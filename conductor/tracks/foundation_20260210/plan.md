@@ -14,4 +14,4 @@
 
 ## Phase 4: Containerization
 - [x] Task: Create a `Dockerfile` for the combined services. 24da0f74
-- [ ] Task: Create a `docker-compose.yml` for local development.
+- [x] Task: Create a `docker-compose.yml` for local development. 956e9b68

@@ -1,0 +1,5 @@
+Task: Perform initial analysis of their database schemas and API structures.
+Summary: Analyzed core model definitions in Sonarr (Series/Episode), Radarr (Movie), and Prowlarr (IndexerDefinition). Identified common fields, logic, and API patterns. Created a summary report in conductor/reference_analysis.md.
+Files:
+- conductor/reference_analysis.md
+Why: To inform the design of Mediarr's unified data model and ensure compatibility with existing media management standards.

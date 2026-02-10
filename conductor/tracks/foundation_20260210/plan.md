@@ -12,6 +12,6 @@
 - [x] Task: Define the unified SQLite schema using Prisma. 21bf2eea
 - [x] Task: Implement the initial database migration. 96876c4b
 
-## Phase 4: Containerization
+## Phase 4: Containerization [checkpoint: 0bc2344]
 - [x] Task: Create a `Dockerfile` for the combined services. 24da0f74
 - [x] Task: Create a `docker-compose.yml` for local development. 956e9b68

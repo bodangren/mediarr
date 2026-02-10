@@ -1,0 +1,7 @@
+Phase 1 Checkpoint: Database Schema & Core Models
+Verification Report:
+- Automated Tests: CI=true npx vitest run — 11 files, 30 tests, ALL PASSING
+- Code Coverage: IndexerRepository (CRUD + encryption), encryption utils, category seed all tested
+- Files: server/src/repositories/IndexerRepository.ts, server/src/utils/encryption.ts, server/src/seeds/categories.ts
+- Schema: Indexer, IndexerRelease, Category models in Prisma
+- Categories: 75 standard Newznab categories seeded (8 parents + 67 subcategories)

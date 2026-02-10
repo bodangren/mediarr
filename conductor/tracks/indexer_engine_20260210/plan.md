@@ -29,7 +29,7 @@ Develop the logic to extract and standardize data from various indexer response 
 
 - [x] Task: Implement `TorznabParser` for standard XML/RSS responses. 05644f4
 - [x] Task: Implement `ScrapingParser` using CSS/XPath selectors from YAML definitions (Cardigann-style). 39d59fd
-- [ ] Task: Create a unified `IndexerResult` model and result merging/deduplication logic.
+- [x] Task: Create a unified `IndexerResult` model and result merging/deduplication logic. bad3762
 - [ ] Task: Conductor - User Manual Verification 'Phase 4: Parsing & Results Standardization' (Protocol in workflow.md)
 
 ## Phase 5: RSS Sync & Scheduling

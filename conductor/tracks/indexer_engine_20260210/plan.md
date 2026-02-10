@@ -8,13 +8,13 @@ Establish the data structures required to store indexers, their configurations, 
 - [x] Task: Create `Category` mapping table and seed initial standard categories (Movies, TV). 33077f5
 - [x] Task: Conductor - User Manual Verification 'Phase 1: Database Schema & Core Models' (Protocol in workflow.md) 30d1805
 
-## Phase 2: Indexer Definitions & Abstraction
+## Phase 2: Indexer Definitions & Abstraction [checkpoint: d45ae83]
 Build the core engine logic to load indexer definitions and provide a unified interface by reverse engineering Prowlarr's YAML parsing logic.
 
 - [x] Task: Implement `DefinitionLoader` to parse Prowlarr-style YAML definition files (analyzing `reference/prowlarr` for field mappings). 7eb650c
 - [x] Task: Create a base `Indexer` class and specialized subclasses (`TorznabIndexer`, `ScrapingIndexer`). 3838cc5
 - [x] Task: Implement the `IndexerFactory` to instantiate indexers from database records or definition files. fe35932
-- [ ] Task: Conductor - User Manual Verification 'Phase 2: Indexer Definitions & Abstraction' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 2: Indexer Definitions & Abstraction' (Protocol in workflow.md) d45ae83
 
 ## Phase 3: Communication & Testing Logic
 Implement the network layer for interacting with indexers and verifying their status.

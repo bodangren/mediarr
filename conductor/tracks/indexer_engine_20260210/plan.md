@@ -37,5 +37,5 @@ Implement the background automation for keeping the local database up to date.
 
 - [x] Task: Set up `node-cron` scheduler within the server application. 9b8a814
 - [x] Task: Implement the `RssSyncService` to fetch and store new releases for enabled indexers. b9bd009
-- [ ] Task: Implement category filtering and mapping during the RSS sync process.
+- [x] Task: Implement category filtering and mapping during the RSS sync process. 4a20396
 - [ ] Task: Conductor - User Manual Verification 'Phase 5: RSS Sync & Scheduling' (Protocol in workflow.md)

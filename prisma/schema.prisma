@@ -1,0 +1,72 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Series {
+  id               Int       @id @default(autoincrement())
+  tvdbId           Int       @unique
+  tmdbId           Int?      @unique
+  imdbId           String?   @unique
+  title            String
+  cleanTitle       String
+  sortTitle        String
+  status           String    // e.g., continuing, ended
+  overview         String?
+  monitored        Boolean   @default(true)
+  qualityProfileId Int
+  path             String?
+  year             Int
+  network          String?
+  added            DateTime  @default(now())
+  episodes         Episode[]
+}
+
+model Episode {
+  id               Int      @id @default(autoincrement())
+  seriesId         Int
+  tvdbId           Int      @unique
+  seasonNumber     Int
+  episodeNumber    Int
+  title            String
+  airDateUtc       DateTime?
+  overview         String?
+  monitored        Boolean  @default(true)
+  series           Series   @relation(fields: [seriesId], references: [id])
+}
+
+model Movie {
+  id               Int      @id @default(autoincrement())
+  tmdbId           Int      @unique
+  imdbId           String?  @unique
+  title            String
+  cleanTitle       String
+  sortTitle        String
+  status           String
+  overview         String?
+  monitored        Boolean  @default(true)
+  qualityProfileId Int
+  path             String?
+  year             Int
+  added            DateTime @default(now())
+}
+
+model Indexer {
+  id             Int      @id @default(autoincrement())
+  name           String   @unique
+  implementation String
+  configContract String
+  settings       String   // JSON string
+  protocol       String   // e.g., torrent, usenet
+  enabled        Boolean  @default(true)
+  supportsRss    Boolean  @default(false)
+  supportsSearch Boolean  @default(false)
+  priority       Int      @default(25)
+  added          DateTime @default(now())
+}

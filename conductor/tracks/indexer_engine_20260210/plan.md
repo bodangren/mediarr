@@ -11,7 +11,7 @@ Establish the data structures required to store indexers, their configurations, 
 ## Phase 2: Indexer Definitions & Abstraction
 Build the core engine logic to load indexer definitions and provide a unified interface by reverse engineering Prowlarr's YAML parsing logic.
 
-- [ ] Task: Implement `DefinitionLoader` to parse Prowlarr-style YAML definition files (analyzing `reference/prowlarr` for field mappings).
+- [x] Task: Implement `DefinitionLoader` to parse Prowlarr-style YAML definition files (analyzing `reference/prowlarr` for field mappings). 7eb650c
 - [ ] Task: Create a base `Indexer` class and specialized subclasses (`TorznabIndexer`, `ScrapingIndexer`).
 - [ ] Task: Implement the `IndexerFactory` to instantiate indexers from database records or definition files.
 - [ ] Task: Conductor - User Manual Verification 'Phase 2: Indexer Definitions & Abstraction' (Protocol in workflow.md)

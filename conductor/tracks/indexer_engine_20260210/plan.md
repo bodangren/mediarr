@@ -21,7 +21,7 @@ Implement the network layer for interacting with indexers and verifying their st
 
 - [x] Task: Implement robust `HttpClient` with support for custom headers, user-agents, and timeout handling. 0c92b76
 - [x] Task: Implement the `Test` capability for Torznab and Definition-based indexers. 3eb2094
-- [ ] Task: Implement the `Search` translation logic (Generic Query -> HTTP Request).
+- [x] Task: Implement the `Search` translation logic (Generic Query -> HTTP Request). 20141e7
 - [ ] Task: Conductor - User Manual Verification 'Phase 3: Communication & Testing Logic' (Protocol in workflow.md)
 
 ## Phase 4: Parsing & Results Standardization

@@ -1,0 +1,96 @@
+---
+id: example-private
+name: Example Private Tracker
+description: A private torrent tracker for testing
+type: private
+language: en
+encoding: UTF-8
+links:
+  - https://private-tracker.com
+legacylinks:
+  - https://old-private-tracker.com
+settings:
+  - name: username
+    type: text
+    label: Username
+  - name: password
+    type: password
+    label: Password
+  - name: freeleech
+    type: checkbox
+    label: Show only freeleech
+    default: false
+caps:
+  categorymappings:
+    - id: "10"
+      cat: Movies/HD
+      desc: "HD Movies"
+    - id: "20"
+      cat: Movies/SD
+      desc: "SD Movies"
+    - id: "30"
+      cat: TV/HD
+      desc: "HD TV"
+    - id: "40"
+      cat: TV/SD
+      desc: "SD TV"
+  modes:
+    search:
+      - q
+    tv-search:
+      - q
+      - season
+      - ep
+    movie-search:
+      - q
+      - imdbid
+login:
+  path: /login.php
+  method: form
+  inputs:
+    username: "{{ .Config.username }}"
+    password: "{{ .Config.password }}"
+  test:
+    path: /index.php
+    selector: "a.logout"
+search:
+  paths:
+    - path: /torrents.php?searchstr={{ .Query.Keywords }}
+      response:
+        type: html
+  rows:
+    selector: "table#torrent_table tbody tr.torrent"
+  fields:
+    title:
+      selector: "a.torrent-link"
+      attribute: title
+    details:
+      selector: "a.torrent-link"
+      attribute: href
+    download:
+      selector: "a.torrent-download"
+      attribute: href
+    size:
+      selector: "td:nth-child(5)"
+      filters:
+        - name: humanize
+    seeders:
+      selector: "td:nth-child(7)"
+    leechers:
+      selector: "td:nth-child(8)"
+    publishdate:
+      selector: "td:nth-child(4) span"
+      attribute: title
+      filters:
+        - name: dateparse
+          args: ["MMM dd yyyy, HH:mm"]
+    category:
+      selector: "td:nth-child(1) a"
+      attribute: href
+      filters:
+        - name: regex
+          args: ["cat=(\\d+)"]
+    minimumratio:
+      text: "1.0"
+    minimumseedtime:
+      text: "259200"

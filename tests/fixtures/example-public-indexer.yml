@@ -1,0 +1,63 @@
+---
+id: example-public
+name: Example Public Torrents
+description: A public torrent indexer for testing
+type: public
+language: en
+encoding: UTF-8
+links:
+  - https://example-torrents.com
+caps:
+  categorymappings:
+    - id: "1"
+      cat: Movies
+      desc: "Movies"
+    - id: "2"
+      cat: TV
+      desc: "TV Shows"
+    - id: "3"
+      cat: Audio
+      desc: "Music"
+  modes:
+    search:
+      - q
+    tv-search:
+      - q
+      - season
+      - ep
+    movie-search:
+      - q
+      - imdbid
+search:
+  paths:
+    - path: /search?q={{ .Query.Keywords }}
+      response:
+        type: html
+  rows:
+    selector: "table.results tbody tr"
+  fields:
+    title:
+      selector: "td:nth-child(2) a"
+    details:
+      selector: "td:nth-child(2) a"
+      attribute: href
+    download:
+      selector: "td:nth-child(3) a"
+      attribute: href
+    size:
+      selector: "td:nth-child(4)"
+    seeders:
+      selector: "td:nth-child(5)"
+    leechers:
+      selector: "td:nth-child(6)"
+    publishdate:
+      selector: "td:nth-child(7)"
+      filters:
+        - name: dateparse
+          args: ["yyyy-MM-dd"]
+    category:
+      selector: "td:nth-child(1)"
+      attribute: class
+      filters:
+        - name: regex
+          args: ["cat-(\\d+)"]

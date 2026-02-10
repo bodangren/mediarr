@@ -1,0 +1,3 @@
+Task: Implement Test capability for Torznab and Definition-based indexers
+Files: server/src/indexers/IndexerTester.ts, tests/indexer-test-capability.test.js
+Tests: 7 tests passing

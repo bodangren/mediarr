@@ -13,7 +13,7 @@ Build the core engine logic to load indexer definitions and provide a unified in
 
 - [x] Task: Implement `DefinitionLoader` to parse Prowlarr-style YAML definition files (analyzing `reference/prowlarr` for field mappings). 7eb650c
 - [x] Task: Create a base `Indexer` class and specialized subclasses (`TorznabIndexer`, `ScrapingIndexer`). 3838cc5
-- [ ] Task: Implement the `IndexerFactory` to instantiate indexers from database records or definition files.
+- [x] Task: Implement the `IndexerFactory` to instantiate indexers from database records or definition files. fe35932
 - [ ] Task: Conductor - User Manual Verification 'Phase 2: Indexer Definitions & Abstraction' (Protocol in workflow.md)
 
 ## Phase 3: Communication & Testing Logic

@@ -4,7 +4,7 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ---
 
-- [~] **Track 2: Unified Indexer Engine (Prowlarr Layer)**
+- [x] **Track 2: Unified Indexer Engine (Prowlarr Layer)**
   *Description: Implementing logic to add, test, and proxy search requests to torrent/NZB indexers.*
   *Link: [./tracks/indexer_engine_20260210/](./tracks/indexer_engine_20260210/)*
 

@@ -5,7 +5,7 @@ Establish the data structures required to store indexers, their configurations, 
 
 - [x] Task: Update Prisma schema to include `Indexer` and `IndexerRelease` models. 9f6c682
 - [x] Task: Implement `Indexer` CRUD repository with support for encrypted/sensitive settings storage. 0686832
-- [ ] Task: Create `Category` mapping table and seed initial standard categories (Movies, TV).
+- [x] Task: Create `Category` mapping table and seed initial standard categories (Movies, TV). 33077f5
 - [ ] Task: Conductor - User Manual Verification 'Phase 1: Database Schema & Core Models' (Protocol in workflow.md)
 
 ## Phase 2: Indexer Definitions & Abstraction

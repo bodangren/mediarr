@@ -1,0 +1,3 @@
+Task: Implement ScrapingParser
+Files: server/src/indexers/ScrapingParser.ts, tests/scraping-parser.test.js
+Tests: 8 tests passing

@@ -30,6 +30,7 @@
     "@prisma/adapter-better-sqlite3": "^7.3.0",
     "@prisma/client": "^7.3.0",
     "better-sqlite3": "^12.6.2",
+    "fast-xml-parser": "^5.3.5",
     "js-yaml": "^4.1.1"
   }
 }

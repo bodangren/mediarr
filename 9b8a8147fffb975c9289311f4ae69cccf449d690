@@ -1,0 +1,3 @@
+Task: Set up node-cron scheduler
+Files: server/src/services/Scheduler.ts, tests/scheduler.test.js
+Tests: 7 tests passing

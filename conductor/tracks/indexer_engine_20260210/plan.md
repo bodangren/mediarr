@@ -19,7 +19,7 @@ Build the core engine logic to load indexer definitions and provide a unified in
 ## Phase 3: Communication & Testing Logic
 Implement the network layer for interacting with indexers and verifying their status.
 
-- [ ] Task: Implement robust `HttpClient` with support for custom headers, user-agents, and timeout handling.
+- [x] Task: Implement robust `HttpClient` with support for custom headers, user-agents, and timeout handling. 0c92b76
 - [ ] Task: Implement the `Test` capability for Torznab and Definition-based indexers.
 - [ ] Task: Implement the `Search` translation logic (Generic Query -> HTTP Request).
 - [ ] Task: Conductor - User Manual Verification 'Phase 3: Communication & Testing Logic' (Protocol in workflow.md)

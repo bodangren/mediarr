@@ -1,8 +1,0 @@
-{
-  "track_id": "foundation_20260210",
-  "type": "feature",
-  "status": "new",
-  "created_at": "2026-02-10T12:00:00Z",
-  "updated_at": "2026-02-10T12:00:00Z",
-  "description": "Scaffolding the monorepo, cloning reference projects for analysis, and defining the unified database schema."
-}

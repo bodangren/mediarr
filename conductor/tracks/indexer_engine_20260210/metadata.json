@@ -1,0 +1,8 @@
+{
+  "track_id": "indexer_engine_20260210",
+  "type": "feature",
+  "status": "new",
+  "created_at": "2026-02-10T21:45:00Z",
+  "updated_at": "2026-02-10T21:45:00Z",
+  "description": "Unified Indexer Engine (Prowlarr Layer) - Implementing logic to add, test, and proxy search requests to torrent indexers by reverse engineering Prowlarr."
+}

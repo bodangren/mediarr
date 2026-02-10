@@ -15,8 +15,6 @@ RUN npm install
 # Build stage
 FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/app/node_modules ./app/node_modules
-COPY --from=deps /app/server/node_modules ./server/node_modules
 COPY . .
 RUN npx prisma generate
 RUN cd app && npm run build

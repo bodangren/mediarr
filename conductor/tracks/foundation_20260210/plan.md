@@ -10,7 +10,7 @@
 
 ## Phase 3: Unified Data Model
 - [x] Task: Define the unified SQLite schema using Prisma. 21bf2eea
-- [ ] Task: Implement the initial database migration.
+- [x] Task: Implement the initial database migration. 96876c4b
 
 ## Phase 4: Containerization
 - [ ] Task: Create a `Dockerfile` for the combined services.

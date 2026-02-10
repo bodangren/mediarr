@@ -20,3 +20,6 @@ When implementing "arr" features, refer to the `reference/` directory (once init
 
 ## 5. Persistence & State
 Update the `plan.md` status markers `[ ]` as you complete tasks. If the workflow requires it, ensure you record task summaries using Git Notes or commit messages as specified.
+
+## 6. Mandatory Archiving
+Once a Track is marked as complete, **ALWAYS** archive it by moving its folder to `conductor/archive/` and removing its entry from the Tracks Registry. Do not ask for permission; this is the project standard.

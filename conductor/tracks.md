@@ -4,10 +4,6 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ---
 
-- [x] **Track 1: Foundation & Reverse Engineering**
-  *Description: Scaffolding the monorepo, cloning reference projects for analysis, and defining the unified database schema.*
-  *Link: [./tracks/foundation_20260210/](./tracks/foundation_20260210/)*
-
 - [ ] **Track 2: Unified Indexer Engine (Prowlarr Layer)**
   *Description: Implementing logic to add, test, and proxy search requests to torrent/NZB indexers.*
 

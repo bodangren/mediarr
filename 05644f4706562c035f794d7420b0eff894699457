@@ -1,0 +1,3 @@
+Task: Implement TorznabParser
+Files: server/src/indexers/TorznabParser.ts, server/src/indexers/IndexerResult.ts
+Tests: 10 tests passing

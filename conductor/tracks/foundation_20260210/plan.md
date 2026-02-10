@@ -13,5 +13,5 @@
 - [x] Task: Implement the initial database migration. 96876c4b
 
 ## Phase 4: Containerization
-- [ ] Task: Create a `Dockerfile` for the combined services.
+- [x] Task: Create a `Dockerfile` for the combined services. 24da0f74
 - [ ] Task: Create a `docker-compose.yml` for local development.

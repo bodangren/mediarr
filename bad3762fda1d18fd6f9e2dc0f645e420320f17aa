@@ -1,0 +1,3 @@
+Task: Create unified IndexerResult model and result merging/deduplication logic
+Files: tests/indexer-result.test.js (model already created in TorznabParser task)
+Tests: 7 tests passing

@@ -9,7 +9,7 @@
 - [x] Task: Perform initial analysis of their database schemas and API structures. 4090c184
 
 ## Phase 3: Unified Data Model
-- [ ] Task: Define the unified SQLite schema using Prisma.
+- [x] Task: Define the unified SQLite schema using Prisma. 21bf2eea
 - [ ] Task: Implement the initial database migration.
 
 ## Phase 4: Containerization

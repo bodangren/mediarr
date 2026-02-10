@@ -27,7 +27,7 @@ Implement the network layer for interacting with indexers and verifying their st
 ## Phase 4: Parsing & Results Standardization
 Develop the logic to extract and standardize data from various indexer response formats, matching Prowlarr's result extraction patterns.
 
-- [ ] Task: Implement `TorznabParser` for standard XML/RSS responses.
+- [x] Task: Implement `TorznabParser` for standard XML/RSS responses. 05644f4
 - [ ] Task: Implement `ScrapingParser` using CSS/XPath selectors from YAML definitions (Cardigann-style).
 - [ ] Task: Create a unified `IndexerResult` model and result merging/deduplication logic.
 - [ ] Task: Conductor - User Manual Verification 'Phase 4: Parsing & Results Standardization' (Protocol in workflow.md)

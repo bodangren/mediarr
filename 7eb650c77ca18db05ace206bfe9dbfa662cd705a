@@ -1,0 +1,4 @@
+Task: Implement DefinitionLoader to parse Prowlarr-style YAML definition files
+Summary: Created DefinitionLoader class with loadFromFile(), loadFromDirectory(), validate(), and normalize() methods. Supports full Cardigann YAML structure (caps, search, login, fields with filters). Added js-yaml dependency.
+Files: server/src/indexers/DefinitionLoader.ts, tests/definition-loader.test.js, tests/fixtures/*.yml
+Tests: 11 tests passing

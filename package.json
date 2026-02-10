@@ -1,0 +1,18 @@
+{
+  "name": "mediarr",
+  "version": "1.0.0",
+  "description": "Mediarr is a unified, all-in-one media management powerhouse designed to replace the fragmented \"arr\" stack (Sonarr, Radarr, Bazarr, Prowlarr) with a single, modern interface and a high-performance integrated backend.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "workspaces": [
+    "app",
+    "server"
+  ],
+  "private": "true"
+}

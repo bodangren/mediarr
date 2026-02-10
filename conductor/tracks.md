@@ -4,7 +4,7 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ---
 
-- [ ] **Track 1: Foundation & Reverse Engineering**
+- [~] **Track 1: Foundation & Reverse Engineering**
   *Description: Scaffolding the monorepo, cloning reference projects for analysis, and defining the unified database schema.*
   *Link: [./tracks/foundation_20260210/](./tracks/foundation_20260210/)*
 

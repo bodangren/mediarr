@@ -1,0 +1,8 @@
+Task: Initialize the monorepo structure with Next.js (app/) and a background service (server/).
+Summary: Initialized a root package.json with npm workspaces for 'app' and 'server'. Scaffolded a Next.js app in 'app/' and a basic Node.js project in 'server/'.
+Files:
+- package.json
+- app/*
+- server/package.json
+- tests/verify-scaffold.js
+Why: To establish the foundational monorepo structure for Mediarr.

@@ -1,6 +1,6 @@
 # Implementation Plan: Track 1 - Foundation & Reverse Engineering
 
-## Phase 1: Project Scaffolding
+## Phase 1: Project Scaffolding [checkpoint: f8cb336]
 - [x] Task: Initialize the monorepo structure with Next.js (app/) and a background service (server/). 4ee899c7
 - [x] Task: Configure TypeScript and shared configurations across the monorepo. 4fe6e5b6
 

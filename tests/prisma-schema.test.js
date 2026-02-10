@@ -1,19 +1,12 @@
-const { execSync } = require('child_process');
-const fs = require('fs');
-const path = require('path');
+import { describe, it, expect } from 'vitest';
+import { execSync } from 'child_process';
 
-const schemaPath = path.join(__dirname, '..', 'prisma', 'schema.prisma');
-
-if (!fs.existsSync(schemaPath)) {
-  console.error('Missing prisma/schema.prisma');
-  process.exit(1);
-}
-
-try {
-  console.log('Validating Prisma schema...');
-  execSync('npx prisma validate', { stdio: 'inherit' });
-  console.log('Prisma schema is valid!');
-} catch (error) {
-  console.error('Prisma schema validation failed!');
-  process.exit(1);
-}
+describe('Prisma Schema', () => {
+  it('should be a valid schema', { timeout: 15000 }, () => {
+    const result = execSync('npx prisma validate', {
+      encoding: 'utf8',
+      cwd: process.cwd(),
+    });
+    expect(result).toContain('is valid');
+  });
+});

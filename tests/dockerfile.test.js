@@ -1,32 +1,23 @@
-const fs = require('fs');
-const path = require('path');
+import { describe, it, expect } from 'vitest';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-const dockerfilePath = path.join(__dirname, '..', 'Dockerfile');
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-if (!fs.existsSync(dockerfilePath)) {
-  console.error('Missing Dockerfile');
-  process.exit(1);
-}
+describe('Dockerfile', () => {
+  const dockerfilePath = path.join(__dirname, '..', 'Dockerfile');
 
-const content = fs.readFileSync(dockerfilePath, 'utf8');
-const requiredKeywords = [
-  'FROM',
-  'RUN',
-  'COPY',
-  'EXPOSE',
-  'CMD',
-];
+  it('should exist', () => {
+    expect(fs.existsSync(dockerfilePath)).toBe(true);
+  });
 
-let failed = false;
-requiredKeywords.forEach(keyword => {
-  if (!content.includes(keyword)) {
-    console.error(`Dockerfile missing keyword: ${keyword}`);
-    failed = true;
-  }
+  it('should contain all required keywords', () => {
+    const content = fs.readFileSync(dockerfilePath, 'utf8');
+    const requiredKeywords = ['FROM', 'RUN', 'COPY', 'EXPOSE', 'CMD'];
+
+    for (const keyword of requiredKeywords) {
+      expect(content, `Dockerfile missing keyword: ${keyword}`).toContain(keyword);
+    }
+  });
 });
-
-if (failed) {
-  process.exit(1);
-} else {
-  console.log('Dockerfile verification passed!');
-}

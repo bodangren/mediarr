@@ -1,23 +1,19 @@
-const fs = require('fs');
-const path = require('path');
+import { describe, it, expect } from 'vitest';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-const requiredFiles = [
-  'tsconfig.json',
-  'app/tsconfig.json',
-  'server/tsconfig.json',
-];
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-let failed = false;
+describe('TypeScript Configuration', () => {
+  const requiredFiles = [
+    'tsconfig.json',
+    'app/tsconfig.json',
+    'server/tsconfig.json',
+  ];
 
-requiredFiles.forEach(f => {
-  if (!fs.existsSync(path.join(__dirname, '..', f))) {
-    console.error(`Missing required TypeScript file: ${f}`);
-    failed = true;
-  }
+  it.each(requiredFiles)('should have %s', (file) => {
+    const filePath = path.join(__dirname, '..', file);
+    expect(fs.existsSync(filePath), `Missing ${file}`).toBe(true);
+  });
 });
-
-if (failed) {
-  process.exit(1);
-} else {
-  console.log('TypeScript configuration verification passed!');
-}

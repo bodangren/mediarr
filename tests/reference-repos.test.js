@@ -1,24 +1,15 @@
-const fs = require('fs');
-const path = require('path');
+import { describe, it, expect } from 'vitest';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-const requiredRepos = [
-  'sonarr',
-  'radarr',
-  'bazarr',
-  'prowlarr',
-];
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-let failed = false;
+describe('Reference Repositories', () => {
+  const requiredRepos = ['sonarr', 'radarr', 'bazarr', 'prowlarr'];
 
-requiredRepos.forEach(repo => {
-  if (!fs.existsSync(path.join(__dirname, '..', 'reference', repo, '.git'))) {
-    console.error(`Missing required repository: reference/${repo}`);
-    failed = true;
-  }
+  it.each(requiredRepos)('should have reference/%s repository cloned', (repo) => {
+    const gitDir = path.join(__dirname, '..', 'reference', repo, '.git');
+    expect(fs.existsSync(gitDir), `Missing reference/${repo}`).toBe(true);
+  });
 });
-
-if (failed) {
-  process.exit(1);
-} else {
-  console.log('Reference repositories verification passed!');
-}

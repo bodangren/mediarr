@@ -1,17 +1,21 @@
-const fs = require('fs');
-const path = require('path');
+import { describe, it, expect } from 'vitest';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-const migrationDir = path.join(__dirname, '..', 'prisma', 'migrations');
-const dbPath = path.join(__dirname, '..', 'prisma', 'dev.db');
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-if (!fs.existsSync(migrationDir) || fs.readdirSync(migrationDir).length === 0) {
-  console.error('Missing migration files in prisma/migrations');
-  process.exit(1);
-}
+describe('Database Migration', () => {
+  const migrationDir = path.join(__dirname, '..', 'prisma', 'migrations');
+  const dbPath = path.join(__dirname, '..', 'prisma', 'dev.db');
 
-if (!fs.existsSync(dbPath)) {
-  console.error('Missing database file: prisma/dev.db');
-  process.exit(1);
-}
+  it('should have migration files in prisma/migrations', () => {
+    expect(fs.existsSync(migrationDir)).toBe(true);
+    const entries = fs.readdirSync(migrationDir);
+    expect(entries.length).toBeGreaterThan(0);
+  });
 
-console.log('Database migration verification passed!');
+  it('should have a dev.db database file', () => {
+    expect(fs.existsSync(dbPath)).toBe(true);
+  });
+});

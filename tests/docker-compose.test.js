@@ -1,17 +1,20 @@
-const fs = require('fs');
-const path = require('path');
+import { describe, it, expect } from 'vitest';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-const filePath = path.join(__dirname, '..', 'docker-compose.yml');
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-if (!fs.existsSync(filePath)) {
-  console.error('Missing docker-compose.yml');
-  process.exit(1);
-}
+describe('docker-compose.yml', () => {
+  const filePath = path.join(__dirname, '..', 'docker-compose.yml');
 
-const content = fs.readFileSync(filePath, 'utf8');
-if (!content.includes('services:') || !content.includes('mediarr:')) {
-  console.error('docker-compose.yml missing required sections');
-  process.exit(1);
-}
+  it('should exist', () => {
+    expect(fs.existsSync(filePath)).toBe(true);
+  });
 
-console.log('docker-compose.yml verification passed!');
+  it('should contain required sections', () => {
+    const content = fs.readFileSync(filePath, 'utf8');
+    expect(content).toContain('services:');
+    expect(content).toContain('mediarr:');
+  });
+});

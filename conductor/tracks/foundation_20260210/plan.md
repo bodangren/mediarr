@@ -5,7 +5,7 @@
 - [x] Task: Configure TypeScript and shared configurations across the monorepo. 4fe6e5b6
 
 ## Phase 2: Reference Gathering
-- [ ] Task: Create a `reference/` directory and clone the latest stable versions of Sonarr, Radarr, Bazarr, and Prowlarr.
+- [x] Task: Create a `reference/` directory and clone the latest stable versions of Sonarr, Radarr, Bazarr, and Prowlarr. 0c0ae24a
 - [ ] Task: Perform initial analysis of their database schemas and API structures.
 
 ## Phase 3: Unified Data Model

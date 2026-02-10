@@ -16,13 +16,13 @@ Build the core engine logic to load indexer definitions and provide a unified in
 - [x] Task: Implement the `IndexerFactory` to instantiate indexers from database records or definition files. fe35932
 - [x] Task: Conductor - User Manual Verification 'Phase 2: Indexer Definitions & Abstraction' (Protocol in workflow.md) d45ae83
 
-## Phase 3: Communication & Testing Logic
+## Phase 3: Communication & Testing Logic [checkpoint: 2b1216a]
 Implement the network layer for interacting with indexers and verifying their status.
 
 - [x] Task: Implement robust `HttpClient` with support for custom headers, user-agents, and timeout handling. 0c92b76
 - [x] Task: Implement the `Test` capability for Torznab and Definition-based indexers. 3eb2094
 - [x] Task: Implement the `Search` translation logic (Generic Query -> HTTP Request). 20141e7
-- [ ] Task: Conductor - User Manual Verification 'Phase 3: Communication & Testing Logic' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 3: Communication & Testing Logic' (Protocol in workflow.md) 2b1216a
 
 ## Phase 4: Parsing & Results Standardization
 Develop the logic to extract and standardize data from various indexer response formats, matching Prowlarr's result extraction patterns.

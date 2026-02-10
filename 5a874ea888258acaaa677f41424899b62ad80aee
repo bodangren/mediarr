@@ -1,0 +1,5 @@
+Phase 4 Checkpoint: Parsing & Results Standardization
+Verification Report:
+- Automated Tests: CI=true npx vitest run — 20 files, 107 tests, ALL PASSING
+- New files: TorznabParser.ts, ScrapingParser.ts, IndexerResult.ts
+- Tests: torznab-parser (10), scraping-parser (8), indexer-result (7)

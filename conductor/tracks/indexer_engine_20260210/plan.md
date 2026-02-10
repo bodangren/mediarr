@@ -24,13 +24,13 @@ Implement the network layer for interacting with indexers and verifying their st
 - [x] Task: Implement the `Search` translation logic (Generic Query -> HTTP Request). 20141e7
 - [x] Task: Conductor - User Manual Verification 'Phase 3: Communication & Testing Logic' (Protocol in workflow.md) 2b1216a
 
-## Phase 4: Parsing & Results Standardization
+## Phase 4: Parsing & Results Standardization [checkpoint: 5a874ea]
 Develop the logic to extract and standardize data from various indexer response formats, matching Prowlarr's result extraction patterns.
 
 - [x] Task: Implement `TorznabParser` for standard XML/RSS responses. 05644f4
 - [x] Task: Implement `ScrapingParser` using CSS/XPath selectors from YAML definitions (Cardigann-style). 39d59fd
 - [x] Task: Create a unified `IndexerResult` model and result merging/deduplication logic. bad3762
-- [ ] Task: Conductor - User Manual Verification 'Phase 4: Parsing & Results Standardization' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 4: Parsing & Results Standardization' (Protocol in workflow.md) 5a874ea
 
 ## Phase 5: RSS Sync & Scheduling
 Implement the background automation for keeping the local database up to date.

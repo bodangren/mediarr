@@ -58,15 +58,41 @@ model Movie {
 }
 
 model Indexer {
-  id             Int      @id @default(autoincrement())
-  name           String   @unique
+  id             Int              @id @default(autoincrement())
+  name           String           @unique
   implementation String
   configContract String
-  settings       String   // JSON string
-  protocol       String   // e.g., torrent, usenet
-  enabled        Boolean  @default(true)
-  supportsRss    Boolean  @default(false)
-  supportsSearch Boolean  @default(false)
-  priority       Int      @default(25)
-  added          DateTime @default(now())
+  settings       String           // JSON string
+  protocol       String           // e.g., torrent, usenet
+  enabled        Boolean          @default(true)
+  supportsRss    Boolean          @default(false)
+  supportsSearch Boolean          @default(false)
+  priority       Int              @default(25)
+  added          DateTime         @default(now())
+  releases       IndexerRelease[]
+}
+
+model IndexerRelease {
+  id           Int      @id @default(autoincrement())
+  guid         String   @unique
+  indexerId    Int
+  indexer      Indexer  @relation(fields: [indexerId], references: [id])
+  title        String
+  size         BigInt?
+  downloadUrl  String?
+  infoUrl      String?
+  magnetUrl    String?
+  publishDate  DateTime
+  seeders      Int?
+  leechers     Int?
+  protocol     String   // torrent, usenet
+  categories   String   // JSON array of category IDs
+  indexerFlags String?  // comma-separated or JSON
+  added        DateTime @default(now())
+}
+
+model Category {
+  id        Int    @id // Using standard IDs (e.g., 2000 for Movies)
+  name      String
+  parent_id Int?
 }

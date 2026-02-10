@@ -1,0 +1,6 @@
+Phase 2 Checkpoint: Indexer Definitions & Abstraction
+Verification Report:
+- Automated Tests: CI=true npx vitest run — 14 files, 59 tests, ALL PASSING
+- New files: DefinitionLoader.ts, BaseIndexer.ts, IndexerFactory.ts
+- Tests: definition-loader (11), indexer-classes (12), indexer-factory (6)
+- YAML parsing of Cardigann definitions working with full field/filter support

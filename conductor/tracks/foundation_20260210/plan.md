@@ -8,7 +8,7 @@
 - [x] Task: Create a `reference/` directory and clone the latest stable versions of Sonarr, Radarr, Bazarr, and Prowlarr. 0c0ae24a
 - [x] Task: Perform initial analysis of their database schemas and API structures. 4090c184
 
-## Phase 3: Unified Data Model
+## Phase 3: Unified Data Model [checkpoint: 665af68]
 - [x] Task: Define the unified SQLite schema using Prisma. 21bf2eea
 - [x] Task: Implement the initial database migration. 96876c4b
 

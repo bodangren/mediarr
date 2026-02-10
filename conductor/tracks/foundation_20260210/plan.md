@@ -6,7 +6,7 @@
 
 ## Phase 2: Reference Gathering
 - [x] Task: Create a `reference/` directory and clone the latest stable versions of Sonarr, Radarr, Bazarr, and Prowlarr. 0c0ae24a
-- [ ] Task: Perform initial analysis of their database schemas and API structures.
+- [x] Task: Perform initial analysis of their database schemas and API structures. 4090c184
 
 ## Phase 3: Unified Data Model
 - [ ] Task: Define the unified SQLite schema using Prisma.

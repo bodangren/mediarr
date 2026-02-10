@@ -1,0 +1,4 @@
+Task: Create base Indexer class and specialized subclasses
+Summary: Added BaseIndexer (abstract), TorznabIndexer (API-based with URL builders), ScrapingIndexer (Cardigann definition-driven with search path/category access).
+Files: server/src/indexers/BaseIndexer.ts, tests/indexer-classes.test.js
+Tests: 12 tests passing

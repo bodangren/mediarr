@@ -1,12 +1,12 @@
 # Implementation Plan: Track 2 - Unified Indexer Engine (Prowlarr Layer)
 
-## Phase 1: Database Schema & Core Models
+## Phase 1: Database Schema & Core Models [checkpoint: 30d1805]
 Establish the data structures required to store indexers, their configurations, and synchronized releases.
 
 - [x] Task: Update Prisma schema to include `Indexer` and `IndexerRelease` models. 9f6c682
 - [x] Task: Implement `Indexer` CRUD repository with support for encrypted/sensitive settings storage. 0686832
 - [x] Task: Create `Category` mapping table and seed initial standard categories (Movies, TV). 33077f5
-- [ ] Task: Conductor - User Manual Verification 'Phase 1: Database Schema & Core Models' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 1: Database Schema & Core Models' (Protocol in workflow.md) 30d1805
 
 ## Phase 2: Indexer Definitions & Abstraction
 Build the core engine logic to load indexer definitions and provide a unified interface by reverse engineering Prowlarr's YAML parsing logic.

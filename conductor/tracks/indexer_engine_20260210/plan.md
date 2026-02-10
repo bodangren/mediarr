@@ -32,10 +32,10 @@ Develop the logic to extract and standardize data from various indexer response 
 - [x] Task: Create a unified `IndexerResult` model and result merging/deduplication logic. bad3762
 - [x] Task: Conductor - User Manual Verification 'Phase 4: Parsing & Results Standardization' (Protocol in workflow.md) 5a874ea
 
-## Phase 5: RSS Sync & Scheduling
+## Phase 5: RSS Sync & Scheduling [checkpoint: 1dceea8]
 Implement the background automation for keeping the local database up to date.
 
 - [x] Task: Set up `node-cron` scheduler within the server application. 9b8a814
 - [x] Task: Implement the `RssSyncService` to fetch and store new releases for enabled indexers. b9bd009
 - [x] Task: Implement category filtering and mapping during the RSS sync process. 4a20396
-- [ ] Task: Conductor - User Manual Verification 'Phase 5: RSS Sync & Scheduling' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 5: RSS Sync & Scheduling' (Protocol in workflow.md) 1dceea8

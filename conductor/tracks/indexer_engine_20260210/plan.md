@@ -35,7 +35,7 @@ Develop the logic to extract and standardize data from various indexer response 
 ## Phase 5: RSS Sync & Scheduling
 Implement the background automation for keeping the local database up to date.
 
-- [ ] Task: Set up `node-cron` scheduler within the server application.
+- [x] Task: Set up `node-cron` scheduler within the server application. 9b8a814
 - [ ] Task: Implement the `RssSyncService` to fetch and store new releases for enabled indexers.
 - [ ] Task: Implement category filtering and mapping during the RSS sync process.
 - [ ] Task: Conductor - User Manual Verification 'Phase 5: RSS Sync & Scheduling' (Protocol in workflow.md)

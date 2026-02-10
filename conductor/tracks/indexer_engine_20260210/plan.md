@@ -3,8 +3,8 @@
 ## Phase 1: Database Schema & Core Models
 Establish the data structures required to store indexers, their configurations, and synchronized releases.
 
-- [~] Task: Update Prisma schema to include `Indexer` and `IndexerRelease` models.
-- [ ] Task: Implement `Indexer` CRUD repository with support for encrypted/sensitive settings storage.
+- [x] Task: Update Prisma schema to include `Indexer` and `IndexerRelease` models. 9f6c682
+- [x] Task: Implement `Indexer` CRUD repository with support for encrypted/sensitive settings storage. 0686832
 - [ ] Task: Create `Category` mapping table and seed initial standard categories (Movies, TV).
 - [ ] Task: Conductor - User Manual Verification 'Phase 1: Database Schema & Core Models' (Protocol in workflow.md)
 

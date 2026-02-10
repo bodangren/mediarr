@@ -14,5 +14,9 @@
     "app",
     "server"
   ],
-  "private": "true"
+  "private": "true",
+  "devDependencies": {
+    "@types/node": "^25.2.2",
+    "typescript": "^5.9.3"
+  }
 }

@@ -1,0 +1,1 @@
+Task: Write Tests for TorrentManager initialization and lifecycle. 6 tests: singleton pattern, WebTorrent client creation, load existing torrents from DB, skip paused/stopped torrents, handle missing source data (mark as error), proper destroy/cleanup. All pass with mocked webtorrent.

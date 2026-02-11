@@ -29,7 +29,7 @@ describe('Torrent Schema', () => {
       downloaded: BigInt(536870912), // 512 MB
       uploaded: BigInt(268435456), // 256 MB
       ratio: 0.5,
-      path: '/downloads/incomplete',
+      path: '/data/downloads/incomplete',
     };
 
     const created = await prisma.torrent.create({
@@ -56,7 +56,7 @@ describe('Torrent Schema', () => {
         name: 'Peer Test',
         status: 'seeding',
         size: BigInt(100),
-        path: '/downloads/complete',
+        path: '/data/downloads/complete',
         peers: {
           create: {
             ip: '127.0.0.1',

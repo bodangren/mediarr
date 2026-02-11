@@ -13,7 +13,7 @@ vi.mock('webtorrent', () => {
       uploaded: 250000,
       length: 1000000,
       timeRemaining: 60000,
-      path: '/downloads/incomplete',
+      path: '/data/downloads/incomplete',
       paused: false,
       done: false,
       on: vi.fn(),
@@ -30,7 +30,7 @@ vi.mock('webtorrent', () => {
   function MockWebTorrent() {
     this.torrents = [];
     this.add = vi.fn((source, opts) => {
-      const torrent = createMockTorrent({ path: opts?.path || '/downloads/incomplete' });
+      const torrent = createMockTorrent({ path: opts?.path || '/data/downloads/incomplete' });
       this.torrents.push(torrent);
       return torrent;
     });

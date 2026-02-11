@@ -61,7 +61,7 @@ describe('TorrentManager - API Data', () => {
         downloaded: BigInt(450000000),
         uploaded: BigInt(100000000),
         eta: 600,
-        path: '/downloads/incomplete'
+        path: '/data/downloads/incomplete'
       }
     ];
 
@@ -82,7 +82,7 @@ describe('TorrentManager - API Data', () => {
       downloaded: '450000000',
       uploaded: '100000000',
       eta: 600,
-      path: '/downloads/incomplete'
+      path: '/data/downloads/incomplete'
     });
   });
 
@@ -98,7 +98,7 @@ describe('TorrentManager - API Data', () => {
       downloaded: BigInt(450000000),
       uploaded: BigInt(100000000),
       eta: 600,
-      path: '/downloads/incomplete'
+      path: '/data/downloads/incomplete'
     };
 
     mockRepo.findByInfoHash.mockResolvedValue(mockDbTorrent);

@@ -12,7 +12,7 @@ vi.mock('webtorrent', () => {
     uploaded: 256,
     length: 1000,
     timeRemaining: 60000,
-    path: '/downloads/incomplete',
+    path: '/data/downloads/incomplete',
     paused: false,
     done: false,
     on: vi.fn(),
@@ -104,7 +104,7 @@ describe('TorrentManager', () => {
         downloaded: BigInt(500000),
         uploaded: BigInt(0),
         ratio: 0,
-        path: '/downloads/incomplete',
+        path: '/data/downloads/incomplete',
         added: new Date(),
         completedAt: null,
         stopAtRatio: null,
@@ -125,7 +125,7 @@ describe('TorrentManager', () => {
         downloaded: BigInt(1800000),
         uploaded: BigInt(500000),
         ratio: 0.25,
-        path: '/downloads/incomplete',
+        path: '/data/downloads/incomplete',
         added: new Date(),
         completedAt: null,
         stopAtRatio: 1.0,
@@ -146,7 +146,7 @@ describe('TorrentManager', () => {
     expect(client.add).toHaveBeenCalledOnce();
     expect(client.add).toHaveBeenCalledWith(
       'magnet:?xt=urn:btih:hash-from-db-1',
-      expect.objectContaining({ path: '/downloads/incomplete' })
+      expect.objectContaining({ path: '/data/downloads/incomplete' })
     );
   });
 
@@ -165,7 +165,7 @@ describe('TorrentManager', () => {
         downloaded: BigInt(500),
         uploaded: BigInt(0),
         ratio: 0,
-        path: '/downloads/incomplete',
+        path: '/data/downloads/incomplete',
         added: new Date(),
         completedAt: null,
         stopAtRatio: null,
@@ -186,7 +186,7 @@ describe('TorrentManager', () => {
         downloaded: BigInt(1000),
         uploaded: BigInt(500),
         ratio: 0.5,
-        path: '/downloads/complete',
+        path: '/data/downloads/complete',
         added: new Date(),
         completedAt: new Date(),
         stopAtRatio: null,
@@ -232,7 +232,7 @@ describe('TorrentManager', () => {
         downloaded: BigInt(100),
         uploaded: BigInt(0),
         ratio: 0,
-        path: '/downloads/incomplete',
+        path: '/data/downloads/incomplete',
         added: new Date(),
         completedAt: null,
         stopAtRatio: null,

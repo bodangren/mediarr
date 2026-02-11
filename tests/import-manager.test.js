@@ -34,7 +34,7 @@ describe('ImportManager', () => {
     const torrentInfo = {
       infoHash: 'abc',
       name: 'The.Boys.S01E01.1080p.WEBRip.x264-GRP',
-      path: '/downloads/complete/The.Boys.S01E01.1080p.WEBRip.x264-GRP'
+      path: '/data/downloads/complete/The.Boys.S01E01.1080p.WEBRip.x264-GRP'
     };
 
     // Mock fs

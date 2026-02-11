@@ -14,7 +14,7 @@ vi.mock('webtorrent', () => {
       uploaded: 0,
       length: 1000,
       timeRemaining: Infinity,
-      path: '/downloads/incomplete',
+      path: '/data/downloads/incomplete',
       paused: false,
       done: false,
       on: vi.fn(),

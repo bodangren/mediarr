@@ -78,7 +78,7 @@ export class TorrentManager extends EventEmitter {
 
   /**
    * Adds a torrent from a magnet link or .torrent file buffer.
-   * Downloads to /downloads/incomplete by default, or a custom path.
+   * Downloads to /data/downloads/incomplete by default, or a custom path.
    */
   async addTorrent(options: AddTorrentOptions): Promise<TorrentInfo> {
     this.ensureInitialized();

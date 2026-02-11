@@ -31,7 +31,7 @@ describe('TorrentRepository', () => {
       downloaded: BigInt(200000000),
       uploaded: BigInt(0),
       ratio: 0,
-      path: '/downloads/incomplete',
+      path: '/data/downloads/incomplete',
     };
 
     const created = await repository.upsert(torrentData);
@@ -53,7 +53,7 @@ describe('TorrentRepository', () => {
         name: 'Find Test',
         status: 'downloading',
         size: BigInt(1000),
-        path: '/downloads/incomplete',
+        path: '/data/downloads/incomplete',
         peers: {
           create: { ip: '1.1.1.1', port: 1234, client: 'TestClient' }
         }
@@ -73,7 +73,7 @@ describe('TorrentRepository', () => {
         name: 'Progress Test',
         status: 'downloading',
         size: BigInt(1000),
-        path: '/downloads/incomplete',
+        path: '/data/downloads/incomplete',
       }
     });
 
@@ -100,7 +100,7 @@ describe('TorrentRepository', () => {
         name: 'Sync Peers Test',
         status: 'downloading',
         size: BigInt(1000),
-        path: '/downloads/incomplete',
+        path: '/data/downloads/incomplete',
       }
     });
 

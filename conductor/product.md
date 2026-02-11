@@ -1,3 +1,9 @@
-# Initial Concept
+# Product Definition
 
-I want to create an all-in-one media manager and downloader with the combined features of sonarr, radarr, bazarr, prowlarr, and a torrent client. Maybe even a simple DLNA server that can handle the subtitles, too. Something like that. Does everything in one interface. I am so tired of trying to wire these separate pieces together every time I need to set one up, then I have six or seven different pages to visit. I think we should clone these projects into subdirectories so that we can reverse engineer them and then rebuild on a modern platform -- next.js or react/vite or sometthing like that.
+Mediarr is a unified, all-in-one media management powerhouse designed to replace the fragmented "arr" stack (Sonarr, Radarr, Bazarr, Prowlarr) with a single, modern interface and a high-performance integrated backend.
+
+### Core Features
+- **Integrated Torrent Engine:** A built-in downloading service (WebTorrent) that eliminates the need for external clients.
+- **Unified Indexer Management:** Standardized support for Torznab and scraping-based indexers.
+- **Automated Lifecycle:** From RSS discovery to download management and final file organization.
+- **Modern Interface:** A sleek Next.js-powered "Modern Dark" dashboard for central control.

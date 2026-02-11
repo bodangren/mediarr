@@ -75,9 +75,7 @@ export class TorrentManager {
    * Downloads to /downloads/incomplete by default, or a custom path.
    */
   async addTorrent(options: AddTorrentOptions): Promise<TorrentInfo> {
-    if (!this.initialized || !this.client) {
-      throw new Error('TorrentManager is not initialized');
-    }
+    this.ensureInitialized();
 
     const source = options.magnetUrl || options.torrentFile;
     if (!source) {
@@ -119,9 +117,7 @@ export class TorrentManager {
    * Sets the global download speed limit in bytes/sec. Use -1 to remove the limit.
    */
   setDownloadSpeedLimit(bytesPerSecond: number): void {
-    if (!this.initialized || !this.client) {
-      throw new Error('TorrentManager is not initialized');
-    }
+    this.ensureInitialized();
     (this.client as any).throttleDownload(bytesPerSecond);
   }
 
@@ -129,9 +125,7 @@ export class TorrentManager {
    * Sets the global upload speed limit in bytes/sec. Use -1 to remove the limit.
    */
   setUploadSpeedLimit(bytesPerSecond: number): void {
-    if (!this.initialized || !this.client) {
-      throw new Error('TorrentManager is not initialized');
-    }
+    this.ensureInitialized();
     (this.client as any).throttleUpload(bytesPerSecond);
   }
 
@@ -145,6 +139,56 @@ export class TorrentManager {
     if (limits.upload !== undefined) {
       this.setUploadSpeedLimit(limits.upload);
     }
+  }
+
+  /**
+   * Finds a torrent in the WebTorrent client by infoHash. Throws if not found.
+   */
+  private findTorrentOrThrow(infoHash: string): any {
+    const torrent = (this.client as any).get(infoHash);
+    if (!torrent) {
+      throw new Error(`Torrent with infoHash '${infoHash}' not found`);
+    }
+    return torrent;
+  }
+
+  /**
+   * Guards that the manager is initialized. Throws if not.
+   */
+  private ensureInitialized(): void {
+    if (!this.initialized || !this.client) {
+      throw new Error('TorrentManager is not initialized');
+    }
+  }
+
+  /**
+   * Pauses a torrent and updates the database status to 'paused'.
+   */
+  async pauseTorrent(infoHash: string): Promise<void> {
+    this.ensureInitialized();
+    const torrent = this.findTorrentOrThrow(infoHash);
+    torrent.pause();
+    await this.repository.updateStatus(infoHash, 'paused');
+  }
+
+  /**
+   * Resumes a paused torrent and updates the database status to 'downloading'.
+   */
+  async resumeTorrent(infoHash: string): Promise<void> {
+    this.ensureInitialized();
+    const torrent = this.findTorrentOrThrow(infoHash);
+    torrent.resume();
+    await this.repository.updateStatus(infoHash, 'downloading');
+  }
+
+  /**
+   * Removes a torrent from the client and deletes it from the database.
+   */
+  async removeTorrent(infoHash: string): Promise<void> {
+    this.ensureInitialized();
+    const torrent = this.findTorrentOrThrow(infoHash);
+    (this.client as any).remove(torrent);
+    await this.repository.delete(infoHash);
   }
 
   /**

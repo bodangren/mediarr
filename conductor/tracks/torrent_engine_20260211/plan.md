@@ -1,6 +1,6 @@
 # Implementation Plan: Track 3 - Integrated Torrent Engine (Downloader Layer)
 
-## Phase 1: Core Engine Integration & Persistence [checkpoint: ]
+## Phase 1: Core Engine Integration & Persistence [checkpoint: ec42688]
 Establish the foundation for WebTorrent and the database state management.
 
 - [x] Task: Update Prisma schema to include `Torrent` and `TorrentPeer` models to track state, progress, and settings. (92b4e31)

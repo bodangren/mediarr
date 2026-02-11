@@ -29,5 +29,5 @@ Replace `fs.rename()` with hard link strategy and move fallback.
 ## Phase 5: Integration Verification
 Ensure all existing functionality works with the new paths.
 
-- [ ] Task: Update any remaining hardcoded path references in tests and configuration.
+- [x] Task: Update any remaining hardcoded path references in tests and configuration. (1485caa)
 - [ ] Task: Conductor - User Manual Verification 'Phase 5: Integration Verification' (Protocol in workflow.md)

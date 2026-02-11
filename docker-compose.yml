@@ -6,7 +6,12 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ./prisma:/app/prisma
+      - mediarr_config:/config
+      - mediarr_data:/data
     environment:
-      - DATABASE_URL=file:/app/prisma/dev.db
+      - DATABASE_URL=file:/config/mediarr.db
       - NODE_ENV=development
+
+volumes:
+  mediarr_config:
+  mediarr_data:

@@ -13,8 +13,8 @@ Establish the foundation for WebTorrent and the database state management.
 ## Phase 2: Transfer & Queue Control [checkpoint: ]
 Implement the logic for adding, pausing, and controlling the download process.
 
-- [ ] Task: Write Tests: Verify the engine can add a magnet link or .torrent file and begin downloading to the `incomplete/` directory.
-- [ ] Task: Implement `addTorrent` logic with support for custom storage paths.
+- [x] Task: Write Tests: Verify the engine can add a magnet link or .torrent file and begin downloading to the `incomplete/` directory. (c78f6cf)
+- [x] Task: Implement `addTorrent` logic with support for custom storage paths. (c78f6cf)
 - [ ] Task: Write Tests: Verify global speed limits (upload/download) are applied and respected by the WebTorrent client.
 - [ ] Task: Implement global speed limit configuration and runtime updates.
 - [ ] Task: Write Tests: Verify pause/resume/remove functionality correctly updates the database and the active engine state.

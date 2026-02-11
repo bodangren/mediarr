@@ -22,8 +22,8 @@ Update download paths from hardcoded `/downloads/` to `/data/downloads/`.
 ## Phase 4: Hard Link Support in Organizer
 Replace `fs.rename()` with hard link strategy and move fallback.
 
-- [ ] Task: Write Tests: Verify `Organizer.organizeFile()` creates a hard link when source and destination are on the same filesystem.
-- [ ] Task: Write Tests: Verify `Organizer.organizeFile()` falls back to `fs.rename()` when hard linking fails (cross-device) and logs a warning.
+- [x] Task: Write Tests: Verify `Organizer.organizeFile()` creates a hard link when source and destination are on the same filesystem. (ad03dd2)
+- [x] Task: Write Tests: Verify `Organizer.organizeFile()` falls back to `fs.rename()` when hard linking fails (cross-device) and logs a warning. (ad03dd2)
 - [ ] Task: Implement hard link with move fallback in `Organizer.organizeFile()`.
 
 ## Phase 5: Integration Verification

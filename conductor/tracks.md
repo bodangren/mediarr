@@ -4,7 +4,7 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ---
 
-- [~] **Track 3: Integrated Torrent Engine (Downloader Layer)**
+- [x] **Track 3: Integrated Torrent Engine (Downloader Layer)**
   *Link: [./tracks/torrent_engine_20260211/](./tracks/torrent_engine_20260211/)*
   *Description: Building the persistent background service for torrenting and queue management.*
 

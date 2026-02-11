@@ -26,8 +26,8 @@ Handle the transition from downloading to completed and enforce seeding rules.
 
 - [x] Task: Write Tests: Verify that files are moved from `incomplete/` to `complete/` exactly when the download reaches 100%. (bdceb7b)
 - [x] Task: Implement file move logic and event emitter for completion. (bdceb7b)
-- [~] Task: Write Tests: Verify seeding limits (ratio/time) correctly trigger the stop/removal of a torrent.
-- [ ] Task: Implement `SeedingProtector` service to monitor active torrents and enforce ratio/time limits.
+- [x] Task: Write Tests: Verify seeding limits (ratio/time) correctly trigger the stop/removal of a torrent. (358ab65)
+- [x] Task: Implement `SeedingProtector` service to monitor active torrents and enforce ratio/time limits. (358ab65)
 
 
 ## Phase 4: API & Real-time Monitoring [checkpoint: ]

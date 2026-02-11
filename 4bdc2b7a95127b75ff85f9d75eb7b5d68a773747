@@ -1,0 +1,3 @@
+Task: Write Tests + Implement global speed limits
+Summary: Added speed throttling methods to TorrentManager. Tests cover download limits, upload limits, limit removal (-1), combined limits, and initialization guard.
+Files: tests/torrent-speed-limits.test.js, server/src/services/TorrentManager.ts

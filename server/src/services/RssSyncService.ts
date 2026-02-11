@@ -3,6 +3,7 @@ import type { HttpClient } from '../indexers/HttpClient';
 import { TorznabIndexer } from '../indexers/BaseIndexer';
 import { TorznabParser } from '../indexers/TorznabParser';
 import type { IndexerResult } from '../indexers/IndexerResult';
+import { EventEmitter } from 'events';
 
 export interface SyncSummary {
   indexersProcessed: number;
@@ -14,13 +15,15 @@ export interface SyncSummary {
  * Service that fetches latest releases from enabled indexers via RSS
  * and stores them in the local database.
  */
-export class RssSyncService {
+export class RssSyncService extends EventEmitter {
   private torznabParser = new TorznabParser();
 
   constructor(
     private prisma: PrismaClient,
     private httpClient: HttpClient,
-  ) {}
+  ) {
+    super();
+  }
 
   /**
    * Run a full RSS sync across all enabled indexers.
@@ -114,5 +117,7 @@ export class RssSyncService {
         indexerFlags: result.indexerFlags ?? null,
       },
     });
+
+    this.emit('release:stored', { ...result, indexerId });
   }
 }

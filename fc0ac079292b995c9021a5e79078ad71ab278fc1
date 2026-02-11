@@ -1,0 +1,5 @@
+Task: Write Tests: Verify TorrentManager uses /data/downloads/ paths
+
+Summary: Updated existing torrent-add and torrent-completion tests to assert /data/downloads/incomplete and /data/downloads/complete paths instead of /downloads/incomplete and /downloads/complete.
+
+Files modified: tests/torrent-add.test.js, tests/torrent-completion.test.js

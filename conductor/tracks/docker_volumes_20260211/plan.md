@@ -19,7 +19,7 @@ Update download paths from hardcoded `/downloads/` to `/data/downloads/`.
 - [x] Task: Write Tests: Verify `TorrentManager` uses `/data/downloads/incomplete` and `/data/downloads/complete` as default paths. (fc0ac07)
 - [x] Task: Update `TorrentManager` constants and file move logic to use the new `/data/downloads/` paths. (4c72d65)
 
-## Phase 4: Hard Link Support in Organizer
+## Phase 4: Hard Link Support in Organizer [checkpoint: 8eae00d]
 Replace `fs.rename()` with hard link strategy and move fallback.
 
 - [x] Task: Write Tests: Verify `Organizer.organizeFile()` creates a hard link when source and destination are on the same filesystem. (ad03dd2)

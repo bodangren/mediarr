@@ -16,7 +16,7 @@ Ensure required directories exist at server startup.
 ## Phase 3: TorrentManager Path Update
 Update download paths from hardcoded `/downloads/` to `/data/downloads/`.
 
-- [ ] Task: Write Tests: Verify `TorrentManager` uses `/data/downloads/incomplete` and `/data/downloads/complete` as default paths.
+- [x] Task: Write Tests: Verify `TorrentManager` uses `/data/downloads/incomplete` and `/data/downloads/complete` as default paths. (fc0ac07)
 - [ ] Task: Update `TorrentManager` constants and file move logic to use the new `/data/downloads/` paths.
 
 ## Phase 4: Hard Link Support in Organizer

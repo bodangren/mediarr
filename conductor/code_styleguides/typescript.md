@@ -40,4 +40,19 @@ This document summarizes key rules and best practices from the Google TypeScript
 - **Redundancy:** **Do not declare types in `@param` or `@return` blocks** (e.g., `/** @param {string} user */`). This is redundant in TypeScript.
 - **Add Information:** Comments must add information, not just restate the code.
 
+## 6. Database & Persistence (Tests)
+- **Driver Adapter:** Always use the `PrismaBetterSqlite3` adapter with `PrismaClient` in tests.
+- **Connection URL:** Use the explicit URL `{ url: 'file:prisma/dev.db' }` for the adapter.
+- **Environment:** Always include `import 'dotenv/config';` at the top of test files using Prisma.
+- **Cleanup:** Use `beforeEach` to clear relevant tables (e.g., `await prisma.model.deleteMany()`) to ensure test isolation.
+- **Example:**
+  ```typescript
+  import { PrismaClient } from '@prisma/client';
+  import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
+  import 'dotenv/config';
+
+  const adapter = new PrismaBetterSqlite3({ url: 'file:prisma/dev.db' });
+  const prisma = new PrismaClient({ adapter });
+  ```
+
 *Source: [Google TypeScript Style Guide](https://google.github.io/styleguide/tsguide.html)*

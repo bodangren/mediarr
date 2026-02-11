@@ -34,6 +34,7 @@
     "fast-xml-parser": "^5.3.5",
     "js-yaml": "^4.1.1",
     "linkedom": "^0.18.12",
-    "node-cron": "^4.2.1"
+    "node-cron": "^4.2.1",
+    "webtorrent": "^2.8.5"
   }
 }

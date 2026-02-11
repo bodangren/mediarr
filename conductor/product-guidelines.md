@@ -9,6 +9,7 @@
 - **Tone and Style:** Professional & Technical. Use precise, industry-standard terminology (e.g., "Indexer Request," "RSS Sync," "Transcode Profile") to provide clarity for technical users.
 - **Information Density:** High. Prioritize data visibility and quick access to technical details.
 - **Configuration Strategy:** Power-User First. Show all settings by default. Assume users are technically proficient and want immediate access to fine-grained controls without navigating through "Advanced" toggles.
+- **Convention over Configuration:** Prioritize sensible, hardcoded defaults within the Docker container (e.g., standard internal paths for downloads and metadata). Users should manage complexity through volume mapping rather than extensive internal configuration.
 
 **Communication Style:**
 - **System Feedback:** Detailed and technical error messages that aid in troubleshooting.

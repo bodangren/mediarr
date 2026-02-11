@@ -26,8 +26,8 @@ Replace `fs.rename()` with hard link strategy and move fallback.
 - [x] Task: Write Tests: Verify `Organizer.organizeFile()` falls back to `fs.rename()` when hard linking fails (cross-device) and logs a warning. (ad03dd2)
 - [x] Task: Implement hard link with move fallback in `Organizer.organizeFile()`. (1a47cde)
 
-## Phase 5: Integration Verification
+## Phase 5: Integration Verification [checkpoint: 6a59c06]
 Ensure all existing functionality works with the new paths.
 
 - [x] Task: Update any remaining hardcoded path references in tests and configuration. (1485caa)
-- [ ] Task: Conductor - User Manual Verification 'Phase 5: Integration Verification' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 5: Integration Verification' (Protocol in workflow.md) (6a59c06)

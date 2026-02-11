@@ -1,6 +1,20 @@
 import WebTorrent from 'webtorrent';
 import { TorrentRepository } from '../repositories/TorrentRepository';
 
+export interface AddTorrentOptions {
+  magnetUrl?: string;
+  torrentFile?: Buffer;
+  path?: string;
+}
+
+export interface TorrentInfo {
+  infoHash: string;
+  name: string;
+  path: string;
+}
+
+const DEFAULT_DOWNLOAD_PATH = '/downloads/incomplete';
+
 /**
  * Singleton manager that wraps the WebTorrent client and handles
  * lifecycle events including persistence via TorrentRepository.
@@ -54,6 +68,51 @@ export class TorrentManager {
    */
   getClient(): WebTorrent.Instance | null {
     return this.client;
+  }
+
+  /**
+   * Adds a torrent from a magnet link or .torrent file buffer.
+   * Downloads to /downloads/incomplete by default, or a custom path.
+   */
+  async addTorrent(options: AddTorrentOptions): Promise<TorrentInfo> {
+    if (!this.initialized || !this.client) {
+      throw new Error('TorrentManager is not initialized');
+    }
+
+    const source = options.magnetUrl || options.torrentFile;
+    if (!source) {
+      throw new Error('Either magnetUrl or torrentFile must be provided');
+    }
+
+    const downloadPath = options.path || DEFAULT_DOWNLOAD_PATH;
+
+    const torrent = this.client.add(source, { path: downloadPath });
+
+    await this.repository.upsert({
+      infoHash: torrent.infoHash,
+      name: torrent.name || 'Unknown',
+      status: 'downloading',
+      progress: 0,
+      downloadSpeed: 0,
+      uploadSpeed: 0,
+      eta: null,
+      size: BigInt(torrent.length || 0),
+      downloaded: BigInt(0),
+      uploaded: BigInt(0),
+      ratio: 0,
+      path: downloadPath,
+      completedAt: null,
+      stopAtRatio: null,
+      stopAtTime: null,
+      magnetUrl: options.magnetUrl || null,
+      torrentFile: options.torrentFile || null,
+    });
+
+    return {
+      infoHash: torrent.infoHash,
+      name: torrent.name || 'Unknown',
+      path: downloadPath,
+    };
   }
 
   /**

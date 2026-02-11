@@ -21,16 +21,30 @@ model Series {
   overview         String?
   monitored        Boolean   @default(true)
   qualityProfileId Int
+  qualityProfile   QualityProfile @relation(fields: [qualityProfileId], references: [id])
   path             String?
   year             Int
   network          String?
   added            DateTime  @default(now())
+  seasons          Season[]
   episodes         Episode[]
+}
+
+model Season {
+  id           Int       @id @default(autoincrement())
+  seriesId     Int
+  seasonNumber Int
+  monitored    Boolean   @default(true)
+  series       Series    @relation(fields: [seriesId], references: [id])
+  episodes     Episode[]
+
+  @@unique([seriesId, seasonNumber])
 }
 
 model Episode {
   id               Int      @id @default(autoincrement())
   seriesId         Int
+  seasonId         Int?
   tvdbId           Int      @unique
   seasonNumber     Int
   episodeNumber    Int
@@ -39,6 +53,7 @@ model Episode {
   overview         String?
   monitored        Boolean  @default(true)
   series           Series   @relation(fields: [seriesId], references: [id])
+  season           Season?  @relation(fields: [seasonId], references: [id])
 }
 
 model Movie {
@@ -52,9 +67,17 @@ model Movie {
   overview         String?
   monitored        Boolean  @default(true)
   qualityProfileId Int
+  qualityProfile   QualityProfile @relation(fields: [qualityProfileId], references: [id])
   path             String?
   year             Int
   added            DateTime @default(now())
+}
+
+model QualityProfile {
+  id     Int      @id @default(autoincrement())
+  name   String   @unique
+  series Series[]
+  movies Movie[]
 }
 
 model Indexer {

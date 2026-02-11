@@ -22,7 +22,9 @@ export class Organizer {
   }
 
   /**
-   * Moves and renames a file to the series/season folder.
+   * Organizes a file to the series/season folder using hard link with move fallback.
+   * Hard links are preferred to save disk space (source stays for seeding).
+   * Falls back to fs.rename if hard linking fails (e.g., cross-device).
    */
   async organizeFile(
     sourcePath: string,
@@ -39,7 +41,16 @@ export class Organizer {
     await fs.mkdir(seasonDir, { recursive: true });
 
     const destinationPath = path.join(seasonDir, filename);
-    await fs.rename(sourcePath, destinationPath);
+
+    try {
+      await fs.link(sourcePath, destinationPath);
+    } catch {
+      console.warn(
+        `Hard link failed for "${sourcePath}", falling back to move. ` +
+        'Ensure downloads and media are on the same volume for hard link support.'
+      );
+      await fs.rename(sourcePath, destinationPath);
+    }
 
     return destinationPath;
   }

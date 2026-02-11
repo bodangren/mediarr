@@ -17,6 +17,13 @@
 **Data & Storage:**
 - **Database:** SQLite (Standard for *arr apps for portability and simplicity).
 - **ORM:** Prisma or Drizzle ORM for type-safe database access.
+- **Storage Architecture:**
+    - **Config Volume (`/config`):** Persistent storage for the SQLite database (`mediarr.db`) and application configuration.
+    - **Data Volume (`/data`):** Unified storage for media and downloads to enable Atomic Moves and Hard Linking.
+        - `/data/downloads/incomplete`: Temporary storage for active downloads.
+        - `/data/downloads/complete`: Storage for finished downloads awaiting import.
+        - `/data/media/tv`: Final destination for organized TV series.
+        - `/data/media/movies`: Final destination for organized movies.
 
 **Deployment:**
 - **Containerization:** Docker & Docker Compose (Targeting Home Lab environments).

@@ -4,6 +4,7 @@ import { TorznabIndexer } from '../indexers/BaseIndexer';
 import { TorznabParser } from '../indexers/TorznabParser';
 import type { IndexerResult } from '../indexers/IndexerResult';
 import { EventEmitter } from 'events';
+import { IndexerHealthRepository } from '../repositories/IndexerHealthRepository';
 
 export interface SyncSummary {
   indexersProcessed: number;
@@ -21,6 +22,7 @@ export class RssSyncService extends EventEmitter {
   constructor(
     private prisma: PrismaClient,
     private httpClient: HttpClient,
+    private indexerHealthRepository?: IndexerHealthRepository,
   ) {
     super();
   }
@@ -45,8 +47,18 @@ export class RssSyncService extends EventEmitter {
         const stored = await this.syncIndexer(dbIndexer);
         summary.indexersProcessed++;
         summary.releasesStored += stored;
+        if (this.indexerHealthRepository) {
+          await this.indexerHealthRepository.recordSuccess(dbIndexer.id, new Date());
+        }
       } catch (error: any) {
         summary.errors.push(`${dbIndexer.name}: ${error.message}`);
+        if (this.indexerHealthRepository) {
+          await this.indexerHealthRepository.recordFailure(
+            dbIndexer.id,
+            String(error?.message ?? 'Unknown sync error'),
+            new Date(),
+          );
+        }
       }
     }
 

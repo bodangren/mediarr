@@ -61,4 +61,15 @@ describe('Scheduler', () => {
     await scheduler.runNow('manual');
     expect(callback).toHaveBeenCalledOnce();
   });
+
+  it('should schedule activity cleanup job and execute retention purge', async () => {
+    const activityRepository = {
+      cleanupOldEvents: vi.fn().mockResolvedValue(7),
+    };
+
+    scheduler.scheduleActivityCleanup(activityRepository, 45, 'activity-cleanup');
+    await scheduler.runNow('activity-cleanup');
+
+    expect(activityRepository.cleanupOldEvents).toHaveBeenCalledWith(45);
+  });
 });

@@ -1,65 +1,91 @@
-import Image from "next/image";
+'use client';
+
+import { useEffect, useMemo, useState } from 'react';
+
+interface HealthPayload {
+  ok: boolean;
+  uptime: number;
+}
 
 export default function Home() {
+  const apiBaseUrl = useMemo(() => {
+    return process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://127.0.0.1:3001';
+  }, []);
+
+  const [health, setHealth] = useState<HealthPayload | null>(null);
+  const [counter, setCounter] = useState<number | null>(null);
+  const [streamState, setStreamState] = useState<'connecting' | 'open' | 'closed'>('connecting');
+
+  useEffect(() => {
+    let cancelled = false;
+
+    fetch(`${apiBaseUrl}/api/health`)
+      .then(async response => {
+        if (!response.ok) {
+          throw new Error(`Health request failed: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then((payload: HealthPayload) => {
+        if (!cancelled) {
+          setHealth(payload);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setHealth(null);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [apiBaseUrl]);
+
+  useEffect(() => {
+    const eventSource = new EventSource(`${apiBaseUrl}/api/events/stream`);
+
+    eventSource.addEventListener('open', () => {
+      setStreamState('open');
+    });
+
+    eventSource.addEventListener('heartbeat', event => {
+      try {
+        const parsed = JSON.parse((event as MessageEvent<string>).data) as { counter: number };
+        setCounter(parsed.counter);
+      } catch {
+        // Keep UI stable if malformed event data appears.
+      }
+    });
+
+    eventSource.addEventListener('error', () => {
+      setStreamState('closed');
+    });
+
+    return () => {
+      eventSource.close();
+      setStreamState('closed');
+    };
+  }, [apiBaseUrl]);
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+    <main className="mx-auto flex min-h-screen w-full max-w-3xl flex-col justify-center gap-6 px-6 py-12">
+      <h1 className="text-3xl font-semibold">Mediarr Platform Spike</h1>
+      <p className="text-sm text-slate-600">
+        Frontend is connected to Fastify backend at <code>{apiBaseUrl}</code>.
+      </p>
+
+      <section className="rounded border border-slate-200 p-4">
+        <h2 className="mb-2 text-lg font-medium">Health</h2>
+        <p>OK: {String(health?.ok ?? false)}</p>
+        <p>Uptime: {health ? `${health.uptime.toFixed(2)}s` : 'unavailable'}</p>
+      </section>
+
+      <section className="rounded border border-slate-200 p-4">
+        <h2 className="mb-2 text-lg font-medium">SSE Heartbeat</h2>
+        <p>Stream: {streamState}</p>
+        <p>Counter: {counter ?? 'waiting...'}</p>
+      </section>
+    </main>
   );
 }

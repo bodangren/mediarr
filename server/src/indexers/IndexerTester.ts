@@ -1,6 +1,8 @@
 import type { BaseIndexer } from './BaseIndexer';
 import { TorznabIndexer, ScrapingIndexer } from './BaseIndexer';
 import type { HttpClient } from './HttpClient';
+import { ActivityEventEmitter } from '../services/ActivityEventEmitter';
+import { IndexerHealthRepository } from '../repositories/IndexerHealthRepository';
 
 export interface TestResult {
   success: boolean;
@@ -13,19 +15,47 @@ type FetchFn = typeof globalThis.fetch;
  * Tests indexer connectivity and basic functionality.
  */
 export class IndexerTester {
-  constructor(private client: HttpClient) {}
+  constructor(
+    private client: HttpClient,
+    private readonly indexerHealthRepository?: IndexerHealthRepository,
+    private readonly activityEventEmitter?: ActivityEventEmitter,
+  ) {}
 
   /**
    * Unified test: routes to the appropriate test method based on indexer type.
    */
   async test(indexer: BaseIndexer, fetchFn?: FetchFn): Promise<TestResult> {
+    let result: TestResult;
     if (indexer instanceof TorznabIndexer) {
-      return this.testTorznab(indexer, fetchFn);
+      result = await this.testTorznab(indexer, fetchFn);
+    } else if (indexer instanceof ScrapingIndexer) {
+      result = await this.testScraping(indexer, fetchFn);
+    } else {
+      result = { success: false, message: `Unknown indexer type: ${indexer.implementation}` };
     }
-    if (indexer instanceof ScrapingIndexer) {
-      return this.testScraping(indexer, fetchFn);
+
+    if (this.indexerHealthRepository && typeof indexer.id === 'number') {
+      if (result.success) {
+        await this.indexerHealthRepository.recordSuccess(indexer.id, new Date());
+      } else {
+        await this.indexerHealthRepository.recordFailure(
+          indexer.id,
+          result.message,
+          new Date(),
+        );
+      }
     }
-    return { success: false, message: `Unknown indexer type: ${indexer.implementation}` };
+
+    await this.activityEventEmitter?.emit({
+      eventType: 'INDEXER_TESTED',
+      sourceModule: 'indexer-tester',
+      entityRef: typeof indexer.id === 'number' ? `indexer:${indexer.id}` : undefined,
+      summary: result.message,
+      success: result.success,
+      occurredAt: new Date(),
+    });
+
+    return result;
   }
 
   /**

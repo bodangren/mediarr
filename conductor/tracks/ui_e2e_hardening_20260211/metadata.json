@@ -1,0 +1,8 @@
+{
+  "track_id": "ui_e2e_hardening_20260211",
+  "type": "chore",
+  "status": "new",
+  "created_at": "2026-02-11T12:00:00Z",
+  "updated_at": "2026-02-11T12:00:00Z",
+  "description": "Track 7F - E2E Journeys & Quality Hardening: end-to-end Playwright journeys, accessibility audits, performance validation, and final UX consistency pass."
+}

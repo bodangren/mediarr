@@ -1,5 +1,6 @@
 import { MetadataProvider } from './MetadataProvider';
 import type { MediaType } from '../types/BaseMedia';
+import { ActivityEventEmitter } from './ActivityEventEmitter';
 
 /**
  * Service for managing movie and TV metadata and monitoring settings.
@@ -7,8 +8,37 @@ import type { MediaType } from '../types/BaseMedia';
 export class MediaService {
   constructor(
     private readonly prisma: any,
-    private readonly metadataProvider: Pick<MetadataProvider, 'getMovieAvailability'> | null = null
+    private readonly metadataProvider: Pick<MetadataProvider, 'getMovieAvailability'> | null = null,
+    private readonly activityEventEmitter?: ActivityEventEmitter,
   ) {}
+
+  async addMovie(input: Record<string, unknown>): Promise<any> {
+    try {
+      const created = await this.prisma.movie.create({
+        data: input,
+      });
+
+      await this.activityEventEmitter?.emit({
+        eventType: 'MEDIA_ADDED',
+        sourceModule: 'media-service',
+        entityRef: `movie:${created.id}`,
+        summary: `Media added: ${String(created.title ?? 'movie')}`,
+        success: true,
+        occurredAt: new Date(),
+      });
+
+      return created;
+    } catch (error: any) {
+      await this.activityEventEmitter?.emit({
+        eventType: 'MEDIA_ADDED',
+        sourceModule: 'media-service',
+        summary: `Media add failed: ${error?.message ?? 'unknown error'}`,
+        success: false,
+        occurredAt: new Date(),
+      });
+      throw error;
+    }
+  }
 
   async getAllMedia(): Promise<any[]> {
     if (this.prisma.media?.findMany) {

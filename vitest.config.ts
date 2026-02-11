@@ -4,11 +4,8 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
-    poolOptions: {
-      threads: {
-        singleThread: true,
-      },
-    },
+    maxWorkers: 1,
+    minWorkers: 1,
     exclude: ['**/node_modules/**', '**/reference/**', '**/dist/**'],
   },
 });

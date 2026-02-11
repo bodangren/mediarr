@@ -18,6 +18,8 @@ export interface TorrentInfo {
 
 const DEFAULT_DOWNLOAD_PATH = '/data/downloads/incomplete';
 const COMPLETE_DOWNLOAD_PATH = '/data/downloads/complete';
+const ACTIVE_SYNC_INTERVAL_MS = 5000;
+const IDLE_SYNC_INTERVAL_MS = 30000;
 
 /**
  * Singleton manager that wraps the WebTorrent client and handles
@@ -28,6 +30,9 @@ export class TorrentManager extends EventEmitter {
 
   private client: WebTorrent.Instance | null = null;
   private initialized = false;
+  private statsSyncTimer: NodeJS.Timeout | null = null;
+  private statsSyncInFlight = false;
+  private statsSyncRunning = false;
 
   private constructor(private repository: TorrentRepository) {
     super();
@@ -60,6 +65,7 @@ export class TorrentManager extends EventEmitter {
     this.initialized = true;
 
     await this.loadExistingTorrents();
+    this.startStatsSyncLoop();
   }
 
   /**
@@ -74,6 +80,26 @@ export class TorrentManager extends EventEmitter {
    */
   getClient(): WebTorrent.Instance | null {
     return this.client;
+  }
+
+  /**
+   * Returns active/idle sync interval in milliseconds.
+   */
+  getCurrentSyncIntervalMs(): number {
+    const torrents = ((this.client as any)?.torrents ?? []) as any[];
+    const hasActiveTransfers = torrents.some(torrent =>
+      torrent &&
+      (torrent.done === false ||
+        (typeof torrent.progress === 'number' && torrent.progress < 1)),
+    );
+    return hasActiveTransfers ? ACTIVE_SYNC_INTERVAL_MS : IDLE_SYNC_INTERVAL_MS;
+  }
+
+  /**
+   * Whether the periodic stats loop is active.
+   */
+  isStatsSyncRunning(): boolean {
+    return this.statsSyncRunning;
   }
 
   /**
@@ -302,9 +328,70 @@ export class TorrentManager extends EventEmitter {
   }
 
   /**
+   * Synchronize torrent progress/speed/peer snapshots to persistence.
+   */
+  async syncStats(): Promise<void> {
+    this.ensureInitialized();
+
+    if (this.statsSyncInFlight) {
+      console.warn('Skipping torrent stats sync cycle due to backpressure');
+      return;
+    }
+
+    this.statsSyncInFlight = true;
+
+    try {
+      const torrents = ((this.client as any)?.torrents ?? []) as any[];
+      for (const torrent of torrents) {
+        if (!torrent?.infoHash) {
+          continue;
+        }
+
+        try {
+          await this.repository.updateProgress(
+            torrent.infoHash,
+            Number(torrent.progress ?? 0),
+            Number(torrent.downloadSpeed ?? 0),
+            Number(torrent.uploadSpeed ?? 0),
+            BigInt(Math.floor(Number(torrent.downloaded ?? 0))),
+            BigInt(Math.floor(Number(torrent.uploaded ?? 0))),
+            typeof torrent.timeRemaining === 'number' && Number.isFinite(torrent.timeRemaining)
+              ? Math.floor(torrent.timeRemaining)
+              : null,
+          );
+
+          const peers = Array.isArray(torrent.peers)
+            ? torrent.peers
+              .filter((peer: any) =>
+                peer &&
+                typeof peer.ip === 'string' &&
+                typeof peer.port === 'number')
+              .map((peer: any) => ({
+                ip: peer.ip,
+                port: peer.port,
+                client: typeof peer.client === 'string' ? peer.client : null,
+              }))
+            : [];
+
+          await this.repository.syncPeers(torrent.infoHash, peers);
+        } catch (error) {
+          console.error(
+            `Failed to persist torrent stats for ${torrent.infoHash}:`,
+            error,
+          );
+        }
+      }
+    } finally {
+      this.statsSyncInFlight = false;
+    }
+  }
+
+  /**
    * Destroys the WebTorrent client and cleans up resources.
    */
   async destroy(): Promise<void> {
+    this.stopStatsSyncLoop();
+
     if (this.client) {
       await new Promise<void>((resolve) => {
         this.client!.destroy(() => resolve());
@@ -341,5 +428,34 @@ export class TorrentManager extends EventEmitter {
         this.handleTorrentCompletion(webTorrent);
       });
     }
+  }
+
+  private startStatsSyncLoop(): void {
+    if (this.statsSyncRunning) {
+      return;
+    }
+
+    this.statsSyncRunning = true;
+    this.scheduleNextStatsSyncCycle();
+  }
+
+  private stopStatsSyncLoop(): void {
+    this.statsSyncRunning = false;
+    if (this.statsSyncTimer) {
+      clearTimeout(this.statsSyncTimer);
+      this.statsSyncTimer = null;
+    }
+  }
+
+  private scheduleNextStatsSyncCycle(): void {
+    if (!this.statsSyncRunning) {
+      return;
+    }
+
+    const intervalMs = this.getCurrentSyncIntervalMs();
+    this.statsSyncTimer = setTimeout(async () => {
+      await this.syncStats();
+      this.scheduleNextStatsSyncCycle();
+    }, intervalMs);
   }
 }

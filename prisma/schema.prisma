@@ -14,6 +14,32 @@ enum MediaType {
   MOVIE
 }
 
+enum VariantMediaType {
+  EPISODE
+  MOVIE
+}
+
+enum SubtitleTrackSource {
+  EMBEDDED
+  EXTERNAL
+}
+
+enum WantedSubtitleState {
+  PENDING
+  SEARCHING
+  DOWNLOADED
+  FAILED
+}
+
+enum ActivityEventType {
+  MEDIA_ADDED
+  SEARCH_EXECUTED
+  RELEASE_GRABBED
+  IMPORT_COMPLETED
+  SUBTITLE_DOWNLOADED
+  INDEXER_TESTED
+}
+
 model Media {
   id                  Int            @id @default(autoincrement())
   mediaType           MediaType
@@ -45,24 +71,24 @@ model Media {
 }
 
 model Series {
-  id               Int       @id @default(autoincrement())
-  mediaId           Int?      @unique
-  tvdbId           Int       @unique
-  tmdbId           Int?      @unique
-  imdbId           String?   @unique
+  id               Int            @id @default(autoincrement())
+  mediaId          Int?           @unique
+  tvdbId           Int            @unique
+  tmdbId           Int?           @unique
+  imdbId           String?        @unique
   title            String
   cleanTitle       String
   sortTitle        String
-  status           String    // e.g., continuing, ended
+  status           String // e.g., continuing, ended
   overview         String?
-  monitored        Boolean   @default(true)
+  monitored        Boolean        @default(true)
   qualityProfileId Int
   qualityProfile   QualityProfile @relation(fields: [qualityProfileId], references: [id])
   path             String?
   year             Int
   network          String?
-  added            DateTime  @default(now())
-  media            Media?    @relation(fields: [mediaId], references: [id], onDelete: SetNull)
+  added            DateTime       @default(now())
+  media            Media?         @relation(fields: [mediaId], references: [id], onDelete: SetNull)
   seasons          Season[]
   episodes         Episode[]
 }
@@ -79,41 +105,150 @@ model Season {
 }
 
 model Episode {
-  id               Int      @id @default(autoincrement())
-  seriesId         Int
-  seasonId         Int?
-  tvdbId           Int      @unique
-  seasonNumber     Int
-  episodeNumber    Int
-  title            String
-  airDateUtc       DateTime?
-  overview         String?
-  monitored        Boolean  @default(true)
-  series           Series   @relation(fields: [seriesId], references: [id])
-  season           Season?  @relation(fields: [seasonId], references: [id])
+  id            Int                @id @default(autoincrement())
+  seriesId      Int
+  seasonId      Int?
+  tvdbId        Int                @unique
+  seasonNumber  Int
+  episodeNumber Int
+  title         String
+  airDateUtc    DateTime?
+  overview      String?
+  monitored     Boolean            @default(true)
+  path          String?
+  series        Series             @relation(fields: [seriesId], references: [id])
+  season        Season?            @relation(fields: [seasonId], references: [id])
+  fileVariants  MediaFileVariant[]
 }
 
 model Movie {
-  id               Int      @id @default(autoincrement())
-  mediaId          Int?     @unique
-  tmdbId           Int      @unique
-  imdbId           String?  @unique
-  title            String
-  cleanTitle       String
-  sortTitle        String
-  status           String
-  overview         String?
-  monitored        Boolean  @default(true)
-  qualityProfileId Int
-  qualityProfile   QualityProfile @relation(fields: [qualityProfileId], references: [id])
-  path             String?
-  year             Int
-  added            DateTime @default(now())
+  id                  Int                @id @default(autoincrement())
+  mediaId             Int?               @unique
+  tmdbId              Int                @unique
+  imdbId              String?            @unique
+  title               String
+  cleanTitle          String
+  sortTitle           String
+  status              String
+  overview            String?
+  monitored           Boolean            @default(true)
+  qualityProfileId    Int
+  qualityProfile      QualityProfile     @relation(fields: [qualityProfileId], references: [id])
+  path                String?
+  year                Int
+  added               DateTime           @default(now())
   minimumAvailability String?
-  inCinemas        DateTime?
-  digitalRelease   DateTime?
-  physicalRelease  DateTime?
-  media            Media?   @relation(fields: [mediaId], references: [id], onDelete: SetNull)
+  inCinemas           DateTime?
+  digitalRelease      DateTime?
+  physicalRelease     DateTime?
+  media               Media?             @relation(fields: [mediaId], references: [id], onDelete: SetNull)
+  fileVariants        MediaFileVariant[]
+}
+
+model MediaFileVariant {
+  id                Int                      @id @default(autoincrement())
+  mediaType         VariantMediaType
+  movieId           Int?
+  episodeId         Int?
+  path              String
+  fileSize          BigInt
+  monitored         Boolean                  @default(true)
+  probeFingerprint  String?
+  releaseName       String?
+  quality           String?
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+  movie             Movie?                   @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  episode           Episode?                 @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+  audioTracks       VariantAudioTrack[]
+  subtitleTracks    VariantSubtitleTrack[]
+  missingSubtitles  VariantMissingSubtitle[]
+  wantedSubtitles   WantedSubtitle[]
+  subtitleHistories SubtitleHistory[]
+
+  @@unique([mediaType, path])
+  @@index([movieId])
+  @@index([episodeId])
+}
+
+model VariantMissingSubtitle {
+  id           Int              @id @default(autoincrement())
+  variantId    Int
+  languageCode String
+  isForced     Boolean          @default(false)
+  isHi         Boolean          @default(false)
+  createdAt    DateTime         @default(now())
+  variant      MediaFileVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  @@unique([variantId, languageCode, isForced, isHi])
+  @@index([variantId])
+}
+
+model VariantAudioTrack {
+  id           Int              @id @default(autoincrement())
+  variantId    Int
+  streamIndex  Int
+  languageCode String?
+  codec        String?
+  channels     String?
+  isDefault    Boolean          @default(false)
+  isForced     Boolean          @default(false)
+  isCommentary Boolean          @default(false)
+  name         String?
+  variant      MediaFileVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  @@unique([variantId, streamIndex])
+  @@index([languageCode])
+}
+
+model VariantSubtitleTrack {
+  id           Int                 @id @default(autoincrement())
+  variantId    Int
+  source       SubtitleTrackSource
+  streamIndex  Int?
+  languageCode String?
+  isForced     Boolean             @default(false)
+  isHi         Boolean             @default(false)
+  codec        String?
+  filePath     String?
+  fileSize     BigInt?
+  variant      MediaFileVariant    @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  @@index([variantId])
+  @@index([languageCode])
+}
+
+model WantedSubtitle {
+  id           Int                 @id @default(autoincrement())
+  variantId    Int
+  languageCode String
+  isForced     Boolean             @default(false)
+  isHi         Boolean             @default(false)
+  state        WantedSubtitleState @default(PENDING)
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  variant      MediaFileVariant    @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  history      SubtitleHistory[]
+
+  @@unique([variantId, languageCode, isForced, isHi])
+  @@index([state])
+}
+
+model SubtitleHistory {
+  id               Int              @id @default(autoincrement())
+  variantId        Int
+  wantedSubtitleId Int?
+  languageCode     String
+  provider         String?
+  score            Float?
+  storedPath       String?
+  message          String?
+  createdAt        DateTime         @default(now())
+  variant          MediaFileVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  wantedSubtitle   WantedSubtitle?  @relation(fields: [wantedSubtitleId], references: [id], onDelete: SetNull)
+
+  @@index([variantId])
+  @@index([wantedSubtitleId])
 }
 
 model QualityProfile {
@@ -129,14 +264,15 @@ model Indexer {
   name           String           @unique
   implementation String
   configContract String
-  settings       String           // JSON string
-  protocol       String           // e.g., torrent, usenet
+  settings       String // JSON string
+  protocol       String // e.g., torrent, usenet
   enabled        Boolean          @default(true)
   supportsRss    Boolean          @default(false)
   supportsSearch Boolean          @default(false)
   priority       Int              @default(25)
   added          DateTime         @default(now())
   releases       IndexerRelease[]
+  healthSnapshot IndexerHealthSnapshot?
 }
 
 model IndexerRelease {
@@ -152,82 +288,110 @@ model IndexerRelease {
   publishDate  DateTime
   seeders      Int?
   leechers     Int?
-  protocol     String   // torrent, usenet
-  categories   String   // JSON array of category IDs
-  indexerFlags String?  // comma-separated or JSON
+  protocol     String // torrent, usenet
+  categories   String // JSON array of category IDs
+  indexerFlags String? // comma-separated or JSON
   added        DateTime @default(now())
 }
 
 model Category {
+  id Int @id // Using standard IDs (e.g., 2000 for Movies)
 
-  id        Int    @id // Using standard IDs (e.g., 2000 for Movies)
-
-  name      String
+  name String
 
   parent_id Int?
-
 }
-
-
 
 model Torrent {
+  id Int @id @default(autoincrement())
 
-  id             Int           @id @default(autoincrement())
+  infoHash String @unique
 
-  infoHash       String        @unique
+  name String
 
-  name           String
+  status String // downloading, seeding, paused, stopped, error
 
-  status         String        // downloading, seeding, paused, stopped, error
+  progress Float @default(0)
 
-  progress       Float         @default(0)
+  downloadSpeed Float @default(0)
 
-  downloadSpeed  Float         @default(0)
+  uploadSpeed Float @default(0)
 
-  uploadSpeed    Float         @default(0)
+  eta Int? // seconds
 
-  eta            Int?          // seconds
+  size BigInt
 
-  size           BigInt
+  downloaded BigInt @default(0)
 
-  downloaded     BigInt        @default(0)
+  uploaded BigInt @default(0)
 
-  uploaded       BigInt        @default(0)
+  ratio Float @default(0)
 
-  ratio          Float         @default(0)
+  path String // The internal path (/downloads/incomplete or /downloads/complete)
 
-  path           String        // The internal path (/downloads/incomplete or /downloads/complete)
+  added DateTime @default(now())
 
-  added          DateTime      @default(now())
+  completedAt DateTime?
 
-  completedAt    DateTime?
+  stopAtRatio Float?
 
-  stopAtRatio    Float?
+  stopAtTime Int? // minutes
 
-  stopAtTime     Int?          // minutes
+  magnetUrl String?
 
-  magnetUrl      String?
+  torrentFile Bytes?
 
-  torrentFile    Bytes?
-
-  peers          TorrentPeer[]
-
+  peers TorrentPeer[]
 }
 
-
-
 model TorrentPeer {
-
-  id        Int     @id @default(autoincrement())
+  id Int @id @default(autoincrement())
 
   torrentId Int
 
-  torrent   Torrent @relation(fields: [torrentId], references: [id], onDelete: Cascade)
+  torrent Torrent @relation(fields: [torrentId], references: [id], onDelete: Cascade)
 
-  ip        String
+  ip String
 
-  port      Int
+  port Int
 
-  client    String?
+  client String?
+}
 
+model AppSettings {
+  id                 Int      @id @default(1)
+  torrentLimits      Json
+  schedulerIntervals Json
+  pathVisibility     Json
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model IndexerHealthSnapshot {
+  id               Int      @id @default(autoincrement())
+  indexerId        Int      @unique
+  indexer          Indexer  @relation(fields: [indexerId], references: [id], onDelete: Cascade)
+  lastSuccessAt    DateTime?
+  lastFailureAt    DateTime?
+  failureCount     Int      @default(0)
+  lastErrorMessage String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model ActivityEvent {
+  id           Int               @id @default(autoincrement())
+  eventType    ActivityEventType
+  sourceModule String
+  entityRef    String?
+  summary      String
+  success      Boolean
+  details      Json?
+  occurredAt   DateTime          @default(now())
+  createdAt    DateTime          @default(now())
+
+  @@index([eventType, occurredAt])
+  @@index([sourceModule, occurredAt])
+  @@index([entityRef])
+  @@index([success, occurredAt])
 }

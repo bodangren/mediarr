@@ -1,0 +1,8 @@
+{
+  "track_id": "subtitle_audio_engine_20260211",
+  "type": "feature",
+  "status": "new",
+  "created_at": "2026-02-11T05:26:57Z",
+  "updated_at": "2026-02-11T05:26:57Z",
+  "description": "Subtitle inventory and fetcher based on Bazarr, extended with multi-file and multi-track audio language tracking."
+}

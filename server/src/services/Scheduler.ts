@@ -7,6 +7,10 @@ interface ScheduledJob {
   callback: JobCallback;
 }
 
+interface ActivityRetentionRepository {
+  cleanupOldEvents(retentionDays: number): Promise<number>;
+}
+
 /**
  * Manages cron-scheduled background jobs with named registration.
  */
@@ -80,5 +84,19 @@ export class Scheduler {
       throw new Error(`Job '${name}' is not scheduled`);
     }
     await job.callback();
+  }
+
+  /**
+   * Schedule daily cleanup for expired activity events.
+   */
+  scheduleActivityCleanup(
+    repository: ActivityRetentionRepository,
+    retentionDays = 30,
+    name = 'activity-cleanup',
+    cronExpression = '0 3 * * *',
+  ): void {
+    this.schedule(name, cronExpression, async () => {
+      await repository.cleanupOldEvents(retentionDays);
+    });
   }
 }

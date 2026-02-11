@@ -4,6 +4,7 @@ import { RssSyncService } from '../server/src/services/RssSyncService';
 describe('RssSyncService', () => {
   let mockPrisma;
   let mockHttpClient;
+  let mockIndexerHealthRepository;
   let service;
 
   const TORZNAB_RSS = `<?xml version="1.0"?>
@@ -67,7 +68,12 @@ describe('RssSyncService', () => {
       buildHeaders: vi.fn().mockReturnValue({}),
     };
 
-    service = new RssSyncService(mockPrisma, mockHttpClient);
+    mockIndexerHealthRepository = {
+      recordSuccess: vi.fn().mockResolvedValue(undefined),
+      recordFailure: vi.fn().mockResolvedValue(undefined),
+    };
+
+    service = new RssSyncService(mockPrisma, mockHttpClient, mockIndexerHealthRepository);
   });
 
   it('should fetch enabled RSS-capable indexers', async () => {
@@ -131,5 +137,29 @@ describe('RssSyncService', () => {
     const summary = await service.sync();
     expect(summary.indexersProcessed).toBe(0);
     expect(mockHttpClient.get).not.toHaveBeenCalled();
+  });
+
+  it('should update indexer health snapshots on successful sync', async () => {
+    await service.sync();
+
+    expect(mockIndexerHealthRepository.recordSuccess).toHaveBeenCalledWith(1, expect.any(Date));
+    expect(mockIndexerHealthRepository.recordFailure).not.toHaveBeenCalled();
+  });
+
+  it('should update indexer health snapshots on sync failures', async () => {
+    mockHttpClient.get.mockResolvedValue({
+      ok: false,
+      status: 503,
+      body: 'Unavailable',
+      headers: {},
+    });
+
+    await service.sync();
+
+    expect(mockIndexerHealthRepository.recordFailure).toHaveBeenCalledWith(
+      1,
+      expect.stringContaining('503'),
+      expect.any(Date),
+    );
   });
 });

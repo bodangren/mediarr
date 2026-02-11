@@ -1,5 +1,6 @@
 import { Parser } from '../utils/Parser';
 import { Organizer } from './Organizer';
+import { ActivityEventEmitter } from './ActivityEventEmitter';
 import path from 'node:path';
 import fs from 'node:fs/promises';
 
@@ -11,11 +12,21 @@ export class ImportManager {
   constructor(
     private readonly torrentManager: any,
     private readonly organizer: Organizer,
-    private readonly prisma: any
+    private readonly prisma: any,
+    private readonly activityEventEmitter?: ActivityEventEmitter,
   ) {
     this.torrentManager.on('torrent:completed', (torrent: any) => {
       this.handleTorrentCompleted(torrent).catch(err => {
         console.error('Failed to import completed torrent:', err);
+        this.activityEventEmitter?.emit({
+          eventType: 'IMPORT_COMPLETED',
+          sourceModule: 'import-manager',
+          entityRef: `torrent:${torrent.infoHash}`,
+          summary: `Import failed for ${torrent.name}`,
+          success: false,
+          details: { reason: err?.message ?? 'unknown error' },
+          occurredAt: new Date(),
+        });
       });
     });
   }
@@ -53,6 +64,15 @@ export class ImportManager {
             await this.prisma.episode.update({
               where: { id: episode.id },
               data: { path: newPath }
+            });
+
+            await this.activityEventEmitter?.emit({
+              eventType: 'IMPORT_COMPLETED',
+              sourceModule: 'import-manager',
+              entityRef: `torrent:${torrent.infoHash}`,
+              summary: `Imported ${filename}`,
+              success: true,
+              occurredAt: new Date(),
             });
           }
         }

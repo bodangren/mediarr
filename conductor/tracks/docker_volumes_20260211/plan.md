@@ -10,7 +10,7 @@ Update the container infrastructure and database location.
 ## Phase 2: Startup Directory Initialization
 Ensure required directories exist at server startup.
 
-- [ ] Task: Write Tests: Verify a startup initializer creates the required subdirectory structure under `/data` (`downloads/incomplete`, `downloads/complete`, `media/tv`, `media/movies`).
+- [x] Task: Write Tests: Verify a startup initializer creates the required subdirectory structure under `/data` (`downloads/incomplete`, `downloads/complete`, `media/tv`, `media/movies`). (f23ed3d)
 - [ ] Task: Implement `DataDirectoryInitializer` service that ensures all required subdirectories exist on server startup.
 
 ## Phase 3: TorrentManager Path Update

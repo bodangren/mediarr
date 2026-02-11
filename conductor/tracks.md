@@ -4,8 +4,8 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ---
 
-- [ ] **Track 4: TV Management Module (Sonarr Layer)**
-  *Description: Implementing series tracking, episode scanning, and "wanted" list logic.*
+- [x] **Track: TV Management Module (Sonarr Layer)**
+*Link: [./tracks/tv_management_20260211/](./tracks/tv_management_20260211/)*
 
 - [ ] **Track 5: Movie Management Module (Radarr Layer)**
   *Description: Implementing movie collection management, quality profiles, and release tracking.*

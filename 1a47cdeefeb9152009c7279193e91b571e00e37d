@@ -1,0 +1,5 @@
+Task: Implement hard link with move fallback in Organizer.organizeFile()
+
+Summary: Replaced fs.rename with fs.link as primary file organization strategy. On failure (e.g., EXDEV cross-device), falls back to fs.rename and logs a warning advising the user to use a single volume for hard link support.
+
+Files modified: server/src/services/Organizer.ts

@@ -46,6 +46,19 @@ export class TorrentRepository {
   }
 
   /**
+   * Updates multiple fields of a torrent.
+   */
+  async update(
+    infoHash: string,
+    data: Partial<Omit<Torrent, 'id' | 'added' | 'infoHash'>>
+  ): Promise<Torrent> {
+    return this.prisma.torrent.update({
+      where: { infoHash },
+      data,
+    });
+  }
+
+  /**
    * Updates the progress and speeds of a torrent.
    */
   async updateProgress(

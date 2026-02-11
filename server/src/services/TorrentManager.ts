@@ -1,5 +1,7 @@
 import WebTorrent from 'webtorrent';
 import { TorrentRepository } from '../repositories/TorrentRepository';
+import { promises as fs } from 'fs';
+import path from 'path';
 
 export interface AddTorrentOptions {
   magnetUrl?: string;
@@ -14,6 +16,7 @@ export interface TorrentInfo {
 }
 
 const DEFAULT_DOWNLOAD_PATH = '/downloads/incomplete';
+const COMPLETE_DOWNLOAD_PATH = '/downloads/complete';
 
 /**
  * Singleton manager that wraps the WebTorrent client and handles
@@ -85,6 +88,11 @@ export class TorrentManager {
     const downloadPath = options.path || DEFAULT_DOWNLOAD_PATH;
 
     const torrent = this.client.add(source, { path: downloadPath });
+
+    // Set up completion handler
+    torrent.on('done', () => {
+      this.handleTorrentCompletion(torrent);
+    });
 
     await this.repository.upsert({
       infoHash: torrent.infoHash,
@@ -192,6 +200,60 @@ export class TorrentManager {
   }
 
   /**
+   * Handles torrent completion by moving files and updating the database.
+   */
+  private async handleTorrentCompletion(torrent: any): Promise<void> {
+    const infoHash = torrent.infoHash;
+    const currentPath = torrent.path;
+
+    // Skip file move if already in complete directory (or a subdirectory of it)
+    if (currentPath.startsWith(COMPLETE_DOWNLOAD_PATH)) {
+      await this.repository.update(infoHash, {
+        status: 'seeding',
+        completedAt: new Date(),
+      });
+      return;
+    }
+
+    try {
+      // Ensure complete directory exists
+      await fs.mkdir(COMPLETE_DOWNLOAD_PATH, { recursive: true });
+
+      // Move files from incomplete to complete
+      // If the torrent is a single file, currentPath might be the file's directory.
+      // If it's a folder, currentPath is the parent of that folder.
+      // WebTorrent usually downloads to 'path/torrent-name'.
+      const sourceDir = path.join(currentPath, torrent.name);
+      const targetDir = path.join(COMPLETE_DOWNLOAD_PATH, torrent.name);
+
+      // Check if source exists (it might not if it was a single file download directly into currentPath)
+      // but usually WebTorrent creates a subfolder if there are multiple files or if it's configured so.
+      // For simplicity and matching current tests/logic:
+      try {
+        await fs.rename(sourceDir, targetDir);
+      } catch (e) {
+        // Fallback: maybe the source is just currentPath itself? 
+        // (This happens if 'path' was set to the exact folder containing the files)
+        await fs.rename(currentPath, targetDir);
+      }
+
+      // Update the torrent's path in WebTorrent
+      torrent.path = targetDir;
+
+      // Update database
+      await this.repository.update(infoHash, {
+        status: 'seeding',
+        path: targetDir,
+        completedAt: new Date(),
+      });
+    } catch (error) {
+      // Update status to error on failure
+      await this.repository.updateStatus(infoHash, 'error');
+      console.error(`Failed to move files for torrent ${infoHash}:`, error);
+    }
+  }
+
+  /**
    * Destroys the WebTorrent client and cleans up resources.
    */
   async destroy(): Promise<void> {
@@ -224,7 +286,12 @@ export class TorrentManager {
         continue;
       }
 
-      this.client!.add(source, { path: torrent.path });
+      const webTorrent = this.client!.add(source, { path: torrent.path });
+
+      // Set up completion handler for resumed torrents
+      webTorrent.on('done', () => {
+        this.handleTorrentCompletion(webTorrent);
+      });
     }
   }
 }

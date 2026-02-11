@@ -16,8 +16,8 @@ export interface TorrentInfo {
   path: string;
 }
 
-const DEFAULT_DOWNLOAD_PATH = '/downloads/incomplete';
-const COMPLETE_DOWNLOAD_PATH = '/downloads/complete';
+const DEFAULT_DOWNLOAD_PATH = '/data/downloads/incomplete';
+const COMPLETE_DOWNLOAD_PATH = '/data/downloads/complete';
 
 /**
  * Singleton manager that wraps the WebTorrent client and handles

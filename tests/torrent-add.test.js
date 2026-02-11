@@ -13,7 +13,7 @@ vi.mock('webtorrent', () => {
       uploaded: 0,
       length: 1000000,
       timeRemaining: Infinity,
-      path: '/downloads/incomplete',
+      path: '/data/downloads/incomplete',
       paused: false,
       done: false,
       on: vi.fn(),
@@ -30,7 +30,7 @@ vi.mock('webtorrent', () => {
   function MockWebTorrent() {
     this.torrents = [];
     this.add = vi.fn((source, opts) => {
-      const torrent = createMockTorrent({ path: opts?.path || '/downloads/incomplete' });
+      const torrent = createMockTorrent({ path: opts?.path || '/data/downloads/incomplete' });
       this.torrents.push(torrent);
       return torrent;
     });
@@ -91,7 +91,7 @@ describe('TorrentManager.addTorrent', () => {
     const client = manager.getClient();
     expect(client.add).toHaveBeenCalledWith(
       magnetUrl,
-      expect.objectContaining({ path: '/downloads/incomplete' })
+      expect.objectContaining({ path: '/data/downloads/incomplete' })
     );
 
     // Should persist the torrent to the database
@@ -100,7 +100,7 @@ describe('TorrentManager.addTorrent', () => {
         infoHash: 'abc123def456',
         magnetUrl,
         status: 'downloading',
-        path: '/downloads/incomplete',
+        path: '/data/downloads/incomplete',
       })
     );
 
@@ -121,7 +121,7 @@ describe('TorrentManager.addTorrent', () => {
     const client = manager.getClient();
     expect(client.add).toHaveBeenCalledWith(
       torrentFileBuffer,
-      expect.objectContaining({ path: '/downloads/incomplete' })
+      expect.objectContaining({ path: '/data/downloads/incomplete' })
     );
 
     // Should persist with the torrentFile buffer
@@ -130,7 +130,7 @@ describe('TorrentManager.addTorrent', () => {
         infoHash: 'abc123def456',
         torrentFile: torrentFileBuffer,
         status: 'downloading',
-        path: '/downloads/incomplete',
+        path: '/data/downloads/incomplete',
       })
     );
 

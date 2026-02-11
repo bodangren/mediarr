@@ -42,7 +42,7 @@ vi.mock('webtorrent', () => {
         uploaded: 0,
         length: 1000000,
         timeRemaining: 0,
-        path: opts?.path || '/downloads/incomplete',
+        path: opts?.path || '/data/downloads/incomplete',
         paused: false,
         done: true,
         on: vi.fn((event, handler) => {
@@ -132,22 +132,22 @@ describe('TorrentManager - Completion Logic & File Move', () => {
     await new Promise(resolve => setTimeout(resolve, 50));
 
     expect(fs.mkdir).toHaveBeenCalledWith(
-      '/downloads/complete',
+      '/data/downloads/complete',
       expect.objectContaining({ recursive: true })
     );
 
-    // In my mock, path is /downloads/incomplete, torrent.name is Test Download
+    // In my mock, path is /data/downloads/incomplete, torrent.name is Test Download
     // handleTorrentCompletion tries to rename path.join(path, name)
     expect(fs.rename).toHaveBeenCalledWith(
-      path.join('/downloads/incomplete', 'Test Download'),
-      path.join('/downloads/complete', 'Test Download')
+      path.join('/data/downloads/incomplete', 'Test Download'),
+      path.join('/data/downloads/complete', 'Test Download')
     );
 
     expect(mockRepo.update).toHaveBeenCalledWith(
       'abc123def456',
       expect.objectContaining({
         status: 'seeding',
-        path: path.join('/downloads/complete', 'Test Download'),
+        path: path.join('/data/downloads/complete', 'Test Download'),
         completedAt: expect.any(Date),
       })
     );
@@ -189,7 +189,7 @@ describe('TorrentManager - Completion Logic & File Move', () => {
     expect(mockRepo.update).toHaveBeenCalledWith(
       'abc123def456',
       expect.objectContaining({
-        path: path.join('/downloads/complete', 'Test Download'),
+        path: path.join('/data/downloads/complete', 'Test Download'),
       })
     );
   });
@@ -198,7 +198,7 @@ describe('TorrentManager - Completion Logic & File Move', () => {
     const magnetUrl = 'magnet:?xt=urn:btih:xyz789&dn=Already+Complete';
 
     // Add torrent with custom path already in complete/
-    await manager.addTorrent({ magnetUrl, path: '/downloads/complete' });
+    await manager.addTorrent({ magnetUrl, path: '/data/downloads/complete' });
 
     const client = manager.getClient();
     const torrent = client.torrents[0];

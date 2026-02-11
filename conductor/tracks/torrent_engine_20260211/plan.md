@@ -4,7 +4,7 @@
 Establish the foundation for WebTorrent and the database state management.
 
 - [x] Task: Update Prisma schema to include `Torrent` and `TorrentPeer` models to track state, progress, and settings. (92b4e31)
-- [ ] Task: Write Tests: Verify `TorrentRepository` can save and retrieve torrent state including metadata and file paths.
+- [x] Task: Write Tests: Verify `TorrentRepository` can save and retrieve torrent state including metadata and file paths. (9c247ad)
 - [ ] Task: Implement `TorrentRepository` for CRUD operations on torrent state.
 - [ ] Task: Write Tests: Verify `TorrentManager` can initialize `webtorrent` and load existing torrents from the database on startup.
 - [ ] Task: Implement `TorrentManager` singleton to wrap the `webtorrent` client and handle lifecycle events.

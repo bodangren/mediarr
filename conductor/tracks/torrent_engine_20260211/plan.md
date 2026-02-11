@@ -24,9 +24,9 @@ Implement the logic for adding, pausing, and controlling the download process.
 ## Phase 3: Completion Logic & Seeding Management [checkpoint: ]
 Handle the transition from downloading to completed and enforce seeding rules.
 
-- [ ] Task: Write Tests: Verify that files are moved from `incomplete/` to `complete/` exactly when the download reaches 100%.
-- [ ] Task: Implement file move logic and event emitter for completion.
-- [ ] Task: Write Tests: Verify seeding limits (ratio/time) correctly trigger the stop/removal of a torrent.
+- [x] Task: Write Tests: Verify that files are moved from `incomplete/` to `complete/` exactly when the download reaches 100%. (bdceb7b)
+- [x] Task: Implement file move logic and event emitter for completion. (bdceb7b)
+- [~] Task: Write Tests: Verify seeding limits (ratio/time) correctly trigger the stop/removal of a torrent.
 - [ ] Task: Implement `SeedingProtector` service to monitor active torrents and enforce ratio/time limits.
 
 

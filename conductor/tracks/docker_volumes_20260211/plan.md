@@ -13,7 +13,7 @@ Ensure required directories exist at server startup.
 - [x] Task: Write Tests: Verify a startup initializer creates the required subdirectory structure under `/data` (`downloads/incomplete`, `downloads/complete`, `media/tv`, `media/movies`). (f23ed3d)
 - [x] Task: Implement `DataDirectoryInitializer` service that ensures all required subdirectories exist on server startup. (5c0f656)
 
-## Phase 3: TorrentManager Path Update
+## Phase 3: TorrentManager Path Update [checkpoint: 0e69f8b]
 Update download paths from hardcoded `/downloads/` to `/data/downloads/`.
 
 - [x] Task: Write Tests: Verify `TorrentManager` uses `/data/downloads/incomplete` and `/data/downloads/complete` as default paths. (fc0ac07)

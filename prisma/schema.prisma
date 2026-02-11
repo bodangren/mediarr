@@ -92,7 +92,75 @@ model IndexerRelease {
 }
 
 model Category {
+
   id        Int    @id // Using standard IDs (e.g., 2000 for Movies)
+
   name      String
+
   parent_id Int?
+
+}
+
+
+
+model Torrent {
+
+  id             Int           @id @default(autoincrement())
+
+  infoHash       String        @unique
+
+  name           String
+
+  status         String        // downloading, seeding, paused, stopped, error
+
+  progress       Float         @default(0)
+
+  downloadSpeed  Float         @default(0)
+
+  uploadSpeed    Float         @default(0)
+
+  eta            Int?          // seconds
+
+  size           BigInt
+
+  downloaded     BigInt        @default(0)
+
+  uploaded       BigInt        @default(0)
+
+  ratio          Float         @default(0)
+
+  path           String        // The internal path (/downloads/incomplete or /downloads/complete)
+
+  added          DateTime      @default(now())
+
+  completedAt    DateTime?
+
+  stopAtRatio    Float?
+
+  stopAtTime     Int?          // minutes
+
+  magnetUrl      String?
+
+  torrentFile    Bytes?
+
+  peers          TorrentPeer[]
+
+}
+
+
+
+model TorrentPeer {
+
+  id        Int     @id @default(autoincrement())
+
+  torrentId Int
+
+  torrent   Torrent @relation(fields: [torrentId], references: [id], onDelete: Cascade)
+
+  ip        String
+
+  port      Int
+
+  client    String?
+
 }

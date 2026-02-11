@@ -21,7 +21,7 @@ Implement the logic for adding, pausing, and controlling the download process.
 - [x] Task: Implement queue control methods (pause, resume, stop). (fbd8b32)
 
 
-## Phase 3: Completion Logic & Seeding Management [checkpoint: ]
+## Phase 3: Completion Logic & Seeding Management [checkpoint: 85814e8]
 Handle the transition from downloading to completed and enforce seeding rules.
 
 - [x] Task: Write Tests: Verify that files are moved from `incomplete/` to `complete/` exactly when the download reaches 100%. (bdceb7b)

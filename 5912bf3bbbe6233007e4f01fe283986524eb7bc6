@@ -1,0 +1,5 @@
+Task: Update Dockerfile to create /config and /data directory structures and set DATABASE_URL default to file:/config/mediarr.db.
+
+Summary: Added /config and /data volume directories to the runner stage. Set DATABASE_URL env var to file:/config/mediarr.db. Created subdirectories: downloads/incomplete, downloads/complete, media/tv, media/movies. Declared VOLUME for both mount points.
+
+Files modified: Dockerfile

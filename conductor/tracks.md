@@ -4,10 +4,6 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ---
 
-- [x] **Track 3: Integrated Torrent Engine (Downloader Layer)**
-  *Link: [./tracks/torrent_engine_20260211/](./tracks/torrent_engine_20260211/)*
-  *Description: Building the persistent background service for torrenting and queue management.*
-
 - [ ] **Track 4: TV Management Module (Sonarr Layer)**
   *Description: Implementing series tracking, episode scanning, and "wanted" list logic.*
 

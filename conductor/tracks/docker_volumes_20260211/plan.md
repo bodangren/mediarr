@@ -5,7 +5,7 @@ Update the container infrastructure and database location.
 
 - [x] Task: Update `Dockerfile` to create `/config` and `/data` directory structures and set `DATABASE_URL` default to `file:/config/mediarr.db`. (5912bf3)
 - [x] Task: Update `docker-compose.yml` to use named volumes for `/config` and `/data`, and set environment variables accordingly. (7499950)
-- [ ] Task: Update `.env` and `prisma.config.ts` to reference the new database path for local development.
+- [x] Task: Update `.env` and `prisma.config.ts` to reference the new database path for local development. (95f5295)
 
 ## Phase 2: Startup Directory Initialization
 Ensure required directories exist at server startup.

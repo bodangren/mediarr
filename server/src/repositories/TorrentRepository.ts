@@ -87,14 +87,12 @@ export class TorrentRepository {
    * Synchronizes peers for a torrent.
    */
   async syncPeers(infoHash: string, peers: Omit<TorrentPeer, 'id' | 'torrentId'>[]): Promise<void> {
-    await this.prisma.$transaction(async (tx) => {
-      const torrent = await tx.torrent.findUnique({ where: { infoHash } });
-      if (!torrent) return;
+    const torrent = await this.prisma.torrent.findUnique({ where: { infoHash } });
+    if (!torrent) return;
 
-      await tx.torrentPeer.deleteMany({ where: { torrentId: torrent.id } });
-      await tx.torrentPeer.createMany({
-        data: peers.map(p => ({ ...p, torrentId: torrent.id })),
-      });
+    await this.prisma.torrentPeer.deleteMany({ where: { torrentId: torrent.id } });
+    await this.prisma.torrentPeer.createMany({
+      data: peers.map(p => ({ ...p, torrentId: torrent.id })),
     });
   }
 }

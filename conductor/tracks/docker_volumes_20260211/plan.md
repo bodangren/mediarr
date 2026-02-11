@@ -24,7 +24,7 @@ Replace `fs.rename()` with hard link strategy and move fallback.
 
 - [x] Task: Write Tests: Verify `Organizer.organizeFile()` creates a hard link when source and destination are on the same filesystem. (ad03dd2)
 - [x] Task: Write Tests: Verify `Organizer.organizeFile()` falls back to `fs.rename()` when hard linking fails (cross-device) and logs a warning. (ad03dd2)
-- [ ] Task: Implement hard link with move fallback in `Organizer.organizeFile()`.
+- [x] Task: Implement hard link with move fallback in `Organizer.organizeFile()`. (1a47cde)
 
 ## Phase 5: Integration Verification
 Ensure all existing functionality works with the new paths.

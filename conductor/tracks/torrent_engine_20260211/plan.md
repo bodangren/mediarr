@@ -33,6 +33,6 @@ Handle the transition from downloading to completed and enforce seeding rules.
 ## Phase 4: API & Real-time Monitoring [checkpoint: ]
 Expose the engine's state to the rest of the application.
 
-- [ ] Task: Write Tests: Verify the internal API returns standardized progress data (speed, peers, ETA, % progress).
-- [ ] Task: Implement the Torrent API endpoints for status and management.
+- [x] Task: Write Tests: Verify the internal API returns standardized progress data (speed, peers, ETA, % progress). (ed7e768)
+- [x] Task: Implement the Torrent API endpoints for status and management. (ed7e768)
 

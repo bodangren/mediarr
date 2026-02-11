@@ -7,7 +7,7 @@ Update the container infrastructure and database location.
 - [x] Task: Update `docker-compose.yml` to use named volumes for `/config` and `/data`, and set environment variables accordingly. (7499950)
 - [x] Task: Update `.env` and `prisma.config.ts` to reference the new database path for local development. (95f5295)
 
-## Phase 2: Startup Directory Initialization
+## Phase 2: Startup Directory Initialization [checkpoint: 55905f8]
 Ensure required directories exist at server startup.
 
 - [x] Task: Write Tests: Verify a startup initializer creates the required subdirectory structure under `/data` (`downloads/incomplete`, `downloads/complete`, `media/tv`, `media/movies`). (f23ed3d)

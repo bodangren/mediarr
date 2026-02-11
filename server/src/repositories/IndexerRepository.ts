@@ -35,6 +35,16 @@ export class IndexerRepository {
     }));
   }
 
+  async findAllEnabled(): Promise<Indexer[]> {
+    const indexers = await this.prisma.indexer.findMany({
+      where: { enabled: true },
+    });
+    return indexers.map((indexer) => ({
+      ...indexer,
+      settings: decrypt(indexer.settings),
+    }));
+  }
+
   async update(id: number, data: Partial<Omit<Indexer, 'id' | 'added'>>): Promise<Indexer> {
     const updateData = { ...data };
     if (updateData.settings) {

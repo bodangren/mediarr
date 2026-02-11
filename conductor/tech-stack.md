@@ -10,6 +10,7 @@
 - **Runtime:** Node.js.
 - **Framework:** Fastify or Express for the dedicated background service.
 - **Torrent Engine:** WebTorrent (Integrated, no external client needed).
+- **Metadata Engine:** Integrated SkyHook proxy for TVDB/TMDB data acquisition.
 - **Task Scheduling:** BullMQ or `node-cron` for managing RSS syncs, availability checks, and torrent monitoring.
 - **Communication:** Internal API/WebSockets between the background service and the Next.js frontend.
 

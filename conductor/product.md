@@ -4,6 +4,7 @@ Mediarr is a unified, all-in-one media management powerhouse designed to replace
 
 ### Core Features
 - **Integrated Torrent Engine:** A built-in downloading service (WebTorrent) that eliminates the need for external clients.
-- **Unified Indexer Management:** Standardized support for Torznab and scraping-based indexers.
+- **Unified Indexer Management:** Standardized support for Torznab and scraping-based indexers, with built-in support for popular public indexers (EZTV, The Pirate Bay).
+- **TV Management Engine:** Comprehensive series tracking, episode scanning, and automated "wanted" list logic.
 - **Automated Lifecycle:** From RSS discovery to download management and final file organization.
 - **Modern Interface:** A sleek Next.js-powered "Modern Dark" dashboard for central control.

@@ -17,7 +17,7 @@ Ensure required directories exist at server startup.
 Update download paths from hardcoded `/downloads/` to `/data/downloads/`.
 
 - [x] Task: Write Tests: Verify `TorrentManager` uses `/data/downloads/incomplete` and `/data/downloads/complete` as default paths. (fc0ac07)
-- [ ] Task: Update `TorrentManager` constants and file move logic to use the new `/data/downloads/` paths.
+- [x] Task: Update `TorrentManager` constants and file move logic to use the new `/data/downloads/` paths. (4c72d65)
 
 ## Phase 4: Hard Link Support in Organizer
 Replace `fs.rename()` with hard link strategy and move fallback.

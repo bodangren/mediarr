@@ -116,6 +116,38 @@ export class TorrentManager {
   }
 
   /**
+   * Sets the global download speed limit in bytes/sec. Use -1 to remove the limit.
+   */
+  setDownloadSpeedLimit(bytesPerSecond: number): void {
+    if (!this.initialized || !this.client) {
+      throw new Error('TorrentManager is not initialized');
+    }
+    (this.client as any).throttleDownload(bytesPerSecond);
+  }
+
+  /**
+   * Sets the global upload speed limit in bytes/sec. Use -1 to remove the limit.
+   */
+  setUploadSpeedLimit(bytesPerSecond: number): void {
+    if (!this.initialized || !this.client) {
+      throw new Error('TorrentManager is not initialized');
+    }
+    (this.client as any).throttleUpload(bytesPerSecond);
+  }
+
+  /**
+   * Sets both download and upload speed limits at once.
+   */
+  setSpeedLimits(limits: { download?: number; upload?: number }): void {
+    if (limits.download !== undefined) {
+      this.setDownloadSpeedLimit(limits.download);
+    }
+    if (limits.upload !== undefined) {
+      this.setUploadSpeedLimit(limits.upload);
+    }
+  }
+
+  /**
    * Destroys the WebTorrent client and cleans up resources.
    */
   async destroy(): Promise<void> {

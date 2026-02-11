@@ -1,6 +1,6 @@
 # Implementation Plan: Docker Volume Architecture & Hard Link Support
 
-## Phase 1: Docker Configuration & Database Migration
+## Phase 1: Docker Configuration & Database Migration [checkpoint: cf46dd1]
 Update the container infrastructure and database location.
 
 - [x] Task: Update `Dockerfile` to create `/config` and `/data` directory structures and set `DATABASE_URL` default to `file:/config/mediarr.db`. (5912bf3)

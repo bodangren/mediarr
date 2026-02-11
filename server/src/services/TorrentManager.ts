@@ -2,6 +2,7 @@ import WebTorrent from 'webtorrent';
 import { TorrentRepository } from '../repositories/TorrentRepository';
 import { promises as fs } from 'fs';
 import path from 'path';
+import { EventEmitter } from 'events';
 
 export interface AddTorrentOptions {
   magnetUrl?: string;
@@ -22,13 +23,15 @@ const COMPLETE_DOWNLOAD_PATH = '/downloads/complete';
  * Singleton manager that wraps the WebTorrent client and handles
  * lifecycle events including persistence via TorrentRepository.
  */
-export class TorrentManager {
+export class TorrentManager extends EventEmitter {
   private static instance: TorrentManager | null = null;
 
   private client: WebTorrent.Instance | null = null;
   private initialized = false;
 
-  private constructor(private repository: TorrentRepository) {}
+  private constructor(private repository: TorrentRepository) {
+    super();
+  }
 
   /**
    * Returns the singleton TorrentManager instance.
@@ -245,6 +248,12 @@ export class TorrentManager {
         status: 'seeding',
         path: targetDir,
         completedAt: new Date(),
+      });
+
+      this.emit('torrent:completed', {
+        infoHash,
+        name: torrent.name,
+        path: targetDir,
       });
     } catch (error) {
       // Update status to error on failure

@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { LibraryScanner } from '../server/src/services/LibraryScanner';
-import { PrismaClient } from '@prisma/client';
 import fs from 'node:fs/promises';
 
 vi.mock('node:fs/promises');
@@ -78,6 +77,35 @@ describe('LibraryScanner', () => {
     expect(prisma.episode.update).toHaveBeenCalledWith({
       where: { id: 102 },
       data: { path: '/media/TV/The Boys/Season 01/The.Boys.S01E02.mkv' }
+    });
+  });
+  it('should scan a movie directory and match movie files', async () => {
+    const movie = {
+      id: 2,
+      tmdbId: 13,
+      title: 'Forrest Gump',
+      year: 1994,
+      path: '/media/movies/Forrest Gump (1994)',
+    };
+
+    fs.access.mockResolvedValue(undefined);
+    fs.readdir.mockResolvedValue(['Forrest Gump (1994).mkv', 'movie.nfo']);
+    fs.stat.mockImplementation(async (itemPath) => {
+      if (itemPath.endsWith('.mkv') || itemPath.endsWith('.nfo')) {
+        return { isDirectory: () => false, isFile: () => true };
+      }
+      return { isDirectory: () => true, isFile: () => false };
+    });
+
+    prisma.movie = {
+      update: vi.fn(),
+    };
+
+    await scanner.scanMovie(movie);
+
+    expect(prisma.movie.update).toHaveBeenCalledWith({
+      where: { id: 2 },
+      data: { path: '/media/movies/Forrest Gump (1994)/Forrest Gump (1994).mkv' },
     });
   });
 });

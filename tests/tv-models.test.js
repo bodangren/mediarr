@@ -11,6 +11,8 @@ describe('TV Models', () => {
     await prisma.episode.deleteMany();
     await prisma.season.deleteMany();
     await prisma.series.deleteMany();
+    await prisma.movie.deleteMany();
+    await prisma.media.deleteMany();
     await prisma.qualityProfile.deleteMany();
   });
 

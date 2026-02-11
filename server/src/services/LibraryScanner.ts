@@ -52,6 +52,33 @@ export class LibraryScanner {
     }
   }
 
+  /**
+   * Scan a movie directory and attach an existing movie file path.
+   */
+  async scanMovie(movie: { id: number; path: string; title: string; year: number }): Promise<void> {
+    if (!movie.path) return;
+
+    try {
+      await fs.access(movie.path);
+    } catch {
+      console.warn(`Movie path ${movie.path} is not accessible`);
+      return;
+    }
+
+    const files = await this.getAllFiles(movie.path);
+    for (const filePath of files) {
+      const ext = path.extname(filePath).toLowerCase();
+      if (!LibraryScanner.videoExtensions.has(ext)) continue;
+      if (!this.matchesMovieFile(movie, filePath)) continue;
+
+      await this.prisma.movie.update({
+        where: { id: movie.id },
+        data: { path: filePath },
+      });
+      return;
+    }
+  }
+
   private async getAllFiles(dir: string): Promise<string[]> {
     const results: string[] = [];
     const list = await fs.readdir(dir);
@@ -69,5 +96,14 @@ export class LibraryScanner {
     }
 
     return results;
+  }
+
+  private matchesMovieFile(movie: { title: string; year: number }, filePath: string): boolean {
+    const filename = path.basename(filePath).toLowerCase();
+    const cleanTitle = movie.title.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const cleanFilename = filename.replace(/[^a-z0-9]/g, '');
+    const hasTitle = cleanFilename.includes(cleanTitle);
+    const hasYear = cleanFilename.includes(String(movie.year));
+    return hasTitle && hasYear;
   }
 }

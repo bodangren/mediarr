@@ -9,8 +9,44 @@ datasource db {
   provider = "sqlite"
 }
 
+enum MediaType {
+  TV
+  MOVIE
+}
+
+model Media {
+  id                  Int            @id @default(autoincrement())
+  mediaType           MediaType
+  tmdbId              Int?
+  tvdbId              Int?
+  imdbId              String?        @unique
+  title               String
+  cleanTitle          String
+  sortTitle           String
+  status              String
+  overview            String?
+  monitored           Boolean        @default(true)
+  qualityProfileId    Int
+  qualityProfile      QualityProfile @relation(fields: [qualityProfileId], references: [id])
+  path                String?
+  year                Int
+  added               DateTime       @default(now())
+  availability        String?
+  minimumAvailability String?
+  inCinemas           DateTime?
+  digitalRelease      DateTime?
+  physicalRelease     DateTime?
+  network             String?
+  series              Series?
+  movie               Movie?
+
+  @@unique([mediaType, tmdbId])
+  @@unique([mediaType, tvdbId])
+}
+
 model Series {
   id               Int       @id @default(autoincrement())
+  mediaId           Int?      @unique
   tvdbId           Int       @unique
   tmdbId           Int?      @unique
   imdbId           String?   @unique
@@ -26,6 +62,7 @@ model Series {
   year             Int
   network          String?
   added            DateTime  @default(now())
+  media            Media?    @relation(fields: [mediaId], references: [id], onDelete: SetNull)
   seasons          Season[]
   episodes         Episode[]
 }
@@ -58,6 +95,7 @@ model Episode {
 
 model Movie {
   id               Int      @id @default(autoincrement())
+  mediaId          Int?     @unique
   tmdbId           Int      @unique
   imdbId           String?  @unique
   title            String
@@ -71,11 +109,17 @@ model Movie {
   path             String?
   year             Int
   added            DateTime @default(now())
+  minimumAvailability String?
+  inCinemas        DateTime?
+  digitalRelease   DateTime?
+  physicalRelease  DateTime?
+  media            Media?   @relation(fields: [mediaId], references: [id], onDelete: SetNull)
 }
 
 model QualityProfile {
   id     Int      @id @default(autoincrement())
   name   String   @unique
+  medias Media[]
   series Series[]
   movies Movie[]
 }

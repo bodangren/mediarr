@@ -1,4 +1,10 @@
 import { HttpClient } from '../indexers/HttpClient';
+import type {
+  BaseMedia,
+  MediaDetailsRequest,
+  MediaSearchRequest,
+  MediaType,
+} from '../types/BaseMedia';
 
 export interface SeriesSearchResult {
   tvdbId: number;
@@ -16,20 +22,131 @@ export interface SeriesDetails {
   episodes: any[];
 }
 
+export interface MovieSearchResult {
+  tmdbId: number;
+  title: string;
+  status?: string;
+  overview?: string;
+  year?: number;
+  imdbId?: string;
+  images: Array<{ coverType: string; url: string }>;
+}
+
+export interface MovieDetails extends BaseMedia {
+  mediaType: 'MOVIE';
+  availability: string;
+  inCinemas?: string;
+  digitalRelease?: string;
+  physicalRelease?: string;
+}
+
 /**
  * Service to fetch metadata for TV series from SkyHook (Sonarr's metadata proxy).
  */
 export class MetadataProvider {
-  private readonly baseUrl = 'https://skyhook.sonarr.tv/v1/tvdb';
+  private readonly tvBaseUrl = 'https://skyhook.sonarr.tv/v1/tvdb';
+  private readonly movieBaseUrl = 'https://api.themoviedb.org/3';
+  private readonly tmdbApiKey?: string;
 
-  constructor(private readonly httpClient: HttpClient) {}
+  constructor(private readonly httpClient: HttpClient, options?: { tmdbApiKey?: string }) {
+    this.tmdbApiKey = options?.tmdbApiKey ?? process.env.TMDB_API_KEY;
+  }
+
+  async searchMedia(request: MediaSearchRequest, fetchFn?: any): Promise<BaseMedia[]> {
+    if (request.mediaType === 'TV') {
+      const results = await this.searchSeries(request.term, fetchFn);
+      return results.map(result => ({
+        mediaType: 'TV',
+        tvdbId: result.tvdbId,
+        tmdbId: undefined,
+        imdbId: undefined,
+        title: result.title,
+        status: result.status,
+        overview: result.overview,
+        year: result.year,
+        network: result.network,
+      }));
+    }
+
+    const results = await this.searchMovies(request.term, fetchFn);
+    return results.map(result => ({
+      mediaType: 'MOVIE',
+      tmdbId: result.tmdbId,
+      imdbId: result.imdbId,
+      title: result.title,
+      status: result.status,
+      overview: result.overview,
+      year: result.year,
+    }));
+  }
+
+  async getMediaDetails(request: MediaDetailsRequest, fetchFn?: any): Promise<BaseMedia | MovieDetails> {
+    if (request.mediaType === 'TV') {
+      if (!request.tvdbId) {
+        throw new Error('tvdbId is required for TV metadata details');
+      }
+
+      const { series } = await this.getSeriesDetails(request.tvdbId, fetchFn);
+      return {
+        mediaType: 'TV',
+        tvdbId: series.tvdbId,
+        title: series.title,
+        status: series.status,
+        overview: series.overview,
+        year: series.year,
+        network: series.network,
+      };
+    }
+
+    if (!request.tmdbId) {
+      throw new Error('tmdbId is required for movie metadata details');
+    }
+
+    return this.getMovieDetails(request.tmdbId, fetchFn);
+  }
+
+  getMovieAvailability(movie: {
+    status?: string;
+    releaseDate?: string;
+    digitalRelease?: string;
+    physicalRelease?: string;
+    inCinemas?: string;
+  }): string {
+    const now = Date.now();
+    const normalizedStatus = movie.status?.toLowerCase().trim();
+    if (normalizedStatus === 'streaming') {
+      return 'streaming';
+    }
+
+    if (normalizedStatus && new Set(['released', 'digital']).has(normalizedStatus)) {
+      return 'released';
+    }
+
+    const releaseDates = [movie.digitalRelease, movie.physicalRelease, movie.releaseDate]
+      .filter((value): value is string => Boolean(value))
+      .map(value => new Date(value).getTime())
+      .filter(value => Number.isFinite(value));
+
+    if (releaseDates.some(value => value <= now)) {
+      return 'released';
+    }
+
+    if (movie.inCinemas) {
+      const inCinemasTime = new Date(movie.inCinemas).getTime();
+      if (Number.isFinite(inCinemasTime) && inCinemasTime <= now) {
+        return 'in_cinemas';
+      }
+    }
+
+    return 'announced';
+  }
 
   /**
    * Search for a series by title.
    */
   async searchSeries(term: string, fetchFn?: any): Promise<SeriesSearchResult[]> {
     const encodedTerm = encodeURIComponent(term.toLowerCase().trim());
-    const url = `${this.baseUrl}/search?term=${encodedTerm}`;
+    const url = `${this.tvBaseUrl}/search?term=${encodedTerm}`;
     
     const response = await this.httpClient.get(url, {}, fetchFn);
     
@@ -44,7 +161,7 @@ export class MetadataProvider {
    * Get full details for a series including episodes.
    */
   async getSeriesDetails(tvdbId: number, fetchFn?: any): Promise<SeriesDetails> {
-    const url = `${this.baseUrl}/shows/${tvdbId}`;
+    const url = `${this.tvBaseUrl}/shows/${tvdbId}`;
     
     const response = await this.httpClient.get(url, {}, fetchFn);
     
@@ -58,5 +175,69 @@ export class MetadataProvider {
       series: data,
       episodes: data.episodes || []
     };
+  }
+
+  private async searchMovies(term: string, fetchFn?: any): Promise<MovieSearchResult[]> {
+    const encodedTerm = encodeURIComponent(term.toLowerCase().trim());
+    const apiKey = this.tmdbApiKey ?? 'demo';
+    const url = `${this.movieBaseUrl}/search/movie?api_key=${encodeURIComponent(apiKey)}&query=${encodedTerm}`;
+    const response = await this.httpClient.get(url, {}, fetchFn);
+
+    if (!response.ok) {
+      throw new Error(`Failed to search movies: ${response.status} ${response.body}`);
+    }
+
+    const payload = JSON.parse(response.body);
+    const results = Array.isArray(payload.results) ? payload.results : [];
+    return results.map((movie: any) => ({
+      tmdbId: movie.id,
+      title: movie.title,
+      status: movie.status,
+      overview: movie.overview,
+      year: this.parseYear(movie.release_date),
+      images: [],
+    }));
+  }
+
+  private async getMovieDetails(tmdbId: number, fetchFn?: any): Promise<MovieDetails> {
+    const apiKey = this.tmdbApiKey ?? 'demo';
+    const url = `${this.movieBaseUrl}/movie/${tmdbId}?api_key=${encodeURIComponent(apiKey)}`;
+    const response = await this.httpClient.get(url, {}, fetchFn);
+
+    if (!response.ok) {
+      throw new Error(`Failed to get movie details: ${response.status} ${response.body}`);
+    }
+
+    const movie = JSON.parse(response.body);
+    const availability = this.getMovieAvailability({
+      status: movie.status,
+      releaseDate: movie.release_date,
+      inCinemas: movie.in_cinemas,
+      digitalRelease: movie.digital_release,
+      physicalRelease: movie.physical_release,
+    });
+
+    return {
+      mediaType: 'MOVIE',
+      tmdbId: movie.id,
+      imdbId: movie.imdb_id,
+      title: movie.title,
+      status: movie.status,
+      overview: movie.overview,
+      year: this.parseYear(movie.release_date),
+      availability,
+      inCinemas: movie.in_cinemas,
+      digitalRelease: movie.digital_release,
+      physicalRelease: movie.physical_release,
+    };
+  }
+
+  private parseYear(releaseDate?: string): number | undefined {
+    if (!releaseDate) {
+      return undefined;
+    }
+
+    const year = parseInt(String(releaseDate).slice(0, 4), 10);
+    return Number.isFinite(year) ? year : undefined;
   }
 }

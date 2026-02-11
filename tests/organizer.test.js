@@ -69,4 +69,49 @@ describe('Organizer', () => {
 
     consoleSpy.mockRestore();
   });
+  it('should organize a movie into Movie Title (Year)/ structure', async () => {
+    const movie = {
+      title: 'Forrest Gump',
+      year: 1994,
+      path: '/data/media/movies',
+    };
+    const sourcePath = '/data/downloads/complete/Forrest.Gump.1994.1080p.mkv';
+
+    fs.mkdir.mockResolvedValue(undefined);
+    fs.link.mockResolvedValue(undefined);
+
+    const destinationPath = await organizer.organizeMovieFile(sourcePath, movie);
+
+    const expectedDir = path.join('/data/media/movies', 'Forrest Gump (1994)');
+    const expectedPath = path.join(expectedDir, 'Forrest Gump (1994).mkv');
+
+    expect(fs.mkdir).toHaveBeenCalledWith(expectedDir, { recursive: true });
+    expect(fs.link).toHaveBeenCalledWith(sourcePath, expectedPath);
+    expect(destinationPath).toBe(expectedPath);
+  });
+
+  it('should colocate metadata files in the movie folder', async () => {
+    const movie = {
+      title: 'Forrest Gump',
+      year: 1994,
+      path: '/data/media/movies',
+    };
+
+    fs.writeFile.mockResolvedValue(undefined);
+
+    const metadataPath = await organizer.colocateMovieMetadata(
+      movie,
+      'movie.nfo',
+      '<movie><title>Forrest Gump</title></movie>'
+    );
+
+    const expectedPath = path.join('/data/media/movies', 'Forrest Gump (1994)', 'movie.nfo');
+
+    expect(fs.mkdir).toHaveBeenCalledWith(
+      path.join('/data/media/movies', 'Forrest Gump (1994)'),
+      { recursive: true }
+    );
+    expect(fs.writeFile).toHaveBeenCalledWith(expectedPath, '<movie><title>Forrest Gump</title></movie>', 'utf8');
+    expect(metadataPath).toBe(expectedPath);
+  });
 });

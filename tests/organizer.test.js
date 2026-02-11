@@ -16,28 +16,57 @@ describe('Organizer', () => {
   it('should generate a standard filename', () => {
     const series = { title: 'The Boys' };
     const episode = { seasonNumber: 1, episodeNumber: 1, title: 'Pilot' };
-    
+
     const filename = organizer.buildFilename(series, episode, '.mkv');
     expect(filename).toBe('The Boys - S01E01 - Pilot.mkv');
   });
 
-  it('should move and rename a file', async () => {
-    const series = { title: 'The Boys', path: '/media/TV/The Boys' };
+  it('should hard link a file when source and destination are on the same filesystem', async () => {
+    const series = { title: 'The Boys', path: '/data/media/tv/The Boys' };
     const episode = { seasonNumber: 1, episodeNumber: 1, title: 'Pilot' };
-    const sourcePath = '/downloads/complete/The.Boys.S01E01.mkv';
+    const sourcePath = '/data/downloads/complete/The.Boys.S01E01.mkv';
 
-    // Mock mkdir and rename
     fs.mkdir.mockResolvedValue(undefined);
-    fs.rename.mockResolvedValue(undefined);
+    fs.link.mockResolvedValue(undefined);
 
     const destinationPath = await organizer.organizeFile(sourcePath, series, episode);
 
-    const expectedDir = path.join('/media/TV/The Boys', 'Season 01');
+    const expectedDir = path.join('/data/media/tv/The Boys', 'Season 01');
     const expectedFile = 'The Boys - S01E01 - Pilot.mkv';
     const expectedPath = path.join(expectedDir, expectedFile);
 
     expect(fs.mkdir).toHaveBeenCalledWith(expectedDir, { recursive: true });
-    expect(fs.rename).toHaveBeenCalledWith(sourcePath, expectedPath);
+    expect(fs.link).toHaveBeenCalledWith(sourcePath, expectedPath);
     expect(destinationPath).toBe(expectedPath);
+  });
+
+  it('should fall back to fs.rename when hard linking fails and log a warning', async () => {
+    const series = { title: 'The Boys', path: '/data/media/tv/The Boys' };
+    const episode = { seasonNumber: 1, episodeNumber: 1, title: 'Pilot' };
+    const sourcePath = '/data/downloads/complete/The.Boys.S01E01.mkv';
+
+    fs.mkdir.mockResolvedValue(undefined);
+    // Simulate cross-device link error
+    const crossDeviceError = new Error('EXDEV: cross-device link not permitted');
+    crossDeviceError.code = 'EXDEV';
+    fs.link.mockRejectedValue(crossDeviceError);
+    fs.rename.mockResolvedValue(undefined);
+
+    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const destinationPath = await organizer.organizeFile(sourcePath, series, episode);
+
+    const expectedDir = path.join('/data/media/tv/The Boys', 'Season 01');
+    const expectedFile = 'The Boys - S01E01 - Pilot.mkv';
+    const expectedPath = path.join(expectedDir, expectedFile);
+
+    expect(fs.link).toHaveBeenCalledWith(sourcePath, expectedPath);
+    expect(fs.rename).toHaveBeenCalledWith(sourcePath, expectedPath);
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Hard link failed')
+    );
+    expect(destinationPath).toBe(expectedPath);
+
+    consoleSpy.mockRestore();
   });
 });

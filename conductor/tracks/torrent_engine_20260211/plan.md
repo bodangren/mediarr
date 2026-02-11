@@ -10,7 +10,7 @@ Establish the foundation for WebTorrent and the database state management.
 - [x] Task: Implement `TorrentManager` singleton to wrap the `webtorrent` client and handle lifecycle events. (1aee30f)
 
 
-## Phase 2: Transfer & Queue Control [checkpoint: ]
+## Phase 2: Transfer & Queue Control [checkpoint: 5c07c9e]
 Implement the logic for adding, pausing, and controlling the download process.
 
 - [x] Task: Write Tests: Verify the engine can add a magnet link or .torrent file and begin downloading to the `incomplete/` directory. (c78f6cf)

@@ -254,6 +254,45 @@ export class TorrentManager {
   }
 
   /**
+   * Returns standardized status for all torrents in the database.
+   */
+  async getTorrentsStatus(): Promise<any[]> {
+    const torrents = await this.repository.findAll();
+    return torrents.map(t => this.mapTorrentToStatus(t));
+  }
+
+  /**
+   * Returns standardized status for a single torrent by infoHash.
+   */
+  async getTorrentStatus(infoHash: string): Promise<any> {
+    const torrent = await this.repository.findByInfoHash(infoHash);
+    if (!torrent) {
+      throw new Error(`Torrent with infoHash '${infoHash}' not found in database`);
+    }
+    return this.mapTorrentToStatus(torrent);
+  }
+
+  /**
+   * Maps a database Torrent record to a standardized status object for API responses.
+   */
+  private mapTorrentToStatus(torrent: any): any {
+    return {
+      infoHash: torrent.infoHash,
+      name: torrent.name,
+      status: torrent.status,
+      progress: torrent.progress,
+      downloadSpeed: torrent.downloadSpeed,
+      uploadSpeed: torrent.uploadSpeed,
+      size: torrent.size.toString(),
+      downloaded: torrent.downloaded.toString(),
+      uploaded: torrent.uploaded.toString(),
+      eta: torrent.eta,
+      path: torrent.path,
+      completedAt: torrent.completedAt,
+    };
+  }
+
+  /**
    * Destroys the WebTorrent client and cleans up resources.
    */
   async destroy(): Promise<void> {

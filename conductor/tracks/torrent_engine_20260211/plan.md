@@ -17,8 +17,8 @@ Implement the logic for adding, pausing, and controlling the download process.
 - [x] Task: Implement `addTorrent` logic with support for custom storage paths. (c78f6cf)
 - [x] Task: Write Tests: Verify global speed limits (upload/download) are applied and respected by the WebTorrent client. (4bdc2b7)
 - [x] Task: Implement global speed limit configuration and runtime updates. (4bdc2b7)
-- [ ] Task: Write Tests: Verify pause/resume/remove functionality correctly updates the database and the active engine state.
-- [ ] Task: Implement queue control methods (pause, resume, stop).
+- [x] Task: Write Tests: Verify pause/resume/remove functionality correctly updates the database and the active engine state. (fbd8b32)
+- [x] Task: Implement queue control methods (pause, resume, stop). (fbd8b32)
 
 
 ## Phase 3: Completion Logic & Seeding Management [checkpoint: ]

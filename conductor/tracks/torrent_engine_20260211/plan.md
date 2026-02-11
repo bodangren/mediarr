@@ -30,7 +30,7 @@ Handle the transition from downloading to completed and enforce seeding rules.
 - [x] Task: Implement `SeedingProtector` service to monitor active torrents and enforce ratio/time limits. (358ab65)
 
 
-## Phase 4: API & Real-time Monitoring [checkpoint: ]
+## Phase 4: API & Real-time Monitoring [checkpoint: 72444f3]
 Expose the engine's state to the rest of the application.
 
 - [x] Task: Write Tests: Verify the internal API returns standardized progress data (speed, peers, ETA, % progress). (ed7e768)

@@ -34,7 +34,7 @@ Assess whether backend behavior meets clone parity, not merely route existence.
   - [ ] Sub-task: Classify each backend capability with parity status and severity.
   - [ ] Sub-task: Attach concrete file references and failing/passing probe references for each finding.
   - [ ] Sub-task: Identify top P0/P1 blockers requiring immediate remediation tracks.
-- [ ] Task: Conductor - User Manual Verification 'Phase 2: Backend Parity Investigation (Contracts, Runtime, and Integrations)' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 2: Backend Parity Investigation (Contracts, Runtime, and Integrations)' (Protocol in workflow.md). [458f7a8]
 
 ## Phase 3: Frontend Parity Investigation (Operator Workflows and UX Completeness)
 Determine true operator-facing completeness of each UI surface against clone intent.

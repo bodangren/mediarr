@@ -1,0 +1,39 @@
+{
+  "version": "1.0.0",
+  "scale": {
+    "P0": {
+      "definition": "Blocks a core clone workflow end-to-end (operator cannot complete critical task).",
+      "examples": [
+        "Cannot add indexers due to incompatible definition contract.",
+        "Release grab fails to enqueue torrent at runtime."
+      ]
+    },
+    "P1": {
+      "definition": "Major operator impairment with severe operational impact but partial workaround exists.",
+      "examples": [
+        "Metadata search works only with undocumented key assumptions.",
+        "Subtitle operations work for one variant path only."
+      ]
+    },
+    "P2": {
+      "definition": "Important parity gap; does not block core workflow but materially reduces fidelity.",
+      "examples": [
+        "Missing diagnostics/remediation hints on indexer failures.",
+        "Wanted list filtering inconsistent with source clone behavior."
+      ]
+    },
+    "P3": {
+      "definition": "Polish, consistency, or quality debt with low immediate operator risk.",
+      "examples": [
+        "Minor copy inconsistencies across UI surfaces.",
+        "Non-critical sorting/pagination preference mismatch."
+      ]
+    }
+  },
+  "classificationRules": [
+    "Choose highest-severity user-impacting failure observed in runtime verification.",
+    "Downgrade only when a verified workaround preserves end-to-end operation.",
+    "Raise one level when issue affects multiple clone domains simultaneously.",
+    "Mark REGRESSION when behavior previously verified as parity-complete no longer works."
+  ]
+}

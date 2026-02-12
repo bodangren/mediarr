@@ -1,0 +1,1 @@
+{"ok":false,"error":{"code":"INTERNAL_ERROR","message":"ENCRYPTION_KEY environment variable is not set","retryable":false,"path":"/api/indexers"}}

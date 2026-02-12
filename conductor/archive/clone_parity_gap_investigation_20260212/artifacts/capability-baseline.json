@@ -1,0 +1,289 @@
+{
+  "version": "1.0.0",
+  "track": "clone_parity_gap_investigation_20260212",
+  "owner": "track9-parity-audit",
+  "investigationStatusLegend": [
+    "pending",
+    "in_progress",
+    "verified",
+    "inferred"
+  ],
+  "capabilities": [
+    {
+      "id": "prowlarr.indexer.definitions.load",
+      "domain": "Prowlarr",
+      "capability": "Indexer definition source loading",
+      "expectedSourceBehavior": "Loads canonical definition packs and exposes them for indexer creation/edit forms.",
+      "mediarrSurface": {
+        "backend": [
+          "server/src/indexers/DefinitionLoader.ts",
+          "server/src/api/routes/indexerRoutes.ts"
+        ],
+        "frontend": [
+          "app/src/app/indexers/page.tsx",
+          "app/src/lib/api/indexerApi.ts"
+        ]
+      },
+      "investigationOwner": "track9-parity-audit",
+      "investigationStatus": "pending"
+    },
+    {
+      "id": "prowlarr.indexer.dynamic-config",
+      "domain": "Prowlarr",
+      "capability": "Definition-driven dynamic settings contracts",
+      "expectedSourceBehavior": "Indexer config forms and API payloads are generated from definition schema with validation and diagnostics.",
+      "mediarrSurface": {
+        "backend": [
+          "server/src/api/routes/indexerRoutes.ts",
+          "server/src/indexers/IndexerFactory.ts"
+        ],
+        "frontend": [
+          "app/src/app/indexers/page.tsx"
+        ]
+      },
+      "investigationOwner": "track9-parity-audit",
+      "investigationStatus": "pending"
+    },
+    {
+      "id": "prowlarr.indexer.test-connectivity",
+      "domain": "Prowlarr",
+      "capability": "Indexer test/connectivity diagnostics",
+      "expectedSourceBehavior": "Operator can test indexer and receive actionable diagnostics/remediation hints.",
+      "mediarrSurface": {
+        "backend": [
+          "server/src/indexers/IndexerTester.ts",
+          "server/src/api/routes/indexerRoutes.ts"
+        ],
+        "frontend": [
+          "app/src/app/indexers/page.tsx"
+        ]
+      },
+      "investigationOwner": "track9-parity-audit",
+      "investigationStatus": "pending"
+    },
+    {
+      "id": "sonarr.series.add-monitor",
+      "domain": "Sonarr",
+      "capability": "Series add + monitor options",
+      "expectedSourceBehavior": "Series can be added with monitoring strategy and immediate wanted state projection.",
+      "mediarrSurface": {
+        "backend": [
+          "server/src/api/routes/seriesRoutes.ts",
+          "server/src/services/SeriesService.ts"
+        ],
+        "frontend": [
+          "app/src/app/add/page.tsx"
+        ]
+      },
+      "investigationOwner": "track9-parity-audit",
+      "investigationStatus": "pending"
+    },
+    {
+      "id": "sonarr.series.search-grab",
+      "domain": "Sonarr",
+      "capability": "Episode release search + grab",
+      "expectedSourceBehavior": "Wanted episode releases can be searched, selected, grabbed, and queued with activity trail.",
+      "mediarrSurface": {
+        "backend": [
+          "server/src/api/routes/releaseRoutes.ts",
+          "server/src/services/TvSearchService.ts"
+        ],
+        "frontend": [
+          "app/src/app/wanted/page.tsx"
+        ]
+      },
+      "investigationOwner": "track9-parity-audit",
+      "investigationStatus": "pending"
+    },
+    {
+      "id": "sonarr.series.import-lifecycle",
+      "domain": "Sonarr",
+      "capability": "Import lifecycle and state transitions",
+      "expectedSourceBehavior": "Queue completion transitions to import with observable status and history updates.",
+      "mediarrSurface": {
+        "backend": [
+          "server/src/services/ImportManager.ts",
+          "server/src/services/TorrentManager.ts"
+        ],
+        "frontend": [
+          "app/src/app/queue/page.tsx",
+          "app/src/app/library/page.tsx"
+        ]
+      },
+      "investigationOwner": "track9-parity-audit",
+      "investigationStatus": "pending"
+    },
+    {
+      "id": "radarr.movie.add-monitor",
+      "domain": "Radarr",
+      "capability": "Movie add + monitor",
+      "expectedSourceBehavior": "Movie can be added with monitoring options and searchable wanted workflow.",
+      "mediarrSurface": {
+        "backend": [
+          "server/src/api/routes/movieRoutes.ts",
+          "server/src/services/MediaService.ts"
+        ],
+        "frontend": [
+          "app/src/app/add/page.tsx"
+        ]
+      },
+      "investigationOwner": "track9-parity-audit",
+      "investigationStatus": "pending"
+    },
+    {
+      "id": "radarr.movie.search-grab",
+      "domain": "Radarr",
+      "capability": "Movie release search + grab",
+      "expectedSourceBehavior": "Candidate releases ranked, selected, grabbed, and routed into queue with activity event.",
+      "mediarrSurface": {
+        "backend": [
+          "server/src/services/MediaSearchService.ts",
+          "server/src/api/routes/releaseRoutes.ts"
+        ],
+        "frontend": [
+          "app/src/app/wanted/page.tsx"
+        ]
+      },
+      "investigationOwner": "track9-parity-audit",
+      "investigationStatus": "pending"
+    },
+    {
+      "id": "radarr.movie.import-lifecycle",
+      "domain": "Radarr",
+      "capability": "Movie import lifecycle and state propagation",
+      "expectedSourceBehavior": "Download completion imports file and updates movie detail + event history.",
+      "mediarrSurface": {
+        "backend": [
+          "server/src/services/ImportManager.ts",
+          "server/src/services/MediaService.ts"
+        ],
+        "frontend": [
+          "app/src/app/library/page.tsx",
+          "app/src/app/activity/page.tsx"
+        ]
+      },
+      "investigationOwner": "track9-parity-audit",
+      "investigationStatus": "pending"
+    },
+    {
+      "id": "bazarr.subtitle.inventory",
+      "domain": "Bazarr",
+      "capability": "Variant subtitle inventory",
+      "expectedSourceBehavior": "Operator can inspect per-variant audio/subtitle inventory with language state.",
+      "mediarrSurface": {
+        "backend": [
+          "server/src/api/routes/subtitleRoutes.ts",
+          "server/src/services/SubtitleInventoryApiService.ts"
+        ],
+        "frontend": [
+          "app/src/app/subtitles/page.tsx"
+        ]
+      },
+      "investigationOwner": "track9-parity-audit",
+      "investigationStatus": "pending"
+    },
+    {
+      "id": "bazarr.subtitle.manual-search-download",
+      "domain": "Bazarr",
+      "capability": "Manual subtitle search/download",
+      "expectedSourceBehavior": "Manual subtitle search is variant-scoped and download updates history/timeline.",
+      "mediarrSurface": {
+        "backend": [
+          "server/src/services/VariantSubtitleFetchService.ts",
+          "server/src/api/routes/subtitleRoutes.ts"
+        ],
+        "frontend": [
+          "app/src/app/subtitles/page.tsx"
+        ]
+      },
+      "investigationOwner": "track9-parity-audit",
+      "investigationStatus": "pending"
+    },
+    {
+      "id": "core.wanted.release.workflow",
+      "domain": "Sonarr+Radarr",
+      "capability": "Wanted view and release search/grab workflow",
+      "expectedSourceBehavior": "Wanted lists expose missing items and allow one-hop search/grab with queue handoff.",
+      "mediarrSurface": {
+        "backend": [
+          "server/src/api/routes/releaseRoutes.ts",
+          "server/src/services/WantedService.ts",
+          "server/src/services/VariantWantedService.ts"
+        ],
+        "frontend": [
+          "app/src/app/wanted/page.tsx"
+        ]
+      },
+      "investigationOwner": "track9-parity-audit",
+      "investigationStatus": "pending"
+    },
+    {
+      "id": "core.queue.operations",
+      "domain": "Sonarr+Radarr",
+      "capability": "Queue monitoring and control operations",
+      "expectedSourceBehavior": "Queue updates in near-real-time and supports pause/resume/remove control actions.",
+      "mediarrSurface": {
+        "backend": [
+          "server/src/api/routes/torrentRoutes.ts",
+          "server/src/services/TorrentManager.ts"
+        ],
+        "frontend": [
+          "app/src/app/queue/page.tsx"
+        ]
+      },
+      "investigationOwner": "track9-parity-audit",
+      "investigationStatus": "pending"
+    },
+    {
+      "id": "core.dashboard.metrics",
+      "domain": "Operations",
+      "capability": "Dashboard metric cards and health feed",
+      "expectedSourceBehavior": "Dashboard summarizes monitored media, queue health, subtitle backlog, and remediation actions.",
+      "mediarrSurface": {
+        "backend": [
+          "server/src/api/routes/operationsRoutes.ts",
+          "server/src/api/routes/eventsRoutes.ts"
+        ],
+        "frontend": [
+          "app/src/app/page.tsx"
+        ]
+      },
+      "investigationOwner": "track9-parity-audit",
+      "investigationStatus": "pending"
+    },
+    {
+      "id": "core.activity.timeline",
+      "domain": "Operations",
+      "capability": "Activity timeline and drill-down",
+      "expectedSourceBehavior": "Activity feed provides cross-module event history with drill-down context.",
+      "mediarrSurface": {
+        "backend": [
+          "server/src/api/routes/operationsRoutes.ts",
+          "server/src/services/ActivityEventEmitter.ts"
+        ],
+        "frontend": [
+          "app/src/app/activity/page.tsx"
+        ]
+      },
+      "investigationOwner": "track9-parity-audit",
+      "investigationStatus": "pending"
+    },
+    {
+      "id": "core.settings.persistence",
+      "domain": "Operations",
+      "capability": "Settings read/update persistence and validation",
+      "expectedSourceBehavior": "Settings are validated, persisted, and reflected in operator UX with stale-state handling.",
+      "mediarrSurface": {
+        "backend": [
+          "server/src/api/routes/operationsRoutes.ts",
+          "server/src/services/SettingsService.ts"
+        ],
+        "frontend": [
+          "app/src/app/settings/page.tsx"
+        ]
+      },
+      "investigationOwner": "track9-parity-audit",
+      "investigationStatus": "pending"
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "generatedAt": "2026-02-12T10:45:00.000Z",
+  "probes": [
+    {
+      "probeId": "indexer-factory-runtime-definitions",
+      "title": "IndexerFactory runtime definition availability",
+      "status": "fail",
+      "runtime": {
+        "mode": "integration_test",
+        "command": "npx vitest run tests/gemini-track9-phase2-backend-execution.test.ts",
+        "observedOutput": "expect(factory.availableDefinitions).toEqual([]) passed"
+      },
+      "evidence": {
+        "routes": [],
+        "files": ["server/src/main.ts", "server/src/indexers/IndexerFactory.ts"]
+      }
+    },
+    {
+      "probeId": "metadata-provider-api-key-default",
+      "title": "MetadataProvider default API key behavior",
+      "status": "partial",
+      "runtime": {
+        "mode": "integration_test",
+        "command": "npx vitest run tests/gemini-track9-phase2-backend-execution.test.ts",
+        "observedOutput": "defaults to 'demo' key when not configured"
+      },
+      "evidence": {
+        "routes": [],
+        "files": ["server/src/services/MetadataProvider.ts"]
+      }
+    },
+    {
+      "probeId": "indexer-create-contract-schema",
+      "title": "Indexer create route schema validation",
+      "status": "partial",
+      "runtime": {
+        "mode": "static_analysis",
+        "command": "read_file server/src/api/routes/indexerRoutes.ts",
+        "observedOutput": "settings: { type: 'string' } required in body schema"
+      },
+      "evidence": {
+        "routes": ["POST /api/indexers"],
+        "files": ["server/src/api/routes/indexerRoutes.ts"]
+      }
+    }
+  ]
+}

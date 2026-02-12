@@ -1,0 +1,152 @@
+{
+  "version": "1.0.0",
+  "generatedAt": "2026-02-12T02:30:00.000Z",
+  "gaps": [
+    {
+      "id": "GAP-001",
+      "findingId": "prowlarr.indexer.definition-ingestion",
+      "domain": "Prowlarr",
+      "status": "REGRESSION",
+      "severity": "P0",
+      "confidence": "high",
+      "classification": "verified",
+      "impact": "Cardigann definition-based workflows fail at runtime, breaking release search paths.",
+      "evidence": [
+        "conductor/tracks/clone_parity_gap_investigation_20260212/evidence/runtime/definition-wiring-probe.txt",
+        "conductor/tracks/clone_parity_gap_investigation_20260212/evidence/runtime/release-search-body.v2.json"
+      ],
+      "remediationItemId": "RMB-001"
+    },
+    {
+      "id": "GAP-002",
+      "findingId": "radarr.metadata.movie-search",
+      "domain": "Radarr",
+      "status": "MISSING",
+      "severity": "P0",
+      "confidence": "high",
+      "classification": "verified",
+      "impact": "Movie metadata search fails under invalid/missing TMDB key behavior.",
+      "evidence": [
+        "conductor/tracks/clone_parity_gap_investigation_20260212/evidence/runtime/metadata-movie-search-body.v2.json",
+        "conductor/tracks/clone_parity_gap_investigation_20260212/evidence/runtime/metadata-api-key-probe.txt"
+      ],
+      "remediationItemId": "RMB-002"
+    },
+    {
+      "id": "GAP-003",
+      "findingId": "prowlarr.indexer.contract-shape",
+      "domain": "Prowlarr",
+      "status": "PARTIAL_IMPLEMENTATION",
+      "severity": "P1",
+      "confidence": "high",
+      "classification": "verified",
+      "impact": "Indexer create/edit payload expectations are brittle and not definition-driven.",
+      "evidence": [
+        "conductor/tracks/clone_parity_gap_investigation_20260212/evidence/runtime/indexer-create-invalid-body.v2.json"
+      ],
+      "remediationItemId": "RMB-003"
+    },
+    {
+      "id": "GAP-004",
+      "findingId": "sonarr.metadata.tv-search",
+      "domain": "Sonarr",
+      "status": "MISSING",
+      "severity": "P1",
+      "confidence": "medium",
+      "classification": "verified",
+      "impact": "TV metadata search path surfaces upstream 404 without fallback strategy.",
+      "evidence": [
+        "conductor/tracks/clone_parity_gap_investigation_20260212/evidence/runtime/metadata-tv-search-body.v2.json"
+      ],
+      "remediationItemId": "RMB-002"
+    },
+    {
+      "id": "GAP-005",
+      "findingId": "core.release.search-grab-side-effects",
+      "domain": "Sonarr+Radarr",
+      "status": "PARTIAL_IMPLEMENTATION",
+      "severity": "P1",
+      "confidence": "high",
+      "classification": "verified",
+      "impact": "Direct grab side effects work, but search path can fail under definition wiring regressions.",
+      "evidence": [
+        "conductor/tracks/clone_parity_gap_investigation_20260212/evidence/runtime/release-grab-body.v2.json",
+        "conductor/tracks/clone_parity_gap_investigation_20260212/evidence/runtime/release-search-body.v2.json"
+      ],
+      "remediationItemId": "RMB-004"
+    },
+    {
+      "id": "GAP-006",
+      "findingId": "bazarr.variant.subtitle-operations",
+      "domain": "Bazarr",
+      "status": "PARTIAL_IMPLEMENTATION",
+      "severity": "P1",
+      "confidence": "high",
+      "classification": "verified",
+      "impact": "Variant ambiguity emits INTERNAL_ERROR and frontend subtitles route remains placeholder.",
+      "evidence": [
+        "conductor/tracks/clone_parity_gap_investigation_20260212/evidence/runtime/subtitles-search-movie-multi-variant-body.json",
+        "app/src/app/(shell)/subtitles/page.tsx"
+      ],
+      "remediationItemId": "RMB-005"
+    },
+    {
+      "id": "GAP-007",
+      "findingId": "sonarr.series.lifecycle",
+      "domain": "Sonarr",
+      "status": "SCAFFOLDED_ONLY",
+      "severity": "P1",
+      "confidence": "low",
+      "classification": "inferred",
+      "impact": "Lifecycle runtime verification is incomplete despite route/test scaffolding.",
+      "evidence": [
+        "conductor/tracks/clone_parity_gap_investigation_20260212/artifacts/frontend-findings.md"
+      ],
+      "remediationItemId": "RMB-004"
+    },
+    {
+      "id": "GAP-008",
+      "findingId": "radarr.movie.lifecycle",
+      "domain": "Radarr",
+      "status": "SCAFFOLDED_ONLY",
+      "severity": "P1",
+      "confidence": "low",
+      "classification": "inferred",
+      "impact": "Movie lifecycle runtime verification remains incomplete.",
+      "evidence": [
+        "conductor/tracks/clone_parity_gap_investigation_20260212/artifacts/frontend-findings.md"
+      ],
+      "remediationItemId": "RMB-004"
+    },
+    {
+      "id": "GAP-009",
+      "findingId": "core.queue.operations",
+      "domain": "Frontend parity",
+      "status": "SCAFFOLDED_ONLY",
+      "severity": "P1",
+      "confidence": "high",
+      "classification": "verified",
+      "impact": "Queue route lacks pause/resume/remove UI controls although backend endpoints are live.",
+      "evidence": [
+        "app/src/app/(shell)/queue/page.tsx",
+        "conductor/tracks/clone_parity_gap_investigation_20260212/evidence/frontend/runtime/api/queue-pause.json"
+      ],
+      "remediationItemId": "RMB-004"
+    },
+    {
+      "id": "GAP-010",
+      "findingId": "core.settings.persistence",
+      "domain": "Frontend parity",
+      "status": "SCAFFOLDED_ONLY",
+      "severity": "P1",
+      "confidence": "high",
+      "classification": "verified",
+      "impact": "Settings UI surface is minimal compared to required parity interactions.",
+      "evidence": [
+        "app/src/app/(shell)/settings/page.tsx",
+        "conductor/tracks/clone_parity_gap_investigation_20260212/evidence/frontend/runtime/api/settings-patch.json"
+      ],
+      "remediationItemId": "RMB-005"
+    }
+  ]
+}

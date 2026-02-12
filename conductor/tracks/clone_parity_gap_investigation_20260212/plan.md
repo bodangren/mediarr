@@ -78,7 +78,7 @@ Turn findings into a precise execution program that closes parity gaps in a cont
   - [ ] Sub-task: Add failing tests asserting each remediation item includes owner track, severity, prerequisites, and verification exit criteria.
   - [ ] Sub-task: Add failing tests asserting every P0/P1 finding maps to an explicit remediation action.
   - [ ] Sub-task: Add failing tests asserting hardening gates reference unresolved parity blockers.
-- [ ] Task: Implement remediation backlog and execution sequencing.
+- [x] Task: Implement remediation backlog and execution sequencing. [55c27fe]
   - [ ] Sub-task: Generate prioritized remediation backlog grouped by domain (Prowlarr/Sonarr/Radarr/Bazarr parity).
   - [ ] Sub-task: Propose updates to existing track sequencing/dependencies where required by findings.
   - [ ] Sub-task: Define hardening gate policy tying 7F execution/completion to closure of parity-critical blockers.

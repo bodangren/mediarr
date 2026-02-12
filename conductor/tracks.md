@@ -83,7 +83,8 @@ While the primary sequence defines hard dependencies, several phases across trac
 
 - [ ] **Track 8: DLNA & Local Streaming**
   *Description: Implementing the internal media server for local streaming with subtitle support.*
+  *Phases: 3 | Link: [./tracks/ui_e2e_hardening_20260211/](./tracks/ui_e2e_hardening_20260211/)*
 
 - [x] **Track 9: Clone Parity Gap Investigation & Recovery Plan**
-  *Description: Perform an evidence-based parity audit against Prowlarr, Sonarr, Radarr, and Bazarr; classify all gaps; and produce prioritized remediation and gating guidance.*
+  *Description: Establishes an explicit, evidence-based parity audit against the project's stated goal: cloning core operator capabilities from Prowlarr, Sonarr, Radarr, and Bazarr into Mediarr.*
   *Phases: 5 | Link: [./tracks/clone_parity_gap_investigation_20260212/](./tracks/clone_parity_gap_investigation_20260212/)*

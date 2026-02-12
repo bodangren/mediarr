@@ -4,6 +4,8 @@
   "description": "Mediarr is a unified, all-in-one media management powerhouse designed to replace the fragmented \"arr\" stack (Sonarr, Radarr, Bazarr, Prowlarr) with a single, modern interface and a high-performance integrated backend.",
   "main": "index.js",
   "scripts": {
+    "start:app": "npm run start --workspace=app",
+    "start:api": "tsx server/src/main.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"
@@ -24,6 +26,7 @@
     "@types/node-cron": "^3.0.11",
     "@vitest/coverage-v8": "^4.0.18",
     "prisma": "^7.3.0",
+    "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "vitest": "^4.0.18"
   },

@@ -31,6 +31,7 @@
 
 **Deployment:**
 - **Containerization:** Docker & Docker Compose (targeting home-lab environments).
+- **Build-time API rewrite requirement (2026-02-11):** In containerized production builds, `API_INTERNAL_URL` must be set during `next build` so `/api/*` rewrites are compiled into the frontend server config.
 - **Authentication:** None currently. App assumes trusted local network. Auth may be added as a future track if needed.
 
 ## 7A Process Model Spike Validation (2026-02-11)

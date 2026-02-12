@@ -1,26 +1,148 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: dark;
+
+  /* Surface ramp */
+  --surface-0: #0b111b;
+  --surface-1: #131d2b;
+  --surface-2: #1a2739;
+  --surface-3: #24354f;
+
+  /* Text tokens */
+  --text-primary: #e6edf9;
+  --text-secondary: #b7c6de;
+  --text-muted: #8ea3c2;
+  --text-inverse: #0d1522;
+
+  /* Accent tokens */
+  --accent-primary: #4bc1ff;
+  --accent-success: #41d37d;
+  --accent-warning: #ffbf57;
+  --accent-danger: #ff6f6f;
+  --accent-info: #74a8ff;
+
+  /* Semantic states */
+  --status-monitored: #69d4ff;
+  --status-wanted: #ffbf57;
+  --status-downloading: #74a8ff;
+  --status-seeding: #41d37d;
+  --status-completed: #3ed29d;
+  --status-error: #ff6f6f;
+
+  --border-subtle: #2a3b54;
+
+  /* 4px spacing scale */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* Typography scale */
+  --font-size-12: 0.75rem;
+  --font-size-14: 0.875rem;
+  --font-size-16: 1rem;
+  --font-size-20: 1.25rem;
+  --font-size-24: 1.5rem;
+  --font-size-32: 2rem;
+
+  /* Radius scale */
+  --radius-none: 0;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-full: 9999px;
+
+  /* Elevation */
+  --shadow-1: 0 2px 8px rgba(5, 8, 14, 0.34);
+  --shadow-2: 0 8px 24px rgba(5, 8, 14, 0.45);
+  --shadow-3: 0 18px 48px rgba(4, 8, 14, 0.58);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-surface-0: var(--surface-0);
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-text-inverse: var(--text-inverse);
+
+  --color-accent-primary: var(--accent-primary);
+  --color-accent-success: var(--accent-success);
+  --color-accent-warning: var(--accent-warning);
+  --color-accent-danger: var(--accent-danger);
+  --color-accent-info: var(--accent-info);
+
+  --color-status-monitored: var(--status-monitored);
+  --color-status-wanted: var(--status-wanted);
+  --color-status-downloading: var(--status-downloading);
+  --color-status-seeding: var(--status-seeding);
+  --color-status-completed: var(--status-completed);
+  --color-status-error: var(--status-error);
+
+  --color-border-subtle: var(--border-subtle);
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-full: var(--radius-full);
+
+  --shadow-elevation-1: var(--shadow-1);
+  --shadow-elevation-2: var(--shadow-2);
+  --shadow-elevation-3: var(--shadow-3);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  border-color: var(--border-subtle);
+}
+
+html,
+body {
+  min-height: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  background:
+    radial-gradient(80vw 60vh at 10% -10%, rgba(88, 198, 255, 0.15), transparent),
+    radial-gradient(80vw 60vh at 90% -15%, rgba(116, 168, 255, 0.15), transparent),
+    var(--surface-0);
+  color: var(--text-primary);
+  font-family: var(--font-geist-sans), sans-serif;
+}
+
+code,
+kbd,
+pre,
+samp {
+  font-family: var(--font-geist-mono), monospace;
+}
+
+@keyframes indeterminate {
+  0% {
+    transform: translateX(-100%);
+    width: 40%;
+  }
+  50% {
+    transform: translateX(40%);
+    width: 55%;
+  }
+  100% {
+    transform: translateX(150%);
+    width: 40%;
+  }
+}
+
+.animate-indeterminate {
+  animation: indeterminate 1.3s linear infinite;
 }

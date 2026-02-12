@@ -6,7 +6,7 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ## Execution Order and Dependencies
 
-**Primary sequence:** `7C -> 7D -> 7E -> 7F -> 8`
+**Primary sequence:** `7D -> 7E -> 7F -> 8`
 
 ### Parallelization Opportunities
 
@@ -53,10 +53,6 @@ While the primary sequence defines hard dependencies, several phases across trac
 ---
 
 ## Tracks
-
-- [ ] **Track 7C: UI Foundation & Core Operations**
-  *Description: Build design token system, data-fetching architecture, app shell/navigation, MSW fixtures, and deliver indexer, add-media, library, wanted, and release-selection workflows.*
-  *Phases: 6 | Link: [./tracks/ui_core_operations_20260211/](./tracks/ui_core_operations_20260211/)*
 
 - [ ] **Track 7D: Queue Console & Subtitle Operations**
   *Description: Deliver torrent queue monitoring with SSE-driven live updates and variant-aware subtitle management UI.*

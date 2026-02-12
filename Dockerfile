@@ -15,6 +15,8 @@ RUN npm install
 
 # Build stage
 FROM base AS builder
+ARG API_INTERNAL_URL=http://api:3001
+ENV API_INTERNAL_URL=${API_INTERNAL_URL}
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npx prisma generate
@@ -39,6 +41,7 @@ COPY --from=builder /app/app/public ./app/public
 COPY --from=builder /app/server ./server
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 
 VOLUME ["/config", "/data"]
 

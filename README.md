@@ -28,3 +28,32 @@ To contribute or implement features, please refer to the active track plans in `
 5. **Subtitle & Audio:** Advanced multi-language tracking and fetching.
 6. **Unified UI:** The final high-density "Modern Dark" dashboard.
 7. **DLNA Server:** Local network streaming with native subtitle support.
+
+## ▶ Running With Compose
+
+Mediarr runs as two containers:
+- `api` on `:3001` (Fastify + Prisma)
+- `mediarr` on `:3000` (Next.js UI)
+
+Start or rebuild:
+
+```bash
+podman-compose up --build -d
+```
+
+Stop:
+
+```bash
+podman-compose down
+```
+
+Notes:
+- The frontend depends on Next.js rewrites for `/api/*` routing to the backend.
+- `API_INTERNAL_URL` must be available at image build time so rewrites are included in the production build.
+- If API requests in the UI fail with `Expected JSON response payload`, rebuild images to refresh rewrite config:
+
+```bash
+podman-compose down
+podman image rm -f mediarr_api mediarr_mediarr || true
+podman-compose up --build -d
+```

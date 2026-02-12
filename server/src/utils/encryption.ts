@@ -22,14 +22,25 @@ export function encrypt(text: string): string {
 }
 
 export function decrypt(text: string): string {
+  if (!text.includes(':')) {
+    // Backward-compatible fallback for legacy/plaintext rows.
+    return text;
+  }
+
   const [ivHex, encryptedText] = text.split(':');
   if (!ivHex || !encryptedText) {
     throw new Error('Invalid encrypted text format');
   }
-  const iv = Buffer.from(ivHex, 'hex');
-  const key = getEncryptionKey();
-  const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
-  let decrypted = decipher.update(encryptedText, 'hex', 'utf8');
-  decrypted += decipher.final('utf8');
-  return decrypted;
+
+  try {
+    const iv = Buffer.from(ivHex, 'hex');
+    const key = getEncryptionKey();
+    const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
+    let decrypted = decipher.update(encryptedText, 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
+    return decrypted;
+  } catch {
+    // If decryption fails (e.g., wrong key or legacy data), return raw value.
+    return text;
+  }
 }

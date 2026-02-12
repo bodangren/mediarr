@@ -115,10 +115,11 @@ export class EventsApiClient {
   }
 
   on<T extends EventName>(event: T, handler: EventHandler<T>): () => void {
-    this.handlers[event].add(handler as EventHandler<any>);
+    const handlers = this.handlers[event] as Set<EventHandler<T>>;
+    handlers.add(handler);
 
     return () => {
-      this.handlers[event].delete(handler as EventHandler<any>);
+      handlers.delete(handler);
     };
   }
 

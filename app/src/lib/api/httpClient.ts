@@ -17,7 +17,7 @@ export interface RequestConfig {
   path: string;
   method?: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
   body?: unknown;
-  query?: Record<string, unknown>;
+  query?: object;
   headers?: Record<string, string>;
 }
 
@@ -50,12 +50,12 @@ function toQueryString(query: Record<string, unknown>): string {
 
 export class ApiHttpClient {
   private readonly baseUrl: string;
-  private readonly fetchFn: typeof fetch;
+  private readonly fetchFn?: typeof fetch;
   private readonly defaultHeaders: Record<string, string>;
 
   constructor(config: ApiHttpClientConfig = {}) {
     this.baseUrl = config.baseUrl ?? '';
-    this.fetchFn = config.fetchFn ?? fetch;
+    this.fetchFn = config.fetchFn;
     this.defaultHeaders = config.defaultHeaders ?? {};
   }
 
@@ -84,7 +84,7 @@ export class ApiHttpClient {
       });
     }
 
-    return parsed.data.data;
+    return parsed.data.data as T;
   }
 
   async requestPaginated<T>(
@@ -116,15 +116,24 @@ export class ApiHttpClient {
     }
 
     return {
-      items: parsed.data.data,
+      items: parsed.data.data as T[],
       meta: parsed.data.meta,
     };
   }
 
   private async execute(config: RequestConfig): Promise<{ status: number; body: unknown }> {
-    const requestUrl = `${this.baseUrl}${config.path}${toQueryString(config.query ?? {})}`;
+    const requestUrl = `${this.baseUrl}${config.path}${toQueryString((config.query ?? {}) as Record<string, unknown>)}`;
+    const fetchImpl =
+      this.fetchFn ??
+      (typeof globalThis.fetch === 'function'
+        ? globalThis.fetch.bind(globalThis)
+        : undefined);
 
-    const response = await this.fetchFn(requestUrl, {
+    if (!fetchImpl) {
+      throw new ContractViolationError('Fetch is not available in this runtime');
+    }
+
+    const response = await fetchImpl(requestUrl, {
       method: config.method ?? 'GET',
       headers: {
         ...this.defaultHeaders,

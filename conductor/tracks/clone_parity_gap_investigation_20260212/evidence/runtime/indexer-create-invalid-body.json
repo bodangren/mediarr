@@ -1,0 +1,1 @@
+{"ok":false,"error":{"code":"INTERNAL_ERROR","message":"body/settings must be string","retryable":false,"path":"/api/indexers"}}

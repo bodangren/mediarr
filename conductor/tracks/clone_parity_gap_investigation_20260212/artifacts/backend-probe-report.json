@@ -1,0 +1,136 @@
+{
+  "version": "1.0.0",
+  "generatedAt": "2026-02-12T01:55:00.000Z",
+  "runtime": {
+    "apiBaseUrl": "http://127.0.0.1:3901",
+    "serverCommand": "ENCRYPTION_KEY='track9-probe-key' API_HOST=127.0.0.1 API_PORT=3901 DATABASE_URL='file:prisma/dev.db' npm run start:api"
+  },
+  "probes": [
+    {
+      "probeId": "indexer-management-contract",
+      "title": "Indexer create/update/test contract realism including definition-aware behavior",
+      "status": "partial",
+      "runtime": {
+        "mode": "live_api_runtime",
+        "command": "curl POST /api/indexers (invalid object settings + valid string settings) and POST /api/indexers/:id/test",
+        "observedOutput": "Object settings rejected with INTERNAL_ERROR 500; valid create succeeds (201) but persists encrypted settings payload; Cardigann test fails with Definition not found."
+      },
+      "evidence": {
+        "routes": [
+          "/api/indexers",
+          "/api/indexers/:id",
+          "/api/indexers/:id/test"
+        ],
+        "files": [
+          "conductor/tracks/clone_parity_gap_investigation_20260212/evidence/runtime/indexer-create-invalid-body.v2.json",
+          "conductor/tracks/clone_parity_gap_investigation_20260212/evidence/runtime/indexer-create-valid-body.v2.json",
+          "conductor/tracks/clone_parity_gap_investigation_20260212/evidence/runtime/indexer-test-body.v2.json",
+          "conductor/tracks/clone_parity_gap_investigation_20260212/evidence/runtime/indexer-cardigann-test-body.v2.json"
+        ]
+      }
+    },
+    {
+      "probeId": "metadata-search-tv",
+      "title": "TV metadata search parity vs Sonarr baseline",
+      "status": "fail",
+      "runtime": {
+        "mode": "live_api_runtime",
+        "command": "curl POST /api/media/search {term:'the office', mediaType:'TV'}",
+        "observedOutput": "Route returns INTERNAL_ERROR 500 with upstream message 'Failed to search series: 404'."
+      },
+      "evidence": {
+        "routes": [
+          "/api/media/search"
+        ],
+        "files": [
+          "conductor/tracks/clone_parity_gap_investigation_20260212/evidence/runtime/metadata-tv-search-body.v2.json",
+          "server/src/services/MetadataProvider.ts"
+        ]
+      }
+    },
+    {
+      "probeId": "metadata-search-movie-missing-key",
+      "title": "Movie metadata search when TMDB key is missing",
+      "status": "fail",
+      "runtime": {
+        "mode": "live_api_runtime",
+        "command": "curl POST /api/media/search {term:'inception', mediaType:'MOVIE'} + probe MetadataProvider URL construction",
+        "observedOutput": "Movie search returns INTERNAL_ERROR 500 with TMDB invalid key. Runtime probe shows fallback URL uses api_key=demo when key is missing."
+      },
+      "evidence": {
+        "routes": [
+          "/api/media/search"
+        ],
+        "files": [
+          "conductor/tracks/clone_parity_gap_investigation_20260212/evidence/runtime/metadata-movie-search-body.v2.json",
+          "conductor/tracks/clone_parity_gap_investigation_20260212/evidence/runtime/metadata-api-key-probe.txt"
+        ]
+      }
+    },
+    {
+      "probeId": "metadata-search-movie-configured-key",
+      "title": "Movie metadata search URL behavior when TMDB key is configured",
+      "status": "partial",
+      "runtime": {
+        "mode": "live_api_runtime",
+        "command": "Runtime MetadataProvider probe with configured tmdbApiKey and deterministic fetch response",
+        "observedOutput": "Configured-key URL path is generated correctly, but live API still fails when key is invalid and no key-validation health gate exists."
+      },
+      "evidence": {
+        "routes": [
+          "/api/media/search"
+        ],
+        "files": [
+          "conductor/tracks/clone_parity_gap_investigation_20260212/evidence/runtime/metadata-api-key-probe.txt",
+          "server/src/services/MetadataProvider.ts"
+        ]
+      }
+    },
+    {
+      "probeId": "release-grab-queue-activity",
+      "title": "Release search/grab side effects: queue handoff and activity events",
+      "status": "partial",
+      "runtime": {
+        "mode": "live_api_runtime",
+        "command": "curl POST /api/releases/search, POST /api/releases/grab, GET /api/torrents, GET /api/activity?eventType=RELEASE_GRABBED",
+        "observedOutput": "Release search fails with definition wiring error, but direct release grab succeeds and produces queue + activity side effects."
+      },
+      "evidence": {
+        "routes": [
+          "/api/releases/search",
+          "/api/releases/grab",
+          "/api/torrents",
+          "/api/activity"
+        ],
+        "files": [
+          "conductor/tracks/clone_parity_gap_investigation_20260212/evidence/runtime/release-search-body.v2.json",
+          "conductor/tracks/clone_parity_gap_investigation_20260212/evidence/runtime/release-grab-body.v2.json",
+          "conductor/tracks/clone_parity_gap_investigation_20260212/evidence/runtime/torrents-after-grab-body.v2.json",
+          "conductor/tracks/clone_parity_gap_investigation_20260212/evidence/runtime/activity-after-grab-body.v2.json"
+        ]
+      }
+    },
+    {
+      "probeId": "subtitle-variant-contract-scoping",
+      "title": "Subtitle variant operation contract and variant scoping",
+      "status": "partial",
+      "runtime": {
+        "mode": "live_api_runtime",
+        "command": "curl POST /api/subtitles/search and /api/subtitles/download for missing identifiers and multi-variant movie scope",
+        "observedOutput": "Missing identifier validation returns 422, but multi-variant ambiguity surfaces as INTERNAL_ERROR 500 rather than normalized validation envelope."
+      },
+      "evidence": {
+        "routes": [
+          "/api/subtitles/search",
+          "/api/subtitles/download"
+        ],
+        "files": [
+          "conductor/tracks/clone_parity_gap_investigation_20260212/evidence/runtime/subtitles-search-missing-ids-body.json",
+          "conductor/tracks/clone_parity_gap_investigation_20260212/evidence/runtime/subtitles-download-missing-ids-body.json",
+          "conductor/tracks/clone_parity_gap_investigation_20260212/evidence/runtime/subtitles-search-movie-multi-variant-body.json",
+          "conductor/tracks/clone_parity_gap_investigation_20260212/evidence/runtime/subtitles-download-movie-multi-variant-body.json"
+        ]
+      }
+    }
+  ]
+}

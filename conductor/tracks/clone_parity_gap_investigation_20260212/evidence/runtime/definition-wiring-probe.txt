@@ -1,0 +1,3 @@
+loaded_definition_count=2
+loaded_definition_ids=example-private,example-public
+runtime_factory_definition_count=0

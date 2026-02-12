@@ -1,0 +1,11 @@
+Task: Write Tests: Add failing backend parity probe tests for clone-critical contracts
+
+Summary:
+- Added red-phase tests requiring backend probe report coverage for indexer contracts, metadata search/API-key behavior, release grab side effects, and subtitle variant scoping.
+- Tests intentionally fail until runtime probes and report artifacts are implemented.
+
+Files:
+- tests/track9-phase2-backend-parity.test.ts
+
+Why:
+- Enforces FR-2 evidence completeness before backend investigation artifacts are generated.

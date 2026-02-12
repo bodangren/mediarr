@@ -1,0 +1,15 @@
+Task: Implement backend parity probes and evidence capture
+
+Summary:
+- Executed live API runtime probes for indexer contracts, metadata search paths, release search/grab side effects, and subtitle variant scoping.
+- Captured raw request/response evidence under track runtime evidence folder.
+- Generated backend probe report artifact and updated parity matrix statuses with severity/confidence-backed findings.
+- Added explicit runtime evidence for definition loader vs runtime factory wiring and metadata API-key behavior.
+
+Files:
+- conductor/tracks/clone_parity_gap_investigation_20260212/artifacts/backend-probe-report.json
+- conductor/tracks/clone_parity_gap_investigation_20260212/artifacts/parity-matrix.json
+- conductor/tracks/clone_parity_gap_investigation_20260212/evidence/runtime/*
+
+Why:
+- Satisfies FR-2 requirement for runtime-backed contract realism, mismatch classification, and reproducible evidence.

@@ -1,6 +1,6 @@
 # Implementation Plan: Track 9 Remediation - Clone Parity Gap Recovery
 
-## Phase 1: Critical Core Wiring (P0 Blockers)
+## Phase 1: Critical Core Wiring (P0 Blockers) [checkpoint: 9891e34]
 Unblock the primary "Search -> Grab" loop at the API level by fixing backend wiring.
 **Focus:** Backend Logic, Integration Tests, API Contracts.
 

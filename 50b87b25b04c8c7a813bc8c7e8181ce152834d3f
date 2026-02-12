@@ -1,0 +1,12 @@
+Task: Write Tests: Add failing tests for coverage integrity and mock-dependence metrics
+
+Summary:
+- Added red-phase tests for per-surface mock dependence metrics.
+- Added failing checks requiring non-mocked verification paths for clone-critical flows.
+- Added parity claim policy gate assertions for required verification classes.
+
+Files:
+- tests/track9-phase4-validation-integrity.test.ts
+
+Why:
+- Establishes FR-4 acceptance contract before implementing validation integrity analyzers.

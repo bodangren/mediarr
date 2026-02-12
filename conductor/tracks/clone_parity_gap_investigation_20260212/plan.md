@@ -87,4 +87,4 @@ Turn findings into a precise execution program that closes parity gaps in a cont
   - [ ] Sub-task: Publish consolidated findings summary with counts by status/severity and top blockers.
   - [ ] Sub-task: Publish command log and evidence index for reproducibility in a fresh session.
   - [ ] Sub-task: Publish recommended "first remediation sprint" scope and explicit success criteria.
-- [ ] Task: Conductor - User Manual Verification 'Phase 5: Remediation Roadmap, Track Realignment, and Delivery Gating' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 5: Remediation Roadmap, Track Realignment, and Delivery Gating' (Protocol in workflow.md). [5ef2fc0]

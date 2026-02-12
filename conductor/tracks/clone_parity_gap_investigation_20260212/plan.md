@@ -30,7 +30,7 @@ Assess whether backend behavior meets clone parity, not merely route existence.
   - [ ] Sub-task: Capture evidence for definition loader plumbing vs runtime factory wiring.
   - [ ] Sub-task: Capture evidence for metadata provider behavior and API key requirements compared with clone goals.
   - [ ] Sub-task: Record contract mismatches, partial implementations, and regressions in matrix artifacts.
-- [ ] Task: Produce backend findings report.
+- [x] Task: Produce backend findings report. [f4400f6]
   - [ ] Sub-task: Classify each backend capability with parity status and severity.
   - [ ] Sub-task: Attach concrete file references and failing/passing probe references for each finding.
   - [ ] Sub-task: Identify top P0/P1 blockers requiring immediate remediation tracks.

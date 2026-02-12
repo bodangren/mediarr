@@ -18,6 +18,9 @@ const settingsSchema = z.object({
     showDownloadPath: z.boolean(),
     showMediaPath: z.boolean(),
   }),
+  apiKeys: z.object({
+    tmdbApiKey: z.string().nullable().optional(),
+  }).optional(),
 });
 
 export type AppSettings = z.infer<typeof settingsSchema>;

@@ -38,29 +38,29 @@ Unblock the primary "Search -> Grab" loop at the API level by fixing backend wir
 Enable user configuration and control via the Frontend.
 **Focus:** Frontend UI, Form State, Mobile Responsiveness.
 
-- [ ] Task: Write Tests: Add component tests for Settings Editor.
-    - [ ] Sub-task: Create `app/src/app/(shell)/settings/settings-form.test.tsx`.
-    - [ ] Sub-task: Test form rendering with initial data.
-    - [ ] Sub-task: Test validation logic for API keys (required fields).
-    - [ ] Sub-task: Test submission payload structure.
-- [ ] Task: Implement Settings Editor UI (RMD-007).
-    - [ ] Sub-task: Create comprehensive Zod schema for all settings (General, Indexers, Clients, Keys).
-    - [ ] Sub-task: Build `/settings` page with react-hook-form.
-    - [ ] Sub-task: Wire form to `PATCH /api/settings`.
-    - [ ] Sub-task: Verify mobile layout (stacking, input sizes).
-- [ ] Task: Write Tests: Add component tests for Queue Controls.
-    - [ ] Sub-task: Create `app/src/app/(shell)/queue/queue-actions.test.tsx`.
-    - [ ] Sub-task: Test Pause/Resume/Remove button interactions.
-    - [ ] Sub-task: Test optimistic UI updates (row state change immediately).
-- [ ] Task: Implement Queue Controls (RMD-005).
-    - [ ] Sub-task: Add action column to Queue DataTable.
-    - [ ] Sub-task: Implement Pause/Resume/Remove handlers calling `torrentApi`.
-    - [ ] Sub-task: Verify touch targets on mobile view.
-- [ ] Task: Implement Background Scheduler Ignition (RMD-004).
-    - [ ] Sub-task: Update `main.ts` to initialize `Scheduler`.
-    - [ ] Sub-task: Register `RssSyncService` and `TorrentManager` loop tasks.
-    - [ ] Sub-task: Add log output confirming scheduler start.
-- [ ] Task: Conductor - User Manual Verification 'Phase 2: Operational Scaffolding (High-Impact P1)' (Protocol in workflow.md)
+- [x] Task: Write Tests: Add component tests for Settings Editor.
+    - [x] Sub-task: Create `app/src/app/(shell)/settings/settings-form.test.tsx`.
+    - [x] Sub-task: Test form rendering with initial data.
+    - [x] Sub-task: Test validation logic for API keys (required fields).
+    - [x] Sub-task: Test submission payload structure.
+- [x] Task: Implement Settings Editor UI (RMD-007).
+    - [x] Sub-task: Create comprehensive Zod schema for all settings (General, Indexers, Clients, Keys).
+    - [x] Sub-task: Build `/settings` page with react-hook-form.
+    - [x] Sub-task: Wire form to `PATCH /api/settings`.
+    - [x] Sub-task: Verify mobile layout (stacking, input sizes).
+- [x] Task: Write Tests: Add component tests for Queue Controls.
+    - [x] Sub-task: Create `app/src/app/(shell)/queue/queue-actions.test.tsx`.
+    - [x] Sub-task: Test Pause/Resume/Remove button interactions.
+    - [x] Sub-task: Test optimistic UI updates (row state change immediately).
+- [x] Task: Implement Queue Controls (RMD-005).
+    - [x] Sub-task: Add action column to Queue DataTable.
+    - [x] Sub-task: Implement Pause/Resume/Remove handlers calling `torrentApi`.
+    - [x] Sub-task: Verify touch targets on mobile view.
+- [x] Task: Implement Background Scheduler Ignition (RMD-004).
+    - [x] Sub-task: Update `main.ts` to initialize `Scheduler`.
+    - [x] Sub-task: Register `RssSyncService` and `TorrentManager` loop tasks.
+    - [x] Sub-task: Add log output confirming scheduler start.
+- [x] Task: Conductor - User Manual Verification 'Phase 2: Operational Scaffolding (High-Impact P1)' (Protocol in workflow.md)
 
 ## Phase 3: Feature Parity (P1 Gaps)
 Deliver the missing "Clone" capabilities (Subtitles, Dynamic Indexers).

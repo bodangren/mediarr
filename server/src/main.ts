@@ -21,6 +21,8 @@ import { DataDirectoryInitializer } from './services/DataDirectoryInitializer';
 import { MediaSearchService } from './services/MediaSearchService';
 import { MediaService } from './services/MediaService';
 import { MetadataProvider } from './services/MetadataProvider';
+import { RssSyncService } from './services/RssSyncService';
+import { Scheduler } from './services/Scheduler';
 import { SettingsService } from './services/SettingsService';
 import {
   SubtitleInventoryApiService,
@@ -203,6 +205,24 @@ async function startApi(): Promise<void> {
   const httpClient = new HttpClient();
   const settingsService = new SettingsService(appSettingsRepository);
   const metadataProvider = new MetadataProvider(httpClient, settingsService);
+
+  const scheduler = new Scheduler();
+  const rssSyncService = new RssSyncService(prisma, httpClient, indexerHealthRepository);
+
+  const settings = await settingsService.get();
+  const rssInterval = settings.schedulerIntervals.rssSyncMinutes;
+  const rssCron = `*/${rssInterval} * * * *`;
+
+  try {
+    scheduler.schedule('rss-sync', rssCron, async () => {
+      console.log('Starting scheduled RSS sync...');
+      await rssSyncService.sync();
+      console.log('RSS sync completed');
+    });
+    console.log(`Scheduler started. RSS Sync scheduled for every ${rssInterval} minutes (${rssCron}).`);
+  } catch (error) {
+    console.error('Failed to schedule RSS sync:', error);
+  }
 
   const definitionLoader = new DefinitionLoader();
   const definitionsPath = process.env.DEFINITIONS_PATH ?? path.resolve(process.cwd(), 'server/definitions');

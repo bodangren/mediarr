@@ -8,6 +8,7 @@ import { StatusBadge } from '@/components/primitives/StatusBadge';
 import { getApiClients } from '@/lib/api/client';
 import { queryKeys } from '@/lib/query/queryKeys';
 import { useApiQuery } from '@/lib/query/useApiQuery';
+import { QueueActions } from './QueueActions';
 
 type QueueRow = {
   infoHash: string;
@@ -51,6 +52,11 @@ export default function QueuePage() {
       key: 'progress',
       header: 'Progress',
       render: row => <ProgressBar value={row.progress ?? 0} label="" />,
+    },
+    {
+      key: 'actions',
+      header: 'Actions',
+      render: row => <QueueActions infoHash={row.infoHash} status={row.status ?? ''} />,
     },
   ];
 

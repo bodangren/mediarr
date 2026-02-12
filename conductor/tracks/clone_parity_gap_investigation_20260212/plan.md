@@ -1,6 +1,6 @@
 # Implementation Plan: Track 9 - Clone Parity Gap Investigation & Recovery Plan
 
-## Phase 1: Audit Framework, Scope Baseline, and Evidence Schema
+## Phase 1: Audit Framework, Scope Baseline, and Evidence Schema [checkpoint: 78d1c4b]
 Create deterministic audit scaffolding so findings are consistent, reviewable, and reproducible.
 
 - [x] Task: Write Tests: Add failing tests for parity matrix schema and status taxonomy. [59f6a54]

@@ -54,6 +54,17 @@ While the primary sequence defines hard dependencies, several phases across trac
 7C/7D/7E/7F/8 ---------------> 9 (clone parity audit & remediation gate)
 ```
 
+### Parity Gating Outcomes (Track 9 - 2026-02-12)
+
+- **Hard gate for Track 7F completion:** unresolved Track 9 `P0/P1` parity blockers must be zero before 7F can be marked complete.
+- **Current parity-critical blockers:** `prowlarr.indexer.definition-ingestion`, `radarr.metadata.movie-search`, `prowlarr.indexer.contract-shape`, `sonarr.metadata.tv-search`, `core.release.search-grab-side-effects`, `bazarr.variant.subtitle-operations`, `sonarr.series.lifecycle`, `radarr.movie.lifecycle`.
+- **Required follow-up execution order before 7F closeout:**
+  1. `track9-followup-prowlarr-definition-runtime`
+  2. `track9-followup-metadata-provider-hardening`
+  3. `track9-followup-indexer-contract-normalization`
+  4. `track9-followup-release-lifecycle-stabilization`
+  5. `track9-followup-subtitle-variant-console`
+
 ---
 
 ## Tracks

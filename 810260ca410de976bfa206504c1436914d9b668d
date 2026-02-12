@@ -1,0 +1,12 @@
+Task: Produce validation integrity findings
+
+Summary:
+- Published Phase 4 findings identifying false-confidence zones and mock-heavy blind spots.
+- Defined minimum verification gates for future parity claims.
+- Mapped additional contract/integration/runtime layers required per critical flow.
+
+Files:
+- conductor/tracks/clone_parity_gap_investigation_20260212/artifacts/validation-findings.md
+
+Why:
+- Completes FR-4 analytical output needed to prevent parity over-claims from mock-only coverage.

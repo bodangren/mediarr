@@ -1,0 +1,115 @@
+{
+  "version": "1.0.0",
+  "generatedAt": "2026-02-12T00:00:00.000Z",
+  "statusClasses": [
+    "PARITY_IMPLEMENTED",
+    "PARTIAL_IMPLEMENTATION",
+    "SCAFFOLDED_ONLY",
+    "PLACEHOLDER_ONLY",
+    "MISSING",
+    "REGRESSION"
+  ],
+  "entries": [
+    {
+      "id": "prowlarr.indexer.definition-ingestion",
+      "domain": "Prowlarr",
+      "capability": "Indexer definitions ingestion and runtime availability",
+      "status": "SCAFFOLDED_ONLY",
+      "severity": "P1",
+      "evidence": {
+        "codePaths": [
+          "server/src/indexers/DefinitionLoader.ts",
+          "server/src/indexers/IndexerFactory.ts"
+        ],
+        "tests": [
+          "tests/definition-loader.test.js",
+          "tests/indexer-factory.test.js"
+        ],
+        "runtimeVerification": [
+          "conductor/tracks/clone_parity_gap_investigation_20260212/evidence/runtime/phase2-indexer-definition-probe.md"
+        ]
+      },
+      "verificationNotes": "Template baseline entry for parity investigation; final status requires runtime probe completion.",
+      "confidence": {
+        "level": "low",
+        "rationale": "Initial scaffold entry; runtime probes have not yet been executed in Phase 2."
+      }
+    },
+    {
+      "id": "sonarr.series.lifecycle",
+      "domain": "Sonarr",
+      "capability": "Series add, monitor, wanted, release search, grab, and import lifecycle",
+      "status": "SCAFFOLDED_ONLY",
+      "severity": "P1",
+      "evidence": {
+        "codePaths": [
+          "server/src/api/routes/seriesRoutes.ts",
+          "server/src/services/SeriesService.ts"
+        ],
+        "tests": [
+          "tests/series-service.test.js",
+          "tests/api-handlers.test.ts"
+        ],
+        "runtimeVerification": [
+          "conductor/tracks/clone_parity_gap_investigation_20260212/evidence/runtime/phase2-series-lifecycle-probe.md"
+        ]
+      },
+      "verificationNotes": "Template baseline entry for Sonarr parity lifecycle coverage.",
+      "confidence": {
+        "level": "low",
+        "rationale": "Coverage includes unit/contract tests but runtime contract parity is pending."
+      }
+    },
+    {
+      "id": "radarr.movie.lifecycle",
+      "domain": "Radarr",
+      "capability": "Movie add, monitor, wanted, release search, grab, and import lifecycle",
+      "status": "SCAFFOLDED_ONLY",
+      "severity": "P1",
+      "evidence": {
+        "codePaths": [
+          "server/src/api/routes/movieRoutes.ts",
+          "server/src/services/MediaService.ts"
+        ],
+        "tests": [
+          "tests/media-service.test.js",
+          "tests/api-handlers.test.ts"
+        ],
+        "runtimeVerification": [
+          "conductor/tracks/clone_parity_gap_investigation_20260212/evidence/runtime/phase2-movie-lifecycle-probe.md"
+        ]
+      },
+      "verificationNotes": "Template baseline entry for Radarr parity lifecycle coverage.",
+      "confidence": {
+        "level": "low",
+        "rationale": "Runtime coverage and provider failure-mode probes are pending."
+      }
+    },
+    {
+      "id": "bazarr.variant.subtitle-operations",
+      "domain": "Bazarr",
+      "capability": "Variant-level subtitle inventory, manual search/download, and history behavior",
+      "status": "SCAFFOLDED_ONLY",
+      "severity": "P1",
+      "evidence": {
+        "codePaths": [
+          "server/src/api/routes/subtitleRoutes.ts",
+          "server/src/services/SubtitleInventoryApiService.ts",
+          "server/src/services/VariantSubtitleFetchService.ts"
+        ],
+        "tests": [
+          "tests/subtitle-inventory-api-service.test.js",
+          "tests/variant-subtitle-fetch-service.test.js"
+        ],
+        "runtimeVerification": [
+          "conductor/tracks/clone_parity_gap_investigation_20260212/evidence/runtime/phase2-subtitle-operations-probe.md"
+        ]
+      },
+      "verificationNotes": "Template baseline entry for Bazarr parity operations.",
+      "confidence": {
+        "level": "low",
+        "rationale": "Current classification intentionally provisional until runtime workflow probes complete."
+      }
+    }
+  ]
+}

@@ -17,7 +17,7 @@ Create deterministic audit scaffolding so findings are consistent, reviewable, a
   - [ ] Sub-task: Mark each capability with investigation owner/status placeholders for downstream phases.
 - [x] Task: Conductor - User Manual Verification 'Phase 1: Audit Framework, Scope Baseline, and Evidence Schema' (Protocol in workflow.md). [e260bc9]
 
-## Phase 2: Backend Parity Investigation (Contracts, Runtime, and Integrations)
+## Phase 2: Backend Parity Investigation (Contracts, Runtime, and Integrations) [checkpoint: bab8e6c]
 Assess whether backend behavior meets clone parity, not merely route existence.
 
 - [x] Task: Write Tests: Add failing backend parity probe tests for clone-critical contracts. [2c9268e]

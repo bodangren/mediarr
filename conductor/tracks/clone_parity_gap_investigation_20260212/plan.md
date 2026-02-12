@@ -57,7 +57,7 @@ Determine true operator-facing completeness of each UI surface against clone int
 ## Phase 4: Test Truthfulness and Validation Integrity Audit
 Quantify where tests provide confidence and where they mask runtime gaps.
 
-- [ ] Task: Write Tests: Add failing tests for coverage integrity and mock-dependence metrics.
+- [x] Task: Write Tests: Add failing tests for coverage integrity and mock-dependence metrics. [50b87b2]
   - [ ] Sub-task: Add failing tests to compute per-surface ratio of mocked tests vs runtime/integration validation.
   - [ ] Sub-task: Add failing tests asserting each clone-critical flow has at least one non-mocked verification path.
   - [ ] Sub-task: Add failing tests asserting track claims cannot be marked parity-complete without required verification class coverage.

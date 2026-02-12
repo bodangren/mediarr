@@ -39,7 +39,7 @@ Assess whether backend behavior meets clone parity, not merely route existence.
 ## Phase 3: Frontend Parity Investigation (Operator Workflows and UX Completeness)
 Determine true operator-facing completeness of each UI surface against clone intent.
 
-- [ ] Task: Write Tests: Add failing checks for placeholder/scaffold detection and route-to-capability completeness.
+- [x] Task: Write Tests: Add failing checks for placeholder/scaffold detection and route-to-capability completeness. [cefd2b6]
   - [ ] Sub-task: Add failing checks that identify explicit placeholder/staged messaging on critical surfaces.
   - [ ] Sub-task: Add failing checks for missing interactions required by clone workflows (e.g., dynamic indexer contract fields, queue controls, subtitle operations).
   - [ ] Sub-task: Add failing checks for dashboard/activity/settings parity requirements from Track 7E spec.

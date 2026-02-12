@@ -34,7 +34,7 @@ Unblock the primary "Search -> Grab" loop at the API level by fixing backend wir
     - [x] Sub-task: Inject settings-based key into `MetadataProvider` in `main.ts`.
 - [x] Task: Conductor - User Manual Verification 'Phase 1: Critical Core Wiring (P0 Blockers)' (Protocol in workflow.md)
 
-## Phase 2: Operational Scaffolding (High-Impact P1)
+## Phase 2: Operational Scaffolding (High-Impact P1) [checkpoint: 34b07c8]
 Enable user configuration and control via the Frontend.
 **Focus:** Frontend UI, Form State, Mobile Responsiveness.
 

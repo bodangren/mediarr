@@ -15,7 +15,7 @@ Create deterministic audit scaffolding so findings are consistent, reviewable, a
   - [ ] Sub-task: Enumerate target capabilities for indexers, media add/search, wanted/release, queue, subtitles, dashboard/activity/settings, and import lifecycle.
   - [ ] Sub-task: Map each target capability to expected parity source behavior (Prowlarr/Sonarr/Radarr/Bazarr).
   - [ ] Sub-task: Mark each capability with investigation owner/status placeholders for downstream phases.
-- [ ] Task: Conductor - User Manual Verification 'Phase 1: Audit Framework, Scope Baseline, and Evidence Schema' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 1: Audit Framework, Scope Baseline, and Evidence Schema' (Protocol in workflow.md). [e260bc9]
 
 ## Phase 2: Backend Parity Investigation (Contracts, Runtime, and Integrations)
 Assess whether backend behavior meets clone parity, not merely route existence.

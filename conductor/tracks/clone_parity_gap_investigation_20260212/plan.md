@@ -7,7 +7,7 @@ Create deterministic audit scaffolding so findings are consistent, reviewable, a
   - [ ] Sub-task: Add failing tests asserting required status classes (`PARITY_IMPLEMENTED`, `PARTIAL_IMPLEMENTATION`, `SCAFFOLDED_ONLY`, `PLACEHOLDER_ONLY`, `MISSING`, `REGRESSION`).
   - [ ] Sub-task: Add failing tests asserting each matrix entry requires domain, capability, status, severity, evidence references, and verification notes.
   - [ ] Sub-task: Add failing tests asserting each finding includes an explicit confidence marker (`high`/`medium`/`low`) and rationale.
-- [ ] Task: Implement parity matrix schema and audit rubric artifacts.
+- [x] Task: Implement parity matrix schema and audit rubric artifacts. [f5ec977]
   - [ ] Sub-task: Create canonical matrix template artifact under this track folder for Prowlarr/Sonarr/Radarr/Bazarr capability mapping.
   - [ ] Sub-task: Create scoring rubric artifact for severity (`P0`-`P3`) with precise definitions and examples.
   - [ ] Sub-task: Create audit execution template capturing command, timestamp, observed output summary, and linked evidence paths.

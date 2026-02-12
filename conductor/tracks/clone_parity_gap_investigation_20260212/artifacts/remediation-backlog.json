@@ -1,0 +1,189 @@
+{
+  "version": "1.0.0",
+  "generatedAt": "2026-02-12T02:20:00.000Z",
+  "items": [
+    {
+      "id": "RMB-001",
+      "title": "Restore indexer definition runtime wiring",
+      "domain": "Prowlarr parity",
+      "findingIds": [
+        "prowlarr.indexer.definition-ingestion"
+      ],
+      "ownerTrack": "track9-followup-prowlarr-definition-runtime",
+      "severity": "P0",
+      "prerequisites": [
+        "Load definition source directory in runtime boot path",
+        "Define fallback behavior when definition is missing"
+      ],
+      "verificationExitCriteria": [
+        "Cardigann indexer test endpoint succeeds with loaded definition",
+        "Release search no longer fails with Definition not found",
+        "Add runtime probe evidence under evidence/runtime"
+      ],
+      "executionOrder": 1,
+      "dependencies": []
+    },
+    {
+      "id": "RMB-002",
+      "title": "Harden metadata provider key and upstream behavior",
+      "domain": "Sonarr/Radarr parity",
+      "findingIds": [
+        "radarr.metadata.movie-search",
+        "sonarr.metadata.tv-search"
+      ],
+      "ownerTrack": "track9-followup-metadata-provider-hardening",
+      "severity": "P0",
+      "prerequisites": [
+        "Define explicit TMDB key readiness checks",
+        "Define normalized failure taxonomy for upstream 404/401"
+      ],
+      "verificationExitCriteria": [
+        "Movie search passes with configured key and clear error when missing",
+        "TV search has fallback or normalized retryable error policy",
+        "Runtime probes for both paths produce deterministic envelopes"
+      ],
+      "executionOrder": 2,
+      "dependencies": [
+        "RMB-001"
+      ]
+    },
+    {
+      "id": "RMB-003",
+      "title": "Normalize indexer contract payload model and validation",
+      "domain": "Prowlarr parity",
+      "findingIds": [
+        "prowlarr.indexer.contract-shape"
+      ],
+      "ownerTrack": "track9-followup-indexer-contract-normalization",
+      "severity": "P1",
+      "prerequisites": [
+        "Finalize dynamic config schema contract",
+        "Agree on settings serialization format"
+      ],
+      "verificationExitCriteria": [
+        "Invalid settings payload returns validation envelope (not INTERNAL_ERROR)",
+        "Indexer create/edit API contract matches frontend schema",
+        "Contract tests and runtime probes both pass"
+      ],
+      "executionOrder": 3,
+      "dependencies": [
+        "RMB-001"
+      ]
+    },
+    {
+      "id": "RMB-004",
+      "title": "Stabilize release search-to-grab lifecycle",
+      "domain": "Sonarr/Radarr parity",
+      "findingIds": [
+        "core.release.search-grab-side-effects",
+        "sonarr.series.lifecycle",
+        "radarr.movie.lifecycle"
+      ],
+      "ownerTrack": "track9-followup-release-lifecycle-stabilization",
+      "severity": "P1",
+      "prerequisites": [
+        "Indexer definition runtime wiring restored",
+        "Metadata search prerequisites hardened"
+      ],
+      "verificationExitCriteria": [
+        "Wanted search->grab->queue->activity journey succeeds end-to-end",
+        "Series/movie lifecycle status transitions verified in runtime",
+        "At least one integration journey per media type recorded"
+      ],
+      "executionOrder": 4,
+      "dependencies": [
+        "RMB-001",
+        "RMB-002"
+      ]
+    },
+    {
+      "id": "RMB-005",
+      "title": "Implement subtitle variant console parity",
+      "domain": "Bazarr parity",
+      "findingIds": [
+        "bazarr.variant.subtitle-operations"
+      ],
+      "ownerTrack": "track9-followup-subtitle-variant-console",
+      "severity": "P1",
+      "prerequisites": [
+        "Track 7D subtitle UI implementation readiness",
+        "Validation normalization for variant ambiguity"
+      ],
+      "verificationExitCriteria": [
+        "Subtitles route is no longer placeholder-only",
+        "Manual search/download flows enforce variant scope with validation envelope",
+        "Runtime subtitle history updates verified"
+      ],
+      "executionOrder": 5,
+      "dependencies": [
+        "RMB-004"
+      ]
+    }
+  ],
+  "hardeningGates": [
+    {
+      "gateId": "GATE-7F-PARITY-CRITICAL",
+      "blockedByFindingIds": [
+        "prowlarr.indexer.definition-ingestion",
+        "radarr.metadata.movie-search",
+        "prowlarr.indexer.contract-shape",
+        "sonarr.metadata.tv-search",
+        "core.release.search-grab-side-effects",
+        "bazarr.variant.subtitle-operations",
+        "sonarr.series.lifecycle",
+        "radarr.movie.lifecycle"
+      ],
+      "policy": "Track 7F cannot be marked complete while any listed finding remains unresolved at P0/P1 severity."
+    },
+    {
+      "gateId": "GATE-CLAIM-PARITY-IMPLEMENTED",
+      "blockedByFindingIds": [
+        "prowlarr.indexer.definition-ingestion",
+        "radarr.metadata.movie-search",
+        "core.release.search-grab-side-effects"
+      ],
+      "policy": "No capability may be promoted to PARITY_IMPLEMENTED without contract + runtime evidence recorded in matrix and validation report."
+    }
+  ],
+  "trackDependencyUpdates": [
+    {
+      "track": "7F",
+      "update": "Add hard dependency on closure of Track 9 P0/P1 backlog items RMB-001 through RMB-005."
+    },
+    {
+      "track": "7D",
+      "update": "Sequence subtitle UI completion after RMB-005 API validation normalization tasks are merged."
+    },
+    {
+      "track": "7E",
+      "update": "Prioritize settings/activity completeness only after RMB-002 metadata hardening to avoid false-green UX state."
+    }
+  ],
+  "followUpTracks": [
+    {
+      "trackId": "track9-followup-prowlarr-definition-runtime",
+      "priority": 1,
+      "scope": "Definition loader -> runtime factory wiring and Cardigann end-to-end route compatibility"
+    },
+    {
+      "trackId": "track9-followup-metadata-provider-hardening",
+      "priority": 2,
+      "scope": "TMDB key readiness, TV provider fallback, normalized external failure taxonomy"
+    },
+    {
+      "trackId": "track9-followup-indexer-contract-normalization",
+      "priority": 3,
+      "scope": "Definition-driven indexer create/edit payload and validation envelope normalization"
+    },
+    {
+      "trackId": "track9-followup-release-lifecycle-stabilization",
+      "priority": 4,
+      "scope": "Wanted search->grab->queue->activity and import lifecycle runtime journey closure"
+    },
+    {
+      "trackId": "track9-followup-subtitle-variant-console",
+      "priority": 5,
+      "scope": "Subtitle operations parity from placeholder route to full manual workflow"
+    }
+  ]
+}

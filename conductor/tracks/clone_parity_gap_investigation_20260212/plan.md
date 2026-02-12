@@ -71,7 +71,7 @@ Quantify where tests provide confidence and where they mask runtime gaps.
   - [ ] Sub-task: Map required additional test layers (contract/integration/e2e) per critical flow.
 - [x] Task: Conductor - User Manual Verification 'Phase 4: Test Truthfulness and Validation Integrity Audit' (Protocol in workflow.md). [1fa89d3]
 
-## Phase 5: Remediation Roadmap, Track Realignment, and Delivery Gating
+## Phase 5: Remediation Roadmap, Track Realignment, and Delivery Gating [checkpoint: d195819]
 Turn findings into a precise execution program that closes parity gaps in a controlled order.
 
 - [x] Task: Write Tests: Add failing tests for remediation backlog schema and dependency consistency. [fa925fa]

@@ -25,7 +25,7 @@ Assess whether backend behavior meets clone parity, not merely route existence.
   - [ ] Sub-task: Add failing tests for metadata search behavior (TV and movie paths, missing-key and configured-key scenarios).
   - [ ] Sub-task: Add failing tests for release search/grab side effects (queue handoff + activity events).
   - [ ] Sub-task: Add failing tests for subtitle variant operations contract requirements and variant scoping.
-- [ ] Task: Implement backend parity probes and evidence capture.
+- [x] Task: Implement backend parity probes and evidence capture. [3636653]
   - [ ] Sub-task: Execute probe suite against running API using real runtime wiring (no MSW substitution).
   - [ ] Sub-task: Capture evidence for definition loader plumbing vs runtime factory wiring.
   - [ ] Sub-task: Capture evidence for metadata provider behavior and API key requirements compared with clone goals.

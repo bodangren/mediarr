@@ -1,0 +1,12 @@
+Task: Write Tests: Add failing tests for remediation backlog schema and dependency consistency
+
+Summary:
+- Added red-phase tests enforcing remediation backlog schema integrity.
+- Added checks that every P0/P1 finding maps to explicit remediation items.
+- Added checks that hardening gates reference unresolved parity blockers.
+
+Files:
+- tests/track9-phase5-remediation-backlog.test.ts
+
+Why:
+- Establishes FR-5/FR-6 acceptance boundary for final remediation program artifacts.

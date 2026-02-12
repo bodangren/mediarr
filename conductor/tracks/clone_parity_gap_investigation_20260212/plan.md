@@ -20,7 +20,7 @@ Create deterministic audit scaffolding so findings are consistent, reviewable, a
 ## Phase 2: Backend Parity Investigation (Contracts, Runtime, and Integrations)
 Assess whether backend behavior meets clone parity, not merely route existence.
 
-- [ ] Task: Write Tests: Add failing backend parity probe tests for clone-critical contracts.
+- [x] Task: Write Tests: Add failing backend parity probe tests for clone-critical contracts. [2c9268e]
   - [ ] Sub-task: Add failing tests for indexer management contract realism (create/update/test with definition-aware expectations).
   - [ ] Sub-task: Add failing tests for metadata search behavior (TV and movie paths, missing-key and configured-key scenarios).
   - [ ] Sub-task: Add failing tests for release search/grab side effects (queue handoff + activity events).

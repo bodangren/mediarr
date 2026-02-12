@@ -1,2 +1,0 @@
-missing_key_url=https://api.themoviedb.org/3/search/movie?api_key=demo&query=inception
-configured_key_url=https://api.themoviedb.org/3/search/movie?api_key=configured-track9-key&query=inception

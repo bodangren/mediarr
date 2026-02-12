@@ -1,4 +1,5 @@
 import { HttpClient } from '../indexers/HttpClient';
+import { SettingsService } from './SettingsService';
 import type {
   BaseMedia,
   MediaDetailsRequest,
@@ -46,11 +47,11 @@ export interface MovieDetails extends BaseMedia {
 export class MetadataProvider {
   private readonly tvBaseUrl = 'https://skyhook.sonarr.tv/v1/tvdb';
   private readonly movieBaseUrl = 'https://api.themoviedb.org/3';
-  private readonly tmdbApiKey?: string;
 
-  constructor(private readonly httpClient: HttpClient, options?: { tmdbApiKey?: string }) {
-    this.tmdbApiKey = options?.tmdbApiKey ?? process.env.TMDB_API_KEY;
-  }
+  constructor(
+    private readonly httpClient: HttpClient,
+    private readonly settingsService: SettingsService,
+  ) {}
 
   async searchMedia(request: MediaSearchRequest, fetchFn?: any): Promise<BaseMedia[]> {
     if (request.mediaType === 'TV') {
@@ -178,8 +179,13 @@ export class MetadataProvider {
   }
 
   private async searchMovies(term: string, fetchFn?: any): Promise<MovieSearchResult[]> {
+    const settings = await this.settingsService.get();
+    const apiKey = settings.apiKeys.tmdbApiKey;
+
+    if (!apiKey) {
+      throw new Error('TMDB API Key is missing. Please configure it in settings.');
+    }
     const encodedTerm = encodeURIComponent(term.toLowerCase().trim());
-    const apiKey = this.tmdbApiKey ?? 'demo';
     const url = `${this.movieBaseUrl}/search/movie?api_key=${encodeURIComponent(apiKey)}&query=${encodedTerm}`;
     const response = await this.httpClient.get(url, {}, fetchFn);
 
@@ -200,7 +206,12 @@ export class MetadataProvider {
   }
 
   private async getMovieDetails(tmdbId: number, fetchFn?: any): Promise<MovieDetails> {
-    const apiKey = this.tmdbApiKey ?? 'demo';
+    const settings = await this.settingsService.get();
+    const apiKey = settings.apiKeys.tmdbApiKey;
+
+    if (!apiKey) {
+      throw new Error('TMDB API Key is missing. Please configure it in settings.');
+    }
     const url = `${this.movieBaseUrl}/movie/${tmdbId}?api_key=${encodeURIComponent(apiKey)}`;
     const response = await this.httpClient.get(url, {}, fetchFn);
 

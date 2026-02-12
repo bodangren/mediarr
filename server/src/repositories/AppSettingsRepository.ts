@@ -18,10 +18,15 @@ export interface PathVisibilitySettings {
   showMediaPath: boolean;
 }
 
+export interface ApiKeysSettings {
+  tmdbApiKey: string | null;
+}
+
 export interface AppSettingsPayload {
   torrentLimits: TorrentLimitsSettings;
   schedulerIntervals: SchedulerIntervalsSettings;
   pathVisibility: PathVisibilitySettings;
+  apiKeys: ApiKeysSettings;
 }
 
 export const DEFAULT_APP_SETTINGS: AppSettingsPayload = {
@@ -39,6 +44,9 @@ export const DEFAULT_APP_SETTINGS: AppSettingsPayload = {
   pathVisibility: {
     showDownloadPath: true,
     showMediaPath: true,
+  },
+  apiKeys: {
+    tmdbApiKey: null,
   },
 };
 
@@ -78,6 +86,13 @@ function readBoolean(value: unknown, fallback: boolean): boolean {
   return fallback;
 }
 
+function readNullableString(value: unknown, fallback: string | null): string | null {
+  if (typeof value === 'string') {
+    return value;
+  }
+  return fallback;
+}
+
 function toJson(value: unknown): Prisma.InputJsonValue {
   return value as Prisma.InputJsonValue;
 }
@@ -100,6 +115,7 @@ export class AppSettingsRepository {
           torrentLimits: toJson(DEFAULT_APP_SETTINGS.torrentLimits),
           schedulerIntervals: toJson(DEFAULT_APP_SETTINGS.schedulerIntervals),
           pathVisibility: toJson(DEFAULT_APP_SETTINGS.pathVisibility),
+          apiKeys: toJson(DEFAULT_APP_SETTINGS.apiKeys),
         },
       });
 
@@ -124,6 +140,10 @@ export class AppSettingsRepository {
         ...current.pathVisibility,
         ...partial.pathVisibility,
       },
+      apiKeys: {
+        ...current.apiKeys,
+        ...partial.apiKeys,
+      },
     };
 
     await this.prisma.appSettings.upsert({
@@ -133,11 +153,13 @@ export class AppSettingsRepository {
         torrentLimits: toJson(merged.torrentLimits),
         schedulerIntervals: toJson(merged.schedulerIntervals),
         pathVisibility: toJson(merged.pathVisibility),
+        apiKeys: toJson(merged.apiKeys),
       },
       update: {
         torrentLimits: toJson(merged.torrentLimits),
         schedulerIntervals: toJson(merged.schedulerIntervals),
         pathVisibility: toJson(merged.pathVisibility),
+        apiKeys: toJson(merged.apiKeys),
       },
     });
 
@@ -152,11 +174,13 @@ export class AppSettingsRepository {
         torrentLimits: toJson(payload.torrentLimits),
         schedulerIntervals: toJson(payload.schedulerIntervals),
         pathVisibility: toJson(payload.pathVisibility),
+        apiKeys: toJson(payload.apiKeys),
       },
       update: {
         torrentLimits: toJson(payload.torrentLimits),
         schedulerIntervals: toJson(payload.schedulerIntervals),
         pathVisibility: toJson(payload.pathVisibility),
+        apiKeys: toJson(payload.apiKeys),
       },
     });
 
@@ -167,10 +191,12 @@ export class AppSettingsRepository {
     torrentLimits: unknown;
     schedulerIntervals: unknown;
     pathVisibility: unknown;
+    apiKeys?: unknown;
   }): AppSettingsPayload {
     const torrentLimits = readObject(record.torrentLimits);
     const schedulerIntervals = readObject(record.schedulerIntervals);
     const pathVisibility = readObject(record.pathVisibility);
+    const apiKeys = readObject(record.apiKeys ?? {});
 
     return {
       torrentLimits: {
@@ -213,6 +239,12 @@ export class AppSettingsRepository {
         showMediaPath: readBoolean(
           pathVisibility.showMediaPath,
           DEFAULT_APP_SETTINGS.pathVisibility.showMediaPath,
+        ),
+      },
+      apiKeys: {
+        tmdbApiKey: readNullableString(
+          apiKeys.tmdbApiKey,
+          DEFAULT_APP_SETTINGS.apiKeys.tmdbApiKey,
         ),
       },
     };

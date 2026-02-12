@@ -5,7 +5,7 @@ import 'dotenv/config';
 import { AppSettingsRepository } from '../server/src/repositories/AppSettingsRepository';
 import { SettingsService } from '../server/src/services/SettingsService';
 
-const adapter = new PrismaBetterSqlite3({ url: 'file:prisma/dev.db' });
+const adapter = new PrismaBetterSqlite3({ url: process.env.DATABASE_URL || 'file:./mediarr.db' });
 const prisma = new PrismaClient({ adapter });
 const repository = new AppSettingsRepository(prisma);
 const service = new SettingsService(repository);
@@ -25,6 +25,7 @@ describe('AppSettingsRepository', () => {
     expect(settings.torrentLimits.maxActiveDownloads).toBeGreaterThan(0);
     expect(settings.schedulerIntervals.rssSyncMinutes).toBeGreaterThan(0);
     expect(settings.pathVisibility.showDownloadPath).toBe(true);
+    expect(settings.apiKeys.tmdbApiKey).toBe(null);
   });
 
   it('should merge partial updates without dropping untouched sections', async () => {
@@ -34,11 +35,15 @@ describe('AppSettingsRepository', () => {
       torrentLimits: {
         maxActiveDownloads: 8,
       },
+      apiKeys: {
+        tmdbApiKey: 'partial-update-key',
+      }
     });
 
     expect(updated.torrentLimits.maxActiveDownloads).toBe(8);
     expect(updated.schedulerIntervals.rssSyncMinutes).toBeGreaterThan(0);
     expect(updated.pathVisibility.showMediaPath).toBe(true);
+    expect(updated.apiKeys.tmdbApiKey).toBe('partial-update-key');
   });
 
   it('should replace settings payload fully via SettingsService', async () => {
@@ -58,10 +63,14 @@ describe('AppSettingsRepository', () => {
         showDownloadPath: false,
         showMediaPath: false,
       },
+      apiKeys: {
+        tmdbApiKey: 'replaced-key',
+      },
     });
 
     expect(replaced.torrentLimits.maxActiveSeeds).toBe(4);
     expect(replaced.schedulerIntervals.torrentMonitoringSeconds).toBe(10);
     expect(replaced.pathVisibility.showMediaPath).toBe(false);
+    expect(replaced.apiKeys.tmdbApiKey).toBe('replaced-key');
   });
 });

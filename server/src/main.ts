@@ -2,7 +2,9 @@ import 'dotenv/config';
 import crypto from 'node:crypto';
 import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 import { PrismaClient } from '@prisma/client';
+import path from 'node:path';
 import { createApiServer } from './api/createApiServer';
+import { DefinitionLoader } from './indexers/DefinitionLoader';
 import { IndexerFactory } from './indexers/IndexerFactory';
 import { HttpClient } from './indexers/HttpClient';
 import { IndexerTester } from './indexers/IndexerTester';
@@ -196,12 +198,23 @@ async function startApi(): Promise<void> {
   const indexerHealthRepository = new IndexerHealthRepository(prisma);
   const mediaRepository = new MediaRepository(prisma);
   const subtitleVariantRepository = new SubtitleVariantRepository(prisma);
-  const torrentRepository = new TorrentRepository(prisma);
   const appSettingsRepository = new AppSettingsRepository(prisma);
 
   const httpClient = new HttpClient();
-  const metadataProvider = new MetadataProvider(httpClient);
-  const indexerFactory = new IndexerFactory([]);
+  const settingsService = new SettingsService(appSettingsRepository);
+  const metadataProvider = new MetadataProvider(httpClient, settingsService);
+
+  const definitionLoader = new DefinitionLoader();
+  const definitionsPath = process.env.DEFINITIONS_PATH ?? path.resolve(process.cwd(), 'server/definitions');
+  let definitions: any[] = [];
+  try {
+    definitions = await definitionLoader.loadFromDirectory(definitionsPath);
+    console.log(`Loaded ${definitions.length} indexer definitions from ${definitionsPath}`);
+  } catch (error) {
+    console.warn(`Failed to load indexer definitions from ${definitionsPath}:`, error);
+  }
+
+  const indexerFactory = new IndexerFactory(definitions, httpClient);
   const indexerTester = new IndexerTester(
     httpClient,
     indexerHealthRepository,
@@ -238,7 +251,6 @@ async function startApi(): Promise<void> {
     activityEventEmitter,
   );
   const wantedService = new WantedService(prisma);
-  const settingsService = new SettingsService(appSettingsRepository);
 
   const app = createApiServer({
     prisma,

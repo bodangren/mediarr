@@ -1,1 +1,0 @@
-{"ok":true,"data":{"torrentLimits":{"maxActiveDownloads":2,"maxActiveSeeds":4,"globalDownloadLimitKbps":1024,"globalUploadLimitKbps":512},"schedulerIntervals":{"rssSyncMinutes":12,"availabilityCheckMinutes":20,"torrentMonitoringSeconds":10},"pathVisibility":{"showDownloadPath":true,"showMediaPath":true}}}

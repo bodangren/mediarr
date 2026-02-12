@@ -1,4 +1,8 @@
 import type { CardigannDefinition, CategoryMapping, SearchPathBlock } from './DefinitionLoader';
+import type { HttpClient } from './HttpClient';
+import type { IndexerResult } from './IndexerResult';
+import { TorznabParser } from './TorznabParser';
+import { ScrapingParser } from './ScrapingParser';
 
 export interface IndexerConfig {
   id: number;
@@ -10,6 +14,7 @@ export interface IndexerConfig {
   supportsRss: boolean;
   supportsSearch: boolean;
   settings: Record<string, any>;
+  httpClient: HttpClient;
 }
 
 export interface SearchQuery {
@@ -35,6 +40,7 @@ export class BaseIndexer {
   readonly supportsRss: boolean;
   readonly supportsSearch: boolean;
   readonly settings: Record<string, any>;
+  protected readonly httpClient: HttpClient;
 
   constructor(config: IndexerConfig) {
     if (new.target === BaseIndexer) {
@@ -49,10 +55,15 @@ export class BaseIndexer {
     this.supportsRss = config.supportsRss;
     this.supportsSearch = config.supportsSearch;
     this.settings = config.settings;
+    this.httpClient = config.httpClient;
   }
 
   get indexerType(): string {
     throw new Error('Subclasses must implement indexerType');
+  }
+
+  async search(query: SearchQuery): Promise<IndexerResult[]> {
+    throw new Error('Method not implemented.');
   }
 }
 
@@ -66,6 +77,16 @@ export class TorznabIndexer extends BaseIndexer {
 
   get indexerType(): string {
     return 'torznab';
+  }
+
+  async search(query: SearchQuery): Promise<IndexerResult[]> {
+    const url = this.buildSearchUrl(query);
+    const response = await this.httpClient.get(url);
+    if (!response.ok) {
+      throw new Error(`Torznab request failed: ${response.status} ${response.body}`);
+    }
+    const parser = new TorznabParser();
+    return parser.parse(response.body);
   }
 
   private get apiUrl(): string {
@@ -145,5 +166,51 @@ export class ScrapingIndexer extends BaseIndexer {
 
   get categoryMappings(): CategoryMapping[] {
     return this.definition.caps?.categorymappings ?? [];
+  }
+
+  async search(query: SearchQuery): Promise<IndexerResult[]> {
+    const firstPath = this.searchPaths[0];
+    if (!firstPath) {
+      throw new Error(`No search paths defined for indexer: ${this.name}`);
+    }
+
+    const url = this.buildScrapingUrl(this.baseUrl, firstPath.path, query);
+    const response = await this.httpClient.get(url);
+    if (!response.ok) {
+      throw new Error(`Scraping request failed: ${response.status}`);
+    }
+
+    const parser = new ScrapingParser();
+    return parser.parse(response.body, this.definition.search.rows.selector, this.definition.search.fields, this.baseUrl);
+  }
+
+  private buildScrapingUrl(baseUrl: string, pathTemplate: string, query: SearchQuery): string {
+    let resolvedPath = pathTemplate;
+
+    // Replace go-template style variables
+    resolvedPath = resolvedPath.replace(/\{\{\s*\.Query\.Keywords\s*\}\}/g, encodeURIComponent(query.q ?? '').replace(/%20/g, '+'));
+    resolvedPath = resolvedPath.replace(/\{\{\s*\.Keywords\s*\}\}/g, encodeURIComponent(query.q ?? '').replace(/%20/g, '+'));
+    
+    resolvedPath = resolvedPath.replace(/\{\{\s*\.Query\.Season\s*\}\}/g, String(query.season ?? ''));
+    resolvedPath = resolvedPath.replace(/\{\{\s*\.Season\s*\}\}/g, String(query.season ?? ''));
+    
+    resolvedPath = resolvedPath.replace(/\{\{\s*\.Query\.Ep\s*\}\}/g, String(query.ep ?? ''));
+    resolvedPath = resolvedPath.replace(/\{\{\s*\.Ep\s*\}\}/g, String(query.ep ?? ''));
+    
+    resolvedPath = resolvedPath.replace(/\{\{\s*\.Query\.IMDBID\s*\}\}/g, query.imdbid ?? '');
+    resolvedPath = resolvedPath.replace(/\{\{\s*\.Query\.TMDBID\s*\}\}/g, query.tmdbid ?? '');
+
+    // Also handle {q} shorthand
+    resolvedPath = resolvedPath.replace(/\{q\}/g, encodeURIComponent(query.q ?? '').replace(/%20/g, '+'));
+
+    // Resolve base URL
+    if (baseUrl.endsWith('/')) {
+        baseUrl = baseUrl.slice(0, -1);
+    }
+    if (!resolvedPath.startsWith('/')) {
+        resolvedPath = '/' + resolvedPath;
+    }
+
+    return `${baseUrl}${resolvedPath}`;
   }
 }

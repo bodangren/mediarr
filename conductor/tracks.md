@@ -85,3 +85,6 @@ While the primary sequence defines hard dependencies, several phases across trac
   *Description: Implementing the internal media server for local streaming with subtitle support.*
   *Phases: 3 | Link: [./tracks/ui_e2e_hardening_20260211/](./tracks/ui_e2e_hardening_20260211/)*
 
+- [~] **Track: Remediation track to fix critical P0 parity blockers (backend wiring) and P1 operational gaps identified in the Track 9 audit.**
+*Link: [./tracks/fix_core_parity_wiring_20260212/](./tracks/fix_core_parity_wiring_20260212/)*
+

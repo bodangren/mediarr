@@ -1,8 +1,0 @@
-{
-  "track_id": "clone_parity_gap_investigation_20260212",
-  "type": "chore",
-  "status": "new",
-  "created_at": "2026-02-12T01:37:28Z",
-  "updated_at": "2026-02-12T01:37:28Z",
-  "description": "Track 9 - Clone Parity Gap Investigation & Recovery Plan: perform a rigorous parity audit versus Prowlarr, Sonarr, Radarr, and Bazarr; classify all gaps with evidence; and produce a prioritized remediation roadmap."
-}

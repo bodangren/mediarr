@@ -1,0 +1,57 @@
+---
+site: example1337x
+name: Example 1337x
+description: "Example definition for testing"
+language: en-US
+type: public
+encoding: UTF-8
+links:
+  - http://example.1337x.to/
+
+caps:
+  categorymappings:
+    - { id: "Movies", cat: Movies, desc: "Movies" }
+    - { id: "TV", cat: TV, desc: "TV" }
+
+  modes:
+    search: [q]
+    tv-search: [q, season, ep]
+    movie-search: [q]
+
+settings: []
+
+login:
+  path: /login
+  method: post
+  inputs:
+    username: "{{ .Config.username }}"
+    password: "{{ .Config.password }}"
+  error:
+    - selector: .alert-danger
+  test:
+    path: /
+
+search:
+  paths:
+    - path: /search/{{ .Keywords }}/1/
+  rows:
+    selector: table.table-list tr:has(a[href*="/torrent/"])
+  fields:
+    title:
+      selector: td.name a:nth-child(2)
+    details:
+      selector: td.name a:nth-child(2)
+      attribute: href
+    download:
+      selector: td.name a:nth-child(2)
+      attribute: href
+    size:
+      selector: td.size
+    date:
+      selector: td.date
+    seeders:
+      selector: td.seeds
+    leechers:
+      selector: td.leeches
+    category:
+      selector: td.coll-1

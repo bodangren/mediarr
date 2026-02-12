@@ -1,15 +1,18 @@
 import type { Indexer } from '@prisma/client';
 import type { CardigannDefinition } from './DefinitionLoader';
 import { TorznabIndexer, ScrapingIndexer, type BaseIndexer } from './BaseIndexer';
+import type { HttpClient } from './HttpClient';
 
 /**
  * Factory that creates typed indexer instances from database records or definition files.
  */
 export class IndexerFactory {
   private definitions: Map<string, CardigannDefinition>;
+  private httpClient: HttpClient;
 
-  constructor(definitions: CardigannDefinition[]) {
+  constructor(definitions: CardigannDefinition[], httpClient: HttpClient) {
     this.definitions = new Map(definitions.map(d => [d.id, d]));
+    this.httpClient = httpClient;
   }
 
   /**
@@ -37,6 +40,7 @@ export class IndexerFactory {
       supportsRss: record.supportsRss,
       supportsSearch: record.supportsSearch,
       settings,
+      httpClient: this.httpClient,
     };
 
     switch (record.implementation) {
@@ -77,6 +81,7 @@ export class IndexerFactory {
       supportsSearch: true,
       settings,
       definition,
+      httpClient: this.httpClient,
     });
   }
 }

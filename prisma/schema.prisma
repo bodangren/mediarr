@@ -363,6 +363,7 @@ model AppSettings {
   torrentLimits      Json
   schedulerIntervals Json
   pathVisibility     Json
+  apiKeys            Json?
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 }

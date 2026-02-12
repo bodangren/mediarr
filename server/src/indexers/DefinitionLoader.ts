@@ -169,6 +169,11 @@ export class DefinitionLoader {
       def.encoding = 'UTF-8';
     }
 
+    // Map site to id if id is missing (standard Cardigann format)
+    if (!def.id && (raw as any).site) {
+      def.id = (raw as any).site;
+    }
+
     // Normalize search: convert single path to paths array
     if (def.search) {
       if (def.search.path && !def.search.paths) {

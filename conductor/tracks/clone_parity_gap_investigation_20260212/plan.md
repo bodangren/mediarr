@@ -11,7 +11,7 @@ Create deterministic audit scaffolding so findings are consistent, reviewable, a
   - [ ] Sub-task: Create canonical matrix template artifact under this track folder for Prowlarr/Sonarr/Radarr/Bazarr capability mapping.
   - [ ] Sub-task: Create scoring rubric artifact for severity (`P0`-`P3`) with precise definitions and examples.
   - [ ] Sub-task: Create audit execution template capturing command, timestamp, observed output summary, and linked evidence paths.
-- [ ] Task: Define clone-critical capability baseline.
+- [x] Task: Define clone-critical capability baseline. [17c17b5]
   - [ ] Sub-task: Enumerate target capabilities for indexers, media add/search, wanted/release, queue, subtitles, dashboard/activity/settings, and import lifecycle.
   - [ ] Sub-task: Map each target capability to expected parity source behavior (Prowlarr/Sonarr/Radarr/Bazarr).
   - [ ] Sub-task: Mark each capability with investigation owner/status placeholders for downstream phases.

@@ -61,7 +61,7 @@ Quantify where tests provide confidence and where they mask runtime gaps.
   - [ ] Sub-task: Add failing tests to compute per-surface ratio of mocked tests vs runtime/integration validation.
   - [ ] Sub-task: Add failing tests asserting each clone-critical flow has at least one non-mocked verification path.
   - [ ] Sub-task: Add failing tests asserting track claims cannot be marked parity-complete without required verification class coverage.
-- [ ] Task: Implement test integrity analyzers and reports.
+- [x] Task: Implement test integrity analyzers and reports. [b05b073]
   - [ ] Sub-task: Build analysis output for `app` and root tests, including `vi.mock` usage concentration by surface.
   - [ ] Sub-task: Build analysis output for backend contract/integration coverage by route group.
   - [ ] Sub-task: Publish confidence ratings per capability based on verification depth.

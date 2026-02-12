@@ -1,0 +1,10 @@
+/ 200
+/activity 200
+/settings 200
+/indexers 200
+/add 200
+/wanted 200
+/queue 200
+/subtitles 200
+/library/movies 200
+/library/series 200

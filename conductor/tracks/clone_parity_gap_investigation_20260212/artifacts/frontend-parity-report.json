@@ -1,0 +1,169 @@
+{
+  "version": "1.0.0",
+  "generatedAt": "2026-02-12T02:05:00.000Z",
+  "runtime": {
+    "frontendBaseUrl": "http://127.0.0.1:3100",
+    "apiBaseUrl": "http://127.0.0.1:3901"
+  },
+  "surfaces": [
+    {
+      "route": "/",
+      "surface": "Dashboard",
+      "status": "partially_functional",
+      "placeholderSignals": [
+        "Core system metrics are available while 7E dashboard enhancements are pending"
+      ],
+      "missingInteractions": [
+        "deep-link metric cards to filtered workflows",
+        "health remediation action controls",
+        "SSE-driven metric refresh behavior verification"
+      ],
+      "backendCapabilityLinks": [
+        "core.dashboard.metrics",
+        "core.activity.timeline"
+      ],
+      "severity": "P1"
+    },
+    {
+      "route": "/activity",
+      "surface": "Activity",
+      "status": "partially_functional",
+      "placeholderSignals": [
+        "Consolidated timeline (expanded insights in Track 7E)"
+      ],
+      "missingInteractions": [
+        "event-type/date/status filters",
+        "drill-down navigation to queue or media detail",
+        "SSE prepend of new events"
+      ],
+      "backendCapabilityLinks": [
+        "core.activity.timeline"
+      ],
+      "severity": "P1"
+    },
+    {
+      "route": "/settings",
+      "surface": "Settings",
+      "status": "scaffold_only",
+      "placeholderSignals": [
+        "Settings surface is expanded in Track 7E"
+      ],
+      "missingInteractions": [
+        "inline edits for torrent/scheduler settings",
+        "validation error rendering for all settings groups",
+        "stale-state detection banner"
+      ],
+      "backendCapabilityLinks": [
+        "core.settings.persistence"
+      ],
+      "severity": "P1"
+    },
+    {
+      "route": "/indexers",
+      "surface": "Indexers",
+      "status": "partially_functional",
+      "placeholderSignals": [],
+      "missingInteractions": [
+        "definition-driven dynamic config contract fields",
+        "definition selector with capability-aware schema rendering",
+        "normalized validation envelopes for malformed config payloads"
+      ],
+      "backendCapabilityLinks": [
+        "prowlarr.indexer.definition-ingestion",
+        "prowlarr.indexer.contract-shape"
+      ],
+      "severity": "P1"
+    },
+    {
+      "route": "/add",
+      "surface": "Add Media",
+      "status": "partially_functional",
+      "placeholderSignals": [],
+      "missingInteractions": [
+        "reliable movie metadata search under missing/invalid API key conditions",
+        "resilient TV metadata fallback when upstream returns 404"
+      ],
+      "backendCapabilityLinks": [
+        "sonarr.metadata.tv-search",
+        "radarr.metadata.movie-search"
+      ],
+      "severity": "P0"
+    },
+    {
+      "route": "/wanted",
+      "surface": "Wanted / Release Search",
+      "status": "partially_functional",
+      "placeholderSignals": [],
+      "missingInteractions": [
+        "stable release search when definition-backed indexers exist",
+        "search->grab one-hop workflow reliability"
+      ],
+      "backendCapabilityLinks": [
+        "core.release.search-grab-side-effects",
+        "prowlarr.indexer.definition-ingestion"
+      ],
+      "severity": "P1"
+    },
+    {
+      "route": "/queue",
+      "surface": "Queue",
+      "status": "scaffold_only",
+      "placeholderSignals": [
+        "Live torrent queue updates (full controls in Track 7D)"
+      ],
+      "missingInteractions": [
+        "pause/resume/remove queue controls",
+        "SSE connection fallback indicator",
+        "row detail pane for peers/trackers/files"
+      ],
+      "backendCapabilityLinks": [
+        "core.queue.operations"
+      ],
+      "severity": "P1"
+    },
+    {
+      "route": "/subtitles",
+      "surface": "Subtitles",
+      "status": "placeholder",
+      "placeholderSignals": [
+        "Subtitle console is delivered in Track 7D",
+        "Subtitle operations are staged"
+      ],
+      "missingInteractions": [
+        "manual subtitle search and download operations",
+        "variant selector and inventory table",
+        "subtitle history timeline"
+      ],
+      "backendCapabilityLinks": [
+        "bazarr.variant.subtitle-operations"
+      ],
+      "severity": "P1"
+    },
+    {
+      "route": "/library/movies",
+      "surface": "Library Movies",
+      "status": "partially_functional",
+      "placeholderSignals": [],
+      "missingInteractions": [
+        "runtime parity walkthrough for import-driven state transitions"
+      ],
+      "backendCapabilityLinks": [
+        "radarr.movie.lifecycle"
+      ],
+      "severity": "P2"
+    },
+    {
+      "route": "/library/series",
+      "surface": "Library Series",
+      "status": "partially_functional",
+      "placeholderSignals": [],
+      "missingInteractions": [
+        "runtime parity walkthrough for wanted->import lifecycle visibility"
+      ],
+      "backendCapabilityLinks": [
+        "sonarr.series.lifecycle"
+      ],
+      "severity": "P2"
+    }
+  ]
+}

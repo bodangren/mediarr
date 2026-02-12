@@ -65,7 +65,7 @@ Quantify where tests provide confidence and where they mask runtime gaps.
   - [ ] Sub-task: Build analysis output for `app` and root tests, including `vi.mock` usage concentration by surface.
   - [ ] Sub-task: Build analysis output for backend contract/integration coverage by route group.
   - [ ] Sub-task: Publish confidence ratings per capability based on verification depth.
-- [ ] Task: Produce validation integrity findings.
+- [x] Task: Produce validation integrity findings. [810260c]
   - [ ] Sub-task: Identify high-risk false-confidence zones (tests passing while runtime parity is missing).
   - [ ] Sub-task: Define minimum validation gates for declaring parity in future tracks.
   - [ ] Sub-task: Map required additional test layers (contract/integration/e2e) per critical flow.

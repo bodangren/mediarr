@@ -52,7 +52,7 @@ Determine true operator-facing completeness of each UI surface against clone int
   - [ ] Sub-task: Publish per-route parity summaries with severity and evidence links.
   - [ ] Sub-task: Identify cross-cutting UX regressions that impact multiple clone domains.
   - [ ] Sub-task: Identify immediate user-visible blockers that must precede hardening work.
-- [ ] Task: Conductor - User Manual Verification 'Phase 3: Frontend Parity Investigation (Operator Workflows and UX Completeness)' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 3: Frontend Parity Investigation (Operator Workflows and UX Completeness)' (Protocol in workflow.md). [d378729]
 
 ## Phase 4: Test Truthfulness and Validation Integrity Audit
 Quantify where tests provide confidence and where they mask runtime gaps.

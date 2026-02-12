@@ -7,6 +7,7 @@ This file tracks all major tracks for the project. Each track has its own detail
 ## Execution Order and Dependencies
 
 **Primary sequence:** `7D -> 7E -> 7F -> 8`
+**Cross-cutting audit gate:** `9` (run in parallel now; use outputs to gate hardening and parity claims)
 
 ### Parallelization Opportunities
 
@@ -16,6 +17,7 @@ While the primary sequence defines hard dependencies, several phases across trac
 - **7B Phase 1** (API harness, pagination conventions, route scaffolds) can start as soon as **7A Phase 2** completes (serializers and error taxonomy exist).
 - **7D** and **7E** are independent of each other — they can run in parallel once 7C is complete. 7D needs the queue/subtitle APIs from 7B; 7E needs the activity/settings/health APIs from 7B. Both need the UI foundations from 7C.
 - **7F** depends on all UI being complete (7C + 7D + 7E), so it must be last among the UI tracks.
+- **9** is an investigation/governance track that should begin immediately and run in parallel. Its parity findings and remediation backlog should gate claims of completion for 7F and readiness for 8.
 
 ### Dependency Graph
 
@@ -48,6 +50,8 @@ While the primary sequence defines hard dependencies, several phases across trac
                                 |
                                 v
                           8 (DLNA & Streaming)
+
+7C/7D/7E/7F/8 ---------------> 9 (clone parity audit & remediation gate)
 ```
 
 ---
@@ -68,3 +72,7 @@ While the primary sequence defines hard dependencies, several phases across trac
 
 - [ ] **Track 8: DLNA & Local Streaming**
   *Description: Implementing the internal media server for local streaming with subtitle support.*
+
+- [~] **Track 9: Clone Parity Gap Investigation & Recovery Plan**
+  *Description: Perform an evidence-based parity audit against Prowlarr, Sonarr, Radarr, and Bazarr; classify all gaps; and produce prioritized remediation and gating guidance.*
+  *Phases: 5 | Link: [./tracks/clone_parity_gap_investigation_20260212/](./tracks/clone_parity_gap_investigation_20260212/)*

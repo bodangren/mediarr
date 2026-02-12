@@ -83,7 +83,7 @@ Turn findings into a precise execution program that closes parity gaps in a cont
   - [ ] Sub-task: Propose updates to existing track sequencing/dependencies where required by findings.
   - [ ] Sub-task: Define hardening gate policy tying 7F execution/completion to closure of parity-critical blockers.
   - [ ] Sub-task: Define candidate follow-up tracks for unresolved high-severity parity gaps.
-- [ ] Task: Produce final investigation package.
+- [x] Task: Produce final investigation package. [1d7a309]
   - [ ] Sub-task: Publish consolidated findings summary with counts by status/severity and top blockers.
   - [ ] Sub-task: Publish command log and evidence index for reproducibility in a fresh session.
   - [ ] Sub-task: Publish recommended "first remediation sprint" scope and explicit success criteria.

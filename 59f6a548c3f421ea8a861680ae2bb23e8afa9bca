@@ -1,0 +1,11 @@
+Task: Write Tests: Add failing tests for parity matrix schema and status taxonomy
+
+Summary:
+- Added red-phase Vitest coverage for Track 9 Phase 1 matrix schema requirements.
+- Tests intentionally fail until parity artifacts are implemented.
+
+Files:
+- tests/track9-phase1-schema.test.ts
+
+Why:
+- Enforces FR-1 schema discipline before artifact implementation and provides deterministic red-phase evidence.

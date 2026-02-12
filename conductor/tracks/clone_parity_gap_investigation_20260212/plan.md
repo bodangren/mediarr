@@ -74,7 +74,7 @@ Quantify where tests provide confidence and where they mask runtime gaps.
 ## Phase 5: Remediation Roadmap, Track Realignment, and Delivery Gating
 Turn findings into a precise execution program that closes parity gaps in a controlled order.
 
-- [ ] Task: Write Tests: Add failing tests for remediation backlog schema and dependency consistency.
+- [x] Task: Write Tests: Add failing tests for remediation backlog schema and dependency consistency. [fa925fa]
   - [ ] Sub-task: Add failing tests asserting each remediation item includes owner track, severity, prerequisites, and verification exit criteria.
   - [ ] Sub-task: Add failing tests asserting every P0/P1 finding maps to an explicit remediation action.
   - [ ] Sub-task: Add failing tests asserting hardening gates reference unresolved parity blockers.

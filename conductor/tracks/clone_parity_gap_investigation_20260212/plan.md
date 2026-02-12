@@ -48,7 +48,7 @@ Determine true operator-facing completeness of each UI surface against clone int
   - [ ] Sub-task: Record where UI is fully functional vs partial vs scaffold-only vs placeholder.
   - [ ] Sub-task: Capture concrete breakpoints (missing actions, wrong validation model, absent data, non-functional links).
   - [ ] Sub-task: Map each gap to corresponding backend capability and track requirement.
-- [ ] Task: Produce frontend findings report.
+- [x] Task: Produce frontend findings report. [f759b65]
   - [ ] Sub-task: Publish per-route parity summaries with severity and evidence links.
   - [ ] Sub-task: Identify cross-cutting UX regressions that impact multiple clone domains.
   - [ ] Sub-task: Identify immediate user-visible blockers that must precede hardening work.

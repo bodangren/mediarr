@@ -43,7 +43,7 @@ Determine true operator-facing completeness of each UI surface against clone int
   - [ ] Sub-task: Add failing checks that identify explicit placeholder/staged messaging on critical surfaces.
   - [ ] Sub-task: Add failing checks for missing interactions required by clone workflows (e.g., dynamic indexer contract fields, queue controls, subtitle operations).
   - [ ] Sub-task: Add failing checks for dashboard/activity/settings parity requirements from Track 7E spec.
-- [ ] Task: Execute frontend parity walkthroughs with evidence capture.
+- [x] Task: Execute frontend parity walkthroughs with evidence capture. [4a4b17f]
   - [ ] Sub-task: Run scripted walkthroughs for indexer add/edit/test, add media, wanted search+grab, queue operations, subtitle operations, and settings workflows.
   - [ ] Sub-task: Record where UI is fully functional vs partial vs scaffold-only vs placeholder.
   - [ ] Sub-task: Capture concrete breakpoints (missing actions, wrong validation model, absent data, non-functional links).

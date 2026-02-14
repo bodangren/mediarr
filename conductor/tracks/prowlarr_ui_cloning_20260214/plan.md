@@ -171,7 +171,7 @@ This plan implements the Prowlarr UI cloning based on the comprehensive specific
 
 ---
 
-## Phase 4: Indexers Management Views
+## Phase 4: Indexers Management Views [checkpoint: e7500f7]
 
 **Objective:** Implement Indexer list, add, edit, and stats views.
 

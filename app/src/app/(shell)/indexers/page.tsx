@@ -3,9 +3,12 @@
 import { useMemo, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { DataTable, type DataTableColumn } from '@/components/primitives/DataTable';
+import { ConfirmModal, Modal, ModalBody, ModalFooter, ModalHeader } from '@/components/primitives/Modal';
 import { PageJumpBar, type JumpFilter, matchesJumpFilter } from '@/components/primitives/PageJumpBar';
 import { PageToolbar, PageToolbarSection } from '@/components/primitives/PageToolbar';
 import { QueryPanel } from '@/components/primitives/QueryPanel';
+import { SelectFooter } from '@/components/primitives/SelectFooter';
+import { SelectProvider, useSelectContext } from '@/components/primitives/SelectProvider';
 import { StatusBadge } from '@/components/primitives/StatusBadge';
 import { useToast } from '@/components/providers/ToastProvider';
 import { getApiClients } from '@/lib/api/client';
@@ -42,6 +45,19 @@ interface SaveIndexerInput {
   supportsSearch: boolean;
   priority: number;
   settings: string;
+}
+
+function SelectionCheckbox({ rowId }: { rowId: number }) {
+  const { isSelected, toggleRow } = useSelectContext();
+
+  return (
+    <input
+      type="checkbox"
+      aria-label="Select row"
+      checked={isSelected(rowId)}
+      onChange={event => toggleRow(rowId, (event.nativeEvent as MouseEvent).shiftKey)}
+    />
+  );
 }
 
 function toSaveIndexerInput(draft: AddIndexerDraft): SaveIndexerInput {
@@ -108,6 +124,13 @@ export default function IndexersPage() {
   const [testOutput, setTestOutput] = useState<Record<number, { message: string; hints: string[] }>>({});
   const [jumpFilter, setJumpFilter] = useState<JumpFilter>('All');
   const [selectionModeEnabled, setSelectionModeEnabled] = useState(false);
+  const [pendingBulkDeleteIds, setPendingBulkDeleteIds] = useState<number[]>([]);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const [isBulkEditOpen, setIsBulkEditOpen] = useState(false);
+  const [bulkEditIds, setBulkEditIds] = useState<number[]>([]);
+  const [bulkEditEnabled, setBulkEditEnabled] = useState(false);
+  const [bulkEditPriority, setBulkEditPriority] = useState('');
+  const [isApplyingBulkEdit, setIsApplyingBulkEdit] = useState(false);
 
   const indexersQuery = useApiQuery({
     queryKey: queryKeys.indexers(),
@@ -327,6 +350,145 @@ export default function IndexersPage() {
     return rows.filter(row => matchesJumpFilter(row.name, jumpFilter));
   }, [indexersQuery.data, jumpFilter]);
 
+  const tableColumns: DataTableColumn<IndexerRow>[] = selectionModeEnabled
+    ? [
+        {
+          key: 'select',
+          header: 'Select',
+          className: 'w-16',
+          render: row => <SelectionCheckbox rowId={row.id} />,
+        },
+        ...columns,
+      ]
+    : columns;
+
+  const handleBulkDelete = async () => {
+    if (pendingBulkDeleteIds.length === 0 || isBulkDeleting) {
+      return;
+    }
+
+    setIsBulkDeleting(true);
+    const results = await Promise.allSettled(pendingBulkDeleteIds.map(id => api.indexerApi.remove(id)));
+    const deletedCount = results.filter(result => result.status === 'fulfilled').length;
+    const failedCount = results.length - deletedCount;
+
+    if (deletedCount > 0) {
+      pushToast({
+        title: `Deleted ${deletedCount} indexers`,
+        variant: 'success',
+      });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.indexers() });
+    }
+
+    if (failedCount > 0) {
+      pushToast({
+        title: `Failed to delete ${failedCount} indexers`,
+        variant: 'error',
+      });
+    }
+
+    setIsBulkDeleting(false);
+    setPendingBulkDeleteIds([]);
+  };
+
+  const handleBulkTest = async (selectedIds: Array<string | number>) => {
+    const indexerIds = selectedIds.map(id => Number(id)).filter(id => Number.isFinite(id));
+    if (indexerIds.length === 0) {
+      return;
+    }
+
+    const results = await Promise.allSettled(
+      indexerIds.map(async id => {
+        const result = await api.indexerApi.test(id);
+        return { id, result };
+      }),
+    );
+
+    let passed = 0;
+    let failed = 0;
+    const diagnostics: Record<number, { message: string; hints: string[] }> = {};
+
+    results.forEach(result => {
+      if (result.status === 'fulfilled') {
+        diagnostics[result.value.id] = {
+          message: result.value.result.message,
+          hints: result.value.result.diagnostics?.remediationHints ?? [],
+        };
+        if (result.value.result.success) {
+          passed += 1;
+        } else {
+          failed += 1;
+        }
+        return;
+      }
+
+      failed += 1;
+    });
+
+    setTestOutput(current => ({
+      ...current,
+      ...diagnostics,
+    }));
+
+    pushToast({
+      title: 'Bulk indexer test complete',
+      message: `${passed} passed, ${failed} failed`,
+      variant: failed > 0 ? 'warning' : 'success',
+    });
+
+    void queryClient.invalidateQueries({ queryKey: ['health'] });
+  };
+
+  const openBulkEdit = (selectedIds: Array<string | number>) => {
+    const indexerIds = selectedIds.map(id => Number(id)).filter(id => Number.isFinite(id));
+    if (indexerIds.length === 0) {
+      return;
+    }
+
+    setBulkEditIds(indexerIds);
+    setBulkEditEnabled(false);
+    setBulkEditPriority('');
+    setIsBulkEditOpen(true);
+  };
+
+  const handleBulkEditApply = async () => {
+    if (bulkEditIds.length === 0 || isApplyingBulkEdit) {
+      return;
+    }
+
+    const parsedPriority = Number.parseInt(bulkEditPriority, 10);
+    const payload: { enabled: boolean; priority?: number } = {
+      enabled: bulkEditEnabled,
+    };
+    if (!Number.isNaN(parsedPriority)) {
+      payload.priority = parsedPriority;
+    }
+
+    setIsApplyingBulkEdit(true);
+    const results = await Promise.allSettled(bulkEditIds.map(id => api.indexerApi.update(id, payload)));
+    const successCount = results.filter(result => result.status === 'fulfilled').length;
+    const failedCount = results.length - successCount;
+
+    if (successCount > 0) {
+      pushToast({
+        title: `Updated ${successCount} indexers`,
+        variant: 'success',
+      });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.indexers() });
+    }
+
+    if (failedCount > 0) {
+      pushToast({
+        title: `Failed to update ${failedCount} indexers`,
+        variant: 'error',
+      });
+    }
+
+    setIsApplyingBulkEdit(false);
+    setIsBulkEditOpen(false);
+    setBulkEditIds([]);
+  };
+
   return (
     <section className="space-y-5">
       <header className="space-y-1">
@@ -394,42 +556,107 @@ export default function IndexersPage() {
         emptyTitle="No indexers configured"
         emptyBody="Create your first indexer below."
       >
-        <DataTable
-          data={filteredRows}
-          columns={columns}
-          getRowId={row => row.id}
-          onSort={() => {
-            // Sorting is managed by backend defaults for now.
-          }}
-          rowActions={row => (
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                className="rounded-sm border border-border-subtle px-2 py-1 text-xs"
-                onClick={() => {
-                  setIsAddModalOpen(false);
-                  setEditing(row);
+        {selectionModeEnabled ? (
+          <SelectProvider rowIds={filteredRows.map(row => row.id)}>
+            <div className="space-y-3">
+              <DataTable
+                data={filteredRows}
+                columns={tableColumns}
+                getRowId={row => row.id}
+                onSort={() => {
+                  // Sorting is managed by backend defaults for now.
                 }}
-              >
-                Edit
-              </button>
-              <button
-                type="button"
-                className="rounded-sm border border-border-subtle px-2 py-1 text-xs"
-                onClick={() => testMutation.mutate(row.id)}
-              >
-                Test
-              </button>
-              <button
-                type="button"
-                className="rounded-sm border border-status-error/60 px-2 py-1 text-xs text-status-error"
-                onClick={() => deleteMutation.mutate(row.id)}
-              >
-                Delete
-              </button>
+                rowActions={row => (
+                  <div className="flex justify-end gap-2">
+                    <button
+                      type="button"
+                      className="rounded-sm border border-border-subtle px-2 py-1 text-xs"
+                      onClick={() => {
+                        setIsAddModalOpen(false);
+                        setEditing(row);
+                      }}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded-sm border border-border-subtle px-2 py-1 text-xs"
+                      onClick={() => testMutation.mutate(row.id)}
+                    >
+                      Test
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded-sm border border-status-error/60 px-2 py-1 text-xs text-status-error"
+                      onClick={() => deleteMutation.mutate(row.id)}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                )}
+              />
+              <SelectFooter
+                actions={[
+                  {
+                    label: 'Delete Selected',
+                    onClick: selectedIds => {
+                      setPendingBulkDeleteIds(selectedIds.map(id => Number(id)).filter(id => Number.isFinite(id)));
+                    },
+                  },
+                  {
+                    label: 'Test Selected',
+                    onClick: selectedIds => {
+                      void handleBulkTest(selectedIds);
+                    },
+                  },
+                  {
+                    label: 'Bulk Edit',
+                    onClick: selectedIds => {
+                      openBulkEdit(selectedIds);
+                    },
+                  },
+                ]}
+              />
             </div>
-          )}
-        />
+          </SelectProvider>
+        ) : (
+          <DataTable
+            data={filteredRows}
+            columns={tableColumns}
+            getRowId={row => row.id}
+            onSort={() => {
+              // Sorting is managed by backend defaults for now.
+            }}
+            rowActions={row => (
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  className="rounded-sm border border-border-subtle px-2 py-1 text-xs"
+                  onClick={() => {
+                    setIsAddModalOpen(false);
+                    setEditing(row);
+                  }}
+                >
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  className="rounded-sm border border-border-subtle px-2 py-1 text-xs"
+                  onClick={() => testMutation.mutate(row.id)}
+                >
+                  Test
+                </button>
+                <button
+                  type="button"
+                  className="rounded-sm border border-status-error/60 px-2 py-1 text-xs text-status-error"
+                  onClick={() => deleteMutation.mutate(row.id)}
+                >
+                  Delete
+                </button>
+              </div>
+            )}
+          />
+        )}
       </QueryPanel>
 
       <AddIndexerModal
@@ -451,6 +678,82 @@ export default function IndexersPage() {
           onSave={handleEditFromModal}
         />
       ) : null}
+
+      <ConfirmModal
+        isOpen={pendingBulkDeleteIds.length > 0}
+        title="Delete selected indexers"
+        description={`This will delete ${pendingBulkDeleteIds.length} selected indexers.`}
+        onCancel={() => {
+          setPendingBulkDeleteIds([]);
+        }}
+        onConfirm={() => {
+          void handleBulkDelete();
+        }}
+        confirmLabel={`Delete ${pendingBulkDeleteIds.length} Indexers`}
+        isConfirming={isBulkDeleting}
+      />
+
+      <Modal
+        isOpen={isBulkEditOpen}
+        ariaLabel="Bulk edit indexers"
+        onClose={() => {
+          setIsBulkEditOpen(false);
+          setBulkEditIds([]);
+        }}
+      >
+        <ModalHeader title="Bulk Edit Indexers" onClose={() => {
+          setIsBulkEditOpen(false);
+          setBulkEditIds([]);
+        }} />
+        <ModalBody>
+          <div className="space-y-4">
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={bulkEditEnabled}
+                onChange={event => {
+                  setBulkEditEnabled(event.currentTarget.checked);
+                }}
+              />
+              Enable selected indexers
+            </label>
+            <label className="grid gap-1 text-sm">
+              <span>Priority</span>
+              <input
+                type="number"
+                value={bulkEditPriority}
+                onChange={event => {
+                  setBulkEditPriority(event.currentTarget.value);
+                }}
+                className="w-24 rounded-sm border border-border-subtle bg-surface-0 px-2 py-1 text-xs"
+              />
+            </label>
+          </div>
+        </ModalBody>
+        <ModalFooter>
+          <button
+            type="button"
+            className="rounded-sm border border-border-subtle px-3 py-1 text-sm"
+            onClick={() => {
+              setIsBulkEditOpen(false);
+              setBulkEditIds([]);
+            }}
+            disabled={isApplyingBulkEdit}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            className="rounded-sm border border-border-subtle px-3 py-1 text-sm"
+            onClick={() => {
+              void handleBulkEditApply();
+            }}
+            disabled={isApplyingBulkEdit}
+          >
+            Apply Changes
+          </button>
+        </ModalFooter>
+      </Modal>
 
       {Object.entries(testOutput).length > 0 ? (
         <section className="rounded-lg border border-border-subtle bg-surface-1 p-4">

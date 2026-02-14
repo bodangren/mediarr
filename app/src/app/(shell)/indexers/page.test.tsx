@@ -461,4 +461,124 @@ describe('indexers page', () => {
       );
     });
   });
+
+  it('confirms and deletes selected indexers in bulk mode', async () => {
+    listMock.mockResolvedValue([
+      buildIndexer({ id: 201, name: 'Bulk Alpha' }),
+      buildIndexer({ id: 202, name: 'Bulk Beta' }),
+      buildIndexer({ id: 203, name: 'Bulk Gamma' }),
+    ]);
+
+    const queryClient = createTestQueryClient();
+    renderPage(queryClient);
+
+    const alphaRow = (await screen.findByText('Bulk Alpha')).closest('tr');
+    const betaRow = screen.getByText('Bulk Beta').closest('tr');
+    expect(alphaRow).not.toBeNull();
+    expect(betaRow).not.toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Select Mode' }));
+    const alphaSelectableRow = screen.getByText('Bulk Alpha').closest('tr');
+    const betaSelectableRow = screen.getByText('Bulk Beta').closest('tr');
+    fireEvent.click(within(alphaSelectableRow as HTMLElement).getByRole('checkbox', { name: 'Select row' }));
+    fireEvent.click(within(betaSelectableRow as HTMLElement).getByRole('checkbox', { name: 'Select row' }));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Delete Selected' }));
+
+    const confirmModal = await screen.findByRole('dialog', { name: 'Delete selected indexers' });
+    fireEvent.click(within(confirmModal).getByRole('button', { name: 'Delete 2 Indexers' }));
+
+    await waitFor(() => {
+      expect(removeMock).toHaveBeenCalledTimes(2);
+      expect(removeMock).toHaveBeenCalledWith(201);
+      expect(removeMock).toHaveBeenCalledWith(202);
+    });
+
+    expect(await screen.findByText('Deleted 2 indexers')).toBeInTheDocument();
+  });
+
+  it('runs bulk test operations for selected indexers', async () => {
+    listMock.mockResolvedValue([
+      buildIndexer({ id: 301, name: 'Test Alpha' }),
+      buildIndexer({ id: 302, name: 'Test Beta' }),
+    ]);
+
+    testMock.mockImplementation((id: number) => {
+      if (id === 301) {
+        return Promise.resolve({
+          success: true,
+          message: 'Alpha healthy',
+          diagnostics: { remediationHints: ['No remediation needed.'] },
+          healthSnapshot: null,
+        });
+      }
+
+      return Promise.resolve({
+        success: false,
+        message: 'Beta timeout',
+        diagnostics: { remediationHints: ['Check DNS'] },
+        healthSnapshot: { failureCount: 3, lastErrorMessage: 'timeout' },
+      });
+    });
+
+    const queryClient = createTestQueryClient();
+    renderPage(queryClient);
+
+    const alphaRow = (await screen.findByText('Test Alpha')).closest('tr');
+    const betaRow = screen.getByText('Test Beta').closest('tr');
+    expect(alphaRow).not.toBeNull();
+    expect(betaRow).not.toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Select Mode' }));
+    const alphaSelectableRow = screen.getByText('Test Alpha').closest('tr');
+    const betaSelectableRow = screen.getByText('Test Beta').closest('tr');
+    fireEvent.click(within(alphaSelectableRow as HTMLElement).getByRole('checkbox', { name: 'Select row' }));
+    fireEvent.click(within(betaSelectableRow as HTMLElement).getByRole('checkbox', { name: 'Select row' }));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Test Selected' }));
+
+    await waitFor(() => {
+      expect(testMock).toHaveBeenCalledTimes(2);
+      expect(testMock).toHaveBeenCalledWith(301);
+      expect(testMock).toHaveBeenCalledWith(302);
+    });
+
+    expect(await screen.findByText('Bulk indexer test complete')).toBeInTheDocument();
+    expect(await screen.findByText('1 passed, 1 failed')).toBeInTheDocument();
+  });
+
+  it('opens bulk edit modal and applies updates to selected indexers', async () => {
+    listMock.mockResolvedValue([
+      buildIndexer({ id: 401, name: 'Edit Alpha', enabled: false, priority: 5 }),
+      buildIndexer({ id: 402, name: 'Edit Beta', enabled: false, priority: 10 }),
+    ]);
+
+    const queryClient = createTestQueryClient();
+    renderPage(queryClient);
+
+    const alphaRow = (await screen.findByText('Edit Alpha')).closest('tr');
+    const betaRow = screen.getByText('Edit Beta').closest('tr');
+    expect(alphaRow).not.toBeNull();
+    expect(betaRow).not.toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Select Mode' }));
+    const alphaSelectableRow = screen.getByText('Edit Alpha').closest('tr');
+    const betaSelectableRow = screen.getByText('Edit Beta').closest('tr');
+    fireEvent.click(within(alphaSelectableRow as HTMLElement).getByRole('checkbox', { name: 'Select row' }));
+    fireEvent.click(within(betaSelectableRow as HTMLElement).getByRole('checkbox', { name: 'Select row' }));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Bulk Edit' }));
+
+    const modal = await screen.findByRole('dialog', { name: 'Bulk edit indexers' });
+    fireEvent.click(within(modal).getByRole('checkbox', { name: 'Enable selected indexers' }));
+    fireEvent.change(within(modal).getByLabelText('Priority'), { target: { value: '77' } });
+    fireEvent.click(within(modal).getByRole('button', { name: 'Apply Changes' }));
+
+    await waitFor(() => {
+      expect(updateMock).toHaveBeenCalledWith(401, { enabled: true, priority: 77 });
+      expect(updateMock).toHaveBeenCalledWith(402, { enabled: true, priority: 77 });
+    });
+
+    expect(await screen.findByText('Updated 2 indexers')).toBeInTheDocument();
+  });
 });

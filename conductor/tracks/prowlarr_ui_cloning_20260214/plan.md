@@ -51,7 +51,7 @@ This plan implements the Prowlarr UI cloning based on the comprehensive specific
   - [x] Implement Redux middleware for state persistence
   - [x] Verify coverage >80%
 
-- [ ] **Task 1.5: Create routing structure**
+- [~] **Task 1.5: Create routing structure**
   - [ ] Write tests for route configuration
   - [ ] Implement Next.js App Router routes matching Prowlarr structure
   - [ ] Write tests for navigation active states

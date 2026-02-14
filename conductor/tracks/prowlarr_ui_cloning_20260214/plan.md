@@ -88,7 +88,7 @@ This plan implements the Prowlarr UI cloning based on the comprehensive specific
   - [x] Implement SortMenu component
   - [x] Verify coverage >80%
 
-- [ ] **Task 2.3: Implement filtering system (TDD)**
+- [~] **Task 2.3: Implement filtering system (TDD)**
   - [ ] Write tests for filter predicates
   - [ ] Implement filter predicate functions
   - [ ] Write tests for FilterMenu component

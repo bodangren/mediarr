@@ -9,44 +9,71 @@ Track: `prowlarr_ui_cloning_20260214`
 - Phase 3 complete and checkpointed (`7083524`).
 - Phase 4 is in progress:
   - Task `4.1` completed (`07e2e6d`).
-  - Next task is `4.2` (`AddIndexerModal`) and is not started.
+  - Task `4.2` completed (`82d93e7`).
+  - Task `4.3` completed (`09d232d`).
+  - Task `4.4` completed (`97c2ffe`).
+  - Next task is `4.5` (`Implement bulk operations`) and is not started.
 
 ## What Was Completed This Session
 
-1. Closed Phase 2 and executed checkpoint protocol.
-2. Completed Phase 3 tasks (`3.1`, `3.2`, `3.3`), manual verification, and phase checkpoint protocol.
-3. Completed Phase 4 Task `4.1` by extending existing monolith indexer page for parity:
-   - Added `PageToolbar` and `PageJumpBar` primitives.
-   - Added toolbar actions (`Add`, `Refresh`, `Sync`, `Select Mode`).
-   - Added alphabet jump filtering (`All`, `#`, `A-Z`) for indexer rows.
-   - Expanded indexer page tests for toolbar/jumpbar/edit/delete/save-error flows.
+1. Completed Task `4.3` with strict TDD:
+   - Added `EditIndexerModal` and replaced inline edit UI on the indexers page.
+   - Wired modal save to update API integration.
+   - Added modal-specific tests and page-level modal integration tests.
+2. Completed Task `4.4` with strict TDD:
+   - Replaced the stats route scaffold with a telemetry-driven dashboard.
+   - Added stat cards (total, active, failed, avg priority).
+   - Added protocol stacked bars, failure-rate bars, and capability-mix chart sections.
+   - Updated scaffold tests so only remaining scaffolded routes assert scaffold copy.
+3. Updated Conductor bookkeeping:
+   - Plan entries updated and committed for Task `4.3` and `4.4`.
+   - Git notes attached to both task implementation commits.
 
-## High-Value Validation Commands
+## Validation Snapshot
 
-Use these before starting Task `4.2`:
+Executed and passing:
 
 ```bash
-CI=true npm run test --workspace=app -- "src/app/(shell)/indexers/page.test.tsx"
-CI=true npm run test:coverage --workspace=app -- "src/app/(shell)/indexers/page.test.tsx"
+CI=true npm run test --workspace=app -- \
+  "src/app/(shell)/indexers/EditIndexerModal.test.tsx" \
+  "src/app/(shell)/indexers/page.test.tsx" \
+  "src/app/(shell)/indexers/stats/page.test.tsx" \
+  "src/app/(shell)/prowlarr-route-scaffolds.test.tsx"
+
 CI=true npm run lint --workspace=app -- \
-  src/components/primitives/PageToolbar.tsx \
-  src/components/primitives/PageJumpBar.tsx \
+  "src/app/(shell)/indexers/EditIndexerModal.tsx" \
+  "src/app/(shell)/indexers/EditIndexerModal.test.tsx" \
   "src/app/(shell)/indexers/page.tsx" \
+  "src/app/(shell)/indexers/page.test.tsx" \
+  "src/app/(shell)/indexers/stats/page.tsx" \
+  "src/app/(shell)/indexers/stats/page.test.tsx" \
+  "src/app/(shell)/prowlarr-route-scaffolds.test.tsx"
+
+CI=true npm run test:coverage --workspace=app -- \
+  "src/app/(shell)/indexers/EditIndexerModal.test.tsx" \
   "src/app/(shell)/indexers/page.test.tsx"
+
+CI=true npm run test:coverage --workspace=app -- \
+  "src/app/(shell)/indexers/stats/page.test.tsx"
 ```
+
+Coverage highlights from scoped runs:
+- `app/src/app/(shell)/indexers/EditIndexerModal.tsx`: ~95.5%
+- `app/src/app/(shell)/indexers/page.tsx`: ~93.8%
+- `app/src/app/(shell)/indexers/stats/page.tsx`: ~97.9%
 
 ## Required Next Steps
 
-1. Mark Task `4.2` as `[~]` in `plan.md`.
-2. Implement `AddIndexerModal` with strict TDD flow:
-   - Write failing tests first for preset selection, schema-driven form rendering, and connection test flow.
-   - Reuse Phase 3 primitives (`Modal`, `Form`, `SpecialInputs`) instead of building duplicate controls.
-3. Continue with `4.3`, `4.4`, `4.5`, then perform:
-   - Phase 4 manual verification task
-   - Phase 4 checkpoint protocol
+1. Mark Task `4.5` as `[~]` in `plan.md`.
+2. Implement bulk indexer operations with TDD:
+   - Bulk delete (with confirm flow).
+   - Bulk connectivity test.
+   - Bulk edit baseline.
+3. Complete `Task: Conductor - User Manual Verification 'Phase 4'`.
+4. Run Phase 4 checkpoint protocol after `4.5` and manual verification are complete.
 
-## Notes For Implementation Strategy
+## Implementation Notes For Next Session
 
-- Prefer extending the current `app/src/app/(shell)/indexers/page.tsx` workflow where possible for faster parity.
-- `DynamicForm` remains available, but progressively migrating toward new form/modal primitives will reduce duplication.
-- Global app lint still has unrelated existing issues in other modules; keep checks scoped to changed files unless explicitly addressing repo-wide lint debt.
+- `EditIndexerModal` now owns edit form state and dynamic schema rendering.
+- `DynamicForm` is no longer used by `indexers/page.tsx`.
+- Stats page now requires query context (`react-query`) and is no longer a static scaffold.

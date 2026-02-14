@@ -219,7 +219,7 @@ This plan implements the Prowlarr UI cloning based on the comprehensive specific
   - [ ] Implement doughnut/pie charts
   - [ ] Verify coverage >80%
 
-- [ ] **Task 4.5: Implement bulk operations (TDD)**
+- [x] **Task 4.5: Implement bulk operations (TDD)** (commit: `1e6fa87`)
   - [ ] Write tests for bulk delete functionality
   - [ ] Implement bulk delete with confirmation
   - [ ] Write tests for bulk test functionality

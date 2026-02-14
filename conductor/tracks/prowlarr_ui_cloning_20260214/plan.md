@@ -26,7 +26,7 @@ This plan implements the Prowlarr UI cloning based on the comprehensive specific
   - [x] Confirm Tailwind CSS setup
   - [x] Document any gaps in infrastructure
 
-- [ ] **Task 1.2: Create base layout components (TDD)**
+- [~] **Task 1.2: Create base layout components (TDD)**
   - [ ] Write tests for Page component structure
   - [ ] Implement Page wrapper component with header, sidebar, content area
   - [ ] Write tests for PageSidebar navigation

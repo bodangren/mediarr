@@ -35,6 +35,7 @@ export function registerReleaseRoutes(
           title: { type: 'string' },
           size: { type: 'number' },
           seeders: { type: 'number' },
+          indexerFlags: { type: 'string' },
           quality: { type: 'string' },
           age: { type: 'number' },
           magnetUrl: { type: 'string' },
@@ -52,6 +53,7 @@ export function registerReleaseRoutes(
       title: string;
       size: number;
       seeders: number;
+      indexerFlags?: string;
       quality?: string;
       age?: number;
       magnetUrl?: string;

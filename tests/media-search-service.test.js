@@ -136,4 +136,31 @@ describe('MediaSearchService', () => {
     expect(result).toEqual({ infoHash: 'moviehash' });
     expect(torrentManager.addTorrent).toHaveBeenCalledWith({ magnetUrl: 'magnet:?ep1' });
   });
+
+  it('should include indexer flags in mapped candidates', async () => {
+    const mockIndexer = {
+      search: vi.fn().mockResolvedValue([
+        {
+          title: 'Flagged.Result.1080p',
+          magnetUrl: 'magnet:?flagged',
+          size: 1234,
+          seeders: 12,
+          indexerFlags: 'freeleech',
+        },
+      ]),
+      config: { name: 'Flag Indexer' },
+    };
+
+    indexerRepository.findAllEnabled.mockResolvedValue([{ id: 3 }]);
+    indexerFactory.fromDatabaseRecord.mockReturnValue(mockIndexer);
+
+    const candidates = await service.getSearchCandidates({ q: 'Flagged Result' });
+
+    expect(candidates).toHaveLength(1);
+    expect(candidates[0]).toMatchObject({
+      title: 'Flagged.Result.1080p',
+      indexer: 'Flag Indexer',
+      indexerFlags: 'freeleech',
+    });
+  });
 });

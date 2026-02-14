@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { DataTable, type DataTableColumn } from '@/components/primitives/DataTable';
+import { Label } from '@/components/primitives/Label';
 import { QueryPanel } from '@/components/primitives/QueryPanel';
 import { getApiClients } from '@/lib/api/client';
 import { queryKeys } from '@/lib/query/queryKeys';
@@ -22,13 +23,14 @@ interface ReleaseRow {
   title: string;
   size: number;
   seeders: number;
+  indexerFlags?: string;
   quality?: string;
   age?: number;
   magnetUrl?: string;
   downloadUrl?: string;
 }
 
-interface SearchPayload {
+interface SearchPayload extends Record<string, unknown> {
   query: string;
   searchType: SearchType;
   category?: string;
@@ -80,6 +82,17 @@ function inferProtocol(row: ReleaseRow): string {
 
 function formatGiB(size: number): string {
   return `${(size / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+}
+
+function parseIndexerFlags(flags?: string): string[] {
+  if (!flags) {
+    return [];
+  }
+
+  return flags
+    .split(',')
+    .map(flag => flag.trim().toLowerCase())
+    .filter(Boolean);
 }
 
 function buildPayload(form: FormState): SearchPayload {
@@ -168,6 +181,25 @@ export default function SearchPage() {
       key: 'indexer',
       header: 'Indexer',
       render: row => row.indexer,
+    },
+    {
+      key: 'flags',
+      header: 'Flags',
+      render: row => {
+        const flags = parseIndexerFlags(row.indexerFlags);
+
+        if (flags.length === 0) {
+          return '-';
+        }
+
+        return (
+          <div className="flex flex-wrap gap-1">
+            {flags.map(flag => (
+              <Label key={`${row.indexer}-${row.title}-${flag}`}>{flag}</Label>
+            ))}
+          </div>
+        );
+      },
     },
     {
       key: 'size',

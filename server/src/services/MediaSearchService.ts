@@ -6,6 +6,7 @@ export interface SearchCandidate {
   title: string;
   size: number;
   seeders: number;
+  indexerFlags?: string;
   quality?: string;
   age?: number;
   magnetUrl?: string;
@@ -75,6 +76,7 @@ export class MediaSearchService {
           title: result.title ?? '',
           size: result.size ?? 0,
           seeders: result.seeders ?? 0,
+          indexerFlags: result.indexerFlags,
           quality: result.quality,
           age: result.age,
           magnetUrl: result.magnetUrl,

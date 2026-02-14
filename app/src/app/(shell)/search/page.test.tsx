@@ -145,6 +145,46 @@ describe('search page', () => {
     expect(screen.getByText('torrent')).toBeInTheDocument();
   });
 
+  it('renders search-specific columns with row fallbacks and indexer flags', async () => {
+    searchCandidatesMock.mockResolvedValueOnce([
+      {
+        indexer: 'Indexer A',
+        title: 'Dune Part Two 1080p WEB-DL',
+        size: 4_294_967_296,
+        seeders: 140,
+        age: 2,
+        magnetUrl: 'magnet:?xt=urn:btih:abc123',
+        indexerFlags: 'freeleech,vip',
+      },
+      {
+        indexer: 'Indexer B',
+        title: 'Fallback Release',
+        size: 1_073_741_824,
+        seeders: 5,
+      },
+    ]);
+
+    const queryClient = createTestQueryClient();
+    renderPage(queryClient);
+
+    fireEvent.change(screen.getByLabelText('Search query'), { target: { value: 'fallback case' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Search releases' }));
+
+    expect(await screen.findByRole('columnheader', { name: 'Protocol' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Age' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Title' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Indexer' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Flags' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Size' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Seeders' })).toBeInTheDocument();
+
+    expect(screen.getByText('freeleech')).toBeInTheDocument();
+    expect(screen.getByText('vip')).toBeInTheDocument();
+    expect(screen.getByText('Fallback Release')).toBeInTheDocument();
+    expect(screen.getByText('unknown')).toBeInTheDocument();
+    expect(screen.getByText('- d')).toBeInTheDocument();
+  });
+
   it('shows empty state when search returns no rows', async () => {
     searchCandidatesMock.mockResolvedValueOnce([]);
 

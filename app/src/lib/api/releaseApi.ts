@@ -7,6 +7,7 @@ const releaseCandidateSchema = z.object({
   title: z.string(),
   size: z.number(),
   seeders: z.number(),
+  indexerFlags: z.string().optional(),
   quality: z.string().optional(),
   age: z.number().optional(),
   magnetUrl: z.string().optional(),

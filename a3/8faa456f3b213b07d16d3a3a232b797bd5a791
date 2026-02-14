@@ -1,0 +1,14 @@
+Task: 3.2 Create Form components (TDD)
+
+Summary:
+- Added reusable form primitives: Form, FormGroup, TextInput, SelectInput, EnhancedSelectInput, CheckInput, and TagInput.
+- Added test suite covering form submit flow, validation/error rendering, select updates, enhanced selection, checkbox toggles, and tag toggling.
+- Implemented enhanced select filtering and selected-state visuals for parity-oriented settings/indexer workflows.
+
+Files:
+- app/src/components/primitives/Form.tsx
+- app/src/components/primitives/form.test.tsx
+
+Why:
+- Establish shared input primitives so Prowlarr add/edit/settings screens can reuse consistent form behavior instead of page-specific ad-hoc controls.
+- Keep feature-parity work maintainable across the unified monolith.

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { NAV_ITEMS, buildBreadcrumbs } from '@/lib/navigation';
+import { useUIStore } from '@/lib/state/useUIStore';
 import { PageLayout } from './PageLayout';
 
 interface AppShellProps {
@@ -11,9 +12,9 @@ interface AppShellProps {
 }
 
 export function AppShell({ pathname, children }: AppShellProps) {
+  const { state: uiState, toggleSidebarCollapsed } = useUIStore();
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [query, setQuery] = useState('');
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     const onKeydown = (event: KeyboardEvent) => {
@@ -51,8 +52,8 @@ export function AppShell({ pathname, children }: AppShellProps) {
   return (
     <PageLayout
       pathname={pathname}
-      sidebarCollapsed={sidebarCollapsed}
-      onToggleSidebar={() => setSidebarCollapsed(current => !current)}
+      sidebarCollapsed={uiState.sidebarCollapsed}
+      onToggleSidebar={toggleSidebarCollapsed}
       header={
         <div className="flex items-center justify-between gap-3">
           <nav aria-label="Breadcrumbs" className="flex flex-wrap items-center gap-2 text-sm text-text-secondary">

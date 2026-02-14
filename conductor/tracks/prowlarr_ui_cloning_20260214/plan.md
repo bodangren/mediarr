@@ -156,7 +156,7 @@ This plan implements the Prowlarr UI cloning based on the comprehensive specific
   - [ ] Implement tag selection input
   - [ ] Verify coverage >80%
 
-- [ ] **Task 3.3: Create specialized inputs (TDD)**
+- [x] **Task 3.3: Create specialized inputs (TDD)** (commit: `4a9bac4`)
   - [ ] Write tests for PasswordInput
   - [ ] Implement password input with visibility toggle
   - [ ] Write tests for PathInput

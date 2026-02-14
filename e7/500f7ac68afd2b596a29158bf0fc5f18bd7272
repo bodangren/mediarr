@@ -1,0 +1,35 @@
+Phase: Phase 4 Indexers Management Views checkpoint verification
+
+Previous checkpoint: 7083524
+Checkpoint commit: e7500f7ac68afd2b596a29158bf0fc5f18bd7272
+
+Changed files since previous checkpoint:
+- app/src/app/(shell)/indexers/AddIndexerModal.test.tsx
+- app/src/app/(shell)/indexers/AddIndexerModal.tsx
+- app/src/app/(shell)/indexers/EditIndexerModal.test.tsx
+- app/src/app/(shell)/indexers/EditIndexerModal.tsx
+- app/src/app/(shell)/indexers/page.test.tsx
+- app/src/app/(shell)/indexers/page.tsx
+- app/src/app/(shell)/indexers/stats/page.test.tsx
+- app/src/app/(shell)/indexers/stats/page.tsx
+- app/src/app/(shell)/prowlarr-route-scaffolds.test.tsx
+- app/src/app/(shell)/settings/settings-form.test.tsx
+- app/src/app/(shell)/settings/settings-form.tsx
+- app/src/app/(shell)/subtitles/page.tsx
+- app/src/components/primitives/PageJumpBar.tsx
+- app/src/components/primitives/PageToolbar.tsx
+- app/src/components/primitives/SelectCheckboxCell.tsx
+- app/src/lib/api/indexerApi.ts
+- app/src/lib/api/routeMap.ts
+- app/src/lib/msw/handlers.ts
+- server/src/api/routeMap.ts
+- server/src/api/routes/indexerRoutes.ts
+- tests/api-handlers.test.ts
+
+Automated test command executed:
+CI=true npm run test --workspace=app -- "src/app/(shell)/indexers/AddIndexerModal.test.tsx" "src/app/(shell)/indexers/EditIndexerModal.test.tsx" "src/app/(shell)/indexers/page.test.tsx" "src/app/(shell)/indexers/stats/page.test.tsx" "src/app/(shell)/prowlarr-route-scaffolds.test.tsx" "src/app/(shell)/settings/settings-form.test.tsx" "src/app/(shell)/subtitles/page.test.tsx" src/components/primitives/selection.test.tsx && CI=true npm test -- tests/api-handlers.test.ts
+
+Outcome:
+- App workspace: 8 files / 46 tests passed.
+- Root API handlers: 1 file / 14 tests passed.
+- No phase checkpoint blocking failures.

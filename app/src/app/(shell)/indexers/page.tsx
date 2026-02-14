@@ -13,7 +13,7 @@ import { queryKeys } from '@/lib/query/queryKeys';
 import { useApiQuery } from '@/lib/query/useApiQuery';
 import { useOptimisticMutation } from '@/lib/query/useOptimisticMutation';
 import { AddIndexerModal, type AddIndexerDraft, type IndexerPreset } from './AddIndexerModal';
-import { DynamicForm } from './DynamicForm';
+import { EditIndexerModal, type EditIndexerDraft } from './EditIndexerModal';
 
 type IndexerRow = {
   id: number;
@@ -32,7 +32,7 @@ type IndexerRow = {
   } | null;
 };
 
-interface IndexerFormState {
+interface SaveIndexerInput {
   name: string;
   implementation: string;
   configContract: string;
@@ -41,9 +41,6 @@ interface IndexerFormState {
   supportsRss: boolean;
   supportsSearch: boolean;
   priority: number;
-}
-
-interface SaveIndexerInput extends IndexerFormState {
   settings: string;
 }
 
@@ -61,32 +58,6 @@ function toSaveIndexerInput(draft: AddIndexerDraft): SaveIndexerInput {
   };
 }
 
-function createDefaultFormState(): IndexerFormState {
-  return {
-    name: '',
-    implementation: 'Torznab',
-    configContract: 'TorznabSettings',
-    protocol: 'torrent',
-    enabled: true,
-    supportsRss: true,
-    supportsSearch: true,
-    priority: 25,
-  };
-}
-
-function parseSettings(raw: string): Record<string, unknown> {
-  try {
-    const parsed = JSON.parse(raw) as unknown;
-    if (parsed && typeof parsed === 'object') {
-      return parsed as Record<string, unknown>;
-    }
-  } catch {
-    // Invalid JSON is surfaced through form validation instead.
-  }
-
-  return {};
-}
-
 function healthStatus(row: IndexerRow): 'completed' | 'warning' | 'error' {
   const failureCount = row.health?.failureCount ?? 0;
   if (failureCount >= 3) {
@@ -99,16 +70,6 @@ function healthStatus(row: IndexerRow): 'completed' | 'warning' | 'error' {
 
   return 'completed';
 }
-
-const torznabSchema = [
-  { name: 'url', type: 'text', label: 'Indexer URL', required: true },
-  { name: 'apiKey', type: 'text', label: 'API Key', required: true },
-];
-
-const usenetSchema = [
-  { name: 'host', type: 'text', label: 'Host', required: true },
-  { name: 'apiKey', type: 'text', label: 'API Key', required: true },
-];
 
 const addIndexerPresets: IndexerPreset[] = [
   {
@@ -144,17 +105,9 @@ export default function IndexersPage() {
 
   const [editing, setEditing] = useState<IndexerRow | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [formState, setFormState] = useState<IndexerFormState>(() => createDefaultFormState());
-  const [formError, setFormError] = useState<string | null>(null);
   const [testOutput, setTestOutput] = useState<Record<number, { message: string; hints: string[] }>>({});
   const [jumpFilter, setJumpFilter] = useState<JumpFilter>('All');
   const [selectionModeEnabled, setSelectionModeEnabled] = useState(false);
-
-  const resetForm = () => {
-    setEditing(null);
-    setFormState(createDefaultFormState());
-    setFormError(null);
-  };
 
   const indexersQuery = useApiQuery({
     queryKey: queryKeys.indexers(),
@@ -210,25 +163,36 @@ export default function IndexersPage() {
     },
   });
 
-  const saveMutation = useMutation({
-    mutationFn: (payload: SaveIndexerInput) => {
-      if (editing) {
-        return api.indexerApi.update(editing.id, payload);
-      }
-
-      return api.indexerApi.create(payload);
-    },
+  const createMutation = useMutation({
+    mutationFn: (payload: SaveIndexerInput) => api.indexerApi.create(payload),
     onSuccess: () => {
       pushToast({
-        title: editing ? 'Indexer updated' : 'Indexer created',
+        title: 'Indexer created',
         variant: 'success',
       });
       setIsAddModalOpen(false);
-      resetForm();
       void queryClient.invalidateQueries({ queryKey: queryKeys.indexers() });
     },
     onError: (error: Error) => {
-      setFormError(error.message);
+      pushToast({
+        title: 'Save failed',
+        message: error.message,
+        variant: 'error',
+      });
+    },
+  });
+
+  const editMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: number; payload: SaveIndexerInput }) => api.indexerApi.update(id, payload),
+    onSuccess: () => {
+      pushToast({
+        title: 'Indexer updated',
+        variant: 'success',
+      });
+      setEditing(null);
+      void queryClient.invalidateQueries({ queryKey: queryKeys.indexers() });
+    },
+    onError: (error: Error) => {
       pushToast({
         title: 'Save failed',
         message: error.message,
@@ -328,23 +292,25 @@ export default function IndexersPage() {
     },
   ];
 
-  const handleSave = (settingsData: unknown) => {
-    if (formState.name.trim().length === 0) {
-      setFormError('Name is required.');
-      return;
-    }
-
-    setFormError(null);
-    const payload: SaveIndexerInput = {
-      ...formState,
-      settings: JSON.stringify(settingsData),
-    };
-
-    saveMutation.mutate(payload);
+  const handleCreateFromModal = (draft: AddIndexerDraft) => {
+    createMutation.mutate(toSaveIndexerInput(draft));
   };
 
-  const handleCreateFromModal = (draft: AddIndexerDraft) => {
-    saveMutation.mutate(toSaveIndexerInput(draft));
+  const handleEditFromModal = (draft: EditIndexerDraft) => {
+    editMutation.mutate({
+      id: draft.id,
+      payload: {
+        name: draft.name,
+        implementation: draft.implementation,
+        configContract: draft.configContract,
+        protocol: draft.protocol,
+        enabled: draft.enabled,
+        supportsRss: draft.supportsRss,
+        supportsSearch: draft.supportsSearch,
+        priority: draft.priority,
+        settings: JSON.stringify(draft.settings),
+      },
+    });
   };
 
   const handleDraftConnectionTest = async (draft: AddIndexerDraft) => {
@@ -361,22 +327,6 @@ export default function IndexersPage() {
     return rows.filter(row => matchesJumpFilter(row.name, jumpFilter));
   }, [indexersQuery.data, jumpFilter]);
 
-  const schema = useMemo(() => {
-    if (editing && editing.configContract && editing.configContract !== 'TorznabSettings') {
-        try {
-            return JSON.parse(editing.configContract);
-        } catch { return torznabSchema; }
-    }
-    return formState.protocol === 'usenet' ? usenetSchema : torznabSchema;
-  }, [editing, formState.protocol]);
-
-  const initialSettings = useMemo(() => {
-      if (editing) {
-          return parseSettings(editing.settings);
-      }
-      return {};
-  }, [editing]);
-
   return (
     <section className="space-y-5">
       <header className="space-y-1">
@@ -392,7 +342,7 @@ export default function IndexersPage() {
             type="button"
             className="rounded-sm border border-border-subtle px-3 py-1 text-sm"
             onClick={() => {
-              resetForm();
+              setEditing(null);
               setIsAddModalOpen(true);
             }}
           >
@@ -458,18 +408,7 @@ export default function IndexersPage() {
                 className="rounded-sm border border-border-subtle px-2 py-1 text-xs"
                 onClick={() => {
                   setIsAddModalOpen(false);
-                  setFormError(null);
                   setEditing(row);
-                  setFormState({
-                    name: row.name,
-                    implementation: row.implementation,
-                    configContract: row.configContract,
-                    protocol: row.protocol,
-                    enabled: row.enabled,
-                    supportsRss: row.supportsRss,
-                    supportsSearch: row.supportsSearch,
-                    priority: row.priority,
-                  });
                 }}
               >
                 Edit
@@ -493,84 +432,25 @@ export default function IndexersPage() {
         />
       </QueryPanel>
 
-      {editing ? (
-        <section className="rounded-lg border border-border-subtle bg-surface-1 p-4">
-          <h2 className="text-lg font-semibold">Edit Indexer</h2>
-          <div className="mt-3 mb-4 grid gap-3 sm:grid-cols-2">
-            <label className="space-y-1 text-sm">
-              <span>Name</span>
-              <input
-                className="w-full rounded-sm border border-border-subtle bg-surface-0 px-3 py-2"
-                value={formState.name}
-                onChange={event => {
-                  const name = event.currentTarget.value;
-                  setFormState(current => ({ ...current, name }));
-                }}
-              />
-            </label>
-
-            <label className="space-y-1 text-sm">
-              <span>Protocol</span>
-              <select
-                className="w-full rounded-sm border border-border-subtle bg-surface-0 px-3 py-2"
-                value={formState.protocol}
-                onChange={event => {
-                  const protocol = event.currentTarget.value;
-                  setFormError(null);
-                  setFormState(current => ({ ...current, protocol }));
-                }}
-              >
-                <option value="torrent">torrent</option>
-                <option value="usenet">usenet</option>
-              </select>
-            </label>
-
-            <label className="inline-flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={formState.enabled}
-                onChange={event => {
-                  const enabled = event.currentTarget.checked;
-                  setFormState(current => ({ ...current, enabled }));
-                }}
-              />
-              Enabled
-            </label>
-          </div>
-
-          <DynamicForm
-            schema={schema}
-            initialData={initialSettings}
-            onSubmit={handleSave}
-            submitLabel="Save"
-          />
-
-          <div className="mt-3 flex gap-2">
-            <button
-              type="button"
-              className="rounded-sm border border-border-subtle px-3 py-1 text-sm"
-              onClick={resetForm}
-            >
-              Cancel
-            </button>
-          </div>
-
-          {formError ? (
-            <p role="alert" className="mt-3 text-sm text-status-error">
-              {formError}
-            </p>
-          ) : null}
-        </section>
-      ) : null}
-
       <AddIndexerModal
         isOpen={isAddModalOpen}
         presets={addIndexerPresets}
-        isSubmitting={saveMutation.isPending}
+        isSubmitting={createMutation.isPending}
         onClose={() => setIsAddModalOpen(false)}
         onCreate={handleCreateFromModal}
         onTestConnection={handleDraftConnectionTest}
       />
+
+      {editing ? (
+        <EditIndexerModal
+          key={editing.id}
+          isOpen
+          indexer={editing}
+          isSubmitting={editMutation.isPending}
+          onClose={() => setEditing(null)}
+          onSave={handleEditFromModal}
+        />
+      ) : null}
 
       {Object.entries(testOutput).length > 0 ? (
         <section className="rounded-lg border border-border-subtle bg-surface-1 p-4">

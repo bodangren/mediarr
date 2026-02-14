@@ -188,7 +188,7 @@ describe('indexers page', () => {
     expect(screen.getByText('Beta Vault')).toBeInTheDocument();
   });
 
-  it('hydrates form state in edit mode and allows cancel reset', async () => {
+  it('opens edit modal with pre-populated values and supports cancel reset', async () => {
     listMock.mockResolvedValue([
       buildIndexer({
         id: 61,
@@ -205,13 +205,49 @@ describe('indexers page', () => {
 
     fireEvent.click(within(row as HTMLElement).getByRole('button', { name: 'Edit' }));
 
-    expect(screen.getByRole('heading', { name: 'Edit Indexer' })).toBeInTheDocument();
-    expect(screen.getByDisplayValue('Editable Indexer')).toBeInTheDocument();
+    const modal = screen.getByRole('dialog', { name: 'Edit indexer' });
+    expect(within(modal).getByDisplayValue('Editable Indexer')).toBeInTheDocument();
+    expect(within(modal).getByDisplayValue('https://editable.example')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('checkbox', { name: 'Enabled' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    fireEvent.click(within(modal).getByRole('button', { name: 'Cancel' }));
 
-    expect(screen.queryByRole('heading', { name: 'Edit Indexer' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: 'Edit indexer' })).not.toBeInTheDocument();
+  });
+
+  it('submits edited indexer payload through modal save action', async () => {
+    listMock.mockResolvedValue([
+      buildIndexer({
+        id: 91,
+        name: 'Updater Indexer',
+        settings: JSON.stringify({ url: 'https://old.example', apiKey: 'old-key' }),
+      }),
+    ]);
+
+    const queryClient = createTestQueryClient();
+    renderPage(queryClient);
+
+    const row = (await screen.findByText('Updater Indexer')).closest('tr');
+    expect(row).not.toBeNull();
+
+    fireEvent.click(within(row as HTMLElement).getByRole('button', { name: 'Edit' }));
+
+    const modal = await screen.findByRole('dialog', { name: 'Edit indexer' });
+    fireEvent.change(within(modal).getByLabelText('Name'), { target: { value: 'Updater Indexer v2' } });
+    fireEvent.change(within(modal).getByLabelText('Indexer URL'), { target: { value: 'https://new.example' } });
+    fireEvent.click(within(modal).getByRole('button', { name: 'Save Indexer' }));
+
+    await waitFor(() => {
+      expect(updateMock).toHaveBeenCalledWith(
+        91,
+        expect.objectContaining({
+          name: 'Updater Indexer v2',
+          settings: JSON.stringify({
+            url: 'https://new.example',
+            apiKey: 'old-key',
+          }),
+        }),
+      );
+    });
   });
 
   it('deletes an indexer row and shows deletion confirmation toast', async () => {

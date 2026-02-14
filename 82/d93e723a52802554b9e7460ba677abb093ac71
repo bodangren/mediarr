@@ -1,0 +1,24 @@
+Task 4.2: Create AddIndexerModal (TDD)
+
+Summary:
+- Added a new preset-driven AddIndexerModal that composes existing Modal/Form/SpecialInputs primitives.
+- Implemented preset selection, schema-driven field rendering (text/password/number/boolean), validation, and in-modal test-connection diagnostics.
+- Integrated modal workflow into the indexers page so Add now opens modal-based create flow while preserving inline edit flow.
+- Added non-persistent draft connectivity testing endpoint support across app + server via POST /api/indexers/test.
+- Expanded UI and backend tests to cover modal behavior, page integration, and draft-test API contract.
+
+Files:
+- app/src/app/(shell)/indexers/AddIndexerModal.tsx
+- app/src/app/(shell)/indexers/AddIndexerModal.test.tsx
+- app/src/app/(shell)/indexers/page.tsx
+- app/src/app/(shell)/indexers/page.test.tsx
+- app/src/lib/api/indexerApi.ts
+- app/src/lib/api/routeMap.ts
+- app/src/lib/msw/handlers.ts
+- server/src/api/routeMap.ts
+- server/src/api/routes/indexerRoutes.ts
+- tests/api-handlers.test.ts
+
+Why:
+- Prowlarr parity requires adding indexers via preset-oriented modal workflows with schema-specific settings and test-before-save behavior.
+- Draft connectivity testing avoids creating temporary persisted records while still validating connection/auth settings from the UI flow.

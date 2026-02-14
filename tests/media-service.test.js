@@ -17,6 +17,9 @@ describe('MediaService', () => {
         update: vi.fn(),
         delete: vi.fn(),
       },
+      episode: {
+        update: vi.fn(),
+      },
       movie: {
         findMany: vi.fn(),
         update: vi.fn(),
@@ -50,6 +53,18 @@ describe('MediaService', () => {
 
     expect(prisma.movie.update).toHaveBeenCalledWith({
       where: { id: 2 },
+      data: { monitored: true },
+    });
+    expect(result.monitored).toBe(true);
+  });
+
+  it('should toggle monitoring for an episode', async () => {
+    prisma.episode.update.mockResolvedValue({ id: 3, monitored: true });
+
+    const result = await service.setEpisodeMonitored(3, true);
+
+    expect(prisma.episode.update).toHaveBeenCalledWith({
+      where: { id: 3 },
       data: { monitored: true },
     });
     expect(result.monitored).toBe(true);

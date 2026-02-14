@@ -18,6 +18,7 @@ export const settingsSchema = z.object({
   }),
   apiKeys: z.object({
     tmdbApiKey: z.string().nullable().optional(),
+    openSubtitlesApiKey: z.string().nullable().optional(),
   }),
 });
 

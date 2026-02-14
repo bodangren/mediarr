@@ -97,14 +97,20 @@ export class MediaService {
       });
     }
 
-    return this.prisma.series.update({
-      where: { id },
-      data: { monitored },
-    });
-  }
-
-  async deleteMedia(id: number, mediaType: MediaType = 'TV', deleteFiles = false): Promise<void> {
-    // File deletion can be wired in here when disk lifecycle management is enabled.
+        return this.prisma.series.update({
+            where: { id },
+            data: { monitored },
+          });
+      }
+    
+      async setEpisodeMonitored(id: number, monitored: boolean): Promise<any> {
+        return this.prisma.episode.update({
+          where: { id },
+          data: { monitored },
+        });
+      }
+    
+      async deleteMedia(id: number, mediaType: MediaType = 'TV', deleteFiles = false): Promise<void> {    // File deletion can be wired in here when disk lifecycle management is enabled.
     void deleteFiles;
 
     if (mediaType === 'MOVIE') {

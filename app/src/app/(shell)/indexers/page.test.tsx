@@ -263,7 +263,7 @@ describe('indexers page', () => {
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Usenet Provider' } });
 
     fireEvent.click(screen.getByRole('button', { name: 'Create' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent('Host and API key are required for Usenet indexers.');
+    expect(await screen.findAllByText('This field is required')).toHaveLength(2);
     expect(createMock).not.toHaveBeenCalled();
 
     fireEvent.change(screen.getByLabelText('Host'), { target: { value: 'news.provider.net' } });

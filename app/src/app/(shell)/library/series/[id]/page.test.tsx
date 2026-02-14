@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ToastProvider } from '@/components/providers/ToastProvider';
 import { getApiClients } from '@/lib/api/client';
@@ -38,12 +38,15 @@ function renderPage() {
   );
 }
 
+const setEpisodeMonitoredMock = vi.fn();
+
 beforeEach(() => {
   vi.clearAllMocks();
 
   mockedGetApiClients.mockReturnValue({
     mediaApi: {
       getSeries: vi.fn(),
+      setEpisodeMonitored: setEpisodeMonitoredMock.mockResolvedValue({ id: 1002, monitored: true }),
     },
   } as ReturnType<typeof getApiClients>);
 
@@ -108,7 +111,9 @@ describe('series detail page', () => {
     expect(monitoredCheckbox).not.toBeChecked();
 
     fireEvent.click(monitoredCheckbox);
-    expect(within(episodeTwoRow as HTMLElement).getByRole('checkbox')).toBeChecked();
-    expect(await screen.findByText('Episode monitor state updated locally')).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(setEpisodeMonitoredMock).toHaveBeenCalledWith(1002, true);
+    });
   });
 });

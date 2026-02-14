@@ -44,7 +44,7 @@ export function SettingsForm() {
         showDownloadPath: true,
         showMediaPath: true,
       },
-      apiKeys: { tmdbApiKey: '' }
+      apiKeys: { tmdbApiKey: '', openSubtitlesApiKey: '' }
     }
   });
 
@@ -53,7 +53,8 @@ export function SettingsForm() {
         form.reset({
             ...settings,
             apiKeys: {
-                tmdbApiKey: settings.apiKeys?.tmdbApiKey ?? ''
+                tmdbApiKey: settings.apiKeys?.tmdbApiKey ?? '',
+                openSubtitlesApiKey: settings.apiKeys?.openSubtitlesApiKey ?? ''
             }
         });
     }
@@ -111,6 +112,16 @@ export function SettingsForm() {
                 placeholder="Enter your TMDB Read Access Token or API Key"
             />
             <p className="text-xs text-gray-500 mt-1">Required for fetching movie metadata.</p>
+        </div>
+        <div className="mt-4">
+            <label htmlFor="openSubtitlesApiKey" className="block text-sm font-medium mb-1">OpenSubtitles API Key</label>
+            <input 
+                id="openSubtitlesApiKey"
+                {...form.register('apiKeys.openSubtitlesApiKey')}
+                className="w-full p-2 border rounded font-mono text-sm"
+                placeholder="Enter your OpenSubtitles.com API Key"
+            />
+            <p className="text-xs text-gray-500 mt-1">Required for searching and downloading subtitles.</p>
         </div>
       </section>
 

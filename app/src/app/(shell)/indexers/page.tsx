@@ -10,6 +10,7 @@ import { getApiClients } from '@/lib/api/client';
 import { queryKeys } from '@/lib/query/queryKeys';
 import { useApiQuery } from '@/lib/query/useApiQuery';
 import { useOptimisticMutation } from '@/lib/query/useOptimisticMutation';
+import { DynamicForm } from './DynamicForm';
 
 type IndexerRow = {
   id: number;
@@ -39,17 +40,6 @@ interface IndexerFormState {
   priority: number;
 }
 
-interface ProtocolSettingsState {
-  torrent: {
-    url: string;
-    apiKey: string;
-  };
-  usenet: {
-    host: string;
-    apiKey: string;
-  };
-}
-
 interface SaveIndexerInput extends IndexerFormState {
   settings: string;
 }
@@ -67,19 +57,6 @@ function createDefaultFormState(): IndexerFormState {
   };
 }
 
-function createDefaultProtocolSettings(): ProtocolSettingsState {
-  return {
-    torrent: {
-      url: '',
-      apiKey: '',
-    },
-    usenet: {
-      host: '',
-      apiKey: '',
-    },
-  };
-}
-
 function parseSettings(raw: string): Record<string, unknown> {
   try {
     const parsed = JSON.parse(raw) as unknown;
@@ -91,40 +68,6 @@ function parseSettings(raw: string): Record<string, unknown> {
   }
 
   return {};
-}
-
-function validateSettings(name: string, protocol: string, settings: ProtocolSettingsState): string | null {
-  if (name.trim().length === 0) {
-    return 'Name is required.';
-  }
-
-  if (protocol === 'usenet') {
-    if (settings.usenet.host.trim().length === 0 || settings.usenet.apiKey.trim().length === 0) {
-      return 'Host and API key are required for Usenet indexers.';
-    }
-
-    return null;
-  }
-
-  if (settings.torrent.url.trim().length === 0 || settings.torrent.apiKey.trim().length === 0) {
-    return 'Indexer URL and API key are required for torrent indexers.';
-  }
-
-  return null;
-}
-
-function serializeSettings(protocol: string, settings: ProtocolSettingsState): string {
-  if (protocol === 'usenet') {
-    return JSON.stringify({
-      host: settings.usenet.host.trim(),
-      apiKey: settings.usenet.apiKey.trim(),
-    });
-  }
-
-  return JSON.stringify({
-    url: settings.torrent.url.trim(),
-    apiKey: settings.torrent.apiKey.trim(),
-  });
 }
 
 function healthStatus(row: IndexerRow): 'completed' | 'warning' | 'error' {
@@ -140,6 +83,16 @@ function healthStatus(row: IndexerRow): 'completed' | 'warning' | 'error' {
   return 'completed';
 }
 
+const torznabSchema = [
+  { name: 'url', type: 'text', label: 'Indexer URL', required: true },
+  { name: 'apiKey', type: 'text', label: 'API Key', required: true },
+];
+
+const usenetSchema = [
+  { name: 'host', type: 'text', label: 'Host', required: true },
+  { name: 'apiKey', type: 'text', label: 'API Key', required: true },
+];
+
 export default function IndexersPage() {
   const api = useMemo(() => getApiClients(), []);
   const queryClient = useQueryClient();
@@ -147,14 +100,12 @@ export default function IndexersPage() {
 
   const [editing, setEditing] = useState<IndexerRow | null>(null);
   const [formState, setFormState] = useState<IndexerFormState>(() => createDefaultFormState());
-  const [protocolSettings, setProtocolSettings] = useState<ProtocolSettingsState>(() => createDefaultProtocolSettings());
   const [formError, setFormError] = useState<string | null>(null);
   const [testOutput, setTestOutput] = useState<Record<number, { message: string; hints: string[] }>>({});
 
   const resetForm = () => {
     setEditing(null);
     setFormState(createDefaultFormState());
-    setProtocolSettings(createDefaultProtocolSettings());
     setFormError(null);
   };
 
@@ -325,23 +276,38 @@ export default function IndexersPage() {
     },
   ];
 
-  const handleSave = () => {
-    const validationError = validateSettings(formState.name, formState.protocol, protocolSettings);
-    if (validationError) {
-      setFormError(validationError);
+  const handleSave = (settingsData: any) => {
+    if (formState.name.trim().length === 0) {
+      setFormError('Name is required.');
       return;
     }
 
     setFormError(null);
     const payload: SaveIndexerInput = {
       ...formState,
-      settings: serializeSettings(formState.protocol, protocolSettings),
+      settings: JSON.stringify(settingsData),
     };
 
     saveMutation.mutate(payload);
   };
 
   const rows = indexersQuery.data ?? [];
+
+  const schema = useMemo(() => {
+    if (editing && editing.configContract && editing.configContract !== 'TorznabSettings') {
+        try {
+            return JSON.parse(editing.configContract);
+        } catch { return torznabSchema; }
+    }
+    return formState.protocol === 'usenet' ? usenetSchema : torznabSchema;
+  }, [editing, formState.protocol]);
+
+  const initialSettings = useMemo(() => {
+      if (editing) {
+          return parseSettings(editing.settings);
+      }
+      return {};
+  }, [editing]);
 
   return (
     <section className="space-y-5">
@@ -376,21 +342,6 @@ export default function IndexersPage() {
                 onClick={() => {
                   setFormError(null);
                   setEditing(row);
-                  const parsedSettings = parseSettings(row.settings);
-                  const nextProtocolSettings = createDefaultProtocolSettings();
-
-                  if (row.protocol === 'usenet') {
-                    nextProtocolSettings.usenet = {
-                      host: typeof parsedSettings.host === 'string' ? parsedSettings.host : '',
-                      apiKey: typeof parsedSettings.apiKey === 'string' ? parsedSettings.apiKey : '',
-                    };
-                  } else {
-                    nextProtocolSettings.torrent = {
-                      url: typeof parsedSettings.url === 'string' ? parsedSettings.url : '',
-                      apiKey: typeof parsedSettings.apiKey === 'string' ? parsedSettings.apiKey : '',
-                    };
-                  }
-
                   setFormState({
                     name: row.name,
                     implementation: row.implementation,
@@ -401,7 +352,6 @@ export default function IndexersPage() {
                     supportsSearch: row.supportsSearch,
                     priority: row.priority,
                   });
-                  setProtocolSettings(nextProtocolSettings);
                 }}
               >
                 Edit
@@ -427,7 +377,7 @@ export default function IndexersPage() {
 
       <section className="rounded-lg border border-border-subtle bg-surface-1 p-4">
         <h2 className="text-lg font-semibold">{editing ? 'Edit Indexer' : 'Create Indexer'}</h2>
-        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        <div className="mt-3 grid gap-3 sm:grid-cols-2 mb-4">
           <label className="space-y-1 text-sm">
             <span>Name</span>
             <input
@@ -456,88 +406,6 @@ export default function IndexersPage() {
             </select>
           </label>
 
-          {formState.protocol === 'usenet' ? (
-            <>
-              <label className="space-y-1 text-sm">
-                <span>Host</span>
-                <input
-                  className="w-full rounded-sm border border-border-subtle bg-surface-0 px-3 py-2"
-                  value={protocolSettings.usenet.host}
-                  onChange={event => {
-                    const host = event.currentTarget.value;
-                    setFormError(null);
-                    setProtocolSettings(current => ({
-                      ...current,
-                      usenet: {
-                        ...current.usenet,
-                        host,
-                      },
-                    }));
-                  }}
-                />
-              </label>
-
-              <label className="space-y-1 text-sm">
-                <span>API Key</span>
-                <input
-                  className="w-full rounded-sm border border-border-subtle bg-surface-0 px-3 py-2"
-                  value={protocolSettings.usenet.apiKey}
-                  onChange={event => {
-                    const apiKey = event.currentTarget.value;
-                    setFormError(null);
-                    setProtocolSettings(current => ({
-                      ...current,
-                      usenet: {
-                        ...current.usenet,
-                        apiKey,
-                      },
-                    }));
-                  }}
-                />
-              </label>
-            </>
-          ) : (
-            <>
-              <label className="space-y-1 text-sm">
-                <span>Indexer URL</span>
-                <input
-                  className="w-full rounded-sm border border-border-subtle bg-surface-0 px-3 py-2"
-                  value={protocolSettings.torrent.url}
-                  onChange={event => {
-                    const url = event.currentTarget.value;
-                    setFormError(null);
-                    setProtocolSettings(current => ({
-                      ...current,
-                      torrent: {
-                        ...current.torrent,
-                        url,
-                      },
-                    }));
-                  }}
-                />
-              </label>
-
-              <label className="space-y-1 text-sm">
-                <span>API Key</span>
-                <input
-                  className="w-full rounded-sm border border-border-subtle bg-surface-0 px-3 py-2"
-                  value={protocolSettings.torrent.apiKey}
-                  onChange={event => {
-                    const apiKey = event.currentTarget.value;
-                    setFormError(null);
-                    setProtocolSettings(current => ({
-                      ...current,
-                      torrent: {
-                        ...current.torrent,
-                        apiKey,
-                      },
-                    }));
-                  }}
-                />
-              </label>
-            </>
-          )}
-
           <label className="inline-flex items-center gap-2 text-sm">
             <input
               type="checkbox"
@@ -551,14 +419,14 @@ export default function IndexersPage() {
           </label>
         </div>
 
+        <DynamicForm 
+            schema={schema} 
+            initialData={initialSettings} 
+            onSubmit={handleSave} 
+            submitLabel={editing ? 'Save' : 'Create'}
+        />
+
         <div className="mt-3 flex gap-2">
-          <button
-            type="button"
-            className="rounded-sm border border-border-subtle px-3 py-1 text-sm"
-            onClick={handleSave}
-          >
-            {editing ? 'Save' : 'Create'}
-          </button>
           {editing ? (
             <button
               type="button"

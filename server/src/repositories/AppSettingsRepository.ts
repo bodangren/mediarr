@@ -20,6 +20,7 @@ export interface PathVisibilitySettings {
 
 export interface ApiKeysSettings {
   tmdbApiKey: string | null;
+  openSubtitlesApiKey: string | null;
 }
 
 export interface AppSettingsPayload {
@@ -47,6 +48,7 @@ export const DEFAULT_APP_SETTINGS: AppSettingsPayload = {
   },
   apiKeys: {
     tmdbApiKey: null,
+    openSubtitlesApiKey: null,
   },
 };
 
@@ -245,6 +247,10 @@ export class AppSettingsRepository {
         tmdbApiKey: readNullableString(
           apiKeys.tmdbApiKey,
           DEFAULT_APP_SETTINGS.apiKeys.tmdbApiKey,
+        ),
+        openSubtitlesApiKey: readNullableString(
+          apiKeys.openSubtitlesApiKey,
+          DEFAULT_APP_SETTINGS.apiKeys.openSubtitlesApiKey,
         ),
       },
     };

@@ -1,14 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { QueryPanel } from '@/components/primitives/QueryPanel';
 import { StatusBadge } from '@/components/primitives/StatusBadge';
-import { useToast } from '@/components/providers/ToastProvider';
 import { getApiClients } from '@/lib/api/client';
 import { queryKeys } from '@/lib/query/queryKeys';
 import { useApiQuery } from '@/lib/query/useApiQuery';
+import { useOptimisticMutation } from '@/lib/query/useOptimisticMutation';
 
 type SeriesDetail = {
   id: number;
@@ -31,16 +31,33 @@ type SeriesDetail = {
 
 export default function SeriesDetailPage() {
   const api = useMemo(() => getApiClients(), []);
-  const { pushToast } = useToast();
   const params = useParams<{ id: string }>();
   const id = Number.parseInt(params.id, 10);
-
-  const [episodeMonitored, setEpisodeMonitored] = useState<Record<number, boolean>>({});
 
   const seriesQuery = useApiQuery({
     queryKey: queryKeys.seriesDetail(id),
     queryFn: () => api.mediaApi.getSeries(id) as Promise<SeriesDetail>,
     staleTimeKind: 'detail',
+  });
+
+  const episodeMonitoredMutation = useOptimisticMutation<SeriesDetail, { id: number; monitored: boolean }, any>({
+    queryKey: queryKeys.seriesDetail(id),
+    mutationFn: variables => api.mediaApi.setEpisodeMonitored(variables.id, variables.monitored),
+    updater: (current, variables) => {
+      return {
+        ...current,
+        seasons: current.seasons?.map(season => ({
+          ...season,
+          episodes: season.episodes?.map(episode => {
+            if (episode.id !== variables.id) {
+              return episode;
+            }
+            return { ...episode, monitored: variables.monitored };
+          }),
+        })),
+      };
+    },
+    errorMessage: 'Could not update episode monitored state.',
   });
 
   const series = seriesQuery.data;
@@ -71,7 +88,7 @@ export default function SeriesDetailPage() {
               </summary>
               <div className="space-y-2 border-t border-border-subtle px-4 py-3">
                 {(season.episodes ?? []).map(episode => {
-                  const monitored = episodeMonitored[episode.id] ?? Boolean(episode.monitored);
+                  const monitored = Boolean(episode.monitored);
                   const hasFile = Boolean(episode.path);
 
                   return (
@@ -88,14 +105,9 @@ export default function SeriesDetailPage() {
                           type="checkbox"
                           checked={monitored}
                           onChange={event => {
-                            setEpisodeMonitored(current => ({
-                              ...current,
-                              [episode.id]: event.currentTarget.checked,
-                            }));
-                            pushToast({
-                              title: 'Episode monitor state updated locally',
-                              message: 'Per-episode persistence API is planned in a follow-up.',
-                              variant: 'info',
+                            episodeMonitoredMutation.mutate({
+                              id: episode.id,
+                              monitored: event.currentTarget.checked,
                             });
                           }}
                         />
@@ -116,3 +128,4 @@ export default function SeriesDetailPage() {
     </section>
   );
 }
+

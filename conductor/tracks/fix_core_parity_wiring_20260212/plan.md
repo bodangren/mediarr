@@ -66,30 +66,47 @@ Enable user configuration and control via the Frontend.
 Deliver the missing "Clone" capabilities (Subtitles, Dynamic Indexers).
 **Focus:** Complex UI Logic, Dynamic Forms, Provider Integration.
 
-- [ ] Task: Write Tests: Add tests for Dynamic Indexer Form.
-    - [ ] Sub-task: Test form generation from JSON schema (configContract).
-    - [ ] Sub-task: Test conditional field rendering.
-- [ ] Task: Implement Dynamic Indexer Configuration (RMD-004).
-    - [ ] Sub-task: Create `DynamicForm` component.
-    - [ ] Sub-task: Update `/indexers` add/edit modal to use `DynamicForm` based on `implementation` type.
-    - [ ] Sub-task: Ensure Cardigann definitions render their specific fields.
-- [ ] Task: Write Tests: Add integration tests for Subtitle Provider.
-    - [ ] Sub-task: Create `tests/integration/subtitle-provider.test.ts`.
-    - [ ] Sub-task: Test provider instantiation and search contract.
-- [ ] Task: Implement Subtitle Provider & UI (RMD-006).
-    - [ ] Sub-task: Implement `OpenSubtitlesProvider` (or generic scraping provider).
-    - [ ] Sub-task: Wire provider to `SubtitleService`.
-    - [ ] Sub-task: Implement `/subtitles` page with Inventory table.
-    - [ ] Sub-task: Implement Manual Search modal and Download action.
-- [ ] Task: Implement Episode Monitoring Persistence (RMD-008).
-    - [ ] Sub-task: Add `PATCH /api/episodes/:id` endpoint.
-    - [ ] Sub-task: Wire frontend toggle to API.
+- [x] Task: Write Tests: Add tests for Dynamic Indexer Form.
+    - [x] Sub-task: Test form generation from JSON schema (configContract).
+    - [x] Sub-task: Test conditional field rendering.
+- [x] Task: Implement Dynamic Indexer Configuration (RMD-004).
+    - [x] Sub-task: Create `DynamicForm` component.
+    - [x] Sub-task: Update `/indexers` add/edit modal to use `DynamicForm` based on `implementation` type.
+    - [x] Sub-task: Ensure Cardigann definitions render their specific fields.
+- [x] Task: Write Tests: Add integration tests for Subtitle Provider.
+    - [x] Sub-task: Create `tests/integration/subtitle-provider.test.ts`.
+    - [x] Sub-task: Test provider instantiation and search contract.
+- [x] Task: Implement Subtitle Provider & UI (RMD-006).
+    - [x] Sub-task: Implement `OpenSubtitlesProvider` (or generic scraping provider).
+    - [x] Sub-task: Wire provider to `SubtitleService`.
+    - [x] Sub-task: Implement `/subtitles` page with Inventory table.
+    - [x] Sub-task: Implement Manual Search modal and Download action.
+- [x] Task: Implement Episode Monitoring Persistence (RMD-008).
+    - [x] Sub-task: Add `PATCH /api/episodes/:id` endpoint.
+    - [x] Sub-task: Wire frontend toggle to API.
 - [ ] Task: Conductor - User Manual Verification 'Phase 3: Feature Parity (P1 Gaps)' (Protocol in workflow.md)
 
 ## Phase 4: Reliability & Polish (P2/P3)
-Improve robustness and observability.
-**Focus:** Dashboard, Error Handling, UX Polish.
+Improve robustness and observability; fix audit findings from Phase 9.
+**Focus:** Indexer Form Parity, Subtitle Download, Conditional Fields, Dashboard, Error Handling, UX Polish.
 
+- [ ] Task: Fix Cardigann Indexer Form Flow (Audit Finding #1 — High).
+    - [ ] Sub-task: Write tests: Add test for implementation selector in create flow (Torznab, Cardigann, Newznab); verify `configContract` and `implementation` update together.
+    - [ ] Sub-task: Write tests: Add test for edit flow loading Cardigann-specific fields from backend definition schema (not JSON-parsing `configContract` string).
+    - [ ] Sub-task: Add implementation type selector to create form (`indexers/page.tsx`); sync `implementation`/`configContract`/`protocol` from selection.
+    - [ ] Sub-task: Replace `JSON.parse(editing.configContract)` fallback with definition-lookup: resolve schema from backend definitions by `configContract` name (e.g. `CardigannSettings` → definition's field list).
+    - [ ] Sub-task: Add API endpoint or extend existing indexer schema endpoint to return field definitions for a given `configContract`.
+- [ ] Task: Implement Real Subtitle Download (Audit Finding #2 — High).
+    - [ ] Sub-task: Write tests: Add integration test for `OpenSubtitlesProvider.download()` — assert it fetches the download link via the OpenSubtitles download API and returns file content/path.
+    - [ ] Sub-task: Write tests: Add integration test for `SubtitleInventoryApiService.manualDownload()` — assert subtitle file is written to the path returned by `NamingService`.
+    - [ ] Sub-task: Implement `OpenSubtitlesProvider.download()`: call OpenSubtitles `/download` endpoint, retrieve file content, return with `content` or `downloadUrl` on candidate.
+    - [ ] Sub-task: Update `SubtitleInventoryApiService.manualDownload()` to write subtitle file content to `storedPath` on disk before persisting DB metadata.
+    - [ ] Sub-task: Replace `alert()` in `subtitles/page.tsx` `ManualSearchView` with toast notification (success/error).
+- [ ] Task: Implement Conditional Field Rendering in DynamicForm (Audit Finding #3 — Medium).
+    - [ ] Sub-task: Write tests: Add test for conditional field visibility — field with `condition: { field: 'useSsl', value: true }` renders only when `useSsl` is checked.
+    - [ ] Sub-task: Write tests: Add test that conditional field values are excluded from submit payload when hidden.
+    - [ ] Sub-task: Extend `FieldDefinition` with optional `condition` property (`{ field: string; value: any }`).
+    - [ ] Sub-task: Implement watch-based conditional rendering in `DynamicForm` — use `useWatch` to show/hide fields and strip hidden values on submit.
 - [ ] Task: Implement Dashboard Completeness (RMD-010).
     - [ ] Sub-task: Add "Calendar" widget (upcoming releases).
     - [ ] Sub-task: Add "Disk Space" widget (system info).

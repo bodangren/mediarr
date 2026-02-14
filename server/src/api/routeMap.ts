@@ -7,6 +7,7 @@ export const API_ROUTE_MAP: ApiRouteDefinition[] = [
   { method: 'GET', path: '/api/series' },
   { method: 'GET', path: '/api/series/:id' },
   { method: 'PATCH', path: '/api/series/:id/monitored' },
+  { method: 'PATCH', path: '/api/episodes/:id' },
   { method: 'DELETE', path: '/api/series/:id' },
 
   { method: 'GET', path: '/api/movies' },

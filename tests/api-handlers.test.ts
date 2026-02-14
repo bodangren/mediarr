@@ -52,12 +52,16 @@ function createDependencies() {
     torrent: {
       count: vi.fn().mockResolvedValue(0),
     },
+    episode: {
+      update: vi.fn().mockImplementation(async ({ where, data }) => ({ id: where.id, ...data })),
+    },
   };
 
   const deps = {
     prisma,
     mediaService: {
       setMonitored: vi.fn().mockImplementation(async (id: number, monitored: boolean) => ({ id, monitored })),
+      setEpisodeMonitored: vi.fn().mockImplementation(async (id: number, monitored: boolean) => ({ id, monitored })),
       deleteMedia: vi.fn().mockResolvedValue(undefined),
       getMovieCandidatesForSearch: vi.fn().mockResolvedValue([
         { id: 2, tmdbId: 603, title: 'The Matrix', year: 1999, monitored: true, status: 'released' },
@@ -371,6 +375,25 @@ describe('API handlers', () => {
     expect(response.statusCode).toBe(200);
     expect(payload.ok).toBe(true);
     expect(payload.data[0].provider).toBe('opensubtitles');
+  });
+
+  it('persists episode monitored toggle through media service', async () => {
+    const { app, deps } = createTestApp();
+    apps.push(app);
+
+    const response = await app.inject({
+      method: 'PATCH',
+      url: '/api/episodes/42',
+      payload: {
+        monitored: true,
+      },
+    });
+    const payload = response.json();
+
+    expect(response.statusCode).toBe(200);
+    expect(payload.ok).toBe(true);
+    expect(payload.data).toEqual({ id: 42, monitored: true });
+    expect(deps.mediaService.setEpisodeMonitored).toHaveBeenCalledWith(42, true);
   });
 
   it('returns activity timeline envelope with pagination metadata', async () => {

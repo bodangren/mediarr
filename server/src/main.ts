@@ -21,6 +21,7 @@ import { DataDirectoryInitializer } from './services/DataDirectoryInitializer';
 import { MediaSearchService } from './services/MediaSearchService';
 import { MediaService } from './services/MediaService';
 import { MetadataProvider } from './services/MetadataProvider';
+import { OpenSubtitlesProvider } from './services/providers/OpenSubtitlesProvider';
 import { RssSyncService } from './services/RssSyncService';
 import { Scheduler } from './services/Scheduler';
 import { SettingsService } from './services/SettingsService';
@@ -201,6 +202,7 @@ async function startApi(): Promise<void> {
   const mediaRepository = new MediaRepository(prisma);
   const subtitleVariantRepository = new SubtitleVariantRepository(prisma);
   const appSettingsRepository = new AppSettingsRepository(prisma);
+  const torrentRepository = new TorrentRepository(prisma);
 
   const httpClient = new HttpClient();
   const settingsService = new SettingsService(appSettingsRepository);
@@ -243,18 +245,17 @@ async function startApi(): Promise<void> {
 
   const torrentManager = await createRuntimeTorrentManager(torrentRepository);
 
-  const manualSubtitleProvider = {
-    async search(): Promise<ManualSearchCandidate[]> {
-      return [];
-    },
-    async download(candidate: ManualSearchCandidate): Promise<ManualSearchCandidate> {
-      return candidate;
-    },
-  };
+  const openSubtitlesProvider = new OpenSubtitlesProvider(httpClient, settingsService);
 
   const subtitleProviderFactory = new SubtitleProviderFactory(
-    { embedded: manualSubtitleProvider },
-    () => ({ manualProvider: 'embedded' }),
+    { 
+        embedded: {
+            async search() { return []; },
+            async download(c: any) { return c; }
+        },
+        opensubtitles: openSubtitlesProvider
+    },
+    () => ({ manualProvider: 'opensubtitles' }),
   );
 
   const subtitleInventoryApiService = new SubtitleInventoryApiService(

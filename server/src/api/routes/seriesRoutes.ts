@@ -155,6 +155,37 @@ export function registerSeriesRoutes(
     return sendSuccess(reply, updated);
   });
 
+  app.patch('/api/episodes/:id', {
+    schema: {
+      params: {
+        type: 'object',
+        required: ['id'],
+        properties: {
+          id: { type: 'string' },
+        },
+      },
+      body: {
+        type: 'object',
+        required: ['monitored'],
+        properties: {
+          monitored: { type: 'boolean' },
+        },
+      },
+    },
+  }, async (request, reply) => {
+    const id = parseIdParam((request.params as { id: string }).id, 'episode');
+    const body = request.body as { monitored: boolean };
+
+    const updated = deps.mediaService?.setEpisodeMonitored
+      ? await deps.mediaService.setEpisodeMonitored(id, body.monitored)
+      : await (deps.prisma as any).episode.update({
+        where: { id },
+        data: { monitored: body.monitored },
+      });
+
+    return sendSuccess(reply, updated);
+  });
+
   app.delete('/api/series/:id', {
     schema: {
       params: {

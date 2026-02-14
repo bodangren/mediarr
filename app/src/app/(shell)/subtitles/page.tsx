@@ -9,7 +9,7 @@ import { QueryPanel } from '@/components/primitives/QueryPanel';
 type MovieRow = {
     id: number;
     title: string;
-    year: number;
+    year?: number;
 };
 
 export default function SubtitlesPage() {
@@ -28,7 +28,7 @@ export default function SubtitlesPage() {
             render: row => (
                 <div>
                     <p className="font-medium">{row.title}</p>
-                    <p className="text-xs text-gray-500">{row.year}</p>
+                    <p className="text-xs text-gray-500">{row.year ?? 'Unknown year'}</p>
                 </div>
             )
         },
@@ -219,7 +219,7 @@ function ManualSearchView({ variantId, onBack }: { variantId: number, onBack: ()
                 <DataTable 
                     data={searchQuery.data ?? []} 
                     columns={columns} 
-                    getRowId={(row, i) => `${row.provider}-${row.languageCode}-${i}`} 
+                    getRowId={row => `${row.provider}-${row.languageCode}-${row.score}`} 
                 />
             </QueryPanel>
         </section>

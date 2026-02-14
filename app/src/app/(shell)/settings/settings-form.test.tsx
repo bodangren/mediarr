@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 // Mock API Client
 vi.mock('@/lib/api/client', () => ({
   getApiClients: () => ({
-    settings: {
+    settingsApi: {
       get: vi.fn().mockResolvedValue({
         torrentLimits: { maxActiveDownloads: 3, maxActiveSeeds: 3 },
         schedulerIntervals: { rssSyncMinutes: 15, availabilityCheckMinutes: 30, torrentMonitoringSeconds: 5 },

@@ -7,9 +7,24 @@ import { settingsSchema, type SettingsFormData } from '@/lib/settings-schema';
 import { getApiClients } from '@/lib/api/client';
 import { useEffect } from 'react';
 
+function toSettingsUpdatePayload(data: SettingsFormData) {
+  return {
+    ...data,
+    torrentLimits: {
+      ...data.torrentLimits,
+      globalDownloadLimitKbps: data.torrentLimits.globalDownloadLimitKbps ?? null,
+      globalUploadLimitKbps: data.torrentLimits.globalUploadLimitKbps ?? null,
+    },
+    apiKeys: {
+      tmdbApiKey: data.apiKeys.tmdbApiKey ?? null,
+      openSubtitlesApiKey: data.apiKeys.openSubtitlesApiKey ?? null,
+    },
+  };
+}
+
 export function SettingsForm() {
   const queryClient = useQueryClient();
-  const api = getApiClients().settings;
+  const api = getApiClients().settingsApi;
 
   const { data: settings, isLoading } = useQuery({
     queryKey: ['settings'],
@@ -17,7 +32,7 @@ export function SettingsForm() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: (data: Partial<SettingsFormData>) => api.update(data),
+    mutationFn: (data: SettingsFormData) => api.update(toSettingsUpdatePayload(data)),
     onSuccess: (data) => {
         queryClient.setQueryData(['settings'], data);
         alert('Settings saved successfully'); // Simple feedback for now

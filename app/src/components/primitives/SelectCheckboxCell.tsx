@@ -15,7 +15,7 @@ export function SelectCheckboxCell({ rowId }: SelectCheckboxCellProps) {
         type="checkbox"
         aria-label="Select row"
         checked={isSelected(rowId)}
-        onChange={event => toggleRow(rowId, event.nativeEvent.shiftKey)}
+        onChange={event => toggleRow(rowId, (event.nativeEvent as MouseEvent).shiftKey)}
       />
     </td>
   );

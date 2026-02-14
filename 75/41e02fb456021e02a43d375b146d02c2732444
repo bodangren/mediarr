@@ -1,0 +1,24 @@
+Task: Prowlarr UI Cloning - Task 2.3 (Implement filtering system)
+
+Summary:
+- Added shared filter predicate utilities with AND/OR group application.
+- Added FilterMenu primitive for predefined dropdown filters.
+- Added FilterBuilder primitive supporting multi-condition AND/OR logic and structured apply payloads.
+- Added tests for predicate behavior, FilterMenu interactions, and FilterBuilder submission behavior.
+
+Files:
+- app/src/lib/table/filter.ts
+- app/src/lib/table/filter.test.ts
+- app/src/components/primitives/FilterMenu.tsx
+- app/src/components/primitives/filter-menu.test.tsx
+- app/src/components/primitives/FilterBuilder.tsx
+- app/src/components/primitives/filter-builder.test.tsx
+- conductor/tracks/prowlarr_ui_cloning_20260214/plan.md
+
+Validation:
+- CI=true npm run test --workspace=app -- src/lib/table/filter.test.ts src/components/primitives/filter-menu.test.tsx src/components/primitives/filter-builder.test.tsx
+- CI=true npm run test:coverage --workspace=app -- src/lib/table/filter.test.ts src/components/primitives/filter-menu.test.tsx src/components/primitives/filter-builder.test.tsx
+- lib/table/filter.ts coverage: 94.11% statements.
+
+Why:
+- Establishes reusable filtering logic and builder UI needed for complex table filtering across Prowlarr parity pages.

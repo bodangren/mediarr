@@ -1,0 +1,22 @@
+Task: Prowlarr UI Cloning - Task 1.4 (State management infrastructure)
+
+Summary:
+- Added a Redux-like UI store module with typed actions, reducer, initialization, and persistence helpers.
+- Added localStorage-backed UI store hook for client usage.
+- Wired AppShell sidebar collapsed state through the new persisted store.
+- Added store tests validating setup, action dispatch, hydration, invalid payload fallback, and persistence behavior.
+
+Files:
+- app/src/lib/state/uiStore.ts
+- app/src/lib/state/useUIStore.ts
+- app/src/lib/state/uiStore.test.ts
+- app/src/components/shell/AppShell.tsx
+- conductor/tracks/prowlarr_ui_cloning_20260214/plan.md
+
+Validation:
+- CI=true npm run test --workspace=app -- src/lib/state/uiStore.test.ts src/components/shell/app-shell.test.tsx
+- CI=true npm run test:coverage --workspace=app -- src/lib/state/uiStore.test.ts
+- state/uiStore.ts coverage: 100% statements, 93.33% branches.
+
+Why:
+- Provides deterministic, persisted UI state infrastructure without replacing the existing React Query data layer.

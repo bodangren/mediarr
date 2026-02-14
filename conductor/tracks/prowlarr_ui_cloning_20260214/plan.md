@@ -256,16 +256,16 @@ This plan implements the Prowlarr UI cloning based on the comprehensive specific
   - [x] Implement flags display (freeleech, etc.)
   - [x] Verify coverage >80%
 
-- [ ] **Task 5.3: Implement release actions (TDD)**
-  - [ ] Write tests for grab functionality
-  - [ ] Implement grab release action
-  - [ ] Write tests for download functionality
-  - [ ] Implement download .torrent/.nzb
-  - [ ] Write tests for OverrideMatch feature
-  - [ ] Implement override match modal
-  - [ ] Write tests for bulk grab
-  - [ ] Implement bulk grab functionality
-  - [ ] Verify coverage >80%
+- [x] **Task 5.3: Implement release actions (TDD)** (commit: `be7e655`)
+  - [x] Write tests for grab functionality
+  - [x] Implement grab release action
+  - [x] Write tests for download functionality
+  - [x] Implement download .torrent/.nzb
+  - [x] Write tests for OverrideMatch feature
+  - [x] Implement override match modal
+  - [x] Write tests for bulk grab
+  - [x] Implement bulk grab functionality
+  - [x] Verify coverage >80%
 
 - [ ] **Task 5.4: Implement search filtering (TDD)**
   - [ ] Write tests for search filters

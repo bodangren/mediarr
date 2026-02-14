@@ -97,7 +97,7 @@ This plan implements the Prowlarr UI cloning based on the comprehensive specific
   - [x] Implement FilterBuilder with AND/OR logic
   - [x] Verify coverage >80%
 
-- [ ] **Task 2.4: Implement pagination (TDD)**
+- [~] **Task 2.4: Implement pagination (TDD)**
   - [ ] Write tests for TablePager component
   - [ ] Implement TablePager with page controls
   - [ ] Write tests for client-side pagination logic

@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { DataTable, type DataTableColumn } from '@/components/primitives/DataTable';
+import { FilterBuilder, type FilterBuilderResult } from '@/components/primitives/FilterBuilder';
 import { Label } from '@/components/primitives/Label';
 import { Modal, ModalBody, ModalFooter, ModalHeader } from '@/components/primitives/Modal';
 import { QueryPanel } from '@/components/primitives/QueryPanel';
@@ -148,6 +149,52 @@ function toReleasePayload(row: ReleaseRow): ReleaseRow {
   };
 }
 
+function customFilterValue(row: ReleaseViewRow, field: string): string | number {
+  switch (field) {
+    case 'title':
+      return row.title;
+    case 'indexer':
+      return row.indexer;
+    case 'protocol':
+      return inferProtocol(row);
+    case 'seeders':
+      return row.seeders;
+    case 'size':
+      return row.size / (1024 * 1024 * 1024);
+    default:
+      return '';
+  }
+}
+
+function matchesCustomFilters(row: ReleaseViewRow, filter: FilterBuilderResult | null): boolean {
+  if (!filter || filter.conditions.length === 0) {
+    return true;
+  }
+
+  const checks = filter.conditions.map(condition => {
+    const value = customFilterValue(row, condition.field);
+    const conditionValue = condition.value.trim();
+
+    if (condition.operator === 'contains') {
+      return String(value).toLowerCase().includes(conditionValue.toLowerCase());
+    }
+
+    if (condition.operator === 'equals') {
+      return String(value).toLowerCase() === conditionValue.toLowerCase();
+    }
+
+    const numericValue = Number(value);
+    const numericCondition = Number(conditionValue);
+    if (!Number.isFinite(numericValue) || !Number.isFinite(numericCondition)) {
+      return false;
+    }
+
+    return numericValue > numericCondition;
+  });
+
+  return filter.operator === 'and' ? checks.every(Boolean) : checks.some(Boolean);
+}
+
 function buildPayload(form: FormState): SearchPayload {
   const payload: SearchPayload = {
     query: form.query.trim(),
@@ -191,6 +238,11 @@ export default function SearchPage() {
   const [overrideTarget, setOverrideTarget] = useState<ReleaseViewRow | null>(null);
   const [overrideTitle, setOverrideTitle] = useState('');
   const [overridesByRowId, setOverridesByRowId] = useState<Record<string, string>>({});
+  const [protocolFilter, setProtocolFilter] = useState<'all' | 'torrent' | 'usenet' | 'unknown'>('all');
+  const [minSizeGbFilter, setMinSizeGbFilter] = useState('');
+  const [minSeedersFilter, setMinSeedersFilter] = useState('');
+  const [showCustomFilters, setShowCustomFilters] = useState(false);
+  const [customFilter, setCustomFilter] = useState<FilterBuilderResult | null>(null);
   const [form, setForm] = useState<FormState>({
     query: '',
     searchType: 'search',
@@ -237,9 +289,34 @@ export default function SearchPage() {
     [overridesByRowId, releasesQuery.data],
   );
 
+  const filteredReleaseRows = useMemo(() => {
+    const minSizeGb = Number.parseFloat(minSizeGbFilter);
+    const minSeeders = Number.parseInt(minSeedersFilter, 10);
+
+    return releaseRows.filter(row => {
+      const protocol = inferProtocol(row);
+      if (protocolFilter !== 'all' && protocol !== protocolFilter) {
+        return false;
+      }
+
+      if (Number.isFinite(minSizeGb) && minSizeGb > 0) {
+        const rowSizeGb = row.size / (1024 * 1024 * 1024);
+        if (rowSizeGb < minSizeGb) {
+          return false;
+        }
+      }
+
+      if (Number.isFinite(minSeeders) && minSeeders > 0 && row.seeders < minSeeders) {
+        return false;
+      }
+
+      return matchesCustomFilters(row, customFilter);
+    });
+  }, [customFilter, minSeedersFilter, minSizeGbFilter, protocolFilter, releaseRows]);
+
   const releaseById = useMemo(
-    () => new Map(releaseRows.map(row => [row.rowId, row])),
-    [releaseRows],
+    () => new Map(filteredReleaseRows.map(row => [row.rowId, row])),
+    [filteredReleaseRows],
   );
 
   const columns: DataTableColumn<ReleaseViewRow>[] = [
@@ -580,9 +657,97 @@ export default function SearchPage() {
               </p>
             ) : null}
 
-            <SelectProvider rowIds={releaseRows.map(row => row.rowId)}>
+            <section className="space-y-3 rounded-md border border-border-subtle bg-surface-1 p-3">
+              <div className="grid gap-3 md:grid-cols-3">
+                <label className="grid gap-1 text-xs">
+                  <span>Protocol filter</span>
+                  <select
+                    aria-label="Protocol filter"
+                    className="rounded-sm border border-border-subtle bg-surface-0 px-2 py-1 text-xs"
+                    value={protocolFilter}
+                    onChange={event => {
+                      setProtocolFilter(event.currentTarget.value as 'all' | 'torrent' | 'usenet' | 'unknown');
+                    }}
+                  >
+                    <option value="all">all</option>
+                    <option value="torrent">torrent</option>
+                    <option value="usenet">usenet</option>
+                    <option value="unknown">unknown</option>
+                  </select>
+                </label>
+
+                <label className="grid gap-1 text-xs">
+                  <span>Minimum size (GB)</span>
+                  <input
+                    aria-label="Minimum size (GB)"
+                    type="number"
+                    min={0}
+                    step="0.1"
+                    value={minSizeGbFilter}
+                    onChange={event => {
+                      setMinSizeGbFilter(event.currentTarget.value);
+                    }}
+                    className="rounded-sm border border-border-subtle bg-surface-0 px-2 py-1 text-xs"
+                  />
+                </label>
+
+                <label className="grid gap-1 text-xs">
+                  <span>Minimum seeders</span>
+                  <input
+                    aria-label="Minimum seeders"
+                    type="number"
+                    min={0}
+                    value={minSeedersFilter}
+                    onChange={event => {
+                      setMinSeedersFilter(event.currentTarget.value);
+                    }}
+                    className="rounded-sm border border-border-subtle bg-surface-0 px-2 py-1 text-xs"
+                  />
+                </label>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  className="rounded-sm border border-border-subtle px-2 py-1 text-xs"
+                  onClick={() => {
+                    setShowCustomFilters(current => !current);
+                  }}
+                >
+                  {showCustomFilters ? 'Hide custom filters' : 'Show custom filters'}
+                </button>
+                {customFilter ? (
+                  <button
+                    type="button"
+                    className="rounded-sm border border-border-subtle px-2 py-1 text-xs"
+                    onClick={() => {
+                      setCustomFilter(null);
+                    }}
+                  >
+                    Clear custom filters
+                  </button>
+                ) : null}
+              </div>
+
+              {showCustomFilters ? (
+                <FilterBuilder
+                  fields={[
+                    { key: 'title', label: 'Title' },
+                    { key: 'indexer', label: 'Indexer' },
+                    { key: 'protocol', label: 'Protocol' },
+                    { key: 'size', label: 'Size (GB)' },
+                    { key: 'seeders', label: 'Seeders' },
+                  ]}
+                  onApply={result => {
+                    setCustomFilter(result);
+                  }}
+                />
+              ) : null}
+            </section>
+
+            <SelectProvider rowIds={filteredReleaseRows.map(row => row.rowId)}>
               <DataTable
-                data={releaseRows}
+                data={filteredReleaseRows}
                 columns={columns}
                 getRowId={row => row.rowId}
                 rowActions={row => {

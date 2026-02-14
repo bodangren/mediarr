@@ -148,7 +148,7 @@ describe('search page', () => {
 
     expect(await screen.findByText('Dune Part Two 1080p WEB-DL')).toBeInTheDocument();
     expect(screen.getAllByText('Indexer A').length).toBeGreaterThan(0);
-    expect(screen.getByText('torrent')).toBeInTheDocument();
+    expect(screen.getAllByText('torrent').length).toBeGreaterThan(0);
   });
 
   it('renders search-specific columns with row fallbacks and indexer flags', async () => {
@@ -187,7 +187,7 @@ describe('search page', () => {
     expect(screen.getByText('freeleech')).toBeInTheDocument();
     expect(screen.getByText('vip')).toBeInTheDocument();
     expect(screen.getByText('Fallback Release')).toBeInTheDocument();
-    expect(screen.getByText('unknown')).toBeInTheDocument();
+    expect(screen.getAllByText('unknown').length).toBeGreaterThan(0);
     expect(screen.getByText('- d')).toBeInTheDocument();
   });
 
@@ -323,5 +323,91 @@ describe('search page', () => {
     await waitFor(() => {
       expect(grabReleaseMock).toHaveBeenCalledTimes(2);
     });
+  });
+
+  it('filters results by protocol, minimum size, and minimum seeders', async () => {
+    searchCandidatesMock.mockResolvedValueOnce([
+      {
+        indexer: 'Indexer A',
+        title: 'Torrent Large',
+        size: 5_368_709_120,
+        seeders: 120,
+        age: 1,
+        magnetUrl: 'magnet:?xt=urn:btih:fit1',
+      },
+      {
+        indexer: 'Indexer B',
+        title: 'Usenet Large',
+        size: 5_368_709_120,
+        seeders: 200,
+        age: 1,
+        downloadUrl: 'https://example.com/file.nzb',
+      },
+      {
+        indexer: 'Indexer C',
+        title: 'Torrent Small',
+        size: 1_073_741_824,
+        seeders: 20,
+        age: 1,
+        magnetUrl: 'magnet:?xt=urn:btih:fit2',
+      },
+    ]);
+
+    const queryClient = createTestQueryClient();
+    renderPage(queryClient);
+
+    fireEvent.change(screen.getByLabelText('Search query'), { target: { value: 'filter candidates' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Search releases' }));
+
+    expect(await screen.findByText('Torrent Large')).toBeInTheDocument();
+    expect(screen.getByText('Usenet Large')).toBeInTheDocument();
+    expect(screen.getByText('Torrent Small')).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('Protocol filter'), { target: { value: 'torrent' } });
+    fireEvent.change(screen.getByLabelText('Minimum size (GB)'), { target: { value: '2' } });
+    fireEvent.change(screen.getByLabelText('Minimum seeders'), { target: { value: '50' } });
+
+    expect(screen.getByText('Torrent Large')).toBeInTheDocument();
+    expect(screen.queryByText('Usenet Large')).not.toBeInTheDocument();
+    expect(screen.queryByText('Torrent Small')).not.toBeInTheDocument();
+  });
+
+  it('applies custom filter builder rules to search results', async () => {
+    searchCandidatesMock.mockResolvedValueOnce([
+      {
+        indexer: 'Indexer A',
+        title: 'VIP Exclusive Pack',
+        size: 4_294_967_296,
+        seeders: 120,
+        age: 1,
+        magnetUrl: 'magnet:?xt=urn:btih:vip',
+      },
+      {
+        indexer: 'Indexer B',
+        title: 'Regular Pack',
+        size: 4_294_967_296,
+        seeders: 120,
+        age: 1,
+        magnetUrl: 'magnet:?xt=urn:btih:reg',
+      },
+    ]);
+
+    const queryClient = createTestQueryClient();
+    renderPage(queryClient);
+
+    fireEvent.change(screen.getByLabelText('Search query'), { target: { value: 'custom filter candidates' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Search releases' }));
+
+    expect(await screen.findByText('VIP Exclusive Pack')).toBeInTheDocument();
+    expect(screen.getByText('Regular Pack')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show custom filters' }));
+    fireEvent.change(screen.getByLabelText('Field 1'), { target: { value: 'title' } });
+    fireEvent.change(screen.getByLabelText('Operator 1'), { target: { value: 'contains' } });
+    fireEvent.change(screen.getByLabelText('Value 1'), { target: { value: 'vip' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Apply filters' }));
+
+    expect(screen.getByText('VIP Exclusive Pack')).toBeInTheDocument();
+    expect(screen.queryByText('Regular Pack')).not.toBeInTheDocument();
   });
 });

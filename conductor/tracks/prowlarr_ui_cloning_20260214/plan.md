@@ -14,7 +14,7 @@ This plan implements the Prowlarr UI cloning based on the comprehensive specific
 
 ---
 
-## Phase 1: Project Setup & Core Infrastructure
+## Phase 1: Project Setup & Core Infrastructure [checkpoint: 0820b46]
 
 **Objective:** Establish the foundation with Next.js, TypeScript, Tailwind CSS, and core UI components.
 

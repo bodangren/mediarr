@@ -238,14 +238,14 @@ This plan implements the Prowlarr UI cloning based on the comprehensive specific
 
 ### Tasks
 
-- [ ] **Task 5.1: Create SearchIndex view (TDD)**
-  - [ ] Write tests for SearchIndex container
-  - [ ] Implement main search page
-  - [ ] Write tests for search input form
-  - [ ] Implement search form with query, category, indexer selection
-  - [ ] Write tests for search parameters
-  - [ ] Implement advanced search options
-  - [ ] Verify coverage >80%
+- [x] **Task 5.1: Create SearchIndex view (TDD)** (commit: `5129d5f`)
+  - [x] Write tests for SearchIndex container
+  - [x] Implement main search page
+  - [x] Write tests for search input form
+  - [x] Implement search form with query, category, indexer selection
+  - [x] Write tests for search parameters
+  - [x] Implement advanced search options
+  - [x] Verify coverage >80%
 
 - [ ] **Task 5.2: Create SearchResults table (TDD)**
   - [ ] Write tests for SearchResultsTable

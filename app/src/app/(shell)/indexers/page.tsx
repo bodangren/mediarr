@@ -1,8 +1,10 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { DataTable, type DataTableColumn } from '@/components/primitives/DataTable';
+import { PageJumpBar, type JumpFilter, matchesJumpFilter } from '@/components/primitives/PageJumpBar';
+import { PageToolbar, PageToolbarSection } from '@/components/primitives/PageToolbar';
 import { QueryPanel } from '@/components/primitives/QueryPanel';
 import { StatusBadge } from '@/components/primitives/StatusBadge';
 import { useToast } from '@/components/providers/ToastProvider';
@@ -97,11 +99,14 @@ export default function IndexersPage() {
   const api = useMemo(() => getApiClients(), []);
   const queryClient = useQueryClient();
   const { pushToast } = useToast();
+  const formSectionRef = useRef<HTMLElement | null>(null);
 
   const [editing, setEditing] = useState<IndexerRow | null>(null);
   const [formState, setFormState] = useState<IndexerFormState>(() => createDefaultFormState());
   const [formError, setFormError] = useState<string | null>(null);
   const [testOutput, setTestOutput] = useState<Record<number, { message: string; hints: string[] }>>({});
+  const [jumpFilter, setJumpFilter] = useState<JumpFilter>('All');
+  const [selectionModeEnabled, setSelectionModeEnabled] = useState(false);
 
   const resetForm = () => {
     setEditing(null);
@@ -276,7 +281,7 @@ export default function IndexersPage() {
     },
   ];
 
-  const handleSave = (settingsData: any) => {
+  const handleSave = (settingsData: unknown) => {
     if (formState.name.trim().length === 0) {
       setFormError('Name is required.');
       return;
@@ -291,7 +296,10 @@ export default function IndexersPage() {
     saveMutation.mutate(payload);
   };
 
-  const rows = indexersQuery.data ?? [];
+  const filteredRows = useMemo(() => {
+    const rows = indexersQuery.data ?? [];
+    return rows.filter(row => matchesJumpFilter(row.name, jumpFilter));
+  }, [indexersQuery.data, jumpFilter]);
 
   const schema = useMemo(() => {
     if (editing && editing.configContract && editing.configContract !== 'TorznabSettings') {
@@ -318,6 +326,55 @@ export default function IndexersPage() {
         </p>
       </header>
 
+      <PageToolbar>
+        <PageToolbarSection>
+          <button
+            type="button"
+            className="rounded-sm border border-border-subtle px-3 py-1 text-sm"
+            onClick={() => {
+              resetForm();
+              formSectionRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+            }}
+          >
+            Add
+          </button>
+          <button
+            type="button"
+            className="rounded-sm border border-border-subtle px-3 py-1 text-sm"
+            onClick={() => {
+              void indexersQuery.refetch();
+            }}
+          >
+            Refresh
+          </button>
+          <button
+            type="button"
+            className="rounded-sm border border-border-subtle px-3 py-1 text-sm"
+            onClick={() => {
+              void indexersQuery.refetch();
+              pushToast({
+                title: 'Indexer sync requested',
+                variant: 'info',
+              });
+            }}
+          >
+            Sync
+          </button>
+          <button
+            type="button"
+            className="rounded-sm border border-border-subtle px-3 py-1 text-sm"
+            onClick={() => setSelectionModeEnabled(previous => !previous)}
+          >
+            Select Mode
+          </button>
+        </PageToolbarSection>
+        <PageToolbarSection align="right">
+          {selectionModeEnabled ? <span className="text-xs text-text-secondary">Selection mode enabled</span> : null}
+        </PageToolbarSection>
+      </PageToolbar>
+
+      <PageJumpBar value={jumpFilter} onChange={setJumpFilter} />
+
       <QueryPanel
         isLoading={indexersQuery.isPending}
         isError={indexersQuery.isError}
@@ -328,7 +385,7 @@ export default function IndexersPage() {
         emptyBody="Create your first indexer below."
       >
         <DataTable
-          data={rows}
+          data={filteredRows}
           columns={columns}
           getRowId={row => row.id}
           onSort={() => {
@@ -375,7 +432,7 @@ export default function IndexersPage() {
         />
       </QueryPanel>
 
-      <section className="rounded-lg border border-border-subtle bg-surface-1 p-4">
+      <section ref={formSectionRef} className="rounded-lg border border-border-subtle bg-surface-1 p-4">
         <h2 className="text-lg font-semibold">{editing ? 'Edit Indexer' : 'Create Indexer'}</h2>
         <div className="mt-3 grid gap-3 sm:grid-cols-2 mb-4">
           <label className="space-y-1 text-sm">

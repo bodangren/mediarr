@@ -110,6 +110,135 @@ beforeEach(() => {
 });
 
 describe('indexers page', () => {
+  it('renders indexer table columns for the index view contract', async () => {
+    listMock.mockResolvedValue([buildIndexer({ id: 31, name: 'Alpha Hub' })]);
+
+    const queryClient = createTestQueryClient();
+    renderPage(queryClient);
+
+    await screen.findByText('Alpha Hub');
+
+    expect(screen.getByRole('columnheader', { name: 'Name' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Protocol' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Enabled' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Priority' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Health' })).toBeInTheDocument();
+  });
+
+  it('renders page toolbar actions and executes refresh/sync/select-mode controls', async () => {
+    listMock.mockResolvedValue([buildIndexer({ id: 41, name: 'Toolbar Indexer' })]);
+
+    const queryClient = createTestQueryClient();
+    renderPage(queryClient);
+
+    await screen.findByText('Toolbar Indexer');
+
+    const addButton = screen.getByRole('button', { name: 'Add' });
+    const refreshButton = screen.getByRole('button', { name: 'Refresh' });
+    const syncButton = screen.getByRole('button', { name: 'Sync' });
+    const selectModeButton = screen.getByRole('button', { name: 'Select Mode' });
+
+    expect(addButton).toBeInTheDocument();
+    expect(refreshButton).toBeInTheDocument();
+    expect(syncButton).toBeInTheDocument();
+    expect(selectModeButton).toBeInTheDocument();
+
+    fireEvent.click(refreshButton);
+    fireEvent.click(syncButton);
+
+    await waitFor(() => {
+      expect(listMock.mock.calls.length).toBeGreaterThanOrEqual(3);
+    });
+
+    fireEvent.click(selectModeButton);
+    expect(screen.getByText('Selection mode enabled')).toBeInTheDocument();
+  });
+
+  it('filters visible rows by alphabet jump bar selection', async () => {
+    listMock.mockResolvedValue([
+      buildIndexer({ id: 51, name: 'Alpha Hub' }),
+      buildIndexer({ id: 52, name: 'Beta Vault' }),
+      buildIndexer({ id: 53, name: '1337 Mirror' }),
+    ]);
+
+    const queryClient = createTestQueryClient();
+    renderPage(queryClient);
+
+    await screen.findByText('Alpha Hub');
+    expect(screen.getByText('Beta Vault')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'B' }));
+    expect(screen.queryByText('Alpha Hub')).not.toBeInTheDocument();
+    expect(screen.getByText('Beta Vault')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: '#' }));
+    expect(screen.getByText('1337 Mirror')).toBeInTheDocument();
+    expect(screen.queryByText('Beta Vault')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'All' }));
+    expect(screen.getByText('Alpha Hub')).toBeInTheDocument();
+    expect(screen.getByText('Beta Vault')).toBeInTheDocument();
+  });
+
+  it('hydrates form state in edit mode and allows cancel reset', async () => {
+    listMock.mockResolvedValue([
+      buildIndexer({
+        id: 61,
+        name: 'Editable Indexer',
+        settings: JSON.stringify({ url: 'https://editable.example', apiKey: 'edit-key' }),
+      }),
+    ]);
+
+    const queryClient = createTestQueryClient();
+    renderPage(queryClient);
+
+    const row = (await screen.findByText('Editable Indexer')).closest('tr');
+    expect(row).not.toBeNull();
+
+    fireEvent.click(within(row as HTMLElement).getByRole('button', { name: 'Edit' }));
+
+    expect(screen.getByRole('heading', { name: 'Edit Indexer' })).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Editable Indexer')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Enabled' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    expect(screen.getByRole('heading', { name: 'Create Indexer' })).toBeInTheDocument();
+  });
+
+  it('deletes an indexer row and shows deletion confirmation toast', async () => {
+    listMock.mockResolvedValue([buildIndexer({ id: 71, name: 'Delete Me' })]);
+
+    const queryClient = createTestQueryClient();
+    renderPage(queryClient);
+
+    const row = (await screen.findByText('Delete Me')).closest('tr');
+    expect(row).not.toBeNull();
+
+    fireEvent.click(within(row as HTMLElement).getByRole('button', { name: 'Delete' }));
+
+    await waitFor(() => {
+      expect(removeMock).toHaveBeenCalledWith(71);
+    });
+    expect(await screen.findByText('Indexer deleted')).toBeInTheDocument();
+  });
+
+  it('surfaces save errors from create mutation failures', async () => {
+    createMock.mockRejectedValueOnce(new Error('save exploded'));
+
+    const queryClient = createTestQueryClient();
+    renderPage(queryClient);
+
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Broken Indexer' } });
+    fireEvent.change(screen.getByLabelText('Indexer URL'), { target: { value: 'https://broken.example' } });
+    fireEvent.change(screen.getByLabelText(/^API Key$/), { target: { value: 'broken-key' } });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Create' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('save exploded');
+    expect(await screen.findByRole('status')).toHaveTextContent('Save failed');
+  });
+
   it('rolls back the enabled toggle when optimistic mutation fails', async () => {
     listMock.mockResolvedValue([
       buildIndexer({ id: 7, name: 'Fallback Indexer', enabled: true }),

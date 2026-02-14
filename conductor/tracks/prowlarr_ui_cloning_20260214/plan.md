@@ -106,7 +106,7 @@ This plan implements the Prowlarr UI cloning based on the comprehensive specific
   - [x] Implement page size configuration
   - [x] Verify coverage >80%
 
-- [ ] **Task 2.5: Implement selection mode (TDD)**
+- [~] **Task 2.5: Implement selection mode (TDD)**
   - [ ] Write tests for SelectProvider context
   - [ ] Implement SelectProvider for bulk operations
   - [ ] Write tests for row selection (checkbox, shift-click)

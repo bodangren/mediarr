@@ -1,7 +1,7 @@
 Task: Prowlarr UI Cloning - Task 2.2 (Implement sorting functionality)
 
 Summary:
-- Added shared sort state utility () and generic multi-column comparator builder in app/src/lib/table/sort.ts.
+- Added shared sort state utility (nextSortState) and generic multi-column comparator builder in app/src/lib/table/sort.ts.
 - Added SortMenu primitive for explicit sort-key UI interactions.
 - Wired shared sorting utilities into series and movies pages to replace duplicated ad-hoc sort toggling logic.
 - Added unit tests for sort reducer/comparators and SortMenu interactions.

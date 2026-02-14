@@ -12,6 +12,7 @@ const mockedGetApiClients = vi.mocked(getApiClients);
 
 const listIndexersMock = vi.fn();
 const searchCandidatesMock = vi.fn();
+const grabReleaseMock = vi.fn();
 
 function createTestQueryClient(): QueryClient {
   return new QueryClient({
@@ -76,6 +77,10 @@ beforeEach(() => {
       magnetUrl: 'magnet:?xt=urn:btih:abc123',
     },
   ]);
+  grabReleaseMock.mockResolvedValue({
+    infoHash: 'abc123',
+    name: 'Dune Part Two 1080p WEB-DL',
+  });
 
   mockedGetApiClients.mockReturnValue({
     indexerApi: {
@@ -83,6 +88,7 @@ beforeEach(() => {
     },
     releaseApi: {
       searchCandidates: searchCandidatesMock,
+      grabRelease: grabReleaseMock,
     },
   } as ReturnType<typeof getApiClients>);
 });
@@ -209,5 +215,113 @@ describe('search page', () => {
 
     expect(await screen.findByText('Could not load data')).toBeInTheDocument();
     expect(screen.getByText('search backend unavailable')).toBeInTheDocument();
+  });
+
+  it('supports row-level grab and download actions', async () => {
+    searchCandidatesMock.mockResolvedValueOnce([
+      {
+        indexer: 'Indexer A',
+        title: 'Grab Candidate',
+        size: 4_294_967_296,
+        seeders: 140,
+        age: 2,
+        magnetUrl: 'magnet:?xt=urn:btih:abc123',
+      },
+    ]);
+
+    const queryClient = createTestQueryClient();
+    renderPage(queryClient);
+
+    fireEvent.change(screen.getByLabelText('Search query'), { target: { value: 'grab candidate' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Search releases' }));
+
+    expect(await screen.findByText('Grab Candidate')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Grab release Grab Candidate' }));
+
+    await waitFor(() => {
+      expect(grabReleaseMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'Grab Candidate',
+          indexer: 'Indexer A',
+          magnetUrl: 'magnet:?xt=urn:btih:abc123',
+        }),
+      );
+    });
+
+    expect(screen.getByRole('link', { name: 'Download release Grab Candidate' })).toHaveAttribute(
+      'href',
+      'magnet:?xt=urn:btih:abc123',
+    );
+  });
+
+  it('opens override modal and applies an override title', async () => {
+    searchCandidatesMock.mockResolvedValueOnce([
+      {
+        indexer: 'Indexer A',
+        title: 'Needs Override',
+        size: 4_294_967_296,
+        seeders: 140,
+        age: 2,
+        magnetUrl: 'magnet:?xt=urn:btih:abc123',
+      },
+    ]);
+
+    const queryClient = createTestQueryClient();
+    renderPage(queryClient);
+
+    fireEvent.change(screen.getByLabelText('Search query'), { target: { value: 'override candidate' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Search releases' }));
+
+    expect(await screen.findByText('Needs Override')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Override match Needs Override' }));
+
+    expect(await screen.findByRole('dialog', { name: 'Override release match' })).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Override title'), { target: { value: 'Override Applied Title' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Apply override' }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog', { name: 'Override release match' })).not.toBeInTheDocument();
+    });
+    expect(screen.getByText('Override Applied Title')).toBeInTheDocument();
+  });
+
+  it('supports bulk grab for selected rows', async () => {
+    searchCandidatesMock.mockResolvedValueOnce([
+      {
+        indexer: 'Indexer A',
+        title: 'Bulk One',
+        size: 4_294_967_296,
+        seeders: 140,
+        age: 2,
+        magnetUrl: 'magnet:?xt=urn:btih:bulk1',
+      },
+      {
+        indexer: 'Indexer B',
+        title: 'Bulk Two',
+        size: 3_221_225_472,
+        seeders: 100,
+        age: 3,
+        magnetUrl: 'magnet:?xt=urn:btih:bulk2',
+      },
+    ]);
+
+    const queryClient = createTestQueryClient();
+    renderPage(queryClient);
+
+    fireEvent.change(screen.getByLabelText('Search query'), { target: { value: 'bulk candidate' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Search releases' }));
+
+    expect(await screen.findByText('Bulk One')).toBeInTheDocument();
+    expect(screen.getByText('Bulk Two')).toBeInTheDocument();
+
+    fireEvent.click(screen.getAllByLabelText('Select row')[0]);
+    fireEvent.click(screen.getAllByLabelText('Select row')[1]);
+    fireEvent.click(screen.getByRole('button', { name: 'Bulk grab' }));
+
+    await waitFor(() => {
+      expect(grabReleaseMock).toHaveBeenCalledTimes(2);
+    });
   });
 });

@@ -1,9 +1,13 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useMutation } from '@tanstack/react-query';
 import { DataTable, type DataTableColumn } from '@/components/primitives/DataTable';
 import { Label } from '@/components/primitives/Label';
+import { Modal, ModalBody, ModalFooter, ModalHeader } from '@/components/primitives/Modal';
 import { QueryPanel } from '@/components/primitives/QueryPanel';
+import { SelectFooter } from '@/components/primitives/SelectFooter';
+import { SelectProvider, useSelectContext } from '@/components/primitives/SelectProvider';
 import { getApiClients } from '@/lib/api/client';
 import { queryKeys } from '@/lib/query/queryKeys';
 import { useApiQuery } from '@/lib/query/useApiQuery';
@@ -30,6 +34,10 @@ interface ReleaseRow {
   downloadUrl?: string;
 }
 
+interface ReleaseViewRow extends ReleaseRow {
+  rowId: string;
+}
+
 interface SearchPayload extends Record<string, unknown> {
   query: string;
   searchType: SearchType;
@@ -52,6 +60,26 @@ interface FormState {
   season: string;
   episode: string;
   year: string;
+}
+
+interface ActionNotice {
+  tone: 'success' | 'error';
+  message: string;
+}
+
+function SelectionCheckbox({ rowId }: { rowId: string }) {
+  const { isSelected, toggleRow } = useSelectContext();
+
+  return (
+    <input
+      type="checkbox"
+      aria-label="Select row"
+      checked={isSelected(rowId)}
+      onChange={event => {
+        toggleRow(rowId, (event.nativeEvent as MouseEvent).shiftKey);
+      }}
+    />
+  );
 }
 
 function parseOptionalNumber(value: string): number | undefined {
@@ -95,6 +123,31 @@ function parseIndexerFlags(flags?: string): string[] {
     .filter(Boolean);
 }
 
+function buildReleaseRowId(row: ReleaseRow): string {
+  return [
+    row.indexer,
+    row.title,
+    row.size,
+    row.seeders,
+    row.magnetUrl ?? '',
+    row.downloadUrl ?? '',
+  ].join('|');
+}
+
+function toReleasePayload(row: ReleaseRow): ReleaseRow {
+  return {
+    indexer: row.indexer,
+    title: row.title,
+    size: row.size,
+    seeders: row.seeders,
+    indexerFlags: row.indexerFlags,
+    quality: row.quality,
+    age: row.age,
+    magnetUrl: row.magnetUrl,
+    downloadUrl: row.downloadUrl,
+  };
+}
+
 function buildPayload(form: FormState): SearchPayload {
   const payload: SearchPayload = {
     query: form.query.trim(),
@@ -134,6 +187,10 @@ export default function SearchPage() {
   const api = useMemo(() => getApiClients(), []);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [submittedPayload, setSubmittedPayload] = useState<SearchPayload | null>(null);
+  const [actionNotice, setActionNotice] = useState<ActionNotice | null>(null);
+  const [overrideTarget, setOverrideTarget] = useState<ReleaseViewRow | null>(null);
+  const [overrideTitle, setOverrideTitle] = useState('');
+  const [overridesByRowId, setOverridesByRowId] = useState<Record<string, string>>({});
   const [form, setForm] = useState<FormState>({
     query: '',
     searchType: 'search',
@@ -161,7 +218,36 @@ export default function SearchPage() {
     isEmpty: rows => rows.length === 0,
   });
 
-  const columns: DataTableColumn<ReleaseRow>[] = [
+  const grabMutation = useMutation({
+    mutationFn: (candidate: ReleaseRow) => api.releaseApi.grabRelease(candidate),
+  });
+
+  const releaseRows = useMemo<ReleaseViewRow[]>(
+    () =>
+      (releasesQuery.data ?? []).map(row => {
+        const rowId = buildReleaseRowId(row);
+        const titleOverride = overridesByRowId[rowId];
+
+        return {
+          ...row,
+          rowId,
+          title: titleOverride ?? row.title,
+        };
+      }),
+    [overridesByRowId, releasesQuery.data],
+  );
+
+  const releaseById = useMemo(
+    () => new Map(releaseRows.map(row => [row.rowId, row])),
+    [releaseRows],
+  );
+
+  const columns: DataTableColumn<ReleaseViewRow>[] = [
+    {
+      key: 'select',
+      header: 'Select',
+      render: row => <SelectionCheckbox rowId={row.rowId} />,
+    },
     {
       key: 'protocol',
       header: 'Protocol',
@@ -195,7 +281,7 @@ export default function SearchPage() {
         return (
           <div className="flex flex-wrap gap-1">
             {flags.map(flag => (
-              <Label key={`${row.indexer}-${row.title}-${flag}`}>{flag}</Label>
+              <Label key={`${row.rowId}-${flag}`}>{flag}</Label>
             ))}
           </div>
         );
@@ -212,6 +298,53 @@ export default function SearchPage() {
       render: row => row.seeders,
     },
   ];
+
+  const handleGrab = async (candidate: ReleaseViewRow) => {
+    try {
+      await grabMutation.mutateAsync(toReleasePayload(candidate));
+      setActionNotice({
+        tone: 'success',
+        message: `Grabbed ${candidate.title}`,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to grab release.';
+      setActionNotice({
+        tone: 'error',
+        message,
+      });
+    }
+  };
+
+  const handleBulkGrab = async (selectedIds: Array<string | number>) => {
+    const candidates = selectedIds
+      .map(id => releaseById.get(String(id)))
+      .filter((row): row is ReleaseViewRow => Boolean(row?.magnetUrl));
+
+    if (candidates.length === 0) {
+      setActionNotice({
+        tone: 'error',
+        message: 'No selected releases contain a magnet URL.',
+      });
+      return;
+    }
+
+    const results = await Promise.allSettled(candidates.map(candidate => grabMutation.mutateAsync(toReleasePayload(candidate))));
+    const successCount = results.filter(result => result.status === 'fulfilled').length;
+    const failureCount = results.length - successCount;
+
+    if (failureCount === 0) {
+      setActionNotice({
+        tone: 'success',
+        message: `Bulk grabbed ${successCount} release${successCount === 1 ? '' : 's'}.`,
+      });
+      return;
+    }
+
+    setActionNotice({
+      tone: 'error',
+      message: `Bulk grab completed with ${successCount} success and ${failureCount} failure.`,
+    });
+  };
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -433,17 +566,157 @@ export default function SearchPage() {
           emptyTitle="No results"
           emptyBody="Try broader criteria or a different indexer selection."
         >
-          <DataTable
-            data={releasesQuery.data ?? []}
-            columns={columns}
-            getRowId={row => `${row.indexer}-${row.title}`}
-          />
+          <div className="space-y-3">
+            {actionNotice ? (
+              <p
+                className={`rounded-sm border px-3 py-2 text-sm ${
+                  actionNotice.tone === 'success'
+                    ? 'border-status-completed/40 bg-status-completed/15 text-status-completed'
+                    : 'border-status-error/40 bg-status-error/15 text-status-error'
+                }`}
+                role="status"
+              >
+                {actionNotice.message}
+              </p>
+            ) : null}
+
+            <SelectProvider rowIds={releaseRows.map(row => row.rowId)}>
+              <DataTable
+                data={releaseRows}
+                columns={columns}
+                getRowId={row => row.rowId}
+                rowActions={row => {
+                  const downloadHref = row.downloadUrl ?? row.magnetUrl;
+                  return (
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        type="button"
+                        aria-label={`Grab release ${row.title}`}
+                        className="rounded-sm border border-border-subtle px-2 py-1 text-xs"
+                        disabled={grabMutation.isPending || !row.magnetUrl}
+                        onClick={() => {
+                          void handleGrab(row);
+                        }}
+                      >
+                        Grab
+                      </button>
+                      {downloadHref ? (
+                        <a
+                          aria-label={`Download release ${row.title}`}
+                          className="rounded-sm border border-border-subtle px-2 py-1 text-xs"
+                          href={downloadHref}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Download
+                        </a>
+                      ) : (
+                        <button
+                          type="button"
+                          className="rounded-sm border border-border-subtle px-2 py-1 text-xs"
+                          disabled
+                        >
+                          Download
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        aria-label={`Override match ${row.title}`}
+                        className="rounded-sm border border-border-subtle px-2 py-1 text-xs"
+                        onClick={() => {
+                          setOverrideTarget(row);
+                          setOverrideTitle(row.title);
+                        }}
+                      >
+                        Override
+                      </button>
+                    </div>
+                  );
+                }}
+              />
+              <SelectFooter
+                actions={[
+                  {
+                    label: 'Bulk grab',
+                    onClick: selectedIds => {
+                      void handleBulkGrab(selectedIds);
+                    },
+                  },
+                ]}
+              />
+            </SelectProvider>
+          </div>
         </QueryPanel>
       ) : (
         <section className="rounded-md border border-border-subtle bg-surface-1 p-4 text-sm text-text-secondary">
           Run a manual search to inspect release results and ranking.
         </section>
       )}
+
+      <Modal
+        isOpen={Boolean(overrideTarget)}
+        ariaLabel="Override release match"
+        onClose={() => {
+          setOverrideTarget(null);
+          setOverrideTitle('');
+        }}
+      >
+        <ModalHeader
+          title="Override release match"
+          onClose={() => {
+            setOverrideTarget(null);
+            setOverrideTitle('');
+          }}
+        />
+        <ModalBody>
+          <label className="grid gap-1 text-sm">
+            <span>Override title</span>
+            <input
+              aria-label="Override title"
+              value={overrideTitle}
+              onChange={event => {
+                setOverrideTitle(event.currentTarget.value);
+              }}
+              className="rounded-sm border border-border-subtle bg-surface-0 px-3 py-2"
+            />
+          </label>
+        </ModalBody>
+        <ModalFooter>
+          <button
+            type="button"
+            className="rounded-sm border border-border-subtle px-3 py-1 text-sm"
+            onClick={() => {
+              setOverrideTarget(null);
+              setOverrideTitle('');
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            className="rounded-sm border border-border-subtle px-3 py-1 text-sm"
+            onClick={() => {
+              if (!overrideTarget) {
+                return;
+              }
+
+              const nextTitle = overrideTitle.trim();
+              if (nextTitle.length === 0) {
+                return;
+              }
+
+              setOverridesByRowId(current => ({
+                ...current,
+                [overrideTarget.rowId]: nextTitle,
+              }));
+              setOverrideTarget(null);
+              setOverrideTitle('');
+            }}
+          >
+            Apply override
+          </button>
+        </ModalFooter>
+      </Modal>
     </section>
   );
 }

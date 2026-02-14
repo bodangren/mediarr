@@ -177,7 +177,7 @@ This plan implements the Prowlarr UI cloning based on the comprehensive specific
 
 ### Tasks
 
-- [ ] **Task 4.1: Create IndexerIndex view (TDD)**
+- [x] **Task 4.1: Create IndexerIndex view (TDD)** (commit: `07e2e6d`)
   - [ ] Write tests for IndexerIndex container
   - [ ] Implement main IndexerIndex page component
   - [ ] Write tests for IndexerIndexTable

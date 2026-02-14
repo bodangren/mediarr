@@ -1,7 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import HistoryPage from './history/page';
-import IndexerStatsPage from './indexers/stats/page';
 import SearchPage from './search/page';
 import SettingsApplicationsPage from './settings/applications/page';
 import SettingsConnectPage from './settings/connect/page';
@@ -18,7 +17,6 @@ import SystemTasksPage from './system/tasks/page';
 import SystemUpdatesPage from './system/updates/page';
 
 const PAGE_CASES = [
-  { title: 'Indexer Stats', Component: IndexerStatsPage },
   { title: 'Search', Component: SearchPage },
   { title: 'History', Component: HistoryPage },
   { title: 'Settings: Indexers', Component: SettingsIndexersPage },

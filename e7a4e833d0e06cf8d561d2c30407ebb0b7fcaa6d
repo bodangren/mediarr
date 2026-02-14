@@ -1,0 +1,24 @@
+Task: Prowlarr UI Cloning - Task 1.3 (Create core UI primitives)
+
+Summary:
+- Added missing core primitive components required by the track plan: Button (variants), Icon (lucide-backed), Alert (tone variants), and Label (badge tones).
+- Added red/green tests in app/src/components/primitives/core-primitives.test.tsx.
+- Added lucide-react to app workspace dependencies to support icon parity.
+
+Files:
+- app/src/components/primitives/Button.tsx
+- app/src/components/primitives/Icon.tsx
+- app/src/components/primitives/Alert.tsx
+- app/src/components/primitives/Label.tsx
+- app/src/components/primitives/core-primitives.test.tsx
+- app/package.json
+- package-lock.json
+- conductor/tracks/prowlarr_ui_cloning_20260214/plan.md
+
+Validation:
+- CI=true npm run test --workspace=app -- src/components/primitives/core-primitives.test.tsx
+- CI=true npm run test:coverage --workspace=app -- src/components/primitives/core-primitives.test.tsx src/components/primitives/primitives.test.tsx
+- components/primitives coverage: 90.32% statements.
+
+Why:
+- Establishes reusable primitive foundation for clone-parity pages and modal/form systems in later phases.

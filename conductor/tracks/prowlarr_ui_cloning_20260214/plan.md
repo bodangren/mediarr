@@ -68,16 +68,16 @@ This plan implements the Prowlarr UI cloning based on the comprehensive specific
 
 ### Tasks
 
-- [~] **Task 2.1: Create base Table components (TDD)**
-  - [ ] Write tests for Table container component
-  - [ ] Implement Table wrapper component
-  - [ ] Write tests for TableHeader with sortable columns
-  - [ ] Implement TableHeader with sort indicators
-  - [ ] Write tests for TableBody and TableRow
-  - [ ] Implement TableBody and TableRow components
-  - [ ] Write tests for TableCell renderers
-  - [ ] Implement custom cell renderers (text, date, status)
-  - [ ] Verify coverage >80%
+- [x] **Task 2.1: Create base Table components (TDD)** (commit: `711c366`)
+  - [x] Write tests for Table container component
+  - [x] Implement Table wrapper component
+  - [x] Write tests for TableHeader with sortable columns
+  - [x] Implement TableHeader with sort indicators
+  - [x] Write tests for TableBody and TableRow
+  - [x] Implement TableBody and TableRow components
+  - [x] Write tests for TableCell renderers
+  - [x] Implement custom cell renderers (text, date, status)
+  - [x] Verify coverage >80%
 
 - [ ] **Task 2.2: Implement sorting functionality (TDD)**
   - [ ] Write tests for sort reducer

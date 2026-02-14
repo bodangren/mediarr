@@ -1,0 +1,16 @@
+Task: prowlarr_ui_cloning_20260214 - Task 5.1 Create SearchIndex view (TDD)
+
+Summary:
+- Replaced scaffolded /search route with a functional SearchIndex page.
+- Added query form controls for search query, search type, category, indexer selection, limit, offset, and advanced season/episode/year fields.
+- Wired release search execution through releaseApi.searchCandidates and rendered baseline result columns (protocol, age, title, indexer, size, seeders).
+- Added QueryPanel-driven empty/error/loading behavior for submitted searches.
+- Updated scaffold contract tests to stop treating /search as scaffolded now that behavior is implemented.
+
+Files changed:
+- app/src/app/(shell)/search/page.tsx
+- app/src/app/(shell)/search/page.test.tsx
+- app/src/app/(shell)/prowlarr-route-scaffolds.test.tsx
+
+Why:
+- Task 5.1 requires moving /search from scaffold to functional manual search surface with parameter wiring and baseline result handling while reusing existing monolith API clients.

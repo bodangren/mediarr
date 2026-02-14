@@ -208,7 +208,7 @@ This plan implements the Prowlarr UI cloning based on the comprehensive specific
   - [ ] Implement update API integration
   - [ ] Verify coverage >80%
 
-- [ ] **Task 4.4: Create IndexerStats view (TDD)**
+- [x] **Task 4.4: Create IndexerStats view (TDD)** (commit: `97c2ffe`)
   - [ ] Write tests for IndexerStats container
   - [ ] Implement stats dashboard page
   - [ ] Write tests for statistics cards

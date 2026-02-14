@@ -33,16 +33,16 @@ This plan implements the Prowlarr UI cloning based on the comprehensive specific
   - [x] Implement collapsible sidebar with navigation links
   - [x] Verify coverage >80%
 
-- [~] **Task 1.3: Create core UI primitives (TDD)**
-  - [ ] Write tests for Button component variants
-  - [ ] Implement Button (primary, secondary, danger variants)
-  - [ ] Write tests for Icon component
-  - [ ] Implement Icon component (using Lucide icons)
-  - [ ] Write tests for Alert component
-  - [ ] Implement Alert (info, success, warning, danger)
-  - [ ] Write tests for Label/Badge component
-  - [ ] Implement Label component (status badges)
-  - [ ] Verify coverage >80%
+- [x] **Task 1.3: Create core UI primitives (TDD)** (commit: `e7a4e83`)
+  - [x] Write tests for Button component variants
+  - [x] Implement Button (primary, secondary, danger variants)
+  - [x] Write tests for Icon component
+  - [x] Implement Icon component (using Lucide icons)
+  - [x] Write tests for Alert component
+  - [x] Implement Alert (info, success, warning, danger)
+  - [x] Write tests for Label/Badge component
+  - [x] Implement Label component (status badges)
+  - [x] Verify coverage >80%
 
 - [ ] **Task 1.4: Set up state management infrastructure**
   - [ ] Write tests for Redux store setup

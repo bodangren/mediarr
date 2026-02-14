@@ -88,3 +88,18 @@ While the primary sequence defines hard dependencies, several phases across trac
 - [~] **Track: Remediation track to fix critical P0 parity blockers (backend wiring) and P1 operational gaps identified in the Track 9 audit.**
 *Link: [./tracks/fix_core_parity_wiring_20260212/](./tracks/fix_core_parity_wiring_20260212/)*
 
+- [ ] **Track: Bazarr UI Cloning**
+*Description: Clone the Bazarr subtitle manager UI with comprehensive views, components, and features for subtitle management across TV and movies.*
+*Phases: 13 | Link: [./tracks/bazarr_ui_cloning_20260214/](./tracks/bazarr_ui_cloning_20260214/)*
+
+- [~] **Track: Prowlarr UI Cloning**
+*Description: Clone the Prowlarr indexer manager UI with comprehensive views, components, and features for managing torrent trackers and usenet indexers.*
+*Phases: 10 | Link: [./tracks/prowlarr_ui_cloning_20260214/](./tracks/prowlarr_ui_cloning_20260214/)*
+
+- [ ] **Track: Radarr UI Cloning**
+*Description: Clone the Radarr movie collection manager UI with comprehensive views, components, and features for managing movies, downloads, and quality profiles.*
+*Phases: 11 | Link: [./tracks/radarr_ui_cloning_20260214/](./tracks/radarr_ui_cloning_20260214/)*
+
+- [ ] **Track: Sonarr UI Cloning**
+*Description: Clone the Sonarr TV series PVR UI with comprehensive views, components, and features for managing series, episodes, downloads, and quality profiles.*
+*Phases: 11 | Link: [./tracks/sonarr_ui_cloning_20260214/](./tracks/sonarr_ui_cloning_20260214/)*

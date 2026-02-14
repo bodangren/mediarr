@@ -1,0 +1,25 @@
+Task: Prowlarr UI Cloning - Task 2.2 (Implement sorting functionality)
+
+Summary:
+- Added shared sort state utility () and generic multi-column comparator builder in app/src/lib/table/sort.ts.
+- Added SortMenu primitive for explicit sort-key UI interactions.
+- Wired shared sorting utilities into series and movies pages to replace duplicated ad-hoc sort toggling logic.
+- Added unit tests for sort reducer/comparators and SortMenu interactions.
+
+Files:
+- app/src/lib/table/sort.ts
+- app/src/lib/table/sort.test.ts
+- app/src/components/primitives/SortMenu.tsx
+- app/src/components/primitives/sort-menu.test.tsx
+- app/src/app/(shell)/library/series/page.tsx
+- app/src/app/(shell)/library/movies/page.tsx
+- conductor/tracks/prowlarr_ui_cloning_20260214/plan.md
+
+Validation:
+- CI=true npm run test --workspace=app -- src/lib/table/sort.test.ts src/components/primitives/sort-menu.test.tsx
+- CI=true npm run test --workspace=app -- src/app/(shell)/library/series/page.test.tsx src/app/(shell)/library/movies/page.test.tsx
+- CI=true npm run test:coverage --workspace=app -- src/lib/table/sort.test.ts src/components/primitives/sort-menu.test.tsx
+- lib/table/sort.ts coverage: 80.95% statements.
+
+Why:
+- Provides reusable sort reducer/predicate logic and explicit sort UI controls needed for table-heavy Prowlarr pages.

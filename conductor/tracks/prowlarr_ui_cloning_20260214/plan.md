@@ -247,14 +247,14 @@ This plan implements the Prowlarr UI cloning based on the comprehensive specific
   - [x] Implement advanced search options
   - [x] Verify coverage >80%
 
-- [ ] **Task 5.2: Create SearchResults table (TDD)**
-  - [ ] Write tests for SearchResultsTable
-  - [ ] Implement search results data table
-  - [ ] Write tests for result columns
-  - [ ] Implement columns (Protocol, Age, Title, Indexer, Size, etc.)
-  - [ ] Write tests for indexer flags display
-  - [ ] Implement flags display (freeleech, etc.)
-  - [ ] Verify coverage >80%
+- [x] **Task 5.2: Create SearchResults table (TDD)** (commit: `c21f704`)
+  - [x] Write tests for SearchResultsTable
+  - [x] Implement search results data table
+  - [x] Write tests for result columns
+  - [x] Implement columns (Protocol, Age, Title, Indexer, Size, etc.)
+  - [x] Write tests for indexer flags display
+  - [x] Implement flags display (freeleech, etc.)
+  - [x] Verify coverage >80%
 
 - [ ] **Task 5.3: Implement release actions (TDD)**
   - [ ] Write tests for grab functionality

@@ -115,7 +115,7 @@ This plan implements the Prowlarr UI cloning based on the comprehensive specific
   - [x] Implement SelectFooter component
   - [x] Verify coverage >80%
 
-- [ ] **Task 2.6: Implement column management (TDD)**
+- [~] **Task 2.6: Implement column management (TDD)**
   - [ ] Write tests for TableOptionsModal
   - [ ] Implement column visibility toggle
   - [ ] Write tests for drag-and-drop column reordering

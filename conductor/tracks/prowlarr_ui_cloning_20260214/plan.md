@@ -79,14 +79,14 @@ This plan implements the Prowlarr UI cloning based on the comprehensive specific
   - [x] Implement custom cell renderers (text, date, status)
   - [x] Verify coverage >80%
 
-- [~] **Task 2.2: Implement sorting functionality (TDD)**
-  - [ ] Write tests for sort reducer
-  - [ ] Implement sort state management
-  - [ ] Write tests for multi-column sort predicates
-  - [ ] Implement sort predicates for common data types
-  - [ ] Write tests for sort UI interactions
-  - [ ] Implement SortMenu component
-  - [ ] Verify coverage >80%
+- [x] **Task 2.2: Implement sorting functionality (TDD)** (commit: `2bfbcf2`)
+  - [x] Write tests for sort reducer
+  - [x] Implement sort state management
+  - [x] Write tests for multi-column sort predicates
+  - [x] Implement sort predicates for common data types
+  - [x] Write tests for sort UI interactions
+  - [x] Implement SortMenu component
+  - [x] Verify coverage >80%
 
 - [ ] **Task 2.3: Implement filtering system (TDD)**
   - [ ] Write tests for filter predicates

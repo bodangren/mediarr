@@ -1,0 +1,23 @@
+Task: Prowlarr UI Cloning - Task 2.4 (Implement pagination)
+
+Summary:
+- Added shared pagination reducer utilities (clamp, transitions, client-side slicing).
+- Added reusable TablePager component with previous/next controls and page-size selector.
+- Refactored DataTable to delegate pager rendering to TablePager while preserving existing external API compatibility.
+- Added tests for pagination reducers and TablePager interactions.
+
+Files:
+- app/src/lib/table/pagination.ts
+- app/src/lib/table/pagination.test.ts
+- app/src/components/primitives/TablePager.tsx
+- app/src/components/primitives/table-pager.test.tsx
+- app/src/components/primitives/DataTable.tsx
+- conductor/tracks/prowlarr_ui_cloning_20260214/plan.md
+
+Validation:
+- CI=true npm run test --workspace=app -- src/lib/table/pagination.test.ts src/components/primitives/table-pager.test.tsx src/components/primitives/primitives.test.tsx
+- CI=true npm run test:coverage --workspace=app -- src/lib/table/pagination.test.ts src/components/primitives/table-pager.test.tsx
+- pagination.ts coverage: 100% statements.
+
+Why:
+- Provides reusable, testable paging state and UI controls required by high-density Prowlarr tables.

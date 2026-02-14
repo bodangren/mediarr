@@ -1,0 +1,8 @@
+{
+  "track_id": "radarr_ui_cloning_20260214",
+  "type": "feature",
+  "status": "spec_complete",
+  "created_at": "2026-02-14T00:00:00Z",
+  "updated_at": "2026-02-14T00:00:00Z",
+  "description": "Clone the Radarr movie collection manager UI with comprehensive views, components, and features for managing movies, downloads, and quality profiles"
+}

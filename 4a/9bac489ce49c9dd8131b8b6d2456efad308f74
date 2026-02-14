@@ -1,0 +1,14 @@
+Task: 3.3 Create specialized inputs (TDD)
+
+Summary:
+- Added specialized primitive inputs: PasswordInput, PathInput, NumberInput, and AutoCompleteInput.
+- Implemented password visibility toggle, path browse action hook, bounded numeric normalization, and filtered autocomplete suggestion selection.
+- Added test suite validating each specialized input behavior and interaction contract.
+
+Files:
+- app/src/components/primitives/SpecialInputs.tsx
+- app/src/components/primitives/special-inputs.test.tsx
+
+Why:
+- Provide reusable form controls required by Prowlarr-style indexer and settings forms without duplicating local one-off implementations.
+- Enable parity-oriented advanced input behavior (visibility, bounded numbers, suggestion picking) in later track phases.

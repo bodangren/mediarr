@@ -68,7 +68,7 @@ This plan implements the Prowlarr UI cloning based on the comprehensive specific
 
 ### Tasks
 
-- [ ] **Task 2.1: Create base Table components (TDD)**
+- [~] **Task 2.1: Create base Table components (TDD)**
   - [ ] Write tests for Table container component
   - [ ] Implement Table wrapper component
   - [ ] Write tests for TableHeader with sortable columns

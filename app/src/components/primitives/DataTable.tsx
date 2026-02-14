@@ -1,12 +1,9 @@
 import type { ReactNode } from 'react';
+import { Table } from './Table';
+import { TableBody } from './TableBody';
+import { TableHeader, type TableColumn } from './TableHeader';
 
-export interface DataTableColumn<RowType> {
-  key: string;
-  header: string;
-  sortable?: boolean;
-  render: (row: RowType) => ReactNode;
-  className?: string;
-}
+export type DataTableColumn<RowType> = TableColumn<RowType>;
 
 interface DataTablePagination {
   page: number;
@@ -41,49 +38,10 @@ export function DataTable<RowType>({
 }: DataTableProps<RowType>) {
   return (
     <div className="space-y-3">
-      <div data-testid="table-overflow" className="overflow-x-auto rounded-md border border-border-subtle">
-        <table className="min-w-full text-left text-sm">
-          <thead className="bg-surface-2 text-text-secondary">
-            <tr>
-              {columns.map(column => {
-                const isActiveSort = sort?.key === column.key;
-                return (
-                  <th key={column.key} className="px-3 py-2 font-semibold">
-                    {column.sortable && onSort ? (
-                      <button
-                        type="button"
-                        className="inline-flex items-center gap-1 text-left"
-                        onClick={() => onSort(column.key)}
-                        aria-label={`Sort by ${column.header}`}
-                      >
-                        {column.header}
-                        <span aria-hidden="true">
-                          {isActiveSort ? (sort?.direction === 'asc' ? '↑' : '↓') : '↕'}
-                        </span>
-                      </button>
-                    ) : (
-                      column.header
-                    )}
-                  </th>
-                );
-              })}
-              {rowActions ? <th className="px-3 py-2 text-right font-semibold">Actions</th> : null}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border-subtle bg-surface-1">
-            {data.map(row => (
-              <tr key={getRowId(row)}>
-                {columns.map(column => (
-                  <td key={column.key} className={`px-3 py-2 text-text-primary ${column.className ?? ''}`}>
-                    {column.render(row)}
-                  </td>
-                ))}
-                {rowActions ? <td className="px-3 py-2 text-right">{rowActions(row)}</td> : null}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <Table>
+        <TableHeader<RowType> columns={columns} sort={sort} onSort={onSort} showActions={Boolean(rowActions)} />
+        <TableBody<RowType> data={data} columns={columns} getRowId={getRowId} rowActions={rowActions} />
+      </Table>
 
       {pagination ? (
         <div className="flex items-center justify-between">

@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { TableOptionsModal } from './TableOptionsModal';
+import { reorderOnHover, TableOptionsModal } from './TableOptionsModal';
 
 describe('TableOptionsModal', () => {
   it('toggles visibility and reorders columns', () => {
@@ -27,5 +27,15 @@ describe('TableOptionsModal', () => {
     fireEvent.click(screen.getByRole('button', { name: /move year down/i }));
     fireEvent.click(screen.getByRole('button', { name: /close/i }));
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('returns unchanged columns when hover indexes are equal', () => {
+    const columns = [
+      { key: 'title', label: 'Title', visible: true },
+      { key: 'year', label: 'Year', visible: true },
+    ];
+
+    expect(reorderOnHover(columns, 0, 0)).toBe(columns);
+    expect(reorderOnHover(columns, 0, 1).map(column => column.key)).toEqual(['year', 'title']);
   });
 });

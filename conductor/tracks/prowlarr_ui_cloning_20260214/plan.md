@@ -134,7 +134,7 @@ This plan implements the Prowlarr UI cloning based on the comprehensive specific
 
 ### Tasks
 
-- [ ] **Task 3.1: Create Modal system (TDD)**
+- [x] **Task 3.1: Create Modal system (TDD)** (commit: `9a67a58`)
   - [ ] Write tests for Modal container
   - [ ] Implement Modal component with backdrop
   - [ ] Write tests for ModalHeader, ModalBody, ModalFooter

@@ -38,6 +38,8 @@ export interface CreateIndexerInput {
   priority?: number;
 }
 
+export type IndexerTestResult = z.infer<typeof testResultSchema>;
+
 export function createIndexerApi(client: ApiHttpClient) {
   return {
     list(): Promise<IndexerItem[]> {
@@ -81,11 +83,22 @@ export function createIndexerApi(client: ApiHttpClient) {
       );
     },
 
-    test(id: number): Promise<z.infer<typeof testResultSchema>> {
+    test(id: number): Promise<IndexerTestResult> {
       return client.request(
         {
           path: routeMap.indexerTest(id),
           method: 'POST',
+        },
+        testResultSchema,
+      );
+    },
+
+    testDraft(input: CreateIndexerInput): Promise<IndexerTestResult> {
+      return client.request(
+        {
+          path: routeMap.indexerTestDraft,
+          method: 'POST',
+          body: input,
         },
         testResultSchema,
       );

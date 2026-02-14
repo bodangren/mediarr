@@ -85,6 +85,72 @@ export function registerIndexerRoutes(
     return sendSuccess(reply, created, 201);
   });
 
+  app.post('/api/indexers/test', {
+    schema: {
+      body: {
+        type: 'object',
+        required: ['name', 'implementation', 'configContract', 'settings', 'protocol'],
+        properties: {
+          name: { type: 'string' },
+          implementation: { type: 'string' },
+          configContract: { type: 'string' },
+          settings: { type: 'string' },
+          protocol: { type: 'string' },
+          enabled: { type: 'boolean' },
+          supportsRss: { type: 'boolean' },
+          supportsSearch: { type: 'boolean' },
+          priority: { type: 'number' },
+        },
+      },
+    },
+  }, async (request, reply) => {
+    if (!deps.indexerTester?.test) {
+      throw new ValidationError('Indexer tester is not configured');
+    }
+
+    if (!deps.indexerFactory?.fromDatabaseRecord) {
+      throw new ValidationError('Indexer factory is not configured');
+    }
+
+    const payload = request.body as Record<string, unknown>;
+    const rawSettings = payload.settings;
+    if (typeof rawSettings !== 'string') {
+      throw new ValidationError('settings must be a JSON string');
+    }
+
+    let parsedSettings: Record<string, unknown>;
+    try {
+      parsedSettings = JSON.parse(rawSettings) as Record<string, unknown>;
+    } catch {
+      throw new ValidationError('settings must be valid JSON');
+    }
+
+    const draftRecord = {
+      id: 0,
+      name: typeof payload.name === 'string' ? payload.name : 'Draft indexer',
+      implementation: typeof payload.implementation === 'string' ? payload.implementation : 'Torznab',
+      configContract: typeof payload.configContract === 'string' ? payload.configContract : 'TorznabSettings',
+      settings: JSON.stringify(parsedSettings),
+      protocol: typeof payload.protocol === 'string' ? payload.protocol : 'torrent',
+      enabled: typeof payload.enabled === 'boolean' ? payload.enabled : true,
+      supportsRss: typeof payload.supportsRss === 'boolean' ? payload.supportsRss : true,
+      supportsSearch: typeof payload.supportsSearch === 'boolean' ? payload.supportsSearch : true,
+      priority: typeof payload.priority === 'number' ? payload.priority : 25,
+      added: new Date(),
+    };
+
+    const indexer = deps.indexerFactory.fromDatabaseRecord(draftRecord as any);
+    const result = await deps.indexerTester.test(indexer as any);
+
+    return sendSuccess(reply, {
+      ...result,
+      diagnostics: {
+        remediationHints: remediationHints(result.message),
+      },
+      healthSnapshot: null,
+    });
+  });
+
   app.put('/api/indexers/:id', {
     schema: {
       params: {

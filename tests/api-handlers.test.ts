@@ -359,6 +359,35 @@ describe('API handlers', () => {
     expect(payload.data.diagnostics.remediationHints.length).toBeGreaterThan(0);
   });
 
+  it('supports draft indexer connectivity tests without persistence', async () => {
+    const { app, deps } = createTestApp();
+    apps.push(app);
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/indexers/test',
+      payload: {
+        name: 'Draft Provider',
+        implementation: 'Torznab',
+        configContract: 'TorznabSettings',
+        settings: JSON.stringify({ url: 'https://draft.example', apiKey: 'secret' }),
+        protocol: 'torrent',
+        enabled: true,
+        supportsRss: true,
+        supportsSearch: true,
+        priority: 25,
+      },
+    });
+    const payload = response.json();
+
+    expect(response.statusCode).toBe(200);
+    expect(payload.ok).toBe(true);
+    expect(payload.data.success).toBe(false);
+    expect(payload.data.diagnostics.remediationHints.length).toBeGreaterThan(0);
+    expect(deps.indexerFactory.fromDatabaseRecord).toHaveBeenCalledTimes(1);
+    expect(deps.indexerTester.test).toHaveBeenCalledTimes(1);
+  });
+
   it('returns subtitle manual search results', async () => {
     const { app } = createTestApp();
     apps.push(app);

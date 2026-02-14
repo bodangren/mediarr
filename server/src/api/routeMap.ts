@@ -32,6 +32,7 @@ export const API_ROUTE_MAP: ApiRouteDefinition[] = [
 
   { method: 'GET', path: '/api/indexers' },
   { method: 'POST', path: '/api/indexers' },
+  { method: 'POST', path: '/api/indexers/test' },
   { method: 'PUT', path: '/api/indexers/:id' },
   { method: 'DELETE', path: '/api/indexers/:id' },
   { method: 'POST', path: '/api/indexers/:id/test' },

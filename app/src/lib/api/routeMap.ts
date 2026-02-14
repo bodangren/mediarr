@@ -28,6 +28,7 @@ export const routeMap = {
   indexerUpdate: (id: number) => `/api/indexers/${id}`,
   indexerDelete: (id: number) => `/api/indexers/${id}`,
   indexerTest: (id: number) => `/api/indexers/${id}/test`,
+  indexerTestDraft: '/api/indexers/test',
 
   subtitleMovieVariants: (id: number) => `/api/subtitles/movie/${id}/variants`,
   subtitleEpisodeVariants: (id: number) => `/api/subtitles/episode/${id}/variants`,

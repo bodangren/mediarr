@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { DataTable, type DataTableColumn } from '@/components/primitives/DataTable';
 import { PageJumpBar, type JumpFilter, matchesJumpFilter } from '@/components/primitives/PageJumpBar';
@@ -12,6 +12,7 @@ import { getApiClients } from '@/lib/api/client';
 import { queryKeys } from '@/lib/query/queryKeys';
 import { useApiQuery } from '@/lib/query/useApiQuery';
 import { useOptimisticMutation } from '@/lib/query/useOptimisticMutation';
+import { AddIndexerModal, type AddIndexerDraft, type IndexerPreset } from './AddIndexerModal';
 import { DynamicForm } from './DynamicForm';
 
 type IndexerRow = {
@@ -44,6 +45,20 @@ interface IndexerFormState {
 
 interface SaveIndexerInput extends IndexerFormState {
   settings: string;
+}
+
+function toSaveIndexerInput(draft: AddIndexerDraft): SaveIndexerInput {
+  return {
+    name: draft.name,
+    implementation: draft.implementation,
+    configContract: draft.configContract,
+    protocol: draft.protocol,
+    enabled: draft.enabled,
+    supportsRss: draft.supportsRss,
+    supportsSearch: draft.supportsSearch,
+    priority: draft.priority,
+    settings: JSON.stringify(draft.settings),
+  };
 }
 
 function createDefaultFormState(): IndexerFormState {
@@ -95,13 +110,40 @@ const usenetSchema = [
   { name: 'apiKey', type: 'text', label: 'API Key', required: true },
 ];
 
+const addIndexerPresets: IndexerPreset[] = [
+  {
+    id: 'torznab-generic',
+    name: 'Generic Torznab',
+    description: 'Custom torrent tracker using Torznab contract.',
+    protocol: 'torrent',
+    implementation: 'Torznab',
+    configContract: 'TorznabSettings',
+    fields: [
+      { name: 'url', label: 'Indexer URL', type: 'text', required: true },
+      { name: 'apiKey', label: 'API Key', type: 'password', required: true },
+    ],
+  },
+  {
+    id: 'newznab-generic',
+    name: 'Generic Newznab',
+    description: 'Custom usenet indexer using Newznab contract.',
+    protocol: 'usenet',
+    implementation: 'Torznab',
+    configContract: 'NewznabSettings',
+    fields: [
+      { name: 'host', label: 'Host', type: 'text', required: true },
+      { name: 'apiKey', label: 'API Key', type: 'password', required: true },
+    ],
+  },
+];
+
 export default function IndexersPage() {
   const api = useMemo(() => getApiClients(), []);
   const queryClient = useQueryClient();
   const { pushToast } = useToast();
-  const formSectionRef = useRef<HTMLElement | null>(null);
 
   const [editing, setEditing] = useState<IndexerRow | null>(null);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [formState, setFormState] = useState<IndexerFormState>(() => createDefaultFormState());
   const [formError, setFormError] = useState<string | null>(null);
   const [testOutput, setTestOutput] = useState<Record<number, { message: string; hints: string[] }>>({});
@@ -181,6 +223,7 @@ export default function IndexersPage() {
         title: editing ? 'Indexer updated' : 'Indexer created',
         variant: 'success',
       });
+      setIsAddModalOpen(false);
       resetForm();
       void queryClient.invalidateQueries({ queryKey: queryKeys.indexers() });
     },
@@ -213,6 +256,10 @@ export default function IndexersPage() {
 
       void queryClient.invalidateQueries({ queryKey: ['health'] });
     },
+  });
+
+  const draftTestMutation = useMutation({
+    mutationFn: (payload: SaveIndexerInput) => api.indexerApi.testDraft(payload),
   });
 
   const columns: DataTableColumn<IndexerRow>[] = [
@@ -296,6 +343,19 @@ export default function IndexersPage() {
     saveMutation.mutate(payload);
   };
 
+  const handleCreateFromModal = (draft: AddIndexerDraft) => {
+    saveMutation.mutate(toSaveIndexerInput(draft));
+  };
+
+  const handleDraftConnectionTest = async (draft: AddIndexerDraft) => {
+    const result = await draftTestMutation.mutateAsync(toSaveIndexerInput(draft));
+    return {
+      success: result.success,
+      message: result.message,
+      hints: result.diagnostics?.remediationHints ?? [],
+    };
+  };
+
   const filteredRows = useMemo(() => {
     const rows = indexersQuery.data ?? [];
     return rows.filter(row => matchesJumpFilter(row.name, jumpFilter));
@@ -333,7 +393,7 @@ export default function IndexersPage() {
             className="rounded-sm border border-border-subtle px-3 py-1 text-sm"
             onClick={() => {
               resetForm();
-              formSectionRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+              setIsAddModalOpen(true);
             }}
           >
             Add
@@ -397,6 +457,7 @@ export default function IndexersPage() {
                 type="button"
                 className="rounded-sm border border-border-subtle px-2 py-1 text-xs"
                 onClick={() => {
+                  setIsAddModalOpen(false);
                   setFormError(null);
                   setEditing(row);
                   setFormState({
@@ -432,59 +493,59 @@ export default function IndexersPage() {
         />
       </QueryPanel>
 
-      <section ref={formSectionRef} className="rounded-lg border border-border-subtle bg-surface-1 p-4">
-        <h2 className="text-lg font-semibold">{editing ? 'Edit Indexer' : 'Create Indexer'}</h2>
-        <div className="mt-3 grid gap-3 sm:grid-cols-2 mb-4">
-          <label className="space-y-1 text-sm">
-            <span>Name</span>
-            <input
-              className="w-full rounded-sm border border-border-subtle bg-surface-0 px-3 py-2"
-              value={formState.name}
-              onChange={event => {
-                const name = event.currentTarget.value;
-                setFormState(current => ({ ...current, name }));
-              }}
-            />
-          </label>
+      {editing ? (
+        <section className="rounded-lg border border-border-subtle bg-surface-1 p-4">
+          <h2 className="text-lg font-semibold">Edit Indexer</h2>
+          <div className="mt-3 mb-4 grid gap-3 sm:grid-cols-2">
+            <label className="space-y-1 text-sm">
+              <span>Name</span>
+              <input
+                className="w-full rounded-sm border border-border-subtle bg-surface-0 px-3 py-2"
+                value={formState.name}
+                onChange={event => {
+                  const name = event.currentTarget.value;
+                  setFormState(current => ({ ...current, name }));
+                }}
+              />
+            </label>
 
-          <label className="space-y-1 text-sm">
-            <span>Protocol</span>
-            <select
-              className="w-full rounded-sm border border-border-subtle bg-surface-0 px-3 py-2"
-              value={formState.protocol}
-              onChange={event => {
-                const protocol = event.currentTarget.value;
-                setFormError(null);
-                setFormState(current => ({ ...current, protocol }));
-              }}
-            >
-              <option value="torrent">torrent</option>
-              <option value="usenet">usenet</option>
-            </select>
-          </label>
+            <label className="space-y-1 text-sm">
+              <span>Protocol</span>
+              <select
+                className="w-full rounded-sm border border-border-subtle bg-surface-0 px-3 py-2"
+                value={formState.protocol}
+                onChange={event => {
+                  const protocol = event.currentTarget.value;
+                  setFormError(null);
+                  setFormState(current => ({ ...current, protocol }));
+                }}
+              >
+                <option value="torrent">torrent</option>
+                <option value="usenet">usenet</option>
+              </select>
+            </label>
 
-          <label className="inline-flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={formState.enabled}
-              onChange={event => {
-                const enabled = event.currentTarget.checked;
-                setFormState(current => ({ ...current, enabled }));
-              }}
-            />
-            Enabled
-          </label>
-        </div>
+            <label className="inline-flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={formState.enabled}
+                onChange={event => {
+                  const enabled = event.currentTarget.checked;
+                  setFormState(current => ({ ...current, enabled }));
+                }}
+              />
+              Enabled
+            </label>
+          </div>
 
-        <DynamicForm 
-            schema={schema} 
-            initialData={initialSettings} 
-            onSubmit={handleSave} 
-            submitLabel={editing ? 'Save' : 'Create'}
-        />
+          <DynamicForm
+            schema={schema}
+            initialData={initialSettings}
+            onSubmit={handleSave}
+            submitLabel="Save"
+          />
 
-        <div className="mt-3 flex gap-2">
-          {editing ? (
+          <div className="mt-3 flex gap-2">
             <button
               type="button"
               className="rounded-sm border border-border-subtle px-3 py-1 text-sm"
@@ -492,15 +553,24 @@ export default function IndexersPage() {
             >
               Cancel
             </button>
-          ) : null}
-        </div>
+          </div>
 
-        {formError ? (
-          <p role="alert" className="mt-3 text-sm text-status-error">
-            {formError}
-          </p>
-        ) : null}
-      </section>
+          {formError ? (
+            <p role="alert" className="mt-3 text-sm text-status-error">
+              {formError}
+            </p>
+          ) : null}
+        </section>
+      ) : null}
+
+      <AddIndexerModal
+        isOpen={isAddModalOpen}
+        presets={addIndexerPresets}
+        isSubmitting={saveMutation.isPending}
+        onClose={() => setIsAddModalOpen(false)}
+        onCreate={handleCreateFromModal}
+        onTestConnection={handleDraftConnectionTest}
+      />
 
       {Object.entries(testOutput).length > 0 ? (
         <section className="rounded-lg border border-border-subtle bg-surface-1 p-4">

@@ -75,6 +75,7 @@ const createMock = vi.fn();
 const updateMock = vi.fn();
 const removeMock = vi.fn();
 const testMock = vi.fn();
+const testDraftMock = vi.fn();
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -97,6 +98,12 @@ beforeEach(() => {
     diagnostics: { remediationHints: ['No remediation needed.'] },
     healthSnapshot: null,
   });
+  testDraftMock.mockResolvedValue({
+    success: true,
+    message: 'Connectivity check succeeded.',
+    diagnostics: { remediationHints: ['No remediation needed.'] },
+    healthSnapshot: null,
+  });
 
   mockedGetApiClients.mockReturnValue({
     indexerApi: {
@@ -105,6 +112,7 @@ beforeEach(() => {
       update: updateMock,
       remove: removeMock,
       test: testMock,
+      testDraft: testDraftMock,
     },
   } as ReturnType<typeof getApiClients>);
 });
@@ -203,7 +211,7 @@ describe('indexers page', () => {
     fireEvent.click(screen.getByRole('checkbox', { name: 'Enabled' }));
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
 
-    expect(screen.getByRole('heading', { name: 'Create Indexer' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Edit Indexer' })).not.toBeInTheDocument();
   });
 
   it('deletes an indexer row and shows deletion confirmation toast', async () => {
@@ -229,14 +237,15 @@ describe('indexers page', () => {
     const queryClient = createTestQueryClient();
     renderPage(queryClient);
 
+    fireEvent.click(screen.getByRole('button', { name: 'Add' }));
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Broken Indexer' } });
     fireEvent.change(screen.getByLabelText('Indexer URL'), { target: { value: 'https://broken.example' } });
     fireEvent.change(screen.getByLabelText(/^API Key$/), { target: { value: 'broken-key' } });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Create' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Add Indexer' }));
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('save exploded');
     expect(await screen.findByRole('status')).toHaveTextContent('Save failed');
+    expect(await screen.findByRole('status')).toHaveTextContent('save exploded');
   });
 
   it('rolls back the enabled toggle when optimistic mutation fails', async () => {
@@ -374,30 +383,37 @@ describe('indexers page', () => {
     expect(within(brokenRow as HTMLElement).getByText('error')).toBeInTheDocument();
   });
 
-  it('switches protocol-specific settings fields and validates required values before save', async () => {
+  it('creates indexers from modal presets and runs draft connection tests', async () => {
     listMock.mockResolvedValue([buildIndexer({ id: 21, name: 'Any Indexer' })]);
 
     const queryClient = createTestQueryClient();
     renderPage(queryClient);
     await screen.findByText('Any Indexer');
 
+    fireEvent.click(screen.getByRole('button', { name: 'Add' }));
+    expect(screen.getByRole('dialog', { name: 'Add indexer' })).toBeInTheDocument();
     expect(screen.getByLabelText('Indexer URL')).toBeInTheDocument();
-    expect(screen.getByLabelText(/^API Key$/)).toBeInTheDocument();
 
-    fireEvent.change(screen.getByLabelText('Protocol'), { target: { value: 'usenet' } });
-
+    fireEvent.click(screen.getByRole('button', { name: /Generic Newznab/ }));
     expect(screen.queryByLabelText('Indexer URL')).not.toBeInTheDocument();
     expect(screen.getByLabelText('Host')).toBeInTheDocument();
-    expect(screen.getByLabelText(/^API Key$/)).toBeInTheDocument();
+
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Usenet Provider' } });
-
-    fireEvent.click(screen.getByRole('button', { name: 'Create' }));
-    expect(await screen.findAllByText('This field is required')).toHaveLength(2);
-    expect(createMock).not.toHaveBeenCalled();
-
     fireEvent.change(screen.getByLabelText('Host'), { target: { value: 'news.provider.net' } });
     fireEvent.change(screen.getByLabelText(/^API Key$/), { target: { value: 'usenet-key' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Create' }));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Test Connection' }));
+
+    await waitFor(() => {
+      expect(testDraftMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          protocol: 'usenet',
+          settings: JSON.stringify({ host: 'news.provider.net', apiKey: 'usenet-key' }),
+        }),
+      );
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Add Indexer' }));
 
     await waitFor(() => {
       expect(createMock).toHaveBeenCalledTimes(1);

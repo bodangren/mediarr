@@ -368,6 +368,41 @@ export function createHandlers(mode: FactoryMode = 'deterministic') {
       });
     }),
 
+    http.post('/api/indexers/test', async ({ request }) => {
+      const body = (await request.json()) as { name?: string; settings?: string };
+      let parsedSettings: Record<string, unknown> = {};
+
+      if (typeof body.settings === 'string') {
+        try {
+          parsedSettings = JSON.parse(body.settings) as Record<string, unknown>;
+        } catch {
+          return sendError('VALIDATION_ERROR', 'Invalid settings payload', 400);
+        }
+      }
+
+      const settingsValues = Object.values(parsedSettings);
+      const hasEmptyRequiredValue = settingsValues.some(value => typeof value === 'string' && value.trim().length === 0);
+      if (!body.name || body.name.trim().length === 0 || hasEmptyRequiredValue) {
+        return sendSuccess({
+          success: false,
+          message: 'Missing required connection values.',
+          diagnostics: {
+            remediationHints: ['Fill in all required fields before testing.'],
+          },
+          healthSnapshot: null,
+        });
+      }
+
+      return sendSuccess({
+        success: true,
+        message: 'Connectivity check succeeded.',
+        diagnostics: {
+          remediationHints: ['No remediation needed.'],
+        },
+        healthSnapshot: null,
+      });
+    }),
+
     http.get('/api/subtitles/movie/:id/variants', ({ params }) => {
       return sendSuccess([{ variantId: Number(params.id) * 10, path: '/media/movie.variant.mkv' }]);
     }),

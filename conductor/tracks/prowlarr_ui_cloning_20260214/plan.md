@@ -188,7 +188,7 @@ This plan implements the Prowlarr UI cloning based on the comprehensive specific
   - [ ] Implement alphabet navigation
   - [ ] Verify coverage >80%
 
-- [ ] **Task 4.2: Create AddIndexerModal (TDD)**
+- [x] **Task 4.2: Create AddIndexerModal (TDD)** (commit: `82d93e7`)
   - [ ] Write tests for AddIndexerModal
   - [ ] Implement add indexer modal
   - [ ] Write tests for indexer preset selection

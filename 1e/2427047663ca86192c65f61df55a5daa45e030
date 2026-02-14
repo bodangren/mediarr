@@ -1,0 +1,15 @@
+Task: 5.4 Implement search filtering (TDD)
+
+Summary:
+- Added Search result filtering controls for protocol, minimum size (GB), and minimum seeders.
+- Integrated FilterBuilder for custom AND/OR filter groups with condition operators.
+- Wired filter pipeline to displayed release rows while preserving row actions, override state, and bulk selection behavior.
+- Expanded Search page tests to verify built-in filters and custom filter builder behavior.
+
+Files changed:
+- app/src/app/(shell)/search/page.tsx
+- app/src/app/(shell)/search/page.test.tsx
+
+Why:
+- Prowlarr parity requires interactive result filtering beyond base query parameters.
+- Reusing the existing FilterBuilder primitive keeps filtering behavior consistent with previously implemented table/filter architecture in the monolith.

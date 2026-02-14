@@ -267,12 +267,12 @@ This plan implements the Prowlarr UI cloning based on the comprehensive specific
   - [x] Implement bulk grab functionality
   - [x] Verify coverage >80%
 
-- [ ] **Task 5.4: Implement search filtering (TDD)**
-  - [ ] Write tests for search filters
-  - [ ] Implement filter by protocol, size, peers
-  - [ ] Write tests for custom filter builder
-  - [ ] Implement search-specific filter builder
-  - [ ] Verify coverage >80%
+- [x] **Task 5.4: Implement search filtering (TDD)** (commit: `1e24270`)
+  - [x] Write tests for search filters
+  - [x] Implement filter by protocol, size, peers
+  - [x] Write tests for custom filter builder
+  - [x] Implement search-specific filter builder
+  - [x] Verify coverage >80%
 
 - [ ] **Task: Conductor - User Manual Verification 'Phase 5'**
 

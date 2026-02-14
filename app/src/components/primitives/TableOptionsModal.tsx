@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef } from 'react';
+import { useCallback, useRef } from 'react';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { moveColumn, toggleColumnVisibility, type ColumnPreference } from '@/lib/table/columns';
@@ -34,19 +34,28 @@ export function reorderOnHover(columns: ColumnPreference[], dragIndex: number, h
   return moveColumn(columns, dragIndex, hoverIndex);
 }
 
+export function applyHoverReorder(
+  columns: ColumnPreference[],
+  item: DragItem,
+  hoverIndex: number,
+  onChange: (columns: ColumnPreference[]) => void,
+) {
+  const next = reorderOnHover(columns, item.index, hoverIndex);
+  if (next === columns) {
+    return;
+  }
+
+  onChange(next);
+  item.index = hoverIndex;
+}
+
 function ColumnRow({ column, index, total, columns, onChange }: ColumnRowProps) {
   const ref = useRef<HTMLLIElement>(null);
 
   const [, drop] = useDrop<DragItem>({
     accept: COLUMN_ITEM_TYPE,
     hover(item) {
-      const next = reorderOnHover(columns, item.index, index);
-      if (next === columns) {
-        return;
-      }
-
-      onChange(next);
-      item.index = index;
+      applyHoverReorder(columns, item, index, onChange);
     },
   });
 
@@ -58,11 +67,17 @@ function ColumnRow({ column, index, total, columns, onChange }: ColumnRowProps) 
     }),
   });
 
-  drag(drop(ref));
+  const attachRowRef = useCallback(
+    (node: HTMLLIElement | null) => {
+      ref.current = node;
+      drag(drop(node));
+    },
+    [drag, drop],
+  );
 
   return (
     <li
-      ref={ref}
+      ref={attachRowRef}
       className="flex items-center justify-between gap-2 rounded-sm border border-border-subtle p-2"
       style={{ opacity: isDragging ? 0.5 : 1 }}
     >

@@ -1,0 +1,16 @@
+Task: Conductor - User Manual Verification 'Phase 2'
+
+Summary:
+- Added Phase 2 manual verification artifact documenting executed commands and outcomes.
+- Reworked TableOptionsModal drag/drop ref wiring to satisfy react-hooks/refs lint constraints.
+- Added explicit hover reorder unit coverage to validate mutation/no-op behavior and keep module coverage above target.
+
+Files:
+- app/src/components/primitives/TableOptionsModal.tsx
+- app/src/components/primitives/table-options-modal.test.tsx
+- conductor/tracks/prowlarr_ui_cloning_20260214/artifacts/phase2-manual-verification.md
+
+Why:
+- Complete required Conductor manual verification task for Phase 2.
+- Remove a Phase 2 lint regression while preserving drag/drop behavior.
+- Ensure coverage and evidence are auditable before phase checkpointing.

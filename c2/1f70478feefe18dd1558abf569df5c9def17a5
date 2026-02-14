@@ -1,0 +1,19 @@
+Task: 5.2 Create SearchResults table (TDD)
+
+Summary:
+- Extended Search results table with a dedicated Flags column and badge rendering for parsed indexer flags.
+- Added Search page test coverage for required result columns, flag rendering, and fallback behavior (unknown protocol, missing age).
+- Propagated indexer flag parity through API contracts by adding indexerFlags to release candidate schemas and backend mapping.
+- Added backend service test coverage to verify MediaSearchService preserves indexerFlags from indexer results.
+
+Files changed:
+- app/src/app/(shell)/search/page.tsx
+- app/src/app/(shell)/search/page.test.tsx
+- app/src/lib/api/releaseApi.ts
+- server/src/services/MediaSearchService.ts
+- server/src/api/routes/releaseRoutes.ts
+- tests/media-search-service.test.js
+
+Why:
+- Prowlarr parity for Search results requires explicit indexer-flag visibility and resilient row rendering.
+- Since Mediarr is a monolith, reusing existing shared table primitives and extending backend contracts keeps implementation minimal while aligning behavior across cloned app surfaces.

@@ -199,7 +199,7 @@ This plan implements the Prowlarr UI cloning based on the comprehensive specific
   - [ ] Implement test connection functionality
   - [ ] Verify coverage >80%
 
-- [ ] **Task 4.3: Create EditIndexerModal (TDD)**
+- [x] **Task 4.3: Create EditIndexerModal (TDD)** (commit: `09d232d`)
   - [ ] Write tests for EditIndexerModal
   - [ ] Implement edit indexer modal
   - [ ] Write tests for form pre-population

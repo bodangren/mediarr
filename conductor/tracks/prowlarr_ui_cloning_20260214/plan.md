@@ -44,12 +44,12 @@ This plan implements the Prowlarr UI cloning based on the comprehensive specific
   - [x] Implement Label component (status badges)
   - [x] Verify coverage >80%
 
-- [~] **Task 1.4: Set up state management infrastructure**
-  - [ ] Write tests for Redux store setup
-  - [ ] Implement Redux store with slices pattern
-  - [ ] Write tests for localStorage persistence
-  - [ ] Implement Redux middleware for state persistence
-  - [ ] Verify coverage >80%
+- [x] **Task 1.4: Set up state management infrastructure** (commit: `a0bd941`)
+  - [x] Write tests for Redux store setup
+  - [x] Implement Redux store with slices pattern
+  - [x] Write tests for localStorage persistence
+  - [x] Implement Redux middleware for state persistence
+  - [x] Verify coverage >80%
 
 - [ ] **Task 1.5: Create routing structure**
   - [ ] Write tests for route configuration

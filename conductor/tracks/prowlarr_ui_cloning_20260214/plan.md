@@ -143,7 +143,7 @@ This plan implements the Prowlarr UI cloning based on the comprehensive specific
   - [ ] Implement ConfirmModal for destructive actions
   - [ ] Verify coverage >80%
 
-- [ ] **Task 3.2: Create Form components (TDD)**
+- [x] **Task 3.2: Create Form components (TDD)** (commit: `a38faa4`)
   - [ ] Write tests for Form and FormGroup
   - [ ] Implement Form wrapper components
   - [ ] Write tests for TextInput

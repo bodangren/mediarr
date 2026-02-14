@@ -33,7 +33,7 @@ This plan implements the Prowlarr UI cloning based on the comprehensive specific
   - [x] Implement collapsible sidebar with navigation links
   - [x] Verify coverage >80%
 
-- [ ] **Task 1.3: Create core UI primitives (TDD)**
+- [~] **Task 1.3: Create core UI primitives (TDD)**
   - [ ] Write tests for Button component variants
   - [ ] Implement Button (primary, secondary, danger variants)
   - [ ] Write tests for Icon component

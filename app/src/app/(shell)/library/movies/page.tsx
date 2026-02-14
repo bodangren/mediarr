@@ -5,12 +5,14 @@ import { useMemo, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { DataTable, type DataTableColumn } from '@/components/primitives/DataTable';
 import { QueryPanel } from '@/components/primitives/QueryPanel';
+import { SortMenu } from '@/components/primitives/SortMenu';
 import { StatusBadge } from '@/components/primitives/StatusBadge';
 import { useToast } from '@/components/providers/ToastProvider';
 import { getApiClients } from '@/lib/api/client';
 import { queryKeys } from '@/lib/query/queryKeys';
 import { useApiQuery } from '@/lib/query/useApiQuery';
 import { useOptimisticMutation } from '@/lib/query/useOptimisticMutation';
+import { nextSortState } from '@/lib/table/sort';
 
 type MovieRow = {
   id: number;
@@ -158,6 +160,22 @@ export default function MoviesLibraryPage() {
         />
       </label>
 
+      <SortMenu
+        label="Sort"
+        value={sortBy}
+        options={[
+          { key: 'title', label: 'Title' },
+          { key: 'year', label: 'Year' },
+          { key: 'status', label: 'Status' },
+        ]}
+        onChange={key => {
+          if (key === 'title' || key === 'year' || key === 'status') {
+            setSortBy(key);
+            setSortDir('asc');
+          }
+        }}
+      />
+
       <QueryPanel
         isLoading={moviesQuery.isPending}
         isError={moviesQuery.isError}
@@ -173,17 +191,13 @@ export default function MoviesLibraryPage() {
           getRowId={row => row.id}
           sort={{ key: sortBy, direction: sortDir }}
           onSort={key => {
-            const allowed = ['title', 'year', 'status'];
-            if (!allowed.includes(key)) {
+            if (key !== 'title' && key !== 'year' && key !== 'status') {
               return;
             }
 
-            if (sortBy === key) {
-              setSortDir(current => (current === 'asc' ? 'desc' : 'asc'));
-            } else {
-              setSortBy(key as 'title' | 'year' | 'status');
-              setSortDir('asc');
-            }
+            const next = nextSortState({ key: sortBy, direction: sortDir }, key);
+            setSortBy(next.key);
+            setSortDir(next.direction);
           }}
           pagination={{
             page,

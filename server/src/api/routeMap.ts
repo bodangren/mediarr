@@ -43,6 +43,9 @@ export const API_ROUTE_MAP: ApiRouteDefinition[] = [
   { method: 'POST', path: '/api/subtitles/download' },
 
   { method: 'GET', path: '/api/activity' },
+  { method: 'DELETE', path: '/api/activity' },
+  { method: 'PATCH', path: '/api/activity/:id/fail' },
+  { method: 'GET', path: '/api/activity/export' },
   { method: 'GET', path: '/api/health' },
   { method: 'GET', path: '/api/settings' },
   { method: 'PATCH', path: '/api/settings' },

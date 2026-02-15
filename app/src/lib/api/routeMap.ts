@@ -36,6 +36,9 @@ export const routeMap = {
   subtitleDownload: '/api/subtitles/download',
 
   activity: '/api/activity',
+  activityClear: '/api/activity',
+  activityMarkFailed: (id: number) => `/api/activity/${id}/fail`,
+  activityExport: '/api/activity/export',
   health: '/api/health',
   settings: '/api/settings',
 

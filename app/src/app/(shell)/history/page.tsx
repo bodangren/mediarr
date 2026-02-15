@@ -1,9 +1,10 @@
 'use client';
 
+import { useMutation } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { DataTable, type DataTableColumn } from '@/components/primitives/DataTable';
 import { Label } from '@/components/primitives/Label';
-import { Modal, ModalBody, ModalFooter, ModalHeader } from '@/components/primitives/Modal';
+import { ConfirmModal, Modal, ModalBody, ModalFooter, ModalHeader } from '@/components/primitives/Modal';
 import { QueryPanel } from '@/components/primitives/QueryPanel';
 import { getApiClients } from '@/lib/api/client';
 import type { ActivityItem } from '@/lib/api/activityApi';
@@ -57,12 +58,25 @@ function formatDetails(details: unknown): string {
   }
 }
 
+function downloadHistoryExport(payload: unknown): void {
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {
+    type: 'application/json',
+  });
+  const objectUrl = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = objectUrl;
+  link.download = `history-export-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+  link.click();
+  URL.revokeObjectURL(objectUrl);
+}
+
 export default function HistoryPage() {
   const api = useMemo(() => getApiClients(), []);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
   const [eventType, setEventType] = useState('');
   const [detailsRow, setDetailsRow] = useState<ActivityItem | null>(null);
+  const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false);
 
   const query = useMemo(
     () => ({
@@ -109,6 +123,33 @@ export default function HistoryPage() {
   ], []);
 
   const meta = historyQuery.data?.meta;
+  const exportQuery = useMemo(
+    () => (eventType ? { eventType } : {}),
+    [eventType],
+  );
+
+  const clearHistoryMutation = useMutation({
+    mutationFn: () => api.activityApi.clear({}),
+    onSuccess: () => {
+      setPage(1);
+      setIsClearConfirmOpen(false);
+      void historyQuery.refetch();
+    },
+  });
+
+  const markFailedMutation = useMutation({
+    mutationFn: (id: number) => api.activityApi.markFailed(id),
+    onSuccess: () => {
+      void historyQuery.refetch();
+    },
+  });
+
+  const exportHistoryMutation = useMutation({
+    mutationFn: () => api.activityApi.export(exportQuery),
+    onSuccess: exported => {
+      downloadHistoryExport(exported.items);
+    },
+  });
 
   return (
     <section className="space-y-4">
@@ -136,6 +177,26 @@ export default function HistoryPage() {
             ))}
           </select>
         </label>
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            className="rounded-sm border border-border-subtle px-3 py-1 text-sm text-text-primary hover:bg-surface-2 disabled:opacity-60"
+            disabled={exportHistoryMutation.isPending}
+            onClick={() => {
+              exportHistoryMutation.mutate();
+            }}
+          >
+            Export history
+          </button>
+          <button
+            type="button"
+            className="rounded-sm border border-border-danger bg-surface-danger px-3 py-1 text-sm text-text-primary hover:bg-surface-danger/80 disabled:opacity-60"
+            disabled={clearHistoryMutation.isPending}
+            onClick={() => setIsClearConfirmOpen(true)}
+          >
+            Clear history
+          </button>
+        </div>
       </div>
 
       <QueryPanel
@@ -152,14 +213,27 @@ export default function HistoryPage() {
           columns={columns}
           getRowId={row => row.id}
           rowActions={row => (
-            <button
-              type="button"
-              className="rounded-sm border border-border-subtle px-2 py-1 text-xs text-text-primary hover:bg-surface-2"
-              onClick={() => setDetailsRow(row)}
-              aria-label={`Details for ${row.summary}`}
-            >
-              Details
-            </button>
+            <div className="flex items-center justify-end gap-2">
+              {row.eventType === 'RELEASE_GRABBED' && row.success !== false ? (
+                <button
+                  type="button"
+                  className="rounded-sm border border-border-subtle px-2 py-1 text-xs text-text-primary hover:bg-surface-2 disabled:opacity-60"
+                  onClick={() => markFailedMutation.mutate(row.id)}
+                  disabled={markFailedMutation.isPending}
+                  aria-label={`Mark ${row.summary} as failed`}
+                >
+                  Mark failed
+                </button>
+              ) : null}
+              <button
+                type="button"
+                className="rounded-sm border border-border-subtle px-2 py-1 text-xs text-text-primary hover:bg-surface-2"
+                onClick={() => setDetailsRow(row)}
+                aria-label={`Details for ${row.summary}`}
+              >
+                Details
+              </button>
+            </div>
           )}
           pagination={{
             page: meta?.page ?? page,
@@ -221,6 +295,17 @@ export default function HistoryPage() {
           </ModalFooter>
         </Modal>
       ) : null}
+
+      <ConfirmModal
+        isOpen={isClearConfirmOpen}
+        title="Clear history"
+        description="This will permanently remove all history records."
+        onCancel={() => setIsClearConfirmOpen(false)}
+        onConfirm={() => clearHistoryMutation.mutate()}
+        confirmLabel="Clear history"
+        confirmVariant="danger"
+        isConfirming={clearHistoryMutation.isPending}
+      />
     </section>
   );
 }

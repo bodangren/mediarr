@@ -192,6 +192,23 @@ function createDependencies() {
         page: 1,
         pageSize: 25,
       }),
+      clear: vi.fn().mockResolvedValue(3),
+      markAsFailed: vi.fn().mockResolvedValue({
+        id: 1,
+        eventType: 'RELEASE_GRABBED',
+        summary: 'Marked failed',
+        success: false,
+        occurredAt: new Date('2026-02-11T11:00:00.000Z'),
+      }),
+      export: vi.fn().mockResolvedValue([
+        {
+          id: 1,
+          eventType: 'MEDIA_ADDED',
+          summary: 'Added',
+          success: true,
+          occurredAt: new Date('2026-02-11T11:00:00.000Z'),
+        },
+      ]),
     },
     metadataProvider: {
       searchMedia: vi.fn().mockResolvedValue([
@@ -435,6 +452,121 @@ describe('API handlers', () => {
     expect(response.statusCode).toBe(200);
     expect(payload.ok).toBe(true);
     expect(payload.meta).toEqual({ page: 1, pageSize: 25, totalCount: 1, totalPages: 1 });
+  });
+
+  it('supports clearing activity history', async () => {
+    const { app, deps } = createTestApp();
+    apps.push(app);
+
+    const response = await app.inject({ method: 'DELETE', url: '/api/activity' });
+    const payload = response.json();
+
+    expect(response.statusCode).toBe(200);
+    expect(payload.ok).toBe(true);
+    expect(payload.data.deletedCount).toBe(3);
+    expect(deps.activityEventRepository.clear).toHaveBeenCalledWith({
+      entityRef: undefined,
+      eventType: undefined,
+      from: undefined,
+      sourceModule: undefined,
+      success: undefined,
+      to: undefined,
+    });
+  });
+
+  it('supports marking an activity event as failed', async () => {
+    const { app, deps } = createTestApp();
+    apps.push(app);
+
+    const response = await app.inject({ method: 'PATCH', url: '/api/activity/1/fail' });
+    const payload = response.json();
+
+    expect(response.statusCode).toBe(200);
+    expect(payload.ok).toBe(true);
+    expect(payload.data.id).toBe(1);
+    expect(payload.data.success).toBe(false);
+    expect(deps.activityEventRepository.markAsFailed).toHaveBeenCalledWith(1);
+  });
+
+  it('supports exporting activity history', async () => {
+    const { app, deps } = createTestApp();
+    apps.push(app);
+
+    const response = await app.inject({ method: 'GET', url: '/api/activity/export?eventType=MEDIA_ADDED' });
+    const payload = response.json();
+
+    expect(response.statusCode).toBe(200);
+    expect(payload.ok).toBe(true);
+    expect(payload.data.totalCount).toBe(1);
+    expect(Array.isArray(payload.data.items)).toBe(true);
+    expect(typeof payload.data.exportedAt).toBe('string');
+    expect(deps.activityEventRepository.export).toHaveBeenCalledWith({
+      entityRef: undefined,
+      eventType: 'MEDIA_ADDED',
+      from: undefined,
+      sourceModule: undefined,
+      success: undefined,
+      to: undefined,
+    });
+  });
+
+  it('parses activity filter query values for clear operations', async () => {
+    const { app, deps } = createTestApp();
+    apps.push(app);
+
+    const response = await app.inject({
+      method: 'DELETE',
+      url: '/api/activity?success=false&from=2026-02-10T00:00:00.000Z&to=2026-02-11T00:00:00.000Z&sourceModule=prowlarr',
+    });
+    const payload = response.json();
+
+    expect(response.statusCode).toBe(200);
+    expect(payload.ok).toBe(true);
+    expect(deps.activityEventRepository.clear).toHaveBeenCalledWith({
+      entityRef: undefined,
+      eventType: undefined,
+      from: new Date('2026-02-10T00:00:00.000Z'),
+      sourceModule: 'prowlarr',
+      success: false,
+      to: new Date('2026-02-11T00:00:00.000Z'),
+    });
+  });
+
+  it('returns settings envelope', async () => {
+    const { app } = createTestApp();
+    apps.push(app);
+
+    const response = await app.inject({ method: 'GET', url: '/api/settings' });
+    const payload = response.json();
+
+    expect(response.statusCode).toBe(200);
+    expect(payload.ok).toBe(true);
+    expect(payload.data.torrentLimits.maxActiveDownloads).toBe(3);
+  });
+
+  it('updates settings with a valid payload', async () => {
+    const { app, deps } = createTestApp();
+    apps.push(app);
+
+    const response = await app.inject({
+      method: 'PATCH',
+      url: '/api/settings',
+      payload: {
+        torrentLimits: {
+          maxActiveDownloads: 5,
+        },
+      },
+    });
+    const payload = response.json();
+
+    expect(response.statusCode).toBe(200);
+    expect(payload.ok).toBe(true);
+    expect(payload.data.torrentLimits.maxActiveDownloads).toBe(5);
+    expect(deps.settingsService.update).toHaveBeenCalledWith({
+      torrentLimits: {
+        maxActiveDownloads: 5,
+      },
+    });
   });
 
   it('returns health endpoint ordered by severity', async () => {

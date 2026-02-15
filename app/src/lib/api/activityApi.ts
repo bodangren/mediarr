@@ -26,6 +26,18 @@ export interface ActivityQuery {
   to?: string;
 }
 
+const clearActivitySchema = z.object({
+  deletedCount: z.number().int().nonnegative(),
+});
+
+const exportActivitySchema = z.object({
+  items: z.array(activityItemSchema),
+  totalCount: z.number().int().nonnegative(),
+  exportedAt: z.string(),
+});
+
+export type ExportActivityResult = z.infer<typeof exportActivitySchema>;
+
 export function createActivityApi(client: ApiHttpClient) {
   return {
     list(query: ActivityQuery = {}): Promise<PaginatedResult<ActivityItem>> {
@@ -35,6 +47,34 @@ export function createActivityApi(client: ApiHttpClient) {
           query,
         },
         activityItemSchema,
+      );
+    },
+    clear(query: ActivityQuery = {}): Promise<{ deletedCount: number }> {
+      return client.request(
+        {
+          path: routeMap.activityClear,
+          method: 'DELETE',
+          query,
+        },
+        clearActivitySchema,
+      );
+    },
+    markFailed(id: number): Promise<ActivityItem> {
+      return client.request(
+        {
+          path: routeMap.activityMarkFailed(id),
+          method: 'PATCH',
+        },
+        activityItemSchema,
+      );
+    },
+    export(query: ActivityQuery = {}): Promise<ExportActivityResult> {
+      return client.request(
+        {
+          path: routeMap.activityExport,
+          query,
+        },
+        exportActivitySchema,
       );
     },
   };

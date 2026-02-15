@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { ValidationError } from '../../errors/domainErrors';
 import { parsePaginationParams, sendPaginatedSuccess, sendSuccess } from '../contracts';
-import { parseBoolean, parseDate } from '../routeUtils';
+import { parseBoolean, parseDate, parseIdParam } from '../routeUtils';
 import type { ApiDependencies } from '../types';
 
 type Severity = 'critical' | 'warning' | 'ok';
@@ -49,6 +49,19 @@ function validateSettingsPatch(payload: unknown): void {
   }
 }
 
+function parseActivityFilters(query: Record<string, unknown>) {
+  return {
+    eventType: typeof query.eventType === 'string' ? query.eventType as any : undefined,
+    sourceModule:
+      typeof query.sourceModule === 'string' ? query.sourceModule : undefined,
+    entityRef: typeof query.entityRef === 'string' ? query.entityRef : undefined,
+    success:
+      query.success === undefined ? undefined : parseBoolean(query.success),
+    from: parseDate(query.from),
+    to: parseDate(query.to),
+  };
+}
+
 export function registerOperationsRoutes(
   app: FastifyInstance,
   deps: ApiDependencies,
@@ -76,16 +89,10 @@ export function registerOperationsRoutes(
 
     const query = request.query as Record<string, unknown>;
     const pagination = parsePaginationParams(query);
+    const filters = parseActivityFilters(query);
 
     const result = await deps.activityEventRepository.query({
-      eventType: typeof query.eventType === 'string' ? query.eventType as any : undefined,
-      sourceModule:
-        typeof query.sourceModule === 'string' ? query.sourceModule : undefined,
-      entityRef: typeof query.entityRef === 'string' ? query.entityRef : undefined,
-      success:
-        query.success === undefined ? undefined : parseBoolean(query.success),
-      from: parseDate(query.from),
-      to: parseDate(query.to),
+      ...filters,
       page: pagination.page,
       pageSize: pagination.pageSize,
     });
@@ -94,6 +101,78 @@ export function registerOperationsRoutes(
       page: result.page,
       pageSize: result.pageSize,
       totalCount: result.total,
+    });
+  });
+
+  app.delete('/api/activity', {
+    schema: {
+      querystring: {
+        type: 'object',
+        properties: {
+          eventType: { type: 'string' },
+          sourceModule: { type: 'string' },
+          entityRef: { type: 'string' },
+          success: { type: ['boolean', 'string'] },
+          from: { type: 'string' },
+          to: { type: 'string' },
+        },
+      },
+    },
+  }, async (request, reply) => {
+    if (!deps.activityEventRepository?.clear) {
+      throw new ValidationError('Activity event repository is not configured');
+    }
+
+    const query = request.query as Record<string, unknown>;
+    const filters = parseActivityFilters(query);
+    const deletedCount = await deps.activityEventRepository.clear(filters);
+
+    return sendSuccess(reply, { deletedCount });
+  });
+
+  app.patch('/api/activity/:id/fail', async (request, reply) => {
+    if (!deps.activityEventRepository?.markAsFailed) {
+      throw new ValidationError('Activity event repository is not configured');
+    }
+
+    const params = request.params as { id?: string };
+    const id = parseIdParam(params.id ?? '', 'activity event');
+    const updated = await deps.activityEventRepository.markAsFailed(id);
+
+    if (!updated) {
+      throw new ValidationError('Activity event not found');
+    }
+
+    return sendSuccess(reply, updated);
+  });
+
+  app.get('/api/activity/export', {
+    schema: {
+      querystring: {
+        type: 'object',
+        properties: {
+          eventType: { type: 'string' },
+          sourceModule: { type: 'string' },
+          entityRef: { type: 'string' },
+          success: { type: ['boolean', 'string'] },
+          from: { type: 'string' },
+          to: { type: 'string' },
+        },
+      },
+    },
+  }, async (request, reply) => {
+    if (!deps.activityEventRepository?.export) {
+      throw new ValidationError('Activity event repository is not configured');
+    }
+
+    const query = request.query as Record<string, unknown>;
+    const filters = parseActivityFilters(query);
+    const items = await deps.activityEventRepository.export(filters);
+
+    return sendSuccess(reply, {
+      items,
+      totalCount: items.length,
+      exportedAt: new Date().toISOString(),
     });
   });
 

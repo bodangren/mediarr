@@ -199,4 +199,83 @@ describe('typed SDK contracts', () => {
 
     eventsApi.disconnect();
   });
+
+  it('uses typed request method/path/payload for activity management actions', async () => {
+    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+      if (url.includes('/api/activity/export')) {
+        return jsonResponse({
+          ok: true,
+          data: {
+            items: [
+              {
+                id: 1,
+                eventType: 'RELEASE_GRABBED',
+                summary: 'Grabbed release',
+                success: true,
+              },
+            ],
+            totalCount: 1,
+            exportedAt: '2026-02-15T00:00:00.000Z',
+          },
+        });
+      }
+
+      if ((init?.method ?? 'GET') === 'PATCH') {
+        return jsonResponse({
+          ok: true,
+          data: {
+            id: 1,
+            eventType: 'RELEASE_GRABBED',
+            summary: 'Marked failed',
+            success: false,
+          },
+        });
+      }
+
+      return jsonResponse({
+        ok: true,
+        data: {
+          deletedCount: 4,
+        },
+      });
+    });
+
+    const api = createApiClients({
+      baseUrl: 'http://127.0.0.1:3001',
+      fetchFn: fetchMock as unknown as typeof fetch,
+    });
+
+    const cleared = await api.activityApi.clear();
+    expect(cleared.deletedCount).toBe(4);
+
+    const failed = await api.activityApi.markFailed(1);
+    expect(failed.success).toBe(false);
+
+    const exported = await api.activityApi.export();
+    expect(exported.totalCount).toBe(1);
+
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      1,
+      'http://127.0.0.1:3001/api/activity',
+      expect.objectContaining({
+        method: 'DELETE',
+      }),
+    );
+
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      'http://127.0.0.1:3001/api/activity/1/fail',
+      expect.objectContaining({
+        method: 'PATCH',
+      }),
+    );
+
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      3,
+      'http://127.0.0.1:3001/api/activity/export',
+      expect.objectContaining({
+        method: 'GET',
+      }),
+    );
+  });
 });

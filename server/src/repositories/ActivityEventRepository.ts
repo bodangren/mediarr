@@ -33,6 +33,8 @@ export interface QueryActivityEventsResult {
   pageSize: number;
 }
 
+type ActivityEventFilterInput = Omit<QueryActivityEventsInput, 'page' | 'pageSize'>;
+
 function toJson(value: unknown): Prisma.InputJsonValue {
   return value as Prisma.InputJsonValue;
 }
@@ -42,6 +44,24 @@ function toJson(value: unknown): Prisma.InputJsonValue {
  */
 export class ActivityEventRepository {
   constructor(private readonly prisma: PrismaClient) {}
+
+  private buildWhere(input: ActivityEventFilterInput): Prisma.ActivityEventWhereInput {
+    const occurredAt: Prisma.DateTimeFilter = {};
+    if (input.from) {
+      occurredAt.gte = input.from;
+    }
+    if (input.to) {
+      occurredAt.lte = input.to;
+    }
+
+    return {
+      eventType: input.eventType,
+      sourceModule: input.sourceModule,
+      entityRef: input.entityRef,
+      success: input.success,
+      occurredAt: Object.keys(occurredAt).length > 0 ? occurredAt : undefined,
+    };
+  }
 
   async create(input: CreateActivityEventInput): Promise<ActivityEvent> {
     return this.prisma.activityEvent.create({
@@ -60,17 +80,7 @@ export class ActivityEventRepository {
   async query(input: QueryActivityEventsInput): Promise<QueryActivityEventsResult> {
     const page = input.page && input.page > 0 ? input.page : 1;
     const pageSize = input.pageSize && input.pageSize > 0 ? input.pageSize : 25;
-
-    const where: Prisma.ActivityEventWhereInput = {
-      eventType: input.eventType,
-      sourceModule: input.sourceModule,
-      entityRef: input.entityRef,
-      success: input.success,
-      occurredAt: {
-        gte: input.from,
-        lte: input.to,
-      },
-    };
+    const where = this.buildWhere(input);
 
     const [items, total] = await Promise.all([
       this.prisma.activityEvent.findMany({
@@ -108,5 +118,39 @@ export class ActivityEventRepository {
     });
 
     return result.count;
+  }
+
+  async clear(input: ActivityEventFilterInput = {}): Promise<number> {
+    const where = this.buildWhere(input);
+    const result = await this.prisma.activityEvent.deleteMany({ where });
+    return result.count;
+  }
+
+  async markAsFailed(id: number): Promise<ActivityEvent | null> {
+    const result = await this.prisma.activityEvent.updateMany({
+      where: { id },
+      data: {
+        success: false,
+      },
+    });
+
+    if (result.count === 0) {
+      return null;
+    }
+
+    return this.prisma.activityEvent.findUnique({
+      where: { id },
+    });
+  }
+
+  async export(input: ActivityEventFilterInput = {}): Promise<ActivityEvent[]> {
+    const where = this.buildWhere(input);
+
+    return this.prisma.activityEvent.findMany({
+      where,
+      orderBy: {
+        occurredAt: 'desc',
+      },
+    });
   }
 }

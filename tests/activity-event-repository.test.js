@@ -72,4 +72,70 @@ describe('ActivityEventRepository', () => {
     expect(all.items).toHaveLength(1);
     expect(all.items[0].summary).toBe('Recent event');
   });
+
+  it('should clear stored history events', async () => {
+    await repository.create({
+      eventType: 'SEARCH_EXECUTED',
+      sourceModule: 'media-search',
+      summary: 'Event 1',
+      success: true,
+      occurredAt: new Date('2026-02-12T00:00:00.000Z'),
+    });
+
+    await repository.create({
+      eventType: 'RELEASE_GRABBED',
+      sourceModule: 'media-search',
+      summary: 'Event 2',
+      success: true,
+      occurredAt: new Date('2026-02-12T00:01:00.000Z'),
+    });
+
+    const deleted = await repository.clear();
+
+    expect(deleted).toBe(2);
+    const remaining = await repository.query({});
+    expect(remaining.total).toBe(0);
+    expect(remaining.items).toHaveLength(0);
+  });
+
+  it('should mark existing event as failed', async () => {
+    const created = await repository.create({
+      eventType: 'RELEASE_GRABBED',
+      sourceModule: 'media-search',
+      entityRef: 'torrent:xyz',
+      summary: 'Grab succeeded',
+      success: true,
+      occurredAt: new Date('2026-02-12T00:00:00.000Z'),
+    });
+
+    const updated = await repository.markAsFailed(created.id);
+
+    expect(updated).not.toBeNull();
+    expect(updated?.id).toBe(created.id);
+    expect(updated?.success).toBe(false);
+  });
+
+  it('should export ordered history rows', async () => {
+    await repository.create({
+      eventType: 'SEARCH_EXECUTED',
+      sourceModule: 'media-search',
+      summary: 'Older',
+      success: true,
+      occurredAt: new Date('2026-02-10T00:00:00.000Z'),
+    });
+
+    await repository.create({
+      eventType: 'RELEASE_GRABBED',
+      sourceModule: 'media-search',
+      summary: 'Newest',
+      success: true,
+      occurredAt: new Date('2026-02-11T00:00:00.000Z'),
+    });
+
+    const exported = await repository.export();
+
+    expect(exported).toHaveLength(2);
+    expect(exported[0].summary).toBe('Newest');
+    expect(exported[1].summary).toBe('Older');
+  });
 });

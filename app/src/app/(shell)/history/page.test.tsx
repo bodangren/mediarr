@@ -10,6 +10,9 @@ vi.mock('@/lib/api/client', () => ({
 
 const mockedGetApiClients = vi.mocked(getApiClients);
 const listActivityMock = vi.fn();
+const clearActivityMock = vi.fn();
+const markFailedActivityMock = vi.fn();
+const exportActivityMock = vi.fn();
 
 function createTestQueryClient(): QueryClient {
   return new QueryClient({
@@ -96,6 +99,14 @@ beforeEach(() => {
           occurredAt: '2026-02-15T10:00:00.000Z',
         },
         {
+          id: 4,
+          eventType: 'RELEASE_GRABBED',
+          summary: 'Grabbed release from Indexer B',
+          sourceModule: 'prowlarr',
+          success: true,
+          occurredAt: '2026-02-15T09:45:00.000Z',
+        },
+        {
           id: 3,
           eventType: 'INDEXER_AUTH',
           summary: 'Authentication failed for private indexer',
@@ -116,9 +127,34 @@ beforeEach(() => {
     };
   });
 
+  clearActivityMock.mockResolvedValue({ deletedCount: 3 });
+  markFailedActivityMock.mockImplementation(async (id: number) => ({
+    id,
+    eventType: 'RELEASE_GRABBED',
+    summary: 'Marked as failed',
+    success: false,
+    occurredAt: '2026-02-15T09:45:00.000Z',
+  }));
+  exportActivityMock.mockResolvedValue({
+    items: [
+      {
+        id: 1,
+        eventType: 'INDEXER_QUERY',
+        summary: 'Initial indexer query executed',
+        sourceModule: 'prowlarr',
+        success: true,
+      },
+    ],
+    totalCount: 1,
+    exportedAt: '2026-02-15T10:30:00.000Z',
+  });
+
   mockedGetApiClients.mockReturnValue({
     activityApi: {
       list: listActivityMock,
+      clear: clearActivityMock,
+      markFailed: markFailedActivityMock,
+      export: exportActivityMock,
     },
   } as ReturnType<typeof getApiClients>);
 });
@@ -216,5 +252,68 @@ describe('history page', () => {
     await waitFor(() => {
       expect(screen.queryByRole('dialog', { name: 'History details' })).not.toBeInTheDocument();
     });
+  });
+
+  it('confirms and clears history with a destructive action', async () => {
+    const queryClient = createTestQueryClient();
+    renderPage(queryClient);
+
+    await screen.findByText('Initial indexer query executed');
+    fireEvent.click(screen.getByRole('button', { name: 'Clear history' }));
+
+    const dialog = await screen.findByRole('dialog', { name: 'Clear history' });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Clear history' }));
+
+    await waitFor(() => {
+      expect(clearActivityMock).toHaveBeenCalledWith({});
+    });
+
+    await waitFor(() => {
+      expect(listActivityMock.mock.calls.length).toBeGreaterThan(1);
+    });
+  });
+
+  it('marks grabbed releases as failed and refetches history', async () => {
+    const queryClient = createTestQueryClient();
+    renderPage(queryClient);
+
+    await screen.findByText('Grabbed release from Indexer B');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Mark Grabbed release from Indexer B as failed' }));
+
+    await waitFor(() => {
+      expect(markFailedActivityMock).toHaveBeenCalledWith(4);
+    });
+
+    expect(screen.queryByRole('button', { name: 'Mark Initial indexer query executed as failed' })).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(listActivityMock.mock.calls.length).toBeGreaterThan(1);
+    });
+  });
+
+  it('exports filtered history rows', async () => {
+    const queryClient = createTestQueryClient();
+    renderPage(queryClient);
+
+    const createObjectUrlSpy = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:history');
+    const revokeObjectUrlSpy = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+
+    fireEvent.change(screen.getByLabelText('Event type'), { target: { value: 'RELEASE_GRABBED' } });
+    await screen.findByText('Grabbed release from Indexer A');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Export history' }));
+
+    await waitFor(() => {
+      expect(exportActivityMock).toHaveBeenCalledWith({ eventType: 'RELEASE_GRABBED' });
+    });
+
+    expect(createObjectUrlSpy).toHaveBeenCalledTimes(1);
+    expect(clickSpy).toHaveBeenCalledTimes(1);
+    expect(revokeObjectUrlSpy).toHaveBeenCalledTimes(1);
+
+    createObjectUrlSpy.mockRestore();
+    revokeObjectUrlSpy.mockRestore();
+    clickSpy.mockRestore();
   });
 });

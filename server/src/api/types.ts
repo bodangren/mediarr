@@ -47,7 +47,7 @@ export interface ApiDependencies {
     | 'manualDownload'
   >;
   settingsService?: Pick<SettingsService, 'get' | 'update'>;
-  activityEventRepository?: Pick<ActivityEventRepository, 'query'>;
+  activityEventRepository?: Pick<ActivityEventRepository, 'query' | 'clear' | 'markAsFailed' | 'export'>;
   indexerHealthRepository?: Pick<IndexerHealthRepository, 'getByIndexerId'>;
   metadataProvider?: Pick<MetadataProvider, 'searchMedia'>;
   eventHub?: ApiEventHub;

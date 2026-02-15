@@ -232,7 +232,7 @@ This plan implements the Prowlarr UI cloning based on the comprehensive specific
 
 ---
 
-## Phase 5: Search View
+## Phase 5: Search View [checkpoint: ea80719]
 
 **Objective:** Implement manual search interface with results table and grab functionality.
 

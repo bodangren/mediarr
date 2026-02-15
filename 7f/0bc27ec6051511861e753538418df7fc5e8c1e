@@ -1,0 +1,1 @@
+Phase 7 partial parity progression:\n- Replaced /settings scaffold with live SettingsForm surface\n- Replaced /settings/indexers scaffold by reusing the main Indexers management page (CRUD/test/bulk flows)\n- Added route-level tests to ensure both settings routes are wired to functional components\n- App tests passed for settings/indexers/settings-form/indexers suites

@@ -519,14 +519,14 @@ This plan implements the Prowlarr UI cloning based on the comprehensive specific
   - [x] Implement theme CSS variables
   - [x] Verify coverage >80%
 
-- [~] **Task 9.5: Performance optimization**
-  - [ ] Write tests for virtual scrolling
-  - [ ] Implement react-window virtualization
-  - [ ] Write tests for memoization
-  - [ ] Implement React.memo and useMemo optimizations
-  - [ ] Write tests for code splitting
-  - [ ] Implement route-based lazy loading
-  - [ ] Verify coverage >80%
+- [x] **Task 9.5: Performance optimization** (commit: 5f2e842)
+  - [x] Write tests for virtual scrolling
+  - [x] Implement react-window virtualization
+  - [x] Write tests for memoization
+  - [x] Implement React.memo and useMemo optimizations
+  - [x] Write tests for code splitting
+  - [x] Implement route-based lazy loading
+  - [x] Verify coverage >80%
 
 - [x] **Task 9.6: Prune irrelevant Prowlarr-specific features** (commit: c5a8091b)
   - [x] Remove `/settings/applications` page and components (inter-app connections not needed in unified app)

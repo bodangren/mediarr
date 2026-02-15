@@ -318,17 +318,18 @@ export function EditIndexerModal({
               {validationError}
             </p>
           ) : null}
-
-          <ModalFooter>
-            <Button variant="secondary" onClick={onClose} disabled={isSubmitting}>
-              Cancel
-            </Button>
-            <Button variant="primary" type="submit" disabled={isSubmitting}>
-              Save Indexer
-            </Button>
-          </ModalFooter>
         </Form>
       </ModalBody>
+      <ModalFooter>
+        <Button variant="secondary" onClick={onClose} disabled={isSubmitting}>
+          Cancel
+        </Button>
+        <form onSubmit={handleSubmit}>
+          <Button variant="primary" type="submit" disabled={isSubmitting}>
+            Save Indexer
+          </Button>
+        </form>
+      </ModalFooter>
     </Modal>
   );
 }

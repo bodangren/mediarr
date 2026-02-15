@@ -76,4 +76,82 @@ describe('Modal primitives', () => {
     expect(onConfirm).toHaveBeenCalledTimes(1);
     expect(screen.getByRole('button', { name: 'Delete' })).toHaveClass('bg-status-error/20');
   });
+
+  it('applies scrollable overflow styles to ModalBody', () => {
+    render(
+      <Modal isOpen ariaLabel="Scrollable modal">
+        <ModalHeader title="Scrollable title" />
+        <ModalBody>
+          <p>Scrollable content</p>
+        </ModalBody>
+      </Modal>,
+    );
+
+    const modal = screen.getByRole('dialog', { name: 'Scrollable modal' });
+    const modalBody = modal.querySelector('.overflow-y-auto');
+    expect(modalBody).toBeInTheDocument();
+    expect(modalBody).toHaveTextContent('Scrollable content');
+  });
+
+  it('applies sticky positioning to ModalFooter', () => {
+    render(
+      <Modal isOpen ariaLabel="Sticky footer modal">
+        <ModalHeader title="Sticky footer title" />
+        <ModalBody>
+          <p>Content</p>
+        </ModalBody>
+        <ModalFooter>
+          <button type="button">Footer Button</button>
+        </ModalFooter>
+      </Modal>,
+    );
+
+    const modal = screen.getByRole('dialog', { name: 'Sticky footer modal' });
+    const modalFooter = modal.querySelector('footer');
+    expect(modalFooter).toBeInTheDocument();
+    expect(modalFooter).toHaveClass('sticky', 'bottom-0');
+  });
+
+  it('applies responsive max-width classes to Modal', () => {
+    render(
+      <Modal isOpen ariaLabel="Responsive modal" maxWidthClassName="max-w-lg sm:max-w-xl lg:max-w-2xl">
+        <ModalBody>
+          <p>Responsive content</p>
+        </ModalBody>
+      </Modal>,
+    );
+
+    const modal = screen.getByRole('dialog', { name: 'Responsive modal' });
+    expect(modal).toHaveClass('max-w-lg', 'sm:max-w-xl', 'lg:max-w-2xl');
+  });
+
+  it('applies mobile-optimized padding to Modal backdrop', () => {
+    render(
+      <Modal isOpen ariaLabel="Mobile modal">
+        <ModalBody>
+          <p>Mobile content</p>
+        </ModalBody>
+      </Modal>,
+    );
+
+    const backdrop = screen.getByTestId('modal-backdrop').parentElement;
+    expect(backdrop).toHaveClass('p-2', 'sm:p-4');
+  });
+
+  it('limits modal height to 85vh with flex layout', () => {
+    render(
+      <Modal isOpen ariaLabel="Height-limited modal">
+        <ModalHeader title="Height title" />
+        <ModalBody>
+          <p>Tall content</p>
+        </ModalBody>
+        <ModalFooter>
+          <button type="button">Action</button>
+        </ModalFooter>
+      </Modal>,
+    );
+
+    const modal = screen.getByRole('dialog', { name: 'Height-limited modal' });
+    expect(modal).toHaveClass('max-h-[85vh]', 'flex', 'flex-col');
+  });
 });

@@ -317,19 +317,21 @@ export function AddIndexerModal({
               ) : null}
             </section>
           ) : null}
-          <ModalFooter>
-            <Button variant="secondary" onClick={onClose} disabled={isSubmitting || isTesting}>
-              Cancel
-            </Button>
-            <Button variant="secondary" onClick={handleTestConnection} disabled={isSubmitting || isTesting}>
-              {isTesting ? 'Testing...' : 'Test Connection'}
-            </Button>
-            <Button variant="primary" type="submit" disabled={isSubmitting || isTesting}>
-              Add Indexer
-            </Button>
-          </ModalFooter>
         </Form>
       </ModalBody>
+      <ModalFooter>
+        <Button variant="secondary" onClick={onClose} disabled={isSubmitting || isTesting}>
+          Cancel
+        </Button>
+        <Button variant="secondary" onClick={handleTestConnection} disabled={isSubmitting || isTesting}>
+          {isTesting ? 'Testing...' : 'Test Connection'}
+        </Button>
+        <form onSubmit={handleSubmit}>
+          <Button variant="primary" type="submit" disabled={isSubmitting || isTesting}>
+            Add Indexer
+          </Button>
+        </form>
+      </ModalFooter>
     </Modal>
   );
 }

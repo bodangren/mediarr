@@ -79,7 +79,7 @@ export function Modal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
       <button
         type="button"
         className="absolute inset-0 bg-surface-3/70"
@@ -91,7 +91,7 @@ export function Modal({
         role="dialog"
         aria-modal="true"
         aria-label={ariaLabel}
-        className={`relative z-10 w-full rounded-md border border-border-subtle bg-surface-1 shadow-elevation-3 ${maxWidthClassName}`}
+        className={`relative z-10 w-full max-h-[85vh] flex flex-col rounded-md border border-border-subtle bg-surface-1 shadow-elevation-3 ${maxWidthClassName} ${className}`}
       >
         {children}
       </div>
@@ -116,11 +116,11 @@ export function ModalHeader({ title, onClose, actions }: ModalHeaderProps) {
 }
 
 export function ModalBody({ children }: ModalBodyProps) {
-  return <div className="px-4 py-3">{children}</div>;
+  return <div className="flex-1 overflow-y-auto px-4 py-3">{children}</div>;
 }
 
 export function ModalFooter({ children }: ModalFooterProps) {
-  return <footer className="flex items-center justify-end gap-2 border-t border-border-subtle px-4 py-3">{children}</footer>;
+  return <footer className="flex items-center justify-end gap-2 border-t border-border-subtle px-4 py-3 sticky bottom-0 bg-surface-1 z-10">{children}</footer>;
 }
 
 export function ConfirmModal({

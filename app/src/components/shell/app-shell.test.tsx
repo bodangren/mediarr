@@ -28,6 +28,18 @@ describe('app shell', () => {
     expect(screen.queryByRole('dialog', { name: /command palette/i })).not.toBeInTheDocument();
   });
 
+  it('shows realtime connection status indicator', () => {
+    renderShell('/');
+    expect(screen.getByRole('status')).toHaveTextContent('Realtime: Idle');
+  });
+
+  it('opens keyboard shortcuts help with question mark', () => {
+    renderShell('/');
+
+    fireEvent.keyDown(window, { key: '?' });
+    expect(screen.getByRole('dialog', { name: /keyboard shortcuts/i })).toBeInTheDocument();
+  });
+
   it('renders mobile bottom nav with active state', () => {
     renderShell('/wanted');
     const wantedLinks = screen.getAllByRole('link', { name: /^wanted$/i });

@@ -2,105 +2,162 @@
 
 Track: `prowlarr_ui_cloning_20260214`
 
-## Session End Summary
+## Session Summary
 
-- Phase 5 is now fully closed and checkpointed:
-  - `Phase 5: Search View [checkpoint: ea80719]`
-  - manual verification task completed in plan (`e98f703`)
-  - phase checkpoint commit created (`ea80719`)
-- Phase 6 progress:
-  - `Task 6.1` complete (`0d92ee3`)
-  - `Task 6.2` complete (`893d18d`)
-  - `Task 6.3` still pending
-  - `Task: Conductor - User Manual Verification 'Phase 6'` still pending
+This session closed additional Phase 9/10 parity gaps, documented a full integration audit pass, and resolved the production build type regression in General Settings.
 
-## Recent Change Set
+## Completed in this session
 
-- `e98f7035` `chore(conductor): add prowlarr phase 5 manual verification report`
-  - Added `phase5-manual-verification.md` with explicit test/lint/coverage/backend verification commands and outcomes.
-- `0969b26d` `conductor(plan): mark prowlarr phase 5 manual verification complete`
-- `ea80719c` `conductor(checkpoint): checkpoint end of phase 5`
-  - Added git note with phase scope and verification command outcome.
-- `1f1d8e96` `conductor(plan): mark phase 'Phase 5: Search View' as complete`
-  - Added Phase 5 checkpoint SHA to plan heading.
-- `0d92ee33` `feat(prowlarr): implement history timeline with filtering and pagination`
-  - Replaced History scaffold with functional activity-backed table view.
-  - Added event type filtering (Grabbed/Query/RSS/Auth), pagination controls, and page-size controls.
-  - Updated scaffold parity test to remove History from scaffold-only pages.
-- `b57d511e` `conductor(plan): mark prowlarr task 6.1 complete`
-- `893d18d5` `feat(prowlarr): add history details modal and status diagnostics`
-  - Added row-level `Details` actions to History table.
-  - Added details modal with event/status/source/entity fields and parameter payload rendering.
-  - Extended tests for modal open/close and diagnostics rendering.
-- `bd87cabc` `conductor(plan): mark prowlarr task 6.2 complete`
+1. **Phase 9.1 realtime parity slice implemented**
+- Extended `eventsApi` contract and SSE listeners for:
+  - `indexer:added`
+  - `indexer:updated`
+  - `indexer:deleted`
+  - `indexer:healthChanged`
+  - `command:started`
+  - `command:completed`
+- Extended `useEventsCacheBridge` to invalidate affected query slices (`indexers`, `health`, `system/status`, `tasks/*`) when those events arrive.
+- Added dedicated tests for event parsing/dispatch and cache bridge invalidation behavior.
 
-## Verified Commands (Passing)
+2. **Phase 9.3 keyboard shortcut parity slice implemented**
+- Added centralized shortcut registry/utilities in `app/src/lib/shortcuts.ts`.
+- Added keyboard shortcuts help modal in `AppShell` (`?`).
+- Preserved `Cmd/Ctrl+K` command palette behavior and added `Cmd/Ctrl+S` save dispatch.
+- Added save-shortcut handling on:
+  - `/settings/general`
+  - `/settings/ui`
+- Added tests for help modal and save-shortcut save behavior.
+
+3. **Realtime connection-state visibility added in shell**
+- Added a header status indicator in `AppShell` showing realtime state (`Idle/Connecting/Reconnecting/Live/Offline`) via `eventsApi.onStateChange`.
+
+4. **Phase 10.1 integration verification executed and documented**
+- Added artifact: `artifacts/parity-audit-20260215.md`.
+- Ran broad route-level verification sweep across major Prowlarr surfaces (indexers, search, history, settings, system).
+- Result: **170/170 tests passed**.
+
+5. **Build blocker fixed (container/production)**
+- Resolved TypeScript mismatch in `settings/general/page.tsx` by changing payload typing from `SettingsFormData` to `Partial<AppSettings>` for `settingsApi.update` compatibility.
+- Verified with `CI=true npm run build --workspace=app` (success).
+
+6. **Podman/Compose behavior diagnosed**
+- Root cause of “UI not changing” was stale image reuse by `podman-compose up` while manual `podman build ./` generated dangling/untagged images not used by compose services.
+- Working sequence validated:
+  - `podman-compose down`
+  - `podman-compose build --no-cache`
+  - `podman-compose up -d --force-recreate`
+
+## Files Changed
+
+- `app/src/app/(shell)/prowlarr-route-scaffolds.test.tsx`
+- `app/src/app/(shell)/settings/general/page.tsx`
+- `app/src/app/(shell)/settings/general/page.test.tsx`
+- `app/src/app/(shell)/settings/ui/page.tsx`
+- `app/src/app/(shell)/settings/ui/page.test.tsx`
+- `app/src/app/(shell)/system/backup/page.test.tsx`
+- `app/src/app/(shell)/system/events/page.test.tsx`
+- `app/src/app/(shell)/system/tasks/page.test.tsx`
+- `app/src/app/globals.css`
+- `app/src/components/shell/AppShell.tsx`
+- `app/src/components/shell/app-shell.test.tsx`
+- `app/src/lib/navigation.ts`
+- `app/src/lib/prowlarr-routes.test.ts`
+- `app/src/lib/uiPreferences.ts`
+- `app/src/lib/uiPreferences.test.ts`
+- `app/src/lib/shortcuts.ts`
+- `app/src/lib/api/eventsApi.ts`
+- `app/src/lib/api/eventsApi.test.ts`
+- `app/src/lib/events/useEventsCacheBridge.ts`
+- `app/src/lib/events/useEventsCacheBridge.test.tsx`
+- `conductor/tracks/prowlarr_ui_cloning_20260214/plan.md`
+- `conductor/tracks/prowlarr_ui_cloning_20260214/artifacts/parity-audit-20260215.md`
+- `conductor/tracks/prowlarr_ui_cloning_20260214/artifacts/next-session-handoff-20260214.md`
+
+## Validation Commands Run
+
+### Focused parity tests
 
 ```bash
 CI=true npm run test --workspace=app -- \
-  'src/app/(shell)/search/page.test.tsx' \
-  'src/app/(shell)/prowlarr-route-scaffolds.test.tsx'
-
-CI=true npm run lint --workspace=app -- \
-  'src/app/(shell)/search/page.tsx' \
-  'src/app/(shell)/search/page.test.tsx' \
-  'src/app/(shell)/prowlarr-route-scaffolds.test.tsx'
-
-CI=true npm run test:coverage --workspace=app -- \
-  'src/app/(shell)/search/page.test.tsx'
-
-CI=true npm run test -- \
-  tests/media-search-service.test.js \
-  tests/api-handlers.test.ts \
-  tests/api-sdk-contract.test.ts
-
-CI=true npm run test --workspace=app -- \
-  'src/app/(shell)/history/page.test.tsx' \
-  'src/app/(shell)/prowlarr-route-scaffolds.test.tsx'
-
-CI=true npm run lint --workspace=app -- \
-  'src/app/(shell)/history/page.tsx' \
-  'src/app/(shell)/history/page.test.tsx' \
-  'src/app/(shell)/prowlarr-route-scaffolds.test.tsx'
-
-CI=true npm run test:coverage --workspace=app -- \
-  'src/app/(shell)/history/page.test.tsx'
+  'src/components/shell/app-shell.test.tsx' \
+  'src/app/(shell)/settings/general/page.test.tsx' \
+  'src/app/(shell)/settings/ui/page.test.tsx' \
+  'src/lib/api/eventsApi.test.ts' \
+  'src/lib/events/useEventsCacheBridge.test.tsx'
 ```
 
-Coverage highlights:
-- `app/src/app/(shell)/search/page.tsx`: `85.26%` lines / `94.11%` functions / `77.06%` branches
-- `app/src/app/(shell)/history/page.tsx`: `89.79%` lines / `89.28%` functions / `88.23%` branches
+### Broad integration verification sweep
 
-## Current Major Parity Status
+```bash
+CI=true npm run test --workspace=app -- \
+  'src/app/(shell)/indexers/page.test.tsx' \
+  'src/app/(shell)/search/page.test.tsx' \
+  'src/app/(shell)/history/page.test.tsx' \
+  'src/app/(shell)/settings/indexers/page.test.tsx' \
+  'src/app/(shell)/settings/applications/page.test.tsx' \
+  'src/app/(shell)/settings/downloadclients/page.test.tsx' \
+  'src/app/(shell)/settings/connect/page.test.tsx' \
+  'src/app/(shell)/settings/tags/page.test.tsx' \
+  'src/app/(shell)/settings/general/page.test.tsx' \
+  'src/app/(shell)/settings/ui/page.test.tsx' \
+  'src/app/(shell)/system/status/page.test.tsx' \
+  'src/app/(shell)/system/tasks/page.test.tsx' \
+  'src/app/(shell)/system/backup/page.test.tsx' \
+  'src/app/(shell)/system/updates/page.test.tsx' \
+  'src/app/(shell)/system/events/page.test.tsx' \
+  'src/app/(shell)/system/logs/files/page.test.tsx'
+```
 
-Implemented/functional now:
-- Search parity (form, results, flags, grab/download/override/bulk actions, filtering)
-- History timeline parity baseline:
-  - Activity-backed paginated table
-  - Event type filtering
-  - Row-level details modal with parameter/status diagnostics
+### Lint
 
-Still scaffolded / major gaps (outside completed Phase 5 and partial Phase 6):
-- History management actions (`clear`, `mark failed`, `export`) for Task `6.3`
-- Phase 6 manual verification + phase checkpoint flow
-- Settings pages (`settings/indexers`, `settings/applications`, `settings/downloadclients`, `settings/connect`, `settings/tags`, `settings/general`, `settings/ui`)
-- System pages (`system/status`, `system/tasks`, `system/backup`, `system/updates`, `system/events`, `system/logs/files`)
+```bash
+CI=true npm run lint --workspace=app -- \
+  'src/lib/shortcuts.ts' \
+  'src/components/shell/AppShell.tsx' \
+  'src/components/shell/app-shell.test.tsx' \
+  'src/app/(shell)/settings/general/page.tsx' \
+  'src/app/(shell)/settings/general/page.test.tsx' \
+  'src/app/(shell)/settings/ui/page.tsx' \
+  'src/app/(shell)/settings/ui/page.test.tsx' \
+  'src/lib/api/eventsApi.ts' \
+  'src/lib/api/eventsApi.test.ts' \
+  'src/lib/events/useEventsCacheBridge.ts' \
+  'src/lib/events/useEventsCacheBridge.test.tsx'
+```
 
-## First Actions For Next Session
+### Production build
 
-1. Execute `Task 6.3: Implement history management (TDD)`:
-   - add clear-history flow (likely needs API route support)
-   - add mark-as-failed workflow and state persistence strategy
-   - add export functionality for history records
-2. Execute `Task: Conductor - User Manual Verification 'Phase 6'`.
-3. Run Phase 6 checkpoint protocol per `conductor/workflow.md`:
-   - determine phase scope from previous checkpoint `ea80719`
-   - run announced automated command(s)
-   - create checkpoint commit + git note
-   - append Phase 6 checkpoint SHA in `plan.md`
-4. Begin Phase 7 Settings implementation.
+```bash
+CI=true npm run build --workspace=app
+```
 
-## Important Context
+## Current Plan State
 
-- Existing unrelated working tree modification remains: `app/src/components/providers/ToastProvider.tsx`.
-- This handoff file is intentionally left uncommitted so the next session can continue updating it.
+- `9.1` marked in progress with core event contract/handler/invalidation/test work complete.
+- `9.3` marked in progress with registry/modal/common shortcuts/save integration complete.
+- `10.1` marked in progress with audit checklist items completed and artifact added.
+- `10.2` remains in progress with concrete gap fixes delivered in this session.
+
+## Known Remaining Gaps
+
+1. **Phase 9.2 responsive hardening**
+- Mobile column-hiding behavior and touch-gesture polish are still open.
+
+2. **Phase 9.4 theme-system completion**
+- Baseline theme + color-impaired support exists; final parity hardening remains.
+
+3. **Phase 9.5 performance optimization**
+- Virtualization/code splitting/memoization hardening remains open.
+
+4. **Phase 10.3/10.4**
+- E2E flow suite and final docs are still open.
+
+## Recommended Next Actions
+
+1. Execute `9.2` responsive hardening (tests + implementation for mobile table behavior and gesture/navigation polish).
+2. Execute `9.4` + `9.5` parity hardening (theme/accessibility and performance).
+3. Start `10.3` E2E journey authoring for indexer/search/settings critical paths.
+4. Keep using compose rebuild/recreate flow to ensure fresh UI image deployment:
+- `podman-compose down`
+- `podman-compose build --no-cache`
+- `podman-compose up -d --force-recreate`

@@ -151,14 +151,8 @@ describe('tasks page', () => {
     const queryClient = createTestQueryClient();
     renderPage(queryClient);
 
-    await waitFor(() => {
-      expect(getTaskHistoryMock).toHaveBeenCalled();
-    });
-
-    const detailsButtons = screen.getAllByText('Details');
-    expect(detailsButtons.length).toBeGreaterThan(0);
-
-    fireEvent.click(detailsButtons[0]);
+    const detailsButton = await screen.findByRole('button', { name: 'Details for RSS Sync' });
+    fireEvent.click(detailsButton);
 
     await waitFor(() => {
       expect(getTaskDetailsMock).toHaveBeenCalled();
@@ -172,16 +166,12 @@ describe('tasks page', () => {
     const queryClient = createTestQueryClient();
     renderPage(queryClient);
 
-    await waitFor(() => {
-      expect(getTaskHistoryMock).toHaveBeenCalled();
-    });
-
-    const detailsButtons = screen.getAllByText('Details');
-    fireEvent.click(detailsButtons[0]);
+    const detailsButton = await screen.findByRole('button', { name: 'Details for RSS Sync' });
+    fireEvent.click(detailsButton);
 
     await screen.findByRole('dialog', { name: 'Task Details' });
 
-    const closeButton = screen.getByRole('button', { name: 'Close' });
+    const closeButton = screen.getByRole('button', { name: 'Close details' });
     fireEvent.click(closeButton);
 
     await waitFor(() => {

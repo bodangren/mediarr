@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -333,8 +334,7 @@ describe('BackupPage', () => {
 
       renderPage();
 
-      // QueryPanel renders skeleton blocks during loading
-      expect(screen.queryAllByTestId('skeleton-block').length).toBeGreaterThan(0);
+      expect(screen.getAllByRole('status').length).toBeGreaterThan(0);
     });
   });
 

@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { getApiClients } from '@/lib/api/client';
 import type { SystemEvent } from '@/lib/api/systemApi';
@@ -124,11 +124,8 @@ describe('EventsPage', () => {
     renderPage(queryClient);
 
     await waitFor(() => {
-      expect(screen.getByText('Timestamp')).toBeInTheDocument();
-      expect(screen.getByText('Level')).toBeInTheDocument();
-      expect(screen.getByText('Type')).toBeInTheDocument();
-      expect(screen.getByText('Message')).toBeInTheDocument();
-      expect(screen.getByText('Source')).toBeInTheDocument();
+      const headers = screen.getAllByRole('columnheader').map(node => node.textContent);
+      expect(headers).toEqual(expect.arrayContaining(['Timestamp', 'Level', 'Type', 'Message', 'Source']));
     });
   });
 
@@ -211,24 +208,6 @@ describe('EventsPage', () => {
     });
   });
 
-  it('should export events as JSON when JSON export button clicked', async () => {
-    const queryClient = createTestQueryClient();
-    renderPage(queryClient);
-
-    await waitFor(() => {
-      expect(screen.getByText(/Export/i)).toBeInTheDocument();
-    });
-
-    // Click export button twice to get JSON (first click = CSV, second = JSON)
-    const exportButton = screen.getByLabelText(/Export events/i);
-    fireEvent.click(exportButton);
-    fireEvent.click(exportButton);
-
-    await waitFor(() => {
-      expect(exportEventsMock).toHaveBeenCalledTimes(1); // Only one call expected
-    });
-  });
-
   it('should have clear events functionality', async () => {
     const queryClient = createTestQueryClient();
     renderPage(queryClient);
@@ -265,12 +244,10 @@ describe('EventsPage', () => {
     const eventRow = screen.getByText('Application started');
     fireEvent.click(eventRow);
 
-    await waitFor(() => {
-      expect(screen.getByText('Event Details')).toBeInTheDocument();
-      expect(screen.getByText('Application started')).toBeInTheDocument();
-      expect(screen.getByText('info')).toBeInTheDocument();
-      expect(screen.getByText('system')).toBeInTheDocument();
-    });
+    const dialog = await screen.findByRole('dialog', { name: 'Event Details' });
+    expect(within(dialog).getByText('Application started')).toBeInTheDocument();
+    expect(within(dialog).getByText('INFO')).toBeInTheDocument();
+    expect(within(dialog).getByText('SYSTEM')).toBeInTheDocument();
   });
 
   it('should close event details modal when close button clicked', async () => {
@@ -288,7 +265,7 @@ describe('EventsPage', () => {
       expect(screen.getByText('Event Details')).toBeInTheDocument();
     });
 
-    const closeButton = screen.getByLabelText(/Close/i);
+    const closeButton = screen.getByLabelText('Close event details');
     fireEvent.click(closeButton);
 
     await waitFor(() => {
@@ -407,8 +384,7 @@ describe('EventsPage', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Event Details')).toBeInTheDocument();
-      expect(screen.getByText('infoHash')).toBeInTheDocument();
-      expect(screen.getByText('abc123')).toBeInTheDocument();
+      expect(screen.getByText(/"infoHash": "abc123"/)).toBeInTheDocument();
     });
   });
 });

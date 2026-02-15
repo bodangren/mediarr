@@ -23,6 +23,35 @@ const healthUpdateSchema = z.array(z.object({
   snapshot: z.unknown().nullable().optional(),
 }).passthrough());
 
+const indexerLifecycleSchema = z.object({
+  indexerId: z.number().optional(),
+  id: z.number().optional(),
+  indexerName: z.string().optional(),
+  name: z.string().optional(),
+  enabled: z.boolean().optional(),
+  protocol: z.string().optional(),
+}).passthrough();
+
+const indexerHealthChangedSchema = z.object({
+  indexerId: z.number().optional(),
+  id: z.number().optional(),
+  indexerName: z.string().optional(),
+  status: z.string().optional(),
+  severity: z.string().optional(),
+  snapshot: z.unknown().nullable().optional(),
+}).passthrough();
+
+const commandStateSchema = z.object({
+  commandId: z.union([z.number(), z.string()]).optional(),
+  id: z.union([z.number(), z.string()]).optional(),
+  name: z.string().optional(),
+  status: z.string().optional(),
+  state: z.string().optional(),
+  progress: z.number().optional(),
+  startedAt: z.string().optional(),
+  completedAt: z.string().optional(),
+}).passthrough();
+
 const heartbeatSchema = z.object({
   timestamp: z.string(),
 }).passthrough();
@@ -33,6 +62,12 @@ export interface EventsPayloadMap {
   'torrent:stats': z.infer<typeof torrentStatsSchema>;
   'activity:new': z.infer<typeof activityNewSchema>;
   'health:update': z.infer<typeof healthUpdateSchema>;
+  'indexer:added': z.infer<typeof indexerLifecycleSchema>;
+  'indexer:updated': z.infer<typeof indexerLifecycleSchema>;
+  'indexer:deleted': z.infer<typeof indexerLifecycleSchema>;
+  'indexer:healthChanged': z.infer<typeof indexerHealthChangedSchema>;
+  'command:started': z.infer<typeof commandStateSchema>;
+  'command:completed': z.infer<typeof commandStateSchema>;
   heartbeat: z.infer<typeof heartbeatSchema>;
 }
 
@@ -68,6 +103,12 @@ export class EventsApiClient {
     'torrent:stats': new Set(),
     'activity:new': new Set(),
     'health:update': new Set(),
+    'indexer:added': new Set(),
+    'indexer:updated': new Set(),
+    'indexer:deleted': new Set(),
+    'indexer:healthChanged': new Set(),
+    'command:started': new Set(),
+    'command:completed': new Set(),
     heartbeat: new Set(),
   };
 
@@ -158,6 +199,30 @@ export class EventsApiClient {
 
     source.addEventListener('health:update', event => {
       this.handleEvent('health:update', event, healthUpdateSchema);
+    });
+
+    source.addEventListener('indexer:added', event => {
+      this.handleEvent('indexer:added', event, indexerLifecycleSchema);
+    });
+
+    source.addEventListener('indexer:updated', event => {
+      this.handleEvent('indexer:updated', event, indexerLifecycleSchema);
+    });
+
+    source.addEventListener('indexer:deleted', event => {
+      this.handleEvent('indexer:deleted', event, indexerLifecycleSchema);
+    });
+
+    source.addEventListener('indexer:healthChanged', event => {
+      this.handleEvent('indexer:healthChanged', event, indexerHealthChangedSchema);
+    });
+
+    source.addEventListener('command:started', event => {
+      this.handleEvent('command:started', event, commandStateSchema);
+    });
+
+    source.addEventListener('command:completed', event => {
+      this.handleEvent('command:completed', event, commandStateSchema);
     });
 
     source.addEventListener('heartbeat', event => {

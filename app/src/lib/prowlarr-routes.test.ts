@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { PROWLARR_ROUTE_PATHS } from './prowlarrRoutes';
-import { isNavActive } from './navigation';
+import { NAV_ITEMS, isNavActive } from './navigation';
 
 describe('prowlarr route configuration', () => {
   it('contains major prowlarr route paths', () => {
@@ -29,6 +29,26 @@ describe('prowlarr route configuration', () => {
 
   it('does not contain duplicate paths', () => {
     expect(new Set(PROWLARR_ROUTE_PATHS).size).toBe(PROWLARR_ROUTE_PATHS.length);
+  });
+
+  it('exposes major settings and system routes in navigation', () => {
+    const navPaths = NAV_ITEMS.map(item => item.path);
+
+    expect(navPaths).toEqual(
+      expect.arrayContaining([
+        '/settings/applications',
+        '/settings/downloadclients',
+        '/settings/connect',
+        '/settings/tags',
+        '/settings/general',
+        '/settings/ui',
+        '/system/tasks',
+        '/system/backup',
+        '/system/updates',
+        '/system/events',
+        '/system/logs/files',
+      ]),
+    );
   });
 
   it('keeps active navigation highlighting for nested routes', () => {

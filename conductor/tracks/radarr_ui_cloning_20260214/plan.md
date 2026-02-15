@@ -576,14 +576,14 @@ This plan implements the Radarr UI cloning based on the comprehensive specificat
   - [ ] Implement progress tracking
   - [ ] Verify coverage >80%
 
-- [ ] **Task 10.5: Implement responsive design (TDD)**
-  - [ ] Write tests for mobile navigation
-  - [ ] Implement mobile sidebar
-  - [ ] Write tests for responsive tables
-  - [ ] Implement column hiding
-  - [ ] Write tests for touch gestures
-  - [ ] Implement swipe navigation
-  - [ ] Verify coverage >80%
+- [x] **Task 10.5: Implement responsive design (TDD)** [75b82284]
+  - [x] Write tests for mobile navigation
+  - [x] Implement mobile sidebar
+  - [x] Write tests for responsive tables
+  - [x] Implement column hiding
+  - [x] Write tests for touch gestures
+  - [x] Implement swipe navigation
+  - [x] Verify coverage >80%
 
 - [ ] **Task 10.6: Implement Jump Bar (TDD)**
   - [ ] Write tests for PageJumpBar

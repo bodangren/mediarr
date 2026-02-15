@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
 
-type ToastVariant = 'success' | 'error' | 'info';
+type ToastVariant = 'success' | 'error' | 'info' | 'warning';
 
 export interface ToastAction {
   label: string;
@@ -30,6 +30,8 @@ function variantClass(variant: ToastVariant): string {
   switch (variant) {
     case 'success':
       return 'border-status-completed/40 bg-status-completed/15';
+    case 'warning':
+      return 'border-accent-warning/40 bg-accent-warning/15';
     case 'error':
       return 'border-status-error/40 bg-status-error/15';
     default:

@@ -3,10 +3,7 @@ import { describe, expect, it } from 'vitest';
 import SettingsApplicationsPage from './settings/applications/page';
 import SettingsConnectPage from './settings/connect/page';
 import SettingsDownloadClientsPage from './settings/downloadclients/page';
-import SettingsGeneralPage from './settings/general/page';
-import SettingsIndexersPage from './settings/indexers/page';
 import SettingsTagsPage from './settings/tags/page';
-import SettingsUiPage from './settings/ui/page';
 import SystemBackupPage from './system/backup/page';
 import SystemEventsPage from './system/events/page';
 import SystemLogFilesPage from './system/logs/files/page';
@@ -15,13 +12,10 @@ import SystemTasksPage from './system/tasks/page';
 import SystemUpdatesPage from './system/updates/page';
 
 const PAGE_CASES = [
-  { title: 'Settings: Indexers', Component: SettingsIndexersPage },
   { title: 'Settings: Applications', Component: SettingsApplicationsPage },
   { title: 'Settings: Download Clients', Component: SettingsDownloadClientsPage },
   { title: 'Settings: Notifications', Component: SettingsConnectPage },
   { title: 'Settings: Tags', Component: SettingsTagsPage },
-  { title: 'Settings: General', Component: SettingsGeneralPage },
-  { title: 'Settings: UI', Component: SettingsUiPage },
   { title: 'System: Status', Component: SystemStatusPage },
   { title: 'System: Tasks', Component: SystemTasksPage },
   { title: 'System: Backup', Component: SystemBackupPage },

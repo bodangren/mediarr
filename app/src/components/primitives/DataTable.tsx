@@ -29,6 +29,7 @@ interface DataTableProps<RowType> {
   pagination?: DataTablePagination;
   sort?: DataTableSort;
   onSort?: (key: string) => void;
+  onRowClick?: (row: RowType) => void;
 }
 
 export function DataTable<RowType>({
@@ -39,12 +40,13 @@ export function DataTable<RowType>({
   pagination,
   sort,
   onSort,
+  onRowClick,
 }: DataTableProps<RowType>) {
   return (
     <div className="space-y-3">
       <Table>
         <TableHeader<RowType> columns={columns} sort={sort} onSort={onSort} showActions={Boolean(rowActions)} />
-        <TableBody<RowType> data={data} columns={columns} getRowId={getRowId} rowActions={rowActions} />
+        <TableBody<RowType> data={data} columns={columns} getRowId={getRowId} rowActions={rowActions} onRowClick={onRowClick} />
       </Table>
 
       {pagination ? (

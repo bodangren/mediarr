@@ -5,7 +5,15 @@ import 'dotenv/config';
 import { AppSettingsRepository } from '../server/src/repositories/AppSettingsRepository';
 import { SettingsService } from '../server/src/services/SettingsService';
 
-const adapter = new PrismaBetterSqlite3({ url: process.env.DATABASE_URL || 'file:./mediarr.db' });
+function resolveTestDatabaseUrl() {
+  const databaseUrl = process.env.DATABASE_URL;
+  if (!databaseUrl || databaseUrl.startsWith('file:/config/')) {
+    return 'file:./mediarr.db';
+  }
+  return databaseUrl;
+}
+
+const adapter = new PrismaBetterSqlite3({ url: resolveTestDatabaseUrl() });
 const prisma = new PrismaClient({ adapter });
 const repository = new AppSettingsRepository(prisma);
 const service = new SettingsService(repository);

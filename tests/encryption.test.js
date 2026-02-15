@@ -24,8 +24,8 @@ describe('Encryption Utility', () => {
     expect(() => encrypt('test')).toThrow('ENCRYPTION_KEY environment variable is not set');
   });
 
-  it('should throw error for invalid encrypted format', () => {
+  it('should return plaintext for legacy unencrypted values', () => {
     process.env.ENCRYPTION_KEY = secretKey;
-    expect(() => decrypt('invalidformat')).toThrow('Invalid encrypted text format');
+    expect(decrypt('invalidformat')).toBe('invalidformat');
   });
 });

@@ -7,10 +7,12 @@ export interface NavigationItem {
 export const NAV_ITEMS: NavigationItem[] = [
   { path: '/', label: 'Dashboard', shortLabel: 'Home' },
   { path: '/indexers', label: 'Indexers', shortLabel: 'Indexers' },
+  { path: '/indexers/stats', label: 'Indexer Stats', shortLabel: 'Stats' },
   { path: '/search', label: 'Search', shortLabel: 'Search' },
   { path: '/history', label: 'History', shortLabel: 'History' },
   { path: '/system/status', label: 'System', shortLabel: 'System' },
   { path: '/settings', label: 'Settings', shortLabel: 'Settings' },
+  { path: '/settings/indexers', label: 'Indexer Settings', shortLabel: 'IdxSet' },
   { path: '/library/series', label: 'Series Library', shortLabel: 'Series' },
   { path: '/library/movies', label: 'Movie Library', shortLabel: 'Movies' },
   { path: '/wanted', label: 'Wanted', shortLabel: 'Wanted' },

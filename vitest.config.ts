@@ -5,13 +5,11 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     maxWorkers: 1,
-    minWorkers: 1,
     exclude: [
       '**/node_modules/**',
       '**/reference/**',
       '**/dist/**',
-      'app/src/**/*.test.ts',
-      'app/src/**/*.test.tsx',
+      'app/src/**/*.test.tsx', // Only exclude React component tests from vitest (they need jsdom)
     ],
   },
 });

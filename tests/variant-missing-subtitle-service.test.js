@@ -60,6 +60,7 @@ describe('VariantMissingSubtitleService', () => {
     await prisma.variantAudioTrack.deleteMany();
     await prisma.mediaFileVariant.deleteMany();
     await prisma.episode.deleteMany();
+    await prisma.season.deleteMany();
     await prisma.series.deleteMany();
     await prisma.movie.deleteMany();
     await prisma.media.deleteMany();

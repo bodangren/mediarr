@@ -1,6 +1,6 @@
 import fs from 'node:fs';
-import path from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { resolveTrack9ArtifactPath } from './helpers/track9Paths';
 
 type ConfidenceLevel = 'high' | 'medium' | 'low';
 
@@ -26,14 +26,7 @@ type ParityMatrixDocument = {
   entries: ParityMatrixEntry[];
 };
 
-const parityMatrixPath = path.join(
-  process.cwd(),
-  'conductor',
-  'tracks',
-  'clone_parity_gap_investigation_20260212',
-  'artifacts',
-  'parity-matrix.json',
-);
+const parityMatrixPath = resolveTrack9ArtifactPath('parity-matrix.json');
 
 function readParityMatrix(): ParityMatrixDocument {
   const source = fs.readFileSync(parityMatrixPath, 'utf8');

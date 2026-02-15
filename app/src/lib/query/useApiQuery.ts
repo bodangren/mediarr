@@ -8,6 +8,7 @@ export interface UseApiQueryOptions<TData> {
   queryFn: () => Promise<TData>;
   staleTimeKind?: StaleTimeKind;
   enabled?: boolean;
+  refetchInterval?: number | false;
   isEmpty?: (data: TData) => boolean;
 }
 
@@ -21,6 +22,7 @@ export function useApiQuery<TData>(options: UseApiQueryOptions<TData>): ApiQuery
     queryFn: options.queryFn,
     staleTime: STALE_TIMES[options.staleTimeKind ?? 'list'],
     enabled: options.enabled,
+    refetchInterval: options.refetchInterval,
   });
 
   const isResolvedEmpty = query.isSuccess && options.isEmpty ? options.isEmpty(query.data) : false;

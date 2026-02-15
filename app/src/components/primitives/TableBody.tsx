@@ -6,6 +6,7 @@ interface TableBodyProps<RowType> {
   columns: TableColumn<RowType>[];
   getRowId: (row: RowType) => string | number;
   rowActions?: (row: RowType) => ReactNode;
+  onRowClick?: (row: RowType) => void;
 }
 
 interface TableCellProps {
@@ -15,13 +16,21 @@ interface TableCellProps {
 
 interface TableRowProps {
   children: ReactNode;
+  onClick?: () => void;
 }
 
-export function TableBody<RowType>({ data, columns, getRowId, rowActions }: TableBodyProps<RowType>) {
+export function TableBody<RowType>({ data, columns, getRowId, rowActions, onRowClick }: TableBodyProps<RowType>) {
   return (
     <tbody className="divide-y divide-border-subtle bg-surface-1">
       {data.map(row => (
-        <TableRow key={getRowId(row)}>
+        <TableRow
+          key={getRowId(row)}
+          onClick={() => {
+            if (onRowClick) {
+              onRowClick(row);
+            }
+          }}
+        >
           {columns.map(column => (
             <TableCell key={column.key} className={column.className}>
               {column.render(row)}
@@ -34,8 +43,15 @@ export function TableBody<RowType>({ data, columns, getRowId, rowActions }: Tabl
   );
 }
 
-export function TableRow({ children }: TableRowProps) {
-  return <tr>{children}</tr>;
+export function TableRow({ children, onClick }: TableRowProps) {
+  return (
+    <tr
+      className={onClick ? 'cursor-pointer hover:bg-surface-2' : ''}
+      onClick={onClick}
+    >
+      {children}
+    </tr>
+  );
 }
 
 export function TableCell({ className, children }: TableCellProps) {

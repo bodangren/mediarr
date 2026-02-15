@@ -121,6 +121,40 @@ export class ApiHttpClient {
     };
   }
 
+  async requestBlob(config: RequestConfig): Promise<Blob> {
+    const requestUrl = `${this.baseUrl}${config.path}${toQueryString((config.query ?? {}) as Record<string, unknown>)}`;
+    const fetchImpl =
+      this.fetchFn ??
+      (typeof globalThis.fetch === 'function'
+        ? globalThis.fetch.bind(globalThis)
+        : undefined);
+
+    if (!fetchImpl) {
+      throw new ContractViolationError('Fetch is not available in this runtime');
+    }
+
+    const response = await fetchImpl(requestUrl, {
+      method: config.method ?? 'GET',
+      headers: {
+        ...this.defaultHeaders,
+        ...(config.body === undefined ? {} : { 'content-type': 'application/json' }),
+        ...(config.headers ?? {}),
+      },
+      body: config.body === undefined ? undefined : JSON.stringify(config.body),
+    });
+
+    if (!response.ok) {
+      throw new ApiClientError({
+        code: 'REQUEST_FAILED',
+        message: `Export request failed with status ${response.status}`,
+        retryable: false,
+        status: response.status,
+      });
+    }
+
+    return await response.blob();
+  }
+
   private async execute(config: RequestConfig): Promise<{ status: number; body: unknown }> {
     const requestUrl = `${this.baseUrl}${config.path}${toQueryString((config.query ?? {}) as Record<string, unknown>)}`;
     const fetchImpl =

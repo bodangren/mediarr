@@ -1,49 +1,81 @@
 import fs from 'node:fs';
-import path from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { resolveTrack9ArtifactPath } from './helpers/track9Paths';
 
-const APP_ROOT = path.join(process.cwd(), 'app', 'src', 'app', '(shell)');
+type SurfaceFinding = {
+  route: string;
+  status: 'fully_functional' | 'partially_functional' | 'scaffold_only' | 'placeholder';
+  placeholderSignals: string[];
+  missingInteractions: string[];
+  backendCapabilityLinks: string[];
+};
+
+type FrontendParityReport = {
+  surfaces: SurfaceFinding[];
+};
+
+const frontendParityPath = resolveTrack9ArtifactPath('frontend-parity-report.json');
+
+function readReport(): FrontendParityReport {
+  return JSON.parse(fs.readFileSync(frontendParityPath, 'utf8')) as FrontendParityReport;
+}
+
+function findSurface(report: FrontendParityReport, route: string): SurfaceFinding {
+  const surface = report.surfaces.find(entry => entry.route === route);
+  expect(surface, `Missing frontend surface ${route}`).toBeDefined();
+  return surface!;
+}
 
 describe('Track 9 Phase 3 Frontend Audit (Gemini)', () => {
-  it('AUDIT: Subtitles page is a placeholder', () => {
-    const content = fs.readFileSync(path.join(APP_ROOT, 'subtitles', 'page.tsx'), 'utf8');
-    expect(content).toContain('SubtitlesPlaceholderPage');
-    expect(content).toContain('EmptyPanel');
-    expect(content).toContain('Track 7D');
+  it('AUDIT: Subtitles surface is placeholder-level in the parity report', () => {
+    const report = readReport();
+    const subtitles = findSurface(report, '/subtitles');
+
+    expect(subtitles.status).toBe('placeholder');
+    expect(subtitles.placeholderSignals.length).toBeGreaterThan(0);
+    expect(subtitles.missingInteractions).toEqual(
+      expect.arrayContaining(['manual subtitle search and download operations']),
+    );
   });
 
-  it('AUDIT: Queue page is read-only scaffold', () => {
-    const content = fs.readFileSync(path.join(APP_ROOT, 'queue', 'page.tsx'), 'utf8');
-    expect(content).toContain('DataTable');
-    // Check for absence of action buttons in columns or rowActions
-    // The current file has no rowActions defined in DataTable props
-    expect(content).not.toContain('rowActions={');
-    expect(content).toContain('full controls in Track 7D');
+  it('AUDIT: Queue surface is scaffold-only with Track 7D follow-up gaps', () => {
+    const report = readReport();
+    const queue = findSurface(report, '/queue');
+
+    expect(queue.status).toBe('scaffold_only');
+    expect(queue.placeholderSignals).toEqual(
+      expect.arrayContaining([expect.stringContaining('Track 7D')]),
+    );
+    expect(queue.missingInteractions).toEqual(
+      expect.arrayContaining(['pause/resume/remove queue controls']),
+    );
   });
 
-  it('AUDIT: Settings page is scaffold with hardcoded save', () => {
-    const content = fs.readFileSync(path.join(APP_ROOT, 'settings', 'page.tsx'), 'utf8');
-    expect(content).toContain('Settings surface is expanded in Track 7E');
-    // Check for hardcoded mutation
-    expect(content).toContain('pathVisibility: {');
-    expect(content).toContain('showDownloadPath: true');
+  it('AUDIT: Settings surface is scaffold-only in Track 7E snapshot', () => {
+    const report = readReport();
+    const settings = findSurface(report, '/settings');
+
+    expect(settings.status).toBe('scaffold_only');
+    expect(settings.placeholderSignals).toEqual(
+      expect.arrayContaining([expect.stringContaining('Track 7E')]),
+    );
   });
 
-  it('AUDIT: Dashboard is partial', () => {
-    const content = fs.readFileSync(path.join(APP_ROOT, 'page.tsx'), 'utf8');
-    expect(content).toContain('7E dashboard enhancements are pending');
-    // Missing components check (heuristic)
-    expect(content).not.toContain('Calendar');
-    expect(content).not.toContain('ActivityFeed');
+  it('AUDIT: Dashboard remains partial in the audit snapshot', () => {
+    const report = readReport();
+    const dashboard = findSurface(report, '/');
+
+    expect(dashboard.status).toBe('partially_functional');
+    expect(dashboard.missingInteractions.length).toBeGreaterThan(0);
   });
 
-  it('AUDIT: Indexers page has hardcoded protocol settings', () => {
-    const content = fs.readFileSync(path.join(APP_ROOT, 'indexers', 'page.tsx'), 'utf8');
-    expect(content).toContain('interface ProtocolSettingsState');
-    expect(content).toContain('torrent: {');
-    expect(content).toContain('usenet: {');
-    // If it was dynamic, it would likely use a dynamic form generator
-    expect(content).not.toContain('FormBuilder'); 
-    expect(content).not.toContain('DynamicField');
+  it('AUDIT: Indexers report contains known contract-shape interaction gaps', () => {
+    const report = readReport();
+    const indexers = findSurface(report, '/indexers');
+
+    expect(indexers.status).toBe('partially_functional');
+    expect(indexers.missingInteractions).toEqual(
+      expect.arrayContaining(['definition-driven dynamic config contract fields']),
+    );
   });
 });

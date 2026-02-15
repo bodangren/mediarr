@@ -24,6 +24,25 @@ export function formatRelativeDate(input: string | undefined): string {
   }).format(date);
 }
 
+export function formatDateTime(input: Date | string | undefined): string {
+  if (!input) {
+    return 'Unknown';
+  }
+
+  const date = input instanceof Date ? input : new Date(input);
+  if (Number.isNaN(date.getTime())) {
+    return 'Unknown';
+  }
+
+  return new Intl.DateTimeFormat(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(date);
+}
+
 export function formatBytesFromString(value: string | number | undefined): string {
   if (value === undefined) {
     return '-';
@@ -44,4 +63,18 @@ export function formatBytesFromString(value: string | number | undefined): strin
   }
 
   return `${nextValue.toFixed(nextValue >= 10 ? 0 : 1)} ${units[unitIndex]}`;
+}
+
+export function formatUptime(seconds: number): string {
+  const days = Math.floor(seconds / 86400);
+  const hours = Math.floor((seconds % 86400) / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+
+  if (days > 0) {
+    return `${days}d ${hours}h`;
+  }
+  if (hours > 0) {
+    return `${hours}h ${minutes}m`;
+  }
+  return `${minutes}m`;
 }

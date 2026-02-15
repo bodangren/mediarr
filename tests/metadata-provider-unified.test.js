@@ -4,9 +4,15 @@ import { HttpClient } from '../server/src/indexers/HttpClient';
 
 describe('MetadataProvider Unified Media Interface', () => {
   let provider;
+  let settingsService;
 
   beforeEach(() => {
-    provider = new MetadataProvider(new HttpClient());
+    settingsService = {
+      get: vi.fn().mockResolvedValue({
+        apiKeys: { tmdbApiKey: 'test-tmdb-key' },
+      }),
+    };
+    provider = new MetadataProvider(new HttpClient(), settingsService);
   });
 
   it('should search TV media with the unified interface', async () => {
@@ -63,7 +69,7 @@ describe('MetadataProvider Unified Media Interface', () => {
     expect(results[0].mediaType).toBe('MOVIE');
     expect(results[0].title).toBe('Forrest Gump');
     expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining('/search/movie?'),
+      expect.stringContaining('/search/movie?api_key=test-tmdb-key'),
       expect.anything()
     );
   });

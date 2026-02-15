@@ -1,6 +1,6 @@
 import fs from 'node:fs';
-import path from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { resolveTrack9ArtifactPath } from './helpers/track9Paths';
 
 type FrontendSurfaceStatus = 'fully_functional' | 'partially_functional' | 'scaffold_only' | 'placeholder';
 
@@ -19,14 +19,7 @@ type FrontendParityReport = {
   surfaces: FrontendSurfaceFinding[];
 };
 
-const reportPath = path.join(
-  process.cwd(),
-  'conductor',
-  'tracks',
-  'clone_parity_gap_investigation_20260212',
-  'artifacts',
-  'frontend-parity-report.json',
-);
+const reportPath = resolveTrack9ArtifactPath('frontend-parity-report.json');
 
 function readReport(): FrontendParityReport {
   return JSON.parse(fs.readFileSync(reportPath, 'utf8')) as FrontendParityReport;

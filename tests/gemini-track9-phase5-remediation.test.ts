@@ -1,15 +1,8 @@
 import fs from 'node:fs';
-import path from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { resolveTrack9ArtifactPath } from './helpers/track9Paths';
 
-const BACKLOG_PATH = path.join(
-  process.cwd(),
-  'conductor',
-  'tracks',
-  'clone_parity_gap_investigation_20260212',
-  'artifacts',
-  'gemini-remediation-backlog.json',
-);
+const BACKLOG_PATH = resolveTrack9ArtifactPath('gemini-remediation-backlog.json');
 
 describe('Track 9 Phase 5 Remediation Backlog Schema (Gemini)', () => {
   it('validates backlog schema', () => {

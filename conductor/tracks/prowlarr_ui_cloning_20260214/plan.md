@@ -135,37 +135,37 @@ This plan implements the Prowlarr UI cloning based on the comprehensive specific
 ### Tasks
 
 - [x] **Task 3.1: Create Modal system (TDD)** (commit: `9a67a58`)
-  - [ ] Write tests for Modal container
-  - [ ] Implement Modal component with backdrop
-  - [ ] Write tests for ModalHeader, ModalBody, ModalFooter
-  - [ ] Implement modal sub-components
-  - [ ] Write tests for ConfirmModal
-  - [ ] Implement ConfirmModal for destructive actions
-  - [ ] Verify coverage >80%
+  - [x] Write tests for Modal container
+  - [x] Implement Modal component with backdrop
+  - [x] Write tests for ModalHeader, ModalBody, ModalFooter
+  - [x] Implement modal sub-components
+  - [x] Write tests for ConfirmModal
+  - [x] Implement ConfirmModal for destructive actions
+  - [x] Verify coverage >80%
 
 - [x] **Task 3.2: Create Form components (TDD)** (commit: `a38faa4`)
-  - [ ] Write tests for Form and FormGroup
-  - [ ] Implement Form wrapper components
-  - [ ] Write tests for TextInput
-  - [ ] Implement TextInput with validation
-  - [ ] Write tests for SelectInput and EnhancedSelectInput
-  - [ ] Implement dropdown inputs
-  - [ ] Write tests for CheckInput
-  - [ ] Implement checkbox component
-  - [ ] Write tests for TagInput
-  - [ ] Implement tag selection input
-  - [ ] Verify coverage >80%
+  - [x] Write tests for Form and FormGroup
+  - [x] Implement Form wrapper components
+  - [x] Write tests for TextInput
+  - [x] Implement TextInput with validation
+  - [x] Write tests for SelectInput and EnhancedSelectInput
+  - [x] Implement dropdown inputs
+  - [x] Write tests for CheckInput
+  - [x] Implement checkbox component
+  - [x] Write tests for TagInput
+  - [x] Implement tag selection input
+  - [x] Verify coverage >80%
 
 - [x] **Task 3.3: Create specialized inputs (TDD)** (commit: `4a9bac4`)
-  - [ ] Write tests for PasswordInput
-  - [ ] Implement password input with visibility toggle
-  - [ ] Write tests for PathInput
-  - [ ] Implement path input with file browser
-  - [ ] Write tests for NumberInput
-  - [ ] Implement numeric input with validation
-  - [ ] Write tests for AutoCompleteInput
-  - [ ] Implement autocomplete with suggestions
-  - [ ] Verify coverage >80%
+  - [x] Write tests for PasswordInput
+  - [x] Implement password input with visibility toggle
+  - [x] Write tests for PathInput
+  - [x] Implement path input with file browser
+  - [x] Write tests for NumberInput
+  - [x] Implement numeric input with validation
+  - [x] Write tests for AutoCompleteInput
+  - [x] Implement autocomplete with suggestions
+  - [x] Verify coverage >80%
 
 - [x] **Task: Conductor - User Manual Verification 'Phase 3'** (commit: `d399df0`)
 
@@ -229,6 +229,17 @@ This plan implements the Prowlarr UI cloning based on the comprehensive specific
   - [ ] Verify coverage >80%
 
 - [x] **Task: Conductor - User Manual Verification 'Phase 4'** (commit: `53af60d`)
+
+- [ ] **Task 4.6: Import Prowlarr Indexer Definitions (TDD)**
+  - [ ] Write tests for indexer definition parser
+  - [ ] Parse Prowlarr C# indexer definitions from reference/prowlarr
+  - [ ] Create TypeScript indexer preset definitions for torrent trackers
+  - [ ] Write tests for indexer preset loading
+  - [ ] Implement indexer preset loading from definitions
+  - [ ] Remove Newznab presets (torrent-only support)
+  - [ ] Write tests for indexer selection UI
+  - [ ] Update AddIndexerModal to display imported indexer presets
+  - [ ] Verify coverage >80%
 
 ---
 
@@ -321,7 +332,7 @@ This plan implements the Prowlarr UI cloning based on the comprehensive specific
 
 ### Tasks
 
-- [~] **Task 7.1: Create Settings Indexer page (TDD)**
+- [x] **Task 7.1: Create Settings Indexer page (TDD)**
   - [x] Write tests for IndexerSettings container
   - [x] Implement indexer configuration page
   - [x] Write tests for indexer list management
@@ -330,7 +341,7 @@ This plan implements the Prowlarr UI cloning based on the comprehensive specific
   - [ ] Implement proxy configuration
   - [ ] Write tests for Indexer Categories
   - [ ] Implement category management
-  - [ ] Verify coverage >80%
+  - [x] Verify coverage >80%
 
 - [ ] **Task 7.2: Create Application Settings page (TDD)**
   - [ ] Write tests for ApplicationSettings
@@ -442,7 +453,7 @@ This plan implements the Prowlarr UI cloning based on the comprehensive specific
   - [ ] Implement update installation
   - [ ] Verify coverage >80%
 
-- [ ] **Task 8.5: Create System Events page (TDD)**
+- [~] **Task 8.5: Create System Events page (TDD)**
   - [ ] Write tests for SystemEvents container
   - [ ] Implement events log page
   - [ ] Write tests for event filtering
@@ -587,3 +598,43 @@ Phase 10 (Integration)
 - Target >80% code coverage for all new code
 - Use Lucide React icons (not FontAwesome) per project standards
 - Follow existing mediarr code style and patterns
+
+---
+
+## Audit Notes (2026-02-15)
+
+### Phase Status Summary
+
+| Phase | Status | Notes |
+|-------|--------|-------|
+| Phase 1: Infrastructure | COMPLETE | All components implemented (uses custom store instead of Redux) |
+| Phase 2: Table System | COMPLETE | All 14 components implemented with tests |
+| Phase 3: Modal/Form System | COMPLETE | Tests now confirmed to exist |
+| Phase 4: Indexer Views | COMPLETE | Full implementation with tests |
+| Phase 5: Search View | COMPLETE | Full implementation with tests |
+| Phase 6: History View | COMPLETE | Full implementation with tests |
+| Phase 7: Settings | PARTIAL | Indexer settings complete; Apps/DLClients/Notifications/Tags/General/UI are stubs |
+| Phase 8: System | STUBS ONLY | All 6 pages scaffolded but empty - not accessible in navigation |
+| Phase 9: Real-time | NOT STARTED | No implementation |
+| Phase 10: Integration | NOT STARTED | No implementation |
+
+### Critical Gaps Identified
+
+1. **Navigation**: Many routes exist but are NOT exposed in sidebar:
+   - `/system/tasks`, `/system/backup`, `/system/updates`, `/system/events`, `/system/logs/files`
+   - `/settings/applications`, `/settings/downloadclients`, `/settings/connect`, `/settings/tags`, `/settings/general`, `/settings/ui`
+
+2. **Settings Pages**: Phase 7 sub-pages marked complete are actually stubs (RouteScaffold only):
+   - Applications, Download Clients, Notifications, Tags - no functionality
+
+3. **System Pages**: Phase 8 - all pages are scaffolded placeholders with no implementation
+
+4. **Indexer Definitions**: Current implementation has only 2 hardcoded presets (Generic Torznab, Generic Newznab). Need to import actual torrent indexer definitions from reference/prowlarr
+
+### Recommended Actions
+
+1. Add missing routes to navigation.ts
+2. Implement full settings pages for Apps, Download Clients, Notifications, Tags
+3. Implement System pages (Status, Tasks, Backup, Updates, Events, Logs)
+4. Add API clients for missing features (applications, downloadclients, notifications, tags, proxies, categories)
+5. **NEW**: Import Prowlarr torrent indexer definitions (Task 4.6)

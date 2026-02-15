@@ -30,6 +30,14 @@ export const routeMap = {
   indexerTest: (id: number) => `/api/indexers/${id}/test`,
   indexerTestDraft: '/api/indexers/test',
 
+  applications: '/api/applications',
+  applicationUpdate: (id: number) => `/api/applications/${id}`,
+  applicationDelete: (id: number) => `/api/applications/${id}`,
+  applicationTest: (id: number) => `/api/applications/${id}/test`,
+  applicationTestDraft: '/api/applications/test',
+  applicationSync: (id: number) => `/api/applications/${id}/sync`,
+  applicationSyncAll: '/api/applications/sync-all',
+
   subtitleMovieVariants: (id: number) => `/api/subtitles/movie/${id}/variants`,
   subtitleEpisodeVariants: (id: number) => `/api/subtitles/episode/${id}/variants`,
   subtitleSearch: '/api/subtitles/search',
@@ -42,5 +50,53 @@ export const routeMap = {
   health: '/api/health',
   settings: '/api/settings',
 
+  downloadClients: '/api/download-clients',
+  downloadClientUpdate: (id: number) => `/api/download-clients/${id}`,
+  downloadClientDelete: (id: number) => `/api/download-clients/${id}`,
+  downloadClientTest: (id: number) => `/api/download-clients/${id}/test`,
+  downloadClientTestDraft: '/api/download-clients/test',
+
+  notifications: '/api/notifications',
+  notificationUpdate: (id: number) => `/api/notifications/${id}`,
+  notificationDelete: (id: number) => `/api/notifications/${id}`,
+  notificationTest: (id: number) => `/api/notifications/${id}/test`,
+  notificationTestDraft: '/api/notifications/test',
+
+  tasksScheduled: '/api/tasks/scheduled',
+  tasksQueued: '/api/tasks/queued',
+  tasksHistory: '/api/tasks/history',
+  taskDetails: (id: number) => `/api/tasks/history/${id}`,
+  taskRun: (taskId: string | number) => `/api/tasks/scheduled/${taskId}/run`,
+  taskCancel: (taskId: number) => `/api/tasks/queued/${taskId}`,
+
+  systemEvents: '/api/system/events',
+  systemEventsClear: '/api/system/events/clear',
+  systemEventsExport: '/api/system/events/export',
+
+  tags: '/api/tags',
+  tagUpdate: (id: number) => `/api/tags/${id}`,
+  tagDelete: (id: number) => `/api/tags/${id}`,
+  tagDetails: (id: number) => `/api/tags/${id}/details`,
+  tagAssignments: (id: number) => `/api/tags/${id}/assignments`,
+
   eventsStream: '/api/events/stream',
+
+  backups: '/api/backups',
+  backupCreate: '/api/backups',
+  backupSchedule: '/api/backups/schedule',
+  backupRestore: (id: number) => `/api/backups/${id}/restore`,
+  backupDownload: (id: number) => `/api/backups/${id}/download`,
+  backupDelete: (id: number) => `/api/backups/${id}`,
+
+  logsFiles: '/api/logs/files',
+  logsFile: (filename: string) => `/api/logs/files/${encodeURIComponent(filename)}`,
+  logsFileDownload: (filename: string) => `/api/logs/files/${encodeURIComponent(filename)}/download`,
+  logsFileClear: (filename: string) => `/api/logs/files/${encodeURIComponent(filename)}/clear`,
+
+  updatesCurrent: '/api/updates/current',
+  updatesAvailable: '/api/updates/available',
+  updatesCheck: '/api/updates/check',
+  updatesInstall: '/api/updates/install',
+  updatesHistory: '/api/updates/history',
+  updatesProgress: (updateId: string) => `/api/updates/progress/${updateId}`,
 };

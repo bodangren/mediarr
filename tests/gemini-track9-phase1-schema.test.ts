@@ -1,18 +1,10 @@
 import fs from 'node:fs';
-import path from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { resolveTrack9ArtifactPath } from './helpers/track9Paths';
 
-const TRACK_ROOT = path.join(
-  process.cwd(),
-  'conductor',
-  'tracks',
-  'clone_parity_gap_investigation_20260212',
-  'artifacts',
-);
-
-const PARITY_MATRIX_PATH = path.join(TRACK_ROOT, 'gemini-parity-matrix.json');
-const CAPABILITY_BASELINE_PATH = path.join(TRACK_ROOT, 'gemini-capability-baseline.json');
-const SEVERITY_RUBRIC_PATH = path.join(TRACK_ROOT, 'gemini-severity-rubric.json');
+const PARITY_MATRIX_PATH = resolveTrack9ArtifactPath('gemini-parity-matrix.json');
+const CAPABILITY_BASELINE_PATH = resolveTrack9ArtifactPath('gemini-capability-baseline.json');
+const SEVERITY_RUBRIC_PATH = resolveTrack9ArtifactPath('gemini-severity-rubric.json');
 
 describe('Track 9 Phase 1 (Gemini) - Schema Validation', () => {
   it('validates gemini-parity-matrix.json schema', () => {

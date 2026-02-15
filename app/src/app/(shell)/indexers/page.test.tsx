@@ -275,8 +275,9 @@ describe('indexers page', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Add' }));
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Broken Indexer' } });
-    fireEvent.change(screen.getByLabelText('Indexer URL'), { target: { value: 'https://broken.example' } });
-    fireEvent.change(screen.getByLabelText(/^API Key$/), { target: { value: 'broken-key' } });
+    fireEvent.change(screen.getByLabelText('Base URL'), { target: { value: 'https://broken.example' } });
+    // First preset (IPTorrents) uses Cookie instead of API Key
+    fireEvent.change(screen.getByLabelText('Cookie'), { target: { value: 'broken-cookie' } });
 
     fireEvent.click(screen.getByRole('button', { name: 'Add Indexer' }));
 
@@ -428,23 +429,25 @@ describe('indexers page', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Add' }));
     expect(screen.getByRole('dialog', { name: 'Add indexer' })).toBeInTheDocument();
+    // First preset (IPTorrents) uses Base URL
+    expect(screen.getByLabelText('Base URL')).toBeInTheDocument();
+
+    // Test Generic Torznab (still in presets)
+    fireEvent.click(screen.getByRole('button', { name: /Generic Torznab/ }));
     expect(screen.getByLabelText('Indexer URL')).toBeInTheDocument();
+    expect(screen.getByLabelText(/^API Key$/)).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: /Generic Newznab/ }));
-    expect(screen.queryByLabelText('Indexer URL')).not.toBeInTheDocument();
-    expect(screen.getByLabelText('Host')).toBeInTheDocument();
-
-    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Usenet Provider' } });
-    fireEvent.change(screen.getByLabelText('Host'), { target: { value: 'news.provider.net' } });
-    fireEvent.change(screen.getByLabelText(/^API Key$/), { target: { value: 'usenet-key' } });
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Custom Torznab' } });
+    fireEvent.change(screen.getByLabelText('Indexer URL'), { target: { value: 'https://custom.torznab' } });
+    fireEvent.change(screen.getByLabelText(/^API Key$/), { target: { value: 'torznab-key' } });
 
     fireEvent.click(screen.getByRole('button', { name: 'Test Connection' }));
 
     await waitFor(() => {
       expect(testDraftMock).toHaveBeenCalledWith(
         expect.objectContaining({
-          protocol: 'usenet',
-          settings: JSON.stringify({ host: 'news.provider.net', apiKey: 'usenet-key' }),
+          protocol: 'torrent',
+          settings: JSON.stringify({ url: 'https://custom.torznab', apiKey: 'torznab-key' }),
         }),
       );
     });
@@ -455,8 +458,8 @@ describe('indexers page', () => {
       expect(createMock).toHaveBeenCalledTimes(1);
       expect(createMock).toHaveBeenCalledWith(
         expect.objectContaining({
-          protocol: 'usenet',
-          settings: JSON.stringify({ host: 'news.provider.net', apiKey: 'usenet-key' }),
+          protocol: 'torrent',
+          settings: JSON.stringify({ url: 'https://custom.torznab', apiKey: 'torznab-key' }),
         }),
       );
     });

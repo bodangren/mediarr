@@ -15,6 +15,7 @@ import { getApiClients } from '@/lib/api/client';
 import { queryKeys } from '@/lib/query/queryKeys';
 import { useApiQuery } from '@/lib/query/useApiQuery';
 import { useOptimisticMutation } from '@/lib/query/useOptimisticMutation';
+import { getPopularPresets, indexerPresets } from '@/lib/indexer/indexerPresets';
 import { AddIndexerModal, type AddIndexerDraft, type IndexerPreset } from './AddIndexerModal';
 import { EditIndexerModal, type EditIndexerDraft } from './EditIndexerModal';
 
@@ -88,6 +89,9 @@ function healthStatus(row: IndexerRow): 'completed' | 'warning' | 'error' {
 }
 
 const addIndexerPresets: IndexerPreset[] = [
+  // Popular indexers from Prowlarr definitions
+  ...getPopularPresets(),
+  // Generic Torznab for custom torrent indexers
   {
     id: 'torznab-generic',
     name: 'Generic Torznab',
@@ -97,18 +101,6 @@ const addIndexerPresets: IndexerPreset[] = [
     configContract: 'TorznabSettings',
     fields: [
       { name: 'url', label: 'Indexer URL', type: 'text', required: true },
-      { name: 'apiKey', label: 'API Key', type: 'password', required: true },
-    ],
-  },
-  {
-    id: 'newznab-generic',
-    name: 'Generic Newznab',
-    description: 'Custom usenet indexer using Newznab contract.',
-    protocol: 'usenet',
-    implementation: 'Torznab',
-    configContract: 'NewznabSettings',
-    fields: [
-      { name: 'host', label: 'Host', type: 'text', required: true },
       { name: 'apiKey', label: 'API Key', type: 'password', required: true },
     ],
   },

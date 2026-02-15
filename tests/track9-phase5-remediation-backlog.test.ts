@@ -1,6 +1,6 @@
 import fs from 'node:fs';
-import path from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { resolveTrack9ArtifactPath, resolveTrack9Root } from './helpers/track9Paths';
 
 type RemediationItem = {
   id: string;
@@ -23,15 +23,10 @@ type RemediationBacklog = {
   hardeningGates: HardeningGate[];
 };
 
-const trackRoot = path.join(
-  process.cwd(),
-  'conductor',
-  'tracks',
-  'clone_parity_gap_investigation_20260212',
-);
+const trackRoot = resolveTrack9Root();
 
-const parityMatrixPath = path.join(trackRoot, 'artifacts', 'parity-matrix.json');
-const remediationPath = path.join(trackRoot, 'artifacts', 'remediation-backlog.json');
+const parityMatrixPath = resolveTrack9ArtifactPath('parity-matrix.json');
+const remediationPath = resolveTrack9ArtifactPath('remediation-backlog.json');
 
 function readParityMatrix(): { entries: Array<{ id: string; severity: string }> } {
   return JSON.parse(fs.readFileSync(parityMatrixPath, 'utf8')) as { entries: Array<{ id: string; severity: string }> };

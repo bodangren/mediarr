@@ -1,6 +1,6 @@
 import fs from 'node:fs';
-import path from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { resolveTrack9ArtifactPath } from './helpers/track9Paths';
 
 type ProbeStatus = 'pass' | 'fail' | 'partial';
 
@@ -24,14 +24,7 @@ type BackendProbeReport = {
   probes: BackendProbe[];
 };
 
-const backendProbePath = path.join(
-  process.cwd(),
-  'conductor',
-  'tracks',
-  'clone_parity_gap_investigation_20260212',
-  'artifacts',
-  'backend-probe-report.json',
-);
+const backendProbePath = resolveTrack9ArtifactPath('backend-probe-report.json');
 
 function readReport(): BackendProbeReport {
   return JSON.parse(fs.readFileSync(backendProbePath, 'utf8')) as BackendProbeReport;

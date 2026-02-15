@@ -11,6 +11,7 @@ describe('settings page', () => {
     render(<SettingsPage />);
 
     expect(screen.getByRole('heading', { name: 'Settings' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Indexers' })).toHaveAttribute('href', '/settings/indexers');
     expect(screen.getByTestId('settings-form')).toBeInTheDocument();
   });
 });

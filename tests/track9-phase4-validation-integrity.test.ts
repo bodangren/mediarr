@@ -1,6 +1,6 @@
 import fs from 'node:fs';
-import path from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { resolveTrack9ArtifactPath } from './helpers/track9Paths';
 
 type SurfaceMetric = {
   surface: string;
@@ -24,14 +24,7 @@ type ValidationIntegrityReport = {
   };
 };
 
-const reportPath = path.join(
-  process.cwd(),
-  'conductor',
-  'tracks',
-  'clone_parity_gap_investigation_20260212',
-  'artifacts',
-  'validation-integrity-report.json',
-);
+const reportPath = resolveTrack9ArtifactPath('validation-integrity-report.json');
 
 function readReport(): ValidationIntegrityReport {
   return JSON.parse(fs.readFileSync(reportPath, 'utf8')) as ValidationIntegrityReport;

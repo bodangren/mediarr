@@ -293,7 +293,7 @@ This plan implements the Prowlarr UI cloning based on the comprehensive specific
   - [ ] Implement filter by event type (grabbed, query, RSS, auth)
   - [ ] Verify coverage >80%
 
-- [ ] **Task 6.2: Implement history details (TDD)**
+- [x] **Task 6.2: Implement history details (TDD)** (commit: `893d18d`)
   - [ ] Write tests for history details modal
   - [ ] Implement details viewer
   - [ ] Write tests for parameter display

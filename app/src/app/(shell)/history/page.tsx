@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import { DataTable, type DataTableColumn } from '@/components/primitives/DataTable';
 import { Label } from '@/components/primitives/Label';
+import { Modal, ModalBody, ModalFooter, ModalHeader } from '@/components/primitives/Modal';
 import { QueryPanel } from '@/components/primitives/QueryPanel';
 import { getApiClients } from '@/lib/api/client';
 import type { ActivityItem } from '@/lib/api/activityApi';
@@ -44,11 +45,24 @@ function renderStatus(status: HistoryStatus) {
   return '-';
 }
 
+function formatDetails(details: unknown): string {
+  if (details === undefined || details === null) {
+    return '{}';
+  }
+
+  try {
+    return JSON.stringify(details, null, 2);
+  } catch {
+    return '{}';
+  }
+}
+
 export default function HistoryPage() {
   const api = useMemo(() => getApiClients(), []);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
   const [eventType, setEventType] = useState('');
+  const [detailsRow, setDetailsRow] = useState<ActivityItem | null>(null);
 
   const query = useMemo(
     () => ({
@@ -137,6 +151,16 @@ export default function HistoryPage() {
           data={historyQuery.data?.items ?? []}
           columns={columns}
           getRowId={row => row.id}
+          rowActions={row => (
+            <button
+              type="button"
+              className="rounded-sm border border-border-subtle px-2 py-1 text-xs text-text-primary hover:bg-surface-2"
+              onClick={() => setDetailsRow(row)}
+              aria-label={`Details for ${row.summary}`}
+            >
+              Details
+            </button>
+          )}
           pagination={{
             page: meta?.page ?? page,
             totalPages: Math.max(1, meta?.totalPages ?? 1),
@@ -153,6 +177,50 @@ export default function HistoryPage() {
           }}
         />
       </QueryPanel>
+
+      {detailsRow ? (
+        <Modal isOpen ariaLabel="History details" onClose={() => setDetailsRow(null)}>
+          <ModalHeader title="History details" onClose={() => setDetailsRow(null)} />
+          <ModalBody>
+            <div className="space-y-3 text-sm">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <div>
+                  <p className="text-xs text-text-secondary">Event</p>
+                  <p>{detailsRow.eventType}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-text-secondary">Status</p>
+                  <div>{renderStatus(getHistoryStatus(detailsRow.success))}</div>
+                </div>
+                <div>
+                  <p className="text-xs text-text-secondary">Source</p>
+                  <p>{detailsRow.sourceModule ?? 'core'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-text-secondary">Entity</p>
+                  <p>{detailsRow.entityRef ?? 'n/a'}</p>
+                </div>
+              </div>
+              <div>
+                <p className="text-xs text-text-secondary">Parameters</p>
+                <pre className="overflow-x-auto rounded-sm border border-border-subtle bg-surface-2 p-2 text-xs text-text-primary">
+                  {formatDetails(detailsRow.details)}
+                </pre>
+              </div>
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <button
+              type="button"
+              className="rounded-sm border border-border-subtle px-3 py-1 text-sm text-text-primary hover:bg-surface-2"
+              onClick={() => setDetailsRow(null)}
+              aria-label="Close details"
+            >
+              Close
+            </button>
+          </ModalFooter>
+        </Modal>
+      ) : null}
     </section>
   );
 }

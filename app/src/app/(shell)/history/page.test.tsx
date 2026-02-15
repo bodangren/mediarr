@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { getApiClients } from '@/lib/api/client';
 import HistoryPage from './page';
@@ -86,6 +86,12 @@ beforeEach(() => {
           eventType: 'INDEXER_QUERY',
           summary: 'Initial indexer query executed',
           sourceModule: 'prowlarr',
+          entityRef: 'movie:42',
+          details: {
+            query: 'Dune Part Two',
+            indexer: 'Indexer A',
+            category: 2000,
+          },
           success: true,
           occurredAt: '2026-02-15T10:00:00.000Z',
         },
@@ -93,6 +99,10 @@ beforeEach(() => {
           id: 3,
           eventType: 'INDEXER_AUTH',
           summary: 'Authentication failed for private indexer',
+          entityRef: 'indexer:7',
+          details: {
+            reason: 'Invalid API key',
+          },
           success: false,
           occurredAt: '2026-02-15T07:30:00.000Z',
         },
@@ -184,6 +194,27 @@ describe('history page', () => {
 
     await waitFor(() => {
       expect(listActivityMock).toHaveBeenCalledWith({ page: 1, pageSize: 50 });
+    });
+  });
+
+  it('opens details modal with parameter payload and status indicators', async () => {
+    const queryClient = createTestQueryClient();
+    renderPage(queryClient);
+
+    await screen.findByText('Initial indexer query executed');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Details for Initial indexer query executed' }));
+
+    const dialog = await screen.findByRole('dialog', { name: 'History details' });
+    expect(dialog).toBeInTheDocument();
+    expect(within(dialog).getByText('movie:42')).toBeInTheDocument();
+    expect(within(dialog).getByText(/Dune Part Two/)).toBeInTheDocument();
+    expect(within(dialog).getByText('success')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Close details' }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog', { name: 'History details' })).not.toBeInTheDocument();
     });
   });
 });

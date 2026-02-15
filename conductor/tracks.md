@@ -92,9 +92,9 @@ While the primary sequence defines hard dependencies, several phases across trac
 *Description: Clone the Bazarr subtitle manager UI with comprehensive views, components, and features for subtitle management across TV and movies.*
 *Phases: 13 | Link: [./tracks/bazarr_ui_cloning_20260214/](./tracks/bazarr_ui_cloning_20260214/)*
 
-- [~] **Track: Prowlarr UI Cloning**
-*Description: Clone the Prowlarr indexer manager UI with comprehensive views, components, and features for managing torrent trackers and usenet indexers.*
-*Phases: 10 | Link: [./tracks/prowlarr_ui_cloning_20260214/](./tracks/prowlarr_ui_cloning_20260214/)*
+- [x] **Track: Prowlarr UI Cloning**
+   *Description: Clone P Prowlarr indexer manager UI with comprehensive views, components, and features for managing torrent trackers and usenet indexers.*
+   *Phases: 10 | Link: [../archive/prowlarr_ui_cloning_20260214/](../archive/prowlarr_ui_cloning_20260214/)*
 
 - [ ] **Track: Radarr UI Cloning**
 *Description: Clone the Radarr movie collection manager UI with comprehensive views, components, and features for managing movies, downloads, and quality profiles.*

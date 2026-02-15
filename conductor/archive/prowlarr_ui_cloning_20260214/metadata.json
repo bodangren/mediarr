@@ -1,0 +1,8 @@
+{
+  "track_id": "prowlarr_ui_cloning_20260214",
+  "type": "feature",
+  "status": "spec_complete",
+  "created_at": "2026-02-14T00:00:00Z",
+  "updated_at": "2026-02-14T00:00:00Z",
+  "description": "Clone the Prowlarr indexer manager UI with comprehensive views, components, and features for managing 500+ torrent trackers and usenet indexers"
+}

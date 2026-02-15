@@ -230,16 +230,16 @@ This plan implements the Prowlarr UI cloning based on the comprehensive specific
 
 - [x] **Task: Conductor - User Manual Verification 'Phase 4'** (commit: `53af60d`)
 
-- [~] **Task 4.6: Import Prowlarr Indexer Definitions (TDD)**
-  - [~] Write tests for indexer definition parser
-  - [~] Parse Prowlarr C# indexer definitions from reference/prowlarr
-  - [~] Create TypeScript indexer preset definitions for torrent trackers
-  - [ ] Write tests for indexer preset loading
-  - [ ] Implement indexer preset loading from definitions
-  - [ ] Remove Newznab presets (torrent-only support)
-  - [ ] Write tests for indexer selection UI
-  - [ ] Update AddIndexerModal to display imported indexer presets
-  - [ ] Verify coverage >80%
+- [x] **Task 4.6: Import Prowlarr Indexer Definitions (TDD)** (commit: `74f373b`)
+  - [x] Write tests for indexer definition parser
+  - [x] Parse Prowlarr C# indexer definitions from reference/prowlarr
+  - [x] Create TypeScript indexer preset definitions for torrent trackers
+  - [x] Write tests for indexer preset loading
+  - [x] Implement indexer preset loading from definitions
+  - [x] Remove Newznab presets (torrent-only support)
+  - [x] Write tests for indexer selection UI
+  - [x] Update AddIndexerModal to display imported indexer presets
+  - [x] Verify coverage >80%
 
 ---
 

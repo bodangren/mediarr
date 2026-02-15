@@ -538,15 +538,15 @@ This plan implements the Prowlarr UI cloning based on the comprehensive specific
   - [x] Update `/settings` landing page to reflect remaining settings (Indexers, General, UI)
   - [x] Verify no broken imports or dead references remain
 
-- [~] **Task 9.7: Redesign navigation with grouped sections and icons**
-  - [ ] Add `icon` field to `NavigationItem` type (using Lucide React icons)
-  - [ ] Reorganize `NAV_ITEMS` into grouped sections: Media Library, Indexers & Search, System, Settings
-  - [ ] Redesign `PageSidebar` with collapsible section headers, icons, and visual hierarchy
-  - [ ] Add section dividers and indentation for sub-items
-  - [ ] Redesign mobile bottom navigation with icon-based tabs and a "More" overflow menu
-  - [ ] Replace cryptic short labels ("IdxSet", "DLC") with meaningful labels or icon-only mode
-  - [ ] Write tests for new navigation grouping, collapse, and active state behavior
-  - [ ] Verify coverage >80%
+- [x] **Task 9.7: Redesign navigation with grouped sections and icons** (commit: 3480d29)
+  - [x] Add `icon` field to `NavigationItem` type (using Lucide React icons)
+  - [x] Reorganize `NAV_ITEMS` into grouped sections: Media Library, Indexers & Search, System, Settings, Other
+  - [x] Redesign `PageSidebar` with collapsible section headers, icons, and visual hierarchy
+  - [x] Add section dividers and indentation for sub-items
+  - [x] Redesign mobile bottom navigation with icon-based tabs and a "More" overflow menu
+  - [x] Replace cryptic short labels ("IdxSet", "DLC") with meaningful labels or icon-only mode
+  - [x] Write tests for new navigation grouping, collapse, and active state behavior
+  - [x] Verify coverage >80%
 
 - [~] **Task 9.8: Fix modal overflow and responsive sizing**
   - [ ] Add `max-h-[85vh] overflow-y-auto` to base `ModalBody` component

@@ -1,0 +1,16 @@
+Task: 6.1 Create History view (TDD)
+
+Summary:
+- Replaced the History scaffold with a functional client page backed by activity API queries.
+- Added event-type filtering and paginated DataTable rendering for history rows.
+- Implemented status badges/fallback rendering and page-size controls.
+- Added dedicated history page tests (red/green) and updated scaffold route test to exclude History.
+
+Files:
+- app/src/app/(shell)/history/page.tsx
+- app/src/app/(shell)/history/page.test.tsx
+- app/src/app/(shell)/prowlarr-route-scaffolds.test.tsx
+
+Why:
+- Phase 6 requires a working query/release history surface, not a placeholder route.
+- Reused existing activity API and table/query primitives to achieve parity quickly in the monolith.

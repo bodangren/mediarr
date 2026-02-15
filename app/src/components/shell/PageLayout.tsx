@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-import { NAV_ITEMS, isNavActive, type NavigationItem } from '@/lib/navigation';
+import * as Icons from 'lucide-react';
+import { NAV_ITEMS, isNavActive, type NavigationSection, type NavigationItem } from '@/lib/navigation';
 import { PageSidebar } from './PageSidebar';
 
 interface PageLayoutProps {
@@ -11,7 +12,23 @@ interface PageLayoutProps {
   onToggleSidebar: () => void;
   header: ReactNode;
   children: ReactNode;
-  navItems?: NavigationItem[];
+  navItems?: NavigationSection[];
+}
+
+// Icon mapping component
+function LucideIcon({ name }: { name: string }) {
+  const IconComponent = (Icons as any)[name];
+
+  if (!IconComponent) {
+    return null;
+  }
+
+  return <IconComponent className="h-4 w-4" />;
+}
+
+// Flatten navigation sections for mobile
+function flattenNavItems(sections: NavigationSection[]): NavigationItem[] {
+  return sections.flatMap(section => section.items);
 }
 
 export function PageLayout({
@@ -22,6 +39,8 @@ export function PageLayout({
   children,
   navItems = NAV_ITEMS,
 }: PageLayoutProps) {
+  const mobileNavItems = flattenNavItems(navItems).slice(0, 5);
+
   return (
     <div className="min-h-screen bg-surface-0 text-text-primary">
       <div
@@ -45,7 +64,7 @@ export function PageLayout({
         aria-label="Mobile Navigation"
       >
         <ul className="grid grid-cols-5 gap-1">
-          {navItems.slice(0, 5).map(item => {
+          {mobileNavItems.map(item => {
             const active = isNavActive(pathname, item.path);
             return (
               <li key={item.path}>
@@ -56,7 +75,8 @@ export function PageLayout({
                   }`}
                   aria-current={active ? 'page' : undefined}
                 >
-                  {item.shortLabel}
+                  <LucideIcon name={item.icon} />
+                  <span className="mt-1">{item.shortLabel}</span>
                 </Link>
               </li>
             );

@@ -2,31 +2,67 @@ export interface NavigationItem {
   path: string;
   label: string;
   shortLabel: string;
+  icon: string;
 }
 
-export const NAV_ITEMS: NavigationItem[] = [
-  { path: '/', label: 'Dashboard', shortLabel: 'Home' },
-  { path: '/indexers', label: 'Indexers', shortLabel: 'Indexers' },
-  { path: '/indexers/stats', label: 'Indexer Stats', shortLabel: 'Stats' },
-  { path: '/search', label: 'Search', shortLabel: 'Search' },
-  { path: '/history', label: 'History', shortLabel: 'History' },
-  { path: '/system/status', label: 'System', shortLabel: 'System' },
-  { path: '/system/tasks', label: 'System Tasks', shortLabel: 'Tasks' },
-  { path: '/system/backup', label: 'System Backup', shortLabel: 'Backup' },
-  { path: '/system/updates', label: 'System Updates', shortLabel: 'Updates' },
-  { path: '/system/events', label: 'System Events', shortLabel: 'Events' },
-  { path: '/system/logs/files', label: 'System Logs', shortLabel: 'Logs' },
-  { path: '/settings', label: 'Settings', shortLabel: 'Settings' },
-  { path: '/settings/indexers', label: 'Indexer Settings', shortLabel: 'IdxSet' },
-  { path: '/settings/general', label: 'General Settings', shortLabel: 'General' },
-  { path: '/settings/ui', label: 'UI Settings', shortLabel: 'UI' },
-  { path: '/library/series', label: 'Series Library', shortLabel: 'Series' },
-  { path: '/library/movies', label: 'Movie Library', shortLabel: 'Movies' },
-  { path: '/wanted', label: 'Wanted', shortLabel: 'Wanted' },
-  { path: '/queue', label: 'Queue', shortLabel: 'Queue' },
-  { path: '/activity', label: 'Activity', shortLabel: 'Activity' },
-  { path: '/subtitles', label: 'Subtitles', shortLabel: 'Subs' },
-  { path: '/add', label: 'Add Media', shortLabel: 'Add' },
+export interface NavigationSection {
+  id: string;
+  label: string;
+  items: NavigationItem[];
+}
+
+export const NAV_ITEMS: NavigationSection[] = [
+  {
+    id: 'media-library',
+    label: 'Media Library',
+    items: [
+      { path: '/library/series', label: 'Series Library', shortLabel: 'Series', icon: 'Tv' },
+      { path: '/library/movies', label: 'Movie Library', shortLabel: 'Movies', icon: 'Film' },
+    ],
+  },
+  {
+    id: 'indexers-search',
+    label: 'Indexers & Search',
+    items: [
+      { path: '/indexers', label: 'Indexers', shortLabel: 'Indexers', icon: 'Database' },
+      { path: '/indexers/stats', label: 'Indexer Stats', shortLabel: 'Stats', icon: 'BarChart3' },
+      { path: '/search', label: 'Search', shortLabel: 'Search', icon: 'Search' },
+      { path: '/history', label: 'History', shortLabel: 'History', icon: 'History' },
+    ],
+  },
+  {
+    id: 'system',
+    label: 'System',
+    items: [
+      { path: '/system/status', label: 'System Status', shortLabel: 'Status', icon: 'Server' },
+      { path: '/system/tasks', label: 'System Tasks', shortLabel: 'Tasks', icon: 'Cpu' },
+      { path: '/system/backup', label: 'System Backup', shortLabel: 'Backup', icon: 'Archive' },
+      { path: '/system/updates', label: 'System Updates', shortLabel: 'Updates', icon: 'Download' },
+      { path: '/system/events', label: 'System Events', shortLabel: 'Events', icon: 'AlertCircle' },
+      { path: '/system/logs/files', label: 'System Logs', shortLabel: 'Logs', icon: 'FileText' },
+    ],
+  },
+  {
+    id: 'settings',
+    label: 'Settings',
+    items: [
+      { path: '/settings', label: 'Settings', shortLabel: 'Settings', icon: 'Settings' },
+      { path: '/settings/indexers', label: 'Indexer Settings', shortLabel: 'Indexers', icon: 'Sliders' },
+      { path: '/settings/general', label: 'General Settings', shortLabel: 'General', icon: 'Settings' },
+      { path: '/settings/ui', label: 'UI Settings', shortLabel: 'UI', icon: 'Palette' },
+    ],
+  },
+  {
+    id: 'other',
+    label: 'Other',
+    items: [
+      { path: '/wanted', label: 'Wanted', shortLabel: 'Wanted', icon: 'Search' },
+      { path: '/queue', label: 'Queue', shortLabel: 'Queue', icon: 'List' },
+      { path: '/activity', label: 'Activity', shortLabel: 'Activity', icon: 'Activity' },
+      { path: '/subtitles', label: 'Subtitles', shortLabel: 'Subs', icon: 'Subtitles' },
+      { path: '/add', label: 'Add Media', shortLabel: 'Add', icon: 'Plus' },
+    ],
+  },
 ];
 
 const SEGMENT_LABELS: Record<string, string> = {
@@ -50,6 +86,10 @@ const SEGMENT_LABELS: Record<string, string> = {
   files: 'Files',
   subtitles: 'Subtitles',
   settings: 'Settings',
+  applications: 'Applications',
+  downloadclients: 'Download Clients',
+  connect: 'Notifications',
+  tags: 'Tags',
   general: 'General',
   ui: 'UI',
   add: 'Add Media',

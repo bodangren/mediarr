@@ -33,6 +33,7 @@
   "dependencies": {
     "@prisma/adapter-better-sqlite3": "^7.3.0",
     "@prisma/client": "^7.3.0",
+    "@tanstack/react-virtual": "^3.13.18",
     "better-sqlite3": "^12.6.2",
     "fast-xml-parser": "^5.3.5",
     "fastify": "^5.6.1",

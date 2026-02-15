@@ -23,6 +23,7 @@ export interface IndexerPreset {
   protocol: string;
   implementation: string;
   configContract: string;
+  privacy: 'Public' | 'SemiPrivate' | 'Private';
   fields: DynamicFieldSchema[];
 }
 

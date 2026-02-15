@@ -321,11 +321,11 @@ This plan implements the Prowlarr UI cloning based on the comprehensive specific
 
 ### Tasks
 
-- [ ] **Task 7.1: Create Settings Indexer page (TDD)**
-  - [ ] Write tests for IndexerSettings container
-  - [ ] Implement indexer configuration page
-  - [ ] Write tests for indexer list management
-  - [ ] Implement add/edit/delete indexers
+- [~] **Task 7.1: Create Settings Indexer page (TDD)**
+  - [x] Write tests for IndexerSettings container
+  - [x] Implement indexer configuration page
+  - [x] Write tests for indexer list management
+  - [x] Implement add/edit/delete indexers
   - [ ] Write tests for Indexer Proxies section
   - [ ] Implement proxy configuration
   - [ ] Write tests for Indexer Categories

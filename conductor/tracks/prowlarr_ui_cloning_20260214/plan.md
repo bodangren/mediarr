@@ -548,13 +548,13 @@ This plan implements the Prowlarr UI cloning based on the comprehensive specific
   - [x] Write tests for new navigation grouping, collapse, and active state behavior
   - [x] Verify coverage >80%
 
-- [~] **Task 9.8: Fix modal overflow and responsive sizing**
-  - [ ] Add `max-h-[85vh] overflow-y-auto` to base `ModalBody` component
-  - [ ] Add sticky footer pattern to `ModalFooter` so action buttons stay visible during scroll
-  - [ ] Audit and fix all content-heavy modals: AddIndexerModal, EditIndexerModal
-  - [ ] Test modal behavior at mobile viewport (375px) — ensure usable without horizontal scroll
-  - [ ] Write tests for modal scroll behavior and footer visibility
-  - [ ] Verify coverage >80%
+- [x] **Task 9.8: Fix modal overflow and responsive sizing** (commit: `d3260e1e`)
+   - [x] Add `max-h-[85vh] overflow-y-auto` to base `ModalBody` component
+   - [x] Add sticky footer pattern to `ModalFooter` so action buttons stay visible during scroll
+   - [x] Audit and fix all content-heavy modals: AddIndexerModal, EditIndexerModal
+   - [x] Test modal behavior at mobile viewport (375px) — ensure usable without horizontal scroll
+   - [x] Write tests for modal scroll behavior and footer visibility
+   - [x] Verify coverage >80%
 
 - [ ] **Task: Conductor - User Manual Verification 'Phase 9'**
 

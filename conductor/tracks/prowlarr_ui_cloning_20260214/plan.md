@@ -302,14 +302,14 @@ This plan implements the Prowlarr UI cloning based on the comprehensive specific
   - [ ] Implement status display with colors
   - [ ] Verify coverage >80%
 
-- [ ] **Task 6.3: Implement history management (TDD)**
-  - [ ] Write tests for clear history functionality
-  - [ ] Implement clear history with confirmation
-  - [ ] Write tests for mark as failed
-  - [ ] Implement failed release marking
-  - [ ] Write tests for export functionality
-  - [ ] Implement history export
-  - [ ] Verify coverage >80%
+- [x] **Task 6.3: Implement history management (TDD)** (commit: `6e2445af`)
+  - [x] Write tests for clear history functionality
+  - [x] Implement clear history with confirmation
+  - [x] Write tests for mark as failed
+  - [x] Implement failed release marking
+  - [x] Write tests for export functionality
+  - [x] Implement history export
+  - [x] Verify coverage >80%
 
 - [ ] **Task: Conductor - User Manual Verification 'Phase 6'**
 

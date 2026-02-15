@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { COLOR_IMPAIRED_KEY, loadColorImpairedMode, toggleColorImpairedMode } from './colorImpaired';
 
-export type ThemePreference = 'light' | 'dark' | 'system';
+export type ThemePreference = 'light' | 'dark' | 'auto';
 
 export interface ThemeContextValue {
   theme: ThemePreference;

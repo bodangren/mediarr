@@ -99,6 +99,7 @@ const addIndexerPresets: IndexerPreset[] = [
     protocol: 'torrent',
     implementation: 'Torznab',
     configContract: 'TorznabSettings',
+    privacy: 'Public',
     fields: [
       { name: 'url', label: 'Indexer URL', type: 'text', required: true },
       { name: 'apiKey', label: 'API Key', type: 'password', required: true },

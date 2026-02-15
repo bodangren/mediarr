@@ -23,11 +23,44 @@ export interface ApiKeysSettings {
   openSubtitlesApiKey: string | null;
 }
 
+export interface HostSettings {
+  bindAddress: string;
+  port: number;
+  urlBase: string;
+  sslPort: number;
+  enableSsl: boolean;
+  sslCertPath: string | null;
+  sslKeyPath: string | null;
+}
+
+export interface SecuritySettings {
+  authenticationRequired: boolean;
+  authenticationMethod: 'none' | 'basic' | 'form';
+  apiKey: string | null;
+}
+
+export interface LoggingSettings {
+  logLevel: 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal';
+  logSizeLimit: number;
+  logRetentionDays: number;
+}
+
+export interface UpdateSettings {
+  branch: 'master' | 'develop' | 'phantom';
+  autoUpdateEnabled: boolean;
+  mechanicsEnabled: boolean;
+  updateScriptPath: string | null;
+}
+
 export interface AppSettingsPayload {
   torrentLimits: TorrentLimitsSettings;
   schedulerIntervals: SchedulerIntervalsSettings;
   pathVisibility: PathVisibilitySettings;
   apiKeys: ApiKeysSettings;
+  host: HostSettings;
+  security: SecuritySettings;
+  logging: LoggingSettings;
+  update: UpdateSettings;
 }
 
 export const DEFAULT_APP_SETTINGS: AppSettingsPayload = {
@@ -49,6 +82,31 @@ export const DEFAULT_APP_SETTINGS: AppSettingsPayload = {
   apiKeys: {
     tmdbApiKey: null,
     openSubtitlesApiKey: null,
+  },
+  host: {
+    bindAddress: '*',
+    port: 9696,
+    urlBase: '',
+    sslPort: 9697,
+    enableSsl: false,
+    sslCertPath: null,
+    sslKeyPath: null,
+  },
+  security: {
+    authenticationRequired: false,
+    authenticationMethod: 'none',
+    apiKey: null,
+  },
+  logging: {
+    logLevel: 'info',
+    logSizeLimit: 1048576,
+    logRetentionDays: 30,
+  },
+  update: {
+    branch: 'master',
+    autoUpdateEnabled: false,
+    mechanicsEnabled: false,
+    updateScriptPath: null,
   },
 };
 
@@ -95,6 +153,46 @@ function readNullableString(value: unknown, fallback: string | null): string | n
   return fallback;
 }
 
+function readString(value: unknown, fallback: string): string {
+  if (typeof value === 'string') {
+    return value;
+  }
+  return fallback;
+}
+
+function readLogLevel(value: unknown, fallback: LoggingSettings['logLevel']): LoggingSettings['logLevel'] {
+  if (
+    value === 'trace' ||
+    value === 'debug' ||
+    value === 'info' ||
+    value === 'warn' ||
+    value === 'error' ||
+    value === 'fatal'
+  ) {
+    return value;
+  }
+  return fallback;
+}
+
+function readAuthenticationMethod(
+  value: unknown,
+  fallback: SecuritySettings['authenticationMethod'],
+): SecuritySettings['authenticationMethod'] {
+  if (value === 'none' || value === 'basic' || value === 'form') {
+    return value;
+  }
+
+  return fallback;
+}
+
+function readUpdateBranch(value: unknown, fallback: UpdateSettings['branch']): UpdateSettings['branch'] {
+  if (value === 'master' || value === 'develop' || value === 'phantom') {
+    return value;
+  }
+
+  return fallback;
+}
+
 function toJson(value: unknown): Prisma.InputJsonValue {
   return value as Prisma.InputJsonValue;
 }
@@ -118,6 +216,10 @@ export class AppSettingsRepository {
           schedulerIntervals: toJson(DEFAULT_APP_SETTINGS.schedulerIntervals),
           pathVisibility: toJson(DEFAULT_APP_SETTINGS.pathVisibility),
           apiKeys: toJson(DEFAULT_APP_SETTINGS.apiKeys),
+          host: toJson(DEFAULT_APP_SETTINGS.host),
+          security: toJson(DEFAULT_APP_SETTINGS.security),
+          logging: toJson(DEFAULT_APP_SETTINGS.logging),
+          update: toJson(DEFAULT_APP_SETTINGS.update),
         },
       });
 
@@ -146,6 +248,22 @@ export class AppSettingsRepository {
         ...current.apiKeys,
         ...partial.apiKeys,
       },
+      host: {
+        ...current.host,
+        ...partial.host,
+      },
+      security: {
+        ...current.security,
+        ...partial.security,
+      },
+      logging: {
+        ...current.logging,
+        ...partial.logging,
+      },
+      update: {
+        ...current.update,
+        ...partial.update,
+      },
     };
 
     await this.prisma.appSettings.upsert({
@@ -156,12 +274,20 @@ export class AppSettingsRepository {
         schedulerIntervals: toJson(merged.schedulerIntervals),
         pathVisibility: toJson(merged.pathVisibility),
         apiKeys: toJson(merged.apiKeys),
+        host: toJson(merged.host),
+        security: toJson(merged.security),
+        logging: toJson(merged.logging),
+        update: toJson(merged.update),
       },
       update: {
         torrentLimits: toJson(merged.torrentLimits),
         schedulerIntervals: toJson(merged.schedulerIntervals),
         pathVisibility: toJson(merged.pathVisibility),
         apiKeys: toJson(merged.apiKeys),
+        host: toJson(merged.host),
+        security: toJson(merged.security),
+        logging: toJson(merged.logging),
+        update: toJson(merged.update),
       },
     });
 
@@ -177,12 +303,20 @@ export class AppSettingsRepository {
         schedulerIntervals: toJson(payload.schedulerIntervals),
         pathVisibility: toJson(payload.pathVisibility),
         apiKeys: toJson(payload.apiKeys),
+        host: toJson(payload.host),
+        security: toJson(payload.security),
+        logging: toJson(payload.logging),
+        update: toJson(payload.update),
       },
       update: {
         torrentLimits: toJson(payload.torrentLimits),
         schedulerIntervals: toJson(payload.schedulerIntervals),
         pathVisibility: toJson(payload.pathVisibility),
         apiKeys: toJson(payload.apiKeys),
+        host: toJson(payload.host),
+        security: toJson(payload.security),
+        logging: toJson(payload.logging),
+        update: toJson(payload.update),
       },
     });
 
@@ -194,11 +328,19 @@ export class AppSettingsRepository {
     schedulerIntervals: unknown;
     pathVisibility: unknown;
     apiKeys?: unknown;
+    host?: unknown;
+    security?: unknown;
+    logging?: unknown;
+    update?: unknown;
   }): AppSettingsPayload {
     const torrentLimits = readObject(record.torrentLimits);
     const schedulerIntervals = readObject(record.schedulerIntervals);
     const pathVisibility = readObject(record.pathVisibility);
     const apiKeys = readObject(record.apiKeys ?? {});
+    const host = readObject(record.host ?? {});
+    const security = readObject(record.security ?? {});
+    const logging = readObject(record.logging ?? {});
+    const update = readObject(record.update ?? {});
 
     return {
       torrentLimits: {
@@ -251,6 +393,82 @@ export class AppSettingsRepository {
         openSubtitlesApiKey: readNullableString(
           apiKeys.openSubtitlesApiKey,
           DEFAULT_APP_SETTINGS.apiKeys.openSubtitlesApiKey,
+        ),
+      },
+      host: {
+        bindAddress: readString(
+          host.bindAddress,
+          DEFAULT_APP_SETTINGS.host.bindAddress,
+        ),
+        port: readNumber(
+          host.port,
+          DEFAULT_APP_SETTINGS.host.port,
+        ),
+        urlBase: readString(
+          host.urlBase,
+          DEFAULT_APP_SETTINGS.host.urlBase,
+        ),
+        sslPort: readNumber(
+          host.sslPort,
+          DEFAULT_APP_SETTINGS.host.sslPort,
+        ),
+        enableSsl: readBoolean(
+          host.enableSsl,
+          DEFAULT_APP_SETTINGS.host.enableSsl,
+        ),
+        sslCertPath: readNullableString(
+          host.sslCertPath,
+          DEFAULT_APP_SETTINGS.host.sslCertPath,
+        ),
+        sslKeyPath: readNullableString(
+          host.sslKeyPath,
+          DEFAULT_APP_SETTINGS.host.sslKeyPath,
+        ),
+      },
+      security: {
+        authenticationRequired: readBoolean(
+          security.authenticationRequired,
+          DEFAULT_APP_SETTINGS.security.authenticationRequired,
+        ),
+        authenticationMethod: readAuthenticationMethod(
+          security.authenticationMethod,
+          DEFAULT_APP_SETTINGS.security.authenticationMethod,
+        ),
+        apiKey: readNullableString(
+          security.apiKey,
+          DEFAULT_APP_SETTINGS.security.apiKey,
+        ),
+      },
+      logging: {
+        logLevel: readLogLevel(
+          logging.logLevel,
+          DEFAULT_APP_SETTINGS.logging.logLevel,
+        ),
+        logSizeLimit: readNumber(
+          logging.logSizeLimit,
+          DEFAULT_APP_SETTINGS.logging.logSizeLimit,
+        ),
+        logRetentionDays: readNumber(
+          logging.logRetentionDays,
+          DEFAULT_APP_SETTINGS.logging.logRetentionDays,
+        ),
+      },
+      update: {
+        branch: readUpdateBranch(
+          update.branch,
+          DEFAULT_APP_SETTINGS.update.branch,
+        ),
+        autoUpdateEnabled: readBoolean(
+          update.autoUpdateEnabled,
+          DEFAULT_APP_SETTINGS.update.autoUpdateEnabled,
+        ),
+        mechanicsEnabled: readBoolean(
+          update.mechanicsEnabled,
+          DEFAULT_APP_SETTINGS.update.mechanicsEnabled,
+        ),
+        updateScriptPath: readNullableString(
+          update.updateScriptPath,
+          DEFAULT_APP_SETTINGS.update.updateScriptPath,
         ),
       },
     };

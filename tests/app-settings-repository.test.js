@@ -34,6 +34,13 @@ describe('AppSettingsRepository', () => {
     expect(settings.schedulerIntervals.rssSyncMinutes).toBeGreaterThan(0);
     expect(settings.pathVisibility.showDownloadPath).toBe(true);
     expect(settings.apiKeys.tmdbApiKey).toBe(null);
+    // New sections
+    expect(settings.host.bindAddress).toBe('*');
+    expect(settings.host.port).toBe(9696);
+    expect(settings.security.authenticationRequired).toBe(false);
+    expect(settings.security.authenticationMethod).toBe('none');
+    expect(settings.logging.logLevel).toBe('info');
+    expect(settings.update.autoUpdateEnabled).toBe(false);
   });
 
   it('should merge partial updates without dropping untouched sections', async () => {
@@ -74,11 +81,42 @@ describe('AppSettingsRepository', () => {
       apiKeys: {
         tmdbApiKey: 'replaced-key',
       },
+      host: {
+        bindAddress: '127.0.0.1',
+        port: 8080,
+        urlBase: '/test',
+        sslPort: 8443,
+        enableSsl: true,
+        sslCertPath: '/tmp/cert.pem',
+        sslKeyPath: '/tmp/key.pem',
+      },
+      security: {
+        authenticationRequired: true,
+        authenticationMethod: 'form',
+        apiKey: 'key123',
+      },
+      logging: {
+        logLevel: 'debug',
+        logSizeLimit: 2097152,
+        logRetentionDays: 14,
+      },
+      update: {
+        branch: 'develop',
+        autoUpdateEnabled: true,
+        mechanicsEnabled: true,
+        updateScriptPath: '/path/to/script.sh',
+      },
     });
 
     expect(replaced.torrentLimits.maxActiveSeeds).toBe(4);
     expect(replaced.schedulerIntervals.torrentMonitoringSeconds).toBe(10);
     expect(replaced.pathVisibility.showMediaPath).toBe(false);
     expect(replaced.apiKeys.tmdbApiKey).toBe('replaced-key');
+    // New sections
+    expect(replaced.host.bindAddress).toBe('127.0.0.1');
+    expect(replaced.host.port).toBe(8080);
+    expect(replaced.security.authenticationRequired).toBe(true);
+    expect(replaced.logging.logLevel).toBe('debug');
+    expect(replaced.update.autoUpdateEnabled).toBe(true);
   });
 });

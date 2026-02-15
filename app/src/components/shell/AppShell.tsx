@@ -78,16 +78,20 @@ export function AppShell({ pathname, children }: AppShellProps) {
 
   const breadcrumbs = useMemo(() => buildBreadcrumbs(pathname), [pathname]);
 
+  const commandItems = useMemo(() => {
+    return NAV_ITEMS.flatMap(section => section.items);
+  }, []);
+
   const filteredCommands = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
     if (normalizedQuery.length === 0) {
-      return NAV_ITEMS;
+      return commandItems;
     }
 
-    return NAV_ITEMS.filter(item => {
+    return commandItems.filter(item => {
       return item.label.toLowerCase().includes(normalizedQuery) || item.path.includes(normalizedQuery);
     });
-  }, [query]);
+  }, [commandItems, query]);
 
   const connectionLabel = useMemo(() => {
     switch (connectionState) {

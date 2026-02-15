@@ -20,6 +20,12 @@ This project follows the **Conductor Workflow**. All major features and fixes ar
 
 To contribute or implement features, please refer to the active track plans in `conductor/tracks/`.
 
+### Prowlarr UI Track Docs (Phase 10.4)
+
+- Component usage: `app/docs/prowlarr-ui/component-usage.md`
+- API integration contracts: `app/docs/prowlarr-ui/api-integration.md`
+- Deployment + migration notes: `conductor/tracks/prowlarr_ui_cloning_20260214/artifacts/phase10.4-deployment-notes.md`
+
 ## 🛣 Roadmap
 1. **Foundation:** Monorepo scaffolding and reverse engineering reference projects.
 2. **Indexer Engine:** Unified indexing and proxying (Prowlarr features).

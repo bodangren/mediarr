@@ -20,6 +20,12 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Prowlarr UI docs (Track 10.4)
+
+- Component usage guide: `app/docs/prowlarr-ui/component-usage.md`
+- Frontend/backend API contracts: `app/docs/prowlarr-ui/api-integration.md`
+- Deployment and migration notes: `conductor/tracks/prowlarr_ui_cloning_20260214/artifacts/phase10.4-deployment-notes.md`
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

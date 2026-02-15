@@ -364,6 +364,10 @@ model AppSettings {
   schedulerIntervals Json
   pathVisibility     Json
   apiKeys            Json?
+  host               Json?
+  security           Json?
+  logging            Json?
+  update             Json?
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 }

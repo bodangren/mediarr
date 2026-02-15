@@ -1,15 +1,19 @@
 import Fastify, { type FastifyInstance } from 'fastify';
 import { registerApiErrorHandler } from './errors';
 import { ApiEventHub } from './eventHub';
+import { registerBackupRoutes } from './routes/backupRoutes';
 import { registerEventsRoutes } from './routes/eventsRoutes';
 import { registerIndexerRoutes } from './routes/indexerRoutes';
+import { registerLogsRoutes } from './routes/logsRoutes';
 import { registerMediaRoutes } from './routes/mediaRoutes';
 import { registerMovieRoutes } from './routes/movieRoutes';
 import { registerOperationsRoutes } from './routes/operationsRoutes';
 import { registerReleaseRoutes } from './routes/releaseRoutes';
 import { registerSeriesRoutes } from './routes/seriesRoutes';
 import { registerSubtitleRoutes } from './routes/subtitleRoutes';
+import { registerSystemRoutes } from './routes/systemRoutes';
 import { registerTorrentRoutes } from './routes/torrentRoutes';
+import { registerUpdatesRoutes } from './routes/updatesRoutes';
 import type { ApiDependencies, ApiServerOptions } from './types';
 
 interface PollState {
@@ -130,6 +134,10 @@ export function createApiServer(
   registerSubtitleRoutes(app, dependencies);
   registerOperationsRoutes(app, dependencies);
   registerEventsRoutes(app, eventHub);
+  registerSystemRoutes(app, dependencies, eventHub);
+  registerBackupRoutes(app, dependencies);
+  registerLogsRoutes(app, dependencies);
+  registerUpdatesRoutes(app, dependencies);
 
   const pollState: PollState = {};
   const intervals: NodeJS.Timeout[] = [];

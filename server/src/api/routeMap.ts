@@ -51,4 +51,41 @@ export const API_ROUTE_MAP: ApiRouteDefinition[] = [
   { method: 'PATCH', path: '/api/settings' },
 
   { method: 'GET', path: '/api/events/stream' },
+
+  // System routes
+  { method: 'GET', path: '/api/system/status' },
+  { method: 'GET', path: '/api/tasks/scheduled' },
+  { method: 'GET', path: '/api/tasks/queued' },
+  { method: 'GET', path: '/api/tasks/history' },
+  { method: 'GET', path: '/api/tasks/history/:id' },
+  { method: 'POST', path: '/api/tasks/scheduled/:taskId/run' },
+  { method: 'DELETE', path: '/api/tasks/queued/:taskId' },
+  { method: 'GET', path: '/api/system/events' },
+  { method: 'DELETE', path: '/api/system/events/clear' },
+  { method: 'GET', path: '/api/system/events/export' },
+
+  // Backup routes
+  { method: 'GET', path: '/api/backups' },
+  { method: 'POST', path: '/api/backups' },
+  { method: 'GET', path: '/api/backups/schedule' },
+  { method: 'PATCH', path: '/api/backups/schedule' },
+  { method: 'POST', path: '/api/backups/:id/restore' },
+  { method: 'POST', path: '/api/backups/:id/download' },
+  { method: 'DELETE', path: '/api/backups/:id' },
+
+  // Logs routes
+  { method: 'GET', path: '/api/logs/files' },
+  { method: 'GET', path: '/api/logs/files/:filename' },
+  { method: 'DELETE', path: '/api/logs/files/:filename' },
+  { method: 'POST', path: '/api/logs/files/:filename/clear' },
+  { method: 'GET', path: '/api/logs/files/:filename/download' },
+  { method: 'GET', path: '/api/logs/files/:filename/raw' },
+
+  // Updates routes
+  { method: 'GET', path: '/api/updates/current' },
+  { method: 'GET', path: '/api/updates/available' },
+  { method: 'POST', path: '/api/updates/check' },
+  { method: 'POST', path: '/api/updates/install' },
+  { method: 'GET', path: '/api/updates/history' },
+  { method: 'GET', path: '/api/updates/progress/:updateId' },
 ];

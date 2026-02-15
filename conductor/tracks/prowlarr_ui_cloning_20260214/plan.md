@@ -337,10 +337,10 @@ This plan implements the Prowlarr UI cloning based on the comprehensive specific
   - [x] Implement indexer configuration page
   - [x] Write tests for indexer list management
   - [x] Implement add/edit/delete indexers
-  - [ ] Write tests for Indexer Proxies section
-  - [ ] Implement proxy configuration
-  - [ ] Write tests for Indexer Categories
-  - [ ] Implement category management
+  - [x] Write tests for Indexer Proxies section
+  - [x] Implement proxy configuration
+  - [x] Write tests for Indexer Categories
+  - [x] Implement category management
   - [x] Verify coverage >80%
 
 - [x] **Task 7.2: Create Application Settings page (TDD)**
@@ -380,15 +380,15 @@ This plan implements the Prowlarr UI cloning based on the comprehensive specific
   - [ ] Verify coverage >80%
 
 - [x] **Task 7.6: Create General Settings (TDD)**
-  - [ ] Write tests for GeneralSettings
-  - [ ] Implement general configuration
-  - [ ] Write tests for host settings (port, bind address, URL base)
-  - [ ] Implement host configuration
-  - [ ] Write tests for security settings (API key, SSL, auth)
-  - [ ] Implement security configuration
-  - [ ] Write tests for logging and update settings
-  - [ ] Implement logging and update config
-  - [ ] Verify coverage >80%
+  - [x] Write tests for GeneralSettings
+  - [x] Implement general configuration
+  - [x] Write tests for host settings (port, bind address, URL base)
+  - [x] Implement host configuration
+  - [x] Write tests for security settings (API key, SSL, auth)
+  - [x] Implement security configuration
+  - [x] Write tests for logging and update settings
+  - [x] Implement logging and update config
+  - [x] Verify coverage >80%
 
 - [x] **Task 7.7: Create UI Settings (TDD)**
   - [ ] Write tests for UISettings
@@ -492,14 +492,14 @@ This plan implements the Prowlarr UI cloning based on the comprehensive specific
   - [x] Implement command tracking
   - [ ] Verify coverage >80%
 
-- [ ] **Task 9.2: Implement responsive design (TDD)**
-  - [ ] Write tests for mobile sidebar behavior
-  - [ ] Implement collapsible mobile navigation
-  - [ ] Write tests for responsive tables
-  - [ ] Implement column hiding on mobile
-  - [ ] Write tests for touch gestures
-  - [ ] Implement swipe navigation
-  - [ ] Verify coverage >80%
+- [x] **Task 9.2: Implement responsive design (TDD)**
+  - [x] Write tests for mobile sidebar behavior
+  - [x] Implement collapsible mobile navigation
+  - [x] Write tests for responsive tables
+  - [x] Implement column hiding on mobile
+  - [x] Write tests for touch gestures
+  - [x] Implement swipe navigation
+  - [x] Verify coverage >80%
 
 - [~] **Task 9.3: Implement keyboard shortcuts (TDD)**
   - [x] Write tests for keyboard shortcut registration
@@ -575,21 +575,22 @@ This plan implements the Prowlarr UI cloning based on the comprehensive specific
 - [~] **Task 10.2: Fix existing functionality gaps**
   - [x] Fix any broken features identified during integration
   - [x] Add missing functionality per spec requirements
-  - [ ] Ensure API compatibility
-  - [ ] Verify data flow integrity
+  - [x] Ensure API compatibility
+  - [x] Verify data flow integrity
 
-- [ ] **Task 10.3: End-to-end testing**
-  - [ ] Create E2E tests for critical user flows
-  - [ ] Test indexer management flow
-  - [ ] Test search and grab flow
-  - [ ] Test settings configuration flow
-  - [ ] Verify mobile responsiveness E2E
+- [x] **Task 10.3: End-to-end testing**
+  - [x] Create E2E tests for critical user flows
+  - [x] Test indexer management flow
+  - [x] Test search and grab flow
+  - [x] Test settings configuration flow
+  - [x] Verify mobile responsiveness E2E
+  - [x] Note: implemented as Vitest integration-journey coverage with mocked API clients (no Playwright harness in repo yet)
 
-- [ ] **Task 10.4: Final documentation**
-  - [ ] Document component usage
-  - [ ] Create API integration guide
-  - [ ] Write deployment notes
-  - [ ] Update project README
+- [x] **Task 10.4: Final documentation**
+  - [x] Document component usage
+  - [x] Create API integration guide
+  - [x] Write deployment notes
+  - [x] Update project README
 
 - [ ] **Task: Conductor - User Manual Verification 'Phase 10'**
 
@@ -681,3 +682,24 @@ Phase 10 (Integration)
     - `src/app/(shell)/settings/general/page.tsx`
     - `src/app/(shell)/settings/ui/page.tsx`
   - Added focused tests for help modal and save shortcuts.
+
+### Audit Update (2026-02-15 - Settings/System API Closure)
+
+- Implemented backend API families required by System pages and clients:
+  - `server/src/api/routes/systemRoutes.ts`
+  - `server/src/api/routes/backupRoutes.ts`
+  - `server/src/api/routes/logsRoutes.ts`
+  - `server/src/api/routes/updatesRoutes.ts`
+  - Registered in `server/src/api/createApiServer.ts` and `server/src/api/routeMap.ts`.
+- Added backend coverage for new APIs in `tests/api-system-routes.test.ts` (tasks/events/backups/logs/updates contracts).
+- Completed Settings parity improvements:
+  - Dedicated `/settings/indexers` surface with proxy and category management blocks.
+  - Expanded `/settings/general` with host, security, logging, and update sections.
+  - Updated settings schemas and tests to validate payload mapping and keyboard-save behavior.
+- Completed responsive/mobile parity pass:
+  - Added mobile bottom-nav `More` overflow menu and tests in `app/src/components/shell/PageLayout.test.tsx`.
+- Removed pruned routes from Prowlarr parity registry in `app/src/lib/prowlarrRoutes.ts` to match Mediarr scope.
+- Verification executed:
+  - `CI=true npm run test --workspace=app -- "src/app/(shell)/indexers/page.test.tsx" "src/app/(shell)/search/page.test.tsx" "src/app/(shell)/history/page.test.tsx" "src/app/(shell)/settings/indexers/page.test.tsx" "src/app/(shell)/settings/general/page.test.tsx" "src/app/(shell)/settings/ui/page.test.tsx" "src/app/(shell)/system/status/page.test.tsx" "src/app/(shell)/system/tasks/page.test.tsx" "src/app/(shell)/system/backup/page.test.tsx" "src/app/(shell)/system/updates/page.test.tsx" "src/app/(shell)/system/events/page.test.tsx" "src/app/(shell)/system/logs/files/page.test.tsx"`
+  - `CI=true npm run test --workspace=app -- "src/lib/api/systemApi.test.ts" "src/lib/api/backupApi.test.ts" "src/lib/api/logsApi.test.ts" "src/lib/api/updatesApi.test.ts"`
+  - `CI=true npm run test -- tests/api-system-routes.test.ts tests/api-route-map.test.ts`

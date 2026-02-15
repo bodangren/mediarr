@@ -510,14 +510,14 @@ This plan implements the Prowlarr UI cloning based on the comprehensive specific
   - [x] Implement shortcuts help modal
   - [ ] Verify coverage >80%
 
-- [~] **Task 9.4: Implement theme system (TDD)**
-  - [ ] Write tests for theme provider
-  - [ ] Implement dark/light theme switching
-  - [ ] Write tests for color impaired mode
-  - [ ] Implement accessibility theme
-  - [ ] Write tests for CSS variables
-  - [ ] Implement theme CSS variables
-  - [ ] Verify coverage >80%
+- [x] **Task 9.4: Implement theme system (TDD)** (commit: c8567632)
+  - [x] Write tests for theme provider
+  - [x] Implement dark/light theme switching
+  - [x] Write tests for color impaired mode
+  - [x] Implement accessibility theme
+  - [x] Write tests for CSS variables
+  - [x] Implement theme CSS variables
+  - [x] Verify coverage >80%
 
 - [~] **Task 9.5: Performance optimization**
   - [ ] Write tests for virtual scrolling

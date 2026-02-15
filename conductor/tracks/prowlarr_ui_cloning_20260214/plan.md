@@ -284,7 +284,7 @@ This plan implements the Prowlarr UI cloning based on the comprehensive specific
 
 ### Tasks
 
-- [ ] **Task 6.1: Create History view (TDD)**
+- [x] **Task 6.1: Create History view (TDD)** (commit: `0d92ee3`)
   - [ ] Write tests for History container
   - [ ] Implement history page
   - [ ] Write tests for history table

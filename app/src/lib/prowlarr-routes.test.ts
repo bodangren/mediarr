@@ -11,10 +11,6 @@ describe('prowlarr route configuration', () => {
         '/search',
         '/history',
         '/settings/indexers',
-        '/settings/applications',
-        '/settings/downloadclients',
-        '/settings/connect',
-        '/settings/tags',
         '/settings/general',
         '/settings/ui',
         '/system/status',
@@ -32,14 +28,11 @@ describe('prowlarr route configuration', () => {
   });
 
   it('exposes major settings and system routes in navigation', () => {
-    const navPaths = NAV_ITEMS.map(item => item.path);
+    // Flatten navigation sections to get all item paths
+    const navPaths = NAV_ITEMS.flatMap(section => section.items.map(item => item.path));
 
     expect(navPaths).toEqual(
       expect.arrayContaining([
-        '/settings/applications',
-        '/settings/downloadclients',
-        '/settings/connect',
-        '/settings/tags',
         '/settings/general',
         '/settings/ui',
         '/system/tasks',

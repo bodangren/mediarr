@@ -10,6 +10,7 @@ interface ModalProps {
   onClose?: () => void;
   closeOnBackdropClick?: boolean;
   maxWidthClassName?: string;
+  className?: string;
 }
 
 interface ModalHeaderProps {
@@ -44,7 +45,8 @@ export function Modal({
   children,
   onClose,
   closeOnBackdropClick = true,
-  maxWidthClassName = 'max-w-lg',
+  maxWidthClassName = 'max-w-lg sm:max-w-xl lg:max-w-2xl',
+  className = '',
 }: ModalProps) {
   useEffect(() => {
     if (!isOpen || !onClose) {

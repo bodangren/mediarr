@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import * as Icons from 'lucide-react';
@@ -26,7 +27,7 @@ function LucideIcon({ name }: { name: string }) {
   return <IconComponent className="h-4 w-4" />;
 }
 
-// Flatten navigation sections for mobile
+// Flatten navigation sections for mobile bottom nav
 function flattenNavItems(sections: NavigationSection[]): NavigationItem[] {
   return sections.flatMap(section => section.items);
 }
@@ -39,6 +40,7 @@ export function PageLayout({
   children,
   navItems = NAV_ITEMS,
 }: PageLayoutProps) {
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const mobileNavItems = flattenNavItems(navItems).slice(0, 5);
 
   return (
@@ -48,17 +50,35 @@ export function PageLayout({
           sidebarCollapsed ? 'lg:grid-cols-[88px_1fr]' : 'lg:grid-cols-[240px_1fr]'
         }`}
       >
-        <PageSidebar pathname={pathname} collapsed={sidebarCollapsed} onToggle={onToggleSidebar} items={navItems} />
+        <PageSidebar
+          pathname={pathname}
+          collapsed={sidebarCollapsed}
+          onToggle={onToggleSidebar}
+          items={navItems}
+          isOpen={isMobileSidebarOpen}
+          onClose={() => setIsMobileSidebarOpen(false)}
+        />
 
         <div className="flex min-h-screen flex-col">
-          <header className="sticky top-0 z-20 border-b border-border-subtle bg-surface-1/90 px-4 py-3 backdrop-blur">
-            {header}
+          <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-border-subtle bg-surface-1/90 px-4 py-3 backdrop-blur lg:gap-0">
+            {/* Mobile menu button */}
+            <button
+              type="button"
+              className="rounded-sm p-1 text-text-secondary hover:bg-surface-2 lg:hidden"
+              onClick={() => setIsMobileSidebarOpen(true)}
+              aria-label="Open navigation menu"
+            >
+              <Icons.Menu className="h-5 w-5" />
+            </button>
+
+            <div className="flex-1">{header}</div>
           </header>
 
-          <main className="flex-1 px-4 pb-20 pt-4 lg:pb-4">{children}</main>
+          <main className="flex-1 px-3 pb-20 pt-3 sm:px-4 sm:pt-4 lg:pb-4">{children}</main>
         </div>
       </div>
 
+      {/* Mobile bottom navigation */}
       <nav
         className="fixed bottom-0 left-0 right-0 z-20 border-t border-border-subtle bg-surface-1 px-2 py-1 lg:hidden"
         aria-label="Mobile Navigation"
@@ -70,13 +90,11 @@ export function PageLayout({
               <li key={item.path}>
                 <Link
                   href={item.path}
-                  className={`flex h-full flex-col items-center justify-center rounded-sm px-2 py-2 text-[11px] ${
-                    active ? 'bg-accent-primary/20 text-text-primary' : 'text-text-secondary'
-                  }`}
+                  className="flex h-full min-h-[44px] flex-col items-center justify-center rounded-sm px-1 py-1.5 text-[10px] sm:px-2 sm:py-2 sm:text-[11px]"
                   aria-current={active ? 'page' : undefined}
                 >
                   <LucideIcon name={item.icon} />
-                  <span className="mt-1">{item.shortLabel}</span>
+                  <span className="mt-0.5 truncate">{item.shortLabel}</span>
                 </Link>
               </li>
             );

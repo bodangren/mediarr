@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { memo, useMemo } from 'react';
 import { StatusBadge } from './StatusBadge';
 
 export interface TableColumn<RowType> {
@@ -7,6 +8,10 @@ export interface TableColumn<RowType> {
   sortable?: boolean;
   render: (row: RowType) => ReactNode;
   className?: string;
+  /** Whether to hide this column on small screens (mobile) */
+  hideOnMobile?: boolean;
+  /** Whether to hide this column on medium screens (tablets) */
+  hideOnTablet?: boolean;
 }
 
 interface TableSort {
@@ -21,23 +26,38 @@ interface TableHeaderProps<RowType> {
   showActions?: boolean;
 }
 
-export function TableHeader<RowType>({ columns, sort, onSort, showActions = false }: TableHeaderProps<RowType>) {
+export const TableHeader = memo(function TableHeader<RowType>({ columns, sort, onSort, showActions = false }: TableHeaderProps<RowType>) {
+  const memoizedOnSort = useMemo(() => onSort, [onSort]);
+
   return (
     <thead className="bg-surface-2 text-text-secondary">
       <tr>
         {columns.map(column => {
           const isActiveSort = sort?.key === column.key;
+          // Add responsive classes for column visibility
+          const responsiveClasses = [
+            column.hideOnMobile ? 'hidden md:table-cell' : '',
+            column.hideOnTablet ? 'hidden lg:table-cell' : '',
+          ]
+            .filter(Boolean)
+            .join(' ');
+
           return (
-            <th key={column.key} className="px-3 py-2 font-semibold">
-              {column.sortable && onSort ? (
+            <th
+              key={column.key}
+              className={`px-3 py-2 font-semibold ${responsiveClasses} ${column.className || ''}`}
+            >
+              {column.sortable && memoizedOnSort ? (
                 <button
                   type="button"
                   className="inline-flex items-center gap-1 text-left"
-                  onClick={() => onSort(column.key)}
+                  onClick={() => memoizedOnSort(column.key)}
                   aria-label={`Sort by ${column.header}`}
                 >
                   {column.header}
-                  <span aria-hidden="true">{isActiveSort ? (sort?.direction === 'asc' ? '↑' : '↓') : '↕'}</span>
+                  <span aria-hidden="true">
+                    {isActiveSort ? (sort?.direction === 'asc' ? '↑' : '↓') : '↕'}
+                  </span>
                 </button>
               ) : (
                 column.header
@@ -45,11 +65,13 @@ export function TableHeader<RowType>({ columns, sort, onSort, showActions = fals
             </th>
           );
         })}
-        {showActions ? <th className="px-3 py-2 text-right font-semibold">Actions</th> : null}
+        {showActions ? (
+          <th className="hidden px-3 py-2 text-right font-semibold sm:table-cell">Actions</th>
+        ) : null}
       </tr>
     </thead>
   );
-}
+}) as <RowType>(props: TableHeaderProps<RowType>) => ReactNode;
 
 export function renderTextCell(value: string | number | null | undefined): string {
   return value == null ? '-' : String(value);
@@ -68,6 +90,6 @@ export function renderDateCell(value: string | Date | null | undefined): string 
   return date.toLocaleString();
 }
 
-export function renderStatusCell(status: string): ReactNode {
+export const renderStatusCell = memo(function renderStatusCell(status: string): ReactNode {
   return <StatusBadge status={status} />;
-}
+});

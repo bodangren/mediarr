@@ -1,10 +1,16 @@
 import type { ReactNode } from 'react';
+import { memo, useMemo } from 'react';
 import { Table } from './Table';
 import { TableBody } from './TableBody';
 import { TableHeader, type TableColumn } from './TableHeader';
 import { TablePager } from './TablePager';
 
-export type DataTableColumn<RowType> = TableColumn<RowType>;
+export type DataTableColumn<RowType> = TableColumn<RowType> & {
+  /** Whether to hide this column on small screens (mobile) */
+  hideOnMobile?: boolean;
+  /** Whether to hide this column on medium screens (tablets) */
+  hideOnTablet?: boolean;
+};
 
 interface DataTablePagination {
   page: number;
@@ -21,7 +27,7 @@ interface DataTableSort {
   direction: 'asc' | 'desc';
 }
 
-interface DataTableProps<RowType> {
+export interface DataTableProps<RowType> {
   data: RowType[];
   columns: DataTableColumn<RowType>[];
   getRowId: (row: RowType) => string | number;
@@ -30,9 +36,13 @@ interface DataTableProps<RowType> {
   sort?: DataTableSort;
   onSort?: (key: string) => void;
   onRowClick?: (row: RowType) => void;
+  /** Whether to enable card view on mobile instead of table view */
+  mobileCardView?: boolean;
+  /** Custom renderer for mobile card view */
+  renderMobileCard?: (row: RowType) => ReactNode;
 }
 
-export function DataTable<RowType>({
+export const DataTable = memo(function DataTable<RowType>({
   data,
   columns,
   getRowId,
@@ -41,13 +51,48 @@ export function DataTable<RowType>({
   sort,
   onSort,
   onRowClick,
+  mobileCardView = false,
+  renderMobileCard,
 }: DataTableProps<RowType>) {
+  const memoizedRowActions = useMemo(() => rowActions, [rowActions]);
+  const memoizedOnSort = useMemo(() => onSort, [onSort]);
+  const memoizedOnRowClick = useMemo(() => onRowClick, [onRowClick]);
+  const memoizedGetRowId = useMemo(() => getRowId, [getRowId]);
+
   return (
     <div className="space-y-3">
-      <Table>
-        <TableHeader<RowType> columns={columns} sort={sort} onSort={onSort} showActions={Boolean(rowActions)} />
-        <TableBody<RowType> data={data} columns={columns} getRowId={getRowId} rowActions={rowActions} onRowClick={onRowClick} />
-      </Table>
+      {/* Mobile card view - shown only on small screens if enabled */}
+      {mobileCardView && renderMobileCard && (
+        <div className="space-y-3 lg:hidden">
+          {data.map(row => (
+            <div
+              key={getRowId(row)}
+              className="rounded-md border border-border-subtle bg-surface-1 p-4"
+            >
+              {renderMobileCard(row)}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Table view - always rendered, columns hidden via CSS */}
+      <div className={mobileCardView ? 'hidden lg:block' : ''}>
+        <Table>
+          <TableHeader<RowType>
+            columns={columns}
+            sort={sort}
+            onSort={memoizedOnSort}
+            showActions={Boolean(memoizedRowActions)}
+          />
+          <TableBody<RowType>
+            data={data}
+            columns={columns}
+            getRowId={memoizedGetRowId}
+            rowActions={memoizedRowActions}
+            onRowClick={memoizedOnRowClick}
+          />
+        </Table>
+      </div>
 
       {pagination ? (
         <TablePager
@@ -62,4 +107,4 @@ export function DataTable<RowType>({
       ) : null}
     </div>
   );
-}
+}) as <RowType>(props: DataTableProps<RowType>) => ReactNode;

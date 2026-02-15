@@ -528,15 +528,15 @@ This plan implements the Prowlarr UI cloning based on the comprehensive specific
   - [ ] Implement route-based lazy loading
   - [ ] Verify coverage >80%
 
-- [~] **Task 9.6: Prune irrelevant Prowlarr-specific features**
-  - [ ] Remove `/settings/applications` page and components (inter-app connections not needed in unified app)
-  - [ ] Remove `/settings/downloadclients` page and components (Mediarr has integrated torrent management)
-  - [ ] Remove `/settings/connect` page and components (notifications consolidated in Mediarr core settings)
-  - [ ] Remove `/settings/tags` page and components (tags consolidated in Mediarr core settings)
-  - [ ] Remove corresponding navigation entries, breadcrumb labels, and route files
-  - [ ] Remove or archive associated test files
-  - [ ] Update `/settings` landing page to reflect remaining settings (Indexers, General, UI)
-  - [ ] Verify no broken imports or dead references remain
+- [x] **Task 9.6: Prune irrelevant Prowlarr-specific features** (commit: c5a8091b)
+  - [x] Remove `/settings/applications` page and components (inter-app connections not needed in unified app)
+  - [x] Remove `/settings/downloadclients` page and components (Mediarr has integrated torrent management)
+  - [x] Remove `/settings/connect` page and components (notifications consolidated in Mediarr core settings)
+  - [x] Remove `/settings/tags` page and components (tags consolidated in Mediarr core settings)
+  - [x] Remove corresponding navigation entries, breadcrumb labels, and route files
+  - [x] Remove or archive associated test files
+  - [x] Update `/settings` landing page to reflect remaining settings (Indexers, General, UI)
+  - [x] Verify no broken imports or dead references remain
 
 - [~] **Task 9.7: Redesign navigation with grouped sections and icons**
   - [ ] Add `icon` field to `NavigationItem` type (using Lucide React icons)

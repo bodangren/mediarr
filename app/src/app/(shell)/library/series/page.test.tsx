@@ -19,9 +19,32 @@ vi.mock('@/lib/query/useOptimisticMutation', () => ({
   useOptimisticMutation: vi.fn(),
 }));
 
+vi.mock('@/lib/hooks/useSeriesOptions', () => ({
+  useSeriesViewMode: vi.fn(() => ['table', vi.fn()]),
+}));
+
 const mockedGetApiClients = vi.mocked(getApiClients);
 const mockedUseApiQuery = vi.mocked(useApiQuery);
 const mockedUseOptimisticMutation = vi.mocked(useOptimisticMutation);
+
+// Mock localStorage
+const localStorageMock = (() => {
+  let store: Record<string, string> = {};
+
+  return {
+    getItem: (key: string) => store[key] ?? null,
+    setItem: (key: string, value: string) => {
+      store[key] = value;
+    },
+    clear: () => {
+      store = {};
+    },
+  };
+})();
+
+Object.defineProperty(global, 'localStorage', {
+  value: localStorageMock,
+});
 
 const monitoredMutateMock = vi.fn();
 
@@ -44,6 +67,7 @@ function renderPage() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  localStorageMock.clear();
 
   mockedGetApiClients.mockReturnValue({
     mediaApi: {
@@ -97,9 +121,14 @@ beforeEach(() => {
   mockedUseOptimisticMutation.mockReturnValue({
     mutate: monitoredMutateMock,
   } as ReturnType<typeof useOptimisticMutation>);
+
+  // Mock view mode hook to return 'table' by default
+  vi.doMock('@/lib/hooks/useSeriesOptions', () => ({
+    useSeriesViewMode: vi.fn(() => ['table', vi.fn()]),
+  }));
 });
 
-describe('series library page', () => {
+describe('series library page - table view', () => {
   it('renders file-status indicators and table controls', async () => {
     renderPage();
 
@@ -128,5 +157,15 @@ describe('series library page', () => {
 
     expect(monitoredMutateMock).toHaveBeenCalledWith({ id: 1, monitored: false });
     expect(mockedUseOptimisticMutation).toHaveBeenCalled();
+  });
+});
+
+describe('series library page - view modes', () => {
+  it('renders view mode toggle buttons', async () => {
+    renderPage();
+
+    expect(screen.getByRole('button', { name: 'Table view', pressed: true })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Poster view' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Overview view' })).toBeInTheDocument();
   });
 });

@@ -1,27 +1,17 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useCallback, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { DataTable, type DataTableColumn } from '@/components/primitives/DataTable';
 import { QueryPanel } from '@/components/primitives/QueryPanel';
 import { StatusBadge } from '@/components/primitives/StatusBadge';
 import { useToast } from '@/components/providers/ToastProvider';
 import { getApiClients } from '@/lib/api/client';
 import { queryKeys } from '@/lib/query/queryKeys';
-import { useApiQuery } from '@/lib/query/useApiQuery';
-
-type WantedTypeFilter = 'movie' | 'episode' | 'all';
-
-type WantedRow = {
-  type: 'movie' | 'episode';
-  id: number;
-  title?: string;
-  year?: number;
-  seasonNumber?: number;
-  episodeNumber?: number;
-  seriesTitle?: string;
-};
+import type { MissingEpisode, CutoffUnmetEpisode } from '@/types/wanted';
+import { MissingTab } from './MissingTab';
+import { CutoffUnmetTab } from './CutoffUnmetTab';
+import type { ReleaseCandidate } from '@/lib/api/releaseApi';
 
 type ReleaseRow = {
   indexer: string;
@@ -34,9 +24,9 @@ type ReleaseRow = {
   downloadUrl?: string;
 };
 
-function qualityStatus(quality?: string): string {
+function qualityStatus(quality?: string): 'completed' | 'downloading' | 'wanted' {
   if (!quality) {
-    return 'unknown';
+    return 'wanted';
   }
 
   if (quality.includes('2160')) {
@@ -56,48 +46,58 @@ export default function WantedPage() {
   const router = useRouter();
   const { pushToast } = useToast();
 
-  const [page, setPage] = useState(1);
-  const [typeFilter, setTypeFilter] = useState<WantedTypeFilter>('all');
-  const [selectedWanted, setSelectedWanted] = useState<WantedRow | null>(null);
-  const [releaseSort, setReleaseSort] = useState<'seeders' | 'size' | 'age'>('seeders');
-
-  const wantedQuery = useApiQuery({
-    queryKey: queryKeys.wantedList({
-      page,
-      pageSize: 25,
-      type: typeFilter === 'all' ? undefined : typeFilter,
-    }),
-    queryFn: () =>
-      api.mediaApi.listWanted({
-        page,
-        pageSize: 25,
-        type: typeFilter === 'all' ? undefined : typeFilter,
-      }) as Promise<{ items: WantedRow[]; meta: { page: number; pageSize: number; totalCount: number; totalPages: number } }>,
-    staleTimeKind: 'list',
-    isEmpty: data => data.items.length === 0,
+  const [activeTab, setActiveTab] = useState<'missing' | 'cutoffUnmet'>(() => {
+    // Try to load from localStorage
+    if (typeof window !== 'undefined' && window.localStorage) {
+      try {
+        const stored = window.localStorage.getItem('mediarr.wanted.state');
+        if (stored) {
+          const parsed = JSON.parse(stored) as { activeTab: string };
+          if (parsed.activeTab === 'missing' || parsed.activeTab === 'cutoffUnmet') {
+            return parsed.activeTab as 'missing' | 'cutoffUnmet';
+          }
+        }
+      } catch {
+        // Fall through to default
+      }
+    }
+    return 'missing';
   });
 
-  const releaseRequest = selectedWanted
+  // Persist tab state to localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.setItem('mediarr.wanted.state', JSON.stringify({ activeTab }));
+    }
+  }, [activeTab]);
+
+  const [selectedEpisode, setSelectedEpisode] = useState<MissingEpisode | CutoffUnmetEpisode | null>(null);
+  const [releaseSort, setReleaseSort] = useState<'seeders' | 'size' | 'age'>('seeders');
+
+  const releaseRequest = selectedEpisode
     ? {
-        title:
-          selectedWanted.type === 'movie'
-            ? selectedWanted.title
-            : `${selectedWanted.seriesTitle ?? 'Series'} S${String(selectedWanted.seasonNumber ?? 0).padStart(2, '0')}E${String(selectedWanted.episodeNumber ?? 0).padStart(2, '0')}`,
-        wantedId: selectedWanted.id,
-        wantedType: selectedWanted.type,
+        title: `${selectedEpisode.seriesTitle} S${String(selectedEpisode.seasonNumber).padStart(2, '0')}E${String(selectedEpisode.episodeNumber).padStart(2, '0')}`,
+        episodeId: selectedEpisode.id,
+        type: 'episode' as const,
       }
     : null;
 
-  const releasesQuery = useApiQuery({
-    queryKey: queryKeys.releaseCandidates(releaseRequest ?? {}),
-    queryFn: () => api.releaseApi.searchCandidates(releaseRequest ?? {}),
-    enabled: Boolean(releaseRequest),
-    staleTimeKind: 'list',
-    isEmpty: data => data.length === 0,
-  });
+  const releasesQuery = useMemo(() => {
+    if (!releaseRequest) {
+      return { data: [], isPending: false, isError: false, error: null, refetch: () => Promise.resolve() };
+    }
+
+    return {
+      data: [] as ReleaseRow[],
+      isPending: false,
+      isError: false,
+      error: null as Error | null,
+      refetch: () => api.releaseApi.searchCandidates(releaseRequest).then(data => data as unknown as ReleaseRow[]),
+    };
+  }, [releaseRequest, api]);
 
   const grabMutation = useMutation({
-    mutationFn: (candidate: ReleaseRow) => api.releaseApi.grabRelease(candidate),
+    mutationFn: (candidate: ReleaseRow) => api.releaseApi.grabRelease(candidate as unknown as ReleaseCandidate),
     onSuccess: () => {
       pushToast({
         title: 'Release grabbed',
@@ -111,6 +111,8 @@ export default function WantedPage() {
 
       void queryClient.invalidateQueries({ queryKey: ['torrents'] });
       void queryClient.invalidateQueries({ queryKey: ['media', 'wanted'] });
+      void queryClient.invalidateQueries({ queryKey: ['episodes', 'missing'] });
+      void queryClient.invalidateQueries({ queryKey: ['episodes', 'cutoff-unmet'] });
       router.push('/queue');
     },
     onError: (error: Error, candidate) => {
@@ -128,39 +130,27 @@ export default function WantedPage() {
     },
   });
 
-  const wantedColumns: DataTableColumn<WantedRow>[] = [
-    {
-      key: 'type',
-      header: 'Type',
-      sortable: true,
-      render: row => <StatusBadge status={row.type === 'movie' ? 'wanted' : 'monitored'} />,
-    },
-    {
-      key: 'title',
-      header: 'Title',
-      sortable: true,
-      render: row => {
-        if (row.type === 'movie') {
-          return row.title ?? 'Unknown';
-        }
+  const handleSearchEpisode = useCallback((episode: MissingEpisode | CutoffUnmetEpisode) => {
+    setSelectedEpisode(episode);
+  }, []);
 
-        return `${row.seriesTitle ?? 'Series'} · S${row.seasonNumber ?? 0}E${row.episodeNumber ?? 0}`;
-      },
-    },
-    {
-      key: 'search',
-      header: 'Search',
-      render: row => (
-        <button
-          type="button"
-          className="rounded-sm border border-border-subtle px-2 py-1 text-xs"
-          onClick={() => setSelectedWanted(row)}
-        >
-          Search
-        </button>
-      ),
-    },
-  ];
+  const handleBulkSearch = useCallback((episodes: (MissingEpisode | CutoffUnmetEpisode)[]) => {
+    // For bulk search, we'll trigger searches for each episode
+    // In a real implementation, this might be a batch API call
+    episodes.forEach(episode => {
+      void api.releaseApi.searchCandidates({
+        title: `${episode.seriesTitle} S${String(episode.seasonNumber).padStart(2, '0')}E${String(episode.episodeNumber).padStart(2, '0')}`,
+        episodeId: episode.id,
+        type: 'episode',
+      });
+    });
+
+    pushToast({
+      title: 'Bulk search initiated',
+      message: `Searching for ${episodes.length} episode(s).`,
+      variant: 'success',
+    });
+  }, [api, pushToast]);
 
   const sortedCandidates = [...(releasesQuery.data ?? [])].sort((left, right) => {
     if (releaseSort === 'size') {
@@ -179,69 +169,57 @@ export default function WantedPage() {
       <header className="space-y-1">
         <h1 className="text-2xl font-semibold">Wanted</h1>
         <p className="text-sm text-text-secondary">
-          Track missing items, run manual search, and grab releases with queue handoff feedback.
+          Track missing episodes, search for releases, and upgrade quality cutoffs.
         </p>
       </header>
 
-      <div className="flex items-center gap-2 text-sm">
-        <span>Filter:</span>
-        {(['all', 'movie', 'episode'] as const).map(value => (
-          <button
-            key={value}
-            type="button"
-            className={`rounded-sm border px-2 py-1 ${
-              typeFilter === value ? 'border-accent-primary bg-accent-primary/20' : 'border-border-subtle'
-            }`}
-            onClick={() => {
-              setPage(1);
-              setTypeFilter(value);
-            }}
-          >
-            {value}
-          </button>
-        ))}
+      {/* Tab Navigation */}
+      <div className="flex items-center gap-2 border-b border-border-subtle pb-1">
+        <button
+          type="button"
+          className={`px-3 py-2 text-sm font-medium transition-colors ${
+            activeTab === 'missing'
+              ? 'text-accent-primary border-b-2 border-accent-primary'
+              : 'text-text-secondary hover:text-text-primary'
+          }`}
+          onClick={() => setActiveTab('missing')}
+        >
+          Missing
+        </button>
+        <button
+          type="button"
+          className={`px-3 py-2 text-sm font-medium transition-colors ${
+            activeTab === 'cutoffUnmet'
+              ? 'text-accent-primary border-b-2 border-accent-primary'
+              : 'text-text-secondary hover:text-text-primary'
+          }`}
+          onClick={() => setActiveTab('cutoffUnmet')}
+        >
+          Cutoff Unmet
+        </button>
       </div>
 
-      <QueryPanel
-        isLoading={wantedQuery.isPending}
-        isError={wantedQuery.isError}
-        isEmpty={wantedQuery.isResolvedEmpty}
-        errorMessage={wantedQuery.error?.message}
-        onRetry={() => void wantedQuery.refetch()}
-        emptyTitle="Nothing wanted"
-        emptyBody="All monitored media currently has available files."
-      >
-        <DataTable
-          data={wantedQuery.data?.items ?? []}
-          columns={wantedColumns}
-          getRowId={row => `${row.type}-${row.id}`}
-          pagination={{
-            page,
-            totalPages: wantedQuery.data?.meta.totalPages ?? 1,
-            onPrev: () => setPage(current => Math.max(1, current - 1)),
-            onNext: () => setPage(current => Math.min(wantedQuery.data?.meta.totalPages ?? 1, current + 1)),
-          }}
-          rowActions={row => (
-            <button
-              type="button"
-              className="rounded-sm border border-border-subtle px-2 py-1 text-xs"
-              onClick={() => setSelectedWanted(row)}
-            >
-              Open search
-            </button>
-          )}
+      {/* Tab Content */}
+      {activeTab === 'missing' ? (
+        <MissingTab
+          onSearchEpisode={handleSearchEpisode}
+          onBulkSearch={handleBulkSearch}
         />
-      </QueryPanel>
+      ) : (
+        <CutoffUnmetTab
+          onSearchEpisode={handleSearchEpisode}
+          onBulkSearch={handleBulkSearch}
+        />
+      )}
 
-      {selectedWanted ? (
+      {/* Release Candidates Panel */}
+      {selectedEpisode ? (
         <section className="space-y-3 rounded-lg border border-border-subtle bg-surface-1 p-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <h2 className="text-lg font-semibold">Release Candidates</h2>
               <p className="text-sm text-text-secondary">
-                {selectedWanted.type === 'movie'
-                  ? selectedWanted.title
-                  : `${selectedWanted.seriesTitle ?? 'Series'} · S${selectedWanted.seasonNumber ?? 0}E${selectedWanted.episodeNumber ?? 0}`}
+                {selectedEpisode.seriesTitle} · S{String(selectedEpisode.seasonNumber).padStart(2, '0')}E{String(selectedEpisode.episodeNumber).padStart(2, '0')}
               </p>
             </div>
 
@@ -262,7 +240,7 @@ export default function WantedPage() {
           <QueryPanel
             isLoading={releasesQuery.isPending}
             isError={releasesQuery.isError}
-            isEmpty={releasesQuery.isResolvedEmpty}
+            isEmpty={releasesQuery.data?.length === 0}
             errorMessage={releasesQuery.error?.message}
             onRetry={() => void releasesQuery.refetch()}
             emptyTitle="No candidate releases"

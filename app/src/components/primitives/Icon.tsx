@@ -6,12 +6,17 @@ import {
   Code,
   Database,
   Download,
+  Edit,
   GitCommit,
+  Grid3X3,
   HardDrive,
   Heart,
   History,
   Info,
+  LayoutList,
+  List,
   Package,
+  Play,
   Plus,
   RefreshCw,
   Search,
@@ -41,7 +46,11 @@ type IconName =
   | 'download'
   | 'history'
   | 'commit'
-  | 'trash';
+  | 'trash'
+  | 'edit'
+  | 'play'
+  | 'grid'
+  | 'list';
 
 interface IconProps extends Omit<LucideProps, 'ref'> {
   name: IconName;
@@ -69,6 +78,10 @@ const ICON_MAP = {
   history: History,
   commit: GitCommit,
   trash: Trash2,
+  edit: Edit,
+  play: Play,
+  grid: Grid3X3,
+  list: List,
 } as const;
 
 export function Icon({ name, label, ...props }: IconProps) {

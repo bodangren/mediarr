@@ -18,6 +18,7 @@ export const NAV_ITEMS: NavigationSection[] = [
     items: [
       { path: '/library/series', label: 'Series Library', shortLabel: 'Series', icon: 'Tv' },
       { path: '/library/movies', label: 'Movie Library', shortLabel: 'Movies', icon: 'Film' },
+      { path: '/calendar', label: 'Calendar', shortLabel: 'Calendar', icon: 'Calendar' },
     ],
   },
   {
@@ -47,9 +48,12 @@ export const NAV_ITEMS: NavigationSection[] = [
     label: 'Settings',
     items: [
       { path: '/settings', label: 'Settings', shortLabel: 'Settings', icon: 'Settings' },
+      { path: '/settings/connect', label: 'Notifications', shortLabel: 'Notifications', icon: 'Bell' },
+      { path: '/settings/downloadclients', label: 'Download Clients', shortLabel: 'Download Clients', icon: 'Download' },
       { path: '/settings/indexers', label: 'Indexer Settings', shortLabel: 'Indexers', icon: 'Sliders' },
       { path: '/settings/general', label: 'General Settings', shortLabel: 'General', icon: 'Settings' },
       { path: '/settings/ui', label: 'UI Settings', shortLabel: 'UI', icon: 'Palette' },
+      { path: '/settings/profiles', label: 'Quality Profiles', shortLabel: 'Profiles', icon: 'list' },
     ],
   },
   {
@@ -59,6 +63,7 @@ export const NAV_ITEMS: NavigationSection[] = [
       { path: '/wanted', label: 'Wanted', shortLabel: 'Wanted', icon: 'Search' },
       { path: '/queue', label: 'Queue', shortLabel: 'Queue', icon: 'List' },
       { path: '/activity', label: 'Activity', shortLabel: 'Activity', icon: 'Activity' },
+      { path: '/activity/blocklist', label: 'Blocklist', shortLabel: 'Blocklist', icon: 'Ban' },
       { path: '/subtitles', label: 'Subtitles', shortLabel: 'Subs', icon: 'Subtitles' },
       { path: '/add', label: 'Add Media', shortLabel: 'Add', icon: 'Plus' },
     ],
@@ -69,9 +74,11 @@ const SEGMENT_LABELS: Record<string, string> = {
   library: 'Library',
   series: 'Series',
   movies: 'Movies',
+  calendar: 'Calendar',
   wanted: 'Wanted',
   queue: 'Queue',
   activity: 'Activity',
+  blocklist: 'Blocklist',
   indexers: 'Indexers',
   stats: 'Stats',
   search: 'Search',
@@ -92,6 +99,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   tags: 'Tags',
   general: 'General',
   ui: 'UI',
+  profiles: 'Quality Profiles',
   add: 'Add Media',
 };
 

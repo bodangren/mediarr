@@ -1,11 +1,13 @@
 'use client';
 
+import Link from 'next/link';
 import { useMemo } from 'react';
 import { QueryPanel } from '@/components/primitives/QueryPanel';
 import { getApiClients } from '@/lib/api/client';
 import { queryKeys } from '@/lib/query/queryKeys';
 import { useApiQuery } from '@/lib/query/useApiQuery';
 import { formatRelativeDate } from '@/lib/format';
+import { Ban } from 'lucide-react';
 
 type ActivityItem = {
   id: number;
@@ -34,9 +36,20 @@ export default function ActivityPage() {
 
   return (
     <section className="space-y-4">
-      <header className="space-y-1">
-        <h1 className="text-2xl font-semibold">Activity</h1>
-        <p className="text-sm text-text-secondary">Consolidated timeline (expanded insights in Track 7E).</p>
+      <header className="space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="space-y-1">
+            <h1 className="text-2xl font-semibold">Activity</h1>
+            <p className="text-sm text-text-secondary">Consolidated timeline (expanded insights in Track 7E).</p>
+          </div>
+          <Link
+            href="/activity/blocklist"
+            className="flex items-center gap-2 rounded-md border border-border-subtle bg-surface-1 px-3 py-2 text-sm text-text-primary hover:bg-surface-2"
+          >
+            <Ban size={16} />
+            View Blocklist
+          </Link>
+        </div>
       </header>
 
       <QueryPanel

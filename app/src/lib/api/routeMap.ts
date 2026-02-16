@@ -11,6 +11,8 @@ export const routeMap = {
   movieDelete: (id: number) => `/api/movies/${id}`,
 
   wanted: '/api/media/wanted',
+  missingEpisodes: '/api/episodes/missing',
+  cutoffUnmetEpisodes: '/api/episodes/cutoff-unmet',
   mediaSearch: '/api/media/search',
   mediaCreate: '/api/media',
 
@@ -47,6 +49,11 @@ export const routeMap = {
   activityClear: '/api/activity',
   activityMarkFailed: (id: number) => `/api/activity/${id}/fail`,
   activityExport: '/api/activity/export',
+
+  blocklist: '/api/blocklist',
+  blocklistRemove: '/api/blocklist/remove',
+  blocklistClear: '/api/blocklist/clear',
+
   health: '/api/health',
   settings: '/api/settings',
 
@@ -78,6 +85,11 @@ export const routeMap = {
   tagDelete: (id: number) => `/api/tags/${id}`,
   tagDetails: (id: number) => `/api/tags/${id}/details`,
   tagAssignments: (id: number) => `/api/tags/${id}/assignments`,
+
+  qualityProfiles: '/api/quality-profiles',
+  qualityProfile: (id: number) => `/api/quality-profiles/${id}`,
+
+  languageProfiles: '/api/language-profiles',
 
   eventsStream: '/api/events/stream',
 

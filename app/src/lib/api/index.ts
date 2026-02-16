@@ -1,12 +1,15 @@
 import { createActivityApi } from './activityApi';
 import { createApplicationsApi } from './applicationsApi';
 import { createBackupApi } from './backupApi';
+import { createBlocklistApi } from './blocklistApi';
+import { createCalendarApi } from './calendarApi';
 import { createEventsApi } from './eventsApi';
 import { createHealthApi } from './healthApi';
 import { ApiHttpClient, type ApiHttpClientConfig } from './httpClient';
 import { createIndexerApi } from './indexerApi';
 import { createLogsApi } from './logsApi';
 import { createMediaApi } from './mediaApi';
+import { createQualityProfileApi } from './qualityProfileApi';
 import { createReleaseApi } from './releaseApi';
 import { createSettingsApi } from './settingsApi';
 import { createSubtitleApi } from './subtitleApi';
@@ -31,6 +34,8 @@ export function createApiClients(config: ApiHttpClientConfig = {}) {
     tagsApi: createTagsApi(httpClient),
     subtitleApi: createSubtitleApi(httpClient),
     activityApi: createActivityApi(httpClient),
+    calendarApi: createCalendarApi(httpClient),
+    blocklistApi: createBlocklistApi(httpClient),
     settingsApi: createSettingsApi(httpClient),
     healthApi: createHealthApi(httpClient),
     notificationsApi: createNotificationsApi(httpClient),
@@ -38,6 +43,7 @@ export function createApiClients(config: ApiHttpClientConfig = {}) {
     backupApi: createBackupApi(httpClient),
     logsApi: createLogsApi(httpClient),
     updatesApi: createUpdatesApi(httpClient),
+    qualityProfileApi: createQualityProfileApi(httpClient),
     eventsApi: createEventsApi({
       baseUrl: config.baseUrl,
     }),

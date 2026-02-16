@@ -1,6 +1,12 @@
 import { z } from 'zod';
 import { ApiHttpClient, type PaginatedResult } from './httpClient';
 import { routeMap } from './routeMap';
+import type {
+  MissingEpisode,
+  CutoffUnmetEpisode,
+  MissingEpisodesQuery,
+  CutoffUnmetEpisodesQuery,
+} from '../../types/wanted';
 
 const seriesItemSchema = z.object({
   id: z.number(),
@@ -25,6 +31,30 @@ const wantedItemSchema = z.object({
   title: z.string().optional(),
 }).passthrough();
 
+const missingEpisodeSchema = z.object({
+  id: z.number(),
+  seriesId: z.number(),
+  seriesTitle: z.string(),
+  seasonNumber: z.number(),
+  episodeNumber: z.number(),
+  episodeTitle: z.string(),
+  airDate: z.string(),
+  status: z.union([z.literal('missing'), z.literal('unaired')]),
+  monitored: z.boolean(),
+}).passthrough();
+
+const cutoffUnmetEpisodeSchema = z.object({
+  id: z.number(),
+  seriesId: z.number(),
+  seriesTitle: z.string(),
+  seasonNumber: z.number(),
+  episodeNumber: z.number(),
+  episodeTitle: z.string(),
+  currentQuality: z.string(),
+  cutoffQuality: z.string(),
+  airDate: z.string(),
+}).passthrough();
+
 const metadataResultSchema = z.object({
   mediaType: z.union([z.literal('TV'), z.literal('MOVIE')]),
   title: z.string(),
@@ -38,6 +68,8 @@ const createdMediaSchema = z.object({
 export type SeriesListItem = z.infer<typeof seriesItemSchema>;
 export type MovieListItem = z.infer<typeof movieItemSchema>;
 export type WantedListItem = z.infer<typeof wantedItemSchema>;
+export type MissingEpisodeItem = z.infer<typeof missingEpisodeSchema>;
+export type CutoffUnmetEpisodeItem = z.infer<typeof cutoffUnmetEpisodeSchema>;
 export type MetadataSearchResult = z.infer<typeof metadataResultSchema>;
 export type CreatedMedia = z.infer<typeof createdMediaSchema>;
 
@@ -176,6 +208,26 @@ export function createMediaApi(client: ApiHttpClient) {
           query,
         },
         wantedItemSchema,
+      );
+    },
+
+    listMissingEpisodes(query: MissingEpisodesQuery = {}): Promise<PaginatedResult<MissingEpisodeItem>> {
+      return client.requestPaginated(
+        {
+          path: routeMap.missingEpisodes,
+          query,
+        },
+        missingEpisodeSchema,
+      );
+    },
+
+    listCutoffUnmetEpisodes(query: CutoffUnmetEpisodesQuery = {}): Promise<PaginatedResult<CutoffUnmetEpisodeItem>> {
+      return client.requestPaginated(
+        {
+          path: routeMap.cutoffUnmetEpisodes,
+          query,
+        },
+        cutoffUnmetEpisodeSchema,
       );
     },
 

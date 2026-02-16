@@ -4,15 +4,20 @@ import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { DataTable, type DataTableColumn } from '@/components/primitives/DataTable';
+import { Icon } from '@/components/primitives/Icon';
 import { QueryPanel } from '@/components/primitives/QueryPanel';
 import { SortMenu } from '@/components/primitives/SortMenu';
 import { StatusBadge } from '@/components/primitives/StatusBadge';
 import { useToast } from '@/components/providers/ToastProvider';
+import { useSeriesViewMode } from '@/lib/hooks/useSeriesOptions';
 import { getApiClients } from '@/lib/api/client';
 import { queryKeys } from '@/lib/query/queryKeys';
 import { useApiQuery } from '@/lib/query/useApiQuery';
 import { useOptimisticMutation } from '@/lib/query/useOptimisticMutation';
 import { nextSortState } from '@/lib/table/sort';
+import { SeriesOverviewView } from '@/components/views/SeriesOverviewView';
+import { SeriesPosterView } from '@/components/views/SeriesPosterView';
+import type { SeriesViewMode } from '@/types/series';
 
 type SeriesRow = {
   id: number;
@@ -36,6 +41,7 @@ export default function SeriesLibraryPage() {
   const api = useMemo(() => getApiClients(), []);
   const queryClient = useQueryClient();
   const { pushToast } = useToast();
+  const [viewMode, setViewMode] = useSeriesViewMode();
 
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
@@ -88,6 +94,10 @@ export default function SeriesLibraryPage() {
       });
     },
   });
+
+  const handleViewModeChange = (mode: SeriesViewMode) => {
+    setViewMode(mode);
+  };
 
   const columns: DataTableColumn<SeriesRow>[] = [
     {
@@ -160,21 +170,69 @@ export default function SeriesLibraryPage() {
         />
       </label>
 
-      <SortMenu
-        label="Sort"
-        value={sortBy}
-        options={[
-          { key: 'title', label: 'Title' },
-          { key: 'year', label: 'Year' },
-          { key: 'status', label: 'Status' },
-        ]}
-        onChange={key => {
-          if (key === 'title' || key === 'year' || key === 'status') {
-            setSortBy(key);
-            setSortDir('asc');
-          }
-        }}
-      />
+      <div className="flex flex-wrap items-center gap-4">
+        <SortMenu
+          label="Sort"
+          value={sortBy}
+          options={[
+            { key: 'title', label: 'Title' },
+            { key: 'year', label: 'Year' },
+            { key: 'status', label: 'Status' },
+          ]}
+          onChange={key => {
+            if (key === 'title' || key === 'year' || key === 'status') {
+              setSortBy(key);
+              setSortDir('asc');
+            }
+          }}
+        />
+
+        {/* View Mode Toggle */}
+        <div className="flex items-center gap-1 rounded-sm border border-border-subtle bg-surface-1 p-1">
+          <button
+            type="button"
+            className={`rounded-sm px-3 py-1.5 text-xs font-medium transition-colors ${
+              viewMode === 'table'
+                ? 'bg-surface-3 text-text-primary'
+                : 'text-text-secondary hover:text-text-primary'
+            }`}
+            onClick={() => handleViewModeChange('table')}
+            aria-label="Table view"
+            aria-pressed={viewMode === 'table'}
+          >
+            <Icon name="list" className="inline-block mr-1" />
+            Table
+          </button>
+          <button
+            type="button"
+            className={`rounded-sm px-3 py-1.5 text-xs font-medium transition-colors ${
+              viewMode === 'posters'
+                ? 'bg-surface-3 text-text-primary'
+                : 'text-text-secondary hover:text-text-primary'
+            }`}
+            onClick={() => handleViewModeChange('posters')}
+            aria-label="Poster view"
+            aria-pressed={viewMode === 'posters'}
+          >
+            <Icon name="grid" className="inline-block mr-1" />
+            Posters
+          </button>
+          <button
+            type="button"
+            className={`rounded-sm px-3 py-1.5 text-xs font-medium transition-colors ${
+              viewMode === 'overview'
+                ? 'bg-surface-3 text-text-primary'
+                : 'text-text-secondary hover:text-text-primary'
+            }`}
+            onClick={() => handleViewModeChange('overview')}
+            aria-label="Overview view"
+            aria-pressed={viewMode === 'overview'}
+          >
+            <Icon name="list" className="inline-block mr-1" />
+            Overview
+          </button>
+        </div>
+      </div>
 
       <QueryPanel
         isLoading={seriesQuery.isPending}
@@ -185,48 +243,134 @@ export default function SeriesLibraryPage() {
         emptyTitle="No series found"
         emptyBody="Adjust filters or add a new series from Add Media."
       >
-        <DataTable
-          data={data?.items ?? []}
-          columns={columns}
-          getRowId={row => row.id}
-          sort={{ key: sortBy, direction: sortDir }}
-          onSort={key => {
-            if (key !== 'title' && key !== 'year' && key !== 'status') {
-              return;
-            }
+        {viewMode === 'table' ? (
+          <DataTable
+            data={data?.items ?? []}
+            columns={columns}
+            getRowId={row => row.id}
+            sort={{ key: sortBy, direction: sortDir }}
+            onSort={key => {
+              if (key !== 'title' && key !== 'year' && key !== 'status') {
+                return;
+              }
 
-            const next = nextSortState({ key: sortBy, direction: sortDir }, key);
-            setSortBy(next.key);
-            setSortDir(next.direction);
-          }}
-          pagination={{
-            page,
-            totalPages: data?.meta.totalPages ?? 1,
-            onPrev: () => setPage(current => Math.max(1, current - 1)),
-            onNext: () => setPage(current => Math.min(data?.meta.totalPages ?? 1, current + 1)),
-          }}
-          rowActions={row => (
-            <div className="flex justify-end gap-2">
-              <Link href={`/library/series/${row.id}`} className="rounded-sm border border-border-subtle px-2 py-1 text-xs">
-                Open
-              </Link>
-              <button
-                type="button"
-                className="rounded-sm border border-status-error/60 px-2 py-1 text-xs text-status-error"
-                onClick={() => {
-                  const confirmed = window.confirm(`Delete ${row.title}?`);
-                  if (!confirmed) {
-                    return;
+              const next = nextSortState({ key: sortBy, direction: sortDir }, key);
+              setSortBy(next.key);
+              setSortDir(next.direction);
+            }}
+            pagination={{
+              page,
+              totalPages: data?.meta.totalPages ?? 1,
+              onPrev: () => setPage(current => Math.max(1, current - 1)),
+              onNext: () => setPage(current => Math.min(data?.meta.totalPages ?? 1, current + 1)),
+            }}
+            rowActions={row => (
+              <div className="flex justify-end gap-2">
+                <Link href={`/library/series/${row.id}`} className="rounded-sm border border-border-subtle px-2 py-1 text-xs">
+                  Open
+                </Link>
+                <button
+                  type="button"
+                  className="rounded-sm border border-status-error/60 px-2 py-1 text-xs text-status-error"
+                  onClick={() => {
+                    const confirmed = window.confirm(`Delete ${row.title}?`);
+                    if (!confirmed) {
+                      return;
+                    }
+
+                    deleteMutation.mutate(row.id);
+                  }}
+                >
+                  Delete
+                </button>
+              </div>
+            )}
+          />
+        ) : viewMode === 'posters' ? (
+          <div className="space-y-4">
+            <SeriesPosterView
+              items={data?.items ?? []}
+              onToggleMonitored={(id, monitored) => {
+                monitoredMutation.mutate({ id, monitored });
+              }}
+              onDelete={id => {
+                const item = data?.items.find(i => i.id === id);
+                if (item) {
+                  const confirmed = window.confirm(`Delete ${item.title}?`);
+                  if (confirmed) {
+                    deleteMutation.mutate(id);
                   }
-
-                  deleteMutation.mutate(row.id);
-                }}
-              >
-                Delete
-              </button>
-            </div>
-          )}
-        />
+                }
+              }}
+            />
+            {/* Pagination for non-table views */}
+            {data && data.meta.totalPages > 1 && (
+              <div className="flex justify-center gap-2">
+                <button
+                  type="button"
+                  className="rounded-sm border border-border-subtle bg-surface-1 px-3 py-1.5 text-xs hover:bg-surface-2 disabled:opacity-50"
+                  onClick={() => setPage(current => Math.max(1, current - 1))}
+                  disabled={page === 1}
+                >
+                  Previous
+                </button>
+                <span className="flex items-center px-2 text-xs text-text-secondary">
+                  Page {page} of {data.meta.totalPages}
+                </span>
+                <button
+                  type="button"
+                  className="rounded-sm border border-border-subtle bg-surface-1 px-3 py-1.5 text-xs hover:bg-surface-2 disabled:opacity-50"
+                  onClick={() => setPage(current => Math.min(data.meta.totalPages, current + 1))}
+                  disabled={page === data.meta.totalPages}
+                >
+                  Next
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <SeriesOverviewView
+              items={data?.items ?? []}
+              onToggleMonitored={(id, monitored) => {
+                monitoredMutation.mutate({ id, monitored });
+              }}
+              onDelete={id => {
+                const item = data?.items.find(i => i.id === id);
+                if (item) {
+                  const confirmed = window.confirm(`Delete ${item.title}?`);
+                  if (confirmed) {
+                    deleteMutation.mutate(id);
+                  }
+                }
+              }}
+            />
+            {/* Pagination for non-table views */}
+            {data && data.meta.totalPages > 1 && (
+              <div className="flex justify-center gap-2">
+                <button
+                  type="button"
+                  className="rounded-sm border border-border-subtle bg-surface-1 px-3 py-1.5 text-xs hover:bg-surface-2 disabled:opacity-50"
+                  onClick={() => setPage(current => Math.max(1, current - 1))}
+                  disabled={page === 1}
+                >
+                  Previous
+                </button>
+                <span className="flex items-center px-2 text-xs text-text-secondary">
+                  Page {page} of {data.meta.totalPages}
+                </span>
+                <button
+                  type="button"
+                  className="rounded-sm border border-border-subtle bg-surface-1 px-3 py-1.5 text-xs hover:bg-surface-2 disabled:opacity-50"
+                  onClick={() => setPage(current => Math.min(data.meta.totalPages, current + 1))}
+                  disabled={page === data.meta.totalPages}
+                >
+                  Next
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </QueryPanel>
     </section>
   );

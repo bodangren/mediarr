@@ -100,7 +100,6 @@ While the primary sequence defines hard dependencies, several phases across trac
 *Description: Clone the Radarr movie collection manager UI with comprehensive views, components, and features for managing movies, downloads, and quality profiles.*
 *Phases: 11 | Link: [./tracks/radarr_ui_cloning_20260214/](./tracks/radarr_ui_cloning_20260214/)*
 
-- [~] **Track: Sonarr UI Cloning**
+- [x] **Track: Sonarr UI Cloning**
 *Description: Clone the Sonarr TV series PVR UI with comprehensive views, components, and features for managing series, episodes, downloads, and quality profiles.*
-*Phases: 14 | Status: IN PROGRESS (Frontend complete, Backend pending) | Link: [./tracks/sonarr_ui_cloning_20260214/](./tracks/sonarr_ui_cloning_20260214/)*
-*Remaining: Phase 12 (Backend APIs), Phase 13 (Deferred UI), Phase 14 (E2E Tests)**
+*Phases: 14 | Status: COMPLETED (Backend APIs and Deferred UI implemented) | Link: [../archive/sonarr_ui_cloning_20260214/](../archive/sonarr_ui_cloning_20260214/)*

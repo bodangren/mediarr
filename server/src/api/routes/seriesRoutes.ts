@@ -4,6 +4,64 @@ import { assertFound, assertNoActiveTorrents, parseBoolean, parseIdParam, sortBy
 import { ValidationError } from '../../errors/domainErrors';
 import type { ApiDependencies } from '../types';
 
+// Calendar episode status type
+type CalendarEpisodeStatus = 'downloaded' | 'missing' | 'airing' | 'unaired';
+
+// Response type for calendar endpoint
+interface CalendarEpisode {
+  id: number;
+  seriesId: number;
+  seriesTitle: string;
+  seasonNumber: number;
+  episodeNumber: number;
+  episodeTitle: string;
+  airDate: string;
+  airTime?: string;
+  status: CalendarEpisodeStatus;
+  hasFile: boolean;
+  monitored: boolean;
+}
+
+// Determine episode status based on air date and file presence
+function determineEpisodeStatus(airDateUtc: Date | null, hasFile: boolean): CalendarEpisodeStatus {
+  if (hasFile) {
+    return 'downloaded';
+  }
+
+  if (!airDateUtc) {
+    return 'unaired';
+  }
+
+  const now = new Date();
+  const airDate = new Date(airDateUtc);
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const airDay = new Date(airDate.getFullYear(), airDate.getMonth(), airDate.getDate());
+
+  if (airDay.getTime() === today.getTime()) {
+    return 'airing';
+  }
+
+  if (airDate < now) {
+    return 'missing';
+  }
+
+  return 'unaired';
+}
+
+// Format date to ISO date string (YYYY-MM-DD)
+function formatAirDate(date: Date | null): string {
+  if (!date) return '';
+  return date.toISOString().split('T')[0] ?? '';
+}
+
+// Format time to HH:mm string
+function formatAirTime(date: Date | null): string | undefined {
+  if (!date) return undefined;
+  const hours = date.getUTCHours().toString().padStart(2, '0');
+  const minutes = date.getUTCMinutes().toString().padStart(2, '0');
+  return `${hours}:${minutes}`;
+}
+
 function filterSeries(
   items: any[],
   query: Record<string, unknown>,
@@ -212,5 +270,137 @@ export function registerSeriesRoutes(
       deleted: true,
       id,
     });
+  });
+
+  /**
+   * GET /api/calendar
+   * Returns episodes airing within a specified date range.
+   *
+   * Query Parameters:
+   * - start: ISO 8601 date string (YYYY-MM-DD) - Start of date range (required)
+   * - end: ISO 8601 date string (YYYY-MM-DD) - End of date range (required)
+   * - seriesId: number | string - Filter by specific series ID (optional)
+   * - tags: string - Comma-separated list of tags to filter (optional)
+   * - status: 'downloaded' | 'missing' | 'airing' | 'unaired' - Filter by episode status (optional)
+   *
+   * Returns: Array of CalendarEpisode objects
+   */
+  app.get('/api/calendar', {
+    schema: {
+      querystring: {
+        type: 'object',
+        required: ['start', 'end'],
+        properties: {
+          start: { type: 'string', format: 'date', description: 'Start date (YYYY-MM-DD)' },
+          end: { type: 'string', format: 'date', description: 'End date (YYYY-MM-DD)' },
+          seriesId: { type: ['number', 'string'], description: 'Filter by series ID' },
+          tags: { type: 'string', description: 'Comma-separated tag list' },
+          status: { type: 'string', enum: ['downloaded', 'missing', 'airing', 'unaired'], description: 'Filter by status' },
+        },
+      },
+    },
+  }, async (request, reply) => {
+    const prisma = deps.prisma as any;
+    const prismaEpisode = prisma.episode;
+    const prismaSeries = prisma.series;
+
+    if (!prismaEpisode?.findMany || !prismaSeries?.findMany) {
+      throw new ValidationError('Episode or Series data source is not configured');
+    }
+
+    const query = request.query as Record<string, unknown>;
+
+    // Parse date range
+    const startStr = typeof query.start === 'string' ? query.start : undefined;
+    const endStr = typeof query.end === 'string' ? query.end : undefined;
+
+    if (!startStr || !endStr) {
+      throw new ValidationError('Both start and end date parameters are required');
+    }
+
+    const startDate = new Date(startStr);
+    const endDate = new Date(endStr);
+
+    if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+      throw new ValidationError('Invalid date format for start or end parameter');
+    }
+
+    // Set time boundaries for the query
+    const queryStartDate = new Date(startDate);
+    queryStartDate.setHours(0, 0, 0, 0);
+    const queryEndDate = new Date(endDate);
+    queryEndDate.setHours(23, 59, 59, 999);
+
+    // Parse optional filters
+    const seriesIdFilter = typeof query.seriesId === 'number'
+      ? query.seriesId
+      : typeof query.seriesId === 'string'
+        ? Number.parseInt(query.seriesId, 10)
+        : undefined;
+
+    const statusFilter = typeof query.status === 'string'
+      ? (query.status as CalendarEpisodeStatus)
+      : undefined;
+
+    // Build where clause
+    const whereClause: Record<string, unknown> = {
+      airDateUtc: {
+        gte: queryStartDate,
+        lte: queryEndDate,
+      },
+    };
+
+    if (seriesIdFilter !== undefined && !Number.isNaN(seriesIdFilter)) {
+      whereClause.seriesId = seriesIdFilter;
+    }
+
+    // Query episodes with series and file variants
+    const episodes = await prismaEpisode.findMany({
+      where: whereClause,
+      include: {
+        series: {
+          select: {
+            id: true,
+            title: true,
+          },
+        },
+        fileVariants: {
+          select: {
+            id: true,
+          },
+        },
+      },
+      orderBy: {
+        airDateUtc: 'asc',
+      },
+    });
+
+    // Transform to calendar episodes
+    const calendarEpisodes: CalendarEpisode[] = episodes.map((ep: any) => {
+      const hasFile = ep.fileVariants && ep.fileVariants.length > 0;
+      const status = determineEpisodeStatus(ep.airDateUtc, hasFile);
+
+      return {
+        id: ep.id,
+        seriesId: ep.seriesId,
+        seriesTitle: ep.series?.title ?? 'Unknown Series',
+        seasonNumber: ep.seasonNumber,
+        episodeNumber: ep.episodeNumber,
+        episodeTitle: ep.title ?? 'Untitled Episode',
+        airDate: formatAirDate(ep.airDateUtc),
+        airTime: formatAirTime(ep.airDateUtc),
+        status,
+        hasFile,
+        monitored: ep.monitored ?? false,
+      };
+    });
+
+    // Apply status filter in memory (after determining status)
+    let filteredEpisodes = calendarEpisodes;
+    if (statusFilter) {
+      filteredEpisodes = calendarEpisodes.filter(ep => ep.status === statusFilter);
+    }
+
+    return sendSuccess(reply, filteredEpisodes);
   });
 }

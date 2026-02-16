@@ -1,10 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
+import { Search } from 'lucide-react';
 import { QueryPanel } from '@/components/primitives/QueryPanel';
 import { StatusBadge } from '@/components/primitives/StatusBadge';
+import { InteractiveSearchModal } from '@/components/search';
 import { getApiClients } from '@/lib/api/client';
 import { queryKeys } from '@/lib/query/queryKeys';
 import { useApiQuery } from '@/lib/query/useApiQuery';
@@ -23,6 +25,7 @@ type SeriesDetail = {
       id: number;
       episodeNumber: number;
       title: string;
+      seasonNumber: number;
       monitored?: boolean;
       path?: string | null;
     }>;
@@ -33,6 +36,40 @@ export default function SeriesDetailPage() {
   const api = useMemo(() => getApiClients(), []);
   const params = useParams<{ id: string }>();
   const id = Number.parseInt(params.id, 10);
+
+  // State for interactive search modal
+  const [searchModal, setSearchModal] = useState<{
+    isOpen: boolean;
+    episodeId: number | null;
+    episodeNumber: number;
+    episodeTitle: string;
+    seasonNumber: number;
+  }>({
+    isOpen: false,
+    episodeId: null,
+    episodeNumber: 0,
+    episodeTitle: '',
+    seasonNumber: 0,
+  });
+
+  const openSearchModal = (episode: {
+    id: number;
+    episodeNumber: number;
+    title: string;
+    seasonNumber: number;
+  }) => {
+    setSearchModal({
+      isOpen: true,
+      episodeId: episode.id,
+      episodeNumber: episode.episodeNumber,
+      episodeTitle: episode.title,
+      seasonNumber: episode.seasonNumber,
+    });
+  };
+
+  const closeSearchModal = () => {
+    setSearchModal(prev => ({ ...prev, isOpen: false }));
+  };
 
   const seriesQuery = useApiQuery({
     queryKey: queryKeys.seriesDetail(id),
@@ -92,14 +129,27 @@ export default function SeriesDetailPage() {
                   const hasFile = Boolean(episode.path);
 
                   return (
-                    <div key={episode.id} className="grid grid-cols-[1fr_auto_auto] items-center gap-3 rounded-sm bg-surface-0 px-3 py-2">
-                      <div>
+                    <div key={episode.id} className="flex items-center gap-3 rounded-sm bg-surface-0 px-3 py-2">
+                      <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium">
                           E{episode.episodeNumber}: {episode.title}
                         </p>
-                        <p className="text-xs text-text-secondary">{hasFile ? episode.path : 'File missing'}</p>
+                        <p className="text-xs text-text-secondary truncate">{hasFile ? episode.path : 'File missing'}</p>
                       </div>
                       <StatusBadge status={hasFile ? 'completed' : 'wanted'} />
+                      <button
+                        type="button"
+                        className="p-1.5 rounded-sm text-text-secondary hover:text-text-primary hover:bg-surface-2 transition-colors"
+                        onClick={() => openSearchModal({
+                          id: episode.id,
+                          episodeNumber: episode.episodeNumber,
+                          title: episode.title,
+                          seasonNumber: season.seasonNumber,
+                        })}
+                        title="Interactive Search"
+                      >
+                        <Search size={16} />
+                      </button>
                       <label className="inline-flex items-center gap-2 text-xs text-text-secondary">
                         <input
                           type="checkbox"
@@ -125,6 +175,20 @@ export default function SeriesDetailPage() {
       <Link href="/library/series" className="inline-flex rounded-sm border border-border-subtle px-3 py-1 text-sm">
         Back to Series
       </Link>
+
+      {/* Interactive Search Modal */}
+      {searchModal.episodeId !== null && series && (
+        <InteractiveSearchModal
+          isOpen={searchModal.isOpen}
+          onClose={closeSearchModal}
+          seriesId={series.id}
+          episodeId={searchModal.episodeId}
+          seriesTitle={series.title}
+          seasonNumber={searchModal.seasonNumber}
+          episodeNumber={searchModal.episodeNumber}
+          episodeTitle={searchModal.episodeTitle}
+        />
+      )}
     </section>
   );
 }

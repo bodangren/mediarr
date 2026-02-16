@@ -10,12 +10,16 @@ import { HttpClient } from './indexers/HttpClient';
 import { IndexerTester } from './indexers/IndexerTester';
 import { ActivityEventRepository } from './repositories/ActivityEventRepository';
 import { AppSettingsRepository } from './repositories/AppSettingsRepository';
+import { DownloadClientRepository } from './repositories/DownloadClientRepository';
 import { IndexerHealthRepository } from './repositories/IndexerHealthRepository';
 import { IndexerRepository } from './repositories/IndexerRepository';
 import { MediaRepository } from './repositories/MediaRepository';
+import { NotificationRepository } from './repositories/NotificationRepository';
+import { QualityProfileRepository } from './repositories/QualityProfileRepository';
 import { SubtitleVariantRepository } from './repositories/SubtitleVariantRepository';
 import { TorrentRepository } from './repositories/TorrentRepository';
 import { seedCategories } from './seeds/categories';
+import { seedQualityDefinitions } from './seeds/qualities';
 import { ActivityEventEmitter } from './services/ActivityEventEmitter';
 import { DataDirectoryInitializer } from './services/DataDirectoryInitializer';
 import { MediaSearchService } from './services/MediaSearchService';
@@ -44,17 +48,42 @@ function parsePort(rawPort: string | undefined, fallback: number): number {
 
 async function ensureBaselineData(prisma: PrismaClient): Promise<void> {
   await seedCategories(prisma);
+  await seedQualityDefinitions(prisma);
+
+  // Default quality profiles with proper items structure
+  const hd1080pItems = [
+    { quality: { id: 1, name: 'SDTV', source: 'television', resolution: 480 }, allowed: true },
+    { quality: { id: 4, name: 'DVD', source: 'dvd', resolution: 480 }, allowed: true },
+    { quality: { id: 5, name: 'HDTV-720p', source: 'television', resolution: 720 }, allowed: true },
+    { quality: { id: 6, name: 'WEBRip-720p', source: 'web', resolution: 720 }, allowed: true },
+    { quality: { id: 7, name: 'WEBDL-720p', source: 'web', resolution: 720 }, allowed: true },
+    { quality: { id: 8, name: 'Bluray-720p', source: 'bluray', resolution: 720 }, allowed: true },
+    { quality: { id: 9, name: 'HDTV-1080p', source: 'television', resolution: 1080 }, allowed: true },
+    { quality: { id: 10, name: 'WEBRip-1080p', source: 'web', resolution: 1080 }, allowed: true },
+    { quality: { id: 11, name: 'WEBDL-1080p', source: 'web', resolution: 1080 }, allowed: true },
+    { quality: { id: 12, name: 'Bluray-1080p', source: 'bluray', resolution: 1080 }, allowed: true },
+    { quality: { id: 13, name: 'Bluray-1080p Remux', source: 'bluray', resolution: 1080 }, allowed: false },
+  ];
+
+  const ultraHdItems = [
+    ...hd1080pItems,
+    { quality: { id: 14, name: 'HDTV-2160p', source: 'television', resolution: 2160 }, allowed: true },
+    { quality: { id: 15, name: 'WEBRip-2160p', source: 'web', resolution: 2160 }, allowed: true },
+    { quality: { id: 16, name: 'WEBDL-2160p', source: 'web', resolution: 2160 }, allowed: true },
+    { quality: { id: 17, name: 'Bluray-2160p', source: 'bluray', resolution: 2160 }, allowed: true },
+    { quality: { id: 18, name: 'Bluray-2160p Remux', source: 'bluray', resolution: 2160 }, allowed: false },
+  ];
 
   await prisma.qualityProfile.upsert({
     where: { name: 'HD-1080p' },
     update: {},
-    create: { name: 'HD-1080p' },
+    create: { name: 'HD-1080p', cutoff: 11, items: hd1080pItems },
   });
 
   await prisma.qualityProfile.upsert({
     where: { name: 'UltraHD' },
     update: {},
-    create: { name: 'UltraHD' },
+    create: { name: 'UltraHD', cutoff: 16, items: ultraHdItems },
   });
 }
 
@@ -197,9 +226,12 @@ async function startApi(): Promise<void> {
   const activityEventRepository = new ActivityEventRepository(prisma);
   const activityEventEmitter = new ActivityEventEmitter(activityEventRepository);
 
+  const downloadClientRepository = new DownloadClientRepository(prisma);
   const indexerRepository = new IndexerRepository(prisma);
   const indexerHealthRepository = new IndexerHealthRepository(prisma);
   const mediaRepository = new MediaRepository(prisma);
+  const notificationRepository = new NotificationRepository(prisma);
+  const qualityProfileRepository = new QualityProfileRepository(prisma);
   const subtitleVariantRepository = new SubtitleVariantRepository(prisma);
   const appSettingsRepository = new AppSettingsRepository(prisma);
   const torrentRepository = new TorrentRepository(prisma);
@@ -287,6 +319,9 @@ async function startApi(): Promise<void> {
     settingsService,
     activityEventRepository,
     indexerHealthRepository,
+    notificationRepository,
+    qualityProfileRepository,
+    downloadClientRepository,
     metadataProvider,
   });
 

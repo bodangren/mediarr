@@ -3,6 +3,9 @@ import type { IndexerRepository } from '../repositories/IndexerRepository';
 import type { MediaRepository } from '../repositories/MediaRepository';
 import type { ActivityEventRepository } from '../repositories/ActivityEventRepository';
 import type { IndexerHealthRepository } from '../repositories/IndexerHealthRepository';
+import type { NotificationRepository } from '../repositories/NotificationRepository';
+import type { QualityProfileRepository } from '../repositories/QualityProfileRepository';
+import type { DownloadClientRepository } from '../repositories/DownloadClientRepository';
 import type { MediaService } from '../services/MediaService';
 import type { MediaSearchService } from '../services/MediaSearchService';
 import type { WantedService } from '../services/WantedService';
@@ -49,6 +52,18 @@ export interface ApiDependencies {
   settingsService?: Pick<SettingsService, 'get' | 'update'>;
   activityEventRepository?: Pick<ActivityEventRepository, 'query' | 'clear' | 'markAsFailed' | 'export'>;
   indexerHealthRepository?: Pick<IndexerHealthRepository, 'getByIndexerId'>;
+  notificationRepository?: Pick<
+    NotificationRepository,
+    'findAll' | 'findById' | 'create' | 'update' | 'delete' | 'exists' | 'nameExists'
+  >;
+  qualityProfileRepository?: Pick<
+    QualityProfileRepository,
+    'findAll' | 'findById' | 'findByName' | 'create' | 'update' | 'delete' | 'isInUse'
+  >;
+  downloadClientRepository?: Pick<
+    DownloadClientRepository,
+    'findAll' | 'findById' | 'create' | 'update' | 'delete' | 'exists' | 'nameExists'
+  >;
   metadataProvider?: Pick<MetadataProvider, 'searchMedia'>;
   eventHub?: ApiEventHub;
 }

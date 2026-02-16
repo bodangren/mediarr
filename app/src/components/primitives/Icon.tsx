@@ -1,6 +1,8 @@
 import {
   Archive,
   CheckCircle2,
+  ChevronDown,
+  ChevronUp,
   CircleAlert,
   CircleX,
   Code,
@@ -50,7 +52,9 @@ type IconName =
   | 'edit'
   | 'play'
   | 'grid'
-  | 'list';
+  | 'list'
+  | 'chevron-up'
+  | 'chevron-down';
 
 interface IconProps extends Omit<LucideProps, 'ref'> {
   name: IconName;
@@ -82,6 +86,8 @@ const ICON_MAP = {
   play: Play,
   grid: Grid3X3,
   list: List,
+  'chevron-up': ChevronUp,
+  'chevron-down': ChevronDown,
 } as const;
 
 export function Icon({ name, label, ...props }: IconProps) {

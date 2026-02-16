@@ -104,6 +104,10 @@ export interface AddMediaInput {
   status?: string;
   overview?: string;
   network?: string;
+  rootFolder?: string;
+  monitor?: 'all' | 'future' | 'missing' | 'existing' | 'pilot' | 'firstSeason' | 'none';
+  seriesType?: 'standard' | 'anime' | 'daily';
+  seasonFolder?: boolean;
 }
 
 export function createMediaApi(client: ApiHttpClient) {

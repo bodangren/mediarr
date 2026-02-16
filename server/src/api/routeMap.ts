@@ -4,6 +4,8 @@ export interface ApiRouteDefinition {
 }
 
 export const API_ROUTE_MAP: ApiRouteDefinition[] = [
+  { method: 'GET', path: '/api/calendar' },
+
   { method: 'GET', path: '/api/series' },
   { method: 'GET', path: '/api/series/:id' },
   { method: 'PATCH', path: '/api/series/:id/monitored' },
@@ -88,4 +90,39 @@ export const API_ROUTE_MAP: ApiRouteDefinition[] = [
   { method: 'POST', path: '/api/updates/install' },
   { method: 'GET', path: '/api/updates/history' },
   { method: 'GET', path: '/api/updates/progress/:updateId' },
+
+  // Notification routes
+  { method: 'GET', path: '/api/notifications' },
+  { method: 'GET', path: '/api/notifications/:id' },
+  { method: 'POST', path: '/api/notifications' },
+  { method: 'PUT', path: '/api/notifications/:id' },
+  { method: 'DELETE', path: '/api/notifications/:id' },
+  { method: 'POST', path: '/api/notifications/:id/test' },
+  { method: 'POST', path: '/api/notifications/test' },
+  { method: 'POST', path: '/api/notifications/schema' },
+  { method: 'GET', path: '/api/notifications/types' },
+
+  // Download Client routes
+  { method: 'GET', path: '/api/download-clients' },
+  { method: 'GET', path: '/api/download-clients/:id' },
+  { method: 'POST', path: '/api/download-clients' },
+  { method: 'PUT', path: '/api/download-clients/:id' },
+  { method: 'DELETE', path: '/api/download-clients/:id' },
+  { method: 'POST', path: '/api/download-clients/:id/test' },
+  { method: 'POST', path: '/api/download-clients/test' },
+  { method: 'POST', path: '/api/download-clients/schema' },
+
+  // Blocklist routes
+  { method: 'GET', path: '/api/blocklist' },
+  { method: 'DELETE', path: '/api/blocklist/remove' },
+  { method: 'DELETE', path: '/api/blocklist/clear' },
+  { method: 'DELETE', path: '/api/blocklist/:id' },
+
+  // Quality Profile routes
+  { method: 'GET', path: '/api/quality-profiles' },
+  { method: 'GET', path: '/api/quality-profiles/:id' },
+  { method: 'POST', path: '/api/quality-profiles' },
+  { method: 'PUT', path: '/api/quality-profiles/:id' },
+  { method: 'DELETE', path: '/api/quality-profiles/:id' },
+  { method: 'GET', path: '/api/quality-definitions' },
 ];

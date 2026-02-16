@@ -252,11 +252,23 @@ model SubtitleHistory {
 }
 
 model QualityProfile {
-  id     Int      @id @default(autoincrement())
-  name   String   @unique
-  medias Media[]
-  series Series[]
-  movies Movie[]
+  id                Int      @id @default(autoincrement())
+  name              String   @unique
+  cutoff            Int      @default(0)
+  items             Json     @default("[]")
+  languageProfileId Int?
+  medias            Media[]
+  series            Series[]
+  movies            Movie[]
+}
+
+model QualityDefinition {
+  id         Int    @id
+  name       String
+  source     String
+  resolution Int    @default(0)
+  title      String?
+  weight     Int    @default(0)
 }
 
 model Indexer {
@@ -399,4 +411,53 @@ model ActivityEvent {
   @@index([sourceModule, occurredAt])
   @@index([entityRef])
   @@index([success, occurredAt])
+}
+
+model Notification {
+  id             Int      @id @default(autoincrement())
+  name           String   @unique
+  type           String   // discord, email, telegram, slack, gotify, pushover, webhook
+  enabled        Boolean  @default(true)
+  onGrab         Boolean  @default(false)
+  onDownload     Boolean  @default(false)
+  onUpgrade      Boolean  @default(false)
+  onRename       Boolean  @default(false)
+  onSeriesAdd    Boolean  @default(false)
+  onEpisodeDelete Boolean @default(false)
+  config         Json     // Type-specific configuration (encrypted fields handled at app layer)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model DownloadClient {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  protocol  String   // 'torrent' or 'usenet'
+  type      String   // 'qbittorrent', 'transmission', 'deluge', 'rtorrent', 'utorrent', 'sabnzbd', 'nzbget'
+  enabled   Boolean  @default(true)
+  priority  Int      @default(25)
+  config    String   // JSON string containing connection config (encrypted sensitive fields)
+  added     DateTime @default(now())
+
+  @@index([protocol])
+  @@index([enabled])
+}
+
+model Blocklist {
+  id            Int      @id @default(autoincrement())
+  seriesId      Int?
+  seriesTitle   String
+  episodeId     Int?
+  seasonNumber  Int?
+  episodeNumber Int?
+  releaseTitle  String
+  quality       String?
+  indexer       String?
+  size          BigInt?
+  reason        String
+  dateBlocked   DateTime @default(now())
+  createdAt     DateTime @default(now())
+
+  @@index([seriesId])
+  @@index([dateBlocked])
 }

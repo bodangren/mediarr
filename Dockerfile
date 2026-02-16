@@ -8,6 +8,7 @@ WORKDIR /app
 
 # Dependencies stage
 FROM base AS deps
+RUN apt-get update -y && apt-get install -y build-essential python3 cmake
 COPY package.json package-lock.json ./
 COPY app/package.json ./app/
 COPY server/package.json ./server/

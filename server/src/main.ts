@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import crypto from 'node:crypto';
+import fs from 'node:fs/promises';
 import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 import { PrismaClient } from '@prisma/client';
 import path from 'node:path';
@@ -9,7 +10,10 @@ import { IndexerFactory } from './indexers/IndexerFactory';
 import { HttpClient } from './indexers/HttpClient';
 import { IndexerTester } from './indexers/IndexerTester';
 import { ActivityEventRepository } from './repositories/ActivityEventRepository';
-import { AppSettingsRepository } from './repositories/AppSettingsRepository';
+import {
+  AppSettingsRepository,
+  DEFAULT_APP_SETTINGS,
+} from './repositories/AppSettingsRepository';
 import { DownloadClientRepository } from './repositories/DownloadClientRepository';
 import { IndexerHealthRepository } from './repositories/IndexerHealthRepository';
 import { IndexerRepository } from './repositories/IndexerRepository';
@@ -207,10 +211,133 @@ async function createRuntimeTorrentManager(
   }
 }
 
+async function resolveDatabaseUrl(configuredUrl: string | undefined): Promise<string> {
+  const fallbackUrl = `file:${path.resolve(process.cwd(), 'mediarr.db')}`;
+  const databaseUrl = configuredUrl ?? 'file:/config/mediarr.db';
+
+  if (!databaseUrl.startsWith('file:')) {
+    return databaseUrl;
+  }
+
+  const sqlitePath = databaseUrl.slice('file:'.length);
+  if (!sqlitePath) {
+    return fallbackUrl;
+  }
+
+  const directory = path.dirname(sqlitePath);
+  try {
+    await fs.mkdir(directory, { recursive: true });
+    return databaseUrl;
+  } catch (error) {
+    console.warn(
+      `Falling back to local database path because '${directory}' is unavailable:`,
+      error,
+    );
+    return fallbackUrl;
+  }
+}
+
+async function repairMalformedJsonColumns(databaseUrl: string): Promise<void> {
+  if (!databaseUrl.startsWith('file:')) {
+    return;
+  }
+
+  const sqlitePath = databaseUrl.slice('file:'.length);
+  if (!sqlitePath) {
+    return;
+  }
+
+  const { default: BetterSqlite3 } = await import('better-sqlite3');
+  const db = new BetterSqlite3(sqlitePath);
+
+  const requiredAppSettingsDefaults: Record<string, string> = {
+    torrentLimits: JSON.stringify(DEFAULT_APP_SETTINGS.torrentLimits),
+    schedulerIntervals: JSON.stringify(DEFAULT_APP_SETTINGS.schedulerIntervals),
+    pathVisibility: JSON.stringify(DEFAULT_APP_SETTINGS.pathVisibility),
+  };
+
+  const nullableAppSettingsColumns = ['apiKeys', 'host', 'security', 'logging', 'update'];
+
+  try {
+    const repairs: Array<{ label: string; changes: number }> = [];
+
+    repairs.push({
+      label: 'QualityProfile.items',
+      changes: db
+        .prepare(
+          `UPDATE "QualityProfile"
+           SET "items" = '[]'
+           WHERE "items" IS NULL OR json_valid("items") = 0`,
+        )
+        .run().changes,
+    });
+
+    repairs.push({
+      label: 'Notification.config',
+      changes: db
+        .prepare(
+          `UPDATE "Notification"
+           SET "config" = '{}'
+           WHERE "config" IS NULL OR json_valid("config") = 0`,
+        )
+        .run().changes,
+    });
+
+    repairs.push({
+      label: 'ActivityEvent.details',
+      changes: db
+        .prepare(
+          `UPDATE "ActivityEvent"
+           SET "details" = NULL
+           WHERE "details" IS NOT NULL AND json_valid("details") = 0`,
+        )
+        .run().changes,
+    });
+
+    for (const [column, defaultJson] of Object.entries(requiredAppSettingsDefaults)) {
+      repairs.push({
+        label: `AppSettings.${column}`,
+        changes: db
+          .prepare(
+            `UPDATE "AppSettings"
+             SET "${column}" = @defaultJson
+             WHERE "${column}" IS NULL OR json_valid("${column}") = 0`,
+          )
+          .run({ defaultJson }).changes,
+      });
+    }
+
+    for (const column of nullableAppSettingsColumns) {
+      repairs.push({
+        label: `AppSettings.${column}`,
+        changes: db
+          .prepare(
+            `UPDATE "AppSettings"
+             SET "${column}" = NULL
+             WHERE "${column}" IS NOT NULL AND json_valid("${column}") = 0`,
+          )
+          .run().changes,
+      });
+    }
+
+    const changed = repairs.filter((repair) => repair.changes > 0);
+    if (changed.length > 0) {
+      console.warn(
+        'Repaired malformed JSON in SQLite:',
+        changed.map((repair) => `${repair.label}=${repair.changes}`).join(', '),
+      );
+    }
+  } finally {
+    db.close();
+  }
+}
+
 async function startApi(): Promise<void> {
-  const databaseUrl = process.env.DATABASE_URL ?? 'file:/config/mediarr.db';
+  const databaseUrl = await resolveDatabaseUrl(process.env.DATABASE_URL);
   const port = parsePort(process.env.API_PORT, 3001);
   const host = process.env.API_HOST ?? '0.0.0.0';
+
+  await repairMalformedJsonColumns(databaseUrl);
 
   const adapter = new PrismaBetterSqlite3({ url: databaseUrl });
   const prisma = new PrismaClient({ adapter });

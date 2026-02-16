@@ -1,4 +1,3 @@
-import WebTorrent from 'webtorrent';
 import { TorrentRepository } from '../repositories/TorrentRepository';
 import { promises as fs } from 'fs';
 import path from 'path';
@@ -28,7 +27,7 @@ const IDLE_SYNC_INTERVAL_MS = 30000;
 export class TorrentManager extends EventEmitter {
   private static instance: TorrentManager | null = null;
 
-  private client: WebTorrent.Instance | null = null;
+  private client: any | null = null;
   private initialized = false;
   private statsSyncTimer: NodeJS.Timeout | null = null;
   private statsSyncInFlight = false;
@@ -61,6 +60,7 @@ export class TorrentManager extends EventEmitter {
   async initialize(): Promise<void> {
     if (this.initialized) return;
 
+    const { default: WebTorrent } = await import('webtorrent');
     this.client = new WebTorrent();
     this.initialized = true;
 
@@ -78,7 +78,7 @@ export class TorrentManager extends EventEmitter {
   /**
    * Returns the underlying WebTorrent client.
    */
-  getClient(): WebTorrent.Instance | null {
+  getClient(): any | null {
     return this.client;
   }
 

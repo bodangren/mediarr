@@ -69,7 +69,7 @@ beforeEach(() => {
           year: 2020,
           status: 'active',
           monitored: true,
-          fileVariants: [{}],
+          fileVariants: [{ path: null }],
         },
         {
           id: 3,

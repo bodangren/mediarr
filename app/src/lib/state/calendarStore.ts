@@ -1,19 +1,24 @@
-import type { CalendarFilters } from '../../types/calendar';
+import type { CalendarFilters, CalendarOptions } from '../../types/calendar';
 
 export interface CalendarState {
   currentDate: string; // ISO date
   viewMode: 'calendar' | 'agenda';
+  contentType: 'all' | 'movies' | 'tv';
   dayCount: 3 | 5 | 7;
   filters: CalendarFilters;
+  options: CalendarOptions;
 }
 
 export type CalendarAction =
   | { type: 'calendar/currentDate/set'; payload: string }
   | { type: 'calendar/currentDate/reset' }
   | { type: 'calendar/viewMode/set'; payload: 'calendar' | 'agenda' }
+  | { type: 'calendar/contentType/set'; payload: 'all' | 'movies' | 'tv' }
   | { type: 'calendar/dayCount/set'; payload: 3 | 5 | 7 }
   | { type: 'calendar/filters/set'; payload: CalendarFilters }
-  | { type: 'calendar/filters/reset' };
+  | { type: 'calendar/filters/reset' }
+  | { type: 'calendar/options/set'; payload: CalendarOptions }
+  | { type: 'calendar/options/reset' };
 
 export interface CalendarStorageLike {
   getItem: (key: string) => string | null;
@@ -27,11 +32,23 @@ export interface CalendarStore {
 
 export const CALENDAR_STATE_STORAGE_KEY = 'mediarr.calendar.state';
 
+const DEFAULT_CALENDAR_OPTIONS: CalendarOptions = {
+  showDayNumbers: true,
+  showWeekNumbers: false,
+  showMonitored: true,
+  showUnmonitored: true,
+  showCinemaReleases: true,
+  showDigitalReleases: true,
+  showPhysicalReleases: true,
+};
+
 const DEFAULT_CALENDAR_STATE: CalendarState = {
   currentDate: new Date().toISOString().split('T')[0]!,
   viewMode: 'calendar',
+  contentType: 'all',
   dayCount: 7,
   filters: {},
+  options: DEFAULT_CALENDAR_OPTIONS,
 };
 
 export function calendarReducer(state: CalendarState, action: CalendarAction): CalendarState {
@@ -56,6 +73,13 @@ export function calendarReducer(state: CalendarState, action: CalendarAction): C
     };
   }
 
+  if (action.type === 'calendar/contentType/set') {
+    return {
+      ...state,
+      contentType: action.payload,
+    };
+  }
+
   if (action.type === 'calendar/dayCount/set') {
     return {
       ...state,
@@ -77,6 +101,20 @@ export function calendarReducer(state: CalendarState, action: CalendarAction): C
     };
   }
 
+  if (action.type === 'calendar/options/set') {
+    return {
+      ...state,
+      options: action.payload,
+    };
+  }
+
+  if (action.type === 'calendar/options/reset') {
+    return {
+      ...state,
+      options: DEFAULT_CALENDAR_OPTIONS,
+    };
+  }
+
   return state;
 }
 
@@ -95,8 +133,10 @@ export function createInitialCalendarState(storage?: CalendarStorageLike): Calen
     return {
       currentDate: parsed.currentDate ?? DEFAULT_CALENDAR_STATE.currentDate,
       viewMode: parsed.viewMode ?? DEFAULT_CALENDAR_STATE.viewMode,
+      contentType: parsed.contentType ?? DEFAULT_CALENDAR_STATE.contentType,
       dayCount: parsed.dayCount ?? DEFAULT_CALENDAR_STATE.dayCount,
       filters: parsed.filters ?? DEFAULT_CALENDAR_STATE.filters,
+      options: parsed.options ?? DEFAULT_CALENDAR_OPTIONS,
     };
   } catch {
     return DEFAULT_CALENDAR_STATE;

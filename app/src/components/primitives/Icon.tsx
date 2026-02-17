@@ -2,6 +2,8 @@ import {
   Archive,
   CheckCircle2,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   ChevronUp,
   CircleAlert,
   CircleX,
@@ -9,6 +11,8 @@ import {
   Database,
   Download,
   Edit,
+  FileEdit,
+  Folder,
   GitCommit,
   Grid3X3,
   HardDrive,
@@ -17,14 +21,17 @@ import {
   Info,
   LayoutList,
   List,
+  Monitor,
   Package,
   Play,
   Plus,
   RefreshCw,
   Search,
   Settings,
+  Star,
   Tag,
   Trash2,
+  User,
   type LucideProps,
 } from 'lucide-react';
 
@@ -54,7 +61,14 @@ type IconName =
   | 'grid'
   | 'list'
   | 'chevron-up'
-  | 'chevron-down';
+  | 'chevron-down'
+  | 'chevron-left'
+  | 'chevron-right'
+  | 'folder'
+  | 'file-edit'
+  | 'star'
+  | 'user'
+  | 'monitor';
 
 interface IconProps extends Omit<LucideProps, 'ref'> {
   name: IconName;
@@ -88,6 +102,13 @@ const ICON_MAP = {
   list: List,
   'chevron-up': ChevronUp,
   'chevron-down': ChevronDown,
+  'chevron-left': ChevronLeft,
+  'chevron-right': ChevronRight,
+  folder: Folder,
+  'file-edit': FileEdit,
+  star: Star,
+  user: User,
+  monitor: Monitor,
 } as const;
 
 export function Icon({ name, label, ...props }: IconProps) {

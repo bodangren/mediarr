@@ -78,3 +78,47 @@ export function formatUptime(seconds: number): string {
   }
   return `${minutes}m`;
 }
+
+export function formatBytes(bytes: number | undefined): string {
+  if (bytes === undefined || !Number.isFinite(bytes)) {
+    return '-';
+  }
+
+  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  let unitIndex = 0;
+  let value = bytes;
+
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024;
+    unitIndex += 1;
+  }
+
+  return `${value.toFixed(value >= 10 ? 0 : 1)} ${units[unitIndex]}`;
+}
+
+export function formatSpeed(bytesPerSecond: number | undefined): string {
+  if (bytesPerSecond === undefined || !Number.isFinite(bytesPerSecond)) {
+    return '-';
+  }
+
+  return `${formatBytes(bytesPerSecond)}/s`;
+}
+
+export function formatTimeRemaining(seconds: number | undefined): string {
+  if (seconds === undefined || !Number.isFinite(seconds) || seconds <= 0) {
+    return '-';
+  }
+
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+
+  if (hours > 0) {
+    return `${hours}h ${minutes}m`;
+  }
+
+  if (minutes > 0) {
+    return `${minutes} min`;
+  }
+
+  return '< 1 min';
+}

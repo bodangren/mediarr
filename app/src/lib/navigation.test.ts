@@ -97,4 +97,65 @@ describe('navigation with grouped sections', () => {
     expect(isNavActive('/', '/')).toBe(true);
     expect(isNavActive('/library/movies', '/')).toBe(false);
   });
+
+  describe('Subtitles navigation', () => {
+    it('should have subtitles section with all expected items', () => {
+      const subtitlesSection = NAV_ITEMS.find(section => section.id === 'subtitles');
+      expect(subtitlesSection).toBeDefined();
+      expect(subtitlesSection?.label).toBe('Subtitles');
+      expect(subtitlesSection?.items).toHaveLength(10);
+    });
+
+    it('should have series and movies navigation items', () => {
+      const subtitlesSection = NAV_ITEMS.find(section => section.id === 'subtitles');
+      const itemPaths = subtitlesSection?.items.map(item => item.path) ?? [];
+
+      expect(itemPaths).toContain('/subtitles/series');
+      expect(itemPaths).toContain('/subtitles/movies');
+    });
+
+    it('should have wanted navigation items with showBadge property', () => {
+      const subtitlesSection = NAV_ITEMS.find(section => section.id === 'subtitles');
+      const wantedSeriesItem = subtitlesSection?.items.find(item => item.path === '/subtitles/wanted/series');
+      const wantedMoviesItem = subtitlesSection?.items.find(item => item.path === '/subtitles/wanted/movies');
+
+      expect(wantedSeriesItem?.showBadge).toBe(true);
+      expect(wantedMoviesItem?.showBadge).toBe(true);
+    });
+
+    it('should have history navigation items', () => {
+      const subtitlesSection = NAV_ITEMS.find(section => section.id === 'subtitles');
+      const itemPaths = subtitlesSection?.items.map(item => item.path) ?? [];
+
+      expect(itemPaths).toContain('/subtitles/history/series');
+      expect(itemPaths).toContain('/subtitles/history/movies');
+    });
+
+    it('should have blacklist navigation items', () => {
+      const subtitlesSection = NAV_ITEMS.find(section => section.id === 'subtitles');
+      const itemPaths = subtitlesSection?.items.map(item => item.path) ?? [];
+
+      expect(itemPaths).toContain('/subtitles/blacklist/series');
+      expect(itemPaths).toContain('/subtitles/blacklist/movies');
+    });
+
+    it('should have profiles and providers navigation items', () => {
+      const subtitlesSection = NAV_ITEMS.find(section => section.id === 'subtitles');
+      const itemPaths = subtitlesSection?.items.map(item => item.path) ?? [];
+
+      expect(itemPaths).toContain('/subtitles/profiles');
+      expect(itemPaths).toContain('/subtitles/providers');
+    });
+  });
+
+  describe('Settings subtitles navigation', () => {
+    it('should have subtitles in settings section', () => {
+      const settingsSection = NAV_ITEMS.find(section => section.id === 'settings');
+      const subtitlesItem = settingsSection?.items.find(item => item.path === '/settings/subtitles');
+
+      expect(subtitlesItem).toBeDefined();
+      expect(subtitlesItem?.label).toBe('Subtitles');
+      expect(subtitlesItem?.icon).toBe('Languages');
+    });
+  });
 });

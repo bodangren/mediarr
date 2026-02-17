@@ -6,6 +6,9 @@ import type { EventsQuery, TaskHistoryQuery } from '../api/systemApi';
 import type { UpdateHistoryQuery } from '../api/updatesApi';
 import type { TorrentListQuery } from '../api/torrentApi';
 import type { MissingEpisodesQuery, CutoffUnmetEpisodesQuery } from '../../types/wanted';
+import type { WantedQueryParams } from '../api/subtitleWantedApi';
+import type { HistoryQueryParams, StatsQueryParams } from '../api/subtitleHistoryApi';
+import type { BlacklistQueryParams } from '../api/subtitleBlacklistApi';
 
 export const queryKeys = {
   seriesList: (query: ListQuery) => ['series', 'list', query] as const,
@@ -56,6 +59,26 @@ export const queryKeys = {
   updatesAvailable: () => ['updates', 'available'] as const,
   updatesHistory: (query: UpdateHistoryQuery) => ['updates', 'history', query] as const,
   updatesProgress: (updateId: string) => ['updates', 'progress', updateId] as const,
+
+  // Subtitle wanted
+  subtitleWantedCount: () => ['subtitle-wanted', 'count'] as const,
+  subtitleWantedSeries: (query: WantedQueryParams) => ['subtitle-wanted', 'series', query] as const,
+  subtitleWantedMovies: (query: WantedQueryParams) => ['subtitle-wanted', 'movies', query] as const,
+
+  // Subtitle history
+  subtitleHistory: (type: 'series' | 'movies', params: HistoryQueryParams) =>
+    ['subtitle-history', type, params] as const,
+  subtitleHistoryStats: (params: StatsQueryParams) => ['subtitle-history-stats', params] as const,
+
+  // Subtitle blacklist
+  subtitleBlacklistSeries: (params: BlacklistQueryParams) =>
+    ['subtitle-blacklist', 'series', params] as const,
+  subtitleBlacklistMovies: (params: BlacklistQueryParams) =>
+    ['subtitle-blacklist', 'movies', params] as const,
+
+  // Subtitle providers
+  subtitleProviders: () => ['subtitle-providers'] as const,
+  subtitleProvider: (id: string) => ['subtitle-provider', id] as const,
 };
 
 export type QueryKeyFactory = typeof queryKeys;

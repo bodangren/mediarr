@@ -7,11 +7,18 @@ import type { BlocklistItem, BlocklistQuery, RemoveBlocklistResult, ClearBlockli
 // These should be replaced with proper schemas from backend when implemented
 const blocklistItemSchema = z.object({
   id: z.number(),
-  seriesId: z.number(),
-  seriesTitle: z.string(),
+  // For TV
+  seriesId: z.number().optional(),
+  seriesTitle: z.string().optional(),
   episodeId: z.number().optional(),
   seasonNumber: z.number().optional(),
   episodeNumber: z.number().optional(),
+  // For Movies
+  movieId: z.number().optional(),
+  movieTitle: z.string().optional(),
+  moviePosterUrl: z.string().optional(),
+  year: z.number().optional(),
+  // Common
   releaseTitle: z.string(),
   quality: z.string().optional(),
   dateBlocked: z.string(),

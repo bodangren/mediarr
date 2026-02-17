@@ -24,6 +24,7 @@
     "react-dom": "19.2.3",
     "react-hook-form": "^7.71.1",
     "react-window": "^2.2.7",
+    "recharts": "^3.7.0",
     "zod": "^3.25.76"
   },
   "devDependencies": {

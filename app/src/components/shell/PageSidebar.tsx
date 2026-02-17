@@ -5,6 +5,7 @@ import Link from 'next/link';
 import * as Icons from 'lucide-react';
 import { NAV_ITEMS, isNavActive, type NavigationSection } from '@/lib/navigation';
 import { useTouchGestures } from '@/lib/hooks/useTouchGestures';
+import { WantedCountBadge } from '@/components/subtitles/WantedCountBadge';
 
 interface PageSidebarProps {
   pathname: string;
@@ -136,7 +137,12 @@ export function PageSidebar({
                             aria-current={active ? 'page' : undefined}
                           >
                             <LucideIcon name={item.icon} />
-                            {!collapsed && <span>{item.label}</span>}
+                            {!collapsed && (
+                              <>
+                                <span>{item.label}</span>
+                                {item.showBadge && <WantedCountBadge className="ml-auto" />}
+                              </>
+                            )}
                             {collapsed && <span className="text-xs">{item.shortLabel}</span>}
                           </Link>
                         </li>
@@ -211,6 +217,7 @@ export function PageSidebar({
                               >
                                 <LucideIcon name={item.icon} />
                                 <span>{item.label}</span>
+                                {item.showBadge && <WantedCountBadge className="ml-auto" />}
                               </Link>
                             </li>
                           );

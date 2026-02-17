@@ -44,6 +44,33 @@ export const routeMap = {
   subtitleEpisodeVariants: (id: number) => `/api/subtitles/episode/${id}/variants`,
   subtitleSearch: '/api/subtitles/search',
   subtitleDownload: '/api/subtitles/download',
+  subtitleHistory: '/api/subtitles/history',
+  subtitleHistoryStats: '/api/subtitles/history/stats',
+
+  subtitleSeriesVariants: (seriesId: number) => `/api/subtitles/series/${seriesId}/variants`,
+  subtitleEpisodeSubtitles: (episodeId: number) => `/api/subtitles/episodes/${episodeId}`,
+  subtitleSeriesSync: (seriesId: number) => `/api/subtitles/series/${seriesId}/sync`,
+  subtitleSeriesScan: (seriesId: number) => `/api/subtitles/series/${seriesId}/scan`,
+  subtitleSeriesSearch: (seriesId: number) => `/api/subtitles/series/${seriesId}/search`,
+
+  subtitleProviders: '/api/subtitles/providers',
+  subtitleProvider: (id: string) => `/api/subtitles/providers/${id}`,
+  subtitleProviderTest: (id: string) => `/api/subtitles/providers/${id}/test`,
+  subtitleProviderReset: (id: string) => `/api/subtitles/providers/${id}/reset`,
+
+  subtitleBlacklistSeries: '/api/subtitles/blacklist/series',
+  subtitleBlacklistMovies: '/api/subtitles/blacklist/movies',
+  subtitleBlacklistItem: (id: number) => `/api/subtitles/blacklist/${id}`,
+  subtitleBlacklistSeriesClear: '/api/subtitles/blacklist/series',
+  subtitleBlacklistMoviesClear: '/api/subtitles/blacklist/movies',
+
+  subtitleWantedSeries: '/api/subtitles/wanted/series',
+  subtitleWantedMovies: '/api/subtitles/wanted/movies',
+  subtitleWantedSeriesSearch: '/api/subtitles/wanted/series/search',
+  subtitleWantedMoviesSearch: '/api/subtitles/wanted/movies/search',
+  subtitleWantedSeriesItemSearch: (seriesId: number) => `/api/subtitles/wanted/series/${seriesId}/search`,
+  subtitleWantedMovieItemSearch: (movieId: number) => `/api/subtitles/wanted/movies/${movieId}/search`,
+  subtitleWantedCount: '/api/subtitles/wanted/count',
 
   activity: '/api/activity',
   activityClear: '/api/activity',
@@ -89,7 +116,8 @@ export const routeMap = {
   qualityProfiles: '/api/quality-profiles',
   qualityProfile: (id: number) => `/api/quality-profiles/${id}`,
 
-  languageProfiles: '/api/language-profiles',
+  languageProfiles: '/api/subtitles/language-profiles',
+  languageProfile: (id: number) => `/api/subtitles/language-profiles/${id}`,
 
   eventsStream: '/api/events/stream',
 

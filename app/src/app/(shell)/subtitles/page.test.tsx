@@ -1,22 +1,33 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import SubtitlesPage from './page';
-import { beforeEach, describe, it, expect, vi } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import SubtitlesPage from './page';
 
-const listMoviesMock = vi.fn();
-const listMovieVariantsMock = vi.fn();
-const manualSearchMock = vi.fn();
-const manualDownloadMock = vi.fn();
+// Mock the Next.js Link component
+vi.mock('next/link', () => ({
+  default: ({ children, href, ...props }: { children: React.ReactNode; href: string; [key: string]: unknown }) => (
+    <a href={href} {...props}>
+      {children}
+    </a>
+  ),
+}));
 
+// Mock API clients
 vi.mock('@/lib/api/client', () => ({
   getApiClients: () => ({
-    mediaApi: {
-      listMovies: listMoviesMock,
+    subtitleWantedApi: {
+      getWantedCount: () => Promise.resolve({ seriesCount: 5, moviesCount: 3, totalCount: 8 }),
     },
-    subtitleApi: {
-      listMovieVariants: listMovieVariantsMock,
-      manualSearch: manualSearchMock,
-      manualDownload: manualDownloadMock,
+    subtitleHistoryApi: {
+      getHistoryStats: () => Promise.resolve({
+        period: 'month',
+        downloads: [
+          { date: '2024-01-01', series: 2, movies: 1 },
+          { date: '2024-01-02', series: 1, movies: 0 },
+        ],
+        byProvider: [],
+        byLanguage: [],
+      }),
     },
   }),
 }));
@@ -29,85 +40,70 @@ const createTestQueryClient = () => new QueryClient({
 });
 
 describe('SubtitlesPage', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    listMoviesMock.mockResolvedValue({ items: [], meta: {} });
-    listMovieVariantsMock.mockResolvedValue([]);
-    manualSearchMock.mockResolvedValue([]);
-    manualDownloadMock.mockResolvedValue({ storedPath: '/tmp/movie.en.srt' });
-    vi.spyOn(window, 'alert').mockImplementation(() => undefined);
-  });
-
-  it('renders subtitle management header', async () => {
+  const renderPage = () => {
     const client = createTestQueryClient();
-    render(
+    return render(
       <QueryClientProvider client={client}>
         <SubtitlesPage />
-      </QueryClientProvider>,
+      </QueryClientProvider>
     );
+  };
 
-    expect(screen.getByText(/Subtitle Management/i)).toBeInTheDocument();
-    await waitFor(() => {
-        expect(screen.getByText(/No movies found/i)).toBeInTheDocument();
-    });
+  it('renders page with header', () => {
+    renderPage();
+    expect(screen.getByText('Subtitles')).toBeInTheDocument();
+    expect(
+      screen.getByText('Manage subtitle downloads, search history, language profiles, and provider settings.')
+    ).toBeInTheDocument();
   });
 
-  it('supports inventory search and manual subtitle download flow', async () => {
-    listMoviesMock.mockResolvedValue({
-      items: [{ id: 101, title: 'The Matrix', year: 1999 }],
-      meta: {},
-    });
-    listMovieVariantsMock.mockResolvedValue([
-      {
-        variantId: 501,
-        path: '/data/movies/the-matrix.mkv',
-        subtitleTracks: [{ languageCode: 'en', isForced: false }],
-        missingSubtitles: [{ languageCode: 'es', isForced: false, isHi: false }],
-      },
-    ]);
-    manualSearchMock.mockResolvedValue([
-      {
-        languageCode: 'es',
-        isForced: false,
-        isHi: false,
-        provider: 'OpenSubtitles',
-        score: 97,
-        extension: '.srt',
-      },
-    ]);
+  it('renders quick stats section', async () => {
+    renderPage();
+    expect(await screen.findByText('Wanted Episodes')).toBeInTheDocument();
+    expect(await screen.findByText('Wanted Movies')).toBeInTheDocument();
+    expect(await screen.findByText('Total Wanted')).toBeInTheDocument();
+    expect(await screen.findByText('Downloaded')).toBeInTheDocument();
+  });
 
-    const client = createTestQueryClient();
-    render(
-      <QueryClientProvider client={client}>
-        <SubtitlesPage />
-      </QueryClientProvider>,
-    );
+  it('displays wanted counts', async () => {
+    renderPage();
+    expect(await screen.findByText('5')).toBeInTheDocument(); // seriesCount
+    expect(await screen.findByText('3')).toBeInTheDocument(); // moviesCount
+    expect(await screen.findByText('8')).toBeInTheDocument(); // totalCount
+  });
 
-    expect(await screen.findByText('The Matrix')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Manage Subtitles' }));
+  it('renders quick links section', () => {
+    renderPage();
+    expect(screen.getByText('Series Subtitles')).toBeInTheDocument();
+    expect(screen.getByText('Movies Subtitles')).toBeInTheDocument();
+    expect(screen.getByText('Wanted Episodes')).toBeInTheDocument();
+    expect(screen.getByText('Wanted Movies')).toBeInTheDocument();
+    expect(screen.getByText('History')).toBeInTheDocument();
+    expect(screen.getByText('Blacklist')).toBeInTheDocument();
+  });
 
-    expect(await screen.findByText('Inventory for Movie #101')).toBeInTheDocument();
-    expect(listMovieVariantsMock).toHaveBeenCalledWith(101);
-    expect(await screen.findByText('/data/movies/the-matrix.mkv')).toBeInTheDocument();
+  it('renders configuration section', () => {
+    renderPage();
+    expect(screen.getByText('Configuration')).toBeInTheDocument();
+    expect(screen.getByText('Language Profiles')).toBeInTheDocument();
+    expect(screen.getByText('Providers')).toBeInTheDocument();
+    expect(screen.getByText('Settings')).toBeInTheDocument();
+  });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Search' }));
+  it('has links to subtitle pages', () => {
+    renderPage();
+    const seriesLink = screen.getByText('Series Subtitles').closest('a');
+    const moviesLink = screen.getByText('Movies Subtitles').closest('a');
+    const profilesLink = screen.getByText('Language Profiles').closest('a');
 
-    expect(await screen.findByText('Manual Search')).toBeInTheDocument();
-    expect(await screen.findByText('OpenSubtitles')).toBeInTheDocument();
+    expect(seriesLink?.getAttribute('href')).toBe('/subtitles/series');
+    expect(moviesLink?.getAttribute('href')).toBe('/subtitles/movies');
+    expect(profilesLink?.getAttribute('href')).toBe('/subtitles/profiles');
+  });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Download' }));
-
-    await waitFor(() => {
-      expect(manualDownloadMock).toHaveBeenCalledWith({
-        variantId: 501,
-        candidate: expect.objectContaining({
-          languageCode: 'es',
-          provider: 'OpenSubtitles',
-          score: 97,
-        }),
-      });
-    });
-
-    expect(await screen.findByText('Inventory for Movie #101')).toBeInTheDocument();
+  it('has link to subtitle settings', () => {
+    renderPage();
+    const settingsLink = screen.getByText('Settings', { selector: 'a' });
+    expect(settingsLink).toBeInTheDocument();
   });
 });

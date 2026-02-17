@@ -88,17 +88,21 @@ While the primary sequence defines hard dependencies, several phases across trac
 - [~] **Track: Remediation track to fix critical P0 parity blockers (backend wiring) and P1 operational gaps identified in the Track 9 audit.**
 *Link: [./tracks/fix_core_parity_wiring_20260212/](./tracks/fix_core_parity_wiring_20260212/)*
 
-- [ ] **Track: Bazarr UI Cloning**
+- [x] **Track: Bazarr UI Cloning**
 *Description: Clone the Bazarr subtitle manager UI with comprehensive views, components, and features for subtitle management across TV and movies.*
-*Phases: 13 | Link: [./tracks/bazarr_ui_cloning_20260214/](./tracks/bazarr_ui_cloning_20260214/)*
+*Phases: 13 | Status: COMPLETED | Link: [../archive/bazarr_ui_cloning_20260214/](../archive/bazarr_ui_cloning_20260214/)*
 
 - [x] **Track: Prowlarr UI Cloning**
    *Description: Clone P Prowlarr indexer manager UI with comprehensive views, components, and features for managing torrent trackers and usenet indexers.*
    *Phases: 10 | Link: [../archive/prowlarr_ui_cloning_20260214/](../archive/prowlarr_ui_cloning_20260214/)*
 
-- [ ] **Track: Radarr UI Cloning**
-*Description: Clone the Radarr movie collection manager UI with comprehensive views, components, and features for managing movies, downloads, and quality profiles.*
+- [~] **Track: Radarr UI Cloning**
+*Description: Clone the Radarr movie collection manager UI. Post-audit: Phases 1-7, 9-10 mostly complete (stub/mock issues deferred to ui_stub_closure). Phase 8 has 6 missing settings pages (mediamanagement, quality, customformats, importlists, metadata, tags). Phase 11 not started.*
 *Phases: 11 | Link: [./tracks/radarr_ui_cloning_20260214/](./tracks/radarr_ui_cloning_20260214/)*
+
+- [ ] **Track: UI Stub Closure & Deduplication**
+  *Description: Close stubs, replace mock data with real APIs (15+ pages across prowlarr/sonarr/radarr tracks), wire ~25 empty action handlers, remove alert() placeholders, delete orphaned code and mock files, remove debug logging, and consolidate duplicated patterns (API factories, modal skeletons, shared schemas).*
+  *Phases: 5 | Link: [./tracks/ui_stub_closure_20260217/](./tracks/ui_stub_closure_20260217/)*
 
 - [x] **Track: Sonarr UI Cloning**
 *Description: Clone the Sonarr TV series PVR UI with comprehensive views, components, and features for managing series, episodes, downloads, and quality profiles.*

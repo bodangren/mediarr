@@ -8,9 +8,11 @@ import { StatusBadge } from '@/components/primitives/StatusBadge';
 import { useToast } from '@/components/providers/ToastProvider';
 import { getApiClients } from '@/lib/api/client';
 import { queryKeys } from '@/lib/query/queryKeys';
-import type { MissingEpisode, CutoffUnmetEpisode } from '@/types/wanted';
+import type { MissingEpisode, CutoffUnmetEpisode, MissingMovie, CutoffUnmetMovie, ContentType } from '@/types/wanted';
 import { MissingTab } from './MissingTab';
 import { CutoffUnmetTab } from './CutoffUnmetTab';
+import { MovieMissingTab } from './MovieMissingTab';
+import { MovieCutoffUnmetTab } from './MovieCutoffUnmetTab';
 import type { ReleaseCandidate } from '@/lib/api/releaseApi';
 
 type ReleaseRow = {
@@ -46,6 +48,24 @@ export default function WantedPage() {
   const router = useRouter();
   const { pushToast } = useToast();
 
+  const [contentType, setContentType] = useState<ContentType>(() => {
+    // Try to load from localStorage
+    if (typeof window !== 'undefined' && window.localStorage) {
+      try {
+        const stored = window.localStorage.getItem('mediarr.wanted.state');
+        if (stored) {
+          const parsed = JSON.parse(stored) as { contentType?: string; activeTab: string };
+          if (parsed.contentType === 'tv' || parsed.contentType === 'movies') {
+            return parsed.contentType as ContentType;
+          }
+        }
+      } catch {
+        // Fall through to default
+      }
+    }
+    return 'tv';
+  });
+
   const [activeTab, setActiveTab] = useState<'missing' | 'cutoffUnmet'>(() => {
     // Try to load from localStorage
     if (typeof window !== 'undefined' && window.localStorage) {
@@ -54,7 +74,7 @@ export default function WantedPage() {
         if (stored) {
           const parsed = JSON.parse(stored) as { activeTab: string };
           if (parsed.activeTab === 'missing' || parsed.activeTab === 'cutoffUnmet') {
-            return parsed.activeTab as 'missing' | 'cutoffUnmet';
+            return parsed.activeTab;
           }
         }
       } catch {
@@ -64,14 +84,15 @@ export default function WantedPage() {
     return 'missing';
   });
 
-  // Persist tab state to localStorage
+  // Persist state to localStorage
   useEffect(() => {
     if (typeof window !== 'undefined' && window.localStorage) {
-      window.localStorage.setItem('mediarr.wanted.state', JSON.stringify({ activeTab }));
+      window.localStorage.setItem('mediarr.wanted.state', JSON.stringify({ contentType, activeTab }));
     }
-  }, [activeTab]);
+  }, [contentType, activeTab]);
 
   const [selectedEpisode, setSelectedEpisode] = useState<MissingEpisode | CutoffUnmetEpisode | null>(null);
+  const [selectedMovie, setSelectedMovie] = useState<MissingMovie | CutoffUnmetMovie | null>(null);
   const [releaseSort, setReleaseSort] = useState<'seeders' | 'size' | 'age'>('seeders');
 
   const releaseRequest = selectedEpisode
@@ -80,7 +101,13 @@ export default function WantedPage() {
         episodeId: selectedEpisode.id,
         type: 'episode' as const,
       }
-    : null;
+    : selectedMovie
+      ? {
+          title: `${selectedMovie.title} (${selectedMovie.year})`,
+          movieId: selectedMovie.movieId,
+          type: 'movie' as const,
+        }
+      : null;
 
   const releasesQuery = useMemo(() => {
     if (!releaseRequest) {
@@ -113,6 +140,8 @@ export default function WantedPage() {
       void queryClient.invalidateQueries({ queryKey: ['media', 'wanted'] });
       void queryClient.invalidateQueries({ queryKey: ['episodes', 'missing'] });
       void queryClient.invalidateQueries({ queryKey: ['episodes', 'cutoff-unmet'] });
+      void queryClient.invalidateQueries({ queryKey: ['movies', 'missing'] });
+      void queryClient.invalidateQueries({ queryKey: ['movies', 'cutoff-unmet'] });
       router.push('/queue');
     },
     onError: (error: Error, candidate) => {
@@ -132,9 +161,15 @@ export default function WantedPage() {
 
   const handleSearchEpisode = useCallback((episode: MissingEpisode | CutoffUnmetEpisode) => {
     setSelectedEpisode(episode);
+    setSelectedMovie(null);
   }, []);
 
-  const handleBulkSearch = useCallback((episodes: (MissingEpisode | CutoffUnmetEpisode)[]) => {
+  const handleSearchMovie = useCallback((movie: MissingMovie | CutoffUnmetMovie) => {
+    setSelectedMovie(movie);
+    setSelectedEpisode(null);
+  }, []);
+
+  const handleBulkSearchEpisodes = useCallback((episodes: (MissingEpisode | CutoffUnmetEpisode)[]) => {
     // For bulk search, we'll trigger searches for each episode
     // In a real implementation, this might be a batch API call
     episodes.forEach(episode => {
@@ -152,6 +187,24 @@ export default function WantedPage() {
     });
   }, [api, pushToast]);
 
+  const handleBulkSearchMovies = useCallback((movies: (MissingMovie | CutoffUnmetMovie)[]) => {
+    // For bulk search, we'll trigger searches for each movie
+    // In a real implementation, this might be a batch API call
+    movies.forEach(movie => {
+      void api.releaseApi.searchCandidates({
+        title: `${movie.title} (${movie.year})`,
+        movieId: movie.movieId,
+        type: 'movie',
+      });
+    });
+
+    pushToast({
+      title: 'Bulk search initiated',
+      message: `Searching for ${movies.length} movie(s).`,
+      variant: 'success',
+    });
+  }, [api, pushToast]);
+
   const sortedCandidates = [...(releasesQuery.data ?? [])].sort((left, right) => {
     if (releaseSort === 'size') {
       return right.size - left.size;
@@ -164,14 +217,49 @@ export default function WantedPage() {
     return right.seeders - left.seeders;
   });
 
+  const selectedItem = selectedEpisode ?? selectedMovie;
+  const itemLabel = selectedEpisode
+    ? `${selectedEpisode.seriesTitle} · S${String(selectedEpisode.seasonNumber).padStart(2, '0')}E${String(selectedEpisode.episodeNumber).padStart(2, '0')}`
+    : selectedMovie
+      ? `${selectedMovie.title} (${selectedMovie.year})`
+      : null;
+
   return (
     <section className="space-y-5">
       <header className="space-y-1">
         <h1 className="text-2xl font-semibold">Wanted</h1>
         <p className="text-sm text-text-secondary">
-          Track missing episodes, search for releases, and upgrade quality cutoffs.
+          {contentType === 'tv' 
+            ? 'Track missing episodes, search for releases, and upgrade quality cutoffs.' 
+            : 'Track missing movies, search for releases, and upgrade quality cutoffs.'}
         </p>
       </header>
+
+      {/* Content Type Toggle */}
+      <div className="flex items-center gap-2 border-b border-border-subtle pb-1">
+        <button
+          type="button"
+          className={`px-3 py-2 text-sm font-medium transition-colors ${
+            contentType === 'tv'
+              ? 'text-accent-primary border-b-2 border-accent-primary'
+              : 'text-text-secondary hover:text-text-primary'
+          }`}
+          onClick={() => setContentType('tv')}
+        >
+          TV Series
+        </button>
+        <button
+          type="button"
+          className={`px-3 py-2 text-sm font-medium transition-colors ${
+            contentType === 'movies'
+              ? 'text-accent-primary border-b-2 border-accent-primary'
+              : 'text-text-secondary hover:text-text-primary'
+          }`}
+          onClick={() => setContentType('movies')}
+        >
+          Movies
+        </button>
+      </div>
 
       {/* Tab Navigation */}
       <div className="flex items-center gap-2 border-b border-border-subtle pb-1">
@@ -200,27 +288,39 @@ export default function WantedPage() {
       </div>
 
       {/* Tab Content */}
-      {activeTab === 'missing' ? (
-        <MissingTab
-          onSearchEpisode={handleSearchEpisode}
-          onBulkSearch={handleBulkSearch}
-        />
+      {contentType === 'tv' ? (
+        activeTab === 'missing' ? (
+          <MissingTab
+            onSearchEpisode={handleSearchEpisode}
+            onBulkSearch={handleBulkSearchEpisodes}
+          />
+        ) : (
+          <CutoffUnmetTab
+            onSearchEpisode={handleSearchEpisode}
+            onBulkSearch={handleBulkSearchEpisodes}
+          />
+        )
       ) : (
-        <CutoffUnmetTab
-          onSearchEpisode={handleSearchEpisode}
-          onBulkSearch={handleBulkSearch}
-        />
+        activeTab === 'missing' ? (
+          <MovieMissingTab
+            onSearchMovie={handleSearchMovie}
+            onBulkSearch={handleBulkSearchMovies}
+          />
+        ) : (
+          <MovieCutoffUnmetTab
+            onSearchMovie={handleSearchMovie}
+            onBulkSearch={handleBulkSearchMovies}
+          />
+        )
       )}
 
       {/* Release Candidates Panel */}
-      {selectedEpisode ? (
+      {selectedItem ? (
         <section className="space-y-3 rounded-lg border border-border-subtle bg-surface-1 p-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <h2 className="text-lg font-semibold">Release Candidates</h2>
-              <p className="text-sm text-text-secondary">
-                {selectedEpisode.seriesTitle} · S{String(selectedEpisode.seasonNumber).padStart(2, '0')}E{String(selectedEpisode.episodeNumber).padStart(2, '0')}
-              </p>
+              <p className="text-sm text-text-secondary">{itemLabel}</p>
             </div>
 
             <label className="text-sm">

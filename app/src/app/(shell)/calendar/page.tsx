@@ -4,18 +4,21 @@ import { useEffect, useMemo, useState } from 'react';
 import { Calendar } from './Calendar';
 import { Agenda } from './Agenda';
 import { CalendarLegend } from './CalendarLegend';
+import { CalendarOptionsModal } from './CalendarOptionsModal';
 import { QueryPanel } from '@/components/primitives/QueryPanel';
 import { Button } from '@/components/primitives/Button';
 import { getApiClients } from '@/lib/api/client';
 import { queryKeys } from '@/lib/query/queryKeys';
 import { useApiQuery } from '@/lib/query/useApiQuery';
 import { getCalendarStore } from '@/lib/state/calendarStore';
-import type { CalendarEpisode } from '@/types/calendar';
+import { getMockMoviesInRange } from '@/lib/mocks/calendarMocks';
+import type { CalendarEvent } from '@/types/calendar';
 
 export default function CalendarPage() {
   const api = getApiClients();
   const calendarStore = getCalendarStore();
   const [mounted, setMounted] = useState(false);
+  const [optionsModalOpen, setOptionsModalOpen] = useState(false);
 
   // Hydrate store on mount
   useEffect(() => {
@@ -76,8 +79,48 @@ export default function CalendarPage() {
         ...state.filters,
       }),
     staleTimeKind: 'list',
-    enabled: mounted,
+    enabled: mounted && (state.contentType === 'all' || state.contentType === 'tv'),
   });
+
+  // Fetch movies (using mock data for now)
+  const moviesQuery = useApiQuery<CalendarEvent[]>({
+    queryKey: ['calendar-movies', { start: startDate, end: endDate, ...state.filters }],
+    queryFn: async () => getMockMoviesInRange(startDate, endDate),
+    staleTimeKind: 'list',
+    enabled: mounted && (state.contentType === 'all' || state.contentType === 'movies'),
+  });
+
+  // Combine events
+  const events = useMemo(() => {
+    const allEvents: CalendarEvent[] = [];
+
+    // Add episode events
+    if (state.contentType === 'all' || state.contentType === 'tv') {
+      const episodes = episodesQuery.data ?? [];
+      episodes.forEach(episode => {
+        allEvents.push({ type: 'episode', data: episode });
+      });
+    }
+
+    // Add movie events
+    if (state.contentType === 'all' || state.contentType === 'movies') {
+      const movies = moviesQuery.data ?? [];
+      movies.forEach(event => {
+        if (event.type === 'movie') {
+          allEvents.push(event);
+        }
+      });
+    }
+
+    // Sort by date
+    allEvents.sort((a, b) => {
+      const dateA = a.type === 'episode' ? a.data.airDate : a.data.releaseDate;
+      const dateB = b.type === 'episode' ? b.data.airDate : b.data.releaseDate;
+      return dateA.localeCompare(dateB);
+    });
+
+    return allEvents;
+  }, [episodesQuery.data, moviesQuery.data, state.contentType]);
 
   // Navigation handlers
   const handlePrevious = () => {
@@ -102,9 +145,23 @@ export default function CalendarPage() {
     calendarStore.dispatch({ type: 'calendar/viewMode/set', payload: mode });
   };
 
+  const handleContentTypeChange = (contentType: 'all' | 'movies' | 'tv') => {
+    calendarStore.dispatch({ type: 'calendar/contentType/set', payload: contentType });
+  };
+
   const handleIcalExport = () => {
     // Placeholder for iCal export functionality
     alert('iCal export feature coming soon!');
+  };
+
+  const handleSearchMissing = () => {
+    // Placeholder for search missing functionality
+    alert('Search for missing movies/episodes coming soon!');
+  };
+
+  const handleRssSync = () => {
+    // Placeholder for RSS sync functionality
+    alert('RSS Sync coming soon!');
   };
 
   const formatDateRange = () => {
@@ -118,11 +175,17 @@ export default function CalendarPage() {
     return null; // Prevent hydration mismatch
   }
 
+  const isLoading = episodesQuery.isPending || moviesQuery.isPending;
+  const isError = episodesQuery.isError || moviesQuery.isError;
+  const isEmpty = (episodesQuery.isResolvedEmpty && moviesQuery.isResolvedEmpty) ||
+    (state.contentType === 'movies' && moviesQuery.data?.length === 0) ||
+    (state.contentType === 'tv' && episodesQuery.data?.length === 0);
+
   return (
     <section className="space-y-4">
       <header className="space-y-1">
         <h1 className="text-2xl font-semibold">Calendar</h1>
-        <p className="text-sm text-text-secondary">View upcoming TV episode air dates</p>
+        <p className="text-sm text-text-secondary">View upcoming TV episodes and movie releases</p>
       </header>
 
       {/* Controls */}
@@ -141,6 +204,24 @@ export default function CalendarPage() {
 
         <div className="flex items-center gap-2">
           <Button
+            variant={state.contentType === 'all' ? 'primary' : 'secondary'}
+            onClick={() => handleContentTypeChange('all')}
+          >
+            All
+          </Button>
+          <Button
+            variant={state.contentType === 'movies' ? 'primary' : 'secondary'}
+            onClick={() => handleContentTypeChange('movies')}
+          >
+            Movies
+          </Button>
+          <Button
+            variant={state.contentType === 'tv' ? 'primary' : 'secondary'}
+            onClick={() => handleContentTypeChange('tv')}
+          >
+            TV
+          </Button>
+          <Button
             variant={state.viewMode === 'calendar' ? 'primary' : 'secondary'}
             onClick={() => handleViewModeChange('calendar')}
           >
@@ -152,8 +233,26 @@ export default function CalendarPage() {
           >
             Agenda
           </Button>
+        </div>
+      </div>
+
+      {/* Additional actions */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <Button variant="secondary" onClick={handleSearchMissing}>
+            Search Missing
+          </Button>
+          <Button variant="secondary" onClick={handleRssSync}>
+            RSS Sync
+          </Button>
+        </div>
+
+        <div className="flex items-center gap-2">
           <Button variant="secondary" onClick={handleIcalExport}>
             iCal
+          </Button>
+          <Button variant="secondary" onClick={() => setOptionsModalOpen(true)}>
+            Options
           </Button>
         </div>
       </div>
@@ -165,24 +264,35 @@ export default function CalendarPage() {
 
       {/* Calendar Content */}
       <QueryPanel
-        isLoading={episodesQuery.isPending}
-        isError={episodesQuery.isError}
-        isEmpty={episodesQuery.isResolvedEmpty}
-        errorMessage={episodesQuery.error?.message}
-        onRetry={() => void episodesQuery.refetch()}
-        emptyTitle="No episodes found"
-        emptyBody="Adjust your date range or check back later"
+        isLoading={isLoading}
+        isError={isError}
+        isEmpty={isEmpty}
+        errorMessage={episodesQuery.error?.message || moviesQuery.error?.message}
+        onRetry={() => {
+          episodesQuery.refetch();
+          moviesQuery.refetch();
+        }}
+        emptyTitle={`No ${state.contentType === 'all' ? 'events' : state.contentType} found`}
+        emptyBody="Adjust your date range or filters, or check back later"
       >
         {state.viewMode === 'calendar' ? (
           <Calendar
-            episodes={episodesQuery.data ?? []}
+            events={events}
             currentDate={state.currentDate}
             dayCount={dayCount}
           />
         ) : (
-          <Agenda episodes={episodesQuery.data ?? []} />
+          <Agenda events={events} />
         )}
       </QueryPanel>
+
+      {/* Calendar Options Modal */}
+      <CalendarOptionsModal
+        isOpen={optionsModalOpen}
+        onClose={() => setOptionsModalOpen(false)}
+        options={state.options}
+        onOptionsChange={(options) => calendarStore.dispatch({ type: 'calendar/options/set', payload: options })}
+      />
     </section>
   );
 }

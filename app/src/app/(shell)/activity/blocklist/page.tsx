@@ -9,6 +9,7 @@ import { SelectFooter } from '@/components/primitives/SelectFooter';
 import { QueryPanel } from '@/components/primitives/QueryPanel';
 import { Button } from '@/components/primitives/Button';
 import { useToast } from '@/components/providers/ToastProvider';
+import { MovieCell } from '@/components/activity/MovieCell';
 import { getApiClients } from '@/lib/api/client';
 import { queryKeys } from '@/lib/query/queryKeys';
 import { useApiQuery } from '@/lib/query/useApiQuery';
@@ -17,11 +18,18 @@ import { Ban } from 'lucide-react';
 
 type BlocklistRow = {
   id: number;
-  seriesId: number;
-  seriesTitle: string;
+  // For TV
+  seriesId?: number;
+  seriesTitle?: string;
   episodeId?: number;
   seasonNumber?: number;
   episodeNumber?: number;
+  // For Movies
+  movieId?: number;
+  movieTitle?: string;
+  moviePosterUrl?: string;
+  year?: number;
+  // Common
   releaseTitle: string;
   quality?: string;
   dateBlocked: string;
@@ -37,7 +45,13 @@ interface PaginatedMeta {
   totalPages: number;
 }
 
-function BlocklistRowActions({ item, onUnblock }: { item: BlocklistRow; onUnblock: (id: number) => Promise<void> }) {
+function BlocklistRowActions({
+  item,
+  onUnblock,
+}: {
+  item: BlocklistRow;
+  onUnblock: (id: number) => Promise<void>;
+}) {
   const [isRemoving, setIsRemoving] = useState(false);
 
   const handleUnblock = async () => {
@@ -72,7 +86,9 @@ function MobileCheckboxCell({ rowId }: { rowId: number }) {
       type="checkbox"
       aria-label="Select row"
       checked={isSelected(rowId)}
-      onChange={event => toggleRow(rowId, (event.nativeEvent as MouseEvent).shiftKey)}
+      onChange={event =>
+        toggleRow(rowId, (event.nativeEvent as MouseEvent).shiftKey)
+      }
     />
   );
 }
@@ -86,7 +102,11 @@ export default function BlocklistPage() {
 
   const blocklistQuery = useApiQuery({
     queryKey: queryKeys.blocklist({ page, pageSize }),
-    queryFn: () => api.blocklistApi.list({ page, pageSize }) as Promise<{ items: BlocklistRow[]; meta: PaginatedMeta }>,
+    queryFn: () =>
+      api.blocklistApi.list({ page, pageSize }) as unknown as Promise<{
+        items: BlocklistRow[];
+        meta: PaginatedMeta;
+      }>,
     staleTimeKind: 'list',
     isEmpty: data => data.items.length === 0,
   });
@@ -109,7 +129,9 @@ export default function BlocklistPage() {
     }
   };
 
-  const handleBulkUnblock = async (selectedIds: Array<string | number>) => {
+  const handleBulkUnblock = async (
+    selectedIds: Array<string | number>,
+  ) => {
     try {
       await api.blocklistApi.remove(selectedIds as number[]);
       await queryClient.invalidateQueries({ queryKey: ['blocklist'] });
@@ -127,7 +149,10 @@ export default function BlocklistPage() {
     }
   };
 
-  const formatEpisode = (seasonNumber?: number, episodeNumber?: number) => {
+  const formatEpisode = (
+    seasonNumber?: number,
+    episodeNumber?: number,
+  ) => {
     if (seasonNumber !== undefined && episodeNumber !== undefined) {
       return `S${seasonNumber.toString().padStart(2, '0')}E${episodeNumber.toString().padStart(2, '0')}`;
     }
@@ -138,31 +163,45 @@ export default function BlocklistPage() {
     {
       key: 'select',
       header: '',
-      render: row => (
-        <SelectCheckboxCell rowId={row.id} />
-      ),
+      render: row => <SelectCheckboxCell rowId={row.id} />,
       className: 'w-10',
     },
     {
-      key: 'seriesTitle',
-      header: 'Series',
-      render: row => (
-        <div>
-          <p className="font-medium text-text-primary">{row.seriesTitle}</p>
-          <p className="text-xs text-text-secondary">{formatEpisode(row.seasonNumber, row.episodeNumber)}</p>
-        </div>
-      ),
+      key: 'media',
+      header: 'Media',
+      render: row =>
+        row.movieId ? (
+          <MovieCell
+            movieId={row.movieId}
+            title={row.movieTitle ?? row.releaseTitle}
+            posterUrl={row.moviePosterUrl}
+            year={row.year}
+          />
+        ) : row.seriesTitle ? (
+          <div>
+            <p className="font-medium text-text-primary">{row.seriesTitle}</p>
+            <p className="text-xs text-text-secondary">
+              {formatEpisode(row.seasonNumber, row.episodeNumber)}
+            </p>
+          </div>
+        ) : (
+          <span className="text-sm text-text-muted">-</span>
+        ),
     },
     {
       key: 'releaseTitle',
       header: 'Release Title',
-      render: row => <span className="text-sm text-text-primary">{row.releaseTitle}</span>,
+      render: row => (
+        <span className="text-sm text-text-primary">{row.releaseTitle}</span>
+      ),
     },
     {
       key: 'quality',
       header: 'Quality',
       render: row => (
-        <span className="text-sm text-text-secondary">{row.quality ?? '-'}</span>
+        <span className="text-xs text-text-primary bg-surface-2 px-2 py-0.5 rounded-sm">
+          {row.quality ?? '-'}
+        </span>
       ),
     },
     {
@@ -179,15 +218,22 @@ export default function BlocklistPage() {
       key: 'dateBlocked',
       header: 'Date Blocked',
       render: row => (
-        <span className="text-sm text-text-secondary">{formatRelativeDate(row.dateBlocked)}</span>
+        <span className="text-sm text-text-secondary">
+          {formatRelativeDate(row.dateBlocked)}
+        </span>
       ),
     },
     {
       key: 'reason',
       header: 'Reason',
       render: row => (
-        <span className="text-sm text-text-muted" title={row.reason}>
-          {row.reason.length > 50 ? `${row.reason.slice(0, 50)}...` : row.reason}
+        <span
+          className="text-sm text-text-muted"
+          title={row.reason}
+        >
+          {row.reason.length > 50
+            ? `${row.reason.slice(0, 50)}...`
+            : row.reason}
         </span>
       ),
       hideOnMobile: true,
@@ -211,7 +257,9 @@ export default function BlocklistPage() {
       <section className="space-y-4">
         <header className="space-y-1">
           <h1 className="text-2xl font-semibold">Blocklist</h1>
-          <p className="text-sm text-text-secondary">Manage blocked releases (Sonarr-style).</p>
+          <p className="text-sm text-text-secondary">
+            Manage blocked releases (Sonarr/Radarr style).
+          </p>
         </header>
 
         <SelectFooter
@@ -236,7 +284,9 @@ export default function BlocklistPage() {
             data={data}
             columns={columns}
             getRowId={row => row.id}
-            rowActions={row => <BlocklistRowActions item={row} onUnblock={handleUnblock} />}
+            rowActions={row => (
+              <BlocklistRowActions item={row} onUnblock={handleUnblock} />
+            )}
             pagination={
               meta
                 ? {
@@ -254,31 +304,54 @@ export default function BlocklistPage() {
             renderMobileCard={row => (
               <div className="space-y-2">
                 <div className="flex items-start justify-between">
-                  <div>
-                    <p className="font-medium text-text-primary">{row.seriesTitle}</p>
-                    <p className="text-xs text-text-secondary">{row.releaseTitle}</p>
-                  </div>
+                  {row.movieId ? (
+                    <div className="flex-1">
+                      <p className="font-medium text-text-primary">
+                        {row.movieTitle}
+                      </p>
+                      <p className="text-xs text-text-secondary">
+                        {row.releaseTitle}
+                      </p>
+                    </div>
+                  ) : row.seriesTitle ? (
+                    <div className="flex-1">
+                      <p className="font-medium text-text-primary">
+                        {row.seriesTitle}
+                      </p>
+                      <p className="text-xs text-text-secondary">
+                        {row.releaseTitle}
+                      </p>
+                    </div>
+                  ) : null}
                   <MobileCheckboxCell rowId={row.id} />
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-xs">
+                  {row.seriesTitle ? (
+                    <div>
+                      <span className="text-text-secondary">Episode:</span>
+                      <span className="ml-1 text-text-primary">
+                        {formatEpisode(row.seasonNumber, row.episodeNumber)}
+                      </span>
+                    </div>
+                  ) : null}
                   <div>
-                    <span className="text-text-secondary">Episode:</span>
+                    <span className="text-text-secondary">Quality:</span>
                     <span className="ml-1 text-text-primary">
-                      {formatEpisode(row.seasonNumber, row.episodeNumber)}
+                      {row.quality ?? '-'}
                     </span>
                   </div>
                   <div>
-                    <span className="text-text-secondary">Quality:</span>
-                    <span className="ml-1 text-text-primary">{row.quality ?? '-'}</span>
-                  </div>
-                  <div>
                     <span className="text-text-secondary">Date:</span>
-                    <span className="ml-1 text-text-primary">{formatRelativeDate(row.dateBlocked)}</span>
+                    <span className="ml-1 text-text-primary">
+                      {formatRelativeDate(row.dateBlocked)}
+                    </span>
                   </div>
                   <div>
                     <span className="text-text-secondary">Reason:</span>
                     <span className="ml-1 text-text-muted" title={row.reason}>
-                      {row.reason.length > 20 ? `${row.reason.slice(0, 20)}...` : row.reason}
+                      {row.reason.length > 20
+                        ? `${row.reason.slice(0, 20)}...`
+                        : row.reason}
                     </span>
                   </div>
                 </div>

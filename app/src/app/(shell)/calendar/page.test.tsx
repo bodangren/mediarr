@@ -63,8 +63,18 @@ describe('CalendarPage', () => {
       getState: vi.fn(() => ({
         currentDate: new Date().toISOString().split('T')[0]!,
         viewMode: 'calendar',
+        contentType: 'all',
         dayCount: 7,
         filters: {},
+        options: {
+          showDayNumbers: true,
+          showWeekNumbers: false,
+          showMonitored: true,
+          showUnmonitored: true,
+          showCinemaReleases: true,
+          showDigitalReleases: true,
+          showPhysicalReleases: true,
+        },
       })),
       dispatch: mockDispatch,
     });
@@ -83,7 +93,7 @@ describe('CalendarPage', () => {
 
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: 'Calendar' })).toBeInTheDocument();
-      expect(screen.getByText('View upcoming TV episode air dates')).toBeInTheDocument();
+      expect(screen.getByText('View upcoming TV episodes and movie releases')).toBeInTheDocument();
     });
   });
 

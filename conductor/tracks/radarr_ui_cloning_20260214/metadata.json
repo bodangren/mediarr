@@ -1,8 +1,8 @@
 {
   "track_id": "radarr_ui_cloning_20260214",
   "type": "feature",
-  "status": "spec_complete",
+  "status": "in_progress",
   "created_at": "2026-02-14T00:00:00Z",
-  "updated_at": "2026-02-14T00:00:00Z",
-  "description": "Clone the Radarr movie collection manager UI with comprehensive views, components, and features for managing movies, downloads, and quality profiles"
+  "updated_at": "2026-02-17T12:00:00Z",
+  "description": "Clone the Radarr movie collection manager UI. Post-audit: Phases 1-7, 9-10 mostly complete (stub/mock issues deferred to ui_stub_closure). Phase 8 has 6 missing settings pages. Phase 11 not started."
 }

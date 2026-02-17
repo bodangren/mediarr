@@ -32,6 +32,32 @@ describe('BlocklistPage', () => {
     items: [
       {
         id: 1,
+        movieId: 201,
+        movieTitle: 'Test Movie',
+        moviePosterUrl: 'https://example.com/poster.jpg',
+        year: 2024,
+        releaseTitle: 'Test.Movie.2024.1080p.WEB-DL',
+        quality: 'WEBDL-1080p',
+        dateBlocked: '2026-02-15T10:00:00Z',
+        reason: 'Quality check failed: expected minimum quality of 720p',
+        indexer: 'TestIndexer',
+        size: 1_500_000_000,
+      },
+      {
+        id: 2,
+        movieId: 202,
+        movieTitle: 'Another Movie',
+        moviePosterUrl: 'https://example.com/poster2.jpg',
+        year: 2023,
+        releaseTitle: 'Another.Movie.2023.720p.HDTV',
+        quality: 'HDTV-720p',
+        dateBlocked: '2026-02-14T15:30:00Z',
+        reason: 'Manual block by user',
+        indexer: 'AnotherIndexer',
+        size: 3_200_000_000,
+      },
+      {
+        id: 3,
         seriesId: 100,
         seriesTitle: 'Test Series',
         episodeId: 1000,
@@ -39,24 +65,10 @@ describe('BlocklistPage', () => {
         episodeNumber: 1,
         releaseTitle: 'Test.Series.S01E01.1080p.WEB-DL',
         quality: 'HDTV-1080p',
-        dateBlocked: '2026-02-15T10:00:00Z',
+        dateBlocked: '2026-02-13T10:00:00Z',
         reason: 'Quality check failed: expected HDTV-720p',
         indexer: 'TestIndexer',
-        size: 1288490188,
-      },
-      {
-        id: 2,
-        seriesId: 101,
-        seriesTitle: 'Another Series',
-        episodeId: 1001,
-        seasonNumber: 2,
-        episodeNumber: 5,
-        releaseTitle: 'Another.Series.S02E05.720p.HDTV',
-        quality: 'HDTV-720p',
-        dateBlocked: '2026-02-14T15:30:00Z',
-        reason: 'Manual block by user',
-        indexer: 'AnotherIndexer',
-        size: 536870912,
+        size: 1_288_490_188,
       },
     ],
     meta: {
@@ -125,11 +137,13 @@ describe('BlocklistPage', () => {
   it('displays blocked releases in table view', () => {
     renderWithQueryClient(<BlocklistPage />);
 
-    expect(screen.getAllByText('Test Series')).toHaveLength(2); // Mobile and desktop views
-    expect(screen.getAllByText('Another Series')).toHaveLength(2);
+    expect(screen.getAllByText('Test Movie')).toHaveLength(2); // Mobile and desktop views
+    expect(screen.getAllByText('Another Movie')).toHaveLength(2);
+    expect(screen.getAllByText('Test Series')).toHaveLength(2);
+    expect(screen.getAllByText('Test.Movie.2024.1080p.WEB-DL')).toHaveLength(2);
+    expect(screen.getAllByText('Another.Movie.2023.720p.HDTV')).toHaveLength(2);
     expect(screen.getAllByText('Test.Series.S01E01.1080p.WEB-DL')).toHaveLength(2);
-    expect(screen.getAllByText('S01E01')).toHaveLength(2);
-    expect(screen.getAllByText('HDTV-1080p')).toHaveLength(2);
+    expect(screen.getAllByText('WEBDL-1080p')).toHaveLength(2);
   });
 
   it('displays empty state when no blocked releases', () => {
@@ -178,12 +192,13 @@ describe('BlocklistPage', () => {
   it('displays mobile card view on small screens', () => {
     renderWithQueryClient(<BlocklistPage />);
 
+    expect(screen.getAllByText('Test Movie')).toHaveLength(2);
+    expect(screen.getAllByText('Another Movie')).toHaveLength(2);
     expect(screen.getAllByText('Test Series')).toHaveLength(2);
 
-    // Mobile card view should include episode, quality, date, and reason
-    expect(screen.getAllByText('Episode:')).toHaveLength(2);
-    expect(screen.getAllByText('Quality:')).toHaveLength(2);
-    expect(screen.getAllByText('Date:')).toHaveLength(2);
-    expect(screen.getAllByText('Reason:')).toHaveLength(2);
+    // Mobile card view should include quality, date, and reason
+    expect(screen.getAllByText('Quality:')).toHaveLength(3);
+    expect(screen.getAllByText('Date:')).toHaveLength(3);
+    expect(screen.getAllByText('Reason:')).toHaveLength(3);
   });
 });

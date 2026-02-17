@@ -1,15 +1,15 @@
 import { useMemo } from 'react';
 import { CalendarDay } from './CalendarDay';
-import type { CalendarEpisode } from '@/types/calendar';
+import type { CalendarEvent } from '@/types/calendar';
 
 interface CalendarProps {
-  episodes: CalendarEpisode[];
+  events: CalendarEvent[];
   currentDate: string;
   dayCount: 3 | 5 | 7;
 }
 
-export function Calendar({ episodes, currentDate, dayCount }: CalendarProps) {
-  const { days, episodesByDate, today } = useMemo(() => {
+export function Calendar({ events, currentDate, dayCount }: CalendarProps) {
+  const { days, eventsByDate, today } = useMemo(() => {
     const startDate = new Date(currentDate);
     const startOfWeek = new Date(startDate);
     startOfWeek.setDate(startDate.getDate() - startDate.getDay());
@@ -18,7 +18,7 @@ export function Calendar({ episodes, currentDate, dayCount }: CalendarProps) {
     today.setHours(0, 0, 0, 0);
 
     const days: string[] = [];
-    const episodesByDate: Record<string, CalendarEpisode[]> = {};
+    const eventsByDate: Record<string, CalendarEvent[]> = {};
 
     // Generate date range based on dayCount
     for (let i = 0; i < dayCount; i++) {
@@ -26,27 +26,40 @@ export function Calendar({ episodes, currentDate, dayCount }: CalendarProps) {
       date.setDate(startOfWeek.getDate() + i);
       const isoDate = date.toISOString().split('T')[0]!;
       days.push(isoDate);
-      episodesByDate[isoDate] = [];
+      eventsByDate[isoDate] = [];
     }
 
-    // Group episodes by date
-    for (const episode of episodes) {
-      if (episodesByDate[episode.airDate]) {
-        episodesByDate[episode.airDate]!.push(episode);
+    // Group events by date
+    for (const event of events) {
+      const eventDate = event.type === 'episode' ? event.data.airDate : event.data.releaseDate;
+      if (eventsByDate[eventDate]) {
+        eventsByDate[eventDate]!.push(event);
       }
     }
 
-    // Sort episodes within each day by air time
-    for (const date in episodesByDate) {
-      episodesByDate[date]!.sort((a, b) => {
-        const timeA = a.airTime || '00:00';
-        const timeB = b.airTime || '00:00';
-        return timeA.localeCompare(timeB);
+    // Sort events within each day
+    for (const date in eventsByDate) {
+      eventsByDate[date]!.sort((a, b) => {
+        // Movies first, then episodes
+        if (a.type === 'movie' && b.type === 'episode') return -1;
+        if (a.type === 'episode' && b.type === 'movie') return 1;
+
+        // Within same type, sort by time/title
+        if (a.type === 'movie' && b.type === 'movie') {
+          return a.data.title.localeCompare(b.data.title);
+        }
+        if (a.type === 'episode' && b.type === 'episode') {
+          const timeA = a.data.airTime || '00:00';
+          const timeB = b.data.airTime || '00:00';
+          return timeA.localeCompare(timeB);
+        }
+
+        return 0;
       });
     }
 
-    return { days, episodesByDate, today: today.toISOString().split('T')[0]! };
-  }, [episodes, currentDate, dayCount]);
+    return { days, eventsByDate, today: today.toISOString().split('T')[0]! };
+  }, [events, currentDate, dayCount]);
 
   return (
     <div className="flex gap-3 overflow-x-auto pb-2">
@@ -54,7 +67,7 @@ export function Calendar({ episodes, currentDate, dayCount }: CalendarProps) {
         <CalendarDay
           key={date}
           date={date}
-          episodes={episodesByDate[date] || []}
+          events={eventsByDate[date] || []}
           isToday={date === today}
         />
       ))}

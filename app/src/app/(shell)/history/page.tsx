@@ -6,6 +6,9 @@ import { DataTable, type DataTableColumn } from '@/components/primitives/DataTab
 import { Label } from '@/components/primitives/Label';
 import { ConfirmModal, Modal, ModalBody, ModalFooter, ModalHeader } from '@/components/primitives/Modal';
 import { QueryPanel } from '@/components/primitives/QueryPanel';
+import { Button } from '@/components/primitives/Button';
+import { MovieCell } from '@/components/activity/MovieCell';
+import { ActivityEventBadge } from '@/components/activity/ActivityEventBadge';
 import { getApiClients } from '@/lib/api/client';
 import type { ActivityItem } from '@/lib/api/activityApi';
 import { formatRelativeDate } from '@/lib/format';
@@ -14,6 +17,12 @@ import { useApiQuery } from '@/lib/query/useApiQuery';
 
 const EVENT_TYPE_OPTIONS = [
   { label: 'All events', value: '' },
+  { label: 'Movie Grabbed', value: 'MOVIE_GRABBED' },
+  { label: 'Movie Downloaded', value: 'MOVIE_DOWNLOADED' },
+  { label: 'Movie Imported', value: 'MOVIE_IMPORTED' },
+  { label: 'Movie Renamed', value: 'MOVIE_RENAMED' },
+  { label: 'File Deleted', value: 'MOVIE_FILE_DELETED' },
+  { label: 'Download Failed', value: 'DOWNLOAD_FAILED' },
   { label: 'Grabbed', value: 'RELEASE_GRABBED' },
   { label: 'Query', value: 'INDEXER_QUERY' },
   { label: 'RSS', value: 'INDEXER_RSS' },
@@ -101,19 +110,55 @@ export default function HistoryPage() {
       render: row => formatRelativeDate(row.occurredAt),
     },
     {
+      key: 'movie',
+      header: 'Movie',
+      render: row =>
+        (row as any).movieId ? (
+          <MovieCell
+            movieId={(row as any).movieId}
+            title={(row as any).movieTitle ?? row.summary}
+            posterUrl={(row as any).moviePosterUrl}
+            size="small"
+          />
+        ) : (
+          <span className="text-sm text-text-muted">-</span>
+        ),
+    },
+    {
       key: 'eventType',
       header: 'Event',
-      render: row => row.eventType,
+      render: row => <ActivityEventBadge eventType={row.eventType} />,
+    },
+    {
+      key: 'quality',
+      header: 'Quality',
+      render: row =>
+        (row as any).quality ? (
+          <span className="text-xs text-text-primary bg-surface-2 px-2 py-0.5 rounded-sm">
+            {(row as any).quality}
+          </span>
+        ) : (
+          <span className="text-sm text-text-muted">-</span>
+        ),
+    },
+    {
+      key: 'indexer',
+      header: 'Indexer',
+      render: row =>
+        (row as any).indexer ? (
+          <span className="text-sm text-text-secondary">{(row as any).indexer}</span>
+        ) : (
+          <span className="text-sm text-text-muted">-</span>
+        ),
     },
     {
       key: 'summary',
       header: 'Summary',
-      render: row => row.summary,
-    },
-    {
-      key: 'sourceModule',
-      header: 'Source',
-      render: row => row.sourceModule ?? 'core',
+      render: row => (
+        <span className="text-sm text-text-primary truncate" title={row.summary}>
+          {row.summary}
+        </span>
+      ),
     },
     {
       key: 'success',
@@ -155,7 +200,7 @@ export default function HistoryPage() {
     <section className="space-y-4">
       <header className="space-y-1">
         <h1 className="text-2xl font-semibold">History</h1>
-        <p className="text-sm text-text-secondary">Indexer query and release history timeline.</p>
+        <p className="text-sm text-text-secondary">Download/import activity timeline with movie support.</p>
       </header>
 
       <div className="flex flex-wrap items-end gap-3 rounded-md border border-border-subtle bg-surface-1 p-3">
@@ -178,24 +223,22 @@ export default function HistoryPage() {
           </select>
         </label>
         <div className="ml-auto flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            className="rounded-sm border border-border-subtle px-3 py-1 text-sm text-text-primary hover:bg-surface-2 disabled:opacity-60"
+          <Button
+            variant="secondary"
             disabled={exportHistoryMutation.isPending}
             onClick={() => {
               exportHistoryMutation.mutate();
             }}
           >
             Export history
-          </button>
-          <button
-            type="button"
-            className="rounded-sm border border-border-danger bg-surface-danger px-3 py-1 text-sm text-text-primary hover:bg-surface-danger/80 disabled:opacity-60"
+          </Button>
+          <Button
+            variant="danger"
             disabled={clearHistoryMutation.isPending}
             onClick={() => setIsClearConfirmOpen(true)}
           >
             Clear history
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -214,25 +257,25 @@ export default function HistoryPage() {
           getRowId={row => row.id}
           rowActions={row => (
             <div className="flex items-center justify-end gap-2">
-              {row.eventType === 'RELEASE_GRABBED' && row.success !== false ? (
-                <button
-                  type="button"
-                  className="rounded-sm border border-border-subtle px-2 py-1 text-xs text-text-primary hover:bg-surface-2 disabled:opacity-60"
+              {(row.eventType === 'RELEASE_GRABBED' ||
+                row.eventType === 'MOVIE_GRABBED') &&
+              row.success !== false ? (
+                <Button
+                  variant="secondary"
+                  className="text-xs px-2 py-1"
                   onClick={() => markFailedMutation.mutate(row.id)}
                   disabled={markFailedMutation.isPending}
-                  aria-label={`Mark ${row.summary} as failed`}
                 >
                   Mark failed
-                </button>
+                </Button>
               ) : null}
-              <button
-                type="button"
-                className="rounded-sm border border-border-subtle px-2 py-1 text-xs text-text-primary hover:bg-surface-2"
+              <Button
+                variant="secondary"
+                className="text-xs px-2 py-1"
                 onClick={() => setDetailsRow(row)}
-                aria-label={`Details for ${row.summary}`}
               >
                 Details
-              </button>
+              </Button>
             </div>
           )}
           pagination={{
@@ -260,7 +303,9 @@ export default function HistoryPage() {
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 <div>
                   <p className="text-xs text-text-secondary">Event</p>
-                  <p>{detailsRow.eventType}</p>
+                  <div className="flex items-center gap-2">
+                    <ActivityEventBadge eventType={detailsRow.eventType} />
+                  </div>
                 </div>
                 <div>
                   <p className="text-xs text-text-secondary">Status</p>
@@ -274,6 +319,30 @@ export default function HistoryPage() {
                   <p className="text-xs text-text-secondary">Entity</p>
                   <p>{detailsRow.entityRef ?? 'n/a'}</p>
                 </div>
+                {(detailsRow as any).movieId ? (
+                  <>
+                    <div>
+                      <p className="text-xs text-text-secondary">Movie</p>
+                      <MovieCell
+                        movieId={(detailsRow as any).movieId}
+                        title={(detailsRow as any).movieTitle ?? 'Unknown'}
+                        posterUrl={(detailsRow as any).moviePosterUrl}
+                      />
+                    </div>
+                    {(detailsRow as any).quality ? (
+                      <div>
+                        <p className="text-xs text-text-secondary">Quality</p>
+                        <p>{(detailsRow as any).quality}</p>
+                      </div>
+                    ) : null}
+                    {(detailsRow as any).indexer ? (
+                      <div>
+                        <p className="text-xs text-text-secondary">Indexer</p>
+                        <p>{(detailsRow as any).indexer}</p>
+                      </div>
+                    ) : null}
+                  </>
+                ) : null}
               </div>
               <div>
                 <p className="text-xs text-text-secondary">Parameters</p>
@@ -284,14 +353,9 @@ export default function HistoryPage() {
             </div>
           </ModalBody>
           <ModalFooter>
-            <button
-              type="button"
-              className="rounded-sm border border-border-subtle px-3 py-1 text-sm text-text-primary hover:bg-surface-2"
-              onClick={() => setDetailsRow(null)}
-              aria-label="Close details"
-            >
+            <Button variant="secondary" onClick={() => setDetailsRow(null)}>
               Close
-            </button>
+            </Button>
           </ModalFooter>
         </Modal>
       ) : null}

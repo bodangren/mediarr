@@ -11,7 +11,6 @@ import { getApiClients } from '@/lib/api/client';
 import { queryKeys } from '@/lib/query/queryKeys';
 import { useApiQuery } from '@/lib/query/useApiQuery';
 import { getCalendarStore } from '@/lib/state/calendarStore';
-import { getMockMoviesInRange } from '@/lib/mocks/calendarMocks';
 import type { CalendarEvent } from '@/types/calendar';
 
 export default function CalendarPage() {
@@ -82,10 +81,15 @@ export default function CalendarPage() {
     enabled: mounted && (state.contentType === 'all' || state.contentType === 'tv'),
   });
 
-  // Fetch movies (using mock data for now)
-  const moviesQuery = useApiQuery<CalendarEvent[]>({
-    queryKey: ['calendar-movies', { start: startDate, end: endDate, ...state.filters }],
-    queryFn: async () => getMockMoviesInRange(startDate, endDate),
+  // Fetch movies
+  const moviesQuery = useApiQuery({
+    queryKey: ['calendar', 'movies', { start: startDate, end: endDate, ...state.filters }],
+    queryFn: () =>
+      api.calendarApi.listCalendarMovies({
+        start: startDate,
+        end: endDate,
+        ...state.filters,
+      }),
     staleTimeKind: 'list',
     enabled: mounted && (state.contentType === 'all' || state.contentType === 'movies'),
   });
@@ -105,10 +109,8 @@ export default function CalendarPage() {
     // Add movie events
     if (state.contentType === 'all' || state.contentType === 'movies') {
       const movies = moviesQuery.data ?? [];
-      movies.forEach(event => {
-        if (event.type === 'movie') {
-          allEvents.push(event);
-        }
+      movies.forEach(movie => {
+        allEvents.push({ type: 'movie' as const, data: movie });
       });
     }
 
@@ -150,18 +152,15 @@ export default function CalendarPage() {
   };
 
   const handleIcalExport = () => {
-    // Placeholder for iCal export functionality
-    alert('iCal export feature coming soon!');
+    // iCal export API not yet available
   };
 
   const handleSearchMissing = () => {
-    // Placeholder for search missing functionality
-    alert('Search for missing movies/episodes coming soon!');
+    // Search for missing API not yet available
   };
 
   const handleRssSync = () => {
-    // Placeholder for RSS sync functionality
-    alert('RSS Sync coming soon!');
+    // RSS sync API not yet available
   };
 
   const formatDateRange = () => {
@@ -239,16 +238,31 @@ export default function CalendarPage() {
       {/* Additional actions */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <Button variant="secondary" onClick={handleSearchMissing}>
+          <Button
+            variant="secondary"
+            onClick={handleSearchMissing}
+            disabled
+            title="Search for missing not yet available"
+          >
             Search Missing
           </Button>
-          <Button variant="secondary" onClick={handleRssSync}>
+          <Button
+            variant="secondary"
+            onClick={handleRssSync}
+            disabled
+            title="RSS Sync not yet available"
+          >
             RSS Sync
           </Button>
         </div>
 
         <div className="flex items-center gap-2">
-          <Button variant="secondary" onClick={handleIcalExport}>
+          <Button
+            variant="secondary"
+            onClick={handleIcalExport}
+            disabled
+            title="iCal export not yet available"
+          >
             iCal
           </Button>
           <Button variant="secondary" onClick={() => setOptionsModalOpen(true)}>

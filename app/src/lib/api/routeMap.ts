@@ -10,6 +10,9 @@ export const routeMap = {
   movieMonitored: (id: number) => `/api/movies/${id}/monitored`,
   movieDelete: (id: number) => `/api/movies/${id}`,
 
+  moviesMissing: '/api/movies/missing',
+  moviesCutoffUnmet: '/api/movies/cutoff-unmet',
+
   wanted: '/api/media/wanted',
   missingEpisodes: '/api/episodes/missing',
   cutoffUnmetEpisodes: '/api/episodes/cutoff-unmet',
@@ -41,6 +44,9 @@ export const routeMap = {
   applicationSyncAll: '/api/applications/sync-all',
 
   subtitleMovieVariants: (id: number) => `/api/subtitles/movie/${id}/variants`,
+  subtitleMovieSync: (id: number) => `/api/subtitles/movie/${id}/sync`,
+  subtitleMovieScan: (id: number) => `/api/subtitles/movie/${id}/scan`,
+  subtitleMovieSearch: (id: number) => `/api/subtitles/movie/${id}/search`,
   subtitleEpisodeVariants: (id: number) => `/api/subtitles/episode/${id}/variants`,
   subtitleSearch: '/api/subtitles/search',
   subtitleDownload: '/api/subtitles/download',
@@ -139,4 +145,16 @@ export const routeMap = {
   updatesInstall: '/api/updates/install',
   updatesHistory: '/api/updates/history',
   updatesProgress: (updateId: string) => `/api/updates/progress/${updateId}`,
+
+  collections: '/api/collections',
+  collectionDetail: (id: number) => `/api/collections/${id}`,
+  collectionUpdate: (id: number) => `/api/collections/${id}`,
+  collectionDelete: (id: number) => `/api/collections/${id}`,
+  collectionSearch: (id: number) => `/api/collections/${id}/search`,
+
+  discover: '/api/discover/movies',
+
+  importScan: '/api/import/scan',
+  importSeries: '/api/import/series',
+  importBulkSeries: '/api/import/series/bulk',
 };

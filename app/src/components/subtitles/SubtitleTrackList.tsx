@@ -10,7 +10,7 @@ export interface SubtitleTrackListProps {
   tracks: SubtitleTrack[];
   missingLanguages: string[];
   onSearch: (languageCode: string) => void;
-  onDelete: (trackId: number) => void;
+  onDelete?: (trackId: number) => void;
   onDownload?: (track: SubtitleTrack) => void;
   className?: string;
 }
@@ -41,6 +41,7 @@ export function SubtitleTrackList({
   };
 
   const handleDelete = async (trackId: number) => {
+    if (!onDelete) return;
     setDeletingTrack(trackId);
     try {
       onDelete(trackId);
@@ -96,15 +97,17 @@ export function SubtitleTrackList({
                       <Download className="h-4 w-4" />
                     </Button>
                   )}
-                  <Button
-                    variant="secondary"
-                    onClick={() => handleDelete(track.id)}
-                    disabled={deletingTrack === track.id}
-                    aria-label={`Delete subtitle for ${track.languageCode}`}
-                    className="p-1.5"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  {onDelete && (
+                    <Button
+                      variant="secondary"
+                      onClick={() => handleDelete(track.id)}
+                      disabled={deletingTrack === track.id}
+                      aria-label={`Delete subtitle for ${track.languageCode}`}
+                      className="p-1.5"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               </div>
             ))}

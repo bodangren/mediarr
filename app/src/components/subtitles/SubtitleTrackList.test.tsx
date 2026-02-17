@@ -168,6 +168,19 @@ describe('SubtitleTrackList', () => {
     expect(downloadButtons.length).toBe(0);
   });
 
+  it('does not render delete button when onDelete is not provided', () => {
+    render(
+      <SubtitleTrackList
+        tracks={mockTracks}
+        missingLanguages={[]}
+        onSearch={vi.fn()}
+      />,
+    );
+
+    const deleteButtons = screen.queryAllByLabelText(/Delete subtitle for/);
+    expect(deleteButtons.length).toBe(0);
+  });
+
   it('renders empty state when no tracks or missing languages', () => {
     render(
       <SubtitleTrackList

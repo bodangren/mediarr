@@ -12,24 +12,25 @@ import type { ManualSearchCandidate } from '@/lib/api';
 
 interface ManualSearchModalProps {
   isOpen: boolean;
-  episodeId: number;
+  episodeId?: number;
+  movieId?: number;
   onClose: () => void;
 }
 
-export function ManualSearchModal({ isOpen, episodeId, onClose }: ManualSearchModalProps) {
+export function ManualSearchModal({ isOpen, episodeId, movieId, onClose }: ManualSearchModalProps) {
   const api = useMemo(() => getApiClients(), []);
   const queryClient = useQueryClient();
   const { pushToast } = useToast();
 
   const searchQuery = useQuery({
-    queryKey: ['subtitle-manual-search', episodeId],
-    queryFn: () => api.subtitleApi.manualSearch({ episodeId }),
-    enabled: isOpen && episodeId > 0,
+    queryKey: ['subtitle-manual-search', movieId ?? episodeId],
+    queryFn: () => api.subtitleApi.manualSearch({ movieId, episodeId }),
+    enabled: isOpen && (movieId ?? episodeId) !== undefined,
   });
 
   const downloadMutation = useMutation({
     mutationFn: (candidate: ManualSearchCandidate) =>
-      api.subtitleApi.manualDownload({ episodeId, candidate }),
+      api.subtitleApi.manualDownload({ movieId, episodeId, candidate }),
     onSuccess: () => {
       pushToast({
         title: 'Download Successful',
@@ -100,7 +101,7 @@ export function ManualSearchModal({ isOpen, episodeId, onClose }: ManualSearchMo
           isEmpty={searchQuery.data?.length === 0}
           onRetry={() => searchQuery.refetch()}
           emptyTitle="No subtitles found"
-          emptyBody="No subtitle candidates found for this episode. Try adjusting your provider settings."
+          emptyBody="No subtitle candidates found. Try adjusting your provider settings."
         >
           <DataTable
             data={searchQuery.data ?? []}

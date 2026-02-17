@@ -13,41 +13,26 @@ import { getApiClients } from '@/lib/api/client';
 import { useApiQuery } from '@/lib/query/useApiQuery';
 import { queryKeys } from '@/lib/query/queryKeys';
 import type { SubtitleHistoryEntry, HistoryQueryParams } from '@/lib/api/subtitleHistoryApi';
-
-function formatRelativeTime(timestamp: string): string {
-  const now = new Date();
-  const date = new Date(timestamp);
-  const diffMs = now.getTime() - date.getTime();
-  const diffSecs = Math.floor(diffMs / 1000);
-  const diffMins = Math.floor(diffSecs / 60);
-  const diffHours = Math.floor(diffMins / 60);
-  const diffDays = Math.floor(diffHours / 24);
-
-  if (diffSecs < 60) return 'just now';
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return date.toLocaleDateString();
-}
-
-const ACTIONS = ['download', 'upgrade', 'manual', 'upload'] as const;
-const PROVIDERS = ['OpenSubtitles', 'Subscene', 'Addic7ed', 'Podnapisi', 'Yify'] as const;
-const LANGUAGES = ['en', 'es', 'fr', 'de', 'it', 'pt', 'ru', 'ar', 'hi', 'zh'] as const;
-
-// Helper to convert readonly tuples to mutable arrays for component compatibility
-const toMutable = <T,>(arr: readonly T[]): T[] => [...arr];
+import { formatRelativeTime } from '@/lib/subtitles/time';
+import {
+  SUBTITLE_ACTIONS_VALUES,
+  SUBTITLE_PROVIDERS_VALUES,
+  SUBTITLE_LANGUAGES,
+  toMutable,
+} from '@/lib/subtitles/constants';
 
 export default function MoviesHistoryPage() {
   const api = useMemo(() => getApiClients(), []);
   const queryClient = useQueryClient();
 
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
   const [filters, setFilters] = useState<FilterState>({});
   const [showClearModal, setShowClearModal] = useState(false);
 
   const queryParams: HistoryQueryParams = {
     page,
-    pageSize: 25,
+    pageSize,
     type: 'movies',
     provider: filters.provider,
     languageCode: filters.languageCode,
@@ -67,7 +52,7 @@ export default function MoviesHistoryPage() {
     mutationFn: () => api.subtitleHistoryApi.clearHistory('movies'),
     onSuccess: () => {
       setShowClearModal(false);
-      queryClient.invalidateQueries({ queryKey: ['subtitleHistory', 'movies'] });
+      queryClient.invalidateQueries({ queryKey: ['subtitle-history', 'movies'] });
     },
   });
 
@@ -156,9 +141,9 @@ export default function MoviesHistoryPage() {
       <HistoryFilters
         filters={filters}
         onChange={setFilters}
-        providers={toMutable(PROVIDERS)}
-        languages={toMutable(LANGUAGES)}
-        actions={toMutable(ACTIONS)}
+        providers={toMutable(SUBTITLE_PROVIDERS_VALUES)}
+        languages={toMutable(SUBTITLE_LANGUAGES)}
+        actions={toMutable(SUBTITLE_ACTIONS_VALUES)}
       />
 
       <QueryPanel
@@ -185,7 +170,7 @@ export default function MoviesHistoryPage() {
                   onNext: () => setPage(current => Math.min(Math.ceil(data.meta.totalCount / (queryParams.pageSize ?? 25)), current + 1)),
                   onPageSizeChange: (size) => {
                     setPage(1);
-                    queryParams.pageSize = size;
+                    setPageSize(size);
                   },
                 }
               : undefined

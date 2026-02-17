@@ -1,16 +1,16 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
 import { DataTable, type DataTableColumn } from '@/components/primitives/DataTable';
 import { QueryPanel } from '@/components/primitives/QueryPanel';
 import { Button } from '@/components/primitives/Button';
 import { getApiClients } from '@/lib/api/client';
 import { queryKeys } from '@/lib/query/queryKeys';
-import { useApiQuery } from '@/lib/query/useApiQuery';
+import { formatBytes } from '@/lib/format';
 import type { CutoffUnmetMovie } from '@/types/wanted';
 import { QualityComparison } from '@/components/wanted/QualityComparison';
-import { mockCutoffUnmetMovies, formatFileSize } from '@/lib/mocks/wantedMocks';
 
 export interface MovieCutoffUnmetTabProps {
   onSearchMovie: (movie: CutoffUnmetMovie) => void;
@@ -20,23 +20,33 @@ export interface MovieCutoffUnmetTabProps {
 export function MovieCutoffUnmetTab({ onSearchMovie, onBulkSearch }: MovieCutoffUnmetTabProps) {
   const api = useMemo(() => getApiClients(), []);
   const queryClient = useQueryClient();
+  const router = useRouter();
 
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState<'qualityGap' | 'title' | 'fileSize'>('qualityGap');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [selectedMovies, setSelectedMovies] = useState<Set<number>>(new Set());
 
-  // For now, use mock data until API is implemented
-  const cutoffUnmetQuery = {
-    data: {
-      items: mockCutoffUnmetMovies,
-      meta: { page: 1, pageSize: 25, totalCount: mockCutoffUnmetMovies.length, totalPages: 1 },
+  const cutoffUnmetQuery = useQuery({
+    queryKey: queryKeys.cutoffUnmetMovies({ page, pageSize: 25, sortBy, sortDir }),
+    queryFn: () => api.wantedApi.listCutoffUnmetMovies({ page, pageSize: 25, sortBy, sortDir }),
+  });
+
+  const toggleMonitoredMutation = useMutation({
+    mutationFn: ({ id, monitored }: { id: number; monitored: boolean }) =>
+      api.movieApi.update(id, { monitored }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['movies', 'cutoff-unmet'] });
     },
-    isPending: false,
-    isError: false,
-    error: null,
-    refetch: () => Promise.resolve(),
-  } as const;
+  });
+
+  const handleToggleMonitored = (movie: CutoffUnmetMovie) => {
+    toggleMonitoredMutation.mutate({ id: movie.id, monitored: !movie.monitored });
+  };
+
+  const handleEditMovie = (movie: CutoffUnmetMovie) => {
+    router.push(`/library/movies/${movie.movieId}`);
+  };
 
   const columns: DataTableColumn<CutoffUnmetMovie>[] = [
     {
@@ -93,7 +103,7 @@ export function MovieCutoffUnmetTab({ onSearchMovie, onBulkSearch }: MovieCutoff
       key: 'fileSize',
       header: 'File Size',
       sortable: true,
-      render: row => <span className="text-sm">{formatFileSize(row.fileSize)}</span>,
+      render: row => <span className="text-sm">{formatBytes(row.fileSize)}</span>,
     },
     {
       key: 'monitored',
@@ -101,14 +111,13 @@ export function MovieCutoffUnmetTab({ onSearchMovie, onBulkSearch }: MovieCutoff
       render: row => (
         <button
           type="button"
-          onClick={() => {
-            // TODO: Implement toggle monitored
-          }}
+          onClick={() => handleToggleMonitored(row)}
+          disabled={toggleMonitoredMutation.isPending}
           className={`rounded-sm px-2 py-1 text-xs font-medium transition-colors ${
             row.monitored
               ? 'bg-accent-success text-text-primary'
               : 'bg-surface-2 text-text-secondary'
-          }`}
+          } ${toggleMonitoredMutation.isPending ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
           {row.monitored ? 'Monitored' : 'Unmonitored'}
         </button>
@@ -128,9 +137,7 @@ export function MovieCutoffUnmetTab({ onSearchMovie, onBulkSearch }: MovieCutoff
           </Button>
           <Button
             variant="secondary"
-            onClick={() => {
-              // TODO: Implement edit
-            }}
+            onClick={() => handleEditMovie(row)}
             className="px-2 py-1 text-xs"
           >
             Edit
@@ -151,7 +158,8 @@ export function MovieCutoffUnmetTab({ onSearchMovie, onBulkSearch }: MovieCutoff
   };
 
   const handleBulkSearch = () => {
-    const selectedItems = cutoffUnmetQuery.data.items.filter(item => selectedMovies.has(item.id));
+    if (!cutoffUnmetQuery.data) return;
+    const selectedItems = cutoffUnmetQuery.data.items.filter((item: CutoffUnmetMovie) => selectedMovies.has(item.id));
     if (selectedItems.length > 0) {
       onBulkSearch(selectedItems);
       setSelectedMovies(new Set());
@@ -177,25 +185,27 @@ export function MovieCutoffUnmetTab({ onSearchMovie, onBulkSearch }: MovieCutoff
       <QueryPanel
         isLoading={cutoffUnmetQuery.isPending}
         isError={cutoffUnmetQuery.isError}
-        isEmpty={cutoffUnmetQuery.data.items.length === 0}
-        errorMessage={cutoffUnmetQuery.error?.message ?? undefined}
+        isEmpty={!cutoffUnmetQuery.data || cutoffUnmetQuery.data.items.length === 0}
+        errorMessage={cutoffUnmetQuery.error instanceof Error ? cutoffUnmetQuery.error.message : undefined}
         onRetry={() => void cutoffUnmetQuery.refetch()}
         emptyTitle="No cutoff unmet movies"
         emptyBody="All monitored movies meet the quality cutoff."
       >
-        <DataTable
-          data={cutoffUnmetQuery.data.items}
-          columns={columns}
-          getRowId={row => row.id}
-          pagination={{
-            page,
-            totalPages: cutoffUnmetQuery.data.meta.totalPages,
-            onPrev: () => setPage(current => Math.max(1, current - 1)),
-            onNext: () => setPage(current => Math.min(cutoffUnmetQuery.data.meta.totalPages, current + 1)),
-          }}
-          sort={{ key: sortBy, direction: sortDir }}
-          onSort={handleSort}
-        />
+        {cutoffUnmetQuery.data && (
+          <DataTable
+            data={cutoffUnmetQuery.data.items}
+            columns={columns}
+            getRowId={row => row.id}
+            pagination={{
+              page,
+              totalPages: cutoffUnmetQuery.data.meta.totalPages,
+              onPrev: () => setPage(current => Math.max(1, current - 1)),
+              onNext: () => setPage(current => Math.min(cutoffUnmetQuery.data.meta.totalPages, current + 1)),
+            }}
+            sort={{ key: sortBy, direction: sortDir }}
+            onSort={handleSort}
+          />
+        )}
       </QueryPanel>
     </section>
   );

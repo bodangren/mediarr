@@ -100,9 +100,9 @@ While the primary sequence defines hard dependencies, several phases across trac
 *Description: Clone the Radarr movie collection manager UI. Post-audit: Phases 1-7, 9-10 mostly complete (stub/mock issues deferred to ui_stub_closure). Phase 8 has 6 missing settings pages (mediamanagement, quality, customformats, importlists, metadata, tags). Phase 11 not started.*
 *Phases: 11 | Link: [./tracks/radarr_ui_cloning_20260214/](./tracks/radarr_ui_cloning_20260214/)*
 
-- [ ] **Track: UI Stub Closure & Deduplication**
-  *Description: Close stubs, replace mock data with real APIs (15+ pages across prowlarr/sonarr/radarr tracks), wire ~25 empty action handlers, remove alert() placeholders, delete orphaned code and mock files, remove debug logging, and consolidate duplicated patterns (API factories, modal skeletons, shared schemas).*
-  *Phases: 5 | Link: [./tracks/ui_stub_closure_20260217/](./tracks/ui_stub_closure_20260217/)*
+- [x] **Track: UI Stub Closure & Deduplication**
+  *Description: Close stubs, replace mock data with real APIs (20+ pages across prowlarr/sonarr/radarr/bazarr tracks), wire empty or placeholder action handlers, remove alert()/coming-soon fallbacks, delete orphaned code and mock files, remove debug logging, and consolidate duplicated patterns (API factories, modal skeletons, shared schemas, subtitle helpers).*
+  *Phases: 5 | Status: COMPLETED | Link: [../archive/ui_stub_closure_20260217/](../archive/ui_stub_closure_20260217/)*
 
 - [x] **Track: Sonarr UI Cloning**
 *Description: Clone the Sonarr TV series PVR UI with comprehensive views, components, and features for managing series, episodes, downloads, and quality profiles.*

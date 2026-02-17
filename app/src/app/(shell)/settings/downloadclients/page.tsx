@@ -11,6 +11,7 @@ import { AddDownloadClientModal } from '@/components/settings/AddDownloadClientM
 import type { DownloadClientDraft } from '@/types/downloadClient';
 import { useToast } from '@/components/providers/ToastProvider';
 import { getApiClients } from '@/lib/api/client';
+import { healthStatus } from '@/lib/health';
 import { queryKeys } from '@/lib/query/queryKeys';
 import { useApiQuery } from '@/lib/query/useApiQuery';
 import { useOptimisticMutation } from '@/lib/query/useOptimisticMutation';
@@ -27,19 +28,6 @@ interface SaveDownloadClientInput {
   priority?: number;
   enabled?: boolean;
   settings: string;
-}
-
-function healthStatus(row: DownloadClientRow): 'completed' | 'warning' | 'error' {
-  const failureCount = row.health?.failureCount ?? 0;
-  if (failureCount >= 3) {
-    return 'error';
-  }
-
-  if (failureCount > 0) {
-    return 'warning';
-  }
-
-  return 'completed';
 }
 
 function toSaveDownloadClientInput(draft: DownloadClientDraft): SaveDownloadClientInput {

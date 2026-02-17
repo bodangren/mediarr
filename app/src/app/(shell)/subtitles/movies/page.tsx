@@ -37,8 +37,8 @@ export default function MovieSubtitlesListPage() {
         title: movie.title,
         year: movie.year,
         monitored: movie.monitored,
-        audioLanguages: (movie as any).audioLanguages ?? ['en'],
-        languageProfile: 'Default',
+        audioLanguages: (movie as any).audioLanguages ?? undefined,
+        languageProfile: (movie as any).languageProfile ?? undefined,
         missingSubtitles: (movie as any).missingSubtitles ?? [],
       }));
     },
@@ -90,14 +90,18 @@ export default function MovieSubtitlesListPage() {
       header: 'Audio Languages',
       render: row => (
         <div className="flex flex-wrap gap-1">
-          {row.audioLanguages?.map(lang => (
-            <span
-              key={lang}
-              className="inline-flex rounded-md bg-surface-2 px-2 py-0.5 text-xs text-text-primary"
-            >
-              {lang}
-            </span>
-          ))}
+          {row.audioLanguages && row.audioLanguages.length > 0 ? (
+            row.audioLanguages.map(lang => (
+              <span
+                key={lang}
+                className="inline-flex rounded-md bg-surface-2 px-2 py-0.5 text-xs text-text-primary"
+              >
+                {lang}
+              </span>
+            ))
+          ) : (
+            <span className="text-xs text-text-muted">Unavailable</span>
+          )}
         </div>
       ),
     },
@@ -105,9 +109,15 @@ export default function MovieSubtitlesListPage() {
       key: 'languageProfile',
       header: 'Language Profile',
       render: row => (
-        <span className="inline-flex rounded-md bg-surface-2 px-2 py-1 text-xs text-text-primary">
-          {row.languageProfile ?? 'Default'}
-        </span>
+        row.languageProfile ? (
+          <span className="inline-flex rounded-md bg-surface-2 px-2 py-1 text-xs text-text-primary">
+            {row.languageProfile}
+          </span>
+        ) : (
+          <span className="inline-flex rounded-md bg-surface-2 px-2 py-1 text-xs text-text-muted">
+            Unavailable
+          </span>
+        )
       ),
     },
     {

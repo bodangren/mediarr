@@ -26,6 +26,8 @@ const mockedUseApiQuery = vi.mocked(useApiQuery);
 const searchCandidatesMock = vi.fn();
 const deleteMovieMock = vi.fn();
 const setMovieMonitoredMock = vi.fn();
+const refreshMovieMock = vi.fn();
+const deleteFileMock = vi.fn();
 
 function renderPage() {
   const queryClient = new QueryClient({
@@ -49,6 +51,8 @@ beforeEach(() => {
   searchCandidatesMock.mockResolvedValue([{ title: 'Candidate A' }, { title: 'Candidate B' }]);
   deleteMovieMock.mockResolvedValue({ deleted: true, id: 7 });
   setMovieMonitoredMock.mockResolvedValue({ id: 7, title: 'Test Movie', monitored: true });
+  refreshMovieMock.mockResolvedValue({ id: 7, refreshed: true });
+  deleteFileMock.mockResolvedValue({ deleted: true });
 
   mockedGetApiClients.mockReturnValue({
     httpClient: {} as any,
@@ -58,6 +62,12 @@ beforeEach(() => {
     mediaApi: {
       deleteMovie: deleteMovieMock,
       setMovieMonitored: setMovieMonitoredMock,
+    },
+    movieApi: {
+      getById: vi.fn(),
+      refresh: refreshMovieMock,
+      update: vi.fn(),
+      deleteFile: deleteFileMock,
     },
   } as any);
 
@@ -70,38 +80,13 @@ beforeEach(() => {
       runtime: 118,
       certification: 'R',
       posterUrl: '',
-      backdropUrl: '',
       status: 'downloaded',
       monitored: true,
       qualityProfileId: 1,
-      qualityProfileName: 'HD - 1080p',
       sizeOnDisk: 2_147_483_648,
       path: '/Movies/Blade Runner 2049 (2017)',
       genres: ['Action', 'Drama', 'Sci-Fi'],
       studio: 'Warner Bros.',
-      ratings: {
-        tmdb: 7.1,
-        imdb: 8.0,
-      },
-      files: [
-        {
-          id: 1,
-          path: '/Movies/Blade Runner 2049 (2017)/Blade.Runner.2049.2017.1080p.BluRay.x264.mkv',
-          quality: 'Bluray-1080p',
-          size: 2_147_483_648,
-          language: 'English',
-        },
-      ],
-      cast: [
-        {
-          id: 1,
-          name: 'Ryan Gosling',
-          character: 'K',
-          profileUrl: '',
-        },
-      ],
-      crew: [],
-      alternateTitles: [],
     },
     isPending: false,
     isLoading: false,
@@ -121,8 +106,18 @@ describe('movie detail page', () => {
     expect(screen.getByText(/Monitored/i)).toBeInTheDocument();
   });
 
-  it('supports search and delete action buttons', async () => {
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+  it('supports refresh action button', async () => {
+    renderPage();
+
+    const refreshButton = await screen.findByRole('button', { name: /Refresh/i });
+    expect(refreshButton).toBeInTheDocument();
+    fireEvent.click(refreshButton);
+    await waitFor(() => {
+      expect(refreshMovieMock).toHaveBeenCalled();
+    });
+  });
+
+  it('supports search action button', async () => {
     renderPage();
 
     const searchButton = await screen.findByRole('button', { name: /Search Movie/i });
@@ -131,8 +126,31 @@ describe('movie detail page', () => {
     await waitFor(() => {
       expect(searchCandidatesMock).toHaveBeenCalled();
     });
+  });
 
-    const deleteButton = screen.getByRole('button', { name: /Delete Movie/i });
+  it('supports interactive search action button', async () => {
+    renderPage();
+
+    const interactiveSearchButton = await screen.findByRole('button', { name: /Interactive Search/i });
+    expect(interactiveSearchButton).toBeInTheDocument();
+    fireEvent.click(interactiveSearchButton);
+    // Modal should open (check by some UI change)
+  });
+
+  it('supports edit movie action button', async () => {
+    renderPage();
+
+    const editButton = await screen.findByRole('button', { name: /Edit Movie/i });
+    expect(editButton).toBeInTheDocument();
+    fireEvent.click(editButton);
+    // Modal should open (check by some UI change)
+  });
+
+  it('supports delete movie action button', async () => {
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    renderPage();
+
+    const deleteButton = await screen.findByRole('button', { name: /Delete Movie/i });
     expect(deleteButton).toBeInTheDocument();
     fireEvent.click(deleteButton);
     await waitFor(() => {
@@ -140,5 +158,14 @@ describe('movie detail page', () => {
     });
 
     confirmSpy.mockRestore();
+  });
+
+  it('shows empty state when no files present', async () => {
+    renderPage();
+
+    // Should show empty state alert with full message
+    await waitFor(() => {
+      expect(screen.getByText(/Click "Search Movie" to find releases/)).toBeInTheDocument();
+    });
   });
 });

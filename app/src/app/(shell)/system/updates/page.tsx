@@ -64,6 +64,7 @@ export default function Page() {
   const { updatesApi } = getApiClients();
   const [error, setError] = useState<string | null>(null);
   const [activeUpdateId, setActiveUpdateId] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
 
   // Fetch current version
   const { data: currentVersion, isLoading: isLoadingCurrent, error: currentVersionError } = useApiQuery({
@@ -84,8 +85,8 @@ export default function Page() {
 
   // Fetch update history
   const { data: historyData, isLoading: isLoadingHistory } = useApiQuery({
-    queryKey: queryKeys.updatesHistory({ page: 1, pageSize: 20 }),
-    queryFn: () => updatesApi.getUpdateHistory({ page: 1, pageSize: 20 }),
+    queryKey: queryKeys.updatesHistory({ page, pageSize: 20 }),
+    queryFn: () => updatesApi.getUpdateHistory({ page, pageSize: 20 }),
   });
 
   // Fetch update progress if active
@@ -289,8 +290,8 @@ export default function Page() {
             pagination={{
               page: historyData.meta.page,
               totalPages: historyData.meta.totalPages,
-              onPrev: () => {},
-              onNext: () => {},
+              onPrev: () => setPage(current => Math.max(1, current - 1)),
+              onNext: () => setPage(current => Math.min(historyData.meta.totalPages, current + 1)),
             }}
           />
         ) : (

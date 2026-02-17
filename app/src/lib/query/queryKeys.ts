@@ -5,7 +5,7 @@ import type { BlocklistQuery } from '../../types/blocklist';
 import type { EventsQuery, TaskHistoryQuery } from '../api/systemApi';
 import type { UpdateHistoryQuery } from '../api/updatesApi';
 import type { TorrentListQuery } from '../api/torrentApi';
-import type { MissingEpisodesQuery, CutoffUnmetEpisodesQuery } from '../../types/wanted';
+import type { MissingEpisodesQuery, CutoffUnmetEpisodesQuery, MissingMoviesQuery, CutoffUnmetMoviesQuery } from '../../types/wanted';
 import type { WantedQueryParams } from '../api/subtitleWantedApi';
 import type { HistoryQueryParams, StatsQueryParams } from '../api/subtitleHistoryApi';
 import type { BlacklistQueryParams } from '../api/subtitleBlacklistApi';
@@ -20,9 +20,16 @@ export const queryKeys = {
   wantedList: (query: WantedQuery) => ['media', 'wanted', query] as const,
   missingEpisodes: (query: MissingEpisodesQuery) => ['episodes', 'missing', query] as const,
   cutoffUnmetEpisodes: (query: CutoffUnmetEpisodesQuery) => ['episodes', 'cutoff-unmet', query] as const,
+  missingMovies: (query: MissingMoviesQuery) => ['movies', 'missing', query] as const,
+  cutoffUnmetMovies: (query: CutoffUnmetMoviesQuery) => ['movies', 'cutoff-unmet', query] as const,
   releaseCandidates: (request: Record<string, unknown>) => ['media', 'release-candidates', request] as const,
 
   calendar: (params: CalendarListParams) => ['calendar', 'list', params] as const,
+
+  collections: () => ['collections', 'list'] as const,
+  collectionDetail: (id: number) => ['collections', 'detail', id] as const,
+
+  discoverMovies: (mode: string) => ['discover', 'movies', mode] as const,
 
   indexers: () => ['indexers', 'list'] as const,
   applications: () => ['applications', 'list'] as const,

@@ -177,7 +177,7 @@ export function createSubtitleApi(client: ApiHttpClient) {
     syncMovie(movieId: number): Promise<SeriesSyncResult> {
       return client.request(
         {
-          path: routeMap.subtitleSeriesSync(movieId),
+          path: routeMap.subtitleMovieSync(movieId),
           method: 'POST',
         },
         seriesSyncResultSchema,
@@ -187,7 +187,7 @@ export function createSubtitleApi(client: ApiHttpClient) {
     scanMovieDisk(movieId: number): Promise<DiskScanResult> {
       return client.request(
         {
-          path: routeMap.subtitleSeriesScan(movieId),
+          path: routeMap.subtitleMovieScan(movieId),
           method: 'POST',
         },
         diskScanResultSchema,
@@ -197,7 +197,7 @@ export function createSubtitleApi(client: ApiHttpClient) {
     searchMovieSubtitles(movieId: number): Promise<SubtitleSearchResult> {
       return client.request(
         {
-          path: routeMap.subtitleSeriesSearch(movieId),
+          path: routeMap.subtitleMovieSearch(movieId),
           method: 'POST',
         },
         subtitleSearchResultSchema,

@@ -21,6 +21,7 @@ describe('CalendarPage', () => {
   let mockGetApiClients: ReturnType<typeof vi.fn>;
   let mockGetCalendarStore: ReturnType<typeof vi.fn>;
   let mockListEpisodes: ReturnType<typeof vi.fn>;
+  let mockListMovies: ReturnType<typeof vi.fn>;
   let mockDispatch: ReturnType<typeof vi.fn>;
 
   const mockEpisodes = [
@@ -39,6 +40,22 @@ describe('CalendarPage', () => {
     },
   ];
 
+  const mockMovies = [
+    {
+      id: 1,
+      movieId: 101,
+      title: 'Test Movie',
+      releaseType: 'cinema' as const,
+      releaseDate: new Date().toISOString().split('T')[0]!,
+      posterUrl: 'https://example.com/poster.jpg',
+      status: 'monitored' as const,
+      hasFile: false,
+      monitored: true,
+      certification: 'PG-13',
+      runtime: 120,
+    },
+  ];
+
   beforeEach(() => {
     queryClient = new QueryClient({
       defaultOptions: {
@@ -49,12 +66,14 @@ describe('CalendarPage', () => {
     });
 
     mockListEpisodes = vi.fn().mockResolvedValue(mockEpisodes);
+    mockListMovies = vi.fn().mockResolvedValue(mockMovies);
     mockDispatch = vi.fn();
 
     mockGetApiClients = vi.mocked(apiClientModule.getApiClients);
     mockGetApiClients.mockReturnValue({
       calendarApi: {
         listCalendarEpisodes: mockListEpisodes,
+        listCalendarMovies: mockListMovies,
       },
     } as unknown as ReturnType<typeof apiClientModule.getApiClients>);
 
@@ -97,7 +116,7 @@ describe('CalendarPage', () => {
     });
   });
 
-  it('renders navigation controls', async () => {
+  it('renders navigation controls with disabled feature buttons', async () => {
     renderCalendarPage();
 
     await waitFor(() => {
@@ -108,6 +127,19 @@ describe('CalendarPage', () => {
       expect(screen.getByText('Agenda')).toBeInTheDocument();
       expect(screen.getByText('iCal')).toBeInTheDocument();
     });
+
+    // Verify feature buttons are disabled with tooltips
+    const icalButton = screen.getByText('iCal');
+    expect(icalButton).toBeDisabled();
+    expect(icalButton).toHaveAttribute('title', 'iCal export not yet available');
+
+    const searchMissingButton = screen.getByText('Search Missing');
+    expect(searchMissingButton).toBeDisabled();
+    expect(searchMissingButton).toHaveAttribute('title', 'Search for missing not yet available');
+
+    const rssSyncButton = screen.getByText('RSS Sync');
+    expect(rssSyncButton).toBeDisabled();
+    expect(rssSyncButton).toHaveAttribute('title', 'RSS Sync not yet available');
   });
 
   it('renders calendar view when view mode is calendar', async () => {

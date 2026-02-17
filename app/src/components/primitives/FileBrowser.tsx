@@ -18,43 +18,11 @@ interface FileBrowserProps {
   title: string;
   initialPath?: string;
   selectFolder?: boolean;
+  entries?: FileBrowserItem[];
+  onPathChange?: (path: string) => void;
   onSelect: (path: string) => void;
   onCancel: () => void;
 }
-
-// Mock file system data
-const MOCK_FILE_SYSTEM: Record<string, FileBrowserItem[]> = {
-  '/': [
-    { name: 'data', path: '/data', type: 'folder' },
-    { name: 'config', path: '/config', type: 'folder' },
-    { name: 'downloads', path: '/downloads', type: 'folder' },
-    { name: 'media', path: '/media', type: 'folder' },
-  ],
-  '/data': [
-    { name: 'media', path: '/data/media', type: 'folder' },
-    { name: 'backups', path: '/data/backups', type: 'folder' },
-    { name: 'downloads', path: '/data/downloads', type: 'folder' },
-  ],
-  '/data/media': [
-    { name: 'movies', path: '/data/media/movies', type: 'folder' },
-    { name: 'tv', path: '/data/media/tv', type: 'folder' },
-    { name: 'music', path: '/data/media/music', type: 'folder' },
-  ],
-  '/data/media/movies': [
-    { name: 'Inception.mkv', path: '/data/media/movies/Inception.mkv', type: 'file', size: 2147483648, modified: new Date('2024-01-15') },
-    { name: 'The Matrix.mkv', path: '/data/media/movies/The Matrix.mkv', type: 'file', size: 1073741824, modified: new Date('2024-02-20') },
-  ],
-  '/downloads': [
-    { name: 'complete', path: '/downloads/complete', type: 'folder' },
-    { name: 'incomplete', path: '/downloads/incomplete', type: 'folder' },
-  ],
-  '/config': [
-    { name: 'settings.json', path: '/config/settings.json', type: 'file', size: 1024, modified: new Date('2024-03-01') },
-  ],
-  '/media': [
-    { name: 'external', path: '/media/external', type: 'folder' },
-  ],
-};
 
 function formatFileSize(bytes?: number): string {
   if (!bytes) return '-';
@@ -96,6 +64,8 @@ export function FileBrowser({
   title,
   initialPath = '/',
   selectFolder = false,
+  entries = [],
+  onPathChange,
   onSelect,
   onCancel,
 }: FileBrowserProps) {
@@ -103,14 +73,15 @@ export function FileBrowser({
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
 
   const items = useMemo(() => {
-    return MOCK_FILE_SYSTEM[currentPath] || [];
-  }, [currentPath]);
+    return entries;
+  }, [entries]);
 
   const pathParts = getPathParts(currentPath);
 
   const handleNavigate = (path: string) => {
     setCurrentPath(path);
     setSelectedPath(null);
+    onPathChange?.(path);
   };
 
   const handleGoUp = () => {

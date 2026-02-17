@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { ApiHttpClient } from './httpClient';
-import { routeMap } from './routeMap';
+import { createCrudApi } from './createCrudApi';
+import { TestResult } from './shared-schemas';
 
 const downloadClientSchema = z.object({
   id: z.number(),
@@ -14,15 +15,6 @@ const downloadClientSchema = z.object({
   category: z.string().nullable(),
   priority: z.number(),
   enabled: z.boolean(),
-});
-
-const testResultSchema = z.object({
-  success: z.boolean(),
-  message: z.string(),
-  diagnostics: z.object({
-    remediationHints: z.array(z.string()),
-  }).optional(),
-  healthSnapshot: z.unknown().nullable().optional(),
 });
 
 export type DownloadClientItem = z.infer<typeof downloadClientSchema>;
@@ -40,70 +32,20 @@ export interface CreateDownloadClientInput {
   enabled?: boolean;
 }
 
-export type DownloadClientTestResult = z.infer<typeof testResultSchema>;
+export type DownloadClientTestResult = TestResult;
 
 export function createDownloadClientApi(client: ApiHttpClient) {
+  const crudApi = createCrudApi<DownloadClientItem, CreateDownloadClientInput>(client, {
+    basePath: '/api/download-clients',
+    itemSchema: downloadClientSchema,
+  });
+
   return {
-    list(): Promise<DownloadClientItem[]> {
-      return client.request(
-        {
-          path: routeMap.downloadClients,
-        },
-        z.array(downloadClientSchema),
-      );
-    },
-
-    create(input: CreateDownloadClientInput): Promise<DownloadClientItem> {
-      return client.request(
-        {
-          path: routeMap.downloadClients,
-          method: 'POST',
-          body: input,
-        },
-        downloadClientSchema,
-      );
-    },
-
-    update(id: number, input: Partial<CreateDownloadClientInput>): Promise<DownloadClientItem> {
-      return client.request(
-        {
-          path: routeMap.downloadClientUpdate(id),
-          method: 'PUT',
-          body: input,
-        },
-        downloadClientSchema,
-      );
-    },
-
-    remove(id: number): Promise<{ id: number }> {
-      return client.request(
-        {
-          path: routeMap.downloadClientDelete(id),
-          method: 'DELETE',
-        },
-        z.object({ id: z.number() }),
-      );
-    },
-
-    test(id: number): Promise<DownloadClientTestResult> {
-      return client.request(
-        {
-          path: routeMap.downloadClientTest(id),
-          method: 'POST',
-        },
-        testResultSchema,
-      );
-    },
-
-    testDraft(input: CreateDownloadClientInput): Promise<DownloadClientTestResult> {
-      return client.request(
-        {
-          path: routeMap.downloadClientTestDraft,
-          method: 'POST',
-          body: input,
-        },
-        testResultSchema,
-      );
-    },
+    list: crudApi.list,
+    create: crudApi.create,
+    update: crudApi.update,
+    remove: crudApi.remove,
+    test: crudApi.test,
+    testDraft: crudApi.testDraft,
   };
 }

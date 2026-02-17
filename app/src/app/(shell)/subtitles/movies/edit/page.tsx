@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState, useCallback } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { QueryPanel } from '@/components/primitives/QueryPanel';
 import { DataTable, type DataTableColumn } from '@/components/primitives/DataTable';
@@ -20,12 +20,11 @@ interface MovieRow {
 
 export default function MovieMassEditPage() {
   const api = useMemo(() => getApiClients(), []);
-  const queryClient = useQueryClient();
   const router = useRouter();
   const { pushToast } = useToast();
 
   const [selectedMovies, setSelectedMovies] = useState<Set<number>>(new Set());
-  const [selectedProfile, setSelectedProfile] = useState<string>('default');
+  const [selectedProfileId, setSelectedProfileId] = useState<number | null>(null);
   const [selectAll, setSelectAll] = useState(false);
 
   // Query for all movies
@@ -49,30 +48,9 @@ export default function MovieMassEditPage() {
     queryFn: () => api.languageProfilesApi.listProfiles(),
   });
 
-  // Mutation for updating language profiles
-  const updateProfilesMutation = useMutation({
-    mutationFn: async (movieIds: number[]) => {
-      // In a real implementation, this would call an API endpoint to update profiles
-      return { updatedCount: movieIds.length };
-    },
-    onSuccess: data => {
-      pushToast({
-        title: 'Update Complete',
-        message: `Updated language profiles for ${data.updatedCount} movies`,
-        variant: 'success',
-      });
-      setSelectedMovies(new Set());
-      setSelectAll(false);
-      queryClient.invalidateQueries({ queryKey: queryKeys.moviesList({}) });
-    },
-    onError: error => {
-      pushToast({
-        title: 'Update Failed',
-        message: error instanceof Error ? error.message : 'Unknown error occurred',
-        variant: 'error',
-      });
-    },
-  });
+  // NOTE: Movie language profile update requires backend support.
+  // Currently no endpoint exists to update movie language profiles.
+  // Apply Changes button is disabled with a tooltip explaining this limitation.
 
   const handleSelectAll = useCallback(() => {
     const newSelectAll = !selectAll;
@@ -107,8 +85,9 @@ export default function MovieMassEditPage() {
       return;
     }
 
-    updateProfilesMutation.mutate(Array.from(selectedMovies));
-  }, [selectedMovies, updateProfilesMutation, pushToast]);
+    // Update requires backend support - currently unavailable
+    // This button is disabled via the disabled prop with a tooltip
+  }, [selectedMovies, pushToast]);
 
   const handleCancel = useCallback(() => {
     router.push('/subtitles/movies');
@@ -117,15 +96,7 @@ export default function MovieMassEditPage() {
   const columns: DataTableColumn<MovieRow>[] = [
     {
       key: 'select',
-      header: (
-        <input
-          type="checkbox"
-          checked={selectAll}
-          onChange={handleSelectAll}
-          className="h-4 w-4 rounded border-border-subtle bg-surface-1 text-accent-primary focus:ring-2 focus:ring-accent-primary/50"
-          aria-label="Select all movies"
-        />
-      ),
+      header: '',
       render: row => (
         <input
           type="checkbox"
@@ -196,34 +167,48 @@ export default function MovieMassEditPage() {
             </label>
             <select
               id="profile-select"
-              value={selectedProfile}
-              onChange={e => setSelectedProfile(e.target.value)}
+              value={selectedProfileId ?? ''}
+              onChange={e => setSelectedProfileId(e.target.value ? Number(e.target.value) : null)}
               disabled={profilesQuery.isPending}
               className="rounded-md border border-border-subtle bg-surface-1 px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-primary/50 disabled:opacity-50"
             >
-              <option value="default">Default</option>
+              <option value="">Select a profile...</option>
               {profilesQuery.data?.map(profile => (
-                <option key={profile.id} value={profile.name}>
+                <option key={profile.id} value={profile.id}>
                   {profile.name}
                 </option>
               ))}
             </select>
           </div>
 
-          {selectedMovies.size > 0 && (
-            <span className="text-sm text-text-secondary">
-              {selectedMovies.size} movie{selectedMovies.size !== 1 ? 's' : ''} selected
-            </span>
-          )}
+          <div className="flex items-center gap-3">
+            <label className="flex items-center gap-2 text-sm text-text-primary">
+              <input
+                type="checkbox"
+                checked={selectAll}
+                onChange={handleSelectAll}
+                className="h-4 w-4 rounded border-border-subtle bg-surface-1 text-accent-primary focus:ring-2 focus:ring-accent-primary/50"
+                aria-label="Select all movies"
+              />
+              Select All
+            </label>
+
+            {selectedMovies.size > 0 && (
+              <span className="text-sm text-text-secondary">
+                {selectedMovies.size} movie{selectedMovies.size !== 1 ? 's' : ''} selected
+              </span>
+            )}
+          </div>
         </div>
 
         <div className="flex items-center gap-2">
           <Button
             variant="primary"
             onClick={handleApplyChanges}
-            disabled={selectedMovies.size === 0 || updateProfilesMutation.isPending}
+            disabled={selectedMovies.size === 0 || selectedProfileId === null}
+            title="Movie language profile update requires backend support"
           >
-            {updateProfilesMutation.isPending ? 'Updating...' : 'Apply Changes'}
+            Apply Changes
           </Button>
           <Button variant="secondary" onClick={handleCancel}>
             Cancel

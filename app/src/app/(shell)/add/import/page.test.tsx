@@ -10,16 +10,35 @@ vi.mock('next/navigation', () => ({
   }),
 }));
 
+// Mock the API client
+const mockScanFolder = vi.fn();
+const mockImportSeries = vi.fn();
+const mockBulkImportSeries = vi.fn();
+vi.mock('@/lib/api/client', () => ({
+  getApiClients: () => ({
+    importApi: {
+      scanFolder: mockScanFolder,
+      importSeries: mockImportSeries,
+      bulkImportSeries: mockBulkImportSeries,
+    },
+  }),
+}));
+
 // Mock the ToastProvider
+const mockPushToast = vi.fn();
 vi.mock('@/components/providers/ToastProvider', () => ({
   useToast: () => ({
-    pushToast: vi.fn(),
+    pushToast: mockPushToast,
   }),
 }));
 
 describe('ImportSeriesPage', () => {
   beforeEach(() => {
     mockPush.mockClear();
+    mockScanFolder.mockClear();
+    mockImportSeries.mockClear();
+    mockBulkImportSeries.mockClear();
+    mockPushToast.mockClear();
   });
 
   it('renders the import series page header', () => {
@@ -48,6 +67,8 @@ describe('ImportSeriesPage', () => {
   });
 
   it('starts scanning when scan button is clicked', async () => {
+    mockScanFolder.mockResolvedValue([]);
+
     render(<ImportSeriesPage />);
 
     const input = screen.getByPlaceholderText('/path/to/tv/folder');
@@ -56,6 +77,8 @@ describe('ImportSeriesPage', () => {
     const scanButton = screen.getByRole('button', { name: /scan/i });
     fireEvent.click(scanButton);
 
+    expect(mockScanFolder).toHaveBeenCalledWith({ path: '/media/tv' });
+
     // Should show scanning state
     await waitFor(() => {
       expect(screen.getByText('Scanning folder...')).toBeInTheDocument();
@@ -63,6 +86,20 @@ describe('ImportSeriesPage', () => {
   });
 
   it('shows results after scanning', async () => {
+    const mockSeries = [
+      {
+        id: 1,
+        folderName: 'Breaking Bad',
+        path: '/media/tv/Breaking Bad',
+        fileCount: 62,
+        matchedSeriesId: 123,
+        matchedSeriesTitle: 'Breaking Bad',
+        matchedSeriesYear: 2008,
+        status: 'matched' as const,
+      },
+    ];
+    mockScanFolder.mockResolvedValue(mockSeries);
+
     render(<ImportSeriesPage />);
 
     const input = screen.getByPlaceholderText('/path/to/tv/folder');
@@ -78,9 +115,24 @@ describe('ImportSeriesPage', () => {
       },
       { timeout: 3000 }
     );
+
+    expect(screen.getByText('Breaking Bad')).toBeInTheDocument();
   });
 
   it('shows import configuration panel after scan', async () => {
+    mockScanFolder.mockResolvedValue([
+      {
+        id: 1,
+        folderName: 'Breaking Bad',
+        path: '/media/tv/Breaking Bad',
+        fileCount: 62,
+        matchedSeriesId: 123,
+        matchedSeriesTitle: 'Breaking Bad',
+        matchedSeriesYear: 2008,
+        status: 'matched' as const,
+      },
+    ]);
+
     render(<ImportSeriesPage />);
 
     const input = screen.getByPlaceholderText('/path/to/tv/folder');
@@ -98,9 +150,10 @@ describe('ImportSeriesPage', () => {
   });
 
   it('shows empty state when no series are found', async () => {
+    mockScanFolder.mockResolvedValue([]);
+
     render(<ImportSeriesPage />);
 
-    // Scan with a non-matching path that returns empty
     const input = screen.getByPlaceholderText('/path/to/tv/folder');
     fireEvent.change(input, { target: { value: '/empty/path' } });
 
@@ -110,9 +163,7 @@ describe('ImportSeriesPage', () => {
     // Wait for scan to complete
     await waitFor(
       () => {
-        // Since mock returns data, we won't see empty state in this test
-        // but we check that the scanning state appears
-        expect(screen.queryByText('Scanning folder...')).toBeDefined();
+        expect(screen.getByText('No series detected')).toBeInTheDocument();
       },
       { timeout: 3000 }
     );
@@ -127,5 +178,45 @@ describe('ImportSeriesPage', () => {
 
     // Check for folder scanner
     expect(screen.getByText('Import Series from Disk')).toBeInTheDocument();
+  });
+
+  it('imports a single series', async () => {
+    const mockSeries = [
+      {
+        id: 1,
+        folderName: 'Breaking Bad',
+        path: '/media/tv/Breaking Bad',
+        fileCount: 62,
+        matchedSeriesId: 123,
+        matchedSeriesTitle: 'Breaking Bad',
+        matchedSeriesYear: 2008,
+        status: 'matched' as const,
+      },
+    ];
+
+    mockScanFolder.mockResolvedValue(mockSeries);
+    mockImportSeries.mockResolvedValue({ id: 1 });
+
+    render(<ImportSeriesPage />);
+
+    const input = screen.getByPlaceholderText('/path/to/tv/folder');
+    fireEvent.change(input, { target: { value: '/media/tv' } });
+
+    const scanButton = screen.getByRole('button', { name: /scan/i });
+    fireEvent.click(scanButton);
+
+    await waitFor(
+      () => {
+        expect(screen.getByText('Breaking Bad')).toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
+
+    const importButton = screen.getAllByRole('button', { name: 'Import' })[0];
+    fireEvent.click(importButton);
+
+    await waitFor(() => {
+      expect(mockImportSeries).toHaveBeenCalled();
+    });
   });
 });

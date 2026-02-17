@@ -9,21 +9,8 @@ import { ImportConfigPanel } from '@/components/import/ImportConfigPanel';
 import { Button } from '@/components/primitives/Button';
 import { useToast } from '@/components/providers/ToastProvider';
 import type { DetectedSeries, ScanProgress, ImportConfig, SeriesSearchResult } from '@/components/import/types';
-import { mockDetectedSeries } from '@/components/import/types';
-
-// Mock implementation for MVP - replace with actual API call when backend is ready
-const scanFolder = async (path: string): Promise<DetectedSeries[]> => {
-  await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate scan delay
-  
-  // For demo, return series that match the path prefix
-  if (path.startsWith('/media/tv') || path === '/media/tv') {
-    return mockDetectedSeries;
-  }
-  
-  // Return subset if specific subfolder
-  const filtered = mockDetectedSeries.filter(s => s.path.toLowerCase().includes(path.toLowerCase()));
-  return filtered.length > 0 ? filtered : mockDetectedSeries.slice(0, 2);
-};
+import { getApiClients } from '@/lib/api/client';
+import { ApiClientError } from '@/lib/api';
 
 const defaultImportConfig: ImportConfig = {
   qualityProfileId: 1,
@@ -37,7 +24,8 @@ const defaultImportConfig: ImportConfig = {
 export default function ImportSeriesPage() {
   const router = useRouter();
   const { pushToast } = useToast();
-  
+  const { importApi } = getApiClients();
+
   const [scanProgress, setScanProgress] = useState<ScanProgress>({
     status: 'idle',
     scannedFolders: 0,
@@ -46,6 +34,7 @@ export default function ImportSeriesPage() {
   const [importConfig, setImportConfig] = useState<ImportConfig>(defaultImportConfig);
   const [manualMatchSeries, setManualMatchSeries] = useState<DetectedSeries | null>(null);
   const [isImporting, setIsImporting] = useState(false);
+  const [backendSupported, setBackendSupported] = useState<boolean | null>(null);
 
   const handleScan = useCallback(async (path: string) => {
     setScanProgress({
@@ -56,18 +45,37 @@ export default function ImportSeriesPage() {
     setDetectedSeries([]);
 
     try {
-      const results = await scanFolder(path);
+      const results = await importApi.scanFolder({ path });
       setDetectedSeries(results);
       setScanProgress({
         status: 'complete',
         scannedFolders: results.length,
       });
+      setBackendSupported(true);
       pushToast({
         title: 'Scan complete',
         message: `Found ${results.length} series in ${path}`,
         variant: 'success',
       });
     } catch (error) {
+      // Check if backend endpoint doesn't exist (404 or 501)
+      if (error instanceof ApiClientError) {
+        if (error.status === 404 || error.status === 501) {
+          setBackendSupported(false);
+          setScanProgress({
+            status: 'complete',
+            scannedFolders: 0,
+            errorMessage: 'Folder scanning requires backend support',
+          });
+          pushToast({
+            title: 'Backend not available',
+            message: 'Folder scanning requires backend support',
+            variant: 'warning',
+          });
+          return;
+        }
+      }
+
       setScanProgress({
         status: 'error',
         scannedFolders: 0,
@@ -75,11 +83,11 @@ export default function ImportSeriesPage() {
       });
       pushToast({
         title: 'Scan failed',
-        message: 'Could not scan the specified folder',
+        message: 'Could not scan specified folder',
         variant: 'error',
       });
     }
-  }, [pushToast]);
+  }, [importApi, pushToast]);
 
   const handleManualMatch = useCallback((series: DetectedSeries) => {
     setManualMatchSeries(series);
@@ -107,40 +115,142 @@ export default function ImportSeriesPage() {
   }, [pushToast]);
 
   const handleImport = useCallback(async (series: DetectedSeries) => {
+    // Check if backend is supported before attempting import
+    if (backendSupported === false) {
+      pushToast({
+        title: 'Backend not available',
+        message: 'Series import requires backend support',
+        variant: 'warning',
+      });
+      return;
+    }
+
     setIsImporting(true);
-    
-    // Mock import - replace with actual API call
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
-    pushToast({
-      title: 'Series imported',
-      message: `"${series.matchedSeriesTitle || series.folderName}" has been imported successfully`,
-      variant: 'success',
-    });
-    
-    // Remove from list after import
-    setDetectedSeries(current => current.filter(s => s.id !== series.id));
-    setIsImporting(false);
-  }, [pushToast]);
+
+    try {
+      if (!series.matchedSeriesId) {
+        pushToast({
+          title: 'Cannot import unmatched series',
+          message: 'Please match the series to a TVDB entry first',
+          variant: 'error',
+        });
+        return;
+      }
+
+      await importApi.importSeries({
+        seriesId: series.matchedSeriesId,
+        folderName: series.folderName,
+        path: series.path,
+        qualityProfileId: importConfig.qualityProfileId,
+        monitored: importConfig.monitored,
+        monitorNewItems: importConfig.monitorNewItems,
+        rootFolder: importConfig.rootFolder,
+        seriesType: importConfig.seriesType,
+        seasonFolder: importConfig.seasonFolder,
+      });
+
+      pushToast({
+        title: 'Series imported',
+        message: `"${series.matchedSeriesTitle || series.folderName}" has been imported successfully`,
+        variant: 'success',
+      });
+
+      // Remove from list after import
+      setDetectedSeries(current => current.filter(s => s.id !== series.id));
+    } catch (error) {
+      if (error instanceof ApiClientError) {
+        if (error.status === 404 || error.status === 501) {
+          setBackendSupported(false);
+          pushToast({
+            title: 'Backend not available',
+            message: 'Series import requires backend support',
+            variant: 'warning',
+          });
+          return;
+        }
+      }
+
+      pushToast({
+        title: 'Import failed',
+        message: error instanceof Error ? error.message : 'Failed to import series',
+        variant: 'error',
+      });
+    } finally {
+      setIsImporting(false);
+    }
+  }, [importApi, importConfig, backendSupported, pushToast]);
 
   const handleBulkImport = useCallback(async (seriesIds: number[]) => {
+    // Check if backend is supported before attempting import
+    if (backendSupported === false) {
+      pushToast({
+        title: 'Backend not available',
+        message: 'Bulk import requires backend support',
+        variant: 'warning',
+      });
+      return;
+    }
+
     setIsImporting(true);
-    
-    // Mock bulk import - replace with actual API call
-    await new Promise(resolve => setTimeout(resolve, 1200));
-    
-    const importedCount = seriesIds.length;
-    
-    pushToast({
-      title: 'Bulk import complete',
-      message: `${importedCount} series imported successfully`,
-      variant: 'success',
-    });
-    
-    // Remove imported series from list
-    setDetectedSeries(current => current.filter(s => !seriesIds.includes(s.id)));
-    setIsImporting(false);
-  }, [pushToast]);
+
+    try {
+      const seriesToImport = detectedSeries.filter(s =>
+        seriesIds.includes(s.id) && s.matchedSeriesId !== null
+      );
+
+      if (seriesToImport.length === 0) {
+        pushToast({
+          title: 'No series to import',
+          message: 'All selected series must be matched first',
+          variant: 'warning',
+        });
+        return;
+      }
+
+      const importRequests = seriesToImport.map(series => ({
+        seriesId: series.matchedSeriesId!,
+        folderName: series.folderName,
+        path: series.path,
+        qualityProfileId: importConfig.qualityProfileId,
+        monitored: importConfig.monitored,
+        monitorNewItems: importConfig.monitorNewItems,
+        rootFolder: importConfig.rootFolder,
+        seriesType: importConfig.seriesType,
+        seasonFolder: importConfig.seasonFolder,
+      }));
+
+      const result = await importApi.bulkImportSeries(importRequests);
+
+      pushToast({
+        title: 'Bulk import complete',
+        message: `${result.importedCount} series imported successfully`,
+        variant: 'success',
+      });
+
+      // Remove imported series from list
+      setDetectedSeries(current => current.filter(s => !result.ids.includes(s.id)));
+    } catch (error) {
+      if (error instanceof ApiClientError) {
+        if (error.status === 404 || error.status === 501) {
+          setBackendSupported(false);
+          pushToast({
+            title: 'Backend not available',
+            message: 'Bulk import requires backend support',
+            variant: 'warning',
+          });
+          return;
+        }
+      }
+
+      pushToast({
+        title: 'Bulk import failed',
+        message: error instanceof Error ? error.message : 'Failed to import series',
+        variant: 'error',
+      });
+    } finally {
+      setIsImporting(false);
+    }
+  }, [detectedSeries, importApi, importConfig, backendSupported, pushToast]);
 
   const matchedCount = detectedSeries.filter(s => s.status === 'matched').length;
   const unmatchedCount = detectedSeries.filter(s => s.status === 'unmatched').length;
@@ -185,7 +295,8 @@ export default function ImportSeriesPage() {
                       .map(s => s.id);
                     handleBulkImport(matchedIds);
                   }}
-                  disabled={isImporting}
+                  disabled={isImporting || backendSupported === false}
+                  title={backendSupported === false ? 'Import requires backend support' : undefined}
                 >
                   Import All Matched ({matchedCount})
                 </Button>
@@ -197,6 +308,7 @@ export default function ImportSeriesPage() {
               onManualMatch={handleManualMatch}
               onImport={handleImport}
               onBulkImport={handleBulkImport}
+              backendSupported={backendSupported}
             />
 
             {/* Warnings */}
@@ -215,10 +327,21 @@ export default function ImportSeriesPage() {
       {/* Empty state after scan with no results */}
       {scanProgress.status === 'complete' && detectedSeries.length === 0 && (
         <div className="rounded-lg border border-border-subtle bg-surface-1 p-8 text-center">
-          <p className="text-lg font-medium text-text-primary">No series detected</p>
-          <p className="mt-2 text-sm text-text-secondary">
-            No TV series were found in the specified folder. Make sure the path is correct and contains properly named series folders.
-          </p>
+          {backendSupported === false ? (
+            <>
+              <p className="text-lg font-medium text-text-primary">Backend Not Available</p>
+              <p className="mt-2 text-sm text-text-secondary">
+                Folder scanning requires backend support. The import feature is not yet implemented on the server.
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-lg font-medium text-text-primary">No series detected</p>
+              <p className="mt-2 text-sm text-text-secondary">
+                No TV series were found in the specified folder. Make sure the path is correct and contains properly named series folders.
+              </p>
+            </>
+          )}
         </div>
       )}
 

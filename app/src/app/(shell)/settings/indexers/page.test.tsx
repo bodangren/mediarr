@@ -1,13 +1,44 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AppShell } from '@/components/shell/AppShell';
+import { ToastProvider } from '@/components/providers/ToastProvider';
+import { getApiClients } from '@/lib/api/client';
 import SettingsIndexersPage from './page';
 
+vi.mock('@/lib/api/client');
+
 function renderPage() {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+      mutations: { retry: false },
+    },
+  });
+
+  vi.mocked(getApiClients).mockReturnValue({
+    indexerApi: {} as any,
+    downloadClientsApi: {} as any,
+    applicationsApi: {} as any,
+    mediaApi: {} as any,
+    releaseApi: {} as any,
+    torrentApi: {} as any,
+    importApi: {} as any,
+    notificationsApi: {} as any,
+    eventsApi: {
+      connectionState: 'idle',
+      onStateChange: vi.fn(() => () => {}),
+    },
+  });
+
   return render(
-    <AppShell pathname="/settings/indexers">
-      <SettingsIndexersPage />
-    </AppShell>,
+    <QueryClientProvider client={queryClient}>
+      <ToastProvider>
+        <AppShell pathname="/settings/indexers">
+          <SettingsIndexersPage />
+        </AppShell>
+      </ToastProvider>
+    </QueryClientProvider>,
   );
 }
 
@@ -30,11 +61,13 @@ describe('settings indexers page', () => {
     // Indexer Proxies section
     expect(screen.getByRole('heading', { name: 'Indexer Proxies' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Add Proxy' })).toBeInTheDocument();
+    expect(screen.getByText('Proxy configuration is stored locally in this browser.')).toBeInTheDocument();
     expect(screen.getByText('No proxies configured. Click Add Proxy to create one.')).toBeInTheDocument();
 
     // Indexer Categories section
     expect(screen.getByRole('heading', { name: 'Indexer Categories' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Add Category' })).toBeInTheDocument();
+    expect(screen.getByText('Category configuration is stored locally in this browser.')).toBeInTheDocument();
     expect(screen.getByText('Movies (HD)')).toBeInTheDocument();
     expect(screen.getByText('Movies (SD)')).toBeInTheDocument();
     expect(screen.getByText('TV Episodes (HD)')).toBeInTheDocument();
@@ -396,6 +429,47 @@ describe('settings indexers page', () => {
     await waitFor(() => {
       expect(screen.getByText('Minimal Proxy')).toBeInTheDocument();
       expect(screen.getByText('HTTP - minimal.example.com:8080')).toBeInTheDocument();
+    });
+  });
+
+  it('persists proxies to localStorage', async () => {
+    // Pre-populate localStorage with a proxy
+    const testProxy = {
+      id: 12345,
+      name: 'Persisted Proxy',
+      type: 'socks5' as const,
+      host: 'persisted.example.com',
+      port: 9999,
+      enabled: true,
+    };
+    window.localStorage.setItem('mediarr:indexer-proxies', JSON.stringify([testProxy]));
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByText('Persisted Proxy')).toBeInTheDocument();
+      expect(screen.getByText('SOCKS5 - persisted.example.com:9999')).toBeInTheDocument();
+    });
+  });
+
+  it('persists categories to localStorage', async () => {
+    // Pre-populate localStorage with custom categories
+    const testCategories = [
+      {
+        id: 999,
+        name: 'Custom Category',
+        description: 'A custom category from localStorage',
+        minSize: 2147483648, // 2 GB
+        maxSize: 10737418240, // 10 GB
+      },
+    ];
+    window.localStorage.setItem('mediarr:indexer-categories', JSON.stringify(testCategories));
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByText('Custom Category')).toBeInTheDocument();
+      expect(screen.getByText('A custom category from localStorage')).toBeInTheDocument();
     });
   });
 });

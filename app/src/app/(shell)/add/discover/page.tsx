@@ -2,12 +2,14 @@
 
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
 import { QueryPanel } from '@/components/primitives/QueryPanel';
 import { EmptyPanel } from '@/components/primitives/EmptyPanel';
 import { Icon } from '@/components/primitives/Icon';
 import { DiscoverFilters } from '@/components/discover/DiscoverFilters';
 import type { DiscoverMovie, DiscoverMode, DiscoverFilters as DiscoverFiltersType } from '@/types/discover';
-import { mockDiscoverMovies } from '@/lib/mocks/discoverMocks';
+import { getApiClients } from '@/lib/api/client';
+import { queryKeys } from '@/lib/query/queryKeys';
 
 interface DiscoverMovieCardProps {
   movie: DiscoverMovie;
@@ -82,9 +84,14 @@ export default function DiscoverMoviesPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [selectedMovie, setSelectedMovie] = useState<DiscoverMovie | null>(null);
 
-  const filteredMovies = useMemo(() => {
-    const movies = mockDiscoverMovies[mode];
+  const { discoverApi } = getApiClients();
 
+  const { data: movies = [], isPending, isError, refetch } = useQuery({
+    queryKey: queryKeys.discoverMovies(mode),
+    queryFn: () => discoverApi.listRecommendations({ mode }),
+  });
+
+  const filteredMovies = useMemo(() => {
     return movies.filter(movie => {
       if (filters.minYear && movie.year < filters.minYear) {
         return false;
@@ -103,7 +110,7 @@ export default function DiscoverMoviesPage() {
       }
       return true;
     });
-  }, [mode, filters]);
+  }, [movies, filters]);
 
   const handleAddMovie = (movie: DiscoverMovie) => {
     setSelectedMovie(movie);
@@ -185,15 +192,15 @@ export default function DiscoverMoviesPage() {
         {/* Movie Grid */}
         <div className="flex-1">
           <QueryPanel
-            isLoading={false}
-            isError={false}
+            isLoading={isPending}
+            isError={isError}
             isEmpty={filteredMovies.length === 0}
             emptyTitle="No movies found"
             emptyBody="Try adjusting your filters or switching to a different mode."
-            onRetry={() => {}}
+            onRetry={() => refetch()}
           >
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-              {filteredMovies.map(movie => (
+              {filteredMovies.map((movie: DiscoverMovie) => (
                 <DiscoverMovieCard key={movie.tmdbId} movie={movie} onAdd={handleAddMovie} />
               ))}
             </div>

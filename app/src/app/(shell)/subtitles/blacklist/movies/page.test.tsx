@@ -251,4 +251,78 @@ describe('BlacklistMoviesPage', () => {
 
     expect(await screen.findByText('-')).toBeInTheDocument();
   });
+
+  it('changes page size and resets to page 1', async () => {
+    listBlacklistMoviesMock.mockResolvedValue({
+      items: [
+        {
+          id: 1,
+          type: 'movie',
+          movieId: 1,
+          movieTitle: 'Test Movie',
+          languageCode: 'en',
+          provider: 'OpenSubtitles',
+          reason: 'Failed validation',
+          timestamp: new Date().toISOString(),
+          subtitlePath: '/path/to/sub/(2023).srt',
+        },
+      ],
+      meta: { page: 2, pageSize: 25, totalCount: 100, totalPages: 4 },
+    });
+
+    const client = createTestQueryClient();
+    render(
+      <QueryClientProvider client={client}>
+        <BlacklistMoviesPage />
+      </QueryClientProvider>,
+    );
+
+    // Click the page size selector
+    const pageSizeSelect = await screen.findByRole('combobox');
+    await userEvent.click(pageSizeSelect);
+
+    // Select a different page size
+    const pageSizeOption = await screen.findByRole('option', { name: '50' });
+    await userEvent.click(pageSizeOption);
+
+    // After changing page size, it should trigger refetch
+    expect(listBlacklistMoviesMock).toHaveBeenCalled();
+  });
+
+  it('clears blacklist and invalidates cache with correct key', async () => {
+    listBlacklistMoviesMock.mockResolvedValue({
+      items: [
+        {
+          id: 1,
+          type: 'movie',
+          movieId: 1,
+          movieTitle: 'Test Movie',
+          languageCode: 'en',
+          provider: 'OpenSubtitles',
+          reason: 'Failed validation',
+          timestamp: new Date().toISOString(),
+          subtitlePath: '/path/to/sub/(2023).srt',
+        },
+      ],
+      meta: { page: 1, pageSize: 25, totalCount: 1, totalPages: 1 },
+    });
+
+    const client = createTestQueryClient();
+    render(
+      <QueryClientProvider client={client}>
+        <BlacklistMoviesPage />
+      </QueryClientProvider>,
+    );
+
+    // Find and click the Remove All button
+    const clearButton = await screen.findByRole('button', { name: 'Remove All' });
+    await userEvent.click(clearButton);
+
+    // Click confirm in modal (the second Remove All button)
+    const confirmButton = screen.getAllByRole('button', { name: 'Remove All' })[1];
+    await userEvent.click(confirmButton);
+
+    // Verify the clear API was called
+    expect(clearBlacklistMoviesMock).toHaveBeenCalled();
+  });
 });

@@ -33,6 +33,24 @@ export interface MockMovie {
   fileVariants: Array<{ id: number; path: string }>;
 }
 
+export interface MockMissingMovie {
+  id: number;
+  movieId: number;
+  title: string;
+  year: number;
+  posterUrl?: string;
+  status: 'missing' | 'announced' | 'incinemas' | 'released';
+  monitored: boolean;
+  cinemaDate?: string;
+  physicalRelease?: string;
+  digitalRelease?: string;
+  qualityProfileId: number;
+  qualityProfileName?: string;
+  runtime?: number;
+  certification?: string;
+  genres?: string[];
+}
+
 export interface MockIndexer {
   id: number;
   name: string;
@@ -66,6 +84,7 @@ export interface MockTorrent {
 export interface MockDataset {
   series: MockSeries[];
   movies: MockMovie[];
+  missingMovies: MockMissingMovie[];
   indexers: MockIndexer[];
   torrents: MockTorrent[];
   activity: Array<{
@@ -150,6 +169,30 @@ function buildMovie(rng: () => number, index: number): MockMovie {
   };
 }
 
+function buildMissingMovie(rng: () => number, index: number): MockMissingMovie {
+  const id = index + 1;
+  const movieId = 100 + id;
+  const title = ['Dune: Part Two', 'Godzilla x Kong: The New Empire', 'Civil War', 'Furiosa: A Mad Max Saga', 'Inside Out 2'][index % 5] ?? `Missing Movie ${id}`;
+
+  return {
+    id,
+    movieId,
+    title,
+    year: 2023 + (index % 2),
+    posterUrl: `https://image.tmdb.org/t/p/w200/mock${id}.jpg`,
+    status: ['missing', 'announced', 'incinemas', 'released'][index % 4] as 'missing' | 'announced' | 'incinemas' | 'released',
+    monitored: rng() > 0.15,
+    cinemaDate: index % 3 === 0 ? '2024-03-01' : undefined,
+    digitalRelease: index % 3 === 1 ? '2024-05-14' : undefined,
+    physicalRelease: index % 3 === 2 ? '2024-06-18' : undefined,
+    qualityProfileId: index % 2 === 0 ? 1 : 2,
+    qualityProfileName: index % 2 === 0 ? 'HD-1080p' : 'UHD-2160p',
+    runtime: 100 + (index % 10) * 10,
+    certification: ['PG-13', 'R', 'PG'][index % 3],
+    genres: ['Action', 'Adventure', 'Sci-Fi'].slice(0, 1 + (index % 3)),
+  };
+}
+
 function buildIndexer(rng: () => number, index: number): MockIndexer {
   const id = index + 1;
   const failing = rng() > 0.7;
@@ -199,6 +242,7 @@ export function createMockDataset(mode: FactoryMode = 'deterministic'): MockData
   return {
     series: Array.from({ length: 14 }, (_unused, index) => buildSeries(rng, index)),
     movies: Array.from({ length: 12 }, (_unused, index) => buildMovie(rng, index)),
+    missingMovies: Array.from({ length: 8 }, (_unused, index) => buildMissingMovie(rng, index)),
     indexers: Array.from({ length: 6 }, (_unused, index) => buildIndexer(rng, index)),
     torrents: Array.from({ length: 8 }, (_unused, index) => buildTorrent(rng, index)),
     activity: Array.from({ length: 14 }, (_unused, index) => ({

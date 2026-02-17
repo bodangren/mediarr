@@ -12,6 +12,7 @@ import { SelectProvider, useSelectContext } from '@/components/primitives/Select
 import { StatusBadge } from '@/components/primitives/StatusBadge';
 import { useToast } from '@/components/providers/ToastProvider';
 import { getApiClients } from '@/lib/api/client';
+import { healthStatus } from '@/lib/health';
 import { queryKeys } from '@/lib/query/queryKeys';
 import { useApiQuery } from '@/lib/query/useApiQuery';
 import { useOptimisticMutation } from '@/lib/query/useOptimisticMutation';
@@ -73,19 +74,6 @@ function toSaveIndexerInput(draft: AddIndexerDraft): SaveIndexerInput {
     priority: draft.priority,
     settings: JSON.stringify(draft.settings),
   };
-}
-
-function healthStatus(row: IndexerRow): 'completed' | 'warning' | 'error' {
-  const failureCount = row.health?.failureCount ?? 0;
-  if (failureCount >= 3) {
-    return 'error';
-  }
-
-  if (failureCount > 0) {
-    return 'warning';
-  }
-
-  return 'completed';
 }
 
 const addIndexerPresets: IndexerPreset[] = [

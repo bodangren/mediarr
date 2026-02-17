@@ -1,6 +1,35 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { FileBrowser, type FileBrowserItem } from './FileBrowser';
+
+// Test data for mock file system
+const mockRootEntries: FileBrowserItem[] = [
+  { name: 'data', path: '/data', type: 'folder' },
+  { name: 'config', path: '/config', type: 'folder' },
+  { name: 'downloads', path: '/downloads', type: 'folder' },
+  { name: 'media', path: '/media', type: 'folder' },
+];
+
+const mockDataEntries: FileBrowserItem[] = [
+  { name: 'media', path: '/data/media', type: 'folder' },
+  { name: 'backups', path: '/data/backups', type: 'folder' },
+  { name: 'downloads', path: '/data/downloads', type: 'folder' },
+];
+
+const mockMediaEntries: FileBrowserItem[] = [
+  { name: 'movies', path: '/data/media/movies', type: 'folder' },
+  { name: 'tv', path: '/data/media/tv', type: 'folder' },
+  { name: 'music', path: '/data/media/music', type: 'folder' },
+];
+
+const mockMoviesEntries: FileBrowserItem[] = [
+  { name: 'Inception.mkv', path: '/data/media/movies/Inception.mkv', type: 'file', size: 2147483648, modified: new Date('2024-01-15') },
+  { name: 'The Matrix.mkv', path: '/data/media/movies/The Matrix.mkv', type: 'file', size: 1073741824, modified: new Date('2024-02-20') },
+];
+
+const mockConfigEntries: FileBrowserItem[] = [
+  { name: 'settings.json', path: '/config/settings.json', type: 'file', size: 1024, modified: new Date('2024-03-01') },
+];
 
 describe('FileBrowser component', () => {
   it('renders modal with file list', () => {
@@ -11,6 +40,7 @@ describe('FileBrowser component', () => {
       <FileBrowser
         isOpen={true}
         title="Select Download Folder"
+        entries={mockRootEntries}
         onSelect={onSelect}
         onCancel={onCancel}
       />,
@@ -29,6 +59,7 @@ describe('FileBrowser component', () => {
       <FileBrowser
         isOpen={false}
         title="Hidden File Browser"
+        entries={mockRootEntries}
         onSelect={onSelect}
         onCancel={onCancel}
       />,
@@ -37,7 +68,7 @@ describe('FileBrowser component', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
-  it('displays root directory items', () => {
+  it('displays provided entries', () => {
     const onSelect = vi.fn();
     const onCancel = vi.fn();
 
@@ -45,6 +76,7 @@ describe('FileBrowser component', () => {
       <FileBrowser
         isOpen={true}
         title="Root Directory"
+        entries={mockRootEntries}
         onSelect={onSelect}
         onCancel={onCancel}
       />,
@@ -57,6 +89,7 @@ describe('FileBrowser component', () => {
   });
 
   it('navigates into folders on double click', () => {
+    const onPathChange = vi.fn();
     const onSelect = vi.fn();
     const onCancel = vi.fn();
 
@@ -64,6 +97,8 @@ describe('FileBrowser component', () => {
       <FileBrowser
         isOpen={true}
         title="Navigate Test"
+        entries={mockRootEntries}
+        onPathChange={onPathChange}
         onSelect={onSelect}
         onCancel={onCancel}
       />,
@@ -72,10 +107,8 @@ describe('FileBrowser component', () => {
     const dataFolder = screen.getByText('data');
     fireEvent.doubleClick(dataFolder);
 
-    // Should now show contents of /data
-    expect(screen.getByText('media')).toBeInTheDocument();
-    expect(screen.getByText('backups')).toBeInTheDocument();
-    expect(screen.getByText('downloads')).toBeInTheDocument();
+    // Should call onPathChange with the folder's path
+    expect(onPathChange).toHaveBeenCalledWith('/data');
   });
 
   it('navigates using breadcrumbs', () => {
@@ -87,6 +120,8 @@ describe('FileBrowser component', () => {
         isOpen={true}
         title="Breadcrumb Test"
         initialPath="/data/media"
+        entries={mockMediaEntries}
+        onPathChange={vi.fn()}
         onSelect={onSelect}
         onCancel={onCancel}
       />,
@@ -103,6 +138,7 @@ describe('FileBrowser component', () => {
   });
 
   it('navigates up to parent directory', () => {
+    const onPathChange = vi.fn();
     const onSelect = vi.fn();
     const onCancel = vi.fn();
 
@@ -111,6 +147,8 @@ describe('FileBrowser component', () => {
         isOpen={true}
         title="Up Navigation Test"
         initialPath="/data/media"
+        entries={mockMediaEntries}
+        onPathChange={onPathChange}
         onSelect={onSelect}
         onCancel={onCancel}
       />,
@@ -121,8 +159,8 @@ describe('FileBrowser component', () => {
 
     fireEvent.click(upButton);
 
-    // Should now show contents of /data
-    expect(screen.getByText('backups')).toBeInTheDocument();
+    // Should call onPathChange with parent path
+    expect(onPathChange).toHaveBeenCalledWith('/data');
   });
 
   it('disables up button at root directory', () => {
@@ -134,6 +172,7 @@ describe('FileBrowser component', () => {
         isOpen={true}
         title="Root Up Test"
         initialPath="/"
+        entries={mockRootEntries}
         onSelect={onSelect}
         onCancel={onCancel}
       />,
@@ -144,6 +183,7 @@ describe('FileBrowser component', () => {
   });
 
   it('navigates to root directory via home button', () => {
+    const onPathChange = vi.fn();
     const onSelect = vi.fn();
     const onCancel = vi.fn();
 
@@ -152,6 +192,8 @@ describe('FileBrowser component', () => {
         isOpen={true}
         title="Home Navigation Test"
         initialPath="/data/media/movies"
+        entries={mockMoviesEntries}
+        onPathChange={onPathChange}
         onSelect={onSelect}
         onCancel={onCancel}
       />,
@@ -160,10 +202,8 @@ describe('FileBrowser component', () => {
     const homeButton = screen.getByRole('button', { name: 'Go to root' });
     fireEvent.click(homeButton);
 
-    // Should show root directory contents
-    expect(screen.getByText('data')).toBeInTheDocument();
-    expect(screen.getByText('config')).toBeInTheDocument();
-    expect(screen.getByText('downloads')).toBeInTheDocument();
+    // Should call onPathChange with root
+    expect(onPathChange).toHaveBeenCalledWith('/');
   });
 
   it('selects files in file selection mode', () => {
@@ -176,6 +216,7 @@ describe('FileBrowser component', () => {
         title="File Selection Test"
         initialPath="/data/media/movies"
         selectFolder={false}
+        entries={mockMoviesEntries}
         onSelect={onSelect}
         onCancel={onCancel}
       />,
@@ -209,6 +250,7 @@ describe('FileBrowser component', () => {
         title="Folder Selection Test"
         initialPath="/data/media/movies"
         selectFolder={true}
+        entries={mockMoviesEntries}
         onSelect={onSelect}
         onCancel={onCancel}
       />,
@@ -238,6 +280,7 @@ describe('FileBrowser component', () => {
         title="No Selection Test"
         initialPath="/data/media"
         selectFolder={false}
+        entries={mockMediaEntries}
         onSelect={onSelect}
         onCancel={onCancel}
       />,
@@ -256,6 +299,7 @@ describe('FileBrowser component', () => {
         isOpen={true}
         title="Metadata Test"
         initialPath="/data/media/movies"
+        entries={mockMoviesEntries}
         onSelect={onSelect}
         onCancel={onCancel}
       />,
@@ -282,7 +326,8 @@ describe('FileBrowser component', () => {
       <FileBrowser
         isOpen={true}
         title="Empty Directory Test"
-        initialPath="/media/external" // Assume this is empty
+        initialPath="/media/external"
+        entries={[]}
         onSelect={onSelect}
         onCancel={onCancel}
       />,
@@ -300,6 +345,7 @@ describe('FileBrowser component', () => {
         isOpen={true}
         title="Item Count Test"
         initialPath="/"
+        entries={mockRootEntries}
         onSelect={onSelect}
         onCancel={onCancel}
       />,
@@ -316,6 +362,7 @@ describe('FileBrowser component', () => {
       <FileBrowser
         isOpen={true}
         title="Cancel Test"
+        entries={mockRootEntries}
         onSelect={onSelect}
         onCancel={onCancel}
       />,
@@ -328,6 +375,7 @@ describe('FileBrowser component', () => {
   });
 
   it('supports keyboard navigation with Enter key', () => {
+    const onPathChange = vi.fn();
     const onSelect = vi.fn();
     const onCancel = vi.fn();
 
@@ -336,6 +384,8 @@ describe('FileBrowser component', () => {
         isOpen={true}
         title="Keyboard Test"
         initialPath="/data/media"
+        entries={mockMediaEntries}
+        onPathChange={onPathChange}
         onSelect={onSelect}
         onCancel={onCancel}
       />,
@@ -345,11 +395,12 @@ describe('FileBrowser component', () => {
     folder.focus();
     fireEvent.keyDown(folder, { key: 'Enter' });
 
-    // Should navigate to movies folder
-    expect(screen.getByText('Inception.mkv')).toBeInTheDocument();
+    // Should call onPathChange with the folder path
+    expect(onPathChange).toHaveBeenCalledWith('/data/media/movies');
   });
 
   it('supports keyboard navigation with Space key', () => {
+    const onPathChange = vi.fn();
     const onSelect = vi.fn();
     const onCancel = vi.fn();
 
@@ -358,6 +409,8 @@ describe('FileBrowser component', () => {
         isOpen={true}
         title="Space Key Test"
         initialPath="/data/media"
+        entries={mockMediaEntries}
+        onPathChange={onPathChange}
         onSelect={onSelect}
         onCancel={onCancel}
       />,
@@ -367,8 +420,8 @@ describe('FileBrowser component', () => {
     folder.focus();
     fireEvent.keyDown(folder, { key: ' ' });
 
-    // Should navigate to movies folder
-    expect(screen.getByText('Inception.mkv')).toBeInTheDocument();
+    // Should call onPathChange with the folder path
+    expect(onPathChange).toHaveBeenCalledWith('/data/media/movies');
   });
 
   it('highlights selected file', () => {
@@ -380,6 +433,7 @@ describe('FileBrowser component', () => {
         isOpen={true}
         title="Highlight Test"
         initialPath="/data/media/movies"
+        entries={mockMoviesEntries}
         onSelect={onSelect}
         onCancel={onCancel}
       />,
@@ -407,6 +461,7 @@ describe('FileBrowser component', () => {
       <FileBrowser
         isOpen={true}
         title="Header Test"
+        entries={mockRootEntries}
         onSelect={onSelect}
         onCancel={onCancel}
       />,
@@ -428,6 +483,7 @@ describe('FileBrowser component', () => {
         isOpen={true}
         title="Folder Icon Test"
         initialPath="/data"
+        entries={mockDataEntries}
         onSelect={onSelect}
         onCancel={onCancel}
       />,
@@ -439,6 +495,7 @@ describe('FileBrowser component', () => {
   });
 
   it('navigates through multiple levels', () => {
+    const onPathChange = vi.fn();
     const onSelect = vi.fn();
     const onCancel = vi.fn();
 
@@ -447,23 +504,69 @@ describe('FileBrowser component', () => {
         isOpen={true}
         title="Multi-level Test"
         initialPath="/"
+        entries={mockRootEntries}
+        onPathChange={onPathChange}
         onSelect={onSelect}
         onCancel={onCancel}
       />,
     );
 
-    // Navigate: / -> data -> media -> movies
+    // Navigate: / -> data
     fireEvent.doubleClick(screen.getByText('data'));
+    expect(onPathChange).toHaveBeenCalledWith('/data');
+
+    // Navigate: /data -> media (note: since entries don't change, we can't actually navigate to subdirectories)
+    // In a real implementation, the parent would update the entries prop when path changes
+    onPathChange.mockClear();
     fireEvent.doubleClick(screen.getByText('media'));
-    fireEvent.doubleClick(screen.getByText('movies'));
+    // The item's path is /media (not /data/media), so that's what gets passed
+    expect(onPathChange).toHaveBeenCalledWith('/media');
+  });
 
-    // Should be in /data/media/movies
-    expect(screen.getByText('Inception.mkv')).toBeInTheDocument();
-    expect(screen.getByText('The Matrix.mkv')).toBeInTheDocument();
+  it('handles onPathChange for folder click', () => {
+    const onPathChange = vi.fn();
+    const onSelect = vi.fn();
+    const onCancel = vi.fn();
 
-    // Breadcrumb should reflect the path
-    expect(screen.getByRole('button', { name: 'data' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'media' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'movies' })).toBeInTheDocument();
+    render(
+      <FileBrowser
+        isOpen={true}
+        title="Folder Click Test"
+        entries={mockRootEntries}
+        onPathChange={onPathChange}
+        onSelect={onSelect}
+        onCancel={onCancel}
+      />,
+    );
+
+    // Single click on folder should trigger navigation
+    fireEvent.click(screen.getByText('data'));
+    expect(onPathChange).toHaveBeenCalledWith('/data');
+  });
+
+  it('handles file selection without navigation in file mode', () => {
+    const onPathChange = vi.fn();
+    const onSelect = vi.fn();
+    const onCancel = vi.fn();
+
+    render(
+      <FileBrowser
+        isOpen={true}
+        title="File Click Test"
+        entries={mockMoviesEntries}
+        onPathChange={onPathChange}
+        selectFolder={false}
+        onSelect={onSelect}
+        onCancel={onCancel}
+      />,
+    );
+
+    // Single click on file should NOT trigger navigation
+    fireEvent.click(screen.getByText('Inception.mkv'));
+    expect(onPathChange).not.toHaveBeenCalled();
+
+    // But should allow selection
+    fireEvent.click(screen.getByRole('button', { name: 'Select' }));
+    expect(onSelect).toHaveBeenCalledWith('/data/media/movies/Inception.mkv');
   });
 });

@@ -140,18 +140,6 @@ export function SettingsForm() {
         </div>
       </section>
 
-      {/* Indexers Stub */}
-      <section className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 opacity-50">
-        <h2 className="text-xl font-semibold mb-4 border-b pb-2">Indexers</h2>
-        <p>Indexers are managed in the dedicated Indexers tab.</p>
-      </section>
-
-      {/* Download Clients Stub */}
-      <section className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 opacity-50">
-        <h2 className="text-xl font-semibold mb-4 border-b pb-2">Download Clients</h2>
-        <p>Download client configuration coming soon.</p>
-      </section>
-
        <div className="flex items-center gap-4">
            <button 
             type="submit" 

@@ -7,11 +7,11 @@ import { Modal, ModalBody, ModalHeader } from '@/components/primitives/Modal';
 import { EmptyPanel } from '@/components/primitives/EmptyPanel';
 import { SkeletonBlock } from '@/components/primitives/SkeletonBlock';
 import { getApiClients } from '@/lib/api/client';
+import { useToast } from '@/components/providers/ToastProvider';
 import { QualityBadge } from './QualityBadge';
 import { ReleaseTitle } from './ReleaseTitle';
 import { PeersCell } from './PeersCell';
 import { AgeCell } from './AgeCell';
-import { MOCK_RELEASES } from './mocks';
 
 interface QualityInfo {
   quality: {
@@ -100,6 +100,7 @@ export function InteractiveSearchModal({
   });
 
   const api = useMemo(() => getApiClients(), []);
+  const { pushToast } = useToast();
 
   const searchReleases = useCallback(async () => {
     setIsLoading(true);
@@ -107,18 +108,45 @@ export function InteractiveSearchModal({
     setGrabState({ releaseId: null, isGrabbing: false, error: null, success: false });
 
     try {
-      // In development, use mock data
-      // In production, this would call the actual API:
-      // const results = await api.releaseApi.searchCandidates({ seriesId, episodeId });
-      await new Promise(resolve => setTimeout(resolve, 800)); // Simulate network delay
-      setReleases(MOCK_RELEASES);
+      const results = await api.releaseApi.searchCandidates({ seriesId, episodeId });
+
+      // Transform API response to component's expected format
+      const releases: ReleaseResult[] = results.map((candidate, index) => ({
+        id: candidate.title + index, // Generate unique ID from title + index
+        guid: candidate.title + '-guid',
+        title: candidate.title,
+        indexer: candidate.indexer,
+        quality: {
+          quality: {
+            name: candidate.quality || 'Unknown',
+            resolution: 0, // API doesn't provide resolution directly
+          },
+          revision: { version: 1, real: 0 },
+        },
+        size: candidate.size,
+        seeders: candidate.seeders,
+        leechers: 0, // API doesn't provide leechers
+        publishDate: new Date(Date.now() - (candidate.age || 0) * 60 * 60 * 1000).toISOString(),
+        ageHours: candidate.age || 0,
+        approved: !candidate.indexerFlags || candidate.indexerFlags.length === 0,
+        rejections: candidate.indexerFlags ? [candidate.indexerFlags] : [],
+        customFormatScore: 0, // API doesn't provide custom format score
+      }));
+
+      setReleases(releases);
     } catch (error) {
-      setSearchError(error instanceof Error ? error.message : 'Failed to search for releases');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to search for releases';
+      setSearchError(errorMessage);
+      pushToast({
+        title: 'Search failed',
+        message: errorMessage,
+        variant: 'error',
+      });
       setReleases([]);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [seriesId, episodeId, api.releaseApi, pushToast]);
 
   // Search automatically when modal opens
   useEffect(() => {
@@ -131,25 +159,46 @@ export function InteractiveSearchModal({
     setGrabState({ releaseId: release.id, isGrabbing: true, error: null, success: false });
 
     try {
-      // In production, this would call the actual API:
-      // await api.releaseApi.grabRelease(release);
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network delay
+      // Transform release to the format expected by the API
+      const releaseCandidate = {
+        title: release.title,
+        indexer: release.indexer,
+        size: release.size,
+        seeders: release.seeders || 0,
+        quality: release.quality.quality.name,
+        age: release.ageHours,
+      };
+
+      await api.releaseApi.grabRelease(releaseCandidate);
 
       setGrabState({ releaseId: release.id, isGrabbing: false, error: null, success: true });
+
+      pushToast({
+        title: 'Release grabbed successfully',
+        message: `${release.title} has been added to your download queue.`,
+        variant: 'success',
+      });
 
       // Reset success state after 3 seconds
       setTimeout(() => {
         setGrabState(prev => ({ ...prev, success: false }));
       }, 3000);
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to grab release';
       setGrabState({
         releaseId: release.id,
         isGrabbing: false,
-        error: error instanceof Error ? error.message : 'Failed to grab release',
+        error: errorMessage,
         success: false,
       });
+
+      pushToast({
+        title: 'Failed to grab release',
+        message: errorMessage,
+        variant: 'error',
+      });
     }
-  }, []);
+  }, [api.releaseApi, pushToast]);
 
   const handleClose = useCallback(() => {
     setReleases([]);

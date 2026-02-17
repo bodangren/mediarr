@@ -130,53 +130,29 @@ export function SubtitleUpload({
     );
   }, []);
 
+  // Subtitle upload requires backend support - endpoint not yet available
+  const isUploadSupported = false;
+
   const handleUpload = useCallback(async () => {
-    if (uploadedFiles.length === 0) return;
-
-    setIsUploading(true);
-
-    // Simulate upload progress for demo purposes
-    // In production, this would call the actual API
-    const uploadPromises = uploadedFiles.map(async (uploadedFile) => {
-      setUploadedFiles((prev) =>
-        prev.map((f) => (f.id === uploadedFile.id ? { ...f, status: 'uploading' as const } : f)),
-      );
-
-      try {
-        // Simulate upload progress
-        for (let progress = 0; progress <= 100; progress += 20) {
-          await new Promise((resolve) => setTimeout(resolve, 100));
-          setUploadedFiles((prev) =>
-            prev.map((f) =>
-              f.id === uploadedFile.id ? { ...f, progress } : f,
-            ),
-          );
-        }
-
-        setUploadedFiles((prev) =>
-          prev.map((f) => (f.id === uploadedFile.id ? { ...f, status: 'success' as const } : f)),
-        );
-      } catch (error) {
-        setUploadedFiles((prev) =>
-          prev.map((f) =>
-            f.id === uploadedFile.id
-              ? { ...f, status: 'error' as const, error: 'Upload failed' }
-              : f,
-          ),
-        );
-      }
-    });
-
-    await Promise.all(uploadPromises);
-    setIsUploading(false);
-  }, [uploadedFiles]);
+    // Upload disabled - backend endpoint not available
+    // When backend supports uploads, implement:
+    // const formData = new FormData();
+    // uploadedFiles.forEach(f => {
+    //   formData.append('files', f.file);
+    //   formData.append('language', f.languageCode);
+    //   if (seriesId) formData.append('seriesId', seriesId.toString());
+    //   if (episodeId) formData.append('episodeId', episodeId.toString());
+    //   if (movieId) formData.append('movieId', movieId.toString());
+    // });
+    // await subtitleApi.uploadSubtitle(formData);
+  }, [uploadedFiles, seriesId, episodeId, movieId]);
 
   const handleComplete = useCallback(() => {
     onSuccess();
   }, [onSuccess]);
 
-  const allSuccess = uploadedFiles.length > 0 && uploadedFiles.every((f) => f.status === 'success');
-  const hasError = uploadedFiles.some((f) => f.status === 'error');
+  // Since upload is not supported, we don't track success/error states
+  const canUpload = uploadedFiles.length > 0 && isUploadSupported;
 
   return (
     <div className="space-y-4">
@@ -249,13 +225,7 @@ export function SubtitleUpload({
               >
                 {/* Status Icon */}
                 <div className="shrink-0">
-                  {uploadedFile.status === 'success' ? (
-                    <CheckCircle className="h-5 w-5 text-accent-success" />
-                  ) : uploadedFile.status === 'error' ? (
-                    <AlertCircle className="h-5 w-5 text-accent-danger" />
-                  ) : (
-                    <div className="h-5 w-5 rounded-full border-2 border-border-subtle" />
-                  )}
+                  <div className="h-5 w-5 rounded-full border-2 border-border-subtle" />
                 </div>
 
                 {/* File Info */}
@@ -272,8 +242,7 @@ export function SubtitleUpload({
                 <select
                   value={uploadedFile.languageCode}
                   onChange={(e) => updateFileLanguage(uploadedFile.id, e.target.value)}
-                  disabled={uploadedFile.status !== 'pending'}
-                  className="rounded border border-border-subtle bg-surface-2 px-2 py-1 text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-accent-primary/50 disabled:opacity-50"
+                  className="rounded border border-border-subtle bg-surface-2 px-2 py-1 text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-accent-primary/50"
                 >
                   {COMMON_LANGUAGES.map((lang) => (
                     <option key={lang.code} value={lang.code}>
@@ -282,21 +251,10 @@ export function SubtitleUpload({
                   ))}
                 </select>
 
-                {/* Progress Bar */}
-                {uploadedFile.status === 'uploading' && (
-                  <div className="h-2 w-24 overflow-hidden rounded-full bg-surface-2">
-                    <div
-                      className="h-full rounded-full bg-accent-primary transition-all duration-200"
-                      style={{ width: `${uploadedFile.progress}%` }}
-                    />
-                  </div>
-                )}
-
                 {/* Remove Button */}
                 <Button
                   variant="secondary"
                   onClick={() => removeFile(uploadedFile.id)}
-                  disabled={uploadedFile.status !== 'pending'}
                   aria-label={`Remove ${uploadedFile.file.name}`}
                   className="p-1.5"
                 >
@@ -321,27 +279,22 @@ export function SubtitleUpload({
           >
             Cancel
           </Button>
-          {allSuccess ? (
-            <Button variant="primary" onClick={handleComplete}>
-              Done
-            </Button>
-          ) : (
-            <Button
-              variant="primary"
-              onClick={handleUpload}
-              disabled={uploadedFiles.length === 0 || isUploading || hasError}
-            >
-              {isUploading ? 'Uploading...' : 'Upload'}
-            </Button>
-          )}
+          <Button
+            variant="primary"
+            onClick={handleUpload}
+            disabled={!canUpload}
+            title={isUploadSupported ? '' : 'Subtitle upload requires backend support'}
+          >
+            Upload
+          </Button>
         </div>
       </div>
 
-      {/* Error Message */}
-      {hasError && (
-        <div className="rounded-md border border-accent-danger/30 bg-accent-danger/10 px-3 py-2">
-          <p className="text-sm text-accent-danger">
-            Some files failed to upload. Please try again.
+      {/* Backend Support Notice */}
+      {!isUploadSupported && (
+        <div className="rounded-md border border-accent-warning/30 bg-accent-warning/10 px-3 py-2">
+          <p className="text-sm text-accent-warning">
+            Subtitle upload requires backend support
           </p>
         </div>
       )}

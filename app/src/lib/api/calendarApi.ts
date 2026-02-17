@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { ApiHttpClient } from './httpClient';
 import { routeMap } from './routeMap';
-import type { CalendarEpisode, CalendarListParams } from '../../types/calendar';
+import type { CalendarEpisode, CalendarMovie, CalendarListParams } from '../../types/calendar';
 
 const calendarEpisodeSchema = z.object({
   id: z.number(),
@@ -17,7 +17,22 @@ const calendarEpisodeSchema = z.object({
   monitored: z.boolean(),
 });
 
+const calendarMovieSchema = z.object({
+  id: z.number(),
+  movieId: z.number(),
+  title: z.string(),
+  releaseType: z.enum(['cinema', 'digital', 'physical']),
+  releaseDate: z.string(),
+  posterUrl: z.string().optional(),
+  status: z.enum(['downloaded', 'monitored', 'missing', 'unmonitored']),
+  hasFile: z.boolean(),
+  monitored: z.boolean(),
+  certification: z.string().optional(),
+  runtime: z.number().optional(),
+});
+
 export type CalendarEpisodeType = z.infer<typeof calendarEpisodeSchema>;
+export type CalendarMovieType = z.infer<typeof calendarMovieSchema>;
 
 export function createCalendarApi(client: ApiHttpClient) {
   return {
@@ -25,9 +40,19 @@ export function createCalendarApi(client: ApiHttpClient) {
       return client.request(
         {
           path: '/api/calendar',
-          query: params,
+          query: { ...params, contentType: 'tv' },
         },
         z.array(calendarEpisodeSchema),
+      );
+    },
+
+    listCalendarMovies(params: CalendarListParams): Promise<CalendarMovie[]> {
+      return client.request(
+        {
+          path: '/api/calendar',
+          query: { ...params, contentType: 'movies' },
+        },
+        z.array(calendarMovieSchema),
       );
     },
   };

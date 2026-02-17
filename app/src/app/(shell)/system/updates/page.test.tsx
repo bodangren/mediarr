@@ -2,6 +2,7 @@
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { getApiClients } from '@/lib/api/client';
 import { queryKeys } from '@/lib/query/queryKeys';
@@ -414,6 +415,65 @@ describe('UpdatesPage', () => {
       await waitFor(() => {
         expect(screen.getByText('success')).toBeInTheDocument();
         expect(screen.getByText('failed')).toBeInTheDocument();
+      });
+    });
+
+    it('should support pagination controls', async () => {
+      const fixture = buildUpdatesFixtures({
+        history: {
+          items: Array.from({ length: 20 }, (_, i) => ({
+            id: i + 1,
+            version: `0.${10 - i}.0`,
+            installedDate: `2026-01-${(i % 30) + 1}T00:00:00Z`,
+            status: 'success' as const,
+            branch: 'main',
+          })),
+          meta: {
+            page: 1,
+            pageSize: 20,
+            totalCount: 40,
+            totalPages: 2,
+          },
+        },
+        available: {
+          available: false,
+        },
+      });
+      vi.mocked(getApiClients).mockReturnValue({
+        updatesApi: {
+          getCurrentVersion: vi.fn().mockResolvedValue(fixture.current),
+          getAvailableUpdates: vi.fn().mockResolvedValue(fixture.available),
+          getUpdateHistory: vi.fn().mockResolvedValue(fixture.history),
+          checkForUpdates: vi.fn().mockResolvedValue({ checked: true, timestamp: '2026-02-15T12:00:00Z' }),
+          installUpdate: vi.fn().mockResolvedValue({
+            updateId: 'update-123',
+            version: '1.1.0',
+            startedAt: '2026-02-15T12:00:00Z',
+            status: 'started' as const,
+          }),
+          getUpdateProgress: vi.fn(),
+        },
+      } as unknown as ReturnType<typeof getApiClients>);
+
+      renderPage();
+
+      await waitFor(() => {
+        expect(screen.getByText('Update History')).toBeInTheDocument();
+      });
+
+      // Find pagination buttons
+      const prevButton = screen.getByRole('button', { name: /previous/i });
+      const nextButton = screen.getByRole('button', { name: /next/i });
+
+      // Previous button should be disabled on first page
+      expect(prevButton).toBeDisabled();
+      expect(nextButton).toBeEnabled();
+
+      // Click next button
+      await userEvent.click(nextButton);
+      // The mock API should be called with page 2
+      await waitFor(() => {
+        expect(vi.mocked(getApiClients)()?.updatesApi.getUpdateHistory).toHaveBeenCalledWith({ page: 2, pageSize: 20 });
       });
     });
   });

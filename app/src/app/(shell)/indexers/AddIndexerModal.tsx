@@ -1,10 +1,10 @@
 'use client';
 
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import { Button } from '@/components/primitives/Button';
-import { CheckInput, Form, FormGroup, TextInput } from '@/components/primitives/Form';
-import { Modal, ModalBody, ModalFooter, ModalHeader } from '@/components/primitives/Modal';
+import { CheckInput, FormGroup, TextInput } from '@/components/primitives/Form';
 import { NumberInput } from '@/components/primitives/SpecialInputs';
+import { ConfigurableItemModal } from '@/components/settings/ConfigurableItemModal';
+import type { TestConnectionResult } from '@/components/settings/ConfigurableItemModal';
 
 type DynamicFieldType = 'text' | 'password' | 'number' | 'boolean';
 
@@ -38,12 +38,6 @@ export interface AddIndexerDraft {
   supportsSearch: boolean;
   priority: number;
   settings: Record<string, unknown>;
-}
-
-interface TestConnectionResult {
-  success: boolean;
-  message: string;
-  hints: string[];
 }
 
 interface AddIndexerModalProps {
@@ -173,8 +167,7 @@ export function AddIndexerModal({
     };
   };
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const handleSubmit = async () => {
     const draft = buildDraft();
     if (!draft) {
       return;
@@ -198,141 +191,143 @@ export function AddIndexerModal({
     }
   };
 
+  const renderIndexerPresetGrid = (
+    indexerPresets: IndexerPreset[],
+    selectedId: string | undefined,
+    onSelect: (id: string) => void,
+  ) => (
+    <>
+      <h3 className="text-sm font-medium text-text-primary">Preset</h3>
+      <div className="grid gap-2 sm:grid-cols-2">
+        {indexerPresets.map(preset => {
+          const selected = preset.id === selectedId;
+          return (
+            <button
+              key={preset.id}
+              type="button"
+              onClick={() => onSelect(preset.id)}
+              className={`rounded-sm border px-3 py-2 text-left text-sm ${
+                selected
+                  ? 'border-accent-primary bg-accent-primary/10 text-text-primary'
+                  : 'border-border-subtle text-text-secondary'
+              }`}
+              aria-pressed={selected}
+            >
+              <p className="font-medium">{preset.name}</p>
+              <p className="text-xs">{preset.description}</p>
+            </button>
+          );
+        })}
+      </div>
+    </>
+  );
+
+  const renderIndexerFields = (
+    preset: IndexerPreset | undefined,
+    values: Record<string, unknown>,
+    onChange: (field: string, value: unknown) => void,
+  ) => (
+    <>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <FormGroup label="Name" htmlFor="add-indexer-name">
+          <TextInput
+            id="add-indexer-name"
+            ariaLabel="Name"
+            value={name}
+            onChange={setName}
+          />
+        </FormGroup>
+        <FormGroup label="Priority" htmlFor="add-indexer-priority">
+          <NumberInput
+            id="add-indexer-priority"
+            value={priority}
+            min={0}
+            max={100}
+            onChange={setPriority}
+          />
+        </FormGroup>
+      </div>
+
+      <div className="grid gap-2 sm:grid-cols-3">
+        <CheckInput id="add-indexer-enabled" label="Enabled" checked={enabled} onChange={setEnabled} />
+        <CheckInput id="add-indexer-rss" label="RSS" checked={supportsRss} onChange={setSupportsRss} />
+        <CheckInput id="add-indexer-search" label="Search" checked={supportsSearch} onChange={setSupportsSearch} />
+      </div>
+
+      <section className="space-y-3">
+        {preset?.fields.map(field => {
+          const value = values[field.name];
+
+          if (field.type === 'boolean') {
+            return (
+              <CheckInput
+                key={field.name}
+                id={`add-indexer-${field.name}`}
+                label={field.label}
+                checked={Boolean(value)}
+                onChange={checked => {
+                  onChange(field.name, checked);
+                }}
+              />
+            );
+          }
+
+          if (field.type === 'number') {
+            return (
+              <FormGroup key={field.name} label={field.label} htmlFor={`add-indexer-${field.name}`}>
+                <NumberInput
+                  id={`add-indexer-${field.name}`}
+                  value={typeof value === 'number' ? value : 0}
+                  onChange={nextValue => {
+                    onChange(field.name, nextValue);
+                  }}
+                />
+              </FormGroup>
+            );
+          }
+
+          return (
+            <FormGroup key={field.name} label={field.label} htmlFor={`add-indexer-${field.name}`}>
+              <TextInput
+                id={`add-indexer-${field.name}`}
+                ariaLabel={field.label}
+                type={field.type === 'password' ? 'password' : 'text'}
+                value={typeof value === 'string' ? value : ''}
+                onChange={nextValue => {
+                  onChange(field.name, nextValue);
+                }}
+              />
+            </FormGroup>
+          );
+        })}
+      </section>
+    </>
+  );
+
   return (
-    <Modal isOpen={isOpen} ariaLabel="Add indexer" onClose={onClose} maxWidthClassName="max-w-3xl">
-      <ModalHeader title="Add Indexer" onClose={onClose} />
-      <ModalBody>
-        <Form onSubmit={handleSubmit}>
-          <section className="space-y-2">
-            <h3 className="text-sm font-medium text-text-primary">Preset</h3>
-            <div className="grid gap-2 sm:grid-cols-2">
-              {presets.map(preset => {
-                const selected = preset.id === selectedPreset?.id;
-                return (
-                  <button
-                    key={preset.id}
-                    type="button"
-                    onClick={() => setSelectedPresetId(preset.id)}
-                    className={`rounded-sm border px-3 py-2 text-left text-sm ${
-                      selected
-                        ? 'border-accent-primary bg-accent-primary/10 text-text-primary'
-                        : 'border-border-subtle text-text-secondary'
-                    }`}
-                    aria-pressed={selected}
-                  >
-                    <p className="font-medium">{preset.name}</p>
-                    <p className="text-xs">{preset.description}</p>
-                  </button>
-                );
-              })}
-            </div>
-          </section>
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            <FormGroup label="Name" htmlFor="add-indexer-name">
-              <TextInput id="add-indexer-name" ariaLabel="Name" value={name} onChange={setName} />
-            </FormGroup>
-            <FormGroup label="Priority" htmlFor="add-indexer-priority">
-              <NumberInput id="add-indexer-priority" value={priority} min={0} max={100} onChange={setPriority} />
-            </FormGroup>
-          </div>
-
-          <div className="grid gap-2 sm:grid-cols-3">
-            <CheckInput id="add-indexer-enabled" label="Enabled" checked={enabled} onChange={setEnabled} />
-            <CheckInput id="add-indexer-rss" label="RSS" checked={supportsRss} onChange={setSupportsRss} />
-            <CheckInput id="add-indexer-search" label="Search" checked={supportsSearch} onChange={setSupportsSearch} />
-          </div>
-
-          <section className="space-y-3">
-            {selectedPreset?.fields.map(field => {
-              const value = fieldValues[field.name];
-
-              if (field.type === 'boolean') {
-                return (
-                  <CheckInput
-                    key={field.name}
-                    id={`add-indexer-${field.name}`}
-                    label={field.label}
-                    checked={Boolean(value)}
-                    onChange={checked => {
-                      setFieldValues(current => ({
-                        ...current,
-                        [field.name]: checked,
-                      }));
-                    }}
-                  />
-                );
-              }
-
-              if (field.type === 'number') {
-                return (
-                  <FormGroup key={field.name} label={field.label} htmlFor={`add-indexer-${field.name}`}>
-                    <NumberInput
-                      id={`add-indexer-${field.name}`}
-                      value={typeof value === 'number' ? value : 0}
-                      onChange={nextValue => {
-                        setFieldValues(current => ({
-                          ...current,
-                          [field.name]: nextValue,
-                        }));
-                      }}
-                    />
-                  </FormGroup>
-                );
-              }
-
-              return (
-                <FormGroup key={field.name} label={field.label} htmlFor={`add-indexer-${field.name}`}>
-                  <TextInput
-                    id={`add-indexer-${field.name}`}
-                    ariaLabel={field.label}
-                    type={field.type === 'password' ? 'password' : 'text'}
-                    value={typeof value === 'string' ? value : ''}
-                    onChange={nextValue => {
-                      setFieldValues(current => ({
-                        ...current,
-                        [field.name]: nextValue,
-                      }));
-                    }}
-                  />
-                </FormGroup>
-              );
-            })}
-          </section>
-
-          {validationError ? (
-            <p role="alert" className="text-sm text-status-error">
-              {validationError}
-            </p>
-          ) : null}
-
-          {testResult ? (
-            <section className="rounded-sm border border-border-subtle bg-surface-0 p-3 text-sm">
-              <p className={testResult.success ? 'text-status-success' : 'text-status-error'}>{testResult.message}</p>
-              {testResult.hints.length > 0 ? (
-                <ul className="list-disc pl-4 text-text-secondary">
-                  {testResult.hints.map(hint => (
-                    <li key={hint}>{hint}</li>
-                  ))}
-                </ul>
-              ) : null}
-            </section>
-          ) : null}
-        </Form>
-      </ModalBody>
-      <ModalFooter>
-        <Button variant="secondary" onClick={onClose} disabled={isSubmitting || isTesting}>
-          Cancel
-        </Button>
-        <Button variant="secondary" onClick={handleTestConnection} disabled={isSubmitting || isTesting}>
-          {isTesting ? 'Testing...' : 'Test Connection'}
-        </Button>
-        <form onSubmit={handleSubmit}>
-          <Button variant="primary" type="submit" disabled={isSubmitting || isTesting}>
-            Add Indexer
-          </Button>
-        </form>
-      </ModalFooter>
-    </Modal>
+    <ConfigurableItemModal<IndexerPreset, Record<string, unknown>>
+      isOpen={isOpen}
+      title="Add Indexer"
+      presets={presets}
+      selectedPresetId={selectedPresetId}
+      fieldValues={fieldValues}
+      isSubmitting={isSubmitting}
+      isTesting={isTesting}
+      testResult={testResult}
+      error={validationError}
+      saveButtonText="Add Indexer"
+      onClose={onClose}
+      onSelectPreset={setSelectedPresetId}
+      onFieldChange={(field, value) => {
+        setFieldValues(current => ({
+          ...current,
+          [field]: value,
+        }));
+      }}
+      onTestConnection={handleTestConnection}
+      onSave={handleSubmit}
+      renderPresetGrid={renderIndexerPresetGrid}
+      renderFields={renderIndexerFields}
+    />
   );
 }

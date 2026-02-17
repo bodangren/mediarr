@@ -1,7 +1,11 @@
 'use client';
 
 import { type DiscoverFilters } from '@/types/discover';
-import { mockGenres, mockCertifications, mockLanguages } from '@/lib/mocks/discoverMocks';
+
+// Static lists for filter options - these can be replaced with API calls when backend endpoints are available
+const GENRES = ['Action', 'Adventure', 'Animation', 'Comedy', 'Crime', 'Documentary', 'Drama', 'Family', 'Fantasy', 'History', 'Horror', 'Music', 'Mystery', 'Romance', 'Science Fiction', 'TV Movie', 'Thriller', 'War', 'Western'] as const;
+const CERTIFICATIONS = ['G', 'PG', 'PG-13', 'R', 'NC-17'] as const;
+const LANGUAGES = ['English', 'Spanish', 'French', 'German', 'Japanese', 'Korean', 'Chinese', 'Italian'] as const;
 
 interface DiscoverFiltersProps {
   filters: DiscoverFilters;
@@ -59,7 +63,7 @@ export function DiscoverFilters({ filters, onChange, onApply, onClear }: Discove
       <div>
         <h3 className="mb-3 text-sm font-semibold text-text-primary">Genres</h3>
         <div className="grid max-h-48 grid-cols-2 gap-2 overflow-y-auto">
-          {mockGenres.map(genre => (
+          {GENRES.map(genre => (
             <label key={genre} className="inline-flex items-center gap-2 text-sm">
               <input
                 type="checkbox"
@@ -84,7 +88,7 @@ export function DiscoverFilters({ filters, onChange, onApply, onClear }: Discove
           className="w-full rounded-sm border border-border-subtle bg-surface-0 px-2 py-1.5 text-sm"
         >
           <option value="">All Certifications</option>
-          {mockCertifications.map(cert => (
+          {CERTIFICATIONS.map(cert => (
             <option key={cert} value={cert}>
               {cert}
             </option>
@@ -103,7 +107,7 @@ export function DiscoverFilters({ filters, onChange, onApply, onClear }: Discove
           className="w-full rounded-sm border border-border-subtle bg-surface-0 px-2 py-1.5 text-sm"
         >
           <option value="">All Languages</option>
-          {mockLanguages.map(lang => (
+          {LANGUAGES.map(lang => (
             <option key={lang} value={lang}>
               {lang}
             </option>

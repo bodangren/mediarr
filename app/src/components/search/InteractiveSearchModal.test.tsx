@@ -1,16 +1,69 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { InteractiveSearchModal } from './InteractiveSearchModal';
+import { ToastProvider } from '@/components/providers/ToastProvider';
 
 // Mock the API client
+const mockSearchCandidates = vi.fn();
+const mockGrabRelease = vi.fn();
+
 vi.mock('@/lib/api/client', () => ({
   getApiClients: vi.fn(() => ({
     releaseApi: {
-      searchCandidates: vi.fn(),
-      grabRelease: vi.fn(),
+      searchCandidates: mockSearchCandidates,
+      grabRelease: mockGrabRelease,
     },
   })),
 }));
+
+// Mock API responses
+const mockReleaseCandidates = [
+  {
+    indexer: 'Indexer A',
+    title: 'Series.Name.S01E01.1080p.WEB-DL.DDP5.1.H.264-GRP',
+    size: 1573741824,
+    seeders: 150,
+    indexerFlags: undefined,
+    quality: 'WEBDL-1080p',
+    age: 48,
+  },
+  {
+    indexer: 'Indexer B',
+    title: 'Series.Name.S01E01.720p.HDTV.x264-EVOLVE',
+    size: 1073741824,
+    seeders: 89,
+    indexerFlags: undefined,
+    quality: 'HDTV-720p',
+    age: 24,
+  },
+  {
+    indexer: 'Indexer C',
+    title: 'Series.Name.S01E01.2160p.UHD.BluRay.x265.10bit.HDR.DTS-HD.MA.5.1-DEFLATE',
+    size: 15737418240,
+    seeders: 45,
+    indexerFlags: undefined,
+    quality: 'Bluray-2160p',
+    age: 72,
+  },
+  {
+    indexer: 'Indexer D',
+    title: 'Series.Name.S01E01.480p.WEBrip.x264-BOOP',
+    size: 367001600,
+    seeders: 12,
+    indexerFlags: 'Quality not in profile',
+    quality: 'WEBRip-480p',
+    age: 6,
+  },
+];
+
+const mockGrabResult = {
+  infoHash: 'abc123',
+  name: 'Series.Name.S01E01.1080p.WEB-DL.DDP5.1.H.264-GRP',
+};
+
+function renderWithToast(ui: React.ReactNode) {
+  return render(<ToastProvider>{ui}</ToastProvider>);
+}
 
 describe('InteractiveSearchModal', () => {
   const defaultProps = {
@@ -26,10 +79,12 @@ describe('InteractiveSearchModal', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockSearchCandidates.mockResolvedValue(mockReleaseCandidates);
+    mockGrabRelease.mockResolvedValue(mockGrabResult);
   });
 
   it('renders when open and displays episode information', async () => {
-    render(<InteractiveSearchModal {...defaultProps} />);
+    renderWithToast(<InteractiveSearchModal {...defaultProps} />);
 
     expect(screen.getByRole('dialog')).toBeInTheDocument();
     expect(screen.getByText(/Test Series S01E01/)).toBeInTheDocument();
@@ -37,21 +92,32 @@ describe('InteractiveSearchModal', () => {
   });
 
   it('does not render when closed', () => {
-    render(<InteractiveSearchModal {...defaultProps} isOpen={false} />);
+    renderWithToast(<InteractiveSearchModal {...defaultProps} isOpen={false} />);
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
+  it('calls searchCandidates API on initial load', async () => {
+    renderWithToast(<InteractiveSearchModal {...defaultProps} />);
+
+    await waitFor(() => {
+      expect(mockSearchCandidates).toHaveBeenCalledTimes(1);
+      expect(mockSearchCandidates).toHaveBeenCalledWith({ seriesId: 1, episodeId: 1 });
+    });
+  });
+
   it('displays loading state on initial search', async () => {
-    render(<InteractiveSearchModal {...defaultProps} />);
+    mockSearchCandidates.mockImplementation(() => new Promise(() => {})); // Never resolve
+
+    renderWithToast(<InteractiveSearchModal {...defaultProps} />);
 
     // Check for loading skeletons
     const skeletons = screen.getAllByRole('status', { name: 'loading' });
     expect(skeletons.length).toBeGreaterThan(0);
   });
 
-  it('displays search results after loading', async () => {
-    render(<InteractiveSearchModal {...defaultProps} />);
+  it('displays search results after API returns data', async () => {
+    renderWithToast(<InteractiveSearchModal {...defaultProps} />);
 
     // Wait for mock data to load
     await waitFor(() => {
@@ -64,7 +130,7 @@ describe('InteractiveSearchModal', () => {
   });
 
   it('displays quality badges with correct colors', async () => {
-    render(<InteractiveSearchModal {...defaultProps} />);
+    renderWithToast(<InteractiveSearchModal {...defaultProps} />);
 
     await waitFor(() => {
       const qualityBadge = screen.getByText('WEBDL-1080p');
@@ -73,7 +139,7 @@ describe('InteractiveSearchModal', () => {
   });
 
   it('displays file sizes in human readable format', async () => {
-    render(<InteractiveSearchModal {...defaultProps} />);
+    renderWithToast(<InteractiveSearchModal {...defaultProps} />);
 
     await waitFor(() => {
       // 1573741824 bytes = ~1.47 GB
@@ -81,17 +147,8 @@ describe('InteractiveSearchModal', () => {
     });
   });
 
-  it('displays custom format scores', async () => {
-    render(<InteractiveSearchModal {...defaultProps} />);
-
-    await waitFor(() => {
-      expect(screen.getByText('+100')).toBeInTheDocument();
-      expect(screen.getByText('+200')).toBeInTheDocument();
-    });
-  });
-
   it('displays rejection reasons for non-approved releases', async () => {
-    render(<InteractiveSearchModal {...defaultProps} />);
+    renderWithToast(<InteractiveSearchModal {...defaultProps} />);
 
     await waitFor(() => {
       expect(screen.getByText('Quality not in profile')).toBeInTheDocument();
@@ -99,7 +156,7 @@ describe('InteractiveSearchModal', () => {
   });
 
   it('has grab button for approved releases', async () => {
-    render(<InteractiveSearchModal {...defaultProps} />);
+    renderWithToast(<InteractiveSearchModal {...defaultProps} />);
 
     await waitFor(() => {
       const grabButtons = screen.getAllByRole('button', { name: /Grab/ });
@@ -108,18 +165,45 @@ describe('InteractiveSearchModal', () => {
   });
 
   it('grab button is disabled for rejected releases', async () => {
-    render(<InteractiveSearchModal {...defaultProps} />);
+    renderWithToast(<InteractiveSearchModal {...defaultProps} />);
 
     await waitFor(() => {
       const grabButtons = screen.getAllByRole('button', { name: /Grab/ });
-      // The 480p release should be disabled
+      // The release with indexerFlags should be disabled
       const disabledButton = grabButtons.find(btn => btn.hasAttribute('disabled'));
       expect(disabledButton).toBeTruthy();
     });
   });
 
+  it('calls grabRelease API when grab button is clicked', async () => {
+    renderWithToast(<InteractiveSearchModal {...defaultProps} />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Indexer A')).toBeInTheDocument();
+    });
+
+    const grabButton = screen.getAllByRole('button', { name: /Grab/ })[0];
+    fireEvent.click(grabButton);
+
+    await waitFor(() => {
+      expect(mockGrabRelease).toHaveBeenCalledTimes(1);
+      expect(mockGrabRelease).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'Series.Name.S01E01.1080p.WEB-DL.DDP5.1.H.264-GRP',
+          indexer: 'Indexer A',
+          size: 1573741824,
+          seeders: 150,
+          quality: 'WEBDL-1080p',
+          age: 48,
+        })
+      );
+    });
+  });
+
   it('shows loading state when grabbing a release', async () => {
-    render(<InteractiveSearchModal {...defaultProps} />);
+    mockGrabRelease.mockImplementation(() => new Promise(() => {})); // Never resolve
+
+    renderWithToast(<InteractiveSearchModal {...defaultProps} />);
 
     await waitFor(() => {
       expect(screen.getByText('Indexer A')).toBeInTheDocument();
@@ -134,7 +218,7 @@ describe('InteractiveSearchModal', () => {
   });
 
   it('shows success state after successful grab', async () => {
-    render(<InteractiveSearchModal {...defaultProps} />);
+    renderWithToast(<InteractiveSearchModal {...defaultProps} />);
 
     await waitFor(() => {
       expect(screen.getByText('Indexer A')).toBeInTheDocument();
@@ -148,9 +232,38 @@ describe('InteractiveSearchModal', () => {
     }, { timeout: 2000 });
   });
 
+  it('displays error toast when search fails', async () => {
+    mockSearchCandidates.mockRejectedValue(new Error('Search failed'));
+
+    renderWithToast(<InteractiveSearchModal {...defaultProps} />);
+
+    await waitFor(() => {
+      // Toast has a specific role="status" and specific classes
+      const toast = screen.getByRole('status', { name: '' });
+      expect(toast).toHaveTextContent('Search failed');
+    });
+  });
+
+  it('displays error toast when grab fails', async () => {
+    mockGrabRelease.mockRejectedValue(new Error('Grab failed'));
+
+    renderWithToast(<InteractiveSearchModal {...defaultProps} />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Indexer A')).toBeInTheDocument();
+    });
+
+    const grabButton = screen.getAllByRole('button', { name: /Grab/ })[0];
+    fireEvent.click(grabButton);
+
+    await waitFor(() => {
+      expect(screen.getByText('Failed to grab release')).toBeInTheDocument();
+    });
+  });
+
   it('calls onClose when close button is clicked', async () => {
     const onClose = vi.fn();
-    render(<InteractiveSearchModal {...defaultProps} onClose={onClose} />);
+    renderWithToast(<InteractiveSearchModal {...defaultProps} onClose={onClose} />);
 
     // The close button in the header has text "Close", while the backdrop also has aria-label "Close modal"
     const closeButton = screen.getByText('Close').closest('button');
@@ -161,25 +274,26 @@ describe('InteractiveSearchModal', () => {
   });
 
   it('triggers new search when search button is clicked', async () => {
-    render(<InteractiveSearchModal {...defaultProps} />);
+    renderWithToast(<InteractiveSearchModal {...defaultProps} />);
 
     // Wait for initial load
     await waitFor(() => {
       expect(screen.getByText('Indexer A')).toBeInTheDocument();
     });
 
+    mockSearchCandidates.mockClear();
     const searchButton = screen.getByRole('button', { name: /Search/ });
     fireEvent.click(searchButton);
 
-    // Should show loading state again
+    // Should call search again
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /Searching/ })).toBeInTheDocument();
+      expect(mockSearchCandidates).toHaveBeenCalledTimes(1);
     });
   });
 
   it('closes on escape key press', async () => {
     const onClose = vi.fn();
-    render(<InteractiveSearchModal {...defaultProps} onClose={onClose} />);
+    renderWithToast(<InteractiveSearchModal {...defaultProps} onClose={onClose} />);
 
     fireEvent.keyDown(window, { key: 'Escape' });
 
@@ -188,12 +302,22 @@ describe('InteractiveSearchModal', () => {
 
   it('closes on backdrop click', async () => {
     const onClose = vi.fn();
-    render(<InteractiveSearchModal {...defaultProps} onClose={onClose} />);
+    renderWithToast(<InteractiveSearchModal {...defaultProps} onClose={onClose} />);
 
     const backdrop = screen.getByTestId('modal-backdrop');
     fireEvent.click(backdrop);
 
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows empty state when no releases are found', async () => {
+    mockSearchCandidates.mockResolvedValue([]);
+
+    renderWithToast(<InteractiveSearchModal {...defaultProps} />);
+
+    await waitFor(() => {
+      expect(screen.getByText('No releases found')).toBeInTheDocument();
+    });
   });
 });
 

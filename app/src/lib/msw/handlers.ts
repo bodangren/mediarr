@@ -122,6 +122,19 @@ export function createHandlers(mode: FactoryMode = 'deterministic') {
       return sendSuccess({ deleted: true, id });
     }),
 
+    http.get('/api/movies/missing', ({ request }) => {
+      const url = new URL(request.url);
+      const monitoredParam = url.searchParams.get('monitored');
+      let filtered = [...dataset.missingMovies];
+
+      if (monitoredParam !== null) {
+        const monitored = monitoredParam === 'true';
+        filtered = filtered.filter(movie => movie.monitored === monitored);
+      }
+
+      return sendPaginated(filtered, numberQuery(url, 'page', 1), numberQuery(url, 'pageSize', 25));
+    }),
+
     http.get('/api/media/wanted', ({ request }) => {
       const url = new URL(request.url);
       const typeFilter = url.searchParams.get('type');

@@ -10,6 +10,7 @@ const presets: IndexerPreset[] = [
     protocol: 'torrent',
     implementation: 'Torznab',
     configContract: 'TorznabSettings',
+    privacy: 'Public',
     fields: [
       { name: 'url', label: 'Indexer URL', type: 'text', required: true },
       { name: 'apiKey', label: 'API Key', type: 'password', required: true },
@@ -22,6 +23,7 @@ const presets: IndexerPreset[] = [
     protocol: 'usenet',
     implementation: 'Torznab',
     configContract: 'NewznabSettings',
+    privacy: 'Public',
     fields: [
       { name: 'host', label: 'Host', type: 'text', required: true },
       { name: 'apiKey', label: 'API Key', type: 'password', required: true },
@@ -41,7 +43,7 @@ describe('AddIndexerModal', () => {
       />,
     );
 
-    expect(screen.getByRole('dialog', { name: 'Add indexer' })).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: 'Add Indexer' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Generic Torznab/ })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Generic Newznab/ })).toBeInTheDocument();
     expect(screen.getByLabelText('Indexer URL')).toBeInTheDocument();
@@ -170,6 +172,7 @@ describe('AddIndexerModal', () => {
             protocol: 'torrent',
             implementation: 'Cardigann',
             configContract: 'CardigannSettings',
+            privacy: 'Public',
             fields: [
               { name: 'seedRequirement', label: 'Minimum Seeders', type: 'number', required: true, defaultValue: 10 },
               { name: 'bypassCloudflare', label: 'Bypass Cloudflare', type: 'boolean', required: true, defaultValue: false },

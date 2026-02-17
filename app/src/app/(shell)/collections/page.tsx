@@ -1,29 +1,40 @@
 'use client';
 
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { QueryPanel } from '@/components/primitives/QueryPanel';
 import { Icon } from '@/components/primitives/Icon';
 import { CollectionGrid } from '@/components/collections';
 import { EditCollectionModal } from '@/components/collections';
 import type { MovieCollection, CollectionEditForm } from '@/types/collection';
-import { mockCollections } from '@/lib/mocks/collectionMocks';
+import { getApiClients } from '@/lib/api/client';
+import { queryKeys } from '@/lib/query/queryKeys';
 
 export default function CollectionsPage() {
-  const [collections, setCollections] = useState<MovieCollection[]>(mockCollections);
+  const { collectionApi } = getApiClients();
+
+  const { data: collections = [], isPending, isError, refetch } = useQuery({
+    queryKey: queryKeys.collections(),
+    queryFn: () => collectionApi.list(),
+  });
   const [editingCollection, setEditingCollection] = useState<MovieCollection | null>(null);
   const [search, setSearch] = useState('');
 
   const handleToggleMonitored = (id: number, monitored: boolean) => {
-    setCollections(current =>
-      current.map(col => (col.id === id ? { ...col, monitored } : col))
-    );
+    // TODO: Wire to collectionApi.update() in Phase 3
+    console.log('Toggle monitored for collection', id, monitored);
   };
 
-  const handleSearch = (id: number) => {
+  const handleSearch = async (id: number) => {
     const collection = collections.find(col => col.id === id);
     if (collection) {
-      // In a real implementation, this would trigger a search for missing movies
-      alert(`Searching for missing movies in "${collection.name}"`);
+      try {
+        await collectionApi.search(id);
+        // Optionally show success feedback or refetch
+      } catch (error) {
+        console.error('Failed to search collection:', error);
+        // Optionally show error feedback
+      }
     }
   };
 
@@ -34,23 +45,17 @@ export default function CollectionsPage() {
   const handleDelete = (id: number) => {
     const collection = collections.find(col => col.id === id);
     if (collection && window.confirm(`Delete collection "${collection.name}"?`)) {
-      setCollections(current => current.filter(col => col.id !== id));
+      // TODO: Wire to collectionApi.delete() in Phase 3
+      console.log('Delete collection', id);
+      refetch();
     }
   };
 
   const handleSaveEdit = (collectionId: number, data: CollectionEditForm) => {
-    setCollections(current =>
-      current.map(col =>
-        col.id === collectionId
-          ? {
-              ...col,
-              name: data.name,
-              overview: data.overview,
-              monitored: data.monitored,
-            }
-          : col
-      )
-    );
+    // TODO: Wire to collectionApi.update() in Phase 3
+    console.log('Save collection', collectionId, data);
+    setEditingCollection(null);
+    refetch();
   };
 
   const filteredCollections = search
@@ -87,12 +92,12 @@ export default function CollectionsPage() {
 
       {/* Collections Grid */}
       <QueryPanel
-        isLoading={false}
-        isError={false}
+        isLoading={isPending}
+        isError={isError}
         isEmpty={filteredCollections.length === 0}
         emptyTitle="No collections found"
         emptyBody="Try adjusting your search or add a new collection."
-        onRetry={() => {}}
+        onRetry={() => refetch()}
       >
         <CollectionGrid
           collections={filteredCollections}

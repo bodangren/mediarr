@@ -396,4 +396,141 @@ describe('subtitleApi', () => {
       );
     });
   });
+
+  // Movie support tests
+  describe('syncMovie', () => {
+    it('should sync movie metadata with Radarr', async () => {
+      const mockResult = {
+        success: true,
+        message: 'Movie synced successfully',
+        episodesUpdated: 1,
+      };
+
+      mockClient.request.mockResolvedValue(mockResult);
+
+      const result = await api.syncMovie(1);
+
+      expect(result).toEqual(mockResult);
+      expect(mockClient.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          path: '/api/subtitles/movie/1/sync',
+          method: 'POST',
+        }),
+        expect.anything(),
+      );
+    });
+
+    it('should handle sync failure', async () => {
+      const mockResult = {
+        success: false,
+        message: 'Failed to sync movie',
+        episodesUpdated: 0,
+      };
+
+      mockClient.request.mockResolvedValue(mockResult);
+
+      const result = await api.syncMovie(999);
+
+      expect(result).toEqual(mockResult);
+      expect(mockClient.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          path: '/api/subtitles/movie/999/sync',
+          method: 'POST',
+        }),
+        expect.anything(),
+      );
+    });
+  });
+
+  describe('scanMovieDisk', () => {
+    it('should scan disk for existing movie subtitles', async () => {
+      const mockResult = {
+        success: true,
+        message: 'Disk scan completed',
+        subtitlesFound: 5,
+        newSubtitles: 2,
+      };
+
+      mockClient.request.mockResolvedValue(mockResult);
+
+      const result = await api.scanMovieDisk(1);
+
+      expect(result).toEqual(mockResult);
+      expect(mockClient.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          path: '/api/subtitles/movie/1/scan',
+          method: 'POST',
+        }),
+        expect.anything(),
+      );
+    });
+
+    it('should handle scan with no new subtitles found', async () => {
+      const mockResult = {
+        success: true,
+        message: 'Disk scan completed',
+        subtitlesFound: 3,
+        newSubtitles: 0,
+      };
+
+      mockClient.request.mockResolvedValue(mockResult);
+
+      const result = await api.scanMovieDisk(42);
+
+      expect(result).toEqual(mockResult);
+      expect(mockClient.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          path: '/api/subtitles/movie/42/scan',
+          method: 'POST',
+        }),
+        expect.anything(),
+      );
+    });
+  });
+
+  describe('searchMovieSubtitles', () => {
+    it('should search for missing subtitles for a movie', async () => {
+      const mockResult = {
+        success: true,
+        message: 'Subtitle search completed',
+        episodesSearched: 1,
+        subtitlesDownloaded: 2,
+      };
+
+      mockClient.request.mockResolvedValue(mockResult);
+
+      const result = await api.searchMovieSubtitles(1);
+
+      expect(result).toEqual(mockResult);
+      expect(mockClient.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          path: '/api/subtitles/movie/1/search',
+          method: 'POST',
+        }),
+        expect.anything(),
+      );
+    });
+
+    it('should handle search with no subtitles found', async () => {
+      const mockResult = {
+        success: true,
+        message: 'Subtitle search completed',
+        episodesSearched: 1,
+        subtitlesDownloaded: 0,
+      };
+
+      mockClient.request.mockResolvedValue(mockResult);
+
+      const result = await api.searchMovieSubtitles(77);
+
+      expect(result).toEqual(mockResult);
+      expect(mockClient.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          path: '/api/subtitles/movie/77/search',
+          method: 'POST',
+        }),
+        expect.anything(),
+      );
+    });
+  });
 });

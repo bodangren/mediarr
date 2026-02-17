@@ -69,8 +69,8 @@ describe('SubtitleUpload', () => {
       />,
     );
 
-    expect(screen.getByText('or click to browse')).toBeInTheDocument();
-    expect(screen.getByText('.srt, .sub, .ass, .vtt')).toBeInTheDocument();
+    expect(screen.getByText((content) => content.includes('or click to browse'))).toBeInTheDocument();
+    expect(screen.getByText((content) => content.includes('.srt, .sub, .ass, .vtt'))).toBeInTheDocument();
   });
 
   it('has language selector with default option', () => {
@@ -256,7 +256,7 @@ describe('SubtitleUpload', () => {
     expect(screen.getByText('2 files selected')).toBeInTheDocument();
   });
 
-  it('shows progress bar during upload', async () => {
+  it('shows backend support notice when upload is not supported', () => {
     render(
       <SubtitleUpload
         onSuccess={mockOnSuccess}
@@ -264,26 +264,10 @@ describe('SubtitleUpload', () => {
       />,
     );
 
-    // Add files and click upload
-    const file = new File(['test'], 'test.srt', { type: 'text/plain' });
-    const input = screen.getByLabelText('Select subtitle files');
-
-    Object.defineProperty(input, 'files', {
-      value: [file],
-      writable: false,
-    });
-
-    fireEvent.change(input);
-
-    const uploadButton = screen.getByText('Upload');
-    fireEvent.click(uploadButton);
-
-    await waitFor(() => {
-      expect(screen.getByText('Uploading...')).toBeInTheDocument();
-    });
+    expect(screen.getByText('Subtitle upload requires backend support')).toBeInTheDocument();
   });
 
-  it('shows success state after upload', async () => {
+  it('keeps upload button disabled when backend does not support uploads', () => {
     render(
       <SubtitleUpload
         onSuccess={mockOnSuccess}
@@ -291,6 +275,7 @@ describe('SubtitleUpload', () => {
       />,
     );
 
+    // Add files
     const file = new File(['test'], 'test.srt', { type: 'text/plain' });
     const input = screen.getByLabelText('Select subtitle files');
 
@@ -301,77 +286,10 @@ describe('SubtitleUpload', () => {
 
     fireEvent.change(input);
 
+    // Upload button should remain disabled
     const uploadButton = screen.getByText('Upload');
-    fireEvent.click(uploadButton);
-
-    // Wait for upload to complete
-    await waitFor(
-      () => {
-        expect(screen.queryByText('Uploading...')).not.toBeInTheDocument();
-      },
-      { timeout: 2000 },
-    );
-  });
-
-  it('shows Done button after successful upload', async () => {
-    render(
-      <SubtitleUpload
-        onSuccess={mockOnSuccess}
-        onCancel={mockOnCancel}
-      />,
-    );
-
-    const file = new File(['test'], 'test.srt', { type: 'text/plain' });
-    const input = screen.getByLabelText('Select subtitle files');
-
-    Object.defineProperty(input, 'files', {
-      value: [file],
-      writable: false,
-    });
-
-    fireEvent.change(input);
-
-    const uploadButton = screen.getByText('Upload');
-    fireEvent.click(uploadButton);
-
-    await waitFor(
-      () => {
-        expect(screen.getByText('Done')).toBeInTheDocument();
-      },
-      { timeout: 2000 },
-    );
-  });
-
-  it('calls onSuccess when Done is clicked', async () => {
-    render(
-      <SubtitleUpload
-        onSuccess={mockOnSuccess}
-        onCancel={mockOnCancel}
-      />,
-    );
-
-    const file = new File(['test'], 'test.srt', { type: 'text/plain' });
-    const input = screen.getByLabelText('Select subtitle files');
-
-    Object.defineProperty(input, 'files', {
-      value: [file],
-      writable: false,
-    });
-
-    fireEvent.change(input);
-
-    const uploadButton = screen.getByText('Upload');
-    fireEvent.click(uploadButton);
-
-    await waitFor(
-      () => {
-        const doneButton = screen.getByText('Done');
-        expect(doneButton).toBeInTheDocument();
-        fireEvent.click(doneButton);
-        expect(mockOnSuccess).toHaveBeenCalledTimes(1);
-      },
-      { timeout: 2000 },
-    );
+    expect(uploadButton).toBeDisabled();
+    expect(uploadButton).toHaveAttribute('title', 'Subtitle upload requires backend support');
   });
 
   it('has accessible file input', () => {

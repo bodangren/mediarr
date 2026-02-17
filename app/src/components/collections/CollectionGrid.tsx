@@ -1,6 +1,7 @@
 'use client';
 
 import { Icon } from '@/components/primitives/Icon';
+import { CollectionCard } from './CollectionCard';
 import type { MovieCollection } from '@/types/collection';
 
 interface CollectionGridProps {

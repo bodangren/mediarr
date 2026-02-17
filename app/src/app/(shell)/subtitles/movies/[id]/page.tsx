@@ -15,7 +15,7 @@ import { SubtitleUpload } from '@/components/subtitles/SubtitleUpload';
 import { ManualSearchModal } from '@/components/subtitles/ManualSearchModal';
 import { MovieActionsToolbar } from '@/components/subtitles/MovieActionsToolbar';
 import { Icon } from '@/components/primitives/Icon';
-import type { SubtitleTrack, ManualSearchCandidate } from '@/lib/api';
+import type { SubtitleTrack } from '@/lib/api';
 
 interface MovieVariant {
   variantId: number;
@@ -57,35 +57,6 @@ export default function MovieSubtitleDetailPage({ params }: { params: { id: stri
       }));
     },
     enabled: movieQuery.data !== undefined,
-  });
-
-  // Query for manual search
-  const searchQuery = useQuery({
-    queryKey: ['subtitle-manual-search', movieId],
-    queryFn: () => api.subtitleApi.manualSearch({ movieId }),
-    enabled: false, // Manually triggered
-  });
-
-  // Mutation for manual download
-  const downloadMutation = useMutation({
-    mutationFn: (candidate: ManualSearchCandidate) =>
-      api.subtitleApi.manualDownload({ movieId, candidate }),
-    onSuccess: () => {
-      pushToast({
-        title: 'Download Successful',
-        message: 'Subtitle file downloaded successfully',
-        variant: 'success',
-      });
-      queryClient.invalidateQueries({ queryKey: ['movie-subtitle-variants', movieId] });
-      setIsSearchModalOpen(false);
-    },
-    onError: error => {
-      pushToast({
-        title: 'Download Failed',
-        message: error instanceof Error ? error.message : 'Unknown error occurred',
-        variant: 'error',
-      });
-    },
   });
 
   // Mutation for sync
@@ -150,8 +121,7 @@ export default function MovieSubtitleDetailPage({ params }: { params: { id: stri
 
   const handleManualSearch = useCallback(() => {
     setIsSearchModalOpen(true);
-    searchQuery.refetch();
-  }, [searchQuery]);
+  }, []);
 
   const handleUpload = useCallback(() => {
     setIsUploadModalOpen(true);
@@ -166,17 +136,6 @@ export default function MovieSubtitleDetailPage({ params }: { params: { id: stri
       pushToast({
         title: 'Searching',
         message: `Searching for ${languageCode} subtitles`,
-        variant: 'info',
-      });
-    },
-    [pushToast]
-  );
-
-  const handleDeleteTrack = useCallback(
-    (trackId: number) => {
-      pushToast({
-        title: 'Delete Subtitle',
-        message: 'This feature is coming soon',
         variant: 'info',
       });
     },
@@ -219,7 +178,7 @@ export default function MovieSubtitleDetailPage({ params }: { params: { id: stri
       <div className="flex flex-col gap-4 rounded-lg border border-border-subtle bg-surface-1 p-4 sm:flex-row">
         {/* Poster placeholder */}
         <div className="aspect-[2/3] w-32 shrink-0 overflow-hidden rounded-md bg-surface-2 sm:w-40">
-          <Icon name="film" size={48} className="h-full w-full text-text-muted" />
+          <Icon name="play" size={48} className="h-full w-full text-text-muted" />
         </div>
 
         {/* Movie Info */}
@@ -237,11 +196,18 @@ export default function MovieSubtitleDetailPage({ params }: { params: { id: stri
             )}
           </div>
 
-          {/* Language profile placeholder - would come from movie data */}
-          <div className="inline-flex items-center gap-2 rounded-md border border-border-subtle bg-surface-2 px-2 py-1 text-xs">
-            <span className="text-text-muted">Language Profile:</span>
-            <span className="text-text-primary">Default</span>
-          </div>
+          {/* Language profile - comes from movie data if available */}
+          {(movie as any).languageProfile ? (
+            <div className="inline-flex items-center gap-2 rounded-md border border-border-subtle bg-surface-2 px-2 py-1 text-xs">
+              <span className="text-text-muted">Language Profile:</span>
+              <span className="text-text-primary">{(movie as any).languageProfile}</span>
+            </div>
+          ) : (
+            <div className="inline-flex items-center gap-2 rounded-md border border-border-subtle bg-surface-2 px-2 py-1 text-xs">
+              <span className="text-text-muted">Language Profile:</span>
+              <span className="text-text-muted">Unavailable</span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -289,7 +255,6 @@ export default function MovieSubtitleDetailPage({ params }: { params: { id: stri
                 tracks={variant.subtitleTracks}
                 missingLanguages={variant.missingSubtitles}
                 onSearch={handleSearchLanguage}
-                onDelete={handleDeleteTrack}
               />
             </div>
           ))}
@@ -299,7 +264,7 @@ export default function MovieSubtitleDetailPage({ params }: { params: { id: stri
       {/* Manual Search Modal */}
       <ManualSearchModal
         isOpen={isSearchModalOpen}
-        episodeId={movieId} // Note: Using movieId as episodeId for now
+        movieId={movieId}
         onClose={() => setIsSearchModalOpen(false)}
       />
 

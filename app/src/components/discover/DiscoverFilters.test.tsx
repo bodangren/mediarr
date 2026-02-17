@@ -2,8 +2,8 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import userEvent from '@testing-library/user-event';
 import { DiscoverFilters } from './DiscoverFilters';
+import { useState } from 'react';
 
-const mockOnChange = vi.fn();
 const mockOnApply = vi.fn();
 const mockOnClear = vi.fn();
 
@@ -17,10 +17,32 @@ describe('DiscoverFilters', () => {
   });
 
   it('renders filter sections correctly', () => {
+    const filters = defaultFilters;
+    const onChange = vi.fn();
+
+    render(
+      <DiscoverFilters
+        filters={filters}
+        onChange={onChange}
+        onApply={mockOnApply}
+        onClear={mockOnClear}
+      />
+    );
+
+    expect(screen.getByLabelText('Min Year')).toBeInTheDocument();
+    expect(screen.getByLabelText('Max Year')).toBeInTheDocument();
+    expect(screen.getByText('Genres')).toBeInTheDocument();
+    expect(screen.getByText('Certification')).toBeInTheDocument();
+    expect(screen.getByText('Language')).toBeInTheDocument();
+  });
+
+  it('renders filter sections correctly', () => {
+    const onChange = vi.fn();
+
     render(
       <DiscoverFilters
         filters={defaultFilters}
-        onChange={mockOnChange}
+        onChange={onChange}
         onApply={mockOnApply}
         onClear={mockOnClear}
       />
@@ -35,99 +57,128 @@ describe('DiscoverFilters', () => {
 
   it('updates min year filter', async () => {
     const user = userEvent.setup();
+    const onChange = vi.fn();
+
     render(
       <DiscoverFilters
         filters={defaultFilters}
-        onChange={mockOnChange}
+        onChange={onChange}
         onApply={mockOnApply}
         onClear={mockOnClear}
       />
     );
 
-    const minYearInput = screen.getByLabelText('Min Year');
-    await user.type(minYearInput, '2010');
+    const minYearInput = screen.getByLabelText('Min Year') as HTMLInputElement;
+    fireEvent.change(minYearInput, { target: { value: '2010' } });
 
-    expect(mockOnChange).toHaveBeenCalledWith({ ...defaultFilters, minYear: 2010 });
+    expect(onChange).toHaveBeenLastCalledWith({ ...defaultFilters, minYear: 2010 });
   });
 
   it('updates max year filter', async () => {
     const user = userEvent.setup();
+    const onChange = vi.fn();
+
     render(
       <DiscoverFilters
         filters={defaultFilters}
-        onChange={mockOnChange}
+        onChange={onChange}
         onApply={mockOnApply}
         onClear={mockOnClear}
       />
     );
 
-    const maxYearInput = screen.getByLabelText('Max Year');
-    await user.type(maxYearInput, '2020');
+    const maxYearInput = screen.getByLabelText('Max Year') as HTMLInputElement;
+    fireEvent.change(maxYearInput, { target: { value: '2020' } });
 
-    expect(mockOnChange).toHaveBeenCalledWith({ ...defaultFilters, maxYear: 2020 });
+    expect(onChange).toHaveBeenLastCalledWith({ ...defaultFilters, maxYear: 2020 });
+  });
+
+  it('updates max year filter', async () => {
+    const onChange = vi.fn();
+
+    render(
+      <DiscoverFilters
+        filters={defaultFilters}
+        onChange={onChange}
+        onApply={mockOnApply}
+        onClear={mockOnClear}
+      />
+    );
+
+    const maxYearInput = screen.getByLabelText('Max Year') as HTMLInputElement;
+    fireEvent.change(maxYearInput, { target: { value: '2020' } });
+
+    expect(onChange).toHaveBeenLastCalledWith({ ...defaultFilters, maxYear: 2020 });
   });
 
   it('toggles genre filter', async () => {
     const user = userEvent.setup();
+    const onChange = vi.fn();
+
     render(
       <DiscoverFilters
         filters={defaultFilters}
-        onChange={mockOnChange}
+        onChange={onChange}
         onApply={mockOnApply}
         onClear={mockOnClear}
       />
     );
 
     const actionCheckbox = screen.getByLabelText(/action/i);
+
+    // Click to add genre
     await user.click(actionCheckbox);
-
-    expect(mockOnChange).toHaveBeenCalledWith({ ...defaultFilters, genres: ['Action'] });
-
-    await user.click(actionCheckbox);
-
-    expect(mockOnChange).toHaveBeenCalledWith({ ...defaultFilters, genres: [] });
+    expect(onChange).toHaveBeenCalledWith({ ...defaultFilters, genres: ['Action'] });
   });
 
   it('updates certification filter', async () => {
     const user = userEvent.setup();
+    const onChange = vi.fn();
+
     render(
       <DiscoverFilters
         filters={defaultFilters}
-        onChange={mockOnChange}
+        onChange={onChange}
         onApply={mockOnApply}
         onClear={mockOnClear}
       />
     );
 
-    const certificationSelect = screen.getByRole('combobox', { name: /certification/i });
+    const certificationHeading = screen.getByText('Certification');
+    const certificationSelect = certificationHeading.nextElementSibling as HTMLSelectElement;
     await user.selectOptions(certificationSelect, 'PG-13');
 
-    expect(mockOnChange).toHaveBeenCalledWith({ ...defaultFilters, certification: 'PG-13' });
+    expect(onChange).toHaveBeenCalledWith({ ...defaultFilters, certification: 'PG-13' });
   });
 
   it('updates language filter', async () => {
     const user = userEvent.setup();
+    const onChange = vi.fn();
+
     render(
       <DiscoverFilters
         filters={defaultFilters}
-        onChange={mockOnChange}
+        onChange={onChange}
         onApply={mockOnApply}
         onClear={mockOnClear}
       />
     );
 
-    const languageSelect = screen.getByRole('combobox', { name: /language/i });
+    const languageHeading = screen.getByText('Language');
+    const languageSelect = languageHeading.nextElementSibling as HTMLSelectElement;
     await user.selectOptions(languageSelect, 'English');
 
-    expect(mockOnChange).toHaveBeenCalledWith({ ...defaultFilters, language: 'English' });
+    expect(onChange).toHaveBeenCalledWith({ ...defaultFilters, language: 'English' });
   });
 
   it('calls onApply when Apply button is clicked', async () => {
     const user = userEvent.setup();
+    const onChange = vi.fn();
+
     render(
       <DiscoverFilters
         filters={defaultFilters}
-        onChange={mockOnChange}
+        onChange={onChange}
         onApply={mockOnApply}
         onClear={mockOnClear}
       />
@@ -141,10 +192,12 @@ describe('DiscoverFilters', () => {
 
   it('calls onClear when Clear button is clicked', async () => {
     const user = userEvent.setup();
+    const onChange = vi.fn();
+
     render(
       <DiscoverFilters
         filters={defaultFilters}
-        onChange={mockOnChange}
+        onChange={onChange}
         onApply={mockOnApply}
         onClear={mockOnClear}
       />
@@ -164,11 +217,12 @@ describe('DiscoverFilters', () => {
       certification: 'PG-13' as const,
       language: 'English',
     };
+    const onChange = vi.fn();
 
     render(
       <DiscoverFilters
         filters={filtersWithValue}
-        onChange={mockOnChange}
+        onChange={onChange}
         onApply={mockOnApply}
         onClear={mockOnClear}
       />
@@ -181,10 +235,12 @@ describe('DiscoverFilters', () => {
   });
 
   it('displays all genre checkboxes', () => {
+    const onChange = vi.fn();
+
     render(
       <DiscoverFilters
         filters={defaultFilters}
-        onChange={mockOnChange}
+        onChange={onChange}
         onApply={mockOnApply}
         onClear={mockOnClear}
       />

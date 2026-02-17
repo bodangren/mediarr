@@ -41,6 +41,4 @@ export interface ScanProgress {
   errorMessage?: string;
 }
 
-// Re-export mock data for backward compatibility during development
-// TODO: Remove these exports when backend API is implemented
-export { mockDetectedSeries, mockSearchResults } from './mocks';
+

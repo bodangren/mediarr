@@ -4,8 +4,12 @@ import { useEffect } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm, useWatch } from 'react-hook-form';
 import { addShortcutSaveListener } from '@/lib/shortcuts';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { z } from 'zod';
+import { useLocalStorage } from '@/lib/hooks/useLocalStorage';
+import { getApiClients } from '@/lib/api/client';
+import { queryKeys } from '@/lib/query/queryKeys';
+import { Alert } from '@/components/primitives/Alert';
 
 // Subtitles-specific settings schema
 const subtitlesSettingsSchema = z.object({
@@ -39,47 +43,32 @@ const DEFAULT_VALUES: SubtitlesSettingsFormData = {
 };
 
 export default function SubtitlesSettingsPage() {
-  const queryClient = useQueryClient();
+  const [localSettings, setLocalSettings] = useLocalStorage<SubtitlesSettingsFormData>(
+    'mediarr:subtitle-settings',
+    DEFAULT_VALUES
+  );
+
   const form = useForm<SubtitlesSettingsFormData>({
     resolver: zodResolver(subtitlesSettingsSchema),
-    defaultValues: DEFAULT_VALUES,
+    defaultValues: localSettings,
   });
 
   const subtitleFolderMode = useWatch({ control: form.control, name: 'subtitleFolderMode' });
 
-  // Query to fetch existing settings (when backend API is ready)
-  const { data: settings, isPending, isError, error, refetch } = useQuery({
-    queryKey: ['subtitles-settings'],
-    queryFn: async () => {
-      // When backend is ready, uncomment this:
-      // return getApiClients().subtitleSettingsApi.get();
-      // For now, return default values
-      return DEFAULT_VALUES;
-    },
-    staleTime: 60_000,
+  // Fetch language profiles from API
+  const { data: languageProfiles = [] } = useQuery({
+    queryKey: queryKeys.languageProfiles(),
+    queryFn: () => getApiClients().languageProfilesApi.listProfiles(),
+    staleTime: 300_000, // 5 minutes
   });
 
+  // Sync form values with localStorage
   useEffect(() => {
-    if (!settings) {
-      return;
-    }
-    form.reset(settings);
-  }, [form, settings]);
-
-  const updateMutation = useMutation({
-    mutationFn: (values: SubtitlesSettingsFormData) => {
-      // When backend is ready, uncomment this:
-      // return getApiClients().subtitleSettingsApi.update(values);
-      // For now, simulate a successful update
-      return Promise.resolve(values);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['subtitles-settings'] });
-    },
-  });
+    form.reset(localSettings);
+  }, [localSettings, form]);
 
   const submitSettings = form.handleSubmit(values => {
-    updateMutation.mutate(values);
+    setLocalSettings(values);
   });
 
   useEffect(() => {
@@ -88,41 +77,16 @@ export default function SubtitlesSettingsPage() {
     });
   }, [submitSettings]);
 
-  if (isPending) {
-    return (
-      <div className="rounded-md border border-border-subtle bg-surface-1 p-4 text-sm text-text-secondary">
-        Loading subtitle settings…
-      </div>
-    );
-  }
-
-  if (isError) {
-    return (
-      <section className="space-y-3">
-        <header className="space-y-1">
-          <h1 className="text-2xl font-semibold">Subtitle Settings</h1>
-          <p className="text-sm text-text-secondary">Configure automatic subtitle downloads and file handling.</p>
-        </header>
-        <div className="rounded-md border border-status-error/50 bg-surface-danger p-4 text-sm text-text-primary">
-          <p>Could not load settings: {error instanceof Error ? error.message : 'Unknown error'}</p>
-          <button
-            type="button"
-            className="mt-3 rounded-sm border border-border-subtle px-3 py-1 text-xs"
-            onClick={() => void refetch()}
-          >
-            Retry
-          </button>
-        </div>
-      </section>
-    );
-  }
-
   return (
     <section className="space-y-5">
       <header className="space-y-1">
         <h1 className="text-2xl font-semibold">Subtitle Settings</h1>
         <p className="text-sm text-text-secondary">Configure automatic subtitle downloads and file handling.</p>
       </header>
+
+      <Alert variant="info">
+        <span className="text-sm">Subtitle settings are stored locally in this browser.</span>
+      </Alert>
 
       <form className="space-y-4" onSubmit={submitSettings}>
         {/* General Settings */}
@@ -259,10 +223,11 @@ export default function SubtitlesSettingsPage() {
                 {...form.register('defaultLanguageProfileId', { valueAsNumber: true })}
               >
                 <option value="">Select a profile...</option>
-                {/* When backend is ready, populate with actual profiles */}
-                <option value="1">English (Default)</option>
-                <option value="2">Spanish</option>
-                <option value="3">French</option>
+                {languageProfiles.map(profile => (
+                  <option key={profile.id} value={profile.id}>
+                    {profile.name}
+                  </option>
+                ))}
               </select>
               <p className="text-xs text-text-muted">
                 Default language profile to use for automatic downloads.
@@ -274,19 +239,10 @@ export default function SubtitlesSettingsPage() {
         <div className="flex items-center gap-3">
           <button
             type="submit"
-            disabled={updateMutation.isPending}
             className="rounded-sm bg-accent-primary px-4 py-2 text-sm font-semibold text-text-inverse disabled:opacity-60"
           >
-            {updateMutation.isPending ? 'Saving…' : 'Save Subtitle Settings'}
+            Save Subtitle Settings
           </button>
-          {updateMutation.isSuccess ? (
-            <span className="text-xs text-status-completed">Saved.</span>
-          ) : null}
-          {updateMutation.isError ? (
-            <span className="text-xs text-status-error">
-              Save failed: {updateMutation.error instanceof Error ? updateMutation.error.message : 'Unknown error'}
-            </span>
-          ) : null}
         </div>
       </form>
     </section>

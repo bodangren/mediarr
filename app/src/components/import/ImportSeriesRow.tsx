@@ -10,9 +10,10 @@ interface ImportSeriesRowProps {
   onSelect: (id: number) => void;
   onManualMatch: (series: DetectedSeries) => void;
   onImport: (series: DetectedSeries) => void;
+  backendSupported: boolean | null;
 }
 
-export function ImportSeriesRow({ series, isSelected, onSelect, onManualMatch, onImport }: ImportSeriesRowProps) {
+export function ImportSeriesRow({ series, isSelected, onSelect, onManualMatch, onImport, backendSupported }: ImportSeriesRowProps) {
   const getStatusIcon = () => {
     switch (series.status) {
       case 'matched':
@@ -84,7 +85,13 @@ export function ImportSeriesRow({ series, isSelected, onSelect, onManualMatch, o
                 <Icon name="edit" label="Edit" className="mr-1" />
                 Edit
               </Button>
-              <Button variant="primary" onClick={() => onImport(series)} className="text-xs">
+              <Button
+                variant="primary"
+                onClick={() => onImport(series)}
+                disabled={backendSupported === false}
+                title={backendSupported === false ? 'Import requires backend support' : undefined}
+                className="text-xs"
+              >
                 Import
               </Button>
             </>

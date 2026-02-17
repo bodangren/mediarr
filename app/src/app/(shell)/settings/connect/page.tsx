@@ -7,8 +7,9 @@ import { Button } from '@/components/primitives/Button';
 import { ConfirmModal } from '@/components/primitives/Modal';
 import { AddNotificationModal } from '@/components/settings/AddNotificationModal';
 import { getApiClients } from '@/lib/api/client';
+import { useOptimisticMutation } from '@/lib/query/useOptimisticMutation';
 import type { Notification, NotificationTestResult } from '@/types/notification';
-import { getNotificationTypeLabel, getNotificationTypeIcon } from '@/types/notification';
+import { getNotificationTypeLabel } from '@/types/notification';
 
 export default function NotificationsSettingsPage() {
   const queryClient = useQueryClient();
@@ -69,11 +70,21 @@ export default function NotificationsSettingsPage() {
     testMutation.mutate(notification.id);
   };
 
-  const handleToggleEnabled = (notification: Notification, enabled: boolean) => {
-    queryClient.setQueryData(['notifications'], (current: Notification[] = []) =>
+  const toggleEnabledMutation = useOptimisticMutation<
+    Notification[],
+    { notification: Notification; enabled: boolean },
+    Notification
+  >({
+    queryKey: ['notifications'],
+    mutationFn: async ({ notification, enabled }) =>
+      await notificationsApi.update(notification.id, { enabled }),
+    updater: (current, { notification, enabled }) =>
       current.map(n => (n.id === notification.id ? { ...n, enabled } : n)),
-    );
-    // Optimistic update - should call API in production
+    errorMessage: 'Failed to update notification status',
+  });
+
+  const handleToggleEnabled = (notification: Notification, enabled: boolean) => {
+    toggleEnabledMutation.mutate({ notification, enabled });
   };
 
   if (isPending) {
@@ -174,6 +185,7 @@ export default function NotificationsSettingsPage() {
                       type="checkbox"
                       checked={notification.enabled}
                       onChange={e => handleToggleEnabled(notification, e.target.checked)}
+                      disabled={toggleEnabledMutation.isPending}
                     />
                     <span className="sr-only">Enabled</span>
                   </label>

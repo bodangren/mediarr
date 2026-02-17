@@ -9,7 +9,6 @@ import { ManualSearchModal } from '@/components/subtitles/ManualSearchModal';
 import { SyncButton } from '@/components/subtitles/SyncButton';
 import { ScanButton } from '@/components/subtitles/ScanButton';
 import { SearchButton } from '@/components/subtitles/SearchButton';
-import { useToast } from '@/components/providers/ToastProvider';
 import { getApiClients } from '@/lib/api/client';
 import { useApiQuery } from '@/lib/query/useApiQuery';
 
@@ -46,7 +45,6 @@ export default function SeriesSubtitleDetailPage() {
   const api = useMemo(() => getApiClients(), []);
   const params = useParams<{ id: string }>();
   const id = Number.parseInt(params.id, 10);
-  const { pushToast } = useToast();
 
   const [expandedSeasons, setExpandedSeasons] = useState<Set<number>>(new Set());
   const [manualSearchModal, setManualSearchModal] = useState<{
@@ -234,13 +232,8 @@ export default function SeriesSubtitleDetailPage() {
                             <Button
                               variant="secondary"
                               className="px-2 py-1 text-xs"
-                              onClick={() => {
-                                pushToast({
-                                  title: 'Upload Feature',
-                                  message: 'Subtitle upload feature coming soon',
-                                  variant: 'info',
-                                });
-                              }}
+                              disabled
+                              title="Subtitle upload requires backend support"
                             >
                               <Upload className="mr-1 h-3 w-3" />
                               Upload

@@ -12,34 +12,20 @@ import { getApiClients } from '@/lib/api/client';
 import { useApiQuery } from '@/lib/query/useApiQuery';
 import { queryKeys } from '@/lib/query/queryKeys';
 import type { BlacklistedSubtitle, BlacklistQueryParams } from '@/lib/api/subtitleBlacklistApi';
-
-function formatRelativeTime(timestamp: string): string {
-  const now = new Date();
-  const date = new Date(timestamp);
-  const diffMs = now.getTime() - date.getTime();
-  const diffSecs = Math.floor(diffMs / 1000);
-  const diffMins = Math.floor(diffSecs / 60);
-  const diffHours = Math.floor(diffMins / 60);
-  const diffDays = Math.floor(diffHours / 24);
-
-  if (diffSecs < 60) return 'just now';
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return date.toLocaleDateString();
-}
+import { formatRelativeTime } from '@/lib/subtitles/time';
 
 export default function BlacklistMoviesPage() {
   const api = useMemo(() => getApiClients(), []);
   const queryClient = useQueryClient();
 
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
   const [showClearModal, setShowClearModal] = useState(false);
   const [itemToRemove, setItemToRemove] = useState<number | null>(null);
 
   const queryParams: BlacklistQueryParams = {
     page,
-    pageSize: 25,
+    pageSize,
   };
 
   const blacklistQuery = useApiQuery({
@@ -185,7 +171,7 @@ export default function BlacklistMoviesPage() {
                   onNext: () => setPage(current => Math.min(Math.ceil(data.meta.totalCount / (queryParams.pageSize ?? 25)), current + 1)),
                   onPageSizeChange: (size) => {
                     setPage(1);
-                    queryParams.pageSize = size;
+                    setPageSize(size);
                   },
                 }
               : undefined

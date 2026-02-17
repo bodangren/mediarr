@@ -37,8 +37,6 @@ describe('SettingsForm', () => {
         expect(screen.getByRole('heading', { name: /General/i })).toBeInTheDocument();
     });
 
-    expect(screen.getByRole('heading', { name: /Indexers/i })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /Download Clients/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /API Keys/i })).toBeInTheDocument();
   });
 

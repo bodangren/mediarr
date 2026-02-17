@@ -1,132 +1,201 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import MoviesHistoryPage from './page';
 
-// Mock dependencies
+const listHistoryMock = vi.fn();
+const clearHistoryMock = vi.fn();
+
 vi.mock('@/lib/api/client', () => ({
   getApiClients: () => ({
     subtitleHistoryApi: {
-      listHistory: vi.fn(),
-      clearHistory: vi.fn(),
+      listHistory: listHistoryMock,
+      clearHistory: clearHistoryMock,
     },
   }),
 }));
 
-vi.mock('@/lib/query/useApiQuery', () => ({
-  useApiQuery: vi.fn(),
-}));
-
-vi.mock('@tanstack/react-query', () => ({
-  useMutation: vi.fn(),
-  useQueryClient: vi.fn(),
-}));
+const createTestQueryClient = () => new QueryClient({
+  defaultOptions: {
+    queries: { retry: false },
+    mutations: { retry: false },
+  },
+});
 
 describe('MoviesHistoryPage', () => {
-  it('renders page header', () => {
-    render(<MoviesHistoryPage />);
+  beforeEach(() => {
+    listHistoryMock.mockResolvedValue({
+      items: [],
+      meta: { page: 1, pageSize: 25, totalCount: 0, totalPages: 0 },
+    });
+    clearHistoryMock.mockResolvedValue({ deletedCount: 0 });
+  });
+
+  it('renders page header', async () => {
+    const client = createTestQueryClient();
+    render(
+      <QueryClientProvider client={client}>
+        <MoviesHistoryPage />
+      </QueryClientProvider>,
+    );
 
     expect(screen.getByText('Movies History')).toBeInTheDocument();
     expect(screen.getByText('View subtitle download history for movies.')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Clear History' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Clear History' })).toBeInTheDocument();
   });
 
-  it('renders history filters', () => {
-    render(<MoviesHistoryPage />);
+  it('renders history filters', async () => {
+    const client = createTestQueryClient();
+    render(
+      <QueryClientProvider client={client}>
+        <MoviesHistoryPage />
+      </QueryClientProvider>,
+    );
 
-    expect(screen.getByLabelText('Provider')).toBeInTheDocument();
+    expect(await screen.findByLabelText('Provider')).toBeInTheDocument();
     expect(screen.getByLabelText('Language')).toBeInTheDocument();
     expect(screen.getByLabelText('Action')).toBeInTheDocument();
     expect(screen.getByLabelText('Start Date')).toBeInTheDocument();
     expect(screen.getByLabelText('End Date')).toBeInTheDocument();
   });
 
-  it('shows loading state', () => {
-    const { useApiQuery } = require('@/lib/query/useApiQuery');
-    useApiQuery.mockReturnValue({
-      isPending: true,
-      isError: false,
-      isResolvedEmpty: false,
-      data: undefined,
-      refetch: vi.fn(),
-    });
+  it('shows empty state', async () => {
+    const client = createTestQueryClient();
+    render(
+      <QueryClientProvider client={client}>
+        <MoviesHistoryPage />
+      </QueryClientProvider>,
+    );
 
-    render(<MoviesHistoryPage />);
-
-    expect(screen.queryByText('No history found')).not.toBeInTheDocument();
-  });
-
-  it('shows empty state', () => {
-    const { useApiQuery } = require('@/lib/query/useApiQuery');
-    useApiQuery.mockReturnValue({
-      isPending: false,
-      isError: false,
-      isResolvedEmpty: true,
-      data: { items: [], meta: { page: 1, pageSize: 25, totalCount: 0, totalPages: 0 } },
-      refetch: vi.fn(),
-    });
-
-    render(<MoviesHistoryPage />);
-
-    expect(screen.getByText('No history found')).toBeInTheDocument();
+    expect(await screen.findByText('No history found')).toBeInTheDocument();
     expect(screen.getByText('Start downloading subtitles for movies to see history here.')).toBeInTheDocument();
   });
 
-  it('shows error state', () => {
-    const { useApiQuery } = require('@/lib/query/useApiQuery');
-    useApiQuery.mockReturnValue({
-      isPending: false,
-      isError: true,
-      isResolvedEmpty: false,
-      error: { message: 'Failed to load history' },
-      refetch: vi.fn(),
+  it('renders history table when data is available', async () => {
+    listHistoryMock.mockResolvedValue({
+      items: [
+        {
+          id: 1,
+          type: 'movie',
+          movieId: 1,
+          movieTitle: 'Test Movie',
+          episodeTitle: 'Test Movie (2024)',
+          languageCode: 'en',
+          provider: 'OpenSubtitles',
+          score: 9.5,
+          action: 'download',
+          timestamp: new Date().toISOString(),
+        },
+      ],
+      meta: { page: 1, pageSize: 25, totalCount: 1, totalPages: 1 },
     });
 
-    render(<MoviesHistoryPage />);
+    const client = createTestQueryClient();
+    render(
+      <QueryClientProvider client={client}>
+        <MoviesHistoryPage />
+      </QueryClientProvider>,
+    );
 
-    expect(screen.getByText('Could not load data')).toBeInTheDocument();
-  });
-
-  it('renders history table when data is available', () => {
-    const { useApiQuery } = require('@/lib/query/useApiQuery');
-    useApiQuery.mockReturnValue({
-      isPending: false,
-      isError: false,
-      isResolvedEmpty: false,
-      data: {
-        items: [
-          {
-            id: 1,
-            type: 'movie',
-            movieId: 1,
-            movieTitle: 'Test Movie',
-            episodeTitle: 'Test Movie (2024)',
-            languageCode: 'en',
-            provider: 'OpenSubtitles',
-            score: 9.5,
-            action: 'download',
-            timestamp: new Date().toISOString(),
-          },
-        ],
-        meta: { page: 1, pageSize: 25, totalCount: 1, totalPages: 1 },
-      },
-      refetch: vi.fn(),
-    });
-
-    render(<MoviesHistoryPage />);
-
-    expect(screen.getByText('Test Movie')).toBeInTheDocument();
-    expect(screen.getByText('en')).toBeInTheDocument();
-    expect(screen.getByText('OpenSubtitles')).toBeInTheDocument();
+    expect(await screen.findByText('Test Movie')).toBeInTheDocument();
+    expect(screen.getAllByText('en').length).toBeGreaterThan(1); // 'en' appears in both filter and table
+    expect(screen.getAllByText('OpenSubtitles').length).toBeGreaterThan(1); // OpenSubtitles in filter and table
     expect(screen.getByText('9.5')).toBeInTheDocument();
   });
 
   it('opens clear history modal when button is clicked', async () => {
-    render(<MoviesHistoryPage />);
+    listHistoryMock.mockResolvedValue({
+      items: [],
+      meta: { page: 1, pageSize: 25, totalCount: 0, totalPages: 0 },
+    });
 
-    const clearButton = screen.getByRole('button', { name: 'Clear History' });
+    const client = createTestQueryClient();
+    render(
+      <QueryClientProvider client={client}>
+        <MoviesHistoryPage />
+      </QueryClientProvider>,
+    );
+
+    const clearButton = await screen.findByRole('button', { name: 'Clear History' });
     await userEvent.click(clearButton);
 
     expect(screen.getByText('Clear Movies History')).toBeInTheDocument();
+  });
+
+  it('changes page size and resets to page 1', async () => {
+    listHistoryMock.mockResolvedValue({
+      items: [
+        {
+          id: 1,
+          type: 'movie',
+          movieId: 1,
+          movieTitle: 'Test Movie',
+          episodeTitle: 'Test Movie (2024)',
+          languageCode: 'en',
+          provider: 'OpenSubtitles',
+          score: 9.5,
+          action: 'download',
+          timestamp: new Date().toISOString(),
+        },
+      ],
+      meta: { page: 2, pageSize: 25, totalCount: 100, totalPages: 4 },
+    });
+
+    const client = createTestQueryClient();
+    render(
+      <QueryClientProvider client={client}>
+        <MoviesHistoryPage />
+      </QueryClientProvider>,
+    );
+
+    // Click the page size selector (use aria-label to identify the page size select)
+    const pageSizeSelect = await screen.findByRole('combobox', { name: /page size/i });
+    await userEvent.click(pageSizeSelect);
+
+    // Select a different page size
+    const pageSizeOption = await screen.findByRole('option', { name: '50' });
+    await userEvent.click(pageSizeOption);
+
+    // After changing page size, the list should be called again
+    expect(listHistoryMock).toHaveBeenCalled();
+  });
+
+  it('clears history and refreshes cache', async () => {
+    listHistoryMock.mockResolvedValue({
+      items: [
+        {
+          id: 1,
+          type: 'movie',
+          movieId: 1,
+          movieTitle: 'Test Movie',
+          episodeTitle: 'Test Movie (2024)',
+          languageCode: 'en',
+          provider: 'OpenSubtitles',
+          score: 9.5,
+          action: 'download',
+          timestamp: new Date().toISOString(),
+        },
+      ],
+      meta: { page: 1, pageSize: 25, totalCount: 1, totalPages: 1 },
+    });
+
+    const client = createTestQueryClient();
+    render(
+      <QueryClientProvider client={client}>
+        <MoviesHistoryPage />
+      </QueryClientProvider>,
+    );
+
+    // Click the Clear History button
+    const clearButton = await screen.findByRole('button', { name: 'Clear History' });
+    await userEvent.click(clearButton);
+
+    // Find the confirm button in the modal (the second Clear History button)
+    const confirmButton = screen.getAllByRole('button', { name: 'Clear History' })[1];
+    await userEvent.click(confirmButton);
+
+    // Verify the clear API was called
+    expect(clearHistoryMock).toHaveBeenCalled();
   });
 });

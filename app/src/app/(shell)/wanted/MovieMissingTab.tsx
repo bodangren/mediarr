@@ -1,17 +1,17 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
 import { DataTable, type DataTableColumn } from '@/components/primitives/DataTable';
 import { QueryPanel } from '@/components/primitives/QueryPanel';
 import { StatusBadge } from '@/components/primitives/StatusBadge';
 import { Button } from '@/components/primitives/Button';
+import { ConfirmModal } from '@/components/primitives/Modal';
 import { getApiClients } from '@/lib/api/client';
 import { queryKeys } from '@/lib/query/queryKeys';
 import { useApiQuery } from '@/lib/query/useApiQuery';
-import type { MissingMovie } from '@/types/wanted';
-import { WantedMovieRow } from '@/components/wanted/WantedMovieRow';
-import { mockMissingMovies } from '@/lib/mocks/wantedMocks';
+import { type MissingMovie } from '@/lib/api/wantedApi';
 
 export interface MovieMissingTabProps {
   onSearchMovie: (movie: MissingMovie) => void;
@@ -20,24 +20,57 @@ export interface MovieMissingTabProps {
 
 export function MovieMissingTab({ onSearchMovie, onBulkSearch }: MovieMissingTabProps) {
   const api = useMemo(() => getApiClients(), []);
-  const queryClient = useQueryClient();
+  const router = useRouter();
 
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState<'cinemaDate' | 'digitalRelease' | 'title'>('cinemaDate');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [selectedMovies, setSelectedMovies] = useState<Set<number>>(new Set());
+  const [movieToDelete, setMovieToDelete] = useState<MissingMovie | null>(null);
 
-  // For now, use mock data until API is implemented
-  const missingQuery = {
-    data: {
-      items: mockMissingMovies,
-      meta: { page: 1, pageSize: 25, totalCount: mockMissingMovies.length, totalPages: 1 },
+  const missingQuery = useApiQuery({
+    queryKey: queryKeys.missingMovies({ page, pageSize: 25, sortBy, sortDir }),
+    queryFn: () => api.wantedApi.listMissingMovies({ page, pageSize: 25, sortBy, sortDir }),
+    isEmpty: (data) => data.items.length === 0,
+  });
+
+  const toggleMonitoredMutation = useMutation({
+    mutationFn: ({ id, monitored }: { id: number; monitored: boolean }) =>
+      api.movieApi.update(id, { monitored }),
+    onSuccess: () => {
+      missingQuery.refetch();
     },
-    isPending: false,
-    isError: false,
-    error: null,
-    refetch: () => Promise.resolve(),
-  } as const;
+  });
+
+  const deleteMovieMutation = useMutation({
+    mutationFn: (id: number) => api.movieApi.remove(id),
+    onSuccess: () => {
+      setMovieToDelete(null);
+      missingQuery.refetch();
+    },
+  });
+
+  const handleToggleMonitored = (movie: MissingMovie) => {
+    toggleMonitoredMutation.mutate({ id: movie.id, monitored: !movie.monitored });
+  };
+
+  const handleEditMovie = (movie: MissingMovie) => {
+    router.push(`/library/movies/${movie.movieId}`);
+  };
+
+  const handleDeleteMovie = (movie: MissingMovie) => {
+    setMovieToDelete(movie);
+  };
+
+  const confirmDeleteMovie = () => {
+    if (movieToDelete) {
+      deleteMovieMutation.mutate(movieToDelete.id);
+    }
+  };
+
+  const cancelDeleteMovie = () => {
+    setMovieToDelete(null);
+  };
 
   const columns: DataTableColumn<MissingMovie>[] = [
     {
@@ -121,14 +154,13 @@ export function MovieMissingTab({ onSearchMovie, onBulkSearch }: MovieMissingTab
       render: row => (
         <button
           type="button"
-          onClick={() => {
-            // TODO: Implement toggle monitored
-          }}
+          onClick={() => handleToggleMonitored(row)}
+          disabled={toggleMonitoredMutation.isPending}
           className={`rounded-sm px-2 py-1 text-xs font-medium transition-colors ${
             row.monitored
               ? 'bg-accent-success text-text-primary'
               : 'bg-surface-2 text-text-secondary'
-          }`}
+          } ${toggleMonitoredMutation.isPending ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
           {row.monitored ? 'Monitored' : 'Unmonitored'}
         </button>
@@ -148,18 +180,14 @@ export function MovieMissingTab({ onSearchMovie, onBulkSearch }: MovieMissingTab
           </Button>
           <Button
             variant="secondary"
-            onClick={() => {
-              // TODO: Implement edit
-            }}
+            onClick={() => handleEditMovie(row)}
             className="px-2 py-1 text-xs"
           >
             Edit
           </Button>
           <Button
             variant="secondary"
-            onClick={() => {
-              // TODO: Implement delete
-            }}
+            onClick={() => handleDeleteMovie(row)}
             className="px-2 py-1 text-xs text-accent-danger"
           >
             Delete
@@ -180,6 +208,7 @@ export function MovieMissingTab({ onSearchMovie, onBulkSearch }: MovieMissingTab
   };
 
   const handleBulkSearch = () => {
+    if (!missingQuery.data) return;
     const selectedItems = missingQuery.data.items.filter(item => selectedMovies.has(item.id));
     if (selectedItems.length > 0) {
       onBulkSearch(selectedItems);
@@ -206,26 +235,41 @@ export function MovieMissingTab({ onSearchMovie, onBulkSearch }: MovieMissingTab
       <QueryPanel
         isLoading={missingQuery.isPending}
         isError={missingQuery.isError}
-        isEmpty={missingQuery.data.items.length === 0}
-        errorMessage={missingQuery.error?.message ?? undefined}
+        isEmpty={missingQuery.isResolvedEmpty}
+        errorMessage={missingQuery.error instanceof Error ? missingQuery.error.message : undefined}
         onRetry={() => void missingQuery.refetch()}
         emptyTitle="No missing movies"
         emptyBody="All monitored movies have been downloaded."
       >
-        <DataTable
-          data={missingQuery.data.items}
-          columns={columns}
-          getRowId={row => row.id}
-          pagination={{
-            page,
-            totalPages: missingQuery.data.meta.totalPages,
-            onPrev: () => setPage(current => Math.max(1, current - 1)),
-            onNext: () => setPage(current => Math.min(missingQuery.data.meta.totalPages, current + 1)),
-          }}
-          sort={{ key: sortBy, direction: sortDir }}
-          onSort={handleSort}
-        />
+        {missingQuery.data && (
+          <DataTable
+            data={missingQuery.data.items}
+            columns={columns}
+            getRowId={row => row.id}
+            pagination={{
+              page,
+              totalPages: missingQuery.data.meta.totalPages,
+              onPrev: () => setPage(current => Math.max(1, current - 1)),
+              onNext: () => setPage(current => Math.min(missingQuery.data.meta.totalPages, current + 1)),
+            }}
+            sort={{ key: sortBy, direction: sortDir }}
+            onSort={handleSort}
+          />
+        )}
       </QueryPanel>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={movieToDelete !== null}
+        title="Delete Movie"
+        description={movieToDelete ? (
+          <>Are you sure you want to delete <strong>{movieToDelete.title} ({movieToDelete.year})</strong>? This action cannot be undone.</>
+        ) : undefined}
+        onCancel={cancelDeleteMovie}
+        onConfirm={confirmDeleteMovie}
+        confirmLabel={deleteMovieMutation.isPending ? 'Deleting...' : 'Delete'}
+        isConfirming={deleteMovieMutation.isPending}
+      />
     </section>
   );
 }

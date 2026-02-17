@@ -428,7 +428,7 @@ describe('indexers page', () => {
     await screen.findByText('Any Indexer');
 
     fireEvent.click(screen.getByRole('button', { name: 'Add' }));
-    expect(screen.getByRole('dialog', { name: 'Add indexer' })).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: 'Add Indexer' })).toBeInTheDocument();
     // First preset (IPTorrents) uses Base URL
     expect(screen.getByLabelText('Base URL')).toBeInTheDocument();
 

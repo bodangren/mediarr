@@ -5,6 +5,7 @@ import { SettingsForm } from './settings-form';
 
 const SETTINGS_LINKS = [
   { href: '/settings/indexers', label: 'Indexers' },
+  { href: '/settings/downloadclients', label: 'Download Clients' },
   { href: '/settings/general', label: 'General' },
   { href: '/settings/ui', label: 'UI' },
 ] as const;

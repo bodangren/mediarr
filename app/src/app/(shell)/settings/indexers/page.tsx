@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/primitives/Button';
 import { Alert } from '@/components/primitives/Alert';
+import { useLocalStorage } from '@/lib/hooks';
 
 interface IndexerProxy {
   id: number;
@@ -24,8 +25,6 @@ interface IndexerCategory {
   maxSize?: number;
 }
 
-// Placeholder local UI state for proxies
-const DEFAULT_PROXIES: IndexerProxy[] = [];
 const DEFAULT_CATEGORIES: IndexerCategory[] = [
   { id: 1, name: 'Movies (HD)', description: 'High definition movies', minSize: 10737418240, maxSize: 53687091200 },
   { id: 2, name: 'Movies (SD)', description: 'Standard definition movies', minSize: 734003200, maxSize: 10737418240 },
@@ -52,8 +51,8 @@ function formatBytes(bytes?: number): string {
 }
 
 export default function SettingsIndexersPage() {
-  const [proxies, setProxies] = useState<IndexerProxy[]>(DEFAULT_PROXIES);
-  const [categories, setCategories] = useState<IndexerCategory[]>(DEFAULT_CATEGORIES);
+  const [proxies, setProxies] = useLocalStorage<IndexerProxy[]>('mediarr:indexer-proxies', []);
+  const [categories, setCategories] = useLocalStorage<IndexerCategory[]>('mediarr:indexer-categories', DEFAULT_CATEGORIES);
   const [isAddProxyOpen, setIsAddProxyOpen] = useState(false);
   const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
 
@@ -157,6 +156,9 @@ export default function SettingsIndexersPage() {
 
       {/* Indexer Proxies Configuration */}
       <section className="space-y-3 rounded-md border border-border-subtle bg-surface-1 p-4">
+        <Alert variant="info">
+          <p className="text-sm">Proxy configuration is stored locally in this browser.</p>
+        </Alert>
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-text-secondary">Indexer Proxies</h2>
           <Button variant="secondary" onClick={handleOpenAddProxy}>
@@ -269,6 +271,9 @@ export default function SettingsIndexersPage() {
 
       {/* Indexer Categories */}
       <section className="space-y-3 rounded-md border border-border-subtle bg-surface-1 p-4">
+        <Alert variant="info">
+          <p className="text-sm">Category configuration is stored locally in this browser.</p>
+        </Alert>
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-text-secondary">Indexer Categories</h2>
           <Button variant="secondary" onClick={handleOpenAddCategory}>

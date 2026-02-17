@@ -14,6 +14,7 @@ interface ImportSeriesTableProps {
   onManualMatch: (series: DetectedSeries) => void;
   onImport: (series: DetectedSeries) => void;
   onBulkImport: (seriesIds: number[]) => void;
+  backendSupported: boolean | null;
 }
 
 function TableHeader() {
@@ -38,6 +39,7 @@ function ImportSeriesTableContent({
   onManualMatch,
   onImport,
   onBulkImport,
+  backendSupported,
 }: ImportSeriesTableProps) {
   const { selectedIds, isSelected, toggleRow, clearSelection } = useSelectContext();
 
@@ -70,6 +72,7 @@ function ImportSeriesTableContent({
               onSelect={toggleRow}
               onManualMatch={onManualMatch}
               onImport={onImport}
+              backendSupported={backendSupported}
             />
           ))}
         </tbody>
@@ -91,7 +94,8 @@ function ImportSeriesTableContent({
                 onBulkImport(selectedIds as number[]);
                 clearSelection();
               }}
-              disabled={selectedIds.length === 0}
+              disabled={selectedIds.length === 0 || backendSupported === false}
+              title={backendSupported === false ? 'Import requires backend support' : undefined}
             >
               Import Selected
             </Button>

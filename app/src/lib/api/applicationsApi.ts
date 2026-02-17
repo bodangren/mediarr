@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { ApiHttpClient } from './httpClient';
 import { routeMap } from './routeMap';
+import { testResultSchema, TestResult } from './shared-schemas';
 
 const applicationSchema = z.object({
   id: z.number(),
@@ -11,15 +12,6 @@ const applicationSchema = z.object({
   syncEnabled: z.boolean(),
 });
 
-const testResultSchema = z.object({
-  success: z.boolean(),
-  message: z.string(),
-  diagnostics: z.object({
-    remediationHints: z.array(z.string()),
-  }).optional(),
-  healthSnapshot: z.unknown().nullable().optional(),
-});
-
 const syncResultSchema = z.object({
   success: z.boolean(),
   message: z.string(),
@@ -27,7 +19,7 @@ const syncResultSchema = z.object({
 });
 
 export type ApplicationItem = z.infer<typeof applicationSchema>;
-export type ApplicationTestResult = z.infer<typeof testResultSchema>;
+export type ApplicationTestResult = TestResult;
 export type ApplicationSyncResult = z.infer<typeof syncResultSchema>;
 
 export interface CreateApplicationInput {

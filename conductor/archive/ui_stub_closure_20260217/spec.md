@@ -4,13 +4,13 @@
 **Date:** 2026-02-17
 **Status:** New
 **Priority:** High
-**Origin:** Post-archive audit of `prowlarr_ui_cloning_20260214`, `sonarr_ui_cloning_20260214`, `radarr_ui_cloning_20260214`, and cross-codebase sweep
+**Origin:** Post-archive audit of `prowlarr_ui_cloning_20260214`, `sonarr_ui_cloning_20260214`, `radarr_ui_cloning_20260214`, `bazarr_ui_cloning_20260214`, and cross-codebase sweep
 
 ---
 
 ## Overview
 
-Audits of the archived prowlarr and sonarr UI cloning tracks, the radarr UI cloning track, plus a broader mediarr frontend sweep, revealed several categories of incomplete or duplicated work that need to be resolved before the UI can be considered production-ready. This track addresses **stubs, mock data in production code, unwired UI handlers, dangling code, and duplicated patterns**.
+Audits of the archived prowlarr, sonarr, radarr, and bazarr UI cloning tracks plus a broader mediarr frontend sweep revealed several categories of incomplete or duplicated work that need to be resolved before the UI can be considered production-ready. This track addresses **stubs, mock data in production code, unwired UI handlers, dangling code, and duplicated patterns**.
 
 This is a cleanup/closure track -- it does not add new features. Every task removes tech debt or replaces fake implementations with real ones.
 
@@ -104,6 +104,26 @@ Additional unwired handlers discovered in the sonarr track audit:
 **Acceptance criteria:**
 - Same as FR-2: zero TODO comments in onClick handlers; every button performs a real action or is disabled with a tooltip.
 
+### FR-2c: Close Bazarr-origin Action Stubs and Wrong Wiring
+
+Additional Bazarr-origin gaps discovered after archive include handlers that still show "coming soon" toasts, wrong parameter wiring, and wrong endpoint mapping.
+
+| File | Handler / Logic | What's Missing |
+|------|------------------|----------------|
+| `app/src/app/(shell)/subtitles/series/[id]/page.tsx` | Episode Upload button (~line 234) | Still shows "Subtitle upload feature coming soon" toast instead of opening a real upload flow. |
+| `app/src/components/subtitles/SubtitleUpload.tsx` | `handleUpload()` (~line 133) | Uses simulated progress with `setTimeout`; no API upload call. |
+| `app/src/app/(shell)/subtitles/movies/[id]/page.tsx` | `handleDeleteTrack()` (~line 175) | Still shows "This feature is coming soon"; no delete API call. |
+| `app/src/app/(shell)/subtitles/movies/[id]/page.tsx` | `ManualSearchModal` usage (~line 300) | Passes `episodeId={movieId}` with comment "for now"; wrong context for movie manual search. |
+| `app/src/lib/api/subtitleApi.ts` | `syncMovie()`, `scanMovieDisk()`, `searchMovieSubtitles()` | Movie methods call `routeMap.subtitleSeries*` endpoints; movie actions are wired to series routes. |
+| `app/src/app/(shell)/subtitles/movies/edit/page.tsx` | Bulk apply mutation (~line 53) | Still mock-only ("In a real implementation..."), no real API call. |
+
+**Acceptance criteria:**
+- No Bazarr subtitle action path shows "coming soon" when a user clicks a primary workflow action.
+- Upload and delete actions call real API clients where endpoints exist; if backend endpoints are missing, controls are explicitly disabled with explanatory tooltip text (no fake success).
+- Movie manual search uses movie context (not `episodeId` workaround).
+- Movie subtitle actions do not call series endpoints.
+- Mass edit applies real updates or is explicitly disabled with clear messaging.
+
 ### FR-3: Wire Notifications Toggle to Backend
 
 **File:** `app/src/app/(shell)/settings/connect/page.tsx`, line 76
@@ -124,6 +144,19 @@ The `handleToggleEnabled` function currently does an optimistic React Query cach
 **Acceptance criteria:**
 - No "coming soon" text in any settings page.
 - Proxy/category data either persists to the backend or is explicitly documented as browser-local with appropriate UX (e.g., a warning that data won't sync across devices).
+
+### FR-4c: Replace Bazarr Subtitle Settings and List Placeholders
+
+| Location | Issue | Required Fix |
+|----------|-------|-------------|
+| `app/src/app/(shell)/settings/subtitles/page.tsx` | Query and mutation are stubbed with inline comments and default values ("when backend is ready", "for now, return default values") | Wire to a real subtitle settings API client if endpoint exists, or persist via localStorage with an explicit browser-local notice. |
+| Same file | Default language profile select options are hardcoded (`English`, `Spanish`, `French`) | Populate from `languageProfilesApi.listProfiles()` instead of hardcoded options. |
+| `app/src/app/(shell)/subtitles/movies/page.tsx` and `app/src/app/(shell)/subtitles/movies/[id]/page.tsx` | Hardcoded placeholder subtitle metadata (`languageProfile: 'Default'`, fallback audio languages, static language profile badge) | Replace with data from real API payloads, or render explicit "Unavailable" state without fake defaults. |
+
+**Acceptance criteria:**
+- No "backend is ready"/"for now" stub comments remain in subtitle settings page logic.
+- Settings save flow writes to a real persistence path (backend or explicit local browser storage).
+- Subtitle list/detail pages do not present fabricated defaults as real metadata.
 
 ### FR-4b: Remove Debug Logging from Production Code
 
@@ -185,6 +218,18 @@ All three define an identical `testResultSchema` with `z.object({ success, messa
 **Duplicated in:** `AddIndexerModal`, `AddDownloadClientModal`, `AddNotificationModal`, `AddProfileModal` -- all follow the same preset-selection → configure-fields → test-connection → save flow.
 
 **Required:** Extract the shared modal skeleton into `app/src/components/settings/AddConfigurableItemModal.tsx` with slots for preset rendering and field rendering. Refactor at least `AddIndexerModal` and `AddDownloadClientModal` to use it. The remaining modals can be migrated in follow-up work.
+
+#### FR-6e: Shared Subtitle History/Blacklist View Helpers
+
+**Duplicated in:**
+- `app/src/app/(shell)/subtitles/history/series/page.tsx`
+- `app/src/app/(shell)/subtitles/history/movies/page.tsx`
+- `app/src/app/(shell)/subtitles/blacklist/series/page.tsx`
+- `app/src/app/(shell)/subtitles/blacklist/movies/page.tsx`
+
+These pages duplicate the same relative-time formatter and very similar pagination state handling.
+
+**Required:** Extract shared helpers (e.g., `formatRelativeTime`, subtitle table pagination state helpers) into `app/src/lib/subtitles/` and use them across these views.
 
 ---
 

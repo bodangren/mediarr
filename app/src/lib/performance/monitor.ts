@@ -17,7 +17,7 @@ export interface PerformanceStatistics {
 class PerformanceMonitor {
   private metrics: Map<string, PerformanceMetric[]> = new Map();
   private activeMeasurements: Map<string, number> = new Map();
-  private isDevelopment = true; // Default to true for testing
+  private isDevelopment = process.env.NODE_ENV === 'development';
 
   setDevelopmentMode(isDev: boolean): void {
     this.isDevelopment = isDev;
@@ -35,7 +35,9 @@ class PerformanceMonitor {
 
     const startTime = this.activeMeasurements.get(metricName);
     if (startTime === undefined) {
-      console.warn(`Performance measurement for "${metricName}" was not started`);
+      if (this.isDevelopment) {
+        console.warn(`Performance measurement for "${metricName}" was not started`);
+      }
       return undefined;
     }
 
@@ -60,7 +62,7 @@ class PerformanceMonitor {
     this.activeMeasurements.delete(metricName);
 
     // Log if requested
-    if (log) {
+    if (log && this.isDevelopment) {
       console.log(`[Performance] ${metricName}: ${duration.toFixed(2)}ms`);
     }
 

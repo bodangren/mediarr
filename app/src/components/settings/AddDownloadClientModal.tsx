@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useState, type FormEvent } from 'react';
-import { Button } from '@/components/primitives/Button';
-import { CheckInput, Form, FormGroup, TextInput } from '@/components/primitives/Form';
-import { Modal, ModalBody, ModalFooter, ModalHeader } from '@/components/primitives/Modal';
+import { useEffect, useState } from 'react';
+import { CheckInput, FormGroup, TextInput } from '@/components/primitives/Form';
 import { NumberInput } from '@/components/primitives/SpecialInputs';
+import { ConfigurableItemModal } from '@/components/settings/ConfigurableItemModal';
+import type { TestConnectionResult } from '@/components/settings/ConfigurableItemModal';
 import type { DownloadClientDraft, DownloadClientType } from '@/types/downloadClient';
 
 export interface DownloadClientPreset {
@@ -24,7 +24,7 @@ export interface AddDownloadClientProps {
   isSubmitting?: boolean;
   onClose: () => void;
   onCreate: (draft: DownloadClientDraft) => void | Promise<void>;
-  onTestConnection: (draft: DownloadClientDraft) => Promise<{ success: boolean; message: string; hints: string[] }>;
+  onTestConnection: (draft: DownloadClientDraft) => Promise<TestConnectionResult>;
 }
 
 const DEFAULT_PRESETS: DownloadClientPreset[] = [
@@ -108,7 +108,7 @@ export function AddDownloadClientModal({
   const [priority, setPriority] = useState(1);
   const [enabled, setEnabled] = useState(true);
   const [validationError, setValidationError] = useState<string | null>(null);
-  const [testResult, setTestResult] = useState<{ success: boolean; message: string; hints: string[] } | null>(null);
+  const [testResult, setTestResult] = useState<TestConnectionResult | null>(null);
   const [isTesting, setIsTesting] = useState(false);
 
   const selectedPreset = presets.find(p => p.id === selectedPresetId) ?? presets[0];
@@ -176,23 +176,6 @@ export function AddDownloadClientModal({
 
     setValidationError(null);
 
-    const settings: Record<string, unknown> = {
-      host: host.trim(),
-      port: portNumber,
-    };
-
-    if (username.trim()) {
-      settings.username = username.trim();
-    }
-
-    if (password.trim()) {
-      settings.password = password.trim();
-    }
-
-    if (category.trim()) {
-      settings.category = category.trim();
-    }
-
     return {
       name: name.trim(),
       implementation: selectedPreset.implementation,
@@ -208,8 +191,7 @@ export function AddDownloadClientModal({
     };
   };
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const handleSubmit = async () => {
     const draft = buildDraft();
     if (!draft) {
       return;
@@ -233,141 +215,136 @@ export function AddDownloadClientModal({
     }
   };
 
-  return (
-    <Modal isOpen={isOpen} ariaLabel="Add download client" onClose={onClose} maxWidthClassName="max-w-2xl">
-      <ModalHeader title="Add Download Client" onClose={onClose} />
-      <ModalBody>
-        <Form onSubmit={handleSubmit}>
-          <section className="space-y-2">
-            <h3 className="text-sm font-medium text-text-primary">Client Type</h3>
-            <div className="grid gap-2 sm:grid-cols-2">
-              {presets.map(preset => {
-                const selected = preset.id === selectedPresetId;
-                return (
-                  <button
-                    key={preset.id}
-                    type="button"
-                    onClick={() => setSelectedPresetId(preset.id)}
-                    className={`rounded-sm border px-3 py-2 text-left text-sm ${
-                      selected
-                        ? 'border-accent-primary bg-accent-primary/10 text-text-primary'
-                        : 'border-border-subtle text-text-secondary'
-                    }`}
-                    aria-pressed={selected}
-                  >
-                    <p className="font-medium">{preset.name}</p>
-                    <p className="text-xs">{preset.description}</p>
-                  </button>
-                );
-              })}
-            </div>
-          </section>
+  const renderDownloadClientPresetGrid = (
+    clientPresets: DownloadClientPreset[],
+    selectedId: string | undefined,
+    onSelect: (id: string) => void,
+  ) => (
+    <>
+      <h3 className="text-sm font-medium text-text-primary">Client Type</h3>
+      <div className="grid gap-2 sm:grid-cols-2">
+        {clientPresets.map(preset => {
+          const selected = preset.id === selectedId;
+          return (
+            <button
+              key={preset.id}
+              type="button"
+              onClick={() => onSelect(preset.id)}
+              className={`rounded-sm border px-3 py-2 text-left text-sm ${
+                selected
+                  ? 'border-accent-primary bg-accent-primary/10 text-text-primary'
+                  : 'border-border-subtle text-text-secondary'
+              }`}
+              aria-pressed={selected}
+            >
+              <p className="font-medium">{preset.name}</p>
+              <p className="text-xs">{preset.description}</p>
+            </button>
+          );
+        })}
+      </div>
+    </>
+  );
 
-          <FormGroup label="Name" htmlFor="add-download-client-name">
-            <TextInput id="add-download-client-name" ariaLabel="Name" value={name} onChange={setName} />
-          </FormGroup>
+  const renderDownloadClientFields = (
+    preset: DownloadClientPreset | undefined,
+    _values: unknown,
+    _onChange: (field: string, value: unknown) => void,
+  ) => (
+    <>
+      <FormGroup label="Name" htmlFor="add-download-client-name">
+        <TextInput id="add-download-client-name" ariaLabel="Name" value={name} onChange={setName} />
+      </FormGroup>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <FormGroup label="Host" htmlFor="add-download-client-host">
-              <TextInput
-                id="add-download-client-host"
-                ariaLabel="Host"
-                placeholder="e.g., localhost or 192.168.1.1"
-                value={host}
-                onChange={setHost}
-              />
-            </FormGroup>
-            <FormGroup label="Port" htmlFor="add-download-client-port">
-              <NumberInput
-                id="add-download-client-port"
-                value={Number.parseInt(port, 10) || selectedPreset?.defaultPort || 9091}
-                min={1}
-                max={65535}
-                onChange={value => setPort(String(value))}
-              />
-            </FormGroup>
-          </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <FormGroup label="Host" htmlFor="add-download-client-host">
+          <TextInput
+            id="add-download-client-host"
+            ariaLabel="Host"
+            placeholder="e.g., localhost or 192.168.1.1"
+            value={host}
+            onChange={setHost}
+          />
+        </FormGroup>
+        <FormGroup label="Port" htmlFor="add-download-client-port">
+          <NumberInput
+            id="add-download-client-port"
+            value={Number.parseInt(port, 10) || selectedPreset?.defaultPort || 9091}
+            min={1}
+            max={65535}
+            onChange={value => setPort(String(value))}
+          />
+        </FormGroup>
+      </div>
 
-          {(selectedPreset?.requiresAuth ?? false) ? (
-            <div className="grid gap-3 sm:grid-cols-2">
-              <FormGroup label="Username" htmlFor="add-download-client-username">
-                <TextInput
-                  id="add-download-client-username"
-                  ariaLabel="Username"
-                  value={username}
-                  onChange={setUsername}
-                />
-              </FormGroup>
-              <FormGroup label="Password" htmlFor="add-download-client-password">
-                <TextInput
-                  id="add-download-client-password"
-                  ariaLabel="Password"
-                  type="password"
-                  value={password}
-                  onChange={setPassword}
-                />
-              </FormGroup>
-            </div>
-          ) : null}
-
-          <FormGroup label="Category (Optional)" htmlFor="add-download-client-category" hint="Default category for downloads">
+      {(preset?.requiresAuth ?? false) ? (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <FormGroup label="Username" htmlFor="add-download-client-username">
             <TextInput
-              id="add-download-client-category"
-              ariaLabel="Category"
-              placeholder="e.g., movies, tv, anime"
-              value={category}
-              onChange={setCategory}
+              id="add-download-client-username"
+              ariaLabel="Username"
+              value={username}
+              onChange={setUsername}
             />
           </FormGroup>
+          <FormGroup label="Password" htmlFor="add-download-client-password">
+            <TextInput
+              id="add-download-client-password"
+              ariaLabel="Password"
+              type="password"
+              value={password}
+              onChange={setPassword}
+            />
+          </FormGroup>
+        </div>
+      ) : null}
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <FormGroup label="Priority" htmlFor="add-download-client-priority">
-              <NumberInput
-                id="add-download-client-priority"
-                value={priority}
-                min={1}
-                max={50}
-                onChange={setPriority}
-              />
-            </FormGroup>
-            <div className="flex items-center gap-2 pt-6">
-              <CheckInput id="add-download-client-enabled" label="Enabled" checked={enabled} onChange={setEnabled} />
-            </div>
-          </div>
+      <FormGroup label="Category (Optional)" htmlFor="add-download-client-category" hint="Default category for downloads">
+        <TextInput
+          id="add-download-client-category"
+          ariaLabel="Category"
+          placeholder="e.g., movies, tv, anime"
+          value={category}
+          onChange={setCategory}
+        />
+      </FormGroup>
 
-          {validationError ? (
-            <p role="alert" className="text-sm text-status-error">
-              {validationError}
-            </p>
-          ) : null}
+      <div className="grid gap-3 sm:grid-cols-2">
+        <FormGroup label="Priority" htmlFor="add-download-client-priority">
+          <NumberInput
+            id="add-download-client-priority"
+            value={priority}
+            min={1}
+            max={50}
+            onChange={setPriority}
+          />
+        </FormGroup>
+        <div className="flex items-center gap-2 pt-6">
+          <CheckInput id="add-download-client-enabled" label="Enabled" checked={enabled} onChange={setEnabled} />
+        </div>
+      </div>
+    </>
+  );
 
-          {testResult ? (
-            <section className="rounded-sm border border-border-subtle bg-surface-0 p-3 text-sm">
-              <p className={testResult.success ? 'text-status-success' : 'text-status-error'}>{testResult.message}</p>
-              {testResult.hints.length > 0 ? (
-                <ul className="list-disc pl-4 text-text-secondary">
-                  {testResult.hints.map((hint, index) => (
-                    <li key={index}>{hint}</li>
-                  ))}
-                </ul>
-              ) : null}
-            </section>
-          ) : null}
-        </Form>
-      </ModalBody>
-      <ModalFooter>
-        <Button variant="secondary" onClick={onClose} disabled={isSubmitting || isTesting}>
-          Cancel
-        </Button>
-        <Button variant="secondary" onClick={handleTestConnection} disabled={isSubmitting || isTesting}>
-          {isTesting ? 'Testing...' : 'Test Connection'}
-        </Button>
-        <form onSubmit={handleSubmit}>
-          <Button variant="primary" type="submit" disabled={isSubmitting || isTesting}>
-            Add Client
-          </Button>
-        </form>
-      </ModalFooter>
-    </Modal>
+  return (
+    <ConfigurableItemModal<DownloadClientPreset, unknown>
+      isOpen={isOpen}
+      title="Add Download Client"
+      presets={presets}
+      selectedPresetId={selectedPresetId}
+      fieldValues={{}}
+      isSubmitting={isSubmitting}
+      isTesting={isTesting}
+      testResult={testResult}
+      error={validationError}
+      saveButtonText="Add Client"
+      onClose={onClose}
+      onSelectPreset={presetId => setSelectedPresetId(presetId as DownloadClientType)}
+      onFieldChange={() => {}}
+      onTestConnection={handleTestConnection}
+      onSave={handleSubmit}
+      renderPresetGrid={renderDownloadClientPresetGrid}
+      renderFields={renderDownloadClientFields}
+    />
   );
 }

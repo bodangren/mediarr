@@ -10,6 +10,7 @@ import { QueryPanel } from '@/components/primitives/QueryPanel';
 import { SelectFooter } from '@/components/primitives/SelectFooter';
 import { SelectProvider, useSelectContext } from '@/components/primitives/SelectProvider';
 import { getApiClients } from '@/lib/api/client';
+import type { ReleaseCandidate, SearchParams } from '@/lib/api';
 import { queryKeys } from '@/lib/query/queryKeys';
 import { useApiQuery } from '@/lib/query/useApiQuery';
 
@@ -25,30 +26,25 @@ interface IndexerRow {
 
 interface ReleaseRow {
   indexer: string;
+  indexerId: number;
+  guid?: string;
   title: string;
   size: number;
   seeders: number;
+  leechers?: number;
   indexerFlags?: string;
   quality?: string;
   age?: number;
+  publishDate?: string;
+  categories?: number[];
+  protocol?: 'torrent' | 'usenet';
   magnetUrl?: string;
   downloadUrl?: string;
+  infoHash?: string;
 }
 
 interface ReleaseViewRow extends ReleaseRow {
   rowId: string;
-}
-
-interface SearchPayload extends Record<string, unknown> {
-  query: string;
-  searchType: SearchType;
-  category?: string;
-  indexerId?: number;
-  limit: number;
-  offset: number;
-  season?: number;
-  episode?: number;
-  year?: number;
 }
 
 interface FormState {
@@ -66,6 +62,13 @@ interface FormState {
 interface ActionNotice {
   tone: 'success' | 'error';
   message: string;
+}
+
+interface PaginationMeta {
+  page: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
 }
 
 function SelectionCheckbox({ rowId }: { rowId: string }) {
@@ -98,6 +101,10 @@ function parseRequiredNumber(value: string, fallback: number): number {
 }
 
 function inferProtocol(row: ReleaseRow): string {
+  if (row.protocol) {
+    return row.protocol;
+  }
+
   if (row.magnetUrl) {
     return 'torrent';
   }
@@ -127,9 +134,11 @@ function parseIndexerFlags(flags?: string): string[] {
 function buildReleaseRowId(row: ReleaseRow): string {
   return [
     row.indexer,
+    row.indexerId,
     row.title,
     row.size,
     row.seeders,
+    row.guid ?? '',
     row.magnetUrl ?? '',
     row.downloadUrl ?? '',
   ].join('|');
@@ -138,14 +147,21 @@ function buildReleaseRowId(row: ReleaseRow): string {
 function toReleasePayload(row: ReleaseRow): ReleaseRow {
   return {
     indexer: row.indexer,
+    indexerId: row.indexerId,
+    guid: row.guid,
     title: row.title,
     size: row.size,
     seeders: row.seeders,
+    leechers: row.leechers,
     indexerFlags: row.indexerFlags,
     quality: row.quality,
     age: row.age,
+    publishDate: row.publishDate,
+    categories: row.categories,
+    protocol: row.protocol,
     magnetUrl: row.magnetUrl,
     downloadUrl: row.downloadUrl,
+    infoHash: row.infoHash,
   };
 }
 
@@ -156,7 +172,7 @@ function customFilterValue(row: ReleaseViewRow, field: string): string | number 
     case 'indexer':
       return row.indexer;
     case 'protocol':
-      return inferProtocol(row);
+      return row.protocol ?? inferProtocol(row);
     case 'seeders':
       return row.seeders;
     case 'size':
@@ -195,21 +211,31 @@ function matchesCustomFilters(row: ReleaseViewRow, filter: FilterBuilderResult |
   return filter.operator === 'and' ? checks.every(Boolean) : checks.some(Boolean);
 }
 
-function buildPayload(form: FormState): SearchPayload {
-  const payload: SearchPayload = {
-    query: form.query.trim(),
-    searchType: form.searchType,
-    limit: parseRequiredNumber(form.limit, 100),
-    offset: parseRequiredNumber(form.offset, 0),
-  };
+function buildPayload(
+  form: FormState,
+  pagination: { page: number; pageSize: number },
+  sortBy: string,
+  sortDir: 'asc' | 'desc',
+): SearchParams {
+  const payload: SearchParams = {};
 
-  if (form.category.trim().length > 0) {
-    payload.category = form.category.trim();
+  if (form.query.trim().length > 0) {
+    payload.query = form.query.trim();
   }
 
-  const indexerId = parseOptionalNumber(form.indexerId);
-  if (indexerId !== undefined) {
-    payload.indexerId = indexerId;
+  if (form.searchType !== 'search') {
+    payload.type = form.searchType as SearchParams['type'];
+  }
+
+  if (form.category.trim().length > 0) {
+    const categoryNums = form.category.split(',')
+      .map(s => s.trim())
+      .filter(Boolean)
+      .map(s => Number.parseInt(s, 10))
+      .filter(n => Number.isFinite(n));
+    if (categoryNums.length > 0) {
+      payload.categories = categoryNums;
+    }
   }
 
   const season = parseOptionalNumber(form.season);
@@ -227,13 +253,18 @@ function buildPayload(form: FormState): SearchPayload {
     payload.year = year;
   }
 
+  payload.page = pagination.page;
+  payload.pageSize = pagination.pageSize;
+  payload.sortBy = sortBy;
+  payload.sortDir = sortDir;
+
   return payload;
 }
 
 export default function SearchPage() {
   const api = useMemo(() => getApiClients(), []);
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [submittedPayload, setSubmittedPayload] = useState<SearchPayload | null>(null);
+  const [submittedParams, setSubmittedParams] = useState<SearchParams | null>(null);
   const [actionNotice, setActionNotice] = useState<ActionNotice | null>(null);
   const [overrideTarget, setOverrideTarget] = useState<ReleaseViewRow | null>(null);
   const [overrideTitle, setOverrideTitle] = useState('');
@@ -243,6 +274,9 @@ export default function SearchPage() {
   const [minSeedersFilter, setMinSeedersFilter] = useState('');
   const [showCustomFilters, setShowCustomFilters] = useState(false);
   const [customFilter, setCustomFilter] = useState<FilterBuilderResult | null>(null);
+  const [pagination, setPagination] = useState({ page: 1, pageSize: 100 });
+  const [sortBy, setSortBy] = useState('seeders');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [form, setForm] = useState<FormState>({
     query: '',
     searchType: 'search',
@@ -263,20 +297,26 @@ export default function SearchPage() {
   });
 
   const releasesQuery = useApiQuery({
-    queryKey: queryKeys.releaseCandidates(submittedPayload ?? { idle: true }),
-    queryFn: () => api.releaseApi.searchCandidates(submittedPayload ?? {}),
-    enabled: Boolean(submittedPayload),
+    queryKey: queryKeys.releaseCandidates(submittedParams ?? { idle: true }),
+    queryFn: () => api.releaseApi.searchCandidates(submittedParams || { query: '' }),
+    enabled: Boolean(submittedParams),
     staleTimeKind: 'list',
-    isEmpty: rows => rows.length === 0,
+    isEmpty: result => result?.items.length === 0 || false,
   });
 
   const grabMutation = useMutation({
-    mutationFn: (candidate: ReleaseRow) => api.releaseApi.grabRelease(candidate),
+    mutationFn: async (candidate: ReleaseViewRow) => {
+      const guid = candidate.guid ?? candidate.infoHash;
+      if (!guid) {
+        throw new Error('Release GUID is required');
+      }
+      return api.releaseApi.grabRelease(guid, candidate.indexerId);
+    },
   });
 
   const releaseRows = useMemo<ReleaseViewRow[]>(
     () =>
-      (releasesQuery.data ?? []).map(row => {
+      (releasesQuery.data?.items ?? []).map((row) => {
         const rowId = buildReleaseRowId(row);
         const titleOverride = overridesByRowId[rowId];
 
@@ -328,7 +368,7 @@ export default function SearchPage() {
     {
       key: 'protocol',
       header: 'Protocol',
-      render: row => inferProtocol(row),
+      render: row => row.protocol ?? inferProtocol(row),
     },
     {
       key: 'age',
@@ -344,6 +384,16 @@ export default function SearchPage() {
       key: 'indexer',
       header: 'Indexer',
       render: row => row.indexer,
+    },
+    {
+      key: 'category',
+      header: 'Category',
+      render: row => {
+        if (!row.categories || row.categories.length === 0) {
+          return '-';
+        }
+        return row.categories.join(', ');
+      },
     },
     {
       key: 'flags',
@@ -371,14 +421,17 @@ export default function SearchPage() {
     },
     {
       key: 'seeders',
-      header: 'Seeders',
-      render: row => row.seeders,
+      header: 'Seeders/Peers',
+      render: row => {
+        const leechers = row.leechers ?? 0;
+        return `${row.seeders}/${leechers}`;
+      },
     },
   ];
 
   const handleGrab = async (candidate: ReleaseViewRow) => {
     try {
-      await grabMutation.mutateAsync(toReleasePayload(candidate));
+      await grabMutation.mutateAsync(candidate);
       setActionNotice({
         tone: 'success',
         message: `Grabbed ${candidate.title}`,
@@ -405,7 +458,7 @@ export default function SearchPage() {
       return;
     }
 
-    const results = await Promise.allSettled(candidates.map(candidate => grabMutation.mutateAsync(toReleasePayload(candidate))));
+    const results = await Promise.allSettled(candidates.map(candidate => grabMutation.mutateAsync(candidate)));
     const successCount = results.filter(result => result.status === 'fulfilled').length;
     const failureCount = results.length - successCount;
 
@@ -425,8 +478,8 @@ export default function SearchPage() {
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const payload = buildPayload(form);
-    setSubmittedPayload(payload);
+    const params = buildPayload(form, pagination, sortBy, sortDir);
+    setSubmittedParams(params);
   };
 
   return (
@@ -631,7 +684,7 @@ export default function SearchPage() {
         ) : null}
       </form>
 
-      {submittedPayload ? (
+      {submittedParams ? (
         <QueryPanel
           isLoading={releasesQuery.isPending}
           isError={releasesQuery.isError}
@@ -658,6 +711,40 @@ export default function SearchPage() {
             ) : null}
 
             <section className="space-y-3 rounded-md border border-border-subtle bg-surface-1 p-3">
+              <div className="flex flex-wrap items-center gap-4">
+                <label className="grid gap-1 text-xs">
+                  <span>Sort by</span>
+                  <select
+                    aria-label="Sort by"
+                    className="rounded-sm border border-border-subtle bg-surface-0 px-2 py-1 text-xs"
+                    value={sortBy}
+                    onChange={event => {
+                      setSortBy(event.currentTarget.value);
+                    }}
+                  >
+                    <option value="seeders">Seeders</option>
+                    <option value="size">Size</option>
+                    <option value="age">Age</option>
+                    <option value="title">Title</option>
+                  </select>
+                </label>
+
+                <label className="grid gap-1 text-xs">
+                  <span>Sort order</span>
+                  <select
+                    aria-label="Sort order"
+                    className="rounded-sm border border-border-subtle bg-surface-0 px-2 py-1 text-xs"
+                    value={sortDir}
+                    onChange={event => {
+                      setSortDir(event.currentTarget.value as 'asc' | 'desc');
+                    }}
+                  >
+                    <option value="desc">Descending</option>
+                    <option value="asc">Ascending</option>
+                  </select>
+                </label>
+              </div>
+
               <div className="grid gap-3 md:grid-cols-3">
                 <label className="grid gap-1 text-xs">
                   <span>Protocol filter</span>
@@ -810,6 +897,45 @@ export default function SearchPage() {
                 ]}
               />
             </SelectProvider>
+
+            {/* Pagination Controls */}
+            {releasesQuery.data && releasesQuery.data.meta.totalCount > 0 && (
+              <div className="flex items-center justify-between rounded-md border border-border-subtle bg-surface-1 px-4 py-2">
+                <div className="text-sm text-text-secondary">
+                  Showing {Math.min((pagination.page - 1) * pagination.pageSize + 1, releasesQuery.data.meta.totalCount)} to{' '}
+                  {Math.min(pagination.page * pagination.pageSize, releasesQuery.data.meta.totalCount)} of{' '}
+                  {releasesQuery.data.meta.totalCount} results
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    className="rounded-sm border border-border-subtle px-3 py-1 text-sm disabled:opacity-50"
+                    disabled={pagination.page <= 1 || releasesQuery.isPending}
+                    onClick={() => {
+                      setPagination(current => ({ ...current, page: current.page - 1 }));
+                    }}
+                  >
+                    Previous
+                  </button>
+                  <span className="text-sm">
+                    Page {pagination.page} of {Math.ceil(releasesQuery.data.meta.totalCount / pagination.pageSize)}
+                  </span>
+                  <button
+                    type="button"
+                    className="rounded-sm border border-border-subtle px-3 py-1 text-sm disabled:opacity-50"
+                    disabled={
+                      pagination.page * pagination.pageSize >= releasesQuery.data.meta.totalCount ||
+                      releasesQuery.isPending
+                    }
+                    onClick={() => {
+                      setPagination(current => ({ ...current, page: current.page + 1 }));
+                    }}
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </QueryPanel>
       ) : (

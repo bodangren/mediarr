@@ -47,6 +47,7 @@ export const routeMap = {
   subtitleMovieSync: (id: number) => `/api/subtitles/movie/${id}/sync`,
   subtitleMovieScan: (id: number) => `/api/subtitles/movie/${id}/scan`,
   subtitleMovieSearch: (id: number) => `/api/subtitles/movie/${id}/search`,
+  subtitleMoviesBulk: '/api/subtitles/movies/bulk',
   subtitleEpisodeVariants: (id: number) => `/api/subtitles/episode/${id}/variants`,
   subtitleSearch: '/api/subtitles/search',
   subtitleDownload: '/api/subtitles/download',

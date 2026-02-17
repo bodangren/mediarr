@@ -23,6 +23,7 @@ export const API_ROUTE_MAP: ApiRouteDefinition[] = [
 
   { method: 'POST', path: '/api/releases/search' },
   { method: 'POST', path: '/api/releases/grab' },
+  { method: 'POST', path: '/api/releases/grab-candidate' },
 
   { method: 'GET', path: '/api/torrents' },
   { method: 'GET', path: '/api/torrents/:infoHash' },

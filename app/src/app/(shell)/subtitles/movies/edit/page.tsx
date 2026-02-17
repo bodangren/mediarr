@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState, useCallback } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { QueryPanel } from '@/components/primitives/QueryPanel';
 import { DataTable, type DataTableColumn } from '@/components/primitives/DataTable';
@@ -21,6 +21,7 @@ interface MovieRow {
 export default function MovieMassEditPage() {
   const api = useMemo(() => getApiClients(), []);
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { pushToast } = useToast();
 
   const [selectedMovies, setSelectedMovies] = useState<Set<number>>(new Set());
@@ -48,9 +49,38 @@ export default function MovieMassEditPage() {
     queryFn: () => api.languageProfilesApi.listProfiles(),
   });
 
-  // NOTE: Movie language profile update requires backend support.
-  // Currently no endpoint exists to update movie language profiles.
-  // Apply Changes button is disabled with a tooltip explaining this limitation.
+  // Bulk update mutation
+  const bulkUpdateMutation = useMutation({
+    mutationFn: async ({ movieIds, languageProfileId }: { movieIds: number[]; languageProfileId: number }) => {
+      return api.subtitleApi.bulkUpdateMovies({ movieIds, languageProfileId });
+    },
+    onSuccess: (data) => {
+      if (data.failedCount > 0) {
+        pushToast({
+          title: `Updated ${data.updatedCount} movies`,
+          message: `${data.failedCount} movies failed to update`,
+          variant: 'warning',
+        });
+      } else {
+        pushToast({
+          title: `Updated ${data.updatedCount} movies successfully`,
+          variant: 'success',
+        });
+      }
+      // Invalidate movies list to refresh the data
+      void queryClient.invalidateQueries({ queryKey: queryKeys.moviesList({}) });
+      // Clear selection after successful update
+      setSelectedMovies(new Set());
+      setSelectAll(false);
+    },
+    onError: (error: Error) => {
+      pushToast({
+        title: 'Failed to update movies',
+        message: error.message,
+        variant: 'error',
+      });
+    },
+  });
 
   const handleSelectAll = useCallback(() => {
     const newSelectAll = !selectAll;
@@ -85,9 +115,20 @@ export default function MovieMassEditPage() {
       return;
     }
 
-    // Update requires backend support - currently unavailable
-    // This button is disabled via the disabled prop with a tooltip
-  }, [selectedMovies, pushToast]);
+    if (selectedProfileId === null) {
+      pushToast({
+        title: 'No Language Profile Selected',
+        message: 'Please select a language profile to apply',
+        variant: 'warning',
+      });
+      return;
+    }
+
+    bulkUpdateMutation.mutate({
+      movieIds: Array.from(selectedMovies),
+      languageProfileId: selectedProfileId,
+    });
+  }, [selectedMovies, selectedProfileId, pushToast, bulkUpdateMutation]);
 
   const handleCancel = useCallback(() => {
     router.push('/subtitles/movies');
@@ -205,12 +246,11 @@ export default function MovieMassEditPage() {
           <Button
             variant="primary"
             onClick={handleApplyChanges}
-            disabled={selectedMovies.size === 0 || selectedProfileId === null}
-            title="Movie language profile update requires backend support"
+            disabled={selectedMovies.size === 0 || selectedProfileId === null || bulkUpdateMutation.isPending}
           >
-            Apply Changes
+            {bulkUpdateMutation.isPending ? 'Updating...' : 'Apply Changes'}
           </Button>
-          <Button variant="secondary" onClick={handleCancel}>
+          <Button variant="secondary" onClick={handleCancel} disabled={bulkUpdateMutation.isPending}>
             Cancel
           </Button>
         </div>

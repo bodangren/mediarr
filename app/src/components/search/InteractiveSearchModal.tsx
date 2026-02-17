@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Search, Download, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
+import { Search, Download, AlertCircle, CheckCircle, Loader2, Globe, Share2 } from 'lucide-react';
 import { Button } from '@/components/primitives/Button';
 import { Modal, ModalBody, ModalHeader } from '@/components/primitives/Modal';
 import { EmptyPanel } from '@/components/primitives/EmptyPanel';
@@ -27,8 +27,9 @@ interface QualityInfo {
 export interface ReleaseResult {
   id: string;
   guid: string;
-  title: string;
   indexer: string;
+  indexerId: number;
+  title: string;
   quality: QualityInfo;
   size: number;
   seeders?: number;
@@ -38,6 +39,7 @@ export interface ReleaseResult {
   approved: boolean;
   rejections?: string[];
   customFormatScore?: number;
+  protocol?: 'torrent' | 'usenet';
 }
 
 interface GrabState {
@@ -51,11 +53,12 @@ interface InteractiveSearchModalProps {
   isOpen: boolean;
   onClose: () => void;
   seriesId: number;
-  episodeId: number;
+  tvdbId?: number; // tvdbId is required for proper indexer search
+  episodeId: number | null; // null for season-level search
   seriesTitle: string;
   seasonNumber: number;
-  episodeNumber: number;
-  episodeTitle: string;
+  episodeNumber?: number; // undefined for season-level search
+  episodeTitle?: string; // undefined for season-level search
 }
 
 function formatSize(bytes: number): string {
@@ -83,6 +86,7 @@ export function InteractiveSearchModal({
   isOpen,
   onClose,
   seriesId,
+  tvdbId,
   episodeId,
   seriesTitle,
   seasonNumber,
@@ -108,14 +112,37 @@ export function InteractiveSearchModal({
     setGrabState({ releaseId: null, isGrabbing: false, error: null, success: false });
 
     try {
-      const results = await api.releaseApi.searchCandidates({ seriesId, episodeId });
+      // Build search params based on whether it's episode-level or season-level search
+      const searchParams: {
+        type: 'tvsearch';
+        tvdbId?: number;
+        season?: number;
+        episode?: number;
+      } = {
+        type: 'tvsearch',
+      };
+
+      if (tvdbId !== undefined) {
+        searchParams.tvdbId = tvdbId;
+      }
+
+      if (seasonNumber !== undefined) {
+        searchParams.season = seasonNumber;
+      }
+
+      if (episodeNumber !== undefined) {
+        searchParams.episode = episodeNumber;
+      }
+
+      const result = await api.releaseApi.searchCandidates(searchParams);
 
       // Transform API response to component's expected format
-      const releases: ReleaseResult[] = results.map((candidate, index) => ({
-        id: candidate.title + index, // Generate unique ID from title + index
-        guid: candidate.title + '-guid',
+      const releases: ReleaseResult[] = result.items.map((candidate, index) => ({
+        id: candidate.guid || candidate.title + index, // Generate unique ID from guid or title + index
+        guid: candidate.guid || candidate.title + '-guid',
         title: candidate.title,
         indexer: candidate.indexer,
+        indexerId: candidate.indexerId,
         quality: {
           quality: {
             name: candidate.quality || 'Unknown',
@@ -125,12 +152,13 @@ export function InteractiveSearchModal({
         },
         size: candidate.size,
         seeders: candidate.seeders,
-        leechers: 0, // API doesn't provide leechers
-        publishDate: new Date(Date.now() - (candidate.age || 0) * 60 * 60 * 1000).toISOString(),
+        leechers: candidate.leechers || 0,
+        publishDate: candidate.publishDate || new Date(Date.now() - (candidate.age || 0) * 60 * 60 * 1000).toISOString(),
         ageHours: candidate.age || 0,
         approved: !candidate.indexerFlags || candidate.indexerFlags.length === 0,
         rejections: candidate.indexerFlags ? [candidate.indexerFlags] : [],
-        customFormatScore: 0, // API doesn't provide custom format score
+        customFormatScore: 0, // API doesn't provide custom format score - will be added when Cross-Cutting Phase 1 is complete
+        protocol: candidate.protocol,
       }));
 
       setReleases(releases);
@@ -146,7 +174,7 @@ export function InteractiveSearchModal({
     } finally {
       setIsLoading(false);
     }
-  }, [seriesId, episodeId, api.releaseApi, pushToast]);
+  }, [tvdbId, seasonNumber, episodeNumber, api.releaseApi, pushToast]);
 
   // Search automatically when modal opens
   useEffect(() => {
@@ -159,17 +187,8 @@ export function InteractiveSearchModal({
     setGrabState({ releaseId: release.id, isGrabbing: true, error: null, success: false });
 
     try {
-      // Transform release to the format expected by the API
-      const releaseCandidate = {
-        title: release.title,
-        indexer: release.indexer,
-        size: release.size,
-        seeders: release.seeders || 0,
-        quality: release.quality.quality.name,
-        age: release.ageHours,
-      };
-
-      await api.releaseApi.grabRelease(releaseCandidate);
+      // Use grabRelease with guid and indexerId
+      await api.releaseApi.grabRelease(release.guid, release.indexerId);
 
       setGrabState({ releaseId: release.id, isGrabbing: false, error: null, success: true });
 
@@ -210,7 +229,7 @@ export function InteractiveSearchModal({
   const headerTitle = (
     <span>
       Interactive Search - {seriesTitle} S{seasonNumber.toString().padStart(2, '0')}
-      E{episodeNumber.toString().padStart(2, '0')}
+      {episodeNumber !== undefined ? `E${episodeNumber.toString().padStart(2, '0')}` : ' (All Episodes)'}
     </span>
   );
 
@@ -229,17 +248,19 @@ export function InteractiveSearchModal({
   return (
     <Modal
       isOpen={isOpen}
-      ariaLabel={`Interactive search for ${seriesTitle} S${seasonNumber}E${episodeNumber}`}
+      ariaLabel={`Interactive search for ${seriesTitle} S${seasonNumber}${episodeNumber !== undefined ? `E${episodeNumber}` : ' (All Episodes)'}`}
       onClose={handleClose}
       maxWidthClassName="max-w-4xl lg:max-w-6xl"
     >
       <ModalHeader title={headerTitle} onClose={handleClose} actions={headerActions} />
       <ModalBody>
-        <div className="mb-3">
-          <p className="text-sm text-text-secondary">
-            Episode: {episodeTitle}
-          </p>
-        </div>
+        {episodeTitle && (
+          <div className="mb-3">
+            <p className="text-sm text-text-secondary">
+              Episode: {episodeTitle}
+            </p>
+          </div>
+        )}
 
         {searchError && (
           <div className="mb-4 rounded-md border border-status-error/50 bg-status-error/10 p-3">
@@ -276,6 +297,7 @@ export function InteractiveSearchModal({
             <table className="min-w-full text-left text-sm">
               <thead className="bg-surface-2 text-text-secondary">
                 <tr>
+                  <th className="px-3 py-2 font-semibold hidden sm:table-cell">Protocol</th>
                   <th className="px-3 py-2 font-semibold">Source</th>
                   <th className="px-3 py-2 font-semibold">Release Title</th>
                   <th className="px-3 py-2 font-semibold">Quality</th>
@@ -298,6 +320,15 @@ export function InteractiveSearchModal({
                       key={release.id}
                       className={!isApproved ? 'bg-status-error/5' : ''}
                     >
+                      <td className="px-3 py-2 hidden sm:table-cell">
+                        {release.protocol === 'torrent' ? (
+                          <Share2 size={14} className="text-text-secondary" aria-label="Torrent" />
+                        ) : release.protocol === 'usenet' ? (
+                          <Globe size={14} className="text-text-secondary" aria-label="Usenet" />
+                        ) : (
+                          <span className="text-xs text-text-secondary">-</span>
+                        )}
+                      </td>
                       <td className="px-3 py-2 text-text-primary">
                         <span className="text-xs">{release.indexer}</span>
                       </td>

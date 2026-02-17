@@ -12,3 +12,6 @@ export type { MovieDetailHeaderProps } from './MovieDetailHeader';
 
 export { MovieActionsToolbar } from './MovieActionsToolbar';
 export type { MovieActionsToolbarProps } from './MovieActionsToolbar';
+
+export { MovieHistory } from './MovieHistory';
+export type { MovieHistoryProps } from './MovieHistory';

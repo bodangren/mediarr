@@ -17,6 +17,7 @@ import { MovieActionsToolbar } from '@/components/movie';
 import { MovieFileTable } from '@/components/movie';
 import { AlternateTitleTable } from '@/components/movie';
 import { CastCard } from '@/components/movie';
+import { MovieHistory } from '@/components/movie';
 import { Icon } from '@/components/primitives/Icon';
 import { EditMovieModal } from '@/components/movie/EditMovieModal';
 import { MovieInteractiveSearchModal } from '@/components/movie/MovieInteractiveSearchModal';
@@ -97,11 +98,14 @@ export default function MovieDetailPage({ params }: { params: { id: string } }) 
   const searchMutation = useMutation({
     mutationFn: async () => {
       const candidates = await api.releaseApi.searchCandidates({
-        movieId,
+        type: 'movie',
         title: movieDetail?.title || '',
+        tmdbId: movieDetailQuery.data?.tmdbId,
+        imdbId: movieDetailQuery.data?.imdbId,
+        year: movieDetail?.year,
       });
 
-      return candidates.length;
+      return candidates.meta.totalCount;
     },
     onSuccess: count => {
       setReleaseCount(count);
@@ -323,6 +327,9 @@ export default function MovieDetailPage({ params }: { params: { id: string } }) 
           <AlternateTitleTable titles={movie.alternateTitles} />
         </section>
       )}
+
+      {/* History Timeline Section */}
+      <MovieHistory movieId={movie.id} />
       </section>
 
       {/* Edit Movie Modal */}
@@ -336,13 +343,17 @@ export default function MovieDetailPage({ params }: { params: { id: string } }) 
       )}
 
       {/* Interactive Search Modal */}
-      <MovieInteractiveSearchModal
-        isOpen={isInteractiveSearchModalOpen}
-        onClose={() => setIsInteractiveSearchModalOpen(false)}
-        movieId={movie.id}
-        movieTitle={movie.title}
-        movieYear={movie.year}
-      />
+      {movieDetailQuery.data && (
+        <MovieInteractiveSearchModal
+          isOpen={isInteractiveSearchModalOpen}
+          onClose={() => setIsInteractiveSearchModalOpen(false)}
+          movieId={movie.id}
+          movieTitle={movie.title}
+          movieYear={movie.year}
+          imdbId={movieDetailQuery.data.imdbId}
+          tmdbId={movieDetailQuery.data.tmdbId}
+        />
+      )}
     </>
   );
 }

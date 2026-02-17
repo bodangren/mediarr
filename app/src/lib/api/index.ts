@@ -84,6 +84,8 @@ export type {
   SeriesSyncResult,
   DiskScanResult,
   SubtitleSearchResult,
+  BulkUpdateMoviesResult,
+  BulkUpdateMoviesInput,
 } from './subtitleApi';
 export type { ManualSearchInput, ManualDownloadInput } from './subtitleApi';
 
@@ -147,3 +149,6 @@ export type { MissingMovie, CutoffUnmetMovie } from './wantedApi';
 
 // Movie types
 export type { Movie, UpdateMovieInput } from './movieApi';
+
+// Release types
+export type { ReleaseCandidate, GrabResult, SearchParams } from './releaseApi';

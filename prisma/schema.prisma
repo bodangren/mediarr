@@ -134,6 +134,7 @@ model Movie {
   monitored           Boolean            @default(true)
   qualityProfileId    Int
   qualityProfile      QualityProfile     @relation(fields: [qualityProfileId], references: [id])
+  languageProfileId   Int?
   path                String?
   year                Int
   added               DateTime           @default(now())
@@ -252,14 +253,73 @@ model SubtitleHistory {
 }
 
 model QualityProfile {
-  id                Int      @id @default(autoincrement())
-  name              String   @unique
-  cutoff            Int      @default(0)
-  items             Json     @default("[]")
-  languageProfileId Int?
-  medias            Media[]
-  series            Series[]
-  movies            Movie[]
+  id                  Int                   @id @default(autoincrement())
+  name                String                @unique
+  cutoff              Int                   @default(0)
+  items               Json                  @default("[]")
+  languageProfileId   Int?
+  medias              Media[]
+  series              Series[]
+  movies              Movie[]
+  customFormatScores  CustomFormatScore[]
+  importLists         ImportList[]
+}
+
+model ImportList {
+  id                Int       @id @default(autoincrement())
+  name              String
+  providerType      String    // 'tmdb-popular', 'tmdb-list', etc.
+  config            Json      // Provider-specific config
+  rootFolderPath    String
+  qualityProfileId  Int
+  languageProfileId Int?      // For Bazarr integration
+  monitorType       String    // 'movie', 'collection', etc.
+  enabled           Boolean   @default(true)
+  syncInterval      Int       @default(24) // hours
+  lastSyncAt        DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  qualityProfile    QualityProfile @relation(fields: [qualityProfileId], references: [id])
+  exclusions        ImportListExclusion[]
+
+  @@index([enabled])
+}
+
+model ImportListExclusion {
+  id           Int        @id @default(autoincrement())
+  importListId Int?
+  tmdbId       Int?
+  imdbId       String?
+  tvdbId       Int?
+  title        String
+  createdAt    DateTime   @default(now())
+  importList   ImportList? @relation(fields: [importListId], references: [id], onDelete: Cascade)
+
+  @@unique([tmdbId, imdbId, tvdbId])
+  @@index([tmdbId])
+  @@index([importListId])
+}
+
+model CustomFormat {
+  id                             Int                   @id @default(autoincrement())
+  name                           String                @unique
+  includeCustomFormatWhenRenaming Boolean              @default(false)
+  conditions                     Json                  // Array of condition objects
+  createdAt                      DateTime              @default(now())
+  updatedAt                      DateTime              @updatedAt
+  scores                         CustomFormatScore[]
+}
+
+model CustomFormatScore {
+  id                Int            @id @default(autoincrement())
+  customFormatId    Int
+  qualityProfileId  Int
+  score             Int            @default(0)
+  customFormat      CustomFormat   @relation(fields: [customFormatId], references: [id], onDelete: Cascade)
+  qualityProfile    QualityProfile @relation(fields: [qualityProfileId], references: [id], onDelete: Cascade)
+
+  @@unique([customFormatId, qualityProfileId])
 }
 
 model QualityDefinition {

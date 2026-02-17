@@ -3,9 +3,10 @@
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { Search } from 'lucide-react';
+import { Search, Film, Calendar, ChevronDown, ChevronUp, Globe, ExternalLink, Tag, X } from 'lucide-react';
 import { QueryPanel } from '@/components/primitives/QueryPanel';
 import { StatusBadge } from '@/components/primitives/StatusBadge';
+import { Button } from '@/components/primitives/Button';
 import { InteractiveSearchModal } from '@/components/search';
 import { getApiClients } from '@/lib/api/client';
 import { queryKeys } from '@/lib/query/queryKeys';
@@ -18,6 +19,11 @@ type SeriesDetail = {
   year?: number;
   status?: string;
   monitored?: boolean;
+  network?: string;
+  overview?: string;
+  tvdbId?: number;
+  tmdbId?: number;
+  imdbId?: string;
   seasons?: Array<{
     seasonNumber: number;
     monitored?: boolean;
@@ -28,6 +34,7 @@ type SeriesDetail = {
       seasonNumber: number;
       monitored?: boolean;
       path?: string | null;
+      airDateUtc?: string | null;
     }>;
   }>;
 };
@@ -41,29 +48,31 @@ export default function SeriesDetailPage() {
   const [searchModal, setSearchModal] = useState<{
     isOpen: boolean;
     episodeId: number | null;
-    episodeNumber: number;
-    episodeTitle: string;
+    episodeNumber?: number;
+    episodeTitle?: string;
     seasonNumber: number;
   }>({
     isOpen: false,
     episodeId: null,
-    episodeNumber: 0,
-    episodeTitle: '',
+    episodeNumber: undefined,
+    episodeTitle: undefined,
     seasonNumber: 0,
   });
 
-  const openSearchModal = (episode: {
+  // State for collapsible sections
+  const [alternateTitlesOpen, setAlternateTitlesOpen] = useState(false);
+
+  const openSearchModal = (seasonNumber: number, episode?: {
     id: number;
     episodeNumber: number;
     title: string;
-    seasonNumber: number;
   }) => {
     setSearchModal({
       isOpen: true,
-      episodeId: episode.id,
-      episodeNumber: episode.episodeNumber,
-      episodeTitle: episode.title,
-      seasonNumber: episode.seasonNumber,
+      episodeId: episode?.id ?? null,
+      episodeNumber: episode?.episodeNumber,
+      episodeTitle: episode?.title,
+      seasonNumber,
     });
   };
 
@@ -99,14 +108,73 @@ export default function SeriesDetailPage() {
 
   const series = seriesQuery.data;
 
+  // Format date for display
+  const formatDate = (dateString: string | null | undefined): string => {
+    if (!dateString) return 'TBA';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  };
+
   return (
     <section className="space-y-4">
-      <header className="space-y-1">
+      {/* Header */}
+      <header className="space-y-2">
         <h1 className="text-2xl font-semibold">{series?.title ?? 'Series Detail'}</h1>
         <p className="text-sm text-text-secondary">
           Year: {series?.year ?? '-'} · Status: {series?.status ?? 'unknown'}
+          {series?.network && ` · Network: ${series.network}`}
         </p>
       </header>
+
+      {/* External Links */}
+      {series && (series.tmdbId || series.imdbId || series.tvdbId) && (
+        <div className="flex gap-2">
+          {series.imdbId && (
+            <a
+              href={`https://www.imdb.com/title/${series.imdbId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-sm text-text-secondary hover:text-text-primary"
+              aria-label="View on IMDb"
+            >
+              <Film size={14} />
+              IMDb
+            </a>
+          )}
+          {series.tvdbId && (
+            <a
+              href={`https://thetvdb.com/series/${series.tvdbId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-sm text-text-secondary hover:text-text-primary"
+              aria-label="View on TheTVDB"
+            >
+              <ExternalLink size={14} />
+              TVDB
+            </a>
+          )}
+          {series.tmdbId && (
+            <a
+              href={`https://www.themoviedb.org/tv/${series.tmdbId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-sm text-text-secondary hover:text-text-primary"
+              aria-label="View on TMDB"
+            >
+              <Globe size={14} />
+              TMDB
+            </a>
+          )}
+        </div>
+      )}
+
+      {/* Overview */}
+      {series?.overview && (
+        <div className="rounded-md border border-border-subtle bg-surface-1 p-4">
+          <h2 className="text-sm font-semibold text-text-primary mb-2">Overview</h2>
+          <p className="text-sm text-text-secondary leading-relaxed">{series.overview}</p>
+        </div>
+      )}
 
       <QueryPanel
         isLoading={seriesQuery.isPending}
@@ -120,8 +188,19 @@ export default function SeriesDetailPage() {
         <div className="space-y-3">
           {(series?.seasons ?? []).map(season => (
             <details key={season.seasonNumber} className="rounded-md border border-border-subtle bg-surface-1" open>
-              <summary className="cursor-pointer px-4 py-3 text-sm font-semibold text-text-primary">
-                Season {season.seasonNumber}
+              <summary className="cursor-pointer px-4 py-3 text-sm font-semibold text-text-primary flex items-center justify-between">
+                <span>Season {season.seasonNumber}</span>
+                <Button
+                  variant="primary"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    openSearchModal(season.seasonNumber);
+                  }}
+                  className="text-xs"
+                >
+                  <Search size={12} className="mr-1" />
+                  Search Season
+                </Button>
               </summary>
               <div className="space-y-2 border-t border-border-subtle px-4 py-3">
                 {(season.episodes ?? []).map(episode => {
@@ -134,17 +213,27 @@ export default function SeriesDetailPage() {
                         <p className="text-sm font-medium">
                           E{episode.episodeNumber}: {episode.title}
                         </p>
-                        <p className="text-xs text-text-secondary truncate">{hasFile ? episode.path : 'File missing'}</p>
+                        <p className="text-xs text-text-secondary">
+                          {episode.airDateUtc ? (
+                            <span className="flex items-center gap-1">
+                              <Calendar size={12} />
+                              {formatDate(episode.airDateUtc)}
+                            </span>
+                          ) : (
+                            <span>TBA</span>
+                          )}
+                          {' · '}
+                          {hasFile ? episode.path : 'File missing'}
+                        </p>
                       </div>
                       <StatusBadge status={hasFile ? 'completed' : 'wanted'} />
                       <button
                         type="button"
                         className="p-1.5 rounded-sm text-text-secondary hover:text-text-primary hover:bg-surface-2 transition-colors"
-                        onClick={() => openSearchModal({
+                        onClick={() => openSearchModal(season.seasonNumber, {
                           id: episode.id,
                           episodeNumber: episode.episodeNumber,
                           title: episode.title,
-                          seasonNumber: season.seasonNumber,
                         })}
                         title="Interactive Search"
                       >
@@ -172,16 +261,45 @@ export default function SeriesDetailPage() {
         </div>
       </QueryPanel>
 
+      {/* Alternate Titles Section */}
+      <div className="rounded-md border border-border-subtle bg-surface-1">
+        <button
+          type="button"
+          onClick={() => setAlternateTitlesOpen(!alternateTitlesOpen)}
+          className="w-full px-4 py-3 flex items-center justify-between text-sm font-semibold text-text-primary"
+        >
+          <span>Alternate Titles</span>
+          {alternateTitlesOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+        </button>
+        {alternateTitlesOpen && (
+          <div className="border-t border-border-subtle px-4 py-3">
+            <p className="text-sm text-text-secondary">No alternate titles available.</p>
+          </div>
+        )}
+      </div>
+
+      {/* Tags Section */}
+      <div className="rounded-md border border-border-subtle bg-surface-1">
+        <div className="px-4 py-3 flex items-center gap-2">
+          <Tag size={14} className="text-text-secondary" />
+          <span className="text-sm font-semibold text-text-primary">Tags</span>
+        </div>
+        <div className="border-t border-border-subtle px-4 py-3">
+          <p className="text-sm text-text-secondary">No tags assigned.</p>
+        </div>
+      </div>
+
       <Link href="/library/series" className="inline-flex rounded-sm border border-border-subtle px-3 py-1 text-sm">
         Back to Series
       </Link>
 
       {/* Interactive Search Modal */}
-      {searchModal.episodeId !== null && series && (
+      {series && (
         <InteractiveSearchModal
           isOpen={searchModal.isOpen}
           onClose={closeSearchModal}
           seriesId={series.id}
+          tvdbId={series.tvdbId}
           episodeId={searchModal.episodeId}
           seriesTitle={series.title}
           seasonNumber={searchModal.seasonNumber}

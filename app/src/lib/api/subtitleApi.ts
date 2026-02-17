@@ -63,8 +63,16 @@ const subtitleSearchResultSchema = z.object({
   subtitlesDownloaded: z.number(),
 });
 
+const bulkUpdateMoviesSchema = z.object({
+  success: z.boolean(),
+  message: z.string(),
+  updatedCount: z.number(),
+  failedCount: z.number(),
+});
+
 export type SubtitleVariantInventory = z.infer<typeof subtitleVariantSchema>;
 export type ManualSearchCandidate = z.infer<typeof manualSearchCandidateSchema>;
+export type BulkUpdateMoviesResult = z.infer<typeof bulkUpdateMoviesSchema>;
 export type SubtitleTrack = z.infer<typeof subtitleTrackSchema>;
 export type EpisodeSubtitle = z.infer<typeof episodeSubtitleSchema>;
 export type SeriesSubtitleVariant = z.infer<typeof seriesSubtitleVariantSchema>;
@@ -80,6 +88,11 @@ export interface ManualSearchInput {
 
 export interface ManualDownloadInput extends ManualSearchInput {
   candidate: ManualSearchCandidate;
+}
+
+export interface BulkUpdateMoviesInput {
+  movieIds: number[];
+  languageProfileId: number;
 }
 
 export function createSubtitleApi(client: ApiHttpClient) {
@@ -201,6 +214,17 @@ export function createSubtitleApi(client: ApiHttpClient) {
           method: 'POST',
         },
         subtitleSearchResultSchema,
+      );
+    },
+
+    bulkUpdateMovies(input: BulkUpdateMoviesInput): Promise<BulkUpdateMoviesResult> {
+      return client.request(
+        {
+          path: routeMap.subtitleMoviesBulk,
+          method: 'PUT',
+          body: input,
+        },
+        bulkUpdateMoviesSchema,
       );
     },
   };

@@ -3,8 +3,10 @@ import { registerApiErrorHandler } from './errors';
 import { ApiEventHub } from './eventHub';
 import { registerBackupRoutes } from './routes/backupRoutes';
 import { registerBlocklistRoutes } from './routes/blocklistRoutes';
+import { registerCustomFormatRoutes } from './routes/customFormatRoutes';
 import { registerDownloadClientRoutes } from './routes/downloadClientRoutes';
 import { registerEventsRoutes } from './routes/eventsRoutes';
+import { registerImportListRoutes } from './routes/importListRoutes';
 import { registerIndexerRoutes } from './routes/indexerRoutes';
 import { registerLogsRoutes } from './routes/logsRoutes';
 import { registerMediaRoutes } from './routes/mediaRoutes';
@@ -146,6 +148,8 @@ export function createApiServer(
   registerBlocklistRoutes(app, dependencies);
   registerQualityProfileRoutes(app, dependencies);
   registerDownloadClientRoutes(app, dependencies);
+  registerCustomFormatRoutes(app, dependencies);
+  registerImportListRoutes(app, dependencies);
 
   const pollState: PollState = {};
   const intervals: NodeJS.Timeout[] = [];

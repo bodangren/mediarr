@@ -14,7 +14,9 @@ import {
   AppSettingsRepository,
   DEFAULT_APP_SETTINGS,
 } from './repositories/AppSettingsRepository';
+import { CustomFormatRepository } from './repositories/CustomFormatRepository';
 import { DownloadClientRepository } from './repositories/DownloadClientRepository';
+import { ImportListRepository } from './repositories/ImportListRepository';
 import { IndexerHealthRepository } from './repositories/IndexerHealthRepository';
 import { IndexerRepository } from './repositories/IndexerRepository';
 import { MediaRepository } from './repositories/MediaRepository';
@@ -26,6 +28,12 @@ import { seedCategories } from './seeds/categories';
 import { seedQualityDefinitions } from './seeds/qualities';
 import { ActivityEventEmitter } from './services/ActivityEventEmitter';
 import { DataDirectoryInitializer } from './services/DataDirectoryInitializer';
+import {
+  ImportListProviderRegistry,
+  ImportListSyncService,
+  TMDBListProvider,
+  TMDBPopularProvider,
+} from './services/importLists';
 import { MediaSearchService } from './services/MediaSearchService';
 import { MediaService } from './services/MediaService';
 import { MetadataProvider } from './services/MetadataProvider';
@@ -354,6 +362,8 @@ async function startApi(): Promise<void> {
   const activityEventEmitter = new ActivityEventEmitter(activityEventRepository);
 
   const downloadClientRepository = new DownloadClientRepository(prisma);
+  const customFormatRepository = new CustomFormatRepository(prisma);
+  const importListRepository = new ImportListRepository(prisma);
   const indexerRepository = new IndexerRepository(prisma);
   const indexerHealthRepository = new IndexerHealthRepository(prisma);
   const mediaRepository = new MediaRepository(prisma);
@@ -366,6 +376,18 @@ async function startApi(): Promise<void> {
   const httpClient = new HttpClient();
   const settingsService = new SettingsService(appSettingsRepository);
   const metadataProvider = new MetadataProvider(httpClient, settingsService);
+
+  // Import list providers
+  const importListProviderRegistry = new ImportListProviderRegistry();
+  importListProviderRegistry.registerProvider(new TMDBPopularProvider(httpClient, settingsService));
+  importListProviderRegistry.registerProvider(new TMDBListProvider(httpClient, settingsService));
+
+  const importListSyncService = new ImportListSyncService(
+    prisma,
+    importListRepository,
+    mediaRepository,
+    importListProviderRegistry,
+  );
 
   const scheduler = new Scheduler();
   const rssSyncService = new RssSyncService(prisma, httpClient, indexerHealthRepository);
@@ -383,6 +405,22 @@ async function startApi(): Promise<void> {
     console.log(`Scheduler started. RSS Sync scheduled for every ${rssInterval} minutes (${rssCron}).`);
   } catch (error) {
     console.error('Failed to schedule RSS sync:', error);
+  }
+
+  // Schedule import list sync every 6 hours
+  try {
+    scheduler.schedule('import-list-sync', '0 */6 * * *', async () => {
+      console.log('Starting scheduled import list sync...');
+      const results = await importListSyncService.syncAllEnabled();
+      let totalAdded = 0;
+      for (const [, result] of results) {
+        totalAdded += result.added;
+      }
+      console.log(`Import list sync completed. Added ${totalAdded} items across ${results.size} lists.`);
+    });
+    console.log('Import list sync scheduled for every 6 hours.');
+  } catch (error) {
+    console.error('Failed to schedule import list sync:', error);
   }
 
   const definitionLoader = new DefinitionLoader();
@@ -449,7 +487,11 @@ async function startApi(): Promise<void> {
     notificationRepository,
     qualityProfileRepository,
     downloadClientRepository,
+    customFormatRepository,
     metadataProvider,
+    importListRepository,
+    importListProviderRegistry,
+    importListSyncService,
   });
 
   const close = async (): Promise<void> => {

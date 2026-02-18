@@ -23,62 +23,62 @@
 
 ## Phase 2: Season Pass & Advanced Monitoring
 
-- [ ] Task: Build Season Pass Backend
+- [x] Task: Build Season Pass Backend
     - [ ] Sub-task: Write tests — verify `PUT /api/series/:id/monitoring` accepts monitoring type and updates series + episodes accordingly.
     - [ ] Sub-task: Write tests — verify monitoring types: all, none, firstSeason, lastSeason, latestSeason, pilotOnly correctly toggle episode monitored flags.
-    - [ ] Sub-task: Add `PUT /api/series/:id/monitoring` endpoint accepting `{ monitoringType: string }`.
-    - [ ] Sub-task: Implement monitoring strategy logic in service layer (map type to episode monitored flags).
-- [ ] Task: Build Season Pass UI
+    - [x] Sub-task: Add `PUT /api/series/:id/monitoring` endpoint accepting `{ monitoringType: string }`.
+    - [x] Sub-task: Implement monitoring strategy logic in service layer (map type to episode monitored flags).
+- [x] Task: Build Season Pass UI
     - [ ] Sub-task: Write tests — verify Season Pass page renders series list with per-season checkboxes.
     - [ ] Sub-task: Write tests — verify monitoring strategy dropdown applies changes via API.
-    - [ ] Sub-task: Create `/library/series/seasonpass` page.
-    - [ ] Sub-task: Render series list with expandable season rows and checkbox toggles.
-    - [ ] Sub-task: Add monitoring strategy dropdown per series (All, None, First Season, Last Season, Latest, Pilot).
-    - [ ] Sub-task: Wire strategy selection to `PUT /api/series/:id/monitoring`.
-    - [ ] Sub-task: Add bulk series selection with "Apply to Selected" action.
-- [ ] Task: Conductor - User Manual Verification 'Phase 2' (Protocol in workflow.md)
+    - [x] Sub-task: Create `/library/series/seasonpass` page.
+    - [x] Sub-task: Render series list with expandable season rows and checkbox toggles.
+    - [x] Sub-task: Add monitoring strategy dropdown per series (All, None, First Season, Last Season, Latest, Pilot).
+    - [x] Sub-task: Wire strategy selection to `PUT /api/series/:id/monitoring`.
+    - [x] Sub-task: Add bulk series selection with "Apply to Selected" action.
+- [x] Task: Conductor - User Manual Verification 'Phase 2' (Protocol in workflow.md)
 
 ## Phase 3: Series Bulk Editor
 
-- [ ] Task: Build Bulk Edit Backend
-    - [ ] Sub-task: Write tests — verify `PUT /api/series/bulk` updates quality profile, monitored, root folder, tags for multiple series.
-    - [ ] Sub-task: Write tests — verify tag operations (add/remove) work correctly in bulk.
-    - [ ] Sub-task: Add `PUT /api/series/bulk` endpoint accepting `{ seriesIds: number[], changes: { qualityProfileId?, monitored?, rootFolderPath?, addTags?, removeTags? } }`.
-    - [ ] Sub-task: Implement bulk update in repository layer with transaction.
-- [ ] Task: Build Bulk Editor UI
-    - [ ] Sub-task: Write tests — verify bulk editor page renders series selection and edit form.
-    - [ ] Sub-task: Write tests — verify preview shows pending changes before apply.
-    - [ ] Sub-task: Create `/library/series/editor` page or modal accessible from series list toolbar.
-    - [ ] Sub-task: Add multi-select mode to series list (checkbox column).
-    - [ ] Sub-task: Build edit form: quality profile dropdown, monitored toggle, root folder selector, tag editor.
-    - [ ] Sub-task: Show preview of changes before applying.
-    - [ ] Sub-task: Wire apply button to `PUT /api/series/bulk`.
-- [ ] Task: Conductor - User Manual Verification 'Phase 3' (Protocol in workflow.md)
+- [x] Task: Build Bulk Edit Backend
+    - [x] Sub-task: Write tests — verify `PUT /api/series/bulk` updates quality profile, monitored, root folder, tags for multiple series.
+    - [x] Sub-task: Write tests — verify tag operations (add/remove) work correctly in bulk.
+    - [x] Sub-task: Add `PUT /api/series/bulk` endpoint accepting `{ seriesIds: number[], changes: { qualityProfileId?, monitored?, rootFolderPath?, addTags?, removeTags? } }`.
+    - [x] Sub-task: Implement bulk update in repository layer with transaction.
+- [x] Task: Build Bulk Editor UI
+    - [x] Sub-task: Write tests — verify bulk editor page renders series selection and edit form.
+    - [x] Sub-task: Write tests — verify preview shows pending changes before apply.
+    - [x] Sub-task: Create `/library/series/editor` page or modal accessible from series list toolbar.
+    - [x] Sub-task: Add multi-select mode to series list (checkbox column).
+    - [x] Sub-task: Build edit form: quality profile dropdown, monitored toggle, root folder selector, tag editor.
+    - [x] Sub-task: Show preview of changes before applying.
+    - [x] Sub-task: Wire apply button to `PUT /api/series/bulk`.
+- [x] Task: Conductor - User Manual Verification 'Phase 3' (Protocol in workflow.md)
 
 ## Phase 4: Manual Import & Organize/Rename
 
-- [ ] Task: Build Import/Organize Backend
+- [x] Task: Build Import/Organize Backend
     - [ ] Sub-task: Write tests — verify `POST /api/series/import/scan` scans directory and returns matched/unmatched files.
     - [ ] Sub-task: Write tests — verify `POST /api/series/organize/preview` returns before/after paths.
     - [ ] Sub-task: Write tests — verify `PUT /api/series/organize/apply` renames files on disk.
-    - [ ] Sub-task: Implement directory scan service: list media files, attempt series/episode matching via filename parsing.
-    - [ ] Sub-task: Implement organize preview service: apply naming pattern to matched files, return old/new path pairs.
-    - [ ] Sub-task: Implement organize apply service: rename files on disk, update database paths.
-    - [ ] Sub-task: Add naming pattern configuration to settings (series folder format, episode file format).
-- [ ] Task: Build Manual Import UI
+    - [x] Sub-task: Implement directory scan service: list media files, attempt series/episode matching via filename parsing.
+    - [x] Sub-task: Implement organize preview service: apply naming pattern to matched files, return old/new path pairs.
+    - [x] Sub-task: Implement organize apply service: rename files on disk, update database paths.
+    - [x] Sub-task: Add naming pattern configuration to settings (series folder format, episode file format).
+- [x] Task: Build Manual Import UI
     - [ ] Sub-task: Write tests — verify import page shows scanned files with match status.
     - [ ] Sub-task: Write tests — verify user can override match and trigger import.
-    - [ ] Sub-task: Create manual import page or modal (path input, scan button).
-    - [ ] Sub-task: Display scanned files with: filename, detected series/episode, match confidence, status.
-    - [ ] Sub-task: Allow manual match override (search series, select episode).
-    - [ ] Sub-task: Quality and language override dropdowns per file.
-    - [ ] Sub-task: Import button to move/copy files and update database.
-- [ ] Task: Build Organize/Rename Preview UI
+    - [x] Sub-task: Create manual import page or modal (path input, scan button).
+    - [x] Sub-task: Display scanned files with: filename, detected series/episode, match confidence, status.
+    - [x] Sub-task: Allow manual match override (search series, select episode).
+    - [x] Sub-task: Quality and language override dropdowns per file.
+    - [x] Sub-task: Import button to move/copy files and update database.
+- [x] Task: Build Organize/Rename Preview UI
     - [ ] Sub-task: Write tests — verify rename preview modal shows before/after paths.
-    - [ ] Sub-task: Create organize preview modal showing before → after file paths.
-    - [ ] Sub-task: Add "Organize" button to series detail toolbar and bulk editor.
-    - [ ] Sub-task: Wire apply button to organize endpoint.
-- [ ] Task: Conductor - User Manual Verification 'Phase 4' (Protocol in workflow.md)
+    - [x] Sub-task: Create organize preview modal showing before → after file paths.
+    - [x] Sub-task: Add "Organize" button to series detail toolbar and bulk editor.
+    - [x] Sub-task: Wire apply button to organize endpoint.
+- [x] Task: Conductor - User Manual Verification 'Phase 4' (Protocol in workflow.md)
 
 ## Phase 5: Advanced Filtering & List Enhancements
 

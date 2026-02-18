@@ -16,6 +16,7 @@ import { createMediaApi } from './mediaApi';
 import { createMovieApi } from './movieApi';
 import { createQualityProfileApi } from './qualityProfileApi';
 import { createReleaseApi } from './releaseApi';
+import { createSeriesApi } from './seriesApi';
 import { createSettingsApi } from './settingsApi';
 import { createSubtitleApi } from './subtitleApi';
 import { createSubtitleBlacklistApi } from './subtitleBlacklistApi';
@@ -64,6 +65,7 @@ export function createApiClients(config: ApiHttpClientConfig = {}) {
     languageProfilesApi: createLanguageProfilesApi(httpClient),
     wantedApi: createWantedApi(httpClient),
     movieApi: createMovieApi(httpClient),
+    seriesApi: createSeriesApi(httpClient),
     eventsApi: createEventsApi({
       baseUrl: config.baseUrl,
     }),
@@ -149,6 +151,9 @@ export type { MissingMovie, CutoffUnmetMovie } from './wantedApi';
 
 // Movie types
 export type { Movie, UpdateMovieInput } from './movieApi';
+
+// Series types
+export type { Series, BulkSeriesChanges, BulkUpdateResult } from './seriesApi';
 
 // Release types
 export type { ReleaseCandidate, GrabResult, SearchParams } from './releaseApi';

@@ -9,6 +9,11 @@ export const API_ROUTE_MAP: ApiRouteDefinition[] = [
   { method: 'GET', path: '/api/series' },
   { method: 'GET', path: '/api/series/:id' },
   { method: 'PATCH', path: '/api/series/:id/monitored' },
+  { method: 'PUT', path: '/api/series/:id/monitoring' },
+  { method: 'PUT', path: '/api/series/bulk' },
+  { method: 'PUT', path: '/api/series/bulk/monitoring' },
+  { method: 'GET', path: '/api/series/root-folders' },
+  { method: 'PATCH', path: '/api/series/:seriesId/seasons/:seasonNumber/monitoring' },
   { method: 'PATCH', path: '/api/episodes/:id' },
   { method: 'DELETE', path: '/api/series/:id' },
 

@@ -1,4 +1,5 @@
 import { createApiClients } from './index';
+import type { MonitoringType } from './mediaApi';
 
 let cachedBaseUrl: string | undefined;
 let cachedClient: ReturnType<typeof createApiClients> | undefined;
@@ -12,3 +13,5 @@ export function getApiClients() {
 
   return cachedClient;
 }
+
+export type { MonitoringType };

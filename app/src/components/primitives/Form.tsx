@@ -67,6 +67,16 @@ interface TagInputProps {
   disabled?: boolean;
 }
 
+interface PasswordInputProps {
+  id: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  disabled?: boolean;
+  error?: string;
+  ariaLabel?: string;
+}
+
 export function Form({ children, onSubmit, className }: FormProps) {
   return (
     <form onSubmit={onSubmit} className={`space-y-4 ${className ?? ''}`.trim()}>
@@ -226,6 +236,32 @@ export function TagInput({ id, label, availableTags, selectedTags, onChange, dis
           );
         })}
       </div>
+    </div>
+  );
+}
+
+export function PasswordInput({
+  id,
+  value,
+  onChange,
+  placeholder,
+  disabled = false,
+  error,
+  ariaLabel,
+}: PasswordInputProps) {
+  return (
+    <div className="space-y-1">
+      <input
+        id={id}
+        type="password"
+        value={value}
+        aria-label={ariaLabel ?? id}
+        placeholder={placeholder}
+        disabled={disabled}
+        onChange={event => onChange(event.target.value)}
+        className="w-full rounded-sm border border-border-subtle bg-surface-1 px-3 py-2 text-sm text-text-primary"
+      />
+      {error ? <p className="text-xs text-status-error" role="alert">{error}</p> : null}
     </div>
   );
 }

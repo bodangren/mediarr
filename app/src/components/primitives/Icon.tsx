@@ -1,6 +1,7 @@
 import {
   Archive,
   CheckCircle2,
+  CheckSquare,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -68,7 +69,8 @@ type IconName =
   | 'file-edit'
   | 'star'
   | 'user'
-  | 'monitor';
+  | 'monitor'
+  | 'check';
 
 interface IconProps extends Omit<LucideProps, 'ref'> {
   name: IconName;
@@ -109,6 +111,7 @@ const ICON_MAP = {
   star: Star,
   user: User,
   monitor: Monitor,
+  check: CheckSquare,
 } as const;
 
 export function Icon({ name, label, ...props }: IconProps) {

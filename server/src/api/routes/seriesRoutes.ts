@@ -3,6 +3,12 @@ import { sendPaginatedSuccess, sendSuccess, parsePaginationParams, paginateArray
 import { assertFound, assertNoActiveTorrents, parseBoolean, parseIdParam, sortByField } from '../routeUtils';
 import { ValidationError } from '../../errors/domainErrors';
 import type { ApiDependencies } from '../types';
+import { SeriesRepository, type BulkSeriesChanges } from '../../repositories/SeriesRepository';
+import { SeriesMonitoringService, type MonitoringType } from '../../services/SeriesMonitoringService';
+import { SeriesOrganizeService, DEFAULT_SERIES_MANAGEMENT_SETTINGS } from '../../services/SeriesOrganizeService';
+import { FilenameParsingService } from '../../services/FilenameParsingService';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 
 // Calendar episode status type
 type CalendarEpisodeStatus = 'downloaded' | 'missing' | 'airing' | 'unaired';
@@ -402,5 +408,385 @@ export function registerSeriesRoutes(
     }
 
     return sendSuccess(reply, filteredEpisodes);
+  });
+
+  // =====================
+  // Bulk Update Routes
+  // =====================
+
+  // Bulk update multiple series
+  app.put('/api/series/bulk', {
+    schema: {
+      body: {
+        type: 'object',
+        required: ['seriesIds', 'changes'],
+        properties: {
+          seriesIds: {
+            type: 'array',
+            items: { type: 'number' },
+            minItems: 1,
+          },
+          changes: {
+            type: 'object',
+            properties: {
+              qualityProfileId: { type: 'number' },
+              monitored: { type: 'boolean' },
+              rootFolderPath: { type: 'string' },
+              seasonFolder: { type: 'boolean' },
+              addTags: {
+                type: 'array',
+                items: { type: 'string' },
+              },
+              removeTags: {
+                type: 'array',
+                items: { type: 'string' },
+              },
+            },
+          },
+        },
+      },
+    },
+  }, async (request, reply) => {
+    const body = request.body as {
+      seriesIds: number[];
+      changes: BulkSeriesChanges;
+    };
+
+    const seriesRepo = new SeriesRepository(deps.prisma as any);
+    const result = await seriesRepo.bulkUpdate(body.seriesIds, body.changes);
+
+    return sendSuccess(reply, result);
+  });
+
+  // Get root folders from existing series
+  app.get('/api/series/root-folders', async (_request, reply) => {
+    const seriesRepo = new SeriesRepository(deps.prisma as any);
+    const rootFolders = await seriesRepo.getDistinctRootFolders();
+
+    return sendSuccess(reply, { rootFolders });
+  });
+
+  // =====================
+  // Monitoring Routes (Season Pass)
+  // =====================
+
+  /**
+   * PUT /api/series/:id/monitoring
+   * Apply a monitoring strategy to all episodes of a series.
+   *
+   * Body: { monitoringType: 'all' | 'none' | 'firstSeason' | 'lastSeason' | 'latestSeason' | 'pilotOnly' | 'monitored' | 'existing' }
+   *
+   * Response: { updatedEpisodes: number, totalEpisodes: number, seriesId: number }
+   */
+  app.put('/api/series/:id/monitoring', {
+    schema: {
+      params: {
+        type: 'object',
+        required: ['id'],
+        properties: {
+          id: { type: 'string' },
+        },
+      },
+      body: {
+        type: 'object',
+        required: ['monitoringType'],
+        properties: {
+          monitoringType: {
+            type: 'string',
+            enum: ['all', 'none', 'firstSeason', 'lastSeason', 'latestSeason', 'pilotOnly', 'monitored', 'existing'],
+          },
+        },
+      },
+    },
+  }, async (request, reply) => {
+    const id = parseIdParam((request.params as { id: string }).id, 'series');
+    const body = request.body as { monitoringType: MonitoringType };
+
+    const monitoringService = new SeriesMonitoringService(deps.prisma as any);
+    const result = await monitoringService.applyMonitoringStrategy(id, body.monitoringType);
+
+    return sendSuccess(reply, result);
+  });
+
+  /**
+   * PUT /api/series/bulk/monitoring
+   * Apply a monitoring strategy to multiple series at once.
+   *
+   * Body: { seriesIds: number[], monitoringType: MonitoringType }
+   *
+   * Response: { results: Array<{ seriesId: number, updatedEpisodes: number, totalEpisodes: number }> }
+   */
+  app.put('/api/series/bulk/monitoring', {
+    schema: {
+      body: {
+        type: 'object',
+        required: ['seriesIds', 'monitoringType'],
+        properties: {
+          seriesIds: {
+            type: 'array',
+            items: { type: 'number' },
+            minItems: 1,
+          },
+          monitoringType: {
+            type: 'string',
+            enum: ['all', 'none', 'firstSeason', 'lastSeason', 'latestSeason', 'pilotOnly', 'monitored', 'existing'],
+          },
+        },
+      },
+    },
+  }, async (request, reply) => {
+    const body = request.body as {
+      seriesIds: number[];
+      monitoringType: MonitoringType;
+    };
+
+    const monitoringService = new SeriesMonitoringService(deps.prisma as any);
+    const results = await Promise.all(
+      body.seriesIds.map(seriesId =>
+        monitoringService.applyMonitoringStrategy(seriesId, body.monitoringType),
+      ),
+    );
+
+    return sendSuccess(reply, { results });
+  });
+
+  /**
+   * PATCH /api/series/:seriesId/seasons/:seasonNumber/monitoring
+   * Toggle monitoring for all episodes in a specific season.
+   *
+   * Body: { monitored: boolean }
+   *
+   * Response: { updatedEpisodes: number }
+   */
+  app.patch('/api/series/:seriesId/seasons/:seasonNumber/monitoring', {
+    schema: {
+      params: {
+        type: 'object',
+        required: ['seriesId', 'seasonNumber'],
+        properties: {
+          seriesId: { type: 'string' },
+          seasonNumber: { type: 'string' },
+        },
+      },
+      body: {
+        type: 'object',
+        required: ['monitored'],
+        properties: {
+          monitored: { type: 'boolean' },
+        },
+      },
+    },
+  }, async (request, reply) => {
+    const seriesId = parseIdParam((request.params as { seriesId: string; seasonNumber: string }).seriesId, 'series');
+    const seasonNumber = Number.parseInt((request.params as { seriesId: string; seasonNumber: string }).seasonNumber, 10);
+    const body = request.body as { monitored: boolean };
+
+    if (Number.isNaN(seasonNumber)) {
+      throw new ValidationError('Invalid season number');
+    }
+
+    const result = await (deps.prisma as any).episode.updateMany({
+      where: {
+        seriesId,
+        seasonNumber,
+      },
+      data: {
+        monitored: body.monitored,
+      },
+    });
+
+    return sendSuccess(reply, { updatedEpisodes: result.count });
+  });
+
+  // =====================
+  // Organize/Rename Routes
+  // =====================
+
+  // Preview rename for selected series
+  app.post('/api/series/organize/preview', {
+    schema: {
+      body: {
+        type: 'object',
+        required: ['seriesIds'],
+        properties: {
+          seriesIds: {
+            type: 'array',
+            items: { type: 'number' },
+          },
+        },
+      },
+    },
+  }, async (request, reply) => {
+    const body = request.body as { seriesIds: number[] };
+
+    const organizeService = new SeriesOrganizeService(
+      deps.prisma,
+      DEFAULT_SERIES_MANAGEMENT_SETTINGS
+    );
+
+    const previews = await organizeService.previewRename(body.seriesIds);
+
+    return sendSuccess(reply, { previews });
+  });
+
+  // Apply rename for selected series
+  app.put('/api/series/organize/apply', {
+    schema: {
+      body: {
+        type: 'object',
+        required: ['seriesIds'],
+        properties: {
+          seriesIds: {
+            type: 'array',
+            items: { type: 'number' },
+          },
+        },
+      },
+    },
+  }, async (request, reply) => {
+    const body = request.body as { seriesIds: number[] };
+
+    const organizeService = new SeriesOrganizeService(
+      deps.prisma,
+      DEFAULT_SERIES_MANAGEMENT_SETTINGS
+    );
+
+    const result = await organizeService.applyRename(body.seriesIds);
+
+    return sendSuccess(reply, result);
+  });
+
+  // =====================
+  // Episode Import Routes
+  // =====================
+
+  // Scan a directory for episode files
+  app.post('/api/series/import/scan', {
+    schema: {
+      body: {
+        type: 'object',
+        required: ['path'],
+        properties: {
+          path: { type: 'string' },
+        },
+      },
+    },
+  }, async (request, reply) => {
+    const body = request.body as { path: string };
+
+    // Validate path exists
+    try {
+      const stat = await fs.stat(body.path);
+      if (!stat.isDirectory()) {
+        throw new ValidationError('Path is not a directory');
+      }
+    } catch (error) {
+      if (error instanceof ValidationError) throw error;
+      throw new ValidationError('Path does not exist or is not accessible');
+    }
+
+    const parsingService = new FilenameParsingService(deps.prisma);
+    const files = await parsingService.scanAndMatchEpisodes(body.path);
+
+    return sendSuccess(reply, { files });
+  });
+
+  // Apply import for selected files
+  app.post('/api/series/import/apply', {
+    schema: {
+      body: {
+        type: 'object',
+        required: ['files'],
+        properties: {
+          files: {
+            type: 'array',
+            items: {
+              type: 'object',
+              required: ['path', 'seriesId', 'seasonId', 'episodeId'],
+              properties: {
+                path: { type: 'string' },
+                seriesId: { type: 'number' },
+                seasonId: { type: 'number' },
+                episodeId: { type: 'number' },
+                quality: { type: 'string' },
+                language: { type: 'string' },
+              },
+            },
+          },
+        },
+      },
+    },
+  }, async (request, reply) => {
+    const body = request.body as {
+      files: Array<{
+        path: string;
+        seriesId: number;
+        seasonId: number;
+        episodeId: number;
+        quality?: string;
+        language?: string;
+      }>;
+    };
+
+    let imported = 0;
+    let failed = 0;
+    const errors: Array<{ path: string; error: string }> = [];
+
+    for (const file of body.files) {
+      try {
+        // Get the episode and series to find the root path
+        const series = await (deps.prisma as any).series.findUnique({
+          where: { id: file.seriesId },
+        });
+
+        const episode = await (deps.prisma as any).episode.findUnique({
+          where: { id: file.episodeId },
+        });
+
+        if (!series || !series.path || !episode) {
+          failed++;
+          errors.push({ path: file.path, error: 'Series or episode not found or series has no path' });
+          continue;
+        }
+
+        // Build destination path
+        const extension = path.extname(file.path);
+        const seriesFolderName = series.title;
+        const seasonFolderName = `Season ${String(episode.seasonNumber).padStart(2, '0')}`;
+        const episodeFilename = `${series.title} - S${String(episode.seasonNumber).padStart(2, '0')}E${String(episode.episodeNumber).padStart(2, '0')}${extension}`;
+        const destDir = path.join(series.path, seriesFolderName, seasonFolderName);
+        const destPath = path.join(destDir, episodeFilename);
+
+        // Ensure destination directory exists
+        await fs.mkdir(destDir, { recursive: true });
+
+        // Move the file
+        await fs.rename(file.path, destPath);
+
+        // Get file size
+        const stat = await fs.stat(destPath);
+
+        // Create file variant in database
+        await (deps.prisma as any).mediaFileVariant.create({
+          data: {
+            mediaType: 'TV',
+            episodeId: episode.id,
+            path: destPath,
+            fileSize: stat.size,
+            quality: file.quality || null,
+          },
+        });
+
+        imported++;
+      } catch (error) {
+        failed++;
+        errors.push({
+          path: file.path,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
+    }
+
+    return sendSuccess(reply, { imported, failed, errors });
   });
 }

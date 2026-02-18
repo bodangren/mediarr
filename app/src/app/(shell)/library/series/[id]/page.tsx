@@ -3,11 +3,12 @@
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { Search, Film, Calendar, ChevronDown, ChevronUp, Globe, ExternalLink, Tag, X } from 'lucide-react';
+import { Search, Film, Calendar, ChevronDown, ChevronUp, Globe, ExternalLink, Tag, X, FolderSync } from 'lucide-react';
 import { QueryPanel } from '@/components/primitives/QueryPanel';
 import { StatusBadge } from '@/components/primitives/StatusBadge';
 import { Button } from '@/components/primitives/Button';
 import { InteractiveSearchModal } from '@/components/search';
+import { OrganizePreviewModal } from '@/components/series/OrganizePreviewModal';
 import { getApiClients } from '@/lib/api/client';
 import { queryKeys } from '@/lib/query/queryKeys';
 import { useApiQuery } from '@/lib/query/useApiQuery';
@@ -61,6 +62,9 @@ export default function SeriesDetailPage() {
 
   // State for collapsible sections
   const [alternateTitlesOpen, setAlternateTitlesOpen] = useState(false);
+
+  // State for organize preview modal
+  const [organizeModalOpen, setOrganizeModalOpen] = useState(false);
 
   const openSearchModal = (seasonNumber: number, episode?: {
     id: number;
@@ -119,11 +123,24 @@ export default function SeriesDetailPage() {
     <section className="space-y-4">
       {/* Header */}
       <header className="space-y-2">
-        <h1 className="text-2xl font-semibold">{series?.title ?? 'Series Detail'}</h1>
-        <p className="text-sm text-text-secondary">
-          Year: {series?.year ?? '-'} · Status: {series?.status ?? 'unknown'}
-          {series?.network && ` · Network: ${series.network}`}
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold">{series?.title ?? 'Series Detail'}</h1>
+            <p className="text-sm text-text-secondary">
+              Year: {series?.year ?? '-'} · Status: {series?.status ?? 'unknown'}
+              {series?.network && ` · Network: ${series.network}`}
+            </p>
+          </div>
+          {series && (
+            <Button
+              variant="secondary"
+              onClick={() => setOrganizeModalOpen(true)}
+            >
+              <FolderSync size={16} className="mr-1" />
+              Preview Rename
+            </Button>
+          )}
+        </div>
       </header>
 
       {/* External Links */}
@@ -305,6 +322,16 @@ export default function SeriesDetailPage() {
           seasonNumber={searchModal.seasonNumber}
           episodeNumber={searchModal.episodeNumber}
           episodeTitle={searchModal.episodeTitle}
+        />
+      )}
+
+      {/* Organize Preview Modal */}
+      {series && (
+        <OrganizePreviewModal
+          isOpen={organizeModalOpen}
+          onClose={() => setOrganizeModalOpen(false)}
+          seriesIds={[series.id]}
+          onComplete={() => void seriesQuery.refetch()}
         />
       )}
     </section>

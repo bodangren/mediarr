@@ -222,6 +222,13 @@ export default function AddMediaPage() {
           </button>
           <button
             type="button"
+            onClick={() => router.push('/add/import/episodes')}
+            className="rounded-sm border border-accent-primary bg-accent-primary/10 px-3 py-1.5 text-sm font-medium text-accent-primary hover:bg-accent-primary/20"
+          >
+            Import Episodes
+          </button>
+          <button
+            type="button"
             onClick={() => router.push('/add/import/movies')}
             className="rounded-sm border border-accent-primary bg-accent-primary/10 px-3 py-1.5 text-sm font-medium text-accent-primary hover:bg-accent-primary/20"
           >

@@ -2,6 +2,10 @@ export const routeMap = {
   series: '/api/series',
   seriesDetail: (id: number) => `/api/series/${id}`,
   seriesMonitored: (id: number) => `/api/series/${id}/monitored`,
+  seriesMonitoring: (id: number) => `/api/series/${id}/monitoring`,
+  seriesBulkMonitoring: '/api/series/bulk/monitoring',
+  seriesSeasonMonitoring: (seriesId: number, seasonNumber: number) =>
+    `/api/series/${seriesId}/seasons/${seasonNumber}/monitoring`,
   seriesDelete: (id: number) => `/api/series/${id}`,
   episodeMonitored: (id: number) => `/api/episodes/${id}`,
 

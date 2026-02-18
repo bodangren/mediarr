@@ -110,6 +110,26 @@ export interface AddMediaInput {
   seasonFolder?: boolean;
 }
 
+export type MonitoringType =
+  | 'all'
+  | 'none'
+  | 'firstSeason'
+  | 'lastSeason'
+  | 'latestSeason'
+  | 'pilotOnly'
+  | 'monitored'
+  | 'existing';
+
+export interface MonitoringResult {
+  updatedEpisodes: number;
+  totalEpisodes: number;
+  seriesId: number;
+}
+
+export interface BulkMonitoringResult {
+  results: MonitoringResult[];
+}
+
 export function createMediaApi(client: ApiHttpClient) {
   return {
     listSeries(query: ListQuery = {}): Promise<PaginatedResult<SeriesListItem>> {
@@ -257,6 +277,62 @@ export function createMediaApi(client: ApiHttpClient) {
           body: input,
         },
         createdMediaSchema,
+      );
+    },
+
+    // Monitoring API (Season Pass)
+    applySeriesMonitoring(
+      seriesId: number,
+      monitoringType: MonitoringType,
+    ): Promise<MonitoringResult> {
+      return client.request(
+        {
+          path: routeMap.seriesMonitoring(seriesId),
+          method: 'PUT',
+          body: { monitoringType },
+        },
+        z.object({
+          updatedEpisodes: z.number(),
+          totalEpisodes: z.number(),
+          seriesId: z.number(),
+        }),
+      );
+    },
+
+    applyBulkSeriesMonitoring(
+      seriesIds: number[],
+      monitoringType: MonitoringType,
+    ): Promise<BulkMonitoringResult> {
+      return client.request(
+        {
+          path: routeMap.seriesBulkMonitoring,
+          method: 'PUT',
+          body: { seriesIds, monitoringType },
+        },
+        z.object({
+          results: z.array(
+            z.object({
+              updatedEpisodes: z.number(),
+              totalEpisodes: z.number(),
+              seriesId: z.number(),
+            }),
+          ),
+        }),
+      );
+    },
+
+    setSeasonMonitoring(
+      seriesId: number,
+      seasonNumber: number,
+      monitored: boolean,
+    ): Promise<{ updatedEpisodes: number }> {
+      return client.request(
+        {
+          path: routeMap.seriesSeasonMonitoring(seriesId, seasonNumber),
+          method: 'PATCH',
+          body: { monitored },
+        },
+        z.object({ updatedEpisodes: z.number() }),
       );
     },
   };

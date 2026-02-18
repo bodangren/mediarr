@@ -18,6 +18,7 @@ import { MovieFileTable } from '@/components/movie';
 import { AlternateTitleTable } from '@/components/movie';
 import { CastCard } from '@/components/movie';
 import { MovieHistory } from '@/components/movie';
+import { OrganizePreviewModal } from '@/components/movie';
 import { Icon } from '@/components/primitives/Icon';
 import { EditMovieModal } from '@/components/movie/EditMovieModal';
 import { MovieInteractiveSearchModal } from '@/components/movie/MovieInteractiveSearchModal';
@@ -67,6 +68,7 @@ export default function MovieDetailPage({ params }: { params: { id: string } }) 
   const [releaseCount, setReleaseCount] = useState<number | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isInteractiveSearchModalOpen, setIsInteractiveSearchModalOpen] = useState(false);
+  const [isOrganizeModalOpen, setIsOrganizeModalOpen] = useState(false);
 
   // Query for movie detail using real API
   const movieDetailQuery = useApiQuery<Movie>({
@@ -179,12 +181,8 @@ export default function MovieDetailPage({ params }: { params: { id: string } }) 
   }, []);
 
   const handlePreviewRename = useCallback(() => {
-    pushToast({
-      title: 'Preview Rename',
-      message: 'Rename preview not yet available',
-      variant: 'info',
-    });
-  }, [pushToast]);
+    setIsOrganizeModalOpen(true);
+  }, []);
 
   const handleManageFiles = useCallback(() => {
     pushToast({
@@ -354,6 +352,14 @@ export default function MovieDetailPage({ params }: { params: { id: string } }) 
           tmdbId={movieDetailQuery.data.tmdbId}
         />
       )}
+
+      {/* Organize/Rename Preview Modal */}
+      <OrganizePreviewModal
+        isOpen={isOrganizeModalOpen}
+        onClose={() => setIsOrganizeModalOpen(false)}
+        movieIds={[movieId]}
+        onComplete={() => void movieDetailQuery.refetch()}
+      />
     </>
   );
 }

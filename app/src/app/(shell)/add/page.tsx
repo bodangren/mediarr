@@ -212,13 +212,22 @@ export default function AddMediaPage() {
             Search metadata, review details, and add movies or series with monitor defaults.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => router.push('/add/import')}
-          className="rounded-sm border border-accent-primary bg-accent-primary/10 px-3 py-1.5 text-sm font-medium text-accent-primary hover:bg-accent-primary/20"
-        >
-          Import from Disk
-        </button>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => router.push('/add/import')}
+            className="rounded-sm border border-accent-primary bg-accent-primary/10 px-3 py-1.5 text-sm font-medium text-accent-primary hover:bg-accent-primary/20"
+          >
+            Import Series
+          </button>
+          <button
+            type="button"
+            onClick={() => router.push('/add/import/movies')}
+            className="rounded-sm border border-accent-primary bg-accent-primary/10 px-3 py-1.5 text-sm font-medium text-accent-primary hover:bg-accent-primary/20"
+          >
+            Import Movies
+          </button>
+        </div>
       </header>
 
       <div className="flex flex-wrap items-center gap-2">

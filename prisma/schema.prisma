@@ -142,6 +142,8 @@ model Movie {
   inCinemas           DateTime?
   digitalRelease      DateTime?
   physicalRelease     DateTime?
+  collectionId        Int?
+  collection          Collection?        @relation(fields: [collectionId], references: [id])
   media               Media?             @relation(fields: [mediaId], references: [id], onDelete: SetNull)
   fileVariants        MediaFileVariant[]
 }
@@ -261,8 +263,29 @@ model QualityProfile {
   medias              Media[]
   series              Series[]
   movies              Movie[]
+  collections         Collection[]
   customFormatScores  CustomFormatScore[]
   importLists         ImportList[]
+}
+
+model Collection {
+  id                      Int       @id @default(autoincrement())
+  tmdbCollectionId        Int       @unique
+  name                    String
+  overview                String?
+  posterPath              String?
+  backdropPath            String?
+  monitored               Boolean   @default(false)
+  qualityProfileId        Int?
+  rootFolderPath          String?
+  addMoviesAutomatically  Boolean   @default(false)
+  searchOnAdd             Boolean   @default(false)
+  minimumAvailability     String    @default("released")
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+
+  qualityProfile          QualityProfile?  @relation(fields: [qualityProfileId], references: [id])
+  movies                  Movie[]
 }
 
 model ImportList {

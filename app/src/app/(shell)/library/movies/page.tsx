@@ -2,12 +2,15 @@
 
 import { useMemo, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { DataTable, type DataTableColumn } from '@/components/primitives/DataTable';
+import type { DataTableColumn } from '@/components/primitives/DataTable';
 import { QueryPanel } from '@/components/primitives/QueryPanel';
 import { SortMenu } from '@/components/primitives/SortMenu';
 import { ViewMenu, type ViewMode } from '@/components/primitives/ViewMenu';
 import { StatusBadge } from '@/components/primitives/StatusBadge';
+import { SelectProvider, useSelectContext } from '@/components/primitives/SelectProvider';
+import { SelectCheckboxCell } from '@/components/primitives/SelectCheckboxCell';
 import { MoviePosterView, MovieOverviewView } from '@/components/views';
+import { MovieBulkEditModal } from '@/components/movie';
 import { useToast } from '@/components/providers/ToastProvider';
 import { getApiClients } from '@/lib/api/client';
 import { queryKeys } from '@/lib/query/queryKeys';
@@ -21,6 +24,72 @@ function fileStatus(item: MovieListItem): string {
   return getFileStatus(item);
 }
 
+// Select All header component - renders the select all checkbox
+function SelectAllHeader({ allIds }: { allIds: (string | number)[] }) {
+  const { selectedIds, isSelected, toggleRow, clearSelection } = useSelectContext();
+  const allSelected = allIds.length > 0 && allIds.every(id => isSelected(id));
+  const someSelected = allIds.some(id => isSelected(id)) && !allSelected;
+
+  const handleToggle = () => {
+    if (allSelected) {
+      clearSelection();
+    } else {
+      // Select all visible items that aren't already selected
+      allIds.forEach(id => {
+        if (!isSelected(id)) {
+          toggleRow(id);
+        }
+      });
+    }
+  };
+
+  return (
+    <input
+      type="checkbox"
+      checked={allSelected}
+      ref={input => {
+        if (input) {
+          input.indeterminate = someSelected;
+        }
+      }}
+      onChange={handleToggle}
+      aria-label="Select all movies on this page"
+      title="Select all movies on this page"
+    />
+  );
+}
+
+// Bulk Edit Toolbar component
+function BulkEditToolbar({ onOpenBulkEdit }: { onOpenBulkEdit: (ids: number[]) => void }) {
+  const { selectedIds, clearSelection } = useSelectContext();
+
+  if (selectedIds.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="flex items-center gap-3 rounded-sm border border-accent-primary/50 bg-accent-primary/10 px-4 py-2 mb-3">
+      <span className="text-sm font-medium">
+        {selectedIds.length} movie{selectedIds.length === 1 ? '' : 's'} selected
+      </span>
+      <button
+        type="button"
+        className="rounded-sm border border-border-subtle bg-surface-1 px-3 py-1 text-sm hover:bg-surface-2"
+        onClick={() => onOpenBulkEdit(selectedIds as number[])}
+      >
+        Bulk Edit
+      </button>
+      <button
+        type="button"
+        className="rounded-sm border border-border-subtle bg-surface-1 px-3 py-1 text-sm hover:bg-surface-2"
+        onClick={clearSelection}
+      >
+        Clear
+      </button>
+    </div>
+  );
+}
+
 export default function MoviesLibraryPage() {
   const api = useMemo(() => getApiClients(), []);
   const queryClient = useQueryClient();
@@ -31,6 +100,8 @@ export default function MoviesLibraryPage() {
   const [sortBy, setSortBy] = useState<'title' | 'year' | 'status'>('title');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [viewMode, setViewMode] = useState<ViewMode>('table');
+  const [isBulkEditOpen, setIsBulkEditOpen] = useState(false);
+  const [selectedMovieIds, setSelectedMovieIds] = useState<number[]>([]);
 
   const queryInput = {
     page,
@@ -91,11 +162,12 @@ export default function MoviesLibraryPage() {
       }
 
       const candidates = await api.releaseApi.searchCandidates({
-        movieId,
+        type: 'movie',
         title: movie.title,
+        year: movie.year,
       });
 
-      return candidates.length;
+      return candidates.meta.totalCount;
     },
     onSuccess: (count, movieId) => {
       const movie = moviesQuery.data?.items.find(m => m.id === movieId);
@@ -107,7 +179,7 @@ export default function MoviesLibraryPage() {
     },
   });
 
-  const columns: DataTableColumn<MovieListItem>[] = [
+  const columns: DataTableColumn<MovieListItem>[] = useMemo(() => [
     {
       key: 'title',
       header: 'Title',
@@ -154,10 +226,17 @@ export default function MoviesLibraryPage() {
         </label>
       ),
     },
-  ];
+  ], [monitoredMutation]);
 
   const data = moviesQuery.data;
   const movies = data?.items ?? [];
+
+  // Get selected movie titles for the modal
+  const selectedMovieTitles = useMemo(() => {
+    return selectedMovieIds
+      .map(id => movies.find(m => m.id === id)?.title)
+      .filter(Boolean) as string[];
+  }, [selectedMovieIds, movies]);
 
   return (
     <section className="space-y-4">
@@ -212,48 +291,157 @@ export default function MoviesLibraryPage() {
         emptyBody="Adjust filters or add a new movie from Add Media."
       >
         {viewMode === 'table' && (
-          <DataTable
-            data={movies}
-            columns={columns}
-            getRowId={row => row.id}
-            sort={{ key: sortBy, direction: sortDir }}
-            onSort={key => {
-              if (key !== 'title' && key !== 'year' && key !== 'status') {
-                return;
-              }
-
-              const next = nextSortState({ key: sortBy, direction: sortDir }, key);
-              setSortBy(next.key);
-              setSortDir(next.direction);
-            }}
-            pagination={{
-              page,
-              totalPages: data?.meta.totalPages ?? 1,
-              onPrev: () => setPage(current => Math.max(1, current - 1)),
-              onNext: () => setPage(current => Math.min(data?.meta.totalPages ?? 1, current + 1)),
-            }}
-            rowActions={row => (
-              <div className="flex justify-end gap-2">
-                <a href={`/library/movies/${row.id}`} className="rounded-sm border border-border-subtle px-2 py-1 text-xs">
-                  Open
-                </a>
+          <SelectProvider rowIds={movies.map(m => m.id)}>
+            <BulkEditToolbar
+              onOpenBulkEdit={(ids) => {
+                setSelectedMovieIds(ids);
+                setIsBulkEditOpen(true);
+              }}
+            />
+            {/* Custom table header with select all */}
+            <div className="overflow-x-auto rounded-sm border border-border-subtle">
+              <table className="w-full">
+                <thead className="bg-surface-2 text-text-secondary">
+                  <tr>
+                    <th className="w-10 px-3 py-2">
+                      <SelectAllHeader allIds={movies.map(m => m.id)} />
+                    </th>
+                    <th className="px-3 py-2 font-semibold text-left">
+                      <button
+                        type="button"
+                        className="inline-flex items-center gap-1 text-left"
+                        onClick={() => {
+                          const next = nextSortState({ key: sortBy, direction: sortDir }, 'title');
+                          setSortBy(next.key as 'title' | 'year' | 'status');
+                          setSortDir(next.direction);
+                        }}
+                      >
+                        Title
+                        {sortBy === 'title' && (
+                          <span aria-hidden="true">{sortDir === 'asc' ? '↑' : '↓'}</span>
+                        )}
+                      </button>
+                    </th>
+                    <th className="px-3 py-2 font-semibold text-left">
+                      <button
+                        type="button"
+                        className="inline-flex items-center gap-1 text-left"
+                        onClick={() => {
+                          const next = nextSortState({ key: sortBy, direction: sortDir }, 'year');
+                          setSortBy(next.key as 'title' | 'year' | 'status');
+                          setSortDir(next.direction);
+                        }}
+                      >
+                        Year
+                        {sortBy === 'year' && (
+                          <span aria-hidden="true">{sortDir === 'asc' ? '↑' : '↓'}</span>
+                        )}
+                      </button>
+                    </th>
+                    <th className="px-3 py-2 font-semibold text-left">
+                      <button
+                        type="button"
+                        className="inline-flex items-center gap-1 text-left"
+                        onClick={() => {
+                          const next = nextSortState({ key: sortBy, direction: sortDir }, 'status');
+                          setSortBy(next.key as 'title' | 'year' | 'status');
+                          setSortDir(next.direction);
+                        }}
+                      >
+                        Status
+                        {sortBy === 'status' && (
+                          <span aria-hidden="true">{sortDir === 'asc' ? '↑' : '↓'}</span>
+                        )}
+                      </button>
+                    </th>
+                    <th className="px-3 py-2 font-semibold text-left">File</th>
+                    <th className="px-3 py-2 font-semibold text-left">Monitored</th>
+                    <th className="px-3 py-2 font-semibold text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border-subtle bg-surface-1">
+                  {movies.map(row => (
+                    <tr key={row.id} className="hover:bg-surface-2">
+                      <td className="w-10 px-3 py-2">
+                        <SelectCheckboxCell rowId={row.id} />
+                      </td>
+                      <td className="px-3 py-2">
+                        <a href={`/library/movies/${row.id}`} className="font-medium hover:underline">
+                          {row.title}
+                        </a>
+                      </td>
+                      <td className="px-3 py-2">{row.year ?? '-'}</td>
+                      <td className="px-3 py-2">
+                        <StatusBadge status={row.status ?? 'unknown'} />
+                      </td>
+                      <td className="px-3 py-2">
+                        <StatusBadge status={fileStatus(row)} />
+                      </td>
+                      <td className="px-3 py-2">
+                        <label className="inline-flex items-center gap-2 text-xs">
+                          <input
+                            type="checkbox"
+                            checked={Boolean(row.monitored)}
+                            onChange={event => {
+                              monitoredMutation.mutate({
+                                id: row.id,
+                                monitored: event.currentTarget.checked,
+                              });
+                            }}
+                          />
+                          {row.monitored ? 'On' : 'Off'}
+                        </label>
+                      </td>
+                      <td className="px-3 py-2">
+                        <div className="flex justify-end gap-2">
+                          <a href={`/library/movies/${row.id}`} className="rounded-sm border border-border-subtle px-2 py-1 text-xs">
+                            Open
+                          </a>
+                          <button
+                            type="button"
+                            className="rounded-sm border border-status-error/60 px-2 py-1 text-xs text-status-error"
+                            onClick={() => {
+                              const confirmed = window.confirm(`Delete ${row.title}?`);
+                              if (!confirmed) {
+                                return;
+                              }
+                              deleteMutation.mutate(row.id);
+                            }}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {/* Pagination */}
+            {data && data.meta.totalPages > 1 && (
+              <div className="flex justify-center gap-2 pt-4">
                 <button
                   type="button"
-                  className="rounded-sm border border-status-error/60 px-2 py-1 text-xs text-status-error"
-                  onClick={() => {
-                    const confirmed = window.confirm(`Delete ${row.title}?`);
-                    if (!confirmed) {
-                      return;
-                    }
-
-                    deleteMutation.mutate(row.id);
-                  }}
+                  className="rounded-sm border border-border-subtle px-4 py-2 text-sm transition-colors hover:bg-surface-2 disabled:opacity-50"
+                  onClick={() => setPage(current => Math.max(1, current - 1))}
+                  disabled={page === 1}
                 >
-                  Delete
+                  Previous
+                </button>
+                <span className="px-4 py-2 text-sm text-text-secondary">
+                  Page {page} of {data.meta.totalPages}
+                </span>
+                <button
+                  type="button"
+                  className="rounded-sm border border-border-subtle px-4 py-2 text-sm transition-colors hover:bg-surface-2 disabled:opacity-50"
+                  onClick={() => setPage(current => Math.min(data.meta.totalPages, current + 1))}
+                  disabled={page === data.meta.totalPages}
+                >
+                  Next
                 </button>
               </div>
             )}
-          />
+          </SelectProvider>
         )}
 
         {viewMode === 'poster' && (
@@ -348,6 +536,14 @@ export default function MoviesLibraryPage() {
           </>
         )}
       </QueryPanel>
+
+      {/* Bulk Edit Modal */}
+      <MovieBulkEditModal
+        isOpen={isBulkEditOpen}
+        onClose={() => setIsBulkEditOpen(false)}
+        selectedMovieIds={selectedMovieIds}
+        selectedMovieTitles={selectedMovieTitles}
+      />
     </section>
   );
 }

@@ -15,3 +15,8 @@ export type { MovieActionsToolbarProps } from './MovieActionsToolbar';
 
 export { MovieHistory } from './MovieHistory';
 export type { MovieHistoryProps } from './MovieHistory';
+
+export { OrganizePreviewModal } from './OrganizePreviewModal';
+export { ManualMatchDialog } from './ManualMatchDialog';
+
+export { MovieBulkEditModal } from './MovieBulkEditModal';

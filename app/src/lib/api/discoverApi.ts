@@ -31,6 +31,10 @@ export interface DiscoverRecommendationsParams {
   mode: 'popular' | 'top-rated' | 'new-releases' | 'upcoming';
 }
 
+export interface SearchMoviesParams {
+  query: string;
+}
+
 export function createDiscoverApi(client: ApiHttpClient) {
   return {
     listRecommendations(params: DiscoverRecommendationsParams): Promise<DiscoverMovie[]> {
@@ -40,6 +44,18 @@ export function createDiscoverApi(client: ApiHttpClient) {
           query: { mode: params.mode },
         },
         z.array(discoverMovieSchema),
+      );
+    },
+
+    searchMovies(params: SearchMoviesParams): Promise<{ results: DiscoverMovie[] }> {
+      return client.request(
+        {
+          path: '/api/discover/movies/search',
+          query: { query: params.query },
+        },
+        z.object({
+          results: z.array(discoverMovieSchema),
+        }),
       );
     },
   };

@@ -3,6 +3,7 @@ import { registerApiErrorHandler } from './errors';
 import { ApiEventHub } from './eventHub';
 import { registerBackupRoutes } from './routes/backupRoutes';
 import { registerBlocklistRoutes } from './routes/blocklistRoutes';
+import { registerCollectionRoutes } from './routes/collectionRoutes';
 import { registerCustomFormatRoutes } from './routes/customFormatRoutes';
 import { registerDownloadClientRoutes } from './routes/downloadClientRoutes';
 import { registerEventsRoutes } from './routes/eventsRoutes';
@@ -150,6 +151,7 @@ export function createApiServer(
   registerDownloadClientRoutes(app, dependencies);
   registerCustomFormatRoutes(app, dependencies);
   registerImportListRoutes(app, dependencies);
+  registerCollectionRoutes(app, dependencies);
 
   const pollState: PollState = {};
   const intervals: NodeJS.Timeout[] = [];

@@ -8,6 +8,7 @@ import type { QualityProfileRepository } from '../repositories/QualityProfileRep
 import type { DownloadClientRepository } from '../repositories/DownloadClientRepository';
 import type { CustomFormatRepository } from '../repositories/CustomFormatRepository';
 import type { ImportListRepository } from '../repositories/ImportListRepository';
+import type { CollectionRepository } from '../repositories/CollectionRepository';
 import type { MediaService } from '../services/MediaService';
 import type { MediaSearchService } from '../services/MediaSearchService';
 import type { WantedService } from '../services/WantedService';
@@ -15,6 +16,7 @@ import type { TorrentManager } from '../services/TorrentManager';
 import type { SettingsService } from '../services/SettingsService';
 import type { SubtitleInventoryApiService } from '../services/SubtitleInventoryApiService';
 import type { MetadataProvider } from '../services/MetadataProvider';
+import type { CollectionService } from '../services/CollectionService';
 import type { IndexerFactory } from '../indexers/IndexerFactory';
 import type { IndexerTester } from '../indexers/IndexerTester';
 import type { ApiEventHub } from './eventHub';
@@ -90,6 +92,14 @@ export interface ApiDependencies {
   >;
   importListProviderRegistry?: ImportListProviderFactory;
   importListSyncService?: Pick<ImportListSyncService, 'syncList' | 'syncAllEnabled'>;
+  collectionRepository?: Pick<
+    CollectionRepository,
+    'findAll' | 'findById' | 'findByTmdbCollectionId' | 'create' | 'update' | 'delete' | 'getMovieCount' | 'getInLibraryCount' | 'exists' | 'existsByTmdbId'
+  >;
+  collectionService?: Pick<
+    CollectionService,
+    'fetchFromTMDB' | 'createCollection' | 'syncCollectionMovies' | 'searchMissingMovies'
+  >;
 }
 
 export interface ApiServerOptions {

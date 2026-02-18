@@ -14,6 +14,7 @@ import {
   AppSettingsRepository,
   DEFAULT_APP_SETTINGS,
 } from './repositories/AppSettingsRepository';
+import { CollectionRepository } from './repositories/CollectionRepository';
 import { CustomFormatRepository } from './repositories/CustomFormatRepository';
 import { DownloadClientRepository } from './repositories/DownloadClientRepository';
 import { ImportListRepository } from './repositories/ImportListRepository';
@@ -27,6 +28,7 @@ import { TorrentRepository } from './repositories/TorrentRepository';
 import { seedCategories } from './seeds/categories';
 import { seedQualityDefinitions } from './seeds/qualities';
 import { ActivityEventEmitter } from './services/ActivityEventEmitter';
+import { CollectionService } from './services/CollectionService';
 import { DataDirectoryInitializer } from './services/DataDirectoryInitializer';
 import {
   ImportListProviderRegistry,
@@ -372,10 +374,12 @@ async function startApi(): Promise<void> {
   const subtitleVariantRepository = new SubtitleVariantRepository(prisma);
   const appSettingsRepository = new AppSettingsRepository(prisma);
   const torrentRepository = new TorrentRepository(prisma);
+  const collectionRepository = new CollectionRepository(prisma);
 
   const httpClient = new HttpClient();
   const settingsService = new SettingsService(appSettingsRepository);
   const metadataProvider = new MetadataProvider(httpClient, settingsService);
+  const collectionService = new CollectionService(prisma, httpClient, settingsService);
 
   // Import list providers
   const importListProviderRegistry = new ImportListProviderRegistry();
@@ -492,6 +496,8 @@ async function startApi(): Promise<void> {
     importListRepository,
     importListProviderRegistry,
     importListSyncService,
+    collectionRepository,
+    collectionService,
   });
 
   const close = async (): Promise<void> => {

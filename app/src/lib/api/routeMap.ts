@@ -152,6 +152,7 @@ export const routeMap = {
   collectionUpdate: (id: number) => `/api/collections/${id}`,
   collectionDelete: (id: number) => `/api/collections/${id}`,
   collectionSearch: (id: number) => `/api/collections/${id}/search`,
+  collectionSync: (id: number) => `/api/collections/${id}/sync`,
 
   discover: '/api/discover/movies',
 

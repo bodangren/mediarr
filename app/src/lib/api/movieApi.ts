@@ -35,7 +35,33 @@ const movieSchema = z.object({
   }).optional(),
 }).passthrough();
 
+// Organize preview schema
+const organizePreviewSchema = z.object({
+  movieId: z.number(),
+  movieTitle: z.string(),
+  currentPath: z.string(),
+  newPath: z.string(),
+  isNewPath: z.boolean(),
+});
+
+// Import file schema
+const importFileSchema = z.object({
+  path: z.string(),
+  size: z.number(),
+  parsedMovieTitle: z.string().optional(),
+  parsedYear: z.number().optional(),
+  parsedQuality: z.string().optional(),
+  match: z.object({
+    movieId: z.number(),
+    title: z.string(),
+    year: z.number(),
+    confidence: z.number(),
+  }).optional(),
+});
+
 export type Movie = z.infer<typeof movieSchema>;
+export type OrganizePreview = z.infer<typeof organizePreviewSchema>;
+export type ImportFile = z.infer<typeof importFileSchema>;
 
 export interface UpdateMovieInput {
   monitored?: boolean;
@@ -47,6 +73,44 @@ export interface UpdateMovieInput {
   certification?: string;
   genres?: string[];
   tags?: number[];
+}
+
+export interface OrganizePreviewInput {
+  movieIds: number[];
+}
+
+export interface OrganizeApplyInput {
+  movieIds: number[];
+}
+
+export interface ImportScanInput {
+  path: string;
+}
+
+export interface ImportApplyFile {
+  path: string;
+  movieId: number;
+  quality?: string;
+  language?: string;
+}
+
+export interface ImportApplyInput {
+  files: ImportApplyFile[];
+}
+
+export interface BulkMovieChanges {
+  qualityProfileId?: number;
+  monitored?: boolean;
+  minimumAvailability?: string;
+  path?: string;
+  addTags?: string[];
+  removeTags?: string[];
+}
+
+export interface BulkUpdateResult {
+  updated: number;
+  failed: number;
+  errors?: Array<{ movieId: number; error: string }>;
 }
 
 export function createMovieApi(client: ApiHttpClient) {
@@ -98,6 +162,100 @@ export function createMovieApi(client: ApiHttpClient) {
           method: 'DELETE',
         },
         z.object({ deleted: z.boolean() }),
+      );
+    },
+
+    // Organize/Rename endpoints
+    previewOrganize(input: OrganizePreviewInput): Promise<{ previews: OrganizePreview[] }> {
+      return client.request(
+        {
+          path: '/api/movies/organize/preview',
+          method: 'POST',
+          body: input,
+        },
+        z.object({
+          previews: z.array(organizePreviewSchema),
+        }),
+      );
+    },
+
+    applyOrganize(input: OrganizeApplyInput): Promise<{ renamed: number; failed: number; errors: Array<{ movieId: number; error: string }> }> {
+      return client.request(
+        {
+          path: '/api/movies/organize/apply',
+          method: 'PUT',
+          body: input,
+        },
+        z.object({
+          renamed: z.number(),
+          failed: z.number(),
+          errors: z.array(z.object({
+            movieId: z.number(),
+            error: z.string(),
+          })),
+        }),
+      );
+    },
+
+    // Import endpoints
+    scanImport(input: ImportScanInput): Promise<{ files: ImportFile[] }> {
+      return client.request(
+        {
+          path: '/api/movies/import/scan',
+          method: 'POST',
+          body: input,
+        },
+        z.object({
+          files: z.array(importFileSchema),
+        }),
+      );
+    },
+
+    applyImport(input: ImportApplyInput): Promise<{ imported: number; failed: number; errors: Array<{ path: string; error: string }> }> {
+      return client.request(
+        {
+          path: '/api/movies/import/apply',
+          method: 'POST',
+          body: input,
+        },
+        z.object({
+          imported: z.number(),
+          failed: z.number(),
+          errors: z.array(z.object({
+            path: z.string(),
+            error: z.string(),
+          })),
+        }),
+      );
+    },
+
+    // Bulk edit endpoints
+    bulkUpdate(movieIds: number[], changes: BulkMovieChanges): Promise<BulkUpdateResult> {
+      return client.request(
+        {
+          path: '/api/movies/bulk',
+          method: 'PUT',
+          body: { movieIds, changes },
+        },
+        z.object({
+          updated: z.number(),
+          failed: z.number(),
+          errors: z.array(z.object({
+            movieId: z.number(),
+            error: z.string(),
+          })).optional(),
+        }),
+      );
+    },
+
+    getRootFolders(): Promise<{ rootFolders: string[] }> {
+      return client.request(
+        {
+          path: '/api/movies/root-folders',
+        },
+        z.object({
+          rootFolders: z.array(z.string()),
+        }),
       );
     },
   };

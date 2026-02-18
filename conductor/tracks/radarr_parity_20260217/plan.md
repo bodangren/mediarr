@@ -21,9 +21,9 @@
     - [x] Sub-task: Add progress bar per collection card (in-library / total movies).
     - [x] Sub-task: Add search button per collection calling search endpoint.
     - [x] Sub-task: Add filter and sort controls (name, size, completion %).
-- [x] Task: Conductor - User Manual Verification 'Phase 1' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 1' (Protocol in workflow.md) - COMPLETED
 
-## Phase 2: Interactive Search & Movie Detail Enrichment
+## Phase 2: Interactive Search & Movie Detail Enrichment - COMPLETED
 > **BLOCKED BY**: "Complete Interactive Search Modal" requires `prowlarr_parity Phase 1` (search aggregation backend must return real results from indexers). Movie detail enrichment tasks have no cross-track dependency.
 > **SOFT DEPENDENCY**: Custom format score display on releases is additive — wire once `cross_cutting_parity Phase 1` delivers `CustomFormatScoringEngine`.
 
@@ -47,9 +47,9 @@
     - [x] Sub-task: Add audio track and subtitle file details for movie file.
     - [x] Sub-task: Add history timeline tab showing download/import events for this movie.
     - [x] Sub-task: Backend: `GET /api/movies/:id/history` returning events filtered to movie.
-- [x] Task: Conductor - User Manual Verification 'Phase 2' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 2' (Protocol in workflow.md) - COMPLETED
 
-## Phase 3: Movie Bulk Editor
+## Phase 3: Movie Bulk Editor - COMPLETED
 
 - [x] Task: Build Bulk Edit Backend
     - [ ] Sub-task: Write tests — verify `PUT /api/movies/bulk` updates fields for multiple movies.
@@ -64,9 +64,9 @@
     - [x] Sub-task: Show change preview summary before applying.
     - [x] Sub-task: Wire apply to `PUT /api/movies/bulk`.
     - [x] Sub-task: Add "Organize Files" action for selected movies in bulk toolbar.
-- [x] Task: Conductor - User Manual Verification 'Phase 3' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 3' (Protocol in workflow.md) - COMPLETED
 
-## Phase 4: Organize/Rename & Interactive Import
+## Phase 4: Organize/Rename & Interactive Import - COMPLETED
 
 - [x] Task: Build Organize/Rename Backend
     - [x] Sub-task: Write tests — verify preview returns old/new path pairs based on naming pattern.
@@ -92,9 +92,9 @@
     - [x] Sub-task: Manual match override: movie search dialog to pick correct match.
     - [x] Sub-task: Quality and language override per file.
     - [x] Sub-task: Import button to apply all confirmed matches.
-- [x] Task: Conductor - User Manual Verification 'Phase 4' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 4' (Protocol in workflow.md) - COMPLETED
 
-## Phase 5: Missing Settings Pages
+## Phase 5: Missing Settings Pages - READY TO START (Unblocked)
 > **BLOCKED BY**: "Build Custom Formats Settings UI" requires `cross_cutting_parity Phase 1` (Custom Formats backend API). "Build Import Lists Settings UI" requires `cross_cutting_parity Phase 2` (Import Lists backend API). Other settings pages in this phase have no cross-track dependencies and can start immediately.
 
 - [ ] Task: Build Media Management Settings Page
@@ -133,4 +133,4 @@
     - [ ] Sub-task: Tag list with add/edit/delete.
     - [ ] Sub-task: Tag detail modal showing: which series, movies, profiles, etc. use this tag.
     - [ ] Sub-task: Backend: `GET /api/tags/:id/detail` returning tag usage across entities.
-- [ ] Task: Conductor - User Manual Verification 'Phase 5' (Protocol in workflow.md)
+- [ ] Task: Conductor - User Manual Verification 'Phase 5' (Protocol in workflow.md) - PENDING

@@ -36,9 +36,9 @@
     - [ ] Sub-task: Write tests — verify override modal allows manual category/quality assignment.
     - [ ] Sub-task: Create ReleaseOverrideModal: manual title, category, quality, language override.
     - [ ] Sub-task: Wire overridden values to grab request.
-- [ ] Task: Conductor - User Manual Verification 'Phase 1' (Protocol in workflow.md)
+- [~] Task: Conductor - User Manual Verification 'Phase 1' (Protocol in workflow.md) - PENDING
 
-## Phase 2: App Profiles, Application Integration & Notifications
+## Phase 2: App Profiles, Application Integration & Notifications - PENDING
 > **SOFT DEPENDENCY**: Notification provider dynamic forms benefit from `cross_cutting_parity Phase 4` DynamicForm conditional field rendering. Can proceed with static forms first.
 
 - [ ] Task: Build App Profiles Backend
@@ -79,9 +79,9 @@
     - [ ] Sub-task: Add any missing provider schemas (Discord, Slack, Telegram, Email, Webhook).
     - [ ] Sub-task: Build/verify Settings > Notifications UI page with provider list, add/edit/delete, test button.
     - [ ] Sub-task: Dynamic form generation from notification provider schema.
-- [ ] Task: Conductor - User Manual Verification 'Phase 2' (Protocol in workflow.md)
+- [ ] Task: Conductor - User Manual Verification 'Phase 2' (Protocol in workflow.md) - PENDING
 
-## Phase 3: Persistence, Cloning, Filters & Info
+## Phase 3: Persistence, Cloning, Filters & Info - PENDING
 
 - [ ] Task: Persist Proxy Settings to Database
     - [ ] Sub-task: Write tests — verify proxy CRUD API stores/retrieves from DB.
@@ -114,4 +114,4 @@
     - [ ] Sub-task: Add capability badges to indexer table rows (RSS, Search, Privacy, Protocol).
     - [ ] Sub-task: Build IndexerInfoModal: full details, capabilities, categories, health history.
     - [ ] Sub-task: Add "Info" button to indexer row actions.
-- [ ] Task: Conductor - User Manual Verification 'Phase 3' (Protocol in workflow.md)
+- [ ] Task: Conductor - User Manual Verification 'Phase 3' (Protocol in workflow.md) - PENDING

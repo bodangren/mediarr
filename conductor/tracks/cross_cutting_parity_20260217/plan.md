@@ -15,9 +15,9 @@
     - [x] Sub-task: Implement CustomFormatScoringEngine: evaluate release title/properties against conditions (regex match, size range, language, indexer flags).
     - [~] Sub-task: Integrate scoring engine into release evaluation (search results ranking).
     - [ ] Sub-task: Add custom format score display to quality profile edit UI.
-- [ ] Task: Conductor - User Manual Verification 'Phase 1' (Protocol in workflow.md)
+- [~] Task: Conductor - User Manual Verification 'Phase 1' (Protocol in workflow.md) - PENDING
 
-## Phase 2: Import Lists Framework
+## Phase 2: Import Lists Framework - BACKEND COMPLETE
 > **NO CROSS-TRACK DEPENDENCIES** — can start immediately.
 > **UNBLOCKS**: Radarr Phase 5 ("Build Import Lists Settings UI").
 
@@ -42,9 +42,9 @@
     - [ ] Sub-task: Create/edit modal: provider type selector, provider-specific config fields, root folder, quality profile, monitoring type, sync interval.
     - [ ] Sub-task: Manual sync button per list.
     - [ ] Sub-task: Exclusions tab: list exclusions, add exclusion (search media + exclude), remove exclusion.
-- [ ] Task: Conductor - User Manual Verification 'Phase 2' (Protocol in workflow.md)
+- [ ] Task: Conductor - User Manual Verification 'Phase 2' (Protocol in workflow.md) - PENDING
 
-## Phase 3: Calendar Sync & Dashboard Widgets
+## Phase 3: Calendar Sync & Dashboard Widgets - PENDING
 > **NO CROSS-TRACK DEPENDENCIES** — can start immediately.
 > **UNBLOCKS**: Sonarr and Radarr calendar page buttons (iCal, RSS, Search Missing — currently disabled).
 
@@ -70,9 +70,9 @@
     - [ ] Sub-task: Build LibraryStatsWidget: total movies, series, episodes, subtitle coverage %.
     - [ ] Sub-task: Build HealthWidget: green/yellow/red status indicators per check.
     - [ ] Sub-task: Add widgets to main dashboard/home page in responsive grid layout.
-- [ ] Task: Conductor - User Manual Verification 'Phase 3' (Protocol in workflow.md)
+- [ ] Task: Conductor - User Manual Verification 'Phase 3' (Protocol in workflow.md) - PENDING
 
-## Phase 4: Activity Filtering & Resilience
+## Phase 4: Activity Filtering & Resilience - PENDING
 > **NO CROSS-TRACK DEPENDENCIES** — carries forward work from archived `fix_core_parity_wiring` Phase 4. Can start immediately.
 > **UNBLOCKS**: Bazarr Phase 2 (subtitle download flow), Prowlarr Phase 1 (per-indexer error reporting), Prowlarr Phase 2 (DynamicForm conditional fields for notification forms).
 
@@ -106,4 +106,4 @@
     - [ ] Sub-task: Implement OpenSubtitlesProvider.download(): call download API, return file content.
     - [ ] Sub-task: Update SubtitleInventoryApiService.manualDownload(): write file to storedPath on disk, persist DB metadata.
     - [ ] Sub-task: Replace alert() in subtitle manual search with toast notification.
-- [ ] Task: Conductor - User Manual Verification 'Phase 4' (Protocol in workflow.md)
+- [ ] Task: Conductor - User Manual Verification 'Phase 4' (Protocol in workflow.md) - PENDING

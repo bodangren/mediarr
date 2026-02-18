@@ -24,9 +24,9 @@
     - [ ] Sub-task: Build upload modal/form: file drop zone, language dropdown, forced checkbox, HI checkbox.
     - [ ] Sub-task: Wire to `POST /api/subtitles/upload`.
     - [ ] Sub-task: Show upload progress and success/error feedback.
-- [ ] Task: Conductor - User Manual Verification 'Phase 1' (Protocol in workflow.md)
+- [~] Task: Conductor - User Manual Verification 'Phase 1' (Protocol in workflow.md) - PARTIAL (mass edit complete, upload pending)
 
-## Phase 2: Episode-Level Operations & Movie Detail Completion
+## Phase 2: Episode-Level Operations & Movie Detail Completion - PENDING
 > **SOFT DEPENDENCY**: "Complete Movie Detail Subtitle Page" manual search → download flow benefits from `cross_cutting_parity Phase 4` (OpenSubtitlesProvider.download() wiring). Can proceed with search-only; download wiring added once Phase 4 delivers.
 
 - [ ] Task: Wire Episode-Level Subtitle Actions
@@ -49,9 +49,9 @@
     - [ ] Sub-task: Wire Search button to manual search with movie context.
     - [ ] Sub-task: Implement `POST /api/subtitles/movie/:id/sync` and `POST /api/subtitles/movie/:id/scan` endpoints.
     - [ ] Sub-task: Complete manual search modal integration with provider results.
-- [ ] Task: Conductor - User Manual Verification 'Phase 2' (Protocol in workflow.md)
+- [ ] Task: Conductor - User Manual Verification 'Phase 2' (Protocol in workflow.md) - PENDING
 
-## Phase 3: Advanced Subtitle Settings
+## Phase 3: Advanced Subtitle Settings - PENDING
 
 - [ ] Task: Build Advanced Settings Schema
     - [ ] Sub-task: Write tests — verify settings schema includes all subtitle-specific fields.
@@ -78,4 +78,4 @@
     - [ ] Sub-task: Write tests — verify anti-captcha config renders in provider settings.
     - [ ] Sub-task: Add anti-captcha section to providers page: provider type (Anti-Captcha, Death-by-Captcha), API key field.
     - [ ] Sub-task: Wire to provider settings API.
-- [ ] Task: Conductor - User Manual Verification 'Phase 3' (Protocol in workflow.md)
+- [ ] Task: Conductor - User Manual Verification 'Phase 3' (Protocol in workflow.md) - PENDING

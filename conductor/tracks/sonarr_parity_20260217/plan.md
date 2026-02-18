@@ -19,9 +19,9 @@
     - [x] Sub-task: Show tags on series detail (read from series data).
     - [x] Sub-task: Add alternate titles section (collapsible).
     - [x] Sub-task: Display episode air dates in episode table rows.
-- [x] Task: Conductor - User Manual Verification 'Phase 1' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 1' (Protocol in workflow.md) - COMPLETED
 
-## Phase 2: Season Pass & Advanced Monitoring
+## Phase 2: Season Pass & Advanced Monitoring - COMPLETED
 
 - [x] Task: Build Season Pass Backend
     - [ ] Sub-task: Write tests — verify `PUT /api/series/:id/monitoring` accepts monitoring type and updates series + episodes accordingly.
@@ -36,9 +36,9 @@
     - [x] Sub-task: Add monitoring strategy dropdown per series (All, None, First Season, Last Season, Latest, Pilot).
     - [x] Sub-task: Wire strategy selection to `PUT /api/series/:id/monitoring`.
     - [x] Sub-task: Add bulk series selection with "Apply to Selected" action.
-- [x] Task: Conductor - User Manual Verification 'Phase 2' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 2' (Protocol in workflow.md) - COMPLETED
 
-## Phase 3: Series Bulk Editor
+## Phase 3: Series Bulk Editor - COMPLETED
 
 - [x] Task: Build Bulk Edit Backend
     - [x] Sub-task: Write tests — verify `PUT /api/series/bulk` updates quality profile, monitored, root folder, tags for multiple series.
@@ -53,9 +53,9 @@
     - [x] Sub-task: Build edit form: quality profile dropdown, monitored toggle, root folder selector, tag editor.
     - [x] Sub-task: Show preview of changes before applying.
     - [x] Sub-task: Wire apply button to `PUT /api/series/bulk`.
-- [x] Task: Conductor - User Manual Verification 'Phase 3' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 3' (Protocol in workflow.md) - COMPLETED
 
-## Phase 4: Manual Import & Organize/Rename
+## Phase 4: Manual Import & Organize/Rename - COMPLETED
 
 - [x] Task: Build Import/Organize Backend
     - [ ] Sub-task: Write tests — verify `POST /api/series/import/scan` scans directory and returns matched/unmatched files.
@@ -78,9 +78,9 @@
     - [x] Sub-task: Create organize preview modal showing before → after file paths.
     - [x] Sub-task: Add "Organize" button to series detail toolbar and bulk editor.
     - [x] Sub-task: Wire apply button to organize endpoint.
-- [x] Task: Conductor - User Manual Verification 'Phase 4' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 4' (Protocol in workflow.md) - COMPLETED
 
-## Phase 5: Advanced Filtering & List Enhancements
+## Phase 5: Advanced Filtering & List Enhancements - PENDING
 
 - [ ] Task: Implement Custom Filters
     - [ ] Sub-task: Write tests — verify filter builder creates, saves, loads, and deletes named filters.

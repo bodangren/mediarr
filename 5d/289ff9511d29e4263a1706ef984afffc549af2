@@ -2,9 +2,9 @@ Task: Implement Query/Config/Category Template Evaluation
 
 Summary:
 - Added a reusable Cardigann template runtime for query/config/category interpolation.
-- Implemented support for key template forms used by current definitions: direct references, , and  blocks.
+- Implemented support for key template forms used by current definitions: direct references, join .Categories, and range .Categories blocks.
 - Added URL resolver utility handling both absolute and relative Cardigann path templates.
-- Updated SearchTranslator and ScrapingIndexer path URL construction to use the shared template runtime while preserving legacy  shorthand behavior.
+- Updated SearchTranslator and ScrapingIndexer path URL construction to use the shared template runtime while preserving legacy {q} shorthand behavior.
 - Added targeted template runtime tests covering query fields, config substitutions, category substitutions, and URL encoding semantics.
 
 Files:

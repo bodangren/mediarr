@@ -89,7 +89,7 @@ The cross-cutting track produces shared backend APIs and engines that domain tra
   *Description: Shared features across all apps — custom formats system, import lists framework, iCal/RSS calendar sync, dashboard widgets, activity filtering, resilience improvements, and carried-forward Cardigann/subtitle fixes.*
   *Phases: 4 | Link: [./tracks/cross_cutting_parity_20260217/](./tracks/cross_cutting_parity_20260217/)*
 
-- [ ] **Track: Cardigann Runtime Parity (Monolith-Native)**
+- [~] **Track: Cardigann Runtime Parity (Monolith-Native)**
   *Description: Reimplement Cardigann execution features required by imported indexer definitions, with a test-first compatibility harness and definition-driven parity milestones for Mediarr's native indexer engine.*
   *Phases: 5 | Link: [./tracks/cardigann_runtime_parity_20260223/](./tracks/cardigann_runtime_parity_20260223/)*
 

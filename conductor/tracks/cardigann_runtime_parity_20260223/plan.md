@@ -4,7 +4,7 @@
 > **TEST-FIRST GATE** - no runtime feature implementation in this phase.
 > **GOAL**: establish measurable parity baseline before coding behavior changes.
 
-- [ ] Task: Build Cardigann Conformance Harness Skeleton
+- [~] Task: Build Cardigann Conformance Harness Skeleton
     - [ ] Sub-task: Create test suite structure under `server/src/indexers/` for Cardigann conformance.
     - [ ] Sub-task: Write tests - harness reports pass/fail by feature area.
     - [ ] Sub-task: Write tests - harness reports pass/fail by definition ID.

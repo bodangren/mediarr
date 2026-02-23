@@ -1,0 +1,60 @@
+{
+  "id": "sample-1337x-html",
+  "definitionId": "sample-1337x",
+  "featureArea": "normalization",
+  "definitionSnippet": {
+    "id": "sample-1337x",
+    "name": "Sample 1337x",
+    "type": "public",
+    "links": [
+      "https://1337x.to"
+    ],
+    "search": {
+      "paths": [
+        {
+          "path": "/search/{{ .Query.Keywords }}/1/"
+        }
+      ],
+      "rows": {
+        "selector": "tr"
+      },
+      "fields": {
+        "title": {
+          "selector": "td.title a"
+        },
+        "details": {
+          "selector": "td.title a",
+          "attribute": "href"
+        },
+        "download": {
+          "selector": "td.download a",
+          "attribute": "href"
+        },
+        "size": {
+          "selector": "td.size"
+        },
+        "seeders": {
+          "selector": "td.seeders"
+        },
+        "leechers": {
+          "selector": "td.leechers"
+        },
+        "category": {
+          "text": "41"
+        }
+      }
+    }
+  },
+  "expectedNormalizedOutputs": [
+    {
+      "title": "Ubuntu 24.04 LTS",
+      "guid": "https://1337x.to/torrent/12345/Ubuntu-24-04-LTS",
+      "downloadUrl": "https://1337x.to/download/12345.torrent",
+      "seeders": 100,
+      "leechers": 5,
+      "categories": [
+        41
+      ]
+    }
+  ]
+}

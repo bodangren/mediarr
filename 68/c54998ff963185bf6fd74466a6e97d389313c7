@@ -1,0 +1,18 @@
+Task: Implement Conditional Template Constructs Used by Definitions
+
+Summary:
+- Extended Cardigann template runtime to evaluate if/else branches used by imported definitions.
+- Added conditional expression support for and/or/eq predicates and grouped expressions used in current fixtures.
+- Added strict runtime diagnostics for unsupported template nodes and unresolved references.
+- Wired strict template rendering into SearchTranslator and ScrapingIndexer URL building paths so unsupported constructs fail fast.
+- Added red/green tests covering conditional branch behavior and strict diagnostics.
+
+Files:
+- conductor/tracks/cardigann_runtime_parity_20260223/plan.md
+- server/src/indexers/TemplateRuntime.ts
+- server/src/indexers/SearchTranslator.ts
+- server/src/indexers/BaseIndexer.ts
+- server/src/indexers/cardigann-conformance/templateRuntime.test.ts
+
+Why:
+- Imported definitions rely on conditional templates; failing fast on unsupported constructs avoids silent malformed requests and improves compatibility observability.

@@ -1,6 +1,6 @@
 # Implementation Plan: Cardigann Runtime Parity (Monolith-Native)
 
-## Phase 1: Baseline Harness and Definition Coverage Map
+## Phase 1: Baseline Harness and Definition Coverage Map [checkpoint: e6dd9e1]
 > **TEST-FIRST GATE** - no runtime feature implementation in this phase.
 > **GOAL**: establish measurable parity baseline before coding behavior changes.
 

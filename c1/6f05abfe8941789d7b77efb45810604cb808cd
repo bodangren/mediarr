@@ -1,0 +1,15 @@
+Task: Implement Regex and Replace Filter Variants
+
+Summary:
+- Added red/green filter parity tests for regexp extraction, re_replace replacement semantics, and fixture-like imported-definition behavior.
+- Implemented regexp support in ScrapingParser as an alias-compatible extractor with capture-group behavior.
+- Implemented re_replace support with regex-pattern parsing and global replacement semantics.
+- Added slash-delimited pattern parsing helper to support Cardigann pattern formats used in definitions.
+
+Files:
+- conductor/tracks/cardigann_runtime_parity_20260223/plan.md
+- server/src/indexers/ScrapingParser.ts
+- server/src/indexers/cardigann-conformance/filterParity.test.ts
+
+Why:
+- Current imported definitions rely heavily on regexp/re_replace; without these handlers, title/category/date extraction paths silently degrade.

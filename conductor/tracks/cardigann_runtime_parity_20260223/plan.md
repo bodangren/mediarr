@@ -37,7 +37,7 @@
     - [x] Sub-task: Implement required conditional evaluation in runtime.
     - [x] Sub-task: Add diagnostics for unsupported template nodes.
 
-- [ ] Task: Conductor - User Manual Verification 'Phase 2' (Protocol in workflow.md) - PENDING
+- [x] Task: Conductor - User Manual Verification 'Phase 2' (Protocol in workflow.md) efbd472
 
 ## Phase 3: Filter Pipeline Parity (Definition-Driven)
 > **ENTRY CRITERIA**: Template tests green for required subset.

@@ -324,6 +324,18 @@ model ImportListExclusion {
   @@index([importListId])
 }
 
+model CustomFilter {
+  id         Int      @id @default(autoincrement())
+  name       String
+  type       String
+  conditions Json
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([name, type])
+  @@index([type])
+}
+
 model CustomFormat {
   id                             Int                   @id @default(autoincrement())
   name                           String                @unique
@@ -361,13 +373,69 @@ model Indexer {
   configContract String
   settings       String // JSON string
   protocol       String // e.g., torrent, usenet
+  appProfileId   Int?
   enabled        Boolean          @default(true)
   supportsRss    Boolean          @default(false)
   supportsSearch Boolean          @default(false)
   priority       Int              @default(25)
   added          DateTime         @default(now())
+  appProfile     AppProfile?      @relation(fields: [appProfileId], references: [id], onDelete: SetNull)
   releases       IndexerRelease[]
   healthSnapshot IndexerHealthSnapshot?
+}
+
+model AppProfile {
+  id                      Int       @id @default(autoincrement())
+  name                    String    @unique
+  enableRss               Boolean   @default(true)
+  enableInteractiveSearch Boolean   @default(true)
+  enableAutomaticSearch   Boolean   @default(true)
+  minimumSeeders          Int       @default(0)
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+  indexers                Indexer[]
+}
+
+enum ApplicationType {
+  Sonarr
+  Radarr
+  Lidarr
+  Readarr
+}
+
+model Application {
+  id             Int             @id @default(autoincrement())
+  name           String          @unique
+  type           ApplicationType
+  baseUrl        String
+  apiKey         String
+  syncCategories Json            @default("[]")
+  tags           Json            @default("[]")
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+}
+
+model Proxy {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  type      String
+  hostname  String
+  port      Int
+  username  String?
+  password  String?
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model IndexerCategory {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  minSize     Int?
+  maxSize     Int?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model IndexerRelease {

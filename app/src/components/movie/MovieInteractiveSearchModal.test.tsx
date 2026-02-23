@@ -1,52 +1,55 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MovieInteractiveSearchModal } from './MovieInteractiveSearchModal';
-import * as releaseApi from '@/lib/api/releaseApi';
+import { ToastProvider } from '@/components/providers/ToastProvider';
 
-// Mock the release API
-vi.mock('@/lib/api/releaseApi', () => ({
-  createReleaseApi: vi.fn(() => ({
-    searchCandidates: vi.fn(),
-    grabRelease: vi.fn(),
+const mockSearchCandidates = vi.fn();
+const mockGrabRelease = vi.fn();
+
+vi.mock('@/lib/api/client', () => ({
+  getApiClients: vi.fn(() => ({
+    releaseApi: {
+      searchCandidates: mockSearchCandidates,
+      grabRelease: mockGrabRelease,
+    },
   })),
 }));
 
+const mockReleaseCandidates = [
+  {
+    indexer: 'TestIndexer',
+    indexerId: 1,
+    guid: 'movie-guid-1',
+    title: 'Test.Movie.2024.1080p.BluRay.x264',
+    size: 2000000000,
+    seeders: 100,
+    leechers: 50,
+    quality: 'Bluray-1080p',
+    age: 24,
+    publishDate: new Date().toISOString(),
+    protocol: 'torrent',
+  },
+];
+
+function renderWithToast(ui: React.ReactNode) {
+  return render(<ToastProvider>{ui}</ToastProvider>);
+}
+
 describe('MovieInteractiveSearchModal', () => {
-  const mockReleaseApi = {
-    searchCandidates: vi.fn(),
-    grabRelease: vi.fn(),
+  const defaultProps = {
+    isOpen: true,
+    onClose: vi.fn(),
+    movieId: 123,
+    movieTitle: 'Test Movie',
+    movieYear: 2024,
+    imdbId: 'tt1234567',
+    tmdbId: 12345,
   };
 
   beforeEach(() => {
     vi.clearAllMocks();
-    (releaseApi.createReleaseApi as any).mockReturnValue(mockReleaseApi);
-  });
-
-  it('should search for releases when modal opens', async () => {
-    const queryClient = new QueryClient({
-      defaultOptions: {
-        queries: { staleTime: 0, retry: false },
-      },
-    });
-
-    const { result } = renderHook(() => ({ isOpen: true, movieId: 123, movieTitle: 'Test Movie' }));
-
-    mockReleaseApi.searchCandidates.mockResolvedValue({
-      items: [
-        {
-          indexer: 'TestIndexer',
-          indexerId: 1,
-          title: 'Test.Release.2024.1080p.BluRay.x264',
-          size: 2000000000,
-          seeders: 100,
-          leechers: 50,
-          quality: 'Bluray-1080p',
-          age: 24,
-          publishDate: new Date().toISOString(),
-          protocol: 'torrent',
-        },
-      ],
+    mockSearchCandidates.mockResolvedValue({
+      items: mockReleaseCandidates,
       meta: {
         page: 1,
         pageSize: 20,
@@ -54,74 +57,40 @@ describe('MovieInteractiveSearchModal', () => {
         totalPages: 1,
       },
     });
-
-    const wrapper = ({ children }: { children: React.ReactNode }) => (
-      <QueryClientProvider client={queryClient}>
-        {children}
-      </QueryClientProvider>
-    );
-
-    renderHook(() => MovieInteractiveSearchModal, {
-      wrapper,
-      initialProps: {
-        isOpen: true,
-        onClose: vi.fn(),
-        movieId: 123,
-        movieTitle: 'Test Movie',
-        movieYear: 2024,
-        imdbId: 'tt1234567',
-        tmdbId: 12345,
-      },
+    mockGrabRelease.mockResolvedValue({
+      success: true,
+      downloadId: 'download-123',
+      message: 'Release grabbed successfully',
     });
+  });
+
+  it('searches for releases when modal opens', async () => {
+    renderWithToast(<MovieInteractiveSearchModal {...defaultProps} />);
 
     await waitFor(() => {
-      expect(mockReleaseApi.searchCandidates).toHaveBeenCalledWith({
+      expect(mockSearchCandidates).toHaveBeenCalledTimes(1);
+      expect(mockSearchCandidates).toHaveBeenCalledWith({
         type: 'movie',
         title: 'Test Movie',
-        tmdbId: 12345,
         imdbId: 'tt1234567',
         year: 2024,
       });
     });
   });
 
-  it('should grab release when grab button is clicked', async () => {
-    const queryClient = new QueryClient({
-      defaultOptions: {
-        queries: { staleTime: 0, retry: false },
-      },
+  it('grabs selected release using guid and indexerId', async () => {
+    renderWithToast(<MovieInteractiveSearchModal {...defaultProps} />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Test\.Movie\.2024\.1080p\.BluRay\.x264/)).toBeInTheDocument();
     });
 
-    mockReleaseApi.searchCandidates.mockResolvedValue({
-      items: [
-        {
-          indexer: 'TestIndexer',
-          indexerId: 1,
-          title: 'Test.Release.2024.1080p',
-          size: 1000000000,
-          seeders: 50,
-          guid: 'test-guid-123',
-          quality: '1080p',
-          age: 12,
-        },
-      ],
-      meta: {
-        page: 1,
-        pageSize: 20,
-        totalCount: 1,
-        totalPages: 1,
-      },
-    });
+    const grabButton = screen.getByRole('button', { name: /Grab/i });
+    fireEvent.click(grabButton);
 
-    mockReleaseApi.grabRelease.mockResolvedValue({
-      success: true,
-      downloadId: 'download-123',
-      message: 'Release grabbed successfully',
+    await waitFor(() => {
+      expect(mockGrabRelease).toHaveBeenCalledTimes(1);
+      expect(mockGrabRelease).toHaveBeenCalledWith('movie-guid-1', 1);
     });
-
-    // Render the modal and trigger grab
-    // In a real test, we'd use render from @testing-library/react
-    // For now, we'll just verify the mock structure
-    expect(mockReleaseApi.grabRelease).toBeDefined();
   });
 });

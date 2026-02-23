@@ -67,6 +67,7 @@ export function registerIndexerRoutes(
           configContract: { type: 'string' },
           settings: { type: 'string' },
           protocol: { type: 'string' },
+          appProfileId: { type: 'number' },
           enabled: { type: 'boolean' },
           supportsRss: { type: 'boolean' },
           supportsSearch: { type: 'boolean' },
@@ -96,6 +97,7 @@ export function registerIndexerRoutes(
           configContract: { type: 'string' },
           settings: { type: 'string' },
           protocol: { type: 'string' },
+          appProfileId: { type: 'number' },
           enabled: { type: 'boolean' },
           supportsRss: { type: 'boolean' },
           supportsSearch: { type: 'boolean' },
@@ -106,10 +108,6 @@ export function registerIndexerRoutes(
   }, async (request, reply) => {
     if (!deps.indexerTester?.test) {
       throw new ValidationError('Indexer tester is not configured');
-    }
-
-    if (!deps.indexerFactory?.fromDatabaseRecord) {
-      throw new ValidationError('Indexer factory is not configured');
     }
 
     const payload = request.body as Record<string, unknown>;
@@ -132,6 +130,7 @@ export function registerIndexerRoutes(
       configContract: typeof payload.configContract === 'string' ? payload.configContract : 'TorznabSettings',
       settings: JSON.stringify(parsedSettings),
       protocol: typeof payload.protocol === 'string' ? payload.protocol : 'torrent',
+      appProfileId: typeof payload.appProfileId === 'number' ? payload.appProfileId : null,
       enabled: typeof payload.enabled === 'boolean' ? payload.enabled : true,
       supportsRss: typeof payload.supportsRss === 'boolean' ? payload.supportsRss : true,
       supportsSearch: typeof payload.supportsSearch === 'boolean' ? payload.supportsSearch : true,
@@ -139,7 +138,23 @@ export function registerIndexerRoutes(
       added: new Date(),
     };
 
-    const indexer = deps.indexerFactory.fromDatabaseRecord(draftRecord as any);
+    let indexer;
+    try {
+      if (!deps.indexerFactory?.fromDatabaseRecord) {
+        throw new ValidationError('Indexer factory is not configured');
+      }
+      indexer = deps.indexerFactory.fromDatabaseRecord(draftRecord as any);
+    } catch (factoryError: any) {
+      return sendSuccess(reply, {
+        success: false,
+        message: factoryError.message ?? 'Failed to create indexer instance',
+        diagnostics: {
+          remediationHints: ['Check that the indexer definition exists and is valid.'],
+        },
+        healthSnapshot: null,
+      });
+    }
+
     const result = await deps.indexerTester.test(indexer as any);
 
     return sendSuccess(reply, {
@@ -243,5 +258,42 @@ export function registerIndexerRoutes(
       },
       healthSnapshot: snapshot,
     });
+  });
+
+  app.post('/api/indexers/:id/clone', {
+    schema: {
+      params: {
+        type: 'object',
+        required: ['id'],
+        properties: {
+          id: { type: 'string' },
+        },
+      },
+    },
+  }, async (request, reply) => {
+    if (!deps.indexerRepository?.findById || !deps.indexerRepository?.create) {
+      throw new ValidationError('Indexer repository is not configured');
+    }
+
+    const id = parseIdParam((request.params as { id: string }).id, 'indexer');
+    const source = await deps.indexerRepository.findById(id);
+    if (!source) {
+      throw new NotFoundError(`Indexer ${id} not found`);
+    }
+
+    const cloned = await deps.indexerRepository.create({
+      name: `${source.name} (Copy)`,
+      implementation: source.implementation,
+      configContract: source.configContract,
+      settings: source.settings,
+      protocol: source.protocol,
+      appProfileId: source.appProfileId,
+      enabled: source.enabled,
+      supportsRss: source.supportsRss,
+      supportsSearch: source.supportsSearch,
+      priority: source.priority,
+    });
+
+    return sendSuccess(reply, cloned, 201);
   });
 }

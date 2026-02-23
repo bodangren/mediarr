@@ -30,7 +30,6 @@ export function getNotificationTypeLabel(type: NotificationType): string {
     Webhook: 'Webhook',
     Slack: 'Slack',
     Pushover: 'Pushover',
-    Pushbullet: 'Pushbullet',
   };
   return labels[type];
 }
@@ -61,7 +60,6 @@ export function getNotificationTypeIcon(type: NotificationType): string {
     Webhook: 'link',
     Slack: 'message-square',
     Pushover: 'smartphone',
-    Pushbullet: 'share-2',
   };
   return icons[type];
 }

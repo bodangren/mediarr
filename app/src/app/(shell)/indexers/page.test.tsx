@@ -76,6 +76,11 @@ const updateMock = vi.fn();
 const removeMock = vi.fn();
 const testMock = vi.fn();
 const testDraftMock = vi.fn();
+const cloneMock = vi.fn();
+const listFiltersMock = vi.fn();
+const createFilterMock = vi.fn();
+const updateFilterMock = vi.fn();
+const deleteFilterMock = vi.fn();
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -104,6 +109,38 @@ beforeEach(() => {
     diagnostics: { remediationHints: ['No remediation needed.'] },
     healthSnapshot: null,
   });
+  cloneMock.mockImplementation((id: number) => {
+    return Promise.resolve(
+      buildIndexer({
+        id: id + 1000,
+        name: `Indexer ${id} (Copy)`,
+      }),
+    );
+  });
+  listFiltersMock.mockResolvedValue([]);
+  createFilterMock.mockResolvedValue({
+    id: 9001,
+    name: 'Saved Indexer Filter',
+    type: 'indexer',
+    conditions: {
+      operator: 'and',
+      conditions: [{ field: 'protocol', operator: 'equals', value: 'torrent' }],
+    },
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  });
+  updateFilterMock.mockResolvedValue({
+    id: 9001,
+    name: 'Saved Indexer Filter',
+    type: 'indexer',
+    conditions: {
+      operator: 'and',
+      conditions: [{ field: 'protocol', operator: 'equals', value: 'torrent' }],
+    },
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  });
+  deleteFilterMock.mockResolvedValue({ id: 9001, deleted: true });
 
   mockedGetApiClients.mockReturnValue({
     indexerApi: {
@@ -113,6 +150,13 @@ beforeEach(() => {
       remove: removeMock,
       test: testMock,
       testDraft: testDraftMock,
+      clone: cloneMock,
+    },
+    filtersApi: {
+      list: listFiltersMock,
+      create: createFilterMock,
+      update: updateFilterMock,
+      delete: deleteFilterMock,
     },
   } as ReturnType<typeof getApiClients>);
 });
@@ -128,6 +172,7 @@ describe('indexers page', () => {
 
     expect(screen.getByRole('columnheader', { name: 'Name' })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: 'Protocol' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Capabilities' })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: 'Enabled' })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: 'Priority' })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: 'Health' })).toBeInTheDocument();
@@ -160,6 +205,71 @@ describe('indexers page', () => {
 
     fireEvent.click(selectModeButton);
     expect(screen.getByText('Selection mode enabled')).toBeInTheDocument();
+  });
+
+  it('applies saved filters to the indexer list', async () => {
+    listMock.mockResolvedValue([
+      buildIndexer({ id: 151, name: 'Torrent One', protocol: 'torrent' }),
+      buildIndexer({ id: 152, name: 'Usenet One', protocol: 'usenet' }),
+    ]);
+    listFiltersMock.mockResolvedValue([
+      {
+        id: 6001,
+        name: 'Torrent only',
+        type: 'indexer',
+        conditions: {
+          operator: 'and',
+          conditions: [{ field: 'protocol', operator: 'equals', value: 'torrent' }],
+        },
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+    ]);
+
+    const queryClient = createTestQueryClient();
+    renderPage(queryClient);
+
+    await screen.findByText('Torrent One');
+    expect(screen.getByText('Usenet One')).toBeInTheDocument();
+
+    fireEvent.change(screen.getByRole('combobox', { name: 'Saved Filter' }), {
+      target: { value: '6001' },
+    });
+
+    expect(screen.getByText('Torrent One')).toBeInTheDocument();
+    expect(screen.queryByText('Usenet One')).not.toBeInTheDocument();
+  });
+
+  it('opens filter builder and saves an indexer filter', async () => {
+    listMock.mockResolvedValue([buildIndexer({ id: 161, name: 'Filter Builder Target' })]);
+
+    const queryClient = createTestQueryClient();
+    renderPage(queryClient);
+
+    await screen.findByText('Filter Builder Target');
+    fireEvent.click(screen.getByRole('button', { name: 'Build Filter' }));
+
+    const modal = await screen.findByText('Custom Filter Builder');
+    expect(modal).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('Filter Name'), {
+      target: { value: 'Torrent Enabled' },
+    });
+    fireEvent.change(screen.getByLabelText('Field 1'), { target: { value: 'protocol' } });
+    fireEvent.change(screen.getByLabelText('Operator 1'), { target: { value: 'equals' } });
+    fireEvent.change(screen.getByLabelText('Value 1'), { target: { value: 'torrent' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save Filter' }));
+
+    await waitFor(() => {
+      expect(createFilterMock).toHaveBeenCalledWith({
+        name: 'Torrent Enabled',
+        type: 'indexer',
+        conditions: {
+          operator: 'and',
+          conditions: [{ field: 'protocol', operator: 'equals', value: 'torrent' }],
+        },
+      });
+    });
   });
 
   it('filters visible rows by alphabet jump bar selection', async () => {
@@ -265,6 +375,63 @@ describe('indexers page', () => {
       expect(removeMock).toHaveBeenCalledWith(71);
     });
     expect(await screen.findByText('Indexer deleted')).toBeInTheDocument();
+  });
+
+  it('clones an indexer row', async () => {
+    listMock.mockResolvedValue([buildIndexer({ id: 111, name: 'Clone Source' })]);
+
+    const queryClient = createTestQueryClient();
+    renderPage(queryClient);
+
+    const row = (await screen.findByText('Clone Source')).closest('tr');
+    expect(row).not.toBeNull();
+
+    fireEvent.click(within(row as HTMLElement).getByRole('button', { name: 'Clone' }));
+
+    await waitFor(() => {
+      expect(cloneMock).toHaveBeenCalledWith(111);
+    });
+    expect(await screen.findByText('Indexer cloned')).toBeInTheDocument();
+  });
+
+  it('displays capability badges and opens indexer info modal', async () => {
+    listMock.mockResolvedValue([
+      buildIndexer({
+        id: 211,
+        name: 'Info Indexer',
+        protocol: 'torrent',
+        supportsRss: true,
+        supportsSearch: false,
+        settings: JSON.stringify({
+          url: 'https://info.example',
+          apiKey: 'abc123',
+          privacy: 'private',
+          categories: ['2000', '5000'],
+        }),
+        health: { failureCount: 2, lastErrorMessage: 'Timeout contacting endpoint' },
+      }),
+    ]);
+
+    const queryClient = createTestQueryClient();
+    renderPage(queryClient);
+
+    const row = (await screen.findByText('Info Indexer')).closest('tr');
+    expect(row).not.toBeNull();
+    expect(within(row as HTMLElement).getByText('RSS')).toBeInTheDocument();
+    expect(within(row as HTMLElement).getByText('Private')).toBeInTheDocument();
+    expect(within(row as HTMLElement).getByText('Torrent')).toBeInTheDocument();
+
+    fireEvent.click(within(row as HTMLElement).getByRole('button', { name: 'Info' }));
+
+    const modal = await screen.findByRole('dialog', { name: 'Indexer information' });
+    expect(within(modal).getByText('Info Indexer')).toBeInTheDocument();
+    expect(within(modal).getByText('Protocol')).toBeInTheDocument();
+    expect(within(modal).getByText('torrent')).toBeInTheDocument();
+    expect(within(modal).getByText('Categories')).toBeInTheDocument();
+    expect(within(modal).getByText('2000, 5000')).toBeInTheDocument();
+    expect(within(modal).getByText('Health failures')).toBeInTheDocument();
+    expect(within(modal).getByText('2')).toBeInTheDocument();
+    expect(within(modal).getByText('Timeout contacting endpoint')).toBeInTheDocument();
   });
 
   it('surfaces save errors from create mutation failures', async () => {

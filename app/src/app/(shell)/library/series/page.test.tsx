@@ -27,6 +27,72 @@ const mockedGetApiClients = vi.mocked(getApiClients);
 const mockedUseApiQuery = vi.mocked(useApiQuery);
 const mockedUseOptimisticMutation = vi.mocked(useOptimisticMutation);
 
+const seriesListResult = {
+  data: {
+    items: [
+      {
+        id: 1,
+        title: 'No Episodes Yet',
+        year: 2022,
+        status: 'active',
+        monitored: true,
+        network: 'HBO',
+        seasons: [],
+      },
+      {
+        id: 2,
+        title: 'Missing Files',
+        year: 2021,
+        status: 'active',
+        monitored: true,
+        network: 'Netflix',
+        seasons: [{ episodes: [{ path: null }] }],
+      },
+      {
+        id: 3,
+        title: 'Has Files',
+        year: 2020,
+        status: 'active',
+        monitored: true,
+        network: 'BBC',
+        seasons: [{ episodes: [{ path: '/data/tv/has-files.mkv' }] }],
+      },
+    ],
+    meta: {
+      page: 1,
+      pageSize: 25,
+      totalCount: 3,
+      totalPages: 3,
+    },
+  },
+  isPending: false,
+  isError: false,
+  isResolvedEmpty: false,
+  error: null,
+  refetch: vi.fn(),
+};
+
+const filtersListResult = {
+  data: [
+    {
+      id: 7,
+      name: 'Monitored',
+      type: 'series',
+      conditions: {
+        operator: 'and',
+        conditions: [{ field: 'monitored', operator: 'equals', value: true }],
+      },
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+  ],
+  isPending: false,
+  isError: false,
+  isResolvedEmpty: false,
+  error: null,
+  refetch: vi.fn(),
+};
+
 // Mock localStorage
 const localStorageMock = (() => {
   let store: Record<string, string> = {};
@@ -73,54 +139,27 @@ beforeEach(() => {
     mediaApi: {
       deleteSeries: vi.fn().mockResolvedValue({ deleted: true, id: 1 }),
       setSeriesMonitored: vi.fn().mockResolvedValue({ id: 1, monitored: false }),
+      listSeries: vi.fn(),
     },
-  } as ReturnType<typeof getApiClients>);
+    filtersApi: {
+      list: vi.fn().mockResolvedValue([]),
+      create: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+    },
+  } as unknown as ReturnType<typeof getApiClients>);
 
-  mockedUseApiQuery.mockReturnValue({
-    data: {
-      items: [
-        {
-          id: 1,
-          title: 'No Episodes Yet',
-          year: 2022,
-          status: 'active',
-          monitored: true,
-          seasons: [],
-        },
-        {
-          id: 2,
-          title: 'Missing Files',
-          year: 2021,
-          status: 'active',
-          monitored: true,
-          seasons: [{ episodes: [{ path: null }] }],
-        },
-        {
-          id: 3,
-          title: 'Has Files',
-          year: 2020,
-          status: 'active',
-          monitored: true,
-          seasons: [{ episodes: [{ path: '/data/tv/has-files.mkv' }] }],
-        },
-      ],
-      meta: {
-        page: 1,
-        pageSize: 25,
-        totalCount: 3,
-        totalPages: 3,
-      },
-    },
-    isPending: false,
-    isError: false,
-    isResolvedEmpty: false,
-    error: null,
-    refetch: vi.fn(),
-  } as ReturnType<typeof useApiQuery>);
+  mockedUseApiQuery.mockImplementation((options: Parameters<typeof useApiQuery>[0]) => {
+    if (Array.isArray(options.queryKey) && options.queryKey[0] === 'filters') {
+      return filtersListResult as unknown as ReturnType<typeof useApiQuery>;
+    }
+
+    return seriesListResult as unknown as ReturnType<typeof useApiQuery>;
+  });
 
   mockedUseOptimisticMutation.mockReturnValue({
     mutate: monitoredMutateMock,
-  } as ReturnType<typeof useOptimisticMutation>);
+  } as unknown as ReturnType<typeof useOptimisticMutation>);
 
   // Mock view mode hook to return 'table' by default
   vi.doMock('@/lib/hooks/useSeriesOptions', () => ({
@@ -135,12 +174,12 @@ describe('series library page - table view', () => {
     const noEpisodesRow = (await screen.findByText('No Episodes Yet')).closest('tr');
     const missingFilesRow = screen.getByText('Missing Files').closest('tr');
     const hasFilesRow = screen.getByText('Has Files').closest('tr');
-    expect(within(noEpisodesRow as HTMLElement).getByText('missing')).toBeInTheDocument();
-    expect(within(missingFilesRow as HTMLElement).getByText('wanted')).toBeInTheDocument();
-    expect(within(hasFilesRow as HTMLElement).getByText('completed')).toBeInTheDocument();
+    expect(within(noEpisodesRow as HTMLElement).getByText('File: missing')).toBeInTheDocument();
+    expect(within(missingFilesRow as HTMLElement).getByText('File: wanted')).toBeInTheDocument();
+    expect(within(hasFilesRow as HTMLElement).getByText('File: completed')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Sort by Year' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Next page' }));
+    fireEvent.change(screen.getByRole('combobox', { name: 'Sort by' }), { target: { value: 'year' } });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Next' })[0] as HTMLElement);
     fireEvent.change(screen.getByPlaceholderText('Search series...'), { target: { value: 'arc' } });
 
     await waitFor(() => {
@@ -152,7 +191,7 @@ describe('series library page - table view', () => {
     renderPage();
 
     const row = (await screen.findByText('No Episodes Yet')).closest('tr');
-    const checkbox = within(row as HTMLElement).getByRole('checkbox');
+    const checkbox = within(row as HTMLElement).getByLabelText('Monitored');
     fireEvent.click(checkbox);
 
     expect(monitoredMutateMock).toHaveBeenCalledWith({ id: 1, monitored: false });
@@ -167,5 +206,16 @@ describe('series library page - view modes', () => {
     expect(screen.getByRole('button', { name: 'Table view', pressed: true })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Poster view' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Overview view' })).toBeInTheDocument();
+  });
+
+  it('renders filter dropdown and jump bar actions', async () => {
+    renderPage();
+
+    expect(screen.getByRole('combobox', { name: 'Saved Filter' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'M' }));
+
+    await waitFor(() => {
+      expect(mockedUseApiQuery).toHaveBeenCalled();
+    });
   });
 });

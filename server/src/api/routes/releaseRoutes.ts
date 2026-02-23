@@ -12,6 +12,7 @@ interface ReleaseSearchBody {
   tvdbId?: number;
   imdbId?: string;
   tmdbId?: number;
+  qualityProfileId?: number;
   year?: number;
   artist?: string;
   album?: string;
@@ -24,6 +25,47 @@ interface ReleaseGrabBody {
   guid: string;
   indexerId: number;
   downloadClientId?: number;
+}
+
+type PrismaLike = Record<string, any>;
+
+async function resolveQualityProfileId(
+  prisma: PrismaLike,
+  body: ReleaseSearchBody,
+): Promise<number | undefined> {
+  if (body.qualityProfileId !== undefined) {
+    return body.qualityProfileId;
+  }
+
+  try {
+    if (body.tvdbId !== undefined && prisma.series?.findFirst) {
+      const series = await prisma.series.findFirst({
+        where: { tvdbId: body.tvdbId },
+        select: { qualityProfileId: true },
+      });
+      if (typeof series?.qualityProfileId === 'number') {
+        return series.qualityProfileId;
+      }
+    }
+
+    if ((body.tmdbId !== undefined || body.imdbId !== undefined) && prisma.movie?.findFirst) {
+      const where: Record<string, unknown> = {};
+      if (body.tmdbId !== undefined) where.tmdbId = body.tmdbId;
+      if (body.imdbId !== undefined) where.imdbId = body.imdbId;
+
+      const movie = await prisma.movie.findFirst({
+        where,
+        select: { qualityProfileId: true },
+      });
+      if (typeof movie?.qualityProfileId === 'number') {
+        return movie.qualityProfileId;
+      }
+    }
+  } catch {
+    // Fallback to seeders/size ranking if lookup fails.
+  }
+
+  return undefined;
 }
 
 export function registerReleaseRoutes(
@@ -46,6 +88,7 @@ export function registerReleaseRoutes(
           tvdbId: { type: 'number' },
           imdbId: { type: 'string' },
           tmdbId: { type: 'number' },
+          qualityProfileId: { type: 'number', minimum: 1 },
           year: { type: 'number', minimum: 1900, maximum: 2100 },
           artist: { type: 'string' },
           album: { type: 'string' },
@@ -82,6 +125,8 @@ export function registerReleaseRoutes(
     if (body.tvdbId !== undefined) searchParams.tvdbId = body.tvdbId;
     if (body.imdbId) searchParams.imdbId = body.imdbId;
     if (body.tmdbId !== undefined) searchParams.tmdbId = body.tmdbId;
+    const qualityProfileId = await resolveQualityProfileId(deps.prisma as PrismaLike, body);
+    if (qualityProfileId !== undefined) searchParams.qualityProfileId = qualityProfileId;
     if (body.year !== undefined) searchParams.year = body.year;
     if (body.artist) searchParams.artist = body.artist;
     if (body.album) searchParams.album = body.album;
@@ -144,6 +189,7 @@ export function registerReleaseRoutes(
 
     return sendSuccess(reply, {
       success: true,
+      infoHash: result.infoHash,
       downloadId: result.infoHash,
       message: `Release successfully added to download client (infoHash: ${result.infoHash})`,
     });
@@ -201,6 +247,7 @@ export function registerReleaseRoutes(
 
     return sendSuccess(reply, {
       success: true,
+      infoHash: result.infoHash,
       downloadId: result.infoHash,
       message: `Release successfully added to download client (infoHash: ${result.infoHash})`,
     });

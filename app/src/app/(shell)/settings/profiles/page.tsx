@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/primitives/Button';
 import { Alert } from '@/components/primitives/Alert';
-import { ConfirmModal } from '@/components/primitives/Modal';
+import { ConfirmModal, Modal, ModalBody, ModalFooter, ModalHeader } from '@/components/primitives/Modal';
 import { AddProfileModal } from '@/components/settings/AddProfileModal';
 import { getApiClients } from '@/lib/api/client';
 import { queryKeys } from '@/lib/query/queryKeys';
@@ -11,6 +11,9 @@ import { useApiQuery } from '@/lib/query/useApiQuery';
 import { useToast } from '@/components/providers/ToastProvider';
 import type { QualityProfile } from '@/types/qualityProfile';
 import { formatQuality, sortQualitiesByRank } from '@/types/qualityProfile';
+import type { CustomFormat } from '@/types/customFormat';
+import type { AppProfileItem, AppProfileInput } from '@/lib/api/appProfilesApi';
+import { useQueryClient } from '@tanstack/react-query';
 
 function formatCutoff(profile: QualityProfile): string {
   const cutoff = profile.qualities.find(q => q.id === profile.cutoffId);
@@ -32,16 +35,49 @@ function getQualitySummary(profile: QualityProfile): string {
   return `${qualities.slice(0, 3).join(', ')} (+${qualities.length - 3} more)`;
 }
 
+function getCustomFormatScoresForProfile(
+  profileId: number,
+  customFormats: CustomFormat[],
+): Array<{ name: string; score: number }> {
+  return customFormats
+    .map((format) => {
+      const matchedScore = format.scores.find(score => score.qualityProfileId === profileId);
+      return matchedScore ? { name: format.name, score: matchedScore.score } : null;
+    })
+    .filter((item): item is { name: string; score: number } => item !== null);
+}
+
 export default function QualityProfilesPage() {
   const { pushToast } = useToast();
+  const queryClient = useQueryClient();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editProfile, setEditProfile] = useState<QualityProfile | undefined>(undefined);
   const [deleteProfile, setDeleteProfile] = useState<QualityProfile | undefined>(undefined);
   const [isSaving, setIsSaving] = useState(false);
+  const [isAppProfileModalOpen, setIsAppProfileModalOpen] = useState(false);
+  const [editingAppProfile, setEditingAppProfile] = useState<AppProfileItem | null>(null);
+  const [deletingAppProfile, setDeletingAppProfile] = useState<AppProfileItem | null>(null);
+  const [appProfileDraft, setAppProfileDraft] = useState<AppProfileInput>({
+    name: '',
+    enableRss: true,
+    enableInteractiveSearch: true,
+    enableAutomaticSearch: true,
+    minimumSeeders: 0,
+  });
 
   const { data: profiles = [], isLoading, error, refetch } = useApiQuery<QualityProfile[]>({
     queryKey: queryKeys.qualityProfiles(),
     queryFn: () => getApiClients().qualityProfileApi.list(),
+  });
+
+  const { data: appProfiles = [], isLoading: isAppProfilesLoading } = useApiQuery<AppProfileItem[]>({
+    queryKey: queryKeys.appProfiles(),
+    queryFn: () => getApiClients().appProfilesApi.list(),
+  });
+
+  const { data: customFormats = [] } = useApiQuery<CustomFormat[]>({
+    queryKey: queryKeys.customFormats(),
+    queryFn: () => getApiClients().customFormatApi.list(),
   });
 
   const handleAddProfile = async (input: { name: string; cutoffId: number; qualities: Array<{ resolution: string; source: string }>; languageProfileId?: number }) => {
@@ -129,6 +165,77 @@ export default function QualityProfilesPage() {
     setIsAddModalOpen(false);
     setEditProfile(undefined);
     setDeleteProfile(undefined);
+  };
+
+  const openCreateAppProfile = () => {
+    setEditingAppProfile(null);
+    setAppProfileDraft({
+      name: '',
+      enableRss: true,
+      enableInteractiveSearch: true,
+      enableAutomaticSearch: true,
+      minimumSeeders: 0,
+    });
+    setIsAppProfileModalOpen(true);
+  };
+
+  const openEditAppProfile = (profile: AppProfileItem) => {
+    setEditingAppProfile(profile);
+    setAppProfileDraft({
+      name: profile.name,
+      enableRss: profile.enableRss,
+      enableInteractiveSearch: profile.enableInteractiveSearch,
+      enableAutomaticSearch: profile.enableAutomaticSearch,
+      minimumSeeders: profile.minimumSeeders,
+    });
+    setIsAppProfileModalOpen(true);
+  };
+
+  const saveAppProfile = async () => {
+    if (!appProfileDraft.name?.trim()) {
+      pushToast({ title: 'Validation failed', message: 'Name is required', variant: 'error' });
+      return;
+    }
+
+    try {
+      if (editingAppProfile) {
+        await getApiClients().appProfilesApi.update(editingAppProfile.id, appProfileDraft);
+        pushToast({ title: 'Profile updated', variant: 'success' });
+      } else {
+        await getApiClients().appProfilesApi.create(appProfileDraft);
+        pushToast({ title: 'Profile created', variant: 'success' });
+      }
+      setIsAppProfileModalOpen(false);
+      setEditingAppProfile(null);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.appProfiles() });
+    } catch (err) {
+      pushToast({ title: 'Save failed', message: 'Could not save app profile', variant: 'error' });
+    }
+  };
+
+  const cloneAppProfile = async (profile: AppProfileItem) => {
+    try {
+      await getApiClients().appProfilesApi.clone(profile.id);
+      pushToast({ title: 'Profile cloned', variant: 'success' });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.appProfiles() });
+    } catch {
+      pushToast({ title: 'Clone failed', variant: 'error' });
+    }
+  };
+
+  const deleteAppProfile = async () => {
+    if (!deletingAppProfile) {
+      return;
+    }
+
+    try {
+      await getApiClients().appProfilesApi.remove(deletingAppProfile.id);
+      setDeletingAppProfile(null);
+      pushToast({ title: 'Profile deleted', variant: 'success' });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.appProfiles() });
+    } catch {
+      pushToast({ title: 'Delete failed', variant: 'error' });
+    }
   };
 
   return (
@@ -224,6 +331,9 @@ export default function QualityProfilesPage() {
         onClose={closeModals}
         onSave={editProfile ? handleEditProfile : handleAddProfile}
         editProfile={editProfile}
+        customFormatScores={
+          editProfile ? getCustomFormatScoresForProfile(editProfile.id, customFormats) : []
+        }
         isLoading={isSaving}
       />
 
@@ -250,6 +360,119 @@ export default function QualityProfilesPage() {
           isConfirming={isSaving}
         />
       )}
+
+      <section className="space-y-3 rounded-sm border border-border-subtle bg-surface-1 p-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-base font-semibold">App Profiles</h2>
+            <p className="text-xs text-text-secondary">Configure indexer-level RSS/search profile behavior.</p>
+          </div>
+          <Button onClick={openCreateAppProfile}>Add App Profile</Button>
+        </div>
+
+        {isAppProfilesLoading ? (
+          <p className="text-sm text-text-secondary">Loading app profiles...</p>
+        ) : null}
+
+        {!isAppProfilesLoading && appProfiles.length === 0 ? (
+          <Alert variant="info">
+            <p>No app profiles configured yet.</p>
+          </Alert>
+        ) : null}
+
+        {appProfiles.map((profile) => (
+          <div key={profile.id} className="rounded-sm border border-border-subtle bg-surface-0 p-3">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="font-medium">{profile.name}</p>
+                <p className="text-xs text-text-muted">
+                  RSS: {profile.enableRss ? 'On' : 'Off'} | Interactive: {profile.enableInteractiveSearch ? 'On' : 'Off'} | Automatic: {profile.enableAutomaticSearch ? 'On' : 'Off'} | Min Seeders: {profile.minimumSeeders}
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="secondary" className="text-xs" onClick={() => openEditAppProfile(profile)}>Edit</Button>
+                <Button variant="secondary" className="text-xs" onClick={() => cloneAppProfile(profile)}>Clone</Button>
+                <Button variant="danger" className="text-xs" onClick={() => setDeletingAppProfile(profile)}>Delete</Button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </section>
+
+      <Modal
+        isOpen={isAppProfileModalOpen}
+        ariaLabel="App profile modal"
+        onClose={() => setIsAppProfileModalOpen(false)}
+        maxWidthClassName="max-w-lg"
+      >
+        <ModalHeader
+          title={editingAppProfile ? 'Edit App Profile' : 'Add App Profile'}
+          onClose={() => setIsAppProfileModalOpen(false)}
+        />
+        <ModalBody>
+          <div className="space-y-3">
+            <label className="grid gap-1 text-sm">
+              <span>Name</span>
+              <input
+                type="text"
+                className="rounded-sm border border-border-subtle bg-surface-0 px-3 py-2"
+                value={appProfileDraft.name ?? ''}
+                onChange={(event) => setAppProfileDraft((current) => ({ ...current, name: event.target.value }))}
+              />
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={Boolean(appProfileDraft.enableRss)}
+                onChange={(event) => setAppProfileDraft((current) => ({ ...current, enableRss: event.target.checked }))}
+              />
+              Enable RSS
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={Boolean(appProfileDraft.enableInteractiveSearch)}
+                onChange={(event) => setAppProfileDraft((current) => ({ ...current, enableInteractiveSearch: event.target.checked }))}
+              />
+              Enable Interactive Search
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={Boolean(appProfileDraft.enableAutomaticSearch)}
+                onChange={(event) => setAppProfileDraft((current) => ({ ...current, enableAutomaticSearch: event.target.checked }))}
+              />
+              Enable Automatic Search
+            </label>
+            <label className="grid gap-1 text-sm">
+              <span>Minimum Seeders</span>
+              <input
+                type="number"
+                className="rounded-sm border border-border-subtle bg-surface-0 px-3 py-2"
+                value={appProfileDraft.minimumSeeders ?? 0}
+                onChange={(event) => setAppProfileDraft((current) => ({
+                  ...current,
+                  minimumSeeders: Number.parseInt(event.target.value, 10) || 0,
+                }))}
+              />
+            </label>
+          </div>
+        </ModalBody>
+        <ModalFooter>
+          <Button variant="secondary" onClick={() => setIsAppProfileModalOpen(false)}>Cancel</Button>
+          <Button variant="primary" onClick={() => { void saveAppProfile(); }}>Save</Button>
+        </ModalFooter>
+      </Modal>
+
+      <ConfirmModal
+        isOpen={deletingAppProfile !== null}
+        title="Delete app profile"
+        description={`Delete ${deletingAppProfile?.name ?? 'app profile'}?`}
+        onCancel={() => setDeletingAppProfile(null)}
+        onConfirm={() => { void deleteAppProfile(); }}
+        confirmLabel="Delete"
+        confirmVariant="danger"
+      />
     </section>
   );
 }

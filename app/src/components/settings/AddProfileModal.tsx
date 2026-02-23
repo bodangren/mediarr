@@ -21,6 +21,10 @@ interface AddProfileModalProps {
   onClose: () => void;
   onSave: (profile: CreateQualityProfileInput) => Promise<void> | void;
   editProfile?: QualityProfile;
+  customFormatScores?: Array<{
+    name: string;
+    score: number;
+  }>;
   isLoading?: boolean;
 }
 
@@ -29,6 +33,7 @@ export function AddProfileModal({
   onClose,
   onSave,
   editProfile,
+  customFormatScores = [],
   isLoading = false,
 }: AddProfileModalProps) {
   const [name, setName] = useState('');
@@ -155,6 +160,31 @@ export function AddProfileModal({
               Optional: Restrict downloads to a specific language profile.
             </p>
           </div>
+
+          {/* Custom Format Scores (edit mode only) */}
+          {editProfile && (
+            <div>
+              <label className="block text-sm font-medium text-text-primary">
+                Custom Format Scores
+              </label>
+              {customFormatScores.length === 0 ? (
+                <p className="mt-1 text-xs text-text-muted">
+                  No custom format scores assigned.
+                </p>
+              ) : (
+                <div className="mt-2 space-y-1 rounded-sm border border-border-subtle bg-surface-0 p-3">
+                  {customFormatScores.map((item) => (
+                    <div key={item.name} className="flex items-center justify-between text-sm">
+                      <span className="text-text-secondary">{item.name}</span>
+                      <span className={item.score >= 0 ? 'font-medium text-accent-primary' : 'font-medium text-accent-danger'}>
+                        {item.score >= 0 ? `+${item.score}` : String(item.score)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Quality Selection */}
           <div>

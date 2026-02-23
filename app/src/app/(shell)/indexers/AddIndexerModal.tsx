@@ -6,7 +6,7 @@ import { NumberInput } from '@/components/primitives/SpecialInputs';
 import { ConfigurableItemModal } from '@/components/settings/ConfigurableItemModal';
 import type { TestConnectionResult } from '@/components/settings/ConfigurableItemModal';
 
-type DynamicFieldType = 'text' | 'password' | 'number' | 'boolean';
+type DynamicFieldType = 'text' | 'password' | 'number' | 'boolean' | 'hidden';
 
 interface DynamicFieldSchema {
   name: string;
@@ -33,6 +33,7 @@ export interface AddIndexerDraft {
   implementation: string;
   configContract: string;
   protocol: string;
+  appProfileId?: number;
   enabled: boolean;
   supportsRss: boolean;
   supportsSearch: boolean;
@@ -47,6 +48,7 @@ interface AddIndexerModalProps {
   onClose: () => void;
   onCreate: (draft: AddIndexerDraft) => void | Promise<void>;
   onTestConnection: (draft: AddIndexerDraft) => Promise<TestConnectionResult>;
+  appProfiles?: Array<{ id: number; name: string }>;
 }
 
 function normalizeFieldValue(field: DynamicFieldSchema): unknown {
@@ -72,6 +74,7 @@ export function AddIndexerModal({
   onClose,
   onCreate,
   onTestConnection,
+  appProfiles = [],
 }: AddIndexerModalProps) {
   const [selectedPresetId, setSelectedPresetId] = useState(presets[0]?.id ?? '');
   const [name, setName] = useState('');
@@ -79,6 +82,7 @@ export function AddIndexerModal({
   const [supportsRss, setSupportsRss] = useState(true);
   const [supportsSearch, setSupportsSearch] = useState(true);
   const [priority, setPriority] = useState(25);
+  const [appProfileId, setAppProfileId] = useState<number | undefined>(undefined);
   const [fieldValues, setFieldValues] = useState<Record<string, unknown>>({});
   const [validationError, setValidationError] = useState<string | null>(null);
   const [testResult, setTestResult] = useState<TestConnectionResult | null>(null);
@@ -104,6 +108,7 @@ export function AddIndexerModal({
     setSupportsRss(true);
     setSupportsSearch(true);
     setPriority(25);
+    setAppProfileId(undefined);
     setValidationError(null);
     setTestResult(null);
   }, [isOpen, presets]);
@@ -163,6 +168,7 @@ export function AddIndexerModal({
       supportsRss,
       supportsSearch,
       priority,
+      appProfileId,
       settings: fieldValues,
     };
   };
@@ -246,6 +252,22 @@ export function AddIndexerModal({
             onChange={setPriority}
           />
         </FormGroup>
+        <FormGroup label="App Profile" htmlFor="add-indexer-app-profile">
+          <select
+            id="add-indexer-app-profile"
+            className="rounded-sm border border-border-subtle bg-surface-0 px-3 py-2 text-sm"
+            value={appProfileId ?? ''}
+            onChange={(event) => {
+              const nextValue = event.target.value;
+              setAppProfileId(nextValue ? Number.parseInt(nextValue, 10) : undefined);
+            }}
+          >
+            <option value="">None</option>
+            {appProfiles.map((profile) => (
+              <option key={profile.id} value={profile.id}>{profile.name}</option>
+            ))}
+          </select>
+        </FormGroup>
       </div>
 
       <div className="grid gap-2 sm:grid-cols-3">
@@ -255,7 +277,7 @@ export function AddIndexerModal({
       </div>
 
       <section className="space-y-3">
-        {preset?.fields.map(field => {
+        {preset?.fields.filter(field => field.type !== 'hidden').map(field => {
           const value = values[field.name];
 
           if (field.type === 'boolean') {

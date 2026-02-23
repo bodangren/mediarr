@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { ApiHttpClient } from './httpClient';
 import { createCrudApi } from './createCrudApi';
 import { TestResult } from './shared-schemas';
+import { routeMap } from './routeMap';
 
 const indexerSchema = z.object({
   id: z.number(),
@@ -10,6 +11,7 @@ const indexerSchema = z.object({
   configContract: z.string(),
   settings: z.string(),
   protocol: z.string(),
+  appProfileId: z.number().nullable().optional(),
   enabled: z.boolean(),
   supportsRss: z.boolean(),
   supportsSearch: z.boolean(),
@@ -24,6 +26,7 @@ export interface CreateIndexerInput {
   configContract: string;
   settings: string;
   protocol: string;
+  appProfileId?: number;
   enabled?: boolean;
   supportsRss?: boolean;
   supportsSearch?: boolean;
@@ -45,5 +48,14 @@ export function createIndexerApi(client: ApiHttpClient) {
     remove: crudApi.remove,
     test: crudApi.test,
     testDraft: crudApi.testDraft,
+    clone(id: number): Promise<IndexerItem> {
+      return client.request(
+        {
+          path: routeMap.indexerClone(id),
+          method: 'POST',
+        },
+        indexerSchema,
+      );
+    },
   };
 }

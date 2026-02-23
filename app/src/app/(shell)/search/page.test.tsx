@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ReleaseCandidate } from '@/lib/api';
 import { getApiClients } from '@/lib/api/client';
 import SearchPage from './page';
 
@@ -11,8 +12,10 @@ vi.mock('@/lib/api/client', () => ({
 const mockedGetApiClients = vi.mocked(getApiClients);
 
 const listIndexersMock = vi.fn();
+const listDownloadClientsMock = vi.fn();
 const searchCandidatesMock = vi.fn();
 const grabReleaseMock = vi.fn();
+const grabCandidateMock = vi.fn();
 
 function createTestQueryClient(): QueryClient {
   return new QueryClient({
@@ -34,6 +37,18 @@ function renderPage(queryClient: QueryClient) {
       <SearchPage />
     </QueryClientProvider>,
   );
+}
+
+function paginated(items: ReleaseCandidate[]) {
+  return {
+    items,
+    meta: {
+      page: 1,
+      pageSize: 100,
+      totalCount: items.length,
+      totalPages: 1,
+    },
+  };
 }
 
 beforeEach(() => {
@@ -66,35 +81,76 @@ beforeEach(() => {
     },
   ]);
 
-  searchCandidatesMock.mockResolvedValue([
+  listDownloadClientsMock.mockResolvedValue([
     {
-      indexer: 'Indexer A',
-      title: 'Dune Part Two 1080p WEB-DL',
-      size: 4_294_967_296,
-      seeders: 140,
-      quality: '1080p',
-      age: 2,
-      magnetUrl: 'magnet:?xt=urn:btih:abc123',
+      id: 1,
+      name: 'qBittorrent',
+      implementation: 'QBittorrent',
+      configContract: 'QBittorrentSettings',
+      settings: '{}',
+      protocol: 'torrent',
+      host: 'localhost',
+      port: 8080,
+      category: null,
+      priority: 1,
+      enabled: true,
+    },
+    {
+      id: 2,
+      name: 'SABnzbd',
+      implementation: 'Sabnzbd',
+      configContract: 'SabnzbdSettings',
+      settings: '{}',
+      protocol: 'usenet',
+      host: 'localhost',
+      port: 8081,
+      category: null,
+      priority: 2,
+      enabled: true,
     },
   ]);
+
+  searchCandidatesMock.mockResolvedValue(
+    paginated([
+      {
+        indexer: 'Indexer A',
+        indexerId: 10,
+        guid: 'guid-abc123',
+        title: 'Dune Part Two 1080p WEB-DL',
+        size: 4_294_967_296,
+        seeders: 140,
+        quality: '1080p',
+        age: 2,
+        categories: [2000],
+        protocol: 'torrent',
+        magnetUrl: 'magnet:?xt=urn:btih:abc123',
+      },
+    ]),
+  );
+
   grabReleaseMock.mockResolvedValue({
-    infoHash: 'abc123',
-    name: 'Dune Part Two 1080p WEB-DL',
+    success: true,
+    downloadId: 'abc123',
+    message: 'grabbed',
   });
 
   mockedGetApiClients.mockReturnValue({
     indexerApi: {
       list: listIndexersMock,
     },
+    downloadClientApi: {
+      list: listDownloadClientsMock,
+    },
     releaseApi: {
       searchCandidates: searchCandidatesMock,
       grabRelease: grabReleaseMock,
+      grabCandidate: grabCandidateMock,
     },
   } as ReturnType<typeof getApiClients>);
 });
 
 describe('search page', () => {
-  it('renders search controls with indexer options', async () => {
+  it('renders search controls with indexer and download client options', async () => {
     const queryClient = createTestQueryClient();
     renderPage(queryClient);
 
@@ -103,255 +159,105 @@ describe('search page', () => {
     expect(screen.getByLabelText('Search type')).toBeInTheDocument();
     expect(screen.getByLabelText('Category')).toBeInTheDocument();
     expect(screen.getByLabelText('Indexer')).toBeInTheDocument();
-    expect(screen.getByLabelText('Limit')).toBeInTheDocument();
-    expect(screen.getByLabelText('Offset')).toBeInTheDocument();
+    expect(screen.getByLabelText('Download client')).toBeInTheDocument();
 
     await waitFor(() => {
       expect(screen.getByRole('option', { name: 'Indexer A' })).toBeInTheDocument();
       expect(screen.getByRole('option', { name: 'Indexer B' })).toBeInTheDocument();
+      expect(screen.getByRole('option', { name: 'qBittorrent' })).toBeInTheDocument();
+      expect(screen.getByRole('option', { name: 'SABnzbd' })).toBeInTheDocument();
     });
   });
 
-  it('submits search parameters and renders result rows', async () => {
+  it('renders type-specific query parameter modal fields and passes values to search', async () => {
     const queryClient = createTestQueryClient();
     renderPage(queryClient);
 
-    await screen.findByRole('option', { name: 'Indexer A' });
-
     fireEvent.change(screen.getByLabelText('Search query'), { target: { value: 'Dune Part Two' } });
-    fireEvent.change(screen.getByLabelText('Search type'), { target: { value: 'movie' } });
+    fireEvent.change(screen.getByLabelText('Search type'), { target: { value: 'tvsearch' } });
     fireEvent.change(screen.getByLabelText('Category'), { target: { value: '2000' } });
-    fireEvent.change(screen.getByLabelText('Indexer'), { target: { value: '10' } });
-    fireEvent.change(screen.getByLabelText('Limit'), { target: { value: '75' } });
-    fireEvent.change(screen.getByLabelText('Offset'), { target: { value: '15' } });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Show advanced options' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Query parameters' }));
+    expect(await screen.findByRole('dialog', { name: 'Query parameters' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Season')).toBeInTheDocument();
+    expect(screen.getByLabelText('Episode')).toBeInTheDocument();
+    expect(screen.getByLabelText('TVDB ID')).toBeInTheDocument();
+    expect(screen.queryByLabelText('IMDB ID')).not.toBeInTheDocument();
+
     fireEvent.change(screen.getByLabelText('Season'), { target: { value: '1' } });
     fireEvent.change(screen.getByLabelText('Episode'), { target: { value: '2' } });
-    fireEvent.change(screen.getByLabelText('Year'), { target: { value: '2024' } });
+    fireEvent.change(screen.getByLabelText('TVDB ID'), { target: { value: '80348' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Apply parameters' }));
 
     fireEvent.click(screen.getByRole('button', { name: 'Search releases' }));
 
     await waitFor(() => {
       expect(searchCandidatesMock).toHaveBeenCalledWith({
         query: 'Dune Part Two',
-        searchType: 'movie',
-        category: '2000',
-        indexerId: 10,
-        limit: 75,
-        offset: 15,
+        type: 'tvsearch',
+        categories: [2000],
         season: 1,
         episode: 2,
-        year: 2024,
+        tvdbId: 80348,
+        page: 1,
+        pageSize: 100,
+        sortBy: 'seeders',
+        sortDir: 'desc',
       });
     });
 
     expect(await screen.findByText('Dune Part Two 1080p WEB-DL')).toBeInTheDocument();
     expect(screen.getAllByText('Indexer A').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('torrent').length).toBeGreaterThan(0);
   });
 
-  it('renders search-specific columns with row fallbacks and indexer flags', async () => {
-    searchCandidatesMock.mockResolvedValueOnce([
-      {
-        indexer: 'Indexer A',
-        title: 'Dune Part Two 1080p WEB-DL',
-        size: 4_294_967_296,
-        seeders: 140,
-        age: 2,
-        magnetUrl: 'magnet:?xt=urn:btih:abc123',
-        indexerFlags: 'freeleech,vip',
-      },
-      {
-        indexer: 'Indexer B',
-        title: 'Fallback Release',
-        size: 1_073_741_824,
-        seeders: 5,
-      },
-    ]);
-
+  it('sends selected download client when grabbing a release', async () => {
     const queryClient = createTestQueryClient();
     renderPage(queryClient);
 
-    fireEvent.change(screen.getByLabelText('Search query'), { target: { value: 'fallback case' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Search releases' }));
-
-    expect(await screen.findByRole('columnheader', { name: 'Protocol' })).toBeInTheDocument();
-    expect(screen.getByRole('columnheader', { name: 'Age' })).toBeInTheDocument();
-    expect(screen.getByRole('columnheader', { name: 'Title' })).toBeInTheDocument();
-    expect(screen.getByRole('columnheader', { name: 'Indexer' })).toBeInTheDocument();
-    expect(screen.getByRole('columnheader', { name: 'Flags' })).toBeInTheDocument();
-    expect(screen.getByRole('columnheader', { name: 'Size' })).toBeInTheDocument();
-    expect(screen.getByRole('columnheader', { name: 'Seeders' })).toBeInTheDocument();
-
-    expect(screen.getByText('freeleech')).toBeInTheDocument();
-    expect(screen.getByText('vip')).toBeInTheDocument();
-    expect(screen.getByText('Fallback Release')).toBeInTheDocument();
-    expect(screen.getAllByText('unknown').length).toBeGreaterThan(0);
-    expect(screen.getByText('- d')).toBeInTheDocument();
-  });
-
-  it('shows empty state when search returns no rows', async () => {
-    searchCandidatesMock.mockResolvedValueOnce([]);
-
-    const queryClient = createTestQueryClient();
-    renderPage(queryClient);
-
-    fireEvent.change(screen.getByLabelText('Search query'), { target: { value: 'missing title' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Search releases' }));
-
-    expect(await screen.findByText('No results')).toBeInTheDocument();
-    expect(screen.getByText('Try broader criteria or a different indexer selection.')).toBeInTheDocument();
-  });
-
-  it('shows query error panel when search request fails', async () => {
-    searchCandidatesMock.mockRejectedValueOnce(new Error('search backend unavailable'));
-
-    const queryClient = createTestQueryClient();
-    renderPage(queryClient);
-
-    fireEvent.change(screen.getByLabelText('Search query'), { target: { value: 'error case' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Search releases' }));
-
-    expect(await screen.findByText('Could not load data')).toBeInTheDocument();
-    expect(screen.getByText('search backend unavailable')).toBeInTheDocument();
-  });
-
-  it('supports row-level grab and download actions', async () => {
-    searchCandidatesMock.mockResolvedValueOnce([
-      {
-        indexer: 'Indexer A',
-        title: 'Grab Candidate',
-        size: 4_294_967_296,
-        seeders: 140,
-        age: 2,
-        magnetUrl: 'magnet:?xt=urn:btih:abc123',
-      },
-    ]);
-
-    const queryClient = createTestQueryClient();
-    renderPage(queryClient);
-
+    await screen.findByRole('option', { name: 'SABnzbd' });
+    fireEvent.change(screen.getByLabelText('Download client'), { target: { value: '2' } });
     fireEvent.change(screen.getByLabelText('Search query'), { target: { value: 'grab candidate' } });
     fireEvent.click(screen.getByRole('button', { name: 'Search releases' }));
 
-    expect(await screen.findByText('Grab Candidate')).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('button', { name: 'Grab release Grab Candidate' }));
+    expect(await screen.findByText('Dune Part Two 1080p WEB-DL')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Grab release Dune Part Two 1080p WEB-DL' }));
 
     await waitFor(() => {
-      expect(grabReleaseMock).toHaveBeenCalledWith(
-        expect.objectContaining({
-          title: 'Grab Candidate',
+      expect(grabReleaseMock).toHaveBeenCalledWith('guid-abc123', 10, 2);
+    });
+  });
+
+  it('filters results by indexer, category, and quality', async () => {
+    searchCandidatesMock.mockResolvedValueOnce(
+      paginated([
+        {
           indexer: 'Indexer A',
-          magnetUrl: 'magnet:?xt=urn:btih:abc123',
-        }),
-      );
-    });
-
-    expect(screen.getByRole('link', { name: 'Download release Grab Candidate' })).toHaveAttribute(
-      'href',
-      'magnet:?xt=urn:btih:abc123',
+          indexerId: 10,
+          guid: 'guid-a',
+          title: 'A 1080p Action',
+          size: 5_368_709_120,
+          seeders: 120,
+          age: 1,
+          quality: '1080p',
+          categories: [2000],
+          protocol: 'torrent',
+          magnetUrl: 'magnet:?xt=urn:btih:fit1',
+        },
+        {
+          indexer: 'Indexer B',
+          indexerId: 20,
+          guid: 'guid-b',
+          title: 'B 2160p Action',
+          size: 5_368_709_120,
+          seeders: 220,
+          age: 1,
+          quality: '2160p',
+          categories: [5000],
+          protocol: 'torrent',
+          magnetUrl: 'magnet:?xt=urn:btih:fit2',
+        },
+      ]),
     );
-  });
-
-  it('opens override modal and applies an override title', async () => {
-    searchCandidatesMock.mockResolvedValueOnce([
-      {
-        indexer: 'Indexer A',
-        title: 'Needs Override',
-        size: 4_294_967_296,
-        seeders: 140,
-        age: 2,
-        magnetUrl: 'magnet:?xt=urn:btih:abc123',
-      },
-    ]);
-
-    const queryClient = createTestQueryClient();
-    renderPage(queryClient);
-
-    fireEvent.change(screen.getByLabelText('Search query'), { target: { value: 'override candidate' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Search releases' }));
-
-    expect(await screen.findByText('Needs Override')).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('button', { name: 'Override match Needs Override' }));
-
-    expect(await screen.findByRole('dialog', { name: 'Override release match' })).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText('Override title'), { target: { value: 'Override Applied Title' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Apply override' }));
-
-    await waitFor(() => {
-      expect(screen.queryByRole('dialog', { name: 'Override release match' })).not.toBeInTheDocument();
-    });
-    expect(screen.getByText('Override Applied Title')).toBeInTheDocument();
-  });
-
-  it('supports bulk grab for selected rows', async () => {
-    searchCandidatesMock.mockResolvedValueOnce([
-      {
-        indexer: 'Indexer A',
-        title: 'Bulk One',
-        size: 4_294_967_296,
-        seeders: 140,
-        age: 2,
-        magnetUrl: 'magnet:?xt=urn:btih:bulk1',
-      },
-      {
-        indexer: 'Indexer B',
-        title: 'Bulk Two',
-        size: 3_221_225_472,
-        seeders: 100,
-        age: 3,
-        magnetUrl: 'magnet:?xt=urn:btih:bulk2',
-      },
-    ]);
-
-    const queryClient = createTestQueryClient();
-    renderPage(queryClient);
-
-    fireEvent.change(screen.getByLabelText('Search query'), { target: { value: 'bulk candidate' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Search releases' }));
-
-    expect(await screen.findByText('Bulk One')).toBeInTheDocument();
-    expect(screen.getByText('Bulk Two')).toBeInTheDocument();
-
-    fireEvent.click(screen.getAllByLabelText('Select row')[0]);
-    fireEvent.click(screen.getAllByLabelText('Select row')[1]);
-    fireEvent.click(screen.getByRole('button', { name: 'Bulk grab' }));
-
-    await waitFor(() => {
-      expect(grabReleaseMock).toHaveBeenCalledTimes(2);
-    });
-  });
-
-  it('filters results by protocol, minimum size, and minimum seeders', async () => {
-    searchCandidatesMock.mockResolvedValueOnce([
-      {
-        indexer: 'Indexer A',
-        title: 'Torrent Large',
-        size: 5_368_709_120,
-        seeders: 120,
-        age: 1,
-        magnetUrl: 'magnet:?xt=urn:btih:fit1',
-      },
-      {
-        indexer: 'Indexer B',
-        title: 'Usenet Large',
-        size: 5_368_709_120,
-        seeders: 200,
-        age: 1,
-        downloadUrl: 'https://example.com/file.nzb',
-      },
-      {
-        indexer: 'Indexer C',
-        title: 'Torrent Small',
-        size: 1_073_741_824,
-        seeders: 20,
-        age: 1,
-        magnetUrl: 'magnet:?xt=urn:btih:fit2',
-      },
-    ]);
 
     const queryClient = createTestQueryClient();
     renderPage(queryClient);
@@ -359,55 +265,56 @@ describe('search page', () => {
     fireEvent.change(screen.getByLabelText('Search query'), { target: { value: 'filter candidates' } });
     fireEvent.click(screen.getByRole('button', { name: 'Search releases' }));
 
-    expect(await screen.findByText('Torrent Large')).toBeInTheDocument();
-    expect(screen.getByText('Usenet Large')).toBeInTheDocument();
-    expect(screen.getByText('Torrent Small')).toBeInTheDocument();
+    expect(await screen.findByText('A 1080p Action')).toBeInTheDocument();
+    expect(screen.getByText('B 2160p Action')).toBeInTheDocument();
 
-    fireEvent.change(screen.getByLabelText('Protocol filter'), { target: { value: 'torrent' } });
-    fireEvent.change(screen.getByLabelText('Minimum size (GB)'), { target: { value: '2' } });
-    fireEvent.change(screen.getByLabelText('Minimum seeders'), { target: { value: '50' } });
+    fireEvent.change(screen.getByLabelText('Indexer filter'), { target: { value: 'Indexer A' } });
+    fireEvent.change(screen.getByLabelText('Category filter'), { target: { value: '2000' } });
+    fireEvent.change(screen.getByLabelText('Quality filter'), { target: { value: '1080p' } });
 
-    expect(screen.getByText('Torrent Large')).toBeInTheDocument();
-    expect(screen.queryByText('Usenet Large')).not.toBeInTheDocument();
-    expect(screen.queryByText('Torrent Small')).not.toBeInTheDocument();
+    expect(screen.getByText('A 1080p Action')).toBeInTheDocument();
+    expect(screen.queryByText('B 2160p Action')).not.toBeInTheDocument();
   });
 
-  it('applies custom filter builder rules to search results', async () => {
-    searchCandidatesMock.mockResolvedValueOnce([
-      {
-        indexer: 'Indexer A',
-        title: 'VIP Exclusive Pack',
-        size: 4_294_967_296,
-        seeders: 120,
-        age: 1,
-        magnetUrl: 'magnet:?xt=urn:btih:vip',
-      },
-      {
-        indexer: 'Indexer B',
-        title: 'Regular Pack',
-        size: 4_294_967_296,
-        seeders: 120,
-        age: 1,
-        magnetUrl: 'magnet:?xt=urn:btih:reg',
-      },
-    ]);
+  it('supports override modal fields and sends overridden values to grab request', async () => {
+    grabCandidateMock.mockResolvedValueOnce({
+      success: true,
+      downloadId: 'override-1',
+      message: 'override grabbed',
+    });
 
     const queryClient = createTestQueryClient();
     renderPage(queryClient);
 
-    fireEvent.change(screen.getByLabelText('Search query'), { target: { value: 'custom filter candidates' } });
+    fireEvent.change(screen.getByLabelText('Search query'), { target: { value: 'override candidate' } });
     fireEvent.click(screen.getByRole('button', { name: 'Search releases' }));
 
-    expect(await screen.findByText('VIP Exclusive Pack')).toBeInTheDocument();
-    expect(screen.getByText('Regular Pack')).toBeInTheDocument();
+    expect(await screen.findByText('Dune Part Two 1080p WEB-DL')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Show custom filters' }));
-    fireEvent.change(screen.getByLabelText('Field 1'), { target: { value: 'title' } });
-    fireEvent.change(screen.getByLabelText('Operator 1'), { target: { value: 'contains' } });
-    fireEvent.change(screen.getByLabelText('Value 1'), { target: { value: 'vip' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Apply filters' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Override match Dune Part Two 1080p WEB-DL' }));
 
-    expect(screen.getByText('VIP Exclusive Pack')).toBeInTheDocument();
-    expect(screen.queryByText('Regular Pack')).not.toBeInTheDocument();
+    expect(await screen.findByRole('dialog', { name: 'Override release match' })).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Override title'), { target: { value: 'Overridden Title' } });
+    fireEvent.change(screen.getByLabelText('Category override'), { target: { value: '5000,5030' } });
+    fireEvent.change(screen.getByLabelText('Quality override'), { target: { value: 'Remux-2160p' } });
+    fireEvent.change(screen.getByLabelText('Language override'), { target: { value: 'en' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Apply override' }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog', { name: 'Override release match' })).not.toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Grab release Overridden Title' }));
+
+    await waitFor(() => {
+      expect(grabCandidateMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'Overridden Title',
+          quality: 'Remux-2160p',
+          categories: [5000, 5030],
+          language: 'en',
+        }),
+      );
+    });
   });
 });

@@ -8,6 +8,7 @@ export interface SubtitleNamingInput {
   extension?: string;
   variantToken: string;
   existingPaths?: string[];
+  subtitleDirectory?: string;
 }
 
 /**
@@ -18,14 +19,20 @@ export class SubtitleNamingService {
     const extension = input.extension?.startsWith('.')
       ? input.extension
       : `.${input.extension ?? 'srt'}`;
-    const dir = path.dirname(input.videoPath);
+    const dir = input.subtitleDirectory
+      ? path.resolve(input.subtitleDirectory)
+      : path.dirname(input.videoPath);
     const videoBaseName = path.basename(
       input.videoPath,
       path.extname(input.videoPath),
     );
-    const languageSuffix = `${input.languageCode.toLowerCase()}${
-      input.isForced ? '.forced' : input.isHi ? '.hi' : ''
-    }`;
+    const flags = [
+      input.isForced ? 'forced' : null,
+      input.isHi ? 'hi' : null,
+    ].filter((flag): flag is string => Boolean(flag));
+    const languageSuffix = flags.length > 0
+      ? `${input.languageCode.toLowerCase()}.${flags.join('.')}`
+      : input.languageCode.toLowerCase();
     const standardName = `${videoBaseName}.${languageSuffix}${extension}`;
     const standardPath = path.join(dir, standardName);
 

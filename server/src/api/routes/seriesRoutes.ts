@@ -7,6 +7,7 @@ import { SeriesRepository, type BulkSeriesChanges } from '../../repositories/Ser
 import { SeriesMonitoringService, type MonitoringType } from '../../services/SeriesMonitoringService';
 import { SeriesOrganizeService, DEFAULT_SERIES_MANAGEMENT_SETTINGS } from '../../services/SeriesOrganizeService';
 import { FilenameParsingService } from '../../services/FilenameParsingService';
+import { FilterService, type FilterConditionsGroup } from '../../services/FilterService';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
@@ -71,6 +72,7 @@ function formatAirTime(date: Date | null): string | undefined {
 function filterSeries(
   items: any[],
   query: Record<string, unknown>,
+  filterService: FilterService,
 ): any[] {
   const monitored =
     typeof query.monitored === 'string' || typeof query.monitored === 'boolean'
@@ -84,8 +86,12 @@ function filterSeries(
     typeof query.search === 'string' && query.search.trim().length > 0
       ? query.search.toLowerCase()
       : undefined;
+  const jump =
+    typeof query.jump === 'string' && query.jump.trim().length > 0
+      ? query.jump.trim().toUpperCase()
+      : 'ALL';
 
-  return items.filter(item => {
+  let filtered = items.filter(item => {
     if (monitored !== undefined && item.monitored !== monitored) {
       return false;
     }
@@ -100,6 +106,33 @@ function filterSeries(
 
     return true;
   });
+
+  if (jump !== 'ALL') {
+    filtered = filtered.filter(item => {
+      const firstChar = String(item.title ?? '').trim().charAt(0).toUpperCase();
+      if (jump === '#') {
+        return firstChar.length > 0 && !/[A-Z]/.test(firstChar);
+      }
+
+      return firstChar === jump;
+    });
+  }
+
+  const customFilterPayload =
+    typeof query.customFilter === 'string' && query.customFilter.trim().length > 0
+      ? query.customFilter
+      : undefined;
+
+  if (customFilterPayload) {
+    try {
+      const parsed = JSON.parse(customFilterPayload) as FilterConditionsGroup;
+      filtered = filterService.applyToSeries(filtered, parsed);
+    } catch {
+      // Ignore malformed customFilter payload and return base filtered list.
+    }
+  }
+
+  return filtered;
 }
 
 export function registerSeriesRoutes(
@@ -118,6 +151,9 @@ export function registerSeriesRoutes(
           status: { type: 'string' },
           monitored: { type: ['boolean', 'string'] },
           search: { type: 'string' },
+          filterId: { type: ['number', 'string'] },
+          customFilter: { type: 'string' },
+          jump: { type: 'string' },
         },
       },
     },
@@ -135,13 +171,41 @@ export function registerSeriesRoutes(
         qualityProfile: true,
         seasons: {
           include: {
-            episodes: true,
+            episodes: {
+              include: {
+                fileVariants: {
+                  select: {
+                    fileSize: true,
+                  },
+                },
+              },
+            },
           },
         },
       },
     });
 
-    const filtered = filterSeries(allItems, query);
+    const filterService = new FilterService(deps.prisma as any);
+    let filtered = filterSeries(allItems, query, filterService);
+
+    const rawFilterId = query.filterId;
+    const filterId =
+      typeof rawFilterId === 'number'
+        ? rawFilterId
+        : typeof rawFilterId === 'string' && rawFilterId.trim().length > 0
+          ? Number.parseInt(rawFilterId, 10)
+          : undefined;
+
+    if (filterId !== undefined && Number.isFinite(filterId)) {
+      const storedFilter = await (deps.prisma as any).customFilter.findUnique({
+        where: { id: filterId },
+      });
+
+      if (storedFilter?.type === 'series') {
+        filtered = filterService.applyToSeries(filtered, storedFilter.conditions as FilterConditionsGroup);
+      }
+    }
+
     const sortField = pagination.sortBy && ['title', 'year', 'status', 'added'].includes(pagination.sortBy)
       ? pagination.sortBy
       : 'title';

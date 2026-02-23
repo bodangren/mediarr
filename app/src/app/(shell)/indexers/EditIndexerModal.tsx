@@ -23,6 +23,7 @@ export interface EditIndexerSource {
   configContract: string;
   settings: string;
   protocol: string;
+  appProfileId?: number | null;
   enabled: boolean;
   supportsRss: boolean;
   supportsSearch: boolean;
@@ -35,6 +36,7 @@ export interface EditIndexerDraft {
   implementation: string;
   configContract: string;
   protocol: string;
+  appProfileId?: number;
   enabled: boolean;
   supportsRss: boolean;
   supportsSearch: boolean;
@@ -48,6 +50,7 @@ interface EditIndexerModalProps {
   isSubmitting?: boolean;
   onClose: () => void;
   onSave: (draft: EditIndexerDraft) => void | Promise<void>;
+  appProfiles?: Array<{ id: number; name: string }>;
 }
 
 const torznabFields: DynamicFieldSchema[] = [
@@ -144,10 +147,14 @@ export function EditIndexerModal({
   isSubmitting = false,
   onClose,
   onSave,
+  appProfiles = [],
 }: EditIndexerModalProps) {
   const [name, setName] = useState(indexer.name);
   const [protocol, setProtocol] = useState<'torrent' | 'usenet'>(indexer.protocol === 'usenet' ? 'usenet' : 'torrent');
   const [configContract, setConfigContract] = useState(indexer.configContract);
+  const [appProfileId, setAppProfileId] = useState<number | undefined>(
+    typeof indexer.appProfileId === 'number' ? indexer.appProfileId : undefined,
+  );
   const [enabled, setEnabled] = useState(indexer.enabled);
   const [supportsRss, setSupportsRss] = useState(indexer.supportsRss);
   const [supportsSearch, setSupportsSearch] = useState(indexer.supportsSearch);
@@ -212,6 +219,7 @@ export function EditIndexerModal({
       implementation: indexer.implementation,
       configContract,
       protocol,
+      appProfileId,
       enabled,
       supportsRss,
       supportsSearch,
@@ -248,6 +256,23 @@ export function EditIndexerModal({
                 { value: 'usenet', label: 'usenet' },
               ]}
             />
+            <label className="grid gap-1 text-sm">
+              <span>App Profile</span>
+              <select
+                id="edit-indexer-app-profile"
+                className="rounded-sm border border-border-subtle bg-surface-0 px-3 py-2 text-sm"
+                value={appProfileId ?? ''}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setAppProfileId(value ? Number.parseInt(value, 10) : undefined);
+                }}
+              >
+                <option value="">None</option>
+                {appProfiles.map((profile) => (
+                  <option key={profile.id} value={profile.id}>{profile.name}</option>
+                ))}
+              </select>
+            </label>
           </div>
 
           <div className="grid gap-2 sm:grid-cols-3">

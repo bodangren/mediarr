@@ -19,6 +19,7 @@ export interface RequestConfig {
   body?: unknown;
   query?: object;
   headers?: Record<string, string>;
+  onUploadProgress?: (progress: number) => void;
 }
 
 export interface PaginatedResult<T> {
@@ -157,6 +158,13 @@ export class ApiHttpClient {
 
   private async execute(config: RequestConfig): Promise<{ status: number; body: unknown }> {
     const requestUrl = `${this.baseUrl}${config.path}${toQueryString((config.query ?? {}) as Record<string, unknown>)}`;
+    const hasUploadProgressCallback = typeof config.onUploadProgress === 'function';
+    const isFormData = typeof FormData !== 'undefined' && config.body instanceof FormData;
+
+    if (hasUploadProgressCallback && isFormData && typeof XMLHttpRequest !== 'undefined') {
+      return this.executeWithXhr(requestUrl, config);
+    }
+
     const fetchImpl =
       this.fetchFn ??
       (typeof globalThis.fetch === 'function'
@@ -167,14 +175,19 @@ export class ApiHttpClient {
       throw new ContractViolationError('Fetch is not available in this runtime');
     }
 
+    const hasJsonBody = config.body !== undefined && !(typeof FormData !== 'undefined' && config.body instanceof FormData);
     const response = await fetchImpl(requestUrl, {
       method: config.method ?? 'GET',
       headers: {
         ...this.defaultHeaders,
-        ...(config.body === undefined ? {} : { 'content-type': 'application/json' }),
+        ...(hasJsonBody ? { 'content-type': 'application/json' } : {}),
         ...(config.headers ?? {}),
       },
-      body: config.body === undefined ? undefined : JSON.stringify(config.body),
+      body: config.body === undefined
+        ? undefined
+        : hasJsonBody
+          ? JSON.stringify(config.body)
+          : (config.body as BodyInit),
     });
 
     const contentType = response.headers.get('content-type') ?? '';
@@ -206,5 +219,74 @@ export class ApiHttpClient {
       status: response.status,
       body,
     };
+  }
+
+  private executeWithXhr(
+    requestUrl: string,
+    config: RequestConfig,
+  ): Promise<{ status: number; body: unknown }> {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open(config.method ?? 'POST', requestUrl, true);
+
+      const headers = {
+        ...this.defaultHeaders,
+        ...(config.headers ?? {}),
+      };
+
+      for (const [header, value] of Object.entries(headers)) {
+        xhr.setRequestHeader(header, value);
+      }
+
+      xhr.upload.onprogress = event => {
+        if (!event.lengthComputable || !config.onUploadProgress) {
+          return;
+        }
+
+        const progress = Math.round((event.loaded / event.total) * 100);
+        config.onUploadProgress(progress);
+      };
+
+      xhr.onerror = () => {
+        reject(new ContractViolationError('Upload request failed before receiving a response'));
+      };
+
+      xhr.onload = () => {
+        const contentType = xhr.getResponseHeader('content-type') ?? '';
+        if (!contentType.toLowerCase().includes('application/json')) {
+          reject(
+            new ContractViolationError('Expected JSON response payload', {
+              status: xhr.status,
+              contentType,
+            }),
+          );
+          return;
+        }
+
+        let body: unknown;
+        try {
+          body = JSON.parse(xhr.responseText);
+        } catch {
+          reject(
+            new ContractViolationError('Failed to parse JSON response payload', {
+              status: xhr.status,
+            }),
+          );
+          return;
+        }
+
+        resolve({
+          status: xhr.status,
+          body,
+        });
+      };
+
+      if (typeof FormData !== 'undefined' && config.body instanceof FormData) {
+        xhr.send(config.body);
+        return;
+      }
+
+      xhr.send(config.body === undefined ? undefined : JSON.stringify(config.body));
+    });
   }
 }

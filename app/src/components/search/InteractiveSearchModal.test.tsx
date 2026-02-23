@@ -19,6 +19,8 @@ vi.mock('@/lib/api/client', () => ({
 // Mock API responses
 const mockReleaseCandidates = [
   {
+    indexerId: 1,
+    guid: 'guid-a',
     indexer: 'Indexer A',
     title: 'Series.Name.S01E01.1080p.WEB-DL.DDP5.1.H.264-GRP',
     size: 1573741824,
@@ -28,6 +30,8 @@ const mockReleaseCandidates = [
     age: 48,
   },
   {
+    indexerId: 2,
+    guid: 'guid-b',
     indexer: 'Indexer B',
     title: 'Series.Name.S01E01.720p.HDTV.x264-EVOLVE',
     size: 1073741824,
@@ -37,6 +41,8 @@ const mockReleaseCandidates = [
     age: 24,
   },
   {
+    indexerId: 3,
+    guid: 'guid-c',
     indexer: 'Indexer C',
     title: 'Series.Name.S01E01.2160p.UHD.BluRay.x265.10bit.HDR.DTS-HD.MA.5.1-DEFLATE',
     size: 15737418240,
@@ -46,6 +52,8 @@ const mockReleaseCandidates = [
     age: 72,
   },
   {
+    indexerId: 4,
+    guid: 'guid-d',
     indexer: 'Indexer D',
     title: 'Series.Name.S01E01.480p.WEBrip.x264-BOOP',
     size: 367001600,
@@ -71,6 +79,7 @@ describe('InteractiveSearchModal', () => {
     onClose: vi.fn(),
     seriesId: 1,
     episodeId: 1,
+    tvdbId: 121361,
     seriesTitle: 'Test Series',
     seasonNumber: 1,
     episodeNumber: 1,
@@ -79,7 +88,15 @@ describe('InteractiveSearchModal', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockSearchCandidates.mockResolvedValue(mockReleaseCandidates);
+    mockSearchCandidates.mockResolvedValue({
+      items: mockReleaseCandidates,
+      meta: {
+        page: 1,
+        pageSize: 20,
+        totalCount: mockReleaseCandidates.length,
+        totalPages: 1,
+      },
+    });
     mockGrabRelease.mockResolvedValue(mockGrabResult);
   });
 
@@ -102,7 +119,12 @@ describe('InteractiveSearchModal', () => {
 
     await waitFor(() => {
       expect(mockSearchCandidates).toHaveBeenCalledTimes(1);
-      expect(mockSearchCandidates).toHaveBeenCalledWith({ seriesId: 1, episodeId: 1 });
+      expect(mockSearchCandidates).toHaveBeenCalledWith({
+        type: 'tvsearch',
+        tvdbId: 121361,
+        season: 1,
+        episode: 1,
+      });
     });
   });
 
@@ -187,16 +209,7 @@ describe('InteractiveSearchModal', () => {
 
     await waitFor(() => {
       expect(mockGrabRelease).toHaveBeenCalledTimes(1);
-      expect(mockGrabRelease).toHaveBeenCalledWith(
-        expect.objectContaining({
-          title: 'Series.Name.S01E01.1080p.WEB-DL.DDP5.1.H.264-GRP',
-          indexer: 'Indexer A',
-          size: 1573741824,
-          seeders: 150,
-          quality: 'WEBDL-1080p',
-          age: 48,
-        })
-      );
+      expect(mockGrabRelease).toHaveBeenCalledWith('guid-a', 1);
     });
   });
 
@@ -311,7 +324,15 @@ describe('InteractiveSearchModal', () => {
   });
 
   it('shows empty state when no releases are found', async () => {
-    mockSearchCandidates.mockResolvedValue([]);
+    mockSearchCandidates.mockResolvedValue({
+      items: [],
+      meta: {
+        page: 1,
+        pageSize: 20,
+        totalCount: 0,
+        totalPages: 0,
+      },
+    });
 
     renderWithToast(<InteractiveSearchModal {...defaultProps} />);
 

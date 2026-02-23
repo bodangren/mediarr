@@ -73,10 +73,6 @@ The cross-cutting track produces shared backend APIs and engines that domain tra
 
 ## Active Tracks
 
-- [ ] **Track: Prowlarr Feature Parity**
-  *Description: Close all Prowlarr gaps — real search execution with release grab, app profiles/sync, notification providers, proxy/category backend persistence, indexer cloning, and custom filters.*
-  *Phases: 3 | Link: [./tracks/prowlarr_parity_20260217/](./tracks/prowlarr_parity_20260217/)*
-
 - [ ] **Track: Sonarr Feature Parity**
   *Description: Close all Sonarr gaps — series bulk editor, season pass UI, manual import/organize, interactive search wiring, advanced filtering, and missing metadata display.*
   *Phases: 5 | Link: [./tracks/sonarr_parity_20260217/](./tracks/sonarr_parity_20260217/)*
@@ -89,9 +85,13 @@ The cross-cutting track produces shared backend APIs and engines that domain tra
   *Description: Close Bazarr gaps — movie mass edit backend, subtitle upload workflow, episode-level detail operations, and advanced subtitle settings.*
   *Phases: 3 | Link: [./tracks/bazarr_parity_20260217/](./tracks/bazarr_parity_20260217/)*
 
-- [ ] **Track: Cross-Cutting Parity Features**
+- [~] **Track: Cross-Cutting Parity Features**
   *Description: Shared features across all apps — custom formats system, import lists framework, iCal/RSS calendar sync, dashboard widgets, activity filtering, resilience improvements, and carried-forward Cardigann/subtitle fixes.*
   *Phases: 4 | Link: [./tracks/cross_cutting_parity_20260217/](./tracks/cross_cutting_parity_20260217/)*
+
+- [ ] **Track: Cardigann Runtime Parity (Monolith-Native)**
+  *Description: Reimplement Cardigann execution features required by imported indexer definitions, with a test-first compatibility harness and definition-driven parity milestones for Mediarr's native indexer engine.*
+  *Phases: 5 | Link: [./tracks/cardigann_runtime_parity_20260223/](./tracks/cardigann_runtime_parity_20260223/)*
 
 ---
 
@@ -112,6 +112,7 @@ The cross-cutting track produces shared backend APIs and engines that domain tra
 - [x] **Track: Sonarr UI Cloning** *Phases: 14 | Link: [../archive/sonarr_ui_cloning_20260214/](../archive/sonarr_ui_cloning_20260214/)*
 - [x] **Track: Bazarr UI Cloning** *Phases: 13 | Link: [../archive/bazarr_ui_cloning_20260214/](../archive/bazarr_ui_cloning_20260214/)*
 - [x] **Track: Prowlarr UI Cloning** *Phases: 10 | Link: [../archive/prowlarr_ui_cloning_20260214/](../archive/prowlarr_ui_cloning_20260214/)*
+- [x] **Track: Prowlarr Feature Parity** *Phases: 3 | Link: [../archive/prowlarr_parity_20260217/](../archive/prowlarr_parity_20260217/)*
 - [x] **Track: UI Stub Closure & Deduplication** *Phases: 5 | Link: [../archive/ui_stub_closure_20260217/](../archive/ui_stub_closure_20260217/)*
 - [x] **Track: Fix Core Parity Wiring** *Phases: 4 (3 complete, Phase 4 carried forward to cross-cutting) | Link: [../archive/fix_core_parity_wiring_20260212/](../archive/fix_core_parity_wiring_20260212/)*
 - [x] **Track: Radarr UI Cloning** *Phases: 11 (settings pages carried forward to radarr_parity) | Link: [../archive/radarr_ui_cloning_20260214/](../archive/radarr_ui_cloning_20260214/)*

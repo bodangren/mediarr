@@ -1,11 +1,13 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useParams } from 'next/navigation';
 import { ChevronDown, ChevronRight, Search, Upload } from 'lucide-react';
 import { Button } from '@/components/primitives/Button';
 import { QueryPanel } from '@/components/primitives/QueryPanel';
 import { ManualSearchModal } from '@/components/subtitles/ManualSearchModal';
+import { SubtitleUpload } from '@/components/subtitles/SubtitleUpload';
 import { SyncButton } from '@/components/subtitles/SyncButton';
 import { ScanButton } from '@/components/subtitles/ScanButton';
 import { SearchButton } from '@/components/subtitles/SearchButton';
@@ -43,11 +45,16 @@ type SeasonRow = {
 
 export default function SeriesSubtitleDetailPage() {
   const api = useMemo(() => getApiClients(), []);
+  const queryClient = useQueryClient();
   const params = useParams<{ id: string }>();
   const id = Number.parseInt(params.id, 10);
 
   const [expandedSeasons, setExpandedSeasons] = useState<Set<number>>(new Set());
   const [manualSearchModal, setManualSearchModal] = useState<{
+    isOpen: boolean;
+    episodeId: number;
+  }>({ isOpen: false, episodeId: 0 });
+  const [uploadModal, setUploadModal] = useState<{
     isOpen: boolean;
     episodeId: number;
   }>({ isOpen: false, episodeId: 0 });
@@ -87,6 +94,19 @@ export default function SeriesSubtitleDetailPage() {
 
   const closeManualSearch = () => {
     setManualSearchModal({ isOpen: false, episodeId: 0 });
+  };
+
+  const openUpload = (episodeId: number) => {
+    setUploadModal({ isOpen: true, episodeId });
+  };
+
+  const closeUpload = () => {
+    setUploadModal({ isOpen: false, episodeId: 0 });
+  };
+
+  const handleUploadSuccess = () => {
+    closeUpload();
+    queryClient.invalidateQueries({ queryKey: ['series', 'subtitles', 'detail', id] });
   };
 
   const series = seriesQuery.data?.series;
@@ -232,8 +252,7 @@ export default function SeriesSubtitleDetailPage() {
                             <Button
                               variant="secondary"
                               className="px-2 py-1 text-xs"
-                              disabled
-                              title="Subtitle upload requires backend support"
+                              onClick={() => openUpload(episode.episodeId)}
                             >
                               <Upload className="mr-1 h-3 w-3" />
                               Upload
@@ -261,6 +280,24 @@ export default function SeriesSubtitleDetailPage() {
         episodeId={manualSearchModal.episodeId}
         onClose={closeManualSearch}
       />
+
+      {uploadModal.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
+          <button
+            type="button"
+            className="absolute inset-0 bg-surface-3/70"
+            onClick={closeUpload}
+            aria-label="Close upload modal"
+          />
+          <div className="relative z-10 w-full max-w-2xl max-h-[85vh] overflow-y-auto rounded-md border border-border-subtle bg-surface-1 shadow-elevation-3 p-4">
+            <SubtitleUpload
+              episodeId={uploadModal.episodeId}
+              onSuccess={handleUploadSuccess}
+              onCancel={closeUpload}
+            />
+          </div>
+        </div>
+      )}
     </section>
   );
 }

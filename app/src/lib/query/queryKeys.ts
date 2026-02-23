@@ -13,6 +13,7 @@ import type { BlacklistQueryParams } from '../api/subtitleBlacklistApi';
 export const queryKeys = {
   seriesList: (query: ListQuery) => ['series', 'list', query] as const,
   seriesDetail: (id: number) => ['series', 'detail', id] as const,
+  filtersList: (type: 'series' | 'indexer') => ['filters', type] as const,
 
   moviesList: (query: ListQuery) => ['movies', 'list', query] as const,
   movieDetail: (id: number) => ['movies', 'detail', id] as const,
@@ -32,6 +33,7 @@ export const queryKeys = {
   discoverMovies: (mode: string) => ['discover', 'movies', mode] as const,
 
   indexers: () => ['indexers', 'list'] as const,
+  appProfiles: () => ['app-profiles', 'list'] as const,
   applications: () => ['applications', 'list'] as const,
   torrents: (query: TorrentListQuery) => ['torrents', 'list', query] as const,
   activity: (query: ActivityQuery) => ['activity', 'list', query] as const,
@@ -43,10 +45,15 @@ export const queryKeys = {
 
   qualityProfiles: () => ['quality-profiles', 'list'] as const,
   qualityProfile: (id: number) => ['quality-profiles', 'detail', id] as const,
+  customFormats: () => ['custom-formats', 'list'] as const,
+  customFormat: (id: number) => ['custom-formats', 'detail', id] as const,
+  customFormatSchema: () => ['custom-formats', 'schema'] as const,
   languageProfiles: () => ['language-profiles', 'list'] as const,
 
   health: () => ['health'] as const,
   settings: () => ['settings'] as const,
+  settingsProxies: () => ['settings', 'proxies'] as const,
+  settingsCategories: () => ['settings', 'categories'] as const,
   systemStatus: () => ['system', 'status'] as const,
   systemEvents: (query: EventsQuery) => ['system', 'events', query] as const,
 
@@ -86,6 +93,12 @@ export const queryKeys = {
   // Subtitle providers
   subtitleProviders: () => ['subtitle-providers'] as const,
   subtitleProvider: (id: string) => ['subtitle-provider', id] as const,
+
+  // Import lists
+  importLists: () => ['import-lists'] as const,
+  importList: (id: number) => ['import-lists', 'detail', id] as const,
+  importListProviders: () => ['import-lists', 'providers'] as const,
+  importListExclusions: () => ['import-lists', 'exclusions'] as const,
 };
 
 export type QueryKeyFactory = typeof queryKeys;

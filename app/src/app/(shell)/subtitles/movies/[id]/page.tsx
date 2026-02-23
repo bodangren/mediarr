@@ -145,12 +145,7 @@ export default function MovieSubtitleDetailPage({ params }: { params: { id: stri
   const handleUploadSuccess = useCallback(() => {
     setIsUploadModalOpen(false);
     queryClient.invalidateQueries({ queryKey: ['movie-subtitle-variants', movieId] });
-    pushToast({
-      title: 'Upload Complete',
-      message: 'Subtitle files uploaded successfully',
-      variant: 'success',
-    });
-  }, [movieId, queryClient, pushToast]);
+  }, [movieId, queryClient]);
 
   if (!movieQuery.data) {
     return (

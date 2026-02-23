@@ -1,3 +1,5 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
 import { SubtitleVariantRepository } from '../repositories/SubtitleVariantRepository';
 import { SubtitleNamingService } from './SubtitleNamingService';
 import { SubtitleProviderFactory } from './SubtitleProviderFactory';
@@ -55,6 +57,30 @@ export interface VariantInventoryView {
     isHi: boolean;
   }>;
 }
+
+export type UploadMediaType = 'movie' | 'episode';
+
+export interface SubtitleUploadInput {
+  mediaId: number;
+  mediaType: UploadMediaType;
+  language: string;
+  forced: boolean;
+  hearingImpaired: boolean;
+  originalFilename: string;
+  content: Buffer;
+}
+
+export interface UploadedSubtitleRecord {
+  id: number;
+  mediaId: number;
+  mediaType: UploadMediaType;
+  filePath: string;
+  language: string;
+  forced: boolean;
+  hearingImpaired: boolean;
+}
+
+const ALLOWED_UPLOAD_EXTENSIONS = new Set(['.srt', '.ass', '.ssa', '.sub', '.vtt']);
 
 /**
  * API-oriented service for variant inventory and manual subtitle workflows.
@@ -164,6 +190,66 @@ export class SubtitleInventoryApiService {
     return { storedPath };
   }
 
+  async uploadSubtitle(input: SubtitleUploadInput): Promise<UploadedSubtitleRecord> {
+    const extension = path.extname(input.originalFilename).toLowerCase();
+    if (!ALLOWED_UPLOAD_EXTENSIONS.has(extension)) {
+      throw new Error('Only subtitle files are supported (.srt, .ass, .ssa, .sub, .vtt)');
+    }
+
+    const variant = await this.resolveVariantForUpload(input.mediaId, input.mediaType);
+    const inventory = await this.repository.getVariantInventory(variant.id);
+
+    const siblingPaths = await this.repository.listSiblingSubtitlePaths(variant.id);
+    const ownPaths = inventory.subtitleTracks
+      .map(track => track.filePath)
+      .filter((value): value is string => Boolean(value));
+
+    const subtitlesDirectory = process.env.SUBTITLES_DIR;
+
+    const namingInput = {
+      videoPath: variant.path,
+      languageCode: input.language,
+      isForced: input.forced,
+      isHi: input.hearingImpaired,
+      extension,
+      variantToken: variant.releaseName ?? `${input.mediaType}-${input.mediaId}`,
+      existingPaths: [...siblingPaths, ...ownPaths],
+      ...(subtitlesDirectory ? { subtitleDirectory: subtitlesDirectory } : {}),
+    };
+
+    let storedPath = this.namingService.buildSubtitlePath(namingInput);
+
+    if (await this.fileExists(storedPath)) {
+      storedPath = this.namingService.buildSubtitlePath({
+        ...namingInput,
+        existingPaths: [...siblingPaths, ...ownPaths, storedPath],
+      });
+    }
+
+    await fs.mkdir(path.dirname(storedPath), { recursive: true });
+    await fs.writeFile(storedPath, input.content);
+
+    const track = await this.repository.createSubtitleTrack({
+      variantId: variant.id,
+      source: 'EXTERNAL',
+      languageCode: input.language,
+      isForced: input.forced,
+      isHi: input.hearingImpaired,
+      filePath: storedPath,
+      fileSize: BigInt(input.content.byteLength),
+    });
+
+    return {
+      id: track.id,
+      mediaId: input.mediaId,
+      mediaType: input.mediaType,
+      filePath: storedPath,
+      language: track.languageCode ?? input.language,
+      forced: track.isForced,
+      hearingImpaired: track.isHi,
+    };
+  }
+
   private resolveProvider(
     provider?: ManualSubtitleProvider,
   ): ManualSubtitleProvider {
@@ -230,7 +316,11 @@ export class SubtitleInventoryApiService {
     if (input.movieId) {
       const variants = await this.repository.listMovieVariants(input.movieId);
       if (variants.length === 1) {
-        return variants[0].id;
+        const selected = variants[0];
+        if (!selected) {
+          throw new Error(`No variants found for movie ${input.movieId}`);
+        }
+        return selected.id;
       }
       if (variants.length > 1) {
         throw new Error(
@@ -243,7 +333,11 @@ export class SubtitleInventoryApiService {
     if (input.episodeId) {
       const variants = await this.repository.listEpisodeVariants(input.episodeId);
       if (variants.length === 1) {
-        return variants[0].id;
+        const selected = variants[0];
+        if (!selected) {
+          throw new Error(`No variants found for episode ${input.episodeId}`);
+        }
+        return selected.id;
       }
       if (variants.length > 1) {
         throw new Error(
@@ -254,5 +348,38 @@ export class SubtitleInventoryApiService {
     }
 
     throw new Error('variantId, movieId, or episodeId is required');
+  }
+
+  private async resolveVariantForUpload(
+    mediaId: number,
+    mediaType: UploadMediaType,
+  ): Promise<{ id: number; path: string; releaseName: string | null }> {
+    const variants = mediaType === 'movie'
+      ? await this.repository.listMovieVariants(mediaId)
+      : await this.repository.listEpisodeVariants(mediaId);
+
+    if (variants.length === 0) {
+      throw new Error(`No variants found for ${mediaType} ${mediaId}`);
+    }
+
+    const selected = variants[0];
+    if (!selected) {
+      throw new Error(`No variants found for ${mediaType} ${mediaId}`);
+    }
+
+    return {
+      id: selected.id,
+      path: selected.path,
+      releaseName: selected.releaseName,
+    };
+  }
+
+  private async fileExists(filePath: string): Promise<boolean> {
+    try {
+      await fs.access(filePath);
+      return true;
+    } catch {
+      return false;
+    }
   }
 }

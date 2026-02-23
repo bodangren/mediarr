@@ -1,14 +1,19 @@
 import { createActivityApi } from './activityApi';
+import { createAppProfilesApi } from './appProfilesApi';
 import { createApplicationsApi } from './applicationsApi';
 import { createBackupApi } from './backupApi';
 import { createBlocklistApi } from './blocklistApi';
 import { createCalendarApi } from './calendarApi';
+import { createCategorySettingsApi } from './categorySettingsApi';
 import { createCollectionApi } from './collectionApi';
+import { createCustomFormatApi } from './customFormatApi';
 import { createDiscoverApi } from './discoverApi';
 import { createEventsApi } from './eventsApi';
+import { createFiltersApi } from './filters';
 import { createHealthApi } from './healthApi';
 import { ApiHttpClient, type ApiHttpClientConfig } from './httpClient';
 import { createImportApi } from './importApi';
+import { createImportListsApi } from './importListsApi';
 import { createIndexerApi } from './indexerApi';
 import { createLanguageProfilesApi } from './languageProfilesApi';
 import { createLogsApi } from './logsApi';
@@ -18,6 +23,7 @@ import { createQualityProfileApi } from './qualityProfileApi';
 import { createReleaseApi } from './releaseApi';
 import { createSeriesApi } from './seriesApi';
 import { createSettingsApi } from './settingsApi';
+import { createProxySettingsApi } from './proxySettingsApi';
 import { createSubtitleApi } from './subtitleApi';
 import { createSubtitleBlacklistApi } from './subtitleBlacklistApi';
 import { createSubtitleHistoryApi } from './subtitleHistoryApi';
@@ -42,7 +48,9 @@ export function createApiClients(config: ApiHttpClientConfig = {}) {
     importApi: createImportApi(httpClient),
     indexerApi: createIndexerApi(httpClient),
     applicationsApi: createApplicationsApi(httpClient),
+    appProfilesApi: createAppProfilesApi(httpClient),
     downloadClientApi: createDownloadClientApi(httpClient),
+    importListsApi: createImportListsApi(httpClient),
     tagsApi: createTagsApi(httpClient),
     subtitleApi: createSubtitleApi(httpClient),
     subtitleBlacklistApi: createSubtitleBlacklistApi(httpClient),
@@ -51,17 +59,21 @@ export function createApiClients(config: ApiHttpClientConfig = {}) {
     subtitleWantedApi: createSubtitleWantedApi(httpClient),
     activityApi: createActivityApi(httpClient),
     calendarApi: createCalendarApi(httpClient),
+    categorySettingsApi: createCategorySettingsApi(httpClient),
     collectionApi: createCollectionApi(httpClient),
     discoverApi: createDiscoverApi(httpClient),
+    filtersApi: createFiltersApi(httpClient),
     blocklistApi: createBlocklistApi(httpClient),
     settingsApi: createSettingsApi(httpClient),
     healthApi: createHealthApi(httpClient),
     notificationsApi: createNotificationsApi(httpClient),
+    proxySettingsApi: createProxySettingsApi(httpClient),
     systemApi: createSystemApi(httpClient),
     backupApi: createBackupApi(httpClient),
     logsApi: createLogsApi(httpClient),
     updatesApi: createUpdatesApi(httpClient),
     qualityProfileApi: createQualityProfileApi(httpClient),
+    customFormatApi: createCustomFormatApi(httpClient),
     languageProfilesApi: createLanguageProfilesApi(httpClient),
     wantedApi: createWantedApi(httpClient),
     movieApi: createMovieApi(httpClient),
@@ -88,6 +100,8 @@ export type {
   SubtitleSearchResult,
   BulkUpdateMoviesResult,
   BulkUpdateMoviesInput,
+  SubtitleUploadRecord,
+  SubtitleUploadInput,
 } from './subtitleApi';
 export type { ManualSearchInput, ManualDownloadInput } from './subtitleApi';
 
@@ -154,6 +168,23 @@ export type { Movie, UpdateMovieInput } from './movieApi';
 
 // Series types
 export type { Series, BulkSeriesChanges, BulkUpdateResult } from './seriesApi';
+export type { CustomFilter, FilterCondition, FilterConditionsGroup } from './filters';
+export type { ProxySettingsItem, ProxySettingsInput } from './proxySettingsApi';
 
 // Release types
 export type { ReleaseCandidate, GrabResult, SearchParams } from './releaseApi';
+
+// Import List types
+export type {
+  ImportList,
+  ImportListExclusion,
+  ProviderInfo,
+  SyncResult,
+  CreateImportListInput,
+  UpdateImportListInput,
+  CreateExclusionInput,
+  TMDBPopularConfig,
+  TMDBListConfig,
+  ProviderType,
+} from './importListsApi';
+export type { CategorySettingsItem, CategorySettingsInput } from './categorySettingsApi';

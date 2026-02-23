@@ -28,6 +28,8 @@ import { TorrentRepository } from './repositories/TorrentRepository';
 import { seedCategories } from './seeds/categories';
 import { seedQualityDefinitions } from './seeds/qualities';
 import { ActivityEventEmitter } from './services/ActivityEventEmitter';
+import { AppProfileService } from './services/AppProfileService';
+import { ApplicationService } from './services/ApplicationService';
 import { CollectionService } from './services/CollectionService';
 import { DataDirectoryInitializer } from './services/DataDirectoryInitializer';
 import {
@@ -471,8 +473,11 @@ async function startApi(): Promise<void> {
     indexerFactory,
     torrentManager,
     activityEventEmitter,
+    customFormatRepository,
   );
   const wantedService = new WantedService(prisma);
+  const appProfileService = new AppProfileService(prisma);
+  const applicationService = new ApplicationService(prisma);
 
   const app = createApiServer({
     prisma,
@@ -498,6 +503,8 @@ async function startApi(): Promise<void> {
     importListSyncService,
     collectionRepository,
     collectionService,
+    appProfileService,
+    applicationService,
   });
 
   const close = async (): Promise<void> => {

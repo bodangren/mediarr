@@ -28,9 +28,9 @@ const NOTIFICATION_TYPES: NotificationType[] = [
   'Discord',
   'Telegram',
   'Email',
+  'Slack',
   'Webhook',
   'Pushover',
-  'Pushbullet',
 ];
 
 const TRIGGER_OPTIONS: NotificationTrigger[] = [
@@ -44,7 +44,7 @@ const TRIGGER_OPTIONS: NotificationTrigger[] = [
 
 function getWebhookUrl(notification?: Notification): string {
   if (!notification) return '';
-  if (notification.type === 'Discord' || notification.type === 'Webhook') {
+  if (notification.type === 'Discord' || notification.type === 'Slack' || notification.type === 'Webhook') {
     return notification.webhookUrl;
   }
   return '';
@@ -235,7 +235,7 @@ export function AddNotificationModal({ isOpen, onClose, notificationToEdit }: Ad
       type,
       enabled,
       triggers,
-      ...(type === 'Discord' || type === 'Webhook' ? { webhookUrl } : {}),
+      ...(type === 'Discord' || type === 'Slack' || type === 'Webhook' ? { webhookUrl } : {}),
       ...(type === 'Telegram' ? { botToken, chatId } : {}),
       ...(type === 'Email' ? { smtpServer, smtpPort: Number.parseInt(smtpPort, 10) || 587, smtpUser, smtpPassword, fromAddress, toAddress } : {}),
       ...(type === 'Webhook' ? { method, headers: headers ? JSON.parse(headers) : undefined } : {}),
@@ -251,7 +251,7 @@ export function AddNotificationModal({ isOpen, onClose, notificationToEdit }: Ad
       type,
       enabled,
       triggers,
-      ...(type === 'Discord' || type === 'Webhook' ? { webhookUrl } : {}),
+      ...(type === 'Discord' || type === 'Slack' || type === 'Webhook' ? { webhookUrl } : {}),
       ...(type === 'Telegram' ? { botToken, chatId } : {}),
       ...(type === 'Email' ? { smtpServer, smtpPort: Number.parseInt(smtpPort, 10) || 587, smtpUser, smtpPassword, fromAddress, toAddress } : {}),
       ...(type === 'Webhook' ? { method, headers: headers ? JSON.parse(headers) : undefined } : {}),
@@ -268,7 +268,7 @@ export function AddNotificationModal({ isOpen, onClose, notificationToEdit }: Ad
     if (!name.trim()) return false;
 
     // Type-specific validation
-    if (type === 'Discord' || type === 'Webhook') {
+    if (type === 'Discord' || type === 'Slack' || type === 'Webhook') {
       if (!webhookUrl.trim()) return false;
     }
 
@@ -286,14 +286,15 @@ export function AddNotificationModal({ isOpen, onClose, notificationToEdit }: Ad
   const renderTypeSpecificFields = () => {
     switch (type) {
       case 'Discord':
+      case 'Slack':
         return (
           <div className="space-y-3">
             <label className="grid gap-1 text-sm">
-              <span>Webhook URL</span>
+              <span>{type === 'Slack' ? 'Slack Webhook URL' : 'Webhook URL'}</span>
               <input
                 type="url"
                 className="rounded-sm border border-border-subtle bg-surface-0 px-3 py-2 text-sm font-mono"
-                placeholder={`https://discord.com/api/webhooks/...`}
+                placeholder={type === 'Slack' ? 'https://hooks.slack.com/services/...' : 'https://discord.com/api/webhooks/...'}
                 value={webhookUrl}
                 onChange={e => setWebhookUrl(e.target.value)}
               />
@@ -436,16 +437,6 @@ export function AddNotificationModal({ isOpen, onClose, notificationToEdit }: Ad
           <div className="space-y-3">
             <Alert variant="info">
               <p>Pushover configuration requires your application API key and user key.</p>
-            </Alert>
-            <p className="text-sm text-text-muted">Implementation pending backend support.</p>
-          </div>
-        );
-
-      case 'Pushbullet':
-        return (
-          <div className="space-y-3">
-            <Alert variant="info">
-              <p>Pushbullet configuration requires your access token.</p>
             </Alert>
             <p className="text-sm text-text-muted">Implementation pending backend support.</p>
           </div>

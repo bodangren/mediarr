@@ -21,6 +21,114 @@ export const indexerPresets: IndexerPreset[] = [
     ],
   },
   {
+    id: '1337x',
+    name: '1337x',
+    description: '1337x is a Public torrent site that offers verified torrent downloads',
+    protocol: 'torrent',
+    implementation: 'Cardigann',
+    configContract: 'CardigannSettings',
+    privacy: 'Public',
+    fields: [
+      { name: 'definitionId', label: 'Definition ID', type: 'text', required: true, defaultValue: '1337x' },
+    ],
+  },
+  {
+    id: 'eztv',
+    name: 'EZTV',
+    description: 'EZTV is a Public torrent site for TV shows',
+    protocol: 'torrent',
+    implementation: 'Cardigann',
+    configContract: 'CardigannSettings',
+    privacy: 'Public',
+    fields: [
+      { name: 'definitionId', label: 'Definition ID', type: 'text', required: true, defaultValue: 'eztv' },
+    ],
+  },
+  {
+    id: 'yts',
+    name: 'YTS',
+    description: 'YTS is a Public torrent site specialising in HD movies of small size',
+    protocol: 'torrent',
+    implementation: 'Cardigann',
+    configContract: 'CardigannSettings',
+    privacy: 'Public',
+    fields: [
+      { name: 'definitionId', label: 'Definition ID', type: 'text', required: true, defaultValue: 'yts' },
+    ],
+  },
+  {
+    id: 'thepiratebay',
+    name: 'The Pirate Bay',
+    description: 'The Pirate Bay (TPB) is the galaxy\'s most resilient Public BitTorrent site',
+    protocol: 'torrent',
+    implementation: 'Cardigann',
+    configContract: 'CardigannSettings',
+    privacy: 'Public',
+    fields: [
+      { name: 'definitionId', label: 'Definition ID', type: 'text', required: true, defaultValue: 'thepiratebay' },
+    ],
+  },
+  {
+    id: 'nyaasi',
+    name: 'Nyaa.si',
+    description: 'Nyaa is a Public torrent site focused on Eastern ASIAN media including anime, manga, literature and music',
+    protocol: 'torrent',
+    implementation: 'Cardigann',
+    configContract: 'CardigannSettings',
+    privacy: 'Public',
+    fields: [
+      { name: 'definitionId', label: 'Definition ID', type: 'text', required: true, defaultValue: 'nyaasi' },
+    ],
+  },
+  {
+    id: 'limetorrents',
+    name: 'LimeTorrents',
+    description: 'LimeTorrents is a Public general torrent index with mostly verified torrents',
+    protocol: 'torrent',
+    implementation: 'Cardigann',
+    configContract: 'CardigannSettings',
+    privacy: 'Public',
+    fields: [
+      { name: 'definitionId', label: 'Definition ID', type: 'text', required: true, defaultValue: 'limetorrents' },
+    ],
+  },
+  {
+    id: 'torrentdownloads',
+    name: 'Torrent Downloads',
+    description: 'Torrent Downloads (TD) is a Public torrent site for all kinds of content',
+    protocol: 'torrent',
+    implementation: 'Cardigann',
+    configContract: 'CardigannSettings',
+    privacy: 'Public',
+    fields: [
+      { name: 'definitionId', label: 'Definition ID', type: 'text', required: true, defaultValue: 'torrentdownloads' },
+    ],
+  },
+  {
+    id: 'torrentgalaxy',
+    name: 'TorrentGalaxy',
+    description: 'TorrentGalaxy is a Public site for MOVIES / TV / GENERAL',
+    protocol: 'torrent',
+    implementation: 'Cardigann',
+    configContract: 'CardigannSettings',
+    privacy: 'Public',
+    fields: [
+      { name: 'definitionId', label: 'Definition ID', type: 'text', required: true, defaultValue: 'torrentgalaxyclone' },
+    ],
+  },
+  {
+    id: 'rutor',
+    name: 'RuTor',
+    description: 'RuTor is a RUSSIAN Public site for MOVIES / TV / GENERAL',
+    protocol: 'torrent',
+    implementation: 'Cardigann',
+    configContract: 'CardigannSettings',
+    privacy: 'Public',
+    fields: [
+      { name: 'definitionId', label: 'Definition ID', type: 'text', required: true, defaultValue: 'rutor' },
+    ],
+  },
+  {
     id: 'anidex',
     name: 'Anidex',
     description: 'Anidex is a Public torrent tracker and indexer, primarily for English fansub groups of anime',
@@ -722,6 +830,11 @@ export function getPresetsByProtocol(protocol: 'torrent' | 'usenet'): IndexerPre
  */
 export function getPopularPresets(): IndexerPreset[] {
   const popularIds = [
+    '1337x',
+    'eztv',
+    'yts',
+    'thepiratebay',
+    'nyaasi',
     'iptorrents',
     'torrentday',
     'alpharatio',
@@ -742,6 +855,10 @@ export function getPopularPresets(): IndexerPreset[] {
     'orpheus',
     'knaben',
     'subsplease',
+    'limetorrents',
+    'torrentgalaxy',
+    'rutor',
+    'torrentdownloads',
   ];
 
   return popularIds

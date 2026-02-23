@@ -1,6 +1,41 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createApiServer } from '../server/src/api/createApiServer';
 
+function buildMultipartPayload(input: {
+  fields: Record<string, string>;
+  file: {
+    fieldName: string;
+    filename: string;
+    contentType: string;
+    content: string;
+  };
+}): { body: string; boundary: string } {
+  const boundary = `----mediarr-${Date.now()}`;
+  const lines: string[] = [];
+
+  for (const [key, value] of Object.entries(input.fields)) {
+    lines.push(`--${boundary}`);
+    lines.push(`Content-Disposition: form-data; name="${key}"`);
+    lines.push('');
+    lines.push(value);
+  }
+
+  lines.push(`--${boundary}`);
+  lines.push(
+    `Content-Disposition: form-data; name="${input.file.fieldName}"; filename="${input.file.filename}"`,
+  );
+  lines.push(`Content-Type: ${input.file.contentType}`);
+  lines.push('');
+  lines.push(input.file.content);
+  lines.push(`--${boundary}--`);
+  lines.push('');
+
+  return {
+    body: lines.join('\r\n'),
+    boundary,
+  };
+}
+
 function createDependencies() {
   const seriesRows = [
     {
@@ -72,6 +107,20 @@ function createDependencies() {
         { indexer: 'IndexerA', title: 'Result', size: 1000, seeders: 20, magnetUrl: 'magnet:?xt=urn:btih:abc' },
       ]),
       grabRelease: vi.fn().mockResolvedValue({ infoHash: 'abc123', name: 'Result' }),
+      grabReleaseByGuid: vi.fn().mockResolvedValue({ infoHash: 'abc123', name: 'Result' }),
+      searchAllIndexers: vi.fn().mockResolvedValue({
+        releases: [
+          {
+            guid: 'release-guid',
+            indexerId: 1,
+            title: 'Result',
+            size: 1000,
+            seeders: 20,
+            leechers: 1,
+            indexer: 'IndexerA',
+          },
+        ],
+      }),
       searchMovie: vi.fn().mockResolvedValue({ infoHash: 'abc123' }),
     },
     wantedService: {
@@ -171,6 +220,15 @@ function createDependencies() {
         { languageCode: 'en', isForced: false, isHi: false, provider: 'opensubtitles', score: 99 },
       ]),
       manualDownload: vi.fn().mockResolvedValue({ storedPath: '/tmp/movie.en.srt' }),
+      uploadSubtitle: vi.fn().mockResolvedValue({
+        id: 99,
+        mediaId: 2,
+        mediaType: 'movie',
+        filePath: '/data/subtitles/The.Matrix.en.srt',
+        language: 'en',
+        forced: false,
+        hearingImpaired: false,
+      }),
     },
     settingsService: {
       get: vi.fn().mockResolvedValue({
@@ -421,6 +479,85 @@ describe('API handlers', () => {
     expect(response.statusCode).toBe(200);
     expect(payload.ok).toBe(true);
     expect(payload.data[0].provider).toBe('opensubtitles');
+  });
+
+  it('accepts subtitle upload multipart request', async () => {
+    const { app, deps } = createTestApp();
+    apps.push(app);
+
+    const { body, boundary } = buildMultipartPayload({
+      fields: {
+        language: 'en',
+        forced: 'false',
+        hearingImpaired: 'true',
+        mediaId: '2',
+        mediaType: 'movie',
+      },
+      file: {
+        fieldName: 'file',
+        filename: 'The.Matrix.en.srt',
+        contentType: 'application/x-subrip',
+        content: '1\n00:00:00,000 --> 00:00:01,000\nHello world',
+      },
+    });
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/subtitles/upload',
+      headers: {
+        'content-type': `multipart/form-data; boundary=${boundary}`,
+      },
+      payload: body,
+    });
+    const payload = response.json();
+
+    expect(response.statusCode).toBe(201);
+    expect(payload.ok).toBe(true);
+    expect(payload.data.filePath).toContain('/data/subtitles/');
+    expect(deps.subtitleInventoryApiService.uploadSubtitle).toHaveBeenCalledWith(
+      expect.objectContaining({
+        originalFilename: 'The.Matrix.en.srt',
+        language: 'en',
+        forced: false,
+        hearingImpaired: true,
+        mediaId: 2,
+        mediaType: 'movie',
+        content: expect.any(Buffer),
+      }),
+    );
+  });
+
+  it('rejects non-subtitle upload extensions', async () => {
+    const { app, deps } = createTestApp();
+    apps.push(app);
+
+    const { body, boundary } = buildMultipartPayload({
+      fields: {
+        language: 'en',
+        mediaId: '2',
+        mediaType: 'movie',
+      },
+      file: {
+        fieldName: 'file',
+        filename: 'not-a-subtitle.txt',
+        contentType: 'text/plain',
+        content: 'hello world',
+      },
+    });
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/subtitles/upload',
+      headers: {
+        'content-type': `multipart/form-data; boundary=${boundary}`,
+      },
+      payload: body,
+    });
+    const payload = response.json();
+
+    expect(response.statusCode).toBe(422);
+    expect(payload.error.code).toBe('VALIDATION_ERROR');
+    expect(deps.subtitleInventoryApiService.uploadSubtitle).not.toHaveBeenCalled();
   });
 
   it('persists episode monitored toggle through media service', async () => {

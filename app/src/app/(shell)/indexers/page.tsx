@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { FilterBuilder } from '@/components/filters/FilterBuilder';
+import { FilterDropdown } from '@/components/filters/FilterDropdown';
 import { DataTable, type DataTableColumn } from '@/components/primitives/DataTable';
 import { ConfirmModal, Modal, ModalBody, ModalFooter, ModalHeader } from '@/components/primitives/Modal';
 import { PageJumpBar, type JumpFilter, matchesJumpFilter } from '@/components/primitives/PageJumpBar';
@@ -12,6 +14,7 @@ import { SelectProvider, useSelectContext } from '@/components/primitives/Select
 import { StatusBadge } from '@/components/primitives/StatusBadge';
 import { useToast } from '@/components/providers/ToastProvider';
 import { getApiClients } from '@/lib/api/client';
+import type { FilterCondition, FilterConditionsGroup } from '@/lib/api/filters';
 import { healthStatus } from '@/lib/health';
 import { queryKeys } from '@/lib/query/queryKeys';
 import { useApiQuery } from '@/lib/query/useApiQuery';
@@ -27,6 +30,7 @@ type IndexerRow = {
   configContract: string;
   settings: string;
   protocol: string;
+  appProfileId?: number | null;
   enabled: boolean;
   supportsRss: boolean;
   supportsSearch: boolean;
@@ -42,11 +46,199 @@ interface SaveIndexerInput {
   implementation: string;
   configContract: string;
   protocol: string;
+  appProfileId?: number;
   enabled: boolean;
   supportsRss: boolean;
   supportsSearch: boolean;
   priority: number;
   settings: string;
+}
+
+function normalizeBooleanValue(value: unknown): boolean {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+
+  if (typeof value === 'number') {
+    return value !== 0;
+  }
+
+  if (typeof value === 'string') {
+    return ['true', '1', 'yes', 'on'].includes(value.trim().toLowerCase());
+  }
+
+  return false;
+}
+
+function stringMatches(actual: string, expected: string, operator: FilterCondition['operator']): boolean {
+  switch (operator) {
+    case 'equals':
+      return actual === expected;
+    case 'notEquals':
+      return actual !== expected;
+    case 'contains':
+      return actual.includes(expected);
+    case 'notContains':
+      return !actual.includes(expected);
+    default:
+      return false;
+  }
+}
+
+function arrayMatches(values: string[], expected: string, operator: FilterCondition['operator']): boolean {
+  if (operator === 'equals' || operator === 'contains') {
+    return values.some(value => value === expected || value.includes(expected));
+  }
+
+  if (operator === 'notEquals' || operator === 'notContains') {
+    return values.every(value => value !== expected && !value.includes(expected));
+  }
+
+  return false;
+}
+
+function parseIndexerSettings(settings: string): Record<string, unknown> {
+  try {
+    return JSON.parse(settings) as Record<string, unknown>;
+  } catch {
+    return {};
+  }
+}
+
+function parseTagsFromSettings(settings: string): string[] {
+  const parsed = parseIndexerSettings(settings);
+  if (Array.isArray(parsed.tags)) {
+    return parsed.tags.map(value => String(value).trim()).filter(Boolean);
+  }
+
+  if (typeof parsed.tag === 'string' && parsed.tag.trim().length > 0) {
+    return [parsed.tag.trim()];
+  }
+
+  return [];
+}
+
+function getIndexerTags(row: IndexerRow): string[] {
+  const direct = (row as unknown as { tags?: unknown }).tags;
+  if (Array.isArray(direct)) {
+    return direct.map(value => String(value).trim()).filter(Boolean);
+  }
+
+  return parseTagsFromSettings(row.settings);
+}
+
+function getIndexerCapabilities(row: IndexerRow): string[] {
+  const explicit = (row as unknown as { capabilities?: unknown }).capabilities;
+  if (Array.isArray(explicit)) {
+    return explicit.map(value => String(value).toLowerCase().trim()).filter(Boolean);
+  }
+
+  const derived: string[] = [];
+  if (row.supportsRss) {
+    derived.push('rss');
+  }
+  if (row.supportsSearch) {
+    derived.push('search');
+  }
+
+  return [...new Set(derived)];
+}
+
+function getIndexerCategories(row: IndexerRow): string[] {
+  const parsed = parseIndexerSettings(row.settings);
+  if (Array.isArray(parsed.categories)) {
+    return parsed.categories.map(value => String(value).trim()).filter(Boolean);
+  }
+
+  if (typeof parsed.category === 'string' && parsed.category.trim().length > 0) {
+    return [parsed.category.trim()];
+  }
+
+  return [];
+}
+
+function getIndexerPrivacy(row: IndexerRow): string | null {
+  const parsed = parseIndexerSettings(row.settings);
+  if (typeof parsed.privacy === 'string' && parsed.privacy.trim().length > 0) {
+    return parsed.privacy.trim();
+  }
+
+  return null;
+}
+
+function titleCase(value: string): string {
+  if (!value) {
+    return value;
+  }
+
+  return value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
+}
+
+function evaluateIndexerCondition(row: IndexerRow, condition: FilterCondition): boolean {
+  if (condition.field === 'enabled') {
+    const expected = normalizeBooleanValue(condition.value);
+    const actual = normalizeBooleanValue(row.enabled);
+    if (condition.operator === 'equals') {
+      return actual === expected;
+    }
+    if (condition.operator === 'notEquals') {
+      return actual !== expected;
+    }
+    return false;
+  }
+
+  if (condition.field === 'priority') {
+    const actual = Number(row.priority);
+    const expected = Number(condition.value);
+    if (!Number.isFinite(actual) || !Number.isFinite(expected)) {
+      return false;
+    }
+
+    if (condition.operator === 'equals') {
+      return actual === expected;
+    }
+    if (condition.operator === 'notEquals') {
+      return actual !== expected;
+    }
+    if (condition.operator === 'greaterThan') {
+      return actual > expected;
+    }
+    if (condition.operator === 'lessThan') {
+      return actual < expected;
+    }
+    return false;
+  }
+
+  if (condition.field === 'capability') {
+    const capabilities = getIndexerCapabilities(row).map(value => value.toLowerCase());
+    const expected = String(condition.value ?? '').toLowerCase().trim();
+    return arrayMatches(capabilities, expected, condition.operator);
+  }
+
+  if (condition.field === 'tag') {
+    const tags = getIndexerTags(row).map(value => value.toLowerCase());
+    const expected = String(condition.value ?? '').toLowerCase().trim();
+    return arrayMatches(tags, expected, condition.operator);
+  }
+
+  if (condition.field === 'protocol') {
+    const actual = String(row.protocol ?? '').toLowerCase().trim();
+    const expected = String(condition.value ?? '').toLowerCase().trim();
+    return stringMatches(actual, expected, condition.operator);
+  }
+
+  return false;
+}
+
+function applyIndexerFilter(rows: IndexerRow[], conditions: FilterConditionsGroup | null): IndexerRow[] {
+  if (!conditions || conditions.conditions.length === 0) {
+    return rows;
+  }
+
+  return rows.filter(row => {
+    const checks = conditions.conditions.map(condition => evaluateIndexerCondition(row, condition));
+    return conditions.operator === 'and' ? checks.every(Boolean) : checks.some(Boolean);
+  });
 }
 
 function SelectionCheckbox({ rowId }: { rowId: number }) {
@@ -68,6 +260,7 @@ function toSaveIndexerInput(draft: AddIndexerDraft): SaveIndexerInput {
     implementation: draft.implementation,
     configContract: draft.configContract,
     protocol: draft.protocol,
+    ...(draft.appProfileId !== undefined ? { appProfileId: draft.appProfileId } : {}),
     enabled: draft.enabled,
     supportsRss: draft.supportsRss,
     supportsSearch: draft.supportsSearch,
@@ -112,12 +305,28 @@ export default function IndexersPage() {
   const [bulkEditEnabled, setBulkEditEnabled] = useState(false);
   const [bulkEditPriority, setBulkEditPriority] = useState('');
   const [isApplyingBulkEdit, setIsApplyingBulkEdit] = useState(false);
+  const [selectedFilterId, setSelectedFilterId] = useState<number | 'custom' | null>(null);
+  const [customFilter, setCustomFilter] = useState<FilterConditionsGroup | null>(null);
+  const [isFilterBuilderOpen, setIsFilterBuilderOpen] = useState(false);
+  const [infoRow, setInfoRow] = useState<IndexerRow | null>(null);
 
   const indexersQuery = useApiQuery({
     queryKey: queryKeys.indexers(),
     queryFn: () => api.indexerApi.list() as Promise<IndexerRow[]>,
     staleTimeKind: 'list',
     isEmpty: rows => rows.length === 0,
+  });
+
+  const appProfilesQuery = useApiQuery({
+    queryKey: queryKeys.appProfiles(),
+    queryFn: () => api.appProfilesApi.list(),
+  });
+
+  const filtersQuery = useApiQuery({
+    queryKey: queryKeys.filtersList('indexer'),
+    queryFn: () => api.filtersApi.list('indexer'),
+    staleTimeKind: 'list',
+    isEmpty: data => data.length === 0,
   });
 
   const enableMutation = useOptimisticMutation<IndexerRow[], { id: number; enabled: boolean }, IndexerRow>({
@@ -230,6 +439,24 @@ export default function IndexersPage() {
     mutationFn: (payload: SaveIndexerInput) => api.indexerApi.testDraft(payload),
   });
 
+  const cloneMutation = useMutation({
+    mutationFn: (id: number) => api.indexerApi.clone(id),
+    onSuccess: () => {
+      pushToast({
+        title: 'Indexer cloned',
+        variant: 'success',
+      });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.indexers() });
+    },
+    onError: (error: Error) => {
+      pushToast({
+        title: 'Clone failed',
+        message: error.message,
+        variant: 'error',
+      });
+    },
+  });
+
   const columns: DataTableColumn<IndexerRow>[] = [
     {
       key: 'name',
@@ -246,6 +473,36 @@ export default function IndexersPage() {
       key: 'protocol',
       header: 'Protocol',
       render: row => row.protocol,
+    },
+    {
+      key: 'capabilities',
+      header: 'Capabilities',
+      render: row => {
+        const badges: string[] = [];
+        if (row.supportsRss) {
+          badges.push('RSS');
+        }
+        if (row.supportsSearch) {
+          badges.push('Search');
+        }
+
+        const privacy = getIndexerPrivacy(row);
+        if (privacy) {
+          badges.push(titleCase(privacy));
+        }
+
+        badges.push(titleCase(row.protocol));
+
+        return (
+          <div className="flex flex-wrap gap-1">
+            {badges.map(badge => (
+              <span key={badge} className="rounded-full border border-border-subtle px-2 py-0.5 text-[10px] font-medium">
+                {badge}
+              </span>
+            ))}
+          </div>
+        );
+      },
     },
     {
       key: 'enabled',
@@ -303,12 +560,13 @@ export default function IndexersPage() {
   const handleEditFromModal = (draft: EditIndexerDraft) => {
     editMutation.mutate({
       id: draft.id,
-      payload: {
-        name: draft.name,
-        implementation: draft.implementation,
-        configContract: draft.configContract,
-        protocol: draft.protocol,
-        enabled: draft.enabled,
+        payload: {
+          name: draft.name,
+          implementation: draft.implementation,
+          configContract: draft.configContract,
+          protocol: draft.protocol,
+          ...(draft.appProfileId !== undefined ? { appProfileId: draft.appProfileId } : {}),
+          enabled: draft.enabled,
         supportsRss: draft.supportsRss,
         supportsSearch: draft.supportsSearch,
         priority: draft.priority,
@@ -326,10 +584,41 @@ export default function IndexersPage() {
     };
   };
 
+  const savedFilters = filtersQuery.data ?? [];
+  const activeSavedFilter =
+    typeof selectedFilterId === 'number' ? savedFilters.find(filter => filter.id === selectedFilterId) ?? null : null;
+  const activeFilterConditions =
+    selectedFilterId === 'custom' ? customFilter : activeSavedFilter?.conditions ?? null;
+
   const filteredRows = useMemo(() => {
     const rows = indexersQuery.data ?? [];
-    return rows.filter(row => matchesJumpFilter(row.name, jumpFilter));
-  }, [indexersQuery.data, jumpFilter]);
+    const jumped = rows.filter(row => matchesJumpFilter(row.name, jumpFilter));
+    return applyIndexerFilter(jumped, activeFilterConditions);
+  }, [indexersQuery.data, jumpFilter, activeFilterConditions]);
+
+  const activeFilterForBuilder:
+    | {
+        id?: number;
+        name: string;
+        type: 'indexer';
+        conditions: FilterConditionsGroup;
+      }
+    | null =
+    selectedFilterId === 'custom'
+      ? {
+          id: undefined,
+          name: 'Custom',
+          type: 'indexer',
+          conditions: customFilter ?? { operator: 'and', conditions: [] },
+        }
+      : activeSavedFilter
+        ? {
+            id: activeSavedFilter.id,
+            name: activeSavedFilter.name,
+            type: 'indexer',
+            conditions: activeSavedFilter.conditions,
+          }
+        : null;
 
   const tableColumns: DataTableColumn<IndexerRow>[] = selectionModeEnabled
     ? [
@@ -526,6 +815,23 @@ export default function IndexersPage() {
         </PageToolbarSection>
       </PageToolbar>
 
+      <div className="flex flex-wrap items-center gap-2">
+        <FilterDropdown
+          id="indexer-filter-dropdown"
+          label="Saved Filter"
+          allLabel="All indexers"
+          filters={savedFilters}
+          selectedFilterId={selectedFilterId}
+          onSelectFilter={value => {
+            setSelectedFilterId(value);
+            if (value !== 'custom') {
+              setCustomFilter(null);
+            }
+          }}
+          onOpenBuilder={() => setIsFilterBuilderOpen(true)}
+        />
+      </div>
+
       <PageJumpBar value={jumpFilter} onChange={setJumpFilter} />
 
       <QueryPanel
@@ -552,6 +858,13 @@ export default function IndexersPage() {
                     <button
                       type="button"
                       className="rounded-sm border border-border-subtle px-2 py-1 text-xs"
+                      onClick={() => setInfoRow(row)}
+                    >
+                      Info
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded-sm border border-border-subtle px-2 py-1 text-xs"
                       onClick={() => {
                         setIsAddModalOpen(false);
                         setEditing(row);
@@ -565,6 +878,13 @@ export default function IndexersPage() {
                       onClick={() => testMutation.mutate(row.id)}
                     >
                       Test
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded-sm border border-border-subtle px-2 py-1 text-xs"
+                      onClick={() => cloneMutation.mutate(row.id)}
+                    >
+                      Clone
                     </button>
                     <button
                       type="button"
@@ -613,6 +933,13 @@ export default function IndexersPage() {
                 <button
                   type="button"
                   className="rounded-sm border border-border-subtle px-2 py-1 text-xs"
+                  onClick={() => setInfoRow(row)}
+                >
+                  Info
+                </button>
+                <button
+                  type="button"
+                  className="rounded-sm border border-border-subtle px-2 py-1 text-xs"
                   onClick={() => {
                     setIsAddModalOpen(false);
                     setEditing(row);
@@ -626,6 +953,13 @@ export default function IndexersPage() {
                   onClick={() => testMutation.mutate(row.id)}
                 >
                   Test
+                </button>
+                <button
+                  type="button"
+                  className="rounded-sm border border-border-subtle px-2 py-1 text-xs"
+                  onClick={() => cloneMutation.mutate(row.id)}
+                >
+                  Clone
                 </button>
                 <button
                   type="button"
@@ -643,6 +977,7 @@ export default function IndexersPage() {
       <AddIndexerModal
         isOpen={isAddModalOpen}
         presets={addIndexerPresets}
+        appProfiles={appProfilesQuery.data?.map((profile) => ({ id: profile.id, name: profile.name })) ?? []}
         isSubmitting={createMutation.isPending}
         onClose={() => setIsAddModalOpen(false)}
         onCreate={handleCreateFromModal}
@@ -654,11 +989,102 @@ export default function IndexersPage() {
           key={editing.id}
           isOpen
           indexer={editing}
+          appProfiles={appProfilesQuery.data?.map((profile) => ({ id: profile.id, name: profile.name })) ?? []}
           isSubmitting={editMutation.isPending}
           onClose={() => setEditing(null)}
           onSave={handleEditFromModal}
         />
       ) : null}
+
+      <FilterBuilder
+        isOpen={isFilterBuilderOpen}
+        targetType="indexer"
+        activeFilter={activeFilterForBuilder}
+        onClose={() => setIsFilterBuilderOpen(false)}
+        onApply={conditions => {
+          setSelectedFilterId('custom');
+          setCustomFilter(conditions);
+          setIsFilterBuilderOpen(false);
+        }}
+        onSave={async ({ id, name, conditions }) => {
+          if (id) {
+            await api.filtersApi.update(id, { name, conditions });
+          } else {
+            const created = await api.filtersApi.create({ name, type: 'indexer', conditions });
+            setSelectedFilterId(created.id);
+            setCustomFilter(null);
+          }
+
+          await queryClient.invalidateQueries({ queryKey: queryKeys.filtersList('indexer') });
+          pushToast({ title: 'Filter saved', variant: 'success' });
+          setIsFilterBuilderOpen(false);
+        }}
+        onDelete={async id => {
+          await api.filtersApi.delete(id);
+          await queryClient.invalidateQueries({ queryKey: queryKeys.filtersList('indexer') });
+          setSelectedFilterId(null);
+          setCustomFilter(null);
+          setIsFilterBuilderOpen(false);
+          pushToast({ title: 'Filter deleted', variant: 'success' });
+        }}
+      />
+
+      <Modal
+        isOpen={Boolean(infoRow)}
+        ariaLabel="Indexer information"
+        onClose={() => setInfoRow(null)}
+      >
+        <ModalHeader
+          title="Indexer Information"
+          onClose={() => {
+            setInfoRow(null);
+          }}
+        />
+        {infoRow ? (
+          <ModalBody>
+            <div className="space-y-4">
+              <h3 className="text-base font-semibold">{infoRow.name}</h3>
+              <dl className="grid grid-cols-1 gap-3 text-sm md:grid-cols-2">
+                <div>
+                  <dt className="text-xs uppercase tracking-wide text-text-secondary">Protocol</dt>
+                  <dd>{infoRow.protocol}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs uppercase tracking-wide text-text-secondary">Implementation</dt>
+                  <dd>{infoRow.implementation}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs uppercase tracking-wide text-text-secondary">Capabilities</dt>
+                  <dd>
+                    {[
+                      infoRow.supportsRss ? 'RSS' : null,
+                      infoRow.supportsSearch ? 'Search' : null,
+                    ]
+                      .filter((value): value is string => Boolean(value))
+                      .join(', ') || 'None'}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-xs uppercase tracking-wide text-text-secondary">Privacy</dt>
+                  <dd>{getIndexerPrivacy(infoRow) ?? 'Unknown'}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs uppercase tracking-wide text-text-secondary">Categories</dt>
+                  <dd>{getIndexerCategories(infoRow).join(', ') || 'None'}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs uppercase tracking-wide text-text-secondary">Health failures</dt>
+                  <dd>{String(infoRow.health?.failureCount ?? 0)}</dd>
+                </div>
+                <div className="md:col-span-2">
+                  <dt className="text-xs uppercase tracking-wide text-text-secondary">Last error</dt>
+                  <dd>{infoRow.health?.lastErrorMessage ?? 'None'}</dd>
+                </div>
+              </dl>
+            </div>
+          </ModalBody>
+        ) : null}
+      </Modal>
 
       <ConfirmModal
         isOpen={pendingBulkDeleteIds.length > 0}

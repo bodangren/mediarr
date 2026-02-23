@@ -70,6 +70,16 @@ const bulkUpdateMoviesSchema = z.object({
   failedCount: z.number(),
 });
 
+const subtitleUploadRecordSchema = z.object({
+  id: z.number(),
+  mediaId: z.number(),
+  mediaType: z.enum(['movie', 'episode']),
+  filePath: z.string(),
+  language: z.string(),
+  forced: z.boolean(),
+  hearingImpaired: z.boolean(),
+});
+
 export type SubtitleVariantInventory = z.infer<typeof subtitleVariantSchema>;
 export type ManualSearchCandidate = z.infer<typeof manualSearchCandidateSchema>;
 export type BulkUpdateMoviesResult = z.infer<typeof bulkUpdateMoviesSchema>;
@@ -79,6 +89,7 @@ export type SeriesSubtitleVariant = z.infer<typeof seriesSubtitleVariantSchema>;
 export type SeriesSyncResult = z.infer<typeof seriesSyncResultSchema>;
 export type DiskScanResult = z.infer<typeof diskScanResultSchema>;
 export type SubtitleSearchResult = z.infer<typeof subtitleSearchResultSchema>;
+export type SubtitleUploadRecord = z.infer<typeof subtitleUploadRecordSchema>;
 
 export interface ManualSearchInput {
   movieId?: number;
@@ -93,6 +104,16 @@ export interface ManualDownloadInput extends ManualSearchInput {
 export interface BulkUpdateMoviesInput {
   movieIds: number[];
   languageProfileId: number;
+}
+
+export interface SubtitleUploadInput {
+  file: File;
+  mediaId: number;
+  mediaType: 'movie' | 'episode';
+  language: string;
+  forced: boolean;
+  hearingImpaired: boolean;
+  onUploadProgress?: (progress: number) => void;
 }
 
 export function createSubtitleApi(client: ApiHttpClient) {
@@ -225,6 +246,26 @@ export function createSubtitleApi(client: ApiHttpClient) {
           body: input,
         },
         bulkUpdateMoviesSchema,
+      );
+    },
+
+    uploadSubtitle(input: SubtitleUploadInput): Promise<SubtitleUploadRecord> {
+      const formData = new FormData();
+      formData.append('file', input.file);
+      formData.append('language', input.language);
+      formData.append('forced', String(input.forced));
+      formData.append('hearingImpaired', String(input.hearingImpaired));
+      formData.append('mediaId', String(input.mediaId));
+      formData.append('mediaType', input.mediaType);
+
+      return client.request(
+        {
+          path: routeMap.subtitleUpload,
+          method: 'POST',
+          body: formData,
+          onUploadProgress: input.onUploadProgress,
+        },
+        subtitleUploadRecordSchema,
       );
     },
   };

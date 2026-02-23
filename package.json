@@ -31,6 +31,7 @@
     "vitest": "^4.0.18"
   },
   "dependencies": {
+    "@fastify/multipart": "^9.4.0",
     "@prisma/adapter-better-sqlite3": "^7.3.0",
     "@prisma/client": "^7.3.0",
     "@tanstack/react-virtual": "^3.13.18",

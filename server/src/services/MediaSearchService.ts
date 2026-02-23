@@ -2,6 +2,8 @@ import { TorrentRejectedError, NotFoundError, ValidationError } from '../errors/
 import { ActivityEventEmitter } from './ActivityEventEmitter';
 import type { IndexerResult } from '../indexers/IndexerResult';
 import type { BaseIndexer, SearchQuery } from '../indexers/BaseIndexer';
+import { CustomFormatScoringEngine, type ReleaseCandidate } from './CustomFormatScoringEngine';
+import type { CustomFormatWithScores } from '../repositories/CustomFormatRepository';
 
 export interface SearchCandidate {
   indexer: string;
@@ -20,6 +22,7 @@ export interface SearchCandidate {
   publishDate?: Date;
   categories?: number[];
   protocol?: string;
+  customFormatScore?: number;
 }
 
 export interface SearchParams {
@@ -36,6 +39,7 @@ export interface SearchParams {
   author?: string;
   title?: string;
   categories?: number[];
+  qualityProfileId?: number;
 }
 
 export interface IndexerSearchResult {
@@ -54,6 +58,79 @@ export interface AggregatedSearchResult {
 }
 
 const INDEXER_TIMEOUT_MS = 30000;
+
+function compareReleasesForRanking(left: SearchCandidate, right: SearchCandidate): number {
+  const leftScore = left.customFormatScore ?? 0;
+  const rightScore = right.customFormatScore ?? 0;
+
+  if (rightScore !== leftScore) {
+    return rightScore - leftScore;
+  }
+
+  if (right.seeders !== left.seeders) {
+    return right.seeders - left.seeders;
+  }
+
+  return right.size - left.size;
+}
+
+function normalizeIndexerFlags(indexerFlags?: string): string[] | undefined {
+  if (!indexerFlags) {
+    return undefined;
+  }
+
+  const flags = indexerFlags
+    .split(/[\s,|]+/)
+    .map(flag => flag.trim())
+    .filter(flag => flag.length > 0);
+
+  return flags.length > 0 ? flags : undefined;
+}
+
+function resolveProtocol(protocol?: string): 'torrent' | 'usenet' {
+  return protocol === 'usenet' ? 'usenet' : 'torrent';
+}
+
+function extractResolution(title: string): number | undefined {
+  const match = title.match(/(?:^|[\s._-])(480|720|1080|2160)p(?:$|[\s._-])/i);
+  return match ? Number(match[1]) : undefined;
+}
+
+function extractSource(title: string): string | undefined {
+  const lowered = title.toLowerCase();
+  if (lowered.includes('webrip')) return 'webrip';
+  if (lowered.includes('webdl') || lowered.includes('web-dl')) return 'webdl';
+  if (lowered.includes('bluray') || lowered.includes('blu-ray') || lowered.includes('bdrip')) return 'bluray';
+  if (lowered.includes('hdtv')) return 'hdtv';
+  if (lowered.includes('dvdrip') || lowered.includes('dvd')) return 'dvd';
+  return undefined;
+}
+
+function extractReleaseGroup(title: string): string | undefined {
+  const match = title.match(/-([^-.\s]+)$/);
+  return match ? match[1] : undefined;
+}
+
+function extractQualityModifier(title: string): string | undefined {
+  const knownModifiers = ['remux', 'proper', 'repack', 'real', 'extended'];
+  const lowered = title.toLowerCase();
+  const matched = knownModifiers.find(modifier => lowered.includes(modifier));
+  return matched;
+}
+
+function toScoringCandidate(release: SearchCandidate): ReleaseCandidate {
+  return {
+    title: release.title,
+    size: release.size,
+    indexerId: release.indexerId,
+    protocol: resolveProtocol(release.protocol),
+    indexerFlags: normalizeIndexerFlags(release.indexerFlags),
+    resolution: extractResolution(release.title),
+    source: extractSource(release.title),
+    releaseGroup: extractReleaseGroup(release.title),
+    qualityModifier: extractQualityModifier(release.title),
+  };
+}
 
 /**
  * Extracts the infoHash from a magnet URL or returns the provided infoHash.
@@ -122,7 +199,7 @@ function toSearchCandidate(result: IndexerResult, indexerId: number, indexerName
 }
 
 /**
- * Deduplicates releases by infoHash, preferring the one with more seeders.
+ * Deduplicates releases by infoHash, preferring the higher-ranked release.
  * Releases without an infoHash are kept but not deduplicated.
  */
 function deduplicateByInfoHash(releases: SearchCandidate[]): SearchCandidate[] {
@@ -139,8 +216,8 @@ function deduplicateByInfoHash(releases: SearchCandidate[]): SearchCandidate[] {
     if (!existing) {
       byInfoHash.set(release.infoHash, release);
     } else {
-      // Keep the one with more seeders
-      if (release.seeders > existing.seeders) {
+      // Keep the release that ranks higher after scoring+sorting rules.
+      if (compareReleasesForRanking(release, existing) < 0) {
         byInfoHash.set(release.infoHash, release);
       }
     }
@@ -217,7 +294,45 @@ export class MediaSearchService {
       addTorrent: (options: { magnetUrl?: string; torrentFile?: Buffer; path?: string }) => Promise<{ infoHash: string; name: string }>;
     },
     private readonly activityEventEmitter?: ActivityEventEmitter,
+    private readonly customFormatRepository?: {
+      findByQualityProfileId: (qualityProfileId: number) => Promise<Array<{
+        customFormat: CustomFormatWithScores;
+        score: number;
+      }>>;
+    },
   ) {}
+
+  private async applyCustomFormatScoring(
+    releases: SearchCandidate[],
+    qualityProfileId?: number,
+  ): Promise<SearchCandidate[]> {
+    if (qualityProfileId === undefined || !this.customFormatRepository?.findByQualityProfileId) {
+      return releases;
+    }
+
+    try {
+      const formatScores = await this.customFormatRepository.findByQualityProfileId(qualityProfileId);
+      if (formatScores.length === 0) {
+        return releases;
+      }
+
+      const scoringEngine = new CustomFormatScoringEngine();
+
+      return releases.map(release => {
+        const scoring = scoringEngine.scoreReleaseForQualityProfile(
+          toScoringCandidate(release),
+          formatScores,
+        );
+
+        return {
+          ...release,
+          customFormatScore: scoring.totalScore,
+        };
+      });
+    } catch {
+      return releases;
+    }
+  }
 
   /**
    * Search all enabled indexers in parallel and aggregate results.
@@ -292,16 +407,14 @@ export class MediaSearchService {
       }
     }
 
-    // Sort by seeders (descending), then by size (descending)
-    allReleases.sort((a, b) => {
-      if (b.seeders !== a.seeders) {
-        return b.seeders - a.seeders;
-      }
-      return b.size - a.size;
-    });
+    const scoredReleases = await this.applyCustomFormatScoring(
+      allReleases,
+      params.qualityProfileId,
+    );
+    scoredReleases.sort(compareReleasesForRanking);
 
-    const totalResults = allReleases.length;
-    const deduplicatedReleases = deduplicateByInfoHash(allReleases);
+    const totalResults = scoredReleases.length;
+    const deduplicatedReleases = deduplicateByInfoHash(scoredReleases);
 
     await this.activityEventEmitter?.emit({
       eventType: 'SEARCH_EXECUTED',

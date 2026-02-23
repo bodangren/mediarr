@@ -8,6 +8,10 @@ export const routeMap = {
     `/api/series/${seriesId}/seasons/${seasonNumber}/monitoring`,
   seriesDelete: (id: number) => `/api/series/${id}`,
   episodeMonitored: (id: number) => `/api/episodes/${id}`,
+  filters: '/api/filters',
+  filterDetail: (id: number) => `/api/filters/${id}`,
+  filtersCustom: '/api/filters/custom',
+  filterCustomDetail: (id: number) => `/api/filters/custom/${id}`,
 
   movies: '/api/movies',
   movieDetail: (id: number) => `/api/movies/${id}`,
@@ -37,7 +41,12 @@ export const routeMap = {
   indexerUpdate: (id: number) => `/api/indexers/${id}`,
   indexerDelete: (id: number) => `/api/indexers/${id}`,
   indexerTest: (id: number) => `/api/indexers/${id}/test`,
+  indexerClone: (id: number) => `/api/indexers/${id}/clone`,
   indexerTestDraft: '/api/indexers/test',
+
+  appProfiles: '/api/profiles/app',
+  appProfile: (id: number) => `/api/profiles/app/${id}`,
+  appProfileClone: (id: number) => `/api/profiles/app/${id}/clone`,
 
   applications: '/api/applications',
   applicationUpdate: (id: number) => `/api/applications/${id}`,
@@ -45,7 +54,7 @@ export const routeMap = {
   applicationTest: (id: number) => `/api/applications/${id}/test`,
   applicationTestDraft: '/api/applications/test',
   applicationSync: (id: number) => `/api/applications/${id}/sync`,
-  applicationSyncAll: '/api/applications/sync-all',
+  applicationSyncAll: '/api/applications/sync',
 
   subtitleMovieVariants: (id: number) => `/api/subtitles/movie/${id}/variants`,
   subtitleMovieSync: (id: number) => `/api/subtitles/movie/${id}/sync`,
@@ -55,6 +64,7 @@ export const routeMap = {
   subtitleEpisodeVariants: (id: number) => `/api/subtitles/episode/${id}/variants`,
   subtitleSearch: '/api/subtitles/search',
   subtitleDownload: '/api/subtitles/download',
+  subtitleUpload: '/api/subtitles/upload',
   subtitleHistory: '/api/subtitles/history',
   subtitleHistoryStats: '/api/subtitles/history/stats',
 
@@ -94,6 +104,10 @@ export const routeMap = {
 
   health: '/api/health',
   settings: '/api/settings',
+  settingsProxies: '/api/settings/proxies',
+  settingsProxy: (id: number) => `/api/settings/proxies/${id}`,
+  settingsCategories: '/api/settings/categories',
+  settingsCategory: (id: number) => `/api/settings/categories/${id}`,
 
   downloadClients: '/api/download-clients',
   downloadClientUpdate: (id: number) => `/api/download-clients/${id}`,
@@ -163,4 +177,9 @@ export const routeMap = {
   importScan: '/api/import/scan',
   importSeries: '/api/import/series',
   importBulkSeries: '/api/import/series/bulk',
+
+  customFormats: '/api/custom-formats',
+  customFormat: (id: number) => `/api/custom-formats/${id}`,
+  customFormatTest: (id: number) => `/api/custom-formats/${id}/test`,
+  customFormatSchema: '/api/custom-formats/schema',
 };

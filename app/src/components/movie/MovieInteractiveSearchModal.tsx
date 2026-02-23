@@ -183,7 +183,7 @@ export function MovieInteractiveSearchModal({
         ageHours: candidate.age || 0,
         approved: !candidate.indexerFlags || candidate.indexerFlags.length === 0,
         rejections: candidate.indexerFlags ? [candidate.indexerFlags] : [],
-        customFormatScore: 0,
+        customFormatScore: candidate.customFormatScore ?? 0,
         protocol: candidate.protocol,
       }));
 

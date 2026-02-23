@@ -11,20 +11,20 @@
     - [x] Sub-task: Write tests — verify mass edit page calls real API and shows success feedback.
     - [x] Sub-task: Replace stub/mock in `/subtitles/movies/edit/page.tsx` with real mutation to `PUT /api/subtitles/movies/bulk`.
     - [x] Sub-task: Add success/error toast notification on save.
-- [ ] Task: Build Subtitle Upload Backend
-    - [ ] Sub-task: Write tests — verify `POST /api/subtitles/upload` accepts multipart file with metadata.
-    - [ ] Sub-task: Write tests — verify file type validation (.srt, .ass, .ssa, .sub, .vtt only).
-    - [ ] Sub-task: Write tests — verify uploaded file is stored and inventory updated.
-    - [ ] Sub-task: Implement `POST /api/subtitles/upload` endpoint: parse multipart form (file, language, forced, hearingImpaired, mediaId, mediaType).
-    - [ ] Sub-task: Store file using SubtitleNamingService for path generation.
-    - [ ] Sub-task: Create subtitle inventory record in database.
-- [ ] Task: Complete Subtitle Upload UI
-    - [ ] Sub-task: Write tests — verify upload form renders file picker, language selector, forced/HI toggles.
-    - [ ] Sub-task: Write tests — verify upload calls API and refreshes inventory.
-    - [ ] Sub-task: Build upload modal/form: file drop zone, language dropdown, forced checkbox, HI checkbox.
-    - [ ] Sub-task: Wire to `POST /api/subtitles/upload`.
-    - [ ] Sub-task: Show upload progress and success/error feedback.
-- [~] Task: Conductor - User Manual Verification 'Phase 1' (Protocol in workflow.md) - PARTIAL (mass edit complete, upload pending)
+- [x] Task: Build Subtitle Upload Backend
+    - [x] Sub-task: Write tests — verify `POST /api/subtitles/upload` accepts multipart file with metadata.
+    - [x] Sub-task: Write tests — verify file type validation (.srt, .ass, .ssa, .sub, .vtt only).
+    - [x] Sub-task: Write tests — verify uploaded file is stored and inventory updated.
+    - [x] Sub-task: Implement `POST /api/subtitles/upload` endpoint: parse multipart form (file, language, forced, hearingImpaired, mediaId, mediaType).
+    - [x] Sub-task: Store file using SubtitleNamingService for path generation.
+    - [x] Sub-task: Create subtitle inventory record in database.
+- [x] Task: Complete Subtitle Upload UI
+    - [x] Sub-task: Write tests — verify upload form renders file picker, language selector, forced/HI toggles.
+    - [x] Sub-task: Write tests — verify upload calls API and refreshes inventory.
+    - [x] Sub-task: Build upload modal/form: file drop zone, language dropdown, forced checkbox, HI checkbox.
+    - [x] Sub-task: Wire to `POST /api/subtitles/upload`.
+    - [x] Sub-task: Show upload progress and success/error feedback.
+- [x] Task: Conductor - User Manual Verification 'Phase 1' (Protocol in workflow.md)
 
 ## Phase 2: Episode-Level Operations & Movie Detail Completion - PENDING
 > **SOFT DEPENDENCY**: "Complete Movie Detail Subtitle Page" manual search → download flow benefits from `cross_cutting_parity Phase 4` (OpenSubtitlesProvider.download() wiring). Can proceed with search-only; download wiring added once Phase 4 delivers.

@@ -81,6 +81,9 @@ export interface ListQuery {
   status?: string;
   monitored?: boolean;
   search?: string;
+  filterId?: number;
+  customFilter?: string;
+  jump?: string;
 }
 
 export interface WantedQuery {

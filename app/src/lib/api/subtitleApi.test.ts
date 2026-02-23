@@ -533,4 +533,53 @@ describe('subtitleApi', () => {
       );
     });
   });
+
+  describe('uploadSubtitle', () => {
+    it('should upload subtitle file with metadata', async () => {
+      const file = new File(['1\n00:00:00,000 --> 00:00:01,000\nHello'], 'movie.en.srt', {
+        type: 'application/x-subrip',
+      });
+      const onUploadProgress = vi.fn();
+      const mockResult = {
+        id: 12,
+        mediaId: 1,
+        mediaType: 'movie',
+        filePath: '/data/subtitles/movie.en.srt',
+        language: 'en',
+        forced: false,
+        hearingImpaired: false,
+      };
+
+      mockClient.request.mockResolvedValue(mockResult);
+
+      const result = await api.uploadSubtitle({
+        file,
+        mediaId: 1,
+        mediaType: 'movie',
+        language: 'en',
+        forced: false,
+        hearingImpaired: false,
+        onUploadProgress,
+      });
+
+      expect(result).toEqual(mockResult);
+      expect(mockClient.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          path: '/api/subtitles/upload',
+          method: 'POST',
+          onUploadProgress,
+        }),
+        expect.anything(),
+      );
+
+      const requestArg = mockClient.request.mock.calls[0]?.[0];
+      expect(requestArg.body).toBeInstanceOf(FormData);
+      expect(requestArg.body.get('mediaType')).toBe('movie');
+      expect(requestArg.body.get('mediaId')).toBe('1');
+      expect(requestArg.body.get('language')).toBe('en');
+      expect(requestArg.body.get('forced')).toBe('false');
+      expect(requestArg.body.get('hearingImpaired')).toBe('false');
+      expect(requestArg.body.get('file')).toBe(file);
+    });
+  });
 });

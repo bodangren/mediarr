@@ -3,19 +3,28 @@ import { ApiHttpClient } from './httpClient';
 import { routeMap } from './routeMap';
 import { testResultSchema, TestResult } from './shared-schemas';
 
+const applicationTypeSchema = z.enum(['Sonarr', 'Radarr', 'Lidarr', 'Readarr']);
+
 const applicationSchema = z.object({
   id: z.number(),
   name: z.string(),
-  type: z.enum(['Sonarr', 'Radarr', 'Lidarr', 'Readarr', 'Whisparr']),
-  url: z.string().url(),
-  apiKey: z.string(), // This is masked on the frontend
-  syncEnabled: z.boolean(),
+  type: applicationTypeSchema,
+  baseUrl: z.string().url(),
+  apiKey: z.string(),
+  syncCategories: z.array(z.number()),
+  tags: z.array(z.string()),
 });
 
 const syncResultSchema = z.object({
   success: z.boolean(),
   message: z.string(),
-  syncedCount: z.number().optional(),
+  syncedCount: z.number(),
+  applicationId: z.number().optional(),
+  failedApplications: z.array(z.object({
+    id: z.number(),
+    name: z.string(),
+    message: z.string(),
+  })).optional(),
 });
 
 export type ApplicationItem = z.infer<typeof applicationSchema>;
@@ -24,18 +33,20 @@ export type ApplicationSyncResult = z.infer<typeof syncResultSchema>;
 
 export interface CreateApplicationInput {
   name: string;
-  type: 'Sonarr' | 'Radarr' | 'Lidarr' | 'Readarr' | 'Whisparr';
-  url: string;
+  type: 'Sonarr' | 'Radarr' | 'Lidarr' | 'Readarr';
+  baseUrl: string;
   apiKey: string;
-  syncEnabled: boolean;
+  syncCategories?: number[];
+  tags?: string[];
 }
 
 export interface UpdateApplicationInput {
   name?: string;
-  type?: 'Sonarr' | 'Radarr' | 'Lidarr' | 'Readarr' | 'Whisparr';
-  url?: string;
+  type?: 'Sonarr' | 'Radarr' | 'Lidarr' | 'Readarr';
+  baseUrl?: string;
   apiKey?: string;
-  syncEnabled?: boolean;
+  syncCategories?: number[];
+  tags?: string[];
 }
 
 export function createApplicationsApi(client: ApiHttpClient) {
@@ -86,17 +97,6 @@ export function createApplicationsApi(client: ApiHttpClient) {
         {
           path: routeMap.applicationTest(id),
           method: 'POST',
-        },
-        testResultSchema,
-      );
-    },
-
-    testDraft(input: CreateApplicationInput): Promise<ApplicationTestResult> {
-      return client.request(
-        {
-          path: routeMap.applicationTestDraft,
-          method: 'POST',
-          body: input,
         },
         testResultSchema,
       );

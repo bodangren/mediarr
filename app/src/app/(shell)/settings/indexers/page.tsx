@@ -1,10 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useMutation } from '@tanstack/react-query';
 import Link from 'next/link';
 import { Button } from '@/components/primitives/Button';
 import { Alert } from '@/components/primitives/Alert';
+import { getApiClients } from '@/lib/api/client';
 import { useLocalStorage } from '@/lib/hooks';
+import { queryKeys } from '@/lib/query/queryKeys';
+import { useApiQuery } from '@/lib/query/useApiQuery';
 
 interface IndexerProxy {
   id: number;
@@ -51,10 +55,13 @@ function formatBytes(bytes?: number): string {
 }
 
 export default function SettingsIndexersPage() {
-  const [proxies, setProxies] = useLocalStorage<IndexerProxy[]>('mediarr:indexer-proxies', []);
-  const [categories, setCategories] = useLocalStorage<IndexerCategory[]>('mediarr:indexer-categories', DEFAULT_CATEGORIES);
+  const api = useMemo(() => getApiClients(), []);
+  const [localProxies, setLocalProxies] = useLocalStorage<IndexerProxy[]>('mediarr:indexer-proxies', []);
+  const [localCategories, setLocalCategories] = useLocalStorage<IndexerCategory[]>('mediarr:indexer-categories', DEFAULT_CATEGORIES);
   const [isAddProxyOpen, setIsAddProxyOpen] = useState(false);
   const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
+  const [hasAttemptedProxyMigration, setHasAttemptedProxyMigration] = useState(false);
+  const [hasAttemptedCategoryMigration, setHasAttemptedCategoryMigration] = useState(false);
 
   // Form draft state for proxies
   const [proxyDraft, setProxyDraft] = useState<{ name: string; type: IndexerProxy['type']; host: string; port: string }>({
@@ -77,6 +84,211 @@ export default function SettingsIndexersPage() {
     maxSize: '',
   });
 
+  const supportsProxyApi = typeof api.proxySettingsApi?.list === 'function';
+  const supportsCategoryApi = typeof api.categorySettingsApi?.list === 'function';
+  const proxiesQuery = useApiQuery({
+    queryKey: queryKeys.settingsProxies(),
+    queryFn: () => api.proxySettingsApi.list() as Promise<IndexerProxy[]>,
+    enabled: supportsProxyApi,
+    staleTimeKind: 'list',
+    isEmpty: rows => rows.length === 0,
+  });
+  const categoriesQuery = useApiQuery({
+    queryKey: queryKeys.settingsCategories(),
+    queryFn: () => api.categorySettingsApi.list() as Promise<IndexerCategory[]>,
+    enabled: supportsCategoryApi,
+    staleTimeKind: 'list',
+    isEmpty: rows => rows.length === 0,
+  });
+
+  const createProxyMutation = useMutation({
+    mutationFn: (payload: Omit<IndexerProxy, 'id'>) =>
+      api.proxySettingsApi.create({
+        name: payload.name,
+        type: payload.type,
+        host: payload.host,
+        port: payload.port,
+        username: payload.username,
+        password: payload.password,
+        enabled: payload.enabled,
+      }),
+  });
+
+  const updateProxyMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: number; payload: Partial<Omit<IndexerProxy, 'id'>> }) =>
+      api.proxySettingsApi.update(id, {
+        name: payload.name,
+        type: payload.type,
+        host: payload.host,
+        port: payload.port,
+        username: payload.username,
+        password: payload.password,
+        enabled: payload.enabled,
+      }),
+  });
+
+  const deleteProxyMutation = useMutation({
+    mutationFn: (id: number) => api.proxySettingsApi.remove(id),
+  });
+  const createCategoryMutation = useMutation({
+    mutationFn: (payload: Omit<IndexerCategory, 'id'>) =>
+      api.categorySettingsApi.create({
+        name: payload.name,
+        description: payload.description,
+        minSize: payload.minSize,
+        maxSize: payload.maxSize,
+      }),
+  });
+  const deleteCategoryMutation = useMutation({
+    mutationFn: (id: number) => api.categorySettingsApi.remove(id),
+  });
+
+  const proxies = supportsProxyApi ? (proxiesQuery.data ?? []) : localProxies;
+  const categories = supportsCategoryApi ? (categoriesQuery.data ?? []) : localCategories;
+
+  useEffect(() => {
+    if (!supportsProxyApi || !proxiesQuery.isSuccess || hasAttemptedProxyMigration) {
+      return;
+    }
+
+    setHasAttemptedProxyMigration(true);
+    if (proxiesQuery.data.length > 0 || typeof window === 'undefined') {
+      return;
+    }
+
+    const migrationKey = 'mediarr:indexer-proxies:migrated';
+    if (window.localStorage.getItem(migrationKey) === '1') {
+      return;
+    }
+
+    const raw = window.localStorage.getItem('mediarr:indexer-proxies');
+    if (!raw) {
+      window.localStorage.setItem(migrationKey, '1');
+      return;
+    }
+
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      window.localStorage.setItem(migrationKey, '1');
+      return;
+    }
+
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      window.localStorage.setItem(migrationKey, '1');
+      return;
+    }
+
+    void (async () => {
+      for (const entry of parsed) {
+        if (!entry || typeof entry !== 'object') {
+          continue;
+        }
+
+        const source = entry as Partial<IndexerProxy> & { hostname?: string };
+        const name = source.name?.trim();
+        const host = source.host?.trim() || source.hostname?.trim();
+        const port = typeof source.port === 'number' ? source.port : 8080;
+        const type = source.type ?? 'http';
+
+        if (!name || !host) {
+          continue;
+        }
+
+        try {
+          await api.proxySettingsApi.create({
+            name,
+            type,
+            host,
+            port,
+            username: source.username,
+            password: source.password,
+            enabled: source.enabled ?? true,
+          });
+        } catch {
+          // Best-effort migration: skip duplicates/invalid rows.
+        }
+      }
+
+      window.localStorage.setItem(migrationKey, '1');
+      void proxiesQuery.refetch();
+    })();
+  }, [
+    api.proxySettingsApi,
+    hasAttemptedProxyMigration,
+    proxiesQuery,
+    supportsProxyApi,
+  ]);
+
+  useEffect(() => {
+    if (!supportsCategoryApi || !categoriesQuery.isSuccess || hasAttemptedCategoryMigration) {
+      return;
+    }
+
+    setHasAttemptedCategoryMigration(true);
+    if (categoriesQuery.data.length > 0 || typeof window === 'undefined') {
+      return;
+    }
+
+    const migrationKey = 'mediarr:indexer-categories:migrated';
+    if (window.localStorage.getItem(migrationKey) === '1') {
+      return;
+    }
+
+    const raw = window.localStorage.getItem('mediarr:indexer-categories');
+    if (!raw) {
+      window.localStorage.setItem(migrationKey, '1');
+      return;
+    }
+
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      window.localStorage.setItem(migrationKey, '1');
+      return;
+    }
+
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      window.localStorage.setItem(migrationKey, '1');
+      return;
+    }
+
+    void (async () => {
+      for (const entry of parsed) {
+        if (!entry || typeof entry !== 'object') {
+          continue;
+        }
+
+        const source = entry as Partial<IndexerCategory>;
+        const name = source.name?.trim();
+        if (!name) {
+          continue;
+        }
+
+        try {
+          await api.categorySettingsApi.create({
+            name,
+            description: source.description,
+            minSize: source.minSize,
+            maxSize: source.maxSize,
+          });
+        } catch {
+          // Best-effort migration: skip duplicates/invalid rows.
+        }
+      }
+
+      window.localStorage.setItem(migrationKey, '1');
+      void categoriesQuery.refetch();
+    })();
+  }, [
+    api.categorySettingsApi,
+    categoriesQuery,
+    hasAttemptedCategoryMigration,
+    supportsCategoryApi,
+  ]);
+
   const handleOpenAddProxy = () => {
     setProxyDraft({ name: '', type: 'http', host: '', port: '8080' });
     setIsAddProxyOpen(true);
@@ -87,14 +299,13 @@ export default function SettingsIndexersPage() {
     setIsAddCategoryOpen(true);
   };
 
-  const handleAddProxy = () => {
+  const handleAddProxy = async () => {
     // Validate minimum required fields
     if (!proxyDraft.name.trim() || !proxyDraft.host.trim() || !proxyDraft.port.trim()) {
       return;
     }
 
-    const newProxy: IndexerProxy = {
-      id: Date.now(),
+    const newProxy = {
       name: proxyDraft.name.trim(),
       type: proxyDraft.type,
       host: proxyDraft.host.trim(),
@@ -102,40 +313,75 @@ export default function SettingsIndexersPage() {
       enabled: true,
     };
 
-    setProxies(current => [...current, newProxy]);
+    if (supportsProxyApi) {
+      await createProxyMutation.mutateAsync(newProxy);
+      await proxiesQuery.refetch();
+    } else {
+      setLocalProxies(current => [...current, { id: Date.now(), ...newProxy }]);
+    }
+
     setIsAddProxyOpen(false);
     setProxyDraft({ name: '', type: 'http', host: '', port: '8080' });
   };
 
-  const handleAddCategory = () => {
+  const handleAddCategory = async () => {
     // Validate minimum required fields
     if (!categoryDraft.name.trim()) {
       return;
     }
 
-    const newCategory: IndexerCategory = {
-      id: Date.now(),
+    const newCategory = {
       name: categoryDraft.name.trim(),
       description: categoryDraft.description.trim() || undefined,
       minSize: categoryDraft.minSize ? parseFloat(categoryDraft.minSize) * 1073741824 : undefined,
       maxSize: categoryDraft.maxSize ? parseFloat(categoryDraft.maxSize) * 1073741824 : undefined,
     };
 
-    setCategories(current => [...current, newCategory]);
+    if (supportsCategoryApi) {
+      await createCategoryMutation.mutateAsync(newCategory);
+      await categoriesQuery.refetch();
+    } else {
+      setLocalCategories(current => [...current, { id: Date.now(), ...newCategory }]);
+    }
+
     setIsAddCategoryOpen(false);
     setCategoryDraft({ name: '', description: '', minSize: '', maxSize: '' });
   };
 
   const handleDeleteProxy = (id: number) => {
-    setProxies(current => current.filter(p => p.id !== id));
+    if (supportsProxyApi) {
+      void (async () => {
+        await deleteProxyMutation.mutateAsync(id);
+        await proxiesQuery.refetch();
+      })();
+      return;
+    }
+
+    setLocalProxies(current => current.filter(p => p.id !== id));
   };
 
   const handleDeleteCategory = (id: number) => {
-    setCategories(current => current.filter(c => c.id !== id));
+    if (supportsCategoryApi) {
+      void (async () => {
+        await deleteCategoryMutation.mutateAsync(id);
+        await categoriesQuery.refetch();
+      })();
+      return;
+    }
+
+    setLocalCategories(current => current.filter(c => c.id !== id));
   };
 
   const handleToggleProxyEnabled = (id: number, enabled: boolean) => {
-    setProxies(current => current.map(p => (p.id === id ? { ...p, enabled } : p)));
+    if (supportsProxyApi) {
+      void (async () => {
+        await updateProxyMutation.mutateAsync({ id, payload: { enabled } });
+        await proxiesQuery.refetch();
+      })();
+      return;
+    }
+
+    setLocalProxies(current => current.map(p => (p.id === id ? { ...p, enabled } : p)));
   };
 
   return (
@@ -157,7 +403,11 @@ export default function SettingsIndexersPage() {
       {/* Indexer Proxies Configuration */}
       <section className="space-y-3 rounded-md border border-border-subtle bg-surface-1 p-4">
         <Alert variant="info">
-          <p className="text-sm">Proxy configuration is stored locally in this browser.</p>
+          <p className="text-sm">
+            {supportsProxyApi
+              ? 'Proxy configuration is stored in the Mediarr database.'
+              : 'Proxy configuration is stored locally in this browser.'}
+          </p>
         </Alert>
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-text-secondary">Indexer Proxies</h2>
@@ -222,7 +472,12 @@ export default function SettingsIndexersPage() {
               </label>
             </div>
             <div className="flex gap-2">
-              <Button variant="primary" onClick={handleAddProxy}>
+              <Button
+                variant="primary"
+                onClick={() => {
+                  void handleAddProxy();
+                }}
+              >
                 Add Proxy
               </Button>
               <Button variant="secondary" onClick={() => setIsAddProxyOpen(false)}>
@@ -272,7 +527,11 @@ export default function SettingsIndexersPage() {
       {/* Indexer Categories */}
       <section className="space-y-3 rounded-md border border-border-subtle bg-surface-1 p-4">
         <Alert variant="info">
-          <p className="text-sm">Category configuration is stored locally in this browser.</p>
+          <p className="text-sm">
+            {supportsCategoryApi
+              ? 'Category configuration is stored in the Mediarr database.'
+              : 'Category configuration is stored locally in this browser.'}
+          </p>
         </Alert>
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-text-secondary">Indexer Categories</h2>
@@ -337,7 +596,12 @@ export default function SettingsIndexersPage() {
               </label>
             </div>
             <div className="flex gap-2">
-              <Button variant="primary" onClick={handleAddCategory}>
+              <Button
+                variant="primary"
+                onClick={() => {
+                  void handleAddCategory();
+                }}
+              >
                 Add Category
               </Button>
               <Button variant="secondary" onClick={() => setIsAddCategoryOpen(false)}>

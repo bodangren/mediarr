@@ -17,6 +17,15 @@ export const API_ROUTE_MAP: ApiRouteDefinition[] = [
   { method: 'PATCH', path: '/api/episodes/:id' },
   { method: 'DELETE', path: '/api/series/:id' },
 
+  { method: 'GET', path: '/api/filters' },
+  { method: 'POST', path: '/api/filters' },
+  { method: 'PUT', path: '/api/filters/:id' },
+  { method: 'DELETE', path: '/api/filters/:id' },
+  { method: 'GET', path: '/api/filters/custom' },
+  { method: 'POST', path: '/api/filters/custom' },
+  { method: 'PUT', path: '/api/filters/custom/:id' },
+  { method: 'DELETE', path: '/api/filters/custom/:id' },
+
   { method: 'GET', path: '/api/movies' },
   { method: 'GET', path: '/api/movies/:id' },
   { method: 'PATCH', path: '/api/movies/:id/monitored' },
@@ -44,11 +53,13 @@ export const API_ROUTE_MAP: ApiRouteDefinition[] = [
   { method: 'PUT', path: '/api/indexers/:id' },
   { method: 'DELETE', path: '/api/indexers/:id' },
   { method: 'POST', path: '/api/indexers/:id/test' },
+  { method: 'POST', path: '/api/indexers/:id/clone' },
 
   { method: 'GET', path: '/api/subtitles/movie/:id/variants' },
   { method: 'GET', path: '/api/subtitles/episode/:id/variants' },
   { method: 'POST', path: '/api/subtitles/search' },
   { method: 'POST', path: '/api/subtitles/download' },
+  { method: 'POST', path: '/api/subtitles/upload' },
 
   { method: 'GET', path: '/api/activity' },
   { method: 'DELETE', path: '/api/activity' },
@@ -57,6 +68,14 @@ export const API_ROUTE_MAP: ApiRouteDefinition[] = [
   { method: 'GET', path: '/api/health' },
   { method: 'GET', path: '/api/settings' },
   { method: 'PATCH', path: '/api/settings' },
+  { method: 'GET', path: '/api/settings/proxies' },
+  { method: 'POST', path: '/api/settings/proxies' },
+  { method: 'PUT', path: '/api/settings/proxies/:id' },
+  { method: 'DELETE', path: '/api/settings/proxies/:id' },
+  { method: 'GET', path: '/api/settings/categories' },
+  { method: 'POST', path: '/api/settings/categories' },
+  { method: 'PUT', path: '/api/settings/categories/:id' },
+  { method: 'DELETE', path: '/api/settings/categories/:id' },
 
   { method: 'GET', path: '/api/events/stream' },
 

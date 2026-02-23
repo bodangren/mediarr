@@ -22,6 +22,8 @@ import type { IndexerTester } from '../indexers/IndexerTester';
 import type { ApiEventHub } from './eventHub';
 import type { ImportListProviderFactory } from '../services/importLists/ImportListProvider';
 import type { ImportListSyncService } from '../services/importLists/ImportListSyncService';
+import type { AppProfileService } from '../services/AppProfileService';
+import type { ApplicationService } from '../services/ApplicationService';
 
 export interface ApiDependencies {
   prisma: PrismaClient | Record<string, any>;
@@ -54,6 +56,7 @@ export interface ApiDependencies {
     | 'listEpisodeVariantInventory'
     | 'manualSearch'
     | 'manualDownload'
+    | 'uploadSubtitle'
   >;
   settingsService?: Pick<SettingsService, 'get' | 'update'>;
   activityEventRepository?: Pick<ActivityEventRepository, 'query' | 'clear' | 'markAsFailed' | 'export'>;
@@ -100,6 +103,8 @@ export interface ApiDependencies {
     CollectionService,
     'fetchFromTMDB' | 'createCollection' | 'syncCollectionMovies' | 'searchMissingMovies'
   >;
+  appProfileService?: Pick<AppProfileService, 'list' | 'create' | 'update' | 'delete' | 'clone'>;
+  applicationService?: Pick<ApplicationService, 'list' | 'create' | 'update' | 'delete' | 'test' | 'syncOne' | 'syncAll'>;
 }
 
 export interface ApiServerOptions {

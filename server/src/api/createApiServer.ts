@@ -1,19 +1,25 @@
 import Fastify, { type FastifyInstance } from 'fastify';
+import multipart from '@fastify/multipart';
 import { registerApiErrorHandler } from './errors';
 import { ApiEventHub } from './eventHub';
 import { registerBackupRoutes } from './routes/backupRoutes';
 import { registerBlocklistRoutes } from './routes/blocklistRoutes';
 import { registerCollectionRoutes } from './routes/collectionRoutes';
+import { registerCategorySettingsRoutes } from './routes/categorySettingsRoutes';
 import { registerCustomFormatRoutes } from './routes/customFormatRoutes';
 import { registerDownloadClientRoutes } from './routes/downloadClientRoutes';
 import { registerEventsRoutes } from './routes/eventsRoutes';
+import { registerFilterRoutes } from './routes/filterRoutes';
 import { registerImportListRoutes } from './routes/importListRoutes';
 import { registerIndexerRoutes } from './routes/indexerRoutes';
+import { registerAppProfileRoutes } from './routes/appProfileRoutes';
+import { registerApplicationRoutes } from './routes/applicationRoutes';
 import { registerLogsRoutes } from './routes/logsRoutes';
 import { registerMediaRoutes } from './routes/mediaRoutes';
 import { registerMovieRoutes } from './routes/movieRoutes';
 import { registerNotificationRoutes } from './routes/notificationRoutes';
 import { registerOperationsRoutes } from './routes/operationsRoutes';
+import { registerProxySettingsRoutes } from './routes/proxySettingsRoutes';
 import { registerQualityProfileRoutes } from './routes/qualityProfileRoutes';
 import { registerReleaseRoutes } from './routes/releaseRoutes';
 import { registerSeriesRoutes } from './routes/seriesRoutes';
@@ -132,6 +138,13 @@ export function createApiServer(
     return registerApiErrorHandler(request, reply, error);
   });
 
+  app.register(multipart, {
+    limits: {
+      fileSize: 10 * 1024 * 1024,
+      files: 1,
+    },
+  });
+
   registerSeriesRoutes(app, dependencies);
   registerMovieRoutes(app, dependencies);
   registerMediaRoutes(app, dependencies);
@@ -140,6 +153,8 @@ export function createApiServer(
   registerIndexerRoutes(app, dependencies);
   registerSubtitleRoutes(app, dependencies);
   registerOperationsRoutes(app, dependencies);
+  registerProxySettingsRoutes(app, dependencies);
+  registerCategorySettingsRoutes(app, dependencies);
   registerEventsRoutes(app, eventHub);
   registerSystemRoutes(app, dependencies, eventHub);
   registerBackupRoutes(app, dependencies);
@@ -149,7 +164,10 @@ export function createApiServer(
   registerBlocklistRoutes(app, dependencies);
   registerQualityProfileRoutes(app, dependencies);
   registerDownloadClientRoutes(app, dependencies);
+  registerAppProfileRoutes(app, dependencies);
+  registerApplicationRoutes(app, dependencies);
   registerCustomFormatRoutes(app, dependencies);
+  registerFilterRoutes(app, dependencies);
   registerImportListRoutes(app, dependencies);
   registerCollectionRoutes(app, dependencies);
 

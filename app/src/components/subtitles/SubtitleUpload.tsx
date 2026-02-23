@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, useCallback, useRef, type DragEvent } from 'react';
-import { Upload, X, CheckCircle, AlertCircle } from 'lucide-react';
+import { useCallback, useMemo, useRef, useState, type ChangeEvent, type DragEvent } from 'react';
+import { AlertCircle, Upload, X } from 'lucide-react';
 import { Button } from '@/components/primitives/Button';
+import { useToast } from '@/components/providers/ToastProvider';
+import { getApiClients } from '@/lib/api/client';
 
 export interface SubtitleUploadProps {
   seriesId?: number;
@@ -12,16 +14,7 @@ export interface SubtitleUploadProps {
   onCancel: () => void;
 }
 
-interface UploadedFile {
-  id: string;
-  file: File;
-  languageCode: string;
-  progress: number;
-  status: 'pending' | 'uploading' | 'success' | 'error';
-  error?: string;
-}
-
-const ALLOWED_EXTENSIONS = ['.srt', '.sub', '.ass', '.vtt'] as const;
+const ALLOWED_EXTENSIONS = ['.srt', '.ass', '.ssa', '.sub', '.vtt'] as const;
 const COMMON_LANGUAGES = [
   { code: 'en', name: 'English' },
   { code: 'es', name: 'Spanish' },
@@ -33,271 +26,233 @@ const COMMON_LANGUAGES = [
   { code: 'ja', name: 'Japanese' },
   { code: 'ko', name: 'Korean' },
   { code: 'zh', name: 'Chinese' },
-  { code: 'ar', name: 'Arabic' },
-  { code: 'nl', name: 'Dutch' },
-  { code: 'pl', name: 'Polish' },
-  { code: 'sv', name: 'Swedish' },
-  { code: 'da', name: 'Danish' },
 ] as const;
 
 export function SubtitleUpload({
-  seriesId,
   episodeId,
   movieId,
   onSuccess,
   onCancel,
 }: SubtitleUploadProps) {
-  const [isDragging, setIsDragging] = useState(false);
-  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
-  const [selectedLanguage, setSelectedLanguage] = useState('en');
-  const [isUploading, setIsUploading] = useState(false);
+  const api = useMemo(() => getApiClients(), []);
+  const { pushToast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [isDragging, setIsDragging] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedLanguage, setSelectedLanguage] = useState('en');
+  const [forced, setForced] = useState(false);
+  const [hearingImpaired, setHearingImpaired] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
+
+  const mediaContext = episodeId
+    ? { mediaType: 'episode' as const, mediaId: episodeId }
+    : movieId
+      ? { mediaType: 'movie' as const, mediaId: movieId }
+      : null;
+
   const isValidFile = useCallback((file: File): boolean => {
-    const extension = '.' + file.name.split('.').pop()?.toLowerCase();
-    return ALLOWED_EXTENSIONS.includes(extension as any);
+    const extension = `.${file.name.split('.').pop()?.toLowerCase() ?? ''}`;
+    return ALLOWED_EXTENSIONS.includes(extension as (typeof ALLOWED_EXTENSIONS)[number]);
   }, []);
 
-  const handleDragOver = useCallback((e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const setFile = useCallback((file: File | null) => {
+    if (!file) {
+      setSelectedFile(null);
+      return;
+    }
+
+    if (!isValidFile(file)) {
+      pushToast({
+        title: 'Invalid file type',
+        message: 'Only .srt, .ass, .ssa, .sub, and .vtt files are supported.',
+        variant: 'error',
+      });
+      return;
+    }
+
+    setSelectedFile(file);
+  }, [isValidFile, pushToast]);
+
+  const handleDragOver = useCallback((event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
     setIsDragging(true);
   }, []);
 
-  const handleDragLeave = useCallback((e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleDragLeave = useCallback((event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
     setIsDragging(false);
   }, []);
 
-  const handleDrop = useCallback(
-    (e: DragEvent<HTMLDivElement>) => {
-      e.preventDefault();
-      e.stopPropagation();
-      setIsDragging(false);
+  const handleDrop = useCallback((event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setIsDragging(false);
+    const file = event.dataTransfer.files[0] ?? null;
+    setFile(file);
+  }, [setFile]);
 
-      const files = Array.from(e.dataTransfer.files);
-      const validFiles = files.filter(isValidFile);
-
-      if (validFiles.length === 0 && files.length > 0) {
-        // Show error about invalid files
-        console.warn('No valid subtitle files dropped');
-        return;
-      }
-
-      const newFiles: UploadedFile[] = validFiles.map((file) => ({
-        id: crypto.randomUUID(),
-        file,
-        languageCode: selectedLanguage,
-        progress: 0,
-        status: 'pending' as const,
-      }));
-
-      setUploadedFiles((prev) => [...prev, ...newFiles]);
-    },
-    [isValidFile, selectedLanguage],
-  );
-
-  const handleFileSelect = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const files = Array.from(e.target.files || []);
-      const validFiles = files.filter(isValidFile);
-
-      const newFiles: UploadedFile[] = validFiles.map((file) => ({
-        id: crypto.randomUUID(),
-        file,
-        languageCode: selectedLanguage,
-        progress: 0,
-        status: 'pending' as const,
-      }));
-
-      setUploadedFiles((prev) => [...prev, ...newFiles]);
-      // Reset input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-    },
-    [isValidFile, selectedLanguage],
-  );
-
-  const removeFile = useCallback((fileId: string) => {
-    setUploadedFiles((prev) => prev.filter((f) => f.id !== fileId));
-  }, []);
-
-  const updateFileLanguage = useCallback((fileId: string, langCode: string) => {
-    setUploadedFiles((prev) =>
-      prev.map((f) => (f.id === fileId ? { ...f, languageCode: langCode } : f)),
-    );
-  }, []);
-
-  // Subtitle upload requires backend support - endpoint not yet available
-  const isUploadSupported = false;
+  const handlePickFile = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] ?? null;
+    setFile(file);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  }, [setFile]);
 
   const handleUpload = useCallback(async () => {
-    // Upload disabled - backend endpoint not available
-    // When backend supports uploads, implement:
-    // const formData = new FormData();
-    // uploadedFiles.forEach(f => {
-    //   formData.append('files', f.file);
-    //   formData.append('language', f.languageCode);
-    //   if (seriesId) formData.append('seriesId', seriesId.toString());
-    //   if (episodeId) formData.append('episodeId', episodeId.toString());
-    //   if (movieId) formData.append('movieId', movieId.toString());
-    // });
-    // await subtitleApi.uploadSubtitle(formData);
-  }, [uploadedFiles, seriesId, episodeId, movieId]);
+    if (!selectedFile || !mediaContext) {
+      return;
+    }
 
-  const handleComplete = useCallback(() => {
-    onSuccess();
-  }, [onSuccess]);
+    setIsUploading(true);
+    setProgress(0);
 
-  // Since upload is not supported, we don't track success/error states
-  const canUpload = uploadedFiles.length > 0 && isUploadSupported;
+    try {
+      await api.subtitleApi.uploadSubtitle({
+        file: selectedFile,
+        language: selectedLanguage,
+        forced,
+        hearingImpaired,
+        mediaId: mediaContext.mediaId,
+        mediaType: mediaContext.mediaType,
+        onUploadProgress: setProgress,
+      });
+
+      setProgress(100);
+      pushToast({
+        title: 'Subtitle uploaded',
+        message: `${selectedFile.name} uploaded successfully.`,
+        variant: 'success',
+      });
+      onSuccess();
+    } catch (error) {
+      pushToast({
+        title: 'Upload failed',
+        message: error instanceof Error ? error.message : 'Failed to upload subtitle file.',
+        variant: 'error',
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  }, [api, forced, hearingImpaired, mediaContext, onSuccess, pushToast, selectedFile, selectedLanguage]);
+
+  const canUpload = selectedFile !== null && mediaContext !== null && !isUploading;
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-text-primary">Upload Subtitles</h2>
-        <Button variant="secondary" onClick={onCancel} aria-label="Cancel upload">
+        <Button variant="secondary" onClick={onCancel} aria-label="Cancel upload" disabled={isUploading}>
           <X className="h-4 w-4" />
         </Button>
       </div>
 
-      {/* Language Selector */}
-      <div className="space-y-2">
-        <label htmlFor="language-select" className="block text-sm font-medium text-text-secondary">
-          Default Language
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label htmlFor="subtitle-language" className="grid gap-1 text-sm">
+          <span>Language</span>
+          <select
+            id="subtitle-language"
+            value={selectedLanguage}
+            onChange={event => setSelectedLanguage(event.target.value)}
+            disabled={isUploading}
+            className="rounded-md border border-border-subtle bg-surface-1 px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-primary/50"
+          >
+            {COMMON_LANGUAGES.map(language => (
+              <option key={language.code} value={language.code}>
+                {language.name} ({language.code})
+              </option>
+            ))}
+          </select>
         </label>
-        <select
-          id="language-select"
-          value={selectedLanguage}
-          onChange={(e) => setSelectedLanguage(e.target.value)}
-          className="w-full rounded-md border border-border-subtle bg-surface-1 px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-primary/50"
-        >
-          {COMMON_LANGUAGES.map((lang) => (
-            <option key={lang.code} value={lang.code}>
-              {lang.name} ({lang.code})
-            </option>
-          ))}
-        </select>
+
+        <div className="grid gap-2 rounded-md border border-border-subtle bg-surface-1 px-3 py-2">
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={forced}
+              onChange={event => setForced(event.target.checked)}
+              disabled={isUploading}
+            />
+            <span>Forced</span>
+          </label>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={hearingImpaired}
+              onChange={event => setHearingImpaired(event.target.checked)}
+              disabled={isUploading}
+            />
+            <span>Hearing Impaired</span>
+          </label>
+        </div>
       </div>
 
-      {/* Drop Zone */}
       <div
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
-        className={`
-          relative rounded-md border-2 border-dashed px-6 py-10 text-center transition-colors
-          ${isDragging
+        className={`relative rounded-md border-2 border-dashed px-6 py-10 text-center transition-colors ${
+          isDragging
             ? 'border-accent-primary bg-accent-primary/10'
             : 'border-border-subtle bg-surface-2 hover:border-border-subtle/70'
-          }
-        `}
+        }`}
       >
         <input
           ref={fileInputRef}
           type="file"
-          multiple
           accept={ALLOWED_EXTENSIONS.join(',')}
-          onChange={handleFileSelect}
+          onChange={handlePickFile}
+          disabled={isUploading}
           className="absolute inset-0 cursor-pointer opacity-0"
-          aria-label="Select subtitle files"
+          aria-label="Select subtitle file"
         />
-        <Upload className="mx-auto h-12 w-12 text-text-muted" />
+        <Upload className="mx-auto h-10 w-10 text-text-muted" />
         <p className="mt-2 text-sm font-medium text-text-primary">
-          {isDragging ? 'Drop files here' : 'Drag & drop subtitle files here'}
+          {isDragging ? 'Drop subtitle file here' : 'Drag & drop subtitle file here'}
         </p>
-        <p className="mt-1 text-xs text-text-muted">
-          or click to browse • {ALLOWED_EXTENSIONS.join(', ')}
-        </p>
+        <p className="mt-1 text-xs text-text-muted">or click to browse - {ALLOWED_EXTENSIONS.join(', ')}</p>
       </div>
 
-      {/* File List */}
-      {uploadedFiles.length > 0 && (
+      {selectedFile ? (
+        <div className="rounded-md border border-border-subtle bg-surface-1 px-3 py-2">
+          <p className="truncate text-sm font-medium text-text-primary">{selectedFile.name}</p>
+          <p className="text-xs text-text-muted">{(selectedFile.size / 1024).toFixed(1)} KB</p>
+        </div>
+      ) : null}
+
+      {isUploading ? (
         <div className="space-y-2">
-          <h3 className="text-sm font-medium text-text-primary">Files to Upload</h3>
-          <div className="space-y-2">
-            {uploadedFiles.map((uploadedFile) => (
-              <div
-                key={uploadedFile.id}
-                className="flex items-center gap-3 rounded-md border border-border-subtle bg-surface-1 px-3 py-2"
-              >
-                {/* Status Icon */}
-                <div className="shrink-0">
-                  <div className="h-5 w-5 rounded-full border-2 border-border-subtle" />
-                </div>
-
-                {/* File Info */}
-                <div className="flex-1 min-w-0">
-                  <p className="truncate text-sm font-medium text-text-primary">
-                    {uploadedFile.file.name}
-                  </p>
-                  <p className="text-xs text-text-muted">
-                    {(uploadedFile.file.size / 1024).toFixed(1)} KB
-                  </p>
-                </div>
-
-                {/* Language Selector */}
-                <select
-                  value={uploadedFile.languageCode}
-                  onChange={(e) => updateFileLanguage(uploadedFile.id, e.target.value)}
-                  className="rounded border border-border-subtle bg-surface-2 px-2 py-1 text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-accent-primary/50"
-                >
-                  {COMMON_LANGUAGES.map((lang) => (
-                    <option key={lang.code} value={lang.code}>
-                      {lang.code}
-                    </option>
-                  ))}
-                </select>
-
-                {/* Remove Button */}
-                <Button
-                  variant="secondary"
-                  onClick={() => removeFile(uploadedFile.id)}
-                  aria-label={`Remove ${uploadedFile.file.name}`}
-                  className="p-1.5"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            ))}
+          <div className="flex items-center justify-between text-xs text-text-muted">
+            <span>Uploading...</span>
+            <span>{progress}%</span>
+          </div>
+          <div className="h-2 overflow-hidden rounded-full bg-surface-3">
+            <div
+              className="h-full bg-accent-primary transition-all"
+              style={{ width: `${Math.max(5, progress)}%` }}
+            />
           </div>
         </div>
-      )}
+      ) : null}
 
-      {/* Actions */}
-      <div className="flex items-center justify-between">
-        <p className="text-xs text-text-muted">
-          {uploadedFiles.length} file{uploadedFiles.length !== 1 ? 's' : ''} selected
-        </p>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="secondary"
-            onClick={onCancel}
-            disabled={isUploading}
-          >
-            Cancel
-          </Button>
-          <Button
-            variant="primary"
-            onClick={handleUpload}
-            disabled={!canUpload}
-            title={isUploadSupported ? '' : 'Subtitle upload requires backend support'}
-          >
-            Upload
-          </Button>
+      {!mediaContext ? (
+        <div className="rounded-md border border-status-error/40 bg-status-error/15 px-3 py-2 text-sm text-text-primary">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="h-4 w-4" />
+            <span>Upload target is unavailable for this media item.</span>
+          </div>
         </div>
+      ) : null}
+
+      <div className="flex items-center justify-end gap-2">
+        <Button variant="secondary" onClick={onCancel} disabled={isUploading}>
+          Cancel
+        </Button>
+        <Button variant="primary" onClick={handleUpload} disabled={!canUpload}>
+          {isUploading ? 'Uploading...' : 'Upload'}
+        </Button>
       </div>
-
-      {/* Backend Support Notice */}
-      {!isUploadSupported && (
-        <div className="rounded-md border border-accent-warning/30 bg-accent-warning/10 px-3 py-2">
-          <p className="text-sm text-accent-warning">
-            Subtitle upload requires backend support
-          </p>
-        </div>
-      )}
     </div>
   );
 }

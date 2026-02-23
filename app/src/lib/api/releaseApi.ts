@@ -19,6 +19,7 @@ const releaseCandidateSchema = z.object({
   magnetUrl: z.string().optional(),
   downloadUrl: z.string().optional(),
   infoHash: z.string().optional(),
+  customFormatScore: z.number().optional(),
 });
 
 const grabResultSchema = z.object({
@@ -29,6 +30,10 @@ const grabResultSchema = z.object({
 
 export type ReleaseCandidate = z.infer<typeof releaseCandidateSchema>;
 export type GrabResult = z.infer<typeof grabResultSchema>;
+export type GrabCandidateInput = Partial<ReleaseCandidate> & {
+  language?: string;
+  downloadClientId?: number;
+};
 export type SearchParams = {
   query?: string;
   type?: 'generic' | 'tvsearch' | 'movie' | 'music' | 'book';
@@ -37,6 +42,7 @@ export type SearchParams = {
   tvdbId?: number;
   imdbId?: string;
   tmdbId?: number;
+  qualityProfileId?: number;
   year?: number;
   artist?: string;
   album?: string;
@@ -66,6 +72,7 @@ export function createReleaseApi(client: ApiHttpClient) {
       if (params.tvdbId !== undefined) bodyParams.tvdbId = params.tvdbId;
       if (params.imdbId !== undefined) bodyParams.imdbId = params.imdbId;
       if (params.tmdbId !== undefined) bodyParams.tmdbId = params.tmdbId;
+      if (params.qualityProfileId !== undefined) bodyParams.qualityProfileId = params.qualityProfileId;
       if (params.year !== undefined) bodyParams.year = params.year;
       if (params.artist !== undefined) bodyParams.artist = params.artist;
       if (params.album !== undefined) bodyParams.album = params.album;
@@ -95,7 +102,7 @@ export function createReleaseApi(client: ApiHttpClient) {
       );
     },
 
-    grabCandidate(candidate: Partial<ReleaseCandidate>): Promise<GrabResult> {
+    grabCandidate(candidate: GrabCandidateInput): Promise<GrabResult> {
       return client.request(
         {
           path: '/api/releases/grab-candidate',

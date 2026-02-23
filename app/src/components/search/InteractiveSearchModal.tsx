@@ -157,7 +157,7 @@ export function InteractiveSearchModal({
         ageHours: candidate.age || 0,
         approved: !candidate.indexerFlags || candidate.indexerFlags.length === 0,
         rejections: candidate.indexerFlags ? [candidate.indexerFlags] : [],
-        customFormatScore: 0, // API doesn't provide custom format score - will be added when Cross-Cutting Phase 1 is complete
+        customFormatScore: candidate.customFormatScore ?? 0,
         protocol: candidate.protocol,
       }));
 

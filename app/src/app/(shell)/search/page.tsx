@@ -24,6 +24,12 @@ interface IndexerRow {
   supportsSearch: boolean;
 }
 
+interface DownloadClientRow {
+  id: number;
+  name: string;
+  enabled: boolean;
+}
+
 interface ReleaseRow {
   indexer: string;
   indexerId: number;
@@ -37,6 +43,7 @@ interface ReleaseRow {
   age?: number;
   publishDate?: string;
   categories?: number[];
+  language?: string;
   protocol?: 'torrent' | 'usenet';
   magnetUrl?: string;
   downloadUrl?: string;
@@ -56,7 +63,13 @@ interface FormState {
   offset: string;
   season: string;
   episode: string;
+  tvdbId: string;
+  imdbId: string;
   year: string;
+  artist: string;
+  album: string;
+  author: string;
+  bookTitle: string;
 }
 
 interface ActionNotice {
@@ -69,6 +82,18 @@ interface PaginationMeta {
   pageSize: number;
   totalCount: number;
   totalPages: number;
+}
+
+interface GrabInput {
+  candidate: ReleaseViewRow;
+  downloadClientId?: number;
+}
+
+interface ReleaseOverride {
+  title?: string;
+  categories?: number[];
+  quality?: string;
+  language?: string;
 }
 
 function SelectionCheckbox({ rowId }: { rowId: string }) {
@@ -158,6 +183,7 @@ function toReleasePayload(row: ReleaseRow): ReleaseRow {
     age: row.age,
     publishDate: row.publishDate,
     categories: row.categories,
+    language: row.language,
     protocol: row.protocol,
     magnetUrl: row.magnetUrl,
     downloadUrl: row.downloadUrl,
@@ -238,19 +264,57 @@ function buildPayload(
     }
   }
 
-  const season = parseOptionalNumber(form.season);
-  if (season !== undefined) {
-    payload.season = season;
+  if (form.searchType === 'tvsearch') {
+    const season = parseOptionalNumber(form.season);
+    if (season !== undefined) {
+      payload.season = season;
+    }
+
+    const episode = parseOptionalNumber(form.episode);
+    if (episode !== undefined) {
+      payload.episode = episode;
+    }
+
+    const tvdbId = parseOptionalNumber(form.tvdbId);
+    if (tvdbId !== undefined) {
+      payload.tvdbId = tvdbId;
+    }
   }
 
-  const episode = parseOptionalNumber(form.episode);
-  if (episode !== undefined) {
-    payload.episode = episode;
+  if (form.searchType === 'movie') {
+    const imdbId = form.imdbId.trim();
+    if (imdbId.length > 0) {
+      payload.imdbId = imdbId;
+    }
+
+    const year = parseOptionalNumber(form.year);
+    if (year !== undefined) {
+      payload.year = year;
+    }
   }
 
-  const year = parseOptionalNumber(form.year);
-  if (year !== undefined) {
-    payload.year = year;
+  if (form.searchType === 'music') {
+    const artist = form.artist.trim();
+    if (artist.length > 0) {
+      payload.artist = artist;
+    }
+
+    const album = form.album.trim();
+    if (album.length > 0) {
+      payload.album = album;
+    }
+  }
+
+  if (form.searchType === 'book') {
+    const author = form.author.trim();
+    if (author.length > 0) {
+      payload.author = author;
+    }
+
+    const bookTitle = form.bookTitle.trim();
+    if (bookTitle.length > 0) {
+      payload.title = bookTitle;
+    }
   }
 
   payload.page = pagination.page;
@@ -263,15 +327,22 @@ function buildPayload(
 
 export default function SearchPage() {
   const api = useMemo(() => getApiClients(), []);
-  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [isQueryModalOpen, setIsQueryModalOpen] = useState(false);
   const [submittedParams, setSubmittedParams] = useState<SearchParams | null>(null);
   const [actionNotice, setActionNotice] = useState<ActionNotice | null>(null);
   const [overrideTarget, setOverrideTarget] = useState<ReleaseViewRow | null>(null);
   const [overrideTitle, setOverrideTitle] = useState('');
-  const [overridesByRowId, setOverridesByRowId] = useState<Record<string, string>>({});
+  const [overrideCategory, setOverrideCategory] = useState('');
+  const [overrideQuality, setOverrideQuality] = useState('');
+  const [overrideLanguage, setOverrideLanguage] = useState('');
+  const [overridesByRowId, setOverridesByRowId] = useState<Record<string, ReleaseOverride>>({});
   const [protocolFilter, setProtocolFilter] = useState<'all' | 'torrent' | 'usenet' | 'unknown'>('all');
+  const [indexerFilter, setIndexerFilter] = useState<string>('all');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [qualityFilter, setQualityFilter] = useState<string>('all');
   const [minSizeGbFilter, setMinSizeGbFilter] = useState('');
   const [minSeedersFilter, setMinSeedersFilter] = useState('');
+  const [downloadClientId, setDownloadClientId] = useState('');
   const [showCustomFilters, setShowCustomFilters] = useState(false);
   const [customFilter, setCustomFilter] = useState<FilterBuilderResult | null>(null);
   const [pagination, setPagination] = useState({ page: 1, pageSize: 100 });
@@ -286,7 +357,24 @@ export default function SearchPage() {
     offset: '0',
     season: '',
     episode: '',
+    tvdbId: '',
+    imdbId: '',
     year: '',
+    artist: '',
+    album: '',
+    author: '',
+    bookTitle: '',
+  });
+  const [queryDraft, setQueryDraft] = useState({
+    season: '',
+    episode: '',
+    tvdbId: '',
+    imdbId: '',
+    year: '',
+    artist: '',
+    album: '',
+    author: '',
+    bookTitle: '',
   });
 
   const indexersQuery = useApiQuery({
@@ -296,21 +384,27 @@ export default function SearchPage() {
     isEmpty: rows => rows.length === 0,
   });
 
+  const downloadClientsQuery = useApiQuery({
+    queryKey: queryKeys.downloadClients(),
+    queryFn: () => api.downloadClientApi.list() as Promise<DownloadClientRow[]>,
+    staleTimeKind: 'list',
+  });
+
   const releasesQuery = useApiQuery({
     queryKey: queryKeys.releaseCandidates(submittedParams ?? { idle: true }),
     queryFn: () => api.releaseApi.searchCandidates(submittedParams || { query: '' }),
     enabled: Boolean(submittedParams),
     staleTimeKind: 'list',
-    isEmpty: result => result?.items.length === 0 || false,
+    isEmpty: result => result?.items?.length === 0 || false,
   });
 
   const grabMutation = useMutation({
-    mutationFn: async (candidate: ReleaseViewRow) => {
+    mutationFn: async ({ candidate, downloadClientId }: GrabInput) => {
       const guid = candidate.guid ?? candidate.infoHash;
       if (!guid) {
         throw new Error('Release GUID is required');
       }
-      return api.releaseApi.grabRelease(guid, candidate.indexerId);
+      return api.releaseApi.grabRelease(guid, candidate.indexerId, downloadClientId);
     },
   });
 
@@ -318,12 +412,15 @@ export default function SearchPage() {
     () =>
       (releasesQuery.data?.items ?? []).map((row) => {
         const rowId = buildReleaseRowId(row);
-        const titleOverride = overridesByRowId[rowId];
+        const override = overridesByRowId[rowId];
 
         return {
           ...row,
           rowId,
-          title: titleOverride ?? row.title,
+          title: override?.title ?? row.title,
+          categories: override?.categories ?? row.categories,
+          quality: override?.quality ?? row.quality,
+          language: override?.language ?? row.language,
         };
       }),
     [overridesByRowId, releasesQuery.data],
@@ -332,10 +429,27 @@ export default function SearchPage() {
   const filteredReleaseRows = useMemo(() => {
     const minSizeGb = Number.parseFloat(minSizeGbFilter);
     const minSeeders = Number.parseInt(minSeedersFilter, 10);
+    const selectedCategory = categoryFilter === 'all' ? undefined : Number.parseInt(categoryFilter, 10);
 
     return releaseRows.filter(row => {
       const protocol = inferProtocol(row);
       if (protocolFilter !== 'all' && protocol !== protocolFilter) {
+        return false;
+      }
+
+      if (indexerFilter !== 'all' && row.indexer !== indexerFilter) {
+        return false;
+      }
+
+      if (
+        selectedCategory !== undefined &&
+        (!Number.isFinite(selectedCategory) || !row.categories?.includes(selectedCategory))
+      ) {
+        return false;
+      }
+
+      const rowQuality = row.quality?.trim() || 'unknown';
+      if (qualityFilter !== 'all' && rowQuality !== qualityFilter) {
         return false;
       }
 
@@ -352,7 +466,31 @@ export default function SearchPage() {
 
       return matchesCustomFilters(row, customFilter);
     });
-  }, [customFilter, minSeedersFilter, minSizeGbFilter, protocolFilter, releaseRows]);
+  }, [
+    categoryFilter,
+    customFilter,
+    indexerFilter,
+    minSeedersFilter,
+    minSizeGbFilter,
+    protocolFilter,
+    qualityFilter,
+    releaseRows,
+  ]);
+
+  const availableIndexerFilters = useMemo(
+    () => Array.from(new Set(releaseRows.map(row => row.indexer))).sort((a, b) => a.localeCompare(b)),
+    [releaseRows],
+  );
+
+  const availableCategoryFilters = useMemo(
+    () => Array.from(new Set(releaseRows.flatMap(row => row.categories ?? []))).sort((a, b) => a - b),
+    [releaseRows],
+  );
+
+  const availableQualityFilters = useMemo(
+    () => Array.from(new Set(releaseRows.map(row => row.quality?.trim() || 'unknown'))).sort((a, b) => a.localeCompare(b)),
+    [releaseRows],
+  );
 
   const releaseById = useMemo(
     () => new Map(filteredReleaseRows.map(row => [row.rowId, row])),
@@ -430,8 +568,22 @@ export default function SearchPage() {
   ];
 
   const handleGrab = async (candidate: ReleaseViewRow) => {
+    const selectedDownloadClientId = parseOptionalNumber(downloadClientId);
+    const override = overridesByRowId[candidate.rowId];
+
     try {
-      await grabMutation.mutateAsync(candidate);
+      if (override) {
+        await api.releaseApi.grabCandidate({
+          ...toReleasePayload(candidate),
+          language: candidate.language,
+          downloadClientId: selectedDownloadClientId,
+        });
+      } else {
+        await grabMutation.mutateAsync({
+          candidate,
+          downloadClientId: selectedDownloadClientId,
+        });
+      }
       setActionNotice({
         tone: 'success',
         message: `Grabbed ${candidate.title}`,
@@ -446,6 +598,7 @@ export default function SearchPage() {
   };
 
   const handleBulkGrab = async (selectedIds: Array<string | number>) => {
+    const selectedDownloadClientId = parseOptionalNumber(downloadClientId);
     const candidates = selectedIds
       .map(id => releaseById.get(String(id)))
       .filter((row): row is ReleaseViewRow => Boolean(row?.magnetUrl));
@@ -458,7 +611,21 @@ export default function SearchPage() {
       return;
     }
 
-    const results = await Promise.allSettled(candidates.map(candidate => grabMutation.mutateAsync(candidate)));
+    const results = await Promise.allSettled(candidates.map(candidate => {
+      const override = overridesByRowId[candidate.rowId];
+      if (override) {
+        return api.releaseApi.grabCandidate({
+          ...toReleasePayload(candidate),
+          language: candidate.language,
+          downloadClientId: selectedDownloadClientId,
+        });
+      }
+
+      return grabMutation.mutateAsync({
+        candidate,
+        downloadClientId: selectedDownloadClientId,
+      });
+    }));
     const successCount = results.filter(result => result.status === 'fulfilled').length;
     const failureCount = results.length - successCount;
 
@@ -480,6 +647,21 @@ export default function SearchPage() {
     event.preventDefault();
     const params = buildPayload(form, pagination, sortBy, sortDir);
     setSubmittedParams(params);
+  };
+
+  const openQueryModal = () => {
+    setQueryDraft({
+      season: form.season,
+      episode: form.episode,
+      tvdbId: form.tvdbId,
+      imdbId: form.imdbId,
+      year: form.year,
+      artist: form.artist,
+      album: form.album,
+      author: form.author,
+      bookTitle: form.bookTitle,
+    });
+    setIsQueryModalOpen(true);
   };
 
   return (
@@ -568,6 +750,27 @@ export default function SearchPage() {
                   <option key={indexer.id} value={String(indexer.id)}>
                     {indexer.name}
                   </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="grid gap-1 text-sm">
+            <span>Download client</span>
+            <select
+              aria-label="Download client"
+              value={downloadClientId}
+              onChange={event => {
+                setDownloadClientId(event.currentTarget.value);
+              }}
+              className="rounded-sm border border-border-subtle bg-surface-0 px-3 py-2"
+            >
+              <option value="">Default (primary)</option>
+              {(downloadClientsQuery.data ?? [])
+                .filter(client => client.enabled)
+                .map(client => (
+                  <option key={client.id} value={String(client.id)}>
+                    {client.name}
+                  </option>
                 ))}
             </select>
           </label>
@@ -614,74 +817,16 @@ export default function SearchPage() {
             type="button"
             className="rounded-sm border border-border-subtle px-3 py-1 text-sm"
             onClick={() => {
-              setShowAdvanced(current => !current);
+              openQueryModal();
             }}
           >
-            {showAdvanced ? 'Hide advanced options' : 'Show advanced options'}
+            Query parameters
           </button>
 
           <button type="submit" className="rounded-sm border border-border-subtle px-3 py-1 text-sm">
             Search releases
           </button>
         </div>
-
-        {showAdvanced ? (
-          <div className="grid gap-3 border-t border-border-subtle pt-3 md:grid-cols-3">
-            <label className="grid gap-1 text-sm">
-              <span>Season</span>
-              <input
-                aria-label="Season"
-                type="number"
-                min={1}
-                value={form.season}
-                onChange={event => {
-                  const season = event.currentTarget.value;
-                  setForm(current => ({
-                    ...current,
-                    season,
-                  }));
-                }}
-                className="rounded-sm border border-border-subtle bg-surface-0 px-3 py-2"
-              />
-            </label>
-
-            <label className="grid gap-1 text-sm">
-              <span>Episode</span>
-              <input
-                aria-label="Episode"
-                type="number"
-                min={1}
-                value={form.episode}
-                onChange={event => {
-                  const episode = event.currentTarget.value;
-                  setForm(current => ({
-                    ...current,
-                    episode,
-                  }));
-                }}
-                className="rounded-sm border border-border-subtle bg-surface-0 px-3 py-2"
-              />
-            </label>
-
-            <label className="grid gap-1 text-sm">
-              <span>Year</span>
-              <input
-                aria-label="Year"
-                type="number"
-                min={1900}
-                value={form.year}
-                onChange={event => {
-                  const year = event.currentTarget.value;
-                  setForm(current => ({
-                    ...current,
-                    year,
-                  }));
-                }}
-                className="rounded-sm border border-border-subtle bg-surface-0 px-3 py-2"
-              />
-            </label>
-          </div>
-        ) : null}
       </form>
 
       {submittedParams ? (
@@ -745,7 +890,64 @@ export default function SearchPage() {
                 </label>
               </div>
 
-              <div className="grid gap-3 md:grid-cols-3">
+              <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-6">
+                <label className="grid gap-1 text-xs">
+                  <span>Indexer filter</span>
+                  <select
+                    aria-label="Indexer filter"
+                    className="rounded-sm border border-border-subtle bg-surface-0 px-2 py-1 text-xs"
+                    value={indexerFilter}
+                    onChange={event => {
+                      setIndexerFilter(event.currentTarget.value);
+                    }}
+                  >
+                    <option value="all">all</option>
+                    {availableIndexerFilters.map(indexerName => (
+                      <option key={indexerName} value={indexerName}>
+                        {indexerName}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="grid gap-1 text-xs">
+                  <span>Category filter</span>
+                  <select
+                    aria-label="Category filter"
+                    className="rounded-sm border border-border-subtle bg-surface-0 px-2 py-1 text-xs"
+                    value={categoryFilter}
+                    onChange={event => {
+                      setCategoryFilter(event.currentTarget.value);
+                    }}
+                  >
+                    <option value="all">all</option>
+                    {availableCategoryFilters.map(category => (
+                      <option key={category} value={String(category)}>
+                        {category}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="grid gap-1 text-xs">
+                  <span>Quality filter</span>
+                  <select
+                    aria-label="Quality filter"
+                    className="rounded-sm border border-border-subtle bg-surface-0 px-2 py-1 text-xs"
+                    value={qualityFilter}
+                    onChange={event => {
+                      setQualityFilter(event.currentTarget.value);
+                    }}
+                  >
+                    <option value="all">all</option>
+                    {availableQualityFilters.map(quality => (
+                      <option key={quality} value={quality}>
+                        {quality}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
                 <label className="grid gap-1 text-xs">
                   <span>Protocol filter</span>
                   <select
@@ -876,8 +1078,12 @@ export default function SearchPage() {
                         aria-label={`Override match ${row.title}`}
                         className="rounded-sm border border-border-subtle px-2 py-1 text-xs"
                         onClick={() => {
+                          const currentOverride = overridesByRowId[row.rowId];
                           setOverrideTarget(row);
-                          setOverrideTitle(row.title);
+                          setOverrideTitle(currentOverride?.title ?? row.title);
+                          setOverrideCategory((currentOverride?.categories ?? row.categories ?? []).join(','));
+                          setOverrideQuality(currentOverride?.quality ?? row.quality ?? '');
+                          setOverrideLanguage(currentOverride?.language ?? row.language ?? '');
                         }}
                       >
                         Override
@@ -945,11 +1151,238 @@ export default function SearchPage() {
       )}
 
       <Modal
+        isOpen={isQueryModalOpen}
+        ariaLabel="Query parameters"
+        onClose={() => {
+          setIsQueryModalOpen(false);
+        }}
+      >
+        <ModalHeader
+          title="Query parameters"
+          onClose={() => {
+            setIsQueryModalOpen(false);
+          }}
+        />
+        <ModalBody>
+          <div className="grid gap-3 md:grid-cols-2">
+            {form.searchType === 'tvsearch' ? (
+              <>
+                <label className="grid gap-1 text-sm">
+                  <span>Season</span>
+                  <input
+                    aria-label="Season"
+                    type="number"
+                    min={1}
+                    value={queryDraft.season}
+                    onChange={event => {
+                      const season = event.currentTarget.value;
+                      setQueryDraft(current => ({
+                        ...current,
+                        season,
+                      }));
+                    }}
+                    className="rounded-sm border border-border-subtle bg-surface-0 px-3 py-2"
+                  />
+                </label>
+
+                <label className="grid gap-1 text-sm">
+                  <span>Episode</span>
+                  <input
+                    aria-label="Episode"
+                    type="number"
+                    min={1}
+                    value={queryDraft.episode}
+                    onChange={event => {
+                      const episode = event.currentTarget.value;
+                      setQueryDraft(current => ({
+                        ...current,
+                        episode,
+                      }));
+                    }}
+                    className="rounded-sm border border-border-subtle bg-surface-0 px-3 py-2"
+                  />
+                </label>
+
+                <label className="grid gap-1 text-sm">
+                  <span>TVDB ID</span>
+                  <input
+                    aria-label="TVDB ID"
+                    type="number"
+                    min={1}
+                    value={queryDraft.tvdbId}
+                    onChange={event => {
+                      const tvdbId = event.currentTarget.value;
+                      setQueryDraft(current => ({
+                        ...current,
+                        tvdbId,
+                      }));
+                    }}
+                    className="rounded-sm border border-border-subtle bg-surface-0 px-3 py-2"
+                  />
+                </label>
+              </>
+            ) : null}
+
+            {form.searchType === 'movie' ? (
+              <>
+                <label className="grid gap-1 text-sm">
+                  <span>IMDB ID</span>
+                  <input
+                    aria-label="IMDB ID"
+                    value={queryDraft.imdbId}
+                    onChange={event => {
+                      const imdbId = event.currentTarget.value;
+                      setQueryDraft(current => ({
+                        ...current,
+                        imdbId,
+                      }));
+                    }}
+                    className="rounded-sm border border-border-subtle bg-surface-0 px-3 py-2"
+                  />
+                </label>
+
+                <label className="grid gap-1 text-sm">
+                  <span>Year</span>
+                  <input
+                    aria-label="Year"
+                    type="number"
+                    min={1900}
+                    value={queryDraft.year}
+                    onChange={event => {
+                      const year = event.currentTarget.value;
+                      setQueryDraft(current => ({
+                        ...current,
+                        year,
+                      }));
+                    }}
+                    className="rounded-sm border border-border-subtle bg-surface-0 px-3 py-2"
+                  />
+                </label>
+              </>
+            ) : null}
+
+            {form.searchType === 'music' ? (
+              <>
+                <label className="grid gap-1 text-sm">
+                  <span>Artist</span>
+                  <input
+                    aria-label="Artist"
+                    value={queryDraft.artist}
+                    onChange={event => {
+                      const artist = event.currentTarget.value;
+                      setQueryDraft(current => ({
+                        ...current,
+                        artist,
+                      }));
+                    }}
+                    className="rounded-sm border border-border-subtle bg-surface-0 px-3 py-2"
+                  />
+                </label>
+
+                <label className="grid gap-1 text-sm">
+                  <span>Album</span>
+                  <input
+                    aria-label="Album"
+                    value={queryDraft.album}
+                    onChange={event => {
+                      const album = event.currentTarget.value;
+                      setQueryDraft(current => ({
+                        ...current,
+                        album,
+                      }));
+                    }}
+                    className="rounded-sm border border-border-subtle bg-surface-0 px-3 py-2"
+                  />
+                </label>
+              </>
+            ) : null}
+
+            {form.searchType === 'book' ? (
+              <>
+                <label className="grid gap-1 text-sm">
+                  <span>Author</span>
+                  <input
+                    aria-label="Author"
+                    value={queryDraft.author}
+                    onChange={event => {
+                      const author = event.currentTarget.value;
+                      setQueryDraft(current => ({
+                        ...current,
+                        author,
+                      }));
+                    }}
+                    className="rounded-sm border border-border-subtle bg-surface-0 px-3 py-2"
+                  />
+                </label>
+
+                <label className="grid gap-1 text-sm">
+                  <span>Title</span>
+                  <input
+                    aria-label="Title"
+                    value={queryDraft.bookTitle}
+                    onChange={event => {
+                      const bookTitle = event.currentTarget.value;
+                      setQueryDraft(current => ({
+                        ...current,
+                        bookTitle,
+                      }));
+                    }}
+                    className="rounded-sm border border-border-subtle bg-surface-0 px-3 py-2"
+                  />
+                </label>
+              </>
+            ) : null}
+
+            {form.searchType === 'search' ? (
+              <p className="text-sm text-text-secondary">
+                No type-specific parameters available for generic search.
+              </p>
+            ) : null}
+          </div>
+        </ModalBody>
+        <ModalFooter>
+          <button
+            type="button"
+            className="rounded-sm border border-border-subtle px-3 py-1 text-sm"
+            onClick={() => {
+              setIsQueryModalOpen(false);
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            className="rounded-sm border border-border-subtle px-3 py-1 text-sm"
+            onClick={() => {
+              setForm(current => ({
+                ...current,
+                season: queryDraft.season,
+                episode: queryDraft.episode,
+                tvdbId: queryDraft.tvdbId,
+                imdbId: queryDraft.imdbId,
+                year: queryDraft.year,
+                artist: queryDraft.artist,
+                album: queryDraft.album,
+                author: queryDraft.author,
+                bookTitle: queryDraft.bookTitle,
+              }));
+              setIsQueryModalOpen(false);
+            }}
+          >
+            Apply parameters
+          </button>
+        </ModalFooter>
+      </Modal>
+
+      <Modal
         isOpen={Boolean(overrideTarget)}
         ariaLabel="Override release match"
         onClose={() => {
           setOverrideTarget(null);
           setOverrideTitle('');
+          setOverrideCategory('');
+          setOverrideQuality('');
+          setOverrideLanguage('');
         }}
       >
         <ModalHeader
@@ -957,20 +1390,62 @@ export default function SearchPage() {
           onClose={() => {
             setOverrideTarget(null);
             setOverrideTitle('');
+            setOverrideCategory('');
+            setOverrideQuality('');
+            setOverrideLanguage('');
           }}
         />
         <ModalBody>
-          <label className="grid gap-1 text-sm">
-            <span>Override title</span>
-            <input
-              aria-label="Override title"
-              value={overrideTitle}
-              onChange={event => {
-                setOverrideTitle(event.currentTarget.value);
-              }}
-              className="rounded-sm border border-border-subtle bg-surface-0 px-3 py-2"
-            />
-          </label>
+          <div className="grid gap-3 md:grid-cols-2">
+            <label className="grid gap-1 text-sm">
+              <span>Override title</span>
+              <input
+                aria-label="Override title"
+                value={overrideTitle}
+                onChange={event => {
+                  setOverrideTitle(event.currentTarget.value);
+                }}
+                className="rounded-sm border border-border-subtle bg-surface-0 px-3 py-2"
+              />
+            </label>
+
+            <label className="grid gap-1 text-sm">
+              <span>Category override</span>
+              <input
+                aria-label="Category override"
+                value={overrideCategory}
+                onChange={event => {
+                  setOverrideCategory(event.currentTarget.value);
+                }}
+                placeholder="e.g. 5000,5030"
+                className="rounded-sm border border-border-subtle bg-surface-0 px-3 py-2"
+              />
+            </label>
+
+            <label className="grid gap-1 text-sm">
+              <span>Quality override</span>
+              <input
+                aria-label="Quality override"
+                value={overrideQuality}
+                onChange={event => {
+                  setOverrideQuality(event.currentTarget.value);
+                }}
+                className="rounded-sm border border-border-subtle bg-surface-0 px-3 py-2"
+              />
+            </label>
+
+            <label className="grid gap-1 text-sm">
+              <span>Language override</span>
+              <input
+                aria-label="Language override"
+                value={overrideLanguage}
+                onChange={event => {
+                  setOverrideLanguage(event.currentTarget.value);
+                }}
+                className="rounded-sm border border-border-subtle bg-surface-0 px-3 py-2"
+              />
+            </label>
+          </div>
         </ModalBody>
         <ModalFooter>
           <button
@@ -979,6 +1454,9 @@ export default function SearchPage() {
             onClick={() => {
               setOverrideTarget(null);
               setOverrideTitle('');
+              setOverrideCategory('');
+              setOverrideQuality('');
+              setOverrideLanguage('');
             }}
           >
             Cancel
@@ -996,12 +1474,29 @@ export default function SearchPage() {
                 return;
               }
 
+              const nextCategories = overrideCategory
+                .split(',')
+                .map(value => value.trim())
+                .filter(Boolean)
+                .map(value => Number.parseInt(value, 10))
+                .filter(value => Number.isFinite(value));
+              const nextQuality = overrideQuality.trim();
+              const nextLanguage = overrideLanguage.trim();
+
               setOverridesByRowId(current => ({
                 ...current,
-                [overrideTarget.rowId]: nextTitle,
+                [overrideTarget.rowId]: {
+                  title: nextTitle,
+                  ...(nextCategories.length > 0 ? { categories: nextCategories } : {}),
+                  ...(nextQuality.length > 0 ? { quality: nextQuality } : {}),
+                  ...(nextLanguage.length > 0 ? { language: nextLanguage } : {}),
+                },
               }));
               setOverrideTarget(null);
               setOverrideTitle('');
+              setOverrideCategory('');
+              setOverrideQuality('');
+              setOverrideLanguage('');
             }}
           >
             Apply override

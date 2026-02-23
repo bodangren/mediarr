@@ -4,6 +4,30 @@ import { sendSuccess } from '../contracts';
 import { parseIdParam } from '../routeUtils';
 import type { ApiDependencies } from '../types';
 
+const ALLOWED_UPLOAD_EXTENSIONS = new Set(['.srt', '.ass', '.ssa', '.sub', '.vtt']);
+
+function parseBooleanFlag(value: string | undefined): boolean {
+  if (!value) {
+    return false;
+  }
+
+  const normalized = value.trim().toLowerCase();
+  return normalized === 'true' || normalized === '1' || normalized === 'yes' || normalized === 'on';
+}
+
+function readFieldValue(fields: Record<string, unknown> | undefined, key: string): string | undefined {
+  if (!fields) {
+    return undefined;
+  }
+
+  const value = fields[key] as { value?: unknown } | undefined;
+  if (!value || typeof value.value !== 'string') {
+    return undefined;
+  }
+
+  return value.value;
+}
+
 export function registerSubtitleRoutes(
   app: FastifyInstance,
   deps: ApiDependencies,
@@ -129,6 +153,51 @@ export function registerSubtitleRoutes(
 
     const result = await deps.subtitleInventoryApiService.manualDownload(body);
     return sendSuccess(reply, result);
+  });
+
+  app.post('/api/subtitles/upload', async (request, reply) => {
+    if (!deps.subtitleInventoryApiService?.uploadSubtitle) {
+      throw new ValidationError('Subtitle inventory API service is not configured');
+    }
+
+    const filePart = await request.file();
+    if (!filePart) {
+      throw new ValidationError('Subtitle file is required');
+    }
+
+    const extension = `.${filePart.filename.split('.').pop()?.toLowerCase() ?? ''}`;
+    if (!ALLOWED_UPLOAD_EXTENSIONS.has(extension)) {
+      throw new ValidationError('Only subtitle files are supported (.srt, .ass, .ssa, .sub, .vtt)');
+    }
+
+    const language = readFieldValue(filePart.fields as Record<string, unknown>, 'language');
+    if (!language) {
+      throw new ValidationError('language is required');
+    }
+
+    const mediaIdRaw = readFieldValue(filePart.fields as Record<string, unknown>, 'mediaId');
+    const mediaId = Number.parseInt(mediaIdRaw ?? '', 10);
+    if (!Number.isFinite(mediaId) || mediaId <= 0) {
+      throw new ValidationError('mediaId must be a positive number');
+    }
+
+    const mediaType = readFieldValue(filePart.fields as Record<string, unknown>, 'mediaType');
+    if (mediaType !== 'movie' && mediaType !== 'episode') {
+      throw new ValidationError("mediaType must be 'movie' or 'episode'");
+    }
+
+    const content = await filePart.toBuffer();
+    const subtitle = await deps.subtitleInventoryApiService.uploadSubtitle({
+      originalFilename: filePart.filename,
+      content,
+      language,
+      forced: parseBooleanFlag(readFieldValue(filePart.fields as Record<string, unknown>, 'forced')),
+      hearingImpaired: parseBooleanFlag(readFieldValue(filePart.fields as Record<string, unknown>, 'hearingImpaired')),
+      mediaId,
+      mediaType,
+    });
+
+    return sendSuccess(reply, subtitle, 201);
   });
 
   /**

@@ -160,7 +160,7 @@ describe('quality profiles page', () => {
 
     await waitFor(() => {
       expect(screen.getByRole('dialog', { name: 'Add Quality Profile' })).toBeInTheDocument();
-      expect(screen.getByLabelText('Profile Name')).toBeInTheDocument();
+      expect(screen.getByLabelText(/Profile Name/i)).toBeInTheDocument();
       expect(screen.getByText('Allowed Qualities')).toBeInTheDocument();
       expect(screen.getByText('Cutoff Quality')).toBeInTheDocument();
     });
@@ -201,6 +201,70 @@ describe('quality profiles page', () => {
     });
   });
 
+  it('shows custom format scores in edit profile modal', async () => {
+    vi.mocked(getApiClients).mockReturnValue({
+      qualityProfileApi: {
+        list: vi.fn().mockResolvedValue([
+          {
+            id: 1,
+            name: 'HD - 1080p/720p',
+            cutoffId: 0,
+            qualities: [
+              { id: 1, name: 'Bluray-1080p', resolution: '1080p', source: 'Bluray' },
+              { id: 2, name: 'Bluray-720p', resolution: '720p', source: 'Bluray' },
+            ],
+          },
+        ]),
+        create: vi.fn(),
+        update: vi.fn(),
+        delete: vi.fn(),
+      },
+      appProfilesApi: {
+        list: vi.fn().mockResolvedValue([]),
+        create: vi.fn(),
+        update: vi.fn(),
+        clone: vi.fn(),
+        remove: vi.fn(),
+      },
+      customFormatApi: {
+        list: vi.fn().mockResolvedValue([
+          {
+            id: 101,
+            name: 'HDR10',
+            includeCustomFormatWhenRenaming: false,
+            conditions: [],
+            scores: [{ id: 1, qualityProfileId: 1, score: 10 }],
+          },
+          {
+            id: 102,
+            name: 'Dolby Vision',
+            includeCustomFormatWhenRenaming: false,
+            conditions: [],
+            scores: [{ id: 2, qualityProfileId: 1, score: 5 }],
+          },
+        ]),
+      },
+      eventsApi: mockEventsApi,
+    } as any);
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('dialog', { name: 'Edit Quality Profile' })).toBeInTheDocument();
+      expect(screen.getByText('Custom Format Scores')).toBeInTheDocument();
+      expect(screen.getByText('HDR10')).toBeInTheDocument();
+      expect(screen.getByText('+10')).toBeInTheDocument();
+      expect(screen.getByText('Dolby Vision')).toBeInTheDocument();
+      expect(screen.getByText('+5')).toBeInTheDocument();
+    });
+  });
+
   it('opens delete confirmation modal when Delete is clicked', async () => {
     vi.mocked(getApiClients).mockReturnValue({
       qualityProfileApi: {
@@ -230,11 +294,12 @@ describe('quality profiles page', () => {
     fireEvent.click(screen.getAllByRole('button', { name: 'Delete' })[0]);
 
     await waitFor(() => {
-      expect(screen.getByRole('dialog', { name: 'Delete Quality Profile' })).toBeInTheDocument();
-      expect(screen.getByText(/Are you sure you want to delete the quality profile/)).toBeInTheDocument();
-      expect(screen.getByText('Test Profile')).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'Delete Profile' })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument();
+      const dialog = screen.getByRole('dialog', { name: 'Delete Quality Profile' });
+      expect(dialog).toBeInTheDocument();
+      expect(within(dialog).getByText(/Are you sure you want to delete the quality profile/)).toBeInTheDocument();
+      expect(within(dialog).getByText('Test Profile')).toBeInTheDocument();
+      expect(within(dialog).getByRole('button', { name: 'Delete Profile' })).toBeInTheDocument();
+      expect(within(dialog).getByRole('button', { name: 'Cancel' })).toBeInTheDocument();
     });
   });
 
@@ -370,7 +435,7 @@ describe('quality profiles page', () => {
       expect(screen.getByRole('dialog', { name: 'Delete Quality Profile' })).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getAllByRole('button', { name: 'Cancel' })[1]); // Second cancel button (in modal)
+    fireEvent.click(within(screen.getByRole('dialog', { name: 'Delete Quality Profile' })).getByRole('button', { name: 'Cancel' }));
 
     await waitFor(() => {
       expect(screen.queryByRole('dialog', { name: 'Delete Quality Profile' })).not.toBeInTheDocument();

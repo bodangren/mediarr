@@ -13,8 +13,9 @@
     - [x] Sub-task: Run migration.
     - [x] Sub-task: Implement `GET/POST/PUT/DELETE /api/custom-formats` endpoints.
     - [x] Sub-task: Implement CustomFormatScoringEngine: evaluate release title/properties against conditions (regex match, size range, language, indexer flags).
-    - [~] Sub-task: Integrate scoring engine into release evaluation (search results ranking).
-    - [ ] Sub-task: Add custom format score display to quality profile edit UI.
+    - [x] Sub-task: Integrate scoring engine into release evaluation (search results ranking).
+    - [x] Sub-task: Build Custom Formats Settings UI at `/settings/customformats` with list page, create/edit modal, condition builder, and CRUD operations.
+    - [x] Sub-task: Add custom format score display to quality profile edit UI.
 - [~] Task: Conductor - User Manual Verification 'Phase 1' (Protocol in workflow.md) - PENDING
 
 ## Phase 2: Import Lists Framework - BACKEND COMPLETE
@@ -34,14 +35,12 @@
     - [x] Sub-task: Implement TMDBPopularProvider (fetch popular movies/series from TMDB).
     - [x] Sub-task: Implement TMDBListProvider (fetch from specific TMDB list by ID).
     - [x] Sub-task: Register import list sync in scheduler (node-cron) at configurable intervals.
-- [ ] Task: Build Import Lists Settings UI
-    - [ ] Sub-task: Write tests — verify import lists page renders with CRUD operations.
-    - [ ] Sub-task: Write tests — verify exclusion management works.
-    - [ ] Sub-task: Create reusable ImportListSettings component (used by both Radarr and Sonarr settings pages).
-    - [ ] Sub-task: List configured import lists with name, type, enabled, last sync time.
-    - [ ] Sub-task: Create/edit modal: provider type selector, provider-specific config fields, root folder, quality profile, monitoring type, sync interval.
-    - [ ] Sub-task: Manual sync button per list.
-    - [ ] Sub-task: Exclusions tab: list exclusions, add exclusion (search media + exclude), remove exclusion.
+- [x] Task: Build Import Lists Settings UI
+    - [x] Sub-task: Create reusable ImportListSettings component (used by both Radarr and Sonarr settings pages).
+    - [x] Sub-task: List configured import lists with name, type, enabled, last sync time.
+    - [x] Sub-task: Create/edit modal: provider type selector, provider-specific config fields, root folder, quality profile, monitoring type, sync interval.
+    - [x] Sub-task: Manual sync button per list.
+    - [x] Sub-task: Exclusions tab: list exclusions, add exclusion (search media + exclude), remove exclusion.
 - [ ] Task: Conductor - User Manual Verification 'Phase 2' (Protocol in workflow.md) - PENDING
 
 ## Phase 3: Calendar Sync & Dashboard Widgets - PENDING

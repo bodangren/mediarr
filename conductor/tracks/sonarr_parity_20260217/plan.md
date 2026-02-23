@@ -80,23 +80,23 @@
     - [x] Sub-task: Wire apply button to organize endpoint.
 - [x] Task: Conductor - User Manual Verification 'Phase 4' (Protocol in workflow.md) - COMPLETED
 
-## Phase 5: Advanced Filtering & List Enhancements - PENDING
+## Phase 5: Advanced Filtering & List Enhancements - COMPLETED
 
-- [ ] Task: Implement Custom Filters
-    - [ ] Sub-task: Write tests — verify filter builder creates, saves, loads, and deletes named filters.
-    - [ ] Sub-task: Write tests — verify filters correctly narrow series list results.
-    - [ ] Sub-task: Backend: `GET/POST/PUT/DELETE /api/filters` for persisting named filters (Prisma model: CustomFilter with JSON conditions field).
-    - [ ] Sub-task: Build FilterBuilder component: condition rows (field, operator, value), add/remove rows.
-    - [ ] Sub-task: Add filter dropdown to series list toolbar (saved filters + "Custom" option opening builder).
-    - [ ] Sub-task: Apply filters to series list query (client-side or backend query params).
-- [ ] Task: Add Table Column Customization
-    - [ ] Sub-task: Write tests — verify column visibility toggles persist and apply to table.
-    - [ ] Sub-task: Add column picker dropdown to series table toolbar.
-    - [ ] Sub-task: Persist column preferences to localStorage.
-    - [ ] Sub-task: Show/hide columns dynamically based on preferences.
-- [ ] Task: Add Jump Bar Navigation
-    - [ ] Sub-task: Write tests — verify jump bar renders A-Z links and scrolls/filters to letter.
-    - [ ] Sub-task: Build JumpBar component (A-Z + # for numeric + All).
-    - [ ] Sub-task: Wire jump bar selection to filter series list by first letter.
-    - [ ] Sub-task: Add to series list page (above table, below toolbar).
-- [ ] Task: Conductor - User Manual Verification 'Phase 5' (Protocol in workflow.md)
+- [x] Task: Implement Custom Filters
+    - [x] Sub-task: Write tests — verify filter builder creates, saves, loads, and deletes named filters.
+    - [x] Sub-task: Write tests — verify filters correctly narrow series list results.
+    - [x] Sub-task: Backend: `GET/POST/PUT/DELETE /api/filters` for persisting named filters (Prisma model: CustomFilter with JSON conditions field).
+    - [x] Sub-task: Build FilterBuilder component: condition rows (field, operator, value), add/remove rows.
+    - [x] Sub-task: Add filter dropdown to series list toolbar (saved filters + "Custom" option opening builder).
+    - [x] Sub-task: Apply filters to series list query (client-side or backend query params).
+- [x] Task: Add Table Column Customization
+    - [x] Sub-task: Write tests — verify column visibility toggles persist and apply to table.
+    - [x] Sub-task: Add column picker dropdown to series table toolbar.
+    - [x] Sub-task: Persist column preferences to localStorage.
+    - [x] Sub-task: Show/hide columns dynamically based on preferences.
+- [x] Task: Add Jump Bar Navigation
+    - [x] Sub-task: Write tests — verify jump bar renders A-Z links and scrolls/filters to letter.
+    - [x] Sub-task: Build JumpBar component (A-Z + # for numeric + All).
+    - [x] Sub-task: Wire jump bar selection to filter series list by first letter.
+    - [x] Sub-task: Add to series list page (above table, below toolbar).
+- [x] Task: Conductor - User Manual Verification 'Phase 5' (Protocol in workflow.md)

@@ -1,0 +1,17 @@
+Task: Add Definition Feature Inventory Tests
+
+Summary:
+- Added definition-level feature inventory builder that scans imported Cardigann definitions for template constructs, filter usage, and request features (inputs/headers/json response/path inheritance).
+- Added strict tracked-feature coverage assertion that throws on untracked discovered features.
+- Added artifact writer for baseline compatibility matrix generation.
+- Added comprehensive tests validating template/filter/request feature detection, untracked feature failure mode, and matrix generation behavior.
+- Generated and committed a baseline compatibility matrix artifact for current imported definitions.
+
+Files:
+- conductor/tracks/cardigann_runtime_parity_20260223/plan.md
+- server/src/indexers/cardigann-conformance/definitionFeatureInventory.ts
+- server/src/indexers/cardigann-conformance/definitionFeatureInventory.test.ts
+- conductor/tracks/cardigann_runtime_parity_20260223/artifacts/phase1-baseline-compatibility-matrix.json
+
+Why:
+- Establishes measurable baseline coverage map and enforcement needed to drive the remaining runtime parity phases definition-by-definition.

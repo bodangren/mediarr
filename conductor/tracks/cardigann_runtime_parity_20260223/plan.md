@@ -24,12 +24,12 @@
 > **ENTRY CRITERIA**: Phase 1 harness and baseline matrix committed.
 > **GOAL**: implement template semantics required by imported definitions, with red-green tests per feature.
 
-- [~] Task: Implement Query/Config/Category Template Evaluation
-    - [ ] Sub-task: Write tests - `.Query.*` substitutions across search paths and fields.
-    - [ ] Sub-task: Write tests - `.Config.*` substitutions from indexer settings.
-    - [ ] Sub-task: Write tests - category/template value substitutions used in imported definitions.
-    - [ ] Sub-task: Implement template evaluator for required variable interpolation.
-    - [ ] Sub-task: Ensure URL encoding behavior matches fixture expectations.
+- [x] Task: Implement Query/Config/Category Template Evaluation 5d289ff
+    - [x] Sub-task: Write tests - `.Query.*` substitutions across search paths and fields.
+    - [x] Sub-task: Write tests - `.Config.*` substitutions from indexer settings.
+    - [x] Sub-task: Write tests - category/template value substitutions used in imported definitions.
+    - [x] Sub-task: Implement template evaluator for required variable interpolation.
+    - [x] Sub-task: Ensure URL encoding behavior matches fixture expectations.
 
 - [ ] Task: Implement Conditional Template Constructs Used by Definitions
     - [ ] Sub-task: Write tests - conditional branches (`if`/`else`) used by fixtures.

@@ -11,12 +11,12 @@
     - [x] Sub-task: Add fixture loader for definition snippets and expected normalized outputs.
     - [x] Sub-task: Add summary reporter output format suitable for CI logs.
 
-- [~] Task: Add Definition Feature Inventory Tests
-    - [ ] Sub-task: Write tests - inventory detects template constructs used by each imported definition.
-    - [ ] Sub-task: Write tests - inventory detects all filter names used by each imported definition.
-    - [ ] Sub-task: Write tests - inventory detects path/input/header/response features used by each definition.
-    - [ ] Sub-task: Write tests - failing assertion if imported definition uses untracked feature.
-    - [ ] Sub-task: Generate baseline compatibility matrix artifact for current imported definitions.
+- [x] Task: Add Definition Feature Inventory Tests c82eeaa
+    - [x] Sub-task: Write tests - inventory detects template constructs used by each imported definition.
+    - [x] Sub-task: Write tests - inventory detects all filter names used by each imported definition.
+    - [x] Sub-task: Write tests - inventory detects path/input/header/response features used by each definition.
+    - [x] Sub-task: Write tests - failing assertion if imported definition uses untracked feature.
+    - [x] Sub-task: Generate baseline compatibility matrix artifact for current imported definitions.
 
 - [ ] Task: Conductor - User Manual Verification 'Phase 1' (Protocol in workflow.md) - PENDING
 

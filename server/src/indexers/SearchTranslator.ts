@@ -65,7 +65,7 @@ export class SearchTranslator {
       query,
       config: settings,
       categories: query.categories ?? [],
-    });
+    }, { strict: true });
 
     // Also handle legacy {q} shorthand.
     renderedPath = renderedPath.replace(/\{q\}/g, encodeURIComponent(query.q ?? '').replace(/%20/g, '+'));

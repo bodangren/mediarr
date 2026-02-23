@@ -190,7 +190,7 @@ export class ScrapingIndexer extends BaseIndexer {
       query,
       config: this.settings,
       categories: query.categories ?? [],
-    });
+    }, { strict: true });
 
     // Also handle legacy {q} shorthand.
     renderedPath = renderedPath.replace(/\{q\}/g, encodeURIComponent(query.q ?? '').replace(/%20/g, '+'));

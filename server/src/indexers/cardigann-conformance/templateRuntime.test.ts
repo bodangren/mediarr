@@ -60,4 +60,44 @@ describe('TemplateRuntime', () => {
 
     expect(encoded).toBe('/api?q=Rick+%26+Morty%3A+S01');
   });
+
+  it('evaluates if/else conditional branches used by definitions', () => {
+    const keywordConditional = '{{ if .Keywords }}search/{{ .Keywords }}{{ else }}home{{ end }}';
+    const andEqConditional =
+      '{{ if and (.Keywords) (eq .Config.disablesort .False) }}sort-{{ else }}nosort-{{ end }}';
+
+    const withKeywords = renderCardigannTemplate(keywordConditional, {
+      ...baseContext,
+      config: { ...baseContext.config, disablesort: false },
+    });
+    const withoutKeywords = renderCardigannTemplate(keywordConditional, {
+      ...baseContext,
+      query: { ...baseContext.query, q: '' },
+      config: { ...baseContext.config, disablesort: false },
+    });
+    const andEqTrue = renderCardigannTemplate(andEqConditional, {
+      ...baseContext,
+      config: { ...baseContext.config, disablesort: false },
+    });
+    const andEqFalse = renderCardigannTemplate(andEqConditional, {
+      ...baseContext,
+      config: { ...baseContext.config, disablesort: true },
+    });
+
+    expect(withKeywords).toBe('search/The+Last+of+Us');
+    expect(withoutKeywords).toBe('home');
+    expect(andEqTrue).toBe('sort-');
+    expect(andEqFalse).toBe('nosort-');
+  });
+
+  it('fails unresolved or unsupported template nodes with diagnostics in strict mode', () => {
+    const unsupportedNode = '{{ if ne .Config.sort "time" }}a{{ else }}b{{ end }}';
+
+    expect(() => renderCardigannTemplate(unsupportedNode, baseContext, { strict: true })).toThrow(
+      /unsupported template node/i,
+    );
+    expect(() => renderCardigannTemplate('{{ .Unsupported.Value }}', baseContext, { strict: true })).toThrow(
+      /unresolved template reference/i,
+    );
+  });
 });

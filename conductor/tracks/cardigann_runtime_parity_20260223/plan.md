@@ -31,7 +31,7 @@
     - [x] Sub-task: Implement template evaluator for required variable interpolation.
     - [x] Sub-task: Ensure URL encoding behavior matches fixture expectations.
 
-- [ ] Task: Implement Conditional Template Constructs Used by Definitions
+- [~] Task: Implement Conditional Template Constructs Used by Definitions
     - [ ] Sub-task: Write tests - conditional branches (`if`/`else`) used by fixtures.
     - [ ] Sub-task: Write tests - unresolved template constructs fail with diagnostics.
     - [ ] Sub-task: Implement required conditional evaluation in runtime.

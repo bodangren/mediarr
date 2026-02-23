@@ -18,7 +18,7 @@
     - [x] Sub-task: Write tests - failing assertion if imported definition uses untracked feature.
     - [x] Sub-task: Generate baseline compatibility matrix artifact for current imported definitions.
 
-- [ ] Task: Conductor - User Manual Verification 'Phase 1' (Protocol in workflow.md) - PENDING
+- [x] Task: Conductor - User Manual Verification 'Phase 1' (Protocol in workflow.md) e6dd9e1
 
 ## Phase 2: Template Runtime Parity (Required Subset)
 > **ENTRY CRITERIA**: Phase 1 harness and baseline matrix committed.

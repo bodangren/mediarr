@@ -31,11 +31,11 @@
     - [x] Sub-task: Implement template evaluator for required variable interpolation.
     - [x] Sub-task: Ensure URL encoding behavior matches fixture expectations.
 
-- [~] Task: Implement Conditional Template Constructs Used by Definitions
-    - [ ] Sub-task: Write tests - conditional branches (`if`/`else`) used by fixtures.
-    - [ ] Sub-task: Write tests - unresolved template constructs fail with diagnostics.
-    - [ ] Sub-task: Implement required conditional evaluation in runtime.
-    - [ ] Sub-task: Add diagnostics for unsupported template nodes.
+- [x] Task: Implement Conditional Template Constructs Used by Definitions 68c5499
+    - [x] Sub-task: Write tests - conditional branches (`if`/`else`) used by fixtures.
+    - [x] Sub-task: Write tests - unresolved template constructs fail with diagnostics.
+    - [x] Sub-task: Implement required conditional evaluation in runtime.
+    - [x] Sub-task: Add diagnostics for unsupported template nodes.
 
 - [ ] Task: Conductor - User Manual Verification 'Phase 2' (Protocol in workflow.md) - PENDING
 

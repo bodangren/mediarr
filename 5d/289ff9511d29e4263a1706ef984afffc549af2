@@ -1,0 +1,18 @@
+Task: Implement Query/Config/Category Template Evaluation
+
+Summary:
+- Added a reusable Cardigann template runtime for query/config/category interpolation.
+- Implemented support for key template forms used by current definitions: direct references, , and  blocks.
+- Added URL resolver utility handling both absolute and relative Cardigann path templates.
+- Updated SearchTranslator and ScrapingIndexer path URL construction to use the shared template runtime while preserving legacy  shorthand behavior.
+- Added targeted template runtime tests covering query fields, config substitutions, category substitutions, and URL encoding semantics.
+
+Files:
+- conductor/tracks/cardigann_runtime_parity_20260223/plan.md
+- server/src/indexers/BaseIndexer.ts
+- server/src/indexers/SearchTranslator.ts
+- server/src/indexers/TemplateRuntime.ts
+- server/src/indexers/cardigann-conformance/templateRuntime.test.ts
+
+Why:
+- Provides the core template interpolation primitives required by imported definitions before moving to conditional-template diagnostics in the next task.

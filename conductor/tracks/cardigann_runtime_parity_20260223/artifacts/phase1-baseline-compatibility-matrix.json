@@ -1,0 +1,294 @@
+{
+  "generatedAt": "2026-02-23T13:45:44.230Z",
+  "definitionCount": 10,
+  "aggregate": {
+    "templateConstructs": [
+      ".Categories",
+      ".Config.addrussiantotitle",
+      ".Config.cat-id",
+      ".Config.disablesort",
+      ".Config.downloadlink",
+      ".Config.downloadlink2",
+      ".Config.filter-id",
+      ".Config.password",
+      ".Config.prefer_magnet_links",
+      ".Config.radarr_compatibility",
+      ".Config.sitelink",
+      ".Config.sonarr_compatibility",
+      ".Config.sort",
+      ".Config.strip_s01",
+      ".Config.stripcyrillic",
+      ".Config.type",
+      ".Config.uploader",
+      ".Config.username",
+      ".False",
+      ".Keywords",
+      ".Query.IMDBID",
+      ".Query.Keywords",
+      ".Result",
+      ".Result.category_group_id",
+      ".Result.category_is_tv_show",
+      ".Result.category_optional",
+      ".Result.date_today",
+      ".Result.date_year",
+      ".Result.date_years",
+      ".Result.download_optional",
+      ".Result.title",
+      ".Result.title_default",
+      ".Result.title_has_episode",
+      ".Result.title_has_movie_ova",
+      ".Result.title_has_season",
+      ".Result.title_keyword_year",
+      ".Result.title_optional",
+      ".Result.title_phase1",
+      ".Result.title_phase2",
+      ".Result.title_phase3",
+      ".Result.year",
+      "else",
+      "if",
+      "range"
+    ],
+    "filterNames": [
+      "andmatch",
+      "append",
+      "dateparse",
+      "fuzzytime",
+      "prepend",
+      "re_replace",
+      "regexp",
+      "replace",
+      "split",
+      "timeago",
+      "tolower",
+      "trim",
+      "urldecode"
+    ],
+    "requestFeatures": [
+      "paths.inputs",
+      "paths.response.json",
+      "search.headers",
+      "search.inputs"
+    ]
+  },
+  "definitions": [
+    {
+      "definitionId": "1337x",
+      "templateConstructs": [
+        ".Config.disablesort",
+        ".Config.downloadlink",
+        ".Config.downloadlink2",
+        ".Config.sort",
+        ".Config.type",
+        ".Config.uploader",
+        ".False",
+        ".Keywords",
+        ".Result",
+        ".Result.category_optional",
+        ".Result.date_today",
+        ".Result.date_year",
+        ".Result.date_years",
+        ".Result.title_default",
+        ".Result.title_optional",
+        "else",
+        "if"
+      ],
+      "filterNames": [
+        "dateparse",
+        "fuzzytime",
+        "re_replace",
+        "replace",
+        "split",
+        "urldecode"
+      ],
+      "requestFeatures": []
+    },
+    {
+      "definitionId": "example1337x",
+      "templateConstructs": [
+        ".Config.password",
+        ".Config.username",
+        ".Keywords"
+      ],
+      "filterNames": [],
+      "requestFeatures": []
+    },
+    {
+      "definitionId": "eztv",
+      "templateConstructs": [
+        ".Keywords",
+        "else",
+        "if"
+      ],
+      "filterNames": [
+        "andmatch",
+        "append",
+        "re_replace",
+        "replace",
+        "trim"
+      ],
+      "requestFeatures": [
+        "search.headers"
+      ]
+    },
+    {
+      "definitionId": "limetorrents",
+      "templateConstructs": [
+        ".Config.downloadlink",
+        ".Config.downloadlink2",
+        ".Config.sort",
+        ".Keywords",
+        ".Result.category_is_tv_show",
+        ".Result.title",
+        "else",
+        "if"
+      ],
+      "filterNames": [
+        "re_replace",
+        "regexp",
+        "replace",
+        "split"
+      ],
+      "requestFeatures": []
+    },
+    {
+      "definitionId": "nyaasi",
+      "templateConstructs": [
+        ".Config.cat-id",
+        ".Config.filter-id",
+        ".Config.prefer_magnet_links",
+        ".Config.radarr_compatibility",
+        ".Config.sonarr_compatibility",
+        ".Config.sort",
+        ".Config.strip_s01",
+        ".Config.type",
+        ".Keywords",
+        ".Query.Keywords",
+        ".Result.category_group_id",
+        ".Result.download_optional",
+        ".Result.title_default",
+        ".Result.title_has_episode",
+        ".Result.title_has_movie_ova",
+        ".Result.title_has_season",
+        ".Result.title_keyword_year",
+        ".Result.title_optional",
+        ".Result.title_phase1",
+        ".Result.title_phase2",
+        ".Result.title_phase3",
+        "else",
+        "if"
+      ],
+      "filterNames": [
+        "append",
+        "dateparse",
+        "re_replace",
+        "regexp",
+        "split",
+        "trim"
+      ],
+      "requestFeatures": [
+        "paths.inputs",
+        "search.inputs"
+      ]
+    },
+    {
+      "definitionId": "rutor",
+      "templateConstructs": [
+        ".Config.addrussiantotitle",
+        ".Config.sort",
+        ".Config.stripcyrillic",
+        ".Keywords",
+        ".Query.IMDBID",
+        "else",
+        "if"
+      ],
+      "filterNames": [
+        "append",
+        "dateparse",
+        "re_replace",
+        "regexp",
+        "replace"
+      ],
+      "requestFeatures": []
+    },
+    {
+      "definitionId": "thepiratebay",
+      "templateConstructs": [
+        ".Categories",
+        ".Config.sitelink",
+        ".Config.uploader",
+        ".Keywords",
+        ".Result",
+        "else",
+        "if"
+      ],
+      "filterNames": [
+        "prepend",
+        "re_replace",
+        "tolower"
+      ],
+      "requestFeatures": [
+        "paths.response.json"
+      ]
+    },
+    {
+      "definitionId": "torrentdownloads",
+      "templateConstructs": [
+        ".Categories",
+        ".Config.downloadlink",
+        ".Config.downloadlink2",
+        ".Keywords",
+        "else",
+        "if",
+        "range"
+      ],
+      "filterNames": [
+        "re_replace",
+        "regexp",
+        "replace",
+        "trim"
+      ],
+      "requestFeatures": [
+        "search.inputs"
+      ]
+    },
+    {
+      "definitionId": "torrentgalaxyclone",
+      "templateConstructs": [
+        ".Categories",
+        ".Config.uploader",
+        ".Keywords",
+        ".Query.IMDBID",
+        ".Result",
+        "else",
+        "if",
+        "range"
+      ],
+      "filterNames": [
+        "timeago"
+      ],
+      "requestFeatures": []
+    },
+    {
+      "definitionId": "yts",
+      "templateConstructs": [
+        ".Config.sitelink",
+        ".Keywords",
+        ".Query.IMDBID",
+        ".Result",
+        ".Result.title_default",
+        ".Result.year",
+        "else",
+        "if"
+      ],
+      "filterNames": [
+        "append",
+        "re_replace",
+        "replace"
+      ],
+      "requestFeatures": [
+        "paths.response.json",
+        "search.inputs"
+      ]
+    }
+  ]
+}

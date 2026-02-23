@@ -61,6 +61,7 @@ export interface LoginBlock {
 export interface SearchPathBlock {
   path: string;
   categories?: string[];
+  inputs?: Record<string, string>;
   inheritinputs?: boolean;
   followredirect?: boolean;
   response?: {

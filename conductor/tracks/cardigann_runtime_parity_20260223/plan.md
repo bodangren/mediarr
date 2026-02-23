@@ -11,7 +11,7 @@
     - [x] Sub-task: Add fixture loader for definition snippets and expected normalized outputs.
     - [x] Sub-task: Add summary reporter output format suitable for CI logs.
 
-- [ ] Task: Add Definition Feature Inventory Tests
+- [~] Task: Add Definition Feature Inventory Tests
     - [ ] Sub-task: Write tests - inventory detects template constructs used by each imported definition.
     - [ ] Sub-task: Write tests - inventory detects all filter names used by each imported definition.
     - [ ] Sub-task: Write tests - inventory detects path/input/header/response features used by each definition.

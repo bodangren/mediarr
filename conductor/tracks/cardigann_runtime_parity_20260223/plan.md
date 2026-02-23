@@ -49,7 +49,7 @@
     - [x] Sub-task: Implement `regexp` and `re_replace` filter handlers.
     - [x] Sub-task: Verify compatibility against fixture expectations per definition.
 
-- [ ] Task: Implement Time/Date and Value-Shaping Filters
+- [~] Task: Implement Time/Date and Value-Shaping Filters
     - [ ] Sub-task: Write tests - `timeago` and `fuzzytime` conversion expectations.
     - [ ] Sub-task: Write tests - `dateparse` variants used by definitions.
     - [ ] Sub-task: Write tests - `remove` and `case` mapping behavior.

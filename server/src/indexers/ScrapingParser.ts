@@ -1,6 +1,7 @@
 import { parseHTML } from 'linkedom';
 import type { SelectorBlock, FilterBlock } from './DefinitionLoader';
 import type { IndexerResult } from './IndexerResult';
+import { applyCardigannFilters } from './CardigannFilterRuntime';
 
 type FieldDefinitions = Record<string, SelectorBlock>;
 
@@ -65,84 +66,7 @@ export class ScrapingParser {
   }
 
   private applyFilters(value: string, filters: FilterBlock[]): string {
-    for (const filter of filters) {
-      value = this.applyFilter(value, filter);
-    }
-    return value;
-  }
-
-  private applyFilter(value: string, filter: FilterBlock): string {
-    switch (filter.name) {
-      case 'trim':
-        return value.trim();
-
-      case 'lowercase':
-        return value.toLowerCase();
-
-      case 'uppercase':
-        return value.toUpperCase();
-
-      case 'replace': {
-        const [find, replace] = (filter.args ?? []) as [string, string];
-        return value.replace(new RegExp(this.escapeRegex(find), 'g'), replace ?? '');
-      }
-
-      case 'regex':
-      case 'regexp': {
-        const pattern = (filter.args ?? [])[0] as string;
-        if (!pattern) {
-          return value;
-        }
-        const regex = this.parseRegexPattern(pattern);
-        const match = value.match(regex);
-        return match?.[1] ?? match?.[0] ?? value;
-      }
-
-      case 're_replace': {
-        const [pattern, replacementRaw] = (filter.args ?? []) as [string, string?];
-        if (!pattern) {
-          return value;
-        }
-
-        const replacement = replacementRaw ?? '';
-        const regex = this.parseRegexPattern(pattern, true);
-        return value.replace(regex, replacement);
-      }
-
-      case 'prepend': {
-        const prefix = (filter.args ?? [])[0] as string;
-        return prefix + value;
-      }
-
-      case 'append': {
-        const suffix = (filter.args ?? [])[0] as string;
-        return value + suffix;
-      }
-
-      case 'split': {
-        const [delimiter, indexStr] = (filter.args ?? []) as [string, string?];
-        const parts = value.split(delimiter);
-        const idx = indexStr !== undefined ? Number(indexStr) : 0;
-        return parts[idx] ?? value;
-      }
-
-      case 'urldecode':
-        return decodeURIComponent(value);
-
-      case 'urlencode':
-        return encodeURIComponent(value);
-
-      case 'dateparse':
-        // Return as-is; date parsing is handled in toIndexerResult
-        return value;
-
-      case 'humanize':
-        // Return as-is; size parsing is handled in toIndexerResult
-        return value;
-
-      default:
-        return value;
-    }
+    return applyCardigannFilters(value, filters);
   }
 
   private toIndexerResult(raw: Record<string, string>, baseUrl: string): IndexerResult {
@@ -185,21 +109,5 @@ export class ScrapingParser {
       categories,
       protocol: 'torrent',
     };
-  }
-
-  private escapeRegex(str: string): string {
-    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  }
-
-  private parseRegexPattern(pattern: string, forceGlobal = false): RegExp {
-    const delimited = pattern.match(/^\/(.+)\/([a-z]*)$/i);
-    const source = delimited?.[1] ?? pattern;
-    let flags = delimited?.[2] ?? '';
-
-    if (forceGlobal && !flags.includes('g')) {
-      flags += 'g';
-    }
-
-    return new RegExp(source, flags);
   }
 }

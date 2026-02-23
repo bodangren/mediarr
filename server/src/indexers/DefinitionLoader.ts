@@ -74,6 +74,7 @@ export interface RowsBlock {
   selector: string;
   after?: number;
   multiple?: boolean;
+  filters?: FilterBlock[];
   count?: SelectorBlock;
   dateheaders?: SelectorBlock;
 }

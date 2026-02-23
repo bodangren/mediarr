@@ -24,7 +24,7 @@
 > **ENTRY CRITERIA**: Phase 1 harness and baseline matrix committed.
 > **GOAL**: implement template semantics required by imported definitions, with red-green tests per feature.
 
-- [ ] Task: Implement Query/Config/Category Template Evaluation
+- [~] Task: Implement Query/Config/Category Template Evaluation
     - [ ] Sub-task: Write tests - `.Query.*` substitutions across search paths and fields.
     - [ ] Sub-task: Write tests - `.Config.*` substitutions from indexer settings.
     - [ ] Sub-task: Write tests - category/template value substitutions used in imported definitions.

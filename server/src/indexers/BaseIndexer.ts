@@ -3,6 +3,7 @@ import type { HttpClient } from './HttpClient';
 import type { IndexerResult } from './IndexerResult';
 import { TorznabParser } from './TorznabParser';
 import { ScrapingParser } from './ScrapingParser';
+import { renderCardigannTemplate, resolveCardigannUrl } from './TemplateRuntime';
 
 export interface IndexerConfig {
   id: number;
@@ -185,32 +186,14 @@ export class ScrapingIndexer extends BaseIndexer {
   }
 
   private buildScrapingUrl(baseUrl: string, pathTemplate: string, query: SearchQuery): string {
-    let resolvedPath = pathTemplate;
+    let renderedPath = renderCardigannTemplate(pathTemplate, {
+      query,
+      config: this.settings,
+      categories: query.categories ?? [],
+    });
 
-    // Replace go-template style variables
-    resolvedPath = resolvedPath.replace(/\{\{\s*\.Query\.Keywords\s*\}\}/g, encodeURIComponent(query.q ?? '').replace(/%20/g, '+'));
-    resolvedPath = resolvedPath.replace(/\{\{\s*\.Keywords\s*\}\}/g, encodeURIComponent(query.q ?? '').replace(/%20/g, '+'));
-    
-    resolvedPath = resolvedPath.replace(/\{\{\s*\.Query\.Season\s*\}\}/g, String(query.season ?? ''));
-    resolvedPath = resolvedPath.replace(/\{\{\s*\.Season\s*\}\}/g, String(query.season ?? ''));
-    
-    resolvedPath = resolvedPath.replace(/\{\{\s*\.Query\.Ep\s*\}\}/g, String(query.ep ?? ''));
-    resolvedPath = resolvedPath.replace(/\{\{\s*\.Ep\s*\}\}/g, String(query.ep ?? ''));
-    
-    resolvedPath = resolvedPath.replace(/\{\{\s*\.Query\.IMDBID\s*\}\}/g, query.imdbid ?? '');
-    resolvedPath = resolvedPath.replace(/\{\{\s*\.Query\.TMDBID\s*\}\}/g, query.tmdbid ?? '');
-
-    // Also handle {q} shorthand
-    resolvedPath = resolvedPath.replace(/\{q\}/g, encodeURIComponent(query.q ?? '').replace(/%20/g, '+'));
-
-    // Resolve base URL
-    if (baseUrl.endsWith('/')) {
-        baseUrl = baseUrl.slice(0, -1);
-    }
-    if (!resolvedPath.startsWith('/')) {
-        resolvedPath = '/' + resolvedPath;
-    }
-
-    return `${baseUrl}${resolvedPath}`;
+    // Also handle legacy {q} shorthand.
+    renderedPath = renderedPath.replace(/\{q\}/g, encodeURIComponent(query.q ?? '').replace(/%20/g, '+'));
+    return resolveCardigannUrl(baseUrl, renderedPath);
   }
 }

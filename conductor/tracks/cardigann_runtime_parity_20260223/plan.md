@@ -4,12 +4,12 @@
 > **TEST-FIRST GATE** - no runtime feature implementation in this phase.
 > **GOAL**: establish measurable parity baseline before coding behavior changes.
 
-- [~] Task: Build Cardigann Conformance Harness Skeleton
-    - [ ] Sub-task: Create test suite structure under `server/src/indexers/` for Cardigann conformance.
-    - [ ] Sub-task: Write tests - harness reports pass/fail by feature area.
-    - [ ] Sub-task: Write tests - harness reports pass/fail by definition ID.
-    - [ ] Sub-task: Add fixture loader for definition snippets and expected normalized outputs.
-    - [ ] Sub-task: Add summary reporter output format suitable for CI logs.
+- [x] Task: Build Cardigann Conformance Harness Skeleton 151c83c
+    - [x] Sub-task: Create test suite structure under `server/src/indexers/` for Cardigann conformance.
+    - [x] Sub-task: Write tests - harness reports pass/fail by feature area.
+    - [x] Sub-task: Write tests - harness reports pass/fail by definition ID.
+    - [x] Sub-task: Add fixture loader for definition snippets and expected normalized outputs.
+    - [x] Sub-task: Add summary reporter output format suitable for CI logs.
 
 - [ ] Task: Add Definition Feature Inventory Tests
     - [ ] Sub-task: Write tests - inventory detects template constructs used by each imported definition.

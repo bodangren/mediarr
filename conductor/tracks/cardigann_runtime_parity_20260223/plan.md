@@ -20,7 +20,7 @@
 
 - [x] Task: Conductor - User Manual Verification 'Phase 1' (Protocol in workflow.md) e6dd9e1
 
-## Phase 2: Template Runtime Parity (Required Subset)
+## Phase 2: Template Runtime Parity (Required Subset) [checkpoint: efbd472]
 > **ENTRY CRITERIA**: Phase 1 harness and baseline matrix committed.
 > **GOAL**: implement template semantics required by imported definitions, with red-green tests per feature.
 

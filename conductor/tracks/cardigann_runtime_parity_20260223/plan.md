@@ -43,7 +43,7 @@
 > **ENTRY CRITERIA**: Template tests green for required subset.
 > **GOAL**: implement missing filters required by current definition set.
 
-- [ ] Task: Implement Regex and Replace Filter Variants
+- [~] Task: Implement Regex and Replace Filter Variants
     - [ ] Sub-task: Write tests - `regexp` extraction behavior with capture groups.
     - [ ] Sub-task: Write tests - `re_replace` replacement semantics.
     - [ ] Sub-task: Implement `regexp` and `re_replace` filter handlers.

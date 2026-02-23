@@ -87,11 +87,26 @@ export class ScrapingParser {
         return value.replace(new RegExp(this.escapeRegex(find), 'g'), replace ?? '');
       }
 
-      case 'regex': {
+      case 'regex':
+      case 'regexp': {
         const pattern = (filter.args ?? [])[0] as string;
-        if (!pattern) return value;
-        const match = value.match(new RegExp(pattern));
+        if (!pattern) {
+          return value;
+        }
+        const regex = this.parseRegexPattern(pattern);
+        const match = value.match(regex);
         return match?.[1] ?? match?.[0] ?? value;
+      }
+
+      case 're_replace': {
+        const [pattern, replacementRaw] = (filter.args ?? []) as [string, string?];
+        if (!pattern) {
+          return value;
+        }
+
+        const replacement = replacementRaw ?? '';
+        const regex = this.parseRegexPattern(pattern, true);
+        return value.replace(regex, replacement);
       }
 
       case 'prepend': {
@@ -174,5 +189,17 @@ export class ScrapingParser {
 
   private escapeRegex(str: string): string {
     return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  private parseRegexPattern(pattern: string, forceGlobal = false): RegExp {
+    const delimited = pattern.match(/^\/(.+)\/([a-z]*)$/i);
+    const source = delimited?.[1] ?? pattern;
+    let flags = delimited?.[2] ?? '';
+
+    if (forceGlobal && !flags.includes('g')) {
+      flags += 'g';
+    }
+
+    return new RegExp(source, flags);
   }
 }

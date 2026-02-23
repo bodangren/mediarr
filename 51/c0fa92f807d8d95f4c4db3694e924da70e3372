@@ -1,0 +1,16 @@
+Progress update: per-site filter coverage
+
+Summary:
+- Added Cardigann filter runtime helper shared by parser/test paths.
+- Added per-site filter coverage tests that execute canonical checks for every filter used by each imported definition (one test per site).
+- Updated ScrapingParser to use shared filter runtime.
+
+Files:
+- server/src/indexers/CardigannFilterRuntime.ts
+- server/src/indexers/ScrapingParser.ts
+- server/src/indexers/DefinitionLoader.ts
+- server/src/indexers/cardigann-conformance/siteFilterCoverage.test.ts
+- conductor/tracks/cardigann_runtime_parity_20260223/plan.md
+
+Purpose:
+- Ensure imported site definitions each have explicit filter verification without relying on live external sites.

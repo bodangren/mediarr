@@ -49,12 +49,12 @@
     - [x] Sub-task: Implement `regexp` and `re_replace` filter handlers.
     - [x] Sub-task: Verify compatibility against fixture expectations per definition.
 
-- [~] Task: Implement Time/Date and Value-Shaping Filters
-    - [ ] Sub-task: Write tests - `timeago` and `fuzzytime` conversion expectations.
-    - [ ] Sub-task: Write tests - `dateparse` variants used by definitions.
-    - [ ] Sub-task: Write tests - `remove` and `case` mapping behavior.
-    - [ ] Sub-task: Implement missing filters with deterministic parsing rules.
-    - [ ] Sub-task: Add explicit errors for unsupported filter args/patterns.
+- [x] Task: Implement Time/Date and Value-Shaping Filters 2469a2b
+    - [x] Sub-task: Write tests - `timeago` and `fuzzytime` conversion expectations.
+    - [x] Sub-task: Write tests - `dateparse` variants used by definitions.
+    - [x] Sub-task: Write tests - `remove` and `case` mapping behavior.
+    - [x] Sub-task: Implement missing filters with deterministic parsing rules.
+    - [x] Sub-task: Add explicit errors for unsupported filter args/patterns.
 
 - [ ] Task: Conductor - User Manual Verification 'Phase 3' (Protocol in workflow.md) - PENDING
 

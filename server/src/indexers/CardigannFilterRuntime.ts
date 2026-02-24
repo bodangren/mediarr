@@ -9,7 +9,12 @@ function normalizeFilterArgs(args: unknown): unknown[] {
   if (args === undefined || args === null) {
     return [];
   }
-  return Array.isArray(args) ? args : [args];
+  // If it's already an array, return it as is.
+  // The caller (ScrapingParser or Test) should pass the args array.
+  if (Array.isArray(args)) {
+    return args;
+  }
+  return [args];
 }
 
 function escapeRegex(str: string): string {
@@ -18,8 +23,16 @@ function escapeRegex(str: string): string {
 
 function parseRegexPattern(pattern: string, forceGlobal = false): RegExp {
   const delimited = pattern.match(/^\/(.+)\/([a-z]*)$/i);
-  const source = delimited?.[1] ?? pattern;
+  let source = delimited?.[1] ?? pattern;
   let flags = delimited?.[2] ?? '';
+
+  // Cardigann regex often uses inline case-insensitive marker `(?i)`.
+  if (source.startsWith('(?i)')) {
+    source = source.slice('(?i)'.length);
+    if (!flags.includes('i')) {
+      flags += 'i';
+    }
+  }
 
   if (forceGlobal && !flags.includes('g')) {
     flags += 'g';
@@ -145,8 +158,19 @@ function applyKnownFilter(
 
     case 'remove': {
       const valueToRemoveRaw = args[0];
-      const valueToRemove = valueToRemoveRaw === undefined ? '' : String(valueToRemoveRaw);
+      if (valueToRemoveRaw === undefined) {
+        return inputValue;
+      }
+      const valueToRemove = String(valueToRemoveRaw);
       return inputValue.split(valueToRemove).join('');
+    }
+
+    case 'case': {
+      const map = args[0] as Record<string, string> | undefined;
+      if (!map || typeof map !== 'object') {
+        return inputValue;
+      }
+      return map[inputValue] ?? inputValue;
     }
 
     case 'urldecode':
@@ -163,6 +187,23 @@ function applyKnownFilter(
     }
 
     case 'dateparse': {
+      // Handle dd.MM.yyyy HH:mm:ss or dd.MM.yyyy
+      const ddmmyyyyMatch = inputValue.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?$/);
+      if (ddmmyyyyMatch) {
+        const [, day, month, year, hour, minute, second] = ddmmyyyyMatch;
+        const date = new Date(
+          Date.UTC(
+            Number(year),
+            Number(month) - 1,
+            Number(day),
+            Number(hour ?? 0),
+            Number(minute ?? 0),
+            Number(second ?? 0),
+          ),
+        );
+        return date.toISOString();
+      }
+
       const parsed = new Date(inputValue);
       return Number.isNaN(parsed.getTime()) ? inputValue : parsed.toISOString();
     }

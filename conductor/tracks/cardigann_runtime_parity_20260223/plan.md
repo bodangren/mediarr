@@ -39,7 +39,7 @@
 
 - [x] Task: Conductor - User Manual Verification 'Phase 2' (Protocol in workflow.md) efbd472
 
-## Phase 3: Filter Pipeline Parity (Definition-Driven)
+## Phase 3: Filter Pipeline Parity (Definition-Driven) [checkpoint: 8c02c5c]
 > **ENTRY CRITERIA**: Template tests green for required subset.
 > **GOAL**: implement missing filters required by current definition set.
 

@@ -1,0 +1,5 @@
+Task: Implement Time/Date and Value-Shaping Filters
+Summary: Implemented missing Cardigann filters (case) and fixed/enhanced existing ones (remove, dateparse, timeago). Added robust date parsing for dd.MM.yyyy format and fixed argument normalization logic.
+Files:
+- server/src/indexers/CardigannFilterRuntime.ts
+- server/src/indexers/cardigann-conformance/timeDateFilters.test.ts

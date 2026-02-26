@@ -7,7 +7,7 @@
     - [ ] Sub-task: Drop `Application` and `AppProfile` models from `schema.prisma`.
     - [ ] Sub-task: Remove `appProfileId` from `Indexer`. Add `supportedMediaTypes` (JSON or simple String array) to `Indexer` if necessary for filtering.
     - [ ] Sub-task: Run Prisma migration and write data-preserving migration script if necessary.
-- [ ] Task: Delete Sync API Routes and Services
+- [x] Task: Delete Sync API Routes and Services 663beb9
     - [ ] Sub-task: Delete `/api/applications` route and associated controllers/services.
     - [ ] Sub-task: Delete `/api/profiles/app` route and associated controllers/services.
     - [ ] Sub-task: Remove tests specific to app sync and profiles.

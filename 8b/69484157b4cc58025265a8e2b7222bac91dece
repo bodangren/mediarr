@@ -1,0 +1,5 @@
+Task: Clean up Prisma Schema
+Changes:
+- Removed Application and AppProfile models from Prisma schema.
+- Removed appProfileId relation from Indexer model and added supportedMediaTypes.
+- Generated and applied Prisma migration to execute these schema changes while preserving existing Indexer data.

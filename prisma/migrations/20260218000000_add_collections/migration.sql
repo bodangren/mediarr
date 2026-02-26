@@ -14,20 +14,17 @@ CREATE TABLE "Collection" (
     "minimumAvailability" TEXT NOT NULL DEFAULT 'released',
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL,
-    CONSTRAINT "Collection_tmdbCollectionId_key" UNIQUE ("tmdbCollectionId")
+    CONSTRAINT "Collection_qualityProfileId_fkey" FOREIGN KEY ("qualityProfileId") REFERENCES "QualityProfile" ("id") ON DELETE SET NULL ON UPDATE CASCADE
 );
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Collection_tmdbCollectionId_key" ON "Collection"("tmdbCollectionId");
 
 -- CreateIndex
 CREATE INDEX "Collection_qualityProfileId_idx" ON "Collection"("qualityProfileId");
 
 -- Add collectionId to Movie table
-ALTER TABLE "Movie" ADD COLUMN "collectionId" INTEGER;
+ALTER TABLE "Movie" ADD COLUMN "collectionId" INTEGER REFERENCES "Collection"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- CreateIndex
 CREATE INDEX "Movie_collectionId_idx" ON "Movie"("collectionId");
-
--- AddForeignKey
-ALTER TABLE "Collection" ADD CONSTRAINT "Collection_qualityProfileId_fkey" FOREIGN KEY ("qualityProfileId") REFERENCES "QualityProfile"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "Movie" ADD CONSTRAINT "Movie_collectionId_fkey" FOREIGN KEY ("collectionId") REFERENCES "Collection"("id") ON DELETE SET NULL ON UPDATE CASCADE;

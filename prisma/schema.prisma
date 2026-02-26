@@ -3,10 +3,12 @@
 
 generator client {
   provider = "prisma-client-js"
+  engineType = "library"
 }
 
 datasource db {
   provider = "sqlite"
+  url      = env("DATABASE_URL")
 }
 
 enum MediaType {
@@ -367,53 +369,22 @@ model QualityDefinition {
 }
 
 model Indexer {
-  id             Int              @id @default(autoincrement())
-  name           String           @unique
-  implementation String
-  configContract String
-  settings       String // JSON string
-  protocol       String // e.g., torrent, usenet
-  appProfileId   Int?
-  enabled        Boolean          @default(true)
-  supportsRss    Boolean          @default(false)
-  supportsSearch Boolean          @default(false)
-  priority       Int              @default(25)
-  added          DateTime         @default(now())
-  appProfile     AppProfile?      @relation(fields: [appProfileId], references: [id], onDelete: SetNull)
-  releases       IndexerRelease[]
-  healthSnapshot IndexerHealthSnapshot?
+  id                  Int              @id @default(autoincrement())
+  name                String           @unique
+  implementation      String
+  configContract      String
+  settings            String // JSON string
+  protocol            String // e.g., torrent, usenet
+  supportedMediaTypes String           @default("[]") // JSON string array e.g., ["TV", "MOVIE"]
+  enabled             Boolean          @default(true)
+  supportsRss         Boolean          @default(false)
+  supportsSearch      Boolean          @default(false)
+  priority            Int              @default(25)
+  added               DateTime         @default(now())
+  releases            IndexerRelease[]
+  healthSnapshot      IndexerHealthSnapshot?
 }
 
-model AppProfile {
-  id                      Int       @id @default(autoincrement())
-  name                    String    @unique
-  enableRss               Boolean   @default(true)
-  enableInteractiveSearch Boolean   @default(true)
-  enableAutomaticSearch   Boolean   @default(true)
-  minimumSeeders          Int       @default(0)
-  createdAt               DateTime  @default(now())
-  updatedAt               DateTime  @updatedAt
-  indexers                Indexer[]
-}
-
-enum ApplicationType {
-  Sonarr
-  Radarr
-  Lidarr
-  Readarr
-}
-
-model Application {
-  id             Int             @id @default(autoincrement())
-  name           String          @unique
-  type           ApplicationType
-  baseUrl        String
-  apiKey         String
-  syncCategories Json            @default("[]")
-  tags           Json            @default("[]")
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-}
 
 model Proxy {
   id        Int      @id @default(autoincrement())

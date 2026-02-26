@@ -11,7 +11,7 @@ const indexerSchema = z.object({
   configContract: z.string(),
   settings: z.string(),
   protocol: z.string(),
-  appProfileId: z.number().nullable().optional(),
+  supportedMediaTypes: z.string().optional().default('[]'),
   enabled: z.boolean(),
   supportsRss: z.boolean(),
   supportsSearch: z.boolean(),
@@ -26,7 +26,7 @@ export interface CreateIndexerInput {
   configContract: string;
   settings: string;
   protocol: string;
-  appProfileId?: number;
+  supportedMediaTypes?: string;
   enabled?: boolean;
   supportsRss?: boolean;
   supportsSearch?: boolean;
@@ -34,6 +34,24 @@ export interface CreateIndexerInput {
 }
 
 export type IndexerTestResult = TestResult;
+
+const indexerSchemaField = z.object({
+  name: z.string(),
+  label: z.string(),
+  type: z.enum(['text', 'password', 'number', 'boolean']),
+  required: z.boolean().optional(),
+  defaultValue: z.union([z.string(), z.number(), z.boolean()]).optional(),
+});
+
+const indexerConfigSchemaResponse = z.object({
+  configContract: z.string(),
+  definitionId: z.string().optional(),
+  fields: z.array(indexerSchemaField),
+  compatibility: z.unknown().nullable(),
+});
+
+export type IndexerSchemaField = z.infer<typeof indexerSchemaField>;
+export type IndexerConfigSchemaResponse = z.infer<typeof indexerConfigSchemaResponse>;
 
 export function createIndexerApi(client: ApiHttpClient) {
   const crudApi = createCrudApi<IndexerItem, CreateIndexerInput>(client, {
@@ -55,6 +73,15 @@ export function createIndexerApi(client: ApiHttpClient) {
           method: 'POST',
         },
         indexerSchema,
+      );
+    },
+    getSchema(configContract: string, definitionId?: string): Promise<IndexerConfigSchemaResponse> {
+      return client.request(
+        {
+          path: routeMap.indexerSchema(configContract, definitionId),
+          method: 'GET',
+        },
+        indexerConfigSchemaResponse,
       );
     },
   };

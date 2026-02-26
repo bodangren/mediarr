@@ -1,7 +1,6 @@
 import 'dotenv/config';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 import { PrismaClient } from '@prisma/client';
 import path from 'node:path';
 import { createApiServer } from './api/createApiServer';
@@ -28,8 +27,7 @@ import { TorrentRepository } from './repositories/TorrentRepository';
 import { seedCategories } from './seeds/categories';
 import { seedQualityDefinitions } from './seeds/qualities';
 import { ActivityEventEmitter } from './services/ActivityEventEmitter';
-import { AppProfileService } from './services/AppProfileService';
-import { ApplicationService } from './services/ApplicationService';
+
 import { CollectionService } from './services/CollectionService';
 import { DataDirectoryInitializer } from './services/DataDirectoryInitializer';
 import {
@@ -249,19 +247,7 @@ async function resolveDatabaseUrl(configuredUrl: string | undefined): Promise<st
   }
 }
 
-async function repairMalformedJsonColumns(databaseUrl: string): Promise<void> {
-  if (!databaseUrl.startsWith('file:')) {
-    return;
-  }
-
-  const sqlitePath = databaseUrl.slice('file:'.length);
-  if (!sqlitePath) {
-    return;
-  }
-
-  const { default: BetterSqlite3 } = await import('better-sqlite3');
-  const db = new BetterSqlite3(sqlitePath);
-
+async function repairMalformedJsonColumns(prisma: PrismaClient): Promise<void> {
   const requiredAppSettingsDefaults: Record<string, string> = {
     torrentLimits: JSON.stringify(DEFAULT_APP_SETTINGS.torrentLimits),
     schedulerIntervals: JSON.stringify(DEFAULT_APP_SETTINGS.schedulerIntervals),
@@ -273,74 +259,56 @@ async function repairMalformedJsonColumns(databaseUrl: string): Promise<void> {
   try {
     const repairs: Array<{ label: string; changes: number }> = [];
 
-    repairs.push({
-      label: 'QualityProfile.items',
-      changes: db
-        .prepare(
-          `UPDATE "QualityProfile"
-           SET "items" = '[]'
-           WHERE "items" IS NULL OR json_valid("items") = 0`,
-        )
-        .run().changes,
-    });
+    const qualityProfileRes = await prisma.$executeRawUnsafe(`
+      UPDATE "QualityProfile"
+      SET "items" = '[]'
+      WHERE "items" IS NULL OR json_valid("items") = 0
+    `);
+    repairs.push({ label: 'QualityProfile.items', changes: qualityProfileRes });
 
-    repairs.push({
-      label: 'Notification.config',
-      changes: db
-        .prepare(
-          `UPDATE "Notification"
-           SET "config" = '{}'
-           WHERE "config" IS NULL OR json_valid("config") = 0`,
-        )
-        .run().changes,
-    });
+    const notificationRes = await prisma.$executeRawUnsafe(`
+      UPDATE "Notification"
+      SET "config" = '{}'
+      WHERE "config" IS NULL OR json_valid("config") = 0
+    `);
+    repairs.push({ label: 'Notification.config', changes: notificationRes });
 
-    repairs.push({
-      label: 'ActivityEvent.details',
-      changes: db
-        .prepare(
-          `UPDATE "ActivityEvent"
-           SET "details" = NULL
-           WHERE "details" IS NOT NULL AND json_valid("details") = 0`,
-        )
-        .run().changes,
-    });
+    const activityEventRes = await prisma.$executeRawUnsafe(`
+      UPDATE "ActivityEvent"
+      SET "details" = NULL
+      WHERE "details" IS NOT NULL AND json_valid("details") = 0
+    `);
+    repairs.push({ label: 'ActivityEvent.details', changes: activityEventRes });
 
     for (const [column, defaultJson] of Object.entries(requiredAppSettingsDefaults)) {
-      repairs.push({
-        label: `AppSettings.${column}`,
-        changes: db
-          .prepare(
-            `UPDATE "AppSettings"
-             SET "${column}" = @defaultJson
-             WHERE "${column}" IS NULL OR json_valid("${column}") = 0`,
-          )
-          .run({ defaultJson }).changes,
-      });
+      // Prisma raw parameterized queries shouldn't dynamically bind column names, 
+      // but since column names are hardcoded, we can use unsafe raw
+      const res = await prisma.$executeRawUnsafe(`
+        UPDATE "AppSettings"
+        SET "${column}" = '${defaultJson}'
+        WHERE "${column}" IS NULL OR json_valid("${column}") = 0
+      `);
+      repairs.push({ label: \`AppSettings.\${column}\`, changes: res });
     }
 
     for (const column of nullableAppSettingsColumns) {
-      repairs.push({
-        label: `AppSettings.${column}`,
-        changes: db
-          .prepare(
-            `UPDATE "AppSettings"
-             SET "${column}" = NULL
-             WHERE "${column}" IS NOT NULL AND json_valid("${column}") = 0`,
-          )
-          .run().changes,
-      });
+      const res = await prisma.$executeRawUnsafe(`
+        UPDATE "AppSettings"
+        SET "${column}" = NULL
+        WHERE "${column}" IS NOT NULL AND json_valid("${column}") = 0
+      `);
+      repairs.push({ label: \`AppSettings.\${column}\`, changes: res });
     }
 
     const changed = repairs.filter((repair) => repair.changes > 0);
     if (changed.length > 0) {
       console.warn(
         'Repaired malformed JSON in SQLite:',
-        changed.map((repair) => `${repair.label}=${repair.changes}`).join(', '),
+        changed.map((repair) => \`\${repair.label}=\${repair.changes}\`).join(', '),
       );
     }
-  } finally {
-    db.close();
+  } catch (err) {
+    console.error('Failed to run JSON repairs:', err);
   }
 }
 
@@ -349,11 +317,16 @@ async function startApi(): Promise<void> {
   const port = parsePort(process.env.API_PORT, 3001);
   const host = process.env.API_HOST ?? '0.0.0.0';
 
-  await repairMalformedJsonColumns(databaseUrl);
-
-  const adapter = new PrismaBetterSqlite3({ url: databaseUrl });
-  const prisma = new PrismaClient({ adapter });
+  const prisma = new PrismaClient({
+    datasources: {
+      db: {
+        url: databaseUrl
+      }
+    }
+  });
   await prisma.$connect();
+  
+  await repairMalformedJsonColumns(prisma);
 
   await ensureBaselineData(prisma);
   try {
@@ -476,8 +449,7 @@ async function startApi(): Promise<void> {
     customFormatRepository,
   );
   const wantedService = new WantedService(prisma);
-  const appProfileService = new AppProfileService(prisma);
-  const applicationService = new ApplicationService(prisma);
+
 
   const app = createApiServer({
     prisma,
@@ -503,8 +475,7 @@ async function startApi(): Promise<void> {
     importListSyncService,
     collectionRepository,
     collectionService,
-    appProfileService,
-    applicationService,
+
   });
 
   const close = async (): Promise<void> => {

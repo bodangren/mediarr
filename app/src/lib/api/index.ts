@@ -1,6 +1,6 @@
 import { createActivityApi } from './activityApi';
-import { createAppProfilesApi } from './appProfilesApi';
-import { createApplicationsApi } from './applicationsApi';
+
+
 import { createBackupApi } from './backupApi';
 import { createBlocklistApi } from './blocklistApi';
 import { createCalendarApi } from './calendarApi';
@@ -47,8 +47,8 @@ export function createApiClients(config: ApiHttpClientConfig = {}) {
     torrentApi: createTorrentApi(httpClient),
     importApi: createImportApi(httpClient),
     indexerApi: createIndexerApi(httpClient),
-    applicationsApi: createApplicationsApi(httpClient),
-    appProfilesApi: createAppProfilesApi(httpClient),
+
+
     downloadClientApi: createDownloadClientApi(httpClient),
     importListsApi: createImportListsApi(httpClient),
     tagsApi: createTagsApi(httpClient),

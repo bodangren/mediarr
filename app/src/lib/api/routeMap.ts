@@ -38,23 +38,21 @@ export const routeMap = {
   torrentSpeedLimits: '/api/torrents/speed-limits',
 
   indexers: '/api/indexers',
+  indexerSchema: (configContract: string, definitionId?: string) => {
+    const encodedContract = encodeURIComponent(configContract);
+    if (!definitionId) {
+      return `/api/indexers/schema/${encodedContract}`;
+    }
+
+    return `/api/indexers/schema/${encodedContract}?definitionId=${encodeURIComponent(definitionId)}`;
+  },
   indexerUpdate: (id: number) => `/api/indexers/${id}`,
   indexerDelete: (id: number) => `/api/indexers/${id}`,
   indexerTest: (id: number) => `/api/indexers/${id}/test`,
   indexerClone: (id: number) => `/api/indexers/${id}/clone`,
   indexerTestDraft: '/api/indexers/test',
 
-  appProfiles: '/api/profiles/app',
-  appProfile: (id: number) => `/api/profiles/app/${id}`,
-  appProfileClone: (id: number) => `/api/profiles/app/${id}/clone`,
 
-  applications: '/api/applications',
-  applicationUpdate: (id: number) => `/api/applications/${id}`,
-  applicationDelete: (id: number) => `/api/applications/${id}`,
-  applicationTest: (id: number) => `/api/applications/${id}/test`,
-  applicationTestDraft: '/api/applications/test',
-  applicationSync: (id: number) => `/api/applications/${id}/sync`,
-  applicationSyncAll: '/api/applications/sync',
 
   subtitleMovieVariants: (id: number) => `/api/subtitles/movie/${id}/variants`,
   subtitleMovieSync: (id: number) => `/api/subtitles/movie/${id}/sync`,

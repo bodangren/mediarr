@@ -12,8 +12,7 @@ import { registerEventsRoutes } from './routes/eventsRoutes';
 import { registerFilterRoutes } from './routes/filterRoutes';
 import { registerImportListRoutes } from './routes/importListRoutes';
 import { registerIndexerRoutes } from './routes/indexerRoutes';
-import { registerAppProfileRoutes } from './routes/appProfileRoutes';
-import { registerApplicationRoutes } from './routes/applicationRoutes';
+
 import { registerLogsRoutes } from './routes/logsRoutes';
 import { registerMediaRoutes } from './routes/mediaRoutes';
 import { registerMovieRoutes } from './routes/movieRoutes';
@@ -164,8 +163,7 @@ export function createApiServer(
   registerBlocklistRoutes(app, dependencies);
   registerQualityProfileRoutes(app, dependencies);
   registerDownloadClientRoutes(app, dependencies);
-  registerAppProfileRoutes(app, dependencies);
-  registerApplicationRoutes(app, dependencies);
+
   registerCustomFormatRoutes(app, dependencies);
   registerFilterRoutes(app, dependencies);
   registerImportListRoutes(app, dependencies);

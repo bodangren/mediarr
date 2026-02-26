@@ -33,8 +33,8 @@ export const queryKeys = {
   discoverMovies: (mode: string) => ['discover', 'movies', mode] as const,
 
   indexers: () => ['indexers', 'list'] as const,
-  appProfiles: () => ['app-profiles', 'list'] as const,
-  applications: () => ['applications', 'list'] as const,
+
+
   torrents: (query: TorrentListQuery) => ['torrents', 'list', query] as const,
   activity: (query: ActivityQuery) => ['activity', 'list', query] as const,
   blocklist: (query: BlocklistQuery) => ['blocklist', 'list', query] as const,

@@ -22,8 +22,7 @@ import type { IndexerTester } from '../indexers/IndexerTester';
 import type { ApiEventHub } from './eventHub';
 import type { ImportListProviderFactory } from '../services/importLists/ImportListProvider';
 import type { ImportListSyncService } from '../services/importLists/ImportListSyncService';
-import type { AppProfileService } from '../services/AppProfileService';
-import type { ApplicationService } from '../services/ApplicationService';
+
 
 export interface ApiDependencies {
   prisma: PrismaClient | Record<string, any>;
@@ -49,7 +48,7 @@ export interface ApiDependencies {
   indexerRepository?: Pick<IndexerRepository, 'findAll' | 'findById' | 'create' | 'update' | 'delete'>;
   mediaRepository?: Pick<MediaRepository, 'findMovieByTmdbId' | 'upsertMovie' | 'upsertSeries'>;
   indexerTester?: Pick<IndexerTester, 'test'>;
-  indexerFactory?: Pick<IndexerFactory, 'fromDatabaseRecord'>;
+  indexerFactory?: Pick<IndexerFactory, 'fromDatabaseRecord' | 'getDefinition' | 'getCompatibilityReport'>;
   subtitleInventoryApiService?: Pick<
     SubtitleInventoryApiService,
     | 'listMovieVariantInventory'
@@ -103,8 +102,7 @@ export interface ApiDependencies {
     CollectionService,
     'fetchFromTMDB' | 'createCollection' | 'syncCollectionMovies' | 'searchMissingMovies'
   >;
-  appProfileService?: Pick<AppProfileService, 'list' | 'create' | 'update' | 'delete' | 'clone'>;
-  applicationService?: Pick<ApplicationService, 'list' | 'create' | 'update' | 'delete' | 'test' | 'syncOne' | 'syncAll'>;
+
 }
 
 export interface ApiServerOptions {

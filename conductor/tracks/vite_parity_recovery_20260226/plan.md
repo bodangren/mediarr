@@ -46,11 +46,11 @@
 ## Phase 4: Critical Settings Operability Parity
 > Goal: make critical unified settings sections usable and wired.
 
-- [~] Task: Settings Navigation and Route Integrity
-    - [~] Sub-task: Write failing tests for navigation to critical settings pages.
+- [x] Task: Settings Navigation and Route Integrity [54a27ff]
+    - [x] Sub-task: Write failing tests for navigation to critical settings pages.
     - [x] Sub-task: Implement/fix route registration and page accessibility.
-- [~] Task: Critical Settings API/Form Wiring
-    - [~] Sub-task: Write failing tests for load/save flows in indexers, download clients, profiles/quality, subtitles, general.
+- [x] Task: Critical Settings API/Form Wiring [54a27ff]
+    - [x] Sub-task: Write failing tests for load/save flows in indexers, download clients, profiles/quality, subtitles, general.
     - [x] Sub-task: Implement/fix request payload typing and form submission behavior.
     - [x] Sub-task: Remove blocking stubs from critical settings paths.
 - [ ] Task: Conductor - User Manual Verification 'Phase 4' (Protocol in workflow.md)

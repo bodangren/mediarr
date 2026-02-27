@@ -4,6 +4,7 @@ import fs from 'node:fs/promises';
 import { PrismaClient } from '@prisma/client';
 import path from 'node:path';
 import { createApiServer } from './api/createApiServer';
+import { registerStaticServing } from './api/staticServing';
 import { DefinitionLoader } from './indexers/DefinitionLoader';
 import { IndexerFactory } from './indexers/IndexerFactory';
 import { HttpClient } from './indexers/HttpClient';
@@ -479,6 +480,9 @@ async function startApi(): Promise<void> {
     collectionService,
 
   });
+
+  const staticDir = process.env.STATIC_DIR ?? path.resolve(process.cwd(), 'app/dist');
+  registerStaticServing(app, staticDir);
 
   const close = async (): Promise<void> => {
     await app.close();

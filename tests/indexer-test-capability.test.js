@@ -119,6 +119,21 @@ describe('IndexerTester', () => {
 
       expect(result.success).toBe(false);
     });
+
+    it('should fail test when response body is a block page (missing indexer name)', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true, status: 200,
+        text: async () => '<html><body>Your ISP has blocked this site.</body></html>',
+        headers: new Headers({ 'content-type': 'text/html' }),
+      });
+
+      const client = new HttpClient();
+      const tester = new IndexerTester(client);
+      const result = await tester.testScraping(scrapingIndexer, mockFetch);
+
+      expect(result.success).toBe(false);
+      expect(result.message).toContain('invalid content');
+    });
   });
 
   describe('unified test method', () => {

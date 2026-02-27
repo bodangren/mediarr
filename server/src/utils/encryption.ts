@@ -39,8 +39,8 @@ export function decrypt(text: string): string {
     let decrypted = decipher.update(encryptedText, 'hex', 'utf8');
     decrypted += decipher.final('utf8');
     return decrypted;
-  } catch {
-    // If decryption fails (e.g., wrong key or legacy data), return raw value.
+  } catch (error: any) {
+    console.warn(`[Encryption] Decryption failed for field: ${error.message}. Returning raw value as fallback.`);
     return text;
   }
 }

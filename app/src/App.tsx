@@ -208,6 +208,23 @@ function SettingsIndexersPage() {
     }
   };
 
+  const addIndexerPresets = useMemo(() => [
+    ...getPopularPresets(),
+    {
+      id: 'torznab-generic',
+      name: 'Generic Torznab',
+      description: 'Custom torrent tracker using Torznab contract.',
+      protocol: 'torrent',
+      implementation: 'Torznab',
+      configContract: 'TorznabSettings',
+      privacy: 'Public',
+      fields: [
+        { name: 'url', label: 'Indexer URL', type: 'text', required: true },
+        { name: 'apiKey', label: 'API Key', type: 'password', required: true },
+      ],
+    },
+  ], []);
+
   const addIndexerPresets = [
     ...getPopularPresets(),
     {

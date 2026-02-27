@@ -25,14 +25,18 @@ export class IndexerTester {
    * Unified test: routes to the appropriate test method based on indexer type.
    */
   async test(indexer: BaseIndexer, fetchFn?: FetchFn): Promise<TestResult> {
+    console.log(`[IndexerTester] Testing indexer: ${indexer.name} (${indexer.implementation})`);
     let result: TestResult;
     if (indexer instanceof TorznabIndexer) {
       result = await this.testTorznab(indexer, fetchFn);
     } else if (indexer instanceof ScrapingIndexer) {
+      console.log(`[IndexerTester] Scraping test for ${indexer.name} at ${indexer.baseUrl}`);
       result = await this.testScraping(indexer, fetchFn);
     } else {
+      console.warn(`[IndexerTester] Unknown indexer type for ${indexer.name}: ${indexer.constructor.name}`);
       result = { success: false, message: `Unknown indexer type: ${indexer.implementation}` };
     }
+    console.log(`[IndexerTester] Result for ${indexer.name}: success=${result.success}, message=${result.message}`);
 
     if (this.indexerHealthRepository && typeof indexer.id === 'number' && indexer.id > 0) {
       if (result.success) {
@@ -99,11 +103,27 @@ export class IndexerTester {
   async testScraping(indexer: ScrapingIndexer, fetchFn?: FetchFn): Promise<TestResult> {
     try {
       const response = await this.client.get(indexer.baseUrl, {}, fetchFn);
+      console.log(`[IndexerTester] Scraping response for ${indexer.name}: status=${response.status}, ok=${response.ok}`);
 
       if (!response.ok) {
         return {
           success: false,
           message: `Scraping test failed with HTTP ${response.status} for ${indexer.name}`,
+        };
+      }
+
+      // Basic content validation to prevent false positives from ISP block pages
+      const lowercaseBody = response.body.toLowerCase();
+      const lowercaseName = indexer.name.toLowerCase();
+      
+      // Check for indexer name or common torrent-related terms if the name is very short
+      const isValidContent = lowercaseBody.includes(lowercaseName) || 
+                            (lowercaseName.length < 4 && lowercaseBody.includes('torrent'));
+
+      if (!isValidContent) {
+        return {
+          success: false,
+          message: `Scraping test failed: reachable but returned invalid content (possible block page or redirect)`,
         };
       }
 

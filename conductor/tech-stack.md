@@ -1,6 +1,6 @@
 # Mediarr Technology Stack
 
-> Last reconciled: 2026-02-26
+> Last reconciled: 2026-02-27
 
 **Frontend & API:**
 - **Framework:** React SPA (Single Page Application) built with Vite. No SSR, no Next.js.
@@ -29,6 +29,14 @@
         - `/data/downloads/complete`: Storage for finished downloads awaiting import.
         - `/data/media/tv`: Final destination for organized TV series.
         - `/data/media/movies`: Final destination for organized movies.
+
+**Testing:**
+- **Framework:** Vitest v4 (app workspace), `@testing-library/react` + `@testing-library/jest-dom` for component and integration tests.
+- **Environment:** `jsdom` for the app workspace; `node` for the server workspace.
+- **Mocking:** `vi.hoisted()` for module-level mock factories; MSW (Mock Service Worker) available for network-level mocking where needed.
+- **Integration test pattern:** `<MemoryRouter>` wrapping `<App>` with all API clients mocked via `vi.mock('@/lib/api/client', ...)`. Test files colocated with source (`*.test.tsx` / `*.test.ts`).
+- **Coverage targets:** ≥80% for new/changed code in each track. CI runs with `CI=true` to prevent watch mode.
+- **Key integration test suites:** `library-routes.test.tsx`, `settings-routes.test.tsx`, `App.test.tsx`; component-level suites for interactive search modals, view components, and settings forms.
 
 **Deployment:**
 - **Single Process:** The frontend is built into static files (`dist/`) and served directly by the Fastify backend. The user only needs to execute the single Bun backend script.

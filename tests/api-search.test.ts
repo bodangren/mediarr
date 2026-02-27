@@ -62,15 +62,20 @@ describe('Unified Search API', () => {
     });
   });
 
-  it('should return error if term is missing', async () => {
+  it('should return error if term is missing or empty', async () => {
     const server = await createApiServer({ prisma: {} } as any);
 
-    const response = await server.inject({
+    const response1 = await server.inject({
       method: 'GET',
       url: '/api/search',
     });
+    expect(response1.statusCode).toBe(400);
 
-    // Currently returns 500 due to unmapped Fastify validation error
-    expect(response.statusCode).toBe(500);
+    const response2 = await server.inject({
+      method: 'GET',
+      url: '/api/search',
+      query: { term: '' },
+    });
+    expect(response2.statusCode).toBe(400);
   });
 });

@@ -131,6 +131,13 @@ export class MediaRepository {
     }) as Promise<(Movie & { media: any }) | null>;
   }
 
+  async findSeriesByTvdbId(tvdbId: number): Promise<(Series & { media: any }) | null> {
+    return this.prisma.series.findUnique({
+      where: { tvdbId },
+      include: { media: true },
+    }) as Promise<(Series & { media: any }) | null>;
+  }
+
   async upsertSeries(input: UpsertSeriesInput): Promise<Series> {
     const media = await this.prisma.media.upsert({
       where: {

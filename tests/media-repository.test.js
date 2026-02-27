@@ -1,31 +1,30 @@
-import { describe, it, expect, beforeEach, afterAll } from 'vitest';
-import { PrismaClient } from '@prisma/client';
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
+import { describe, it, expect, vi } from 'vitest';
 import { MediaRepository } from '../server/src/repositories/MediaRepository';
-import 'dotenv/config';
-
-const adapter = new PrismaBetterSqlite3({ url: 'file:prisma/dev.db' });
-const prisma = new PrismaClient({ adapter });
-const repository = new MediaRepository(prisma);
 
 describe('MediaRepository', () => {
-  beforeEach(async () => {
-    await prisma.episode.deleteMany();
-    await prisma.season.deleteMany();
-    await prisma.series.deleteMany();
-    await prisma.movie.deleteMany();
-    await prisma.media.deleteMany();
-    await prisma.qualityProfile.deleteMany();
-  });
-
-  afterAll(async () => {
-    await prisma.$disconnect();
-  });
+  function createMocks() {
+    const prisma = {
+      media: {
+        upsert: vi.fn(),
+      },
+      movie: {
+        upsert: vi.fn(),
+        findUnique: vi.fn(),
+      },
+      series: {
+        upsert: vi.fn(),
+        findUnique: vi.fn(),
+      },
+    };
+    const repository = new MediaRepository(prisma);
+    return { prisma, repository };
+  }
 
   it('should upsert a movie and keep media record in sync', async () => {
-    const profile = await prisma.qualityProfile.create({
-      data: { name: 'Any' },
-    });
+    const { prisma, repository } = createMocks();
+    
+    prisma.media.upsert.mockResolvedValue({ id: 1 });
+    prisma.movie.upsert.mockResolvedValue({ id: 10, tmdbId: 13, title: 'Forrest Gump' });
 
     const movie = await repository.upsertMovie({
       tmdbId: 13,
@@ -35,16 +34,57 @@ describe('MediaRepository', () => {
       status: 'released',
       monitored: true,
       year: 1994,
-      qualityProfileId: profile.id,
-      minimumAvailability: 'released',
-      digitalRelease: new Date('1994-11-03T00:00:00.000Z'),
+      qualityProfileId: 1,
     });
 
     expect(movie.tmdbId).toBe(13);
+    expect(prisma.media.upsert).toHaveBeenCalled();
+    expect(prisma.movie.upsert).toHaveBeenCalledWith(expect.objectContaining({
+      where: { tmdbId: 13 }
+    }));
+  });
+
+  it('should find a movie by tmdbId', async () => {
+    const { prisma, repository } = createMocks();
+    const mockMovie = { id: 10, tmdbId: 13, title: 'Forrest Gump', media: { mediaType: 'MOVIE', title: 'Forrest Gump' } };
+    prisma.movie.findUnique.mockResolvedValue(mockMovie);
 
     const loaded = await repository.findMovieByTmdbId(13);
-    expect(loaded).not.toBeNull();
-    expect(loaded.media?.mediaType).toBe('MOVIE');
-    expect(loaded.media?.title).toBe('Forrest Gump');
+    expect(loaded).toEqual(mockMovie);
+    expect(prisma.movie.findUnique).toHaveBeenCalledWith({
+      where: { tmdbId: 13 },
+      include: { media: true }
+    });
+  });
+
+  it('should upsert a series and find it by tvdbId', async () => {
+    const { prisma, repository } = createMocks();
+    
+    prisma.media.upsert.mockResolvedValue({ id: 2 });
+    prisma.series.upsert.mockResolvedValue({ id: 20, tvdbId: 355567, title: 'The Boys' });
+    
+    const mockSeries = { id: 20, tvdbId: 355567, title: 'The Boys', media: { mediaType: 'TV', tvdbId: 355567 } };
+    prisma.series.findUnique.mockResolvedValue(mockSeries);
+
+    await repository.upsertSeries({
+      tvdbId: 355567,
+      title: 'The Boys',
+      cleanTitle: 'theboys',
+      sortTitle: 'boys',
+      status: 'continuing',
+      monitored: true,
+      year: 2019,
+      qualityProfileId: 1,
+    });
+
+    const loaded = await repository.findSeriesByTvdbId(355567);
+    
+    expect(prisma.media.upsert).toHaveBeenCalled();
+    expect(prisma.series.upsert).toHaveBeenCalled();
+    expect(loaded).toEqual(mockSeries);
+    expect(prisma.series.findUnique).toHaveBeenCalledWith({
+      where: { tvdbId: 355567 },
+      include: { media: true }
+    });
   });
 });

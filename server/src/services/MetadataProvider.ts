@@ -55,10 +55,19 @@ export class MetadataProvider {
 
   async searchMedia(request: MediaSearchRequest, fetchFn?: any): Promise<BaseMedia[]> {
     if (!request.mediaType) {
-      const [tvResults, movieResults] = await Promise.all([
+      const results = await Promise.allSettled([
         this.searchSeries(request.term, fetchFn),
         this.searchMovies(request.term, fetchFn),
       ]);
+
+      const tvResults = results[0].status === 'fulfilled' ? results[0].value : [];
+      const movieResults = results[1].status === 'fulfilled' ? results[1].value : [];
+
+      if (results.some(r => r.status === 'rejected')) {
+        console.error('One or more metadata providers failed during unified search:', 
+          results.filter(r => r.status === 'rejected').map(r => (r as PromiseRejectedResult).reason)
+        );
+      }
 
       const mappedTv = tvResults.map(result => ({
         mediaType: 'TV' as MediaType,

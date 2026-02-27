@@ -17,7 +17,7 @@
 ## Phase 2: Add to Wanted Persistence
 > Goal: Enable saving media items to the database and preventing duplicates.
 
-- [ ] Task: Update Database Schema and Repository
+- [~] Task: Update Database Schema and Repository
     - [ ] Write failing tests for adding a media item to the "Wanted" list.
     - [ ] Implement repository logic to save search results to the database.
     - [ ] Add duplicate check logic (ensure item isn't already in library/wanted).

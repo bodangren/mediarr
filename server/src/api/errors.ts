@@ -50,7 +50,20 @@ export function sendError(
 export function registerApiErrorHandler(
   request: FastifyRequest,
   reply: FastifyReply,
-  error: unknown,
+  error: any,
 ): FastifyReply {
+  if (error.validation) {
+    return reply.code(error.statusCode || 400).send({
+      ok: false,
+      error: {
+        code: 'VALIDATION_ERROR',
+        message: error.message,
+        details: error.validation,
+        retryable: false,
+        path: request.url,
+      },
+    });
+  }
+
   return sendError(reply, error, request.url);
 }

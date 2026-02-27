@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import { ConflictError, ValidationError } from '../../errors/domainErrors';
+import { ConflictError, InternalError, ValidationError } from '../../errors/domainErrors';
 import { paginateArray, parsePaginationParams, sendPaginatedSuccess, sendSuccess } from '../contracts';
 import { sortByField } from '../routeUtils';
 import type { ApiDependencies } from '../types';
@@ -161,8 +161,8 @@ export function registerMediaRoutes(
         type: 'object',
         required: ['term'],
         properties: {
-          term: { type: 'string' },
-          mediaType: { type: 'string' },
+          term: { type: 'string', minLength: 1 },
+          mediaType: { type: 'string', enum: ['TV', 'MOVIE', 'tv', 'movie', 'series'] },
         },
       },
     },
@@ -172,12 +172,19 @@ export function registerMediaRoutes(
       throw new ValidationError('Metadata provider is not configured');
     }
 
-    const results = await deps.metadataProvider.searchMedia({
-      term: query.term,
-      mediaType: query.mediaType ? normalizeMediaType(query.mediaType) : undefined,
-    });
+    try {
+      const results = await deps.metadataProvider.searchMedia({
+        term: query.term,
+        mediaType: query.mediaType ? normalizeMediaType(query.mediaType) : undefined,
+      });
 
-    return sendSuccess(reply, results);
+      return sendSuccess(reply, results);
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+      throw new InternalError(`Search failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   });
 
   app.post('/api/media', {
@@ -266,11 +273,13 @@ export function registerMediaRoutes(
       throw new ValidationError('tvdbId, title, and year are required for TV');
     }
 
-    const duplicate = await (deps.prisma as any).series.findUnique({
-      where: {
-        tvdbId: body.tvdbId,
-      },
-    });
+    const duplicate = deps.mediaRepository?.findSeriesByTvdbId
+      ? await deps.mediaRepository.findSeriesByTvdbId(body.tvdbId)
+      : await (deps.prisma as any).series.findUnique({
+        where: {
+          tvdbId: body.tvdbId,
+        },
+      });
 
     if (duplicate) {
       throw new ConflictError('Series already exists', {

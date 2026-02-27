@@ -1,0 +1,22 @@
+Task: Write failing UI/API integration tests for library list + detail paths
+
+Summary: Created app/src/library-routes.test.tsx with 33 integration tests covering the complete
+library list/detail route surface area missing from App.test.tsx.
+
+Files created:
+- app/src/library-routes.test.tsx
+
+Tests added (33 total):
+- /library/movies: listMovies API call, pagination params, title render, item render, empty state,
+  error state, monitoring toggle + reload, delete + reload
+- /library/tv: listSeries API call, pagination params, title render, item render, empty state,
+  error state, monitoring toggle + reload, delete + reload
+- /library/movies/:id: getById call, title/year/status/monitored render, overview render,
+  API error, invalid-id error, Interactive Search button
+- /library/tv/:id: getSeriesWithEpisodes call, title/season/episode render, API error,
+  invalid-id error, Interactive Search button
+- /library/series/:id alias: fetches correct series, renders details
+
+Why: The existing App.test.tsx only covered movie/series detail routes. List pages and their
+interactive wiring (toggle, delete, reload cycles) had no coverage. All 33 tests pass green
+since route components and API wiring were already implemented.

@@ -17,7 +17,7 @@ export interface PerformanceStatistics {
 class PerformanceMonitor {
   private metrics: Map<string, PerformanceMetric[]> = new Map();
   private activeMeasurements: Map<string, number> = new Map();
-  private isDevelopment = process.env.NODE_ENV === 'development';
+  private isDevelopment = import.meta.env.DEV;
 
   setDevelopmentMode(isDev: boolean): void {
     this.isDevelopment = isDev;

@@ -289,7 +289,7 @@ async function repairMalformedJsonColumns(prisma: PrismaClient): Promise<void> {
         SET "${column}" = '${defaultJson}'
         WHERE "${column}" IS NULL OR json_valid("${column}") = 0
       `);
-      repairs.push({ label: \`AppSettings.\${column}\`, changes: res });
+      repairs.push({ label: `AppSettings.${column}`, changes: res });
     }
 
     for (const column of nullableAppSettingsColumns) {
@@ -298,14 +298,14 @@ async function repairMalformedJsonColumns(prisma: PrismaClient): Promise<void> {
         SET "${column}" = NULL
         WHERE "${column}" IS NOT NULL AND json_valid("${column}") = 0
       `);
-      repairs.push({ label: \`AppSettings.\${column}\`, changes: res });
+      repairs.push({ label: `AppSettings.${column}`, changes: res });
     }
 
     const changed = repairs.filter((repair) => repair.changes > 0);
     if (changed.length > 0) {
       console.warn(
         'Repaired malformed JSON in SQLite:',
-        changed.map((repair) => \`\${repair.label}=\${repair.changes}\`).join(', '),
+        changed.map((repair) => `${repair.label}=${repair.changes}`).join(', '),
       );
     }
   } catch (err) {

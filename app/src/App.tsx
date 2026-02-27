@@ -1,16 +1,21 @@
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom';
 import { AppShell } from '@/components/shell/AppShell';
+import { useToast } from '@/components/providers/ToastProvider';
+import { AddIndexerModal } from '@/components/indexers/AddIndexerModal';
+import { EditIndexerModal } from '@/components/indexers/EditIndexerModal';
 import { MovieInteractiveSearchModal } from '@/components/movie/MovieInteractiveSearchModal';
 import { InteractiveSearchModal } from '@/components/search/InteractiveSearchModal';
 import { MovieOverviewView, SeriesOverviewView } from '@/components/views';
 import { getApiClients } from '@/lib/api/client';
+import { getPopularPresets } from '@/lib/indexer/indexerPresets';
 import type { IndexerItem } from '@/lib/api/indexerApi';
 import type { DownloadClientItem } from '@/lib/api/downloadClientsApi';
 import type { QualityProfileItem } from '@/lib/api/qualityProfileApi';
 import type { SubtitleProvider } from '@/lib/api/subtitleProvidersApi';
 import type { NotificationItem } from '@/lib/api/notificationsApi';
 import type { AppSettings } from '@/lib/api/settingsApi';
+import type { MetadataSearchResult } from '@/lib/api/mediaApi';
 import type { MovieListItem as MovieViewItem } from '@/types/movie';
 import type { SeriesListItem as SeriesViewItem } from '@/types/series';
 
@@ -106,13 +111,13 @@ function SettingsMediaPage() {
 
 function SettingsIndexersPage() {
   const api = useMemo(() => getApiClients(), []);
+  const { pushToast } = useToast();
   const [indexers, setIndexers] = useState<IndexerItem[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [name, setName] = useState('');
-  const [url, setUrl] = useState('');
-  const [apiKey, setApiKey] = useState('');
-  const [supportedMediaTypes, setSupportedMediaTypes] = useState('["TV","MOVIE"]');
+  const [editing, setEditing] = useState<IndexerItem | null>(null);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const load = async () => {
     setIsLoading(true);
@@ -131,72 +136,208 @@ function SettingsIndexersPage() {
     void load();
   }, []);
 
-  const onCreate = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    await api.indexerApi.create({
-      name,
+  const onAdd = async (draft: any) => {
+    setIsSubmitting(true);
+    try {
+      await api.indexerApi.create({
+        ...draft,
+        settings: JSON.stringify(draft.settings),
+      });
+      setIsAddModalOpen(false);
+      pushToast({ title: 'Indexer created', variant: 'success' });
+      await load();
+    } catch (err) {
+      pushToast({
+        title: 'Save failed',
+        message: err instanceof Error ? err.message : 'Failed to create indexer',
+        variant: 'error',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const onEdit = async (draft: any) => {
+    setIsSubmitting(true);
+    try {
+      await api.indexerApi.update(draft.id, {
+        ...draft,
+        settings: JSON.stringify(draft.settings),
+      });
+      setEditing(null);
+      pushToast({ title: 'Indexer updated', variant: 'success' });
+      await load();
+    } catch (err) {
+      pushToast({
+        title: 'Save failed',
+        message: err instanceof Error ? err.message : 'Failed to update indexer',
+        variant: 'error',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const onDelete = async (id: number) => {
+    if (!window.confirm('Are you sure you want to delete this indexer?')) {
+      return;
+    }
+    try {
+      await api.indexerApi.remove(id);
+      pushToast({ title: 'Indexer deleted', variant: 'success' });
+      await load();
+    } catch (err) {
+      pushToast({
+        title: 'Delete failed',
+        message: err instanceof Error ? err.message : 'Failed to delete indexer',
+        variant: 'error',
+      });
+    }
+  };
+
+  const onToggle = async (id: number, enabled: boolean) => {
+    try {
+      await api.indexerApi.update(id, { enabled });
+      await load();
+    } catch (err) {
+      pushToast({
+        title: 'Toggle failed',
+        message: err instanceof Error ? err.message : 'Failed to toggle indexer',
+        variant: 'error',
+      });
+    }
+  };
+
+  const addIndexerPresets = [
+    ...getPopularPresets(),
+    {
+      id: 'torznab-generic',
+      name: 'Generic Torznab',
+      description: 'Custom torrent tracker using Torznab contract.',
+      protocol: 'torrent',
       implementation: 'Torznab',
       configContract: 'TorznabSettings',
-      protocol: 'torrent',
-      settings: JSON.stringify({ url, apiKey }),
-      supportedMediaTypes,
-      enabled: true,
-      supportsRss: true,
-      supportsSearch: true,
-      priority: 25,
-    });
-    setName('');
-    setUrl('');
-    setApiKey('');
-    await load();
-  };
+      privacy: 'Public',
+      fields: [
+        { name: 'url', label: 'Indexer URL', type: 'text', required: true },
+        { name: 'apiKey', label: 'API Key', type: 'password', required: true },
+      ],
+    },
+  ];
 
   return (
     <RouteScaffold
       title="Indexers"
       description="Single global indexer list used by both movie and TV search via the monolith search aggregation service."
     >
-      <form className="grid gap-2 rounded-md border border-border-subtle bg-surface-1 p-4 lg:grid-cols-4" onSubmit={event => { void onCreate(event); }}>
-        <input value={name} onChange={event => setName(event.target.value)} placeholder="Name" className="rounded-sm border border-border-subtle bg-surface-0 px-2 py-1 text-sm" required />
-        <input value={url} onChange={event => setUrl(event.target.value)} placeholder="https://indexer/api" className="rounded-sm border border-border-subtle bg-surface-0 px-2 py-1 text-sm" required />
-        <input value={apiKey} onChange={event => setApiKey(event.target.value)} placeholder="API Key" className="rounded-sm border border-border-subtle bg-surface-0 px-2 py-1 text-sm" required />
-        <input value={supportedMediaTypes} onChange={event => setSupportedMediaTypes(event.target.value)} placeholder='["TV","MOVIE"]' className="rounded-sm border border-border-subtle bg-surface-0 px-2 py-1 text-sm" />
-        <button type="submit" className="rounded-sm border border-border-subtle bg-surface-2 px-3 py-2 text-sm lg:col-span-4">Add Indexer</button>
-      </form>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          className="rounded-sm border border-border-subtle bg-surface-2 px-3 py-1.5 text-sm font-medium"
+          onClick={() => setIsAddModalOpen(true)}
+        >
+          Add Indexer
+        </button>
+        <button
+          type="button"
+          className="rounded-sm border border-border-subtle bg-surface-1 px-3 py-1.5 text-sm"
+          onClick={() => { void load(); }}
+        >
+          Refresh
+        </button>
+      </div>
 
       {error ? <p className="text-sm text-status-error">{error}</p> : null}
       {isLoading ? <p className="text-sm text-text-secondary">Loading indexers...</p> : null}
 
-      <ul className="space-y-2">
+      <ul className="space-y-3">
         {indexers.map(indexer => (
-          <li key={indexer.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border-subtle bg-surface-1 p-3">
+          <li key={indexer.id} className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border-subtle bg-surface-1 p-4 shadow-sm">
             <div>
-              <p className="font-medium">{indexer.name}</p>
-              <p className="text-xs text-text-secondary">{indexer.implementation} / {indexer.protocol}</p>
+              <div className="flex items-center gap-2">
+                <p className="font-medium">{indexer.name}</p>
+                <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[10px] uppercase tracking-wider text-text-secondary">
+                  {indexer.protocol}
+                </span>
+              </div>
+              <p className="text-xs text-text-secondary">{indexer.implementation} / {indexer.configContract}</p>
             </div>
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                className="rounded-sm border border-border-subtle px-2 py-1 text-xs"
-                onClick={() => {
-                  void api.indexerApi.update(indexer.id, { enabled: !indexer.enabled }).then(load);
-                }}
+                className="rounded-sm border border-border-subtle px-2.5 py-1 text-xs font-medium hover:bg-surface-2"
+                onClick={() => onToggle(indexer.id, !indexer.enabled)}
               >
                 {indexer.enabled ? 'Disable' : 'Enable'}
               </button>
               <button
                 type="button"
-                className="rounded-sm border border-border-subtle px-2 py-1 text-xs"
+                className="rounded-sm border border-border-subtle px-2.5 py-1 text-xs font-medium hover:bg-surface-2"
+                onClick={() => setEditing(indexer)}
+              >
+                Edit
+              </button>
+              <button
+                type="button"
+                className="rounded-sm border border-border-subtle px-2.5 py-1 text-xs font-medium hover:bg-surface-2"
                 onClick={() => {
-                  void api.indexerApi.remove(indexer.id).then(load);
+                  void api.indexerApi.test(indexer.id).then(res => {
+                    pushToast({
+                      title: res.success ? 'Indexer test passed' : 'Indexer test failed',
+                      message: res.message,
+                      variant: res.success ? 'success' : 'error',
+                    });
+                  });
                 }}
+              >
+                Test
+              </button>
+              <button
+                type="button"
+                className="rounded-sm border border-status-error/20 px-2.5 py-1 text-xs font-medium text-status-error hover:bg-status-error/10"
+                onClick={() => onDelete(indexer.id)}
               >
                 Delete
               </button>
             </div>
           </li>
         ))}
+        {!isLoading && indexers.length === 0 && (
+          <li className="rounded-md border border-dashed border-border-subtle p-8 text-center text-sm text-text-secondary">
+            No indexers configured yet. Click "Add Indexer" to get started.
+          </li>
+        )}
       </ul>
+
+      <AddIndexerModal
+        isOpen={isAddModalOpen}
+        presets={addIndexerPresets as any}
+        isSubmitting={isSubmitting}
+        onClose={() => setIsAddModalOpen(false)}
+        onCreate={onAdd}
+        onTestConnection={async (draft) => {
+          const res = await api.indexerApi.testDraft({
+            ...draft,
+            settings: JSON.stringify(draft.settings),
+          } as any);
+          return {
+            success: res.success,
+            message: res.message,
+            hints: res.diagnostics?.remediationHints ?? [],
+          };
+        }}
+      />
+
+      {editing ? (
+        <EditIndexerModal
+          key={editing.id}
+          isOpen
+          indexer={editing as any}
+          isSubmitting={isSubmitting}
+          onClose={() => setEditing(null)}
+          onSave={onEdit}
+        />
+      ) : null}
     </RouteScaffold>
   );
 }
@@ -829,6 +970,113 @@ function DashboardPage() {
   return <StaticPage title="Dashboard" description="Unified overview across movies, TV, tasks, and system status." />;
 }
 
+function SearchPage() {
+  const api = useMemo(() => getApiClients(), []);
+  const { pushToast } = useToast();
+  const [term, setTerm] = useState('');
+  const [results, setResults] = useState<MetadataSearchResult[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const onSearch = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!term.trim()) {
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+    try {
+      const data = await api.mediaApi.searchMetadata({ term });
+      setResults(data);
+    } catch (searchError) {
+      setError(searchError instanceof Error ? searchError.message : 'Search failed');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const onAdd = async (item: MetadataSearchResult) => {
+    try {
+      await api.mediaApi.addToWanted({
+        mediaType: item.mediaType,
+        tmdbId: item.tmdbId,
+        tvdbId: item.tvdbId,
+        title: item.title,
+        year: item.year,
+        status: item.status,
+        overview: item.overview,
+        network: item.network,
+      });
+      pushToast({
+        title: 'Added to Wanted',
+        message: `"${item.title}" has been added to your collection.`,
+        variant: 'success',
+      });
+    } catch (addError) {
+      pushToast({
+        title: 'Failed to add',
+        message: addError instanceof Error ? addError.message : 'Failed to add item',
+        variant: 'error',
+      });
+    }
+  };
+
+  return (
+    <RouteScaffold title="Search" description="Search for movies and TV shows to add to your collection.">
+      <form onSubmit={event => { void onSearch(event); }} className="flex gap-2">
+        <input
+          value={term}
+          onChange={event => setTerm(event.target.value)}
+          placeholder="Search by title..."
+          className="flex-1 rounded-sm border border-border-subtle bg-surface-1 px-3 py-2 text-sm"
+          autoFocus
+        />
+        <button
+          type="submit"
+          disabled={isLoading}
+          className="rounded-sm border border-border-subtle bg-surface-2 px-4 py-2 text-sm font-medium"
+        >
+          {isLoading ? 'Searching...' : 'Search'}
+        </button>
+      </form>
+
+      {error ? <p className="text-sm text-status-error">{error}</p> : null}
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {results.map((item, index) => (
+          <div key={`${item.mediaType}-${item.tmdbId || item.tvdbId || index}`} className="flex flex-col overflow-hidden rounded-md border border-border-subtle bg-surface-1">
+            <div className="aspect-[2/3] w-full bg-surface-2">
+              {item.images?.[0]?.url ? (
+                <img src={item.images[0].url} alt={item.title} className="h-full w-full object-cover" />
+              ) : (
+                <div className="flex h-full items-center justify-center text-xs text-text-secondary">No Poster</div>
+              )}
+            </div>
+            <div className="flex flex-1 flex-col p-3">
+              <div className="flex items-start justify-between gap-2">
+                <h3 className="line-clamp-1 font-medium">{item.title}</h3>
+                <span className="shrink-0 rounded-sm bg-surface-2 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-text-secondary">
+                  {item.mediaType}
+                </span>
+              </div>
+              <p className="text-xs text-text-secondary">{item.year || 'Unknown Year'}</p>
+              <p className="mt-2 line-clamp-3 flex-1 text-xs text-text-secondary">{item.overview}</p>
+              <button
+                type="button"
+                onClick={() => { void onAdd(item); }}
+                className="mt-3 w-full rounded-sm border border-border-subtle bg-surface-2 py-1.5 text-xs font-medium"
+              >
+                Add to Wanted
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </RouteScaffold>
+  );
+}
+
 function MoviesLibraryPage() {
   const api = useMemo(() => getApiClients(), []);
   const [movies, setMovies] = useState<MovieViewItem[]>([]);
@@ -1102,6 +1350,7 @@ export default function App() {
           <ShellWrapper>
             <Routes>
               <Route path="dashboard" element={<DashboardPage />} />
+              <Route path="search" element={<SearchPage />} />
 
               <Route path="library/movies" element={<MoviesLibraryPage />} />
               <Route path="library/movies/:id" element={<MovieDetailPage />} />

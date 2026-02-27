@@ -15,7 +15,7 @@ export default defineConfig({
     proxy: {
       // Forward all /api requests to the Node.js daemon
       '/api': {
-        target: 'http://localhost:3000',
+        target: 'http://localhost:3001',
         changeOrigin: true,
         secure: false,
       }

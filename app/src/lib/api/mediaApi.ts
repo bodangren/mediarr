@@ -59,6 +59,17 @@ const cutoffUnmetEpisodeSchema = z.object({
 const metadataResultSchema = z.object({
   mediaType: z.union([z.literal('TV'), z.literal('MOVIE')]),
   title: z.string(),
+  tmdbId: z.number().optional(),
+  tvdbId: z.number().optional(),
+  imdbId: z.string().optional(),
+  year: z.number().optional(),
+  status: z.string().optional(),
+  overview: z.string().optional(),
+  network: z.string().optional(),
+  images: z.array(z.object({
+    coverType: z.string(),
+    url: z.string(),
+  })).optional(),
 }).passthrough();
 
 const createdMediaSchema = z.object({
@@ -261,15 +272,26 @@ export function createMediaApi(client: ApiHttpClient) {
 
     searchMetadata(input: {
       term: string;
-      mediaType: 'TV' | 'MOVIE';
+      mediaType?: 'TV' | 'MOVIE';
     }): Promise<MetadataSearchResult[]> {
       return client.request(
         {
-          path: routeMap.mediaSearch,
+          path: routeMap.search,
+          method: 'GET',
+          query: input,
+        },
+        z.array(metadataResultSchema),
+      );
+    },
+
+    addToWanted(input: AddMediaInput): Promise<CreatedMedia> {
+      return client.request(
+        {
+          path: routeMap.wantedCreate,
           method: 'POST',
           body: input,
         },
-        z.array(metadataResultSchema),
+        createdMediaSchema,
       );
     },
 

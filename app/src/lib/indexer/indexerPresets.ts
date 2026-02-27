@@ -1,21 +1,4 @@
-interface IndexerPresetField {
-  name: string;
-  label: string;
-  type: 'text' | 'password' | 'number' | 'boolean';
-  required?: boolean;
-  defaultValue?: string | number | boolean;
-}
-
-interface IndexerPreset {
-  id: string;
-  name: string;
-  description: string;
-  protocol: string;
-  implementation: string;
-  configContract: string;
-  privacy: 'Public' | 'SemiPrivate' | 'Private';
-  fields: IndexerPresetField[];
-}
+import type { IndexerPreset } from '@/components/indexers/AddIndexerModal';
 
 /**
  * Indexer presets imported from Prowlarr C# definitions

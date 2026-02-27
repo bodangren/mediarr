@@ -12,7 +12,7 @@
     - [x] Write failing integration tests for `GET /api/search?q=...`.
     - [x] Implement Fastify route that aggregates results from both clients.
     - [x] Verify search results return a unified data structure.
-- [ ] Task: Conductor - User Manual Verification 'Phase 1' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 1' (Protocol in workflow.md)
 
 ## Phase 2: Add to Wanted Persistence
 > Goal: Enable saving media items to the database and preventing duplicates.
@@ -29,14 +29,14 @@
 ## Phase 3: Frontend Search Interface
 > Goal: Provide a user-friendly UI for searching and adding media.
 
-- [ ] Task: Create Search Page Layout and Route
-    - [ ] Write failing UI tests for the `/search` route.
-    - [ ] Implement search page with a search bar and results container.
-- [ ] Task: Implement Search Results Rendering
-    - [ ] Write failing UI tests for rendering search results from the API.
-    - [ ] Implement result cards with posters, titles, and media types.
-- [ ] Task: Connect "Add to Wanted" Action
-    - [ ] Write failing UI tests for the "Add" button click and API call.
-    - [ ] Implement frontend logic to call `POST /api/wanted`.
-    - [ ] Add success/error toast notifications.
-- [ ] Task: Conductor - User Manual Verification 'Phase 3' (Protocol in workflow.md)
+- [x] Task: Create Search Page Layout and Route
+    - [x] Write failing UI tests for the `/search` route.
+    - [x] Implement search page with a search bar and results container.
+- [x] Task: Implement Search Results Rendering
+    - [x] Write failing UI tests for rendering search results from the API.
+    - [x] Implement result cards with posters, titles, and media types.
+- [x] Task: Connect "Add to Wanted" Action
+    - [x] Write failing UI tests for the "Add" button click and API call.
+    - [x] Implement frontend logic to call `POST /api/wanted`.
+    - [x] Add success/error toast notifications.
+- [x] Task: Conductor - User Manual Verification 'Phase 3' (Protocol in workflow.md)

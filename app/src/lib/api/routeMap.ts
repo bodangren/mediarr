@@ -24,8 +24,10 @@ export const routeMap = {
   moviesCutoffUnmet: '/api/movies/cutoff-unmet',
 
   wanted: '/api/media/wanted',
+  wantedCreate: '/api/wanted',
   missingEpisodes: '/api/episodes/missing',
   cutoffUnmetEpisodes: '/api/episodes/cutoff-unmet',
+  search: '/api/search',
   mediaSearch: '/api/media/search',
   mediaCreate: '/api/media',
 

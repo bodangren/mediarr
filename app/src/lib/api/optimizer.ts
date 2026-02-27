@@ -69,7 +69,7 @@ class RequestDeduplicator {
  */
 class ApiCache {
   private cache = new Map<string, CacheEntry<unknown>>();
-  private isDevelopment = process.env.NODE_ENV === 'development';
+  private isDevelopment = import.meta.env.DEV;
 
   set<T>(key: string, data: T, options: CacheOptions = {}): void {
     const ttl = options.ttl ?? DEFAULT_TTL;

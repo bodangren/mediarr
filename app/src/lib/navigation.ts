@@ -18,6 +18,7 @@ export const NAV_ITEMS: NavigationSection[] = [
     label: 'Dashboard',
     items: [
       { path: '/dashboard', label: 'Dashboard', shortLabel: 'Home', icon: 'LayoutDashboard' },
+      { path: '/search', label: 'Search', shortLabel: 'Search', icon: 'Search' },
     ],
   },
   {
@@ -70,6 +71,7 @@ export const NAV_ITEMS: NavigationSection[] = [
 
 const SEGMENT_LABELS: Record<string, string> = {
   dashboard: 'Dashboard',
+  search: 'Search',
   library: 'Library',
   movies: 'Movies',
   tv: 'TV Shows',

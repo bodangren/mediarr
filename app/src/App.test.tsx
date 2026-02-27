@@ -11,6 +11,8 @@ const mockApi = vi.hoisted(() => ({
     listSeries: vi.fn(),
     setSeriesMonitored: vi.fn(),
     deleteSeries: vi.fn(),
+    searchMetadata: vi.fn(),
+    addToWanted: vi.fn(),
   },
   movieApi: {
     getById: vi.fn(),
@@ -276,5 +278,44 @@ describe('App route and settings parity', () => {
       });
     });
     expect(await screen.findByText('Subtitle settings saved.')).toBeInTheDocument();
+  });
+
+  it('searches for media and adds a result to wanted', async () => {
+    mockApi.mediaApi.searchMetadata.mockResolvedValue([
+      {
+        mediaType: 'MOVIE',
+        tmdbId: 13,
+        title: 'Forrest Gump',
+        year: 1994,
+        overview: 'Life is like a box of chocolates',
+        images: [{ coverType: 'poster', url: 'http://image.tmdb.org/t/p/w500/abc.jpg' }],
+      },
+    ]);
+    mockApi.mediaApi.addToWanted.mockResolvedValue({ id: 10 });
+
+    renderApp('/search');
+
+    const input = screen.getByPlaceholderText('Search by title...');
+    fireEvent.change(input, { target: { value: 'Forrest' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Search' }));
+
+    await waitFor(() => {
+      expect(mockApi.mediaApi.searchMetadata).toHaveBeenCalledWith({ term: 'Forrest' });
+    });
+
+    expect(await screen.findByText('Forrest Gump')).toBeInTheDocument();
+    expect(screen.getByText('1994')).toBeInTheDocument();
+    expect(screen.getByText('MOVIE')).toBeInTheDocument();
+
+    const addButton = screen.getByRole('button', { name: 'Add to Wanted' });
+    fireEvent.click(addButton);
+
+    await waitFor(() => {
+      expect(mockApi.mediaApi.addToWanted).toHaveBeenCalledWith(expect.objectContaining({
+        mediaType: 'MOVIE',
+        tmdbId: 13,
+        title: 'Forrest Gump',
+      }));
+    });
   });
 });

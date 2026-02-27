@@ -37,7 +37,7 @@ export interface ProxySettingsInput {
 
 export function createProxySettingsApi(client: ApiHttpClient) {
   return {
-    list(): Promise<ProxySettingsItem[]> {
+    list() {
       return client.request(
         {
           path: routeMap.settingsProxies,
@@ -46,7 +46,7 @@ export function createProxySettingsApi(client: ApiHttpClient) {
       );
     },
 
-    create(input: ProxySettingsInput): Promise<ProxySettingsItem> {
+    create(input: ProxySettingsInput) {
       return client.request(
         {
           path: routeMap.settingsProxies,
@@ -65,7 +65,7 @@ export function createProxySettingsApi(client: ApiHttpClient) {
       );
     },
 
-    update(id: number, input: Partial<ProxySettingsInput>): Promise<ProxySettingsItem> {
+    update(id: number, input: Partial<ProxySettingsInput>) {
       return client.request(
         {
           path: routeMap.settingsProxy(id),

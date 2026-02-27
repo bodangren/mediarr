@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import { Icon } from '@/components/primitives/Icon';
 import { ProgressBar } from '@/components/primitives/ProgressBar';
@@ -27,7 +27,7 @@ function SeriesPosterCard({ item, onToggleMonitored, onDelete, onRefresh }: Seri
 
   return (
     <Link
-      href={`/library/series/${item.id}`}
+      to={`/library/tv/${item.id}`}
       className="group relative flex flex-col gap-2 overflow-hidden rounded-md border border-border-subtle bg-surface-1 transition-all hover:shadow-elevation-2"
     >
       {/* Poster Image */}

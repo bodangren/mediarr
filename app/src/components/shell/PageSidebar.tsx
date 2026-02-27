@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 import * as Icons from 'lucide-react';
 import { NAV_ITEMS, isNavActive, type NavigationSection } from '@/lib/navigation';
 import { useTouchGestures } from '@/lib/hooks/useTouchGestures';
@@ -128,7 +128,7 @@ export function PageSidebar({
                       return (
                         <li key={item.path}>
                           <Link
-                            href={item.path}
+                            to={item.path}
                             className={`flex items-center gap-2 rounded-sm px-3 py-2 text-sm ${
                               active
                                 ? 'bg-accent-primary/20 text-text-primary'
@@ -206,7 +206,7 @@ export function PageSidebar({
                           return (
                             <li key={item.path}>
                               <Link
-                                href={item.path}
+                                to={item.path}
                                 onClick={onClose}
                                 className={`flex items-center gap-2 rounded-sm px-3 py-3 text-sm ${
                                   active

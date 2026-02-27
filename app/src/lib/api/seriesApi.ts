@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { ApiHttpClient } from './httpClient';
+import { ApiHttpClient, type PaginatedResult } from './httpClient';
+import { routeMap } from './routeMap';
 
 // Series schema for type inference
 const seriesSchema = z.object({
@@ -63,6 +64,26 @@ const seriesSearchResultSchema = z.object({
   })).optional(),
 });
 
+const releaseCandidateSchema = z.object({
+  indexer: z.string(),
+  indexerId: z.number(),
+  title: z.string(),
+  guid: z.string().optional(),
+  size: z.number(),
+  seeders: z.number(),
+  leechers: z.number().optional(),
+  indexerFlags: z.string().optional(),
+  quality: z.string().optional(),
+  age: z.number().optional(),
+  publishDate: z.string().optional(),
+  categories: z.array(z.number()).optional(),
+  protocol: z.enum(['torrent', 'usenet']).optional(),
+  magnetUrl: z.string().optional(),
+  downloadUrl: z.string().optional(),
+  infoHash: z.string().optional(),
+  customFormatScore: z.number().optional(),
+});
+
 export type Series = z.infer<typeof seriesSchema>;
 export type SeriesOrganizePreview = z.infer<typeof seriesOrganizePreviewSchema>;
 export type EpisodeImportFile = z.infer<typeof episodeImportFileSchema>;
@@ -106,6 +127,16 @@ export interface EpisodeImportApplyFile {
 
 export interface EpisodeImportApplyInput {
   files: EpisodeImportApplyFile[];
+}
+
+export interface SeriesSearchInput {
+  query?: string;
+  seasonNumber?: number;
+  episodeNumber?: number;
+  episodeId?: number;
+  qualityProfileId?: number;
+  page?: number;
+  pageSize?: number;
 }
 
 export function createSeriesApi(client: ApiHttpClient) {
@@ -235,6 +266,29 @@ export function createSeriesApi(client: ApiHttpClient) {
             })),
           })),
         }).passthrough(),
+      );
+    },
+
+    searchReleases(seriesId: number, input: SeriesSearchInput): Promise<PaginatedResult<z.infer<typeof releaseCandidateSchema>>> {
+      const query: Record<string, unknown> = {};
+      if (input.page !== undefined) query.page = input.page;
+      if (input.pageSize !== undefined) query.pageSize = input.pageSize;
+
+      const body: Record<string, unknown> = {};
+      if (input.query !== undefined) body.query = input.query;
+      if (input.seasonNumber !== undefined) body.seasonNumber = input.seasonNumber;
+      if (input.episodeNumber !== undefined) body.episodeNumber = input.episodeNumber;
+      if (input.episodeId !== undefined) body.episodeId = input.episodeId;
+      if (input.qualityProfileId !== undefined) body.qualityProfileId = input.qualityProfileId;
+
+      return client.requestPaginated(
+        {
+          path: routeMap.seriesSearch(seriesId),
+          method: 'POST',
+          body,
+          query,
+        },
+        releaseCandidateSchema,
       );
     },
   };

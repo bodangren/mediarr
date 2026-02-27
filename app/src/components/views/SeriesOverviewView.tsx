@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 import { Icon } from '@/components/primitives/Icon';
 import { ProgressBar } from '@/components/primitives/ProgressBar';
 import { StatusBadge } from '@/components/primitives/StatusBadge';
@@ -34,7 +34,7 @@ function SeriesOverviewCard({ item, onToggleMonitored, onDelete, onRefresh }: Se
     <article className="flex gap-4 rounded-md border border-border-subtle bg-surface-1 p-4 transition-colors hover:border-border-subtle hover:bg-surface-2">
       {/* Poster Thumbnail */}
       <Link
-        href={`/library/series/${item.id}`}
+        to={`/library/tv/${item.id}`}
         className="flex-shrink-0"
       >
         <div className="h-32 w-24 overflow-hidden rounded-md bg-surface-2">
@@ -57,7 +57,7 @@ function SeriesOverviewCard({ item, onToggleMonitored, onDelete, onRefresh }: Se
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
             <Link
-              href={`/library/series/${item.id}`}
+              to={`/library/tv/${item.id}`}
               className="line-clamp-1 text-base font-medium text-text-primary hover:text-accent-primary"
             >
               {item.title}

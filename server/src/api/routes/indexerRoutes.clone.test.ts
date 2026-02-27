@@ -49,7 +49,7 @@ describe('indexerRoutes clone endpoint', () => {
       configContract: 'TorznabSettings',
       settings: '{"url":"https://indexer.example","apiKey":"abc"}',
       protocol: 'torrent',
-      appProfileId: null,
+      supportedMediaTypes: '[]',
       enabled: true,
       supportsRss: true,
       supportsSearch: true,

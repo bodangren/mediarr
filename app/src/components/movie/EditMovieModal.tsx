@@ -6,7 +6,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@/components/primitives/Button';
 import { Modal, ModalBody, ModalHeader, ModalFooter } from '@/components/primitives/Modal';
-import { Label } from '@/components/primitives/Label';
 import { useToast } from '@/components/providers/ToastProvider';
 import type { Movie, UpdateMovieInput } from '@/lib/api/movieApi';
 import { getApiClients } from '@/lib/api/client';
@@ -114,7 +113,7 @@ export function EditMovieModal({ isOpen, onClose, movie, onSave }: EditMovieModa
       <ModalBody>
         <form id="edit-movie-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
-            <Label htmlFor="title">Title</Label>
+            <label htmlFor="title" className="mb-1 block text-sm font-medium text-text-primary">Title</label>
             <input
               id="title"
               type="text"
@@ -128,7 +127,7 @@ export function EditMovieModal({ isOpen, onClose, movie, onSave }: EditMovieModa
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="monitored">Monitored</Label>
+              <label htmlFor="monitored" className="mb-1 block text-sm font-medium text-text-primary">Monitored</label>
               <select
                 id="monitored"
                 className="w-full rounded-sm border border-border-subtle bg-surface-0 px-3 py-2 text-sm text-text-primary focus:border-accent-primary focus:outline-none"
@@ -140,7 +139,7 @@ export function EditMovieModal({ isOpen, onClose, movie, onSave }: EditMovieModa
             </div>
 
             <div>
-              <Label htmlFor="qualityProfileId">Quality Profile</Label>
+              <label htmlFor="qualityProfileId" className="mb-1 block text-sm font-medium text-text-primary">Quality Profile</label>
               <input
                 id="qualityProfileId"
                 type="number"
@@ -154,7 +153,7 @@ export function EditMovieModal({ isOpen, onClose, movie, onSave }: EditMovieModa
           </div>
 
           <div>
-            <Label htmlFor="path">Path</Label>
+            <label htmlFor="path" className="mb-1 block text-sm font-medium text-text-primary">Path</label>
             <input
               id="path"
               type="text"
@@ -165,7 +164,7 @@ export function EditMovieModal({ isOpen, onClose, movie, onSave }: EditMovieModa
           </div>
 
           <div>
-            <Label htmlFor="overview">Overview</Label>
+            <label htmlFor="overview" className="mb-1 block text-sm font-medium text-text-primary">Overview</label>
             <textarea
               id="overview"
               rows={3}
@@ -177,7 +176,7 @@ export function EditMovieModal({ isOpen, onClose, movie, onSave }: EditMovieModa
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="studio">Studio</Label>
+              <label htmlFor="studio" className="mb-1 block text-sm font-medium text-text-primary">Studio</label>
               <input
                 id="studio"
                 type="text"
@@ -187,7 +186,7 @@ export function EditMovieModal({ isOpen, onClose, movie, onSave }: EditMovieModa
             </div>
 
             <div>
-              <Label htmlFor="certification">Certification</Label>
+              <label htmlFor="certification" className="mb-1 block text-sm font-medium text-text-primary">Certification</label>
               <input
                 id="certification"
                 type="text"
@@ -199,7 +198,7 @@ export function EditMovieModal({ isOpen, onClose, movie, onSave }: EditMovieModa
           </div>
 
           <div>
-            <Label htmlFor="genres">Genres (comma-separated)</Label>
+            <label htmlFor="genres" className="mb-1 block text-sm font-medium text-text-primary">Genres (comma-separated)</label>
             <input
               id="genres"
               type="text"

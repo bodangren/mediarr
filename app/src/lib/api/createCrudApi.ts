@@ -1,16 +1,17 @@
 import { z } from 'zod';
 import { ApiHttpClient } from './httpClient';
-import { testResultSchema, TestResult } from './shared-schemas';
+import { testResultSchema } from './shared-schemas';
+import type { TestResult } from './shared-schemas';
 
-export interface CrudApiConfig<TItem, TCreate> {
+export interface CrudApiConfig<TItem> {
   basePath: string;
-  itemSchema: z.ZodType<TItem>;
-  listSchema?: z.ZodType<TItem[]>;
+  itemSchema: z.ZodType<TItem, z.ZodTypeDef, unknown>;
+  listSchema?: z.ZodType<TItem[], z.ZodTypeDef, unknown>;
 }
 
 export function createCrudApi<TItem, TCreate>(
   client: ApiHttpClient,
-  config: CrudApiConfig<TItem, TCreate>
+  config: CrudApiConfig<TItem>
 ) {
   const { basePath, itemSchema, listSchema } = config;
 

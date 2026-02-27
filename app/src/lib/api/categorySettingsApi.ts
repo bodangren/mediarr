@@ -27,7 +27,7 @@ export interface CategorySettingsInput {
 
 export function createCategorySettingsApi(client: ApiHttpClient) {
   return {
-    list(): Promise<CategorySettingsItem[]> {
+    list() {
       return client.request(
         {
           path: routeMap.settingsCategories,
@@ -36,7 +36,7 @@ export function createCategorySettingsApi(client: ApiHttpClient) {
       );
     },
 
-    create(input: CategorySettingsInput): Promise<CategorySettingsItem> {
+    create(input: CategorySettingsInput) {
       return client.request(
         {
           path: routeMap.settingsCategories,
@@ -47,7 +47,7 @@ export function createCategorySettingsApi(client: ApiHttpClient) {
       );
     },
 
-    update(id: number, input: Partial<CategorySettingsInput>): Promise<CategorySettingsItem> {
+    update(id: number, input: Partial<CategorySettingsInput>) {
       return client.request(
         {
           path: routeMap.settingsCategory(id),

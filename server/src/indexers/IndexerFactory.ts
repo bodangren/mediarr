@@ -2,6 +2,11 @@ import type { Indexer } from '@prisma/client';
 import type { CardigannDefinition } from './DefinitionLoader';
 import { TorznabIndexer, ScrapingIndexer, type BaseIndexer } from './BaseIndexer';
 import type { HttpClient } from './HttpClient';
+import {
+  assessDefinitionCompatibility,
+  formatCompatibilityFailure,
+  type DefinitionCompatibilityReport,
+} from './CardigannCompatibility';
 
 /**
  * Factory that creates typed indexer instances from database records or definition files.
@@ -20,6 +25,27 @@ export class IndexerFactory {
    */
   get availableDefinitions(): string[] {
     return Array.from(this.definitions.keys());
+  }
+
+  /**
+   * Get a loaded definition by ID.
+   */
+  getDefinition(definitionId: string): CardigannDefinition | undefined {
+    return this.definitions.get(definitionId);
+  }
+
+  /**
+   * Assess compatibility for a loaded definition.
+   */
+  getCompatibilityReport(definitionId: string): DefinitionCompatibilityReport {
+    const definition = this.definitions.get(definitionId);
+    if (!definition) {
+      throw new Error(
+        `Definition not found for ID: ${definitionId}. Remediation: verify the definitionId exists in server/definitions.`,
+      );
+    }
+
+    return assessDefinitionCompatibility(definition);
   }
 
   /**
@@ -48,12 +74,26 @@ export class IndexerFactory {
         return new TorznabIndexer(baseConfig);
 
       case 'Cardigann': {
-        const definitionId = settings.definitionId as string;
+        const definitionId = settings.definitionId;
+        if (typeof definitionId !== 'string' || definitionId.trim().length === 0) {
+          throw new Error(
+            'Cardigann settings missing required field: definitionId. Remediation: include definitionId in indexer settings.',
+          );
+        }
+
         const definition = this.definitions.get(definitionId);
         if (!definition) {
-          throw new Error(`Definition not found for ID: ${definitionId}`);
+          throw new Error(
+            `Definition not found for ID: ${definitionId}. Remediation: verify the definitionId exists in server/definitions.`,
+          );
         }
-        return new ScrapingIndexer({ ...baseConfig, definition });
+
+        const compatibility = assessDefinitionCompatibility(definition);
+        if (compatibility.status === 'incompatible') {
+          throw new Error(formatCompatibilityFailure(compatibility));
+        }
+
+        return new ScrapingIndexer({ ...baseConfig, definition, compatibility });
       }
 
       default:
@@ -67,7 +107,14 @@ export class IndexerFactory {
   fromDefinition(definitionId: string, settings: Record<string, any> = {}): ScrapingIndexer {
     const definition = this.definitions.get(definitionId);
     if (!definition) {
-      throw new Error(`Definition not found for ID: ${definitionId}`);
+      throw new Error(
+        `Definition not found for ID: ${definitionId}. Remediation: verify the definitionId exists in server/definitions.`,
+      );
+    }
+
+    const compatibility = assessDefinitionCompatibility(definition);
+    if (compatibility.status === 'incompatible') {
+      throw new Error(formatCompatibilityFailure(compatibility));
     }
 
     return new ScrapingIndexer({
@@ -81,6 +128,7 @@ export class IndexerFactory {
       supportsSearch: true,
       settings,
       definition,
+      compatibility,
       httpClient: this.httpClient,
     });
   }

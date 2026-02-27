@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { ApiHttpClient } from './httpClient';
 import { createCrudApi } from './createCrudApi';
-import { TestResult } from './shared-schemas';
+import type { TestResult } from './shared-schemas';
 
 const downloadClientSchema = z.object({
   id: z.number(),

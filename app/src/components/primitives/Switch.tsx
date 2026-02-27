@@ -1,4 +1,5 @@
 interface SwitchProps {
+  id?: string;
   checked: boolean;
   onChange: (checked: boolean) => void;
   disabled?: boolean;
@@ -6,7 +7,7 @@ interface SwitchProps {
   'aria-label'?: string;
 }
 
-export function Switch({ checked, onChange, disabled = false, label, 'aria-label': ariaLabel }: SwitchProps) {
+export function Switch({ id, checked, onChange, disabled = false, label, 'aria-label': ariaLabel }: SwitchProps) {
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     onChange(event.target.checked);
   };
@@ -14,6 +15,7 @@ export function Switch({ checked, onChange, disabled = false, label, 'aria-label
   const switchElement = (
     <label className="relative inline-flex items-center">
       <input
+        id={id}
         type="checkbox"
         checked={checked}
         disabled={disabled}

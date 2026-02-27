@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { ConnectionState } from '@/lib/api/eventsApi';
 import { getApiClients } from '@/lib/api/client';
@@ -119,7 +119,7 @@ export function AppShell({ pathname, children }: AppShellProps) {
             {breadcrumbs.map((crumb, index) => (
               <span key={crumb.href} className="inline-flex items-center gap-2">
                 {index > 0 ? <span aria-hidden="true">/</span> : null}
-                <Link href={crumb.href} className="hover:text-text-primary">
+                <Link to={crumb.href} className="hover:text-text-primary">
                   {crumb.label}
                 </Link>
               </span>
@@ -171,7 +171,7 @@ export function AppShell({ pathname, children }: AppShellProps) {
               {filteredCommands.map(item => (
                 <li key={item.path}>
                   <Link
-                    href={item.path}
+                    to={item.path}
                     className="block rounded-sm px-3 py-2 text-sm text-text-secondary hover:bg-surface-2 hover:text-text-primary"
                     onClick={() => setPaletteOpen(false)}
                   >

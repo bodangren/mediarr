@@ -7,7 +7,13 @@ import { ImportListList } from './ImportListList';
 import { ImportListModal } from './ImportListModal';
 import { ExclusionManager } from './ExclusionManager';
 import { AddExclusionModal } from './AddExclusionModal';
-import type { ImportList, ImportListExclusion, CreateImportListInput, CreateExclusionInput } from '@/lib/api/importListsApi';
+import type {
+  ImportList,
+  ImportListExclusion,
+  CreateImportListInput,
+  UpdateImportListInput,
+  CreateExclusionInput,
+} from '@/lib/api/importListsApi';
 import type { QualityProfile } from '@/types/qualityProfile';
 
 type TabType = 'lists' | 'exclusions';
@@ -26,7 +32,7 @@ interface ImportListSettingsProps {
   
   // Callbacks
   onCreateList: (input: CreateImportListInput) => Promise<void>;
-  onUpdateList: (id: number, input: CreateImportListInput) => Promise<void>;
+  onUpdateList: (id: number, input: UpdateImportListInput) => Promise<void>;
   onDeleteList: (id: number) => Promise<void>;
   onSyncList: (id: number) => Promise<void>;
   onCreateExclusion: (input: CreateExclusionInput) => Promise<void>;
@@ -75,13 +81,13 @@ export function ImportListSettings({
   const [isDeletingExclusion, setIsDeletingExclusion] = useState(false);
 
   // Create/Update list handler
-  const handleSaveList = async (input: CreateImportListInput) => {
+  const handleSaveList = async (input: CreateImportListInput | UpdateImportListInput) => {
     setIsSaving(true);
     try {
       if (editList) {
-        await onUpdateList(editList.id, input);
+        await onUpdateList(editList.id, input as UpdateImportListInput);
       } else {
-        await onCreateList(input);
+        await onCreateList(input as CreateImportListInput);
       }
       setIsListModalOpen(false);
       setEditList(undefined);

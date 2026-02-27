@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { ApiHttpClient } from './httpClient';
+import { ApiHttpClient, type PaginatedResult } from './httpClient';
 import { routeMap } from './routeMap';
 
 const movieSchema = z.object({
@@ -59,6 +59,26 @@ const importFileSchema = z.object({
   }).optional(),
 });
 
+const releaseCandidateSchema = z.object({
+  indexer: z.string(),
+  indexerId: z.number(),
+  title: z.string(),
+  guid: z.string().optional(),
+  size: z.number(),
+  seeders: z.number(),
+  leechers: z.number().optional(),
+  indexerFlags: z.string().optional(),
+  quality: z.string().optional(),
+  age: z.number().optional(),
+  publishDate: z.string().optional(),
+  categories: z.array(z.number()).optional(),
+  protocol: z.enum(['torrent', 'usenet']).optional(),
+  magnetUrl: z.string().optional(),
+  downloadUrl: z.string().optional(),
+  infoHash: z.string().optional(),
+  customFormatScore: z.number().optional(),
+});
+
 export type Movie = z.infer<typeof movieSchema>;
 export type OrganizePreview = z.infer<typeof organizePreviewSchema>;
 export type ImportFile = z.infer<typeof importFileSchema>;
@@ -66,6 +86,7 @@ export type ImportFile = z.infer<typeof importFileSchema>;
 export interface UpdateMovieInput {
   monitored?: boolean;
   qualityProfileId?: number;
+  path?: string;
   title?: string;
   titleSlug?: string;
   overview?: string;
@@ -111,6 +132,17 @@ export interface BulkUpdateResult {
   updated: number;
   failed: number;
   errors?: Array<{ movieId: number; error: string }>;
+}
+
+export interface MovieSearchInput {
+  query?: string;
+  title?: string;
+  year?: number;
+  tmdbId?: number;
+  imdbId?: string;
+  qualityProfileId?: number;
+  page?: number;
+  pageSize?: number;
 }
 
 export function createMovieApi(client: ApiHttpClient) {
@@ -256,6 +288,30 @@ export function createMovieApi(client: ApiHttpClient) {
         z.object({
           rootFolders: z.array(z.string()),
         }),
+      );
+    },
+
+    searchReleases(movieId: number, input: MovieSearchInput): Promise<PaginatedResult<z.infer<typeof releaseCandidateSchema>>> {
+      const query: Record<string, unknown> = {};
+      if (input.page !== undefined) query.page = input.page;
+      if (input.pageSize !== undefined) query.pageSize = input.pageSize;
+
+      const body: Record<string, unknown> = {};
+      if (input.query !== undefined) body.query = input.query;
+      if (input.title !== undefined) body.title = input.title;
+      if (input.year !== undefined) body.year = input.year;
+      if (input.tmdbId !== undefined) body.tmdbId = input.tmdbId;
+      if (input.imdbId !== undefined) body.imdbId = input.imdbId;
+      if (input.qualityProfileId !== undefined) body.qualityProfileId = input.qualityProfileId;
+
+      return client.requestPaginated(
+        {
+          path: routeMap.movieSearch(movieId),
+          method: 'POST',
+          body,
+          query,
+        },
+        releaseCandidateSchema,
       );
     },
   };

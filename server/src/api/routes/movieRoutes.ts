@@ -6,6 +6,7 @@ import type { ApiDependencies } from '../types';
 import { MovieOrganizeService, DEFAULT_MEDIA_MANAGEMENT_SETTINGS } from '../../services/MovieOrganizeService';
 import { FilenameParsingService } from '../../services/FilenameParsingService';
 import { MovieRepository, type BulkMovieChanges } from '../../repositories/MovieRepository';
+import type { SearchParams } from '../../services/MediaSearchService';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
@@ -118,6 +119,111 @@ export function registerMovieRoutes(
     });
 
     return sendSuccess(reply, assertFound(movie, `Movie ${id} not found`));
+  });
+
+  app.post('/api/movies/:id/search', {
+    schema: {
+      params: {
+        type: 'object',
+        required: ['id'],
+        properties: {
+          id: { type: 'string' },
+        },
+      },
+      body: {
+        type: 'object',
+        properties: {
+          query: { type: 'string' },
+          title: { type: 'string' },
+          year: { type: 'number', minimum: 1900, maximum: 2100 },
+          tmdbId: { type: 'number' },
+          imdbId: { type: 'string' },
+          qualityProfileId: { type: 'number', minimum: 1 },
+        },
+      },
+      querystring: {
+        type: 'object',
+        properties: {
+          page: { type: 'number', minimum: 1 },
+          pageSize: { type: 'number', minimum: 1, maximum: 100 },
+          sortBy: { type: 'string' },
+          sortDir: { type: 'string', enum: ['asc', 'desc'] },
+        },
+      },
+    },
+  }, async (request, reply) => {
+    const searchAllIndexers = deps.searchAggregationService?.searchAllIndexers
+      ?? deps.mediaSearchService?.searchAllIndexers;
+    if (!searchAllIndexers) {
+      throw new ValidationError('Search aggregation service is not configured');
+    }
+
+    const id = parseIdParam((request.params as { id: string }).id, 'movie');
+    const body = (request.body ?? {}) as {
+      query?: string;
+      title?: string;
+      year?: number;
+      tmdbId?: number;
+      imdbId?: string;
+      qualityProfileId?: number;
+    };
+    const pagination = parsePaginationParams(request.query as Record<string, unknown>);
+    const prisma = deps.prisma as any;
+    if (!prisma.movie?.findUnique) {
+      throw new ValidationError('Movie search data source is not configured');
+    }
+
+    const movie = await prisma.movie.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        title: true,
+        year: true,
+        tmdbId: true,
+        imdbId: true,
+        qualityProfileId: true,
+      },
+    });
+    if (!movie) {
+      throw new ValidationError(`Movie ${id} not found`);
+    }
+
+    const searchParams: SearchParams = {
+      type: 'movie',
+      query: body.query,
+      title: body.title ?? movie.title,
+      qualityProfileId: body.qualityProfileId ?? movie.qualityProfileId ?? undefined,
+    };
+    if (body.year !== undefined) {
+      searchParams.year = body.year;
+    } else if (typeof movie.year === 'number') {
+      searchParams.year = movie.year;
+    }
+
+    if (body.tmdbId !== undefined) {
+      searchParams.tmdbId = body.tmdbId;
+    } else if (typeof movie.tmdbId === 'number') {
+      searchParams.tmdbId = movie.tmdbId;
+    }
+
+    if (body.imdbId) {
+      searchParams.imdbId = body.imdbId;
+    } else if (typeof movie.imdbId === 'string' && movie.imdbId.length > 0) {
+      searchParams.imdbId = movie.imdbId;
+    }
+
+    const result = await searchAllIndexers(searchParams);
+    const { items, totalCount } = paginateArray(
+      result.releases,
+      pagination.page,
+      pagination.pageSize,
+    );
+
+    return sendPaginatedSuccess(reply, items, {
+      page: pagination.page,
+      pageSize: pagination.pageSize,
+      totalCount,
+    });
   });
 
   app.patch('/api/movies/:id/monitored', {

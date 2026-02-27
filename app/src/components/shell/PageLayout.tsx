@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import * as Icons from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -95,7 +95,7 @@ export function PageLayout({
             return (
               <li key={item.path}>
                 <Link
-                  href={item.path}
+                  to={item.path}
                   className="flex h-full min-h-[44px] flex-col items-center justify-center rounded-sm px-1 py-1.5 text-[10px] sm:px-2 sm:py-2 sm:text-[11px]"
                   aria-current={active ? 'page' : undefined}
                 >
@@ -136,7 +136,7 @@ export function PageLayout({
               return (
                 <li key={item.path} role="none">
                   <Link
-                    href={item.path}
+                    to={item.path}
                     role="menuitem"
                     className={`flex items-center gap-3 rounded-sm px-3 py-2 text-sm ${
                       active ? 'bg-accent-primary/20 text-accent-primary' : 'hover:bg-surface-2'

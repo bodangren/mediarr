@@ -6,9 +6,11 @@
   "scripts": {
     "start:app": "npm run start --workspace=app",
     "start:api": "tsx server/src/main.ts",
+    "dev": "DATABASE_URL=\"file:$(pwd)/mediarr.db\" API_PORT=3001 ENCRYPTION_KEY=dev-local-encryption-key DEFINITIONS_PATH=\"$(pwd)/server/definitions\" npm run dev --workspace=server & DATABASE_URL=\"file:$(pwd)/mediarr.db\" API_INTERNAL_URL=http://localhost:3001 npm run dev --workspace=app",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "test:cardigann:live": "CARDIGANN_LIVE_TESTS=true vitest run server/src/indexers/cardigann-conformance/liveSiteDefinitions.test.ts"
   },
   "keywords": [],
   "author": "",
@@ -20,22 +22,19 @@
   ],
   "private": "true",
   "devDependencies": {
-    "@types/better-sqlite3": "^7.6.13",
+    "@prisma/client": "^6.4.1",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^25.2.2",
     "@types/node-cron": "^3.0.11",
     "@vitest/coverage-v8": "^4.0.18",
-    "prisma": "^7.3.0",
-    "tsx": "^4.21.0",
+    "prisma": "^6.4.1",
     "typescript": "^5.9.3",
     "vitest": "^4.0.18"
   },
   "dependencies": {
     "@fastify/multipart": "^9.4.0",
-    "@prisma/adapter-better-sqlite3": "^7.3.0",
-    "@prisma/client": "^7.3.0",
     "@tanstack/react-virtual": "^3.13.18",
-    "better-sqlite3": "^12.6.2",
+    "dotenv": "^17.3.1",
     "fast-xml-parser": "^5.3.5",
     "fastify": "^5.6.1",
     "js-yaml": "^4.1.1",

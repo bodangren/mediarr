@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 
 export interface MovieCellProps {
   movieId?: number;
@@ -54,7 +54,7 @@ export function MovieCell({ movieId, title, posterUrl, year, size = 'small' }: M
   if (movieId) {
     return (
       <Link
-        href={`/movie/${movieId}`}
+        to={`/movie/${movieId}`}
         className="block transition-colors hover:text-accent-primary focus:outline-none focus:ring-2 focus:ring-accent-primary focus:ring-offset-2"
       >
         {content}

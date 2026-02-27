@@ -8,6 +8,7 @@ import { SeriesMonitoringService, type MonitoringType } from '../../services/Ser
 import { SeriesOrganizeService, DEFAULT_SERIES_MANAGEMENT_SETTINGS } from '../../services/SeriesOrganizeService';
 import { FilenameParsingService } from '../../services/FilenameParsingService';
 import { FilterService, type FilterConditionsGroup } from '../../services/FilterService';
+import type { SearchParams } from '../../services/MediaSearchService';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
@@ -248,6 +249,126 @@ export function registerSeriesRoutes(
     });
 
     return sendSuccess(reply, assertFound(record, `Series ${id} not found`));
+  });
+
+  app.post('/api/series/:id/search', {
+    schema: {
+      params: {
+        type: 'object',
+        required: ['id'],
+        properties: {
+          id: { type: 'string' },
+        },
+      },
+      body: {
+        type: 'object',
+        properties: {
+          query: { type: 'string' },
+          seasonNumber: { type: 'number', minimum: 1 },
+          episodeNumber: { type: 'number', minimum: 1 },
+          episodeId: { type: 'number', minimum: 1 },
+          qualityProfileId: { type: 'number', minimum: 1 },
+        },
+      },
+      querystring: {
+        type: 'object',
+        properties: {
+          page: { type: 'number', minimum: 1 },
+          pageSize: { type: 'number', minimum: 1, maximum: 100 },
+          sortBy: { type: 'string' },
+          sortDir: { type: 'string', enum: ['asc', 'desc'] },
+        },
+      },
+    },
+  }, async (request, reply) => {
+    const searchAllIndexers = deps.searchAggregationService?.searchAllIndexers
+      ?? deps.mediaSearchService?.searchAllIndexers;
+    if (!searchAllIndexers) {
+      throw new ValidationError('Search aggregation service is not configured');
+    }
+
+    const id = parseIdParam((request.params as { id: string }).id, 'series');
+    const body = (request.body ?? {}) as {
+      query?: string;
+      seasonNumber?: number;
+      episodeNumber?: number;
+      episodeId?: number;
+      qualityProfileId?: number;
+    };
+    const pagination = parsePaginationParams(request.query as Record<string, unknown>);
+
+    const prisma = deps.prisma as any;
+    if (!prisma.series?.findUnique || !prisma.episode?.findUnique) {
+      throw new ValidationError('Series search data source is not configured');
+    }
+    const series = await prisma.series.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        title: true,
+        tvdbId: true,
+        qualityProfileId: true,
+      },
+    });
+    if (!series) {
+      throw new ValidationError(`Series ${id} not found`);
+    }
+
+    let seasonNumber = body.seasonNumber;
+    let episodeNumber = body.episodeNumber;
+
+    if ((seasonNumber === undefined || episodeNumber === undefined) && typeof body.episodeId === 'number') {
+      const episode = await prisma.episode.findUnique({
+        where: { id: body.episodeId },
+        select: {
+          id: true,
+          seriesId: true,
+          seasonNumber: true,
+          episodeNumber: true,
+        },
+      });
+
+      if (!episode || episode.seriesId !== id) {
+        throw new ValidationError(`Episode ${body.episodeId} not found for series ${id}`);
+      }
+
+      if (seasonNumber === undefined) {
+        seasonNumber = episode.seasonNumber;
+      }
+
+      if (episodeNumber === undefined) {
+        episodeNumber = episode.episodeNumber;
+      }
+    }
+
+    const searchParams: SearchParams = {
+      type: 'tvsearch',
+      query: body.query ?? series.title,
+      qualityProfileId: body.qualityProfileId ?? series.qualityProfileId ?? undefined,
+    };
+
+    if (typeof series.tvdbId === 'number') {
+      searchParams.tvdbId = series.tvdbId;
+    }
+    if (seasonNumber !== undefined) {
+      searchParams.season = seasonNumber;
+    }
+    if (episodeNumber !== undefined) {
+      searchParams.episode = episodeNumber;
+    }
+
+    const result = await searchAllIndexers(searchParams);
+    const { items, totalCount } = paginateArray(
+      result.releases,
+      pagination.page,
+      pagination.pageSize,
+    );
+
+    return sendPaginatedSuccess(reply, items, {
+      page: pagination.page,
+      pageSize: pagination.pageSize,
+      totalCount,
+    });
   });
 
   app.patch('/api/series/:id/monitored', {

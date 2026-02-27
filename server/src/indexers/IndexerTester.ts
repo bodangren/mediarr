@@ -34,7 +34,7 @@ export class IndexerTester {
       result = { success: false, message: `Unknown indexer type: ${indexer.implementation}` };
     }
 
-    if (this.indexerHealthRepository && typeof indexer.id === 'number') {
+    if (this.indexerHealthRepository && typeof indexer.id === 'number' && indexer.id > 0) {
       if (result.success) {
         await this.indexerHealthRepository.recordSuccess(indexer.id, new Date());
       } else {
@@ -49,7 +49,7 @@ export class IndexerTester {
     await this.activityEventEmitter?.emit({
       eventType: 'INDEXER_TESTED',
       sourceModule: 'indexer-tester',
-      entityRef: typeof indexer.id === 'number' ? `indexer:${indexer.id}` : undefined,
+      entityRef: typeof indexer.id === 'number' && indexer.id > 0 ? `indexer:${indexer.id}` : undefined,
       summary: result.message,
       success: result.success,
       occurredAt: new Date(),

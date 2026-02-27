@@ -149,17 +149,12 @@ export function MovieInteractiveSearchModal({
     setGrabState({ releaseId: null, isGrabbing: false, error: null, success: false });
 
     try {
-      // Build search parameters - use tmdbId or imdbId, not movieId
-      const searchParams: any = {
-        type: 'movie',
+      const result = await api.movieApi.searchReleases(movieId, {
         title: movieTitle,
-      };
-
-      if (imdbId) searchParams.imdbId = imdbId;
-      else if (tmdbId) searchParams.tmdbId = tmdbId;
-      if (movieYear) searchParams.year = movieYear;
-
-      const result = await api.releaseApi.searchCandidates(searchParams);
+        ...(imdbId ? { imdbId } : {}),
+        ...(!imdbId && tmdbId ? { tmdbId } : {}),
+        ...(movieYear ? { year: movieYear } : {}),
+      });
 
       // Transform API response to component's expected format
       // PaginatedResult has items property
@@ -206,7 +201,7 @@ export function MovieInteractiveSearchModal({
     } finally {
       setIsLoading(false);
     }
-  }, [movieId, movieTitle, movieYear, imdbId, tmdbId, api.releaseApi, pushToast]);
+  }, [movieId, movieTitle, movieYear, imdbId, tmdbId, api.movieApi, pushToast]);
 
   // Filter and sort releases
   useEffect(() => {

@@ -1,25 +1,12 @@
 # Agent Instructions (AGENTS.md)
 
-Welcome, Agent. This project uses the **Conductor Methodology** for development and project management. Adhere to the following rules during your session.
+Welcome, Agent. This project uses the **Conductor Methodology** for spec-driven development.
 
-## 1. Context Awareness
-Always start by reading the project index: `conductor/index.md`. This will guide you to the Product Definition, Tech Stack, and the current Tracks.
-
-## 2. Track-Based Development
-- **DO NOT** perform significant work without an active Track.
-- Check `conductor/tracks.md` to see which tracks are `in_progress`.
-- Follow the `plan.md` within the specific track folder (e.g., `conductor/tracks/<track_id>/plan.md`).
-
-## 3. Workflow & Standards
-- Adhere to the `conductor/workflow.md` for testing, committing, and reporting.
-- Respect the code style guides located in `conductor/code_styleguides/`.
-- Mediarr uses a **Monorepo** structure. Ensure you are working in the correct workspace (e.g., `app/` for frontend, `server/` for core logic).
-
-## 4. Reverse Engineering Protocol
-When implementing "arr" features, refer to the `reference/` directory (once initialized). Analyze the original implementations in Sonarr, Radarr, etc., to ensure feature parity while modernizing the architecture for Mediarr.
-
-## 5. Persistence & State
-Update the `plan.md` status markers `[ ]` as you complete tasks. If the workflow requires it, ensure you record task summaries using Git Notes or commit messages as specified.
-
-## 6. Mandatory Archiving
-Once a Track is marked as complete, **ALWAYS** archive it by moving its folder to `conductor/archive/` and removing its entry from the Tracks Registry. Do not ask for permission; this is the project standard.
+## Core Mandates
+1. **Context First:** Always start by reading `conductor/index.md` to understand the product, tech stack, and workflow.
+2. **Track-Based Work:** Never perform significant work without an active Track. Check `conductor/tracks.md` for `in_progress` tracks.
+3. **Follow the Spec:** Each active track has a `spec.md` and `plan.md`. Read them. Implement strictly against the plan. Update the `[ ]` checkboxes in `plan.md` as you go.
+4. **Monolith Architecture:** Mediarr is a single, unified monolith. Do not build siloed microservices or sync logic between domains (Movies vs. TV). They share the same database and memory space.
+5. **No Next.js:** We use a pure React SPA (Vite) frontend communicating with a Bun/Node daemon. Do not attempt to use Next.js App Router features.
+6. **Archiving:** When a plan is 100% complete, archive the track folder to `conductor/archive/` and update `tracks.md`. Do not ask for permission.
+7. **Commit:** Commit work with a note after each phase of a track.

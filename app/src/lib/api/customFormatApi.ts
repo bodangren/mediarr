@@ -64,7 +64,7 @@ export function createCustomFormatApi(client: ApiHttpClient) {
     /**
      * Get all custom formats
      */
-    list(): Promise<CustomFormat[]> {
+    list() {
       return client.request(
         {
           path: basePath,
@@ -76,7 +76,7 @@ export function createCustomFormatApi(client: ApiHttpClient) {
     /**
      * Get a single custom format by ID
      */
-    get(id: number): Promise<CustomFormat> {
+    get(id: number) {
       return client.request(
         {
           path: `${basePath}/${id}`,
@@ -88,7 +88,7 @@ export function createCustomFormatApi(client: ApiHttpClient) {
     /**
      * Create a new custom format
      */
-    create(input: CreateCustomFormatInput): Promise<CustomFormat> {
+    create(input: CreateCustomFormatInput) {
       return client.request(
         {
           path: basePath,
@@ -102,7 +102,7 @@ export function createCustomFormatApi(client: ApiHttpClient) {
     /**
      * Update an existing custom format
      */
-    update(id: number, input: UpdateCustomFormatInput): Promise<CustomFormat> {
+    update(id: number, input: UpdateCustomFormatInput) {
       return client.request(
         {
           path: `${basePath}/${id}`,

@@ -8,6 +8,7 @@ export const API_ROUTE_MAP: ApiRouteDefinition[] = [
 
   { method: 'GET', path: '/api/series' },
   { method: 'GET', path: '/api/series/:id' },
+  { method: 'POST', path: '/api/series/:id/search' },
   { method: 'PATCH', path: '/api/series/:id/monitored' },
   { method: 'PUT', path: '/api/series/:id/monitoring' },
   { method: 'PUT', path: '/api/series/bulk' },
@@ -28,6 +29,7 @@ export const API_ROUTE_MAP: ApiRouteDefinition[] = [
 
   { method: 'GET', path: '/api/movies' },
   { method: 'GET', path: '/api/movies/:id' },
+  { method: 'POST', path: '/api/movies/:id/search' },
   { method: 'PATCH', path: '/api/movies/:id/monitored' },
   { method: 'DELETE', path: '/api/movies/:id' },
 
@@ -48,6 +50,7 @@ export const API_ROUTE_MAP: ApiRouteDefinition[] = [
   { method: 'PATCH', path: '/api/torrents/speed-limits' },
 
   { method: 'GET', path: '/api/indexers' },
+  { method: 'GET', path: '/api/indexers/schema/:configContract' },
   { method: 'POST', path: '/api/indexers' },
   { method: 'POST', path: '/api/indexers/test' },
   { method: 'PUT', path: '/api/indexers/:id' },

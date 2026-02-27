@@ -1,161 +1,50 @@
 import { describe, expect, it } from 'vitest';
-import { NAV_ITEMS, isNavActive, type NavigationItem, type NavigationSection } from './navigation';
+import { NAV_ITEMS, isNavActive, type NavigationSection } from './navigation';
 
-describe('navigation with grouped sections', () => {
-  it('exports NavigationItem with optional icon field', () => {
-    const item: NavigationItem = {
-      path: '/test',
-      label: 'Test',
-      shortLabel: 'Test',
-      icon: 'LayoutDashboard',
-    };
-
-    expect(item.icon).toBe('LayoutDashboard');
+describe('unified monolith navigation', () => {
+  it('defines the expected top-level sections', () => {
+    const sectionIds = NAV_ITEMS.map(section => section.id);
+    expect(sectionIds).toEqual([
+      'dashboard',
+      'library',
+      'calendar',
+      'activity',
+      'settings',
+      'system',
+    ]);
   });
 
-  it('exports NavigationSection type for grouped navigation', () => {
-    const section: NavigationSection = {
-      id: 'test-section',
-      label: 'Test Section',
-      items: [
-        {
-          path: '/test',
-          label: 'Test',
-          shortLabel: 'Test',
-          icon: 'LayoutDashboard',
-        },
-      ],
-    };
+  it('exposes a unified library section', () => {
+    const library = NAV_ITEMS.find(section => section.id === 'library');
+    const paths = library?.items.map(item => item.path) ?? [];
 
-    expect(section.id).toBe('test-section');
-    expect(section.items).toHaveLength(1);
+    expect(paths).toEqual(['/library/movies', '/library/tv', '/library/collections']);
   });
 
-  it('NAV_ITEMS is an array of NavigationSection with proper grouping', () => {
-    expect(NAV_ITEMS).toBeInstanceOf(Array);
-    expect(NAV_ITEMS.length).toBeGreaterThan(0);
+  it('exposes unified system actions', () => {
+    const system = NAV_ITEMS.find(section => section.id === 'system');
+    const paths = system?.items.map(item => item.path) ?? [];
 
-    const sections = NAV_ITEMS as NavigationSection[];
-    const mediaLibrarySection = sections.find(s => s.id === 'media-library');
-    const indexersSection = sections.find(s => s.id === 'indexers-search');
-    const systemSection = sections.find(s => s.id === 'system');
-    const settingsSection = sections.find(s => s.id === 'settings');
-
-    expect(mediaLibrarySection).toBeDefined();
-    expect(mediaLibrarySection?.label).toBe('Media Library');
-    expect(mediaLibrarySection?.items).toContainEqual(
-      expect.objectContaining({ path: '/library/series', label: 'Series Library' })
-    );
-    expect(mediaLibrarySection?.items).toContainEqual(
-      expect.objectContaining({ path: '/library/movies', label: 'Movie Library' })
-    );
-
-    expect(indexersSection).toBeDefined();
-    expect(indexersSection?.label).toBe('Indexers & Search');
-    expect(indexersSection?.items).toContainEqual(expect.objectContaining({ path: '/indexers' }));
-    expect(indexersSection?.items).toContainEqual(expect.objectContaining({ path: '/search' }));
-
-    expect(systemSection).toBeDefined();
-    expect(systemSection?.label).toBe('System');
-    expect(systemSection?.items).toContainEqual(expect.objectContaining({ path: '/system/status' }));
-    expect(systemSection?.items).toContainEqual(expect.objectContaining({ path: '/system/logs/files' }));
-
-    expect(settingsSection).toBeDefined();
-    expect(settingsSection?.label).toBe('Settings');
-    expect(settingsSection?.items).toContainEqual(expect.objectContaining({ path: '/settings' }));
-    expect(settingsSection?.items).toContainEqual(expect.objectContaining({ path: '/settings/general' }));
+    expect(paths).toEqual(['/system/tasks', '/system/logs', '/system/backup']);
   });
 
-  it('all navigation items have icon fields', () => {
+  it('keeps icons and short labels for all nav items', () => {
     const sections = NAV_ITEMS as NavigationSection[];
 
     sections.forEach(section => {
       section.items.forEach(item => {
-        expect(item.icon).toBeDefined();
-        expect(typeof item.icon).toBe('string');
-        expect(item.icon.length).toBeGreaterThan(0);
+        expect(item.icon).toBeTruthy();
+        expect(item.shortLabel).toBeTruthy();
       });
     });
   });
 
-  it('navigation items use meaningful short labels (no cryptic abbreviations)', () => {
-    const sections = NAV_ITEMS as NavigationSection[];
-
-    const crypticLabels = ['IdxSet', 'DLC', 'Notify', 'Apps'];
-    const allShortLabels = sections.flatMap(section => section.items.map(item => item.shortLabel));
-
-    crypticLabels.forEach(label => {
-      expect(allShortLabels).not.toContain(label);
-    });
-  });
-
-  it('isNavActive keeps active navigation highlighting for nested routes', () => {
+  it('matches active routes using nested path prefix logic', () => {
     expect(isNavActive('/settings/indexers', '/settings')).toBe(true);
-    expect(isNavActive('/system/logs/files', '/system')).toBe(true);
-    expect(isNavActive('/library/series/123', '/library/series')).toBe(true);
-    expect(isNavActive('/history', '/indexers')).toBe(false);
-    expect(isNavActive('/', '/')).toBe(true);
-    expect(isNavActive('/library/movies', '/')).toBe(false);
-  });
-
-  describe('Subtitles navigation', () => {
-    it('should have subtitles section with all expected items', () => {
-      const subtitlesSection = NAV_ITEMS.find(section => section.id === 'subtitles');
-      expect(subtitlesSection).toBeDefined();
-      expect(subtitlesSection?.label).toBe('Subtitles');
-      expect(subtitlesSection?.items).toHaveLength(10);
-    });
-
-    it('should have series and movies navigation items', () => {
-      const subtitlesSection = NAV_ITEMS.find(section => section.id === 'subtitles');
-      const itemPaths = subtitlesSection?.items.map(item => item.path) ?? [];
-
-      expect(itemPaths).toContain('/subtitles/series');
-      expect(itemPaths).toContain('/subtitles/movies');
-    });
-
-    it('should have wanted navigation items with showBadge property', () => {
-      const subtitlesSection = NAV_ITEMS.find(section => section.id === 'subtitles');
-      const wantedSeriesItem = subtitlesSection?.items.find(item => item.path === '/subtitles/wanted/series');
-      const wantedMoviesItem = subtitlesSection?.items.find(item => item.path === '/subtitles/wanted/movies');
-
-      expect(wantedSeriesItem?.showBadge).toBe(true);
-      expect(wantedMoviesItem?.showBadge).toBe(true);
-    });
-
-    it('should have history navigation items', () => {
-      const subtitlesSection = NAV_ITEMS.find(section => section.id === 'subtitles');
-      const itemPaths = subtitlesSection?.items.map(item => item.path) ?? [];
-
-      expect(itemPaths).toContain('/subtitles/history/series');
-      expect(itemPaths).toContain('/subtitles/history/movies');
-    });
-
-    it('should have blacklist navigation items', () => {
-      const subtitlesSection = NAV_ITEMS.find(section => section.id === 'subtitles');
-      const itemPaths = subtitlesSection?.items.map(item => item.path) ?? [];
-
-      expect(itemPaths).toContain('/subtitles/blacklist/series');
-      expect(itemPaths).toContain('/subtitles/blacklist/movies');
-    });
-
-    it('should have profiles and providers navigation items', () => {
-      const subtitlesSection = NAV_ITEMS.find(section => section.id === 'subtitles');
-      const itemPaths = subtitlesSection?.items.map(item => item.path) ?? [];
-
-      expect(itemPaths).toContain('/subtitles/profiles');
-      expect(itemPaths).toContain('/subtitles/providers');
-    });
-  });
-
-  describe('Settings subtitles navigation', () => {
-    it('should have subtitles in settings section', () => {
-      const settingsSection = NAV_ITEMS.find(section => section.id === 'settings');
-      const subtitlesItem = settingsSection?.items.find(item => item.path === '/settings/subtitles');
-
-      expect(subtitlesItem).toBeDefined();
-      expect(subtitlesItem?.label).toBe('Subtitles');
-      expect(subtitlesItem?.icon).toBe('Languages');
-    });
+    expect(isNavActive('/system/logs/files', '/system/logs')).toBe(true);
+    expect(isNavActive('/library/tv/42', '/library/tv')).toBe(true);
+    expect(isNavActive('/calendar', '/dashboard')).toBe(false);
+    expect(isNavActive('/dashboard', '/')).toBe(true);
+    expect(isNavActive('/', '/')).toBe(false);
   });
 });

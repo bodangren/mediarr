@@ -45,7 +45,7 @@ const TRIGGER_OPTIONS: NotificationTrigger[] = [
 function getWebhookUrl(notification?: Notification): string {
   if (!notification) return '';
   if (notification.type === 'Discord' || notification.type === 'Slack' || notification.type === 'Webhook') {
-    return notification.webhookUrl;
+    return notification.webhookUrl ?? '';
   }
   return '';
 }
@@ -53,7 +53,7 @@ function getWebhookUrl(notification?: Notification): string {
 function getBotToken(notification?: Notification): string {
   if (!notification) return '';
   if (notification.type === 'Telegram') {
-    return notification.botToken;
+    return notification.botToken ?? '';
   }
   return '';
 }
@@ -61,7 +61,7 @@ function getBotToken(notification?: Notification): string {
 function getChatId(notification?: Notification): string {
   if (!notification) return '';
   if (notification.type === 'Telegram') {
-    return notification.chatId;
+    return notification.chatId ?? '';
   }
   return '';
 }
@@ -69,7 +69,7 @@ function getChatId(notification?: Notification): string {
 function getSmtpServer(notification?: Notification): string {
   if (!notification) return '';
   if (notification.type === 'Email') {
-    return notification.smtpServer;
+    return notification.smtpServer ?? '';
   }
   return '';
 }
@@ -77,7 +77,7 @@ function getSmtpServer(notification?: Notification): string {
 function getSmtpPort(notification?: Notification): string {
   if (!notification) return '587';
   if (notification.type === 'Email') {
-    return notification.smtpPort.toString();
+    return String(notification.smtpPort ?? 587);
   }
   return '587';
 }
@@ -85,7 +85,7 @@ function getSmtpPort(notification?: Notification): string {
 function getSmtpUser(notification?: Notification): string {
   if (!notification) return '';
   if (notification.type === 'Email') {
-    return notification.smtpUser;
+    return notification.smtpUser ?? '';
   }
   return '';
 }
@@ -93,7 +93,7 @@ function getSmtpUser(notification?: Notification): string {
 function getSmtpPassword(notification?: Notification): string {
   if (!notification) return '';
   if (notification.type === 'Email') {
-    return notification.smtpPassword;
+    return notification.smtpPassword ?? '';
   }
   return '';
 }
@@ -101,7 +101,7 @@ function getSmtpPassword(notification?: Notification): string {
 function getFromAddress(notification?: Notification): string {
   if (!notification) return '';
   if (notification.type === 'Email') {
-    return notification.fromAddress;
+    return notification.fromAddress ?? '';
   }
   return '';
 }
@@ -109,7 +109,7 @@ function getFromAddress(notification?: Notification): string {
 function getToAddress(notification?: Notification): string {
   if (!notification) return '';
   if (notification.type === 'Email') {
-    return notification.toAddress;
+    return notification.toAddress ?? '';
   }
   return '';
 }
@@ -117,7 +117,7 @@ function getToAddress(notification?: Notification): string {
 function getMethod(notification?: Notification): 'GET' | 'POST' | 'PUT' {
   if (!notification) return 'POST';
   if (notification.type === 'Webhook') {
-    return notification.method;
+    return notification.method ?? 'POST';
   }
   return 'POST';
 }

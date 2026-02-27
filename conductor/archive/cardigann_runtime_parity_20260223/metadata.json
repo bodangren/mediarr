@@ -1,0 +1,8 @@
+{
+  "track_id": "cardigann_runtime_parity_20260223",
+  "type": "feature",
+  "status": "complete",
+  "created_at": "2026-02-23T00:00:00Z",
+  "updated_at": "2026-02-24T00:00:00Z",
+  "description": "Deliver monolith-native Cardigann runtime parity for imported definitions using a test-first conformance harness, definition-driven implementation milestones, and strict compatibility reporting."
+}

@@ -1,7 +1,7 @@
 import type { BaseIndexer, SearchQuery } from './BaseIndexer';
 import { TorznabIndexer, ScrapingIndexer } from './BaseIndexer';
 import type { HttpClient, HttpResponse } from './HttpClient';
-import { renderCardigannTemplate, resolveCardigannUrl } from './TemplateRuntime';
+import { buildCardigannRequest } from './CardigannRequestBuilder';
 
 type FetchFn = typeof globalThis.fetch;
 
@@ -30,8 +30,8 @@ export class SearchTranslator {
   async searchAll(indexer: ScrapingIndexer, query: SearchQuery, fetchFn?: FetchFn): Promise<HttpResponse[]> {
     const responses: HttpResponse[] = [];
     for (const searchPath of indexer.searchPaths) {
-      const url = this.buildScrapingUrl(indexer.baseUrl, searchPath.path, query, indexer.settings);
-      const response = await this.client.get(url, {}, fetchFn);
+      const request = buildCardigannRequest(indexer.definition, searchPath, query, indexer.settings);
+      const response = await this.client.get(request.url, { headers: request.headers }, fetchFn);
       responses.push(response);
     }
     return responses;
@@ -48,28 +48,7 @@ export class SearchTranslator {
       throw new Error(`No search paths defined for indexer: ${indexer.name}`);
     }
 
-    const url = this.buildScrapingUrl(indexer.baseUrl, firstPath.path, query, indexer.settings);
-    return this.client.get(url, {}, fetchFn);
-  }
-
-  /**
-   * Build a full URL by substituting template variables into the search path.
-   */
-  private buildScrapingUrl(
-    baseUrl: string,
-    pathTemplate: string,
-    query: SearchQuery,
-    settings: Record<string, unknown>,
-  ): string {
-    let renderedPath = renderCardigannTemplate(pathTemplate, {
-      query,
-      config: settings,
-      categories: query.categories ?? [],
-    }, { strict: true });
-
-    // Also handle legacy {q} shorthand.
-    renderedPath = renderedPath.replace(/\{q\}/g, encodeURIComponent(query.q ?? '').replace(/%20/g, '+'));
-
-    return resolveCardigannUrl(baseUrl, renderedPath);
+    const request = buildCardigannRequest(indexer.definition, firstPath, query, indexer.settings);
+    return this.client.get(request.url, { headers: request.headers }, fetchFn);
   }
 }

@@ -21,6 +21,7 @@ interface ModalHeaderProps {
 
 interface ModalBodyProps {
   children: ReactNode;
+  className?: string;
 }
 
 interface ModalFooterProps {
@@ -115,8 +116,8 @@ export function ModalHeader({ title, onClose, actions }: ModalHeaderProps) {
   );
 }
 
-export function ModalBody({ children }: ModalBodyProps) {
-  return <div className="flex-1 overflow-y-auto px-4 py-3">{children}</div>;
+export function ModalBody({ children, className = '' }: ModalBodyProps) {
+  return <div className={`flex-1 overflow-y-auto px-4 py-3 ${className}`}>{children}</div>;
 }
 
 export function ModalFooter({ children }: ModalFooterProps) {

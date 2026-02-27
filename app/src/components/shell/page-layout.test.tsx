@@ -1,13 +1,16 @@
 import { render, screen } from '@testing-library/react';
+import { BrowserRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import { PageLayout } from './PageLayout';
 
 describe('PageLayout', () => {
-  it('renders page header, sidebar, mobile nav, and main content area', () => {
+  it('renders header, sidebar nav, mobile nav, and content', () => {
     render(
-      <PageLayout pathname="/queue" sidebarCollapsed={false} onToggleSidebar={vi.fn()} header={<div>Page Header</div>}>
-        <div>Queue content</div>
-      </PageLayout>,
+      <BrowserRouter>
+        <PageLayout pathname="/activity/queue" sidebarCollapsed={false} onToggleSidebar={vi.fn()} header={<div>Page Header</div>}>
+          <div>Queue content</div>
+        </PageLayout>
+      </BrowserRouter>,
     );
 
     expect(screen.getByText('Page Header')).toBeInTheDocument();
@@ -16,18 +19,15 @@ describe('PageLayout', () => {
     expect(screen.getByRole('main')).toHaveTextContent('Queue content');
   });
 
-  it('renders mobile navigation with icons and labels', () => {
+  it('renders bottom mobile nav actions', () => {
     render(
-      <PageLayout pathname="/indexers" sidebarCollapsed={false} onToggleSidebar={vi.fn()} header={<div>Header</div>}>
-        <div>Content</div>
-      </PageLayout>,
+      <BrowserRouter>
+        <PageLayout pathname="/dashboard" sidebarCollapsed={false} onToggleSidebar={vi.fn()} header={<div>Header</div>}>
+          <div>Content</div>
+        </PageLayout>
+      </BrowserRouter>,
     );
 
-    const mobileNav = screen.getByRole('navigation', { name: /mobile navigation/i });
-    expect(mobileNav).toBeInTheDocument();
-
-    // Check for icons (Lucide icons render as SVGs)
-    const icons = mobileNav.querySelectorAll('svg');
-    expect(icons.length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: /more navigation options/i })).toBeInTheDocument();
   });
 });

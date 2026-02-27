@@ -62,7 +62,7 @@ export class ApiHttpClient {
 
   async request<T>(
     config: RequestConfig,
-    schema: z.ZodType<T>,
+    schema: z.ZodType<T, z.ZodTypeDef, unknown>,
   ): Promise<T> {
     const payload = await this.execute(config);
 
@@ -90,7 +90,7 @@ export class ApiHttpClient {
 
   async requestPaginated<T>(
     config: RequestConfig,
-    itemSchema: z.ZodType<T>,
+    itemSchema: z.ZodType<T, z.ZodTypeDef, unknown>,
   ): Promise<PaginatedResult<T>> {
     const payload = await this.execute(config);
 

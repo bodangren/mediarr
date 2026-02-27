@@ -4,6 +4,26 @@ import { sendSuccess } from '../contracts';
 import { parseIdParam } from '../routeUtils';
 import type { ApiDependencies } from '../types';
 
+type DynamicSchemaFieldType = 'text' | 'password' | 'number' | 'boolean';
+
+interface DynamicSchemaField {
+  name: string;
+  label: string;
+  type: DynamicSchemaFieldType;
+  required?: boolean;
+  defaultValue?: string | number | boolean;
+}
+
+const TORZNAB_SCHEMA_FIELDS: DynamicSchemaField[] = [
+  { name: 'url', label: 'Indexer URL', type: 'text', required: true },
+  { name: 'apiKey', label: 'API Key', type: 'password', required: true },
+];
+
+const NEWZNAB_SCHEMA_FIELDS: DynamicSchemaField[] = [
+  { name: 'host', label: 'Host', type: 'text', required: true },
+  { name: 'apiKey', label: 'API Key', type: 'password', required: true },
+];
+
 function remediationHints(message: string): string[] {
   const hints: string[] = [];
   const normalized = message.toLowerCase();
@@ -38,6 +58,77 @@ async function loadHealthSnapshot(
   return deps.indexerHealthRepository.getByIndexerId(indexerId);
 }
 
+function normalizeCardigannSettingType(rawType: string): DynamicSchemaFieldType | null {
+  const normalized = rawType.toLowerCase();
+
+  if (normalized === 'password') {
+    return 'password';
+  }
+  if (normalized === 'number' || normalized === 'integer') {
+    return 'number';
+  }
+  if (normalized === 'checkbox' || normalized === 'bool' || normalized === 'boolean') {
+    return 'boolean';
+  }
+  if (normalized === 'info') {
+    return null;
+  }
+
+  return 'text';
+}
+
+function buildCardigannSchemaFields(definition: { settings?: unknown[] }, definitionId: string): DynamicSchemaField[] {
+  const fields: DynamicSchemaField[] = [
+    {
+      name: 'definitionId',
+      label: 'Definition ID',
+      type: 'text',
+      required: true,
+      defaultValue: definitionId,
+    },
+  ];
+
+  for (const rawSetting of definition.settings ?? []) {
+    if (!rawSetting || typeof rawSetting !== 'object') {
+      continue;
+    }
+
+    const setting = rawSetting as {
+      name?: unknown;
+      label?: unknown;
+      type?: unknown;
+      default?: unknown;
+      optional?: unknown;
+    };
+    if (typeof setting.name !== 'string' || !setting.name || setting.name === 'definitionId') {
+      continue;
+    }
+
+    const fieldType = normalizeCardigannSettingType(typeof setting.type === 'string' ? setting.type : 'text');
+    if (!fieldType) {
+      continue;
+    }
+
+    const defaultValue = (
+      typeof setting.default === 'string'
+      || typeof setting.default === 'number'
+      || typeof setting.default === 'boolean'
+    ) ? setting.default : undefined;
+
+    fields.push({
+      name: setting.name,
+      label: typeof setting.label === 'string' && setting.label.trim().length > 0
+        ? setting.label
+        : setting.name,
+      type: fieldType,
+      required: !Boolean(setting.optional),
+      ...(defaultValue !== undefined ? { defaultValue } : {}),
+    });
+  }
+
+  return fields;
+}
+
 export function registerIndexerRoutes(
   app: FastifyInstance,
   deps: ApiDependencies,
@@ -56,6 +147,75 @@ export function registerIndexerRoutes(
     return sendSuccess(reply, withHealth);
   });
 
+  app.get('/api/indexers/schema/:configContract', {
+    schema: {
+      params: {
+        type: 'object',
+        required: ['configContract'],
+        properties: {
+          configContract: { type: 'string' },
+        },
+      },
+      querystring: {
+        type: 'object',
+        properties: {
+          definitionId: { type: 'string' },
+        },
+      },
+    },
+  }, async (request, reply) => {
+    const { configContract } = request.params as { configContract: string };
+
+    if (configContract === 'TorznabSettings') {
+      return sendSuccess(reply, {
+        configContract,
+        fields: TORZNAB_SCHEMA_FIELDS,
+        compatibility: null,
+      });
+    }
+
+    if (configContract === 'NewznabSettings') {
+      return sendSuccess(reply, {
+        configContract,
+        fields: NEWZNAB_SCHEMA_FIELDS,
+        compatibility: null,
+      });
+    }
+
+    if (configContract !== 'CardigannSettings') {
+      return sendSuccess(reply, {
+        configContract,
+        fields: [],
+        compatibility: null,
+      });
+    }
+
+    const { definitionId } = request.query as { definitionId?: string };
+    if (!definitionId || definitionId.trim().length === 0) {
+      throw new ValidationError('definitionId query parameter is required for CardigannSettings schema lookup');
+    }
+
+    if (!deps.indexerFactory?.getDefinition) {
+      throw new ValidationError('Indexer factory schema lookup is not configured');
+    }
+
+    const definition = deps.indexerFactory.getDefinition(definitionId);
+    if (!definition) {
+      throw new NotFoundError(`Cardigann definition '${definitionId}' not found`);
+    }
+
+    const compatibility = deps.indexerFactory.getCompatibilityReport
+      ? deps.indexerFactory.getCompatibilityReport(definitionId)
+      : null;
+
+    return sendSuccess(reply, {
+      configContract,
+      definitionId,
+      fields: buildCardigannSchemaFields(definition, definitionId),
+      compatibility,
+    });
+  });
+
   app.post('/api/indexers', {
     schema: {
       body: {
@@ -67,7 +227,7 @@ export function registerIndexerRoutes(
           configContract: { type: 'string' },
           settings: { type: 'string' },
           protocol: { type: 'string' },
-          appProfileId: { type: 'number' },
+          supportedMediaTypes: { type: 'string' },
           enabled: { type: 'boolean' },
           supportsRss: { type: 'boolean' },
           supportsSearch: { type: 'boolean' },
@@ -97,7 +257,7 @@ export function registerIndexerRoutes(
           configContract: { type: 'string' },
           settings: { type: 'string' },
           protocol: { type: 'string' },
-          appProfileId: { type: 'number' },
+          supportedMediaTypes: { type: 'string' },
           enabled: { type: 'boolean' },
           supportsRss: { type: 'boolean' },
           supportsSearch: { type: 'boolean' },
@@ -130,7 +290,7 @@ export function registerIndexerRoutes(
       configContract: typeof payload.configContract === 'string' ? payload.configContract : 'TorznabSettings',
       settings: JSON.stringify(parsedSettings),
       protocol: typeof payload.protocol === 'string' ? payload.protocol : 'torrent',
-      appProfileId: typeof payload.appProfileId === 'number' ? payload.appProfileId : null,
+      supportedMediaTypes: typeof payload.supportedMediaTypes === 'string' ? payload.supportedMediaTypes : '[]',
       enabled: typeof payload.enabled === 'boolean' ? payload.enabled : true,
       supportsRss: typeof payload.supportsRss === 'boolean' ? payload.supportsRss : true,
       supportsSearch: typeof payload.supportsSearch === 'boolean' ? payload.supportsSearch : true,
@@ -145,11 +305,12 @@ export function registerIndexerRoutes(
       }
       indexer = deps.indexerFactory.fromDatabaseRecord(draftRecord as any);
     } catch (factoryError: any) {
+      const message = factoryError.message ?? 'Failed to create indexer instance';
       return sendSuccess(reply, {
         success: false,
-        message: factoryError.message ?? 'Failed to create indexer instance',
+        message,
         diagnostics: {
-          remediationHints: ['Check that the indexer definition exists and is valid.'],
+          remediationHints: remediationHints(message),
         },
         healthSnapshot: null,
       });
@@ -237,9 +398,22 @@ export function registerIndexerRoutes(
       throw new NotFoundError(`Indexer ${id} not found`);
     }
 
-    const indexer = deps.indexerFactory?.fromDatabaseRecord
-      ? deps.indexerFactory.fromDatabaseRecord(record as any)
-      : record;
+    let indexer;
+    try {
+      indexer = deps.indexerFactory?.fromDatabaseRecord
+        ? deps.indexerFactory.fromDatabaseRecord(record as any)
+        : record;
+    } catch (factoryError: any) {
+      const message = factoryError.message ?? 'Failed to create indexer instance';
+      return sendSuccess(reply, {
+        success: false,
+        message,
+        diagnostics: {
+          remediationHints: remediationHints(message),
+        },
+        healthSnapshot: await loadHealthSnapshot(deps, id),
+      });
+    }
 
     const result = await deps.indexerTester.test(indexer as any);
     const snapshot = await loadHealthSnapshot(deps, id);
@@ -287,7 +461,7 @@ export function registerIndexerRoutes(
       configContract: source.configContract,
       settings: source.settings,
       protocol: source.protocol,
-      appProfileId: source.appProfileId,
+      supportedMediaTypes: source.supportedMediaTypes,
       enabled: source.enabled,
       supportsRss: source.supportsRss,
       supportsSearch: source.supportsSearch,

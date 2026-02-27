@@ -3,7 +3,8 @@ import type { HttpClient } from './HttpClient';
 import type { IndexerResult } from './IndexerResult';
 import { TorznabParser } from './TorznabParser';
 import { ScrapingParser } from './ScrapingParser';
-import { renderCardigannTemplate, resolveCardigannUrl } from './TemplateRuntime';
+import { buildCardigannRequest } from './CardigannRequestBuilder';
+import type { DefinitionCompatibilityReport } from './CardigannCompatibility';
 
 export interface IndexerConfig {
   id: number;
@@ -140,6 +141,7 @@ export class TorznabIndexer extends BaseIndexer {
 
 export interface ScrapingIndexerConfig extends IndexerConfig {
   definition: CardigannDefinition;
+  compatibility?: DefinitionCompatibilityReport;
 }
 
 /**
@@ -147,10 +149,12 @@ export interface ScrapingIndexerConfig extends IndexerConfig {
  */
 export class ScrapingIndexer extends BaseIndexer {
   readonly definition: CardigannDefinition;
+  readonly compatibility?: DefinitionCompatibilityReport;
 
   constructor(config: ScrapingIndexerConfig) {
     super(config);
     this.definition = config.definition;
+    this.compatibility = config.compatibility;
   }
 
   get indexerType(): string {
@@ -175,25 +179,18 @@ export class ScrapingIndexer extends BaseIndexer {
       throw new Error(`No search paths defined for indexer: ${this.name}`);
     }
 
-    const url = this.buildScrapingUrl(this.baseUrl, firstPath.path, query);
-    const response = await this.httpClient.get(url);
+    const request = buildCardigannRequest(this.definition, firstPath, query, this.settings);
+    const response = await this.httpClient.get(request.url, { headers: request.headers });
     if (!response.ok) {
       throw new Error(`Scraping request failed: ${response.status}`);
     }
 
     const parser = new ScrapingParser();
-    return parser.parse(response.body, this.definition.search.rows.selector, this.definition.search.fields, this.baseUrl);
-  }
-
-  private buildScrapingUrl(baseUrl: string, pathTemplate: string, query: SearchQuery): string {
-    let renderedPath = renderCardigannTemplate(pathTemplate, {
-      query,
-      config: this.settings,
-      categories: query.categories ?? [],
-    }, { strict: true });
-
-    // Also handle legacy {q} shorthand.
-    renderedPath = renderedPath.replace(/\{q\}/g, encodeURIComponent(query.q ?? '').replace(/%20/g, '+'));
-    return resolveCardigannUrl(baseUrl, renderedPath);
+    return parser.parse(response.body, this.definition.search.rows.selector, this.definition.search.fields, this.baseUrl, {
+      responseType: request.responseType,
+      rows: this.definition.search.rows,
+      categoryMappings: this.categoryMappings,
+      query: request.query,
+    });
   }
 }

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { ApiHttpClient } from './httpClient';
 import { createCrudApi } from './createCrudApi';
-import { TestResult } from './shared-schemas';
+import type { TestResult } from './shared-schemas';
 import { routeMap } from './routeMap';
 
 const indexerSchema = z.object({
@@ -11,7 +11,7 @@ const indexerSchema = z.object({
   configContract: z.string(),
   settings: z.string(),
   protocol: z.string(),
-  supportedMediaTypes: z.string().optional().default('[]'),
+  supportedMediaTypes: z.string().default('[]'),
   enabled: z.boolean(),
   supportsRss: z.boolean(),
   supportsSearch: z.boolean(),

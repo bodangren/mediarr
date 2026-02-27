@@ -1,0 +1,52 @@
+import { describe, expect, it } from 'vitest';
+import { PROWLARR_ROUTE_PATHS } from './prowlarrRoutes';
+import { NAV_ITEMS, isNavActive } from './navigation';
+
+describe('prowlarr route configuration', () => {
+  it('contains major prowlarr route paths', () => {
+    expect(PROWLARR_ROUTE_PATHS).toEqual(
+      expect.arrayContaining([
+        '/indexers',
+        '/indexers/stats',
+        '/search',
+        '/history',
+        '/settings/indexers',
+        '/settings/general',
+        '/settings/ui',
+        '/system/status',
+        '/system/tasks',
+        '/system/backup',
+        '/system/updates',
+        '/system/events',
+        '/system/logs/files',
+      ]),
+    );
+  });
+
+  it('does not contain duplicate paths', () => {
+    expect(new Set(PROWLARR_ROUTE_PATHS).size).toBe(PROWLARR_ROUTE_PATHS.length);
+  });
+
+  it('exposes major settings and system routes in navigation', () => {
+    // Flatten navigation sections to get all item paths
+    const navPaths = NAV_ITEMS.flatMap(section => section.items.map(item => item.path));
+
+    expect(navPaths).toEqual(
+      expect.arrayContaining([
+        '/settings/general',
+        '/settings/ui',
+        '/system/tasks',
+        '/system/backup',
+        '/system/updates',
+        '/system/events',
+        '/system/logs/files',
+      ]),
+    );
+  });
+
+  it('keeps active navigation highlighting for nested routes', () => {
+    expect(isNavActive('/settings/indexers', '/settings')).toBe(true);
+    expect(isNavActive('/system/logs/files', '/system')).toBe(true);
+    expect(isNavActive('/history', '/indexers')).toBe(false);
+  });
+});

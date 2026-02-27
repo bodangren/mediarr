@@ -112,29 +112,12 @@ export function InteractiveSearchModal({
     setGrabState({ releaseId: null, isGrabbing: false, error: null, success: false });
 
     try {
-      // Build search params based on whether it's episode-level or season-level search
-      const searchParams: {
-        type: 'tvsearch';
-        tvdbId?: number;
-        season?: number;
-        episode?: number;
-      } = {
-        type: 'tvsearch',
-      };
-
-      if (tvdbId !== undefined) {
-        searchParams.tvdbId = tvdbId;
-      }
-
-      if (seasonNumber !== undefined) {
-        searchParams.season = seasonNumber;
-      }
-
-      if (episodeNumber !== undefined) {
-        searchParams.episode = episodeNumber;
-      }
-
-      const result = await api.releaseApi.searchCandidates(searchParams);
+      const result = await api.seriesApi.searchReleases(seriesId, {
+        query: seriesTitle,
+        seasonNumber,
+        episodeNumber,
+        ...(episodeId !== null ? { episodeId } : {}),
+      });
 
       // Transform API response to component's expected format
       const releases: ReleaseResult[] = result.items.map((candidate, index) => ({
@@ -174,7 +157,7 @@ export function InteractiveSearchModal({
     } finally {
       setIsLoading(false);
     }
-  }, [tvdbId, seasonNumber, episodeNumber, api.releaseApi, pushToast]);
+  }, [tvdbId, seasonNumber, episodeNumber, episodeId, seriesId, seriesTitle, api.seriesApi, pushToast]);
 
   // Search automatically when modal opens
   useEffect(() => {

@@ -1,0 +1,441 @@
+{
+  "generatedAt": "2026-02-26T13:37:45.948Z",
+  "presetDefinitionIds": [
+    "1337x",
+    "eztv",
+    "yts",
+    "thepiratebay",
+    "nyaasi",
+    "limetorrents",
+    "torrentdownloads",
+    "torrentgalaxyclone",
+    "rutor"
+  ],
+  "totals": {
+    "definitions": 9,
+    "compatible": 9,
+    "degraded": 0,
+    "incompatible": 0
+  },
+  "compatibility": [
+    {
+      "definitionId": "1337x",
+      "status": "compatible",
+      "issues": []
+    },
+    {
+      "definitionId": "eztv",
+      "status": "compatible",
+      "issues": []
+    },
+    {
+      "definitionId": "yts",
+      "status": "compatible",
+      "issues": []
+    },
+    {
+      "definitionId": "thepiratebay",
+      "status": "compatible",
+      "issues": []
+    },
+    {
+      "definitionId": "nyaasi",
+      "status": "compatible",
+      "issues": []
+    },
+    {
+      "definitionId": "limetorrents",
+      "status": "compatible",
+      "issues": []
+    },
+    {
+      "definitionId": "torrentdownloads",
+      "status": "compatible",
+      "issues": []
+    },
+    {
+      "definitionId": "torrentgalaxyclone",
+      "status": "compatible",
+      "issues": []
+    },
+    {
+      "definitionId": "rutor",
+      "status": "compatible",
+      "issues": []
+    }
+  ],
+  "inventory": [
+    {
+      "definitionId": "1337x",
+      "requestFeatures": [],
+      "filterNames": [
+        "dateparse",
+        "fuzzytime",
+        "re_replace",
+        "replace",
+        "split",
+        "urldecode"
+      ],
+      "templateConstructs": [
+        ".Config.disablesort",
+        ".Config.downloadlink",
+        ".Config.downloadlink2",
+        ".Config.sort",
+        ".Config.type",
+        ".Config.uploader",
+        ".False",
+        ".Keywords",
+        ".Result",
+        ".Result.category_optional",
+        ".Result.date_today",
+        ".Result.date_year",
+        ".Result.date_years",
+        ".Result.title_default",
+        ".Result.title_optional",
+        "else",
+        "if"
+      ]
+    },
+    {
+      "definitionId": "eztv",
+      "requestFeatures": [
+        "search.headers"
+      ],
+      "filterNames": [
+        "andmatch",
+        "append",
+        "re_replace",
+        "replace",
+        "trim"
+      ],
+      "templateConstructs": [
+        ".Keywords",
+        "else",
+        "if"
+      ]
+    },
+    {
+      "definitionId": "limetorrents",
+      "requestFeatures": [],
+      "filterNames": [
+        "re_replace",
+        "regexp",
+        "replace",
+        "split"
+      ],
+      "templateConstructs": [
+        ".Config.downloadlink",
+        ".Config.downloadlink2",
+        ".Config.sort",
+        ".Keywords",
+        ".Result.category_is_tv_show",
+        ".Result.title",
+        "else",
+        "if"
+      ]
+    },
+    {
+      "definitionId": "nyaasi",
+      "requestFeatures": [
+        "search.inputs",
+        "paths.inputs"
+      ],
+      "filterNames": [
+        "append",
+        "dateparse",
+        "re_replace",
+        "regexp",
+        "split",
+        "trim"
+      ],
+      "templateConstructs": [
+        ".Config.cat-id",
+        ".Config.filter-id",
+        ".Config.prefer_magnet_links",
+        ".Config.radarr_compatibility",
+        ".Config.sonarr_compatibility",
+        ".Config.sort",
+        ".Config.strip_s01",
+        ".Config.type",
+        ".Keywords",
+        ".Query.Keywords",
+        ".Result.category_group_id",
+        ".Result.download_optional",
+        ".Result.title_default",
+        ".Result.title_has_episode",
+        ".Result.title_has_movie_ova",
+        ".Result.title_has_season",
+        ".Result.title_keyword_year",
+        ".Result.title_optional",
+        ".Result.title_phase1",
+        ".Result.title_phase2",
+        ".Result.title_phase3",
+        "else",
+        "if"
+      ]
+    },
+    {
+      "definitionId": "rutor",
+      "requestFeatures": [],
+      "filterNames": [
+        "append",
+        "dateparse",
+        "re_replace",
+        "regexp",
+        "replace"
+      ],
+      "templateConstructs": [
+        ".Config.addrussiantotitle",
+        ".Config.sort",
+        ".Config.stripcyrillic",
+        ".Keywords",
+        ".Query.IMDBID",
+        "else",
+        "if"
+      ]
+    },
+    {
+      "definitionId": "thepiratebay",
+      "requestFeatures": [
+        "paths.response.json"
+      ],
+      "filterNames": [
+        "prepend",
+        "re_replace",
+        "tolower"
+      ],
+      "templateConstructs": [
+        ".Categories",
+        ".Config.sitelink",
+        ".Config.uploader",
+        ".Keywords",
+        ".Result",
+        "else",
+        "if"
+      ]
+    },
+    {
+      "definitionId": "torrentdownloads",
+      "requestFeatures": [
+        "search.inputs"
+      ],
+      "filterNames": [
+        "re_replace",
+        "regexp",
+        "replace",
+        "trim"
+      ],
+      "templateConstructs": [
+        ".Categories",
+        ".Config.downloadlink",
+        ".Config.downloadlink2",
+        ".Keywords",
+        "else",
+        "if",
+        "range"
+      ]
+    },
+    {
+      "definitionId": "torrentgalaxyclone",
+      "requestFeatures": [],
+      "filterNames": [
+        "timeago"
+      ],
+      "templateConstructs": [
+        ".Categories",
+        ".Config.uploader",
+        ".Keywords",
+        ".Query.IMDBID",
+        ".Result",
+        "else",
+        "if",
+        "range"
+      ]
+    },
+    {
+      "definitionId": "yts",
+      "requestFeatures": [
+        "search.inputs",
+        "paths.response.json"
+      ],
+      "filterNames": [
+        "append",
+        "re_replace",
+        "replace"
+      ],
+      "templateConstructs": [
+        ".Config.sitelink",
+        ".Keywords",
+        ".Query.IMDBID",
+        ".Result",
+        ".Result.title_default",
+        ".Result.year",
+        "else",
+        "if"
+      ]
+    }
+  ],
+  "harnessReport": {
+    "total": 16,
+    "passed": 16,
+    "failed": 0,
+    "byFeatureArea": {
+      "compatibility": {
+        "total": 9,
+        "passed": 9,
+        "failed": 0
+      },
+      "request": {
+        "total": 7,
+        "passed": 7,
+        "failed": 0
+      }
+    },
+    "byDefinitionId": {
+      "1337x": {
+        "total": 1,
+        "passed": 1,
+        "failed": 0
+      },
+      "eztv": {
+        "total": 2,
+        "passed": 2,
+        "failed": 0
+      },
+      "limetorrents": {
+        "total": 1,
+        "passed": 1,
+        "failed": 0
+      },
+      "nyaasi": {
+        "total": 3,
+        "passed": 3,
+        "failed": 0
+      },
+      "rutor": {
+        "total": 1,
+        "passed": 1,
+        "failed": 0
+      },
+      "thepiratebay": {
+        "total": 2,
+        "passed": 2,
+        "failed": 0
+      },
+      "torrentdownloads": {
+        "total": 2,
+        "passed": 2,
+        "failed": 0
+      },
+      "torrentgalaxyclone": {
+        "total": 1,
+        "passed": 1,
+        "failed": 0
+      },
+      "yts": {
+        "total": 3,
+        "passed": 3,
+        "failed": 0
+      }
+    },
+    "cases": [
+      {
+        "id": "compatibility-1337x",
+        "definitionId": "1337x",
+        "featureArea": "compatibility",
+        "status": "pass"
+      },
+      {
+        "id": "compatibility-eztv",
+        "definitionId": "eztv",
+        "featureArea": "compatibility",
+        "status": "pass"
+      },
+      {
+        "id": "request-eztv-search.headers",
+        "definitionId": "eztv",
+        "featureArea": "request",
+        "status": "pass"
+      },
+      {
+        "id": "compatibility-limetorrents",
+        "definitionId": "limetorrents",
+        "featureArea": "compatibility",
+        "status": "pass"
+      },
+      {
+        "id": "compatibility-nyaasi",
+        "definitionId": "nyaasi",
+        "featureArea": "compatibility",
+        "status": "pass"
+      },
+      {
+        "id": "request-nyaasi-search.inputs",
+        "definitionId": "nyaasi",
+        "featureArea": "request",
+        "status": "pass"
+      },
+      {
+        "id": "request-nyaasi-paths.inputs",
+        "definitionId": "nyaasi",
+        "featureArea": "request",
+        "status": "pass"
+      },
+      {
+        "id": "compatibility-rutor",
+        "definitionId": "rutor",
+        "featureArea": "compatibility",
+        "status": "pass"
+      },
+      {
+        "id": "compatibility-thepiratebay",
+        "definitionId": "thepiratebay",
+        "featureArea": "compatibility",
+        "status": "pass"
+      },
+      {
+        "id": "request-thepiratebay-paths.response.json",
+        "definitionId": "thepiratebay",
+        "featureArea": "request",
+        "status": "pass"
+      },
+      {
+        "id": "compatibility-torrentdownloads",
+        "definitionId": "torrentdownloads",
+        "featureArea": "compatibility",
+        "status": "pass"
+      },
+      {
+        "id": "request-torrentdownloads-search.inputs",
+        "definitionId": "torrentdownloads",
+        "featureArea": "request",
+        "status": "pass"
+      },
+      {
+        "id": "compatibility-torrentgalaxyclone",
+        "definitionId": "torrentgalaxyclone",
+        "featureArea": "compatibility",
+        "status": "pass"
+      },
+      {
+        "id": "compatibility-yts",
+        "definitionId": "yts",
+        "featureArea": "compatibility",
+        "status": "pass"
+      },
+      {
+        "id": "request-yts-search.inputs",
+        "definitionId": "yts",
+        "featureArea": "request",
+        "status": "pass"
+      },
+      {
+        "id": "request-yts-paths.response.json",
+        "definitionId": "yts",
+        "featureArea": "request",
+        "status": "pass"
+      }
+    ]
+  },
+  "harnessSummary": "CARDIGANN_CONFORMANCE_SUMMARY total=16 passed=16 failed=0\nFEATURE area=compatibility total=9 passed=9 failed=0\nFEATURE area=request total=7 passed=7 failed=0\nDEFINITION id=1337x total=1 passed=1 failed=0\nDEFINITION id=eztv total=2 passed=2 failed=0\nDEFINITION id=limetorrents total=1 passed=1 failed=0\nDEFINITION id=nyaasi total=3 passed=3 failed=0\nDEFINITION id=rutor total=1 passed=1 failed=0\nDEFINITION id=thepiratebay total=2 passed=2 failed=0\nDEFINITION id=torrentdownloads total=2 passed=2 failed=0\nDEFINITION id=torrentgalaxyclone total=1 passed=1 failed=0\nDEFINITION id=yts total=3 passed=3 failed=0"
+}

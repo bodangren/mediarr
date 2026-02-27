@@ -72,8 +72,10 @@ export interface SearchPathBlock {
 
 export interface RowsBlock {
   selector: string;
+  attribute?: string;
   after?: number;
   multiple?: boolean;
+  missingAttributeEqualsNoResults?: boolean;
   filters?: FilterBlock[];
   count?: SelectorBlock;
   dateheaders?: SelectorBlock;

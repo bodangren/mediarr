@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 import { Icon } from '@/components/primitives/Icon';
 import { StatusBadge } from '@/components/primitives/StatusBadge';
 import { getFileStatus, getRatingDisplay, getRuntimeDisplay, type MovieListItem } from '@/types/movie';
@@ -27,7 +27,7 @@ function MoviePosterCard({ item, onToggleMonitored, onDelete, onSearch }: MovieP
 
   return (
     <Link
-      href={`/library/movies/${item.id}`}
+      to={`/library/movies/${item.id}`}
       className="group relative flex flex-col gap-2 overflow-hidden rounded-md border border-border-subtle bg-surface-1 transition-all hover:shadow-elevation-2"
     >
       {/* Poster Image */}

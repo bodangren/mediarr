@@ -60,7 +60,7 @@ export function SeriesBulkEditModal({
     enabled: isOpen,
   });
 
-  const qualityProfiles = qualityProfilesData?.data ?? [];
+  const qualityProfiles = qualityProfilesData ?? [];
   const rootFolders = rootFoldersData?.rootFolders ?? [];
 
   // Reset form when modal opens

@@ -1,0 +1,8 @@
+{
+  "track_id": "monolith_unification_refactor_20260226",
+  "type": "refactor",
+  "status": "completed",
+  "created_at": "2026-02-26T00:00:00Z",
+  "updated_at": "2026-02-26T00:00:00Z",
+  "description": "Refactor Mediarr away from siloed microservice structures into a true monolith. Prune Prowlarr sync features, merge duplicate menus, and establish a single unified global backend architecture."
+}

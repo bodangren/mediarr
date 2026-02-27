@@ -1,0 +1,22 @@
+Task: Backend-Served SPA Deep-Link Validation
+
+Summary: Implemented static file serving with SPA deep-link fallback for the Fastify backend server.
+
+Changes:
+- Created server/src/api/staticServing.ts with registerStaticServing function
+- Created server/src/api/staticServing.test.ts with 17 integration tests
+- Updated server/src/main.ts to register static serving from app/dist
+
+Key behaviors:
+- Serves static assets (JS, CSS, images, fonts) with correct MIME types
+- Falls back to index.html for SPA routes (dashboard, library/*, settings/*, etc.)
+- Does NOT serve index.html for /api/* routes (passes through to API handlers)
+- Does NOT serve index.html for missing static files (returns 404)
+- Handles missing static directory gracefully
+
+Files created/modified:
+- server/src/api/staticServing.ts (new)
+- server/src/api/staticServing.test.ts (new)
+- server/src/main.ts (modified)
+
+Why: Required for production deployment where the Bun backend serves the Vite-built React SPA directly, enabling deep-linking to client-side routes.

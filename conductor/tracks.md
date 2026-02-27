@@ -32,7 +32,7 @@ Vite Frontend Parity Recovery (Phase 5: Hardening and Release Gates)
 
 ## Active Tracks
 
-- [ ] **Track: Vite Frontend Parity Recovery** *Phases: 5 | Link: [./tracks/vite_parity_recovery_20260226/](./tracks/vite_parity_recovery_20260226/)*
+- [x] **Track: Vite Frontend Parity Recovery** *Phases: 5 | Link: [./tracks/vite_parity_recovery_20260226/](./tracks/vite_parity_recovery_20260226/)*
 
 ---
 

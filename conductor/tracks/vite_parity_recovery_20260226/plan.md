@@ -37,10 +37,10 @@
     - [x] Sub-task: Write failing UI/API integration tests for library list + detail paths.
     - [x] Sub-task: Implement/fix route components and API wiring.
     - [x] Sub-task: Verify TV and Movie list/detail workflows function end-to-end.
-- [ ] Task: Interactive Search and Grab Operability
-    - [ ] Sub-task: Write failing tests for interactive search request/response rendering.
-    - [ ] Sub-task: Write failing tests for grab action success/failure handling.
-    - [ ] Sub-task: Implement/fix integration for both domains and remove critical stubs.
+- [x] Task: Interactive Search and Grab Operability [0ae17ab]
+    - [x] Sub-task: Write failing tests for interactive search request/response rendering.
+    - [x] Sub-task: Write failing tests for grab action success/failure handling.
+    - [x] Sub-task: Implement/fix integration for both domains and remove critical stubs.
 - [ ] Task: Conductor - User Manual Verification 'Phase 3' (Protocol in workflow.md)
 
 ## Phase 4: Critical Settings Operability Parity

@@ -1,0 +1,8 @@
+{
+  "track_id": "vite_parity_recovery_20260226",
+  "type": "feature",
+  "status": "in_progress",
+  "created_at": "2026-02-26T00:00:00Z",
+  "updated_at": "2026-02-27T00:00:00Z",
+  "description": "Recover the Vite frontend after Next.js migration by fixing build-blocking type/toolchain issues and closing critical parity gaps versus *arr behaviors within the Mediarr monolith."
+}

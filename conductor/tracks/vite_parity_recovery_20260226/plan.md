@@ -55,7 +55,7 @@
     - [x] Sub-task: Remove blocking stubs from critical settings paths.
 - [ ] Task: Conductor - User Manual Verification 'Phase 4' (Protocol in workflow.md)
 
-## Phase 5: Backend-Served SPA Validation and App Gate
+## Phase 5: Backend-Served SPA Validation and App Gate [checkpoint: e51b580]
 > Goal: validate production serving path and enforce completion gate.
 
 - [x] Task: Backend-Served SPA Deep-Link Validation [f144e93]

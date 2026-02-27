@@ -61,7 +61,7 @@
 - [x] Task: Backend-Served SPA Deep-Link Validation [f144e93]
     - [x] Sub-task: Write failing integration checks for direct route loads under backend static serving.
     - [x] Sub-task: Implement/fix backend static fallback behavior and asset path compatibility.
-- [~] Task: App Workspace Completion Gate
+- [x] Task: App Workspace Completion Gate [3cb4370]
     - [x] Sub-task: Run app workspace lint/type/build/test checks in CI-compatible non-interactive mode.
     - [x] Sub-task: Document remaining Important/Deferred parity items from the matrix.
     - [x] Sub-task: Confirm no unresolved Critical parity items remain.

@@ -1,0 +1,24 @@
+Task: Write failing tests for interactive search request/response rendering + grab action success/failure handling
+
+Summary: Fixed stale test files that mocked the wrong API endpoint and expanded coverage.
+
+Root cause: Both InteractiveSearchModal.test.tsx and MovieInteractiveSearchModal.test.tsx were
+mocking releaseApi.searchCandidates but the components call seriesApi.searchReleases and
+movieApi.searchReleases respectively. Also required vi.hoisted() for proper mock hoisting.
+
+Files changed:
+- app/src/components/search/InteractiveSearchModal.test.tsx (series modal - 29 tests)
+- app/src/components/movie/MovieInteractiveSearchModal.test.tsx (movie modal - 16 tests)
+
+New test coverage (both modals):
+- Correct API method mocked (seriesApi.searchReleases / movieApi.searchReleases)
+- Release result rendering (titles, indexer, quality badges, file sizes, rejections)
+- Empty state (no releases found)
+- Search error state (inline + toast)
+- Re-search on button click
+- Grab: correct guid/indexerId passed to releaseApi.grabRelease
+- Grab: in-flight spinner state
+- Grab: success (Grabbed) state
+- Grab: failure (inline + toast error)
+- Modal controls: close button, Escape, backdrop click
+- Series-specific: season-level search (no episodeId), episode-level search

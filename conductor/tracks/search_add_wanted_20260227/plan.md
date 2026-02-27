@@ -17,14 +17,14 @@
 ## Phase 2: Add to Wanted Persistence
 > Goal: Enable saving media items to the database and preventing duplicates.
 
-- [~] Task: Update Database Schema and Repository
-    - [ ] Write failing tests for adding a media item to the "Wanted" list.
-    - [ ] Implement repository logic to save search results to the database.
-    - [ ] Add duplicate check logic (ensure item isn't already in library/wanted).
-- [ ] Task: Create "Add" API Endpoint
-    - [ ] Write failing integration tests for `POST /api/wanted`.
-    - [ ] Implement Fastify route to handle adding items.
-- [ ] Task: Conductor - User Manual Verification 'Phase 2' (Protocol in workflow.md)
+- [x] Task: Update Database Schema and Repository
+    - [x] Write failing tests for adding a media item to the "Wanted" list.
+    - [x] Implement repository logic to save search results to the database.
+    - [x] Add duplicate check logic (ensure item isn't already in library/wanted).
+- [x] Task: Create "Add" API Endpoint
+    - [x] Write failing integration tests for `POST /api/wanted`.
+    - [x] Implement Fastify route to handle adding items.
+- [x] Task: Conductor - User Manual Verification 'Phase 2' (Protocol in workflow.md)
 
 ## Phase 3: Frontend Search Interface
 > Goal: Provide a user-friendly UI for searching and adding media.

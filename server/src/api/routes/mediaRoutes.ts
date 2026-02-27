@@ -187,28 +187,7 @@ export function registerMediaRoutes(
     }
   });
 
-  app.post('/api/media', {
-    schema: {
-      body: {
-        type: 'object',
-        required: ['mediaType'],
-        properties: {
-          mediaType: { type: 'string' },
-          qualityProfileId: { type: 'number' },
-          monitored: { type: 'boolean' },
-          searchNow: { type: 'boolean' },
-          tmdbId: { type: 'number' },
-          tvdbId: { type: 'number' },
-          imdbId: { type: 'string' },
-          title: { type: 'string' },
-          year: { type: 'number' },
-          status: { type: 'string' },
-          overview: { type: 'string' },
-          network: { type: 'string' },
-        },
-      },
-    },
-  }, async (request, reply) => {
+  async function handleCreateMedia(request: any, reply: any) {
     const body = request.body as CreateMediaBody;
     const mediaType = normalizeMediaType(body.mediaType);
     const monitored = body.monitored ?? true;
@@ -327,5 +306,51 @@ export function registerMediaRoutes(
     }
 
     return sendSuccess(reply, created, 201);
-  });
-}
+  }
+
+  app.post('/api/media', {
+    schema: {
+      body: {
+        type: 'object',
+        required: ['mediaType'],
+        properties: {
+          mediaType: { type: 'string' },
+          qualityProfileId: { type: 'number' },
+          monitored: { type: 'boolean' },
+          searchNow: { type: 'boolean' },
+          tmdbId: { type: 'number' },
+          tvdbId: { type: 'number' },
+          imdbId: { type: 'string' },
+          title: { type: 'string' },
+          year: { type: 'number' },
+          status: { type: 'string' },
+          overview: { type: 'string' },
+          network: { type: 'string' },
+        },
+      },
+    },
+  }, handleCreateMedia);
+
+  app.post('/api/wanted', {
+    schema: {
+      body: {
+        type: 'object',
+        required: ['mediaType'],
+        properties: {
+          mediaType: { type: 'string' },
+          qualityProfileId: { type: 'number' },
+          monitored: { type: 'boolean' },
+          searchNow: { type: 'boolean' },
+          tmdbId: { type: 'number' },
+          tvdbId: { type: 'number' },
+          imdbId: { type: 'string' },
+          title: { type: 'string' },
+          year: { type: 'number' },
+          status: { type: 'string' },
+          overview: { type: 'string' },
+          network: { type: 'string' },
+        },
+      },
+    },
+      }, handleCreateMedia);
+  }

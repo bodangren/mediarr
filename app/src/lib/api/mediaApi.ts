@@ -20,6 +20,7 @@ const movieItemSchema = z.object({
   id: z.number(),
   title: z.string(),
   tmdbId: z.number().optional(),
+  imdbId: z.string().optional(),
   year: z.number().optional(),
   status: z.string().optional(),
   monitored: z.boolean().optional(),

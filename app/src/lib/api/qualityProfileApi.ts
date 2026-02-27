@@ -1,21 +1,25 @@
 import { z } from 'zod';
 import { ApiHttpClient } from './httpClient';
 import { routeMap } from './routeMap';
-import type { Quality, QualityProfile } from '@/types/qualityProfile';
 
-const qualitySchema = z.object({
+const qualityDefinitionSchema = z.object({
   id: z.number(),
   name: z.string(),
-  resolution: z.string(),
+  resolution: z.number(),
   source: z.string(),
+});
+
+const qualityProfileItemSchema = z.object({
+  quality: qualityDefinitionSchema,
+  allowed: z.boolean(),
 });
 
 const qualityProfileSchema = z.object({
   id: z.number(),
   name: z.string(),
-  cutoffId: z.number(),
-  qualities: z.array(qualitySchema),
-  languageProfileId: z.number().optional(),
+  cutoff: z.number(),
+  items: z.array(qualityProfileItemSchema),
+  languageProfileId: z.number().nullable().optional(),
 });
 
 /**
@@ -28,24 +32,20 @@ const languageProfileSchema = z.object({
 
 export interface CreateQualityProfileInput {
   name: string;
-  cutoffId: number;
-  qualities: Array<{
-    resolution: string;
-    source: string;
-  }>;
-  languageProfileId?: number;
+  cutoff: number;
+  items: QualityProfileRule[];
+  languageProfileId?: number | null;
 }
 
 export interface UpdateQualityProfileInput {
   name?: string;
-  cutoffId?: number;
-  qualities?: Array<{
-    resolution: string;
-    source: string;
-  }>;
-  languageProfileId?: number;
+  cutoff?: number;
+  items?: QualityProfileRule[];
+  languageProfileId?: number | null;
 }
 
+export type QualityDefinition = z.infer<typeof qualityDefinitionSchema>;
+export type QualityProfileRule = z.infer<typeof qualityProfileItemSchema>;
 export type QualityProfileItem = z.infer<typeof qualityProfileSchema>;
 export type LanguageProfileItem = z.infer<typeof languageProfileSchema>;
 

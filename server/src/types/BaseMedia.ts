@@ -10,10 +10,11 @@ export interface BaseMedia {
   overview?: string;
   year?: number;
   network?: string;
+  images?: Array<{ coverType: string; url: string }>;
 }
 
 export interface MediaSearchRequest {
-  mediaType: MediaType;
+  mediaType?: MediaType;
   term: string;
 }
 

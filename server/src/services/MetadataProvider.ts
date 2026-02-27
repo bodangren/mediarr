@@ -54,6 +54,39 @@ export class MetadataProvider {
   ) {}
 
   async searchMedia(request: MediaSearchRequest, fetchFn?: any): Promise<BaseMedia[]> {
+    if (!request.mediaType) {
+      const [tvResults, movieResults] = await Promise.all([
+        this.searchSeries(request.term, fetchFn),
+        this.searchMovies(request.term, fetchFn),
+      ]);
+
+      const mappedTv = tvResults.map(result => ({
+        mediaType: 'TV' as MediaType,
+        tvdbId: result.tvdbId,
+        tmdbId: undefined,
+        imdbId: undefined,
+        title: result.title,
+        status: result.status,
+        overview: result.overview,
+        year: result.year,
+        network: result.network,
+        images: result.images,
+      }));
+
+      const mappedMovies = movieResults.map(result => ({
+        mediaType: 'MOVIE' as MediaType,
+        tmdbId: result.tmdbId,
+        imdbId: result.imdbId,
+        title: result.title,
+        status: result.status,
+        overview: result.overview,
+        year: result.year,
+        images: result.images,
+      }));
+
+      return [...mappedTv, ...mappedMovies];
+    }
+
     if (request.mediaType === 'TV') {
       const results = await this.searchSeries(request.term, fetchFn);
       return results.map(result => ({
@@ -66,6 +99,7 @@ export class MetadataProvider {
         overview: result.overview,
         year: result.year,
         network: result.network,
+        images: result.images,
       }));
     }
 
@@ -78,6 +112,7 @@ export class MetadataProvider {
       status: result.status,
       overview: result.overview,
       year: result.year,
+      images: result.images,
     }));
   }
 
@@ -201,7 +236,7 @@ export class MetadataProvider {
       status: movie.status,
       overview: movie.overview,
       year: this.parseYear(movie.release_date),
-      images: [],
+      images: movie.poster_path ? [{ coverType: 'poster', url: `https://image.tmdb.org/t/p/w500${movie.poster_path}` }] : [],
     }));
   }
 

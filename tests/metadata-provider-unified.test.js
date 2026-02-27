@@ -52,6 +52,7 @@ describe('MetadataProvider Unified Media Interface', () => {
           title: 'Forrest Gump',
           release_date: '1994-07-06',
           overview: 'Life is like a box of chocolates',
+          poster_path: '/abc.jpg',
         },
       ],
     };
@@ -68,6 +69,8 @@ describe('MetadataProvider Unified Media Interface', () => {
     expect(results).toHaveLength(1);
     expect(results[0].mediaType).toBe('MOVIE');
     expect(results[0].title).toBe('Forrest Gump');
+    expect(results[0].images).toHaveLength(1);
+    expect(results[0].images[0].url).toContain('image.tmdb.org/t/p/w500/abc.jpg');
     expect(mockFetch).toHaveBeenCalledWith(
       expect.stringContaining('/search/movie?api_key=test-tmdb-key'),
       expect.anything()
@@ -115,5 +118,33 @@ describe('MetadataProvider Unified Media Interface', () => {
 
     expect(streaming).toBe('streaming');
     expect(inCinemas).toBe('in_cinemas');
+  });
+
+  it('should search both TV and movies when no mediaType is specified', async () => {
+    const mockTvResponse = [{ title: 'The Boys', tvdbId: 355567 }];
+    const mockMovieResponse = { results: [{ id: 13, title: 'Forrest Gump' }] };
+
+    const mockFetch = vi.fn().mockImplementation(url => {
+      if (url.includes('skyhook.sonarr.tv')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: async () => JSON.stringify(mockTvResponse),
+          headers: new Headers({ 'content-type': 'application/json' }),
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        text: async () => JSON.stringify(mockMovieResponse),
+        headers: new Headers({ 'content-type': 'application/json' }),
+      });
+    });
+
+    const results = await provider.searchMedia({ term: 'Boys' }, mockFetch);
+
+    expect(results).toHaveLength(2);
+    expect(results.some(r => r.mediaType === 'TV')).toBe(true);
+    expect(results.some(r => r.mediaType === 'MOVIE')).toBe(true);
   });
 });

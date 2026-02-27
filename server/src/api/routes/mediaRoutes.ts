@@ -155,6 +155,31 @@ export function registerMediaRoutes(
     return sendSuccess(reply, results);
   });
 
+  app.get('/api/search', {
+    schema: {
+      querystring: {
+        type: 'object',
+        required: ['term'],
+        properties: {
+          term: { type: 'string' },
+          mediaType: { type: 'string' },
+        },
+      },
+    },
+  }, async (request, reply) => {
+    const query = request.query as { term: string; mediaType?: string };
+    if (!deps.metadataProvider?.searchMedia) {
+      throw new ValidationError('Metadata provider is not configured');
+    }
+
+    const results = await deps.metadataProvider.searchMedia({
+      term: query.term,
+      mediaType: query.mediaType ? normalizeMediaType(query.mediaType) : undefined,
+    });
+
+    return sendSuccess(reply, results);
+  });
+
   app.post('/api/media', {
     schema: {
       body: {

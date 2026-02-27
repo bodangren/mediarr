@@ -3,15 +3,15 @@
 ## Phase 1: Backend Metadata Integration
 > Goal: Establish connectivity with metadata providers and expose a unified search API.
 
-- [ ] Task: Implement TMDB/TVDB search clients
-    - [ ] Write failing unit tests for TMDB movie search.
-    - [ ] Write failing unit tests for TVDB/SkyHook series search.
-    - [ ] Implement TMDB client and ensure tests pass.
-    - [ ] Implement TVDB client and ensure tests pass.
-- [ ] Task: Create Search API Endpoint
-    - [ ] Write failing integration tests for `GET /api/search?q=...`.
-    - [ ] Implement Fastify route that aggregates results from both clients.
-    - [ ] Verify search results return a unified data structure.
+- [x] Task: Implement TMDB/TVDB search clients
+    - [x] Write failing unit tests for TMDB movie search.
+    - [x] Write failing unit tests for TVDB/SkyHook series search.
+    - [x] Implement TMDB client and ensure tests pass.
+    - [x] Implement TVDB client and ensure tests pass.
+- [x] Task: Create Search API Endpoint
+    - [x] Write failing integration tests for `GET /api/search?q=...`.
+    - [x] Implement Fastify route that aggregates results from both clients.
+    - [x] Verify search results return a unified data structure.
 - [ ] Task: Conductor - User Manual Verification 'Phase 1' (Protocol in workflow.md)
 
 ## Phase 2: Add to Wanted Persistence

@@ -6,33 +6,25 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ## Execution Order and Dependencies
 
-**Primary sequence:** `Vite Frontend Parity Recovery`
+**Primary sequence:** `Vite Frontend Parity Recovery` -> `Search and Add to Wanted`
 
-The current critical path is to stabilize the post-migration Vite frontend build and close remaining core parity gaps between legacy *arr UX expectations and the unified Mediarr monolith.
+The current critical path is to enable media discovery and acquisition by implementing search and the "Wanted" state persistence.
 
 ### Dependency Graph
 
 ```
-Vite Frontend Parity Recovery (Phase 1: Baseline and Gap Inventory)
+Vite Frontend Parity Recovery (Completed)
     |
     v
-Vite Frontend Parity Recovery (Phase 2: Type and Toolchain Stabilization)
-    |
-    v
-Vite Frontend Parity Recovery (Phase 3: Router and Core UX Parity)
-    |
-    v
-Vite Frontend Parity Recovery (Phase 4: Backend-Served SPA Production Path)
-    |
-    v
-Vite Frontend Parity Recovery (Phase 5: Hardening and Release Gates)
+Search and Add to Wanted (Current)
 ```
 
 ---
 
 ## Active Tracks
 
-- [x] **Track: Vite Frontend Parity Recovery** *Phases: 5 | Link: [./tracks/vite_parity_recovery_20260226/](./tracks/vite_parity_recovery_20260226/)*
+- [x] **Track: Vite Frontend Parity Recovery** *Phases: 5 | Link: [./archive/vite_parity_recovery_20260226/](./archive/vite_parity_recovery_20260226/)*
+- [ ] **Track: Search and Add to Wanted** *Link: [./tracks/search_add_wanted_20260227/](./tracks/search_add_wanted_20260227/)*
 
 ---
 

@@ -33,10 +33,10 @@
 ## Phase 3: Critical Core Media Operations Parity
 > Goal: ensure core TV/Movie day-to-day operations are functional.
 
-- [~] Task: Library List/Detail Route Operability
-    - [~] Sub-task: Write failing UI/API integration tests for library list + detail paths.
+- [x] Task: Library List/Detail Route Operability [d588484]
+    - [x] Sub-task: Write failing UI/API integration tests for library list + detail paths.
     - [x] Sub-task: Implement/fix route components and API wiring.
-    - [~] Sub-task: Verify TV and Movie list/detail workflows function end-to-end.
+    - [x] Sub-task: Verify TV and Movie list/detail workflows function end-to-end.
 - [ ] Task: Interactive Search and Grab Operability
     - [ ] Sub-task: Write failing tests for interactive search request/response rendering.
     - [ ] Sub-task: Write failing tests for grab action success/failure handling.

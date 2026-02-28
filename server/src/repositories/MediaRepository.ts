@@ -1,4 +1,5 @@
 import type { PrismaClient, Movie, Series } from '@prisma/client';
+import type { SeriesDetails } from '../services/MetadataProvider';
 
 export interface UpsertMovieInput {
   tmdbId: number;
@@ -218,5 +219,91 @@ export class MediaRepository {
         posterUrl: input.posterUrl,
       },
     });
+  }
+
+  /**
+   * Eagerly populate Season and Episode rows from SkyHook metadata.
+   * Safe to call in a background Promise — errors should be caught by the caller.
+   */
+  async upsertSeasonsAndEpisodes(seriesId: number, details: SeriesDetails): Promise<void> {
+    const episodes: any[] = details.episodes ?? [];
+
+    if (episodes.length === 0) {
+      return;
+    }
+
+    // Collect unique season numbers from episodes (SkyHook may return an empty
+    // seasons array even when episodes exist).
+    const seasonNumbersFromEpisodes = [
+      ...new Set(episodes.map((ep: any) => Number(ep.seasonNumber))),
+    ].filter((n) => Number.isFinite(n));
+
+    const seriesSeasons: Array<{ seasonNumber: number }> =
+      Array.isArray(details.series.seasons) && details.series.seasons.length > 0
+        ? details.series.seasons
+        : seasonNumbersFromEpisodes.map((n) => ({ seasonNumber: n }));
+
+    // Upsert each season and build a map from seasonNumber → season id.
+    const seasonIdMap = new Map<number, number>();
+    for (const s of seriesSeasons) {
+      const seasonNumber = Number(s.seasonNumber);
+      if (!Number.isFinite(seasonNumber)) {
+        continue;
+      }
+
+      const season = await (this.prisma as any).season.upsert({
+        where: {
+          seriesId_seasonNumber: { seriesId, seasonNumber },
+        },
+        update: {},
+        create: {
+          seriesId,
+          seasonNumber,
+          monitored: true,
+        },
+      });
+
+      seasonIdMap.set(seasonNumber, season.id);
+    }
+
+    // Upsert each episode.
+    for (const ep of episodes) {
+      const tvdbId = ep.id != null ? Number(ep.id) : null;
+      if (!tvdbId || !Number.isFinite(tvdbId)) {
+        // Skip episodes without a valid TVDB id.
+        continue;
+      }
+
+      const seasonNumber = Number(ep.seasonNumber);
+      const episodeNumber = Number(ep.episodeNumber);
+      const seasonId = seasonIdMap.get(seasonNumber) ?? null;
+      const airDateUtc =
+        ep.firstAired && typeof ep.firstAired === 'string' && ep.firstAired.trim() !== ''
+          ? new Date(ep.firstAired)
+          : null;
+
+      await (this.prisma as any).episode.upsert({
+        where: { tvdbId },
+        update: {
+          seasonId,
+          seasonNumber,
+          episodeNumber,
+          title: ep.episodeName ?? ep.title ?? '',
+          airDateUtc,
+          overview: ep.overview ?? null,
+        },
+        create: {
+          tvdbId,
+          seriesId,
+          seasonId,
+          seasonNumber,
+          episodeNumber,
+          title: ep.episodeName ?? ep.title ?? '',
+          airDateUtc,
+          overview: ep.overview ?? null,
+          monitored: true,
+        },
+      });
+    }
   }
 }

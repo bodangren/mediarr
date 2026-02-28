@@ -17,6 +17,20 @@ describe('ActivityEventBadge', () => {
     expect(badge).toHaveClass('bg-status-completed/20', 'text-status-completed');
   });
 
+  it('renders MOVIE_IMPORTED with success color', () => {
+    render(<ActivityEventBadge eventType="MOVIE_IMPORTED" />);
+    const badge = screen.getByText('Movie Imported');
+    expect(badge).toBeInTheDocument();
+    expect(badge).toHaveClass('bg-status-completed/20', 'text-status-completed');
+  });
+
+  it('renders SERIES_IMPORTED with success color', () => {
+    render(<ActivityEventBadge eventType="SERIES_IMPORTED" />);
+    const badge = screen.getByText('Episode Imported');
+    expect(badge).toBeInTheDocument();
+    expect(badge).toHaveClass('bg-status-completed/20', 'text-status-completed');
+  });
+
   it('renders IMPORT_FAILED with error color', () => {
     render(<ActivityEventBadge eventType="IMPORT_FAILED" />);
     const badge = screen.getByText('Import Failed');

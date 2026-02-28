@@ -67,10 +67,10 @@
 
 ### Backend — IMPORT_FAILED Activity Event
 
-- [ ] Task: Ensure IMPORT_FAILED events are logged with sufficient detail
-    - [ ] Confirm activity logger accepts `IMPORT_FAILED` event type with `details: { sourcePath, reason, torrentName }`
-    - [ ] Add `IMPORT_FAILED` to `ActivityEventBadge` config in the frontend (error color)
-    - [ ] Write test for badge rendering
+- [x] Task: Ensure IMPORT_FAILED events are logged with sufficient detail
+    - [x] Confirm activity logger accepts `IMPORT_FAILED` event type with `details: { sourcePath, reason, torrentName }`
+    - [x] Add `IMPORT_FAILED` to `ActivityEventBadge` config in the frontend (error color)
+    - [x] Write test for badge rendering
 
 - [ ] Task: Conductor - User Manual Verification 'Phase 3: Import Pipeline Hardening' (Protocol in workflow.md)
 

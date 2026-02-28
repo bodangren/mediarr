@@ -13,6 +13,14 @@ const EVENT_TYPE_CONFIG: Record<string, { label: string; className: string }> = 
     label: 'Imported',
     className: 'bg-status-completed/20 text-status-completed',
   },
+  MOVIE_IMPORTED: {
+    label: 'Movie Imported',
+    className: 'bg-status-completed/20 text-status-completed',
+  },
+  SERIES_IMPORTED: {
+    label: 'Episode Imported',
+    className: 'bg-status-completed/20 text-status-completed',
+  },
   IMPORT_FAILED: {
     label: 'Import Failed',
     className: 'bg-status-error/20 text-status-error',

@@ -30,9 +30,9 @@
 
 ### Backend — Series Release Search API Validation
 
-- [ ] Task: Confirm series release search handles tvdbId + season + episode params
-    - [ ] Write tests in `seriesRoutes.search.test.ts` asserting that `POST /api/releases/search` correctly passes `tvdbId`, `season`, and `episode` to `MediaSearchService.searchAllIndexers`
-    - [ ] Patch any gaps found (ensure `season` and `episode` are forwarded when present)
+- [x] Task: Confirm series release search handles tvdbId + season + episode params [4ef84df]
+    - [x] Write tests in `seriesRoutes.search.test.ts` asserting that `POST /api/releases/search` correctly passes `tvdbId`, `season`, and `episode` to `MediaSearchService.searchAllIndexers`
+    - [x] Patch any gaps found (ensure `season` and `episode` are forwarded when present)
 
 ### Frontend — SeriesInteractiveSearchModal
 

@@ -2,7 +2,7 @@
 
 ---
 
-## Phase 1: Quality Profile Presets & Drag-to-Reorder
+## Phase 1: Quality Profile Presets & Drag-to-Reorder [checkpoint: 891f7baa]
 
 ### Backend — Seed Standard Profiles
 
@@ -22,7 +22,7 @@
     - [x] `SettingsProfilesPage.test.tsx` created — 6 tests exercising the full edit flow
     - [x] `AddProfileModal.test.tsx` rewritten with real API type fixtures (11 tests)
 
-- [ ] Task: Conductor - User Manual Verification 'Phase 1: Quality Profile Presets & Drag-to-Reorder' (Protocol in workflow.md)
+- [~] Task: Conductor - User Manual Verification 'Phase 1: Quality Profile Presets & Drag-to-Reorder' (Protocol in workflow.md)
 
 ---
 

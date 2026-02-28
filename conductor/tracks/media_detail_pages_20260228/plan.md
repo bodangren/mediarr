@@ -1,6 +1,6 @@
 # Implementation Plan: Media Detail Pages & Library Enrichment
 
-## Phase 1: Integrated Downloader Settings
+## Phase 1: Integrated Downloader Settings [checkpoint: f4377e6]
 > Goal: Extend TorrentLimitsSettings with the new fields and replace the
 > multi-client download routes with a single-instance settings API.
 

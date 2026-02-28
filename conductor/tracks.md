@@ -24,12 +24,12 @@ Search and Add to Wanted (Current)
 ## Active Tracks
 
 - [x] **Track: Vite Frontend Parity Recovery** *Phases: 5 | Link: [./archive/vite_parity_recovery_20260226/](./archive/vite_parity_recovery_20260226/)*
-- [x] **Track: Search and Add to Wanted** *Link: [./tracks/search_add_wanted_20260227/](./tracks/search_add_wanted_20260227/)*
 
 ---
 
 ## Archived Tracks
 
+- [x] **Track: Search and Add to Wanted** *Phases: 3 | Link: [./archive/search_add_wanted_20260227/](./archive/search_add_wanted_20260227/)*
 - [x] **Track: Monolith Unification Refactor** *Phases: 3 | Link: [../archive/monolith_unification_refactor_20260226/](../archive/monolith_unification_refactor_20260226/)*
 - [x] **Track: Sonarr Feature Parity** *Phases: 5 | Link: [../archive/sonarr_parity_20260217/](../archive/sonarr_parity_20260217/)*
 - [x] **Track: Foundation** *Link: [../archive/foundation_20260210/](../archive/foundation_20260210/)*

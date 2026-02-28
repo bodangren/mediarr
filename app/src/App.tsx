@@ -1751,7 +1751,7 @@ function SeriesDetailPage() {
               <input
                 type="checkbox"
                 ref={seriesMonitoredRef}
-                checked={allSeasonsMonitored}
+                checked={series.monitored}
                 aria-label="Series Monitored"
                 onChange={() => { void handleToggleSeriesMonitored(); }}
               />

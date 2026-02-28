@@ -1290,7 +1290,6 @@ function MovieDetailPage() {
   const [qualityProfiles, setQualityProfiles] = useState<QualityProfileItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchOpen, setSearchOpen] = useState(false);
 
   useEffect(() => {
     if (!Number.isFinite(movieId)) {
@@ -1424,14 +1423,6 @@ function MovieDetailPage() {
 
             <button
               type="button"
-              className="rounded-sm border border-border-subtle bg-surface-2 px-3 py-2 text-sm"
-              onClick={() => setSearchOpen(true)}
-            >
-              Interactive Search
-            </button>
-
-            <button
-              type="button"
               className="rounded-sm border border-status-error/60 px-3 py-2 text-sm text-status-error"
               aria-label="Remove from Library"
               onClick={() => { void handleRemove(); }}
@@ -1440,17 +1431,6 @@ function MovieDetailPage() {
             </button>
           </section>
         </>
-      ) : null}
-      {movie ? (
-        <MovieInteractiveSearchModal
-          isOpen={searchOpen}
-          onClose={() => setSearchOpen(false)}
-          movieId={movie.id}
-          movieTitle={movie.title}
-          movieYear={movie.year}
-          imdbId={movie.imdbId}
-          tmdbId={movie.tmdbId}
-        />
       ) : null}
     </RouteScaffold>
   );
@@ -1499,19 +1479,47 @@ function SeriesLibraryPage() {
   );
 }
 
+type EpisodeItem = {
+  id: number;
+  seasonNumber: number;
+  episodeNumber: number;
+  title: string;
+  airDateUtc?: string | null;
+  monitored: boolean;
+};
+
+type SeasonItem = {
+  id: number;
+  seasonNumber: number;
+  monitored: boolean;
+  episodes: EpisodeItem[];
+};
+
+type SeriesDetail = {
+  id: number;
+  title: string;
+  year?: number;
+  status?: string;
+  overview?: string;
+  network?: string;
+  posterUrl?: string;
+  tvdbId?: number;
+  monitored: boolean;
+  qualityProfileId?: number;
+  seasons: SeasonItem[];
+};
+
 function SeriesDetailPage() {
   const api = useMemo(() => getApiClients(), []);
   const params = useParams();
+  const navigate = useNavigate();
+  const { addToast } = useToast();
   const seriesId = Number(params.id);
-  const [series, setSeries] = useState<{
-    id: number;
-    title: string;
-    seasons: Array<{ seasonNumber: number; episodes: Array<{ id: number; episodeNumber: number; title: string }> }>;
-    tvdbId?: number;
-  } | null>(null);
+  const [series, setSeries] = useState<SeriesDetail | null>(null);
+  const [qualityProfiles, setQualityProfiles] = useState<QualityProfileItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchOpen, setSearchOpen] = useState(false);
+  const [expandedSeasons, setExpandedSeasons] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     if (!Number.isFinite(seriesId)) {
@@ -1524,13 +1532,37 @@ function SeriesDetailPage() {
       setIsLoading(true);
       setError(null);
       try {
-        const item = await api.seriesApi.getSeriesWithEpisodes(seriesId);
+        const [item, profiles] = await Promise.all([
+          api.seriesApi.getSeriesWithEpisodes(seriesId),
+          api.qualityProfileApi.list(),
+        ]);
+        const raw = item as any;
         setSeries({
           id: item.id,
           title: item.title,
-          seasons: item.seasons,
-          tvdbId: (item as { tvdbId?: number }).tvdbId,
+          year: raw.year,
+          status: raw.status,
+          overview: raw.overview,
+          network: raw.network,
+          posterUrl: raw.posterUrl,
+          tvdbId: raw.tvdbId,
+          monitored: raw.monitored ?? false,
+          qualityProfileId: raw.qualityProfileId,
+          seasons: (item.seasons as any[]).map((s: any) => ({
+            id: s.id,
+            seasonNumber: s.seasonNumber,
+            monitored: s.monitored ?? false,
+            episodes: (s.episodes ?? []).map((ep: any) => ({
+              id: ep.id,
+              seasonNumber: ep.seasonNumber ?? s.seasonNumber,
+              episodeNumber: ep.episodeNumber,
+              title: ep.title ?? '',
+              airDateUtc: ep.airDateUtc ?? null,
+              monitored: ep.monitored ?? false,
+            })),
+          })),
         });
+        setQualityProfiles(profiles);
       } catch (loadError) {
         setError(loadError instanceof Error ? loadError.message : 'Failed to load series details');
       } finally {
@@ -1541,36 +1573,231 @@ function SeriesDetailPage() {
     void load();
   }, [api, seriesId]);
 
+  const handleToggleSeriesMonitored = async () => {
+    if (!series) return;
+    const newMonitored = !series.monitored;
+    try {
+      await api.mediaApi.setSeriesMonitored(series.id, newMonitored);
+      setSeries(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          monitored: newMonitored,
+          seasons: prev.seasons.map(s => ({ ...s, monitored: newMonitored })),
+        };
+      });
+    } catch {
+      addToast({ type: 'error', message: 'Failed to update series monitoring' });
+    }
+  };
+
+  const handleToggleSeasonMonitored = async (seasonNumber: number, currentMonitored: boolean) => {
+    if (!series) return;
+    try {
+      await api.mediaApi.setSeasonMonitored(series.id, seasonNumber, !currentMonitored);
+      setSeries(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          seasons: prev.seasons.map(s =>
+            s.seasonNumber === seasonNumber ? { ...s, monitored: !currentMonitored } : s,
+          ),
+        };
+      });
+    } catch {
+      addToast({ type: 'error', message: 'Failed to update season monitoring' });
+    }
+  };
+
+  const handleToggleEpisodeMonitored = async (episodeId: number, seasonNumber: number, currentMonitored: boolean) => {
+    if (!series) return;
+    try {
+      await api.mediaApi.setEpisodeMonitored(episodeId, !currentMonitored);
+      setSeries(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          seasons: prev.seasons.map(s =>
+            s.seasonNumber === seasonNumber
+              ? {
+                ...s,
+                episodes: s.episodes.map(ep =>
+                  ep.id === episodeId ? { ...ep, monitored: !currentMonitored } : ep,
+                ),
+              }
+              : s,
+          ),
+        };
+      });
+    } catch {
+      addToast({ type: 'error', message: 'Failed to update episode monitoring' });
+    }
+  };
+
+  const handleQualityProfileChange = async (profileId: number) => {
+    if (!series) return;
+    try {
+      await api.seriesApi.bulkUpdate([series.id], { qualityProfileId: profileId });
+      setSeries(prev => prev ? { ...prev, qualityProfileId: profileId } : prev);
+    } catch {
+      addToast({ type: 'error', message: 'Failed to update quality profile' });
+    }
+  };
+
+  const handleRemove = async () => {
+    if (!series) return;
+    if (!window.confirm(`Remove "${series.title}" from library?`)) return;
+    try {
+      await api.mediaApi.deleteSeries(series.id);
+      addToast({ type: 'success', message: `"${series.title}" removed from library` });
+      navigate('/library/tv');
+    } catch {
+      addToast({ type: 'error', message: 'Failed to remove series' });
+    }
+  };
+
+  const toggleSeasonExpanded = (seasonNumber: number) => {
+    setExpandedSeasons(prev => {
+      const next = new Set(prev);
+      if (next.has(seasonNumber)) {
+        next.delete(seasonNumber);
+      } else {
+        next.add(seasonNumber);
+      }
+      return next;
+    });
+  };
+
   const firstSeason = series?.seasons[0]?.seasonNumber ?? 1;
-  const episodeCount = series?.seasons.reduce((sum, season) => sum + season.episodes.length, 0) ?? 0;
+  const allSeasonsMonitored = Boolean(series && series.seasons.length > 0 && series.seasons.every(s => s.monitored));
+  const someSeasonsMonitored = Boolean(series && series.seasons.some(s => s.monitored));
+  const seriesMonitoredIndeterminate = !allSeasonsMonitored && someSeasonsMonitored;
+  const seriesMonitoredRef = (el: HTMLInputElement | null) => {
+    if (el) el.indeterminate = seriesMonitoredIndeterminate;
+  };
 
   return (
     <RouteScaffold title="Series Details" description="Details and interactive search for the selected series.">
       {isLoading ? <p className="text-sm text-text-secondary">Loading series...</p> : null}
       {error ? <p className="text-sm text-status-error">{error}</p> : null}
       {series ? (
-        <section className="space-y-3 rounded-md border border-border-subtle bg-surface-1 p-4">
-          <h2 className="text-lg font-medium">{series.title}</h2>
-          <p className="text-sm text-text-secondary">Seasons: {series.seasons.length} | Episodes: {episodeCount}</p>
-          <button
-            type="button"
-            className="rounded-sm border border-border-subtle bg-surface-2 px-3 py-2 text-sm"
-            onClick={() => setSearchOpen(true)}
-          >
-            Interactive Search
-          </button>
-        </section>
-      ) : null}
-      {series ? (
-        <InteractiveSearchModal
-          isOpen={searchOpen}
-          onClose={() => setSearchOpen(false)}
-          seriesId={series.id}
-          tvdbId={series.tvdbId}
-          episodeId={null}
-          seriesTitle={series.title}
-          seasonNumber={firstSeason}
-        />
+        <>
+          {/* Header: poster + metadata */}
+          <section className="flex gap-6 rounded-md border border-border-subtle bg-surface-1 p-4">
+            <div className="flex-shrink-0 w-32">
+              {series.posterUrl ? (
+                <img src={series.posterUrl} alt={series.title} className="w-full rounded-md object-cover" />
+              ) : (
+                <div className="flex h-48 w-32 items-center justify-center rounded-md bg-surface-2 text-xs text-text-secondary">No Poster</div>
+              )}
+            </div>
+            <div className="flex-1 space-y-2">
+              <h2 className="text-xl font-semibold">{series.title}</h2>
+              <div className="flex flex-wrap items-center gap-3 text-sm text-text-secondary">
+                {series.year ? <span>{series.year}</span> : null}
+                {series.network ? <span>{series.network}</span> : null}
+                {series.status ? <span className="rounded-sm bg-surface-2 px-2 py-0.5 text-xs">{series.status}</span> : null}
+              </div>
+              {series.overview ? <p className="text-sm text-text-secondary">{series.overview}</p> : null}
+            </div>
+          </section>
+
+          {/* Controls */}
+          <section className="flex flex-wrap items-center gap-4 rounded-md border border-border-subtle bg-surface-1 p-4">
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                ref={seriesMonitoredRef}
+                checked={allSeasonsMonitored}
+                aria-label="Series Monitored"
+                onChange={() => { void handleToggleSeriesMonitored(); }}
+              />
+              Monitored
+            </label>
+
+            <label className="flex items-center gap-2 text-sm" htmlFor="series-quality-profile">
+              Quality Profile
+              <select
+                id="series-quality-profile"
+                aria-label="Quality Profile"
+                value={series.qualityProfileId ?? ''}
+                onChange={event => { void handleQualityProfileChange(Number(event.target.value)); }}
+                className="rounded-sm border border-border-subtle bg-surface-0 px-2 py-1 text-sm"
+              >
+                {qualityProfiles.map(p => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            </label>
+
+            <button
+              type="button"
+              className="rounded-sm border border-status-error/60 px-3 py-2 text-sm text-status-error"
+              aria-label="Remove from Library"
+              onClick={() => { void handleRemove(); }}
+            >
+              Remove from Library
+            </button>
+          </section>
+
+          {/* Season list */}
+          <section className="rounded-md border border-border-subtle bg-surface-1">
+            {series.seasons.map(season => (
+              <div key={season.seasonNumber} className="border-b border-border-subtle last:border-b-0">
+                {/* Season row */}
+                <div className="flex items-center gap-3 px-4 py-3">
+                  <button
+                    type="button"
+                    aria-label={`Expand Season ${season.seasonNumber}`}
+                    className="flex items-center gap-2 flex-1 text-left text-sm font-medium"
+                    onClick={() => toggleSeasonExpanded(season.seasonNumber)}
+                  >
+                    <span>{expandedSeasons.has(season.seasonNumber) ? '▼' : '▶'}</span>
+                    Season {season.seasonNumber}
+                    <span className="text-xs text-text-secondary ml-2">({season.episodes.length} episodes)</span>
+                  </button>
+                  <label className="flex items-center gap-1 text-xs text-text-secondary">
+                    <input
+                      type="checkbox"
+                      checked={season.monitored}
+                      aria-label={`Season ${season.seasonNumber} Monitored`}
+                      onChange={() => { void handleToggleSeasonMonitored(season.seasonNumber, season.monitored); }}
+                    />
+                    Monitored
+                  </label>
+                </div>
+
+                {/* Episode list (expanded) */}
+                {expandedSeasons.has(season.seasonNumber) && (
+                  <ul className="bg-surface-0 py-2">
+                    {season.episodes.map(ep => (
+                      <li key={ep.id} className="flex items-center gap-3 px-6 py-2 text-sm">
+                        <span className="w-16 flex-shrink-0 text-xs text-text-secondary font-mono">
+                          S{String(ep.seasonNumber).padStart(2, '0')}E{String(ep.episodeNumber).padStart(2, '0')}
+                        </span>
+                        <span className="flex-1 truncate">{ep.title}</span>
+                        {ep.airDateUtc ? (
+                          <span className="text-xs text-text-secondary">
+                            {new Date(ep.airDateUtc).toLocaleDateString()}
+                          </span>
+                        ) : null}
+                        <label className="flex items-center gap-1 text-xs text-text-secondary flex-shrink-0">
+                          <input
+                            type="checkbox"
+                            checked={ep.monitored}
+                            aria-label={`S${String(ep.seasonNumber).padStart(2, '0')}E${String(ep.episodeNumber).padStart(2, '0')} Monitored`}
+                            onChange={() => { void handleToggleEpisodeMonitored(ep.id, ep.seasonNumber, ep.monitored); }}
+                          />
+                          Monitored
+                        </label>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            ))}
+          </section>
+        </>
       ) : null}
     </RouteScaffold>
   );

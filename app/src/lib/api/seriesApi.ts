@@ -259,12 +259,15 @@ export function createSeriesApi(client: ApiHttpClient) {
           seasons: z.array(z.object({
             id: z.number(),
             seasonNumber: z.number(),
+            monitored: z.boolean().nullish(),
             episodes: z.array(z.object({
               id: z.number(),
-              episodeNumber: z.number(),
-              title: z.string(),
-            })),
-          })),
+              episodeNumber: z.number().nullish(),
+              title: z.string().nullish(),
+              airDateUtc: z.string().nullish(),
+              monitored: z.boolean().nullish(),
+            }).passthrough()),
+          }).passthrough()),
         }).passthrough(),
       );
     },

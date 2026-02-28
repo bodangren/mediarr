@@ -268,7 +268,8 @@ export class MediaRepository {
 
     // Upsert each episode.
     for (const ep of episodes) {
-      const tvdbId = ep.id != null ? Number(ep.id) : null;
+      const rawTvdbId = ep.tvdbId ?? ep.id;
+      const tvdbId = rawTvdbId != null ? Number(rawTvdbId) : null;
       if (!tvdbId || !Number.isFinite(tvdbId)) {
         // Skip episodes without a valid TVDB id.
         continue;
@@ -277,9 +278,10 @@ export class MediaRepository {
       const seasonNumber = Number(ep.seasonNumber);
       const episodeNumber = Number(ep.episodeNumber);
       const seasonId = seasonIdMap.get(seasonNumber) ?? null;
+      const rawAirDate = ep.airDate ?? ep.firstAired;
       const airDateUtc =
-        ep.firstAired && typeof ep.firstAired === 'string' && ep.firstAired.trim() !== ''
-          ? new Date(ep.firstAired)
+        rawAirDate && typeof rawAirDate === 'string' && rawAirDate.trim() !== ''
+          ? new Date(rawAirDate)
           : null;
 
       await (this.prisma as any).episode.upsert({

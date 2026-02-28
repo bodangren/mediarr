@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNo
 import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { AppShell } from '@/components/shell/AppShell';
 import { useToast } from '@/components/providers/ToastProvider';
-import { Folder } from 'lucide-react';
+import { Folder, Search } from 'lucide-react';
 import { AddIndexerModal } from '@/components/indexers/AddIndexerModal';
 import { FilesystemBrowser } from '@/components/primitives/FilesystemBrowser';
 import { AddProfileModal } from '@/components/settings/AddProfileModal';
@@ -10,7 +10,9 @@ import { EditIndexerModal } from '@/components/indexers/EditIndexerModal';
 import { MovieInteractiveSearchModal } from '@/components/movie/MovieInteractiveSearchModal';
 import { InteractiveSearchModal } from '@/components/search/InteractiveSearchModal';
 import { SeriesInteractiveSearchModal, type SearchLevel } from '@/components/series/SeriesInteractiveSearchModal';
-import { MovieOverviewView, SeriesOverviewView } from '@/components/views';
+import { SeriesOverviewView, MovieOverviewView } from '@/components/views';
+import { ActivityQueuePage } from '@/components/activity/ActivityQueuePage';
+import { ActivityHistoryPage } from '@/components/activity/ActivityHistoryPage';
 import { getApiClients } from '@/lib/api/client';
 import { getPopularPresets } from '@/lib/indexer/indexerPresets';
 import type { IndexerItem } from '@/lib/api/indexerApi';
@@ -1418,6 +1420,7 @@ function MovieDetailPage() {
   const [qualityProfiles, setQualityProfiles] = useState<QualityProfileItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
 
   useEffect(() => {
     if (!Number.isFinite(movieId)) {
@@ -1551,6 +1554,15 @@ function MovieDetailPage() {
 
             <button
               type="button"
+              className="rounded-sm border border-border-subtle bg-surface-2 px-3 py-2 text-sm text-text-primary hover:bg-surface-3 flex items-center gap-2"
+              onClick={() => setIsSearchModalOpen(true)}
+            >
+              <Search size={16} />
+              Interactive Search
+            </button>
+
+            <button
+              type="button"
               className="rounded-sm border border-status-error/60 px-3 py-2 text-sm text-status-error"
               aria-label="Remove from Library"
               onClick={() => { void handleRemove(); }}
@@ -1558,6 +1570,16 @@ function MovieDetailPage() {
               Remove from Library
             </button>
           </section>
+
+          <MovieInteractiveSearchModal
+            isOpen={isSearchModalOpen}
+            onClose={() => setIsSearchModalOpen(false)}
+            movieId={movie.id}
+            movieTitle={movie.title}
+            movieYear={movie.year}
+            imdbId={movie.imdbId}
+            tmdbId={movie.tmdbId}
+          />
         </>
       ) : null}
     </RouteScaffold>
@@ -2004,8 +2026,8 @@ export default function App() {
 
               <Route path="calendar" element={<StaticPage title="Calendar" description="Unified calendar for upcoming movie and TV activity." />} />
 
-              <Route path="activity/queue" element={<StaticPage title="Queue" description="Unified download queue across all monitored media." />} />
-              <Route path="activity/history" element={<StaticPage title="History" description="Unified activity history and release lifecycle events." />} />
+              <Route path="activity/queue" element={<ActivityQueuePage />} />
+              <Route path="activity/history" element={<ActivityHistoryPage />} />
 
               <Route path="settings" element={<Navigate to="/settings/media" replace />} />
               <Route path="settings/media" element={<SettingsMediaPage />} />

@@ -154,13 +154,13 @@
 
 ### Frontend — History Page Component
 
-- [ ] Task: Build `ActivityHistoryPage` component
+- [~] Task: Build `ActivityHistoryPage` component
     - [ ] Write rendering tests: renders history rows, event type badges, filters, pagination, empty state, Mark Failed action
     - [ ] Create `app/src/components/activity/ActivityHistoryPage.tsx`:
         - Fetches `activityApi.list()` with pagination
-        - Columns: Date, Event Type badge, Media Title, Quality, Indexer, Details, Actions
-        - Filters: event type dropdown, date range (from/to), success/failure toggle
-        - Per-row **Mark Failed** action → `activityApi.markFailed(id)`
+        - Columns: Date, Event Type badge, Summary, Source (`sourceModule`), Quality, Indexer, Actions
+        - Filters: event type dropdown, success/failure status toggle
+        - Per-row **Mark Failed** action → `activityApi.markFailed(id)` (only shown for successful rows)
         - Pagination controls (page size + page navigation)
         - Empty state panel when no history
     - [ ] Replace `StaticPage` stub for `/activity/history` in `App.tsx` with `ActivityHistoryPage`

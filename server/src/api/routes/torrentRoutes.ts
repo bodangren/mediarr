@@ -194,6 +194,34 @@ export function registerTorrentRoutes(
     }
   });
 
+  app.post('/api/torrents/:infoHash/retry-import', {
+    schema: {
+      params: {
+        type: 'object',
+        required: ['infoHash'],
+        properties: {
+          infoHash: { type: 'string' },
+        },
+      },
+    },
+  }, async (request, reply) => {
+    if (!deps.importManager?.retryImportByInfoHash) {
+      throw new ValidationError('Import manager is not configured');
+    }
+
+    const infoHash = (request.params as { infoHash: string }).infoHash;
+
+    try {
+      await deps.importManager.retryImportByInfoHash(infoHash);
+      return sendSuccess(reply, {
+        infoHash,
+        retried: true,
+      });
+    } catch (error) {
+      maybeNotFound(error);
+    }
+  });
+
   app.patch('/api/torrents/speed-limits', {
     schema: {
       body: {

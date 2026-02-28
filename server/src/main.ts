@@ -451,7 +451,7 @@ async function startApi(): Promise<void> {
   });
 
   const organizer = new Organizer();
-  new ImportManager(torrentManager, organizer, prisma, activityEventEmitter);
+  const importManager = new ImportManager(torrentManager, organizer, prisma, activityEventEmitter);
 
   const openSubtitlesProvider = new OpenSubtitlesProvider(httpClient, settingsService);
 
@@ -491,6 +491,7 @@ async function startApi(): Promise<void> {
     searchAggregationService,
     wantedService,
     torrentManager,
+    importManager,
     indexerRepository,
     mediaRepository,
     indexerTester,

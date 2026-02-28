@@ -8,7 +8,7 @@ import { DataTable, type DataTableColumn } from '@/components/primitives/DataTab
 import { Button } from '@/components/primitives/Button';
 import { ActivityEventBadge } from './ActivityEventBadge';
 import { useToast } from '@/components/providers/ToastProvider';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, RotateCcw } from 'lucide-react';
 
 const EVENT_TYPE_OPTIONS = [
   { value: '', label: 'All Events' },
@@ -64,6 +64,7 @@ export function ActivityHistoryPage() {
   const [statusFilter, setStatusFilter] = useState('');
 
   const [markingId, setMarkingId] = useState<number | null>(null);
+  const [retryingId, setRetryingId] = useState<number | null>(null);
 
   const fetchHistory = useCallback(async () => {
     setIsLoading(true);
@@ -101,6 +102,23 @@ export function ActivityHistoryPage() {
       });
     } finally {
       setMarkingId(null);
+    }
+  };
+
+  const handleRetryImport = async (item: ActivityItem) => {
+    setRetryingId(item.id);
+    try {
+      await api.activityApi.retryImport(item.id);
+      pushToast({ title: 'Import retried', variant: 'success' });
+      void fetchHistory();
+    } catch (err) {
+      pushToast({
+        title: 'Retry failed',
+        message: err instanceof Error ? err.message : 'Unknown error',
+        variant: 'error',
+      });
+    } finally {
+      setRetryingId(null);
     }
   };
 
@@ -160,6 +178,19 @@ export function ActivityHistoryPage() {
   ];
 
   const rowActions = (item: ActivityItem) => {
+    if (item.eventType === 'IMPORT_FAILED' && item.success === false) {
+      return (
+        <Button
+          variant="secondary"
+          onClick={() => handleRetryImport(item)}
+          disabled={retryingId === item.id}
+          aria-label="Retry import"
+        >
+          <RotateCcw size={14} />
+        </Button>
+      );
+    }
+
     if (item.success === false) return null;
     return (
       <Button

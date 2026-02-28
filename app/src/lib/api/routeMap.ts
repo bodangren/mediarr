@@ -39,6 +39,7 @@ export const routeMap = {
   torrentPause: (infoHash: string) => `/api/torrents/${infoHash}/pause`,
   torrentResume: (infoHash: string) => `/api/torrents/${infoHash}/resume`,
   torrentDelete: (infoHash: string) => `/api/torrents/${infoHash}`,
+  torrentRetryImport: (infoHash: string) => `/api/torrents/${infoHash}/retry-import`,
   torrentSpeedLimits: '/api/torrents/speed-limits',
 
   indexers: '/api/indexers',
@@ -98,6 +99,7 @@ export const routeMap = {
   activity: '/api/activity',
   activityClear: '/api/activity',
   activityMarkFailed: (id: number) => `/api/activity/${id}/fail`,
+  activityRetryImport: (id: number) => `/api/activity/${id}/retry-import`,
   activityExport: '/api/activity/export',
 
   blocklist: '/api/blocklist',

@@ -68,6 +68,18 @@ export function createActivityApi(client: ApiHttpClient) {
         activityItemSchema,
       );
     },
+    retryImport(id: number): Promise<{ id: number; retried: boolean }> {
+      return client.request(
+        {
+          path: routeMap.activityRetryImport(id),
+          method: 'POST',
+        },
+        z.object({
+          id: z.number(),
+          retried: z.boolean(),
+        }),
+      );
+    },
     export(query: ActivityQuery = {}): Promise<ExportActivityResult> {
       return client.request(
         {

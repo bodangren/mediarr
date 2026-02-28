@@ -55,6 +55,7 @@ describe('ActivityQueuePage', () => {
         pause: vi.fn().mockResolvedValue({ infoHash: 'hash1', status: 'paused' }),
         resume: vi.fn().mockResolvedValue({ infoHash: 'hash2', status: 'downloading' }),
         remove: vi.fn().mockResolvedValue({ infoHash: 'hash1', removed: true }),
+        retryImport: vi.fn().mockResolvedValue({ infoHash: 'hash1', retried: true }),
         setSpeedLimits: vi.fn().mockResolvedValue({ updated: true, limits: {} }),
       },
     };
@@ -134,6 +135,20 @@ describe('ActivityQueuePage', () => {
 
     await waitFor(() => {
       expect(mockApi.torrentApi.remove).toHaveBeenCalledWith('hash1');
+    });
+  });
+
+  it('calls retryImport API when retry import action is clicked', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await waitFor(() => screen.getByText('Big Buck Bunny'));
+
+    const row = screen.getByText('Big Buck Bunny').closest('tr')!;
+    await user.click(within(row).getByLabelText('Retry import'));
+
+    await waitFor(() => {
+      expect(mockApi.torrentApi.retryImport).toHaveBeenCalledWith('hash1');
     });
   });
 

@@ -55,6 +55,7 @@ describe('ActivityHistoryPage', () => {
           meta: { page: 1, pageSize: 20, totalCount: 3, totalPages: 1 },
         }),
         markFailed: vi.fn().mockResolvedValue({ ...mockItems[0], success: false }),
+        retryImport: vi.fn().mockResolvedValue({ id: 2, retried: true }),
       },
     };
     (getApiClients as any).mockReturnValue(mockApi);
@@ -76,7 +77,7 @@ describe('ActivityHistoryPage', () => {
       expect(screen.getByText('Grabbed The Matrix (1999)')).toBeInTheDocument();
     });
 
-    expect(screen.getByText('Download failed for Inception (2010)')).toBeInTheDocument();
+    expect(screen.getByText('Import failed for Inception (2010)')).toBeInTheDocument();
     expect(screen.getByText('Imported Breaking Bad S01E01')).toBeInTheDocument();
 
     // Event type badges
@@ -123,10 +124,24 @@ describe('ActivityHistoryPage', () => {
   it('does not show Mark Failed button on already-failed rows', async () => {
     renderPage();
 
-    await waitFor(() => screen.getByText('Download failed for Inception (2010)'));
+    await waitFor(() => screen.getByText('Import failed for Inception (2010)'));
 
-    const row = screen.getByText('Download failed for Inception (2010)').closest('tr')!;
+    const row = screen.getByText('Import failed for Inception (2010)').closest('tr')!;
     expect(within(row).queryByRole('button', { name: /mark failed/i })).not.toBeInTheDocument();
+  });
+
+  it('shows Retry Import action for failed import rows and calls retry API', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await waitFor(() => screen.getByText('Import failed for Inception (2010)'));
+
+    const row = screen.getByText('Import failed for Inception (2010)').closest('tr')!;
+    await user.click(within(row).getByRole('button', { name: /retry import/i }));
+
+    await waitFor(() => {
+      expect(mockApi.activityApi.retryImport).toHaveBeenCalledWith(2);
+    });
   });
 
   it('filters by event type when dropdown changes', async () => {

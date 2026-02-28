@@ -146,6 +146,21 @@ export function registerOperationsRoutes(
     return sendSuccess(reply, updated);
   });
 
+  app.post('/api/activity/:id/retry-import', async (request, reply) => {
+    if (!deps.importManager?.retryImportByActivityEventId) {
+      throw new ValidationError('Import manager is not configured');
+    }
+
+    const params = request.params as { id?: string };
+    const id = parseIdParam(params.id ?? '', 'activity event');
+    await deps.importManager.retryImportByActivityEventId(id);
+
+    return sendSuccess(reply, {
+      id,
+      retried: true,
+    });
+  });
+
   app.get('/api/activity/export', {
     schema: {
       querystring: {

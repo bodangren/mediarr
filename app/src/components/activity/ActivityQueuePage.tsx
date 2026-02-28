@@ -11,7 +11,7 @@ import { Button } from '@/components/primitives/Button';
 import { useToast } from '@/components/providers/ToastProvider';
 import { formatBytes, formatSpeed, formatTimeRemaining, formatPercent } from '@/lib/format';
 import { QueueRemoveModal, type QueueRemoveOptions } from './QueueRemoveModal';
-import { Pause, Play, Trash2, Settings2 } from 'lucide-react';
+import { Pause, Play, Trash2, Settings2, RotateCcw } from 'lucide-react';
 
 function normalizeQueueStatus(status: string | undefined): 'downloading' | 'seeding' | 'paused' | 'error' | 'queued' {
   const normalized = (status ?? '').toLowerCase();
@@ -36,6 +36,7 @@ export function ActivityQueuePage() {
   
   const [removingItem, setRemovingItem] = useState<TorrentItem | null>(null);
   const [isRemoving, setIsRemoving] = useState(false);
+  const [retryingInfoHash, setRetryingInfoHash] = useState<string | null>(null);
 
   const [downloadLimit, setDownloadLimit] = useState<number | undefined>(0);
   const [uploadLimit, setUploadLimit] = useState<number | undefined>(0);
@@ -107,6 +108,23 @@ export function ActivityQueuePage() {
       });
     } finally {
       setIsRemoving(false);
+    }
+  };
+
+  const handleRetryImport = async (torrent: TorrentItem) => {
+    setRetryingInfoHash(torrent.infoHash);
+    try {
+      await api.torrentApi.retryImport(torrent.infoHash);
+      pushToast({ title: 'Import retried', variant: 'success' });
+      void fetchTorrents(true);
+    } catch (err) {
+      pushToast({
+        title: 'Retry failed',
+        message: err instanceof Error ? err.message : 'Unknown error',
+        variant: 'error',
+      });
+    } finally {
+      setRetryingInfoHash(null);
     }
   };
 
@@ -197,6 +215,14 @@ export function ActivityQueuePage() {
           aria-label={isPaused ? 'Resume torrent' : 'Pause torrent'}
         >
           {isPaused ? <Play size={14} /> : <Pause size={14} />}
+        </Button>
+        <Button
+          variant="secondary"
+          onClick={() => handleRetryImport(torrent)}
+          disabled={retryingInfoHash === torrent.infoHash}
+          aria-label="Retry import"
+        >
+          <RotateCcw size={14} />
         </Button>
         <Button
           variant="danger"

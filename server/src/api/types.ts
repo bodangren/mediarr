@@ -18,6 +18,7 @@ import type { SettingsService } from '../services/SettingsService';
 import type { SubtitleInventoryApiService } from '../services/SubtitleInventoryApiService';
 import type { MetadataProvider } from '../services/MetadataProvider';
 import type { CollectionService } from '../services/CollectionService';
+import type { ImportManager } from '../services/ImportManager';
 import type { IndexerFactory } from '../indexers/IndexerFactory';
 import type { IndexerTester } from '../indexers/IndexerTester';
 import type { ApiEventHub } from './eventHub';
@@ -47,6 +48,10 @@ export interface ApiDependencies {
     | 'setDownloadPaths'
     | 'getTorrentsStatus'
     | 'getTorrentStatus'
+  >;
+  importManager?: Pick<
+    ImportManager,
+    'retryImportByInfoHash' | 'retryImportByActivityEventId'
   >;
   indexerRepository?: Pick<IndexerRepository, 'findAll' | 'findById' | 'create' | 'update' | 'delete'>;
   mediaRepository?: Pick<MediaRepository, 'findMovieByTmdbId' | 'upsertMovie' | 'upsertSeries' | 'findSeriesByTvdbId' | 'upsertSeasonsAndEpisodes'>;

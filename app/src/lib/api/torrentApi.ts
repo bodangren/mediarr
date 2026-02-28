@@ -107,6 +107,19 @@ export function createTorrentApi(client: ApiHttpClient) {
       );
     },
 
+    retryImport(infoHash: string): Promise<{ infoHash: string; retried: boolean }> {
+      return client.request(
+        {
+          path: routeMap.torrentRetryImport(infoHash),
+          method: 'POST',
+        },
+        z.object({
+          infoHash: z.string(),
+          retried: z.boolean(),
+        }),
+      );
+    },
+
     setSpeedLimits(input: SpeedLimitsInput): Promise<{ updated: boolean; limits: SpeedLimitsInput }> {
       return client.request(
         {

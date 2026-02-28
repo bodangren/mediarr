@@ -34,16 +34,38 @@ function makePrisma({
   series = null as any,
   episode = null as any,
   movie = null as any,
+  mediaManagement = null as any,
+  torrent = null as any,
+  activityEvent = null as any,
 } = {}) {
   return {
-    series: { findFirst: vi.fn().mockResolvedValue(series) },
+    series: {
+      findFirst: vi.fn().mockResolvedValue(series),
+      update: vi.fn().mockResolvedValue(series),
+    },
     episode: {
       findFirst: vi.fn().mockResolvedValue(episode),
       update: vi.fn().mockResolvedValue(episode),
     },
-    movie: { findFirst: vi.fn().mockResolvedValue(movie) },
+    movie: {
+      findFirst: vi.fn().mockResolvedValue(movie),
+      update: vi.fn().mockResolvedValue(movie),
+    },
     mediaFileVariant: {
       upsert: vi.fn().mockResolvedValue({ id: 1 }),
+    },
+    appSettings: {
+      findUnique: vi.fn().mockResolvedValue(
+        mediaManagement
+          ? { mediaManagement }
+          : null,
+      ),
+    },
+    torrent: {
+      findUnique: vi.fn().mockResolvedValue(torrent),
+    },
+    activityEvent: {
+      findUnique: vi.fn().mockResolvedValue(activityEvent),
     },
   };
 }
@@ -189,6 +211,139 @@ describe('ImportManager', () => {
         success: false,
         details: expect.objectContaining({ reason: 'disk full' }),
       }),
+    );
+  });
+
+  it('episode import fallback: uses tvRootFolder when series.path is null', async () => {
+    const series = { id: 1, title: 'A Knight of the Seven Kingdoms', cleanTitle: 'aknight', year: 2026, path: null };
+    const episode = { id: 10, seasonNumber: 1, episodeNumber: 1, title: 'Pilot' };
+    const prisma = makePrisma({
+      series,
+      episode,
+      mediaManagement: { movieRootFolder: '/media/movies', tvRootFolder: '/media/tv' },
+    });
+
+    const torrent = {
+      infoHash: 'ep124',
+      name: 'A.Knight.of.the.Seven.Kingdoms.S01E01.mkv',
+      path: '/downloads/complete/A.Knight.of.the.Seven.Kingdoms.S01E01.mkv',
+    };
+
+    await fireTorrentCompleted(prisma, torrent);
+
+    expect(prisma.series.update).toHaveBeenCalledWith({
+      where: { id: series.id },
+      data: { path: '/media/tv/A Knight of the Seven Kingdoms (2026)' },
+    });
+    expect(organizer.organizeFile).toHaveBeenCalledWith(
+      torrent.path,
+      expect.objectContaining({
+        id: series.id,
+        path: '/media/tv/A Knight of the Seven Kingdoms (2026)',
+      }),
+      episode,
+    );
+  });
+
+  it('movie import fallback: uses movieRootFolder when movie.path is null', async () => {
+    const movie = { id: 5, title: 'The Matrix', year: 1999, path: null };
+    const prisma = makePrisma({
+      series: null,
+      episode: null,
+      movie,
+      mediaManagement: { movieRootFolder: '/media/movies', tvRootFolder: '/media/tv' },
+    });
+
+    await fireTorrentCompleted(prisma);
+
+    expect(prisma.movie.update).toHaveBeenCalledWith({
+      where: { id: movie.id },
+      data: { path: '/media/movies/The Matrix (1999)' },
+    });
+    expect(organizer.organizeMovieFile).toHaveBeenCalledWith(
+      TORRENT.path,
+      expect.objectContaining({
+        id: movie.id,
+        path: '/media/movies/The Matrix (1999)',
+      }),
+    );
+  });
+
+  it('retryImportByInfoHash retries using persisted torrent path', async () => {
+    const movie = { id: 5, title: 'The Matrix', year: 1999, path: '/media/movies' };
+    const prisma = makePrisma({
+      series: null,
+      episode: null,
+      movie,
+      torrent: {
+        infoHash: 'retry-1',
+        name: 'The.Matrix.1999.mkv',
+        path: '/downloads/complete',
+      },
+    });
+
+    const manager = new ImportManager(
+      torrentManager as any,
+      organizer as any,
+      prisma as any,
+      activityEmitter as any,
+    );
+
+    await manager.retryImportByInfoHash('retry-1');
+
+    expect(prisma.torrent.findUnique).toHaveBeenCalledWith({
+      where: { infoHash: 'retry-1' },
+      select: {
+        infoHash: true,
+        name: true,
+        path: true,
+      },
+    });
+    expect(organizer.organizeMovieFile).toHaveBeenCalledWith(
+      '/downloads/complete/The.Matrix.1999.mkv',
+      movie,
+    );
+  });
+
+  it('retryImportByActivityEventId falls back to sourcePath when torrent row is missing', async () => {
+    const movie = { id: 5, title: 'The Matrix', year: 1999, path: '/media/movies' };
+    const prisma = makePrisma({
+      series: null,
+      episode: null,
+      movie,
+      torrent: null,
+      activityEvent: {
+        id: 175,
+        eventType: 'IMPORT_FAILED',
+        entityRef: 'torrent:missinghash',
+        details: {
+          sourcePath: '/downloads/complete/The.Matrix.1999.mkv',
+          torrentName: 'The.Matrix.1999.mkv',
+        },
+      },
+    });
+
+    const manager = new ImportManager(
+      torrentManager as any,
+      organizer as any,
+      prisma as any,
+      activityEmitter as any,
+    );
+
+    await manager.retryImportByActivityEventId(175);
+
+    expect(prisma.activityEvent.findUnique).toHaveBeenCalledWith({
+      where: { id: 175 },
+      select: {
+        id: true,
+        eventType: true,
+        entityRef: true,
+        details: true,
+      },
+    });
+    expect(organizer.organizeMovieFile).toHaveBeenCalledWith(
+      '/downloads/complete/The.Matrix.1999.mkv',
+      movie,
     );
   });
 });

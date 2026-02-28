@@ -47,6 +47,7 @@ export const API_ROUTE_MAP: ApiRouteDefinition[] = [
   { method: 'PATCH', path: '/api/torrents/:infoHash/pause' },
   { method: 'PATCH', path: '/api/torrents/:infoHash/resume' },
   { method: 'DELETE', path: '/api/torrents/:infoHash' },
+  { method: 'POST', path: '/api/torrents/:infoHash/retry-import' },
   { method: 'PATCH', path: '/api/torrents/speed-limits' },
 
   { method: 'GET', path: '/api/indexers' },
@@ -67,6 +68,7 @@ export const API_ROUTE_MAP: ApiRouteDefinition[] = [
   { method: 'GET', path: '/api/activity' },
   { method: 'DELETE', path: '/api/activity' },
   { method: 'PATCH', path: '/api/activity/:id/fail' },
+  { method: 'POST', path: '/api/activity/:id/retry-import' },
   { method: 'GET', path: '/api/activity/export' },
   { method: 'GET', path: '/api/health' },
   { method: 'GET', path: '/api/settings' },

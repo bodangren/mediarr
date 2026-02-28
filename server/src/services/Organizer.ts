@@ -69,8 +69,7 @@ export class Organizer {
     movie: { title: string; year: number; path: string }
   ): Promise<string> {
     const extension = path.extname(sourcePath);
-    const movieFolderName = this.buildMovieFolderName(movie);
-    const movieDir = path.join(movie.path, movieFolderName);
+    const movieDir = this.resolveMovieDirectory(movie);
     const filename = this.buildMovieFilename(movie, extension);
 
     await fs.mkdir(movieDir, { recursive: true });
@@ -95,13 +94,26 @@ export class Organizer {
     filename: string,
     contents: string
   ): Promise<string> {
-    const movieFolderName = this.buildMovieFolderName(movie);
-    const movieDir = path.join(movie.path, movieFolderName);
+    const movieDir = this.resolveMovieDirectory(movie);
     await fs.mkdir(movieDir, { recursive: true });
 
     const destinationPath = path.join(movieDir, filename);
     await fs.writeFile(destinationPath, contents, 'utf8');
     return destinationPath;
+  }
+
+  private resolveMovieDirectory(movie: { title: string; year: number; path: string }): string {
+    const movieFolderName = this.buildMovieFolderName(movie);
+    const basePath = path.normalize(movie.path);
+    const leaf = path.basename(basePath);
+
+    // Support both stored forms:
+    // 1) root folder path ("/movies") and 2) movie folder path ("/movies/Title (Year)").
+    if (leaf.toLowerCase() === movieFolderName.toLowerCase()) {
+      return basePath;
+    }
+
+    return path.join(basePath, movieFolderName);
   }
 
   private sanitize(name: string): string {

@@ -48,7 +48,7 @@
     - [x] Add **TV Root Folder** path input with FilesystemBrowser + Validate in Settings > Media
     - [x] Wire both into the existing GET/PUT settings/media save flow
 
-- [~] Task: Conductor - User Manual Verification 'Phase 2: Movie & TV Root Folders' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 2: Movie & TV Root Folders' (Protocol in workflow.md)
 
 ---
 

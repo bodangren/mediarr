@@ -150,7 +150,7 @@
 
 ---
 
-## Phase 5: Activity History Page
+## Phase 5: Activity History Page [checkpoint: 6b03e024]
 
 ### Frontend — History Page Component
 
@@ -165,4 +165,4 @@
         - Empty state panel when no history
     - [x] Replace `StaticPage` stub for `/activity/history` in `App.tsx` with `ActivityHistoryPage`
 
-- [ ] Task: Conductor - User Manual Verification 'Phase 5: Activity History Page' (Protocol in workflow.md)
+- [~] Task: Conductor - User Manual Verification 'Phase 5: Activity History Page' (Protocol in workflow.md)

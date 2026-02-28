@@ -51,11 +51,11 @@
 
 ### Frontend — Series Detail Toolbar Wiring
 
-- [~] Task: Wire series detail toolbar "Search" button and season/episode actions
-    - [ ] Write tests asserting toolbar Search button renders and opens `SeriesInteractiveSearchModal`
-    - [ ] Open `SeriesInteractiveSearchModal` from the series detail toolbar Search button at Series level
-    - [ ] Add "Search Season" action to season header rows → modal at Season level with season pre-filled
-    - [ ] Add "Search Episode" action to episode rows → modal at Episode level with season + episode pre-filled
+- [x] Task: Wire series detail toolbar "Search" button and season/episode actions [240e94b]
+    - [x] Write tests asserting toolbar Search button renders and opens `SeriesInteractiveSearchModal`
+    - [x] Open `SeriesInteractiveSearchModal` from the series detail toolbar Search button at Series level
+    - [x] Add "Search Season" action to season header rows → modal at Season level with season pre-filled
+    - [x] Add "Search Episode" action to episode rows → modal at Episode level with season + episode pre-filled
 
 - [ ] Task: Conductor - User Manual Verification 'Phase 2: Series Interactive Search Modal' (Protocol in workflow.md)
 

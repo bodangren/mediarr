@@ -3,6 +3,7 @@ import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 're
 import { AppShell } from '@/components/shell/AppShell';
 import { useToast } from '@/components/providers/ToastProvider';
 import { AddIndexerModal } from '@/components/indexers/AddIndexerModal';
+import { AddProfileModal } from '@/components/settings/AddProfileModal';
 import { EditIndexerModal } from '@/components/indexers/EditIndexerModal';
 import { MovieInteractiveSearchModal } from '@/components/movie/MovieInteractiveSearchModal';
 import { InteractiveSearchModal } from '@/components/search/InteractiveSearchModal';
@@ -11,7 +12,7 @@ import { getApiClients } from '@/lib/api/client';
 import { getPopularPresets } from '@/lib/indexer/indexerPresets';
 import type { IndexerItem } from '@/lib/api/indexerApi';
 import type { TorrentLimitsSettings } from '@/lib/api/downloadClientsApi';
-import type { QualityProfileItem } from '@/lib/api/qualityProfileApi';
+import type { CreateQualityProfileInput, QualityProfileItem } from '@/lib/api/qualityProfileApi';
 import type { SubtitleProvider } from '@/lib/api/subtitleProvidersApi';
 import type { NotificationItem } from '@/lib/api/notificationsApi';
 import type { AppSettings } from '@/lib/api/settingsApi';
@@ -528,7 +529,7 @@ function SettingsClientsPage() {
   );
 }
 
-function SettingsProfilesPage() {
+export function SettingsProfilesPage() {
   const api = useMemo(() => getApiClients(), []);
   const [qualityProfiles, setQualityProfiles] = useState<QualityProfileItem[]>([]);
   const [customFormats, setCustomFormats] = useState<Array<{ id: number; name: string; conditionCount: number }>>([]);
@@ -540,6 +541,25 @@ function SettingsProfilesPage() {
   const [templateProfileId, setTemplateProfileId] = useState<number | null>(null);
   const [profileNameDrafts, setProfileNameDrafts] = useState<Record<number, string>>({});
   const [newFormatName, setNewFormatName] = useState('');
+  const [editingProfile, setEditingProfile] = useState<QualityProfileItem | null>(null);
+  const [isEditModalSaving, setIsEditModalSaving] = useState(false);
+
+  const handleSaveEditProfile = async (input: CreateQualityProfileInput) => {
+    if (!editingProfile) return;
+    setIsEditModalSaving(true);
+    setError(null);
+    setMessage(null);
+    try {
+      await api.qualityProfileApi.update(editingProfile.id, input);
+      await load();
+      setMessage(`Updated profile "${input.name}".`);
+      setEditingProfile(null);
+    } catch (updateError) {
+      setError(updateError instanceof Error ? updateError.message : 'Failed to update quality profile');
+    } finally {
+      setIsEditModalSaving(false);
+    }
+  };
 
   const load = async () => {
     setIsLoading(true);
@@ -769,6 +789,14 @@ function SettingsProfilesPage() {
                   </button>
                   <button
                     type="button"
+                    className="rounded-sm border border-border-subtle px-2 py-1 text-xs"
+                    onClick={() => setEditingProfile(profile)}
+                    disabled={isSaving}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
                     className="rounded-sm border border-status-error/60 px-2 py-1 text-xs text-status-error"
                     onClick={() => {
                       void deleteProfile(profile.id);
@@ -817,6 +845,15 @@ function SettingsProfilesPage() {
           </ul>
         </article>
       </section>
+      {editingProfile ? (
+        <AddProfileModal
+          isOpen
+          onClose={() => setEditingProfile(null)}
+          onSave={handleSaveEditProfile}
+          editProfile={editingProfile}
+          isLoading={isEditModalSaving}
+        />
+      ) : null}
     </RouteScaffold>
   );
 }

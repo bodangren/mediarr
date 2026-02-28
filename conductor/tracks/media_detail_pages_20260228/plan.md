@@ -23,7 +23,7 @@
     - [ ] Verify tests pass.
 - [ ] Task: Conductor - User Manual Verification 'Phase 1' (Protocol in workflow.md)
 
-## Phase 2: Eager TV Episode Population
+## Phase 2: Eager TV Episode Population [checkpoint: 78418fd]
 > Goal: When a TV series is added to Wanted, fetch and persist its full
 > season/episode data from SkyHook in the background.
 

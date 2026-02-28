@@ -9,6 +9,7 @@ const torrentSchema = z.object({
   progress: z.number().optional(),
   downloadSpeed: z.number().optional(),
   uploadSpeed: z.number().optional(),
+  seeders: z.number().int().nonnegative().optional(),
   size: z.string(),
   downloaded: z.string(),
   uploaded: z.string(),

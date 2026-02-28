@@ -28,6 +28,24 @@
 
 ## Phase 2: Series Interactive Search Modal [checkpoint: 9e10942]
 
+### Regression Hardening — Scraping Parser & Live Smoke Coverage
+
+- [x] Task: Fix row-selector parsing regressions and add live search smoke coverage
+    - [x] Add parser regression tests for CSS combinator selectors and nested `:has(...)`
+    - [x] Patch `ScrapingParser` selector handling to preserve combinators and support nested parentheses in `:has(...)`
+    - [x] Add env-gated live smoke tests for `/api/releases/search` using TPB movie + TV queries
+
+- [x] Task: Enrich interactive search candidates with parsed quality and computed age
+    - [x] Add service tests asserting `quality` and `age` are populated from title + publish date
+    - [x] Patch `MediaSearchService` candidate mapping to infer quality and compute age hours
+    - [x] Add UI fallback mapping in interactive search modals when API fields are absent
+
+- [x] Task: Harden paginated interactive search against invalid dates and string category mappings
+    - [x] Guard API payload date serialization so invalid Date values do not throw during page responses
+    - [x] Ignore invalid indexer publishDate values during candidate enrichment to avoid leaking broken dates
+    - [x] Preserve non-numeric mapped category IDs (e.g. TorrentGalaxy `TV`) instead of coercing to `NaN`
+    - [x] Add movie-search fallback retry without `imdbId` when an indexer returns zero results for IMDB-based lookups
+
 ### Backend — Series Release Search API Validation
 
 - [x] Task: Confirm series release search handles tvdbId + season + episode params [4ef84df]
@@ -97,23 +115,23 @@
 
 ### Frontend — Queue API Client
 
-- [ ] Task: Add torrent queue API client
-    - [ ] Write unit tests for `torrentApi` covering list, pause, resume, remove, setSpeedLimits
-    - [ ] Create `app/src/lib/api/torrentApi.ts` with typed methods wrapping existing `/api/torrents` endpoints
-    - [ ] Add torrent API to `getApiClients()`
+- [x] Task: Add torrent queue API client
+    - [x] Write unit tests for `torrentApi` covering list, pause, resume, remove, setSpeedLimits
+    - [x] Create `app/src/lib/api/torrentApi.ts` with typed methods wrapping existing `/api/torrents` endpoints
+    - [x] Add torrent API to `getApiClients()`
 
 ### Frontend — Queue Page Component
 
-- [ ] Task: Build `ActivityQueuePage` component
-    - [ ] Write rendering tests: renders torrent rows with progress bars, status badges, action buttons; empty state; speed limit inputs
-    - [ ] Create `app/src/components/activity/ActivityQueuePage.tsx`:
+- [x] Task: Build `ActivityQueuePage` component
+    - [x] Write rendering tests: renders torrent rows with progress bars, status badges, action buttons; empty state; speed limit inputs
+    - [x] Create `app/src/components/activity/ActivityQueuePage.tsx`:
         - Polls `torrentApi.list()` every 5 s; pauses polling on `document.visibilityState === 'hidden'`
         - Columns: Title, Status badge (Downloading / Seeding / Paused / Error / Queued), Progress bar + %, Size, ↓ Speed, ↑ Speed, ETA, Seeders, Actions
         - Pause/Resume toggle per row
         - Remove row → opens `QueueRemoveModal`; on confirm calls `torrentApi.remove(infoHash)`
         - Global speed limit inputs wired to `torrentApi.setSpeedLimits()`
         - Empty state panel when no torrents
-    - [ ] Replace `StaticPage` stub for `/activity/queue` in `App.tsx` with `ActivityQueuePage`
+    - [x] Replace `StaticPage` stub for `/activity/queue` in `App.tsx` with `ActivityQueuePage`
 
 - [ ] Task: Conductor - User Manual Verification 'Phase 4: Activity Queue Page' (Protocol in workflow.md)
 

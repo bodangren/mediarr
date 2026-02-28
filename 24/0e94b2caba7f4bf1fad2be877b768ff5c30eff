@@ -1,0 +1,9 @@
+Task: Wire series detail toolbar Search button and season/episode actions
+
+Summary: Added SeriesInteractiveSearchModal wiring to SeriesDetailPage in App.tsx. Added toolbar-level 'Search' button (opens Series level), per-season 'Search Season N' button, per-episode 'Search S##E##' button. Added import, searchModal state, and 3 new integration tests in App.detailPages.test.tsx.
+
+Files modified:
+- app/src/App.tsx (import, state, 3 buttons, modal JSX)
+- app/src/App.detailPages.test.tsx (SeriesInteractiveSearchModal mock + 3 new tests)
+
+Pre-existing: 'renders series-level monitored toggle' was already failing before this task.

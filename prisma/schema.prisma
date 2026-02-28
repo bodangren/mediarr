@@ -33,14 +33,6 @@ enum WantedSubtitleState {
   FAILED
 }
 
-enum ActivityEventType {
-  MEDIA_ADDED
-  SEARCH_EXECUTED
-  RELEASE_GRABBED
-  IMPORT_COMPLETED
-  SUBTITLE_DOWNLOADED
-  INDEXER_TESTED
-}
 
 model Media {
   id                  Int            @id @default(autoincrement())
@@ -522,7 +514,7 @@ model IndexerHealthSnapshot {
 
 model ActivityEvent {
   id           Int               @id @default(autoincrement())
-  eventType    ActivityEventType
+  eventType    String
   sourceModule String
   entityRef    String?
   summary      String

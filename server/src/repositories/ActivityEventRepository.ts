@@ -1,12 +1,11 @@
 import type {
   ActivityEvent,
-  ActivityEventType,
   Prisma,
   PrismaClient,
 } from '@prisma/client';
 
 export interface CreateActivityEventInput {
-  eventType: ActivityEventType;
+  eventType: string;
   sourceModule: string;
   entityRef?: string;
   summary: string;
@@ -16,7 +15,7 @@ export interface CreateActivityEventInput {
 }
 
 export interface QueryActivityEventsInput {
-  eventType?: ActivityEventType;
+  eventType?: string;
   sourceModule?: string;
   entityRef?: string;
   success?: boolean;

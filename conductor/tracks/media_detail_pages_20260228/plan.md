@@ -14,7 +14,7 @@
     - [ ] Ensure existing AppSettingsRepository.get() and update() handle
           the new fields correctly (JSON merge).
     - [ ] Verify tests pass.
-- [~] Task: Refactor downloadClientRoutes.ts to integrated downloader settings
+- [x] aea0634 Task: Refactor downloadClientRoutes.ts to integrated downloader settings
     - [ ] Write failing integration tests for GET /api/download-client and
           PUT /api/download-client.
     - [ ] Replace multi-client CRUD routes with GET (reads torrentLimits from

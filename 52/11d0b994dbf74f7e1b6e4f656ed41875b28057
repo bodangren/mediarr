@@ -1,0 +1,9 @@
+Task: Default movie/series path to root folder on add
+
+Summary: Added resolveRootFolders() and buildMediaPath() helpers to mediaRoutes.ts. When a movie or series is added via POST /api/media or /api/wanted, if movieRootFolder or tvRootFolder is set in MediaManagementSettings, the path is automatically defaulted to '{rootFolder}/{Title} ({Year})'. If no root folder is set, path remains null.
+
+Files created:
+- server/src/api/routes/mediaRoutes.rootFolder.test.ts (6 tests)
+
+Files modified:
+- server/src/api/routes/mediaRoutes.ts (resolveRootFolders, buildMediaPath, path defaulting in handleCreateMedia)

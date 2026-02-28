@@ -14,13 +14,13 @@
 
 ### Frontend — Drag-to-Reorder in Profile Editor
 
-- [ ] Task: Add drag-to-reorder quality list to `AddProfileModal`
-    - [ ] Write rendering + interaction tests for the reorderable quality list (mouse drag, keyboard arrow-key movement)
-    - [ ] Implement draggable quality rows in `app/src/components/settings/AddProfileModal.tsx` using `@dnd-kit/sortable` (or equivalent already in project)
-    - [ ] Ensure cutoff selector updates correctly when its quality item is moved
-    - [ ] Verify saved order is included in the `CreateQualityProfileInput` payload sent to the API
+- [x] Task: Add drag-to-reorder quality list to `AddProfileModal` [033c7ed]
+    - [x] Write rendering + interaction tests for the reorderable quality list (mouse drag, keyboard arrow-key movement)
+    - [x] Implement draggable quality rows in `app/src/components/settings/AddProfileModal.tsx` using `@dnd-kit/sortable` (or equivalent already in project)
+    - [x] Ensure cutoff selector updates correctly when its quality item is moved
+    - [x] Verify saved order is included in the `CreateQualityProfileInput` payload sent to the API
 
-- [ ] Task: Conductor - User Manual Verification 'Phase 1: Quality Profile Presets & Drag-to-Reorder' (Protocol in workflow.md)
+- [~] Task: Conductor - User Manual Verification 'Phase 1: Quality Profile Presets & Drag-to-Reorder' (Protocol in workflow.md)
 
 ---
 

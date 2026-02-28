@@ -22,7 +22,7 @@
     - [x] Add **Seed Limit Action** select (`pause` | `remove`)
     - [x] Wire all four fields into the existing save flow (GET on mount, PUT on save)
 
-- [~] Task: Conductor - User Manual Verification 'Phase 1: Complete Directory & Seed Controls' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 1: Complete Directory & Seed Controls' (Protocol in workflow.md)
 
 ---
 

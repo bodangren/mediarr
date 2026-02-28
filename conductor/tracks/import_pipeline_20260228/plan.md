@@ -56,14 +56,14 @@
 
 ### Backend — ImportManager Verification & Tests
 
-- [ ] Task: Verify ImportManager is wired at startup and write unit tests
-    - [ ] Confirm `ImportManager` is instantiated and `initialize()` (or equivalent) is called during server startup in `createApiServer.ts` or `index.ts`
-    - [ ] Write unit tests covering:
+- [x] Task: Verify ImportManager is wired at startup and write unit tests
+    - [x] Confirm `ImportManager` is instantiated and `initialize()` (or equivalent) is called during server startup in `createApiServer.ts` or `index.ts`
+    - [x] Write unit tests covering:
         - Movie import success: `torrent:completed` event → file scanned → matched to movie → `organizeMovieFile()` called → `MediaFileVariant` created → `MOVIE_IMPORTED` activity event logged
         - Episode import success: matched to series/episode → `organizeFile()` called → `Episode.path` updated → `SERIES_IMPORTED` activity logged
         - No match found: `IMPORT_FAILED` activity event logged with "no match" reason; process does not throw
         - Organizer throws: error caught → `IMPORT_FAILED` logged; other torrent processing unaffected
-    - [ ] Fix any gaps found during verification
+    - [x] Fix any gaps found during verification
 
 ### Backend — IMPORT_FAILED Activity Event
 

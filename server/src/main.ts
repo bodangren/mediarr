@@ -28,6 +28,8 @@ import { TorrentRepository } from './repositories/TorrentRepository';
 import { seedCategories } from './seeds/categories';
 import { seedQualityDefinitions, seedQualityProfiles } from './seeds/qualities';
 import { ActivityEventEmitter } from './services/ActivityEventEmitter';
+import { ImportManager } from './services/ImportManager';
+import { Organizer } from './services/Organizer';
 
 import { CollectionService } from './services/CollectionService';
 import { DataDirectoryInitializer } from './services/DataDirectoryInitializer';
@@ -447,6 +449,9 @@ async function startApi(): Promise<void> {
     incomplete: settings.torrentLimits.incompleteDirectory,
     complete: settings.torrentLimits.completeDirectory,
   });
+
+  const organizer = new Organizer();
+  new ImportManager(torrentManager, organizer, prisma, activityEventEmitter);
 
   const openSubtitlesProvider = new OpenSubtitlesProvider(httpClient, settingsService);
 

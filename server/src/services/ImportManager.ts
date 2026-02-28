@@ -5,8 +5,9 @@ import path from 'node:path';
 import fs from 'node:fs/promises';
 
 /**
- * Service to bridge TorrentManager and Organizer for TV shows.
- * Listens for completed torrents and attempts to import them if they match a known series.
+ * Service to bridge TorrentManager and Organizer for completed torrent imports.
+ * Listens for completed torrents and attempts to import them if they match a known
+ * movie or TV series/episode.
  */
 export class ImportManager {
   constructor(
@@ -19,12 +20,16 @@ export class ImportManager {
       this.handleTorrentCompleted(torrent).catch(err => {
         console.error('Failed to import completed torrent:', err);
         this.activityEventEmitter?.emit({
-          eventType: 'IMPORT_COMPLETED',
+          eventType: 'IMPORT_FAILED',
           sourceModule: 'import-manager',
           entityRef: `torrent:${torrent.infoHash}`,
           summary: `Import failed for ${torrent.name}`,
           success: false,
-          details: { reason: err?.message ?? 'unknown error' },
+          details: {
+            sourcePath: torrent.path,
+            torrentName: torrent.name,
+            reason: err?.message ?? 'unknown error',
+          },
           occurredAt: new Date(),
         });
       });
@@ -33,21 +38,20 @@ export class ImportManager {
 
   private async handleTorrentCompleted(torrent: { infoHash: string; name: string; path: string }): Promise<void> {
     const files = await this.getFiles(torrent.path);
-    
+
     for (const filePath of files) {
       const filename = path.basename(filePath);
       const parsed = Parser.parse(filename);
 
-      if (parsed && parsed.seriesTitle) {
-        // Try to find series by title (fuzzy match or exact)
-        // For now, simple exact match or lowercase match
+      // ── Try episode import ──────────────────────────────────────────────
+      if (parsed?.seriesTitle) {
         const series = await this.prisma.series.findFirst({
           where: {
             OR: [
               { title: { contains: parsed.seriesTitle } },
-              { cleanTitle: { contains: parsed.seriesTitle.toLowerCase().replace(/\s/g, '') } }
-            ]
-          }
+              { cleanTitle: { contains: parsed.seriesTitle.toLowerCase().replace(/\s/g, '') } },
+            ],
+          },
         });
 
         if (series) {
@@ -55,28 +59,88 @@ export class ImportManager {
             where: {
               seriesId: series.id,
               seasonNumber: parsed.seasonNumber,
-              episodeNumber: parsed.episodeNumbers[0]
-            }
+              episodeNumber: parsed.episodeNumbers[0],
+            },
           });
 
           if (episode) {
             const newPath = await this.organizer.organizeFile(filePath, series, episode);
             await this.prisma.episode.update({
               where: { id: episode.id },
-              data: { path: newPath }
+              data: { path: newPath },
             });
 
             await this.activityEventEmitter?.emit({
-              eventType: 'IMPORT_COMPLETED',
+              eventType: 'SERIES_IMPORTED',
               sourceModule: 'import-manager',
               entityRef: `torrent:${torrent.infoHash}`,
-              summary: `Imported ${filename}`,
+              summary: `Imported episode ${filename}`,
               success: true,
+              details: { sourcePath: filePath, torrentName: torrent.name },
               occurredAt: new Date(),
             });
+            continue;
           }
         }
       }
+
+      // ── Try movie import ────────────────────────────────────────────────
+      // When the parser finds no episode pattern, attempt to match as a movie
+      // by searching for a movie whose title appears in the cleaned filename.
+      if (!parsed) {
+        const cleanedName = path.basename(filePath, path.extname(filePath))
+          .replace(/[._]/g, ' ')
+          .trim();
+
+        const movie = await this.prisma.movie.findFirst({
+          where: {
+            OR: [
+              { title: { contains: cleanedName } },
+              { cleanTitle: { contains: cleanedName.toLowerCase().replace(/\s/g, '') } },
+            ],
+          },
+        });
+
+        if (movie) {
+          const newPath = await this.organizer.organizeMovieFile(filePath, movie);
+          await this.prisma.mediaFileVariant.upsert({
+            where: { mediaType_path: { mediaType: 'MOVIE', path: newPath } },
+            create: {
+              mediaType: 'MOVIE',
+              movieId: movie.id,
+              path: newPath,
+              fileSize: BigInt(0),
+            },
+            update: { movieId: movie.id },
+          });
+
+          await this.activityEventEmitter?.emit({
+            eventType: 'MOVIE_IMPORTED',
+            sourceModule: 'import-manager',
+            entityRef: `torrent:${torrent.infoHash}`,
+            summary: `Imported movie ${filename}`,
+            success: true,
+            details: { sourcePath: filePath, torrentName: torrent.name },
+            occurredAt: new Date(),
+          });
+          continue;
+        }
+      }
+
+      // ── No match ────────────────────────────────────────────────────────
+      await this.activityEventEmitter?.emit({
+        eventType: 'IMPORT_FAILED',
+        sourceModule: 'import-manager',
+        entityRef: `torrent:${torrent.infoHash}`,
+        summary: `No match found for ${filename}`,
+        success: false,
+        details: {
+          sourcePath: filePath,
+          torrentName: torrent.name,
+          reason: 'no match found in library',
+        },
+        occurredAt: new Date(),
+      });
     }
   }
 

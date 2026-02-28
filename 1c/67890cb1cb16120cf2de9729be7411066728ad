@@ -1,0 +1,9 @@
+Task: Build FilesystemBrowser modal component
+
+Summary: Created filesystemApi.ts client (list method), added it to createApiClients. Created FilesystemBrowser.tsx modal with breadcrumb navigation, directory listing, and onSelect callback. 8 rendering/navigation/selection tests pass.
+
+Files created:
+- app/src/lib/api/filesystemApi.ts (new)
+- app/src/components/primitives/FilesystemBrowser.tsx (new)
+- app/src/components/primitives/FilesystemBrowser.test.tsx (new, 8 tests)
+- app/src/lib/api/index.ts (added filesystemApi)

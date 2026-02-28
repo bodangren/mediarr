@@ -188,11 +188,28 @@ export function registerMediaRoutes(
     }
   });
 
+  async function resolveRootFolders(): Promise<{ movieRootFolder: string; tvRootFolder: string }> {
+    if (!deps.settingsService?.get) {
+      return { movieRootFolder: '', tvRootFolder: '' };
+    }
+    const settings = await deps.settingsService.get();
+    return {
+      movieRootFolder: settings.mediaManagement?.movieRootFolder ?? '',
+      tvRootFolder: settings.mediaManagement?.tvRootFolder ?? '',
+    };
+  }
+
+  function buildMediaPath(rootFolder: string, title: string, year: number): string | null {
+    if (!rootFolder) return null;
+    return `${rootFolder}/${title} (${year})`;
+  }
+
   async function handleCreateMedia(request: any, reply: any) {
     const body = request.body as CreateMediaBody;
     const mediaType = normalizeMediaType(body.mediaType);
     const monitored = body.monitored ?? true;
     const qualityProfileId = body.qualityProfileId ?? 1;
+    const { movieRootFolder, tvRootFolder } = await resolveRootFolders();
 
     if (mediaType === 'MOVIE') {
       if (!body.tmdbId || !body.title || !body.year) {
@@ -214,6 +231,8 @@ export function registerMediaRoutes(
         });
       }
 
+      const moviePath = buildMediaPath(movieRootFolder, body.title, body.year);
+
       const created = deps.mediaRepository?.upsertMovie
         ? await deps.mediaRepository.upsertMovie({
           tmdbId: body.tmdbId,
@@ -227,6 +246,7 @@ export function registerMediaRoutes(
           qualityProfileId,
           year: body.year,
           posterUrl: body.posterUrl,
+          path: moviePath,
         })
         : await (deps.prisma as any).movie.create({
           data: {
@@ -241,6 +261,7 @@ export function registerMediaRoutes(
             qualityProfileId,
             year: body.year,
             posterUrl: body.posterUrl,
+            path: moviePath,
           },
         });
 
@@ -270,6 +291,8 @@ export function registerMediaRoutes(
       });
     }
 
+    const seriesPath = buildMediaPath(tvRootFolder, body.title, body.year);
+
     const created = deps.mediaRepository?.upsertSeries
       ? await deps.mediaRepository.upsertSeries({
         tvdbId: body.tvdbId,
@@ -285,6 +308,7 @@ export function registerMediaRoutes(
         year: body.year,
         network: body.network,
         posterUrl: body.posterUrl,
+        path: seriesPath,
       })
       : await (deps.prisma as any).series.create({
         data: {
@@ -301,6 +325,7 @@ export function registerMediaRoutes(
           year: body.year,
           network: body.network,
           posterUrl: body.posterUrl,
+          path: seriesPath,
         },
       });
 

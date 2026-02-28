@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
-import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { AppShell } from '@/components/shell/AppShell';
 import { useToast } from '@/components/providers/ToastProvider';
 import { AddIndexerModal } from '@/components/indexers/AddIndexerModal';
@@ -1271,6 +1271,8 @@ function MoviesLibraryPage() {
 function MovieDetailPage() {
   const api = useMemo(() => getApiClients(), []);
   const params = useParams();
+  const navigate = useNavigate();
+  const { addToast } = useToast();
   const movieId = Number(params.id);
   const [movie, setMovie] = useState<{
     id: number;
@@ -1281,7 +1283,11 @@ function MovieDetailPage() {
     monitored: boolean;
     tmdbId?: number;
     imdbId?: string;
+    posterUrl?: string;
+    genres?: string[];
+    qualityProfileId?: number;
   } | null>(null);
+  const [qualityProfiles, setQualityProfiles] = useState<QualityProfileItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -1297,7 +1303,10 @@ function MovieDetailPage() {
       setIsLoading(true);
       setError(null);
       try {
-        const item = await api.movieApi.getById(movieId);
+        const [item, profiles] = await Promise.all([
+          api.movieApi.getById(movieId),
+          api.qualityProfileApi.list(),
+        ]);
         setMovie({
           id: item.id,
           title: item.title,
@@ -1307,7 +1316,11 @@ function MovieDetailPage() {
           monitored: item.monitored,
           tmdbId: item.tmdbId,
           imdbId: item.imdbId,
+          posterUrl: item.posterUrl,
+          genres: (item as any).genres as string[] | undefined,
+          qualityProfileId: item.qualityProfileId,
         });
+        setQualityProfiles(profiles);
       } catch (loadError) {
         setError(loadError instanceof Error ? loadError.message : 'Failed to load movie details');
       } finally {
@@ -1318,23 +1331,115 @@ function MovieDetailPage() {
     void load();
   }, [api, movieId]);
 
+  const handleToggleMonitored = async () => {
+    if (!movie) return;
+    try {
+      await api.mediaApi.setMovieMonitored(movie.id, !movie.monitored);
+      setMovie(prev => prev ? { ...prev, monitored: !prev.monitored } : prev);
+    } catch (err) {
+      addToast({ type: 'error', message: 'Failed to update monitoring' });
+    }
+  };
+
+  const handleQualityProfileChange = async (profileId: number) => {
+    if (!movie) return;
+    try {
+      await api.movieApi.update(movie.id, { qualityProfileId: profileId });
+      setMovie(prev => prev ? { ...prev, qualityProfileId: profileId } : prev);
+    } catch (err) {
+      addToast({ type: 'error', message: 'Failed to update quality profile' });
+    }
+  };
+
+  const handleRemove = async () => {
+    if (!movie) return;
+    if (!window.confirm(`Remove "${movie.title}" from library?`)) return;
+    try {
+      await api.mediaApi.deleteMovie(movie.id);
+      addToast({ type: 'success', message: `"${movie.title}" removed from library` });
+      navigate('/library/movies');
+    } catch (err) {
+      addToast({ type: 'error', message: 'Failed to remove movie' });
+    }
+  };
+
   return (
     <RouteScaffold title="Movie Details" description="Details and interactive search for the selected movie.">
       {isLoading ? <p className="text-sm text-text-secondary">Loading movie...</p> : null}
       {error ? <p className="text-sm text-status-error">{error}</p> : null}
       {movie ? (
-        <section className="space-y-3 rounded-md border border-border-subtle bg-surface-1 p-4">
-          <h2 className="text-lg font-medium">{movie.title}</h2>
-          <p className="text-sm text-text-secondary">Year: {movie.year ?? 'Unknown'} | Status: {movie.status ?? 'Unknown'} | Monitored: {movie.monitored ? 'Yes' : 'No'}</p>
-          {movie.overview ? <p className="text-sm text-text-secondary">{movie.overview}</p> : null}
-          <button
-            type="button"
-            className="rounded-sm border border-border-subtle bg-surface-2 px-3 py-2 text-sm"
-            onClick={() => setSearchOpen(true)}
-          >
-            Interactive Search
-          </button>
-        </section>
+        <>
+          {/* Header: poster + metadata */}
+          <section className="flex gap-6 rounded-md border border-border-subtle bg-surface-1 p-4">
+            <div className="flex-shrink-0 w-32">
+              {movie.posterUrl ? (
+                <img src={movie.posterUrl} alt={movie.title} className="w-full rounded-md object-cover" />
+              ) : (
+                <div className="flex h-48 w-32 items-center justify-center rounded-md bg-surface-2 text-xs text-text-secondary">No Poster</div>
+              )}
+            </div>
+            <div className="flex-1 space-y-2">
+              <h2 className="text-xl font-semibold">{movie.title}</h2>
+              <div className="flex flex-wrap items-center gap-3 text-sm text-text-secondary">
+                {movie.year ? <span>{movie.year}</span> : null}
+                {movie.status ? <span className="rounded-sm bg-surface-2 px-2 py-0.5 text-xs">{movie.status}</span> : null}
+              </div>
+              {movie.genres && movie.genres.length > 0 ? (
+                <div className="flex flex-wrap gap-1">
+                  {movie.genres.map(g => (
+                    <span key={g} className="rounded-sm bg-surface-2 px-2 py-0.5 text-xs text-text-secondary">{g}</span>
+                  ))}
+                </div>
+              ) : null}
+              {movie.overview ? <p className="text-sm text-text-secondary">{movie.overview}</p> : null}
+            </div>
+          </section>
+
+          {/* Controls */}
+          <section className="flex flex-wrap items-center gap-4 rounded-md border border-border-subtle bg-surface-1 p-4">
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={movie.monitored}
+                aria-label="Monitored"
+                onChange={() => { void handleToggleMonitored(); }}
+              />
+              Monitored
+            </label>
+
+            <label className="flex items-center gap-2 text-sm" htmlFor="movie-quality-profile">
+              Quality Profile
+              <select
+                id="movie-quality-profile"
+                aria-label="Quality Profile"
+                value={movie.qualityProfileId ?? ''}
+                onChange={event => { void handleQualityProfileChange(Number(event.target.value)); }}
+                className="rounded-sm border border-border-subtle bg-surface-0 px-2 py-1 text-sm"
+              >
+                {qualityProfiles.map(p => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            </label>
+
+            <button
+              type="button"
+              className="rounded-sm border border-border-subtle bg-surface-2 px-3 py-2 text-sm"
+              onClick={() => setSearchOpen(true)}
+            >
+              Interactive Search
+            </button>
+
+            <button
+              type="button"
+              className="rounded-sm border border-status-error/60 px-3 py-2 text-sm text-status-error"
+              aria-label="Remove from Library"
+              onClick={() => { void handleRemove(); }}
+            >
+              Remove from Library
+            </button>
+          </section>
+        </>
       ) : null}
       {movie ? (
         <MovieInteractiveSearchModal

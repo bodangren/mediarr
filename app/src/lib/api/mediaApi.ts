@@ -189,6 +189,17 @@ export function createMediaApi(client: ApiHttpClient) {
       );
     },
 
+    setSeasonMonitored(seriesId: number, seasonNumber: number, monitored: boolean): Promise<{ monitored: boolean }> {
+      return client.request(
+        {
+          path: routeMap.seriesSeasonMonitoring(seriesId, seasonNumber),
+          method: 'PATCH',
+          body: { monitored },
+        },
+        z.object({ monitored: z.boolean() }).passthrough(),
+      );
+    },
+
     deleteSeries(id: number, deleteFiles = false): Promise<{ deleted: boolean; id: number }> {
       return client.request(
         {

@@ -46,7 +46,7 @@
 ## Phase 3: Frontend — Detail Pages
 > Goal: Movie and TV detail pages reachable from library cards.
 
-- [ ] Task: Make library cards navigable
+- [~] Task: Make library cards navigable
     - [ ] Write failing UI tests: clicking a movie card navigates to /movies/:id,
           clicking a TV card navigates to /series/:id.
     - [ ] Wrap movie and TV cards in the Movies/TV pages with a router Link.

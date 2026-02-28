@@ -4,7 +4,7 @@
 > Goal: Extend TorrentLimitsSettings with the new fields and replace the
 > multi-client download routes with a single-instance settings API.
 
-- [~] Task: Extend TorrentLimitsSettings and AppSettingsRepository
+- [x] c7ca3e0 Task: Extend TorrentLimitsSettings and AppSettingsRepository
     - [ ] Write failing unit tests for the new fields (incompleteDirectory,
           completeDirectory, seedRatioLimit, seedTimeLimit, seedLimitAction)
           and their defaults.

@@ -30,25 +30,25 @@
 
 ### Backend — Extend MediaManagementSettings
 
-- [ ] Task: Add `movieRootFolder` and `tvRootFolder` to MediaManagementSettings API
-    - [ ] Write unit tests: GET returns `movieRootFolder` and `tvRootFolder`; PUT saves them; fields default to empty string when not set
-    - [ ] Extend `MediaManagementSettings` interface and storage to include both fields
-    - [ ] Extend GET `/api/settings/media` response and PUT body schema to include both fields
+- [x] Task: Add `movieRootFolder` and `tvRootFolder` to MediaManagementSettings API (2e2bc2d1)
+    - [x] Write unit tests: GET returns `movieRootFolder` and `tvRootFolder`; PUT saves them; fields default to empty string when not set
+    - [x] Extend `MediaManagementSettings` interface and storage to include both fields
+    - [x] Extend GET `/api/settings/media` response and PUT body schema to include both fields
 
-- [ ] Task: Default movie/series path to root folder on add
-    - [ ] Write unit tests: adding a movie with no explicit path sets `movie.path` to `{movieRootFolder}/{formatted title}`; adding series sets `series.path` similarly; if no root folder configured, path remains null
-    - [ ] In movie add handler: if `path` not provided and `movieRootFolder` is set, compute and set `movie.path`
-    - [ ] In series add handler: same logic for `tvRootFolder`
+- [x] Task: Default movie/series path to root folder on add (5211d0b9)
+    - [x] Write unit tests: adding a movie with no explicit path sets `movie.path` to `{movieRootFolder}/{formatted title}`; adding series sets `series.path` similarly; if no root folder configured, path remains null
+    - [x] In movie add handler: if `path` not provided and `movieRootFolder` is set, compute and set `movie.path`
+    - [x] In series add handler: same logic for `tvRootFolder`
 
 ### Frontend — Settings > Media Root Folder UI
 
-- [ ] Task: Wire movie and TV root folder path browsers into Settings > Media
-    - [ ] Write rendering tests: movie root folder input with folder icon + Validate renders; TV root folder renders; values persist after save
-    - [ ] Add **Movie Root Folder** path input with FilesystemBrowser + Validate in Settings > Media
-    - [ ] Add **TV Root Folder** path input with FilesystemBrowser + Validate in Settings > Media
-    - [ ] Wire both into the existing GET/PUT settings/media save flow
+- [x] Task: Wire movie and TV root folder path browsers into Settings > Media (99b44fb3)
+    - [x] Write rendering tests: movie root folder input with folder icon + Validate renders; TV root folder renders; values persist after save
+    - [x] Add **Movie Root Folder** path input with FilesystemBrowser + Validate in Settings > Media
+    - [x] Add **TV Root Folder** path input with FilesystemBrowser + Validate in Settings > Media
+    - [x] Wire both into the existing GET/PUT settings/media save flow
 
-- [ ] Task: Conductor - User Manual Verification 'Phase 2: Movie & TV Root Folders' (Protocol in workflow.md)
+- [~] Task: Conductor - User Manual Verification 'Phase 2: Movie & TV Root Folders' (Protocol in workflow.md)
 
 ---
 

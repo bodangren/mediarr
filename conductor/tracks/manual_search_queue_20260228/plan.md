@@ -133,7 +133,20 @@
         - Empty state panel when no torrents
     - [x] Replace `StaticPage` stub for `/activity/queue` in `App.tsx` with `ActivityQueuePage`
 
-- [ ] Task: Conductor - User Manual Verification 'Phase 4: Activity Queue Page' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 4: Activity Queue Page' (Protocol in workflow.md)
+    - [x] Verified end-to-end manual grab handoff to internal downloader with configured client paths.
+    - [x] Verified queue row lifecycle no longer crashes backend on stale torrent deletion.
+    - [x] Verified new torrent can transition from grabbed to actively downloading.
+
+### Phase 4 Verification Observations (2026-02-28)
+
+- [x] Observed + fixed: GUID-only re-search grab path was unreliable for scraping indexers (`Release with GUID ... not found`); candidate handoff path restored reliable grabs.
+- [x] Observed + fixed: torrent persistence failures on `infoHash: undefined` caused repeated `P2025` sync noise; infoHash resolution + cleanup hardening applied.
+- [x] Observed + fixed: hardcoded `/data/downloads/*` defaults conflicted with local dev permissions; downloader now uses configured Settings > Clients directories.
+- [x] Observed + fixed: deleting stale DB-only torrents crashed backend (`No torrent with id [object Promise]`); remove path now handles async client lookups and DB-only rows safely.
+- [x] Observed + fixed: tracker/magnet normalization issues produced `Invalid torrent identifier`; magnet normalization and duplicate-add handling hardened.
+- [x] Observed + fixed: oversized ETA values overflowed SQLite `INT` (`P2023`), causing crash loops; startup ETA repair + sync ETA normalization/clamping added.
+- [ ] Follow-up suggestion: add explicit queue state badge for `stalled/no peers` (distinct from `downloading`) and optional stale-row auto-remediation action.
 
 ---
 

@@ -89,3 +89,12 @@ Advance the core user workflow across five areas:
 - Wanted page / missing episode list (not in nav yet).
 - Post-processing / import / file organization (next track).
 - Subtitle search.
+
+## Implementation Observations (2026-02-28)
+- Queue reliability depended on candidate-based grab handoff (GUID-only re-search was not sufficient for scraping indexers).
+- Downloader behavior must use Settings > Clients paths as the runtime source of truth; hardcoded `/data/*` paths caused local permission failures.
+- Torrent lifecycle handling required hardening for stale DB-only rows, async client lookups, and magnet normalization edge cases.
+- ETA persistence must normalize milliseconds to seconds and clamp to SQLite `INT` bounds to prevent `P2023` crash loops.
+
+## Follow-up Suggestion
+- Add a distinct queue status badge for `stalled/no peers` (separate from `downloading`) with optional remediation action (e.g., retry metadata/tracker refresh or safe remove/regrab).

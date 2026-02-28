@@ -359,5 +359,47 @@ export function registerMediaRoutes(
         },
       },
     },
-      }, handleCreateMedia);
-  }
+  }, async (request, reply) => {
+    const body = request.body as CreateMediaBody;
+    const mediaType = normalizeMediaType(body.mediaType);
+
+    // Delegate to the shared handler to create the record and send the response.
+    await handleCreateMedia(request, reply);
+
+    // After the response is sent (or queued), fire background episode population
+    // for TV series only.
+    if (mediaType === 'TV' && body.tvdbId) {
+      const tvdbId = body.tvdbId;
+
+      // Resolve the series id from the just-created record so we can associate
+      // seasons/episodes correctly.
+      const resolveSeriesId = async (): Promise<number | null> => {
+        if (deps.mediaRepository?.findSeriesByTvdbId) {
+          const s = await deps.mediaRepository.findSeriesByTvdbId(tvdbId);
+          return s?.id ?? null;
+        }
+
+        const s = await (deps.prisma as any).series?.findUnique?.({ where: { tvdbId } });
+        return s?.id ?? null;
+      };
+
+      Promise.resolve().then(async () => {
+        try {
+          const seriesId = await resolveSeriesId();
+          if (seriesId == null) {
+            return;
+          }
+
+          if (!deps.metadataProvider?.getSeriesDetails || !deps.mediaRepository?.upsertSeasonsAndEpisodes) {
+            return;
+          }
+
+          const details = await deps.metadataProvider.getSeriesDetails(tvdbId);
+          await deps.mediaRepository.upsertSeasonsAndEpisodes(seriesId, details);
+        } catch (err) {
+          console.error('[wanted] Failed to populate episodes:', err);
+        }
+      });
+    }
+  });
+}

@@ -48,7 +48,7 @@ export interface ApiDependencies {
     | 'getTorrentStatus'
   >;
   indexerRepository?: Pick<IndexerRepository, 'findAll' | 'findById' | 'create' | 'update' | 'delete'>;
-  mediaRepository?: Pick<MediaRepository, 'findMovieByTmdbId' | 'upsertMovie' | 'upsertSeries'>;
+  mediaRepository?: Pick<MediaRepository, 'findMovieByTmdbId' | 'upsertMovie' | 'upsertSeries' | 'findSeriesByTvdbId' | 'upsertSeasonsAndEpisodes'>;
   indexerTester?: Pick<IndexerTester, 'test'>;
   indexerFactory?: Pick<IndexerFactory, 'fromDatabaseRecord' | 'getDefinition' | 'getCompatibilityReport'>;
   subtitleInventoryApiService?: Pick<
@@ -78,7 +78,7 @@ export interface ApiDependencies {
     CustomFormatRepository,
     'findAll' | 'findById' | 'findByName' | 'create' | 'update' | 'delete' | 'exists' | 'nameExists' | 'findByQualityProfileId'
   >;
-  metadataProvider?: Pick<MetadataProvider, 'searchMedia'>;
+  metadataProvider?: Pick<MetadataProvider, 'searchMedia' | 'getSeriesDetails'>;
   eventHub?: ApiEventHub;
   importListRepository?: Pick<
     ImportListRepository,

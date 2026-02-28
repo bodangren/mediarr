@@ -72,6 +72,17 @@
     - [x] Add `IMPORT_FAILED` to `ActivityEventBadge` config in the frontend (error color)
     - [x] Write test for badge rendering
 
+- [x] Task: Add import retry and root-folder fallback hardening (f9e6274d)
+    - [x] Write unit tests for fallback path resolution when `series.path` / `movie.path` is null during import
+    - [x] In `ImportManager`, resolve missing series/movie paths from `/settings/media` root folders and persist resolved paths
+    - [x] Add retry APIs:
+      - `POST /api/activity/:id/retry-import` (retry from failed history entry)
+      - `POST /api/torrents/:infoHash/retry-import` (retry from queue/completed torrent)
+    - [x] Add frontend actions:
+      - History: show `Retry Import` button for failed import events
+      - Queue: show `Retry Import` button per torrent row
+    - [x] Add route/component tests for retry actions
+
 - [ ] Task: Conductor - User Manual Verification 'Phase 3: Import Pipeline Hardening' (Protocol in workflow.md)
 
 ---

@@ -180,4 +180,6 @@ export const routeMap = {
   customFormat: (id: number) => `/api/custom-formats/${id}`,
   customFormatTest: (id: number) => `/api/custom-formats/${id}/test`,
   customFormatSchema: '/api/custom-formats/schema',
+
+  filesystem: '/api/filesystem',
 };

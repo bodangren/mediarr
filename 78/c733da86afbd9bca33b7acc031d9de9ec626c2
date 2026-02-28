@@ -1,0 +1,46 @@
+Track: Search and Add to Wanted
+Status: Complete (all 3 phases, 12 tasks)
+
+Summary of changes:
+This commit closes the Search and Add to Wanted track. The work spans three
+phases covering metadata integration, wanted-list persistence, and the
+frontend search UI.
+
+Files modified:
+  server/src/services/MetadataProvider.ts
+    - Fixed SkyHook URL paths (/search/en/ and /shows/en/<id>)
+    - Added popularity field mapping from rating.count for TV, movie.popularity for TMDB
+    - Derive year from firstAired when year is absent in SkyHook response
+    - Sort unified search results by popularity descending
+
+  server/src/repositories/MediaRepository.ts
+    - Added posterUrl to UpsertMovieInput and UpsertSeriesInput interfaces
+    - Passed posterUrl through all Prisma upsert/create data payloads
+
+  server/src/api/routes/mediaRoutes.ts
+    - Added posterUrl to CreateMediaBody interface
+    - Passed posterUrl through all series and movie create branches
+    - Added posterUrl to Fastify JSON schema for both POST /api/wanted routes
+
+  server/src/api/errors.ts
+    - Added console.error logging before sending error response
+
+  prisma/schema.prisma
+    - Added optional posterUrl String? field to Series model
+    - Added optional posterUrl String? field to Movie model
+
+  prisma/mediarr.db-journal
+    - Deleted stale SQLite journal file
+
+  app/src/App.tsx
+    - Added getPosterUrl() helper preferring coverType==='poster' images
+    - Removed unused addIndexerPresets variable from SettingsIndexersPage
+    - SearchPage: pass posterUrl when calling POST /api/wanted
+    - SearchPage: reset typeFilter to 'all' on new search
+    - Added All/TV/Movies filter pills to narrow search results by type
+    - Used getPosterUrl() in result card image rendering
+
+  app/src/lib/api/mediaApi.ts
+    - Relaxed Zod field schemas from .optional() to .nullish() for year,
+      status, monitored, tmdbId, imdbId, title to handle API null values
+    - Added posterUrl to AddMediaInput interface

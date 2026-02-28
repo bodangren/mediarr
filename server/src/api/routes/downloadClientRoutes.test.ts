@@ -1,394 +1,235 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { FastifyInstance } from 'fastify';
-import Fastify from 'fastify';
-import { registerDownloadClientRoutes } from './downloadClientRoutes';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import Fastify, { type FastifyInstance } from 'fastify';
 import { registerApiErrorHandler } from '../errors';
-import type { DownloadClientRepository } from '../../repositories/DownloadClientRepository';
 import type { ApiDependencies } from '../types';
+import { registerDownloadClientRoutes } from './downloadClientRoutes';
+import { DEFAULT_APP_SETTINGS, type TorrentLimitsSettings } from '../../repositories/AppSettingsRepository';
 
-type MockDownloadClientRepository = {
-  [K in keyof DownloadClientRepository]: ReturnType<typeof vi.fn>;
-};
-
-function createMockRepository(): MockDownloadClientRepository {
+function createSettingsServiceMock() {
   return {
-    create: vi.fn(),
-    findById: vi.fn(),
-    findAll: vi.fn(),
-    findByProtocol: vi.fn(),
-    findEnabled: vi.fn(),
+    get: vi.fn(),
     update: vi.fn(),
-    delete: vi.fn(),
-    exists: vi.fn(),
-    nameExists: vi.fn(),
   };
 }
 
-function createTestApp(mockRepo: MockDownloadClientRepository): FastifyInstance {
+function createTorrentManagerMock() {
+  return {
+    addTorrent: vi.fn(),
+    pauseTorrent: vi.fn(),
+    resumeTorrent: vi.fn(),
+    removeTorrent: vi.fn(),
+    setSpeedLimits: vi.fn(),
+    getTorrentsStatus: vi.fn(),
+    getTorrentStatus: vi.fn(),
+  };
+}
+
+function createApp(
+  settingsService: ReturnType<typeof createSettingsServiceMock>,
+  torrentManager?: ReturnType<typeof createTorrentManagerMock>,
+): FastifyInstance {
   const app = Fastify();
   const deps: ApiDependencies = {
     prisma: {},
-    downloadClientRepository: mockRepo as unknown as DownloadClientRepository,
+    settingsService,
+    ...(torrentManager ? { torrentManager } : {}),
   };
-  
-  // Register error handler before routes
-  app.setErrorHandler((error, request, reply) => {
-    return registerApiErrorHandler(request, reply, error);
-  });
-  
+
+  app.setErrorHandler((error, request, reply) => registerApiErrorHandler(request, reply, error));
   registerDownloadClientRoutes(app, deps);
   return app;
 }
 
-describe('Download Client Routes', () => {
-  let mockRepo: MockDownloadClientRepository;
+const defaultTorrentLimits: TorrentLimitsSettings = {
+  maxActiveDownloads: 3,
+  maxActiveSeeds: 3,
+  globalDownloadLimitKbps: null,
+  globalUploadLimitKbps: null,
+  incompleteDirectory: '',
+  completeDirectory: '',
+  seedRatioLimit: 0,
+  seedTimeLimitMinutes: 0,
+  seedLimitAction: 'pause',
+};
+
+describe('downloadClientRoutes — GET /api/download-client', () => {
+  let settingsService: ReturnType<typeof createSettingsServiceMock>;
   let app: FastifyInstance;
 
   beforeEach(() => {
-    mockRepo = createMockRepository();
-    app = createTestApp(mockRepo);
+    settingsService = createSettingsServiceMock();
+    app = createApp(settingsService);
   });
 
-  describe('GET /api/download-clients', () => {
-    it('returns all download clients', async () => {
-      const mockClients = [
-        {
-          id: 1,
-          name: 'qBittorrent',
-          protocol: 'torrent',
-          type: 'qbittorrent',
-          enabled: true,
-          priority: 25,
-          config: { host: 'localhost', port: 8080, useSsl: false },
-          added: new Date(),
-        },
-      ];
-      mockRepo.findAll.mockResolvedValue(mockClients);
-
-      const response = await app.inject({
-        method: 'GET',
-        url: '/api/download-clients',
-      });
-
-      expect(response.statusCode).toBe(200);
-      const body = JSON.parse(response.body);
-      expect(body.ok).toBe(true);
-      expect(body.data).toHaveLength(1);
-      expect(body.data[0].name).toBe('qBittorrent');
+  it('returns torrentLimits from settingsService', async () => {
+    settingsService.get.mockResolvedValue({
+      ...DEFAULT_APP_SETTINGS,
+      torrentLimits: defaultTorrentLimits,
     });
+
+    const response = await app.inject({ method: 'GET', url: '/api/download-client' });
+
+    expect(response.statusCode).toBe(200);
+    const body = JSON.parse(response.body) as { data: TorrentLimitsSettings };
+    expect(body.data).toEqual(defaultTorrentLimits);
+    expect(settingsService.get).toHaveBeenCalledTimes(1);
   });
 
-  describe('GET /api/download-clients/:id', () => {
-    it('returns a single download client', async () => {
-      const mockClient = {
-        id: 1,
-        name: 'qBittorrent',
-        protocol: 'torrent',
-        type: 'qbittorrent',
-        enabled: true,
-        priority: 25,
-        config: { host: 'localhost', port: 8080, useSsl: false },
-        added: new Date(),
-      };
-      mockRepo.findById.mockResolvedValue(mockClient);
+  it('returns custom torrentLimits values', async () => {
+    const custom: TorrentLimitsSettings = {
+      maxActiveDownloads: 5,
+      maxActiveSeeds: 10,
+      globalDownloadLimitKbps: 1024,
+      globalUploadLimitKbps: 512,
+      incompleteDirectory: '/tmp/incomplete',
+      completeDirectory: '/media/complete',
+      seedRatioLimit: 1.5,
+      seedTimeLimitMinutes: 60,
+      seedLimitAction: 'remove',
+    };
 
-      const response = await app.inject({
-        method: 'GET',
-        url: '/api/download-clients/1',
-      });
-
-      expect(response.statusCode).toBe(200);
-      const body = JSON.parse(response.body);
-      expect(body.ok).toBe(true);
-      expect(body.data.name).toBe('qBittorrent');
+    settingsService.get.mockResolvedValue({
+      ...DEFAULT_APP_SETTINGS,
+      torrentLimits: custom,
     });
 
-    it('returns 404 when client not found', async () => {
-      mockRepo.findById.mockResolvedValue(null);
+    const response = await app.inject({ method: 'GET', url: '/api/download-client' });
 
-      const response = await app.inject({
-        method: 'GET',
-        url: '/api/download-clients/999',
-      });
-
-      expect(response.statusCode).toBe(404);
-      const body = JSON.parse(response.body);
-      expect(body.ok).toBe(false);
-      expect(body.error.code).toBe('NOT_FOUND');
-    });
+    expect(response.statusCode).toBe(200);
+    const body = JSON.parse(response.body) as { data: TorrentLimitsSettings };
+    expect(body.data.incompleteDirectory).toBe('/tmp/incomplete');
+    expect(body.data.completeDirectory).toBe('/media/complete');
+    expect(body.data.seedRatioLimit).toBe(1.5);
+    expect(body.data.seedTimeLimitMinutes).toBe(60);
+    expect(body.data.seedLimitAction).toBe('remove');
   });
 
-  describe('POST /api/download-clients', () => {
-    it('creates a new download client', async () => {
-      mockRepo.nameExists.mockResolvedValue(false);
-      mockRepo.create.mockResolvedValue({
-        id: 1,
-        name: 'qBittorrent',
-        protocol: 'torrent',
-        type: 'qbittorrent',
-        enabled: true,
-        priority: 25,
-        config: { host: 'localhost', port: 8080, useSsl: false },
-        added: new Date(),
-      });
+  it('returns 500 if settingsService is not configured', async () => {
+    const appNoSettings = Fastify();
+    const deps: ApiDependencies = { prisma: {} };
+    appNoSettings.setErrorHandler((error, request, reply) =>
+      registerApiErrorHandler(request, reply, error),
+    );
+    registerDownloadClientRoutes(appNoSettings, deps);
 
-      const response = await app.inject({
-        method: 'POST',
-        url: '/api/download-clients',
-        payload: {
-          name: 'qBittorrent',
-          protocol: 'torrent',
-          type: 'qbittorrent',
-          config: {
-            host: 'localhost',
-            port: 8080,
-            useSsl: false,
-          },
-        },
-      });
+    const response = await appNoSettings.inject({ method: 'GET', url: '/api/download-client' });
 
-      expect(response.statusCode).toBe(201);
-      const body = JSON.parse(response.body);
-      expect(body.ok).toBe(true);
-      expect(body.data.name).toBe('qBittorrent');
+    expect(response.statusCode).toBeGreaterThanOrEqual(400);
+  });
+});
+
+describe('downloadClientRoutes — PUT /api/download-client', () => {
+  let settingsService: ReturnType<typeof createSettingsServiceMock>;
+  let torrentManager: ReturnType<typeof createTorrentManagerMock>;
+  let app: FastifyInstance;
+
+  beforeEach(() => {
+    settingsService = createSettingsServiceMock();
+    torrentManager = createTorrentManagerMock();
+    app = createApp(settingsService, torrentManager);
+  });
+
+  it('saves torrentLimits via settingsService.update', async () => {
+    settingsService.update.mockResolvedValue({
+      ...DEFAULT_APP_SETTINGS,
+      torrentLimits: defaultTorrentLimits,
     });
 
-    it('rejects duplicate names', async () => {
-      mockRepo.nameExists.mockResolvedValue(true);
-
-      const response = await app.inject({
-        method: 'POST',
-        url: '/api/download-clients',
-        payload: {
-          name: 'qBittorrent',
-          protocol: 'torrent',
-          type: 'qbittorrent',
-          config: {
-            host: 'localhost',
-            port: 8080,
-            useSsl: false,
-          },
-        },
-      });
-
-      expect(response.statusCode).toBe(409);
-      const body = JSON.parse(response.body);
-      expect(body.error.code).toBe('CONFLICT');
+    const response = await app.inject({
+      method: 'PUT',
+      url: '/api/download-client',
+      payload: defaultTorrentLimits,
     });
 
-    it('rejects unknown client types', async () => {
-      mockRepo.nameExists.mockResolvedValue(false);
-
-      const response = await app.inject({
-        method: 'POST',
-        url: '/api/download-clients',
-        payload: {
-          name: 'Unknown Client',
-          protocol: 'torrent',
-          type: 'unknown',
-          config: {
-            host: 'localhost',
-            port: 8080,
-            useSsl: false,
-          },
-        },
-      });
-
-      expect(response.statusCode).toBe(422);
-      const body = JSON.parse(response.body);
-      expect(body.error.code).toBe('VALIDATION_ERROR');
+    expect(response.statusCode).toBe(200);
+    expect(settingsService.update).toHaveBeenCalledWith({
+      torrentLimits: defaultTorrentLimits,
     });
   });
 
-  describe('PUT /api/download-clients/:id', () => {
-    it('updates an existing download client', async () => {
-      mockRepo.findById.mockResolvedValue({
-        id: 1,
-        name: 'qBittorrent',
-        protocol: 'torrent',
-        type: 'qbittorrent',
-        enabled: true,
-        priority: 25,
-        config: { host: 'localhost', port: 8080, useSsl: false },
-        added: new Date(),
-      });
-      mockRepo.nameExists.mockResolvedValue(false);
-      mockRepo.update.mockResolvedValue({
-        id: 1,
-        name: 'qBittorrent Updated',
-        protocol: 'torrent',
-        type: 'qbittorrent',
-        enabled: true,
-        priority: 25,
-        config: { host: 'localhost', port: 8080, useSsl: false },
-        added: new Date(),
-      });
+  it('calls torrentManager.setSpeedLimits with download and upload values', async () => {
+    const payload: TorrentLimitsSettings = {
+      ...defaultTorrentLimits,
+      globalDownloadLimitKbps: 500,
+      globalUploadLimitKbps: 100,
+    };
 
-      const response = await app.inject({
-        method: 'PUT',
-        url: '/api/download-clients/1',
-        payload: {
-          name: 'qBittorrent Updated',
-        },
-      });
+    settingsService.update.mockResolvedValue({
+      ...DEFAULT_APP_SETTINGS,
+      torrentLimits: payload,
+    });
+    torrentManager.setSpeedLimits.mockResolvedValue(undefined);
 
-      expect(response.statusCode).toBe(200);
-      const body = JSON.parse(response.body);
-      expect(body.ok).toBe(true);
-      expect(body.data.name).toBe('qBittorrent Updated');
+    const response = await app.inject({
+      method: 'PUT',
+      url: '/api/download-client',
+      payload,
     });
 
-    it('returns 404 when updating non-existent client', async () => {
-      mockRepo.findById.mockResolvedValue(null);
-
-      const response = await app.inject({
-        method: 'PUT',
-        url: '/api/download-clients/999',
-        payload: {
-          name: 'Updated',
-        },
-      });
-
-      expect(response.statusCode).toBe(404);
+    expect(response.statusCode).toBe(200);
+    expect(torrentManager.setSpeedLimits).toHaveBeenCalledWith({
+      download: 500,
+      upload: 100,
     });
   });
 
-  describe('DELETE /api/download-clients/:id', () => {
-    it('deletes a download client', async () => {
-      mockRepo.exists.mockResolvedValue(true);
-      mockRepo.delete.mockResolvedValue({
-        id: 1,
-        name: 'qBittorrent',
-        protocol: 'torrent',
-        type: 'qbittorrent',
-        enabled: true,
-        priority: 25,
-        config: { host: 'localhost', port: 8080, useSsl: false },
-        added: new Date(),
-      });
-
-      const response = await app.inject({
-        method: 'DELETE',
-        url: '/api/download-clients/1',
-      });
-
-      expect(response.statusCode).toBe(200);
-      const body = JSON.parse(response.body);
-      expect(body.ok).toBe(true);
+  it('does not fail if torrentManager is not configured', async () => {
+    const appNoManager = createApp(settingsService, undefined);
+    settingsService.update.mockResolvedValue({
+      ...DEFAULT_APP_SETTINGS,
+      torrentLimits: defaultTorrentLimits,
     });
 
-    it('returns 404 when deleting non-existent client', async () => {
-      mockRepo.exists.mockResolvedValue(false);
-
-      const response = await app.inject({
-        method: 'DELETE',
-        url: '/api/download-clients/999',
-      });
-
-      expect(response.statusCode).toBe(404);
+    const response = await appNoManager.inject({
+      method: 'PUT',
+      url: '/api/download-client',
+      payload: defaultTorrentLimits,
     });
+
+    expect(response.statusCode).toBe(200);
   });
 
-  describe('POST /api/download-clients/:id/test', () => {
-    it('tests an existing client connection', async () => {
-      mockRepo.findById.mockResolvedValue({
-        id: 1,
-        name: 'qBittorrent',
-        protocol: 'torrent',
-        type: 'qbittorrent',
-        enabled: true,
-        priority: 25,
-        config: { host: 'localhost', port: 8080, useSsl: false },
-        added: new Date(),
-      });
+  it('returns 400 for invalid seedLimitAction', async () => {
+    const payload = {
+      ...defaultTorrentLimits,
+      seedLimitAction: 'delete', // invalid
+    };
 
-      const response = await app.inject({
-        method: 'POST',
-        url: '/api/download-clients/1/test',
-      });
-
-      expect(response.statusCode).toBe(200);
-      const body = JSON.parse(response.body);
-      expect(body.ok).toBe(true);
-      expect(body.data.success).toBe(true);
+    const response = await app.inject({
+      method: 'PUT',
+      url: '/api/download-client',
+      payload,
     });
 
-    it('returns 404 when testing non-existent client', async () => {
-      mockRepo.findById.mockResolvedValue(null);
-
-      const response = await app.inject({
-        method: 'POST',
-        url: '/api/download-clients/999/test',
-      });
-
-      expect(response.statusCode).toBe(404);
-    });
+    expect(response.statusCode).toBe(400);
   });
 
-  describe('POST /api/download-clients/test', () => {
-    it('tests a new client config without saving', async () => {
-      const response = await app.inject({
-        method: 'POST',
-        url: '/api/download-clients/test',
-        payload: {
-          type: 'qbittorrent',
-          config: {
-            host: 'localhost',
-            port: 8080,
-            useSsl: false,
-          },
-        },
-      });
+  it('returns the updated torrentLimits in the response', async () => {
+    const updated: TorrentLimitsSettings = {
+      ...defaultTorrentLimits,
+      incompleteDirectory: '/dl/in',
+      completeDirectory: '/dl/done',
+      seedRatioLimit: 2.0,
+      seedTimeLimitMinutes: 90,
+      seedLimitAction: 'remove',
+    };
 
-      expect(response.statusCode).toBe(200);
-      const body = JSON.parse(response.body);
-      expect(body.ok).toBe(true);
-      expect(body.data.success).toBe(true);
-    });
-  });
-
-  describe('POST /api/download-clients/schema', () => {
-    it('returns all schemas when no type specified', async () => {
-      const response = await app.inject({
-        method: 'POST',
-        url: '/api/download-clients/schema',
-        payload: {},
-      });
-
-      expect(response.statusCode).toBe(200);
-      const body = JSON.parse(response.body);
-      expect(body.ok).toBe(true);
-      expect(Array.isArray(body.data)).toBe(true);
-      expect(body.data.length).toBeGreaterThan(0);
+    settingsService.update.mockResolvedValue({
+      ...DEFAULT_APP_SETTINGS,
+      torrentLimits: updated,
     });
 
-    it('returns schema for specific type', async () => {
-      const response = await app.inject({
-        method: 'POST',
-        url: '/api/download-clients/schema',
-        payload: {
-          type: 'qbittorrent',
-        },
-      });
-
-      expect(response.statusCode).toBe(200);
-      const body = JSON.parse(response.body);
-      expect(body.ok).toBe(true);
-      expect(body.data.type).toBe('qbittorrent');
-      expect(body.data.protocol).toBe('torrent');
-      expect(Array.isArray(body.data.fields)).toBe(true);
+    const response = await app.inject({
+      method: 'PUT',
+      url: '/api/download-client',
+      payload: updated,
     });
 
-    it('returns error for unknown type', async () => {
-      const response = await app.inject({
-        method: 'POST',
-        url: '/api/download-clients/schema',
-        payload: {
-          type: 'unknown',
-        },
-      });
-
-      expect(response.statusCode).toBe(422);
-    });
+    expect(response.statusCode).toBe(200);
+    const body = JSON.parse(response.body) as { data: TorrentLimitsSettings };
+    expect(body.data.incompleteDirectory).toBe('/dl/in');
+    expect(body.data.completeDirectory).toBe('/dl/done');
+    expect(body.data.seedRatioLimit).toBe(2.0);
+    expect(body.data.seedLimitAction).toBe('remove');
   });
 });

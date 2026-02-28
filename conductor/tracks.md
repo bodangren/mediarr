@@ -6,9 +6,9 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ## Execution Order and Dependencies
 
-**Primary sequence:** `Vite Frontend Parity Recovery` -> `Search and Add to Wanted`
+**Primary sequence:** `Vite Frontend Parity Recovery` -> `Search and Add to Wanted` -> `Manual Search, Queue Monitoring & Quality Profile Enhancements`
 
-The current critical path is to enable media discovery and acquisition by implementing search and the "Wanted" state persistence.
+The current critical path is to complete the grab workflow: manual torrent search, download monitoring, and quality profile management.
 
 ### Dependency Graph
 
@@ -16,13 +16,17 @@ The current critical path is to enable media discovery and acquisition by implem
 Vite Frontend Parity Recovery (Completed)
     |
     v
-Search and Add to Wanted (Current)
+Search and Add to Wanted (Completed)
+    |
+    v
+Manual Search, Queue Monitoring & Quality Profile Enhancements (Current)
 ```
 
 ---
 
 ## Active Tracks
 
+- [~] **Track: Manual Search, Queue Monitoring & Quality Profile Enhancements** *Phases: 5 | Link: [./tracks/manual_search_queue_20260228/](./tracks/manual_search_queue_20260228/)*
 - [x] **Track: Vite Frontend Parity Recovery** *Phases: 5 | Link: [./archive/vite_parity_recovery_20260226/](./archive/vite_parity_recovery_20260226/)*
 
 ---

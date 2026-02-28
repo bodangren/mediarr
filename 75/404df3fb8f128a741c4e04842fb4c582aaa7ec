@@ -1,0 +1,19 @@
+Phase 1 Verification Report: Settings > Clients — Complete Directory & Seed Controls
+
+Automated test command: CI=true npx vitest run src/components/settings/SettingsClientsPage.test.tsx
+Outcome: 8/8 tests passed
+
+Tests verified:
+- Complete directory field renders with folder icon and Validate button
+- Seed ratio limit input renders and reflects loaded value
+- Seed time limit input renders and reflects loaded value
+- Seed limit action select renders with pause/remove options
+- Values persist after successful save
+- Validate button shows writable status on success
+- Validate button shows not-found status on failure
+- Browse button opens filesystem browser
+
+Manual verification: Passed (user confirmed)
+Files changed this phase:
+- app/src/App.tsx (exported SettingsClientsPage)
+- app/src/components/settings/SettingsClientsPage.test.tsx (new, 8 tests)

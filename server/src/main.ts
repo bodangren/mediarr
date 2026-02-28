@@ -279,6 +279,27 @@ async function repairMalformedJsonColumns(prisma: PrismaClient): Promise<void> {
     `);
     repairs.push({ label: 'ActivityEvent.details', changes: activityEventRes });
 
+    const torrentEtaDownscaleRes = await prisma.$executeRawUnsafe(`
+      UPDATE "Torrent"
+      SET "eta" = CAST("eta" / 1000 AS INTEGER)
+      WHERE "eta" > 2147483647
+    `);
+    repairs.push({ label: 'Torrent.eta.downscaled', changes: torrentEtaDownscaleRes });
+
+    const torrentEtaClampRes = await prisma.$executeRawUnsafe(`
+      UPDATE "Torrent"
+      SET "eta" = 2147483647
+      WHERE "eta" > 2147483647
+    `);
+    repairs.push({ label: 'Torrent.eta.clamped', changes: torrentEtaClampRes });
+
+    const torrentEtaNegativeRes = await prisma.$executeRawUnsafe(`
+      UPDATE "Torrent"
+      SET "eta" = NULL
+      WHERE "eta" < 0
+    `);
+    repairs.push({ label: 'Torrent.eta.negative-null', changes: torrentEtaNegativeRes });
+
     for (const [column, defaultJson] of Object.entries(requiredAppSettingsDefaults)) {
       // Prisma raw parameterized queries shouldn't dynamically bind column names, 
       // but since column names are hardcoded, we can use unsafe raw

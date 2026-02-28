@@ -57,7 +57,7 @@ describe('TorrentManager stats sync loop', () => {
         uploadSpeed: 20,
         downloaded: 500,
         uploaded: 100,
-        timeRemaining: 60,
+        timeRemaining: 60_000,
         peers: [
           { ip: '1.1.1.1', port: 1111, client: 'A' },
         ],
@@ -112,7 +112,7 @@ describe('TorrentManager stats sync loop', () => {
         uploadSpeed: 5,
         downloaded: 300,
         uploaded: 40,
-        timeRemaining: 120,
+        timeRemaining: 120_000,
         peers: [],
       },
     ];
@@ -129,5 +129,32 @@ describe('TorrentManager stats sync loop', () => {
     release();
     await first;
     warnSpy.mockRestore();
+  });
+
+  it('should clamp excessively large ETA values to SQLite INT max', async () => {
+    manager.getClient().torrents = [
+      {
+        infoHash: 'hash-large-eta',
+        progress: 0.1,
+        downloadSpeed: 1,
+        uploadSpeed: 1,
+        downloaded: 1,
+        uploaded: 1,
+        timeRemaining: 3_000_000_000_000,
+        peers: [],
+      },
+    ];
+
+    await manager.syncStats();
+
+    expect(repository.updateProgress).toHaveBeenCalledWith(
+      'hash-large-eta',
+      0.1,
+      1,
+      1,
+      BigInt(1),
+      BigInt(1),
+      2_147_483_647,
+    );
   });
 });

@@ -177,19 +177,25 @@ export function createApiServer(
   app.addHook('onReady', async () => {
     intervals.push(
       setInterval(() => {
-        void pollTorrentStats(dependencies, eventHub);
+        void pollTorrentStats(dependencies, eventHub).catch(error => {
+          console.error('Failed to poll torrent stats:', error);
+        });
       }, options.torrentStatsIntervalMs ?? 5000),
     );
 
     intervals.push(
       setInterval(() => {
-        void pollActivity(dependencies, eventHub, pollState);
+        void pollActivity(dependencies, eventHub, pollState).catch(error => {
+          console.error('Failed to poll activity:', error);
+        });
       }, options.activityPollIntervalMs ?? 1000),
     );
 
     intervals.push(
       setInterval(() => {
-        void pollHealth(dependencies, eventHub, pollState);
+        void pollHealth(dependencies, eventHub, pollState).catch(error => {
+          console.error('Failed to poll health:', error);
+        });
       }, options.healthPollIntervalMs ?? 3000),
     );
   });

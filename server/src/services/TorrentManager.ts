@@ -29,6 +29,7 @@ const ACTIVE_SYNC_INTERVAL_MS = 5000;
 const IDLE_SYNC_INTERVAL_MS = 30000;
 const INFO_HASH_WAIT_TIMEOUT_MS = 1000;
 const INFO_HASH_POLL_INTERVAL_MS = 50;
+const SQLITE_INT_MAX = 2_147_483_647;
 
 /**
  * Singleton manager that wraps the WebTorrent client and handles
@@ -630,9 +631,7 @@ export class TorrentManager extends EventEmitter {
             Number(torrent.uploadSpeed ?? 0),
             BigInt(Math.floor(Number(torrent.downloaded ?? 0))),
             BigInt(Math.floor(Number(torrent.uploaded ?? 0))),
-            typeof torrent.timeRemaining === 'number' && Number.isFinite(torrent.timeRemaining)
-              ? Math.floor(torrent.timeRemaining)
-              : null,
+            this.normalizeEtaSeconds(torrent.timeRemaining),
           );
 
           const peers = Array.isArray(torrent.peers)
@@ -671,6 +670,20 @@ export class TorrentManager extends EventEmitter {
     } finally {
       this.statsSyncInFlight = false;
     }
+  }
+
+  private normalizeEtaSeconds(timeRemaining: unknown): number | null {
+    if (typeof timeRemaining !== 'number' || !Number.isFinite(timeRemaining)) {
+      return null;
+    }
+
+    // WebTorrent exposes timeRemaining in milliseconds. Persist ETA as seconds.
+    const seconds = Math.floor(timeRemaining / 1000);
+    if (!Number.isFinite(seconds) || seconds < 0) {
+      return null;
+    }
+
+    return Math.min(seconds, SQLITE_INT_MAX);
   }
 
   /**

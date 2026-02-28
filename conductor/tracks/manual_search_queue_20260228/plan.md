@@ -65,18 +65,18 @@
 
 ### Backend — Filesystem API
 
-- [ ] Task: Implement `GET /api/filesystem` route
-    - [ ] Write unit tests for filesystem route covering: list root, list subdirectory, read/write permission flags, path traversal attempt rejected, non-existent path returns 404
-    - [ ] Create `server/src/api/routes/filesystemRoutes.ts` with `GET /api/filesystem?path=<dir>`:
+- [x] Task: Implement `GET /api/filesystem` route [ed4aae3]
+    - [x] Write unit tests for filesystem route covering: list root, list subdirectory, read/write permission flags, path traversal attempt rejected, non-existent path returns 404
+    - [x] Create `server/src/api/routes/filesystemRoutes.ts` with `GET /api/filesystem?path=<dir>`:
         - Returns `{ path, entries: [{ name, path, isDirectory, readable, writable }] }`
         - Resolves real path with `fs.realpath`; rejects if resolved path escapes a configured safe root
         - Returns root listing (`/` on Linux) when no `path` param given
-    - [ ] Register route in `createApiServer.ts`
-    - [ ] Add route to `routeMap.ts`
+    - [x] Register route in `createApiServer.ts`
+    - [x] Add route to `routeMap.ts`
 
 ### Frontend — Path Browser Modal & Validated Input
 
-- [ ] Task: Build `FilesystemBrowser` modal component
+- [~] Task: Build `FilesystemBrowser` modal component
     - [ ] Write rendering tests: renders directory list, breadcrumb navigation, selection updates parent
     - [ ] Create `app/src/components/primitives/FilesystemBrowser.tsx` — navigable directory tree modal with breadcrumb trail and folder selection
     - [ ] Add `filesystemApi.ts` client with `list(path?: string)` method

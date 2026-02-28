@@ -78,7 +78,7 @@
 ## Phase 4: Frontend — Download Client Settings & Cleanup
 > Goal: Repurpose the Download Clients page, remove all legacy multi-client UI.
 
-- [ ] Task: Rewrite Download Client settings page
+- [x] 11018de Task: Rewrite Download Client settings page
     - [ ] Write failing UI tests for the settings form fields and save action.
     - [ ] Replace the multi-client CRUD list with a single-instance settings
           form: incomplete directory (text + folder picker), complete directory
@@ -87,7 +87,7 @@
           (Pause / Remove).
     - [ ] On save, call PUT /api/download-client and show a success toast.
     - [ ] Verify tests pass.
-- [ ] Task: Rename and clean up Download Clients references
+- [~] Task: Rename and clean up Download Clients references
     - [ ] Write failing UI tests asserting "Download Clients" label is absent.
     - [ ] Update nav label, page title, and route from "Download Clients" to
           "Download Client".

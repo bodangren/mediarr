@@ -1,4 +1,8 @@
-export function serializeDate(value: Date): string {
+export function serializeDate(value: Date): string | undefined {
+  const timestamp = value.getTime();
+  if (!Number.isFinite(timestamp)) {
+    return undefined;
+  }
   return value.toISOString();
 }
 

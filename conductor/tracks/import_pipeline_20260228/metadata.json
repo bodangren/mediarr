@@ -1,0 +1,8 @@
+{
+  "track_id": "import_pipeline_20260228",
+  "type": "feature",
+  "status": "new",
+  "created_at": "2026-02-28T00:00:00Z",
+  "updated_at": "2026-02-28T00:00:00Z",
+  "description": "Wire the full post-processing pipeline: complete directory & seed controls in Settings > Clients, movie/TV root folder settings in Settings > Media, end-to-end import pipeline hardening, and seed ratio enforcement."
+}

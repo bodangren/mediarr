@@ -273,7 +273,9 @@ export function registerMovieRoutes(
       searchParams.imdbId = movie.imdbId;
     }
 
-    const result = await searchAllIndexers(searchParams);
+    const result = deps.searchAggregationService?.searchAllIndexers 
+      ? await deps.searchAggregationService.searchAllIndexers(searchParams)
+      : await deps.mediaSearchService!.searchAllIndexers(searchParams);
     const { items, totalCount } = paginateArray(
       result.releases,
       pagination.page,

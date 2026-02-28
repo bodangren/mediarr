@@ -95,4 +95,35 @@ describe('ScrapingParser filter parity', () => {
     expect(results).toHaveLength(1);
     expect(results[0]?.title).toBe('The Last of Us S01E02');
   });
+
+  it('supports legacy CJK unicode property classes used in keywords filters', () => {
+    const parser = new ScrapingParser();
+    const html = `
+      <table>
+        <tbody>
+          <tr>
+            <td class="title">Big Buck Bunny 2008</td>
+          </tr>
+        </tbody>
+      </table>
+    `;
+
+    const results = parser.parse(
+      html,
+      'tr',
+      {
+        title: {
+          selector: 'td.title',
+          filters: [
+            { name: 're_replace', args: ['([\\p{IsCJKUnifiedIdeographs}\\W]+)', '.'] },
+            { name: 'tolower' },
+          ],
+        },
+      },
+      'https://example.test',
+    );
+
+    expect(results).toHaveLength(1);
+    expect(results[0]?.title).toBe('big.buck.bunny.2008');
+  });
 });

@@ -1,18 +1,19 @@
+import type { ReactNode } from 'react';
+
 interface RouteScaffoldProps {
   title: string;
   description: string;
+  children?: ReactNode;
 }
 
-export function RouteScaffold({ title, description }: RouteScaffoldProps) {
+export function RouteScaffold({ title, description, children }: RouteScaffoldProps) {
   return (
-    <section className="space-y-3">
-      <header className="space-y-1">
-        <h1 className="text-2xl font-semibold">{title}</h1>
+    <div className="space-y-4">
+      <header className="rounded-md border border-border-subtle bg-surface-1 p-4">
+        <h1 className="text-lg font-semibold">{title}</h1>
         <p className="text-sm text-text-secondary">{description}</p>
       </header>
-      <section className="rounded-md border border-border-subtle bg-surface-1 p-4 text-sm text-text-secondary">
-        This route is scaffolded for Prowlarr parity and will be progressively wired with feature-complete behavior.
-      </section>
-    </section>
+      {children}
+    </div>
   );
 }

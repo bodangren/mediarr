@@ -13,7 +13,7 @@ export interface HttpResponse {
 type FetchFn = typeof globalThis.fetch;
 
 const DEFAULT_TIMEOUT = 30000;
-const DEFAULT_USER_AGENT = 'Mediarr/1.0';
+const DEFAULT_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36';
 
 /**
  * HTTP client with configurable timeouts, user-agent, headers, and cookie support.

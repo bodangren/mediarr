@@ -62,7 +62,7 @@ function buildRequestHeaders(
       query,
       config: settings,
       categories,
-    }, { strict: true });
+    }, { strict: false });
 
     if (rendered) {
       headers[headerName] = rendered;
@@ -99,7 +99,7 @@ export function buildCardigannRequest(
     query: normalizedQuery,
     config: settings,
     categories,
-  }, { strict: true });
+  }, { strict: false });
 
   // Legacy shorthand used in some historic definitions.
   renderedPath = renderedPath.replace(/\{q\}/g, encodeURIComponent(normalizedQuery.q ?? '').replace(/%20/g, '+'));
@@ -117,7 +117,7 @@ export function buildCardigannRequest(
       query: normalizedQuery,
       config: settings,
       categories,
-    }, { strict: true });
+    }, { strict: false });
 
     if (!renderedValue) {
       continue;

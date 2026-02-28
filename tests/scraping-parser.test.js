@@ -61,6 +61,8 @@ const SEARCH_FIELDS = {
 };
 
 const ROW_SELECTOR = 'table.results tbody tr';
+const ROW_SELECTOR_WITH_CHILD_COMBINATORS = 'table.results > tbody > tr';
+const ROW_SELECTOR_WITH_NESTED_HAS = 'table.results tbody tr:has(td:nth-child(1))';
 
 describe('ScrapingParser', () => {
   const parser = new ScrapingParser();
@@ -68,6 +70,27 @@ describe('ScrapingParser', () => {
   it('should parse rows from HTML using selector', () => {
     const results = parser.parse(SAMPLE_HTML, ROW_SELECTOR, SEARCH_FIELDS, 'https://example.com');
     expect(results).toHaveLength(2);
+  });
+
+  it('should preserve CSS child combinators in row selectors', () => {
+    const results = parser.parse(
+      SAMPLE_HTML,
+      ROW_SELECTOR_WITH_CHILD_COMBINATORS,
+      SEARCH_FIELDS,
+      'https://example.com',
+    );
+    expect(results).toHaveLength(2);
+  });
+
+  it('should support nested parentheses inside :has() row selectors', () => {
+    const parse = () => parser.parse(
+      SAMPLE_HTML,
+      ROW_SELECTOR_WITH_NESTED_HAS,
+      SEARCH_FIELDS,
+      'https://example.com',
+    );
+    expect(parse).not.toThrow();
+    expect(parse()).toHaveLength(2);
   });
 
   it('should extract title from attribute', () => {

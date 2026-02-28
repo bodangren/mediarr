@@ -91,4 +91,35 @@ describe('movieRoutes search aggregation wiring', () => {
       qualityProfileId: 9,
     }));
   });
+
+  it('does not fail when a release contains an invalid publishDate', async () => {
+    searchAllIndexers.mockResolvedValue({
+      releases: [
+        {
+          guid: 'release-bad-date',
+          indexer: 'Indexer One',
+          indexerId: 11,
+          title: 'Movie.2025.1080p',
+          size: 2200,
+          seeders: 30,
+          publishDate: new Date('invalid'),
+          protocol: 'torrent',
+        },
+      ],
+      indexerResults: [],
+      totalResults: 1,
+      deduplicatedCount: 1,
+    });
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/movies/8/search?page=2&pageSize=100',
+      payload: {},
+    });
+
+    expect(response.statusCode).toBe(200);
+    const body = response.json();
+    expect(body.ok).toBe(true);
+    expect(body.data[0]?.publishDate).toBeUndefined();
+  });
 });

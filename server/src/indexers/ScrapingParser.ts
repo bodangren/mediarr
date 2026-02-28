@@ -44,7 +44,7 @@ export class ScrapingParser {
     options: ParserOptions,
   ): IndexerResult[] {
     const { document } = parseHTML(html);
-    const rows = Array.from(document.querySelectorAll(rowSelector));
+    const rows = this.querySelectorAllWithPseudo(document, rowSelector);
     const filteredRows = this.applyRowOptions(rows, options.rows, options.query);
     const results: IndexerResult[] = [];
 
@@ -57,6 +57,321 @@ export class ScrapingParser {
     }
 
     return results;
+  }
+
+  /**
+   * Enhanced querySelectorAll that supports :contains() and :has() pseudo-selectors.
+   */
+  private querySelectorAllWithPseudo(root: any, selector: string): any[] {
+    const parts = this.splitSelectorList(selector);
+    const allResults = new Set<any>();
+
+    for (const part of parts) {
+      // Basic support for :contains and :has
+      // Example: table:contains('Latest') tr:has(a.magnet)
+      
+      // We process the selector parts sequentially
+      let currentElements = [root];
+      const segments = this.splitSelectorSegments(part);
+
+      for (const segment of segments) {
+        const nextElements: any[] = [];
+        
+        for (const el of currentElements) {
+          const matched = this.processSelectorSegment(el, segment);
+          nextElements.push(...matched);
+        }
+        
+        currentElements = Array.from(new Set(nextElements));
+        if (currentElements.length === 0) break;
+      }
+
+      for (const el of currentElements) {
+        allResults.add(el);
+      }
+    }
+
+    return Array.from(allResults);
+  }
+
+  private splitSelectorList(selector: string): string[] {
+    const selectors: string[] = [];
+    let current = '';
+    let parenDepth = 0;
+    let bracketDepth = 0;
+    let inSingleQuote = false;
+    let inDoubleQuote = false;
+    let escaped = false;
+
+    for (let i = 0; i < selector.length; i += 1) {
+      const char = selector[i]!;
+
+      if (escaped) {
+        current += char;
+        escaped = false;
+        continue;
+      }
+
+      if (char === '\\') {
+        current += char;
+        escaped = true;
+        continue;
+      }
+
+      if (!inDoubleQuote && char === '\'') {
+        inSingleQuote = !inSingleQuote;
+        current += char;
+        continue;
+      }
+
+      if (!inSingleQuote && char === '"') {
+        inDoubleQuote = !inDoubleQuote;
+        current += char;
+        continue;
+      }
+
+      if (!inSingleQuote && !inDoubleQuote) {
+        if (char === '(') parenDepth += 1;
+        else if (char === ')') parenDepth = Math.max(0, parenDepth - 1);
+        else if (char === '[') bracketDepth += 1;
+        else if (char === ']') bracketDepth = Math.max(0, bracketDepth - 1);
+
+        if (char === ',' && parenDepth === 0 && bracketDepth === 0) {
+          if (current.trim()) {
+            selectors.push(current.trim());
+          }
+          current = '';
+          continue;
+        }
+      }
+
+      current += char;
+    }
+
+    if (current.trim()) {
+      selectors.push(current.trim());
+    }
+
+    return selectors;
+  }
+
+  private previousNonWhitespace(input: string, index: number): string | null {
+    for (let i = index; i >= 0; i -= 1) {
+      const char = input[i]!;
+      if (!/\s/.test(char)) {
+        return char;
+      }
+    }
+
+    return null;
+  }
+
+  private nextNonWhitespace(input: string, index: number): string | null {
+    for (let i = index; i < input.length; i += 1) {
+      const char = input[i]!;
+      if (!/\s/.test(char)) {
+        return char;
+      }
+    }
+
+    return null;
+  }
+
+  private isCssCombinator(char: string | null): boolean {
+    return char === '>' || char === '+' || char === '~';
+  }
+
+  private splitSelectorSegments(selector: string): string[] {
+    const segments: string[] = [];
+    let current = '';
+    let depth = 0;
+    let inSingleQuote = false;
+    let inDoubleQuote = false;
+    let escaped = false;
+
+    for (let i = 0; i < selector.length; i += 1) {
+      const char = selector[i]!;
+
+      if (escaped) {
+        current += char;
+        escaped = false;
+        continue;
+      }
+
+      if (char === '\\') {
+        current += char;
+        escaped = true;
+        continue;
+      }
+
+      if (!inDoubleQuote && char === '\'') {
+        inSingleQuote = !inSingleQuote;
+        current += char;
+        continue;
+      }
+
+      if (!inSingleQuote && char === '"') {
+        inDoubleQuote = !inDoubleQuote;
+        current += char;
+        continue;
+      }
+
+      if (!inSingleQuote && !inDoubleQuote) {
+        if (char === '(') depth += 1;
+        else if (char === ')') depth = Math.max(0, depth - 1);
+      }
+
+      if (!inSingleQuote && !inDoubleQuote && depth === 0 && /\s/.test(char)) {
+        const prev = this.previousNonWhitespace(selector, i - 1);
+        const next = this.nextNonWhitespace(selector, i + 1);
+        if (!this.isCssCombinator(prev) && !this.isCssCombinator(next)) {
+          if (current.trim()) {
+            segments.push(current.trim());
+          }
+          current = '';
+          continue;
+        }
+      }
+
+      current += char;
+    }
+
+    if (current.trim()) {
+      segments.push(current.trim());
+    }
+
+    return segments;
+  }
+
+  private parsePseudoFunctionSegment(
+    segment: string,
+    pseudo: 'contains' | 'has',
+  ): { startIndex: number; base: string; argument: string; rest: string } | null {
+    const lowerSegment = segment.toLowerCase();
+    const marker = `:${pseudo}(`;
+    const startIndex = lowerSegment.indexOf(marker);
+    if (startIndex < 0) {
+      return null;
+    }
+
+    const openParenIndex = startIndex + marker.length - 1;
+    let depth = 0;
+    let inSingleQuote = false;
+    let inDoubleQuote = false;
+    let escaped = false;
+    let closeParenIndex = -1;
+
+    for (let i = openParenIndex; i < segment.length; i += 1) {
+      const char = segment[i]!;
+
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+
+      if (char === '\\') {
+        escaped = true;
+        continue;
+      }
+
+      if (!inDoubleQuote && char === '\'') {
+        inSingleQuote = !inSingleQuote;
+        continue;
+      }
+
+      if (!inSingleQuote && char === '"') {
+        inDoubleQuote = !inDoubleQuote;
+        continue;
+      }
+
+      if (inSingleQuote || inDoubleQuote) {
+        continue;
+      }
+
+      if (char === '(') {
+        depth += 1;
+        continue;
+      }
+
+      if (char === ')') {
+        depth -= 1;
+        if (depth === 0) {
+          closeParenIndex = i;
+          break;
+        }
+      }
+    }
+
+    if (closeParenIndex < 0) {
+      return null;
+    }
+
+    return {
+      startIndex,
+      base: segment.slice(0, startIndex).trim(),
+      argument: segment.slice(openParenIndex + 1, closeParenIndex),
+      rest: segment.slice(closeParenIndex + 1).trim(),
+    };
+  }
+
+  private normalizeContainsText(value: string): string {
+    const trimmed = value.trim();
+    if (trimmed.length >= 2) {
+      const startsWithSingle = trimmed.startsWith('\'') && trimmed.endsWith('\'');
+      const startsWithDouble = trimmed.startsWith('"') && trimmed.endsWith('"');
+      if (startsWithSingle || startsWithDouble) {
+        return trimmed.slice(1, -1);
+      }
+    }
+
+    return trimmed;
+  }
+
+  private querySelectorAllFromRoot(root: any, selector: string): any[] {
+    const normalized = selector.trim();
+    if (!normalized) {
+      return [];
+    }
+
+    const scopedSelector = /^[>+~]/.test(normalized)
+      ? `:scope ${normalized}`
+      : normalized;
+
+    return Array.from(root.querySelectorAll(scopedSelector));
+  }
+
+  private processSelectorSegment(root: any, segment: string): any[] {
+    const containsPseudo = this.parsePseudoFunctionSegment(segment, 'contains');
+    const hasPseudo = this.parsePseudoFunctionSegment(segment, 'has');
+    const activePseudo = (() => {
+      if (!containsPseudo) return hasPseudo;
+      if (!hasPseudo) return containsPseudo;
+      return containsPseudo.startIndex <= hasPseudo.startIndex ? containsPseudo : hasPseudo;
+    })();
+
+    if (!activePseudo) {
+      return this.querySelectorAllFromRoot(root, segment);
+    }
+
+    if (activePseudo === containsPseudo) {
+      const baseSelector = containsPseudo.base || '*';
+      const text = this.normalizeContainsText(containsPseudo.argument);
+      const elements = this.querySelectorAllFromRoot(root, baseSelector);
+      const matched = elements.filter((el: any) => String(el.textContent ?? '').includes(text));
+      if (containsPseudo.rest) {
+        return matched.flatMap(el => this.processSelectorSegment(el, containsPseudo.rest));
+      }
+      return matched;
+    }
+
+    const baseSelector = hasPseudo!.base || '*';
+    const subSelector = hasPseudo!.argument.trim();
+    const elements = this.querySelectorAllFromRoot(root, baseSelector);
+    const matched = elements.filter((el: any) => el.querySelector(subSelector) !== null);
+    if (hasPseudo!.rest) {
+      return matched.flatMap(el => this.processSelectorSegment(el, hasPseudo!.rest));
+    }
+    return matched;
   }
 
   private parseJson(
@@ -177,8 +492,18 @@ export class ScrapingParser {
   private extractJsonFields(context: JsonRowContext, fields: FieldDefinitions): Record<string, string> {
     const extracted: Record<string, string> = {};
 
+    // First pass: extract all fields without templates
     for (const [name, def] of Object.entries(fields)) {
       extracted[name] = this.extractJsonField(context, def);
+    }
+
+    // Second pass: resolve templates
+    for (const [name, def] of Object.entries(fields)) {
+      const hasTextTemplate = typeof def.text === 'string' && def.text.includes('{{');
+      const hasDefaultTemplate = typeof def.default === 'string' && def.default.includes('{{');
+      if (hasTextTemplate || hasDefaultTemplate) {
+        extracted[name] = this.renderFieldTemplate(extracted[name], extracted);
+      }
     }
 
     return extracted;
@@ -274,11 +599,29 @@ export class ScrapingParser {
   private extractFields(row: any, fields: FieldDefinitions): Record<string, string> {
     const extracted: Record<string, string> = {};
 
+    // First pass: extract all fields without templates
     for (const [name, def] of Object.entries(fields)) {
       extracted[name] = this.extractField(row, def);
     }
 
+    // Second pass: resolve templates
+    for (const [name, def] of Object.entries(fields)) {
+      const hasTextTemplate = typeof def.text === 'string' && def.text.includes('{{');
+      const hasDefaultTemplate = typeof def.default === 'string' && def.default.includes('{{');
+      if (hasTextTemplate || hasDefaultTemplate) {
+        extracted[name] = this.renderFieldTemplate(extracted[name], extracted);
+      }
+    }
+
     return extracted;
+  }
+
+  private renderFieldTemplate(template: string, results: Record<string, string>): string {
+    if (!template || !template.includes('{{')) return template;
+
+    return template.replace(/\{\{\s*\.Result\.([A-Za-z0-9_-]+)\s*\}\}/g, (_, fieldName) => {
+      return results[fieldName] ?? '';
+    });
   }
 
   private extractField(row: any, def: SelectorBlock): string {

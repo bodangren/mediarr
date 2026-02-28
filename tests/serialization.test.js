@@ -45,6 +45,14 @@ describe('serialization utilities', () => {
     expect(serializeDate(date)).toBe('2026-02-11T08:30:00.000Z');
   });
 
+  it('should safely handle invalid Date values', () => {
+    const invalidDate = new Date('invalid');
+    expect(serializeDate(invalidDate)).toBeUndefined();
+
+    const payload = serializeApiPayload({ publishDate: invalidDate });
+    expect(JSON.stringify(payload)).toBe('{}');
+  });
+
   it('should normalize enum values to string unions', () => {
     expect(normalizeEnumValue('DOWNLOADING')).toBe('DOWNLOADING');
   });

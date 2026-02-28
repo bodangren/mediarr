@@ -112,6 +112,50 @@ describe('Cardigann indexer runtime parity', () => {
     expect(client.calls[0]!.url).toContain('/search');
   });
 
+  it('preserves string category mapping IDs for scraping requests', async () => {
+    const client = new StubHttpClient();
+    client.setResponse('/search', {
+      status: 200,
+      ok: true,
+      body: '<div></div>',
+      headers: { 'content-type': 'text/html' },
+    });
+
+    const indexer = new ScrapingIndexer({
+      id: 21,
+      name: 'TGX-like',
+      implementation: 'Cardigann',
+      protocol: 'torrent',
+      enabled: true,
+      priority: 25,
+      supportsRss: true,
+      supportsSearch: true,
+      settings: {},
+      definition: buildScrapingDefinition({
+        caps: {
+          categorymappings: [
+            { id: 'TV', cat: 'TV', desc: 'TV' },
+            { id: 'Movies', cat: 'Movies', desc: 'Movies' },
+          ],
+        },
+        search: {
+          paths: [{ path: '/search{{ range .Categories }}:category:{{.}}{{ end }}' }],
+          rows: { selector: 'div' },
+          fields: {
+            title: { selector: '.title', optional: true, default: 'placeholder' },
+          },
+        },
+      }),
+      httpClient: client as never,
+    });
+
+    await indexer.search({ q: 'The Sopranos', categories: [5000] });
+
+    expect(client.calls).toHaveLength(1);
+    expect(client.calls[0]!.url).toContain(':category:TV');
+    expect(client.calls[0]!.url).not.toContain(':category:NaN');
+  });
+
   it('fails scraping indexer when search paths are missing or request fails', async () => {
     const noPathIndexer = new ScrapingIndexer({
       id: 3,

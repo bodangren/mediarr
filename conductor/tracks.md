@@ -6,9 +6,9 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ## Execution Order and Dependencies
 
-**Primary sequence:** `Vite Frontend Parity Recovery` -> `Search and Add to Wanted` -> `Manual Search, Queue Monitoring & Quality Profile Enhancements`
+**Primary sequence:** `Vite Frontend Parity Recovery` -> `Search and Add to Wanted` -> `Manual Search, Queue Monitoring & Quality Profile Enhancements` -> `Import Pipeline & Root Folder Settings`
 
-The current critical path is to complete the grab workflow: manual torrent search, download monitoring, and quality profile management.
+The current critical path is to complete the download lifecycle: finish queue/history UI, then wire the full import pipeline (complete folder, root folders, import hardening, seed ratio enforcement).
 
 ### Dependency Graph
 
@@ -27,6 +27,7 @@ Manual Search, Queue Monitoring & Quality Profile Enhancements (Current)
 ## Active Tracks
 
 - [~] **Track: Manual Search, Queue Monitoring & Quality Profile Enhancements** *Phases: 5 | Link: [./tracks/manual_search_queue_20260228/](./tracks/manual_search_queue_20260228/)*
+- [ ] **Track: Import Pipeline & Root Folder Settings** *Phases: 4 | Link: [./tracks/import_pipeline_20260228/](./tracks/import_pipeline_20260228/)*
 - [x] **Track: Vite Frontend Parity Recovery** *Phases: 5 | Link: [./archive/vite_parity_recovery_20260226/](./archive/vite_parity_recovery_20260226/)*
 
 ---

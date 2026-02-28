@@ -21,10 +21,21 @@ function escapeRegex(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+function normalizeLegacyUnicodeProperties(source: string): string {
+  // Cardigann definitions sometimes use Go-style IsCJK property aliases.
+  // JavaScript regex engines do not support this alias directly.
+  return source.replace(/\\p\{IsCJKUnifiedIdeographs\}/g, '\\u4E00-\\u9FFF');
+}
+
+function dedupeRegexFlags(flags: string): string {
+  return Array.from(new Set(flags.split(''))).join('');
+}
+
 function parseRegexPattern(pattern: string, forceGlobal = false): RegExp {
   const delimited = pattern.match(/^\/(.+)\/([a-z]*)$/i);
   let source = delimited?.[1] ?? pattern;
   let flags = delimited?.[2] ?? '';
+  source = normalizeLegacyUnicodeProperties(source);
 
   // Cardigann regex often uses inline case-insensitive marker `(?i)`.
   if (source.startsWith('(?i)')) {
@@ -38,7 +49,11 @@ function parseRegexPattern(pattern: string, forceGlobal = false): RegExp {
     flags += 'g';
   }
 
-  return new RegExp(source, flags);
+  if (source.includes('\\p{') && !flags.includes('u')) {
+    flags += 'u';
+  }
+
+  return new RegExp(source, dedupeRegexFlags(flags));
 }
 
 function parseRelativeDate(value: string, now: Date): Date | undefined {

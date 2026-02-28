@@ -374,7 +374,13 @@ export class MediaSearchService {
       fromDatabaseRecord: (record: unknown) => BaseIndexer;
     },
     private readonly torrentManager: {
-      addTorrent: (options: { magnetUrl?: string; torrentFile?: Buffer; path?: string }) => Promise<{ infoHash: string; name: string }>;
+      addTorrent: (options: {
+        magnetUrl?: string;
+        torrentFile?: Buffer;
+        path?: string;
+        name?: string;
+        size?: number;
+      }) => Promise<{ infoHash: string; name: string }>;
     },
     private readonly activityEventEmitter?: ActivityEventEmitter,
     private readonly customFormatRepository?: {
@@ -652,7 +658,16 @@ export class MediaSearchService {
       const downloadUrl = candidate.downloadUrl;
 
       // Build addTorrent options carefully to avoid undefined in optional props
-      const addOptions: { magnetUrl?: string; downloadUrl?: string; path?: string } = {};
+      const addOptions: {
+        magnetUrl?: string;
+        downloadUrl?: string;
+        path?: string;
+        name?: string;
+        size?: number;
+      } = {
+        name: candidate.title,
+        size: candidate.size,
+      };
       if (magnetUrl) {
         addOptions.magnetUrl = magnetUrl;
       } else if (downloadUrl) {

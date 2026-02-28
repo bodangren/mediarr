@@ -5,14 +5,25 @@ export type TorrentWithPeers = Torrent & { peers: TorrentPeer[] };
 export class TorrentRepository {
   constructor(private prisma: PrismaClient) {}
 
+  private normalizeInfoHash(infoHash: string): string {
+    return infoHash.trim().toLowerCase();
+  }
+
   /**
    * Upserts a torrent record based on its infoHash.
    */
   async upsert(data: Omit<Torrent, 'id' | 'added'>): Promise<Torrent> {
+    const normalizedInfoHash = this.normalizeInfoHash(data.infoHash);
     return this.prisma.torrent.upsert({
-      where: { infoHash: data.infoHash },
-      update: data,
-      create: data,
+      where: { infoHash: normalizedInfoHash },
+      update: {
+        ...data,
+        infoHash: normalizedInfoHash,
+      },
+      create: {
+        ...data,
+        infoHash: normalizedInfoHash,
+      },
     });
   }
 
@@ -21,7 +32,7 @@ export class TorrentRepository {
    */
   async findByInfoHash(infoHash: string): Promise<TorrentWithPeers | null> {
     return this.prisma.torrent.findUnique({
-      where: { infoHash },
+      where: { infoHash: this.normalizeInfoHash(infoHash) },
       include: { peers: true },
     });
   }
@@ -40,7 +51,7 @@ export class TorrentRepository {
    */
   async updateStatus(infoHash: string, status: string): Promise<Torrent> {
     return this.prisma.torrent.update({
-      where: { infoHash },
+      where: { infoHash: this.normalizeInfoHash(infoHash) },
       data: { status },
     });
   }
@@ -53,7 +64,7 @@ export class TorrentRepository {
     data: Partial<Omit<Torrent, 'id' | 'added' | 'infoHash'>>
   ): Promise<Torrent> {
     return this.prisma.torrent.update({
-      where: { infoHash },
+      where: { infoHash: this.normalizeInfoHash(infoHash) },
       data,
     });
   }
@@ -71,7 +82,7 @@ export class TorrentRepository {
     eta: number | null
   ): Promise<Torrent> {
     return this.prisma.torrent.update({
-      where: { infoHash },
+      where: { infoHash: this.normalizeInfoHash(infoHash) },
       data: {
         progress,
         downloadSpeed,
@@ -87,12 +98,13 @@ export class TorrentRepository {
    * Deletes a torrent and its associated peers.
    */
   async delete(infoHash: string): Promise<Torrent> {
+    const normalizedInfoHash = this.normalizeInfoHash(infoHash);
     // Delete peers first (Prisma handles this if cascade is set, but explicit is safer if not sure)
     await this.prisma.torrentPeer.deleteMany({
-      where: { torrent: { infoHash } },
+      where: { torrent: { infoHash: normalizedInfoHash } },
     });
     return this.prisma.torrent.delete({
-      where: { infoHash },
+      where: { infoHash: normalizedInfoHash },
     });
   }
 
@@ -100,7 +112,9 @@ export class TorrentRepository {
    * Synchronizes peers for a torrent.
    */
   async syncPeers(infoHash: string, peers: Omit<TorrentPeer, 'id' | 'torrentId'>[]): Promise<void> {
-    const torrent = await this.prisma.torrent.findUnique({ where: { infoHash } });
+    const torrent = await this.prisma.torrent.findUnique({
+      where: { infoHash: this.normalizeInfoHash(infoHash) },
+    });
     if (!torrent) return;
 
     await this.prisma.torrentPeer.deleteMany({ where: { torrentId: torrent.id } });

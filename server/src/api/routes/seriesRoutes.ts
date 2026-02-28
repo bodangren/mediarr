@@ -281,9 +281,7 @@ export function registerSeriesRoutes(
       },
     },
   }, async (request, reply) => {
-    const searchAllIndexers = deps.searchAggregationService?.searchAllIndexers
-      ?? deps.mediaSearchService?.searchAllIndexers;
-    if (!searchAllIndexers) {
+    if (!deps.searchAggregationService?.searchAllIndexers && !deps.mediaSearchService?.searchAllIndexers) {
       throw new ValidationError('Search aggregation service is not configured');
     }
 
@@ -357,7 +355,9 @@ export function registerSeriesRoutes(
       searchParams.episode = episodeNumber;
     }
 
-    const result = await searchAllIndexers(searchParams);
+    const result = deps.searchAggregationService?.searchAllIndexers 
+      ? await deps.searchAggregationService.searchAllIndexers(searchParams)
+      : await deps.mediaSearchService!.searchAllIndexers(searchParams);
     const { items, totalCount } = paginateArray(
       result.releases,
       pagination.page,

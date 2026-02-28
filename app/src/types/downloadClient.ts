@@ -1,10 +1,10 @@
 /**
  * Download Client Types
  *
- * Types for download client management (torrent/usenet clients)
+ * Types retained for legacy modal components that may reference them.
+ * The multi-client management UI has been replaced by a single-instance
+ * settings form backed by TorrentLimitsSettings in downloadClientsApi.ts.
  */
-
-import type { DownloadClientItem } from '../lib/api/downloadClientsApi';
 
 export type DownloadClientType =
   | 'transmission'
@@ -13,19 +13,6 @@ export type DownloadClientType =
   | 'rtorrent'
   | 'sabnzbd'
   | 'nzbget';
-
-export interface DownloadClient {
-  id: number;
-  name: string;
-  implementation: string;
-  configContract: string;
-  protocol: string;
-  host: string;
-  port: number;
-  category: string | null;
-  priority: number;
-  enabled: boolean;
-}
 
 export interface DownloadClientDraft {
   name: string;
@@ -40,12 +27,3 @@ export interface DownloadClientDraft {
   priority: number;
   enabled: boolean;
 }
-
-export interface DownloadClientHealth {
-  failureCount?: number;
-  lastErrorMessage?: string | null;
-}
-
-export type DownloadClientRow = DownloadClientItem & {
-  health?: DownloadClientHealth | null;
-};

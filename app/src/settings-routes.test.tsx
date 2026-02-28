@@ -30,10 +30,8 @@ const mockApi = vi.hoisted(() => ({
     remove: vi.fn(),
   },
   downloadClientApi: {
-    list: vi.fn(),
-    create: vi.fn(),
-    update: vi.fn(),
-    remove: vi.fn(),
+    get: vi.fn(),
+    save: vi.fn(),
   },
   qualityProfileApi: {
     list: vi.fn(),
@@ -124,9 +122,9 @@ describe('Settings routes — navigation integrity', () => {
     expect(await screen.findByText('Indexers')).toBeInTheDocument();
   });
 
-  it('renders the Download Clients settings page title', async () => {
+  it('renders the Download Client settings page title (singular)', async () => {
     renderApp('/settings/clients');
-    expect(await screen.findByText('Download Clients')).toBeInTheDocument();
+    expect(await screen.findByText('Download Client')).toBeInTheDocument();
   });
 
   it('renders the Profiles & Quality settings page title', async () => {
@@ -265,20 +263,25 @@ describe('Settings: Indexers page', () => {
   });
 });
 
-// ── Download Clients ──────────────────────────────────────────────────────────
+// ── Download Client (single-instance) ─────────────────────────────────────────
 
-describe('Settings: Download Clients page', () => {
-  const mockClients = [
-    { id: 1, name: 'qBittorrent', host: 'localhost', port: 8080, protocol: 'torrent', enabled: true },
-    { id: 2, name: 'SABnzbd', host: 'localhost', port: 8085, protocol: 'usenet', enabled: false },
-  ];
+const defaultTorrentLimits = {
+  maxActiveDownloads: 3,
+  maxActiveSeeds: 3,
+  globalDownloadLimitKbps: null,
+  globalUploadLimitKbps: null,
+  incompleteDirectory: '/tmp/dl',
+  completeDirectory: '/media/done',
+  seedRatioLimit: 0,
+  seedTimeLimitMinutes: 0,
+  seedLimitAction: 'pause' as const,
+};
 
+describe('Settings: Download Client page (single-instance)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockApi.downloadClientApi.list.mockResolvedValue(mockClients);
-    mockApi.downloadClientApi.create.mockResolvedValue({ id: 3, name: 'Deluge', host: '192.168.1.1', port: 8112, protocol: 'torrent', enabled: true });
-    mockApi.downloadClientApi.update.mockResolvedValue({ ...mockClients[0], enabled: false });
-    mockApi.downloadClientApi.remove.mockResolvedValue({ id: 1 });
+    mockApi.downloadClientApi.get.mockResolvedValue(defaultTorrentLimits);
+    mockApi.downloadClientApi.save.mockResolvedValue(defaultTorrentLimits);
     mockApi.indexerApi.list.mockResolvedValue([]);
     mockApi.qualityProfileApi.list.mockResolvedValue([]);
     mockApi.customFormatApi.list.mockResolvedValue([]);
@@ -291,79 +294,29 @@ describe('Settings: Download Clients page', () => {
     mockApi.mediaApi.listSeries.mockResolvedValue({ items: [], meta: { page: 1, pageSize: 200, totalCount: 0, totalPages: 0 } });
   });
 
-  it('calls downloadClientApi.list on mount', async () => {
+  it('calls downloadClientApi.get on mount', async () => {
     renderApp('/settings/clients');
 
     await waitFor(() => {
-      expect(mockApi.downloadClientApi.list).toHaveBeenCalledTimes(1);
+      expect(mockApi.downloadClientApi.get).toHaveBeenCalledTimes(1);
     });
   });
 
-  it('renders existing download clients', async () => {
+  it('renders incomplete directory input with loaded value', async () => {
     renderApp('/settings/clients');
 
-    expect(await screen.findByText('qBittorrent')).toBeInTheDocument();
-    expect(screen.getByText('SABnzbd')).toBeInTheDocument();
+    const input = await screen.findByDisplayValue('/tmp/dl');
+    expect(input).toBeInTheDocument();
   });
 
-  it('calls downloadClientApi.create with correct payload on form submit', async () => {
+  it('calls downloadClientApi.save on form submit', async () => {
     renderApp('/settings/clients');
 
-    await screen.findByText('qBittorrent');
-
-    fireEvent.change(screen.getByPlaceholderText('Client name'), { target: { value: 'Deluge' } });
-    fireEvent.change(screen.getByPlaceholderText('Host'), { target: { value: '192.168.1.1' } });
-    fireEvent.change(screen.getByPlaceholderText('Port'), { target: { value: '8112' } });
-    fireEvent.submit(screen.getByRole('button', { name: 'Add Client' }).closest('form')!);
+    await screen.findByDisplayValue('/tmp/dl');
+    fireEvent.click(screen.getByRole('button', { name: /save/i }));
 
     await waitFor(() => {
-      expect(mockApi.downloadClientApi.create).toHaveBeenCalledWith(expect.objectContaining({
-        name: 'Deluge',
-        host: '192.168.1.1',
-        port: 8112,
-        implementation: 'qBittorrent',
-        protocol: 'torrent',
-      }));
-    });
-  });
-
-  it('calls downloadClientApi.update when toggle button is clicked', async () => {
-    renderApp('/settings/clients');
-
-    await screen.findByText('qBittorrent');
-    const [disableButton] = screen.getAllByRole('button', { name: 'Disable' });
-    fireEvent.click(disableButton!);
-
-    await waitFor(() => {
-      expect(mockApi.downloadClientApi.update).toHaveBeenCalledWith(1, { enabled: false });
-    });
-  });
-
-  it('calls downloadClientApi.remove when Delete is clicked', async () => {
-    renderApp('/settings/clients');
-
-    await screen.findByText('qBittorrent');
-    const [deleteButton] = screen.getAllByRole('button', { name: 'Delete' });
-    fireEvent.click(deleteButton!);
-
-    await waitFor(() => {
-      expect(mockApi.downloadClientApi.remove).toHaveBeenCalledWith(1);
-    });
-  });
-
-  it('reloads clients after successful create', async () => {
-    renderApp('/settings/clients');
-
-    await screen.findByText('qBittorrent');
-    mockApi.downloadClientApi.list.mockClear();
-
-    fireEvent.change(screen.getByPlaceholderText('Client name'), { target: { value: 'NewClient' } });
-    fireEvent.change(screen.getByPlaceholderText('Host'), { target: { value: 'host' } });
-    fireEvent.change(screen.getByPlaceholderText('Port'), { target: { value: '9090' } });
-    fireEvent.submit(screen.getByRole('button', { name: 'Add Client' }).closest('form')!);
-
-    await waitFor(() => {
-      expect(mockApi.downloadClientApi.list).toHaveBeenCalledTimes(1);
+      expect(mockApi.downloadClientApi.save).toHaveBeenCalledTimes(1);
     });
   });
 });

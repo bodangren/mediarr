@@ -87,7 +87,7 @@
           (Pause / Remove).
     - [ ] On save, call PUT /api/download-client and show a success toast.
     - [ ] Verify tests pass.
-- [~] Task: Rename and clean up Download Clients references
+- [x] 384299d Task: Rename and clean up Download Clients references
     - [ ] Write failing UI tests asserting "Download Clients" label is absent.
     - [ ] Update nav label, page title, and route from "Download Clients" to
           "Download Client".

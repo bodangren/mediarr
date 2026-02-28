@@ -44,9 +44,10 @@ describe('filesystemRoutes', () => {
 
     expect(response.statusCode).toBe(200);
     const body = response.json();
-    expect(body.path).toBe('/');
-    expect(body.entries).toHaveLength(2);
-    expect(body.entries[0]).toMatchObject({ name: 'home', isDirectory: true });
+    expect(body.ok).toBe(true);
+    expect(body.data.path).toBe('/');
+    expect(body.data.entries).toHaveLength(2);
+    expect(body.data.entries[0]).toMatchObject({ name: 'home', isDirectory: true });
   });
 
   it('returns directory listing for a valid subdirectory path', async () => {
@@ -66,10 +67,11 @@ describe('filesystemRoutes', () => {
 
     expect(response.statusCode).toBe(200);
     const body = response.json();
-    expect(body.path).toBe('/home/user/media');
-    expect(body.entries).toHaveLength(3);
-    expect(body.entries.find((e: any) => e.name === 'movies')?.isDirectory).toBe(true);
-    expect(body.entries.find((e: any) => e.name === 'README.txt')?.isDirectory).toBe(false);
+    expect(body.ok).toBe(true);
+    expect(body.data.path).toBe('/home/user/media');
+    expect(body.data.entries).toHaveLength(3);
+    expect(body.data.entries.find((e: any) => e.name === 'movies')?.isDirectory).toBe(true);
+    expect(body.data.entries.find((e: any) => e.name === 'README.txt')?.isDirectory).toBe(false);
   });
 
   it('includes read/write permission flags on entries', async () => {
@@ -94,8 +96,9 @@ describe('filesystemRoutes', () => {
 
     expect(response.statusCode).toBe(200);
     const body = response.json();
-    const writable = body.entries.find((e: any) => e.name === 'writable-dir');
-    const readonly = body.entries.find((e: any) => e.name === 'readonly-dir');
+    expect(body.ok).toBe(true);
+    const writable = body.data.entries.find((e: any) => e.name === 'writable-dir');
+    const readonly = body.data.entries.find((e: any) => e.name === 'readonly-dir');
     expect(writable.readable).toBe(true);
     expect(writable.writable).toBe(true);
     expect(readonly.readable).toBe(true);
@@ -121,8 +124,9 @@ describe('filesystemRoutes', () => {
 
     expect(response.statusCode).toBe(200);
     const body = response.json();
-    expect(body.readable).toBe(true);
-    expect(body.writable).toBe(false);
+    expect(body.ok).toBe(true);
+    expect(body.data.readable).toBe(true);
+    expect(body.data.writable).toBe(false);
   });
 
   it('returns 404 for a non-existent path', async () => {

@@ -1,6 +1,7 @@
 import { constants, access, readdir, realpath } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { FastifyInstance } from 'fastify';
+import { sendSuccess } from '../contracts';
 import type { ApiDependencies } from '../types';
 
 interface FilesystemEntry {
@@ -97,6 +98,6 @@ export function registerFilesystemRoutes(
       entries,
     };
 
-    return reply.send(response);
+    return sendSuccess(reply, response);
   });
 }

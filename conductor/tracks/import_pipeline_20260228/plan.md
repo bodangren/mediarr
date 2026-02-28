@@ -6,23 +6,23 @@
 
 ### Backend — Verify API Coverage
 
-- [ ] Task: Confirm GET/PUT `/api/download-client` exposes complete directory and seed fields
-    - [ ] Read `downloadClientRoutes.ts` and confirm `completeDirectory`, `seedRatioLimit`, `seedTimeLimitMinutes`, `seedLimitAction` are in the response/body schema
-    - [ ] If any fields are missing from the API schema, add them and write tests for the gap
-    - [ ] Confirm `TorrentManager.setDownloadPaths()` is called with the updated complete directory on PUT
+- [x] Task: Confirm GET/PUT `/api/download-client` exposes complete directory and seed fields (84247b3d)
+    - [x] Read `downloadClientRoutes.ts` and confirm `completeDirectory`, `seedRatioLimit`, `seedTimeLimitMinutes`, `seedLimitAction` are in the response/body schema
+    - [x] If any fields are missing from the API schema, add them and write tests for the gap
+    - [x] Confirm `TorrentManager.setDownloadPaths()` is called with the updated complete directory on PUT
 
 ### Frontend — Settings > Clients Seed & Complete Path UI
 
-- [ ] Task: Wire complete directory browser and seed controls into Settings > Clients
-    - [ ] Write rendering tests: complete directory field renders with folder icon + Validate, seed ratio/time inputs render, seed action select renders, values persist after save
-    - [ ] Read current SettingsClientsPage (or equivalent in App.tsx) to understand the existing form structure
-    - [ ] Add **Complete Directory** path input with FilesystemBrowser + Validate button (same pattern as incomplete directory)
-    - [ ] Add **Seed Ratio Limit** numeric input (label: "Ratio Limit", hint: "0 = unlimited")
-    - [ ] Add **Seed Time Limit** numeric input (label: "Time Limit (minutes)", hint: "0 = unlimited")
-    - [ ] Add **Seed Limit Action** select (`pause` | `remove`)
-    - [ ] Wire all four fields into the existing save flow (GET on mount, PUT on save)
+- [x] Task: Wire complete directory browser and seed controls into Settings > Clients (84247b3d)
+    - [x] Write rendering tests: complete directory field renders with folder icon + Validate, seed ratio/time inputs render, seed action select renders, values persist after save
+    - [x] Read current SettingsClientsPage (or equivalent in App.tsx) to understand the existing form structure
+    - [x] Add **Complete Directory** path input with FilesystemBrowser + Validate button (same pattern as incomplete directory)
+    - [x] Add **Seed Ratio Limit** numeric input (label: "Ratio Limit", hint: "0 = unlimited")
+    - [x] Add **Seed Time Limit** numeric input (label: "Time Limit (minutes)", hint: "0 = unlimited")
+    - [x] Add **Seed Limit Action** select (`pause` | `remove`)
+    - [x] Wire all four fields into the existing save flow (GET on mount, PUT on save)
 
-- [ ] Task: Conductor - User Manual Verification 'Phase 1: Complete Directory & Seed Controls' (Protocol in workflow.md)
+- [~] Task: Conductor - User Manual Verification 'Phase 1: Complete Directory & Seed Controls' (Protocol in workflow.md)
 
 ---
 

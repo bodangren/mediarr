@@ -10,7 +10,7 @@ import { MovieOverviewView, SeriesOverviewView } from '@/components/views';
 import { getApiClients } from '@/lib/api/client';
 import { getPopularPresets } from '@/lib/indexer/indexerPresets';
 import type { IndexerItem } from '@/lib/api/indexerApi';
-import type { DownloadClientItem } from '@/lib/api/downloadClientsApi';
+import type { TorrentLimitsSettings } from '@/lib/api/downloadClientsApi';
 import type { QualityProfileItem } from '@/lib/api/qualityProfileApi';
 import type { SubtitleProvider } from '@/lib/api/subtitleProvidersApi';
 import type { NotificationItem } from '@/lib/api/notificationsApi';
@@ -344,76 +344,186 @@ function SettingsIndexersPage() {
 
 function SettingsClientsPage() {
   const api = useMemo(() => getApiClients(), []);
-  const [clients, setClients] = useState<DownloadClientItem[]>([]);
-  const [name, setName] = useState('');
-  const [host, setHost] = useState('localhost');
-  const [port, setPort] = useState('8080');
-
-  const load = async () => {
-    const items = await api.downloadClientApi.list();
-    setClients(items);
-  };
+  const { pushToast } = useToast();
+  const [settings, setSettings] = useState<TorrentLimitsSettings | null>(null);
+  const [incompleteDirectory, setIncompleteDirectory] = useState('');
+  const [completeDirectory, setCompleteDirectory] = useState('');
+  const [globalDownloadLimitKbps, setGlobalDownloadLimitKbps] = useState('0');
+  const [globalUploadLimitKbps, setGlobalUploadLimitKbps] = useState('0');
+  const [maxActiveDownloads, setMaxActiveDownloads] = useState('3');
+  const [seedRatioLimit, setSeedRatioLimit] = useState('0');
+  const [seedTimeLimitMinutes, setSeedTimeLimitMinutes] = useState('0');
+  const [seedLimitAction, setSeedLimitAction] = useState<'pause' | 'remove'>('pause');
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    void load();
-  }, []);
+    const load = async () => {
+      setError(null);
+      try {
+        const value = await api.downloadClientApi.get();
+        setSettings(value);
+        setIncompleteDirectory(value.incompleteDirectory);
+        setCompleteDirectory(value.completeDirectory);
+        setGlobalDownloadLimitKbps(String(value.globalDownloadLimitKbps ?? 0));
+        setGlobalUploadLimitKbps(String(value.globalUploadLimitKbps ?? 0));
+        setMaxActiveDownloads(String(value.maxActiveDownloads));
+        setSeedRatioLimit(String(value.seedRatioLimit));
+        setSeedTimeLimitMinutes(String(value.seedTimeLimitMinutes));
+        setSeedLimitAction(value.seedLimitAction);
+      } catch (loadError) {
+        setError(loadError instanceof Error ? loadError.message : 'Failed to load download client settings');
+      }
+    };
 
-  const onCreate = async (event: FormEvent<HTMLFormElement>) => {
+    void load();
+  }, [api]);
+
+  const onSave = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    await api.downloadClientApi.create({
-      name,
-      implementation: 'qBittorrent',
-      configContract: 'qBittorrentSettings',
-      settings: JSON.stringify({ host, port: Number.parseInt(port, 10) }),
-      protocol: 'torrent',
-      host,
-      port: Number.parseInt(port, 10),
-      priority: 25,
-      enabled: true,
-    });
-    setName('');
-    await load();
+
+    setIsSaving(true);
+    setError(null);
+    try {
+      const dlLimit = Number.parseFloat(globalDownloadLimitKbps);
+      const ulLimit = Number.parseFloat(globalUploadLimitKbps);
+      const updated = await api.downloadClientApi.save({
+        maxActiveDownloads: Number.parseInt(maxActiveDownloads, 10),
+        maxActiveSeeds: settings?.maxActiveSeeds ?? 3,
+        globalDownloadLimitKbps: dlLimit > 0 ? dlLimit : null,
+        globalUploadLimitKbps: ulLimit > 0 ? ulLimit : null,
+        incompleteDirectory,
+        completeDirectory,
+        seedRatioLimit: Number.parseFloat(seedRatioLimit),
+        seedTimeLimitMinutes: Number.parseInt(seedTimeLimitMinutes, 10),
+        seedLimitAction,
+      });
+      setSettings(updated);
+      setIncompleteDirectory(updated.incompleteDirectory);
+      setCompleteDirectory(updated.completeDirectory);
+      setGlobalDownloadLimitKbps(String(updated.globalDownloadLimitKbps ?? 0));
+      setGlobalUploadLimitKbps(String(updated.globalUploadLimitKbps ?? 0));
+      setMaxActiveDownloads(String(updated.maxActiveDownloads));
+      setSeedRatioLimit(String(updated.seedRatioLimit));
+      setSeedTimeLimitMinutes(String(updated.seedTimeLimitMinutes));
+      setSeedLimitAction(updated.seedLimitAction);
+      pushToast({ title: 'Download Client settings saved.', variant: 'success' });
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : 'Failed to save download client settings');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
-    <RouteScaffold title="Download Clients" description="Unified global download client management across all media domains.">
-      <form className="grid gap-2 rounded-md border border-border-subtle bg-surface-1 p-4 lg:grid-cols-4" onSubmit={event => { void onCreate(event); }}>
-        <input value={name} onChange={event => setName(event.target.value)} placeholder="Client name" className="rounded-sm border border-border-subtle bg-surface-0 px-2 py-1 text-sm" required />
-        <input value={host} onChange={event => setHost(event.target.value)} placeholder="Host" className="rounded-sm border border-border-subtle bg-surface-0 px-2 py-1 text-sm" required />
-        <input value={port} onChange={event => setPort(event.target.value)} placeholder="Port" className="rounded-sm border border-border-subtle bg-surface-0 px-2 py-1 text-sm" required />
-        <button type="submit" className="rounded-sm border border-border-subtle bg-surface-2 px-3 py-2 text-sm">Add Client</button>
+    <RouteScaffold title="Download Client" description="Integrated downloader settings for the built-in torrent client.">
+      {error ? <p className="text-sm text-status-error">{error}</p> : null}
+      <form
+        className="rounded-md border border-border-subtle bg-surface-1 p-4 text-sm text-text-secondary"
+        onSubmit={event => { void onSave(event); }}
+      >
+        {!settings ? (
+          <p>Loading settings...</p>
+        ) : (
+          <div className="grid gap-4 lg:grid-cols-2">
+            <label className="text-sm text-text-secondary">
+              Incomplete Directory
+              <p className="text-xs text-text-secondary">Where downloading pieces are stored temporarily.</p>
+              <input
+                type="text"
+                value={incompleteDirectory}
+                onChange={event => setIncompleteDirectory(event.target.value)}
+                className="mt-1 w-full rounded-sm border border-border-subtle bg-surface-0 px-2 py-1 text-sm text-text-primary"
+              />
+            </label>
+            <label className="text-sm text-text-secondary">
+              Complete Directory
+              <p className="text-xs text-text-secondary">Where finished torrents are moved after download.</p>
+              <input
+                type="text"
+                value={completeDirectory}
+                onChange={event => setCompleteDirectory(event.target.value)}
+                className="mt-1 w-full rounded-sm border border-border-subtle bg-surface-0 px-2 py-1 text-sm text-text-primary"
+              />
+            </label>
+            <label className="text-sm text-text-secondary">
+              Max Download Speed (KB/s, 0 = unlimited)
+              <input
+                type="number"
+                min={0}
+                step={1}
+                value={globalDownloadLimitKbps}
+                onChange={event => setGlobalDownloadLimitKbps(event.target.value)}
+                className="mt-1 w-full rounded-sm border border-border-subtle bg-surface-0 px-2 py-1 text-sm text-text-primary"
+              />
+            </label>
+            <label className="text-sm text-text-secondary">
+              Max Upload Speed (KB/s, 0 = unlimited)
+              <input
+                type="number"
+                min={0}
+                step={1}
+                value={globalUploadLimitKbps}
+                onChange={event => setGlobalUploadLimitKbps(event.target.value)}
+                className="mt-1 w-full rounded-sm border border-border-subtle bg-surface-0 px-2 py-1 text-sm text-text-primary"
+              />
+            </label>
+            <label className="text-sm text-text-secondary">
+              Max Active Downloads (0 = unlimited)
+              <input
+                type="number"
+                min={0}
+                step={1}
+                value={maxActiveDownloads}
+                onChange={event => setMaxActiveDownloads(event.target.value)}
+                className="mt-1 w-full rounded-sm border border-border-subtle bg-surface-0 px-2 py-1 text-sm text-text-primary"
+              />
+            </label>
+            <label className="text-sm text-text-secondary">
+              Seed Ratio Limit (0 = unlimited)
+              <input
+                type="number"
+                min={0}
+                step={0.01}
+                value={seedRatioLimit}
+                onChange={event => setSeedRatioLimit(event.target.value)}
+                className="mt-1 w-full rounded-sm border border-border-subtle bg-surface-0 px-2 py-1 text-sm text-text-primary"
+              />
+            </label>
+            <label className="text-sm text-text-secondary">
+              Seed Time Limit (minutes, 0 = unlimited)
+              <input
+                type="number"
+                min={0}
+                step={1}
+                value={seedTimeLimitMinutes}
+                onChange={event => setSeedTimeLimitMinutes(event.target.value)}
+                className="mt-1 w-full rounded-sm border border-border-subtle bg-surface-0 px-2 py-1 text-sm text-text-primary"
+              />
+            </label>
+            <label className="text-sm text-text-secondary">
+              When Seed Limit Reached
+              <select
+                value={seedLimitAction}
+                onChange={event => setSeedLimitAction(event.target.value as 'pause' | 'remove')}
+                className="mt-1 w-full rounded-sm border border-border-subtle bg-surface-0 px-2 py-1 text-sm text-text-primary"
+              >
+                <option value="pause">Pause torrent</option>
+                <option value="remove">Remove torrent</option>
+              </select>
+            </label>
+          </div>
+        )}
+        <div className="mt-4">
+          <button
+            type="submit"
+            className="rounded-sm border border-border-subtle bg-surface-2 px-3 py-2 text-sm"
+            disabled={!settings || isSaving}
+          >
+            {isSaving ? 'Saving...' : 'Save Download Client Settings'}
+          </button>
+        </div>
       </form>
-
-      <ul className="space-y-2">
-        {clients.map(client => (
-          <li key={client.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border-subtle bg-surface-1 p-3">
-            <div>
-              <p className="font-medium">{client.name}</p>
-              <p className="text-xs text-text-secondary">{client.host}:{client.port} ({client.protocol})</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                className="rounded-sm border border-border-subtle px-2 py-1 text-xs"
-                onClick={() => {
-                  void api.downloadClientApi.update(client.id, { enabled: !client.enabled }).then(load);
-                }}
-              >
-                {client.enabled ? 'Disable' : 'Enable'}
-              </button>
-              <button
-                type="button"
-                className="rounded-sm border border-border-subtle px-2 py-1 text-xs"
-                onClick={() => {
-                  void api.downloadClientApi.remove(client.id).then(load);
-                }}
-              >
-                Delete
-              </button>
-            </div>
-          </li>
-        ))}
-      </ul>
     </RouteScaffold>
   );
 }

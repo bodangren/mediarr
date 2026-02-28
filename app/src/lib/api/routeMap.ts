@@ -111,11 +111,7 @@ export const routeMap = {
   settingsCategories: '/api/settings/categories',
   settingsCategory: (id: number) => `/api/settings/categories/${id}`,
 
-  downloadClients: '/api/download-clients',
-  downloadClientUpdate: (id: number) => `/api/download-clients/${id}`,
-  downloadClientDelete: (id: number) => `/api/download-clients/${id}`,
-  downloadClientTest: (id: number) => `/api/download-clients/${id}/test`,
-  downloadClientTestDraft: '/api/download-clients/test',
+  downloadClient: '/api/download-client',
 
   notifications: '/api/notifications',
   notificationUpdate: (id: number) => `/api/notifications/${id}`,

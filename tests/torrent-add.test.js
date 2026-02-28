@@ -91,16 +91,15 @@ describe('TorrentManager.addTorrent', () => {
 
     // Should add the magnet to the WebTorrent client
     const client = manager.getClient();
-    expect(client.add).toHaveBeenCalledWith(
-      magnetUrl,
-      expect.objectContaining({ path: '/data/downloads/incomplete' })
-    );
+    const addSource = client.add.mock.calls[0][0];
+    expect(addSource).toContain(`xt=urn:btih:${TEST_INFO_HASH}`);
+    expect(client.add.mock.calls[0][1]).toEqual(expect.objectContaining({ path: '/data/downloads/incomplete' }));
 
     // Should persist the torrent to the database
     expect(mockRepo.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
         infoHash: TEST_INFO_HASH,
-        magnetUrl,
+        magnetUrl: expect.stringContaining(`xt=urn:btih:${TEST_INFO_HASH}`),
         status: 'downloading',
         path: '/data/downloads/incomplete',
       })
@@ -150,10 +149,9 @@ describe('TorrentManager.addTorrent', () => {
     const result = await manager.addTorrent({ magnetUrl, path: customPath });
 
     const client = manager.getClient();
-    expect(client.add).toHaveBeenCalledWith(
-      magnetUrl,
-      expect.objectContaining({ path: customPath })
-    );
+    const addSource = client.add.mock.calls[0][0];
+    expect(addSource).toContain(`xt=urn:btih:${TEST_INFO_HASH}`);
+    expect(client.add.mock.calls[0][1]).toEqual(expect.objectContaining({ path: customPath }));
 
     expect(mockRepo.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -169,10 +167,10 @@ describe('TorrentManager.addTorrent', () => {
     await manager.addTorrent({ magnetUrl });
 
     const client = manager.getClient();
-    expect(client.add).toHaveBeenCalledWith(
-      magnetUrl,
-      expect.objectContaining({ path: '/tmp/mediarr-incomplete' })
-    );
+    const source = client.add.mock.calls[0][0];
+    expect(source).toContain(`xt=urn:btih:${TEST_INFO_HASH}`);
+    expect(source).toContain('tr=udp://tracker.opentrackr.org:1337/announce');
+    expect(client.add.mock.calls[0][1]).toEqual(expect.objectContaining({ path: '/tmp/mediarr-incomplete' }));
   });
 
   it('should append default trackers when magnet has no tracker params', async () => {
@@ -182,8 +180,27 @@ describe('TorrentManager.addTorrent', () => {
 
     const client = manager.getClient();
     const source = client.add.mock.calls[0][0];
-    expect(source).toMatch(/xt=urn%3Abtih%3A[0-9a-f]{40}/i);
+    expect(source).toMatch(/xt=urn:btih:[0-9a-f]{40}/i);
     expect(source).toContain('tr=');
+  });
+
+  it('should return existing torrent when infoHash already exists in database', async () => {
+    const magnetUrl = `magnet:?xt=urn:btih:${TEST_INFO_HASH}&dn=AlreadyThere`;
+    mockRepo.findByInfoHash.mockResolvedValueOnce({
+      infoHash: TEST_INFO_HASH,
+      name: 'Existing Torrent',
+      path: '/existing/path',
+    });
+
+    const result = await manager.addTorrent({ magnetUrl });
+
+    const client = manager.getClient();
+    expect(client.add).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      infoHash: TEST_INFO_HASH,
+      name: 'Existing Torrent',
+      path: '/existing/path',
+    });
   });
 
   it('should derive infoHash from magnet URL when WebTorrent has no immediate infoHash', async () => {

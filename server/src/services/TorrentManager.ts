@@ -151,6 +151,27 @@ export class TorrentManager extends EventEmitter {
       throw new Error('Incomplete download directory is not configured. Configure it in Settings > Clients.');
     }
 
+    const infoHashHint = this.extractInfoHashFromMagnet(preparedMagnetUrl);
+    if (infoHashHint) {
+      const existingRow = await this.repository.findByInfoHash(infoHashHint);
+      if (existingRow) {
+        return {
+          infoHash: existingRow.infoHash,
+          name: existingRow.name,
+          path: existingRow.path,
+        };
+      }
+
+      const existingClientTorrent = await this.findTorrent(infoHashHint);
+      if (existingClientTorrent) {
+        return {
+          infoHash: infoHashHint,
+          name: existingClientTorrent.name || options.name || 'Unknown',
+          path: existingClientTorrent.path || downloadPath,
+        };
+      }
+    }
+
     const torrent = this.client.add(source, { path: downloadPath });
 
     this.attachTorrentLifecycleHandlers(torrent);
@@ -206,23 +227,54 @@ export class TorrentManager extends EventEmitter {
       return magnetUrl;
     }
 
-    try {
-      const url = new URL(magnetUrl);
-      const hasTrackers = url.searchParams.getAll('tr').length > 0;
-      if (!hasTrackers) {
-        for (const tracker of DEFAULT_MAGNET_TRACKERS) {
-          url.searchParams.append('tr', tracker);
-        }
-      }
+    const normalized = this.normalizeMagnetParameters(magnetUrl);
+    const hasTrackers = /(?:[?&])tr=/i.test(normalized);
+    const hasDisplayName = /(?:[?&])dn=/i.test(normalized);
 
-      if (name && !url.searchParams.get('dn')) {
-        url.searchParams.set('dn', name);
+    let result = normalized;
+    if (!hasTrackers) {
+      for (const tracker of DEFAULT_MAGNET_TRACKERS) {
+        const separator = result.includes('?') ? '&' : '?';
+        result += `${separator}tr=${tracker}`;
       }
-
-      return url.toString();
-    } catch {
-      return magnetUrl;
     }
+
+    if (name && !hasDisplayName) {
+      const separator = result.includes('?') ? '&' : '?';
+      result += `${separator}dn=${encodeURIComponent(name)}`;
+    }
+
+    return result;
+  }
+
+  private normalizeMagnetParameters(magnetUrl: string): string {
+    const [base, query = ''] = magnetUrl.split('?', 2);
+    const params = query
+      .split('&')
+      .filter(Boolean)
+      .map((pair) => {
+        const eqIndex = pair.indexOf('=');
+        if (eqIndex < 0) {
+          return pair;
+        }
+
+        const key = pair.slice(0, eqIndex);
+        const value = pair.slice(eqIndex + 1);
+        if (key === 'xt' || key === 'tr') {
+          try {
+            return `${key}=${decodeURIComponent(value)}`;
+          } catch {
+            return pair;
+          }
+        }
+        return pair;
+      });
+
+    if (params.length === 0) {
+      return base;
+    }
+
+    return `${base}?${params.join('&')}`;
   }
 
   private async resolveInfoHash(torrent: any, magnetUrl?: string): Promise<string | undefined> {
@@ -347,11 +399,25 @@ export class TorrentManager extends EventEmitter {
   /**
    * Finds a torrent in the WebTorrent client by infoHash. Throws if not found.
    */
+  private async findTorrent(infoHash: string): Promise<any | null> {
+    const client = this.client as any;
+    if (typeof client.get === 'function') {
+      const maybeTorrent = client.get(infoHash);
+      const torrent = typeof maybeTorrent?.then === 'function'
+        ? await maybeTorrent
+        : maybeTorrent;
+      return torrent ?? null;
+    }
+
+    const torrents = Array.isArray(client.torrents) ? client.torrents : [];
+    return torrents.find((torrent: any) => torrent?.infoHash === infoHash) ?? null;
+  }
+
+  /**
+   * Finds a torrent in the WebTorrent client by infoHash. Throws if not found.
+   */
   private async findTorrentOrThrow(infoHash: string): Promise<any> {
-    const maybeTorrent = (this.client as any).get(infoHash);
-    const torrent = typeof maybeTorrent?.then === 'function'
-      ? await maybeTorrent
-      : maybeTorrent;
+    const torrent = await this.findTorrent(infoHash);
     if (!torrent) {
       throw new Error(`Torrent with infoHash '${infoHash}' not found`);
     }
@@ -635,7 +701,9 @@ export class TorrentManager extends EventEmitter {
         continue;
       }
 
-      const source = torrent.magnetUrl || torrent.torrentFile;
+      const source = torrent.magnetUrl
+        ? this.normalizeMagnetParameters(torrent.magnetUrl)
+        : torrent.torrentFile;
       if (!source) {
         // Can't resume without a magnet URL or torrent file
         await this.repository.updateStatus(torrent.infoHash, 'error');

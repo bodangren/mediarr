@@ -19,6 +19,7 @@ function createTorrentManagerMock() {
     resumeTorrent: vi.fn(),
     removeTorrent: vi.fn(),
     setSpeedLimits: vi.fn(),
+    setDownloadPaths: vi.fn(),
     getTorrentsStatus: vi.fn(),
     getTorrentStatus: vi.fn(),
   };
@@ -45,8 +46,8 @@ const defaultTorrentLimits: TorrentLimitsSettings = {
   maxActiveSeeds: 3,
   globalDownloadLimitKbps: null,
   globalUploadLimitKbps: null,
-  incompleteDirectory: '',
-  completeDirectory: '',
+  incompleteDirectory: '/downloads/incomplete',
+  completeDirectory: '/downloads/complete',
   seedRatioLimit: 0,
   seedTimeLimitMinutes: 0,
   seedLimitAction: 'pause',
@@ -171,6 +172,10 @@ describe('downloadClientRoutes — PUT /api/download-client', () => {
       download: 500,
       upload: 100,
     });
+    expect(torrentManager.setDownloadPaths).toHaveBeenCalledWith({
+      incomplete: payload.incompleteDirectory,
+      complete: payload.completeDirectory,
+    });
   });
 
   it('does not fail if torrentManager is not configured', async () => {
@@ -202,6 +207,19 @@ describe('downloadClientRoutes — PUT /api/download-client', () => {
     });
 
     expect(response.statusCode).toBe(400);
+  });
+
+  it('returns 400 for empty download directories', async () => {
+    const response = await app.inject({
+      method: 'PUT',
+      url: '/api/download-client',
+      payload: {
+        ...defaultTorrentLimits,
+        incompleteDirectory: '   ',
+      },
+    });
+
+    expect(response.statusCode).toBe(422);
   });
 
   it('returns the updated torrentLimits in the response', async () => {

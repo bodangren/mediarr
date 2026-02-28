@@ -7,6 +7,8 @@ export interface AddTorrentOptions {
   magnetUrl?: string;
   torrentFile?: Buffer;
   path?: string;
+  name?: string;
+  size?: number;
 }
 
 export interface TorrentInfo {
@@ -34,6 +36,8 @@ export class TorrentManager extends EventEmitter {
   private statsSyncTimer: NodeJS.Timeout | null = null;
   private statsSyncInFlight = false;
   private statsSyncRunning = false;
+  private incompleteDownloadPath = DEFAULT_DOWNLOAD_PATH;
+  private completeDownloadPath = COMPLETE_DOWNLOAD_PATH;
 
   private constructor(private repository: TorrentRepository) {
     super();
@@ -85,6 +89,18 @@ export class TorrentManager extends EventEmitter {
   }
 
   /**
+   * Updates default download directories used by torrent add/completion lifecycle.
+   */
+  setDownloadPaths(paths: { incomplete?: string; complete?: string }): void {
+    if (paths.incomplete !== undefined) {
+      this.incompleteDownloadPath = paths.incomplete;
+    }
+    if (paths.complete !== undefined) {
+      this.completeDownloadPath = paths.complete;
+    }
+  }
+
+  /**
    * Returns active/idle sync interval in milliseconds.
    */
   getCurrentSyncIntervalMs(): number {
@@ -116,7 +132,11 @@ export class TorrentManager extends EventEmitter {
       throw new Error('Either magnetUrl or torrentFile must be provided');
     }
 
-    const downloadPath = options.path || DEFAULT_DOWNLOAD_PATH;
+    const configuredPath = options.path ?? this.incompleteDownloadPath;
+    const downloadPath = configuredPath.trim();
+    if (!downloadPath) {
+      throw new Error('Incomplete download directory is not configured. Configure it in Settings > Clients.');
+    }
 
     const torrent = this.client.add(source, { path: downloadPath });
 
@@ -138,13 +158,13 @@ export class TorrentManager extends EventEmitter {
     try {
       await this.repository.upsert({
         infoHash,
-        name: torrent.name || 'Unknown',
+        name: torrent.name || options.name || 'Unknown',
         status: 'downloading',
         progress: 0,
         downloadSpeed: 0,
         uploadSpeed: 0,
         eta: null,
-        size: BigInt(torrent.length || 0),
+        size: BigInt(torrent.length || options.size || 0),
         downloaded: BigInt(0),
         uploaded: BigInt(0),
         ratio: 0,
@@ -166,7 +186,7 @@ export class TorrentManager extends EventEmitter {
 
     return {
       infoHash,
-      name: torrent.name || 'Unknown',
+      name: torrent.name || options.name || 'Unknown',
       path: downloadPath,
     };
   }
@@ -346,9 +366,18 @@ export class TorrentManager extends EventEmitter {
   private async handleTorrentCompletion(torrent: any): Promise<void> {
     const infoHash = torrent.infoHash;
     const currentPath = torrent.path;
+    const completeDownloadPath = this.completeDownloadPath.trim();
+
+    if (!completeDownloadPath) {
+      await this.repository.updateStatus(infoHash, 'error');
+      console.error(
+        `Complete download directory is not configured for torrent ${infoHash}. Configure it in Settings > Clients.`,
+      );
+      return;
+    }
 
     // Skip file move if already in complete directory (or a subdirectory of it)
-    if (currentPath.startsWith(COMPLETE_DOWNLOAD_PATH)) {
+    if (currentPath.startsWith(completeDownloadPath)) {
       await this.repository.update(infoHash, {
         status: 'seeding',
         completedAt: new Date(),
@@ -358,14 +387,14 @@ export class TorrentManager extends EventEmitter {
 
     try {
       // Ensure complete directory exists
-      await fs.mkdir(COMPLETE_DOWNLOAD_PATH, { recursive: true });
+      await fs.mkdir(completeDownloadPath, { recursive: true });
 
       // Move files from incomplete to complete
       // If the torrent is a single file, currentPath might be the file's directory.
       // If it's a folder, currentPath is the parent of that folder.
       // WebTorrent usually downloads to 'path/torrent-name'.
       const sourceDir = path.join(currentPath, torrent.name);
-      const targetDir = path.join(COMPLETE_DOWNLOAD_PATH, torrent.name);
+      const targetDir = path.join(completeDownloadPath, torrent.name);
 
       // Check if source exists (it might not if it was a single file download directly into currentPath)
       // but usually WebTorrent creates a subfolder if there are multiple files or if it's configured so.

@@ -162,6 +162,19 @@ describe('TorrentManager.addTorrent', () => {
     );
   });
 
+  it('should use configured incomplete directory when defaults are updated', async () => {
+    const magnetUrl = `magnet:?xt=urn:btih:${TEST_INFO_HASH}&dn=Configured+Path`;
+    manager.setDownloadPaths({ incomplete: '/tmp/mediarr-incomplete' });
+
+    await manager.addTorrent({ magnetUrl });
+
+    const client = manager.getClient();
+    expect(client.add).toHaveBeenCalledWith(
+      magnetUrl,
+      expect.objectContaining({ path: '/tmp/mediarr-incomplete' })
+    );
+  });
+
   it('should derive infoHash from magnet URL when WebTorrent has no immediate infoHash', async () => {
     const magnetUrl = 'magnet:?xt=urn:btih:87773A30994884F2D5ABEF7CF1360CF19E91A3E6&dn=NoHashYet';
     const client = manager.getClient();
@@ -216,6 +229,14 @@ describe('TorrentManager.addTorrent', () => {
     const client = manager.getClient();
     expect(client.add).not.toHaveBeenCalled();
     expect(mockRepo.upsert).not.toHaveBeenCalled();
+  });
+
+  it('should throw a clear error when incomplete directory is not configured', async () => {
+    manager.setDownloadPaths({ incomplete: '   ' });
+
+    await expect(
+      manager.addTorrent({ magnetUrl: `magnet:?xt=urn:btih:${TEST_INFO_HASH}&dn=NoPath` })
+    ).rejects.toThrow(/incomplete download directory is not configured/i);
   });
 
   it('should throw if the manager is not initialized', async () => {

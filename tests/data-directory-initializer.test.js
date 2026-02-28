@@ -6,26 +6,23 @@ vi.mock('node:fs/promises');
 
 describe('DataDirectoryInitializer', () => {
   let initializer;
+  const configuredDirs = [
+    '/downloads/incomplete',
+    '/downloads/complete',
+  ];
 
   beforeEach(() => {
-    initializer = new DataDirectoryInitializer();
+    initializer = new DataDirectoryInitializer(configuredDirs);
     vi.clearAllMocks();
   });
 
-  it('should create all required subdirectories under /data', async () => {
+  it('should create configured directories', async () => {
     fs.mkdir.mockResolvedValue(undefined);
 
     await initializer.initialize();
 
-    const expectedDirs = [
-      '/data/downloads/incomplete',
-      '/data/downloads/complete',
-      '/data/media/tv',
-      '/data/media/movies',
-    ];
-
-    expect(fs.mkdir).toHaveBeenCalledTimes(expectedDirs.length);
-    for (const dir of expectedDirs) {
+    expect(fs.mkdir).toHaveBeenCalledTimes(configuredDirs.length);
+    for (const dir of configuredDirs) {
       expect(fs.mkdir).toHaveBeenCalledWith(dir, { recursive: true });
     }
   });
@@ -34,5 +31,15 @@ describe('DataDirectoryInitializer', () => {
     fs.mkdir.mockResolvedValue(undefined);
 
     await expect(initializer.initialize()).resolves.not.toThrow();
+  });
+
+  it('skips empty path entries', async () => {
+    const withEmptyEntries = new DataDirectoryInitializer(['', '  ', '/ok/path']);
+    fs.mkdir.mockResolvedValue(undefined);
+
+    await withEmptyEntries.initialize();
+
+    expect(fs.mkdir).toHaveBeenCalledTimes(1);
+    expect(fs.mkdir).toHaveBeenCalledWith('/ok/path', { recursive: true });
   });
 });

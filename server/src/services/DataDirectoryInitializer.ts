@@ -1,18 +1,16 @@
 import fs from 'node:fs/promises';
 
-const REQUIRED_DIRECTORIES = [
-  '/data/downloads/incomplete',
-  '/data/downloads/complete',
-  '/data/media/tv',
-  '/data/media/movies',
-];
-
 /**
  * Ensures the required data directory structure exists on startup.
  */
 export class DataDirectoryInitializer {
+  constructor(private readonly directories: string[] = []) {}
+
   async initialize(): Promise<void> {
-    for (const dir of REQUIRED_DIRECTORIES) {
+    for (const dir of this.directories) {
+      if (!dir || !dir.trim()) {
+        continue;
+      }
       await fs.mkdir(dir, { recursive: true });
     }
   }

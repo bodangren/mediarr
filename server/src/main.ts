@@ -89,10 +89,13 @@ async function ensureBaselineData(prisma: PrismaClient): Promise<void> {
 interface RuntimeTorrentManager {
   initialize?: () => Promise<void>;
   destroy?: () => Promise<void>;
+  setDownloadPaths?: (paths: { incomplete?: string; complete?: string }) => void;
   addTorrent: (input: {
     magnetUrl?: string;
     path?: string;
     torrentFileBase64?: string;
+    name?: string;
+    size?: number;
   }) => Promise<{ infoHash: string; name: string }>;
   pauseTorrent: (infoHash: string) => Promise<void>;
   resumeTorrent: (infoHash: string) => Promise<void>;
@@ -135,26 +138,37 @@ function mapTorrentRecord(torrent: {
 function createFallbackTorrentManager(
   repository: TorrentRepository,
 ): RuntimeTorrentManager {
+  let incompleteDownloadPath = '/data/downloads/incomplete';
+
   return {
+    setDownloadPaths(paths) {
+      if (paths.incomplete !== undefined) {
+        incompleteDownloadPath = paths.incomplete;
+      }
+    },
     async addTorrent(input) {
       const infoHash = crypto
         .createHash('sha1')
         .update(`${input.magnetUrl ?? ''}:${Date.now()}:${Math.random()}`)
         .digest('hex');
+      const downloadPath = (input.path ?? incompleteDownloadPath).trim();
+      if (!downloadPath) {
+        throw new Error('Incomplete download directory is not configured. Configure it in Settings > Clients.');
+      }
 
       const row = await repository.upsert({
         infoHash,
-        name: input.magnetUrl ?? 'Manual Torrent',
+        name: input.name ?? input.magnetUrl ?? 'Manual Torrent',
         status: 'downloading',
         progress: 0,
         downloadSpeed: 0,
         uploadSpeed: 0,
         eta: null,
-        size: BigInt(0),
+        size: BigInt(input.size ?? 0),
         downloaded: BigInt(0),
         uploaded: BigInt(0),
         ratio: 0,
-        path: input.path ?? '/data/downloads/incomplete',
+        path: downloadPath,
         completedAt: null,
         stopAtRatio: null,
         stopAtTime: null,
@@ -314,11 +328,6 @@ async function startApi(): Promise<void> {
   await repairMalformedJsonColumns(prisma);
 
   await ensureBaselineData(prisma);
-  try {
-    await new DataDirectoryInitializer().initialize();
-  } catch (error) {
-    console.warn('Data directory initialization skipped:', error);
-  }
 
   const activityEventRepository = new ActivityEventRepository(prisma);
   const activityEventEmitter = new ActivityEventEmitter(activityEventRepository);
@@ -357,6 +366,14 @@ async function startApi(): Promise<void> {
   const rssSyncService = new RssSyncService(prisma, httpClient, indexerHealthRepository);
 
   const settings = await settingsService.get();
+  try {
+    await new DataDirectoryInitializer([
+      settings.torrentLimits.incompleteDirectory,
+      settings.torrentLimits.completeDirectory,
+    ]).initialize();
+  } catch (error) {
+    console.warn('Data directory initialization skipped:', error);
+  }
   const rssInterval = settings.schedulerIntervals.rssSyncMinutes;
   const rssCron = `*/${rssInterval} * * * *`;
 
@@ -405,6 +422,10 @@ async function startApi(): Promise<void> {
   );
 
   const torrentManager = await createRuntimeTorrentManager(torrentRepository);
+  torrentManager.setDownloadPaths?.({
+    incomplete: settings.torrentLimits.incompleteDirectory,
+    complete: settings.torrentLimits.completeDirectory,
+  });
 
   const openSubtitlesProvider = new OpenSubtitlesProvider(httpClient, settingsService);
 

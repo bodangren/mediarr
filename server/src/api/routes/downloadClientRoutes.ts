@@ -35,8 +35,14 @@ function validateTorrentLimitsBody(body: unknown): TorrentLimitsSettings {
   if (typeof b.incompleteDirectory !== 'string') {
     throw new ValidationError('incompleteDirectory must be a string');
   }
+  if (!b.incompleteDirectory.trim()) {
+    throw new ValidationError('incompleteDirectory must not be empty');
+  }
   if (typeof b.completeDirectory !== 'string') {
     throw new ValidationError('completeDirectory must be a string');
+  }
+  if (!b.completeDirectory.trim()) {
+    throw new ValidationError('completeDirectory must not be empty');
   }
   if (typeof b.seedRatioLimit !== 'number') {
     throw new ValidationError('seedRatioLimit must be a number');
@@ -116,6 +122,12 @@ export function registerDownloadClientRoutes(
       await deps.torrentManager.setSpeedLimits({
         download: torrentLimits.globalDownloadLimitKbps,
         upload: torrentLimits.globalUploadLimitKbps,
+      });
+    }
+    if (deps.torrentManager?.setDownloadPaths) {
+      deps.torrentManager.setDownloadPaths({
+        incomplete: torrentLimits.incompleteDirectory,
+        complete: torrentLimits.completeDirectory,
       });
     }
 

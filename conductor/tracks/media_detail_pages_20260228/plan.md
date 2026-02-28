@@ -33,14 +33,14 @@
           upsert for Season (unique: seriesId+seasonNumber) and Episode
           (unique: tvdbId).
     - [x] Verify tests pass.
-- [~] Task: Hook episode population into POST /api/wanted
-    - [ ] Write failing integration tests: adding a TV series triggers a
+- [x] 5bc1a7b Task: Hook episode population into POST /api/wanted
+    - [x] Write failing integration tests: adding a TV series triggers a
           background SkyHook fetch and seasons/episodes appear in the DB.
-    - [ ] In mediaRoutes.ts, after the series is committed, fire an async
+    - [x] In mediaRoutes.ts, after the series is committed, fire an async
           call to MetadataProvider.getSeriesDetails(tvdbId) then
           upsertSeasonsAndEpisodes — must not await before sending the response.
-    - [ ] Log errors from the background fetch without surfacing them to the client.
-    - [ ] Verify tests pass.
+    - [x] Log errors from the background fetch without surfacing them to the client.
+    - [x] Verify tests pass.
 - [ ] Task: Conductor - User Manual Verification 'Phase 2' (Protocol in workflow.md)
 
 ## Phase 3: Frontend — Detail Pages

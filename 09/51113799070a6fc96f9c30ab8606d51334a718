@@ -1,0 +1,1 @@
+Phase 2 Task 1: Add Season/Episode upsert to MediaRepository. Files changed: server/src/repositories/MediaRepository.ts (added upsertSeasonsAndEpisodes method), server/src/repositories/MediaRepository.upsertSeasonsAndEpisodes.test.ts (new test file). Why: Persist season and episode data from SkyHook metadata when a TV series is added.

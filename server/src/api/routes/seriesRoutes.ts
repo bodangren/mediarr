@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { sendPaginatedSuccess, sendSuccess, parsePaginationParams, paginateArray } from '../contracts';
-import { assertFound, assertNoActiveTorrents, parseBoolean, parseIdParam, sortByField } from '../routeUtils';
+import { assertFound, parseBoolean, parseIdParam, sortByField } from '../routeUtils';
 import { ValidationError } from '../../errors/domainErrors';
 import type { ApiDependencies } from '../types';
 import { SeriesRepository, type BulkSeriesChanges } from '../../repositories/SeriesRepository';
@@ -449,8 +449,6 @@ export function registerSeriesRoutes(
     const id = parseIdParam((request.params as { id: string }).id, 'series');
     const body = (request.body ?? {}) as { deleteFiles?: boolean };
 
-    await assertNoActiveTorrents(deps.prisma as any, `series:${id}`);
-
     if (deps.mediaService?.deleteMedia) {
       await deps.mediaService.deleteMedia(id, 'TV', body.deleteFiles ?? false);
     } else {
@@ -770,17 +768,18 @@ export function registerSeriesRoutes(
       throw new ValidationError('Invalid season number');
     }
 
-    const result = await (deps.prisma as any).episode.updateMany({
-      where: {
-        seriesId,
-        seasonNumber,
-      },
-      data: {
-        monitored: body.monitored,
-      },
-    });
+    const [episodeResult] = await Promise.all([
+      (deps.prisma as any).episode.updateMany({
+        where: { seriesId, seasonNumber },
+        data: { monitored: body.monitored },
+      }),
+      (deps.prisma as any).season.updateMany({
+        where: { seriesId, seasonNumber },
+        data: { monitored: body.monitored },
+      }),
+    ]);
 
-    return sendSuccess(reply, { updatedEpisodes: result.count });
+    return sendSuccess(reply, { monitored: body.monitored, updatedEpisodes: episodeResult.count });
   });
 
   // =====================

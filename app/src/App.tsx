@@ -1759,9 +1759,9 @@ function SeriesDetailPage() {
                   <label className="flex items-center gap-1 text-xs text-text-secondary">
                     <input
                       type="checkbox"
-                      checked={season.monitored}
+                      checked={season.monitored ?? false}
                       aria-label={`Season ${season.seasonNumber} Monitored`}
-                      onChange={() => { void handleToggleSeasonMonitored(season.seasonNumber, season.monitored); }}
+                      onChange={() => { void handleToggleSeasonMonitored(season.seasonNumber, season.monitored ?? false); }}
                     />
                     Monitored
                   </label>

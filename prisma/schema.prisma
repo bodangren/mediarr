@@ -101,7 +101,7 @@ model Season {
   seriesId     Int
   seasonNumber Int
   monitored    Boolean   @default(true)
-  series       Series    @relation(fields: [seriesId], references: [id])
+  series       Series    @relation(fields: [seriesId], references: [id], onDelete: Cascade)
   episodes     Episode[]
 
   @@unique([seriesId, seasonNumber])
@@ -119,8 +119,8 @@ model Episode {
   overview      String?
   monitored     Boolean            @default(true)
   path          String?
-  series        Series             @relation(fields: [seriesId], references: [id])
-  season        Season?            @relation(fields: [seasonId], references: [id])
+  series        Series             @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  season        Season?            @relation(fields: [seasonId], references: [id], onDelete: SetNull)
   fileVariants  MediaFileVariant[]
 }
 

@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { sendPaginatedSuccess, sendSuccess, parsePaginationParams, paginateArray } from '../contracts';
-import { assertFound, assertNoActiveTorrents, parseBoolean, parseIdParam, sortByField } from '../routeUtils';
+import { assertFound, parseBoolean, parseIdParam, sortByField } from '../routeUtils';
 import { ValidationError } from '../../errors/domainErrors';
 import type { ApiDependencies } from '../types';
 import { MovieOrganizeService, DEFAULT_MEDIA_MANAGEMENT_SETTINGS } from '../../services/MovieOrganizeService';
@@ -272,8 +272,6 @@ export function registerMovieRoutes(
   }, async (request, reply) => {
     const id = parseIdParam((request.params as { id: string }).id, 'movie');
     const body = (request.body ?? {}) as { deleteFiles?: boolean };
-
-    await assertNoActiveTorrents(deps.prisma as any, `movie:${id}`);
 
     if (deps.mediaService?.deleteMedia) {
       await deps.mediaService.deleteMedia(id, 'MOVIE', body.deleteFiles ?? false);

@@ -89,7 +89,7 @@
     - [x] Extended `filesystemResponseSchema` in `filesystemApi.ts` to include top-level `readable`/`writable` fields
     - [x] Added `filesystemApi.list` mock to `download-client-settings.test.tsx` and mocked `FilesystemBrowser` component
 
-- [ ] Task: Conductor - User Manual Verification 'Phase 3: Download Location File Browser' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 3: Download Location File Browser' (Protocol in workflow.md)
 
 ---
 

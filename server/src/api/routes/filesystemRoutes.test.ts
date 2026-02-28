@@ -102,6 +102,29 @@ describe('filesystemRoutes', () => {
     expect(readonly.writable).toBe(false);
   });
 
+  it('includes readable/writable flags for the current path in the response', async () => {
+    mockRealpath.mockResolvedValue('/data/complete');
+    mockReaddir.mockResolvedValue([]);
+    // First two access calls are for the path itself (R_OK, W_OK); path is readable but not writable
+    mockAccess.mockImplementation((_p, mode) => {
+      if (mode === fsPromises.constants.W_OK) {
+        return Promise.reject(new Error('permission denied'));
+      }
+      return Promise.resolve(undefined);
+    });
+
+    const app = createApp();
+    const response = await app.inject({
+      method: 'GET',
+      url: '/api/filesystem?path=%2Fdata%2Fcomplete',
+    });
+
+    expect(response.statusCode).toBe(200);
+    const body = response.json();
+    expect(body.readable).toBe(true);
+    expect(body.writable).toBe(false);
+  });
+
   it('returns 404 for a non-existent path', async () => {
     mockRealpath.mockRejectedValue(Object.assign(new Error('ENOENT'), { code: 'ENOENT' }));
 

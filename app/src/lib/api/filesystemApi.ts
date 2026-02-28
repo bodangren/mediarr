@@ -12,6 +12,8 @@ const filesystemEntrySchema = z.object({
 
 const filesystemResponseSchema = z.object({
   path: z.string(),
+  readable: z.boolean(),
+  writable: z.boolean(),
   entries: z.array(filesystemEntrySchema),
 });
 

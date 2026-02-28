@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { AppShell } from '@/components/shell/AppShell';
 import { useToast } from '@/components/providers/ToastProvider';
+import { Folder } from 'lucide-react';
 import { AddIndexerModal } from '@/components/indexers/AddIndexerModal';
+import { FilesystemBrowser } from '@/components/primitives/FilesystemBrowser';
 import { AddProfileModal } from '@/components/settings/AddProfileModal';
 import { EditIndexerModal } from '@/components/indexers/EditIndexerModal';
 import { MovieInteractiveSearchModal } from '@/components/movie/MovieInteractiveSearchModal';
@@ -358,6 +360,21 @@ function SettingsClientsPage() {
   const [seedLimitAction, setSeedLimitAction] = useState<'pause' | 'remove'>('pause');
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [activeBrowser, setActiveBrowser] = useState<'incomplete' | 'complete' | null>(null);
+  const [incompleteStatus, setIncompleteStatus] = useState<'writable' | 'readonly' | 'notfound' | null>(null);
+  const [completeStatus, setCompleteStatus] = useState<'writable' | 'readonly' | 'notfound' | null>(null);
+
+  const validateDirectory = useCallback(
+    async (path: string, setStatus: (s: 'writable' | 'readonly' | 'notfound') => void) => {
+      try {
+        const result = await api.filesystemApi.list(path);
+        setStatus(result.writable ? 'writable' : 'readonly');
+      } catch {
+        setStatus('notfound');
+      }
+    },
+    [api.filesystemApi],
+  );
 
   useEffect(() => {
     const load = async () => {
@@ -428,26 +445,84 @@ function SettingsClientsPage() {
           <p>Loading settings...</p>
         ) : (
           <div className="grid gap-4 lg:grid-cols-2">
-            <label className="text-sm text-text-secondary">
-              Incomplete Directory
-              <p className="text-xs text-text-secondary">Where downloading pieces are stored temporarily.</p>
-              <input
-                type="text"
-                value={incompleteDirectory}
-                onChange={event => setIncompleteDirectory(event.target.value)}
-                className="mt-1 w-full rounded-sm border border-border-subtle bg-surface-0 px-2 py-1 text-sm text-text-primary"
-              />
-            </label>
-            <label className="text-sm text-text-secondary">
-              Complete Directory
-              <p className="text-xs text-text-secondary">Where finished torrents are moved after download.</p>
-              <input
-                type="text"
-                value={completeDirectory}
-                onChange={event => setCompleteDirectory(event.target.value)}
-                className="mt-1 w-full rounded-sm border border-border-subtle bg-surface-0 px-2 py-1 text-sm text-text-primary"
-              />
-            </label>
+            <div className="text-sm text-text-secondary">
+              <label>
+                Incomplete Directory
+                <p className="text-xs text-text-secondary">Where downloading pieces are stored temporarily.</p>
+                <div className="mt-1 flex items-center gap-1">
+                  <input
+                    type="text"
+                    value={incompleteDirectory}
+                    onChange={event => { setIncompleteDirectory(event.target.value); setIncompleteStatus(null); }}
+                    className="min-w-0 flex-1 rounded-sm border border-border-subtle bg-surface-0 px-2 py-1 text-sm text-text-primary"
+                  />
+                  <button
+                    type="button"
+                    aria-label="Browse incomplete directory"
+                    onClick={() => setActiveBrowser('incomplete')}
+                    className="flex-shrink-0 rounded-sm border border-border-subtle bg-surface-1 p-1 hover:bg-surface-2"
+                  >
+                    <Folder size={16} />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Validate incomplete directory"
+                    onClick={() => { void validateDirectory(incompleteDirectory, setIncompleteStatus); }}
+                    className="flex-shrink-0 rounded-sm border border-border-subtle bg-surface-1 px-2 py-1 text-xs hover:bg-surface-2"
+                  >
+                    Validate
+                  </button>
+                </div>
+              </label>
+              {incompleteStatus === 'writable' && (
+                <span className="mt-1 block text-xs text-green-500">✓ Writable</span>
+              )}
+              {incompleteStatus === 'readonly' && (
+                <span className="mt-1 block text-xs text-yellow-500">⚠ Read-only</span>
+              )}
+              {incompleteStatus === 'notfound' && (
+                <span className="mt-1 block text-xs text-red-500">✗ Not found</span>
+              )}
+            </div>
+            <div className="text-sm text-text-secondary">
+              <label>
+                Complete Directory
+                <p className="text-xs text-text-secondary">Where finished torrents are moved after download.</p>
+                <div className="mt-1 flex items-center gap-1">
+                  <input
+                    type="text"
+                    value={completeDirectory}
+                    onChange={event => { setCompleteDirectory(event.target.value); setCompleteStatus(null); }}
+                    className="min-w-0 flex-1 rounded-sm border border-border-subtle bg-surface-0 px-2 py-1 text-sm text-text-primary"
+                  />
+                  <button
+                    type="button"
+                    aria-label="Browse complete directory"
+                    onClick={() => setActiveBrowser('complete')}
+                    className="flex-shrink-0 rounded-sm border border-border-subtle bg-surface-1 p-1 hover:bg-surface-2"
+                  >
+                    <Folder size={16} />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Validate complete directory"
+                    onClick={() => { void validateDirectory(completeDirectory, setCompleteStatus); }}
+                    className="flex-shrink-0 rounded-sm border border-border-subtle bg-surface-1 px-2 py-1 text-xs hover:bg-surface-2"
+                  >
+                    Validate
+                  </button>
+                </div>
+              </label>
+              {completeStatus === 'writable' && (
+                <span className="mt-1 block text-xs text-green-500">✓ Writable</span>
+              )}
+              {completeStatus === 'readonly' && (
+                <span className="mt-1 block text-xs text-yellow-500">⚠ Read-only</span>
+              )}
+              {completeStatus === 'notfound' && (
+                <span className="mt-1 block text-xs text-red-500">✗ Not found</span>
+              )}
+            </div>
             <label className="text-sm text-text-secondary">
               Max Download Speed (KB/s, 0 = unlimited)
               <input
@@ -526,6 +601,21 @@ function SettingsClientsPage() {
           </button>
         </div>
       </form>
+      <FilesystemBrowser
+        isOpen={activeBrowser !== null}
+        onClose={() => setActiveBrowser(null)}
+        onSelect={(path) => {
+          if (activeBrowser === 'incomplete') {
+            setIncompleteDirectory(path);
+            setIncompleteStatus(null);
+          } else if (activeBrowser === 'complete') {
+            setCompleteDirectory(path);
+            setCompleteStatus(null);
+          }
+          setActiveBrowser(null);
+        }}
+        initialPath={activeBrowser === 'incomplete' ? incompleteDirectory : completeDirectory}
+      />
     </RouteScaffold>
   );
 }

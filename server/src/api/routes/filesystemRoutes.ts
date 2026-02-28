@@ -13,6 +13,8 @@ interface FilesystemEntry {
 
 interface FilesystemResponse {
   path: string;
+  readable: boolean;
+  writable: boolean;
   entries: FilesystemEntry[];
 }
 
@@ -67,6 +69,10 @@ export function registerFilesystemRoutes(
       throw err;
     }
 
+    // Check permissions for the current path itself
+    const pathReadable = await checkPermission(resolvedPath, constants.R_OK);
+    const pathWritable = await checkPermission(resolvedPath, constants.W_OK);
+
     // Build entries with permission flags
     const entries: FilesystemEntry[] = await Promise.all(
       dirEntries.map(async (dirent) => {
@@ -86,6 +92,8 @@ export function registerFilesystemRoutes(
 
     const response: FilesystemResponse = {
       path: resolvedPath,
+      readable: pathReadable,
+      writable: pathWritable,
       entries,
     };
 

@@ -43,6 +43,7 @@ const mockApi = vi.hoisted(() => ({
   subtitleProvidersApi: { listProviders: vi.fn() },
   notificationsApi: { list: vi.fn() },
   settingsApi: { get: vi.fn(), update: vi.fn() },
+  filesystemApi: { list: vi.fn() },
 }));
 
 vi.mock('@/lib/api/client', () => ({
@@ -62,6 +63,11 @@ vi.mock('@/components/providers/ToastProvider', () => ({
 
 vi.mock('@/components/movie/MovieInteractiveSearchModal', () => ({
   MovieInteractiveSearchModal: () => null,
+}));
+
+vi.mock('@/components/primitives/FilesystemBrowser', () => ({
+  FilesystemBrowser: ({ isOpen }: { isOpen: boolean }) =>
+    isOpen ? <div data-testid="filesystem-browser" /> : null,
 }));
 
 vi.mock('@/components/search/InteractiveSearchModal', () => ({
@@ -223,5 +229,82 @@ describe('Phase 4: "Download Clients" (plural) must be absent', () => {
 
     // The exact plural string "Download Clients" should not appear as rendered text
     expect(screen.queryByText('Download Clients')).not.toBeInTheDocument();
+  });
+});
+
+describe('Phase 3: FilesystemBrowser wired into download client path inputs', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockApi.mediaApi.listMovies.mockResolvedValue({ items: [], meta: { page: 1, pageSize: 200, totalCount: 0, totalPages: 0 } });
+    mockApi.mediaApi.listSeries.mockResolvedValue({ items: [], meta: { page: 1, pageSize: 200, totalCount: 0, totalPages: 0 } });
+    mockApi.indexerApi.list.mockResolvedValue([]);
+    mockApi.downloadClientApi.get.mockResolvedValue(defaultTorrentLimits);
+    mockApi.downloadClientApi.save.mockResolvedValue(defaultTorrentLimits);
+    mockApi.qualityProfileApi.list.mockResolvedValue([]);
+    mockApi.customFormatApi.list.mockResolvedValue([]);
+    mockApi.subtitleProvidersApi.listProviders.mockResolvedValue([]);
+    mockApi.notificationsApi.list.mockResolvedValue([]);
+    mockApi.settingsApi.get.mockResolvedValue(baseSettings);
+    mockApi.movieApi.getRootFolders.mockResolvedValue({ rootFolders: [] });
+    mockApi.seriesApi.getRootFolders.mockResolvedValue({ rootFolders: [] });
+    mockApi.filesystemApi.list.mockResolvedValue({
+      path: '/tmp/incomplete',
+      readable: true,
+      writable: true,
+      entries: [],
+    });
+  });
+
+  it('renders a browse button for the incomplete directory field', async () => {
+    renderApp('/settings/clients');
+    await screen.findByDisplayValue('/tmp/incomplete');
+    expect(screen.getByRole('button', { name: /browse incomplete directory/i })).toBeInTheDocument();
+  });
+
+  it('clicking the browse button for incomplete directory opens FilesystemBrowser', async () => {
+    renderApp('/settings/clients');
+    await screen.findByDisplayValue('/tmp/incomplete');
+    fireEvent.click(screen.getByRole('button', { name: /browse incomplete directory/i }));
+    expect(screen.getByTestId('filesystem-browser')).toBeInTheDocument();
+  });
+
+  it('renders a browse button for the complete directory field', async () => {
+    renderApp('/settings/clients');
+    await screen.findByDisplayValue('/media/complete');
+    expect(screen.getByRole('button', { name: /browse complete directory/i })).toBeInTheDocument();
+  });
+
+  it('Validate button for incomplete directory shows Writable when path is writable', async () => {
+    mockApi.filesystemApi.list.mockResolvedValue({
+      path: '/tmp/incomplete',
+      readable: true,
+      writable: true,
+      entries: [],
+    });
+    renderApp('/settings/clients');
+    await screen.findByDisplayValue('/tmp/incomplete');
+    fireEvent.click(screen.getByRole('button', { name: /validate incomplete directory/i }));
+    await screen.findByText(/writable/i);
+  });
+
+  it('Validate button for incomplete directory shows Read-only when path is read-only', async () => {
+    mockApi.filesystemApi.list.mockResolvedValue({
+      path: '/tmp/incomplete',
+      readable: true,
+      writable: false,
+      entries: [],
+    });
+    renderApp('/settings/clients');
+    await screen.findByDisplayValue('/tmp/incomplete');
+    fireEvent.click(screen.getByRole('button', { name: /validate incomplete directory/i }));
+    await screen.findByText(/read-only/i);
+  });
+
+  it('Validate button for incomplete directory shows Not found when API throws', async () => {
+    mockApi.filesystemApi.list.mockRejectedValue(new Error('404 Not found'));
+    renderApp('/settings/clients');
+    await screen.findByDisplayValue('/tmp/incomplete');
+    fireEvent.click(screen.getByRole('button', { name: /validate incomplete directory/i }));
+    await screen.findByText(/not found/i);
   });
 });

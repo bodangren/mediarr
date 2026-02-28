@@ -68,7 +68,8 @@
 - [x] Task: Implement `GET /api/filesystem` route [ed4aae3]
     - [x] Write unit tests for filesystem route covering: list root, list subdirectory, read/write permission flags, path traversal attempt rejected, non-existent path returns 404
     - [x] Create `server/src/api/routes/filesystemRoutes.ts` with `GET /api/filesystem?path=<dir>`:
-        - Returns `{ path, entries: [{ name, path, isDirectory, readable, writable }] }`
+        - Returns `{ path, readable, writable, entries: [{ name, path, isDirectory, readable, writable }] }`
+        - Also returns `readable`/`writable` for the current path itself (added for Validate button support)
         - Resolves real path with `fs.realpath`; rejects if resolved path escapes a configured safe root
         - Returns root listing (`/` on Linux) when no `path` param given
     - [x] Register route in `createApiServer.ts`
@@ -81,10 +82,12 @@
     - [x] Create `app/src/components/primitives/FilesystemBrowser.tsx` — navigable directory tree modal with breadcrumb trail and folder selection
     - [x] Add `filesystemApi.ts` client with `list(path?: string)` method
 
-- [~] Task: Wire file browser into Download Client settings path input
-    - [ ] Write tests asserting folder icon opens browser, Validate button calls API and shows correct status icons
-    - [ ] Replace plain path text input in download client settings with composite: text field + folder icon button (opens `FilesystemBrowser`) + Validate button
-    - [ ] Validate button calls `filesystemApi.list(currentPath)` and renders: ✓ Writable / ⚠ Read-only / ✗ Not found
+- [x] Task: Wire file browser into Download Client settings path input
+    - [x] Write tests asserting folder icon opens browser, Validate button calls API and shows correct status icons (6 new tests in `download-client-settings.test.tsx`, 15 total pass)
+    - [x] Replace plain path text input in download client settings with composite: text field + folder icon button (opens `FilesystemBrowser`) + Validate button
+    - [x] Validate button calls `filesystemApi.list(currentPath)` and renders: ✓ Writable / ⚠ Read-only / ✗ Not found
+    - [x] Extended `filesystemResponseSchema` in `filesystemApi.ts` to include top-level `readable`/`writable` fields
+    - [x] Added `filesystemApi.list` mock to `download-client-settings.test.tsx` and mocked `FilesystemBrowser` component
 
 - [ ] Task: Conductor - User Manual Verification 'Phase 3: Download Location File Browser' (Protocol in workflow.md)
 

@@ -92,6 +92,23 @@ vi.mock('@/components/search/InteractiveSearchModal', () => ({
   InteractiveSearchModal: () => null,
 }));
 
+vi.mock('@/components/series/SeriesInteractiveSearchModal', () => ({
+  SeriesInteractiveSearchModal: ({ isOpen, initialLevel, initialSeason, initialEpisode, onClose }: {
+    isOpen: boolean;
+    initialLevel?: string;
+    initialSeason?: number;
+    initialEpisode?: number;
+    onClose: () => void;
+  }) => isOpen ? (
+    <div data-testid="series-search-modal">
+      <span data-testid="modal-level">{initialLevel ?? 'series'}</span>
+      {initialSeason !== undefined && <span data-testid="modal-season">{initialSeason}</span>}
+      {initialEpisode !== undefined && <span data-testid="modal-episode">{initialEpisode}</span>}
+      <button onClick={onClose}>Close Modal</button>
+    </div>
+  ) : null,
+}));
+
 vi.mock('@/components/views', () => ({
   MovieOverviewView: ({ items }: { items: unknown[] }) => <div>Movies View {items.length}</div>,
   SeriesOverviewView: ({ items }: { items: unknown[] }) => <div>Series View {items.length}</div>,
@@ -416,6 +433,49 @@ describe('Phase 3 — Detail Pages', () => {
       mockApi.seriesApi.getSeriesWithEpisodes.mockReturnValue(new Promise(() => {}));
       renderApp('/library/tv/42');
       expect(screen.getByText(/loading series/i)).toBeInTheDocument();
+    });
+
+    it('toolbar Search button renders and opens SeriesInteractiveSearchModal at Series level', async () => {
+      renderApp('/library/tv/42');
+      await waitFor(() => expect(screen.getByText('Breaking Bad')).toBeInTheDocument());
+
+      expect(screen.queryByTestId('series-search-modal')).not.toBeInTheDocument();
+
+      const searchButton = screen.getByRole('button', { name: /^search$/i });
+      fireEvent.click(searchButton);
+
+      expect(screen.getByTestId('series-search-modal')).toBeInTheDocument();
+      expect(screen.getByTestId('modal-level').textContent).toBe('series');
+    });
+
+    it('Search Season button opens SeriesInteractiveSearchModal at Season level', async () => {
+      renderApp('/library/tv/42');
+      await waitFor(() => expect(screen.getByText(/Season 1/)).toBeInTheDocument());
+
+      const searchSeasonBtn = screen.getByRole('button', { name: /search season 1/i });
+      fireEvent.click(searchSeasonBtn);
+
+      expect(screen.getByTestId('series-search-modal')).toBeInTheDocument();
+      expect(screen.getByTestId('modal-level').textContent).toBe('season');
+      expect(screen.getByTestId('modal-season').textContent).toBe('1');
+    });
+
+    it('Search Episode button opens SeriesInteractiveSearchModal at Episode level', async () => {
+      renderApp('/library/tv/42');
+      await waitFor(() => expect(screen.getByText(/Season 1/)).toBeInTheDocument());
+
+      // Expand season 1 to reveal episodes
+      const season1ExpandButton = screen.getByRole('button', { name: /expand season 1/i });
+      fireEvent.click(season1ExpandButton);
+      await waitFor(() => expect(screen.getByText('Pilot')).toBeInTheDocument());
+
+      const searchEpisodeBtn = screen.getByRole('button', { name: /search S01E01/i });
+      fireEvent.click(searchEpisodeBtn);
+
+      expect(screen.getByTestId('series-search-modal')).toBeInTheDocument();
+      expect(screen.getByTestId('modal-level').textContent).toBe('episode');
+      expect(screen.getByTestId('modal-season').textContent).toBe('1');
+      expect(screen.getByTestId('modal-episode').textContent).toBe('1');
     });
   });
 });

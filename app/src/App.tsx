@@ -7,6 +7,7 @@ import { AddProfileModal } from '@/components/settings/AddProfileModal';
 import { EditIndexerModal } from '@/components/indexers/EditIndexerModal';
 import { MovieInteractiveSearchModal } from '@/components/movie/MovieInteractiveSearchModal';
 import { InteractiveSearchModal } from '@/components/search/InteractiveSearchModal';
+import { SeriesInteractiveSearchModal, type SearchLevel } from '@/components/series/SeriesInteractiveSearchModal';
 import { MovieOverviewView, SeriesOverviewView } from '@/components/views';
 import { getApiClients } from '@/lib/api/client';
 import { getPopularPresets } from '@/lib/indexer/indexerPresets';
@@ -1557,6 +1558,11 @@ function SeriesDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedSeasons, setExpandedSeasons] = useState<Set<number>>(new Set());
+  const [searchModal, setSearchModal] = useState<{
+    level: SearchLevel;
+    season?: number;
+    episode?: number;
+  } | null>(null);
 
   useEffect(() => {
     if (!Number.isFinite(seriesId)) {
@@ -1769,6 +1775,15 @@ function SeriesDetailPage() {
 
             <button
               type="button"
+              className="rounded-sm border border-accent px-3 py-2 text-sm text-accent"
+              aria-label="Search"
+              onClick={() => setSearchModal({ level: 'series' })}
+            >
+              Search
+            </button>
+
+            <button
+              type="button"
               className="rounded-sm border border-status-error/60 px-3 py-2 text-sm text-status-error"
               aria-label="Remove from Library"
               onClick={() => { void handleRemove(); }}
@@ -1792,6 +1807,14 @@ function SeriesDetailPage() {
                     <span>{expandedSeasons.has(season.seasonNumber) ? '▼' : '▶'}</span>
                     Season {season.seasonNumber}
                     <span className="text-xs text-text-secondary ml-2">({season.episodes.length} episodes)</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded-sm border border-border-subtle px-2 py-1 text-xs text-text-secondary"
+                    aria-label={`Search Season ${season.seasonNumber}`}
+                    onClick={() => setSearchModal({ level: 'season', season: season.seasonNumber })}
+                  >
+                    Search
                   </button>
                   <label className="flex items-center gap-1 text-xs text-text-secondary">
                     <input
@@ -1818,6 +1841,18 @@ function SeriesDetailPage() {
                             {new Date(ep.airDateUtc).toLocaleDateString()}
                           </span>
                         ) : null}
+                        <button
+                          type="button"
+                          className="rounded-sm border border-border-subtle px-2 py-0.5 text-xs text-text-secondary flex-shrink-0"
+                          aria-label={`Search S${String(ep.seasonNumber).padStart(2, '0')}E${String(ep.episodeNumber).padStart(2, '0')}`}
+                          onClick={() => setSearchModal({
+                            level: 'episode',
+                            season: ep.seasonNumber,
+                            episode: ep.episodeNumber,
+                          })}
+                        >
+                          Search
+                        </button>
                         <label className="flex items-center gap-1 text-xs text-text-secondary flex-shrink-0">
                           <input
                             type="checkbox"
@@ -1836,6 +1871,18 @@ function SeriesDetailPage() {
           </section>
         </>
       ) : null}
+
+      {searchModal && series && (
+        <SeriesInteractiveSearchModal
+          isOpen
+          onClose={() => setSearchModal(null)}
+          seriesId={series.id}
+          seriesTitle={series.title}
+          initialLevel={searchModal.level}
+          initialSeason={searchModal.season}
+          initialEpisode={searchModal.episode}
+        />
+      )}
     </RouteScaffold>
   );
 }

@@ -12,6 +12,7 @@ export interface UpsertMovieInput {
   qualityProfileId: number;
   path?: string;
   year: number;
+  posterUrl?: string;
   minimumAvailability?: string;
   inCinemas?: Date;
   digitalRelease?: Date;
@@ -32,6 +33,7 @@ export interface UpsertSeriesInput {
   path?: string;
   year: number;
   network?: string;
+  posterUrl?: string;
 }
 
 /**
@@ -98,6 +100,7 @@ export class MediaRepository {
         qualityProfileId: input.qualityProfileId,
         path: input.path,
         year: input.year,
+        posterUrl: input.posterUrl,
         minimumAvailability: input.minimumAvailability,
         inCinemas: input.inCinemas,
         digitalRelease: input.digitalRelease,
@@ -116,6 +119,7 @@ export class MediaRepository {
         qualityProfileId: input.qualityProfileId,
         path: input.path,
         year: input.year,
+        posterUrl: input.posterUrl,
         minimumAvailability: input.minimumAvailability,
         inCinemas: input.inCinemas,
         digitalRelease: input.digitalRelease,
@@ -194,6 +198,7 @@ export class MediaRepository {
         path: input.path,
         year: input.year,
         network: input.network,
+        posterUrl: input.posterUrl,
       },
       create: {
         mediaId: media.id,
@@ -210,6 +215,7 @@ export class MediaRepository {
         path: input.path,
         year: input.year,
         network: input.network,
+        posterUrl: input.posterUrl,
       },
     });
   }

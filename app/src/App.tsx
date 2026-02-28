@@ -225,23 +225,6 @@ function SettingsIndexersPage() {
     },
   ], []);
 
-  const addIndexerPresets = [
-    ...getPopularPresets(),
-    {
-      id: 'torznab-generic',
-      name: 'Generic Torznab',
-      description: 'Custom torrent tracker using Torznab contract.',
-      protocol: 'torrent',
-      implementation: 'Torznab',
-      configContract: 'TorznabSettings',
-      privacy: 'Public',
-      fields: [
-        { name: 'url', label: 'Indexer URL', type: 'text', required: true },
-        { name: 'apiKey', label: 'API Key', type: 'password', required: true },
-      ],
-    },
-  ];
-
   return (
     <RouteScaffold
       title="Indexers"
@@ -987,6 +970,14 @@ function DashboardPage() {
   return <StaticPage title="Dashboard" description="Unified overview across movies, TV, tasks, and system status." />;
 }
 
+function getPosterUrl(images?: Array<{ coverType: string; url: string }>): string | undefined {
+  if (!images?.length) return undefined;
+  return (
+    images.find(img => img.coverType.toLowerCase() === 'poster')?.url ??
+    images[0].url
+  );
+}
+
 function SearchPage() {
   const api = useMemo(() => getApiClients(), []);
   const { pushToast } = useToast();
@@ -994,6 +985,7 @@ function SearchPage() {
   const [results, setResults] = useState<MetadataSearchResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [typeFilter, setTypeFilter] = useState<'all' | 'TV' | 'MOVIE'>('all');
 
   const onSearch = async (event: FormEvent) => {
     event.preventDefault();
@@ -1003,6 +995,7 @@ function SearchPage() {
 
     setIsLoading(true);
     setError(null);
+    setTypeFilter('all');
     try {
       const data = await api.mediaApi.searchMetadata({ term });
       setResults(data);
@@ -1024,6 +1017,7 @@ function SearchPage() {
         status: item.status,
         overview: item.overview,
         network: item.network,
+        posterUrl: getPosterUrl(item.images),
       });
       pushToast({
         title: 'Added to Wanted',
@@ -1060,12 +1054,27 @@ function SearchPage() {
 
       {error ? <p className="text-sm text-status-error">{error}</p> : null}
 
+      {results.length > 0 && (
+        <div className="flex items-center gap-1">
+          {(['all', 'TV', 'MOVIE'] as const).map(f => (
+            <button
+              key={f}
+              type="button"
+              onClick={() => setTypeFilter(f)}
+              className={`rounded-sm px-3 py-1 text-xs font-medium border ${typeFilter === f ? 'bg-surface-3 border-border-subtle text-text-primary' : 'bg-surface-1 border-transparent text-text-secondary hover:text-text-primary'}`}
+            >
+              {f === 'all' ? `All (${results.length})` : f === 'TV' ? `TV (${results.filter(r => r.mediaType === 'TV').length})` : `Movies (${results.filter(r => r.mediaType === 'MOVIE').length})`}
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {results.map((item, index) => (
+        {results.filter(r => typeFilter === 'all' || r.mediaType === typeFilter).map((item, index) => (
           <div key={`${item.mediaType}-${item.tmdbId || item.tvdbId || index}`} className="flex flex-col overflow-hidden rounded-md border border-border-subtle bg-surface-1">
             <div className="aspect-[2/3] w-full bg-surface-2">
-              {item.images?.[0]?.url ? (
-                <img src={item.images[0].url} alt={item.title} className="h-full w-full object-cover" />
+              {getPosterUrl(item.images) ? (
+                <img src={getPosterUrl(item.images)} alt={item.title} className="h-full w-full object-cover" />
               ) : (
                 <div className="flex h-full items-center justify-center text-xs text-text-secondary">No Poster</div>
               )}

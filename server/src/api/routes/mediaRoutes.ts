@@ -17,6 +17,7 @@ interface CreateMediaBody {
   status?: string;
   overview?: string;
   network?: string;
+  posterUrl?: string;
 }
 
 function normalizeMediaType(mediaType: string): 'TV' | 'MOVIE' {
@@ -225,6 +226,7 @@ export function registerMediaRoutes(
           monitored,
           qualityProfileId,
           year: body.year,
+          posterUrl: body.posterUrl,
         })
         : await (deps.prisma as any).movie.create({
           data: {
@@ -238,6 +240,7 @@ export function registerMediaRoutes(
             monitored,
             qualityProfileId,
             year: body.year,
+            posterUrl: body.posterUrl,
           },
         });
 
@@ -281,6 +284,7 @@ export function registerMediaRoutes(
         qualityProfileId,
         year: body.year,
         network: body.network,
+        posterUrl: body.posterUrl,
       })
       : await (deps.prisma as any).series.create({
         data: {
@@ -296,6 +300,7 @@ export function registerMediaRoutes(
           qualityProfileId,
           year: body.year,
           network: body.network,
+          posterUrl: body.posterUrl,
         },
       });
 
@@ -326,6 +331,7 @@ export function registerMediaRoutes(
           status: { type: 'string' },
           overview: { type: 'string' },
           network: { type: 'string' },
+          posterUrl: { type: 'string' },
         },
       },
     },
@@ -349,6 +355,7 @@ export function registerMediaRoutes(
           status: { type: 'string' },
           overview: { type: 'string' },
           network: { type: 'string' },
+          posterUrl: { type: 'string' },
         },
       },
     },

@@ -89,6 +89,7 @@ model Series {
   path             String?
   year             Int
   network          String?
+  posterUrl        String?
   added            DateTime       @default(now())
   media            Media?         @relation(fields: [mediaId], references: [id], onDelete: SetNull)
   seasons          Season[]
@@ -139,6 +140,7 @@ model Movie {
   languageProfileId   Int?
   path                String?
   year                Int
+  posterUrl           String?
   added               DateTime           @default(now())
   minimumAvailability String?
   inCinemas           DateTime?

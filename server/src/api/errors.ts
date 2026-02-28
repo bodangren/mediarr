@@ -65,5 +65,6 @@ export function registerApiErrorHandler(
     });
   }
 
+  console.error(`[API Error] ${request.method} ${request.url}:`, error);
   return sendError(reply, error, request.url);
 }

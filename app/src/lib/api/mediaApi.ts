@@ -11,25 +11,25 @@ import type {
 const seriesItemSchema = z.object({
   id: z.number(),
   title: z.string(),
-  year: z.number().optional(),
-  status: z.string().optional(),
-  monitored: z.boolean().optional(),
+  year: z.number().nullish(),
+  status: z.string().nullish(),
+  monitored: z.boolean().nullish(),
 }).passthrough();
 
 const movieItemSchema = z.object({
   id: z.number(),
   title: z.string(),
-  tmdbId: z.number().optional(),
-  imdbId: z.string().optional(),
-  year: z.number().optional(),
-  status: z.string().optional(),
-  monitored: z.boolean().optional(),
+  tmdbId: z.number().nullish(),
+  imdbId: z.string().nullish(),
+  year: z.number().nullish(),
+  status: z.string().nullish(),
+  monitored: z.boolean().nullish(),
 }).passthrough();
 
 const wantedItemSchema = z.object({
   type: z.union([z.literal('movie'), z.literal('episode')]),
   id: z.number(),
-  title: z.string().optional(),
+  title: z.string().nullish(),
 }).passthrough();
 
 const missingEpisodeSchema = z.object({
@@ -119,6 +119,7 @@ export interface AddMediaInput {
   status?: string;
   overview?: string;
   network?: string;
+  posterUrl?: string;
   rootFolder?: string;
   monitor?: 'all' | 'future' | 'missing' | 'existing' | 'pilot' | 'firstSeason' | 'none';
   seriesType?: 'standard' | 'anime' | 'daily';

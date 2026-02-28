@@ -80,6 +80,7 @@ export class MetadataProvider {
         year: result.year,
         network: result.network,
         images: result.images,
+        popularity: (result as any).popularity ?? 0,
       }));
 
       const mappedMovies = movieResults.map(result => ({
@@ -91,9 +92,12 @@ export class MetadataProvider {
         overview: result.overview,
         year: result.year,
         images: result.images,
+        popularity: (result as any).popularity ?? 0,
       }));
 
-      return [...mappedTv, ...mappedMovies];
+      return [...mappedTv, ...mappedMovies].sort(
+        (a, b) => ((b as any).popularity ?? 0) - ((a as any).popularity ?? 0),
+      );
     }
 
     if (request.mediaType === 'TV') {
@@ -191,7 +195,7 @@ export class MetadataProvider {
    */
   async searchSeries(term: string, fetchFn?: any): Promise<SeriesSearchResult[]> {
     const encodedTerm = encodeURIComponent(term.toLowerCase().trim());
-    const url = `${this.tvBaseUrl}/search?term=${encodedTerm}`;
+    const url = `${this.tvBaseUrl}/search/en/?term=${encodedTerm}`;
     
     const response = await this.httpClient.get(url, {}, fetchFn);
     
@@ -199,14 +203,19 @@ export class MetadataProvider {
       throw new Error(`Failed to search series: ${response.status} ${response.body}`);
     }
 
-    return JSON.parse(response.body);
+    const raw: any[] = JSON.parse(response.body);
+    return raw.map(item => ({
+      ...item,
+      year: item.year ?? (item.firstAired ? parseInt(String(item.firstAired).slice(0, 4), 10) : undefined),
+      popularity: item.rating?.count ?? 0,
+    }));
   }
 
   /**
    * Get full details for a series including episodes.
    */
   async getSeriesDetails(tvdbId: number, fetchFn?: any): Promise<SeriesDetails> {
-    const url = `${this.tvBaseUrl}/shows/${tvdbId}`;
+    const url = `${this.tvBaseUrl}/shows/en/${tvdbId}`;
     
     const response = await this.httpClient.get(url, {}, fetchFn);
     
@@ -245,6 +254,7 @@ export class MetadataProvider {
       status: movie.status,
       overview: movie.overview,
       year: this.parseYear(movie.release_date),
+      popularity: movie.popularity ?? 0,
       images: movie.poster_path ? [{ coverType: 'poster', url: `https://image.tmdb.org/t/p/w500${movie.poster_path}` }] : [],
     }));
   }

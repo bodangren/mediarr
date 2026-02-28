@@ -2,7 +2,7 @@
 
 ---
 
-## Phase 1: Settings > Clients — Complete Directory & Seed Controls
+## Phase 1: Settings > Clients — Complete Directory & Seed Controls [checkpoint: 75404df3]
 
 ### Backend — Verify API Coverage
 

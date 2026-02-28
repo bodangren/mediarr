@@ -542,16 +542,20 @@ export class TorrentManager extends EventEmitter {
         await fs.rename(currentPath, targetDir);
       }
 
-      // Update the torrent's path in WebTorrent
-      torrent.path = targetDir;
+      // Update the torrent's path in WebTorrent to the parent directory so that
+      // on restart, client.add(source, { path }) correctly resolves files at
+      // completeDownloadPath/torrent.name rather than double-nesting the name.
+      torrent.path = completeDownloadPath;
 
-      // Update database
+      // Update database — store the parent (completeDownloadPath) not the subfolder,
+      // so loadExistingTorrents can re-add with the correct parent path on restart.
       await this.repository.update(infoHash, {
         status: 'seeding',
-        path: targetDir,
+        path: completeDownloadPath,
         completedAt: new Date(),
       });
 
+      // Emit the actual torrent subfolder path so ImportManager knows where the files are.
       this.emit('torrent:completed', {
         infoHash,
         name: torrent.name,

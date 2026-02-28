@@ -33,6 +33,7 @@ import { createSubtitleWantedApi } from './subtitleWantedApi';
 import { createTagsApi } from './tagsApi';
 import { createTorrentApi } from './torrentApi';
 import { createDownloadClientApi } from './downloadClientsApi';
+import { createMediaManagementApi } from './mediaManagementApi';
 import { createNotificationsApi } from './notificationsApi';
 import { createSystemApi } from './systemApi';
 import { createUpdatesApi } from './updatesApi';
@@ -51,6 +52,7 @@ export function createApiClients(config: ApiHttpClientConfig = {}) {
 
 
     downloadClientApi: createDownloadClientApi(httpClient),
+    mediaManagementApi: createMediaManagementApi(httpClient),
     importListsApi: createImportListsApi(httpClient),
     tagsApi: createTagsApi(httpClient),
     subtitleApi: createSubtitleApi(httpClient),

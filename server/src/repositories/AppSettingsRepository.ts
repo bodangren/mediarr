@@ -57,6 +57,11 @@ export interface UpdateSettings {
   updateScriptPath: string | null;
 }
 
+export interface MediaManagementSettings {
+  movieRootFolder: string;
+  tvRootFolder: string;
+}
+
 export interface AppSettingsPayload {
   torrentLimits: TorrentLimitsSettings;
   schedulerIntervals: SchedulerIntervalsSettings;
@@ -66,7 +71,13 @@ export interface AppSettingsPayload {
   security: SecuritySettings;
   logging: LoggingSettings;
   update: UpdateSettings;
+  mediaManagement: MediaManagementSettings;
 }
+
+export const DEFAULT_MEDIA_MANAGEMENT_SETTINGS: MediaManagementSettings = {
+  movieRootFolder: '',
+  tvRootFolder: '',
+};
 
 export const DEFAULT_APP_SETTINGS: AppSettingsPayload = {
   torrentLimits: {
@@ -118,6 +129,7 @@ export const DEFAULT_APP_SETTINGS: AppSettingsPayload = {
     mechanicsEnabled: false,
     updateScriptPath: null,
   },
+  mediaManagement: DEFAULT_MEDIA_MANAGEMENT_SETTINGS,
 };
 
 function readObject(value: unknown): Record<string, unknown> {
@@ -285,6 +297,10 @@ export class AppSettingsRepository {
         ...current.update,
         ...partial.update,
       },
+      mediaManagement: {
+        ...current.mediaManagement,
+        ...partial.mediaManagement,
+      },
     };
 
     await this.prisma.appSettings.upsert({
@@ -299,6 +315,7 @@ export class AppSettingsRepository {
         security: toJson(merged.security),
         logging: toJson(merged.logging),
         update: toJson(merged.update),
+        mediaManagement: toJson(merged.mediaManagement),
       },
       update: {
         torrentLimits: toJson(merged.torrentLimits),
@@ -309,6 +326,7 @@ export class AppSettingsRepository {
         security: toJson(merged.security),
         logging: toJson(merged.logging),
         update: toJson(merged.update),
+        mediaManagement: toJson(merged.mediaManagement),
       },
     });
 
@@ -328,6 +346,7 @@ export class AppSettingsRepository {
         security: toJson(payload.security),
         logging: toJson(payload.logging),
         update: toJson(payload.update),
+        mediaManagement: toJson(payload.mediaManagement),
       },
       update: {
         torrentLimits: toJson(payload.torrentLimits),
@@ -338,6 +357,7 @@ export class AppSettingsRepository {
         security: toJson(payload.security),
         logging: toJson(payload.logging),
         update: toJson(payload.update),
+        mediaManagement: toJson(payload.mediaManagement),
       },
     });
 
@@ -353,6 +373,7 @@ export class AppSettingsRepository {
     security?: unknown;
     logging?: unknown;
     update?: unknown;
+    mediaManagement?: unknown;
   }): AppSettingsPayload {
     const torrentLimits = readObject(record.torrentLimits);
     const schedulerIntervals = readObject(record.schedulerIntervals);
@@ -362,6 +383,7 @@ export class AppSettingsRepository {
     const security = readObject(record.security ?? {});
     const logging = readObject(record.logging ?? {});
     const update = readObject(record.update ?? {});
+    const mediaManagement = readObject(record.mediaManagement ?? {});
 
     return {
       torrentLimits: {
@@ -510,6 +532,16 @@ export class AppSettingsRepository {
         updateScriptPath: readNullableString(
           update.updateScriptPath,
           DEFAULT_APP_SETTINGS.update.updateScriptPath,
+        ),
+      },
+      mediaManagement: {
+        movieRootFolder: readString(
+          mediaManagement.movieRootFolder,
+          DEFAULT_MEDIA_MANAGEMENT_SETTINGS.movieRootFolder,
+        ),
+        tvRootFolder: readString(
+          mediaManagement.tvRootFolder,
+          DEFAULT_MEDIA_MANAGEMENT_SETTINGS.tvRootFolder,
         ),
       },
     };

@@ -496,6 +496,7 @@ model AppSettings {
   security           Json?
   logging            Json?
   update             Json?
+  mediaManagement    Json?
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 }

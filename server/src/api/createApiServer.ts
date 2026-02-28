@@ -16,6 +16,7 @@ import { registerIndexerRoutes } from './routes/indexerRoutes';
 
 import { registerLogsRoutes } from './routes/logsRoutes';
 import { registerMediaRoutes } from './routes/mediaRoutes';
+import { registerMediaSettingsRoutes } from './routes/mediaSettingsRoutes';
 import { registerMovieRoutes } from './routes/movieRoutes';
 import { registerNotificationRoutes } from './routes/notificationRoutes';
 import { registerOperationsRoutes } from './routes/operationsRoutes';
@@ -164,6 +165,7 @@ export function createApiServer(
   registerBlocklistRoutes(app, dependencies);
   registerQualityProfileRoutes(app, dependencies);
   registerDownloadClientRoutes(app, dependencies);
+  registerMediaSettingsRoutes(app, dependencies);
 
   registerCustomFormatRoutes(app, dependencies);
   registerFilterRoutes(app, dependencies);

@@ -76,12 +76,12 @@
 
 ### Frontend — Path Browser Modal & Validated Input
 
-- [~] Task: Build `FilesystemBrowser` modal component
-    - [ ] Write rendering tests: renders directory list, breadcrumb navigation, selection updates parent
-    - [ ] Create `app/src/components/primitives/FilesystemBrowser.tsx` — navigable directory tree modal with breadcrumb trail and folder selection
-    - [ ] Add `filesystemApi.ts` client with `list(path?: string)` method
+- [x] Task: Build `FilesystemBrowser` modal component [1c67890]
+    - [x] Write rendering tests: renders directory list, breadcrumb navigation, selection updates parent
+    - [x] Create `app/src/components/primitives/FilesystemBrowser.tsx` — navigable directory tree modal with breadcrumb trail and folder selection
+    - [x] Add `filesystemApi.ts` client with `list(path?: string)` method
 
-- [ ] Task: Wire file browser into Download Client settings path input
+- [~] Task: Wire file browser into Download Client settings path input
     - [ ] Write tests asserting folder icon opens browser, Validate button calls API and shows correct status icons
     - [ ] Replace plain path text input in download client settings with composite: text field + folder icon button (opens `FilesystemBrowser`) + Validate button
     - [ ] Validate button calls `filesystemApi.list(currentPath)` and renders: ✓ Writable / ⚠ Read-only / ✗ Not found

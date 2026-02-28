@@ -85,7 +85,7 @@ describe('TorrentManager.addTorrent', () => {
   });
 
   it('should add a torrent via magnet link and download to incomplete/ directory', async () => {
-    const magnetUrl = `magnet:?xt=urn:btih:${TEST_INFO_HASH}&dn=Test+Download`;
+    const magnetUrl = `magnet:?xt=urn:btih:${TEST_INFO_HASH}&dn=Test+Download&tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337%2Fannounce`;
 
     const result = await manager.addTorrent({ magnetUrl });
 
@@ -144,7 +144,7 @@ describe('TorrentManager.addTorrent', () => {
   });
 
   it('should support a custom download path', async () => {
-    const magnetUrl = `magnet:?xt=urn:btih:${TEST_INFO_HASH}&dn=Custom+Path`;
+    const magnetUrl = `magnet:?xt=urn:btih:${TEST_INFO_HASH}&dn=Custom+Path&tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337%2Fannounce`;
     const customPath = '/media/movies';
 
     const result = await manager.addTorrent({ magnetUrl, path: customPath });
@@ -163,7 +163,7 @@ describe('TorrentManager.addTorrent', () => {
   });
 
   it('should use configured incomplete directory when defaults are updated', async () => {
-    const magnetUrl = `magnet:?xt=urn:btih:${TEST_INFO_HASH}&dn=Configured+Path`;
+    const magnetUrl = `magnet:?xt=urn:btih:${TEST_INFO_HASH}&dn=Configured+Path&tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337%2Fannounce`;
     manager.setDownloadPaths({ incomplete: '/tmp/mediarr-incomplete' });
 
     await manager.addTorrent({ magnetUrl });
@@ -173,6 +173,17 @@ describe('TorrentManager.addTorrent', () => {
       magnetUrl,
       expect.objectContaining({ path: '/tmp/mediarr-incomplete' })
     );
+  });
+
+  it('should append default trackers when magnet has no tracker params', async () => {
+    const magnetUrl = `magnet:?xt=urn:btih:${TEST_INFO_HASH}&dn=NoTrackers`;
+
+    await manager.addTorrent({ magnetUrl });
+
+    const client = manager.getClient();
+    const source = client.add.mock.calls[0][0];
+    expect(source).toMatch(/xt=urn%3Abtih%3A[0-9a-f]{40}/i);
+    expect(source).toContain('tr=');
   });
 
   it('should derive infoHash from magnet URL when WebTorrent has no immediate infoHash', async () => {

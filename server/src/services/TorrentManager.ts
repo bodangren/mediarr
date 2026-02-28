@@ -1,5 +1,5 @@
 import { TorrentRepository } from '../repositories/TorrentRepository';
-import { promises as fs } from 'fs';
+import { promises as fs, constants as fsConstants } from 'fs';
 import path from 'path';
 import { EventEmitter } from 'events';
 
@@ -19,6 +19,12 @@ export interface TorrentInfo {
 
 const DEFAULT_DOWNLOAD_PATH = '/data/downloads/incomplete';
 const COMPLETE_DOWNLOAD_PATH = '/data/downloads/complete';
+const DEFAULT_MAGNET_TRACKERS = [
+  'udp://tracker.opentrackr.org:1337/announce',
+  'udp://open.stealth.si:80/announce',
+  'udp://tracker.torrent.eu.org:451/announce',
+  'udp://exodus.desync.com:6969/announce',
+];
 const ACTIVE_SYNC_INTERVAL_MS = 5000;
 const IDLE_SYNC_INTERVAL_MS = 30000;
 const INFO_HASH_WAIT_TIMEOUT_MS = 1000;
@@ -68,6 +74,12 @@ export class TorrentManager extends EventEmitter {
 
     const { default: WebTorrent } = await import('webtorrent');
     this.client = new WebTorrent();
+    (this.client as any).on('error', (error: unknown) => {
+      console.error('WebTorrent client error:', error);
+    });
+    (this.client as any).on('warning', (warning: unknown) => {
+      console.warn('WebTorrent client warning:', warning);
+    });
     this.initialized = true;
 
     await this.loadExistingTorrents();
@@ -127,7 +139,8 @@ export class TorrentManager extends EventEmitter {
   async addTorrent(options: AddTorrentOptions): Promise<TorrentInfo> {
     this.ensureInitialized();
 
-    const source = options.magnetUrl || options.torrentFile;
+    const preparedMagnetUrl = this.prepareMagnetUrl(options.magnetUrl, options.name);
+    const source = preparedMagnetUrl || options.torrentFile;
     if (!source) {
       throw new Error('Either magnetUrl or torrentFile must be provided');
     }
@@ -140,12 +153,9 @@ export class TorrentManager extends EventEmitter {
 
     const torrent = this.client.add(source, { path: downloadPath });
 
-    // Set up completion handler
-    torrent.on('done', () => {
-      this.handleTorrentCompletion(torrent);
-    });
+    this.attachTorrentLifecycleHandlers(torrent);
 
-    const infoHash = await this.resolveInfoHash(torrent, options.magnetUrl);
+    const infoHash = await this.resolveInfoHash(torrent, preparedMagnetUrl);
     if (!infoHash) {
       try {
         (this.client as any).remove(torrent);
@@ -172,7 +182,7 @@ export class TorrentManager extends EventEmitter {
         completedAt: null,
         stopAtRatio: null,
         stopAtTime: null,
-        magnetUrl: options.magnetUrl || null,
+        magnetUrl: preparedMagnetUrl || null,
         torrentFile: options.torrentFile || null,
       });
     } catch (error) {
@@ -189,6 +199,30 @@ export class TorrentManager extends EventEmitter {
       name: torrent.name || options.name || 'Unknown',
       path: downloadPath,
     };
+  }
+
+  private prepareMagnetUrl(magnetUrl?: string, name?: string): string | undefined {
+    if (!magnetUrl || !magnetUrl.startsWith('magnet:?')) {
+      return magnetUrl;
+    }
+
+    try {
+      const url = new URL(magnetUrl);
+      const hasTrackers = url.searchParams.getAll('tr').length > 0;
+      if (!hasTrackers) {
+        for (const tracker of DEFAULT_MAGNET_TRACKERS) {
+          url.searchParams.append('tr', tracker);
+        }
+      }
+
+      if (name && !url.searchParams.get('dn')) {
+        url.searchParams.set('dn', name);
+      }
+
+      return url.toString();
+    } catch {
+      return magnetUrl;
+    }
   }
 
   private async resolveInfoHash(torrent: any, magnetUrl?: string): Promise<string | undefined> {
@@ -358,6 +392,31 @@ export class TorrentManager extends EventEmitter {
     const torrent = this.findTorrentOrThrow(infoHash);
     (this.client as any).remove(torrent);
     await this.repository.delete(infoHash);
+  }
+
+  private attachTorrentLifecycleHandlers(torrent: any): void {
+    torrent.on('done', () => {
+      void this.handleTorrentCompletion(torrent);
+    });
+
+    torrent.on('warning', (warning: unknown) => {
+      const torrentRef = this.normalizeInfoHash(torrent?.infoHash) ?? torrent?.name ?? 'unknown';
+      console.warn(`WebTorrent warning for ${torrentRef}:`, warning);
+    });
+
+    torrent.on('error', (error: unknown) => {
+      const infoHash = this.normalizeInfoHash(torrent?.infoHash);
+      const torrentRef = infoHash ?? torrent?.name ?? 'unknown';
+      console.error(`WebTorrent error for ${torrentRef}:`, error);
+
+      if (infoHash) {
+        void this.repository
+          .updateStatus(infoHash, 'error')
+          .catch((persistError: unknown) => {
+            console.error(`Failed to persist error status for ${infoHash}:`, persistError);
+          });
+      }
+    });
   }
 
   /**
@@ -574,12 +633,20 @@ export class TorrentManager extends EventEmitter {
         continue;
       }
 
-      const webTorrent = this.client!.add(source, { path: torrent.path });
+      try {
+        await fs.mkdir(torrent.path, { recursive: true });
+        await fs.access(torrent.path, fsConstants.W_OK);
+      } catch (error) {
+        await this.repository.updateStatus(torrent.infoHash, 'error');
+        console.error(
+          `Skipping resume for torrent ${torrent.infoHash}: download path is not writable (${torrent.path})`,
+          error,
+        );
+        continue;
+      }
 
-      // Set up completion handler for resumed torrents
-      webTorrent.on('done', () => {
-        this.handleTorrentCompletion(webTorrent);
-      });
+      const webTorrent = this.client!.add(source, { path: torrent.path });
+      this.attachTorrentLifecycleHandlers(webTorrent);
     }
   }
 

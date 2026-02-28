@@ -19,6 +19,8 @@ const DEFAULT_DOWNLOAD_PATH = '/data/downloads/incomplete';
 const COMPLETE_DOWNLOAD_PATH = '/data/downloads/complete';
 const ACTIVE_SYNC_INTERVAL_MS = 5000;
 const IDLE_SYNC_INTERVAL_MS = 30000;
+const INFO_HASH_WAIT_TIMEOUT_MS = 1000;
+const INFO_HASH_POLL_INTERVAL_MS = 50;
 
 /**
  * Singleton manager that wraps the WebTorrent client and handles
@@ -123,31 +125,141 @@ export class TorrentManager extends EventEmitter {
       this.handleTorrentCompletion(torrent);
     });
 
-    await this.repository.upsert({
-      infoHash: torrent.infoHash,
-      name: torrent.name || 'Unknown',
-      status: 'downloading',
-      progress: 0,
-      downloadSpeed: 0,
-      uploadSpeed: 0,
-      eta: null,
-      size: BigInt(torrent.length || 0),
-      downloaded: BigInt(0),
-      uploaded: BigInt(0),
-      ratio: 0,
-      path: downloadPath,
-      completedAt: null,
-      stopAtRatio: null,
-      stopAtTime: null,
-      magnetUrl: options.magnetUrl || null,
-      torrentFile: options.torrentFile || null,
-    });
+    const infoHash = await this.resolveInfoHash(torrent, options.magnetUrl);
+    if (!infoHash) {
+      try {
+        (this.client as any).remove(torrent);
+      } catch {
+        // Best effort cleanup if torrent was added but cannot be persisted.
+      }
+      throw new Error('Unable to resolve torrent infoHash from source');
+    }
+
+    try {
+      await this.repository.upsert({
+        infoHash,
+        name: torrent.name || 'Unknown',
+        status: 'downloading',
+        progress: 0,
+        downloadSpeed: 0,
+        uploadSpeed: 0,
+        eta: null,
+        size: BigInt(torrent.length || 0),
+        downloaded: BigInt(0),
+        uploaded: BigInt(0),
+        ratio: 0,
+        path: downloadPath,
+        completedAt: null,
+        stopAtRatio: null,
+        stopAtTime: null,
+        magnetUrl: options.magnetUrl || null,
+        torrentFile: options.torrentFile || null,
+      });
+    } catch (error) {
+      try {
+        (this.client as any).remove(torrent);
+      } catch {
+        // Best effort cleanup if persistence fails.
+      }
+      throw error;
+    }
 
     return {
-      infoHash: torrent.infoHash,
+      infoHash,
       name: torrent.name || 'Unknown',
       path: downloadPath,
     };
+  }
+
+  private async resolveInfoHash(torrent: any, magnetUrl?: string): Promise<string | undefined> {
+    const immediate = this.normalizeInfoHash(torrent?.infoHash);
+    if (immediate) {
+      return immediate;
+    }
+
+    const fromMagnet = this.extractInfoHashFromMagnet(magnetUrl);
+    if (fromMagnet) {
+      return fromMagnet;
+    }
+
+    const startedAt = Date.now();
+    while (Date.now() - startedAt < INFO_HASH_WAIT_TIMEOUT_MS) {
+      await new Promise(resolve => setTimeout(resolve, INFO_HASH_POLL_INTERVAL_MS));
+      const delayed = this.normalizeInfoHash(torrent?.infoHash);
+      if (delayed) {
+        return delayed;
+      }
+    }
+
+    return undefined;
+  }
+
+  private extractInfoHashFromMagnet(magnetUrl?: string): string | undefined {
+    if (!magnetUrl || !magnetUrl.startsWith('magnet:?')) {
+      return undefined;
+    }
+
+    try {
+      const url = new URL(magnetUrl);
+      const xtValues = url.searchParams.getAll('xt');
+      for (const xt of xtValues) {
+        const match = /^urn:btih:([a-zA-Z0-9]+)$/i.exec(xt);
+        if (!match) {
+          continue;
+        }
+
+        const normalized = this.normalizeInfoHash(match[1]);
+        if (normalized) {
+          return normalized;
+        }
+      }
+    } catch {
+      return undefined;
+    }
+
+    return undefined;
+  }
+
+  private normalizeInfoHash(value: unknown): string | undefined {
+    if (typeof value !== 'string') {
+      return undefined;
+    }
+
+    const candidate = value.trim();
+    if (/^[a-fA-F0-9]{40}$/.test(candidate)) {
+      return candidate.toLowerCase();
+    }
+
+    if (/^[a-zA-Z2-7]{32}$/.test(candidate)) {
+      const decoded = this.base32ToHex(candidate);
+      return decoded;
+    }
+
+    return undefined;
+  }
+
+  private base32ToHex(input: string): string | undefined {
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+    let bits = '';
+
+    for (const char of input.toUpperCase()) {
+      const index = alphabet.indexOf(char);
+      if (index < 0) {
+        return undefined;
+      }
+      bits += index.toString(2).padStart(5, '0');
+    }
+
+    const bytes: number[] = [];
+    for (let i = 0; i + 8 <= bits.length; i += 8) {
+      bytes.push(Number.parseInt(bits.slice(i, i + 8), 2));
+    }
+
+    if (bytes.length < 20) {
+      return undefined;
+    }
+
+    return bytes.slice(0, 20).map(b => b.toString(16).padStart(2, '0')).join('');
   }
 
   /**
@@ -375,6 +487,18 @@ export class TorrentManager extends EventEmitter {
 
           await this.repository.syncPeers(torrent.infoHash, peers);
         } catch (error) {
+          if ((error as { code?: string })?.code === 'P2025') {
+            console.warn(
+              `Removing unmanaged torrent ${torrent.infoHash} because no persistence row exists`,
+            );
+            try {
+              (this.client as any).remove(torrent);
+            } catch {
+              // Ignore cleanup errors and continue sync loop.
+            }
+            continue;
+          }
+
           console.error(
             `Failed to persist torrent stats for ${torrent.infoHash}:`,
             error,

@@ -16,6 +16,7 @@ import { AgeCell } from '@/components/search/AgeCell';
 import type { ReleaseCandidate } from '@/lib/api/releaseApi';
 
 export type SearchLevel = 'series' | 'season' | 'episode';
+const SEARCH_PAGE_SIZE = 100;
 
 interface QualityInfo {
   quality: {
@@ -44,6 +45,9 @@ interface ReleaseResult {
   rejections?: string[];
   customFormatScore?: number;
   protocol?: 'torrent' | 'usenet';
+  magnetUrl?: string;
+  downloadUrl?: string;
+  infoHash?: string;
 }
 
 interface GrabState {
@@ -96,6 +100,36 @@ function getQualityOrder(quality: string): number {
   if (q.includes('1080')) return 3;
   if (q.includes('720')) return 2;
   if (q.includes('480')) return 1;
+  return 0;
+}
+
+function inferQualityFromTitle(title: string): string | undefined {
+  const lowered = title.toLowerCase();
+  const resolution = lowered.match(/(?:^|[\s._-])(480|720|1080|2160)p(?:$|[\s._-])/i)?.[1];
+  let source: string | undefined;
+  if (lowered.includes('webrip')) source = 'WEBRip';
+  else if (lowered.includes('webdl') || lowered.includes('web-dl')) source = 'WEB-DL';
+  else if (lowered.includes('bluray') || lowered.includes('blu-ray') || lowered.includes('bdrip')) source = 'BluRay';
+  else if (lowered.includes('hdtv')) source = 'HDTV';
+  else if (lowered.includes('dvd')) source = 'DVD';
+
+  if (resolution && source) return `${resolution}p ${source}`;
+  if (resolution) return `${resolution}p`;
+  return source;
+}
+
+function resolveAgeHours(candidate: ReleaseCandidate): number {
+  if (typeof candidate.age === 'number' && Number.isFinite(candidate.age)) {
+    return Math.max(0, candidate.age);
+  }
+
+  if (candidate.publishDate) {
+    const publishedAt = new Date(candidate.publishDate).getTime();
+    if (Number.isFinite(publishedAt)) {
+      return Math.max(0, (Date.now() - publishedAt) / (1000 * 60 * 60));
+    }
+  }
+
   return 0;
 }
 
@@ -164,6 +198,8 @@ export function SeriesInteractiveSearchModal({
       const input: {
         seasonNumber?: number;
         episodeNumber?: number;
+        page?: number;
+        pageSize?: number;
       } = {};
 
       if (level === 'season' || level === 'episode') {
@@ -173,32 +209,55 @@ export function SeriesInteractiveSearchModal({
         input.episodeNumber = episode;
       }
 
-      const result = await api.seriesApi.searchReleases(seriesId, input);
+      let page = 1;
+      let totalPages = 1;
+      const allCandidates: ReleaseCandidate[] = [];
 
-      const releasesData: ReleaseResult[] = (result.items || []).map(
-        (candidate: ReleaseCandidate, index: number) => ({
-          id: candidate.guid || `${candidate.indexer}-${index}`,
-          guid: candidate.guid || `${candidate.indexer}-${index}`,
-          indexer: candidate.indexer,
-          indexerId: candidate.indexerId,
-          title: candidate.title,
-          quality: {
+      do {
+        const result = await api.seriesApi.searchReleases(seriesId, {
+          ...input,
+          page,
+          pageSize: SEARCH_PAGE_SIZE,
+        });
+        allCandidates.push(...(result.items || []));
+        totalPages = result.meta?.totalPages ?? 1;
+        page += 1;
+      } while (page <= totalPages);
+
+      const releasesData: ReleaseResult[] = allCandidates.map(
+        (candidate: ReleaseCandidate, index: number) => {
+          const qualityName = candidate.quality || inferQualityFromTitle(candidate.title) || 'Unknown';
+          const ageHours = resolveAgeHours(candidate);
+          const publishDate = candidate.publishDate
+            || new Date(Date.now() - ageHours * 60 * 60 * 1000).toISOString();
+
+          return {
+            id: candidate.guid || `${candidate.indexer}-${index}`,
+            guid: candidate.guid || `${candidate.indexer}-${index}`,
+            indexer: candidate.indexer,
+            indexerId: candidate.indexerId,
+            title: candidate.title,
             quality: {
-              name: candidate.quality || 'Unknown',
-              resolution: getResolutionFromQuality(candidate.quality || ''),
+              quality: {
+                name: qualityName,
+                resolution: getResolutionFromQuality(qualityName),
+              },
+              revision: { version: 1, real: 0 },
             },
-            revision: { version: 1, real: 0 },
-          },
-          size: candidate.size,
-          seeders: candidate.seeders,
-          leechers: candidate.leechers || 0,
-          publishDate: candidate.publishDate || new Date().toISOString(),
-          ageHours: candidate.age || 0,
-          approved: !candidate.indexerFlags || candidate.indexerFlags.length === 0,
-          rejections: candidate.indexerFlags ? [candidate.indexerFlags] : [],
-          customFormatScore: candidate.customFormatScore ?? 0,
-          protocol: candidate.protocol,
-        }),
+            size: candidate.size,
+            seeders: candidate.seeders,
+            leechers: candidate.leechers || 0,
+            publishDate,
+            ageHours,
+            approved: !candidate.indexerFlags || candidate.indexerFlags.length === 0,
+            rejections: candidate.indexerFlags ? [candidate.indexerFlags] : [],
+            customFormatScore: candidate.customFormatScore ?? 0,
+            protocol: candidate.protocol,
+            magnetUrl: candidate.magnetUrl,
+            downloadUrl: candidate.downloadUrl,
+            infoHash: candidate.infoHash,
+          };
+        },
       );
 
       setReleases(releasesData);
@@ -260,7 +319,26 @@ export function SeriesInteractiveSearchModal({
     setGrabState({ releaseId: release.id, isGrabbing: true, error: null, success: false });
 
     try {
-      await api.releaseApi.grabRelease(release.guid, release.indexerId);
+      if (release.magnetUrl || release.downloadUrl) {
+        await api.releaseApi.grabCandidate({
+          indexer: release.indexer,
+          indexerId: release.indexerId,
+          title: release.title,
+          guid: release.guid,
+          size: release.size,
+          seeders: release.seeders ?? 0,
+          leechers: release.leechers,
+          quality: release.quality.quality.name,
+          age: Math.round(release.ageHours),
+          publishDate: release.publishDate,
+          protocol: release.protocol,
+          magnetUrl: release.magnetUrl,
+          downloadUrl: release.downloadUrl,
+          infoHash: release.infoHash,
+        });
+      } else {
+        await api.releaseApi.grabRelease(release.guid, release.indexerId);
+      }
       setGrabState({ releaseId: release.id, isGrabbing: false, error: null, success: true });
       pushToast({
         title: 'Release grabbed successfully',

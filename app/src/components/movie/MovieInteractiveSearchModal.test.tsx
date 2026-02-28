@@ -3,11 +3,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MovieInteractiveSearchModal } from './MovieInteractiveSearchModal';
 import { ToastProvider } from '@/components/providers/ToastProvider';
 
-// The component calls movieApi.searchReleases and releaseApi.grabRelease.
+// The component calls movieApi.searchReleases and releaseApi.grabCandidate.
 // Use vi.hoisted so the references are available when vi.mock's factory is hoisted.
-const { mockSearchReleases, mockGrabRelease } = vi.hoisted(() => ({
+const { mockSearchReleases, mockGrabRelease, mockGrabCandidate } = vi.hoisted(() => ({
   mockSearchReleases: vi.fn(),
   mockGrabRelease: vi.fn(),
+  mockGrabCandidate: vi.fn(),
 }));
 
 vi.mock('@/lib/api/client', () => ({
@@ -17,6 +18,7 @@ vi.mock('@/lib/api/client', () => ({
     },
     releaseApi: {
       grabRelease: mockGrabRelease,
+      grabCandidate: mockGrabCandidate,
     },
   })),
 }));
@@ -37,6 +39,7 @@ const mockReleaseCandidates = [
     protocol: 'torrent' as const,
     customFormatScore: 15,
     indexerFlags: undefined,
+    magnetUrl: 'magnet:?xt=urn:btih:movie-guid-1',
   },
   {
     indexer: 'TestIndexer2',
@@ -52,6 +55,7 @@ const mockReleaseCandidates = [
     protocol: 'torrent' as const,
     customFormatScore: 0,
     indexerFlags: 'Quality not in profile',
+    magnetUrl: 'magnet:?xt=urn:btih:movie-guid-2',
   },
 ];
 
@@ -79,6 +83,7 @@ describe('MovieInteractiveSearchModal', () => {
     vi.clearAllMocks();
     mockSearchReleases.mockResolvedValue(paginatedResponse);
     mockGrabRelease.mockResolvedValue({ success: true, downloadId: 'download-123', message: 'Grabbed' });
+    mockGrabCandidate.mockResolvedValue({ success: true, downloadId: 'download-123', message: 'Grabbed' });
   });
 
   // ── Rendering ──────────────────────────────────────────────────────────────
@@ -133,6 +138,35 @@ describe('MovieInteractiveSearchModal', () => {
     expect(screen.getAllByText('TestIndexer').length).toBeGreaterThan(0);
   });
 
+  it('fetches additional pages so results include non-first-page indexers', async () => {
+    mockSearchReleases
+      .mockResolvedValueOnce({
+        items: [mockReleaseCandidates[0]],
+        meta: { page: 1, pageSize: 100, totalCount: 2, totalPages: 2 },
+      })
+      .mockResolvedValueOnce({
+        items: [mockReleaseCandidates[1]],
+        meta: { page: 2, pageSize: 100, totalCount: 2, totalPages: 2 },
+      });
+
+    renderWithToast(<MovieInteractiveSearchModal {...defaultProps} />);
+
+    await waitFor(() => {
+      expect(mockSearchReleases).toHaveBeenCalledTimes(2);
+      expect(mockSearchReleases).toHaveBeenNthCalledWith(
+        1,
+        123,
+        expect.objectContaining({ page: 1, pageSize: 100 }),
+      );
+      expect(mockSearchReleases).toHaveBeenNthCalledWith(
+        2,
+        123,
+        expect.objectContaining({ page: 2, pageSize: 100 }),
+      );
+      expect(screen.getAllByText('TestIndexer2').length).toBeGreaterThan(0);
+    });
+  });
+
   it('shows empty state when no releases are returned', async () => {
     mockSearchReleases.mockResolvedValue({
       items: [],
@@ -174,7 +208,7 @@ describe('MovieInteractiveSearchModal', () => {
 
   // ── Grab wiring ───────────────────────────────────────────────────────────
 
-  it('calls releaseApi.grabRelease with correct guid and indexerId', async () => {
+  it('calls releaseApi.grabCandidate with selected release details', async () => {
     renderWithToast(<MovieInteractiveSearchModal {...defaultProps} />);
 
     await waitFor(() => {
@@ -185,13 +219,18 @@ describe('MovieInteractiveSearchModal', () => {
     fireEvent.click(grabButton!);
 
     await waitFor(() => {
-      expect(mockGrabRelease).toHaveBeenCalledTimes(1);
-      expect(mockGrabRelease).toHaveBeenCalledWith('movie-guid-1', 1);
+      expect(mockGrabCandidate).toHaveBeenCalledTimes(1);
+      expect(mockGrabCandidate).toHaveBeenCalledWith(expect.objectContaining({
+        guid: 'movie-guid-1',
+        indexerId: 1,
+        title: 'Test.Movie.2024.1080p.BluRay.x264',
+        magnetUrl: 'magnet:?xt=urn:btih:movie-guid-1',
+      }));
     });
   });
 
   it('shows grabbing spinner while grab is in-flight', async () => {
-    mockGrabRelease.mockImplementation(() => new Promise(() => {}));
+    mockGrabCandidate.mockImplementation(() => new Promise(() => {}));
 
     renderWithToast(<MovieInteractiveSearchModal {...defaultProps} />);
 
@@ -222,8 +261,8 @@ describe('MovieInteractiveSearchModal', () => {
     }, { timeout: 3000 });
   });
 
-  it('shows grab error when releaseApi.grabRelease fails', async () => {
-    mockGrabRelease.mockRejectedValue(new Error('Download client unreachable'));
+  it('shows grab error when releaseApi.grabCandidate fails', async () => {
+    mockGrabCandidate.mockRejectedValue(new Error('Download client unreachable'));
 
     renderWithToast(<MovieInteractiveSearchModal {...defaultProps} />);
 

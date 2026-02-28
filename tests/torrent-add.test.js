@@ -1,10 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
+const TEST_INFO_HASH = '87773a30994884f2d5abef7cf1360cf19e91a3e6';
+
 // Mock webtorrent before importing TorrentManager
 vi.mock('webtorrent', () => {
   function createMockTorrent(overrides = {}) {
     return {
-      infoHash: 'abc123def456',
+      infoHash: TEST_INFO_HASH,
       name: 'Test Download',
       progress: 0,
       downloadSpeed: 0,
@@ -83,7 +85,7 @@ describe('TorrentManager.addTorrent', () => {
   });
 
   it('should add a torrent via magnet link and download to incomplete/ directory', async () => {
-    const magnetUrl = 'magnet:?xt=urn:btih:abc123def456&dn=Test+Download';
+    const magnetUrl = `magnet:?xt=urn:btih:${TEST_INFO_HASH}&dn=Test+Download`;
 
     const result = await manager.addTorrent({ magnetUrl });
 
@@ -97,7 +99,7 @@ describe('TorrentManager.addTorrent', () => {
     // Should persist the torrent to the database
     expect(mockRepo.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
-        infoHash: 'abc123def456',
+        infoHash: TEST_INFO_HASH,
         magnetUrl,
         status: 'downloading',
         path: '/data/downloads/incomplete',
@@ -107,7 +109,7 @@ describe('TorrentManager.addTorrent', () => {
     // Should return relevant torrent info
     expect(result).toEqual(
       expect.objectContaining({
-        infoHash: 'abc123def456',
+        infoHash: TEST_INFO_HASH,
         name: 'Test Download',
       })
     );
@@ -127,7 +129,7 @@ describe('TorrentManager.addTorrent', () => {
     // Should persist with the torrentFile buffer
     expect(mockRepo.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
-        infoHash: 'abc123def456',
+        infoHash: TEST_INFO_HASH,
         torrentFile: torrentFileBuffer,
         status: 'downloading',
         path: '/data/downloads/incomplete',
@@ -136,13 +138,13 @@ describe('TorrentManager.addTorrent', () => {
 
     expect(result).toEqual(
       expect.objectContaining({
-        infoHash: 'abc123def456',
+        infoHash: TEST_INFO_HASH,
       })
     );
   });
 
   it('should support a custom download path', async () => {
-    const magnetUrl = 'magnet:?xt=urn:btih:abc123def456&dn=Custom+Path';
+    const magnetUrl = `magnet:?xt=urn:btih:${TEST_INFO_HASH}&dn=Custom+Path`;
     const customPath = '/media/movies';
 
     const result = await manager.addTorrent({ magnetUrl, path: customPath });
@@ -158,6 +160,52 @@ describe('TorrentManager.addTorrent', () => {
         path: customPath,
       })
     );
+  });
+
+  it('should derive infoHash from magnet URL when WebTorrent has no immediate infoHash', async () => {
+    const magnetUrl = 'magnet:?xt=urn:btih:87773A30994884F2D5ABEF7CF1360CF19E91A3E6&dn=NoHashYet';
+    const client = manager.getClient();
+
+    const delayedHashTorrent = {
+      infoHash: undefined,
+      name: 'Unknown',
+      progress: 0,
+      downloadSpeed: 0,
+      uploadSpeed: 0,
+      downloaded: 0,
+      uploaded: 0,
+      length: 0,
+      timeRemaining: Infinity,
+      path: '/data/downloads/incomplete',
+      paused: false,
+      done: false,
+      on: vi.fn(),
+      pause: vi.fn(),
+      resume: vi.fn(),
+      destroy: vi.fn(),
+    };
+
+    client.add.mockReturnValueOnce(delayedHashTorrent);
+
+    const result = await manager.addTorrent({ magnetUrl });
+
+    expect(mockRepo.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        infoHash: '87773a30994884f2d5abef7cf1360cf19e91a3e6',
+      })
+    );
+    expect(result.infoHash).toBe('87773a30994884f2d5abef7cf1360cf19e91a3e6');
+  });
+
+  it('should remove torrent from client when DB upsert fails', async () => {
+    const magnetUrl = `magnet:?xt=urn:btih:${TEST_INFO_HASH}&dn=UpsertFail`;
+    const client = manager.getClient();
+
+    mockRepo.upsert.mockRejectedValueOnce(new Error('db write failed'));
+
+    await expect(manager.addTorrent({ magnetUrl })).rejects.toThrow('db write failed');
+
+    expect(client.remove).toHaveBeenCalled();
   });
 
   it('should throw if neither magnetUrl nor torrentFile is provided', async () => {

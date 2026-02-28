@@ -3,9 +3,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SeriesInteractiveSearchModal } from './SeriesInteractiveSearchModal';
 import { ToastProvider } from '@/components/providers/ToastProvider';
 
-const { mockSearchReleases, mockGrabRelease } = vi.hoisted(() => ({
+const { mockSearchReleases, mockGrabRelease, mockGrabCandidate } = vi.hoisted(() => ({
   mockSearchReleases: vi.fn(),
   mockGrabRelease: vi.fn(),
+  mockGrabCandidate: vi.fn(),
 }));
 
 vi.mock('@/lib/api/client', () => ({
@@ -15,6 +16,7 @@ vi.mock('@/lib/api/client', () => ({
     },
     releaseApi: {
       grabRelease: mockGrabRelease,
+      grabCandidate: mockGrabCandidate,
     },
   })),
 }));
@@ -34,6 +36,7 @@ const mockReleaseCandidates = [
     protocol: 'torrent' as const,
     customFormatScore: 10,
     indexerFlags: undefined,
+    magnetUrl: 'magnet:?xt=urn:btih:series-guid-1',
   },
   {
     indexer: 'TestIndexer2',
@@ -49,6 +52,7 @@ const mockReleaseCandidates = [
     protocol: 'torrent' as const,
     customFormatScore: 0,
     indexerFlags: 'Quality not in profile',
+    magnetUrl: 'magnet:?xt=urn:btih:series-guid-2',
   },
 ];
 
@@ -73,6 +77,7 @@ describe('SeriesInteractiveSearchModal', () => {
     vi.clearAllMocks();
     mockSearchReleases.mockResolvedValue(paginatedResponse);
     mockGrabRelease.mockResolvedValue({ success: true, downloadId: 'dl-1', message: 'Grabbed' });
+    mockGrabCandidate.mockResolvedValue({ success: true, downloadId: 'dl-1', message: 'Grabbed' });
   });
 
   // ── Rendering ──────────────────────────────────────────────────────────────
@@ -192,6 +197,27 @@ describe('SeriesInteractiveSearchModal', () => {
     expect(screen.getAllByText('TestIndexer').length).toBeGreaterThan(0);
   });
 
+  it('fetches additional pages so results include non-first-page indexers', async () => {
+    mockSearchReleases
+      .mockResolvedValueOnce({
+        items: [mockReleaseCandidates[0]],
+        meta: { page: 1, pageSize: 100, totalCount: 2, totalPages: 2 },
+      })
+      .mockResolvedValueOnce({
+        items: [mockReleaseCandidates[1]],
+        meta: { page: 2, pageSize: 100, totalCount: 2, totalPages: 2 },
+      });
+
+    renderWithToast(<SeriesInteractiveSearchModal {...defaultProps} />);
+
+    await waitFor(() => {
+      expect(mockSearchReleases).toHaveBeenCalledTimes(2);
+      expect(mockSearchReleases).toHaveBeenNthCalledWith(1, 10, expect.objectContaining({ page: 1, pageSize: 100 }));
+      expect(mockSearchReleases).toHaveBeenNthCalledWith(2, 10, expect.objectContaining({ page: 2, pageSize: 100 }));
+      expect(screen.getAllByText('TestIndexer2').length).toBeGreaterThan(0);
+    });
+  });
+
   it('shows empty state when no releases are returned', async () => {
     mockSearchReleases.mockResolvedValue({
       items: [],
@@ -232,7 +258,7 @@ describe('SeriesInteractiveSearchModal', () => {
 
   // ── Grab wiring ───────────────────────────────────────────────────────────
 
-  it('calls releaseApi.grabRelease with correct guid and indexerId', async () => {
+  it('calls releaseApi.grabCandidate with selected release details', async () => {
     renderWithToast(<SeriesInteractiveSearchModal {...defaultProps} />);
 
     await waitFor(() => {
@@ -243,13 +269,18 @@ describe('SeriesInteractiveSearchModal', () => {
     fireEvent.click(grabButtons[0]!);
 
     await waitFor(() => {
-      expect(mockGrabRelease).toHaveBeenCalledTimes(1);
-      expect(mockGrabRelease).toHaveBeenCalledWith('series-guid-1', 1);
+      expect(mockGrabCandidate).toHaveBeenCalledTimes(1);
+      expect(mockGrabCandidate).toHaveBeenCalledWith(expect.objectContaining({
+        guid: 'series-guid-1',
+        indexerId: 1,
+        title: 'Test.Show.S01E01.1080p.BluRay.x264',
+        magnetUrl: 'magnet:?xt=urn:btih:series-guid-1',
+      }));
     });
   });
 
   it('shows grabbing spinner while grab is in-flight', async () => {
-    mockGrabRelease.mockImplementation(() => new Promise(() => {}));
+    mockGrabCandidate.mockImplementation(() => new Promise(() => {}));
 
     renderWithToast(<SeriesInteractiveSearchModal {...defaultProps} />);
 

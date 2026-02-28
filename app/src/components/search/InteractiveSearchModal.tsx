@@ -40,6 +40,9 @@ export interface ReleaseResult {
   rejections?: string[];
   customFormatScore?: number;
   protocol?: 'torrent' | 'usenet';
+  magnetUrl?: string;
+  downloadUrl?: string;
+  infoHash?: string;
 }
 
 interface GrabState {
@@ -142,6 +145,9 @@ export function InteractiveSearchModal({
         rejections: candidate.indexerFlags ? [candidate.indexerFlags] : [],
         customFormatScore: candidate.customFormatScore ?? 0,
         protocol: candidate.protocol,
+        magnetUrl: candidate.magnetUrl,
+        downloadUrl: candidate.downloadUrl,
+        infoHash: candidate.infoHash,
       }));
 
       setReleases(releases);
@@ -170,8 +176,26 @@ export function InteractiveSearchModal({
     setGrabState({ releaseId: release.id, isGrabbing: true, error: null, success: false });
 
     try {
-      // Use grabRelease with guid and indexerId
-      await api.releaseApi.grabRelease(release.guid, release.indexerId);
+      if (release.magnetUrl || release.downloadUrl) {
+        await api.releaseApi.grabCandidate({
+          indexer: release.indexer,
+          indexerId: release.indexerId,
+          title: release.title,
+          guid: release.guid,
+          size: release.size,
+          seeders: release.seeders ?? 0,
+          leechers: release.leechers,
+          quality: release.quality.quality.name,
+          age: Math.round(release.ageHours),
+          publishDate: release.publishDate,
+          protocol: release.protocol,
+          magnetUrl: release.magnetUrl,
+          downloadUrl: release.downloadUrl,
+          infoHash: release.infoHash,
+        });
+      } else {
+        await api.releaseApi.grabRelease(release.guid, release.indexerId);
+      }
 
       setGrabState({ releaseId: release.id, isGrabbing: false, error: null, success: true });
 

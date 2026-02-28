@@ -3,11 +3,12 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { InteractiveSearchModal } from './InteractiveSearchModal';
 import { ToastProvider } from '@/components/providers/ToastProvider';
 
-// The component calls seriesApi.searchReleases and releaseApi.grabRelease.
+// The component calls seriesApi.searchReleases and releaseApi.grabCandidate.
 // Use vi.hoisted so the references are available when vi.mock's factory is hoisted.
-const { mockSearchReleases, mockGrabRelease } = vi.hoisted(() => ({
+const { mockSearchReleases, mockGrabRelease, mockGrabCandidate } = vi.hoisted(() => ({
   mockSearchReleases: vi.fn(),
   mockGrabRelease: vi.fn(),
+  mockGrabCandidate: vi.fn(),
 }));
 
 vi.mock('@/lib/api/client', () => ({
@@ -17,6 +18,7 @@ vi.mock('@/lib/api/client', () => ({
     },
     releaseApi: {
       grabRelease: mockGrabRelease,
+      grabCandidate: mockGrabCandidate,
     },
   })),
 }));
@@ -37,6 +39,7 @@ const mockReleaseCandidates = [
     publishDate: new Date().toISOString(),
     protocol: 'torrent' as const,
     customFormatScore: 10,
+    magnetUrl: 'magnet:?xt=urn:btih:guid-a',
   },
   {
     indexerId: 2,
@@ -52,6 +55,7 @@ const mockReleaseCandidates = [
     publishDate: new Date().toISOString(),
     protocol: 'torrent' as const,
     customFormatScore: 0,
+    magnetUrl: 'magnet:?xt=urn:btih:guid-b',
   },
   {
     indexerId: 3,
@@ -67,6 +71,7 @@ const mockReleaseCandidates = [
     publishDate: new Date().toISOString(),
     protocol: 'torrent' as const,
     customFormatScore: 20,
+    magnetUrl: 'magnet:?xt=urn:btih:guid-c',
   },
   {
     indexerId: 4,
@@ -82,6 +87,7 @@ const mockReleaseCandidates = [
     publishDate: new Date().toISOString(),
     protocol: 'torrent' as const,
     customFormatScore: -10,
+    magnetUrl: 'magnet:?xt=urn:btih:guid-d',
   },
 ];
 
@@ -111,6 +117,7 @@ describe('InteractiveSearchModal', () => {
     vi.clearAllMocks();
     mockSearchReleases.mockResolvedValue(paginatedResponse);
     mockGrabRelease.mockResolvedValue({ success: true, downloadId: 'dl-1', message: 'Grabbed' });
+    mockGrabCandidate.mockResolvedValue({ success: true, downloadId: 'dl-1', message: 'Grabbed' });
   });
 
   // ── Rendering ──────────────────────────────────────────────────────────────
@@ -257,7 +264,7 @@ describe('InteractiveSearchModal', () => {
     });
   });
 
-  it('calls releaseApi.grabRelease with guid and indexerId on grab click', async () => {
+  it('calls releaseApi.grabCandidate with selected release details on grab click', async () => {
     renderWithToast(<InteractiveSearchModal {...defaultProps} />);
 
     await waitFor(() => {
@@ -268,13 +275,18 @@ describe('InteractiveSearchModal', () => {
     fireEvent.click(firstGrab!);
 
     await waitFor(() => {
-      expect(mockGrabRelease).toHaveBeenCalledTimes(1);
-      expect(mockGrabRelease).toHaveBeenCalledWith('guid-a', 1);
+      expect(mockGrabCandidate).toHaveBeenCalledTimes(1);
+      expect(mockGrabCandidate).toHaveBeenCalledWith(expect.objectContaining({
+        guid: 'guid-a',
+        indexerId: 1,
+        title: 'Series.Name.S01E01.1080p.WEB-DL.DDP5.1.H.264-GRP',
+        magnetUrl: 'magnet:?xt=urn:btih:guid-a',
+      }));
     });
   });
 
   it('shows grabbing state while grab is in-flight', async () => {
-    mockGrabRelease.mockImplementation(() => new Promise(() => {})); // never resolve
+    mockGrabCandidate.mockImplementation(() => new Promise(() => {})); // never resolve
 
     renderWithToast(<InteractiveSearchModal {...defaultProps} />);
 
@@ -305,8 +317,8 @@ describe('InteractiveSearchModal', () => {
     }, { timeout: 3000 });
   });
 
-  it('shows inline grab error when grabRelease fails', async () => {
-    mockGrabRelease.mockRejectedValue(new Error('Download client offline'));
+  it('shows inline grab error when grabCandidate fails', async () => {
+    mockGrabCandidate.mockRejectedValue(new Error('Download client offline'));
 
     renderWithToast(<InteractiveSearchModal {...defaultProps} />);
 

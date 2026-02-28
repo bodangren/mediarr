@@ -106,6 +106,62 @@ function extractSource(title: string): string | undefined {
   return undefined;
 }
 
+function formatSourceLabel(source: string): string {
+  switch (source) {
+    case 'webrip':
+      return 'WEBRip';
+    case 'webdl':
+      return 'WEB-DL';
+    case 'bluray':
+      return 'BluRay';
+    case 'hdtv':
+      return 'HDTV';
+    case 'dvd':
+      return 'DVD';
+    default:
+      return source;
+  }
+}
+
+function inferQualityFromTitle(title: string): string | undefined {
+  const resolution = extractResolution(title);
+  const source = extractSource(title);
+
+  if (resolution !== undefined && source !== undefined) {
+    return `${resolution}p ${formatSourceLabel(source)}`;
+  }
+  if (resolution !== undefined) {
+    return `${resolution}p`;
+  }
+  if (source !== undefined) {
+    return formatSourceLabel(source);
+  }
+
+  return undefined;
+}
+
+function computeAgeHours(publishDate?: Date): number | undefined {
+  if (!publishDate) {
+    return undefined;
+  }
+
+  const publishedAt = publishDate.getTime();
+  if (!Number.isFinite(publishedAt)) {
+    return undefined;
+  }
+
+  const ageMs = Date.now() - publishedAt;
+  if (!Number.isFinite(ageMs)) {
+    return undefined;
+  }
+
+  return Math.max(0, ageMs / (1000 * 60 * 60));
+}
+
+function isValidDate(value: Date): boolean {
+  return Number.isFinite(value.getTime());
+}
+
 function extractReleaseGroup(title: string): string | undefined {
   const match = title.match(/-([^-.\s]+)$/);
   return match ? match[1] : undefined;
@@ -185,14 +241,22 @@ function toSearchCandidate(result: IndexerResult, indexerId: number, indexerName
   if (infoHash !== undefined) {
     candidate.infoHash = infoHash;
   }
-  if (result.publishDate !== undefined) {
+  if (result.publishDate !== undefined && isValidDate(result.publishDate)) {
     candidate.publishDate = result.publishDate;
+    const ageHours = computeAgeHours(result.publishDate);
+    if (ageHours !== undefined) {
+      candidate.age = ageHours;
+    }
   }
   if (result.categories !== undefined && result.categories.length > 0) {
     candidate.categories = result.categories;
   }
   if (result.protocol !== undefined) {
     candidate.protocol = result.protocol;
+  }
+  const inferredQuality = inferQualityFromTitle(result.title);
+  if (inferredQuality !== undefined) {
+    candidate.quality = inferredQuality;
   }
 
   return candidate;
@@ -217,6 +281,7 @@ function deduplicateByInfoHash(releases: SearchCandidate[]): SearchCandidate[] {
       byInfoHash.set(release.infoHash, release);
     } else {
       // Keep the release that ranks higher after scoring+sorting rules.
+      // compareReleasesForRanking returns negative if 'left' is better (higher priority).
       if (compareReleasesForRanking(release, existing) < 0) {
         byInfoHash.set(release.infoHash, release);
       }
@@ -236,8 +301,13 @@ function toSearchQuery(params: SearchParams): SearchQuery {
     query.q = params.query;
   }
 
+  // Provide default categories based on search type if not specified
   if (params.categories && params.categories.length > 0) {
     query.categories = params.categories;
+  } else if (params.type === 'movie') {
+    query.categories = [2000]; // Standard Movies category
+  } else if (params.type === 'tvsearch') {
+    query.categories = [5000]; // Standard TV category
   }
 
   if (params.season !== undefined) {
@@ -249,12 +319,14 @@ function toSearchQuery(params: SearchParams): SearchQuery {
   }
 
   if (params.imdbId) {
-    // Remove 'tt' prefix if present
-    query.imdbid = params.imdbId.replace(/^tt/, '');
+    // Many indexers (like YTS) require the 'tt' prefix.
+    // Indexers that don't want it usually handle it in their keywordsfilters or templates.
+    query.imdbid = params.imdbId.startsWith('tt') ? params.imdbId : `tt${params.imdbId}`;
   }
 
   if (params.tmdbId !== undefined) {
-    query.tmdbid = String(params.tmdbId);
+    // tmdbid should be a number in the query object
+    query.tmdbid = params.tmdbId;
   }
 
   // Build query string from title/year if not provided
@@ -267,6 +339,17 @@ function toSearchQuery(params: SearchParams): SearchQuery {
   }
 
   return query;
+}
+
+function shouldRetryMovieSearchWithoutImdbId(
+  params: SearchParams,
+  query: SearchQuery,
+  results: IndexerResult[],
+): boolean {
+  return params.type === 'movie'
+    && Boolean(params.imdbId)
+    && Boolean(query.imdbid)
+    && results.length === 0;
 }
 
 /**
@@ -360,7 +443,21 @@ export class MediaSearchService {
 
       try {
         const indexer = this.indexerFactory.fromDatabaseRecord(record);
-        const results = await this.searchWithTimeout(indexer, query, INDEXER_TIMEOUT_MS);
+        let results = await this.searchWithTimeout(indexer, query, INDEXER_TIMEOUT_MS);
+
+        if (shouldRetryMovieSearchWithoutImdbId(params, query, results)) {
+          const fallbackQuery: SearchQuery = { ...query };
+          delete fallbackQuery.imdbid;
+
+          try {
+            const fallbackResults = await this.searchWithTimeout(indexer, fallbackQuery, INDEXER_TIMEOUT_MS);
+            if (fallbackResults.length > 0) {
+              results = fallbackResults;
+            }
+          } catch {
+            // Ignore fallback failures and preserve the primary search outcome.
+          }
+        }
 
         return {
           indexerId,
@@ -487,10 +584,11 @@ export class MediaSearchService {
     const yearPart = movie.year ? ` ${movie.year}` : '';
     const query = `${movie.title}${yearPart}`.trim();
 
+    // We only use the query string here to maximize indexer compatibility.
+    // If we want to use specific IDs (IMDB/TMDB), they should be handled as fallback
+    // or as part of a more complex search aggregation strategy.
     const candidates = await this.getSearchCandidates({
       q: query,
-      tmdbid: movie.tmdbId,
-      imdbid: movie.imdbId,
     });
 
     if (candidates.length === 0) {
@@ -546,13 +644,19 @@ export class MediaSearchService {
 
     try {
       // Prefer magnet URL, fall back to download URL
-      const magnetUrl = candidate.magnetUrl?.startsWith('magnet:') ? candidate.magnetUrl : undefined;
+      const magnetUrl = candidate.magnetUrl?.startsWith('magnet:')
+        ? candidate.magnetUrl
+        : candidate.downloadUrl?.startsWith('magnet:')
+          ? candidate.downloadUrl
+          : undefined;
       const downloadUrl = candidate.downloadUrl;
 
       // Build addTorrent options carefully to avoid undefined in optional props
-      const addOptions: { magnetUrl?: string; path?: string } = {};
+      const addOptions: { magnetUrl?: string; downloadUrl?: string; path?: string } = {};
       if (magnetUrl) {
         addOptions.magnetUrl = magnetUrl;
+      } else if (downloadUrl) {
+        addOptions.downloadUrl = downloadUrl;
       }
 
       const torrent = await this.torrentManager.addTorrent(addOptions);

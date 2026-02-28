@@ -1,6 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { DndProvider, useDrag, useDrop } from 'react-dnd';
-import { HTML5Backend } from 'react-dnd-html5-backend';
+import { useEffect, useState } from 'react';
 import { Alert } from '@/components/primitives/Alert';
 import { Button } from '@/components/primitives/Button';
 import { Modal, ModalBody, ModalFooter, ModalHeader } from '@/components/primitives/Modal';
@@ -18,12 +16,6 @@ export interface AddProfileModalProps {
   isLoading?: boolean;
 }
 
-const QUALITY_ITEM_TYPE = 'quality-row';
-
-interface DragItem {
-  index: number;
-}
-
 function moveItem<T>(arr: T[], from: number, to: number): T[] {
   if (from === to || from < 0 || to < 0 || from >= arr.length || to >= arr.length) return arr;
   const next = [...arr];
@@ -37,53 +29,57 @@ interface QualityRowProps {
   index: number;
   total: number;
   isCutoff: boolean;
-  items: QualityProfileRule[];
-  onReorder: (items: QualityProfileRule[]) => void;
+  isDragging: boolean;
+  onDragStart: (index: number) => void;
+  onDragEnter: (index: number) => void;
+  onDragEnd: () => void;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
   onToggle: (id: number) => void;
 }
 
-function QualityRow({ rule, index, total, isCutoff, items, onReorder, onToggle }: QualityRowProps) {
-  const ref = useRef<HTMLLIElement>(null);
+function QualityRow({
+  rule,
+  index,
+  total,
+  isCutoff,
+  isDragging,
+  onDragStart,
+  onDragEnter,
+  onDragEnd,
+  onMoveUp,
+  onMoveDown,
+  onToggle,
+}: QualityRowProps) {
   const qualityName = rule.quality.name;
-
-  const [{ isDragging }, drag] = useDrag({
-    type: QUALITY_ITEM_TYPE,
-    item: { index },
-    collect: monitor => ({ isDragging: monitor.isDragging() }),
-  });
-
-  const [, drop] = useDrop<DragItem>({
-    accept: QUALITY_ITEM_TYPE,
-    hover(item) {
-      if (item.index === index) return;
-      onReorder(moveItem(items, item.index, index));
-      item.index = index;
-    },
-  });
-
-  const attachRef = useCallback(
-    (node: HTMLLIElement | null) => {
-      ref.current = node;
-      drag(drop(node));
-    },
-    [drag, drop],
-  );
 
   return (
     <li
-      ref={attachRef}
-      style={{ opacity: isDragging ? 0.4 : 1 }}
-      className={`flex items-center gap-2 rounded-sm border px-3 py-1.5 text-sm ${
+      draggable
+      onDragStart={e => {
+        // Replace the browser ghost image with an invisible pixel so the
+        // native floating ghost doesn't appear — feedback is via opacity only.
+        const ghost = document.createElement('div');
+        ghost.style.cssText = 'position:fixed;top:-999px;left:-999px;width:1px;height:1px';
+        document.body.appendChild(ghost);
+        e.dataTransfer.setDragImage(ghost, 0, 0);
+        setTimeout(() => ghost.remove(), 0);
+        onDragStart(index);
+      }}
+      onDragEnter={e => {
+        e.preventDefault();
+        onDragEnter(index);
+      }}
+      onDragOver={e => e.preventDefault()}
+      onDragEnd={onDragEnd}
+      style={{ opacity: isDragging ? 0.3 : 1 }}
+      className={`flex cursor-grab items-center gap-2 rounded-sm border px-3 py-1.5 text-sm transition-opacity ${
         isCutoff && rule.allowed
           ? 'border-accent-primary bg-accent-primary/10'
           : 'border-border-subtle'
       } ${!rule.allowed ? 'opacity-50' : ''}`}
     >
-      <span
-        className="cursor-grab text-text-muted select-none"
-        aria-hidden="true"
-        title="Drag to reorder"
-      >
+      <span className="text-text-muted select-none" aria-hidden="true" title="Drag to reorder">
         ⠿
       </span>
       <input
@@ -104,7 +100,7 @@ function QualityRow({ rule, index, total, isCutoff, items, onReorder, onToggle }
           type="button"
           aria-label={`Move ${qualityName} up`}
           className="rounded-sm border border-border-subtle px-1.5 py-0.5 text-xs text-text-secondary hover:bg-surface-2 disabled:opacity-40"
-          onClick={() => onReorder(moveItem(items, index, index - 1))}
+          onClick={onMoveUp}
           disabled={index <= 0}
         >
           ↑
@@ -113,7 +109,7 @@ function QualityRow({ rule, index, total, isCutoff, items, onReorder, onToggle }
           type="button"
           aria-label={`Move ${qualityName} down`}
           className="rounded-sm border border-border-subtle px-1.5 py-0.5 text-xs text-text-secondary hover:bg-surface-2 disabled:opacity-40"
-          onClick={() => onReorder(moveItem(items, index, index + 1))}
+          onClick={onMoveDown}
           disabled={index >= total - 1}
         >
           ↓
@@ -133,6 +129,7 @@ export function AddProfileModal({
   const [name, setName] = useState('');
   const [items, setItems] = useState<QualityProfileRule[]>([]);
   const [cutoff, setCutoff] = useState<number>(0);
+  const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
 
   useEffect(() => {
     if (isOpen && editProfile) {
@@ -142,12 +139,29 @@ export function AddProfileModal({
     }
   }, [isOpen, editProfile]);
 
+  const handleDragStart = (index: number) => setDraggingIndex(index);
+
+  const handleDragEnter = (index: number) => {
+    if (draggingIndex === null || draggingIndex === index) return;
+    setItems(current => moveItem(current, draggingIndex, index));
+    setDraggingIndex(index);
+  };
+
+  const handleDragEnd = () => setDraggingIndex(null);
+
+  const handleMoveUp = (index: number) => {
+    setItems(current => moveItem(current, index, index - 1));
+  };
+
+  const handleMoveDown = (index: number) => {
+    setItems(current => moveItem(current, index, index + 1));
+  };
+
   const handleToggle = (qualityId: number) => {
     const rule = items.find(r => r.quality.id === qualityId);
     setItems(current =>
       current.map(r => r.quality.id === qualityId ? { ...r, allowed: !r.allowed } : r),
     );
-    // If we just disabled the current cutoff, move cutoff to the next allowed quality
     if (rule?.allowed && cutoff === qualityId) {
       const nextAllowed = items.find(r => r.allowed && r.quality.id !== qualityId);
       setCutoff(nextAllowed?.quality.id ?? 0);
@@ -186,27 +200,29 @@ export function AddProfileModal({
               Qualities <span className="text-accent-danger">*</span>
             </label>
             <p className="mb-2 text-xs text-text-muted">
-              Drag or use ↑↓ to set priority. Check to allow. Top = highest priority.
+              Drag rows or use ↑↓ to set priority. Check to allow. Top = highest priority.
             </p>
             {items.length === 0 ? (
               <p className="text-sm text-text-muted">No qualities available.</p>
             ) : (
-              <DndProvider backend={HTML5Backend}>
-                <ul className="max-h-80 space-y-1 overflow-y-auto rounded-sm border border-border-subtle bg-surface-0 p-2">
-                  {items.map((rule, index) => (
-                    <QualityRow
-                      key={rule.quality.id}
-                      rule={rule}
-                      index={index}
-                      total={items.length}
-                      isCutoff={cutoff === rule.quality.id}
-                      items={items}
-                      onReorder={setItems}
-                      onToggle={handleToggle}
-                    />
-                  ))}
-                </ul>
-              </DndProvider>
+              <ul className="max-h-80 space-y-1 overflow-y-auto rounded-sm border border-border-subtle bg-surface-0 p-2">
+                {items.map((rule, index) => (
+                  <QualityRow
+                    key={rule.quality.id}
+                    rule={rule}
+                    index={index}
+                    total={items.length}
+                    isCutoff={cutoff === rule.quality.id}
+                    isDragging={draggingIndex === index}
+                    onDragStart={handleDragStart}
+                    onDragEnter={handleDragEnter}
+                    onDragEnd={handleDragEnd}
+                    onMoveUp={() => handleMoveUp(index)}
+                    onMoveDown={() => handleMoveDown(index)}
+                    onToggle={handleToggle}
+                  />
+                ))}
+              </ul>
             )}
           </div>
 
@@ -215,7 +231,7 @@ export function AddProfileModal({
               Cutoff Quality <span className="text-accent-danger">*</span>
             </label>
             <p className="mb-1 text-xs text-text-muted">
-              Minimum quality — Mediarr stops upgrading once a file at this quality is grabbed.
+              Mediarr stops upgrading once a file at this quality is grabbed.
             </p>
             <select
               id="cutoff-quality"

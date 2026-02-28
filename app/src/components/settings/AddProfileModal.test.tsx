@@ -3,13 +3,6 @@ import { describe, expect, it, vi } from 'vitest';
 import type { QualityProfileItem } from '@/lib/api/qualityProfileApi';
 import { AddProfileModal } from './AddProfileModal';
 
-vi.mock('react-dnd', () => ({
-  DndProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  useDrag: () => [{ isDragging: false }, vi.fn(), vi.fn()],
-  useDrop: () => [{ isOver: false }, vi.fn()],
-}));
-vi.mock('react-dnd-html5-backend', () => ({ HTML5Backend: {} }));
-
 const mockProfile: QualityProfileItem = {
   id: 1,
   name: 'HD-1080p',

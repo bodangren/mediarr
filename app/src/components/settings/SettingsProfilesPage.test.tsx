@@ -2,13 +2,6 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { QualityProfileItem } from '@/lib/api/qualityProfileApi';
 
-// Mock react-dnd used inside AddProfileModal
-vi.mock('react-dnd', () => ({
-  DndProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  useDrag: () => [{ isDragging: false }, vi.fn(), vi.fn()],
-  useDrop: () => [{ isOver: false }, vi.fn()],
-}));
-vi.mock('react-dnd-html5-backend', () => ({ HTML5Backend: {} }));
 
 const mockProfile: QualityProfileItem = {
   id: 42,

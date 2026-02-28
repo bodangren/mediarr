@@ -1,10 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+const TEST_INFO_HASH = '87773a30994884f2d5abef7cf1360cf19e91a3e6';
 
 // Mock webtorrent before importing TorrentManager
 vi.mock('webtorrent', () => {
   function createMockTorrent(overrides = {}) {
     return {
-      infoHash: 'abc123def456',
+      infoHash: TEST_INFO_HASH,
       name: 'Test Download',
       progress: 0.5,
       downloadSpeed: 1024,
@@ -89,16 +90,16 @@ describe('TorrentManager queue control', () => {
   describe('pauseTorrent', () => {
     it('should pause an active torrent and update the database status', async () => {
       // First add a torrent
-      await manager.addTorrent({ magnetUrl: 'magnet:?xt=urn:btih:abc123def456' });
+      await manager.addTorrent({ magnetUrl: `magnet:?xt=urn:btih:${TEST_INFO_HASH}` });
 
-      await manager.pauseTorrent('abc123def456');
+      await manager.pauseTorrent(TEST_INFO_HASH);
 
       // Should update the DB status to 'paused'
-      expect(mockRepo.updateStatus).toHaveBeenCalledWith('abc123def456', 'paused');
+      expect(mockRepo.updateStatus).toHaveBeenCalledWith(TEST_INFO_HASH, 'paused');
 
       // Should call pause on the WebTorrent torrent object
       const client = manager.getClient();
-      const torrent = client.get('abc123def456');
+      const torrent = client.get(TEST_INFO_HASH);
       expect(torrent.pause).toHaveBeenCalled();
     });
 
@@ -112,16 +113,16 @@ describe('TorrentManager queue control', () => {
 
   describe('resumeTorrent', () => {
     it('should resume a paused torrent and update the database status', async () => {
-      await manager.addTorrent({ magnetUrl: 'magnet:?xt=urn:btih:abc123def456' });
+      await manager.addTorrent({ magnetUrl: `magnet:?xt=urn:btih:${TEST_INFO_HASH}` });
 
       // Simulate paused state
       const client = manager.getClient();
-      const torrent = client.get('abc123def456');
+      const torrent = client.get(TEST_INFO_HASH);
       torrent.paused = true;
 
-      await manager.resumeTorrent('abc123def456');
+      await manager.resumeTorrent(TEST_INFO_HASH);
 
-      expect(mockRepo.updateStatus).toHaveBeenCalledWith('abc123def456', 'downloading');
+      expect(mockRepo.updateStatus).toHaveBeenCalledWith(TEST_INFO_HASH, 'downloading');
       expect(torrent.resume).toHaveBeenCalled();
     });
 
@@ -135,21 +136,44 @@ describe('TorrentManager queue control', () => {
 
   describe('removeTorrent', () => {
     it('should remove a torrent from the client and delete from database', async () => {
-      await manager.addTorrent({ magnetUrl: 'magnet:?xt=urn:btih:abc123def456' });
+      await manager.addTorrent({ magnetUrl: `magnet:?xt=urn:btih:${TEST_INFO_HASH}` });
 
-      await manager.removeTorrent('abc123def456');
+      await manager.removeTorrent(TEST_INFO_HASH);
 
       // Should delete from the database
-      expect(mockRepo.delete).toHaveBeenCalledWith('abc123def456');
+      expect(mockRepo.delete).toHaveBeenCalledWith(TEST_INFO_HASH);
 
       // Should remove from the client
       const client = manager.getClient();
       expect(client.remove).toHaveBeenCalled();
     });
 
-    it('should throw for a non-existent torrent', async () => {
+    it('should handle async client.get() when removing', async () => {
+      await manager.addTorrent({ magnetUrl: `magnet:?xt=urn:btih:${TEST_INFO_HASH}` });
+      const client = manager.getClient();
+      const torrent = client.torrents[0];
+      client.get.mockResolvedValueOnce(torrent);
+
+      await manager.removeTorrent(TEST_INFO_HASH);
+
+      expect(client.remove).toHaveBeenCalled();
+      expect(mockRepo.delete).toHaveBeenCalledWith(TEST_INFO_HASH);
+    });
+
+    it('should delete DB-only torrent even when missing in client', async () => {
       const client = manager.getClient();
       client.get.mockReturnValue(null);
+
+      await manager.removeTorrent(TEST_INFO_HASH);
+
+      expect(mockRepo.delete).toHaveBeenCalledWith(TEST_INFO_HASH);
+      expect(client.remove).not.toHaveBeenCalled();
+    });
+
+    it('should throw when torrent is missing in client and database', async () => {
+      const client = manager.getClient();
+      client.get.mockReturnValue(null);
+      mockRepo.delete.mockRejectedValueOnce(new Error("Torrent with infoHash 'nonexistent' not found"));
 
       await expect(manager.removeTorrent('nonexistent')).rejects.toThrow(/not found/i);
     });

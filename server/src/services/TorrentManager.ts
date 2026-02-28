@@ -347,8 +347,11 @@ export class TorrentManager extends EventEmitter {
   /**
    * Finds a torrent in the WebTorrent client by infoHash. Throws if not found.
    */
-  private findTorrentOrThrow(infoHash: string): any {
-    const torrent = (this.client as any).get(infoHash);
+  private async findTorrentOrThrow(infoHash: string): Promise<any> {
+    const maybeTorrent = (this.client as any).get(infoHash);
+    const torrent = typeof maybeTorrent?.then === 'function'
+      ? await maybeTorrent
+      : maybeTorrent;
     if (!torrent) {
       throw new Error(`Torrent with infoHash '${infoHash}' not found`);
     }
@@ -369,7 +372,7 @@ export class TorrentManager extends EventEmitter {
    */
   async pauseTorrent(infoHash: string): Promise<void> {
     this.ensureInitialized();
-    const torrent = this.findTorrentOrThrow(infoHash);
+    const torrent = await this.findTorrentOrThrow(infoHash);
     torrent.pause();
     await this.repository.updateStatus(infoHash, 'paused');
   }
@@ -379,7 +382,7 @@ export class TorrentManager extends EventEmitter {
    */
   async resumeTorrent(infoHash: string): Promise<void> {
     this.ensureInitialized();
-    const torrent = this.findTorrentOrThrow(infoHash);
+    const torrent = await this.findTorrentOrThrow(infoHash);
     torrent.resume();
     await this.repository.updateStatus(infoHash, 'downloading');
   }
@@ -389,8 +392,14 @@ export class TorrentManager extends EventEmitter {
    */
   async removeTorrent(infoHash: string): Promise<void> {
     this.ensureInitialized();
-    const torrent = this.findTorrentOrThrow(infoHash);
-    (this.client as any).remove(torrent);
+    try {
+      const torrent = await this.findTorrentOrThrow(infoHash);
+      (this.client as any).remove(torrent);
+    } catch (error) {
+      if (!(error instanceof Error) || !/not found/i.test(error.message)) {
+        throw error;
+      }
+    }
     await this.repository.delete(infoHash);
   }
 

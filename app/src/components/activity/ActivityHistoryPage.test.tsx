@@ -13,7 +13,7 @@ vi.mock('@/lib/api/client', () => ({
 const mockItems = [
   {
     id: 1,
-    eventType: 'MOVIE_GRABBED',
+    eventType: 'RELEASE_GRABBED',
     sourceModule: 'movies',
     entityRef: 'The Matrix',
     summary: 'Grabbed The Matrix (1999)',
@@ -23,17 +23,17 @@ const mockItems = [
   },
   {
     id: 2,
-    eventType: 'DOWNLOAD_FAILED',
+    eventType: 'IMPORT_FAILED',
     sourceModule: 'movies',
     entityRef: 'Inception',
-    summary: 'Download failed for Inception (2010)',
+    summary: 'Import failed for Inception (2010)',
     success: false,
     details: { quality: 'WEBDL-1080p', indexer: 'NZBGeek' },
     occurredAt: '2026-02-27T08:30:00.000Z',
   },
   {
     id: 3,
-    eventType: 'SERIES_IMPORTED',
+    eventType: 'IMPORT_COMPLETED',
     sourceModule: 'series',
     entityRef: 'Breaking Bad S01E01',
     summary: 'Imported Breaking Bad S01E01',
@@ -136,11 +136,11 @@ describe('ActivityHistoryPage', () => {
     await waitFor(() => screen.getByText('Grabbed The Matrix (1999)'));
 
     const eventTypeFilter = screen.getByRole('combobox', { name: /event type/i });
-    await user.selectOptions(eventTypeFilter, 'DOWNLOAD_FAILED');
+    await user.selectOptions(eventTypeFilter, 'IMPORT_FAILED');
 
     await waitFor(() => {
       expect(mockApi.activityApi.list).toHaveBeenCalledWith(
-        expect.objectContaining({ eventType: 'DOWNLOAD_FAILED', page: 1 }),
+        expect.objectContaining({ eventType: 'IMPORT_FAILED', page: 1 }),
       );
     });
   });

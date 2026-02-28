@@ -12,16 +12,13 @@ import { AlertTriangle } from 'lucide-react';
 
 const EVENT_TYPE_OPTIONS = [
   { value: '', label: 'All Events' },
-  { value: 'MOVIE_GRABBED', label: 'Movie Grabbed' },
-  { value: 'MOVIE_IMPORTED', label: 'Movie Imported' },
-  { value: 'MOVIE_DOWNLOADED', label: 'Movie Downloaded' },
-  { value: 'DOWNLOAD_FAILED', label: 'Download Failed' },
+  { value: 'RELEASE_GRABBED', label: 'Grabbed' },
+  { value: 'IMPORT_COMPLETED', label: 'Imported' },
   { value: 'IMPORT_FAILED', label: 'Import Failed' },
-  { value: 'RELEASE_GRABBED', label: 'Release Grabbed' },
-  { value: 'SERIES_IMPORTED', label: 'Series Imported' },
-  { value: 'SERIES_DOWNLOADED', label: 'Series Downloaded' },
-  { value: 'INDEXER_QUERY', label: 'Indexer Query' },
-  { value: 'INDEXER_RSS', label: 'Indexer RSS' },
+  { value: 'MEDIA_ADDED', label: 'Media Added' },
+  { value: 'SEARCH_EXECUTED', label: 'Search' },
+  { value: 'SUBTITLE_DOWNLOADED', label: 'Subtitle Downloaded' },
+  { value: 'SEEDING_COMPLETE', label: 'Seeding Complete' },
 ];
 
 const STATUS_OPTIONS = [

@@ -3,122 +3,64 @@ import { render, screen } from '@testing-library/react';
 import { ActivityEventBadge } from '@/components/activity/ActivityEventBadge';
 
 describe('ActivityEventBadge', () => {
-  describe('Movie events', () => {
-    it('renders MOVIE_GRABBED with primary color', () => {
-      render(<ActivityEventBadge eventType="MOVIE_GRABBED" />);
-
-      const badge = screen.getByText('Grabbed');
-      expect(badge).toBeInTheDocument();
-      expect(badge).toHaveClass('bg-accent-primary/20', 'text-accent-primary');
-    });
-
-    it('renders MOVIE_DOWNLOADED with info color', () => {
-      render(<ActivityEventBadge eventType="MOVIE_DOWNLOADED" />);
-
-      const badge = screen.getByText('Downloaded');
-      expect(badge).toBeInTheDocument();
-      expect(badge).toHaveClass('bg-accent-info/20', 'text-accent-info');
-    });
-
-    it('renders MOVIE_IMPORTED with success color', () => {
-      render(<ActivityEventBadge eventType="MOVIE_IMPORTED" />);
-
-      const badge = screen.getByText('Imported');
-      expect(badge).toBeInTheDocument();
-      expect(badge).toHaveClass('bg-status-completed/20', 'text-status-completed');
-    });
-
-    it('renders MOVIE_FILE_DELETED with error color', () => {
-      render(<ActivityEventBadge eventType="MOVIE_FILE_DELETED" />);
-
-      const badge = screen.getByText('File Deleted');
-      expect(badge).toBeInTheDocument();
-      expect(badge).toHaveClass('bg-status-error/20', 'text-status-error');
-    });
-
-    it('renders MOVIE_RENAMED with info color', () => {
-      render(<ActivityEventBadge eventType="MOVIE_RENAMED" />);
-
-      const badge = screen.getByText('Renamed');
-      expect(badge).toBeInTheDocument();
-      expect(badge).toHaveClass('bg-accent-info/20', 'text-accent-info');
-    });
-
-    it('renders DOWNLOAD_FAILED with error color', () => {
-      render(<ActivityEventBadge eventType="DOWNLOAD_FAILED" />);
-
-      const badge = screen.getByText('Failed');
-      expect(badge).toBeInTheDocument();
-      expect(badge).toHaveClass('bg-status-error/20', 'text-status-error');
-    });
-  });
-
-  describe('TV/Series events', () => {
-    it('renders RELEASE_GRABBED with primary color', () => {
-      render(<ActivityEventBadge eventType="RELEASE_GRABBED" />);
-
-      const badge = screen.getByText('Grabbed');
-      expect(badge).toBeInTheDocument();
-      expect(badge).toHaveClass('bg-accent-primary/20', 'text-accent-primary');
-    });
-
-    it('renders SERIES_DOWNLOADED with info color', () => {
-      render(<ActivityEventBadge eventType="SERIES_DOWNLOADED" />);
-
-      const badge = screen.getByText('Downloaded');
-      expect(badge).toBeInTheDocument();
-      expect(badge).toHaveClass('bg-accent-info/20', 'text-accent-info');
-    });
-
-    it('renders SERIES_IMPORTED with success color', () => {
-      render(<ActivityEventBadge eventType="SERIES_IMPORTED" />);
-
-      const badge = screen.getByText('Imported');
-      expect(badge).toBeInTheDocument();
-      expect(badge).toHaveClass('bg-status-completed/20', 'text-status-completed');
-    });
-  });
-
-  describe('General events', () => {
-    it('renders INDEXER_QUERY with neutral color', () => {
-      render(<ActivityEventBadge eventType="INDEXER_QUERY" />);
-
-      const badge = screen.getByText('Query');
-      expect(badge).toBeInTheDocument();
-      expect(badge).toHaveClass('bg-surface-2', 'text-text-secondary');
-    });
-
-    it('renders INDEXER_RSS with neutral color', () => {
-      render(<ActivityEventBadge eventType="INDEXER_RSS" />);
-
-      const badge = screen.getByText('RSS');
-      expect(badge).toBeInTheDocument();
-      expect(badge).toHaveClass('bg-surface-2', 'text-text-secondary');
-    });
-
-    it('renders INDEXER_AUTH with error color', () => {
-      render(<ActivityEventBadge eventType="INDEXER_AUTH" />);
-
-      const badge = screen.getByText('Auth');
-      expect(badge).toBeInTheDocument();
-      expect(badge).toHaveClass('bg-status-error/20', 'text-status-error');
-    });
-  });
-
-  describe('Unknown events', () => {
-    it('renders unknown event type with neutral color', () => {
-      render(<ActivityEventBadge eventType="UNKNOWN_EVENT_TYPE" />);
-
-      const badge = screen.getByText('UNKNOWN_EVENT_TYPE');
-      expect(badge).toBeInTheDocument();
-      expect(badge).toHaveClass('bg-surface-2', 'text-text-secondary');
-    });
-  });
-
-  it('includes title attribute with event type', () => {
-    render(<ActivityEventBadge eventType="MOVIE_GRABBED" />);
-
+  it('renders RELEASE_GRABBED with primary color', () => {
+    render(<ActivityEventBadge eventType="RELEASE_GRABBED" />);
     const badge = screen.getByText('Grabbed');
-    expect(badge).toHaveAttribute('title', 'MOVIE_GRABBED');
+    expect(badge).toBeInTheDocument();
+    expect(badge).toHaveClass('bg-accent-primary/20', 'text-accent-primary');
+  });
+
+  it('renders IMPORT_COMPLETED with success color', () => {
+    render(<ActivityEventBadge eventType="IMPORT_COMPLETED" />);
+    const badge = screen.getByText('Imported');
+    expect(badge).toBeInTheDocument();
+    expect(badge).toHaveClass('bg-status-completed/20', 'text-status-completed');
+  });
+
+  it('renders IMPORT_FAILED with error color', () => {
+    render(<ActivityEventBadge eventType="IMPORT_FAILED" />);
+    const badge = screen.getByText('Import Failed');
+    expect(badge).toBeInTheDocument();
+    expect(badge).toHaveClass('bg-status-error/20', 'text-status-error');
+  });
+
+  it('renders MEDIA_ADDED with info color', () => {
+    render(<ActivityEventBadge eventType="MEDIA_ADDED" />);
+    const badge = screen.getByText('Added');
+    expect(badge).toBeInTheDocument();
+    expect(badge).toHaveClass('bg-accent-info/20', 'text-accent-info');
+  });
+
+  it('renders SEARCH_EXECUTED with neutral color', () => {
+    render(<ActivityEventBadge eventType="SEARCH_EXECUTED" />);
+    const badge = screen.getByText('Search');
+    expect(badge).toBeInTheDocument();
+    expect(badge).toHaveClass('bg-surface-2', 'text-text-secondary');
+  });
+
+  it('renders SUBTITLE_DOWNLOADED with info color', () => {
+    render(<ActivityEventBadge eventType="SUBTITLE_DOWNLOADED" />);
+    const badge = screen.getByText('Subtitle');
+    expect(badge).toBeInTheDocument();
+    expect(badge).toHaveClass('bg-accent-info/20', 'text-accent-info');
+  });
+
+  it('renders SEEDING_COMPLETE with neutral color', () => {
+    render(<ActivityEventBadge eventType="SEEDING_COMPLETE" />);
+    const badge = screen.getByText('Seeding Done');
+    expect(badge).toBeInTheDocument();
+    expect(badge).toHaveClass('bg-surface-2', 'text-text-secondary');
+  });
+
+  it('renders unknown event type as raw string with neutral color', () => {
+    render(<ActivityEventBadge eventType="UNKNOWN_FUTURE_EVENT" />);
+    const badge = screen.getByText('UNKNOWN_FUTURE_EVENT');
+    expect(badge).toBeInTheDocument();
+    expect(badge).toHaveClass('bg-surface-2', 'text-text-secondary');
+  });
+
+  it('includes title attribute with the raw event type', () => {
+    render(<ActivityEventBadge eventType="RELEASE_GRABBED" />);
+    expect(screen.getByText('Grabbed')).toHaveAttribute('title', 'RELEASE_GRABBED');
   });
 });

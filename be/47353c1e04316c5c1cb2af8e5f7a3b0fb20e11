@@ -1,0 +1,12 @@
+Phase 2 Verification Report: Settings > Media — Movie & TV Root Folders
+
+Automated tests: 19/19 passed across 3 test files
+- server/src/api/routes/mediaSettingsRoutes.test.ts (8 tests)
+- server/src/api/routes/mediaRoutes.rootFolder.test.ts (6 tests)
+- app/src/components/settings/SettingsMediaPage.test.tsx (5 tests)
+
+Manual verification: Passed (user confirmed)
+- Movie Root Folder input with Browse + Validate renders and persists
+- TV Root Folder input with Browse + Validate renders and persists
+- Save writes to /api/settings/media, values survive refresh
+- Database split bug fixed: .env now targets project-root mediarr.db

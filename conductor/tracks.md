@@ -26,7 +26,7 @@ Manual Search, Queue Monitoring & Quality Profile Enhancements (Current)
 
 ## Active Tracks
 
-- [ ] **Track: Import Pipeline & Root Folder Settings** *Phases: 4 | Link: [./tracks/import_pipeline_20260228/](./tracks/import_pipeline_20260228/)*
+- [~] **Track: Import Pipeline & Root Folder Settings** *Phases: 4 | Link: [./tracks/import_pipeline_20260228/](./tracks/import_pipeline_20260228/)*
 - [x] **Track: Manual Search, Queue Monitoring & Quality Profile Enhancements** *Phases: 5 | Link: [./archive/manual_search_queue_20260228/](./archive/manual_search_queue_20260228/)*
 - [x] **Track: Vite Frontend Parity Recovery** *Phases: 5 | Link: [./archive/vite_parity_recovery_20260226/](./archive/vite_parity_recovery_20260226/)*
 

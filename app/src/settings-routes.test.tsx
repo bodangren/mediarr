@@ -72,10 +72,39 @@ vi.mock('@/components/views', () => ({
   SeriesOverviewView: ({ items }: { items: unknown[] }) => <div>Series View {items.length}</div>,
 }));
 
+const mockPushToast = vi.hoisted(() => vi.fn());
+
+vi.mock('@/components/providers/ToastProvider', () => ({
+  ToastProvider: ({ children }: { children: ReactNode }) => <>{children}</>,
+  useToast: () => ({ pushToast: mockPushToast, toasts: [] }),
+}));
+
 import App from './App';
 
+const defaultTorrentLimits = {
+  maxActiveDownloads: 3,
+  maxActiveSeeds: 3,
+  globalDownloadLimitKbps: null,
+  globalUploadLimitKbps: null,
+  incompleteDirectory: '',
+  completeDirectory: '',
+  seedRatioLimit: 0,
+  seedTimeLimitMinutes: 0,
+  seedLimitAction: 'pause' as const,
+};
+
 const baseSettings = {
-  torrentLimits: { maxActiveDownloads: 3, maxActiveSeeds: 5, globalDownloadLimitKbps: null, globalUploadLimitKbps: null },
+  torrentLimits: {
+    maxActiveDownloads: 3,
+    maxActiveSeeds: 5,
+    globalDownloadLimitKbps: null,
+    globalUploadLimitKbps: null,
+    incompleteDirectory: '',
+    completeDirectory: '',
+    seedRatioLimit: 0,
+    seedTimeLimitMinutes: 0,
+    seedLimitAction: 'pause' as const,
+  },
   schedulerIntervals: { rssSyncMinutes: 15, availabilityCheckMinutes: 30, torrentMonitoringSeconds: 60 },
   pathVisibility: { showDownloadPath: false, showMediaPath: false },
   apiKeys: { tmdbApiKey: null, openSubtitlesApiKey: null },
@@ -107,7 +136,7 @@ describe('Settings routes — navigation integrity', () => {
     mockApi.mediaApi.listMovies.mockResolvedValue({ items: [], meta: { page: 1, pageSize: 200, totalCount: 0, totalPages: 0 } });
     mockApi.mediaApi.listSeries.mockResolvedValue({ items: [], meta: { page: 1, pageSize: 200, totalCount: 0, totalPages: 0 } });
     mockApi.indexerApi.list.mockResolvedValue([]);
-    mockApi.downloadClientApi.list.mockResolvedValue([]);
+    mockApi.downloadClientApi.get.mockResolvedValue(defaultTorrentLimits);
     mockApi.qualityProfileApi.list.mockResolvedValue([]);
     mockApi.customFormatApi.list.mockResolvedValue([]);
     mockApi.subtitleProvidersApi.listProviders.mockResolvedValue([]);
@@ -167,7 +196,7 @@ describe('Settings: Indexers page', () => {
     mockApi.indexerApi.create.mockResolvedValue({ id: 3, name: 'New Indexer', implementation: 'Torznab', protocol: 'torrent', enabled: true });
     mockApi.indexerApi.update.mockResolvedValue({ ...mockIndexers[0], enabled: false });
     mockApi.indexerApi.remove.mockResolvedValue({ id: 1 });
-    mockApi.downloadClientApi.list.mockResolvedValue([]);
+    mockApi.downloadClientApi.get.mockResolvedValue(defaultTorrentLimits);
     mockApi.qualityProfileApi.list.mockResolvedValue([]);
     mockApi.customFormatApi.list.mockResolvedValue([]);
     mockApi.subtitleProvidersApi.listProviders.mockResolvedValue([]);
@@ -265,23 +294,17 @@ describe('Settings: Indexers page', () => {
 
 // ── Download Client (single-instance) ─────────────────────────────────────────
 
-const defaultTorrentLimits = {
-  maxActiveDownloads: 3,
-  maxActiveSeeds: 3,
-  globalDownloadLimitKbps: null,
-  globalUploadLimitKbps: null,
+const dlTorrentLimits = {
+  ...defaultTorrentLimits,
   incompleteDirectory: '/tmp/dl',
   completeDirectory: '/media/done',
-  seedRatioLimit: 0,
-  seedTimeLimitMinutes: 0,
-  seedLimitAction: 'pause' as const,
 };
 
 describe('Settings: Download Client page (single-instance)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockApi.downloadClientApi.get.mockResolvedValue(defaultTorrentLimits);
-    mockApi.downloadClientApi.save.mockResolvedValue(defaultTorrentLimits);
+    mockApi.downloadClientApi.get.mockResolvedValue(dlTorrentLimits);
+    mockApi.downloadClientApi.save.mockResolvedValue(dlTorrentLimits);
     mockApi.indexerApi.list.mockResolvedValue([]);
     mockApi.qualityProfileApi.list.mockResolvedValue([]);
     mockApi.customFormatApi.list.mockResolvedValue([]);
@@ -334,7 +357,7 @@ describe('Settings: Profiles & Quality page', () => {
     ]);
     mockApi.customFormatApi.create.mockResolvedValue({ id: 2, name: 'NewFormat', includeCustomFormatWhenRenaming: false, conditions: [], scores: [] });
     mockApi.indexerApi.list.mockResolvedValue([]);
-    mockApi.downloadClientApi.list.mockResolvedValue([]);
+    mockApi.downloadClientApi.get.mockResolvedValue(defaultTorrentLimits);
     mockApi.subtitleProvidersApi.listProviders.mockResolvedValue([]);
     mockApi.notificationsApi.list.mockResolvedValue([]);
     mockApi.settingsApi.get.mockResolvedValue(baseSettings);
@@ -438,7 +461,7 @@ describe('Settings: Subtitles page', () => {
       { id: 1, name: 'OpenSubtitles', status: 'ok' },
     ]);
     mockApi.indexerApi.list.mockResolvedValue([]);
-    mockApi.downloadClientApi.list.mockResolvedValue([]);
+    mockApi.downloadClientApi.get.mockResolvedValue(defaultTorrentLimits);
     mockApi.qualityProfileApi.list.mockResolvedValue([]);
     mockApi.customFormatApi.list.mockResolvedValue([]);
     mockApi.notificationsApi.list.mockResolvedValue([]);

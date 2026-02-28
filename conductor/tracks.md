@@ -24,6 +24,7 @@ Search and Add to Wanted (Current)
 ## Active Tracks
 
 - [x] **Track: Vite Frontend Parity Recovery** *Phases: 5 | Link: [./archive/vite_parity_recovery_20260226/](./archive/vite_parity_recovery_20260226/)*
+- [ ] **Track: Media Detail Pages & Library Enrichment** *Phases: 4 | Link: [./tracks/media_detail_pages_20260228/](./tracks/media_detail_pages_20260228/)*
 
 ---
 

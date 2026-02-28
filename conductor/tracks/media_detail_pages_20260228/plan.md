@@ -14,7 +14,7 @@
     - [ ] Ensure existing AppSettingsRepository.get() and update() handle
           the new fields correctly (JSON merge).
     - [ ] Verify tests pass.
-- [ ] Task: Refactor downloadClientRoutes.ts to integrated downloader settings
+- [~] Task: Refactor downloadClientRoutes.ts to integrated downloader settings
     - [ ] Write failing integration tests for GET /api/download-client and
           PUT /api/download-client.
     - [ ] Replace multi-client CRUD routes with GET (reads torrentLimits from
@@ -27,13 +27,13 @@
 > Goal: When a TV series is added to Wanted, fetch and persist its full
 > season/episode data from SkyHook in the background.
 
-- [~] Task: Add Season/Episode upsert to MediaRepository
-    - [ ] Write failing unit tests for upsertSeasonsAndEpisodes(seriesId, details).
-    - [ ] Implement upsertSeasonsAndEpisodes in MediaRepository using Prisma
+- [x] 0951113 Task: Add Season/Episode upsert to MediaRepository
+    - [x] Write failing unit tests for upsertSeasonsAndEpisodes(seriesId, details).
+    - [x] Implement upsertSeasonsAndEpisodes in MediaRepository using Prisma
           upsert for Season (unique: seriesId+seasonNumber) and Episode
           (unique: tvdbId).
-    - [ ] Verify tests pass.
-- [ ] Task: Hook episode population into POST /api/wanted
+    - [x] Verify tests pass.
+- [~] Task: Hook episode population into POST /api/wanted
     - [ ] Write failing integration tests: adding a TV series triggers a
           background SkyHook fetch and seasons/episodes appear in the DB.
     - [ ] In mediaRoutes.ts, after the series is committed, fire an async

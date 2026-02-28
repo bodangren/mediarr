@@ -348,7 +348,7 @@ function SettingsIndexersPage() {
   );
 }
 
-function SettingsClientsPage() {
+export function SettingsClientsPage() {
   const api = useMemo(() => getApiClients(), []);
   const { pushToast } = useToast();
   const [settings, setSettings] = useState<TorrentLimitsSettings | null>(null);

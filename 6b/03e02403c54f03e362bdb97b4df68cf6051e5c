@@ -1,0 +1,17 @@
+Phase 5 Verification Report: Activity History Page
+
+Automated test command: CI=true npx vitest run (app workspace, Phase 5 files)
+
+Results:
+- ActivityHistoryPage.test.tsx: 7/7 passed
+- ActivityQueuePage.test.tsx: 7/7 passed
+- torrentApi.test.ts: 7/7 passed
+Total: 21/21 passed
+
+Phase 5 scope:
+- ActivityHistoryPage component with paginated history, event type + status filters,
+  Mark Failed action (success rows only), Source/Quality/Indexer columns
+- Route /activity/history wired in App.tsx (replaces StaticPage stub)
+- Also committed: TorrentManager restart re-download bug fix (completeDir parent path)
+- Also committed: import_pipeline_20260228 track created (spec + plan)
+- Also committed: tracks.md updated with new track and execution sequence

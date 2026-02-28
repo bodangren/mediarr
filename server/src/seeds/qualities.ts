@@ -71,6 +71,69 @@ export async function seedQualityDefinitions(prisma: PrismaClient): Promise<numb
   return QUALITY_DEFINITIONS.length;
 }
 
+interface QualityProfilePreset {
+  name: string;
+  cutoff: number;
+  allowedIds: number[];
+}
+
+function buildItems(allowedIds: number[]): Array<{ quality: { id: number; name: string; source: string; resolution: number }; allowed: boolean }> {
+  return QUALITY_DEFINITIONS.map(q => ({
+    quality: { id: q.id, name: q.name, source: q.source, resolution: q.resolution },
+    allowed: allowedIds.includes(q.id),
+  }));
+}
+
+const QUALITY_PROFILE_PRESETS: QualityProfilePreset[] = [
+  {
+    name: 'Any',
+    cutoff: 1, // SDTV
+    allowedIds: QUALITY_DEFINITIONS.map(q => q.id),
+  },
+  {
+    name: 'SD',
+    cutoff: 1, // SDTV
+    allowedIds: [1, 2, 3, 4],
+  },
+  {
+    name: 'HD-720p',
+    cutoff: 5, // HDTV-720p
+    allowedIds: [5, 6, 7, 8],
+  },
+  {
+    name: 'HD-1080p',
+    cutoff: 9, // HDTV-1080p
+    allowedIds: [9, 10, 11, 12],
+  },
+  {
+    name: 'Ultra-HD',
+    cutoff: 14, // HDTV-2160p
+    allowedIds: [14, 15, 16, 17],
+  },
+  {
+    name: 'HD - 720p/1080p',
+    cutoff: 5, // HDTV-720p
+    allowedIds: [5, 6, 7, 8, 9, 10, 11, 12],
+  },
+];
+
+/**
+ * Seeds standard quality profiles into the database.
+ * Uses upsert for idempotency — safe to call multiple times.
+ * Existing profiles with matching names are updated in place, not duplicated.
+ */
+export async function seedQualityProfiles(prisma: PrismaClient): Promise<number> {
+  for (const preset of QUALITY_PROFILE_PRESETS) {
+    const items = buildItems(preset.allowedIds);
+    await prisma.qualityProfile.upsert({
+      where: { name: preset.name },
+      update: { cutoff: preset.cutoff, items: items as never },
+      create: { name: preset.name, cutoff: preset.cutoff, items: items as never },
+    });
+  }
+  return QUALITY_PROFILE_PRESETS.length;
+}
+
 /**
  * Get all quality definitions for API responses
  */

@@ -26,7 +26,7 @@ import { QualityProfileRepository } from './repositories/QualityProfileRepositor
 import { SubtitleVariantRepository } from './repositories/SubtitleVariantRepository';
 import { TorrentRepository } from './repositories/TorrentRepository';
 import { seedCategories } from './seeds/categories';
-import { seedQualityDefinitions } from './seeds/qualities';
+import { seedQualityDefinitions, seedQualityProfiles } from './seeds/qualities';
 import { ActivityEventEmitter } from './services/ActivityEventEmitter';
 
 import { CollectionService } from './services/CollectionService';
@@ -61,45 +61,29 @@ function parsePort(rawPort: string | undefined, fallback: number): number {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+async function migrateOldQualityProfiles(prisma: PrismaClient): Promise<void> {
+  // Migrate legacy "UltraHD" profile (created before standardized presets) to "Ultra-HD"
+  const oldProfile = await (prisma as any).qualityProfile.findUnique({ where: { name: 'UltraHD' } });
+  if (!oldProfile) return;
+
+  const newProfile = await (prisma as any).qualityProfile.findUnique({ where: { name: 'Ultra-HD' } });
+  if (!newProfile) return;
+
+  // Reassign any media using the old profile to the new one
+  await Promise.all([
+    (prisma as any).movie.updateMany({ where: { qualityProfileId: oldProfile.id }, data: { qualityProfileId: newProfile.id } }),
+    (prisma as any).series.updateMany({ where: { qualityProfileId: oldProfile.id }, data: { qualityProfileId: newProfile.id } }),
+    (prisma as any).media.updateMany({ where: { qualityProfileId: oldProfile.id }, data: { qualityProfileId: newProfile.id } }),
+  ]);
+
+  await (prisma as any).qualityProfile.delete({ where: { id: oldProfile.id } });
+}
+
 async function ensureBaselineData(prisma: PrismaClient): Promise<void> {
   await seedCategories(prisma);
   await seedQualityDefinitions(prisma);
-
-  // Default quality profiles with proper items structure
-  const hd1080pItems = [
-    { quality: { id: 1, name: 'SDTV', source: 'television', resolution: 480 }, allowed: true },
-    { quality: { id: 4, name: 'DVD', source: 'dvd', resolution: 480 }, allowed: true },
-    { quality: { id: 5, name: 'HDTV-720p', source: 'television', resolution: 720 }, allowed: true },
-    { quality: { id: 6, name: 'WEBRip-720p', source: 'web', resolution: 720 }, allowed: true },
-    { quality: { id: 7, name: 'WEBDL-720p', source: 'web', resolution: 720 }, allowed: true },
-    { quality: { id: 8, name: 'Bluray-720p', source: 'bluray', resolution: 720 }, allowed: true },
-    { quality: { id: 9, name: 'HDTV-1080p', source: 'television', resolution: 1080 }, allowed: true },
-    { quality: { id: 10, name: 'WEBRip-1080p', source: 'web', resolution: 1080 }, allowed: true },
-    { quality: { id: 11, name: 'WEBDL-1080p', source: 'web', resolution: 1080 }, allowed: true },
-    { quality: { id: 12, name: 'Bluray-1080p', source: 'bluray', resolution: 1080 }, allowed: true },
-    { quality: { id: 13, name: 'Bluray-1080p Remux', source: 'bluray', resolution: 1080 }, allowed: false },
-  ];
-
-  const ultraHdItems = [
-    ...hd1080pItems,
-    { quality: { id: 14, name: 'HDTV-2160p', source: 'television', resolution: 2160 }, allowed: true },
-    { quality: { id: 15, name: 'WEBRip-2160p', source: 'web', resolution: 2160 }, allowed: true },
-    { quality: { id: 16, name: 'WEBDL-2160p', source: 'web', resolution: 2160 }, allowed: true },
-    { quality: { id: 17, name: 'Bluray-2160p', source: 'bluray', resolution: 2160 }, allowed: true },
-    { quality: { id: 18, name: 'Bluray-2160p Remux', source: 'bluray', resolution: 2160 }, allowed: false },
-  ];
-
-  await prisma.qualityProfile.upsert({
-    where: { name: 'HD-1080p' },
-    update: {},
-    create: { name: 'HD-1080p', cutoff: 11, items: hd1080pItems },
-  });
-
-  await prisma.qualityProfile.upsert({
-    where: { name: 'UltraHD' },
-    update: {},
-    create: { name: 'UltraHD', cutoff: 16, items: ultraHdItems },
-  });
+  await seedQualityProfiles(prisma);
+  await migrateOldQualityProfiles(prisma);
 }
 
 interface RuntimeTorrentManager {

@@ -121,6 +121,67 @@ export function registerMovieRoutes(
     return sendSuccess(reply, assertFound(movie, `Movie ${id} not found`));
   });
 
+  // PUT /api/movies/:id - Update movie metadata/settings
+  app.put('/api/movies/:id', {
+    schema: {
+      params: {
+        type: 'object',
+        required: ['id'],
+        properties: {
+          id: { type: 'string' },
+        },
+      },
+      body: {
+        type: 'object',
+        properties: {
+          monitored: { type: 'boolean' },
+          qualityProfileId: { type: 'number' },
+          path: { type: 'string' },
+          title: { type: 'string' },
+          titleSlug: { type: 'string' },
+          overview: { type: 'string' },
+          studio: { type: 'string' },
+          certification: { type: 'string' },
+          genres: { type: 'array', items: { type: 'string' } },
+        },
+      },
+    },
+  }, async (request, reply) => {
+    const id = parseIdParam((request.params as { id: string }).id, 'movie');
+    const body = request.body as {
+      monitored?: boolean;
+      qualityProfileId?: number;
+      path?: string;
+      title?: string;
+      titleSlug?: string;
+      overview?: string;
+      studio?: string;
+      certification?: string;
+      genres?: string[];
+    };
+
+    const movie = await (deps.prisma as any).movie.findUnique({ where: { id } });
+    assertFound(movie, `Movie ${id} not found`);
+
+    const updateData: Record<string, unknown> = {};
+    if (body.monitored !== undefined) updateData.monitored = body.monitored;
+    if (body.qualityProfileId !== undefined) updateData.qualityProfileId = body.qualityProfileId;
+    if (body.path !== undefined) updateData.path = body.path;
+    if (body.title !== undefined) updateData.title = body.title;
+    if (body.titleSlug !== undefined) updateData.titleSlug = body.titleSlug;
+    if (body.overview !== undefined) updateData.overview = body.overview;
+    if (body.studio !== undefined) updateData.studio = body.studio;
+    if (body.certification !== undefined) updateData.certification = body.certification;
+    if (body.genres !== undefined) updateData.genres = body.genres;
+
+    const updated = await (deps.prisma as any).movie.update({
+      where: { id },
+      data: updateData,
+    });
+
+    return sendSuccess(reply, updated);
+  });
+
   app.post('/api/movies/:id/search', {
     schema: {
       params: {

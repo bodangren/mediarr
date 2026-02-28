@@ -1,0 +1,8 @@
+Task: Confirm series release search handles tvdbId + season + episode params
+
+Summary: Verified POST /api/series/:id/search correctly forwards tvdbId, season, and episode to searchAllIndexers. The route already had correct implementation. Extended seriesRoutes.search.test.ts from 2 to 6 tests covering: explicit season/episode params, episodeId derivation, series-level search (no season), mediaSearchService fallback, missing tvdbId (null), and episode-series mismatch (422).
+
+Files modified:
+- server/src/api/routes/seriesRoutes.search.test.ts (87 lines added)
+
+No implementation gaps found — all params correctly forwarded.

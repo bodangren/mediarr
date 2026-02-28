@@ -1,0 +1,18 @@
+Task: Build ActivityHistoryPage component (Phase 5)
+
+Summary: Replaced StaticPage stub at /activity/history with a full paginated
+activity history view. Component fetches activityApi.list() with pagination
+and supports event type and success/failure filters.
+
+Columns: Date, Event Type badge, Summary, Source, Quality, Indexer, Actions
+Filters: Event Type dropdown, Status (All/Success/Failed) select
+Actions: Mark Failed button (shown only on successful rows)
+Pagination: prev/next with page counter
+
+Files created:
+- app/src/components/activity/ActivityHistoryPage.tsx
+- app/src/components/activity/ActivityHistoryPage.test.tsx (7 tests)
+
+Files modified:
+- app/src/App.tsx: import + route wired
+- conductor/tracks/manual_search_queue_20260228/plan.md: task marked in-progress

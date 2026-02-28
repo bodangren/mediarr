@@ -114,11 +114,23 @@ export class MediaService {
     void deleteFiles;
 
     if (mediaType === 'MOVIE') {
+      const movie = await this.prisma.movie.findUnique({ where: { id }, select: { mediaId: true } });
       await this.prisma.movie.delete({ where: { id } });
+      if (movie?.mediaId) {
+        await (this.prisma as any).media.delete({ where: { id: movie.mediaId } }).catch(() => {});
+      }
       return;
     }
 
+    // Prisma's libquery engine for SQLite doesn't always fire DB-level
+    // cascades when foreign_keys=ON; explicitly delete children first.
+    const series = await this.prisma.series.findUnique({ where: { id }, select: { mediaId: true } });
+    await (this.prisma as any).episode.deleteMany({ where: { seriesId: id } });
+    await (this.prisma as any).season.deleteMany({ where: { seriesId: id } });
     await this.prisma.series.delete({ where: { id } });
+    if (series?.mediaId) {
+      await (this.prisma as any).media.delete({ where: { id: series.mediaId } }).catch(() => {});
+    }
   }
 
   async getMovieCandidatesForSearch(): Promise<any[]> {

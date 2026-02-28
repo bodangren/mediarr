@@ -36,9 +36,9 @@
 
 ### Frontend — SeriesInteractiveSearchModal
 
-- [ ] Task: Build `SeriesInteractiveSearchModal` component
-    - [ ] Write rendering tests: modal renders with level selector, season/episode selectors appear at correct levels, results table renders, Grab button triggers API call
-    - [ ] Create `app/src/components/series/SeriesInteractiveSearchModal.tsx` with:
+- [x] Task: Build `SeriesInteractiveSearchModal` component [eb6cba0]
+    - [x] Write rendering tests: modal renders with level selector, season/episode selectors appear at correct levels, results table renders, Grab button triggers API call
+    - [x] Create `app/src/components/series/SeriesInteractiveSearchModal.tsx` with:
         - Search level selector (Series / Season / Episode)
         - Season number selector (visible at Season + Episode levels)
         - Episode number selector (visible at Episode level)
@@ -47,11 +47,11 @@
         - One-click Grab → `releaseApi.grabRelease(guid, indexerId)`
         - Approved/rejected visual distinction; inline rejection reasons
         - Auto-search on open
-    - [ ] Add `seriesApi.searchReleases()` client method if not already present
+    - [x] Add `seriesApi.searchReleases()` client method if not already present
 
 ### Frontend — Series Detail Toolbar Wiring
 
-- [ ] Task: Wire series detail toolbar "Search" button and season/episode actions
+- [~] Task: Wire series detail toolbar "Search" button and season/episode actions
     - [ ] Write tests asserting toolbar Search button renders and opens `SeriesInteractiveSearchModal`
     - [ ] Open `SeriesInteractiveSearchModal` from the series detail toolbar Search button at Series level
     - [ ] Add "Search Season" action to season header rows → modal at Season level with season pre-filled

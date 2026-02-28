@@ -1,0 +1,3 @@
+Conductor plan update:
+- Marked task 'Add import retry and root-folder fallback hardening' as completed.
+- Recorded implementation commit SHA: f9e6274d in plan.md for auditability.

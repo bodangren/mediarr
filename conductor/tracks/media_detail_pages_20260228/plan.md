@@ -4,7 +4,7 @@
 > Goal: Extend TorrentLimitsSettings with the new fields and replace the
 > multi-client download routes with a single-instance settings API.
 
-- [ ] Task: Extend TorrentLimitsSettings and AppSettingsRepository
+- [~] Task: Extend TorrentLimitsSettings and AppSettingsRepository
     - [ ] Write failing unit tests for the new fields (incompleteDirectory,
           completeDirectory, seedRatioLimit, seedTimeLimit, seedLimitAction)
           and their defaults.
@@ -27,7 +27,7 @@
 > Goal: When a TV series is added to Wanted, fetch and persist its full
 > season/episode data from SkyHook in the background.
 
-- [ ] Task: Add Season/Episode upsert to MediaRepository
+- [~] Task: Add Season/Episode upsert to MediaRepository
     - [ ] Write failing unit tests for upsertSeasonsAndEpisodes(seriesId, details).
     - [ ] Implement upsertSeasonsAndEpisodes in MediaRepository using Prisma
           upsert for Season (unique: seriesId+seasonNumber) and Episode

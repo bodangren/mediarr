@@ -5,6 +5,11 @@ export interface TorrentLimitsSettings {
   maxActiveSeeds: number;
   globalDownloadLimitKbps: number | null;
   globalUploadLimitKbps: number | null;
+  incompleteDirectory: string;
+  completeDirectory: string;
+  seedRatioLimit: number;
+  seedTimeLimitMinutes: number;
+  seedLimitAction: 'pause' | 'remove';
 }
 
 export interface SchedulerIntervalsSettings {
@@ -69,6 +74,11 @@ export const DEFAULT_APP_SETTINGS: AppSettingsPayload = {
     maxActiveSeeds: 3,
     globalDownloadLimitKbps: null,
     globalUploadLimitKbps: null,
+    incompleteDirectory: '',
+    completeDirectory: '',
+    seedRatioLimit: 0,
+    seedTimeLimitMinutes: 0,
+    seedLimitAction: 'pause',
   },
   schedulerIntervals: {
     rssSyncMinutes: 15,
@@ -187,6 +197,17 @@ function readAuthenticationMethod(
 
 function readUpdateBranch(value: unknown, fallback: UpdateSettings['branch']): UpdateSettings['branch'] {
   if (value === 'master' || value === 'develop' || value === 'phantom') {
+    return value;
+  }
+
+  return fallback;
+}
+
+function readSeedLimitAction(
+  value: unknown,
+  fallback: TorrentLimitsSettings['seedLimitAction'],
+): TorrentLimitsSettings['seedLimitAction'] {
+  if (value === 'pause' || value === 'remove') {
     return value;
   }
 
@@ -359,6 +380,26 @@ export class AppSettingsRepository {
         globalUploadLimitKbps: readNullableNumber(
           torrentLimits.globalUploadLimitKbps,
           DEFAULT_APP_SETTINGS.torrentLimits.globalUploadLimitKbps,
+        ),
+        incompleteDirectory: readString(
+          torrentLimits.incompleteDirectory,
+          DEFAULT_APP_SETTINGS.torrentLimits.incompleteDirectory,
+        ),
+        completeDirectory: readString(
+          torrentLimits.completeDirectory,
+          DEFAULT_APP_SETTINGS.torrentLimits.completeDirectory,
+        ),
+        seedRatioLimit: readNumber(
+          torrentLimits.seedRatioLimit,
+          DEFAULT_APP_SETTINGS.torrentLimits.seedRatioLimit,
+        ),
+        seedTimeLimitMinutes: readNumber(
+          torrentLimits.seedTimeLimitMinutes,
+          DEFAULT_APP_SETTINGS.torrentLimits.seedTimeLimitMinutes,
+        ),
+        seedLimitAction: readSeedLimitAction(
+          torrentLimits.seedLimitAction,
+          DEFAULT_APP_SETTINGS.torrentLimits.seedLimitAction,
         ),
       },
       schedulerIntervals: {

@@ -113,4 +113,91 @@ describe('seriesRoutes search aggregation wiring', () => {
       qualityProfileId: 7,
     }));
   });
+
+  it('performs series-level search (no season/episode) with tvdbId only', async () => {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/series/10/search',
+      payload: {},
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(searchAllIndexers).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'tvsearch',
+      tvdbId: 1234,
+      qualityProfileId: 7,
+    }));
+    // season and episode must NOT be present for a series-level search
+    const callArgs = searchAllIndexers.mock.calls[0][0];
+    expect(callArgs.season).toBeUndefined();
+    expect(callArgs.episode).toBeUndefined();
+  });
+
+  it('falls back to mediaSearchService when searchAggregationService is absent', async () => {
+    const fallbackSearch = vi.fn().mockResolvedValue({
+      releases: [],
+      indexerResults: [],
+      totalResults: 0,
+      deduplicatedCount: 0,
+    });
+
+    const fallbackDeps = {
+      ...deps,
+      searchAggregationService: undefined,
+      mediaSearchService: { searchAllIndexers: fallbackSearch },
+    } as unknown as ApiDependencies;
+
+    const fallbackApp = createApp(fallbackDeps);
+
+    const response = await fallbackApp.inject({
+      method: 'POST',
+      url: '/api/series/10/search',
+      payload: { seasonNumber: 2, episodeNumber: 5 },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(fallbackSearch).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'tvsearch',
+      tvdbId: 1234,
+      season: 2,
+      episode: 5,
+    }));
+  });
+
+  it('omits tvdbId from search params when series has no tvdbId', async () => {
+    (deps.prisma as any).series.findUnique.mockResolvedValue({
+      id: 10,
+      title: 'No TVDB Series',
+      tvdbId: null,
+      qualityProfileId: 7,
+    });
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/series/10/search',
+      payload: { seasonNumber: 1 },
+    });
+
+    expect(response.statusCode).toBe(200);
+    const callArgs = searchAllIndexers.mock.calls[0][0];
+    expect(callArgs.tvdbId).toBeUndefined();
+    expect(callArgs.season).toBe(1);
+  });
+
+  it('returns 400 when episodeId does not belong to the requested series', async () => {
+    (deps.prisma as any).episode.findUnique.mockResolvedValue({
+      id: 55,
+      seriesId: 999, // different series
+      seasonNumber: 1,
+      episodeNumber: 1,
+    });
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/series/10/search',
+      payload: { episodeId: 55 },
+    });
+
+    expect(response.statusCode).toBe(422);
+  });
 });

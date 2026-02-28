@@ -1,0 +1,13 @@
+Fix: drag-to-reorder unusable due to react-dnd HTML5Backend ghost image issue
+
+Root cause: react-dnd's HTML5Backend wraps the browser's native drag API which produces a ghost image that floats at a random offset (not cursor-tracking) and has unreliable hover detection. Drops landed in wrong positions ~80% of the time.
+
+Fix: Removed react-dnd entirely from AddProfileModal. Replaced with native HTML5 drag events:
+- li[draggable] on each QualityRow
+- onDragStart: injects a 1px invisible div as the drag image (via e.dataTransfer.setDragImage) so no browser ghost appears; cleans up immediately via setTimeout
+- onDragEnter: fires reliably when cursor enters a new list item; triggers moveItem reorder and updates draggingIndex to track position
+- onDragOver: e.preventDefault() to allow drop
+- onDragEnd: clears draggingIndex state
+- Visual feedback: dragging item fades to opacity 0.3
+
+Also removed the now-dead vi.mock('react-dnd') and vi.mock('react-dnd-html5-backend') blocks from both test files.

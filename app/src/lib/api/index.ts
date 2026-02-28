@@ -9,6 +9,7 @@ import { createCollectionApi } from './collectionApi';
 import { createCustomFormatApi } from './customFormatApi';
 import { createDiscoverApi } from './discoverApi';
 import { createEventsApi } from './eventsApi';
+import { createFilesystemApi } from './filesystemApi';
 import { createFiltersApi } from './filters';
 import { createHealthApi } from './healthApi';
 import { ApiHttpClient, type ApiHttpClientConfig } from './httpClient';
@@ -78,6 +79,7 @@ export function createApiClients(config: ApiHttpClientConfig = {}) {
     wantedApi: createWantedApi(httpClient),
     movieApi: createMovieApi(httpClient),
     seriesApi: createSeriesApi(httpClient),
+    filesystemApi: createFilesystemApi(httpClient),
     eventsApi: createEventsApi({
       baseUrl: config.baseUrl,
     }),

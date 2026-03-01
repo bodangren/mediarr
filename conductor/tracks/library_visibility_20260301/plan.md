@@ -28,7 +28,7 @@
 
 - [x] Task: Conductor - User Manual Verification 'Phase 2'
 
-## Phase 3: Dashboard Landing Page
+## Phase 3: Dashboard Landing Page [checkpoint: 7dffa2fc]
 > Goal: Create a useful home screen for the application.
 
 - [x] Task: Backend Dashboard APIs
@@ -41,4 +41,4 @@
     - [x] Sub-task: Build "System Status" widget (Disk space bars).
     - [x] Sub-task: Set Dashboard as the default `/` route.
 
-- [ ] Task: Conductor - User Manual Verification 'Phase 3'
+- [x] Task: Conductor - User Manual Verification 'Phase 3'

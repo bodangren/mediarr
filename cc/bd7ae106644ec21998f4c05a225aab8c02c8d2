@@ -1,0 +1,16 @@
+simplify pass on dashboard phase (library_visibility track)
+
+reuse:
+  - formatBytes/formatSpeed duplicated locally → now imported from @/lib/format
+  - formatEpisodeCode added to @/lib/format; replaces two inline padStart patterns
+    in UpcomingWidget and CalendarPage
+
+quality:
+  - DashboardPage used a hand-rolled <header> instead of <RouteScaffold>; fixed
+  - isPast variable computed for every calendar cell but only used in one item
+    conditional; eliminated the variable, inlined the check
+  - unused React named import removed from CalendarPage
+
+efficiency:
+  - weeks grid (42 Date objects) was rebuilt on every render; wrapped in useMemo
+  - todayStr was new Date() on every render, breaking reference equality; memoized

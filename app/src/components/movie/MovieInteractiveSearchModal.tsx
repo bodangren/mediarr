@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Search, Download, AlertCircle, CheckCircle, Loader2, Filter, ArrowUpDown } from 'lucide-react';
+import { Search, Download, AlertCircle, CheckCircle, Loader2, Filter, ArrowUpDown, X } from 'lucide-react';
 import { Button } from '@/components/primitives/Button';
 import { Modal, ModalBody, ModalHeader } from '@/components/primitives/Modal';
 import { EmptyPanel } from '@/components/primitives/EmptyPanel';
@@ -162,6 +162,7 @@ export function MovieInteractiveSearchModal({
   });
   const [qualityFilter, setQualityFilter] = useState('all');
   const [indexerFilter, setIndexerFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [sortField, setSortField] = useState<SortField>('seeders');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [overrideMatch, setOverrideMatch] = useState<OverrideMatchState>({
@@ -264,6 +265,12 @@ export function MovieInteractiveSearchModal({
   useEffect(() => {
     let filtered = [...releases];
 
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      filtered = filtered.filter(r => r.title.toLowerCase().includes(query));
+    }
+
     // Apply quality filter
     if (qualityFilter !== 'all') {
       filtered = filtered.filter(r => r.quality.quality.name.toLowerCase().includes(qualityFilter));
@@ -299,7 +306,7 @@ export function MovieInteractiveSearchModal({
     });
 
     setFilteredReleases(filtered);
-  }, [releases, qualityFilter, indexerFilter, sortField, sortDirection]);
+  }, [releases, searchQuery, qualityFilter, indexerFilter, sortField, sortDirection]);
 
   // Search automatically when modal opens
   useEffect(() => {
@@ -389,6 +396,7 @@ export function MovieInteractiveSearchModal({
     setGrabState({ releaseId: null, isGrabbing: false, error: null, success: false });
     setQualityFilter('all');
     setIndexerFilter('all');
+    setSearchQuery('');
     onClose();
   }, [onClose]);
 
@@ -432,6 +440,26 @@ export function MovieInteractiveSearchModal({
           {/* Filter and Sort Controls */}
           {!isLoading && releases.length > 0 && (
             <div className="mb-4 flex flex-wrap gap-4 rounded-md border border-border-subtle bg-surface-2 p-3">
+              <div className="flex items-center gap-2">
+                <Search size={16} className="text-text-secondary" />
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Search releases..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-48 rounded-md border border-border-subtle bg-surface-1 px-3 py-1.5 pr-8 text-sm text-text-primary placeholder:text-text-tertiary"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-text-primary"
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
+              </div>
               <div className="flex items-center gap-2">
                 <Filter size={16} className="text-text-secondary" />
                 <FilterMenu

@@ -29,7 +29,6 @@ Collections (Planned)
 
 ## Active Tracks
 
-- [~] **Track: Library Visibility & Dashboard** *Phases: 3 | Link: [./tracks/library_visibility_20260301/](./tracks/library_visibility_20260301/)*
 - [ ] **Track: Existing Library Import** *Phases: 4 | Link: [./tracks/existing_library_import_20260301/](./tracks/existing_library_import_20260301/)*
 - [ ] **Track: Collections** *Phases: 3 | Link: [./tracks/collections_20260301/](./tracks/collections_20260301/)*
 - [x] **Track: Manual Search, Queue Monitoring & Quality Profile Enhancements** *Phases: 5 | Link: [./archive/manual_search_queue_20260228/](./archive/manual_search_queue_20260228/)*
@@ -38,6 +37,8 @@ Collections (Planned)
 ---
 
 ## Archived Tracks
+
+- [x] **Track: Library Visibility & Dashboard** *Phases: 3 | Link: [./archive/library_visibility_20260301/](./archive/library_visibility_20260301/)*
 
 - [x] **Track: Import Pipeline & Root Folder Settings** *Phases: 4 | Link: [./archive/import_pipeline_20260228/](./archive/import_pipeline_20260228/)*
 - [x] **Track: Media Detail Pages & Library Enrichment** *Phases: 4 | Link: [./archive/media_detail_pages_20260228/](./archive/media_detail_pages_20260228/)*

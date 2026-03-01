@@ -1,0 +1,20 @@
+Task: Harden movie matching for release-style filenames (c1a7f4d2)
+
+Summary:
+- Fixed ImportManager movie matching for completed torrents whose filenames contain release metadata (e.g. The.Matrix.1999.1080p.BrRip.x264.YIFY.mp4).
+- Replaced reversed/overly-broad title matching with parsed title/year matching and normalized clean-title fallback.
+- Added a regression test that validates year-prioritized matching for dot-delimited release names.
+- Recorded the completed hardening task in the active Conductor plan for import_pipeline_20260228.
+
+Files changed:
+- server/src/services/ImportManager.ts
+- server/src/services/ImportManager.test.ts
+- conductor/tracks/import_pipeline_20260228/plan.md
+
+Why:
+- Import failures were logged as "No match found" for known library movies because the query attempted to match full release strings against stored movie titles.
+- The new parsing/matching logic aligns import matching behavior with release-name reality while preserving existing import flows.
+
+Verification:
+- CI=true npx vitest run server/src/services/ImportManager.test.ts
+- CI=true npx vitest run server/src/api/routes/operationsRoutes.retryImport.test.ts server/src/api/routes/torrentRoutes.retryImport.test.ts

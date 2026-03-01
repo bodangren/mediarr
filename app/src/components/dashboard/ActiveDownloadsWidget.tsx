@@ -1,17 +1,10 @@
 import { Link } from 'react-router-dom';
+import { formatSpeed } from '@/lib/format';
 import type { TorrentItem } from '@/lib/api/torrentApi';
 
 interface ActiveDownloadsWidgetProps {
   torrents: TorrentItem[];
   isLoading: boolean;
-}
-
-function formatSpeed(bytesPerSecond: number): string {
-  if (bytesPerSecond === 0) return '0 B/s';
-  const k = 1024;
-  const sizes = ['B/s', 'KB/s', 'MB/s', 'GB/s'];
-  const i = Math.floor(Math.log(bytesPerSecond) / Math.log(k));
-  return `${parseFloat((bytesPerSecond / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
 }
 
 export function ActiveDownloadsWidget({ torrents, isLoading }: ActiveDownloadsWidgetProps) {

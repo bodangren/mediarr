@@ -104,6 +104,10 @@ export function formatSpeed(bytesPerSecond: number | undefined): string {
   return `${formatBytes(bytesPerSecond)}/s`;
 }
 
+export function formatEpisodeCode(seasonNumber: number, episodeNumber: number): string {
+  return `S${String(seasonNumber).padStart(2, '0')}E${String(episodeNumber).padStart(2, '0')}`;
+}
+
 export function formatTimeRemaining(seconds: number | undefined): string {
   if (seconds === undefined || !Number.isFinite(seconds) || seconds <= 0) {
     return '-';

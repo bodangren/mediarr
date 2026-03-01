@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { getApiClients } from '@/lib/api/client';
+import { RouteScaffold } from '@/components/primitives/RouteScaffold';
 import type { ActivityItem } from '@/lib/api/activityApi';
 import type { DiskSpaceInfo, UpcomingItem } from '@/lib/api/dashboardApi';
 import type { TorrentItem } from '@/lib/api/torrentApi';
@@ -86,20 +87,13 @@ export function DashboardPage() {
   }, [api]);
 
   return (
-    <div className="space-y-4">
-      <header className="rounded-md border border-border-subtle bg-surface-1 p-4">
-        <h1 className="text-lg font-semibold">Dashboard</h1>
-        <p className="text-sm text-text-secondary">
-          Unified overview across movies, TV, tasks, and system status.
-        </p>
-      </header>
-
+    <RouteScaffold title="Dashboard" description="Unified overview across movies, TV, tasks, and system status.">
       <div className="grid gap-4 lg:grid-cols-2">
         <RecentlyAddedWidget items={recentActivity} isLoading={isLoadingActivity} />
         <UpcomingWidget items={upcoming} isLoading={isLoadingUpcoming} />
         <ActiveDownloadsWidget torrents={torrents} isLoading={isLoadingTorrents} />
         <DiskSpaceWidget data={diskSpace} isLoading={isLoadingDiskSpace} />
       </div>
-    </div>
+    </RouteScaffold>
   );
 }

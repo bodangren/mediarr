@@ -1,3 +1,4 @@
+import { formatEpisodeCode } from '@/lib/format';
 import type { UpcomingItem } from '@/lib/api/dashboardApi';
 import { Link } from 'react-router-dom';
 
@@ -85,7 +86,7 @@ export function UpcomingWidget({ items, isLoading }: UpcomingWidgetProps) {
               </p>
               {item.type === 'episode' && item.episodeTitle && (
                 <p className="text-[10px] text-text-secondary truncate" title={item.episodeTitle}>
-                  S{String(item.seasonNumber).padStart(2, '0')}E{String(item.episodeNumber).padStart(2, '0')} - {item.episodeTitle}
+                  {formatEpisodeCode(item.seasonNumber!, item.episodeNumber!)} - {item.episodeTitle}
                 </p>
               )}
             </div>

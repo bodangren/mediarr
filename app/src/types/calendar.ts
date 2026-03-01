@@ -1,34 +1,25 @@
-export interface CalendarEpisode {
-  id: number;
-  seriesId: number;
-  seriesTitle: string;
-  seasonNumber: number;
-  episodeNumber: number;
-  episodeTitle: string;
-  airDate: string; // ISO date
-  airTime?: string; // HH:mm
-  status: 'downloaded' | 'missing' | 'airing' | 'unaired';
-  hasFile: boolean;
-  monitored: boolean;
-}
+export type CalendarItemStatus = 'downloaded' | 'missing' | 'airing' | 'unaired';
 
-export interface CalendarMovie {
+export interface CalendarItem {
   id: number;
-  movieId: number;
+  type: 'episode' | 'movie';
+  seriesId?: number;
+  movieId?: number;
   title: string;
-  releaseType: 'cinema' | 'digital' | 'physical';
-  releaseDate: string; // ISO date
-  posterUrl?: string;
-  status: 'downloaded' | 'monitored' | 'missing' | 'unmonitored';
+  episodeTitle?: string;
+  seasonNumber?: number;
+  episodeNumber?: number;
+  date: string;
+  time?: string;
+  status: CalendarItemStatus;
   hasFile: boolean;
   monitored: boolean;
-  certification?: string;
-  runtime?: number;
 }
 
-export type CalendarEvent =
-  | { type: 'episode'; data: CalendarEpisode }
-  | { type: 'movie'; data: CalendarMovie };
+export interface CalendarListParams {
+  start: string;
+  end: string;
+}
 
 export interface CalendarFilters {
   contentType?: 'all' | 'movies' | 'tv';
@@ -36,17 +27,6 @@ export interface CalendarFilters {
   movieId?: number;
   tags?: number[];
   status?: ('downloaded' | 'missing' | 'airing' | 'unaired' | 'monitored' | 'unmonitored');
-  releaseTypes?: ('cinema' | 'digital' | 'physical')[];
-}
-
-export interface CalendarListParams {
-  start: string;
-  end: string;
-  contentType?: 'all' | 'movies' | 'tv';
-  seriesId?: number;
-  movieId?: number;
-  tags?: number[];
-  status?: 'downloaded' | 'missing' | 'airing' | 'unaired' | 'monitored' | 'unmonitored';
   releaseTypes?: ('cinema' | 'digital' | 'physical')[];
 }
 

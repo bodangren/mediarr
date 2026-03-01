@@ -33,6 +33,21 @@ export class ImportManager {
           // Activity error is emitted in importCompletedTorrent.
         });
       });
+
+      this.torrentManager.on('torrent:seeding_complete', (payload: any) => {
+        this.activityEventEmitter?.emit({
+          eventType: 'SEEDING_COMPLETE',
+          sourceModule: 'torrent-manager',
+          entityRef: `torrent:${payload.infoHash}`,
+          summary: `Seeding limit reached for ${payload.name}`,
+          success: true,
+          details: {
+            reason: payload.reason,
+            torrentName: payload.name,
+          },
+          occurredAt: new Date(),
+        }).catch((err) => console.error('Failed to log SEEDING_COMPLETE:', err));
+      });
     }
   }
 

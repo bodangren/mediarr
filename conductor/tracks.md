@@ -6,27 +6,32 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ## Execution Order and Dependencies
 
-**Primary sequence:** `Vite Frontend Parity Recovery` -> `Search and Add to Wanted` -> `Manual Search, Queue Monitoring & Quality Profile Enhancements` -> `Import Pipeline & Root Folder Settings`
+**Primary sequence:** `Library Visibility & Dashboard` -> `Existing Library Import` -> `Collections`
 
-The current critical path is to complete the download lifecycle: finish queue/history UI, then wire the full import pipeline (complete folder, root folders, import hardening, seed ratio enforcement).
+The current critical path is to surface the backend state to the UI (Dashboard, Calendar, Series Status) before we allow users to bulk-import their existing media libraries.
 
 ### Dependency Graph
 
 ```
-Vite Frontend Parity Recovery (Completed)
+Import Pipeline & Root Folder Settings (Completed)
     |
     v
-Search and Add to Wanted (Completed)
+Library Visibility & Dashboard (Current)
     |
     v
-Manual Search, Queue Monitoring & Quality Profile Enhancements (Current)
+Existing Library Import (Planned)
+    |
+    v
+Collections (Planned)
 ```
 
 ---
 
 ## Active Tracks
 
-- [~] **Track: Import Pipeline & Root Folder Settings** *Phases: 4 | Link: [./tracks/import_pipeline_20260228/](./tracks/import_pipeline_20260228/)*
+- [~] **Track: Library Visibility & Dashboard** *Phases: 3 | Link: [./tracks/library_visibility_20260301/](./tracks/library_visibility_20260301/)*
+- [ ] **Track: Existing Library Import** *Phases: 4 | Link: [./tracks/existing_library_import_20260301/](./tracks/existing_library_import_20260301/)*
+- [ ] **Track: Collections** *Phases: 3 | Link: [./tracks/collections_20260301/](./tracks/collections_20260301/)*
 - [x] **Track: Manual Search, Queue Monitoring & Quality Profile Enhancements** *Phases: 5 | Link: [./archive/manual_search_queue_20260228/](./archive/manual_search_queue_20260228/)*
 - [x] **Track: Vite Frontend Parity Recovery** *Phases: 5 | Link: [./archive/vite_parity_recovery_20260226/](./archive/vite_parity_recovery_20260226/)*
 
@@ -34,6 +39,7 @@ Manual Search, Queue Monitoring & Quality Profile Enhancements (Current)
 
 ## Archived Tracks
 
+- [x] **Track: Import Pipeline & Root Folder Settings** *Phases: 4 | Link: [./archive/import_pipeline_20260228/](./archive/import_pipeline_20260228/)*
 - [x] **Track: Media Detail Pages & Library Enrichment** *Phases: 4 | Link: [./archive/media_detail_pages_20260228/](./archive/media_detail_pages_20260228/)*
 - [x] **Track: Search and Add to Wanted** *Phases: 3 | Link: [./archive/search_add_wanted_20260227/](./archive/search_add_wanted_20260227/)*
 - [x] **Track: Monolith Unification Refactor** *Phases: 3 | Link: [../archive/monolith_unification_refactor_20260226/](../archive/monolith_unification_refactor_20260226/)*

@@ -21,6 +21,10 @@ const EVENT_TYPE_CONFIG: Record<string, { label: string; className: string }> = 
     label: 'Episode Imported',
     className: 'bg-status-completed/20 text-status-completed',
   },
+  SEEDING_COMPLETE: {
+    label: 'Seeding Complete',
+    className: 'bg-status-completed/20 text-status-completed',
+  },
   IMPORT_FAILED: {
     label: 'Import Failed',
     className: 'bg-status-error/20 text-status-error',
@@ -36,10 +40,6 @@ const EVENT_TYPE_CONFIG: Record<string, { label: string; className: string }> = 
   SUBTITLE_DOWNLOADED: {
     label: 'Subtitle',
     className: 'bg-accent-info/20 text-accent-info',
-  },
-  SEEDING_COMPLETE: {
-    label: 'Seeding Done',
-    className: 'bg-surface-2 text-text-secondary',
   },
 };
 

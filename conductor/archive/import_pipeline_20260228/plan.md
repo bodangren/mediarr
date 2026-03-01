@@ -88,7 +88,7 @@
     - [x] Parse movie title/year from completed release filenames before DB lookup
     - [x] Match movies using parsed title + normalized clean title (with year-prioritized lookup)
 
-- [ ] Task: Conductor - User Manual Verification 'Phase 3: Import Pipeline Hardening' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 3: Import Pipeline Hardening' (Protocol in workflow.md)
 
 ---
 
@@ -96,16 +96,16 @@
 
 ### Backend — Ratio & Time Watcher
 
-- [ ] Task: Implement seed limit enforcement in TorrentManager stats sync loop
-    - [ ] Write unit tests covering:
+- [x] Task: Implement seed limit enforcement in TorrentManager stats sync loop
+    - [x] Write unit tests covering:
         - Ratio trigger: torrent with `ratio >= seedRatioLimit` and action `pause` → `pauseTorrent()` called
         - Ratio trigger: action `remove` → `removeTorrent()` called, complete folder file deleted, activity logged
         - Time trigger: `completedAt` + `seedTimeLimitMinutes` elapsed → same pause/remove logic
         - No-op: `seedRatioLimit = 0` and `seedTimeLimitMinutes = 0` → no action taken
         - No-op: torrent not yet imported (`status != 'seeding'` or `completedAt` null) → no action taken
-    - [ ] Add `checkSeedLimits(torrent)` method to `TorrentManager`
-    - [ ] Call `checkSeedLimits()` for each seeding torrent in the stats sync loop after updating stats
-    - [ ] On remove action: delete files from complete folder path, remove DB row, log `SEEDING_COMPLETE` activity event
-    - [ ] Read effective limits from `TorrentLimitsSettings` (already stored in DB); fall back to `stopAtRatio`/`stopAtTime` on the torrent row if set
+    - [x] Add `checkSeedLimits(torrent)` method to `TorrentManager`
+    - [x] Call `checkSeedLimits()` for each seeding torrent in the stats sync loop after updating stats
+    - [x] On remove action: delete files from complete folder path, remove DB row, log `SEEDING_COMPLETE` activity event
+    - [x] Read effective limits from `TorrentLimitsSettings` (already stored in DB); fall back to `stopAtRatio`/`stopAtTime` on the torrent row if set
 
-- [ ] Task: Conductor - User Manual Verification 'Phase 4: Seed Ratio Enforcement' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 4: Seed Ratio Enforcement' (Protocol in workflow.md)

@@ -8,6 +8,7 @@ import { SeriesMonitoringService, type MonitoringType } from '../../services/Ser
 import { SeriesOrganizeService, DEFAULT_SERIES_MANAGEMENT_SETTINGS } from '../../services/SeriesOrganizeService';
 import { FilenameParsingService } from '../../services/FilenameParsingService';
 import { FilterService, type FilterConditionsGroup } from '../../services/FilterService';
+import { Parser } from '../../utils/Parser';
 import type { SearchParams } from '../../services/MediaSearchService';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -248,7 +249,103 @@ export function registerSeriesRoutes(
       },
     });
 
-    return sendSuccess(reply, assertFound(record, `Series ${id} not found`));
+    if (!record) {
+      return sendSuccess(reply, assertFound(record, `Series ${id} not found`));
+    }
+
+    let totalEpisodes = 0;
+    let episodesOnDisk = 0;
+    let episodesMissing = 0;
+    let episodesDownloading = 0;
+
+    const downloadingEpisodes = new Set<string>();
+    if (deps.torrentManager) {
+      try {
+        const activeTorrents = await deps.torrentManager.getActiveTorrents();
+        if (activeTorrents.length > 0) {
+          const seriesTitleLower = record.title.toLowerCase().replace(/\s/g, '');
+          const seriesCleanTitleLower = record.cleanTitle ? record.cleanTitle.toLowerCase() : '';
+
+          for (const torrent of activeTorrents) {
+            const parsed = Parser.parse(torrent.name);
+            if (parsed && parsed.seriesTitle) {
+              const parsedTitleLower = parsed.seriesTitle.toLowerCase().replace(/\s/g, '');
+              if (parsedTitleLower === seriesTitleLower || (seriesCleanTitleLower && parsedTitleLower === seriesCleanTitleLower)) {
+                if (parsed.seasonNumber !== undefined && parsed.episodeNumbers && parsed.episodeNumbers.length > 0) {
+                  for (const epNum of parsed.episodeNumbers) {
+                    downloadingEpisodes.add(`${parsed.seasonNumber}-${epNum}`);
+                  }
+                }
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Failed to get downloading torrents for stats:', err);
+      }
+    }
+
+    const augmentedSeasons = (record.seasons || []).map((season: any) => {
+      let seasonTotal = 0;
+      let seasonOnDisk = 0;
+      let seasonMissing = 0;
+      let seasonDownloading = 0;
+
+      const augmentedEpisodes = (season.episodes || []).map((episode: any) => {
+        const hasFile = !!episode.path;
+        const isDownloading = downloadingEpisodes.has(`${episode.seasonNumber}-${episode.episodeNumber}`);
+
+        // Only count monitored episodes or ones that are available/downloading
+        if (episode.monitored || hasFile || isDownloading) {
+          seasonTotal++;
+          if (hasFile) {
+            seasonOnDisk++;
+          } else if (isDownloading) {
+            seasonDownloading++;
+          } else if (episode.monitored) {
+            // Unreleased episodes shouldn't necessarily be counted as missing if airdate is in future, 
+            // but for simple UI we can keep it as 'missing' or check airdate. 
+            // For now, if it's monitored and not on disk and not downloading, it's missing.
+            seasonMissing++;
+          }
+        }
+
+        return {
+          ...episode,
+          hasFile,
+          isDownloading,
+        };
+      });
+
+      totalEpisodes += seasonTotal;
+      episodesOnDisk += seasonOnDisk;
+      episodesMissing += seasonMissing;
+      episodesDownloading += seasonDownloading;
+
+      return {
+        ...season,
+        episodes: augmentedEpisodes,
+        statistics: {
+          totalEpisodes: seasonTotal,
+          episodesOnDisk: seasonOnDisk,
+          episodesMissing: seasonMissing,
+          episodesDownloading: seasonDownloading,
+        }
+      };
+    });
+
+    const augmentedRecord = {
+      ...record,
+      seasons: augmentedSeasons,
+      statistics: {
+        totalEpisodes,
+        episodesOnDisk,
+        episodesMissing,
+        episodesDownloading,
+      }
+    };
+
+    return sendSuccess(reply, augmentedRecord);
   });
 
   app.post('/api/series/:id/search', {
@@ -459,138 +556,6 @@ export function registerSeriesRoutes(
       deleted: true,
       id,
     });
-  });
-
-  /**
-   * GET /api/calendar
-   * Returns episodes airing within a specified date range.
-   *
-   * Query Parameters:
-   * - start: ISO 8601 date string (YYYY-MM-DD) - Start of date range (required)
-   * - end: ISO 8601 date string (YYYY-MM-DD) - End of date range (required)
-   * - seriesId: number | string - Filter by specific series ID (optional)
-   * - tags: string - Comma-separated list of tags to filter (optional)
-   * - status: 'downloaded' | 'missing' | 'airing' | 'unaired' - Filter by episode status (optional)
-   *
-   * Returns: Array of CalendarEpisode objects
-   */
-  app.get('/api/calendar', {
-    schema: {
-      querystring: {
-        type: 'object',
-        required: ['start', 'end'],
-        properties: {
-          start: { type: 'string', format: 'date', description: 'Start date (YYYY-MM-DD)' },
-          end: { type: 'string', format: 'date', description: 'End date (YYYY-MM-DD)' },
-          seriesId: { type: ['number', 'string'], description: 'Filter by series ID' },
-          tags: { type: 'string', description: 'Comma-separated tag list' },
-          status: { type: 'string', enum: ['downloaded', 'missing', 'airing', 'unaired'], description: 'Filter by status' },
-        },
-      },
-    },
-  }, async (request, reply) => {
-    const prisma = deps.prisma as any;
-    const prismaEpisode = prisma.episode;
-    const prismaSeries = prisma.series;
-
-    if (!prismaEpisode?.findMany || !prismaSeries?.findMany) {
-      throw new ValidationError('Episode or Series data source is not configured');
-    }
-
-    const query = request.query as Record<string, unknown>;
-
-    // Parse date range
-    const startStr = typeof query.start === 'string' ? query.start : undefined;
-    const endStr = typeof query.end === 'string' ? query.end : undefined;
-
-    if (!startStr || !endStr) {
-      throw new ValidationError('Both start and end date parameters are required');
-    }
-
-    const startDate = new Date(startStr);
-    const endDate = new Date(endStr);
-
-    if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
-      throw new ValidationError('Invalid date format for start or end parameter');
-    }
-
-    // Set time boundaries for the query
-    const queryStartDate = new Date(startDate);
-    queryStartDate.setHours(0, 0, 0, 0);
-    const queryEndDate = new Date(endDate);
-    queryEndDate.setHours(23, 59, 59, 999);
-
-    // Parse optional filters
-    const seriesIdFilter = typeof query.seriesId === 'number'
-      ? query.seriesId
-      : typeof query.seriesId === 'string'
-        ? Number.parseInt(query.seriesId, 10)
-        : undefined;
-
-    const statusFilter = typeof query.status === 'string'
-      ? (query.status as CalendarEpisodeStatus)
-      : undefined;
-
-    // Build where clause
-    const whereClause: Record<string, unknown> = {
-      airDateUtc: {
-        gte: queryStartDate,
-        lte: queryEndDate,
-      },
-    };
-
-    if (seriesIdFilter !== undefined && !Number.isNaN(seriesIdFilter)) {
-      whereClause.seriesId = seriesIdFilter;
-    }
-
-    // Query episodes with series and file variants
-    const episodes = await prismaEpisode.findMany({
-      where: whereClause,
-      include: {
-        series: {
-          select: {
-            id: true,
-            title: true,
-          },
-        },
-        fileVariants: {
-          select: {
-            id: true,
-          },
-        },
-      },
-      orderBy: {
-        airDateUtc: 'asc',
-      },
-    });
-
-    // Transform to calendar episodes
-    const calendarEpisodes: CalendarEpisode[] = episodes.map((ep: any) => {
-      const hasFile = ep.fileVariants && ep.fileVariants.length > 0;
-      const status = determineEpisodeStatus(ep.airDateUtc, hasFile);
-
-      return {
-        id: ep.id,
-        seriesId: ep.seriesId,
-        seriesTitle: ep.series?.title ?? 'Unknown Series',
-        seasonNumber: ep.seasonNumber,
-        episodeNumber: ep.episodeNumber,
-        episodeTitle: ep.title ?? 'Untitled Episode',
-        airDate: formatAirDate(ep.airDateUtc),
-        airTime: formatAirTime(ep.airDateUtc),
-        status,
-        hasFile,
-        monitored: ep.monitored ?? false,
-      };
-    });
-
-    // Apply status filter in memory (after determining status)
-    let filteredEpisodes = calendarEpisodes;
-    if (statusFilter) {
-      filteredEpisodes = calendarEpisodes.filter(ep => ep.status === statusFilter);
-    }
-
-    return sendSuccess(reply, filteredEpisodes);
   });
 
   // =====================

@@ -44,12 +44,12 @@ export function EditMovieModal({ isOpen, onClose, movie, onSave }: EditMovieModa
     defaultValues: {
       monitored: movie.monitored,
       qualityProfileId: movie.qualityProfileId,
-      path: movie.path,
+      path: movie.path ?? undefined,
       title: movie.title,
-      overview: movie.overview,
-      studio: movie.studio,
-      certification: movie.certification,
-      genres: movie.genres,
+      overview: movie.overview ?? undefined,
+      studio: movie.studio ?? undefined,
+      certification: movie.certification ?? undefined,
+      genres: movie.genres ?? undefined,
     },
   });
 
@@ -58,12 +58,12 @@ export function EditMovieModal({ isOpen, onClose, movie, onSave }: EditMovieModa
     reset({
       monitored: movie.monitored,
       qualityProfileId: movie.qualityProfileId,
-      path: movie.path,
+      path: movie.path ?? undefined,
       title: movie.title,
-      overview: movie.overview,
-      studio: movie.studio,
-      certification: movie.certification,
-      genres: movie.genres,
+      overview: movie.overview ?? undefined,
+      studio: movie.studio ?? undefined,
+      certification: movie.certification ?? undefined,
+      genres: movie.genres ?? undefined,
     });
   }, [movie, reset]);
 

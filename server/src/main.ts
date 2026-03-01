@@ -210,10 +210,20 @@ function createFallbackTorrentManager(
 
 async function createRuntimeTorrentManager(
   repository: TorrentRepository,
+  paths?: { 
+    incomplete?: string; 
+    complete?: string;
+    seedRatioLimit?: number;
+    seedTimeLimitMinutes?: number;
+    seedLimitAction?: 'pause' | 'remove';
+  }
 ): Promise<RuntimeTorrentManager> {
   try {
     const module = await import('./services/TorrentManager');
     const manager = module.TorrentManager.getInstance(repository);
+    if (paths) {
+      manager.setDownloadPaths(paths);
+    }
     await manager.initialize();
     return manager;
   } catch (error) {
@@ -444,10 +454,12 @@ async function startApi(): Promise<void> {
     activityEventEmitter,
   );
 
-  const torrentManager = await createRuntimeTorrentManager(torrentRepository);
-  torrentManager.setDownloadPaths?.({
+  const torrentManager = await createRuntimeTorrentManager(torrentRepository, {
     incomplete: settings.torrentLimits.incompleteDirectory,
     complete: settings.torrentLimits.completeDirectory,
+    seedRatioLimit: settings.torrentLimits.seedRatioLimit,
+    seedTimeLimitMinutes: settings.torrentLimits.seedTimeLimitMinutes,
+    seedLimitAction: settings.torrentLimits.seedLimitAction,
   });
 
   const organizer = new Organizer();

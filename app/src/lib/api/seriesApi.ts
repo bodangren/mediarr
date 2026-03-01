@@ -2,6 +2,13 @@ import { z } from 'zod';
 import { ApiHttpClient, type PaginatedResult } from './httpClient';
 import { routeMap } from './routeMap';
 
+const episodeStatisticsSchema = z.object({
+  totalEpisodes: z.number(),
+  episodesOnDisk: z.number(),
+  episodesMissing: z.number(),
+  episodesDownloading: z.number(),
+});
+
 // Series schema for type inference
 const seriesSchema = z.object({
   id: z.number(),
@@ -17,6 +24,8 @@ const seriesSchema = z.object({
   status: z.string().optional(),
   overview: z.string().optional(),
   network: z.string().optional(),
+  statistics: z.any().optional(),
+  seasons: z.any().optional(),
 }).passthrough();
 
 // Series organize preview schema
@@ -242,12 +251,19 @@ export function createSeriesApi(client: ApiHttpClient) {
       seasons: Array<{
         id: number;
         seasonNumber: number;
+        monitored?: boolean | null;
+        statistics?: any;
         episodes: Array<{
           id: number;
           episodeNumber: number;
           title: string;
+          airDateUtc?: string | null;
+          monitored?: boolean | null;
+          hasFile?: boolean | null;
+          isDownloading?: boolean | null;
         }>;
       }>;
+      statistics?: any;
     }> {
       return client.request(
         {
@@ -256,16 +272,20 @@ export function createSeriesApi(client: ApiHttpClient) {
         z.object({
           id: z.number(),
           title: z.string(),
+          statistics: episodeStatisticsSchema.optional(),
           seasons: z.array(z.object({
             id: z.number(),
             seasonNumber: z.number(),
             monitored: z.boolean().nullish(),
+            statistics: episodeStatisticsSchema.optional(),
             episodes: z.array(z.object({
               id: z.number(),
-              episodeNumber: z.number().nullish(),
-              title: z.string().nullish(),
+              episodeNumber: z.number(),
+              title: z.string(),
               airDateUtc: z.string().nullish(),
               monitored: z.boolean().nullish(),
+              hasFile: z.boolean().nullish(),
+              isDownloading: z.boolean().nullish(),
             }).passthrough()),
           }).passthrough()),
         }).passthrough(),

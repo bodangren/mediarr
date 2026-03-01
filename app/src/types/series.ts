@@ -19,13 +19,27 @@ export interface SeriesOptionsState {
  * Extended series item with computed properties for UI views.
  */
 export interface SeriesListItem extends ApiSeriesListItem {
+  statistics?: {
+    totalEpisodes: number;
+    episodesOnDisk: number;
+    episodesMissing: number;
+    episodesDownloading: number;
+  };
   seasons?: Array<{
+    statistics?: {
+      totalEpisodes: number;
+      episodesOnDisk: number;
+      episodesMissing: number;
+      episodesDownloading: number;
+    };
     episodes?: Array<{
       path?: string | null;
       seasonNumber?: number;
       episodeNumber?: number;
       airDate?: string | null;
       monitored?: boolean;
+      hasFile?: boolean;
+      isDownloading?: boolean;
     }>;
   }>;
   overview?: string;

@@ -1,4 +1,5 @@
 import { TorrentRepository } from '../repositories/TorrentRepository';
+import type { Torrent } from '@prisma/client';
 import { promises as fs, constants as fsConstants } from 'fs';
 import path from 'path';
 import { EventEmitter } from 'events';
@@ -45,6 +46,14 @@ export class TorrentManager extends EventEmitter {
   private statsSyncRunning = false;
   private incompleteDownloadPath = DEFAULT_DOWNLOAD_PATH;
   private completeDownloadPath = COMPLETE_DOWNLOAD_PATH;
+  
+  private seedRatioLimit: number = 0;
+  private seedTimeLimitMinutes: number = 0;
+  private seedLimitAction: 'pause' | 'remove' = 'pause';
+
+  // Tracks the DB-stored uploaded bytes at the start of each session per torrent,
+  // so that lifetime upload totals survive WebTorrent restarting its session counters.
+  private sessionUploadedBaselines = new Map<string, bigint>();
 
   private constructor(private repository: TorrentRepository) {
     super();
@@ -102,20 +111,73 @@ export class TorrentManager extends EventEmitter {
   }
 
   /**
-   * Updates default download directories used by torrent add/completion lifecycle.
+   * Updates default download directories and seed limits used by torrent lifecycle.
    */
-  setDownloadPaths(paths: { incomplete?: string; complete?: string }): void {
-    if (paths.incomplete !== undefined) {
-      this.incompleteDownloadPath = paths.incomplete;
+  setDownloadPaths(settings: {
+    incomplete?: string;
+    complete?: string;
+    seedRatioLimit?: number;
+    seedTimeLimitMinutes?: number;
+    seedLimitAction?: 'pause' | 'remove';
+  }): void {
+    if (settings.incomplete !== undefined) {
+      this.incompleteDownloadPath = settings.incomplete;
     }
-    if (paths.complete !== undefined) {
-      this.completeDownloadPath = paths.complete;
+    if (settings.complete !== undefined) {
+      this.completeDownloadPath = settings.complete;
+    }
+    if (settings.seedRatioLimit !== undefined) {
+      this.seedRatioLimit = settings.seedRatioLimit;
+    }
+    if (settings.seedTimeLimitMinutes !== undefined) {
+      this.seedTimeLimitMinutes = settings.seedTimeLimitMinutes;
+    }
+    if (settings.seedLimitAction !== undefined) {
+      this.seedLimitAction = settings.seedLimitAction;
     }
   }
 
   /**
-   * Returns active/idle sync interval in milliseconds.
+   * Checks if a seeding torrent has exceeded its configured ratio or time limits.
+   * If a limit is exceeded, applies the configured action (pause or remove).
+   * Accepts the already-fetched DB record to avoid a redundant round-trip.
    */
+  public async checkSeedLimits(dbTorrent: Torrent): Promise<void> {
+    if (dbTorrent.status !== 'seeding' || !dbTorrent.completedAt) {
+      return;
+    }
+
+    const effectiveRatioLimit = dbTorrent.stopAtRatio ?? this.seedRatioLimit;
+    const effectiveTimeLimit = dbTorrent.stopAtTime ?? this.seedTimeLimitMinutes;
+
+    let limitReached = false;
+    let reason = '';
+
+    if (effectiveRatioLimit > 0 && dbTorrent.ratio >= effectiveRatioLimit) {
+      limitReached = true;
+      reason = `Ratio limit reached: ${dbTorrent.ratio.toFixed(2)} >= ${effectiveRatioLimit}`;
+    } else if (effectiveTimeLimit > 0) {
+      const minutesSeeding = (Date.now() - dbTorrent.completedAt.getTime()) / (1000 * 60);
+      if (minutesSeeding >= effectiveTimeLimit) {
+        limitReached = true;
+        reason = `Time limit reached: ${Math.floor(minutesSeeding)} >= ${effectiveTimeLimit} minutes`;
+      }
+    }
+
+    if (limitReached) {
+      const { infoHash, name } = dbTorrent;
+      const action = this.seedLimitAction;
+      console.log(`Torrent ${infoHash} reached seed limit (${reason}). Action: ${action}`);
+
+      if (action === 'pause') {
+        await this.pauseTorrent(infoHash);
+      } else {
+        await this.removeTorrent(infoHash);
+      }
+
+      this.emit('torrent:seeding_complete', { infoHash, name, reason });
+    }
+  }
   getCurrentSyncIntervalMs(): number {
     const torrents = ((this.client as any)?.torrents ?? []) as any[];
     const hasActiveTransfers = torrents.some(torrent =>
@@ -455,19 +517,35 @@ export class TorrentManager extends EventEmitter {
   }
 
   /**
-   * Removes a torrent from the client and deletes it from the database.
+   * Removes a torrent from the client, deletes its files from disk, and deletes it from the database.
    */
   async removeTorrent(infoHash: string): Promise<void> {
     this.ensureInitialized();
+    
+    // Fetch DB record first to get the path before we delete it
+    const dbTorrent = await this.repository.findByInfoHash(infoHash);
+    
     try {
       const torrent = await this.findTorrentOrThrow(infoHash);
-      (this.client as any).remove(torrent);
+      (this.client as any).remove(torrent, { destroyStore: true });
     } catch (error) {
       if (!(error instanceof Error) || !/not found/i.test(error.message)) {
         throw error;
       }
     }
+    
+    // Delete files manually to be safe, especially if they were moved to the completed folder
+    if (dbTorrent && dbTorrent.path && dbTorrent.name) {
+      try {
+        const fullPath = path.join(dbTorrent.path, dbTorrent.name);
+        await fs.rm(fullPath, { recursive: true, force: true });
+      } catch (fsError) {
+        console.error(`Failed to delete files for torrent ${infoHash} at ${dbTorrent.path}:`, fsError);
+      }
+    }
+
     await this.repository.delete(infoHash);
+    this.sessionUploadedBaselines.delete(infoHash);
   }
 
   private attachTorrentLifecycleHandlers(torrent: any): void {
@@ -577,6 +655,14 @@ export class TorrentManager extends EventEmitter {
   }
 
   /**
+   * Returns standardized status for torrents that are actively downloading or queued.
+   */
+  async getActiveTorrents(): Promise<any[]> {
+    const torrents = await this.repository.findByStatuses(['downloading', 'queued']);
+    return torrents.map(t => this.mapTorrentToStatus(t));
+  }
+
+  /**
    * Returns standardized status for a single torrent by infoHash.
    */
   async getTorrentStatus(infoHash: string): Promise<any> {
@@ -628,15 +714,31 @@ export class TorrentManager extends EventEmitter {
         }
 
         try {
-          await this.repository.updateProgress(
+          const downloadedBytes = BigInt(Math.floor(Number(torrent.downloaded ?? 0)));
+          const sessionUploadedBytes = BigInt(Math.floor(Number(torrent.uploaded ?? 0)));
+
+          // WebTorrent resets uploaded/downloaded counters on restart. To preserve lifetime
+          // upload totals we snapshot the DB value on first encounter and accumulate from there.
+          if (!this.sessionUploadedBaselines.has(torrent.infoHash)) {
+            const existing = await this.repository.findByInfoHash(torrent.infoHash);
+            this.sessionUploadedBaselines.set(torrent.infoHash, existing?.uploaded ?? BigInt(0));
+          }
+          const uploadedBaseline = this.sessionUploadedBaselines.get(torrent.infoHash)!;
+          const lifetimeUploadedBytes = uploadedBaseline + sessionUploadedBytes;
+          const ratio = downloadedBytes === BigInt(0) ? 0 : Number(lifetimeUploadedBytes) / Number(downloadedBytes);
+
+          const updatedTorrent = await this.repository.updateProgress(
             torrent.infoHash,
             Number(torrent.progress ?? 0),
             Number(torrent.downloadSpeed ?? 0),
             Number(torrent.uploadSpeed ?? 0),
-            BigInt(Math.floor(Number(torrent.downloaded ?? 0))),
-            BigInt(Math.floor(Number(torrent.uploaded ?? 0))),
+            downloadedBytes,
+            lifetimeUploadedBytes,
+            ratio,
             this.normalizeEtaSeconds(torrent.timeRemaining),
           );
+
+          await this.checkSeedLimits(updatedTorrent);
 
           const peers = Array.isArray(torrent.peers)
             ? torrent.peers

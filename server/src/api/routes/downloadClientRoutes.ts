@@ -128,6 +128,9 @@ export function registerDownloadClientRoutes(
       deps.torrentManager.setDownloadPaths({
         incomplete: torrentLimits.incompleteDirectory,
         complete: torrentLimits.completeDirectory,
+        seedRatioLimit: torrentLimits.seedRatioLimit,
+        seedTimeLimitMinutes: torrentLimits.seedTimeLimitMinutes,
+        seedLimitAction: torrentLimits.seedLimitAction,
       });
     }
 

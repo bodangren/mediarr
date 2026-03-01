@@ -47,6 +47,16 @@ export class TorrentRepository {
   }
 
   /**
+   * Retrieves torrents matching any of the given statuses.
+   */
+  async findByStatuses(statuses: string[]): Promise<Torrent[]> {
+    return this.prisma.torrent.findMany({
+      where: { status: { in: statuses } },
+      orderBy: { added: 'desc' },
+    });
+  }
+
+  /**
    * Updates the status of a torrent.
    */
   async updateStatus(infoHash: string, status: string): Promise<Torrent> {
@@ -79,6 +89,7 @@ export class TorrentRepository {
     uploadSpeed: number,
     downloaded: bigint,
     uploaded: bigint,
+    ratio: number,
     eta: number | null
   ): Promise<Torrent> {
     return this.prisma.torrent.update({
@@ -89,6 +100,7 @@ export class TorrentRepository {
         uploadSpeed,
         downloaded,
         uploaded,
+        ratio,
         eta,
       },
     });

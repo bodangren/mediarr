@@ -1,0 +1,20 @@
+Task: Address review blockers for Library Visibility & Dashboard (security + date correctness)
+
+Summary:
+- Replaced shell-based disk-space execution with argument-safe df execution () to remove command-injection risk from configured root paths.
+- Fixed dashboard upcoming movie date selection to choose an in-window release date when one release field is outside the 7-day window.
+- Fixed calendar date key/range generation to use local date parts instead of UTC ISO splitting, preventing off-by-one day shifts in non-UTC timezones.
+- Updated Recently Added filtering to include  and  events.
+- Added regression tests for all of the above.
+
+Files changed:
+- app/src/components/calendar/CalendarPage.tsx
+- app/src/components/calendar/dateUtils.ts
+- app/src/components/calendar/dateUtils.test.ts
+- app/src/components/dashboard/RecentlyAddedWidget.tsx
+- app/src/components/dashboard/RecentlyAddedWidget.test.tsx
+- server/src/api/routes/dashboardRoutes.ts
+- server/src/api/routes/dashboardRoutes.test.ts
+
+Why:
+These changes resolve user-visible correctness regressions (calendar day shifts, missing recent imports, incorrect upcoming movie date/status) and remove a security flaw in shell command execution for disk-space checks.

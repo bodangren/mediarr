@@ -5,6 +5,7 @@ import { formatEpisodeCode } from '@/lib/format';
 import type { CalendarItem } from '@/types/calendar';
 import { Link } from 'react-router-dom';
 import { useToast } from '@/components/providers/ToastProvider';
+import { getCalendarFetchRange, toLocalDateKey } from './dateUtils';
 
 export function CalendarPage() {
   const api = useMemo(() => getApiClients(), []);
@@ -23,20 +24,9 @@ export function CalendarPage() {
     const fetchCalendar = async () => {
       setIsLoading(true);
       try {
-        // Fetch from 1st of month to end of month
-        // We'll pad it slightly to cover the visible grid (previous/next month days)
-        const startDate = new Date(currentYear, currentMonth, 1);
-        const startDayOfWeek = startDate.getDay();
-        startDate.setDate(startDate.getDate() - startDayOfWeek); // Backtrack to Sunday
+        const { start, end } = getCalendarFetchRange(currentYear, currentMonth);
         
-        const endDate = new Date(currentYear, currentMonth + 1, 0);
-        const endDayOfWeek = endDate.getDay();
-        endDate.setDate(endDate.getDate() + (6 - endDayOfWeek)); // Forward to Saturday
-        
-        const startStr = startDate.toISOString().split('T')[0];
-        const endStr = endDate.toISOString().split('T')[0];
-        
-        const data = await api.calendarApi.list({ start: startStr, end: endStr });
+        const data = await api.calendarApi.list({ start, end });
         setItems(data);
       } catch (err) {
         pushToast({ variant: 'error', title: 'Error', message: 'Failed to load calendar' });
@@ -60,7 +50,7 @@ export function CalendarPage() {
     setCurrentDate(new Date());
   };
 
-  const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
+  const todayStr = useMemo(() => toLocalDateKey(new Date()), []);
 
   const weeks = useMemo(() => {
     const result: Date[][] = [];
@@ -124,7 +114,7 @@ export function CalendarPage() {
           {weeks.map((week, wIdx) => (
             <div key={wIdx} className="grid grid-cols-7 flex-1 border-b border-border-subtle last:border-b-0">
               {week.map((day, dIdx) => {
-                const dateStr = day.toISOString().split('T')[0];
+                const dateStr = toLocalDateKey(day);
                 const isCurrentMonth = day.getMonth() === currentMonth;
                 const isToday = dateStr === todayStr;
                 const dayItems = itemsByDate.get(dateStr) || [];

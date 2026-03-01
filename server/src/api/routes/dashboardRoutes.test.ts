@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { registerApiErrorHandler } from '../errors';
 import type { ApiDependencies } from '../types';
@@ -121,6 +121,27 @@ describe('getDiskSpaceForPath', () => {
       expect(result.total).toBeGreaterThanOrEqual(0);
     }
   });
+
+  it('passes configured path as a raw df argument (no shell interpolation)', async () => {
+    const suspiciousPath = '/media/movies"; touch /tmp/pwned #';
+    const runDf = vi.fn().mockResolvedValue(
+      [
+        'Filesystem 1B-blocks Used Available Use% Mounted on',
+        '/dev/sda1 1000 250 750 25% /media/movies',
+      ].join('\n'),
+    );
+
+    const result = await getDiskSpaceForPath(suspiciousPath, runDf);
+
+    expect(runDf).toHaveBeenCalledWith(suspiciousPath);
+    expect(result).toEqual({
+      path: suspiciousPath,
+      label: suspiciousPath,
+      free: 750,
+      total: 1000,
+      usedPercent: 25,
+    });
+  });
 });
 
 describe('dashboardRoutes — GET /api/dashboard/upcoming', () => {
@@ -129,9 +150,14 @@ describe('dashboardRoutes — GET /api/dashboard/upcoming', () => {
   let app: FastifyInstance;
 
   beforeEach(() => {
+    vi.useFakeTimers();
     settingsService = createSettingsServiceMock();
     prisma = createPrismaMock();
     app = createApp(settingsService, prisma);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('returns upcoming items for next 7 days', async () => {
@@ -143,5 +169,32 @@ describe('dashboardRoutes — GET /api/dashboard/upcoming', () => {
     expect(response.statusCode).toBe(200);
     const body = JSON.parse(response.body) as { data: unknown[] };
     expect(Array.isArray(body.data)).toBe(true);
+  });
+
+  it('uses an in-window movie release date when one release is outside window', async () => {
+    vi.setSystemTime(new Date('2026-03-01T10:00:00.000Z'));
+    prisma.episode.findMany.mockResolvedValue([]);
+    prisma.movie.findMany.mockResolvedValue([
+      {
+        id: 101,
+        title: 'Physical Soon, Digital Later',
+        monitored: true,
+        digitalRelease: new Date('2026-03-20T12:00:00.000Z'),
+        physicalRelease: new Date('2026-03-04T12:00:00.000Z'),
+        fileVariants: [],
+      },
+    ]);
+
+    const response = await app.inject({ method: 'GET', url: '/api/dashboard/upcoming' });
+    expect(response.statusCode).toBe(200);
+
+    const body = JSON.parse(response.body) as { data: Array<{ id: number; type: string; date: string; status: string }> };
+    expect(body.data).toHaveLength(1);
+    expect(body.data[0]).toMatchObject({
+      id: 101,
+      type: 'movie',
+      date: '2026-03-04',
+      status: 'unaired',
+    });
   });
 });

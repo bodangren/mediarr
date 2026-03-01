@@ -33,7 +33,13 @@ export function RecentlyAddedWidget({ items, isLoading }: RecentlyAddedWidgetPro
   }
 
   const recentItems = items
-    .filter(item => item.eventType === 'IMPORT_COMPLETED' || item.eventType === 'MEDIA_ADDED')
+    .filter(
+      (item) =>
+        item.eventType === 'IMPORT_COMPLETED' ||
+        item.eventType === 'MEDIA_ADDED' ||
+        item.eventType === 'MOVIE_IMPORTED' ||
+        item.eventType === 'SERIES_IMPORTED',
+    )
     .slice(0, 8);
 
   if (recentItems.length === 0) {

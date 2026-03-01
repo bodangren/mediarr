@@ -1,11 +1,8 @@
-import { exec } from 'node:child_process';
-import { promisify } from 'node:util';
+import { execFile } from 'node:child_process';
 import type { FastifyInstance } from 'fastify';
 import { ValidationError } from '../../errors/domainErrors';
 import { sendSuccess } from '../contracts';
 import type { ApiDependencies } from '../types';
-
-const execAsync = promisify(exec);
 
 export interface DiskSpaceInfo {
   path: string;
@@ -27,15 +24,40 @@ export interface UpcomingItem {
   hasFile: boolean;
 }
 
-export async function getDiskSpaceForPath(path: string): Promise<DiskSpaceInfo | null> {
+export async function runDfCommand(path: string): Promise<string> {
+  return await new Promise<string>((resolve, reject) => {
+    execFile('df', ['-B1', path], (error, stdout) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+      resolve(stdout);
+    });
+  });
+}
+
+export async function getDiskSpaceForPath(
+  path: string,
+  runDf: (path: string) => Promise<string> = runDfCommand,
+): Promise<DiskSpaceInfo | null> {
   if (!path || path.trim() === '') {
     return null;
   }
 
   try {
     if (process.platform === 'linux' || process.platform === 'darwin') {
-      const { stdout } = await execAsync(`df -B1 "${path}" 2>/dev/null | tail -1`);
-      const parts = stdout.trim().split(/\s+/);
+      const stdout = await runDf(path);
+      const lines = stdout
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0);
+      const lastLine = lines[lines.length - 1];
+
+      if (!lastLine) {
+        return null;
+      }
+
+      const parts = lastLine.split(/\s+/);
       
       if (parts.length >= 4) {
         const total = parseInt(parts[1], 10);
@@ -82,6 +104,40 @@ function determineMovieStatus(releaseDate: Date | null | undefined, hasFile: boo
   if (releaseDate > now) return 'unaired';
   
   return 'missing';
+}
+
+function toDate(value: Date | string | null | undefined): Date | null {
+  if (!value) {
+    return null;
+  }
+
+  const date = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function pickUpcomingMovieDate(
+  digitalRelease: Date | string | null | undefined,
+  physicalRelease: Date | string | null | undefined,
+  windowStart: Date,
+  windowEnd: Date,
+): Date | null {
+  const releases = [toDate(digitalRelease), toDate(physicalRelease)].filter(
+    (date): date is Date => Boolean(date),
+  );
+
+  if (releases.length === 0) {
+    return null;
+  }
+
+  const inWindow = releases
+    .filter((date) => date >= windowStart && date <= windowEnd)
+    .sort((a, b) => a.getTime() - b.getTime());
+
+  if (inWindow.length > 0) {
+    return inWindow[0];
+  }
+
+  return releases.sort((a, b) => a.getTime() - b.getTime())[0];
 }
 
 export function registerDashboardRoutes(
@@ -182,7 +238,12 @@ export function registerDashboardRoutes(
 
       for (const movie of movies) {
         const hasFile = movie.fileVariants && movie.fileVariants.length > 0;
-        const relevantDate = movie.digitalRelease || movie.physicalRelease;
+        const relevantDate = pickUpcomingMovieDate(
+          movie.digitalRelease,
+          movie.physicalRelease,
+          now,
+          sevenDaysFromNow,
+        );
         
         upcomingItems.push({
           id: movie.id,

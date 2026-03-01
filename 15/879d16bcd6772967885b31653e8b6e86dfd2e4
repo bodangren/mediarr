@@ -1,10 +1,10 @@
 Task: Address review blockers for Library Visibility & Dashboard (security + date correctness)
 
 Summary:
-- Replaced shell-based disk-space execution with argument-safe df execution () to remove command-injection risk from configured root paths.
+- Replaced shell-based disk-space execution with argument-safe df execution (`execFile`) to remove command-injection risk from configured root paths.
 - Fixed dashboard upcoming movie date selection to choose an in-window release date when one release field is outside the 7-day window.
 - Fixed calendar date key/range generation to use local date parts instead of UTC ISO splitting, preventing off-by-one day shifts in non-UTC timezones.
-- Updated Recently Added filtering to include  and  events.
+- Updated Recently Added filtering to include `MOVIE_IMPORTED` and `SERIES_IMPORTED` events.
 - Added regression tests for all of the above.
 
 Files changed:

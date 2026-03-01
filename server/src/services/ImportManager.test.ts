@@ -169,6 +169,40 @@ describe('ImportManager', () => {
     );
   });
 
+  it('movie import: parses release filename and matches by title/year', async () => {
+    const movie = { id: 5, title: 'The Matrix', cleanTitle: 'thematrix', year: 1999, path: '/media/movies' };
+    const prisma = makePrisma({ series: null, episode: null, movie: null });
+
+    prisma.movie.findFirst.mockImplementation(async ({ where }: any) => {
+      const clauses = Array.isArray(where?.OR) ? where.OR : [];
+      const hasTitleClause = clauses.some((clause: any) => clause?.title?.contains === 'The Matrix');
+      const hasCleanTitleClause = clauses.some((clause: any) => clause?.cleanTitle?.contains === 'thematrix');
+      if (where?.year === 1999 && hasTitleClause && hasCleanTitleClause) {
+        return movie;
+      }
+      return null;
+    });
+
+    const torrent = {
+      infoHash: 'movie-1999',
+      name: 'The Matrix (1999) 1080p BrRip x264 -YIFY',
+      path: '/downloads/complete/The.Matrix.1999.1080p.BrRip.x264.YIFY.mp4',
+    };
+
+    await fireTorrentCompleted(prisma, torrent);
+
+    expect(organizer.organizeMovieFile).toHaveBeenCalledWith(
+      torrent.path,
+      movie,
+    );
+    expect(activityEmitter.emit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: 'MOVIE_IMPORTED',
+        success: true,
+      }),
+    );
+  });
+
   // ───────── No match found ─────────
 
   it('no match found: IMPORT_FAILED logged and does not throw', async () => {

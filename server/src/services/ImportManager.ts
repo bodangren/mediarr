@@ -204,20 +204,9 @@ export class ImportManager {
 
       // ── Try movie import ────────────────────────────────────────────────
       // When the parser finds no episode pattern, attempt to match as a movie
-      // by searching for a movie whose title appears in the cleaned filename.
+      // by parsing release-style filenames and matching against movie title/year.
       if (!parsed) {
-        const cleanedName = path.basename(filePath, path.extname(filePath))
-          .replace(/[._]/g, ' ')
-          .trim();
-
-        const movie = await this.prisma.movie.findFirst({
-          where: {
-            OR: [
-              { title: { contains: cleanedName } },
-              { cleanTitle: { contains: cleanedName.toLowerCase().replace(/\s/g, '') } },
-            ],
-          },
-        });
+        const movie = await this.findMovieMatch(filePath);
 
         if (movie) {
           const moviePath = await this.resolveMoviePath(movie);
@@ -432,5 +421,74 @@ export class ImportManager {
     } catch {
       return false;
     }
+  }
+
+  private async findMovieMatch(filePath: string): Promise<any | null> {
+    const parsedMovie = this.parseMovieTitle(path.basename(filePath));
+    if (!parsedMovie) {
+      return null;
+    }
+
+    const cleanTitle = this.normalizeMovieTitle(parsedMovie.title);
+    if (!cleanTitle) {
+      return null;
+    }
+
+    const matchClauses = [
+      { title: { contains: parsedMovie.title } },
+      { cleanTitle: { contains: cleanTitle } },
+    ];
+
+    if (parsedMovie.year) {
+      const yearScopedMatch = await this.prisma.movie.findFirst({
+        where: {
+          year: parsedMovie.year,
+          OR: matchClauses,
+        },
+      });
+      if (yearScopedMatch) {
+        return yearScopedMatch;
+      }
+    }
+
+    return this.prisma.movie.findFirst({
+      where: {
+        OR: matchClauses,
+      },
+    });
+  }
+
+  private parseMovieTitle(filename: string): { title: string; year?: number } | null {
+    const basename = path.basename(filename, path.extname(filename));
+    const normalized = basename.replace(/[._-]+/g, ' ').replace(/\s+/g, ' ').trim();
+    if (!normalized) {
+      return null;
+    }
+
+    const yearMatch = normalized.match(/^(.*?)(?:\s+)(19\d{2}|20\d{2})(?:\s|$)/i);
+    if (yearMatch) {
+      const title = yearMatch[1]?.trim();
+      const year = parseInt(yearMatch[2], 10);
+      if (title) {
+        return {
+          title,
+          year: Number.isFinite(year) ? year : undefined,
+        };
+      }
+    }
+
+    const qualityMatch = normalized.match(/^(.*?)(?:\s+)(2160p|1080p|720p|480p|bluray|brrip|webrip|web[- ]dl|hdtv|x264|x265|h264|h265)\b/i);
+    if (qualityMatch) {
+      const title = qualityMatch[1]?.trim();
+      if (title) {
+        return { title };
+      }
+    }
+
+    return { title: normalized };
+  }
+
+  private normalizeMovieTitle(value: string): string {
+    return value.toLowerCase().replace(/[^a-z0-9]/g, '');
   }
 }

@@ -83,6 +83,11 @@
       - Queue: show `Retry Import` button per torrent row
     - [x] Add route/component tests for retry actions
 
+- [x] Task: Harden movie matching for release-style filenames (c1a7f4d2)
+    - [x] Add ImportManager regression test for filenames like `The.Matrix.1999.1080p.BrRip.x264.YIFY.mp4`
+    - [x] Parse movie title/year from completed release filenames before DB lookup
+    - [x] Match movies using parsed title + normalized clean title (with year-prioritized lookup)
+
 - [ ] Task: Conductor - User Manual Verification 'Phase 3: Import Pipeline Hardening' (Protocol in workflow.md)
 
 ---

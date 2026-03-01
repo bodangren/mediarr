@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { AppShell } from '@/components/shell/AppShell';
+import { DashboardPage } from '@/components/dashboard/DashboardPage';
 import { useToast } from '@/components/providers/ToastProvider';
 import { Folder, Search } from 'lucide-react';
 import { AddIndexerModal } from '@/components/indexers/AddIndexerModal';
@@ -13,6 +14,7 @@ import { SeriesInteractiveSearchModal, type SearchLevel } from '@/components/ser
 import { SeriesOverviewView, MovieOverviewView } from '@/components/views';
 import { ActivityQueuePage } from '@/components/activity/ActivityQueuePage';
 import { ActivityHistoryPage } from '@/components/activity/ActivityHistoryPage';
+import { CalendarPage } from '@/components/calendar/CalendarPage';
 import { getApiClients } from '@/lib/api/client';
 import { getPopularPresets } from '@/lib/indexer/indexerPresets';
 import type { IndexerItem } from '@/lib/api/indexerApi';
@@ -1290,10 +1292,6 @@ function SettingsGeneralPage() {
   );
 }
 
-function DashboardPage() {
-  return <StaticPage title="Dashboard" description="Unified overview across movies, TV, tasks, and system status." />;
-}
-
 function getPosterUrl(images?: Array<{ coverType: string; url: string }>): string | undefined {
   if (!images?.length) return undefined;
   return (
@@ -1473,9 +1471,9 @@ function MoviesLibraryPage() {
           onClose={() => setSearchMovieId(null)}
           movieId={selectedMovie.id}
           movieTitle={selectedMovie.title}
-          movieYear={selectedMovie.year}
-          imdbId={selectedMovie.imdbId}
-          tmdbId={selectedMovie.tmdbId}
+          movieYear={selectedMovie.year ?? undefined}
+          imdbId={selectedMovie.imdbId ?? undefined}
+          tmdbId={selectedMovie.tmdbId ?? undefined}
         />
       ) : null}
     </RouteScaffold>
@@ -1486,7 +1484,7 @@ function MovieDetailPage() {
   const api = useMemo(() => getApiClients(), []);
   const params = useParams();
   const navigate = useNavigate();
-  const { addToast } = useToast();
+  const { pushToast } = useToast();
   const movieId = Number(params.id);
   const [movie, setMovie] = useState<{
     id: number;
@@ -1524,13 +1522,13 @@ function MovieDetailPage() {
         setMovie({
           id: item.id,
           title: item.title,
-          year: item.year,
-          overview: item.overview,
-          status: item.status,
-          monitored: item.monitored,
-          tmdbId: item.tmdbId,
-          imdbId: item.imdbId,
-          posterUrl: item.posterUrl,
+          year: item.year ?? undefined,
+          overview: item.overview ?? undefined,
+          status: item.status ?? undefined,
+          monitored: item.monitored ?? false,
+          tmdbId: item.tmdbId ?? undefined,
+          imdbId: item.imdbId ?? undefined,
+          posterUrl: item.posterUrl ?? undefined,
           genres: (item as any).genres as string[] | undefined,
           qualityProfileId: item.qualityProfileId,
         });
@@ -1551,7 +1549,7 @@ function MovieDetailPage() {
       await api.mediaApi.setMovieMonitored(movie.id, !movie.monitored);
       setMovie(prev => prev ? { ...prev, monitored: !prev.monitored } : prev);
     } catch (err) {
-      addToast({ type: 'error', message: 'Failed to update monitoring' });
+      pushToast({ title: 'Error', variant: 'error', message: 'Failed to update monitoring' });
     }
   };
 
@@ -1561,7 +1559,7 @@ function MovieDetailPage() {
       await api.movieApi.update(movie.id, { qualityProfileId: profileId });
       setMovie(prev => prev ? { ...prev, qualityProfileId: profileId } : prev);
     } catch (err) {
-      addToast({ type: 'error', message: 'Failed to update quality profile' });
+      pushToast({ title: 'Error', variant: 'error', message: 'Failed to update quality profile' });
     }
   };
 
@@ -1570,10 +1568,10 @@ function MovieDetailPage() {
     if (!window.confirm(`Remove "${movie.title}" from library?`)) return;
     try {
       await api.mediaApi.deleteMovie(movie.id);
-      addToast({ type: 'success', message: `"${movie.title}" removed from library` });
+      pushToast({ title: 'Success', variant: 'success', message: `"${movie.title}" removed from library` });
       navigate('/library/movies');
     } catch (err) {
-      addToast({ type: 'error', message: 'Failed to remove movie' });
+      pushToast({ title: 'Error', variant: 'error', message: 'Failed to remove movie' });
     }
   };
 
@@ -1720,6 +1718,8 @@ type EpisodeItem = {
   title: string;
   airDateUtc?: string | null;
   monitored: boolean;
+  hasFile?: boolean;
+  isDownloading?: boolean;
 };
 
 type SeasonItem = {
@@ -1727,6 +1727,12 @@ type SeasonItem = {
   seasonNumber: number;
   monitored: boolean;
   episodes: EpisodeItem[];
+  statistics?: {
+    totalEpisodes: number;
+    episodesOnDisk: number;
+    episodesMissing: number;
+    episodesDownloading: number;
+  };
 };
 
 type SeriesDetail = {
@@ -1741,13 +1747,19 @@ type SeriesDetail = {
   monitored: boolean;
   qualityProfileId?: number;
   seasons: SeasonItem[];
+  statistics?: {
+    totalEpisodes: number;
+    episodesOnDisk: number;
+    episodesMissing: number;
+    episodesDownloading: number;
+  };
 };
 
 function SeriesDetailPage() {
   const api = useMemo(() => getApiClients(), []);
   const params = useParams();
   const navigate = useNavigate();
-  const { addToast } = useToast();
+  const { pushToast } = useToast();
   const seriesId = Number(params.id);
   const [series, setSeries] = useState<SeriesDetail | null>(null);
   const [qualityProfiles, setQualityProfiles] = useState<QualityProfileItem[]>([]);
@@ -1787,10 +1799,12 @@ function SeriesDetailPage() {
           tvdbId: raw.tvdbId,
           monitored: raw.monitored ?? false,
           qualityProfileId: raw.qualityProfileId,
+          statistics: raw.statistics,
           seasons: (item.seasons as any[]).map((s: any) => ({
             id: s.id,
             seasonNumber: s.seasonNumber,
             monitored: s.monitored ?? false,
+            statistics: s.statistics,
             episodes: (s.episodes ?? []).map((ep: any) => ({
               id: ep.id,
               seasonNumber: ep.seasonNumber ?? s.seasonNumber,
@@ -1798,6 +1812,8 @@ function SeriesDetailPage() {
               title: ep.title ?? '',
               airDateUtc: ep.airDateUtc ?? null,
               monitored: ep.monitored ?? false,
+              hasFile: ep.hasFile ?? false,
+              isDownloading: ep.isDownloading ?? false,
             })),
           })),
         });
@@ -1826,7 +1842,7 @@ function SeriesDetailPage() {
         };
       });
     } catch {
-      addToast({ type: 'error', message: 'Failed to update series monitoring' });
+      pushToast({ title: 'Error', variant: 'error', message: 'Failed to update series monitoring' });
     }
   };
 
@@ -1844,7 +1860,7 @@ function SeriesDetailPage() {
         };
       });
     } catch {
-      addToast({ type: 'error', message: 'Failed to update season monitoring' });
+      pushToast({ title: 'Error', variant: 'error', message: 'Failed to update season monitoring' });
     }
   };
 
@@ -1869,7 +1885,7 @@ function SeriesDetailPage() {
         };
       });
     } catch {
-      addToast({ type: 'error', message: 'Failed to update episode monitoring' });
+      pushToast({ title: 'Error', variant: 'error', message: 'Failed to update episode monitoring' });
     }
   };
 
@@ -1879,7 +1895,7 @@ function SeriesDetailPage() {
       await api.seriesApi.bulkUpdate([series.id], { qualityProfileId: profileId });
       setSeries(prev => prev ? { ...prev, qualityProfileId: profileId } : prev);
     } catch {
-      addToast({ type: 'error', message: 'Failed to update quality profile' });
+      pushToast({ title: 'Error', variant: 'error', message: 'Failed to update quality profile' });
     }
   };
 
@@ -1888,10 +1904,10 @@ function SeriesDetailPage() {
     if (!window.confirm(`Remove "${series.title}" from library?`)) return;
     try {
       await api.mediaApi.deleteSeries(series.id);
-      addToast({ type: 'success', message: `"${series.title}" removed from library` });
+      pushToast({ title: 'Success', variant: 'success', message: `"${series.title}" removed from library` });
       navigate('/library/tv');
     } catch {
-      addToast({ type: 'error', message: 'Failed to remove series' });
+      pushToast({ title: 'Error', variant: 'error', message: 'Failed to remove series' });
     }
   };
 
@@ -1936,6 +1952,16 @@ function SeriesDetailPage() {
                 {series.year ? <span>{series.year}</span> : null}
                 {series.network ? <span>{series.network}</span> : null}
                 {series.status ? <span className="rounded-sm bg-surface-2 px-2 py-0.5 text-xs">{series.status}</span> : null}
+                {series.statistics && series.statistics.totalEpisodes > 0 ? (
+                  <span className="flex items-center gap-1.5 ml-2 text-xs">
+                    <span className="w-24 h-1.5 bg-surface-2 rounded-full overflow-hidden flex">
+                      <span style={{ width: `${(series.statistics.episodesOnDisk / series.statistics.totalEpisodes) * 100}%` }} className="bg-status-completed h-full"></span>
+                      <span style={{ width: `${(series.statistics.episodesDownloading / series.statistics.totalEpisodes) * 100}%` }} className="bg-accent-primary h-full"></span>
+                      <span style={{ width: `${(series.statistics.episodesMissing / series.statistics.totalEpisodes) * 100}%` }} className="bg-status-error h-full"></span>
+                    </span>
+                    <span>{series.statistics.episodesOnDisk} / {series.statistics.totalEpisodes}</span>
+                  </span>
+                ) : null}
               </div>
               {series.overview ? <p className="text-sm text-text-secondary">{series.overview}</p> : null}
             </div>
@@ -2002,7 +2028,16 @@ function SeriesDetailPage() {
                   >
                     <span>{expandedSeasons.has(season.seasonNumber) ? '▼' : '▶'}</span>
                     Season {season.seasonNumber}
-                    <span className="text-xs text-text-secondary ml-2">({season.episodes.length} episodes)</span>
+                    <span className="text-xs text-text-secondary ml-2 flex items-center gap-3">
+                      ({season.episodes.length} episodes)
+                      {season.statistics && season.statistics.totalEpisodes > 0 ? (
+                        <span className="w-16 h-1.5 bg-surface-2 rounded-full overflow-hidden flex">
+                          <span style={{ width: `${(season.statistics.episodesOnDisk / season.statistics.totalEpisodes) * 100}%` }} className="bg-status-completed h-full"></span>
+                          <span style={{ width: `${(season.statistics.episodesDownloading / season.statistics.totalEpisodes) * 100}%` }} className="bg-accent-primary h-full"></span>
+                          <span style={{ width: `${(season.statistics.episodesMissing / season.statistics.totalEpisodes) * 100}%` }} className="bg-status-error h-full"></span>
+                        </span>
+                      ) : null}
+                    </span>
                   </button>
                   <button
                     type="button"
@@ -2031,7 +2066,18 @@ function SeriesDetailPage() {
                         <span className="w-16 flex-shrink-0 text-xs text-text-secondary font-mono">
                           S{String(ep.seasonNumber).padStart(2, '0')}E{String(ep.episodeNumber).padStart(2, '0')}
                         </span>
-                        <span className="flex-1 truncate">{ep.title}</span>
+                        <span className="flex-1 truncate flex items-center gap-2">
+                          {ep.title}
+                          {ep.isDownloading ? (
+                            <span className="rounded-sm bg-accent-primary/20 px-1.5 py-0.5 text-[10px] text-accent-primary font-medium tracking-wide">Downloading</span>
+                          ) : ep.hasFile ? (
+                            <span className="rounded-sm bg-status-completed/20 px-1.5 py-0.5 text-[10px] text-status-completed font-medium tracking-wide">Available</span>
+                          ) : ep.monitored ? (
+                            <span className="rounded-sm bg-status-error/20 px-1.5 py-0.5 text-[10px] text-status-error font-medium tracking-wide">Missing</span>
+                          ) : (
+                            <span className="rounded-sm bg-surface-2 px-1.5 py-0.5 text-[10px] text-text-secondary font-medium tracking-wide">Unmonitored</span>
+                          )}
+                        </span>
                         {ep.airDateUtc ? (
                           <span className="text-xs text-text-secondary">
                             {new Date(ep.airDateUtc).toLocaleDateString()}
@@ -2108,7 +2154,7 @@ export default function App() {
               <Route path="library/series/:id" element={<SeriesDetailPage />} />
               <Route path="library/collections" element={<StaticPage title="Collections" description="Unified collection management view." />} />
 
-              <Route path="calendar" element={<StaticPage title="Calendar" description="Unified calendar for upcoming movie and TV activity." />} />
+              <Route path="calendar" element={<CalendarPage />} />
 
               <Route path="activity/queue" element={<ActivityQueuePage />} />
               <Route path="activity/history" element={<ActivityHistoryPage />} />

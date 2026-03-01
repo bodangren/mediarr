@@ -1,12 +1,11 @@
 import { createActivityApi } from './activityApi';
-
-
 import { createBackupApi } from './backupApi';
 import { createBlocklistApi } from './blocklistApi';
 import { createCalendarApi } from './calendarApi';
 import { createCategorySettingsApi } from './categorySettingsApi';
 import { createCollectionApi } from './collectionApi';
 import { createCustomFormatApi } from './customFormatApi';
+import { createDashboardApi } from './dashboardApi';
 import { createDiscoverApi } from './discoverApi';
 import { createEventsApi } from './eventsApi';
 import { createFilesystemApi } from './filesystemApi';
@@ -62,6 +61,7 @@ export function createApiClients(config: ApiHttpClientConfig = {}) {
     subtitleWantedApi: createSubtitleWantedApi(httpClient),
     activityApi: createActivityApi(httpClient),
     calendarApi: createCalendarApi(httpClient),
+    dashboardApi: createDashboardApi(httpClient),
     categorySettingsApi: createCategorySettingsApi(httpClient),
     collectionApi: createCollectionApi(httpClient),
     discoverApi: createDiscoverApi(httpClient),

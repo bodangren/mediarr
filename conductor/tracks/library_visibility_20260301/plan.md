@@ -34,11 +34,11 @@
 - [x] Task: Backend Dashboard APIs
     - [x] Sub-task: Create endpoints or reuse existing ones for "Recently Added" (recently added to the library database).
     - [x] Sub-task: Create endpoint for "Disk Space" (querying OS for configured root folder free space).
-- [ ] Task: Frontend Dashboard UI
-    - [ ] Sub-task: Build "Recently Added" widget (carousel or grid of posters).
-    - [ ] Sub-task: Build "Upcoming" widget (mini-list of the next 7 days from the Calendar API).
-    - [ ] Sub-task: Build "Active Downloads" widget (mini-view of the Queue API).
-    - [ ] Sub-task: Build "System Status" widget (Disk space bars).
-    - [ ] Sub-task: Set Dashboard as the default `/` route.
+- [x] Task: Frontend Dashboard UI
+    - [x] Sub-task: Build "Recently Added" widget (carousel or grid of posters).
+    - [x] Sub-task: Build "Upcoming" widget (mini-list of the next 7 days from the Calendar API).
+    - [x] Sub-task: Build "Active Downloads" widget (mini-view of the Queue API).
+    - [x] Sub-task: Build "System Status" widget (Disk space bars).
+    - [x] Sub-task: Set Dashboard as the default `/` route.
 
 - [ ] Task: Conductor - User Manual Verification 'Phase 3'

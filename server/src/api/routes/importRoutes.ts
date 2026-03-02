@@ -117,6 +117,62 @@ export function registerImportRoutes(
     return sendSuccess(reply, results);
   });
 
+  // POST /api/import/backfill-posters
+  // Fetches and stores posterUrl for movies that have a tmdbId but no poster.
+  app.post('/api/import/backfill-posters', async (_request, reply) => {
+    if (!matchService || !deps.metadataProvider) {
+      return reply.code(500).send({ ok: false, error: 'Metadata provider not configured' });
+    }
+
+    const movies: Array<{ id: number; tmdbId: number; title: string }> =
+      await (deps.prisma as any).movie.findMany({
+        where: {
+          tmdbId: { not: null },
+          OR: [{ posterUrl: null }, { posterUrl: '' }],
+        },
+        select: { id: true, tmdbId: true, title: true },
+      });
+
+    let updated = 0;
+    let skipped = 0;
+    const errors: Array<{ title: string; error: string }> = [];
+
+    await withConcurrencyLimit(
+      movies,
+      MATCH_CONCURRENCY,
+      async (movie) => {
+        try {
+          const details = await deps.metadataProvider!.getMediaDetails({
+            mediaType: 'MOVIE',
+            tmdbId: movie.tmdbId,
+          });
+          const posterUrl = (details as any).images?.[0]?.url as string | undefined;
+          if (posterUrl) {
+            await (deps.prisma as any).movie.update({
+              where: { id: movie.id },
+              data: { posterUrl },
+            });
+            updated++;
+          } else {
+            skipped++;
+          }
+        } catch (err) {
+          const message = err instanceof Error ? err.message : 'Unknown error';
+          console.error(`[backfill-posters] "${movie.title}": ${message}`);
+          errors.push({ title: movie.title, error: message });
+        }
+      },
+    );
+
+    return sendSuccess(reply, {
+      total: movies.length,
+      updated,
+      skipped,
+      failed: errors.length,
+      errors,
+    });
+  });
+
   app.post<{
     Body: {
       items: Array<{

@@ -77,10 +77,9 @@ export class BulkImportService {
         result.imported++;
       } else {
         result.failed++;
-        result.errors.push({
-          folderPath: items[i]!.folderPath,
-          error: outcome.reason instanceof Error ? outcome.reason.message : 'Unknown error',
-        });
+        const message = outcome.reason instanceof Error ? outcome.reason.message : 'Unknown error';
+        console.error(`[BulkImport] Failed to import "${items[i]!.folderPath}": ${message}`);
+        result.errors.push({ folderPath: items[i]!.folderPath, error: message });
       }
     }
 

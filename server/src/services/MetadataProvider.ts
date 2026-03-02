@@ -231,6 +231,41 @@ export class MetadataProvider {
     };
   }
 
+  async findMovieByImdbId(imdbId: string, fetchFn?: any): Promise<BaseMedia | null> {
+    const settings = await this.settingsService.get();
+    const apiKey = settings.apiKeys.tmdbApiKey;
+
+    if (!apiKey) {
+      throw new Error('TMDB API Key is missing. Please configure it in settings.');
+    }
+
+    const normalizedImdbId = imdbId.startsWith('tt') ? imdbId : `tt${imdbId}`;
+    const url = `${this.movieBaseUrl}/find/${encodeURIComponent(normalizedImdbId)}?api_key=${encodeURIComponent(apiKey)}&external_source=imdb_id`;
+    const response = await this.httpClient.get(url, {}, fetchFn);
+
+    if (!response.ok) {
+      throw new Error(`Failed to find movie by IMDb ID: ${response.status} ${response.body}`);
+    }
+
+    const payload = JSON.parse(response.body);
+    const match = Array.isArray(payload.movie_results) ? payload.movie_results[0] : null;
+
+    if (!match) {
+      return null;
+    }
+
+    return {
+      mediaType: 'MOVIE',
+      tmdbId: match.id,
+      imdbId: normalizedImdbId,
+      title: match.title,
+      status: match.status,
+      overview: match.overview,
+      year: this.parseYear(match.release_date),
+      images: match.poster_path ? [{ coverType: 'poster', url: `https://image.tmdb.org/t/p/w500${match.poster_path}` }] : [],
+    };
+  }
+
   private async searchMovies(term: string, fetchFn?: any): Promise<MovieSearchResult[]> {
     const settings = await this.settingsService.get();
     const apiKey = settings.apiKeys.tmdbApiKey;

@@ -15,11 +15,11 @@
 ## Phase 2: Metadata Resolution
 > Goal: Map the parsed filenames to actual TMDB/TVDB entities.
 
-- [ ] Task: Implement Metadata Matching Logic
-    - [ ] Sub-task: Use `MetadataProvider.searchSeries()` / `searchMovies()` to lookup parsed titles.
-    - [ ] Sub-task: Return top 3-5 match candidates with confidence scores for each scanned item.
-    - [ ] Sub-task: Use NFO-derived IDs (IMDB/TMDB/TVDB) as exact match hints when present.
-    - [ ] Sub-task: Create `POST /api/import/scan` endpoint returning scanned items with match candidates.
+- [x] Task: Implement Metadata Matching Logic
+    - [x] Sub-task: Use `MetadataProvider.searchSeries()` / `searchMovies()` to lookup parsed titles.
+    - [x] Sub-task: Return top 3-5 match candidates with confidence scores for each scanned item.
+    - [x] Sub-task: Use NFO-derived IDs (IMDB/TMDB/TVDB) as exact match hints when present.
+    - [x] Sub-task: Create `POST /api/import/scan` endpoint returning scanned items with match candidates.
 
 ## Phase 3: Bulk Import Execution
 > Goal: Save the matched entities to the database and optionally rename files.

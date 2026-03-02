@@ -19,6 +19,7 @@ export interface SeriesOptionsState {
  * Extended series item with computed properties for UI views.
  */
 export interface SeriesListItem extends ApiSeriesListItem {
+  sizeOnDisk?: number;
   statistics?: {
     totalEpisodes: number;
     episodesOnDisk: number;

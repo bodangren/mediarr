@@ -314,5 +314,12 @@ export function createSeriesApi(client: ApiHttpClient) {
         releaseCandidateSchema,
       );
     },
+
+    rescan(seriesId: number, folderPath?: string): Promise<{ rescanned: boolean; id: number; episodeCount: number; filesLinked: number }> {
+      return client.request(
+        { path: `/api/series/${seriesId}/rescan`, method: 'POST', body: folderPath ? { folderPath } : {} },
+        z.object({ rescanned: z.boolean(), id: z.number(), episodeCount: z.number(), filesLinked: z.number().default(0) }),
+      );
+    },
   };
 }

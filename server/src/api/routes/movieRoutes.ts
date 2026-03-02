@@ -76,10 +76,18 @@ export function registerMovieRoutes(
       },
     });
 
-    const filtered = filterMovies(allItems, query);
-    const sortField = pagination.sortBy && ['title', 'year', 'status', 'added'].includes(pagination.sortBy)
-      ? pagination.sortBy
-      : 'title';
+    const itemsWithSize = allItems.map((movie: any) => ({
+      ...movie,
+      sizeOnDisk: (movie.fileVariants ?? []).reduce(
+        (sum: number, v: any) => sum + Number(v.fileSize ?? 0),
+        0,
+      ),
+    }));
+
+    const filtered = filterMovies(itemsWithSize, query);
+    const sortField = pagination.sortBy && ['title', 'year', 'status', 'added', 'sizeOnDisk'].includes(pagination.sortBy)
+      ? (pagination.sortBy === 'title' ? 'sortTitle' : pagination.sortBy)
+      : 'sortTitle';
     const sortDirection = pagination.sortDir ?? 'asc';
 
     const sorted = sortByField(filtered, sortField, sortDirection);
@@ -118,7 +126,12 @@ export function registerMovieRoutes(
       },
     });
 
-    return sendSuccess(reply, assertFound(movie, `Movie ${id} not found`));
+    const found = assertFound(movie, `Movie ${id} not found`);
+    const sizeOnDisk = (found.fileVariants ?? []).reduce(
+      (sum: number, v: any) => sum + Number(v.fileSize ?? 0),
+      0,
+    );
+    return sendSuccess(reply, { ...found, sizeOnDisk });
   });
 
   // PUT /api/movies/:id - Update movie metadata/settings
@@ -331,13 +344,22 @@ export function registerMovieRoutes(
           id: { type: 'string' },
         },
       },
+      querystring: {
+        type: 'object',
+        properties: {
+          deleteFiles: { type: 'string' },
+        },
+      },
     },
   }, async (request, reply) => {
     const id = parseIdParam((request.params as { id: string }).id, 'movie');
-    const body = (request.body ?? {}) as { deleteFiles?: boolean };
+    // deleteFiles can arrive as a query param (preferred for DELETE) or body fallback
+    const query = request.query as Record<string, string | undefined>;
+    const body = (request.body ?? {}) as Record<string, unknown>;
+    const deleteFiles = query.deleteFiles === 'true' || body.deleteFiles === true;
 
     if (deps.mediaService?.deleteMedia) {
-      await deps.mediaService.deleteMedia(id, 'MOVIE', body.deleteFiles ?? false);
+      await deps.mediaService.deleteMedia(id, 'MOVIE', deleteFiles);
     } else {
       await (deps.prisma as any).movie.delete({
         where: {

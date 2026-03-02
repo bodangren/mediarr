@@ -14,6 +14,7 @@ const seriesItemSchema = z.object({
   year: z.number().nullish(),
   status: z.string().nullish(),
   monitored: z.boolean().nullish(),
+  sizeOnDisk: z.number().nullish(),
 }).passthrough();
 
 const movieItemSchema = z.object({
@@ -24,6 +25,7 @@ const movieItemSchema = z.object({
   year: z.number().nullish(),
   status: z.string().nullish(),
   monitored: z.boolean().nullish(),
+  sizeOnDisk: z.number().nullish(),
 }).passthrough();
 
 const wantedItemSchema = z.object({
@@ -205,7 +207,7 @@ export function createMediaApi(client: ApiHttpClient) {
         {
           path: routeMap.seriesDelete(id),
           method: 'DELETE',
-          body: { deleteFiles },
+          query: deleteFiles ? { deleteFiles: 'true' } : {},
         },
         z.object({ deleted: z.boolean(), id: z.number() }),
       );
@@ -246,7 +248,7 @@ export function createMediaApi(client: ApiHttpClient) {
         {
           path: routeMap.movieDelete(id),
           method: 'DELETE',
-          body: { deleteFiles },
+          query: deleteFiles ? { deleteFiles: 'true' } : {},
         },
         z.object({ deleted: z.boolean(), id: z.number() }),
       );

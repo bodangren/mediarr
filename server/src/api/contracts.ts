@@ -71,7 +71,7 @@ export function parsePaginationParams(
   const rawPageSize = parseInteger(query.pageSize);
 
   const page = rawPage !== undefined ? Math.max(rawPage, 1) : 1;
-  const pageSize = rawPageSize !== undefined ? clamp(rawPageSize, 1, 100) : 25;
+  const pageSize = rawPageSize !== undefined ? clamp(rawPageSize, 1, 10_000) : 25;
 
   const sortBy =
     typeof query.sortBy === 'string' && query.sortBy.trim().length > 0

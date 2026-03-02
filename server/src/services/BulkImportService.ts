@@ -63,8 +63,21 @@ export class BulkImportService {
   }
 
   async executeImport(items: ImportMatchItem[]): Promise<ImportResult> {
+    // Deduplicate by matchId+mediaType: merge files from duplicate folders into one item
+    const deduped = new Map<string, ImportMatchItem>();
+    for (const item of items) {
+      const key = `${item.mediaType}:${item.matchId}`;
+      const existing = deduped.get(key);
+      if (existing) {
+        existing.files = [...existing.files, ...item.files];
+      } else {
+        deduped.set(key, { ...item, files: [...item.files] });
+      }
+    }
+    const dedupedItems = Array.from(deduped.values());
+
     const outcomes = await BulkImportService.withConcurrencyLimit(
-      items,
+      dedupedItems,
       BulkImportService.IMPORT_CONCURRENCY,
       (item) => item.mediaType === 'movie' ? this.importMovie(item) : this.importSeries(item),
     );
@@ -78,8 +91,8 @@ export class BulkImportService {
       } else {
         result.failed++;
         const message = outcome.reason instanceof Error ? outcome.reason.message : 'Unknown error';
-        console.error(`[BulkImport] Failed to import "${items[i]!.folderPath}": ${message}`);
-        result.errors.push({ folderPath: items[i]!.folderPath, error: message });
+        console.error(`[BulkImport] Failed to import "${dedupedItems[i]!.folderPath}": ${message}`);
+        result.errors.push({ folderPath: dedupedItems[i]!.folderPath, error: message });
       }
     }
 
@@ -101,24 +114,34 @@ export class BulkImportService {
       ? `${item.rootFolderPath}/${cleanTitle} (${movieData.year})`
       : item.folderPath;
 
-    const movie = await (this.prisma as any).movie.upsert({
-      where: { tmdbId: movieData.tmdbId },
-      create: {
-        tmdbId: movieData.tmdbId,
-        imdbId: movieData.imdbId,
-        title: movieData.title,
-        cleanTitle,
-        sortTitle: toSortTitle(movieData.title),
-        status: movieData.status ?? 'released',
-        overview: movieData.overview,
-        monitored: true,
-        qualityProfileId: item.qualityProfileId,
-        path: moviePath,
-        year: movieData.year ?? 0,
-        posterUrl: movieData.images?.[0]?.url,
-      },
-      update: {},
+    // Find existing record by tmdbId OR imdbId — the DB may have this movie
+    // already (e.g. added via search) stored with a different unique-key pairing.
+    const orConditions: object[] = [{ tmdbId: movieData.tmdbId }];
+    if (movieData.imdbId) orConditions.push({ imdbId: movieData.imdbId });
+
+    const existing = await (this.prisma as any).movie.findFirst({
+      where: { OR: orConditions },
+      select: { id: true },
     });
+
+    const movie = existing
+      ? await (this.prisma as any).movie.findUnique({ where: { id: existing.id } })
+      : await (this.prisma as any).movie.create({
+          data: {
+            tmdbId: movieData.tmdbId,
+            imdbId: movieData.imdbId,
+            title: movieData.title,
+            cleanTitle,
+            sortTitle: toSortTitle(movieData.title),
+            status: movieData.status ?? 'released',
+            overview: movieData.overview,
+            monitored: true,
+            qualityProfileId: item.qualityProfileId,
+            path: moviePath,
+            year: movieData.year ?? 0,
+            posterUrl: movieData.images?.[0]?.url,
+          },
+        });
 
     for (const file of item.files) {
       let filePath = file.path;
@@ -128,7 +151,7 @@ export class BulkImportService {
           title: movie.title,
           year: movie.year,
           path: moviePath,
-        });
+        }, { move: true });
       }
 
       await this.variantRepo.upsertVariant(this.buildVariantInput('MOVIE', { movieId: movie.id }, file, filePath));
@@ -143,24 +166,32 @@ export class BulkImportService {
       ? `${item.rootFolderPath}/${cleanTitle}`
       : item.folderPath;
 
-    const series = await (this.prisma as any).series.upsert({
-      where: { tvdbId: seriesData.series.tvdbId },
-      create: {
-        tvdbId: seriesData.series.tvdbId,
-        title: seriesData.series.title,
-        cleanTitle,
-        sortTitle: toSortTitle(seriesData.series.title),
-        status: seriesData.series.status ?? 'continuing',
-        overview: seriesData.series.overview,
-        monitored: true,
-        qualityProfileId: item.qualityProfileId,
-        path: seriesPath,
-        year: seriesData.series.year ?? 0,
-        network: seriesData.series.network,
-        posterUrl: seriesData.series.images?.[0]?.url,
-      },
-      update: {},
+    const seriesOrConditions: object[] = [{ tvdbId: seriesData.series.tvdbId }];
+    if (seriesData.series.imdbId) seriesOrConditions.push({ imdbId: seriesData.series.imdbId });
+
+    const existingSeries = await (this.prisma as any).series.findFirst({
+      where: { OR: seriesOrConditions },
+      select: { id: true },
     });
+
+    const series = existingSeries
+      ? await (this.prisma as any).series.findUnique({ where: { id: existingSeries.id } })
+      : await (this.prisma as any).series.create({
+          data: {
+            tvdbId: seriesData.series.tvdbId,
+            title: seriesData.series.title,
+            cleanTitle,
+            sortTitle: toSortTitle(seriesData.series.title),
+            status: seriesData.series.status ?? 'continuing',
+            overview: seriesData.series.overview,
+            monitored: true,
+            qualityProfileId: item.qualityProfileId,
+            path: seriesPath,
+            year: seriesData.series.year ?? 0,
+            network: seriesData.series.network,
+            posterUrl: seriesData.series.images?.[0]?.url,
+          },
+        });
 
     const seasonMap = new Map<number, number>();
 
@@ -177,19 +208,18 @@ export class BulkImportService {
 
     for (const ep of seriesData.episodes) {
       if (!seasonMap.has(ep.seasonNumber)) {
-        const season = await (this.prisma as any).season.create({
-          data: {
-            seriesId: series.id,
-            seasonNumber: ep.seasonNumber,
-            monitored: true,
-          },
+        const season = await (this.prisma as any).season.upsert({
+          where: { seriesId_seasonNumber: { seriesId: series.id, seasonNumber: ep.seasonNumber } },
+          create: { seriesId: series.id, seasonNumber: ep.seasonNumber, monitored: true },
+          update: {},
         });
         seasonMap.set(ep.seasonNumber, season.id);
       }
 
       const rawAirDate = ep.airDateUtc ?? ep.airDate;
-      const episode = await (this.prisma as any).episode.create({
-        data: {
+      const episode = await (this.prisma as any).episode.upsert({
+        where: { tvdbId: ep.tvdbId ?? ep.id },
+        create: {
           seriesId: series.id,
           seasonId: seasonMap.get(ep.seasonNumber),
           tvdbId: ep.tvdbId ?? ep.id,
@@ -200,6 +230,7 @@ export class BulkImportService {
           overview: ep.overview,
           monitored: true,
         },
+        update: {},
       });
 
       const matchingFile = filesByEpisode.get(`${ep.seasonNumber}x${ep.episodeNumber}`);
@@ -216,8 +247,15 @@ export class BulkImportService {
               episodeNumber: ep.episodeNumber,
               title: episode.title,
             },
+            { move: true },
           );
         }
+
+        // Set episode.path so the UI correctly shows the episode as "on disk"
+        await (this.prisma as any).episode.update({
+          where: { id: episode.id },
+          data: { path: filePath },
+        });
 
         await this.variantRepo.upsertVariant(this.buildVariantInput('EPISODE', { episodeId: episode.id }, matchingFile, filePath));
       }

@@ -22,14 +22,19 @@ export class Organizer {
   }
 
   /**
-   * Organizes a file to the series/season folder using hard link with move fallback.
-   * Hard links are preferred to save disk space (source stays for seeding).
-   * Falls back to fs.rename if hard linking fails (e.g., cross-device).
+   * Organizes a file to the series/season folder.
+   *
+   * Default (move: false): hard link preserving source for torrent seeding,
+   * with fs.rename fallback on cross-device.
+   *
+   * move: true: rename (move) first — used when files are already in the media
+   * tree so no copy is left behind. Falls back to copy+unlink on cross-device.
    */
   async organizeFile(
     sourcePath: string,
     series: { title: string; path: string },
-    episode: { seasonNumber: number; episodeNumber: number; title: string }
+    episode: { seasonNumber: number; episodeNumber: number; title: string },
+    options?: { move?: boolean }
   ): Promise<string> {
     const extension = path.extname(sourcePath);
     const filename = this.buildFilename(series, episode, extension);
@@ -42,14 +47,22 @@ export class Organizer {
 
     const destinationPath = path.join(seasonDir, filename);
 
-    try {
-      await fs.link(sourcePath, destinationPath);
-    } catch {
-      console.warn(
-        `Hard link failed for "${sourcePath}", falling back to move. ` +
-        'Ensure downloads and media are on the same volume for hard link support.'
-      );
-      await fs.rename(sourcePath, destinationPath);
+    if (path.resolve(sourcePath) === path.resolve(destinationPath)) {
+      return destinationPath;
+    }
+
+    if (options?.move) {
+      await this.moveFile(sourcePath, destinationPath);
+    } else {
+      try {
+        await fs.link(sourcePath, destinationPath);
+      } catch {
+        console.warn(
+          `Hard link failed for "${sourcePath}", falling back to move. ` +
+          'Ensure downloads and media are on the same volume for hard link support.'
+        );
+        await fs.rename(sourcePath, destinationPath);
+      }
     }
 
     return destinationPath;
@@ -66,7 +79,8 @@ export class Organizer {
 
   async organizeMovieFile(
     sourcePath: string,
-    movie: { title: string; year: number; path: string }
+    movie: { title: string; year: number; path: string },
+    options?: { move?: boolean }
   ): Promise<string> {
     const extension = path.extname(sourcePath);
     const movieDir = this.resolveMovieDirectory(movie);
@@ -76,14 +90,22 @@ export class Organizer {
 
     const destinationPath = path.join(movieDir, filename);
 
-    try {
-      await fs.link(sourcePath, destinationPath);
-    } catch {
-      console.warn(
-        `Hard link failed for "${sourcePath}", falling back to move. ` +
-        'Ensure downloads and media are on the same volume for hard link support.'
-      );
-      await fs.rename(sourcePath, destinationPath);
+    if (path.resolve(sourcePath) === path.resolve(destinationPath)) {
+      return destinationPath;
+    }
+
+    if (options?.move) {
+      await this.moveFile(sourcePath, destinationPath);
+    } else {
+      try {
+        await fs.link(sourcePath, destinationPath);
+      } catch {
+        console.warn(
+          `Hard link failed for "${sourcePath}", falling back to move. ` +
+          'Ensure downloads and media are on the same volume for hard link support.'
+        );
+        await fs.rename(sourcePath, destinationPath);
+      }
     }
 
     return destinationPath;
@@ -114,6 +136,18 @@ export class Organizer {
     }
 
     return path.join(basePath, movieFolderName);
+  }
+
+  /** Move a file: try fs.rename (atomic, same-fs), fall back to copy+unlink cross-device. */
+  private async moveFile(sourcePath: string, destinationPath: string): Promise<void> {
+    try {
+      await fs.rename(sourcePath, destinationPath);
+    } catch (err: any) {
+      if (err?.code !== 'EXDEV') throw err;
+      // Cross-device: copy then remove source
+      await fs.copyFile(sourcePath, destinationPath);
+      await fs.unlink(sourcePath);
+    }
   }
 
   private sanitize(name: string): string {

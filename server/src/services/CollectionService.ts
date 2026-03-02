@@ -2,6 +2,7 @@ import type { PrismaClient } from '@prisma/client';
 import { HttpClient } from '../indexers/HttpClient';
 import { SettingsService } from './SettingsService';
 import { ConflictError, NotFoundError, ValidationError, ProviderUnavailableError } from '../errors/domainErrors';
+import { toSortTitle } from '../utils/stringUtils';
 
 export interface TMDBCollectionMovie {
   id: number;
@@ -152,7 +153,7 @@ export class CollectionService {
               tmdbId: movie.tmdbId,
               title: movie.title,
               cleanTitle: this.cleanTitle(movie.title),
-              sortTitle: movie.title.toLowerCase(),
+              sortTitle: toSortTitle(movie.title),
               year: movie.year,
               overview: movie.overview ?? null,
               posterPath: movie.posterPath ?? null,
@@ -206,7 +207,7 @@ export class CollectionService {
             tmdbId: movie.tmdbId,
             title: movie.title,
             cleanTitle: this.cleanTitle(movie.title),
-            sortTitle: movie.title.toLowerCase(),
+            sortTitle: toSortTitle(movie.title),
             year: movie.year,
             overview: movie.overview ?? null,
             posterPath: movie.posterPath ?? null,

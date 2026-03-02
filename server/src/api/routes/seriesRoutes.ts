@@ -10,6 +10,8 @@ import { FilenameParsingService } from '../../services/FilenameParsingService';
 import { FilterService, type FilterConditionsGroup } from '../../services/FilterService';
 import { Parser } from '../../utils/Parser';
 import type { SearchParams } from '../../services/MediaSearchService';
+import { ExistingLibraryScanner } from '../../services/ExistingLibraryScanner';
+import { SubtitleVariantRepository } from '../../repositories/SubtitleVariantRepository';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
@@ -187,8 +189,16 @@ export function registerSeriesRoutes(
       },
     });
 
+    const itemsWithSize = allItems.map((series: any) => ({
+      ...series,
+      sizeOnDisk: (series.seasons ?? [])
+        .flatMap((s: any) => s.episodes ?? [])
+        .flatMap((ep: any) => ep.fileVariants ?? [])
+        .reduce((sum: number, v: any) => sum + Number(v.fileSize ?? 0), 0),
+    }));
+
     const filterService = new FilterService(deps.prisma as any);
-    let filtered = filterSeries(allItems, query, filterService);
+    let filtered = filterSeries(itemsWithSize, query, filterService);
 
     const rawFilterId = query.filterId;
     const filterId =
@@ -208,9 +218,9 @@ export function registerSeriesRoutes(
       }
     }
 
-    const sortField = pagination.sortBy && ['title', 'year', 'status', 'added'].includes(pagination.sortBy)
-      ? pagination.sortBy
-      : 'title';
+    const sortField = pagination.sortBy && ['title', 'year', 'status', 'added', 'sizeOnDisk'].includes(pagination.sortBy)
+      ? (pagination.sortBy === 'title' ? 'sortTitle' : pagination.sortBy)
+      : 'sortTitle';
     const sortDirection = pagination.sortDir ?? 'asc';
 
     const sorted = sortByField(filtered, sortField, sortDirection);
@@ -242,7 +252,11 @@ export function registerSeriesRoutes(
       include: {
         seasons: {
           include: {
-            episodes: true,
+            episodes: {
+              include: {
+                fileVariants: { select: { fileSize: true } },
+              },
+            },
           },
         },
         qualityProfile: true,
@@ -292,6 +306,7 @@ export function registerSeriesRoutes(
       let seasonDownloading = 0;
 
       const augmentedEpisodes = (season.episodes || []).map((episode: any) => {
+        const { fileVariants: _fv, ...episodeData } = episode;
         const hasFile = !!episode.path;
         const isDownloading = downloadingEpisodes.has(`${episode.seasonNumber}-${episode.episodeNumber}`);
 
@@ -303,15 +318,15 @@ export function registerSeriesRoutes(
           } else if (isDownloading) {
             seasonDownloading++;
           } else if (episode.monitored) {
-            // Unreleased episodes shouldn't necessarily be counted as missing if airdate is in future, 
-            // but for simple UI we can keep it as 'missing' or check airdate. 
+            // Unreleased episodes shouldn't necessarily be counted as missing if airdate is in future,
+            // but for simple UI we can keep it as 'missing' or check airdate.
             // For now, if it's monitored and not on disk and not downloading, it's missing.
             seasonMissing++;
           }
         }
 
         return {
-          ...episode,
+          ...episodeData,
           hasFile,
           isDownloading,
         };
@@ -334,9 +349,15 @@ export function registerSeriesRoutes(
       };
     });
 
+    const sizeOnDisk = (record.seasons ?? [])
+      .flatMap((s: any) => s.episodes ?? [])
+      .flatMap((ep: any) => ep.fileVariants ?? [])
+      .reduce((sum: number, v: any) => sum + Number(v.fileSize ?? 0), 0);
+
     const augmentedRecord = {
       ...record,
       seasons: augmentedSeasons,
+      sizeOnDisk,
       statistics: {
         totalEpisodes,
         episodesOnDisk,
@@ -541,13 +562,22 @@ export function registerSeriesRoutes(
           id: { type: 'string' },
         },
       },
+      querystring: {
+        type: 'object',
+        properties: {
+          deleteFiles: { type: 'string' },
+        },
+      },
     },
   }, async (request, reply) => {
     const id = parseIdParam((request.params as { id: string }).id, 'series');
-    const body = (request.body ?? {}) as { deleteFiles?: boolean };
+    // deleteFiles can arrive as a query param (preferred for DELETE) or body fallback
+    const query = request.query as Record<string, string | undefined>;
+    const body = (request.body ?? {}) as Record<string, unknown>;
+    const deleteFiles = query.deleteFiles === 'true' || body.deleteFiles === true;
 
     if (deps.mediaService?.deleteMedia) {
-      await deps.mediaService.deleteMedia(id, 'TV', body.deleteFiles ?? false);
+      await deps.mediaService.deleteMedia(id, 'TV', deleteFiles);
     } else {
       await (deps.prisma as any).series.delete({ where: { id } });
     }
@@ -555,6 +585,144 @@ export function registerSeriesRoutes(
     return sendSuccess(reply, {
       deleted: true,
       id,
+    });
+  });
+
+  // =====================
+  // Rescan / Refresh
+  // =====================
+
+  /**
+   * POST /api/series/:id/rescan
+   * Re-fetches episode metadata from the provider, upserts missing seasons/episodes,
+   * and scans the series folder on disk to link existing files to episodes.
+   * Accepts an optional { folderPath } body to override the stored series path.
+   */
+  app.post('/api/series/:id/rescan', {
+    schema: {
+      params: {
+        type: 'object',
+        required: ['id'],
+        properties: { id: { type: 'string' } },
+      },
+    },
+  }, async (request, reply) => {
+    const id = parseIdParam((request.params as { id: string }).id, 'series');
+    const body = (request.body as { folderPath?: string } | undefined) ?? {};
+
+    const series = await (deps.prisma as any).series.findUnique({
+      where: { id },
+      select: { id: true, tvdbId: true, title: true, path: true },
+    });
+    assertFound(series, `Series ${id} not found`);
+
+    if (!deps.metadataProvider?.getSeriesDetails) {
+      throw new ValidationError('Metadata provider is not configured');
+    }
+
+    // If a new folder path was provided, update it in the DB
+    const seriesPath: string = body.folderPath ?? series.path ?? '';
+    if (body.folderPath && body.folderPath !== series.path) {
+      await (deps.prisma as any).series.update({
+        where: { id },
+        data: { path: body.folderPath },
+      });
+    }
+
+    const seriesData = await deps.metadataProvider.getSeriesDetails(series.tvdbId);
+
+    const seasonMap = new Map<number, number>();
+
+    // Ensure all seasons/episodes exist with updated metadata
+    for (const ep of seriesData.episodes) {
+      if (!seasonMap.has(ep.seasonNumber)) {
+        const season = await (deps.prisma as any).season.upsert({
+          where: { seriesId_seasonNumber: { seriesId: id, seasonNumber: ep.seasonNumber } },
+          create: { seriesId: id, seasonNumber: ep.seasonNumber, monitored: true },
+          update: {},
+        });
+        seasonMap.set(ep.seasonNumber, season.id);
+      }
+
+      const rawAirDate = ep.airDateUtc ?? ep.airDate;
+      await (deps.prisma as any).episode.upsert({
+        where: { tvdbId: ep.tvdbId ?? ep.id },
+        create: {
+          seriesId: id,
+          seasonId: seasonMap.get(ep.seasonNumber),
+          tvdbId: ep.tvdbId ?? ep.id,
+          seasonNumber: ep.seasonNumber,
+          episodeNumber: ep.episodeNumber,
+          title: ep.title ?? `Episode ${ep.episodeNumber}`,
+          airDateUtc: rawAirDate ? new Date(rawAirDate) : null,
+          overview: ep.overview,
+          monitored: true,
+        },
+        update: {
+          title: ep.title ?? `Episode ${ep.episodeNumber}`,
+          airDateUtc: rawAirDate ? new Date(rawAirDate) : null,
+          overview: ep.overview,
+          seasonId: seasonMap.get(ep.seasonNumber),
+        },
+      });
+    }
+
+    // Scan the folder on disk to link files to episodes
+    let filesLinked = 0;
+    if (seriesPath) {
+      try {
+        const scanner = new ExistingLibraryScanner();
+        const scanResult = await scanner.scan(seriesPath);
+        const variantRepo = new SubtitleVariantRepository(deps.prisma as any);
+
+        // Index episodes from DB by season/episode for O(1) lookup
+        const dbEpisodes = await (deps.prisma as any).episode.findMany({
+          where: { seriesId: id },
+          select: { id: true, seasonNumber: true, episodeNumber: true },
+        });
+        const epIndex = new Map<string, number>();
+        for (const e of dbEpisodes) {
+          epIndex.set(`${e.seasonNumber}x${e.episodeNumber}`, e.id);
+        }
+
+        for (const folder of scanResult.folders) {
+          for (const file of folder.files) {
+            const parsed = file.parsedInfo;
+            if (!parsed?.seasonNumber || !parsed.episodeNumbers?.length) continue;
+
+            for (const epNum of parsed.episodeNumbers) {
+              const epId = epIndex.get(`${parsed.seasonNumber}x${epNum}`);
+              if (!epId) continue;
+
+              await (deps.prisma as any).episode.update({
+                where: { id: epId },
+                data: { path: file.path },
+              });
+
+              await variantRepo.upsertVariant({
+                mediaType: 'EPISODE',
+                episodeId: epId,
+                path: file.path,
+                fileSize: BigInt(file.size),
+              });
+
+              filesLinked++;
+            }
+          }
+        }
+      } catch (err) {
+        // Non-fatal: log but don't fail the rescan if the folder is unreadable
+        console.warn(`[Rescan] Could not scan folder "${seriesPath}":`, err);
+      }
+    }
+
+    const episodeCount = await (deps.prisma as any).episode.count({ where: { seriesId: id } });
+
+    return sendSuccess(reply, {
+      rescanned: true,
+      id,
+      episodeCount,
+      filesLinked,
     });
   });
 

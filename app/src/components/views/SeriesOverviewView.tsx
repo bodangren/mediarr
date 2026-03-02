@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import { Icon } from '@/components/primitives/Icon';
 import { ProgressBar } from '@/components/primitives/ProgressBar';
 import { StatusBadge } from '@/components/primitives/StatusBadge';
-import { formatRelativeDate } from '@/lib/format';
+import { formatBytes, formatRelativeDate } from '@/lib/format';
 import { calculateEpisodeProgress, getEpisodeCounts, getLastAired, getNextAiring, type SeriesListItem } from '@/types/series';
 
 interface OverviewViewProps {
@@ -91,6 +91,9 @@ function SeriesOverviewCard({ item, onToggleMonitored, onDelete, onRefresh }: Se
           <div className="flex-1">
             <ProgressBar value={progress} />
           </div>
+          {item.sizeOnDisk != null && item.sizeOnDisk > 0 && (
+            <span className="flex-shrink-0 text-text-muted">{formatBytes(item.sizeOnDisk)}</span>
+          )}
         </div>
 
         {/* Episode Info */}

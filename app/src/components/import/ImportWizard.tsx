@@ -15,6 +15,7 @@ type WizardStep = 'select-folder' | 'scanning' | 'review' | 'config' | 'importin
 
 interface ImportItem {
   folderPath: string;
+  mergedFolderPaths?: string[];
   files: Array<{
     path: string;
     size: number;
@@ -50,7 +51,7 @@ export function ImportWizard({ isOpen, onClose, mediaType }: ImportWizardProps) 
     try {
       const result = await api.importApi.scan({ path: selectedPath });
       
-      const items: ImportItem[] = result.folders.map((folder: ScannedFolderWithMatches) => ({
+      const rawItems: ImportItem[] = result.folders.map((folder: ScannedFolderWithMatches) => ({
         folderPath: folder.path,
         files: folder.files.map(f => ({
           path: f.path,
@@ -66,7 +67,29 @@ export function ImportWizard({ isOpen, onClose, mediaType }: ImportWizardProps) 
         matchCandidates: folder.matchCandidates,
         renameFiles: false,
       }));
-      
+
+      // Merge folders that resolved to the same match into a single entry.
+      // This is required for the rename case and avoids duplicate-constraint
+      // errors when the same title has multiple folder variants on disk.
+      const mergeMap = new Map<number, ImportItem>();
+      const unmatched: ImportItem[] = [];
+
+      for (const item of rawItems) {
+        if (item.selectedMatchId > 0) {
+          const existing = mergeMap.get(item.selectedMatchId);
+          if (existing) {
+            existing.files = [...existing.files, ...item.files];
+            existing.mergedFolderPaths = [...(existing.mergedFolderPaths ?? []), item.folderPath];
+          } else {
+            mergeMap.set(item.selectedMatchId, { ...item, files: [...item.files] });
+          }
+        } else {
+          unmatched.push(item);
+        }
+      }
+
+      const items: ImportItem[] = [...mergeMap.values(), ...unmatched];
+
       setImportItems(items);
       setStep('review');
     } catch (err) {
@@ -102,7 +125,25 @@ export function ImportWizard({ isOpen, onClose, mediaType }: ImportWizardProps) 
     setError(null);
 
     try {
-      const items = importItems.map(item => ({
+      // Re-deduplicate in case the user changed a match in the review step to
+      // one that now collides with another item.
+      const mergeMap = new Map<number, typeof importItems[number]>();
+      const unmatched: typeof importItems = [];
+      for (const item of importItems) {
+        if (item.selectedMatchId > 0) {
+          const existing = mergeMap.get(item.selectedMatchId);
+          if (existing) {
+            existing.files = [...existing.files, ...item.files];
+          } else {
+            mergeMap.set(item.selectedMatchId, { ...item, files: [...item.files] });
+          }
+        } else {
+          unmatched.push(item);
+        }
+      }
+      const dedupedItems = [...mergeMap.values(), ...unmatched];
+
+      const items = dedupedItems.map(item => ({
         folderPath: item.folderPath,
         mediaType,
         matchId: item.selectedMatchId,
@@ -199,7 +240,14 @@ export function ImportWizard({ isOpen, onClose, mediaType }: ImportWizardProps) 
                     <div className="mb-2 flex items-start justify-between">
                       <div className="flex-1">
                         <p className="text-sm font-medium">{item.folderPath.split('/').pop()}</p>
-                        <p className="text-xs text-text-secondary">{item.files.length} file{item.files.length !== 1 ? 's' : ''}</p>
+                        <p className="text-xs text-text-secondary">
+                          {item.files.length} file{item.files.length !== 1 ? 's' : ''}
+                          {item.mergedFolderPaths && item.mergedFolderPaths.length > 0 && (
+                            <span className="ml-2 text-status-warning" title={item.mergedFolderPaths.join('\n')}>
+                              +{item.mergedFolderPaths.length} merged folder{item.mergedFolderPaths.length !== 1 ? 's' : ''}
+                            </span>
+                          )}
+                        </p>
                       </div>
                     </div>
                     

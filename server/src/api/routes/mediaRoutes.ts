@@ -3,6 +3,7 @@ import { ConflictError, InternalError, ValidationError } from '../../errors/doma
 import { paginateArray, parsePaginationParams, sendPaginatedSuccess, sendSuccess } from '../contracts';
 import { sortByField } from '../routeUtils';
 import type { ApiDependencies } from '../types';
+import { toSortTitle } from '../../utils/stringUtils';
 
 interface CreateMediaBody {
   mediaType: 'TV' | 'MOVIE' | 'movie' | 'series';
@@ -239,7 +240,7 @@ export function registerMediaRoutes(
           imdbId: body.imdbId,
           title: body.title,
           cleanTitle: body.title.toLowerCase().replace(/\W+/g, ''),
-          sortTitle: body.title.toLowerCase(),
+          sortTitle: toSortTitle(body.title),
           status: body.status ?? 'announced',
           overview: body.overview,
           monitored,
@@ -254,7 +255,7 @@ export function registerMediaRoutes(
             imdbId: body.imdbId,
             title: body.title,
             cleanTitle: body.title.toLowerCase().replace(/\W+/g, ''),
-            sortTitle: body.title.toLowerCase(),
+            sortTitle: toSortTitle(body.title),
             status: body.status ?? 'announced',
             overview: body.overview,
             monitored,
@@ -300,7 +301,7 @@ export function registerMediaRoutes(
         imdbId: body.imdbId,
         title: body.title,
         cleanTitle: body.title.toLowerCase().replace(/\W+/g, ''),
-        sortTitle: body.title.toLowerCase(),
+        sortTitle: toSortTitle(body.title),
         status: body.status ?? 'continuing',
         overview: body.overview,
         monitored,
@@ -317,7 +318,7 @@ export function registerMediaRoutes(
           imdbId: body.imdbId,
           title: body.title,
           cleanTitle: body.title.toLowerCase().replace(/\W+/g, ''),
-          sortTitle: body.title.toLowerCase(),
+          sortTitle: toSortTitle(body.title),
           status: body.status ?? 'continuing',
           overview: body.overview,
           monitored,

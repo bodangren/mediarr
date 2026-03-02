@@ -27,6 +27,7 @@ import type { AppSettings } from '@/lib/api/settingsApi';
 import type { MetadataSearchResult } from '@/lib/api/mediaApi';
 import type { MovieListItem as MovieViewItem } from '@/types/movie';
 import type { SeriesListItem as SeriesViewItem } from '@/types/series';
+import { formatBytes } from '@/lib/format';
 
 function RouteScaffold({ title, description, actions, children }: { title: string; description: string; actions?: ReactNode; children?: ReactNode }) {
   return (
@@ -1438,12 +1439,14 @@ function MoviesLibraryPage() {
   const [error, setError] = useState<string | null>(null);
   const [searchMovieId, setSearchMovieId] = useState<number | null>(null);
   const [isImportOpen, setIsImportOpen] = useState(false);
+  const [sortBy, setSortBy] = useState('title');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
 
   const load = async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const page = await api.mediaApi.listMovies({ page: 1, pageSize: 200 });
+      const page = await api.mediaApi.listMovies({ page: 1, pageSize: 10_000 });
       setMovies(page.items as MovieViewItem[]);
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : 'Failed to load movies');
@@ -1455,6 +1458,17 @@ function MoviesLibraryPage() {
   useEffect(() => {
     void load();
   }, [api]);
+
+  const sortedMovies = useMemo(() => {
+    const sign = sortDir === 'desc' ? -1 : 1;
+    const field = sortBy === 'title' ? 'sortTitle' : sortBy;
+    return [...movies].sort((a, b) => {
+      const aVal = (a as any)[field] ?? (sortBy === 'title' ? a.title : 0);
+      const bVal = (b as any)[field] ?? (sortBy === 'title' ? b.title : 0);
+      if (typeof aVal === 'number' && typeof bVal === 'number') return (aVal - bVal) * sign;
+      return String(aVal ?? '').localeCompare(String(bVal ?? '')) * sign;
+    });
+  }, [movies, sortBy, sortDir]);
 
   const selectedMovie = movies.find(movie => movie.id === searchMovieId) ?? null;
 
@@ -1474,14 +1488,37 @@ function MoviesLibraryPage() {
       }
     >
       {error ? <p className="text-sm text-status-error">{error}</p> : null}
+      <div className="flex items-center gap-2 text-sm text-text-secondary">
+        <span>Sort:</span>
+        <select
+          value={sortBy}
+          onChange={e => setSortBy(e.target.value)}
+          className="rounded-sm border border-border-subtle bg-surface-0 px-2 py-1 text-sm text-text-primary"
+        >
+          <option value="title">Name</option>
+          <option value="year">Year</option>
+          <option value="sizeOnDisk">Size</option>
+          <option value="status">Status</option>
+        </select>
+        <button
+          type="button"
+          onClick={() => setSortDir(d => d === 'asc' ? 'desc' : 'asc')}
+          className="rounded-sm border border-border-subtle bg-surface-0 px-2 py-1 text-sm text-text-primary hover:bg-surface-2"
+          aria-label={sortDir === 'asc' ? 'Sort ascending' : 'Sort descending'}
+        >
+          {sortDir === 'asc' ? '↑ Asc' : '↓ Desc'}
+        </button>
+      </div>
       <MovieOverviewView
-        items={movies}
+        items={sortedMovies}
         isLoading={isLoading}
         onToggleMonitored={(id, monitored) => {
           void api.mediaApi.setMovieMonitored(id, monitored).then(load);
         }}
-        onDelete={id => {
-          void api.mediaApi.deleteMovie(id).then(load);
+        onDelete={async id => {
+          const deleteFiles = window.confirm('Also delete files from disk? This cannot be undone.');
+          await api.mediaApi.deleteMovie(id, deleteFiles);
+          await load();
         }}
         onSearch={id => setSearchMovieId(id)}
       />
@@ -1523,6 +1560,8 @@ function MovieDetailPage() {
     posterUrl?: string;
     genres?: string[];
     qualityProfileId?: number;
+    path?: string;
+    sizeOnDisk?: number;
   } | null>(null);
   const [qualityProfiles, setQualityProfiles] = useState<QualityProfileItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -1556,6 +1595,8 @@ function MovieDetailPage() {
           posterUrl: item.posterUrl ?? undefined,
           genres: (item as any).genres as string[] | undefined,
           qualityProfileId: item.qualityProfileId,
+          path: (item as any).path ?? undefined,
+          sizeOnDisk: item.sizeOnDisk ?? undefined,
         });
         setQualityProfiles(profiles);
       } catch (loadError) {
@@ -1591,9 +1632,11 @@ function MovieDetailPage() {
   const handleRemove = async () => {
     if (!movie) return;
     if (!window.confirm(`Remove "${movie.title}" from library?`)) return;
+    const deleteFiles = window.confirm('Also delete files from disk? This cannot be undone.');
     try {
-      await api.mediaApi.deleteMovie(movie.id);
-      pushToast({ title: 'Success', variant: 'success', message: `"${movie.title}" removed from library` });
+      await api.mediaApi.deleteMovie(movie.id, deleteFiles);
+      const msg = deleteFiles ? `"${movie.title}" removed from library and deleted from disk` : `"${movie.title}" removed from library`;
+      pushToast({ title: 'Success', variant: 'success', message: msg });
       navigate('/library/movies');
     } catch (err) {
       pushToast({ title: 'Error', variant: 'error', message: 'Failed to remove movie' });
@@ -1629,6 +1672,12 @@ function MovieDetailPage() {
                 </div>
               ) : null}
               {movie.overview ? <p className="text-sm text-text-secondary">{movie.overview}</p> : null}
+              {movie.path ? (
+                <p className="text-xs text-text-secondary font-mono truncate" title={movie.path}>{movie.path}</p>
+              ) : null}
+              {movie.sizeOnDisk != null && movie.sizeOnDisk > 0 ? (
+                <p className="text-xs text-text-muted">{formatBytes(movie.sizeOnDisk)} on disk</p>
+              ) : null}
             </div>
           </section>
 
@@ -1699,12 +1748,14 @@ function SeriesLibraryPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isImportOpen, setIsImportOpen] = useState(false);
+  const [sortBy, setSortBy] = useState('title');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
 
   const load = async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const page = await api.mediaApi.listSeries({ page: 1, pageSize: 200 });
+      const page = await api.mediaApi.listSeries({ page: 1, pageSize: 10_000 });
       setSeries(page.items as SeriesViewItem[]);
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : 'Failed to load series');
@@ -1716,6 +1767,17 @@ function SeriesLibraryPage() {
   useEffect(() => {
     void load();
   }, [api]);
+
+  const sortedSeries = useMemo(() => {
+    const sign = sortDir === 'desc' ? -1 : 1;
+    const field = sortBy === 'title' ? 'sortTitle' : sortBy;
+    return [...series].sort((a, b) => {
+      const aVal = (a as any)[field] ?? (sortBy === 'title' ? a.title : 0);
+      const bVal = (b as any)[field] ?? (sortBy === 'title' ? b.title : 0);
+      if (typeof aVal === 'number' && typeof bVal === 'number') return (aVal - bVal) * sign;
+      return String(aVal ?? '').localeCompare(String(bVal ?? '')) * sign;
+    });
+  }, [series, sortBy, sortDir]);
 
   return (
     <RouteScaffold
@@ -1733,13 +1795,36 @@ function SeriesLibraryPage() {
       }
     >
       {error ? <p className="text-sm text-status-error">{error}</p> : null}
+      <div className="flex items-center gap-2 text-sm text-text-secondary">
+        <span>Sort:</span>
+        <select
+          value={sortBy}
+          onChange={e => setSortBy(e.target.value)}
+          className="rounded-sm border border-border-subtle bg-surface-0 px-2 py-1 text-sm text-text-primary"
+        >
+          <option value="title">Name</option>
+          <option value="year">Year</option>
+          <option value="sizeOnDisk">Size</option>
+          <option value="status">Status</option>
+        </select>
+        <button
+          type="button"
+          onClick={() => setSortDir(d => d === 'asc' ? 'desc' : 'asc')}
+          className="rounded-sm border border-border-subtle bg-surface-0 px-2 py-1 text-sm text-text-primary hover:bg-surface-2"
+          aria-label={sortDir === 'asc' ? 'Sort ascending' : 'Sort descending'}
+        >
+          {sortDir === 'asc' ? '↑ Asc' : '↓ Desc'}
+        </button>
+      </div>
       <SeriesOverviewView
-        items={series}
+        items={sortedSeries}
         onToggleMonitored={(id, monitored) => {
           void api.mediaApi.setSeriesMonitored(id, monitored).then(load);
         }}
-        onDelete={id => {
-          void api.mediaApi.deleteSeries(id).then(load);
+        onDelete={async id => {
+          const deleteFiles = window.confirm('Also delete files from disk? This cannot be undone.');
+          await api.mediaApi.deleteSeries(id, deleteFiles);
+          await load();
         }}
         onRefresh={() => {
           void load();
@@ -1790,6 +1875,8 @@ type SeriesDetail = {
   tvdbId?: number;
   monitored: boolean;
   qualityProfileId?: number;
+  path?: string;
+  sizeOnDisk?: number;
   seasons: SeasonItem[];
   statistics?: {
     totalEpisodes: number;
@@ -1815,62 +1902,63 @@ function SeriesDetailPage() {
     season?: number;
     episode?: number;
   } | null>(null);
+  const [editingPath, setEditingPath] = useState(false);
+  const [pathInput, setPathInput] = useState('');
 
-  useEffect(() => {
+  const load = useCallback(async () => {
     if (!Number.isFinite(seriesId)) {
       setError('Invalid series id');
       setIsLoading(false);
       return;
     }
-
-    const load = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const [item, profiles] = await Promise.all([
-          api.seriesApi.getSeriesWithEpisodes(seriesId),
-          api.qualityProfileApi.list(),
-        ]);
-        const raw = item as any;
-        setSeries({
-          id: item.id,
-          title: item.title,
-          year: raw.year,
-          status: raw.status,
-          overview: raw.overview,
-          network: raw.network,
-          posterUrl: raw.posterUrl,
-          tvdbId: raw.tvdbId,
-          monitored: raw.monitored ?? false,
-          qualityProfileId: raw.qualityProfileId,
-          statistics: raw.statistics,
-          seasons: (item.seasons as any[]).map((s: any) => ({
-            id: s.id,
-            seasonNumber: s.seasonNumber,
-            monitored: s.monitored ?? false,
-            statistics: s.statistics,
-            episodes: (s.episodes ?? []).map((ep: any) => ({
-              id: ep.id,
-              seasonNumber: ep.seasonNumber ?? s.seasonNumber,
-              episodeNumber: ep.episodeNumber,
-              title: ep.title ?? '',
-              airDateUtc: ep.airDateUtc ?? null,
-              monitored: ep.monitored ?? false,
-              hasFile: ep.hasFile ?? false,
-              isDownloading: ep.isDownloading ?? false,
-            })),
+    setIsLoading(true);
+    setError(null);
+    try {
+      const [item, profiles] = await Promise.all([
+        api.seriesApi.getSeriesWithEpisodes(seriesId),
+        api.qualityProfileApi.list(),
+      ]);
+      const raw = item as any;
+      setSeries({
+        id: item.id,
+        title: item.title,
+        year: raw.year,
+        status: raw.status,
+        overview: raw.overview,
+        network: raw.network,
+        posterUrl: raw.posterUrl,
+        tvdbId: raw.tvdbId,
+        monitored: raw.monitored ?? false,
+        qualityProfileId: raw.qualityProfileId,
+        path: raw.path,
+        sizeOnDisk: raw.sizeOnDisk,
+        statistics: raw.statistics,
+        seasons: (item.seasons as any[]).map((s: any) => ({
+          id: s.id,
+          seasonNumber: s.seasonNumber,
+          monitored: s.monitored ?? false,
+          statistics: s.statistics,
+          episodes: (s.episodes ?? []).map((ep: any) => ({
+            id: ep.id,
+            seasonNumber: ep.seasonNumber ?? s.seasonNumber,
+            episodeNumber: ep.episodeNumber,
+            title: ep.title ?? '',
+            airDateUtc: ep.airDateUtc ?? null,
+            monitored: ep.monitored ?? false,
+            hasFile: ep.hasFile ?? false,
+            isDownloading: ep.isDownloading ?? false,
           })),
-        });
-        setQualityProfiles(profiles);
-      } catch (loadError) {
-        setError(loadError instanceof Error ? loadError.message : 'Failed to load series details');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    void load();
+        })),
+      });
+      setQualityProfiles(profiles);
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : 'Failed to load series details');
+    } finally {
+      setIsLoading(false);
+    }
   }, [api, seriesId]);
+
+  useEffect(() => { void load(); }, [load]);
 
   const handleToggleSeriesMonitored = async () => {
     if (!series) return;
@@ -1946,9 +2034,11 @@ function SeriesDetailPage() {
   const handleRemove = async () => {
     if (!series) return;
     if (!window.confirm(`Remove "${series.title}" from library?`)) return;
+    const deleteFiles = window.confirm('Also delete files from disk? This cannot be undone.');
     try {
-      await api.mediaApi.deleteSeries(series.id);
-      pushToast({ title: 'Success', variant: 'success', message: `"${series.title}" removed from library` });
+      await api.mediaApi.deleteSeries(series.id, deleteFiles);
+      const msg = deleteFiles ? `"${series.title}" removed from library and deleted from disk` : `"${series.title}" removed from library`;
+      pushToast({ title: 'Success', variant: 'success', message: msg });
       navigate('/library/tv');
     } catch {
       pushToast({ title: 'Error', variant: 'error', message: 'Failed to remove series' });
@@ -1968,6 +2058,34 @@ function SeriesDetailPage() {
   };
 
   const firstSeason = series?.seasons[0]?.seasonNumber ?? 1;
+
+  // Auto-expand the first season when series data loads
+  useEffect(() => {
+    if (series && series.seasons.length > 0) {
+      setExpandedSeasons(new Set([series.seasons[0].seasonNumber]));
+    }
+  }, [series?.id]);
+
+  const handleRescan = async (folderPath?: string) => {
+    if (!series) return;
+    try {
+      const result = await api.seriesApi.rescan(series.id, folderPath);
+      const parts = [`${result.episodeCount} episodes synced`];
+      if (result.filesLinked > 0) parts.push(`${result.filesLinked} files linked`);
+      pushToast({ title: 'Rescan complete', variant: 'success', message: parts.join(', ') });
+      setEditingPath(false);
+      void load();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error('[Rescan] error:', err);
+      pushToast({ title: 'Rescan failed', variant: 'error', message: msg });
+    }
+  };
+
+  const handleSavePathAndRescan = () => {
+    void handleRescan(pathInput.trim() || undefined);
+  };
+
   const allSeasonsMonitored = Boolean(series && series.seasons.length > 0 && series.seasons.every(s => s.monitored));
   const someSeasonsMonitored = Boolean(series && series.seasons.some(s => s.monitored));
   const seriesMonitoredIndeterminate = !allSeasonsMonitored && someSeasonsMonitored;
@@ -2008,6 +2126,12 @@ function SeriesDetailPage() {
                 ) : null}
               </div>
               {series.overview ? <p className="text-sm text-text-secondary">{series.overview}</p> : null}
+              {series.path ? (
+                <p className="text-xs text-text-secondary font-mono truncate" title={series.path}>{series.path}</p>
+              ) : null}
+              {series.sizeOnDisk != null && series.sizeOnDisk > 0 ? (
+                <p className="text-xs text-text-muted">{formatBytes(series.sizeOnDisk)} on disk</p>
+              ) : null}
             </div>
           </section>
 
@@ -2047,6 +2171,43 @@ function SeriesDetailPage() {
             >
               Search
             </button>
+
+            {editingPath ? (
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  className="rounded-sm border border-border-subtle bg-surface-0 px-2 py-1 text-sm font-mono w-80"
+                  value={pathInput}
+                  onChange={e => setPathInput(e.target.value)}
+                  placeholder="Folder path on disk"
+                  aria-label="Folder path"
+                  onKeyDown={e => { if (e.key === 'Enter') handleSavePathAndRescan(); if (e.key === 'Escape') setEditingPath(false); }}
+                  autoFocus
+                />
+                <button type="button" className="rounded-sm border border-accent px-3 py-1.5 text-sm text-accent" onClick={handleSavePathAndRescan}>Save & Rescan</button>
+                <button type="button" className="rounded-sm border border-border-subtle px-3 py-1.5 text-sm" onClick={() => setEditingPath(false)}>Cancel</button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  className="rounded-sm border border-border-subtle px-3 py-2 text-sm"
+                  aria-label="Rescan Episodes"
+                  onClick={() => { void handleRescan(); }}
+                >
+                  Rescan Episodes
+                </button>
+                <button
+                  type="button"
+                  className="rounded-sm border border-border-subtle px-2 py-2 text-sm"
+                  aria-label="Change folder path"
+                  title="Change folder path"
+                  onClick={() => { setPathInput(series.path ?? ''); setEditingPath(true); }}
+                >
+                  ✎
+                </button>
+              </div>
+            )}
 
             <button
               type="button"

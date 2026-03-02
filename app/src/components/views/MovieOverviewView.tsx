@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon } from '@/components/primitives/Icon';
 import { StatusBadge } from '@/components/primitives/StatusBadge';
+import { formatBytes } from '@/lib/format';
 import { getFileStatus, getRatingDisplay, getRuntimeDisplay, type MovieListItem } from '@/types/movie';
 
 interface MovieOverviewViewProps {
@@ -66,6 +67,9 @@ function MovieOverviewCard({ item, onToggleMonitored, onDelete, onSearch }: Movi
               {item.runtime && <span>•</span>}
               {item.runtime && <span>{getRuntimeDisplay(item.runtime)}</span>}
               <StatusBadge status={fileStatus} />
+              {item.sizeOnDisk != null && item.sizeOnDisk > 0 && (
+                <span className="text-text-muted">• {formatBytes(item.sizeOnDisk)}</span>
+              )}
             </div>
           </div>
 

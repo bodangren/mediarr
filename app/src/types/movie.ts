@@ -22,6 +22,7 @@ export interface MovieListItem extends ApiMovieListItem {
   overview?: string;
   runtime?: number;
   certification?: string;
+  sizeOnDisk?: number;
   fileVariants?: Array<{ id?: number; path?: string }>;
   ratings?: {
     tmdb?: number;

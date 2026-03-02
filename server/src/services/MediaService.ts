@@ -1,6 +1,7 @@
 import { MetadataProvider } from './MetadataProvider';
 import type { MediaType } from '../types/BaseMedia';
 import { ActivityEventEmitter } from './ActivityEventEmitter';
+import fs from 'node:fs/promises';
 
 /**
  * Service for managing movie and TV metadata and monitoring settings.
@@ -110,26 +111,34 @@ export class MediaService {
         });
       }
     
-      async deleteMedia(id: number, mediaType: MediaType = 'TV', deleteFiles = false): Promise<void> {    // File deletion can be wired in here when disk lifecycle management is enabled.
-    void deleteFiles;
-
+      async deleteMedia(id: number, mediaType: MediaType = 'TV', deleteFiles = false): Promise<void> {
     if (mediaType === 'MOVIE') {
-      const movie = await this.prisma.movie.findUnique({ where: { id }, select: { mediaId: true } });
+      const movie = await this.prisma.movie.findUnique({ where: { id }, select: { mediaId: true, path: true } });
       await this.prisma.movie.delete({ where: { id } });
       if (movie?.mediaId) {
         await (this.prisma as any).media.delete({ where: { id: movie.mediaId } }).catch(() => {});
+      }
+      if (deleteFiles && movie?.path) {
+        await fs.rm(movie.path, { recursive: true, force: true }).catch((err) => {
+          console.warn(`[deleteMedia] Could not delete folder "${movie.path}":`, err);
+        });
       }
       return;
     }
 
     // Prisma's libquery engine for SQLite doesn't always fire DB-level
     // cascades when foreign_keys=ON; explicitly delete children first.
-    const series = await this.prisma.series.findUnique({ where: { id }, select: { mediaId: true } });
+    const series = await this.prisma.series.findUnique({ where: { id }, select: { mediaId: true, path: true } });
     await (this.prisma as any).episode.deleteMany({ where: { seriesId: id } });
     await (this.prisma as any).season.deleteMany({ where: { seriesId: id } });
     await this.prisma.series.delete({ where: { id } });
     if (series?.mediaId) {
       await (this.prisma as any).media.delete({ where: { id: series.mediaId } }).catch(() => {});
+    }
+    if (deleteFiles && series?.path) {
+      await fs.rm(series.path, { recursive: true, force: true }).catch((err) => {
+        console.warn(`[deleteMedia] Could not delete folder "${series.path}":`, err);
+      });
     }
   }
 

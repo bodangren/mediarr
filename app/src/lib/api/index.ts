@@ -158,10 +158,12 @@ export type { DiscoverMovie, DiscoverRecommendationsParams } from './discoverApi
 
 // Import types
 export type {
-  DetectedSeries,
-  SeriesSearchResult,
-  ImportSeriesRequest,
-  ScanFolderRequest,
+  MatchCandidate,
+  ScannedFile,
+  ScannedFolderWithMatches,
+  ScanResponse,
+  ImportMatchItem,
+  ImportResult,
 } from './importApi';
 
 // Wanted types

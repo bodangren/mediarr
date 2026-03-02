@@ -1,88 +1,107 @@
 import { z } from 'zod';
 import { ApiHttpClient } from './httpClient';
-import { routeMap } from './routeMap';
 
-const detectedSeriesSchema = z.object({
-  id: z.number(),
-  folderName: z.string(),
-  path: z.string(),
-  fileCount: z.number(),
-  matchedSeriesId: z.number().nullable(),
-  matchedSeriesTitle: z.string().optional(),
-  matchedSeriesYear: z.number().optional(),
-  status: z.enum(['matched', 'unmatched', 'pending']),
-});
-
-const seriesSearchResultSchema = z.object({
+const matchCandidateSchema = z.object({
   id: z.number(),
   title: z.string(),
   year: z.number().optional(),
   overview: z.string().optional(),
-  network: z.string().optional(),
-  status: z.string().optional(),
-  tvdbId: z.number().optional(),
-  tmdbId: z.number().optional(),
-  imdbId: z.string().optional(),
-  images: z.array(z.object({ coverType: z.string(), remoteUrl: z.string() })).optional(),
+  posterUrl: z.string().optional(),
+  confidence: z.number(),
+  matchSource: z.enum(['nfo', 'search', 'exact']),
 });
 
-const importSeriesRequestSchema = z.object({
-  seriesId: z.number(),
-  folderName: z.string(),
+const parsedInfoSchema = z.object({
+  seasonNumber: z.number().optional(),
+  episodeNumbers: z.array(z.number()).optional(),
+  movieTitle: z.string().optional(),
+  seriesTitle: z.string().optional(),
+  quality: z.string().optional(),
+  year: z.number().optional(),
+}).optional();
+
+const scannedFileSchema = z.object({
   path: z.string(),
-  qualityProfileId: z.number(),
-  monitored: z.boolean(),
-  monitorNewItems: z.enum(['all', 'none', 'future']),
-  rootFolder: z.string(),
-  seriesType: z.enum(['standard', 'anime', 'daily']),
-  seasonFolder: z.boolean(),
-  matchedSeriesId: z.number().optional(),
+  size: z.number(),
+  extension: z.string(),
+  nfoPath: z.string().optional(),
+  parsedInfo: parsedInfoSchema,
 });
 
-const scanFolderRequestSchema = z.object({
+const scannedFolderSchema = z.object({
   path: z.string(),
+  type: z.enum(['movie', 'series', 'unknown']),
+  files: z.array(scannedFileSchema),
+  nfoData: z.object({
+    imdbId: z.string().optional(),
+    tmdbId: z.number().optional(),
+    tvdbId: z.number().optional(),
+    title: z.string().optional(),
+    year: z.number().optional(),
+  }).optional(),
+  parsedTitle: z.string().optional(),
+  parsedYear: z.number().optional(),
+  matchCandidates: z.array(matchCandidateSchema),
+  selectedMatchId: z.number().optional(),
 });
 
-export type DetectedSeries = z.infer<typeof detectedSeriesSchema>;
-export type SeriesSearchResult = z.infer<typeof seriesSearchResultSchema>;
-export type ImportSeriesRequest = z.infer<typeof importSeriesRequestSchema>;
-export type ScanFolderRequest = z.infer<typeof scanFolderRequestSchema>;
+const scanResponseSchema = z.object({
+  rootPath: z.string(),
+  folders: z.array(scannedFolderSchema),
+  totalFiles: z.number(),
+  scanDurationMs: z.number(),
+});
+
+const importResultSchema = z.object({
+  imported: z.number(),
+  failed: z.number(),
+  errors: z.array(z.object({
+    folderPath: z.string(),
+    error: z.string(),
+  })),
+});
+
+export type MatchCandidate = z.infer<typeof matchCandidateSchema>;
+export type ScannedFile = z.infer<typeof scannedFileSchema>;
+export type ScannedFolderWithMatches = z.infer<typeof scannedFolderSchema>;
+export type ScanResponse = z.infer<typeof scanResponseSchema>;
+export type ImportResult = z.infer<typeof importResultSchema>;
+
+export interface ImportMatchItem {
+  folderPath: string;
+  mediaType: 'movie' | 'series';
+  matchId: number;
+  files: Array<{
+    path: string;
+    size: number;
+    extension: string;
+    parsedInfo?: z.infer<typeof parsedInfoSchema>;
+  }>;
+  renameFiles: boolean;
+  rootFolderPath: string;
+  qualityProfileId: number;
+}
 
 export function createImportApi(client: ApiHttpClient) {
   return {
-    scanFolder(request: ScanFolderRequest): Promise<DetectedSeries[]> {
+    scan(body: { path: string }): Promise<ScanResponse> {
       return client.request(
-        {
-          path: routeMap.importScan,
-          method: 'POST',
-          body: request,
-        },
-        z.array(detectedSeriesSchema),
+        { path: '/api/import/scan', method: 'POST', body },
+        scanResponseSchema,
       );
     },
 
-    importSeries(request: ImportSeriesRequest): Promise<{ id: number }> {
+    search(body: { title: string; mediaType: 'movie' | 'series' }): Promise<MatchCandidate[]> {
       return client.request(
-        {
-          path: routeMap.importSeries,
-          method: 'POST',
-          body: request,
-        },
-        z.object({ id: z.number() }),
+        { path: '/api/import/search', method: 'POST', body },
+        z.array(matchCandidateSchema),
       );
     },
 
-    bulkImportSeries(requests: ImportSeriesRequest[]): Promise<{ importedCount: number; ids: number[] }> {
+    execute(body: { items: ImportMatchItem[] }): Promise<ImportResult> {
       return client.request(
-        {
-          path: routeMap.importBulkSeries,
-          method: 'POST',
-          body: { items: requests },
-        },
-        z.object({
-          importedCount: z.number(),
-          ids: z.array(z.number()),
-        }),
+        { path: '/api/import/execute', method: 'POST', body },
+        importResultSchema,
       );
     },
   };

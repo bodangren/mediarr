@@ -12,6 +12,7 @@ import { MovieInteractiveSearchModal } from '@/components/movie/MovieInteractive
 import { InteractiveSearchModal } from '@/components/search/InteractiveSearchModal';
 import { SeriesInteractiveSearchModal, type SearchLevel } from '@/components/series/SeriesInteractiveSearchModal';
 import { SeriesOverviewView, MovieOverviewView } from '@/components/views';
+import { ImportWizard } from '@/components/import/ImportWizard';
 import { ActivityQueuePage } from '@/components/activity/ActivityQueuePage';
 import { ActivityHistoryPage } from '@/components/activity/ActivityHistoryPage';
 import { CalendarPage } from '@/components/calendar/CalendarPage';
@@ -27,12 +28,17 @@ import type { MetadataSearchResult } from '@/lib/api/mediaApi';
 import type { MovieListItem as MovieViewItem } from '@/types/movie';
 import type { SeriesListItem as SeriesViewItem } from '@/types/series';
 
-function RouteScaffold({ title, description, children }: { title: string; description: string; children?: ReactNode }) {
+function RouteScaffold({ title, description, actions, children }: { title: string; description: string; actions?: ReactNode; children?: ReactNode }) {
   return (
     <div className="space-y-4">
       <header className="rounded-md border border-border-subtle bg-surface-1 p-4">
-        <h1 className="text-lg font-semibold">{title}</h1>
-        <p className="text-sm text-text-secondary">{description}</p>
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h1 className="text-lg font-semibold">{title}</h1>
+            <p className="text-sm text-text-secondary">{description}</p>
+          </div>
+          {actions ? <div className="flex items-center gap-2">{actions}</div> : null}
+        </div>
       </header>
       {children}
     </div>
@@ -1431,6 +1437,7 @@ function MoviesLibraryPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchMovieId, setSearchMovieId] = useState<number | null>(null);
+  const [isImportOpen, setIsImportOpen] = useState(false);
 
   const load = async () => {
     setIsLoading(true);
@@ -1452,7 +1459,20 @@ function MoviesLibraryPage() {
   const selectedMovie = movies.find(movie => movie.id === searchMovieId) ?? null;
 
   return (
-    <RouteScaffold title="Movies" description="Unified movie library view with interactive search and grab actions.">
+    <RouteScaffold
+      title="Movies"
+      description="Unified movie library view with interactive search and grab actions."
+      actions={
+        <button
+          type="button"
+          onClick={() => setIsImportOpen(true)}
+          className="inline-flex items-center gap-1.5 rounded-sm border border-border-subtle bg-surface-2 px-3 py-1.5 text-sm font-medium hover:bg-surface-3"
+        >
+          <Folder size={14} />
+          Import Existing
+        </button>
+      }
+    >
       {error ? <p className="text-sm text-status-error">{error}</p> : null}
       <MovieOverviewView
         items={movies}
@@ -1476,6 +1496,11 @@ function MoviesLibraryPage() {
           tmdbId={selectedMovie.tmdbId ?? undefined}
         />
       ) : null}
+      <ImportWizard
+        isOpen={isImportOpen}
+        onClose={() => { setIsImportOpen(false); void load(); }}
+        mediaType="movie"
+      />
     </RouteScaffold>
   );
 }
@@ -1673,6 +1698,7 @@ function SeriesLibraryPage() {
   const [series, setSeries] = useState<SeriesViewItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isImportOpen, setIsImportOpen] = useState(false);
 
   const load = async () => {
     setIsLoading(true);
@@ -1692,7 +1718,20 @@ function SeriesLibraryPage() {
   }, [api]);
 
   return (
-    <RouteScaffold title="TV Shows" description="Unified TV library view with monitoring controls and details access.">
+    <RouteScaffold
+      title="TV Shows"
+      description="Unified TV library view with monitoring controls and details access."
+      actions={
+        <button
+          type="button"
+          onClick={() => setIsImportOpen(true)}
+          className="inline-flex items-center gap-1.5 rounded-sm border border-border-subtle bg-surface-2 px-3 py-1.5 text-sm font-medium hover:bg-surface-3"
+        >
+          <Folder size={14} />
+          Import Existing
+        </button>
+      }
+    >
       {error ? <p className="text-sm text-status-error">{error}</p> : null}
       <SeriesOverviewView
         items={series}
@@ -1707,6 +1746,11 @@ function SeriesLibraryPage() {
         }}
       />
       {isLoading ? <p className="text-sm text-text-secondary">Loading series...</p> : null}
+      <ImportWizard
+        isOpen={isImportOpen}
+        onClose={() => { setIsImportOpen(false); void load(); }}
+        mediaType="series"
+      />
     </RouteScaffold>
   );
 }

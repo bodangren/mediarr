@@ -124,10 +124,9 @@ export function registerImportRoutes(
       return reply.code(500).send({ ok: false, error: 'Metadata provider not configured' });
     }
 
-    const movies: Array<{ id: number; tmdbId: number; title: string }> =
+    const movies: Array<{ id: number; tmdbId: number | null; title: string }> =
       await (deps.prisma as any).movie.findMany({
         where: {
-          tmdbId: { not: null },
           OR: [{ posterUrl: null }, { posterUrl: '' }],
         },
         select: { id: true, tmdbId: true, title: true },
@@ -141,6 +140,10 @@ export function registerImportRoutes(
       movies,
       MATCH_CONCURRENCY,
       async (movie) => {
+        if (!movie.tmdbId) {
+          skipped++;
+          return;
+        }
         try {
           const details = await deps.metadataProvider!.getMediaDetails({
             mediaType: 'MOVIE',

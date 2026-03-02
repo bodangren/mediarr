@@ -38,6 +38,9 @@ export interface ScanResult {
 const VIDEO_EXTENSIONS = new Set(['.mkv', '.mp4', '.avi', '.ts', '.m4v', '.mov', '.wmv']);
 const NFO_EXTENSION = '.nfo';
 
+// Matches "Season 1", "Season 01", "S01", "S1", etc.
+const SEASON_DIR_PATTERN = /^(?:season\s*\d+|s\d+)$/i;
+
 export class ExistingLibraryScanner {
   async scan(rootPath: string): Promise<ScanResult> {
     const startTime = Date.now();
@@ -54,7 +57,8 @@ export class ExistingLibraryScanner {
     }
 
     const allFolders = await Promise.all([...folderPaths].map((p) => this.processFolder(p)));
-    const folders = allFolders.filter((f) => f.files.length > 0);
+    const nonEmpty = allFolders.filter((f) => f.files.length > 0);
+    const folders = this.consolidateSeasonFolders(nonEmpty);
     const totalFiles = folders.reduce((sum, f) => sum + f.files.length, 0);
 
     return {
@@ -63,6 +67,49 @@ export class ExistingLibraryScanner {
       totalFiles,
       scanDurationMs: Date.now() - startTime,
     };
+  }
+
+  /**
+   * Merges season subfolders (e.g. "Season 01/", "S02/") into their parent
+   * show folder so the show is presented as a single import unit.
+   *
+   * If the parent folder has no direct video files of its own (the common
+   * case), a synthetic show folder is created from the parent directory name.
+   * If the parent already has direct files the season files are appended.
+   */
+  private consolidateSeasonFolders(folders: ScannedFolder[]): ScannedFolder[] {
+    const byPath = new Map<string, ScannedFolder>(folders.map((f) => [f.path, f]));
+    const seasonPaths = new Set<string>();
+
+    for (const folder of folders) {
+      if (!SEASON_DIR_PATTERN.test(path.basename(folder.path))) continue;
+
+      seasonPaths.add(folder.path);
+      const showPath = path.dirname(folder.path);
+
+      if (!byPath.has(showPath)) {
+        const showName = path.basename(showPath);
+        const parsed = Parser.parseDirectory(showName);
+        byPath.set(showPath, {
+          path: showPath,
+          type: 'series',
+          files: [],
+          nfoData: folder.nfoData,
+          parsedTitle: parsed.title ?? folder.nfoData?.title,
+          parsedYear: parsed.year ?? folder.nfoData?.year,
+        });
+      }
+
+      const showFolder = byPath.get(showPath)!;
+      showFolder.type = 'series';
+      showFolder.files.push(...folder.files);
+      // Prefer show-level NFO; fall back to season NFO only if nothing yet set
+      if (!showFolder.nfoData && folder.nfoData) {
+        showFolder.nfoData = folder.nfoData;
+      }
+    }
+
+    return [...byPath.values()].filter((f) => !seasonPaths.has(f.path));
   }
 
   private async processFolder(folderPath: string): Promise<ScannedFolder> {

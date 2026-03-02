@@ -1,0 +1,31 @@
+Phase 3 Verification Report: Frontend Collections UI
+
+Automated Test Command: npx vitest run src/components/collections/ src/components/movie/MovieDetailHeader.test.tsx src/lib/api/collectionApi.test.ts src/lib/api/movieApi.test.ts
+
+Test Outcome: PASSED — 69 tests across 8 test files
+
+Files Changed in Phase 3 (since 8fa3174b):
+  app/src/App.tsx
+  app/src/components/collections/CollectionCard.test.tsx
+  app/src/components/collections/CollectionCard.tsx
+  app/src/components/collections/CollectionDetailPage.test.tsx
+  app/src/components/collections/CollectionDetailPage.tsx
+  app/src/components/collections/CollectionGrid.test.tsx
+  app/src/components/collections/CollectionGrid.tsx
+  app/src/components/collections/CollectionsPage.test.tsx
+  app/src/components/collections/CollectionsPage.tsx
+  app/src/components/collections/EditCollectionModal.test.tsx
+  app/src/components/collections/EditCollectionModal.tsx
+  app/src/components/movie/MovieDetailHeader.test.tsx
+  app/src/components/movie/MovieDetailHeader.tsx
+  app/src/lib/api/collectionApi.ts + collectionApi.test.ts (created)
+  app/src/lib/api/movieApi.ts + movieApi.test.ts (created)
+  app/src/types/collection.ts
+  app/src/types/movie.ts
+  conductor/tracks/collections_20260301/plan.md
+
+Pre-existing Failures (not introduced by Phase 3):
+  App.test.tsx — 3 tests fail with 'useToast must be used within ToastProvider'
+  Affected routes: /library/movies/:id (MovieDetailPage), /library/series/:id (SeriesDetailPage), /search (SearchPage)
+  Root cause: App.test.tsx renderApp() wraps in MemoryRouter only, not ToastProvider.
+  These pages used useToast before Phase 3 began.

@@ -29,10 +29,10 @@
     - [x] Sub-task: `DELETE /api/collections/:id` — delete collection, unlinks movies.
     - [x] Sub-task: `POST /api/collections/:id/search` — trigger search for missing items.
     - [x] Sub-task: `POST /api/collections/:id/sync` — sync movie list from TMDB.
-- [ ] Task: Movie Detail API — include collection data
-    - [ ] Sub-task: Update `GET /api/movies/:id` Prisma query to `include: { collection: true }`.
-    - [ ] Sub-task: Map the collection relation to `{ id, name, posterUrl }` in the response shape.
-    - [ ] Sub-task: Write unit test asserting the movie detail response includes `collection: { id, name, posterUrl }` when a movie belongs to a collection, and `null` otherwise.
+- [x] Task: Movie Detail API — include collection data (8fa3174)
+    - [x] Sub-task: Update `GET /api/movies/:id` Prisma query to `include: { collection: true }`.
+    - [x] Sub-task: Map the collection relation to `{ id, name, posterUrl }` in the response shape.
+    - [x] Sub-task: Write unit test asserting the movie detail response includes `collection: { id, name, posterUrl }` when a movie belongs to a collection, and `null` otherwise.
 - [ ] Task: Conductor - User Manual Verification 'Phase 2: Collections API' (Protocol in workflow.md)
 
 ## Phase 3: Frontend Collections UI

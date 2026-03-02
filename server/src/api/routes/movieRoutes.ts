@@ -123,6 +123,13 @@ export function registerMovieRoutes(
             subtitleTracks: true,
           },
         },
+        collection: {
+          select: {
+            id: true,
+            name: true,
+            posterPath: true,
+          },
+        },
       },
     });
 
@@ -131,7 +138,18 @@ export function registerMovieRoutes(
       (sum: number, v: any) => sum + Number(v.fileSize ?? 0),
       0,
     );
-    return sendSuccess(reply, { ...found, sizeOnDisk });
+
+    const collection = found.collection
+      ? {
+          id: found.collection.id,
+          name: found.collection.name,
+          posterUrl: found.collection.posterPath
+            ? `https://image.tmdb.org/t/p/w500${found.collection.posterPath}`
+            : null,
+        }
+      : null;
+
+    return sendSuccess(reply, { ...found, sizeOnDisk, collection });
   });
 
   // PUT /api/movies/:id - Update movie metadata/settings

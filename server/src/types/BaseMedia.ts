@@ -11,6 +11,7 @@ export interface BaseMedia {
   year?: number;
   network?: string;
   images?: Array<{ coverType: string; url: string }>;
+  tmdbCollectionId?: number;
 }
 
 export interface MediaSearchRequest {

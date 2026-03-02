@@ -19,6 +19,7 @@ interface CreateMediaBody {
   overview?: string;
   network?: string;
   posterUrl?: string;
+  tmdbCollectionId?: number;
 }
 
 function normalizeMediaType(mediaType: string): 'TV' | 'MOVIE' {
@@ -268,6 +269,11 @@ export function registerMediaRoutes(
 
       if (body.searchNow && deps.mediaSearchService?.searchMovie) {
         await deps.mediaSearchService.searchMovie(created);
+      }
+
+      if (body.tmdbCollectionId && deps.collectionService?.linkMovieToCollection) {
+        // Fire-and-forget: link movie to its TMDB collection asynchronously
+        void deps.collectionService.linkMovieToCollection(body.tmdbCollectionId, created.id);
       }
 
       return sendSuccess(reply, created, 201);

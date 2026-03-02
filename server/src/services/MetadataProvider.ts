@@ -291,6 +291,7 @@ export class MetadataProvider {
       year: this.parseYear(movie.release_date),
       popularity: movie.popularity ?? 0,
       images: movie.poster_path ? [{ coverType: 'poster', url: `https://image.tmdb.org/t/p/w500${movie.poster_path}` }] : [],
+      tmdbCollectionId: movie.belongs_to_collection?.id ?? undefined,
     }));
   }
 
@@ -332,6 +333,7 @@ export class MetadataProvider {
       inCinemas: movie.in_cinemas,
       digitalRelease: movie.digital_release,
       physicalRelease: movie.physical_release,
+      tmdbCollectionId: movie.belongs_to_collection?.id ?? undefined,
     };
   }
 

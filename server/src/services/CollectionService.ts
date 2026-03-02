@@ -260,6 +260,51 @@ export class CollectionService {
     };
   }
 
+  /**
+   * Find-or-create a Collection by TMDB ID and link a movie (by DB id) to it.
+   * Safe to call fire-and-forget after movie creation; never throws.
+   */
+  async linkMovieToCollection(tmdbCollectionId: number, movieDbId: number): Promise<void> {
+    try {
+      let collection = await (this.prisma as any).collection?.findUnique({
+        where: { tmdbCollectionId },
+      });
+
+      if (!collection) {
+        try {
+          const info = await this.fetchFromTMDB(tmdbCollectionId);
+          collection = await (this.prisma as any).collection?.create({
+            data: {
+              tmdbCollectionId,
+              name: info.name,
+              overview: info.overview,
+              posterPath: info.posterPath,
+              backdropPath: info.backdropPath,
+              monitored: false,
+            },
+          });
+        } catch (createErr) {
+          // Race condition: another request created it — try to fetch again
+          if ((createErr as any)?.name === 'ConflictError' || (createErr as any)?.message?.includes('Unique constraint')) {
+            collection = await (this.prisma as any).collection?.findUnique({
+              where: { tmdbCollectionId },
+            });
+          }
+          if (!collection) {
+            throw createErr;
+          }
+        }
+      }
+
+      await (this.prisma as any).movie?.update({
+        where: { id: movieDbId },
+        data: { collectionId: collection.id },
+      });
+    } catch (err) {
+      console.error(`[CollectionService] Failed to link movie ${movieDbId} to TMDB collection ${tmdbCollectionId}:`, err);
+    }
+  }
+
   private parseYear(releaseDate?: string): number | undefined {
     if (!releaseDate) {
       return undefined;

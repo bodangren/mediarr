@@ -108,7 +108,7 @@ export interface ApiDependencies {
   >;
   collectionService?: Pick<
     CollectionService,
-    'fetchFromTMDB' | 'createCollection' | 'syncCollectionMovies' | 'searchMissingMovies'
+    'fetchFromTMDB' | 'createCollection' | 'syncCollectionMovies' | 'searchMissingMovies' | 'linkMovieToCollection'
   >;
 
 }

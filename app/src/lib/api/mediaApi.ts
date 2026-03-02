@@ -72,6 +72,7 @@ const metadataResultSchema = z.object({
     coverType: z.string(),
     url: z.string(),
   })).optional(),
+  tmdbCollectionId: z.number().optional(),
 }).passthrough();
 
 const createdMediaSchema = z.object({
@@ -126,6 +127,7 @@ export interface AddMediaInput {
   monitor?: 'all' | 'future' | 'missing' | 'existing' | 'pilot' | 'firstSeason' | 'none';
   seriesType?: 'standard' | 'anime' | 'daily';
   seasonFolder?: boolean;
+  tmdbCollectionId?: number;
 }
 
 export type MonitoringType =

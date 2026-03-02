@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import userEvent from '@testing-library/user-event';
 import { CollectionCard } from './CollectionCard';
@@ -8,10 +8,11 @@ const mockOnToggleMonitored = vi.fn();
 const mockOnSearch = vi.fn();
 const mockOnEdit = vi.fn();
 const mockOnDelete = vi.fn();
+const mockOnNavigate = vi.fn();
 
 const mockCollection: MovieCollection = {
   id: 1,
-  tmdbId: 86311,
+  tmdbCollectionId: 86311,
   name: 'The Avengers Collection',
   overview: 'The Avengers film series produced by Marvel Studios.',
   posterUrl: 'https://via.placeholder.com/300x450?text=Avengers',
@@ -122,7 +123,7 @@ describe('CollectionCard', () => {
     expect(screen.getByText('5/6')).toBeInTheDocument();
   });
 
-  it('calculates and displays progress bar correctly', () => {
+  it('calculates and displays progress percentage', () => {
     render(
       <CollectionCard
         collection={mockCollection}
@@ -133,8 +134,7 @@ describe('CollectionCard', () => {
       />
     );
 
-    const progressBar = screen.getByRole('progressbar');
-    expect(progressBar).toHaveAttribute('aria-valuenow', '83.33');
+    expect(screen.getByText('83%')).toBeInTheDocument();
   });
 
   it('shows hover actions on card hover', async () => {
@@ -242,5 +242,43 @@ describe('CollectionCard', () => {
 
     const poster = screen.getByAltText('The Avengers Collection');
     expect(poster).toHaveAttribute('src', '/images/placeholder-poster.png');
+  });
+
+  it('calls onNavigate when poster image is clicked', async () => {
+    const user = userEvent.setup();
+    render(
+      <CollectionCard
+        collection={mockCollection}
+        onToggleMonitored={mockOnToggleMonitored}
+        onSearch={mockOnSearch}
+        onEdit={mockOnEdit}
+        onDelete={mockOnDelete}
+        onNavigate={mockOnNavigate}
+      />
+    );
+
+    const poster = screen.getByAltText('The Avengers Collection');
+    await user.click(poster);
+
+    expect(mockOnNavigate).toHaveBeenCalledWith(1);
+  });
+
+  it('calls onNavigate when title is clicked', async () => {
+    const user = userEvent.setup();
+    render(
+      <CollectionCard
+        collection={mockCollection}
+        onToggleMonitored={mockOnToggleMonitored}
+        onSearch={mockOnSearch}
+        onEdit={mockOnEdit}
+        onDelete={mockOnDelete}
+        onNavigate={mockOnNavigate}
+      />
+    );
+
+    const title = screen.getByText('The Avengers Collection');
+    await user.click(title);
+
+    expect(mockOnNavigate).toHaveBeenCalledWith(1);
   });
 });

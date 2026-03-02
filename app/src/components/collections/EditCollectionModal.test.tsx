@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import userEvent from '@testing-library/user-event';
 import { EditCollectionModal } from './EditCollectionModal';
@@ -7,9 +7,15 @@ import type { MovieCollection } from '@/types/collection';
 const mockOnClose = vi.fn();
 const mockOnSave = vi.fn();
 
+const mockQualityProfiles = [
+  { id: 1, name: 'Default' },
+  { id: 2, name: 'HD-1080p' },
+  { id: 3, name: 'Ultra HD-4K' },
+];
+
 const mockCollection: MovieCollection = {
   id: 1,
-  tmdbId: 86311,
+  tmdbCollectionId: 86311,
   name: 'The Avengers Collection',
   overview: 'The Avengers film series produced by Marvel Studios.',
   posterUrl: 'https://via.placeholder.com/300x450?text=Avengers',
@@ -17,6 +23,9 @@ const mockCollection: MovieCollection = {
   moviesInLibrary: 5,
   monitored: true,
   movies: [],
+  minimumAvailability: 'inCinemas',
+  qualityProfileId: 2,
+  rootFolderPath: '/data/movies',
 };
 
 describe('EditCollectionModal', () => {
@@ -28,6 +37,7 @@ describe('EditCollectionModal', () => {
     render(
       <EditCollectionModal
         collection={mockCollection}
+        qualityProfiles={mockQualityProfiles}
         isOpen={false}
         onClose={mockOnClose}
         onSave={mockOnSave}
@@ -41,6 +51,7 @@ describe('EditCollectionModal', () => {
     render(
       <EditCollectionModal
         collection={mockCollection}
+        qualityProfiles={mockQualityProfiles}
         isOpen
         onClose={mockOnClose}
         onSave={mockOnSave}
@@ -52,10 +63,11 @@ describe('EditCollectionModal', () => {
     expect(screen.getByLabelText('Overview')).toBeInTheDocument();
   });
 
-  it('pre-fills form with collection data', () => {
+  it('pre-fills form with collection name and overview', () => {
     render(
       <EditCollectionModal
         collection={mockCollection}
+        qualityProfiles={mockQualityProfiles}
         isOpen
         onClose={mockOnClose}
         onSave={mockOnSave}
@@ -69,11 +81,73 @@ describe('EditCollectionModal', () => {
     expect(overviewTextarea).toHaveValue('The Avengers film series produced by Marvel Studios.');
   });
 
+  it('pre-fills minimumAvailability from collection', () => {
+    render(
+      <EditCollectionModal
+        collection={mockCollection}
+        qualityProfiles={mockQualityProfiles}
+        isOpen
+        onClose={mockOnClose}
+        onSave={mockOnSave}
+      />
+    );
+
+    const select = screen.getByLabelText('Minimum Availability') as HTMLSelectElement;
+    expect(select.value).toBe('inCinemas');
+  });
+
+  it('pre-fills qualityProfileId from collection', () => {
+    render(
+      <EditCollectionModal
+        collection={mockCollection}
+        qualityProfiles={mockQualityProfiles}
+        isOpen
+        onClose={mockOnClose}
+        onSave={mockOnSave}
+      />
+    );
+
+    const select = screen.getByLabelText('Quality Profile') as HTMLSelectElement;
+    expect(select.value).toBe('2');
+  });
+
+  it('pre-fills rootFolder from collection.rootFolderPath', () => {
+    render(
+      <EditCollectionModal
+        collection={mockCollection}
+        qualityProfiles={mockQualityProfiles}
+        isOpen
+        onClose={mockOnClose}
+        onSave={mockOnSave}
+      />
+    );
+
+    const rootFolderInput = screen.getByLabelText('Root Folder') as HTMLInputElement;
+    expect(rootFolderInput.value).toBe('/data/movies');
+  });
+
+  it('renders quality profiles from prop as select options', () => {
+    render(
+      <EditCollectionModal
+        collection={mockCollection}
+        qualityProfiles={mockQualityProfiles}
+        isOpen
+        onClose={mockOnClose}
+        onSave={mockOnSave}
+      />
+    );
+
+    expect(screen.getByRole('option', { name: 'Default' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'HD-1080p' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Ultra HD-4K' })).toBeInTheDocument();
+  });
+
   it('calls onClose when Cancel button is clicked', async () => {
     const user = userEvent.setup();
     render(
       <EditCollectionModal
         collection={mockCollection}
+        qualityProfiles={mockQualityProfiles}
         isOpen
         onClose={mockOnClose}
         onSave={mockOnSave}
@@ -92,14 +166,17 @@ describe('EditCollectionModal', () => {
     render(
       <EditCollectionModal
         collection={mockCollection}
+        qualityProfiles={mockQualityProfiles}
         isOpen
         onClose={mockOnClose}
         onSave={mockOnSave}
       />
     );
 
-    const closeButton = screen.getByRole('button', { name: /close modal/i });
-    await user.click(closeButton);
+    const closeButtons = screen.getAllByRole('button', { name: /close modal/i });
+    // Modal renders a backdrop button first, then the header close button second
+    const headerCloseButton = closeButtons[1];
+    await user.click(headerCloseButton);
 
     expect(mockOnClose).toHaveBeenCalledTimes(1);
   });
@@ -109,6 +186,7 @@ describe('EditCollectionModal', () => {
     render(
       <EditCollectionModal
         collection={mockCollection}
+        qualityProfiles={mockQualityProfiles}
         isOpen
         onClose={mockOnClose}
         onSave={mockOnSave}
@@ -127,6 +205,7 @@ describe('EditCollectionModal', () => {
     render(
       <EditCollectionModal
         collection={mockCollection}
+        qualityProfiles={mockQualityProfiles}
         isOpen
         onClose={mockOnClose}
         onSave={mockOnSave}
@@ -150,6 +229,7 @@ describe('EditCollectionModal', () => {
     render(
       <EditCollectionModal
         collection={mockCollection}
+        qualityProfiles={mockQualityProfiles}
         isOpen
         onClose={mockOnClose}
         onSave={mockOnSave}
@@ -167,6 +247,7 @@ describe('EditCollectionModal', () => {
     render(
       <EditCollectionModal
         collection={mockCollection}
+        qualityProfiles={mockQualityProfiles}
         isOpen
         onClose={mockOnClose}
         onSave={mockOnSave}
@@ -183,6 +264,7 @@ describe('EditCollectionModal', () => {
     render(
       <EditCollectionModal
         collection={unmonitoredCollection}
+        qualityProfiles={mockQualityProfiles}
         isOpen
         onClose={mockOnClose}
         onSave={mockOnSave}

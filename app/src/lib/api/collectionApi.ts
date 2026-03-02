@@ -1,6 +1,9 @@
 import { z } from 'zod';
 import { ApiHttpClient } from './httpClient';
 import { routeMap } from './routeMap';
+import type { MovieCollection, CollectionMovie, CollectionEditForm } from '@/types/collection';
+
+export type { MovieCollection, CollectionMovie, CollectionEditForm };
 
 const collectionMovieSchema = z.object({
   id: z.number(),
@@ -8,6 +11,7 @@ const collectionMovieSchema = z.object({
   title: z.string(),
   year: z.number(),
   posterUrl: z.string().optional().nullable(),
+  overview: z.string().optional().nullable(),
   inLibrary: z.boolean(),
   monitored: z.boolean().optional(),
   status: z.string().optional(),
@@ -16,8 +20,7 @@ const collectionMovieSchema = z.object({
 
 const collectionSchema = z.object({
   id: z.number(),
-  tmdbId: z.number().optional().nullable(),
-  tmdbCollectionId: z.number().optional(),
+  tmdbCollectionId: z.number(),
   name: z.string(),
   overview: z.string().optional().nullable(),
   posterUrl: z.string().optional().nullable(),
@@ -56,19 +59,6 @@ const syncResponseSchema = z.object({
   added: z.number(),
   updated: z.number(),
 });
-
-export type MovieCollection = z.infer<typeof collectionSchema>;
-export type CollectionMovie = z.infer<typeof collectionMovieSchema>;
-
-export interface CollectionEditForm {
-  name: string;
-  overview: string;
-  monitored: boolean;
-  minimumAvailability: string;
-  qualityProfileId: number;
-  rootFolder: string;
-  searchOnAdd: boolean;
-}
 
 export interface CreateCollectionInput {
   tmdbCollectionId: number;

@@ -10,6 +10,7 @@ interface CollectionCardProps {
   onSearch: (id: number) => void;
   onEdit: (collection: MovieCollection) => void;
   onDelete: (id: number) => void;
+  onNavigate?: (id: number) => void;
 }
 
 export function CollectionCard({
@@ -18,6 +19,7 @@ export function CollectionCard({
   onSearch,
   onEdit,
   onDelete,
+  onNavigate,
 }: CollectionCardProps) {
   const progress = collection.movieCount > 0
     ? (collection.moviesInLibrary / collection.movieCount) * 100
@@ -32,8 +34,9 @@ export function CollectionCard({
         <img
           src={posterUrl}
           alt={collection.name}
-          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+          className={`h-full w-full object-cover transition-transform duration-300 group-hover:scale-105 ${onNavigate ? 'cursor-pointer' : ''}`}
           loading="lazy"
+          onClick={onNavigate ? () => onNavigate(collection.id) : undefined}
           onError={event => {
             const target = event.currentTarget;
             target.src = '/images/placeholder-poster.png';
@@ -91,7 +94,10 @@ export function CollectionCard({
 
       {/* Collection Info */}
       <div className="flex flex-1 flex-col gap-2 px-3 pb-3">
-        <h3 className="line-clamp-2 text-sm font-semibold text-text-primary group-hover:text-accent-primary">
+        <h3
+          className={`line-clamp-2 text-sm font-semibold text-text-primary group-hover:text-accent-primary ${onNavigate ? 'cursor-pointer' : ''}`}
+          onClick={onNavigate ? () => onNavigate(collection.id) : undefined}
+        >
           {collection.name}
         </h3>
 

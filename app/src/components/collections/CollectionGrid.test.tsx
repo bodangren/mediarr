@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import userEvent from '@testing-library/user-event';
 import { CollectionGrid } from './CollectionGrid';
 import type { MovieCollection } from '@/types/collection';
 
@@ -7,11 +8,12 @@ const mockOnToggleMonitored = vi.fn();
 const mockOnSearch = vi.fn();
 const mockOnEdit = vi.fn();
 const mockOnDelete = vi.fn();
+const mockOnNavigate = vi.fn();
 
 const mockCollections: MovieCollection[] = [
   {
     id: 1,
-    tmdbId: 86311,
+    tmdbCollectionId: 86311,
     name: 'The Avengers Collection',
     overview: 'The Avengers film series produced by Marvel Studios.',
     posterUrl: 'https://via.placeholder.com/300x450?text=Avengers',
@@ -22,7 +24,7 @@ const mockCollections: MovieCollection[] = [
   },
   {
     id: 2,
-    tmdbId: 10,
+    tmdbCollectionId: 10,
     name: 'Star Wars Collection',
     overview: 'The Star Wars saga.',
     posterUrl: 'https://via.placeholder.com/300x450?text=Star+Wars',
@@ -102,5 +104,24 @@ describe('CollectionGrid', () => {
 
     const starWarsCard = screen.getByText('Star Wars Collection');
     expect(starWarsCard.closest('article')).toBeInTheDocument();
+  });
+
+  it('passes onNavigate to child cards and invokes it on poster click', async () => {
+    const user = userEvent.setup();
+    render(
+      <CollectionGrid
+        collections={mockCollections}
+        onToggleMonitored={mockOnToggleMonitored}
+        onSearch={mockOnSearch}
+        onEdit={mockOnEdit}
+        onDelete={mockOnDelete}
+        onNavigate={mockOnNavigate}
+      />
+    );
+
+    const poster = screen.getByAltText('The Avengers Collection');
+    await user.click(poster);
+
+    expect(mockOnNavigate).toHaveBeenCalledWith(1);
   });
 });

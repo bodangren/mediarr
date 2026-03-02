@@ -1,13 +1,20 @@
 export interface MovieCollection {
   id: number;
-  tmdbId: number;
+  tmdbCollectionId: number;
   name: string;
-  overview?: string;
-  posterUrl?: string;
+  overview?: string | null;
+  posterUrl?: string | null;
+  backdropUrl?: string | null;
   movieCount: number;
   moviesInLibrary: number;
   monitored: boolean;
-  movies: CollectionMovie[];
+  movies?: CollectionMovie[];
+  qualityProfileId?: number | null;
+  qualityProfile?: { id: number; name: string } | null;
+  minimumAvailability?: string;
+  rootFolderPath?: string | null;
+  addMoviesAutomatically?: boolean;
+  searchOnAdd?: boolean;
 }
 
 export interface CollectionMovie {
@@ -15,9 +22,12 @@ export interface CollectionMovie {
   tmdbId: number;
   title: string;
   year: number;
-  posterUrl?: string;
+  posterUrl?: string | null;
+  overview?: string | null;
+  status?: string;
   inLibrary: boolean;
   monitored?: boolean;
+  quality?: string | null;
 }
 
 export interface CollectionEditForm {

@@ -10,6 +10,7 @@ interface CollectionGridProps {
   onSearch: (id: number) => void;
   onEdit: (collection: MovieCollection) => void;
   onDelete: (id: number) => void;
+  onNavigate?: (id: number) => void;
 }
 
 export function CollectionGrid({
@@ -18,6 +19,7 @@ export function CollectionGrid({
   onSearch,
   onEdit,
   onDelete,
+  onNavigate,
 }: CollectionGridProps) {
   if (collections.length === 0) {
     return (
@@ -38,6 +40,7 @@ export function CollectionGrid({
           onSearch={onSearch}
           onEdit={onEdit}
           onDelete={onDelete}
+          onNavigate={onNavigate}
         />
       ))}
     </div>

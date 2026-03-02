@@ -6,20 +6,21 @@ import type { MovieCollection, CollectionEditForm } from '@/types/collection';
 
 interface EditCollectionModalProps {
   collection: MovieCollection;
+  qualityProfiles: { id: number; name: string }[];
   isOpen: boolean;
   onClose: () => void;
   onSave: (collectionId: number, data: CollectionEditForm) => void;
 }
 
-export function EditCollectionModal({ collection, isOpen, onClose, onSave }: EditCollectionModalProps) {
+export function EditCollectionModal({ collection, qualityProfiles, isOpen, onClose, onSave }: EditCollectionModalProps) {
   const [formData, setFormData] = useState<CollectionEditForm>({
     name: collection.name,
     overview: collection.overview ?? '',
     monitored: collection.monitored,
-    minimumAvailability: 'released',
-    qualityProfileId: 1,
-    rootFolder: '/movies',
-    searchOnAdd: true,
+    minimumAvailability: collection.minimumAvailability ?? 'released',
+    qualityProfileId: collection.qualityProfileId ?? 0,
+    rootFolder: collection.rootFolderPath ?? '',
+    searchOnAdd: collection.searchOnAdd ?? true,
   });
 
   const handleSubmit = (event: React.FormEvent) => {
@@ -42,7 +43,7 @@ export function EditCollectionModal({ collection, isOpen, onClose, onSave }: Edi
             <input
               type="text"
               value={formData.name}
-              onChange={event => setFormData(current => ({ ...current, name: event.currentTarget.value }))}
+              onChange={event => { const value = event.currentTarget.value; setFormData(current => ({ ...current, name: value })); }}
               required
               className="w-full rounded-sm border border-border-subtle bg-surface-0 px-3 py-2"
               placeholder="Enter collection name"
@@ -53,7 +54,7 @@ export function EditCollectionModal({ collection, isOpen, onClose, onSave }: Edi
             <span className="font-medium">Overview</span>
             <textarea
               value={formData.overview}
-              onChange={event => setFormData(current => ({ ...current, overview: event.currentTarget.value }))}
+              onChange={event => { const value = event.currentTarget.value; setFormData(current => ({ ...current, overview: value })); }}
               rows={3}
               className="w-full rounded-sm border border-border-subtle bg-surface-0 px-3 py-2 resize-y"
               placeholder="Enter collection overview"
@@ -65,9 +66,10 @@ export function EditCollectionModal({ collection, isOpen, onClose, onSave }: Edi
               <span className="font-medium">Minimum Availability</span>
               <select
                 value={formData.minimumAvailability}
-                onChange={event =>
-                  setFormData(current => ({ ...current, minimumAvailability: event.currentTarget.value }))
-                }
+                onChange={event => {
+                  const value = event.currentTarget.value;
+                  setFormData(current => ({ ...current, minimumAvailability: value }));
+                }}
                 className="w-full rounded-sm border border-border-subtle bg-surface-0 px-3 py-2"
               >
                 <option value="announced">Announced</option>
@@ -81,18 +83,15 @@ export function EditCollectionModal({ collection, isOpen, onClose, onSave }: Edi
               <span className="font-medium">Quality Profile</span>
               <select
                 value={formData.qualityProfileId}
-                onChange={event =>
-                  setFormData(current => ({
-                    ...current,
-                    qualityProfileId: Number.parseInt(event.currentTarget.value, 10),
-                  }))
-                }
+                onChange={event => {
+                  const value = Number.parseInt(event.currentTarget.value, 10);
+                  setFormData(current => ({ ...current, qualityProfileId: value }));
+                }}
                 className="w-full rounded-sm border border-border-subtle bg-surface-0 px-3 py-2"
               >
-                <option value="1">Default</option>
-                <option value="2">HD - 720p</option>
-                <option value="3">Full HD - 1080p</option>
-                <option value="4">Ultra HD - 4K</option>
+                {qualityProfiles.map(profile => (
+                  <option key={profile.id} value={profile.id}>{profile.name}</option>
+                ))}
               </select>
             </label>
           </div>
@@ -102,7 +101,7 @@ export function EditCollectionModal({ collection, isOpen, onClose, onSave }: Edi
             <input
               type="text"
               value={formData.rootFolder}
-              onChange={event => setFormData(current => ({ ...current, rootFolder: event.currentTarget.value }))}
+              onChange={event => { const value = event.currentTarget.value; setFormData(current => ({ ...current, rootFolder: value })); }}
               required
               className="w-full rounded-sm border border-border-subtle bg-surface-0 px-3 py-2"
               placeholder="/path/to/movies"
@@ -114,7 +113,7 @@ export function EditCollectionModal({ collection, isOpen, onClose, onSave }: Edi
               type="checkbox"
               id="searchOnAdd"
               checked={formData.searchOnAdd}
-              onChange={event => setFormData(current => ({ ...current, searchOnAdd: event.currentTarget.checked }))}
+              onChange={event => { const checked = event.currentTarget.checked; setFormData(current => ({ ...current, searchOnAdd: checked })); }}
               className="rounded-sm border-border-subtle bg-surface-0"
             />
             <label htmlFor="searchOnAdd" className="text-sm text-text-primary">
@@ -127,7 +126,7 @@ export function EditCollectionModal({ collection, isOpen, onClose, onSave }: Edi
               type="checkbox"
               id="monitored"
               checked={formData.monitored}
-              onChange={event => setFormData(current => ({ ...current, monitored: event.currentTarget.checked }))}
+              onChange={event => { const checked = event.currentTarget.checked; setFormData(current => ({ ...current, monitored: checked })); }}
               className="rounded-sm border-border-subtle bg-surface-0"
             />
             <label htmlFor="monitored" className="text-sm text-text-primary">

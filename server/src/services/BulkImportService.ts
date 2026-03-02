@@ -101,8 +101,9 @@ export class BulkImportService {
       ? `${item.rootFolderPath}/${cleanTitle} (${movieData.year})`
       : item.folderPath;
 
-    const movie = await (this.prisma as any).movie.create({
-      data: {
+    const movie = await (this.prisma as any).movie.upsert({
+      where: { tmdbId: movieData.tmdbId },
+      create: {
         tmdbId: movieData.tmdbId,
         imdbId: movieData.imdbId,
         title: movieData.title,
@@ -116,6 +117,7 @@ export class BulkImportService {
         year: movieData.year ?? 0,
         posterUrl: movieData.images?.[0]?.url,
       },
+      update: {},
     });
 
     for (const file of item.files) {
@@ -141,8 +143,9 @@ export class BulkImportService {
       ? `${item.rootFolderPath}/${cleanTitle}`
       : item.folderPath;
 
-    const series = await (this.prisma as any).series.create({
-      data: {
+    const series = await (this.prisma as any).series.upsert({
+      where: { tvdbId: seriesData.series.tvdbId },
+      create: {
         tvdbId: seriesData.series.tvdbId,
         title: seriesData.series.title,
         cleanTitle,
@@ -156,6 +159,7 @@ export class BulkImportService {
         network: seriesData.series.network,
         posterUrl: seriesData.series.images?.[0]?.url,
       },
+      update: {},
     });
 
     const seasonMap = new Map<number, number>();

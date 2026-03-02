@@ -38,8 +38,8 @@ export interface ScanResult {
 const VIDEO_EXTENSIONS = new Set(['.mkv', '.mp4', '.avi', '.ts', '.m4v', '.mov', '.wmv']);
 const NFO_EXTENSION = '.nfo';
 
-// Matches "Season 1", "Season 01", "S01", "S1", etc.
-const SEASON_DIR_PATTERN = /^(?:season\s*\d+|s\d+)$/i;
+// Matches "Season 1", "Season 01", "S01", "S1", "Specials", "Extras", "Bonus", etc.
+const SEASON_DIR_PATTERN = /^(?:season\s*\d+|s\d+|specials?|extras?|bonus(?:\s+features?)?|behind\s+the\s+scenes|featurettes?)$/i;
 
 export class ExistingLibraryScanner {
   async scan(rootPath: string): Promise<ScanResult> {
@@ -257,16 +257,24 @@ export class ExistingLibraryScanner {
         result.tmdbId = parseInt(tmdbMatch[1], 10);
       }
 
-      let tvdbMatch = content.match(/thetvdb\.com\/\?tab=series&id=(\d+)/i);
+      // Modern Kodi/Jellyfin NFO: <uniqueid type="tvdb">110381</uniqueid>
+      let tvdbMatch = content.match(/<uniqueid[^>]+type=["']tvdb["'][^>]*>(\d+)<\/uniqueid>/i);
+      if (!tvdbMatch) {
+        tvdbMatch = content.match(/thetvdb\.com\/\?tab=series&id=(\d+)/i);
+      }
       if (!tvdbMatch) {
         tvdbMatch = content.match(/thetvdb\.com\/series\/[^/]+\/id\/(\d+)/i);
       }
       if (!tvdbMatch) {
         tvdbMatch = content.match(/<tvdbid>(\d+)<\/tvdbid>/i);
       }
+      // <id> in a <tvshow> block is the legacy Kodi TVDB ID — only use it
+      // when no other TVDB identifier was found, and it looks plausible
+      // (real TVDB IDs are < 2,000,000; larger numbers are likely Kodi
+      // internal database IDs or IMDB numeric IDs).
       if (!tvdbMatch && content.includes('<tvshow>')) {
         const idMatch = content.match(/<id>(\d+)<\/id>/i);
-        if (idMatch?.[1]) {
+        if (idMatch?.[1] && parseInt(idMatch[1], 10) < 2_000_000) {
           tvdbMatch = idMatch;
         }
       }

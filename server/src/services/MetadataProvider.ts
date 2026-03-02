@@ -325,6 +325,9 @@ export class MetadataProvider {
       status: movie.status,
       overview: movie.overview,
       year: this.parseYear(movie.release_date),
+      images: movie.poster_path
+        ? [{ coverType: 'poster', url: `https://image.tmdb.org/t/p/w500${movie.poster_path}` }]
+        : [],
       availability,
       inCinemas: movie.in_cinemas,
       digitalRelease: movie.digital_release,

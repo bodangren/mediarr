@@ -35,11 +35,38 @@ export class BulkImportService {
     this.variantRepo = new SubtitleVariantRepository(prisma);
   }
 
+  private static readonly IMPORT_CONCURRENCY = 5;
+
+  private static async withConcurrencyLimit<T, R>(
+    items: T[],
+    concurrency: number,
+    fn: (item: T) => Promise<R>,
+  ): Promise<PromiseSettledResult<R>[]> {
+    const results: PromiseSettledResult<R>[] = new Array(items.length);
+    let next = 0;
+
+    async function worker(): Promise<void> {
+      while (next < items.length) {
+        const i = next++;
+        try {
+          results[i] = { status: 'fulfilled', value: await fn(items[i]!) };
+        } catch (reason) {
+          results[i] = { status: 'rejected', reason };
+        }
+      }
+    }
+
+    await Promise.all(
+      Array.from({ length: Math.min(concurrency, items.length) }, worker),
+    );
+    return results;
+  }
+
   async executeImport(items: ImportMatchItem[]): Promise<ImportResult> {
-    const outcomes = await Promise.allSettled(
-      items.map((item) =>
-        item.mediaType === 'movie' ? this.importMovie(item) : this.importSeries(item),
-      ),
+    const outcomes = await BulkImportService.withConcurrencyLimit(
+      items,
+      BulkImportService.IMPORT_CONCURRENCY,
+      (item) => item.mediaType === 'movie' ? this.importMovie(item) : this.importSeries(item),
     );
 
     const result: ImportResult = { imported: 0, failed: 0, errors: [] };

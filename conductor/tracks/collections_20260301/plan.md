@@ -35,38 +35,38 @@
     - [x] Sub-task: Write unit test asserting the movie detail response includes `collection: { id, name, posterUrl }` when a movie belongs to a collection, and `null` otherwise.
 - [ ] Task: Conductor - User Manual Verification 'Phase 2: Collections API' (Protocol in workflow.md)
 
-## Phase 3: Frontend Collections UI
+## Phase 3: Frontend Collections UI [checkpoint: 3ad372f]
 > Goal: Let users browse and manage their collections.
 
 - [x] Task: Collection UI Components (pre-existing — see issues below)
     - [x] Sub-task: `CollectionCard.tsx` — poster, progress bar, monitor toggle, hover actions (search/edit/delete).
     - [x] Sub-task: `CollectionGrid.tsx` — responsive 1→2→3→4-col grid; empty state.
     - [x] Sub-task: `EditCollectionModal.tsx` — edit form with name, overview, minimumAvailability, qualityProfile, rootFolder, searchOnAdd, monitored.
-- [ ] Task: Fix type definitions and component gaps
-    - [ ] Sub-task: Consolidate `types/collection.ts` — expand `MovieCollection` to include `tmdbCollectionId`, `backdropUrl`, `qualityProfileId`, `qualityProfile`, `minimumAvailability`, `rootFolderPath`, `addMoviesAutomatically`, `searchOnAdd`; remove duplicate type from `collectionApi.ts` and re-export from `types/collection.ts`.
-    - [ ] Sub-task: Add `onNavigate?: (id: number) => void` prop to `CollectionCard`; wrap the poster image and title in a clickable element that calls `onNavigate(collection.id)`.
-    - [ ] Sub-task: Thread `onNavigate` through `CollectionGrid` to each `CollectionCard`.
-    - [ ] Sub-task: Update `EditCollectionModal` to accept `qualityProfiles: { id: number; name: string }[]` as a prop and render them dynamically instead of hardcoded options.
-    - [ ] Sub-task: Update `EditCollectionModal` to properly pre-fill `minimumAvailability`, `qualityProfileId`, and `rootFolder` from the `collection` prop (requires fields now present on the type).
-    - [ ] Sub-task: Update existing tests for `CollectionCard`, `CollectionGrid`, and `EditCollectionModal` to reflect new props/behaviour.
-- [ ] Task: Collections Library Page (`/library/collections`)
-    - [ ] Sub-task: Create `CollectionsPage` component — fetch list via `collectionApi.list()` with React Query (`queryKeys.collections()`).
-    - [ ] Sub-task: Render `CollectionGrid` with live data; handle `onToggleMonitored` (call `collectionApi.update` + invalidate), `onSearch` (call `collectionApi.search`), `onEdit` (open `EditCollectionModal`), `onDelete` (call `collectionApi.delete` + invalidate), `onNavigate` (call `navigate('/library/collections/:id')`).
-    - [ ] Sub-task: Fetch quality profiles via `queryKeys.qualityProfiles()` and pass to `EditCollectionModal`.
-    - [ ] Sub-task: Add "Add Collection" button that opens an inline modal accepting a TMDB Collection ID, calls `collectionApi.create`, and invalidates the list query.
-    - [ ] Sub-task: Register route in `App.tsx` — replace the `StaticPage` placeholder with `<CollectionsPage />`.
-    - [ ] Sub-task: Write component tests for the Collections Library page (list renders, empty state, add flow, edit flow).
-- [ ] Task: Collection Detail Page (`/library/collections/:id`)
-    - [ ] Sub-task: Create `CollectionDetailPage` component — read `:id` from URL params, fetch via `collectionApi.getById(id)` with React Query (`queryKeys.collectionDetail(id)`).
-    - [ ] Sub-task: Render backdrop hero section: backdrop image, overlaid poster, title, overview, and `X of Y in library` stats badge.
-    - [ ] Sub-task: Render movie list rows: poster thumbnail (or placeholder), title, year, status badge (In Library / Missing / Announced), and monitored indicator.
-    - [ ] Sub-task: Wire "Search for Missing" button → `collectionApi.search(id)` → toast feedback.
-    - [ ] Sub-task: Wire "Sync from TMDB" button → `collectionApi.sync(id)` → invalidate detail query → toast feedback.
-    - [ ] Sub-task: Register `/library/collections/:id` route in `App.tsx`.
-    - [ ] Sub-task: Write component tests for Collection Detail page (renders header, renders movie rows, search button calls API, sync button calls API).
-- [ ] Task: Movie Detail → Collection Link
-    - [ ] Sub-task: Update `GET /api/movies/:id` response to include `collection.id` (covered in Phase 2 task above).
-    - [ ] Sub-task: Update `movieApi.ts` Zod schema to parse `collection.id` (already has the field — verify it survives to the component).
-    - [ ] Sub-task: Update `MovieDetailHeader` to render the collection section as a `<Link to={/library/collections/${collection.id}}>` (using React Router `Link`) instead of a plain `<span>`.
-    - [ ] Sub-task: Write unit test for `MovieDetailHeader` asserting the collection renders as a link with the correct href when `collection.id` is present.
-- [ ] Task: Conductor - User Manual Verification 'Phase 3: Frontend Collections UI' (Protocol in workflow.md)
+- [x] Task: Fix type definitions and component gaps (42ac363c)
+    - [x] Sub-task: Consolidate `types/collection.ts` — expand `MovieCollection` to include `tmdbCollectionId`, `backdropUrl`, `qualityProfileId`, `qualityProfile`, `minimumAvailability`, `rootFolderPath`, `addMoviesAutomatically`, `searchOnAdd`; remove duplicate type from `collectionApi.ts` and re-export from `types/collection.ts`.
+    - [x] Sub-task: Add `onNavigate?: (id: number) => void` prop to `CollectionCard`; wrap the poster image and title in a clickable element that calls `onNavigate(collection.id)`.
+    - [x] Sub-task: Thread `onNavigate` through `CollectionGrid` to each `CollectionCard`.
+    - [x] Sub-task: Update `EditCollectionModal` to accept `qualityProfiles: { id: number; name: string }[]` as a prop and render them dynamically instead of hardcoded options.
+    - [x] Sub-task: Update `EditCollectionModal` to properly pre-fill `minimumAvailability`, `qualityProfileId`, and `rootFolder` from the `collection` prop (requires fields now present on the type).
+    - [x] Sub-task: Update existing tests for `CollectionCard`, `CollectionGrid`, and `EditCollectionModal` to reflect new props/behaviour.
+- [x] Task: Collections Library Page (`/library/collections`) (c84e8c83)
+    - [x] Sub-task: Create `CollectionsPage` component — fetch list via `collectionApi.list()` with React Query (`queryKeys.collections()`).
+    - [x] Sub-task: Render `CollectionGrid` with live data; handle `onToggleMonitored` (call `collectionApi.update` + invalidate), `onSearch` (call `collectionApi.search`), `onEdit` (open `EditCollectionModal`), `onDelete` (call `collectionApi.delete` + invalidate), `onNavigate` (call `navigate('/library/collections/:id')`).
+    - [x] Sub-task: Fetch quality profiles via `queryKeys.qualityProfiles()` and pass to `EditCollectionModal`.
+    - [x] Sub-task: Add "Add Collection" button that opens an inline modal accepting a TMDB Collection ID, calls `collectionApi.create`, and invalidates the list query.
+    - [x] Sub-task: Register route in `App.tsx` — replace the `StaticPage` placeholder with `<CollectionsPage />`.
+    - [x] Sub-task: Write component tests for the Collections Library page (list renders, empty state, add flow, edit flow).
+- [x] Task: Collection Detail Page (`/library/collections/:id`) (c84e8c83)
+    - [x] Sub-task: Create `CollectionDetailPage` component — read `:id` from URL params, fetch via `collectionApi.getById(id)` with React Query (`queryKeys.collectionDetail(id)`).
+    - [x] Sub-task: Render backdrop hero section: backdrop image, overlaid poster, title, overview, and `X of Y in library` stats badge.
+    - [x] Sub-task: Render movie list rows: poster thumbnail (or placeholder), title, year, status badge (In Library / Missing / Announced), and monitored indicator.
+    - [x] Sub-task: Wire "Search for Missing" button → `collectionApi.search(id)` → toast feedback.
+    - [x] Sub-task: Wire "Sync from TMDB" button → `collectionApi.sync(id)` → invalidate detail query → toast feedback.
+    - [x] Sub-task: Register `/library/collections/:id` route in `App.tsx`.
+    - [x] Sub-task: Write component tests for Collection Detail page (renders header, renders movie rows, search button calls API, sync button calls API).
+- [x] Task: Movie Detail → Collection Link (c84e8c83)
+    - [x] Sub-task: Update `GET /api/movies/:id` response to include `collection.id` (covered in Phase 2 task above).
+    - [x] Sub-task: Update `movieApi.ts` Zod schema to parse `collection.name` (fixed title→name mismatch; passes to component correctly).
+    - [x] Sub-task: Update `MovieDetailHeader` to render the collection section as a `<Link to={/library/collections/${collection.id}}>` (using React Router `Link`) instead of a plain `<span>`.
+    - [x] Sub-task: Write unit test for `MovieDetailHeader` asserting the collection renders as a link with the correct href when `collection.id` is present.
+- [x] Task: Conductor - User Manual Verification 'Phase 3: Frontend Collections UI' (Protocol in workflow.md) (3ad372f)

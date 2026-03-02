@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Icon } from '@/components/primitives/Icon';
 import { StatusBadge } from '@/components/primitives/StatusBadge';
 import type { MovieDetail } from '@/types/movie';
@@ -147,7 +148,12 @@ export function MovieDetailHeader({ movie, onMonitoredChange, onPreviousMovie, o
             {collection && (
               <div className="flex items-center gap-1.5">
                 <Icon name="package" className="h-4 w-4" />
-                <span>{collection}</span>
+                <Link
+                  to={`/library/collections/${collection.id}`}
+                  className="hover:text-accent-primary hover:underline"
+                >
+                  {collection.name}
+                </Link>
               </div>
             )}
           </div>

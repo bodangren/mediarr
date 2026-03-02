@@ -29,8 +29,7 @@ const movieSchema = z.object({
   }).nullish(),
   collection: z.object({
     id: z.number(),
-    title: z.string(),
-    overview: z.string().nullish(),
+    name: z.string(),
     posterUrl: z.string().nullish(),
   }).nullish(),
 }).passthrough();

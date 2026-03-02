@@ -16,6 +16,8 @@ import { ImportWizard } from '@/components/import/ImportWizard';
 import { ActivityQueuePage } from '@/components/activity/ActivityQueuePage';
 import { ActivityHistoryPage } from '@/components/activity/ActivityHistoryPage';
 import { CalendarPage } from '@/components/calendar/CalendarPage';
+import { CollectionsPage } from '@/components/collections/CollectionsPage';
+import { CollectionDetailPage } from '@/components/collections/CollectionDetailPage';
 import { getApiClients } from '@/lib/api/client';
 import { getPopularPresets } from '@/lib/indexer/indexerPresets';
 import type { IndexerItem } from '@/lib/api/indexerApi';
@@ -2357,7 +2359,8 @@ export default function App() {
               <Route path="library/tv/:id" element={<SeriesDetailPage />} />
               <Route path="library/series" element={<Navigate to="/library/tv" replace />} />
               <Route path="library/series/:id" element={<SeriesDetailPage />} />
-              <Route path="library/collections" element={<StaticPage title="Collections" description="Unified collection management view." />} />
+              <Route path="library/collections" element={<CollectionsPage />} />
+              <Route path="library/collections/:id" element={<CollectionDetailPage />} />
 
               <Route path="calendar" element={<CalendarPage />} />
 

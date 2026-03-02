@@ -90,7 +90,7 @@ export interface MovieDetail {
   path?: string;
   genres?: string[];
   studio?: string;
-  collection?: string;
+  collection?: { id: number; name: string; posterUrl?: string | null };
   ratings: MovieRatings;
   files: MovieFile[];
   cast: CastMember[];

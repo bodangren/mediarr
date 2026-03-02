@@ -1,6 +1,7 @@
 import type { MetadataProvider } from './MetadataProvider';
 import type { ScannedFolder, NfoData } from './ExistingLibraryScanner';
 import type { BaseMedia } from '../types/BaseMedia';
+import { normalizeTitle, levenshteinDistance } from '../utils/stringUtils';
 
 type MetadataProviderDeps = Pick<MetadataProvider, 'searchMedia' | 'findMovieByImdbId'>;
 
@@ -35,6 +36,11 @@ export class ImportMatchService {
     }
 
     return [];
+  }
+
+  async searchByTitle(title: string, mediaType: 'movie' | 'series'): Promise<MatchCandidate[]> {
+    const apiType = mediaType === 'series' ? 'TV' : 'MOVIE';
+    return this.matchByMediaType(apiType, title, undefined, undefined);
   }
 
   private async matchByMediaType(
@@ -143,8 +149,8 @@ export class ImportMatchService {
   }
 
   private calculateTitleConfidence(parsed: string, result: string): number {
-    const normalizedParsed = this.normalizeTitle(parsed);
-    const normalizedResult = this.normalizeTitle(result);
+    const normalizedParsed = normalizeTitle(parsed);
+    const normalizedResult = normalizeTitle(result);
 
     if (normalizedParsed === normalizedResult) {
       return 1.0;
@@ -157,45 +163,11 @@ export class ImportMatchService {
       return 0.7 + lengthRatio * 0.25;
     }
 
-    const distance = this.levenshteinDistance(normalizedParsed, normalizedResult);
+    const distance = levenshteinDistance(normalizedParsed, normalizedResult);
     const maxLen = Math.max(normalizedParsed.length, normalizedResult.length);
     if (maxLen === 0) return 0;
 
     return Math.max(0, 1 - distance / maxLen);
-  }
-
-  private normalizeTitle(title: string): string {
-    return title
-      .toLowerCase()
-      .replace(/[^a-z0-9]/g, '')
-      .replace(/^(the|a|an)/, '');
-  }
-
-  private levenshteinDistance(a: string, b: string): number {
-    const matrix: number[][] = [];
-
-    for (let i = 0; i <= b.length; i++) {
-      matrix[i] = [i];
-    }
-    for (let j = 0; j <= a.length; j++) {
-      matrix[0]![j] = j;
-    }
-
-    for (let i = 1; i <= b.length; i++) {
-      for (let j = 1; j <= a.length; j++) {
-        if (b.charAt(i - 1) === a.charAt(j - 1)) {
-          matrix[i]![j] = matrix[i - 1]![j - 1]!;
-        } else {
-          matrix[i]![j] = Math.min(
-            matrix[i - 1]![j - 1]! + 1,
-            matrix[i]![j - 1]! + 1,
-            matrix[i - 1]![j]! + 1,
-          );
-        }
-      }
-    }
-
-    return matrix[b.length]![a.length]!;
   }
 
   private extractTitleFromFiles(folder: ScannedFolder): string | undefined {

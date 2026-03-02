@@ -3,6 +3,8 @@ import { sendSuccess } from '../contracts';
 import type { ApiDependencies } from '../types';
 import { ExistingLibraryScanner, type ScannedFolder } from '../../services/ExistingLibraryScanner';
 import { ImportMatchService, type ScannedFolderWithMatches } from '../../services/ImportMatchService';
+import { BulkImportService } from '../../services/BulkImportService';
+import type { ParsedInfo } from '../../utils/Parser';
 
 const MATCH_CONCURRENCY = 5;
 
@@ -43,6 +45,9 @@ export function registerImportRoutes(
   const scanner = new ExistingLibraryScanner();
   const matchService = deps.metadataProvider
     ? new ImportMatchService(deps.metadataProvider)
+    : null;
+  const importService = deps.metadataProvider
+    ? new BulkImportService(deps.prisma as any, deps.metadataProvider)
     : null;
 
   app.post<{
@@ -107,13 +112,72 @@ export function registerImportRoutes(
 
     const { title, mediaType } = request.body;
 
-    const results = await matchService.matchFolder({
-      path: '',
-      type: mediaType,
-      files: [],
-      parsedTitle: title,
-    });
+    const results = await matchService.searchByTitle(title, mediaType);
 
     return sendSuccess(reply, results);
+  });
+
+  app.post<{
+    Body: {
+      items: Array<{
+        folderPath: string;
+        mediaType: 'movie' | 'series';
+        matchId: number;
+        files: Array<{
+          path: string;
+          size: number;
+          extension: string;
+          parsedInfo?: ParsedInfo;
+        }>;
+        renameFiles: boolean;
+        rootFolderPath: string;
+        qualityProfileId: number;
+      }>;
+    };
+  }>('/api/import/execute', {
+    schema: {
+      body: {
+        type: 'object',
+        required: ['items'],
+        properties: {
+          items: {
+            type: 'array',
+            items: {
+              type: 'object',
+              required: ['folderPath', 'mediaType', 'matchId', 'files', 'renameFiles', 'rootFolderPath', 'qualityProfileId'],
+              properties: {
+                folderPath: { type: 'string' },
+                mediaType: { type: 'string', enum: ['movie', 'series'] },
+                matchId: { type: 'number' },
+                files: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    required: ['path', 'size', 'extension'],
+                    properties: {
+                      path: { type: 'string' },
+                      size: { type: 'number' },
+                      extension: { type: 'string' },
+                      parsedInfo: { type: 'object' },
+                    },
+                  },
+                },
+                renameFiles: { type: 'boolean' },
+                rootFolderPath: { type: 'string' },
+                qualityProfileId: { type: 'number' },
+              },
+            },
+          },
+        },
+      },
+    },
+  }, async (request, reply) => {
+    if (!importService) {
+      return reply.code(500).send({ ok: false, error: 'Metadata provider not configured' });
+    }
+
+    const result = await importService.executeImport(request.body.items);
+
+    return sendSuccess(reply, result);
   });
 }

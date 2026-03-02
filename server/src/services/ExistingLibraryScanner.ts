@@ -147,6 +147,12 @@ export class ExistingLibraryScanner {
       }
     }
 
+    // Build a Map for O(1) NFO sidecar lookups
+    const nfoByBaseName = new Map<string, string>();
+    for (const nfo of nfoFiles) {
+      nfoByBaseName.set(path.basename(nfo, NFO_EXTENSION).toLowerCase(), nfo);
+    }
+
     const fileResults = await Promise.all(
       videoEntries.map(async (entry): Promise<ScannedFile | null> => {
         const filePath = path.join(folderPath, entry.name);
@@ -172,10 +178,8 @@ export class ExistingLibraryScanner {
               }
             : undefined);
 
-        const videoBaseName = entry.name.replace(/\.[^.]+$/, '');
-        const correspondingNfo = nfoFiles.find(
-          (nfo) => path.basename(nfo, NFO_EXTENSION).toLowerCase() === videoBaseName.toLowerCase(),
-        );
+        const videoBaseName = entry.name.replace(/\.[^.]+$/, '').toLowerCase();
+        const correspondingNfo = nfoByBaseName.get(videoBaseName);
 
         return { path: filePath, size, extension: ext, nfoPath: correspondingNfo, parsedInfo };
       }),
@@ -240,34 +244,45 @@ export class ExistingLibraryScanner {
   }
 
   private async scanDirectory(dirPath: string): Promise<Array<{ path: string; type: 'folder' | 'video' }>> {
-    const results: Array<{ path: string; type: 'folder' | 'video' }> = [];
     let entries: Dirent[];
 
     try {
       entries = await fs.readdir(dirPath, { withFileTypes: true });
     } catch {
-      return results;
+      return [];
     }
+
+    const dirs: string[] = [];
+    const localVideos: string[] = [];
 
     for (const entry of entries) {
       const fullPath = path.join(dirPath, entry.name);
-
       if (entry.isDirectory()) {
-        const subResults = await this.scanDirectory(fullPath);
-        results.push(...subResults);
-
-        const hasDirectVideos = subResults.some(
-          (r) => r.type === 'video' && path.dirname(r.path) === fullPath,
-        );
-        if (hasDirectVideos) {
-          results.push({ path: fullPath, type: 'folder' });
-        }
+        dirs.push(fullPath);
       } else if (entry.isFile()) {
         const ext = path.extname(entry.name).toLowerCase();
         if (VIDEO_EXTENSIONS.has(ext)) {
-          results.push({ path: fullPath, type: 'video' });
+          localVideos.push(fullPath);
         }
       }
+    }
+
+    // Recurse into all subdirectories in parallel
+    const subResultArrays = await Promise.all(dirs.map((d) => this.scanDirectory(d)));
+
+    const results: Array<{ path: string; type: 'folder' | 'video' }> = [];
+
+    for (const video of localVideos) {
+      results.push({ path: video, type: 'video' });
+    }
+
+    for (const subResults of subResultArrays) {
+      results.push(...subResults);
+    }
+
+    // Emit this directory as a folder entry if it directly contains videos
+    if (localVideos.length > 0) {
+      results.push({ path: dirPath, type: 'folder' });
     }
 
     return results;

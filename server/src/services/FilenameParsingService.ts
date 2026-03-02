@@ -1,4 +1,5 @@
 import type { PrismaClient } from '@prisma/client';
+import { normalizeTitle, levenshteinDistance } from '../utils/stringUtils';
 
 /**
  * Parsed movie information from a filename.
@@ -383,12 +384,12 @@ export class FilenameParsingService {
   ): { series: typeof series[0]; seasonId?: number; episodeId?: number; confidence: number } | null {
     if (!parsed.seriesTitle) return null;
 
-    const normalizedParsedTitle = this.normalizeTitle(parsed.seriesTitle);
+    const normalizedParsedTitle = normalizeTitle(parsed.seriesTitle);
     let bestMatch: { series: typeof series[0]; seasonId?: number; episodeId?: number; confidence: number } | null = null;
 
     for (const s of series) {
-      const normalizedSeriesTitle = this.normalizeTitle(s.title);
-      const normalizedCleanTitle = this.normalizeTitle(s.cleanTitle);
+      const normalizedSeriesTitle = normalizeTitle(s.title);
+      const normalizedCleanTitle = normalizeTitle(s.cleanTitle);
 
       // Calculate series similarity
       let confidence = 0;
@@ -402,7 +403,7 @@ export class FilenameParsingService {
         confidence = 0.8;
       } else {
         // Calculate Levenshtein-based similarity
-        const distance = this.levenshteinDistance(normalizedParsedTitle, normalizedSeriesTitle);
+        const distance = levenshteinDistance(normalizedParsedTitle, normalizedSeriesTitle);
         const maxLength = Math.max(normalizedParsedTitle.length, normalizedSeriesTitle.length);
         confidence = 1 - distance / maxLength;
       }
@@ -502,12 +503,12 @@ export class FilenameParsingService {
   ): { movie: typeof movies[0]; confidence: number } | null {
     if (!parsed.title) return null;
 
-    const normalizedParsedTitle = this.normalizeTitle(parsed.title);
+    const normalizedParsedTitle = normalizeTitle(parsed.title);
     let bestMatch: { movie: typeof movies[0]; confidence: number } | null = null;
 
     for (const movie of movies) {
-      const normalizedMovieTitle = this.normalizeTitle(movie.title);
-      const normalizedCleanTitle = this.normalizeTitle(movie.cleanTitle);
+      const normalizedMovieTitle = normalizeTitle(movie.title);
+      const normalizedCleanTitle = normalizeTitle(movie.cleanTitle);
 
       // Calculate similarity
       let confidence = 0;
@@ -521,7 +522,7 @@ export class FilenameParsingService {
         confidence = 0.8;
       } else {
         // Calculate Levenshtein-based similarity
-        const distance = this.levenshteinDistance(normalizedParsedTitle, normalizedMovieTitle);
+        const distance = levenshteinDistance(normalizedParsedTitle, normalizedMovieTitle);
         const maxLength = Math.max(normalizedParsedTitle.length, normalizedMovieTitle.length);
         confidence = 1 - distance / maxLength;
       }
@@ -546,42 +547,6 @@ export class FilenameParsingService {
   /**
    * Normalize a title for comparison.
    */
-  private normalizeTitle(title: string): string {
-    return title
-      .toLowerCase()
-      .replace(/[^a-z0-9]/g, '')
-      .replace(/^(the|a|an)/, '');
-  }
-
-  /**
-   * Calculate Levenshtein distance between two strings.
-   */
-  private levenshteinDistance(a: string, b: string): number {
-    const matrix: number[][] = [];
-
-    for (let i = 0; i <= b.length; i++) {
-      matrix[i] = [i];
-    }
-    for (let j = 0; j <= a.length; j++) {
-      matrix[0][j] = j;
-    }
-
-    for (let i = 1; i <= b.length; i++) {
-      for (let j = 1; j <= a.length; j++) {
-        if (b.charAt(i - 1) === a.charAt(j - 1)) {
-          matrix[i][j] = matrix[i - 1][j - 1];
-        } else {
-          matrix[i][j] = Math.min(
-            matrix[i - 1][j - 1] + 1,
-            matrix[i][j - 1] + 1,
-            matrix[i - 1][j] + 1
-          );
-        }
-      }
-    }
-
-    return matrix[b.length][a.length];
-  }
 
   /**
    * Recursively scan directory for video files.

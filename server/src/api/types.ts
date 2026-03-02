@@ -84,7 +84,7 @@ export interface ApiDependencies {
     CustomFormatRepository,
     'findAll' | 'findById' | 'findByName' | 'create' | 'update' | 'delete' | 'exists' | 'nameExists' | 'findByQualityProfileId'
   >;
-  metadataProvider?: Pick<MetadataProvider, 'searchMedia' | 'getSeriesDetails' | 'findMovieByImdbId'>;
+  metadataProvider?: Pick<MetadataProvider, 'searchMedia' | 'getMediaDetails' | 'getSeriesDetails' | 'findMovieByImdbId'>;
   eventHub?: ApiEventHub;
   importListRepository?: Pick<
     ImportListRepository,

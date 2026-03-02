@@ -24,11 +24,11 @@
 ## Phase 3: Bulk Import Execution
 > Goal: Save the matched entities to the database and optionally rename files.
 
-- [ ] Task: Build Bulk Import API
-    - [ ] Sub-task: Create `POST /api/import/execute` endpoint accepting a list of confirmed matches.
-    - [ ] Sub-task: For Movies: Create the Movie record, create MediaFileVariant record, optionally rename using `Organizer` service.
-    - [ ] Sub-task: For Series: Create the Series record, fetch metadata/episodes, create MediaFileVariant records for existing episodes.
-    - [ ] Sub-task: Support hard-linking when renaming to preserve original files (optional toggle).
+- [x] Task: Build Bulk Import API
+    - [x] Sub-task: Create `POST /api/import/execute` endpoint accepting a list of confirmed matches.
+    - [x] Sub-task: For Movies: Create the Movie record, create MediaFileVariant record, optionally rename using `Organizer` service.
+    - [x] Sub-task: For Series: Create the Series record, fetch metadata/episodes, create MediaFileVariant records for existing episodes.
+    - [x] Sub-task: Support hard-linking when renaming to preserve original files (optional toggle).
 
 ## Phase 4: Frontend UI
 > Goal: Provide a user-friendly wizard for the import process.

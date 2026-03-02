@@ -2,6 +2,7 @@ import type { PrismaClient } from '@prisma/client';
 import type { ImportListRepository, ImportListWithProfile } from '../../repositories/ImportListRepository';
 import type { MediaRepository } from '../../repositories/MediaRepository';
 import type { ImportListProviderFactory, ImportListItem } from './ImportListProvider';
+import { toSortTitle } from '../../utils/stringUtils';
 
 export interface SyncResult {
   added: number;
@@ -127,7 +128,7 @@ export class ImportListSyncService {
 
   private async addToList(importList: ImportListWithProfile, item: ImportListItem): Promise<void> {
     const cleanTitle = this.cleanTitle(item.title);
-    const sortTitle = this.generateSortTitle(item.title);
+    const sortTitle = toSortTitle(item.title);
     const year = item.year ?? 0;
 
     if (item.mediaType === 'movie' && item.tmdbId) {
@@ -201,16 +202,4 @@ export class ImportListSyncService {
       .trim();
   }
 
-  private generateSortTitle(title: string): string {
-    const articles = ['the ', 'a ', 'an '];
-    const lowerTitle = title.toLowerCase();
-    
-    for (const article of articles) {
-      if (lowerTitle.startsWith(article)) {
-        return title.slice(article.length) + ', ' + title.slice(0, article.length - 1);
-      }
-    }
-    
-    return title;
-  }
 }

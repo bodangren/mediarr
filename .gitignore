@@ -36,3 +36,10 @@ reference/
 
 /app/generated/prisma
 *.db
+
+# Compiled TypeScript in app/src (Vite handles this)
+/app/src/**/*.js
+/app/src/**/*.js.map
+/app/src/**/*.d.ts
+/app/src/**/*.d.ts.map
+!/app/src/**/*.test.js

@@ -29,7 +29,7 @@ Collections (Planned)
 
 ## Active Tracks
 
-- [ ] **Track: Existing Library Import** *Phases: 4 | Link: [./tracks/existing_library_import_20260301/](./tracks/existing_library_import_20260301/)*
+- [x] **Track: Existing Library Import** *Phases: 4 | Link: [./tracks/existing_library_import_20260301/](./tracks/existing_library_import_20260301/)*
 - [ ] **Track: Collections** *Phases: 3 | Link: [./tracks/collections_20260301/](./tracks/collections_20260301/)*
 - [x] **Track: Manual Search, Queue Monitoring & Quality Profile Enhancements** *Phases: 5 | Link: [./archive/manual_search_queue_20260228/](./archive/manual_search_queue_20260228/)*
 - [x] **Track: Vite Frontend Parity Recovery** *Phases: 5 | Link: [./archive/vite_parity_recovery_20260226/](./archive/vite_parity_recovery_20260226/)*

@@ -33,10 +33,10 @@
 ## Phase 4: Frontend UI
 > Goal: Provide a user-friendly wizard for the import process.
 
-- [ ] Task: Build Import Wizard UI
-    - [ ] Sub-task: Add "Import Existing" button to Library pages.
-    - [ ] Sub-task: Step 1: Select root folder to scan.
-    - [ ] Sub-task: Step 2: Display scanning progress.
-    - [ ] Sub-task: Step 3: Review Matches. Show list of detected media with dropdown selectors for ambiguous matches. Allow manual search modal to fix incorrect matches.
-    - [ ] Sub-task: Step 4: Toggle for renaming files during import.
-    - [ ] Sub-task: Step 5: Execute import and show progress.
+- [x] Task: Build Import Wizard UI
+    - [x] Sub-task: Add "Import Existing" button to Library pages.
+    - [x] Sub-task: Step 1: Select root folder to scan.
+    - [x] Sub-task: Step 2: Display scanning progress.
+    - [x] Sub-task: Step 3: Review Matches. Show list of detected media with dropdown selectors for ambiguous matches. Allow manual search modal to fix incorrect matches.
+    - [x] Sub-task: Step 4: Toggle for renaming files during import.
+    - [x] Sub-task: Step 5: Execute import and show progress.

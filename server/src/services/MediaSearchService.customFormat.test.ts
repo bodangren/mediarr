@@ -116,7 +116,7 @@ describe('MediaSearchService custom format scoring integration', () => {
 
     expect(customFormatRepository.findByQualityProfileId).toHaveBeenCalledWith(10);
     expect(result.releases[0]?.title).toContain('x265');
-    expect(result.releases[0]?.customFormatScore).toBe(150);
+    expect(result.releases[0]?.customFormatScore).toBe(259);
   });
 
   it('keeps the highest-scored duplicate when infoHash is shared across indexers', async () => {
@@ -181,6 +181,6 @@ describe('MediaSearchService custom format scoring integration', () => {
     expect(result.totalResults).toBe(2);
     expect(result.deduplicatedCount).toBe(1);
     expect(result.releases[0]?.title).toContain('x265');
-    expect(result.releases[0]?.customFormatScore).toBe(250);
+    expect(result.releases[0]?.customFormatScore).toBe(357);
   });
 });

@@ -2,6 +2,7 @@ import type {
   CustomFormatCondition,
   CustomFormatWithScores,
 } from '../repositories/CustomFormatRepository';
+import { normalizeTitle, levenshteinDistance } from '../utils/stringUtils';
 
 /**
  * Release candidate for custom format evaluation
@@ -17,6 +18,7 @@ export interface ReleaseCandidate {
   resolution?: number | undefined;
   qualityModifier?: string | undefined;
   indexerFlags?: string[] | undefined;
+  seeders?: number;
 }
 
 /**
@@ -31,6 +33,22 @@ export interface ScoringResult {
   totalScore: number;
 }
 
+export interface UnifiedScoringResult extends ScoringResult {
+  breakdown: {
+    customFormatScore: number;
+    confidenceScore: number;
+    indexerScore: number;
+    seedScore: number;
+  };
+}
+
+export interface TargetParams {
+  title?: string;
+  year?: number;
+  season?: number;
+  episode?: number;
+}
+
 /**
  * Custom Format Scoring Engine
  * 
@@ -38,6 +56,87 @@ export interface ScoringResult {
  * based on quality profile configurations.
  */
 export class CustomFormatScoringEngine {
+  /**
+   * Calculates a comprehensive score that includes Custom Formats, Title Confidence, Indexer Priority, and Seeders.
+   */
+  scoreCandidateUnified(
+    candidate: { title: string; seeders?: number },
+    formatScores: Array<{ customFormat: CustomFormatWithScores; score: number }>,
+    targetParams: TargetParams,
+    indexerPriority: number = 0,
+  ): UnifiedScoringResult {
+    // 1. Calculate Custom Format Score
+    let customFormatScore = 0;
+    const matchedFormats: UnifiedScoringResult['matchedFormats'] = [];
+    
+    // We create a dummy ReleaseCandidate just for format scoring if needed,
+    // though typically the caller passes a full candidate.
+    const releaseCandidate = candidate as ReleaseCandidate;
+    
+    for (const { customFormat, score } of formatScores) {
+      if (this.evaluate(releaseCandidate, customFormat)) {
+        matchedFormats.push({
+          id: customFormat.id,
+          name: customFormat.name,
+          score,
+        });
+        customFormatScore += score;
+      }
+    }
+
+    // 2. Calculate Confidence Score (0 to 100)
+    let confidenceScore = 0;
+    if (targetParams.title) {
+      const normalizedTarget = normalizeTitle(targetParams.title);
+      // Remove common release group/quality strings before comparing
+      let cleanCandidateTitle = candidate.title;
+      const qualityIndex = cleanCandidateTitle.search(/\d{3,4}p|BluRay|WEB|HDTV|DVD|S\d{2}/i);
+      if (qualityIndex > 0) {
+        cleanCandidateTitle = cleanCandidateTitle.substring(0, qualityIndex);
+      }
+      
+      const normalizedCandidate = normalizeTitle(cleanCandidateTitle);
+      
+      if (normalizedCandidate === normalizedTarget || normalizedCandidate.includes(normalizedTarget)) {
+        confidenceScore = 100;
+      } else {
+        const distance = levenshteinDistance(normalizedTarget, normalizedCandidate);
+        const maxLength = Math.max(normalizedTarget.length, normalizedCandidate.length);
+        const similarity = Math.max(0, 1 - distance / (maxLength || 1));
+        confidenceScore = Math.round(similarity * 100);
+      }
+      
+      // Bonus for exact season/episode match in title if applicable
+      if (targetParams.season !== undefined && targetParams.episode !== undefined) {
+        const s = targetParams.season.toString().padStart(2, '0');
+        const e = targetParams.episode.toString().padStart(2, '0');
+        if (candidate.title.match(new RegExp(`S${s}E${e}`, 'i'))) {
+          confidenceScore = Math.min(100, confidenceScore + 20);
+        }
+      }
+    }
+
+    // 3. Calculate Indexer Score (Priority * 5)
+    const indexerScore = (indexerPriority || 0) * 5;
+
+    // 4. Calculate Seeds Score (log10(seeds) * 10)
+    const seeders = candidate.seeders || 0;
+    const seedScore = seeders > 0 ? Math.round(Math.log10(seeders) * 10) : 0;
+
+    const totalScore = customFormatScore + confidenceScore + indexerScore + seedScore;
+
+    return {
+      matchedFormats,
+      totalScore,
+      breakdown: {
+        customFormatScore,
+        confidenceScore,
+        indexerScore,
+        seedScore,
+      }
+    };
+  }
+
   /**
    * Evaluate a single condition against a release candidate
    */

@@ -391,36 +391,44 @@ export class MediaSearchService {
     },
   ) {}
 
-  private async applyCustomFormatScoring(
+  private async applyUnifiedScoring(
     releases: SearchCandidate[],
+    indexerRecords: Array<{ id: number; priority: number }>,
+    targetParams: { title?: string; season?: number; episode?: number; year?: number },
     qualityProfileId?: number,
   ): Promise<SearchCandidate[]> {
-    if (qualityProfileId === undefined || !this.customFormatRepository?.findByQualityProfileId) {
-      return releases;
-    }
+    let formatScores: Array<{ customFormat: CustomFormatWithScores; score: number }> = [];
 
-    try {
-      const formatScores = await this.customFormatRepository.findByQualityProfileId(qualityProfileId);
-      if (formatScores.length === 0) {
-        return releases;
+    if (qualityProfileId !== undefined && this.customFormatRepository?.findByQualityProfileId) {
+      try {
+        formatScores = await this.customFormatRepository.findByQualityProfileId(qualityProfileId);
+      } catch {
+        // Ignore error and proceed with unified scoring (confidence, priority, seeds) without formats
       }
-
-      const scoringEngine = new CustomFormatScoringEngine();
-
-      return releases.map(release => {
-        const scoring = scoringEngine.scoreReleaseForQualityProfile(
-          toScoringCandidate(release),
-          formatScores,
-        );
-
-        return {
-          ...release,
-          customFormatScore: scoring.totalScore,
-        };
-      });
-    } catch {
-      return releases;
     }
+
+    const scoringEngine = new CustomFormatScoringEngine();
+
+    return releases.map(release => {
+      const indexerPriority = indexerRecords.find(r => r.id === release.indexerId)?.priority || 0;
+      
+      const candidateToScore = {
+        ...toScoringCandidate(release),
+        seeders: release.seeders,
+      };
+
+      const scoring = scoringEngine.scoreCandidateUnified(
+        candidateToScore,
+        formatScores,
+        targetParams,
+        indexerPriority,
+      );
+
+      return {
+        ...release,
+        customFormatScore: scoring.totalScore, // Store unified score here so sorting logic works unchanged
+      };
+    });
   }
 
   /**
@@ -510,8 +518,17 @@ export class MediaSearchService {
       }
     }
 
-    const scoredReleases = await this.applyCustomFormatScoring(
+    const targetParams = {
+      title: params.title || params.query,
+      season: params.season,
+      episode: params.episode,
+      year: params.year,
+    };
+
+    const scoredReleases = await this.applyUnifiedScoring(
       allReleases,
+      indexerRecords,
+      targetParams,
       params.qualityProfileId,
     );
     scoredReleases.sort(compareReleasesForRanking);

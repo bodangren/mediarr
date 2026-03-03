@@ -309,10 +309,14 @@ export class WantedSearchService {
         qualityProfileId: series.qualityProfileId,
       });
 
-      // Exclude individual episodes; keep only series-level packs
+      // Exclude individual episodes AND single-season packs.
+      // A season pack like "The.Sopranos.S01.Complete" has no episode number so
+      // Parser.parse returns null — we must also check for a lone season marker.
       const candidates = searchResult.releases.filter(r => {
         const parsed = Parser.parse(r.title);
-        return !(parsed && parsed.episodeNumbers.length > 0);
+        if (parsed && parsed.episodeNumbers.length > 0) return false; // individual episode
+        if (this.isSingleSeasonPack(r.title)) return false; // single-season pack
+        return true;
       });
 
       if (candidates.length === 0) return false;
@@ -334,6 +338,18 @@ export class WantedSearchService {
     } catch {
       return false;
     }
+  }
+
+  /**
+   * Returns true if the release title looks like a single-season pack
+   * (e.g. "Show.S01.Complete", "Show Season 2") rather than a complete series.
+   * Titles with a lone season marker but no episode marker qualify.
+   */
+  private isSingleSeasonPack(title: string): boolean {
+    // Has a season marker (S01, S1, Season 1) but no episode marker (S01E01, E01)
+    const hasSeason = /\bS\d{1,2}\b/i.test(title) || /\bSeason\s*\d{1,2}\b/i.test(title);
+    const hasEpisode = /S\d{1,2}E\d+/i.test(title) || /\bE\d{2,3}\b/i.test(title);
+    return hasSeason && !hasEpisode;
   }
 
   /**

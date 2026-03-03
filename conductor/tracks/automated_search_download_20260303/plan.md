@@ -3,13 +3,13 @@
 ## Phase 1: Scoring Engine and Candidate Ranking
 > Goal: Enhance the current scoring engine to support a holistic "Best Candidate" selection process.
 
-- [ ] Task: Extend `CustomFormatScoringEngine` with Confidence and Indexer Score
-    - [ ] Sub-task: Integrate `FilenameParsingService` to compute a "Confidence" score based on title matching.
-    - [ ] Sub-task: Add `IndexerPriority` scoring to the engine (read from database).
-    - [ ] Sub-task: Add `Seeds` count as a weighted scoring factor.
-- [ ] Task: Update `MediaSearchService.searchAllIndexers`
-    - [ ] Sub-task: Ensure the updated scoring is applied to all results and sorted accordingly.
-- [ ] Task: Write unit tests for the enhanced scoring engine and search aggregation.
+- [x] Task: Extend `CustomFormatScoringEngine` with Confidence and Indexer Score [1071b8a]
+    - [x] Sub-task: Integrate `FilenameParsingService` to compute a "Confidence" score based on title matching.
+    - [x] Sub-task: Add `IndexerPriority` scoring to the engine (read from database).
+    - [x] Sub-task: Add `Seeds` count as a weighted scoring factor.
+- [x] Task: Update `MediaSearchService.searchAllIndexers` [1071b8a]
+    - [x] Sub-task: Ensure the updated scoring is applied to all results and sorted accordingly.
+- [x] Task: Write unit tests for the enhanced scoring engine and search aggregation. [1071b8a]
 - [ ] Task: Conductor - User Manual Verification 'Phase 1: Scoring Engine' (Protocol in workflow.md)
 
 ## Phase 2: Automated Search Backend

@@ -18,7 +18,8 @@ describe('MovieActionsToolbar', () => {
     render(<MovieActionsToolbar {...handlers} />);
 
     expect(screen.getByRole('button', { name: /Refresh/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Search Movie/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Manual Search/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Auto-Search/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Interactive Search/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Preview Rename/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Manage Files/i })).toBeInTheDocument();

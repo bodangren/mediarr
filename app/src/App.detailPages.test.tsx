@@ -31,6 +31,7 @@ const mockApi = vi.hoisted(() => ({
     remove: vi.fn(),
     getRootFolders: vi.fn(),
     searchReleases: vi.fn(),
+    getTmdbCollection: vi.fn().mockResolvedValue({ collection: null }),
   },
   seriesApi: {
     getSeriesWithEpisodes: vi.fn(),
@@ -293,7 +294,7 @@ describe('Phase 3 — Detail Pages', () => {
       fireEvent.click(removeButton);
 
       await waitFor(() => {
-        expect(mockApi.mediaApi.deleteMovie).toHaveBeenCalledWith(7);
+        expect(mockApi.mediaApi.deleteMovie).toHaveBeenCalledWith(7, true);
       });
     });
 
@@ -368,18 +369,11 @@ describe('Phase 3 — Detail Pages', () => {
       });
     });
 
-    it('expands season to show episodes when clicked', async () => {
+    it('shows episodes immediately without needing to expand season', async () => {
       renderApp('/library/tv/42');
       await waitFor(() => expect(screen.getByText(/Season 1/)).toBeInTheDocument());
 
-      // Episodes should not be visible initially
-      expect(screen.queryByText('Pilot')).not.toBeInTheDocument();
-
-      // Click on Season 1 to expand
-      const season1Row = screen.getByRole('button', { name: /expand season 1/i });
-      fireEvent.click(season1Row);
-
-      // Episodes should now be visible
+      // Episodes should be visible initially
       expect(screen.getByText('Pilot')).toBeInTheDocument();
       expect(screen.getByText("Cat's in the Bag")).toBeInTheDocument();
     });
@@ -389,11 +383,6 @@ describe('Phase 3 — Detail Pages', () => {
       renderApp('/library/tv/42');
 
       await waitFor(() => expect(screen.getByText(/Season 1/)).toBeInTheDocument());
-
-      // Expand season 1
-      const season1ExpandButton = screen.getByRole('button', { name: /expand season 1/i });
-      fireEvent.click(season1ExpandButton);
-
       await waitFor(() => expect(screen.getByText('Pilot')).toBeInTheDocument());
 
       const episodeToggle = screen.getByRole('checkbox', { name: /S01E01.*monitored/i });
@@ -425,7 +414,7 @@ describe('Phase 3 — Detail Pages', () => {
       fireEvent.click(removeButton);
 
       await waitFor(() => {
-        expect(mockApi.mediaApi.deleteSeries).toHaveBeenCalledWith(42);
+        expect(mockApi.mediaApi.deleteSeries).toHaveBeenCalledWith(42, true);
       });
     });
 
@@ -463,10 +452,6 @@ describe('Phase 3 — Detail Pages', () => {
     it('Search Episode button opens SeriesInteractiveSearchModal at Episode level', async () => {
       renderApp('/library/tv/42');
       await waitFor(() => expect(screen.getByText(/Season 1/)).toBeInTheDocument());
-
-      // Expand season 1 to reveal episodes
-      const season1ExpandButton = screen.getByRole('button', { name: /expand season 1/i });
-      fireEvent.click(season1ExpandButton);
       await waitFor(() => expect(screen.getByText('Pilot')).toBeInTheDocument());
 
       const searchEpisodeBtn = screen.getByRole('button', { name: /search S01E01/i });

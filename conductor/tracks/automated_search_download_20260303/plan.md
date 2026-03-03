@@ -35,13 +35,13 @@
     - [x] Sub-task: Hook into the "Movie Added" / "Series Added" events to trigger automated search on-add.
 - [x] Task: Conductor - User Manual Verification 'Phase 3: Scheduler and Event Wiring' (Protocol in workflow.md)
 
-## Phase 4: Frontend Integration
+## Phase 4: Frontend Integration [checkpoint: cae746d]
 > Goal: Provide UI triggers for automated searches.
 
-- [~] Task: Media Detail UI
-    - [ ] Sub-task: Add "Auto-Search" button to `MovieActionsToolbar` and Series detail page.
-- [~] Task: Dashboard UI
-    - [ ] Sub-task: Add "Search Missing" button to the Dashboard/Overview.
-- [~] Task: Activity Logs
-    - [ ] Sub-task: Ensure automated grab attempts (successful or skipped) are visible in the Activity History.
-- [ ] Task: Conductor - User Manual Verification 'Phase 4: Frontend Integration' (Protocol in workflow.md)
+- [x] Task: Media Detail UI
+    - [x] Sub-task: Add "Auto-Search" button to `MovieActionsToolbar` and Series detail page.
+- [x] Task: Dashboard UI
+    - [x] Sub-task: Add "Search Missing" button to the Dashboard/Overview.
+- [x] Task: Activity Logs
+    - [x] Sub-task: Ensure automated grab attempts (successful or skipped) are visible in the Activity History.
+- [x] Task: Conductor - User Manual Verification 'Phase 4: Frontend Integration' (Protocol in workflow.md)

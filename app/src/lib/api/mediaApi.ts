@@ -322,6 +322,17 @@ export function createMediaApi(client: ApiHttpClient) {
       );
     },
 
+    triggerAutoSearch(id: number, type: 'movie' | 'episode' | 'series'): Promise<any> {
+      return client.request(
+        {
+          path: `/api/media/${id}/auto-search`,
+          method: 'POST',
+          body: { type },
+        },
+        z.any(),
+      );
+    },
+
     // Monitoring API (Season Pass)
     applySeriesMonitoring(
       seriesId: number,

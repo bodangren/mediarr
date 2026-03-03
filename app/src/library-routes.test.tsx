@@ -7,6 +7,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { ToastProvider } from '@/components/providers/ToastProvider';
 
 const mockApi = vi.hoisted(() => ({
   mediaApi: {
@@ -21,6 +22,7 @@ const mockApi = vi.hoisted(() => ({
     getById: vi.fn(),
     getRootFolders: vi.fn(),
     searchReleases: vi.fn(),
+    getTmdbCollection: vi.fn().mockResolvedValue({ collection: null }),
   },
   seriesApi: {
     getSeriesWithEpisodes: vi.fn(),
@@ -118,7 +120,9 @@ const baseSettings = {
 function renderApp(route: string) {
   return render(
     <MemoryRouter initialEntries={[route]}>
-      <App />
+      <ToastProvider>
+        <App />
+      </ToastProvider>
     </MemoryRouter>,
   );
 }
@@ -174,7 +178,7 @@ describe('Library list and detail route integration', () => {
       renderApp('/library/movies');
 
       await waitFor(() => {
-        expect(mockApi.mediaApi.listMovies).toHaveBeenCalledWith({ page: 1, pageSize: 200 });
+        expect(mockApi.mediaApi.listMovies).toHaveBeenCalledWith({ page: 1, pageSize: 10000 });
       });
     });
 
@@ -238,17 +242,19 @@ describe('Library list and detail route integration', () => {
     });
 
     it('calls deleteMovie when delete is triggered', async () => {
+      window.confirm = vi.fn(() => true);
       renderApp('/library/movies');
 
       await screen.findByTestId('movie-1');
       fireEvent.click(screen.getByRole('button', { name: 'Delete 1' }));
 
       await waitFor(() => {
-        expect(mockApi.mediaApi.deleteMovie).toHaveBeenCalledWith(1);
+        expect(mockApi.mediaApi.deleteMovie).toHaveBeenCalledWith(1, true);
       });
     });
 
     it('reloads movies after delete', async () => {
+      window.confirm = vi.fn(() => true);
       renderApp('/library/movies');
 
       await screen.findByTestId('movie-1');
@@ -267,7 +273,7 @@ describe('Library list and detail route integration', () => {
       renderApp('/library/tv');
 
       await waitFor(() => {
-        expect(mockApi.mediaApi.listSeries).toHaveBeenCalledWith({ page: 1, pageSize: 200 });
+        expect(mockApi.mediaApi.listSeries).toHaveBeenCalledWith({ page: 1, pageSize: 10000 });
       });
     });
 
@@ -329,17 +335,19 @@ describe('Library list and detail route integration', () => {
     });
 
     it('calls deleteSeries when delete is triggered', async () => {
+      window.confirm = vi.fn(() => true);
       renderApp('/library/tv');
 
       await screen.findByTestId('series-10');
       fireEvent.click(screen.getByRole('button', { name: 'Delete 10' }));
 
       await waitFor(() => {
-        expect(mockApi.mediaApi.deleteSeries).toHaveBeenCalledWith(10);
+        expect(mockApi.mediaApi.deleteSeries).toHaveBeenCalledWith(10, true);
       });
     });
 
     it('reloads series after delete', async () => {
+      window.confirm = vi.fn(() => true);
       renderApp('/library/tv');
 
       await screen.findByTestId('series-10');
@@ -372,9 +380,11 @@ describe('Library list and detail route integration', () => {
     it('shows year, status and monitored state', async () => {
       renderApp('/library/movies/7');
 
-      expect(await screen.findByText(/Year: 2024/)).toBeInTheDocument();
-      expect(screen.getByText(/Status: released/)).toBeInTheDocument();
-      expect(screen.getByText(/Monitored: Yes/)).toBeInTheDocument();
+      expect(await screen.findByText('2024')).toBeInTheDocument();
+      expect(screen.getByText(/released/i)).toBeInTheDocument();
+      // The monitored state is indicated by the checkbox being checked
+      const toggle = screen.getByRole('checkbox', { name: /Monitored/i });
+      expect(toggle).toBeChecked();
     });
 
     it('shows movie overview text', async () => {
@@ -426,8 +436,8 @@ describe('Library list and detail route integration', () => {
     it('shows season and episode counts', async () => {
       renderApp('/library/tv/42');
 
-      expect(await screen.findByText(/Seasons: 1/)).toBeInTheDocument();
-      expect(screen.getByText(/Episodes: 1/)).toBeInTheDocument();
+      expect(await screen.findByText(/Season 1/)).toBeInTheDocument();
+      expect(screen.getByText(/1 episodes/i)).toBeInTheDocument();
     });
 
     it('shows error when getSeriesWithEpisodes API fails', async () => {
@@ -448,7 +458,7 @@ describe('Library list and detail route integration', () => {
     it('renders Interactive Search button when series is loaded', async () => {
       renderApp('/library/tv/42');
 
-      expect(await screen.findByRole('button', { name: 'Interactive Search' })).toBeInTheDocument();
+      expect(await screen.findByRole('button', { name: 'Search' })).toBeInTheDocument();
     });
   });
 

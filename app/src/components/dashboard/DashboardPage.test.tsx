@@ -132,11 +132,16 @@ describe('DashboardPage', () => {
     expect(mockApi.torrentApi.list).toHaveBeenCalledWith({ page: 1, pageSize: 50 });
   });
 
-  it('handles loading states for all widgets', () => {
+  it('handles loading states for all widgets', async () => {
     renderPage();
 
     const loadingMessages = screen.getAllByText('Loading...');
     expect(loadingMessages.length).toBe(4);
+
+    // Wait for loading to finish to avoid act() warnings from state updates
+    await waitFor(() => {
+      expect(screen.queryAllByText('Loading...').length).toBe(0);
+    });
   });
 
   it('handles API errors gracefully', async () => {

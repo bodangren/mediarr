@@ -53,6 +53,8 @@ import {
 import { SubtitleNamingService } from './services/SubtitleNamingService';
 import { SubtitleProviderFactory } from './services/SubtitleProviderFactory';
 import { WantedService } from './services/WantedService';
+import { WantedSearchService } from './services/WantedSearchService';
+import { RssMediaMonitor } from './services/RssMediaMonitor';
 
 function parsePort(rawPort: string | undefined, fallback: number): number {
   if (!rawPort) {
@@ -494,6 +496,11 @@ async function startApi(): Promise<void> {
   );
   const mediaSearchService = searchAggregationService;
   const wantedService = new WantedService(prisma);
+  const wantedSearchService = new WantedSearchService(mediaSearchService, prisma, activityEventEmitter);
+
+  // Initialize background automation services
+  new RssMediaMonitor(rssSyncService, torrentManager, prisma, metadataProvider, customFormatRepository);
+  scheduler.scheduleWantedSearch(wantedSearchService);
 
 
   const app = createApiServer({
@@ -502,6 +509,7 @@ async function startApi(): Promise<void> {
     mediaSearchService,
     searchAggregationService,
     wantedService,
+    wantedSearchService,
     torrentManager,
     importManager,
     indexerRepository,

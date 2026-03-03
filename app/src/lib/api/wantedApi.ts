@@ -42,6 +42,16 @@ export type CutoffUnmetMovie = z.infer<typeof cutoffUnmetMovieSchema>;
 
 export function createWantedApi(client: ApiHttpClient) {
   return {
+    triggerAutoSearchAll(): Promise<{ message: string }> {
+      return client.request(
+        {
+          path: '/api/wanted/search-all',
+          method: 'POST',
+        },
+        z.object({ message: z.string() }).passthrough(),
+      );
+    },
+
     listMissingMovies(query: MissingMoviesQuery = {}): Promise<PaginatedResult<MissingMovie>> {
       return client.requestPaginated(
         {

@@ -271,6 +271,9 @@ export class ImportManager {
       }
 
       if (parsed && seriesTitle) {
+        // Strip a trailing year that release groups embed before the episode marker
+        // e.g. "Archer 2009" from "Archer.2009.S09E05..." → "Archer"
+        seriesTitle = seriesTitle.replace(/\s+(19|20)\d{2}$/, '').trim() || seriesTitle;
         const cleanSearchTitle = seriesTitle.toLowerCase().replace(/[^\w]/g, '');
         const series = await this.prisma.series.findFirst({
           where: {

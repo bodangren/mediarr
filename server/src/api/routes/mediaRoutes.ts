@@ -345,6 +345,61 @@ export function registerMediaRoutes(
     return sendSuccess(reply, created, 201);
   }
 
+  app.post('/api/wanted/search-all', async (request, reply) => {
+    if (!deps.wantedSearchService?.autoSearchAll) {
+      throw new InternalError('Wanted search service is not available');
+    }
+    
+    // Fire and forget, don't wait for completion
+    void deps.wantedSearchService.autoSearchAll();
+    
+    return sendSuccess(reply, { message: 'Background search triggered for all wanted media' });
+  });
+
+  app.post('/api/media/:id/auto-search', {
+    schema: {
+      params: {
+        type: 'object',
+        required: ['id'],
+        properties: {
+          id: { type: ['number', 'string'] },
+        },
+      },
+      body: {
+        type: 'object',
+        required: ['type'],
+        properties: {
+          type: { type: 'string', enum: ['movie', 'episode'] },
+        },
+      },
+    },
+  }, async (request, reply) => {
+    if (!deps.wantedSearchService?.autoSearchMovie || !deps.wantedSearchService?.autoSearchEpisode) {
+      throw new InternalError('Wanted search service is not available');
+    }
+
+    const { id } = request.params as { id: string | number };
+    const { type } = request.body as { type: 'movie' | 'episode' };
+    const numericId = typeof id === 'string' ? parseInt(id, 10) : id;
+
+    if (isNaN(numericId)) {
+      throw new ValidationError('Invalid ID');
+    }
+
+    let result;
+    if (type === 'movie') {
+      result = await deps.wantedSearchService.autoSearchMovie(numericId);
+    } else {
+      result = await deps.wantedSearchService.autoSearchEpisode(numericId);
+    }
+
+    if (!result.success) {
+      return reply.status(404).send({ success: false, error: result.reason });
+    }
+
+    return sendSuccess(reply, result);
+  });
+
   app.post('/api/media', {
     schema: {
       body: {

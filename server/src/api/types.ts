@@ -13,6 +13,7 @@ import type { MediaService } from '../services/MediaService';
 import type { MediaSearchService } from '../services/MediaSearchService';
 import type { SearchAggregationService } from '../services/SearchAggregationService';
 import type { WantedService } from '../services/WantedService';
+import type { WantedSearchService } from '../services/WantedSearchService';
 import type { TorrentManager } from '../services/TorrentManager';
 import type { SettingsService } from '../services/SettingsService';
 import type { SubtitleInventoryApiService } from '../services/SubtitleInventoryApiService';
@@ -38,6 +39,7 @@ export interface ApiDependencies {
   >;
   searchAggregationService?: Pick<SearchAggregationService, 'searchAllIndexers'>;
   wantedService?: Pick<WantedService, 'getMissingEpisodes'>;
+  wantedSearchService?: Pick<WantedSearchService, 'autoSearchMovie' | 'autoSearchEpisode' | 'autoSearchAll'>;
   torrentManager?: Pick<
     TorrentManager,
     | 'addTorrent'

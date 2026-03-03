@@ -168,3 +168,101 @@ describe('POST /api/wanted — TV series episode population', () => {
     consoleSpy.mockRestore();
   });
 });
+
+describe('POST /api/wanted/search-all', () => {
+  it('triggers autoSearchAll in the background and returns 200 immediately', async () => {
+    const autoSearchAll = vi.fn().mockResolvedValue(undefined);
+    const deps: ApiDependencies = {
+      prisma: {} as any,
+      wantedSearchService: {
+        autoSearchAll,
+        autoSearchMovie: vi.fn(),
+        autoSearchEpisode: vi.fn(),
+      }
+    };
+
+    const app = buildApp(deps);
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/wanted/search-all',
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(autoSearchAll).toHaveBeenCalled();
+  });
+});
+
+describe('POST /api/media/:id/auto-search', () => {
+  it('calls autoSearchMovie for type=movie and returns the result', async () => {
+    const autoSearchMovie = vi.fn().mockResolvedValue({ success: true, release: { title: 'Movie.Release' } });
+    const deps: ApiDependencies = {
+      prisma: {} as any,
+      wantedSearchService: {
+        autoSearchAll: vi.fn(),
+        autoSearchMovie,
+        autoSearchEpisode: vi.fn(),
+      }
+    };
+
+    const app = buildApp(deps);
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/media/123/auto-search',
+      payload: { type: 'movie' },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(autoSearchMovie).toHaveBeenCalledWith(123);
+    const body = JSON.parse(response.body);
+    expect(body.data.release.title).toBe('Movie.Release');
+  });
+
+  it('calls autoSearchEpisode for type=episode and returns the result', async () => {
+    const autoSearchEpisode = vi.fn().mockResolvedValue({ success: true, release: { title: 'Episode.Release' } });
+    const deps: ApiDependencies = {
+      prisma: {} as any,
+      wantedSearchService: {
+        autoSearchAll: vi.fn(),
+        autoSearchMovie: vi.fn(),
+        autoSearchEpisode,
+      }
+    };
+
+    const app = buildApp(deps);
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/media/456/auto-search',
+      payload: { type: 'episode' },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(autoSearchEpisode).toHaveBeenCalledWith(456);
+  });
+
+  it('returns 404 when auto-search returns success=false', async () => {
+    const autoSearchMovie = vi.fn().mockResolvedValue({ success: false, reason: 'No candidates' });
+    const deps: ApiDependencies = {
+      prisma: {} as any,
+      wantedSearchService: {
+        autoSearchAll: vi.fn(),
+        autoSearchMovie,
+        autoSearchEpisode: vi.fn(),
+      }
+    };
+
+    const app = buildApp(deps);
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/media/123/auto-search',
+      payload: { type: 'movie' },
+    });
+
+    expect(response.statusCode).toBe(404);
+    const body = JSON.parse(response.body);
+    expect(body.error).toBe('No candidates');
+  });
+});

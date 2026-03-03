@@ -152,6 +152,60 @@ export class WantedSearchService {
   }
 
   /**
+   * Triggers an automated search for all missing wanted media in the background.
+   */
+  async autoSearchAll(): Promise<void> {
+    this.activityEventEmitter.emit({
+      eventType: 'SEARCH_EXECUTED',
+      sourceModule: 'wanted-search-service',
+      summary: 'Started background automated search for all missing media',
+      success: true,
+      details: {},
+      occurredAt: new Date(),
+    }).catch(console.error);
+
+    // Fire and forget background process
+    Promise.resolve().then(async () => {
+      try {
+        // Search missing movies
+        const wantedMovies = await this.prisma.movie.findMany({
+          where: { monitored: true, path: null },
+          select: { id: true },
+        });
+
+        for (const movie of wantedMovies) {
+          await this.autoSearchMovie(movie.id);
+          // Small delay to prevent hammering indexers
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+
+        // Search missing episodes
+        const wantedEpisodes = await this.prisma.episode.findMany({
+          where: { monitored: true, path: null },
+          select: { id: true },
+        });
+
+        for (const episode of wantedEpisodes) {
+          await this.autoSearchEpisode(episode.id);
+          // Small delay to prevent hammering indexers
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+
+        await this.activityEventEmitter.emit({
+          eventType: 'SEARCH_EXECUTED',
+          sourceModule: 'wanted-search-service',
+          summary: 'Completed background automated search for all missing media',
+          success: true,
+          details: { moviesSearched: wantedMovies.length, episodesSearched: wantedEpisodes.length },
+          occurredAt: new Date(),
+        });
+      } catch (err) {
+        console.error('Failed during autoSearchAll', err);
+      }
+    });
+  }
+
+  /**
    * Helper to log skipped automated searches
    */
   private async logAndReturnSkip(mediaId: number, type: 'movie' | 'episode', title: string, reason: string): Promise<AutoSearchResult> {

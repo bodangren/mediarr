@@ -1,14 +1,18 @@
 import { Parser } from '../utils/Parser';
+import { CustomFormatScoringEngine } from './CustomFormatScoringEngine';
 
 /**
  * Service that monitors RSS releases and triggers downloads for wanted TV and movie media.
  */
 export class RssMediaMonitor {
+  private readonly AUTO_GRAB_THRESHOLD = 50;
+
   constructor(
     private readonly rssSyncService: any,
     private readonly torrentManager: any,
     private readonly prisma: any,
-    private readonly metadataProvider: any = null
+    private readonly metadataProvider: any = null,
+    private readonly customFormatRepository: any = null
   ) {
     this.rssSyncService.on('release:stored', (release: any) => {
       this.handleNewRelease(release).catch(err => {
@@ -17,7 +21,7 @@ export class RssMediaMonitor {
     });
   }
 
-  private async handleNewRelease(release: { title: string; magnetUrl?: string }): Promise<void> {
+  private async handleNewRelease(release: { title: string; magnetUrl?: string; seeders?: number; size?: number; indexerId?: number; protocol?: string; indexerFlags?: string }): Promise<void> {
     if (!release.magnetUrl) return;
 
     const tvMatched = await this.handleTvRelease(release);
@@ -28,7 +32,26 @@ export class RssMediaMonitor {
     await this.handleMovieRelease(release);
   }
 
-  private async handleTvRelease(release: { title: string; magnetUrl: string }): Promise<boolean> {
+  private async getFormatScores(qualityProfileId: number | null) {
+    if (!qualityProfileId || !this.customFormatRepository) return [];
+    try {
+      return await this.customFormatRepository.findByQualityProfileId(qualityProfileId);
+    } catch {
+      return [];
+    }
+  }
+
+  private async getIndexerPriority(indexerId?: number): Promise<number> {
+    if (!indexerId) return 0;
+    try {
+      const indexer = await this.prisma.indexer.findUnique({ where: { id: indexerId } });
+      return indexer?.priority || 0;
+    } catch {
+      return 0;
+    }
+  }
+
+  private async handleTvRelease(release: { title: string; magnetUrl: string; seeders?: number; indexerId?: number }): Promise<boolean> {
     const parsed = Parser.parse(release.title);
     if (!(parsed && parsed.seriesTitle)) {
       return false;
@@ -62,12 +85,29 @@ export class RssMediaMonitor {
       return false;
     }
 
-    console.log(`RssMediaMonitor: Grabbing ${release.title} for ${series.title}`);
+    // Score the release
+    const engine = new CustomFormatScoringEngine();
+    const formatScores = await this.getFormatScores(series.qualityProfileId);
+    const indexerPriority = await this.getIndexerPriority(release.indexerId);
+
+    const scoringResult = engine.scoreCandidateUnified(
+      { title: release.title, seeders: release.seeders },
+      formatScores,
+      { title: series.title, season: episode.seasonNumber, episode: episode.episodeNumber },
+      indexerPriority
+    );
+
+    if (scoringResult.totalScore < this.AUTO_GRAB_THRESHOLD) {
+      console.log(`RssMediaMonitor: Skipped ${release.title} for ${series.title} (score ${scoringResult.totalScore} < ${this.AUTO_GRAB_THRESHOLD})`);
+      return true; // We matched it, but rejected it based on score
+    }
+
+    console.log(`RssMediaMonitor: Grabbing ${release.title} for ${series.title} (score ${scoringResult.totalScore})`);
     await this.torrentManager.addTorrent({ magnetUrl: release.magnetUrl });
     return true;
   }
 
-  private async handleMovieRelease(release: { title: string; magnetUrl: string }): Promise<void> {
+  private async handleMovieRelease(release: { title: string; magnetUrl: string; seeders?: number; indexerId?: number }): Promise<void> {
     const parsed = this.parseMovieTitle(release.title);
     if (!parsed) {
       return;
@@ -95,7 +135,24 @@ export class RssMediaMonitor {
       return;
     }
 
-    console.log(`RssMediaMonitor: Grabbing ${release.title} for ${movie.title}`);
+    // Score the release
+    const engine = new CustomFormatScoringEngine();
+    const formatScores = await this.getFormatScores(movie.qualityProfileId);
+    const indexerPriority = await this.getIndexerPriority(release.indexerId);
+
+    const scoringResult = engine.scoreCandidateUnified(
+      { title: release.title, seeders: release.seeders },
+      formatScores,
+      { title: movie.title, year: movie.year },
+      indexerPriority
+    );
+
+    if (scoringResult.totalScore < this.AUTO_GRAB_THRESHOLD) {
+      console.log(`RssMediaMonitor: Skipped ${release.title} for ${movie.title} (score ${scoringResult.totalScore} < ${this.AUTO_GRAB_THRESHOLD})`);
+      return;
+    }
+
+    console.log(`RssMediaMonitor: Grabbing ${release.title} for ${movie.title} (score ${scoringResult.totalScore})`);
     await this.torrentManager.addTorrent({ magnetUrl: release.magnetUrl });
   }
 

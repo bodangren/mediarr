@@ -33,7 +33,7 @@ Subtitle Management (New)
 
 ## Active Tracks
 
-- [~] **Track: Automated Search and Download** *Phases: 4 | Link: [./tracks/automated_search_download_20260303/](./tracks/automated_search_download_20260303/)*
+- [x] **Track: Automated Search and Download** *Phases: 4 | Link: [./tracks/automated_search_download_20260303/](./tracks/automated_search_download_20260303/)*
 - [ ] **Track: Subtitle Management** *Phases: 3 | Link: [./tracks/subtitle_management_20260303/](./tracks/subtitle_management_20260303/)*
 
 ---

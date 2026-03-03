@@ -300,13 +300,14 @@ export class WantedSearchService {
    * Returns true if a pack was grabbed.
    */
   private async tryGrabSeriesPack(
-    series: { id: number; title: string; qualityProfileId: number },
+    series: { id: number; title: string; tvdbId: number | null; qualityProfileId: number },
   ): Promise<boolean> {
     try {
       const searchResult = await this.mediaSearchService.searchAllIndexers({
         query: series.title,
         type: 'tvsearch',
         qualityProfileId: series.qualityProfileId,
+        ...(series.tvdbId ? { tvdbId: series.tvdbId } : {}),
       });
 
       // Exclude individual episodes, single-season packs, and unrelated titles.
@@ -343,17 +344,34 @@ export class WantedSearchService {
 
   /**
    * Returns true when a release title plausibly belongs to the given series.
-   * Normalises both strings (lowercase, collapse non-alphanumeric to spaces)
-   * and checks that the release starts with the series title — allowing for
-   * extra tokens like quality tags, group names, or pack labels after the title.
+   *
+   * Strategy:
+   *  1. Filter out unrendered template syntax (e.g. YTS Cardigann rendering bugs).
+   *  2. Normalise both strings: lowercase, collapse non-alphanumeric to spaces.
+   *  3. Build candidate variants of the series title by stripping a trailing year
+   *     and/or a leading article (The, A, An) so that e.g. "The Sopranos" also
+   *     matches releases titled "Sopranos Complete Series…".
+   *  4. Require the normalised release title to START WITH one of these variants
+   *     so that the series name appears at the beginning, not buried inside
+   *     (e.g. "Wise Guy David Chase and the Sopranos" is correctly rejected).
    */
   private titlesMatch(releaseTitle: string, seriesTitle: string): boolean {
+    // Reject unrendered Cardigann template syntax (indexer-side rendering bug)
+    if (releaseTitle.includes('{{') || releaseTitle.includes('}}')) return false;
+
     const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+    const stripArticle = (s: string) => s.replace(/^(the|a|an) /, '');
+
     const normRelease = norm(releaseTitle);
-    const normSeries = norm(seriesTitle);
-    // Strip a trailing year from the series title so "Archer (2009)" → "archer"
-    const normSeriesNoYear = normSeries.replace(/\s+(19|20)\d{2}$/, '').trim();
-    return normRelease.startsWith(normSeries) || normRelease.startsWith(normSeriesNoYear);
+    const base = norm(seriesTitle);
+    const baseNoYear = base.replace(/ (19|20)\d{2}$/, '').trim();
+
+    // Build unique non-empty variants: with/without year, with/without leading article
+    const variants = [...new Set(
+      [base, baseNoYear].flatMap(v => [v, stripArticle(v)]).filter(Boolean)
+    )];
+
+    return variants.some(v => normRelease.startsWith(v));
   }
 
   /**
@@ -374,7 +392,7 @@ export class WantedSearchService {
    * Returns true if a pack was grabbed.
    */
   private async tryGrabSeasonPack(
-    series: { id: number; title: string; qualityProfileId: number },
+    series: { id: number; title: string; tvdbId: number | null; qualityProfileId: number },
     seasonNumber: number,
   ): Promise<boolean> {
     const seasonLabel = `S${String(seasonNumber).padStart(2, '0')}`;
@@ -384,6 +402,7 @@ export class WantedSearchService {
         season: seasonNumber,
         type: 'tvsearch',
         qualityProfileId: series.qualityProfileId,
+        ...(series.tvdbId ? { tvdbId: series.tvdbId } : {}),
       });
 
       // Exclude individual episodes and unrelated titles.

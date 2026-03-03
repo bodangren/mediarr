@@ -27,6 +27,7 @@ export interface SearchQuery {
   ep?: number;
   imdbid?: string;
   tmdbid?: number | string;
+  tvdbid?: number;
 }
 
 /**
@@ -120,6 +121,9 @@ export class TorznabIndexer extends BaseIndexer {
     }
     if (query.imdbid) {
       params.set('imdbid', query.imdbid.replace(/^tt/, ''));
+    }
+    if (query.tvdbid !== undefined) {
+      params.set('tvdbid', String(query.tvdbid));
     }
 
     return `${this.apiUrl}/api?${params.toString()}`;

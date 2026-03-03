@@ -329,6 +329,10 @@ function toSearchQuery(params: SearchParams): SearchQuery {
     query.tmdbid = params.tmdbId;
   }
 
+  if (params.tvdbId !== undefined) {
+    query.tvdbid = params.tvdbId;
+  }
+
   // Build query string from title/year if not provided
   if (!query.q && params.title) {
     let q = params.title;

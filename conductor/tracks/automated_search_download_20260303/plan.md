@@ -1,6 +1,6 @@
 # Implementation Plan: Automated Search and Download
 
-## Phase 1: Scoring Engine and Candidate Ranking
+## Phase 1: Scoring Engine and Candidate Ranking [checkpoint: fe8369d]
 > Goal: Enhance the current scoring engine to support a holistic "Best Candidate" selection process.
 
 - [x] Task: Extend `CustomFormatScoringEngine` with Confidence and Indexer Score [1071b8a]
@@ -10,7 +10,7 @@
 - [x] Task: Update `MediaSearchService.searchAllIndexers` [1071b8a]
     - [x] Sub-task: Ensure the updated scoring is applied to all results and sorted accordingly.
 - [x] Task: Write unit tests for the enhanced scoring engine and search aggregation. [1071b8a]
-- [ ] Task: Conductor - User Manual Verification 'Phase 1: Scoring Engine' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 1: Scoring Engine' (Protocol in workflow.md)
 
 ## Phase 2: Automated Search Backend
 > Goal: Implement the backend logic to identify missing media and trigger automated downloads.

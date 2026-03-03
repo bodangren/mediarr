@@ -99,6 +99,7 @@ export function registerCollectionRoutes(
             overview: true,
             status: true,
             monitored: true,
+            posterUrl: true,
             fileVariants: {
               select: {
                 quality: true,
@@ -123,6 +124,7 @@ export function registerCollectionRoutes(
       overview: movie.overview,
       status: movie.status,
       monitored: movie.monitored,
+      posterUrl: movie.posterUrl ?? null,
       inLibrary: movie.fileVariants.length > 0,
       quality: movie.fileVariants[0]?.quality ?? null,
     }));

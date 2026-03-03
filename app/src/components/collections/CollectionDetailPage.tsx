@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getApiClients } from '@/lib/api/client';
 import { queryKeys } from '@/lib/query/queryKeys';
@@ -114,9 +114,10 @@ export function CollectionDetailPage() {
       {/* Movie List */}
       <div className="flex flex-col gap-1 p-6">
         {(collection.movies ?? []).map(movie => (
-          <div
+          <Link
             key={movie.id}
-            className="flex items-center gap-3 rounded-md border border-border-subtle bg-surface-1 p-3"
+            to={`/library/movies/${movie.id}`}
+            className="flex items-center gap-3 rounded-md border border-border-subtle bg-surface-1 p-3 hover:bg-surface-2 transition-colors"
           >
             {movie.posterUrl ? (
               <img
@@ -143,7 +144,7 @@ export function CollectionDetailPage() {
             >
               {movie.inLibrary ? 'In Library' : 'Missing'}
             </span>
-          </div>
+          </Link>
         ))}
       </div>
     </div>

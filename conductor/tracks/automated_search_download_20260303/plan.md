@@ -26,22 +26,22 @@
     - [x] Sub-task: `POST /api/media/:id/auto-search` — trigger an automated search for a specific item.
 - [x] Task: Conductor - User Manual Verification 'Phase 2: Automated Search Backend' (Protocol in workflow.md)
 
-## Phase 3: Scheduler and Event Wiring
+## Phase 3: Scheduler and Event Wiring [checkpoint: 013fd9b]
 > Goal: Wire automation into background tasks and existing media events.
 
-- [~] Task: Background Scheduler Wiring
-    - [ ] Sub-task: Add a scheduled job in `Scheduler.ts` for periodic "Wanted Search".
-- [ ] Task: Event Triggers
-    - [ ] Sub-task: Hook into the "Movie Added" / "Series Added" events to trigger automated search on-add.
-- [ ] Task: Conductor - User Manual Verification 'Phase 3: Scheduler and Event Wiring' (Protocol in workflow.md)
+- [x] Task: Background Scheduler Wiring [cda8d3b]
+    - [x] Sub-task: Add a scheduled job in `Scheduler.ts` for periodic "Wanted Search".
+- [x] Task: Event Triggers [cda8d3b]
+    - [x] Sub-task: Hook into the "Movie Added" / "Series Added" events to trigger automated search on-add.
+- [x] Task: Conductor - User Manual Verification 'Phase 3: Scheduler and Event Wiring' (Protocol in workflow.md)
 
 ## Phase 4: Frontend Integration
 > Goal: Provide UI triggers for automated searches.
 
-- [ ] Task: Media Detail UI
+- [~] Task: Media Detail UI
     - [ ] Sub-task: Add "Auto-Search" button to `MovieActionsToolbar` and Series detail page.
-- [ ] Task: Dashboard UI
+- [~] Task: Dashboard UI
     - [ ] Sub-task: Add "Search Missing" button to the Dashboard/Overview.
-- [ ] Task: Activity Logs
+- [~] Task: Activity Logs
     - [ ] Sub-task: Ensure automated grab attempts (successful or skipped) are visible in the Activity History.
 - [ ] Task: Conductor - User Manual Verification 'Phase 4: Frontend Integration' (Protocol in workflow.md)

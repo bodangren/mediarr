@@ -152,12 +152,36 @@ export class ImportManager {
       const parsed = Parser.parse(filename);
 
       // ── Try episode import ──────────────────────────────────────────────
-      if (parsed?.seriesTitle) {
+      let seriesTitle = parsed?.seriesTitle;
+
+      if (parsed && !seriesTitle) {
+        const torrentParsed = Parser.parse(torrent.name);
+        if (torrentParsed?.seriesTitle) {
+          seriesTitle = torrentParsed.seriesTitle;
+        } else {
+          let dirTitle = Parser.parseDirectory(torrent.name)?.title || torrent.name;
+          
+          const seasonMatch = dirTitle.match(/(?:S\d{1,2}|Season\s*\d{1,2})\b/i);
+          if (seasonMatch && seasonMatch.index !== undefined && seasonMatch.index > 0) {
+             dirTitle = dirTitle.substring(0, seasonMatch.index);
+          }
+          
+          const qualityMatch = dirTitle.search(/\d{3,4}p|BluRay|WEB|HDTV/i);
+          if (qualityMatch > 0) {
+             dirTitle = dirTitle.substring(0, qualityMatch);
+          }
+          
+          seriesTitle = dirTitle.replace(/[._\- ]+$/, '').replace(/[._]/g, ' ').trim();
+        }
+      }
+
+      if (parsed && seriesTitle) {
+        const cleanSearchTitle = seriesTitle.toLowerCase().replace(/[^\w]/g, '');
         const series = await this.prisma.series.findFirst({
           where: {
             OR: [
-              { title: { contains: parsed.seriesTitle } },
-              { cleanTitle: { contains: parsed.seriesTitle.toLowerCase().replace(/\s/g, '') } },
+              { title: { contains: seriesTitle } },
+              { cleanTitle: { contains: cleanSearchTitle } },
             ],
           },
         });

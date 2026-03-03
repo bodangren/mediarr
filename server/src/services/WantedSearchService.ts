@@ -309,13 +309,14 @@ export class WantedSearchService {
         qualityProfileId: series.qualityProfileId,
       });
 
-      // Exclude individual episodes AND single-season packs.
+      // Exclude individual episodes, single-season packs, and unrelated titles.
       // A season pack like "The.Sopranos.S01.Complete" has no episode number so
       // Parser.parse returns null — we must also check for a lone season marker.
       const candidates = searchResult.releases.filter(r => {
         const parsed = Parser.parse(r.title);
         if (parsed && parsed.episodeNumbers.length > 0) return false; // individual episode
         if (this.isSingleSeasonPack(r.title)) return false; // single-season pack
+        if (!this.titlesMatch(r.title, series.title)) return false; // unrelated release
         return true;
       });
 
@@ -338,6 +339,21 @@ export class WantedSearchService {
     } catch {
       return false;
     }
+  }
+
+  /**
+   * Returns true when a release title plausibly belongs to the given series.
+   * Normalises both strings (lowercase, collapse non-alphanumeric to spaces)
+   * and checks that the release starts with the series title — allowing for
+   * extra tokens like quality tags, group names, or pack labels after the title.
+   */
+  private titlesMatch(releaseTitle: string, seriesTitle: string): boolean {
+    const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+    const normRelease = norm(releaseTitle);
+    const normSeries = norm(seriesTitle);
+    // Strip a trailing year from the series title so "Archer (2009)" → "archer"
+    const normSeriesNoYear = normSeries.replace(/\s+(19|20)\d{2}$/, '').trim();
+    return normRelease.startsWith(normSeries) || normRelease.startsWith(normSeriesNoYear);
   }
 
   /**
@@ -370,10 +386,12 @@ export class WantedSearchService {
         qualityProfileId: series.qualityProfileId,
       });
 
-      // Exclude individual episode results
+      // Exclude individual episodes and unrelated titles.
       const candidates = searchResult.releases.filter(r => {
         const parsed = Parser.parse(r.title);
-        return !(parsed && parsed.episodeNumbers.length > 0);
+        if (parsed && parsed.episodeNumbers.length > 0) return false; // individual episode
+        if (!this.titlesMatch(r.title, series.title)) return false; // unrelated release
+        return true;
       });
 
       if (candidates.length === 0) return false;

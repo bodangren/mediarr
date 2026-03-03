@@ -1,0 +1,23 @@
+Phase 4: Movie Detail Collection Detection & Bug Fixes
+
+Added on-demand TMDB collection detection from the movie detail page,
+so existing library movies can be linked to collections without re-adding.
+
+New: CollectionService.detectMovieCollection(tmdbMovieId)
+  — calls GET /movie/{id} on TMDB and extracts belongs_to_collection.
+
+New: GET /api/movies/:id/tmdb-collection
+  — returns { collection: { tmdbCollectionId, name, posterUrl } | null }.
+
+New: MovieCollectionSection.tsx (7 tests)
+  — auto-detects collection on mount; shows Monitor toggle + Add to Library;
+    calls collectionApi.create() then collectionApi.sync() to link all movies.
+
+Fix: posterPath → posterUrl in CollectionService.createCollection and syncCollectionMovies
+  — Movie schema uses posterUrl (full URL); was crashing with PrismaClientValidationError.
+
+Fix: POST /api/collections made idempotent
+  — returns 200 + existing collection instead of 409 ConflictError,
+    enabling retry after a partial sync failure.
+
+Tests: collectionRoutes.create.test.ts (5 tests), movieApi.test.ts +2 tests.

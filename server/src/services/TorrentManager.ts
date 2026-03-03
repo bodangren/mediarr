@@ -10,6 +10,8 @@ export interface AddTorrentOptions {
   path?: string;
   name?: string;
   size?: number;
+  episodeId?: number;
+  movieId?: number;
 }
 
 export interface TorrentInfo {
@@ -24,7 +26,6 @@ const DEFAULT_MAGNET_TRACKERS = [
   'udp://tracker.opentrackr.org:1337/announce',
   'udp://open.stealth.si:80/announce',
   'udp://tracker.torrent.eu.org:451/announce',
-  'udp://exodus.desync.com:6969/announce',
 ];
 const ACTIVE_SYNC_INTERVAL_MS = 5000;
 const IDLE_SYNC_INTERVAL_MS = 30000;
@@ -50,6 +51,7 @@ export class TorrentManager extends EventEmitter {
   private seedRatioLimit: number = 0;
   private seedTimeLimitMinutes: number = 0;
   private seedLimitAction: 'pause' | 'remove' = 'pause';
+  private maxActiveDownloads: number = 0; // 0 = unlimited
 
   // Tracks the DB-stored uploaded bytes at the start of each session per torrent,
   // so that lifetime upload totals survive WebTorrent restarting its session counters.
@@ -119,6 +121,7 @@ export class TorrentManager extends EventEmitter {
     seedRatioLimit?: number;
     seedTimeLimitMinutes?: number;
     seedLimitAction?: 'pause' | 'remove';
+    maxActiveDownloads?: number;
   }): void {
     if (settings.incomplete !== undefined) {
       this.incompleteDownloadPath = settings.incomplete;
@@ -134,6 +137,9 @@ export class TorrentManager extends EventEmitter {
     }
     if (settings.seedLimitAction !== undefined) {
       this.seedLimitAction = settings.seedLimitAction;
+    }
+    if (settings.maxActiveDownloads !== undefined) {
+      this.maxActiveDownloads = settings.maxActiveDownloads;
     }
   }
 
@@ -214,6 +220,13 @@ export class TorrentManager extends EventEmitter {
       throw new Error('Incomplete download directory is not configured. Configure it in Settings > Clients.');
     }
 
+    if (this.maxActiveDownloads > 0) {
+      const activeCount = await this.repository.countByStatus('downloading');
+      if (activeCount >= this.maxActiveDownloads) {
+        throw new Error(`Max active downloads limit reached (${this.maxActiveDownloads})`);
+      }
+    }
+
     const infoHashHint = this.extractInfoHashFromMagnet(preparedMagnetUrl);
     if (infoHashHint) {
       const existingRow = await this.repository.findByInfoHash(infoHashHint);
@@ -268,6 +281,8 @@ export class TorrentManager extends EventEmitter {
         stopAtTime: null,
         magnetUrl: preparedMagnetUrl || null,
         torrentFile: options.torrentFile || null,
+        episodeId: options.episodeId ?? null,
+        movieId: options.movieId ?? null,
       });
     } catch (error) {
       try {

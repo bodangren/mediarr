@@ -131,6 +131,7 @@ export function registerDownloadClientRoutes(
         seedRatioLimit: torrentLimits.seedRatioLimit,
         seedTimeLimitMinutes: torrentLimits.seedTimeLimitMinutes,
         seedLimitAction: torrentLimits.seedLimitAction,
+        maxActiveDownloads: torrentLimits.maxActiveDownloads,
       });
     }
 

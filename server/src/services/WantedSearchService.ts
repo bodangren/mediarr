@@ -58,7 +58,7 @@ export class WantedSearchService {
       }
 
       // Grab the release
-      await this.mediaSearchService.grabRelease(bestCandidate);
+      await this.mediaSearchService.grabRelease(bestCandidate, { movieId });
 
       await this.activityEventEmitter.emit({
         eventType: 'RELEASE_GRABBED',
@@ -128,7 +128,7 @@ export class WantedSearchService {
          );
       }
 
-      await this.mediaSearchService.grabRelease(bestCandidate);
+      await this.mediaSearchService.grabRelease(bestCandidate, { episodeId });
 
       await this.activityEventEmitter.emit({
         eventType: 'RELEASE_GRABBED',

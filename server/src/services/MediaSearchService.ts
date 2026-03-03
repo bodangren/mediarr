@@ -380,6 +380,8 @@ export class MediaSearchService {
         path?: string;
         name?: string;
         size?: number;
+        episodeId?: number;
+        movieId?: number;
       }) => Promise<{ infoHash: string; name: string }>;
     },
     private readonly activityEventEmitter?: ActivityEventEmitter,
@@ -654,7 +656,7 @@ export class MediaSearchService {
   /**
    * Grab a release by adding it to the torrent client.
    */
-  async grabRelease(candidate: SearchCandidate): Promise<{ infoHash: string; name: string }> {
+  async grabRelease(candidate: SearchCandidate, mediaContext?: { episodeId?: number; movieId?: number }): Promise<{ infoHash: string; name: string }> {
     if (!candidate.magnetUrl && !candidate.downloadUrl) {
       throw new TorrentRejectedError(
         'Search candidate does not contain a magnet URL or download URL',
@@ -689,6 +691,12 @@ export class MediaSearchService {
         addOptions.magnetUrl = magnetUrl;
       } else if (downloadUrl) {
         addOptions.downloadUrl = downloadUrl;
+      }
+      if (mediaContext?.episodeId) {
+        addOptions.episodeId = mediaContext.episodeId;
+      }
+      if (mediaContext?.movieId) {
+        addOptions.movieId = mediaContext.movieId;
       }
 
       const torrent = await this.torrentManager.addTorrent(addOptions);

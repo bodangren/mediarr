@@ -212,12 +212,13 @@ function createFallbackTorrentManager(
 
 async function createRuntimeTorrentManager(
   repository: TorrentRepository,
-  paths?: { 
-    incomplete?: string; 
+  paths?: {
+    incomplete?: string;
     complete?: string;
     seedRatioLimit?: number;
     seedTimeLimitMinutes?: number;
     seedLimitAction?: 'pause' | 'remove';
+    maxActiveDownloads?: number;
   }
 ): Promise<RuntimeTorrentManager> {
   try {
@@ -462,6 +463,7 @@ async function startApi(): Promise<void> {
     seedRatioLimit: settings.torrentLimits.seedRatioLimit,
     seedTimeLimitMinutes: settings.torrentLimits.seedTimeLimitMinutes,
     seedLimitAction: settings.torrentLimits.seedLimitAction,
+    maxActiveDownloads: settings.torrentLimits.maxActiveDownloads,
   });
 
   const organizer = new Organizer();

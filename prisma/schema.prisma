@@ -469,6 +469,10 @@ model Torrent {
 
   torrentFile Bytes?
 
+  episodeId Int?
+
+  movieId Int?
+
   peers TorrentPeer[]
 }
 

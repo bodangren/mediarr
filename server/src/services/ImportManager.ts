@@ -147,8 +147,103 @@ export class ImportManager {
   private async handleTorrentCompleted(torrent: CompletedTorrentPayload): Promise<void> {
     const files = await this.getFiles(torrent.path);
 
+    // Fetch the torrent row once so we can use its linked episode/movie IDs.
+    const torrentRow = await this.prisma.torrent?.findUnique?.({
+      where: { infoHash: torrent.infoHash },
+      select: { episodeId: true, movieId: true },
+    });
+
     for (const filePath of files) {
       const filename = path.basename(filePath);
+
+      // ── Fast path: torrent was grabbed for a known episode ───────────────
+      const linkedEpisodeId = torrentRow?.episodeId ?? null;
+      if (linkedEpisodeId) {
+        const episode = await this.prisma.episode.findUnique({
+          where: { id: linkedEpisodeId },
+          include: { season: { include: { series: true } } },
+        });
+
+        if (episode?.season?.series) {
+          const series = episode.season.series;
+          const seriesPath = await this.resolveSeriesPath(series);
+          if (!seriesPath) {
+            await this.activityEventEmitter?.emit({
+              eventType: 'IMPORT_FAILED',
+              sourceModule: 'import-manager',
+              entityRef: `torrent:${torrent.infoHash}`,
+              summary: `No TV root folder configured for ${series.title}`,
+              success: false,
+              details: {
+                sourcePath: filePath,
+                torrentName: torrent.name,
+                reason: 'series.path is null and no TV root folder is configured',
+              },
+              occurredAt: new Date(),
+            });
+            continue;
+          }
+
+          const newPath = await this.organizer.organizeFile(filePath, { ...series, path: seriesPath }, episode);
+          await this.prisma.episode.update({ where: { id: episode.id }, data: { path: newPath } });
+
+          await this.activityEventEmitter?.emit({
+            eventType: 'SERIES_IMPORTED',
+            sourceModule: 'import-manager',
+            entityRef: `torrent:${torrent.infoHash}`,
+            summary: `Imported episode ${filename}`,
+            success: true,
+            details: { sourcePath: filePath, torrentName: torrent.name },
+            occurredAt: new Date(),
+          });
+          continue;
+        }
+      }
+
+      // ── Fast path: torrent was grabbed for a known movie ─────────────────
+      const linkedMovieId = torrentRow?.movieId ?? null;
+      if (linkedMovieId) {
+        const movie = await this.prisma.movie.findUnique({ where: { id: linkedMovieId } });
+
+        if (movie) {
+          const moviePath = await this.resolveMoviePath(movie);
+          if (!moviePath) {
+            await this.activityEventEmitter?.emit({
+              eventType: 'IMPORT_FAILED',
+              sourceModule: 'import-manager',
+              entityRef: `torrent:${torrent.infoHash}`,
+              summary: `No movie root folder configured for ${movie.title}`,
+              success: false,
+              details: {
+                sourcePath: filePath,
+                torrentName: torrent.name,
+                reason: 'movie.path is null and no movie root folder is configured',
+              },
+              occurredAt: new Date(),
+            });
+            continue;
+          }
+
+          const newPath = await this.organizer.organizeMovieFile(filePath, { ...movie, path: moviePath });
+          await this.prisma.mediaFileVariant.upsert({
+            where: { mediaType_path: { mediaType: 'MOVIE', path: newPath } },
+            create: { mediaType: 'MOVIE', movieId: movie.id, path: newPath, fileSize: BigInt(0) },
+            update: { movieId: movie.id },
+          });
+
+          await this.activityEventEmitter?.emit({
+            eventType: 'MOVIE_IMPORTED',
+            sourceModule: 'import-manager',
+            entityRef: `torrent:${torrent.infoHash}`,
+            summary: `Imported movie ${filename}`,
+            success: true,
+            details: { sourcePath: filePath, torrentName: torrent.name },
+            occurredAt: new Date(),
+          });
+          continue;
+        }
+      }
+
       const parsed = Parser.parse(filename);
 
       // ── Try episode import ──────────────────────────────────────────────
@@ -528,6 +623,6 @@ export class ImportManager {
   }
 
   private normalizeMovieTitle(value: string): string {
-    return value.toLowerCase().replace(/[^a-z0-9]/g, '');
+    return value.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
   }
 }

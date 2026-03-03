@@ -47,6 +47,13 @@ export class TorrentRepository {
   }
 
   /**
+   * Counts torrents with a given status.
+   */
+  async countByStatus(status: string): Promise<number> {
+    return this.prisma.torrent.count({ where: { status } });
+  }
+
+  /**
    * Retrieves torrents matching any of the given statuses.
    */
   async findByStatuses(statuses: string[]): Promise<Torrent[]> {

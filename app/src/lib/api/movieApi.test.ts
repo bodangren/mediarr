@@ -104,4 +104,25 @@ describe('Movie API', () => {
     );
     expect(result).toEqual({ deleted: true });
   });
+
+  it('gets TMDB collection info for a movie', async () => {
+    const collectionInfo = { collection: { tmdbCollectionId: 87359, name: 'John Wick Collection', posterUrl: null } };
+    mockHttpClient.request.mockResolvedValue(collectionInfo);
+
+    const result = await movieApi.getTmdbCollection(1);
+
+    expect(mockHttpClient.request).toHaveBeenCalledWith(
+      { path: '/api/movies/1/tmdb-collection' },
+      expect.anything(),
+    );
+    expect(result).toEqual(collectionInfo);
+  });
+
+  it('returns null collection when movie has no TMDB collection', async () => {
+    mockHttpClient.request.mockResolvedValue({ collection: null });
+
+    const result = await movieApi.getTmdbCollection(1);
+
+    expect(result.collection).toBeNull();
+  });
 });

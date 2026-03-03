@@ -213,6 +213,50 @@ export function registerMovieRoutes(
     return sendSuccess(reply, updated);
   });
 
+  // GET /api/movies/:id/tmdb-collection - Detect TMDB collection for a movie
+  app.get('/api/movies/:id/tmdb-collection', {
+    schema: {
+      params: {
+        type: 'object',
+        required: ['id'],
+        properties: {
+          id: { type: 'string' },
+        },
+      },
+    },
+  }, async (request, reply) => {
+    const id = parseIdParam((request.params as { id: string }).id, 'movie');
+
+    const movie = await (deps.prisma as any).movie.findUnique({
+      where: { id },
+      select: { id: true, tmdbId: true },
+    });
+
+    assertFound(movie, `Movie ${id} not found`);
+
+    if (!movie.tmdbId) {
+      return sendSuccess(reply, { collection: null });
+    }
+
+    if (!deps.collectionService) {
+      return sendSuccess(reply, { collection: null });
+    }
+
+    const detected = await deps.collectionService.detectMovieCollection(movie.tmdbId);
+
+    if (!detected) {
+      return sendSuccess(reply, { collection: null });
+    }
+
+    return sendSuccess(reply, {
+      collection: {
+        tmdbCollectionId: detected.tmdbCollectionId,
+        name: detected.name,
+        posterUrl: detected.posterPath ? `https://image.tmdb.org/t/p/w500${detected.posterPath}` : null,
+      },
+    });
+  });
+
   app.post('/api/movies/:id/search', {
     schema: {
       params: {

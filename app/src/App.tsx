@@ -9,6 +9,7 @@ import { FilesystemBrowser } from '@/components/primitives/FilesystemBrowser';
 import { AddProfileModal } from '@/components/settings/AddProfileModal';
 import { EditIndexerModal } from '@/components/indexers/EditIndexerModal';
 import { MovieInteractiveSearchModal } from '@/components/movie/MovieInteractiveSearchModal';
+import { MovieCollectionSection } from '@/components/movie/MovieCollectionSection';
 import { InteractiveSearchModal } from '@/components/search/InteractiveSearchModal';
 import { SeriesInteractiveSearchModal, type SearchLevel } from '@/components/series/SeriesInteractiveSearchModal';
 import { SeriesOverviewView, MovieOverviewView } from '@/components/views';
@@ -1564,6 +1565,7 @@ function MovieDetailPage() {
     qualityProfileId?: number;
     path?: string;
     sizeOnDisk?: number;
+    collection?: { id: number; name: string } | null;
   } | null>(null);
   const [qualityProfiles, setQualityProfiles] = useState<QualityProfileItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -1599,6 +1601,7 @@ function MovieDetailPage() {
           qualityProfileId: item.qualityProfileId,
           path: (item as any).path ?? undefined,
           sizeOnDisk: item.sizeOnDisk ?? undefined,
+          collection: (item as any).collection ?? null,
         });
         setQualityProfiles(profiles);
       } catch (loadError) {
@@ -1680,6 +1683,17 @@ function MovieDetailPage() {
               {movie.sizeOnDisk != null && movie.sizeOnDisk > 0 ? (
                 <p className="text-xs text-text-muted">{formatBytes(movie.sizeOnDisk)} on disk</p>
               ) : null}
+              <MovieCollectionSection
+                movieId={movie.id}
+                tmdbId={movie.tmdbId}
+                collection={movie.collection ?? null}
+                onCollectionAdded={() => {
+                  // Re-fetch movie to get updated collection link
+                  void api.movieApi.getById(movie.id).then(item => {
+                    setMovie(prev => prev ? { ...prev, collection: (item as any).collection ?? null } : prev);
+                  });
+                }}
+              />
             </div>
           </section>
 

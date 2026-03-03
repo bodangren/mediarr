@@ -290,6 +290,21 @@ export function createMovieApi(client: ApiHttpClient) {
       );
     },
 
+    getTmdbCollection(id: number): Promise<{ collection: { tmdbCollectionId: number; name: string; posterUrl: string | null } | null }> {
+      return client.request(
+        {
+          path: `/api/movies/${id}/tmdb-collection`,
+        },
+        z.object({
+          collection: z.object({
+            tmdbCollectionId: z.number(),
+            name: z.string(),
+            posterUrl: z.string().nullable(),
+          }).nullable(),
+        }),
+      );
+    },
+
     searchReleases(movieId: number, input: MovieSearchInput): Promise<PaginatedResult<z.infer<typeof releaseCandidateSchema>>> {
       const query: Record<string, unknown> = {};
       if (input.page !== undefined) query.page = input.page;

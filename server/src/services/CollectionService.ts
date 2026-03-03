@@ -51,6 +51,13 @@ export interface SearchMissingResult {
   missing: number;
 }
 
+export interface MovieCollectionDetection {
+  tmdbCollectionId: number;
+  name: string;
+  posterPath: string | null;
+  backdropPath: string | null;
+}
+
 export class CollectionService {
   private readonly tmdbBaseUrl = 'https://api.themoviedb.org/3';
 
@@ -98,6 +105,38 @@ export class CollectionService {
       posterPath: data.poster_path || '',
       backdropPath: data.backdrop_path || '',
       movies,
+    };
+  }
+
+  async detectMovieCollection(tmdbMovieId: number): Promise<MovieCollectionDetection | null> {
+    const settings = await this.settingsService.get();
+    const apiKey = settings.apiKeys.tmdbApiKey;
+
+    if (!apiKey) {
+      throw new ValidationError('TMDB API Key is missing. Please configure it in settings.');
+    }
+
+    const url = `${this.tmdbBaseUrl}/movie/${tmdbMovieId}?api_key=${encodeURIComponent(apiKey)}`;
+    const response = await this.httpClient.get(url);
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        return null;
+      }
+      throw new ProviderUnavailableError(`Failed to fetch movie from TMDB: ${response.status} ${response.body}`);
+    }
+
+    const data: { belongs_to_collection?: { id: number; name: string; poster_path: string | null; backdrop_path: string | null } | null } = JSON.parse(response.body);
+
+    if (!data.belongs_to_collection) {
+      return null;
+    }
+
+    return {
+      tmdbCollectionId: data.belongs_to_collection.id,
+      name: data.belongs_to_collection.name,
+      posterPath: data.belongs_to_collection.poster_path,
+      backdropPath: data.belongs_to_collection.backdrop_path,
     };
   }
 

@@ -1,0 +1,7 @@
+Task: API Endpoints
+Summary: Implemented POST /api/wanted/search-all and POST /api/media/:id/auto-search for triggering the WantedSearchService.
+Files modified:
+- server/src/api/routes/mediaRoutes.ts
+- server/src/api/types.ts
+- server/src/api/routes/mediaRoutes.wanted.test.ts
+- server/src/services/WantedSearchService.ts

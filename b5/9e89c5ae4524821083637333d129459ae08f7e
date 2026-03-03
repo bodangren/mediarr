@@ -1,0 +1,5 @@
+Task: Improve RssMediaMonitor
+Summary: Updated the RSS Media Monitor to instantiate the CustomFormatScoringEngine and score incoming releases. The monitor now checks if the total score meets the AUTO_GRAB_THRESHOLD (50) before grabbing.
+Files modified:
+- server/src/services/RssMediaMonitor.ts
+- tests/rss-media-monitor.test.js

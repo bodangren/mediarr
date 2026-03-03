@@ -1,0 +1,55 @@
+import { jsx as _jsx, Fragment as _Fragment, jsxs as _jsxs } from "react/jsx-runtime";
+import { fireEvent, render, screen } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
+import { DataTable } from './DataTable';
+import { EmptyPanel } from './EmptyPanel';
+import { ErrorPanel } from './ErrorPanel';
+import { MetricCard } from './MetricCard';
+import { ProgressBar } from './ProgressBar';
+import { SkeletonBlock } from './SkeletonBlock';
+import { StatusBadge } from './StatusBadge';
+describe('UI primitives', () => {
+    it('renders semantic status badge classes', () => {
+        render(_jsx(StatusBadge, { status: "downloading" }));
+        expect(screen.getByText('downloading')).toBeInTheDocument();
+    });
+    it('renders progress values for determinate and indeterminate modes', () => {
+        const { rerender } = render(_jsx(ProgressBar, { value: 42, label: "Sync" }));
+        expect(screen.getByText('42%')).toBeInTheDocument();
+        rerender(_jsx(ProgressBar, { indeterminate: true, label: "Sync" }));
+        expect(screen.queryByText('42%')).not.toBeInTheDocument();
+    });
+    it('renders metric card trend + action', () => {
+        const onAction = vi.fn();
+        render(_jsx(MetricCard, { label: "Queue", value: "12", trend: "up", onAction: onAction }));
+        fireEvent.click(screen.getByRole('button', { name: /open queue/i }));
+        expect(onAction).toHaveBeenCalledTimes(1);
+    });
+    it('renders empty and error panels', () => {
+        const onRetry = vi.fn();
+        render(_jsxs(_Fragment, { children: [_jsx(EmptyPanel, { title: "Nothing here", body: "Try broader filters." }), _jsx(ErrorPanel, { title: "Load failed", body: "Backend offline", onRetry: onRetry })] }));
+        fireEvent.click(screen.getByRole('button', { name: /retry/i }));
+        expect(onRetry).toHaveBeenCalledTimes(1);
+    });
+    it('supports sorting, row actions, pagination and horizontal overflow table wrapper', () => {
+        const onSort = vi.fn();
+        const onPrev = vi.fn();
+        const onNext = vi.fn();
+        const columns = [
+            { key: 'title', header: 'Title', sortable: true, render: row => row.title },
+        ];
+        render(_jsx(DataTable, { data: [{ id: 1, title: 'Andor' }], columns: columns, getRowId: row => row.id, sort: { key: 'title', direction: 'asc' }, onSort: onSort, pagination: { page: 2, totalPages: 3, onNext, onPrev }, rowActions: row => _jsxs("button", { type: "button", children: ["Open ", row.title] }) }));
+        expect(screen.getByTestId('table-overflow')).toHaveClass('overflow-x-auto');
+        fireEvent.click(screen.getByRole('button', { name: /sort by title/i }));
+        fireEvent.click(screen.getByRole('button', { name: /next page/i }));
+        fireEvent.click(screen.getByRole('button', { name: /previous page/i }));
+        expect(onSort).toHaveBeenCalledWith('title');
+        expect(onNext).toHaveBeenCalledTimes(1);
+        expect(onPrev).toHaveBeenCalledTimes(1);
+    });
+    it('renders skeleton block placeholder', () => {
+        render(_jsx(SkeletonBlock, { ariaLabel: "loading row", className: "h-4 w-24" }));
+        expect(screen.getByLabelText('loading row')).toBeInTheDocument();
+    });
+});
+//# sourceMappingURL=primitives.test.js.map

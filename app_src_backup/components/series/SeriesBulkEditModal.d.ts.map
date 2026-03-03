@@ -1,0 +1,1 @@
+{"version":3,"file":"SeriesBulkEditModal.d.ts","sourceRoot":"","sources":["SeriesBulkEditModal.tsx"],"names":[],"mappings":"AAWA,UAAU,wBAAwB;IAChC,MAAM,EAAE,OAAO,CAAC;IAChB,OAAO,EAAE,MAAM,IAAI,CAAC;IACpB,iBAAiB,EAAE,MAAM,EAAE,CAAC;IAC5B,oBAAoB,EAAE,MAAM,EAAE,CAAC;CAChC;AAoBD,wBAAgB,mBAAmB,CAAC,EAClC,MAAM,EACN,OAAO,EACP,iBAAiB,EACjB,oBAAoB,GACrB,EAAE,wBAAwB,2CA6T1B"}

@@ -1,0 +1,18 @@
+'use client';
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+export function HistoryFilters({ filters, onChange, providers, languages, actions, }) {
+    const handleChange = (key, value) => {
+        onChange({
+            ...filters,
+            [key]: value === '' ? undefined : value,
+        });
+    };
+    return (_jsxs("div", { className: "flex flex-wrap items-end gap-3 rounded-md border border-border-subtle bg-surface-1 p-4", children: [_jsxs("div", { className: "flex-1 min-w-[150px] space-y-1", children: [_jsx("label", { htmlFor: "provider-filter", className: "block text-xs text-text-secondary", children: "Provider" }), _jsxs("select", { id: "provider-filter", value: filters.provider ?? '', onChange: (e) => handleChange('provider', e.currentTarget.value), className: "w-full rounded-sm border border-border-subtle bg-surface-0 px-3 py-2 text-sm", children: [_jsx("option", { value: "", children: "All Providers" }), providers.map(provider => (_jsx("option", { value: provider, children: provider }, provider)))] })] }), _jsxs("div", { className: "flex-1 min-w-[150px] space-y-1", children: [_jsx("label", { htmlFor: "language-filter", className: "block text-xs text-text-secondary", children: "Language" }), _jsxs("select", { id: "language-filter", value: filters.languageCode ?? '', onChange: (e) => handleChange('languageCode', e.currentTarget.value), className: "w-full rounded-sm border border-border-subtle bg-surface-0 px-3 py-2 text-sm", children: [_jsx("option", { value: "", children: "All Languages" }), languages.map(language => (_jsx("option", { value: language, children: language }, language)))] })] }), _jsxs("div", { className: "flex-1 min-w-[150px] space-y-1", children: [_jsx("label", { htmlFor: "action-filter", className: "block text-xs text-text-secondary", children: "Action" }), _jsxs("select", { id: "action-filter", value: filters.action ?? '', onChange: (e) => handleChange('action', e.currentTarget.value), className: "w-full rounded-sm border border-border-subtle bg-surface-0 px-3 py-2 text-sm", children: [_jsx("option", { value: "", children: "All Actions" }), actions.map(action => (_jsx("option", { value: action, children: action.charAt(0).toUpperCase() + action.slice(1) }, action)))] })] }), _jsxs("div", { className: "flex-1 min-w-[150px] space-y-1", children: [_jsx("label", { htmlFor: "start-date-filter", className: "block text-xs text-text-secondary", children: "Start Date" }), _jsx("input", { id: "start-date-filter", type: "date", value: filters.startDate ?? '', onChange: (e) => handleChange('startDate', e.currentTarget.value), className: "w-full rounded-sm border border-border-subtle bg-surface-0 px-3 py-2 text-sm" })] }), _jsxs("div", { className: "flex-1 min-w-[150px] space-y-1", children: [_jsx("label", { htmlFor: "end-date-filter", className: "block text-xs text-text-secondary", children: "End Date" }), _jsx("input", { id: "end-date-filter", type: "date", value: filters.endDate ?? '', onChange: (e) => handleChange('endDate', e.currentTarget.value), className: "w-full rounded-sm border border-border-subtle bg-surface-0 px-3 py-2 text-sm" })] }), _jsx("button", { type: "button", onClick: () => onChange({
+                    provider: undefined,
+                    languageCode: undefined,
+                    action: undefined,
+                    startDate: undefined,
+                    endDate: undefined,
+                }), className: "rounded-sm border border-border-subtle bg-surface-2 px-3 py-2 text-sm hover:bg-surface-3", children: "Clear Filters" })] }));
+}
+//# sourceMappingURL=HistoryFilters.js.map

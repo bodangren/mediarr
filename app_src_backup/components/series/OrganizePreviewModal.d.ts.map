@@ -1,0 +1,1 @@
+{"version":3,"file":"OrganizePreviewModal.d.ts","sourceRoot":"","sources":["OrganizePreviewModal.tsx"],"names":[],"mappings":"AAWA,UAAU,yBAAyB;IACjC,MAAM,EAAE,OAAO,CAAC;IAChB,OAAO,EAAE,MAAM,IAAI,CAAC;IACpB,SAAS,EAAE,MAAM,EAAE,CAAC;IACpB,UAAU,CAAC,EAAE,MAAM,IAAI,CAAC;CACzB;AAED,wBAAgB,oBAAoB,CAAC,EACnC,MAAM,EACN,OAAO,EACP,SAAS,EACT,UAAU,GACX,EAAE,yBAAyB,2CA8L3B"}

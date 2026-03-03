@@ -1,0 +1,15 @@
+'use client';
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { useState } from 'react';
+import { Button } from '@/components/primitives/Button';
+import { Alert } from '@/components/primitives/Alert';
+export function ExclusionManager({ exclusions, isLoading, error, onAddExclusion, onRemoveExclusion, isDeleting, }) {
+    if (isLoading) {
+        return (_jsx("div", { className: "rounded-sm border border-border-subtle bg-surface-1 p-4", children: _jsx("p", { className: "text-sm text-text-secondary", children: "Loading exclusions..." }) }));
+    }
+    if (error) {
+        return (_jsx(Alert, { variant: "danger", children: _jsx("p", { children: "Failed to load exclusions. Please try again later." }) }));
+    }
+    return (_jsxs("section", { className: "space-y-3", children: [_jsxs("div", { className: "flex items-center justify-between", children: [_jsxs("div", { children: [_jsx("h2", { className: "text-sm font-semibold uppercase tracking-wide text-text-secondary", children: "Import List Exclusions" }), _jsx("p", { className: "text-xs text-text-muted", children: "Items excluded from automatic import" })] }), _jsx(Button, { variant: "secondary", onClick: onAddExclusion, children: "Add Exclusion" })] }), exclusions.length === 0 ? (_jsx(Alert, { variant: "info", children: _jsx("p", { children: "No exclusions configured. Items will be imported normally." }) })) : (_jsx("div", { className: "rounded-sm border border-border-subtle bg-surface-0 overflow-hidden", children: _jsxs("table", { className: "w-full text-sm", children: [_jsx("thead", { children: _jsxs("tr", { className: "border-b border-border-subtle bg-surface-1", children: [_jsx("th", { className: "px-4 py-2 text-left font-medium text-text-secondary", children: "Title" }), _jsx("th", { className: "px-4 py-2 text-left font-medium text-text-secondary", children: "TMDB ID" }), _jsx("th", { className: "px-4 py-2 text-left font-medium text-text-secondary", children: "IMDB ID" }), _jsx("th", { className: "px-4 py-2 text-left font-medium text-text-secondary", children: "TVDB ID" }), _jsx("th", { className: "px-4 py-2 text-right font-medium text-text-secondary", children: "Actions" })] }) }), _jsx("tbody", { className: "divide-y divide-border-subtle", children: exclusions.map((exclusion) => (_jsxs("tr", { className: "hover:bg-surface-1", children: [_jsx("td", { className: "px-4 py-3 text-text-primary", children: exclusion.title }), _jsx("td", { className: "px-4 py-3 text-text-secondary", children: exclusion.tmdbId ?? '-' }), _jsx("td", { className: "px-4 py-3 text-text-secondary", children: exclusion.imdbId ?? '-' }), _jsx("td", { className: "px-4 py-3 text-text-secondary", children: exclusion.tvdbId ?? '-' }), _jsx("td", { className: "px-4 py-3 text-right", children: _jsx(Button, { variant: "danger", onClick: () => onRemoveExclusion(exclusion), disabled: isDeleting, className: "text-xs", children: "Remove" }) })] }, exclusion.id))) })] }) }))] }));
+}
+//# sourceMappingURL=ExclusionManager.js.map

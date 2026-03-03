@@ -1,0 +1,1 @@
+{"version":3,"file":"CalendarMovieEvent.d.ts","sourceRoot":"","sources":["CalendarMovieEvent.tsx"],"names":[],"mappings":"AAEA,OAAO,KAAK,EAAE,aAAa,EAAE,MAAM,kBAAkB,CAAC;AAEtD,UAAU,uBAAuB;IAC/B,KAAK,EAAE,aAAa,CAAC;IACrB,OAAO,CAAC,EAAE,CAAC,KAAK,EAAE,aAAa,KAAK,IAAI,CAAC;CAC1C;AAED,wBAAgB,kBAAkB,CAAC,EAAE,KAAK,EAAE,OAAO,EAAE,EAAE,uBAAuB,2CAyE7E"}

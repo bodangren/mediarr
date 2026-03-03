@@ -6,9 +6,7 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ## Execution Order and Dependencies
 
-**Primary sequence:** `Library Visibility & Dashboard` -> `Existing Library Import` -> `Collections`
-
-The current critical path is to surface the backend state to the UI (Dashboard, Calendar, Series Status) before we allow users to bulk-import their existing media libraries.
+**Primary sequence:** `Library Visibility & Dashboard` -> `Existing Library Import` -> `Collections` -> `Automated Search` -> `Subtitle Management`
 
 ### Dependency Graph
 
@@ -16,35 +14,43 @@ The current critical path is to surface the backend state to the UI (Dashboard, 
 Import Pipeline & Root Folder Settings (Completed)
     |
     v
-Library Visibility & Dashboard (Current)
+Library Visibility & Dashboard (Completed)
     |
     v
-Existing Library Import (Planned)
+Existing Library Import (Completed)
     |
     v
-Collections (Planned)
+Collections (Completed)
+    |
+    v
+Automated Search & Download (New)
+    |
+    v
+Subtitle Management (New)
 ```
 
 ---
 
 ## Active Tracks
 
-- [x] **Track: Existing Library Import** *Phases: 4 | Link: [./tracks/existing_library_import_20260301/](./tracks/existing_library_import_20260301/)*
-- [x] **Track: Collections** *Phases: 4 | Link: [./archive/collections_20260301/](./archive/collections_20260301/)*
-- [x] **Track: Manual Search, Queue Monitoring & Quality Profile Enhancements** *Phases: 5 | Link: [./archive/manual_search_queue_20260228/](./archive/manual_search_queue_20260228/)*
-- [x] **Track: Vite Frontend Parity Recovery** *Phases: 5 | Link: [./archive/vite_parity_recovery_20260226/](./archive/vite_parity_recovery_20260226/)*
+- [ ] **Track: Automated Search and Download** *Phases: 4 | Link: [./tracks/automated_search_download_20260303/](./tracks/automated_search_download_20260303/)*
+- [ ] **Track: Subtitle Management** *Phases: 3 | Link: [./tracks/subtitle_management_20260303/](./tracks/subtitle_management_20260303/)*
 
 ---
 
 ## Archived Tracks
 
+- [x] **Track: Existing Library Import** *Phases: 4 | Link: [./archive/existing_library_import_20260301/](./archive/existing_library_import_20260301/)*
+- [x] **Track: Collections** *Phases: 4 | Link: [./archive/collections_20260301/](./archive/collections_20260301/)*
+- [x] **Track: Manual Search, Queue Monitoring & Quality Profile Enhancements** *Phases: 5 | Link: [./archive/manual_search_queue_20260228/](./archive/manual_search_queue_20260228/)*
+- [x] **Track: Vite Frontend Parity Recovery** *Phases: 5 | Link: [./archive/vite_parity_recovery_20260226/](./archive/vite_parity_recovery_20260226/)*
 - [x] **Track: Library Visibility & Dashboard** *Phases: 3 | Link: [./archive/library_visibility_20260301/](./archive/library_visibility_20260301/)*
 
 - [x] **Track: Import Pipeline & Root Folder Settings** *Phases: 4 | Link: [./archive/import_pipeline_20260228/](./archive/import_pipeline_20260228/)*
 - [x] **Track: Media Detail Pages & Library Enrichment** *Phases: 4 | Link: [./archive/media_detail_pages_20260228/](./archive/media_detail_pages_20260228/)*
 - [x] **Track: Search and Add to Wanted** *Phases: 3 | Link: [./archive/search_add_wanted_20260227/](./archive/search_add_wanted_20260227/)*
 - [x] **Track: Monolith Unification Refactor** *Phases: 3 | Link: [../archive/monolith_unification_refactor_20260226/](../archive/monolith_unification_refactor_20260226/)*
-- [x] **Track: Sonarr Feature Parity** *Phases: 5 | Link: [../archive/sonarr_parity_20260217/](../archive/sonarr_parity_20260217/)*
+- [x] **Track: Sonarr Feature Parity** *Phases: 5 | Link: [./archive/sonarr_parity_20260217/](./archive/sonarr_parity_20260217/)*
 - [x] **Track: Foundation** *Link: [../archive/foundation_20260210/](../archive/foundation_20260210/)*
 - [x] **Track: Indexer Engine** *Link: [../archive/indexer_engine_20260210/](../archive/indexer_engine_20260210/)*
 - [x] **Track: Torrent Engine** *Link: [../archive/torrent_engine_20260211/](../archive/torrent_engine_20260211/)*

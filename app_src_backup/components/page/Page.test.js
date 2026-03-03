@@ -1,0 +1,66 @@
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { describe, expect, it, vi } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import { Page } from './Page';
+describe('Page', () => {
+    it('renders title', () => {
+        render(_jsx(Page, { title: "Test Page", onMenuToggle: vi.fn(), children: "Content" }));
+        const heading = screen.getByRole('heading', { name: 'Test Page' });
+        expect(heading).toBeInTheDocument();
+    });
+    it('renders children', () => {
+        render(_jsx(Page, { title: "Test Page", onMenuToggle: vi.fn(), children: _jsx("div", { children: "Page content" }) }));
+        expect(screen.getByText('Page content')).toBeInTheDocument();
+    });
+    it('renders header actions when provided', () => {
+        const testAction = _jsx("button", { type: "button", children: "Test Action" });
+        render(_jsx(Page, { title: "Test Page", onMenuToggle: vi.fn(), headerActions: testAction, children: "Content" }));
+        expect(screen.getByText('Test Action')).toBeInTheDocument();
+    });
+    it('does not render header actions when not provided', () => {
+        const { container } = render(_jsx(Page, { title: "Test Page", onMenuToggle: vi.fn(), children: "Content" }));
+        const actionsContainer = container.querySelector('.flex.items-center.gap-2');
+        expect(actionsContainer).not.toBeInTheDocument();
+    });
+    it('has correct container styles', () => {
+        const { container } = render(_jsx(Page, { title: "Test Page", onMenuToggle: vi.fn(), children: "Content" }));
+        const page = container.firstChild;
+        expect(page).toHaveClass('h-full');
+    });
+    it('has correct inner container padding on small screens', () => {
+        const { container } = render(_jsx(Page, { title: "Test Page", onMenuToggle: vi.fn(), children: "Content" }));
+        const innerContainer = container.querySelector('.px-4');
+        expect(innerContainer).toBeInTheDocument();
+        expect(innerContainer).toHaveClass('py-3');
+    });
+    it('has correct inner container padding on medium screens', () => {
+        const { container } = render(_jsx(Page, { title: "Test Page", onMenuToggle: vi.fn(), children: "Content" }));
+        const innerContainer = container.querySelector('.sm\\:px-4');
+        expect(innerContainer).toBeInTheDocument();
+        expect(innerContainer).toHaveClass('sm:py-4');
+    });
+    it('has correct inner container padding on large screens', () => {
+        const { container } = render(_jsx(Page, { title: "Test Page", onMenuToggle: vi.fn(), children: "Content" }));
+        const innerContainer = container.querySelector('.lg\\:px-6');
+        expect(innerContainer).toBeInTheDocument();
+        expect(innerContainer).toHaveClass('lg:py-4');
+    });
+    it('has correct heading styles', () => {
+        const { container } = render(_jsx(Page, { title: "Test Page", onMenuToggle: vi.fn(), children: "Content" }));
+        const heading = container.querySelector('h1');
+        expect(heading).toHaveClass('flex-1', 'truncate', 'text-2xl', 'font-semibold', 'text-text-primary');
+    });
+    it('truncates long titles', () => {
+        const longTitle = 'This is a very long title that should be truncated when it overflows the available space';
+        render(_jsx(Page, { title: longTitle, onMenuToggle: vi.fn(), children: "Content" }));
+        const heading = screen.getByRole('heading');
+        expect(heading).toHaveClass('truncate');
+    });
+    it('renders multiple children', () => {
+        render(_jsxs(Page, { title: "Test Page", onMenuToggle: vi.fn(), children: [_jsx("div", { children: "First child" }), _jsx("div", { children: "Second child" }), _jsx("div", { children: "Third child" })] }));
+        expect(screen.getByText('First child')).toBeInTheDocument();
+        expect(screen.getByText('Second child')).toBeInTheDocument();
+        expect(screen.getByText('Third child')).toBeInTheDocument();
+    });
+});
+//# sourceMappingURL=Page.test.js.map

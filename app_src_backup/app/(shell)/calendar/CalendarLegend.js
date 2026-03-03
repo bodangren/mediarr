@@ -1,0 +1,6 @@
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { StatusBadge } from '@/components/primitives/StatusBadge';
+export function CalendarLegend() {
+    return (_jsxs("div", { className: "flex flex-wrap items-center gap-4 text-sm text-text-secondary", children: [_jsx("span", { className: "text-xs font-semibold uppercase", children: "Legend:" }), _jsx(StatusBadge, { status: "Downloaded" }), _jsx(StatusBadge, { status: "Missing" }), _jsx(StatusBadge, { status: "Airing" }), _jsx(StatusBadge, { status: "Unaired" }), _jsx(StatusBadge, { status: "Monitored" }), _jsx(StatusBadge, { status: "Unmonitored" }), _jsx("span", { className: "inline-flex rounded-full bg-purple-500/20 px-2 py-0.5 text-xs font-semibold text-purple-400", children: "Cinema" }), _jsx("span", { className: "inline-flex rounded-full bg-blue-500/20 px-2 py-0.5 text-xs font-semibold text-blue-400", children: "Digital" }), _jsx("span", { className: "inline-flex rounded-full bg-green-500/20 px-2 py-0.5 text-xs font-semibold text-green-400", children: "Physical" })] }));
+}
+//# sourceMappingURL=CalendarLegend.js.map

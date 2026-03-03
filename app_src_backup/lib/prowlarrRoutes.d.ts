@@ -1,0 +1,2 @@
+export declare const PROWLARR_ROUTE_PATHS: readonly ["/indexers", "/indexers/stats", "/search", "/history", "/settings/indexers", "/settings/general", "/settings/ui", "/system/status", "/system/tasks", "/system/backup", "/system/updates", "/system/events", "/system/logs/files"];
+//# sourceMappingURL=prowlarrRoutes.d.ts.map

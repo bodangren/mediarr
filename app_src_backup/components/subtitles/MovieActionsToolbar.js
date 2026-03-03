@@ -1,0 +1,18 @@
+'use client';
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { useState } from 'react';
+import { Icon } from '@/components/primitives/Icon';
+import { Menu } from '@/components/primitives/Menu';
+export function MovieActionsToolbar({ onSync, onScan, onSearch, onManualSearch, onUpload, onHistory, isSyncing = false, isScanning = false, isSearching = false, }) {
+    const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
+    const moreMenuItems = [
+        {
+            key: 'history',
+            label: 'History',
+            icon: ({ className }) => _jsx(Icon, { name: "history", className: className }),
+            onClick: onHistory,
+        },
+    ];
+    return (_jsxs("div", { className: "flex flex-wrap items-center gap-2 border-b border-border-subtle pb-2", children: [_jsxs("div", { className: "flex flex-wrap items-center gap-2", children: [_jsxs("button", { type: "button", className: "flex items-center gap-2 rounded-sm border border-border-subtle px-3 py-1.5 text-sm transition-colors hover:bg-surface-2 disabled:opacity-50", onClick: onSync, disabled: isSyncing, "aria-label": "Sync movie", children: [_jsx(Icon, { name: "refresh", className: isSyncing ? 'animate-spin' : '' }), _jsx("span", { children: "Sync" })] }), _jsxs("button", { type: "button", className: "flex items-center gap-2 rounded-sm border border-border-subtle px-3 py-1.5 text-sm transition-colors hover:bg-surface-2 disabled:opacity-50", onClick: onScan, disabled: isScanning, "aria-label": "Scan disk", children: [_jsx(Icon, { name: "disk", className: isScanning ? 'animate-spin' : '' }), _jsx("span", { children: "Scan Disk" })] }), _jsxs("button", { type: "button", className: "flex items-center gap-2 rounded-sm border border-border-subtle px-3 py-1.5 text-sm transition-colors hover:bg-surface-2 disabled:opacity-50", onClick: onSearch, disabled: isSearching, "aria-label": "Search all subtitles", children: [_jsx(Icon, { name: "search", className: isSearching ? 'animate-spin' : '' }), _jsx("span", { children: "Search All" })] })] }), _jsx("div", { className: "mx-2 h-6 w-px bg-border-subtle" }), _jsxs("div", { className: "flex flex-wrap items-center gap-2", children: [_jsxs("button", { type: "button", className: "flex items-center gap-2 rounded-sm border border-border-subtle px-3 py-1.5 text-sm transition-colors hover:bg-surface-2", onClick: onManualSearch, "aria-label": "Manual search", children: [_jsx(Icon, { name: "search" }), _jsx("span", { children: "Manual Search" })] }), _jsxs("button", { type: "button", className: "flex items-center gap-2 rounded-sm border border-border-subtle px-3 py-1.5 text-sm transition-colors hover:bg-surface-2", onClick: onUpload, "aria-label": "Upload subtitles", children: [_jsx(Icon, { name: "plus" }), _jsx("span", { children: "Upload" })] }), _jsxs("div", { className: "relative inline-flex items-center", children: [_jsx("button", { type: "button", onClick: () => setIsMoreMenuOpen(!isMoreMenuOpen), className: "flex items-center gap-2 rounded-sm border border-border-subtle px-3 py-1.5 text-sm transition-colors hover:bg-surface-2", "aria-label": "More actions", "aria-expanded": isMoreMenuOpen, children: _jsx(Icon, { name: "settings" }) }), _jsx(Menu, { isOpen: isMoreMenuOpen, onClose: () => setIsMoreMenuOpen(false), items: moreMenuItems, align: "right", ariaLabel: "More actions" })] })] })] }));
+}
+//# sourceMappingURL=MovieActionsToolbar.js.map

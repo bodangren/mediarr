@@ -1,0 +1,10 @@
+import { jsx as _jsx } from "react/jsx-runtime";
+const VARIANT_CLASS = {
+    primary: 'border-accent-primary bg-accent-primary text-white hover:opacity-90',
+    secondary: 'border-border-subtle bg-surface-1 text-text-primary hover:bg-surface-2',
+    danger: 'border-status-error/70 bg-status-error/20 text-text-primary hover:bg-status-error/30',
+};
+export function Button({ variant = 'primary', children, className, ...props }) {
+    return (_jsx("button", { type: "button", className: `inline-flex items-center justify-center rounded-sm border px-3 py-1.5 text-sm font-medium transition ${VARIANT_CLASS[variant]} ${className ?? ''}`, ...props, children: children }));
+}
+//# sourceMappingURL=Button.js.map

@@ -177,13 +177,14 @@ export function registerCollectionRoutes(
       searchOnAdd?: boolean;
     };
 
-    // Check if collection already exists
+    // Check if collection already exists — return it rather than erroring so
+    // callers can safely retry (e.g. after a failed sync) without getting stuck.
     const existing = await (deps.prisma as any).collection?.findUnique({
       where: { tmdbCollectionId: body.tmdbCollectionId },
     });
 
     if (existing) {
-      throw new ConflictError(`Collection with TMDB ID ${body.tmdbCollectionId} already exists`);
+      return sendSuccess(reply, { id: existing.id, name: existing.name, moviesAdded: 0 }, 200);
     }
 
     // Use collection service to fetch from TMDB and create

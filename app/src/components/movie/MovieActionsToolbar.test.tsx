@@ -39,8 +39,23 @@ describe('MovieActionsToolbar', () => {
     const handleSearch = vi.fn();
     render(<MovieActionsToolbar onSearch={handleSearch} />);
 
-    fireEvent.click(screen.getByRole('button', { name: /Search Movie/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Manual Search/i }));
     expect(handleSearch).toHaveBeenCalledTimes(1);
+  });
+
+  it('calls onAutoSearch when auto-search button is clicked', () => {
+    const handleAutoSearch = vi.fn();
+    render(<MovieActionsToolbar onAutoSearch={handleAutoSearch} />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Auto-Search/i }));
+    expect(handleAutoSearch).toHaveBeenCalledTimes(1);
+  });
+
+  it('disables auto-search button when isAutoSearching is true', () => {
+    render(<MovieActionsToolbar onAutoSearch={vi.fn()} isAutoSearching={true} />);
+
+    const autoSearchButton = screen.getByRole('button', { name: /Auto-Search/i });
+    expect(autoSearchButton).toBeDisabled();
   });
 
   it('disables refresh button when isRefreshing is true', () => {
@@ -53,7 +68,7 @@ describe('MovieActionsToolbar', () => {
   it('disables search button when isSearching is true', () => {
     render(<MovieActionsToolbar onSearch={vi.fn()} isSearching={true} />);
 
-    const searchButton = screen.getByRole('button', { name: /Search Movie/i });
+    const searchButton = screen.getByRole('button', { name: /Manual Search/i });
     expect(searchButton).toBeDisabled();
   });
 

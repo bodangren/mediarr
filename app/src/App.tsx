@@ -1648,6 +1648,26 @@ function MovieDetailPage() {
     }
   };
 
+  const handleAutoSearch = async () => {
+    if (!movie) return;
+    try {
+      pushToast({ title: 'Searching', message: `Automated search started for ${movie.title}`, variant: 'info' });
+      const response = await fetch(`/api/media/${movie.id}/auto-search`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'movie' })
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        pushToast({ title: 'Search Failed', variant: 'error', message: data.error || 'No candidates found' });
+      } else {
+        pushToast({ title: 'Success', variant: 'success', message: `Grabbed ${data.data?.release?.title || 'a release'}` });
+      }
+    } catch (err) {
+      pushToast({ title: 'Error', variant: 'error', message: 'Failed to execute automated search' });
+    }
+  };
+
   return (
     <RouteScaffold title="Movie Details" description="Details and interactive search for the selected movie.">
       {isLoading ? <p className="text-sm text-text-secondary">Loading movie...</p> : null}
@@ -1723,6 +1743,15 @@ function MovieDetailPage() {
                 ))}
               </select>
             </label>
+
+            <button
+              type="button"
+              className="rounded-sm border border-border-subtle bg-surface-2 px-3 py-2 text-sm text-text-primary hover:bg-surface-3 flex items-center gap-2"
+              onClick={handleAutoSearch}
+            >
+              <Search size={16} />
+              Auto-Search
+            </button>
 
             <button
               type="button"
@@ -2102,6 +2131,26 @@ function SeriesDetailPage() {
     void handleRescan(pathInput.trim() || undefined);
   };
 
+  const handleAutoSearch = async () => {
+    if (!series) return;
+    try {
+      pushToast({ title: 'Searching', message: `Automated search started for all missing episodes in ${series.title}`, variant: 'info' });
+      const response = await fetch(`/api/media/${series.id}/auto-search`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'series' })
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        pushToast({ title: 'Search Failed', variant: 'error', message: data.error || 'Failed to start automated search' });
+      } else {
+        pushToast({ title: 'Success', variant: 'success', message: `Automated search started in background` });
+      }
+    } catch (err) {
+      pushToast({ title: 'Error', variant: 'error', message: 'Failed to execute automated search' });
+    }
+  };
+
   const allSeasonsMonitored = Boolean(series && series.seasons.length > 0 && series.seasons.every(s => s.monitored));
   const someSeasonsMonitored = Boolean(series && series.seasons.some(s => s.monitored));
   const seriesMonitoredIndeterminate = !allSeasonsMonitored && someSeasonsMonitored;
@@ -2178,6 +2227,14 @@ function SeriesDetailPage() {
                 ))}
               </select>
             </label>
+
+            <button
+              type="button"
+              className="rounded-sm border border-accent px-3 py-2 text-sm text-accent"
+              onClick={handleAutoSearch}
+            >
+              Auto-Search
+            </button>
 
             <button
               type="button"

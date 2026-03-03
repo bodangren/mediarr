@@ -5,6 +5,7 @@ import { Icon } from '@/components/primitives/Icon';
 export interface MovieActionsToolbarProps {
   onRefresh?: () => void;
   onSearch?: () => void;
+  onAutoSearch?: () => void;
   onInteractiveSearch?: () => void;
   onPreviewRename?: () => void;
   onManageFiles?: () => void;
@@ -13,11 +14,13 @@ export interface MovieActionsToolbarProps {
   onDelete?: () => void;
   isRefreshing?: boolean;
   isSearching?: boolean;
+  isAutoSearching?: boolean;
 }
 
 export function MovieActionsToolbar({
   onRefresh,
   onSearch,
+  onAutoSearch,
   onInteractiveSearch,
   onPreviewRename,
   onManageFiles,
@@ -26,6 +29,7 @@ export function MovieActionsToolbar({
   onDelete,
   isRefreshing = false,
   isSearching = false,
+  isAutoSearching = false,
 }: MovieActionsToolbarProps) {
   return (
     <div className="flex flex-wrap items-center gap-2 border-b border-border-subtle pb-2">
@@ -44,11 +48,21 @@ export function MovieActionsToolbar({
         <button
           type="button"
           className="flex items-center gap-2 rounded-sm border border-border-subtle px-3 py-1.5 text-sm transition-colors hover:bg-surface-2 disabled:opacity-50"
+          onClick={onAutoSearch}
+          disabled={isAutoSearching}
+        >
+          <Icon name="search" className={isAutoSearching ? 'animate-spin' : ''} />
+          <span>Auto-Search</span>
+        </button>
+
+        <button
+          type="button"
+          className="flex items-center gap-2 rounded-sm border border-border-subtle px-3 py-1.5 text-sm transition-colors hover:bg-surface-2 disabled:opacity-50"
           onClick={onSearch}
           disabled={isSearching}
         >
-          <Icon name="search" />
-          <span>Search Movie</span>
+          <Icon name="search" className={isSearching ? 'animate-spin' : ''} />
+          <span>Manual Search</span>
         </button>
 
         <button

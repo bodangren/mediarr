@@ -12,24 +12,24 @@
 - [x] Task: Write unit tests for the enhanced scoring engine and search aggregation. [1071b8a]
 - [x] Task: Conductor - User Manual Verification 'Phase 1: Scoring Engine' (Protocol in workflow.md)
 
-## Phase 2: Automated Search Backend
+## Phase 2: Automated Search Backend [checkpoint: f1004e5]
 > Goal: Implement the backend logic to identify missing media and trigger automated downloads.
 
-- [ ] Task: Implement `WantedSearchService`
-    - [ ] Sub-task: Create a service to find monitored media (Movies/Episodes) with missing paths.
-    - [ ] Sub-task: Add a method to trigger an automated search for a specific item, selecting and grabbing the best candidate.
-    - [ ] Sub-task: Implement minimum score threshold logic for automatic grabbing.
-- [ ] Task: Improve `RssMediaMonitor`
-    - [ ] Sub-task: Use the new scoring engine to decide whether to grab a release found in RSS.
-- [ ] Task: API Endpoints
-    - [ ] Sub-task: `POST /api/wanted/search-all` — trigger a background task for all missing media.
-    - [ ] Sub-task: `POST /api/media/:id/auto-search` — trigger an automated search for a specific item.
-- [ ] Task: Conductor - User Manual Verification 'Phase 2: Automated Search Backend' (Protocol in workflow.md)
+- [x] Task: Implement `WantedSearchService`
+    - [x] Sub-task: Create a service to find monitored media (Movies/Episodes) with missing paths.
+    - [x] Sub-task: Add a method to trigger an automated search for a specific item, selecting and grabbing the best candidate.
+    - [x] Sub-task: Implement minimum score threshold logic for automatic grabbing.
+- [x] Task: Improve `RssMediaMonitor`
+    - [x] Sub-task: Use the new scoring engine to decide whether to grab a release found in RSS.
+- [x] Task: API Endpoints [5519bb7]
+    - [x] Sub-task: `POST /api/wanted/search-all` — trigger a background task for all missing media.
+    - [x] Sub-task: `POST /api/media/:id/auto-search` — trigger an automated search for a specific item.
+- [x] Task: Conductor - User Manual Verification 'Phase 2: Automated Search Backend' (Protocol in workflow.md)
 
 ## Phase 3: Scheduler and Event Wiring
 > Goal: Wire automation into background tasks and existing media events.
 
-- [ ] Task: Background Scheduler Wiring
+- [~] Task: Background Scheduler Wiring
     - [ ] Sub-task: Add a scheduled job in `Scheduler.ts` for periodic "Wanted Search".
 - [ ] Task: Event Triggers
     - [ ] Sub-task: Hook into the "Movie Added" / "Series Added" events to trigger automated search on-add.

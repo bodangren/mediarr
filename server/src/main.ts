@@ -107,6 +107,7 @@ interface RuntimeTorrentManager {
   setSpeedLimits: (limits: { download?: number; upload?: number }) => void;
   getTorrentsStatus: () => Promise<unknown[]>;
   getTorrentStatus: (infoHash: string) => Promise<unknown>;
+  getActiveTorrents: () => Promise<unknown[]>;
 }
 
 function mapTorrentRecord(torrent: {
@@ -178,6 +179,8 @@ function createFallbackTorrentManager(
         stopAtTime: null,
         magnetUrl: input.magnetUrl ?? null,
         torrentFile: null,
+        episodeId: null,
+        movieId: null,
       });
 
       return {
@@ -206,6 +209,10 @@ function createFallbackTorrentManager(
       }
 
       return mapTorrentRecord(row);
+    },
+    async getActiveTorrents() {
+      const rows = await repository.findByStatuses(['downloading', 'queued']);
+      return rows.map(mapTorrentRecord);
     },
   };
 }

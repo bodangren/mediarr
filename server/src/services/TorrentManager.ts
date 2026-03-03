@@ -220,12 +220,8 @@ export class TorrentManager extends EventEmitter {
       throw new Error('Incomplete download directory is not configured. Configure it in Settings > Clients.');
     }
 
-    if (this.maxActiveDownloads > 0) {
-      const activeCount = await this.repository.countByStatus('downloading');
-      if (activeCount >= this.maxActiveDownloads) {
-        throw new Error(`Max active downloads limit reached (${this.maxActiveDownloads})`);
-      }
-    }
+    const atLimit = this.maxActiveDownloads > 0
+      && (await this.repository.countByStatus('downloading')) >= this.maxActiveDownloads;
 
     const infoHashHint = this.extractInfoHashFromMagnet(preparedMagnetUrl);
     if (infoHashHint) {
@@ -246,6 +242,36 @@ export class TorrentManager extends EventEmitter {
           path: existingClientTorrent.path || downloadPath,
         };
       }
+    }
+
+    // If the active download limit is reached, store the torrent as queued so it
+    // is visible in the UI and will be promoted automatically when a slot opens.
+    if (atLimit) {
+      // We don't have an infoHash yet (magnet requires network resolution), so
+      // use the hint from the magnet URI if available, otherwise use a placeholder.
+      const queuedInfoHash = infoHashHint ?? `queued-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      await this.repository.upsert({
+        infoHash: queuedInfoHash,
+        name: options.name ?? 'Unknown',
+        status: 'queued',
+        progress: 0,
+        downloadSpeed: 0,
+        uploadSpeed: 0,
+        eta: null,
+        size: BigInt(options.size ?? 0),
+        downloaded: BigInt(0),
+        uploaded: BigInt(0),
+        ratio: 0,
+        path: downloadPath,
+        completedAt: null,
+        stopAtRatio: null,
+        stopAtTime: null,
+        magnetUrl: preparedMagnetUrl ?? null,
+        torrentFile: options.torrentFile ?? null,
+        episodeId: options.episodeId ?? null,
+        movieId: options.movieId ?? null,
+      });
+      return { infoHash: queuedInfoHash, name: options.name ?? 'Unknown', path: downloadPath };
     }
 
     const torrent = this.client.add(source, { path: downloadPath });
@@ -536,16 +562,19 @@ export class TorrentManager extends EventEmitter {
    */
   async removeTorrent(infoHash: string): Promise<void> {
     this.ensureInitialized();
-    
-    // Fetch DB record first to get the path before we delete it
+
+    // Fetch DB record first to get the path and status before we delete it
     const dbTorrent = await this.repository.findByInfoHash(infoHash);
-    
-    try {
-      const torrent = await this.findTorrentOrThrow(infoHash);
-      (this.client as any).remove(torrent, { destroyStore: true });
-    } catch (error) {
-      if (!(error instanceof Error) || !/not found/i.test(error.message)) {
-        throw error;
+
+    // Queued torrents exist only in the DB — skip the WebTorrent removal attempt
+    if (dbTorrent?.status !== 'queued') {
+      try {
+        const torrent = await this.findTorrentOrThrow(infoHash);
+        (this.client as any).remove(torrent, { destroyStore: true });
+      } catch (error) {
+        if (!(error instanceof Error) || !/not found/i.test(error.message)) {
+          throw error;
+        }
       }
     }
     
@@ -559,8 +588,73 @@ export class TorrentManager extends EventEmitter {
       }
     }
 
+    const wasDownloading = dbTorrent?.status === 'downloading';
     await this.repository.delete(infoHash);
     this.sessionUploadedBaselines.delete(infoHash);
+
+    // Freeing an active download slot may allow a queued torrent to start.
+    if (wasDownloading) {
+      void this.promoteNextQueued();
+    }
+  }
+
+  /**
+   * If slots are available, promotes the oldest queued torrent to actively downloading.
+   * Called after a download finishes, errors out, or is removed.
+   */
+  private async promoteNextQueued(): Promise<void> {
+    if (this.maxActiveDownloads > 0) {
+      const activeCount = await this.repository.countByStatus('downloading');
+      if (activeCount >= this.maxActiveDownloads) return;
+    }
+
+    const queued = await this.repository.findOldestQueued();
+    if (!queued) return;
+
+    const source = queued.magnetUrl
+      ? this.normalizeMagnetParameters(queued.magnetUrl)
+      : queued.torrentFile;
+    if (!source) {
+      await this.repository.updateStatus(queued.infoHash, 'error');
+      return;
+    }
+
+    try {
+      await this.repository.updateStatus(queued.infoHash, 'downloading');
+      const torrent = this.client!.add(source, { path: queued.path });
+      this.attachTorrentLifecycleHandlers(torrent);
+
+      // Once the real infoHash resolves, update the DB record (the queued row may
+      // have used a placeholder hash if only a torrent file was available).
+      const resolvedHash = await this.resolveInfoHash(torrent, queued.magnetUrl ?? undefined);
+      if (resolvedHash && resolvedHash !== queued.infoHash) {
+        await this.repository.delete(queued.infoHash);
+        await this.repository.upsert({
+          infoHash: resolvedHash,
+          name: torrent.name || queued.name,
+          status: 'downloading',
+          progress: 0,
+          downloadSpeed: 0,
+          uploadSpeed: 0,
+          eta: null,
+          size: BigInt(torrent.length || 0),
+          downloaded: BigInt(0),
+          uploaded: BigInt(0),
+          ratio: 0,
+          path: queued.path,
+          completedAt: null,
+          stopAtRatio: queued.stopAtRatio,
+          stopAtTime: queued.stopAtTime,
+          magnetUrl: queued.magnetUrl,
+          torrentFile: queued.torrentFile,
+          episodeId: queued.episodeId,
+          movieId: queued.movieId,
+        });
+      }
+    } catch (err) {
+      console.error(`Failed to promote queued torrent ${queued.infoHash}:`, err);
+      await this.repository.updateStatus(queued.infoHash, 'error');
+    }
   }
 
   private attachTorrentLifecycleHandlers(torrent: any): void {
@@ -581,6 +675,7 @@ export class TorrentManager extends EventEmitter {
       if (infoHash) {
         void this.repository
           .updateStatus(infoHash, 'error')
+          .then(() => this.promoteNextQueued())
           .catch((persistError: unknown) => {
             console.error(`Failed to persist error status for ${infoHash}:`, persistError);
           });
@@ -610,6 +705,7 @@ export class TorrentManager extends EventEmitter {
         status: 'seeding',
         completedAt: new Date(),
       });
+      void this.promoteNextQueued();
       return;
     }
 
@@ -654,10 +750,13 @@ export class TorrentManager extends EventEmitter {
         name: torrent.name,
         path: targetDir,
       });
+
+      void this.promoteNextQueued();
     } catch (error) {
       // Update status to error on failure
       await this.repository.updateStatus(infoHash, 'error');
       console.error(`Failed to move files for torrent ${infoHash}:`, error);
+      void this.promoteNextQueued();
     }
   }
 
@@ -828,10 +927,22 @@ export class TorrentManager extends EventEmitter {
    */
   private async loadExistingTorrents(): Promise<void> {
     const torrents = await this.repository.findAll();
+    let resumedDownloads = 0;
 
     for (const torrent of torrents) {
-      // Only re-add torrents that were actively downloading or seeding
-      if (torrent.status !== 'downloading' && torrent.status !== 'seeding') {
+      // Seeding torrents are always resumed (they don't count against the download limit)
+      if (torrent.status === 'seeding') {
+        // handled below
+      } else if (torrent.status === 'downloading') {
+        // Respect the limit: if too many were "downloading" when the server shut down,
+        // demote the excess back to queued so they remain visible and are promoted in order.
+        if (this.maxActiveDownloads > 0 && resumedDownloads >= this.maxActiveDownloads) {
+          await this.repository.updateStatus(torrent.infoHash, 'queued');
+          continue;
+        }
+        resumedDownloads++;
+      } else {
+        // queued, paused, error, completed — skip re-adding to WebTorrent
         continue;
       }
 

@@ -50,6 +50,7 @@ export interface ApiDependencies {
     | 'setDownloadPaths'
     | 'getTorrentsStatus'
     | 'getTorrentStatus'
+    | 'getActiveTorrents'
   >;
   importManager?: Pick<
     ImportManager,

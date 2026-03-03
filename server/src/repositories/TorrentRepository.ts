@@ -54,6 +54,18 @@ export class TorrentRepository {
   }
 
   /**
+   * Returns the oldest queued torrent (FIFO order) or null if none exist.
+   */
+  async findOldestQueued(): Promise<Torrent | null> {
+    const results = await this.prisma.torrent.findMany({
+      where: { status: 'queued' },
+      orderBy: { added: 'asc' },
+      take: 1,
+    });
+    return results[0] ?? null;
+  }
+
+  /**
    * Retrieves torrents matching any of the given statuses.
    */
   async findByStatuses(statuses: string[]): Promise<Torrent[]> {

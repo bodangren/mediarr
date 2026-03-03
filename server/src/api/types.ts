@@ -39,7 +39,7 @@ export interface ApiDependencies {
   >;
   searchAggregationService?: Pick<SearchAggregationService, 'searchAllIndexers'>;
   wantedService?: Pick<WantedService, 'getMissingEpisodes'>;
-  wantedSearchService?: Pick<WantedSearchService, 'autoSearchMovie' | 'autoSearchEpisode' | 'autoSearchAll'>;
+  wantedSearchService?: Pick<WantedSearchService, 'autoSearchMovie' | 'autoSearchEpisode' | 'autoSearchAll' | 'autoSearchSeries'>;
   torrentManager?: Pick<
     TorrentManager,
     | 'addTorrent'

@@ -72,4 +72,15 @@ describe('Scheduler', () => {
 
     expect(activityRepository.cleanupOldEvents).toHaveBeenCalledWith(45);
   });
+
+  it('should schedule wanted search job and execute autoSearchAll', async () => {
+    const wantedSearchService = {
+      autoSearchAll: vi.fn().mockResolvedValue(undefined),
+    };
+
+    scheduler.scheduleWantedSearch(wantedSearchService);
+    await scheduler.runNow('wanted-search');
+
+    expect(wantedSearchService.autoSearchAll).toHaveBeenCalled();
+  });
 });

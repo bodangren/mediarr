@@ -267,8 +267,9 @@ export function registerMediaRoutes(
           },
         });
 
-      if (body.searchNow && deps.mediaSearchService?.searchMovie) {
-        await deps.mediaSearchService.searchMovie(created);
+      if (body.searchNow && deps.wantedSearchService?.autoSearchMovie) {
+        // Fire and forget auto search
+        void deps.wantedSearchService.autoSearchMovie(created.id);
       }
 
       if (body.tmdbCollectionId && deps.collectionService?.linkMovieToCollection) {
@@ -335,12 +336,6 @@ export function registerMediaRoutes(
           path: seriesPath,
         },
       });
-
-    if (body.searchNow && deps.mediaSearchService?.getSearchCandidates) {
-      await deps.mediaSearchService.getSearchCandidates({
-        q: body.title,
-      });
-    }
 
     return sendSuccess(reply, created, 201);
   }
@@ -483,6 +478,10 @@ export function registerMediaRoutes(
 
           const details = await deps.metadataProvider.getSeriesDetails(tvdbId);
           await deps.mediaRepository.upsertSeasonsAndEpisodes(seriesId, details);
+
+          if (body.searchNow && deps.wantedSearchService?.autoSearchSeries) {
+            void deps.wantedSearchService.autoSearchSeries(seriesId);
+          }
         } catch (err) {
           console.error('[wanted] Failed to populate episodes:', err);
         }

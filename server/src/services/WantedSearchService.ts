@@ -152,6 +152,26 @@ export class WantedSearchService {
   }
 
   /**
+   * Triggers an automated search for all missing episodes in a specific series.
+   */
+  async autoSearchSeries(seriesId: number): Promise<void> {
+    const wantedEpisodes = await this.prisma.episode.findMany({
+      where: {
+        seriesId,
+        monitored: true,
+        path: null,
+      },
+      select: { id: true },
+    });
+
+    for (const episode of wantedEpisodes) {
+      await this.autoSearchEpisode(episode.id);
+      // Small delay to prevent hammering indexers
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    }
+  }
+
+  /**
    * Triggers an automated search for all missing wanted media in the background.
    */
   async autoSearchAll(): Promise<void> {

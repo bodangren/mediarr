@@ -99,4 +99,17 @@ export class Scheduler {
       await repository.cleanupOldEvents(retentionDays);
     });
   }
+
+  /**
+   * Schedule periodic searches for all missing wanted media.
+   */
+  scheduleWantedSearch(
+    wantedSearchService: { autoSearchAll: () => Promise<void> },
+    name = 'wanted-search',
+    cronExpression = '0 */6 * * *', // Every 6 hours by default
+  ): void {
+    this.schedule(name, cronExpression, async () => {
+      await wantedSearchService.autoSearchAll();
+    });
+  }
 }

@@ -234,6 +234,7 @@ describe('playbackRoutes', () => {
   });
 
   it('returns validation error when playback service is missing', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const app = Fastify();
     app.setErrorHandler((error, request, reply) => registerApiErrorHandler(request, reply, error));
     registerPlaybackRoutes(app, { prisma: {} as any });
@@ -247,5 +248,6 @@ describe('playbackRoutes', () => {
     expect(response.json().error.code).toBe('VALIDATION_ERROR');
 
     await app.close();
+    consoleSpy.mockRestore();
   });
 });

@@ -19,6 +19,7 @@ import type { SettingsService } from '../services/SettingsService';
 import type { SubtitleInventoryApiService } from '../services/SubtitleInventoryApiService';
 import type { SubtitleProviderFactory } from '../services/SubtitleProviderFactory';
 import type { SubtitleAutomationService } from '../services/SubtitleAutomationService';
+import type { PlaybackService } from '../services/PlaybackService';
 import type { MetadataProvider } from '../services/MetadataProvider';
 import type { CollectionService } from '../services/CollectionService';
 import type { ImportManager } from '../services/ImportManager';
@@ -77,6 +78,10 @@ export interface ApiDependencies {
   subtitleAutomationService?: Pick<
     SubtitleAutomationService,
     'runAutomationCycle' | 'onMovieImported' | 'onEpisodeImported'
+  >;
+  playbackService?: Pick<
+    PlaybackService,
+    'resolveStreamSource' | 'buildManifest' | 'recordHeartbeat' | 'resolveSubtitleTrack'
   >;
   settingsService?: Pick<SettingsService, 'get' | 'update'>;
   activityEventRepository?: Pick<ActivityEventRepository, 'query' | 'clear' | 'markAsFailed' | 'export'>;

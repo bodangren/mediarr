@@ -25,6 +25,7 @@ import { registerProxySettingsRoutes } from './routes/proxySettingsRoutes';
 import { registerQualityProfileRoutes } from './routes/qualityProfileRoutes';
 import { registerReleaseRoutes } from './routes/releaseRoutes';
 import { registerSeriesRoutes } from './routes/seriesRoutes';
+import { registerPlaybackRoutes } from './routes/playbackRoutes';
 import { registerCalendarRoutes } from './routes/calendarRoutes';
 import { registerDashboardRoutes } from './routes/dashboardRoutes';
 import { registerSubtitleRoutes } from './routes/subtitleRoutes';
@@ -150,6 +151,7 @@ export function createApiServer(
   });
 
   registerSeriesRoutes(app, dependencies);
+  registerPlaybackRoutes(app, dependencies);
   registerCalendarRoutes(app, dependencies);
   registerDashboardRoutes(app, dependencies);
   registerMovieRoutes(app, dependencies);

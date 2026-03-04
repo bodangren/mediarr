@@ -7,9 +7,9 @@
 - [ ] Task: Conductor - User Manual Verification 'Phase 1: Persistence & Discovery' (Protocol in workflow.md)
 
 ## Phase 2: Playback APIs & Streaming
-- [ ] Task: Implement `StreamingController` in Fastify with `Accept-Ranges` and stream-based delivery for `/api/stream/:id`.
-- [ ] Task: Implement `PlaybackManifestController` (`GET /api/playback/:id`) returning video, metadata, and subtitle URLs.
-- [ ] Task: Implement `ProgressHeartbeatController` (`POST /api/playback/progress`) for client-side syncing.
+- [x] Task: Implement `StreamingController` in Fastify with `Accept-Ranges` and stream-based delivery for `/api/stream/:id`.
+- [x] Task: Implement `PlaybackManifestController` (`GET /api/playback/:id`) returning video, metadata, and subtitle URLs.
+- [x] Task: Implement `ProgressHeartbeatController` (`POST /api/playback/progress`) for client-side syncing.
 - [ ] Task: Conductor - User Manual Verification 'Phase 2: Playback APIs & Streaming' (Protocol in workflow.md)
 
 ## Phase 3: Integration & Testing

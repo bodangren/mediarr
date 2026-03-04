@@ -22,6 +22,7 @@ import { IndexerHealthRepository } from './repositories/IndexerHealthRepository'
 import { IndexerRepository } from './repositories/IndexerRepository';
 import { MediaRepository } from './repositories/MediaRepository';
 import { NotificationRepository } from './repositories/NotificationRepository';
+import { PlaybackRepository } from './repositories/PlaybackRepository';
 import { QualityProfileRepository } from './repositories/QualityProfileRepository';
 import { SubtitleVariantRepository } from './repositories/SubtitleVariantRepository';
 import { TorrentRepository } from './repositories/TorrentRepository';
@@ -42,6 +43,7 @@ import {
 import { SearchAggregationService } from './services/SearchAggregationService';
 import { MediaService } from './services/MediaService';
 import { MetadataProvider } from './services/MetadataProvider';
+import { PlaybackService } from './services/PlaybackService';
 import { OpenSubtitlesProvider } from './services/providers/OpenSubtitlesProvider';
 import { AssrtProvider } from './services/providers/AssrtProvider';
 import { SubdlProvider } from './services/providers/SubdlProvider';
@@ -393,6 +395,7 @@ async function startApi(): Promise<void> {
   const notificationRepository = new NotificationRepository(prisma);
   const qualityProfileRepository = new QualityProfileRepository(prisma);
   const subtitleVariantRepository = new SubtitleVariantRepository(prisma);
+  const playbackRepository = new PlaybackRepository(prisma);
   const appSettingsRepository = new AppSettingsRepository(prisma);
   const torrentRepository = new TorrentRepository(prisma);
   const collectionRepository = new CollectionRepository(prisma);
@@ -401,6 +404,11 @@ async function startApi(): Promise<void> {
   const settingsService = new SettingsService(appSettingsRepository);
   const metadataProvider = new MetadataProvider(httpClient, settingsService);
   const collectionService = new CollectionService(prisma, httpClient, settingsService);
+  const playbackService = new PlaybackService(
+    prisma,
+    playbackRepository,
+    settingsService,
+  );
 
   // Import list providers
   const importListProviderRegistry = new ImportListProviderRegistry();
@@ -586,6 +594,7 @@ async function startApi(): Promise<void> {
     subtitleInventoryApiService,
     subtitleProviderFactory,
     subtitleAutomationService,
+    playbackService,
     settingsService,
     activityEventRepository,
     indexerHealthRepository,

@@ -37,6 +37,11 @@ export const API_ROUTE_MAP: ApiRouteDefinition[] = [
   { method: 'POST', path: '/api/media/search' },
   { method: 'POST', path: '/api/media' },
 
+  { method: 'GET', path: '/api/stream/:id' },
+  { method: 'GET', path: '/api/playback/:id' },
+  { method: 'POST', path: '/api/playback/progress' },
+  { method: 'GET', path: '/api/playback/subtitles/:trackId' },
+
   { method: 'POST', path: '/api/releases/search' },
   { method: 'POST', path: '/api/releases/grab' },
   { method: 'POST', path: '/api/releases/grab-candidate' },

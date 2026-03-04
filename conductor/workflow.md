@@ -9,6 +9,13 @@
 5. **User Experience First:** Every decision should prioritize user experience
 6. **Non-Interactive & CI-Aware:** Prefer non-interactive commands. Use `CI=true` for watch-mode tools (tests, linters) to ensure single execution.
 
+## Security Scope Decision (2026-03-05)
+
+- Mediarr currently targets trusted household LAN deployments.
+- Authentication/authorization work is intentionally out of scope for the current phase.
+- Broad hardening work is out of scope unless the deployment trust model changes.
+- Dependency updates for known CVEs are optional maintenance and are not release blockers.
+
 ## Task Workflow
 
 All tasks follow a strict lifecycle:
@@ -117,7 +124,7 @@ Before marking any task complete, verify:
 - [ ] No linting or static analysis errors (using the project's configured tools)
 - [ ] Works correctly on mobile (if applicable)
 - [ ] Documentation updated if needed
-- [ ] No security vulnerabilities introduced
+- [ ] No new security regressions introduced within the accepted trusted-LAN/no-auth scope
 
 ## Development Commands
 
@@ -155,7 +162,7 @@ Before marking any task complete, verify:
 ### Integration Testing
 - Test complete user flows
 - Verify database transactions
-- Test authentication and authorization
+- Validate expected no-auth behavior in trusted-LAN mode
 - Check form submissions
 
 ### Mobile Testing
@@ -187,6 +194,7 @@ Before requesting review:
    - Coverage adequate (>80%)
 
 4. **Security**
+   - Respect the declared trusted-LAN/no-auth scope unless the scope is explicitly changed
    - No hardcoded secrets
    - Input validation present
    - SQL injection prevented

@@ -3,6 +3,11 @@
 **Date:** March 3, 2026
 **Summary:** Total 8 packages affected by 14 known vulnerabilities (0 Critical, 10 High, 2 Medium, 2 Low).
 
+## Scope Disposition (March 5, 2026)
+
+- For the current trusted-LAN project scope, dependency upgrades are tracked as optional maintenance ("nice to have").
+- This report remains a maintenance reference and does not block current-scope feature delivery.
+
 ## Key Findings
 
 ### Priority 1: Critical Build-Tool Vulnerability

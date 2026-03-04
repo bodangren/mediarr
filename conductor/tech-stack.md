@@ -1,6 +1,6 @@
 # Mediarr Technology Stack
 
-> Last reconciled: 2026-02-27
+> Last reconciled: 2026-03-05
 
 **Frontend & API:**
 - **Framework:** React SPA (Single Page Application) built with Vite. No SSR, no Next.js.
@@ -41,4 +41,6 @@
 **Deployment:**
 - **Single Process:** The frontend is built into static files (`dist/`) and served directly by the Fastify backend. The user only needs to execute the single Bun backend script.
 - **Containerization:** Docker & Docker Compose (targeting home-lab environments).
-- **Authentication:** None currently. App assumes a trusted local network.
+- **Authentication:** None. This is an intentional product decision for trusted household LAN use.
+- **Security Scope (2026-03-05):** Additional hardening work (auth, network boundary controls, and broad security retrofits) is out of scope for the current project phase.
+- **Dependency Updates:** Vulnerability-related package upgrades are optional maintenance ("nice to have"), not a release blocker for the current scope.

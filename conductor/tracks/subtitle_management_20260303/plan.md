@@ -17,17 +17,17 @@
 ## Phase 2: Wanted Languages and Automation Engine
 > Goal: Configure target languages and automate missing subtitle fetches.
 
-- [ ] Task: Add global wanted languages to settings
-  - [ ] Sub-task: Add `wantedLanguages` to backend settings model/repository/validation.
-  - [ ] Sub-task: Add `wantedLanguages` to frontend settings client schema.
-- [ ] Task: Build automated subtitle orchestration
-  - [ ] Sub-task: Scan variants for missing subtitles from wanted languages.
-  - [ ] Sub-task: Sync `VariantMissingSubtitle` and `WantedSubtitle` records.
-  - [ ] Sub-task: Run fetch loop with state transitions and history recording.
-- [ ] Task: Integrate triggers
-  - [ ] Sub-task: Trigger subtitle automation on import events.
-  - [ ] Sub-task: Add periodic scheduler job for subtitle wanted scan/search.
-- [ ] Task: Add backend tests for settings + automation + scheduler/import hooks.
+- [x] Task: Add global wanted languages to settings [6941a19]
+  - [x] Sub-task: Add `wantedLanguages` to backend settings model/repository/validation.
+  - [x] Sub-task: Add `wantedLanguages` to frontend settings client schema.
+- [x] Task: Build automated subtitle orchestration [6941a19]
+  - [x] Sub-task: Scan variants for missing subtitles from wanted languages.
+  - [x] Sub-task: Sync `VariantMissingSubtitle` and `WantedSubtitle` records.
+  - [x] Sub-task: Run fetch loop with state transitions and history recording.
+- [x] Task: Integrate triggers [6941a19]
+  - [x] Sub-task: Trigger subtitle automation on import events.
+  - [x] Sub-task: Add periodic scheduler job for subtitle wanted scan/search.
+- [x] Task: Add backend tests for settings + automation + scheduler/import hooks. [6941a19]
 
 ## Phase 3: Subtitle API Contract Completion
 > Goal: Expose a complete subtitle API surface aligned with current frontend route map.

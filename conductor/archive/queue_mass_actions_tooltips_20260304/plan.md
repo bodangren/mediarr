@@ -15,4 +15,4 @@
     - [x] Sub-task: Add `title` on row-level pause/resume, retry, and remove buttons
     - [x] Sub-task: Add `title` on bulk icon action buttons
 - [x] Task: Extend frontend tests for queue mass actions and tooltip affordance
-- [ ] Task: Conductor - User Manual Verification 'Phase 1: Queue UX Enhancements' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 1: Queue UX Enhancements' (Protocol in workflow.md)

@@ -1,0 +1,1 @@
+Phase 1 complete: added AppSettings.streaming model/defaults, Prisma migration, and repository tests for streaming persistence.

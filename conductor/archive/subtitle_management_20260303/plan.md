@@ -77,3 +77,8 @@
   - `npm run test -- server/src/services/SubtitleScoringService.test.ts server/src/services/SubtitleInventoryApiService.test.ts server/src/services/SubtitleInventoryApiService.manual.test.ts server/src/services/SubtitleAutomationService.test.ts server/src/services/ProviderBackedSubtitleFetchProvider.test.ts server/src/services/Scheduler.subtitle.test.ts server/src/services/providers/OpenSubtitlesProvider.test.ts server/src/api/routes/subtitleRoutes.phase3.test.ts server/src/api/routes/movieRoutes.search.test.ts server/src/api/routes/movieRoutes.collection.test.ts`
   - `npm run test:coverage -- server/src/api/routes/subtitleRoutes.phase3.test.ts server/src/api/routes/movieRoutes.search.test.ts server/src/api/routes/movieRoutes.collection.test.ts --coverage.include=server/src/api/routes/subtitleRoutes.ts --coverage.include=server/src/api/routes/movieRoutes.ts --coverage.reporter=text --coverage.reporter=text-summary`
   - `npm run test --workspace=app -- --coverage src/App.subtitle-phase4.test.tsx src/App.test.tsx src/App.detailPages.test.tsx src/components/views/MovieOverviewView.test.tsx --coverage.include=src/App.tsx --coverage.include=src/components/views/MovieOverviewView.tsx --coverage.reporter=text --coverage.reporter=text-summary`
+
+## Post-Archive Maintenance (2026-03-05)
+
+- `394e1ddb` added client-side fallback support for legacy non-envelope subtitle provider payloads.
+- `c9c377e5` extended provider payload normalization for legacy status values (for example `ok`) to avoid settings page provider status contract errors.

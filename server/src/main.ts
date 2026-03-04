@@ -582,6 +582,8 @@ async function startApi(): Promise<void> {
     indexerTester,
     indexerFactory,
     subtitleInventoryApiService,
+    subtitleProviderFactory,
+    subtitleAutomationService,
     settingsService,
     activityEventRepository,
     indexerHealthRepository,

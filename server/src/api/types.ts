@@ -17,6 +17,8 @@ import type { WantedSearchService } from '../services/WantedSearchService';
 import type { TorrentManager } from '../services/TorrentManager';
 import type { SettingsService } from '../services/SettingsService';
 import type { SubtitleInventoryApiService } from '../services/SubtitleInventoryApiService';
+import type { SubtitleProviderFactory } from '../services/SubtitleProviderFactory';
+import type { SubtitleAutomationService } from '../services/SubtitleAutomationService';
 import type { MetadataProvider } from '../services/MetadataProvider';
 import type { CollectionService } from '../services/CollectionService';
 import type { ImportManager } from '../services/ImportManager';
@@ -66,7 +68,15 @@ export interface ApiDependencies {
     | 'listEpisodeVariantInventory'
     | 'manualSearch'
     | 'manualDownload'
-    | 'uploadSubtitle'
+      | 'uploadSubtitle'
+  >;
+  subtitleProviderFactory?: Pick<
+    SubtitleProviderFactory,
+    'getProviderNames' | 'resolveManualProvider'
+  >;
+  subtitleAutomationService?: Pick<
+    SubtitleAutomationService,
+    'runAutomationCycle' | 'onMovieImported' | 'onEpisodeImported'
   >;
   settingsService?: Pick<SettingsService, 'get' | 'update'>;
   activityEventRepository?: Pick<ActivityEventRepository, 'query' | 'clear' | 'markAsFailed' | 'export'>;

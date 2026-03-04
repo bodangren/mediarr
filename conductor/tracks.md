@@ -35,6 +35,7 @@ Subtitle Management (New)
 
 - [x] **Track: Automated Search and Download** *Phases: 4 | Link: [./tracks/automated_search_download_20260303/](./tracks/automated_search_download_20260303/)*
 - [ ] **Track: Subtitle Management** *Phases: 3 | Link: [./tracks/subtitle_management_20260303/](./tracks/subtitle_management_20260303/)*
+- [~] **Track: Queue Mass Actions + Action Tooltips** *Phases: 1 | Link: [./tracks/queue_mass_actions_tooltips_20260304/](./tracks/queue_mass_actions_tooltips_20260304/)*
 
 ---
 

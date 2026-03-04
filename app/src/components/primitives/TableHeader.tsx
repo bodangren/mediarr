@@ -4,7 +4,8 @@ import { StatusBadge } from './StatusBadge';
 
 export interface TableColumn<RowType> {
   key: string;
-  header: string;
+  header: ReactNode;
+  sortLabel?: string;
   sortable?: boolean;
   render: (row: RowType) => ReactNode;
   className?: string;
@@ -52,7 +53,7 @@ export const TableHeader = memo(function TableHeader<RowType>({ columns, sort, o
                   type="button"
                   className="inline-flex items-center gap-1 text-left"
                   onClick={() => memoizedOnSort(column.key)}
-                  aria-label={`Sort by ${column.header}`}
+                  aria-label={`Sort by ${column.sortLabel ?? (typeof column.header === 'string' ? column.header : column.key)}`}
                 >
                   {column.header}
                   <span aria-hidden="true">

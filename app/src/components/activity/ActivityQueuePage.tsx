@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getApiClients } from '@/lib/api/client';
 import type { TorrentItem } from '@/lib/api/torrentApi';
 import { RouteScaffold } from '@/components/primitives/RouteScaffold';
@@ -25,18 +25,21 @@ function normalizeQueueStatus(status: string | undefined): 'downloading' | 'seed
 export function ActivityQueuePage() {
   const api = useMemo(() => getApiClients(), []);
   const { pushToast } = useToast();
-  
+
   const [torrents, setTorrents] = useState<TorrentItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   const [page, setPage] = useState(1);
   const [pageSize] = useState(20);
   const [totalCount, setTotalCount] = useState(0);
-  
-  const [removingItem, setRemovingItem] = useState<TorrentItem | null>(null);
+
+  const [selectedInfoHashes, setSelectedInfoHashes] = useState<string[]>([]);
+  const [removeTargets, setRemoveTargets] = useState<TorrentItem[]>([]);
   const [isRemoving, setIsRemoving] = useState(false);
   const [retryingInfoHash, setRetryingInfoHash] = useState<string | null>(null);
+  const [bulkAction, setBulkAction] = useState<'pause' | 'resume' | 'retry' | null>(null);
+  const selectAllRef = useRef<HTMLInputElement>(null);
 
   const [downloadLimit, setDownloadLimit] = useState<number | undefined>(0);
   const [uploadLimit, setUploadLimit] = useState<number | undefined>(0);
@@ -68,13 +71,50 @@ export function ActivityQueuePage() {
         void fetchTorrents(true);
       }
     }, 5000);
-    
+
     return () => clearInterval(interval);
   }, [fetchTorrents]);
 
+  useEffect(() => {
+    setSelectedInfoHashes(current =>
+      current.filter(infoHash => torrents.some(torrent => torrent.infoHash === infoHash))
+    );
+  }, [torrents]);
+
+  const selectedTorrents = useMemo(
+    () => torrents.filter(torrent => selectedInfoHashes.includes(torrent.infoHash)),
+    [selectedInfoHashes, torrents]
+  );
+  const selectedCount = selectedTorrents.length;
+  const allSelectedOnPage = torrents.length > 0 && selectedCount === torrents.length;
+  const hasPartialSelection = selectedCount > 0 && !allSelectedOnPage;
+
+  useEffect(() => {
+    if (selectAllRef.current) {
+      selectAllRef.current.indeterminate = hasPartialSelection;
+    }
+  }, [hasPartialSelection]);
+
+  const toggleSelection = (infoHash: string) => {
+    setSelectedInfoHashes(current =>
+      current.includes(infoHash)
+        ? current.filter(selectedHash => selectedHash !== infoHash)
+        : [...current, infoHash]
+    );
+  };
+
+  const toggleSelectAllOnPage = () => {
+    if (allSelectedOnPage) {
+      setSelectedInfoHashes([]);
+      return;
+    }
+
+    setSelectedInfoHashes(torrents.map(torrent => torrent.infoHash));
+  };
+
   const handlePauseResume = async (torrent: TorrentItem) => {
     try {
-      if (torrent.status === 'paused') {
+      if (normalizeQueueStatus(torrent.status) === 'paused') {
         await api.torrentApi.resume(torrent.infoHash);
         pushToast({ title: 'Torrent resumed', variant: 'success' });
       } else {
@@ -91,21 +131,105 @@ export function ActivityQueuePage() {
     }
   };
 
+  const runBulkAction = async (
+    action: 'pause' | 'resume' | 'retry',
+    targets: TorrentItem[],
+    request: (infoHash: string) => Promise<unknown>,
+    successVerb: string,
+    emptySelectionMessage: string
+  ) => {
+    if (targets.length === 0) {
+      pushToast({ title: emptySelectionMessage, variant: 'info' });
+      return;
+    }
+
+    setBulkAction(action);
+    try {
+      const results = await Promise.allSettled(
+        targets.map(torrent => request(torrent.infoHash))
+      );
+      const successCount = results.filter(result => result.status === 'fulfilled').length;
+      const failedCount = results.length - successCount;
+
+      if (successCount > 0) {
+        pushToast({
+          title: `${successCount} torrent${successCount === 1 ? '' : 's'} ${successVerb}`,
+          variant: 'success',
+        });
+      }
+      if (failedCount > 0) {
+        pushToast({
+          title: `${failedCount} torrent${failedCount === 1 ? '' : 's'} failed`,
+          message: `Some ${action} requests did not complete successfully.`,
+          variant: 'error',
+        });
+      }
+      if (successCount > 0) {
+        setSelectedInfoHashes([]);
+      }
+      void fetchTorrents(true);
+    } finally {
+      setBulkAction(null);
+    }
+  };
+
+  const handlePauseSelected = async () => {
+    await runBulkAction(
+      'pause',
+      selectedTorrents.filter(torrent => normalizeQueueStatus(torrent.status) !== 'paused'),
+      infoHash => api.torrentApi.pause(infoHash),
+      'paused',
+      'No active torrents selected to pause'
+    );
+  };
+
+  const handleResumeSelected = async () => {
+    await runBulkAction(
+      'resume',
+      selectedTorrents.filter(torrent => normalizeQueueStatus(torrent.status) === 'paused'),
+      infoHash => api.torrentApi.resume(infoHash),
+      'resumed',
+      'No paused torrents selected to resume'
+    );
+  };
+
+  const handleRetrySelected = async () => {
+    await runBulkAction(
+      'retry',
+      selectedTorrents,
+      infoHash => api.torrentApi.retryImport(infoHash),
+      'retried',
+      'Select at least one torrent to retry import'
+    );
+  };
+
   const handleRemoveConfirm = async (_options: QueueRemoveOptions) => {
-    if (!removingItem) return;
-    
+    if (removeTargets.length === 0) return;
+
     setIsRemoving(true);
     try {
-      await api.torrentApi.remove(removingItem.infoHash);
-      pushToast({ title: 'Torrent removed', variant: 'success' });
-      setRemovingItem(null);
+      const results = await Promise.allSettled(
+        removeTargets.map(torrent => api.torrentApi.remove(torrent.infoHash))
+      );
+      const successCount = results.filter(result => result.status === 'fulfilled').length;
+      const failedCount = results.length - successCount;
+
+      if (successCount > 0) {
+        pushToast({
+          title: `${successCount} torrent${successCount === 1 ? '' : 's'} removed`,
+          variant: 'success',
+        });
+      }
+      if (failedCount > 0) {
+        pushToast({
+          title: `${failedCount} torrent${failedCount === 1 ? '' : 's'} could not be removed`,
+          variant: 'error',
+        });
+      }
+
+      setSelectedInfoHashes([]);
+      setRemoveTargets([]);
       void fetchTorrents(true);
-    } catch (err) {
-      pushToast({ 
-        title: 'Removal failed', 
-        message: err instanceof Error ? err.message : 'Unknown error',
-        variant: 'error' 
-      });
     } finally {
       setIsRemoving(false);
     }
@@ -137,10 +261,10 @@ export function ActivityQueuePage() {
       });
       pushToast({ title: 'Speed limits updated', variant: 'success' });
     } catch (err) {
-      pushToast({ 
-        title: 'Update failed', 
+      pushToast({
+        title: 'Update failed',
         message: err instanceof Error ? err.message : 'Unknown error',
-        variant: 'error' 
+        variant: 'error',
       });
     } finally {
       setIsUpdatingLimits(false);
@@ -149,12 +273,35 @@ export function ActivityQueuePage() {
 
   const columns: DataTableColumn<TorrentItem>[] = [
     {
+      key: 'select',
+      header: (
+        <input
+          ref={selectAllRef}
+          type="checkbox"
+          aria-label="Select all torrents"
+          title="Select all torrents on this page"
+          checked={allSelectedOnPage}
+          onChange={toggleSelectAllOnPage}
+        />
+      ),
+      className: 'w-10',
+      render: torrent => (
+        <input
+          type="checkbox"
+          aria-label={`Select ${torrent.name}`}
+          title={`Select ${torrent.name}`}
+          checked={selectedInfoHashes.includes(torrent.infoHash)}
+          onChange={() => toggleSelection(torrent.infoHash)}
+        />
+      ),
+    },
+    {
       key: 'name',
       header: 'Title',
       render: (torrent) => (
         <div className="flex flex-col gap-1 max-w-md">
           <span className="font-medium truncate" title={torrent.name}>{torrent.name}</span>
-          <span className="text-xs text-text-secondary truncate" title={torrent.path}>{torrent.path}</span>
+          <span className="text-xs text-text-secondary truncate" title={torrent.path ?? ''}>{torrent.path}</span>
         </div>
       ),
     },
@@ -207,33 +354,43 @@ export function ActivityQueuePage() {
 
   const rowActions = (torrent: TorrentItem) => {
     const isPaused = normalizeQueueStatus(torrent.status) === 'paused';
+    const isBulkBusy = bulkAction !== null || isRemoving;
     return (
       <div className="flex items-center gap-2">
         <Button
           variant="secondary"
           onClick={() => handlePauseResume(torrent)}
+          disabled={isBulkBusy}
           aria-label={isPaused ? 'Resume torrent' : 'Pause torrent'}
+          title={isPaused ? 'Resume torrent' : 'Pause torrent'}
         >
           {isPaused ? <Play size={14} /> : <Pause size={14} />}
         </Button>
         <Button
           variant="secondary"
           onClick={() => handleRetryImport(torrent)}
-          disabled={retryingInfoHash === torrent.infoHash}
+          disabled={retryingInfoHash === torrent.infoHash || isBulkBusy}
           aria-label="Retry import"
+          title="Retry import"
         >
           <RotateCcw size={14} />
         </Button>
         <Button
           variant="danger"
-          onClick={() => setRemovingItem(torrent)}
+          onClick={() => setRemoveTargets([torrent])}
+          disabled={isBulkBusy}
           aria-label="Remove torrent"
+          title="Remove torrent"
         >
           <Trash2 size={14} />
         </Button>
       </div>
     );
   };
+
+  const removeModalItemTitle = removeTargets.length === 1
+    ? removeTargets[0].name
+    : `${removeTargets.length} selected torrents`;
 
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
@@ -283,6 +440,65 @@ export function ActivityQueuePage() {
           </div>
         </section>
 
+        {selectedCount > 0 && (
+          <section className="rounded-md border border-border-subtle bg-surface-1 px-4 py-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="text-sm text-text-secondary">
+                {selectedCount} torrent{selectedCount === 1 ? '' : 's'} selected
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  variant="secondary"
+                  className="px-2"
+                  onClick={handlePauseSelected}
+                  disabled={bulkAction !== null || isRemoving}
+                  aria-label="Pause selected torrents"
+                  title="Pause selected torrents"
+                >
+                  <Pause size={14} />
+                </Button>
+                <Button
+                  variant="secondary"
+                  className="px-2"
+                  onClick={handleResumeSelected}
+                  disabled={bulkAction !== null || isRemoving}
+                  aria-label="Resume selected torrents"
+                  title="Resume selected torrents"
+                >
+                  <Play size={14} />
+                </Button>
+                <Button
+                  variant="secondary"
+                  className="px-2"
+                  onClick={handleRetrySelected}
+                  disabled={bulkAction !== null || isRemoving}
+                  aria-label="Retry import for selected torrents"
+                  title="Retry import for selected torrents"
+                >
+                  <RotateCcw size={14} />
+                </Button>
+                <Button
+                  variant="danger"
+                  className="px-2"
+                  onClick={() => setRemoveTargets(selectedTorrents)}
+                  disabled={bulkAction !== null || isRemoving}
+                  aria-label="Remove selected torrents"
+                  title="Remove selected torrents"
+                >
+                  <Trash2 size={14} />
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => setSelectedInfoHashes([])}
+                  disabled={bulkAction !== null || isRemoving}
+                >
+                  Clear Selection
+                </Button>
+              </div>
+            </div>
+          </section>
+        )}
+
         {/* Queue Table */}
         <DataTable
           data={torrents}
@@ -306,11 +522,11 @@ export function ActivityQueuePage() {
         )}
       </div>
 
-      {removingItem && (
+      {removeTargets.length > 0 && (
         <QueueRemoveModal
           isOpen={true}
-          itemTitle={removingItem.name}
-          onClose={() => setRemovingItem(null)}
+          itemTitle={removeModalItemTitle}
+          onClose={() => setRemoveTargets([])}
           onConfirm={handleRemoveConfirm}
           isConfirming={isRemoving}
         />

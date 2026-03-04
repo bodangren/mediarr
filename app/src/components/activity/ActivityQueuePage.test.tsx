@@ -152,6 +152,90 @@ describe('ActivityQueuePage', () => {
     });
   });
 
+  it('shows icon tooltips for row-level queue actions', async () => {
+    renderPage();
+
+    await waitFor(() => screen.getByText('Big Buck Bunny'));
+
+    const row = screen.getByText('Big Buck Bunny').closest('tr')!;
+    expect(within(row).getByTitle('Pause torrent')).toBeInTheDocument();
+    expect(within(row).getByTitle('Retry import')).toBeInTheDocument();
+    expect(within(row).getByTitle('Remove torrent')).toBeInTheDocument();
+  });
+
+  it('supports bulk pause for selected torrents', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await waitFor(() => screen.getByLabelText('Select Big Buck Bunny'));
+    await user.click(screen.getByLabelText('Select Big Buck Bunny'));
+
+    await user.click(screen.getByLabelText('Pause selected torrents'));
+
+    await waitFor(() => {
+      expect(mockApi.torrentApi.pause).toHaveBeenCalledWith('hash1');
+    });
+  });
+
+  it('shows icon tooltips for bulk queue actions when rows are selected', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await waitFor(() => screen.getByLabelText('Select Big Buck Bunny'));
+    await user.click(screen.getByLabelText('Select Big Buck Bunny'));
+
+    expect(screen.getByTitle('Pause selected torrents')).toBeInTheDocument();
+    expect(screen.getByTitle('Resume selected torrents')).toBeInTheDocument();
+    expect(screen.getByTitle('Retry import for selected torrents')).toBeInTheDocument();
+    expect(screen.getByTitle('Remove selected torrents')).toBeInTheDocument();
+  });
+
+  it('supports bulk resume for selected torrents', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await waitFor(() => screen.getByLabelText('Select Sintel'));
+    await user.click(screen.getByLabelText('Select Sintel'));
+
+    await user.click(screen.getByLabelText('Resume selected torrents'));
+
+    await waitFor(() => {
+      expect(mockApi.torrentApi.resume).toHaveBeenCalledWith('hash2');
+    });
+  });
+
+  it('supports bulk retry import for selected torrents', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await waitFor(() => screen.getByLabelText('Select all torrents'));
+    await user.click(screen.getByLabelText('Select all torrents'));
+
+    await user.click(screen.getByLabelText('Retry import for selected torrents'));
+
+    await waitFor(() => {
+      expect(mockApi.torrentApi.retryImport).toHaveBeenCalledWith('hash1');
+      expect(mockApi.torrentApi.retryImport).toHaveBeenCalledWith('hash2');
+    });
+  });
+
+  it('supports bulk remove for selected torrents with confirmation', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await waitFor(() => screen.getByLabelText('Select all torrents'));
+    await user.click(screen.getByLabelText('Select all torrents'));
+    await user.click(screen.getByLabelText('Remove selected torrents'));
+
+    const modal = screen.getByRole('dialog', { name: 'Remove from queue' });
+    await user.click(within(modal).getByRole('button', { name: 'Remove' }));
+
+    await waitFor(() => {
+      expect(mockApi.torrentApi.remove).toHaveBeenCalledWith('hash1');
+      expect(mockApi.torrentApi.remove).toHaveBeenCalledWith('hash2');
+    });
+  });
+
   it('calls setSpeedLimits when applying limits', async () => {
     const user = userEvent.setup();
     renderPage();

@@ -60,6 +60,58 @@ function validateSettingsPatch(payload: unknown): void {
       throw new ValidationError('wantedLanguages must only contain non-empty strings');
     }
   }
+
+  if (root.streaming !== undefined) {
+    if (!root.streaming || typeof root.streaming !== 'object' || Array.isArray(root.streaming)) {
+      throw new ValidationError('streaming must be an object');
+    }
+
+    const streaming = root.streaming as Record<string, unknown>;
+
+    if (
+      streaming.discoveryEnabled !== undefined &&
+      typeof streaming.discoveryEnabled !== 'boolean'
+    ) {
+      throw new ValidationError('streaming.discoveryEnabled must be a boolean');
+    }
+
+    if (streaming.discoveryServiceName !== undefined) {
+      if (
+        typeof streaming.discoveryServiceName !== 'string' ||
+        streaming.discoveryServiceName.trim().length === 0
+      ) {
+        throw new ValidationError('streaming.discoveryServiceName must be a non-empty string');
+      }
+    }
+
+    if (streaming.defaultUserId !== undefined) {
+      if (
+        typeof streaming.defaultUserId !== 'string' ||
+        streaming.defaultUserId.trim().length === 0
+      ) {
+        throw new ValidationError('streaming.defaultUserId must be a non-empty string');
+      }
+    }
+
+    if (streaming.watchedThreshold !== undefined) {
+      if (
+        typeof streaming.watchedThreshold !== 'number' ||
+        !Number.isFinite(streaming.watchedThreshold) ||
+        streaming.watchedThreshold <= 0 ||
+        streaming.watchedThreshold > 1
+      ) {
+        throw new ValidationError('streaming.watchedThreshold must be a number between 0 and 1');
+      }
+    }
+
+    if (
+      streaming.subtitleDirectory !== undefined &&
+      streaming.subtitleDirectory !== null &&
+      typeof streaming.subtitleDirectory !== 'string'
+    ) {
+      throw new ValidationError('streaming.subtitleDirectory must be a string or null');
+    }
+  }
 }
 
 function parseActivityFilters(query: Record<string, unknown>) {
@@ -259,6 +311,7 @@ export function registerOperationsRoutes(
           security: { type: 'object' },
           logging: { type: 'object' },
           update: { type: 'object' },
+          streaming: { type: 'object' },
         },
       },
     },

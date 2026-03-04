@@ -6,6 +6,7 @@ import type { PlaybackRepository } from '../repositories/PlaybackRepository';
 import type { SettingsService } from './SettingsService';
 
 const DEFAULT_USER_ID = 'lan-default';
+const DEFAULT_WATCHED_THRESHOLD = 0.9;
 const DEFAULT_ALLOWED_ROOTS = ['/data/media'];
 const ALLOWED_SUBTITLE_EXTENSIONS = new Set(['.srt', '.vtt']);
 
@@ -91,9 +92,15 @@ interface EpisodePlaybackRecord {
 
 type PlaybackRecord = MoviePlaybackRecord | EpisodePlaybackRecord;
 
-function normalizeUserId(userId: string | undefined): string {
+interface RuntimeStreamingSettings {
+  defaultUserId: string;
+  watchedThreshold: number;
+  subtitleDirectory: string | null;
+}
+
+function normalizeUserId(userId: string | undefined, fallbackUserId: string): string {
   const normalized = userId?.trim();
-  return normalized && normalized.length > 0 ? normalized : DEFAULT_USER_ID;
+  return normalized && normalized.length > 0 ? normalized : fallbackUserId;
 }
 
 function parseSubtitleFormat(filePath: string): 'srt' | 'vtt' | null {
@@ -138,7 +145,8 @@ export class PlaybackService {
     const playbackRecord = await this.resolvePlaybackRecord(input);
     await this.assertPathAllowed(playbackRecord.variantPath);
 
-    const userId = normalizeUserId(input.userId);
+    const streamingSettings = await this.getRuntimeStreamingSettings();
+    const userId = normalizeUserId(input.userId, streamingSettings.defaultUserId);
     const progress = await this.playbackRepository.getProgress({
       mediaType: input.mediaType,
       mediaId: input.mediaId,
@@ -191,7 +199,8 @@ export class PlaybackService {
     isWatched: boolean;
     lastWatched: string;
   }> {
-    const userId = normalizeUserId(input.userId);
+    const streamingSettings = await this.getRuntimeStreamingSettings();
+    const userId = normalizeUserId(input.userId, streamingSettings.defaultUserId);
 
     const saved = await this.playbackRepository.upsertProgress({
       mediaType: input.mediaType,
@@ -199,7 +208,7 @@ export class PlaybackService {
       userId,
       position: input.position,
       duration: input.duration,
-      watchedThreshold: 0.9,
+      watchedThreshold: streamingSettings.watchedThreshold,
     });
 
     return {
@@ -413,8 +422,49 @@ export class PlaybackService {
     return mapped;
   }
 
+  private normalizeWatchedThreshold(value: unknown): number {
+    if (typeof value !== 'number' || !Number.isFinite(value)) {
+      return DEFAULT_WATCHED_THRESHOLD;
+    }
+
+    if (value <= 0) {
+      return DEFAULT_WATCHED_THRESHOLD;
+    }
+
+    if (value > 1) {
+      return 1;
+    }
+
+    return value;
+  }
+
+  private async getRuntimeStreamingSettings(): Promise<RuntimeStreamingSettings> {
+    const fallback: RuntimeStreamingSettings = {
+      defaultUserId: DEFAULT_USER_ID,
+      watchedThreshold: DEFAULT_WATCHED_THRESHOLD,
+      subtitleDirectory: process.env.SUBTITLES_DIR?.trim() || null,
+    };
+
+    if (!this.settingsService?.get) {
+      return fallback;
+    }
+
+    const settings = await this.settingsService.get();
+    const defaultUserId = settings.streaming?.defaultUserId?.trim();
+    const subtitleDirectory = settings.streaming?.subtitleDirectory?.trim();
+
+    return {
+      defaultUserId: defaultUserId && defaultUserId.length > 0 ? defaultUserId : fallback.defaultUserId,
+      watchedThreshold: this.normalizeWatchedThreshold(settings.streaming?.watchedThreshold),
+      subtitleDirectory: subtitleDirectory && subtitleDirectory.length > 0
+        ? subtitleDirectory
+        : fallback.subtitleDirectory,
+    };
+  }
+
   private async getAllowedRoots(extraRoots: string[] = []): Promise<string[]> {
     const roots = new Set<string>(DEFAULT_ALLOWED_ROOTS.map(normalizeRoot));
+    const streamingSettings = await this.getRuntimeStreamingSettings();
 
     if (this.settingsService?.get) {
       const settings = await this.settingsService.get();
@@ -431,7 +481,7 @@ export class PlaybackService {
       }
     }
 
-    const subtitleDirectory = process.env.SUBTITLES_DIR?.trim();
+    const subtitleDirectory = streamingSettings.subtitleDirectory;
     if (subtitleDirectory) {
       roots.add(normalizeRoot(subtitleDirectory));
     }

@@ -50,6 +50,13 @@ const settingsSchema = z.object({
     mechanicsEnabled: z.boolean(),
     updateScriptPath: z.string().nullable().optional(),
   }).optional(),
+  streaming: z.object({
+    discoveryEnabled: z.boolean(),
+    discoveryServiceName: z.string(),
+    defaultUserId: z.string(),
+    watchedThreshold: z.number(),
+    subtitleDirectory: z.string().nullable().optional(),
+  }).optional(),
 });
 
 export type AppSettings = z.infer<typeof settingsSchema>;

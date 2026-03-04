@@ -6,8 +6,26 @@ import type { ApiDependencies } from '../types';
 
 function createSettingsServiceMock() {
   return {
-    get: vi.fn().mockResolvedValue({ wantedLanguages: [] }),
-    update: vi.fn().mockResolvedValue({ wantedLanguages: ['en', 'th'] }),
+    get: vi.fn().mockResolvedValue({
+      wantedLanguages: [],
+      streaming: {
+        discoveryEnabled: true,
+        discoveryServiceName: 'Mediarr',
+        defaultUserId: 'lan-default',
+        watchedThreshold: 0.9,
+        subtitleDirectory: null,
+      },
+    }),
+    update: vi.fn().mockResolvedValue({
+      wantedLanguages: ['en', 'th'],
+      streaming: {
+        discoveryEnabled: false,
+        discoveryServiceName: 'Living Room Mediarr',
+        defaultUserId: 'family-room',
+        watchedThreshold: 0.85,
+        subtitleDirectory: '/srv/subtitles',
+      },
+    }),
   };
 }
 
@@ -47,6 +65,51 @@ describe('operationsRoutes settings wantedLanguages', () => {
       url: '/api/settings',
       payload: {
         wantedLanguages: [''],
+      },
+    });
+
+    expect(response.statusCode).toBeGreaterThanOrEqual(400);
+  });
+
+  it('accepts streaming patch and forwards to settingsService.update', async () => {
+    const { app, settingsService } = createApp();
+
+    const response = await app.inject({
+      method: 'PATCH',
+      url: '/api/settings',
+      payload: {
+        streaming: {
+          discoveryEnabled: false,
+          discoveryServiceName: 'Living Room Mediarr',
+          defaultUserId: 'family-room',
+          watchedThreshold: 0.85,
+          subtitleDirectory: '/srv/subtitles',
+        },
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(settingsService.update).toHaveBeenCalledWith({
+      streaming: {
+        discoveryEnabled: false,
+        discoveryServiceName: 'Living Room Mediarr',
+        defaultUserId: 'family-room',
+        watchedThreshold: 0.85,
+        subtitleDirectory: '/srv/subtitles',
+      },
+    });
+  });
+
+  it('rejects invalid streaming watchedThreshold payload', async () => {
+    const { app } = createApp();
+
+    const response = await app.inject({
+      method: 'PATCH',
+      url: '/api/settings',
+      payload: {
+        streaming: {
+          watchedThreshold: 1.5,
+        },
       },
     });
 

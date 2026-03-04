@@ -7,11 +7,11 @@
 - [x] Task: Add/adjust repository tests for defaults and persistence merge behavior.
 
 ## Phase 2: API & Runtime Wiring
-- [ ] Task: Extend `/api/settings` PATCH schema/validation to include `streaming`.
-- [ ] Task: Extend frontend settings API schema/types to include `streaming`.
-- [ ] Task: Wire `PlaybackService` to use DB-backed default user id and watched threshold.
-- [ ] Task: Wire discovery startup to use DB-backed discovery settings.
-- [ ] Task: Add/update API/service tests for new runtime behavior.
+- [x] Task: Extend `/api/settings` PATCH schema/validation to include `streaming`.
+- [x] Task: Extend frontend settings API schema/types to include `streaming`.
+- [x] Task: Wire `PlaybackService` to use DB-backed default user id and watched threshold.
+- [x] Task: Wire discovery startup to use DB-backed discovery settings.
+- [x] Task: Add/update API/service tests for new runtime behavior.
 
 ## Phase 3: Settings UI Panel
 - [ ] Task: Add `SettingsStreamingPage` in SPA settings routes.

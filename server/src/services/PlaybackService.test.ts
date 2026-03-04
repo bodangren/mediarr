@@ -47,7 +47,7 @@ describe('PlaybackService', () => {
     await fs.rm(tempDir, { recursive: true, force: true });
   });
 
-  function createService() {
+  function createService(settingsOverrides: Record<string, unknown> = {}) {
     return new PlaybackService(
       prisma as any,
       playbackRepository as any,
@@ -57,6 +57,7 @@ describe('PlaybackService', () => {
             movieRootFolder: tempDir,
             tvRootFolder: tempDir,
           },
+          ...settingsOverrides,
         }),
       } as any,
     );
@@ -161,6 +162,42 @@ describe('PlaybackService', () => {
     expect(result.userId).toBe('lan-default');
   });
 
+  it('records progress with configured streaming defaults', async () => {
+    playbackRepository.upsertProgress.mockResolvedValue({
+      mediaType: 'EPISODE',
+      mediaId: 4,
+      userId: 'family-room',
+      position: 120,
+      duration: 300,
+      progress: 0.4,
+      isWatched: false,
+      lastWatched: new Date('2026-03-05T00:00:00.000Z'),
+    });
+
+    const service = createService({
+      streaming: {
+        defaultUserId: 'family-room',
+        watchedThreshold: 0.8,
+      },
+    });
+
+    await service.recordHeartbeat({
+      mediaType: 'EPISODE',
+      mediaId: 4,
+      position: 120,
+      duration: 300,
+    });
+
+    expect(playbackRepository.upsertProgress).toHaveBeenCalledWith({
+      mediaType: 'EPISODE',
+      mediaId: 4,
+      userId: 'family-room',
+      position: 120,
+      duration: 300,
+      watchedThreshold: 0.8,
+    });
+  });
+
   it('resolves subtitle track only for sidecar srt/vtt files', async () => {
     const moviePath = path.join(tempDir, 'movie.mp4');
     const subtitlePath = path.join(tempDir, 'movie.zh.vtt');
@@ -189,5 +226,41 @@ describe('PlaybackService', () => {
       isHi: false,
       format: 'vtt',
     });
+  });
+
+  it('allows subtitle track paths from configured streaming subtitle directory', async () => {
+    const mediaDir = path.join(tempDir, 'media');
+    const subtitleDir = path.join(tempDir, 'subs');
+    await fs.mkdir(mediaDir, { recursive: true });
+    await fs.mkdir(subtitleDir, { recursive: true });
+
+    const moviePath = path.join(mediaDir, 'movie.mp4');
+    const subtitlePath = path.join(subtitleDir, 'movie.en.srt');
+    await fs.writeFile(moviePath, 'movie');
+    await fs.writeFile(subtitlePath, 'subtitle');
+
+    prisma.variantSubtitleTrack.findUnique.mockResolvedValue({
+      id: 88,
+      filePath: subtitlePath,
+      languageCode: 'en',
+      isForced: false,
+      isHi: false,
+      variant: {
+        path: moviePath,
+      },
+    });
+
+    const service = createService({
+      mediaManagement: {
+        movieRootFolder: mediaDir,
+        tvRootFolder: mediaDir,
+      },
+      streaming: {
+        subtitleDirectory: subtitleDir,
+      },
+    });
+
+    const subtitle = await service.resolveSubtitleTrack(88);
+    expect(subtitle.filePath).toBe(subtitlePath);
   });
 });

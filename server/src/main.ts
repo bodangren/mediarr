@@ -633,20 +633,27 @@ async function startApi(): Promise<void> {
   });
 
   await app.listen({ host, port });
-  try {
-    const discoveryAnnouncement = discoveryService.start({
-      port,
-      name: process.env.MDNS_SERVICE_NAME ?? 'Mediarr',
-      type: 'mediarr',
-      txt: {
-        version: '1.0.0',
-      },
-    });
-    console.log(
-      `Discovery broadcast active as _${discoveryAnnouncement.type}._tcp on port ${discoveryAnnouncement.port}`,
-    );
-  } catch (error) {
-    console.warn('Failed to start discovery service:', error);
+  if (settings.streaming.discoveryEnabled) {
+    try {
+      const configuredServiceName = settings.streaming.discoveryServiceName.trim();
+      const discoveryAnnouncement = discoveryService.start({
+        port,
+        name: configuredServiceName.length > 0
+          ? configuredServiceName
+          : (process.env.MDNS_SERVICE_NAME ?? 'Mediarr'),
+        type: 'mediarr',
+        txt: {
+          version: '1.0.0',
+        },
+      });
+      console.log(
+        `Discovery broadcast active as _${discoveryAnnouncement.type}._tcp on port ${discoveryAnnouncement.port}`,
+      );
+    } catch (error) {
+      console.warn('Failed to start discovery service:', error);
+    }
+  } else {
+    console.log('Discovery broadcast disabled by streaming settings.');
   }
   console.log(`Mediarr API listening on http://${host}:${port}`);
 }

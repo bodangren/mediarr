@@ -12,3 +12,7 @@
 ## Management
 - [Tracks Registry](./tracks.md)
 - [Tracks Directory](./tracks/)
+
+## Security
+- [Dependency Vulnerability Scan Report](./dependency_scan_report.md)
+- [Security & Privacy Audit Report](./security_audit_report.md)

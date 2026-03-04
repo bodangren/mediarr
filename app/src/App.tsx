@@ -1652,13 +1652,8 @@ function MovieDetailPage() {
     if (!movie) return;
     try {
       pushToast({ title: 'Searching', message: `Automated search started for ${movie.title}`, variant: 'info' });
-      const response = await fetch(`/api/media/${movie.id}/auto-search`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'movie' })
-      });
-      const data = await response.json();
-      if (!response.ok || !data.success) {
+      const data = await api.mediaApi.triggerAutoSearch(movie.id, 'movie');
+      if (!data.success) {
         pushToast({ title: 'Search Failed', variant: 'error', message: data.error || 'No candidates found' });
       } else {
         pushToast({ title: 'Success', variant: 'success', message: `Grabbed ${data.data?.release?.title || 'a release'}` });
@@ -2135,13 +2130,8 @@ function SeriesDetailPage() {
     if (!series) return;
     try {
       pushToast({ title: 'Searching', message: `Automated search started for all missing episodes in ${series.title}`, variant: 'info' });
-      const response = await fetch(`/api/media/${series.id}/auto-search`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'series' })
-      });
-      const data = await response.json();
-      if (!response.ok || !data.success) {
+      const data = await api.mediaApi.triggerAutoSearch(series.id, 'series');
+      if (!data.success) {
         pushToast({ title: 'Search Failed', variant: 'error', message: data.error || 'Failed to start automated search' });
       } else {
         pushToast({ title: 'Success', variant: 'success', message: `Automated search started in background` });

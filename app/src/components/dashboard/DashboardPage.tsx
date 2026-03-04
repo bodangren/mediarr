@@ -29,8 +29,7 @@ export function DashboardPage() {
   const handleSearchMissing = async () => {
     setIsSearchingMissing(true);
     try {
-      const res = await fetch('/api/wanted/search-all', { method: 'POST' });
-      if (!res.ok) throw new Error('Failed to trigger search');
+      await api.wantedApi.triggerAutoSearchAll();
       pushToast({ title: 'Background Search Started', message: 'Searching for all missing media...', variant: 'success' });
     } catch (err) {
       pushToast({ title: 'Search Failed', message: 'Could not trigger background search', variant: 'error' });

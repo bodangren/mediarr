@@ -364,17 +364,17 @@ export function registerMediaRoutes(
         type: 'object',
         required: ['type'],
         properties: {
-          type: { type: 'string', enum: ['movie', 'episode'] },
+          type: { type: 'string', enum: ['movie', 'episode', 'series'] },
         },
       },
     },
   }, async (request, reply) => {
-    if (!deps.wantedSearchService?.autoSearchMovie || !deps.wantedSearchService?.autoSearchEpisode) {
+    if (!deps.wantedSearchService?.autoSearchMovie || !deps.wantedSearchService?.autoSearchEpisode || !deps.wantedSearchService?.autoSearchSeries) {
       throw new InternalError('Wanted search service is not available');
     }
 
     const { id } = request.params as { id: string | number };
-    const { type } = request.body as { type: 'movie' | 'episode' };
+    const { type } = request.body as { type: 'movie' | 'episode' | 'series' };
     const numericId = typeof id === 'string' ? parseInt(id, 10) : id;
 
     if (isNaN(numericId)) {
@@ -384,12 +384,16 @@ export function registerMediaRoutes(
     let result;
     if (type === 'movie') {
       result = await deps.wantedSearchService.autoSearchMovie(numericId);
-    } else {
+    } else if (type === 'episode') {
       result = await deps.wantedSearchService.autoSearchEpisode(numericId);
+    } else if (type === 'series') {
+      // Fire and forget since it searches multiple episodes
+      void deps.wantedSearchService.autoSearchSeries(numericId);
+      return sendSuccess(reply, { success: true, message: 'Series automated search started in the background.' });
     }
 
-    if (!result.success) {
-      return reply.status(404).send({ success: false, error: result.reason });
+    if (!result?.success) {
+      return reply.status(404).send({ success: false, error: result?.reason || 'Unknown error' });
     }
 
     return sendSuccess(reply, result);

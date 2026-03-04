@@ -97,6 +97,35 @@ describe('Subtitle Providers API', () => {
       expect(result).toEqual(legacyProviders);
     });
 
+    it('should normalize envelope payload when provider status uses legacy values', async () => {
+      mockHttpClient.request.mockRejectedValue(
+        new ContractViolationError('Response did not match success envelope contract', {
+          payload: {
+            success: true,
+            data: [
+              {
+                id: 'opensubtitles',
+                name: 'OpenSubtitles',
+                status: 'ok',
+              },
+            ],
+          },
+        }),
+      );
+
+      const result = await subtitleProvidersApi.listProviders();
+      expect(result).toEqual([
+        {
+          id: 'opensubtitles',
+          name: 'OpenSubtitles',
+          enabled: true,
+          type: 'api',
+          settings: {},
+          status: 'active',
+        },
+      ]);
+    });
+
     it('should rethrow contract violations when payload cannot be interpreted as providers', async () => {
       const error = new ContractViolationError('Response did not match success envelope contract', {
         payload: { unexpected: true },

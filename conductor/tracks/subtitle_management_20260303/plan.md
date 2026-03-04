@@ -47,15 +47,15 @@
 ## Phase 4: Frontend Integration and Badges
 > Goal: Wire subtitle APIs into UI and render accurate subtitle status badges.
 
-- [ ] Task: Settings integration
-  - [ ] Sub-task: Add wanted languages controls in subtitle settings page.
-  - [ ] Sub-task: Keep provider status and credentials working with new endpoints.
-- [ ] Task: Subtitle status rendering
-  - [ ] Sub-task: Render language badges on movie/episode list/detail surfaces.
-  - [ ] Sub-task: Render aggregate series/season partial vs complete subtitle status.
-- [ ] Task: Manual subtitle UX
-  - [ ] Sub-task: Connect manual search modal and download actions to live API.
-- [ ] Task: Add frontend tests for settings, badge logic, and manual subtitle flows.
+- [x] Task: Settings integration [0b36d1f2]
+  - [x] Sub-task: Add wanted languages controls in subtitle settings page.
+  - [x] Sub-task: Keep provider status and credentials working with new endpoints.
+- [x] Task: Subtitle status rendering [0b36d1f2]
+  - [x] Sub-task: Render language badges on movie/episode list/detail surfaces.
+  - [x] Sub-task: Render aggregate series/season partial vs complete subtitle status.
+- [x] Task: Manual subtitle UX [0b36d1f2]
+  - [x] Sub-task: Connect manual search modal and download actions to live API.
+- [x] Task: Add frontend tests for settings, badge logic, and manual subtitle flows. [0b36d1f2]
 
 ## Phase 5: Track Hardening and Final Verification
 > Goal: Run full validation and finalize conductor tracking in one pass.

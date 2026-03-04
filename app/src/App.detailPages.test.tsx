@@ -384,13 +384,10 @@ describe('Phase 3 — Detail Pages', () => {
       });
     });
 
-    it('shows episodes immediately without needing to expand season', async () => {
+    it('shows season row episode counts', async () => {
       renderApp('/library/tv/42');
       await waitFor(() => expect(screen.getByText(/Season 1/)).toBeInTheDocument());
-
-      // Episodes should be visible initially
-      expect(screen.getByText('Pilot')).toBeInTheDocument();
-      expect(screen.getByText("Cat's in the Bag")).toBeInTheDocument();
+      expect(screen.getByText(/\(2 episodes\)/)).toBeInTheDocument();
     });
 
     it('renders per-episode monitored toggles', async () => {

@@ -3,6 +3,7 @@ import path from 'node:path';
 import { SubtitleVariantRepository } from '../repositories/SubtitleVariantRepository';
 import { SubtitleNamingService } from './SubtitleNamingService';
 import { SubtitleProviderFactory } from './SubtitleProviderFactory';
+import { SubtitleScoringService } from './SubtitleScoringService';
 
 export interface ManualSearchCandidate {
   languageCode: string;
@@ -10,6 +11,9 @@ export interface ManualSearchCandidate {
   isHi: boolean;
   provider: string;
   score: number;
+  releaseName?: string;
+  providerData?: Record<string, unknown>;
+  content?: Buffer;
   extension?: string;
 }
 
@@ -90,6 +94,7 @@ export class SubtitleInventoryApiService {
     private readonly repository: SubtitleVariantRepository,
     private readonly namingService: SubtitleNamingService = new SubtitleNamingService(),
     private readonly providerFactory?: SubtitleProviderFactory,
+    private readonly scoringService: SubtitleScoringService = new SubtitleScoringService(),
   ) {}
 
   async listMovieVariantInventory(movieId: number): Promise<VariantInventoryView[]> {
@@ -112,14 +117,13 @@ export class SubtitleInventoryApiService {
     },
     provider?: ManualSubtitleProvider,
   ): Promise<ManualSearchCandidate[]> {
-    const resolvedProvider = this.resolveProvider(provider);
     const variantId = await this.resolveVariantId(input);
     const inventory = await this.repository.getVariantInventory(variantId);
     if (!inventory.variant) {
       throw new Error(`Variant ${variantId} not found`);
     }
 
-    return resolvedProvider.search({
+    const context = {
       variant: {
         id: inventory.variant.id,
         path: inventory.variant.path,
@@ -130,7 +134,13 @@ export class SubtitleInventoryApiService {
         isCommentary: track.isCommentary,
         isDefault: track.isDefault,
       })),
-    });
+    };
+
+    const candidates = provider
+      ? await provider.search(context)
+      : await this.searchAcrossProviders(context);
+
+    return this.scoringService.rankManual(candidates, inventory.variant.releaseName);
   }
 
   async manualDownload(
@@ -142,7 +152,10 @@ export class SubtitleInventoryApiService {
     },
     provider?: ManualSubtitleProvider,
   ): Promise<{ storedPath: string }> {
-    const resolvedProvider = this.resolveProvider(provider);
+    const resolvedProvider = this.resolveProviderForCandidate(
+      provider,
+      input.candidate.provider,
+    );
     const variantId = await this.resolveVariantId(input);
     const inventory = await this.repository.getVariantInventory(variantId);
     if (!inventory.variant) {
@@ -170,6 +183,10 @@ export class SubtitleInventoryApiService {
       existingPaths: [...siblingPaths, ...ownPaths],
     });
 
+    const contentBuffer = this.toContentBuffer(candidate.content);
+    await fs.mkdir(path.dirname(storedPath), { recursive: true });
+    await fs.writeFile(storedPath, contentBuffer);
+
     await this.repository.createSubtitleTrack({
       variantId,
       source: 'EXTERNAL',
@@ -177,6 +194,7 @@ export class SubtitleInventoryApiService {
       isForced: candidate.isForced,
       isHi: candidate.isHi,
       filePath: storedPath,
+      fileSize: BigInt(contentBuffer.byteLength),
     });
     await this.repository.createSubtitleHistory({
       variantId,
@@ -250,8 +268,9 @@ export class SubtitleInventoryApiService {
     };
   }
 
-  private resolveProvider(
+  private resolveProviderForCandidate(
     provider?: ManualSubtitleProvider,
+    providerName?: string,
   ): ManualSubtitleProvider {
     if (provider) {
       return provider;
@@ -261,7 +280,58 @@ export class SubtitleInventoryApiService {
       throw new Error('Manual subtitle provider is required');
     }
 
+    const requestedProvider = providerName?.toLowerCase();
+    if (requestedProvider) {
+      return this.providerFactory.resolveManualProvider(requestedProvider);
+    }
+
     return this.providerFactory.resolveManualProvider();
+  }
+
+  private async searchAcrossProviders(context: {
+    variant: {
+      id: number;
+      path: string;
+      releaseName?: string | null;
+    };
+    audioTracks: Array<{
+      languageCode: string | null;
+      isCommentary: boolean;
+      isDefault: boolean;
+    }>;
+  }): Promise<ManualSearchCandidate[]> {
+    if (!this.providerFactory) {
+      throw new Error('Manual subtitle provider is required');
+    }
+
+    const providers = this.providerFactory.resolveAllManualProviders();
+    const searches = await Promise.all(
+      providers.map(async entry => {
+        try {
+          const candidates = await entry.provider.search(context);
+          return candidates.map(candidate => ({
+            ...candidate,
+            provider: candidate.provider || entry.name,
+          }));
+        } catch (error) {
+          console.warn(
+            `[SubtitleInventoryApiService] Provider '${entry.name}' search failed:`,
+            error,
+          );
+          return [];
+        }
+      }),
+    );
+
+    return searches.flat();
+  }
+
+  private toContentBuffer(content: Buffer | undefined): Buffer {
+    if (!content) {
+      return Buffer.alloc(0);
+    }
+
+    return Buffer.isBuffer(content) ? content : Buffer.from(content);
   }
 
   private async mapVariantInventory(

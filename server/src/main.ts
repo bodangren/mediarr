@@ -43,6 +43,8 @@ import { SearchAggregationService } from './services/SearchAggregationService';
 import { MediaService } from './services/MediaService';
 import { MetadataProvider } from './services/MetadataProvider';
 import { OpenSubtitlesProvider } from './services/providers/OpenSubtitlesProvider';
+import { AssrtProvider } from './services/providers/AssrtProvider';
+import { SubdlProvider } from './services/providers/SubdlProvider';
 import { RssSyncService } from './services/RssSyncService';
 import { Scheduler } from './services/Scheduler';
 import { SettingsService } from './services/SettingsService';
@@ -52,6 +54,7 @@ import {
 } from './services/SubtitleInventoryApiService';
 import { SubtitleNamingService } from './services/SubtitleNamingService';
 import { SubtitleProviderFactory } from './services/SubtitleProviderFactory';
+import { SubtitleScoringService } from './services/SubtitleScoringService';
 import { WantedService } from './services/WantedService';
 import { WantedSearchService } from './services/WantedSearchService';
 import { RssMediaMonitor } from './services/RssMediaMonitor';
@@ -477,22 +480,29 @@ async function startApi(): Promise<void> {
   const importManager = new ImportManager(torrentManager, organizer, prisma, activityEventEmitter);
 
   const openSubtitlesProvider = new OpenSubtitlesProvider(httpClient, settingsService);
+  const assrtProvider = new AssrtProvider(httpClient, settingsService);
+  const subdlProvider = new SubdlProvider(httpClient, settingsService);
+
+  const manualSubtitleProvider = process.env.MANUAL_SUBTITLE_PROVIDER?.toLowerCase() ?? 'opensubtitles';
 
   const subtitleProviderFactory = new SubtitleProviderFactory(
-    { 
-        embedded: {
-            async search() { return []; },
-            async download(c: any) { return c; }
-        },
-        opensubtitles: openSubtitlesProvider
+    {
+      embedded: {
+        async search() { return []; },
+        async download(c: ManualSearchCandidate) { return c; }
+      },
+      opensubtitles: openSubtitlesProvider,
+      assrt: assrtProvider,
+      subdl: subdlProvider,
     },
-    () => ({ manualProvider: 'opensubtitles' }),
+    () => ({ manualProvider: manualSubtitleProvider }),
   );
 
   const subtitleInventoryApiService = new SubtitleInventoryApiService(
     subtitleVariantRepository,
     new SubtitleNamingService(),
     subtitleProviderFactory,
+    new SubtitleScoringService(),
   );
 
   const mediaService = new MediaService(prisma, metadataProvider, activityEventEmitter);

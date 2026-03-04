@@ -2,9 +2,31 @@ import type { ManualSearchCandidate, ManualSubtitleProvider } from '../SubtitleI
 import type { HttpClient } from '../../indexers/HttpClient';
 import type { SettingsService } from '../SettingsService';
 
+interface OpenSubtitlesSearchResponse {
+  data?: Array<{
+    attributes?: {
+      language?: string;
+      foreign_parts_only?: boolean;
+      hearing_impaired?: boolean;
+      download_count?: number;
+      votes?: number;
+      release?: string;
+      files?: Array<{
+        file_id?: number;
+        file_name?: string;
+      }>;
+    };
+  }>;
+}
+
+interface OpenSubtitlesDownloadResponse {
+  link?: string;
+  file_name?: string;
+}
+
 export class OpenSubtitlesProvider implements ManualSubtitleProvider {
   constructor(
-    private readonly httpClient: HttpClient, 
+    private readonly httpClient: HttpClient,
     private readonly settingsService: SettingsService
   ) {}
 
@@ -24,42 +46,142 @@ export class OpenSubtitlesProvider implements ManualSubtitleProvider {
     const apiKey = settings.apiKeys.openSubtitlesApiKey;
 
     if (!apiKey) {
-        throw new Error('OpenSubtitles API Key is missing. Please configure it in settings.');
+      throw new Error('OpenSubtitles API Key is missing. Please configure it in settings.');
     }
 
-    const releaseName = context.variant.releaseName ?? '';
+    const releaseName = context.variant.releaseName ?? this.deriveReleaseName(context.variant.path);
     if (!releaseName) {
-        return [];
+      return [];
     }
 
     const url = `https://api.opensubtitles.com/api/v1/subtitles?query=${encodeURIComponent(releaseName)}`;
     const response = await this.httpClient.get(url, {
-        headers: {
-            'Api-Key': apiKey,
-            'Content-Type': 'application/json'
-        }
+      headers: {
+        'Api-Key': apiKey,
+        'Content-Type': 'application/json',
+      }
     });
 
     if (!response.ok) {
-        throw new Error(`OpenSubtitles search failed: ${response.status}`);
+      throw new Error(`OpenSubtitles search failed: ${response.status}`);
     }
 
-    const data = JSON.parse(response.body);
-    
-    return (data.data || []).map((item: any) => ({
-        languageCode: item.attributes?.language ?? 'en',
-        isForced: item.attributes?.foreign_parts_only ?? false,
-        isHi: item.attributes?.hearing_impaired ?? false,
-        provider: 'OpenSubtitles',
-        score: item.attributes?.votes ?? 0, 
-        extension: '.srt'
-    }));
+    const data = JSON.parse(response.body) as OpenSubtitlesSearchResponse;
+    const records = data.data ?? [];
+
+    return records
+      .map(item => {
+        const attributes = item.attributes;
+        const file = attributes?.files?.[0];
+        const fileId = file?.file_id;
+        if (!attributes || !fileId) {
+          return null;
+        }
+
+        const voteScore = typeof attributes.votes === 'number' ? attributes.votes : 0;
+        const downloadScore = typeof attributes.download_count === 'number'
+          ? Math.min(attributes.download_count / 50, 50)
+          : 0;
+
+        return {
+          languageCode: attributes.language?.toLowerCase() ?? 'en',
+          isForced: attributes.foreign_parts_only ?? false,
+          isHi: attributes.hearing_impaired ?? false,
+          provider: 'opensubtitles',
+          score: voteScore + downloadScore,
+          releaseName: attributes.release ?? file.file_name,
+          extension: this.extractExtension(file.file_name) ?? '.srt',
+          providerData: {
+            fileId,
+          },
+        } satisfies ManualSearchCandidate;
+      })
+      .filter((candidate): candidate is ManualSearchCandidate => candidate !== null);
   }
 
   async download(candidate: ManualSearchCandidate): Promise<ManualSearchCandidate> {
-      // In a real implementation, this would fetch the download link and download the file content.
-      // For now, we assume the candidate is ready or the download URL is handled elsewhere.
-      // Or we implement a fetch.
+    if (candidate.content && candidate.content.byteLength > 0) {
       return candidate;
+    }
+
+    const settings = await this.settingsService.get();
+    const apiKey = settings.apiKeys.openSubtitlesApiKey;
+    if (!apiKey) {
+      throw new Error('OpenSubtitles API Key is missing. Please configure it in settings.');
+    }
+
+    const fileId = this.readNumericProviderData(candidate.providerData, 'fileId');
+    if (!fileId) {
+      throw new Error('OpenSubtitles candidate is missing provider file id');
+    }
+
+    const response = await this.httpClient.post(
+      'https://api.opensubtitles.com/api/v1/download',
+      {
+        headers: {
+          'Api-Key': apiKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ file_id: fileId }),
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error(`OpenSubtitles download token request failed: ${response.status}`);
+    }
+
+    const payload = JSON.parse(response.body) as OpenSubtitlesDownloadResponse;
+    if (!payload.link) {
+      throw new Error('OpenSubtitles download response did not include a link');
+    }
+
+    const fileResponse = await fetch(payload.link);
+    if (!fileResponse.ok) {
+      throw new Error(`OpenSubtitles file download failed: ${fileResponse.status}`);
+    }
+
+    const content = Buffer.from(await fileResponse.arrayBuffer());
+    return {
+      ...candidate,
+      content,
+      extension: candidate.extension
+        ?? this.extractExtension(payload.file_name)
+        ?? '.srt',
+    };
+  }
+
+  private deriveReleaseName(filePath: string): string {
+    const filename = filePath.split('/').pop() ?? filePath;
+    return filename.replace(/\.[^.]+$/, '');
+  }
+
+  private extractExtension(filename?: string): string | undefined {
+    if (!filename) {
+      return undefined;
+    }
+
+    const match = filename.match(/\.[A-Za-z0-9]+$/);
+    if (!match) {
+      return undefined;
+    }
+
+    return match[0].toLowerCase();
+  }
+
+  private readNumericProviderData(
+    providerData: Record<string, unknown> | undefined,
+    key: string,
+  ): number | null {
+    const value = providerData?.[key];
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return value;
+    }
+    if (typeof value === 'string') {
+      const parsed = Number.parseInt(value, 10);
+      if (Number.isFinite(parsed)) {
+        return parsed;
+      }
+    }
+    return null;
   }
 }

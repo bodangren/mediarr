@@ -1,3 +1,5 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
 import { SubtitleVariantRepository } from '../repositories/SubtitleVariantRepository';
 import { SubtitleNamingService } from './SubtitleNamingService';
 import { ActivityEventEmitter } from './ActivityEventEmitter';
@@ -27,6 +29,7 @@ export interface SubtitleFetchCandidate {
   isHi: boolean;
   provider: string;
   score: number;
+  content?: Buffer;
   extension?: string;
 }
 
@@ -117,6 +120,12 @@ export class VariantSubtitleFetchService {
       existingPaths: [...siblingPaths, ...ownPaths],
     });
 
+    const content = candidate.content && candidate.content.byteLength > 0
+      ? candidate.content
+      : Buffer.alloc(0);
+    await fs.mkdir(path.dirname(storedPath), { recursive: true });
+    await fs.writeFile(storedPath, content);
+
     await this.repository.createSubtitleTrack({
       variantId: inventory.variant.id,
       source: 'EXTERNAL',
@@ -124,6 +133,7 @@ export class VariantSubtitleFetchService {
       isForced: candidate.isForced,
       isHi: candidate.isHi,
       filePath: storedPath,
+      fileSize: BigInt(content.byteLength),
     });
 
     await this.repository.createSubtitleHistory({

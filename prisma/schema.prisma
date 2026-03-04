@@ -33,6 +33,11 @@ enum WantedSubtitleState {
   FAILED
 }
 
+enum PlaybackMediaType {
+  MOVIE
+  EPISODE
+}
+
 
 model Media {
   id                  Int            @id @default(autoincrement())
@@ -503,6 +508,24 @@ model AppSettings {
   mediaManagement    Json?
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
+}
+
+model PlaybackProgress {
+  id         Int               @id @default(autoincrement())
+  mediaType  PlaybackMediaType
+  mediaId    Int
+  userId     String
+  position   Int               @default(0)
+  duration   Int               @default(0)
+  progress   Float             @default(0)
+  isWatched  Boolean           @default(false)
+  lastWatched DateTime         @default(now())
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  @@unique([mediaType, mediaId, userId])
+  @@index([mediaType, mediaId])
+  @@index([userId])
 }
 
 model IndexerHealthSnapshot {

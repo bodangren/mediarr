@@ -57,6 +57,7 @@ import { SubtitleNamingService } from './services/SubtitleNamingService';
 import { SubtitleProviderFactory } from './services/SubtitleProviderFactory';
 import { SubtitleScoringService } from './services/SubtitleScoringService';
 import { ProviderBackedSubtitleFetchProvider } from './services/ProviderBackedSubtitleFetchProvider';
+import { DiscoveryService } from './services/DiscoveryService';
 import { VariantMissingSubtitleService } from './services/VariantMissingSubtitleService';
 import { VariantSubtitleFetchService } from './services/VariantSubtitleFetchService';
 import { VariantWantedService } from './services/VariantWantedService';
@@ -414,6 +415,7 @@ async function startApi(): Promise<void> {
   );
 
   const scheduler = new Scheduler();
+  const discoveryService = new DiscoveryService();
   const rssSyncService = new RssSyncService(prisma, httpClient, indexerHealthRepository);
 
   const settings = await settingsService.get();
@@ -604,6 +606,9 @@ async function startApi(): Promise<void> {
   registerStaticServing(app, staticDir);
 
   const close = async (): Promise<void> => {
+    await discoveryService.stop().catch(error => {
+      console.warn('Failed to stop discovery service cleanly:', error);
+    });
     await app.close();
     if (torrentManager.destroy) {
       await torrentManager.destroy();
@@ -619,6 +624,21 @@ async function startApi(): Promise<void> {
   });
 
   await app.listen({ host, port });
+  try {
+    const discoveryAnnouncement = discoveryService.start({
+      port,
+      name: process.env.MDNS_SERVICE_NAME ?? 'Mediarr',
+      type: 'mediarr',
+      txt: {
+        version: '1.0.0',
+      },
+    });
+    console.log(
+      `Discovery broadcast active as _${discoveryAnnouncement.type}._tcp on port ${discoveryAnnouncement.port}`,
+    );
+  } catch (error) {
+    console.warn('Failed to start discovery service:', error);
+  }
   console.log(`Mediarr API listening on http://${host}:${port}`);
 }
 

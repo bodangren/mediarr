@@ -1,9 +1,9 @@
 # Implementation Plan: Streaming Server & Discovery
 
 ## Phase 1: Persistence & Discovery
-- [ ] Task: Update Prisma schema to add `PlaybackProgress` model (mediaId, userId, position, duration, lastWatched).
-- [ ] Task: Create `PlaybackRepository` for querying and updating progress records.
-- [ ] Task: Implement `DiscoveryService` using `bonjour` or similar Bun-compatible library to broadcast `_mediarr._tcp`.
+- [x] Task: Update Prisma schema to add `PlaybackProgress` model (mediaId, userId, position, duration, lastWatched).
+- [x] Task: Create `PlaybackRepository` for querying and updating progress records.
+- [x] Task: Implement `DiscoveryService` using `bonjour` or similar Bun-compatible library to broadcast `_mediarr._tcp`.
 - [ ] Task: Conductor - User Manual Verification 'Phase 1: Persistence & Discovery' (Protocol in workflow.md)
 
 ## Phase 2: Playback APIs & Streaming

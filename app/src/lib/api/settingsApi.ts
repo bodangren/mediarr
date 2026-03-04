@@ -21,7 +21,10 @@ const settingsSchema = z.object({
   apiKeys: z.object({
     tmdbApiKey: z.string().nullable().optional(),
     openSubtitlesApiKey: z.string().nullable().optional(),
+    assrtApiToken: z.string().nullable().optional(),
+    subdlApiKey: z.string().nullable().optional(),
   }).optional(),
+  wantedLanguages: z.array(z.string()).default([]),
   host: z.object({
     port: z.number(),
     bindAddress: z.string(),

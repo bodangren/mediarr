@@ -269,6 +269,13 @@ export class SubtitleVariantRepository {
     });
   }
 
+  async listMonitoredVariants(): Promise<MediaFileVariant[]> {
+    return this.prisma.mediaFileVariant.findMany({
+      where: { monitored: true },
+      orderBy: { id: 'asc' },
+    });
+  }
+
   async getVariantInventory(variantId: number): Promise<{
     variant: MediaFileVariant | null;
     audioTracks: VariantAudioTrack[];
@@ -321,6 +328,23 @@ export class SubtitleVariantRepository {
     return this.prisma.wantedSubtitle.findMany({
       where: { variantId },
       orderBy: [{ languageCode: 'asc' }, { isForced: 'asc' }, { isHi: 'asc' }],
+    });
+  }
+
+  async listWantedSubtitlesByStates(
+    states: WantedSubtitleState[],
+    limit = 200,
+  ): Promise<WantedSubtitle[]> {
+    if (states.length === 0) {
+      return [];
+    }
+
+    return this.prisma.wantedSubtitle.findMany({
+      where: {
+        state: { in: states },
+      },
+      orderBy: [{ updatedAt: 'asc' }, { id: 'asc' }],
+      take: limit,
     });
   }
 

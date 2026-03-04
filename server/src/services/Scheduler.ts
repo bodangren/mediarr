@@ -112,4 +112,17 @@ export class Scheduler {
       await wantedSearchService.autoSearchAll();
     });
   }
+
+  /**
+   * Schedule periodic subtitle automation scans for missing wanted subtitles.
+   */
+  scheduleSubtitleWantedSearch(
+    subtitleAutomationService: { runAutomationCycle: () => Promise<unknown> },
+    name = 'subtitle-wanted-search',
+    cronExpression = '0 */6 * * *',
+  ): void {
+    this.schedule(name, cronExpression, async () => {
+      await subtitleAutomationService.runAutomationCycle();
+    });
+  }
 }

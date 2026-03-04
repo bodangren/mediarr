@@ -15,6 +15,11 @@ interface MediaRootFolders {
   tvRootFolder: string;
 }
 
+interface ImportHooks {
+  onMovieImported?: (movieId: number) => Promise<void> | void;
+  onEpisodeImported?: (episodeId: number) => Promise<void> | void;
+}
+
 /**
  * Service to bridge TorrentManager and Organizer for completed torrent imports.
  * Listens for completed torrents and attempts to import them if they match a known
@@ -26,6 +31,7 @@ export class ImportManager {
     private readonly organizer: Organizer,
     private readonly prisma: any,
     private readonly activityEventEmitter?: ActivityEventEmitter,
+    private readonly hooks: ImportHooks = {},
   ) {
     if (typeof this.torrentManager?.on === 'function') {
       this.torrentManager.on('torrent:completed', (torrent: any) => {
@@ -186,6 +192,11 @@ export class ImportManager {
 
           const newPath = await this.organizer.organizeFile(filePath, { ...series, path: seriesPath }, episode);
           await this.prisma.episode.update({ where: { id: episode.id }, data: { path: newPath } });
+          await this.prisma.mediaFileVariant.upsert({
+            where: { mediaType_path: { mediaType: 'EPISODE', path: newPath } },
+            create: { mediaType: 'EPISODE', episodeId: episode.id, path: newPath, fileSize: BigInt(0) },
+            update: { episodeId: episode.id },
+          });
 
           await this.activityEventEmitter?.emit({
             eventType: 'SERIES_IMPORTED',
@@ -196,6 +207,8 @@ export class ImportManager {
             details: { sourcePath: filePath, torrentName: torrent.name },
             occurredAt: new Date(),
           });
+
+          await this.runImportHook('onEpisodeImported', episode.id);
           continue;
         }
       }
@@ -240,6 +253,7 @@ export class ImportManager {
             details: { sourcePath: filePath, torrentName: torrent.name },
             occurredAt: new Date(),
           });
+          await this.runImportHook('onMovieImported', movie.id);
           continue;
         }
       }
@@ -324,6 +338,11 @@ export class ImportManager {
               where: { id: episode.id },
               data: { path: newPath },
             });
+            await this.prisma.mediaFileVariant.upsert({
+              where: { mediaType_path: { mediaType: 'EPISODE', path: newPath } },
+              create: { mediaType: 'EPISODE', episodeId: episode.id, path: newPath, fileSize: BigInt(0) },
+              update: { episodeId: episode.id },
+            });
 
             await this.activityEventEmitter?.emit({
               eventType: 'SERIES_IMPORTED',
@@ -334,6 +353,7 @@ export class ImportManager {
               details: { sourcePath: filePath, torrentName: torrent.name },
               occurredAt: new Date(),
             });
+            await this.runImportHook('onEpisodeImported', episode.id);
             continue;
           }
         }
@@ -391,6 +411,7 @@ export class ImportManager {
             details: { sourcePath: filePath, torrentName: torrent.name },
             occurredAt: new Date(),
           });
+          await this.runImportHook('onMovieImported', movie.id);
           continue;
         }
       }
@@ -437,6 +458,22 @@ export class ImportManager {
     }
 
     return results;
+  }
+
+  private async runImportHook(
+    hookName: keyof ImportHooks,
+    mediaId: number,
+  ): Promise<void> {
+    const hook = this.hooks[hookName];
+    if (!hook) {
+      return;
+    }
+
+    try {
+      await hook(mediaId);
+    } catch (error) {
+      console.warn(`[ImportManager] ${hookName} hook failed for media id ${mediaId}:`, error);
+    }
   }
 
   private async resolveRetryImportPath(basePath: unknown, torrentName: unknown): Promise<string> {

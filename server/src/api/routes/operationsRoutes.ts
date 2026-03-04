@@ -47,6 +47,19 @@ function validateSettingsPatch(payload: unknown): void {
       throw new ValidationError('torrentLimits.maxActiveDownloads must be a positive number');
     }
   }
+
+  if (root.wantedLanguages !== undefined) {
+    if (!Array.isArray(root.wantedLanguages)) {
+      throw new ValidationError('wantedLanguages must be an array of language codes');
+    }
+
+    const invalid = root.wantedLanguages.some(
+      item => typeof item !== 'string' || item.trim().length === 0,
+    );
+    if (invalid) {
+      throw new ValidationError('wantedLanguages must only contain non-empty strings');
+    }
+  }
 }
 
 function parseActivityFilters(query: Record<string, unknown>) {
@@ -241,6 +254,7 @@ export function registerOperationsRoutes(
           schedulerIntervals: { type: 'object' },
           pathVisibility: { type: 'object' },
           apiKeys: { type: 'object' },
+          wantedLanguages: { type: 'array', items: { type: 'string' } },
           host: { type: 'object' },
           security: { type: 'object' },
           logging: { type: 'object' },

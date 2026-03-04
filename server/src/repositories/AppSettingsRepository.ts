@@ -26,6 +26,8 @@ export interface PathVisibilitySettings {
 export interface ApiKeysSettings {
   tmdbApiKey: string | null;
   openSubtitlesApiKey: string | null;
+  assrtApiToken: string | null;
+  subdlApiKey: string | null;
 }
 
 export interface HostSettings {
@@ -67,6 +69,7 @@ export interface AppSettingsPayload {
   schedulerIntervals: SchedulerIntervalsSettings;
   pathVisibility: PathVisibilitySettings;
   apiKeys: ApiKeysSettings;
+  wantedLanguages: string[];
   host: HostSettings;
   security: SecuritySettings;
   logging: LoggingSettings;
@@ -103,7 +106,10 @@ export const DEFAULT_APP_SETTINGS: AppSettingsPayload = {
   apiKeys: {
     tmdbApiKey: null,
     openSubtitlesApiKey: null,
+    assrtApiToken: null,
+    subdlApiKey: null,
   },
+  wantedLanguages: [],
   host: {
     bindAddress: '*',
     port: 9696,
@@ -182,6 +188,19 @@ function readString(value: unknown, fallback: string): string {
   return fallback;
 }
 
+function readStringArray(value: unknown, fallback: string[]): string[] {
+  if (!Array.isArray(value)) {
+    return fallback;
+  }
+
+  const next = value
+    .filter((item): item is string => typeof item === 'string')
+    .map(item => item.trim().toLowerCase())
+    .filter(item => item.length > 0);
+
+  return Array.from(new Set(next));
+}
+
 function readLogLevel(value: unknown, fallback: LoggingSettings['logLevel']): LoggingSettings['logLevel'] {
   if (
     value === 'trace' ||
@@ -252,7 +271,11 @@ export class AppSettingsRepository {
           host: toJson(DEFAULT_APP_SETTINGS.host),
           security: toJson(DEFAULT_APP_SETTINGS.security),
           logging: toJson(DEFAULT_APP_SETTINGS.logging),
-          update: toJson(DEFAULT_APP_SETTINGS.update),
+          update: toJson({
+            ...DEFAULT_APP_SETTINGS.update,
+            wantedLanguages: DEFAULT_APP_SETTINGS.wantedLanguages,
+          }),
+          mediaManagement: toJson(DEFAULT_APP_SETTINGS.mediaManagement),
         },
       });
 
@@ -281,6 +304,10 @@ export class AppSettingsRepository {
         ...current.apiKeys,
         ...partial.apiKeys,
       },
+      wantedLanguages: readStringArray(
+        partial.wantedLanguages,
+        current.wantedLanguages,
+      ),
       host: {
         ...current.host,
         ...partial.host,
@@ -314,7 +341,10 @@ export class AppSettingsRepository {
         host: toJson(merged.host),
         security: toJson(merged.security),
         logging: toJson(merged.logging),
-        update: toJson(merged.update),
+        update: toJson({
+          ...merged.update,
+          wantedLanguages: merged.wantedLanguages,
+        }),
         mediaManagement: toJson(merged.mediaManagement),
       },
       update: {
@@ -325,7 +355,10 @@ export class AppSettingsRepository {
         host: toJson(merged.host),
         security: toJson(merged.security),
         logging: toJson(merged.logging),
-        update: toJson(merged.update),
+        update: toJson({
+          ...merged.update,
+          wantedLanguages: merged.wantedLanguages,
+        }),
         mediaManagement: toJson(merged.mediaManagement),
       },
     });
@@ -345,7 +378,10 @@ export class AppSettingsRepository {
         host: toJson(payload.host),
         security: toJson(payload.security),
         logging: toJson(payload.logging),
-        update: toJson(payload.update),
+        update: toJson({
+          ...payload.update,
+          wantedLanguages: payload.wantedLanguages,
+        }),
         mediaManagement: toJson(payload.mediaManagement),
       },
       update: {
@@ -356,7 +392,10 @@ export class AppSettingsRepository {
         host: toJson(payload.host),
         security: toJson(payload.security),
         logging: toJson(payload.logging),
-        update: toJson(payload.update),
+        update: toJson({
+          ...payload.update,
+          wantedLanguages: payload.wantedLanguages,
+        }),
         mediaManagement: toJson(payload.mediaManagement),
       },
     });
@@ -457,7 +496,19 @@ export class AppSettingsRepository {
           apiKeys.openSubtitlesApiKey,
           DEFAULT_APP_SETTINGS.apiKeys.openSubtitlesApiKey,
         ),
+        assrtApiToken: readNullableString(
+          apiKeys.assrtApiToken,
+          DEFAULT_APP_SETTINGS.apiKeys.assrtApiToken,
+        ),
+        subdlApiKey: readNullableString(
+          apiKeys.subdlApiKey,
+          DEFAULT_APP_SETTINGS.apiKeys.subdlApiKey,
+        ),
       },
+      wantedLanguages: readStringArray(
+        update.wantedLanguages,
+        DEFAULT_APP_SETTINGS.wantedLanguages,
+      ),
       host: {
         bindAddress: readString(
           host.bindAddress,

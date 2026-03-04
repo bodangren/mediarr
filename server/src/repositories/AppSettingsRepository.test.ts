@@ -47,6 +47,15 @@ describe('AppSettingsRepository — TorrentLimitsSettings new fields', () => {
     expect(DEFAULT_APP_SETTINGS.torrentLimits.seedLimitAction).toBe('pause');
   });
 
+  it('DEFAULT_APP_SETTINGS has wantedLanguages defaulting to []', () => {
+    expect(DEFAULT_APP_SETTINGS.wantedLanguages).toEqual([]);
+  });
+
+  it('DEFAULT_APP_SETTINGS.apiKeys includes subtitle provider credentials defaults', () => {
+    expect(DEFAULT_APP_SETTINGS.apiKeys.assrtApiToken).toBeNull();
+    expect(DEFAULT_APP_SETTINGS.apiKeys.subdlApiKey).toBeNull();
+  });
+
   // ── get() — no existing record returns defaults ────────────────────────────
 
   it('get() returns default torrentLimits including new fields when no record exists', async () => {
@@ -240,5 +249,55 @@ describe('AppSettingsRepository — TorrentLimitsSettings new fields', () => {
     // Other new fields unchanged
     expect(result.torrentLimits.seedTimeLimitMinutes).toBe(30);
     expect(result.torrentLimits.seedLimitAction).toBe('pause');
+  });
+
+  it('get() reads wantedLanguages from persisted update JSON', async () => {
+    prismaMock.appSettings.findUnique.mockResolvedValue({
+      torrentLimits: DEFAULT_APP_SETTINGS.torrentLimits,
+      schedulerIntervals: DEFAULT_APP_SETTINGS.schedulerIntervals,
+      pathVisibility: DEFAULT_APP_SETTINGS.pathVisibility,
+      apiKeys: DEFAULT_APP_SETTINGS.apiKeys,
+      host: DEFAULT_APP_SETTINGS.host,
+      security: DEFAULT_APP_SETTINGS.security,
+      logging: DEFAULT_APP_SETTINGS.logging,
+      update: {
+        ...DEFAULT_APP_SETTINGS.update,
+        wantedLanguages: ['EN', 'th', 'th'],
+      },
+      mediaManagement: DEFAULT_APP_SETTINGS.mediaManagement,
+    });
+
+    const settings = await repo.get();
+    expect(settings.wantedLanguages).toEqual(['en', 'th']);
+  });
+
+  it('update() merges wantedLanguages into persisted settings payload', async () => {
+    prismaMock.appSettings.findUnique.mockResolvedValue({
+      torrentLimits: DEFAULT_APP_SETTINGS.torrentLimits,
+      schedulerIntervals: DEFAULT_APP_SETTINGS.schedulerIntervals,
+      pathVisibility: DEFAULT_APP_SETTINGS.pathVisibility,
+      apiKeys: DEFAULT_APP_SETTINGS.apiKeys,
+      host: DEFAULT_APP_SETTINGS.host,
+      security: DEFAULT_APP_SETTINGS.security,
+      logging: DEFAULT_APP_SETTINGS.logging,
+      update: DEFAULT_APP_SETTINGS.update,
+      mediaManagement: DEFAULT_APP_SETTINGS.mediaManagement,
+    });
+    prismaMock.appSettings.upsert.mockResolvedValue({});
+
+    const updated = await repo.update({
+      wantedLanguages: ['EN', 'zh', 'zh', ''],
+    });
+
+    expect(updated.wantedLanguages).toEqual(['en', 'zh']);
+    expect(prismaMock.appSettings.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        update: expect.objectContaining({
+          update: expect.objectContaining({
+            wantedLanguages: ['en', 'zh'],
+          }),
+        }),
+      }),
+    );
   });
 });

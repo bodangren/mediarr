@@ -48,6 +48,7 @@ import { SubdlProvider } from './services/providers/SubdlProvider';
 import { RssSyncService } from './services/RssSyncService';
 import { Scheduler } from './services/Scheduler';
 import { SettingsService } from './services/SettingsService';
+import { SubtitleAutomationService } from './services/SubtitleAutomationService';
 import {
   SubtitleInventoryApiService,
   type ManualSearchCandidate,
@@ -55,6 +56,10 @@ import {
 import { SubtitleNamingService } from './services/SubtitleNamingService';
 import { SubtitleProviderFactory } from './services/SubtitleProviderFactory';
 import { SubtitleScoringService } from './services/SubtitleScoringService';
+import { ProviderBackedSubtitleFetchProvider } from './services/ProviderBackedSubtitleFetchProvider';
+import { VariantMissingSubtitleService } from './services/VariantMissingSubtitleService';
+import { VariantSubtitleFetchService } from './services/VariantSubtitleFetchService';
+import { VariantWantedService } from './services/VariantWantedService';
 import { WantedService } from './services/WantedService';
 import { WantedSearchService } from './services/WantedSearchService';
 import { RssMediaMonitor } from './services/RssMediaMonitor';
@@ -477,7 +482,6 @@ async function startApi(): Promise<void> {
   });
 
   const organizer = new Organizer();
-  const importManager = new ImportManager(torrentManager, organizer, prisma, activityEventEmitter);
 
   const openSubtitlesProvider = new OpenSubtitlesProvider(httpClient, settingsService);
   const assrtProvider = new AssrtProvider(httpClient, settingsService);
@@ -505,6 +509,41 @@ async function startApi(): Promise<void> {
     new SubtitleScoringService(),
   );
 
+  const subtitleMissingService = new VariantMissingSubtitleService(subtitleVariantRepository);
+  const subtitleWantedService = new VariantWantedService(subtitleVariantRepository);
+  const subtitleFetchService = new VariantSubtitleFetchService(
+    subtitleVariantRepository,
+    new SubtitleNamingService(),
+    activityEventEmitter,
+  );
+  const subtitleFetchProvider = new ProviderBackedSubtitleFetchProvider(
+    subtitleProviderFactory,
+    new SubtitleScoringService(),
+  );
+  const subtitleAutomationService = new SubtitleAutomationService(
+    subtitleVariantRepository,
+    settingsService,
+    subtitleMissingService,
+    subtitleWantedService,
+    subtitleFetchService,
+    subtitleFetchProvider,
+  );
+
+  const importManager = new ImportManager(
+    torrentManager,
+    organizer,
+    prisma,
+    activityEventEmitter,
+    {
+      onMovieImported: async (movieId: number) => {
+        await subtitleAutomationService.onMovieImported(movieId);
+      },
+      onEpisodeImported: async (episodeId: number) => {
+        await subtitleAutomationService.onEpisodeImported(episodeId);
+      },
+    },
+  );
+
   const mediaService = new MediaService(prisma, metadataProvider, activityEventEmitter);
   const searchAggregationService = new SearchAggregationService(
     indexerRepository,
@@ -520,6 +559,13 @@ async function startApi(): Promise<void> {
   // Initialize background automation services
   new RssMediaMonitor(rssSyncService, torrentManager, prisma, metadataProvider, customFormatRepository);
   scheduler.scheduleWantedSearch(wantedSearchService);
+  const subtitleScanInterval = Math.max(5, settings.schedulerIntervals.availabilityCheckMinutes);
+  const subtitleScanCron = `*/${subtitleScanInterval} * * * *`;
+  scheduler.scheduleSubtitleWantedSearch(
+    subtitleAutomationService,
+    'subtitle-wanted-search',
+    subtitleScanCron,
+  );
 
 
   const app = createApiServer({

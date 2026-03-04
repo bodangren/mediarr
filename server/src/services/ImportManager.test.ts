@@ -105,8 +105,15 @@ describe('ImportManager', () => {
   async function fireTorrentCompleted(
     prisma: ReturnType<typeof makePrisma>,
     torrent = TORRENT,
+    hooks?: { onMovieImported?: (id: number) => Promise<void> | void; onEpisodeImported?: (id: number) => Promise<void> | void },
   ) {
-    new ImportManager(torrentManager as any, organizer as any, prisma as any, activityEmitter as any);
+    new ImportManager(
+      torrentManager as any,
+      organizer as any,
+      prisma as any,
+      activityEmitter as any,
+      hooks,
+    );
     // Fire the event
     await new Promise<void>((resolve) => {
       torrentManager.emit('torrent:completed', torrent);
@@ -176,7 +183,10 @@ describe('ImportManager', () => {
     prisma.movie.findFirst.mockImplementation(async ({ where }: any) => {
       const clauses = Array.isArray(where?.OR) ? where.OR : [];
       const hasTitleClause = clauses.some((clause: any) => clause?.title?.contains === 'The Matrix');
-      const hasCleanTitleClause = clauses.some((clause: any) => clause?.cleanTitle?.contains === 'thematrix');
+      const hasCleanTitleClause = clauses.some((clause: any) => {
+        const value = clause?.cleanTitle?.contains;
+        return value === 'thematrix' || value === 'the matrix';
+      });
       if (where?.year === 1999 && hasTitleClause && hasCleanTitleClause) {
         return movie;
       }
@@ -379,5 +389,15 @@ describe('ImportManager', () => {
       '/downloads/complete/The.Matrix.1999.mkv',
       movie,
     );
+  });
+
+  it('invokes import hooks after successful movie import', async () => {
+    const movie = { id: 5, title: 'The Matrix', year: 1999, path: '/media/movies' };
+    const prisma = makePrisma({ series: null, episode: null, movie });
+    const onMovieImported = vi.fn().mockResolvedValue(undefined);
+
+    await fireTorrentCompleted(prisma, TORRENT, { onMovieImported });
+
+    expect(onMovieImported).toHaveBeenCalledWith(5);
   });
 });

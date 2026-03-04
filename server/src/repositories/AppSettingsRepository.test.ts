@@ -56,6 +56,16 @@ describe('AppSettingsRepository — TorrentLimitsSettings new fields', () => {
     expect(DEFAULT_APP_SETTINGS.apiKeys.subdlApiKey).toBeNull();
   });
 
+  it('DEFAULT_APP_SETTINGS has streaming defaults', () => {
+    expect(DEFAULT_APP_SETTINGS.streaming).toEqual({
+      discoveryEnabled: true,
+      discoveryServiceName: 'Mediarr',
+      defaultUserId: 'lan-default',
+      watchedThreshold: 0.9,
+      subtitleDirectory: null,
+    });
+  });
+
   // ── get() — no existing record returns defaults ────────────────────────────
 
   it('get() returns default torrentLimits including new fields when no record exists', async () => {
@@ -295,6 +305,71 @@ describe('AppSettingsRepository — TorrentLimitsSettings new fields', () => {
         update: expect.objectContaining({
           update: expect.objectContaining({
             wantedLanguages: ['en', 'zh'],
+          }),
+        }),
+      }),
+    );
+  });
+
+  it('get() falls back to streaming defaults when streaming is absent', async () => {
+    prismaMock.appSettings.findUnique.mockResolvedValue({
+      torrentLimits: DEFAULT_APP_SETTINGS.torrentLimits,
+      schedulerIntervals: DEFAULT_APP_SETTINGS.schedulerIntervals,
+      pathVisibility: DEFAULT_APP_SETTINGS.pathVisibility,
+      apiKeys: DEFAULT_APP_SETTINGS.apiKeys,
+      host: DEFAULT_APP_SETTINGS.host,
+      security: DEFAULT_APP_SETTINGS.security,
+      logging: DEFAULT_APP_SETTINGS.logging,
+      update: DEFAULT_APP_SETTINGS.update,
+      mediaManagement: DEFAULT_APP_SETTINGS.mediaManagement,
+    });
+
+    const settings = await repo.get();
+    expect(settings.streaming).toEqual(DEFAULT_APP_SETTINGS.streaming);
+  });
+
+  it('update() merges streaming settings into persisted payload', async () => {
+    prismaMock.appSettings.findUnique.mockResolvedValue({
+      torrentLimits: DEFAULT_APP_SETTINGS.torrentLimits,
+      schedulerIntervals: DEFAULT_APP_SETTINGS.schedulerIntervals,
+      pathVisibility: DEFAULT_APP_SETTINGS.pathVisibility,
+      apiKeys: DEFAULT_APP_SETTINGS.apiKeys,
+      host: DEFAULT_APP_SETTINGS.host,
+      security: DEFAULT_APP_SETTINGS.security,
+      logging: DEFAULT_APP_SETTINGS.logging,
+      update: DEFAULT_APP_SETTINGS.update,
+      mediaManagement: DEFAULT_APP_SETTINGS.mediaManagement,
+      streaming: DEFAULT_APP_SETTINGS.streaming,
+    });
+    prismaMock.appSettings.upsert.mockResolvedValue({});
+
+    const updated = await repo.update({
+      streaming: {
+        discoveryEnabled: false,
+        discoveryServiceName: 'Living Room Mediarr',
+        defaultUserId: 'family-room',
+        watchedThreshold: 0.85,
+        subtitleDirectory: '/srv/subtitles',
+      },
+    });
+
+    expect(updated.streaming).toEqual({
+      discoveryEnabled: false,
+      discoveryServiceName: 'Living Room Mediarr',
+      defaultUserId: 'family-room',
+      watchedThreshold: 0.85,
+      subtitleDirectory: '/srv/subtitles',
+    });
+
+    expect(prismaMock.appSettings.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        update: expect.objectContaining({
+          streaming: expect.objectContaining({
+            discoveryEnabled: false,
+            discoveryServiceName: 'Living Room Mediarr',
+            defaultUserId: 'family-room',
+            watchedThreshold: 0.85,
+            subtitleDirectory: '/srv/subtitles',
           }),
         }),
       }),

@@ -64,6 +64,14 @@ export interface MediaManagementSettings {
   tvRootFolder: string;
 }
 
+export interface StreamingSettings {
+  discoveryEnabled: boolean;
+  discoveryServiceName: string;
+  defaultUserId: string;
+  watchedThreshold: number;
+  subtitleDirectory: string | null;
+}
+
 export interface AppSettingsPayload {
   torrentLimits: TorrentLimitsSettings;
   schedulerIntervals: SchedulerIntervalsSettings;
@@ -75,11 +83,20 @@ export interface AppSettingsPayload {
   logging: LoggingSettings;
   update: UpdateSettings;
   mediaManagement: MediaManagementSettings;
+  streaming: StreamingSettings;
 }
 
 export const DEFAULT_MEDIA_MANAGEMENT_SETTINGS: MediaManagementSettings = {
   movieRootFolder: '',
   tvRootFolder: '',
+};
+
+export const DEFAULT_STREAMING_SETTINGS: StreamingSettings = {
+  discoveryEnabled: true,
+  discoveryServiceName: 'Mediarr',
+  defaultUserId: 'lan-default',
+  watchedThreshold: 0.9,
+  subtitleDirectory: null,
 };
 
 export const DEFAULT_APP_SETTINGS: AppSettingsPayload = {
@@ -136,6 +153,7 @@ export const DEFAULT_APP_SETTINGS: AppSettingsPayload = {
     updateScriptPath: null,
   },
   mediaManagement: DEFAULT_MEDIA_MANAGEMENT_SETTINGS,
+  streaming: DEFAULT_STREAMING_SETTINGS,
 };
 
 function readObject(value: unknown): Record<string, unknown> {
@@ -181,11 +199,29 @@ function readNullableString(value: unknown, fallback: string | null): string | n
   return fallback;
 }
 
+function readNullableTrimmedString(value: unknown, fallback: string | null): string | null {
+  if (typeof value !== 'string') {
+    return fallback;
+  }
+
+  const normalized = value.trim();
+  return normalized.length > 0 ? normalized : null;
+}
+
 function readString(value: unknown, fallback: string): string {
   if (typeof value === 'string') {
     return value;
   }
   return fallback;
+}
+
+function readTrimmedString(value: unknown, fallback: string): string {
+  if (typeof value !== 'string') {
+    return fallback;
+  }
+
+  const normalized = value.trim();
+  return normalized.length > 0 ? normalized : fallback;
 }
 
 function readStringArray(value: unknown, fallback: string[]): string[] {
@@ -249,6 +285,10 @@ function toJson(value: unknown): Prisma.InputJsonValue {
   return value as Prisma.InputJsonValue;
 }
 
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max);
+}
+
 /**
  * Persists app-level settings using a single-row record.
  */
@@ -276,6 +316,7 @@ export class AppSettingsRepository {
             wantedLanguages: DEFAULT_APP_SETTINGS.wantedLanguages,
           }),
           mediaManagement: toJson(DEFAULT_APP_SETTINGS.mediaManagement),
+          streaming: toJson(DEFAULT_APP_SETTINGS.streaming),
         },
       });
 
@@ -328,6 +369,10 @@ export class AppSettingsRepository {
         ...current.mediaManagement,
         ...partial.mediaManagement,
       },
+      streaming: {
+        ...current.streaming,
+        ...partial.streaming,
+      },
     };
 
     await this.prisma.appSettings.upsert({
@@ -346,6 +391,7 @@ export class AppSettingsRepository {
           wantedLanguages: merged.wantedLanguages,
         }),
         mediaManagement: toJson(merged.mediaManagement),
+        streaming: toJson(merged.streaming),
       },
       update: {
         torrentLimits: toJson(merged.torrentLimits),
@@ -360,6 +406,7 @@ export class AppSettingsRepository {
           wantedLanguages: merged.wantedLanguages,
         }),
         mediaManagement: toJson(merged.mediaManagement),
+        streaming: toJson(merged.streaming),
       },
     });
 
@@ -383,6 +430,7 @@ export class AppSettingsRepository {
           wantedLanguages: payload.wantedLanguages,
         }),
         mediaManagement: toJson(payload.mediaManagement),
+        streaming: toJson(payload.streaming),
       },
       update: {
         torrentLimits: toJson(payload.torrentLimits),
@@ -397,6 +445,7 @@ export class AppSettingsRepository {
           wantedLanguages: payload.wantedLanguages,
         }),
         mediaManagement: toJson(payload.mediaManagement),
+        streaming: toJson(payload.streaming),
       },
     });
 
@@ -413,6 +462,7 @@ export class AppSettingsRepository {
     logging?: unknown;
     update?: unknown;
     mediaManagement?: unknown;
+    streaming?: unknown;
   }): AppSettingsPayload {
     const torrentLimits = readObject(record.torrentLimits);
     const schedulerIntervals = readObject(record.schedulerIntervals);
@@ -423,6 +473,7 @@ export class AppSettingsRepository {
     const logging = readObject(record.logging ?? {});
     const update = readObject(record.update ?? {});
     const mediaManagement = readObject(record.mediaManagement ?? {});
+    const streaming = readObject(record.streaming ?? {});
 
     return {
       torrentLimits: {
@@ -593,6 +644,32 @@ export class AppSettingsRepository {
         tvRootFolder: readString(
           mediaManagement.tvRootFolder,
           DEFAULT_MEDIA_MANAGEMENT_SETTINGS.tvRootFolder,
+        ),
+      },
+      streaming: {
+        discoveryEnabled: readBoolean(
+          streaming.discoveryEnabled,
+          DEFAULT_APP_SETTINGS.streaming.discoveryEnabled,
+        ),
+        discoveryServiceName: readTrimmedString(
+          streaming.discoveryServiceName,
+          DEFAULT_APP_SETTINGS.streaming.discoveryServiceName,
+        ),
+        defaultUserId: readTrimmedString(
+          streaming.defaultUserId,
+          DEFAULT_APP_SETTINGS.streaming.defaultUserId,
+        ),
+        watchedThreshold: clamp(
+          readNumber(
+            streaming.watchedThreshold,
+            DEFAULT_APP_SETTINGS.streaming.watchedThreshold,
+          ),
+          0,
+          1,
+        ),
+        subtitleDirectory: readNullableTrimmedString(
+          streaming.subtitleDirectory,
+          DEFAULT_APP_SETTINGS.streaming.subtitleDirectory,
         ),
       },
     };

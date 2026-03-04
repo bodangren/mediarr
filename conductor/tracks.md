@@ -41,6 +41,7 @@ Android TV Client (New)
 
 - [x] **Track: Automated Search and Download** *Phases: 4 | Link: [./tracks/automated_search_download_20260303/](./tracks/automated_search_download_20260303/)*
 - [ ] **Track: Android TV Client** *Phases: 3 | Link: [./tracks/android_tv_client_20260304/](./tracks/android_tv_client_20260304/)*
+- [~] **Track: Streaming Settings Panel & DB-backed Configuration** *Phases: 3 | Link: [./tracks/streaming_settings_panel_20260305/](./tracks/streaming_settings_panel_20260305/)*
 
 ---
 

@@ -1,42 +1,70 @@
 # Implementation Plan: Subtitle Management
 
-## Phase 1: Subtitle Providers and Scoring
-> Goal: Implement real subtitle providers (indexers) and a scoring algorithm.
+## Phase 1: Provider and Scoring Foundation
+> Goal: Deliver production-usable provider integrations and candidate ranking.
 
-- [ ] Task: Implement Subtitle Providers
-    - [ ] Sub-task: Bridge OpenSubtitles (org/com) into `ManualSubtitleProvider` and `SubtitleFetchProvider`.
-    - [ ] Sub-task: Implement a generic provider wrapper based on Bazarr's subliminal-like logic (reference `reference/bazarr/`).
-    - [ ] Sub-task: Specifically add support for Addic7ed and Thai/Chinese sites (SubHD/Zimuku).
-- [ ] Task: Implement Subtitle Scoring
-    - [ ] Sub-task: Create a `SubtitleScoringService` based on Bazarr's `score.py` (hash match, title match, year match, etc.).
-- [ ] Task: Write unit tests for providers and scoring logic.
-- [ ] Task: Conductor - User Manual Verification 'Phase 1: Subtitle Providers' (Protocol in workflow.md)
+- [ ] Task: Complete OpenSubtitles provider flow
+  - [ ] Sub-task: Implement real download behavior in `OpenSubtitlesProvider`.
+  - [ ] Sub-task: Ensure provider outputs normalized language/forced/HI metadata.
+- [ ] Task: Add additional providers
+  - [ ] Sub-task: Implement ASSRT provider adapter (Chinese).
+  - [ ] Sub-task: Implement SubDL provider adapter (Thai-capable).
+  - [ ] Sub-task: Wire providers into `SubtitleProviderFactory` with configurable selection.
+- [ ] Task: Implement scoring service
+  - [ ] Sub-task: Add `SubtitleScoringService` and apply to manual and automated selection.
+- [ ] Task: Add backend tests for provider and scoring behavior.
 
-## Phase 2: Configuration and Backend Automation
-> Goal: Configure desired languages and implement automated searches.
+## Phase 2: Wanted Languages and Automation Engine
+> Goal: Configure target languages and automate missing subtitle fetches.
 
-- [ ] Task: Global Subtitle Settings
-    - [ ] Sub-task: Add `wantedLanguages` (array of language codes) to `AppSettings`.
-    - [ ] Sub-task: Add API endpoints for managing wanted languages.
-- [ ] Task: Automated Subtitle Search Service
-    - [ ] Sub-task: Create a service to scan for media missing wanted subtitles.
-    - [ ] Sub-task: Implement the automated search/download loop.
-- [ ] Task: Import Integration
-    - [ ] Sub-task: Hook into the media import process to trigger a subtitle search on success.
-- [ ] Task: Conductor - User Manual Verification 'Phase 2: Configuration and Backend Automation' (Protocol in workflow.md)
+- [ ] Task: Add global wanted languages to settings
+  - [ ] Sub-task: Add `wantedLanguages` to backend settings model/repository/validation.
+  - [ ] Sub-task: Add `wantedLanguages` to frontend settings client schema.
+- [ ] Task: Build automated subtitle orchestration
+  - [ ] Sub-task: Scan variants for missing subtitles from wanted languages.
+  - [ ] Sub-task: Sync `VariantMissingSubtitle` and `WantedSubtitle` records.
+  - [ ] Sub-task: Run fetch loop with state transitions and history recording.
+- [ ] Task: Integrate triggers
+  - [ ] Sub-task: Trigger subtitle automation on import events.
+  - [ ] Sub-task: Add periodic scheduler job for subtitle wanted scan/search.
+- [ ] Task: Add backend tests for settings + automation + scheduler/import hooks.
 
-## Phase 3: Frontend Subtitle Badges
-> Goal: Display color-coded language badges in the UI.
+## Phase 3: Subtitle API Contract Completion
+> Goal: Expose a complete subtitle API surface aligned with current frontend route map.
 
-- [ ] Task: Implement Subtitle Status Logic in Frontend
-    - [ ] Sub-task: Add `wantedLanguages` to the frontend settings store.
-    - [ ] Sub-task: Update `Movie` and `Episode` types to include their subtitle track information.
-- [ ] Task: Media Item Badges
-    - [ ] Sub-task: Use `LanguageBadge.tsx` to display [en], [th], [zh] badges on Movie and Episode rows.
-    - [ ] Sub-task: Green for grabbed, Gray for missing/wanted.
-- [ ] Task: Parent/Collection Badges
-    - [ ] Sub-task: Implement "Partial" (Yellow) status logic for Series and Seasons.
-    - [ ] Sub-task: Render collection-level badges in the library overview.
-- [ ] Task: Media Detail Integration
-    - [ ] Sub-task: Add detailed subtitle status badges to `MovieDetailHeader` and Series detail header.
-- [ ] Task: Conductor - User Manual Verification 'Phase 3: Frontend Subtitle Badges' (Protocol in workflow.md)
+- [ ] Task: Implement providers endpoints
+  - [ ] Sub-task: `GET/PUT /api/subtitles/providers/:id`, `GET /api/subtitles/providers`, `POST /test`, `POST /reset`.
+- [ ] Task: Implement wanted endpoints
+  - [ ] Sub-task: Series/movies wanted list endpoints with pagination/filtering.
+  - [ ] Sub-task: Trigger search endpoints and wanted count endpoint.
+- [ ] Task: Implement history and blacklist endpoints
+  - [ ] Sub-task: History list/stats/clear endpoints.
+  - [ ] Sub-task: Blacklist list/remove/clear endpoints.
+- [ ] Task: Implement movie/series sync/scan/search convenience endpoints.
+- [ ] Task: Align server `routeMap` and dependency wiring with implemented routes.
+- [ ] Task: Add route-level tests for all new subtitle endpoints.
+
+## Phase 4: Frontend Integration and Badges
+> Goal: Wire subtitle APIs into UI and render accurate subtitle status badges.
+
+- [ ] Task: Settings integration
+  - [ ] Sub-task: Add wanted languages controls in subtitle settings page.
+  - [ ] Sub-task: Keep provider status and credentials working with new endpoints.
+- [ ] Task: Subtitle status rendering
+  - [ ] Sub-task: Render language badges on movie/episode list/detail surfaces.
+  - [ ] Sub-task: Render aggregate series/season partial vs complete subtitle status.
+- [ ] Task: Manual subtitle UX
+  - [ ] Sub-task: Connect manual search modal and download actions to live API.
+- [ ] Task: Add frontend tests for settings, badge logic, and manual subtitle flows.
+
+## Phase 5: Track Hardening and Final Verification
+> Goal: Run full validation and finalize conductor tracking in one pass.
+
+- [ ] Task: Run automated verification
+  - [ ] Sub-task: Execute relevant test suites for server/app subtitle changes.
+  - [ ] Sub-task: Execute coverage checks for modified modules.
+- [ ] Task: Perform manual verification at end of track only
+  - [ ] Sub-task: Run full manual verification protocol for all phases in one session.
+- [ ] Task: Finalize conductor records
+  - [ ] Sub-task: Mark all completed tasks/phase checkboxes with commit SHAs.
+  - [ ] Sub-task: Prepare track completion summary for archive handoff.

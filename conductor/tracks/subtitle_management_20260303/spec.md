@@ -1,38 +1,56 @@
 # Specification: Subtitle Management
 
 ## Overview
-Implement a comprehensive subtitle management pipeline, similar to the media download pipeline. This includes support for subtitle indexers (providers), wanted language profiles, and both manual and automated searches. Visual feedback will be provided through status badges on media items.
+Implement a complete subtitle management pipeline in the Mediarr monolith, using shared movie/TV services and a unified database. The feature set includes multi-provider subtitle search/download, global wanted language settings, automated fetch flows, and UI subtitle status badges.
 
 ## Functional Requirements
-- **Subtitle Indexers (Providers):**
-    - Integrate with subtitle providers including OpenSubtitles, Addic7ed, and Chinese/Thai specialized sites (e.g., SubHD, Zimuku).
-    - Leverage the existing `SubtitleProviderFactory` to manage multiple providers.
-- **Language Management:**
-    - Global "Wanted Languages" list in Settings.
-    - Ability to mark specific languages as "Wanted" for a piece of media.
-- **Automated Subtitle Search:**
-    - **On-Import Trigger:** Automatically search for missing subtitles immediately after a media file is imported.
-    - **Background Task:** A periodic task that scans the library for media missing wanted subtitles and triggers searches.
-- **UI Integration (Badges):**
-    - **Media Item Badges:** Display `[en]`, `[th]`, `[zh]` badges on Movie rows and Episode rows.
-        - **Green:** Subtitle grabbed/available.
-        - **Gray/Disabled:** Subtitle wanted but missing.
-    - **Collection Badges:** Display status on Series and Seasons.
-        - **Yellow/Partial:** Some but not all wanted subtitles are available for that collection.
-    - **Media Detail:** Show detailed subtitle status in the header or a dedicated "Subtitles" tab.
-- **Manual Search:**
-    - A "Manual Search" modal for subtitles allowing users to pick specific results from different providers.
+- **Provider Foundation**
+  - Support OpenSubtitles with real search and download flow.
+  - Add one Chinese-capable provider and one Thai-capable provider for Phase 1 rollout:
+    - Chinese: ASSRT.
+    - Thai: SubDL.
+  - Use `SubtitleProviderFactory` for provider resolution and consistent provider naming.
+  - Provider failures must be isolated (one provider failing must not crash overall subtitle workflows).
+- **Scoring and Candidate Selection**
+  - Implement deterministic subtitle candidate scoring (release-name, language fit, forced/HI fit, quality hints).
+  - Use scoring in both manual search ordering and automated "best candidate" selection.
+- **Wanted Language Management**
+  - Add global `wantedLanguages` in app settings as a list of language codes.
+  - Global wanted languages are the baseline for all media when no item-specific override exists.
+- **Automated Subtitle Search**
+  - On import success (`MOVIE_IMPORTED`, `SERIES_IMPORTED`), trigger subtitle automation for the imported media.
+  - Add periodic scheduler job to scan for missing wanted subtitles and trigger fetch.
+  - Persist wanted subtitle state transitions (`PENDING`, `SEARCHING`, `DOWNLOADED`, `FAILED`).
+- **Subtitle API Surface**
+  - Implement subtitle endpoints required by current app clients for:
+    - Providers management/status.
+    - Wanted subtitles lists/search/count.
+    - Subtitle history and summary stats.
+    - Subtitle blacklist listing/removal/clear.
+    - Movie/series subtitle sync/scan/search convenience flows.
+- **Frontend Integration**
+  - Settings page supports `wantedLanguages` and provider status/credentials.
+  - Movie and episode UI surfaces display per-language subtitle badges.
+  - Series/season surfaces display aggregate partial/complete status.
+  - Media detail headers expose detailed subtitle status.
+  - Manual subtitle search and download flow uses live provider data.
 
 ## Non-Functional Requirements
-- **Data Integrity:** Subtitles should be stored in the same directory as the media file, following standard naming conventions.
-- **API Rate Limiting:** Respect rate limits for subtitle providers (e.g., OpenSubtitles).
+- **Monolith Constraint**: All subtitle logic remains inside the existing backend/frontend monolith; no new service boundaries.
+- **Data Integrity**: Downloaded/uploaded subtitle file paths follow existing subtitle naming conventions and persist in `VariantSubtitleTrack`/`SubtitleHistory`.
+- **Rate Limiting and Resilience**: Provider integrations implement request throttling/backoff behavior and graceful degradation.
+- **Contract Safety**: Backend route map and frontend route map must remain aligned for subtitle endpoints.
 
 ## Acceptance Criteria
-- Users can configure a list of wanted languages in Settings.
-- Media detail pages display badges for all wanted languages with correct color coding.
-- Importing a new movie automatically triggers a search for configured wanted subtitles.
-- A "Manual Search" modal for subtitles returns results from at least one configured provider.
+- Users can configure `wantedLanguages` and read/write them via settings APIs and UI.
+- Manual subtitle search returns provider results and manual download writes/persists subtitle tracks.
+- Importing media triggers subtitle search for missing wanted languages.
+- Periodic subtitle automation runs and updates wanted subtitle states.
+- Movie/Episode rows and detail pages render subtitle language badges with correct status mapping.
+- Series/Season aggregate subtitle status shows partial vs complete correctly.
+- Existing subtitle API clients in `app/src/lib/api/*subtitle*.ts` can call implemented backend endpoints without contract mismatch.
 
 ## Out of Scope
-- Subtitle synchronization/retiming tools.
-- Subtitle editing/translation within the UI.
+- Subtitle timeline synchronization/retiming tools.
+- Subtitle editing/translation workflows.
+- OCR for image-only subtitle formats.

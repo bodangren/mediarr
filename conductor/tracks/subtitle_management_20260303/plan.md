@@ -32,17 +32,17 @@
 ## Phase 3: Subtitle API Contract Completion
 > Goal: Expose a complete subtitle API surface aligned with current frontend route map.
 
-- [ ] Task: Implement providers endpoints
-  - [ ] Sub-task: `GET/PUT /api/subtitles/providers/:id`, `GET /api/subtitles/providers`, `POST /test`, `POST /reset`.
-- [ ] Task: Implement wanted endpoints
-  - [ ] Sub-task: Series/movies wanted list endpoints with pagination/filtering.
-  - [ ] Sub-task: Trigger search endpoints and wanted count endpoint.
-- [ ] Task: Implement history and blacklist endpoints
-  - [ ] Sub-task: History list/stats/clear endpoints.
-  - [ ] Sub-task: Blacklist list/remove/clear endpoints.
-- [ ] Task: Implement movie/series sync/scan/search convenience endpoints.
-- [ ] Task: Align server `routeMap` and dependency wiring with implemented routes.
-- [ ] Task: Add route-level tests for all new subtitle endpoints.
+- [x] Task: Implement providers endpoints [8be73fd]
+  - [x] Sub-task: `GET/PUT /api/subtitles/providers/:id`, `GET /api/subtitles/providers`, `POST /test`, `POST /reset`.
+- [x] Task: Implement wanted endpoints [8be73fd]
+  - [x] Sub-task: Series/movies wanted list endpoints with pagination/filtering.
+  - [x] Sub-task: Trigger search endpoints and wanted count endpoint.
+- [x] Task: Implement history and blacklist endpoints [8be73fd]
+  - [x] Sub-task: History list/stats/clear endpoints.
+  - [x] Sub-task: Blacklist list/remove/clear endpoints.
+- [x] Task: Implement movie/series sync/scan/search convenience endpoints. [8be73fd]
+- [x] Task: Align server `routeMap` and dependency wiring with implemented routes. [8be73fd]
+- [x] Task: Add route-level tests for all new subtitle endpoints. [8be73fd]
 
 ## Phase 4: Frontend Integration and Badges
 > Goal: Wire subtitle APIs into UI and render accurate subtitle status badges.

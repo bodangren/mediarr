@@ -10,6 +10,8 @@ import { AddProfileModal } from '@/components/settings/AddProfileModal';
 import { EditIndexerModal } from '@/components/indexers/EditIndexerModal';
 import { MovieInteractiveSearchModal } from '@/components/movie/MovieInteractiveSearchModal';
 import { MovieCollectionSection } from '@/components/movie/MovieCollectionSection';
+import { LanguageBadge } from '@/components/subtitles/LanguageBadge';
+import { ManualSearchModal } from '@/components/subtitles/ManualSearchModal';
 import { InteractiveSearchModal } from '@/components/search/InteractiveSearchModal';
 import { SeriesInteractiveSearchModal, type SearchLevel } from '@/components/series/SeriesInteractiveSearchModal';
 import { SeriesOverviewView, MovieOverviewView } from '@/components/views';
@@ -28,6 +30,7 @@ import type { SubtitleProvider } from '@/lib/api/subtitleProvidersApi';
 import type { NotificationItem } from '@/lib/api/notificationsApi';
 import type { AppSettings } from '@/lib/api/settingsApi';
 import type { MetadataSearchResult } from '@/lib/api/mediaApi';
+import { COMMON_LANGUAGES, getLanguageName } from '@/lib/constants/languages';
 import type { MovieListItem as MovieViewItem } from '@/types/movie';
 import type { SeriesListItem as SeriesViewItem } from '@/types/series';
 import { formatBytes } from '@/lib/format';
@@ -51,6 +54,61 @@ function RouteScaffold({ title, description, actions, children }: { title: strin
 
 function StaticPage({ title, description }: { title: string; description: string }) {
   return <RouteScaffold title={title} description={description} />;
+}
+
+type SubtitleCoverageStatus = 'complete' | 'partial' | 'missing' | 'none';
+
+interface SubtitleCoverageSummary {
+  availableLanguages: string[];
+  missingLanguages: string[];
+  status: SubtitleCoverageStatus;
+}
+
+function normalizeLanguageCodes(values: string[]): string[] {
+  return [...new Set(values.map(value => value.trim().toLowerCase()).filter(Boolean))].sort();
+}
+
+function summarizeSubtitleCoverage(
+  availableLanguagesRaw: string[],
+  missingLanguagesRaw: string[],
+): SubtitleCoverageSummary {
+  const availableLanguages = normalizeLanguageCodes(availableLanguagesRaw);
+  const missingLanguages = normalizeLanguageCodes(missingLanguagesRaw);
+
+  let status: SubtitleCoverageStatus = 'none';
+  if (availableLanguages.length > 0 && missingLanguages.length === 0) {
+    status = 'complete';
+  } else if (availableLanguages.length > 0 && missingLanguages.length > 0) {
+    status = 'partial';
+  } else if (availableLanguages.length === 0 && missingLanguages.length > 0) {
+    status = 'missing';
+  }
+
+  return {
+    availableLanguages,
+    missingLanguages,
+    status,
+  };
+}
+
+function subtitleStatusBadgeClass(status: SubtitleCoverageStatus): string {
+  if (status === 'complete') {
+    return 'bg-status-completed/20 text-status-completed';
+  }
+  if (status === 'partial') {
+    return 'bg-accent-warning/20 text-accent-warning';
+  }
+  if (status === 'missing') {
+    return 'bg-status-error/20 text-status-error';
+  }
+  return 'bg-surface-2 text-text-secondary';
+}
+
+function subtitleStatusLabel(status: SubtitleCoverageStatus): string {
+  if (status === 'complete') return 'Subtitles Complete';
+  if (status === 'partial') return 'Subtitles Partial';
+  if (status === 'missing') return 'Subtitles Missing';
+  return 'No Subtitle Data';
 }
 
 export function SettingsMediaPage() {
@@ -1051,6 +1109,9 @@ function SettingsSubtitlesPage() {
   const api = useMemo(() => getApiClients(), []);
   const [providers, setProviders] = useState<SubtitleProvider[]>([]);
   const [openSubtitlesApiKey, setOpenSubtitlesApiKey] = useState('');
+  const [assrtApiToken, setAssrtApiToken] = useState('');
+  const [subdlApiKey, setSubdlApiKey] = useState('');
+  const [wantedLanguages, setWantedLanguages] = useState<string[]>([]);
   const [showDownloadPath, setShowDownloadPath] = useState(false);
   const [showMediaPath, setShowMediaPath] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -1066,6 +1127,9 @@ function SettingsSubtitlesPage() {
       try {
         const settings = await api.settingsApi.get();
         setOpenSubtitlesApiKey(settings.apiKeys?.openSubtitlesApiKey ?? '');
+        setAssrtApiToken(settings.apiKeys?.assrtApiToken ?? '');
+        setSubdlApiKey(settings.apiKeys?.subdlApiKey ?? '');
+        setWantedLanguages(normalizeLanguageCodes(settings.wantedLanguages ?? []));
         setShowDownloadPath(settings.pathVisibility.showDownloadPath);
         setShowMediaPath(settings.pathVisibility.showMediaPath);
       } catch (loadError) {
@@ -1087,6 +1151,16 @@ function SettingsSubtitlesPage() {
     void load();
   }, [api]);
 
+  const toggleWantedLanguage = (languageCode: string) => {
+    setWantedLanguages(current => {
+      const normalized = languageCode.trim().toLowerCase();
+      if (current.includes(normalized)) {
+        return current.filter(item => item !== normalized);
+      }
+      return normalizeLanguageCodes([...current, normalized]);
+    });
+  };
+
   const onSave = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsSaving(true);
@@ -1096,7 +1170,10 @@ function SettingsSubtitlesPage() {
       await api.settingsApi.update({
         apiKeys: {
           openSubtitlesApiKey: openSubtitlesApiKey.trim() === '' ? null : openSubtitlesApiKey.trim(),
+          assrtApiToken: assrtApiToken.trim() === '' ? null : assrtApiToken.trim(),
+          subdlApiKey: subdlApiKey.trim() === '' ? null : subdlApiKey.trim(),
         },
+        wantedLanguages: normalizeLanguageCodes(wantedLanguages),
         pathVisibility: {
           showDownloadPath,
           showMediaPath,
@@ -1135,6 +1212,86 @@ function SettingsSubtitlesPage() {
             className="mt-1 w-full rounded-sm border border-border-subtle bg-surface-0 px-2 py-1 text-sm text-text-primary"
           />
         </label>
+        <label className="mt-3 block text-sm text-text-secondary">
+          ASSRT API Token
+          <input
+            type="text"
+            value={assrtApiToken}
+            onChange={event => setAssrtApiToken(event.target.value)}
+            placeholder="Paste ASSRT token"
+            className="mt-1 w-full rounded-sm border border-border-subtle bg-surface-0 px-2 py-1 text-sm text-text-primary"
+          />
+        </label>
+        <label className="mt-3 block text-sm text-text-secondary">
+          SubDL API Key
+          <input
+            type="text"
+            value={subdlApiKey}
+            onChange={event => setSubdlApiKey(event.target.value)}
+            placeholder="Paste SubDL API key"
+            className="mt-1 w-full rounded-sm border border-border-subtle bg-surface-0 px-2 py-1 text-sm text-text-primary"
+          />
+        </label>
+        <div className="mt-4 space-y-2">
+          <h3 className="text-sm font-medium text-text-primary">Wanted Languages</h3>
+          <p className="text-xs text-text-secondary">
+            Subtitles automation will prioritize these languages globally when no item-specific override exists.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              className="rounded-sm border border-border-subtle px-2 py-1 text-xs text-text-secondary hover:bg-surface-2"
+              onClick={() => setWantedLanguages(normalizeLanguageCodes([...wantedLanguages, 'en']))}
+            >
+              Add English
+            </button>
+            <button
+              type="button"
+              className="rounded-sm border border-border-subtle px-2 py-1 text-xs text-text-secondary hover:bg-surface-2"
+              onClick={() => setWantedLanguages(normalizeLanguageCodes([...wantedLanguages, 'zh']))}
+            >
+              Add Chinese
+            </button>
+            <button
+              type="button"
+              className="rounded-sm border border-border-subtle px-2 py-1 text-xs text-text-secondary hover:bg-surface-2"
+              onClick={() => setWantedLanguages(normalizeLanguageCodes([...wantedLanguages, 'th']))}
+            >
+              Add Thai
+            </button>
+            <button
+              type="button"
+              className="rounded-sm border border-border-subtle px-2 py-1 text-xs text-text-secondary hover:bg-surface-2"
+              onClick={() => setWantedLanguages([])}
+            >
+              Clear
+            </button>
+          </div>
+          <div className="max-h-48 overflow-y-auto rounded-sm border border-border-subtle bg-surface-0 p-2">
+            <div className="grid gap-1 sm:grid-cols-2 lg:grid-cols-3">
+              {COMMON_LANGUAGES.map(language => (
+                <label key={language.code} className="flex items-center gap-2 rounded-sm px-2 py-1 text-xs text-text-secondary hover:bg-surface-1">
+                  <input
+                    type="checkbox"
+                    aria-label={`Wanted language ${language.code}`}
+                    checked={wantedLanguages.includes(language.code)}
+                    onChange={() => toggleWantedLanguage(language.code)}
+                  />
+                  {language.name} ({language.code})
+                </label>
+              ))}
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-1">
+            {wantedLanguages.length === 0 ? (
+              <span className="text-xs text-text-muted">No wanted languages selected.</span>
+            ) : wantedLanguages.map(code => (
+              <span key={code} className="rounded-sm bg-surface-2 px-2 py-0.5 text-xs text-text-secondary">
+                {getLanguageName(code)} ({code})
+              </span>
+            ))}
+          </div>
+        </div>
         <label className="mt-3 flex items-center gap-2 text-sm text-text-secondary">
           <input type="checkbox" checked={showDownloadPath} onChange={event => setShowDownloadPath(event.target.checked)} />
           Show download paths in subtitle-related views
@@ -1568,9 +1725,30 @@ function MovieDetailPage() {
     collection?: { id: number; name: string } | null;
   } | null>(null);
   const [qualityProfiles, setQualityProfiles] = useState<QualityProfileItem[]>([]);
+  const [movieSubtitleSummary, setMovieSubtitleSummary] = useState<SubtitleCoverageSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+  const [isManualSubtitleModalOpen, setIsManualSubtitleModalOpen] = useState(false);
+
+  const loadMovieSubtitleSummary = useCallback(async (targetMovieId: number) => {
+    try {
+      const variants = await api.subtitleApi.listMovieVariants(targetMovieId);
+      const available = variants.flatMap(variant =>
+        ((variant as any).subtitleTracks ?? [])
+          .map((track: any) => String(track.languageCode ?? '').toLowerCase())
+          .filter(Boolean),
+      );
+      const missing = variants.flatMap(variant =>
+        ((variant as any).missingSubtitles ?? [])
+          .map((item: any) => String(item.languageCode ?? '').toLowerCase())
+          .filter(Boolean),
+      );
+      setMovieSubtitleSummary(summarizeSubtitleCoverage(available, missing));
+    } catch {
+      setMovieSubtitleSummary(null);
+    }
+  }, [api]);
 
   useEffect(() => {
     if (!Number.isFinite(movieId)) {
@@ -1604,6 +1782,7 @@ function MovieDetailPage() {
           collection: (item as any).collection ?? null,
         });
         setQualityProfiles(profiles);
+        await loadMovieSubtitleSummary(item.id);
       } catch (loadError) {
         setError(loadError instanceof Error ? loadError.message : 'Failed to load movie details');
       } finally {
@@ -1612,7 +1791,7 @@ function MovieDetailPage() {
     };
 
     void load();
-  }, [api, movieId]);
+  }, [api, movieId, loadMovieSubtitleSummary]);
 
   const handleToggleMonitored = async () => {
     if (!movie) return;
@@ -1683,7 +1862,22 @@ function MovieDetailPage() {
               <div className="flex flex-wrap items-center gap-3 text-sm text-text-secondary">
                 {movie.year ? <span>{movie.year}</span> : null}
                 {movie.status ? <span className="rounded-sm bg-surface-2 px-2 py-0.5 text-xs">{movie.status}</span> : null}
+                {movieSubtitleSummary ? (
+                  <span className={`rounded-sm px-2 py-0.5 text-xs ${subtitleStatusBadgeClass(movieSubtitleSummary.status)}`}>
+                    {subtitleStatusLabel(movieSubtitleSummary.status)}
+                  </span>
+                ) : null}
               </div>
+              {movieSubtitleSummary && (movieSubtitleSummary.availableLanguages.length > 0 || movieSubtitleSummary.missingLanguages.length > 0) ? (
+                <div className="flex flex-wrap gap-1">
+                  {movieSubtitleSummary.availableLanguages.slice(0, 6).map(code => (
+                    <LanguageBadge key={`movie-available-${code}`} languageCode={code} variant="available" />
+                  ))}
+                  {movieSubtitleSummary.missingLanguages.slice(0, 6).map(code => (
+                    <LanguageBadge key={`movie-missing-${code}`} languageCode={code} variant="missing" />
+                  ))}
+                </div>
+              ) : null}
               {movie.genres && movie.genres.length > 0 ? (
                 <div className="flex flex-wrap gap-1">
                   {movie.genres.map(g => (
@@ -1759,6 +1953,14 @@ function MovieDetailPage() {
 
             <button
               type="button"
+              className="rounded-sm border border-border-subtle bg-surface-2 px-3 py-2 text-sm text-text-primary hover:bg-surface-3"
+              onClick={() => setIsManualSubtitleModalOpen(true)}
+            >
+              Manual Subtitles
+            </button>
+
+            <button
+              type="button"
               className="rounded-sm border border-status-error/60 px-3 py-2 text-sm text-status-error"
               aria-label="Remove from Library"
               onClick={() => { void handleRemove(); }}
@@ -1775,6 +1977,14 @@ function MovieDetailPage() {
             movieYear={movie.year}
             imdbId={movie.imdbId}
             tmdbId={movie.tmdbId}
+          />
+          <ManualSearchModal
+            isOpen={isManualSubtitleModalOpen}
+            movieId={movie.id}
+            onClose={() => {
+              setIsManualSubtitleModalOpen(false);
+              void loadMovieSubtitleSummary(movie.id);
+            }}
           />
         </>
       ) : null}
@@ -1942,8 +2152,70 @@ function SeriesDetailPage() {
     season?: number;
     episode?: number;
   } | null>(null);
+  const [episodeSubtitleSummaries, setEpisodeSubtitleSummaries] = useState<Record<number, SubtitleCoverageSummary>>({});
+  const [seasonSubtitleStatuses, setSeasonSubtitleStatuses] = useState<Record<number, SubtitleCoverageStatus>>({});
+  const [seriesSubtitleStatus, setSeriesSubtitleStatus] = useState<SubtitleCoverageStatus>('none');
+  const [selectedSubtitleEpisodeId, setSelectedSubtitleEpisodeId] = useState<number | null>(null);
   const [editingPath, setEditingPath] = useState(false);
   const [pathInput, setPathInput] = useState('');
+
+  const loadSeriesSubtitleSummaries = useCallback(async (targetSeriesId: number) => {
+    try {
+      const seasons = await api.subtitleApi.listSeriesVariants(targetSeriesId);
+      const nextEpisodeSummaries: Record<number, SubtitleCoverageSummary> = {};
+      const nextSeasonStatuses: Record<number, SubtitleCoverageStatus> = {};
+      const aggregateSeasonStatuses: SubtitleCoverageStatus[] = [];
+
+      for (const season of seasons) {
+        const episodeStatuses: SubtitleCoverageStatus[] = [];
+
+        for (const episode of season.episodes ?? []) {
+          const available = (episode.subtitleTracks ?? [])
+            .map(track => String(track.languageCode ?? '').toLowerCase())
+            .filter(Boolean);
+          const missing = (episode.missingSubtitles ?? [])
+            .map(code => String(code ?? '').toLowerCase())
+            .filter(Boolean);
+          const summary = summarizeSubtitleCoverage(available, missing);
+          nextEpisodeSummaries[episode.episodeId] = summary;
+          episodeStatuses.push(summary.status);
+        }
+
+        let seasonStatus: SubtitleCoverageStatus = 'none';
+        if (episodeStatuses.some(status => status === 'partial')
+          || (episodeStatuses.includes('complete') && episodeStatuses.includes('missing'))) {
+          seasonStatus = 'partial';
+        } else if (episodeStatuses.includes('missing')) {
+          seasonStatus = 'missing';
+        } else if (episodeStatuses.includes('complete')) {
+          seasonStatus = 'complete';
+        }
+
+        nextSeasonStatuses[season.seasonNumber] = seasonStatus;
+        if (seasonStatus !== 'none') {
+          aggregateSeasonStatuses.push(seasonStatus);
+        }
+      }
+
+      let nextSeriesStatus: SubtitleCoverageStatus = 'none';
+      if (aggregateSeasonStatuses.some(status => status === 'partial')
+        || (aggregateSeasonStatuses.includes('complete') && aggregateSeasonStatuses.includes('missing'))) {
+        nextSeriesStatus = 'partial';
+      } else if (aggregateSeasonStatuses.includes('missing')) {
+        nextSeriesStatus = 'missing';
+      } else if (aggregateSeasonStatuses.includes('complete')) {
+        nextSeriesStatus = 'complete';
+      }
+
+      setEpisodeSubtitleSummaries(nextEpisodeSummaries);
+      setSeasonSubtitleStatuses(nextSeasonStatuses);
+      setSeriesSubtitleStatus(nextSeriesStatus);
+    } catch {
+      setEpisodeSubtitleSummaries({});
+      setSeasonSubtitleStatuses({});
+      setSeriesSubtitleStatus('none');
+    }
+  }, [api]);
 
   const load = useCallback(async () => {
     if (!Number.isFinite(seriesId)) {
@@ -1991,12 +2263,13 @@ function SeriesDetailPage() {
         })),
       });
       setQualityProfiles(profiles);
+      await loadSeriesSubtitleSummaries(item.id);
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : 'Failed to load series details');
     } finally {
       setIsLoading(false);
     }
-  }, [api, seriesId]);
+  }, [api, seriesId, loadSeriesSubtitleSummaries]);
 
   useEffect(() => { void load(); }, [load]);
 
@@ -2169,6 +2442,11 @@ function SeriesDetailPage() {
                 {series.year ? <span>{series.year}</span> : null}
                 {series.network ? <span>{series.network}</span> : null}
                 {series.status ? <span className="rounded-sm bg-surface-2 px-2 py-0.5 text-xs">{series.status}</span> : null}
+                {seriesSubtitleStatus !== 'none' ? (
+                  <span className={`rounded-sm px-2 py-0.5 text-xs ${subtitleStatusBadgeClass(seriesSubtitleStatus)}`}>
+                    {subtitleStatusLabel(seriesSubtitleStatus)}
+                  </span>
+                ) : null}
                 {series.statistics && series.statistics.totalEpisodes > 0 ? (
                   <span className="flex items-center gap-1.5 ml-2 text-xs">
                     <span className="w-24 h-1.5 bg-surface-2 rounded-full overflow-hidden flex">
@@ -2298,6 +2576,11 @@ function SeriesDetailPage() {
                     Season {season.seasonNumber}
                     <span className="text-xs text-text-secondary ml-2 flex items-center gap-3">
                       ({season.episodes.length} episodes)
+                      {seasonSubtitleStatuses[season.seasonNumber] && seasonSubtitleStatuses[season.seasonNumber] !== 'none' ? (
+                        <span className={`rounded-sm px-1.5 py-0.5 text-[10px] ${subtitleStatusBadgeClass(seasonSubtitleStatuses[season.seasonNumber]!)}`}>
+                          {subtitleStatusLabel(seasonSubtitleStatuses[season.seasonNumber]!)}
+                        </span>
+                      ) : null}
                       {season.statistics && season.statistics.totalEpisodes > 0 ? (
                         <span className="w-16 h-1.5 bg-surface-2 rounded-full overflow-hidden flex">
                           <span style={{ width: `${(season.statistics.episodesOnDisk / season.statistics.totalEpisodes) * 100}%` }} className="bg-status-completed h-full"></span>
@@ -2329,51 +2612,74 @@ function SeriesDetailPage() {
                 {/* Episode list (expanded) */}
                 {expandedSeasons.has(season.seasonNumber) && (
                   <ul className="bg-surface-0 py-2">
-                    {season.episodes.map(ep => (
-                      <li key={ep.id} className="flex items-center gap-3 px-6 py-2 text-sm">
-                        <span className="w-16 flex-shrink-0 text-xs text-text-secondary font-mono">
-                          S{String(ep.seasonNumber).padStart(2, '0')}E{String(ep.episodeNumber).padStart(2, '0')}
-                        </span>
-                        <span className="flex-1 truncate flex items-center gap-2">
-                          {ep.title}
-                          {ep.isDownloading ? (
-                            <span className="rounded-sm bg-accent-primary/20 px-1.5 py-0.5 text-[10px] text-accent-primary font-medium tracking-wide">Downloading</span>
-                          ) : ep.hasFile ? (
-                            <span className="rounded-sm bg-status-completed/20 px-1.5 py-0.5 text-[10px] text-status-completed font-medium tracking-wide">Available</span>
-                          ) : ep.monitored ? (
-                            <span className="rounded-sm bg-status-error/20 px-1.5 py-0.5 text-[10px] text-status-error font-medium tracking-wide">Missing</span>
-                          ) : (
-                            <span className="rounded-sm bg-surface-2 px-1.5 py-0.5 text-[10px] text-text-secondary font-medium tracking-wide">Unmonitored</span>
-                          )}
-                        </span>
-                        {ep.airDateUtc ? (
-                          <span className="text-xs text-text-secondary">
-                            {new Date(ep.airDateUtc).toLocaleDateString()}
+                    {season.episodes.map(ep => {
+                      const episodeSummary = episodeSubtitleSummaries[ep.id];
+
+                      return (
+                        <li key={ep.id} className="flex items-center gap-3 px-6 py-2 text-sm">
+                          <span className="w-16 flex-shrink-0 text-xs text-text-secondary font-mono">
+                            S{String(ep.seasonNumber).padStart(2, '0')}E{String(ep.episodeNumber).padStart(2, '0')}
                           </span>
-                        ) : null}
-                        <button
-                          type="button"
-                          className="rounded-sm border border-border-subtle px-2 py-0.5 text-xs text-text-secondary flex-shrink-0"
-                          aria-label={`Search S${String(ep.seasonNumber).padStart(2, '0')}E${String(ep.episodeNumber).padStart(2, '0')}`}
+                          <span className="flex-1 truncate flex items-center gap-2">
+                            {ep.title}
+                            {ep.isDownloading ? (
+                              <span className="rounded-sm bg-accent-primary/20 px-1.5 py-0.5 text-[10px] text-accent-primary font-medium tracking-wide">Downloading</span>
+                            ) : ep.hasFile ? (
+                              <span className="rounded-sm bg-status-completed/20 px-1.5 py-0.5 text-[10px] text-status-completed font-medium tracking-wide">Available</span>
+                            ) : ep.monitored ? (
+                              <span className="rounded-sm bg-status-error/20 px-1.5 py-0.5 text-[10px] text-status-error font-medium tracking-wide">Missing</span>
+                            ) : (
+                              <span className="rounded-sm bg-surface-2 px-1.5 py-0.5 text-[10px] text-text-secondary font-medium tracking-wide">Unmonitored</span>
+                            )}
+                            {episodeSummary ? (
+                              <span className={`rounded-sm px-1.5 py-0.5 text-[10px] ${subtitleStatusBadgeClass(episodeSummary.status)}`}>
+                                {subtitleStatusLabel(episodeSummary.status)}
+                              </span>
+                            ) : null}
+                            {episodeSummary?.availableLanguages.slice(0, 3).map(code => (
+                              <LanguageBadge key={`episode-${ep.id}-available-${code}`} languageCode={code} variant="available" />
+                            ))}
+                            {episodeSummary?.missingLanguages.slice(0, 3).map(code => (
+                              <LanguageBadge key={`episode-${ep.id}-missing-${code}`} languageCode={code} variant="missing" />
+                            ))}
+                          </span>
+                          {ep.airDateUtc ? (
+                            <span className="text-xs text-text-secondary">
+                              {new Date(ep.airDateUtc).toLocaleDateString()}
+                            </span>
+                          ) : null}
+                          <button
+                            type="button"
+                            className="rounded-sm border border-border-subtle px-2 py-0.5 text-xs text-text-secondary flex-shrink-0"
+                            aria-label={`Search S${String(ep.seasonNumber).padStart(2, '0')}E${String(ep.episodeNumber).padStart(2, '0')}`}
                           onClick={() => setSearchModal({
-                            level: 'episode',
-                            season: ep.seasonNumber,
-                            episode: ep.episodeNumber,
-                          })}
-                        >
-                          Search
-                        </button>
-                        <label className="flex items-center gap-1 text-xs text-text-secondary flex-shrink-0">
-                          <input
-                            type="checkbox"
-                            checked={ep.monitored}
-                            aria-label={`S${String(ep.seasonNumber).padStart(2, '0')}E${String(ep.episodeNumber).padStart(2, '0')} Monitored`}
-                            onChange={() => { void handleToggleEpisodeMonitored(ep.id, ep.seasonNumber, ep.monitored); }}
-                          />
-                          Monitored
-                        </label>
-                      </li>
-                    ))}
+                              level: 'episode',
+                              season: ep.seasonNumber,
+                              episode: ep.episodeNumber,
+                            })}
+                          >
+                            Search
+                          </button>
+                          <button
+                            type="button"
+                            className="rounded-sm border border-border-subtle px-2 py-0.5 text-xs text-text-secondary flex-shrink-0"
+                            aria-label={`Manual subtitles S${String(ep.seasonNumber).padStart(2, '0')}E${String(ep.episodeNumber).padStart(2, '0')}`}
+                            onClick={() => setSelectedSubtitleEpisodeId(ep.id)}
+                          >
+                            Subtitles
+                          </button>
+                          <label className="flex items-center gap-1 text-xs text-text-secondary flex-shrink-0">
+                            <input
+                              type="checkbox"
+                              checked={ep.monitored}
+                              aria-label={`S${String(ep.seasonNumber).padStart(2, '0')}E${String(ep.episodeNumber).padStart(2, '0')} Monitored`}
+                              onChange={() => { void handleToggleEpisodeMonitored(ep.id, ep.seasonNumber, ep.monitored); }}
+                            />
+                            Monitored
+                          </label>
+                        </li>
+                      );
+                    })}
                   </ul>
                 )}
               </div>
@@ -2393,6 +2699,18 @@ function SeriesDetailPage() {
           initialEpisode={searchModal.episode}
         />
       )}
+      {selectedSubtitleEpisodeId !== null ? (
+        <ManualSearchModal
+          isOpen
+          episodeId={selectedSubtitleEpisodeId}
+          onClose={() => {
+            setSelectedSubtitleEpisodeId(null);
+            if (series) {
+              void loadSeriesSubtitleSummaries(series.id);
+            }
+          }}
+        />
+      ) : null}
     </RouteScaffold>
   );
 }

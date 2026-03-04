@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon } from '@/components/primitives/Icon';
 import { StatusBadge } from '@/components/primitives/StatusBadge';
+import { LanguageBadge } from '@/components/subtitles/LanguageBadge';
 import { formatBytes } from '@/lib/format';
 import { getFileStatus, getRatingDisplay, getRuntimeDisplay, type MovieListItem } from '@/types/movie';
 
@@ -22,11 +23,68 @@ interface MovieOverviewCardProps {
   onSearch?: (id: number) => void;
 }
 
+type SubtitleStatus = 'complete' | 'partial' | 'missing' | 'none';
+
+interface MovieSubtitleSummary {
+  availableLanguages: string[];
+  missingLanguages: string[];
+  status: SubtitleStatus;
+}
+
+function summarizeMovieSubtitles(item: MovieListItem): MovieSubtitleSummary {
+  const availableSet = new Set<string>();
+  const missingSet = new Set<string>();
+
+  for (const variant of item.fileVariants ?? []) {
+    for (const track of variant.subtitleTracks ?? []) {
+      const code = track.languageCode?.trim().toLowerCase();
+      if (!code) {
+        continue;
+      }
+      availableSet.add(code);
+    }
+
+    for (const missing of variant.missingSubtitles ?? []) {
+      const code = missing.languageCode?.trim().toLowerCase();
+      if (!code) {
+        continue;
+      }
+      missingSet.add(code);
+    }
+  }
+
+  const availableLanguages = [...availableSet].sort();
+  const missingLanguages = [...missingSet].sort();
+
+  let status: SubtitleStatus = 'none';
+  if (availableLanguages.length > 0 && missingLanguages.length === 0) {
+    status = 'complete';
+  } else if (availableLanguages.length > 0 && missingLanguages.length > 0) {
+    status = 'partial';
+  } else if (availableLanguages.length === 0 && missingLanguages.length > 0) {
+    status = 'missing';
+  }
+
+  return {
+    availableLanguages,
+    missingLanguages,
+    status,
+  };
+}
+
+function subtitleStatusLabel(status: SubtitleStatus): string {
+  if (status === 'complete') return 'Subtitles Complete';
+  if (status === 'partial') return 'Subtitles Partial';
+  if (status === 'missing') return 'Subtitles Missing';
+  return 'No Subtitle Data';
+}
+
 function MovieOverviewCard({ item, onToggleMonitored, onDelete, onSearch }: MovieOverviewCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const fileStatus = getFileStatus(item);
   const posterUrl = item.posterUrl ?? '/images/placeholder-poster.png';
   const rating = getRatingDisplay(item);
+  const subtitleSummary = summarizeMovieSubtitles(item);
 
   return (
     <article className="flex gap-4 rounded-md border border-border-subtle bg-surface-1 p-4 transition-colors hover:border-border-subtle hover:bg-surface-2">
@@ -103,6 +161,26 @@ function MovieOverviewCard({ item, onToggleMonitored, onDelete, onSearch }: Movi
             </div>
           )}
         </div>
+
+        {subtitleSummary.status !== 'none' && (
+          <div className="flex flex-wrap items-center gap-1.5 text-xs">
+            <span className="rounded-sm bg-surface-2 px-1.5 py-0.5 text-[10px] text-text-secondary">
+              {subtitleStatusLabel(subtitleSummary.status)}
+            </span>
+            {subtitleSummary.availableLanguages.slice(0, 3).map(code => (
+              <LanguageBadge key={`available-${item.id}-${code}`} languageCode={code} variant="available" />
+            ))}
+            {subtitleSummary.missingLanguages.slice(0, 3).map(code => (
+              <LanguageBadge key={`missing-${item.id}-${code}`} languageCode={code} variant="missing" />
+            ))}
+            {subtitleSummary.availableLanguages.length > 3 && (
+              <span className="text-[10px] text-text-muted">+{subtitleSummary.availableLanguages.length - 3} available</span>
+            )}
+            {subtitleSummary.missingLanguages.length > 3 && (
+              <span className="text-[10px] text-text-muted">+{subtitleSummary.missingLanguages.length - 3} missing</span>
+            )}
+          </div>
+        )}
 
         {/* Expandable Description */}
         {item.overview && (

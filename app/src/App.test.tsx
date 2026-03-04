@@ -16,6 +16,7 @@ const mockApi = vi.hoisted(() => ({
   },
   movieApi: {
     getById: vi.fn(),
+    getTmdbCollection: vi.fn(),
     getRootFolders: vi.fn(),
     searchReleases: vi.fn(),
   },
@@ -23,6 +24,13 @@ const mockApi = vi.hoisted(() => ({
     getSeriesWithEpisodes: vi.fn(),
     getRootFolders: vi.fn(),
     searchReleases: vi.fn(),
+  },
+  subtitleApi: {
+    listMovieVariants: vi.fn(),
+    listSeriesVariants: vi.fn(),
+  },
+  subtitleWantedApi: {
+    getWantedCount: vi.fn(),
   },
   releaseApi: {
     grabRelease: vi.fn(),
@@ -70,12 +78,21 @@ vi.mock('@/components/shell/AppShell', () => ({
   AppShell: ({ children }: { pathname: string; children: ReactNode }) => <div data-testid="app-shell">{children}</div>,
 }));
 
+vi.mock('@/components/providers/ToastProvider', () => ({
+  ToastProvider: ({ children }: { children: ReactNode }) => <>{children}</>,
+  useToast: () => ({ pushToast: vi.fn() }),
+}));
+
 vi.mock('@/components/movie/MovieInteractiveSearchModal', () => ({
   MovieInteractiveSearchModal: () => null,
 }));
 
 vi.mock('@/components/search/InteractiveSearchModal', () => ({
   InteractiveSearchModal: () => null,
+}));
+
+vi.mock('@/components/subtitles/ManualSearchModal', () => ({
+  ManualSearchModal: () => null,
 }));
 
 vi.mock('@/components/views', () => ({
@@ -104,7 +121,10 @@ const baseSettings = {
   apiKeys: {
     tmdbApiKey: null,
     openSubtitlesApiKey: null,
+    assrtApiToken: null,
+    subdlApiKey: null,
   },
+  wantedLanguages: [],
   host: {
     port: 3000,
     bindAddress: '0.0.0.0',
@@ -164,12 +184,16 @@ describe('App route and settings parity', () => {
       tmdbId: 100,
       imdbId: 'tt0123456',
     });
+    mockApi.movieApi.getTmdbCollection.mockResolvedValue({ collection: null });
     mockApi.seriesApi.getSeriesWithEpisodes.mockResolvedValue({
       id: 42,
       title: 'Test Series',
       seasons: [{ id: 1, seasonNumber: 1, episodes: [{ id: 1001, episodeNumber: 1, title: 'Pilot' }] }],
       tvdbId: 12345,
     });
+    mockApi.subtitleApi.listMovieVariants.mockResolvedValue([]);
+    mockApi.subtitleApi.listSeriesVariants.mockResolvedValue([]);
+    mockApi.subtitleWantedApi.getWantedCount.mockResolvedValue({ seriesCount: 0, moviesCount: 0, totalCount: 0 });
     mockApi.indexerApi.list.mockResolvedValue([]);
     mockApi.downloadClientApi.list.mockResolvedValue([]);
     mockApi.notificationsApi.list.mockResolvedValue([]);
@@ -270,7 +294,10 @@ describe('App route and settings parity', () => {
       expect(mockApi.settingsApi.update).toHaveBeenCalledWith({
         apiKeys: {
           openSubtitlesApiKey: 'abc-key',
+          assrtApiToken: null,
+          subdlApiKey: null,
         },
+        wantedLanguages: [],
         pathVisibility: {
           showDownloadPath: true,
           showMediaPath: false,

@@ -72,7 +72,25 @@ export function registerMovieRoutes(
     const allItems = await prismaMovies.findMany({
       include: {
         qualityProfile: true,
-        fileVariants: true,
+        fileVariants: {
+          include: {
+            subtitleTracks: {
+              select: {
+                languageCode: true,
+                isForced: true,
+                isHi: true,
+                filePath: true,
+              },
+            },
+            missingSubtitles: {
+              select: {
+                languageCode: true,
+                isForced: true,
+                isHi: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -121,6 +139,7 @@ export function registerMovieRoutes(
           include: {
             audioTracks: true,
             subtitleTracks: true,
+            missingSubtitles: true,
           },
         },
         collection: {

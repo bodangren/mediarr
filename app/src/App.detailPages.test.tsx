@@ -39,6 +39,13 @@ const mockApi = vi.hoisted(() => ({
     getRootFolders: vi.fn(),
     searchReleases: vi.fn(),
   },
+  subtitleApi: {
+    listMovieVariants: vi.fn(),
+    listSeriesVariants: vi.fn(),
+  },
+  subtitleWantedApi: {
+    getWantedCount: vi.fn(),
+  },
   releaseApi: {
     grabRelease: vi.fn(),
   },
@@ -108,6 +115,10 @@ vi.mock('@/components/series/SeriesInteractiveSearchModal', () => ({
       <button onClick={onClose}>Close Modal</button>
     </div>
   ) : null,
+}));
+
+vi.mock('@/components/subtitles/ManualSearchModal', () => ({
+  ManualSearchModal: () => null,
 }));
 
 vi.mock('@/components/views', () => ({
@@ -201,11 +212,15 @@ describe('Phase 3 — Detail Pages', () => {
     mockApi.qualityProfileApi.list.mockResolvedValue(qualityProfiles);
     mockApi.customFormatApi.list.mockResolvedValue([]);
     mockApi.subtitleProvidersApi.listProviders.mockResolvedValue([]);
+    mockApi.subtitleApi.listMovieVariants.mockResolvedValue([]);
+    mockApi.subtitleApi.listSeriesVariants.mockResolvedValue([]);
+    mockApi.subtitleWantedApi.getWantedCount.mockResolvedValue({ seriesCount: 0, moviesCount: 0, totalCount: 0 });
     mockApi.settingsApi.get.mockResolvedValue({
       torrentLimits: { maxActiveDownloads: 3, maxActiveSeeds: 5, globalDownloadLimitKbps: null, globalUploadLimitKbps: null },
       schedulerIntervals: { rssSyncMinutes: 15, availabilityCheckMinutes: 30, torrentMonitoringSeconds: 60 },
       pathVisibility: { showDownloadPath: false, showMediaPath: false },
-      apiKeys: { tmdbApiKey: null, openSubtitlesApiKey: null },
+      apiKeys: { tmdbApiKey: null, openSubtitlesApiKey: null, assrtApiToken: null, subdlApiKey: null },
+      wantedLanguages: [],
       host: { port: 3000, bindAddress: '0.0.0.0', urlBase: null, sslPort: null, enableSsl: false, sslCertPath: null, sslKeyPath: null },
       security: { apiKey: null, authenticationMethod: 'none', authenticationRequired: false },
       logging: { logLevel: 'info', logSizeLimit: 20, logRetentionDays: 7 },

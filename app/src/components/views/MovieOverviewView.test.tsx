@@ -1,4 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import { MovieOverviewView } from './MovieOverviewView';
 import type { MovieListItem } from '@/types/movie';
@@ -34,10 +35,14 @@ const mockMovies: MovieListItem[] = [
   },
 ];
 
+function renderWithRouter(ui: React.ReactElement) {
+  return render(<MemoryRouter>{ui}</MemoryRouter>);
+}
+
 describe('MovieOverviewView', () => {
   it('renders movie overview cards', () => {
     const onToggleMonitored = vi.fn();
-    render(<MovieOverviewView items={mockMovies} onToggleMonitored={onToggleMonitored} />);
+    renderWithRouter(<MovieOverviewView items={mockMovies} onToggleMonitored={onToggleMonitored} />);
 
     expect(screen.getByText('The Matrix')).toBeInTheDocument();
     expect(screen.getByText('Inception')).toBeInTheDocument();
@@ -47,7 +52,7 @@ describe('MovieOverviewView', () => {
 
   it('calls onToggleMonitored when monitoring button is clicked', () => {
     const onToggleMonitored = vi.fn();
-    render(<MovieOverviewView items={mockMovies} onToggleMonitored={onToggleMonitored} />);
+    renderWithRouter(<MovieOverviewView items={mockMovies} onToggleMonitored={onToggleMonitored} />);
 
     const firstMovieCard = screen.getByText('The Matrix').closest('article');
     const toggleButton = firstMovieCard?.querySelector('button[aria-label*="Disable"]');
@@ -65,7 +70,7 @@ describe('MovieOverviewView', () => {
     // Mock window.confirm
     window.confirm = vi.fn(() => true);
 
-    render(
+    renderWithRouter(
       <MovieOverviewView
         items={mockMovies}
         onToggleMonitored={onToggleMonitored}
@@ -88,7 +93,7 @@ describe('MovieOverviewView', () => {
     const onToggleMonitored = vi.fn();
     const onSearch = vi.fn();
 
-    render(
+    renderWithRouter(
       <MovieOverviewView
         items={mockMovies}
         onToggleMonitored={onToggleMonitored}
@@ -108,14 +113,14 @@ describe('MovieOverviewView', () => {
 
   it('displays empty state when no items', () => {
     const onToggleMonitored = vi.fn();
-    render(<MovieOverviewView items={[]} onToggleMonitored={onToggleMonitored} />);
+    renderWithRouter(<MovieOverviewView items={[]} onToggleMonitored={onToggleMonitored} />);
 
     expect(screen.getByText('No movies found')).toBeInTheDocument();
   });
 
   it('expands and collapses overview text', () => {
     const onToggleMonitored = vi.fn();
-    render(<MovieOverviewView items={mockMovies} onToggleMonitored={onToggleMonitored} />);
+    renderWithRouter(<MovieOverviewView items={mockMovies} onToggleMonitored={onToggleMonitored} />);
 
     // Initially, "Show more" buttons should be visible
     const showMoreButtons = screen.getAllByText('Show more');
@@ -134,7 +139,7 @@ describe('MovieOverviewView', () => {
 
   it('displays rating and TMDb ID', () => {
     const onToggleMonitored = vi.fn();
-    render(<MovieOverviewView items={mockMovies} onToggleMonitored={onToggleMonitored} />);
+    renderWithRouter(<MovieOverviewView items={mockMovies} onToggleMonitored={onToggleMonitored} />);
 
     // Check for rating display - use getAllByText since there are two movies
     const stars = screen.getAllByText('⭐');
@@ -150,7 +155,7 @@ describe('MovieOverviewView', () => {
 
   it('displays runtime and certification', () => {
     const onToggleMonitored = vi.fn();
-    render(<MovieOverviewView items={mockMovies} onToggleMonitored={onToggleMonitored} />);
+    renderWithRouter(<MovieOverviewView items={mockMovies} onToggleMonitored={onToggleMonitored} />);
 
     // Check for runtime display
     expect(screen.getByText('2h 16m')).toBeInTheDocument(); // 136 minutes
@@ -161,7 +166,7 @@ describe('MovieOverviewView', () => {
 
   it('navigates to movie detail when card is clicked', () => {
     const onToggleMonitored = vi.fn();
-    render(<MovieOverviewView items={mockMovies} onToggleMonitored={onToggleMonitored} />);
+    renderWithRouter(<MovieOverviewView items={mockMovies} onToggleMonitored={onToggleMonitored} />);
 
     const link = screen.getByText('The Matrix').closest('a');
     expect(link).toHaveAttribute('href', '/library/movies/1');
@@ -169,7 +174,7 @@ describe('MovieOverviewView', () => {
 
   it('shows loading skeletons when isLoading is true', () => {
     const onToggleMonitored = vi.fn();
-    render(<MovieOverviewView items={[]} onToggleMonitored={onToggleMonitored} isLoading />);
+    renderWithRouter(<MovieOverviewView items={[]} onToggleMonitored={onToggleMonitored} isLoading />);
 
     // Check that skeleton elements are rendered
     const skeletons = document.querySelectorAll('.animate-pulse');
@@ -185,7 +190,7 @@ describe('MovieOverviewView', () => {
       ...mockMovies[0],
       posterUrl: undefined,
     };
-    render(<MovieOverviewView items={[movieWithoutPoster]} onToggleMonitored={onToggleMonitored} />);
+    renderWithRouter(<MovieOverviewView items={[movieWithoutPoster]} onToggleMonitored={onToggleMonitored} />);
 
     // Should still render the card without posterUrl
     expect(screen.getByText('The Matrix')).toBeInTheDocument();
@@ -201,7 +206,7 @@ describe('MovieOverviewView', () => {
       ...mockMovies[0],
       overview: undefined,
     };
-    render(<MovieOverviewView items={[movieWithoutOverview]} onToggleMonitored={onToggleMonitored} />);
+    renderWithRouter(<MovieOverviewView items={[movieWithoutOverview]} onToggleMonitored={onToggleMonitored} />);
 
     // "Show more" button should not be visible
     expect(screen.queryByText('Show more')).not.toBeInTheDocument();

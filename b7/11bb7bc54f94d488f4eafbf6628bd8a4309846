@@ -1,0 +1,19 @@
+Task: Conductor docs scope alignment for security architecture review
+
+Summary:
+- Recorded explicit product decision that Mediarr runs as a trusted-household-LAN app with no authentication in current scope.
+- Reframed security hardening items as out-of-scope/non-blocking for the current phase.
+- Preserved and rolled up in-progress review findings into the same documentation change set.
+- Marked dependency vulnerability upgrades as optional maintenance (nice-to-have), not release blockers.
+
+Files modified:
+- conductor/tech-stack.md
+- conductor/workflow.md
+- conductor/dependency_scan_report.md
+- conductor/security_audit_report.md
+- conductor/reference_analysis.md
+
+Why:
+- Keep project governance docs consistent with accepted architecture constraints.
+- Prevent repeated reopening of out-of-scope hardening work during feature execution.
+- Preserve audit findings for future use while making current delivery criteria explicit.

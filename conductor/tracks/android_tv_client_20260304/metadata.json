@@ -1,0 +1,8 @@
+{
+  "track_id": "android_tv_client_20260304",
+  "type": "feature",
+  "status": "new",
+  "created_at": "2026-03-04T10:00:00Z",
+  "updated_at": "2026-03-04T10:00:00Z",
+  "description": "A native Android TV application with a modern, Netflix-style UI for browsing and watching the Mediarr library."
+}

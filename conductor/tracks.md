@@ -27,6 +27,12 @@ Automated Search & Download (New)
     |
     v
 Subtitle Management (New)
+    |
+    v
+Streaming Server & Discovery (New)
+    |
+    v
+Android TV Client (New)
 ```
 
 ---
@@ -35,6 +41,8 @@ Subtitle Management (New)
 
 - [x] **Track: Automated Search and Download** *Phases: 4 | Link: [./tracks/automated_search_download_20260303/](./tracks/automated_search_download_20260303/)*
 - [ ] **Track: Subtitle Management** *Phases: 3 | Link: [./tracks/subtitle_management_20260303/](./tracks/subtitle_management_20260303/)*
+- [ ] **Track: Streaming Server & Discovery** *Phases: 3 | Link: [./tracks/streaming_server_20260304/](./tracks/streaming_server_20260304/)*
+- [ ] **Track: Android TV Client** *Phases: 3 | Link: [./tracks/android_tv_client_20260304/](./tracks/android_tv_client_20260304/)*
 
 ---
 

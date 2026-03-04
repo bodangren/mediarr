@@ -1,8 +1,8 @@
 {
   "track_id": "subtitle_management_20260303",
   "type": "feature",
-  "status": "in_progress",
+  "status": "completed",
   "created_at": "2026-03-03T10:45:00Z",
-  "updated_at": "2026-03-04T14:25:00Z",
+  "updated_at": "2026-03-04T14:56:00Z",
   "description": "Build a subtitle management pipeline including providers, languages, automation, and UI badges with full API contract alignment."
 }

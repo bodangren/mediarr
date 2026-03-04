@@ -60,11 +60,20 @@
 ## Phase 5: Track Hardening and Final Verification
 > Goal: Run full validation and finalize conductor tracking in one pass.
 
-- [ ] Task: Run automated verification
-  - [ ] Sub-task: Execute relevant test suites for server/app subtitle changes.
-  - [ ] Sub-task: Execute coverage checks for modified modules.
-- [ ] Task: Perform manual verification at end of track only
-  - [ ] Sub-task: Run full manual verification protocol for all phases in one session.
-- [ ] Task: Finalize conductor records
-  - [ ] Sub-task: Mark all completed tasks/phase checkboxes with commit SHAs.
-  - [ ] Sub-task: Prepare track completion summary for archive handoff.
+- [x] Task: Run automated verification [e5ef335f]
+  - [x] Sub-task: Execute relevant test suites for server/app subtitle changes.
+  - [x] Sub-task: Execute coverage checks for modified modules.
+- [x] Task: Perform manual verification at end of track only [e5ef335f]
+  - [x] Sub-task: Run full manual verification protocol for all phases in one session.
+- [x] Task: Finalize conductor records [e5ef335f]
+  - [x] Sub-task: Mark all completed tasks/phase checkboxes with commit SHAs.
+  - [x] Sub-task: Prepare track completion summary for archive handoff.
+
+## Completion Summary (Archive Handoff)
+
+- Implemented full subtitle management rollout across provider foundation, automation, API contracts, and frontend integration.
+- Final frontend integration includes wanted languages controls, provider credential support for OpenSubtitles/ASSRT/SubDL, subtitle status badges on library/detail surfaces, and live manual subtitle modal wiring.
+- Verification executed at end of track:
+  - `npm run test -- server/src/services/SubtitleScoringService.test.ts server/src/services/SubtitleInventoryApiService.test.ts server/src/services/SubtitleInventoryApiService.manual.test.ts server/src/services/SubtitleAutomationService.test.ts server/src/services/ProviderBackedSubtitleFetchProvider.test.ts server/src/services/Scheduler.subtitle.test.ts server/src/services/providers/OpenSubtitlesProvider.test.ts server/src/api/routes/subtitleRoutes.phase3.test.ts server/src/api/routes/movieRoutes.search.test.ts server/src/api/routes/movieRoutes.collection.test.ts`
+  - `npm run test:coverage -- server/src/api/routes/subtitleRoutes.phase3.test.ts server/src/api/routes/movieRoutes.search.test.ts server/src/api/routes/movieRoutes.collection.test.ts --coverage.include=server/src/api/routes/subtitleRoutes.ts --coverage.include=server/src/api/routes/movieRoutes.ts --coverage.reporter=text --coverage.reporter=text-summary`
+  - `npm run test --workspace=app -- --coverage src/App.subtitle-phase4.test.tsx src/App.test.tsx src/App.detailPages.test.tsx src/components/views/MovieOverviewView.test.tsx --coverage.include=src/App.tsx --coverage.include=src/components/views/MovieOverviewView.tsx --coverage.reporter=text --coverage.reporter=text-summary`

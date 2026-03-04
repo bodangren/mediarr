@@ -40,13 +40,13 @@ Android TV Client (New)
 ## Active Tracks
 
 - [x] **Track: Automated Search and Download** *Phases: 4 | Link: [./tracks/automated_search_download_20260303/](./tracks/automated_search_download_20260303/)*
-- [ ] **Track: Streaming Server & Discovery** *Phases: 3 | Link: [./tracks/streaming_server_20260304/](./tracks/streaming_server_20260304/)*
 - [ ] **Track: Android TV Client** *Phases: 3 | Link: [./tracks/android_tv_client_20260304/](./tracks/android_tv_client_20260304/)*
 
 ---
 
 ## Archived Tracks
 
+- [x] **Track: Streaming Server & Discovery** *Phases: 3 | Link: [./archive/streaming_server_20260304/](./archive/streaming_server_20260304/)*
 - [x] **Track: Subtitle Management** *Phases: 5 | Link: [./archive/subtitle_management_20260303/](./archive/subtitle_management_20260303/)*
 - [x] **Track: Queue Mass Actions + Action Tooltips** *Phases: 1 | Link: [./archive/queue_mass_actions_tooltips_20260304/](./archive/queue_mass_actions_tooltips_20260304/)*
 - [x] **Track: Existing Library Import** *Phases: 4 | Link: [./archive/existing_library_import_20260301/](./archive/existing_library_import_20260301/)*

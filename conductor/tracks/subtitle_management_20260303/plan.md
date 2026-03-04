@@ -3,16 +3,16 @@
 ## Phase 1: Provider and Scoring Foundation
 > Goal: Deliver production-usable provider integrations and candidate ranking.
 
-- [ ] Task: Complete OpenSubtitles provider flow
-  - [ ] Sub-task: Implement real download behavior in `OpenSubtitlesProvider`.
-  - [ ] Sub-task: Ensure provider outputs normalized language/forced/HI metadata.
-- [ ] Task: Add additional providers
-  - [ ] Sub-task: Implement ASSRT provider adapter (Chinese).
-  - [ ] Sub-task: Implement SubDL provider adapter (Thai-capable).
-  - [ ] Sub-task: Wire providers into `SubtitleProviderFactory` with configurable selection.
-- [ ] Task: Implement scoring service
-  - [ ] Sub-task: Add `SubtitleScoringService` and apply to manual and automated selection.
-- [ ] Task: Add backend tests for provider and scoring behavior.
+- [x] Task: Complete OpenSubtitles provider flow [7e0e38b]
+  - [x] Sub-task: Implement real download behavior in `OpenSubtitlesProvider`.
+  - [x] Sub-task: Ensure provider outputs normalized language/forced/HI metadata.
+- [x] Task: Add additional providers [7e0e38b]
+  - [x] Sub-task: Implement ASSRT provider adapter (Chinese).
+  - [x] Sub-task: Implement SubDL provider adapter (Thai-capable).
+  - [x] Sub-task: Wire providers into `SubtitleProviderFactory` with configurable selection.
+- [x] Task: Implement scoring service [7e0e38b]
+  - [x] Sub-task: Add `SubtitleScoringService` and apply to manual and automated selection.
+- [x] Task: Add backend tests for provider and scoring behavior. [7e0e38b]
 
 ## Phase 2: Wanted Languages and Automation Engine
 > Goal: Configure target languages and automate missing subtitle fetches.

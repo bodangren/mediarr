@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { createSubtitleProvidersApi } from './subtitleProvidersApi';
 import { ApiHttpClient } from './httpClient';
+import { ContractViolationError } from './errors';
 
 // Mock the ApiHttpClient
 vi.mock('./httpClient', () => {
@@ -72,6 +73,37 @@ describe('Subtitle Providers API', () => {
       const result = await subtitleProvidersApi.listProviders();
 
       expect(result).toEqual([]);
+    });
+
+    it('should accept legacy raw array payload when success envelope validation fails', async () => {
+      const legacyProviders = [
+        {
+          id: 'opensubtitles',
+          name: 'OpenSubtitles',
+          enabled: true,
+          type: 'api',
+          settings: { apiKey: 'abc' },
+          status: 'active' as const,
+        },
+      ];
+
+      mockHttpClient.request.mockRejectedValue(
+        new ContractViolationError('Response did not match success envelope contract', {
+          payload: legacyProviders,
+        }),
+      );
+
+      const result = await subtitleProvidersApi.listProviders();
+      expect(result).toEqual(legacyProviders);
+    });
+
+    it('should rethrow contract violations when payload cannot be interpreted as providers', async () => {
+      const error = new ContractViolationError('Response did not match success envelope contract', {
+        payload: { unexpected: true },
+      });
+      mockHttpClient.request.mockRejectedValue(error);
+
+      await expect(subtitleProvidersApi.listProviders()).rejects.toBe(error);
     });
   });
 

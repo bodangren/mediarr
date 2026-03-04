@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { ApiHttpClient } from './httpClient';
+import { ContractViolationError } from './errors';
 import { routeMap } from './routeMap';
 
 // Provider settings schema - varies by provider
@@ -34,18 +35,50 @@ export type SubtitleProvider = z.infer<typeof subtitleProviderSchema>;
 export type ProviderSettings = z.infer<typeof providerSettingsSchema>;
 export type ProviderTestResult = z.infer<typeof providerTestResultSchema>;
 
+function parseLegacyProvidersPayload(payload: unknown): SubtitleProvider[] | null {
+  const fromArray = z.array(subtitleProviderSchema).safeParse(payload);
+  if (fromArray.success) {
+    return fromArray.data;
+  }
+
+  if (payload && typeof payload === 'object') {
+    const record = payload as Record<string, unknown>;
+    const fromProviders = z.array(subtitleProviderSchema).safeParse(record.providers);
+    if (fromProviders.success) {
+      return fromProviders.data;
+    }
+    const fromData = z.array(subtitleProviderSchema).safeParse(record.data);
+    if (fromData.success) {
+      return fromData.data;
+    }
+  }
+
+  return null;
+}
+
 export function createSubtitleProvidersApi(client: ApiHttpClient) {
   return {
     /**
      * List all configured subtitle providers
      */
-    listProviders(): Promise<SubtitleProvider[]> {
-      return client.request(
-        {
-          path: routeMap.subtitleProviders,
-        },
-        z.array(subtitleProviderSchema),
-      );
+    async listProviders(): Promise<SubtitleProvider[]> {
+      try {
+        return await client.request(
+          {
+            path: routeMap.subtitleProviders,
+          },
+          z.array(subtitleProviderSchema),
+        );
+      } catch (error) {
+        if (error instanceof ContractViolationError) {
+          const payload = (error.details as { payload?: unknown } | undefined)?.payload;
+          const fallback = parseLegacyProvidersPayload(payload);
+          if (fallback) {
+            return fallback;
+          }
+        }
+        throw error;
+      }
     },
 
     /**

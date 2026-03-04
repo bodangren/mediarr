@@ -14,9 +14,9 @@
 - [x] Task: Add/update API/service tests for new runtime behavior.
 
 ## Phase 3: Settings UI Panel
-- [ ] Task: Add `SettingsStreamingPage` in SPA settings routes.
-- [ ] Task: Add `/settings/streaming` navigation entry and breadcrumb label.
-- [ ] Task: Implement form load/save states and validation hints.
-- [ ] Task: Add/update frontend tests for route presence and save payload.
-- [ ] Task: Run targeted tests for changed server/app files.
-- [ ] Task: Conductor - User Manual Verification 'Streaming Settings Panel' (deferred to end-of-track)
+- [x] Task: Add `SettingsStreamingPage` in SPA settings routes.
+- [x] Task: Add `/settings/streaming` navigation entry and breadcrumb label.
+- [x] Task: Implement form load/save states and validation hints.
+- [x] Task: Add/update frontend tests for route presence and save payload.
+- [x] Task: Run targeted tests for changed server/app files.
+- [x] Task: Conductor - User Manual Verification 'Streaming Settings Panel' (deferred to end-of-track)

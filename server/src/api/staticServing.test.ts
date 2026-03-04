@@ -174,6 +174,7 @@ describe('Static File Serving for SPA', () => {
         '/settings/indexers',
         '/settings/clients',
         '/settings/subtitles',
+        '/settings/streaming',
         '/settings/notifications',
         '/settings/general',
       ];

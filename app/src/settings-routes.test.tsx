@@ -112,6 +112,13 @@ const baseSettings = {
   security: { apiKey: null, authenticationMethod: 'none' as const, authenticationRequired: false },
   logging: { logLevel: 'info' as const, logSizeLimit: 20, logRetentionDays: 7 },
   update: { branch: 'master' as const, autoUpdateEnabled: false, mechanicsEnabled: false, updateScriptPath: null },
+  streaming: {
+    discoveryEnabled: true,
+    discoveryServiceName: 'Mediarr',
+    defaultUserId: 'lan-default',
+    watchedThreshold: 0.9,
+    subtitleDirectory: null,
+  },
 };
 
 const mockQualityProfile = {
@@ -169,6 +176,11 @@ describe('Settings routes — navigation integrity', () => {
   it('renders the General settings page title', async () => {
     renderApp('/settings/general');
     expect(await screen.findByText('General')).toBeInTheDocument();
+  });
+
+  it('renders the Streaming settings page title', async () => {
+    renderApp('/settings/streaming');
+    expect(await screen.findByText('Streaming')).toBeInTheDocument();
   });
 
   it('renders the Media Management settings page title', async () => {
@@ -509,5 +521,67 @@ describe('Settings: Subtitles page', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Save Subtitle Settings' }));
 
     expect(await screen.findByText('Subtitle settings saved.')).toBeInTheDocument();
+  });
+});
+
+describe('Settings: Streaming page', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockApi.settingsApi.get.mockResolvedValue(baseSettings);
+    mockApi.settingsApi.update.mockResolvedValue({
+      ...baseSettings,
+      streaming: {
+        discoveryEnabled: false,
+        discoveryServiceName: 'Living Room Mediarr',
+        defaultUserId: 'family-room',
+        watchedThreshold: 0.8,
+        subtitleDirectory: '/srv/subtitles',
+      },
+    });
+    mockApi.indexerApi.list.mockResolvedValue([]);
+    mockApi.downloadClientApi.get.mockResolvedValue(defaultTorrentLimits);
+    mockApi.qualityProfileApi.list.mockResolvedValue([]);
+    mockApi.customFormatApi.list.mockResolvedValue([]);
+    mockApi.subtitleProvidersApi.listProviders.mockResolvedValue([]);
+    mockApi.notificationsApi.list.mockResolvedValue([]);
+    mockApi.movieApi.getRootFolders.mockResolvedValue({ rootFolders: [] });
+    mockApi.seriesApi.getRootFolders.mockResolvedValue({ rootFolders: [] });
+    mockApi.mediaApi.listMovies.mockResolvedValue({ items: [], meta: { page: 1, pageSize: 200, totalCount: 0, totalPages: 0 } });
+    mockApi.mediaApi.listSeries.mockResolvedValue({ items: [], meta: { page: 1, pageSize: 200, totalCount: 0, totalPages: 0 } });
+  });
+
+  it('calls settingsApi.update with streaming payload on save', async () => {
+    renderApp('/settings/streaming');
+
+    await screen.findByText('Streaming');
+
+    fireEvent.click(screen.getByLabelText('Enable mDNS discovery broadcast'));
+    fireEvent.change(screen.getByLabelText('Discovery Service Name'), { target: { value: 'Living Room Mediarr' } });
+    fireEvent.change(screen.getByLabelText('Default Playback User ID'), { target: { value: 'family-room' } });
+    fireEvent.change(screen.getByRole('spinbutton', { name: /Watched Threshold/ }), { target: { value: '80' } });
+    fireEvent.change(screen.getByPlaceholderText('/path/to/subtitles'), { target: { value: '/srv/subtitles' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save Streaming Settings' }));
+
+    await waitFor(() => {
+      expect(mockApi.settingsApi.update).toHaveBeenCalledWith({
+        streaming: {
+          discoveryEnabled: false,
+          discoveryServiceName: 'Living Room Mediarr',
+          defaultUserId: 'family-room',
+          watchedThreshold: 0.8,
+          subtitleDirectory: '/srv/subtitles',
+        },
+      });
+    });
+  });
+
+  it('shows success message after saving streaming settings', async () => {
+    renderApp('/settings/streaming');
+
+    await screen.findByText('Streaming');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save Streaming Settings' }));
+
+    expect(await screen.findByText('Streaming settings saved.')).toBeInTheDocument();
   });
 });

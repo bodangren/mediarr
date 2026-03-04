@@ -28,6 +28,13 @@ describe('unified monolith navigation', () => {
     expect(paths).toEqual(['/system/tasks', '/system/logs', '/system/backup']);
   });
 
+  it('includes streaming settings route in the settings section', () => {
+    const settings = NAV_ITEMS.find(section => section.id === 'settings');
+    const paths = settings?.items.map(item => item.path) ?? [];
+
+    expect(paths).toContain('/settings/streaming');
+  });
+
   it('keeps icons and short labels for all nav items', () => {
     const sections = NAV_ITEMS as NavigationSection[];
 

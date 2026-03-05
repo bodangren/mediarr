@@ -26,10 +26,14 @@ Commands:
 
 Options:
   --avd <name>      AVD name (default: ${DEFAULT_AVD})
+  --gpu <mode>      GPU mode for emulator (default: auto)
   --headless        Launch emulator without window
   --timeout <sec>   Boot wait timeout in seconds (default: ${DEFAULT_TIMEOUT})
   --wipe-data       Pass -wipe-data to emulator on startup
   --cold-boot       Pass -no-snapshot-load to emulator on startup
+  --no-snapshot     Disable snapshot load and save
+  --no-vulkan       Disable Vulkan feature in emulator
+  --safe-mode       Equivalent to: --gpu swiftshader_indirect --cold-boot --no-snapshot --no-vulkan
   -h, --help        Show this help
 
 Examples:
@@ -88,6 +92,10 @@ first_emulator_serial() {
   "${ADB_BIN}" devices | awk '/^emulator-[0-9]+\t(device|offline)$/ {print $1; exit}'
 }
 
+running_emulator_pid_for_avd() {
+  pgrep -f "${EMULATOR_BIN}.*-avd[[:space:]]+${AVD_NAME}( |$)" | head -n1 || true
+}
+
 start_adb() {
   "${ADB_BIN}" start-server >/dev/null
 }
@@ -122,22 +130,31 @@ start_emulator() {
   local headless="$3"
   local wipe_data="$4"
   local cold_boot="$5"
+  local gpu_mode="$6"
+  local no_snapshot="$7"
+  local no_vulkan="$8"
 
-  local existing
-  existing="$(first_emulator_serial || true)"
-  if [[ -n "${existing}" ]]; then
-    log "Emulator already detected: ${existing}"
+  local existing_pid
+  existing_pid="$(running_emulator_pid_for_avd)"
+  if [[ -n "${existing_pid}" ]]; then
+    log "Emulator process already running for ${avd_name} (pid ${existing_pid})"
   else
     local -a args
-    args=("-avd" "${avd_name}" "-no-audio" "-netdelay" "none" "-netspeed" "full")
+    args=("-avd" "${avd_name}" "-no-audio" "-netdelay" "none" "-netspeed" "full" "-gpu" "${gpu_mode}")
     if [[ "${headless}" == "1" ]]; then
-      args+=("-no-window" "-gpu" "swiftshader_indirect")
+      args+=("-no-window")
     fi
     if [[ "${wipe_data}" == "1" ]]; then
       args+=("-wipe-data")
     fi
     if [[ "${cold_boot}" == "1" ]]; then
       args+=("-no-snapshot-load")
+    fi
+    if [[ "${no_snapshot}" == "1" ]]; then
+      args+=("-no-snapshot-load" "-no-snapshot-save")
+    fi
+    if [[ "${no_vulkan}" == "1" ]]; then
+      args+=("-feature" "-Vulkan")
     fi
 
     log "Launching emulator '${avd_name}' (log: ${EMULATOR_LOG})"
@@ -220,16 +237,24 @@ if [[ $# -gt 0 && "$1" != -* ]]; then
 fi
 
 AVD_NAME="${DEFAULT_AVD}"
+GPU_MODE="auto"
 HEADLESS=0
 TIMEOUT="${DEFAULT_TIMEOUT}"
 WIPE_DATA=0
 COLD_BOOT=0
+NO_SNAPSHOT=0
+NO_VULKAN=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --avd)
       [[ $# -ge 2 ]] || die "--avd requires a value"
       AVD_NAME="$2"
+      shift 2
+      ;;
+    --gpu)
+      [[ $# -ge 2 ]] || die "--gpu requires a value"
+      GPU_MODE="$2"
       shift 2
       ;;
     --headless)
@@ -249,6 +274,21 @@ while [[ $# -gt 0 ]]; do
       COLD_BOOT=1
       shift
       ;;
+    --no-snapshot)
+      NO_SNAPSHOT=1
+      shift
+      ;;
+    --no-vulkan)
+      NO_VULKAN=1
+      shift
+      ;;
+    --safe-mode)
+      GPU_MODE="swiftshader_indirect"
+      COLD_BOOT=1
+      NO_SNAPSHOT=1
+      NO_VULKAN=1
+      shift
+      ;;
     -h|--help)
       usage
       exit 0
@@ -264,7 +304,7 @@ start_adb
 
 case "${COMMAND}" in
   up)
-    start_emulator "${AVD_NAME}" "${TIMEOUT}" "${HEADLESS}" "${WIPE_DATA}" "${COLD_BOOT}"
+    start_emulator "${AVD_NAME}" "${TIMEOUT}" "${HEADLESS}" "${WIPE_DATA}" "${COLD_BOOT}" "${GPU_MODE}" "${NO_SNAPSHOT}" "${NO_VULKAN}"
     ;;
   build)
     build_apk
@@ -274,7 +314,7 @@ case "${COMMAND}" in
     ;;
   run)
     build_apk
-    start_emulator "${AVD_NAME}" "${TIMEOUT}" "${HEADLESS}" "${WIPE_DATA}" "${COLD_BOOT}"
+    start_emulator "${AVD_NAME}" "${TIMEOUT}" "${HEADLESS}" "${WIPE_DATA}" "${COLD_BOOT}" "${GPU_MODE}" "${NO_SNAPSHOT}" "${NO_VULKAN}"
     install_apk
     ;;
   status)

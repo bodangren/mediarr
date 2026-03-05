@@ -1,0 +1,5 @@
+Track: android_tv_client_20260304
+Phase: 3 - Playback & Syncing
+Summary: Added playback session modeling from manifest, resume prompt workflow, ExoPlayer subtitle wiring, and 30-second heartbeat progress syncing with final flush.
+Tests: ./gradlew :app:testDebugUnitTest --tests '*PlaybackSession*' --tests '*Resume*' --tests '*Heartbeat*' (PASS)
+Files: player/*, playback repositories, app navigation/player integration, and phase plan updates.

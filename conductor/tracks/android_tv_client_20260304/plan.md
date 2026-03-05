@@ -69,11 +69,11 @@
 ### Task 2.4: Deferred manual verification checkpoint
 - [ ] Task: Conductor - User Manual Verification 'Phase 2: Media Browsing & Detail View' (deferred to end-of-track verification batch).
 
-## Phase 3: Playback & Syncing
+## Phase 3: Playback & Syncing [checkpoint: 7dbbbd7]
 > Goal: Add ExoPlayer playback, subtitle/audio selection, resume, and progress sync heartbeat.
 
 ### Task 3.1: Integrate ExoPlayer with subtitle/audio track support
-- [x] Task: Integrate Media3 ExoPlayer playback flow using playback manifest stream/subtitle URLs.
+- [x] Task: Integrate Media3 ExoPlayer playback flow using playback manifest stream/subtitle URLs. [7dbbbd7]
   - [x] Sub-task: Build `PlaybackSession` from manifest.
   - [x] Sub-task: Configure player media items and sidecar subtitle tracks.
   - [x] Sub-task: Expose audio/subtitle track selection UI.
@@ -82,7 +82,7 @@
 - Expected commit message: `feat(android-tv): integrate exoplayer with subtitle and audio tracks`
 
 ### Task 3.2: Implement resume prompt and seek restoration
-- [x] Task: Implement resume logic based on manifest `resume.position`.
+- [x] Task: Implement resume logic based on manifest `resume.position`. [7dbbbd7]
   - [x] Sub-task: Add Resume prompt (`Resume` vs `Start over`) before playback start.
   - [x] Sub-task: Perform seek to saved timestamp on resume path.
   - [x] Sub-task: Clear prompt state and persist local decision metadata.
@@ -90,7 +90,7 @@
 - Expected commit message: `feat(android-tv): add playback resume decision flow`
 
 ### Task 3.3: Add 30-second playback heartbeat sync
-- [x] Task: Add heartbeat task during playback to sync progress with server.
+- [x] Task: Add heartbeat task during playback to sync progress with server. [7dbbbd7]
   - [x] Sub-task: Implement periodic (30s) progress POST to `/api/playback/progress`.
   - [x] Sub-task: Emit final heartbeat on pause/stop/end events.
   - [x] Sub-task: Map watched threshold responses into local playback state.

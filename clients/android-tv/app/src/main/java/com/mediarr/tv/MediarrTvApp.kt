@@ -1,6 +1,7 @@
 package com.mediarr.tv
 
 import android.app.Application
+import android.os.Build
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
@@ -46,24 +47,29 @@ fun MediarrTvApp() {
   val homeViewModel: HomeViewModel = viewModel()
   val discoveryState = discoveryViewModel.state.collectAsState()
   var screen: AppScreen by remember { mutableStateOf(AppScreen.Home) }
+  val defaultBaseUrl = remember { defaultBaseUrl() }
   val apiClient = remember(discoveryRepository) {
     MediarrApiClient(
-      baseUrlProvider = { discoveryRepository.loadSavedEndpoint()?.baseUrl ?: "http://127.0.0.1:3001" },
+      baseUrlProvider = { discoveryRepository.loadSavedEndpoint()?.baseUrl ?: defaultBaseUrl },
     )
   }
   val remoteRepository = remember(apiClient) { RemoteCatalogRepository(apiClient) }
   val remotePlaybackRepository = remember(apiClient, discoveryRepository) {
     RemotePlaybackRepository(
       api = apiClient,
-      baseUrlProvider = { discoveryRepository.loadSavedEndpoint()?.baseUrl ?: "http://127.0.0.1:3001" },
+      baseUrlProvider = { discoveryRepository.loadSavedEndpoint()?.baseUrl ?: defaultBaseUrl },
     )
   }
   val resumeDecider = remember { ResumeDecider() }
 
+  LaunchedEffect(remoteRepository) {
+    homeViewModel.attachRepository(remoteRepository)
+  }
+
   LaunchedEffect(discoveryState.value) {
     val state = discoveryState.value
     if (state is DiscoveryState.Found) {
-      homeViewModel.attachRepository(remoteRepository)
+      homeViewModel.refresh()
     }
   }
 
@@ -139,3 +145,16 @@ fun MediarrTvApp() {
 }
 
 class MediarrTvApplication : Application()
+
+private fun defaultBaseUrl(): String {
+  val isEmulator = Build.FINGERPRINT.startsWith("generic", ignoreCase = true) ||
+    Build.MODEL.contains("emulator", ignoreCase = true) ||
+    Build.MODEL.contains("android sdk built for", ignoreCase = true) ||
+    Build.PRODUCT.contains("sdk", ignoreCase = true)
+
+  return if (isEmulator) {
+    "http://10.0.2.2:3001"
+  } else {
+    "http://127.0.0.1:3001"
+  }
+}

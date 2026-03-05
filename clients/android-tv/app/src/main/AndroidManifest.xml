@@ -13,6 +13,7 @@
     android:allowBackup="true"
     android:banner="@drawable/app_banner"
     android:label="Mediarr TV"
+    android:usesCleartextTraffic="true"
     android:supportsRtl="true"
     android:theme="@style/Theme.MediarrTv">
     <activity

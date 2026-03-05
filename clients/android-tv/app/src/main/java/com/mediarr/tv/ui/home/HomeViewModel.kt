@@ -1,5 +1,6 @@
 package com.mediarr.tv.ui.home
 
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mediarr.tv.core.model.MediaCard
@@ -11,8 +12,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class HomeViewModel : ViewModel() {
-  private var repository: CatalogRepository = MockCatalogRepository
+class HomeViewModel(
+  initialRepository: CatalogRepository = MockCatalogRepository,
+) : ViewModel() {
+  private var repository: CatalogRepository = initialRepository
   private val focusMemory = FocusMemory()
 
   private val _uiState = MutableStateFlow(HomeUiState(isLoading = true))
@@ -65,6 +68,18 @@ class HomeViewModel : ViewModel() {
   }
 
   suspend fun loadDetail(item: MediaCard): MediaCard = repository.detail(item)
+}
+
+class HomeViewModelFactory(
+  private val initialRepository: CatalogRepository,
+) : ViewModelProvider.Factory {
+  override fun <T : ViewModel> create(modelClass: Class<T>): T {
+    if (modelClass.isAssignableFrom(HomeViewModel::class.java)) {
+      @Suppress("UNCHECKED_CAST")
+      return HomeViewModel(initialRepository) as T
+    }
+    throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
+  }
 }
 
 data class HomeUiState(

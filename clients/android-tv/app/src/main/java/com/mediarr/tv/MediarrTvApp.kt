@@ -18,6 +18,7 @@ import com.mediarr.tv.data.repository.RemoteCatalogRepository
 import com.mediarr.tv.data.repository.RemotePlaybackRepository
 import com.mediarr.tv.discovery.DiscoveryState
 import com.mediarr.tv.discovery.DiscoveryViewModelFactory
+import com.mediarr.tv.discovery.DiscoveryEndpoint
 import com.mediarr.tv.discovery.EndpointDataStore
 import com.mediarr.tv.discovery.DiscoveryViewModel
 import com.mediarr.tv.discovery.NsdDiscoveryRepository
@@ -25,6 +26,7 @@ import com.mediarr.tv.ui.detail.DetailScreen
 import com.mediarr.tv.ui.detail.ResumePromptScreen
 import com.mediarr.tv.ui.home.HomeScreen
 import com.mediarr.tv.ui.home.HomeViewModel
+import com.mediarr.tv.ui.home.HomeViewModelFactory
 import com.mediarr.tv.ui.navigation.AppScreen
 import com.mediarr.tv.player.PlayerScreen
 import com.mediarr.tv.player.ResumeDecider
@@ -44,27 +46,31 @@ fun MediarrTvApp() {
   val discoveryViewModel: DiscoveryViewModel = viewModel(
     factory = DiscoveryViewModelFactory(discoveryRepository),
   )
-  val homeViewModel: HomeViewModel = viewModel()
   val discoveryState = discoveryViewModel.state.collectAsState()
   var screen: AppScreen by remember { mutableStateOf(AppScreen.Home) }
   val defaultBaseUrl = remember { defaultBaseUrl() }
   val apiClient = remember(discoveryRepository) {
     MediarrApiClient(
-      baseUrlProvider = { discoveryRepository.loadSavedEndpoint()?.baseUrl ?: defaultBaseUrl },
+      baseUrlProvider = {
+        val saved = discoveryRepository.loadSavedEndpoint()
+        effectiveBaseUrl(saved, defaultBaseUrl)
+      },
     )
   }
   val remoteRepository = remember(apiClient) { RemoteCatalogRepository(apiClient) }
   val remotePlaybackRepository = remember(apiClient, discoveryRepository) {
     RemotePlaybackRepository(
       api = apiClient,
-      baseUrlProvider = { discoveryRepository.loadSavedEndpoint()?.baseUrl ?: defaultBaseUrl },
+      baseUrlProvider = {
+        val saved = discoveryRepository.loadSavedEndpoint()
+        effectiveBaseUrl(saved, defaultBaseUrl)
+      },
     )
   }
+  val homeViewModel: HomeViewModel = viewModel(
+    factory = HomeViewModelFactory(remoteRepository),
+  )
   val resumeDecider = remember { ResumeDecider() }
-
-  LaunchedEffect(remoteRepository) {
-    homeViewModel.attachRepository(remoteRepository)
-  }
 
   LaunchedEffect(discoveryState.value) {
     val state = discoveryState.value
@@ -156,5 +162,22 @@ private fun defaultBaseUrl(): String {
     "http://10.0.2.2:3001"
   } else {
     "http://127.0.0.1:3001"
+  }
+}
+
+private fun effectiveBaseUrl(saved: DiscoveryEndpoint?, fallbackBaseUrl: String): String {
+  if (saved == null) {
+    return fallbackBaseUrl
+  }
+
+  val host = saved.host.trim().lowercase()
+  val fallbackHost = fallbackBaseUrl.removePrefix("http://").substringBefore(':').lowercase()
+  val isEmulatorFallback = fallbackHost == "10.0.2.2"
+  val isLoopbackSaved = host == "127.0.0.1" || host == "localhost" || host == "::1"
+
+  return if (isEmulatorFallback && isLoopbackSaved) {
+    "http://10.0.2.2:${saved.port}"
+  } else {
+    saved.baseUrl
   }
 }

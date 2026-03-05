@@ -1,6 +1,9 @@
 package com.mediarr.tv.data.api
 
 import java.io.IOException
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
@@ -16,6 +19,7 @@ import okhttp3.Request
 class MediarrApiClient(
   private val baseUrlProvider: suspend () -> String,
   private val httpClient: OkHttpClient = OkHttpClient(),
+  private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
   private val json: Json = Json {
     ignoreUnknownKeys = true
     explicitNulls = false
@@ -74,7 +78,9 @@ class MediarrApiClient(
       .get()
       .build()
 
-    return executeForData(request, path)
+    return withContext(ioDispatcher) {
+      executeForData(request, path)
+    }
   }
 
   private suspend fun postData(path: String, jsonBody: String): JsonElement {
@@ -83,7 +89,9 @@ class MediarrApiClient(
       .post(jsonBody.toRequestBody("application/json".toMediaType()))
       .build()
 
-    return executeForData(request, path)
+    return withContext(ioDispatcher) {
+      executeForData(request, path)
+    }
   }
 
   private suspend fun resolveUrl(path: String): String {

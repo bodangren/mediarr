@@ -35,7 +35,7 @@
 - Expected commit message: `feat(android-tv): implement mock home rows with dpad focus states`
 
 ### Task 1.4: Deferred manual verification checkpoint
-- [ ] Task: Conductor - User Manual Verification 'Phase 1: Scaffolding & Discovery' (deferred to end-of-track verification batch).
+- [~] Task: Conductor - User Manual Verification 'Phase 1: Scaffolding & Discovery' (started in deferred batch; see `verification_20260305.md`).
 
 ## Phase 2: Media Browsing & Detail View [checkpoint: b27c581]
 > Goal: Replace mock browsing with live Mediarr API data and build detail experiences.
@@ -67,7 +67,7 @@
 - Expected commit message: `feat(android-tv): improve dpad traversal and focus restoration`
 
 ### Task 2.4: Deferred manual verification checkpoint
-- [ ] Task: Conductor - User Manual Verification 'Phase 2: Media Browsing & Detail View' (deferred to end-of-track verification batch).
+- [~] Task: Conductor - User Manual Verification 'Phase 2: Media Browsing & Detail View' (started in deferred batch; see `verification_20260305.md`).
 
 ## Phase 3: Playback & Syncing [checkpoint: 7dbbbd7]
 > Goal: Add ExoPlayer playback, subtitle/audio selection, resume, and progress sync heartbeat.
@@ -98,10 +98,11 @@
 - Expected commit message: `feat(android-tv): add playback heartbeat progress syncing`
 
 ### Task 3.4: Deferred manual verification checkpoint
-- [ ] Task: Conductor - User Manual Verification 'Phase 3: Playback & Syncing' (deferred to end-of-track verification batch).
+- [ ] Task: Conductor - User Manual Verification 'Phase 3: Playback & Syncing' (blocked pending Phase 1/2 UI interaction fixes).
 
 ## Final Deferred Verification Batch
-- [ ] Task: Execute manual verification protocol for Phases 1-3 in one pass and attach consolidated evidence note.
+- [~] Task: Execute manual verification protocol for Phases 1-3 in one pass and attach consolidated evidence note.
+- Evidence note: `conductor/tracks/android_tv_client_20260304/verification_20260305.md`
 - [ ] Task: Validate acceptance criteria end-to-end (discovery, browsing, 4K playback path, resume at timestamp).
 - [ ] Task: Update track metadata status and archive track folder if all criteria pass.
 - Test command: `cd clients/android-tv && ./gradlew :app:testDebugUnitTest && cd /home/daniel-bo/Desktop/mediarr && CI=true npm test`

@@ -37,11 +37,11 @@
 ### Task 1.4: Deferred manual verification checkpoint
 - [ ] Task: Conductor - User Manual Verification 'Phase 1: Scaffolding & Discovery' (deferred to end-of-track verification batch).
 
-## Phase 2: Media Browsing & Detail View
+## Phase 2: Media Browsing & Detail View [checkpoint: b27c581]
 > Goal: Replace mock browsing with live Mediarr API data and build detail experiences.
 
 ### Task 2.1: Add Mediarr API client and real metadata integration
-- [x] Task: Fetch real metadata from Mediarr APIs (`/api/movies`, `/api/series`, `/api/playback/:id`).
+- [x] Task: Fetch real metadata from Mediarr APIs (`/api/movies`, `/api/series`, `/api/playback/:id`). [b27c581]
   - [x] Sub-task: Implement HTTP client with JSON serialization and API models.
   - [x] Sub-task: Implement repositories for movie/series list and playback manifest reads.
   - [x] Sub-task: Add configuration source for discovered server base URL.
@@ -50,7 +50,7 @@
 - Expected commit message: `feat(android-tv): integrate mediarr metadata apis`
 
 ### Task 2.2: Build Detail view screen
-- [x] Task: Build detail screen with hero backdrop, synopsis, metadata, and play CTA.
+- [x] Task: Build detail screen with hero backdrop, synopsis, metadata, and play CTA. [b27c581]
   - [x] Sub-task: Implement `DetailScreen` composable with `Play` action.
   - [x] Sub-task: Display high-resolution poster/backdrop and overview text.
   - [x] Sub-task: Add state handling for loading/error/empty media payloads.
@@ -59,7 +59,7 @@
 - Expected commit message: `feat(android-tv): add media detail experience`
 
 ### Task 2.3: Implement DPAD focus handling for Netflix-style rows
-- [x] Task: Implement deterministic DPAD focus traversal across rows/cards/detail actions.
+- [x] Task: Implement deterministic DPAD focus traversal across rows/cards/detail actions. [b27c581]
   - [x] Sub-task: Add focus restoration when returning from detail to home.
   - [x] Sub-task: Add row-edge behavior and no-focus-trap safeguards.
   - [x] Sub-task: Add view-model state for selected rail/card indices.
@@ -73,27 +73,27 @@
 > Goal: Add ExoPlayer playback, subtitle/audio selection, resume, and progress sync heartbeat.
 
 ### Task 3.1: Integrate ExoPlayer with subtitle/audio track support
-- [ ] Task: Integrate Media3 ExoPlayer playback flow using playback manifest stream/subtitle URLs.
-  - [ ] Sub-task: Build `PlaybackSession` from manifest.
-  - [ ] Sub-task: Configure player media items and sidecar subtitle tracks.
-  - [ ] Sub-task: Expose audio/subtitle track selection UI.
-  - [ ] Sub-task: Add player lifecycle handling for app/background state.
+- [x] Task: Integrate Media3 ExoPlayer playback flow using playback manifest stream/subtitle URLs.
+  - [x] Sub-task: Build `PlaybackSession` from manifest.
+  - [x] Sub-task: Configure player media items and sidecar subtitle tracks.
+  - [x] Sub-task: Expose audio/subtitle track selection UI.
+  - [x] Sub-task: Add player lifecycle handling for app/background state.
 - Test command: `cd clients/android-tv && ./gradlew :app:testDebugUnitTest --tests "*PlaybackSession*"`
 - Expected commit message: `feat(android-tv): integrate exoplayer with subtitle and audio tracks`
 
 ### Task 3.2: Implement resume prompt and seek restoration
-- [ ] Task: Implement resume logic based on manifest `resume.position`.
-  - [ ] Sub-task: Add Resume prompt (`Resume` vs `Start over`) before playback start.
-  - [ ] Sub-task: Perform seek to saved timestamp on resume path.
-  - [ ] Sub-task: Clear prompt state and persist local decision metadata.
+- [x] Task: Implement resume logic based on manifest `resume.position`.
+  - [x] Sub-task: Add Resume prompt (`Resume` vs `Start over`) before playback start.
+  - [x] Sub-task: Perform seek to saved timestamp on resume path.
+  - [x] Sub-task: Clear prompt state and persist local decision metadata.
 - Test command: `cd clients/android-tv && ./gradlew :app:testDebugUnitTest --tests "*Resume*"`
 - Expected commit message: `feat(android-tv): add playback resume decision flow`
 
 ### Task 3.3: Add 30-second playback heartbeat sync
-- [ ] Task: Add heartbeat task during playback to sync progress with server.
-  - [ ] Sub-task: Implement periodic (30s) progress POST to `/api/playback/progress`.
-  - [ ] Sub-task: Emit final heartbeat on pause/stop/end events.
-  - [ ] Sub-task: Map watched threshold responses into local playback state.
+- [x] Task: Add heartbeat task during playback to sync progress with server.
+  - [x] Sub-task: Implement periodic (30s) progress POST to `/api/playback/progress`.
+  - [x] Sub-task: Emit final heartbeat on pause/stop/end events.
+  - [x] Sub-task: Map watched threshold responses into local playback state.
 - Test command: `cd clients/android-tv && ./gradlew :app:testDebugUnitTest --tests "*Heartbeat*"`
 - Expected commit message: `feat(android-tv): add playback heartbeat progress syncing`
 

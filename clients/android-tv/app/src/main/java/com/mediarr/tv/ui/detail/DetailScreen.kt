@@ -2,9 +2,12 @@ package com.mediarr.tv.ui.detail
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -29,6 +32,12 @@ fun DetailScreen(
       .padding(32.dp),
     verticalArrangement = Arrangement.spacedBy(12.dp),
   ) {
+    Box(
+      modifier = Modifier
+        .fillMaxWidth()
+        .height(220.dp)
+        .background(Color(0xFF1F1F1F)),
+    )
     Text(text = media.title, color = Color.White, fontWeight = FontWeight.Bold)
     if (!media.subtitle.isNullOrBlank()) {
       Text(text = media.subtitle, color = Color(0xFFBDBDBD))

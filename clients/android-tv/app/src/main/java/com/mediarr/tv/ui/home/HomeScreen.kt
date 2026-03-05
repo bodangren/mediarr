@@ -13,6 +13,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.tv.material3.Button
 import androidx.tv.material3.Text
 import androidx.tv.foundation.lazy.list.TvLazyRow
 import androidx.tv.foundation.lazy.list.itemsIndexed as tvItemsIndexed
@@ -24,7 +25,7 @@ fun HomeScreen(
   onSelectItem: (MediaCard) -> Unit,
   viewModel: HomeViewModel = viewModel(),
 ) {
-  val rows by viewModel.rows.collectAsState()
+  val uiState by viewModel.uiState.collectAsState()
   val listState = rememberLazyListState()
 
   LazyColumn(
@@ -34,7 +35,25 @@ fun HomeScreen(
     state = listState,
     verticalArrangement = Arrangement.spacedBy(24.dp),
   ) {
-    itemsIndexed(rows, key = { _, row -> row.key }) { rowIndex, row ->
+    if (uiState.errorMessage != null) {
+      item(key = "error") {
+        Text(text = "Catalog fallback mode: ${uiState.errorMessage}")
+      }
+    }
+
+    if (uiState.isLoading) {
+      item(key = "loading") {
+        Text(text = "Loading library...")
+      }
+    }
+
+    item(key = "refresh") {
+      Button(onClick = { viewModel.refresh() }) {
+        Text(text = "Refresh")
+      }
+    }
+
+    itemsIndexed(uiState.rows, key = { _, row -> row.key }) { rowIndex, row ->
       Text(text = row.title)
       TvLazyRow(
         contentPadding = PaddingValues(vertical = 8.dp),

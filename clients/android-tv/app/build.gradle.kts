@@ -81,7 +81,7 @@ dependencies {
   implementation("androidx.tv:tv-material:1.0.1")
 
   implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
-  implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.1")
+  implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
   implementation("com.squareup.okhttp3:okhttp:4.12.0")
   implementation("androidx.datastore:datastore-preferences:1.1.1")
 
@@ -92,4 +92,5 @@ dependencies {
   testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
   testImplementation("io.mockk:mockk:1.13.12")
   testImplementation("androidx.arch.core:core-testing:2.2.0")
+  testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
 }

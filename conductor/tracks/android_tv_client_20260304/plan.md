@@ -4,11 +4,11 @@
 - Manual verification tasks are intentionally deferred until the end of the track per user instruction on 2026-03-05.
 - Work still follows TDD for unit-testable modules and phase checkpoint commits.
 
-## Phase 1: Scaffolding & Discovery
+## Phase 1: Scaffolding & Discovery [checkpoint: 07e08d6]
 > Goal: Create Android TV project foundation, network discovery, and a DPAD-first home surface with mock data.
 
 ### Task 1.1: Scaffold Android TV project structure
-- [x] Task: Create `clients/android-tv/` Gradle project with Kotlin + Compose for TV + Media3 baseline.
+- [x] Task: Create `clients/android-tv/` Gradle project with Kotlin + Compose for TV + Media3 baseline. [07e08d6]
   - [x] Sub-task: Add Gradle wrapper/config (`settings.gradle.kts`, root/app build files, gradle properties, wrapper files).
   - [x] Sub-task: Add Android manifest, app theme, and Compose TV dependencies.
   - [x] Sub-task: Add package structure: `core`, `discovery`, `data`, `domain`, `ui`, `player`.
@@ -17,7 +17,7 @@
 - Expected commit message: `feat(android-tv): scaffold compose-for-tv application`
 
 ### Task 1.2: Implement mDNS discovery (NsdManager)
-- [x] Task: Implement discovery layer to resolve `_mediarr._tcp` server endpoints.
+- [x] Task: Implement discovery layer to resolve `_mediarr._tcp` server endpoints. [07e08d6]
   - [x] Sub-task: Add `DiscoveryEndpoint`, `DiscoveryState`, and `DiscoveryRepository` interfaces.
   - [x] Sub-task: Implement `NsdDiscoveryRepository` using Android `NsdManager`.
   - [x] Sub-task: Add endpoint persistence (`DataStore`) and startup fallback behavior.
@@ -26,7 +26,7 @@
 - Expected commit message: `feat(android-tv): add mdns discovery and endpoint persistence`
 
 ### Task 1.3: Build Home screen rows with mock data and DPAD focus
-- [x] Task: Build TV home experience with mock data first.
+- [x] Task: Build TV home experience with mock data first. [07e08d6]
   - [x] Sub-task: Add row/rail models for `Recently Added`, `Movies`, and `TV Shows`.
   - [x] Sub-task: Implement poster card component with focused/unfocused visual states.
   - [x] Sub-task: Implement horizontal row carousels and vertical stacked rows.
@@ -41,28 +41,28 @@
 > Goal: Replace mock browsing with live Mediarr API data and build detail experiences.
 
 ### Task 2.1: Add Mediarr API client and real metadata integration
-- [ ] Task: Fetch real metadata from Mediarr APIs (`/api/movies`, `/api/series`, `/api/playback/:id`).
-  - [ ] Sub-task: Implement HTTP client with JSON serialization and API models.
-  - [ ] Sub-task: Implement repositories for movie/series list and playback manifest reads.
-  - [ ] Sub-task: Add configuration source for discovered server base URL.
-  - [ ] Sub-task: Add error mapping and loading-state contracts for UI.
+- [x] Task: Fetch real metadata from Mediarr APIs (`/api/movies`, `/api/series`, `/api/playback/:id`).
+  - [x] Sub-task: Implement HTTP client with JSON serialization and API models.
+  - [x] Sub-task: Implement repositories for movie/series list and playback manifest reads.
+  - [x] Sub-task: Add configuration source for discovered server base URL.
+  - [x] Sub-task: Add error mapping and loading-state contracts for UI.
 - Test command: `cd clients/android-tv && ./gradlew :app:testDebugUnitTest --tests "*Repository*"`
 - Expected commit message: `feat(android-tv): integrate mediarr metadata apis`
 
 ### Task 2.2: Build Detail view screen
-- [ ] Task: Build detail screen with hero backdrop, synopsis, metadata, and play CTA.
-  - [ ] Sub-task: Implement `DetailScreen` composable with `Play` action.
-  - [ ] Sub-task: Display high-resolution poster/backdrop and overview text.
-  - [ ] Sub-task: Add state handling for loading/error/empty media payloads.
-  - [ ] Sub-task: Wire navigation from home poster selection into detail route.
+- [x] Task: Build detail screen with hero backdrop, synopsis, metadata, and play CTA.
+  - [x] Sub-task: Implement `DetailScreen` composable with `Play` action.
+  - [x] Sub-task: Display high-resolution poster/backdrop and overview text.
+  - [x] Sub-task: Add state handling for loading/error/empty media payloads.
+  - [x] Sub-task: Wire navigation from home poster selection into detail route.
 - Test command: `cd clients/android-tv && ./gradlew :app:testDebugUnitTest --tests "*Detail*"`
 - Expected commit message: `feat(android-tv): add media detail experience`
 
 ### Task 2.3: Implement DPAD focus handling for Netflix-style rows
-- [ ] Task: Implement deterministic DPAD focus traversal across rows/cards/detail actions.
-  - [ ] Sub-task: Add focus restoration when returning from detail to home.
-  - [ ] Sub-task: Add row-edge behavior and no-focus-trap safeguards.
-  - [ ] Sub-task: Add view-model state for selected rail/card indices.
+- [x] Task: Implement deterministic DPAD focus traversal across rows/cards/detail actions.
+  - [x] Sub-task: Add focus restoration when returning from detail to home.
+  - [x] Sub-task: Add row-edge behavior and no-focus-trap safeguards.
+  - [x] Sub-task: Add view-model state for selected rail/card indices.
 - Test command: `cd clients/android-tv && ./gradlew :app:testDebugUnitTest --tests "*Focus*"`
 - Expected commit message: `feat(android-tv): improve dpad traversal and focus restoration`
 

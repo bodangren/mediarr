@@ -10,6 +10,7 @@
   <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
 
   <application
+    android:name=".MediarrTvApplication"
     android:allowBackup="true"
     android:banner="@drawable/app_banner"
     android:label="Mediarr TV"

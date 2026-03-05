@@ -12,6 +12,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.ImageLoader
+import coil.ImageLoaderFactory
+import okhttp3.OkHttpClient
 import com.mediarr.tv.core.model.MediaType
 import com.mediarr.tv.data.api.MediarrApiClient
 import com.mediarr.tv.data.repository.RemoteCatalogRepository
@@ -150,7 +153,26 @@ fun MediarrTvApp() {
   }
 }
 
-class MediarrTvApplication : Application()
+class MediarrTvApplication : Application(), ImageLoaderFactory {
+  override fun newImageLoader(): ImageLoader {
+    return ImageLoader.Builder(this)
+      .crossfade(true)
+      .logger(coil.util.DebugLogger())
+      .okHttpClient {
+        OkHttpClient.Builder()
+          .addInterceptor { chain ->
+            val request = chain.request().newBuilder()
+              .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+              .header("Accept", "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8")
+              .header("Accept-Language", "en-US,en;q=0.9")
+              .build()
+            chain.proceed(request)
+          }
+          .build()
+      }
+      .build()
+  }
+}
 
 private fun defaultBaseUrl(): String {
   val isEmulator = Build.FINGERPRINT.startsWith("generic", ignoreCase = true) ||

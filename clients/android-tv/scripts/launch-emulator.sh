@@ -21,6 +21,7 @@ Commands:
   build    Build debug APK with Gradle (:app:assembleDebug).
   install  Install existing debug APK on running emulator.
   run      Build + up + install.
+  tune     Apply emulator performance tuning on a running device.
   status   Show SDK path, emulator process, adb devices, APK status.
   down     Stop all running emulator instances.
 
@@ -33,7 +34,9 @@ Options:
   --cold-boot       Pass -no-snapshot-load to emulator on startup
   --no-snapshot     Disable snapshot load and save
   --no-vulkan       Disable Vulkan feature in emulator
+  --balanced-mode   Equivalent to: --gpu host --cold-boot --no-snapshot --no-vulkan
   --safe-mode       Equivalent to: --gpu swiftshader_indirect --cold-boot --no-snapshot --no-vulkan
+  --tune            After boot, disable animations for smoother UI response
   -h, --help        Show this help
 
 Examples:
@@ -124,6 +127,20 @@ wait_for_boot() {
   return 1
 }
 
+apply_runtime_tuning() {
+  local serial
+  serial="$(first_emulator_serial || true)"
+  [[ -n "${serial}" ]] || die "No emulator detected for tuning."
+
+  log "Applying runtime tuning on ${serial}"
+  "${ADB_BIN}" -s "${serial}" shell settings put global window_animation_scale 0 >/dev/null 2>&1 || true
+  "${ADB_BIN}" -s "${serial}" shell settings put global transition_animation_scale 0 >/dev/null 2>&1 || true
+  "${ADB_BIN}" -s "${serial}" shell settings put global animator_duration_scale 0 >/dev/null 2>&1 || true
+  "${ADB_BIN}" -s "${serial}" shell settings put system pointer_location 0 >/dev/null 2>&1 || true
+  "${ADB_BIN}" -s "${serial}" shell settings put system show_touches 0 >/dev/null 2>&1 || true
+  log "Tuning complete"
+}
+
 start_emulator() {
   local avd_name="$1"
   local timeout="$2"
@@ -155,6 +172,10 @@ start_emulator() {
     fi
     if [[ "${no_vulkan}" == "1" ]]; then
       args+=("-feature" "-Vulkan")
+    fi
+
+    if [[ "${gpu_mode}" == "swiftshader_indirect" ]]; then
+      log "Running in safe software-GPU mode (slower, but more stable)."
     fi
 
     log "Launching emulator '${avd_name}' (log: ${EMULATOR_LOG})"
@@ -244,6 +265,7 @@ WIPE_DATA=0
 COLD_BOOT=0
 NO_SNAPSHOT=0
 NO_VULKAN=0
+APPLY_TUNE=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -289,6 +311,17 @@ while [[ $# -gt 0 ]]; do
       NO_VULKAN=1
       shift
       ;;
+    --balanced-mode)
+      GPU_MODE="host"
+      COLD_BOOT=1
+      NO_SNAPSHOT=1
+      NO_VULKAN=1
+      shift
+      ;;
+    --tune)
+      APPLY_TUNE=1
+      shift
+      ;;
     -h|--help)
       usage
       exit 0
@@ -305,6 +338,9 @@ start_adb
 case "${COMMAND}" in
   up)
     start_emulator "${AVD_NAME}" "${TIMEOUT}" "${HEADLESS}" "${WIPE_DATA}" "${COLD_BOOT}" "${GPU_MODE}" "${NO_SNAPSHOT}" "${NO_VULKAN}"
+    if [[ "${APPLY_TUNE}" == "1" ]]; then
+      apply_runtime_tuning
+    fi
     ;;
   build)
     build_apk
@@ -315,7 +351,13 @@ case "${COMMAND}" in
   run)
     build_apk
     start_emulator "${AVD_NAME}" "${TIMEOUT}" "${HEADLESS}" "${WIPE_DATA}" "${COLD_BOOT}" "${GPU_MODE}" "${NO_SNAPSHOT}" "${NO_VULKAN}"
+    if [[ "${APPLY_TUNE}" == "1" ]]; then
+      apply_runtime_tuning
+    fi
     install_apk
+    ;;
+  tune)
+    apply_runtime_tuning
     ;;
   status)
     show_status

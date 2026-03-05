@@ -1,0 +1,5 @@
+Track: android_tv_client_20260304
+Phase: 1 - Scaffolding & Discovery
+Summary: Scaffolded a new Android TV client project with Compose for TV, Media3 baseline player surface, mDNS discovery repository using NsdManager, DataStore endpoint persistence, and mock-home DPAD UI.
+Tests: ./gradlew :app:testDebugUnitTest (PASS)
+Files: clients/android-tv/* + conductor/tracks/android_tv_client_20260304/plan.md

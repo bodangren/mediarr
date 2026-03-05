@@ -24,17 +24,25 @@ describe('DiscoveryService', () => {
     expect(announcement).toEqual({
       name: 'Mediarr API',
       type: 'mediarr',
+      aliases: ['http'],
       port: 3001,
       txt: { version: '1.0.0' },
     });
-    expect(bonjour.publish).toHaveBeenCalledWith({
+    expect(bonjour.publish).toHaveBeenNthCalledWith(1, {
       name: 'Mediarr API',
       type: 'mediarr',
       protocol: 'tcp',
       port: 3001,
       txt: { version: '1.0.0' },
     });
-    expect(publication.start).toHaveBeenCalledOnce();
+    expect(bonjour.publish).toHaveBeenNthCalledWith(2, {
+      name: 'Mediarr API',
+      type: 'http',
+      protocol: 'tcp',
+      port: 3001,
+      txt: { version: '1.0.0' },
+    });
+    expect(publication.start).toHaveBeenCalledTimes(2);
     expect(service.isStarted()).toBe(true);
   });
 
@@ -52,7 +60,7 @@ describe('DiscoveryService', () => {
 
     expect(first).toEqual(second);
     expect(first.port).toBe(3001);
-    expect(bonjour.publish).toHaveBeenCalledTimes(1);
+    expect(bonjour.publish).toHaveBeenCalledTimes(2);
   });
 
   it('stops publication and destroys bonjour instance', async () => {
@@ -72,7 +80,7 @@ describe('DiscoveryService', () => {
 
     await service.stop();
 
-    expect(publication.stop).toHaveBeenCalledOnce();
+    expect(publication.stop).toHaveBeenCalledTimes(2);
     expect(bonjour.unpublishAll).toHaveBeenCalledTimes(1);
     expect(bonjour.destroy).toHaveBeenCalledTimes(1);
     expect(service.isStarted()).toBe(false);
@@ -88,5 +96,27 @@ describe('DiscoveryService', () => {
 
     expect(() => service.start({ port: 0 })).toThrow('DiscoveryService port must be a positive integer');
     expect(() => service.start({ port: -1 })).toThrow('DiscoveryService port must be a positive integer');
+  });
+
+  it('publishes configured alias types and skips duplicate aliases', () => {
+    const bonjour = {
+      publish: vi.fn().mockReturnValue({ start: vi.fn(), stop: vi.fn() }),
+      unpublishAll: vi.fn((callback?: () => void) => callback?.()),
+      destroy: vi.fn(),
+    };
+    const service = new DiscoveryService(() => bonjour as any);
+
+    const announcement = service.start({
+      name: 'Mediarr API',
+      type: 'mediarr',
+      aliases: ['http', 'mediarr', '  ', 'http', 'webdav'],
+      port: 3001,
+    });
+
+    expect(announcement.aliases).toEqual(['http', 'webdav']);
+    expect(bonjour.publish).toHaveBeenCalledTimes(3);
+    expect(bonjour.publish).toHaveBeenNthCalledWith(1, expect.objectContaining({ type: 'mediarr' }));
+    expect(bonjour.publish).toHaveBeenNthCalledWith(2, expect.objectContaining({ type: 'http' }));
+    expect(bonjour.publish).toHaveBeenNthCalledWith(3, expect.objectContaining({ type: 'webdav' }));
   });
 });

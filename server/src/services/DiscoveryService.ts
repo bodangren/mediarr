@@ -20,6 +20,7 @@ interface BonjourInstance {
 export interface DiscoveryServiceOptions {
   name?: string;
   type?: string;
+  aliases?: string[];
   port: number;
   txt?: Record<string, string>;
 }
@@ -27,6 +28,7 @@ export interface DiscoveryServiceOptions {
 export interface DiscoveryAnnouncement {
   name: string;
   type: string;
+  aliases?: string[];
   port: number;
   txt?: Record<string, string>;
 }
@@ -41,13 +43,13 @@ const DEFAULT_SERVICE_TYPE = 'mediarr';
  */
 export class DiscoveryService {
   private bonjour?: BonjourInstance;
-  private publication?: BonjourPublication;
+  private publications: BonjourPublication[] = [];
   private announcement?: DiscoveryAnnouncement;
 
   constructor(private readonly bonjourFactory: BonjourFactory = () => new Bonjour() as BonjourInstance) {}
 
   isStarted(): boolean {
-    return Boolean(this.bonjour && this.publication && this.announcement);
+    return Boolean(this.bonjour && this.publications.length > 0 && this.announcement);
   }
 
   getAnnouncement(): DiscoveryAnnouncement | null {
@@ -65,23 +67,47 @@ export class DiscoveryService {
 
     const serviceName = options.name?.trim() || DEFAULT_SERVICE_NAME;
     const serviceType = options.type?.trim() || DEFAULT_SERVICE_TYPE;
+    const aliasTypes = Array.from(
+      new Set(
+        (options.aliases ?? ['http'])
+          .map(alias => alias.trim())
+          .filter(alias => alias.length > 0 && alias !== serviceType),
+      ),
+    );
 
     const bonjour = this.bonjourFactory();
-    const publication = bonjour.publish({
+    const publications: BonjourPublication[] = [];
+
+    const primaryPublication = bonjour.publish({
       name: serviceName,
       type: serviceType,
       protocol: 'tcp',
       port: options.port,
       ...(options.txt ? { txt: options.txt } : {}),
     });
+    publications.push(primaryPublication);
 
-    publication.start?.();
+    for (const aliasType of aliasTypes) {
+      const aliasPublication = bonjour.publish({
+        name: serviceName,
+        type: aliasType,
+        protocol: 'tcp',
+        port: options.port,
+        ...(options.txt ? { txt: options.txt } : {}),
+      });
+      publications.push(aliasPublication);
+    }
+
+    for (const publication of publications) {
+      publication.start?.();
+    }
 
     this.bonjour = bonjour;
-    this.publication = publication;
+    this.publications = publications;
     this.announcement = {
       name: serviceName,
       type: serviceType,
+      ...(aliasTypes.length > 0 ? { aliases: aliasTypes } : {}),
       port: options.port,
       ...(options.txt ? { txt: options.txt } : {}),
     };
@@ -90,14 +116,16 @@ export class DiscoveryService {
   }
 
   async stop(): Promise<void> {
-    const publication = this.publication;
+    const publications = this.publications;
     const bonjour = this.bonjour;
 
-    this.publication = undefined;
+    this.publications = [];
     this.bonjour = undefined;
     this.announcement = undefined;
 
-    publication?.stop?.();
+    for (const publication of publications) {
+      publication?.stop?.();
+    }
 
     if (!bonjour) {
       return;

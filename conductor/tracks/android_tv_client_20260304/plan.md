@@ -3,6 +3,7 @@
 ## Execution Notes
 - Manual verification tasks are intentionally deferred until the end of the track per user instruction on 2026-03-05.
 - Work still follows TDD for unit-testable modules and phase checkpoint commits.
+- Branch review on 2026-03-06 found functional gaps in discovery activation, full-library loading, TV episode playback, and DPAD-safe resume flows. These are tracked in the repair phase below.
 
 ## Phase 1: Scaffolding & Discovery [checkpoint: 07e08d6]
 > Goal: Create Android TV project foundation, network discovery, and a DPAD-first home surface with mock data.
@@ -98,12 +99,40 @@
 - Expected commit message: `feat(android-tv): add playback heartbeat progress syncing`
 
 ### Task 3.4: Deferred manual verification checkpoint
-- [x] Task: Conductor - User Manual Verification 'Phase 3: Playback & Syncing' (blocked pending Phase 1/2 UI interaction fixes).
+- [~] Task: Conductor - User Manual Verification 'Phase 3: Playback & Syncing' (blocked pending Phase 1/2 UI interaction fixes).
+
+## Phase 4: Repair & Acceptance Recovery [checkpoint: d5f693d]
+> Goal: Bring the committed Android TV implementation in line with the spec before the final deferred manual verification pass.
+
+### Task 4.1: Repair discovery activation and remote endpoint selection
+- [x] Task: Ensure discovered endpoints become the active API base URL and persist for future launches.
+  - [x] Sub-task: Apply discovered endpoints to the runtime API client instead of only refreshing the home screen.
+  - [x] Sub-task: Preserve emulator-safe fallback behavior when discovery is unavailable.
+  - [x] Sub-task: Add tests for discovery-driven endpoint activation.
+- Test command: `cd clients/android-tv && ./gradlew :app:testDebugUnitTest --tests "*Discovery*" --tests "*HomeViewModel*"`
+- Expected commit message: `fix(android-tv): activate discovered endpoints at runtime`
+
+### Task 4.2: Restore complete library browsing and stable artwork loading
+- [x] Task: Load the full available movie/series catalog and normalize remote image handling.
+  - [x] Sub-task: Replace the fixed 40-item cap with full catalog pagination.
+  - [x] Sub-task: Keep poster/backdrop URLs valid for both TMDB and TVDB-backed records.
+  - [x] Sub-task: Add repository/API tests for paginated catalog aggregation.
+- Test command: `cd clients/android-tv && ./gradlew :app:testDebugUnitTest --tests "*ApiClient*" --tests "*Repository*"`
+- Expected commit message: `fix(android-tv): load complete catalog and stabilize artwork urls`
+
+### Task 4.3: Repair TV playback entry for series and resume navigation
+- [x] Task: Route series playback through playable episodes and make resume flows TV-safe.
+  - [x] Sub-task: Extend series detail loading to surface playable episode choices from `/api/series/:id`.
+  - [x] Sub-task: Play episode ids through the existing playback/progress APIs instead of treating series ids as episodes.
+  - [x] Sub-task: Replace handset resume prompt controls with TV-focused controls and add back handling.
+  - [x] Sub-task: Add tests for series detail mapping and episode playback session creation.
+- Test command: `cd clients/android-tv && ./gradlew :app:testDebugUnitTest --tests "*Detail*" --tests "*Playback*" --tests "*Resume*"`
+- Expected commit message: `fix(android-tv): route series playback through episode selections`
 
 ## Final Deferred Verification Batch
-- [x] Task: Execute manual verification protocol for Phases 1-3 in one pass and attach consolidated evidence note.
+- [~] Task: Execute manual verification protocol for Phases 1-3 in one pass and attach consolidated evidence note.
 - Evidence note: `conductor/tracks/android_tv_client_20260304/verification_20260305.md`
-- [x] Task: Validate acceptance criteria end-to-end (discovery, browsing, 4K playback path, resume at timestamp).
-- [x] Task: Update track metadata status and archive track folder if all criteria pass.
+- [ ] Task: Validate acceptance criteria end-to-end (discovery, browsing, 4K playback path, resume at timestamp).
+- [ ] Task: Update track metadata status and archive track folder if all criteria pass.
 - Test command: `cd clients/android-tv && ./gradlew :app:testDebugUnitTest && cd /home/daniel-bo/Desktop/mediarr && CI=true npm test`
 - Expected commit message: `chore(conductor): complete deferred manual verification for android tv track`

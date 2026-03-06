@@ -6,19 +6,19 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.darkColorScheme
 
 private val DarkColorScheme = darkColorScheme(
-  primary = Color(0xFF8FD3A8),
+  primary = Color(0xFFF2C572),
   onPrimary = Color.Black,
-  primaryContainer = Color(0xFF294636),
+  primaryContainer = Color(0xFF4A3620),
   onPrimaryContainer = Color.White,
-  secondary = Color(0xFFF0C674),
+  secondary = Color(0xFF9AD1C6),
   onSecondary = Color.Black,
-  background = Color(0xFF11161A),
-  onBackground = Color(0xFFF2F4F5),
-  surface = Color(0xFF1B2228),
-  onSurface = Color(0xFFF2F4F5),
-  surfaceVariant = Color(0xFF28323A),
-  onSurfaceVariant = Color(0xFFD0D6DB),
-  error = Color(0xFFCF6679),
+  background = Color(0xFF0B1014),
+  onBackground = Color(0xFFF7F1E6),
+  surface = Color(0xFF162028),
+  onSurface = Color(0xFFF7F1E6),
+  surfaceVariant = Color(0xFF22313B),
+  onSurfaceVariant = Color(0xFFB8C5CC),
+  error = Color(0xFFE07A7A),
 )
 
 @Composable

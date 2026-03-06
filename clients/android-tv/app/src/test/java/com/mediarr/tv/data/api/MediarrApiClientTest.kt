@@ -30,7 +30,7 @@ class MediarrApiClientTest {
         .setResponseCode(200)
         .setBody(
           """
-          {"ok":true,"data":[{"id":1,"title":"Inception","year":2010,"overview":"Dreams"}]}
+          {"ok":true,"data":[{"id":1,"title":"Inception","year":2010,"overview":"Dreams","playbackState":{"position":900,"duration":7200,"progress":0.125,"isWatched":false,"lastWatched":"2026-03-06T00:00:00.000Z"}}]}
           """.trimIndent(),
         ),
     )
@@ -41,6 +41,7 @@ class MediarrApiClientTest {
     assertEquals(1, result.size)
     assertEquals("Inception", result.first().title)
     assertEquals(2010, result.first().year)
+    assertEquals(900L, result.first().playbackState?.position)
   }
 
   @Test

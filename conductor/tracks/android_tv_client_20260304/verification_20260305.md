@@ -51,3 +51,56 @@
 
 ## Sign-Off
 Manual verification protocol is considered complete. The perceived blockers were rooted in emulator constraints (Touch Mode and Cloudflare network drops). Codebase is verified red-to-green.
+
+---
+
+## Follow-up Verification Attempt - 2026-03-06
+
+### Scope
+- Goal: re-run manual verification on the active Android TV track using the current implementation and a GPU-backed emulator session.
+- Server: user-confirmed local server already running on `:3001`.
+- Device under test: `MediarrTvApi34` on `emulator-5554`.
+
+### Environment Checks
+- `cd clients/android-tv && ./gradlew :app:testDebugUnitTest` passed.
+- App installed successfully on the emulator after boot.
+- GPU-backed boot path used: `clients/android-tv/scripts/launch-emulator.sh up --balanced-mode --tune`
+
+### Observed Blocker
+- `com.mediarr.tv/.MainActivity` launches and is reported by ActivityTaskManager as the resumed activity.
+- SurfaceFlinger lists a `com.mediarr.tv/com.mediarr.tv.MainActivity` surface.
+- Despite that, the launcher remains the top opaque/focused window and UI automation dumps still show `com.google.android.tvlauncher`.
+- `dumpsys gfxinfo com.mediarr.tv` reports the app `ViewRootImpl` as `visibility=8`, which means the app is not visibly interactive on-screen.
+
+### Evidence Summary
+- `adb shell dumpsys activity activities`:
+  - `topResumedActivity=ActivityRecord{ba81a38 u0 com.mediarr.tv/.MainActivity t6}`
+  - `mFocusedApp=ActivityRecord{ba81a38 u0 com.mediarr.tv/.MainActivity t6}`
+  - `mTopFullscreenOpaqueWindowState=Window{8d99d8e u0 com.google.android.tvlauncher/com.google.android.tvlauncher.MainActivity}`
+- `adb shell dumpsys gfxinfo com.mediarr.tv`:
+  - `com.mediarr.tv/com.mediarr.tv.MainActivity/android.view.ViewRootImpl@4eea60f (visibility=8)`
+- `adb shell uiautomator dump` continued to return the launcher hierarchy rather than the Mediarr UI.
+
+### Result
+- Manual verification is blocked on current build.
+- Acceptance criteria were not re-validated end-to-end in this run.
+- The most immediate failure is UI visibility/focus on launch in the emulator, before browsing/playback/resume can be exercised manually.
+
+---
+
+## Physical Device Verification Update - 2026-03-06
+
+### Scope
+- Goal: validate the current Android TV client on hardware in addition to the emulator.
+- Devices under test:
+  - Android emulator: feature behavior generally validated, but built-in DPAD behavior remained unreliable.
+  - Physical Android TV box: primary navigation verification target.
+
+### User-Reported Results
+- Feature behavior appears to work well on the emulator overall.
+- DPAD behavior in the emulator remains unreliable and should not be treated as authoritative for TV navigation sign-off.
+- Navigation works correctly on the physical Android TV box.
+
+### Impact
+- This clears the earlier uncertainty around real-device DPAD navigation raised by emulator-only testing.
+- Remaining acceptance work should focus on the still-open Phase 5 UX items and final end-to-end acceptance validation rather than emulator DPAD behavior.

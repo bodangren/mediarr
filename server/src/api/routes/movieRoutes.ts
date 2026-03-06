@@ -9,6 +9,31 @@ import { MovieRepository, type BulkMovieChanges } from '../../repositories/Movie
 import type { SearchParams } from '../../services/MediaSearchService';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import type { PlaybackProgress } from '@prisma/client';
+
+function latestPlaybackMap(records: PlaybackProgress[]): Map<number, PlaybackProgress> {
+  const result = new Map<number, PlaybackProgress>();
+  for (const record of records) {
+    if (!result.has(record.mediaId)) {
+      result.set(record.mediaId, record);
+    }
+  }
+  return result;
+}
+
+function serializePlaybackState(progress: PlaybackProgress | null | undefined) {
+  if (!progress) {
+    return null;
+  }
+
+  return {
+    position: progress.position,
+    duration: progress.duration,
+    progress: progress.progress,
+    isWatched: progress.isWatched,
+    lastWatched: progress.lastWatched.toISOString(),
+  };
+}
 
 function filterMovies(items: any[], query: Record<string, unknown>): any[] {
   const monitored =
@@ -101,8 +126,27 @@ export function registerMovieRoutes(
         0,
       ),
     }));
+    const movieIds = itemsWithSize.map((movie: any) => movie.id);
+    const playbackRows = movieIds.length > 0 && (deps.prisma as any).playbackProgress?.findMany
+      ? await (deps.prisma as any).playbackProgress.findMany({
+          where: {
+            mediaType: 'MOVIE',
+            mediaId: { in: movieIds },
+          },
+          orderBy: [
+            { lastWatched: 'desc' },
+            { updatedAt: 'desc' },
+            { id: 'desc' },
+          ],
+        })
+      : [];
+    const playbackMap = latestPlaybackMap(playbackRows);
+    const itemsWithPlayback = itemsWithSize.map((movie: any) => ({
+      ...movie,
+      playbackState: serializePlaybackState(playbackMap.get(movie.id)),
+    }));
 
-    const filtered = filterMovies(itemsWithSize, query);
+    const filtered = filterMovies(itemsWithPlayback, query);
     const sortField = pagination.sortBy && ['title', 'year', 'status', 'added', 'sizeOnDisk'].includes(pagination.sortBy)
       ? (pagination.sortBy === 'title' ? 'sortTitle' : pagination.sortBy)
       : 'sortTitle';
@@ -153,6 +197,19 @@ export function registerMovieRoutes(
     });
 
     const found = assertFound(movie, `Movie ${id} not found`);
+    const playbackState = (deps.prisma as any).playbackProgress?.findFirst
+      ? await (deps.prisma as any).playbackProgress.findFirst({
+          where: {
+            mediaType: 'MOVIE',
+            mediaId: found.id,
+          },
+          orderBy: [
+            { lastWatched: 'desc' },
+            { updatedAt: 'desc' },
+            { id: 'desc' },
+          ],
+        })
+      : null;
     const sizeOnDisk = (found.fileVariants ?? []).reduce(
       (sum: number, v: any) => sum + Number(v.fileSize ?? 0),
       0,
@@ -168,7 +225,12 @@ export function registerMovieRoutes(
         }
       : null;
 
-    return sendSuccess(reply, { ...found, sizeOnDisk, collection });
+    return sendSuccess(reply, {
+      ...found,
+      sizeOnDisk,
+      collection,
+      playbackState: serializePlaybackState(playbackState),
+    });
   });
 
   // PUT /api/movies/:id - Update movie metadata/settings

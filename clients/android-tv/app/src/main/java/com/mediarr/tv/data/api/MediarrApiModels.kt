@@ -11,6 +11,7 @@ data class MovieDto(
   val overview: String? = null,
   val posterUrl: String? = null,
   val backdropUrl: String? = null,
+  val playbackState: PlaybackStateDto? = null,
 )
 
 @Serializable
@@ -21,6 +22,7 @@ data class SeriesDto(
   val overview: String? = null,
   val posterUrl: String? = null,
   val backdropUrl: String? = null,
+  val statistics: SeriesStatisticsDto? = null,
 )
 
 @Serializable
@@ -32,12 +34,14 @@ data class SeriesDetailDto(
   val posterUrl: String? = null,
   val backdropUrl: String? = null,
   val seasons: List<SeriesSeasonDto> = emptyList(),
+  val statistics: SeriesStatisticsDto? = null,
 )
 
 @Serializable
 data class SeriesSeasonDto(
   val seasonNumber: Int,
   val episodes: List<SeriesEpisodeDto> = emptyList(),
+  val statistics: SeasonStatisticsDto? = null,
 )
 
 @Serializable
@@ -50,6 +54,37 @@ data class SeriesEpisodeDto(
   val path: String? = null,
   val hasFile: Boolean = false,
   val isDownloading: Boolean = false,
+  val playbackState: PlaybackStateDto? = null,
+)
+
+@Serializable
+data class PlaybackStateDto(
+  val position: Long = 0L,
+  val duration: Long = 0L,
+  val progress: Double = 0.0,
+  val isWatched: Boolean = false,
+  @SerialName("lastWatched")
+  val lastWatchedIso: String? = null,
+)
+
+@Serializable
+data class SeriesStatisticsDto(
+  val totalEpisodes: Int = 0,
+  val episodesOnDisk: Int = 0,
+  val episodesMissing: Int = 0,
+  val episodesDownloading: Int = 0,
+  val watchedEpisodes: Int = 0,
+  val inProgressEpisodes: Int = 0,
+)
+
+@Serializable
+data class SeasonStatisticsDto(
+  val totalEpisodes: Int = 0,
+  val episodesOnDisk: Int = 0,
+  val episodesMissing: Int = 0,
+  val episodesDownloading: Int = 0,
+  val watchedEpisodes: Int = 0,
+  val inProgressEpisodes: Int = 0,
 )
 
 @Serializable

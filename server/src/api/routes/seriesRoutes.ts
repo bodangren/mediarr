@@ -14,6 +14,7 @@ import { ExistingLibraryScanner } from '../../services/ExistingLibraryScanner';
 import { SubtitleVariantRepository } from '../../repositories/SubtitleVariantRepository';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import type { PlaybackProgress } from '@prisma/client';
 
 // Calendar episode status type
 type CalendarEpisodeStatus = 'downloaded' | 'missing' | 'airing' | 'unaired';
@@ -71,6 +72,30 @@ function formatAirTime(date: Date | null): string | undefined {
   const hours = date.getUTCHours().toString().padStart(2, '0');
   const minutes = date.getUTCMinutes().toString().padStart(2, '0');
   return `${hours}:${minutes}`;
+}
+
+function latestPlaybackMap(records: PlaybackProgress[]): Map<number, PlaybackProgress> {
+  const result = new Map<number, PlaybackProgress>();
+  for (const record of records) {
+    if (!result.has(record.mediaId)) {
+      result.set(record.mediaId, record);
+    }
+  }
+  return result;
+}
+
+function serializePlaybackState(progress: PlaybackProgress | null | undefined) {
+  if (!progress) {
+    return null;
+  }
+
+  return {
+    position: progress.position,
+    duration: progress.duration,
+    progress: progress.progress,
+    isWatched: progress.isWatched,
+    lastWatched: progress.lastWatched.toISOString(),
+  };
 }
 
 function filterSeries(
@@ -196,9 +221,45 @@ export function registerSeriesRoutes(
         .flatMap((ep: any) => ep.fileVariants ?? [])
         .reduce((sum: number, v: any) => sum + Number(v.fileSize ?? 0), 0),
     }));
+    const episodeIds = itemsWithSize
+      .flatMap((series: any) => series.seasons ?? [])
+      .flatMap((season: any) => season.episodes ?? [])
+      .map((episode: any) => episode.id);
+    const playbackRows = episodeIds.length > 0 && (deps.prisma as any).playbackProgress?.findMany
+      ? await (deps.prisma as any).playbackProgress.findMany({
+          where: {
+            mediaType: 'EPISODE',
+            mediaId: { in: episodeIds },
+          },
+          orderBy: [
+            { lastWatched: 'desc' },
+            { updatedAt: 'desc' },
+            { id: 'desc' },
+          ],
+        })
+      : [];
+    const playbackMap = latestPlaybackMap(playbackRows);
+    const itemsWithPlayback = itemsWithSize.map((series: any) => {
+      const seriesEpisodes = (series.seasons ?? []).flatMap((season: any) => season.episodes ?? []);
+      const watchedEpisodes = seriesEpisodes.filter((episode: any) => playbackMap.get(episode.id)?.isWatched === true).length;
+      const inProgressEpisodes = seriesEpisodes.filter((episode: any) => {
+        const playback = playbackMap.get(episode.id);
+        return playback && !playback.isWatched && playback.position > 0;
+      }).length;
+
+      return {
+        ...series,
+        statistics: {
+          ...(series.statistics ?? {}),
+          totalEpisodes: seriesEpisodes.length,
+          watchedEpisodes,
+          inProgressEpisodes,
+        },
+      };
+    });
 
     const filterService = new FilterService(deps.prisma as any);
-    let filtered = filterSeries(itemsWithSize, query, filterService);
+    let filtered = filterSeries(itemsWithPlayback, query, filterService);
 
     const rawFilterId = query.filterId;
     const filterId =
@@ -299,16 +360,37 @@ export function registerSeriesRoutes(
       }
     }
 
+    const episodeIds = (record.seasons ?? [])
+      .flatMap((season: any) => season.episodes ?? [])
+      .map((episode: any) => episode.id);
+    const playbackRows = episodeIds.length > 0 && (deps.prisma as any).playbackProgress?.findMany
+      ? await (deps.prisma as any).playbackProgress.findMany({
+          where: {
+            mediaType: 'EPISODE',
+            mediaId: { in: episodeIds },
+          },
+          orderBy: [
+            { lastWatched: 'desc' },
+            { updatedAt: 'desc' },
+            { id: 'desc' },
+          ],
+        })
+      : [];
+    const playbackMap = latestPlaybackMap(playbackRows);
+
     const augmentedSeasons = (record.seasons || []).map((season: any) => {
       let seasonTotal = 0;
       let seasonOnDisk = 0;
       let seasonMissing = 0;
       let seasonDownloading = 0;
+      let seasonWatched = 0;
+      let seasonInProgress = 0;
 
       const augmentedEpisodes = (season.episodes || []).map((episode: any) => {
         const { fileVariants: _fv, ...episodeData } = episode;
         const hasFile = !!episode.path;
         const isDownloading = downloadingEpisodes.has(`${episode.seasonNumber}-${episode.episodeNumber}`);
+        const playback = playbackMap.get(episode.id);
 
         // Only count monitored episodes or ones that are available/downloading
         if (episode.monitored || hasFile || isDownloading) {
@@ -324,11 +406,17 @@ export function registerSeriesRoutes(
             seasonMissing++;
           }
         }
+        if (playback?.isWatched) {
+          seasonWatched++;
+        } else if (playback && playback.position > 0) {
+          seasonInProgress++;
+        }
 
         return {
           ...episodeData,
           hasFile,
           isDownloading,
+          playbackState: serializePlaybackState(playback),
         };
       });
 
@@ -336,6 +424,8 @@ export function registerSeriesRoutes(
       episodesOnDisk += seasonOnDisk;
       episodesMissing += seasonMissing;
       episodesDownloading += seasonDownloading;
+      const watchedEpisodes = seasonWatched;
+      const inProgressEpisodes = seasonInProgress;
 
       return {
         ...season,
@@ -345,6 +435,8 @@ export function registerSeriesRoutes(
           episodesOnDisk: seasonOnDisk,
           episodesMissing: seasonMissing,
           episodesDownloading: seasonDownloading,
+          watchedEpisodes,
+          inProgressEpisodes,
         }
       };
     });
@@ -363,6 +455,8 @@ export function registerSeriesRoutes(
         episodesOnDisk,
         episodesMissing,
         episodesDownloading,
+        watchedEpisodes: augmentedSeasons.reduce((sum: number, season: any) => sum + Number(season.statistics?.watchedEpisodes ?? 0), 0),
+        inProgressEpisodes: augmentedSeasons.reduce((sum: number, season: any) => sum + Number(season.statistics?.inProgressEpisodes ?? 0), 0),
       }
     };
 

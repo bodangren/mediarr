@@ -7,15 +7,28 @@ import com.mediarr.tv.core.model.MediaType
 object MockCatalog {
   fun rows(): List<MediaRow> = listOf(
     MediaRow(
-      key = "recent",
-      title = "Recently Added",
-      items = (1..15).map { index ->
+      key = "recent-movies",
+      title = "Recently Added Movies",
+      items = (1..12).map { index ->
         MediaCard(
           id = index,
-          title = "Recent #$index",
-          subtitle = "New",
-          overview = "Recently added media item #$index.",
-          mediaType = if (index % 2 == 0) MediaType.MOVIE else MediaType.SERIES,
+          title = "Movie Premiere #$index",
+          subtitle = "Fresh import",
+          overview = "Recently added movie item #$index.",
+          mediaType = MediaType.MOVIE,
+        )
+      },
+    ),
+    MediaRow(
+      key = "recent-series",
+      title = "Recently Added Shows",
+      items = (41..52).map { index ->
+        MediaCard(
+          id = index,
+          title = "Series Arrival #$index",
+          subtitle = "New episode pack",
+          overview = "Recently added show item #$index.",
+          mediaType = MediaType.SERIES,
         )
       },
     ),

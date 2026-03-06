@@ -161,7 +161,10 @@ fun MediarrTvApp() {
           )
         },
         onBack = {
-          screen = AppScreen.Detail(value.returnTo)
+          screen = exitPlayerToDetail(value)
+        },
+        onEnded = {
+          screen = exitPlayerToDetail(value)
         },
       )
       LaunchedEffect(value.session.streamUrl) {
@@ -171,6 +174,10 @@ fun MediarrTvApp() {
       }
     }
   }
+}
+
+internal fun exitPlayerToDetail(screen: AppScreen.Player): AppScreen.Detail {
+  return AppScreen.Detail(screen.returnTo)
 }
 
 class MediarrTvApplication : Application(), ImageLoaderFactory {

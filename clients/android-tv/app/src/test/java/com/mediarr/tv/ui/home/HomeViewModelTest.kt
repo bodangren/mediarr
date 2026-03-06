@@ -29,15 +29,16 @@ class HomeViewModelTest {
   }
 
   @Test
-  fun `loads three default rails with media data`() = runTest {
+  fun `loads recent and library rails with media data`() = runTest {
     val subject = HomeViewModel()
     advanceUntilIdle()
 
     val rows = subject.uiState.value.rows
-    assertEquals(3, rows.size)
-    assertEquals("Recently Added", rows[0].title)
-    assertEquals("Movies", rows[1].title)
-    assertEquals("TV Shows", rows[2].title)
+    assertEquals(4, rows.size)
+    assertEquals("Recently Added Movies", rows[0].title)
+    assertEquals("Recently Added Shows", rows[1].title)
+    assertEquals("Movies", rows[2].title)
+    assertEquals("TV Shows", rows[3].title)
   }
 
   @Test
@@ -45,7 +46,7 @@ class HomeViewModelTest {
     val subject = HomeViewModel()
     advanceUntilIdle()
 
-    subject.updateFocus(rowIndex = 1, itemIndex = 3)
+    subject.updateFocus(rowIndex = 2, itemIndex = 3)
 
     val selected = subject.selectedItemOrNull()
     assertNotNull(selected)

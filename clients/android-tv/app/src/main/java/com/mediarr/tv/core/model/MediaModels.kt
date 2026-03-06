@@ -14,6 +14,7 @@ data class MediaCard(
   val posterUrl: String? = null,
   val backdropUrl: String? = null,
   val mediaType: MediaType,
+  val episodes: List<MediaCard> = emptyList(),
 )
 
 data class MediaRow(

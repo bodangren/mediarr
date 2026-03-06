@@ -1,5 +1,6 @@
 package com.mediarr.tv.ui.home
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,6 +20,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.tv.material3.Button
+import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.mediarr.tv.core.model.MediaCard
 import com.mediarr.tv.ui.components.PosterCard
@@ -30,45 +32,62 @@ fun HomeScreen(
 ) {
   val uiState by viewModel.uiState.collectAsState()
   val listState = rememberLazyListState()
-  val focusRequester = remember { FocusRequester() }
+  val firstCardFocusRequester = remember { FocusRequester() }
 
   LaunchedEffect(uiState.rows) {
     if (uiState.rows.isNotEmpty()) {
-      try {
-        focusRequester.requestFocus()
-      } catch (e: Exception) {
-        // Ignore focus error
-      }
+      runCatching { firstCardFocusRequester.requestFocus() }
     }
   }
 
   LazyColumn(
     modifier = Modifier
       .fillMaxSize()
-      .padding(horizontal = 24.dp, vertical = 16.dp),
+      .background(MaterialTheme.colorScheme.background)
+      .padding(horizontal = 24.dp, vertical = 20.dp),
     state = listState,
     verticalArrangement = Arrangement.spacedBy(24.dp),
   ) {
+    item(key = "title") {
+      Text(
+        text = "Mediarr TV",
+        style = MaterialTheme.typography.displaySmall,
+        color = MaterialTheme.colorScheme.onBackground,
+      )
+    }
+
     if (uiState.errorMessage != null) {
       item(key = "error") {
-        Text(text = "Catalog fallback mode: ${uiState.errorMessage}")
+        Text(
+          text = "Catalog fallback mode: ${uiState.errorMessage}",
+          color = MaterialTheme.colorScheme.error,
+          style = MaterialTheme.typography.bodyMedium,
+        )
       }
     }
 
     if (uiState.isLoading) {
       item(key = "loading") {
-        Text(text = "Loading library...")
+        Text(
+          text = "Loading library...",
+          color = MaterialTheme.colorScheme.onBackground,
+          style = MaterialTheme.typography.bodyLarge,
+        )
       }
     }
 
     item(key = "refresh") {
       Button(onClick = { viewModel.refresh() }) {
-        Text(text = "Refresh")
+        Text(text = "Refresh Library")
       }
     }
 
     itemsIndexed(uiState.rows, key = { _, row -> row.key }) { rowIndex, row ->
-      Text(text = row.title)
+      Text(
+        text = row.title,
+        style = MaterialTheme.typography.titleLarge,
+        color = MaterialTheme.colorScheme.onBackground,
+      )
       LazyRow(
         contentPadding = PaddingValues(vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(14.dp),
@@ -78,7 +97,11 @@ fun HomeScreen(
             item = item,
             onFocused = { viewModel.updateFocus(rowIndex, itemIndex) },
             onClick = { onSelectItem(item) },
-            modifier = if (rowIndex == 0 && itemIndex == 0) Modifier.focusRequester(focusRequester) else Modifier
+            modifier = if (rowIndex == 0 && itemIndex == 0) {
+              Modifier.focusRequester(firstCardFocusRequester)
+            } else {
+              Modifier
+            },
           )
         }
       }

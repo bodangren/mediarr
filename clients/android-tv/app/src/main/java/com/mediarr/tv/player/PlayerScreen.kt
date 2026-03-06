@@ -2,6 +2,7 @@ package com.mediarr.tv.player
 
 import android.net.Uri
 import android.view.ViewGroup
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -34,6 +35,7 @@ fun PlayerScreen(
   session: PlaybackSession,
   startPositionSeconds: Long,
   onProgress: suspend (positionSeconds: Long, durationSeconds: Long) -> Unit,
+  onBack: () -> Unit,
 ) {
   val scope = rememberCoroutineScope()
   val playerHolder = remember { mutableStateOf<ExoPlayer?>(null) }
@@ -48,6 +50,8 @@ fun PlayerScreen(
       },
     )
   }
+
+  BackHandler(onBack = onBack)
 
   Column(
     modifier = Modifier

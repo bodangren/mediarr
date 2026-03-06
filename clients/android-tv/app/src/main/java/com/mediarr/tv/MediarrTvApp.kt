@@ -4,37 +4,37 @@ import android.app.Application
 import android.os.Build
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.ImageLoader
 import coil.ImageLoaderFactory
-import okhttp3.OkHttpClient
-import com.mediarr.tv.core.model.MediaType
+import coil.util.DebugLogger
 import com.mediarr.tv.data.api.MediarrApiClient
 import com.mediarr.tv.data.repository.RemoteCatalogRepository
 import com.mediarr.tv.data.repository.RemotePlaybackRepository
-import com.mediarr.tv.discovery.DiscoveryState
-import com.mediarr.tv.discovery.DiscoveryViewModelFactory
 import com.mediarr.tv.discovery.DiscoveryEndpoint
-import com.mediarr.tv.discovery.EndpointDataStore
+import com.mediarr.tv.discovery.DiscoveryState
 import com.mediarr.tv.discovery.DiscoveryViewModel
+import com.mediarr.tv.discovery.DiscoveryViewModelFactory
+import com.mediarr.tv.discovery.EndpointDataStore
 import com.mediarr.tv.discovery.NsdDiscoveryRepository
+import com.mediarr.tv.player.PlayerScreen
+import com.mediarr.tv.player.ResumeDecider
+import com.mediarr.tv.player.ResumeOption
 import com.mediarr.tv.ui.detail.DetailScreen
 import com.mediarr.tv.ui.detail.ResumePromptScreen
 import com.mediarr.tv.ui.home.HomeScreen
 import com.mediarr.tv.ui.home.HomeViewModel
 import com.mediarr.tv.ui.home.HomeViewModelFactory
 import com.mediarr.tv.ui.navigation.AppScreen
-import com.mediarr.tv.player.PlayerScreen
-import com.mediarr.tv.player.ResumeDecider
-import com.mediarr.tv.player.ResumeOption
 import kotlinx.coroutines.launch
+import okhttp3.OkHttpClient
 
 @Composable
 fun MediarrTvApp() {
@@ -50,24 +50,18 @@ fun MediarrTvApp() {
     factory = DiscoveryViewModelFactory(discoveryRepository),
   )
   val discoveryState = discoveryViewModel.state.collectAsState()
-  var screen: AppScreen by remember { mutableStateOf(AppScreen.Home) }
   val defaultBaseUrl = remember { defaultBaseUrl() }
-  val apiClient = remember(discoveryRepository) {
-    MediarrApiClient(
-      baseUrlProvider = {
-        val saved = discoveryRepository.loadSavedEndpoint()
-        effectiveBaseUrl(saved, defaultBaseUrl)
-      },
-    )
+  var activeBaseUrl by remember { mutableStateOf(defaultBaseUrl) }
+  var screen: AppScreen by remember { mutableStateOf(AppScreen.Home) }
+
+  val apiClient = remember(activeBaseUrl) {
+    MediarrApiClient(baseUrlProvider = { activeBaseUrl })
   }
   val remoteRepository = remember(apiClient) { RemoteCatalogRepository(apiClient) }
-  val remotePlaybackRepository = remember(apiClient, discoveryRepository) {
+  val remotePlaybackRepository = remember(apiClient, activeBaseUrl) {
     RemotePlaybackRepository(
       api = apiClient,
-      baseUrlProvider = {
-        val saved = discoveryRepository.loadSavedEndpoint()
-        effectiveBaseUrl(saved, defaultBaseUrl)
-      },
+      baseUrlProvider = { activeBaseUrl },
     )
   }
   val homeViewModel: HomeViewModel = viewModel(
@@ -75,10 +69,25 @@ fun MediarrTvApp() {
   )
   val resumeDecider = remember { ResumeDecider() }
 
+  LaunchedEffect(Unit) {
+    val saved = discoveryRepository.loadSavedEndpoint()
+    if (saved != null) {
+      activeBaseUrl = effectiveBaseUrl(saved, defaultBaseUrl)
+    }
+  }
+
+  LaunchedEffect(remoteRepository) {
+    homeViewModel.attachRepository(remoteRepository)
+  }
+
   LaunchedEffect(discoveryState.value) {
     val state = discoveryState.value
     if (state is DiscoveryState.Found) {
-      homeViewModel.refresh()
+      val resolvedBaseUrl = effectiveBaseUrl(state.endpoint, defaultBaseUrl)
+      if (resolvedBaseUrl != activeBaseUrl) {
+        activeBaseUrl = resolvedBaseUrl
+      }
+      discoveryViewModel.save(state.endpoint)
     }
   }
 
@@ -99,12 +108,17 @@ fun MediarrTvApp() {
         scope.launch {
           val session = remotePlaybackRepository.createSession(selected)
           screen = if (resumeDecider.shouldPrompt(session)) {
-            AppScreen.ResumePrompt(selected, session)
+            AppScreen.ResumePrompt(
+              media = selected,
+              session = session,
+              returnTo = value.media,
+            )
           } else {
             AppScreen.Player(
               media = selected,
               session = session,
               startPositionSeconds = 0L,
+              returnTo = value.media,
             )
           }
         }
@@ -113,12 +127,14 @@ fun MediarrTvApp() {
     )
 
     is AppScreen.ResumePrompt -> ResumePromptScreen(
+      mediaTitle = value.media.title,
       positionSeconds = value.session.resumePositionSeconds,
       onResume = {
         screen = AppScreen.Player(
           media = value.media,
           session = value.session,
           startPositionSeconds = resumeDecider.startPosition(value.session, ResumeOption.RESUME),
+          returnTo = value.returnTo,
         )
       },
       onStartOver = {
@@ -126,9 +142,10 @@ fun MediarrTvApp() {
           media = value.media,
           session = value.session,
           startPositionSeconds = resumeDecider.startPosition(value.session, ResumeOption.START_OVER),
+          returnTo = value.returnTo,
         )
       },
-      onCancel = { screen = AppScreen.Detail(value.media) },
+      onCancel = { screen = AppScreen.Detail(value.returnTo) },
     )
 
     is AppScreen.Player -> {
@@ -143,8 +160,11 @@ fun MediarrTvApp() {
             durationSeconds = durationSeconds,
           )
         },
+        onBack = {
+          screen = AppScreen.Detail(value.returnTo)
+        },
       )
-      LaunchedEffect(Unit) {
+      LaunchedEffect(value.session.streamUrl) {
         if (value.session.streamUrl.isBlank()) {
           screen = AppScreen.Home
         }
@@ -157,17 +177,9 @@ class MediarrTvApplication : Application(), ImageLoaderFactory {
   override fun newImageLoader(): ImageLoader {
     return ImageLoader.Builder(this)
       .crossfade(true)
-      .logger(coil.util.DebugLogger())
+      .logger(DebugLogger())
       .okHttpClient {
         OkHttpClient.Builder()
-          .addInterceptor { chain ->
-            val request = chain.request().newBuilder()
-              .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-              .header("Accept", "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8")
-              .header("Accept-Language", "en-US,en;q=0.9")
-              .build()
-            chain.proceed(request)
-          }
           .build()
       }
       .build()
@@ -187,7 +199,7 @@ private fun defaultBaseUrl(): String {
   }
 }
 
-private fun effectiveBaseUrl(saved: DiscoveryEndpoint?, fallbackBaseUrl: String): String {
+internal fun effectiveBaseUrl(saved: DiscoveryEndpoint?, fallbackBaseUrl: String): String {
   if (saved == null) {
     return fallbackBaseUrl
   }

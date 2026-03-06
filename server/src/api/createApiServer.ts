@@ -32,6 +32,7 @@ import { registerSubtitleRoutes } from './routes/subtitleRoutes';
 import { registerSystemRoutes } from './routes/systemRoutes';
 import { registerTorrentRoutes } from './routes/torrentRoutes';
 import { registerUpdatesRoutes } from './routes/updatesRoutes';
+import { registerImageRoutes } from './routes/imageRoutes';
 import type { ApiDependencies, ApiServerOptions } from './types';
 
 interface PollState {
@@ -173,6 +174,7 @@ export function createApiServer(
   registerQualityProfileRoutes(app, dependencies);
   registerDownloadClientRoutes(app, dependencies);
   registerMediaSettingsRoutes(app, dependencies);
+  registerImageRoutes(app, dependencies);
 
   registerCustomFormatRoutes(app, dependencies);
   registerFilterRoutes(app, dependencies);

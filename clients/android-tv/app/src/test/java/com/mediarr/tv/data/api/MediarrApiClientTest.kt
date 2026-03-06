@@ -44,6 +44,34 @@ class MediarrApiClientTest {
   }
 
   @Test
+  fun `aggregates paginated movie responses`() = runTest {
+    server.enqueue(
+      MockResponse()
+        .setResponseCode(200)
+        .setBody(
+          """
+          {"ok":true,"data":[{"id":1,"title":"Movie 1"}],"meta":{"page":1,"pageSize":1,"totalCount":2,"totalPages":2}}
+          """.trimIndent(),
+        ),
+    )
+    server.enqueue(
+      MockResponse()
+        .setResponseCode(200)
+        .setBody(
+          """
+          {"ok":true,"data":[{"id":2,"title":"Movie 2"}],"meta":{"page":2,"pageSize":1,"totalCount":2,"totalPages":2}}
+          """.trimIndent(),
+        ),
+    )
+
+    val client = MediarrApiClient(baseUrlProvider = { server.url("/").toString().trimEnd('/') })
+
+    val result = client.movies()
+
+    assertEquals(listOf("Movie 1", "Movie 2"), result.map { it.title })
+  }
+
+  @Test
   fun `decodes playback manifest payload`() = runTest {
     server.enqueue(
       MockResponse()
@@ -75,5 +103,17 @@ class MediarrApiClientTest {
     assertTrue(result.streamUrl.contains("/api/stream/9"))
     assertEquals("Movie 9", result.metadata.title)
     assertEquals(1, result.subtitles.size)
+  }
+
+  @Test
+  fun `proxies tvdb artwork urls through local api`() = runTest {
+    val client = MediarrApiClient(baseUrlProvider = { "http://127.0.0.1:3001" })
+
+    val result = client.imageProxyUrl("https://artworks.thetvdb.com/banners/posters/123.jpg")
+
+    assertEquals(
+      "http://127.0.0.1:3001/api/images/proxy?url=https%3A%2F%2Fartworks.thetvdb.com%2Fbanners%2Fposters%2F123.jpg",
+      result,
+    )
   }
 }

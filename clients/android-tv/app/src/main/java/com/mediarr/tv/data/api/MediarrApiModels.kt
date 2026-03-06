@@ -24,6 +24,35 @@ data class SeriesDto(
 )
 
 @Serializable
+data class SeriesDetailDto(
+  val id: Int,
+  val title: String,
+  val year: Int? = null,
+  val overview: String? = null,
+  val posterUrl: String? = null,
+  val backdropUrl: String? = null,
+  val seasons: List<SeriesSeasonDto> = emptyList(),
+)
+
+@Serializable
+data class SeriesSeasonDto(
+  val seasonNumber: Int,
+  val episodes: List<SeriesEpisodeDto> = emptyList(),
+)
+
+@Serializable
+data class SeriesEpisodeDto(
+  val id: Int,
+  val title: String,
+  val overview: String? = null,
+  val seasonNumber: Int,
+  val episodeNumber: Int,
+  val path: String? = null,
+  val hasFile: Boolean = false,
+  val isDownloading: Boolean = false,
+)
+
+@Serializable
 data class PlaybackManifestDto(
   val streamUrl: String,
   val metadata: PlaybackMetadataDto,

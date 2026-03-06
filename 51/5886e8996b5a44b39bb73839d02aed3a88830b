@@ -1,0 +1,16 @@
+Track: Android TV Client
+
+Rollup summary:
+- Completed the remaining coded work for Phases 6 and 7 of the Android TV track.
+- Replaced the temporary always-visible playback subtitle rail with a unified TV overlay flow for transport, settings, subtitles, and audio.
+- Added reducer-style playback overlay state, runtime audio-track option mapping from Media3 current tracks, and custom sidecar subtitle rendering with live timing offset support.
+- Preserved return-to-detail playback exit behavior and integrated the new playback UI into the existing Mediarr TV navigation flow.
+- Updated Android TV track docs/spec/plan to reflect the completed overlay/settings work and deferred final manual verification.
+
+Verification:
+- Passed: cd clients/android-tv && ./gradlew :app:testDebugUnitTest --tests "*Playback*" --tests "*Player*"
+- Passed: cd clients/android-tv && ./gradlew :app:testDebugUnitTest
+- Fails outside Android track scope: CI=true npm test (existing unrelated repository failures in server/web and backup suites).
+
+Why:
+- The previous player UI still used a permanent subtitle rail and could not satisfy the spec requirements for a TV overlay, coherent DPAD navigation, subtitle timing adjustment, or runtime audio selection.

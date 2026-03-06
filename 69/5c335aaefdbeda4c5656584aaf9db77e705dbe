@@ -1,0 +1,13 @@
+Plan update for Android TV Client track.
+
+Summary:
+- added Phase 4 repair tasks covering discovery activation, full-library browsing, artwork stability, and series playback/resume recovery
+- marked all Phase 4 tasks complete after code and automated verification
+- recorded checkpoint d5f693d for the completed repair phase
+- left deferred manual verification and final acceptance/archive tasks open for the end of the track
+
+Files:
+- conductor/tracks/android_tv_client_20260304/plan.md
+
+Why:
+The prior plan overstated track completion despite unresolved Android TV failures. This update makes the remaining scope accurate and preserves an auditable checkpoint for the repair phase.

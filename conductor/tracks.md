@@ -46,6 +46,7 @@ Android TV Client (New)
 
 ## Archived Tracks
 
+- [x] **Track: Subtitle Inventory Disk Import Recovery** *Phases: 2 | Link: [./archive/subtitle_inventory_disk_import_recovery_20260307/](./archive/subtitle_inventory_disk_import_recovery_20260307/)*
 - [x] **Track: Streaming Settings Panel & DB-backed Configuration** *Phases: 3 | Link: [./archive/streaming_settings_panel_20260305/](./archive/streaming_settings_panel_20260305/)*
 - [x] **Track: Streaming Server & Discovery** *Phases: 3 | Link: [./archive/streaming_server_20260304/](./archive/streaming_server_20260304/)*
 - [x] **Track: Subtitle Management** *Phases: 5 | Link: [./archive/subtitle_management_20260303/](./archive/subtitle_management_20260303/)*

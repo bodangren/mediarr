@@ -85,6 +85,32 @@ export interface UploadedSubtitleRecord {
 }
 
 const ALLOWED_UPLOAD_EXTENSIONS = new Set(['.srt', '.ass', '.ssa', '.sub', '.vtt']);
+const SUBTITLE_FLAG_TOKENS = new Set(['forced', 'forc', 'sdh', 'hi', 'cc']);
+const LANGUAGE_TOKEN_MAP = new Map<string, string>([
+  ['en', 'en'],
+  ['eng', 'en'],
+  ['english', 'en'],
+  ['th', 'th'],
+  ['tha', 'th'],
+  ['thai', 'th'],
+  ['zh', 'zh'],
+  ['zho', 'zh'],
+  ['chi', 'zh'],
+  ['chs', 'zh'],
+  ['cht', 'zh'],
+  ['cn', 'zh'],
+  ['sc', 'zh'],
+  ['tc', 'zh'],
+  ['jp', 'ja'],
+  ['jpn', 'ja'],
+  ['ja', 'ja'],
+  ['japanese', 'ja'],
+]);
+
+export interface SubtitleDiskScanResult {
+  subtitlesFound: number;
+  newSubtitles: number;
+}
 
 /**
  * API-oriented service for variant inventory and manual subtitle workflows.
@@ -268,6 +294,16 @@ export class SubtitleInventoryApiService {
     };
   }
 
+  async scanMovieDisk(movieId: number): Promise<SubtitleDiskScanResult> {
+    const variants = await this.repository.listMovieVariants(movieId);
+    return this.scanVariants(variants);
+  }
+
+  async scanEpisodeDisk(episodeId: number): Promise<SubtitleDiskScanResult> {
+    const variants = await this.repository.listEpisodeVariants(episodeId);
+    return this.scanVariants(variants);
+  }
+
   private resolveProviderForCandidate(
     provider?: ManualSubtitleProvider,
     providerName?: string,
@@ -374,6 +410,56 @@ export class SubtitleInventoryApiService {
     return items;
   }
 
+  private async scanVariants(
+    variants: Array<{
+      id: number;
+      path: string;
+    }>,
+  ): Promise<SubtitleDiskScanResult> {
+    let subtitlesFound = 0;
+    let newSubtitles = 0;
+
+    for (const variant of variants) {
+      const inventory = await this.repository.getVariantInventory(variant.id);
+      if (!inventory.variant) {
+        continue;
+      }
+
+      const scannedExternalTracks = await this.scanExternalSubtitleTracks(inventory.variant.path);
+      subtitlesFound += scannedExternalTracks.length;
+
+      const existingExternalPaths = new Set(
+        inventory.subtitleTracks
+          .filter(track => track.source === 'EXTERNAL')
+          .map(track => track.filePath)
+          .filter((value): value is string => Boolean(value)),
+      );
+      newSubtitles += scannedExternalTracks.filter(track => {
+        return Boolean(track.filePath && !existingExternalPaths.has(track.filePath));
+      }).length;
+
+      const preservedEmbeddedTracks = inventory.subtitleTracks
+        .filter(track => track.source !== 'EXTERNAL')
+        .map(track => ({
+          source: track.source,
+          streamIndex: track.streamIndex ?? undefined,
+          languageCode: track.languageCode ?? undefined,
+          isForced: track.isForced,
+          isHi: track.isHi,
+          codec: track.codec ?? undefined,
+          filePath: track.filePath ?? undefined,
+          fileSize: track.fileSize ?? undefined,
+        }));
+
+      await this.repository.replaceSubtitleTracks(variant.id, [
+        ...preservedEmbeddedTracks,
+        ...scannedExternalTracks,
+      ]);
+    }
+
+    return { subtitlesFound, newSubtitles };
+  }
+
   private async resolveVariantId(input: {
     movieId?: number;
     episodeId?: number;
@@ -451,5 +537,97 @@ export class SubtitleInventoryApiService {
     } catch {
       return false;
     }
+  }
+
+  private async scanExternalSubtitleTracks(videoPath: string): Promise<Array<{
+    source: 'EXTERNAL';
+    languageCode?: string;
+    isForced: boolean;
+    isHi: boolean;
+    filePath: string;
+    fileSize: bigint;
+  }>> {
+    const directory = path.dirname(videoPath);
+    let entries: string[];
+    try {
+      entries = await fs.readdir(directory);
+    } catch {
+      return [];
+    }
+
+    const videoBaseName = path.basename(videoPath, path.extname(videoPath));
+    const matches = entries.filter(entry => this.matchesVariantSubtitleFile(videoBaseName, entry));
+    const tracks = await Promise.all(
+      matches.map(async entry => {
+        const fullPath = path.join(directory, entry);
+        const stats = await fs.stat(fullPath);
+        const metadata = this.parseSubtitleFilename(videoBaseName, entry);
+        return {
+          source: 'EXTERNAL' as const,
+          languageCode: metadata.languageCode,
+          isForced: metadata.isForced,
+          isHi: metadata.isHi,
+          filePath: fullPath,
+          fileSize: BigInt(stats.size),
+        };
+      }),
+    );
+
+    return tracks;
+  }
+
+  private matchesVariantSubtitleFile(videoBaseName: string, entryName: string): boolean {
+    const extension = path.extname(entryName).toLowerCase();
+    if (!ALLOWED_UPLOAD_EXTENSIONS.has(extension)) {
+      return false;
+    }
+
+    const subtitleBaseName = path.basename(entryName, extension);
+    const escapedBase = videoBaseName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return new RegExp(`^${escapedBase}(?:[._\\- ].+)?$`, 'i').test(subtitleBaseName);
+  }
+
+  private parseSubtitleFilename(
+    videoBaseName: string,
+    entryName: string,
+  ): {
+    languageCode?: string;
+    isForced: boolean;
+    isHi: boolean;
+  } {
+    const extension = path.extname(entryName);
+    const subtitleBaseName = path.basename(entryName, extension);
+    const suffix = subtitleBaseName.slice(videoBaseName.length).replace(/^[._\-\s]+/, '');
+    const tokens = suffix
+      .split(/[._\-\s]+/)
+      .map(token => token.trim().toLowerCase())
+      .filter(Boolean);
+
+    let languageCode: string | undefined;
+    let isForced = false;
+    let isHi = false;
+
+    for (const token of tokens) {
+      if (token === 'forced' || token === 'forc') {
+        isForced = true;
+        continue;
+      }
+      if (token === 'hi' || token === 'sdh' || token === 'cc') {
+        isHi = true;
+        continue;
+      }
+      if (!languageCode) {
+        languageCode = LANGUAGE_TOKEN_MAP.get(token) ?? languageCode;
+      }
+      if (SUBTITLE_FLAG_TOKENS.has(token) && token !== 'forced' && token !== 'forc') {
+        isHi = isHi || token === 'hi' || token === 'sdh' || token === 'cc';
+      }
+    }
+
+    return {
+      languageCode,
+      isForced,
+      isHi,
+    };
   }
 }

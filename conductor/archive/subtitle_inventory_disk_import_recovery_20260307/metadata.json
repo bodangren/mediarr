@@ -1,0 +1,8 @@
+{
+  "track_id": "subtitle_inventory_disk_import_recovery_20260307",
+  "type": "bugfix",
+  "status": "completed",
+  "created_at": "2026-03-07T00:00:00Z",
+  "updated_at": "2026-03-07T00:00:00Z",
+  "description": "Import existing on-disk subtitle files into the subtitle inventory database during movie and series scan flows."
+}

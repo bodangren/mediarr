@@ -1,0 +1,28 @@
+#!/usr/bin/env sh
+set -eu
+
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+GRADLE_VERSION="8.7"
+DIST_DIR="$SCRIPT_DIR/.gradle-dist"
+DIST_NAME="gradle-$GRADLE_VERSION"
+DIST_ZIP="$DIST_DIR/$DIST_NAME-bin.zip"
+DIST_URL="https://services.gradle.org/distributions/$DIST_NAME-bin.zip"
+GRADLE_HOME="$DIST_DIR/$DIST_NAME"
+
+if [ ! -x "$GRADLE_HOME/bin/gradle" ]; then
+  mkdir -p "$DIST_DIR"
+  if [ ! -f "$DIST_ZIP" ]; then
+    echo "Downloading Gradle $GRADLE_VERSION..."
+    curl -fsSL "$DIST_URL" -o "$DIST_ZIP"
+  fi
+  echo "Extracting Gradle $GRADLE_VERSION..."
+  rm -rf "$GRADLE_HOME"
+  unzip -q "$DIST_ZIP" -d "$DIST_DIR"
+fi
+
+if [ -f "$SCRIPT_DIR/local.properties" ]; then
+  export ANDROID_HOME=$(sed -n 's/^sdk.dir=//p' "$SCRIPT_DIR/local.properties" | tail -n1)
+  export ANDROID_SDK_ROOT="$ANDROID_HOME"
+fi
+
+exec "$GRADLE_HOME/bin/gradle" "$@"

@@ -1196,19 +1196,18 @@ export function registerSubtitleRoutes(
   });
 
   app.post('/api/subtitles/movie/:id/scan', async (request, reply) => {
-    if (!deps.subtitleInventoryApiService?.listMovieVariantInventory) {
+    if (!deps.subtitleInventoryApiService?.scanMovieDisk) {
       throw new ValidationError('Subtitle inventory API service is not configured');
     }
 
     const movieId = parseIdParam((request.params as { id?: string }).id ?? '', 'movie');
-    const inventory = await deps.subtitleInventoryApiService.listMovieVariantInventory(movieId);
-    const subtitlesFound = inventory.reduce((sum, item) => sum + item.subtitleTracks.length, 0);
+    const result = await deps.subtitleInventoryApiService.scanMovieDisk(movieId);
 
     return sendSuccess(reply, {
       success: true,
       message: 'Movie subtitle scan completed',
-      subtitlesFound,
-      newSubtitles: 0,
+      subtitlesFound: result.subtitlesFound,
+      newSubtitles: result.newSubtitles,
     });
   });
 
@@ -1254,7 +1253,7 @@ export function registerSubtitleRoutes(
   });
 
   app.post('/api/subtitles/series/:id/scan', async (request, reply) => {
-    if (!deps.subtitleInventoryApiService?.listEpisodeVariantInventory) {
+    if (!deps.subtitleInventoryApiService?.scanEpisodeDisk) {
       throw new ValidationError('Subtitle inventory API service is not configured');
     }
 
@@ -1266,16 +1265,18 @@ export function registerSubtitleRoutes(
     });
 
     let subtitlesFound = 0;
+    let newSubtitles = 0;
     for (const episode of episodes) {
-      const inventory = await deps.subtitleInventoryApiService.listEpisodeVariantInventory(episode.id);
-      subtitlesFound += inventory.reduce((sum, item) => sum + item.subtitleTracks.length, 0);
+      const result = await deps.subtitleInventoryApiService.scanEpisodeDisk(episode.id);
+      subtitlesFound += result.subtitlesFound;
+      newSubtitles += result.newSubtitles;
     }
 
     return sendSuccess(reply, {
       success: true,
       message: 'Series subtitle scan completed',
       subtitlesFound,
-      newSubtitles: 0,
+      newSubtitles,
     });
   });
 

@@ -38,6 +38,9 @@
 - **Coverage targets:** ≥80% for new/changed code in each track. CI runs with `CI=true` to prevent watch mode.
 - **Key integration test suites:** `library-routes.test.tsx`, `settings-routes.test.tsx`, `App.test.tsx`; component-level suites for interactive search modals, view components, and settings forms.
 
+**Clients (New):**
+- **Android TV App:** Native Kotlin application built with Jetpack Compose for TV (`androidx.tv.material3`), ExoPlayer (`androidx.media3`) for 4K/HDR hardware-accelerated playback, and Coil for image loading. Connects to the fastify backend via OkHttp, utilizing mDNS for automatic server discovery on the local network.
+
 **Deployment:**
 - **Single Process:** The frontend is built into static files (`dist/`) and served directly by the Fastify backend. The user only needs to execute the single Bun backend script.
 - **Containerization:** Docker & Docker Compose (targeting home-lab environments).

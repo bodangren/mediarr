@@ -189,4 +189,7 @@ export const API_ROUTE_MAP: ApiRouteDefinition[] = [
   { method: 'PUT', path: '/api/quality-profiles/:id' },
   { method: 'DELETE', path: '/api/quality-profiles/:id' },
   { method: 'GET', path: '/api/quality-definitions' },
+
+  // Image proxy
+  { method: 'GET', path: '/api/images/proxy' },
 ];

@@ -473,8 +473,8 @@ async function testWebhookNotification(config: Record<string, unknown>): Promise
       try {
         const customHeaders = JSON.parse(config.headers) as Record<string, string>;
         Object.assign(headers, customHeaders);
-      } catch {
-        // Ignore invalid JSON
+      } catch (err) {
+        console.error('[notificationRoutes] invalid custom headers JSON, ignoring:', err instanceof Error ? err.message : String(err));
       }
     }
 

@@ -40,6 +40,7 @@ Android TV Client (New)
 ## Active Tracks
 
 - [x] **Track: Automated Search and Download** *Phases: 4 | Link: [./tracks/automated_search_download_20260303/](./tracks/automated_search_download_20260303/)*
+- [~] **Track: Backend Deduplication & Security Hardening** *Phases: 3 | Link: [./tracks/refactor_dedup_security_20260308/](./tracks/refactor_dedup_security_20260308/)*
 ---
 
 ## Archived Tracks

@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { sendPaginatedSuccess, sendSuccess, parsePaginationParams, paginateArray } from '../contracts';
-import { assertFound, parseBoolean, parseIdParam, sortByField } from '../routeUtils';
+import { assertFound, parseIdParam, sortByField } from '../routeUtils';
 import { ValidationError } from '../../errors/domainErrors';
 import type { ApiDependencies } from '../types';
 import { MovieOrganizeService, DEFAULT_MEDIA_MANAGEMENT_SETTINGS } from '../../services/MovieOrganizeService';
@@ -9,61 +9,13 @@ import { MovieRepository, type BulkMovieChanges } from '../../repositories/Movie
 import type { SearchParams } from '../../services/MediaSearchService';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import type { PlaybackProgress } from '@prisma/client';
-
-function latestPlaybackMap(records: PlaybackProgress[]): Map<number, PlaybackProgress> {
-  const result = new Map<number, PlaybackProgress>();
-  for (const record of records) {
-    if (!result.has(record.mediaId)) {
-      result.set(record.mediaId, record);
-    }
-  }
-  return result;
-}
-
-function serializePlaybackState(progress: PlaybackProgress | null | undefined) {
-  if (!progress) {
-    return null;
-  }
-
-  return {
-    position: progress.position,
-    duration: progress.duration,
-    progress: progress.progress,
-    isWatched: progress.isWatched,
-    lastWatched: progress.lastWatched.toISOString(),
-  };
-}
+import { latestPlaybackMap, serializePlaybackState } from '../utils/playbackHelpers';
+import { parseLibraryFilters, applyLibraryFilters } from '../utils/queryHelpers';
+import { safePath } from '../utils/safePath';
 
 function filterMovies(items: any[], query: Record<string, unknown>): any[] {
-  const monitored =
-    typeof query.monitored === 'string' || typeof query.monitored === 'boolean'
-      ? parseBoolean(query.monitored)
-      : undefined;
-  const status =
-    typeof query.status === 'string' && query.status.trim().length > 0
-      ? query.status.toLowerCase()
-      : undefined;
-  const search =
-    typeof query.search === 'string' && query.search.trim().length > 0
-      ? query.search.toLowerCase()
-      : undefined;
-
-  return items.filter(item => {
-    if (monitored !== undefined && item.monitored !== monitored) {
-      return false;
-    }
-
-    if (status && String(item.status ?? '').toLowerCase() !== status) {
-      return false;
-    }
-
-    if (search && !String(item.title ?? '').toLowerCase().includes(search)) {
-      return false;
-    }
-
-    return true;
-  });
+  const filters = parseLibraryFilters(query);
+  return applyLibraryFilters(items, filters);
 }
 
 export function registerMovieRoutes(
@@ -716,12 +668,12 @@ export function registerMovieRoutes(
           continue;
         }
 
-        // Build destination path
+        // Build destination path (validated against movie root)
         const extension = path.extname(file.path);
         const movieFolderName = `${movie.title} (${movie.year})`;
-        const destDir = path.join(movie.path, movieFolderName);
+        const destDir = safePath(movie.path, movieFolderName);
         const destFilename = `${movieFolderName}${extension}`;
-        const destPath = path.join(destDir, destFilename);
+        const destPath = safePath(destDir, destFilename);
 
         // Ensure destination directory exists
         await fs.mkdir(destDir, { recursive: true });

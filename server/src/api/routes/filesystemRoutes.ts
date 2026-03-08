@@ -53,7 +53,7 @@ export function registerFilesystemRoutes(
     } catch (err: unknown) {
       const nodeErr = err as NodeJS.ErrnoException;
       if (nodeErr.code === 'ENOENT' || nodeErr.code === 'ENOTDIR') {
-        return reply.status(404).send({ error: `Path not found: ${requestedPath}` });
+        return reply.code(404).send({ ok: false, error: `Path not found: ${requestedPath}` });
       }
       throw err;
     }
@@ -65,7 +65,7 @@ export function registerFilesystemRoutes(
     } catch (err: unknown) {
       const nodeErr = err as NodeJS.ErrnoException;
       if (nodeErr.code === 'ENOTDIR' || nodeErr.code === 'EACCES') {
-        return reply.status(404).send({ error: `Cannot read directory: ${resolvedPath}` });
+        return reply.code(404).send({ ok: false, error: `Cannot read directory: ${resolvedPath}` });
       }
       throw err;
     }

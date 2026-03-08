@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { sendPaginatedSuccess, sendSuccess, parsePaginationParams, paginateArray } from '../contracts';
-import { assertFound, parseBoolean, parseIdParam, sortByField } from '../routeUtils';
+import { assertFound, parseIdParam, sortByField } from '../routeUtils';
 import { ValidationError } from '../../errors/domainErrors';
 import type { ApiDependencies } from '../types';
 import { SeriesRepository, type BulkSeriesChanges } from '../../repositories/SeriesRepository';
@@ -14,10 +14,10 @@ import { ExistingLibraryScanner } from '../../services/ExistingLibraryScanner';
 import { SubtitleVariantRepository } from '../../repositories/SubtitleVariantRepository';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import type { PlaybackProgress } from '@prisma/client';
-
-// Calendar episode status type
-type CalendarEpisodeStatus = 'downloaded' | 'missing' | 'airing' | 'unaired';
+import { latestPlaybackMap, serializePlaybackState } from '../utils/playbackHelpers';
+import { parseLibraryFilters, applyLibraryFilters } from '../utils/queryHelpers';
+import { determineEpisodeStatus, type EpisodeStatus } from '../utils/episodeStatusHelpers';
+import { safePath } from '../utils/safePath';
 
 // Response type for calendar endpoint
 interface CalendarEpisode {
@@ -29,35 +29,9 @@ interface CalendarEpisode {
   episodeTitle: string;
   airDate: string;
   airTime?: string;
-  status: CalendarEpisodeStatus;
+  status: EpisodeStatus;
   hasFile: boolean;
   monitored: boolean;
-}
-
-// Determine episode status based on air date and file presence
-function determineEpisodeStatus(airDateUtc: Date | null, hasFile: boolean): CalendarEpisodeStatus {
-  if (hasFile) {
-    return 'downloaded';
-  }
-
-  if (!airDateUtc) {
-    return 'unaired';
-  }
-
-  const now = new Date();
-  const airDate = new Date(airDateUtc);
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const airDay = new Date(airDate.getFullYear(), airDate.getMonth(), airDate.getDate());
-
-  if (airDay.getTime() === today.getTime()) {
-    return 'airing';
-  }
-
-  if (airDate < now) {
-    return 'missing';
-  }
-
-  return 'unaired';
 }
 
 // Format date to ISO date string (YYYY-MM-DD)
@@ -74,67 +48,18 @@ function formatAirTime(date: Date | null): string | undefined {
   return `${hours}:${minutes}`;
 }
 
-function latestPlaybackMap(records: PlaybackProgress[]): Map<number, PlaybackProgress> {
-  const result = new Map<number, PlaybackProgress>();
-  for (const record of records) {
-    if (!result.has(record.mediaId)) {
-      result.set(record.mediaId, record);
-    }
-  }
-  return result;
-}
-
-function serializePlaybackState(progress: PlaybackProgress | null | undefined) {
-  if (!progress) {
-    return null;
-  }
-
-  return {
-    position: progress.position,
-    duration: progress.duration,
-    progress: progress.progress,
-    isWatched: progress.isWatched,
-    lastWatched: progress.lastWatched.toISOString(),
-  };
-}
-
 function filterSeries(
   items: any[],
   query: Record<string, unknown>,
   filterService: FilterService,
 ): any[] {
-  const monitored =
-    typeof query.monitored === 'string' || typeof query.monitored === 'boolean'
-      ? parseBoolean(query.monitored)
-      : undefined;
-  const status =
-    typeof query.status === 'string' && query.status.trim().length > 0
-      ? query.status.toLowerCase()
-      : undefined;
-  const search =
-    typeof query.search === 'string' && query.search.trim().length > 0
-      ? query.search.toLowerCase()
-      : undefined;
+  const filters = parseLibraryFilters(query);
   const jump =
     typeof query.jump === 'string' && query.jump.trim().length > 0
       ? query.jump.trim().toUpperCase()
       : 'ALL';
 
-  let filtered = items.filter(item => {
-    if (monitored !== undefined && item.monitored !== monitored) {
-      return false;
-    }
-
-    if (status && String(item.status ?? '').toLowerCase() !== status) {
-      return false;
-    }
-
-    if (search && !String(item.title ?? '').toLowerCase().includes(search)) {
-      return false;
-    }
-
-    return true;
-  });
+  let filtered = applyLibraryFilters(items, filters);
 
   if (jump !== 'ALL') {
     filtered = filtered.filter(item => {
@@ -156,8 +81,8 @@ function filterSeries(
     try {
       const parsed = JSON.parse(customFilterPayload) as FilterConditionsGroup;
       filtered = filterService.applyToSeries(filtered, parsed);
-    } catch {
-      // Ignore malformed customFilter payload and return base filtered list.
+    } catch (err) {
+      console.error('[seriesRoutes] malformed customFilter payload, ignoring:', err instanceof Error ? err.message : String(err));
     }
   }
 
@@ -1165,8 +1090,8 @@ export function registerSeriesRoutes(
         const seriesFolderName = series.title;
         const seasonFolderName = `Season ${String(episode.seasonNumber).padStart(2, '0')}`;
         const episodeFilename = `${series.title} - S${String(episode.seasonNumber).padStart(2, '0')}E${String(episode.episodeNumber).padStart(2, '0')}${extension}`;
-        const destDir = path.join(series.path, seriesFolderName, seasonFolderName);
-        const destPath = path.join(destDir, episodeFilename);
+        const destDir = safePath(series.path, seriesFolderName, seasonFolderName);
+        const destPath = safePath(destDir, episodeFilename);
 
         // Ensure destination directory exists
         await fs.mkdir(destDir, { recursive: true });

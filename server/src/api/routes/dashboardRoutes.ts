@@ -3,6 +3,7 @@ import type { FastifyInstance } from 'fastify';
 import { ValidationError } from '../../errors/domainErrors';
 import { sendSuccess } from '../contracts';
 import type { ApiDependencies } from '../types';
+import { determineEpisodeStatus, determineMovieStatus } from '../utils/episodeStatusHelpers';
 
 export interface DiskSpaceInfo {
   path: string;
@@ -78,32 +79,10 @@ export async function getDiskSpaceForPath(
     }
 
     return null;
-  } catch {
+  } catch (err) {
+    console.error('[dashboardRoutes] getDiskSpaceForPath failed:', err instanceof Error ? err.message : String(err));
     return null;
   }
-}
-
-function determineEpisodeStatus(airDateUtc: Date | null | undefined, hasFile: boolean): UpcomingItem['status'] {
-  if (hasFile) return 'downloaded';
-  if (!airDateUtc) return 'unaired';
-  
-  const now = new Date();
-  if (airDateUtc > now) return 'unaired';
-  
-  const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-  if (airDateUtc >= oneDayAgo && airDateUtc <= now) return 'airing';
-  
-  return 'missing';
-}
-
-function determineMovieStatus(releaseDate: Date | null | undefined, hasFile: boolean): UpcomingItem['status'] {
-  if (hasFile) return 'downloaded';
-  if (!releaseDate) return 'unaired';
-  
-  const now = new Date();
-  if (releaseDate > now) return 'unaired';
-  
-  return 'missing';
 }
 
 function toDate(value: Date | string | null | undefined): Date | null {

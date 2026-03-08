@@ -393,7 +393,7 @@ export function registerMediaRoutes(
     }
 
     if (!result?.success) {
-      return reply.status(404).send({ success: false, error: result?.reason || 'Unknown error' });
+      return reply.code(404).send({ ok: false, error: result?.reason || 'Unknown error' });
     }
 
     return sendSuccess(reply, result);

@@ -57,7 +57,7 @@ export function registerImageRoutes(
       return reply.send(Buffer.from(buffer));
     } catch (error) {
       app.log.error(error, `Failed to proxy image: ${url}`);
-      return reply.status(500).send('Internal Server Error while proxying image');
+      return reply.code(500).send({ ok: false, error: 'Internal Server Error while proxying image' });
     }
   });
 }

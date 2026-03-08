@@ -61,8 +61,8 @@ async function resolveQualityProfileId(
         return movie.qualityProfileId;
       }
     }
-  } catch {
-    // Fallback to seeders/size ranking if lookup fails.
+  } catch (err) {
+    console.error('[releaseRoutes] quality profile lookup failed, falling back to seeders/size ranking:', err instanceof Error ? err.message : String(err));
   }
 
   return undefined;

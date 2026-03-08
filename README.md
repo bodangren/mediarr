@@ -59,6 +59,45 @@ Shared backend utilities live in `server/src/api/utils/`:
 - **queryHelpers** — Library filter parsing (monitored, status, search) used across movie and series endpoints.
 - **safePath** — Path-traversal protection for file operations, ensuring resolved paths stay within allowed root directories.
 
+## Shared Libraries
+
+### Subtitle Utilities (`server/src/services/providers/providerUtils.ts`)
+
+Canonical subtitle provider helpers shared across all subtitle providers (OpenSubtitles, Assrt, Subdl):
+
+- **`deriveReleaseName`** — Extracts release name from a media file path.
+- **`extractExtension`** — Normalises subtitle file extensions.
+- **`readNumericProviderData`** — Safely reads a numeric field from provider-specific metadata.
+- **`ALLOWED_SUBTITLE_EXTENSIONS`** — Single authoritative set of accepted subtitle file extensions.
+
+### Frontend Subtitle Coverage (`app/src/lib/subtitles/coverage.ts`)
+
+Shared frontend helpers for displaying subtitle availability:
+
+- **`summarizeSubtitleCoverage`** — Computes complete/partial/missing status from available and missing language lists.
+- **`subtitleStatusLabel`** / **`subtitleStatusBadgeClass`** — Consistent UI labels and CSS classes across all subtitle views.
+
+## System Administration
+
+### Scheduler (`server/src/services/Scheduler.ts`)
+
+Named cron job manager with metadata tracking:
+- Exposes `listJobsMeta()` with `lastRunAt`, `lastDurationMs`, and `nextRunAt` for every registered job.
+- `runNow(name)` triggers a job immediately and updates its timing metadata.
+- Pre-built helpers: `scheduleActivityCleanup`, `scheduleWantedSearch`, `scheduleSubtitleWantedSearch`.
+
+### Log Reader (`server/src/services/LogReaderService.ts`)
+
+In-process ring buffer (2 000 entries max) that intercepts `console.log/warn/error` and exposes them via `GET /api/logs/files`. Supports filtering by level, search text, and date range, with pagination.
+
+### Backup Service (`server/src/services/BackupService.ts`)
+
+SQLite database backup management:
+- `create(type)` — Copies the live database file to the configured backup directory with a timestamped name.
+- `list()` / `delete(id)` — Enumerate and remove backups; returns entries newest-first.
+- `applyRetention(days)` — Removes backups older than the given number of days.
+- `getFilePath(name)` — Path-traversal-safe lookup within the backup directory.
+
 ## Roadmap
 
 1. **Foundation:** Monorepo scaffolding and reverse engineering reference projects.

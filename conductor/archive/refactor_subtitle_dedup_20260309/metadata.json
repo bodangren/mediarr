@@ -1,8 +1,8 @@
 {
   "track_id": "refactor_subtitle_dedup_20260309",
   "type": "chore",
-  "status": "in_progress",
+  "status": "completed",
   "created_at": "2026-03-09T00:00:00Z",
-  "updated_at": "2026-03-09T00:00:00Z",
+  "updated_at": "2026-03-09T07:00:00Z",
   "description": "Eliminate duplicate code in subtitle providers and UI, add typed PROVIDER_IDS constant, fix sequential async loops for performance, and extract shared subtitle coverage utilities to dedicated modules."
 }

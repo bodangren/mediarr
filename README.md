@@ -50,6 +50,15 @@ This project follows the **Conductor Workflow**. All major features and fixes ar
 
 To contribute or implement features, please refer to the active track plans in `conductor/tracks/`.
 
+## API Utilities
+
+Shared backend utilities live in `server/src/api/utils/`:
+
+- **playbackHelpers** — Playback state serialization and latest-progress mapping.
+- **episodeStatusHelpers** — Unified episode/movie status determination (downloaded, missing, airing, unaired).
+- **queryHelpers** — Library filter parsing (monitored, status, search) used across movie and series endpoints.
+- **safePath** — Path-traversal protection for file operations, ensuring resolved paths stay within allowed root directories.
+
 ## Roadmap
 
 1. **Foundation:** Monorepo scaffolding and reverse engineering reference projects.

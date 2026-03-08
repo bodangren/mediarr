@@ -40,11 +40,12 @@ Android TV Client (New)
 ## Active Tracks
 
 - [x] **Track: Automated Search and Download** *Phases: 4 | Link: [./tracks/automated_search_download_20260303/](./tracks/automated_search_download_20260303/)*
-- [~] **Track: Backend Deduplication & Security Hardening** *Phases: 3 | Link: [./tracks/refactor_dedup_security_20260308/](./tracks/refactor_dedup_security_20260308/)*
+
 ---
 
 ## Archived Tracks
 
+- [x] **Track: Backend Deduplication & Security Hardening** *Phases: 3 | Link: [./archive/refactor_dedup_security_20260308/](./archive/refactor_dedup_security_20260308/)*
 - [x] **Track: Android TV Client** *Phases: 7 | Link: [./archive/android_tv_client_20260304/](./archive/android_tv_client_20260304/)*
 - [x] **Track: Subtitle Inventory Disk Import Recovery** *Phases: 2 | Link: [./archive/subtitle_inventory_disk_import_recovery_20260307/](./archive/subtitle_inventory_disk_import_recovery_20260307/)*
 - [x] **Track: Streaming Settings Panel & DB-backed Configuration** *Phases: 3 | Link: [./archive/streaming_settings_panel_20260305/](./archive/streaming_settings_panel_20260305/)*

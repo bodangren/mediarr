@@ -1,0 +1,8 @@
+{
+  "track_id": "system_admin_pages_20260308",
+  "type": "feature",
+  "status": "new",
+  "created_at": "2026-03-08T10:00:00Z",
+  "updated_at": "2026-03-08T10:00:00Z",
+  "description": "Replace stub system pages (Tasks, Logs, Backup) with real implementations wired to the actual Scheduler, SQLite database, and log files."
+}

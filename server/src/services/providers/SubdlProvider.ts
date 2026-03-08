@@ -1,6 +1,7 @@
 import type { ManualSearchCandidate, ManualSubtitleProvider } from '../SubtitleInventoryApiService';
 import type { HttpClient } from '../../indexers/HttpClient';
 import type { SettingsService } from '../SettingsService';
+import { deriveReleaseName, extractExtension } from './providerUtils';
 
 interface SubdlSearchItem {
   language?: string;
@@ -44,7 +45,7 @@ export class SubdlProvider implements ManualSubtitleProvider {
     }>;
   }): Promise<ManualSearchCandidate[]> {
     const apiKey = await this.resolveApiKey();
-    const releaseName = context.variant.releaseName ?? this.deriveReleaseName(context.variant.path);
+    const releaseName = context.variant.releaseName ?? deriveReleaseName(context.variant.path);
     if (!releaseName) {
       return [];
     }
@@ -115,7 +116,7 @@ export class SubdlProvider implements ManualSubtitleProvider {
     return {
       ...candidate,
       content,
-      extension: candidate.extension ?? this.extractExtension(filename) ?? '.srt',
+      extension: candidate.extension ?? extractExtension(filename) ?? '.srt',
     };
   }
 
@@ -146,24 +147,6 @@ export class SubdlProvider implements ManualSubtitleProvider {
     }
 
     return null;
-  }
-
-  private deriveReleaseName(filePath: string): string {
-    const filename = filePath.split('/').pop() ?? filePath;
-    return filename.replace(/\.[^.]+$/, '');
-  }
-
-  private extractExtension(filename?: string): string | undefined {
-    if (!filename) {
-      return undefined;
-    }
-
-    const match = filename.match(/\.[A-Za-z0-9]+$/);
-    if (!match) {
-      return undefined;
-    }
-
-    return match[0].toLowerCase();
   }
 
   private readStringProviderData(

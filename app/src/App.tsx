@@ -34,6 +34,14 @@ import { COMMON_LANGUAGES, getLanguageName } from '@/lib/constants/languages';
 import type { MovieListItem as MovieViewItem } from '@/types/movie';
 import type { SeriesListItem as SeriesViewItem } from '@/types/series';
 import { formatBytes } from '@/lib/format';
+import {
+  type SubtitleCoverageStatus,
+  type SubtitleCoverageSummary,
+  normalizeLanguageCodes,
+  summarizeSubtitleCoverage,
+  subtitleStatusLabel,
+  subtitleStatusBadgeClass,
+} from '@/lib/subtitles/coverage';
 
 function RouteScaffold({ title, description, actions, children }: { title: string; description: string; actions?: ReactNode; children?: ReactNode }) {
   return (
@@ -54,61 +62,6 @@ function RouteScaffold({ title, description, actions, children }: { title: strin
 
 function StaticPage({ title, description }: { title: string; description: string }) {
   return <RouteScaffold title={title} description={description} />;
-}
-
-type SubtitleCoverageStatus = 'complete' | 'partial' | 'missing' | 'none';
-
-interface SubtitleCoverageSummary {
-  availableLanguages: string[];
-  missingLanguages: string[];
-  status: SubtitleCoverageStatus;
-}
-
-function normalizeLanguageCodes(values: string[]): string[] {
-  return [...new Set(values.map(value => value.trim().toLowerCase()).filter(Boolean))].sort();
-}
-
-function summarizeSubtitleCoverage(
-  availableLanguagesRaw: string[],
-  missingLanguagesRaw: string[],
-): SubtitleCoverageSummary {
-  const availableLanguages = normalizeLanguageCodes(availableLanguagesRaw);
-  const missingLanguages = normalizeLanguageCodes(missingLanguagesRaw);
-
-  let status: SubtitleCoverageStatus = 'none';
-  if (availableLanguages.length > 0 && missingLanguages.length === 0) {
-    status = 'complete';
-  } else if (availableLanguages.length > 0 && missingLanguages.length > 0) {
-    status = 'partial';
-  } else if (availableLanguages.length === 0 && missingLanguages.length > 0) {
-    status = 'missing';
-  }
-
-  return {
-    availableLanguages,
-    missingLanguages,
-    status,
-  };
-}
-
-function subtitleStatusBadgeClass(status: SubtitleCoverageStatus): string {
-  if (status === 'complete') {
-    return 'bg-status-completed/20 text-status-completed';
-  }
-  if (status === 'partial') {
-    return 'bg-accent-warning/20 text-accent-warning';
-  }
-  if (status === 'missing') {
-    return 'bg-status-error/20 text-status-error';
-  }
-  return 'bg-surface-2 text-text-secondary';
-}
-
-function subtitleStatusLabel(status: SubtitleCoverageStatus): string {
-  if (status === 'complete') return 'Subtitles Complete';
-  if (status === 'partial') return 'Subtitles Partial';
-  if (status === 'missing') return 'Subtitles Missing';
-  return 'No Subtitle Data';
 }
 
 export function SettingsMediaPage() {

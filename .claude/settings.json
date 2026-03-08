@@ -1,0 +1,26 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "filepath=$(echo \"$CLAUDE_TOOL_INPUT\" | jq -r '.file_path // empty'); case \"$filepath\" in *.env|*.env.*) echo 'BLOCK: Do not edit .env files directly. Ask the user to update environment variables manually.' >&2; exit 1;; esac; exit 0"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "filepath=$(echo \"$CLAUDE_TOOL_INPUT\" | jq -r '.file_path // empty'); case \"$filepath\" in */app/src/*.ts|*/app/src/*.tsx|*/app/src/*.js|*/app/src/*.jsx) cd /home/daniel-bo/Desktop/mediarr && npx eslint --fix \"$filepath\" 2>/dev/null; exit 0;; esac; exit 0"
+          }
+        ]
+      }
+    ]
+  }
+}

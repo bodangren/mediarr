@@ -203,6 +203,14 @@ export const systemState = {
   get queuedTasks() { return queuedTasks; },
 };
 
+/** Convert a kebab-case job name like 'rss-sync' to 'RSS Sync'. */
+function formatJobName(name: string): string {
+  return name
+    .split('-')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
 export function registerSystemRoutes(
   app: FastifyInstance,
   deps: ApiDependencies,
@@ -279,6 +287,18 @@ export function registerSystemRoutes(
 
   // GET /api/tasks/scheduled
   app.get('/api/tasks/scheduled', async (_request, reply) => {
+    if (deps.scheduler) {
+      const liveJobs = deps.scheduler.listJobsMeta().map(job => ({
+        id: job.name,
+        taskName: formatJobName(job.name),
+        interval: job.cronExpression,
+        lastExecution: job.lastRunAt,
+        lastDuration: job.lastDurationMs,
+        nextExecution: job.nextRunAt,
+        status: 'pending' as TaskStatus,
+      }));
+      return sendSuccess(reply, liveJobs);
+    }
     return sendSuccess(reply, scheduledTasks);
   });
 
@@ -346,6 +366,25 @@ export function registerSystemRoutes(
 
     if (!taskId) {
       throw new ValidationError('Task ID is required');
+    }
+
+    // Use the real scheduler when available
+    if (deps.scheduler) {
+      const knownJobs = deps.scheduler.listJobs();
+      if (!knownJobs.includes(taskId)) {
+        throw new NotFoundError(`Scheduled task with id "${taskId}" not found`);
+      }
+      const taskName = formatJobName(taskId);
+      const startedAt = new Date().toISOString();
+      // Fire-and-forget (non-blocking response) — run in background
+      void (async () => {
+        try {
+          await deps.scheduler!.runNow(taskId);
+        } catch (err) {
+          console.error(`Manual run of task '${taskId}' failed:`, err);
+        }
+      })();
+      return sendSuccess(reply, { taskId, taskName, queuedAt: startedAt }, 202);
     }
 
     const task = scheduledTasks.find(t => t.id === taskId);

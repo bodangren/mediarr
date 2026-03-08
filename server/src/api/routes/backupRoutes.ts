@@ -72,10 +72,14 @@ export const backupState = {
 
 export function registerBackupRoutes(
   app: FastifyInstance,
-  _deps: ApiDependencies,
+  deps: ApiDependencies,
 ): void {
   // GET /api/backups
   app.get('/api/backups', async (_request, reply) => {
+    if (deps.backupService) {
+      const entries = await deps.backupService.list();
+      return sendSuccess(reply, entries);
+    }
     // Sort by most recent first
     const sorted = [...backups].sort(
       (a, b) => new Date(b.created).getTime() - new Date(a.created).getTime()
@@ -85,9 +89,13 @@ export function registerBackupRoutes(
 
   // POST /api/backups
   app.post('/api/backups', async (_request, reply) => {
+    if (deps.backupService) {
+      const entry = await deps.backupService.create('manual');
+      return sendSuccess(reply, entry, 201);
+    }
     const now = new Date();
     const name = `mediarr_backup_${now.toISOString().replace(/[:.]/g, '-').slice(0, 19)}.zip`;
-    
+
     const backup: Backup = {
       id: backupIdCounter++,
       name,
@@ -186,6 +194,21 @@ export function registerBackupRoutes(
   // DELETE /api/backups/:id
   app.delete('/api/backups/:id', async (request, reply) => {
     const params = request.params as { id?: string };
+
+    if (deps.backupService) {
+      const id = params.id;
+      if (!id) {
+        throw new NotFoundError('Backup id is required');
+      }
+      try {
+        await deps.backupService.delete(id);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Unknown error';
+        throw new NotFoundError(`Could not delete backup: ${msg}`);
+      }
+      return sendSuccess(reply, { id, deleted: true });
+    }
+
     const id = parseIdParam(params.id ?? '', 'backup');
 
     const index = backups.findIndex(b => b.id === id);

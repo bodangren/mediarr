@@ -8,8 +8,7 @@ import {
 } from '../contracts';
 import { parseIdParam } from '../routeUtils';
 import type { ApiDependencies } from '../types';
-
-const ALLOWED_UPLOAD_EXTENSIONS = new Set(['.srt', '.ass', '.ssa', '.sub', '.vtt']);
+import { ALLOWED_SUBTITLE_EXTENSIONS } from '../../services/providers/providerUtils';
 
 interface SubtitleBlacklistEntry {
   id: number;
@@ -240,7 +239,7 @@ export function registerSubtitleRoutes(
     }
 
     const extension = `.${filePart.filename.split('.').pop()?.toLowerCase() ?? ''}`;
-    if (!ALLOWED_UPLOAD_EXTENSIONS.has(extension)) {
+    if (!ALLOWED_SUBTITLE_EXTENSIONS.has(extension)) {
       throw new ValidationError('Only subtitle files are supported (.srt, .ass, .ssa, .sub, .vtt)');
     }
 

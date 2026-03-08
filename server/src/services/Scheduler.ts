@@ -2,9 +2,20 @@ import cron from 'node-cron';
 
 type JobCallback = () => Promise<void> | void;
 
+export interface ScheduledJobMeta {
+  name: string;
+  cronExpression: string;
+  lastRunAt: string | null;
+  lastDurationMs: number | null;
+  nextRunAt: string | null;
+}
+
 interface ScheduledJob {
   task: cron.ScheduledTask;
   callback: JobCallback;
+  cronExpression: string;
+  lastRunAt: string | null;
+  lastDurationMs: number | null;
 }
 
 interface ActivityRetentionRepository {
@@ -29,15 +40,80 @@ export class Scheduler {
       throw new Error(`Invalid cron expression: ${cronExpression}`);
     }
 
-    const task = cron.schedule(cronExpression, async () => {
+    const meta: ScheduledJob = {
+      task: null as unknown as cron.ScheduledTask,
+      callback,
+      cronExpression,
+      lastRunAt: null,
+      lastDurationMs: null,
+    };
+
+    const wrappedCallback = async () => {
+      const start = Date.now();
       try {
         await callback();
       } catch (error) {
         console.error(`Scheduler job '${name}' failed:`, error);
+      } finally {
+        meta.lastRunAt = new Date().toISOString();
+        meta.lastDurationMs = Date.now() - start;
       }
-    }, { scheduled: true });
+    };
 
-    this.jobs.set(name, { task, callback });
+    const task = cron.schedule(cronExpression, wrappedCallback, { scheduled: true });
+    meta.task = task;
+
+    this.jobs.set(name, meta);
+  }
+
+  /**
+   * Return metadata for all scheduled jobs.
+   */
+  listJobsMeta(): ScheduledJobMeta[] {
+    return Array.from(this.jobs.entries()).map(([name, job]) => ({
+      name,
+      cronExpression: job.cronExpression,
+      lastRunAt: job.lastRunAt,
+      lastDurationMs: job.lastDurationMs,
+      nextRunAt: this.computeNextRun(job.cronExpression),
+    }));
+  }
+
+  private computeNextRun(cronExpression: string): string | null {
+    try {
+      // Parse the cron expression to determine next execution time
+      // node-cron doesn't expose next-run directly; use a simple heuristic
+      const parts = cronExpression.split(' ');
+      if (parts.length < 5) return null;
+      const minutePart = parts[0];
+      const now = new Date();
+      // For */N patterns, compute the next occurrence
+      if (minutePart && minutePart.startsWith('*/')) {
+        const interval = parseInt(minutePart.slice(2), 10);
+        if (!isNaN(interval) && interval > 0) {
+          const currentMinute = now.getMinutes();
+          const minutesUntilNext = interval - (currentMinute % interval);
+          const next = new Date(now.getTime() + minutesUntilNext * 60 * 1000);
+          next.setSeconds(0, 0);
+          return next.toISOString();
+        }
+      }
+      // For 0 */H patterns (hourly-based)
+      const hourPart = parts[1];
+      if (minutePart === '0' && hourPart && hourPart.startsWith('*/')) {
+        const interval = parseInt(hourPart.slice(2), 10);
+        if (!isNaN(interval) && interval > 0) {
+          const currentHour = now.getHours();
+          const hoursUntilNext = interval - (currentHour % interval);
+          const next = new Date(now.getTime() + hoursUntilNext * 60 * 60 * 1000);
+          next.setMinutes(0, 0, 0);
+          return next.toISOString();
+        }
+      }
+      return null;
+    } catch {
+      return null;
+    }
   }
 
   /**
@@ -69,7 +145,7 @@ export class Scheduler {
    * Stop and remove all jobs.
    */
   stopAll(): void {
-    for (const [name, job] of this.jobs) {
+    for (const [, job] of this.jobs) {
       job.task.stop();
     }
     this.jobs.clear();
@@ -83,7 +159,13 @@ export class Scheduler {
     if (!job) {
       throw new Error(`Job '${name}' is not scheduled`);
     }
-    await job.callback();
+    const start = Date.now();
+    try {
+      await job.callback();
+    } finally {
+      job.lastRunAt = new Date().toISOString();
+      job.lastDurationMs = Date.now() - start;
+    }
   }
 
   /**

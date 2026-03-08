@@ -4,6 +4,7 @@ import { SubtitleVariantRepository } from '../repositories/SubtitleVariantReposi
 import { SubtitleNamingService } from './SubtitleNamingService';
 import { SubtitleProviderFactory } from './SubtitleProviderFactory';
 import { SubtitleScoringService } from './SubtitleScoringService';
+import { ALLOWED_SUBTITLE_EXTENSIONS } from './providers/providerUtils';
 
 export interface ManualSearchCandidate {
   languageCode: string;
@@ -84,7 +85,6 @@ export interface UploadedSubtitleRecord {
   hearingImpaired: boolean;
 }
 
-const ALLOWED_UPLOAD_EXTENSIONS = new Set(['.srt', '.ass', '.ssa', '.sub', '.vtt']);
 const SUBTITLE_FLAG_TOKENS = new Set(['forced', 'forc', 'sdh', 'hi', 'cc']);
 const LANGUAGE_TOKEN_MAP = new Map<string, string>([
   ['en', 'en'],
@@ -236,7 +236,7 @@ export class SubtitleInventoryApiService {
 
   async uploadSubtitle(input: SubtitleUploadInput): Promise<UploadedSubtitleRecord> {
     const extension = path.extname(input.originalFilename).toLowerCase();
-    if (!ALLOWED_UPLOAD_EXTENSIONS.has(extension)) {
+    if (!ALLOWED_SUBTITLE_EXTENSIONS.has(extension)) {
       throw new Error('Only subtitle files are supported (.srt, .ass, .ssa, .sub, .vtt)');
     }
 
@@ -373,16 +373,15 @@ export class SubtitleInventoryApiService {
   private async mapVariantInventory(
     variantIds: number[],
   ): Promise<VariantInventoryView[]> {
-    const items: VariantInventoryView[] = [];
-    for (const variantId of variantIds) {
-      const inventory = await this.repository.getVariantInventory(variantId);
-      if (!inventory.variant) {
-        continue;
-      }
-      items.push({
-        variantId: inventory.variant.id,
-        path: inventory.variant.path,
-        fileSize: inventory.variant.fileSize,
+    const inventories = await Promise.all(
+      variantIds.map(variantId => this.repository.getVariantInventory(variantId)),
+    );
+    return inventories
+      .filter(inventory => inventory.variant != null)
+      .map(inventory => ({
+        variantId: inventory.variant!.id,
+        path: inventory.variant!.path,
+        fileSize: inventory.variant!.fileSize,
         audioTracks: inventory.audioTracks.map(track => ({
           streamIndex: track.streamIndex,
           languageCode: track.languageCode,
@@ -405,9 +404,7 @@ export class SubtitleInventoryApiService {
           isForced: item.isForced,
           isHi: item.isHi,
         })),
-      });
-    }
-    return items;
+      }));
   }
 
   private async scanVariants(
@@ -578,7 +575,7 @@ export class SubtitleInventoryApiService {
 
   private matchesVariantSubtitleFile(videoBaseName: string, entryName: string): boolean {
     const extension = path.extname(entryName).toLowerCase();
-    if (!ALLOWED_UPLOAD_EXTENSIONS.has(extension)) {
+    if (!ALLOWED_SUBTITLE_EXTENSIONS.has(extension)) {
       return false;
     }
 

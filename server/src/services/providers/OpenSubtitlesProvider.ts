@@ -1,6 +1,7 @@
 import type { ManualSearchCandidate, ManualSubtitleProvider } from '../SubtitleInventoryApiService';
 import type { HttpClient } from '../../indexers/HttpClient';
 import type { SettingsService } from '../SettingsService';
+import { deriveReleaseName, extractExtension, readNumericProviderData } from './providerUtils';
 
 interface OpenSubtitlesSearchResponse {
   data?: Array<{
@@ -49,7 +50,7 @@ export class OpenSubtitlesProvider implements ManualSubtitleProvider {
       throw new Error('OpenSubtitles API Key is missing. Please configure it in settings.');
     }
 
-    const releaseName = context.variant.releaseName ?? this.deriveReleaseName(context.variant.path);
+    const releaseName = context.variant.releaseName ?? deriveReleaseName(context.variant.path);
     if (!releaseName) {
       return [];
     }
@@ -90,7 +91,7 @@ export class OpenSubtitlesProvider implements ManualSubtitleProvider {
           provider: 'opensubtitles',
           score: voteScore + downloadScore,
           releaseName: attributes.release ?? file.file_name,
-          extension: this.extractExtension(file.file_name) ?? '.srt',
+          extension: extractExtension(file.file_name) ?? '.srt',
           providerData: {
             fileId,
           },
@@ -110,7 +111,7 @@ export class OpenSubtitlesProvider implements ManualSubtitleProvider {
       throw new Error('OpenSubtitles API Key is missing. Please configure it in settings.');
     }
 
-    const fileId = this.readNumericProviderData(candidate.providerData, 'fileId');
+    const fileId = readNumericProviderData(candidate.providerData, 'fileId');
     if (!fileId) {
       throw new Error('OpenSubtitles candidate is missing provider file id');
     }
@@ -145,43 +146,9 @@ export class OpenSubtitlesProvider implements ManualSubtitleProvider {
       ...candidate,
       content,
       extension: candidate.extension
-        ?? this.extractExtension(payload.file_name)
+        ?? extractExtension(payload.file_name)
         ?? '.srt',
     };
   }
 
-  private deriveReleaseName(filePath: string): string {
-    const filename = filePath.split('/').pop() ?? filePath;
-    return filename.replace(/\.[^.]+$/, '');
-  }
-
-  private extractExtension(filename?: string): string | undefined {
-    if (!filename) {
-      return undefined;
-    }
-
-    const match = filename.match(/\.[A-Za-z0-9]+$/);
-    if (!match) {
-      return undefined;
-    }
-
-    return match[0].toLowerCase();
-  }
-
-  private readNumericProviderData(
-    providerData: Record<string, unknown> | undefined,
-    key: string,
-  ): number | null {
-    const value = providerData?.[key];
-    if (typeof value === 'number' && Number.isFinite(value)) {
-      return value;
-    }
-    if (typeof value === 'string') {
-      const parsed = Number.parseInt(value, 10);
-      if (Number.isFinite(parsed)) {
-        return parsed;
-      }
-    }
-    return null;
-  }
 }

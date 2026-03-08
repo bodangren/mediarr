@@ -28,6 +28,9 @@ import type { IndexerTester } from '../indexers/IndexerTester';
 import type { ApiEventHub } from './eventHub';
 import type { ImportListProviderFactory } from '../services/importLists/ImportListProvider';
 import type { ImportListSyncService } from '../services/importLists/ImportListSyncService';
+import type { Scheduler } from '../services/Scheduler';
+import type { LogReaderService } from '../services/LogReaderService';
+import type { BackupService } from '../services/BackupService';
 
 
 export interface ApiDependencies {
@@ -128,6 +131,9 @@ export interface ApiDependencies {
     CollectionService,
     'fetchFromTMDB' | 'createCollection' | 'syncCollectionMovies' | 'searchMissingMovies' | 'linkMovieToCollection' | 'detectMovieCollection'
   >;
+  scheduler?: Pick<Scheduler, 'listJobsMeta' | 'runNow' | 'listJobs'>;
+  logReaderService?: Pick<LogReaderService, 'getEntries'>;
+  backupService?: Pick<BackupService, 'create' | 'list' | 'delete' | 'getFilePath'>;
 
 }
 

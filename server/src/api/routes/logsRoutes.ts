@@ -66,10 +66,23 @@ export const logsState = {
 
 export function registerLogsRoutes(
   app: FastifyInstance,
-  _deps: ApiDependencies,
+  deps: ApiDependencies,
 ): void {
   // GET /api/logs/files
-  app.get('/api/logs/files', async (_request, reply) => {
+  app.get('/api/logs/files', async (request, reply) => {
+    if (deps.logReaderService) {
+      const query = request.query as Record<string, unknown>;
+      const page = typeof query.page === 'string' ? parseInt(query.page, 10) : 1;
+      const pageSize = typeof query.pageSize === 'string' ? parseInt(query.pageSize, 10) : 100;
+      const filter = {
+        level: query.level as 'info' | 'warn' | 'error' | 'debug' | undefined,
+        search: typeof query.search === 'string' ? query.search : undefined,
+        startDate: typeof query.startDate === 'string' ? query.startDate : undefined,
+        endDate: typeof query.endDate === 'string' ? query.endDate : undefined,
+      };
+      const result = deps.logReaderService.getEntries(filter, page, pageSize);
+      return sendSuccess(reply, result);
+    }
     const files = Array.from(logFiles.values()).map(f => f.metadata);
     // Sort by most recently modified first
     files.sort((a, b) => new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime());

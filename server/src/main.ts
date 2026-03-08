@@ -66,6 +66,8 @@ import { VariantWantedService } from './services/VariantWantedService';
 import { WantedService } from './services/WantedService';
 import { WantedSearchService } from './services/WantedSearchService';
 import { RssMediaMonitor } from './services/RssMediaMonitor';
+import { BackupService } from './services/BackupService';
+import { globalLogBuffer } from './services/LogReaderService';
 
 function parsePort(rawPort: string | undefined, fallback: number): number {
   if (!rawPort) {
@@ -366,6 +368,9 @@ async function repairMalformedJsonColumns(prisma: PrismaClient): Promise<void> {
 }
 
 async function startApi(): Promise<void> {
+  // Install global log buffer before any other output
+  globalLogBuffer.install();
+
   const databaseUrl = await resolveDatabaseUrl(process.env.DATABASE_URL);
   const port = parsePort(process.env.API_PORT, 3001);
   const host = process.env.API_HOST ?? '0.0.0.0';
@@ -578,6 +583,11 @@ async function startApi(): Promise<void> {
   );
 
 
+  // Derive db path from database URL (strip "file:" prefix)
+  const dbFilePath = databaseUrl.replace(/^file:/, '');
+  const backupDir = process.env.BACKUP_DIR ?? path.resolve(path.dirname(dbFilePath), 'backups');
+  const backupService = new BackupService(dbFilePath, backupDir);
+
   const app = createApiServer({
     prisma,
     mediaService,
@@ -608,7 +618,9 @@ async function startApi(): Promise<void> {
     importListSyncService,
     collectionRepository,
     collectionService,
-
+    scheduler,
+    logReaderService: globalLogBuffer,
+    backupService,
   });
 
   const staticDir = process.env.STATIC_DIR ?? path.resolve(process.cwd(), 'app/dist');

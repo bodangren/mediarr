@@ -1,6 +1,7 @@
 import type { ManualSearchCandidate, ManualSubtitleProvider } from '../SubtitleInventoryApiService';
 import type { HttpClient } from '../../indexers/HttpClient';
 import type { SettingsService } from '../SettingsService';
+import { deriveReleaseName, extractExtension, readNumericProviderData } from './providerUtils';
 
 interface AssrtSearchResponse {
   sub?: {
@@ -52,7 +53,7 @@ export class AssrtProvider implements ManualSubtitleProvider {
     }>;
   }): Promise<ManualSearchCandidate[]> {
     const token = await this.resolveToken();
-    const releaseName = context.variant.releaseName ?? this.deriveReleaseName(context.variant.path);
+    const releaseName = context.variant.releaseName ?? deriveReleaseName(context.variant.path);
     if (!releaseName) {
       return [];
     }
@@ -106,7 +107,7 @@ export class AssrtProvider implements ManualSubtitleProvider {
     }
 
     const token = await this.resolveToken();
-    const subtitleId = this.readNumericProviderData(candidate.providerData, 'subtitleId');
+    const subtitleId = readNumericProviderData(candidate.providerData, 'subtitleId');
     if (!subtitleId) {
       throw new Error('ASSRT candidate is missing subtitle id');
     }
@@ -135,7 +136,7 @@ export class AssrtProvider implements ManualSubtitleProvider {
     return {
       ...candidate,
       content,
-      extension: candidate.extension ?? this.extractExtension(file.f) ?? '.srt',
+      extension: candidate.extension ?? extractExtension(file.f) ?? '.srt',
     };
   }
 
@@ -191,38 +192,4 @@ export class AssrtProvider implements ManualSubtitleProvider {
     return undefined;
   }
 
-  private deriveReleaseName(filePath: string): string {
-    const filename = filePath.split('/').pop() ?? filePath;
-    return filename.replace(/\.[^.]+$/, '');
-  }
-
-  private extractExtension(filename?: string): string | undefined {
-    if (!filename) {
-      return undefined;
-    }
-
-    const match = filename.match(/\.[A-Za-z0-9]+$/);
-    if (!match) {
-      return undefined;
-    }
-
-    return match[0].toLowerCase();
-  }
-
-  private readNumericProviderData(
-    providerData: Record<string, unknown> | undefined,
-    key: string,
-  ): number | null {
-    const value = providerData?.[key];
-    if (typeof value === 'number' && Number.isFinite(value)) {
-      return value;
-    }
-    if (typeof value === 'string') {
-      const parsed = Number.parseInt(value, 10);
-      if (Number.isFinite(parsed)) {
-        return parsed;
-      }
-    }
-    return null;
-  }
 }

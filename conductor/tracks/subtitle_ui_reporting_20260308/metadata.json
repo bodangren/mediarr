@@ -1,0 +1,8 @@
+{
+  "track_id": "subtitle_ui_reporting_20260308",
+  "type": "feature",
+  "status": "new",
+  "created_at": "2026-03-08T10:00:00Z",
+  "updated_at": "2026-03-08T10:00:00Z",
+  "description": "Fix subtitle badge reporting in the UI, add subtitle status at all levels (series/season/episode/movie), enable on-demand subtitle search from detail pages, and make daily subtitle search targeted rather than exhaustive."
+}

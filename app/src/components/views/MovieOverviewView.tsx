@@ -7,6 +7,10 @@ import { StatusBadge } from '@/components/primitives/StatusBadge';
 import { LanguageBadge } from '@/components/subtitles/LanguageBadge';
 import { formatBytes } from '@/lib/format';
 import { getFileStatus, getRatingDisplay, getRuntimeDisplay, type MovieListItem } from '@/types/movie';
+import {
+  summarizeSubtitleCoverage,
+  subtitleStatusLabel,
+} from '@/lib/subtitles/coverage';
 
 interface MovieOverviewViewProps {
   items: MovieListItem[];
@@ -23,60 +27,22 @@ interface MovieOverviewCardProps {
   onSearch?: (id: number) => void;
 }
 
-type SubtitleStatus = 'complete' | 'partial' | 'missing' | 'none';
-
-interface MovieSubtitleSummary {
-  availableLanguages: string[];
-  missingLanguages: string[];
-  status: SubtitleStatus;
-}
-
-function summarizeMovieSubtitles(item: MovieListItem): MovieSubtitleSummary {
+function summarizeMovieSubtitles(item: MovieListItem): ReturnType<typeof summarizeSubtitleCoverage> {
   const availableSet = new Set<string>();
   const missingSet = new Set<string>();
 
   for (const variant of item.fileVariants ?? []) {
     for (const track of variant.subtitleTracks ?? []) {
       const code = track.languageCode?.trim().toLowerCase();
-      if (!code) {
-        continue;
-      }
-      availableSet.add(code);
+      if (code) availableSet.add(code);
     }
-
     for (const missing of variant.missingSubtitles ?? []) {
       const code = missing.languageCode?.trim().toLowerCase();
-      if (!code) {
-        continue;
-      }
-      missingSet.add(code);
+      if (code) missingSet.add(code);
     }
   }
 
-  const availableLanguages = [...availableSet].sort();
-  const missingLanguages = [...missingSet].sort();
-
-  let status: SubtitleStatus = 'none';
-  if (availableLanguages.length > 0 && missingLanguages.length === 0) {
-    status = 'complete';
-  } else if (availableLanguages.length > 0 && missingLanguages.length > 0) {
-    status = 'partial';
-  } else if (availableLanguages.length === 0 && missingLanguages.length > 0) {
-    status = 'missing';
-  }
-
-  return {
-    availableLanguages,
-    missingLanguages,
-    status,
-  };
-}
-
-function subtitleStatusLabel(status: SubtitleStatus): string {
-  if (status === 'complete') return 'Subtitles Complete';
-  if (status === 'partial') return 'Subtitles Partial';
-  if (status === 'missing') return 'Subtitles Missing';
-  return 'No Subtitle Data';
+  return summarizeSubtitleCoverage([...availableSet], [...missingSet]);
 }
 
 function MovieOverviewCard({ item, onToggleMonitored, onDelete, onSearch }: MovieOverviewCardProps) {

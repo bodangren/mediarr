@@ -13,6 +13,7 @@ import { registerFilesystemRoutes } from './routes/filesystemRoutes';
 import { registerFilterRoutes } from './routes/filterRoutes';
 import { registerImportListRoutes } from './routes/importListRoutes';
 import { registerImportRoutes } from './routes/importRoutes';
+import { registerLibraryRoutes } from './routes/libraryRoutes';
 import { registerIndexerRoutes } from './routes/indexerRoutes';
 
 import { registerLogsRoutes } from './routes/logsRoutes';
@@ -182,6 +183,7 @@ export function createApiServer(
   registerCollectionRoutes(app, dependencies);
   registerFilesystemRoutes(app, dependencies);
   registerImportRoutes(app, dependencies);
+  registerLibraryRoutes(app, dependencies);
 
   const pollState: PollState = {};
   const intervals: NodeJS.Timeout[] = [];

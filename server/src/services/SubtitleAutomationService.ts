@@ -72,6 +72,40 @@ export class SubtitleAutomationService {
     };
   }
 
+  async runTargetedAutomationCycle(options: { recentDays?: number; limit?: number } = {}): Promise<SubtitleAutomationStats> {
+    const recentDays = options.recentDays ?? 7;
+    const limit = options.limit ?? 100;
+
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - recentDays);
+
+    // Get variants for recently-added movies/episodes
+    const recentVariants = await this.repository.listRecentlyAddedVariants(cutoff);
+
+    // Get variants that have FAILED wanted subtitles (eligible for retry)
+    const failedVariants = await this.repository.listVariantsWithFailedWanted();
+
+    // Merge and deduplicate variant IDs
+    const variantIds = [...new Set([
+      ...recentVariants.map((v: { id: number }) => v.id),
+      ...failedVariants.map((v: { id: number }) => v.id),
+    ])];
+
+    const wantedLanguages = await this.resolveWantedLanguages();
+    for (const variantId of variantIds) {
+      await this.syncVariantState(variantId, wantedLanguages);
+    }
+
+    const queue = await this.processWantedQueue(limit);
+
+    return {
+      variantsScanned: variantIds.length,
+      wantedQueued: queue.queued,
+      downloaded: queue.downloaded,
+      failed: queue.failed,
+    };
+  }
+
   async runAutomationCycle(limit = 100): Promise<SubtitleAutomationStats> {
     const variantsScanned = await this.syncAllVariants();
     const queue = await this.processWantedQueue(limit);

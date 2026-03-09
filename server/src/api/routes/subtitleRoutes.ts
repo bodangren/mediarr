@@ -1306,4 +1306,46 @@ export function registerSubtitleRoutes(
       subtitlesDownloaded,
     });
   });
+
+  app.post<{ Params: { id: string; season: string } }>('/api/subtitles/series/:id/season/:season/search', {
+    schema: {
+      params: {
+        type: 'object',
+        required: ['id', 'season'],
+        properties: {
+          id: { type: 'string' },
+          season: { type: 'string' },
+        },
+      },
+    },
+  }, async (request, reply) => {
+    if (!deps.subtitleAutomationService?.onEpisodeImported) {
+      throw new ValidationError('Subtitle automation service is not configured');
+    }
+
+    const seriesId = parseIdParam((request.params as { id?: string }).id ?? '', 'series');
+    const seasonNumber = parseInt((request.params as { season?: string }).season ?? '', 10);
+    if (isNaN(seasonNumber)) throw new ValidationError('Invalid season number');
+
+    const prisma = deps.prisma as any;
+    const episodes = await prisma.episode.findMany({
+      where: { seriesId, seasonNumber },
+      select: { id: true },
+    });
+
+    let episodesSearched = 0;
+    let subtitlesDownloaded = 0;
+    for (const episode of episodes) {
+      const stats = await deps.subtitleAutomationService.onEpisodeImported(episode.id);
+      episodesSearched += stats.variantsScanned;
+      subtitlesDownloaded += stats.downloaded;
+    }
+
+    return sendSuccess(reply, {
+      success: true,
+      message: `Season ${seasonNumber} subtitle search completed`,
+      episodesSearched,
+      subtitlesDownloaded,
+    });
+  });
 }

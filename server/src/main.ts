@@ -67,6 +67,7 @@ import { WantedService } from './services/WantedService';
 import { WantedSearchService } from './services/WantedSearchService';
 import { RssMediaMonitor } from './services/RssMediaMonitor';
 import { BackupService } from './services/BackupService';
+import { LibraryScanService } from './services/LibraryScanService';
 import { globalLogBuffer } from './services/LogReaderService';
 
 function parsePort(rawPort: string | undefined, fallback: number): number {
@@ -428,6 +429,7 @@ async function startApi(): Promise<void> {
   );
 
   const scheduler = new Scheduler();
+  const libraryScanService = new LibraryScanService(prisma);
   const discoveryService = new DiscoveryService();
   const rssSyncService = new RssSyncService(prisma, httpClient, indexerHealthRepository);
 
@@ -577,10 +579,17 @@ async function startApi(): Promise<void> {
   const subtitleScanInterval = Math.max(5, settings.schedulerIntervals.availabilityCheckMinutes);
   const subtitleScanCron = `*/${subtitleScanInterval} * * * *`;
   scheduler.scheduleSubtitleWantedSearch(
-    subtitleAutomationService,
+    { runAutomationCycle: () => subtitleAutomationService.runTargetedAutomationCycle({ recentDays: 7 }) },
     'subtitle-wanted-search',
     subtitleScanCron,
   );
+
+  try {
+    scheduler.scheduleLibraryScan(libraryScanService, settingsService);
+    console.log('Library scan scheduled daily at 2 AM.');
+  } catch (error) {
+    console.error('Failed to schedule library scan:', error);
+  }
 
 
   // Derive db path from database URL (strip "file:" prefix)
@@ -621,6 +630,7 @@ async function startApi(): Promise<void> {
     scheduler,
     logReaderService: globalLogBuffer,
     backupService,
+    libraryScanService,
   });
 
   const staticDir = process.env.STATIC_DIR ?? path.resolve(process.cwd(), 'app/dist');

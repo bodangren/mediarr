@@ -207,6 +207,16 @@ export function createSubtitleApi(client: ApiHttpClient) {
       );
     },
 
+    searchSeasonSubtitles(seriesId: number, seasonNumber: number): Promise<SubtitleSearchResult> {
+      return client.request(
+        {
+          path: routeMap.subtitleSeasonSearch(seriesId, seasonNumber),
+          method: 'POST',
+        },
+        subtitleSearchResultSchema,
+      );
+    },
+
     // Movie support methods
     syncMovie(movieId: number): Promise<SeriesSyncResult> {
       return client.request(

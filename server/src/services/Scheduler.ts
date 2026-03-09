@@ -207,4 +207,36 @@ export class Scheduler {
       await subtitleAutomationService.runAutomationCycle();
     });
   }
+
+  /**
+   * Schedule daily library scan to reconcile DB with filesystem.
+   */
+  scheduleLibraryScan(
+    libraryScanService: {
+      scanAll: (settings: { movieRootFolder: string; tvRootFolder: string }) => Promise<unknown>;
+    },
+    settingsProvider: { get: () => Promise<{ mediaManagement?: { movieRootFolder?: string; tvRootFolder?: string } }> },
+    name = 'library-scan',
+    cronExpression = '0 2 * * *',
+  ): void {
+    this.schedule(name, cronExpression, async () => {
+      const settings = await settingsProvider.get();
+      const movieRootFolder = settings.mediaManagement?.movieRootFolder ?? '';
+      const tvRootFolder = settings.mediaManagement?.tvRootFolder ?? '';
+      await libraryScanService.scanAll({ movieRootFolder, tvRootFolder });
+    });
+  }
+
+  /**
+   * Schedule periodic targeted subtitle search — only processes recently-added and failed items.
+   */
+  scheduleTargetedSubtitleSearch(
+    subtitleAutomationService: { runTargetedAutomationCycle: (options?: { recentDays?: number; limit?: number }) => Promise<unknown> },
+    name = 'subtitle-targeted-search',
+    cronExpression = '0 3 * * *', // Daily at 3 AM
+  ): void {
+    this.schedule(name, cronExpression, async () => {
+      await subtitleAutomationService.runTargetedAutomationCycle({ recentDays: 7 });
+    });
+  }
 }

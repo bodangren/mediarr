@@ -10,6 +10,7 @@ import { getFileStatus, getRatingDisplay, getRuntimeDisplay, type MovieListItem 
 import {
   summarizeSubtitleCoverage,
   subtitleStatusLabel,
+  subtitleStatusBadgeClass,
 } from '@/lib/subtitles/coverage';
 
 interface MovieOverviewViewProps {
@@ -130,7 +131,7 @@ function MovieOverviewCard({ item, onToggleMonitored, onDelete, onSearch }: Movi
 
         {subtitleSummary.status !== 'none' && (
           <div className="flex flex-wrap items-center gap-1.5 text-xs">
-            <span className="rounded-sm bg-surface-2 px-1.5 py-0.5 text-[10px] text-text-secondary">
+            <span className={`rounded-sm px-1.5 py-0.5 text-[10px] ${subtitleStatusBadgeClass(subtitleSummary.status)}`}>
               {subtitleStatusLabel(subtitleSummary.status)}
             </span>
             {subtitleSummary.availableLanguages.slice(0, 3).map(code => (

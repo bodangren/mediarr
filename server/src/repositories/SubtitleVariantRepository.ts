@@ -276,6 +276,34 @@ export class SubtitleVariantRepository {
     });
   }
 
+  /**
+   * Returns variants whose linked movie or episode was created after the given cutoff date.
+   */
+  async listRecentlyAddedVariants(cutoff: Date): Promise<Array<{ id: number }>> {
+    return this.prisma.mediaFileVariant.findMany({
+      where: {
+        OR: [
+          { movie: { createdAt: { gte: cutoff } } },
+          { episode: { createdAt: { gte: cutoff } } },
+        ],
+      },
+      select: { id: true },
+      orderBy: { id: 'asc' },
+    });
+  }
+
+  /**
+   * Returns variant IDs that have at least one WantedSubtitle in FAILED state.
+   */
+  async listVariantsWithFailedWanted(): Promise<Array<{ id: number }>> {
+    const failedWanted = await this.prisma.wantedSubtitle.findMany({
+      where: { state: 'FAILED' },
+      select: { variantId: true },
+      distinct: ['variantId'],
+    });
+    return failedWanted.map(w => ({ id: w.variantId }));
+  }
+
   async getVariantInventory(variantId: number): Promise<{
     variant: MediaFileVariant | null;
     audioTracks: VariantAudioTrack[];

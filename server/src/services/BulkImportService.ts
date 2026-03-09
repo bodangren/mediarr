@@ -1,9 +1,16 @@
+import path from 'node:path';
 import type { PrismaClient } from '@prisma/client';
 import type { MetadataProvider } from './MetadataProvider';
 import { Organizer } from './Organizer';
 import { SubtitleVariantRepository, type UpsertVariantInput } from '../repositories/SubtitleVariantRepository';
 import type { ScannedFile } from './ExistingLibraryScanner';
 import { sanitizeTitle, toSortTitle } from '../utils/stringUtils';
+
+function isInsideRoot(filePath: string, rootPath: string): boolean {
+  const normalizedFile = path.resolve(filePath);
+  const normalizedRoot = path.resolve(rootPath);
+  return normalizedFile.startsWith(normalizedRoot + path.sep) || normalizedFile === normalizedRoot;
+}
 
 export interface ImportMatchItem {
   folderPath: string;
@@ -146,7 +153,7 @@ export class BulkImportService {
     for (const file of item.files) {
       let filePath = file.path;
 
-      if (item.renameFiles) {
+      if (item.renameFiles && !isInsideRoot(file.path, item.rootFolderPath)) {
         filePath = await this.organizer.organizeMovieFile(file.path, {
           title: movie.title,
           year: movie.year,
@@ -238,7 +245,7 @@ export class BulkImportService {
       if (matchingFile) {
         let filePath = matchingFile.path;
 
-        if (item.renameFiles) {
+        if (item.renameFiles && !isInsideRoot(matchingFile.path, item.rootFolderPath)) {
           filePath = await this.organizer.organizeFile(
             matchingFile.path,
             { title: series.title, path: seriesPath },

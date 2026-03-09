@@ -84,7 +84,18 @@ Shared frontend helpers for displaying subtitle availability:
 Named cron job manager with metadata tracking:
 - Exposes `listJobsMeta()` with `lastRunAt`, `lastDurationMs`, and `nextRunAt` for every registered job.
 - `runNow(name)` triggers a job immediately and updates its timing metadata.
-- Pre-built helpers: `scheduleActivityCleanup`, `scheduleWantedSearch`, `scheduleSubtitleWantedSearch`.
+- Pre-built helpers: `scheduleActivityCleanup`, `scheduleWantedSearch`, `scheduleSubtitleWantedSearch`, `scheduleTargetedSubtitleSearch`, `scheduleLibraryScan`.
+
+### Library Scan Service (`server/src/services/LibraryScanService.ts`)
+
+Filesystem reconciliation service that keeps the database in sync with on-disk media files:
+- `scanAll(settings)` — Walks `movieRootFolder` and `tvRootFolder`, marks missing DB records as unlinked, links newly-found video files to existing library entries, and counts adjacent subtitle files.
+- Triggered on demand via `POST /api/library/scan` or automatically by the daily `library-scan` cron job (2 AM).
+
+### Targeted Subtitle Automation (`server/src/services/SubtitleAutomationService.ts`)
+
+- `runTargetedAutomationCycle(options)` — Scans only recently-added media (default: last 7 days) and variants with previously-failed download attempts, rather than the entire library. Used by the daily scheduled job to reduce subtitle provider load.
+- `runAutomationCycle()` — Full library scan; used for on-demand triggers and post-import flows.
 
 ### Log Reader (`server/src/services/LogReaderService.ts`)
 

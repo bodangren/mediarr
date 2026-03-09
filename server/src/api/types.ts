@@ -31,6 +31,7 @@ import type { ImportListSyncService } from '../services/importLists/ImportListSy
 import type { Scheduler } from '../services/Scheduler';
 import type { LogReaderService } from '../services/LogReaderService';
 import type { BackupService } from '../services/BackupService';
+import type { LibraryScanService } from '../services/LibraryScanService';
 
 
 export interface ApiDependencies {
@@ -80,7 +81,7 @@ export interface ApiDependencies {
   >;
   subtitleAutomationService?: Pick<
     SubtitleAutomationService,
-    'runAutomationCycle' | 'onMovieImported' | 'onEpisodeImported'
+    'runAutomationCycle' | 'runTargetedAutomationCycle' | 'onMovieImported' | 'onEpisodeImported'
   >;
   playbackService?: Pick<
     PlaybackService,
@@ -134,6 +135,7 @@ export interface ApiDependencies {
   scheduler?: Pick<Scheduler, 'listJobsMeta' | 'runNow' | 'listJobs'>;
   logReaderService?: Pick<LogReaderService, 'getEntries'>;
   backupService?: Pick<BackupService, 'create' | 'list' | 'delete' | 'getFilePath'>;
+  libraryScanService?: Pick<LibraryScanService, 'scanAll'>;
 
 }
 

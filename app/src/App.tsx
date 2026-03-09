@@ -1856,6 +1856,7 @@ function MovieDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [isManualSubtitleModalOpen, setIsManualSubtitleModalOpen] = useState(false);
+  const [isSearchingSubtitles, setIsSearchingSubtitles] = useState(false);
 
   const loadMovieSubtitleSummary = useCallback(async (targetMovieId: number) => {
     try {
@@ -1950,6 +1951,25 @@ function MovieDetailPage() {
       navigate('/library/movies');
     } catch (err) {
       pushToast({ title: 'Error', variant: 'error', message: 'Failed to remove movie' });
+    }
+  };
+
+  const handleSearchSubtitles = async () => {
+    if (!movie) return;
+    setIsSearchingSubtitles(true);
+    try {
+      pushToast({ title: 'Searching', message: `Searching subtitles for ${movie.title}...`, variant: 'info' });
+      const result = await api.subtitleApi.searchMovieSubtitles(movie.id);
+      pushToast({
+        title: 'Subtitles',
+        variant: 'success',
+        message: `Search complete: ${result.subtitlesDownloaded} subtitle(s) downloaded`,
+      });
+      await loadMovieSubtitleSummary(movie.id);
+    } catch {
+      pushToast({ title: 'Error', variant: 'error', message: 'Subtitle search failed' });
+    } finally {
+      setIsSearchingSubtitles(false);
     }
   };
 
@@ -2083,6 +2103,15 @@ function MovieDetailPage() {
               onClick={() => setIsManualSubtitleModalOpen(true)}
             >
               Manual Subtitles
+            </button>
+
+            <button
+              type="button"
+              className="rounded-sm border border-border-subtle bg-surface-2 px-3 py-2 text-sm text-text-primary hover:bg-surface-3 disabled:opacity-50"
+              disabled={isSearchingSubtitles}
+              onClick={() => { void handleSearchSubtitles(); }}
+            >
+              {isSearchingSubtitles ? 'Searching...' : 'Search Subtitles'}
             </button>
 
             <button
@@ -2284,6 +2313,7 @@ function SeriesDetailPage() {
   const [selectedSubtitleEpisodeId, setSelectedSubtitleEpisodeId] = useState<number | null>(null);
   const [editingPath, setEditingPath] = useState(false);
   const [pathInput, setPathInput] = useState('');
+  const [searchingSubtitlesSeason, setSearchingSubtitlesSeason] = useState<number | null>(null);
 
   const loadSeriesSubtitleSummaries = useCallback(async (targetSeriesId: number) => {
     try {
@@ -2540,6 +2570,25 @@ function SeriesDetailPage() {
     }
   };
 
+  const handleSearchSeasonSubtitles = async (seasonNumber: number) => {
+    if (!series) return;
+    setSearchingSubtitlesSeason(seasonNumber);
+    try {
+      pushToast({ title: 'Searching', message: `Searching subtitles for Season ${seasonNumber}...`, variant: 'info' });
+      const result = await api.subtitleApi.searchSeasonSubtitles(series.id, seasonNumber);
+      pushToast({
+        title: 'Subtitles',
+        variant: 'success',
+        message: `Season ${seasonNumber}: ${result.subtitlesDownloaded} subtitle(s) downloaded`,
+      });
+      await loadSeriesSubtitleSummaries(series.id);
+    } catch {
+      pushToast({ title: 'Error', variant: 'error', message: `Subtitle search for Season ${seasonNumber} failed` });
+    } finally {
+      setSearchingSubtitlesSeason(null);
+    }
+  };
+
   const allSeasonsMonitored = Boolean(series && series.seasons.length > 0 && series.seasons.every(s => s.monitored));
   const someSeasonsMonitored = Boolean(series && series.seasons.some(s => s.monitored));
   const seriesMonitoredIndeterminate = !allSeasonsMonitored && someSeasonsMonitored;
@@ -2723,6 +2772,15 @@ function SeriesDetailPage() {
                     onClick={() => setSearchModal({ level: 'season', season: season.seasonNumber })}
                   >
                     Search
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded-sm border border-border-subtle px-2 py-1 text-xs text-text-secondary disabled:opacity-50"
+                    aria-label={`Search Subtitles Season ${season.seasonNumber}`}
+                    disabled={searchingSubtitlesSeason === season.seasonNumber}
+                    onClick={() => { void handleSearchSeasonSubtitles(season.seasonNumber); }}
+                  >
+                    {searchingSubtitlesSeason === season.seasonNumber ? 'Searching...' : 'Sub Search'}
                   </button>
                   <label className="flex items-center gap-1 text-xs text-text-secondary">
                     <input

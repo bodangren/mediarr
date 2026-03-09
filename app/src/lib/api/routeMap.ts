@@ -76,6 +76,7 @@ export const routeMap = {
   subtitleSeriesSync: (seriesId: number) => `/api/subtitles/series/${seriesId}/sync`,
   subtitleSeriesScan: (seriesId: number) => `/api/subtitles/series/${seriesId}/scan`,
   subtitleSeriesSearch: (seriesId: number) => `/api/subtitles/series/${seriesId}/search`,
+  subtitleSeasonSearch: (seriesId: number, season: number) => `/api/subtitles/series/${seriesId}/season/${season}/search`,
 
   subtitleProviders: '/api/subtitles/providers',
   subtitleProvider: (id: string) => `/api/subtitles/providers/${id}`,

@@ -19,6 +19,7 @@ import { ImportWizard } from '@/components/import/ImportWizard';
 import { ActivityQueuePage } from '@/components/activity/ActivityQueuePage';
 import { ActivityHistoryPage } from '@/components/activity/ActivityHistoryPage';
 import { CalendarPage } from '@/components/calendar/CalendarPage';
+import { StatsPage } from '@/components/system/StatsPage';
 import { CollectionsPage } from '@/components/collections/CollectionsPage';
 import { CollectionDetailPage } from '@/components/collections/CollectionDetailPage';
 import { getApiClients } from '@/lib/api/client';
@@ -2943,6 +2944,7 @@ export default function App() {
               <Route path="system/tasks" element={<StaticPage title="Tasks" description="Unified scheduled and queued background task management." />} />
               <Route path="system/logs" element={<StaticPage title="Logs" description="Unified system and application log access." />} />
               <Route path="system/backup" element={<StaticPage title="Backup" description="Unified backup and restore workflow." />} />
+              <Route path="system/stats" element={<StatsPage />} />
               <Route path="system/status" element={<Navigate to="/system/tasks" replace />} />
 
               <Route path="*" element={<Navigate to="/dashboard" replace />} />

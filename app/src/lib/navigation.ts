@@ -66,6 +66,7 @@ export const NAV_ITEMS: NavigationSection[] = [
       { path: '/system/tasks', label: 'Tasks', shortLabel: 'Tasks', icon: 'Cpu' },
       { path: '/system/logs', label: 'Logs', shortLabel: 'Logs', icon: 'FileText' },
       { path: '/system/backup', label: 'Backup', shortLabel: 'Backup', icon: 'HardDriveDownload' },
+      { path: '/system/stats', label: 'Statistics', shortLabel: 'Stats', icon: 'BarChart3' },
     ],
   },
 ];
@@ -94,6 +95,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   tasks: 'Tasks',
   logs: 'Logs',
   backup: 'Backup',
+  stats: 'Statistics',
 };
 
 export interface BreadcrumbItem {

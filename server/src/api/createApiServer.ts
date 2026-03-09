@@ -29,6 +29,7 @@ import { registerSeriesRoutes } from './routes/seriesRoutes';
 import { registerPlaybackRoutes } from './routes/playbackRoutes';
 import { registerCalendarRoutes } from './routes/calendarRoutes';
 import { registerDashboardRoutes } from './routes/dashboardRoutes';
+import { registerStatsRoutes } from './routes/statsRoutes';
 import { registerSubtitleRoutes } from './routes/subtitleRoutes';
 import { registerSystemRoutes } from './routes/systemRoutes';
 import { registerTorrentRoutes } from './routes/torrentRoutes';
@@ -156,6 +157,7 @@ export function createApiServer(
   registerPlaybackRoutes(app, dependencies);
   registerCalendarRoutes(app, dependencies);
   registerDashboardRoutes(app, dependencies);
+  registerStatsRoutes(app, dependencies);
   registerMovieRoutes(app, dependencies);
   registerMediaRoutes(app, dependencies);
   registerReleaseRoutes(app, dependencies);

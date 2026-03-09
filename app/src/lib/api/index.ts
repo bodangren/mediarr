@@ -35,6 +35,7 @@ import { createDownloadClientApi } from './downloadClientsApi';
 import { createMediaManagementApi } from './mediaManagementApi';
 import { createNotificationsApi } from './notificationsApi';
 import { createSystemApi } from './systemApi';
+import { createStatsApi } from './statsApi';
 import { createUpdatesApi } from './updatesApi';
 import { createWantedApi } from './wantedApi';
 
@@ -72,6 +73,7 @@ export function createApiClients(config: ApiHttpClientConfig = {}) {
     notificationsApi: createNotificationsApi(httpClient),
     proxySettingsApi: createProxySettingsApi(httpClient),
     systemApi: createSystemApi(httpClient),
+    statsApi: createStatsApi(httpClient),
     backupApi: createBackupApi(httpClient),
     logsApi: createLogsApi(httpClient),
     updatesApi: createUpdatesApi(httpClient),

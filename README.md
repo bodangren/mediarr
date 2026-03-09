@@ -91,6 +91,17 @@ Shared frontend helpers for displaying subtitle availability:
 - **`summarizeSubtitleCoverage`** — Computes complete/partial/missing status from available and missing language lists.
 - **`subtitleStatusLabel`** / **`subtitleStatusBadgeClass`** — Consistent UI labels and CSS classes across all subtitle views.
 
+## Automated Search
+
+### Release-Date Guard (`server/src/services/WantedSearchService.ts`)
+
+Automated searches now skip content that has not yet been publicly released:
+
+- **Movies** — compares the earliest non-null date among `digitalRelease`, `physicalRelease`, and `inCinemas` against the current time plus a 1-day grace period. If the movie has not been released yet, the search is skipped and logged as a skip event.
+- **Episodes** — compares `airDateUtc + 1 day` to the current time; unaired episodes are skipped before firing any indexer query.
+- **Series sweeps** (`autoSearchSeries`) — filters out unaired episodes before spawning individual searches, avoiding unnecessary DB lookups.
+- **Global sweep** (`autoSearchAll`) — uses a Prisma-level `OR` filter so unreleased movies are excluded from the candidate list before any network calls are made.
+
 ## System Administration
 
 ### Scheduler (`server/src/services/Scheduler.ts`)

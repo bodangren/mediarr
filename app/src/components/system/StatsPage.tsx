@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { getApiClients } from '@/lib/api/client';
 import { formatBytes } from '@/lib/format';
 import type { LibraryStats, QualityBreakdown } from '@/lib/api/statsApi';
+import { RouteScaffold } from '@/components/primitives/RouteScaffold';
 
 function StatCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
   return (
@@ -118,12 +119,10 @@ export function StatsPage() {
   }, []);
 
   return (
-    <div className="space-y-4">
-      <header className="rounded-md border border-border-subtle bg-surface-1 p-4">
-        <h1 className="text-lg font-semibold">Statistics</h1>
-        <p className="text-sm text-text-secondary">Library composition, quality distribution, storage usage, and activity metrics.</p>
-      </header>
-
+    <RouteScaffold
+      title="Statistics"
+      description="Library composition, quality distribution, storage usage, and activity metrics."
+    >
       {loading ? (
         <div className="rounded-md border border-border-subtle bg-surface-1 p-8 text-center text-text-secondary">
           Loading statistics…
@@ -211,6 +210,6 @@ export function StatsPage() {
           </section>
         </div>
       ) : null}
-    </div>
+    </RouteScaffold>
   );
 }

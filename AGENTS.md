@@ -10,3 +10,4 @@ Welcome, Agent. This project uses the **Conductor Methodology** for spec-driven 
 5. **No Next.js:** We use a pure React SPA (Vite) frontend communicating with a Bun/Node daemon. Do not attempt to use Next.js App Router features.
 6. **Archiving:** When a plan is 100% complete, archive the track folder to `conductor/archive/` and update `tracks.md`. Do not ask for permission.
 7. **Commit:** Commit work with a note after each phase of a track.
+8. **Memory:** Use conductor/tech-debt.md and conductor/lessons-learned.md

@@ -20,6 +20,34 @@ export class WantedSearchService {
   ) {}
 
   /**
+   * Returns true when the given date (plus a 1-day grace period) is in the past,
+   * meaning the content is considered available for searching.
+   * When date is null we conservatively allow the search to proceed.
+   */
+  private isReleasedYet(date: Date | null): boolean {
+    if (date === null) return true;
+    const oneDayMs = 24 * 60 * 60 * 1000;
+    return Date.now() >= date.getTime() + oneDayMs;
+  }
+
+  /**
+   * Returns the earliest known public release date for a movie.
+   * Prefers digital > physical > theatrical ordering by choosing the earliest date.
+   * Returns null if none is set.
+   */
+  private getMovieReleaseDate(movie: {
+    digitalRelease: Date | null;
+    physicalRelease: Date | null;
+    inCinemas: Date | null;
+  }): Date | null {
+    const candidates = [movie.digitalRelease, movie.physicalRelease, movie.inCinemas].filter(
+      (d): d is Date => d !== null,
+    );
+    if (candidates.length === 0) return null;
+    return candidates.reduce((earliest, d) => (d < earliest ? d : earliest));
+  }
+
+  /**
    * Triggers an automated search for a specific movie.
    */
   async autoSearchMovie(movieId: number): Promise<AutoSearchResult> {
@@ -29,6 +57,11 @@ export class WantedSearchService {
 
     if (!movie) {
       return { success: false, reason: 'Movie not found' };
+    }
+
+    const releaseDate = this.getMovieReleaseDate(movie);
+    if (!this.isReleasedYet(releaseDate)) {
+      return this.logAndReturnSkip(movieId, 'movie', movie.title, 'Movie has not been released yet');
     }
 
     try {
@@ -103,6 +136,10 @@ export class WantedSearchService {
 
     const series = episode.season.series;
     const searchString = `${series.title} S${episode.seasonNumber.toString().padStart(2, '0')}E${episode.episodeNumber.toString().padStart(2, '0')}`;
+
+    if (!this.isReleasedYet(episode.airDateUtc)) {
+      return this.logAndReturnSkip(episode.id, 'episode', searchString, 'Episode has not aired yet');
+    }
 
     try {
       const searchResult = await this.mediaSearchService.searchAllIndexers({
@@ -208,18 +245,19 @@ export class WantedSearchService {
           }
         }
 
-        // Fall back to individual episode searches
+        // Fall back to individual episode searches — skip episodes that haven't aired yet
         for (const episode of missingEpisodes) {
+          if (!this.isReleasedYet(episode.airDateUtc)) continue;
           await this.autoSearchEpisode(episode.id);
           await delay(2000);
         }
       }
     }
 
-    // Specials are always searched individually
+    // Specials are always searched individually (skipping pre-air ones)
     const specialsSeason = series.seasons.find(s => s.seasonNumber === 0);
     if (specialsSeason) {
-      for (const episode of specialsSeason.episodes.filter(e => !e.path)) {
+      for (const episode of specialsSeason.episodes.filter(e => !e.path && this.isReleasedYet(e.airDateUtc))) {
         await this.autoSearchEpisode(episode.id);
         await delay(2000);
       }
@@ -245,9 +283,25 @@ export class WantedSearchService {
       try {
         const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-        // Search missing movies
+        // Search missing movies — only include those whose earliest release date has passed
+        const releaseCutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
         const wantedMovies = await this.prisma.movie.findMany({
-          where: { monitored: true, path: null },
+          where: {
+            monitored: true,
+            path: null,
+            // Include movie when at least one release date is known and in the past,
+            // OR when no release dates are set (unknown release status).
+            OR: [
+              {
+                digitalRelease: null,
+                physicalRelease: null,
+                inCinemas: null,
+              },
+              { digitalRelease: { lte: releaseCutoff } },
+              { physicalRelease: { lte: releaseCutoff } },
+              { inCinemas: { lte: releaseCutoff } },
+            ],
+          },
           select: { id: true },
         });
 

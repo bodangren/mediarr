@@ -41,10 +41,13 @@ Android TV Client (New)
 
 *(none)*
 
+
+
 ---
 
 ## Archived Tracks
 
+- [x] **Track: System Pages Completion** *Phases: 3 | Link: [./archive/system-pages-completion_20260309/](./archive/system-pages-completion_20260309/)*
 - [x] **Track: Library Scan & Import Fix** *Phases: 3 | Link: [./archive/library_scan_import_fix_20260308/](./archive/library_scan_import_fix_20260308/)*
 - [x] **Track: Subtitle UI Reporting & Targeted Search** *Phases: 3 | Link: [./archive/subtitle_ui_reporting_20260308/](./archive/subtitle_ui_reporting_20260308/)*
 - [x] **Track: Subtitle Code Deduplication & Performance Refactor** *Phases: 3 | Link: [./archive/refactor_subtitle_dedup_20260309/](./archive/refactor_subtitle_dedup_20260309/)*

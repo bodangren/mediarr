@@ -50,6 +50,20 @@ This project follows the **Conductor Workflow**. All major features and fixes ar
 
 To contribute or implement features, please refer to the active track plans in `conductor/tracks/`.
 
+## Library Statistics & Analytics
+
+A dedicated analytics page at `/system/stats` aggregates library health data in real time:
+
+- **Library counts** — Total and monitored movies, TV shows, and episodes
+- **Storage breakdown** — Total size with a visual Movies vs TV split bar
+- **Quality distribution** — CSS bar charts showing 4K / 1080p / 720p / SD / Unknown counts for movies and episodes separately (`GET /api/system/stats`)
+- **Missing media** — Count of monitored items without files (movies and aired episodes), with links to the library
+- **Recent activity** — Downloads and searches over the last 7 and 30 days, plus subtitle downloads
+
+Backend implementation: `server/src/api/routes/statsRoutes.ts` — pure Prisma aggregations, no external dependencies.
+
+---
+
 ## API Utilities
 
 Shared backend utilities live in `server/src/api/utils/`:

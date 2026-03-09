@@ -20,6 +20,9 @@ import { ActivityQueuePage } from '@/components/activity/ActivityQueuePage';
 import { ActivityHistoryPage } from '@/components/activity/ActivityHistoryPage';
 import { CalendarPage } from '@/components/calendar/CalendarPage';
 import { StatsPage } from '@/components/system/StatsPage';
+import { SystemTasksPage } from '@/components/system/SystemTasksPage';
+import { SystemLogsPage } from '@/components/system/SystemLogsPage';
+import { SystemBackupPage } from '@/components/system/SystemBackupPage';
 import { CollectionsPage } from '@/components/collections/CollectionsPage';
 import { CollectionDetailPage } from '@/components/collections/CollectionDetailPage';
 import { getApiClients } from '@/lib/api/client';
@@ -2941,9 +2944,9 @@ export default function App() {
               <Route path="settings/notifications" element={<SettingsNotificationsPage />} />
               <Route path="settings/general" element={<SettingsGeneralPage />} />
 
-              <Route path="system/tasks" element={<StaticPage title="Tasks" description="Unified scheduled and queued background task management." />} />
-              <Route path="system/logs" element={<StaticPage title="Logs" description="Unified system and application log access." />} />
-              <Route path="system/backup" element={<StaticPage title="Backup" description="Unified backup and restore workflow." />} />
+              <Route path="system/tasks" element={<SystemTasksPage />} />
+              <Route path="system/logs" element={<SystemLogsPage />} />
+              <Route path="system/backup" element={<SystemBackupPage />} />
               <Route path="system/stats" element={<StatsPage />} />
               <Route path="system/status" element={<Navigate to="/system/tasks" replace />} />
 

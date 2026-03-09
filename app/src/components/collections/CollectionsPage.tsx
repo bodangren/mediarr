@@ -43,20 +43,20 @@ export function CollectionsPage() {
     mutationFn: (id: number) => api.collectionApi.delete(id),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.collections() });
-      pushToast({ type: 'success', message: 'Collection deleted.' });
+      pushToast({ variant: 'success', message: 'Collection deleted.' });
     },
     onError: () => {
-      pushToast({ type: 'error', message: 'Failed to delete collection.' });
+      pushToast({ variant: 'error', message: 'Failed to delete collection.' });
     },
   });
 
   const searchMutation = useMutation({
     mutationFn: (id: number) => api.collectionApi.search(id),
     onSuccess: result => {
-      pushToast({ type: 'success', message: `Searching for ${result.missing} missing movies.` });
+      pushToast({ variant: 'success', message: `Searching for ${result.missing} missing movies.` });
     },
     onError: () => {
-      pushToast({ type: 'error', message: 'Search failed.' });
+      pushToast({ variant: 'error', message: 'Search failed.' });
     },
   });
 
@@ -66,10 +66,10 @@ export function CollectionsPage() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.collections() });
       setEditingCollection(null);
-      pushToast({ type: 'success', message: 'Collection updated.' });
+      pushToast({ variant: 'success', message: 'Collection updated.' });
     },
     onError: () => {
-      pushToast({ type: 'error', message: 'Failed to update collection.' });
+      pushToast({ variant: 'error', message: 'Failed to update collection.' });
     },
   });
 
@@ -84,9 +84,9 @@ export function CollectionsPage() {
       void queryClient.invalidateQueries({ queryKey: queryKeys.collections() });
       setShowAddModal(false);
       setAddTmdbId('');
-      pushToast({ type: 'success', message: 'Collection added.' });
+      pushToast({ variant: 'success', message: 'Collection added.' });
     } catch {
-      pushToast({ type: 'error', message: 'Failed to add collection.' });
+      pushToast({ variant: 'error', message: 'Failed to add collection.' });
     } finally {
       setIsAdding(false);
     }

@@ -23,10 +23,10 @@ export function CollectionDetailPage() {
   const searchMutation = useMutation({
     mutationFn: () => api.collectionApi.search(collectionId),
     onSuccess: result => {
-      pushToast({ type: 'success', message: `Searching for ${result.missing} missing movies.` });
+      pushToast({ variant: 'success', message: `Searching for ${result.missing} missing movies.` });
     },
     onError: () => {
-      pushToast({ type: 'error', message: 'Search failed.' });
+      pushToast({ variant: 'error', message: 'Search failed.' });
     },
   });
 
@@ -34,10 +34,10 @@ export function CollectionDetailPage() {
     mutationFn: () => api.collectionApi.sync(collectionId),
     onSuccess: result => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.collectionDetail(collectionId) });
-      pushToast({ type: 'success', message: `Synced: ${result.added} added, ${result.updated} updated.` });
+      pushToast({ variant: 'success', message: `Synced: ${result.added} added, ${result.updated} updated.` });
     },
     onError: () => {
-      pushToast({ type: 'error', message: 'Sync failed.' });
+      pushToast({ variant: 'error', message: 'Sync failed.' });
     },
   });
 

@@ -10,7 +10,7 @@ export interface ToastAction {
 }
 
 export interface ToastInput {
-  title: string;
+  title?: string;
   message?: string;
   variant?: ToastVariant;
   action?: ToastAction;
@@ -71,7 +71,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               className={`pointer-events-auto rounded-md border px-4 py-3 shadow-elevation-2 backdrop-blur ${variantClass(variant)}`}
               role="status"
             >
-              <p className="text-sm font-semibold text-text-primary">{toast.title}</p>
+              {toast.title ? <p className="text-sm font-semibold text-text-primary">{toast.title}</p> : null}
               {toast.message ? <p className="mt-1 text-sm text-text-secondary">{toast.message}</p> : null}
               {toast.action ? (
                 <button

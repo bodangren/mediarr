@@ -1,0 +1,9 @@
+{
+  "id": "system-pages-completion_20260309",
+  "title": "System Pages Completion",
+  "type": "feature",
+  "status": "complete",
+  "created": "2026-03-09",
+  "phases": 3,
+  "description": "Implement the three stub system pages (Tasks, Logs, Backup) as fully functional React components, replacing StaticPage placeholders with real API-connected UIs."
+}

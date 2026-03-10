@@ -1,0 +1,9 @@
+{
+  "id": "feature_system_health_20260310",
+  "type": "feature",
+  "title": "Real System Health & Disk Space Monitoring",
+  "status": "completed",
+  "created": "2026-03-10",
+  "phases": 3,
+  "description": "Replace hardcoded stubs in /api/system/status with real live checks: disk space via fs.statfs(), process uptime, database connectivity, root folder existence/writability, and FFmpeg detection."
+}

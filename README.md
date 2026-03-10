@@ -91,6 +91,22 @@ Shared frontend helpers for displaying subtitle availability:
 - **`summarizeSubtitleCoverage`** — Computes complete/partial/missing status from available and missing language lists.
 - **`subtitleStatusLabel`** / **`subtitleStatusBadgeClass`** — Consistent UI labels and CSS classes across all subtitle views.
 
+## System Health Monitoring
+
+### SystemHealthService (`server/src/services/SystemHealthService.ts`)
+
+The `/api/system/status` endpoint now returns **real, live** system data instead of hardcoded stubs:
+
+- **`getDiskSpace(paths)`** — Uses `fs.statfs()` to report actual free/total bytes for each configured path. Falls back to zeros on inaccessible paths.
+- **`getProcessInfo()`** — Returns actual `process.uptime()`, `process.version`, `process.platform`, and a real server start timestamp.
+- **`checkDatabase()`** — Pings the database with `SELECT 1`, fetches the SQLite version via `sqlite_version()`, and reads the latest migration name from `_prisma_migrations`. Returns `'error'` status on failure.
+- **`checkRootFolders(paths)`** — Checks each path with `fs.access(R_OK)`, reporting `'ok'` or `'error'` per path.
+- **`detectFFmpeg()`** — Runs `ffmpeg -version` and parses the version string; returns `status: 'unknown'` if FFmpeg is not installed.
+
+Overall health status (`ok` / `warning` / `error`) is computed from the per-check results. The service is injected via `ApiDependencies.systemHealthService` so routes fall back gracefully in test environments.
+
+---
+
 ## Notification Event Dispatch
 
 ### NotificationDispatchService (`server/src/services/NotificationDispatchService.ts`)

@@ -49,6 +49,7 @@ Android TV Client (New)
 
 ## Archived Tracks
 
+- [x] **Track: Real System Health & Disk Space Monitoring** *Phases: 3 | Link: [./archive/feature_system_health_20260310/](./archive/feature_system_health_20260310/)*
 - [x] **Track: Notification Event Dispatch Service** *Phases: 3 | Link: [./archive/feature_notification_dispatch_20260310/](./archive/feature_notification_dispatch_20260310/)*
 - [x] **Track: Search Release-Date Guard & System UI Consistency Refactor** *Phases: 4 | Link: [./archive/refactor_search_release_date_ui_cleanup_20260310/](./archive/refactor_search_release_date_ui_cleanup_20260310/)*
 - [x] **Track: System Pages Completion** *Phases: 3 | Link: [./archive/system-pages-completion_20260309/](./archive/system-pages-completion_20260309/)*

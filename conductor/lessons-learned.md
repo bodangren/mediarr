@@ -12,6 +12,9 @@
 - (2026-03-10, feature_notification_dispatch) When extracting shared logic, `sendSingleNotification` exported from service is consumed by both routes (test) and service (dispatch) — prevents divergence. Pattern: extract to service, import into routes, never duplicate.
 - (2026-03-10, feature_notification_dispatch) `NotificationRepository.findAllEnabled()` was already implemented but unused. Before building new infrastructure always check repositories for ready-made helpers.
 
+- (2026-03-10, feature_system_health) `vi.hoisted()` is required for mock variables referenced inside `vi.mock()` factories — plain `const mockFn = vi.fn()` at the module top level causes "Cannot access before initialization" when Vitest hoists the mock call.
+- (2026-03-10, feature_system_health) `fs.statfs()` is available on Bun and Node ≥ 18; cast through `(fs as any).statfs` if TypeScript does not expose the type in the target lib.
+
 ### Recurring Gotchas
 <!-- Problems encountered repeatedly; save future tracks from the same pain -->
 

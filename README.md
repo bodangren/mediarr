@@ -95,8 +95,9 @@ Shared frontend helpers for displaying subtitle availability:
 
 ### SystemHealthService (`server/src/services/SystemHealthService.ts`)
 
-The `/api/system/status` endpoint now returns **real, live** system data instead of hardcoded stubs:
+The `/api/system/status` endpoint returns **real, live** system data with **dynamic path resolution from AppSettings**:
 
+- **Dynamic disk-space paths** — Disk-space check paths are read from `settingsService` at request time: `movieRootFolder`, `tvRootFolder`, `torrentLimits.incompleteDirectory`, and `torrentLimits.completeDirectory`. Duplicate paths are deduplicated automatically. Falls back to an empty array when `settingsService` is not configured.
 - **`getDiskSpace(paths)`** — Uses `fs.statfs()` to report actual free/total bytes for each configured path. Falls back to zeros on inaccessible paths.
 - **`getProcessInfo()`** — Returns actual `process.uptime()`, `process.version`, `process.platform`, and a real server start timestamp.
 - **`checkDatabase()`** — Pings the database with `SELECT 1`, fetches the SQLite version via `sqlite_version()`, and reads the latest migration name from `_prisma_migrations`. Returns `'error'` status on failure.

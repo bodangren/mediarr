@@ -2,7 +2,7 @@
   "id": "feature_system_routes_coverage_20260311",
   "title": "System Routes Test Coverage & Dynamic Disk Space from AppSettings",
   "type": "feature",
-  "status": "in_progress",
+  "status": "completed",
   "created": "2026-03-11",
   "phases": 2,
   "description": "Add comprehensive Vitest test coverage for the untested systemRoutes.ts file (system status, task management, system events) and resolve open tech debt by replacing hardcoded disk-space paths with dynamic values read from AppSettings root folder configuration."

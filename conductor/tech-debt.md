@@ -10,7 +10,7 @@
 |------|-------|------|----------|--------|-------|
 | 2026-01-01 | example_track | Example: Hardcoded timeout value | Low | Resolved | Replaced with config value in v1.2 |
 | 2026-03-10 | refactor_search_release_date_ui_cleanup_20260310 | autoSearchMovie/Episode searched pre-release content | Medium | Resolved | Added isReleasedYet guard + Prisma date filter in autoSearchAll |
-| 2026-03-10 | feature_system_health_20260310 | /api/system/status disk space paths are hardcoded to /data and /data/downloads | Low | Open | Should read root folder paths from AppSettings rather than fixed paths |
+| 2026-03-10 | feature_system_health_20260310 | /api/system/status disk space paths are hardcoded to /data and /data/downloads | Low | Resolved | Reads movieRootFolder/tvRootFolder/torrent directories from settingsService; falls back to empty array |
 | 2026-03-10 | feature_android_push_notifications_20260310 | Android POST_NOTIFICATIONS is declared but not runtime-requested | Low | Open | Add runtime permission request flow for Android 13+ (API 33+) devices |
 | 2026-03-11 | refactor_security_code_quality_20260311 | SQL value interpolation in repairMalformedJsonColumns | High | Resolved | Parameterized via positional arg to $executeRawUnsafe |
 | 2026-03-11 | refactor_security_code_quality_20260311 | Unsafe new Date() from query params in systemRoutes | Medium | Resolved | Replaced with parseDate() from routeUtils |

@@ -29,6 +29,8 @@
 <!-- Approaches worth repeating -->
 
 - (YYYY-MM-DD, track_id) Example: Writing acceptance criteria before implementation caught scope creep early
+- (2026-03-11, feature_system_routes_coverage) TDD on routes with in-memory module state: use exported `systemState` proxy object to reset state between tests in `beforeEach`. Pure filter-predicate bugs (like the clear-by-level logic) are only detectable with test coverage — write the tests first, let them fail, then fix.
+- (2026-03-11, feature_system_routes_coverage) Conditional filter logic using sequential `if (condition) return keep` guards is fragile — use an explicit boolean predicate (`const matches = ...; return !matches`) for clarity and correctness.
 
 ### Planning Improvements
 <!-- Notes on where estimates were wrong and why -->

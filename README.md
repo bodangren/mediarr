@@ -107,20 +107,25 @@ Overall health status (`ok` / `warning` / `error`) is computed from the per-chec
 
 ---
 
-## Notification Event Dispatch
+## Push Notifications (Server → Android TV)
 
 ### NotificationDispatchService (`server/src/services/NotificationDispatchService.ts`)
 
-Configured notifications (Discord, Slack, Telegram, Gotify, Pushover, Webhook, Email) are now **automatically dispatched on real app events**:
+Mediarr delivers real-time push notifications directly to connected Android TV clients via the existing SSE (Server-Sent Events) event hub — **no external services required**.
 
-- **`notifyGrab(payload)`** — Fires when a release is successfully grabbed (torrent added). Triggered from `MediaSearchService.grabRelease()`.
-- **`notifyDownload(payload)`** — Fires when a movie or episode is successfully imported after download. Triggered from `ImportManager` at all 4 import paths (linked movie, linked episode, parsed movie, parsed episode). Uses `onDownload` or `onUpgrade` flag depending on `isUpgrade`.
-- **`notifySeriesAdd(payload)`** — Available for wiring when a new series is added to the library.
-- **`notifyEpisodeDelete(payload)`** — Available for wiring when an episode file is deleted.
+- **`notifyGrab(payload)`** — Publishes `notification:grab` when a release is grabbed. Triggered from `MediaSearchService.grabRelease()`.
+- **`notifyDownload(payload)`** — Publishes `notification:download` when a movie or episode import completes. Triggered from `ImportManager` at all 4 import paths. Uses `isUpgrade: true` for quality upgrades.
+- **`notifySeriesAdd(payload)`** — Publishes `notification:seriesAdd` when a series is added to the library.
+- **`notifyEpisodeDelete(payload)`** — Publishes `notification:episodeDelete` when an episode file is deleted.
 
-Each method reads all enabled notifications from the DB, filters by the relevant boolean flag (`onGrab`, `onDownload`, etc.), and sends to all matching integrations concurrently. Errors from individual notification sends are swallowed so a broken integration never blocks the main import/download flow.
+Events are published to `ApiEventHub` which broadcasts them via SSE to all connected clients. Errors from the hub are swallowed so a broken connection never blocks the main download/import flow.
 
-The shared `sendSingleNotification(type, config, title, body)` function is exported and used by both the dispatch service and the notification test routes, eliminating code duplication.
+### Android TV Notification Client (`clients/android-tv/.../notification/`)
+
+- **`NotificationEventSource`** — Coroutine-based OkHttp SSE client. Subscribes to `/api/events/stream`, parses `notification:*` events, and dispatches to a `NotificationEventListener`. Reconnects automatically with exponential back-off.
+- **`MediarrNotificationManager`** — Creates the `mediarr_push` Android notification channel and posts system notifications via `NotificationManagerCompat`.
+- Wired via `DisposableEffect` in `MediarrTvApp.kt`: starts when a server URL is active, stops cleanly on URL change.
+- Status endpoint: `GET /api/notifications/push-status` — returns `enabled: true`, `transport: "sse"`, and the count of currently connected SSE clients.
 
 ---
 

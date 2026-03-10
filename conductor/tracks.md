@@ -49,6 +49,7 @@ Android TV Client (New)
 
 ## Archived Tracks
 
+- [x] **Track: Server-to-Android Push Notification System** *Phases: 3 | Link: [./archive/feature_android_push_notifications_20260310/](./archive/feature_android_push_notifications_20260310/)*
 - [x] **Track: Real System Health & Disk Space Monitoring** *Phases: 3 | Link: [./archive/feature_system_health_20260310/](./archive/feature_system_health_20260310/)*
 - [x] **Track: Notification Event Dispatch Service** *Phases: 3 | Link: [./archive/feature_notification_dispatch_20260310/](./archive/feature_notification_dispatch_20260310/)*
 - [x] **Track: Search Release-Date Guard & System UI Consistency Refactor** *Phases: 4 | Link: [./archive/refactor_search_release_date_ui_cleanup_20260310/](./archive/refactor_search_release_date_ui_cleanup_20260310/)*
@@ -105,4 +106,3 @@ Android TV Client (New)
 - [~] **Track: UI Dashboard & Settings (archived)** *Link: [../archive/ui_dashboard_settings_20260211/](../archive/ui_dashboard_settings_20260211/)*
 - [~] **Track: UI E2E Hardening (archived)** *Link: [../archive/ui_e2e_hardening_20260211/](../archive/ui_e2e_hardening_20260211/)*
 
-- Next track should be to change the recent notification work -- no online, email, discord, etc. -- and instead only build notifications between the server and the android so.

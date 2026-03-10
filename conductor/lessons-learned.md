@@ -9,8 +9,9 @@
 - (YYYY-MM-DD, track_id) Example: Chose X over Y because of Z constraint
 - (2026-03-10, refactor_search_release_date_ui_cleanup) Movie model has no single `releaseDate` field — uses `inCinemas`, `physicalRelease`, `digitalRelease`; use the earliest non-null date as the effective release date guard.
 - (2026-03-10, refactor_search_release_date_ui_cleanup) All new system pages must use `RouteScaffold` primitive. Future code review should verify this from the start.
-- (2026-03-10, feature_notification_dispatch) When extracting shared logic, `sendSingleNotification` exported from service is consumed by both routes (test) and service (dispatch) — prevents divergence. Pattern: extract to service, import into routes, never duplicate.
-- (2026-03-10, feature_notification_dispatch) `NotificationRepository.findAllEnabled()` was already implemented but unused. Before building new infrastructure always check repositories for ready-made helpers.
+- (2026-03-10, feature_android_push_notifications) When replacing an external dispatch mechanism with SSE, create the `ApiEventHub` BEFORE services that need it in `main.ts` and pass it explicitly — avoids circular dependency between service construction and server initialization.
+- (2026-03-10, feature_android_push_notifications) Android SSE can be implemented with plain OkHttp streaming (no `okhttp-sse` artifact needed) — read the response body line-by-line and accumulate `event:` / `data:` fields between blank lines.
+- (2026-03-10, feature_android_push_notifications) Use `DisposableEffect` (not `LaunchedEffect + remember`) to manage started/stopped resources in Compose when the key changes — `onDispose` cleanly stops the old resource before the new one starts.
 
 - (2026-03-10, feature_system_health) `vi.hoisted()` is required for mock variables referenced inside `vi.mock()` factories — plain `const mockFn = vi.fn()` at the module top level causes "Cannot access before initialization" when Vitest hoists the mock call.
 - (2026-03-10, feature_system_health) `fs.statfs()` is available on Bun and Node ≥ 18; cast through `(fs as any).statfs` if TypeScript does not expose the type in the target lib.

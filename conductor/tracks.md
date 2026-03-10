@@ -103,3 +103,5 @@ Android TV Client (New)
 - [~] **Track: UI Operational Hardening (archived)** *Link: [../archive/ui_operational_hardening_20260211/](../archive/ui_operational_hardening_20260211/)*
 - [~] **Track: UI Dashboard & Settings (archived)** *Link: [../archive/ui_dashboard_settings_20260211/](../archive/ui_dashboard_settings_20260211/)*
 - [~] **Track: UI E2E Hardening (archived)** *Link: [../archive/ui_e2e_hardening_20260211/](../archive/ui_e2e_hardening_20260211/)*
+
+- Next track should be to change the recent notification work -- no online, email, discord, etc. -- and instead only build notifications between the server and the android so.

@@ -9,6 +9,8 @@
 - (YYYY-MM-DD, track_id) Example: Chose X over Y because of Z constraint
 - (2026-03-10, refactor_search_release_date_ui_cleanup) Movie model has no single `releaseDate` field — uses `inCinemas`, `physicalRelease`, `digitalRelease`; use the earliest non-null date as the effective release date guard.
 - (2026-03-10, refactor_search_release_date_ui_cleanup) All new system pages must use `RouteScaffold` primitive. Future code review should verify this from the start.
+- (2026-03-10, feature_notification_dispatch) When extracting shared logic, `sendSingleNotification` exported from service is consumed by both routes (test) and service (dispatch) — prevents divergence. Pattern: extract to service, import into routes, never duplicate.
+- (2026-03-10, feature_notification_dispatch) `NotificationRepository.findAllEnabled()` was already implemented but unused. Before building new infrastructure always check repositories for ready-made helpers.
 
 ### Recurring Gotchas
 <!-- Problems encountered repeatedly; save future tracks from the same pain -->

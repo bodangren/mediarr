@@ -71,6 +71,7 @@ import { LibraryScanService } from './services/LibraryScanService';
 import { globalLogBuffer } from './services/LogReaderService';
 import { NotificationDispatchService } from './services/NotificationDispatchService';
 import { SystemHealthService } from './services/SystemHealthService';
+import { ApiEventHub } from './api/eventHub';
 
 function parsePort(rawPort: string | undefined, fallback: number): number {
   if (!rawPort) {
@@ -408,7 +409,10 @@ async function startApi(): Promise<void> {
   const torrentRepository = new TorrentRepository(prisma);
   const collectionRepository = new CollectionRepository(prisma);
 
-  const notificationDispatchService = new NotificationDispatchService(notificationRepository);
+  // Create the event hub early so NotificationDispatchService can publish to it
+  const eventHub = new ApiEventHub();
+
+  const notificationDispatchService = new NotificationDispatchService(eventHub);
 
   const httpClient = new HttpClient();
   const settingsService = new SettingsService(appSettingsRepository);
@@ -606,6 +610,7 @@ async function startApi(): Promise<void> {
 
   const app = createApiServer({
     prisma,
+    eventHub,
     mediaService,
     mediaSearchService,
     searchAggregationService,

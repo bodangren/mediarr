@@ -3,6 +3,7 @@ package com.mediarr.tv
 import android.app.Application
 import android.os.Build
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -16,6 +17,13 @@ import coil.ImageLoader
 import coil.ImageLoaderFactory
 import coil.util.DebugLogger
 import com.mediarr.tv.data.api.MediarrApiClient
+import com.mediarr.tv.notification.DownloadNotificationEvent
+import com.mediarr.tv.notification.EpisodeDeleteNotificationEvent
+import com.mediarr.tv.notification.GrabNotificationEvent
+import com.mediarr.tv.notification.MediarrNotificationManager
+import com.mediarr.tv.notification.NotificationEventListener
+import com.mediarr.tv.notification.NotificationEventSource
+import com.mediarr.tv.notification.SeriesAddNotificationEvent
 import com.mediarr.tv.data.repository.RemoteCatalogRepository
 import com.mediarr.tv.data.repository.RemotePlaybackRepository
 import com.mediarr.tv.discovery.DiscoveryEndpoint
@@ -78,6 +86,22 @@ fun MediarrTvApp() {
 
   LaunchedEffect(remoteRepository) {
     homeViewModel.attachRepository(remoteRepository)
+  }
+
+  val notificationManager = remember(context) { MediarrNotificationManager(context) }
+
+  DisposableEffect(activeBaseUrl) {
+    val source = NotificationEventSource(
+      baseUrlProvider = { activeBaseUrl },
+      listener = object : NotificationEventListener {
+        override fun onGrab(event: GrabNotificationEvent) = notificationManager.showGrab(event)
+        override fun onDownload(event: DownloadNotificationEvent) = notificationManager.showDownload(event)
+        override fun onSeriesAdd(event: SeriesAddNotificationEvent) = notificationManager.showSeriesAdd(event)
+        override fun onEpisodeDelete(event: EpisodeDeleteNotificationEvent) = notificationManager.showEpisodeDelete(event)
+      },
+    )
+    source.start()
+    onDispose { source.stop() }
   }
 
   LaunchedEffect(discoveryState.value) {

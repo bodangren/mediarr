@@ -16,6 +16,10 @@ export class ApiEventHub {
     this.heartbeatIntervalMs = heartbeatIntervalMs;
   }
 
+  get clientCount(): number {
+    return this.clients.size;
+  }
+
   addClient(client: ServerResponse): void {
     this.clients.add(client);
     this.ensureHeartbeat();

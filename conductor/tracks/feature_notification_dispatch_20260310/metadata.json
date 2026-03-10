@@ -1,0 +1,9 @@
+{
+  "id": "feature_notification_dispatch_20260310",
+  "title": "Notification Event Dispatch Service",
+  "type": "feature",
+  "status": "in_progress",
+  "created": "2026-03-10",
+  "phases": 3,
+  "description": "Implement a NotificationDispatchService that fires configured notifications (Discord, Slack, Telegram, etc.) on real app events: grabs, downloads, series additions, and episode deletes. Currently notifications are configured and stored in DB but never dispatched on events."
+}

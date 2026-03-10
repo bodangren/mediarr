@@ -69,6 +69,7 @@ import { RssMediaMonitor } from './services/RssMediaMonitor';
 import { BackupService } from './services/BackupService';
 import { LibraryScanService } from './services/LibraryScanService';
 import { globalLogBuffer } from './services/LogReaderService';
+import { NotificationDispatchService } from './services/NotificationDispatchService';
 
 function parsePort(rawPort: string | undefined, fallback: number): number {
   if (!rawPort) {
@@ -406,6 +407,8 @@ async function startApi(): Promise<void> {
   const torrentRepository = new TorrentRepository(prisma);
   const collectionRepository = new CollectionRepository(prisma);
 
+  const notificationDispatchService = new NotificationDispatchService(notificationRepository);
+
   const httpClient = new HttpClient();
   const settingsService = new SettingsService(appSettingsRepository);
   const metadataProvider = new MetadataProvider(httpClient, settingsService);
@@ -559,6 +562,7 @@ async function startApi(): Promise<void> {
         await subtitleAutomationService.onEpisodeImported(episodeId);
       },
     },
+    notificationDispatchService,
   );
 
   const mediaService = new MediaService(prisma, metadataProvider, activityEventEmitter);
@@ -568,6 +572,7 @@ async function startApi(): Promise<void> {
     torrentManager,
     activityEventEmitter,
     customFormatRepository,
+    notificationDispatchService,
   );
   const mediaSearchService = searchAggregationService;
   const wantedService = new WantedService(prisma);

@@ -91,6 +91,23 @@ Shared frontend helpers for displaying subtitle availability:
 - **`summarizeSubtitleCoverage`** — Computes complete/partial/missing status from available and missing language lists.
 - **`subtitleStatusLabel`** / **`subtitleStatusBadgeClass`** — Consistent UI labels and CSS classes across all subtitle views.
 
+## Notification Event Dispatch
+
+### NotificationDispatchService (`server/src/services/NotificationDispatchService.ts`)
+
+Configured notifications (Discord, Slack, Telegram, Gotify, Pushover, Webhook, Email) are now **automatically dispatched on real app events**:
+
+- **`notifyGrab(payload)`** — Fires when a release is successfully grabbed (torrent added). Triggered from `MediaSearchService.grabRelease()`.
+- **`notifyDownload(payload)`** — Fires when a movie or episode is successfully imported after download. Triggered from `ImportManager` at all 4 import paths (linked movie, linked episode, parsed movie, parsed episode). Uses `onDownload` or `onUpgrade` flag depending on `isUpgrade`.
+- **`notifySeriesAdd(payload)`** — Available for wiring when a new series is added to the library.
+- **`notifyEpisodeDelete(payload)`** — Available for wiring when an episode file is deleted.
+
+Each method reads all enabled notifications from the DB, filters by the relevant boolean flag (`onGrab`, `onDownload`, etc.), and sends to all matching integrations concurrently. Errors from individual notification sends are swallowed so a broken integration never blocks the main import/download flow.
+
+The shared `sendSingleNotification(type, config, title, body)` function is exported and used by both the dispatch service and the notification test routes, eliminating code duplication.
+
+---
+
 ## Automated Search
 
 ### Release-Date Guard (`server/src/services/WantedSearchService.ts`)

@@ -1,6 +1,7 @@
 import { Parser } from '../utils/Parser';
 import { Organizer } from './Organizer';
 import { ActivityEventEmitter } from './ActivityEventEmitter';
+import type { NotificationDispatchService } from './NotificationDispatchService';
 import path from 'node:path';
 import fs from 'node:fs/promises';
 
@@ -32,6 +33,7 @@ export class ImportManager {
     private readonly prisma: any,
     private readonly activityEventEmitter?: ActivityEventEmitter,
     private readonly hooks: ImportHooks = {},
+    private readonly notificationDispatchService?: NotificationDispatchService,
   ) {
     if (typeof this.torrentManager?.on === 'function') {
       this.torrentManager.on('torrent:completed', (torrent: any) => {
@@ -208,6 +210,11 @@ export class ImportManager {
             occurredAt: new Date(),
           });
 
+          void this.notificationDispatchService?.notifyDownload({
+            title: `${episode.season?.series?.title ?? series?.title ?? torrent.name} - ${filename}`,
+            mediaType: 'episode',
+          });
+
           await this.runImportHook('onEpisodeImported', episode.id);
           continue;
         }
@@ -253,6 +260,12 @@ export class ImportManager {
             details: { sourcePath: filePath, torrentName: torrent.name },
             occurredAt: new Date(),
           });
+
+          void this.notificationDispatchService?.notifyDownload({
+            title: movie.title,
+            mediaType: 'movie',
+          });
+
           await this.runImportHook('onMovieImported', movie.id);
           continue;
         }
@@ -353,6 +366,12 @@ export class ImportManager {
               details: { sourcePath: filePath, torrentName: torrent.name },
               occurredAt: new Date(),
             });
+
+            void this.notificationDispatchService?.notifyDownload({
+              title: `${series.title} - ${filename}`,
+              mediaType: 'episode',
+            });
+
             await this.runImportHook('onEpisodeImported', episode.id);
             continue;
           }
@@ -411,6 +430,12 @@ export class ImportManager {
             details: { sourcePath: filePath, torrentName: torrent.name },
             occurredAt: new Date(),
           });
+
+          void this.notificationDispatchService?.notifyDownload({
+            title: movie.title,
+            mediaType: 'movie',
+          });
+
           await this.runImportHook('onMovieImported', movie.id);
           continue;
         }

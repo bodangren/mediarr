@@ -4,6 +4,7 @@ import type { IndexerResult } from '../indexers/IndexerResult';
 import type { BaseIndexer, SearchQuery } from '../indexers/BaseIndexer';
 import { CustomFormatScoringEngine, type ReleaseCandidate } from './CustomFormatScoringEngine';
 import type { CustomFormatWithScores } from '../repositories/CustomFormatRepository';
+import type { NotificationDispatchService } from './NotificationDispatchService';
 
 export interface SearchCandidate {
   indexer: string;
@@ -395,6 +396,7 @@ export class MediaSearchService {
         score: number;
       }>>;
     },
+    private readonly notificationDispatchService?: NotificationDispatchService,
   ) {}
 
   private async applyUnifiedScoring(
@@ -734,6 +736,14 @@ export class MediaSearchService {
       }
 
       await this.activityEventEmitter?.emit(eventData);
+
+      // Fire grab notifications (fire-and-forget; errors are swallowed inside service)
+      void this.notificationDispatchService?.notifyGrab({
+        title: candidate.title,
+        indexer: candidate.indexer,
+        size: candidate.size,
+        quality: candidate.quality,
+      });
 
       return torrent;
     } catch (error: unknown) {

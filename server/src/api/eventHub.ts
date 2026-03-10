@@ -1,7 +1,13 @@
 import type { ServerResponse } from 'node:http';
 
 function formatSseFrame(event: string, payload: unknown): string {
-  return `event: ${event}\ndata: ${JSON.stringify(payload)}\n\n`;
+  let data: string;
+  try {
+    data = JSON.stringify(payload);
+  } catch {
+    data = JSON.stringify({ error: 'serialization_failed' });
+  }
+  return `event: ${event}\ndata: ${data}\n\n`;
 }
 
 /**

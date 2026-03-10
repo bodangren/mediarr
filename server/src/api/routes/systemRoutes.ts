@@ -7,7 +7,7 @@ import {
   sendPaginatedSuccess,
   sendSuccess,
 } from '../contracts';
-import { parseIdParam } from '../routeUtils';
+import { parseDate, parseIdParam } from '../routeUtils';
 import type { ApiDependencies } from '../types';
 import type { ApiEventHub } from '../eventHub';
 
@@ -18,6 +18,33 @@ type QueuedStatus = 'running' | 'queued' | 'paused';
 type HistoryStatus = 'success' | 'failed';
 type EventLevel = 'info' | 'warning' | 'error' | 'fatal';
 type EventType = 'system' | 'indexer' | 'network' | 'download' | 'import' | 'health' | 'update' | 'backup' | 'other';
+
+const EVENT_LEVELS: ReadonlySet<EventLevel> = new Set(['info', 'warning', 'error', 'fatal']);
+const EVENT_TYPES: ReadonlySet<EventType> = new Set(['system', 'indexer', 'network', 'download', 'import', 'health', 'update', 'backup', 'other']);
+
+function isEventLevel(v: unknown): v is EventLevel {
+  return typeof v === 'string' && EVENT_LEVELS.has(v as EventLevel);
+}
+
+function isEventType(v: unknown): v is EventType {
+  return typeof v === 'string' && EVENT_TYPES.has(v as EventType);
+}
+
+function parseEventFilters(query: Record<string, unknown>): {
+  level?: EventLevel;
+  type?: EventType;
+  startDate?: Date;
+  endDate?: Date;
+} {
+  const filters: { level?: EventLevel; type?: EventType; startDate?: Date; endDate?: Date } = {};
+  if (isEventLevel(query.level)) filters.level = query.level;
+  if (isEventType(query.type)) filters.type = query.type;
+  const startDate = parseDate(query.startDate);
+  if (startDate) filters.startDate = startDate;
+  const endDate = parseDate(query.endDate);
+  if (endDate) filters.endDate = endDate;
+  return filters;
+}
 
 // In-memory state for tasks
 interface ScheduledTask {
@@ -523,17 +550,7 @@ export function registerSystemRoutes(
     const query = request.query as Record<string, unknown>;
     const pagination = parsePaginationParams(query);
 
-    const filters: {
-      level?: EventLevel;
-      type?: EventType;
-      startDate?: Date;
-      endDate?: Date;
-    } = {};
-    
-    if (query.level) filters.level = query.level as EventLevel;
-    if (query.type) filters.type = query.type as EventType;
-    if (query.startDate) filters.startDate = new Date(query.startDate as string);
-    if (query.endDate) filters.endDate = new Date(query.endDate as string);
+    const filters = parseEventFilters(query);
 
     const filtered = filterEvents(systemEvents, filters);
     // Sort by most recent first
@@ -562,8 +579,8 @@ export function registerSystemRoutes(
   }, async (request, reply) => {
     const query = request.query as Record<string, unknown>;
 
-    const before = query.before ? new Date(query.before as string) : undefined;
-    const level = query.level as EventLevel | undefined;
+    const before = parseDate(query.before);
+    const level = isEventLevel(query.level) ? query.level : undefined;
 
     const initialCount = systemEvents.length;
 
@@ -600,17 +617,7 @@ export function registerSystemRoutes(
   }, async (request, reply) => {
     const query = request.query as Record<string, unknown>;
 
-    const filters: {
-      level?: EventLevel;
-      type?: EventType;
-      startDate?: Date;
-      endDate?: Date;
-    } = {};
-    
-    if (query.level) filters.level = query.level as EventLevel;
-    if (query.type) filters.type = query.type as EventType;
-    if (query.startDate) filters.startDate = new Date(query.startDate as string);
-    if (query.endDate) filters.endDate = new Date(query.endDate as string);
+    const filters = parseEventFilters(query);
 
     const filtered = filterEvents(systemEvents, filters);
     filtered.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());

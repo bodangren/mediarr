@@ -1,0 +1,9 @@
+{
+  "id": "refactor_security_code_quality_20260311",
+  "type": "refactor",
+  "title": "Security Hardening & Code Quality Refactor",
+  "status": "in_progress",
+  "created": "2026-03-11",
+  "phases": 3,
+  "description": "Code review of 2026-03-10 tracks: fix SQL parameterization in main.ts, add date validation and enum guards in systemRoutes.ts, deduplicate filter-parsing logic, harden SSE JSON serialization in eventHub.ts."
+}

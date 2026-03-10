@@ -340,13 +340,13 @@ async function repairMalformedJsonColumns(prisma: PrismaClient): Promise<void> {
     repairs.push({ label: 'Torrent.eta.negative-null', changes: torrentEtaNegativeRes });
 
     for (const [column, defaultJson] of Object.entries(requiredAppSettingsDefaults)) {
-      // Prisma raw parameterized queries shouldn't dynamically bind column names, 
-      // but since column names are hardcoded, we can use unsafe raw
-      const res = await prisma.$executeRawUnsafe(`
-        UPDATE "AppSettings"
-        SET "${column}" = '${defaultJson}'
-        WHERE "${column}" IS NULL OR json_valid("${column}") = 0
-      `);
+      // Column names cannot be bound as parameters in SQL, so we use $executeRawUnsafe
+      // for the identifier only. The value is passed as a positional parameter to prevent
+      // any risk of injection from the JSON string content.
+      const res = await prisma.$executeRawUnsafe(
+        `UPDATE "AppSettings" SET "${column}" = ? WHERE "${column}" IS NULL OR json_valid("${column}") = 0`,
+        defaultJson,
+      );
       repairs.push({ label: `AppSettings.${column}`, changes: res });
     }
 

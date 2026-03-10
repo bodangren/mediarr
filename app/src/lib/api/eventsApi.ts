@@ -56,6 +56,33 @@ const heartbeatSchema = z.object({
   timestamp: z.string(),
 }).passthrough();
 
+const notificationGrabSchema = z.object({
+  title: z.string(),
+  indexer: z.string().nullable().optional(),
+  quality: z.string().nullable().optional(),
+  size: z.number().nullable().optional(),
+  sizeFormatted: z.string().nullable().optional(),
+}).passthrough();
+
+const notificationDownloadSchema = z.object({
+  title: z.string(),
+  mediaType: z.enum(['movie', 'episode']),
+  isUpgrade: z.boolean().optional(),
+}).passthrough();
+
+const notificationSeriesAddSchema = z.object({
+  title: z.string(),
+  year: z.number().nullable().optional(),
+}).passthrough();
+
+const notificationEpisodeDeleteSchema = z.object({
+  seriesTitle: z.string(),
+  episodeRef: z.string(),
+  episodeTitle: z.string().nullable().optional(),
+  seasonNumber: z.number().nullable().optional(),
+  episodeNumber: z.number().nullable().optional(),
+}).passthrough();
+
 export type ConnectionState = 'idle' | 'connecting' | 'open' | 'reconnecting' | 'closed';
 
 export interface EventsPayloadMap {
@@ -69,6 +96,10 @@ export interface EventsPayloadMap {
   'command:started': z.infer<typeof commandStateSchema>;
   'command:completed': z.infer<typeof commandStateSchema>;
   heartbeat: z.infer<typeof heartbeatSchema>;
+  'notification:grab': z.infer<typeof notificationGrabSchema>;
+  'notification:download': z.infer<typeof notificationDownloadSchema>;
+  'notification:seriesAdd': z.infer<typeof notificationSeriesAddSchema>;
+  'notification:episodeDelete': z.infer<typeof notificationEpisodeDeleteSchema>;
 }
 
 type EventName = keyof EventsPayloadMap;
@@ -110,6 +141,10 @@ export class EventsApiClient {
     'command:started': new Set(),
     'command:completed': new Set(),
     heartbeat: new Set(),
+    'notification:grab': new Set(),
+    'notification:download': new Set(),
+    'notification:seriesAdd': new Set(),
+    'notification:episodeDelete': new Set(),
   };
 
   private readonly stateHandlers = new Set<StateHandler>();
@@ -227,6 +262,22 @@ export class EventsApiClient {
 
     source.addEventListener('heartbeat', event => {
       this.handleEvent('heartbeat', event, heartbeatSchema);
+    });
+
+    source.addEventListener('notification:grab', event => {
+      this.handleEvent('notification:grab', event, notificationGrabSchema);
+    });
+
+    source.addEventListener('notification:download', event => {
+      this.handleEvent('notification:download', event, notificationDownloadSchema);
+    });
+
+    source.addEventListener('notification:seriesAdd', event => {
+      this.handleEvent('notification:seriesAdd', event, notificationSeriesAddSchema);
+    });
+
+    source.addEventListener('notification:episodeDelete', event => {
+      this.handleEvent('notification:episodeDelete', event, notificationEpisodeDeleteSchema);
     });
   }
 

@@ -3,24 +3,13 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import { registerApiErrorHandler } from '../errors';
 import { registerNotificationRoutes } from './notificationRoutes';
 import type { ApiDependencies } from '../types';
+import type { ApiEventHub } from '../eventHub';
 
-function createRepositoryMock() {
-  return {
-    findAll: vi.fn(),
-    findById: vi.fn(),
-    create: vi.fn(),
-    update: vi.fn(),
-    delete: vi.fn(),
-    exists: vi.fn(),
-    nameExists: vi.fn(),
-  };
-}
-
-function createApp(mockRepo: ReturnType<typeof createRepositoryMock>): FastifyInstance {
+function createApp(hub?: Partial<ApiEventHub>): FastifyInstance {
   const app = Fastify();
   const deps: ApiDependencies = {
     prisma: {},
-    notificationRepository: mockRepo,
+    eventHub: hub as ApiEventHub | undefined,
   };
 
   app.setErrorHandler((error, request, reply) => registerApiErrorHandler(request, reply, error));
@@ -29,99 +18,47 @@ function createApp(mockRepo: ReturnType<typeof createRepositoryMock>): FastifyIn
 }
 
 describe('notificationRoutes', () => {
-  let mockRepo: ReturnType<typeof createRepositoryMock>;
   let app: FastifyInstance;
 
   beforeEach(() => {
-    mockRepo = createRepositoryMock();
-    app = createApp(mockRepo);
+    app = createApp();
   });
 
-  it('returns provider schema list with required providers', async () => {
-    const response = await app.inject({
-      method: 'POST',
-      url: '/api/notifications/schema',
-      payload: {},
-    });
-    expect(response.statusCode).toBe(200);
+  describe('GET /api/notifications/push-status', () => {
+    it('returns push status with enabled=true and transport=sse', async () => {
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/notifications/push-status',
+      });
 
-    const body = JSON.parse(response.body) as { data: Array<{ type: string }> };
-    const types = body.data.map((item) => item.type);
-    expect(types).toEqual(expect.arrayContaining(['discord', 'slack', 'telegram', 'email', 'webhook']));
-  });
+      expect(response.statusCode).toBe(200);
+      const body = JSON.parse(response.body) as { data: { enabled: boolean; transport: string; connectedClients: number } };
+      expect(body.data.enabled).toBe(true);
+      expect(body.data.transport).toBe('sse');
+      expect(typeof body.data.connectedClients).toBe('number');
+    });
 
-  it('supports notification CRUD and test endpoints', async () => {
-    mockRepo.nameExists.mockResolvedValue(false);
-    mockRepo.exists.mockResolvedValue(true);
-    mockRepo.create.mockResolvedValue({
-      id: 1,
-      name: 'Discord Hook',
-      type: 'discord',
-      enabled: true,
-      onGrab: true,
-      onDownload: false,
-      onUpgrade: false,
-      onRename: false,
-      onSeriesAdd: false,
-      onEpisodeDelete: false,
-      config: { webhookUrl: 'https://discord.com/api/webhooks/test' },
-    });
-    mockRepo.update.mockResolvedValue({
-      id: 1,
-      name: 'Discord Hook',
-      type: 'discord',
-      enabled: true,
-      onGrab: true,
-      onDownload: false,
-      onUpgrade: false,
-      onRename: false,
-      onSeriesAdd: false,
-      onEpisodeDelete: false,
-      config: { webhookUrl: 'https://discord.com/api/webhooks/test' },
-    });
-    mockRepo.findById.mockResolvedValue({
-      id: 1,
-      name: 'Discord Hook',
-      type: 'discord',
-      enabled: true,
-      onGrab: true,
-      onDownload: false,
-      onUpgrade: false,
-      onRename: false,
-      onSeriesAdd: false,
-      onEpisodeDelete: false,
-      config: { webhookUrl: 'https://discord.com/api/webhooks/test' },
-    });
-    mockRepo.delete.mockResolvedValue({ id: 1 });
+    it('returns connectedClients=0 when no eventHub is configured', async () => {
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/notifications/push-status',
+      });
 
-    const createResponse = await app.inject({
-      method: 'POST',
-      url: '/api/notifications',
-      payload: {
-        name: 'Discord Hook',
-        type: 'discord',
-        config: { webhookUrl: 'https://discord.com/api/webhooks/test' },
-      },
+      const body = JSON.parse(response.body) as { data: { connectedClients: number } };
+      expect(body.data.connectedClients).toBe(0);
     });
-    expect(createResponse.statusCode).toBe(201);
 
-    const updateResponse = await app.inject({
-      method: 'PUT',
-      url: '/api/notifications/1',
-      payload: { name: 'Discord Hook' },
-    });
-    expect(updateResponse.statusCode).toBe(200);
+    it('returns connectedClients from eventHub.clientCount when hub is provided', async () => {
+      const mockHub = { clientCount: 3 } as Partial<ApiEventHub>;
+      const appWithHub = createApp(mockHub);
 
-    const testResponse = await app.inject({
-      method: 'POST',
-      url: '/api/notifications/1/test',
-    });
-    expect(testResponse.statusCode).toBe(200);
+      const response = await appWithHub.inject({
+        method: 'GET',
+        url: '/api/notifications/push-status',
+      });
 
-    const deleteResponse = await app.inject({
-      method: 'DELETE',
-      url: '/api/notifications/1',
+      const body = JSON.parse(response.body) as { data: { connectedClients: number } };
+      expect(body.data.connectedClients).toBe(3);
     });
-    expect(deleteResponse.statusCode).toBe(200);
   });
 });

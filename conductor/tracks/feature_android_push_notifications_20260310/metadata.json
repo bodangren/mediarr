@@ -1,0 +1,9 @@
+{
+  "id": "feature_android_push_notifications_20260310",
+  "title": "Server-to-Android Push Notification System",
+  "type": "feature",
+  "status": "in_progress",
+  "created": "2026-03-10",
+  "phases": 3,
+  "description": "Replace the external notification provider system (Discord, Slack, Telegram, Gotify, Pushover, Webhook, Email) with a direct server-to-Android push notification channel. The server publishes notification events via the existing SSE (Server-Sent Events) hub; the Android TV client subscribes to the event stream and displays system notifications."
+}

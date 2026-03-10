@@ -129,6 +129,29 @@ Events are published to `ApiEventHub` which broadcasts them via SSE to all conne
 
 ---
 
+## Security & Code Quality
+
+### Event System Hardening (`server/src/api/eventHub.ts`)
+
+The SSE event hub is hardened against malformed payloads:
+
+- **Circular-reference safety** — `formatSseFrame()` wraps `JSON.stringify()` in a try/catch; a payload that cannot be serialized emits `{"error":"serialization_failed"}` rather than throwing and crashing the process.
+- **Tested** — 5 unit tests in `eventHub.test.ts` cover broadcast, broken-pipe client removal, circular-reference resilience, client count tracking, and clean shutdown.
+
+### Input Validation (`server/src/api/routes/systemRoutes.ts`)
+
+System event filters now validate all query parameters before use:
+
+- **Date safety** — `parseDate()` from `routeUtils.ts` is used everywhere dates arrive from query strings, so invalid date strings return `undefined` rather than silently creating `Invalid Date`.
+- **Enum guards** — `isEventLevel()` / `isEventType()` set-membership checks replace unsafe `as EventLevel` casts; unknown values are silently ignored rather than corrupting filter logic.
+- **DRY filter parsing** — A single `parseEventFilters(query)` helper is shared between the `GET /api/system/events` and `GET /api/system/events/export` handlers.
+
+### SQL Parameterization (`server/src/main.ts`)
+
+`repairMalformedJsonColumns()` now passes JSON default values as positional parameters to `$executeRawUnsafe()` rather than interpolating them directly into the SQL string, following parameterized-query best practices.
+
+---
+
 ## Automated Search
 
 ### Release-Date Guard (`server/src/services/WantedSearchService.ts`)

@@ -12,6 +12,9 @@
 - (2026-03-10, feature_android_push_notifications) When replacing an external dispatch mechanism with SSE, create the `ApiEventHub` BEFORE services that need it in `main.ts` and pass it explicitly — avoids circular dependency between service construction and server initialization.
 - (2026-03-10, feature_android_push_notifications) Android SSE can be implemented with plain OkHttp streaming (no `okhttp-sse` artifact needed) — read the response body line-by-line and accumulate `event:` / `data:` fields between blank lines.
 - (2026-03-10, feature_android_push_notifications) Use `DisposableEffect` (not `LaunchedEffect + remember`) to manage started/stopped resources in Compose when the key changes — `onDispose` cleanly stops the old resource before the new one starts.
+- (2026-03-11, refactor_security_code_quality) `$executeRawUnsafe` accepts positional parameters as additional arguments — use `prisma.$executeRawUnsafe(sql, ...values)` to bind values even when column identifiers must remain in the SQL string.
+- (2026-03-11, refactor_security_code_quality) Always use `parseDate()` from `routeUtils.ts` when converting query string values to Date — `new Date(invalidString)` silently creates `Invalid Date` which passes comparisons incorrectly.
+- (2026-03-11, refactor_security_code_quality) Guard all enum casts from query params with an explicit membership check (`Set.has()`); bare `as EventLevel` casts let any string through and corrupt filter logic silently.
 
 - (2026-03-10, feature_system_health) `vi.hoisted()` is required for mock variables referenced inside `vi.mock()` factories — plain `const mockFn = vi.fn()` at the module top level causes "Cannot access before initialization" when Vitest hoists the mock call.
 - (2026-03-10, feature_system_health) `fs.statfs()` is available on Bun and Node ≥ 18; cast through `(fs as any).statfs` if TypeScript does not expose the type in the target lib.

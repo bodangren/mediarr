@@ -247,23 +247,42 @@ export function registerSystemRoutes(
   app.get('/api/system/status', async (_request, reply) => {
     const svc = deps.systemHealthService;
 
-    // Collect live data concurrently when service is available
-    const diskPaths = [
-      { path: '/data', label: 'Data Directory' },
-      { path: '/data/downloads', label: 'Downloads' },
-    ];
-    const folderPaths = [
-      { path: '/data/media', label: 'Media Root' },
-      { path: '/data/downloads', label: 'Downloads Root' },
-    ];
+    // Resolve disk-space and folder paths dynamically from AppSettings when available
+    let diskPaths: Array<{ path: string; label: string }> = [];
+    let folderPaths: Array<{ path: string; label: string }> = [];
+
+    if (deps.settingsService) {
+      try {
+        const settings = await deps.settingsService.get();
+        const seen = new Set<string>();
+        const addDisk = (path: string, label: string) => {
+          if (path && !seen.has(path)) {
+            seen.add(path);
+            diskPaths.push({ path, label });
+          }
+        };
+        addDisk(settings.mediaManagement.movieRootFolder, 'Movies');
+        addDisk(settings.mediaManagement.tvRootFolder, 'TV Shows');
+        addDisk(settings.torrentLimits.incompleteDirectory, 'Downloads (Incomplete)');
+        addDisk(settings.torrentLimits.completeDirectory, 'Downloads (Complete)');
+
+        folderPaths = [
+          ...(settings.mediaManagement.movieRootFolder
+            ? [{ path: settings.mediaManagement.movieRootFolder, label: 'Movies' }]
+            : []),
+          ...(settings.mediaManagement.tvRootFolder
+            ? [{ path: settings.mediaManagement.tvRootFolder, label: 'TV Shows' }]
+            : []),
+        ];
+      } catch {
+        // Fall back to empty paths; non-fatal
+      }
+    }
 
     const [diskSpace, processInfo, dbCheck, folderChecks, ffmpeg] = await Promise.all([
       svc
         ? svc.getDiskSpace(diskPaths)
-        : Promise.resolve([
-            { path: '/data', label: 'Data Directory', free: 0, total: 0 },
-            { path: '/data/downloads', label: 'Downloads', free: 0, total: 0 },
-          ]),
+        : Promise.resolve([]),
       svc
         ? Promise.resolve(svc.getProcessInfo())
         : Promise.resolve({
@@ -585,10 +604,10 @@ export function registerSystemRoutes(
     const initialCount = systemEvents.length;
 
     systemEvents = systemEvents.filter(event => {
-      if (level && event.level !== level) return true;
-      if (before && new Date(event.timestamp) >= before) return true;
-      if (!level && !before) return false;
-      return true;
+      // Keep the event unless it matches ALL active filter criteria (i.e. should be cleared)
+      const matchesLevel = !level || event.level === level;
+      const matchesBefore = !before || new Date(event.timestamp) < before;
+      return !(matchesLevel && matchesBefore);
     });
 
     const cleared = initialCount - systemEvents.length;

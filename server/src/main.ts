@@ -70,6 +70,7 @@ import { BackupService } from './services/BackupService';
 import { LibraryScanService } from './services/LibraryScanService';
 import { globalLogBuffer } from './services/LogReaderService';
 import { NotificationDispatchService } from './services/NotificationDispatchService';
+import { SystemHealthService } from './services/SystemHealthService';
 
 function parsePort(rawPort: string | undefined, fallback: number): number {
   if (!rawPort) {
@@ -601,6 +602,7 @@ async function startApi(): Promise<void> {
   const dbFilePath = databaseUrl.replace(/^file:/, '');
   const backupDir = process.env.BACKUP_DIR ?? path.resolve(path.dirname(dbFilePath), 'backups');
   const backupService = new BackupService(dbFilePath, backupDir);
+  const systemHealthService = new SystemHealthService(prisma);
 
   const app = createApiServer({
     prisma,
@@ -636,6 +638,7 @@ async function startApi(): Promise<void> {
     logReaderService: globalLogBuffer,
     backupService,
     libraryScanService,
+    systemHealthService,
   });
 
   const staticDir = process.env.STATIC_DIR ?? path.resolve(process.cwd(), 'app/dist');

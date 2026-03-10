@@ -32,6 +32,7 @@ import type { Scheduler } from '../services/Scheduler';
 import type { LogReaderService } from '../services/LogReaderService';
 import type { BackupService } from '../services/BackupService';
 import type { LibraryScanService } from '../services/LibraryScanService';
+import type { SystemHealthService } from '../services/SystemHealthService';
 
 
 export interface ApiDependencies {
@@ -136,6 +137,10 @@ export interface ApiDependencies {
   logReaderService?: Pick<LogReaderService, 'getEntries'>;
   backupService?: Pick<BackupService, 'create' | 'list' | 'delete' | 'getFilePath'>;
   libraryScanService?: Pick<LibraryScanService, 'scanAll'>;
+  systemHealthService?: Pick<
+    SystemHealthService,
+    'getDiskSpace' | 'getProcessInfo' | 'checkDatabase' | 'checkRootFolders' | 'detectFFmpeg'
+  >;
 
 }
 

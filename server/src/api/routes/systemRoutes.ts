@@ -218,65 +218,103 @@ export function registerSystemRoutes(
 ): void {
   // GET /api/system/status
   app.get('/api/system/status', async (_request, reply) => {
-    const startTime = new Date(Date.now() - 3600000); // 1 hour ago
+    const svc = deps.systemHealthService;
+
+    // Collect live data concurrently when service is available
+    const diskPaths = [
+      { path: '/data', label: 'Data Directory' },
+      { path: '/data/downloads', label: 'Downloads' },
+    ];
+    const folderPaths = [
+      { path: '/data/media', label: 'Media Root' },
+      { path: '/data/downloads', label: 'Downloads Root' },
+    ];
+
+    const [diskSpace, processInfo, dbCheck, folderChecks, ffmpeg] = await Promise.all([
+      svc
+        ? svc.getDiskSpace(diskPaths)
+        : Promise.resolve([
+            { path: '/data', label: 'Data Directory', free: 0, total: 0 },
+            { path: '/data/downloads', label: 'Downloads', free: 0, total: 0 },
+          ]),
+      svc
+        ? Promise.resolve(svc.getProcessInfo())
+        : Promise.resolve({
+            version: process.version,
+            os: process.platform,
+            isLinux: process.platform === 'linux',
+            isWindows: process.platform === 'win32',
+            isDocker: false,
+            startTime: new Date(Date.now() - 3600000).toISOString(),
+            uptime: 3600,
+          }),
+      svc
+        ? svc.checkDatabase()
+        : Promise.resolve({ status: 'unknown' as HealthStatus, message: 'Health service not initialized' }),
+      svc
+        ? svc.checkRootFolders(folderPaths)
+        : Promise.resolve([]),
+      svc
+        ? svc.detectFFmpeg()
+        : Promise.resolve({ version: undefined, status: 'unknown' as HealthStatus }),
+    ]);
+
+    // Build health checks list from real results
+    const healthChecks = [
+      {
+        type: 'database',
+        source: 'SQLite',
+        message: dbCheck.message,
+        status: dbCheck.status,
+        lastChecked: new Date().toISOString(),
+      },
+      ...folderChecks,
+    ];
+    const overallHealth: HealthStatus = healthChecks.some(c => c.status === 'error')
+      ? 'error'
+      : healthChecks.some(c => c.status === 'warning')
+        ? 'warning'
+        : 'ok';
+
     const status = {
       health: {
-        overall: 'ok' as HealthStatus,
-        checks: [
-          {
-            type: 'database',
-            source: 'SQLite',
-            message: 'Database is healthy',
-            status: 'ok' as HealthStatus,
-            lastChecked: new Date().toISOString(),
-          },
-          {
-            type: 'indexers',
-            source: 'IndexerHealth',
-            message: 'All indexers operational',
-            status: 'ok' as HealthStatus,
-            lastChecked: new Date().toISOString(),
-          },
-        ],
+        overall: overallHealth,
+        checks: healthChecks,
       },
       system: {
         version: '1.0.0',
         branch: 'main',
-        commit: 'abc123def456',
-        startTime: startTime.toISOString(),
-        uptime: Math.floor((Date.now() - startTime.getTime()) / 1000),
-        os: process.platform,
-        isLinux: process.platform === 'linux',
-        isWindows: process.platform === 'win32',
-        isDocker: false,
+        commit: process.env.GIT_COMMIT ?? 'unknown',
+        startTime: processInfo.startTime,
+        uptime: processInfo.uptime,
+        os: processInfo.os,
+        isLinux: processInfo.isLinux,
+        isWindows: processInfo.isWindows,
+        isDocker: processInfo.isDocker,
       },
       database: {
         type: 'SQLite',
-        version: '3.45.0',
-        migration: '20240101000000',
-        location: './data/mediarr.db',
+        version: ('version' in dbCheck ? dbCheck.version : undefined) ?? 'unknown',
+        migration: ('migration' in dbCheck ? dbCheck.migration : undefined) ?? 'unknown',
+        location: ('location' in dbCheck ? dbCheck.location : undefined) ?? 'unknown',
       },
-      diskSpace: [
-        {
-          path: '/data',
-          label: 'Data Directory',
-          free: 50000000000,
-          total: 100000000000,
-        },
-        {
-          path: '/downloads',
-          label: 'Downloads',
-          free: 25000000000,
-          total: 50000000000,
-        },
-      ],
+      diskSpace,
       dependencies: {
         required: [
-          { name: 'Node.js', version: process.version, status: 'ok' as HealthStatus },
-          { name: 'SQLite', version: '3.45.0', status: 'ok' as HealthStatus },
+          { name: 'Node.js', version: processInfo.version, status: 'ok' as HealthStatus },
+          {
+            name: 'SQLite',
+            version: ('version' in dbCheck ? dbCheck.version : undefined) ?? 'unknown',
+            status: dbCheck.status === 'ok' ? 'ok' as HealthStatus : 'error' as HealthStatus,
+          },
         ],
         optional: [
-          { name: 'FFmpeg', version: '6.0', status: 'ok' as HealthStatus },
+          {
+            name: 'FFmpeg',
+            version: ffmpeg.version,
+            status: ffmpeg.status,
+            reason: ffmpeg.status === 'unknown' ? 'Not installed or not in PATH' : undefined,
+          },
           { name: 'Mono', version: undefined, status: 'unknown' as HealthStatus, reason: 'Not installed' },
         ],
       },

@@ -2,7 +2,7 @@
   "id": "feature_system_events_ui_20260311",
   "title": "System Events Log UI",
   "type": "feature",
-  "status": "in_progress",
+  "status": "archived",
   "created": "2026-03-11",
   "phases": 2,
   "description": "Add a /system/events frontend page that exposes the fully-built backend System Events API. Includes level/type filtering, pagination, clear, and CSV/JSON export. Wires into App routing and sidebar navigation."

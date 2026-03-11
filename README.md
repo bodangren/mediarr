@@ -164,6 +164,19 @@ Automated searches now skip content that has not yet been publicly released:
 - **Series sweeps** (`autoSearchSeries`) — filters out unaired episodes before spawning individual searches, avoiding unnecessary DB lookups.
 - **Global sweep** (`autoSearchAll`) — uses a Prisma-level `OR` filter so unreleased movies are excluded from the candidate list before any network calls are made.
 
+## System Events Log (`/system/events`)
+
+A dedicated frontend page exposing the backend System Events API:
+
+- **Paginated event table** — shows timestamp, level badge (colour-coded), type, message, and source for every system event.
+- **Filter by level** — info / warning / error / fatal.
+- **Filter by type** — system / indexer / network / download / import / health / update / backup / other.
+- **Clear All** — removes all in-memory events via `DELETE /api/system/events/clear`.
+- **Export CSV** — downloads a filtered snapshot of events via `GET /api/system/events/export?format=csv`.
+- Linked from the System section of the sidebar navigation under "Events".
+
+---
+
 ## System Administration
 
 ### Scheduler (`server/src/services/Scheduler.ts`)

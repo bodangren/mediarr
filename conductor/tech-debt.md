@@ -14,3 +14,4 @@
 | 2026-03-10 | feature_android_push_notifications_20260310 | Android POST_NOTIFICATIONS is declared but not runtime-requested | Low | Open | Add runtime permission request flow for Android 13+ (API 33+) devices |
 | 2026-03-11 | refactor_security_code_quality_20260311 | SQL value interpolation in repairMalformedJsonColumns | High | Resolved | Parameterized via positional arg to $executeRawUnsafe |
 | 2026-03-11 | refactor_security_code_quality_20260311 | Unsafe new Date() from query params in systemRoutes | Medium | Resolved | Replaced with parseDate() from routeUtils |
+| 2026-03-11 | feature_system_events_ui_20260311 | /system/events page lacks date-range picker and SSE real-time feed | Low | Open | Deferred to future tracks; filter by level/type sufficient for MVP |

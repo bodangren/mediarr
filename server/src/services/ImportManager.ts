@@ -172,7 +172,26 @@ export class ImportManager {
           include: { season: { include: { series: true } } },
         });
 
-        if (episode?.season?.series) {
+        if (!episode?.season?.series) {
+          // Linked episode no longer exists in the DB (deleted after the grab).
+          // Emit a specific failure instead of silently falling through to parser paths.
+          await this.activityEventEmitter?.emit({
+            eventType: 'IMPORT_FAILED',
+            sourceModule: 'import-manager',
+            entityRef: `torrent:${torrent.infoHash}`,
+            summary: `Linked episode (id=${linkedEpisodeId}) not found for ${filename}`,
+            success: false,
+            details: {
+              sourcePath: filePath,
+              torrentName: torrent.name,
+              reason: `linked episode id=${linkedEpisodeId} not found in library`,
+            },
+            occurredAt: new Date(),
+          });
+          continue;
+        }
+
+        {
           const series = episode.season.series;
           const seriesPath = await this.resolveSeriesPath(series);
           if (!seriesPath) {

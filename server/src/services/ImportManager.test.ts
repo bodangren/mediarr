@@ -33,11 +33,16 @@ function makeActivityEmitter() {
 function makePrisma({
   series = null as any,
   episode = null as any,
+  // episodeFindUnique: when set, used for the fast-path episode.findUnique call
+  // (torrent grabbed for a known episodeId). Defaults to the same value as episode
+  // so existing tests are unaffected.
+  episodeFindUnique = undefined as any,
   movie = null as any,
   mediaManagement = null as any,
   torrent = null as any,
   activityEvent = null as any,
 } = {}) {
+  const linkedEpisodeResult = episodeFindUnique !== undefined ? episodeFindUnique : episode;
   return {
     series: {
       findFirst: vi.fn().mockResolvedValue(series),
@@ -45,10 +50,12 @@ function makePrisma({
     },
     episode: {
       findFirst: vi.fn().mockResolvedValue(episode),
+      findUnique: vi.fn().mockResolvedValue(linkedEpisodeResult),
       update: vi.fn().mockResolvedValue(episode),
     },
     movie: {
       findFirst: vi.fn().mockResolvedValue(movie),
+      findUnique: vi.fn().mockResolvedValue(movie),
       update: vi.fn().mockResolvedValue(movie),
     },
     mediaFileVariant: {
@@ -399,5 +406,44 @@ describe('ImportManager', () => {
     await fireTorrentCompleted(prisma, TORRENT, { onMovieImported });
 
     expect(onMovieImported).toHaveBeenCalledWith(5);
+  });
+
+  // ───────── Fast-path: linked episode not found in DB ─────────
+
+  it('fast-path: linkedEpisodeId set but episode deleted — emits IMPORT_FAILED and skips file', async () => {
+    // Torrent was grabbed for episodeId=42, but the episode no longer exists in the DB.
+    const torrentWithLinkedEpisode = {
+      infoHash: 'linked-ep',
+      name: 'Breaking.Bad.S01E01.Pilot.mkv',
+      path: '/downloads/complete/Breaking.Bad.S01E01.Pilot.mkv',
+    };
+
+    const prisma = makePrisma({
+      // torrent row has episodeId set
+      torrent: { episodeId: 42, movieId: null },
+      // episode.findUnique returns null (episode was deleted after grab)
+      episodeFindUnique: null,
+      // Fallback paths should NOT be reached — set series/episode to null to surface any fall-through
+      series: null,
+      episode: null,
+      movie: null,
+    });
+
+    await fireTorrentCompleted(prisma, torrentWithLinkedEpisode);
+
+    // Must emit IMPORT_FAILED for the linked-episode-not-found case
+    expect(activityEmitter.emit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: 'IMPORT_FAILED',
+        success: false,
+        details: expect.objectContaining({
+          reason: expect.stringMatching(/episode.*not found|linked.*episode/i),
+        }),
+      }),
+    );
+
+    // Must NOT attempt to organize the file
+    expect(organizer.organizeFile).not.toHaveBeenCalled();
+    expect(organizer.organizeMovieFile).not.toHaveBeenCalled();
   });
 });

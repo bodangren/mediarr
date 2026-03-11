@@ -15,3 +15,6 @@
 | 2026-03-11 | refactor_security_code_quality_20260311 | SQL value interpolation in repairMalformedJsonColumns | High | Resolved | Parameterized via positional arg to $executeRawUnsafe |
 | 2026-03-11 | refactor_security_code_quality_20260311 | Unsafe new Date() from query params in systemRoutes | Medium | Resolved | Replaced with parseDate() from routeUtils |
 | 2026-03-11 | feature_system_events_ui_20260311 | /system/events page lacks date-range picker and SSE real-time feed | Low | Open | Deferred to future tracks; filter by level/type sufficient for MVP |
+| 2026-03-11 | bug_episode_matching_corner_cases_20260311 | autoSearchEpisode grabbed wrong episode (no candidate validation) | High | Resolved | Filter candidates via Parser.parse() season+episode match before grab |
+| 2026-03-11 | bug_episode_matching_corner_cases_20260311 | isSingleSeasonPack false positive for S01-S05 range packs | Medium | Resolved | Pre-check range pattern; also fixed dot-sep Season.N detection |
+| 2026-03-11 | bug_episode_matching_corner_cases_20260311 | ImportManager: linked episode deleted after grab → silent fall-through | High | Resolved | Explicit IMPORT_FAILED + continue when episode.findUnique returns null |

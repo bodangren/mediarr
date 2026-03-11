@@ -39,7 +39,7 @@ Android TV Client (New)
 
 ## Active Tracks
 
-- [~] **Track: Episode Matching Corner Cases — Wrong Grab & Pack Detection** *Phases: 4 | Link: [./tracks/bug_episode_matching_corner_cases_20260311/](./tracks/bug_episode_matching_corner_cases_20260311/)*
+*(none)*
 
 ## Upcoming / Planned
 
@@ -49,6 +49,7 @@ Android TV Client (New)
 
 ## Archived Tracks
 
+- [x] **Track: Episode Matching Corner Cases — Wrong Grab & Pack Detection** *Phases: 4 | Link: [./archive/bug_episode_matching_corner_cases_20260311/](./archive/bug_episode_matching_corner_cases_20260311/)*
 - [x] **Track: System Events Log UI** *Phases: 2 | Link: [./archive/feature_system_events_ui_20260311/](./archive/feature_system_events_ui_20260311/)*
 - [x] **Track: System Routes Test Coverage & Dynamic Disk Space from AppSettings** *Phases: 2 | Link: [./archive/feature_system_routes_coverage_20260311/](./archive/feature_system_routes_coverage_20260311/)*
 - [x] **Track: Security Hardening & Code Quality Refactor** *Phases: 3 | Link: [./archive/refactor_security_code_quality_20260311/](./archive/refactor_security_code_quality_20260311/)*

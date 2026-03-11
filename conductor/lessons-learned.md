@@ -35,6 +35,11 @@
 - (2026-03-11, feature_system_events_ui) `vi.spyOn(document, 'createElement').mockImplementation` causes an infinite call-stack when the fallback calls `document.createElement()` — which is itself spied. Patch global `URL.createObjectURL`/`revokeObjectURL` directly instead; the anchor click is an implementation detail the test need not simulate.
 - (2026-03-11, feature_system_events_ui) Navigation tests that use `toEqual(exact-array)` will break when a new nav item is added. Prefer `toContain` assertions for membership checks; reserve exact-array assertions only for ordering-sensitive tests.
 
+- (2026-03-11, bug_episode_matching_corner_cases) `autoSearchEpisode` must validate returned releases via `Parser.parse()` before grabbing — indexers routinely return wrong episodes. Filter by `seasonNumber` + `episodeNumbers.includes(requested)` BEFORE selecting the best candidate.
+- (2026-03-11, bug_episode_matching_corner_cases) `isSingleSeasonPack` must check for season-range patterns (S01-S05) FIRST — `\bS\d{1,2}\b` matches the first number in a range, giving false positives. Also, `Season.N` (dot-separated) needs `[.\s]*` not `\s*` between "Season" and digit.
+- (2026-03-11, bug_episode_matching_corner_cases) `[-–]` character class in a JS regex with `[-]` first is a literal hyphen (not a range), but `[a–z]` where en-dash is between two chars COULD form a Unicode range. When in doubt, use `(?:-|–)` non-capturing group instead.
+- (2026-03-11, bug_episode_matching_corner_cases) After an early-guard `if (!x) { ... continue; }` block, use a bare `{ }` block (not a redundant `if (x) { }`) for the success path — keeps structure flat and avoids unreachable-code lint warnings.
+
 ### Planning Improvements
 <!-- Notes on where estimates were wrong and why -->
 

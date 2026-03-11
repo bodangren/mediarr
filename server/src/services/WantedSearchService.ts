@@ -154,7 +154,21 @@ export class WantedSearchService {
         return this.logAndReturnSkip(episodeId, 'episode', searchString, 'No releases found');
       }
 
-      const bestCandidate = searchResult.releases[0]!;
+      // Filter candidates to only those that contain the requested episode number.
+      // Indexers can return nearby or wrong episodes — we must validate before grabbing.
+      const validCandidates = searchResult.releases.filter(r => {
+        const parsed = Parser.parse(r.title);
+        if (!parsed) return false; // unparseable title (e.g. season pack) — reject
+        if (parsed.seasonNumber !== episode.seasonNumber) return false;
+        if (!parsed.episodeNumbers.includes(episode.episodeNumber)) return false;
+        return true;
+      });
+
+      if (validCandidates.length === 0) {
+        return this.logAndReturnSkip(episodeId, 'episode', searchString, 'No valid candidates matching episode number');
+      }
+
+      const bestCandidate = validCandidates[0]!;
       const score = bestCandidate.customFormatScore ?? 0;
 
       if (score < this.AUTO_GRAB_THRESHOLD) {
@@ -434,8 +448,13 @@ export class WantedSearchService {
    * Titles with a lone season marker but no episode marker qualify.
    */
   private isSingleSeasonPack(title: string): boolean {
-    // Has a season marker (S01, S1, Season 1) but no episode marker (S01E01, E01)
-    const hasSeason = /\bS\d{1,2}\b/i.test(title) || /\bSeason\s*\d{1,2}\b/i.test(title);
+    // A range of seasons (e.g. S01-S05 or S01–S06) is a multi-season pack, not a
+    // single-season pack — return false immediately so series-pack searches keep it.
+    const hasSeasonRange = /S\d{1,2}\s*[-–]\s*S?\d{1,2}/i.test(title);
+    if (hasSeasonRange) return false;
+
+    // Has a season marker (S01, S1, Season 1, Season.1) but no episode marker (S01E01, E01)
+    const hasSeason = /\bS\d{1,2}\b/i.test(title) || /\bSeason[.\s]*\d{1,2}\b/i.test(title);
     const hasEpisode = /S\d{1,2}E\d+/i.test(title) || /\bE\d{2,3}\b/i.test(title);
     return hasSeason && !hasEpisode;
   }

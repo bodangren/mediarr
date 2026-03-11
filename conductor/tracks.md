@@ -39,7 +39,7 @@ Android TV Client (New)
 
 ## Active Tracks
 
-*(none)*
+- [~] **Track: Episode Matching Corner Cases — Wrong Grab & Pack Detection** *Phases: 4 | Link: [./tracks/bug_episode_matching_corner_cases_20260311/](./tracks/bug_episode_matching_corner_cases_20260311/)*
 
 ## Upcoming / Planned
 

@@ -65,6 +65,7 @@ export const NAV_ITEMS: NavigationSection[] = [
     items: [
       { path: '/system/tasks', label: 'Tasks', shortLabel: 'Tasks', icon: 'Cpu' },
       { path: '/system/logs', label: 'Logs', shortLabel: 'Logs', icon: 'FileText' },
+      { path: '/system/events', label: 'Events', shortLabel: 'Events', icon: 'AlertCircle' },
       { path: '/system/backup', label: 'Backup', shortLabel: 'Backup', icon: 'HardDriveDownload' },
       { path: '/system/stats', label: 'Statistics', shortLabel: 'Stats', icon: 'BarChart3' },
     ],
@@ -94,6 +95,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   system: 'System',
   tasks: 'Tasks',
   logs: 'Logs',
+  events: 'Events',
   backup: 'Backup',
   stats: 'Statistics',
 };

@@ -25,7 +25,7 @@ describe('unified monolith navigation', () => {
     const system = NAV_ITEMS.find(section => section.id === 'system');
     const paths = system?.items.map(item => item.path) ?? [];
 
-    expect(paths).toEqual(['/system/tasks', '/system/logs', '/system/backup']);
+    expect(paths).toEqual(['/system/tasks', '/system/logs', '/system/events', '/system/backup', '/system/stats']);
   });
 
   it('includes streaming settings route in the settings section', () => {

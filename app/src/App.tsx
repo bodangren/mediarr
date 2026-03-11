@@ -23,6 +23,7 @@ import { StatsPage } from '@/components/system/StatsPage';
 import { SystemTasksPage } from '@/components/system/SystemTasksPage';
 import { SystemLogsPage } from '@/components/system/SystemLogsPage';
 import { SystemBackupPage } from '@/components/system/SystemBackupPage';
+import { SystemEventsPage } from '@/components/system/SystemEventsPage';
 import { CollectionsPage } from '@/components/collections/CollectionsPage';
 import { CollectionDetailPage } from '@/components/collections/CollectionDetailPage';
 import { getApiClients } from '@/lib/api/client';
@@ -2947,6 +2948,7 @@ export default function App() {
               <Route path="system/tasks" element={<SystemTasksPage />} />
               <Route path="system/logs" element={<SystemLogsPage />} />
               <Route path="system/backup" element={<SystemBackupPage />} />
+              <Route path="system/events" element={<SystemEventsPage />} />
               <Route path="system/stats" element={<StatsPage />} />
               <Route path="system/status" element={<Navigate to="/system/tasks" replace />} />
 

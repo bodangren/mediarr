@@ -70,6 +70,7 @@ import { BackupService } from './services/BackupService';
 import { LibraryScanService } from './services/LibraryScanService';
 import { globalLogBuffer } from './services/LogReaderService';
 import { NotificationDispatchService } from './services/NotificationDispatchService';
+import { SeedingProtector } from './services/SeedingProtector';
 import { SystemHealthService } from './services/SystemHealthService';
 import { ApiEventHub } from './api/eventHub';
 
@@ -508,6 +509,9 @@ async function startApi(): Promise<void> {
 
   const organizer = new Organizer();
 
+  const seedingProtector = new SeedingProtector(torrentManager as any, torrentRepository, prisma as any);
+  seedingProtector.start();
+
   const openSubtitlesProvider = new OpenSubtitlesProvider(httpClient, settingsService);
   const assrtProvider = new AssrtProvider(httpClient, settingsService);
   const subdlProvider = new SubdlProvider(httpClient, settingsService);
@@ -650,6 +654,7 @@ async function startApi(): Promise<void> {
   registerStaticServing(app, staticDir);
 
   const close = async (): Promise<void> => {
+    seedingProtector.stop();
     await discoveryService.stop().catch(error => {
       console.warn('Failed to stop discovery service cleanly:', error);
     });

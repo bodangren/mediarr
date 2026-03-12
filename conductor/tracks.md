@@ -39,7 +39,7 @@ Android TV Client (New)
 
 ## Active Tracks
 
-*(none)*
+- [~] **Track: Wire SeedingProtector into main.ts runtime** *Type: chore | Link: [./tracks/chore_seeding_protector_wiring_20260313/](./tracks/chore_seeding_protector_wiring_20260313/)*
 
 ## Upcoming / Planned
 

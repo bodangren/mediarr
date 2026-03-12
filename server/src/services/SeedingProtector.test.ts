@@ -32,7 +32,6 @@ describe('SeedingProtector', () => {
   let prisma: {
     episode: { findUnique: ReturnType<typeof vi.fn> };
     movie: { findUnique: ReturnType<typeof vi.fn> };
-    activityEvent: { create: ReturnType<typeof vi.fn> };
   };
   let protector: SeedingProtector;
 
@@ -42,7 +41,6 @@ describe('SeedingProtector', () => {
     prisma = {
       episode: { findUnique: vi.fn() },
       movie: { findUnique: vi.fn() },
-      activityEvent: { create: vi.fn().mockResolvedValue({}) },
     };
     protector = new SeedingProtector(manager as any, repository as any, prisma as any);
   });

@@ -40,6 +40,8 @@
 - (2026-03-11, bug_episode_matching_corner_cases) `[-–]` character class in a JS regex with `[-]` first is a literal hyphen (not a range), but `[a–z]` where en-dash is between two chars COULD form a Unicode range. When in doubt, use `(?:-|–)` non-capturing group instead.
 - (2026-03-11, bug_episode_matching_corner_cases) After an early-guard `if (!x) { ... continue; }` block, use a bare `{ }` block (not a redundant `if (x) { }`) for the success path — keeps structure flat and avoids unreachable-code lint warnings.
 - (2026-03-12, chore_import_cleanup) When fixing a null-guard bug in one fast path (e.g. linked episode), always check sibling fast paths (linked movie) for the same pattern — the ImportManager had identical fall-through bugs in both the episode and movie linked-ID paths.
+- (2026-03-12, bug_seeding_protector_grab_corner_cases) Services that remove/delete resources must check whether dependent downstream work completed before removing. `SeedingProtector` must query `episode.path`/`movie.path` via an injected Prisma interface before calling `removeTorrent`.
+- (2026-03-12, bug_seeding_protector_grab_corner_cases) URL normalisation in `grabRelease` can produce a falsy URL even when the original `magnetUrl` is non-null (HTTPS URL, not a magnet: URI). Always add a post-normalisation guard that throws before the expensive downstream call.
 
 ### Planning Improvements
 <!-- Notes on where estimates were wrong and why -->

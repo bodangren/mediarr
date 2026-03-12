@@ -39,7 +39,7 @@ Android TV Client (New)
 
 ## Active Tracks
 
-*(none)*
+- [~] **Track: SeedingProtector & grabRelease Corner Cases** *Type: bug | Link: [./tracks/bug_seeding_protector_grab_corner_cases_20260312/](./tracks/bug_seeding_protector_grab_corner_cases_20260312/)*
 
 ## Upcoming / Planned
 

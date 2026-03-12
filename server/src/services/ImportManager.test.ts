@@ -408,6 +408,44 @@ describe('ImportManager', () => {
     expect(onMovieImported).toHaveBeenCalledWith(5);
   });
 
+  // ───────── Fast-path: linked movie not found in DB ─────────
+
+  it('fast-path: linkedMovieId set but movie deleted — emits IMPORT_FAILED and skips file', async () => {
+    // Torrent was grabbed for movieId=99, but the movie no longer exists in the DB.
+    const torrentWithLinkedMovie = {
+      infoHash: 'linked-mv',
+      name: 'The.Matrix.1999.mkv',
+      path: '/downloads/complete/The.Matrix.1999.mkv',
+    };
+
+    const prisma = makePrisma({
+      // torrent row has movieId set
+      torrent: { episodeId: null, movieId: 99 },
+      // movie.findUnique returns null (movie was deleted after grab)
+      movie: null,
+      // Fallback paths should NOT be reached — ensure nothing is found via parser
+      series: null,
+      episode: null,
+    });
+
+    await fireTorrentCompleted(prisma, torrentWithLinkedMovie);
+
+    // Must emit IMPORT_FAILED for the linked-movie-not-found case
+    expect(activityEmitter.emit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: 'IMPORT_FAILED',
+        success: false,
+        details: expect.objectContaining({
+          reason: expect.stringMatching(/movie.*not found|linked.*movie/i),
+        }),
+      }),
+    );
+
+    // Must NOT attempt to organize the file
+    expect(organizer.organizeFile).not.toHaveBeenCalled();
+    expect(organizer.organizeMovieFile).not.toHaveBeenCalled();
+  });
+
   // ───────── Fast-path: linked episode not found in DB ─────────
 
   it('fast-path: linkedEpisodeId set but episode deleted — emits IMPORT_FAILED and skips file', async () => {

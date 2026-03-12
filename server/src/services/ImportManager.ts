@@ -244,7 +244,26 @@ export class ImportManager {
       if (linkedMovieId) {
         const movie = await this.prisma.movie.findUnique({ where: { id: linkedMovieId } });
 
-        if (movie) {
+        if (!movie) {
+          // Linked movie no longer exists in the DB (deleted after the grab).
+          // Emit a specific failure instead of silently falling through to parser paths.
+          await this.activityEventEmitter?.emit({
+            eventType: 'IMPORT_FAILED',
+            sourceModule: 'import-manager',
+            entityRef: `torrent:${torrent.infoHash}`,
+            summary: `Linked movie (id=${linkedMovieId}) not found for ${filename}`,
+            success: false,
+            details: {
+              sourcePath: filePath,
+              torrentName: torrent.name,
+              reason: `linked movie id=${linkedMovieId} not found in library`,
+            },
+            occurredAt: new Date(),
+          });
+          continue;
+        }
+
+        {
           const moviePath = await this.resolveMoviePath(movie);
           if (!moviePath) {
             await this.activityEventEmitter?.emit({

@@ -43,6 +43,8 @@
 - (2026-03-12, bug_seeding_protector_grab_corner_cases) Services that remove/delete resources must check whether dependent downstream work completed before removing. `SeedingProtector` must query `episode.path`/`movie.path` via an injected Prisma interface before calling `removeTorrent`.
 - (2026-03-12, bug_seeding_protector_grab_corner_cases) URL normalisation in `grabRelease` can produce a falsy URL even when the original `magnetUrl` is non-null (HTTPS URL, not a magnet: URI). Always add a post-normalisation guard that throws before the expensive downstream call.
 - (2026-03-13, chore_seeding_protector_wiring) After adding a service with injected dependencies (e.g. Prisma), verify it is wired in `main.ts` before archiving the track — a service that is never instantiated is dead code regardless of test coverage.
+- (2026-03-13, bug_wanted_series_pack_corner_cases) When a function has an early-return inside a conditional block, specials/post-processing blocks after that block are silently skipped. Replace `if (result) return` with a flag variable (`let packGrabbed = false; if (...) packGrabbed = true;`) so later blocks always execute.
+- (2026-03-13, bug_wanted_series_pack_corner_cases) When testing service methods that call sibling methods on the same class, use `vi.spyOn(service, 'methodName').mockResolvedValue(...)` to intercept without mocking the full downstream dependency chain. This avoids having to set up Prisma mock returns for deeply nested includes.
 
 ### Planning Improvements
 <!-- Notes on where estimates were wrong and why -->

@@ -22,3 +22,4 @@
 | 2026-03-12 | bug_seeding_protector_grab_corner_cases_20260312 | SeedingProtector removed torrents when linked media not yet imported | High | Resolved | Inject Prisma; skip removal when episode/movie.path is null |
 | 2026-03-12 | bug_seeding_protector_grab_corner_cases_20260312 | grabRelease passed early URL guard with non-magnet magnetUrl + no downloadUrl | Medium | Resolved | Post-normalisation guard throws TorrentRejectedError before addTorrent |
 | 2026-03-13 | chore_seeding_protector_wiring_20260313 | SeedingProtector never instantiated in main.ts — import-guard was dead code | High | Resolved | Wired with prisma + torrentRepository; start/stop added to lifecycle |
+| 2026-03-13 | bug_wanted_series_pack_corner_cases_20260313 | autoSearchSeries early return skipped specials search for ended series with pack | High | Resolved | Replaced `if (grabbed) return` with packGrabbed flag; specials block always runs |

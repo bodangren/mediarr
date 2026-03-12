@@ -11,11 +11,11 @@
 
 ## Phase 2 — grabRelease: URL normalisation corner case
 
-- [ ] P2.1 Write `MediaSearchService.grabRelease.test.ts` — failing test: `magnetUrl` is HTTPS URL + no `downloadUrl` → `TorrentRejectedError` thrown before `addTorrent` is called.
-- [ ] P2.2 Run tests — confirm test **fails** (Red).
-- [ ] P2.3 Fix `grabRelease`: add early guard after URL normalisation — if both resolved URLs are falsy, throw `TorrentRejectedError` immediately.
-- [ ] P2.4 Run tests — confirm all green (Green).
-- [ ] P2.5 Commit Phase 2.
+- [x] P2.1 Write `MediaSearchService.grabRelease.test.ts` — failing test: `magnetUrl` is HTTPS URL + no `downloadUrl` → `TorrentRejectedError` thrown before `addTorrent` is called.
+- [x] P2.2 Run tests — confirm test **fails** (Red).
+- [x] P2.3 Fix `grabRelease`: add early guard after URL normalisation — if both resolved URLs are falsy, throw `TorrentRejectedError` immediately.
+- [x] P2.4 Run tests — confirm all green (Green).
+- [x] P2.5 Commit Phase 2.
 
 ## Phase 3 — Full validation & archive
 

@@ -680,7 +680,22 @@ export class MediaSearchService {
         : candidate.downloadUrl?.startsWith('magnet:')
           ? candidate.downloadUrl
           : undefined;
-      const downloadUrl = candidate.downloadUrl;
+      const downloadUrl = candidate.downloadUrl?.startsWith('magnet:')
+        ? undefined
+        : candidate.downloadUrl;
+
+      // After normalisation, ensure at least one usable URL remains.
+      // A candidate whose magnetUrl is an HTTPS URL (not a magnet: URI) and has
+      // no downloadUrl would pass the early guard above but end up with no URL here.
+      if (!magnetUrl && !downloadUrl) {
+        throw new TorrentRejectedError(
+          'Search candidate has no usable magnet or download URL after normalisation',
+          {
+            title: candidate.title,
+            indexer: candidate.indexer,
+          },
+        );
+      }
 
       // Build addTorrent options carefully to avoid undefined in optional props
       const addOptions: {

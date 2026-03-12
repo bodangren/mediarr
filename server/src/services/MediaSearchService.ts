@@ -490,7 +490,12 @@ export class MediaSearchService {
         };
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        const isTimeout = errorMessage.includes('timeout') || errorMessage.includes('Timeout');
+        // searchWithTimeout throws "Indexer search timed out after Nms" (two words).
+        // Check both "timeout" (one word) and "timed out" (two words) to cover both
+        // the internal timeout and any externally-thrown timeout errors.
+        const isTimeout = errorMessage.includes('timeout')
+          || errorMessage.includes('Timeout')
+          || errorMessage.includes('timed out');
 
         return {
           indexerId,
@@ -673,30 +678,32 @@ export class MediaSearchService {
       );
     }
 
+    // Prefer magnet URL, fall back to download URL
+    const magnetUrl = candidate.magnetUrl?.startsWith('magnet:')
+      ? candidate.magnetUrl
+      : candidate.downloadUrl?.startsWith('magnet:')
+        ? candidate.downloadUrl
+        : undefined;
+    const downloadUrl = candidate.downloadUrl?.startsWith('magnet:')
+      ? undefined
+      : candidate.downloadUrl;
+
+    // After normalisation, ensure at least one usable URL remains.
+    // A candidate whose magnetUrl is an HTTPS URL (not a magnet: URI) and has
+    // no downloadUrl would pass the early guard above but end up with no URL here.
+    // Guard is placed before the try/catch so the original message is preserved
+    // and the failure event is not emitted (addTorrent was never called).
+    if (!magnetUrl && !downloadUrl) {
+      throw new TorrentRejectedError(
+        'Search candidate has no usable magnet or download URL after normalisation',
+        {
+          title: candidate.title,
+          indexer: candidate.indexer,
+        },
+      );
+    }
+
     try {
-      // Prefer magnet URL, fall back to download URL
-      const magnetUrl = candidate.magnetUrl?.startsWith('magnet:')
-        ? candidate.magnetUrl
-        : candidate.downloadUrl?.startsWith('magnet:')
-          ? candidate.downloadUrl
-          : undefined;
-      const downloadUrl = candidate.downloadUrl?.startsWith('magnet:')
-        ? undefined
-        : candidate.downloadUrl;
-
-      // After normalisation, ensure at least one usable URL remains.
-      // A candidate whose magnetUrl is an HTTPS URL (not a magnet: URI) and has
-      // no downloadUrl would pass the early guard above but end up with no URL here.
-      if (!magnetUrl && !downloadUrl) {
-        throw new TorrentRejectedError(
-          'Search candidate has no usable magnet or download URL after normalisation',
-          {
-            title: candidate.title,
-            indexer: candidate.indexer,
-          },
-        );
-      }
-
       // Build addTorrent options carefully to avoid undefined in optional props
       const addOptions: {
         magnetUrl?: string;

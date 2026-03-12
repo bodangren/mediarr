@@ -1,0 +1,7 @@
+{
+  "id": "bug_search_aggregation_corner_cases_20260313",
+  "title": "MediaSearchService Corner Cases — Grab Error Propagation, grabReleaseByGuid, Indexer Resilience",
+  "type": "bug",
+  "status": "in_progress",
+  "created": "2026-03-13"
+}

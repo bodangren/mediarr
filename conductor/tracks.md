@@ -39,7 +39,7 @@ Android TV Client (New)
 
 ## Active Tracks
 
-- [~] **Track: ImportManager Cleanup — Linked-Movie-Null Fix & Code Quality** *Phases: 3 | Link: [./tracks/chore_import_cleanup_20260312/](./tracks/chore_import_cleanup_20260312/)*
+*(none)*
 
 ## Upcoming / Planned
 
@@ -49,6 +49,7 @@ Android TV Client (New)
 
 ## Archived Tracks
 
+- [x] **Track: ImportManager Cleanup — Linked-Movie-Null Fix & Code Quality** *Phases: 3 | Link: [./archive/chore_import_cleanup_20260312/](./archive/chore_import_cleanup_20260312/)*
 - [x] **Track: Episode Matching Corner Cases — Wrong Grab & Pack Detection** *Phases: 4 | Link: [./archive/bug_episode_matching_corner_cases_20260311/](./archive/bug_episode_matching_corner_cases_20260311/)*
 - [x] **Track: System Events Log UI** *Phases: 2 | Link: [./archive/feature_system_events_ui_20260311/](./archive/feature_system_events_ui_20260311/)*
 - [x] **Track: System Routes Test Coverage & Dynamic Disk Space from AppSettings** *Phases: 2 | Link: [./archive/feature_system_routes_coverage_20260311/](./archive/feature_system_routes_coverage_20260311/)*

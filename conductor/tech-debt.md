@@ -18,3 +18,4 @@
 | 2026-03-11 | bug_episode_matching_corner_cases_20260311 | autoSearchEpisode grabbed wrong episode (no candidate validation) | High | Resolved | Filter candidates via Parser.parse() season+episode match before grab |
 | 2026-03-11 | bug_episode_matching_corner_cases_20260311 | isSingleSeasonPack false positive for S01-S05 range packs | Medium | Resolved | Pre-check range pattern; also fixed dot-sep Season.N detection |
 | 2026-03-11 | bug_episode_matching_corner_cases_20260311 | ImportManager: linked episode deleted after grab → silent fall-through | High | Resolved | Explicit IMPORT_FAILED + continue when episode.findUnique returns null |
+| 2026-03-12 | chore_import_cleanup_20260312 | ImportManager: linked movie deleted after grab → silent fall-through | High | Resolved | Analogous fix: IMPORT_FAILED + continue when movie.findUnique returns null |

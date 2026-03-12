@@ -39,6 +39,7 @@
 - (2026-03-11, bug_episode_matching_corner_cases) `isSingleSeasonPack` must check for season-range patterns (S01-S05) FIRST — `\bS\d{1,2}\b` matches the first number in a range, giving false positives. Also, `Season.N` (dot-separated) needs `[.\s]*` not `\s*` between "Season" and digit.
 - (2026-03-11, bug_episode_matching_corner_cases) `[-–]` character class in a JS regex with `[-]` first is a literal hyphen (not a range), but `[a–z]` where en-dash is between two chars COULD form a Unicode range. When in doubt, use `(?:-|–)` non-capturing group instead.
 - (2026-03-11, bug_episode_matching_corner_cases) After an early-guard `if (!x) { ... continue; }` block, use a bare `{ }` block (not a redundant `if (x) { }`) for the success path — keeps structure flat and avoids unreachable-code lint warnings.
+- (2026-03-12, chore_import_cleanup) When fixing a null-guard bug in one fast path (e.g. linked episode), always check sibling fast paths (linked movie) for the same pattern — the ImportManager had identical fall-through bugs in both the episode and movie linked-ID paths.
 
 ### Planning Improvements
 <!-- Notes on where estimates were wrong and why -->

@@ -237,33 +237,34 @@ export class WantedSearchService {
     const regularSeasons = series.seasons.filter(s => s.seasonNumber > 0);
     const seasonsWithMissing = regularSeasons.filter(s => s.episodes.some(e => !e.path));
 
-    if (seasonsWithMissing.length === 0) {
-      // Nothing missing in regular seasons — still handle specials below
-    } else {
-      // For ended series, try a complete series pack first
+    if (seasonsWithMissing.length > 0) {
+      // For ended series, try a complete series pack first.
+      // packGrabbed = true means we skip per-season fallback, but specials still run below.
+      let packGrabbed = false;
       if (series.status === 'Ended') {
-        const grabbed = await this.tryGrabSeriesPack(series);
-        if (grabbed) return;
+        packGrabbed = await this.tryGrabSeriesPack(series);
       }
 
-      // Per-season strategy
-      for (const season of seasonsWithMissing) {
-        const missingEpisodes = season.episodes.filter(e => !e.path);
+      // Per-season strategy (skipped when a series pack was already grabbed)
+      if (!packGrabbed) {
+        for (const season of seasonsWithMissing) {
+          const missingEpisodes = season.episodes.filter(e => !e.path);
 
-        if (this.isSeasonComplete(season.episodes)) {
-          // All episodes have aired — prefer a season pack
-          const grabbed = await this.tryGrabSeasonPack(series, season.seasonNumber);
-          if (grabbed) {
-            await delay(2000);
-            continue;
+          if (this.isSeasonComplete(season.episodes)) {
+            // All episodes have aired — prefer a season pack
+            const grabbed = await this.tryGrabSeasonPack(series, season.seasonNumber);
+            if (grabbed) {
+              await delay(2000);
+              continue;
+            }
           }
-        }
 
-        // Fall back to individual episode searches — skip episodes that haven't aired yet
-        for (const episode of missingEpisodes) {
-          if (!this.isReleasedYet(episode.airDateUtc)) continue;
-          await this.autoSearchEpisode(episode.id);
-          await delay(2000);
+          // Fall back to individual episode searches — skip episodes that haven't aired yet
+          for (const episode of missingEpisodes) {
+            if (!this.isReleasedYet(episode.airDateUtc)) continue;
+            await this.autoSearchEpisode(episode.id);
+            await delay(2000);
+          }
         }
       }
     }

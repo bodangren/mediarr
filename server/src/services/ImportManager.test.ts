@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ImportManager } from './ImportManager';
+import fs from 'node:fs/promises';
 
 // --- Helpers ---
 
@@ -483,5 +484,141 @@ describe('ImportManager', () => {
     // Must NOT attempt to organize the file
     expect(organizer.organizeFile).not.toHaveBeenCalled();
     expect(organizer.organizeMovieFile).not.toHaveBeenCalled();
+  });
+
+  // ───────── Empty torrent directory — silent failure bug ─────────
+
+  it('empty directory: IMPORT_FAILED emitted when torrent contains no video files', async () => {
+    // Override fs mock: the torrent path is a directory that contains no files.
+    vi.mocked(fs.stat).mockResolvedValueOnce({ isDirectory: () => true } as any);
+    vi.mocked(fs.readdir).mockResolvedValueOnce([]);
+
+    const prisma = makePrisma({ series: null, episode: null, movie: null });
+    const emptyDirTorrent = {
+      infoHash: 'empty-dir-1',
+      name: 'Show.S01',
+      path: '/downloads/complete/Show.S01',
+    };
+
+    await fireTorrentCompleted(prisma, emptyDirTorrent);
+
+    expect(organizer.organizeFile).not.toHaveBeenCalled();
+    expect(organizer.organizeMovieFile).not.toHaveBeenCalled();
+    expect(activityEmitter.emit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: 'IMPORT_FAILED',
+        success: false,
+        details: expect.objectContaining({
+          reason: expect.stringMatching(/no importable/i),
+        }),
+      }),
+    );
+  });
+
+  // ───────── Fast-path: linked episode, no TV root folder configured ─────────
+
+  it('fast-path linked episode: no TV root folder configured — emits IMPORT_FAILED', async () => {
+    const series = { id: 1, title: 'Firefly', cleanTitle: 'firefly', year: 2002, path: null };
+    const episode = {
+      id: 42,
+      seasonNumber: 1,
+      episodeNumber: 1,
+      title: 'Serenity',
+      season: { series },
+    };
+
+    const prisma = makePrisma({
+      torrent: { episodeId: 42, movieId: null },
+      episodeFindUnique: episode,
+      // No mediaManagement — tvRootFolder will be absent
+      series: null,
+      episode: null,
+      movie: null,
+    });
+
+    const linkedTorrent = {
+      infoHash: 'linked-ep-noroot',
+      name: 'Firefly.S01E01.mkv',
+      path: '/downloads/complete/Firefly.S01E01.mkv',
+    };
+
+    await fireTorrentCompleted(prisma, linkedTorrent);
+
+    expect(activityEmitter.emit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: 'IMPORT_FAILED',
+        success: false,
+        details: expect.objectContaining({
+          reason: expect.stringMatching(/TV root folder|tvRootFolder/i),
+        }),
+      }),
+    );
+    expect(organizer.organizeFile).not.toHaveBeenCalled();
+  });
+
+  // ───────── Fast-path: linked movie, no movie root folder configured ─────────
+
+  it('fast-path linked movie: no movie root folder configured — emits IMPORT_FAILED', async () => {
+    const movie = { id: 7, title: 'Inception', year: 2010, path: null };
+
+    const prisma = makePrisma({
+      torrent: { episodeId: null, movieId: 7 },
+      movie,
+      // No mediaManagement — movieRootFolder will be absent
+      series: null,
+      episode: null,
+    });
+
+    const linkedTorrent = {
+      infoHash: 'linked-mv-noroot',
+      name: 'Inception.2010.mkv',
+      path: '/downloads/complete/Inception.2010.mkv',
+    };
+
+    await fireTorrentCompleted(prisma, linkedTorrent);
+
+    expect(activityEmitter.emit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: 'IMPORT_FAILED',
+        success: false,
+        details: expect.objectContaining({
+          reason: expect.stringMatching(/movie root folder|movieRootFolder/i),
+        }),
+      }),
+    );
+    expect(organizer.organizeMovieFile).not.toHaveBeenCalled();
+  });
+
+  // ───────── retryImportByActivityEventId error branches ─────────
+
+  it('retryImportByActivityEventId: throws when activity event not found', async () => {
+    const prisma = makePrisma({ activityEvent: null });
+    const manager = new ImportManager(
+      torrentManager as any,
+      organizer as any,
+      prisma as any,
+      activityEmitter as any,
+    );
+
+    await expect(manager.retryImportByActivityEventId(999)).rejects.toThrow(/not found/i);
+  });
+
+  it('retryImportByActivityEventId: throws when event type is not IMPORT_FAILED', async () => {
+    const prisma = makePrisma({
+      activityEvent: {
+        id: 10,
+        eventType: 'SERIES_IMPORTED',
+        entityRef: 'torrent:abc',
+        details: {},
+      },
+    });
+    const manager = new ImportManager(
+      torrentManager as any,
+      organizer as any,
+      prisma as any,
+      activityEmitter as any,
+    );
+
+    await expect(manager.retryImportByActivityEventId(10)).rejects.toThrow(/not an import failure/i);
   });
 });

@@ -161,6 +161,23 @@ export class ImportManager {
       select: { episodeId: true, movieId: true },
     });
 
+    if (files.length === 0) {
+      await this.activityEventEmitter?.emit({
+        eventType: 'IMPORT_FAILED',
+        sourceModule: 'import-manager',
+        entityRef: `torrent:${torrent.infoHash}`,
+        summary: `No importable video files found for ${torrent.name}`,
+        success: false,
+        details: {
+          sourcePath: torrent.path,
+          torrentName: torrent.name,
+          reason: 'no importable video files found in torrent directory',
+        },
+        occurredAt: new Date(),
+      });
+      return;
+    }
+
     for (const filePath of files) {
       const filename = path.basename(filePath);
 

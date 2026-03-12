@@ -146,9 +146,9 @@ describe('WantedSearchService — autoSearchEpisode candidate episode-number val
 
     const result = await service.autoSearchEpisode(10);
 
-    // Multi-episode releases should be accepted if the requested episode is included
-    // NOTE: Parser.parse returns episodeNumbers:[1] for S01E01E02 (matches first ep pattern S01E01)
-    // so this release is accepted as a valid match for episode 1
+    // Parser.parse('S01E01E02') returns episodeNumbers:[1] — the regex captures the SnnEnn
+    // group and stops; the trailing E02 is not parsed as a second episode number.
+    // Episode 1 is present in the result, so the release is accepted as a valid candidate.
     expect(result.success).toBe(true);
     expect(grabRelease).toHaveBeenCalledTimes(1);
   });

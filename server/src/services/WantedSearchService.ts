@@ -83,12 +83,12 @@ export class WantedSearchService {
       // Check if it meets the minimum threshold
       const score = bestCandidate.customFormatScore ?? 0;
       if (score < this.AUTO_GRAB_THRESHOLD) {
-         return this.logAndReturnSkip(
-           movieId, 
-           'movie', 
-           movie.title, 
-           `Best candidate score (${score}) is below threshold (${this.AUTO_GRAB_THRESHOLD})`
-         );
+        return this.logAndReturnSkip(
+          movieId,
+          'movie',
+          movie.title,
+          `Best candidate score (${score}) is below threshold (${this.AUTO_GRAB_THRESHOLD})`,
+        );
       }
 
       // Grab the release
@@ -172,12 +172,12 @@ export class WantedSearchService {
       const score = bestCandidate.customFormatScore ?? 0;
 
       if (score < this.AUTO_GRAB_THRESHOLD) {
-         return this.logAndReturnSkip(
-           episodeId, 
-           'episode', 
-           searchString, 
-           `Best candidate score (${score}) is below threshold (${this.AUTO_GRAB_THRESHOLD})`
-         );
+        return this.logAndReturnSkip(
+          episodeId,
+          'episode',
+          searchString,
+          `Best candidate score (${score}) is below threshold (${this.AUTO_GRAB_THRESHOLD})`,
+        );
       }
 
       await this.mediaSearchService.grabRelease(bestCandidate, { episodeId });

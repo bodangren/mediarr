@@ -39,7 +39,7 @@ Android TV Client (New)
 
 ## Active Tracks
 
-- [~] **Track: ImportManager corner cases — empty-directory + no-root-folder IMPORT_FAILED** *Phases: 4 | Link: [./tracks/bug_import_manager_corner_cases_20260313/](./tracks/bug_import_manager_corner_cases_20260313/)*
+*(none)*
 
 ## Upcoming / Planned
 
@@ -49,6 +49,7 @@ Android TV Client (New)
 
 ## Archived Tracks
 
+- [x] **Track: ImportManager corner cases — empty-directory + no-root-folder IMPORT_FAILED** *Phases: 4 | Link: [./archive/bug_import_manager_corner_cases_20260313/](./archive/bug_import_manager_corner_cases_20260313/)*
 - [x] **Track: WantedSearchService autoSearchSeries Corner Cases** *Phases: 2 | Link: [./archive/bug_wanted_series_pack_corner_cases_20260313/](./archive/bug_wanted_series_pack_corner_cases_20260313/)*
 - [x] **Track: Wire SeedingProtector into main.ts runtime** *Phases: 1 | Link: [./archive/chore_seeding_protector_wiring_20260313/](./archive/chore_seeding_protector_wiring_20260313/)*
 - [x] **Track: SeedingProtector & grabRelease Corner Cases** *Phases: 2 | Link: [./archive/bug_seeding_protector_grab_corner_cases_20260312/](./archive/bug_seeding_protector_grab_corner_cases_20260312/)*

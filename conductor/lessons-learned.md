@@ -45,6 +45,8 @@
 - (2026-03-13, chore_seeding_protector_wiring) After adding a service with injected dependencies (e.g. Prisma), verify it is wired in `main.ts` before archiving the track — a service that is never instantiated is dead code regardless of test coverage.
 - (2026-03-13, bug_wanted_series_pack_corner_cases) When a function has an early-return inside a conditional block, specials/post-processing blocks after that block are silently skipped. Replace `if (result) return` with a flag variable (`let packGrabbed = false; if (...) packGrabbed = true;`) so later blocks always execute.
 - (2026-03-13, bug_wanted_series_pack_corner_cases) When testing service methods that call sibling methods on the same class, use `vi.spyOn(service, 'methodName').mockResolvedValue(...)` to intercept without mocking the full downstream dependency chain. This avoids having to set up Prisma mock returns for deeply nested includes.
+- (2026-03-13, bug_import_manager_corner_cases) When a for-loop iterates over a collection that may be empty, always add an explicit empty-collection guard before the loop. A zero-iteration loop is a silent no-op — no failure path, no event, no log. Guard with `if (items.length === 0)` and emit a failure event.
+- (2026-03-13, bug_import_manager_corner_cases) To override a module-level `vi.mock()` factory for a single test, use `vi.mocked(fn).mockResolvedValueOnce(...)` — this queues one override and falls back to the factory default for subsequent calls without requiring cleanup in `afterEach`.
 
 ### Planning Improvements
 <!-- Notes on where estimates were wrong and why -->

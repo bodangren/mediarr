@@ -42,6 +42,7 @@
 - (2026-03-12, chore_import_cleanup) When fixing a null-guard bug in one fast path (e.g. linked episode), always check sibling fast paths (linked movie) for the same pattern — the ImportManager had identical fall-through bugs in both the episode and movie linked-ID paths.
 - (2026-03-12, bug_seeding_protector_grab_corner_cases) Services that remove/delete resources must check whether dependent downstream work completed before removing. `SeedingProtector` must query `episode.path`/`movie.path` via an injected Prisma interface before calling `removeTorrent`.
 - (2026-03-12, bug_seeding_protector_grab_corner_cases) URL normalisation in `grabRelease` can produce a falsy URL even when the original `magnetUrl` is non-null (HTTPS URL, not a magnet: URI). Always add a post-normalisation guard that throws before the expensive downstream call.
+- (2026-03-13, chore_seeding_protector_wiring) After adding a service with injected dependencies (e.g. Prisma), verify it is wired in `main.ts` before archiving the track — a service that is never instantiated is dead code regardless of test coverage.
 
 ### Planning Improvements
 <!-- Notes on where estimates were wrong and why -->

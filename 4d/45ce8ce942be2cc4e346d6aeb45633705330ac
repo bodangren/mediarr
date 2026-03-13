@@ -1,0 +1,1 @@
+Phase 1: Red-Green cycle for wrong-series episode grab bug. Added titlesMatch() to autoSearchEpisode candidate filter. All 38 WantedSearchService tests pass.

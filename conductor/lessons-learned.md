@@ -29,6 +29,8 @@
 - (2026-03-13, bug_search_aggregation_corner_cases) String matching for timeout detection: `"timed out"` (two words) ≠ `"timeout"` (one word). Include all natural phrasings in the predicate or the category silently degrades to 'error'.
 - (2026-03-13, bug_rss_media_monitor_corner_cases) Services that grab torrents must pass `episodeId`/`movieId` to `addTorrent` — omitting them breaks the ImportManager fast-path for all RSS-triggered downloads. Audit every `addTorrent` call to confirm media context is forwarded.
 - (2026-03-13, bug_rss_media_monitor_corner_cases) Scoring confidence: `CustomFormatScoringEngine.confidenceScore` = 100 whenever the release title INCLUDES the movie/series title. To test below-threshold score, use a movie title unrelated to the release title rather than relying on quality markers alone.
+- (2026-03-13, bug_autosearch_wrong_series_episode) Candidate filters must check ALL dimensions: `autoSearchEpisode` needed season+episode+series-title. Adding only season+episode left a gap — a different show's S01E01 passed the filter and got grabbed. Apply `titlesMatch()` as the third guard.
+- (2026-03-13, bug_autosearch_wrong_series_episode) `autoSearchMovie` core paths (not-found, no-releases, below-threshold, successful-grab, search-error) had zero tests; add smoke tests for every early-exit path to prevent silent regressions.
 
 ### Patterns That Worked Well
 

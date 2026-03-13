@@ -49,6 +49,7 @@ Android TV Client (New)
 
 ## Archived Tracks
 
+- [x] **Track: WantedSearchService — wrong-series episode grab + autoSearchMovie coverage** *Phases: 4 | Link: [./archive/bug_autosearch_wrong_series_episode_20260313/](./archive/bug_autosearch_wrong_series_episode_20260313/)*
 - [x] **Track: RssMediaMonitor corner cases — missing episodeId/movieId in addTorrent & coverage** *Phases: 4 | Link: [./archive/bug_rss_media_monitor_corner_cases_20260313/](./archive/bug_rss_media_monitor_corner_cases_20260313/)*
 - [x] **Track: MediaSearchService Corner Cases — Grab Error Propagation, grabReleaseByGuid, Indexer Resilience** *Phases: 4 | Link: [./archive/bug_search_aggregation_corner_cases_20260313/](./archive/bug_search_aggregation_corner_cases_20260313/)*
 - [x] **Track: ImportManager corner cases — empty-directory + no-root-folder IMPORT_FAILED** *Phases: 4 | Link: [./archive/bug_import_manager_corner_cases_20260313/](./archive/bug_import_manager_corner_cases_20260313/)*

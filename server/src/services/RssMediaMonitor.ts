@@ -103,7 +103,7 @@ export class RssMediaMonitor {
     }
 
     console.log(`RssMediaMonitor: Grabbing ${release.title} for ${series.title} (score ${scoringResult.totalScore})`);
-    await this.torrentManager.addTorrent({ magnetUrl: release.magnetUrl });
+    await this.torrentManager.addTorrent({ magnetUrl: release.magnetUrl, episodeId: episode.id });
     return true;
   }
 
@@ -153,7 +153,7 @@ export class RssMediaMonitor {
     }
 
     console.log(`RssMediaMonitor: Grabbing ${release.title} for ${movie.title} (score ${scoringResult.totalScore})`);
-    await this.torrentManager.addTorrent({ magnetUrl: release.magnetUrl });
+    await this.torrentManager.addTorrent({ magnetUrl: release.magnetUrl, movieId: movie.id });
   }
 
   private parseMovieTitle(title: string): { title: string; year?: number } | null {

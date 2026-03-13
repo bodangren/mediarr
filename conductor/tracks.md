@@ -39,7 +39,7 @@ Android TV Client (New)
 
 ## Active Tracks
 
-*(none)*
+- [~] **Track: RssMediaMonitor corner cases — missing episodeId/movieId in addTorrent & coverage** *Phases: 4 | Link: [./tracks/bug_rss_media_monitor_corner_cases_20260313/](./tracks/bug_rss_media_monitor_corner_cases_20260313/)*
 
 ## Upcoming / Planned
 

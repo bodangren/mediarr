@@ -27,6 +27,8 @@
 - (2026-03-13, bug_import_manager_corner_cases) Use `vi.mocked(fn).mockResolvedValueOnce(...)` to override a `vi.mock()` factory for a single test without `afterEach` cleanup.
 - (2026-03-13, bug_search_aggregation_corner_cases) Validation guards that must NOT emit failure events must be placed **before** the `try/catch` block — a guard throw inside try is caught, re-wrapped with a misleading "handoff failed" prefix, and triggers a spurious failure event.
 - (2026-03-13, bug_search_aggregation_corner_cases) String matching for timeout detection: `"timed out"` (two words) ≠ `"timeout"` (one word). Include all natural phrasings in the predicate or the category silently degrades to 'error'.
+- (2026-03-13, bug_rss_media_monitor_corner_cases) Services that grab torrents must pass `episodeId`/`movieId` to `addTorrent` — omitting them breaks the ImportManager fast-path for all RSS-triggered downloads. Audit every `addTorrent` call to confirm media context is forwarded.
+- (2026-03-13, bug_rss_media_monitor_corner_cases) Scoring confidence: `CustomFormatScoringEngine.confidenceScore` = 100 whenever the release title INCLUDES the movie/series title. To test below-threshold score, use a movie title unrelated to the release title rather than relying on quality markers alone.
 
 ### Patterns That Worked Well
 

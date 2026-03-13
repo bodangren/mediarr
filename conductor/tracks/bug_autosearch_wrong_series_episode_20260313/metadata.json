@@ -1,0 +1,7 @@
+{
+  "id": "bug_autosearch_wrong_series_episode_20260313",
+  "title": "WantedSearchService — autoSearchEpisode grabs wrong-series episode + autoSearchMovie core path coverage",
+  "type": "bug",
+  "status": "in_progress",
+  "created": "2026-03-13"
+}

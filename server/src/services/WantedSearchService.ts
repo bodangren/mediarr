@@ -154,13 +154,15 @@ export class WantedSearchService {
         return this.logAndReturnSkip(episodeId, 'episode', searchString, 'No releases found');
       }
 
-      // Filter candidates to only those that contain the requested episode number.
-      // Indexers can return nearby or wrong episodes — we must validate before grabbing.
+      // Filter candidates to only those that contain the requested episode number AND
+      // belong to the requested series. Indexers can return wrong episodes or even wrong
+      // shows — we must validate title, season, and episode before grabbing.
       const validCandidates = searchResult.releases.filter(r => {
         const parsed = Parser.parse(r.title);
         if (!parsed) return false; // unparseable title (e.g. season pack) — reject
         if (parsed.seasonNumber !== episode.seasonNumber) return false;
         if (!parsed.episodeNumbers.includes(episode.episodeNumber)) return false;
+        if (!this.titlesMatch(r.title, series.title)) return false; // wrong show
         return true;
       });
 

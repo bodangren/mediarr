@@ -168,6 +168,28 @@ describe('WantedSearchService — autoSearchEpisode candidate episode-number val
     expect(result.reason).toMatch(/no.*valid.*candidate|no.*match|below threshold|No releases found/i);
     expect(grabRelease).not.toHaveBeenCalled();
   });
+
+  it('BUG: rejects a release from a different series even if season/episode numbers match', async () => {
+    // "Better Call Saul S01E01" has the same season+episode as the requested "Breaking Bad S01E01"
+    // but is a completely different show. The higher score must NOT cause it to be grabbed.
+    // This test FAILS before the fix (current filter only checks season+episode, not series title).
+    const wrongSeries = makeCandidate('Better.Call.Saul.S01E01.Pilot.1080p.mkv', 100);
+    const rightSeries = makeCandidate('Breaking.Bad.S01E01.Pilot.720p.mkv', 80);
+
+    searchAllIndexers.mockResolvedValue({ releases: [wrongSeries, rightSeries] });
+
+    const result = await service.autoSearchEpisode(10); // episode 10 belongs to Breaking Bad
+
+    expect(result.success).toBe(true);
+    expect(grabRelease).toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'Breaking.Bad.S01E01.Pilot.720p.mkv' }),
+      expect.anything(),
+    );
+    expect(grabRelease).not.toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'Better.Call.Saul.S01E01.Pilot.1080p.mkv' }),
+      expect.anything(),
+    );
+  });
 });
 
 // ─── isSingleSeasonPack corner cases ─────────────────────────────────────────

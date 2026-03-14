@@ -33,7 +33,7 @@ chore_drizzle_migration_20260314  (backend-only; depends on clean baseline from 
 
 ## Active Tracks
 
-- [~] **Track: Server Package/Module Alignment — Enable tsc --noEmit Quality Gate** *Phases: 4 | Link: [./tracks/chore_server_module_alignment_20260315/](./tracks/chore_server_module_alignment_20260315/)*
+*(none)*
 
 ## Upcoming / Planned
 
@@ -50,6 +50,7 @@ chore_drizzle_migration_20260314  (backend-only; depends on clean baseline from 
 ---
 ## Archived Tracks
 
+- [x] **Track: Server Package/Module Alignment** *Phases: 4 | Link: [./archive/chore_server_module_alignment_20260315/](./archive/chore_server_module_alignment_20260315/)*
 - [x] **Track: shadcn/ui Installation & Primitive Migration** *Phases: 4 | Link: [./archive/chore_shadcn_setup_20260314/](./archive/chore_shadcn_setup_20260314/)*
 - [x] **Track: UI Foundation Cleanup** *Phases: 3 | Link: [./archive/chore_ui_foundation_20260314/](./archive/chore_ui_foundation_20260314/)*
 - [x] **Track: Fix Failing Tests** *Phases: 2 | Link: [./archive/chore_fix_failing_tests_20260314/](./archive/chore_fix_failing_tests_20260314/)*

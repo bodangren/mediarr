@@ -34,6 +34,9 @@
 - (2026-03-13, bug_autosearch_wrong_series_episode) `autoSearchMovie` core paths (not-found, no-releases, below-threshold, successful-grab, search-error) had zero tests; add smoke tests for every early-exit path to prevent silent regressions.
 
 - (2026-03-14, chore_shadcn_setup) Radix `Tooltip` **requires** `TooltipProvider` as an ancestor — wire it in `AppProviders` at app root and use a `renderWithTooltip()` helper in tests for all components that contain a `Tooltip`.
+- (2026-03-15, chore_server_module_alignment) For tsx/transpiler-based servers, use `"module": "preserve"` + `"moduleResolution": "bundler"` in tsconfig — NOT `module:nodenext`. The latter requires `.js` extensions on all relative imports (622 TS2835 errors) and conflicts with `type:commonjs` in package.json. `bundler` mode works with ESM-syntax source without enforcing file extensions.
+- (2026-03-15, chore_server_module_alignment) Vitest mocks must match the import style in the source: if source uses named imports (`import { validate } from 'node-cron'`), the mock must export `{ validate: ... }` — NOT `{ default: { validate: ... } }`. Changing from default to named imports breaks any test that mocks via `default:`.
+- (2026-03-15, chore_server_module_alignment) When filtering arrays to narrow type (e.g., `(string|number)[] → number[]`), verify that strings in the array are intentional — filtering them out may break behavior that relies on them (Cardigann string category IDs). Widen the target type instead of filtering when strings are valid.
 
 ### Patterns That Worked Well
 

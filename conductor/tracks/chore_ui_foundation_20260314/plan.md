@@ -3,8 +3,8 @@
 ## Phase 1 — cn(), RouteScaffold, and 'use client' removal
 
 - [x] Create `app/src/lib/cn.ts` exporting `cn(...inputs)` using `clsx` + `tailwind-merge` <!-- d512aa9 -->
-- [~] Grep all `.tsx`/`.ts` files in `app/src/` for `'use client'` and remove every occurrence
-- [ ] Audit `app/src/components/primitives/RouteScaffold.tsx` — verify its props match all callsites
+- [x] Grep all `.tsx`/`.ts` files in `app/src/` for `'use client'` and remove every occurrence <!-- d6be9e2 -->
+- [x] Audit `app/src/components/primitives/RouteScaffold.tsx` — verify its props match all callsites <!-- d6be9e2 -->
 - [ ] Delete the private `RouteScaffold` function from `App.tsx`
 - [ ] Update `App.tsx` to import `RouteScaffold` from `@/components/primitives/RouteScaffold`
 - [ ] Fix `CollectionDetailPage` `ToastInput` TS error

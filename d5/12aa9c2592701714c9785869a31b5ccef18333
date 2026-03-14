@@ -1,0 +1,4 @@
+Task: Create app/src/lib/cn.ts
+Summary: Created cn() helper exporting clsx + tailwind-merge composition. clsx and tailwind-merge were already installed; this wires them together as the canonical class-merging utility for the project.
+Files created: app/src/lib/cn.ts
+Why: shadcn/ui and all subsequent component migrations depend on cn() being available at @/lib/cn

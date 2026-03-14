@@ -1,4 +1,3 @@
-'use client';
 
 import { Button } from '@/components/primitives/Button';
 import { Icon } from '@/components/primitives/Icon';

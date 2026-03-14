@@ -1,4 +1,3 @@
-'use client';
 
 import { useState } from 'react';
 import { LayoutGrid, List, Table2 } from 'lucide-react';

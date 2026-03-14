@@ -1,4 +1,3 @@
-'use client';
 
 import { type DiscoverFilters } from '@/types/discover';
 

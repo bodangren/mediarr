@@ -1,4 +1,3 @@
-'use client';
 
 import { useCallback, useMemo, useRef, useState, type ChangeEvent, type DragEvent } from 'react';
 import { AlertCircle, Upload, X } from 'lucide-react';

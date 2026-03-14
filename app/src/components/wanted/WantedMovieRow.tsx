@@ -1,4 +1,3 @@
-'use client';
 
 import { type LucideIcon } from 'lucide-react';
 import { StatusBadge } from '@/components/primitives/StatusBadge';

@@ -1,4 +1,3 @@
-'use client';
 
 import { Icon } from '@/components/primitives/Icon';
 import { CollectionCard } from './CollectionCard';

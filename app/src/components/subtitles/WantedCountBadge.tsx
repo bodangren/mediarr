@@ -1,4 +1,3 @@
-'use client';
 
 import { useApiQuery } from '@/lib/query/useApiQuery';
 import { queryKeys } from '@/lib/query/queryKeys';

@@ -1,4 +1,3 @@
-'use client';
 
 import type { MovieFile } from '@/types/movie';
 import { formatFileSize } from '@/types/movie';

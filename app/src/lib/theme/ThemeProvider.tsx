@@ -1,4 +1,3 @@
-'use client';
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { COLOR_IMPAIRED_KEY, loadColorImpairedMode, toggleColorImpairedMode } from './colorImpaired';

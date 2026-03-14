@@ -1,4 +1,3 @@
-'use client';
 
 import { useEffect, useState } from 'react';
 import { CheckInput, FormGroup, TextInput } from '@/components/primitives/Form';

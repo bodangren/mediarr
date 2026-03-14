@@ -1,4 +1,3 @@
-'use client';
 
 import { StatusBadge } from '@/components/primitives/StatusBadge';
 

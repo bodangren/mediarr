@@ -1,4 +1,3 @@
-'use client';
 
 import { useQuery, type QueryKey, type UseQueryResult } from '@tanstack/react-query';
 import { STALE_TIMES, type StaleTimeKind } from './queryClient';

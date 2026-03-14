@@ -1,4 +1,3 @@
-'use client';
 
 import { useState } from 'react';
 import { type SubtitleProvider, type ProviderSettings, type ProviderTestResult } from '@/lib/api';

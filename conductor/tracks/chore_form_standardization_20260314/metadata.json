@@ -1,0 +1,9 @@
+{
+  "id": "chore_form_standardization_20260314",
+  "type": "chore",
+  "title": "Form Standardization — react-hook-form + shadcn/ui Form everywhere",
+  "status": "planned",
+  "created": "2026-03-14",
+  "phases": 2,
+  "description": "After shadcn/ui is in place, migrate all settings forms and modal forms from the current mix of manual useState patterns and raw inputs to react-hook-form + zod + shadcn/ui Form components. Establishes a single pattern any contributor can follow for new forms."
+}

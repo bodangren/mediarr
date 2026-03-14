@@ -1,4 +1,3 @@
-'use client';
 
 import type { CustomFilter } from '@/lib/api/filters';
 

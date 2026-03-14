@@ -1,4 +1,3 @@
-'use client';
 
 import type { LanguageSetting } from '@/lib/api/languageProfilesApi';
 import { getLanguageName } from '@/lib/constants/languages';

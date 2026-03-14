@@ -1,4 +1,3 @@
-'use client';
 
 import { useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';

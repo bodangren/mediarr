@@ -1,4 +1,3 @@
-'use client';
 
 import { useMutation, useQueryClient, type QueryKey } from '@tanstack/react-query';
 import { useToast } from '@/components/providers/ToastProvider';

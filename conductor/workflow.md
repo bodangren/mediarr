@@ -253,6 +253,51 @@ A task is complete when:
 8. Changes committed with proper message
 9. Git note with task summary attached to the commit
 
+## Track Completion & Archiving
+
+A track is not truly done until it is archived. Archiving is mandatory and must be the final
+act of every track, performed immediately after all tasks are `[x]` and all tests pass.
+
+### Archiving Checklist
+
+1. **Verify Completion**
+   - Every task in `plan.md` is marked `[x]` with a commit SHA.
+   - Every phase heading in `plan.md` has a `[checkpoint: <sha>]` annotation.
+   - The full automated test suite passes (`CI=true bun run test --run`).
+   - The production build succeeds (`cd app && npm run build`).
+
+2. **Update `metadata.json`**
+   - Set `"status": "done"`.
+   - Add `"completed": "<YYYY-MM-DD>"` with today's date.
+
+3. **Move the Track Directory**
+   ```bash
+   mv conductor/tracks/<track_id> conductor/archive/<track_id>
+   ```
+   The track folder must no longer exist under `conductor/tracks/`.
+
+4. **Update `conductor/tracks.md`**
+   - Remove the `[~] In Progress` entry for `<track_id>`.
+   - If the file has an archive/completed section, add the entry there. Otherwise, delete the line entirely.
+
+5. **Commit the Archive Action**
+   Stage and commit all archiving changes in a single dedicated commit:
+   ```bash
+   git add conductor/archive/<track_id> conductor/tracks.md
+   git commit -m "chore: archive <track_id> track; update docs, registry, and lessons"
+   ```
+   This commit must be separate from the final implementation commit so the archive action
+   is clearly visible in the git log.
+
+6. **Push to Remote**
+   ```bash
+   git push origin main
+   ```
+
+> **Why This Matters:** Unarchived completed tracks pollute `tracks.md`, cause the autonomous
+> agent to misidentify work as in-progress, and make project status reporting unreliable.
+> There are no exceptions to this rule.
+
 ## Emergency Procedures
 
 ### Critical Bug in Production

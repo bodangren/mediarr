@@ -1,4 +1,3 @@
-'use client';
 
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { Button } from '@/components/primitives/Button';

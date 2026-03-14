@@ -1,0 +1,9 @@
+{
+  "id": "chore_drizzle_migration_20260314",
+  "type": "chore",
+  "title": "Drizzle ORM Migration — Replace Prisma with Drizzle + bun:sqlite",
+  "status": "planned",
+  "created": "2026-03-14",
+  "phases": 4,
+  "description": "Replace Prisma ORM with Drizzle ORM using the bun:sqlite driver. Define the Drizzle schema from the existing Prisma schema, generate the initial migration, rewrite all 20 repository files to use Drizzle queries, switch the dev server from tsx watch to bun --watch, and remove Prisma entirely. This eliminates the binary engine, Bun compatibility friction, and the prisma generate step."
+}

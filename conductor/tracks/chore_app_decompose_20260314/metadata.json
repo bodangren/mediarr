@@ -1,0 +1,9 @@
+{
+  "id": "chore_app_decompose_20260314",
+  "type": "chore",
+  "title": "App.tsx Decomposition — Extract Settings Pages, Modals, and Inline Components",
+  "status": "planned",
+  "created": "2026-03-14",
+  "phases": 3,
+  "description": "App.tsx is a 4000+ line god file containing route definitions, page components, modals, settings forms, and shared utilities all tangled together. This track extracts every page-level component into its own file, shrinking App.tsx to a pure route tree under 200 lines. No functional changes."
+}

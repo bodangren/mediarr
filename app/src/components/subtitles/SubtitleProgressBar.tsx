@@ -1,4 +1,3 @@
-'use client';
 
 import { formatPercent } from '@/lib/format';
 

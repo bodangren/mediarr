@@ -1,4 +1,3 @@
-'use client';
 
 import { ProgressBar } from '@/components/primitives/ProgressBar';
 import { Button } from '@/components/primitives/Button';

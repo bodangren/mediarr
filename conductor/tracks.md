@@ -6,44 +6,42 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ## Execution Order and Dependencies
 
-**Primary sequence:** `Library Visibility & Dashboard` -> `Existing Library Import` -> `Collections` -> `Automated Search` -> `Subtitle Management`
+**Current sequence (Stack Modernisation):**
+`chore_ui_foundation` → `chore_shadcn_setup` → `chore_app_decompose` → `chore_form_standardization`
+
+**Parallel track (backend, no frontend dependency):**
+`chore_drizzle_migration` — can begin after `chore_ui_foundation` is complete (clean baseline)
 
 ### Dependency Graph
 
 ```
-Import Pipeline & Root Folder Settings (Completed)
+chore_ui_foundation_20260314  (no deps — first track of day, clean baseline)
     |
     v
-Library Visibility & Dashboard (Completed)
+chore_shadcn_setup_20260314  (needs cn() and clean build from foundation)
     |
     v
-Existing Library Import (Completed)
+chore_app_decompose_20260314  (needs shadcn primitives available to extracted pages)
     |
     v
-Collections (Completed)
-    |
-    v
-Automated Search & Download (New)
-    |
-    v
-Subtitle Management (New)
-    |
-    v
-Streaming Server & Discovery (New)
-    |
-    v
-Android TV Client (New)
+chore_form_standardization_20260314  (needs shadcn Form + decomposed pages)
+
+chore_drizzle_migration_20260314  (backend-only; depends on clean baseline from ui_foundation)
 ```
 
 ---
 
 ## Active Tracks
 
-*(none)*
+*(none — begin with chore_ui_foundation_20260314)*
 
 ## Upcoming / Planned
 
-*(none)*
+- [~] **Track: UI Foundation Cleanup** *Phases: 3 | Link: [./tracks/chore_ui_foundation_20260314/](./tracks/chore_ui_foundation_20260314/)*
+- [ ] **Track: shadcn/ui Installation & Primitive Migration** *Phases: 4 | Link: [./tracks/chore_shadcn_setup_20260314/](./tracks/chore_shadcn_setup_20260314/)*
+- [ ] **Track: App.tsx Decomposition** *Phases: 3 | Link: [./tracks/chore_app_decompose_20260314/](./tracks/chore_app_decompose_20260314/)*
+- [ ] **Track: Form Standardization** *Phases: 2 | Link: [./tracks/chore_form_standardization_20260314/](./tracks/chore_form_standardization_20260314/)*
+- [ ] **Track: Drizzle ORM Migration** *Phases: 4 | Link: [./tracks/chore_drizzle_migration_20260314/](./tracks/chore_drizzle_migration_20260314/)*
 
 ---
 

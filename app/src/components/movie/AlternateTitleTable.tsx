@@ -1,4 +1,3 @@
-'use client';
 
 import type { AlternateTitle } from '@/types/movie';
 

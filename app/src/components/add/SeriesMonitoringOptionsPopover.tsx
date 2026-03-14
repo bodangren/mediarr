@@ -1,4 +1,3 @@
-'use client';
 
 import { useState, useRef, useEffect, type ReactNode } from 'react';
 import { Icon } from '@/components/primitives/Icon';

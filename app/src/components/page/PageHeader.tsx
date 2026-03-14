@@ -1,4 +1,3 @@
-'use client';
 
 import * as Icons from 'lucide-react';
 import type { ReactNode } from 'react';

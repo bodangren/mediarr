@@ -1,4 +1,3 @@
-'use client';
 
 import { useCallback, useRef } from 'react';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';

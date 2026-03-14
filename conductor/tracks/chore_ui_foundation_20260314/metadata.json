@@ -1,0 +1,9 @@
+{
+  "id": "chore_ui_foundation_20260314",
+  "type": "chore",
+  "title": "UI Foundation Cleanup — cn(), RouteScaffold, react-dnd → @dnd-kit, react-window → @tanstack/react-virtual",
+  "status": "planned",
+  "created": "2026-03-14",
+  "phases": 3,
+  "description": "Pre-shadcn cleanup: introduce cn() utility, remove 'use client' directives, consolidate the two RouteScaffold implementations, fix pre-existing TS errors, swap react-window for @tanstack/react-virtual, and swap react-dnd for @dnd-kit/core. No functional changes — this track makes the codebase safe for the shadcn migration that follows."
+}

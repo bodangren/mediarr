@@ -1,4 +1,3 @@
-'use client';
 
 import type { SubtitleTrack } from '@/lib/api/subtitleApi';
 import { LanguageBadge } from './LanguageBadge';

@@ -1,4 +1,3 @@
-'use client';
 
 import { useEffect, useState, type ComponentType, type ReactNode } from 'react';
 import { Button } from './Button';

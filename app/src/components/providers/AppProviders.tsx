@@ -1,4 +1,3 @@
-'use client';
 
 import { QueryClientProvider } from '@tanstack/react-query';
 import { useEffect, useState, type ReactNode } from 'react';

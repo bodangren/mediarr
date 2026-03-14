@@ -1,4 +1,3 @@
-'use client';
 
 import type { ImportConfig } from './types';
 

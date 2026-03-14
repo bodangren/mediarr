@@ -1,4 +1,3 @@
-'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Search, Download, AlertCircle, CheckCircle, Loader2, Filter, ArrowUpDown, X } from 'lucide-react';

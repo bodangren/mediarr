@@ -1,4 +1,3 @@
-'use client';
 
 import type { CastMember } from '@/types/movie';
 

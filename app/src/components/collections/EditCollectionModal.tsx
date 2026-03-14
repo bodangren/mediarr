@@ -1,4 +1,3 @@
-'use client';
 
 import { useState } from 'react';
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '@/components/primitives/Modal';

@@ -1,4 +1,3 @@
-'use client';
 
 import { useCallback, useRef, useState } from 'react';
 import { createUIStore, type UIAction, type UIState, type UIStore } from './uiStore';

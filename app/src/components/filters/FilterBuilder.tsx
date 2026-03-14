@@ -1,4 +1,3 @@
-'use client';
 
 import { useEffect, useMemo, useState } from 'react';
 import type { FilterCondition, FilterConditionsGroup, FilterField, FilterTargetType } from '@/lib/api/filters';

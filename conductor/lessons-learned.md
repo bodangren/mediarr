@@ -33,6 +33,8 @@
 - (2026-03-13, bug_autosearch_wrong_series_episode) Candidate filters must check ALL dimensions: `autoSearchEpisode` needed season+episode+series-title. Adding only season+episode left a gap — a different show's S01E01 passed the filter and got grabbed. Apply `titlesMatch()` as the third guard.
 - (2026-03-13, bug_autosearch_wrong_series_episode) `autoSearchMovie` core paths (not-found, no-releases, below-threshold, successful-grab, search-error) had zero tests; add smoke tests for every early-exit path to prevent silent regressions.
 
+- (2026-03-14, chore_shadcn_setup) Radix `Tooltip` **requires** `TooltipProvider` as an ancestor — wire it in `AppProviders` at app root and use a `renderWithTooltip()` helper in tests for all components that contain a `Tooltip`.
+
 ### Patterns That Worked Well
 
 - (2026-03-11, feature_system_routes_coverage) TDD on routes with in-memory state: export a proxy state object; reset it in `beforeEach`. Filter-predicate bugs only surface with coverage — write tests first.

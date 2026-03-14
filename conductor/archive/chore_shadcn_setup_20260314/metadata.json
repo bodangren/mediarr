@@ -1,0 +1,10 @@
+{
+  "id": "chore_shadcn_setup_20260314",
+  "type": "chore",
+  "title": "shadcn/ui Installation & Primitive Migration",
+  "status": "done",
+  "created": "2026-03-14",
+  "completed": "2026-03-14",
+  "phases": 4,
+  "description": "Install and configure shadcn/ui against the existing design token system. Migrate all hand-rolled primitive components (Button, Modal/Dialog, Form inputs, Switch, Table, Menu, Badge, Progress, Tooltip) to shadcn equivalents. Existing component APIs are updated at all callsites. This track eliminates the custom primitive maintenance surface and makes the codebase consistent."
+}

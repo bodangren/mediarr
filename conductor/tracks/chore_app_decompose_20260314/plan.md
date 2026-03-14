@@ -12,15 +12,17 @@
 - [ ] Extract `SettingsSubtitlesPage` → `app/src/pages/settings/SettingsSubtitlesPage.tsx`
 - [ ] Extract `SettingsGeneralPage` → `app/src/pages/settings/SettingsGeneralPage.tsx`
 - [ ] Extract `SettingsImportListsPage` → `app/src/pages/settings/SettingsImportListsPage.tsx`
+- [ ] **Test Remediation:** Identify all tests in `tests/` and `app/src/` related to settings (e.g. `api-settings-general.test.ts`, `settings-routes.test.tsx`); update their imports and ensure they pass after extraction.
 - [ ] Extract any remaining settings route components (audit App.tsx for any missed)
 - [ ] Update App.tsx `<Route>` elements to import from the new files
 - [ ] Run `cd app && npm run build` — confirm clean after each extraction batch
-- [ ] Run `CI=true npm test` — confirm `settings-routes.test.tsx` still passes
+- [ ] Run `CI=true npm test` — confirm `settings-routes.test.tsx` and other settings tests pass
 
 ## Phase 2 — Extract Inline Modals and Shared Components
 
 - [ ] Identify all inline modal components defined in `App.tsx` (those not already in a feature directory)
 - [ ] Move each to its feature directory (e.g. inline indexer edit modal → `components/indexers/`)
+- [ ] **Test Remediation:** For each extracted modal, find its associated tests (e.g. in `app_src_backup/components/`); update imports and restore to passing status.
 - [ ] Extract `StaticPage` helper (if still present) to `app/src/components/primitives/StaticPage.tsx`
 - [ ] Extract any inline type definitions from `App.tsx` to their respective type files
 - [ ] Update all imports in `App.tsx` for the moved components

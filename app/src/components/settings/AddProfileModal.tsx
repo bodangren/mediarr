@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Alert } from '@/components/primitives/Alert';
+import { Alert } from '@/components/ui/alert-compat';
 import { Button } from '@/components/ui/button';
 import { Modal, ModalBody, ModalFooter, ModalHeader } from '@/components/ui/modal';
 import type {

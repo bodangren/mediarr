@@ -23,8 +23,8 @@ describe('SearchProgressIndicator', () => {
 
     expect(screen.getByText(/Searching for subtitles/i)).toBeInTheDocument();
     expect(screen.getByText(/5 of 10 completed, 1 failed/i)).toBeInTheDocument();
-    // There are two 50% elements - one in header, one from ProgressBar
-    expect(screen.getAllByText(/50%/i)).toHaveLength(2);
+    // One percentage display from ProgressBar
+    expect(screen.getAllByText(/50%/i)).toHaveLength(1);
   });
 
   it('should calculate correct percentage', () => {

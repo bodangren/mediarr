@@ -1,7 +1,7 @@
 
 import { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Alert } from '@/components/primitives/Alert';
+import { Alert } from '@/components/ui/alert-compat';
 import { Modal, ModalBody, ModalFooter, ModalHeader } from '@/components/ui/modal';
 import { getApiClients } from '@/lib/api/client';
 import type { CreateExclusionInput, ImportListExclusion } from '@/lib/api/importListsApi';

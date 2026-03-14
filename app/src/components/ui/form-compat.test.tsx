@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import {
   CheckInput,
@@ -8,7 +9,7 @@ import {
   SelectInput,
   TagInput,
   TextInput,
-} from './Form';
+} from './form-compat';
 
 describe('Form primitives', () => {
   it('renders form and form group wrappers with submit behavior', () => {
@@ -36,7 +37,8 @@ describe('Form primitives', () => {
     expect(screen.getByText('API key is required')).toBeInTheDocument();
   });
 
-  it('updates value for select input', () => {
+  it('updates value for select input', async () => {
+    const user = userEvent.setup();
     const onChange = vi.fn();
 
     render(
@@ -52,7 +54,11 @@ describe('Form primitives', () => {
       />,
     );
 
-    fireEvent.change(screen.getByRole('combobox', { name: 'Protocol' }), { target: { value: 'usenet' } });
+    const trigger = screen.getByRole('combobox', { name: 'Protocol' });
+    await user.click(trigger);
+    const option = await screen.findByRole('option', { name: 'Usenet' });
+    await user.click(option);
+
     expect(onChange).toHaveBeenCalledWith('usenet');
   });
 

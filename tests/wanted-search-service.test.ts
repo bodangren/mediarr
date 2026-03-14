@@ -71,7 +71,7 @@ describe('WantedSearchService', () => {
       year: 1999,
       type: 'movie',
     }));
-    expect(mediaSearchService.grabRelease).toHaveBeenCalledWith(candidates[0]);
+    expect(mediaSearchService.grabRelease).toHaveBeenCalledWith(candidates[0], { movieId: 1 });
   });
 
   it('should skip grabbing if best candidate is below threshold', async () => {

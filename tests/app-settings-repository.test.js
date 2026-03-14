@@ -1,19 +1,20 @@
 import { describe, it, expect, beforeEach, afterAll } from 'vitest';
 import { PrismaClient } from '@prisma/client';
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
+import { PrismaBetterSQLite3 } from '@prisma/adapter-better-sqlite3';
 import 'dotenv/config';
 import { AppSettingsRepository } from '../server/src/repositories/AppSettingsRepository';
 import { SettingsService } from '../server/src/services/SettingsService';
 
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
 function resolveTestDatabaseUrl() {
-  const databaseUrl = process.env.DATABASE_URL;
-  if (!databaseUrl || databaseUrl.startsWith('file:/config/')) {
-    return 'file:./mediarr.db';
-  }
-  return databaseUrl;
+  return `file:${path.join(__dirname, '..', 'prisma', 'dev.db')}`;
 }
 
-const adapter = new PrismaBetterSqlite3({ url: resolveTestDatabaseUrl() });
+const adapter = new PrismaBetterSQLite3({ url: resolveTestDatabaseUrl() });
 const prisma = new PrismaClient({ adapter });
 const repository = new AppSettingsRepository(prisma);
 const service = new SettingsService(repository);

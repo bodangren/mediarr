@@ -37,6 +37,7 @@ const mockApi = vi.hoisted(() => ({
   subtitleProvidersApi: { listProviders: vi.fn() },
   notificationsApi: { list: vi.fn() },
   settingsApi: { get: vi.fn(), update: vi.fn() },
+  mediaManagementApi: { get: vi.fn(), save: vi.fn() },
 }));
 
 vi.mock('@/lib/api/client', () => ({
@@ -169,6 +170,7 @@ describe('Library list and detail route integration', () => {
     mockApi.customFormatApi.list.mockResolvedValue([]);
     mockApi.subtitleProvidersApi.listProviders.mockResolvedValue([]);
     mockApi.settingsApi.get.mockResolvedValue(baseSettings);
+    mockApi.mediaManagementApi.get.mockResolvedValue({ movieRootFolder: '/movies', tvRootFolder: '/tv' });
   });
 
   // ── Movie list (/library/movies) ────────────────────────────────────────────

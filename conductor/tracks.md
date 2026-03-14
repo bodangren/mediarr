@@ -43,6 +43,11 @@ chore_drizzle_migration_20260314  (backend-only; depends on clean baseline from 
 
 ---
 
+## Upcoming / Unplanned
+
+- [ ] *Track: Use AI SDK and a cheap model for pattern matching instead of regex during search and import; Choose model and input API key
+
+---
 ## Archived Tracks
 
 - [x] **Track: UI Foundation Cleanup** *Phases: 3 | Link: [./archive/chore_ui_foundation_20260314/](./archive/chore_ui_foundation_20260314/)*

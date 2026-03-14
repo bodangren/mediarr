@@ -3,11 +3,11 @@ import { useState } from 'react';
 import { type SubtitleProvider, type ProviderSettings, type ProviderTestResult } from '@/lib/api';
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
-import { Form, FormGroup, TextInput, PasswordInput } from '@/components/primitives/Form';
+import { Form, FormGroup, TextInput, PasswordInput } from '@/components/ui/form-compat';
 import { NumberInput } from '@/components/primitives/SpecialInputs';
 import { Switch } from '@/components/ui/switch-compat';
 import { ProviderTestResult as TestResultDisplay } from './ProviderTestResult';
-import { Alert } from '@/components/primitives/Alert';
+import { Alert } from '@/components/ui/alert-compat';
 
 export interface ProviderSettingsModalProps {
   isOpen: boolean;

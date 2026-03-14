@@ -11,6 +11,7 @@
 - [ ] Migrate `SettingsNotificationsPage` to react-hook-form + zod schema
 - [ ] Migrate `SettingsSubtitlesPage` to react-hook-form + zod schema
 - [ ] Migrate `SettingsGeneralPage` to react-hook-form + zod schema
+- [ ] **Test Remediation:** For each migrated settings form, identify its associated tests in `tests/` or `app/src/` (e.g. `api-settings-general.test.ts`); update them to reflect the new form structure and validation logic, ensuring they pass.
 - [ ] Ensure `EnhancedSelectInput` and `TagInput` accept `value`/`onChange` as Controller-compatible props
 - [ ] Run `cd app && npm run build` and `CI=true npm test` — confirm clean
 
@@ -22,6 +23,7 @@
 - [ ] Migrate `AddProfileModal` form to react-hook-form + zod
 - [ ] Migrate `ImportWizard` form steps to react-hook-form + zod
 - [ ] Migrate any remaining modal forms identified in the audit
+- [ ] **Test Remediation:** For each migrated modal form, find its associated tests (e.g. `indexer-schema.test.js`, `indexer-result.test.js`); update them to reflect the new form structure and validation logic, restoring them to passing status.
 - [ ] Delete the deprecated `Form.tsx` shim; update all remaining imports
 - [ ] Write form validation tests for at least 2 settings forms (valid submit, invalid submit shows error messages)
 - [ ] Run `cd app && npm run build` — zero TS errors

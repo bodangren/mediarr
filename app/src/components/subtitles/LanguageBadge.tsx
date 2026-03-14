@@ -31,8 +31,8 @@ export function LanguageBadge({
     : '';
 
   const indicators = [];
-  if (isForced) indicators.push('(F)');
-  if (isHi) indicators.push('(HI)');
+  if (isForced) indicators.push('F');
+  if (isHi) indicators.push('HI');
 
   return (
     <span

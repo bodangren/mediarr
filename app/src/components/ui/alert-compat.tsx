@@ -1,6 +1,6 @@
 import { type ReactNode } from 'react';
 import { Alert as ShadcnAlert } from '@/components/ui/alert';
-import { Icon } from './Icon';
+import { Icon } from '@/components/primitives/Icon';
 import { cn } from '@/lib/cn';
 
 type AlertVariant = 'info' | 'success' | 'warning' | 'danger';

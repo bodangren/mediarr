@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { PrismaClient } from '@prisma/client';
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
+import { PrismaBetterSQLite3 } from '@prisma/adapter-better-sqlite3';
 import { seedCategories, STANDARD_CATEGORIES } from '../server/src/seeds/categories';
 
-const adapter = new PrismaBetterSqlite3({ url: 'file:prisma/dev.db' });
+const adapter = new PrismaBetterSQLite3({ url: 'file:prisma/dev.db' });
 const prisma = new PrismaClient({ adapter });
 
 describe('Category Seed', () => {

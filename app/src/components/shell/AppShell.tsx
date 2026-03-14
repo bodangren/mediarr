@@ -1,5 +1,4 @@
-
-import { Link } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { ConnectionState } from '@/lib/api/eventsApi';
 import { getApiClients } from '@/lib/api/client';
@@ -13,6 +12,14 @@ import {
 import { useUIStore } from '@/lib/state/useUIStore';
 import { applyUIPreferences, loadUIPreferences } from '@/lib/uiPreferences';
 import { PageLayout } from './PageLayout';
+import {
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
 
 interface AppShellProps {
   pathname: string;
@@ -20,13 +27,13 @@ interface AppShellProps {
 }
 
 export function AppShell({ pathname, children }: AppShellProps) {
+  const navigate = useNavigate();
   const { state: uiState, toggleSidebarCollapsed } = useUIStore();
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [shortcutHelpOpen, setShortcutHelpOpen] = useState(false);
   const [connectionState, setConnectionState] = useState<ConnectionState>(() => {
     return getApiClients().eventsApi.connectionState;
   });
-  const [query, setQuery] = useState('');
 
   useEffect(() => {
     applyUIPreferences(loadUIPreferences());
@@ -77,21 +84,6 @@ export function AppShell({ pathname, children }: AppShellProps) {
 
   const breadcrumbs = useMemo(() => buildBreadcrumbs(pathname), [pathname]);
 
-  const commandItems = useMemo(() => {
-    return NAV_ITEMS.flatMap(section => section.items);
-  }, []);
-
-  const filteredCommands = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
-    if (normalizedQuery.length === 0) {
-      return commandItems;
-    }
-
-    return commandItems.filter(item => {
-      return item.label.toLowerCase().includes(normalizedQuery) || item.path.includes(normalizedQuery);
-    });
-  }, [commandItems, query]);
-
   const connectionLabel = useMemo(() => {
     switch (connectionState) {
       case 'open':
@@ -106,6 +98,11 @@ export function AppShell({ pathname, children }: AppShellProps) {
         return 'Idle';
     }
   }, [connectionState]);
+
+  const handleCommandSelect = (path: string) => {
+    setPaletteOpen(false);
+    navigate(path);
+  };
 
   return (
     <PageLayout
@@ -149,43 +146,25 @@ export function AppShell({ pathname, children }: AppShellProps) {
     >
       {children}
 
-      {paletteOpen ? (
-        <div
-          className="fixed inset-0 z-40 flex items-start justify-center bg-surface-3/80 px-3 pt-[12vh]"
-          onClick={() => setPaletteOpen(false)}
-        >
-          <div
-            role="dialog"
-            aria-label="Command Palette"
-            className="w-full max-w-xl rounded-lg border border-border-subtle bg-surface-1 p-3 shadow-elevation-3"
-            onClick={event => event.stopPropagation()}
-          >
-            <input
-              value={query}
-              onChange={event => setQuery(event.currentTarget.value)}
-              placeholder="Jump to route or search"
-              className="w-full rounded-sm border border-border-subtle bg-surface-0 px-3 py-2 text-sm outline-none focus:border-accent-primary"
-            />
-            <ul className="mt-3 max-h-80 overflow-y-auto">
-              {filteredCommands.map(item => (
-                <li key={item.path}>
-                  <Link
-                    to={item.path}
-                    className="block rounded-sm px-3 py-2 text-sm text-text-secondary hover:bg-surface-2 hover:text-text-primary"
-                    onClick={() => setPaletteOpen(false)}
-                  >
-                    {item.label}
-                    <span className="ml-2 text-xs text-text-muted">{item.path}</span>
-                  </Link>
-                </li>
+      <CommandDialog open={paletteOpen} onOpenChange={setPaletteOpen}>
+        <CommandInput placeholder="Type a command or search..." />
+        <CommandList>
+          <CommandEmpty>No results found.</CommandEmpty>
+          {NAV_ITEMS.map(section => (
+            <CommandGroup key={section.id} heading={section.label}>
+              {section.items.map(item => (
+                <CommandItem
+                  key={item.path}
+                  onSelect={() => handleCommandSelect(item.path)}
+                >
+                  <span>{item.label}</span>
+                  <span className="ml-2 text-xs text-muted-foreground">{item.path}</span>
+                </CommandItem>
               ))}
-              {filteredCommands.length === 0 ? (
-                <li className="px-3 py-2 text-sm text-text-muted">No command matches your query.</li>
-              ) : null}
-            </ul>
-          </div>
-        </div>
-      ) : null}
+            </CommandGroup>
+          ))}
+        </CommandList>
+      </CommandDialog>
 
       {shortcutHelpOpen ? (
         <div

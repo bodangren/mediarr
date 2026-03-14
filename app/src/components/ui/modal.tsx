@@ -50,7 +50,7 @@ interface ConfirmModalProps {
   onConfirm: () => void;
   cancelLabel?: string;
   confirmLabel?: string;
-  confirmVariant?: 'default' | 'destructive';
+  confirmVariant?: 'default' | 'destructive' | 'primary' | 'danger';
   isConfirming?: boolean;
 }
 
@@ -109,9 +109,9 @@ export function ModalBody({ children, className = '' }: ModalBodyProps) {
 
 export function ModalFooter({ children }: ModalFooterProps) {
   return (
-    <DialogFooterPrimitive className="border-t border-border-subtle px-4 py-3 sticky bottom-0 bg-background z-10 sm:justify-end">
+    <footer className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 border-t border-border-subtle px-4 py-3 sticky bottom-0 bg-background z-10">
       {children}
-    </DialogFooterPrimitive>
+    </footer>
   );
 }
 
@@ -123,7 +123,7 @@ export function ConfirmModal({
   onConfirm,
   cancelLabel = 'Cancel',
   confirmLabel = 'Confirm',
-  confirmVariant = 'destructive',
+  confirmVariant = 'danger',
   isConfirming = false,
 }: ConfirmModalProps) {
   return (

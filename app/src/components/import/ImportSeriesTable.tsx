@@ -1,10 +1,10 @@
 
 import type { ReactNode } from 'react';
 import { useMemo } from 'react';
-import { Table } from '@/components/primitives/Table';
+import { Table } from '@/components/ui/table-compat';
 import { SelectProvider, useSelectContext } from '@/components/primitives/SelectProvider';
 import { Button } from '@/components/ui/button';
-import { EmptyPanel } from '@/components/primitives/EmptyPanel';
+import { EmptyPanel } from '@/components/ui/empty-panel';
 import { ImportSeriesRow } from './ImportSeriesRow';
 import type { DetectedSeries } from './types';
 

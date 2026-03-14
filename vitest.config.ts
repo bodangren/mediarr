@@ -9,7 +9,8 @@ export default defineConfig({
       '**/node_modules/**',
       '**/reference/**',
       '**/dist/**',
-      'app/src/**/*.test.tsx', // Only exclude React component tests from vitest (they need jsdom)
+      'app_src_backup/**',
+      'app/src/**/*.test.{ts,tsx,js,jsx}',
     ],
   },
 });

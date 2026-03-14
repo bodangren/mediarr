@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from 'react';
-import { CheckInput, FormGroup, TextInput } from '@/components/primitives/Form';
+import { CheckInput, FormGroup, TextInput } from '@/components/ui/form-compat';
 import { NumberInput } from '@/components/primitives/SpecialInputs';
 import { ConfigurableItemModal } from '@/components/settings/ConfigurableItemModal';
 import type { TestConnectionResult } from '@/components/settings/ConfigurableItemModal';

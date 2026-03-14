@@ -1,9 +1,9 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { Alert } from './Alert';
+import { Alert } from '@/components/ui/alert-compat';
 import { Button } from '@/components/ui/button';
 import { Icon } from './Icon';
-import { Label } from './Label';
+import { Label } from '@/components/ui/label-badge';
 
 describe('core primitives', () => {
   it('renders button variants and click interactions', () => {

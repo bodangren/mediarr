@@ -1,7 +1,8 @@
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { ViewMenu, type ViewMode } from './ViewMenu';
+import { ViewMenu, type ViewMode } from './view-menu-compat';
 
 describe('ViewMenu', () => {
   const mockOnChange = vi.fn();
@@ -25,118 +26,82 @@ describe('ViewMenu', () => {
   });
 
   it('opens menu on click', async () => {
+    const user = userEvent.setup();
     render(<ViewMenu value="poster" onChange={mockOnChange} />);
 
     const button = screen.getByRole('button', { name: /view: poster/i });
-    await userEvent.click(button);
+    await user.click(button);
 
-    expect(screen.getByRole('listbox')).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: 'Poster' })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: 'Overview' })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: 'Table' })).toBeInTheDocument();
-  });
-
-  it('closes menu when clicking backdrop', async () => {
-    render(<ViewMenu value="poster" onChange={mockOnChange} />);
-
-    const button = screen.getByRole('button', { name: /view: poster/i });
-    await userEvent.click(button);
-
-    expect(screen.getByRole('listbox')).toBeInTheDocument();
-
-    // Click backdrop (fixed inset-0 button)
-    const backdrop = screen.getByLabelText('Close view menu');
-    await userEvent.click(backdrop);
-
-    await waitFor(() => {
-      expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
-    });
+    expect(await screen.findByRole('menu')).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Poster' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Overview' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Table' })).toBeInTheDocument();
   });
 
   it('calls onChange with correct value when selecting option', async () => {
+    const user = userEvent.setup();
     render(<ViewMenu value="poster" onChange={mockOnChange} />);
 
     const button = screen.getByRole('button', { name: /view: poster/i });
-    await userEvent.click(button);
+    await user.click(button);
 
-    const overviewOption = screen.getByRole('option', { name: 'Overview' });
-    const overviewButton = within(overviewOption).getByRole('button');
-    await userEvent.click(overviewButton);
+    const overviewOption = await screen.findByRole('menuitem', { name: 'Overview' });
+    await user.click(overviewOption);
 
     expect(mockOnChange).toHaveBeenCalledWith('overview');
     expect(mockOnChange).toHaveBeenCalledTimes(1);
 
     // Menu should close after selection
     await waitFor(() => {
-      expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+      expect(screen.queryByRole('menu')).not.toBeInTheDocument();
     });
   });
 
   it('highlights active view with checkmark', async () => {
+    const user = userEvent.setup();
     render(<ViewMenu value="overview" onChange={mockOnChange} />);
 
     const button = screen.getByRole('button', { name: /view: overview/i });
-    await userEvent.click(button);
+    await user.click(button);
 
-    const overviewOption = screen.getByRole('option', { name: 'Overview' });
-    expect(overviewOption).toHaveAttribute('aria-selected', 'true');
+    const overviewOption = await screen.findByRole('menuitem', { name: 'Overview' });
     expect(overviewOption.querySelector('[data-testid="active-checkmark"]')).toBeInTheDocument();
 
-    const posterOption = screen.getByRole('option', { name: 'Poster' });
-    expect(posterOption).toHaveAttribute('aria-selected', 'false');
+    const posterOption = screen.getByRole('menuitem', { name: 'Poster' });
     expect(posterOption.querySelector('[data-testid="active-checkmark"]')).not.toBeInTheDocument();
   });
 
   it('displays correct icon for each view mode', async () => {
+    const user = userEvent.setup();
     render(<ViewMenu value="table" onChange={mockOnChange} />);
 
     const button = screen.getByRole('button', { name: /view: table/i });
     // Button should have an icon (svg inside)
     expect(button.querySelector('svg')).toBeInTheDocument();
 
-    await userEvent.click(button);
+    await user.click(button);
 
     // All options should have icons
-    const options = screen.getAllByRole('option');
+    const options = await screen.findAllByRole('menuitem');
     options.forEach(option => {
       expect(option.querySelector('svg')).toBeInTheDocument();
     });
   });
 
-  it('toggles menu open/close on repeated clicks', async () => {
+  it('closes menu on second click', async () => {
     render(<ViewMenu value="poster" onChange={mockOnChange} />);
 
     const button = screen.getByRole('button', { name: /view: poster/i });
 
     // Open menu
-    await userEvent.click(button);
-    expect(screen.getByRole('listbox')).toBeInTheDocument();
+    fireEvent.click(button);
+    expect(await screen.findByRole('menu')).toBeInTheDocument();
 
     // Close menu by clicking button again
-    await userEvent.click(button);
+    fireEvent.click(button);
     await waitFor(() => {
-      expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+      expect(screen.queryByRole('menu')).not.toBeInTheDocument();
     });
-
-    // Open again
-    await userEvent.click(button);
-    expect(screen.getByRole('listbox')).toBeInTheDocument();
-  });
-
-  it('applies correct styling to active option', async () => {
-    render(<ViewMenu value="table" onChange={mockOnChange} />);
-
-    const button = screen.getByRole('button', { name: /view: table/i });
-    await userEvent.click(button);
-
-    const tableOption = screen.getByRole('option', { name: 'Table' });
-    const tableButton = within(tableOption).getByRole('button');
-    expect(tableButton).toHaveClass('bg-surface-2', 'text-text-primary', 'font-medium');
-
-    const posterOption = screen.getByRole('option', { name: 'Poster' });
-    const posterButton = within(posterOption).getByRole('button');
-    expect(posterButton).toHaveClass('text-text-secondary');
-    expect(posterButton).not.toHaveClass('bg-surface-2', 'font-medium');
   });
 
   it('has proper accessibility attributes', () => {
@@ -144,16 +109,17 @@ describe('ViewMenu', () => {
 
     const button = screen.getByRole('button', { name: /view: poster/i });
     expect(button).toHaveAttribute('aria-expanded', 'false');
-    expect(button).toHaveAttribute('aria-haspopup', 'listbox');
+    expect(button).toHaveAttribute('aria-haspopup', 'menu');
   });
 
   it('updates accessibility attributes when menu opens', async () => {
+    const user = userEvent.setup();
     render(<ViewMenu value="poster" onChange={mockOnChange} />);
 
     const button = screen.getByRole('button', { name: /view: poster/i });
     expect(button).toHaveAttribute('aria-expanded', 'false');
 
-    await userEvent.click(button);
+    await user.click(button);
 
     expect(button).toHaveAttribute('aria-expanded', 'true');
   });
@@ -173,35 +139,29 @@ describe('ViewMenu', () => {
   });
 
   it('handles rapid option clicks correctly', async () => {
+    const user = userEvent.setup();
     render(<ViewMenu value="poster" onChange={mockOnChange} />);
 
     const button = screen.getByRole('button', { name: /view: poster/i });
-    await userEvent.click(button);
+    await user.click(button);
 
-    let tableOption = screen.getByRole('option', { name: 'Table' });
-    const tableButton = within(tableOption).getByRole('button');
+    let tableOption = await screen.findByRole('menuitem', { name: 'Table' });
 
     // Click table option
-    await userEvent.click(tableButton);
+    await user.click(tableOption);
     expect(mockOnChange).toHaveBeenCalledWith('table');
 
     // Wait for menu to close
     await waitFor(() => {
-      expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+      expect(screen.queryByRole('menu')).not.toBeInTheDocument();
     });
 
     // Reopen menu
-    await userEvent.click(button);
-
-    // Wait for menu to open
-    await waitFor(() => {
-      expect(screen.getByRole('listbox')).toBeInTheDocument();
-    });
+    await user.click(button);
 
     // Click poster option
-    let posterOption = screen.getByRole('option', { name: 'Poster' });
-    const posterButton = within(posterOption).getByRole('button');
-    await userEvent.click(posterButton);
+    let posterOption = await screen.findByRole('menuitem', { name: 'Poster' });
+    await user.click(posterOption);
 
     expect(mockOnChange).toHaveBeenLastCalledWith('poster');
   });

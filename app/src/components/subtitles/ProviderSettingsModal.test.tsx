@@ -103,7 +103,7 @@ describe('ProviderSettingsModal', () => {
       />,
     );
 
-    expect(screen.getByText('This provider does not require any configuration')).toBeInTheDocument();
+    expect(screen.getByText(/This provider does not require any configuration/)).toBeInTheDocument();
   });
 
   it('renders Addic7ed provider fields', () => {
@@ -260,7 +260,7 @@ describe('ProviderSettingsModal', () => {
       />,
     );
 
-    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Saving...' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Reset' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Test' })).toBeDisabled();

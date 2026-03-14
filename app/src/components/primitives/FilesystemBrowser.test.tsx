@@ -133,15 +133,14 @@ describe('FilesystemBrowser', () => {
     expect(onSelect).toHaveBeenCalled();
   });
 
-  it('calls onClose when the Close button is clicked', async () => {
+  it('calls onClose when the Cancel button is clicked', async () => {
     const onClose = vi.fn();
     renderWithToast(<FilesystemBrowser {...defaultProps} onClose={onClose} />);
 
     await waitFor(() => expect(screen.getByText('home')).toBeInTheDocument());
 
-    const closeButton = screen.getByText('Close').closest('button');
-    expect(closeButton).toBeTruthy();
-    fireEvent.click(closeButton!);
+    const cancelButton = screen.getByRole('button', { name: /cancel/i });
+    fireEvent.click(cancelButton);
 
     expect(onClose).toHaveBeenCalledTimes(1);
   });

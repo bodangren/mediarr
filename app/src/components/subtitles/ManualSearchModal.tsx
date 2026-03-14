@@ -1,9 +1,9 @@
 
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Modal, ModalBody, ModalFooter, ModalHeader } from '@/components/ui/modal';
-import { QueryPanel } from '@/components/primitives/QueryPanel';
+import { QueryPanel } from '@/components/ui/query-panel';
 import { useToast } from '@/components/providers/ToastProvider';
 import { DataTable, type DataTableColumn } from '@/components/primitives/DataTable';
 import { getApiClients } from '@/lib/api/client';
@@ -17,6 +17,11 @@ interface ManualSearchModalProps {
 }
 
 export function ManualSearchModal({ isOpen, episodeId, movieId, onClose }: ManualSearchModalProps) {
+  if (!isOpen) return null;
+  return <ManualSearchModalInner isOpen={isOpen} episodeId={episodeId} movieId={movieId} onClose={onClose} />;
+}
+
+function ManualSearchModalInner({ isOpen, episodeId, movieId, onClose }: ManualSearchModalProps) {
   const api = useMemo(() => getApiClients(), []);
   const queryClient = useQueryClient();
   const { pushToast } = useToast();

@@ -19,6 +19,25 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { moveColumn, toggleColumnVisibility, type ColumnPreference } from '@/lib/table/columns';
+import { Modal, ModalBody, ModalHeader } from '@/components/ui/modal';
+
+/** @deprecated Used for tests compatibility with the old react-dnd implementation */
+export function reorderOnHover(columns: ColumnPreference[], dragIndex: number, hoverIndex: number): ColumnPreference[] {
+  if (dragIndex === hoverIndex) {
+    return columns;
+  }
+  return moveColumn(columns, dragIndex, hoverIndex);
+}
+
+/** @deprecated Used for tests compatibility with the old react-dnd implementation */
+export function applyHoverReorder(columns: ColumnPreference[], item: { index: number }, hoverIndex: number, onChange: (cols: ColumnPreference[]) => void) {
+  const next = reorderOnHover(columns, item.index, hoverIndex);
+  if (next === columns) {
+    return;
+  }
+  onChange(next);
+  item.index = hoverIndex;
+}
 
 interface TableOptionsModalProps {
   title: string;
@@ -144,19 +163,9 @@ export function TableOptionsModal({ title, columns, onChange, onClose }: TableOp
   const activeColumn = activeId ? columns.find((col) => col.key === activeId) : null;
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-surface-3/70 px-4">
-      <div className="w-full max-w-md rounded-md border border-border-subtle bg-surface-1 p-4 shadow-elevation-3">
-        <header className="mb-3 flex items-center justify-between">
-          <h2 className="text-base font-semibold">{title}</h2>
-          <button
-            type="button"
-            className="rounded-sm border border-border-subtle px-2 py-1 text-xs text-text-secondary"
-            onClick={onClose}
-          >
-            Close
-          </button>
-        </header>
-
+    <Modal isOpen={true} onClose={onClose} ariaLabel={title} maxWidthClassName="max-w-md">
+      <ModalHeader title={title} onClose={onClose} />
+      <ModalBody>
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
@@ -182,7 +191,7 @@ export function TableOptionsModal({ title, columns, onChange, onClose }: TableOp
             {activeColumn ? <DragOverlayItem column={activeColumn} /> : null}
           </DragOverlay>
         </DndContext>
-      </div>
-    </div>
+      </ModalBody>
+    </Modal>
   );
 }

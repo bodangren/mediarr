@@ -1,7 +1,7 @@
 
 import { useMemo, useState, type FormEvent } from 'react';
 import { Button } from '@/components/ui/button';
-import { CheckInput, Form, FormGroup, SelectInput, TextInput } from '@/components/primitives/Form';
+import { CheckInput, Form, FormGroup, SelectInput, TextInput } from '@/components/ui/form-compat';
 import { Modal, ModalBody, ModalFooter, ModalHeader } from '@/components/ui/modal';
 import { NumberInput } from '@/components/primitives/SpecialInputs';
 

@@ -24,8 +24,8 @@ export class WantedSearchService {
    * meaning the content is considered available for searching.
    * When date is null we conservatively allow the search to proceed.
    */
-  private isReleasedYet(date: Date | null): boolean {
-    if (date === null) return true;
+  private isReleasedYet(date: Date | null | undefined): boolean {
+    if (date === null || date === undefined) return true;
     const oneDayMs = 24 * 60 * 60 * 1000;
     return Date.now() >= date.getTime() + oneDayMs;
   }
@@ -36,12 +36,12 @@ export class WantedSearchService {
    * Returns null if none is set.
    */
   private getMovieReleaseDate(movie: {
-    digitalRelease: Date | null;
-    physicalRelease: Date | null;
-    inCinemas: Date | null;
+    digitalRelease?: Date | null;
+    physicalRelease?: Date | null;
+    inCinemas?: Date | null;
   }): Date | null {
     const candidates = [movie.digitalRelease, movie.physicalRelease, movie.inCinemas].filter(
-      (d): d is Date => d !== null,
+      (d): d is Date => d instanceof Date,
     );
     if (candidates.length === 0) return null;
     return candidates.reduce((earliest, d) => (d < earliest ? d : earliest));

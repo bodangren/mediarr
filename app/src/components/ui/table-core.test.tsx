@@ -1,8 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { Table } from './Table';
-import { TableBody, TableCell, TableRow } from './TableBody';
-import { renderDateCell, renderStatusCell, renderTextCell, TableHeader, type TableColumn } from './TableHeader';
+import { Table } from '@/components/ui/table-compat';
+import { TableBody, TableCell, TableRow } from '@/components/ui/table-body-compat';
+import { TableHeader, type TableColumn, renderDateCell, renderStatusCell, renderTextCell } from '@/components/ui/table-header-compat';
 
 interface RowModel {
   id: number;

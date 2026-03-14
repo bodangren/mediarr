@@ -64,7 +64,7 @@ export function SubtitleTrackList({
             {tracksWithIds.map((track) => (
               <div
                 key={track.id}
-                className="flex items-center justify-between gap-3 rounded-md border border-border-subtle bg-surface-1 px-3 py-2"
+                className="flex items-center justify-between gap-3 rounded-md border border-border-subtle px-3 py-2"
               >
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   <LanguageBadge

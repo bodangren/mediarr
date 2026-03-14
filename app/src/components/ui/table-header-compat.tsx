@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { memo, useMemo } from 'react';
-import { StatusBadge } from './StatusBadge';
+import { StatusBadge } from './status-badge-compat';
 
 export interface TableColumn<RowType> {
   key: string;
@@ -91,6 +91,14 @@ export function renderDateCell(value: string | Date | null | undefined): string 
   return date.toLocaleString();
 }
 
-export const renderStatusCell = memo(function renderStatusCell(status: string): ReactNode {
+interface StatusCellProps {
+  status: string;
+}
+
+const StatusCell = memo(function StatusCell({ status }: StatusCellProps): ReactNode {
   return <StatusBadge status={status} />;
 });
+
+export function renderStatusCell(status: string): ReactNode {
+  return <StatusCell status={status} />;
+}

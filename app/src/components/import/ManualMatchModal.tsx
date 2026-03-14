@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
-import { SkeletonBlock } from '@/components/primitives/SkeletonBlock';
+import { SkeletonBlock } from '@/components/ui/skeleton-compat';
 import type { DetectedSeries, SeriesSearchResult } from './types';
 import { mockSearchResults } from './types';
 

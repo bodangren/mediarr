@@ -69,13 +69,13 @@ describe('Unified Search API', () => {
       method: 'GET',
       url: '/api/search',
     });
-    expect(response1.statusCode).toBe(400);
+    expect(response1.statusCode).toBe(422);
 
     const response2 = await server.inject({
       method: 'GET',
       url: '/api/search',
       query: { term: '' },
     });
-    expect(response2.statusCode).toBe(400);
+    expect(response2.statusCode).toBe(422);
   });
 });

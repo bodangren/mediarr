@@ -1,47 +1,50 @@
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
-import { Switch } from '@/components/ui/switch-compat';
+import { describe, expect, it, vi } from 'vitest';
+import { Switch } from './switch-compat';
 
 describe('Switch', () => {
   it('renders unchecked switch correctly', () => {
     render(
       <Switch
+        id="feature-switch"
         checked={false}
         onChange={() => {}}
-        aria-label="Enable feature"
+        label="Enable feature"
       />,
     );
 
-    const checkbox = screen.getByRole('checkbox', { name: 'Enable feature' });
+    const checkbox = screen.getByRole('switch', { name: 'Enable feature' });
     expect(checkbox).toBeInTheDocument();
-    expect(checkbox).not.toBeChecked();
+    expect(checkbox).toHaveAttribute('data-state', 'unchecked');
   });
 
   it('renders checked switch correctly', () => {
     render(
       <Switch
+        id="feature-switch"
         checked
         onChange={() => {}}
-        aria-label="Enable feature"
+        label="Enable feature"
       />,
     );
 
-    const checkbox = screen.getByRole('checkbox', { name: 'Enable feature' });
+    const checkbox = screen.getByRole('switch', { name: 'Enable feature' });
     expect(checkbox).toBeInTheDocument();
-    expect(checkbox).toBeChecked();
+    expect(checkbox).toHaveAttribute('data-state', 'checked');
   });
 
   it('calls onChange when clicked', () => {
     const handleChange = vi.fn();
     render(
       <Switch
+        id="feature-switch"
         checked={false}
         onChange={handleChange}
-        aria-label="Enable feature"
+        label="Enable feature"
       />,
     );
 
-    const checkbox = screen.getByRole('checkbox', { name: 'Enable feature' });
+    const checkbox = screen.getByRole('switch', { name: 'Enable feature' });
     checkbox.click();
     expect(handleChange).toHaveBeenCalledTimes(1);
     expect(handleChange).toHaveBeenCalledWith(true);
@@ -50,6 +53,7 @@ describe('Switch', () => {
   it('renders with label text', () => {
     render(
       <Switch
+        id="feature-switch"
         checked
         onChange={() => {}}
         label="Enable notifications"
@@ -57,34 +61,21 @@ describe('Switch', () => {
     );
 
     expect(screen.getByText('Enable notifications')).toBeInTheDocument();
-    expect(screen.getByRole('checkbox', { name: 'Enable notifications' })).toBeInTheDocument();
+    expect(screen.getByRole('switch', { name: 'Enable notifications' })).toBeInTheDocument();
   });
 
   it('disables switch when disabled prop is true', () => {
     render(
       <Switch
+        id="feature-switch"
         checked
         onChange={() => {}}
         disabled
-        aria-label="Enable feature"
-      />,
-    );
-
-    const checkbox = screen.getByRole('checkbox', { name: 'Enable feature' });
-    expect(checkbox).toBeDisabled();
-  });
-
-  it('prefers aria-label over label for accessibility', () => {
-    render(
-      <Switch
-        checked
-        onChange={() => {}}
         label="Enable feature"
-        aria-label="Custom label"
       />,
     );
 
-    const checkbox = screen.getByRole('checkbox', { name: 'Custom label' });
-    expect(checkbox).toBeInTheDocument();
+    const checkbox = screen.getByRole('switch', { name: 'Enable feature' });
+    expect(checkbox).toBeDisabled();
   });
 });

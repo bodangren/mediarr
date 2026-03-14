@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Alert } from '@/components/primitives/Alert';
+import { Alert } from '@/components/ui/alert-compat';
 import { Button } from '@/components/ui/button';
 import { Modal, ModalBody, ModalFooter, ModalHeader } from '@/components/ui/modal';
 import { getApiClients } from '@/lib/api/client';

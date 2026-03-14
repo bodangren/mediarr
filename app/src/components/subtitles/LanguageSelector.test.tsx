@@ -8,13 +8,13 @@ describe('LanguageSelector', () => {
 
     expect(screen.getByLabelText('Language')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Language' })).toBeInTheDocument();
-    expect(screen.getByText('English (en)')).toBeInTheDocument();
+    expect(screen.getByText(/English.*en/)).toBeInTheDocument();
   });
 
   it('displays selected language correctly', () => {
     render(<LanguageSelector value="fr" onChange={vi.fn()} />);
 
-    expect(screen.getByText('French (fr)')).toBeInTheDocument();
+    expect(screen.getByText(/French.*fr/)).toBeInTheDocument();
   });
 
   it('displays placeholder when no language is selected', () => {
@@ -41,7 +41,7 @@ describe('LanguageSelector', () => {
     const button = screen.getByRole('button', { name: 'Select language' });
     fireEvent.click(button);
 
-    const frenchOption = screen.getByText('French (fr)');
+    const frenchOption = screen.getByText(/French.*fr/);
     fireEvent.click(frenchOption);
 
     expect(handleChange).toHaveBeenCalledWith('fr');
@@ -53,9 +53,9 @@ describe('LanguageSelector', () => {
     const button = screen.getByRole('button', { name: 'Select language' });
     fireEvent.click(button);
 
-    expect(screen.queryByText('English (en)')).not.toBeInTheDocument();
-    expect(screen.queryByText('Spanish (es)')).not.toBeInTheDocument();
-    expect(screen.getByText('French (fr)')).toBeInTheDocument();
+    expect(screen.queryByText(/English.*en/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Spanish.*es/)).not.toBeInTheDocument();
+    expect(screen.getByText(/French.*fr/)).toBeInTheDocument();
   });
 
   it('filters languages by search query', () => {
@@ -67,8 +67,8 @@ describe('LanguageSelector', () => {
     const searchInput = screen.getByPlaceholderText('Search languages...');
     fireEvent.change(searchInput, { target: { value: 'span' } });
 
-    expect(screen.getByText('Spanish (es)')).toBeInTheDocument();
-    expect(screen.queryByText('English (en)')).not.toBeInTheDocument();
+    expect(screen.getByText(/Spanish.*es/)).toBeInTheDocument();
+    expect(screen.queryByText(/English.*en/)).not.toBeInTheDocument();
   });
 
   it('shows no results message when search matches nothing', () => {

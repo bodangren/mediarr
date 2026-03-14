@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
-import { EmptyPanel } from './EmptyPanel';
-import { ErrorPanel } from './ErrorPanel';
-import { SkeletonBlock } from './SkeletonBlock';
+import { EmptyPanel } from './empty-panel';
+import { ErrorPanel } from './error-panel';
+import { SkeletonBlock } from '@/components/ui/skeleton-compat';
 
 interface QueryPanelProps {
   isLoading: boolean;

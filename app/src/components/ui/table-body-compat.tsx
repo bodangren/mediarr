@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { memo, useMemo } from 'react';
-import type { TableColumn } from './TableHeader';
+import type { TableColumn } from './table-header-compat';
 
 interface TableBodyProps<RowType> {
   data: RowType[];

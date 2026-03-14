@@ -1,7 +1,7 @@
 
 import type React from 'react';
 import { Button } from '@/components/ui/button';
-import { Form } from '@/components/primitives/Form';
+import { Form } from '@/components/ui/form-compat';
 import { Modal, ModalBody, ModalFooter, ModalHeader } from '@/components/ui/modal';
 
 export interface TestConnectionResult {

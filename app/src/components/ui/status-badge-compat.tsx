@@ -18,12 +18,12 @@ const STATUS_CLASS: Record<string, string> = {
 };
 
 export function StatusBadge({ status }: StatusBadgeProps) {
-  const normalized = status.toLowerCase();
+  const normalized = typeof status === 'string' ? status.toLowerCase() : '';
   const colorClass = STATUS_CLASS[normalized] ?? 'bg-surface-2 text-text-secondary hover:bg-surface-2';
 
   return (
     <Badge className={cn('rounded-full px-2 py-0.5 text-xs font-semibold border-0', colorClass)}>
-      {normalized}
+      {status}
     </Badge>
   );
 }

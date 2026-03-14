@@ -5,6 +5,7 @@
 
 ### Architecture & Design
 
+- (2026-03-14, code-review) **Inquiry vs. Directive Mandate:** NEVER modify the codebase during an Inquiry phase (e.g., /code-review). Directives for implementation must be explicitly issued by the user. Unauthorized "fixes" contaminate the research phase, bloat the context, and invalidate the review report.
 - (2026-03-10, refactor_search_release_date_ui_cleanup) Movie model has no single `releaseDate` — uses `inCinemas`, `physicalRelease`, `digitalRelease`; use earliest non-null as guard.
 - (2026-03-10, refactor_search_release_date_ui_cleanup) All new system pages must use `RouteScaffold`. Verify from the start in code review.
 - (2026-03-10, feature_android_push_notifications) Create `ApiEventHub` BEFORE services that need it in `main.ts` — avoids circular dependency.

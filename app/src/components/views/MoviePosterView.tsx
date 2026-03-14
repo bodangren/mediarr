@@ -1,7 +1,7 @@
 
 import { Link } from 'react-router-dom';
 import { Icon } from '@/components/primitives/Icon';
-import { StatusBadge } from '@/components/primitives/StatusBadge';
+import { StatusBadge } from '@/components/ui/status-badge-compat';
 import { getFileStatus, getRatingDisplay, getRuntimeDisplay, type MovieListItem } from '@/types/movie';
 
 interface MoviePosterViewProps {

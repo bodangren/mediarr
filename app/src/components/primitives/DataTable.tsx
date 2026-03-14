@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
 import { memo, useMemo } from 'react';
-import { Table } from './Table';
-import { TableBody } from './TableBody';
-import { TableHeader, type TableColumn } from './TableHeader';
+import { Table } from '@/components/ui/table-compat';
+import { TableBody } from '@/components/ui/table-body-compat';
+import { TableHeader, type TableColumn } from '@/components/ui/table-header-compat';
 import { TablePager } from './TablePager';
 
 export type DataTableColumn<RowType> = TableColumn<RowType> & {

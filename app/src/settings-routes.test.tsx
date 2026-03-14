@@ -47,6 +47,7 @@ const mockApi = vi.hoisted(() => ({
   subtitleProvidersApi: { listProviders: vi.fn() },
   notificationsApi: { list: vi.fn() },
   settingsApi: { get: vi.fn(), update: vi.fn() },
+  mediaManagementApi: { get: vi.fn(), save: vi.fn() },
 }));
 
 vi.mock('@/lib/api/client', () => ({
@@ -149,6 +150,7 @@ describe('Settings routes — navigation integrity', () => {
     mockApi.subtitleProvidersApi.listProviders.mockResolvedValue([]);
     mockApi.notificationsApi.list.mockResolvedValue([]);
     mockApi.settingsApi.get.mockResolvedValue(baseSettings);
+    mockApi.mediaManagementApi.get.mockResolvedValue({ movieRootFolder: '/movies', tvRootFolder: '/tv' });
     mockApi.movieApi.getRootFolders.mockResolvedValue({ rootFolders: [] });
     mockApi.seriesApi.getRootFolders.mockResolvedValue({ rootFolders: [] });
   });
@@ -214,6 +216,7 @@ describe('Settings: Indexers page', () => {
     mockApi.subtitleProvidersApi.listProviders.mockResolvedValue([]);
     mockApi.notificationsApi.list.mockResolvedValue([]);
     mockApi.settingsApi.get.mockResolvedValue(baseSettings);
+    mockApi.mediaManagementApi.get.mockResolvedValue({ movieRootFolder: '/movies', tvRootFolder: '/tv' });
     mockApi.movieApi.getRootFolders.mockResolvedValue({ rootFolders: [] });
     mockApi.seriesApi.getRootFolders.mockResolvedValue({ rootFolders: [] });
     mockApi.mediaApi.listMovies.mockResolvedValue({ items: [], meta: { page: 1, pageSize: 200, totalCount: 0, totalPages: 0 } });
@@ -323,6 +326,7 @@ describe('Settings: Download Client page (single-instance)', () => {
     mockApi.subtitleProvidersApi.listProviders.mockResolvedValue([]);
     mockApi.notificationsApi.list.mockResolvedValue([]);
     mockApi.settingsApi.get.mockResolvedValue(baseSettings);
+    mockApi.mediaManagementApi.get.mockResolvedValue({ movieRootFolder: '/movies', tvRootFolder: '/tv' });
     mockApi.movieApi.getRootFolders.mockResolvedValue({ rootFolders: [] });
     mockApi.seriesApi.getRootFolders.mockResolvedValue({ rootFolders: [] });
     mockApi.mediaApi.listMovies.mockResolvedValue({ items: [], meta: { page: 1, pageSize: 200, totalCount: 0, totalPages: 0 } });
@@ -373,6 +377,7 @@ describe('Settings: Profiles & Quality page', () => {
     mockApi.subtitleProvidersApi.listProviders.mockResolvedValue([]);
     mockApi.notificationsApi.list.mockResolvedValue([]);
     mockApi.settingsApi.get.mockResolvedValue(baseSettings);
+    mockApi.mediaManagementApi.get.mockResolvedValue({ movieRootFolder: '/movies', tvRootFolder: '/tv' });
     mockApi.movieApi.getRootFolders.mockResolvedValue({ rootFolders: [] });
     mockApi.seriesApi.getRootFolders.mockResolvedValue({ rootFolders: [] });
     mockApi.mediaApi.listMovies.mockResolvedValue({ items: [], meta: { page: 1, pageSize: 200, totalCount: 0, totalPages: 0 } });

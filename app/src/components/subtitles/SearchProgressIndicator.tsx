@@ -1,5 +1,5 @@
 
-import { ProgressBar } from '@/components/primitives/ProgressBar';
+import { ProgressBar } from '@/components/ui/progress-bar-compat';
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
 
@@ -36,7 +36,6 @@ export function SearchProgressIndicator({
                 {progress.failed > 0 && `, ${progress.failed} failed`}
               </p>
             </div>
-            <div className="text-sm font-medium text-text-primary">{Math.round(percentage)}%</div>
           </div>
           <ProgressBar value={percentage} />
         </div>

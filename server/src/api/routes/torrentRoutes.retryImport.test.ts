@@ -7,6 +7,7 @@ import { registerTorrentRoutes } from './torrentRoutes';
 function createImportManagerMock() {
   return {
     retryImportByInfoHash: vi.fn().mockResolvedValue(undefined),
+    retryImportByActivityEventId: vi.fn().mockResolvedValue(undefined),
   };
 }
 

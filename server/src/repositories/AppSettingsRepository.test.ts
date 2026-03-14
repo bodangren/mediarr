@@ -198,7 +198,7 @@ describe('AppSettingsRepository — TorrentLimitsSettings new fields', () => {
       },
     };
 
-    const result = await repo.update(partial);
+    const result = await repo.update(partial as any);
 
     expect(result.torrentLimits.incompleteDirectory).toBe('/dl/incomplete');
     expect(result.torrentLimits.completeDirectory).toBe('/dl/done');
@@ -246,7 +246,7 @@ describe('AppSettingsRepository — TorrentLimitsSettings new fields', () => {
     prismaMock.appSettings.upsert.mockResolvedValue({});
 
     const result = await repo.update({
-      torrentLimits: { seedRatioLimit: 3.0 },
+      torrentLimits: { seedRatioLimit: 3.0 } as any,
     });
 
     // Unchanged fields preserved

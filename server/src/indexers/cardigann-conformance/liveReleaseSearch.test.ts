@@ -38,9 +38,9 @@ async function createLiveReleaseSearchApp(): Promise<FastifyInstance> {
         },
       }],
     },
-    factory,
+    factory as unknown as { fromDatabaseRecord: (record: unknown) => import('../BaseIndexer').BaseIndexer },
     {
-      addTorrent: async () => ({ infoHash: 'not-used', name: 'not-used' }),
+      addTorrent: async () => ({ infoHash: 'not-used', name: 'not-used', path: '' }),
     },
   );
 

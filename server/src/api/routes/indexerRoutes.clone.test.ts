@@ -24,6 +24,8 @@ function createApp(indexerRepository: ReturnType<typeof createIndexerRepositoryM
     },
     indexerFactory: {
       fromDatabaseRecord: vi.fn(),
+      getDefinition: vi.fn(),
+      getCompatibilityReport: vi.fn(),
     },
   };
 

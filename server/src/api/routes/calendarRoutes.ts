@@ -135,7 +135,7 @@ export function registerCalendarRoutes(
 
       // Filter by status if provided
       if (statusFilter) {
-        episodes = episodes.filter(ep => {
+        episodes = episodes.filter((ep: typeof episodes[number]) => {
           const hasFile = ep.fileVariants && ep.fileVariants.length > 0;
           const epStatus = determineEpisodeStatus(ep.airDateUtc, hasFile);
           return epStatus === statusFilter;

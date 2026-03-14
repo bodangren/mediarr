@@ -711,6 +711,8 @@ export class MediaSearchService {
         path?: string;
         name?: string;
         size?: number;
+        episodeId?: number;
+        movieId?: number;
       } = {
         name: candidate.title,
         size: candidate.size,

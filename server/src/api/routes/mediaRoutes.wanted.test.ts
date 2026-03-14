@@ -178,6 +178,7 @@ describe('POST /api/wanted/search-all', () => {
         autoSearchAll,
         autoSearchMovie: vi.fn(),
         autoSearchEpisode: vi.fn(),
+        autoSearchSeries: vi.fn(),
       }
     };
 
@@ -202,6 +203,7 @@ describe('POST /api/media/:id/auto-search', () => {
         autoSearchAll: vi.fn(),
         autoSearchMovie,
         autoSearchEpisode: vi.fn(),
+        autoSearchSeries: vi.fn(),
       }
     };
 
@@ -227,6 +229,7 @@ describe('POST /api/media/:id/auto-search', () => {
         autoSearchAll: vi.fn(),
         autoSearchMovie: vi.fn(),
         autoSearchEpisode,
+        autoSearchSeries: vi.fn(),
       }
     };
 
@@ -250,6 +253,7 @@ describe('POST /api/media/:id/auto-search', () => {
         autoSearchAll: vi.fn(),
         autoSearchMovie,
         autoSearchEpisode: vi.fn(),
+        autoSearchSeries: vi.fn(),
       }
     };
 

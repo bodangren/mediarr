@@ -97,7 +97,7 @@ export class OpenSubtitlesProvider implements ManualSubtitleProvider {
           },
         } satisfies ManualSearchCandidate;
       })
-      .filter((candidate): candidate is ManualSearchCandidate => candidate !== null);
+      .filter((candidate): candidate is NonNullable<typeof candidate> => candidate !== null) as ManualSearchCandidate[];
   }
 
   async download(candidate: ManualSearchCandidate): Promise<ManualSearchCandidate> {

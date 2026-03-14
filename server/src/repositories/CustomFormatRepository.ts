@@ -108,7 +108,7 @@ export class CustomFormatRepository {
           score: score.score,
         })),
         skipDuplicates: true,
-      });
+      } as any);
     }
 
     // Fetch with scores
@@ -153,7 +153,7 @@ export class CustomFormatRepository {
             score: score.score,
           })),
           skipDuplicates: true,
-        });
+        } as any);
       }
     }
 

@@ -247,8 +247,8 @@ export function registerMediaRoutes(
           monitored,
           qualityProfileId,
           year: body.year,
-          posterUrl: body.posterUrl,
-          path: moviePath,
+          posterUrl: body.posterUrl as string | undefined,
+          path: moviePath as string | undefined,
         })
         : await (deps.prisma as any).movie.create({
           data: {
@@ -315,8 +315,8 @@ export function registerMediaRoutes(
         qualityProfileId,
         year: body.year,
         network: body.network,
-        posterUrl: body.posterUrl,
-        path: seriesPath,
+        posterUrl: body.posterUrl as string | undefined,
+        path: seriesPath as string | undefined,
       })
       : await (deps.prisma as any).series.create({
         data: {

@@ -333,7 +333,7 @@ export function registerSubtitleRoutes(
     }
 
     const settings = await deps.settingsService.get();
-    const apiKeys = settings.apiKeys as Record<string, unknown>;
+    const apiKeys = settings.apiKeys as unknown as Record<string, unknown>;
 
     const providers = deps.subtitleProviderFactory.getProviderNames().map(name => {
       const keyName = providerCredentialKey(name);
@@ -369,7 +369,7 @@ export function registerSubtitleRoutes(
 
     const settings = await deps.settingsService.get();
     const keyName = providerCredentialKey(id);
-    const apiKeys = settings.apiKeys as Record<string, unknown>;
+    const apiKeys = settings.apiKeys as unknown as Record<string, unknown>;
     const configuredValue = keyName && typeof apiKeys[keyName] === 'string'
       ? (apiKeys[keyName] as string)
       : null;
@@ -814,7 +814,7 @@ export function registerSubtitleRoutes(
           filePath: row.storedPath ?? undefined,
         };
       })
-      .filter(item => {
+      .filter((item: Record<string, any>) => {
         if (typeFilter === 'series' && item.type !== 'series') return false;
         if (typeFilter === 'movies' && item.type !== 'movie') return false;
         if (actionFilter && item.action !== actionFilter) return false;

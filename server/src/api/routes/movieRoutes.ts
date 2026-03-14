@@ -549,7 +549,7 @@ export function registerMovieRoutes(
     const body = request.body as { movieIds: number[] };
 
     const organizeService = new MovieOrganizeService(
-      deps.prisma,
+      deps.prisma as import('@prisma/client').PrismaClient,
       DEFAULT_MEDIA_MANAGEMENT_SETTINGS
     );
 
@@ -576,7 +576,7 @@ export function registerMovieRoutes(
     const body = request.body as { movieIds: number[] };
 
     const organizeService = new MovieOrganizeService(
-      deps.prisma,
+      deps.prisma as import('@prisma/client').PrismaClient,
       DEFAULT_MEDIA_MANAGEMENT_SETTINGS
     );
 
@@ -614,7 +614,7 @@ export function registerMovieRoutes(
       throw new ValidationError('Path does not exist or is not accessible');
     }
 
-    const parsingService = new FilenameParsingService(deps.prisma);
+    const parsingService = new FilenameParsingService(deps.prisma as import('@prisma/client').PrismaClient);
     const files = await parsingService.scanAndMatch(body.path);
 
     return sendSuccess(reply, { files });

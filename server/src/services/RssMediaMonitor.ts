@@ -24,12 +24,13 @@ export class RssMediaMonitor {
   private async handleNewRelease(release: { title: string; magnetUrl?: string; seeders?: number; size?: number; indexerId?: number; protocol?: string; indexerFlags?: string }): Promise<void> {
     if (!release.magnetUrl) return;
 
-    const tvMatched = await this.handleTvRelease(release);
+    const releaseWithMagnet = release as typeof release & { magnetUrl: string };
+    const tvMatched = await this.handleTvRelease(releaseWithMagnet);
     if (tvMatched) {
       return;
     }
 
-    await this.handleMovieRelease(release);
+    await this.handleMovieRelease(releaseWithMagnet);
   }
 
   private async getFormatScores(qualityProfileId: number | null) {

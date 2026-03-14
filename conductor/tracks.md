@@ -33,7 +33,7 @@ chore_drizzle_migration_20260314  (backend-only; depends on clean baseline from 
 
 ## Active Tracks
 
-*(none)*
+- [~] **Track: Server Package/Module Alignment — Enable tsc --noEmit Quality Gate** *Phases: 4 | Link: [./tracks/chore_server_module_alignment_20260315/](./tracks/chore_server_module_alignment_20260315/)*
 
 ## Upcoming / Planned
 

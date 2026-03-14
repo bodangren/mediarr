@@ -1,6 +1,6 @@
 import {
   ActivityEventRepository,
-  CreateActivityEventInput,
+  type CreateActivityEventInput,
 } from '../repositories/ActivityEventRepository';
 
 /**

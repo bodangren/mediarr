@@ -120,8 +120,8 @@ export function registerDownloadClientRoutes(
     // Apply speed limits to torrent manager if available
     if (deps.torrentManager?.setSpeedLimits) {
       await deps.torrentManager.setSpeedLimits({
-        download: torrentLimits.globalDownloadLimitKbps,
-        upload: torrentLimits.globalUploadLimitKbps,
+        download: torrentLimits.globalDownloadLimitKbps ?? undefined,
+        upload: torrentLimits.globalUploadLimitKbps ?? undefined,
       });
     }
     if (deps.torrentManager?.setDownloadPaths) {

@@ -61,7 +61,7 @@ export function registerFilesystemRoutes(
     // Read directory entries
     let dirEntries: Awaited<ReturnType<typeof readdir>>;
     try {
-      dirEntries = await readdir(resolvedPath, { withFileTypes: true });
+      dirEntries = await readdir(resolvedPath, { withFileTypes: true }) as unknown as Awaited<ReturnType<typeof readdir>>;
     } catch (err: unknown) {
       const nodeErr = err as NodeJS.ErrnoException;
       if (nodeErr.code === 'ENOTDIR' || nodeErr.code === 'EACCES') {
@@ -77,12 +77,13 @@ export function registerFilesystemRoutes(
     // Build entries with permission flags
     const entries: FilesystemEntry[] = await Promise.all(
       dirEntries.map(async (dirent) => {
-        const fullPath = join(resolvedPath, dirent.name);
+        const direntName = dirent.name as unknown as string;
+        const fullPath = join(resolvedPath, direntName);
         const readable = await checkPermission(fullPath, constants.R_OK);
         const writable = await checkPermission(fullPath, constants.W_OK);
 
         return {
-          name: dirent.name,
+          name: direntName,
           path: fullPath,
           isDirectory: dirent.isDirectory(),
           readable,

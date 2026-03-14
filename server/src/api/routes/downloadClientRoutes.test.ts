@@ -22,6 +22,7 @@ function createTorrentManagerMock() {
     setDownloadPaths: vi.fn(),
     getTorrentsStatus: vi.fn(),
     getTorrentStatus: vi.fn(),
+    getActiveTorrents: vi.fn(),
   };
 }
 

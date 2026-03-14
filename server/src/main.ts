@@ -576,8 +576,8 @@ async function startApi(): Promise<void> {
 
   const mediaService = new MediaService(prisma, metadataProvider, activityEventEmitter);
   const searchAggregationService = new SearchAggregationService(
-    indexerRepository,
-    indexerFactory,
+    indexerRepository as any,
+    indexerFactory as any,
     torrentManager,
     activityEventEmitter,
     customFormatRepository,
@@ -620,7 +620,7 @@ async function startApi(): Promise<void> {
     searchAggregationService,
     wantedService,
     wantedSearchService,
-    torrentManager,
+    torrentManager: torrentManager as any,
     importManager,
     indexerRepository,
     mediaRepository,

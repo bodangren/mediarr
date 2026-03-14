@@ -85,6 +85,7 @@ export class RssSyncService extends EventEmitter {
       supportsRss: dbIndexer.supportsRss,
       supportsSearch: dbIndexer.supportsSearch,
       settings,
+      httpClient: this.httpClient,
     });
 
     const rssUrl = indexer.buildRssUrl();

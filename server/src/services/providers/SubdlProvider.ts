@@ -88,7 +88,7 @@ export class SubdlProvider implements ManualSubtitleProvider {
           },
         } satisfies ManualSearchCandidate;
       })
-      .filter((candidate): candidate is ManualSearchCandidate => candidate !== null);
+      .filter((candidate): candidate is NonNullable<typeof candidate> => candidate !== null) as ManualSearchCandidate[];
   }
 
   async download(candidate: ManualSearchCandidate): Promise<ManualSearchCandidate> {
@@ -116,13 +116,13 @@ export class SubdlProvider implements ManualSubtitleProvider {
     return {
       ...candidate,
       content,
-      extension: candidate.extension ?? extractExtension(filename) ?? '.srt',
+      extension: candidate.extension ?? extractExtension(filename ?? undefined) ?? '.srt',
     };
   }
 
   private async resolveApiKey(): Promise<string> {
     const settings = await this.settingsService.get();
-    const apiKeys = settings.apiKeys as Record<string, unknown>;
+    const apiKeys = settings.apiKeys as unknown as Record<string, unknown>;
     const keyFromSettings = typeof apiKeys.subdlApiKey === 'string' ? apiKeys.subdlApiKey : null;
     const apiKey = keyFromSettings ?? process.env.SUBDL_API_KEY ?? null;
     if (!apiKey) {

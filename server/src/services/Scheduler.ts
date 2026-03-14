@@ -1,4 +1,5 @@
-import cron from 'node-cron';
+import { schedule as cronSchedule, validate as cronValidate } from 'node-cron';
+import type { ScheduledTask } from 'node-cron';
 
 type JobCallback = () => Promise<void> | void;
 
@@ -11,7 +12,7 @@ export interface ScheduledJobMeta {
 }
 
 interface ScheduledJob {
-  task: cron.ScheduledTask;
+  task: ScheduledTask;
   callback: JobCallback;
   cronExpression: string;
   lastRunAt: string | null;
@@ -36,12 +37,12 @@ export class Scheduler {
       throw new Error(`Job '${name}' is already scheduled`);
     }
 
-    if (!cron.validate(cronExpression)) {
+    if (!cronValidate(cronExpression)) {
       throw new Error(`Invalid cron expression: ${cronExpression}`);
     }
 
     const meta: ScheduledJob = {
-      task: null as unknown as cron.ScheduledTask,
+      task: null as unknown as ScheduledTask,
       callback,
       cronExpression,
       lastRunAt: null,
@@ -60,7 +61,7 @@ export class Scheduler {
       }
     };
 
-    const task = cron.schedule(cronExpression, wrappedCallback, { scheduled: true });
+    const task = cronSchedule(cronExpression, wrappedCallback);
     meta.task = task;
 
     this.jobs.set(name, meta);

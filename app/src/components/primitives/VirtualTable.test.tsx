@@ -61,7 +61,7 @@ describe('VirtualTable', () => {
 
     const tableRows = screen.getAllByRole('row');
 
-    // Header row + visible rows (plus some buffer rows from react-window)
+    // Header row + visible rows (plus some buffer rows from @tanstack/react-virtual)
     expect(tableRows.length).toBeLessThan(data.length);
     expect(tableRows.length).toBeGreaterThan(1); // At least header + some rows
   });

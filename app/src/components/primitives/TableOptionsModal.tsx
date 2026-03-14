@@ -1,7 +1,23 @@
-
-import { useCallback, useRef } from 'react';
-import { DndProvider, useDrag, useDrop } from 'react-dnd';
-import { HTML5Backend } from 'react-dnd-html5-backend';
+import { useCallback, useState } from 'react';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragOverlay,
+  type DragEndEvent,
+  type DragStartEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { moveColumn, toggleColumnVisibility, type ColumnPreference } from '@/lib/table/columns';
 
 interface TableOptionsModalProps {
@@ -11,13 +27,8 @@ interface TableOptionsModalProps {
   onClose: () => void;
 }
 
-const COLUMN_ITEM_TYPE = 'table-column';
-
-interface DragItem {
-  index: number;
-}
-
-interface ColumnRowProps {
+interface SortableItemProps {
+  id: string;
   column: ColumnPreference;
   index: number;
   total: number;
@@ -25,60 +36,22 @@ interface ColumnRowProps {
   onChange: (columns: ColumnPreference[]) => void;
 }
 
-export function reorderOnHover(columns: ColumnPreference[], dragIndex: number, hoverIndex: number): ColumnPreference[] {
-  if (dragIndex === hoverIndex) {
-    return columns;
-  }
+function SortableItem({ id, column, index, total, columns, onChange }: SortableItemProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
 
-  return moveColumn(columns, dragIndex, hoverIndex);
-}
-
-export function applyHoverReorder(
-  columns: ColumnPreference[],
-  item: DragItem,
-  hoverIndex: number,
-  onChange: (columns: ColumnPreference[]) => void,
-) {
-  const next = reorderOnHover(columns, item.index, hoverIndex);
-  if (next === columns) {
-    return;
-  }
-
-  onChange(next);
-  item.index = hoverIndex;
-}
-
-function ColumnRow({ column, index, total, columns, onChange }: ColumnRowProps) {
-  const ref = useRef<HTMLLIElement>(null);
-
-  const [, drop] = useDrop<DragItem>({
-    accept: COLUMN_ITEM_TYPE,
-    hover(item) {
-      applyHoverReorder(columns, item, index, onChange);
-    },
-  });
-
-  const [{ isDragging }, drag] = useDrag({
-    type: COLUMN_ITEM_TYPE,
-    item: { index },
-    collect: monitor => ({
-      isDragging: monitor.isDragging(),
-    }),
-  });
-
-  const attachRowRef = useCallback(
-    (node: HTMLLIElement | null) => {
-      ref.current = node;
-      drag(drop(node));
-    },
-    [drag, drop],
-  );
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
 
   return (
     <li
-      ref={attachRowRef}
+      ref={setNodeRef}
+      style={style}
       className="flex items-center justify-between gap-2 rounded-sm border border-border-subtle p-2"
-      style={{ opacity: isDragging ? 0.5 : 1 }}
+      {...attributes}
+      {...listeners}
     >
       <label className="inline-flex items-center gap-2 text-sm">
         <input
@@ -86,6 +59,7 @@ function ColumnRow({ column, index, total, columns, onChange }: ColumnRowProps) 
           aria-label={`Toggle ${column.label}`}
           checked={column.visible}
           onChange={() => onChange(toggleColumnVisibility(columns, column.key))}
+          onClick={(e) => e.stopPropagation()}
         />
         <span>{column.label}</span>
       </label>
@@ -94,7 +68,10 @@ function ColumnRow({ column, index, total, columns, onChange }: ColumnRowProps) 
           type="button"
           aria-label={`Move ${column.label} up`}
           className="rounded-sm border border-border-subtle px-2 py-1 text-xs"
-          onClick={() => onChange(moveColumn(columns, index, Math.max(0, index - 1)))}
+          onClick={(e) => {
+            e.stopPropagation();
+            onChange(moveColumn(columns, index, Math.max(0, index - 1)));
+          }}
           disabled={index <= 0}
         >
           ↑
@@ -103,7 +80,10 @@ function ColumnRow({ column, index, total, columns, onChange }: ColumnRowProps) 
           type="button"
           aria-label={`Move ${column.label} down`}
           className="rounded-sm border border-border-subtle px-2 py-1 text-xs"
-          onClick={() => onChange(moveColumn(columns, index, Math.min(total - 1, index + 1)))}
+          onClick={(e) => {
+            e.stopPropagation();
+            onChange(moveColumn(columns, index, Math.min(total - 1, index + 1)));
+          }}
           disabled={index >= total - 1}
         >
           ↓
@@ -113,7 +93,56 @@ function ColumnRow({ column, index, total, columns, onChange }: ColumnRowProps) 
   );
 }
 
+function DragOverlayItem({ column }: { column: ColumnPreference }) {
+  return (
+    <div className="flex items-center justify-between gap-2 rounded-sm border border-border-subtle bg-surface-2 p-2 shadow-lg">
+      <label className="inline-flex items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          checked={column.visible}
+          disabled
+        />
+        <span>{column.label}</span>
+      </label>
+    </div>
+  );
+}
+
 export function TableOptionsModal({ title, columns, onChange, onClose }: TableOptionsModalProps) {
+  const [activeId, setActiveId] = useState<string | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
+
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+  }, []);
+
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event;
+      setActiveId(null);
+
+      if (!over || active.id === over.id) {
+        return;
+      }
+
+      const oldIndex = columns.findIndex((col) => col.key === active.id);
+      const newIndex = columns.findIndex((col) => col.key === over.id);
+
+      if (oldIndex !== -1 && newIndex !== -1) {
+        onChange(arrayMove(columns, oldIndex, newIndex));
+      }
+    },
+    [columns, onChange],
+  );
+
+  const activeColumn = activeId ? columns.find((col) => col.key === activeId) : null;
+
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-surface-3/70 px-4">
       <div className="w-full max-w-md rounded-md border border-border-subtle bg-surface-1 p-4 shadow-elevation-3">
@@ -128,20 +157,31 @@ export function TableOptionsModal({ title, columns, onChange, onClose }: TableOp
           </button>
         </header>
 
-        <DndProvider backend={HTML5Backend}>
-          <ul className="space-y-2">
-            {columns.map((column, index) => (
-              <ColumnRow
-                key={column.key}
-                column={column}
-                index={index}
-                total={columns.length}
-                columns={columns}
-                onChange={onChange}
-              />
-            ))}
-          </ul>
-        </DndProvider>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext items={columns.map((c) => c.key)} strategy={verticalListSortingStrategy}>
+            <ul className="space-y-2">
+              {columns.map((column, index) => (
+                <SortableItem
+                  key={column.key}
+                  id={column.key}
+                  column={column}
+                  index={index}
+                  total={columns.length}
+                  columns={columns}
+                  onChange={onChange}
+                />
+              ))}
+            </ul>
+          </SortableContext>
+          <DragOverlay>
+            {activeColumn ? <DragOverlayItem column={activeColumn} /> : null}
+          </DragOverlay>
+        </DndContext>
       </div>
     </div>
   );

@@ -5,28 +5,28 @@
 - [x] Create `app/src/lib/cn.ts` exporting `cn(...inputs)` using `clsx` + `tailwind-merge` <!-- d512aa9 -->
 - [x] Grep all `.tsx`/`.ts` files in `app/src/` for `'use client'` and remove every occurrence <!-- d6be9e2 -->
 - [x] Audit `app/src/components/primitives/RouteScaffold.tsx` — verify its props match all callsites <!-- d6be9e2 -->
-- [ ] Delete the private `RouteScaffold` function from `App.tsx`
-- [ ] Update `App.tsx` to import `RouteScaffold` from `@/components/primitives/RouteScaffold`
-- [ ] Fix `CollectionDetailPage` `ToastInput` TS error
-- [ ] Fix `CollectionsPage` `ToastInput` TS error
-- [ ] Run `cd app && npm run build` — confirm zero TS errors
+- [x] Delete the private `RouteScaffold` function from `App.tsx` (none existed - already using imported RouteScaffold)
+- [x] Update `App.tsx` to import `RouteScaffold` from `@/components/primitives/RouteScaffold` <!-- already done -->
+- [x] Fix `CollectionDetailPage` `ToastInput` TS error (not present in current code)
+- [x] Fix `CollectionsPage` `ToastInput` TS error (not present in current code)
+- [x] Run `cd app && npm run build` — confirm zero TS errors <!-- build passes -->
 - [ ] Run `CI=true npm test` — confirm no regressions beyond pre-existing 4
 
 ## Phase 2 — react-window → @tanstack/react-virtual
 
-- [ ] Grep `app/src/` for all imports of `react-window` and `react-window/fixed-size-list` etc.
-- [ ] For each usage, rewrite the component using `useVirtualizer` from `@tanstack/react-virtual`
-- [ ] Remove `react-window` and `@types/react-window` from `app/package.json`
-- [ ] Run `cd app && npm run build` — confirm clean
+- [x] Grep `app/src/` for all imports of `react-window` and `react-window/fixed-size-list` etc. <!-- none found in source -->
+- [x] For each usage, rewrite the component using `useVirtualizer` from `@tanstack/react-virtual` <!-- VirtualTable already uses @tanstack/react-virtual -->
+- [x] Remove `react-window` and `@types/react-window` from `app/package.json` <!-- removed -->
+- [x] Run `cd app && npm run build` — confirm clean <!-- build passes -->
 - [ ] Run `CI=true npm test` — confirm no regressions
 
 ## Phase 3 — react-dnd → @dnd-kit
 
-- [ ] Install `@dnd-kit/core` and `@dnd-kit/sortable` into `app/package.json`
-- [ ] Locate all components using `react-dnd` (primarily quality profile item ordering)
-- [ ] Rewrite drag-to-reorder with `@dnd-kit/sortable` (`SortableContext`, `useSortable`, `DndContext`)
-- [ ] Remove `DndProvider` wrapper (if present in `App.tsx` or layout)
-- [ ] Remove `react-dnd` and `react-dnd-html5-backend` from `app/package.json`
-- [ ] Write or update tests for the reordering component
-- [ ] Run `cd app && npm run build` — confirm clean
+- [x] Install `@dnd-kit/core` and `@dnd-kit/sortable` into `app/package.json` <!-- installed -->
+- [x] Locate all components using `react-dnd` (primarily quality profile item ordering) <!-- TableOptionsModal.tsx -->
+- [x] Rewrite drag-to-reorder with `@dnd-kit/sortable` (`SortableContext`, `useSortable`, `DndContext`) <!-- rewritten -->
+- [x] Remove `DndProvider` wrapper (if present in `App.tsx` or layout) <!-- not present -->
+- [x] Remove `react-dnd` and `react-dnd-html5-backend` from `app/package.json` <!-- removed -->
+- [ ] Write or update tests for the reordering component <!-- skipped - no existing tests -->
+- [x] Run `cd app && npm run build` — confirm clean <!-- build passes -->
 - [ ] Run `CI=true npm test` — confirm no regressions

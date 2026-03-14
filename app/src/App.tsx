@@ -6,6 +6,7 @@ import { useToast } from '@/components/providers/ToastProvider';
 import { Folder, Search } from 'lucide-react';
 import { AddIndexerModal } from '@/components/indexers/AddIndexerModal';
 import { FilesystemBrowser } from '@/components/primitives/FilesystemBrowser';
+import { RouteScaffold } from '@/components/primitives/RouteScaffold';
 import { AddProfileModal } from '@/components/settings/AddProfileModal';
 import { EditIndexerModal } from '@/components/indexers/EditIndexerModal';
 import { MovieInteractiveSearchModal } from '@/components/movie/MovieInteractiveSearchModal';
@@ -48,22 +49,6 @@ import {
   subtitleStatusBadgeClass,
 } from '@/lib/subtitles/coverage';
 
-function RouteScaffold({ title, description, actions, children }: { title: string; description: string; actions?: ReactNode; children?: ReactNode }) {
-  return (
-    <div className="space-y-4">
-      <header className="rounded-md border border-border-subtle bg-surface-1 p-4">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <h1 className="text-lg font-semibold">{title}</h1>
-            <p className="text-sm text-text-secondary">{description}</p>
-          </div>
-          {actions ? <div className="flex items-center gap-2">{actions}</div> : null}
-        </div>
-      </header>
-      {children}
-    </div>
-  );
-}
 
 function StaticPage({ title, description }: { title: string; description: string }) {
   return <RouteScaffold title={title} description={description} />;

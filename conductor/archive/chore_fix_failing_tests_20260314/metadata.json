@@ -1,0 +1,10 @@
+{
+  "id": "chore_fix_failing_tests_20260314",
+  "type": "chore",
+  "status": "archived",
+  "title": "Fix Failing Tests",
+  "created": "2026-03-14",
+  "archived": "2026-03-14",
+  "phases": 2,
+  "notes": "All fixable tests passing. 12 Prisma-coupled tests deferred to chore_drizzle_migration_20260314."
+}

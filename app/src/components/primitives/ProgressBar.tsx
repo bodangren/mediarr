@@ -1,3 +1,4 @@
+import { Progress } from '@/components/ui/progress';
 import { formatPercent } from '@/lib/format';
 
 interface ProgressBarProps {
@@ -12,14 +13,14 @@ export function ProgressBar({ value = 0, indeterminate = false, label }: Progres
   return (
     <div className="flex w-full flex-col gap-1">
       {label ? <span className="text-xs text-text-secondary">{label}</span> : null}
-      <div className="h-2 w-full overflow-hidden rounded-full bg-surface-2">
-        <div
-          className={`h-full rounded-full bg-accent-primary ${indeterminate ? 'animate-indeterminate' : ''}`}
-          style={indeterminate ? undefined : { width: `${clamped}%` }}
-          aria-label={label ?? 'Progress'}
-        />
-      </div>
-      {indeterminate ? null : <span className="text-xs text-text-secondary">{formatPercent(clamped)}</span>}
+      <Progress
+        value={indeterminate ? undefined : clamped}
+        aria-label={label ?? 'Progress'}
+        className={`h-2 bg-surface-2 ${indeterminate ? '[&>div]:animate-indeterminate [&>div]:rounded-full' : ''} [&>div]:bg-accent-primary`}
+      />
+      {indeterminate ? null : (
+        <span className="text-xs text-text-secondary">{formatPercent(clamped)}</span>
+      )}
     </div>
   );
 }

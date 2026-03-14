@@ -369,7 +369,7 @@ export function registerMediaRoutes(
       },
     },
   }, async (request, reply) => {
-    if (!deps.wantedSearchService?.autoSearchMovie || !deps.wantedSearchService?.autoSearchEpisode || !deps.wantedSearchService?.autoSearchSeries) {
+    if (!deps.wantedSearchService) {
       throw new InternalError('Wanted search service is not available');
     }
 
@@ -381,22 +381,34 @@ export function registerMediaRoutes(
       throw new ValidationError('Invalid ID');
     }
 
-    let result;
     if (type === 'movie') {
-      result = await deps.wantedSearchService.autoSearchMovie(numericId);
-    } else if (type === 'episode') {
-      result = await deps.wantedSearchService.autoSearchEpisode(numericId);
-    } else if (type === 'series') {
-      // Fire and forget since it searches multiple episodes
-      void deps.wantedSearchService.autoSearchSeries(numericId);
-      return sendSuccess(reply, { success: true, message: 'Series automated search started in the background.' });
+      if (!deps.wantedSearchService.autoSearchMovie) {
+        throw new InternalError('Wanted search service is not available');
+      }
+      const result = await deps.wantedSearchService.autoSearchMovie(numericId);
+      if (!result?.success) {
+        return reply.code(404).send({ ok: false, error: result?.reason || 'Unknown error' });
+      }
+      return sendSuccess(reply, result);
     }
 
-    if (!result?.success) {
-      return reply.code(404).send({ ok: false, error: result?.reason || 'Unknown error' });
+    if (type === 'episode') {
+      if (!deps.wantedSearchService.autoSearchEpisode) {
+        throw new InternalError('Wanted search service is not available');
+      }
+      const result = await deps.wantedSearchService.autoSearchEpisode(numericId);
+      if (!result?.success) {
+        return reply.code(404).send({ ok: false, error: result?.reason || 'Unknown error' });
+      }
+      return sendSuccess(reply, result);
     }
 
-    return sendSuccess(reply, result);
+    // type === 'series': fire and forget since it searches multiple episodes
+    if (!deps.wantedSearchService.autoSearchSeries) {
+      throw new InternalError('Wanted search service is not available');
+    }
+    void deps.wantedSearchService.autoSearchSeries(numericId);
+    return sendSuccess(reply, { success: true, message: 'Series automated search started in the background.' });
   });
 
   app.post('/api/media', {

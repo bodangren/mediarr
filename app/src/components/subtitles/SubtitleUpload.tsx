@@ -1,7 +1,7 @@
 
 import { useCallback, useMemo, useRef, useState, type ChangeEvent, type DragEvent } from 'react';
 import { AlertCircle, Upload, X } from 'lucide-react';
-import { Button } from '@/components/primitives/Button';
+import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/providers/ToastProvider';
 import { getApiClients } from '@/lib/api/client';
 
@@ -248,7 +248,7 @@ export function SubtitleUpload({
         <Button variant="secondary" onClick={onCancel} disabled={isUploading}>
           Cancel
         </Button>
-        <Button variant="primary" onClick={handleUpload} disabled={!canUpload}>
+        <Button variant="default" onClick={handleUpload} disabled={!canUpload}>
           {isUploading ? 'Uploading...' : 'Upload'}
         </Button>
       </div>

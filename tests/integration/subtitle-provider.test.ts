@@ -11,15 +11,16 @@ class MockHttpClient extends HttpClient {
             status: 200, 
             body: JSON.stringify({ 
                 data: [
-                    { 
-                        attributes: { 
-                            language: 'en', 
-                            foreign_parts_only: false, 
+                    {
+                        attributes: {
+                            language: 'en',
+                            foreign_parts_only: false,
                             hearing_impaired: true,
-                            votes: 10
-                        } 
+                            votes: 10,
+                            files: [{ file_id: 123, file_name: 'Movie.2024.1080p.en.srt' }]
+                        }
                     }
-                ] 
+                ]
             }), 
             headers: {} 
         };
@@ -45,7 +46,7 @@ describe('OpenSubtitlesProvider', () => {
         });
 
         expect(results).toHaveLength(1);
-        expect(results[0].provider).toBe('OpenSubtitles');
+        expect(results[0].provider).toBe('opensubtitles');
         expect(results[0].isHi).toBe(true);
     });
 

@@ -2,8 +2,8 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Alert } from '@/components/primitives/Alert';
-import { Button } from '@/components/primitives/Button';
-import { Modal, ModalBody, ModalFooter, ModalHeader } from '@/components/primitives/Modal';
+import { Button } from '@/components/ui/button';
+import { Modal, ModalBody, ModalFooter, ModalHeader } from '@/components/ui/modal';
 import { getApiClients } from '@/lib/api/client';
 import type {
   Notification,
@@ -531,7 +531,7 @@ export function AddNotificationModal({ isOpen, onClose, notificationToEdit }: Ad
           Cancel
         </Button>
         <Button
-          variant="primary"
+          variant="default"
           onClick={handleSubmit}
           disabled={!isFormValid() || createMutation.isPending || updateMutation.isPending}
         >

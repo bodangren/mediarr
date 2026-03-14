@@ -1,8 +1,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Search, Download, AlertCircle, CheckCircle, Loader2, Filter, ArrowUpDown, X } from 'lucide-react';
-import { Button } from '@/components/primitives/Button';
-import { Modal, ModalBody, ModalHeader } from '@/components/primitives/Modal';
+import { Button } from '@/components/ui/button';
+import { Modal, ModalBody, ModalHeader } from '@/components/ui/modal';
 import { EmptyPanel } from '@/components/primitives/EmptyPanel';
 import { SkeletonBlock } from '@/components/primitives/SkeletonBlock';
 import { FilterMenu } from '@/components/primitives/FilterMenu';
@@ -382,7 +382,7 @@ export function SeriesInteractiveSearchModal({
 
   const headerActions = (
     <Button
-      variant="primary"
+      variant="default"
       onClick={() => void searchReleases()}
       disabled={isLoading}
       className="flex items-center gap-2"
@@ -618,7 +618,7 @@ export function SeriesInteractiveSearchModal({
                           </div>
                         ) : (
                           <Button
-                            variant={isApproved ? 'primary' : 'secondary'}
+                            variant={isApproved ? 'default' : 'secondary'}
                             onClick={() => void handleGrab(release)}
                             disabled={isGrabbing}
                             className="inline-flex items-center gap-1"

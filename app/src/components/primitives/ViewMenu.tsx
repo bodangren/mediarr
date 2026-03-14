@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { LayoutGrid, List, Table2 } from 'lucide-react';
-import { Button } from './Button';
+import { Button } from '@/components/ui/button';
 
 export type ViewMode = 'poster' | 'overview' | 'table';
 

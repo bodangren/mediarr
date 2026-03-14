@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { Alert } from './Alert';
-import { Button } from './Button';
+import { Button } from '@/components/ui/button';
 import { Icon } from './Icon';
 import { Label } from './Label';
 
@@ -10,11 +10,11 @@ describe('core primitives', () => {
     const onClick = vi.fn();
     render(
       <>
-        <Button variant="primary" onClick={onClick}>
+        <Button variant="default" onClick={onClick}>
           Primary
         </Button>
         <Button variant="secondary">Secondary</Button>
-        <Button variant="danger">Danger</Button>
+        <Button variant="destructive">Danger</Button>
       </>,
     );
 

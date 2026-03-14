@@ -1,8 +1,8 @@
 
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Button } from '@/components/primitives/Button';
-import { Modal, ModalBody, ModalFooter, ModalHeader } from '@/components/primitives/Modal';
+import { Button } from '@/components/ui/button';
+import { Modal, ModalBody, ModalFooter, ModalHeader } from '@/components/ui/modal';
 import { QueryPanel } from '@/components/primitives/QueryPanel';
 import { useToast } from '@/components/providers/ToastProvider';
 import { DataTable, type DataTableColumn } from '@/components/primitives/DataTable';
@@ -80,7 +80,7 @@ export function ManualSearchModal({ isOpen, episodeId, movieId, onClose }: Manua
       header: 'Actions',
       render: row => (
         <Button
-          variant="primary"
+          variant="default"
           onClick={() => downloadMutation.mutate(row)}
           disabled={downloadMutation.isPending}
         >

@@ -1,8 +1,8 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Button } from '@/components/primitives/Button';
-import { Modal, ModalBody, ModalHeader, ModalFooter } from '@/components/primitives/Modal';
+import { Button } from '@/components/ui/button';
+import { Modal, ModalBody, ModalHeader, ModalFooter } from '@/components/ui/modal';
 import { useToast } from '@/components/providers/ToastProvider';
 import { getApiClients } from '@/lib/api/client';
 import { queryKeys } from '@/lib/query/queryKeys';
@@ -342,7 +342,7 @@ export function SeriesBulkEditModal({
           Cancel
         </Button>
         <Button
-          variant="primary"
+          variant="default"
           onClick={handleApply}
           disabled={bulkUpdateMutation.isPending || (showPreview && !hasChanges())}
         >

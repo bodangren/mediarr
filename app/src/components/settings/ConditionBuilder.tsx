@@ -1,6 +1,6 @@
 
 import { useCallback } from 'react';
-import { Button } from '@/components/primitives/Button';
+import { Button } from '@/components/ui/button';
 import type {
   CustomFormatCondition,
   ConditionType,

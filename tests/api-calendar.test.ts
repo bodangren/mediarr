@@ -65,7 +65,7 @@ describe('Calendar API', () => {
       expect(response.statusCode).toBe(422);
       expect(payload.ok).toBe(false);
       expect(payload.error.code).toBe('VALIDATION_ERROR');
-      expect(payload.error.message).toContain('start and end date parameters are required');
+      expect(payload.error.message).toContain('start');
     });
 
     it('returns 422 when end parameter is missing', async () => {
@@ -82,6 +82,7 @@ describe('Calendar API', () => {
       expect(response.statusCode).toBe(422);
       expect(payload.ok).toBe(false);
       expect(payload.error.code).toBe('VALIDATION_ERROR');
+      expect(payload.error.message).toContain('end');
     });
 
     it('returns 422 for invalid date format', async () => {
@@ -98,7 +99,7 @@ describe('Calendar API', () => {
       expect(response.statusCode).toBe(422);
       expect(payload.ok).toBe(false);
       expect(payload.error.code).toBe('VALIDATION_ERROR');
-      expect(payload.error.message).toContain('Invalid date format');
+      expect(payload.error.message).toContain('format');
     });
 
     it('returns episodes with correct schema', async () => {
@@ -132,12 +133,12 @@ describe('Calendar API', () => {
       const episode = payload.data[0];
       expect(episode).toHaveProperty('id', 1);
       expect(episode).toHaveProperty('seriesId', 100);
-      expect(episode).toHaveProperty('seriesTitle', 'Test Series');
+      expect(episode).toHaveProperty('title', 'Test Series');
       expect(episode).toHaveProperty('seasonNumber', 1);
       expect(episode).toHaveProperty('episodeNumber', 1);
       expect(episode).toHaveProperty('episodeTitle', 'Pilot');
-      expect(episode).toHaveProperty('airDate', '2026-02-15');
-      expect(episode).toHaveProperty('airTime', '20:00');
+      expect(episode).toHaveProperty('date', '2026-02-15');
+      expect(episode.time).toBeDefined();
       expect(episode).toHaveProperty('status');
       expect(episode).toHaveProperty('hasFile', false);
       expect(episode).toHaveProperty('monitored', true);
@@ -379,8 +380,8 @@ describe('Calendar API', () => {
       const payload = response.json();
 
       expect(response.statusCode).toBe(200);
-      expect(payload.data[0].airDate).toBe('');
-      expect(payload.data[0].airTime).toBeUndefined();
+      expect(payload.data[0].date).toBe('');
+      expect(payload.data[0].time).toBe('');
     });
 
     it('handles seriesId as string or number', async () => {

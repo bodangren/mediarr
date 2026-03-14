@@ -12,9 +12,13 @@ vi.mock('node:fs/promises', () => ({
   default: {
     stat: vi.fn().mockResolvedValue({ isDirectory: () => false }),
     readdir: vi.fn().mockResolvedValue([]),
+    mkdir: vi.fn().mockResolvedValue(undefined),
+    writeFile: vi.fn().mockResolvedValue(undefined),
   },
   stat: vi.fn().mockResolvedValue({ isDirectory: () => false }),
   readdir: vi.fn().mockResolvedValue([]),
+  mkdir: vi.fn().mockResolvedValue(undefined),
+  writeFile: vi.fn().mockResolvedValue(undefined),
 }));
 
 describe('activity event emission adapters', () => {
@@ -90,11 +94,14 @@ describe('activity event emission adapters', () => {
     };
     const prisma = {
       series: {
-        findFirst: vi.fn().mockResolvedValue({ id: 1, title: 'The Boys' }),
+        findFirst: vi.fn().mockResolvedValue({ id: 1, title: 'The Boys', path: '/media/TV/The Boys' }),
       },
       episode: {
         findFirst: vi.fn().mockResolvedValue({ id: 101, seasonNumber: 1, episodeNumber: 1 }),
         update: vi.fn().mockResolvedValue({ id: 101 }),
+      },
+      mediaFileVariant: {
+        upsert: vi.fn().mockResolvedValue({}),
       },
     };
     const emitter = { emit: vi.fn().mockResolvedValue(undefined) };
@@ -110,7 +117,7 @@ describe('activity event emission adapters', () => {
     await new Promise(resolve => setTimeout(resolve, 20));
 
     expect(emitter.emit).toHaveBeenCalledWith(expect.objectContaining({
-      eventType: 'IMPORT_COMPLETED',
+      eventType: 'SERIES_IMPORTED',
       sourceModule: 'import-manager',
       success: true,
     }));

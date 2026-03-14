@@ -1,8 +1,8 @@
 
 import { useState, useCallback } from 'react';
-import { Button } from '@/components/primitives/Button';
+import { Button } from '@/components/ui/button';
 import { Alert } from '@/components/primitives/Alert';
-import { Modal, ModalBody, ModalFooter, ModalHeader } from '@/components/primitives/Modal';
+import { Modal, ModalBody, ModalFooter, ModalHeader } from '@/components/ui/modal';
 import { getApiClients } from '@/lib/api/client';
 import type { CreateExclusionInput, ImportListExclusion } from '@/lib/api/importListsApi';
 import type { DiscoverMovie } from '@/lib/api/discoverApi';
@@ -117,7 +117,7 @@ export function AddExclusionModal({
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
             />
-            <Button variant="primary" onClick={handleSearch} disabled={isSearching || !searchQuery.trim()}>
+            <Button variant="default" onClick={handleSearch} disabled={isSearching || !searchQuery.trim()}>
               {isSearching ? 'Searching...' : 'Search'}
             </Button>
           </div>
@@ -216,7 +216,7 @@ export function AddExclusionModal({
           Cancel
         </Button>
         <Button
-          variant="primary"
+          variant="default"
           onClick={handleAddExclusion}
           disabled={!selectedResult || isLoading}
         >

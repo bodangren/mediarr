@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { Button } from '@/components/primitives/Button';
+import { Button } from '@/components/ui/button';
 import { Alert } from '@/components/primitives/Alert';
 import type { ImportListExclusion } from '@/lib/api/importListsApi';
 
@@ -78,7 +78,7 @@ export function ExclusionManager({
                   <td className="px-4 py-3 text-text-secondary">{exclusion.tvdbId ?? '-'}</td>
                   <td className="px-4 py-3 text-right">
                     <Button
-                      variant="danger"
+                      variant="destructive"
                       onClick={() => onRemoveExclusion(exclusion)}
                       disabled={isDeleting}
                       className="text-xs"

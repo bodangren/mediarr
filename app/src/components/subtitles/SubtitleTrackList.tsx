@@ -1,7 +1,7 @@
 
 import type { SubtitleTrack } from '@/lib/api/subtitleApi';
 import { LanguageBadge } from './LanguageBadge';
-import { Button } from '@/components/primitives/Button';
+import { Button } from '@/components/ui/button';
 import { Download, Trash2, Search } from 'lucide-react';
 import { useState } from 'react';
 

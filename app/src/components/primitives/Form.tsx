@@ -1,5 +1,15 @@
 
 import { useMemo, useState, type FormEventHandler, type ReactNode } from 'react';
+import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface OptionItem {
   value: string;
@@ -109,7 +119,7 @@ export function TextInput({
 }: TextInputProps) {
   return (
     <div className="space-y-1">
-      <input
+      <Input
         id={id}
         type={type}
         value={value}
@@ -117,7 +127,6 @@ export function TextInput({
         placeholder={placeholder}
         disabled={disabled}
         onChange={event => onChange(event.target.value)}
-        className="w-full rounded-sm border border-border-subtle bg-surface-1 px-3 py-2 text-sm text-text-primary"
       />
       {error ? <p className="text-xs text-status-error" role="alert">{error}</p> : null}
     </div>
@@ -126,23 +135,21 @@ export function TextInput({
 
 export function SelectInput({ id, label, value, options, onChange, disabled = false }: SelectInputProps) {
   return (
-    <label htmlFor={id} className="flex flex-col gap-1 text-sm text-text-primary">
-      <span>{label}</span>
-      <select
-        id={id}
-        aria-label={label}
-        value={value}
-        disabled={disabled}
-        onChange={event => onChange(event.target.value)}
-        className="rounded-sm border border-border-subtle bg-surface-1 px-3 py-2 text-sm"
-      >
-        {options.map(option => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-    </label>
+    <div className="flex flex-col gap-1">
+      <Label htmlFor={id} className="text-sm text-text-primary">{label}</Label>
+      <Select value={value} onValueChange={onChange} disabled={disabled}>
+        <SelectTrigger id={id} aria-label={label}>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map(option => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
   );
 }
 
@@ -193,16 +200,15 @@ export function EnhancedSelectInput({ id, label, value, options, onChange, disab
 
 export function CheckInput({ id, label, checked, onChange, disabled = false }: CheckInputProps) {
   return (
-    <label htmlFor={id} className="inline-flex items-center gap-2 text-sm text-text-primary">
-      <input
+    <div className="flex items-center gap-2">
+      <Checkbox
         id={id}
-        type="checkbox"
         checked={checked}
+        onCheckedChange={(state) => onChange(state === true)}
         disabled={disabled}
-        onChange={event => onChange(event.target.checked)}
       />
-      <span>{label}</span>
-    </label>
+      <Label htmlFor={id} className="text-sm text-text-primary">{label}</Label>
+    </div>
   );
 }
 
@@ -250,7 +256,7 @@ export function PasswordInput({
 }: PasswordInputProps) {
   return (
     <div className="space-y-1">
-      <input
+      <Input
         id={id}
         type="password"
         value={value}
@@ -258,7 +264,6 @@ export function PasswordInput({
         placeholder={placeholder}
         disabled={disabled}
         onChange={event => onChange(event.target.value)}
-        className="w-full rounded-sm border border-border-subtle bg-surface-1 px-3 py-2 text-sm text-text-primary"
       />
       {error ? <p className="text-xs text-status-error" role="alert">{error}</p> : null}
     </div>

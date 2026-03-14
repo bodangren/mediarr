@@ -99,7 +99,7 @@ describe('IndexerTester', () => {
     it('should pass test when site homepage is reachable', async () => {
       const mockFetch = vi.fn().mockResolvedValue({
         ok: true, status: 200,
-        text: async () => '<html><body>Site content</body></html>',
+        text: async () => '<html><body>Test Scraper - Site content</body></html>',
         headers: new Headers({ 'content-type': 'text/html' }),
       });
 

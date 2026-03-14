@@ -1,6 +1,6 @@
 
 import { ProgressBar } from '@/components/primitives/ProgressBar';
-import { Button } from '@/components/primitives/Button';
+import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
 
 export interface SearchProgressIndicatorProps {

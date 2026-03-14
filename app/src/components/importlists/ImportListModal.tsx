@@ -1,8 +1,8 @@
 
 import { useEffect, useState } from 'react';
-import { Button } from '@/components/primitives/Button';
+import { Button } from '@/components/ui/button';
 import { Alert } from '@/components/primitives/Alert';
-import { Modal, ModalBody, ModalFooter, ModalHeader } from '@/components/primitives/Modal';
+import { Modal, ModalBody, ModalFooter, ModalHeader } from '@/components/ui/modal';
 import type {
   ImportList,
   CreateImportListInput,
@@ -351,7 +351,7 @@ export function ImportListModal({
         <Button variant="secondary" onClick={onClose} disabled={isLoading}>
           Cancel
         </Button>
-        <Button variant="primary" onClick={handleSave} disabled={!canSave || isLoading}>
+        <Button variant="default" onClick={handleSave} disabled={!canSave || isLoading}>
           {isLoading ? 'Saving...' : editList ? 'Save Changes' : 'Add Import List'}
         </Button>
       </ModalFooter>

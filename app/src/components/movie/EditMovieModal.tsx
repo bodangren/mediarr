@@ -3,8 +3,8 @@ import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Button } from '@/components/primitives/Button';
-import { Modal, ModalBody, ModalHeader, ModalFooter } from '@/components/primitives/Modal';
+import { Button } from '@/components/ui/button';
+import { Modal, ModalBody, ModalHeader, ModalFooter } from '@/components/ui/modal';
 import { useToast } from '@/components/providers/ToastProvider';
 import type { Movie, UpdateMovieInput } from '@/lib/api/movieApi';
 import { getApiClients } from '@/lib/api/client';
@@ -212,7 +212,7 @@ export function EditMovieModal({ isOpen, onClose, movie, onSave }: EditMovieModa
         <Button variant="secondary" onClick={onClose} disabled={isSubmitting}>
           Cancel
         </Button>
-        <Button variant="primary" type="submit" form="edit-movie-form" disabled={isSubmitting}>
+        <Button variant="default" type="submit" form="edit-movie-form" disabled={isSubmitting}>
           {isSubmitting ? 'Saving...' : 'Save'}
         </Button>
       </ModalFooter>

@@ -1,8 +1,8 @@
 
 import type React from 'react';
-import { Button } from '@/components/primitives/Button';
+import { Button } from '@/components/ui/button';
 import { Form } from '@/components/primitives/Form';
-import { Modal, ModalBody, ModalFooter, ModalHeader } from '@/components/primitives/Modal';
+import { Modal, ModalBody, ModalFooter, ModalHeader } from '@/components/ui/modal';
 
 export interface TestConnectionResult {
   success: boolean;
@@ -107,7 +107,7 @@ export function ConfigurableItemModal<TPreset extends PresetBase, TFieldValues>(
           {isTesting ? 'Testing...' : 'Test Connection'}
         </Button>
         <form onSubmit={handleSubmit}>
-          <Button variant="primary" type="submit" disabled={isSubmitting || isTesting}>
+          <Button variant="default" type="submit" disabled={isSubmitting || isTesting}>
             {saveButtonText}
           </Button>
         </form>

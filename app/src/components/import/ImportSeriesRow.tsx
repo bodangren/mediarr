@@ -1,5 +1,5 @@
 
-import { Button } from '@/components/primitives/Button';
+import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/primitives/Icon';
 import type { DetectedSeries } from './types';
 
@@ -85,7 +85,7 @@ export function ImportSeriesRow({ series, isSelected, onSelect, onManualMatch, o
                 Edit
               </Button>
               <Button
-                variant="primary"
+                variant="default"
                 onClick={() => onImport(series)}
                 disabled={backendSupported === false}
                 title={backendSupported === false ? 'Import requires backend support' : undefined}

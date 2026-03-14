@@ -45,14 +45,18 @@ function determineMovieStatus(releaseDate: Date | null | undefined, hasFile: boo
   return 'missing';
 }
 
-function formatAirDate(date: Date | null | undefined): string {
+function formatAirDate(date: Date | string | null | undefined): string {
   if (!date) return '';
-  return date.toISOString().split('T')[0];
+  const d = typeof date === 'string' ? new Date(date) : date;
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toISOString().split('T')[0];
 }
 
-function formatAirTime(date: Date | null | undefined): string {
+function formatAirTime(date: Date | string | null | undefined): string {
   if (!date) return '';
-  return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+  const d = typeof date === 'string' ? new Date(date) : date;
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 }
 
 export function registerCalendarRoutes(
@@ -97,23 +101,46 @@ export function registerCalendarRoutes(
     const queryEndDate = new Date(endDate);
     queryEndDate.setHours(23, 59, 59, 999);
 
+    const seriesId = query.seriesId !== undefined 
+      ? (typeof query.seriesId === 'string' ? parseInt(query.seriesId, 10) : Number(query.seriesId))
+      : undefined;
+    const statusFilter = query.status as string | undefined;
+
     const calendarItems: CalendarItem[] = [];
 
     // Query Episodes
     if (prisma.episode && prisma.episode.findMany) {
-      const episodes = await prisma.episode.findMany({
-        where: {
-          airDateUtc: {
-            gte: queryStartDate,
-            lte: queryEndDate,
-          },
-          monitored: true, // Only monitored episodes according to plan
+      const episodeWhere: any = {
+        airDateUtc: {
+          gte: queryStartDate,
+          lte: queryEndDate,
         },
+        monitored: true,
+      };
+      
+      if (seriesId !== undefined && !isNaN(seriesId)) {
+        episodeWhere.seriesId = seriesId;
+      }
+
+      let episodes = await prisma.episode.findMany({
+        where: episodeWhere,
         include: {
           series: { select: { id: true, title: true } },
           fileVariants: { select: { id: true } },
         },
+        orderBy: {
+          airDateUtc: 'asc',
+        },
       });
+
+      // Filter by status if provided
+      if (statusFilter) {
+        episodes = episodes.filter(ep => {
+          const hasFile = ep.fileVariants && ep.fileVariants.length > 0;
+          const epStatus = determineEpisodeStatus(ep.airDateUtc, hasFile);
+          return epStatus === statusFilter;
+        });
+      }
 
       for (const ep of episodes) {
         const hasFile = ep.fileVariants && ep.fileVariants.length > 0;

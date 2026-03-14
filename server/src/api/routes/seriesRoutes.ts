@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { sendPaginatedSuccess, sendSuccess, parsePaginationParams, paginateArray } from '../contracts';
-import { assertFound, parseIdParam, sortByField } from '../routeUtils';
+import { assertFound, parseIdParam, sortByField, assertNoAssociatedTorrents } from '../routeUtils';
 import { ValidationError } from '../../errors/domainErrors';
 import type { ApiDependencies } from '../types';
 import { SeriesRepository, type BulkSeriesChanges } from '../../repositories/SeriesRepository';
@@ -594,6 +594,8 @@ export function registerSeriesRoutes(
     const query = request.query as Record<string, string | undefined>;
     const body = (request.body ?? {}) as Record<string, unknown>;
     const deleteFiles = query.deleteFiles === 'true' || body.deleteFiles === true;
+
+    await assertNoAssociatedTorrents(deps.prisma, 'series', id);
 
     if (deps.mediaService?.deleteMedia) {
       await deps.mediaService.deleteMedia(id, 'TV', deleteFiles);

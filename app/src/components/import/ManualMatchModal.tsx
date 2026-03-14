@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
-import { Modal, ModalHeader, ModalBody, ModalFooter } from '@/components/primitives/Modal';
-import { Button } from '@/components/primitives/Button';
+import { Modal, ModalHeader, ModalBody, ModalFooter } from '@/components/ui/modal';
+import { Button } from '@/components/ui/button';
 import { SkeletonBlock } from '@/components/primitives/SkeletonBlock';
 import type { DetectedSeries, SeriesSearchResult } from './types';
 import { mockSearchResults } from './types';
@@ -154,7 +154,7 @@ export function ManualMatchModal({ isOpen, onClose, series, onMatch }: ManualMat
         <Button variant="secondary" onClick={onClose}>
           Cancel
         </Button>
-        <Button variant="primary" onClick={handleConfirm} disabled={!selectedResult}>
+        <Button variant="default" onClick={handleConfirm} disabled={!selectedResult}>
           Confirm Match
         </Button>
       </ModalFooter>

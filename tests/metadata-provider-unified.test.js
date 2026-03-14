@@ -39,7 +39,7 @@ describe('MetadataProvider Unified Media Interface', () => {
     expect(results[0].mediaType).toBe('TV');
     expect(results[0].title).toBe('The Boys');
     expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining('skyhook.sonarr.tv/v1/tvdb/search?term=the%20boys'),
+      expect.stringContaining('skyhook.sonarr.tv/v1/tvdb/search/en/?term=the%20boys'),
       expect.anything()
     );
   });

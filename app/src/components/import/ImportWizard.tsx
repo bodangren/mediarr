@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react';
-import { Modal, ModalHeader, ModalBody } from '@/components/primitives/Modal';
-import { Button } from '@/components/primitives/Button';
+import { Modal, ModalHeader, ModalBody } from '@/components/ui/modal';
+import { Button } from '@/components/ui/button';
 import { FilesystemBrowser } from '@/components/primitives/FilesystemBrowser';
 import { getApiClients } from '@/lib/api/client';
 import type { ScannedFolderWithMatches, MatchCandidate } from '@/lib/api/importApi';

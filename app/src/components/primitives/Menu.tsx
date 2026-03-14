@@ -1,6 +1,6 @@
 
 import { useEffect, useState, type ComponentType, type ReactNode } from 'react';
-import { Button } from './Button';
+import { Button } from '@/components/ui/button';
 
 export type MenuAlign = 'left' | 'right';
 

@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { Switch } from './Switch';
+import { Switch } from '@/components/ui/switch-compat';
 
 describe('Switch', () => {
   it('renders unchecked switch correctly', () => {

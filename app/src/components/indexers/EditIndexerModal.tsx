@@ -1,8 +1,8 @@
 
 import { useMemo, useState, type FormEvent } from 'react';
-import { Button } from '@/components/primitives/Button';
+import { Button } from '@/components/ui/button';
 import { CheckInput, Form, FormGroup, SelectInput, TextInput } from '@/components/primitives/Form';
-import { Modal, ModalBody, ModalFooter, ModalHeader } from '@/components/primitives/Modal';
+import { Modal, ModalBody, ModalFooter, ModalHeader } from '@/components/ui/modal';
 import { NumberInput } from '@/components/primitives/SpecialInputs';
 
 type DynamicFieldType = 'text' | 'password' | 'number' | 'boolean';
@@ -426,7 +426,7 @@ export function EditIndexerModal({
           Cancel
         </Button>
         <form onSubmit={handleSubmit}>
-          <Button variant="primary" type="submit" disabled={isSubmitting}>
+          <Button variant="default" type="submit" disabled={isSubmitting}>
             Save Indexer
           </Button>
         </form>

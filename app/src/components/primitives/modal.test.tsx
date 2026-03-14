@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { ConfirmModal, Modal, ModalBody, ModalFooter, ModalHeader } from './Modal';
+import { ConfirmModal, Modal, ModalBody, ModalFooter, ModalHeader } from '@/components/ui/modal';
 
 describe('Modal primitives', () => {
   it('renders dialog content and closes on backdrop click', () => {

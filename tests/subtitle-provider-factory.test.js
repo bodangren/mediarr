@@ -2,6 +2,15 @@ import { describe, it, expect, vi } from 'vitest';
 import { SubtitleProviderFactory } from '../server/src/services/SubtitleProviderFactory';
 import { SubtitleInventoryApiService } from '../server/src/services/SubtitleInventoryApiService';
 
+vi.mock('node:fs/promises', () => ({
+  default: {
+    mkdir: vi.fn().mockResolvedValue(undefined),
+    writeFile: vi.fn().mockResolvedValue(undefined),
+  },
+  mkdir: vi.fn().mockResolvedValue(undefined),
+  writeFile: vi.fn().mockResolvedValue(undefined),
+}));
+
 describe('SubtitleProviderFactory', () => {
   it('should resolve providers from runtime config', () => {
     const providerA = { search: vi.fn() };

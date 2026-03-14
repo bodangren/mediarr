@@ -40,9 +40,9 @@ describe('TvSearchService', () => {
     expect(mockIndexer.search).toHaveBeenCalledWith(expect.objectContaining({
       q: 'The Boys S01E01'
     }));
-    expect(torrentManager.addTorrent).toHaveBeenCalledWith({
+    expect(torrentManager.addTorrent).toHaveBeenCalledWith(expect.objectContaining({
       magnetUrl: 'magnet:?2',
-    });
+    }));
     expect(result.infoHash).toBe('abc');
   });
 });

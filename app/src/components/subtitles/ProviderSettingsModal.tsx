@@ -1,11 +1,11 @@
 
 import { useState } from 'react';
 import { type SubtitleProvider, type ProviderSettings, type ProviderTestResult } from '@/lib/api';
-import { Modal, ModalHeader, ModalBody, ModalFooter } from '@/components/primitives/Modal';
-import { Button } from '@/components/primitives/Button';
+import { Modal, ModalHeader, ModalBody, ModalFooter } from '@/components/ui/modal';
+import { Button } from '@/components/ui/button';
 import { Form, FormGroup, TextInput, PasswordInput } from '@/components/primitives/Form';
 import { NumberInput } from '@/components/primitives/SpecialInputs';
-import { Switch } from '@/components/primitives/Switch';
+import { Switch } from '@/components/ui/switch-compat';
 import { ProviderTestResult as TestResultDisplay } from './ProviderTestResult';
 import { Alert } from '@/components/primitives/Alert';
 
@@ -223,7 +223,7 @@ export function ProviderSettingsModal({
       <ModalFooter>
         <div className="flex items-center justify-between gap-4 w-full">
           <Button
-            variant="danger"
+            variant="destructive"
             onClick={handleReset}
             disabled={isResetting || isSaving || isTesting}
           >
@@ -234,7 +234,7 @@ export function ProviderSettingsModal({
               Cancel
             </Button>
             <Button
-              variant="primary"
+              variant="default"
               onClick={handleSave}
               disabled={isSaving || isResetting || isTesting}
             >

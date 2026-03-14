@@ -1,0 +1,4 @@
+Tasks: Audit RouteScaffold props + Delete local RouteScaffold + Import from primitives
+Summary: Both RouteScaffold implementations had identical props (title, description, actions?, children?). Deleted the inline copy from App.tsx (lines 51-66) and added import from @/components/primitives/RouteScaffold. Also resolved pre-existing RouteScaffoldProps TS mismatch in DashboardPage and the ToastInput errors in CollectionsPage/CollectionDetailPage — these were phantom errors caused by the type confusion from having two definitions.
+Files modified: app/src/App.tsx
+Why: P2+P4 from spec — single canonical RouteScaffold is required before shadcn migration.

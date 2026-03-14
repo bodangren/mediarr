@@ -1,0 +1,3 @@
+Task: Remove all 'use client' directives
+Summary: Stripped 'use client'; from the first line of every .tsx/.ts file in app/src/ using sed. 95 files affected. The directive is a Next.js RSC concept and is silently ignored in Vite SPA — misleads contributors.
+Why: P3 from spec — cargo-cult Next.js directive had to go before shadcn migration begins.

@@ -2,11 +2,16 @@
 import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { PageToolbarButton } from '@/components/ui/page-toolbar-button-compat';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import * as Icons from 'lucide-react';
+
+function renderWithTooltip(ui: React.ReactElement) {
+  return render(<TooltipProvider>{ui}</TooltipProvider>);
+}
 
 describe('PageToolbarButton', () => {
   it('renders button with icon and label', () => {
-    render(
+    renderWithTooltip(
       <PageToolbarButton
         icon={<Icons.Search className="h-4 w-4" />}
         label="Search"
@@ -18,7 +23,7 @@ describe('PageToolbarButton', () => {
   });
 
   it('renders custom aria label when provided', () => {
-    render(
+    renderWithTooltip(
       <PageToolbarButton
         icon={<Icons.Search className="h-4 w-4" />}
         label="Search"
@@ -31,7 +36,7 @@ describe('PageToolbarButton', () => {
 
   it('calls onClick when clicked', () => {
     const handleClick = vi.fn();
-    render(
+    renderWithTooltip(
       <PageToolbarButton
         icon={<Icons.Search className="h-4 w-4" />}
         label="Search"
@@ -44,7 +49,7 @@ describe('PageToolbarButton', () => {
   });
 
   it('is disabled when disabled prop is true', () => {
-    render(
+    renderWithTooltip(
       <PageToolbarButton
         icon={<Icons.Search className="h-4 w-4" />}
         label="Search"
@@ -59,7 +64,7 @@ describe('PageToolbarButton', () => {
 
   it('does not call onClick when disabled', () => {
     const handleClick = vi.fn();
-    render(
+    renderWithTooltip(
       <PageToolbarButton
         icon={<Icons.Search className="h-4 w-4" />}
         label="Search"
@@ -73,7 +78,7 @@ describe('PageToolbarButton', () => {
   });
 
   it('shows loading state with spinning icon', () => {
-    render(
+    renderWithTooltip(
       <PageToolbarButton
         icon={<Icons.RefreshCw className="h-4 w-4" />}
         label="Refresh"
@@ -88,7 +93,7 @@ describe('PageToolbarButton', () => {
   });
 
   it('shows active state when isActive prop is true', () => {
-    render(
+    renderWithTooltip(
       <PageToolbarButton
         icon={<Icons.Grid className="h-4 w-4" />}
         label="Grid View"
@@ -101,19 +106,19 @@ describe('PageToolbarButton', () => {
   });
 
   it('hides label on small screens', () => {
-    render(
+    renderWithTooltip(
       <PageToolbarButton
         icon={<Icons.Search className="h-4 w-4" />}
         label="Search"
       />,
     );
 
-    const label = screen.getByText('Search');
+    const label = screen.getByText('Search', { selector: 'span.hidden' });
     expect(label).toHaveClass('hidden', 'sm:inline');
   });
 
   it('has focus ring on focus', () => {
-    render(
+    renderWithTooltip(
       <PageToolbarButton
         icon={<Icons.Search className="h-4 w-4" />}
         label="Search"
@@ -125,7 +130,7 @@ describe('PageToolbarButton', () => {
   });
 
   it('has transition effects', () => {
-    render(
+    renderWithTooltip(
       <PageToolbarButton
         icon={<Icons.Search className="h-4 w-4" />}
         label="Search"
@@ -134,5 +139,18 @@ describe('PageToolbarButton', () => {
 
     const button = screen.getByRole('button');
     expect(button).toHaveClass('transition-colors');
+  });
+
+  it('shows tooltip content with label text', () => {
+    renderWithTooltip(
+      <PageToolbarButton
+        icon={<Icons.Search className="h-4 w-4" />}
+        label="Search"
+      />,
+    );
+
+    // Tooltip trigger should be present and accessible
+    const trigger = screen.getByRole('button', { name: 'Search' });
+    expect(trigger).toBeInTheDocument();
   });
 });

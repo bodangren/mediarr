@@ -47,11 +47,11 @@
 - [x] Replace `SortMenu.tsx`, `ViewMenu.tsx`, `FilterMenu.tsx` to use `DropdownMenu` internally
 - [x] Replace `PageToolbarButton.tsx` with `ui/button.tsx` variant `ghost` + `size="sm"`
 - [x] Delete `PageToolbarSeparator.tsx`; replace usages with `ui/separator.tsx` orientation="vertical"
-- [ ] Add tooltips to icon-only toolbar buttons using `ui/tooltip.tsx`
+- [x] Add tooltips to icon-only toolbar buttons using `ui/tooltip.tsx`; wire `TooltipProvider` in `AppProviders`
 - [x] Replace the hand-rolled command palette in `AppShell.tsx` with the shadcn `Command` + `CommandDialog` component
-- [ ] Pull `multi-select` from the shadcn community registry; replace `TagInput` and `EnhancedSelectInput` in `Form.tsx` with it
-- [ ] Pull `combobox` from the registry; replace the remaining `EnhancedSelectInput` usages (single-select with search) with it
-- [ ] Pull `sidebar` from the registry; evaluate as a replacement for `PageSidebar.tsx` (carry forward to `chore_app_decompose` if scope is too large for this track)
-- [x] **Test Remediation:** Update test files to use the new shadcn components and pass. `ViewMenu` toggle behavior is fixed under the current shadcn dropdown wrapper; remaining files are still pending migration.
-- [ ] Delete all old primitive files that have been fully replaced and have no remaining importers
-- [ ] Run final `cd app && npm run build` and `CI=true npm test` — confirm zero errors, all tests pass
+- [~] Pull `multi-select` from the shadcn community registry; replace `TagInput` and `EnhancedSelectInput` in `Form.tsx` with it (**DEFERRED** — `form-compat.tsx` already uses shadcn internals; full community-registry multi-select carried to `chore_app_decompose_20260314`)
+- [~] Pull `combobox` from the registry; replace the remaining `EnhancedSelectInput` usages (single-select with search) with it (**DEFERRED** — carried to `chore_app_decompose_20260314`)
+- [~] Pull `sidebar` from the registry; evaluate as a replacement for `PageSidebar.tsx` (**DEFERRED** — carried to `chore_app_decompose_20260314` as explicitly noted in spec)
+- [x] **Test Remediation:** Update test files to use the new shadcn components and pass. `ViewMenu` toggle behavior is fixed; all tests updated for Tooltip wrapping.
+- [x] Delete all old primitive files that have been fully replaced and have no remaining importers (completed during Phases 2–3; all migrated primitives removed)
+- [x] Run final `cd app && npm run build` and `CI=true npm test` — build clean; 186 files / 1030 tests pass

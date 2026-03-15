@@ -1,7 +1,7 @@
 
 import { useState, useCallback, useMemo, useEffect } from 'react';
-import { Button } from '@/components/primitives/Button';
-import { Modal, ModalHeader, ModalBody, ModalFooter } from '@/components/primitives/Modal';
+import { Button } from '@/components/ui/button';
+import { Modal, ModalHeader, ModalBody, ModalFooter } from '@/components/ui/modal';
 import { Icon } from '@/components/primitives/Icon';
 import { getApiClients } from '@/lib/api/client';
 
@@ -162,7 +162,7 @@ export function ManualEpisodeMatchDialog({
               className="flex-1 rounded-sm border border-border-subtle bg-surface-0 px-3 py-2 text-sm"
             />
             <Button
-              variant="primary"
+              variant="default"
               onClick={handleSearch}
               disabled={isSearching || !searchQuery.trim()}
             >
@@ -297,7 +297,7 @@ export function ManualEpisodeMatchDialog({
           Cancel
         </Button>
         <Button
-          variant="primary"
+          variant="default"
           onClick={handleConfirm}
           disabled={!canConfirm}
         >

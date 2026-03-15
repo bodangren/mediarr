@@ -1,8 +1,8 @@
 
 import { useState, useCallback, useMemo } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import { Button } from '@/components/primitives/Button';
-import { Modal, ModalHeader, ModalBody, ModalFooter } from '@/components/primitives/Modal';
+import { Button } from '@/components/ui/button';
+import { Modal, ModalHeader, ModalBody, ModalFooter } from '@/components/ui/modal';
 import { Icon } from '@/components/primitives/Icon';
 import { useToast } from '@/components/providers/ToastProvider';
 import { getApiClients } from '@/lib/api/client';
@@ -173,7 +173,7 @@ export function OrganizePreviewModal({
           Cancel
         </Button>
         <Button
-          variant="primary"
+          variant="default"
           onClick={() => applyMutation.mutate()}
           disabled={changedPreviews.length === 0 || applyMutation.isPending}
         >

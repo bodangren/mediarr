@@ -61,7 +61,7 @@ export class Parser {
 
     let title = name;
 
-    if (year !== undefined) {
+    if (year !== undefined && yearMatch) {
       const yearIndex = title.indexOf(yearMatch[1]);
       if (yearIndex > 0) {
         title = title.substring(0, yearIndex);

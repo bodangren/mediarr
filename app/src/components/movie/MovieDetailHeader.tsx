@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon } from '@/components/primitives/Icon';
-import { StatusBadge } from '@/components/primitives/StatusBadge';
+import { StatusBadge } from '@/components/ui/status-badge-compat';
 import type { MovieDetail } from '@/types/movie';
 import { formatFileSize } from '@/types/movie';
 import { getRuntimeDisplay } from '@/types/movie';

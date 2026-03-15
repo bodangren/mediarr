@@ -57,7 +57,7 @@ function makeService() {
     movie: { findUnique: vi.fn() },
     episode: { findUnique: episodeFindUnique },
     series: { findUnique: vi.fn() },
-  } as unknown as Parameters<typeof WantedSearchService.prototype.constructor>[1];
+  } as unknown as ConstructorParameters<typeof WantedSearchService>[1];
 
   const service = new WantedSearchService(mediaSearchService, prisma, activityEventEmitter);
 

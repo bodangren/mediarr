@@ -1,5 +1,5 @@
 import {
-  AppSettingsPayload,
+  type AppSettingsPayload,
   AppSettingsRepository,
 } from '../repositories/AppSettingsRepository';
 

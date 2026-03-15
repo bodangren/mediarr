@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { Icon } from '@/components/primitives/Icon';
-import { Menu, type MenuItem } from '@/components/primitives/Menu';
+import { Menu, type MenuItem } from '@/components/ui/menu-compat';
 
 export interface MovieActionsToolbarProps {
   onSync: () => void;

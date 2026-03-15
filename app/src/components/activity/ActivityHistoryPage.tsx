@@ -4,7 +4,7 @@ import { getApiClients } from '@/lib/api/client';
 import type { ActivityItem, ActivityQuery } from '@/lib/api/activityApi';
 import { RouteScaffold } from '@/components/primitives/RouteScaffold';
 import { DataTable, type DataTableColumn } from '@/components/primitives/DataTable';
-import { Button } from '@/components/primitives/Button';
+import { Button } from '@/components/ui/button';
 import { ActivityEventBadge } from './ActivityEventBadge';
 import { useToast } from '@/components/providers/ToastProvider';
 import { AlertTriangle, RotateCcw } from 'lucide-react';
@@ -193,7 +193,7 @@ export function ActivityHistoryPage() {
     if (item.success === false) return null;
     return (
       <Button
-        variant="danger"
+        variant="destructive"
         onClick={() => handleMarkFailed(item)}
         disabled={markingId === item.id}
         aria-label="Mark failed"

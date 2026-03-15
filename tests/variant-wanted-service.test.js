@@ -1,11 +1,11 @@
 import { describe, it, expect, beforeEach, afterAll } from 'vitest';
 import { PrismaClient } from '@prisma/client';
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
+import { PrismaBetterSQLite3 } from '@prisma/adapter-better-sqlite3';
 import 'dotenv/config';
 import { SubtitleVariantRepository } from '../server/src/repositories/SubtitleVariantRepository';
 import { VariantWantedService } from '../server/src/services/VariantWantedService';
 
-const adapter = new PrismaBetterSqlite3({ url: 'file:prisma/dev.db' });
+const adapter = new PrismaBetterSQLite3({ url: 'file:prisma/dev.db' });
 const prisma = new PrismaClient({ adapter });
 const repository = new SubtitleVariantRepository(prisma);
 const service = new VariantWantedService(repository);

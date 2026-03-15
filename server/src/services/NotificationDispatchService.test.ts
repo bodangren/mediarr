@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NotificationDispatchService, type EventPublisher } from './NotificationDispatchService';
 
-function makeHub(): { publish: ReturnType<typeof vi.fn> } & EventPublisher {
-  return { publish: vi.fn() };
+function makeHub(): EventPublisher & { publish: ReturnType<typeof vi.fn> } {
+  const publish = vi.fn() as unknown as EventPublisher['publish'] & ReturnType<typeof vi.fn>;
+  return { publish };
 }
 
 describe('NotificationDispatchService', () => {

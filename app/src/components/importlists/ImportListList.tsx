@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
-import { Button } from '@/components/primitives/Button';
-import { Alert } from '@/components/primitives/Alert';
+import { Button } from '@/components/ui/button';
+import { Alert } from '@/components/ui/alert-compat';
 import type { ImportList } from '@/lib/api/importListsApi';
 
 interface ImportListListProps {
@@ -146,7 +146,7 @@ export function ImportListList({
                   Edit
                 </Button>
                 <Button
-                  variant="danger"
+                  variant="destructive"
                   onClick={() => onDelete(list)}
                   className="text-sm"
                 >

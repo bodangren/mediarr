@@ -1,5 +1,5 @@
 import type { SubtitleProvider } from '@/lib/api';
-import { StatusBadge } from '@/components/primitives/StatusBadge';
+import { StatusBadge } from '@/components/ui/status-badge-compat';
 
 export interface ProviderStatusBadgeProps {
   status: 'active' | 'error' | 'disabled';

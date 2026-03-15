@@ -56,7 +56,8 @@ describe('RssTvMonitor', () => {
 
     expect(prisma.series.findFirst).toHaveBeenCalled();
     expect(torrentManager.addTorrent).toHaveBeenCalledWith({
-      magnetUrl: 'magnet:?xt=urn:btih:abc'
+      magnetUrl: 'magnet:?xt=urn:btih:abc',
+      episodeId: 101,
     });
   });
 });

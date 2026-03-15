@@ -142,7 +142,7 @@ export class AssrtProvider implements ManualSubtitleProvider {
 
   private async resolveToken(): Promise<string> {
     const settings = await this.settingsService.get();
-    const apiKeys = settings.apiKeys as Record<string, unknown>;
+    const apiKeys = settings.apiKeys as unknown as Record<string, unknown>;
     const tokenFromSettings = typeof apiKeys.assrtApiToken === 'string' ? apiKeys.assrtApiToken : null;
     const token = tokenFromSettings ?? process.env.ASSRT_API_TOKEN ?? null;
     if (!token) {

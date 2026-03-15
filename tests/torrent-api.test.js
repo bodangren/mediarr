@@ -21,6 +21,11 @@ vi.mock('webtorrent', () => {
   class MockWebTorrent {
     constructor() {
       this.torrents = [];
+      this.on = vi.fn();
+      this.downloadSpeed = 0;
+      this.uploadSpeed = 0;
+      this.throttleDownload = vi.fn();
+      this.throttleUpload = vi.fn();
     }
     add() { return { on: vi.fn(), infoHash: 'abc', name: 'test' }; }
     get() { return null; }

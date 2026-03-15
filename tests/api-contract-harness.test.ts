@@ -69,7 +69,7 @@ describe('API contract harness', () => {
       }),
     ).toEqual({
       page: 1,
-      pageSize: 100,
+      pageSize: 300,
       sortBy: 'title',
       sortDir: 'desc',
     });

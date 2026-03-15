@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { getApiClients } from '@/lib/api/client';
 import type { LogFile, LogFileContents } from '@/lib/api/logsApi';
 import { RouteScaffold } from '@/components/primitives/RouteScaffold';
-import { Button } from '@/components/primitives/Button';
+import { Button } from '@/components/ui/button';
 import { formatBytes, formatRelativeDate } from '@/lib/format';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -102,7 +102,7 @@ function LogContentViewer({ filename }: { filename: string }) {
         <Button variant="secondary" className="text-xs" onClick={() => { void handleDownload(); }}>
           Download
         </Button>
-        <Button variant="danger" className="text-xs" disabled={clearing} onClick={() => { void handleClear(); }}>
+        <Button variant="destructive" className="text-xs" disabled={clearing} onClick={() => { void handleClear(); }}>
           {clearing ? 'Clearing…' : 'Clear'}
         </Button>
       </div>

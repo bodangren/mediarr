@@ -1,8 +1,8 @@
 
 import { useEffect, useState } from 'react';
-import { Modal, ModalBody, ModalFooter, ModalHeader } from '@/components/primitives/Modal';
-import { Button } from '@/components/primitives/Button';
-import { Label } from '@/components/primitives/Label';
+import { Modal, ModalBody, ModalFooter, ModalHeader } from '@/components/ui/modal';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label-badge';
 
 export interface QueueRemoveModalProps {
   isOpen: boolean;
@@ -144,7 +144,7 @@ export function QueueRemoveModal({
           <Button variant="secondary" onClick={handleClose} disabled={isConfirming}>
             Cancel
           </Button>
-          <Button variant="danger" onClick={handleConfirm} disabled={isConfirming}>
+          <Button variant="destructive" onClick={handleConfirm} disabled={isConfirming}>
             {isConfirming ? 'Removing...' : 'Remove'}
           </Button>
         </div>

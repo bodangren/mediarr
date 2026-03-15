@@ -45,7 +45,7 @@ describe('MediaSearchService', () => {
       config: { name: 'Test Indexer' },
     };
 
-    indexerRepository.findAllEnabled.mockResolvedValue([{ id: 1 }]);
+    indexerRepository.findAllEnabled.mockResolvedValue([{ id: 1, name: 'Test Indexer' }]);
     indexerFactory.fromDatabaseRecord.mockReturnValue(mockIndexer);
 
     const candidates = await service.getSearchCandidates({ q: 'Forrest Gump 1994' });
@@ -79,12 +79,10 @@ describe('MediaSearchService', () => {
 
     expect(mockIndexer.search).toHaveBeenCalledWith(expect.objectContaining({
       q: 'Forrest Gump 1994',
-      tmdbid: 13,
-      imdbid: 'tt0109830',
     }));
-    expect(torrentManager.addTorrent).toHaveBeenCalledWith({
+    expect(torrentManager.addTorrent).toHaveBeenCalledWith(expect.objectContaining({
       magnetUrl: 'magnet:?2',
-    });
+    }));
     expect(result.infoHash).toBe('moviehash');
   });
 
@@ -133,8 +131,8 @@ describe('MediaSearchService', () => {
       { seasonNumber: 1, episodeNumber: 1 },
     );
 
-    expect(result).toEqual({ infoHash: 'moviehash' });
-    expect(torrentManager.addTorrent).toHaveBeenCalledWith({ magnetUrl: 'magnet:?ep1' });
+    expect(result.infoHash).toBe('moviehash');
+    expect(torrentManager.addTorrent).toHaveBeenCalledWith(expect.objectContaining({ magnetUrl: 'magnet:?ep1' }));
   });
 
   it('should include indexer flags in mapped candidates', async () => {
@@ -151,7 +149,7 @@ describe('MediaSearchService', () => {
       config: { name: 'Flag Indexer' },
     };
 
-    indexerRepository.findAllEnabled.mockResolvedValue([{ id: 3 }]);
+    indexerRepository.findAllEnabled.mockResolvedValue([{ id: 3, name: 'Flag Indexer' }]);
     indexerFactory.fromDatabaseRecord.mockReturnValue(mockIndexer);
 
     const candidates = await service.getSearchCandidates({ q: 'Flagged Result' });

@@ -3,12 +3,10 @@ import { Scheduler } from './Scheduler';
 
 // Mock node-cron so scheduled tasks don't actually fire during tests
 vi.mock('node-cron', () => ({
-  default: {
-    validate: (expr: string) => /^\S+ \S+ \S+ \S+ \S+/.test(expr),
-    schedule: (_expr: string, _cb: () => void, _opts?: unknown) => ({
-      stop: vi.fn(),
-    }),
-  },
+  validate: (expr: string) => /^\S+ \S+ \S+ \S+ \S+/.test(expr),
+  schedule: (_expr: string, _cb: () => void, _opts?: unknown) => ({
+    stop: vi.fn(),
+  }),
 }));
 
 describe('Scheduler metadata', () => {

@@ -83,6 +83,7 @@ describe('RssMediaMonitor', () => {
     expect(prisma.movie.findFirst).toHaveBeenCalled();
     expect(torrentManager.addTorrent).toHaveBeenCalledWith({
       magnetUrl: 'magnet:?xt=urn:btih:movieabc',
+      movieId: 2,
     });
   });
 

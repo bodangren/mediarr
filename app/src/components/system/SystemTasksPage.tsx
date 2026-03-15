@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { getApiClients } from '@/lib/api/client';
 import type { ScheduledTask, QueuedTask, TaskHistory } from '@/lib/api/systemApi';
 import { RouteScaffold } from '@/components/primitives/RouteScaffold';
-import { Button } from '@/components/primitives/Button';
+import { Button } from '@/components/ui/button';
 import { formatDateTime, formatRelativeDate } from '@/lib/format';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -187,7 +187,7 @@ function QueuedTasksSection() {
           <StatusBadge status={task.status} />
           <span className="text-xs text-text-secondary tabular-nums">{task.progress}%</span>
           <Button
-            variant="danger"
+            variant="destructive"
             className="text-xs"
             disabled={cancellingIds.has(task.id as number)}
             onClick={() => { void handleCancel(task.id as number); }}

@@ -4,9 +4,9 @@ import { getApiClients } from '@/lib/api/client';
 import type { TorrentItem } from '@/lib/api/torrentApi';
 import { RouteScaffold } from '@/components/primitives/RouteScaffold';
 import { DataTable, type DataTableColumn } from '@/components/primitives/DataTable';
-import { ProgressBar } from '@/components/primitives/ProgressBar';
-import { StatusBadge } from '@/components/primitives/StatusBadge';
-import { Button } from '@/components/primitives/Button';
+import { ProgressBar } from '@/components/ui/progress-bar-compat';
+import { StatusBadge } from '@/components/ui/status-badge-compat';
+import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/providers/ToastProvider';
 import { formatBytes, formatSpeed, formatTimeRemaining, formatPercent } from '@/lib/format';
 import { QueueRemoveModal, type QueueRemoveOptions } from './QueueRemoveModal';
@@ -375,7 +375,7 @@ export function ActivityQueuePage() {
           <RotateCcw size={14} />
         </Button>
         <Button
-          variant="danger"
+          variant="destructive"
           onClick={() => setRemoveTargets([torrent])}
           disabled={isBulkBusy}
           aria-label="Remove torrent"
@@ -477,7 +477,7 @@ export function ActivityQueuePage() {
                   <RotateCcw size={14} />
                 </Button>
                 <Button
-                  variant="danger"
+                  variant="destructive"
                   className="px-2"
                   onClick={() => setRemoveTargets(selectedTorrents)}
                   disabled={bulkAction !== null || isRemoving}

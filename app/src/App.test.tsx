@@ -68,6 +68,10 @@ const mockApi = vi.hoisted(() => ({
     get: vi.fn(),
     update: vi.fn(),
   },
+  mediaManagementApi: {
+    get: vi.fn(),
+    save: vi.fn(),
+  },
 }));
 
 vi.mock('@/lib/api/client', () => ({
@@ -240,6 +244,10 @@ describe('App route and settings parity', () => {
       scores: [],
     });
     mockApi.customFormatApi.delete.mockResolvedValue({ id: 1 });
+    mockApi.mediaManagementApi.get.mockResolvedValue({
+      movieRootFolder: '/movies',
+      tvRootFolder: '/tv',
+    });
   });
 
   it('loads movie detail route and fetches movie by id', async () => {

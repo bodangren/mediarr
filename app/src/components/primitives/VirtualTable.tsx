@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { memo, useMemo, useRef } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import type { TableColumn } from './TableHeader';
+import type { TableColumn } from '@/components/ui/table-header-compat';
 
 interface VirtualTableProps<RowType> {
   columns: TableColumn<RowType>[];

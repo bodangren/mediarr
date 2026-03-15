@@ -25,7 +25,7 @@ describe('TableOptionsModal', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /move year up/i }));
     fireEvent.click(screen.getByRole('button', { name: /move year down/i }));
-    fireEvent.click(screen.getByRole('button', { name: /close/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'Close modal' }));
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 

@@ -1,9 +1,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Folder, FolderOpen, ChevronRight } from 'lucide-react';
-import { Button } from './Button';
-import { Modal, ModalBody, ModalFooter, ModalHeader } from './Modal';
-import { SkeletonBlock } from './SkeletonBlock';
+import { Button } from '@/components/ui/button';
+import { Modal, ModalBody, ModalFooter, ModalHeader } from '@/components/ui/modal';
+import { SkeletonBlock } from '@/components/ui/skeleton-compat';
 import { getApiClients } from '@/lib/api/client';
 import type { FilesystemEntry } from '@/lib/api/filesystemApi';
 
@@ -162,7 +162,7 @@ export function FilesystemBrowser({
           <Button variant="secondary" onClick={handleClose}>
             Cancel
           </Button>
-          <Button variant="primary" onClick={handleSelect} aria-label="Select directory">
+          <Button variant="default" onClick={handleSelect} aria-label="Select directory">
             Select
           </Button>
         </div>

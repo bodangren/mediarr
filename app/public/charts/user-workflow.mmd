@@ -1,0 +1,15 @@
+```mermaid
+graph TD
+    A[Start Mediarr] --> B[Add Media Folders]
+    B --> C[Configure Indexers]
+    C --> D[Search for Movies & TV]
+    D --> E{Found Results?}
+    E -->|Yes| F[Select Quality & Download]
+    E -->|No| G[Adjust Search / Add More Indexers]
+    F --> H[Built-in Torrent Downloads]
+    H --> I[Automatic Organization]
+    I --> J[Subtitle Auto-Download]
+    J --> K[Stream via DLNA / Local Network]
+    G --> D
+    K --> L[Enjoy Your Media!]
+```

@@ -48,7 +48,7 @@ function buildScrapingDefinition(overrides: Partial<CardigannDefinition> = {}): 
 
 describe('Cardigann indexer runtime parity', () => {
   it('guards against direct BaseIndexer instantiation', () => {
-    expect(() => new (BaseIndexer as never)({
+    expect(() => new (BaseIndexer as any)({
       id: 1,
       name: 'Base',
       implementation: 'Base',

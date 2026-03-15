@@ -6,6 +6,7 @@ import { registerOperationsRoutes } from './operationsRoutes';
 
 function createImportManagerMock() {
   return {
+    retryImportByInfoHash: vi.fn().mockResolvedValue(undefined),
     retryImportByActivityEventId: vi.fn().mockResolvedValue(undefined),
   };
 }

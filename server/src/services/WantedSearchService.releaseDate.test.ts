@@ -34,7 +34,7 @@ function makeService(prismaOverrides: Record<string, unknown> = {}) {
     episode: { findUnique: vi.fn() },
     series: { findUnique: vi.fn() },
     ...prismaOverrides,
-  } as unknown as Parameters<typeof WantedSearchService.prototype.constructor>[1];
+  } as unknown as ConstructorParameters<typeof WantedSearchService>[1];
 
   const service = new WantedSearchService(mediaSearchService, prisma, activityEventEmitter);
 

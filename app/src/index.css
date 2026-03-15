@@ -61,6 +61,29 @@
   --shadow-1: 0 2px 8px rgba(5, 8, 14, 0.34);
   --shadow-2: 0 8px 24px rgba(5, 8, 14, 0.45);
   --shadow-3: 0 18px 48px rgba(4, 8, 14, 0.58);
+
+  /* shadcn/ui variable bridge — do not remove, shadcn components depend on these.
+     Mediarr design tokens remain the source of truth; these are aliases only.      */
+  --background: var(--surface-0);
+  --foreground: var(--text-primary);
+  --card: var(--surface-1);
+  --card-foreground: var(--text-primary);
+  --popover: var(--surface-2);
+  --popover-foreground: var(--text-primary);
+  --primary: var(--accent-primary);
+  --primary-foreground: var(--text-inverse);
+  --secondary: var(--surface-2);
+  --secondary-foreground: var(--text-primary);
+  --muted: var(--surface-2);
+  --muted-foreground: var(--text-muted);
+  --accent: var(--surface-3);
+  --accent-foreground: var(--text-primary);
+  --destructive: var(--accent-danger);
+  --destructive-foreground: var(--text-inverse);
+  --border: var(--border-subtle);
+  --input: var(--surface-1);
+  --ring: var(--accent-primary);
+  --radius: var(--radius-sm);
 }
 
 :root[data-theme='light'] {
@@ -90,6 +113,10 @@
   --status-error: #c43d43;
 
   --border-subtle: #bfd0e8;
+
+  /* shadcn/ui bridge — light theme overrides cascade automatically via the token aliases above */
+  --destructive: var(--accent-danger);
+  --primary: var(--accent-primary);
 }
 
 :root[data-color-impaired='true'] {

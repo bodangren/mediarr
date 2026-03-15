@@ -38,7 +38,7 @@ describe('MetadataProvider', () => {
     expect(results[0].title).toBe('The Boys');
     expect(results[0].tvdbId).toBe(355567);
     expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining('skyhook.sonarr.tv/v1/tvdb/search?term=the%20boys'),
+      expect.stringContaining('skyhook.sonarr.tv/v1/tvdb/search/en/?term=the%20boys'),
       expect.anything()
     );
   });
@@ -76,7 +76,7 @@ describe('MetadataProvider', () => {
     expect(episodes).toHaveLength(1);
     expect(episodes[0].title).toBe('The Name of the Game');
     expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining('skyhook.sonarr.tv/v1/tvdb/shows/355567'),
+      expect.stringContaining('skyhook.sonarr.tv/v1/tvdb/shows/en/355567'),
       expect.anything()
     );
   });

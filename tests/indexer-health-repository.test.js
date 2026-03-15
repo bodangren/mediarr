@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach, afterAll } from 'vitest';
 import { PrismaClient } from '@prisma/client';
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
+import { PrismaBetterSQLite3 } from '@prisma/adapter-better-sqlite3';
 import 'dotenv/config';
 import { IndexerHealthRepository } from '../server/src/repositories/IndexerHealthRepository';
 
-const adapter = new PrismaBetterSqlite3({ url: 'file:prisma/dev.db' });
+const adapter = new PrismaBetterSQLite3({ url: 'file:prisma/dev.db' });
 const prisma = new PrismaClient({ adapter });
 const repository = new IndexerHealthRepository(prisma);
 

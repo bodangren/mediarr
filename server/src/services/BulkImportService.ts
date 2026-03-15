@@ -174,7 +174,7 @@ export class BulkImportService {
       : item.folderPath;
 
     const seriesOrConditions: object[] = [{ tvdbId: seriesData.series.tvdbId }];
-    if (seriesData.series.imdbId) seriesOrConditions.push({ imdbId: seriesData.series.imdbId });
+    if ((seriesData.series as any).imdbId) seriesOrConditions.push({ imdbId: (seriesData.series as any).imdbId });
 
     const existingSeries = await (this.prisma as any).series.findFirst({
       where: { OR: seriesOrConditions },

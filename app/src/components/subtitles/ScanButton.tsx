@@ -1,7 +1,7 @@
 
 import { useMemo } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import { Button } from '@/components/primitives/Button';
+import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/providers/ToastProvider';
 import { getApiClients } from '@/lib/api/client';
 

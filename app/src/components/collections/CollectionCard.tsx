@@ -1,6 +1,6 @@
 
 import { Icon } from '@/components/primitives/Icon';
-import { ProgressBar } from '@/components/primitives/ProgressBar';
+import { ProgressBar } from '@/components/ui/progress-bar-compat';
 import type { MovieCollection } from '@/types/collection';
 
 interface CollectionCardProps {

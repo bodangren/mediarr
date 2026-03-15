@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { sendPaginatedSuccess, sendSuccess, parsePaginationParams, paginateArray } from '../contracts';
-import { assertFound, parseIdParam, sortByField } from '../routeUtils';
+import { assertFound, parseIdParam, sortByField, assertNoAssociatedTorrents } from '../routeUtils';
 import { ValidationError } from '../../errors/domainErrors';
 import type { ApiDependencies } from '../types';
 import { SeriesRepository, type BulkSeriesChanges } from '../../repositories/SeriesRepository';
@@ -595,6 +595,8 @@ export function registerSeriesRoutes(
     const body = (request.body ?? {}) as Record<string, unknown>;
     const deleteFiles = query.deleteFiles === 'true' || body.deleteFiles === true;
 
+    await assertNoAssociatedTorrents(deps.prisma, 'series', id);
+
     if (deps.mediaService?.deleteMedia) {
       await deps.mediaService.deleteMedia(id, 'TV', deleteFiles);
     } else {
@@ -956,7 +958,7 @@ export function registerSeriesRoutes(
     const body = request.body as { seriesIds: number[] };
 
     const organizeService = new SeriesOrganizeService(
-      deps.prisma,
+      deps.prisma as import('@prisma/client').PrismaClient,
       DEFAULT_SERIES_MANAGEMENT_SETTINGS
     );
 
@@ -983,7 +985,7 @@ export function registerSeriesRoutes(
     const body = request.body as { seriesIds: number[] };
 
     const organizeService = new SeriesOrganizeService(
-      deps.prisma,
+      deps.prisma as import('@prisma/client').PrismaClient,
       DEFAULT_SERIES_MANAGEMENT_SETTINGS
     );
 
@@ -1021,7 +1023,7 @@ export function registerSeriesRoutes(
       throw new ValidationError('Path does not exist or is not accessible');
     }
 
-    const parsingService = new FilenameParsingService(deps.prisma);
+    const parsingService = new FilenameParsingService(deps.prisma as import('@prisma/client').PrismaClient);
     const files = await parsingService.scanAndMatchEpisodes(body.path);
 
     return sendSuccess(reply, { files });

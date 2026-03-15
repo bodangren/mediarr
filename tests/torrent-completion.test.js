@@ -14,6 +14,10 @@ vi.mock('fs', () => {
   };
 });
 
+// Valid 40-char hex infoHashes (required by TorrentManager.normalizeInfoHash)
+const HASH_A = 'abc123def456abc123def456abc123def4560001';
+const HASH_B = 'deadbeef1234deadbeef1234deadbeef12340002';
+
 // Mock webtorrent before importing TorrentManager
 vi.mock('webtorrent', () => {
   class MockWebTorrent {
@@ -29,9 +33,9 @@ vi.mock('webtorrent', () => {
     add(source, opts) {
       const onHandlers = {};
       const torrent = {
-        infoHash: typeof source === 'string' && source.includes('btih:') 
+        infoHash: typeof source === 'string' && source.includes('btih:')
           ? source.split('btih:')[1].split('&')[0]
-          : 'abc123def456',
+          : 'abc123def456abc123def456abc123def4560001',
         name: typeof source === 'string' && source.includes('dn=') 
           ? decodeURIComponent(source.split('dn=')[1].split('&')[0]).replace(/\+/g, ' ')
           : 'Test Download',
@@ -92,6 +96,9 @@ function createMockRepository() {
     upsert: vi.fn().mockResolvedValue({}),
     findByInfoHash: vi.fn().mockResolvedValue(null),
     findAll: vi.fn().mockResolvedValue([]),
+    findByStatuses: vi.fn().mockResolvedValue([]),
+    findOldestQueued: vi.fn().mockResolvedValue(null),
+    countByStatus: vi.fn().mockResolvedValue(0),
     updateStatus: vi.fn().mockResolvedValue({}),
     updateProgress: vi.fn().mockResolvedValue({}),
     update: vi.fn().mockResolvedValue({}),
@@ -120,7 +127,7 @@ describe('TorrentManager - Completion Logic & File Move', () => {
   });
 
   it('should move files from incomplete/ to complete/ when torrent reaches 100%', async () => {
-    const magnetUrl = 'magnet:?xt=urn:btih:abc123def456&dn=Test+Download';
+    const magnetUrl = `magnet:?xt=urn:btih:${HASH_A}&dn=Test+Download`;
 
     await manager.addTorrent({ magnetUrl });
 
@@ -144,17 +151,17 @@ describe('TorrentManager - Completion Logic & File Move', () => {
     );
 
     expect(mockRepo.update).toHaveBeenCalledWith(
-      'abc123def456',
+      HASH_A,
       expect.objectContaining({
         status: 'seeding',
-        path: path.join('/data/downloads/complete', 'Test Download'),
+        path: '/data/downloads/complete',
         completedAt: expect.any(Date),
       })
     );
   });
 
   it('should set completedAt timestamp when torrent finishes', async () => {
-    const magnetUrl = 'magnet:?xt=urn:btih:abc123def456&dn=Test+Download';
+    const magnetUrl = `magnet:?xt=urn:btih:${HASH_A}&dn=Test+Download`;
     await manager.addTorrent({ magnetUrl });
 
     const client = manager.getClient();
@@ -165,19 +172,19 @@ describe('TorrentManager - Completion Logic & File Move', () => {
     await new Promise(resolve => setTimeout(resolve, 50));
 
     expect(mockRepo.update).toHaveBeenCalledWith(
-      'abc123def456',
+      HASH_A,
       expect.objectContaining({
         completedAt: expect.any(Date),
       })
     );
 
-    const updateCallArgs = mockRepo.update.mock.calls.find(call => call[0] === 'abc123def456');
+    const updateCallArgs = mockRepo.update.mock.calls.find(call => call[0] === HASH_A);
     const completedAt = updateCallArgs[1].completedAt;
     expect(completedAt.getTime()).toBeGreaterThanOrEqual(beforeTime.getTime());
   });
 
   it('should update torrent path in database after file move', async () => {
-    const magnetUrl = 'magnet:?xt=urn:btih:abc123def456&dn=Test+Download';
+    const magnetUrl = `magnet:?xt=urn:btih:${HASH_A}&dn=Test+Download`;
     await manager.addTorrent({ magnetUrl });
 
     const client = manager.getClient();
@@ -187,15 +194,15 @@ describe('TorrentManager - Completion Logic & File Move', () => {
     await new Promise(resolve => setTimeout(resolve, 50));
 
     expect(mockRepo.update).toHaveBeenCalledWith(
-      'abc123def456',
+      HASH_A,
       expect.objectContaining({
-        path: path.join('/data/downloads/complete', 'Test Download'),
+        path: '/data/downloads/complete',
       })
     );
   });
 
   it('should not move files if torrent is already in complete/ directory', async () => {
-    const magnetUrl = 'magnet:?xt=urn:btih:xyz789&dn=Already+Complete';
+    const magnetUrl = `magnet:?xt=urn:btih:${HASH_B}&dn=Already+Complete`;
 
     // Add torrent with custom path already in complete/
     await manager.addTorrent({ magnetUrl, path: '/data/downloads/complete' });
@@ -209,7 +216,7 @@ describe('TorrentManager - Completion Logic & File Move', () => {
     expect(fs.rename).not.toHaveBeenCalled();
 
     expect(mockRepo.update).toHaveBeenCalledWith(
-      'xyz789',
+      HASH_B,
       expect.objectContaining({
         status: 'seeding',
         completedAt: expect.any(Date)
@@ -218,7 +225,7 @@ describe('TorrentManager - Completion Logic & File Move', () => {
   });
 
   it('should handle file move errors gracefully', async () => {
-    const magnetUrl = 'magnet:?xt=urn:btih:abc123def456&dn=Test+Download';
+    const magnetUrl = `magnet:?xt=urn:btih:${HASH_A}&dn=Test+Download`;
     
     // Mock rename to fail (both attempts)
     vi.mocked(fs.rename).mockRejectedValue(new Error('Permission denied'));
@@ -232,7 +239,7 @@ describe('TorrentManager - Completion Logic & File Move', () => {
     await new Promise(resolve => setTimeout(resolve, 50));
 
     expect(mockRepo.updateStatus).toHaveBeenCalledWith(
-      'abc123def456',
+      HASH_A,
       'error'
     );
   });

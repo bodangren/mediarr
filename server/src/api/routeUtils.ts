@@ -4,6 +4,32 @@ import {
   ValidationError,
 } from '../errors/domainErrors';
 
+export async function assertNoAssociatedTorrents(
+  prisma: any,
+  mediaType: 'series' | 'movie',
+  id: number,
+): Promise<void> {
+  if (!prisma.torrent?.count) {
+    return;
+  }
+
+  const whereClause =
+    mediaType === 'series'
+      ? { seriesId: id }
+      : { movieId: id };
+
+  const count = await prisma.torrent.count({
+    where: whereClause,
+  });
+
+  if (count > 0) {
+    throw new ConflictError(
+      `${mediaType === 'series' ? 'Series' : 'Movie'} has associated torrents`,
+      { context: { mediaType, id }, activeCount: count },
+    );
+  }
+}
+
 export function parseIdParam(input: string, entityName = 'entity'): number {
   const parsed = Number.parseInt(input, 10);
   if (!Number.isInteger(parsed) || parsed <= 0) {

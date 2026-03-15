@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { sendPaginatedSuccess, sendSuccess, parsePaginationParams, paginateArray } from '../contracts';
-import { assertFound, parseIdParam, sortByField } from '../routeUtils';
+import { assertFound, parseIdParam, sortByField, assertNoAssociatedTorrents } from '../routeUtils';
 import { ValidationError } from '../../errors/domainErrors';
 import type { ApiDependencies } from '../types';
 import { MovieOrganizeService, DEFAULT_MEDIA_MANAGEMENT_SETTINGS } from '../../services/MovieOrganizeService';
@@ -453,6 +453,8 @@ export function registerMovieRoutes(
     const body = (request.body ?? {}) as Record<string, unknown>;
     const deleteFiles = query.deleteFiles === 'true' || body.deleteFiles === true;
 
+    await assertNoAssociatedTorrents(deps.prisma, 'movie', id);
+
     if (deps.mediaService?.deleteMedia) {
       await deps.mediaService.deleteMedia(id, 'MOVIE', deleteFiles);
     } else {
@@ -547,7 +549,7 @@ export function registerMovieRoutes(
     const body = request.body as { movieIds: number[] };
 
     const organizeService = new MovieOrganizeService(
-      deps.prisma,
+      deps.prisma as import('@prisma/client').PrismaClient,
       DEFAULT_MEDIA_MANAGEMENT_SETTINGS
     );
 
@@ -574,7 +576,7 @@ export function registerMovieRoutes(
     const body = request.body as { movieIds: number[] };
 
     const organizeService = new MovieOrganizeService(
-      deps.prisma,
+      deps.prisma as import('@prisma/client').PrismaClient,
       DEFAULT_MEDIA_MANAGEMENT_SETTINGS
     );
 
@@ -612,7 +614,7 @@ export function registerMovieRoutes(
       throw new ValidationError('Path does not exist or is not accessible');
     }
 
-    const parsingService = new FilenameParsingService(deps.prisma);
+    const parsingService = new FilenameParsingService(deps.prisma as import('@prisma/client').PrismaClient);
     const files = await parsingService.scanAndMatch(body.path);
 
     return sendSuccess(reply, { files });

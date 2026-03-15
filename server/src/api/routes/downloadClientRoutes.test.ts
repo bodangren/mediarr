@@ -22,6 +22,7 @@ function createTorrentManagerMock() {
     setDownloadPaths: vi.fn(),
     getTorrentsStatus: vi.fn(),
     getTorrentStatus: vi.fn(),
+    getActiveTorrents: vi.fn(),
   };
 }
 
@@ -175,6 +176,10 @@ describe('downloadClientRoutes — PUT /api/download-client', () => {
     expect(torrentManager.setDownloadPaths).toHaveBeenCalledWith({
       incomplete: payload.incompleteDirectory,
       complete: payload.completeDirectory,
+      seedRatioLimit: payload.seedRatioLimit,
+      seedTimeLimitMinutes: payload.seedTimeLimitMinutes,
+      seedLimitAction: payload.seedLimitAction,
+      maxActiveDownloads: payload.maxActiveDownloads,
     });
   });
 
@@ -206,7 +211,7 @@ describe('downloadClientRoutes — PUT /api/download-client', () => {
       payload,
     });
 
-    expect(response.statusCode).toBe(400);
+    expect(response.statusCode).toBe(422);
   });
 
   it('returns 400 for empty download directories', async () => {

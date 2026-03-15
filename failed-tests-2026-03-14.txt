@@ -1,0 +1,2159 @@
+
+> mediarr@1.0.0 test
+> vitest run
+
+
+[1m[46m RUN [49m[22m [36mv4.0.18 [39m[90m/home/daniel-bo/Desktop/mediarr[39m
+
+ [31m❯[39m tests/api-handlers.test.ts [2m([22m[2m22 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[33m 7350[2mms[22m[39m
+     [33m[2m✓[22m[39m returns paginated series envelope [33m 831[2mms[22m[39m
+[31m     [31m×[31m maps CONFLICT domain errors to envelope on delete[39m[33m 448[2mms[22m[39m
+     [33m[2m✓[22m[39m returns movie detail envelope [33m 431[2mms[22m[39m
+     [32m✓[39m returns unified wanted list with pagination[32m 274[2mms[22m[39m
+     [33m[2m✓[22m[39m returns CONFLICT when media already exists [33m 333[2mms[22m[39m
+     [33m[2m✓[22m[39m returns release search and grab envelopes [33m 330[2mms[22m[39m
+     [33m[2m✓[22m[39m returns torrent list envelope with meta [33m 329[2mms[22m[39m
+     [33m[2m✓[22m[39m returns indexer diagnostics and remediation hints for test endpoint [33m 313[2mms[22m[39m
+     [33m[2m✓[22m[39m supports draft indexer connectivity tests without persistence [33m 307[2mms[22m[39m
+     [32m✓[39m returns subtitle manual search results[32m 237[2mms[22m[39m
+     [33m[2m✓[22m[39m accepts subtitle upload multipart request [33m 341[2mms[22m[39m
+     [33m[2m✓[22m[39m rejects non-subtitle upload extensions [33m 369[2mms[22m[39m
+     [33m[2m✓[22m[39m persists episode monitored toggle through media service [33m 303[2mms[22m[39m
+     [32m✓[39m returns activity timeline envelope with pagination metadata[32m 262[2mms[22m[39m
+     [32m✓[39m supports clearing activity history[32m 299[2mms[22m[39m
+     [33m[2m✓[22m[39m supports marking an activity event as failed [33m 304[2mms[22m[39m
+     [32m✓[39m supports exporting activity history[32m 220[2mms[22m[39m
+     [33m[2m✓[22m[39m parses activity filter query values for clear operations [33m 313[2mms[22m[39m
+     [33m[2m✓[22m[39m returns settings envelope [33m 305[2mms[22m[39m
+     [32m✓[39m updates settings with a valid payload[32m 254[2mms[22m[39m
+     [32m✓[39m returns health endpoint ordered by severity[32m 237[2mms[22m[39m
+     [33m[2m✓[22m[39m validates settings payload and rejects invalid updates [33m 307[2mms[22m[39m
+ [31m❯[39m tests/api-calendar.test.ts [2m([22m[2m12 tests[22m[2m | [22m[31m9 failed[39m[2m)[22m[33m 4460[2mms[22m[39m
+       [33m[2m✓[22m[39m returns 200 with empty array when no episodes exist [33m 770[2mms[22m[39m
+[31m       [31m×[31m returns 422 when start parameter is missing[39m[33m 495[2mms[22m[39m
+[31m       [31m×[31m returns 422 when end parameter is missing[39m[33m 351[2mms[22m[39m
+[31m       [31m×[31m returns 422 for invalid date format[39m[33m 383[2mms[22m[39m
+[31m       [31m×[31m returns episodes with correct schema[39m[33m 326[2mms[22m[39m
+[31m       [31m×[31m filters by seriesId when provided[39m[32m 228[2mms[22m[39m
+[31m       [31m×[31m filters by status when provided[39m[33m 302[2mms[22m[39m
+       [33m[2m✓[22m[39m returns "downloaded" status for episodes with files [33m 313[2mms[22m[39m
+       [32m✓[39m returns "unaired" status for future episodes without files[32m 212[2mms[22m[39m
+[31m       [31m×[31m orders episodes by airDateUtc ascending[39m[33m 414[2mms[22m[39m
+[31m       [31m×[31m handles episodes without airDateUtc[39m[33m 420[2mms[22m[39m
+[31m       [31m×[31m handles seriesId as string or number[39m[32m 240[2mms[22m[39m
+ [31m❯[39m tests/torrent-completion.test.js [2m([22m[2m5 tests[22m[2m | [22m[31m5 failed[39m[2m)[22m[33m 5123[2mms[22m[39m
+[31m     [31m×[31m should move files from incomplete/ to complete/ when torrent reaches 100%[39m[33m 1061[2mms[22m[39m
+[31m     [31m×[31m should set completedAt timestamp when torrent finishes[39m[33m 1015[2mms[22m[39m
+[31m     [31m×[31m should update torrent path in database after file move[39m[33m 1014[2mms[22m[39m
+[31m     [31m×[31m should not move files if torrent is already in complete/ directory[39m[33m 1013[2mms[22m[39m
+[31m     [31m×[31m should handle file move errors gracefully[39m[33m 1012[2mms[22m[39m
+ [31m❯[39m tests/api-route-map.test.ts [2m([22m[2m1 test[22m[2m | [22m[31m1 failed[39m[2m)[22m[33m 776[2mms[22m[39m
+[31m     [31m×[31m registers every required method/path pair[39m[33m 772[2mms[22m[39m
+ [31m❯[39m server/src/api/routes/mediaRoutes.wanted.test.ts [2m([22m[2m8 tests[22m[2m | [22m[31m3 failed[39m[2m)[22m[33m 722[2mms[22m[39m
+     [32m✓[39m returns 201 immediately without waiting for episode population[32m 222[2mms[22m[39m
+     [32m✓[39m fires getSeriesDetails in the background after responding[32m 106[2mms[22m[39m
+     [32m✓[39m does not fire episode population for MOVIE type[32m 64[2mms[22m[39m
+     [32m✓[39m logs error when background episode population fails without affecting the response[32m 64[2mms[22m[39m
+     [32m✓[39m triggers autoSearchAll in the background and returns 200 immediately[32m 53[2mms[22m[39m
+[31m     [31m×[31m calls autoSearchMovie for type=movie and returns the result[39m[32m 89[2mms[22m[39m
+[31m     [31m×[31m calls autoSearchEpisode for type=episode and returns the result[39m[32m 58[2mms[22m[39m
+[31m     [31m×[31m returns 404 when auto-search returns success=false[39m[32m 59[2mms[22m[39m
+ [31m❯[39m server/src/api/routes/downloadClientRoutes.test.ts [2m([22m[2m9 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[33m 488[2mms[22m[39m
+     [32m✓[39m returns torrentLimits from settingsService[32m 115[2mms[22m[39m
+     [32m✓[39m returns custom torrentLimits values[32m 44[2mms[22m[39m
+     [32m✓[39m returns 500 if settingsService is not configured[32m 47[2mms[22m[39m
+     [32m✓[39m saves torrentLimits via settingsService.update[32m 51[2mms[22m[39m
+[31m     [31m×[31m calls torrentManager.setSpeedLimits with download and upload values[39m[32m 59[2mms[22m[39m
+     [32m✓[39m does not fail if torrentManager is not configured[32m 41[2mms[22m[39m
+     [32m✓[39m returns 400 for invalid seedLimitAction[32m 39[2mms[22m[39m
+     [32m✓[39m returns 400 for empty download directories[32m 46[2mms[22m[39m
+     [32m✓[39m returns the updated torrentLimits in the response[32m 41[2mms[22m[39m
+ [31m❯[39m tests/api-sdk-contract.test.ts [2m([22m[2m5 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[32m 135[2mms[22m[39m
+[31m     [31m×[31m uses typed request method/path/payload for media and release modules[39m[32m 96[2mms[22m[39m
+     [32m✓[39m throws CONTRACT_VIOLATION when response shape does not match schema[32m 7[2mms[22m[39m
+     [32m✓[39m normalizes API error envelopes into typed ApiClientError[32m 8[2mms[22m[39m
+     [32m✓[39m eventsApi decodes typed payloads and reconnects with backoff[32m 13[2mms[22m[39m
+     [32m✓[39m uses typed request method/path/payload for activity management actions[32m 6[2mms[22m[39m
+ [31m❯[39m app_src_backup/lib/indexer/indexerPresets.test.js [2m([22m[2m21 tests[22m[2m | [22m[31m3 failed[39m[2m)[22m[32m 67[2mms[22m[39m
+[31m       [31m×[31m should contain 53 indexer presets[39m[32m 15[2mms[22m[39m
+       [32m✓[39m should have unique IDs for all presets[32m 1[2mms[22m[39m
+[31m       [31m×[31m should have all required fields for each preset[39m[32m 7[2mms[22m[39m
+       [32m✓[39m should return preset by ID[32m 1[2mms[22m[39m
+       [32m✓[39m should return undefined for unknown ID[32m 0[2mms[22m[39m
+       [32m✓[39m should return correct presets for various IDs[32m 0[2mms[22m[39m
+       [32m✓[39m should return all torrent presets[32m 0[2mms[22m[39m
+       [32m✓[39m should return empty array for usenet[32m 0[2mms[22m[39m
+[31m       [31m×[31m should return popular presets[39m[32m 2[2mms[22m[39m
+       [32m✓[39m should contain well-known indexers[32m 1[2mms[22m[39m
+       [32m✓[39m should return public presets[32m 1[2mms[22m[39m
+       [32m✓[39m should return private presets[32m 2[2mms[22m[39m
+       [32m✓[39m should return semi-private presets[32m 3[2mms[22m[39m
+       [32m✓[39m should search by name[32m 3[2mms[22m[39m
+       [32m✓[39m should search by description[32m 0[2mms[22m[39m
+       [32m✓[39m should be case insensitive[32m 0[2mms[22m[39m
+       [32m✓[39m should return empty array for no matches[32m 0[2mms[22m[39m
+       [32m✓[39m should have proper field types[32m 24[2mms[22m[39m
+       [32m✓[39m should have cookie field for cookie-based auth[32m 0[2mms[22m[39m
+       [32m✓[39m should have username/password for userpass-based auth[32m 0[2mms[22m[39m
+       [32m✓[39m should have apiKey for api-based auth[32m 0[2mms[22m[39m
+ [31m❯[39m app_src_backup/lib/indexer/indexerPresets.test.ts [2m([22m[2m21 tests[22m[2m | [22m[31m3 failed[39m[2m)[22m[32m 99[2mms[22m[39m
+[31m       [31m×[31m should contain 53 indexer presets[39m[32m 23[2mms[22m[39m
+       [32m✓[39m should have unique IDs for all presets[32m 1[2mms[22m[39m
+[31m       [31m×[31m should have all required fields for each preset[39m[32m 10[2mms[22m[39m
+       [32m✓[39m should return preset by ID[32m 1[2mms[22m[39m
+       [32m✓[39m should return undefined for unknown ID[32m 1[2mms[22m[39m
+       [32m✓[39m should return correct presets for various IDs[32m 1[2mms[22m[39m
+       [32m✓[39m should return all torrent presets[32m 1[2mms[22m[39m
+       [32m✓[39m should return empty array for usenet[32m 1[2mms[22m[39m
+[31m       [31m×[31m should return popular presets[39m[32m 2[2mms[22m[39m
+       [32m✓[39m should contain well-known indexers[32m 2[2mms[22m[39m
+       [32m✓[39m should return public presets[32m 2[2mms[22m[39m
+       [32m✓[39m should return private presets[32m 3[2mms[22m[39m
+       [32m✓[39m should return semi-private presets[32m 1[2mms[22m[39m
+       [32m✓[39m should search by name[32m 8[2mms[22m[39m
+       [32m✓[39m should search by description[32m 1[2mms[22m[39m
+       [32m✓[39m should be case insensitive[32m 0[2mms[22m[39m
+       [32m✓[39m should return empty array for no matches[32m 1[2mms[22m[39m
+       [32m✓[39m should have proper field types[32m 35[2mms[22m[39m
+       [32m✓[39m should have cookie field for cookie-based auth[32m 0[2mms[22m[39m
+       [32m✓[39m should have username/password for userpass-based auth[32m 0[2mms[22m[39m
+       [32m✓[39m should have apiKey for api-based auth[32m 0[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/primitives/Menu.test.js [2m([22m[2m25 tests[22m[2m | [22m[31m25 failed[39m[2m)[22m[32m 55[2mms[22m[39m
+[31m       [31m×[31m renders dropdown menu with items and closes on backdrop click[39m[32m 16[2mms[22m[39m
+[31m       [31m×[31m does not render when closed[39m[32m 2[2mms[22m[39m
+[31m       [31m×[31m closes on escape key press[39m[32m 2[2mms[22m[39m
+[31m       [31m×[31m fires item click handler and closes menu[39m[32m 1[2mms[22m[39m
+[31m       [31m×[31m renders disabled items without click handler[39m[32m 2[2mms[22m[39m
+[31m       [31m×[31m renders dividers between items[39m[32m 1[2mms[22m[39m
+[31m       [31m×[31m renders items with icons[39m[32m 2[2mms[22m[39m
+[31m       [31m×[31m aligns menu to the right when specified[39m[32m 2[2mms[22m[39m
+[31m       [31m×[31m aligns menu to the left by default[39m[32m 2[2mms[22m[39m
+[31m       [31m×[31m applies custom className to menu[39m[32m 2[2mms[22m[39m
+[31m       [31m×[31m renders multiple dividers correctly[39m[32m 1[2mms[22m[39m
+[31m       [31m×[31m handles empty items array[39m[32m 1[2mms[22m[39m
+[31m       [31m×[31m renders trigger button with children[39m[32m 1[2mms[22m[39m
+[31m       [31m×[31m calls onClick handler when clicked[39m[32m 1[2mms[22m[39m
+[31m       [31m×[31m disables button when disabled prop is true[39m[32m 1[2mms[22m[39m
+[31m       [31m×[31m applies custom ariaLabel[39m[32m 1[2mms[22m[39m
+[31m       [31m×[31m opens menu when trigger button is clicked[39m[32m 1[2mms[22m[39m
+[31m       [31m×[31m closes menu when item is clicked[39m[32m 1[2mms[22m[39m
+[31m       [31m×[31m closes menu when backdrop is clicked[39m[32m 1[2mms[22m[39m
+[31m       [31m×[31m closes menu on escape key[39m[32m 1[2mms[22m[39m
+[31m       [31m×[31m supports right-aligned menus[39m[32m 1[2mms[22m[39m
+[31m       [31m×[31m has proper ARIA roles[39m[32m 1[2mms[22m[39m
+[31m       [31m×[31m has disabled items with proper ARIA[39m[32m 1[2mms[22m[39m
+[31m       [31m×[31m renders dividers with separator role[39m[32m 1[2mms[22m[39m
+[31m       [31m×[31m backdrop has proper aria-label[39m[32m 1[2mms[22m[39m
+ [31m❯[39m app/src/lib/indexer/indexerPresets.test.ts [2m([22m[2m21 tests[22m[2m | [22m[31m3 failed[39m[2m)[22m[32m 72[2mms[22m[39m
+[31m       [31m×[31m should contain 53 indexer presets[39m[32m 20[2mms[22m[39m
+       [32m✓[39m should have unique IDs for all presets[32m 1[2mms[22m[39m
+[31m       [31m×[31m should have all required fields for each preset[39m[32m 8[2mms[22m[39m
+       [32m✓[39m should return preset by ID[32m 1[2mms[22m[39m
+       [32m✓[39m should return undefined for unknown ID[32m 0[2mms[22m[39m
+       [32m✓[39m should return correct presets for various IDs[32m 0[2mms[22m[39m
+       [32m✓[39m should return all torrent presets[32m 0[2mms[22m[39m
+       [32m✓[39m should return empty array for usenet[32m 0[2mms[22m[39m
+[31m       [31m×[31m should return popular presets[39m[32m 2[2mms[22m[39m
+       [32m✓[39m should contain well-known indexers[32m 1[2mms[22m[39m
+       [32m✓[39m should return public presets[32m 1[2mms[22m[39m
+       [32m✓[39m should return private presets[32m 2[2mms[22m[39m
+       [32m✓[39m should return semi-private presets[32m 0[2mms[22m[39m
+       [32m✓[39m should search by name[32m 5[2mms[22m[39m
+       [32m✓[39m should search by description[32m 0[2mms[22m[39m
+       [32m✓[39m should be case insensitive[32m 0[2mms[22m[39m
+       [32m✓[39m should return empty array for no matches[32m 0[2mms[22m[39m
+       [32m✓[39m should have proper field types[32m 23[2mms[22m[39m
+       [32m✓[39m should have cookie field for cookie-based auth[32m 0[2mms[22m[39m
+       [32m✓[39m should have username/password for userpass-based auth[32m 0[2mms[22m[39m
+       [32m✓[39m should have apiKey for api-based auth[32m 0[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/primitives/PageToolbar.test.tsx [2m([22m[2m22 tests[22m[2m | [22m[31m22 failed[39m[2m)[22m[32m 34[2mms[22m[39m
+[31m     [31m×[31m renders PageToolbar with children[39m[32m 10[2mms[22m[39m
+[31m     [31m×[31m applies correct CSS classes to PageToolbar[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m renders multiple children correctly[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m renders complex nested content[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m has semantic HTML structure[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m renders PageToolbarSection with children[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m renders PageToolbarSection with left alignment (default)[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m renders PageToolbarSection with right alignment[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m does not have justify-start when align is right[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m does not have justify-end when align is left[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m does not have justify-end when align is not specified (default left)[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m renders multiple children in section[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m has semantic HTML structure[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m combines PageToolbar and PageToolbarSection correctly[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m renders multiple sections in toolbar[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m maintains flex layout between toolbar and sections[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m handles nested toolbar content with multiple sections[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m supports icons in sections[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m renders realistic toolbar with multiple elements[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m wraps content on small screens with flex-wrap[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m applies gap spacing between sections[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m applies gap spacing within sections[39m[32m 1[2mms[22m[39m
+ [31m❯[39m tests/metadata-provider-unified.test.js [2m([22m[2m5 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[32m 115[2mms[22m[39m
+[31m     [31m×[31m should search TV media with the unified interface[39m[32m 95[2mms[22m[39m
+     [32m✓[39m should search movie media with the unified interface[32m 5[2mms[22m[39m
+     [32m✓[39m should load movie details with normalized availability fields[32m 4[2mms[22m[39m
+     [32m✓[39m should classify streaming and in-cinemas movies correctly[32m 2[2mms[22m[39m
+     [32m✓[39m should search both TV and movies when no mediaType is specified[32m 3[2mms[22m[39m
+ [31m❯[39m tests/torrent-manager-sync-loop.test.js [2m([22m[2m5 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[32m 73[2mms[22m[39m
+[31m     [31m×[31m should persist progress and peers through syncStats[39m[32m 36[2mms[22m[39m
+     [32m✓[39m should use 5s interval when active and 30s when idle[32m 3[2mms[22m[39m
+     [32m✓[39m should start sync loop on initialize and stop on destroy[32m 2[2mms[22m[39m
+     [32m✓[39m should skip overlapping sync cycles and warn[32m 12[2mms[22m[39m
+[31m     [31m×[31m should clamp excessively large ETA values to SQLite INT max[39m[32m 15[2mms[22m[39m
+[90mstdout[2m | tests/activity-event-emission.test.js[2m > [22m[2mactivity event emission adapters[2m > [22m[2mshould emit INDEXER_TESTED from IndexerTester
+[22m[39m[IndexerTester] Testing indexer: Indexer One (Torznab)
+
+[90mstdout[2m | tests/activity-event-emission.test.js[2m > [22m[2mactivity event emission adapters[2m > [22m[2mshould emit INDEXER_TESTED from IndexerTester
+[22m[39m[IndexerTester] Result for Indexer One: success=true, message=Torznab test successful for Indexer One
+
+ [31m❯[39m tests/activity-event-emission.test.js [2m([22m[2m5 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[32m 109[2mms[22m[39m
+     [32m✓[39m should emit MEDIA_ADDED when media is added via MediaService[32m 8[2mms[22m[39m
+     [32m✓[39m should emit SEARCH_EXECUTED and RELEASE_GRABBED from MediaSearchService[32m 10[2mms[22m[39m
+[31m     [31m×[31m should emit IMPORT_COMPLETED when import succeeds[39m[32m 39[2mms[22m[39m
+[31m     [31m×[31m should emit SUBTITLE_DOWNLOADED when subtitle fetch succeeds[39m[32m 3[2mms[22m[39m
+     [32m✓[39m should emit INDEXER_TESTED from IndexerTester[32m 46[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/primitives/ViewMenu.test.js [2m([22m[2m15 tests[22m[2m | [22m[31m15 failed[39m[2m)[22m[32m 64[2mms[22m[39m
+[31m     [31m×[31m renders correctly with initial value[39m[32m 15[2mms[22m[39m
+[31m     [31m×[31m renders with custom label[39m[32m 4[2mms[22m[39m
+[31m     [31m×[31m opens menu on click[39m[32m 3[2mms[22m[39m
+[31m     [31m×[31m closes menu when clicking backdrop[39m[32m 3[2mms[22m[39m
+[31m     [31m×[31m calls onChange with correct value when selecting option[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m highlights active view with checkmark[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m displays correct icon for each view mode[39m[32m 3[2mms[22m[39m
+[31m     [31m×[31m toggles menu open/close on repeated clicks[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m applies correct styling to active option[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m has proper accessibility attributes[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m updates accessibility attributes when menu opens[39m[32m 2[2mms[22m[39m
+[31m       [31m×[31m renders correct label for poster mode[39m[32m 2[2mms[22m[39m
+[31m       [31m×[31m renders correct label for overview mode[39m[32m 1[2mms[22m[39m
+[31m       [31m×[31m renders correct label for table mode[39m[32m 13[2mms[22m[39m
+[31m     [31m×[31m handles rapid option clicks correctly[39m[32m 2[2mms[22m[39m
+ [31m❯[39m tests/media-search-service.test.js [2m([22m[2m6 tests[22m[2m | [22m[31m4 failed[39m[2m)[22m[32m 63[2mms[22m[39m
+[31m     [31m×[31m should return ranked search candidates without queue side effects[39m[32m 28[2mms[22m[39m
+[31m     [31m×[31m should search for a movie using title/year/id query hints and grab best match[39m[32m 14[2mms[22m[39m
+     [32m✓[39m should throw TORRENT_REJECTED when trying to grab a candidate without magnet[32m 4[2mms[22m[39m
+     [32m✓[39m should throw TORRENT_REJECTED when torrent manager rejects add request[32m 3[2mms[22m[39m
+[31m     [31m×[31m should keep compatibility for searchEpisode composition[39m[32m 5[2mms[22m[39m
+[31m     [31m×[31m should include indexer flags in mapped candidates[39m[32m 5[2mms[22m[39m
+ [31m❯[39m app_src_backup/lib/navigation.test.ts [2m([22m[2m13 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[32m 34[2mms[22m[39m
+     [32m✓[39m exports NavigationItem with optional icon field[32m 2[2mms[22m[39m
+     [32m✓[39m exports NavigationSection type for grouped navigation[32m 2[2mms[22m[39m
+[31m     [31m×[31m NAV_ITEMS is an array of NavigationSection with proper grouping[39m[32m 8[2mms[22m[39m
+     [32m✓[39m all navigation items have icon fields[32m 9[2mms[22m[39m
+[31m     [31m×[31m navigation items use meaningful short labels (no cryptic abbreviations)[39m[32m 6[2mms[22m[39m
+     [32m✓[39m isNavActive keeps active navigation highlighting for nested routes[32m 1[2mms[22m[39m
+       [32m✓[39m should have subtitles section with all expected items[32m 1[2mms[22m[39m
+       [32m✓[39m should have series and movies navigation items[32m 1[2mms[22m[39m
+       [32m✓[39m should have wanted navigation items with showBadge property[32m 0[2mms[22m[39m
+       [32m✓[39m should have history navigation items[32m 1[2mms[22m[39m
+       [32m✓[39m should have blacklist navigation items[32m 1[2mms[22m[39m
+       [32m✓[39m should have profiles and providers navigation items[32m 1[2mms[22m[39m
+       [32m✓[39m should have subtitles in settings section[32m 0[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/primitives/table-core.test.js [2m([22m[2m2 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[32m 62[2mms[22m[39m
+[31m     [31m×[31m renders base table wrapper with sortable headers and rows[39m[32m 12[2mms[22m[39m
+[31m     [31m×[31m renders date and status cell helpers[39m[32m 46[2mms[22m[39m
+[90mstdout[2m | tests/rss-media-monitor.test.js[2m > [22m[2mRssMediaMonitor[2m > [22m[2mshould trigger download for a monitored missing released movie with high score
+[22m[39mRssMediaMonitor: Grabbing Forrest.Gump.1994.1080p.BluRay.x264-GRP for Forrest Gump (score 100)
+
+[90mstdout[2m | tests/rss-media-monitor.test.js[2m > [22m[2mRssMediaMonitor[2m > [22m[2mshould ignore releases that score below the threshold
+[22m[39mRssMediaMonitor: Skipped Forrest.Gump.1994.LowScore.Release for Forrest Gump (score 10 < 50)
+
+ [31m❯[39m tests/rss-media-monitor.test.js [2m([22m[2m3 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[32m 67[2mms[22m[39m
+[31m     [31m×[31m should trigger download for a monitored missing released movie with high score[39m[32m 39[2mms[22m[39m
+     [32m✓[39m should ignore releases that score below the threshold[32m 13[2mms[22m[39m
+     [32m✓[39m should ignore in-cinemas releases when minimum availability is released[32m 12[2mms[22m[39m
+ [31m❯[39m tests/search-translator.test.js [2m([22m[2m6 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[32m 75[2mms[22m[39m
+       [32m✓[39m should translate a generic query into a Torznab API request[32m 51[2mms[22m[39m
+       [32m✓[39m should include categories in the Torznab request[32m 1[2mms[22m[39m
+[31m       [31m×[31m should include IMDB ID in movie search[39m[32m 13[2mms[22m[39m
+       [32m✓[39m should translate a generic query into a scraping HTTP request[32m 3[2mms[22m[39m
+       [32m✓[39m should handle empty query for RSS-like browsing[32m 1[2mms[22m[39m
+       [32m✓[39m should search multiple paths when defined[32m 2[2mms[22m[39m
+[90mstdout[2m | tests/indexer-test-capability.test.js[2m > [22m[2mIndexerTester[2m > [22m[2mScraping indexer testing[2m > [22m[2mshould pass test when site homepage is reachable
+[22m[39m[IndexerTester] Scraping response for Test Scraper: status=200, ok=true
+
+[90mstdout[2m | tests/indexer-test-capability.test.js[2m > [22m[2mIndexerTester[2m > [22m[2mScraping indexer testing[2m > [22m[2mshould fail test when response body is a block page (missing indexer name)
+[22m[39m[IndexerTester] Scraping response for Test Scraper: status=200, ok=true
+
+[90mstdout[2m | tests/indexer-test-capability.test.js[2m > [22m[2mIndexerTester[2m > [22m[2munified test method[2m > [22m[2mshould route to torznab test for TorznabIndexer
+[22m[39m[IndexerTester] Testing indexer: T (Torznab)
+
+[90mstdout[2m | tests/indexer-test-capability.test.js[2m > [22m[2mIndexerTester[2m > [22m[2munified test method[2m > [22m[2mshould route to torznab test for TorznabIndexer
+[22m[39m[IndexerTester] Result for T: success=true, message=Torznab test successful for T
+
+ [31m❯[39m tests/indexer-test-capability.test.js [2m([22m[2m8 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[32m 93[2mms[22m[39m
+       [32m✓[39m should pass test when caps endpoint returns valid XML[32m 59[2mms[22m[39m
+       [32m✓[39m should fail test when caps endpoint returns error[32m 1[2mms[22m[39m
+       [32m✓[39m should fail test when caps response is not valid XML[32m 1[2mms[22m[39m
+       [32m✓[39m should fail test on network error[32m 1[2mms[22m[39m
+[31m       [31m×[31m should pass test when site homepage is reachable[39m[32m 21[2mms[22m[39m
+       [32m✓[39m should fail test when site is unreachable[32m 1[2mms[22m[39m
+       [32m✓[39m should fail test when response body is a block page (missing indexer name)[32m 1[2mms[22m[39m
+       [32m✓[39m should route to torznab test for TorznabIndexer[32m 2[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/subtitles/HistoryFilters.test.js [2m([22m[2m12 tests[22m[2m | [22m[31m12 failed[39m[2m)[22m[32m 42[2mms[22m[39m
+[31m     [31m×[31m renders all filter controls[39m[32m 13[2mms[22m[39m
+[31m     [31m×[31m renders provider options[39m[32m 3[2mms[22m[39m
+[31m     [31m×[31m renders language options[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m renders action options[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m calls onChange when provider changes[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m calls onChange when language changes[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m calls onChange when action changes[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m calls onChange when start date changes[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m calls onChange when end date changes[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m calls onChange with empty value when clearing provider[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m calls onChange with all undefined when Clear Filters is clicked[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m displays current filter values[39m[32m 2[2mms[22m[39m
+ [31m❯[39m tests/tv-search-service.test.js [2m([22m[2m1 test[22m[2m | [22m[31m1 failed[39m[2m)[22m[32m 38[2mms[22m[39m
+[31m     [31m×[31m should search for an episode and add the best match to torrent manager[39m[32m 34[2mms[22m[39m
+ [31m❯[39m app_src_backup/lib/theme/colorImpaired.test.js [2m([22m[2m11 tests[22m[2m | [22m[31m4 failed[39m[2m)[22m[32m 27[2mms[22m[39m
+       [32m✓[39m should have correct storage key[32m 3[2mms[22m[39m
+       [32m✓[39m should return false when no value is stored[32m 0[2mms[22m[39m
+[31m       [31m×[31m should return true when stored value is "true"[39m[32m 12[2mms[22m[39m
+       [32m✓[39m should return false when stored value is "false"[32m 1[2mms[22m[39m
+       [32m✓[39m should return false for invalid values[32m 0[2mms[22m[39m
+       [32m✓[39m should set data-color-impaired to "true" when enabled[32m 0[2mms[22m[39m
+       [32m✓[39m should set data-color-impaired to "false" when disabled[32m 0[2mms[22m[39m
+       [32m✓[39m should not throw when document is undefined[32m 2[2mms[22m[39m
+[31m       [31m×[31m should toggle from false to true[39m[32m 2[2mms[22m[39m
+[31m       [31m×[31m should toggle from true to false[39m[32m 1[2mms[22m[39m
+[31m       [31m×[31m should persist to localStorage[39m[32m 2[2mms[22m[39m
+ [31m❯[39m tests/metadata-provider.test.js [2m([22m[2m2 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[32m 101[2mms[22m[39m
+[31m     [31m×[31m should search for series by title[39m[32m 90[2mms[22m[39m
+[31m     [31m×[31m should get series details including episodes and seasons[39m[32m 7[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/page/Page.test.js [2m([22m[2m11 tests[22m[2m | [22m[31m11 failed[39m[2m)[22m[32m 33[2mms[22m[39m
+[31m     [31m×[31m renders title[39m[32m 13[2mms[22m[39m
+[31m     [31m×[31m renders children[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m renders header actions when provided[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m does not render header actions when not provided[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m has correct container styles[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m has correct inner container padding on small screens[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m has correct inner container padding on medium screens[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m has correct inner container padding on large screens[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m has correct heading styles[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m truncates long titles[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m renders multiple children[39m[32m 2[2mms[22m[39m
+ [31m❯[39m app/src/lib/hooks/useTouchGestures.test.ts [2m([22m[2m8 tests[22m[2m | [22m[31m8 failed[39m[2m)[22m[32m 22[2mms[22m[39m
+[31m     [31m×[31m detects left swipe gesture[39m[32m 9[2mms[22m[39m
+[31m     [31m×[31m detects right swipe gesture[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m does not trigger swipe below threshold[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m ignores vertical swipes (not configured)[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m cleans up event listeners on unmount[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m resets swipe state after gesture completes[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m handles diagonal swipes correctly based on dominant direction[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m supports custom threshold values[39m[32m 1[2mms[22m[39m
+ [31m❯[39m tests/api-contract-harness.test.ts [2m([22m[2m4 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[32m 32[2mms[22m[39m
+     [32m✓[39m buildSuccessEnvelope should return the canonical success shape[32m 4[2mms[22m[39m
+     [32m✓[39m buildPaginatedEnvelope should return list payload with pagination meta[32m 1[2mms[22m[39m
+     [32m✓[39m buildErrorEnvelope should map domain errors to canonical shape[32m 2[2mms[22m[39m
+[31m     [31m×[31m parsePaginationParams should apply defaults and bounds[39m[32m 21[2mms[22m[39m
+[90mstdout[2m | tests/rss-tv-monitor.test.js[2m > [22m[2mRssTvMonitor[2m > [22m[2mshould trigger download when a matching monitored missing episode release is found
+[22m[39mRssMediaMonitor: Grabbing The.Boys.S01E01.1080p.WEBRip.x264-GRP for The Boys (score 100)
+
+ [31m❯[39m tests/rss-tv-monitor.test.js [2m([22m[2m1 test[22m[2m | [22m[31m1 failed[39m[2m)[22m[32m 43[2mms[22m[39m
+[31m     [31m×[31m should trigger download when a matching monitored missing episode release is found[39m[32m 39[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/page/PageContent.test.tsx [2m([22m[2m6 tests[22m[2m | [22m[31m6 failed[39m[2m)[22m[32m 26[2mms[22m[39m
+[31m     [31m×[31m renders children without title[39m[32m 12[2mms[22m[39m
+[31m     [31m×[31m renders title when provided[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m has correct heading styles[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m applies default layout classes[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m applies custom className[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m renders multiple children[39m[32m 1[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/primitives/table-core.test.tsx [2m([22m[2m2 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[32m 50[2mms[22m[39m
+[31m     [31m×[31m renders base table wrapper with sortable headers and rows[39m[32m 11[2mms[22m[39m
+[31m     [31m×[31m renders date and status cell helpers[39m[32m 36[2mms[22m[39m
+ [31m❯[39m app_src_backup/lib/performance/monitor.test.js [2m([22m[2m14 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[32m 64[2mms[22m[39m
+     [32m✓[39m starts and stops a performance measurement[32m 5[2mms[22m[39m
+[31m     [31m×[31m measures async operations[39m[32m 22[2mms[22m[39m
+     [32m✓[39m logs metrics in development mode[32m 4[2mms[22m[39m
+     [32m✓[39m does not log metrics in production mode[32m 1[2mms[22m[39m
+     [32m✓[39m measures component render time[32m 2[2mms[22m[39m
+     [32m✓[39m measures API call performance[32m 13[2mms[22m[39m
+     [32m✓[39m stores and retrieves all metrics[32m 2[2mms[22m[39m
+     [32m✓[39m gets metrics by name pattern[32m 1[2mms[22m[39m
+     [32m✓[39m calculates average duration for metrics[32m 1[2mms[22m[39m
+     [32m✓[39m clears all metrics[32m 1[2mms[22m[39m
+     [32m✓[39m handles stopping a non-existent metric gracefully[32m 3[2mms[22m[39m
+     [32m✓[39m handles multiple concurrent measurements[32m 1[2mms[22m[39m
+     [32m✓[39m tracks metrics statistics[32m 3[2mms[22m[39m
+     [32m✓[39m returns undefined for statistics on non-existent metric[32m 0[2mms[22m[39m
+ [31m❯[39m tests/torrent-api.test.js [2m([22m[2m2 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[32m 34[2mms[22m[39m
+[31m     [31m×[31m should return standardized progress data for all torrents[39m[32m 25[2mms[22m[39m
+[31m     [31m×[31m should return data for a single torrent by infoHash[39m[32m 4[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/primitives/ViewMenu.test.tsx [2m([22m[2m15 tests[22m[2m | [22m[31m15 failed[39m[2m)[22m[32m 41[2mms[22m[39m
+[31m     [31m×[31m renders correctly with initial value[39m[32m 10[2mms[22m[39m
+[31m     [31m×[31m renders with custom label[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m opens menu on click[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m closes menu when clicking backdrop[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m calls onChange with correct value when selecting option[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m highlights active view with checkmark[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m displays correct icon for each view mode[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m toggles menu open/close on repeated clicks[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m applies correct styling to active option[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m has proper accessibility attributes[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m updates accessibility attributes when menu opens[39m[32m 1[2mms[22m[39m
+[31m       [31m×[31m renders correct label for poster mode[39m[32m 1[2mms[22m[39m
+[31m       [31m×[31m renders correct label for overview mode[39m[32m 1[2mms[22m[39m
+[31m       [31m×[31m renders correct label for table mode[39m[32m 9[2mms[22m[39m
+[31m     [31m×[31m handles rapid option clicks correctly[39m[32m 1[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/subtitles/LanguageBadge.test.js [2m([22m[2m15 tests[22m[2m | [22m[31m15 failed[39m[2m)[22m[32m 37[2mms[22m[39m
+[31m     [31m×[31m renders language code correctly[39m[32m 13[2mms[22m[39m
+[31m     [31m×[31m renders available variant with correct styling[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m renders missing variant with correct styling[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m renders searching variant with correct styling[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m shows forced indicator when isForced is true[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m shows HI indicator when isHi is true[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m shows both forced and HI indicators when both are true[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m calls onClick when clicked[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m does not call onClick when not provided[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m is keyboard accessible when onClick is provided[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m has correct ARIA label[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m applies custom className[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m forwards additional props[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m indicators have reduced opacity[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m handles all variant types[39m[32m 1[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/subtitles/LanguageBadge.test.tsx [2m([22m[2m15 tests[22m[2m | [22m[31m15 failed[39m[2m)[22m[32m 36[2mms[22m[39m
+[31m     [31m×[31m renders language code correctly[39m[32m 13[2mms[22m[39m
+[31m     [31m×[31m renders available variant with correct styling[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m renders missing variant with correct styling[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m renders searching variant with correct styling[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m shows forced indicator when isForced is true[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m shows HI indicator when isHi is true[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m shows both forced and HI indicators when both are true[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m calls onClick when clicked[39m[32m 3[2mms[22m[39m
+[31m     [31m×[31m does not call onClick when not provided[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m is keyboard accessible when onClick is provided[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m has correct ARIA label[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m applies custom className[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m forwards additional props[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m indicators have reduced opacity[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m handles all variant types[39m[32m 1[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/primitives/modal.test.js [2m([22m[2m9 tests[22m[2m | [22m[31m9 failed[39m[2m)[22m[32m 31[2mms[22m[39m
+[31m     [31m×[31m renders dialog content and closes on backdrop click[39m[32m 14[2mms[22m[39m
+[31m     [31m×[31m does not render when closed[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m renders modal subcomponents layout blocks[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m fires confirm and cancel handlers in confirm modal[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m applies scrollable overflow styles to ModalBody[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m applies sticky positioning to ModalFooter[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m applies responsive max-width classes to Modal[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m applies mobile-optimized padding to Modal backdrop[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m limits modal height to 85vh with flex layout[39m[32m 2[2mms[22m[39m
+ [31m❯[39m app_src_backup/app/(shell)/queue/queue-actions.test.js [2m([22m[2m3 tests[22m[2m | [22m[31m3 failed[39m[2m)[22m[32m 21[2mms[22m[39m
+[31m     [31m×[31m calls pause API when Pause button clicked[39m[32m 11[2mms[22m[39m
+[31m     [31m×[31m calls resume API when Resume button clicked[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m calls remove API when Remove button clicked[39m[32m 2[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/primitives/FileBrowser.test.tsx [2m([22m[2m23 tests[22m[2m | [22m[31m23 failed[39m[2m)[22m[32m 35[2mms[22m[39m
+[31m     [31m×[31m renders modal with file list[39m[32m 11[2mms[22m[39m
+[31m     [31m×[31m does not render when closed[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m displays provided entries[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m navigates into folders on double click[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m navigates using breadcrumbs[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m navigates up to parent directory[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m disables up button at root directory[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m navigates to root directory via home button[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m selects files in file selection mode[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m selects current folder in folder selection mode[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m disables select button when no file is selected in file mode[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m displays file metadata correctly[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m shows empty state for empty directories[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m displays item count[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m calls onCancel when cancel button is clicked[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m supports keyboard navigation with Enter key[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m supports keyboard navigation with Space key[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m highlights selected file[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m renders table headers correctly[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m displays folder icons[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m navigates through multiple levels[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m handles onPathChange for folder click[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m handles file selection without navigation in file mode[39m[32m 1[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/primitives/SortMenu.test.tsx [2m([22m[2m17 tests[22m[2m | [22m[31m17 failed[39m[2m)[22m[32m 44[2mms[22m[39m
+[31m     [31m×[31m renders correctly with initial values[39m[32m 10[2mms[22m[39m
+[31m     [31m×[31m renders with custom label[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m displays up arrow icon for ascending direction[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m displays down arrow icon for descending direction[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m calls onChange when select value changes[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m calls onDirectionChange when direction button is clicked[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m toggles direction from asc to desc[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m toggles direction from desc to asc[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m renders all options in select dropdown[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m applies correct styling to select and button[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m direction button has accent color[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m handles multiple direction toggles[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m handles multiple value changes[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m works independently for onChange and onDirectionChange[39m[32m 1[2mms[22m[39m
+[31m       [31m×[31m renders correctly with asc direction[39m[32m 8[2mms[22m[39m
+[31m       [31m×[31m renders correctly with desc direction[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m has proper accessibility attributes[39m[32m 1[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/primitives/Menu.test.tsx [2m([22m[2m25 tests[22m[2m | [22m[31m25 failed[39m[2m)[22m[32m 36[2mms[22m[39m
+[31m       [31m×[31m renders dropdown menu with items and closes on backdrop click[39m[32m 10[2mms[22m[39m
+[31m       [31m×[31m does not render when closed[39m[32m 1[2mms[22m[39m
+[31m       [31m×[31m closes on escape key press[39m[32m 1[2mms[22m[39m
+[31m       [31m×[31m fires item click handler and closes menu[39m[32m 1[2mms[22m[39m
+[31m       [31m×[31m renders disabled items without click handler[39m[32m 1[2mms[22m[39m
+[31m       [31m×[31m renders dividers between items[39m[32m 1[2mms[22m[39m
+[31m       [31m×[31m renders items with icons[39m[32m 1[2mms[22m[39m
+[31m       [31m×[31m aligns menu to the right when specified[39m[32m 1[2mms[22m[39m
+[31m       [31m×[31m aligns menu to the left by default[39m[32m 1[2mms[22m[39m
+[31m       [31m×[31m applies custom className to menu[39m[32m 1[2mms[22m[39m
+[31m       [31m×[31m renders multiple dividers correctly[39m[32m 1[2mms[22m[39m
+[31m       [31m×[31m handles empty items array[39m[32m 1[2mms[22m[39m
+[31m       [31m×[31m renders trigger button with children[39m[32m 1[2mms[22m[39m
+[31m       [31m×[31m calls onClick handler when clicked[39m[32m 1[2mms[22m[39m
+[31m       [31m×[31m disables button when disabled prop is true[39m[32m 1[2mms[22m[39m
+[31m       [31m×[31m applies custom ariaLabel[39m[32m 1[2mms[22m[39m
+[31m       [31m×[31m opens menu when trigger button is clicked[39m[32m 1[2mms[22m[39m
+[31m       [31m×[31m closes menu when item is clicked[39m[32m 1[2mms[22m[39m
+[31m       [31m×[31m closes menu when backdrop is clicked[39m[32m 1[2mms[22m[39m
+[31m       [31m×[31m closes menu on escape key[39m[32m 1[2mms[22m[39m
+[31m       [31m×[31m supports right-aligned menus[39m[32m 1[2mms[22m[39m
+[31m       [31m×[31m has proper ARIA roles[39m[32m 1[2mms[22m[39m
+[31m       [31m×[31m has disabled items with proper ARIA[39m[32m 1[2mms[22m[39m
+[31m       [31m×[31m renders dividers with separator role[39m[32m 1[2mms[22m[39m
+[31m       [31m×[31m backdrop has proper aria-label[39m[32m 1[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/primitives/FilterMenu.test.tsx [2m([22m[2m18 tests[22m[2m | [22m[31m18 failed[39m[2m)[22m[32m 54[2mms[22m[39m
+[31m     [31m×[31m renders correctly with initial value[39m[32m 13[2mms[22m[39m
+[31m     [31m×[31m renders with custom label[39m[32m 3[2mms[22m[39m
+[31m     [31m×[31m renders all options in select dropdown[39m[32m 3[2mms[22m[39m
+[31m     [31m×[31m calls onChange when select value changes[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m calls onCustomFilter when custom option is selected[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m renders custom option when onCustomFilter is provided[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m does not render custom option when onCustomFilter is not provided[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m shows custom as selected when customFilterActive is true[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m shows original value when customFilterActive is false[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m applies correct styling[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m handles multiple value changes[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m handles mixed selections with custom option[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m respects the label prop for accessibility[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m works without onCustomFilter prop[39m[32m 2[2mms[22m[39m
+[31m       [31m×[31m maintains custom selection when customFilterActive remains true[39m[32m 2[2mms[22m[39m
+[31m       [31m×[31m switches back to standard filter when customFilterActive becomes false[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m handles empty options array[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m handles single option[39m[32m 2[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/primitives/table-memoization.test.tsx [2m([22m[2m6 tests[22m[2m | [22m[31m6 failed[39m[2m)[22m[32m 36[2mms[22m[39m
+[31m     [31m×[31m Table component memoizes rendering with same props[39m[32m 16[2mms[22m[39m
+[31m     [31m×[31m TableHeader memoizes with same columns prop[39m[32m 5[2mms[22m[39m
+[31m     [31m×[31m TableBody memoizes with same data and columns[39m[32m 3[2mms[22m[39m
+[31m     [31m×[31m TableRow memoizes with same children[39m[32m 3[2mms[22m[39m
+[31m     [31m×[31m TableCell memoizes with same className and children[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m prevents unnecessary re-renders when irrelevant props change[39m[32m 2[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/primitives/SortMenu.test.js [2m([22m[2m17 tests[22m[2m | [22m[31m17 failed[39m[2m)[22m[32m 67[2mms[22m[39m
+[31m     [31m×[31m renders correctly with initial values[39m[32m 14[2mms[22m[39m
+[31m     [31m×[31m renders with custom label[39m[32m 4[2mms[22m[39m
+[31m     [31m×[31m displays up arrow icon for ascending direction[39m[32m 3[2mms[22m[39m
+[31m     [31m×[31m displays down arrow icon for descending direction[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m calls onChange when select value changes[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m calls onDirectionChange when direction button is clicked[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m toggles direction from asc to desc[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m toggles direction from desc to asc[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m renders all options in select dropdown[39m[32m 3[2mms[22m[39m
+[31m     [31m×[31m applies correct styling to select and button[39m[32m 3[2mms[22m[39m
+[31m     [31m×[31m direction button has accent color[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m handles multiple direction toggles[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m handles multiple value changes[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m works independently for onChange and onDirectionChange[39m[32m 2[2mms[22m[39m
+[31m       [31m×[31m renders correctly with asc direction[39m[32m 13[2mms[22m[39m
+[31m       [31m×[31m renders correctly with desc direction[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m has proper accessibility attributes[39m[32m 2[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/primitives/FileBrowser.test.js [2m([22m[2m23 tests[22m[2m | [22m[31m23 failed[39m[2m)[22m[32m 51[2mms[22m[39m
+[31m     [31m×[31m renders modal with file list[39m[32m 15[2mms[22m[39m
+[31m     [31m×[31m does not render when closed[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m displays provided entries[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m navigates into folders on double click[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m navigates using breadcrumbs[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m navigates up to parent directory[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m disables up button at root directory[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m navigates to root directory via home button[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m selects files in file selection mode[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m selects current folder in folder selection mode[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m disables select button when no file is selected in file mode[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m displays file metadata correctly[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m shows empty state for empty directories[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m displays item count[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m calls onCancel when cancel button is clicked[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m supports keyboard navigation with Enter key[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m supports keyboard navigation with Space key[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m highlights selected file[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m renders table headers correctly[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m displays folder icons[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m navigates through multiple levels[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m handles onPathChange for folder click[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m handles file selection without navigation in file mode[39m[32m 1[2mms[22m[39m
+ [31m❯[39m app_src_backup/lib/navigation.test.js [2m([22m[2m13 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[32m 43[2mms[22m[39m
+     [32m✓[39m exports NavigationItem with optional icon field[32m 2[2mms[22m[39m
+     [32m✓[39m exports NavigationSection type for grouped navigation[32m 2[2mms[22m[39m
+[31m     [31m×[31m NAV_ITEMS is an array of NavigationSection with proper grouping[39m[32m 10[2mms[22m[39m
+     [32m✓[39m all navigation items have icon fields[32m 11[2mms[22m[39m
+[31m     [31m×[31m navigation items use meaningful short labels (no cryptic abbreviations)[39m[32m 8[2mms[22m[39m
+     [32m✓[39m isNavActive keeps active navigation highlighting for nested routes[32m 1[2mms[22m[39m
+       [32m✓[39m should have subtitles section with all expected items[32m 1[2mms[22m[39m
+       [32m✓[39m should have series and movies navigation items[32m 1[2mms[22m[39m
+       [32m✓[39m should have wanted navigation items with showBadge property[32m 1[2mms[22m[39m
+       [32m✓[39m should have history navigation items[32m 1[2mms[22m[39m
+       [32m✓[39m should have blacklist navigation items[32m 1[2mms[22m[39m
+       [32m✓[39m should have profiles and providers navigation items[32m 1[2mms[22m[39m
+       [32m✓[39m should have subtitles in settings section[32m 1[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/primitives/FilterMenu.test.js [2m([22m[2m18 tests[22m[2m | [22m[31m18 failed[39m[2m)[22m[32m 35[2mms[22m[39m
+[31m     [31m×[31m renders correctly with initial value[39m[32m 9[2mms[22m[39m
+[31m     [31m×[31m renders with custom label[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m renders all options in select dropdown[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m calls onChange when select value changes[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m calls onCustomFilter when custom option is selected[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m renders custom option when onCustomFilter is provided[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m does not render custom option when onCustomFilter is not provided[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m shows custom as selected when customFilterActive is true[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m shows original value when customFilterActive is false[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m applies correct styling[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m handles multiple value changes[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m handles mixed selections with custom option[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m respects the label prop for accessibility[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m works without onCustomFilter prop[39m[32m 1[2mms[22m[39m
+[31m       [31m×[31m maintains custom selection when customFilterActive remains true[39m[32m 1[2mms[22m[39m
+[31m       [31m×[31m switches back to standard filter when customFilterActive becomes false[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m handles empty options array[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m handles single option[39m[32m 1[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/primitives/PageToolbar.test.js [2m([22m[2m22 tests[22m[2m | [22m[31m22 failed[39m[2m)[22m[32m 33[2mms[22m[39m
+[31m     [31m×[31m renders PageToolbar with children[39m[32m 9[2mms[22m[39m
+[31m     [31m×[31m applies correct CSS classes to PageToolbar[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m renders multiple children correctly[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m renders complex nested content[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m has semantic HTML structure[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m renders PageToolbarSection with children[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m renders PageToolbarSection with left alignment (default)[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m renders PageToolbarSection with right alignment[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m does not have justify-start when align is right[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m does not have justify-end when align is left[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m does not have justify-end when align is not specified (default left)[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m renders multiple children in section[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m has semantic HTML structure[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m combines PageToolbar and PageToolbarSection correctly[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m renders multiple sections in toolbar[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m maintains flex layout between toolbar and sections[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m handles nested toolbar content with multiple sections[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m supports icons in sections[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m renders realistic toolbar with multiple elements[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m wraps content on small screens with flex-wrap[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m applies gap spacing between sections[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m applies gap spacing within sections[39m[32m 1[2mms[22m[39m
+ [31m❯[39m app_src_backup/lib/hooks/useTouchGestures.test.ts [2m([22m[2m8 tests[22m[2m | [22m[31m8 failed[39m[2m)[22m[32m 32[2mms[22m[39m
+[31m     [31m×[31m detects left swipe gesture[39m[32m 13[2mms[22m[39m
+[31m     [31m×[31m detects right swipe gesture[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m does not trigger swipe below threshold[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m ignores vertical swipes (not configured)[39m[32m 3[2mms[22m[39m
+[31m     [31m×[31m cleans up event listeners on unmount[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m resets swipe state after gesture completes[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m handles diagonal swipes correctly based on dominant direction[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m supports custom threshold values[39m[32m 1[2mms[22m[39m
+ [31m❯[39m app_src_backup/lib/theme/useTheme.test.tsx [2m([22m[2m3 tests[22m[2m | [22m[31m3 failed[39m[2m)[22m[32m 41[2mms[22m[39m
+[31m     [31m×[31m should throw error when used outside ThemeProvider[39m[32m 30[2mms[22m[39m
+[31m     [31m×[31m should return theme context when used inside ThemeProvider[39m[32m 3[2mms[22m[39m
+[31m     [31m×[31m should allow changing theme[39m[32m 2[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/primitives/modal.test.tsx [2m([22m[2m9 tests[22m[2m | [22m[31m9 failed[39m[2m)[22m[32m 32[2mms[22m[39m
+[31m     [31m×[31m renders dialog content and closes on backdrop click[39m[32m 14[2mms[22m[39m
+[31m     [31m×[31m does not render when closed[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m renders modal subcomponents layout blocks[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m fires confirm and cancel handlers in confirm modal[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m applies scrollable overflow styles to ModalBody[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m applies sticky positioning to ModalFooter[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m applies responsive max-width classes to Modal[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m applies mobile-optimized padding to Modal backdrop[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m limits modal height to 85vh with flex layout[39m[32m 2[2mms[22m[39m
+ [31m❯[39m app_src_backup/lib/hooks/useTouchGestures.test.js [2m([22m[2m8 tests[22m[2m | [22m[31m8 failed[39m[2m)[22m[32m 24[2mms[22m[39m
+[31m     [31m×[31m detects left swipe gesture[39m[32m 11[2mms[22m[39m
+[31m     [31m×[31m detects right swipe gesture[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m does not trigger swipe below threshold[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m ignores vertical swipes (not configured)[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m cleans up event listeners on unmount[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m resets swipe state after gesture completes[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m handles diagonal swipes correctly based on dominant direction[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m supports custom threshold values[39m[32m 1[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/primitives/Switch.test.js [2m([22m[2m6 tests[22m[2m | [22m[31m6 failed[39m[2m)[22m[32m 26[2mms[22m[39m
+[31m     [31m×[31m renders unchecked switch correctly[39m[32m 12[2mms[22m[39m
+[31m     [31m×[31m renders checked switch correctly[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m calls onChange when clicked[39m[32m 3[2mms[22m[39m
+[31m     [31m×[31m renders with label text[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m disables switch when disabled prop is true[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m prefers aria-label over label for accessibility[39m[32m 1[2mms[22m[39m
+ [31m❯[39m app_src_backup/lib/theme/colorImpaired.test.ts [2m([22m[2m11 tests[22m[2m | [22m[31m4 failed[39m[2m)[22m[32m 26[2mms[22m[39m
+       [32m✓[39m should have correct storage key[32m 3[2mms[22m[39m
+       [32m✓[39m should return false when no value is stored[32m 0[2mms[22m[39m
+[31m       [31m×[31m should return true when stored value is "true"[39m[32m 11[2mms[22m[39m
+       [32m✓[39m should return false when stored value is "false"[32m 1[2mms[22m[39m
+       [32m✓[39m should return false for invalid values[32m 0[2mms[22m[39m
+       [32m✓[39m should set data-color-impaired to "true" when enabled[32m 0[2mms[22m[39m
+       [32m✓[39m should set data-color-impaired to "false" when disabled[32m 0[2mms[22m[39m
+       [32m✓[39m should not throw when document is undefined[32m 1[2mms[22m[39m
+[31m       [31m×[31m should toggle from false to true[39m[32m 2[2mms[22m[39m
+[31m       [31m×[31m should toggle from true to false[39m[32m 1[2mms[22m[39m
+[31m       [31m×[31m should persist to localStorage[39m[32m 2[2mms[22m[39m
+ [31m❯[39m app_src_backup/lib/theme/useTheme.test.js [2m([22m[2m3 tests[22m[2m | [22m[31m3 failed[39m[2m)[22m[32m 39[2mms[22m[39m
+[31m     [31m×[31m should throw error when used outside ThemeProvider[39m[32m 30[2mms[22m[39m
+[31m     [31m×[31m should return theme context when used inside ThemeProvider[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m should allow changing theme[39m[32m 1[2mms[22m[39m
+ [31m❯[39m tests/integration/subtitle-provider.test.ts [2m([22m[2m3 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[32m 20[2mms[22m[39m
+[31m     [31m×[31m should search using release name and API key from settings[39m[32m 14[2mms[22m[39m
+     [32m✓[39m should throw if API key is missing in settings[32m 3[2mms[22m[39m
+     [32m✓[39m should throw on API error[32m 1[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/subtitles/HistoryFilters.test.tsx [2m([22m[2m12 tests[22m[2m | [22m[31m12 failed[39m[2m)[22m[32m 29[2mms[22m[39m
+[31m     [31m×[31m renders all filter controls[39m[32m 8[2mms[22m[39m
+[31m     [31m×[31m renders provider options[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m renders language options[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m renders action options[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m calls onChange when provider changes[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m calls onChange when language changes[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m calls onChange when action changes[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m calls onChange when start date changes[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m calls onChange when end date changes[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m calls onChange with empty value when clearing provider[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m calls onChange with all undefined when Clear Filters is clicked[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m displays current filter values[39m[32m 1[2mms[22m[39m
+ [31m❯[39m app/src/lib/theme/colorImpaired.test.ts [2m([22m[2m11 tests[22m[2m | [22m[31m4 failed[39m[2m)[22m[32m 43[2mms[22m[39m
+       [32m✓[39m should have correct storage key[32m 5[2mms[22m[39m
+       [32m✓[39m should return false when no value is stored[32m 1[2mms[22m[39m
+[31m       [31m×[31m should return true when stored value is "true"[39m[32m 18[2mms[22m[39m
+       [32m✓[39m should return false when stored value is "false"[32m 1[2mms[22m[39m
+       [32m✓[39m should return false for invalid values[32m 1[2mms[22m[39m
+       [32m✓[39m should set data-color-impaired to "true" when enabled[32m 1[2mms[22m[39m
+       [32m✓[39m should set data-color-impaired to "false" when disabled[32m 0[2mms[22m[39m
+       [32m✓[39m should not throw when document is undefined[32m 2[2mms[22m[39m
+[31m       [31m×[31m should toggle from false to true[39m[32m 3[2mms[22m[39m
+[31m       [31m×[31m should toggle from true to false[39m[32m 3[2mms[22m[39m
+[31m       [31m×[31m should persist to localStorage[39m[32m 3[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/primitives/VirtualTable.test.js [2m([22m[2m7 tests[22m[2m | [22m[31m7 failed[39m[2m)[22m[32m 20[2mms[22m[39m
+[31m     [31m×[31m renders virtual table with header and visible rows[39m[32m 9[2mms[22m[39m
+[31m     [31m×[31m only renders visible rows in the DOM[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m handles variable row heights when rowHeight is null[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m renders correct cell content for visible rows[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m handles empty data set[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m supports row click handler[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m supports custom row className[39m[32m 1[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/import/ImportConfigPanel.test.js [2m([22m[2m12 tests[22m[2m | [22m[31m12 failed[39m[2m)[22m[32m 35[2mms[22m[39m
+[31m     [31m×[31m renders all configuration options[39m[32m 13[2mms[22m[39m
+[31m     [31m×[31m renders quality profile options[39m[32m 3[2mms[22m[39m
+[31m     [31m×[31m calls onChange when quality profile is changed[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m renders root folder options[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m calls onChange when root folder is changed[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m renders series type options[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m toggles monitored checkbox correctly[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m toggles season folder checkbox correctly[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m renders monitor new items buttons[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m highlights selected monitor new items option[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m calls onChange when monitor new items is changed[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m uses default folder option when no root folders provided[39m[32m 1[2mms[22m[39m
+ [31m❯[39m tests/prowlarr-track-phase1-task1.1-audit.test.ts [2m([22m[2m1 test[22m[2m | [22m[31m1 failed[39m[2m)[22m[32m 26[2mms[22m[39m
+[31m     [31m×[31m creates a tech stack audit document with required verification sections[39m[32m 21[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/primitives/table-memoization.test.js [2m([22m[2m6 tests[22m[2m | [22m[31m6 failed[39m[2m)[22m[32m 19[2mms[22m[39m
+[31m     [31m×[31m Table component memoizes rendering with same props[39m[32m 9[2mms[22m[39m
+[31m     [31m×[31m TableHeader memoizes with same columns prop[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m TableBody memoizes with same data and columns[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m TableRow memoizes with same children[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m TableCell memoizes with same className and children[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m prevents unnecessary re-renders when irrelevant props change[39m[32m 1[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/page/Page.test.tsx [2m([22m[2m11 tests[22m[2m | [22m[31m11 failed[39m[2m)[22m[32m 34[2mms[22m[39m
+[31m     [31m×[31m renders title[39m[32m 14[2mms[22m[39m
+[31m     [31m×[31m renders children[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m renders header actions when provided[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m does not render header actions when not provided[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m has correct container styles[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m has correct inner container padding on small screens[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m has correct inner container padding on medium screens[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m has correct inner container padding on large screens[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m has correct heading styles[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m truncates long titles[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m renders multiple children[39m[32m 1[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/primitives/selection.test.tsx [2m([22m[2m1 test[22m[2m | [22m[31m1 failed[39m[2m)[22m[32m 17[2mms[22m[39m
+[31m     [31m×[31m supports row selection and shift-click range selection[39m[32m 12[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/page/PageHeader.test.tsx [2m([22m[2m9 tests[22m[2m | [22m[31m9 failed[39m[2m)[22m[32m 32[2mms[22m[39m
+[31m     [31m×[31m renders title[39m[32m 13[2mms[22m[39m
+[31m     [31m×[31m renders menu toggle button on mobile[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m calls onMenuToggle when menu button is clicked[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m renders actions when provided[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m does not render actions when not provided[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m truncates long titles[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m has correct heading styles[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m has correct container styles[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m renders multiple actions[39m[32m 2[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/primitives/form.test.tsx [2m([22m[2m6 tests[22m[2m | [22m[31m6 failed[39m[2m)[22m[32m 19[2mms[22m[39m
+[31m     [31m×[31m renders form and form group wrappers with submit behavior[39m[32m 10[2mms[22m[39m
+[31m     [31m×[31m renders text input error messaging[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m updates value for select input[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m supports enhanced select option picking[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m updates checked value in check input[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m toggles tags in tag input[39m[32m 1[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/primitives/PageToolbarButton.test.tsx [2m([22m[2m11 tests[22m[2m | [22m[31m11 failed[39m[2m)[22m[32m 23[2mms[22m[39m
+[31m     [31m×[31m renders button with icon and label[39m[32m 9[2mms[22m[39m
+[31m     [31m×[31m renders custom aria label when provided[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m calls onClick when clicked[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m is disabled when disabled prop is true[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m does not call onClick when disabled[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m shows loading state with spinning icon[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m shows active state when isActive prop is true[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m hides label on small screens[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m has focus ring on keyboard focus[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m has transition effects[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m shows hover effect on non-active state[39m[32m 1[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/wanted/ReleaseDateCell.test.js [2m([22m[2m5 tests[22m[2m | [22m[31m5 failed[39m[2m)[22m[32m 20[2mms[22m[39m
+[31m     [31m×[31m renders all release dates when provided[39m[32m 10[2mms[22m[39m
+[31m     [31m×[31m renders only cinema date when provided[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m renders only digital date when provided[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m renders only physical date when provided[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m renders all dashes when no dates provided[39m[32m 1[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/import/ImportConfigPanel.test.tsx [2m([22m[2m12 tests[22m[2m | [22m[31m12 failed[39m[2m)[22m[32m 36[2mms[22m[39m
+[31m     [31m×[31m renders all configuration options[39m[32m 14[2mms[22m[39m
+[31m     [31m×[31m renders quality profile options[39m[32m 3[2mms[22m[39m
+[31m     [31m×[31m calls onChange when quality profile is changed[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m renders root folder options[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m calls onChange when root folder is changed[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m renders series type options[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m toggles monitored checkbox correctly[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m toggles season folder checkbox correctly[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m renders monitor new items buttons[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m highlights selected monitor new items option[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m calls onChange when monitor new items is changed[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m uses default folder option when no root folders provided[39m[32m 1[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/primitives/Switch.test.tsx [2m([22m[2m6 tests[22m[2m | [22m[31m6 failed[39m[2m)[22m[32m 28[2mms[22m[39m
+[31m     [31m×[31m renders unchecked switch correctly[39m[32m 13[2mms[22m[39m
+[31m     [31m×[31m renders checked switch correctly[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m calls onChange when clicked[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m renders with label text[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m disables switch when disabled prop is true[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m prefers aria-label over label for accessibility[39m[32m 2[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/page/PageHeader.test.js [2m([22m[2m9 tests[22m[2m | [22m[31m9 failed[39m[2m)[22m[32m 32[2mms[22m[39m
+[31m     [31m×[31m renders title[39m[32m 13[2mms[22m[39m
+[31m     [31m×[31m renders menu toggle button on mobile[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m calls onMenuToggle when menu button is clicked[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m renders actions when provided[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m does not render actions when not provided[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m truncates long titles[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m has correct heading styles[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m has correct container styles[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m renders multiple actions[39m[32m 2[2mms[22m[39m
+ [31m❯[39m app_src_backup/lib/theme/ThemeProvider.test.tsx [2m([22m[2m6 tests[22m[2m | [22m[31m6 failed[39m[2m)[22m[32m 21[2mms[22m[39m
+[31m     [31m×[31m should provide default theme context[39m[32m 11[2mms[22m[39m
+[31m     [31m×[31m should load theme from localStorage[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m should set theme and update document[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m should toggle between light and dark themes[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m should persist theme to localStorage[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m should use system theme when theme is "auto"[39m[32m 1[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/subtitles/WantedCountBadge.test.tsx [2m([22m[2m5 tests[22m[2m | [22m[31m5 failed[39m[2m)[22m[32m 17[2mms[22m[39m
+[31m     [31m×[31m should not render when count is 0[39m[32m 9[2mms[22m[39m
+[31m     [31m×[31m should render count badge with positive count[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m should not render when data is undefined[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m should apply custom className[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m should poll every 30 seconds[39m[32m 1[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/primitives/PageToolbarButton.test.js [2m([22m[2m11 tests[22m[2m | [22m[31m11 failed[39m[2m)[22m[32m 32[2mms[22m[39m
+[31m     [31m×[31m renders button with icon and label[39m[32m 12[2mms[22m[39m
+[31m     [31m×[31m renders custom aria label when provided[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m calls onClick when clicked[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m is disabled when disabled prop is true[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m does not call onClick when disabled[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m shows loading state with spinning icon[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m shows active state when isActive prop is true[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m hides label on small screens[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m has focus ring on keyboard focus[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m has transition effects[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m shows hover effect on non-active state[39m[32m 1[2mms[22m[39m
+ [31m❯[39m app/src/lib/prowlarr-routes.test.ts [2m([22m[2m4 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[32m 35[2mms[22m[39m
+     [32m✓[39m contains major prowlarr route paths[32m 6[2mms[22m[39m
+     [32m✓[39m does not contain duplicate paths[32m 1[2mms[22m[39m
+[31m     [31m×[31m exposes major settings and system routes in navigation[39m[32m 23[2mms[22m[39m
+     [32m✓[39m keeps active navigation highlighting for nested routes[32m 1[2mms[22m[39m
+ [31m❯[39m app_src_backup/lib/hooks/useLocalStorage.test.ts [2m([22m[2m7 tests[22m[2m | [22m[31m7 failed[39m[2m)[22m[32m 20[2mms[22m[39m
+[31m     [31m×[31m returns initial value when localStorage is empty[39m[32m 9[2mms[22m[39m
+[31m     [31m×[31m reads existing value from localStorage[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m updates localStorage when value changes[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m supports functional updates[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m persists objects correctly[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m persists arrays correctly[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m handles JSON parse errors gracefully[39m[32m 1[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/page/PageContent.test.js [2m([22m[2m6 tests[22m[2m | [22m[31m6 failed[39m[2m)[22m[32m 35[2mms[22m[39m
+[31m     [31m×[31m renders children without title[39m[32m 15[2mms[22m[39m
+[31m     [31m×[31m renders title when provided[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m has correct heading styles[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m applies default layout classes[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m applies custom className[39m[32m 3[2mms[22m[39m
+[31m     [31m×[31m renders multiple children[39m[32m 2[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/primitives/form.test.js [2m([22m[2m6 tests[22m[2m | [22m[31m6 failed[39m[2m)[22m[32m 32[2mms[22m[39m
+[31m     [31m×[31m renders form and form group wrappers with submit behavior[39m[32m 16[2mms[22m[39m
+[31m     [31m×[31m renders text input error messaging[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m updates value for select input[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m supports enhanced select option picking[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m updates checked value in check input[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m toggles tags in tag input[39m[32m 1[2mms[22m[39m
+ [31m❯[39m app_src_backup/lib/hooks/useLocalStorage.test.js [2m([22m[2m7 tests[22m[2m | [22m[31m7 failed[39m[2m)[22m[32m 21[2mms[22m[39m
+[31m     [31m×[31m returns initial value when localStorage is empty[39m[32m 10[2mms[22m[39m
+[31m     [31m×[31m reads existing value from localStorage[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m updates localStorage when value changes[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m supports functional updates[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m persists objects correctly[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m persists arrays correctly[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m handles JSON parse errors gracefully[39m[32m 1[2mms[22m[39m
+ [31m❯[39m tests/subtitle-provider-factory.test.js [2m([22m[2m2 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[32m 28[2mms[22m[39m
+     [32m✓[39m should resolve providers from runtime config[32m 5[2mms[22m[39m
+[31m     [31m×[31m should run manual search/download without per-call provider injection[39m[32m 19[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/primitives/special-inputs.test.tsx [2m([22m[2m4 tests[22m[2m | [22m[31m4 failed[39m[2m)[22m[32m 20[2mms[22m[39m
+[31m     [31m×[31m toggles password visibility and propagates input changes[39m[32m 11[2mms[22m[39m
+[31m     [31m×[31m supports path input editing and browse action callback[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m normalizes numeric input values within bounds[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m filters autocomplete suggestions and selects an option[39m[32m 2[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/subtitles/WantedCountBadge.test.js [2m([22m[2m5 tests[22m[2m | [22m[31m5 failed[39m[2m)[22m[32m 23[2mms[22m[39m
+[31m     [31m×[31m should not render when count is 0[39m[32m 12[2mms[22m[39m
+[31m     [31m×[31m should render count badge with positive count[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m should not render when data is undefined[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m should apply custom className[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m should poll every 30 seconds[39m[32m 1[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/primitives/table-pager.test.js [2m([22m[2m1 test[22m[2m | [22m[31m1 failed[39m[2m)[22m[32m 20[2mms[22m[39m
+[31m     [31m×[31m renders navigation controls and page-size selector[39m[32m 14[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/page/PageContentBody.test.tsx [2m([22m[2m4 tests[22m[2m | [22m[31m4 failed[39m[2m)[22m[32m 20[2mms[22m[39m
+[31m     [31m×[31m renders children correctly[39m[32m 11[2mms[22m[39m
+[31m     [31m×[31m applies default classes[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m applies custom className[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m has scrollbar styling classes[39m[32m 1[2mms[22m[39m
+ [31m❯[39m app/src/lib/hooks/useLocalStorage.test.ts [2m([22m[2m7 tests[22m[2m | [22m[31m7 failed[39m[2m)[22m[32m 20[2mms[22m[39m
+[31m     [31m×[31m returns initial value when localStorage is empty[39m[32m 9[2mms[22m[39m
+[31m     [31m×[31m reads existing value from localStorage[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m updates localStorage when value changes[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m supports functional updates[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m persists objects correctly[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m persists arrays correctly[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m handles JSON parse errors gracefully[39m[32m 1[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/primitives/VirtualTable.test.tsx [2m([22m[2m7 tests[22m[2m | [22m[31m7 failed[39m[2m)[22m[32m 36[2mms[22m[39m
+[31m     [31m×[31m renders virtual table with header and visible rows[39m[32m 17[2mms[22m[39m
+[31m     [31m×[31m only renders visible rows in the DOM[39m[32m 3[2mms[22m[39m
+[31m     [31m×[31m handles variable row heights when rowHeight is null[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m renders correct cell content for visible rows[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m handles empty data set[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m supports row click handler[39m[32m 3[2mms[22m[39m
+[31m     [31m×[31m supports custom row className[39m[32m 1[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/movie/CastCard.test.js [2m([22m[2m2 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[32m 20[2mms[22m[39m
+[31m     [31m×[31m renders cast member with profile image[39m[32m 12[2mms[22m[39m
+[31m     [31m×[31m renders placeholder when no profile image[39m[32m 2[2mms[22m[39m
+ [31m❯[39m app_src_backup/lib/theme/ThemeProvider.test.js [2m([22m[2m6 tests[22m[2m | [22m[31m6 failed[39m[2m)[22m[32m 21[2mms[22m[39m
+[31m     [31m×[31m should provide default theme context[39m[32m 11[2mms[22m[39m
+[31m     [31m×[31m should load theme from localStorage[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m should set theme and update document[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m should toggle between light and dark themes[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m should persist theme to localStorage[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m should use system theme when theme is "auto"[39m[32m 1[2mms[22m[39m
+ [31m❯[39m tests/wanted-search-service.test.ts [2m([22m[2m2 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[32m 23[2mms[22m[39m
+[31m     [31m×[31m should trigger search for a movie and grab the best candidate above threshold[39m[32m 16[2mms[22m[39m
+[31m     [31m×[31m should skip grabbing if best candidate is below threshold[39m[32m 3[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/primitives/PageToolbarSeparator.test.tsx [2m([22m[2m4 tests[22m[2m | [22m[31m4 failed[39m[2m)[22m[32m 16[2mms[22m[39m
+[31m     [31m×[31m renders separator element[39m[32m 8[2mms[22m[39m
+[31m     [31m×[31m has correct dimensions[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m has correct color[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m has separator role for accessibility[39m[32m 1[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/wanted/ReleaseDateCell.test.tsx [2m([22m[2m5 tests[22m[2m | [22m[31m5 failed[39m[2m)[22m[32m 25[2mms[22m[39m
+[31m     [31m×[31m renders all release dates when provided[39m[32m 12[2mms[22m[39m
+[31m     [31m×[31m renders only cinema date when provided[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m renders only digital date when provided[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m renders only physical date when provided[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m renders all dashes when no dates provided[39m[32m 1[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/page/PageContentBody.test.js [2m([22m[2m4 tests[22m[2m | [22m[31m4 failed[39m[2m)[22m[32m 26[2mms[22m[39m
+[31m     [31m×[31m renders children correctly[39m[32m 13[2mms[22m[39m
+[31m     [31m×[31m applies default classes[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m applies custom className[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m has scrollbar styling classes[39m[32m 2[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/primitives/special-inputs.test.js [2m([22m[2m4 tests[22m[2m | [22m[31m4 failed[39m[2m)[22m[32m 19[2mms[22m[39m
+[31m     [31m×[31m toggles password visibility and propagates input changes[39m[32m 11[2mms[22m[39m
+[31m     [31m×[31m supports path input editing and browse action callback[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m normalizes numeric input values within bounds[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m filters autocomplete suggestions and selects an option[39m[32m 1[2mms[22m[39m
+ [31m❯[39m tests/database-migration.test.js [2m([22m[2m2 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[32m 28[2mms[22m[39m
+     [32m✓[39m should have migration files in prisma/migrations[32m 5[2mms[22m[39m
+[31m     [31m×[31m should have a dev.db database file[39m[32m 19[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/primitives/core-primitives.test.js [2m([22m[2m4 tests[22m[2m | [22m[31m4 failed[39m[2m)[22m[32m 24[2mms[22m[39m
+[31m     [31m×[31m renders button variants and click interactions[39m[32m 13[2mms[22m[39m
+[31m     [31m×[31m renders icon from lucide set with accessible label[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m renders alert variants with semantic tone classes[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m renders label badge variants[39m[32m 2[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/primitives/core-primitives.test.tsx [2m([22m[2m4 tests[22m[2m | [22m[31m4 failed[39m[2m)[22m[32m 25[2mms[22m[39m
+[31m     [31m×[31m renders button variants and click interactions[39m[32m 14[2mms[22m[39m
+[31m     [31m×[31m renders icon from lucide set with accessible label[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m renders alert variants with semantic tone classes[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m renders label badge variants[39m[32m 2[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/primitives/filter-builder.test.tsx [2m([22m[2m1 test[22m[2m | [22m[31m1 failed[39m[2m)[22m[32m 13[2mms[22m[39m
+[31m     [31m×[31m builds and submits AND/OR filter groups[39m[32m 10[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/filters/FilterBuilder.test.js [2m([22m[2m2 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[32m 24[2mms[22m[39m
+[31m     [31m×[31m adds conditions and applies custom filters[39m[32m 14[2mms[22m[39m
+[31m     [31m×[31m saves and deletes a named filter[39m[32m 4[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/filters/FilterBuilder.test.tsx [2m([22m[2m2 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[32m 23[2mms[22m[39m
+[31m     [31m×[31m adds conditions and applies custom filters[39m[32m 14[2mms[22m[39m
+[31m     [31m×[31m saves and deletes a named filter[39m[32m 3[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/primitives/PageToolbarSeparator.test.js [2m([22m[2m4 tests[22m[2m | [22m[31m4 failed[39m[2m)[22m[32m 34[2mms[22m[39m
+[31m     [31m×[31m renders separator element[39m[32m 18[2mms[22m[39m
+[31m     [31m×[31m has correct dimensions[39m[32m 3[2mms[22m[39m
+[31m     [31m×[31m has correct color[39m[32m 3[2mms[22m[39m
+[31m     [31m×[31m has separator role for accessibility[39m[32m 2[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/series/ColumnPicker.test.js [2m([22m[2m1 test[22m[2m | [22m[31m1 failed[39m[2m)[22m[32m 20[2mms[22m[39m
+[31m     [31m×[31m toggles visible table columns[39m[32m 13[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/movie/AlternateTitleTable.test.tsx [2m([22m[2m2 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[32m 17[2mms[22m[39m
+[31m     [31m×[31m renders list of alternate titles[39m[32m 11[2mms[22m[39m
+[31m     [31m×[31m shows empty message when no titles[39m[32m 2[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/movie/AlternateTitleTable.test.js [2m([22m[2m2 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[32m 25[2mms[22m[39m
+[31m     [31m×[31m renders list of alternate titles[39m[32m 14[2mms[22m[39m
+[31m     [31m×[31m shows empty message when no titles[39m[32m 2[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/series/ColumnPicker.test.tsx [2m([22m[2m1 test[22m[2m | [22m[31m1 failed[39m[2m)[22m[32m 14[2mms[22m[39m
+[31m     [31m×[31m toggles visible table columns[39m[32m 9[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/wanted/QualityComparison.test.tsx [2m([22m[2m3 tests[22m[2m | [22m[31m3 failed[39m[2m)[22m[32m 14[2mms[22m[39m
+[31m     [31m×[31m renders current and cutoff quality with arrow[39m[32m 8[2mms[22m[39m
+[31m     [31m×[31m renders with custom className[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m renders complex quality strings[39m[32m 1[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/primitives/selection.test.js [2m([22m[2m1 test[22m[2m | [22m[31m1 failed[39m[2m)[22m[32m 19[2mms[22m[39m
+[31m     [31m×[31m supports row selection and shift-click range selection[39m[32m 13[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/wanted/QualityComparison.test.js [2m([22m[2m3 tests[22m[2m | [22m[31m3 failed[39m[2m)[22m[32m 21[2mms[22m[39m
+[31m     [31m×[31m renders current and cutoff quality with arrow[39m[32m 12[2mms[22m[39m
+[31m     [31m×[31m renders with custom className[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m renders complex quality strings[39m[32m 1[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/series/JumpBar.test.tsx [2m([22m[2m1 test[22m[2m | [22m[31m1 failed[39m[2m)[22m[32m 18[2mms[22m[39m
+[31m     [31m×[31m renders jump options and selects a letter[39m[32m 12[2mms[22m[39m
+ [31m❯[39m app_src_backup/app/(shell)/queue/queue-actions.test.tsx [2m([22m[2m3 tests[22m[2m | [22m[31m3 failed[39m[2m)[22m[32m 23[2mms[22m[39m
+[31m     [31m×[31m calls pause API when Pause button clicked[39m[32m 12[2mms[22m[39m
+[31m     [31m×[31m calls resume API when Resume button clicked[39m[32m 3[2mms[22m[39m
+[31m     [31m×[31m calls remove API when Remove button clicked[39m[32m 2[2mms[22m[39m
+ [31m❯[39m app_src_backup/lib/state/useUIStore.test.tsx [2m([22m[2m2 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[32m 16[2mms[22m[39m
+[31m     [31m×[31m hydrates initial state from localStorage when available[39m[32m 9[2mms[22m[39m
+[31m     [31m×[31m updates state and persists sidebar collapsed changes[39m[32m 1[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/series/JumpBar.test.js [2m([22m[2m1 test[22m[2m | [22m[31m1 failed[39m[2m)[22m[32m 25[2mms[22m[39m
+[31m     [31m×[31m renders jump options and selects a letter[39m[32m 18[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/primitives/filter-builder.test.js [2m([22m[2m1 test[22m[2m | [22m[31m1 failed[39m[2m)[22m[32m 16[2mms[22m[39m
+[31m     [31m×[31m builds and submits AND/OR filter groups[39m[32m 11[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/movie/CastCard.test.tsx [2m([22m[2m2 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[32m 17[2mms[22m[39m
+[31m     [31m×[31m renders cast member with profile image[39m[32m 10[2mms[22m[39m
+[31m     [31m×[31m renders placeholder when no profile image[39m[32m 1[2mms[22m[39m
+ [31m❯[39m app_src_backup/components/primitives/table-pager.test.tsx [2m([22m[2m1 test[22m[2m | [22m[31m1 failed[39m[2m)[22m[32m 20[2mms[22m[39m
+[31m     [31m×[31m renders navigation controls and page-size selector[39m[32m 13[2mms[22m[39m
+ [31m❯[39m app_src_backup/lib/uiPreferences.test.ts [2m([22m[2m3 tests[22m[2m | [22m[31m3 failed[39m[2m)[22m[32m 12[2mms[22m[39m
+[31m     [31m×[31m loads default preferences when storage is empty[39m[32m 7[2mms[22m[39m
+[31m     [31m×[31m saves and loads preferences from storage[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m applies theme and color impaired attributes to document root[39m[32m 1[2mms[22m[39m
+ [31m❯[39m app/src/lib/uiPreferences.test.ts [2m([22m[2m3 tests[22m[2m | [22m[31m3 failed[39m[2m)[22m[32m 18[2mms[22m[39m
+[31m     [31m×[31m loads default preferences when storage is empty[39m[32m 11[2mms[22m[39m
+[31m     [31m×[31m saves and loads preferences from storage[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m applies theme and color impaired attributes to document root[39m[32m 2[2mms[22m[39m
+ [31m❯[39m app_src_backup/lib/state/useUIStore.test.js [2m([22m[2m2 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[32m 13[2mms[22m[39m
+[31m     [31m×[31m hydrates initial state from localStorage when available[39m[32m 8[2mms[22m[39m
+[31m     [31m×[31m updates state and persists sidebar collapsed changes[39m[32m 1[2mms[22m[39m
+ [31m❯[39m app_src_backup/lib/uiPreferences.test.js [2m([22m[2m3 tests[22m[2m | [22m[31m3 failed[39m[2m)[22m[32m 19[2mms[22m[39m
+[31m     [31m×[31m loads default preferences when storage is empty[39m[32m 11[2mms[22m[39m
+[31m     [31m×[31m saves and loads preferences from storage[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m applies theme and color impaired attributes to document root[39m[32m 2[2mms[22m[39m
+ [31m❯[39m tests/activity-event-repository.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m tests/app-settings-repository.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m tests/category-seed.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m tests/indexer-health-repository.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m tests/indexer-repository.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m tests/media-models.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m tests/movie-models.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m tests/prisma-init.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m tests/subtitle-audio-engine.integration.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m tests/subtitle-inventory-api-service.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m tests/subtitle-variant-repository.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m tests/subtitle-variant-schema.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m tests/torrent-repository.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m tests/torrent-schema.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m tests/tv-models.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m tests/variant-backfill-service.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m tests/variant-inventory-indexer.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m tests/variant-missing-subtitle-service.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m tests/variant-subtitle-fetch-service.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m tests/variant-wanted-service.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/activity/ActivityEventBadge.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/activity/ActivityEventBadge.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/activity/MovieCell.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/activity/MovieCell.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/activity/QueueRemoveModal.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/activity/QueueRemoveModal.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/add/SearchResultCard.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/add/SearchResultCard.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/add/SeriesMonitoringOptionsPopover.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/add/SeriesMonitoringOptionsPopover.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/add/SeriesTypePopover.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/add/SeriesTypePopover.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/collections/CollectionCard.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/collections/CollectionCard.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/collections/CollectionGrid.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/collections/CollectionGrid.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/collections/EditCollectionModal.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/collections/EditCollectionModal.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/discover/DiscoverFilters.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/discover/DiscoverFilters.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/import/FolderScanner.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/import/FolderScanner.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/import/ImportSeriesRow.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/import/ImportSeriesRow.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/import/ImportSeriesTable.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/import/ImportSeriesTable.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/import/ManualMatchModal.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/import/ManualMatchModal.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/movie/MovieActionsToolbar.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/movie/MovieActionsToolbar.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/movie/MovieDetailHeader.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/movie/MovieDetailHeader.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/movie/MovieFileTable.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/movie/MovieFileTable.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/movie/MovieHistory.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/movie/MovieHistory.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/movie/MovieInteractiveSearchModal.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/movie/MovieInteractiveSearchModal.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/search/InteractiveSearchModal.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/search/InteractiveSearchModal.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/settings/ConfigurableItemModal.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/settings/ConfigurableItemModal.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/shell/PageLayout.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/shell/PageLayout.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/shell/PageSidebar.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/shell/PageSidebar.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/shell/app-shell.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/shell/app-shell.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/shell/page-layout.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/shell/page-layout.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/primitives/primitives.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/primitives/primitives.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/primitives/table-options-modal.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/primitives/table-options-modal.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/views/MovieOverviewView.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/views/MovieOverviewView.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/views/MoviePosterView.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/views/MoviePosterView.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/views/SeriesOverviewView.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/views/SeriesOverviewView.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/views/SeriesPosterView.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/views/SeriesPosterView.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/wanted/WantedMovieRow.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/wanted/WantedMovieRow.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/subtitles/LanguageSelector.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/subtitles/LanguageSelector.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/subtitles/LanguageSettingRow.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/subtitles/LanguageSettingRow.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/subtitles/ManualSearchModal.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/subtitles/ManualSearchModal.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/subtitles/MovieActionsToolbar.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/subtitles/MovieActionsToolbar.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/subtitles/ProfileEditorModal.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/subtitles/ProfileEditorModal.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/subtitles/ProviderSettingsModal.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/subtitles/ProviderSettingsModal.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/subtitles/ProviderStatusBadge.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/subtitles/ProviderStatusBadge.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/subtitles/ProviderTestResult.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/subtitles/ProviderTestResult.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/subtitles/SearchProgressIndicator.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/subtitles/SearchProgressIndicator.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/subtitles/SubtitleProgressBar.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/subtitles/SubtitleProgressBar.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/subtitles/SubtitleTrackList.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/subtitles/SubtitleTrackList.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/subtitles/SubtitleUpload.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/components/subtitles/SubtitleUpload.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/lib/events/useEventsCacheBridge.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/lib/events/useEventsCacheBridge.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/lib/hooks/useMediaQuery.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/lib/hooks/useMediaQuery.test.ts [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/e2e-journeys.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/e2e-journeys.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/prowlarr-route-scaffolds.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/prowlarr-route-scaffolds.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app/src/lib/hooks/useMediaQuery.test.ts [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/calendar/CalendarMovieEvent.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/calendar/CalendarMovieEvent.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/calendar/CalendarOptionsModal.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/calendar/CalendarOptionsModal.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/calendar/page.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/calendar/page.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/collections/page.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/collections/page.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/history/page.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/history/page.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/indexers/AddIndexerModal.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/indexers/AddIndexerModal.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/indexers/EditIndexerModal.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/indexers/EditIndexerModal.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/indexers/page.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/indexers/page.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/search/page.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/search/page.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/settings/page.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/settings/page.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/settings/settings-form.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/settings/settings-form.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/subtitles/page.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/subtitles/page.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/wanted/MovieCutoffUnmetTab.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/wanted/MovieCutoffUnmetTab.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/wanted/MovieMissingTab.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/wanted/MovieMissingTab.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/wanted/page.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/wanted/page.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/add/page.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/add/page.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/activity/blocklist/page.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/activity/blocklist/page.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/indexers/stats/page.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/indexers/stats/page.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/library/movies/page.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/library/movies/page.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/library/series/page.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/library/series/page.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/settings/connect/page.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/settings/connect/page.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/settings/downloadclients/page.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/settings/downloadclients/page.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/settings/general/page.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/settings/general/page.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/settings/indexers/page.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/settings/indexers/page.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/settings/profiles/page.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/settings/profiles/page.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/settings/subtitles/page.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/settings/subtitles/page.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/settings/ui/page.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/settings/ui/page.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/subtitles/profiles/page.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/subtitles/profiles/page.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/subtitles/providers/page.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/subtitles/providers/page.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/subtitles/movies/page.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/subtitles/movies/page.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/system/backup/page.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/system/backup/page.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/system/events/page.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/system/events/page.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/system/status/HealthCheck.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/system/status/HealthCheck.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/system/status/page.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/system/status/page.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/system/tasks/page.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/system/tasks/page.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/system/updates/page.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/system/updates/page.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/add/discover/page.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/add/discover/page.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/add/import/page.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/add/import/page.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/library/movies/[id]/page.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/library/movies/[id]/page.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/library/series/[id]/page.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/library/series/[id]/page.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/subtitles/blacklist/movies/page.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/subtitles/blacklist/movies/page.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/subtitles/blacklist/series/page.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/subtitles/blacklist/series/page.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/subtitles/history/movies/page.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/subtitles/history/movies/page.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/subtitles/history/series/page.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/subtitles/history/series/page.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/subtitles/history/stats/page.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/subtitles/history/stats/page.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/subtitles/wanted/movies/page.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/subtitles/wanted/movies/page.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/subtitles/wanted/series/page.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/subtitles/wanted/series/page.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/subtitles/movies/[id]/page.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/subtitles/movies/[id]/page.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/subtitles/movies/edit/page.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/subtitles/movies/edit/page.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/system/logs/files/page.test.js [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m app_src_backup/app/(shell)/system/logs/files/page.test.tsx [2m([22m[2m0 test[22m[2m)[22m
+ [32m✓[39m server/src/services/WantedSearchService.autoSearchSeries.test.ts [2m([22m[2m13 tests[22m[2m)[22m[33m 12057[2mms[22m[39m
+     [33m[2m✓[22m[39m BUG: ended series — specials are still searched after series pack is grabbed [33m 2006[2mms[22m[39m
+     [33m[2m✓[22m[39m falls through to per-season logic when no series pack is found for an ended series [33m 2004[2mms[22m[39m
+     [33m[2m✓[22m[39m does not attempt a series pack for a continuing series [33m 2005[2mms[22m[39m
+     [33m[2m✓[22m[39m grabs a season pack when all episodes in a season have aired [33m 2004[2mms[22m[39m
+     [33m[2m✓[22m[39m falls back to individual episodes when no season pack is found [33m 4005[2mms[22m[39m
+ [32m✓[39m tests/api-system-routes.test.ts [2m([22m[2m41 tests[22m[2m)[22m[33m 12072[2mms[22m[39m
+       [33m[2m✓[22m[39m returns system status envelope [33m 738[2mms[22m[39m
+       [33m[2m✓[22m[39m returns scheduled tasks envelope [33m 466[2mms[22m[39m
+       [33m[2m✓[22m[39m returns empty queued tasks initially [33m 341[2mms[22m[39m
+       [33m[2m✓[22m[39m returns paginated task history envelope [33m 351[2mms[22m[39m
+       [33m[2m✓[22m[39m filters task history by status [33m 309[2mms[22m[39m
+       [33m[2m✓[22m[39m queues a scheduled task for execution [33m 316[2mms[22m[39m
+       [33m[2m✓[22m[39m returns 404 for non-existent queued task [33m 335[2mms[22m[39m
+       [33m[2m✓[22m[39m returns paginated system events envelope [33m 395[2mms[22m[39m
+       [33m[2m✓[22m[39m filters events by level [33m 316[2mms[22m[39m
+       [33m[2m✓[22m[39m filters events by type [33m 304[2mms[22m[39m
+       [33m[2m✓[22m[39m clears all events when no filters provided [33m 301[2mms[22m[39m
+       [33m[2m✓[22m[39m restores from a backup [33m 309[2mms[22m[39m
+       [33m[2m✓[22m[39m returns 404 for non-existent backup [33m 303[2mms[22m[39m
+ [32m✓[39m tests/process-model-spike.test.js [2m([22m[2m1 test[22m[2m)[22m[33m 4216[2mms[22m[39m
+     [33m[2m✓[22m[39m should expose health endpoint and keep heartbeat counter monotonic across requests [33m 4211[2mms[22m[39m
+ [32m✓[39m tests/prisma-schema.test.js [2m([22m[2m1 test[22m[2m)[22m[33m 3070[2mms[22m[39m
+     [33m[2m✓[22m[39m should be a valid schema [33m 3066[2mms[22m[39m
+ [32m✓[39m tests/api-settings-general.test.ts [2m([22m[2m15 tests[22m[2m)[22m[33m 4568[2mms[22m[39m
+       [33m[2m✓[22m[39m returns all settings sections including host/security/logging/update [33m 856[2mms[22m[39m
+       [33m[2m✓[22m[39m preserves host settings in PATCH->GET round-trip [33m 462[2mms[22m[39m
+       [33m[2m✓[22m[39m preserves security settings in PATCH->GET round-trip [33m 441[2mms[22m[39m
+       [33m[2m✓[22m[39m preserves logging settings in PATCH->GET round-trip [33m 467[2mms[22m[39m
+       [33m[2m✓[22m[39m preserves update settings in PATCH->GET round-trip [33m 378[2mms[22m[39m
+       [33m[2m✓[22m[39m supports partial updates within a section [33m 309[2mms[22m[39m
+       [33m[2m✓[22m[39m maintains backward compatibility when new fields are absent [33m 302[2mms[22m[39m
+       [33m[2m✓[22m[39m returns a download URL that points to a working route [33m 319[2mms[22m[39m
+       [33m[2m✓[22m[39m returns 404 for non-existent file in raw endpoint [33m 319[2mms[22m[39m
+       [33m[2m✓[22m[39m serves raw log file content with proper headers [33m 313[2mms[22m[39m
+       [33m[2m✓[22m[39m handles URL-encoded filenames correctly [33m 388[2mms[22m[39m
+ [32m✓[39m tests/api-search.test.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 1925[2mms[22m[39m
+     [33m[2m✓[22m[39m should search for both TV and movies via GET /api/search [33m 885[2mms[22m[39m
+     [33m[2m✓[22m[39m should filter by mediaType if provided [33m 476[2mms[22m[39m
+     [33m[2m✓[22m[39m should return error if term is missing or empty [33m 558[2mms[22m[39m
+ [32m✓[39m tests/api-wanted.test.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 1324[2mms[22m[39m
+     [33m[2m✓[22m[39m should add a movie to wanted via POST /api/wanted [33m 699[2mms[22m[39m
+     [33m[2m✓[22m[39m should add a series to wanted via POST /api/wanted [33m 310[2mms[22m[39m
+     [33m[2m✓[22m[39m should return 409 Conflict if media already exists [33m 310[2mms[22m[39m
+ [32m✓[39m server/src/api/routes/systemRoutes.test.ts [2m([22m[2m40 tests[22m[2m)[22m[33m 1318[2mms[22m[39m
+ [32m✓[39m tests/api-events-stream.test.ts [2m([22m[2m2 tests[22m[2m)[22m[33m 652[2mms[22m[39m
+     [33m[2m✓[22m[39m createApiServer emits torrent/activity/health updates through event hub polling [33m 574[2mms[22m[39m
+ [32m✓[39m server/src/api/routes/subtitleRoutes.phase3.test.ts [2m([22m[2m10 tests[22m[2m)[22m[33m 604[2mms[22m[39m
+ [32m✓[39m server/src/api/playbackStreaming.integration.test.ts [2m([22m[2m1 test[22m[2m)[22m[33m 580[2mms[22m[39m
+     [33m[2m✓[22m[39m serves 206 Partial Content through the full api server wiring [33m 576[2mms[22m[39m
+ [32m✓[39m server/src/api/routes/seriesRoutes.search.test.ts [2m([22m[2m6 tests[22m[2m)[22m[33m 505[2mms[22m[39m
+ [32m✓[39m server/src/api/routes/calendarRoutes.test.ts [2m([22m[2m10 tests[22m[2m)[22m[33m 394[2mms[22m[39m
+ [32m✓[39m server/src/api/routes/mediaRoutes.rootFolder.test.ts [2m([22m[2m6 tests[22m[2m)[22m[33m 385[2mms[22m[39m
+ [32m✓[39m server/src/api/routes/playbackRoutes.test.ts [2m([22m[2m7 tests[22m[2m)[22m[33m 368[2mms[22m[39m
+ [32m✓[39m server/src/api/routes/collectionRoutes.create.test.ts [2m([22m[2m5 tests[22m[2m)[22m[33m 379[2mms[22m[39m
+ [32m✓[39m server/src/api/routes/subtitleRoutes.scan.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 277[2mms[22m[39m
+ [32m✓[39m server/src/api/routes/torrentRoutes.retryImport.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 237[2mms[22m[39m
+ [32m✓[39m server/src/api/routes/operationsRoutes.settings.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 285[2mms[22m[39m
+ [32m✓[39m server/src/api/routes/categorySettingsRoutes.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 293[2mms[22m[39m
+ [32m✓[39m server/src/api/routes/movieRoutes.search.test.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 305[2mms[22m[39m
+ [32m✓[39m server/src/api/routes/proxySettingsRoutes.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 250[2mms[22m[39m
+ [32m✓[39m server/src/api/routes/filterRoutes.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 241[2mms[22m[39m
+ [32m✓[39m server/src/api/routes/filesystemRoutes.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 265[2mms[22m[39m
+ [32m✓[39m server/src/api/routes/operationsRoutes.retryImport.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 201[2mms[22m[39m
+ [32m✓[39m server/src/api/routes/indexerRoutes.schema.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 250[2mms[22m[39m
+ [32m✓[39m server/src/api/routes/movieRoutes.collection.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 245[2mms[22m[39m
+ [32m✓[39m tests/encryption.test.js [2m([22m[2m3 tests[22m[2m)[22m[32m 188[2mms[22m[39m
+ [32m✓[39m server/src/api/routes/releaseRoutes.customFormat.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 202[2mms[22m[39m
+ [32m✓[39m server/src/api/staticServing.test.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 211[2mms[22m[39m
+ [32m✓[39m server/src/indexers/cardigann-conformance/definitionFeatureInventory.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 181[2mms[22m[39m
+ [32m✓[39m server/src/api/routes/indexerRoutes.clone.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 174[2mms[22m[39m
+ [32m✓[39m server/src/api/routes/mediaSettingsRoutes.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 153[2mms[22m[39m
+[90mstdout[2m | tests/seeding-protector.test.js[2m > [22m[2mSeedingProtector[2m > [22m[2mshould stop torrent when ratio limit is reached
+[22m[39mSeedingProtector: Stopped torrent abc due to limits reached.
+
+[90mstdout[2m | tests/seeding-protector.test.js[2m > [22m[2mSeedingProtector[2m > [22m[2mshould stop torrent when time limit is reached
+[22m[39mSeedingProtector: Stopped torrent def due to limits reached.
+
+ [32m✓[39m tests/seeding-protector.test.js [2m([22m[2m4 tests[22m[2m)[22m[32m 108[2mms[22m[39m
+ [32m✓[39m server/src/api/routes/dashboardRoutes.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 128[2mms[22m[39m
+ [32m✓[39m tests/scheduler.test.js [2m([22m[2m9 tests[22m[2m)[22m[32m 95[2mms[22m[39m
+ [32m✓[39m server/src/services/ImportManager.test.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 93[2mms[22m[39m
+ [32m✓[39m server/src/api/routes/statsRoutes.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 76[2mms[22m[39m
+ [32m✓[39m server/src/indexers/cardigann-conformance/finalConformanceGate.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 73[2mms[22m[39m
+ [32m✓[39m tests/torrent-add.test.js [2m([22m[2m11 tests[22m[2m)[22m[32m 69[2mms[22m[39m
+ [32m✓[39m app_src_backup/lib/api/subtitleApi.test.js [2m([22m[2m22 tests[22m[2m)[22m[32m 68[2mms[22m[39m
+ [32m✓[39m tests/api-sdk-snapshots.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 68[2mms[22m[39m
+ [32m✓[39m server/src/api/routes/notificationRoutes.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 59[2mms[22m[39m
+ [32m✓[39m app/src/lib/api/subtitleApi.test.ts [2m([22m[2m22 tests[22m[2m)[22m[32m 64[2mms[22m[39m
+ [32m✓[39m app_src_backup/lib/api/subtitleApi.test.ts [2m([22m[2m22 tests[22m[2m)[22m[32m 64[2mms[22m[39m
+ [32m✓[39m tests/scraping-parser.test.js [2m([22m[2m10 tests[22m[2m)[22m[32m 58[2mms[22m[39m
+ [32m✓[39m tests/torrent-queue-control.test.js [2m([22m[2m9 tests[22m[2m)[22m[32m 58[2mms[22m[39m
+ [32m✓[39m server/src/services/BackupService.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 47[2mms[22m[39m
+ [32m✓[39m tests/http-client.test.js [2m([22m[2m10 tests[22m[2m)[22m[32m 52[2mms[22m[39m
+ [32m✓[39m server/src/services/ExistingLibraryScanner.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 49[2mms[22m[39m
+ [32m✓[39m app_src_backup/lib/subtitles/time.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 41[2mms[22m[39m
+ [32m✓[39m app_src_backup/lib/subtitles/time.test.js [2m([22m[2m14 tests[22m[2m)[22m[32m 41[2mms[22m[39m
+ [32m✓[39m server/src/services/Scheduler.subtitle.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 49[2mms[22m[39m
+[90mstdout[2m | server/src/services/SeedingProtector.test.ts[2m > [22m[2mSeedingProtector[2m > [22m[2mratio limit[2m > [22m[2mremoves an unlinked torrent when ratio limit is reached
+[22m[39mSeedingProtector: Stopped torrent aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa due to limits reached.
+
+[90mstdout[2m | server/src/services/SeedingProtector.test.ts[2m > [22m[2mSeedingProtector[2m > [22m[2mtime limit[2m > [22m[2mremoves an unlinked torrent when seed-time limit is reached
+[22m[39mSeedingProtector: Stopped torrent aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa due to limits reached.
+
+[90mstdout[2m | server/src/services/SeedingProtector.test.ts[2m > [22m[2mSeedingProtector[2m > [22m[2mlinked episode — import guard[2m > [22m[2mremoves the torrent when the linked episode HAS been imported (path set)
+[22m[39mSeedingProtector: Stopped torrent aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa due to limits reached.
+
+[90mstdout[2m | server/src/services/SeedingProtector.test.ts[2m > [22m[2mSeedingProtector[2m > [22m[2mlinked episode — import guard[2m > [22m[2mdoes NOT remove the torrent when the linked episode has NOT been imported (path null)
+[22m[39mSeedingProtector: Skipping removal of aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa — linked media not yet imported (episode id=10 has no path (import pending)).
+
+[90mstdout[2m | server/src/services/SeedingProtector.test.ts[2m > [22m[2mSeedingProtector[2m > [22m[2mlinked episode — import guard[2m > [22m[2mdoes NOT remove the torrent when the linked episode no longer exists in DB
+[22m[39mSeedingProtector: Skipping removal of aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa — linked media not yet imported (episode id=99 not found).
+
+[90mstdout[2m | server/src/services/SeedingProtector.test.ts[2m > [22m[2mSeedingProtector[2m > [22m[2mlinked movie — import guard[2m > [22m[2mremoves the torrent when the linked movie HAS been imported (path set)
+[22m[39mSeedingProtector: Stopped torrent aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa due to limits reached.
+
+[90mstdout[2m | server/src/services/SeedingProtector.test.ts[2m > [22m[2mSeedingProtector[2m > [22m[2mlinked movie — import guard[2m > [22m[2mdoes NOT remove the torrent when the linked movie has NOT been imported (path null)
+[22m[39mSeedingProtector: Skipping removal of aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa — linked media not yet imported (movie id=20 has no path (import pending)).
+
+[90mstdout[2m | server/src/services/SeedingProtector.test.ts[2m > [22m[2mSeedingProtector[2m > [22m[2mlinked movie — import guard[2m > [22m[2mdoes NOT remove the torrent when the linked movie no longer exists in DB
+[22m[39mSeedingProtector: Skipping removal of aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa — linked media not yet imported (movie id=99 not found).
+
+[90mstdout[2m | server/src/services/SeedingProtector.test.ts[2m > [22m[2mSeedingProtector[2m > [22m[2merror handling[2m > [22m[2mcontinues checking other torrents when removeTorrent throws
+[22m[39mSeedingProtector: Stopped torrent bbbb2222bbbb2222bbbb2222bbbb2222bbbb2222 due to limits reached.
+
+ [32m✓[39m server/src/services/SeedingProtector.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 68[2mms[22m[39m
+ [32m✓[39m app/src/lib/performance/monitor.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 44[2mms[22m[39m
+ [32m✓[39m tests/torrent-manager.test.js [2m([22m[2m6 tests[22m[2m)[22m[32m 46[2mms[22m[39m
+ [32m✓[39m tests/torrent-speed-limits.test.js [2m([22m[2m6 tests[22m[2m)[22m[32m 39[2mms[22m[39m
+ [32m✓[39m app_src_backup/lib/performance/monitor.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 43[2mms[22m[39m
+ [32m✓[39m app/src/lib/subtitles/time.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 44[2mms[22m[39m
+ [32m✓[39m tests/definition-loader.test.js [2m([22m[2m11 tests[22m[2m)[22m[32m 45[2mms[22m[39m
+ [32m✓[39m tests/indexer-factory.test.js [2m([22m[2m6 tests[22m[2m)[22m[32m 38[2mms[22m[39m
+ [32m✓[39m tests/integration/indexer-search.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 42[2mms[22m[39m
+ [32m✓[39m tests/import-manager.test.js [2m([22m[2m1 test[22m[2m)[22m[32m 29[2mms[22m[39m
+ [32m✓[39m tests/rss-sync-service.test.js [2m([22m[2m10 tests[22m[2m)[22m[32m 36[2mms[22m[39m
+[90mstdout[2m | server/src/services/RssMediaMonitor.test.ts[2m > [22m[2mRssMediaMonitor.handleMovieRelease — movieId passed to addTorrent[2m > [22m[2mpasses movieId to addTorrent when a wanted movie is matched
+[22m[39mRssMediaMonitor: Grabbing The.Matrix.1999.1080p.BluRay for The Matrix (score 115)
+
+[90mstdout[2m | server/src/services/RssMediaMonitor.test.ts[2m > [22m[2mRssMediaMonitor — corner cases[2m > [22m[2m3.3 skips a movie release whose score is below the AUTO_GRAB_THRESHOLD
+[22m[39mRssMediaMonitor: Skipped Total.Recall.1990.480p.WebRip for Dune Part Two (score 13 < 50)
+
+[90mstdout[2m | server/src/services/RssMediaMonitor.test.ts[2m > [22m[2mRssMediaMonitor.handleTvRelease — episodeId passed to addTorrent[2m > [22m[2mpasses episodeId to addTorrent when a wanted TV episode is matched
+[22m[39mRssMediaMonitor: Grabbing Breaking.Bad.S01E01.Pilot.1080p.BluRay for Breaking Bad (score 113)
+
+ [32m✓[39m server/src/services/RssMediaMonitor.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 33[2mms[22m[39m
+ [32m✓[39m server/src/indexers/cardigann-conformance/indexerRuntimeParity.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 32[2mms[22m[39m
+ [32m✓[39m app_src_backup/lib/api/systemApi.test.js [2m([22m[2m19 tests[22m[2m)[22m[32m 31[2mms[22m[39m
+ [32m✓[39m app_src_backup/lib/api/subtitleProvidersApi.test.ts [2m([22m[2m22 tests[22m[2m)[22m[32m 25[2mms[22m[39m
+ [32m✓[39m server/src/services/ImportMatchService.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 33[2mms[22m[39m
+ [32m✓[39m app/src/lib/api/subtitleProvidersApi.test.ts [2m([22m[2m25 tests[22m[2m)[22m[32m 31[2mms[22m[39m
+ [32m✓[39m server/src/services/PlaybackService.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 29[2mms[22m[39m
+ [32m✓[39m server/src/indexers/cardigann-conformance/filterParity.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 27[2mms[22m[39m
+ [32m✓[39m server/src/repositories/AppSettingsRepository.test.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 26[2mms[22m[39m
+ [32m✓[39m server/src/indexers/cardigann-conformance/responseParsingParity.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 30[2mms[22m[39m
+ [32m✓[39m app_src_backup/lib/api/subtitleHistoryApi.test.ts [2m([22m[2m21 tests[22m[2m)[22m[32m 24[2mms[22m[39m
+ [32m✓[39m server/src/services/MediaSearchService.cornerCases.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 30[2mms[22m[39m
+ [32m✓[39m app/src/lib/table/sort.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 25[2mms[22m[39m
+ [32m✓[39m server/src/seeds/qualities.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 24[2mms[22m[39m
+ [32m✓[39m app/src/lib/api/languageProfilesApi.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 23[2mms[22m[39m
+ [32m✓[39m app/src/lib/api/systemApi.test.ts [2m([22m[2m19 tests[22m[2m)[22m[32m 29[2mms[22m[39m
+ [32m✓[39m server/src/services/NotificationDispatchService.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 25[2mms[22m[39m
+ [32m✓[39m app_src_backup/lib/table/sort.test.js [2m([22m[2m3 tests[22m[2m)[22m[32m 23[2mms[22m[39m
+ [32m✓[39m app_src_backup/lib/api/systemApi.test.ts [2m([22m[2m19 tests[22m[2m)[22m[32m 27[2mms[22m[39m
+ [32m✓[39m app_src_backup/lib/api/subtitleProvidersApi.test.js [2m([22m[2m22 tests[22m[2m)[22m[32m 24[2mms[22m[39m
+ [32m✓[39m app_src_backup/lib/table/sort.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 25[2mms[22m[39m
+ [32m✓[39m app_src_backup/lib/api/languageProfilesApi.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 23[2mms[22m[39m
+ [32m✓[39m app_src_backup/lib/api/subtitleHistoryApi.test.js [2m([22m[2m21 tests[22m[2m)[22m[32m 24[2mms[22m[39m
+ [32m✓[39m tests/torznab-parser.test.js [2m([22m[2m10 tests[22m[2m)[22m[32m 24[2mms[22m[39m
+ [32m✓[39m app/src/lib/api/subtitleHistoryApi.test.ts [2m([22m[2m21 tests[22m[2m)[22m[32m 24[2mms[22m[39m
+ [32m✓[39m server/src/services/WantedSearchService.episodeValidation.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 31[2mms[22m[39m
+ [32m✓[39m server/src/services/MediaSearchService.enrichment.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 21[2mms[22m[39m
+ [32m✓[39m app_src_backup/lib/api/languageProfilesApi.test.js [2m([22m[2m15 tests[22m[2m)[22m[32m 24[2mms[22m[39m
+ [32m✓[39m server/src/services/SubtitleInventoryApiService.manual.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 25[2mms[22m[39m
+ [32m✓[39m server/src/services/BulkImportService.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 26[2mms[22m[39m
+ [32m✓[39m tests/integration/indexer-definition-loading.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 20[2mms[22m[39m
+ [32m✓[39m app/src/lib/api/subtitleBlacklistApi.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 20[2mms[22m[39m
+ [32m✓[39m server/src/services/WantedSearchService.autoSearchMovie.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 20[2mms[22m[39m
+ [32m✓[39m tests/category-filter.test.js [2m([22m[2m9 tests[22m[2m)[22m[32m 20[2mms[22m[39m
+ [32m✓[39m server/src/services/SystemHealthService.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 26[2mms[22m[39m
+ [32m✓[39m app_src_backup/lib/api/subtitleWantedApi.test.js [2m([22m[2m13 tests[22m[2m)[22m[32m 21[2mms[22m[39m
+ [32m✓[39m app/src/lib/api/subtitleWantedApi.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 20[2mms[22m[39m
+ [32m✓[39m app_src_backup/lib/api/subtitleWantedApi.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 24[2mms[22m[39m
+ [32m✓[39m app_src_backup/lib/api/logsApi.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m server/src/repositories/MediaRepository.upsertSeasonsAndEpisodes.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m server/src/services/WantedSearchService.releaseDate.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 19[2mms[22m[39m
+ [32m✓[39m server/src/services/providers/AssrtProvider.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m app_src_backup/lib/api/subtitleBlacklistApi.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 20[2mms[22m[39m
+ [32m✓[39m app_src_backup/lib/api/logsApi.test.js [2m([22m[2m6 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m app_src_backup/lib/api/updatesApi.test.js [2m([22m[2m9 tests[22m[2m)[22m[32m 18[2mms[22m[39m
+ [32m✓[39m app_src_backup/lib/api/subtitleBlacklistApi.test.js [2m([22m[2m10 tests[22m[2m)[22m[32m 20[2mms[22m[39m
+ [32m✓[39m server/src/services/MediaSearchService.grabRelease.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m server/src/utils/Parser.test.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 22[2mms[22m[39m
+ [32m✓[39m app/src/lib/api/updatesApi.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m tests/indexer-classes.test.js [2m([22m[2m12 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m server/src/services/CollectionService.link.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 18[2mms[22m[39m
+ [32m✓[39m server/src/services/SubtitleInventoryApiService.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 19[2mms[22m[39m
+ [32m✓[39m app_src_backup/lib/api/backupApi.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 17[2mms[22m[39m
+ [32m✓[39m app_src_backup/lib/api/backupApi.test.js [2m([22m[2m7 tests[22m[2m)[22m[32m 23[2mms[22m[39m
+ [32m✓[39m app/src/lib/api/backupApi.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 17[2mms[22m[39m
+ [32m✓[39m app_src_backup/lib/api/notificationsApi.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m server/src/services/DiscoveryService.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m tests/gemini-track9-phase1-schema.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m tests/track9-phase3-frontend-parity.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m server/src/services/Scheduler.meta.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m server/src/services/DiscoveryService.integration.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 17[2mms[22m[39m
+ [32m✓[39m app/src/lib/state/uiStore.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m app/src/lib/api/torrentApi.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m app_src_backup/lib/api/tagsApi.test.js [2m([22m[2m6 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m app_src_backup/lib/api/updatesApi.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 17[2mms[22m[39m
+ [32m✓[39m app_src_backup/lib/api/indexerApi.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m app/src/lib/api/shared-schemas.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m app/src/lib/api/logsApi.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m app/src/lib/api/downloadClientsApi.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m server/src/repositories/PlaybackRepository.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m app/src/lib/api/collectionApi.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m app_src_backup/lib/api/createCrudApi.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m tests/track9-phase5-remediation-backlog.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m server/src/indexers/cardigann-conformance/siteFilterCoverage.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m tests/organizer.test.js [2m([22m[2m5 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m tests/media-repository.test.js [2m([22m[2m3 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m tests/subtitle-requirement-engine.test.js [2m([22m[2m5 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+[90mstdout[2m | tests/gemini-track9-phase4-test-audit.test.ts[2m > [22m[2mTrack 9 Phase 4 Test Integrity Audit (Gemini)[2m > [22m[2mAUDIT: Quantify mock usage in tests
+[22m[39mTest Integrity Stats: [
+  {
+    "file": "activity-event-emission.test.js",
+    "mocks": 27,
+    "tests": 7,
+    "ratio": 3.857142857142857
+  },
+  {
+    "file": "activity-event-repository.test.js",
+    "mocks": 0,
+    "tests": 5,
+    "ratio": 0
+  },
+  {
+    "file": "api-calendar.test.ts",
+    "mocks": 4,
+    "tests": 14,
+    "ratio": 0.2857142857142857
+  },
+  {
+    "file": "api-contract-harness.test.ts",
+    "mocks": 0,
+    "tests": 4,
+    "ratio": 0
+  },
+  {
+    "file": "api-events-stream.test.ts",
+    "mocks": 0,
+    "tests": 2,
+    "ratio": 0
+  },
+  {
+    "file": "api-handlers.test.ts",
+    "mocks": 36,
+    "tests": 22,
+    "ratio": 1.6363636363636365
+  },
+  {
+    "file": "api-route-map.test.ts",
+    "mocks": 0,
+    "tests": 1,
+    "ratio": 0
+  },
+  {
+    "file": "api-sdk-contract.test.ts",
+    "mocks": 0,
+    "tests": 9,
+    "ratio": 0
+  },
+  {
+    "file": "api-sdk-snapshots.test.ts",
+    "mocks": 0,
+    "tests": 1,
+    "ratio": 0
+  },
+  {
+    "file": "api-search.test.ts",
+    "mocks": 2,
+    "tests": 3,
+    "ratio": 0.6666666666666666
+  },
+  {
+    "file": "api-settings-general.test.ts",
+    "mocks": 0,
+    "tests": 15,
+    "ratio": 0
+  },
+  {
+    "file": "api-system-routes.test.ts",
+    "mocks": 0,
+    "tests": 41,
+    "ratio": 0
+  },
+  {
+    "file": "api-wanted.test.ts",
+    "mocks": 5,
+    "tests": 3,
+    "ratio": 1.6666666666666667
+  },
+  {
+    "file": "app-settings-repository.test.js",
+    "mocks": 0,
+    "tests": 3,
+    "ratio": 0
+  },
+  {
+    "file": "category-filter.test.js",
+    "mocks": 0,
+    "tests": 9,
+    "ratio": 0
+  },
+  {
+    "file": "category-seed.test.js",
+    "mocks": 0,
+    "tests": 7,
+    "ratio": 0
+  },
+  {
+    "file": "data-directory-initializer.test.js",
+    "mocks": 4,
+    "tests": 3,
+    "ratio": 1.3333333333333333
+  },
+  {
+    "file": "database-migration.test.js",
+    "mocks": 0,
+    "tests": 2,
+    "ratio": 0
+  },
+  {
+    "file": "definition-loader.test.js",
+    "mocks": 0,
+    "tests": 11,
+    "ratio": 0
+  },
+  {
+    "file": "docker-compose.test.js",
+    "mocks": 0,
+    "tests": 2,
+    "ratio": 0
+  },
+  {
+    "file": "dockerfile.test.js",
+    "mocks": 0,
+    "tests": 2,
+    "ratio": 0
+  },
+  {
+    "file": "domain-errors.test.js",
+    "mocks": 0,
+    "tests": 4,
+    "ratio": 0
+  },
+  {
+    "file": "encryption.test.js",
+    "mocks": 0,
+    "tests": 3,
+    "ratio": 0
+  },
+  {
+    "file": "episode-service.test.js",
+    "mocks": 1,
+    "tests": 1,
+    "ratio": 1
+  },
+  {
+    "file": "gemini-track9-phase1-schema.test.ts",
+    "mocks": 0,
+    "tests": 3,
+    "ratio": 0
+  },
+  {
+    "file": "gemini-track9-phase2-backend-execution.test.ts",
+    "mocks": 5,
+    "tests": 4,
+    "ratio": 1.25
+  },
+  {
+    "file": "gemini-track9-phase3-frontend-audit.test.ts",
+    "mocks": 0,
+    "tests": 5,
+    "ratio": 0
+  },
+  {
+    "file": "gemini-track9-phase4-test-audit.test.ts",
+    "mocks": 2,
+    "tests": 1,
+    "ratio": 2
+  },
+  {
+    "file": "gemini-track9-phase5-remediation.test.ts",
+    "mocks": 0,
+    "tests": 1,
+    "ratio": 0
+  },
+  {
+    "file": "http-client.test.js",
+    "mocks": 4,
+    "tests": 10,
+    "ratio": 0.4
+  },
+  {
+    "file": "import-manager-parsing.test.ts",
+    "mocks": 0,
+    "tests": 1,
+    "ratio": 0
+  },
+  {
+    "file": "import-manager.test.js",
+    "mocks": 5,
+    "tests": 2,
+    "ratio": 2.5
+  },
+  {
+    "file": "indexer-classes.test.js",
+    "mocks": 0,
+    "tests": 12,
+    "ratio": 0
+  },
+  {
+    "file": "indexer-factory.test.js",
+    "mocks": 0,
+    "tests": 6,
+    "ratio": 0
+  },
+  {
+    "file": "indexer-health-repository.test.js",
+    "mocks": 0,
+    "tests": 2,
+    "ratio": 0
+  },
+  {
+    "file": "indexer-repository.test.js",
+    "mocks": 0,
+    "tests": 2,
+    "ratio": 0
+  },
+  {
+    "file": "indexer-result.test.js",
+    "mocks": 0,
+    "tests": 7,
+    "ratio": 0
+  },
+  {
+    "file": "indexer-schema.test.js",
+    "mocks": 0,
+    "tests": 3,
+    "ratio": 0
+  },
+  {
+    "file": "indexer-test-capability.test.js",
+    "mocks": 6,
+    "tests": 9,
+    "ratio": 0.6666666666666666
+  },
+  {
+    "file": "library-scanner.test.js",
+    "mocks": 4,
+    "tests": 2,
+    "ratio": 2
+  },
+  {
+    "file": "media-models.test.js",
+    "mocks": 0,
+    "tests": 2,
+    "ratio": 0
+  },
+  {
+    "file": "media-repository.test.js",
+    "mocks": 6,
+    "tests": 3,
+    "ratio": 2
+  },
+  {
+    "file": "media-search-service.test.js",
+    "mocks": 13,
+    "tests": 6,
+    "ratio": 2.1666666666666665
+  },
+  {
+    "file": "media-service.test.js",
+    "mocks": 6,
+    "tests": 4,
+    "ratio": 1.5
+  },
+  {
+    "file": "metadata-generator.test.js",
+    "mocks": 1,
+    "tests": 2,
+    "ratio": 0.5
+  },
+  {
+    "file": "metadata-provider-unified.test.js",
+    "mocks": 4,
+    "tests": 5,
+    "ratio": 0.8
+  },
+  {
+    "file": "metadata-provider.test.js",
+    "mocks": 2,
+    "tests": 2,
+    "ratio": 1
+  },
+  {
+    "file": "movie-models.test.js",
+    "mocks": 0,
+    "tests": 1,
+    "ratio": 0
+  },
+  {
+    "file": "organizer.test.js",
+    "mocks": 9,
+    "tests": 5,
+    "ratio": 1.8
+  },
+  {
+    "file": "prisma-init.test.js",
+    "mocks": 0,
+    "tests": 1,
+    "ratio": 0
+  },
+  {
+    "file": "prisma-schema.test.js",
+    "mocks": 0,
+    "tests": 1,
+    "ratio": 0
+  },
+  {
+    "file": "probe-metadata-parser.test.js",
+    "mocks": 0,
+    "tests": 2,
+    "ratio": 0
+  },
+  {
+    "file": "process-model-spike.test.js",
+    "mocks": 0,
+    "tests": 1,
+    "ratio": 0
+  },
+  {
+    "file": "prowlarr-track-phase1-task1.1-audit.test.ts",
+    "mocks": 0,
+    "tests": 1,
+    "ratio": 0
+  },
+  {
+    "file": "reference-repos.test.js",
+    "mocks": 0,
+    "tests": 0,
+    "ratio": 0
+  },
+  {
+    "file": "rss-media-monitor.test.js",
+    "mocks": 10,
+    "tests": 6,
+    "ratio": 1.6666666666666667
+  },
+  {
+    "file": "rss-sync-service.test.js",
+    "mocks": 9,
+    "tests": 10,
+    "ratio": 0.9
+  },
+  {
+    "file": "rss-tv-monitor.test.js",
+    "mocks": 3,
+    "tests": 2,
+    "ratio": 1.5
+  },
+  {
+    "file": "scheduler.test.js",
+    "mocks": 3,
+    "tests": 9,
+    "ratio": 0.3333333333333333
+  },
+  {
+    "file": "scoring-engine.test.ts",
+    "mocks": 0,
+    "tests": 2,
+    "ratio": 0
+  },
+  {
+    "file": "scraping-parser.test.js",
+    "mocks": 0,
+    "tests": 10,
+    "ratio": 0
+  },
+  {
+    "file": "search-translator.test.js",
+    "mocks": 6,
+    "tests": 6,
+    "ratio": 1
+  },
+  {
+    "file": "seeding-protector.test.js",
+    "mocks": 8,
+    "tests": 4,
+    "ratio": 2
+  },
+  {
+    "file": "serialization.test.js",
+    "mocks": 0,
+    "tests": 6,
+    "ratio": 0
+  },
+  {
+    "file": "series-service.test.js",
+    "mocks": 1,
+    "tests": 1,
+    "ratio": 1
+  },
+  {
+    "file": "subtitle-audio-engine.integration.test.js",
+    "mocks": 0,
+    "tests": 2,
+    "ratio": 0
+  },
+  {
+    "file": "subtitle-inventory-api-service.test.js",
+    "mocks": 2,
+    "tests": 4,
+    "ratio": 0.5
+  },
+  {
+    "file": "subtitle-naming-service.test.js",
+    "mocks": 0,
+    "tests": 2,
+    "ratio": 0
+  },
+  {
+    "file": "subtitle-provider-factory.test.js",
+    "mocks": 7,
+    "tests": 2,
+    "ratio": 3.5
+  },
+  {
+    "file": "subtitle-requirement-engine.test.js",
+    "mocks": 0,
+    "tests": 5,
+    "ratio": 0
+  },
+  {
+    "file": "subtitle-variant-repository.test.js",
+    "mocks": 0,
+    "tests": 3,
+    "ratio": 0
+  },
+  {
+    "file": "subtitle-variant-schema.test.js",
+    "mocks": 0,
+    "tests": 1,
+    "ratio": 0
+  },
+  {
+    "file": "torrent-add.test.js",
+    "mocks": 10,
+    "tests": 11,
+    "ratio": 0.9090909090909091
+  },
+  {
+    "file": "torrent-api.test.js",
+    "mocks": 11,
+    "tests": 2,
+    "ratio": 5.5
+  },
+  {
+    "file": "torrent-completion.test.js",
+    "mocks": 14,
+    "tests": 14,
+    "ratio": 1
+  },
+  {
+    "file": "torrent-manager-sync-loop.test.js",
+    "mocks": 10,
+    "tests": 5,
+    "ratio": 2
+  },
+  {
+    "file": "torrent-manager.test.js",
+    "mocks": 12,
+    "tests": 6,
+    "ratio": 2
+  },
+  {
+    "file": "torrent-queue-control.test.js",
+    "mocks": 13,
+    "tests": 9,
+    "ratio": 1.4444444444444444
+  },
+  {
+    "file": "torrent-repository.test.js",
+    "mocks": 0,
+    "tests": 4,
+    "ratio": 0
+  },
+  {
+    "file": "torrent-schema.test.js",
+    "mocks": 0,
+    "tests": 2,
+    "ratio": 0
+  },
+  {
+    "file": "torrent-speed-limits.test.js",
+    "mocks": 9,
+    "tests": 12,
+    "ratio": 0.75
+  },
+  {
+    "file": "torznab-parser.test.js",
+    "mocks": 0,
+    "tests": 10,
+    "ratio": 0
+  },
+  {
+    "file": "track9-phase1-schema.test.ts",
+    "mocks": 0,
+    "tests": 3,
+    "ratio": 0
+  },
+  {
+    "file": "track9-phase2-backend-parity.test.ts",
+    "mocks": 0,
+    "tests": 3,
+    "ratio": 0
+  },
+  {
+    "file": "track9-phase3-frontend-parity.test.ts",
+    "mocks": 0,
+    "tests": 3,
+    "ratio": 0
+  },
+  {
+    "file": "track9-phase4-validation-integrity.test.ts",
+    "mocks": 0,
+    "tests": 3,
+    "ratio": 0
+  },
+  {
+    "file": "track9-phase5-remediation-backlog.test.ts",
+    "mocks": 0,
+    "tests": 3,
+    "ratio": 0
+  },
+  {
+    "file": "tv-models.test.js",
+    "mocks": 0,
+    "tests": 2,
+    "ratio": 0
+  },
+  {
+    "file": "tv-search-service.test.js",
+    "mocks": 4,
+    "tests": 1,
+    "ratio": 4
+  },
+  {
+    "file": "typescript.test.js",
+    "mocks": 0,
+    "tests": 0,
+    "ratio": 0
+  },
+  {
+    "file": "variant-backfill-service.test.js",
+    "mocks": 0,
+    "tests": 2,
+    "ratio": 0
+  },
+  {
+    "file": "variant-inventory-indexer.test.js",
+    "mocks": 0,
+    "tests": 3,
+    "ratio": 0
+  },
+  {
+    "file": "variant-missing-subtitle-service.test.js",
+    "mocks": 0,
+    "tests": 2,
+    "ratio": 0
+  },
+  {
+    "file": "variant-subtitle-fetch-service.test.js",
+    "mocks": 2,
+    "tests": 2,
+    "ratio": 1
+  },
+  {
+    "file": "variant-wanted-service.test.js",
+    "mocks": 0,
+    "tests": 2,
+    "ratio": 0
+  },
+  {
+    "file": "wanted-search-service.test.ts",
+    "mocks": 5,
+    "tests": 2,
+    "ratio": 2.5
+  },
+  {
+    "file": "wanted-service.test.js",
+    "mocks": 1,
+    "tests": 1,
+    "ratio": 1
+  }
+]
+
+ [32m✓[39m tests/gemini-track9-phase4-test-audit.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 28[2mms[22m[39m
+ [32m✓[39m app_src_backup/lib/api/eventsApi.test.js [2m([22m[2m1 test[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m server/src/indexers/cardigann-conformance/searchRequestParity.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m app_src_backup/lib/api/tagsApi.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m tests/scoring-engine.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m app/src/lib/api/tagsApi.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m app_src_backup/lib/api/createCrudApi.test.js [2m([22m[2m7 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m tests/media-service.test.js [2m([22m[2m4 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m app/src/lib/api/createCrudApi.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m app_src_backup/lib/api/eventsApi.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m server/src/indexers/cardigann-conformance/compatibilityValidation.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m server/src/services/SubtitleAutomationService.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m server/src/services/MediaSearchService.customFormat.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m server/src/indexers/cardigann-conformance/conformanceHarness.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m tests/gemini-track9-phase2-backend-execution.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m tests/data-directory-initializer.test.js [2m([22m[2m3 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m app/src/lib/api/movieApi.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m tests/library-scanner.test.js [2m([22m[2m2 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m app_src_backup/lib/prowlarr-routes.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m app_src_backup/lib/api/shared-schemas.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m tests/track9-phase1-schema.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m app_src_backup/lib/api/indexerApi.test.js [2m([22m[2m6 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m app/src/lib/api/indexerApi.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m app_src_backup/lib/api/downloadClientsApi.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m server/src/api/eventHub.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m app_src_backup/lib/api/downloadClientsApi.test.js [2m([22m[2m6 tests[22m[2m)[22m[32m 17[2mms[22m[39m
+ [32m✓[39m server/src/api/utils/episodeStatusHelpers.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m server/src/services/providers/OpenSubtitlesProvider.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m app/src/lib/navigation.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m app/src/lib/api/eventsApi.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m app_src_backup/lib/health.test.js [2m([22m[2m8 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m app_src_backup/lib/api/shared-schemas.test.js [2m([22m[2m4 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m server/src/services/LogReaderService.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m app_src_backup/lib/api/notificationsApi.test.js [2m([22m[2m2 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m tests/wanted-service.test.js [2m([22m[2m1 test[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m tests/indexer-result.test.js [2m([22m[2m7 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m tests/probe-metadata-parser.test.js [2m([22m[2m2 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m app_src_backup/lib/api/applicationsApi.test.js [2m([22m[2m3 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m server/src/services/Organizer.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m app/src/lib/api/notificationsApi.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m server/src/indexers/cardigann-conformance/timeDateFilters.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m app_src_backup/lib/api/applicationsApi.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m app_src_backup/lib/state/uiStore.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m tests/metadata-generator.test.js [2m([22m[2m2 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m server/src/api/utils/queryHelpers.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m server/src/services/providers/SubdlProvider.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m app/src/lib/subtitles/coverage.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m server/src/indexers/cardigann-conformance/templateRuntime.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m app_src_backup/lib/table/columns.test.js [2m([22m[2m5 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m app/src/lib/table/columns.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m server/src/services/providers/providerUtils.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m app_src_backup/lib/table/columns.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m app_src_backup/lib/state/uiStore.test.js [2m([22m[2m8 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m app_src_backup/lib/prowlarr-routes.test.js [2m([22m[2m4 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/series-service.test.js [2m([22m[2m1 test[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/serialization.test.js [2m([22m[2m6 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m app_src_backup/lib/constants/languages.test.js [2m([22m[2m8 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/gemini-track9-phase3-frontend-audit.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m app/src/lib/constants/languages.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m app_src_backup/lib/constants/languages.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m server/src/api/utils/playbackHelpers.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/domain-errors.test.js [2m([22m[2m4 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/episode-service.test.js [2m([22m[2m1 test[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/integration/metadata-provider.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/gemini-track9-phase5-remediation.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/typescript.test.js [2m([22m[2m3 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m server/src/api/utils/safePath.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/track9-phase2-backend-parity.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/indexer-schema.test.js [2m([22m[2m3 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m app/src/components/calendar/dateUtils.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m server/src/services/ProviderBackedSubtitleFetchProvider.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/track9-phase4-validation-integrity.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m app_src_backup/lib/table/filter.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m app/src/lib/health.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m app_src_backup/lib/table/filter.test.js [2m([22m[2m2 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m app_src_backup/lib/health.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m app/src/lib/table/pagination.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m app_src_backup/lib/table/pagination.test.js [2m([22m[2m3 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m app_src_backup/lib/table/pagination.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m tests/dockerfile.test.js [2m([22m[2m2 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m app/src/lib/table/filter.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m tests/import-manager-parsing.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m server/src/no-stray-databases.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m server/src/indexers/cardigann-conformance/liveSiteDefinitions.test.ts [2m([22m[2m10 tests[22m[2m | [22m[33m9 skipped[39m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m tests/reference-repos.test.js [2m([22m[2m4 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m server/src/services/SubtitleScoringService.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m server/src/indexers/cardigann-conformance/liveReleaseSearch.test.ts [2m([22m[2m3 tests[22m[2m | [22m[33m2 skipped[39m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/subtitle-naming-service.test.js [2m([22m[2m2 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/docker-compose.test.js [2m([22m[2m2 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+
+[2m Test Files [22m [1m[31m336 failed[39m[22m[2m | [22m[1m[32m230 passed[39m[22m[90m (566)[39m
+[2m      Tests [22m [1m[31m699 failed[39m[22m[2m | [22m[1m[32m1808 passed[39m[22m[2m | [22m[33m11 skipped[39m[90m (2518)[39m
+[2m   Start at [22m 10:44:00
+[2m   Duration [22m 399.32s[2m (transform 14.44s, setup 0ms, import 68.93s, tests 75.60s, environment 199ms)[22m
+

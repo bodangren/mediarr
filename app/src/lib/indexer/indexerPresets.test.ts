@@ -9,8 +9,8 @@ import {
 
 describe('indexerPresets', () => {
   describe('indexerPresets array', () => {
-    it('should contain 53 indexer presets', () => {
-      expect(indexerPresets).toHaveLength(53);
+    it('should contain 62 indexer presets', () => {
+      expect(indexerPresets).toHaveLength(62);
     });
 
     it('should have unique IDs for all presets', () => {
@@ -31,8 +31,8 @@ describe('indexerPresets', () => {
         expect(Array.isArray(preset.fields)).toBe(true);
         expect(preset.fields.length).toBeGreaterThan(0);
 
-        // Check that first field is always baseUrl
-        expect(preset.fields[0].name).toBe('baseUrl');
+        // First field is baseUrl (native) or definitionId (Cardigann) — both are text/required
+        expect(['baseUrl', 'definitionId']).toContain(preset.fields[0].name);
         expect(preset.fields[0].type).toBe('text');
         expect(preset.fields[0].required).toBe(true);
       }
@@ -75,7 +75,7 @@ describe('indexerPresets', () => {
     it('should return popular presets', () => {
       const popular = getPopularPresets();
       expect(popular.length).toBeGreaterThan(0);
-      expect(popular.length).toBeLessThanOrEqual(20);
+      expect(popular.length).toBeLessThanOrEqual(30);
     });
 
     it('should contain well-known indexers', () => {

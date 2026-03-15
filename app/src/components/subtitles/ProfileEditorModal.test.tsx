@@ -34,8 +34,8 @@ describe('ProfileEditorModal', () => {
 
     await waitFor(() => {
       expect(screen.getByRole('dialog', { name: 'Add Language Profile' })).toBeInTheDocument();
-      expect(screen.getByLabelText('Profile Name')).toHaveValue('');
-      expect(screen.getByText('No languages added yet.')).toBeInTheDocument();
+      expect(screen.getByLabelText(/Profile Name/)).toHaveValue('');
+      expect(screen.getByText(/No languages added yet/)).toBeInTheDocument();
     });
   });
 
@@ -51,7 +51,7 @@ describe('ProfileEditorModal', () => {
 
     await waitFor(() => {
       expect(screen.getByRole('dialog', { name: 'Edit Language Profile' })).toBeInTheDocument();
-      expect(screen.getByLabelText('Profile Name')).toHaveValue('Test Profile');
+      expect(screen.getByLabelText(/Profile Name/)).toHaveValue('Test Profile');
       expect(screen.getByDisplayValue('Test Profile')).toBeInTheDocument();
       expect(screen.getByText('English')).toBeInTheDocument();
       expect(screen.getByText('Spanish')).toBeInTheDocument();
@@ -93,7 +93,7 @@ describe('ProfileEditorModal', () => {
       expect(screen.getByRole('dialog', { name: 'Add Language Profile' })).toBeInTheDocument();
     });
 
-    const nameInput = screen.getByLabelText('Profile Name');
+    const nameInput = screen.getByLabelText(/Profile Name/);
     fireEvent.change(nameInput, { target: { value: 'Test Profile' } });
 
     const submitButton = screen.getByRole('button', { name: 'Create Profile' });
@@ -128,9 +128,9 @@ describe('ProfileEditorModal', () => {
     const firstOption = screen.getAllByRole('option')[0];
     fireEvent.click(firstOption);
 
-    // Click Add Language button
-    const addButton = screen.getByRole('button', { name: 'Add Language' });
-    fireEvent.click(addButton);
+    // Click Add Language button (the second one which is the actual action button)
+    const addButtons = screen.getAllByRole('button', { name: 'Add Language' });
+    fireEvent.click(addButtons[1]);
 
     await waitFor(() => {
       expect(screen.queryByText('No languages added yet.')).not.toBeInTheDocument();
@@ -198,7 +198,7 @@ describe('ProfileEditorModal', () => {
       expect(screen.getByRole('dialog', { name: 'Add Language Profile' })).toBeInTheDocument();
     });
 
-    const submitButton = screen.getByRole('button', { name: 'Create Profile' });
+    const submitButton = screen.getByRole('button', { name: 'Saving...' });
     expect(submitButton).toBeDisabled();
   });
 
@@ -254,11 +254,12 @@ describe('ProfileEditorModal', () => {
       expect(screen.getByRole('dialog', { name: 'Edit Language Profile' })).toBeInTheDocument();
     });
 
-    const nameInput = screen.getByLabelText('Profile Name');
-    const cutoffSelect = screen.getByLabelText('Cutoff Language');
-    const upgradeAllowedCheckbox = screen.getByLabelText('Allow Upgrades');
-    const mustContainInput = screen.getByLabelText('Must Contain');
-    const mustNotContainInput = screen.getByLabelText('Must Not Contain');
+    const nameInput = screen.getByLabelText(/Profile Name/);
+    const cutoffSelect = screen.getByLabelText(/Cutoff Language/);
+    const upgradeAllowedCheckbox = screen.getByLabelText(/Allow Upgrades/);
+    const mustContainInput = screen.getByLabelText(/Must Contain/);
+    const mustNotContainInput = screen.getByLabelText(/Must Not Contain/);
+
 
     expect(nameInput).toBeDisabled();
     expect(cutoffSelect).toBeDisabled();
@@ -287,7 +288,7 @@ describe('ProfileEditorModal', () => {
       expect(screen.getByText('Profile name is required')).toBeInTheDocument();
     });
 
-    const nameInput = screen.getByLabelText('Profile Name');
+    const nameInput = screen.getByLabelText(/Profile Name/);
     fireEvent.change(nameInput, { target: { value: 'Test' } });
 
     await waitFor(() => {

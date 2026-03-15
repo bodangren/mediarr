@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { getApiClients } from '@/lib/api/client';
 import type { Backup, BackupSchedule, UpdateBackupScheduleInput } from '@/lib/api/backupApi';
 import { RouteScaffold } from '@/components/primitives/RouteScaffold';
-import { Button } from '@/components/primitives/Button';
+import { Button } from '@/components/ui/button';
 import { formatBytes, formatDateTime, formatRelativeDate } from '@/lib/format';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -87,7 +87,7 @@ function BackupList({ onCreated }: { onCreated: () => void }) {
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold">Backups</h2>
-        <Button variant="primary" disabled={creating} onClick={() => { void handleCreateNow(); }}>
+        <Button variant="default" disabled={creating} onClick={() => { void handleCreateNow(); }}>
           {creating ? 'Creating…' : 'Back Up Now'}
         </Button>
       </div>
@@ -136,7 +136,7 @@ function BackupList({ onCreated }: { onCreated: () => void }) {
                         Download
                       </Button>
                       <Button
-                        variant="danger"
+                        variant="destructive"
                         className="text-xs"
                         disabled={actionIds.has(backup.id)}
                         onClick={() => { void handleDelete(backup.id, backup.name); }}
@@ -246,7 +246,7 @@ function BackupSchedulePanel() {
         </div>
       )}
 
-      <Button variant="primary" disabled={saving} onClick={() => { void handleSave(); }}>
+      <Button variant="default" disabled={saving} onClick={() => { void handleSave(); }}>
         {saving ? 'Saving…' : 'Save Schedule'}
       </Button>
     </div>

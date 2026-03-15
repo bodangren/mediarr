@@ -53,7 +53,7 @@ export function registerApiErrorHandler(
   error: any,
 ): FastifyReply {
   if (error.validation) {
-    return reply.code(error.statusCode || 400).send({
+    return reply.code(422).send({
       ok: false,
       error: {
         code: 'VALIDATION_ERROR',

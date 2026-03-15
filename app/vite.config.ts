@@ -12,6 +12,7 @@ export default defineConfig({
     },
   },
   server: {
+    host: true, // listen on 0.0.0.0 so LAN devices (e.g. Android TV) can reach the dev server
     proxy: {
       // Forward all /api requests to the Node.js daemon
       '/api': {

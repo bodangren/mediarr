@@ -73,6 +73,7 @@ describe('TorrentManager stats sync loop', () => {
       20,
       BigInt(500),
       BigInt(100),
+      0.2,
       60,
     );
     expect(repository.syncPeers).toHaveBeenCalledWith('hash-1', [
@@ -154,6 +155,7 @@ describe('TorrentManager stats sync loop', () => {
       1,
       BigInt(1),
       BigInt(1),
+      1,
       2_147_483_647,
     );
   });

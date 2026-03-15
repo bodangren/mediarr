@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import * as Icons from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { Modal, ModalHeader, ModalBody } from '@/components/primitives/Modal';
+import { Modal, ModalHeader, ModalBody } from '@/components/ui/modal';
 import { NAV_ITEMS, isNavActive, type NavigationSection, type NavigationItem } from '@/lib/navigation';
 import { PageSidebar } from './PageSidebar';
 

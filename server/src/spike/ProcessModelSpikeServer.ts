@@ -1,4 +1,4 @@
-import Fastify, { FastifyInstance } from 'fastify';
+import Fastify, { type FastifyInstance } from 'fastify';
 import type { ServerResponse } from 'node:http';
 
 interface SpikeServerOptions {

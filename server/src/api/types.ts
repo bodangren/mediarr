@@ -39,7 +39,7 @@ export interface ApiDependencies {
   prisma: PrismaClient | Record<string, any>;
   mediaService?: Pick<
     MediaService,
-    'setMonitored' | 'deleteMedia' | 'getMovieCandidatesForSearch'
+    'setMonitored' | 'deleteMedia' | 'getMovieCandidatesForSearch' | 'setEpisodeMonitored'
   >;
   mediaSearchService?: Pick<
     MediaSearchService,
@@ -74,7 +74,9 @@ export interface ApiDependencies {
     | 'listEpisodeVariantInventory'
     | 'manualSearch'
     | 'manualDownload'
-      | 'uploadSubtitle'
+    | 'uploadSubtitle'
+    | 'scanMovieDisk'
+    | 'scanEpisodeDisk'
   >;
   subtitleProviderFactory?: Pick<
     SubtitleProviderFactory,

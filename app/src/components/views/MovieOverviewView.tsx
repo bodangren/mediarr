@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon } from '@/components/primitives/Icon';
-import { StatusBadge } from '@/components/primitives/StatusBadge';
+import { StatusBadge } from '@/components/ui/status-badge-compat';
 import { LanguageBadge } from '@/components/subtitles/LanguageBadge';
 import { formatBytes } from '@/lib/format';
 import { getFileStatus, getRatingDisplay, getRuntimeDisplay, type MovieListItem } from '@/types/movie';

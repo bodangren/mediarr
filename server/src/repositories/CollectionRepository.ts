@@ -93,7 +93,7 @@ export class CollectionRepository {
             title: true,
             year: true,
             overview: true,
-            posterPath: true,
+            posterUrl: true,
             status: true,
             monitored: true,
             fileVariants: {
@@ -111,13 +111,13 @@ export class CollectionRepository {
 
     return {
       ...collection,
-      movies: collection.movies.map(movie => ({
+      movies: (collection as any).movies.map((movie: any) => ({
         id: movie.id,
         tmdbId: movie.tmdbId,
         title: movie.title,
         year: movie.year,
         overview: movie.overview,
-        posterPath: movie.posterPath ?? null,
+        posterPath: (movie as any).posterUrl ?? null,
         status: movie.status,
         monitored: movie.monitored,
         hasFiles: movie.fileVariants.length > 0,

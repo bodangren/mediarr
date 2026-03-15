@@ -5,6 +5,7 @@ import { useEventsCacheBridge } from '@/lib/events/useEventsCacheBridge';
 import { createQueryClient } from '@/lib/query/queryClient';
 import { ThemeProvider } from '@/lib/theme/ThemeProvider';
 import { ToastProvider } from './ToastProvider';
+import { TooltipProvider } from '@/components/ui/tooltip';
 
 function EventsBridgeMount(): null {
   useEventsCacheBridge();
@@ -33,10 +34,12 @@ export function AppProviders({ children }: { children: ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        <ToastProvider>
-          <EventsBridgeMount />
-          {children}
-        </ToastProvider>
+        <TooltipProvider delayDuration={500}>
+          <ToastProvider>
+            <EventsBridgeMount />
+            {children}
+          </ToastProvider>
+        </TooltipProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );

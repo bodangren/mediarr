@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Alert } from '@/components/primitives/Alert';
-import { Button } from '@/components/primitives/Button';
-import { Modal, ModalBody, ModalFooter, ModalHeader } from '@/components/primitives/Modal';
+import { Alert } from '@/components/ui/alert-compat';
+import { Button } from '@/components/ui/button';
+import { Modal, ModalBody, ModalFooter, ModalHeader } from '@/components/ui/modal';
 import type {
   CreateQualityProfileInput,
   QualityProfileItem,
@@ -260,7 +260,7 @@ export function AddProfileModal({
         <Button variant="secondary" onClick={onClose} disabled={isLoading}>
           Cancel
         </Button>
-        <Button variant="primary" onClick={handleSave} disabled={!canSave || isLoading}>
+        <Button variant="default" onClick={handleSave} disabled={!canSave || isLoading}>
           {isLoading ? 'Saving...' : editProfile ? 'Save Changes' : 'Add Profile'}
         </Button>
       </ModalFooter>

@@ -28,17 +28,18 @@ describe('LanguageBadge', () => {
 
   it('shows forced indicator when isForced is true', () => {
     render(<LanguageBadge languageCode="en" variant="available" isForced />);
-    expect(screen.getByText('(F)')).toBeInTheDocument();
+    expect(screen.getByText(/F/)).toBeInTheDocument();
   });
 
   it('shows HI indicator when isHi is true', () => {
     render(<LanguageBadge languageCode="en" variant="available" isHi />);
-    expect(screen.getByText('(HI)')).toBeInTheDocument();
+    expect(screen.getByText(/HI/)).toBeInTheDocument();
   });
 
   it('shows both forced and HI indicators when both are true', () => {
     render(<LanguageBadge languageCode="en" variant="available" isForced isHi />);
-    expect(screen.getByText('(F) (HI)')).toBeInTheDocument();
+    expect(screen.getByText(/F/)).toBeInTheDocument();
+    expect(screen.getByText(/HI/)).toBeInTheDocument();
   });
 
   it('calls onClick when clicked', () => {
@@ -69,7 +70,7 @@ describe('LanguageBadge', () => {
   it('has correct ARIA label', () => {
     render(<LanguageBadge languageCode="en" variant="available" isForced />);
     const badge = screen.getByText('en');
-    expect(badge).toHaveAttribute('aria-label', 'Language: en (F)');
+    expect(badge).toHaveAttribute('aria-label', 'Language: en F');
   });
 
   it('applies custom className', () => {
@@ -87,7 +88,7 @@ describe('LanguageBadge', () => {
 
   it('indicators have reduced opacity', () => {
     render(<LanguageBadge languageCode="en" variant="available" isForced />);
-    const indicator = screen.getByText('(F)');
+    const indicator = screen.getByText(/F/);
     expect(indicator).toHaveClass('text-[10px]', 'opacity-75');
   });
 

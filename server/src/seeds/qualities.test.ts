@@ -78,17 +78,17 @@ describe('seedQualityProfiles', () => {
       (c: [{ create: { name: string } }]) => c[0].create.name === name
     );
     expect(call).toBeDefined();
-    expect(call[0].create.cutoff).toBe(CUTOFFS[name]);
+    expect(call![0].create.cutoff).toBe(CUTOFFS[name]);
   });
 
   it.each(EXPECTED_PRESET_NAMES)('"%s" preset allowed quality IDs are correct', async (name) => {
     await seedQualityProfiles(prisma as never);
     const call = prisma._upsertMock.mock.calls.find(
-      (c: [{ create: { name: string; items: Array<{ quality: { id: number }; allowed: boolean }> } }]) =>
-        c[0].create.name === name
+      (c: any[]) =>
+        c[0]?.create?.name === name
     );
     expect(call).toBeDefined();
-    const items = call[0].create.items as Array<{ quality: { id: number }; allowed: boolean }>;
+    const items = (call as any)[0].create.items as Array<{ quality: { id: number }; allowed: boolean }>;
     const allowedIds = items.filter(i => i.allowed).map(i => i.quality.id).sort((a, b) => a - b);
     const expectedIds = [...EXPECTED_ALLOWED_IDS[name]].sort((a, b) => a - b);
     expect(allowedIds).toEqual(expectedIds);

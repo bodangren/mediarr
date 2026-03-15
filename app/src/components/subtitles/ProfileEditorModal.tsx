@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
-import { Modal, ModalHeader, ModalBody, ModalFooter } from '@/components/primitives/Modal';
-import { Button } from '@/components/primitives/Button';
+import { Modal, ModalHeader, ModalBody, ModalFooter } from '@/components/ui/modal';
+import { Button } from '@/components/ui/button';
 import { LanguageSelector } from './LanguageSelector';
 import { LanguageSettingRow } from './LanguageSettingRow';
 import type { LanguageProfile, LanguageSetting, LanguageProfileInput } from '@/lib/api/languageProfilesApi';
@@ -333,7 +333,7 @@ export function ProfileEditorModal({
           <Button type="button" variant="secondary" onClick={onClose} disabled={isLoading}>
             Cancel
           </Button>
-          <Button type="submit" variant="primary" disabled={isLoading}>
+          <Button type="submit" variant="default" disabled={isLoading}>
             {isLoading ? 'Saving...' : isEditMode ? 'Save Changes' : 'Create Profile'}
           </Button>
         </ModalFooter>

@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { type ProviderTestResult } from '@/lib/api';
 import { Icon } from '@/components/primitives/Icon';
-import { Alert } from '@/components/primitives/Alert';
+import { Alert } from '@/components/ui/alert-compat';
 
 export interface ProviderTestResultProps {
   result: ProviderTestResult | null;

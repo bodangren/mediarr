@@ -155,26 +155,12 @@ export const API_ROUTE_MAP: ApiRouteDefinition[] = [
   { method: 'GET', path: '/api/updates/history' },
   { method: 'GET', path: '/api/updates/progress/:updateId' },
 
-  // Notification routes
-  { method: 'GET', path: '/api/notifications' },
-  { method: 'GET', path: '/api/notifications/:id' },
-  { method: 'POST', path: '/api/notifications' },
-  { method: 'PUT', path: '/api/notifications/:id' },
-  { method: 'DELETE', path: '/api/notifications/:id' },
-  { method: 'POST', path: '/api/notifications/:id/test' },
-  { method: 'POST', path: '/api/notifications/test' },
-  { method: 'POST', path: '/api/notifications/schema' },
-  { method: 'GET', path: '/api/notifications/types' },
+  // Notification routes (push-status only; full CRUD deferred to notification-management feature)
+  { method: 'GET', path: '/api/notifications/push-status' },
 
-  // Download Client routes
-  { method: 'GET', path: '/api/download-clients' },
-  { method: 'GET', path: '/api/download-clients/:id' },
-  { method: 'POST', path: '/api/download-clients' },
-  { method: 'PUT', path: '/api/download-clients/:id' },
-  { method: 'DELETE', path: '/api/download-clients/:id' },
-  { method: 'POST', path: '/api/download-clients/:id/test' },
-  { method: 'POST', path: '/api/download-clients/test' },
-  { method: 'POST', path: '/api/download-clients/schema' },
+  // Download Client routes (speed-limits settings only; full CRUD deferred)
+  { method: 'GET', path: '/api/download-client' },
+  { method: 'PUT', path: '/api/download-client' },
 
   // Blocklist routes
   { method: 'GET', path: '/api/blocklist' },

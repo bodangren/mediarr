@@ -55,7 +55,7 @@ describe('SearchTranslator', () => {
       await translator.search(torznab, { imdbid: 'tt1234567' }, mockFetch);
 
       const [url] = mockFetch.mock.calls[0];
-      expect(url).toContain('imdbid=tt1234567');
+      expect(url).toContain('imdbid=1234567');
     });
   });
 

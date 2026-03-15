@@ -2,8 +2,8 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon } from '@/components/primitives/Icon';
-import { ProgressBar } from '@/components/primitives/ProgressBar';
-import { StatusBadge } from '@/components/primitives/StatusBadge';
+import { ProgressBar } from '@/components/ui/progress-bar-compat';
+import { StatusBadge } from '@/components/ui/status-badge-compat';
 import { formatBytes, formatRelativeDate } from '@/lib/format';
 import { calculateEpisodeProgress, getEpisodeCounts, getLastAired, getNextAiring, type SeriesListItem } from '@/types/series';
 

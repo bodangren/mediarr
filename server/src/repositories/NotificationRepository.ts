@@ -1,4 +1,4 @@
-import { PrismaClient, Notification } from '@prisma/client';
+import { PrismaClient, type Notification } from '@prisma/client';
 import { encrypt, decrypt } from '../utils/encryption';
 
 // Fields that should be encrypted in config
@@ -82,7 +82,7 @@ export class NotificationRepository {
         onRename: data.onRename ?? false,
         onSeriesAdd: data.onSeriesAdd ?? false,
         onEpisodeDelete: data.onEpisodeDelete ?? false,
-        config: encryptedConfig,
+        config: encryptedConfig as unknown as import('@prisma/client').Prisma.InputJsonValue,
       },
     });
   }
@@ -96,7 +96,7 @@ export class NotificationRepository {
 
     return {
       ...notification,
-      config: decryptSensitiveFields(notification.type, notification.config as NotificationConfig),
+      config: decryptSensitiveFields(notification.type, notification.config as NotificationConfig) as unknown as import('@prisma/client').Prisma.JsonValue,
     };
   }
 
@@ -104,7 +104,7 @@ export class NotificationRepository {
     const notifications = await this.prisma.notification.findMany();
     return notifications.map((notification) => ({
       ...notification,
-      config: decryptSensitiveFields(notification.type, notification.config as NotificationConfig),
+      config: decryptSensitiveFields(notification.type, notification.config as NotificationConfig) as unknown as import('@prisma/client').Prisma.JsonValue,
     }));
   }
 
@@ -114,7 +114,7 @@ export class NotificationRepository {
     });
     return notifications.map((notification) => ({
       ...notification,
-      config: decryptSensitiveFields(notification.type, notification.config as NotificationConfig),
+      config: decryptSensitiveFields(notification.type, notification.config as NotificationConfig) as unknown as import('@prisma/client').Prisma.JsonValue,
     }));
   }
 
@@ -138,7 +138,7 @@ export class NotificationRepository {
 
     return {
       ...updated,
-      config: decryptSensitiveFields(updated.type, updated.config as NotificationConfig),
+      config: decryptSensitiveFields(updated.type, updated.config as NotificationConfig) as unknown as import('@prisma/client').Prisma.JsonValue,
     };
   }
 

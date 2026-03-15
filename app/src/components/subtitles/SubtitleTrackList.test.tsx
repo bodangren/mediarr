@@ -92,7 +92,7 @@ describe('SubtitleTrackList', () => {
       />,
     );
 
-    expect(screen.getByText('(F)')).toBeInTheDocument();
+    expect(screen.getByText(/F/)).toBeInTheDocument();
   });
 
   it('shows HI indicator on language badge', () => {
@@ -105,7 +105,7 @@ describe('SubtitleTrackList', () => {
       />,
     );
 
-    expect(screen.getByText('(HI)')).toBeInTheDocument();
+    expect(screen.getByText(/HI/)).toBeInTheDocument();
   });
 
   it('calls onDelete when delete button is clicked', () => {
@@ -236,10 +236,11 @@ describe('SubtitleTrackList', () => {
       />,
     );
 
-    const trackItems = document.querySelectorAll('.rounded-md.border');
+    // The track item is a div with these classes
+    const trackItems = document.querySelectorAll('.flex.items-center.justify-between.gap-3.rounded-md.border');
     expect(trackItems.length).toBeGreaterThan(0);
     trackItems.forEach(item => {
-      expect(item).toHaveClass('bg-surface-1');
+      expect(item).toHaveClass('border-border-subtle');
     });
   });
 

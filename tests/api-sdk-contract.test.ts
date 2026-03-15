@@ -35,8 +35,9 @@ describe('typed SDK contracts', () => {
       return jsonResponse({
         ok: true,
         data: {
-          infoHash: 'abc123',
-          name: 'Result',
+          success: true,
+          downloadId: 'abc123',
+          message: 'Grabbed successfully',
         },
       });
     });
@@ -49,7 +50,7 @@ describe('typed SDK contracts', () => {
     const series = await api.mediaApi.listSeries({ page: 1, pageSize: 25 });
     expect(series.items[0].title).toBe('Andor');
 
-    await api.releaseApi.grabRelease({
+    await api.releaseApi.grabCandidate({
       indexer: 'Indexer',
       title: 'Result',
       size: 1000,
@@ -67,7 +68,7 @@ describe('typed SDK contracts', () => {
 
     expect(fetchMock).toHaveBeenNthCalledWith(
       2,
-      'http://127.0.0.1:3001/api/releases/grab',
+      'http://127.0.0.1:3001/api/releases/grab-candidate',
       expect.objectContaining({
         method: 'POST',
         body: JSON.stringify({

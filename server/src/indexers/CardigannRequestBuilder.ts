@@ -51,7 +51,7 @@ function buildRequestHeaders(
   settings: Record<string, unknown>,
 ): Record<string, string> {
   const headers: Record<string, string> = {};
-  const categories = query.categories ?? [];
+  const categories = (query.categories ?? []).filter((v): v is number => typeof v === 'number');
 
   for (const [headerName, values] of Object.entries(definition.search.headers ?? {})) {
     if (!Array.isArray(values) || values.length === 0) {

@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
-import { Button } from '@/components/primitives/Button';
-import { ConfirmModal } from '@/components/primitives/Modal';
+import { Button } from '@/components/ui/button';
+import { ConfirmModal } from '@/components/ui/modal';
 import { ImportListList } from './ImportListList';
 import { ImportListModal } from './ImportListModal';
 import { ExclusionManager } from './ExclusionManager';
@@ -194,7 +194,7 @@ export function ImportListSettings({
       {activeTab === 'lists' && (
         <>
           <div>
-            <Button variant="primary" onClick={openAddModal}>
+            <Button variant="default" onClick={openAddModal}>
               Add Import List
             </Button>
           </div>
@@ -264,7 +264,7 @@ export function ImportListSettings({
           onConfirm={handleDeleteList}
           cancelLabel="Cancel"
           confirmLabel="Delete List"
-          confirmVariant="danger"
+          confirmVariant="destructive"
           isConfirming={isSaving}
         />
       )}
@@ -289,7 +289,7 @@ export function ImportListSettings({
           onConfirm={handleDeleteExclusion}
           cancelLabel="Cancel"
           confirmLabel="Remove Exclusion"
-          confirmVariant="danger"
+          confirmVariant="destructive"
           isConfirming={isDeletingExclusion}
         />
       )}

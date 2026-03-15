@@ -5,6 +5,7 @@
 
 ### Architecture & Design
 
+- (2026-03-14, code-review) **Inquiry vs. Directive Mandate:** NEVER modify the codebase during an Inquiry phase (e.g., /code-review). Directives for implementation must be explicitly issued by the user. Unauthorized "fixes" contaminate the research phase, bloat the context, and invalidate the review report.
 - (2026-03-10, refactor_search_release_date_ui_cleanup) Movie model has no single `releaseDate` — uses `inCinemas`, `physicalRelease`, `digitalRelease`; use earliest non-null as guard.
 - (2026-03-10, refactor_search_release_date_ui_cleanup) All new system pages must use `RouteScaffold`. Verify from the start in code review.
 - (2026-03-10, feature_android_push_notifications) Create `ApiEventHub` BEFORE services that need it in `main.ts` — avoids circular dependency.
@@ -31,6 +32,11 @@
 - (2026-03-13, bug_rss_media_monitor_corner_cases) Scoring confidence: `CustomFormatScoringEngine.confidenceScore` = 100 whenever the release title INCLUDES the movie/series title. To test below-threshold score, use a movie title unrelated to the release title rather than relying on quality markers alone.
 - (2026-03-13, bug_autosearch_wrong_series_episode) Candidate filters must check ALL dimensions: `autoSearchEpisode` needed season+episode+series-title. Adding only season+episode left a gap — a different show's S01E01 passed the filter and got grabbed. Apply `titlesMatch()` as the third guard.
 - (2026-03-13, bug_autosearch_wrong_series_episode) `autoSearchMovie` core paths (not-found, no-releases, below-threshold, successful-grab, search-error) had zero tests; add smoke tests for every early-exit path to prevent silent regressions.
+
+- (2026-03-14, chore_shadcn_setup) Radix `Tooltip` **requires** `TooltipProvider` as an ancestor — wire it in `AppProviders` at app root and use a `renderWithTooltip()` helper in tests for all components that contain a `Tooltip`.
+- (2026-03-15, chore_server_module_alignment) For tsx/transpiler-based servers, use `"module": "preserve"` + `"moduleResolution": "bundler"` in tsconfig — NOT `module:nodenext`. The latter requires `.js` extensions on all relative imports (622 TS2835 errors) and conflicts with `type:commonjs` in package.json. `bundler` mode works with ESM-syntax source without enforcing file extensions.
+- (2026-03-15, chore_server_module_alignment) Vitest mocks must match the import style in the source: if source uses named imports (`import { validate } from 'node-cron'`), the mock must export `{ validate: ... }` — NOT `{ default: { validate: ... } }`. Changing from default to named imports breaks any test that mocks via `default:`.
+- (2026-03-15, chore_server_module_alignment) When filtering arrays to narrow type (e.g., `(string|number)[] → number[]`), verify that strings in the array are intentional — filtering them out may break behavior that relies on them (Cardigann string category IDs). Widen the target type instead of filtering when strings are valid.
 
 ### Patterns That Worked Well
 

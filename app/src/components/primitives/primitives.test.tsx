@@ -1,12 +1,12 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { DataTable, type DataTableColumn } from './DataTable';
-import { EmptyPanel } from './EmptyPanel';
-import { ErrorPanel } from './ErrorPanel';
+import { EmptyPanel } from '@/components/ui/empty-panel';
+import { ErrorPanel } from '@/components/ui/error-panel';
 import { MetricCard } from './MetricCard';
-import { ProgressBar } from './ProgressBar';
-import { SkeletonBlock } from './SkeletonBlock';
-import { StatusBadge } from './StatusBadge';
+import { ProgressBar } from '@/components/ui/progress-bar-compat';
+import { SkeletonBlock } from '@/components/ui/skeleton-compat';
+import { StatusBadge } from '@/components/ui/status-badge-compat';
 
 interface Row {
   id: number;

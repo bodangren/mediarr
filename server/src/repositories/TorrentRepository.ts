@@ -1,4 +1,4 @@
-import { PrismaClient, Torrent, TorrentPeer } from '@prisma/client';
+import { PrismaClient, type Torrent, type TorrentPeer } from '@prisma/client';
 
 export type TorrentWithPeers = Torrent & { peers: TorrentPeer[] };
 

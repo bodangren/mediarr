@@ -1,20 +1,20 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { Alert } from './Alert';
-import { Button } from './Button';
+import { Alert } from '@/components/ui/alert-compat';
+import { Button } from '@/components/ui/button';
 import { Icon } from './Icon';
-import { Label } from './Label';
+import { Label } from '@/components/ui/label-badge';
 
 describe('core primitives', () => {
   it('renders button variants and click interactions', () => {
     const onClick = vi.fn();
     render(
       <>
-        <Button variant="primary" onClick={onClick}>
+        <Button variant="default" onClick={onClick}>
           Primary
         </Button>
         <Button variant="secondary">Secondary</Button>
-        <Button variant="danger">Danger</Button>
+        <Button variant="destructive">Danger</Button>
       </>,
     );
 

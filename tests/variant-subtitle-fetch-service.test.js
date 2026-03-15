@@ -1,11 +1,21 @@
 import { describe, it, expect, beforeEach, afterAll, vi } from 'vitest';
 import { PrismaClient } from '@prisma/client';
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
+import { PrismaBetterSQLite3 } from '@prisma/adapter-better-sqlite3';
 import 'dotenv/config';
 import { SubtitleVariantRepository } from '../server/src/repositories/SubtitleVariantRepository';
 import { VariantSubtitleFetchService } from '../server/src/services/VariantSubtitleFetchService';
 
-const adapter = new PrismaBetterSqlite3({ url: 'file:prisma/dev.db' });
+vi.mock('node:fs/promises', () => ({
+  default: {
+    mkdir: vi.fn().mockResolvedValue(undefined),
+    writeFile: vi.fn().mockResolvedValue(undefined),
+    access: vi.fn().mockResolvedValue(undefined),
+    readdir: vi.fn().mockResolvedValue([]),
+    stat: vi.fn().mockResolvedValue({ size: 100 }),
+  },
+}));
+
+const adapter = new PrismaBetterSQLite3({ url: 'file:prisma/dev.db' });
 const prisma = new PrismaClient({ adapter });
 const repository = new SubtitleVariantRepository(prisma);
 const fetchService = new VariantSubtitleFetchService(repository);

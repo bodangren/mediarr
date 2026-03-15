@@ -33,20 +33,27 @@ chore_drizzle_migration_20260314  (backend-only; depends on clean baseline from 
 
 ## Active Tracks
 
-*(none — begin with chore_ui_foundation_20260314)*
+- [~] **Track: Cleanup Pending Changes from Prior Work** *Phases: 3 | Link: [./tracks/chore_cleanup_pending_changes_20260315/](./tracks/chore_cleanup_pending_changes_20260315/)*
 
 ## Upcoming / Planned
 
-- [~] **Track: UI Foundation Cleanup** *Phases: 3 | Link: [./tracks/chore_ui_foundation_20260314/](./tracks/chore_ui_foundation_20260314/)*
-- [ ] **Track: shadcn/ui Installation & Primitive Migration** *Phases: 4 | Link: [./tracks/chore_shadcn_setup_20260314/](./tracks/chore_shadcn_setup_20260314/)*
 - [ ] **Track: App.tsx Decomposition** *Phases: 3 | Link: [./tracks/chore_app_decompose_20260314/](./tracks/chore_app_decompose_20260314/)*
 - [ ] **Track: Form Standardization** *Phases: 2 | Link: [./tracks/chore_form_standardization_20260314/](./tracks/chore_form_standardization_20260314/)*
 - [ ] **Track: Drizzle ORM Migration** *Phases: 4 | Link: [./tracks/chore_drizzle_migration_20260314/](./tracks/chore_drizzle_migration_20260314/)*
 
 ---
 
+## Upcoming / Unplanned
+
+- [ ] *Track: Use AI SDK and a cheap model for pattern matching instead of regex during search and import; Choose model and input API key
+
+---
 ## Archived Tracks
 
+- [x] **Track: Server Package/Module Alignment** *Phases: 4 | Link: [./archive/chore_server_module_alignment_20260315/](./archive/chore_server_module_alignment_20260315/)*
+- [x] **Track: shadcn/ui Installation & Primitive Migration** *Phases: 4 | Link: [./archive/chore_shadcn_setup_20260314/](./archive/chore_shadcn_setup_20260314/)*
+- [x] **Track: UI Foundation Cleanup** *Phases: 3 | Link: [./archive/chore_ui_foundation_20260314/](./archive/chore_ui_foundation_20260314/)*
+- [x] **Track: Fix Failing Tests** *Phases: 2 | Link: [./archive/chore_fix_failing_tests_20260314/](./archive/chore_fix_failing_tests_20260314/)*
 - [x] **Track: WantedSearchService — wrong-series episode grab + autoSearchMovie coverage** *Phases: 4 | Link: [./archive/bug_autosearch_wrong_series_episode_20260313/](./archive/bug_autosearch_wrong_series_episode_20260313/)*
 - [x] **Track: RssMediaMonitor corner cases — missing episodeId/movieId in addTorrent & coverage** *Phases: 4 | Link: [./archive/bug_rss_media_monitor_corner_cases_20260313/](./archive/bug_rss_media_monitor_corner_cases_20260313/)*
 - [x] **Track: MediaSearchService Corner Cases — Grab Error Propagation, grabReleaseByGuid, Indexer Resilience** *Phases: 4 | Link: [./archive/bug_search_aggregation_corner_cases_20260313/](./archive/bug_search_aggregation_corner_cases_20260313/)*

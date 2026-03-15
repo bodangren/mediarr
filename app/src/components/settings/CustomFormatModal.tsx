@@ -1,8 +1,8 @@
 
 import { useEffect, useState } from 'react';
-import { Button } from '@/components/primitives/Button';
-import { Alert } from '@/components/primitives/Alert';
-import { Modal, ModalBody, ModalFooter, ModalHeader } from '@/components/primitives/Modal';
+import { Button } from '@/components/ui/button';
+import { Alert } from '@/components/ui/alert-compat';
+import { Modal, ModalBody, ModalFooter, ModalHeader } from '@/components/ui/modal';
 import { ConditionBuilder } from './ConditionBuilder';
 import type {
   CustomFormat,
@@ -169,7 +169,7 @@ export function CustomFormatModal({
         <Button variant="secondary" onClick={handleClose} disabled={isLoading}>
           Cancel
         </Button>
-        <Button variant="primary" onClick={handleSave} disabled={isLoading}>
+        <Button variant="default" onClick={handleSave} disabled={isLoading}>
           {isLoading ? 'Saving...' : editFormat ? 'Save Changes' : 'Add Format'}
         </Button>
       </ModalFooter>

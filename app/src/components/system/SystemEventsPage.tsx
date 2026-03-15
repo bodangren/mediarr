@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { getApiClients } from '@/lib/api/client';
 import type { SystemEvent, EventLevel, EventType } from '@/lib/api/systemApi';
 import { RouteScaffold } from '@/components/primitives/RouteScaffold';
-import { Button } from '@/components/primitives/Button';
+import { Button } from '@/components/ui/button';
 import { formatDateTime } from '@/lib/format';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -124,7 +124,7 @@ export function SystemEventsPage() {
         {exporting ? 'Exporting…' : 'Export CSV'}
       </Button>
       <Button
-        variant="danger"
+        variant="destructive"
         className="text-xs"
         disabled={clearing}
         onClick={() => { void handleClearAll(); }}

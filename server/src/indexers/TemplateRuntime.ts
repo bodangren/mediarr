@@ -3,7 +3,7 @@ import type { SearchQuery } from './BaseIndexer';
 export interface TemplateRuntimeContext {
   query: SearchQuery;
   config: Record<string, unknown>;
-  categories: number[];
+  categories: (string | number)[];
 }
 
 export interface TemplateRenderOptions {

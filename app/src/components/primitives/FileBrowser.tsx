@@ -1,8 +1,8 @@
 
 import { useMemo, useState, type ReactNode } from 'react';
 import { Folder, File, ArrowUp, Home, ChevronRight } from 'lucide-react';
-import { Button } from './Button';
-import { Modal, ModalHeader, ModalBody, ModalFooter } from './Modal';
+import { Button } from '@/components/ui/button';
+import { Modal, ModalHeader, ModalBody, ModalFooter } from '@/components/ui/modal';
 
 export interface FileBrowserItem {
   name: string;
@@ -228,7 +228,7 @@ export function FileBrowser({
         <Button variant="secondary" onClick={onCancel}>
           Cancel
         </Button>
-        <Button variant="primary" onClick={handleSelectFolder} disabled={!canSelect}>
+        <Button variant="default" onClick={handleSelectFolder} disabled={!canSelect}>
           Select
         </Button>
       </ModalFooter>

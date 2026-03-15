@@ -84,6 +84,7 @@ export class TorrentManager extends EventEmitter {
   async initialize(): Promise<void> {
     if (this.initialized) return;
 
+    // @ts-ignore - webtorrent has no bundled types
     const { default: WebTorrent } = await import('webtorrent');
     this.client = new WebTorrent();
     (this.client as any).on('error', (error: unknown) => {

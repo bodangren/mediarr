@@ -1,0 +1,21 @@
+Date	Event Type	Summary	Source	Quality	Indexer	Actions
+Mar 14, 2026, 01:44 PM	Import Failed	No match found for Shout Out.mkv	import-manager	—	—	
+Mar 14, 2026, 01:44 PM	Import Failed	No match found for L'espion Mal Fait.mkv	import-manager	—	—	
+Mar 14, 2026, 01:44 PM	Import Failed	No match found for Dear Archer.mkv	import-manager	—	—	
+Mar 14, 2026, 01:44 PM	Import Failed	No match found for Comic-con.mkv	import-manager	—	—	
+Mar 14, 2026, 01:44 PM	Import Failed	No match found for Archersaurus Self-Extinction.mkv	import-manager	—	—	
+Mar 14, 2026, 01:44 PM	Import Failed	No match found for Archer S02E13 Double Trouble [1080p x265 10bit Joy].mkv	import-manager	—	—	
+Mar 14, 2026, 01:44 PM	Import Failed	No match found for Archer S02E12 White Nights [1080p x265 10bit Joy].mkv	import-manager	—	—	
+Mar 14, 2026, 01:44 PM	Import Failed	No match found for Archer S02E11 Jeu Monégasque [1080p x265 10bit Joy].mkv	import-manager	—	—	
+Mar 14, 2026, 01:44 PM	Import Failed	No match found for Archer S02E10 El Secuestro [1080p x265 10bit Joy].mkv	import-manager	—	—	
+Mar 14, 2026, 01:44 PM	Import Failed	No match found for Archer S02E09 Placebo Effect [1080p x265 10bit Joy].mkv	import-manager	—	—	
+Mar 14, 2026, 01:44 PM	Import Failed	No match found for Archer S02E08 Stage Two [1080p x265 10bit Joy].mkv	import-manager	—	—	
+Mar 14, 2026, 01:44 PM	Import Failed	No match found for Archer S02E07 Movie Star [1080p x265 10bit Joy].mkv	import-manager	—	—	
+Mar 14, 2026, 01:44 PM	Import Failed	No match found for Archer S02E06 Tragical History [1080p x265 10bit Joy].mkv	import-manager	—	—	
+Mar 14, 2026, 01:44 PM	Import Failed	No match found for Archer S02E05 The Double Deuce [1080p x265 10bit Joy].mkv	import-manager	—	—	
+Mar 14, 2026, 01:44 PM	Import Failed	No match found for Archer S02E04 Pipeline Fever [1080p x265 10bit Joy].mkv	import-manager	—	—	
+Mar 14, 2026, 01:44 PM	Import Failed	No match found for Archer S02E03 Blood Test [1080p x265 10bit Joy].mkv	import-manager	—	—	
+Mar 14, 2026, 01:44 PM	Import Failed	No match found for Archer S02E02 A Going Concern [1080p x265 10bit Joy].mkv	import-manager	—	—	
+Mar 14, 2026, 01:44 PM	Import Failed	No match found for Archer S02E01 Swiss Miss [1080p x265 10bit Joy].mkv	import-manager	—	—	
+Mar 14, 2026, 01:39 PM	Import Failed	No match found for Archer S01E10 Dial M for Mother [1080p x265 10bit Joy].mkv	import-manager	—	—	
+Mar 14, 2026, 01:39 PM	Import Failed	No match found for Archer S01E09 Job Offer [1080p x265 10bit Joy].mkv	import-manager	—	—	

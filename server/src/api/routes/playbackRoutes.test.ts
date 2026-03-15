@@ -9,11 +9,11 @@ import type { ApiDependencies } from '../types';
 
 interface TestContext {
   app: FastifyInstance;
-  deps: ApiDependencies & { playbackService: Record<string, any> };
+  deps: Omit<ApiDependencies, 'playbackService'> & { playbackService: Record<string, any> };
 }
 
 function createApp(overrides: Partial<Record<string, any>> = {}): TestContext {
-  const playbackService = {
+  const playbackService: Record<string, any> = {
     resolveStreamSource: vi.fn(),
     buildManifest: vi.fn(),
     recordHeartbeat: vi.fn(),
@@ -25,11 +25,11 @@ function createApp(overrides: Partial<Record<string, any>> = {}): TestContext {
     prisma: {},
     playbackService,
     ...overrides,
-  } as ApiDependencies & { playbackService: Record<string, any> };
+  } as Omit<ApiDependencies, 'playbackService'> & { playbackService: Record<string, any> };
 
   const app = Fastify();
   app.setErrorHandler((error, request, reply) => registerApiErrorHandler(request, reply, error));
-  registerPlaybackRoutes(app, deps);
+  registerPlaybackRoutes(app, deps as unknown as ApiDependencies);
 
   return { app, deps };
 }

@@ -168,7 +168,7 @@ describe('calendarRoutes — GET /api/calendar', () => {
       url: '/api/calendar',
     });
 
-    expect(response.statusCode).toBe(400);
+    expect(response.statusCode).toBe(422);
   });
 
   it('validates date format', async () => {
@@ -178,7 +178,7 @@ describe('calendarRoutes — GET /api/calendar', () => {
       query: { start: 'invalid', end: '2026-03-31' },
     });
 
-    expect(response.statusCode).toBe(400);
+    expect(response.statusCode).toBe(422);
   });
 
   it('sorts calendar items by date', async () => {

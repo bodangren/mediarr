@@ -1,4 +1,4 @@
-import { PrismaClient, Indexer } from '@prisma/client';
+import { PrismaClient, type Indexer } from '@prisma/client';
 import { encrypt, decrypt } from '../utils/encryption';
 
 export class IndexerRepository {

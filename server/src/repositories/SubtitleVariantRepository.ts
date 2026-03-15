@@ -283,8 +283,8 @@ export class SubtitleVariantRepository {
     return this.prisma.mediaFileVariant.findMany({
       where: {
         OR: [
-          { movie: { createdAt: { gte: cutoff } } },
-          { episode: { createdAt: { gte: cutoff } } },
+          { movie: { createdAt: { gte: cutoff } } as any },
+          { episode: { createdAt: { gte: cutoff } } as any },
         ],
       },
       select: { id: true },

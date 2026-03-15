@@ -3,8 +3,8 @@ import { useMemo } from 'react';
 import { useApiQuery } from '@/lib/query/useApiQuery';
 import { queryKeys } from '@/lib/query/queryKeys';
 import { getApiClients } from '@/lib/api/client';
-import { QueryPanel } from '@/components/primitives/QueryPanel';
-import { EmptyPanel } from '@/components/primitives/EmptyPanel';
+import { QueryPanel } from '@/components/ui/query-panel';
+import { EmptyPanel } from '@/components/ui/empty-panel';
 import type { ActivityItem } from '@/lib/api/activityApi';
 
 export interface MovieHistoryProps {

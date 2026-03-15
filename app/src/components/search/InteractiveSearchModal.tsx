@@ -1,10 +1,10 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Search, Download, AlertCircle, CheckCircle, Loader2, Globe, Share2 } from 'lucide-react';
-import { Button } from '@/components/primitives/Button';
-import { Modal, ModalBody, ModalHeader } from '@/components/primitives/Modal';
-import { EmptyPanel } from '@/components/primitives/EmptyPanel';
-import { SkeletonBlock } from '@/components/primitives/SkeletonBlock';
+import { Button } from '@/components/ui/button';
+import { Modal, ModalBody, ModalHeader } from '@/components/ui/modal';
+import { EmptyPanel } from '@/components/ui/empty-panel';
+import { SkeletonBlock } from '@/components/ui/skeleton-compat';
 import { getApiClients } from '@/lib/api/client';
 import { useToast } from '@/components/providers/ToastProvider';
 import { QualityBadge } from './QualityBadge';
@@ -241,7 +241,7 @@ export function InteractiveSearchModal({
 
   const headerActions = (
     <Button
-      variant="primary"
+      variant="default"
       onClick={() => void searchReleases()}
       disabled={isLoading}
       className="flex items-center gap-2"
@@ -385,7 +385,7 @@ export function InteractiveSearchModal({
                           </div>
                         ) : (
                           <Button
-                            variant={isApproved ? 'primary' : 'secondary'}
+                            variant={isApproved ? 'default' : 'secondary'}
                             onClick={() => void handleGrab(release)}
                             disabled={isGrabbing || !isApproved}
                             className="inline-flex items-center gap-1"

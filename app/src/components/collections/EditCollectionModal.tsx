@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { Modal, ModalHeader, ModalBody, ModalFooter } from '@/components/primitives/Modal';
+import { Modal, ModalHeader, ModalBody, ModalFooter } from '@/components/ui/modal';
 import type { MovieCollection, CollectionEditForm } from '@/types/collection';
 
 interface EditCollectionModalProps {

@@ -1,7 +1,21 @@
 import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { VirtualTable } from './VirtualTable';
-import type { TableColumn } from './TableHeader';
+import type { TableColumn } from '@/components/ui/table-header-compat';
+
+// Mock useVirtualizer since it depends on DOM measurements that don't work in JSDOM
+vi.mock('@tanstack/react-virtual', () => ({
+  useVirtualizer: vi.fn(({ count, estimateSize }: { count: number; estimateSize: () => number }) => ({
+    getVirtualItems: () => Array.from({ length: Math.min(count, 10) }, (_, i) => ({
+      index: i,
+      start: i * estimateSize(),
+      size: estimateSize(),
+      key: i,
+    })),
+    getTotalSize: () => count * estimateSize(),
+    measureElement: () => {},
+  })),
+}));
 
 interface RowModel {
   id: number;
@@ -61,7 +75,7 @@ describe('VirtualTable', () => {
 
     const tableRows = screen.getAllByRole('row');
 
-    // Header row + visible rows (plus some buffer rows from react-window)
+    // Header row + visible rows (plus some buffer rows from @tanstack/react-virtual)
     expect(tableRows.length).toBeLessThan(data.length);
     expect(tableRows.length).toBeGreaterThan(1); // At least header + some rows
   });

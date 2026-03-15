@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach, afterAll } from 'vitest';
 import { TorrentRepository } from '../server/src/repositories/TorrentRepository';
 import { PrismaClient } from '@prisma/client';
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
+import { PrismaBetterSQLite3 } from '@prisma/adapter-better-sqlite3';
 import 'dotenv/config';
 
-const adapter = new PrismaBetterSqlite3({ url: 'file:prisma/dev.db' });
+const adapter = new PrismaBetterSQLite3({ url: 'file:prisma/dev.db' });
 const prisma = new PrismaClient({ adapter });
 const repository = new TorrentRepository(prisma);
 
@@ -84,7 +84,8 @@ describe('TorrentRepository', () => {
       200,
       BigInt(500),
       BigInt(100),
-      1800
+      0.5, // ratio
+      1800 // eta
     );
 
     const updated = await prisma.torrent.findUnique({ where: { infoHash: 'progress-test-hash' } });

@@ -1,5 +1,30 @@
 import type { PrismaClient } from '@prisma/client';
 import { normalizeTitle, levenshteinDistance } from '../utils/stringUtils';
+import { aiParsingService } from './AiParsingService';
+
+const PARSE_FILENAME_SYSTEM_PROMPT = `You are a movie filename parser. Given a filename, extract info as JSON with:
+- title: string (movie title, cleaned, required)
+- year: number (optional)
+- quality: string (e.g. "1080p BluRay", optional)
+- resolution: string (e.g. "1080p", optional)
+- source: string (e.g. "BluRay", optional)
+- codec: string (e.g. "X264", optional)
+- group: string (release group, optional)
+Respond with JSON only. The title field is required.`;
+
+const PARSE_EPISODE_FILENAME_SYSTEM_PROMPT = `You are a TV episode filename parser. Given a filename, extract info as JSON with:
+- seriesTitle: string (series name, cleaned, required)
+- seasonNumber: number (optional)
+- episodeNumber: number (optional)
+- absoluteEpisodeNumber: number (optional, for absolute numbering)
+- endingEpisodeNumber: number (optional, for multi-episode files)
+- year: number (optional)
+- quality: string (e.g. "1080p BluRay", optional)
+- resolution: string (e.g. "1080p", optional)
+- source: string (e.g. "BluRay", optional)
+- codec: string (e.g. "X264", optional)
+- group: string (release group, optional)
+Respond with JSON only. The seriesTitle field is required.`;
 
 /**
  * Parsed movie information from a filename.
@@ -76,7 +101,19 @@ export class FilenameParsingService {
   /**
    * Parse movie info from a filename.
    */
-  parseFilename(filename: string): ParsedMovieInfo {
+  async parseFilename(filename: string): Promise<ParsedMovieInfo> {
+    const aiResult = await aiParsingService.parse<ParsedMovieInfo>(
+      PARSE_FILENAME_SYSTEM_PROMPT,
+      filename,
+      ['title']
+    );
+    if (aiResult !== null) {
+      return aiResult;
+    }
+    return this._parseFilenameRegex(filename);
+  }
+
+  private _parseFilenameRegex(filename: string): ParsedMovieInfo {
     // Remove extension
     const name = filename.replace(/\.[^.]+$/, '');
 
@@ -169,7 +206,19 @@ export class FilenameParsingService {
    * - Series.Title.E02.1080p... (anime style)
    * - Series.Title.102.1080p... (absolute numbering)
    */
-  parseEpisodeFilename(filename: string): ParsedEpisodeInfo {
+  async parseEpisodeFilename(filename: string): Promise<ParsedEpisodeInfo> {
+    const aiResult = await aiParsingService.parse<ParsedEpisodeInfo>(
+      PARSE_EPISODE_FILENAME_SYSTEM_PROMPT,
+      filename,
+      ['seriesTitle']
+    );
+    if (aiResult !== null) {
+      return aiResult;
+    }
+    return this._parseEpisodeFilenameRegex(filename);
+  }
+
+  private _parseEpisodeFilenameRegex(filename: string): ParsedEpisodeInfo {
     // Remove extension
     const name = filename.replace(/\.[^.]+$/, '');
 
@@ -333,7 +382,7 @@ export class FilenameParsingService {
     for (const file of files) {
       const stat = await fs.stat(file);
       const filename = path.basename(file);
-      const parsed = this.parseEpisodeFilename(filename);
+      const parsed = await this.parseEpisodeFilename(filename);
 
       // Try to match against database
       const match = this.findBestEpisodeMatch(parsed, series);
@@ -469,7 +518,7 @@ export class FilenameParsingService {
     for (const file of files) {
       const stat = await fs.stat(file);
       const filename = path.basename(file);
-      const parsed = this.parseFilename(filename);
+      const parsed = await this.parseFilename(filename);
 
       // Try to match against database
       const match = this.findBestMatch(parsed, movies);

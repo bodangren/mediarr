@@ -33,7 +33,7 @@ chore_drizzle_migration_20260314  (backend-only; depends on clean baseline from 
 
 ## Active Tracks
 
-*(none)*
+- [~] **Track: Organizer Test Coverage** *Phases: 4 | Link: [./tracks/chore_organizer_coverage_20260316/](./tracks/chore_organizer_coverage_20260316/)*
 
 ## Upcoming / Planned
 

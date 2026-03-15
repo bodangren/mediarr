@@ -33,7 +33,7 @@ chore_drizzle_migration_20260314  (backend-only; depends on clean baseline from 
 
 ## Active Tracks
 
-*(none)*
+- [~] **Track: TorrentManager Corner Cases** *Phases: 4 | Link: [./tracks/bug_torrent_manager_corner_cases_20260315/](./tracks/bug_torrent_manager_corner_cases_20260315/)*
 
 ## Upcoming / Planned
 

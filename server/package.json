@@ -11,5 +11,8 @@
   "author": "",
   "license": "ISC",
   "type": "commonjs",
-  "private": "true"
+  "private": "true",
+  "dependencies": {
+    "openai": "^6.29.0"
+  }
 }

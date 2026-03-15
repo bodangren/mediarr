@@ -30,7 +30,7 @@ export class LibraryScanner {
       if (!LibraryScanner.videoExtensions.has(ext)) continue;
 
       const filename = path.basename(filePath);
-      const parsed = Parser.parse(filename);
+      const parsed = await Parser.parse(filename);
 
       if (parsed && parsed.seasonNumber !== undefined && parsed.episodeNumbers.length > 0) {
         // Find matching episode in DB

@@ -30,6 +30,10 @@ export class AiParsingService {
     userPrompt: string,
     requiredFields: string[] = []
   ): Promise<T | null> {
+    // Skip AI entirely when no API key is configured (e.g. tests, local dev without key).
+    if (!process.env.GLM_API_KEY) {
+      return null;
+    }
     for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
       try {
         const response = await this.client.chat.completions.create(

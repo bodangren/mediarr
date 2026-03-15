@@ -326,17 +326,17 @@ export class ImportManager {
         }
       }
 
-      const parsed = Parser.parse(filename);
+      const parsed = await Parser.parse(filename);
 
       // ── Try episode import ──────────────────────────────────────────────
       let seriesTitle = parsed?.seriesTitle;
 
       if (parsed && !seriesTitle) {
-        const torrentParsed = Parser.parse(torrent.name);
+        const torrentParsed = await Parser.parse(torrent.name);
         if (torrentParsed?.seriesTitle) {
           seriesTitle = torrentParsed.seriesTitle;
         } else {
-          let dirTitle = Parser.parseDirectory(torrent.name)?.title || torrent.name;
+          let dirTitle = (await Parser.parseDirectory(torrent.name))?.title || torrent.name;
           
           const seasonMatch = dirTitle.match(/(?:S\d{1,2}|Season\s*\d{1,2})\b/i);
           if (seasonMatch && seasonMatch.index !== undefined && seasonMatch.index > 0) {

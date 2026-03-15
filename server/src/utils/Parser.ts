@@ -1,3 +1,5 @@
+import { aiParsingService } from '../services/AiParsingService';
+
 export interface ParsedInfo {
   seriesTitle?: string | undefined;
   seasonNumber?: number | undefined;
@@ -20,6 +22,27 @@ export interface ParsedMovie {
   quality?: string | undefined;
 }
 
+const PARSE_SYSTEM_PROMPT = `You are a media filename parser. Given a filename, extract episode info as JSON with these fields:
+- seriesTitle: string (series name, cleaned)
+- seasonNumber: number (season number)
+- episodeNumbers: number[] (episode number(s))
+- quality: string (e.g. "1080p", optional)
+- year: number (optional)
+- type: "series" | "movie" (use "series" if season/episode numbers are present)
+Respond with JSON only. If the filename is not a TV episode, set type to "movie" and omit seriesTitle/seasonNumber/episodeNumbers.`;
+
+const PARSE_MOVIE_SYSTEM_PROMPT = `You are a media filename parser. Given a filename, extract movie info as JSON with:
+- title: string (movie title, cleaned)
+- year: number (optional)
+- quality: string (e.g. "1080p", optional)
+Respond with JSON only. The title field is required.`;
+
+const PARSE_DIRECTORY_SYSTEM_PROMPT = `You are a media directory name parser. Given a folder name, extract info as JSON with:
+- title: string (title, cleaned)
+- year: number (optional)
+- type: "movie" | "series" (optional; use "movie" if year is present in "Title (Year)" format, "series" if it looks like a season folder)
+Respond with JSON only.`;
+
 export class Parser {
   private static seriesPatterns = [
     /s?(?<season>\d{1,2})[ex](?<episode>\d{1,3})/i,
@@ -31,7 +54,44 @@ export class Parser {
 
   private static movieFolderPattern = /^(?<title>.+?)\s*\((?<year>19\d{2}|20\d{2})\)\s*$/;
 
-  public static parse(filename: string): ParsedInfo | null {
+  public static async parse(filename: string): Promise<ParsedInfo | null> {
+    const aiResult = await aiParsingService.parse<ParsedInfo>(
+      PARSE_SYSTEM_PROMPT,
+      filename,
+      ['episodeNumbers']
+    );
+    if (aiResult !== null) {
+      return aiResult;
+    }
+    return this._parseRegex(filename);
+  }
+
+  public static async parseMovie(filename: string): Promise<ParsedMovie | null> {
+    const aiResult = await aiParsingService.parse<ParsedMovie>(
+      PARSE_MOVIE_SYSTEM_PROMPT,
+      filename,
+      ['title']
+    );
+    if (aiResult !== null) {
+      return aiResult;
+    }
+    return this._parseMovieRegex(filename);
+  }
+
+  public static async parseDirectory(dirName: string): Promise<ParsedDirectory> {
+    const aiResult = await aiParsingService.parse<ParsedDirectory>(
+      PARSE_DIRECTORY_SYSTEM_PROMPT,
+      dirName
+    );
+    if (aiResult !== null) {
+      return aiResult;
+    }
+    return this._parseDirectoryRegex(dirName);
+  }
+
+  // ── Regex fallbacks ────────────────────────────────────────────────────────
+
+  private static _parseRegex(filename: string): ParsedInfo | null {
     for (const pattern of this.seriesPatterns) {
       const match = filename.match(pattern);
       if (match && match.groups) {
@@ -50,7 +110,7 @@ export class Parser {
     return null;
   }
 
-  public static parseMovie(filename: string): ParsedMovie | null {
+  private static _parseMovieRegex(filename: string): ParsedMovie | null {
     const name = filename.replace(/\.[^.]+$/, '');
 
     let year: number | undefined;
@@ -97,7 +157,7 @@ export class Parser {
     };
   }
 
-  public static parseDirectory(dirName: string): ParsedDirectory {
+  private static _parseDirectoryRegex(dirName: string): ParsedDirectory {
     const result: ParsedDirectory = {};
 
     const movieMatch = dirName.match(this.movieFolderPattern);

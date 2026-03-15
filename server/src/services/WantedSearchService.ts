@@ -157,14 +157,14 @@ export class WantedSearchService {
       // Filter candidates to only those that contain the requested episode number AND
       // belong to the requested series. Indexers can return wrong episodes or even wrong
       // shows — we must validate title, season, and episode before grabbing.
-      const validCandidates = searchResult.releases.filter(r => {
-        const parsed = Parser.parse(r.title);
-        if (!parsed) return false; // unparseable title (e.g. season pack) — reject
-        if (parsed.seasonNumber !== episode.seasonNumber) return false;
-        if (!parsed.episodeNumbers.includes(episode.episodeNumber)) return false;
-        if (!this.titlesMatch(r.title, series.title)) return false; // wrong show
-        return true;
-      });
+      const validCandidates = (await Promise.all(searchResult.releases.map(async r => {
+        const parsed = await Parser.parse(r.title);
+        if (!parsed) return null; // unparseable title (e.g. season pack) — reject
+        if (parsed.seasonNumber !== episode.seasonNumber) return null;
+        if (!parsed.episodeNumbers.includes(episode.episodeNumber)) return null;
+        if (!this.titlesMatch(r.title, series.title)) return null; // wrong show
+        return r;
+      }))).filter((r): r is typeof searchResult.releases[number] => r !== null);
 
       if (validCandidates.length === 0) {
         return this.logAndReturnSkip(episodeId, 'episode', searchString, 'No valid candidates matching episode number');
@@ -384,13 +384,13 @@ export class WantedSearchService {
       // Exclude individual episodes, single-season packs, and unrelated titles.
       // A season pack like "The.Sopranos.S01.Complete" has no episode number so
       // Parser.parse returns null — we must also check for a lone season marker.
-      const candidates = searchResult.releases.filter(r => {
-        const parsed = Parser.parse(r.title);
-        if (parsed && parsed.episodeNumbers.length > 0) return false; // individual episode
-        if (this.isSingleSeasonPack(r.title)) return false; // single-season pack
-        if (!this.titlesMatch(r.title, series.title)) return false; // unrelated release
-        return true;
-      });
+      const candidates = (await Promise.all(searchResult.releases.map(async r => {
+        const parsed = await Parser.parse(r.title);
+        if (parsed && parsed.episodeNumbers.length > 0) return null; // individual episode
+        if (this.isSingleSeasonPack(r.title)) return null; // single-season pack
+        if (!this.titlesMatch(r.title, series.title)) return null; // unrelated release
+        return r;
+      }))).filter((r): r is typeof searchResult.releases[number] => r !== null);
 
       if (candidates.length === 0) return false;
 
@@ -482,12 +482,12 @@ export class WantedSearchService {
       });
 
       // Exclude individual episodes and unrelated titles.
-      const candidates = searchResult.releases.filter(r => {
-        const parsed = Parser.parse(r.title);
-        if (parsed && parsed.episodeNumbers.length > 0) return false; // individual episode
-        if (!this.titlesMatch(r.title, series.title)) return false; // unrelated release
-        return true;
-      });
+      const candidates = (await Promise.all(searchResult.releases.map(async r => {
+        const parsed = await Parser.parse(r.title);
+        if (parsed && parsed.episodeNumbers.length > 0) return null; // individual episode
+        if (!this.titlesMatch(r.title, series.title)) return null; // unrelated release
+        return r;
+      }))).filter((r): r is typeof searchResult.releases[number] => r !== null);
 
       if (candidates.length === 0) return false;
 

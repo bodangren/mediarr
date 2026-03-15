@@ -1,10 +1,101 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import type { ParsedInfo, ParsedMovie, ParsedDirectory } from './Parser';
+
+// Hoisted mock for aiParsingService
+const mockAiParse = vi.hoisted(() => vi.fn());
+
+vi.mock('../services/AiParsingService', () => ({
+  aiParsingService: { parse: mockAiParse },
+}));
+
 import { Parser } from './Parser';
 
-describe('Parser', () => {
+describe('Parser — AI integration', () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  describe('parse() — AI primary', () => {
+    it('returns AI result when aiParsingService.parse succeeds', async () => {
+      const aiResult: ParsedInfo = {
+        seriesTitle: 'Breaking Bad',
+        seasonNumber: 1,
+        episodeNumbers: [1],
+        type: 'series',
+      };
+      mockAiParse.mockResolvedValueOnce(aiResult);
+
+      const result = await Parser.parse('Breaking.Bad.S01E01.Pilot.mkv');
+      expect(result).toEqual(aiResult);
+      expect(mockAiParse).toHaveBeenCalledOnce();
+    });
+
+    it('falls back to regex when AI returns null', async () => {
+      mockAiParse.mockResolvedValueOnce(null);
+
+      const result = await Parser.parse('Breaking.Bad.S01E01.Pilot.mkv');
+      expect(result).not.toBeNull();
+      expect(result?.seriesTitle).toBe('Breaking Bad');
+      expect(result?.seasonNumber).toBe(1);
+      expect(result?.episodeNumbers).toEqual([1]);
+    });
+  });
+
+  describe('parseMovie() — AI primary', () => {
+    it('returns AI result when aiParsingService.parse succeeds', async () => {
+      const aiResult: ParsedMovie = { title: 'The Shawshank Redemption', year: 1994, quality: '1080p' };
+      mockAiParse.mockResolvedValueOnce(aiResult);
+
+      const result = await Parser.parseMovie('The.Shawshank.Redemption.1994.1080p.mkv');
+      expect(result).toEqual(aiResult);
+      expect(mockAiParse).toHaveBeenCalledOnce();
+    });
+
+    it('falls back to regex when AI returns null', async () => {
+      mockAiParse.mockResolvedValueOnce(null);
+
+      const result = await Parser.parseMovie('Pulp.Fiction.1994.mkv');
+      expect(result).not.toBeNull();
+      expect(result?.title).toBe('Pulp Fiction');
+      expect(result?.year).toBe(1994);
+    });
+  });
+
+  describe('parseDirectory() — AI primary', () => {
+    it('returns AI result when aiParsingService.parse succeeds', async () => {
+      const aiResult: ParsedDirectory = { title: 'The Matrix', year: 1999, type: 'movie' };
+      mockAiParse.mockResolvedValueOnce(aiResult);
+
+      const result = await Parser.parseDirectory('The Matrix (1999)');
+      expect(result).toEqual(aiResult);
+      expect(mockAiParse).toHaveBeenCalledOnce();
+    });
+
+    it('falls back to regex when AI returns null', async () => {
+      mockAiParse.mockResolvedValueOnce(null);
+
+      const result = await Parser.parseDirectory('The Matrix (1999)');
+      expect(result.title).toBe('The Matrix');
+      expect(result.year).toBe(1999);
+      expect(result.type).toBe('movie');
+    });
+  });
+});
+
+// Regex fallback tests — AI is mocked to return null so we exercise the regex paths
+describe('Parser — regex fallback (AI returns null)', () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+    mockAiParse.mockResolvedValue(null);
+  });
+
   describe('parse (series)', () => {
-    it('parses S01E01 format', () => {
-      const result = Parser.parse('Breaking.Bad.S01E01.Pilot.mkv');
+    it('parses S01E01 format', async () => {
+      const result = await Parser.parse('Breaking.Bad.S01E01.Pilot.mkv');
       expect(result).not.toBeNull();
       expect(result?.seriesTitle).toBe('Breaking Bad');
       expect(result?.seasonNumber).toBe(1);
@@ -12,23 +103,23 @@ describe('Parser', () => {
       expect(result?.type).toBe('series');
     });
 
-    it('parses s01e01 lowercase format', () => {
-      const result = Parser.parse('show.s01e05.title.mkv');
+    it('parses s01e01 lowercase format', async () => {
+      const result = await Parser.parse('show.s01e05.title.mkv');
       expect(result).not.toBeNull();
       expect(result?.seasonNumber).toBe(1);
       expect(result?.episodeNumbers).toEqual([5]);
     });
 
-    it('parses 1x01 format', () => {
-      const result = Parser.parse('The.Show.1x12.Episode.Name.mkv');
+    it('parses 1x01 format', async () => {
+      const result = await Parser.parse('The.Show.1x12.Episode.Name.mkv');
       expect(result).not.toBeNull();
       expect(result?.seriesTitle).toBe('The Show');
       expect(result?.seasonNumber).toBe(1);
       expect(result?.episodeNumbers).toEqual([12]);
     });
 
-    it('parses Season X Episode Y format', () => {
-      const result = Parser.parse('Series Name Season 2 Episode 3.mkv');
+    it('parses Season X Episode Y format', async () => {
+      const result = await Parser.parse('Series Name Season 2 Episode 3.mkv');
       expect(result).not.toBeNull();
       expect(result?.seasonNumber).toBe(2);
       expect(result?.episodeNumbers).toEqual([3]);
@@ -36,49 +127,49 @@ describe('Parser', () => {
   });
 
   describe('parse (movie)', () => {
-    it('returns null for movie-like filenames to preserve episode parser contract', () => {
-      const result = Parser.parse('The.Matrix.1999.1080p.mkv');
+    it('returns null for movie-like filenames to preserve episode parser contract', async () => {
+      const result = await Parser.parse('The.Matrix.1999.1080p.mkv');
       expect(result).toBeNull();
     });
 
-    it('returns null for movie names with parenthesized year', () => {
-      const result = Parser.parse('Inception (2010).mp4');
+    it('returns null for movie names with parenthesized year', async () => {
+      const result = await Parser.parse('Inception (2010).mp4');
       expect(result).toBeNull();
     });
 
-    it('returns null for movie release names with quality tokens', () => {
-      const result = Parser.parse('Movie.Name.2024.2160p.UHD.BluRay.mkv');
+    it('returns null for movie release names with quality tokens', async () => {
+      const result = await Parser.parse('Movie.Name.2024.2160p.UHD.BluRay.mkv');
       expect(result).toBeNull();
     });
 
-    it('returns null for movie names without a year', () => {
-      const result = Parser.parse('Some.Movie.1080p.BluRay.x264-GROUP.mkv');
+    it('returns null for movie names without a year', async () => {
+      const result = await Parser.parse('Some.Movie.1080p.BluRay.x264-GROUP.mkv');
       expect(result).toBeNull();
     });
   });
 
   describe('parseMovie', () => {
-    it('extracts title and year from standard format', () => {
-      const result = Parser.parseMovie('The.Shawshank.Redemption.1994.1080p.mkv');
+    it('extracts title and year from standard format', async () => {
+      const result = await Parser.parseMovie('The.Shawshank.Redemption.1994.1080p.mkv');
       expect(result).not.toBeNull();
       expect(result?.title).toBe('The Shawshank Redemption');
       expect(result?.year).toBe(1994);
     });
 
-    it('handles dots as spaces', () => {
-      const result = Parser.parseMovie('Pulp.Fiction.1994.mkv');
+    it('handles dots as spaces', async () => {
+      const result = await Parser.parseMovie('Pulp.Fiction.1994.mkv');
       expect(result).not.toBeNull();
       expect(result?.title).toBe('Pulp Fiction');
     });
 
-    it('handles underscores as spaces', () => {
-      const result = Parser.parseMovie('The_Godfather_1972.mkv');
+    it('handles underscores as spaces', async () => {
+      const result = await Parser.parseMovie('The_Godfather_1972.mkv');
       expect(result).not.toBeNull();
       expect(result?.title).toBe('The Godfather');
     });
 
-    it('extracts quality from movie filename', () => {
-      const result = Parser.parseMovie('Movie.Name.2024.2160p.UHD.BluRay.mkv');
+    it('extracts quality from movie filename', async () => {
+      const result = await Parser.parseMovie('Movie.Name.2024.2160p.UHD.BluRay.mkv');
       expect(result).not.toBeNull();
       expect(result?.title).toBe('Movie Name');
       expect(result?.year).toBe(2024);
@@ -87,34 +178,34 @@ describe('Parser', () => {
   });
 
   describe('parseDirectory', () => {
-    it('parses movie folder format "Title (Year)"', () => {
-      const result = Parser.parseDirectory('The Matrix (1999)');
+    it('parses movie folder format "Title (Year)"', async () => {
+      const result = await Parser.parseDirectory('The Matrix (1999)');
       expect(result.title).toBe('The Matrix');
       expect(result.year).toBe(1999);
       expect(result.type).toBe('movie');
     });
 
-    it('parses movie folder with dots', () => {
-      const result = Parser.parseDirectory('The.Dark.Knight.(2008)');
+    it('parses movie folder with dots', async () => {
+      const result = await Parser.parseDirectory('The.Dark.Knight.(2008)');
       expect(result.title).toBe('The Dark Knight');
       expect(result.year).toBe(2008);
       expect(result.type).toBe('movie');
     });
 
-    it('detects series from Season folder', () => {
-      const result = Parser.parseDirectory('Season 01');
+    it('detects series from Season folder', async () => {
+      const result = await Parser.parseDirectory('Season 01');
       expect(result.type).toBe('series');
     });
 
-    it('parses folder with year but no type indication', () => {
-      const result = Parser.parseDirectory('Breaking Bad 2008');
+    it('parses folder with year but no type indication', async () => {
+      const result = await Parser.parseDirectory('Breaking Bad 2008');
       expect(result.title).toBe('Breaking Bad 2008');
       expect(result.year).toBe(2008);
       expect(result.type).toBeUndefined();
     });
 
-    it('handles plain folder names', () => {
-      const result = Parser.parseDirectory('My Movies');
+    it('handles plain folder names', async () => {
+      const result = await Parser.parseDirectory('My Movies');
       expect(result.title).toBe('My Movies');
     });
   });

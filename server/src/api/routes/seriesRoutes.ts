@@ -267,7 +267,7 @@ export function registerSeriesRoutes(
           const seriesCleanTitleLower = record.cleanTitle ? record.cleanTitle.toLowerCase() : '';
 
           for (const torrent of activeTorrents) {
-            const parsed = Parser.parse(torrent.name);
+            const parsed = await Parser.parse(torrent.name);
             if (parsed && parsed.seriesTitle) {
               const parsedTitleLower = parsed.seriesTitle.toLowerCase().replace(/\s/g, '');
               if (parsedTitleLower === seriesTitleLower || (seriesCleanTitleLower && parsedTitleLower === seriesCleanTitleLower)) {

@@ -53,7 +53,7 @@ export class RssMediaMonitor {
   }
 
   private async handleTvRelease(release: { title: string; magnetUrl: string; seeders?: number; indexerId?: number }): Promise<boolean> {
-    const parsed = Parser.parse(release.title);
+    const parsed = await Parser.parse(release.title);
     if (!(parsed && parsed.seriesTitle)) {
       return false;
     }

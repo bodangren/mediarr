@@ -58,7 +58,7 @@ export class ExistingLibraryScanner {
 
     const allFolders = await Promise.all([...folderPaths].map((p) => this.processFolder(p)));
     const nonEmpty = allFolders.filter((f) => f.files.length > 0);
-    const folders = this.consolidateSeasonFolders(nonEmpty);
+    const folders = await this.consolidateSeasonFolders(nonEmpty);
     const totalFiles = folders.reduce((sum, f) => sum + f.files.length, 0);
 
     return {
@@ -77,7 +77,7 @@ export class ExistingLibraryScanner {
    * case), a synthetic show folder is created from the parent directory name.
    * If the parent already has direct files the season files are appended.
    */
-  private consolidateSeasonFolders(folders: ScannedFolder[]): ScannedFolder[] {
+  private async consolidateSeasonFolders(folders: ScannedFolder[]): Promise<ScannedFolder[]> {
     const byPath = new Map<string, ScannedFolder>(folders.map((f) => [f.path, f]));
     const seasonPaths = new Set<string>();
 
@@ -89,7 +89,7 @@ export class ExistingLibraryScanner {
 
       if (!byPath.has(showPath)) {
         const showName = path.basename(showPath);
-        const parsed = Parser.parseDirectory(showName);
+        const parsed = await Parser.parseDirectory(showName);
         byPath.set(showPath, {
           path: showPath,
           type: 'series',
@@ -121,7 +121,7 @@ export class ExistingLibraryScanner {
     }
 
     const folderName = path.basename(folderPath);
-    const folderParsed = Parser.parseDirectory(folderName);
+    const folderParsed = await Parser.parseDirectory(folderName);
 
     const type = this.detectFolderType(files, folderParsed);
 
@@ -212,8 +212,8 @@ export class ExistingLibraryScanner {
         }
 
         const ext = path.extname(entry.name).toLowerCase();
-        const parsedSeries = Parser.parse(entry.name);
-        const parsedMovie = parsedSeries ? null : Parser.parseMovie(entry.name);
+        const parsedSeries = await Parser.parse(entry.name);
+        const parsedMovie = parsedSeries ? null : await Parser.parseMovie(entry.name);
         const parsedInfo = parsedSeries
           ?? (parsedMovie
             ? {

@@ -38,6 +38,9 @@
 - (2026-03-15, chore_server_module_alignment) Vitest mocks must match the import style in the source: if source uses named imports (`import { validate } from 'node-cron'`), the mock must export `{ validate: ... }` — NOT `{ default: { validate: ... } }`. Changing from default to named imports breaks any test that mocks via `default:`.
 - (2026-03-15, chore_server_module_alignment) When filtering arrays to narrow type (e.g., `(string|number)[] → number[]`), verify that strings in the array are intentional — filtering them out may break behavior that relies on them (Cardigann string category IDs). Widen the target type instead of filtering when strings are valid.
 
+- (2026-03-15, bug_torrent_manager_corner_cases) `vi.fn(() => impl)` uses an arrow function internally; `new vi.fn()` fails with "is not a constructor". Use `vi.fn(function() { return impl; })` for mocks that will be called with `new`. Vitest warns about this at test run time.
+- (2026-03-15, bug_torrent_manager_corner_cases) `vi.clearAllMocks()` only clears call history — it does NOT clear `mockReturnValue`/`mockResolvedValue` implementations. Use `vi.resetAllMocks()` in `afterEach` (clears implementations) + `beforeEach` to restore hoisted mock defaults. This prevents cross-test contamination when one test sets a return value that a later test relies on being absent.
+
 ### Patterns That Worked Well
 
 - (2026-03-11, feature_system_routes_coverage) TDD on routes with in-memory state: export a proxy state object; reset it in `beforeEach`. Filter-predicate bugs only surface with coverage — write tests first.

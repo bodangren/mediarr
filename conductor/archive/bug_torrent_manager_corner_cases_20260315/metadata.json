@@ -2,6 +2,7 @@
   "id": "bug_torrent_manager_corner_cases_20260315",
   "title": "TorrentManager Corner Cases — addTorrent, Completion, Seed Limits, Queue Promotion",
   "type": "bug",
-  "status": "in_progress",
-  "created": "2026-03-15"
+  "status": "done",
+  "created": "2026-03-15",
+  "completed": "2026-03-15"
 }

@@ -36,6 +36,6 @@
 
 ## Phase 4 — Verify & Archive
 
-- [ ] 4.1 Full test suite passes (excluding documented pre-existing failures)
-- [ ] 4.2 Production build passes (`cd app && npm run build`)
-- [ ] 4.3 Archive track and push
+- [x] 4.1 Full test suite passes — 1051 tests pass, 11 skipped (b81192c)
+- [x] 4.2 Production build passes (`cd app && npm run build`) — chunk size warning is pre-existing (b81192c)
+- [x] 4.3 Archive track and push

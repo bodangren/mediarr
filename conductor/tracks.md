@@ -33,7 +33,7 @@ chore_drizzle_migration_20260314  (backend-only; depends on clean baseline from 
 
 ## Active Tracks
 
-*(none)*
+- [ ] **Track: AI-Powered Filename Parsing** *Phases: 4 | Link: [./tracks/feature_ai_parsing_20260316/](./tracks/feature_ai_parsing_20260316/)*
 
 ## Upcoming / Planned
 
@@ -45,7 +45,7 @@ chore_drizzle_migration_20260314  (backend-only; depends on clean baseline from 
 
 ## Upcoming / Unplanned
 
-- [ ] *Track: Use AI SDK and a cheap model for pattern matching instead of regex during search and import; Choose model and input API key
+- [x] *Track: Use AI SDK and a cheap model for pattern matching instead of regex during search and import → promoted to feature_ai_parsing_20260316*
 
 ---
 ## Archived Tracks

@@ -37,7 +37,7 @@ chore_drizzle_migration_20260314  (backend-only; depends on clean baseline from 
 
 ## Upcoming / Planned
 
-- [ ] **Track: App.tsx Decomposition** *Phases: 3 | Link: [./tracks/chore_app_decompose_20260314/](./tracks/chore_app_decompose_20260314/)*
+- [x] **Track: App.tsx Decomposition** *Phases: 3 | Link: [./archive/chore_app_decompose_20260314/](./archive/chore_app_decompose_20260314/)*
 - [ ] **Track: Form Standardization** *Phases: 2 | Link: [./tracks/chore_form_standardization_20260314/](./tracks/chore_form_standardization_20260314/)*
 - [ ] **Track: Drizzle ORM Migration** *Phases: 4 | Link: [./tracks/chore_drizzle_migration_20260314/](./tracks/chore_drizzle_migration_20260314/)*
 

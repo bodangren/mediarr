@@ -1,0 +1,241 @@
+import { useEffect, useMemo, useState } from 'react';
+import { RouteScaffold } from '@/components/primitives/RouteScaffold';
+import { AddIndexerModal } from '@/components/indexers/AddIndexerModal';
+import { EditIndexerModal } from '@/components/indexers/EditIndexerModal';
+import { useToast } from '@/components/providers/ToastProvider';
+import { getApiClients } from '@/lib/api/client';
+import { getPopularPresets } from '@/lib/indexer/indexerPresets';
+import type { IndexerItem } from '@/lib/api/indexerApi';
+
+export function SettingsIndexersPage() {
+  const api = useMemo(() => getApiClients(), []);
+  const { pushToast } = useToast();
+  const [indexers, setIndexers] = useState<IndexerItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [editing, setEditing] = useState<IndexerItem | null>(null);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const load = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const items = await api.indexerApi.list();
+      setIndexers(items);
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : 'Failed to load indexers');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void load();
+  }, []);
+
+  const onAdd = async (draft: any) => {
+    setIsSubmitting(true);
+    try {
+      await api.indexerApi.create({
+        ...draft,
+        settings: JSON.stringify(draft.settings),
+      });
+      setIsAddModalOpen(false);
+      pushToast({ title: 'Indexer created', variant: 'success' });
+      await load();
+    } catch (err) {
+      pushToast({
+        title: 'Save failed',
+        message: err instanceof Error ? err.message : 'Failed to create indexer',
+        variant: 'error',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const onEdit = async (draft: any) => {
+    setIsSubmitting(true);
+    try {
+      await api.indexerApi.update(draft.id, {
+        ...draft,
+        settings: JSON.stringify(draft.settings),
+      });
+      setEditing(null);
+      pushToast({ title: 'Indexer updated', variant: 'success' });
+      await load();
+    } catch (err) {
+      pushToast({
+        title: 'Save failed',
+        message: err instanceof Error ? err.message : 'Failed to update indexer',
+        variant: 'error',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const onDelete = async (id: number) => {
+    if (!window.confirm('Are you sure you want to delete this indexer?')) {
+      return;
+    }
+    try {
+      await api.indexerApi.remove(id);
+      pushToast({ title: 'Indexer deleted', variant: 'success' });
+      await load();
+    } catch (err) {
+      pushToast({
+        title: 'Delete failed',
+        message: err instanceof Error ? err.message : 'Failed to delete indexer',
+        variant: 'error',
+      });
+    }
+  };
+
+  const onToggle = async (id: number, enabled: boolean) => {
+    try {
+      await api.indexerApi.update(id, { enabled });
+      await load();
+    } catch (err) {
+      pushToast({
+        title: 'Toggle failed',
+        message: err instanceof Error ? err.message : 'Failed to toggle indexer',
+        variant: 'error',
+      });
+    }
+  };
+
+  const addIndexerPresets = useMemo(() => [
+    ...getPopularPresets(),
+    {
+      id: 'torznab-generic',
+      name: 'Generic Torznab',
+      description: 'Custom torrent tracker using Torznab contract.',
+      protocol: 'torrent',
+      implementation: 'Torznab',
+      configContract: 'TorznabSettings',
+      privacy: 'Public',
+      fields: [
+        { name: 'url', label: 'Indexer URL', type: 'text', required: true },
+        { name: 'apiKey', label: 'API Key', type: 'password', required: true },
+      ],
+    },
+  ], []);
+
+  return (
+    <RouteScaffold
+      title="Indexers"
+      description="Single global indexer list used by both movie and TV search via the monolith search aggregation service."
+    >
+      <div className="flex gap-2">
+        <button
+          type="button"
+          className="rounded-sm border border-border-subtle bg-surface-2 px-3 py-1.5 text-sm font-medium"
+          onClick={() => setIsAddModalOpen(true)}
+        >
+          Add Indexer
+        </button>
+        <button
+          type="button"
+          className="rounded-sm border border-border-subtle bg-surface-1 px-3 py-1.5 text-sm"
+          onClick={() => { void load(); }}
+        >
+          Refresh
+        </button>
+      </div>
+
+      {error ? <p className="text-sm text-status-error">{error}</p> : null}
+      {isLoading ? <p className="text-sm text-text-secondary">Loading indexers...</p> : null}
+
+      <ul className="space-y-3">
+        {indexers.map(indexer => (
+          <li key={indexer.id} className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border-subtle bg-surface-1 p-4 shadow-sm">
+            <div>
+              <div className="flex items-center gap-2">
+                <p className="font-medium">{indexer.name}</p>
+                <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[10px] uppercase tracking-wider text-text-secondary">
+                  {indexer.protocol}
+                </span>
+              </div>
+              <p className="text-xs text-text-secondary">{indexer.implementation} / {indexer.configContract}</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                className="rounded-sm border border-border-subtle px-2.5 py-1 text-xs font-medium hover:bg-surface-2"
+                onClick={() => onToggle(indexer.id, !indexer.enabled)}
+              >
+                {indexer.enabled ? 'Disable' : 'Enable'}
+              </button>
+              <button
+                type="button"
+                className="rounded-sm border border-border-subtle px-2.5 py-1 text-xs font-medium hover:bg-surface-2"
+                onClick={() => setEditing(indexer)}
+              >
+                Edit
+              </button>
+              <button
+                type="button"
+                className="rounded-sm border border-border-subtle px-2.5 py-1 text-xs font-medium hover:bg-surface-2"
+                onClick={() => {
+                  void api.indexerApi.test(indexer.id).then(res => {
+                    pushToast({
+                      title: res.success ? 'Indexer test passed' : 'Indexer test failed',
+                      message: res.message,
+                      variant: res.success ? 'success' : 'error',
+                    });
+                  });
+                }}
+              >
+                Test
+              </button>
+              <button
+                type="button"
+                className="rounded-sm border border-status-error/20 px-2.5 py-1 text-xs font-medium text-status-error hover:bg-status-error/10"
+                onClick={() => onDelete(indexer.id)}
+              >
+                Delete
+              </button>
+            </div>
+          </li>
+        ))}
+        {!isLoading && indexers.length === 0 && (
+          <li className="rounded-md border border-dashed border-border-subtle p-8 text-center text-sm text-text-secondary">
+            No indexers configured yet. Click "Add Indexer" to get started.
+          </li>
+        )}
+      </ul>
+
+      <AddIndexerModal
+        isOpen={isAddModalOpen}
+        presets={addIndexerPresets as any}
+        isSubmitting={isSubmitting}
+        onClose={() => setIsAddModalOpen(false)}
+        onCreate={onAdd}
+        onTestConnection={async (draft) => {
+          const res = await api.indexerApi.testDraft({
+            ...draft,
+            settings: JSON.stringify(draft.settings),
+          } as any);
+          return {
+            success: res.success,
+            message: res.message,
+            hints: res.diagnostics?.remediationHints ?? [],
+          };
+        }}
+      />
+
+      {editing ? (
+        <EditIndexerModal
+          key={editing.id}
+          isOpen
+          indexer={editing as any}
+          isSubmitting={isSubmitting}
+          onClose={() => setEditing(null)}
+          onSave={onEdit}
+        />
+      ) : null}
+    </RouteScaffold>
+  );
+}

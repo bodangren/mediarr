@@ -33,7 +33,7 @@ chore_drizzle_migration_20260314  (backend-only; depends on clean baseline from 
 
 ## Active Tracks
 
-- [~] **Track: Organizer Test Coverage** *Phases: 4 | Link: [./tracks/chore_organizer_coverage_20260316/](./tracks/chore_organizer_coverage_20260316/)*
+*(none)*
 
 ## Upcoming / Planned
 
@@ -50,6 +50,7 @@ chore_drizzle_migration_20260314  (backend-only; depends on clean baseline from 
 ---
 ## Archived Tracks
 
+- [x] **Track: Organizer Test Coverage** *Phases: 4 | Link: [./archive/chore_organizer_coverage_20260316/](./archive/chore_organizer_coverage_20260316/)*
 - [x] **Track: TorrentManager Corner Cases** *Phases: 4 | Link: [./archive/bug_torrent_manager_corner_cases_20260315/](./archive/bug_torrent_manager_corner_cases_20260315/)*
 - [x] **Track: Cleanup Pending Changes from Prior Work** *Phases: 3 | Link: [./archive/chore_cleanup_pending_changes_20260315/](./archive/chore_cleanup_pending_changes_20260315/)*
 - [x] **Track: Server Package/Module Alignment** *Phases: 4 | Link: [./archive/chore_server_module_alignment_20260315/](./archive/chore_server_module_alignment_20260315/)*

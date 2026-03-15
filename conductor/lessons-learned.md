@@ -40,6 +40,7 @@
 
 - (2026-03-15, bug_torrent_manager_corner_cases) `vi.fn(() => impl)` uses an arrow function internally; `new vi.fn()` fails with "is not a constructor". Use `vi.fn(function() { return impl; })` for mocks that will be called with `new`. Vitest warns about this at test run time.
 - (2026-03-15, bug_torrent_manager_corner_cases) `vi.clearAllMocks()` only clears call history — it does NOT clear `mockReturnValue`/`mockResolvedValue` implementations. Use `vi.resetAllMocks()` in `afterEach` (clears implementations) + `beforeEach` to restore hoisted mock defaults. This prevents cross-test contamination when one test sets a return value that a later test relies on being absent.
+- (2026-03-16, chore_organizer_coverage) When a service uses `fs.copyFile` + `fs.unlink` in an EXDEV fallback, the `vi.mock()` factory MUST include both functions or any test that triggers the fallback will fail with "not a function". Audit every `vi.mock('node:fs/promises')` call when adding move/cross-device tests.
 
 ### Patterns That Worked Well
 

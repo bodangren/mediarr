@@ -3,6 +3,7 @@ package com.mediarr.tv.notification
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -48,14 +49,14 @@ class NotificationEventSource(
 
   private suspend fun connectLoop() {
     var attempt = 0
-    while (isActive) {
+    while (currentCoroutineContext().isActive) {
       try {
         connect()
         attempt = 0 // reset on clean disconnect
       } catch (_: Exception) {
         // reconnect with capped exponential back-off
       }
-      if (!isActive) break
+      if (!currentCoroutineContext().isActive) break
       val delayMs = minOf(1_000L * (1L shl attempt.coerceAtMost(5)), 30_000L)
       attempt++
       delay(delayMs)

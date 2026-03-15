@@ -277,16 +277,11 @@ export class SubtitleVariantRepository {
   }
 
   /**
-   * Returns variants whose linked movie or episode was created after the given cutoff date.
+   * Returns variants that were created after the given cutoff date.
    */
   async listRecentlyAddedVariants(cutoff: Date): Promise<Array<{ id: number }>> {
     return this.prisma.mediaFileVariant.findMany({
-      where: {
-        OR: [
-          { movie: { createdAt: { gte: cutoff } } as any },
-          { episode: { createdAt: { gte: cutoff } } as any },
-        ],
-      },
+      where: { createdAt: { gte: cutoff } },
       select: { id: true },
       orderBy: { id: 'asc' },
     });

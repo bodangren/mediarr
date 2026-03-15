@@ -19,8 +19,7 @@
 - (2026-03-11, bug_episode_matching_corner_cases) `autoSearchEpisode` must validate candidates via `Parser.parse()` — filter by `seasonNumber` + `episodeNumbers.includes(requested)` BEFORE grabbing.
 - (2026-03-11, bug_episode_matching_corner_cases) `isSingleSeasonPack`: check S01-S05 range patterns FIRST; `\bS\d{1,2}\b` matches the first number in a range giving false positives. `Season.N` needs `[.\s]*` not `\s*`.
 - (2026-03-12, chore_import_cleanup) When fixing a null-guard bug in one path, check all sibling paths for the same pattern (ImportManager had identical fall-through in both episode and movie paths).
-- (2026-03-12, bug_seeding_protector_grab_corner_cases) Services that remove resources must check whether downstream work completed first (query `episode.path`/`movie.path` before `removeTorrent`).
-- (2026-03-12, bug_seeding_protector_grab_corner_cases) URL normalisation in `grabRelease` can produce a falsy URL even when `magnetUrl` is non-null (HTTPS URL). Always post-normalisation guard before the expensive downstream call.
+- (2026-03-12, bug_seeding_protector_grab_corner_cases) Before removing a torrent, verify downstream import completed (`episode.path`/`movie.path`). URL normalisation in `grabRelease` can produce a falsy URL even from a non-null `magnetUrl` — always guard post-normalisation.
 - (2026-03-13, chore_seeding_protector_wiring) After adding a service, verify it is wired in `main.ts` — a never-instantiated service is dead code regardless of test coverage.
 - (2026-03-13, bug_wanted_series_pack_corner_cases) Replace `if (result) return` with a flag variable so post-processing blocks after the conditional always execute.
 - (2026-03-13, bug_wanted_series_pack_corner_cases) To intercept a sibling method call in tests, use `vi.spyOn(service, 'methodName').mockResolvedValue(...)`.
@@ -41,6 +40,9 @@
 - (2026-03-15, bug_torrent_manager_corner_cases) `vi.fn(() => impl)` uses an arrow function internally; `new vi.fn()` fails with "is not a constructor". Use `vi.fn(function() { return impl; })` for mocks that will be called with `new`. Vitest warns about this at test run time.
 - (2026-03-15, bug_torrent_manager_corner_cases) `vi.clearAllMocks()` only clears call history — it does NOT clear `mockReturnValue`/`mockResolvedValue` implementations. Use `vi.resetAllMocks()` in `afterEach` (clears implementations) + `beforeEach` to restore hoisted mock defaults. This prevents cross-test contamination when one test sets a return value that a later test relies on being absent.
 - (2026-03-16, chore_organizer_coverage) When a service uses `fs.copyFile` + `fs.unlink` in an EXDEV fallback, the `vi.mock()` factory MUST include both functions or any test that triggers the fallback will fail with "not a function". Audit every `vi.mock('node:fs/promises')` call when adding move/cross-device tests.
+
+- (2026-03-16, chore_app_decompose) When extracting components from a god file, verify each component's imports by reading it fully — the agent correctly identified that `getPosterUrl` was defined but never called in `MovieDetailPage` (the API response already provides `posterUrl`). Dead helpers silently copied from a god file should be deleted, not transplanted.
+- (2026-03-16, chore_app_decompose) Prisma relation filters only accept fields that exist on the related model. `Movie` has `added` (not `createdAt`); `Episode` has no date field at all. When a query needs "recently added variants", filter on `MediaFileVariant.createdAt` directly — it's set at import time and is the correct proxy.
 
 ### Patterns That Worked Well
 

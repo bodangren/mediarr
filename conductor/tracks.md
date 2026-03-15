@@ -33,7 +33,7 @@ chore_drizzle_migration_20260314  (backend-only; depends on clean baseline from 
 
 ## Active Tracks
 
-*(none)*
+- [~] **Track: Cleanup Pending Changes from Prior Work** *Phases: 3 | Link: [./tracks/chore_cleanup_pending_changes_20260315/](./tracks/chore_cleanup_pending_changes_20260315/)*
 
 ## Upcoming / Planned
 

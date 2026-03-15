@@ -2,6 +2,7 @@
   "id": "chore_cleanup_pending_changes_20260315",
   "title": "Cleanup: Commit Pending Changes from Prior Work",
   "type": "chore",
-  "status": "in_progress",
-  "created": "2026-03-15"
+  "status": "done",
+  "created": "2026-03-15",
+  "completed": "2026-03-15"
 }

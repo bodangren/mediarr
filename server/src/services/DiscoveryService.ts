@@ -11,6 +11,7 @@ interface BonjourInstance {
     type: string;
     protocol: 'tcp' | 'udp';
     port: number;
+    host?: string;
     txt?: Record<string, string>;
   }) => BonjourPublication;
   unpublishAll: (callback?: () => void) => void;
@@ -22,6 +23,7 @@ export interface DiscoveryServiceOptions {
   type?: string;
   aliases?: string[];
   port: number;
+  host?: string; // explicit LAN IP to advertise; avoids hostname→loopback resolution
   txt?: Record<string, string>;
 }
 
@@ -30,6 +32,7 @@ export interface DiscoveryAnnouncement {
   type: string;
   aliases?: string[];
   port: number;
+  host?: string;
   txt?: Record<string, string>;
 }
 
@@ -83,6 +86,7 @@ export class DiscoveryService {
       type: serviceType,
       protocol: 'tcp',
       port: options.port,
+      ...(options.host ? { host: options.host } : {}),
       ...(options.txt ? { txt: options.txt } : {}),
     });
     publications.push(primaryPublication);
@@ -93,6 +97,7 @@ export class DiscoveryService {
         type: aliasType,
         protocol: 'tcp',
         port: options.port,
+        ...(options.host ? { host: options.host } : {}),
         ...(options.txt ? { txt: options.txt } : {}),
       });
       publications.push(aliasPublication);
@@ -109,6 +114,7 @@ export class DiscoveryService {
       type: serviceType,
       ...(aliasTypes.length > 0 ? { aliases: aliasTypes } : {}),
       port: options.port,
+      ...(options.host ? { host: options.host } : {}),
       ...(options.txt ? { txt: options.txt } : {}),
     };
 

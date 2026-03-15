@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
+import os from 'node:os';
 import { PrismaClient } from '@prisma/client';
 import path from 'node:path';
 import { createApiServer } from './api/createApiServer';
@@ -380,6 +381,27 @@ async function startApi(): Promise<void> {
   const port = parsePort(process.env.API_PORT, 3001);
   const host = process.env.API_HOST ?? '0.0.0.0';
 
+  // Determine the LAN IP to advertise over mDNS. When the server binds to
+  // 0.0.0.0 and the system hostname resolves to 127.x.x.x (common on Linux),
+  // bonjour-service would advertise the loopback address. We prefer the
+  // interface named in MDNS_IFACE (default: wlp3s0), then fall back to the
+  // first non-loopback IPv4 address. Override entirely with MDNS_HOST.
+  const mdnsHost = process.env.MDNS_HOST ?? (() => {
+    const ifaces = os.networkInterfaces();
+    const preferredIface = process.env.MDNS_IFACE ?? 'wlp3s0';
+    const preferred = ifaces[preferredIface];
+    if (preferred) {
+      const addr = preferred.find(a => a.family === 'IPv4' && !a.internal);
+      if (addr) return addr.address;
+    }
+    for (const iface of Object.values(ifaces)) {
+      for (const addr of iface ?? []) {
+        if (addr.family === 'IPv4' && !addr.internal) return addr.address;
+      }
+    }
+    return undefined;
+  })();
+
   const prisma = new PrismaClient({
     datasources: {
       db: {
@@ -682,6 +704,7 @@ async function startApi(): Promise<void> {
           ? configuredServiceName
           : (process.env.MDNS_SERVICE_NAME ?? 'Mediarr'),
         type: 'mediarr',
+        host: mdnsHost,
         txt: {
           version: '1.0.0',
         },

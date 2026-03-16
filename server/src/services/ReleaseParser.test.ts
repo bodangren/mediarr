@@ -4,6 +4,10 @@ vi.mock('@ai-sdk/deepseek', () => ({
   deepseek: vi.fn(() => ({})),
 }));
 
+vi.mock('@ai-sdk/openai', () => ({
+  openai: vi.fn(() => ({})),
+}));
+
 vi.mock('ai', () => ({
   generateText: vi.fn(),
   Output: {
@@ -20,6 +24,7 @@ const mockGenerateText = vi.mocked(generateText);
 beforeEach(() => {
   vi.clearAllMocks();
   process.env.DEEPSEEK_API_KEY = 'test-key';
+  process.env.OPENAI_API_KEY = 'test-key';
 });
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -144,7 +149,7 @@ describe('ReleaseParser.parseBatch()', () => {
   });
 
   it('returns [] when no API key is set', async () => {
-    delete process.env.DEEPSEEK_API_KEY;
+    delete process.env.OPENAI_API_KEY;
     const parsed = await releaseParser.parseBatch(['title1']);
     expect(parsed).toEqual([]);
   });

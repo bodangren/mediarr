@@ -1,4 +1,5 @@
 import { deepseek } from '@ai-sdk/deepseek';
+import { openai } from '@ai-sdk/openai';
 import { generateText, Output } from 'ai';
 import { z } from 'zod';
 
@@ -133,7 +134,7 @@ export class ReleaseParser {
    * Returns `[]` on any failure; never throws.
    */
   async parseBatch(titles: string[], context?: SearchContext): Promise<ParsedReleaseWithScore[]> {
-    if (!process.env.DEEPSEEK_API_KEY || titles.length === 0) {
+    if (!process.env.OPENAI_API_KEY || titles.length === 0) {
       return [];
     }
 
@@ -165,7 +166,7 @@ ${titles.map((t, i) => `${i + 1}. ${t}`).join('\n')}`;
 
     try {
       const { output } = await generateText({
-        model: deepseek('deepseek-chat'),
+        model: openai('gpt-5-nano'),
         output: Output.object({
           schema: z.object({
           results: z.array(ParsedReleaseWithScoreSchema).describe('One entry per input title, in the same order.'),

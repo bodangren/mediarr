@@ -10,30 +10,30 @@
 
 ---
 
-- [ ] Task 1: Define `ParsedRelease` Zod schema and `SearchContext` type
-    - [ ] Create `server/src/services/ReleaseParser.ts`
-    - [ ] Define and export `ParsedReleaseSchema` (zod), `ParsedRelease`, `ParsedReleaseWithScore`, `SearchContext`
-    - [ ] `matchType` enum: `episode | season_pack | complete_series`
-    - [ ] `quality` sub-object: `resolution`, `source`, `codec`
+- [x] Task 1: Define `ParsedRelease` Zod schema and `SearchContext` type
+    - [x] Create `server/src/services/ReleaseParser.ts`
+    - [x] Define and export `ParsedReleaseSchema` (zod), `ParsedRelease`, `ParsedReleaseWithScore`, `SearchContext`
+    - [x] `matchType` enum: `episode | season_pack | complete_series`
+    - [x] `quality` sub-object: `resolution`, `source`, `codec`
 
-- [ ] Task 2: Write failing tests for `ReleaseParser`
-    - [ ] Create `server/src/services/ReleaseParser.test.ts`
-    - [ ] Mock `@ai-sdk/openai` and `ai` modules via `vi.mock`
-    - [ ] `parse()`: returns `ParsedRelease` on success; `null` on schema failure; `null` on network error; falls back to regex for `SxxExx` filenames when AI returns null
-    - [ ] `parse()`: serial queue — second call waits for first
-    - [ ] `parseBatch()`: single call returns scored array aligned with input; returns `[]` on failure
-    - [ ] `parseBatch()`: `season_pack` scores higher than `complete_series` for a season-specific context
-    - [ ] Run tests; confirm all fail (Red) ✓
+- [x] Task 2: Write failing tests for `ReleaseParser`
+    - [x] Create `server/src/services/ReleaseParser.test.ts`
+    - [x] Mock `@ai-sdk/openai` and `ai` modules via `vi.mock`
+    - [x] `parse()`: returns `ParsedRelease` on success; `null` on schema failure; `null` on network error; falls back to regex for `SxxExx` filenames when AI returns null
+    - [x] `parse()`: serial queue — second call waits for first
+    - [x] `parseBatch()`: single call returns scored array aligned with input; returns `[]` on failure
+    - [x] `parseBatch()`: `season_pack` scores higher than `complete_series` for a season-specific context
+    - [x] Run tests; confirm all fail (Red) ✓
 
-- [ ] Task 3: Implement `ReleaseParser`
-    - [ ] `createOpenAI()` from `@ai-sdk/openai` with `baseURL: https://api.deepseek.com` + `DEEPSEEK_API_KEY`
-    - [ ] `parse()`: `generateObject({ model, schema: ParsedReleaseSchema, prompt })` with 10s timeout, 2 retries, serial queue; regex fallback (`Parser._parseRegex` / `_parseMovieRegex`) on null
-    - [ ] `parseBatch()`: `generateObject` with `z.array(ParsedReleaseWithScoreSchema)`, single call, 15s timeout; returns `[]` on failure
-    - [ ] Batch prompt includes `SearchContext` when provided
-    - [ ] Export singleton `releaseParser`
-    - [ ] Run tests; confirm all pass (Green) ✓
+- [x] Task 3: Implement `ReleaseParser`
+    - [x] `createOpenAI()` from `@ai-sdk/openai` with `baseURL: https://api.deepseek.com` + `DEEPSEEK_API_KEY`
+    - [x] `parse()`: `generateObject({ model, schema: ParsedReleaseSchema, prompt })` with 10s timeout, 2 retries, serial queue; regex fallback on null
+    - [x] `parseBatch()`: `generateObject` with `z.array(ParsedReleaseWithScoreSchema)`, single call, 15s timeout; returns `[]` on failure
+    - [x] Batch prompt includes `SearchContext` when provided
+    - [x] Export singleton `releaseParser`
+    - [x] Run tests; confirm all pass (Green) ✓
 
-- [ ] Task 4: Phase 1 complete — commit
+- [x] Task 4: Phase 1 complete — commit
 
 ---
 

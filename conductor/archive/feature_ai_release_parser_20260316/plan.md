@@ -1,5 +1,12 @@
 # Plan: AI Release Parser — Batch Search Scoring & Import Matching
 
+## ⛔ Implementation Warning
+
+**Do NOT read existing implementations of the files listed in this plan before writing them.**
+The on-disk state of `ReleaseParser.ts`, `AiParsingService.ts`, and related files may be partial, broken, or reverted. Reading them poisons the implementation context.
+
+Implement every file **fresh from the spec alone**. If you need to understand a call site (e.g. how `ImportManager` calls `Parser.parse`), read only the specific lines you need — do not read entire service files. Delete any file that must be replaced before writing the new version.
+
 ## Phase 1: ReleaseParser Service
 
 ### Context

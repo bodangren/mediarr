@@ -548,8 +548,14 @@ export class MediaSearchService {
     // Batch AI parse all release titles in one call for relevance scoring
     console.log(`[MediaSearchService] indexer query done — ${allReleases.length} results, eventHub=${this.eventHub != null}, apiKey=${!!process.env.DEEPSEEK_API_KEY}`);
     this.eventHub?.publish('search:parsing', { resultCount: allReleases.length });
-    // Only send seeded releases to AI — unseeded results aren't grabbable and waste tokens/time
-    const seededReleases = allReleases.filter((r) => r.seeders > 2);
+    // Only send the top N well-seeded releases to AI — cap prevents timeouts on large result sets.
+    // Results beyond the cap fall back to Levenshtein scoring. Sort by seeders desc to prioritise
+    // the most likely grabs.
+    const AI_BATCH_CAP = 25;
+    const seededReleases = allReleases
+      .filter((r) => r.seeders > 2)
+      .sort((a, b) => b.seeders - a.seeders)
+      .slice(0, AI_BATCH_CAP);
     const titles = seededReleases.map((r) => r.title);
     const batchContext = {
       seriesTitle: params.type === 'tvsearch' ? (params.title ?? params.query) : undefined,
@@ -557,10 +563,11 @@ export class MediaSearchService {
       seasonNumber: params.season,
       episodeNumber: params.episode,
     };
-    console.log(`[MediaSearchService] parseBatch starting — ${titles.length} titles, context=${JSON.stringify(batchContext)}`);
+    const unseededCount = allReleases.filter((r) => r.seeders <= 2).length;
+    console.log(`[MediaSearchService] parseBatch starting — ${titles.length}/${allReleases.length} titles sent to AI (${unseededCount} unseeded + ${allReleases.length - unseededCount - titles.length} over cap skipped)`);
     const batchStart = Date.now();
     const parsedBatch = await releaseParser.parseBatch(titles, batchContext);
-    console.log(`[MediaSearchService] parseBatch done in ${Date.now() - batchStart}ms — got ${parsedBatch.length} results (${allReleases.length - seededReleases.length} unseeded skipped)`);
+    console.log(`[MediaSearchService] parseBatch done in ${Date.now() - batchStart}ms — got ${parsedBatch.length} results`);
     for (let i = 0; i < seededReleases.length; i++) {
       const p = parsedBatch[i];
       if (p) seededReleases[i]!.parsedRelease = p;

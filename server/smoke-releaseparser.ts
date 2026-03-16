@@ -1,6 +1,7 @@
 /**
  * Smoke test for ReleaseParser — real DeepSeek calls, no disk/DB writes.
- * Run with: bun smoke-releaseparser.ts  (from server/)
+ * Run with: DEEPSEEK_API_KEY=<key> bun smoke-releaseparser.ts  (from server/)
+ * Note: .env is in the project root; bun only loads .env from cwd, so pass the key explicitly.
  */
 
 import { releaseParser } from './src/services/ReleaseParser';

@@ -38,8 +38,8 @@ export interface SearchContext {
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
-const SINGLE_TIMEOUT_MS = 10_000;
-const BATCH_TIMEOUT_MS = 15_000;
+const SINGLE_TIMEOUT_MS = 30_000;
+const BATCH_TIMEOUT_MS = 90_000;
 const MAX_ATTEMPTS = 3;
 const BACKOFF_DELAYS_MS = [1000, 2000];
 

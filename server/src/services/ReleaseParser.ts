@@ -18,21 +18,15 @@ export const QualitySchema = z.object({
     .optional()
     .catch(undefined),
   source: z
-    .string()
-    .describe(
-      'Origin or distribution medium of the release. ' +
-      'Examples: BluRay, WEB-DL, WEBRip, HDTV, PDTV, DVDRip, DVD, REMUX, AMZN, NF, HULU. ' +
-      'This is independent of resolution — a WEB-DL can be 720p or 1080p.',
-    )
-    .optional(),
+    .enum(['BluRay', 'WEB-DL', 'WEBRip', 'HDTV', 'PDTV', 'DVDRip', 'DVD', 'REMUX', 'AMZN', 'NF', 'HULU', 'DSNP', 'ATVP', 'other'])
+    .describe('Distribution medium. Use "other" for any source not in this list.')
+    .optional()
+    .catch(undefined),
   codec: z
-    .string()
-    .describe(
-      'Video codec used to encode the file. ' +
-      'Examples: x264, x265, HEVC, AVC, XviD, DivX, H.264, H.265. ' +
-      'This is independent of resolution and source.',
-    )
-    .optional(),
+    .enum(['x264', 'x265', 'HEVC', 'AVC', 'XviD', 'DivX', 'AV1', 'VP9', 'other'])
+    .describe('Video codec. Use "other" for any codec not in this list.')
+    .optional()
+    .catch(undefined),
 });
 
 export const ParsedReleaseSchema = z.object({
@@ -162,8 +156,8 @@ Return a JSON object with a "results" array — one entry per title, same order 
 - episodeNumbers: number[] (empty array for season packs, complete series, movies)
 - year: disambiguation year only if part of the title (e.g. Archer 2009)
 - quality.resolution: "SD"|"480p"|"720p"|"1080p"|"unknown" — use "SD" when no explicit resolution tag and no HD marker, "unknown" for 4K/UHD/2160p
-- quality.source: e.g. BluRay, WEB-DL, HDTV
-- quality.codec: e.g. x264, x265, HEVC
+- quality.source: BluRay|WEB-DL|WEBRip|HDTV|DVDRip|REMUX|other
+- quality.codec: x264|x265|HEVC|AVC|XviD|other
 - relevanceScore: 0–100 (exact season pack = 90–100, complete series = 50–69, wrong season = 0–49)
 
 Titles to parse:
@@ -201,8 +195,8 @@ ${titles.map((t, i) => `${i + 1}. ${t}`).join('\n')}`;
 - episodeNumbers: number[] (empty array for season packs, movies)
 - year: disambiguation year only if part of the title (e.g. Archer 2009)
 - quality.resolution: "SD"|"480p"|"720p"|"1080p"|"unknown" — use "SD" when no explicit resolution tag and no HD marker, "unknown" for 4K/UHD/2160p
-- quality.source: e.g. BluRay, WEB-DL, HDTV, REMUX
-- quality.codec: e.g. x264, x265, HEVC
+- quality.source: BluRay|WEB-DL|WEBRip|HDTV|DVDRip|REMUX|other
+- quality.codec: x264|x265|HEVC|AVC|XviD|other
 
 Release title: ${title}`;
 

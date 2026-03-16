@@ -13,6 +13,9 @@ export class WantedSearchService {
   // Score threshold required to automatically grab a release
   private readonly AUTO_GRAB_THRESHOLD = 50;
 
+  // Guard: prevents concurrent autoSearchAll runs from producing duplicate grabs
+  private isRunning = false;
+
   constructor(
     private readonly mediaSearchService: MediaSearchService,
     private readonly prisma: PrismaClient,
@@ -286,6 +289,10 @@ export class WantedSearchService {
    * TV series use smart pack-first logic via autoSearchSeries.
    */
   async autoSearchAll(): Promise<void> {
+    if (this.isRunning) {
+      return;
+    }
+
     this.activityEventEmitter.emit({
       eventType: 'SEARCH_EXECUTED',
       sourceModule: 'wanted-search-service',
@@ -294,6 +301,8 @@ export class WantedSearchService {
       details: {},
       occurredAt: new Date(),
     }).catch(console.error);
+
+    this.isRunning = true;
 
     // Fire and forget background process
     Promise.resolve().then(async () => {
@@ -351,6 +360,8 @@ export class WantedSearchService {
         });
       } catch (err) {
         console.error('Failed during autoSearchAll', err);
+      } finally {
+        this.isRunning = false;
       }
     });
   }

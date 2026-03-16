@@ -1,0 +1,7 @@
+{
+  "id": "bug_autosearch_all_corner_cases_20260316",
+  "title": "WantedSearchService.autoSearchAll — Concurrent-Execution Guard & Full Coverage",
+  "type": "bug",
+  "status": "in_progress",
+  "created": "2026-03-16"
+}

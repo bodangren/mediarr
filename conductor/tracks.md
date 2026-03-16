@@ -33,6 +33,7 @@ chore_drizzle_migration_20260314  (backend-only; depends on clean baseline from 
 
 ## Active Tracks
 
+- [~] **Track: WantedSearchService.autoSearchAll — Concurrent-Execution Guard & Full Coverage** *Phases: 4 | Link: [./tracks/bug_autosearch_all_corner_cases_20260316/](./tracks/bug_autosearch_all_corner_cases_20260316/)*
 - [x] **Track: AI-Powered Filename Parsing** *Phases: 4 | Link: [./archive/feature_ai_parsing_20260316/](./archive/feature_ai_parsing_20260316/)*
 
 ## Upcoming / Planned

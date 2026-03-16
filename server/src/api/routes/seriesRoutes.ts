@@ -680,6 +680,7 @@ export function registerSeriesRoutes(
           monitored: true,
         },
         update: {
+          seriesId: id,
           title: ep.title ?? `Episode ${ep.episodeNumber}`,
           airDateUtc: rawAirDate ? new Date(rawAirDate) : null,
           overview: ep.overview,

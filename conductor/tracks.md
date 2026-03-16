@@ -33,6 +33,7 @@ chore_drizzle_migration_20260314  (backend-only; depends on clean baseline from 
 
 ## Active Tracks
 
+- [~] **Track: seriesRoutes import/apply & rescan corner cases** *Phases: 3 | Link: [./tracks/bug_series_routes_import_rescan_20260316/](./tracks/bug_series_routes_import_rescan_20260316/)*
 - [x] **Track: AI-Powered Filename Parsing** *Phases: 4 | Link: [./archive/feature_ai_parsing_20260316/](./archive/feature_ai_parsing_20260316/)*
 
 ## Upcoming / Planned

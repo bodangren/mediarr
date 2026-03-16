@@ -176,7 +176,7 @@ export class ImportMatchService {
     }
 
     const titles = folder.files
-      .map((f) => f.parsedInfo?.seriesTitle ?? f.parsedInfo?.movieTitle)
+      .map((f) => f.parsedInfo?.title)
       .filter((t): t is string => Boolean(t));
 
     if (titles.length === 0) {

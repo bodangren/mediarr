@@ -4,7 +4,7 @@ import type { ApiDependencies } from '../types';
 import { ExistingLibraryScanner, type ScannedFolder } from '../../services/ExistingLibraryScanner';
 import { ImportMatchService, type ScannedFolderWithMatches } from '../../services/ImportMatchService';
 import { BulkImportService } from '../../services/BulkImportService';
-import type { ParsedInfo } from '../../utils/Parser';
+import type { ParsedRelease } from '../../services/ReleaseParser';
 
 const MATCH_CONCURRENCY = 5;
 
@@ -186,7 +186,7 @@ export function registerImportRoutes(
           path: string;
           size: number;
           extension: string;
-          parsedInfo?: ParsedInfo;
+          parsedInfo?: ParsedRelease;
         }>;
         renameFiles: boolean;
         rootFolderPath: string;

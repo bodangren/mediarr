@@ -1,4 +1,4 @@
-import { Parser } from '../utils/Parser';
+import { releaseParser } from './ReleaseParser';
 import { Organizer } from './Organizer';
 import { ActivityEventEmitter } from './ActivityEventEmitter';
 import type { NotificationDispatchService } from './NotificationDispatchService';
@@ -326,17 +326,17 @@ export class ImportManager {
         }
       }
 
-      const parsed = await Parser.parse(filename);
+      const parsed = await releaseParser.parse(filename);
 
       // ── Try episode import ──────────────────────────────────────────────
-      let seriesTitle = parsed?.seriesTitle;
+      let seriesTitle = parsed?.title;
 
       if (parsed && !seriesTitle) {
-        const torrentParsed = await Parser.parse(torrent.name);
-        if (torrentParsed?.seriesTitle) {
-          seriesTitle = torrentParsed.seriesTitle;
+        const torrentParsed = await releaseParser.parse(torrent.name);
+        if (torrentParsed?.title) {
+          seriesTitle = torrentParsed.title;
         } else {
-          let dirTitle = (await Parser.parseDirectory(torrent.name))?.title || torrent.name;
+          let dirTitle = (await releaseParser.parse(torrent.name))?.title || torrent.name;
           
           const seasonMatch = dirTitle.match(/(?:S\d{1,2}|Season\s*\d{1,2})\b/i);
           if (seasonMatch && seasonMatch.index !== undefined && seasonMatch.index > 0) {
@@ -371,7 +371,7 @@ export class ImportManager {
             where: {
               seriesId: series.id,
               seasonNumber: parsed.seasonNumber,
-              episodeNumber: parsed.episodeNumbers[0],
+              episodeNumber: parsed.episodeNumbers?.[0],
             },
           });
 

@@ -26,7 +26,7 @@ describe('ExistingLibraryScanner', () => {
       expect(result.folders).toHaveLength(1);
       expect(result.folders[0]?.type).toBe('movie');
       expect(result.folders[0]?.files).toHaveLength(1);
-      expect(result.folders[0]?.files[0]?.parsedInfo?.movieTitle).toBe('The Matrix');
+      expect(result.folders[0]?.files[0]?.parsedInfo?.title).toBe('The Matrix');
       expect(result.folders[0]?.files[0]?.parsedInfo?.year).toBe(1999);
     });
 

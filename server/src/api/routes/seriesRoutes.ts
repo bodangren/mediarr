@@ -8,7 +8,7 @@ import { SeriesMonitoringService, type MonitoringType } from '../../services/Ser
 import { SeriesOrganizeService, DEFAULT_SERIES_MANAGEMENT_SETTINGS } from '../../services/SeriesOrganizeService';
 import { FilenameParsingService } from '../../services/FilenameParsingService';
 import { FilterService, type FilterConditionsGroup } from '../../services/FilterService';
-import { Parser } from '../../utils/Parser';
+import { releaseParser } from '../../services/ReleaseParser';
 import type { SearchParams } from '../../services/MediaSearchService';
 import { ExistingLibraryScanner } from '../../services/ExistingLibraryScanner';
 import { SubtitleVariantRepository } from '../../repositories/SubtitleVariantRepository';
@@ -267,11 +267,11 @@ export function registerSeriesRoutes(
           const seriesCleanTitleLower = record.cleanTitle ? record.cleanTitle.toLowerCase() : '';
 
           for (const torrent of activeTorrents) {
-            const parsed = await Parser.parse(torrent.name);
-            if (parsed && parsed.seriesTitle) {
-              const parsedTitleLower = parsed.seriesTitle.toLowerCase().replace(/\s/g, '');
+            const parsed = await releaseParser.parse(torrent.name);
+            if (parsed && parsed.title && parsed.type === 'series') {
+              const parsedTitleLower = parsed.title.toLowerCase().replace(/\s/g, '');
               if (parsedTitleLower === seriesTitleLower || (seriesCleanTitleLower && parsedTitleLower === seriesCleanTitleLower)) {
-                if (parsed.seasonNumber !== undefined && parsed.episodeNumbers && parsed.episodeNumbers.length > 0) {
+                if (parsed.seasonNumber !== undefined && parsed.episodeNumbers && (parsed.episodeNumbers?.length ?? 0) > 0) {
                   for (const epNum of parsed.episodeNumbers) {
                     downloadingEpisodes.add(`${parsed.seasonNumber}-${epNum}`);
                   }

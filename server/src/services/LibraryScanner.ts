@@ -1,6 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { Parser } from '../utils/Parser';
+import { releaseParser } from './ReleaseParser';
 
 /**
  * Service to scan local directories for existing media files and match them to episodes.
@@ -30,15 +30,15 @@ export class LibraryScanner {
       if (!LibraryScanner.videoExtensions.has(ext)) continue;
 
       const filename = path.basename(filePath);
-      const parsed = await Parser.parse(filename);
+      const parsed = await releaseParser.parse(filename);
 
-      if (parsed && parsed.seasonNumber !== undefined && parsed.episodeNumbers.length > 0) {
+      if (parsed && parsed.seasonNumber !== undefined && (parsed.episodeNumbers?.length ?? 0) > 0) {
         // Find matching episode in DB
         const episode = await this.prisma.episode.findFirst({
           where: {
             seriesId: series.id,
             seasonNumber: parsed.seasonNumber,
-            episodeNumber: parsed.episodeNumbers[0],
+            episodeNumber: parsed.episodeNumbers?.[0],
           }
         });
 

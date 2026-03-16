@@ -1,4 +1,4 @@
-import { Parser } from '../utils/Parser';
+import { releaseParser } from './ReleaseParser';
 import { CustomFormatScoringEngine } from './CustomFormatScoringEngine';
 
 /**
@@ -53,16 +53,16 @@ export class RssMediaMonitor {
   }
 
   private async handleTvRelease(release: { title: string; magnetUrl: string; seeders?: number; indexerId?: number }): Promise<boolean> {
-    const parsed = await Parser.parse(release.title);
-    if (!(parsed && parsed.seriesTitle)) {
+    const parsed = await releaseParser.parse(release.title);
+    if (!(parsed && parsed.title && parsed.type === 'series')) {
       return false;
     }
 
     const series = await this.prisma.series.findFirst({
       where: {
         OR: [
-          { title: { contains: parsed.seriesTitle } },
-          { cleanTitle: { contains: parsed.seriesTitle.toLowerCase().replace(/\s/g, '') } },
+          { title: { contains: parsed.title } },
+          { cleanTitle: { contains: parsed.title.toLowerCase().replace(/\s/g, '') } },
         ],
         monitored: true,
       },
@@ -76,7 +76,7 @@ export class RssMediaMonitor {
       where: {
         seriesId: series.id,
         seasonNumber: parsed.seasonNumber,
-        episodeNumber: parsed.episodeNumbers[0],
+        episodeNumber: parsed.episodeNumbers?.[0],
         monitored: true,
         path: null,
       },

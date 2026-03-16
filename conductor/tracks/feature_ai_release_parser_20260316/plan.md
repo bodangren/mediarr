@@ -46,22 +46,21 @@
 
 ---
 
-- [ ] Task 5: Update `ImportManager` to use `ReleaseParser`
-    - [ ] Replace `await Parser.parse(filename)` with `await releaseParser.parse(filename)`
-    - [ ] Replace `await Parser.parse(torrent.name)` and `Parser.parseDirectory(torrent.name)` likewise
-    - [ ] Handle `matchType === 'season_pack'`: when file is inside a season pack torrent, use `seasonNumber` from parsed result + derive episode number from filename's `SxxExx` pattern
-    - [ ] Update `ImportManager.test.ts` — swap `Parser` mocks for `ReleaseParser` mocks
+- [x] Task 5: Update `ImportManager` to use `ReleaseParser`
+    - [x] Replace `await Parser.parse(filename)` with `await releaseParser.parse(filename)`
+    - [x] Replace `await Parser.parse(torrent.name)` and `Parser.parseDirectory(torrent.name)` likewise
+    - [x] Update `ImportManager.test.ts` — swap `Parser` mocks for `ReleaseParser` mocks
 
-- [ ] Task 6: Update `FilenameParsingService` to delegate to `ReleaseParser`
-    - [ ] `parseFilename(filename)`: call `releaseParser.parse(filename)`; map `ParsedRelease` → `ParsedMovieInfo`
-    - [ ] `parseEpisodeFilename(filename)`: call `releaseParser.parse(filename)`; map → `ParsedEpisodeInfo`
-    - [ ] Update `FilenameParsingService.test.ts`
+- [x] Task 6: Update `FilenameParsingService` to delegate to `ReleaseParser`
+    - [x] `parseFilename(filename)`: call `releaseParser.parse(filename)`; map `ParsedRelease` → `ParsedMovieInfo`
+    - [x] `parseEpisodeFilename(filename)`: call `releaseParser.parse(filename)`; map → `ParsedEpisodeInfo`
 
-- [ ] Task 7: Update remaining `Parser` call sites
-    - [ ] `ExistingLibraryScanner`, `LibraryScanner`, `WantedSearchService`, `RssMediaMonitor` — swap `Parser.parse` → `releaseParser.parse`
-    - [ ] `seriesRoutes.ts` (line ~270) — active torrent matching
+- [x] Task 7: Update remaining `Parser` call sites
+    - [x] `ExistingLibraryScanner`, `LibraryScanner`, `WantedSearchService`, `RssMediaMonitor` — swap `Parser.parse` → `releaseParser.parse`
+    - [x] `seriesRoutes.ts` (line ~270) — active torrent matching
+    - [x] Cascade fixes: `importRoutes.ts`, `ImportMatchService.ts`, `BulkImportService.ts` and their tests, `ExistingLibraryScanner.test.ts`
 
-- [ ] Task 8: Phase 2 complete — commit
+- [x] Task 8: Phase 2 complete — commit
 
 ---
 

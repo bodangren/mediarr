@@ -1,6 +1,6 @@
 import type { PrismaClient } from '@prisma/client';
 import { normalizeTitle, levenshteinDistance } from '../utils/stringUtils';
-import { aiParsingService } from './AiParsingService';
+import { releaseParser } from './ReleaseParser';
 
 const PARSE_FILENAME_SYSTEM_PROMPT = `You are a movie filename parser. Given a filename, extract info as JSON with:
 - title: string (movie title, cleaned, required)
@@ -102,13 +102,16 @@ export class FilenameParsingService {
    * Parse movie info from a filename.
    */
   async parseFilename(filename: string): Promise<ParsedMovieInfo> {
-    const aiResult = await aiParsingService.parse<ParsedMovieInfo>(
-      PARSE_FILENAME_SYSTEM_PROMPT,
-      filename,
-      ['title']
-    );
+    const aiResult = await releaseParser.parse(filename);
     if (aiResult !== null) {
-      return aiResult;
+      return {
+        title: aiResult.title,
+        year: aiResult.year,
+        resolution: aiResult.quality?.resolution,
+        source: aiResult.quality?.source,
+        codec: aiResult.quality?.codec,
+        quality: [aiResult.quality?.resolution, aiResult.quality?.source].filter(Boolean).join(' ') || undefined,
+      };
     }
     return this._parseFilenameRegex(filename);
   }
@@ -207,13 +210,18 @@ export class FilenameParsingService {
    * - Series.Title.102.1080p... (absolute numbering)
    */
   async parseEpisodeFilename(filename: string): Promise<ParsedEpisodeInfo> {
-    const aiResult = await aiParsingService.parse<ParsedEpisodeInfo>(
-      PARSE_EPISODE_FILENAME_SYSTEM_PROMPT,
-      filename,
-      ['seriesTitle']
-    );
+    const aiResult = await releaseParser.parse(filename);
     if (aiResult !== null) {
-      return aiResult;
+      return {
+        seriesTitle: aiResult.title,
+        seasonNumber: aiResult.seasonNumber,
+        episodeNumber: aiResult.episodeNumbers?.[0],
+        year: aiResult.year,
+        resolution: aiResult.quality?.resolution,
+        source: aiResult.quality?.source,
+        codec: aiResult.quality?.codec,
+        quality: [aiResult.quality?.resolution, aiResult.quality?.source].filter(Boolean).join(' ') || undefined,
+      };
     }
     return this._parseEpisodeFilenameRegex(filename);
   }

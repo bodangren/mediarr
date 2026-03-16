@@ -1,1 +1,1 @@
-That background task is stale — its results were superseded by the foreground run I did afterward (which confirmed 1061 tests passing). No action needed.
+The background test run completed — this was the initial baseline check I started at the top. Its output is no longer needed since we've already run the full suite (1108 passing) and pushed. Dismissing it.

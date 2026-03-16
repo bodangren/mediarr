@@ -8,9 +8,14 @@ const TIMEOUT_MS = 10_000;
  * Singleton wrapper around an OpenAI-compatible client (Z.AI / GLM).
  * Calls the model with a system + user prompt, expects JSON back.
  * Returns null on any failure (network, timeout, bad JSON, missing fields).
+ *
+ * glm-4.7-flash has a concurrency limit of 1, so all calls are serialised
+ * through a promise chain to avoid 429 errors.
  */
 export class AiParsingService {
   private readonly client: OpenAI;
+  // Serial queue: each call appends itself and waits for the previous to finish.
+  private queue: Promise<unknown> = Promise.resolve();
 
   constructor() {
     this.client = new OpenAI({
@@ -21,14 +26,26 @@ export class AiParsingService {
 
   /**
    * Call the AI model and parse the response as JSON of type T.
+   * Calls are serialised to respect the model's concurrency limit of 1.
    * @param systemPrompt  Instructions for the model.
    * @param userPrompt    The input (e.g. the filename).
    * @param requiredFields  Field names that must be present in the parsed result.
    */
-  async parse<T>(
+  parse<T>(
     systemPrompt: string,
     userPrompt: string,
     requiredFields: string[] = []
+  ): Promise<T | null> {
+    const next = this.queue.then(() => this._parse<T>(systemPrompt, userPrompt, requiredFields));
+    // Swallow rejections on the chain tail so a failure doesn't block subsequent calls.
+    this.queue = next.catch(() => {});
+    return next;
+  }
+
+  private async _parse<T>(
+    systemPrompt: string,
+    userPrompt: string,
+    requiredFields: string[]
   ): Promise<T | null> {
     // Skip AI entirely when no API key is configured (e.g. tests, local dev without key).
     if (!process.env.GLM_API_KEY) {

@@ -33,6 +33,7 @@ chore_drizzle_migration_20260314  (backend-only; depends on clean baseline from 
 
 ## Active Tracks
 
+- [ ] **Track: AI Release Parser — Batch Search Scoring & Import Matching** *Phases: 4 | Link: [./tracks/feature_ai_release_parser_20260316/](./tracks/feature_ai_release_parser_20260316/)*
 - [x] **Track: AI-Powered Filename Parsing** *Phases: 4 | Link: [./archive/feature_ai_parsing_20260316/](./archive/feature_ai_parsing_20260316/)*
 
 ## Upcoming / Planned

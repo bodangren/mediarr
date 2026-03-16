@@ -106,10 +106,10 @@ export class FilenameParsingService {
     if (aiResult !== null) {
       return {
         title: aiResult.title,
-        year: aiResult.year,
-        resolution: aiResult.quality?.resolution,
-        source: aiResult.quality?.source,
-        codec: aiResult.quality?.codec,
+        year: aiResult.year ?? undefined,
+        resolution: aiResult.quality?.resolution ?? undefined,
+        source: aiResult.quality?.source ?? undefined,
+        codec: aiResult.quality?.codec ?? undefined,
         quality: [aiResult.quality?.resolution, aiResult.quality?.source].filter(Boolean).join(' ') || undefined,
       };
     }
@@ -214,12 +214,12 @@ export class FilenameParsingService {
     if (aiResult !== null) {
       return {
         seriesTitle: aiResult.title,
-        seasonNumber: aiResult.seasonNumber,
+        seasonNumber: aiResult.seasonNumber ?? undefined,
         episodeNumber: aiResult.episodeNumbers?.[0],
-        year: aiResult.year,
-        resolution: aiResult.quality?.resolution,
-        source: aiResult.quality?.source,
-        codec: aiResult.quality?.codec,
+        year: aiResult.year ?? undefined,
+        resolution: aiResult.quality?.resolution ?? undefined,
+        source: aiResult.quality?.source ?? undefined,
+        codec: aiResult.quality?.codec ?? undefined,
         quality: [aiResult.quality?.resolution, aiResult.quality?.source].filter(Boolean).join(' ') || undefined,
       };
     }

@@ -16,18 +16,18 @@ export const QualitySchema = z.object({
       '"1080p" when the title explicitly states 1080p or Full HD. ' +
       '"unknown" when the title states 4K, UHD, 2160p, or any resolution that is not in this list.',
     )
-    .optional()
-    .catch(undefined),
+    .nullable()
+    .catch(null),
   source: z
     .enum(['BluRay', 'WEB-DL', 'WEBRip', 'HDTV', 'PDTV', 'DVDRip', 'DVD', 'REMUX', 'AMZN', 'NF', 'HULU', 'DSNP', 'ATVP', 'other'])
     .describe('Distribution medium. Use "other" for any source not in this list.')
-    .optional()
-    .catch(undefined),
+    .nullable()
+    .catch(null),
   codec: z
     .enum(['x264', 'x265', 'HEVC', 'AVC', 'XviD', 'DivX', 'AV1', 'VP9', 'other'])
     .describe('Video codec. Use "other" for any codec not in this list.')
-    .optional()
-    .catch(undefined),
+    .nullable()
+    .catch(null),
 });
 
 export const ParsedReleaseSchema = z.object({
@@ -48,29 +48,28 @@ export const ParsedReleaseSchema = z.object({
     .catch('episode'),
   seasonNumber: z
     .number()
-    .describe('Season number for episodes or season packs. Omit for movies or complete series.')
-    .optional()
-    .catch(undefined),
+    .describe('Season number for episodes or season packs. Use null for movies or complete series.')
+    .nullable()
+    .catch(null),
   episodeNumbers: z
     .array(z.number())
     .describe(
       'Episode numbers for single or multi-episode files. ' +
       'Empty array for season packs, complete series, and movies.',
     )
-    .optional()
-    .catch(undefined),
+    .catch([]),
   year: z
     .number()
     .describe(
       'Disambiguation year when it is part of the title (e.g. Archer 2009, Doctor Who 2005). ' +
-      'Omit if the year is not needed to identify the title.',
+      'Use null if the year is not needed to identify the title.',
     )
-    .optional()
-    .catch(undefined),
+    .nullable()
+    .catch(null),
   quality: QualitySchema
     .describe('Video quality metadata extracted from the release title')
-    .optional()
-    .catch(undefined),
+    .nullable()
+    .catch(null),
 });
 
 export const ParsedReleaseWithScoreSchema = ParsedReleaseSchema.extend({
@@ -176,7 +175,9 @@ ${titles.map((t, i) => `${i + 1}. ${t}`).join('\n')}`;
         abortSignal: AbortSignal.timeout(BATCH_TIMEOUT_MS),
       });
       return output.results;
-    } catch {
+    } catch (e) {
+      console.error('[ReleaseParser.parseBatch] error:', e instanceof Error ? e.message : String(e));
+      if (e instanceof Error && 'text' in e) console.error('[ReleaseParser.parseBatch] raw text:', (e as any).text);
       return [];
     }
   }
@@ -245,6 +246,8 @@ Release title: ${title}`;
           matchType: 'episode',
           seasonNumber: season,
           episodeNumbers: [episode],
+          year: null,
+          quality: null,
         };
       }
     }

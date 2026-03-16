@@ -39,6 +39,7 @@ describe('ReleaseParser.parse()', () => {
       matchType: 'episode',
       seasonNumber: 2,
       episodeNumbers: [1],
+      year: null,
       quality: { resolution: '1080p', source: 'BluRay', codec: 'x264' },
     };
     mockGenerateText.mockResolvedValueOnce({ output: result } as never);
@@ -105,9 +106,9 @@ describe('ReleaseParser.parse()', () => {
 describe('ReleaseParser.parseBatch()', () => {
   it('returns scored array aligned with input order', async () => {
     const results: ParsedReleaseWithScore[] = [
-      { title: 'TBBT', type: 'series', matchType: 'season_pack', seasonNumber: 2, episodeNumbers: [], relevanceScore: 90 },
-      { title: 'TBBT', type: 'series', matchType: 'complete_series', episodeNumbers: [], relevanceScore: 40 },
-      { title: 'TBBT', type: 'series', matchType: 'episode', seasonNumber: 2, episodeNumbers: [1], relevanceScore: 10 },
+      { title: 'TBBT', type: 'series', matchType: 'season_pack', seasonNumber: 2, episodeNumbers: [], year: null, quality: null, relevanceScore: 90 },
+      { title: 'TBBT', type: 'series', matchType: 'complete_series', seasonNumber: null, episodeNumbers: [], year: null, quality: null, relevanceScore: 40 },
+      { title: 'TBBT', type: 'series', matchType: 'episode', seasonNumber: 2, episodeNumbers: [1], year: null, quality: null, relevanceScore: 10 },
     ];
     mockGenerateText.mockResolvedValueOnce({ output: { results } } as never);
 
@@ -133,8 +134,8 @@ describe('ReleaseParser.parseBatch()', () => {
 
   it('season_pack scores higher than complete_series for season-specific context', async () => {
     const results: ParsedReleaseWithScore[] = [
-      { title: 'TBBT', type: 'series', matchType: 'season_pack', seasonNumber: 2, episodeNumbers: [], relevanceScore: 92 },
-      { title: 'TBBT', type: 'series', matchType: 'complete_series', episodeNumbers: [], relevanceScore: 38 },
+      { title: 'TBBT', type: 'series', matchType: 'season_pack', seasonNumber: 2, episodeNumbers: [], year: null, quality: null, relevanceScore: 92 },
+      { title: 'TBBT', type: 'series', matchType: 'complete_series', seasonNumber: null, episodeNumbers: [], year: null, quality: null, relevanceScore: 38 },
     ];
     mockGenerateText.mockResolvedValueOnce({ output: { results } } as never);
 

@@ -172,9 +172,10 @@ if (movieResults.length === 0) {
     console.log(`  ${pass ? green('✓') : red('✗')} ${label}`);
 
   console.log('');
+  // 4K/UHD now maps to "unknown" per schema — top result should be "unknown" (highest-quality 4K release)
   check(
-    `Top result is 2160p (got: ${topResult?.quality?.resolution})`,
-    topResult?.quality?.resolution === '2160p',
+    `Top result resolution is "unknown" (4K/UHD — got: ${topResult?.quality?.resolution})`,
+    topResult?.quality?.resolution === 'unknown',
   );
   const docResult = movieResults.find((_, i) => movieTitles[i]?.includes('Documentary'));
   check(

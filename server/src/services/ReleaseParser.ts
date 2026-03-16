@@ -5,24 +5,79 @@ import { z } from 'zod';
 // ── Schemas ──────────────────────────────────────────────────────────────────
 
 export const QualitySchema = z.object({
-  // .catch(undefined) — model may return "4K", "UHD", etc.; coerce unknown values to undefined
-  resolution: z.enum(['480p', '720p', '1080p', '2160p']).optional().catch(undefined),
-  source: z.string().optional(),
-  codec: z.string().optional(),
+  resolution: z
+    .enum(['SD', '480p', '720p', '1080p', 'unknown'])
+    .describe(
+      'Video resolution. "SD" for standard-def (DVDRip, XviD, SVCD, PDTV). ' +
+      '"480p" for 480p encodes. "720p" for HD-ready. "1080p" for full HD. ' +
+      '"unknown" for 4K/UHD/2160p releases or when resolution cannot be determined.',
+    )
+    .optional()
+    .catch(undefined),
+  source: z
+    .string()
+    .describe('Release source, e.g. BluRay, WEB-DL, WEBRip, HDTV, REMUX, AMZN')
+    .optional(),
+  codec: z
+    .string()
+    .describe('Video codec, e.g. x264, x265, HEVC, AVC, XviD')
+    .optional(),
 });
 
 export const ParsedReleaseSchema = z.object({
-  title: z.string(),
-  type: z.enum(['series', 'movie']).catch('series'),
-  matchType: z.enum(['episode', 'season_pack', 'complete_series']).catch('episode'),
-  seasonNumber: z.number().optional().catch(undefined),
-  episodeNumbers: z.array(z.number()).optional().catch(undefined),
-  year: z.number().optional().catch(undefined),
-  quality: QualitySchema.optional().catch(undefined),
+  title: z
+    .string()
+    .describe('Cleaned series or movie name only — no year, no resolution, no release group, no codec info'),
+  type: z
+    .enum(['series', 'movie'])
+    .describe('"series" for TV shows and anime; "movie" for films')
+    .catch('series'),
+  matchType: z
+    .enum(['episode', 'season_pack', 'complete_series'])
+    .describe(
+      '"episode" for a single episode file. ' +
+      '"season_pack" for a full season of a TV series. ' +
+      '"complete_series" for all seasons of a TV series OR for a single movie file.',
+    )
+    .catch('episode'),
+  seasonNumber: z
+    .number()
+    .describe('Season number for episodes or season packs. Omit for movies or complete series.')
+    .optional()
+    .catch(undefined),
+  episodeNumbers: z
+    .array(z.number())
+    .describe(
+      'Episode numbers for single or multi-episode files. ' +
+      'Empty array for season packs, complete series, and movies.',
+    )
+    .optional()
+    .catch(undefined),
+  year: z
+    .number()
+    .describe(
+      'Disambiguation year when it is part of the title (e.g. Archer 2009, Doctor Who 2005). ' +
+      'Omit if the year is not needed to identify the title.',
+    )
+    .optional()
+    .catch(undefined),
+  quality: QualitySchema
+    .describe('Video quality metadata extracted from the release title')
+    .optional()
+    .catch(undefined),
 });
 
 export const ParsedReleaseWithScoreSchema = ParsedReleaseSchema.extend({
-  relevanceScore: z.number().min(0).max(100).catch(50),
+  relevanceScore: z
+    .number()
+    .min(0)
+    .max(100)
+    .describe(
+      'Relevance score 0–100 relative to the search context. ' +
+      '90–100: exact season pack match. 70–89: correct season episodes or UHD pack. ' +
+      '50–69: complete series or adjacent season. 0–49: wrong season, wrong show, or poor quality match.',
+    )
+    .catch(50),
 });
 
 export type ParsedRelease = z.infer<typeof ParsedReleaseSchema>;
@@ -88,15 +143,17 @@ export class ReleaseParser {
 
     const prompt = `You are a torrent release parser. Parse each release title and score its relevance to the search context.
 ${contextBlock}
-Return a JSON array with one object per title (same order as input). Each object must have:
-- title: string (cleaned series/movie name, no year, no release group)
+Return a JSON object with a "results" array — one entry per title, same order as input. Each entry:
+- title: cleaned name only (no year, no release group, no codec, no resolution)
 - type: "series" | "movie"
-- matchType: "episode" | "season_pack" | "complete_series"
-- seasonNumber: number (if applicable)
-- episodeNumbers: number[] (if applicable, empty array otherwise)
-- year: number (disambiguation year only, e.g. Archer 2009)
-- quality: { resolution?: "480p"|"720p"|"1080p"|"2160p", source?: string, codec?: string }
-- relevanceScore: number 0–100 (season packs for the exact season score highest, complete series score medium, wrong season/episode score lowest)
+- matchType: "episode" | "season_pack" | "complete_series" (use "complete_series" for single movie files)
+- seasonNumber: number if applicable
+- episodeNumbers: number[] (empty array for season packs, complete series, movies)
+- year: disambiguation year only if part of the title (e.g. Archer 2009)
+- quality.resolution: "SD"|"480p"|"720p"|"1080p"|"unknown" — use "SD" for DVDRip/XviD, "unknown" for 4K/UHD/2160p
+- quality.source: e.g. BluRay, WEB-DL, HDTV
+- quality.codec: e.g. x264, x265, HEVC
+- relevanceScore: 0–100 (exact season pack = 90–100, complete series = 50–69, wrong season = 0–49)
 
 Titles to parse:
 ${titles.map((t, i) => `${i + 1}. ${t}`).join('\n')}`;
@@ -105,7 +162,9 @@ ${titles.map((t, i) => `${i + 1}. ${t}`).join('\n')}`;
       const { output } = await generateText({
         model: deepseek('deepseek-chat'),
         output: Output.object({
-          schema: z.object({ results: z.array(ParsedReleaseWithScoreSchema) }),
+          schema: z.object({
+          results: z.array(ParsedReleaseWithScoreSchema).describe('One entry per input title, in the same order.'),
+        }),
         }),
         prompt,
         abortSignal: AbortSignal.timeout(BATCH_TIMEOUT_MS),
@@ -123,14 +182,16 @@ ${titles.map((t, i) => `${i + 1}. ${t}`).join('\n')}`;
       return this._regexFallback(title);
     }
 
-    const prompt = `Parse this torrent/release title and return a JSON object with:
-- title: string (cleaned series/movie name, no year, no release group)
+    const prompt = `Parse this torrent/release title into a JSON object.
+- title: cleaned name only (no year, release group, codec, resolution)
 - type: "series" | "movie"
-- matchType: "episode" | "season_pack" | "complete_series"
-- seasonNumber: number (if applicable)
-- episodeNumbers: number[] (empty array if none)
-- year: number (disambiguation year only, optional)
-- quality: { resolution?: "480p"|"720p"|"1080p"|"2160p", source?: string, codec?: string }
+- matchType: "episode" | "season_pack" | "complete_series" (use "complete_series" for a movie file)
+- seasonNumber: number if applicable
+- episodeNumbers: number[] (empty array for season packs, movies)
+- year: disambiguation year only if part of the title (e.g. Archer 2009)
+- quality.resolution: "SD"|"480p"|"720p"|"1080p"|"unknown" — use "SD" for DVDRip/XviD, "unknown" for 4K/UHD/2160p
+- quality.source: e.g. BluRay, WEB-DL, HDTV, REMUX
+- quality.codec: e.g. x264, x265, HEVC
 
 Release title: ${title}`;
 

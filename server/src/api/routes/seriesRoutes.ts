@@ -268,10 +268,10 @@ export function registerSeriesRoutes(
 
           for (const torrent of activeTorrents) {
             const parsed = await releaseParser.parse(torrent.name);
-            if (parsed && parsed.title && parsed.type === 'series') {
+            if (parsed && parsed.title) {
               const parsedTitleLower = parsed.title.toLowerCase().replace(/\s/g, '');
               if (parsedTitleLower === seriesTitleLower || (seriesCleanTitleLower && parsedTitleLower === seriesCleanTitleLower)) {
-                if (parsed.seasonNumber !== undefined && parsed.episodeNumbers && (parsed.episodeNumbers?.length ?? 0) > 0) {
+                if (parsed.seasonNumber !== undefined && parsed.episodeNumbers && parsed.episodeNumbers.length > 0) {
                   for (const epNum of parsed.episodeNumbers) {
                     downloadingEpisodes.add(`${parsed.seasonNumber}-${epNum}`);
                   }
@@ -476,9 +476,13 @@ export function registerSeriesRoutes(
       }
     }
 
+    // Strip disambiguation year suffix (e.g. "Archer (2009)" → "Archer")
+    // before passing to indexers — parenthesised years confuse indexer text search.
+    const searchTitle = series.title.replace(/\s*\(\d{4}\)\s*$/, '').trim();
     const searchParams: SearchParams = {
       type: 'tvsearch',
-      query: body.query ?? series.title,
+      query: body.query ?? searchTitle,
+      title: searchTitle,
       qualityProfileId: body.qualityProfileId ?? series.qualityProfileId ?? undefined,
     };
 

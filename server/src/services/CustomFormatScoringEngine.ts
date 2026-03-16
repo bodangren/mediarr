@@ -87,9 +87,10 @@ export class CustomFormatScoringEngine {
     }
 
     // 2. Calculate Confidence Score (0 to 100)
-    // Use AI relevance score when available; fall back to Levenshtein distance.
+    // When AI-parsed relevance is available, use it directly — it understands matchType semantics.
+    // Otherwise fall back to Levenshtein-based title similarity.
     let confidenceScore = 0;
-    if (parsedRelease?.relevanceScore != null) {
+    if (parsedRelease !== undefined) {
       confidenceScore = parsedRelease.relevanceScore;
     } else if (targetParams.title) {
       const normalizedTarget = normalizeTitle(targetParams.title);
@@ -99,9 +100,9 @@ export class CustomFormatScoringEngine {
       if (qualityIndex > 0) {
         cleanCandidateTitle = cleanCandidateTitle.substring(0, qualityIndex);
       }
-
+      
       const normalizedCandidate = normalizeTitle(cleanCandidateTitle);
-
+      
       if (normalizedCandidate === normalizedTarget || normalizedCandidate.includes(normalizedTarget)) {
         confidenceScore = 100;
       } else {
@@ -110,7 +111,7 @@ export class CustomFormatScoringEngine {
         const similarity = Math.max(0, 1 - distance / (maxLength || 1));
         confidenceScore = Math.round(similarity * 100);
       }
-
+      
       // Bonus for exact season/episode match in title if applicable
       if (targetParams.season !== undefined && targetParams.episode !== undefined) {
         const s = targetParams.season.toString().padStart(2, '0');

@@ -1,14 +1,16 @@
 import fs from 'node:fs/promises';
 import type { Dirent } from 'node:fs';
 import path from 'node:path';
-import { releaseParser, type ParsedRelease } from './ReleaseParser';
+import { releaseParser } from './ReleaseParser';
+import { Parser } from '../utils/Parser';
+import type { ParsedDirectory, ParsedInfo } from '../utils/Parser';
 
 export interface ScannedFile {
   path: string;
   size: number;
   extension: string;
   nfoPath?: string | undefined;
-  parsedInfo?: ParsedRelease | undefined;
+  parsedInfo?: ParsedInfo | undefined;
 }
 
 export interface ScannedFolder {
@@ -121,7 +123,14 @@ export class ExistingLibraryScanner {
     }
 
     const folderName = path.basename(folderPath);
-    const folderParsed = await releaseParser.parse(folderName);
+    const _folderParsedRelease = await releaseParser.parse(folderName);
+    const folderParsed: ParsedDirectory = _folderParsedRelease
+      ? {
+          title: _folderParsedRelease.title,
+          year: _folderParsedRelease.year ?? undefined,
+          type: _folderParsedRelease.type,
+        }
+      : await Parser.parseDirectory(folderName);
 
     const type = this.detectFolderType(files, folderParsed);
 
@@ -130,13 +139,13 @@ export class ExistingLibraryScanner {
       type,
       files,
       nfoData,
-      parsedTitle: folderParsed?.title ?? nfoData?.title,
-      parsedYear: folderParsed?.year ?? nfoData?.year,
+      parsedTitle: folderParsed.title ?? nfoData?.title,
+      parsedYear: folderParsed.year ?? nfoData?.year,
     };
   }
 
-  private detectFolderType(files: ScannedFile[], folderParsed: ParsedRelease | null): 'movie' | 'series' | 'unknown' {
-    if (folderParsed?.type) {
+  private detectFolderType(files: ScannedFile[], folderParsed: ParsedDirectory): 'movie' | 'series' | 'unknown' {
+    if (folderParsed.type) {
       return folderParsed.type;
     }
 
@@ -162,7 +171,7 @@ export class ExistingLibraryScanner {
       }
 
       const seriesTitles = new Set(
-        files.map((f) => (f.parsedInfo?.type === 'series' ? f.parsedInfo?.title?.toLowerCase() : undefined)).filter(Boolean),
+        files.map((f) => f.parsedInfo?.seriesTitle?.toLowerCase()).filter(Boolean),
       );
       if (seriesTitles.size === 1) {
         return 'series';
@@ -212,7 +221,31 @@ export class ExistingLibraryScanner {
         }
 
         const ext = path.extname(entry.name).toLowerCase();
-        const parsedInfo = (await releaseParser.parse(entry.name)) ?? undefined;
+        const _pr = await releaseParser.parse(entry.name);
+        let parsedInfo: ParsedInfo | undefined;
+        if (_pr) {
+          parsedInfo = {
+            seriesTitle: _pr.type === 'series' ? _pr.title : undefined,
+            movieTitle: _pr.type === 'movie' ? _pr.title : undefined,
+            seasonNumber: _pr.seasonNumber ?? undefined,
+            episodeNumbers: _pr.episodeNumbers,
+            year: _pr.year ?? undefined,
+            quality: [_pr.quality?.resolution, _pr.quality?.source].filter(Boolean).join(' ') || undefined,
+            type: _pr.type,
+          };
+        } else {
+          // releaseParser regex only handles episodes/season packs; fall back to movie regex
+          const movie = await Parser.parseMovie(entry.name);
+          if (movie) {
+            parsedInfo = {
+              movieTitle: movie.title,
+              year: movie.year,
+              quality: movie.quality,
+              episodeNumbers: [],
+              type: 'movie',
+            };
+          }
+        }
 
         const videoBaseName = entry.name.replace(/\.[^.]+$/, '').toLowerCase();
         const correspondingNfo = nfoByBaseName.get(videoBaseName);

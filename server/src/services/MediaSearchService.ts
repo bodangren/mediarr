@@ -5,7 +5,7 @@ import type { BaseIndexer, SearchQuery } from '../indexers/BaseIndexer';
 import { CustomFormatScoringEngine, type ReleaseCandidate } from './CustomFormatScoringEngine';
 import type { CustomFormatWithScores } from '../repositories/CustomFormatRepository';
 import type { NotificationDispatchService } from './NotificationDispatchService';
-import { releaseParser, type ParsedReleaseWithScore } from './ReleaseParser';
+import { releaseParser, type ParsedReleaseWithScore, type SearchContext } from './ReleaseParser';
 import type { ApiEventHub } from '../api/eventHub';
 
 export interface SearchCandidate {
@@ -423,7 +423,7 @@ export class MediaSearchService {
 
     return releases.map(release => {
       const indexerPriority = indexerRecords.find(r => r.id === release.indexerId)?.priority || 0;
-      
+
       const candidateToScore = {
         ...toScoringCandidate(release),
         seeders: release.seeders,
@@ -459,11 +459,11 @@ export class MediaSearchService {
       };
     }
 
+    this.eventHub?.publish('search:querying', { indexerCount: indexerRecords.length });
+
     const query = toSearchQuery(params);
     const indexerResults: IndexerSearchResult[] = [];
     const allReleases: SearchCandidate[] = [];
-
-    this.eventHub?.publish('search:querying', { indexerCount: indexerRecords.length });
 
     // Query each indexer in parallel with timeout
     const searchPromises = indexerRecords.map(async (record) => {
@@ -538,40 +538,44 @@ export class MediaSearchService {
       }
     }
 
+    this.eventHub?.publish('search:parsing', { resultCount: allReleases.length });
+
+    // AI batch parse: top 25 well-seeded releases (seeders > 2), sorted by seeders desc
+    const seededReleases = [...allReleases]
+      .filter(r => r.seeders > 2)
+      .sort((a, b) => b.seeders - a.seeders)
+      .slice(0, 25);
+
+    if (seededReleases.length > 0) {
+      const batchContext: SearchContext = {};
+      if (params.type === 'tvsearch') {
+        batchContext.seriesTitle = params.title || params.query;
+      } else if (params.type === 'movie') {
+        batchContext.movieTitle = params.title || params.query;
+      }
+      if (params.season !== undefined) batchContext.seasonNumber = params.season;
+      if (params.episode !== undefined) batchContext.episodeNumber = params.episode;
+
+      const parsedBatch = await releaseParser.parseBatch(
+        seededReleases.map(r => r.title),
+        batchContext,
+      );
+
+      for (let i = 0; i < parsedBatch.length; i++) {
+        const release = seededReleases[i];
+        const parsed = parsedBatch[i];
+        if (release && parsed) {
+          release.parsedRelease = parsed;
+        }
+      }
+    }
+
     const targetParams = {
       title: params.title || params.query,
       season: params.season,
       episode: params.episode,
       year: params.year,
     };
-
-    // Batch AI parse all release titles in one call for relevance scoring
-    console.log(`[MediaSearchService] indexer query done — ${allReleases.length} results, eventHub=${this.eventHub != null}, apiKey=${!!process.env.DEEPSEEK_API_KEY}`);
-    this.eventHub?.publish('search:parsing', { resultCount: allReleases.length });
-    // Only send the top N well-seeded releases to AI — cap prevents timeouts on large result sets.
-    // Results beyond the cap fall back to Levenshtein scoring. Sort by seeders desc to prioritise
-    // the most likely grabs.
-    const AI_BATCH_CAP = 25;
-    const seededReleases = allReleases
-      .filter((r) => r.seeders > 2)
-      .sort((a, b) => b.seeders - a.seeders)
-      .slice(0, AI_BATCH_CAP);
-    const titles = seededReleases.map((r) => r.title);
-    const batchContext = {
-      seriesTitle: params.type === 'tvsearch' ? (params.title ?? params.query) : undefined,
-      movieTitle: params.type === 'movie' ? (params.title ?? params.query) : undefined,
-      seasonNumber: params.season,
-      episodeNumber: params.episode,
-    };
-    const unseededCount = allReleases.filter((r) => r.seeders <= 2).length;
-    console.log(`[MediaSearchService] parseBatch starting — ${titles.length}/${allReleases.length} titles sent to AI (${unseededCount} unseeded + ${allReleases.length - unseededCount - titles.length} over cap skipped)`);
-    const batchStart = Date.now();
-    const parsedBatch = await releaseParser.parseBatch(titles, batchContext);
-    console.log(`[MediaSearchService] parseBatch done in ${Date.now() - batchStart}ms — got ${parsedBatch.length} results`);
-    for (let i = 0; i < seededReleases.length; i++) {
-      const p = parsedBatch[i];
-      if (p) seededReleases[i]!.parsedRelease = p;
-    }
 
     const scoredReleases = await this.applyUnifiedScoring(
       allReleases,

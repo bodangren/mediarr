@@ -84,29 +84,6 @@ const TORRENT = {
   path: '/downloads/complete/The.Matrix.1999.mkv',
 };
 
-// Mock releaseParser — tests control return values per-torrent name below
-vi.mock('./ReleaseParser', () => ({
-  releaseParser: {
-    parse: vi.fn(async (name: string) => {
-      // Episode patterns: S01E01 etc.
-      const epMatch = name.match(/S(\d{1,2})E(\d{1,3})/i);
-      if (epMatch) {
-        // Extract a rough title from before the season marker
-        const titleRaw = name.replace(/\.[^.]+$/, '').split(/\.S\d{1,2}E/i)[0] ?? name;
-        const title = titleRaw.replace(/[._]/g, ' ').trim();
-        return {
-          title,
-          type: 'series',
-          matchType: 'episode',
-          seasonNumber: parseInt(epMatch[1], 10),
-          episodeNumbers: [parseInt(epMatch[2], 10)],
-        };
-      }
-      return null;
-    }),
-  },
-}));
-
 // Fs mock — a single video file at the torrent path
 vi.mock('node:fs/promises', () => ({
   default: {

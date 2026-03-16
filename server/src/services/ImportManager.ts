@@ -371,7 +371,7 @@ export class ImportManager {
             where: {
               seriesId: series.id,
               seasonNumber: parsed.seasonNumber,
-              episodeNumber: parsed.episodeNumbers?.[0],
+              episodeNumber: parsed.episodeNumbers[0],
             },
           });
 

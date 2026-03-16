@@ -157,20 +157,16 @@ export class WantedSearchService {
         return this.logAndReturnSkip(episodeId, 'episode', searchString, 'No releases found');
       }
 
-      // Filter candidates to only those that contain the requested episode number AND
-      // belong to the requested series. Indexers can return wrong episodes or even wrong
-      // shows — we must validate title, season, and episode before grabbing.
+      // Filter candidates to only those that are an exact episode match for the
+      // requested season/episode and belong to the requested series.
       const validCandidates = (await Promise.all(searchResult.releases.map(async r => {
         const parsed = await releaseParser.parse(r.title);
         if (!parsed) return null;
-        if (!this.titlesMatch(r.title, series.title)) return null; // wrong show
-        // Accept exact episode match
-        if (parsed.matchType === 'episode' && parsed.seasonNumber === episode.seasonNumber && (parsed.episodeNumbers ?? []).includes(episode.episodeNumber)) return r;
-        // Accept season pack for the right season
-        if (parsed.matchType === 'season_pack' && parsed.seasonNumber === episode.seasonNumber) return r;
-        // Accept complete series as last resort
-        if (parsed.matchType === 'complete_series') return r;
-        return null;
+        if (parsed.matchType !== 'episode') return null;
+        if (parsed.seasonNumber !== episode.seasonNumber) return null;
+        if (!parsed.episodeNumbers.includes(episode.episodeNumber)) return null;
+        if (!this.titlesMatch(r.title, series.title)) return null;
+        return r;
       }))).filter((r): r is typeof searchResult.releases[number] => r !== null);
 
       if (validCandidates.length === 0) {
@@ -397,13 +393,11 @@ export class WantedSearchService {
       });
 
       // Exclude individual episodes, single-season packs, and unrelated titles.
-      // A season pack like "The.Sopranos.S01.Complete" has no episode number so
-      // Parser.parse returns null — we must also check for a lone season marker.
       const candidates = (await Promise.all(searchResult.releases.map(async r => {
         const parsed = await releaseParser.parse(r.title);
+        if (parsed?.matchType === 'episode') return null; // individual episode
+        if (parsed?.matchType === 'season_pack') return null; // single-season pack
         if (!this.titlesMatch(r.title, series.title)) return null; // unrelated release
-        if (parsed?.matchType === 'episode') return null;
-        if (parsed?.matchType === 'season_pack') return null;
         return r;
       }))).filter((r): r is typeof searchResult.releases[number] => r !== null);
 
@@ -499,7 +493,7 @@ export class WantedSearchService {
       // Exclude individual episodes and unrelated titles.
       const candidates = (await Promise.all(searchResult.releases.map(async r => {
         const parsed = await releaseParser.parse(r.title);
-        if (parsed?.matchType === 'episode') return null;
+        if (parsed?.matchType === 'episode') return null; // individual episode
         if (!this.titlesMatch(r.title, series.title)) return null; // unrelated release
         return r;
       }))).filter((r): r is typeof searchResult.releases[number] => r !== null);

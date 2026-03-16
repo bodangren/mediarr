@@ -268,7 +268,7 @@ describe('ImportMatchService', () => {
             path: '/test/Breaking.Bad.S01E01.mkv', 
             size: 1000, 
             extension: '.mkv',
-            parsedInfo: { title: 'Breaking Bad', type: 'series' as const, matchType: 'episode' as const, seasonNumber: null, episodeNumbers: [1], year: null, quality: null },
+            parsedInfo: { seriesTitle: 'Breaking Bad', episodeNumbers: [1] },
           },
         ],
       };

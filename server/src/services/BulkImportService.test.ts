@@ -275,7 +275,7 @@ describe('BulkImportService', () => {
         path: '/tv/Breaking Bad/Season 1/Breaking.Bad.S01E01.mkv',
         size: 1000,
         extension: '.mkv',
-        parsedInfo: { title: 'Breaking Bad', type: 'series' as const, matchType: 'episode' as const, seasonNumber: 1, episodeNumbers: [1], year: null, quality: null },
+        parsedInfo: { seasonNumber: 1, episodeNumbers: [1] },
       }],
       renameFiles: false,
       rootFolderPath: '/media/tv',

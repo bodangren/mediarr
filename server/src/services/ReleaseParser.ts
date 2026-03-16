@@ -1,31 +1,28 @@
-import { deepseek } from '@ai-sdk/deepseek';
-import { openai } from '@ai-sdk/openai';
-import { generateText, Output } from 'ai';
+import { generateObject } from 'ai';
+import { createOpenAI } from '@ai-sdk/openai';
 import { z } from 'zod';
 
-// ── Schemas ──────────────────────────────────────────────────────────────────
+// ── Schemas ─────────────────────────────────────────────────────────────────
 
 export const QualitySchema = z.object({
   resolution: z
     .enum(['SD', '480p', '720p', '1080p', 'unknown'])
     .describe(
-      'Pixel resolution of the video. ' +
-      '"SD" when the title has no explicit resolution tag and no HD/UHD marker (standard definition, ~480i/576i). ' +
-      '"480p" when the title explicitly states 480p. ' +
-      '"720p" when the title explicitly states 720p or HD. ' +
-      '"1080p" when the title explicitly states 1080p or Full HD. ' +
-      '"unknown" when the title states 4K, UHD, 2160p, or any resolution that is not in this list.',
+      '"SD" = no explicit resolution and no HD/UHD marker. "480p"|"720p"|"1080p" = title explicitly states that resolution. "unknown" = 4K, UHD, 2160p, or any resolution not in this list.',
     )
     .nullable()
     .catch(null),
   source: z
-    .enum(['BluRay', 'WEB-DL', 'WEBRip', 'HDTV', 'PDTV', 'DVDRip', 'DVD', 'REMUX', 'AMZN', 'NF', 'HULU', 'DSNP', 'ATVP', 'other'])
-    .describe('Distribution medium. Use "other" for any source not in this list.')
+    .enum([
+      'BluRay', 'WEB-DL', 'WEBRip', 'HDTV', 'PDTV', 'DVDRip', 'DVD',
+      'REMUX', 'AMZN', 'NF', 'HULU', 'DSNP', 'ATVP', 'other',
+    ])
+    .describe('Distribution medium. "other" for anything not in this list.')
     .nullable()
     .catch(null),
   codec: z
     .enum(['x264', 'x265', 'HEVC', 'AVC', 'XviD', 'DivX', 'AV1', 'VP9', 'other'])
-    .describe('Video codec. Use "other" for any codec not in this list.')
+    .describe('Video codec. "other" for anything not in this list.')
     .nullable()
     .catch(null),
 });
@@ -33,7 +30,7 @@ export const QualitySchema = z.object({
 export const ParsedReleaseSchema = z.object({
   title: z
     .string()
-    .describe('Cleaned series or movie name only — no year, no resolution, no release group, no codec info'),
+    .describe('Cleaned series or movie name — no year, no resolution, no release group, no codec'),
   type: z
     .enum(['series', 'movie'])
     .describe('"series" for TV shows and anime; "movie" for films')
@@ -41,35 +38,24 @@ export const ParsedReleaseSchema = z.object({
   matchType: z
     .enum(['episode', 'season_pack', 'complete_series'])
     .describe(
-      '"episode" for a single episode file. ' +
-      '"season_pack" for a full season of a TV series. ' +
-      '"complete_series" for all seasons of a TV series OR for a single movie file.',
+      '"episode" = single episode file. "season_pack" = full season of a TV series. "complete_series" = all seasons of a series OR a single movie file.',
     )
     .catch('episode'),
   seasonNumber: z
     .number()
-    .describe('Season number for episodes or season packs. Use null for movies or complete series.')
+    .describe('Season number for episodes/season packs. null for movies or complete series.')
     .nullable()
     .catch(null),
   episodeNumbers: z
     .array(z.number())
-    .describe(
-      'Episode numbers for single or multi-episode files. ' +
-      'Empty array for season packs, complete series, and movies.',
-    )
+    .describe('Episode numbers. Empty array for season packs, complete series, movies.')
     .catch([]),
   year: z
     .number()
-    .describe(
-      'Disambiguation year when it is part of the title (e.g. Archer 2009, Doctor Who 2005). ' +
-      'Use null if the year is not needed to identify the title.',
-    )
+    .describe('Disambiguation year if part of the title (e.g. Archer 2009). null otherwise.')
     .nullable()
     .catch(null),
-  quality: QualitySchema
-    .describe('Video quality metadata extracted from the release title')
-    .nullable()
-    .catch(null),
+  quality: QualitySchema.nullable().catch(null),
 });
 
 export const ParsedReleaseWithScoreSchema = ParsedReleaseSchema.extend({
@@ -78,11 +64,13 @@ export const ParsedReleaseWithScoreSchema = ParsedReleaseSchema.extend({
     .min(0)
     .max(100)
     .describe(
-      'Relevance score 0–100 relative to the search context. ' +
-      '90–100: exact season pack match. 70–89: correct season episodes or UHD pack. ' +
-      '50–69: complete series or adjacent season. 0–49: wrong season, wrong show, or poor quality match.',
+      '0–100 relevance to the search context. 90–100 = exact match (right show, right season pack). 70–89 = correct season individual episodes or UHD pack. 50–69 = complete series or adjacent season. 0–49 = wrong season, wrong show, or poor quality.',
     )
     .catch(50),
+});
+
+const BatchResponseSchema = z.object({
+  results: z.array(ParsedReleaseWithScoreSchema),
 });
 
 export type ParsedRelease = z.infer<typeof ParsedReleaseSchema>;
@@ -96,163 +84,140 @@ export interface SearchContext {
   preferredResolution?: string;
 }
 
-// ── Constants ────────────────────────────────────────────────────────────────
+// ── Regex fallback (no AI dependency) ───────────────────────────────────────
 
-const SINGLE_TIMEOUT_MS = 30_000;
-const BATCH_TIMEOUT_MS = 90_000;
-const MAX_ATTEMPTS = 3;
-const BACKOFF_DELAYS_MS = [1000, 2000];
-
-const SERIES_PATTERNS = [
-  /s?(?<season>\d{1,2})[ex](?<episode>\d{1,3})/i,
-  /(?<season>\d{1,2})x(?<episode>\d{1,3})/i,
-  /season\s+(?<season>\d{1,2})\s+episode\s+(?<episode>\d{1,3})/i,
-];
-
-// ── ReleaseParser ─────────────────────────────────────────────────────────────
-
-export class ReleaseParser {
-  /** Serial queue: each single parse() call appends and waits for the previous. */
-  private queue: Promise<unknown> = Promise.resolve();
-
-  /**
-   * Parse a single release title. Returns a `ParsedRelease` or `null` on failure.
-   * Falls back to regex when AI is disabled or returns null.
-   * Calls are serialised to respect concurrency limits.
-   */
-  parse(title: string): Promise<ParsedRelease | null> {
-    const next = this.queue.then(() => this._parseSingle(title));
-    // Swallow tail rejections so a failure doesn't block subsequent calls.
-    this.queue = next.catch(() => {});
-    return next;
+function regexFallback(title: string): ParsedRelease | null {
+  // SxxExx — single episode
+  const episodeMatch = title.match(/S(\d{1,2})E(\d{1,3})/i);
+  if (episodeMatch) {
+    const matchIdx = title.search(/S\d{1,2}E\d{1,3}/i);
+    const rawTitle = matchIdx > 0 ? title.substring(0, matchIdx) : title;
+    return {
+      title: rawTitle.replace(/[._\- ]+$/, '').replace(/[._]/g, ' ').trim(),
+      type: 'series',
+      matchType: 'episode',
+      seasonNumber: parseInt(episodeMatch[1]!, 10),
+      episodeNumbers: [parseInt(episodeMatch[2]!, 10)],
+      year: null,
+      quality: null,
+    };
   }
 
-  /**
-   * Parse a batch of release titles in a single AI call.
-   * Each result includes a `relevanceScore` (0–100).
-   * Returns `[]` on any failure; never throws.
-   */
+  // Lone season marker (S01 without episode) — season pack
+  if (/\bS\d{1,2}\b/i.test(title) && !/S\d{1,2}E\d/i.test(title)) {
+    const seasonMatch = title.match(/\bS(\d{1,2})\b/i);
+    const matchIdx = title.search(/\bS\d{1,2}\b/i);
+    const rawTitle = matchIdx > 0 ? title.substring(0, matchIdx) : title;
+    return {
+      title: rawTitle.replace(/[._\- ]+$/, '').replace(/[._]/g, ' ').trim(),
+      type: 'series',
+      matchType: 'season_pack',
+      seasonNumber: seasonMatch ? parseInt(seasonMatch[1]!, 10) : null,
+      episodeNumbers: [],
+      year: null,
+      quality: null,
+    };
+  }
+
+  return null;
+}
+
+// ── Service ──────────────────────────────────────────────────────────────────
+
+class ReleaseParserService {
+  private queue: Promise<void> = Promise.resolve();
+
+  // parse() — single title, serial queue, regex fallback on failure
+  async parse(title: string): Promise<ParsedRelease | null> {
+    if (!process.env.OPENAI_API_KEY) {
+      return regexFallback(title);
+    }
+
+    let resultResolve!: (value: ParsedRelease | null) => void;
+    const resultPromise = new Promise<ParsedRelease | null>(resolve => {
+      resultResolve = resolve;
+    });
+
+    // Serial queue: each call waits for the previous to finish.
+    // The .catch(() => {}) on the tail keeps the chain alive across failures.
+    this.queue = this.queue
+      .then(() => this._parseSingle(title))
+      .then(result => resultResolve(result))
+      .catch(() => resultResolve(null));
+
+    return resultPromise;
+  }
+
+  private async _parseSingle(title: string): Promise<ParsedRelease | null> {
+    const openai = createOpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    const model = openai.chat('gpt-5-nano');
+    const delays = [1000, 2000];
+
+    for (let attempt = 0; attempt <= delays.length; attempt++) {
+      try {
+        const { object } = await generateObject({
+          model,
+          schema: ParsedReleaseSchema,
+          prompt: `Parse this media release title and extract structured information:\n\n"${title}"`,
+          abortSignal: AbortSignal.timeout(30000),
+        });
+        return object;
+      } catch {
+        if (attempt < delays.length) {
+          await new Promise(resolve => setTimeout(resolve, delays[attempt]!));
+        }
+      }
+    }
+
+    return regexFallback(title);
+  }
+
+  // parseBatch() — one AI call for all titles, no queue
   async parseBatch(titles: string[], context?: SearchContext): Promise<ParsedReleaseWithScore[]> {
     if (!process.env.OPENAI_API_KEY || titles.length === 0) {
       return [];
     }
 
-    const contextLines: string[] = [];
-    if (context?.seriesTitle) contextLines.push(`Series: ${context.seriesTitle}`);
-    if (context?.movieTitle) contextLines.push(`Movie: ${context.movieTitle}`);
-    if (context?.seasonNumber != null) contextLines.push(`Season: ${context.seasonNumber}`);
-    if (context?.episodeNumber != null) contextLines.push(`Episode: ${context.episodeNumber}`);
-    if (context?.preferredResolution) contextLines.push(`Preferred resolution: ${context.preferredResolution}`);
-
-    const contextBlock = contextLines.length > 0 ? `\nSearch context:\n${contextLines.join('\n')}\n` : '';
-
-    const prompt = `You are a torrent release parser. Parse each release title and score its relevance to the search context.
-${contextBlock}
-Return a JSON object with a "results" array — one entry per title, same order as input. Each entry:
-- title: cleaned name only (no year, no release group, no codec, no resolution)
-- type: "series" | "movie"
-- matchType: "episode" | "season_pack" | "complete_series" (use "complete_series" for single movie files)
-- seasonNumber: number if applicable
-- episodeNumbers: number[] (empty array for season packs, complete series, movies)
-- year: disambiguation year only if part of the title (e.g. Archer 2009)
-- quality.resolution: "SD"|"480p"|"720p"|"1080p"|"unknown" — use "SD" when no explicit resolution tag and no HD marker, "unknown" for 4K/UHD/2160p
-- quality.source: BluRay|WEB-DL|WEBRip|HDTV|DVDRip|REMUX|other
-- quality.codec: x264|x265|HEVC|AVC|XviD|other
-- relevanceScore: 0–100 (exact season pack = 90–100, complete series = 50–69, wrong season = 0–49)
-
-Titles to parse:
-${titles.map((t, i) => `${i + 1}. ${t}`).join('\n')}`;
+    const contextBlock = this._buildContextBlock(context);
+    const titlesBlock = titles.map((t, i) => `${i + 1}. ${t}`).join('\n');
+    const prompt = [
+      'You are a media release parser and relevance scorer.',
+      contextBlock ? `Search context:\n${contextBlock}` : '',
+      'Parse each release title below and score its relevance to the search context.',
+      'Return one entry per title in the same order.',
+      '',
+      titlesBlock,
+    ]
+      .filter(Boolean)
+      .join('\n');
 
     try {
-      const { output } = await generateText({
-        model: openai('gpt-5-nano'),
-        output: Output.object({
-          schema: z.object({
-          results: z.array(ParsedReleaseWithScoreSchema).describe('One entry per input title, in the same order.'),
-        }),
-        }),
+      const openai = createOpenAI({ apiKey: process.env.OPENAI_API_KEY });
+      const model = openai.chat('gpt-5-nano');
+
+      const { object } = await generateObject({
+        model,
+        schema: BatchResponseSchema,
         prompt,
-        abortSignal: AbortSignal.timeout(BATCH_TIMEOUT_MS),
+        abortSignal: AbortSignal.timeout(60000),
       });
-      return output.results;
-    } catch (e) {
-      console.error('[ReleaseParser.parseBatch] error:', e instanceof Error ? e.message : String(e));
-      if (e instanceof Error && 'text' in e) console.error('[ReleaseParser.parseBatch] raw text:', (e as any).text);
+
+      return object.results;
+    } catch {
       return [];
     }
   }
 
-  // ── Private ─────────────────────────────────────────────────────────────────
-
-  private async _parseSingle(title: string): Promise<ParsedRelease | null> {
-    if (!process.env.DEEPSEEK_API_KEY) {
-      return this._regexFallback(title);
-    }
-
-    const prompt = `Parse this torrent/release title into a JSON object.
-- title: cleaned name only (no year, release group, codec, resolution)
-- type: "series" | "movie"
-- matchType: "episode" | "season_pack" | "complete_series" (use "complete_series" for a movie file)
-- seasonNumber: number if applicable
-- episodeNumbers: number[] (empty array for season packs, movies)
-- year: disambiguation year only if part of the title (e.g. Archer 2009)
-- quality.resolution: "SD"|"480p"|"720p"|"1080p"|"unknown" — use "SD" when no explicit resolution tag and no HD marker, "unknown" for 4K/UHD/2160p
-- quality.source: BluRay|WEB-DL|WEBRip|HDTV|DVDRip|REMUX|other
-- quality.codec: x264|x265|HEVC|AVC|XviD|other
-
-Release title: ${title}`;
-
-    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-      try {
-        const { output } = await generateText({
-          model: deepseek('deepseek-chat'),
-          output: Output.object({ schema: ParsedReleaseSchema }),
-          prompt,
-          abortSignal: AbortSignal.timeout(SINGLE_TIMEOUT_MS),
-        });
-        return output;
-      } catch {
-        if (attempt === MAX_ATTEMPTS - 1) {
-          return this._regexFallback(title);
-        }
-        const delay = BACKOFF_DELAYS_MS[attempt] ?? BACKOFF_DELAYS_MS[BACKOFF_DELAYS_MS.length - 1]!;
-        await new Promise((r) => setTimeout(r, delay));
-      }
-    }
-
-    return this._regexFallback(title);
-  }
-
-  /** Regex fallback — handles standard SxxExx patterns only. */
-  private _regexFallback(title: string): ParsedRelease | null {
-    for (const pattern of SERIES_PATTERNS) {
-      const match = title.match(pattern);
-      if (match?.groups) {
-        const season = parseInt(match.groups.season!, 10);
-        const episode = parseInt(match.groups.episode!, 10);
-        const matchStr = match[0]!;
-        const index = title.indexOf(matchStr);
-        let seriesTitle = '';
-        if (index > 0) {
-          seriesTitle = title
-            .substring(0, index)
-            .replace(/[._\- ]+$/, '')
-            .replace(/[._]/g, ' ')
-            .trim();
-        }
-        return {
-          title: seriesTitle || title,
-          type: 'series',
-          matchType: 'episode',
-          seasonNumber: season,
-          episodeNumbers: [episode],
-          year: null,
-          quality: null,
-        };
-      }
-    }
-    return null;
+  private _buildContextBlock(context?: SearchContext): string {
+    if (!context) return '';
+    const parts: string[] = [];
+    if (context.seriesTitle) parts.push(`Series: ${context.seriesTitle}`);
+    if (context.movieTitle) parts.push(`Movie: ${context.movieTitle}`);
+    if (context.seasonNumber !== undefined) parts.push(`Season: ${context.seasonNumber}`);
+    if (context.episodeNumber !== undefined) parts.push(`Episode: ${context.episodeNumber}`);
+    if (context.preferredResolution) parts.push(`Preferred resolution: ${context.preferredResolution}`);
+    return parts.join(' / ');
   }
 }
 
-export const releaseParser = new ReleaseParser();
+export const releaseParser = new ReleaseParserService();

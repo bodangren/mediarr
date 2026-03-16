@@ -43,19 +43,19 @@ export class Parser {
     return this._parseDirectoryRegex(dirName);
   }
 
-  // ── Regex fallbacks ────────────────────────────────────────────────────────
+  // ── Regex helpers ──────────────────────────────────────────────────────────
 
   private static _parseRegex(filename: string): ParsedInfo | null {
     for (const pattern of this.seriesPatterns) {
       const match = filename.match(pattern);
       if (match && match.groups) {
-        const season = parseInt(match.groups.season, 10);
-        const episode = parseInt(match.groups.episode, 10);
+        const season = parseInt(match.groups.season!, 10);
+        const episode = parseInt(match.groups.episode!, 10);
 
         return {
           seasonNumber: season,
           episodeNumbers: [episode],
-          seriesTitle: this.extractSeriesTitle(filename, match[0]),
+          seriesTitle: this.extractSeriesTitle(filename, match[0]!),
           type: 'series',
         };
       }
@@ -76,7 +76,7 @@ export class Parser {
     let title = name;
 
     if (year !== undefined && yearMatch) {
-      const yearIndex = title.indexOf(yearMatch[1]);
+      const yearIndex = title.indexOf(yearMatch[1]!);
       if (yearIndex > 0) {
         title = title.substring(0, yearIndex);
       }

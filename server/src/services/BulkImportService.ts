@@ -280,7 +280,7 @@ export class BulkImportService {
       ...owner,
       path: filePath,
       fileSize: BigInt(file.size),
-      ...(file.parsedInfo?.quality ? { quality: [file.parsedInfo.quality.resolution, file.parsedInfo.quality.source].filter(Boolean).join(' ') || undefined } : {}),
+      ...(file.parsedInfo?.quality ? { quality: file.parsedInfo.quality } : {}),
     };
   }
 

@@ -32,13 +32,13 @@ export class LibraryScanner {
       const filename = path.basename(filePath);
       const parsed = await releaseParser.parse(filename);
 
-      if (parsed && parsed.seasonNumber !== undefined && (parsed.episodeNumbers?.length ?? 0) > 0) {
+      if (parsed && parsed.seasonNumber !== undefined && parsed.episodeNumbers.length > 0) {
         // Find matching episode in DB
         const episode = await this.prisma.episode.findFirst({
           where: {
             seriesId: series.id,
             seasonNumber: parsed.seasonNumber,
-            episodeNumber: parsed.episodeNumbers?.[0],
+            episodeNumber: parsed.episodeNumbers[0],
           }
         });
 

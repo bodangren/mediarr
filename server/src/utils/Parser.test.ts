@@ -2,9 +2,8 @@ import { describe, it, expect } from 'vitest';
 import type { ParsedInfo, ParsedMovie, ParsedDirectory } from './Parser';
 import { Parser } from './Parser';
 
-// Parser is now pure regex — no AI dependency
-
-describe('Parser — regex', () => {
+// Regex-only tests — Parser.ts is now pure regex; AI calls are handled by ReleaseParser.
+describe('Parser — regex fallback', () => {
   describe('parse (series)', () => {
     it('parses S01E01 format', async () => {
       const result = await Parser.parse('Breaking.Bad.S01E01.Pilot.mkv');
@@ -38,8 +37,8 @@ describe('Parser — regex', () => {
     });
   });
 
-  describe('parse (movie — returns null)', () => {
-    it('returns null for movie-like filenames', async () => {
+  describe('parse (movie)', () => {
+    it('returns null for movie-like filenames to preserve episode parser contract', async () => {
       const result = await Parser.parse('The.Matrix.1999.1080p.mkv');
       expect(result).toBeNull();
     });
@@ -122,3 +121,8 @@ describe('Parser — regex', () => {
     });
   });
 });
+
+// Satisfy TypeScript: these imports are used in the type-checking context only
+type _ParsedInfo = ParsedInfo;
+type _ParsedMovie = ParsedMovie;
+type _ParsedDirectory = ParsedDirectory;

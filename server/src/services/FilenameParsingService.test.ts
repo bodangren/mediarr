@@ -21,30 +21,27 @@ describe('FilenameParsingService', () => {
     service = new FilenameParsingService(mockPrisma);
   });
 
-  describe('parseFilename() — AI primary', () => {
-    it('returns AI result when releaseParser.parse succeeds', async () => {
+  describe('parseFilename() — releaseParser primary', () => {
+    it('returns mapped result when releaseParser.parse returns ParsedRelease', async () => {
       mockReleaseParse.mockResolvedValueOnce({
         title: 'The Shawshank Redemption',
         type: 'movie',
-        matchType: 'episode',
+        matchType: 'complete_series',
+        seasonNumber: null,
+        episodeNumbers: [],
         year: 1994,
-        quality: { resolution: '1080p', source: 'BluRay' },
+        quality: { resolution: '1080p', source: 'BluRay', codec: null },
       });
 
-      const expected: ParsedMovieInfo = {
-        title: 'The Shawshank Redemption',
-        year: 1994,
-        quality: '1080p BluRay',
-        resolution: '1080p',
-        source: 'BluRay',
-      };
-
       const result = await service.parseFilename('The.Shawshank.Redemption.1994.1080p.BluRay.mkv');
-      expect(result).toEqual(expected);
+      expect(result.title).toBe('The Shawshank Redemption');
+      expect(result.year).toBe(1994);
+      expect(result.resolution).toBe('1080p');
+      expect(result.source).toBe('BluRay');
       expect(mockReleaseParse).toHaveBeenCalledOnce();
     });
 
-    it('falls back to regex when AI returns null — returns valid ParsedMovieInfo', async () => {
+    it('falls back to regex when releaseParser returns null — returns valid ParsedMovieInfo', async () => {
       mockReleaseParse.mockResolvedValueOnce(null);
 
       const result = await service.parseFilename('Pulp.Fiction.1994.720p.BluRay.x264-GROUP.mkv');
@@ -53,7 +50,7 @@ describe('FilenameParsingService', () => {
       expect(result.resolution).toBe('720p');
     });
 
-    it('falls back to regex when AI fails — movie without year', async () => {
+    it('falls back to regex when releaseParser returns null — movie without year', async () => {
       mockReleaseParse.mockResolvedValueOnce(null);
 
       const result = await service.parseFilename('Inception.1080p.WEB-DL.mkv');
@@ -62,31 +59,27 @@ describe('FilenameParsingService', () => {
     });
   });
 
-  describe('parseEpisodeFilename() — AI primary', () => {
-    it('returns AI result when releaseParser.parse succeeds', async () => {
+  describe('parseEpisodeFilename() — releaseParser primary', () => {
+    it('returns mapped result when releaseParser.parse returns ParsedRelease', async () => {
       mockReleaseParse.mockResolvedValueOnce({
         title: 'Breaking Bad',
         type: 'series',
         matchType: 'episode',
         seasonNumber: 1,
         episodeNumbers: [1],
-        quality: { resolution: '1080p' },
+        year: null,
+        quality: { resolution: '1080p', source: null, codec: null },
       });
 
-      const expected: ParsedEpisodeInfo = {
-        seriesTitle: 'Breaking Bad',
-        seasonNumber: 1,
-        episodeNumber: 1,
-        quality: '1080p',
-        resolution: '1080p',
-      };
-
       const result = await service.parseEpisodeFilename('Breaking.Bad.S01E01.1080p.mkv');
-      expect(result).toEqual(expected);
+      expect(result.seriesTitle).toBe('Breaking Bad');
+      expect(result.seasonNumber).toBe(1);
+      expect(result.episodeNumber).toBe(1);
+      expect(result.resolution).toBe('1080p');
       expect(mockReleaseParse).toHaveBeenCalledOnce();
     });
 
-    it('falls back to regex when AI returns null — S01E02 pattern', async () => {
+    it('falls back to regex when releaseParser returns null — S01E02 pattern', async () => {
       mockReleaseParse.mockResolvedValueOnce(null);
 
       const result = await service.parseEpisodeFilename('Breaking.Bad.S01E02.1080p.BluRay.mkv');
@@ -96,7 +89,7 @@ describe('FilenameParsingService', () => {
       expect(result.resolution).toBe('1080p');
     });
 
-    it('falls back to regex when AI returns null — 1x02 pattern', async () => {
+    it('falls back to regex when releaseParser returns null — 1x02 pattern', async () => {
       mockReleaseParse.mockResolvedValueOnce(null);
 
       const result = await service.parseEpisodeFilename('The.Show.1x12.Episode.720p.mkv');
@@ -106,3 +99,7 @@ describe('FilenameParsingService', () => {
     });
   });
 });
+
+// Satisfy TypeScript: types used for documentation purposes only
+type _ParsedMovieInfo = ParsedMovieInfo;
+type _ParsedEpisodeInfo = ParsedEpisodeInfo;

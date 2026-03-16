@@ -546,18 +546,24 @@ export class MediaSearchService {
     };
 
     // Batch AI parse all release titles in one call for relevance scoring
+    console.log(`[MediaSearchService] indexer query done — ${allReleases.length} results, eventHub=${this.eventHub != null}, apiKey=${!!process.env.DEEPSEEK_API_KEY}`);
     this.eventHub?.publish('search:parsing', { resultCount: allReleases.length });
-    const titles = allReleases.map((r) => r.title);
+    // Only send seeded releases to AI — unseeded results aren't grabbable and waste tokens/time
+    const seededReleases = allReleases.filter((r) => r.seeders > 2);
+    const titles = seededReleases.map((r) => r.title);
     const batchContext = {
       seriesTitle: params.type === 'tvsearch' ? (params.title ?? params.query) : undefined,
       movieTitle: params.type === 'movie' ? (params.title ?? params.query) : undefined,
       seasonNumber: params.season,
       episodeNumber: params.episode,
     };
+    console.log(`[MediaSearchService] parseBatch starting — ${titles.length} titles, context=${JSON.stringify(batchContext)}`);
+    const batchStart = Date.now();
     const parsedBatch = await releaseParser.parseBatch(titles, batchContext);
-    for (let i = 0; i < allReleases.length; i++) {
+    console.log(`[MediaSearchService] parseBatch done in ${Date.now() - batchStart}ms — got ${parsedBatch.length} results (${allReleases.length - seededReleases.length} unseeded skipped)`);
+    for (let i = 0; i < seededReleases.length; i++) {
       const p = parsedBatch[i];
-      if (p) allReleases[i]!.parsedRelease = p;
+      if (p) seededReleases[i]!.parsedRelease = p;
     }
 
     const scoredReleases = await this.applyUnifiedScoring(

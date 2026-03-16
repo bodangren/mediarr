@@ -604,6 +604,7 @@ async function startApi(): Promise<void> {
     activityEventEmitter,
     customFormatRepository,
     notificationDispatchService,
+    eventHub,
   );
   const mediaSearchService = searchAggregationService;
   const wantedService = new WantedService(prisma);

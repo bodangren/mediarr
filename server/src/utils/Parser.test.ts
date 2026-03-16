@@ -1,98 +1,10 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import type { ParsedInfo, ParsedMovie, ParsedDirectory } from './Parser';
-
-// Hoisted mock for aiParsingService
-const mockAiParse = vi.hoisted(() => vi.fn());
-
-vi.mock('../services/AiParsingService', () => ({
-  aiParsingService: { parse: mockAiParse },
-}));
-
 import { Parser } from './Parser';
 
-describe('Parser — AI integration', () => {
-  beforeEach(() => {
-    vi.resetAllMocks();
-  });
+// Parser is now pure regex — no AI dependency
 
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
-  describe('parse() — AI primary', () => {
-    it('returns AI result when aiParsingService.parse succeeds', async () => {
-      const aiResult: ParsedInfo = {
-        seriesTitle: 'Breaking Bad',
-        seasonNumber: 1,
-        episodeNumbers: [1],
-        type: 'series',
-      };
-      mockAiParse.mockResolvedValueOnce(aiResult);
-
-      const result = await Parser.parse('Breaking.Bad.S01E01.Pilot.mkv');
-      expect(result).toEqual(aiResult);
-      expect(mockAiParse).toHaveBeenCalledOnce();
-    });
-
-    it('falls back to regex when AI returns null', async () => {
-      mockAiParse.mockResolvedValueOnce(null);
-
-      const result = await Parser.parse('Breaking.Bad.S01E01.Pilot.mkv');
-      expect(result).not.toBeNull();
-      expect(result?.seriesTitle).toBe('Breaking Bad');
-      expect(result?.seasonNumber).toBe(1);
-      expect(result?.episodeNumbers).toEqual([1]);
-    });
-  });
-
-  describe('parseMovie() — AI primary', () => {
-    it('returns AI result when aiParsingService.parse succeeds', async () => {
-      const aiResult: ParsedMovie = { title: 'The Shawshank Redemption', year: 1994, quality: '1080p' };
-      mockAiParse.mockResolvedValueOnce(aiResult);
-
-      const result = await Parser.parseMovie('The.Shawshank.Redemption.1994.1080p.mkv');
-      expect(result).toEqual(aiResult);
-      expect(mockAiParse).toHaveBeenCalledOnce();
-    });
-
-    it('falls back to regex when AI returns null', async () => {
-      mockAiParse.mockResolvedValueOnce(null);
-
-      const result = await Parser.parseMovie('Pulp.Fiction.1994.mkv');
-      expect(result).not.toBeNull();
-      expect(result?.title).toBe('Pulp Fiction');
-      expect(result?.year).toBe(1994);
-    });
-  });
-
-  describe('parseDirectory() — AI primary', () => {
-    it('returns AI result when aiParsingService.parse succeeds', async () => {
-      const aiResult: ParsedDirectory = { title: 'The Matrix', year: 1999, type: 'movie' };
-      mockAiParse.mockResolvedValueOnce(aiResult);
-
-      const result = await Parser.parseDirectory('The Matrix (1999)');
-      expect(result).toEqual(aiResult);
-      expect(mockAiParse).toHaveBeenCalledOnce();
-    });
-
-    it('falls back to regex when AI returns null', async () => {
-      mockAiParse.mockResolvedValueOnce(null);
-
-      const result = await Parser.parseDirectory('The Matrix (1999)');
-      expect(result.title).toBe('The Matrix');
-      expect(result.year).toBe(1999);
-      expect(result.type).toBe('movie');
-    });
-  });
-});
-
-// Regex fallback tests — AI is mocked to return null so we exercise the regex paths
-describe('Parser — regex fallback (AI returns null)', () => {
-  beforeEach(() => {
-    vi.resetAllMocks();
-    mockAiParse.mockResolvedValue(null);
-  });
-
+describe('Parser — regex', () => {
   describe('parse (series)', () => {
     it('parses S01E01 format', async () => {
       const result = await Parser.parse('Breaking.Bad.S01E01.Pilot.mkv');
@@ -126,8 +38,8 @@ describe('Parser — regex fallback (AI returns null)', () => {
     });
   });
 
-  describe('parse (movie)', () => {
-    it('returns null for movie-like filenames to preserve episode parser contract', async () => {
+  describe('parse (movie — returns null)', () => {
+    it('returns null for movie-like filenames', async () => {
       const result = await Parser.parse('The.Matrix.1999.1080p.mkv');
       expect(result).toBeNull();
     });

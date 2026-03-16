@@ -82,11 +82,11 @@ describe('ReleaseParser.parse()', () => {
       .mockImplementationOnce(async () => {
         await new Promise((r) => setTimeout(r, 20));
         order.push(1);
-        return { object: { title: 'A', type: 'series', matchType: 'episode', episodeNumbers: [1] } };
+        return { object: { title: 'A', type: 'series', matchType: 'episode', episodeNumbers: [1] } } as never;
       })
       .mockImplementationOnce(async () => {
         order.push(2);
-        return { object: { title: 'B', type: 'series', matchType: 'episode', episodeNumbers: [2] } };
+        return { object: { title: 'B', type: 'series', matchType: 'episode', episodeNumbers: [2] } } as never;
       });
 
     const [r1, r2] = await Promise.all([

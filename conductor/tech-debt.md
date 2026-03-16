@@ -22,3 +22,4 @@
 | 2026-03-15 | chore_server_module_alignment_20260315 | `exactOptionalPropertyTypes` and `noUncheckedIndexedAccess` disabled to clear noise | Medium | Open | These are valuable strictness settings that should be re-enabled once the codebase is cleaned up; each setting adds ~50-90 errors that need targeted fixes |
 | 2026-03-16 | chore_organizer_coverage_20260316 | `Organizer.test.ts` had zero tests for `organizeFile` (primary episode import path) | High | Resolved | 12 tests added covering all code paths; vi.hoisted() mock pattern applied (ee125bd) |
 | 2026-03-16 | feature_ai_parsing_20260316 | No response caching — every filename parse hits Z.AI | Low | Open | AI calls are per-file at import time; cache by filename hash if latency becomes a concern |
+| 2026-03-16 | bug_autosearch_all_corner_cases_20260316 | autoSearchAll had no concurrent-execution guard | High | Resolved | Added isRunning flag + finally-reset; 10 tests added (b4d90bb) |

@@ -46,6 +46,8 @@
 
 - (2026-03-16, feature_ai_parsing) When a service method gains a `GLM_API_KEY` early-return guard (`if (!process.env.GLM_API_KEY) return null`), tests that exercise the mock call-path must explicitly set `process.env.GLM_API_KEY = 'test-key'` in `beforeEach` and restore it in `afterEach` — otherwise the guard short-circuits before the mock is reached.
 - (2026-03-16, feature_ai_parsing) Fire-and-forget async event listeners (`emitter.on('event', async () => {...})`) are NOT awaited at the `emit` call site. Tests that rely on `setTimeout(resolve, Nms)` for synchronization break if the async chain now includes real network calls (even with a guard). Always `vi.mock` any AI/HTTP service in tests that use time-based synchronization.
+- (2026-03-16, bug_autosearch_all_corner_cases) Fire-and-forget methods (`Promise.resolve().then(async () => {...})`) with internal `setTimeout` delays require `vi.useFakeTimers()` + repeated `await Promise.resolve()` flushes before/after each `vi.advanceTimersByTimeAsync(ms)` call. Pattern: flush microtasks → advance timer → flush again.
+- (2026-03-16, bug_autosearch_all_corner_cases) Orchestration services that run background loops must have a `private isRunning = false` guard + `finally` reset to prevent duplicate concurrent runs. Without this, every `setInterval`-driven or manual re-trigger causes duplicate grabs across the entire wanted list.
 
 ### Patterns That Worked Well
 

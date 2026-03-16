@@ -33,7 +33,6 @@ chore_drizzle_migration_20260314  (backend-only; depends on clean baseline from 
 
 ## Active Tracks
 
-- [~] **Track: WantedSearchService.autoSearchAll — Concurrent-Execution Guard & Full Coverage** *Phases: 4 | Link: [./tracks/bug_autosearch_all_corner_cases_20260316/](./tracks/bug_autosearch_all_corner_cases_20260316/)*
 - [x] **Track: AI-Powered Filename Parsing** *Phases: 4 | Link: [./archive/feature_ai_parsing_20260316/](./archive/feature_ai_parsing_20260316/)*
 
 ## Upcoming / Planned
@@ -51,6 +50,7 @@ chore_drizzle_migration_20260314  (backend-only; depends on clean baseline from 
 ---
 ## Archived Tracks
 
+- [x] **Track: WantedSearchService.autoSearchAll Concurrent-Execution Guard** *Phases: 4 | Link: [./archive/bug_autosearch_all_corner_cases_20260316/](./archive/bug_autosearch_all_corner_cases_20260316/)*
 - [x] **Track: Organizer Test Coverage** *Phases: 4 | Link: [./archive/chore_organizer_coverage_20260316/](./archive/chore_organizer_coverage_20260316/)*
 - [x] **Track: TorrentManager Corner Cases** *Phases: 4 | Link: [./archive/bug_torrent_manager_corner_cases_20260315/](./archive/bug_torrent_manager_corner_cases_20260315/)*
 - [x] **Track: Cleanup Pending Changes from Prior Work** *Phases: 3 | Link: [./archive/chore_cleanup_pending_changes_20260315/](./archive/chore_cleanup_pending_changes_20260315/)*

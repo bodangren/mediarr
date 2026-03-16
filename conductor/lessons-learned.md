@@ -7,10 +7,7 @@
 
 - (2026-03-14, code-review) **Inquiry vs. Directive Mandate:** NEVER modify the codebase during an Inquiry phase (e.g., /code-review). Directives for implementation must be explicitly issued by the user. Unauthorized "fixes" contaminate the research phase, bloat the context, and invalidate the review report.
 - (2026-03-10, refactor_search_release_date_ui_cleanup) Movie model has no single `releaseDate` — uses `inCinemas`, `physicalRelease`, `digitalRelease`; use earliest non-null as guard.
-- (2026-03-10, refactor_search_release_date_ui_cleanup) All new system pages must use `RouteScaffold`. Verify from the start in code review.
 - (2026-03-10, feature_android_push_notifications) Create `ApiEventHub` BEFORE services that need it in `main.ts` — avoids circular dependency.
-- (2026-03-10, feature_android_push_notifications) Android SSE: plain OkHttp streaming (no `okhttp-sse`); `DisposableEffect` (not `LaunchedEffect`) for lifecycle management.
-- (2026-03-11, refactor_security_code_quality) `$executeRawUnsafe(sql, ...values)` for parameterized raw SQL. Always `parseDate()` for query-param dates. Guard enum casts with `Set.has()`.
 - (2026-03-10, feature_system_health) `vi.hoisted()` required for mock variables inside `vi.mock()` factories.
 
 ### Recurring Gotchas
@@ -30,8 +27,6 @@
 - (2026-03-13, bug_rss_media_monitor_corner_cases) Services that grab torrents must pass `episodeId`/`movieId` to `addTorrent` — omitting them breaks the ImportManager fast-path for all RSS-triggered downloads. Audit every `addTorrent` call to confirm media context is forwarded.
 - (2026-03-13, bug_rss_media_monitor_corner_cases) Scoring confidence: `CustomFormatScoringEngine.confidenceScore` = 100 whenever the release title INCLUDES the movie/series title. To test below-threshold score, use a movie title unrelated to the release title rather than relying on quality markers alone.
 - (2026-03-13, bug_autosearch_wrong_series_episode) Candidate filters must check ALL dimensions: `autoSearchEpisode` needed season+episode+series-title. Adding only season+episode left a gap — a different show's S01E01 passed the filter and got grabbed. Apply `titlesMatch()` as the third guard.
-- (2026-03-13, bug_autosearch_wrong_series_episode) `autoSearchMovie` core paths (not-found, no-releases, below-threshold, successful-grab, search-error) had zero tests; add smoke tests for every early-exit path to prevent silent regressions.
-
 - (2026-03-14, chore_shadcn_setup) Radix `Tooltip` **requires** `TooltipProvider` as an ancestor — wire it in `AppProviders` at app root and use a `renderWithTooltip()` helper in tests for all components that contain a `Tooltip`.
 - (2026-03-15, chore_server_module_alignment) For tsx/transpiler-based servers, use `"module": "preserve"` + `"moduleResolution": "bundler"` in tsconfig — NOT `module:nodenext`. The latter requires `.js` extensions on all relative imports (622 TS2835 errors) and conflicts with `type:commonjs` in package.json. `bundler` mode works with ESM-syntax source without enforcing file extensions.
 - (2026-03-15, chore_server_module_alignment) Vitest mocks must match the import style in the source: if source uses named imports (`import { validate } from 'node-cron'`), the mock must export `{ validate: ... }` — NOT `{ default: { validate: ... } }`. Changing from default to named imports breaks any test that mocks via `default:`.
@@ -39,11 +34,6 @@
 
 - (2026-03-15, bug_torrent_manager_corner_cases) `vi.fn(() => impl)` uses an arrow function internally; `new vi.fn()` fails with "is not a constructor". Use `vi.fn(function() { return impl; })` for mocks that will be called with `new`. Vitest warns about this at test run time.
 - (2026-03-15, bug_torrent_manager_corner_cases) `vi.clearAllMocks()` only clears call history — it does NOT clear `mockReturnValue`/`mockResolvedValue` implementations. Use `vi.resetAllMocks()` in `afterEach` (clears implementations) + `beforeEach` to restore hoisted mock defaults. This prevents cross-test contamination when one test sets a return value that a later test relies on being absent.
-- (2026-03-16, chore_organizer_coverage) When a service uses `fs.copyFile` + `fs.unlink` in an EXDEV fallback, the `vi.mock()` factory MUST include both functions or any test that triggers the fallback will fail with "not a function". Audit every `vi.mock('node:fs/promises')` call when adding move/cross-device tests.
-
-- (2026-03-16, chore_app_decompose) When extracting components from a god file, verify each component's imports by reading it fully — the agent correctly identified that `getPosterUrl` was defined but never called in `MovieDetailPage` (the API response already provides `posterUrl`). Dead helpers silently copied from a god file should be deleted, not transplanted.
-- (2026-03-16, chore_app_decompose) Prisma relation filters only accept fields that exist on the related model. `Movie` has `added` (not `createdAt`); `Episode` has no date field at all. When a query needs "recently added variants", filter on `MediaFileVariant.createdAt` directly — it's set at import time and is the correct proxy.
-
 - (2026-03-16, feature_ai_parsing) When a service method gains a `GLM_API_KEY` early-return guard (`if (!process.env.GLM_API_KEY) return null`), tests that exercise the mock call-path must explicitly set `process.env.GLM_API_KEY = 'test-key'` in `beforeEach` and restore it in `afterEach` — otherwise the guard short-circuits before the mock is reached.
 - (2026-03-16, feature_ai_parsing) Fire-and-forget async event listeners (`emitter.on('event', async () => {...})`) are NOT awaited at the `emit` call site. Tests that rely on `setTimeout(resolve, Nms)` for synchronization break if the async chain now includes real network calls (even with a guard). Always `vi.mock` any AI/HTTP service in tests that use time-based synchronization.
 - (2026-03-16, bug_autosearch_all_corner_cases) Fire-and-forget methods (`Promise.resolve().then(async () => {...})`) with internal `setTimeout` delays require `vi.useFakeTimers()` + repeated `await Promise.resolve()` flushes before/after each `vi.advanceTimersByTimeAsync(ms)` call. Pattern: flush microtasks → advance timer → flush again.

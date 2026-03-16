@@ -44,7 +44,10 @@
 - (2026-03-16, chore_app_decompose) When extracting components from a god file, verify each component's imports by reading it fully — the agent correctly identified that `getPosterUrl` was defined but never called in `MovieDetailPage` (the API response already provides `posterUrl`). Dead helpers silently copied from a god file should be deleted, not transplanted.
 - (2026-03-16, chore_app_decompose) Prisma relation filters only accept fields that exist on the related model. `Movie` has `added` (not `createdAt`); `Episode` has no date field at all. When a query needs "recently added variants", filter on `MediaFileVariant.createdAt` directly — it's set at import time and is the correct proxy.
 
+- (2026-03-16, feature_ai_parsing) When a service method gains a `GLM_API_KEY` early-return guard (`if (!process.env.GLM_API_KEY) return null`), tests that exercise the mock call-path must explicitly set `process.env.GLM_API_KEY = 'test-key'` in `beforeEach` and restore it in `afterEach` — otherwise the guard short-circuits before the mock is reached.
+- (2026-03-16, feature_ai_parsing) Fire-and-forget async event listeners (`emitter.on('event', async () => {...})`) are NOT awaited at the `emit` call site. Tests that rely on `setTimeout(resolve, Nms)` for synchronization break if the async chain now includes real network calls (even with a guard). Always `vi.mock` any AI/HTTP service in tests that use time-based synchronization.
+
 ### Patterns That Worked Well
 
+- (2026-03-16, feature_ai_parsing) Wrapping a singleton AI client in a guard (`if (!API_KEY) return null`) + TDD fallback tests lets the entire codebase degrade gracefully to regex without any code changes to callers.
 - (2026-03-11, feature_system_routes_coverage) TDD on routes with in-memory state: export a proxy state object; reset it in `beforeEach`. Filter-predicate bugs only surface with coverage — write tests first.
-- (2026-03-11, feature_system_events_ui) Prefer `toContain` over `toEqual(exact-array)` for nav-item membership checks; exact-array assertions break when new items are added.

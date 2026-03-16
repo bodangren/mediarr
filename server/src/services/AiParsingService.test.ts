@@ -23,13 +23,19 @@ import { AiParsingService } from './AiParsingService';
 let service: AiParsingService;
 
 describe('AiParsingService', () => {
+  let savedApiKey: string | undefined;
+
   beforeEach(() => {
     vi.resetAllMocks();
     vi.useFakeTimers();
+    // Ensure the GLM_API_KEY guard does not short-circuit — tests exercise the mock path
+    savedApiKey = process.env.GLM_API_KEY;
+    process.env.GLM_API_KEY = 'test-key';
     service = new AiParsingService();
   });
 
   afterEach(() => {
+    process.env.GLM_API_KEY = savedApiKey;
     vi.useRealTimers();
     vi.restoreAllMocks();
   });

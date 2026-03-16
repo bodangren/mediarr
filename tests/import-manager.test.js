@@ -6,6 +6,10 @@ import { EventEmitter } from 'events';
 import fs from 'node:fs/promises';
 
 vi.mock('node:fs/promises');
+// AiParsingService is injected into Parser; mock it so tests remain fast and offline
+vi.mock('../server/src/services/AiParsingService', () => ({
+  aiParsingService: { parse: vi.fn().mockResolvedValue(null) },
+}));
 
 describe('ImportManager', () => {
   let importManager;

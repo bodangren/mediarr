@@ -8,19 +8,30 @@ export const QualitySchema = z.object({
   resolution: z
     .enum(['SD', '480p', '720p', '1080p', 'unknown'])
     .describe(
-      'Video resolution. "SD" for standard-def (DVDRip, XviD, SVCD, PDTV). ' +
-      '"480p" for 480p encodes. "720p" for HD-ready. "1080p" for full HD. ' +
-      '"unknown" for 4K/UHD/2160p releases or when resolution cannot be determined.',
+      'Pixel resolution of the video. ' +
+      '"SD" when the title has no explicit resolution tag and no HD/UHD marker (standard definition, ~480i/576i). ' +
+      '"480p" when the title explicitly states 480p. ' +
+      '"720p" when the title explicitly states 720p or HD. ' +
+      '"1080p" when the title explicitly states 1080p or Full HD. ' +
+      '"unknown" when the title states 4K, UHD, 2160p, or any resolution that is not in this list.',
     )
     .optional()
     .catch(undefined),
   source: z
     .string()
-    .describe('Release source, e.g. BluRay, WEB-DL, WEBRip, HDTV, REMUX, AMZN')
+    .describe(
+      'Origin or distribution medium of the release. ' +
+      'Examples: BluRay, WEB-DL, WEBRip, HDTV, PDTV, DVDRip, DVD, REMUX, AMZN, NF, HULU. ' +
+      'This is independent of resolution — a WEB-DL can be 720p or 1080p.',
+    )
     .optional(),
   codec: z
     .string()
-    .describe('Video codec, e.g. x264, x265, HEVC, AVC, XviD')
+    .describe(
+      'Video codec used to encode the file. ' +
+      'Examples: x264, x265, HEVC, AVC, XviD, DivX, H.264, H.265. ' +
+      'This is independent of resolution and source.',
+    )
     .optional(),
 });
 
@@ -150,7 +161,7 @@ Return a JSON object with a "results" array — one entry per title, same order 
 - seasonNumber: number if applicable
 - episodeNumbers: number[] (empty array for season packs, complete series, movies)
 - year: disambiguation year only if part of the title (e.g. Archer 2009)
-- quality.resolution: "SD"|"480p"|"720p"|"1080p"|"unknown" — use "SD" for DVDRip/XviD, "unknown" for 4K/UHD/2160p
+- quality.resolution: "SD"|"480p"|"720p"|"1080p"|"unknown" — use "SD" when no explicit resolution tag and no HD marker, "unknown" for 4K/UHD/2160p
 - quality.source: e.g. BluRay, WEB-DL, HDTV
 - quality.codec: e.g. x264, x265, HEVC
 - relevanceScore: 0–100 (exact season pack = 90–100, complete series = 50–69, wrong season = 0–49)
@@ -189,7 +200,7 @@ ${titles.map((t, i) => `${i + 1}. ${t}`).join('\n')}`;
 - seasonNumber: number if applicable
 - episodeNumbers: number[] (empty array for season packs, movies)
 - year: disambiguation year only if part of the title (e.g. Archer 2009)
-- quality.resolution: "SD"|"480p"|"720p"|"1080p"|"unknown" — use "SD" for DVDRip/XviD, "unknown" for 4K/UHD/2160p
+- quality.resolution: "SD"|"480p"|"720p"|"1080p"|"unknown" — use "SD" when no explicit resolution tag and no HD marker, "unknown" for 4K/UHD/2160p
 - quality.source: e.g. BluRay, WEB-DL, HDTV, REMUX
 - quality.codec: e.g. x264, x265, HEVC
 

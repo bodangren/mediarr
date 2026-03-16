@@ -3,6 +3,7 @@ import type {
   CustomFormatWithScores,
 } from '../repositories/CustomFormatRepository';
 import { normalizeTitle, levenshteinDistance } from '../utils/stringUtils';
+import type { ParsedReleaseWithScore } from './ReleaseParser';
 
 /**
  * Release candidate for custom format evaluation
@@ -64,6 +65,7 @@ export class CustomFormatScoringEngine {
     formatScores: Array<{ customFormat: CustomFormatWithScores; score: number }>,
     targetParams: TargetParams,
     indexerPriority: number = 0,
+    parsedRelease?: ParsedReleaseWithScore,
   ): UnifiedScoringResult {
     // 1. Calculate Custom Format Score
     let customFormatScore = 0;
@@ -85,8 +87,11 @@ export class CustomFormatScoringEngine {
     }
 
     // 2. Calculate Confidence Score (0 to 100)
+    // Use AI relevance score when available; fall back to Levenshtein distance.
     let confidenceScore = 0;
-    if (targetParams.title) {
+    if (parsedRelease?.relevanceScore != null) {
+      confidenceScore = parsedRelease.relevanceScore;
+    } else if (targetParams.title) {
       const normalizedTarget = normalizeTitle(targetParams.title);
       // Remove common release group/quality strings before comparing
       let cleanCandidateTitle = candidate.title;
@@ -94,9 +99,9 @@ export class CustomFormatScoringEngine {
       if (qualityIndex > 0) {
         cleanCandidateTitle = cleanCandidateTitle.substring(0, qualityIndex);
       }
-      
+
       const normalizedCandidate = normalizeTitle(cleanCandidateTitle);
-      
+
       if (normalizedCandidate === normalizedTarget || normalizedCandidate.includes(normalizedTarget)) {
         confidenceScore = 100;
       } else {
@@ -105,7 +110,7 @@ export class CustomFormatScoringEngine {
         const similarity = Math.max(0, 1 - distance / (maxLength || 1));
         confidenceScore = Math.round(similarity * 100);
       }
-      
+
       // Bonus for exact season/episode match in title if applicable
       if (targetParams.season !== undefined && targetParams.episode !== undefined) {
         const s = targetParams.season.toString().padStart(2, '0');

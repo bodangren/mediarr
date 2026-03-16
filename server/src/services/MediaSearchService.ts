@@ -5,6 +5,8 @@ import type { BaseIndexer, SearchQuery } from '../indexers/BaseIndexer';
 import { CustomFormatScoringEngine, type ReleaseCandidate } from './CustomFormatScoringEngine';
 import type { CustomFormatWithScores } from '../repositories/CustomFormatRepository';
 import type { NotificationDispatchService } from './NotificationDispatchService';
+import { releaseParser, type ParsedReleaseWithScore } from './ReleaseParser';
+import type { ApiEventHub } from '../api/eventHub';
 
 export interface SearchCandidate {
   indexer: string;
@@ -24,6 +26,7 @@ export interface SearchCandidate {
   categories?: number[];
   protocol?: string;
   customFormatScore?: number;
+  parsedRelease?: ParsedReleaseWithScore;
 }
 
 export interface SearchParams {
@@ -397,6 +400,7 @@ export class MediaSearchService {
       }>>;
     },
     private readonly notificationDispatchService?: NotificationDispatchService,
+    private readonly eventHub?: ApiEventHub,
   ) {}
 
   private async applyUnifiedScoring(
@@ -430,6 +434,7 @@ export class MediaSearchService {
         formatScores,
         targetParams,
         indexerPriority,
+        release.parsedRelease,
       );
 
       return {
@@ -457,6 +462,8 @@ export class MediaSearchService {
     const query = toSearchQuery(params);
     const indexerResults: IndexerSearchResult[] = [];
     const allReleases: SearchCandidate[] = [];
+
+    this.eventHub?.publish('search:querying', { indexerCount: indexerRecords.length });
 
     // Query each indexer in parallel with timeout
     const searchPromises = indexerRecords.map(async (record) => {
@@ -538,6 +545,21 @@ export class MediaSearchService {
       year: params.year,
     };
 
+    // Batch AI parse all release titles in one call for relevance scoring
+    this.eventHub?.publish('search:parsing', { resultCount: allReleases.length });
+    const titles = allReleases.map((r) => r.title);
+    const batchContext = {
+      seriesTitle: params.type === 'tvsearch' ? (params.title ?? params.query) : undefined,
+      movieTitle: params.type === 'movie' ? (params.title ?? params.query) : undefined,
+      seasonNumber: params.season,
+      episodeNumber: params.episode,
+    };
+    const parsedBatch = await releaseParser.parseBatch(titles, batchContext);
+    for (let i = 0; i < allReleases.length; i++) {
+      const p = parsedBatch[i];
+      if (p) allReleases[i]!.parsedRelease = p;
+    }
+
     const scoredReleases = await this.applyUnifiedScoring(
       allReleases,
       indexerRecords,
@@ -548,6 +570,7 @@ export class MediaSearchService {
 
     const totalResults = scoredReleases.length;
     const deduplicatedReleases = deduplicateByInfoHash(scoredReleases);
+    this.eventHub?.publish('search:done', { resultCount: deduplicatedReleases.length });
 
     await this.activityEventEmitter?.emit({
       eventType: 'SEARCH_EXECUTED',

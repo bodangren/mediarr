@@ -1,7 +1,38 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
+
+// Mock releaseParser so tests don't need a DEEPSEEK_API_KEY.
+// Returns ParsedRelease based on simple filename heuristics.
+vi.mock('./ReleaseParser', () => ({
+  releaseParser: {
+    parse: vi.fn((name: string) => {
+      const seriesMatch = name.match(/[Ss](\d{1,2})[Ee](\d{1,3})/);
+      if (seriesMatch) {
+        const title = name.split(/[Ss]\d{1,2}[Ee]/)[0]!.replace(/[._]/g, ' ').trim();
+        return Promise.resolve({
+          title,
+          type: 'series' as const,
+          matchType: 'episode' as const,
+          seasonNumber: parseInt(seriesMatch[1]!, 10),
+          episodeNumbers: [parseInt(seriesMatch[2]!, 10)],
+        });
+      }
+      const yearMatch = name.match(/(.*?)[\s.(]((?:19|20)\d{2})/);
+      if (yearMatch) {
+        return Promise.resolve({
+          title: yearMatch[1]!.replace(/[._]/g, ' ').trim(),
+          type: 'movie' as const,
+          matchType: 'episode' as const,
+          year: parseInt(yearMatch[2]!, 10),
+        });
+      }
+      return Promise.resolve(null);
+    }),
+  },
+}));
+
 import { ExistingLibraryScanner } from './ExistingLibraryScanner';
 
 describe('ExistingLibraryScanner', () => {

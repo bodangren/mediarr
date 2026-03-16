@@ -74,24 +74,22 @@
 
 ---
 
-- [ ] Task 9: Add SSE progress events to `searchAllIndexers`
-    - [ ] Emit `search:querying` before parallel indexer calls
-    - [ ] Emit `search:parsing` after indexer results collected, before AI batch call
-    - [ ] Emit `search:done` with result count after scoring complete
-    - [ ] `ApiEventHub` injected into `MediaSearchService` (or passed as optional dep)
+- [x] Task 9: Add SSE progress events to `searchAllIndexers`
+    - [x] Emit `search:querying` before parallel indexer calls
+    - [x] Emit `search:parsing` after indexer results collected, before AI batch call
+    - [x] Emit `search:done` with result count after scoring complete
+    - [x] `ApiEventHub` added as optional dep to `MediaSearchService` constructor
 
-- [ ] Task 10: Wire `parseBatch` into `searchAllIndexers`
-    - [ ] After collecting all `IndexerRelease[]`, call `releaseParser.parseBatch(titles, context)` where `context` is derived from `SearchParams`
-    - [ ] Attach `ParsedReleaseWithScore` to each `SearchCandidate` as `parsedRelease`
-    - [ ] In `CustomFormatScoringEngine.scoreCandidateUnified()`: use `parsedRelease.relevanceScore` as `confidenceScore` when available; fall back to existing Levenshtein logic otherwise
+- [x] Task 10: Wire `parseBatch` into `searchAllIndexers`
+    - [x] After collecting all releases, call `releaseParser.parseBatch(titles, context)` derived from `SearchParams`
+    - [x] Attach `ParsedReleaseWithScore` to each `SearchCandidate` as `parsedRelease`
+    - [x] `CustomFormatScoringEngine.scoreCandidateUnified()`: use `parsedRelease.relevanceScore` as `confidenceScore` when available; fall back to Levenshtein otherwise
 
-- [ ] Task 11: Update `WantedSearchService` to accept season packs
-    - [ ] `autoSearchEpisode`: replace `Parser.parse(candidate.title)` with `releaseParser.parse(candidate.title)`
-    - [ ] Accept candidates where `matchType === 'season_pack'` AND `seasonNumber === episode.seasonNumber`
-    - [ ] Accept candidates where `matchType === 'complete_series'` as last resort (score must still exceed threshold)
-    - [ ] Update `WantedSearchService` tests
+- [x] Task 11: Update `WantedSearchService` to accept season packs
+    - [x] Done in Phase 2: `autoSearchEpisode` uses `matchType` guards (episode/season_pack/complete_series)
+    - [x] `FilenameParsingService.test.ts` + `ExistingLibraryScanner.test.ts` updated to mock `releaseParser`
 
-- [ ] Task 12: Phase 3 complete — commit
+- [x] Task 12: Phase 3 complete — commit
 
 ---
 

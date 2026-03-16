@@ -1,30 +1,24 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-// Mock ai and @ai-sdk/openai before importing ReleaseParser
-vi.mock('@ai-sdk/openai', () => ({
-  createOpenAI: vi.fn(() => ({
-    chat: vi.fn(),
-  })),
+vi.mock('@ai-sdk/deepseek', () => ({
+  deepseek: vi.fn(() => ({})),
 }));
 
 vi.mock('ai', () => ({
-  generateObject: vi.fn(),
+  generateText: vi.fn(),
+  Output: {
+    object: vi.fn((opts) => opts),
+  },
 }));
 
-import { generateObject } from 'ai';
-import { createOpenAI } from '@ai-sdk/openai';
-import { releaseParser, ReleaseParser } from './ReleaseParser';
+import { generateText } from 'ai';
+import { releaseParser } from './ReleaseParser';
 import type { ParsedRelease, ParsedReleaseWithScore, SearchContext } from './ReleaseParser';
 
-const mockGenerateObject = vi.mocked(generateObject);
-const mockCreateOpenAI = vi.mocked(createOpenAI);
-
-// A minimal model stub
-const fakeModel = {} as ReturnType<ReturnType<typeof createOpenAI>>;
+const mockGenerateText = vi.mocked(generateText);
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockCreateOpenAI.mockReturnValue((() => fakeModel) as unknown as ReturnType<typeof createOpenAI>);
   process.env.DEEPSEEK_API_KEY = 'test-key';
 });
 
@@ -42,26 +36,19 @@ describe('ReleaseParser.parse()', () => {
       episodeNumbers: [1],
       quality: { resolution: '1080p', source: 'BluRay', codec: 'x264' },
     };
-    mockGenerateObject.mockResolvedValueOnce({ object: result } as ReturnType<typeof generateObject> extends Promise<infer T> ? T : never);
+    mockGenerateText.mockResolvedValueOnce({ output: result } as never);
 
     const parsed = await releaseParser.parse('The.Big.Bang.Theory.S02E01.1080p.BluRay.x264');
     expect(parsed).toMatchObject(result);
   });
 
-  it('returns null on schema failure (generateObject throws)', async () => {
-    mockGenerateObject.mockRejectedValueOnce(new Error('Schema validation failed'));
+  it('returns null on schema failure (generateText throws)', async () => {
+    mockGenerateText.mockRejectedValueOnce(new Error('Schema validation failed'));
     const parsed = await releaseParser.parse('garbage title');
     expect(parsed).toBeNull();
   });
 
-  it('returns null on network error for non-parseable title', async () => {
-    mockGenerateObject.mockRejectedValue(new Error('Network error'));
-    // No SxxExx pattern → regex fallback also returns null
-    const parsed = await releaseParser.parse('Some.Random.Release.Without.Episode.Info');
-    expect(parsed).toBeNull();
-  });
-
-  it('falls back to regex for SxxExx filenames when AI returns null (no API key)', async () => {
+  it('falls back to regex for SxxExx filenames when AI is disabled (no API key)', async () => {
     delete process.env.DEEPSEEK_API_KEY;
     const parsed = await releaseParser.parse('Breaking.Bad.S03E05.720p.HDTV');
     expect(parsed).not.toBeNull();
@@ -76,17 +63,23 @@ describe('ReleaseParser.parse()', () => {
     expect(parsed).toBeNull();
   });
 
+  it('returns null on network error for non-parseable title', async () => {
+    mockGenerateText.mockRejectedValue(new Error('Network error'));
+    const parsed = await releaseParser.parse('Some.Random.Release.Without.Episode.Info');
+    expect(parsed).toBeNull();
+  });
+
   it('serial queue — second call waits for first', async () => {
     const order: number[] = [];
-    mockGenerateObject
+    mockGenerateText
       .mockImplementationOnce(async () => {
         await new Promise((r) => setTimeout(r, 20));
         order.push(1);
-        return { object: { title: 'A', type: 'series', matchType: 'episode', episodeNumbers: [1] } } as never;
+        return { output: { title: 'A', type: 'series', matchType: 'episode', episodeNumbers: [1] } } as never;
       })
       .mockImplementationOnce(async () => {
         order.push(2);
-        return { object: { title: 'B', type: 'series', matchType: 'episode', episodeNumbers: [2] } } as never;
+        return { output: { title: 'B', type: 'series', matchType: 'episode', episodeNumbers: [2] } } as never;
       });
 
     const [r1, r2] = await Promise.all([
@@ -111,7 +104,7 @@ describe('ReleaseParser.parseBatch()', () => {
       { title: 'TBBT', type: 'series', matchType: 'complete_series', episodeNumbers: [], relevanceScore: 40 },
       { title: 'TBBT', type: 'series', matchType: 'episode', seasonNumber: 2, episodeNumbers: [1], relevanceScore: 10 },
     ];
-    mockGenerateObject.mockResolvedValueOnce({ object: results } as ReturnType<typeof generateObject> extends Promise<infer T> ? T : never);
+    mockGenerateText.mockResolvedValueOnce({ output: { results } } as never);
 
     const titles = [
       'The Big Bang Theory S02 1080p BluRay',
@@ -128,7 +121,7 @@ describe('ReleaseParser.parseBatch()', () => {
   });
 
   it('returns [] on network failure', async () => {
-    mockGenerateObject.mockRejectedValueOnce(new Error('timeout'));
+    mockGenerateText.mockRejectedValueOnce(new Error('timeout'));
     const parsed = await releaseParser.parseBatch(['title1', 'title2']);
     expect(parsed).toEqual([]);
   });
@@ -138,7 +131,7 @@ describe('ReleaseParser.parseBatch()', () => {
       { title: 'TBBT', type: 'series', matchType: 'season_pack', seasonNumber: 2, episodeNumbers: [], relevanceScore: 92 },
       { title: 'TBBT', type: 'series', matchType: 'complete_series', episodeNumbers: [], relevanceScore: 38 },
     ];
-    mockGenerateObject.mockResolvedValueOnce({ object: results } as ReturnType<typeof generateObject> extends Promise<infer T> ? T : never);
+    mockGenerateText.mockResolvedValueOnce({ output: { results } } as never);
 
     const parsed = await releaseParser.parseBatch(
       ['TBBT S02 1080p BluRay', 'TBBT Complete Series'],

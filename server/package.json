@@ -13,6 +13,7 @@
   "type": "commonjs",
   "private": "true",
   "dependencies": {
+    "@ai-sdk/deepseek": "^2.0.24",
     "@ai-sdk/openai": "^3.0.41",
     "ai": "^6.0.116",
     "openai": "^6.29.0"

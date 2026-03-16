@@ -1,27 +1,28 @@
-import { createOpenAI } from '@ai-sdk/openai';
-import { generateObject } from 'ai';
+import { deepseek } from '@ai-sdk/deepseek';
+import { generateText, Output } from 'ai';
 import { z } from 'zod';
 
 // ── Schemas ──────────────────────────────────────────────────────────────────
 
 export const QualitySchema = z.object({
-  resolution: z.enum(['480p', '720p', '1080p', '2160p']).optional(),
+  // .catch(undefined) — model may return "4K", "UHD", etc.; coerce unknown values to undefined
+  resolution: z.enum(['480p', '720p', '1080p', '2160p']).optional().catch(undefined),
   source: z.string().optional(),
   codec: z.string().optional(),
 });
 
 export const ParsedReleaseSchema = z.object({
   title: z.string(),
-  type: z.enum(['series', 'movie']),
-  matchType: z.enum(['episode', 'season_pack', 'complete_series']),
-  seasonNumber: z.number().optional(),
-  episodeNumbers: z.array(z.number()).optional(),
-  year: z.number().optional(),
-  quality: QualitySchema.optional(),
+  type: z.enum(['series', 'movie']).catch('series'),
+  matchType: z.enum(['episode', 'season_pack', 'complete_series']).catch('episode'),
+  seasonNumber: z.number().optional().catch(undefined),
+  episodeNumbers: z.array(z.number()).optional().catch(undefined),
+  year: z.number().optional().catch(undefined),
+  quality: QualitySchema.optional().catch(undefined),
 });
 
 export const ParsedReleaseWithScoreSchema = ParsedReleaseSchema.extend({
-  relevanceScore: z.number().min(0).max(100),
+  relevanceScore: z.number().min(0).max(100).catch(50),
 });
 
 export type ParsedRelease = z.infer<typeof ParsedReleaseSchema>;
@@ -53,14 +54,6 @@ const SERIES_PATTERNS = [
 export class ReleaseParser {
   /** Serial queue: each single parse() call appends and waits for the previous. */
   private queue: Promise<unknown> = Promise.resolve();
-
-  private getModel() {
-    const openai = createOpenAI({
-      baseURL: 'https://api.deepseek.com',
-      apiKey: process.env.DEEPSEEK_API_KEY ?? '',
-    });
-    return openai('deepseek-chat');
-  }
 
   /**
    * Parse a single release title. Returns a `ParsedRelease` or `null` on failure.
@@ -103,19 +96,21 @@ Return a JSON array with one object per title (same order as input). Each object
 - episodeNumbers: number[] (if applicable, empty array otherwise)
 - year: number (disambiguation year only, e.g. Archer 2009)
 - quality: { resolution?: "480p"|"720p"|"1080p"|"2160p", source?: string, codec?: string }
-- relevanceScore: number 0–100 (how well this release matches the search context; season packs for the exact season score highest, complete series score medium, wrong season/episode score lowest)
+- relevanceScore: number 0–100 (season packs for the exact season score highest, complete series score medium, wrong season/episode score lowest)
 
 Titles to parse:
 ${titles.map((t, i) => `${i + 1}. ${t}`).join('\n')}`;
 
     try {
-      const { object } = await generateObject({
-        model: this.getModel(),
-        schema: z.array(ParsedReleaseWithScoreSchema),
+      const { output } = await generateText({
+        model: deepseek('deepseek-chat'),
+        output: Output.object({
+          schema: z.object({ results: z.array(ParsedReleaseWithScoreSchema) }),
+        }),
         prompt,
         abortSignal: AbortSignal.timeout(BATCH_TIMEOUT_MS),
       });
-      return object;
+      return output.results;
     } catch {
       return [];
     }
@@ -141,13 +136,13 @@ Release title: ${title}`;
 
     for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
       try {
-        const { object } = await generateObject({
-          model: this.getModel(),
-          schema: ParsedReleaseSchema,
+        const { output } = await generateText({
+          model: deepseek('deepseek-chat'),
+          output: Output.object({ schema: ParsedReleaseSchema }),
           prompt,
           abortSignal: AbortSignal.timeout(SINGLE_TIMEOUT_MS),
         });
-        return object;
+        return output;
       } catch {
         if (attempt === MAX_ATTEMPTS - 1) {
           return this._regexFallback(title);

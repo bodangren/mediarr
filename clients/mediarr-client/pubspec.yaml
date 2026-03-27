@@ -1,0 +1,51 @@
+name: mediarr_client
+description: "Mediarr cross-platform client for Android TV, Linux, and macOS"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.8.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State management
+  flutter_riverpod: ^2.6.1
+  riverpod_annotation: ^2.6.1
+
+  # Routing
+  go_router: ^14.8.1
+
+  # Networking
+  dio: ^5.8.0
+
+  # mDNS discovery
+  bonsoir: ^5.1.4
+
+  # Media playback
+  media_kit: ^1.1.11
+  media_kit_video: ^1.2.5
+  media_kit_libs_linux: ^1.1.3
+  media_kit_libs_macos_video: ^1.1.4
+  media_kit_libs_android_video: ^1.3.6
+
+  # Image loading
+  cached_network_image: ^3.4.1
+
+  # Local storage
+  shared_preferences: ^2.5.3
+
+  # Icons
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  riverpod_generator: ^2.6.5
+  build_runner: ^2.4.15
+  mocktail: ^1.0.4
+
+flutter:
+  uses-material-design: true

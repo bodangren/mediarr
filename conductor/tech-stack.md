@@ -47,8 +47,9 @@
 - **Coverage targets:** ≥80% for new/changed code in each track. CI runs with `CI=true` to prevent watch mode.
 - **Key integration test suites:** `library-routes.test.tsx`, `settings-routes.test.tsx`, `App.test.tsx`; component-level suites for interactive search modals, view components, and settings forms.
 
-**Clients (New):**
-- **Android TV App:** Native Kotlin application built with Jetpack Compose for TV (`androidx.tv.material3`), ExoPlayer (`androidx.media3`) for 4K/HDR hardware-accelerated playback, and Coil for image loading. Connects to the fastify backend via OkHttp, utilizing mDNS for automatic server discovery on the local network.
+**Clients:**
+- **Cross-Platform Client (Flutter):** Located at `clients/mediarr-client/`. A single Flutter codebase targeting Android TV, Linux desktop, and macOS. Uses Riverpod for state management, go_router for navigation, media_kit (ExoPlayer on Android, mpv/libmpv on Linux/macOS) for hardware-accelerated 4K/HDR playback, and bonsoir for mDNS server discovery. 10-foot leanback UI with D-pad/keyboard-first navigation and Mediarr "Modern Dark" theming.
+- **~~Android TV App (Kotlin)~~:** `clients/android-tv/` — **DEPRECATED.** Legacy native Kotlin app. No further development. Superseded by the Flutter cross-platform client.
 
 **Deployment:**
 - **Single Process:** The frontend is built into static files (`dist/`) and served directly by the Fastify backend. The user only needs to execute the single Bun backend script.

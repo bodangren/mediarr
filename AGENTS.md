@@ -8,6 +8,7 @@ Welcome, Agent. This project uses the **Conductor Methodology** for spec-driven 
 3. **Follow the Spec:** Each active track has a `spec.md` and `plan.md`. Read them. Implement strictly against the plan. Update the `[ ]` checkboxes in `plan.md` as you go.
 4. **Monolith Architecture:** Mediarr is a single, unified monolith. Do not build siloed microservices or sync logic between domains (Movies vs. TV). They share the same database and memory space.
 5. **No Next.js:** We use a pure React SPA (Vite) frontend communicating with a Bun/Node daemon. Do not attempt to use Next.js App Router features.
-6. **Archiving:** When a plan is 100% complete, archive the track folder to `conductor/archive/` and update `tracks.md`. Do not ask for permission.
-7. **Commit:** Commit work with a note after each phase of a track.
-8. **Memory:** Use conductor/tech-debt.md and conductor/lessons-learned.md
+6. **Flutter Client Only:** The cross-platform client lives at `clients/mediarr-client/` (Flutter). The legacy Kotlin Android TV app at `clients/android-tv/` is **deprecated** — do NOT develop, fix, or extend it. All client work targets the Flutter codebase.
+7. **Archiving:** When a plan is 100% complete, archive the track folder to `conductor/archive/` and update `tracks.md`. Do not ask for permission.
+8. **Commit:** Commit work with a note after each phase of a track.
+9. **Memory:** Use conductor/tech-debt.md and conductor/lessons-learned.md

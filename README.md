@@ -14,7 +14,7 @@ Built for home lab enthusiasts, Mediarr eliminates the complexity of wiring toge
 - **Testing:** Vitest
 - **State Management:** TanStack React Query
 - **Routing:** React Router v7
-- **Clients:** Android TV (Kotlin + Jetpack Compose)
+- **Clients:** Flutter (Android TV + Linux + macOS) at `clients/mediarr-client/`
 - **Deployment:** Docker & Docker Compose (migration from Next.js to Vite in progress)
 
 ## Development
@@ -108,11 +108,11 @@ Overall health status (`ok` / `warning` / `error`) is computed from the per-chec
 
 ---
 
-## Push Notifications (Server → Android TV)
+## Push Notifications (Server → Clients)
 
 ### NotificationDispatchService (`server/src/services/NotificationDispatchService.ts`)
 
-Mediarr delivers real-time push notifications directly to connected Android TV clients via the existing SSE (Server-Sent Events) event hub — **no external services required**.
+Mediarr delivers real-time push notifications directly to connected clients via the existing SSE (Server-Sent Events) event hub — **no external services required**.
 
 - **`notifyGrab(payload)`** — Publishes `notification:grab` when a release is grabbed. Triggered from `MediaSearchService.grabRelease()`.
 - **`notifyDownload(payload)`** — Publishes `notification:download` when a movie or episode import completes. Triggered from `ImportManager` at all 4 import paths. Uses `isUpgrade: true` for quality upgrades.
@@ -121,12 +121,11 @@ Mediarr delivers real-time push notifications directly to connected Android TV c
 
 Events are published to `ApiEventHub` which broadcasts them via SSE to all connected clients. Errors from the hub are swallowed so a broken connection never blocks the main download/import flow.
 
-### Android TV Notification Client (`clients/android-tv/.../notification/`)
+### Client Notification Support
 
-- **`NotificationEventSource`** — Coroutine-based OkHttp SSE client. Subscribes to `/api/events/stream`, parses `notification:*` events, and dispatches to a `NotificationEventListener`. Reconnects automatically with exponential back-off.
-- **`MediarrNotificationManager`** — Creates the `mediarr_push` Android notification channel and posts system notifications via `NotificationManagerCompat`.
-- Wired via `DisposableEffect` in `MediarrTvApp.kt`: starts when a server URL is active, stops cleanly on URL change.
+- SSE push notifications are available via `GET /api/events/stream` for any connected client.
 - Status endpoint: `GET /api/notifications/push-status` — returns `enabled: true`, `transport: "sse"`, and the count of currently connected SSE clients.
+- The legacy Android TV Kotlin client (`clients/android-tv/`) implemented SSE notifications via OkHttp. The Flutter cross-platform client (`clients/mediarr-client/`) will add SSE notification support in a follow-up track.
 
 ---
 
@@ -218,7 +217,7 @@ SQLite database backup management:
 5. **Subtitle & Audio:** Advanced multi-language tracking and fetching.
 6. **Unified UI:** The final high-density "Modern Dark" dashboard.
 7. **DLNA Server:** Local network streaming with native subtitle support.
-8. **Android TV Client:** Native Kotlin client with Jetpack Compose UI.
+8. **Cross-Platform Client:** Flutter client for Android TV, Linux, and macOS.
 
 ## License
 

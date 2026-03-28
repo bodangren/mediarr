@@ -10,6 +10,7 @@ class Episode {
     this.hasFile = false,
     this.monitored = false,
     this.quality,
+    this.path,
   });
 
   final int id;
@@ -21,6 +22,7 @@ class Episode {
   final bool hasFile;
   final bool monitored;
   final String? quality;
+  final String? path;
 
   factory Episode.fromJson(Map<String, dynamic> json) {
     return Episode(
@@ -33,6 +35,7 @@ class Episode {
       hasFile: json['hasFile'] as bool? ?? false,
       monitored: json['monitored'] as bool? ?? false,
       quality: json['quality'] as String?,
+      path: json['path'] as String?,
     );
   }
 }

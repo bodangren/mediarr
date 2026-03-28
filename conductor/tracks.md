@@ -33,7 +33,7 @@ chore_drizzle_migration_20260314  (backend-only; depends on clean baseline from 
 
 ## Active Tracks
 
-- [ ] **Track: Flutter Cross-Platform Client** *Phases: 5 | Link: [./tracks/feature_flutter_client_20260328/](./tracks/feature_flutter_client_20260328/)*
+- [x] **Track: Flutter Cross-Platform Client** *Phases: 5 | Link: [./archive/feature_flutter_client_20260328/](./archive/feature_flutter_client_20260328/)*
 - [x] **Track: AI Release Parser — Batch Search Scoring & Import Matching** *Phases: 4 | Link: [./archive/feature_ai_release_parser_20260316/](./archive/feature_ai_release_parser_20260316/)*
 - [x] **Track: AI-Powered Filename Parsing** *Phases: 4 | Link: [./archive/feature_ai_parsing_20260316/](./archive/feature_ai_parsing_20260316/)*
 

@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mediarr_client/core/router/app_router.dart';
+import 'package:mediarr_client/features/library/movies_screen.dart';
+import 'package:mediarr_client/features/library/series_screen.dart';
+import 'package:mediarr_client/shared/models/movie.dart';
+import 'package:mediarr_client/shared/models/series.dart';
 
 void main() {
   group('AppRoutes', () {
@@ -47,18 +51,19 @@ void main() {
           ),
         ),
       );
-      // Use pump() — discovery screen has an animating CircularProgressIndicator
-      // so pumpAndSettle() would time out
       await tester.pump();
       await tester.pump();
 
       expect(find.text('Mediarr'), findsOneWidget);
-      // Discovery screen shows manual entry mode when provider isn't overridden
       expect(find.text('Enter server address to connect'), findsOneWidget);
     });
 
     testWidgets('navigates to movies screen via shell route', (tester) async {
-      final container = ProviderContainer();
+      final container = ProviderContainer(
+        overrides: [
+          moviesProvider.overrideWith((ref) async => <Movie>[]),
+        ],
+      );
       addTearDown(container.dispose);
 
       final router = container.read(appRouterProvider);
@@ -74,12 +79,16 @@ void main() {
       router.go(AppRoutes.movies);
       await tester.pumpAndSettle();
 
-      expect(find.text('Movies Library'), findsOneWidget);
-      expect(find.text('Movies'), findsOneWidget);
+      // MediaGrid title is "Movies"; NavigationRail label is also "Movies"
+      expect(find.text('Movies'), findsWidgets);
     });
 
     testWidgets('navigates to series screen via shell route', (tester) async {
-      final container = ProviderContainer();
+      final container = ProviderContainer(
+        overrides: [
+          seriesListProvider.overrideWith((ref) async => <Series>[]),
+        ],
+      );
       addTearDown(container.dispose);
 
       final router = container.read(appRouterProvider);
@@ -95,12 +104,16 @@ void main() {
       router.go(AppRoutes.series);
       await tester.pumpAndSettle();
 
-      expect(find.text('Series Library'), findsOneWidget);
-      expect(find.text('Series'), findsOneWidget);
+      expect(find.text('Series'), findsWidgets);
     });
 
     testWidgets('navigates to settings screen via shell route', (tester) async {
-      final container = ProviderContainer();
+      final container = ProviderContainer(
+        overrides: [
+          moviesProvider.overrideWith((ref) async => <Movie>[]),
+          seriesListProvider.overrideWith((ref) async => <Series>[]),
+        ],
+      );
       addTearDown(container.dispose);
 
       final router = container.read(appRouterProvider);

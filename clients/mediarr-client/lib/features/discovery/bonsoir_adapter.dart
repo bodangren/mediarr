@@ -17,19 +17,17 @@ class BonsoirMdnsAdapter implements MdnsDiscoveryAdapter {
     if (_started) return;
     _started = true;
 
-    _discovery = BonsoirDiscovery(
-      type: '_mediarr._tcp',
-    );
-
+    _discovery = BonsoirDiscovery(type: '_mediarr._tcp');
     await _discovery!.ready;
 
     _discovery!.eventStream?.listen((event) {
-      if (event.type == BonsoirDiscoveryEventType.DISCOVERY_SERVICE_FOUND) {
+      if (event.type == BonsoirDiscoveryEventType.discoveryServiceFound) {
         final service = event.service;
         if (service != null) {
+          final host = service is ResolvedBonsoirService ? service.host : null;
           _controller.add(DiscoveredServer(
             name: service.name,
-            host: service.host ?? service.ip ?? '',
+            host: host ?? '',
             port: service.port,
           ));
         }

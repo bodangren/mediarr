@@ -11,7 +11,7 @@ void main() {
   WidgetsFlutterBinding.ensureInitialized();
   MediaKit.ensureInitialized();
 
-  runApp(const ProviderScope(
+  runApp(ProviderScope(
     overrides: [
       discoveryServiceProvider.overrideWith((ref) {
         return DiscoveryService(
@@ -20,7 +20,7 @@ void main() {
         );
       }),
     ],
-    child: MediarrApp(),
+    child: const MediarrApp(),
   ));
 }
 

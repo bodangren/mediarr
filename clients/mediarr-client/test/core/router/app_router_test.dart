@@ -53,7 +53,8 @@ void main() {
       await tester.pump();
 
       expect(find.text('Mediarr'), findsOneWidget);
-      expect(find.text('Searching for server...'), findsOneWidget);
+      // Discovery screen shows manual entry mode when provider isn't overridden
+      expect(find.text('Enter server address to connect'), findsOneWidget);
     });
 
     testWidgets('navigates to movies screen via shell route', (tester) async {

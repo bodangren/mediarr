@@ -30,23 +30,23 @@
 
 ## Phase 2 — Server Discovery & API Client
 
-- [ ] Task: Implement mDNS server discovery
-    - [ ] Write unit tests for discovery state machine (scanning -> found -> connected / timeout -> manual)
-    - [ ] Implement mDNS discovery service using bonsoir package
-    - [ ] Build discovery UI screen with scanning animation and server list
-    - [ ] Add manual IP:port entry fallback with form validation
-    - [ ] Persist last-used server address with shared_preferences
-- [ ] Task: Build API client layer
-    - [ ] Write unit tests for API client (mock HTTP, error handling, serialization)
-    - [ ] Implement typed API client for Mediarr REST endpoints (movies, series, episodes, system/status)
-    - [ ] Create data models (Movie, Series, Season, Episode) matching server API responses
-    - [ ] Add connection health check (periodic `/api/system/status` ping)
-- [ ] Task: Implement connection flow integration
-    - [ ] Write integration test for full discovery -> connect -> health-check flow
-    - [ ] Wire discovery service and API client into Riverpod providers
-    - [ ] Build connection status indicator widget (connected/disconnected/reconnecting)
-    - [ ] Handle server unreachable with automatic retry and user feedback
-- [ ] Task: Conductor — Phase 2 Completion Verification (Protocol in workflow.md)
+- [x] Task: Implement mDNS server discovery
+    - [x] Write unit tests for discovery state machine (scanning -> found -> connected / timeout -> manual)
+    - [x] Implement mDNS discovery service using bonsoir package
+    - [x] Build discovery UI screen with scanning animation and server list
+    - [x] Add manual IP:port entry fallback with form validation
+    - [x] Persist last-used server address with shared_preferences
+- [x] Task: Build API client layer
+    - [x] Write unit tests for API client (mock HTTP, error handling, serialization)
+    - [x] Implement typed API client for Mediarr REST endpoints (movies, series, episodes, system/status)
+    - [x] Create data models (Movie, Series, Season, Episode) matching server API responses
+    - [x] Add connection health check (periodic `/api/system/status` ping)
+- [x] Task: Implement connection flow integration
+    - [x] Write integration test for full discovery -> connect -> health-check flow
+    - [x] Wire discovery service and API client into Riverpod providers
+    - [x] Build connection status indicator widget (connected/disconnected/reconnecting)
+    - [x] Handle server unreachable with automatic retry and user feedback
+- [~] Task: Conductor — Phase 2 Completion Verification (Protocol in workflow.md)
 
 ## Phase 3 — Library Browsing
 

@@ -135,10 +135,11 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
   Future<List<Movie>> getMovies() async {
     final response = await _dio.get('/api/movies');
     if (response.statusCode == 200 && response.data != null) {
-      final list = response.data is String
+      final raw = response.data is String
           ? jsonDecode(response.data as String)
           : response.data;
-      return (list as List)
+      final data = raw is Map<String, dynamic> ? raw['data'] ?? raw : raw;
+      return (data as List)
           .map((json) => Movie.fromJson(json as Map<String, dynamic>))
           .toList();
     }
@@ -159,10 +160,11 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
   Future<List<Series>> getSeries() async {
     final response = await _dio.get('/api/series');
     if (response.statusCode == 200 && response.data != null) {
-      final list = response.data is String
+      final raw = response.data is String
           ? jsonDecode(response.data as String)
           : response.data;
-      return (list as List)
+      final data = raw is Map<String, dynamic> ? raw['data'] ?? raw : raw;
+      return (data as List)
           .map((json) => Series.fromJson(json as Map<String, dynamic>))
           .toList();
     }
@@ -183,10 +185,11 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
   Future<List<Season>> getSeasons(int seriesId) async {
     final response = await _dio.get('/api/series/$seriesId/seasons');
     if (response.statusCode == 200 && response.data != null) {
-      final list = response.data is String
+      final raw = response.data is String
           ? jsonDecode(response.data as String)
           : response.data;
-      return (list as List)
+      final data = raw is Map<String, dynamic> ? raw['data'] ?? raw : raw;
+      return (data as List)
           .map((json) => Season.fromJson(json as Map<String, dynamic>))
           .toList();
     }
@@ -200,10 +203,11 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
     }
     final response = await _dio.get(path);
     if (response.statusCode == 200 && response.data != null) {
-      final list = response.data is String
+      final raw = response.data is String
           ? jsonDecode(response.data as String)
           : response.data;
-      return (list as List)
+      final data = raw is Map<String, dynamic> ? raw['data'] ?? raw : raw;
+      return (data as List)
           .map((json) => Episode.fromJson(json as Map<String, dynamic>))
           .toList();
     }

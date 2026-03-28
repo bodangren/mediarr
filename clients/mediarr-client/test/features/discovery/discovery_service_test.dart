@@ -40,13 +40,13 @@ void main() {
   const testServer = DiscoveredServer(
     name: 'Mediarr Server',
     host: '192.168.1.100',
-    port: 3001,
+    port: 5174,
   );
 
   const testServer2 = DiscoveredServer(
     name: 'Mediarr Server 2',
     host: '192.168.1.101',
-    port: 3001,
+    port: 5174,
   );
 
   setUp(() {
@@ -64,14 +64,14 @@ void main() {
 
   group('DiscoveredServer', () {
     test('url is computed correctly', () {
-      expect(testServer.url, 'http://192.168.1.100:3001');
+      expect(testServer.url, 'http://192.168.1.100:5174');
     });
 
     test('equality by host and port', () {
       const duplicate = DiscoveredServer(
         name: 'Different Name',
         host: '192.168.1.100',
-        port: 3001,
+        port: 5174,
       );
       expect(testServer, equals(duplicate));
     });
@@ -160,11 +160,11 @@ void main() {
     });
 
     test('connectManually transitions to connected', () {
-      service.connectManually('10.0.0.5', 3001);
+      service.connectManually('10.0.0.5', 5174);
 
       expect(service.state.phase, DiscoveryPhase.connected);
       expect(service.state.selectedServer?.host, '10.0.0.5');
-      expect(service.state.selectedServer?.port, 3001);
+      expect(service.state.selectedServer?.port, 5174);
       expect(service.state.selectedServer?.name, 'Manual');
     });
 

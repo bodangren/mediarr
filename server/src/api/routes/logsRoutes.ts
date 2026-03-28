@@ -19,7 +19,7 @@ const logFiles: Map<string, { metadata: LogFile; contents: string }> = new Map([
       lastModified: new Date().toISOString(),
     },
     contents: [
-      '[2024-02-15 10:30:00] INFO  [main] Server started on port 3001',
+      '[2024-02-15 10:30:00] INFO  [main] Server started on port 5174',
       '[2024-02-15 10:30:01] INFO  [indexer] Loading indexer definitions...',
       '[2024-02-15 10:30:02] INFO  [indexer] Loaded 15 indexer definitions',
       '[2024-02-15 10:30:05] INFO  [scheduler] Starting RSS sync scheduler',

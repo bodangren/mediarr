@@ -18,7 +18,7 @@ class DiscoveryScreen extends ConsumerStatefulWidget {
 
 class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
   final _hostController = TextEditingController();
-  final _portController = TextEditingController(text: '3001');
+  final _portController = TextEditingController(text: '5174');
   bool _isConnecting = false;
 
   @override
@@ -170,7 +170,7 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
                       : () {
                           final host = _hostController.text.trim();
                           final port =
-                              int.tryParse(_portController.text.trim()) ?? 3001;
+                              int.tryParse(_portController.text.trim()) ?? 5174;
                           if (host.isNotEmpty) {
                             _connectToServer(host, port);
                           }

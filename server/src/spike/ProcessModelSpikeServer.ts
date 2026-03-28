@@ -25,7 +25,7 @@ export class ProcessModelSpikeServer {
     this.registerRoutes();
   }
 
-  async start(port = 3001): Promise<string> {
+  async start(port = 5174): Promise<string> {
     if (!this.heartbeatTimer) {
       this.heartbeatTimer = setInterval(() => {
         this.heartbeatCounter += 1;

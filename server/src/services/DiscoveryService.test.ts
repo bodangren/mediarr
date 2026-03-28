@@ -17,7 +17,7 @@ describe('DiscoveryService', () => {
     const service = new DiscoveryService(() => bonjour as any);
     const announcement = service.start({
       name: 'Mediarr API',
-      port: 3001,
+      port: 5174,
       txt: { version: '1.0.0' },
     });
 
@@ -25,21 +25,21 @@ describe('DiscoveryService', () => {
       name: 'Mediarr API',
       type: 'mediarr',
       aliases: ['http'],
-      port: 3001,
+      port: 5174,
       txt: { version: '1.0.0' },
     });
     expect(bonjour.publish).toHaveBeenNthCalledWith(1, {
       name: 'Mediarr API',
       type: 'mediarr',
       protocol: 'tcp',
-      port: 3001,
+      port: 5174,
       txt: { version: '1.0.0' },
     });
     expect(bonjour.publish).toHaveBeenNthCalledWith(2, {
       name: 'Mediarr API',
       type: 'http',
       protocol: 'tcp',
-      port: 3001,
+      port: 5174,
       txt: { version: '1.0.0' },
     });
     expect(publication.start).toHaveBeenCalledTimes(2);
@@ -55,11 +55,11 @@ describe('DiscoveryService', () => {
 
     const service = new DiscoveryService(() => bonjour as any);
 
-    const first = service.start({ port: 3001 });
+    const first = service.start({ port: 5174 });
     const second = service.start({ port: 9999, name: 'ignored' });
 
     expect(first).toEqual(second);
-    expect(first.port).toBe(3001);
+    expect(first.port).toBe(5174);
     expect(bonjour.publish).toHaveBeenCalledTimes(2);
   });
 
@@ -76,7 +76,7 @@ describe('DiscoveryService', () => {
     };
 
     const service = new DiscoveryService(() => bonjour as any);
-    service.start({ port: 3001 });
+    service.start({ port: 5174 });
 
     await service.stop();
 
@@ -110,7 +110,7 @@ describe('DiscoveryService', () => {
       name: 'Mediarr API',
       type: 'mediarr',
       aliases: ['http', 'mediarr', '  ', 'http', 'webdav'],
-      port: 3001,
+      port: 5174,
     });
 
     expect(announcement.aliases).toEqual(['http', 'webdav']);

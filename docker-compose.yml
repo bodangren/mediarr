@@ -4,18 +4,18 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        API_INTERNAL_URL: http://api:3001
+        API_INTERNAL_URL: http://api:5174
     command: >
       sh -lc "npx prisma migrate deploy && npm run start:api"
     ports:
-      - "3001:3001"
+      - "5174:5174"
     volumes:
       - mediarr_config:/config
       - mediarr_data:/data
     environment:
       - DATABASE_URL=file:/config/mediarr.db
       - ENCRYPTION_KEY=dev-local-encryption-key
-      - API_PORT=3001
+      - API_PORT=5174
       - NODE_ENV=production
 
   mediarr:
@@ -23,14 +23,14 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        API_INTERNAL_URL: http://api:3001
+        API_INTERNAL_URL: http://api:5174
     depends_on:
       - api
     command: npm run start --workspace=app
     ports:
       - "3000:3000"
     environment:
-      - API_INTERNAL_URL=http://api:3001
+      - API_INTERNAL_URL=http://api:5174
       - NEXT_PUBLIC_API_BASE_URL=
       - NODE_ENV=production
 

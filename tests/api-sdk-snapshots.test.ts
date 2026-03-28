@@ -45,7 +45,7 @@ describe('SDK payload snapshots', () => {
     });
 
     const api = createApiClients({
-      baseUrl: 'http://127.0.0.1:3001',
+      baseUrl: 'http://127.0.0.1:5174',
       fetchFn: fetchMock as unknown as typeof fetch,
     });
 

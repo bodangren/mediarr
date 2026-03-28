@@ -95,7 +95,7 @@ Before building new UI, check `components/primitives/` for: Button, Alert, Label
 
 # API Layer
 
-Clients in `lib/api/` (one per domain), built on `ApiHttpClient` wrapping fetch. Backend proxy: `/api/*` → Fastify at port 3001. Error types: `ApiClientError`, `ContractViolationError`.
+Clients in `lib/api/` (one per domain), built on `ApiHttpClient` wrapping fetch. Backend proxy: `/api/*` → Fastify at port 5174. Error types: `ApiClientError`, `ContractViolationError`.
 
 # Operating Rules
 

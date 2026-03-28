@@ -98,11 +98,11 @@ void main() {
     test('copyWith preserves unchanged fields', () {
       const original = ApiClientState(
         status: ConnectionStatus.connected,
-        baseUrl: 'http://localhost:3001',
+        baseUrl: 'http://localhost:5174',
       );
       final updated = original.copyWith(lastError: 'test');
       expect(updated.status, ConnectionStatus.connected);
-      expect(updated.baseUrl, 'http://localhost:3001');
+      expect(updated.baseUrl, 'http://localhost:5174');
       expect(updated.lastError, 'test');
     });
   });
@@ -139,11 +139,11 @@ void main() {
         },
       ));
 
-      final result = await client.connect('http://localhost:3001');
+      final result = await client.connect('http://localhost:5174');
 
       expect(result, true);
       expect(client.state.status, ConnectionStatus.connected);
-      expect(client.state.baseUrl, 'http://localhost:3001');
+      expect(client.state.baseUrl, 'http://localhost:5174');
     });
 
     test('connect sets error on failure', () async {
@@ -156,7 +156,7 @@ void main() {
         },
       ));
 
-      final result = await client.connect('http://unreachable:3001');
+      final result = await client.connect('http://unreachable:5174');
 
       expect(result, false);
       expect(client.state.status, ConnectionStatus.error);
@@ -174,7 +174,7 @@ void main() {
         },
       ));
 
-      await client.connect('http://localhost:3001');
+      await client.connect('http://localhost:5174');
       client.disconnect();
 
       expect(client.state.status, ConnectionStatus.disconnected);
@@ -214,7 +214,7 @@ void main() {
         },
       ));
 
-      await client.connect('http://localhost:3001');
+      await client.connect('http://localhost:5174');
       final movies = await client.getMovies();
 
       expect(movies.length, 2);
@@ -253,7 +253,7 @@ void main() {
         },
       ));
 
-      await client.connect('http://localhost:3001');
+      await client.connect('http://localhost:5174');
       final series = await client.getSeries();
 
       expect(series.length, 1);
@@ -272,10 +272,10 @@ void main() {
         },
       ));
 
-      await client.connect('http://192.168.1.100:3001');
+      await client.connect('http://192.168.1.100:5174');
       final url = client.getStreamUrl('/data/media/movies/Inception (2010)/Inception.mkv');
 
-      expect(url, startsWith('http://192.168.1.100:3001/api/stream?path='));
+      expect(url, startsWith('http://192.168.1.100:5174/api/stream?path='));
       expect(url, contains('Inception'));
     });
   });

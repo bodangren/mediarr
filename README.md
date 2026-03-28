@@ -31,7 +31,7 @@ npm install
 npm run dev
 ```
 
-This starts both the Vite dev server (frontend on `:5173`) and the Fastify API server (backend on `:3001`).
+This starts both the Vite dev server (frontend on `:5173`) and the Fastify API server (backend on `:5174`).
 
 ### Testing
 

@@ -43,7 +43,7 @@ describe('typed SDK contracts', () => {
     });
 
     const api = createApiClients({
-      baseUrl: 'http://127.0.0.1:3001',
+      baseUrl: 'http://127.0.0.1:5174',
       fetchFn: fetchMock as unknown as typeof fetch,
     });
 
@@ -60,7 +60,7 @@ describe('typed SDK contracts', () => {
 
     expect(fetchMock).toHaveBeenNthCalledWith(
       1,
-      'http://127.0.0.1:3001/api/series?page=1&pageSize=25',
+      'http://127.0.0.1:5174/api/series?page=1&pageSize=25',
       expect.objectContaining({
         method: 'GET',
       }),
@@ -68,7 +68,7 @@ describe('typed SDK contracts', () => {
 
     expect(fetchMock).toHaveBeenNthCalledWith(
       2,
-      'http://127.0.0.1:3001/api/releases/grab-candidate',
+      'http://127.0.0.1:5174/api/releases/grab-candidate',
       expect.objectContaining({
         method: 'POST',
         body: JSON.stringify({
@@ -91,7 +91,7 @@ describe('typed SDK contracts', () => {
     }));
 
     const api = createApiClients({
-      baseUrl: 'http://127.0.0.1:3001',
+      baseUrl: 'http://127.0.0.1:5174',
       fetchFn: fetchMock as unknown as typeof fetch,
     });
 
@@ -109,7 +109,7 @@ describe('typed SDK contracts', () => {
     }, 409));
 
     const api = createApiClients({
-      baseUrl: 'http://127.0.0.1:3001',
+      baseUrl: 'http://127.0.0.1:5174',
       fetchFn: fetchMock as unknown as typeof fetch,
     });
 
@@ -175,7 +175,7 @@ describe('typed SDK contracts', () => {
     const received: unknown[] = [];
 
     const eventsApi = createEventsApi({
-      baseUrl: 'http://127.0.0.1:3001',
+      baseUrl: 'http://127.0.0.1:5174',
       maxReconnectDelayMs: 25,
       eventSourceFactory: url => new FakeEventSource(url) as unknown as EventSource,
     });
@@ -242,7 +242,7 @@ describe('typed SDK contracts', () => {
     });
 
     const api = createApiClients({
-      baseUrl: 'http://127.0.0.1:3001',
+      baseUrl: 'http://127.0.0.1:5174',
       fetchFn: fetchMock as unknown as typeof fetch,
     });
 
@@ -257,7 +257,7 @@ describe('typed SDK contracts', () => {
 
     expect(fetchMock).toHaveBeenNthCalledWith(
       1,
-      'http://127.0.0.1:3001/api/activity',
+      'http://127.0.0.1:5174/api/activity',
       expect.objectContaining({
         method: 'DELETE',
       }),
@@ -265,7 +265,7 @@ describe('typed SDK contracts', () => {
 
     expect(fetchMock).toHaveBeenNthCalledWith(
       2,
-      'http://127.0.0.1:3001/api/activity/1/fail',
+      'http://127.0.0.1:5174/api/activity/1/fail',
       expect.objectContaining({
         method: 'PATCH',
       }),
@@ -273,7 +273,7 @@ describe('typed SDK contracts', () => {
 
     expect(fetchMock).toHaveBeenNthCalledWith(
       3,
-      'http://127.0.0.1:3001/api/activity/export',
+      'http://127.0.0.1:5174/api/activity/export',
       expect.objectContaining({
         method: 'GET',
       }),

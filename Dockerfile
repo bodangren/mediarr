@@ -16,7 +16,7 @@ RUN npm install
 
 # Build stage
 FROM base AS builder
-ARG API_INTERNAL_URL=http://api:3001
+ARG API_INTERNAL_URL=http://api:5174
 ENV API_INTERNAL_URL=${API_INTERNAL_URL}
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .

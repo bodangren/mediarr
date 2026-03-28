@@ -6,7 +6,7 @@
   "scripts": {
     "start:app": "npm run start --workspace=app",
     "start:api": "tsx server/src/main.ts",
-    "dev": "DATABASE_URL=\"file:$(pwd)/mediarr.db\" API_PORT=3001 ENCRYPTION_KEY=dev-local-encryption-key DEFINITIONS_PATH=\"$(pwd)/server/definitions\" npm run dev --workspace=server & DATABASE_URL=\"file:$(pwd)/mediarr.db\" API_INTERNAL_URL=http://localhost:3001 npm run dev --workspace=app",
+    "dev": "DATABASE_URL=\"file:$(pwd)/mediarr.db\" API_PORT=5174 ENCRYPTION_KEY=dev-local-encryption-key DEFINITIONS_PATH=\"$(pwd)/server/definitions\" npm run dev --workspace=server & DATABASE_URL=\"file:$(pwd)/mediarr.db\" API_INTERNAL_URL=http://localhost:5174 npm run dev --workspace=app",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",

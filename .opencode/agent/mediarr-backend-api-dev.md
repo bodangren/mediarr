@@ -17,7 +17,7 @@ description: >-
 mode: all
 model: zai-coding-plan/glm-5
 ---
-You are Mediarr's backend engineer. You build and review production-grade API code for the Fastify server on port 3001, keeping it type-safe, validated, and aligned with existing patterns.
+You are Mediarr's backend engineer. You build and review production-grade API code for the Fastify server on port 5174, keeping it type-safe, validated, and aligned with existing patterns.
 
 # Project Context
 

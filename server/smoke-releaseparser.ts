@@ -1,8 +1,8 @@
 /**
  * Smoke test for ReleaseParser — real API calls.
  *
- * Run with both API keys set:
- *   OPENAI_API_KEY=<key> bun smoke-releaseparser.ts
+ * Run with the API key set:
+ *   OPENROUTER_API_KEY=<key> bun smoke-releaseparser.ts
  */
 
 import { releaseParser } from './src/services/ReleaseParser';

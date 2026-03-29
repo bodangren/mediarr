@@ -1,6 +1,11 @@
-import { generateObject } from 'ai';
-import { createOpenAI } from '@ai-sdk/openai';
+import { generateText, Output } from 'ai';
+import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { z } from 'zod';
+import path from 'node:path';
+
+const openrouter = createOpenRouter({
+  apiKey: process.env.OPENROUTER_API_KEY,
+});
 
 // ── Schemas ─────────────────────────────────────────────────────────────────
 
@@ -122,6 +127,85 @@ function regexFallback(title: string): ParsedRelease | null {
   return null;
 }
 
+// ── Prompts ───────────────────────────────────────────────────────────────────
+
+const PARSE_PROMPT = (title: string) => `You are a media release title parser. Analyse this title and return ONLY a valid JSON object — no markdown, no explanation, no code fences.
+
+Title: "${title}"
+
+Return exactly this JSON shape:
+{
+  "title": "<show/movie name only — strip SxxExx, NNxNN, season/episode markers, year, codec, resolution, release group, file extension, and everything after the episode marker>",
+  "type": "series" | "movie",
+  "matchType": "episode" | "season_pack" | "complete_series",
+  "seasonNumber": <integer> | null,
+  "episodeNumbers": [<integers>],
+  "year": <4-digit integer> | null,
+  "quality": {
+    "resolution": "SD" | "480p" | "720p" | "1080p" | "unknown",
+    "source": "BluRay" | "WEB-DL" | "WEBRip" | "HDTV" | "PDTV" | "DVDRip" | "DVD" | "REMUX" | "AMZN" | "NF" | "HULU" | "DSNP" | "ATVP" | "other",
+    "codec": "x264" | "x265" | "HEVC" | "AVC" | "XviD" | "DivX" | "AV1" | "VP9" | "other"
+  } | null
+}
+
+Rules:
+- title: ONLY the show/movie name. For "Archer.2009.S10E04.Some.Episode.Title" → title is "Archer", for "Breaking.Bad.S03E05.Mas" → "Breaking Bad"
+- matchType "episode": single episode file (has SxxExx or NNxNN pattern)
+- matchType "season_pack": full season with no episode number (e.g. S02 with no E number)
+- matchType "complete_series": all seasons of a series, OR any standalone movie file
+- type "movie": if it is clearly a film (no season/episode markers, has a movie release year)
+- resolution "unknown" for 4K, UHD, 2160p, or anything above 1080p
+- year: the 4-digit disambiguation year if it is part of the show title (e.g. "Archer (2009)" → 2009, "The Office (US)" has no year). The release year of a movie (e.g. "Oppenheimer.2023") is NOT a disambiguation year — return null. A year after a series name like "Archer.2009" IS a disambiguation year → return 2009.
+- episodeNumbers: empty array [] for season packs, complete series, and movies`;
+
+const FILES_PROMPT = (paths: string[]) => [
+  'You are a media file path parser. Return ONLY a valid JSON object — no markdown, no explanation, no code fences.',
+  '',
+  'Each input is a file path relative to a media library root. Use the folder structure as context when the filename alone is ambiguous.',
+  'Example: "Sopranos/Season 1/episode 5.mkv" → title="The Sopranos", seasonNumber=1, episodeNumbers=[5], matchType="episode"',
+  '',
+  'Field rules:',
+  '- title: series or movie name only — strip season/episode markers, year, codec, resolution, release group, file extension',
+  '- matchType: "episode" (single episode), "season_pack" (full season directory), "complete_series" (all seasons or movie)',
+  '- type: "series" for TV/anime, "movie" for films',
+  '- seasonNumber: integer from filename or parent folder, null for movies',
+  '- episodeNumbers: array of integers. Empty array for season packs, complete series, movies.',
+  '- year: disambiguation year if part of the show title (e.g. "Archer (2009)" → 2009). null otherwise.',
+  '- resolution "unknown" for 4K / UHD / 2160p.',
+  '',
+  'Return exactly this JSON shape (one entry per path, same order):',
+  '{"results":[{"title":"…","type":"series"|"movie","matchType":"episode"|"season_pack"|"complete_series","seasonNumber":N|null,"episodeNumbers":[N,…],"year":N|null,"quality":{"resolution":"SD"|"480p"|"720p"|"1080p"|"unknown","source":"BluRay"|"WEB-DL"|"WEBRip"|"HDTV"|"PDTV"|"DVDRip"|"DVD"|"REMUX"|"AMZN"|"NF"|"HULU"|"DSNP"|"ATVP"|"other","codec":"x264"|"x265"|"HEVC"|"AVC"|"XviD"|"DivX"|"AV1"|"VP9"|"other"}}]}',
+  '',
+  'Paths:',
+  ...paths.map((p, i) => `${i + 1}. ${p}`),
+]
+  .filter(s => s !== undefined)
+  .join('\n');
+
+const BATCH_PROMPT = (titles: string[], contextBlock: string) => [
+  'You are a media release parser and relevance scorer. Return ONLY a valid JSON object — no markdown, no explanation, no code fences.',
+  '',
+  contextBlock ? `Search context: ${contextBlock}` : '',
+  '',
+  'For each numbered title below, parse it and score its relevance to the search context (0–100).',
+  'Scoring: 90–100 = exact season pack matching the requested season. 70–89 = individual episodes from the requested season. 50–69 = complete series or adjacent/wrong season pack. 0–49 = wrong show, wrong season, or poor quality.',
+  'IMPORTANT: when a season is specified in the context, the season_pack for that exact season MUST score higher than complete_series.',
+  '',
+  'Field rules:',
+  '- matchType: "episode" (SxxExx), "season_pack" (full season, no episode), "complete_series" (all seasons OR any movie file)',
+  '- type "movie" for films. ALL movies use matchType "complete_series".',
+  '- resolution "unknown" for 4K / UHD / 2160p. "1080p" only if title explicitly says 1080p.',
+  '- source: "REMUX" is a source (not a codec). BluRay.REMUX → source="REMUX".',
+  '',
+  'Return exactly this JSON shape (one entry per title, same order):',
+  '{"results":[{"title":"…","type":"series"|"movie","matchType":"episode"|"season_pack"|"complete_series","seasonNumber":N|null,"episodeNumbers":[N,…],"year":N|null,"quality":{"resolution":"SD"|"480p"|"720p"|"1080p"|"unknown","source":"BluRay"|"WEB-DL"|"WEBRip"|"HDTV"|"PDTV"|"DVDRip"|"DVD"|"REMUX"|"AMZN"|"NF"|"HULU"|"DSNP"|"ATVP"|"other","codec":"x264"|"x265"|"HEVC"|"AVC"|"XviD"|"DivX"|"AV1"|"VP9"|"other"},"relevanceScore":N}]}',
+  '',
+  'Titles:',
+  ...titles.map((t, i) => `${i + 1}. ${t}`),
+]
+  .filter(s => s !== undefined)
+  .join('\n');
+
 // ── Service ──────────────────────────────────────────────────────────────────
 
 class ReleaseParserService {
@@ -129,7 +213,7 @@ class ReleaseParserService {
 
   // parse() — single title, serial queue, regex fallback on failure
   async parse(title: string): Promise<ParsedRelease | null> {
-    if (!process.env.OPENAI_API_KEY) {
+    if (!process.env.OPENROUTER_API_KEY) {
       return regexFallback(title);
     }
 
@@ -139,29 +223,33 @@ class ReleaseParserService {
     });
 
     // Serial queue: each call waits for the previous to finish.
-    // The .catch(() => {}) on the tail keeps the chain alive across failures.
+    // The .catch at the tail keeps the chain alive across failures.
     this.queue = this.queue
       .then(() => this._parseSingle(title))
       .then(result => resultResolve(result))
-      .catch(() => resultResolve(null));
+      .catch(() => resultResolve(regexFallback(title)));
 
     return resultPromise;
   }
 
   private async _parseSingle(title: string): Promise<ParsedRelease | null> {
-    const openai = createOpenAI({ apiKey: process.env.OPENAI_API_KEY });
-    const model = openai.chat('gpt-5-nano');
+    const model = openrouter(process.env.OPENROUTER_MODEL ?? 'minimax/minimax-m2.7');
     const delays = [1000, 2000];
 
     for (let attempt = 0; attempt <= delays.length; attempt++) {
       try {
-        const { object } = await generateObject({
+        // Use Output.json() to avoid provider-side schema enforcement on nullable fields.
+        // Validate the returned JSON ourselves with Zod's .catch() fallbacks.
+        const { output } = await generateText({
           model,
-          schema: ParsedReleaseSchema,
-          prompt: `Parse this media release title and extract structured information:\n\n"${title}"`,
-          abortSignal: AbortSignal.timeout(30000),
+          output: Output.json(),
+          prompt: PARSE_PROMPT(title),
+          providerOptions: { openrouter: {} },
+          abortSignal: AbortSignal.timeout(15000),
         });
-        return object;
+
+        const parsed = ParsedReleaseSchema.safeParse(output);
+        if (parsed.success) return parsed.data;
       } catch {
         if (attempt < delays.length) {
           await new Promise(resolve => setTimeout(resolve, delays[attempt]!));
@@ -174,38 +262,96 @@ class ReleaseParserService {
 
   // parseBatch() — one AI call for all titles, no queue
   async parseBatch(titles: string[], context?: SearchContext): Promise<ParsedReleaseWithScore[]> {
-    if (!process.env.OPENAI_API_KEY || titles.length === 0) {
+    if (!process.env.OPENROUTER_API_KEY || titles.length === 0) {
       return [];
     }
 
     const contextBlock = this._buildContextBlock(context);
-    const titlesBlock = titles.map((t, i) => `${i + 1}. ${t}`).join('\n');
-    const prompt = [
-      'You are a media release parser and relevance scorer.',
-      contextBlock ? `Search context:\n${contextBlock}` : '',
-      'Parse each release title below and score its relevance to the search context.',
-      'Return one entry per title in the same order.',
-      '',
-      titlesBlock,
-    ]
-      .filter(Boolean)
-      .join('\n');
 
     try {
-      const openai = createOpenAI({ apiKey: process.env.OPENAI_API_KEY });
-      const model = openai.chat('gpt-5-nano');
-
-      const { object } = await generateObject({
-        model,
-        schema: BatchResponseSchema,
-        prompt,
-        abortSignal: AbortSignal.timeout(60000),
+      const { output } = await generateText({
+        model: openrouter(process.env.OPENROUTER_MODEL ?? 'minimax/minimax-m2.7'),
+        output: Output.json(),
+        prompt: BATCH_PROMPT(titles, contextBlock),
+        providerOptions: { openrouter: {} },
+        abortSignal: AbortSignal.timeout(20000),
       });
 
-      return object.results;
+      const parsed = BatchResponseSchema.safeParse(output);
+      return parsed.success ? parsed.data.results : [];
     } catch {
       return [];
     }
+  }
+
+  // parseFiles() — batch parse file paths (relative to scan root), no relevance scoring
+  async parseFiles(filePaths: string[]): Promise<ParsedRelease[]> {
+    if (filePaths.length === 0) return [];
+
+    // Regex fallback for when AI is unavailable
+    const regexResults = () => filePaths.map(p => regexFallback(path.basename(p)) ?? {
+      title: path.basename(p, path.extname(p)),
+      type: 'series' as const,
+      matchType: 'episode' as const,
+      seasonNumber: null,
+      episodeNumbers: [],
+      year: null,
+      quality: null,
+    });
+
+    if (!process.env.OPENROUTER_API_KEY) {
+      return regexResults();
+    }
+
+    const BATCH_SIZE = 50;
+    const results: ParsedRelease[] = [];
+
+    for (let offset = 0; offset < filePaths.length; offset += BATCH_SIZE) {
+      const batch = filePaths.slice(offset, offset + BATCH_SIZE);
+      console.log(`[parseFiles] batch ${Math.floor(offset / BATCH_SIZE) + 1} — ${batch.length} paths`);
+      const t0 = Date.now();
+
+      try {
+        const { output } = await generateText({
+          model: openrouter(process.env.OPENROUTER_MODEL ?? 'minimax/minimax-m2.7'),
+          output: Output.json(),
+          prompt: FILES_PROMPT(batch),
+          providerOptions: { openrouter: {} },
+          abortSignal: AbortSignal.timeout(20000),
+        });
+
+        const parsed = z.object({ results: z.array(ParsedReleaseSchema) }).safeParse(output);
+        console.log(`[parseFiles] done in ${Date.now() - t0}ms — success:${parsed.success}`);
+
+        if (parsed.success && parsed.data.results.length === batch.length) {
+          results.push(...parsed.data.results);
+        } else {
+          // Fallback for this batch only
+          results.push(...batch.map(p => regexFallback(path.basename(p)) ?? {
+            title: path.basename(p, path.extname(p)),
+            type: 'series' as const,
+            matchType: 'episode' as const,
+            seasonNumber: null,
+            episodeNumbers: [],
+            year: null,
+            quality: null,
+          }));
+        }
+      } catch (err) {
+        console.log(`[parseFiles] error after ${Date.now() - t0}ms:`, err);
+        results.push(...batch.map(p => regexFallback(path.basename(p)) ?? {
+          title: path.basename(p, path.extname(p)),
+          type: 'series' as const,
+          matchType: 'episode' as const,
+          seasonNumber: null,
+          episodeNumbers: [],
+          year: null,
+          quality: null,
+        }));
+      }
+    }
+
+    return results;
   }
 
   private _buildContextBlock(context?: SearchContext): string {

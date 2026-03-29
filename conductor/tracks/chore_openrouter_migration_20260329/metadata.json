@@ -1,0 +1,11 @@
+{
+  "track_id": "chore_openrouter_migration_20260329",
+  "type": "chore",
+  "status": "new",
+  "created_at": "2026-03-29T00:00:00Z",
+  "updated_at": "2026-03-29T00:00:00Z",
+  "description": "Migrate AI provider from @ai-sdk/openai to @openrouter/ai-sdk-provider for multi-model flexibility",
+  "estimated_tasks": 16,
+  "actual_tasks": null,
+  "deviation_notes": ""
+}

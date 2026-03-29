@@ -1,51 +1,29 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import type { GenerateObjectResult } from 'ai';
 import { releaseParser, ParsedReleaseSchema, ParsedReleaseWithScoreSchema } from './ReleaseParser';
 import type { ParsedRelease, ParsedReleaseWithScore, SearchContext } from './ReleaseParser';
 
-/** Build a fully-typed GenerateObjectResult stub for use with mockResolvedValueOnce. */
-function makeObjectResult<T>(object: T): GenerateObjectResult<T> {
-  return {
-    object,
-    reasoning: undefined,
-    finishReason: 'stop',
-    usage: {
-      inputTokens: 0,
-      outputTokens: 0,
-      totalTokens: 0,
-      inputTokenDetails: { noCacheTokens: undefined, cacheReadTokens: undefined, cacheWriteTokens: undefined },
-      outputTokenDetails: { textTokens: undefined, reasoningTokens: undefined },
-    },
-    warnings: undefined,
-    request: { body: undefined },
-    response: {
-      id: 'mock-id',
-      timestamp: new Date(0),
-      modelId: 'gpt-5-nano',
-      body: undefined,
-      headers: undefined,
-    },
-    providerMetadata: undefined,
-    toJsonResponse: vi.fn(),
-  };
-}
-
 // ── Mocks ────────────────────────────────────────────────────────────────────
 
-vi.mock('@ai-sdk/openai', () => ({
-  createOpenAI: vi.fn(() => ({
-    chat: vi.fn(() => 'mock-model'),
-  })),
+vi.mock('@openrouter/ai-sdk-provider', () => ({
+  createOpenRouter: vi.fn(() => vi.fn(() => 'mock-openrouter-model')),
 }));
 
 vi.mock('ai', () => ({
-  generateObject: vi.fn(),
+  generateText: vi.fn(),
+  Output: {
+    json: vi.fn(() => 'mock-json-output'),
+  },
 }));
 
-import { generateObject } from 'ai';
-const mockGenerateObject = vi.mocked(generateObject);
+import { generateText } from 'ai';
+const mockGenerateText = vi.mocked(generateText);
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
+
+/** Returns the minimal shape generateText resolves to when Output.object is used. */
+function makeTextResult<T>(output: T): { output: T } {
+  return { output } as { output: T };
+}
 
 function makeParsed(overrides: Partial<ParsedRelease> = {}): ParsedRelease {
   return {
@@ -68,8 +46,8 @@ function makeScored(overrides: Partial<ParsedReleaseWithScore> = {}): ParsedRele
 
 describe('ReleaseParser — parse()', () => {
   beforeEach(() => {
-    vi.stubEnv('OPENAI_API_KEY', 'test-key');
-    mockGenerateObject.mockReset();
+    vi.stubEnv('OPENROUTER_API_KEY', 'test-key');
+    mockGenerateText.mockReset();
   });
 
   afterEach(() => {
@@ -78,25 +56,26 @@ describe('ReleaseParser — parse()', () => {
 
   it('returns ParsedRelease on success', async () => {
     const expected = makeParsed();
-    mockGenerateObject.mockResolvedValueOnce(makeObjectResult(expected));
+    mockGenerateText.mockResolvedValueOnce(makeTextResult(expected) as never);
 
     const result = await releaseParser.parse('Breaking.Bad.S03E05.1080p.BluRay.mkv');
     expect(result).toMatchObject(expected);
   });
 
-  it('returns null when generateObject throws', async () => {
-    // Exhaust all 3 attempts
-    mockGenerateObject
+  it('returns regex fallback when generateText throws on all retries', async () => {
+    // 3 attempts total (attempt 0, 1, 2)
+    mockGenerateText
       .mockRejectedValueOnce(new Error('network'))
       .mockRejectedValueOnce(new Error('network'))
       .mockRejectedValueOnce(new Error('network'));
 
     const result = await releaseParser.parse('unparseable-garbage');
+    // regex returns null for garbage input
     expect(result).toBeNull();
   });
 
-  it('falls back to regex for SxxExx filenames when AI returns null after all retries', async () => {
-    mockGenerateObject
+  it('falls back to regex for SxxExx filenames when AI fails', async () => {
+    mockGenerateText
       .mockRejectedValueOnce(new Error('fail'))
       .mockRejectedValueOnce(new Error('fail'))
       .mockRejectedValueOnce(new Error('fail'));
@@ -108,19 +87,19 @@ describe('ReleaseParser — parse()', () => {
     expect(result?.episodeNumbers).toEqual([5]);
   });
 
-  it('falls back to regex for OPENAI_API_KEY absent', async () => {
+  it('skips AI and falls back to regex when OPENROUTER_API_KEY is absent', async () => {
     vi.unstubAllEnvs();
-    vi.stubEnv('OPENAI_API_KEY', '');
+    vi.stubEnv('OPENROUTER_API_KEY', '');
 
     const result = await releaseParser.parse('The.Wire.S02E03.720p.mkv');
-    expect(mockGenerateObject).not.toHaveBeenCalled();
+    expect(mockGenerateText).not.toHaveBeenCalled();
     expect(result?.seasonNumber).toBe(2);
     expect(result?.episodeNumbers).toEqual([3]);
   });
 
-  it('falls back to regex for lone season marker', async () => {
+  it('regex fallback recognises lone season marker as season_pack', async () => {
     vi.unstubAllEnvs();
-    vi.stubEnv('OPENAI_API_KEY', '');
+    vi.stubEnv('OPENROUTER_API_KEY', '');
 
     const result = await releaseParser.parse('The.Big.Bang.Theory.S02.1080p.BluRay');
     expect(result?.matchType).toBe('season_pack');
@@ -128,9 +107,9 @@ describe('ReleaseParser — parse()', () => {
     expect(result?.episodeNumbers).toEqual([]);
   });
 
-  it('returns null from regex fallback when no pattern matches', async () => {
+  it('regex fallback returns null when no pattern matches', async () => {
     vi.unstubAllEnvs();
-    vi.stubEnv('OPENAI_API_KEY', '');
+    vi.stubEnv('OPENROUTER_API_KEY', '');
 
     const result = await releaseParser.parse('Oppenheimer.2023.2160p.UHD.BluRay');
     expect(result).toBeNull();
@@ -138,15 +117,15 @@ describe('ReleaseParser — parse()', () => {
 
   it('serial queue — second call waits for first', async () => {
     const order: number[] = [];
-    mockGenerateObject
+    mockGenerateText
       .mockImplementationOnce(async () => {
         await new Promise(r => setTimeout(r, 20));
         order.push(1);
-        return makeObjectResult(makeParsed({ title: 'First' }));
+        return makeTextResult(makeParsed({ title: 'First' })) as never;
       })
       .mockImplementationOnce(async () => {
         order.push(2);
-        return makeObjectResult(makeParsed({ title: 'Second' }));
+        return makeTextResult(makeParsed({ title: 'Second' })) as never;
       });
 
     const [r1, r2] = await Promise.all([
@@ -160,11 +139,11 @@ describe('ReleaseParser — parse()', () => {
   });
 
   it('queue survives a failure — subsequent call still executes', async () => {
-    mockGenerateObject
+    mockGenerateText
       .mockRejectedValueOnce(new Error('fail 1'))
       .mockRejectedValueOnce(new Error('fail 2'))
       .mockRejectedValueOnce(new Error('fail 3'))
-      .mockResolvedValueOnce(makeObjectResult(makeParsed({ title: 'Recovered' })));
+      .mockResolvedValueOnce(makeTextResult(makeParsed({ title: 'Recovered' })) as never);
 
     await releaseParser.parse('bad-title');
     const result = await releaseParser.parse('Good.Show.S01E01.mkv');
@@ -174,8 +153,8 @@ describe('ReleaseParser — parse()', () => {
 
 describe('ReleaseParser — parseBatch()', () => {
   beforeEach(() => {
-    vi.stubEnv('OPENAI_API_KEY', 'test-key');
-    mockGenerateObject.mockReset();
+    vi.stubEnv('OPENROUTER_API_KEY', 'test-key');
+    mockGenerateText.mockReset();
   });
 
   afterEach(() => {
@@ -188,7 +167,7 @@ describe('ReleaseParser — parseBatch()', () => {
       makeScored({ title: 'The Big Bang Theory', matchType: 'complete_series', relevanceScore: 45 }),
       makeScored({ title: 'The Big Bang Theory', matchType: 'episode', relevanceScore: 70 }),
     ];
-    mockGenerateObject.mockResolvedValueOnce(makeObjectResult({ results }));
+    mockGenerateText.mockResolvedValueOnce(makeTextResult({ results }) as never);
 
     const titles = [
       'The.Big.Bang.Theory.S02.1080p.BluRay',
@@ -211,7 +190,7 @@ describe('ReleaseParser — parseBatch()', () => {
       makeScored({ matchType: 'season_pack', relevanceScore: 92 }),
       makeScored({ matchType: 'complete_series', relevanceScore: 48 }),
     ];
-    mockGenerateObject.mockResolvedValueOnce(makeObjectResult({ results }));
+    mockGenerateText.mockResolvedValueOnce(makeTextResult({ results }) as never);
 
     const output = await releaseParser.parseBatch(
       ['TBBT.S02.1080p', 'TBBT.Complete.Series'],
@@ -221,37 +200,37 @@ describe('ReleaseParser — parseBatch()', () => {
     expect(output[0]!.relevanceScore).toBeGreaterThan(output[1]!.relevanceScore);
   });
 
-  it('returns [] when OPENAI_API_KEY is absent', async () => {
+  it('returns [] when OPENROUTER_API_KEY is absent', async () => {
     vi.unstubAllEnvs();
-    vi.stubEnv('OPENAI_API_KEY', '');
+    vi.stubEnv('OPENROUTER_API_KEY', '');
 
     const output = await releaseParser.parseBatch(['Some.Show.S01.mkv']);
     expect(output).toEqual([]);
-    expect(mockGenerateObject).not.toHaveBeenCalled();
+    expect(mockGenerateText).not.toHaveBeenCalled();
   });
 
   it('returns [] when titles array is empty', async () => {
     const output = await releaseParser.parseBatch([]);
     expect(output).toEqual([]);
-    expect(mockGenerateObject).not.toHaveBeenCalled();
+    expect(mockGenerateText).not.toHaveBeenCalled();
   });
 
-  it('returns [] when generateObject throws', async () => {
-    mockGenerateObject.mockRejectedValueOnce(new Error('timeout'));
+  it('returns [] when generateText throws', async () => {
+    mockGenerateText.mockRejectedValueOnce(new Error('timeout'));
 
     const output = await releaseParser.parseBatch(['Some.Show.S01E01.mkv']);
     expect(output).toEqual([]);
   });
 
   it('includes context block in prompt when context is provided', async () => {
-    mockGenerateObject.mockResolvedValueOnce(makeObjectResult({ results: [makeScored()] }));
+    mockGenerateText.mockResolvedValueOnce(makeTextResult({ results: [makeScored()] }) as never);
 
     await releaseParser.parseBatch(
       ['Breaking.Bad.S03.1080p'],
       { seriesTitle: 'Breaking Bad', seasonNumber: 3, preferredResolution: '1080p' },
     );
 
-    const callArgs = mockGenerateObject.mock.calls[0]![0] as { prompt: string };
+    const callArgs = mockGenerateText.mock.calls[0]![0] as { prompt: string };
     expect(callArgs.prompt).toContain('Breaking Bad');
     expect(callArgs.prompt).toContain('Season: 3');
     expect(callArgs.prompt).toContain('1080p');

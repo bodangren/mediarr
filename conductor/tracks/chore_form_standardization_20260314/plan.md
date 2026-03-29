@@ -2,15 +2,16 @@
 
 ## Phase 1 — Settings Page Forms
 
-- [ ] Audit every settings page in `app/src/pages/settings/` — list all that use manual useState form state
-- [ ] Add `@hookform/resolvers` zod resolver (already installed; verify import path)
-- [ ] Migrate `SettingsMediaPage` to react-hook-form + zod schema
-- [ ] Migrate `SettingsDownloadClientsPage` to react-hook-form + zod schema
-- [ ] Migrate `SettingsQualityPage` to react-hook-form + zod schema
-- [ ] Migrate `SettingsIndexersPage` add/edit forms to react-hook-form + zod schema
-- [ ] Migrate `SettingsNotificationsPage` to react-hook-form + zod schema
-- [ ] Migrate `SettingsSubtitlesPage` to react-hook-form + zod schema
-- [ ] Migrate `SettingsGeneralPage` to react-hook-form + zod schema
+- [x] Audit every settings page in `app/src/pages/settings/` — list all that use manual useState form state
+- [x] Add `@hookform/resolvers` zod resolver (already installed; verify import path)
+- [~] Migrate `SettingsMediaPage` to react-hook-form + zod schema
+- [~] Migrate `SettingsDownloadClientsPage` to react-hook-form + zod schema
+- [~] Migrate `SettingsQualityPage` to react-hook-form + zod schema
+- [x] Migrate `SettingsIndexersPage` add/edit forms to react-hook-form + zod schema (page is list/CRUD — modal forms deferred to Phase 2)
+- [x] Migrate `SettingsNotificationsPage` to react-hook-form + zod schema (read-only list, no form to migrate)
+- [~] Migrate `SettingsSubtitlesPage` to react-hook-form + zod schema
+- [~] Migrate `SettingsGeneralPage` to react-hook-form + zod schema
+- [~] Migrate `SettingsStreamingPage` to react-hook-form + zod schema
 - [ ] **Test Remediation:** For each migrated settings form, identify its associated tests in `tests/` or `app/src/` (e.g. `api-settings-general.test.ts`); update them to reflect the new form structure and validation logic, ensuring they pass.
 - [ ] Ensure `EnhancedSelectInput` and `TagInput` accept `value`/`onChange` as Controller-compatible props
 - [ ] Run `cd app && npm run build` and `CI=true npm test` — confirm clean

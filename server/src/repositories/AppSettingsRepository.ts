@@ -1,4 +1,6 @@
-import type { Prisma, PrismaClient } from '@prisma/client';
+import { eq, and, sql } from "drizzle-orm";
+import type { DB } from "../db/index.js";
+import { appSettings } from "../db/schema.js";
 
 export interface TorrentLimitsSettings {
   maxActiveDownloads: number;
@@ -9,7 +11,7 @@ export interface TorrentLimitsSettings {
   completeDirectory: string;
   seedRatioLimit: number;
   seedTimeLimitMinutes: number;
-  seedLimitAction: 'pause' | 'remove';
+  seedLimitAction: "pause" | "remove";
 }
 
 export interface SchedulerIntervalsSettings {
@@ -42,18 +44,18 @@ export interface HostSettings {
 
 export interface SecuritySettings {
   authenticationRequired: boolean;
-  authenticationMethod: 'none' | 'basic' | 'form';
+  authenticationMethod: "none" | "basic" | "form";
   apiKey: string | null;
 }
 
 export interface LoggingSettings {
-  logLevel: 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal';
+  logLevel: "trace" | "debug" | "info" | "warn" | "error" | "fatal";
   logSizeLimit: number;
   logRetentionDays: number;
 }
 
 export interface UpdateSettings {
-  branch: 'master' | 'develop' | 'phantom';
+  branch: "master" | "develop" | "phantom";
   autoUpdateEnabled: boolean;
   mechanicsEnabled: boolean;
   updateScriptPath: string | null;
@@ -87,14 +89,14 @@ export interface AppSettingsPayload {
 }
 
 export const DEFAULT_MEDIA_MANAGEMENT_SETTINGS: MediaManagementSettings = {
-  movieRootFolder: '',
-  tvRootFolder: '',
+  movieRootFolder: "",
+  tvRootFolder: "",
 };
 
 export const DEFAULT_STREAMING_SETTINGS: StreamingSettings = {
   discoveryEnabled: true,
-  discoveryServiceName: 'Mediarr',
-  defaultUserId: 'lan-default',
+  discoveryServiceName: "Mediarr",
+  defaultUserId: "lan-default",
   watchedThreshold: 0.9,
   subtitleDirectory: null,
 };
@@ -105,11 +107,11 @@ export const DEFAULT_APP_SETTINGS: AppSettingsPayload = {
     maxActiveSeeds: 3,
     globalDownloadLimitKbps: null,
     globalUploadLimitKbps: null,
-    incompleteDirectory: '',
-    completeDirectory: '',
+    incompleteDirectory: "",
+    completeDirectory: "",
     seedRatioLimit: 0,
     seedTimeLimitMinutes: 0,
-    seedLimitAction: 'pause',
+    seedLimitAction: "pause",
   },
   schedulerIntervals: {
     rssSyncMinutes: 15,
@@ -128,9 +130,9 @@ export const DEFAULT_APP_SETTINGS: AppSettingsPayload = {
   },
   wantedLanguages: [],
   host: {
-    bindAddress: '*',
+    bindAddress: "*",
     port: 9696,
-    urlBase: '',
+    urlBase: "",
     sslPort: 9697,
     enableSsl: false,
     sslCertPath: null,
@@ -138,16 +140,16 @@ export const DEFAULT_APP_SETTINGS: AppSettingsPayload = {
   },
   security: {
     authenticationRequired: false,
-    authenticationMethod: 'none',
+    authenticationMethod: "none",
     apiKey: null,
   },
   logging: {
-    logLevel: 'info',
+    logLevel: "info",
     logSizeLimit: 1048576,
     logRetentionDays: 30,
   },
   update: {
-    branch: 'master',
+    branch: "master",
     autoUpdateEnabled: false,
     mechanicsEnabled: false,
     updateScriptPath: null,
@@ -157,7 +159,7 @@ export const DEFAULT_APP_SETTINGS: AppSettingsPayload = {
 };
 
 function readObject(value: unknown): Record<string, unknown> {
-  if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+  if (typeof value === "object" && value !== null && !Array.isArray(value)) {
     return value as Record<string, unknown>;
   }
 
@@ -165,7 +167,7 @@ function readObject(value: unknown): Record<string, unknown> {
 }
 
 function readNumber(value: unknown, fallback: number): number {
-  if (typeof value === 'number' && Number.isFinite(value)) {
+  if (typeof value === "number" && Number.isFinite(value)) {
     return value;
   }
 
@@ -177,7 +179,7 @@ function readNullableNumber(value: unknown, fallback: number | null): number | n
     return null;
   }
 
-  if (typeof value === 'number' && Number.isFinite(value)) {
+  if (typeof value === "number" && Number.isFinite(value)) {
     return value;
   }
 
@@ -185,7 +187,7 @@ function readNullableNumber(value: unknown, fallback: number | null): number | n
 }
 
 function readBoolean(value: unknown, fallback: boolean): boolean {
-  if (typeof value === 'boolean') {
+  if (typeof value === "boolean") {
     return value;
   }
 
@@ -193,14 +195,14 @@ function readBoolean(value: unknown, fallback: boolean): boolean {
 }
 
 function readNullableString(value: unknown, fallback: string | null): string | null {
-  if (typeof value === 'string') {
+  if (typeof value === "string") {
     return value;
   }
   return fallback;
 }
 
 function readNullableTrimmedString(value: unknown, fallback: string | null): string | null {
-  if (typeof value !== 'string') {
+  if (typeof value !== "string") {
     return fallback;
   }
 
@@ -209,14 +211,14 @@ function readNullableTrimmedString(value: unknown, fallback: string | null): str
 }
 
 function readString(value: unknown, fallback: string): string {
-  if (typeof value === 'string') {
+  if (typeof value === "string") {
     return value;
   }
   return fallback;
 }
 
 function readTrimmedString(value: unknown, fallback: string): string {
-  if (typeof value !== 'string') {
+  if (typeof value !== "string") {
     return fallback;
   }
 
@@ -230,21 +232,21 @@ function readStringArray(value: unknown, fallback: string[]): string[] {
   }
 
   const next = value
-    .filter((item): item is string => typeof item === 'string')
-    .map(item => item.trim().toLowerCase())
-    .filter(item => item.length > 0);
+    .filter((item): item is string => typeof item === "string")
+    .map((item) => item.trim().toLowerCase())
+    .filter((item) => item.length > 0);
 
   return Array.from(new Set(next));
 }
 
-function readLogLevel(value: unknown, fallback: LoggingSettings['logLevel']): LoggingSettings['logLevel'] {
+function readLogLevel(value: unknown, fallback: LoggingSettings["logLevel"]): LoggingSettings["logLevel"] {
   if (
-    value === 'trace' ||
-    value === 'debug' ||
-    value === 'info' ||
-    value === 'warn' ||
-    value === 'error' ||
-    value === 'fatal'
+    value === "trace" ||
+    value === "debug" ||
+    value === "info" ||
+    value === "warn" ||
+    value === "error" ||
+    value === "fatal"
   ) {
     return value;
   }
@@ -253,17 +255,17 @@ function readLogLevel(value: unknown, fallback: LoggingSettings['logLevel']): Lo
 
 function readAuthenticationMethod(
   value: unknown,
-  fallback: SecuritySettings['authenticationMethod'],
-): SecuritySettings['authenticationMethod'] {
-  if (value === 'none' || value === 'basic' || value === 'form') {
+  fallback: SecuritySettings["authenticationMethod"],
+): SecuritySettings["authenticationMethod"] {
+  if (value === "none" || value === "basic" || value === "form") {
     return value;
   }
 
   return fallback;
 }
 
-function readUpdateBranch(value: unknown, fallback: UpdateSettings['branch']): UpdateSettings['branch'] {
-  if (value === 'master' || value === 'develop' || value === 'phantom') {
+function readUpdateBranch(value: unknown, fallback: UpdateSettings["branch"]): UpdateSettings["branch"] {
+  if (value === "master" || value === "develop" || value === "phantom") {
     return value;
   }
 
@@ -272,52 +274,47 @@ function readUpdateBranch(value: unknown, fallback: UpdateSettings['branch']): U
 
 function readSeedLimitAction(
   value: unknown,
-  fallback: TorrentLimitsSettings['seedLimitAction'],
-): TorrentLimitsSettings['seedLimitAction'] {
-  if (value === 'pause' || value === 'remove') {
+  fallback: TorrentLimitsSettings["seedLimitAction"],
+): TorrentLimitsSettings["seedLimitAction"] {
+  if (value === "pause" || value === "remove") {
     return value;
   }
 
   return fallback;
 }
 
-function toJson(value: unknown): Prisma.InputJsonValue {
-  return value as Prisma.InputJsonValue;
-}
-
 function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
 }
 
-/**
- * Persists app-level settings using a single-row record.
- */
 export class AppSettingsRepository {
-  constructor(private readonly prisma: PrismaClient) {}
+  constructor(private readonly db: DB) {}
 
   async get(): Promise<AppSettingsPayload> {
-    const record = await this.prisma.appSettings.findUnique({
-      where: { id: 1 },
-    });
+    const records = await this.db
+      .select()
+      .from(appSettings)
+      .where(eq(appSettings.id, 1))
+      .limit(1);
+
+    const record = records[0];
 
     if (!record) {
-      await this.prisma.appSettings.create({
-        data: {
-          id: 1,
-          torrentLimits: toJson(DEFAULT_APP_SETTINGS.torrentLimits),
-          schedulerIntervals: toJson(DEFAULT_APP_SETTINGS.schedulerIntervals),
-          pathVisibility: toJson(DEFAULT_APP_SETTINGS.pathVisibility),
-          apiKeys: toJson(DEFAULT_APP_SETTINGS.apiKeys),
-          host: toJson(DEFAULT_APP_SETTINGS.host),
-          security: toJson(DEFAULT_APP_SETTINGS.security),
-          logging: toJson(DEFAULT_APP_SETTINGS.logging),
-          update: toJson({
-            ...DEFAULT_APP_SETTINGS.update,
-            wantedLanguages: DEFAULT_APP_SETTINGS.wantedLanguages,
-          }),
-          mediaManagement: toJson(DEFAULT_APP_SETTINGS.mediaManagement),
-          streaming: toJson(DEFAULT_APP_SETTINGS.streaming),
+      await this.db.insert(appSettings).values({
+        id: 1,
+        torrentLimits: DEFAULT_APP_SETTINGS.torrentLimits,
+        schedulerIntervals: DEFAULT_APP_SETTINGS.schedulerIntervals,
+        pathVisibility: DEFAULT_APP_SETTINGS.pathVisibility,
+        apiKeys: DEFAULT_APP_SETTINGS.apiKeys,
+        host: DEFAULT_APP_SETTINGS.host,
+        security: DEFAULT_APP_SETTINGS.security,
+        logging: DEFAULT_APP_SETTINGS.logging,
+        update: {
+          ...DEFAULT_APP_SETTINGS.update,
+          wantedLanguages: DEFAULT_APP_SETTINGS.wantedLanguages,
         },
+        mediaManagement: DEFAULT_APP_SETTINGS.mediaManagement,
+        streaming: DEFAULT_APP_SETTINGS.streaming,
       });
 
       return DEFAULT_APP_SETTINGS;
@@ -375,79 +372,71 @@ export class AppSettingsRepository {
       },
     };
 
-    await this.prisma.appSettings.upsert({
-      where: { id: 1 },
-      create: {
-        id: 1,
-        torrentLimits: toJson(merged.torrentLimits),
-        schedulerIntervals: toJson(merged.schedulerIntervals),
-        pathVisibility: toJson(merged.pathVisibility),
-        apiKeys: toJson(merged.apiKeys),
-        host: toJson(merged.host),
-        security: toJson(merged.security),
-        logging: toJson(merged.logging),
-        update: toJson({
-          ...merged.update,
-          wantedLanguages: merged.wantedLanguages,
-        }),
-        mediaManagement: toJson(merged.mediaManagement),
-        streaming: toJson(merged.streaming),
-      },
+    const updateValue = {
+      torrentLimits: merged.torrentLimits,
+      schedulerIntervals: merged.schedulerIntervals,
+      pathVisibility: merged.pathVisibility,
+      apiKeys: merged.apiKeys,
+      host: merged.host,
+      security: merged.security,
+      logging: merged.logging,
       update: {
-        torrentLimits: toJson(merged.torrentLimits),
-        schedulerIntervals: toJson(merged.schedulerIntervals),
-        pathVisibility: toJson(merged.pathVisibility),
-        apiKeys: toJson(merged.apiKeys),
-        host: toJson(merged.host),
-        security: toJson(merged.security),
-        logging: toJson(merged.logging),
-        update: toJson({
-          ...merged.update,
-          wantedLanguages: merged.wantedLanguages,
-        }),
-        mediaManagement: toJson(merged.mediaManagement),
-        streaming: toJson(merged.streaming),
+        ...merged.update,
+        wantedLanguages: merged.wantedLanguages,
       },
-    });
+      mediaManagement: merged.mediaManagement,
+      streaming: merged.streaming,
+    };
+
+    const existing = await this.db
+      .select({ id: appSettings.id })
+      .from(appSettings)
+      .where(eq(appSettings.id, 1))
+      .limit(1);
+
+    if (existing.length === 0) {
+      await this.db.insert(appSettings).values({ id: 1, ...updateValue });
+    } else {
+      await this.db
+        .update(appSettings)
+        .set(updateValue)
+        .where(eq(appSettings.id, 1));
+    }
 
     return merged;
   }
 
   async replace(payload: AppSettingsPayload): Promise<AppSettingsPayload> {
-    await this.prisma.appSettings.upsert({
-      where: { id: 1 },
-      create: {
-        id: 1,
-        torrentLimits: toJson(payload.torrentLimits),
-        schedulerIntervals: toJson(payload.schedulerIntervals),
-        pathVisibility: toJson(payload.pathVisibility),
-        apiKeys: toJson(payload.apiKeys),
-        host: toJson(payload.host),
-        security: toJson(payload.security),
-        logging: toJson(payload.logging),
-        update: toJson({
-          ...payload.update,
-          wantedLanguages: payload.wantedLanguages,
-        }),
-        mediaManagement: toJson(payload.mediaManagement),
-        streaming: toJson(payload.streaming),
-      },
+    const value = {
+      torrentLimits: payload.torrentLimits,
+      schedulerIntervals: payload.schedulerIntervals,
+      pathVisibility: payload.pathVisibility,
+      apiKeys: payload.apiKeys,
+      host: payload.host,
+      security: payload.security,
+      logging: payload.logging,
       update: {
-        torrentLimits: toJson(payload.torrentLimits),
-        schedulerIntervals: toJson(payload.schedulerIntervals),
-        pathVisibility: toJson(payload.pathVisibility),
-        apiKeys: toJson(payload.apiKeys),
-        host: toJson(payload.host),
-        security: toJson(payload.security),
-        logging: toJson(payload.logging),
-        update: toJson({
-          ...payload.update,
-          wantedLanguages: payload.wantedLanguages,
-        }),
-        mediaManagement: toJson(payload.mediaManagement),
-        streaming: toJson(payload.streaming),
+        ...payload.update,
+        wantedLanguages: payload.wantedLanguages,
       },
-    });
+      mediaManagement: payload.mediaManagement,
+      streaming: payload.streaming,
+    };
+
+    const existing = await this.db
+      .select({ id: appSettings.id })
+      .from(appSettings)
+      .where(eq(appSettings.id, 1))
+      .limit(1);
+
+    if (existing.length === 0) {
+      await this.db.insert(appSettings).values({ id: 1, ...value });
+    } else {
+      await this.db
+        .update(appSettings)
+        .set(value)
+        .where(eq(appSettings.id, 1));
+    }
 
     return payload;
   }

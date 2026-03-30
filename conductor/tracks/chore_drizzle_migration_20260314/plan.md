@@ -2,15 +2,15 @@
 
 ## Phase 1 — Schema Definition and Baseline Migration
 
-- [ ] Install `drizzle-orm`, `drizzle-kit` into root `package.json`; install `bun:sqlite` type stubs if needed
-- [ ] Create `server/src/db/` directory
-- [ ] Read `prisma/schema.prisma` in full; translate every model, enum, and relation to Drizzle TypeScript schema in `server/src/db/schema.ts`
-- [ ] Create `server/src/db/index.ts` — exports `db` singleton: `drizzle(new Database(process.env.DATABASE_URL!))`
-- [ ] Create `drizzle.config.ts` in root with `dialect: 'sqlite'`, pointing at `server/src/db/schema.ts`
-- [ ] Run `bunx drizzle-kit generate` — produces baseline SQL migration in `drizzle/`
-- [ ] Verify generated SQL matches existing Prisma migration structure (same tables, columns, indexes)
-- [ ] Run `bunx drizzle-kit migrate` against a copy of `mediarr.db` — confirm no errors
-- [ ] Commit schema + migration files
+- [x] Install `drizzle-orm`, `drizzle-kit` into root `package.json`; install `bun:sqlite` type stubs if needed
+- [x] Create `server/src/db/` directory
+- [x] Read `prisma/schema.prisma` in full; translate every model, enum, and relation to Drizzle TypeScript schema in `server/src/db/schema.ts`
+- [x] Create `server/src/db/index.ts` — exports `db` singleton: `drizzle(new Database(process.env.DATABASE_URL!))`
+- [x] Create `drizzle.config.ts` in root with `dialect: 'sqlite'`, pointing at `server/src/db/schema.ts`
+- [x] Run `bunx drizzle-kit generate` — produces baseline SQL migration in `drizzle/`
+- [x] Verify generated SQL matches existing Prisma migration structure (same tables, columns, indexes)
+- [x] Run `bunx drizzle-kit migrate` against a copy of `mediarr.db` — confirm no errors
+- [x] Commit schema + migration files
 
 ## Phase 2 — Migrate Read-Heavy Repositories
 

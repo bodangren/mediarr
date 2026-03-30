@@ -14,11 +14,11 @@
 
 ## Phase 2 — Migrate Read-Heavy Repositories
 
-- [ ] Migrate `AppSettingsRepository.ts` to Drizzle
+- [x] Migrate `AppSettingsRepository.ts` to Drizzle
+- [~] Migrate `QualityProfileRepository.ts` to Drizzle (written, not yet tested)
 - [ ] Migrate `MediaRepository.ts` to Drizzle (largest — contains complex joins)
 - [ ] Migrate `MovieRepository.ts` to Drizzle
 - [ ] Migrate `SeriesRepository.ts` to Drizzle
-- [ ] Migrate `QualityProfileRepository.ts` to Drizzle
 - [ ] Migrate `IndexerRepository.ts` to Drizzle
 - [ ] Migrate `TorrentRepository.ts` to Drizzle
 - [ ] Migrate `PlaybackRepository.ts` to Drizzle

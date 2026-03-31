@@ -1,7 +1,6 @@
 
 import type React from 'react';
 import { Button } from '@/components/ui/button';
-import { Form } from '@/components/ui/form-compat';
 import { Modal, ModalBody, ModalFooter, ModalHeader } from '@/components/ui/modal';
 
 export interface TestConnectionResult {
@@ -72,7 +71,7 @@ export function ConfigurableItemModal<TPreset extends PresetBase, TFieldValues>(
     <Modal isOpen={isOpen} ariaLabel={title} onClose={onClose} maxWidthClassName="max-w-3xl">
       <ModalHeader title={title} onClose={onClose} />
       <ModalBody>
-        <Form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="space-y-4">
           <section className="space-y-2">
             {renderPresetGrid(presets, selectedPresetId, onSelectPreset)}
           </section>
@@ -97,7 +96,7 @@ export function ConfigurableItemModal<TPreset extends PresetBase, TFieldValues>(
               ) : null}
             </section>
           ) : null}
-        </Form>
+        </form>
       </ModalBody>
       <ModalFooter>
         <Button variant="secondary" onClick={onClose} disabled={isSubmitting || isTesting}>
@@ -106,11 +105,9 @@ export function ConfigurableItemModal<TPreset extends PresetBase, TFieldValues>(
         <Button variant="secondary" onClick={onTestConnection} disabled={isSubmitting || isTesting}>
           {isTesting ? 'Testing...' : 'Test Connection'}
         </Button>
-        <form onSubmit={handleSubmit}>
-          <Button variant="default" type="submit" disabled={isSubmitting || isTesting}>
-            {saveButtonText}
-          </Button>
-        </form>
+        <Button variant="default" onClick={onSave} disabled={isSubmitting || isTesting}>
+          {saveButtonText}
+        </Button>
       </ModalFooter>
     </Modal>
   );

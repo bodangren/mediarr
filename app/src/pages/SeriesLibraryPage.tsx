@@ -1,10 +1,22 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Folder } from 'lucide-react';
+import { Folder, RefreshCw } from 'lucide-react';
 import { RouteScaffold } from '@/components/primitives/RouteScaffold';
 import { ImportWizard } from '@/components/import/ImportWizard';
 import { SeriesOverviewView } from '@/components/views';
 import { getApiClients } from '@/lib/api/client';
 import type { SeriesListItem as SeriesViewItem } from '@/types/series';
+import type { MetadataSearchResult } from '@/lib/api/mediaApi';
+
+interface UnknownFileInfo {
+  path: string;
+  seasonNumber: number | null;
+  episodeNumbers: number[];
+}
+
+interface UnknownSeriesGroup {
+  title: string;
+  files: UnknownFileInfo[];
+}
 
 export function SeriesLibraryPage() {
   const api = useMemo(() => getApiClients(), []);
@@ -12,6 +24,108 @@ export function SeriesLibraryPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isImportOpen, setIsImportOpen] = useState(false);
+  const [isRescanning, setIsRescanning] = useState(false);
+  const [rescanResult, setRescanResult] = useState<string | null>(null);
+  const [duplicates, setDuplicates] = useState<{ label: string; files: string[] }[]>([]);
+  const [unknownSeries, setUnknownSeries] = useState<UnknownSeriesGroup[]>([]);
+
+  // Per-unknown-series search state
+  const [searchingFor, setSearchingFor] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchResults, setSearchResults] = useState<MetadataSearchResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [addingId, setAddingId] = useState<string | null>(null);
+
+  const handleRescan = async () => {
+    setIsRescanning(true);
+    setRescanResult(null);
+    setDuplicates([]);
+    setUnknownSeries([]);
+    try {
+      const res = await fetch('/api/library/rescan/tv', { method: 'POST' });
+      const data = await res.json() as { data?: { filesLinked: number; staleCleared: number; skipped: number; duplicates: { label: string; files: string[] }[]; unknownSeries: UnknownSeriesGroup[] } };
+      const d = data.data;
+      if (d) {
+        setRescanResult(`Linked ${d.filesLinked} file(s), cleared ${d.staleCleared} stale, skipped ${d.skipped}`);
+        setDuplicates(d.duplicates ?? []);
+        setUnknownSeries(d.unknownSeries ?? []);
+      } else {
+        setRescanResult('Rescan complete');
+      }
+      void load();
+    } catch {
+      setRescanResult('Rescan failed');
+    } finally {
+      setIsRescanning(false);
+    }
+  };
+
+  const handleDeleteDuplicate = async (filePath: string, groupLabel: string) => {
+    try {
+      await fetch('/api/library/file', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path: filePath }) });
+      setDuplicates(prev => prev.map(g =>
+        g.label === groupLabel ? { ...g, files: g.files.filter(f => f !== filePath) } : g
+      ).filter(g => g.files.length > 1));
+    } catch {
+      // ignore
+    }
+  };
+
+  const openSearch = (title: string) => {
+    setSearchingFor(title);
+    setSearchTerm(title);
+    setSearchResults([]);
+  };
+
+  const runSearch = async () => {
+    if (!searchTerm.trim()) return;
+    setIsSearching(true);
+    try {
+      const results = await api.mediaApi.searchMetadata({ term: searchTerm, mediaType: 'TV' });
+      setSearchResults(results);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleAddAndLink = async (item: MetadataSearchResult, group: UnknownSeriesGroup) => {
+    const key = `${item.tmdbId}-${item.tvdbId}`;
+    setAddingId(key);
+    try {
+      const created = await api.mediaApi.addToWanted({
+        mediaType: 'TV',
+        tmdbId: item.tmdbId,
+        tvdbId: item.tvdbId,
+        title: item.title,
+        year: item.year,
+        status: item.status,
+        overview: item.overview,
+        network: item.network,
+        posterUrl: item.images?.find(i => i.coverType === 'poster')?.url,
+      });
+
+      // Derive the common parent folder from the found files
+      const filePaths = group.files.map(f => f.path);
+      const folderPath = filePaths.length === 1
+        ? filePaths[0]!.substring(0, filePaths[0]!.lastIndexOf('/'))
+        : filePaths.reduce((common, p) => {
+            const folder = p.substring(0, p.lastIndexOf('/'));
+            let i = 0;
+            while (i < common.length && i < folder.length && common[i] === folder[i]) i++;
+            return common.substring(0, i).replace(/\/$/, '');
+          });
+
+      // Rescan fetches episodes from TVDB and links files from the actual folder
+      await api.seriesApi.rescan(created.id, folderPath);
+
+      setUnknownSeries(prev => prev.filter(g => g.title !== group.title));
+      setSearchingFor(null);
+      void load();
+    } finally {
+      setAddingId(null);
+    }
+  };
+
   const [sortBy, setSortBy] = useState('title');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
 
@@ -48,17 +162,118 @@ export function SeriesLibraryPage() {
       title="TV Shows"
       description="Unified TV library view with monitoring controls and details access."
       actions={
-        <button
-          type="button"
-          onClick={() => setIsImportOpen(true)}
-          className="inline-flex items-center gap-1.5 rounded-sm border border-border-subtle bg-surface-2 px-3 py-1.5 text-sm font-medium hover:bg-surface-3"
-        >
-          <Folder size={14} />
-          Import Existing
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => void handleRescan()}
+            disabled={isRescanning}
+            className="inline-flex items-center gap-1.5 rounded-sm border border-border-subtle bg-surface-2 px-3 py-1.5 text-sm font-medium hover:bg-surface-3 disabled:opacity-50"
+          >
+            <RefreshCw size={14} className={isRescanning ? 'animate-spin' : ''} />
+            {isRescanning ? 'Rescanning…' : 'Rescan Library'}
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsImportOpen(true)}
+            className="inline-flex items-center gap-1.5 rounded-sm border border-border-subtle bg-surface-2 px-3 py-1.5 text-sm font-medium hover:bg-surface-3"
+          >
+            <Folder size={14} />
+            Import Existing
+          </button>
+        </div>
       }
     >
       {error ? <p className="text-sm text-status-error">{error}</p> : null}
+      {rescanResult ? <p className="text-sm text-text-secondary">{rescanResult}</p> : null}
+      {duplicates.length > 0 && (
+        <div className="rounded-sm border border-border-subtle bg-surface-2 p-3 text-sm space-y-3">
+          <p className="font-medium text-status-warning">Duplicates found — keep first file, delete others:</p>
+          {duplicates.map(group => (
+            <div key={group.label} className="space-y-1">
+              <p className="font-medium">{group.label}</p>
+              {group.files.map((f, i) => (
+                <div key={f} className="flex items-center justify-between gap-2 pl-2">
+                  <span className="truncate text-text-secondary font-mono text-xs">{f}</span>
+                  {i === 0
+                    ? <span className="shrink-0 text-xs text-status-success">kept</span>
+                    : <button type="button" onClick={() => void handleDeleteDuplicate(f, group.label)} className="shrink-0 rounded-sm border border-status-error px-2 py-0.5 text-xs text-status-error hover:bg-status-error hover:text-white">Delete</button>
+                  }
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+      {unknownSeries.length > 0 && (
+        <div className="rounded-sm border border-border-subtle bg-surface-2 p-3 text-sm space-y-3">
+          <p className="font-medium text-status-warning">Unknown series found — add to watchlist to link files:</p>
+          {unknownSeries.map(group => (
+            <div key={group.title} className="space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <p className="font-medium">{group.title}</p>
+                  <p className="text-xs text-text-secondary">{group.files.length} file(s)</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => openSearch(group.title)}
+                  className="shrink-0 rounded-sm border border-border-subtle bg-surface-3 px-3 py-1 text-xs font-medium hover:bg-surface-1"
+                >
+                  Search & Add
+                </button>
+              </div>
+              {searchingFor === group.title && (
+                <div className="pl-2 space-y-2 border-l border-border-subtle">
+                  <div className="flex gap-2">
+                    <input
+                      value={searchTerm}
+                      onChange={e => setSearchTerm(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter') void runSearch(); }}
+                      className="flex-1 rounded-sm border border-border-subtle bg-surface-0 px-2 py-1 text-xs"
+                      placeholder="Search title..."
+                    />
+                    <button
+                      type="button"
+                      onClick={() => void runSearch()}
+                      disabled={isSearching}
+                      className="rounded-sm border border-border-subtle bg-surface-3 px-3 py-1 text-xs font-medium disabled:opacity-50"
+                    >
+                      {isSearching ? '…' : 'Search'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSearchingFor(null)}
+                      className="rounded-sm border border-border-subtle bg-surface-3 px-2 py-1 text-xs"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  {searchResults.length > 0 && (
+                    <div className="space-y-1 max-h-48 overflow-y-auto">
+                      {searchResults.map((item, idx) => (
+                        <div key={`${item.tmdbId}-${item.tvdbId}-${idx}`} className="flex items-center justify-between gap-2 rounded-sm bg-surface-1 px-2 py-1.5">
+                          <div className="min-w-0">
+                            <span className="font-medium">{item.title}</span>
+                            {item.year ? <span className="ml-1 text-text-secondary">({item.year})</span> : null}
+                          </div>
+                          <button
+                            type="button"
+                            disabled={addingId === `${item.tmdbId}-${item.tvdbId}`}
+                            onClick={() => void handleAddAndLink(item, group)}
+                            className="shrink-0 rounded-sm border border-border-subtle bg-surface-2 px-2 py-0.5 text-xs font-medium disabled:opacity-50 hover:bg-surface-3"
+                          >
+                            Add & Link
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
       <div className="flex items-center gap-2 text-sm text-text-secondary">
         <span>Sort:</span>
         <select

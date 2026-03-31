@@ -1,6 +1,8 @@
 
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import { CheckInput, FormGroup, TextInput } from '@/components/ui/form-compat';
+import { useEffect, useMemo, useState } from 'react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { NumberInput } from '@/components/primitives/SpecialInputs';
 import { ConfigurableItemModal } from '@/components/settings/ConfigurableItemModal';
 import type { TestConnectionResult } from '@/components/settings/ConfigurableItemModal';
@@ -238,15 +240,16 @@ export function AddIndexerModal({
   ) => (
     <>
       <div className="grid gap-3 sm:grid-cols-2">
-        <FormGroup label="Name" htmlFor="add-indexer-name">
-          <TextInput
+        <div className="space-y-1.5">
+          <Label htmlFor="add-indexer-name" className="text-sm font-medium">Name</Label>
+          <Input
             id="add-indexer-name"
-            ariaLabel="Name"
             value={name}
-            onChange={setName}
+            onChange={e => setName(e.target.value)}
           />
-        </FormGroup>
-        <FormGroup label="Priority" htmlFor="add-indexer-priority">
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="add-indexer-priority" className="text-sm font-medium">Priority</Label>
           <NumberInput
             id="add-indexer-priority"
             value={priority}
@@ -254,17 +257,18 @@ export function AddIndexerModal({
             max={100}
             onChange={setPriority}
           />
-        </FormGroup>
-        <FormGroup label="Supported Media Types" htmlFor="add-indexer-supported-media-types">
-          <TextInput
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="add-indexer-supported-media-types" className="text-sm font-medium">Supported Media Types</Label>
+          <Input
             id="add-indexer-supported-media-types"
-            ariaLabel="Supported Media Types"
             value={supportedMediaTypes}
-            onChange={setSupportedMediaTypes}
+            onChange={e => setSupportedMediaTypes(e.target.value)}
             placeholder='["TV", "MOVIE"]'
           />
-        </FormGroup>
-        <FormGroup label="App Profile" htmlFor="add-indexer-app-profile">
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="add-indexer-app-profile" className="text-sm font-medium">App Profile</Label>
           <select
             id="add-indexer-app-profile"
             className="rounded-sm border border-border-subtle bg-surface-0 px-3 py-2 text-sm"
@@ -279,13 +283,22 @@ export function AddIndexerModal({
               <option key={profile.id} value={profile.id}>{profile.name}</option>
             ))}
           </select>
-        </FormGroup>
+        </div>
       </div>
 
       <div className="grid gap-2 sm:grid-cols-3">
-        <CheckInput id="add-indexer-enabled" label="Enabled" checked={enabled} onChange={setEnabled} />
-        <CheckInput id="add-indexer-rss" label="RSS" checked={supportsRss} onChange={setSupportsRss} />
-        <CheckInput id="add-indexer-search" label="Search" checked={supportsSearch} onChange={setSupportsSearch} />
+        <div className="flex items-center gap-2">
+          <Checkbox id="add-indexer-enabled" checked={enabled} onCheckedChange={c => setEnabled(c === true)} />
+          <Label htmlFor="add-indexer-enabled" className="text-sm">Enabled</Label>
+        </div>
+        <div className="flex items-center gap-2">
+          <Checkbox id="add-indexer-rss" checked={supportsRss} onCheckedChange={c => setSupportsRss(c === true)} />
+          <Label htmlFor="add-indexer-rss" className="text-sm">RSS</Label>
+        </div>
+        <div className="flex items-center gap-2">
+          <Checkbox id="add-indexer-search" checked={supportsSearch} onCheckedChange={c => setSupportsSearch(c === true)} />
+          <Label htmlFor="add-indexer-search" className="text-sm">Search</Label>
+        </div>
       </div>
 
       <section className="space-y-3">
@@ -294,21 +307,23 @@ export function AddIndexerModal({
 
           if (field.type === 'boolean') {
             return (
-              <CheckInput
-                key={field.name}
-                id={`add-indexer-${field.name}`}
-                label={field.label}
-                checked={Boolean(value)}
-                onChange={checked => {
-                  onChange(field.name, checked);
-                }}
-              />
+              <div key={field.name} className="flex items-center gap-2">
+                <Checkbox
+                  id={`add-indexer-${field.name}`}
+                  checked={Boolean(value)}
+                  onCheckedChange={checked => {
+                    onChange(field.name, checked === true);
+                  }}
+                />
+                <Label htmlFor={`add-indexer-${field.name}`} className="text-sm">{field.label}</Label>
+              </div>
             );
           }
 
           if (field.type === 'number') {
             return (
-              <FormGroup key={field.name} label={field.label} htmlFor={`add-indexer-${field.name}`}>
+              <div key={field.name} className="space-y-1.5">
+                <Label htmlFor={`add-indexer-${field.name}`} className="text-sm font-medium">{field.label}</Label>
                 <NumberInput
                   id={`add-indexer-${field.name}`}
                   value={typeof value === 'number' ? value : 0}
@@ -316,22 +331,22 @@ export function AddIndexerModal({
                     onChange(field.name, nextValue);
                   }}
                 />
-              </FormGroup>
+              </div>
             );
           }
 
           return (
-            <FormGroup key={field.name} label={field.label} htmlFor={`add-indexer-${field.name}`}>
-              <TextInput
+            <div key={field.name} className="space-y-1.5">
+              <Label htmlFor={`add-indexer-${field.name}`} className="text-sm font-medium">{field.label}</Label>
+              <Input
                 id={`add-indexer-${field.name}`}
-                ariaLabel={field.label}
                 type={field.type === 'password' ? 'password' : 'text'}
                 value={typeof value === 'string' ? value : ''}
-                onChange={nextValue => {
-                  onChange(field.name, nextValue);
+                onChange={e => {
+                  onChange(field.name, e.target.value);
                 }}
               />
-            </FormGroup>
+            </div>
           );
         })}
       </section>

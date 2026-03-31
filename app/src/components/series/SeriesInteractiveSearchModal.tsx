@@ -15,7 +15,7 @@ import { AgeCell } from '@/components/search/AgeCell';
 import type { ReleaseCandidate } from '@/lib/api/releaseApi';
 
 export type SearchLevel = 'series' | 'season' | 'episode';
-const SEARCH_PAGE_SIZE = 100;
+const SEARCH_PAGE_SIZE = 500;
 
 interface QualityInfo {
   quality: {
@@ -66,7 +66,7 @@ export interface SeriesInteractiveSearchModalProps {
   initialEpisode?: number;
 }
 
-type SortField = 'seeders' | 'size' | 'age' | 'quality';
+type SortField = 'seeders' | 'size' | 'age' | 'quality' | 'score';
 
 function formatSize(bytes: number): string {
   const units = ['B', 'KB', 'MB', 'GB', 'TB'];
@@ -142,6 +142,7 @@ const qualityOptions = [
 ];
 
 const sortOptions = [
+  { key: 'score', label: 'Score' },
   { key: 'seeders', label: 'Seeders' },
   { key: 'size', label: 'Size' },
   { key: 'age', label: 'Age' },
@@ -179,7 +180,7 @@ export function SeriesInteractiveSearchModal({
   const [qualityFilter, setQualityFilter] = useState('all');
   const [indexerFilter, setIndexerFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortField, setSortField] = useState<SortField>('seeders');
+  const [sortField, setSortField] = useState<SortField>('score');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [availableIndexers, setAvailableIndexers] = useState<{ key: string; label: string }[]>([
     { key: 'all', label: 'All Indexers' },
@@ -302,6 +303,7 @@ export function SeriesInteractiveSearchModal({
         case 'quality':
           comparison = getQualityOrder(a.quality.quality.name) - getQualityOrder(b.quality.quality.name);
           break;
+        case 'score': comparison = (a.customFormatScore ?? 0) - (b.customFormatScore ?? 0); break;
       }
       return sortDirection === 'desc' ? -comparison : comparison;
     });

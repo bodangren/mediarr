@@ -1,8 +1,26 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { RouteScaffold } from '@/components/primitives/RouteScaffold';
 import { AddProfileModal } from '@/components/settings/AddProfileModal';
+import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { getApiClients } from '@/lib/api/client';
 import type { CreateQualityProfileInput, QualityProfileItem } from '@/lib/api/qualityProfileApi';
+
+const createProfileSchema = z.object({
+  name: z.string().min(1, 'Profile name is required'),
+  templateProfileId: z.coerce.number(),
+});
+type CreateProfileValues = z.infer<typeof createProfileSchema>;
+
+const createFormatSchema = z.object({
+  name: z.string().min(1, 'Format name is required'),
+});
+type CreateFormatValues = z.infer<typeof createFormatSchema>;
 
 export function SettingsProfilesPage() {
   const api = useMemo(() => getApiClients(), []);
@@ -12,12 +30,19 @@ export function SettingsProfilesPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const [newProfileName, setNewProfileName] = useState('');
-  const [templateProfileId, setTemplateProfileId] = useState<number | null>(null);
   const [profileNameDrafts, setProfileNameDrafts] = useState<Record<number, string>>({});
-  const [newFormatName, setNewFormatName] = useState('');
   const [editingProfile, setEditingProfile] = useState<QualityProfileItem | null>(null);
   const [isEditModalSaving, setIsEditModalSaving] = useState(false);
+
+  const createProfileForm = useForm<CreateProfileValues>({
+    resolver: zodResolver(createProfileSchema),
+    defaultValues: { name: '', templateProfileId: 0 },
+  });
+
+  const createFormatForm = useForm<CreateFormatValues>({
+    resolver: zodResolver(createFormatSchema),
+    defaultValues: { name: '' },
+  });
 
   const handleSaveEditProfile = async (input: CreateQualityProfileInput) => {
     if (!editingProfile) return;
@@ -51,15 +76,12 @@ export function SettingsProfilesPage() {
         conditionCount: format.conditions.length,
       })));
       setProfileNameDrafts(Object.fromEntries(profiles.map(profile => [profile.id, profile.name])));
-      setTemplateProfileId(current => {
-        if (profiles.length === 0) {
-          return null;
-        }
-        if (current === null || !profiles.some(profile => profile.id === current)) {
-          return profiles[0].id;
-        }
-        return current;
-      });
+
+      // Set template default to first profile if available
+      const currentTemplate = createProfileForm.getValues('templateProfileId');
+      if (profiles.length > 0 && (!currentTemplate || !profiles.some(p => p.id === currentTemplate))) {
+        createProfileForm.setValue('templateProfileId', profiles[0].id);
+      }
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : 'Failed to load quality settings');
     } finally {
@@ -71,15 +93,8 @@ export function SettingsProfilesPage() {
     void load();
   }, [api]);
 
-  const onCreateProfile = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    const name = newProfileName.trim();
-    if (!name) {
-      return;
-    }
-
-    const template = qualityProfiles.find(profile => profile.id === templateProfileId) ?? qualityProfiles[0];
+  const onCreateProfile = async (data: CreateProfileValues) => {
+    const template = qualityProfiles.find(profile => profile.id === data.templateProfileId) ?? qualityProfiles[0];
     if (!template) {
       setError('Cannot create a profile until at least one template profile exists.');
       return;
@@ -90,14 +105,14 @@ export function SettingsProfilesPage() {
     setMessage(null);
     try {
       await api.qualityProfileApi.create({
-        name,
+        name: data.name,
         cutoff: template.cutoff,
         items: template.items,
         languageProfileId: template.languageProfileId,
       });
-      setNewProfileName('');
+      createProfileForm.reset({ name: '', templateProfileId: data.templateProfileId });
       await load();
-      setMessage(`Created quality profile "${name}".`);
+      setMessage(`Created quality profile "${data.name}".`);
     } catch (createError) {
       setError(createError instanceof Error ? createError.message : 'Failed to create quality profile');
     } finally {
@@ -107,9 +122,7 @@ export function SettingsProfilesPage() {
 
   const saveProfileName = async (profileId: number) => {
     const name = profileNameDrafts[profileId]?.trim();
-    if (!name) {
-      return;
-    }
+    if (!name) return;
 
     setIsSaving(true);
     setError(null);
@@ -127,14 +140,10 @@ export function SettingsProfilesPage() {
 
   const deleteProfile = async (profileId: number) => {
     const profile = qualityProfiles.find(item => item.id === profileId);
-    if (!profile) {
-      return;
-    }
+    if (!profile) return;
 
     const confirmed = window.confirm(`Delete quality profile "${profile.name}"?`);
-    if (!confirmed) {
-      return;
-    }
+    if (!confirmed) return;
 
     setIsSaving(true);
     setError(null);
@@ -150,35 +159,29 @@ export function SettingsProfilesPage() {
     }
   };
 
-  const onCreateCustomFormat = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const name = newFormatName.trim();
-    if (!name) {
-      return;
-    }
-
+  const onCreateCustomFormat = async (data: CreateFormatValues) => {
     setIsSaving(true);
     setError(null);
     setMessage(null);
     try {
       await api.customFormatApi.create({
-        name,
+        name: data.name,
         includeCustomFormatWhenRenaming: false,
         conditions: [
           {
             type: 'regex',
             field: 'title',
             operator: 'contains',
-            value: name,
+            value: data.name,
             negate: false,
             required: false,
           },
         ],
         scores: [],
       });
-      setNewFormatName('');
+      createFormatForm.reset({ name: '' });
       await load();
-      setMessage(`Created custom format "${name}".`);
+      setMessage(`Created custom format "${data.name}".`);
     } catch (createError) {
       setError(createError instanceof Error ? createError.message : 'Failed to create custom format');
     } finally {
@@ -188,14 +191,10 @@ export function SettingsProfilesPage() {
 
   const deleteCustomFormat = async (formatId: number) => {
     const format = customFormats.find(item => item.id === formatId);
-    if (!format) {
-      return;
-    }
+    if (!format) return;
 
     const confirmed = window.confirm(`Delete custom format "${format.name}"?`);
-    if (!confirmed) {
-      return;
-    }
+    if (!confirmed) return;
 
     setIsSaving(true);
     setError(null);
@@ -219,28 +218,53 @@ export function SettingsProfilesPage() {
       <section className="grid gap-4 lg:grid-cols-2">
         <article className="rounded-md border border-border-subtle bg-surface-1 p-4">
           <h2 className="font-medium">Quality Profiles</h2>
-          <form className="mt-3 grid gap-2 lg:grid-cols-5" onSubmit={event => { void onCreateProfile(event); }}>
-            <input
-              value={newProfileName}
-              onChange={event => setNewProfileName(event.target.value)}
-              placeholder="New profile name"
-              className="rounded-sm border border-border-subtle bg-surface-0 px-2 py-1 text-sm lg:col-span-2"
-              required
-            />
-            <select
-              value={templateProfileId ?? ''}
-              onChange={event => setTemplateProfileId(Number(event.target.value))}
-              className="rounded-sm border border-border-subtle bg-surface-0 px-2 py-1 text-sm lg:col-span-2"
-              disabled={qualityProfiles.length === 0}
-            >
-              {qualityProfiles.map(profile => (
-                <option key={profile.id} value={profile.id}>Template: {profile.name}</option>
-              ))}
-            </select>
-            <button type="submit" className="rounded-sm border border-border-subtle bg-surface-2 px-3 py-2 text-sm" disabled={isSaving || qualityProfiles.length === 0}>
-              Add
-            </button>
-          </form>
+          <Form {...createProfileForm}>
+            <form className="mt-3 grid gap-2 lg:grid-cols-5" onSubmit={event => { void createProfileForm.handleSubmit(onCreateProfile)(event); }}>
+              <FormField
+                control={createProfileForm.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem className="lg:col-span-2">
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder="New profile name"
+                        className="rounded-sm border border-border-subtle bg-surface-0 px-2 py-1 text-sm"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={createProfileForm.control}
+                name="templateProfileId"
+                render={({ field }) => (
+                  <FormItem className="lg:col-span-2">
+                    <Select
+                      onValueChange={(v) => field.onChange(Number(v))}
+                      value={String(field.value)}
+                      disabled={qualityProfiles.length === 0}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="rounded-sm border border-border-subtle bg-surface-0 px-2 py-1 text-sm">
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {qualityProfiles.map(profile => (
+                          <SelectItem key={profile.id} value={String(profile.id)}>Template: {profile.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </FormItem>
+                )}
+              />
+              <Button type="submit" variant="outline" size="sm" disabled={isSaving || qualityProfiles.length === 0}>
+                Add
+              </Button>
+            </form>
+          </Form>
           <ul className="mt-3 space-y-2 text-sm text-text-secondary">
             {qualityProfiles.length === 0 ? <li>No quality profiles found.</li> : qualityProfiles.map(profile => (
               <li key={profile.id} className="rounded-sm border border-border-subtle bg-surface-0 p-3">
@@ -252,34 +276,15 @@ export function SettingsProfilesPage() {
                     }}
                     className="min-w-44 flex-1 rounded-sm border border-border-subtle bg-surface-1 px-2 py-1 text-sm text-text-primary"
                   />
-                  <button
-                    type="button"
-                    className="rounded-sm border border-border-subtle px-2 py-1 text-xs"
-                    onClick={() => {
-                      void saveProfileName(profile.id);
-                    }}
-                    disabled={isSaving}
-                  >
+                  <Button type="button" variant="outline" size="xs" onClick={() => { void saveProfileName(profile.id); }} disabled={isSaving}>
                     Save
-                  </button>
-                  <button
-                    type="button"
-                    className="rounded-sm border border-border-subtle px-2 py-1 text-xs"
-                    onClick={() => setEditingProfile(profile)}
-                    disabled={isSaving}
-                  >
+                  </Button>
+                  <Button type="button" variant="outline" size="xs" onClick={() => setEditingProfile(profile)} disabled={isSaving}>
                     Edit
-                  </button>
-                  <button
-                    type="button"
-                    className="rounded-sm border border-status-error/60 px-2 py-1 text-xs text-status-error"
-                    onClick={() => {
-                      void deleteProfile(profile.id);
-                    }}
-                    disabled={isSaving}
-                  >
+                  </Button>
+                  <Button type="button" variant="destructive" size="xs" onClick={() => { void deleteProfile(profile.id); }} disabled={isSaving}>
                     Delete
-                  </button>
+                  </Button>
                 </div>
                 <p className="mt-2 text-xs text-text-secondary">Allowed qualities: {profile.items.filter(item => item.allowed).length} | Cutoff quality id: {profile.cutoff}</p>
               </li>
@@ -288,16 +293,27 @@ export function SettingsProfilesPage() {
         </article>
         <article className="rounded-md border border-border-subtle bg-surface-1 p-4">
           <h2 className="font-medium">Custom Formats</h2>
-          <form className="mt-3 flex flex-wrap gap-2" onSubmit={event => { void onCreateCustomFormat(event); }}>
-            <input
-              value={newFormatName}
-              onChange={event => setNewFormatName(event.target.value)}
-              placeholder="New custom format name"
-              className="min-w-44 flex-1 rounded-sm border border-border-subtle bg-surface-0 px-2 py-1 text-sm"
-              required
-            />
-            <button type="submit" className="rounded-sm border border-border-subtle bg-surface-2 px-3 py-2 text-sm" disabled={isSaving}>Add</button>
-          </form>
+          <Form {...createFormatForm}>
+            <form className="mt-3 flex flex-wrap gap-2" onSubmit={event => { void createFormatForm.handleSubmit(onCreateCustomFormat)(event); }}>
+              <FormField
+                control={createFormatForm.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem className="min-w-44 flex-1">
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder="New custom format name"
+                        className="rounded-sm border border-border-subtle bg-surface-0 px-2 py-1 text-sm"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <Button type="submit" variant="outline" size="sm" disabled={isSaving}>Add</Button>
+            </form>
+          </Form>
           <ul className="mt-3 space-y-2 text-sm text-text-secondary">
             {customFormats.length === 0 ? <li>No custom formats found.</li> : customFormats.map(format => (
               <li key={format.id} className="flex flex-wrap items-center justify-between gap-2 rounded-sm border border-border-subtle bg-surface-0 p-3">
@@ -305,16 +321,9 @@ export function SettingsProfilesPage() {
                   <p className="font-medium text-text-primary">{format.name}</p>
                   <p className="text-xs text-text-secondary">Conditions: {format.conditionCount}</p>
                 </div>
-                <button
-                  type="button"
-                  className="rounded-sm border border-status-error/60 px-2 py-1 text-xs text-status-error"
-                  onClick={() => {
-                    void deleteCustomFormat(format.id);
-                  }}
-                  disabled={isSaving}
-                >
+                <Button type="button" variant="destructive" size="xs" onClick={() => { void deleteCustomFormat(format.id); }} disabled={isSaving}>
                   Delete
-                </button>
+                </Button>
               </li>
             ))}
           </ul>

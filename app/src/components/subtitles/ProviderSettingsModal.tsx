@@ -3,7 +3,8 @@ import { useState } from 'react';
 import { type SubtitleProvider, type ProviderSettings, type ProviderTestResult } from '@/lib/api';
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
-import { Form, FormGroup, TextInput, PasswordInput } from '@/components/ui/form-compat';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { NumberInput } from '@/components/primitives/SpecialInputs';
 import { Switch } from '@/components/ui/switch-compat';
 import { ProviderTestResult as TestResultDisplay } from './ProviderTestResult';
@@ -90,34 +91,44 @@ export function ProviderSettingsModal({
   };
 
   const renderProviderFields = () => {
+    const Field = ({ label, id, hint, children }: { label: string; id: string; hint?: string; children: React.ReactNode }) => (
+      <div className="space-y-1.5">
+        <Label htmlFor={id} className="text-sm font-medium">{label}</Label>
+        {hint ? <p className="text-xs text-text-secondary">{hint}</p> : null}
+        {children}
+      </div>
+    );
+
     switch (provider.type.toLowerCase()) {
       case 'opensubtitles':
         return (
           <>
-            <FormGroup label="Username" htmlFor="username">
-              <TextInput
+            <Field label="Username" id="username">
+              <Input
                 id="username"
                 value={settings.username ?? ''}
-                onChange={value => handleInputChange('username', value)}
+                onChange={e => handleInputChange('username', e.target.value)}
                 placeholder="OpenSubtitles username"
               />
-            </FormGroup>
-            <FormGroup label="Password" htmlFor="password">
-              <PasswordInput
+            </Field>
+            <Field label="Password" id="password">
+              <Input
                 id="password"
+                type="password"
                 value={settings.password ?? ''}
-                onChange={value => handleInputChange('password', value)}
+                onChange={e => handleInputChange('password', e.target.value)}
                 placeholder="OpenSubtitles password"
               />
-            </FormGroup>
-            <FormGroup label="API Key (Optional)" htmlFor="apiKey" hint="Not required for all users">
-              <PasswordInput
+            </Field>
+            <Field label="API Key (Optional)" id="apiKey" hint="Not required for all users">
+              <Input
                 id="apiKey"
+                type="password"
                 value={settings.apiKey ?? ''}
-                onChange={value => handleInputChange('apiKey', value)}
+                onChange={e => handleInputChange('apiKey', e.target.value)}
                 placeholder="OpenSubtitles API key"
               />
-            </FormGroup>
+            </Field>
           </>
         );
 
@@ -132,22 +143,23 @@ export function ProviderSettingsModal({
       case 'addic7ed':
         return (
           <>
-            <FormGroup label="Username" htmlFor="username">
-              <TextInput
+            <Field label="Username" id="username">
+              <Input
                 id="username"
                 value={settings.username ?? ''}
-                onChange={value => handleInputChange('username', value)}
+                onChange={e => handleInputChange('username', e.target.value)}
                 placeholder="Addic7ed username"
               />
-            </FormGroup>
-            <FormGroup label="Password" htmlFor="password">
-              <PasswordInput
+            </Field>
+            <Field label="Password" id="password">
+              <Input
                 id="password"
+                type="password"
                 value={settings.password ?? ''}
-                onChange={value => handleInputChange('password', value)}
+                onChange={e => handleInputChange('password', e.target.value)}
                 placeholder="Addic7ed password"
               />
-            </FormGroup>
+            </Field>
           </>
         );
 
@@ -155,15 +167,16 @@ export function ProviderSettingsModal({
       default:
         return (
           <>
-            <FormGroup label="API Key" htmlFor="apiKey" hint="Required for most generic providers">
-              <PasswordInput
+            <Field label="API Key" id="apiKey" hint="Required for most generic providers">
+              <Input
                 id="apiKey"
+                type="password"
                 value={settings.apiKey ?? ''}
-                onChange={value => handleInputChange('apiKey', value)}
+                onChange={e => handleInputChange('apiKey', e.target.value)}
                 placeholder="Provider API key"
               />
-            </FormGroup>
-            <FormGroup label="Timeout (seconds)" htmlFor="timeout" hint="Connection timeout duration">
+            </Field>
+            <Field label="Timeout (seconds)" id="timeout" hint="Connection timeout duration">
               <NumberInput
                 id="timeout"
                 value={settings.timeout ?? 30}
@@ -171,8 +184,8 @@ export function ProviderSettingsModal({
                 min={5}
                 max={120}
               />
-            </FormGroup>
-            <FormGroup label="Max Results" htmlFor="maxResults" hint="Maximum search results to return">
+            </Field>
+            <Field label="Max Results" id="maxResults" hint="Maximum search results to return">
               <NumberInput
                 id="maxResults"
                 value={settings.maxResults ?? 50}
@@ -180,15 +193,15 @@ export function ProviderSettingsModal({
                 min={1}
                 max={200}
               />
-            </FormGroup>
-            <FormGroup label="Use SSL" htmlFor="useSSL" hint="Enable HTTPS connections">
+            </Field>
+            <Field label="Use SSL" id="useSSL" hint="Enable HTTPS connections">
               <Switch
                 id="useSSL"
                 checked={settings.useSSL ?? true}
                 onChange={checked => handleInputChange('useSSL', checked)}
                 label="Enable SSL"
               />
-            </FormGroup>
+            </Field>
           </>
         );
     }
@@ -215,9 +228,7 @@ export function ProviderSettingsModal({
         }
       />
       <ModalBody>
-        <Form>
-          <div className="space-y-4">{renderProviderFields()}</div>
-        </Form>
+        <div className="space-y-4">{renderProviderFields()}</div>
         <TestResultDisplay result={testResult} isTesting={isTesting} />
       </ModalBody>
       <ModalFooter>

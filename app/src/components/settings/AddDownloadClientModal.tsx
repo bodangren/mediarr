@@ -1,8 +1,27 @@
 
-import { useEffect, useState } from 'react';
-import { CheckInput, FormGroup, TextInput } from '@/components/ui/form-compat';
-import { NumberInput } from '@/components/primitives/SpecialInputs';
-import { ConfigurableItemModal } from '@/components/settings/ConfigurableItemModal';
+import { useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Modal, ModalBody, ModalFooter, ModalHeader } from '@/components/ui/modal';
 import type { TestConnectionResult } from '@/components/settings/ConfigurableItemModal';
 import type { DownloadClientDraft, DownloadClientType } from '@/types/downloadClient';
 
@@ -25,6 +44,20 @@ export interface AddDownloadClientProps {
   onCreate: (draft: DownloadClientDraft) => void | Promise<void>;
   onTestConnection: (draft: DownloadClientDraft) => Promise<TestConnectionResult>;
 }
+
+const downloadClientSchema = z.object({
+  presetId: z.string().min(1, 'Client type is required'),
+  name: z.string().min(1, 'Name is required'),
+  host: z.string().min(1, 'Host is required'),
+  port: z.coerce.number().int().min(1, 'Port must be at least 1').max(65535, 'Port must be at most 65535'),
+  username: z.string().optional(),
+  password: z.string().optional(),
+  category: z.string().optional(),
+  priority: z.coerce.number().int().min(1).max(50),
+  enabled: z.boolean(),
+});
+
+type FormValues = z.infer<typeof downloadClientSchema>;
 
 const DEFAULT_PRESETS: DownloadClientPreset[] = [
   {
@@ -97,253 +130,235 @@ export function AddDownloadClientModal({
   onCreate,
   onTestConnection,
 }: AddDownloadClientProps) {
-  const [selectedPresetId, setSelectedPresetId] = useState<DownloadClientType>(presets[0]?.id ?? 'transmission');
-  const [name, setName] = useState('');
-  const [host, setHost] = useState('');
-  const [port, setPort] = useState('9091');
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [category, setCategory] = useState('');
-  const [priority, setPriority] = useState(1);
-  const [enabled, setEnabled] = useState(true);
-  const [validationError, setValidationError] = useState<string | null>(null);
-  const [testResult, setTestResult] = useState<TestConnectionResult | null>(null);
-  const [isTesting, setIsTesting] = useState(false);
+  const form = useForm<FormValues>({
+    resolver: zodResolver(downloadClientSchema),
+    defaultValues: {
+      presetId: presets[0]?.id ?? 'transmission',
+      name: '',
+      host: '',
+      port: presets[0]?.defaultPort ?? 9091,
+      username: '',
+      password: '',
+      category: '',
+      priority: 1,
+      enabled: true,
+    },
+  });
 
+  const selectedPresetId = form.watch('presetId');
   const selectedPreset = presets.find(p => p.id === selectedPresetId) ?? presets[0];
 
   useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
-
-    setSelectedPresetId(presets[0]?.id ?? 'transmission');
-    setName('');
-    setHost('');
-    setPort(`${presets[0]?.defaultPort ?? 9091}`);
-    setUsername('');
-    setPassword('');
-    setCategory('');
-    setPriority(1);
-    setEnabled(true);
-    setValidationError(null);
-    setTestResult(null);
-  }, [isOpen, presets]);
+    if (!isOpen) return;
+    form.reset({
+      presetId: presets[0]?.id ?? 'transmission',
+      name: '',
+      host: '',
+      port: presets[0]?.defaultPort ?? 9091,
+      username: '',
+      password: '',
+      category: '',
+      priority: 1,
+      enabled: true,
+    });
+  }, [isOpen, presets, form]);
 
   useEffect(() => {
-    if (!selectedPreset) {
-      return;
-    }
+    if (!selectedPreset) return;
+    form.setValue('port', selectedPreset.defaultPort);
+  }, [selectedPreset, form]);
 
-    setPort(`${selectedPreset.defaultPort}`);
-    setTestResult(null);
-    setValidationError(null);
-  }, [selectedPreset]);
-
-  const buildDraft = (): DownloadClientDraft | null => {
-    if (!selectedPreset) {
-      setValidationError('No download client preset is available.');
-      return null;
-    }
-
-    if (name.trim().length === 0) {
-      setValidationError('Name is required.');
-      return null;
-    }
-
-    if (host.trim().length === 0) {
-      setValidationError('Host is required.');
-      return null;
-    }
-
-    const portNumber = Number.parseInt(port, 10);
-    if (Number.isNaN(portNumber) || portNumber < 1 || portNumber > 65535) {
-      setValidationError('Port must be between 1 and 65535.');
-      return null;
-    }
-
-    if (selectedPreset.requiresAuth) {
-      if (username.trim().length === 0) {
-        setValidationError('Username is required for this client type.');
-        return null;
-      }
-      if (password.trim().length === 0) {
-        setValidationError('Password is required for this client type.');
-        return null;
-      }
-    }
-
-    setValidationError(null);
-
+  const buildDraft = (data: FormValues): DownloadClientDraft => {
+    const preset = presets.find(p => p.id === data.presetId) ?? presets[0]!;
     return {
-      name: name.trim(),
-      implementation: selectedPreset.implementation,
-      configContract: selectedPreset.configContract,
-      protocol: selectedPreset.protocol,
-      host: host.trim(),
-      port,
-      username: username.trim(),
-      password: password.trim(),
-      category: category.trim(),
-      priority,
-      enabled,
+      name: data.name.trim(),
+      implementation: preset.implementation,
+      configContract: preset.configContract,
+      protocol: preset.protocol,
+      host: data.host.trim(),
+      port: String(data.port),
+      username: (data.username ?? '').trim(),
+      password: (data.password ?? '').trim(),
+      category: (data.category ?? '').trim(),
+      priority: data.priority,
+      enabled: data.enabled,
     };
   };
 
-  const handleSubmit = async () => {
-    const draft = buildDraft();
-    if (!draft) {
-      return;
-    }
-
+  const handleSubmit = async (data: FormValues) => {
+    const draft = buildDraft(data);
     await onCreate(draft);
   };
 
   const handleTestConnection = async () => {
-    const draft = buildDraft();
-    if (!draft) {
-      return;
-    }
-
-    setIsTesting(true);
-    try {
-      const result = await onTestConnection(draft);
-      setTestResult(result);
-    } finally {
-      setIsTesting(false);
-    }
+    const isValid = await form.trigger();
+    if (!isValid) return;
+    const data = form.getValues();
+    const draft = buildDraft(data);
+    await onTestConnection(draft);
   };
 
-  const renderDownloadClientPresetGrid = (
-    clientPresets: DownloadClientPreset[],
-    selectedId: string | undefined,
-    onSelect: (id: string) => void,
-  ) => (
-    <>
-      <h3 className="text-sm font-medium text-text-primary">Client Type</h3>
-      <div className="grid gap-2 sm:grid-cols-2">
-        {clientPresets.map(preset => {
-          const selected = preset.id === selectedId;
-          return (
-            <button
-              key={preset.id}
-              type="button"
-              onClick={() => onSelect(preset.id)}
-              className={`rounded-sm border px-3 py-2 text-left text-sm ${
-                selected
-                  ? 'border-accent-primary bg-accent-primary/10 text-text-primary'
-                  : 'border-border-subtle text-text-secondary'
-              }`}
-              aria-pressed={selected}
-            >
-              <p className="font-medium">{preset.name}</p>
-              <p className="text-xs">{preset.description}</p>
-            </button>
-          );
-        })}
-      </div>
-    </>
-  );
-
-  const renderDownloadClientFields = (
-    preset: DownloadClientPreset | undefined,
-    _values: unknown,
-    _onChange: (field: string, value: unknown) => void,
-  ) => (
-    <>
-      <FormGroup label="Name" htmlFor="add-download-client-name">
-        <TextInput id="add-download-client-name" ariaLabel="Name" value={name} onChange={setName} />
-      </FormGroup>
-
-      <div className="grid gap-3 sm:grid-cols-2">
-        <FormGroup label="Host" htmlFor="add-download-client-host">
-          <TextInput
-            id="add-download-client-host"
-            ariaLabel="Host"
-            placeholder="e.g., localhost or 192.168.1.1"
-            value={host}
-            onChange={setHost}
-          />
-        </FormGroup>
-        <FormGroup label="Port" htmlFor="add-download-client-port">
-          <NumberInput
-            id="add-download-client-port"
-            value={Number.parseInt(port, 10) || selectedPreset?.defaultPort || 9091}
-            min={1}
-            max={65535}
-            onChange={value => setPort(String(value))}
-          />
-        </FormGroup>
-      </div>
-
-      {(preset?.requiresAuth ?? false) ? (
-        <div className="grid gap-3 sm:grid-cols-2">
-          <FormGroup label="Username" htmlFor="add-download-client-username">
-            <TextInput
-              id="add-download-client-username"
-              ariaLabel="Username"
-              value={username}
-              onChange={setUsername}
-            />
-          </FormGroup>
-          <FormGroup label="Password" htmlFor="add-download-client-password">
-            <TextInput
-              id="add-download-client-password"
-              ariaLabel="Password"
-              type="password"
-              value={password}
-              onChange={setPassword}
-            />
-          </FormGroup>
-        </div>
-      ) : null}
-
-      <FormGroup label="Category (Optional)" htmlFor="add-download-client-category" hint="Default category for downloads">
-        <TextInput
-          id="add-download-client-category"
-          ariaLabel="Category"
-          placeholder="e.g., movies, tv, anime"
-          value={category}
-          onChange={setCategory}
-        />
-      </FormGroup>
-
-      <div className="grid gap-3 sm:grid-cols-2">
-        <FormGroup label="Priority" htmlFor="add-download-client-priority">
-          <NumberInput
-            id="add-download-client-priority"
-            value={priority}
-            min={1}
-            max={50}
-            onChange={setPriority}
-          />
-        </FormGroup>
-        <div className="flex items-center gap-2 pt-6">
-          <CheckInput id="add-download-client-enabled" label="Enabled" checked={enabled} onChange={setEnabled} />
-        </div>
-      </div>
-    </>
-  );
-
   return (
-    <ConfigurableItemModal<DownloadClientPreset, unknown>
-      isOpen={isOpen}
-      title="Add Download Client"
-      presets={presets}
-      selectedPresetId={selectedPresetId}
-      fieldValues={{}}
-      isSubmitting={isSubmitting}
-      isTesting={isTesting}
-      testResult={testResult}
-      error={validationError}
-      saveButtonText="Add Client"
-      onClose={onClose}
-      onSelectPreset={presetId => setSelectedPresetId(presetId as DownloadClientType)}
-      onFieldChange={() => {}}
-      onTestConnection={handleTestConnection}
-      onSave={handleSubmit}
-      renderPresetGrid={renderDownloadClientPresetGrid}
-      renderFields={renderDownloadClientFields}
-    />
+    <Modal isOpen={isOpen} ariaLabel="Add Download Client" onClose={onClose} maxWidthClassName="max-w-3xl">
+      <ModalHeader title="Add Download Client" onClose={onClose} />
+      <ModalBody>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="presetId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Client Type</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {presets.map(preset => (
+                        <SelectItem key={preset.id} value={preset.id}>
+                          {preset.name} — {preset.description}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="My Download Client" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="host"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Host</FormLabel>
+                    <FormControl>
+                      <Input placeholder="localhost" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="port"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Port</FormLabel>
+                    <FormControl>
+                      <Input type="number" min={1} max={65535} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {selectedPreset?.requiresAuth && (
+              <div className="grid gap-3 sm:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="username"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Username</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Password</FormLabel>
+                      <FormControl>
+                        <Input type="password" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            )}
+
+            <FormField
+              control={form.control}
+              name="category"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Category (Optional)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g., movies, tv, anime" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="priority"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Priority</FormLabel>
+                    <FormControl>
+                      <Input type="number" min={1} max={50} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="enabled"
+                render={({ field }) => (
+                  <FormItem className="flex items-center gap-2 pt-6">
+                    <FormControl>
+                      <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                    </FormControl>
+                    <FormLabel className="!mt-0">Enabled</FormLabel>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          </form>
+        </Form>
+      </ModalBody>
+      <ModalFooter>
+        <Button variant="secondary" onClick={onClose} disabled={isSubmitting}>
+          Cancel
+        </Button>
+        <Button variant="secondary" onClick={handleTestConnection} disabled={isSubmitting}>
+          Test Connection
+        </Button>
+        <Button variant="default" onClick={form.handleSubmit(handleSubmit)} disabled={isSubmitting}>
+          Add Client
+        </Button>
+      </ModalFooter>
+    </Modal>
   );
 }

@@ -1,7 +1,16 @@
 
 import { useMemo, useState, type FormEvent } from 'react';
 import { Button } from '@/components/ui/button';
-import { CheckInput, Form, FormGroup, SelectInput, TextInput } from '@/components/ui/form-compat';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Modal, ModalBody, ModalFooter, ModalHeader } from '@/components/ui/modal';
 import { NumberInput } from '@/components/primitives/SpecialInputs';
 
@@ -257,8 +266,7 @@ export function EditIndexerModal({
     setValidationError(null);
   };
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const handleSubmit = async () => {
     if (name.trim().length === 0) {
       setValidationError('Name is required.');
       return;
@@ -298,42 +306,51 @@ export function EditIndexerModal({
     });
   };
 
+  const handleFormSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    await handleSubmit();
+  };
+
   return (
     <Modal isOpen={isOpen} ariaLabel="Edit indexer" onClose={onClose} maxWidthClassName="max-w-3xl">
       <ModalHeader title="Edit Indexer" onClose={onClose} />
       <ModalBody>
-        <Form onSubmit={handleSubmit}>
+        <form onSubmit={handleFormSubmit} className="space-y-4">
           <div className="grid gap-3 sm:grid-cols-2">
-            <FormGroup label="Name" htmlFor="edit-indexer-name">
-              <TextInput id="edit-indexer-name" ariaLabel="Name" value={name} onChange={setName} />
-            </FormGroup>
-            <FormGroup label="Priority" htmlFor="edit-indexer-priority">
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-indexer-name" className="text-sm font-medium">Name</Label>
+              <Input id="edit-indexer-name" value={name} onChange={e => setName(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-indexer-priority" className="text-sm font-medium">Priority</Label>
               <NumberInput id="edit-indexer-priority" value={priority} min={0} max={100} onChange={setPriority} />
-            </FormGroup>
-            <FormGroup label="Supported Media Types" htmlFor="edit-indexer-supported-media-types">
-              <TextInput
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-indexer-supported-media-types" className="text-sm font-medium">Supported Media Types</Label>
+              <Input
                 id="edit-indexer-supported-media-types"
-                ariaLabel="Supported Media Types"
                 value={supportedMediaTypes}
-                onChange={setSupportedMediaTypes}
+                onChange={e => setSupportedMediaTypes(e.target.value)}
                 placeholder='["TV", "MOVIE"]'
               />
-            </FormGroup>
+            </div>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
-            <SelectInput
-              id="edit-indexer-protocol"
-              label="Protocol"
-              value={protocol}
-              onChange={handleProtocolChange}
-              options={[
-                { value: 'torrent', label: 'torrent' },
-                { value: 'usenet', label: 'usenet' },
-              ]}
-            />
-            <label className="grid gap-1 text-sm">
-              <span>App Profile</span>
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium">Protocol</Label>
+              <Select value={protocol} onValueChange={handleProtocolChange}>
+                <SelectTrigger id="edit-indexer-protocol">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="torrent">torrent</SelectItem>
+                  <SelectItem value="usenet">usenet</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-indexer-app-profile" className="text-sm font-medium">App Profile</Label>
               <select
                 id="edit-indexer-app-profile"
                 className="rounded-sm border border-border-subtle bg-surface-0 px-3 py-2 text-sm"
@@ -348,13 +365,22 @@ export function EditIndexerModal({
                   <option key={profile.id} value={profile.id}>{profile.name}</option>
                 ))}
               </select>
-            </label>
+            </div>
           </div>
 
           <div className="grid gap-2 sm:grid-cols-3">
-            <CheckInput id="edit-indexer-enabled" label="Enabled" checked={enabled} onChange={setEnabled} />
-            <CheckInput id="edit-indexer-rss" label="RSS" checked={supportsRss} onChange={setSupportsRss} />
-            <CheckInput id="edit-indexer-search" label="Search" checked={supportsSearch} onChange={setSupportsSearch} />
+            <div className="flex items-center gap-2">
+              <Checkbox id="edit-indexer-enabled" checked={enabled} onCheckedChange={c => setEnabled(c === true)} />
+              <Label htmlFor="edit-indexer-enabled" className="text-sm">Enabled</Label>
+            </div>
+            <div className="flex items-center gap-2">
+              <Checkbox id="edit-indexer-rss" checked={supportsRss} onCheckedChange={c => setSupportsRss(c === true)} />
+              <Label htmlFor="edit-indexer-rss" className="text-sm">RSS</Label>
+            </div>
+            <div className="flex items-center gap-2">
+              <Checkbox id="edit-indexer-search" checked={supportsSearch} onCheckedChange={c => setSupportsSearch(c === true)} />
+              <Label htmlFor="edit-indexer-search" className="text-sm">Search</Label>
+            </div>
           </div>
 
           <section className="space-y-3">
@@ -363,24 +389,26 @@ export function EditIndexerModal({
 
               if (field.type === 'boolean') {
                 return (
-                  <CheckInput
-                    key={field.name}
-                    id={`edit-indexer-${field.name}`}
-                    label={field.label}
-                    checked={Boolean(value)}
-                    onChange={checked => {
-                      setFieldValues(current => ({
-                        ...current,
-                        [field.name]: checked,
-                      }));
-                    }}
-                  />
+                  <div key={field.name} className="flex items-center gap-2">
+                    <Checkbox
+                      id={`edit-indexer-${field.name}`}
+                      checked={Boolean(value)}
+                      onCheckedChange={checked => {
+                        setFieldValues(current => ({
+                          ...current,
+                          [field.name]: checked === true,
+                        }));
+                      }}
+                    />
+                    <Label htmlFor={`edit-indexer-${field.name}`} className="text-sm">{field.label}</Label>
+                  </div>
                 );
               }
 
               if (field.type === 'number') {
                 return (
-                  <FormGroup key={field.name} label={field.label} htmlFor={`edit-indexer-${field.name}`}>
+                  <div key={field.name} className="space-y-1.5">
+                    <Label htmlFor={`edit-indexer-${field.name}`} className="text-sm font-medium">{field.label}</Label>
                     <NumberInput
                       id={`edit-indexer-${field.name}`}
                       value={typeof value === 'number' ? value : 0}
@@ -391,25 +419,25 @@ export function EditIndexerModal({
                         }));
                       }}
                     />
-                  </FormGroup>
+                  </div>
                 );
               }
 
               return (
-                <FormGroup key={field.name} label={field.label} htmlFor={`edit-indexer-${field.name}`}>
-                  <TextInput
+                <div key={field.name} className="space-y-1.5">
+                  <Label htmlFor={`edit-indexer-${field.name}`} className="text-sm font-medium">{field.label}</Label>
+                  <Input
                     id={`edit-indexer-${field.name}`}
-                    ariaLabel={field.label}
                     type={field.type === 'password' ? 'password' : 'text'}
                     value={typeof value === 'string' ? value : ''}
-                    onChange={nextValue => {
+                    onChange={e => {
                       setFieldValues(current => ({
                         ...current,
-                        [field.name]: nextValue,
+                        [field.name]: e.target.value,
                       }));
                     }}
                   />
-                </FormGroup>
+                </div>
               );
             })}
           </section>
@@ -419,17 +447,15 @@ export function EditIndexerModal({
               {validationError}
             </p>
           ) : null}
-        </Form>
+        </form>
       </ModalBody>
       <ModalFooter>
         <Button variant="secondary" onClick={onClose} disabled={isSubmitting}>
           Cancel
         </Button>
-        <form onSubmit={handleSubmit}>
-          <Button variant="default" type="submit" disabled={isSubmitting}>
-            Save Indexer
-          </Button>
-        </form>
+        <Button variant="default" onClick={handleSubmit} disabled={isSubmitting}>
+          Save Indexer
+        </Button>
       </ModalFooter>
     </Modal>
   );

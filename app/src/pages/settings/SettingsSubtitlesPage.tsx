@@ -1,24 +1,48 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { RouteScaffold } from '@/components/primitives/RouteScaffold';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { getApiClients } from '@/lib/api/client';
 import type { SubtitleProvider } from '@/lib/api/subtitleProvidersApi';
 import { COMMON_LANGUAGES, getLanguageName } from '@/lib/constants/languages';
 import { normalizeLanguageCodes } from '@/lib/subtitles/coverage';
 
+const subtitleSettingsSchema = z.object({
+  openSubtitlesApiKey: z.string(),
+  assrtApiToken: z.string(),
+  subdlApiKey: z.string(),
+  wantedLanguages: z.array(z.string()),
+  showDownloadPath: z.boolean(),
+  showMediaPath: z.boolean(),
+});
+
+type SubtitleSettingsValues = z.infer<typeof subtitleSettingsSchema>;
+
 export function SettingsSubtitlesPage() {
   const api = useMemo(() => getApiClients(), []);
   const [providers, setProviders] = useState<SubtitleProvider[]>([]);
-  const [openSubtitlesApiKey, setOpenSubtitlesApiKey] = useState('');
-  const [assrtApiToken, setAssrtApiToken] = useState('');
-  const [subdlApiKey, setSubdlApiKey] = useState('');
-  const [wantedLanguages, setWantedLanguages] = useState<string[]>([]);
-  const [showDownloadPath, setShowDownloadPath] = useState(false);
-  const [showMediaPath, setShowMediaPath] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [providerLoadError, setProviderLoadError] = useState<string | null>(null);
+
+  const form = useForm<SubtitleSettingsValues>({
+    resolver: zodResolver(subtitleSettingsSchema),
+    defaultValues: {
+      openSubtitlesApiKey: '',
+      assrtApiToken: '',
+      subdlApiKey: '',
+      wantedLanguages: [],
+      showDownloadPath: false,
+      showMediaPath: false,
+    },
+  });
 
   useEffect(() => {
     const load = async () => {
@@ -26,12 +50,14 @@ export function SettingsSubtitlesPage() {
       setError(null);
       try {
         const settings = await api.settingsApi.get();
-        setOpenSubtitlesApiKey(settings.apiKeys?.openSubtitlesApiKey ?? '');
-        setAssrtApiToken(settings.apiKeys?.assrtApiToken ?? '');
-        setSubdlApiKey(settings.apiKeys?.subdlApiKey ?? '');
-        setWantedLanguages(normalizeLanguageCodes(settings.wantedLanguages ?? []));
-        setShowDownloadPath(settings.pathVisibility.showDownloadPath);
-        setShowMediaPath(settings.pathVisibility.showMediaPath);
+        form.reset({
+          openSubtitlesApiKey: settings.apiKeys?.openSubtitlesApiKey ?? '',
+          assrtApiToken: settings.apiKeys?.assrtApiToken ?? '',
+          subdlApiKey: settings.apiKeys?.subdlApiKey ?? '',
+          wantedLanguages: normalizeLanguageCodes(settings.wantedLanguages ?? []),
+          showDownloadPath: settings.pathVisibility.showDownloadPath,
+          showMediaPath: settings.pathVisibility.showMediaPath,
+        });
       } catch (loadError) {
         setError(loadError instanceof Error ? loadError.message : 'Failed to load subtitle settings');
       }
@@ -49,34 +75,33 @@ export function SettingsSubtitlesPage() {
     };
 
     void load();
-  }, [api]);
+  }, [api, form]);
 
   const toggleWantedLanguage = (languageCode: string) => {
-    setWantedLanguages(current => {
-      const normalized = languageCode.trim().toLowerCase();
-      if (current.includes(normalized)) {
-        return current.filter(item => item !== normalized);
-      }
-      return normalizeLanguageCodes([...current, normalized]);
-    });
+    const current = form.getValues('wantedLanguages');
+    const normalized = languageCode.trim().toLowerCase();
+    if (current.includes(normalized)) {
+      form.setValue('wantedLanguages', current.filter(item => item !== normalized));
+    } else {
+      form.setValue('wantedLanguages', normalizeLanguageCodes([...current, normalized]));
+    }
   };
 
-  const onSave = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const onSubmit = async (data: SubtitleSettingsValues) => {
     setIsSaving(true);
     setError(null);
     setMessage(null);
     try {
       await api.settingsApi.update({
         apiKeys: {
-          openSubtitlesApiKey: openSubtitlesApiKey.trim() === '' ? null : openSubtitlesApiKey.trim(),
-          assrtApiToken: assrtApiToken.trim() === '' ? null : assrtApiToken.trim(),
-          subdlApiKey: subdlApiKey.trim() === '' ? null : subdlApiKey.trim(),
+          openSubtitlesApiKey: data.openSubtitlesApiKey.trim() === '' ? null : data.openSubtitlesApiKey.trim(),
+          assrtApiToken: data.assrtApiToken.trim() === '' ? null : data.assrtApiToken.trim(),
+          subdlApiKey: data.subdlApiKey.trim() === '' ? null : data.subdlApiKey.trim(),
         },
-        wantedLanguages: normalizeLanguageCodes(wantedLanguages),
+        wantedLanguages: normalizeLanguageCodes(data.wantedLanguages),
         pathVisibility: {
-          showDownloadPath,
-          showMediaPath,
+          showDownloadPath: data.showDownloadPath,
+          showMediaPath: data.showMediaPath,
         },
       });
       setMessage('Subtitle settings saved.');
@@ -86,6 +111,8 @@ export function SettingsSubtitlesPage() {
       setIsSaving(false);
     }
   };
+
+  const wantedLanguages = form.watch('wantedLanguages');
 
   return (
     <RouteScaffold title="Subtitles" description="Unified subtitle providers and global behavior controls.">
@@ -100,112 +127,138 @@ export function SettingsSubtitlesPage() {
         </ul>
       </section>
 
-      <form className="rounded-md border border-border-subtle bg-surface-1 p-4" onSubmit={event => { void onSave(event); }}>
-        <h2 className="font-medium">Provider Credentials and Visibility</h2>
-        <label className="mt-3 block text-sm text-text-secondary">
-          OpenSubtitles API Key
-          <input
-            type="text"
-            value={openSubtitlesApiKey}
-            onChange={event => setOpenSubtitlesApiKey(event.target.value)}
-            placeholder="Paste OpenSubtitles API key"
-            className="mt-1 w-full rounded-sm border border-border-subtle bg-surface-0 px-2 py-1 text-sm text-text-primary"
-          />
-        </label>
-        <label className="mt-3 block text-sm text-text-secondary">
-          ASSRT API Token
-          <input
-            type="text"
-            value={assrtApiToken}
-            onChange={event => setAssrtApiToken(event.target.value)}
-            placeholder="Paste ASSRT token"
-            className="mt-1 w-full rounded-sm border border-border-subtle bg-surface-0 px-2 py-1 text-sm text-text-primary"
-          />
-        </label>
-        <label className="mt-3 block text-sm text-text-secondary">
-          SubDL API Key
-          <input
-            type="text"
-            value={subdlApiKey}
-            onChange={event => setSubdlApiKey(event.target.value)}
-            placeholder="Paste SubDL API key"
-            className="mt-1 w-full rounded-sm border border-border-subtle bg-surface-0 px-2 py-1 text-sm text-text-primary"
-          />
-        </label>
-        <div className="mt-4 space-y-2">
-          <h3 className="text-sm font-medium text-text-primary">Wanted Languages</h3>
-          <p className="text-xs text-text-secondary">
-            Subtitles automation will prioritize these languages globally when no item-specific override exists.
-          </p>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              className="rounded-sm border border-border-subtle px-2 py-1 text-xs text-text-secondary hover:bg-surface-2"
-              onClick={() => setWantedLanguages(normalizeLanguageCodes([...wantedLanguages, 'en']))}
-            >
-              Add English
-            </button>
-            <button
-              type="button"
-              className="rounded-sm border border-border-subtle px-2 py-1 text-xs text-text-secondary hover:bg-surface-2"
-              onClick={() => setWantedLanguages(normalizeLanguageCodes([...wantedLanguages, 'zh']))}
-            >
-              Add Chinese
-            </button>
-            <button
-              type="button"
-              className="rounded-sm border border-border-subtle px-2 py-1 text-xs text-text-secondary hover:bg-surface-2"
-              onClick={() => setWantedLanguages(normalizeLanguageCodes([...wantedLanguages, 'th']))}
-            >
-              Add Thai
-            </button>
-            <button
-              type="button"
-              className="rounded-sm border border-border-subtle px-2 py-1 text-xs text-text-secondary hover:bg-surface-2"
-              onClick={() => setWantedLanguages([])}
-            >
-              Clear
-            </button>
-          </div>
-          <div className="max-h-48 overflow-y-auto rounded-sm border border-border-subtle bg-surface-0 p-2">
-            <div className="grid gap-1 sm:grid-cols-2 lg:grid-cols-3">
-              {COMMON_LANGUAGES.map(language => (
-                <label key={language.code} className="flex items-center gap-2 rounded-sm px-2 py-1 text-xs text-text-secondary hover:bg-surface-1">
-                  <input
-                    type="checkbox"
-                    aria-label={`Wanted language ${language.code}`}
-                    checked={wantedLanguages.includes(language.code)}
-                    onChange={() => toggleWantedLanguage(language.code)}
+      <Form {...form}>
+        <form className="rounded-md border border-border-subtle bg-surface-1 p-4" onSubmit={event => { void form.handleSubmit(onSubmit)(event); }}>
+          <h2 className="font-medium">Provider Credentials and Visibility</h2>
+          <FormField
+            control={form.control}
+            name="openSubtitlesApiKey"
+            render={({ field }) => (
+              <FormItem className="mt-3">
+                <FormLabel className="text-sm text-text-secondary">OpenSubtitles API Key</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    placeholder="Paste OpenSubtitles API key"
+                    className="mt-1 w-full rounded-sm border border-border-subtle bg-surface-0 px-2 py-1 text-sm text-text-primary"
                   />
-                  {language.name} ({language.code})
-                </label>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="assrtApiToken"
+            render={({ field }) => (
+              <FormItem className="mt-3">
+                <FormLabel className="text-sm text-text-secondary">ASSRT API Token</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    placeholder="Paste ASSRT token"
+                    className="mt-1 w-full rounded-sm border border-border-subtle bg-surface-0 px-2 py-1 text-sm text-text-primary"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="subdlApiKey"
+            render={({ field }) => (
+              <FormItem className="mt-3">
+                <FormLabel className="text-sm text-text-secondary">SubDL API Key</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    placeholder="Paste SubDL API key"
+                    className="mt-1 w-full rounded-sm border border-border-subtle bg-surface-0 px-2 py-1 text-sm text-text-primary"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <div className="mt-4 space-y-2">
+            <h3 className="text-sm font-medium text-text-primary">Wanted Languages</h3>
+            <p className="text-xs text-text-secondary">
+              Subtitles automation will prioritize these languages globally when no item-specific override exists.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" variant="outline" size="xs" onClick={() => form.setValue('wantedLanguages', normalizeLanguageCodes([...wantedLanguages, 'en']))}>
+                Add English
+              </Button>
+              <Button type="button" variant="outline" size="xs" onClick={() => form.setValue('wantedLanguages', normalizeLanguageCodes([...wantedLanguages, 'zh']))}>
+                Add Chinese
+              </Button>
+              <Button type="button" variant="outline" size="xs" onClick={() => form.setValue('wantedLanguages', normalizeLanguageCodes([...wantedLanguages, 'th']))}>
+                Add Thai
+              </Button>
+              <Button type="button" variant="outline" size="xs" onClick={() => form.setValue('wantedLanguages', [])}>
+                Clear
+              </Button>
+            </div>
+            <div className="max-h-48 overflow-y-auto rounded-sm border border-border-subtle bg-surface-0 p-2">
+              <div className="grid gap-1 sm:grid-cols-2 lg:grid-cols-3">
+                {COMMON_LANGUAGES.map(language => (
+                  <label key={language.code} className="flex items-center gap-2 rounded-sm px-2 py-1 text-xs text-text-secondary hover:bg-surface-1">
+                    <input
+                      type="checkbox"
+                      aria-label={`Wanted language ${language.code}`}
+                      checked={wantedLanguages.includes(language.code)}
+                      onChange={() => toggleWantedLanguage(language.code)}
+                    />
+                    {language.name} ({language.code})
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {wantedLanguages.length === 0 ? (
+                <span className="text-xs text-text-muted">No wanted languages selected.</span>
+              ) : wantedLanguages.map(code => (
+                <span key={code} className="rounded-sm bg-surface-2 px-2 py-0.5 text-xs text-text-secondary">
+                  {getLanguageName(code)} ({code})
+                </span>
               ))}
             </div>
           </div>
-          <div className="flex flex-wrap gap-1">
-            {wantedLanguages.length === 0 ? (
-              <span className="text-xs text-text-muted">No wanted languages selected.</span>
-            ) : wantedLanguages.map(code => (
-              <span key={code} className="rounded-sm bg-surface-2 px-2 py-0.5 text-xs text-text-secondary">
-                {getLanguageName(code)} ({code})
-              </span>
-            ))}
+
+          <FormField
+            control={form.control}
+            name="showDownloadPath"
+            render={({ field }) => (
+              <FormItem className="mt-3 flex items-center gap-2">
+                <FormControl>
+                  <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                </FormControl>
+                <FormLabel className="text-sm text-text-secondary">Show download paths in subtitle-related views</FormLabel>
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="showMediaPath"
+            render={({ field }) => (
+              <FormItem className="mt-2 flex items-center gap-2">
+                <FormControl>
+                  <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                </FormControl>
+                <FormLabel className="text-sm text-text-secondary">Show media paths in subtitle-related views</FormLabel>
+              </FormItem>
+            )}
+          />
+
+          <div className="mt-3">
+            <Button type="submit" variant="outline" size="sm" disabled={isSaving}>
+              {isSaving ? 'Saving...' : 'Save Subtitle Settings'}
+            </Button>
           </div>
-        </div>
-        <label className="mt-3 flex items-center gap-2 text-sm text-text-secondary">
-          <input type="checkbox" checked={showDownloadPath} onChange={event => setShowDownloadPath(event.target.checked)} />
-          Show download paths in subtitle-related views
-        </label>
-        <label className="mt-2 flex items-center gap-2 text-sm text-text-secondary">
-          <input type="checkbox" checked={showMediaPath} onChange={event => setShowMediaPath(event.target.checked)} />
-          Show media paths in subtitle-related views
-        </label>
-        <div className="mt-3">
-          <button type="submit" className="rounded-sm border border-border-subtle bg-surface-2 px-3 py-2 text-sm" disabled={isSaving}>
-            {isSaving ? 'Saving...' : 'Save Subtitle Settings'}
-          </button>
-        </div>
-      </form>
+        </form>
+      </Form>
     </RouteScaffold>
   );
 }

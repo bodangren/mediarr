@@ -327,6 +327,7 @@ export class ImportManager {
       }
 
       const parsed = await releaseParser.parse(filename);
+      let episodeImported = false;
 
       // ── Try episode import ──────────────────────────────────────────────
       let seriesTitle = parsed?.title;
@@ -428,15 +429,17 @@ export class ImportManager {
             });
 
             await this.runImportHook('onEpisodeImported', episode.id);
+            episodeImported = true;
             continue;
           }
         }
       }
 
       // ── Try movie import ────────────────────────────────────────────────
-      // When the parser finds no episode pattern, attempt to match as a movie
-      // by parsing release-style filenames and matching against movie title/year.
-      if (!parsed) {
+      // When the parser finds no episode pattern (or found one but no DB match),
+      // attempt to match as a movie by parsing release-style filenames and matching
+      // against movie title/year.
+      if (!episodeImported) {
         const movie = await this.findMovieMatch(filePath);
 
         if (movie) {

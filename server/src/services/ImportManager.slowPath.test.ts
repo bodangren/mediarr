@@ -133,7 +133,7 @@ describe('ImportManager — parser-based slow path', () => {
     );
   });
 
-  it('BUG: parsed episode with no matching DB episode does NOT fall through to movie path', async () => {
+  it('parsed episode with no matching DB episode falls through to movie path', async () => {
     const series = { id: 1, title: 'Breaking Bad', cleanTitle: 'breakingbad', path: '/media/tv' };
     const movie = { id: 5, title: 'Breaking Bad Movie', year: 2019, path: '/media/movies' };
 
@@ -155,12 +155,10 @@ describe('ImportManager — parser-based slow path', () => {
 
     const { org, ae } = await fireTorrentCompleted(prisma, torrent);
 
-    const importFailed = ae.emit.mock.calls.find(
-      (call: any[]) => call[0]?.eventType === 'IMPORT_FAILED',
+    expect(org.organizeMovieFile).toHaveBeenCalled();
+    expect(ae.emit).toHaveBeenCalledWith(
+      expect.objectContaining({ eventType: 'MOVIE_IMPORTED', success: true }),
     );
-    expect(importFailed).toBeDefined();
-    expect(importFailed![0].details.reason).toContain('no match found');
-    expect(org.organizeMovieFile).not.toHaveBeenCalled();
   });
 
   it('emits IMPORT_FAILED when parser cannot match any series or movie', async () => {

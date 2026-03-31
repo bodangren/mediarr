@@ -62,12 +62,7 @@ Parallel:
 
 ---
 
-## Active Tracks
 
-### Directive: Corner-Case Testing
-- [~] **Track: Corner-Case Testing — WantedSearch + ImportManager** *Phases: 4 | Link: [./tracks/bug_corner_case_testing_wantedsearch_import_20260331/](./tracks/bug_corner_case_testing_wantedsearch_import_20260331/)*
-
-### Phase A: Fix What's Broken
 - [ ] **Track: Form Standardization Completion** *Phases: 3 | Link: [./tracks/chore_form_standardization_completion_20260330/](./tracks/chore_form_standardization_completion_20260330/)*
 - [ ] **Track: Playback Resume & Continue Watching** *Phases: 4 | Link: [./tracks/feature_playback_resume_sync_20260330/](./tracks/feature_playback_resume_sync_20260330/)*
 
@@ -93,6 +88,7 @@ Parallel:
 
 ## Archived Tracks
 
+- [x] **Track: Corner-Case Testing — WantedSearch + ImportManager** *Phases: 4 | Link: [./archive/bug_corner_case_testing_wantedsearch_import_20260331/](./archive/bug_corner_case_testing_wantedsearch_import_20260331/)* — 19 tests; 1 bug found (ImportManager episode-to-movie fallback)
 - [x] **Track: Flutter mDNS Discovery Fix** *Phases: 2 | Link: [./archive/bug_flutter_mdns_discovery_20260330/](./archive/bug_flutter_mdns_discovery_20260330/)* — mDNS resolve(), provider defaults, playback tests all fixed
 - [x] **Track: Form Standardization (superseded)** *Phases: 2 | Link: [./archive/chore_form_standardization_20260314/](./archive/chore_form_standardization_20260314/)* — Phase 1 complete; Phase 2 superseded by `chore_form_standardization_completion_20260330`
 - [x] **Track: OpenRouter AI Provider Migration** *Phases: 4 | Link: [./archive/chore_openrouter_migration_20260329/](./archive/chore_openrouter_migration_20260329/)*

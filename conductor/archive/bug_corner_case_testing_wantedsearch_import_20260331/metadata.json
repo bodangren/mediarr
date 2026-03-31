@@ -1,0 +1,10 @@
+{
+  "id": "bug_corner_case_testing_wantedsearch_import_20260331",
+  "type": "bug",
+  "title": "Corner-Case Testing — WantedSearchService episode matching + ImportManager import paths",
+  "status": "done",
+  "created": "2026-03-31",
+  "completed": "2026-03-31",
+  "phases": 4,
+  "description": "Write tests for untested corner cases in WantedSearchService (titlesMatch, isSeasonComplete, Cardigann rejection) and ImportManager (parser-based slow path, findMovieMatch year scoping, hook failure resilience). 19 tests added, 1 bug discovered (episode-to-movie fallback broken)."
+}

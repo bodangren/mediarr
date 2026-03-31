@@ -57,6 +57,8 @@
 - (2026-03-30, chore_drizzle_migration) **Prisma→Drizzle repo migration pattern:** Replace `PrismaClient` with `DB` type, `prisma.model.findUnique` → `db.select().from(table).where(eq(...)).limit(1)`, `prisma.model.upsert` → check-exists + insert/update, `Prisma.InputJsonValue` → pass value directly (Drizzle `mode: "json"` handles serialization).
 - (2026-03-30, chore_drizzle_migration) **`bun:sqlite` import causes TS error in tsx/tsc.** Only resolves under Bun runtime. Safe to ignore for type-checking; add `@ts-ignore` or declare module if needed.
 - (2026-03-30, chore_drizzle_migration) **Baseline migration on existing DB:** Don't run `drizzle-kit migrate` against a Prisma-created DB. Either journal-only (insert into `__drizzle_migrations`) or recreate from scratch. For this project, user chose fresh DB.
+- (2026-03-31, bug_corner_case_testing) **`if (!parsed)` guard prevents episode-to-movie fallback.** ImportManager's slow path parses the filename as an episode. If the episode doesn't exist in the DB, the code should fall through to try movie matching. But the movie path is guarded by `if (!parsed)` (line 439), so parsed-but-unmatched episodes always go to "no match found" instead. Fix: track the "no episode found" condition and use it to enter the movie path.
+- (2026-03-31, bug_corner_case_testing) **Testing private methods via public API.** `titlesMatch`, `isSeasonComplete`, `parseInfoHash` are private. Test them indirectly through `autoSearchEpisode`, `autoSearchSeries`, `retryImportByActivityEventId`. This ensures tests survive refactoring.
 
 ### Patterns That Worked Well
 

@@ -1,6 +1,4 @@
-import { eq, asc } from "drizzle-orm";
-import type { DB } from "../db/index.js";
-import { qualityProfiles, media, series, movies } from "../db/schema.js";
+import type { PrismaClient, QualityProfile, Prisma } from '@prisma/client';
 
 export interface QualityProfileItem {
   quality: {
@@ -12,10 +10,9 @@ export interface QualityProfileItem {
   allowed: boolean;
 }
 
-type QualityProfileRow = typeof qualityProfiles.$inferSelect;
-export type QualityProfileWithItems = Omit<QualityProfileRow, "items"> & {
+export interface QualityProfileWithItems extends Omit<QualityProfile, 'items'> {
   items: QualityProfileItem[];
-};
+}
 
 export interface CreateQualityProfileData {
   name: string;
@@ -25,10 +22,10 @@ export interface CreateQualityProfileData {
 }
 
 export interface UpdateQualityProfileData {
-  name?: string;
-  cutoff?: number;
-  items?: QualityProfileItem[];
-  languageProfileId?: number | null;
+  name?: string | undefined;
+  cutoff?: number | undefined;
+  items?: QualityProfileItem[] | undefined;
+  languageProfileId?: number | null | undefined;
 }
 
 function parseItems(items: unknown): QualityProfileItem[] {
@@ -38,92 +35,99 @@ function parseItems(items: unknown): QualityProfileItem[] {
   return items as QualityProfileItem[];
 }
 
-function mapProfile(row: QualityProfileRow): QualityProfileWithItems {
-  return {
-    ...row,
-    items: parseItems(row.items),
-  };
-}
-
 export class QualityProfileRepository {
-  constructor(private db: DB) {}
+  constructor(private prisma: PrismaClient) {}
 
   async findAll(): Promise<QualityProfileWithItems[]> {
-    const profiles = await this.db
-      .select()
-      .from(qualityProfiles)
-      .orderBy(asc(qualityProfiles.name));
+    const profiles = await this.prisma.qualityProfile.findMany({
+      orderBy: { name: 'asc' },
+    });
 
-    return profiles.map(mapProfile);
+    return profiles.map(profile => ({
+      ...profile,
+      items: parseItems(profile.items),
+    }));
   }
 
   async findById(id: number): Promise<QualityProfileWithItems | null> {
-    const rows = await this.db
-      .select()
-      .from(qualityProfiles)
-      .where(eq(qualityProfiles.id, id))
-      .limit(1);
+    const profile = await this.prisma.qualityProfile.findUnique({
+      where: { id },
+    });
 
-    return rows[0] ? mapProfile(rows[0]) : null;
+    if (!profile) return null;
+
+    return {
+      ...profile,
+      items: parseItems(profile.items),
+    };
   }
 
   async findByName(name: string): Promise<QualityProfileWithItems | null> {
-    const rows = await this.db
-      .select()
-      .from(qualityProfiles)
-      .where(eq(qualityProfiles.name, name))
-      .limit(1);
+    const profile = await this.prisma.qualityProfile.findUnique({
+      where: { name },
+    });
 
-    return rows[0] ? mapProfile(rows[0]) : null;
+    if (!profile) return null;
+
+    return {
+      ...profile,
+      items: parseItems(profile.items),
+    };
   }
 
   async create(data: CreateQualityProfileData): Promise<QualityProfileWithItems> {
-    const result = await this.db
-      .insert(qualityProfiles)
-      .values({
+    const profile = await this.prisma.qualityProfile.create({
+      data: {
         name: data.name,
         cutoff: data.cutoff,
-        items: data.items,
+        items: data.items as unknown as Prisma.InputJsonValue,
         languageProfileId: data.languageProfileId ?? null,
-      })
-      .returning();
+      },
+    });
 
-    return mapProfile(result[0]);
+    return {
+      ...profile,
+      items: parseItems(profile.items),
+    };
   }
 
   async update(id: number, data: UpdateQualityProfileData): Promise<QualityProfileWithItems> {
-    const updateData: Record<string, unknown> = {};
+    const updateData: Prisma.QualityProfileUpdateInput = {};
 
     if (data.name !== undefined) updateData.name = data.name;
     if (data.cutoff !== undefined) updateData.cutoff = data.cutoff;
-    if (data.items !== undefined) updateData.items = data.items;
+    if (data.items !== undefined) updateData.items = data.items as unknown as Prisma.InputJsonValue;
     if (data.languageProfileId !== undefined) updateData.languageProfileId = data.languageProfileId;
 
-    const result = await this.db
-      .update(qualityProfiles)
-      .set(updateData)
-      .where(eq(qualityProfiles.id, id))
-      .returning();
+    const profile = await this.prisma.qualityProfile.update({
+      where: { id },
+      data: updateData,
+    });
 
-    return mapProfile(result[0]);
+    return {
+      ...profile,
+      items: parseItems(profile.items),
+    };
   }
 
   async delete(id: number): Promise<QualityProfileWithItems> {
-    const result = await this.db
-      .delete(qualityProfiles)
-      .where(eq(qualityProfiles.id, id))
-      .returning();
+    const profile = await this.prisma.qualityProfile.delete({
+      where: { id },
+    });
 
-    return mapProfile(result[0]);
+    return {
+      ...profile,
+      items: parseItems(profile.items),
+    };
   }
 
   async isInUse(id: number): Promise<boolean> {
-    const [mediaResult, seriesResult, movieResult] = await Promise.all([
-      this.db.select({ id: media.id }).from(media).where(eq(media.qualityProfileId, id)).limit(1),
-      this.db.select({ id: series.id }).from(series).where(eq(series.qualityProfileId, id)).limit(1),
-      this.db.select({ id: movies.id }).from(movies).where(eq(movies.qualityProfileId, id)).limit(1),
+    const [mediaCount, seriesCount, movieCount] = await Promise.all([
+      this.prisma.media.count({ where: { qualityProfileId: id } }),
+      this.prisma.series.count({ where: { qualityProfileId: id } }),
+      this.prisma.movie.count({ where: { qualityProfileId: id } }),
     ]);
 
-    return mediaResult.length > 0 || seriesResult.length > 0 || movieResult.length > 0;
+    return mediaCount > 0 || seriesCount > 0 || movieCount > 0;
   }
 }

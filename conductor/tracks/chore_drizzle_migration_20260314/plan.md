@@ -12,21 +12,31 @@
 - [x] Run `bunx drizzle-kit migrate` against a copy of `mediarr.db` — confirm no errors
 - [x] Commit schema + migration files
 
-## Phase 2 — Migrate Read-Heavy Repositories
+## Phase 2 — Migrate Repositories (REVERTED — blocked by directive)
 
-- [x] Migrate `AppSettingsRepository.ts` to Drizzle
-- [~] Migrate `QualityProfileRepository.ts` to Drizzle (written, not yet tested)
-- [ ] Migrate `MediaRepository.ts` to Drizzle (largest — contains complex joins)
-- [ ] Migrate `MovieRepository.ts` to Drizzle
-- [ ] Migrate `SeriesRepository.ts` to Drizzle
-- [ ] Migrate `IndexerRepository.ts` to Drizzle
-- [ ] Migrate `TorrentRepository.ts` to Drizzle
-- [ ] Migrate `PlaybackRepository.ts` to Drizzle
-- [ ] Migrate `CollectionRepository.ts` to Drizzle
+> **Status: PAUSED.** Repository migrations (AppSettingsRepository, QualityProfileRepository, and 18 others)
+> were completed but reverted because the test suite broke (121 failures). The directive mandates corner-case
+> testing, which requires a green test suite. This phase will resume after the directive is satisfied.
+>
+> **Revert commit:** Reverted AppSettingsRepository.ts and QualityProfileRepository.ts to pre-Drizzle state.
+> The uncommitted Drizzle repo changes (18 additional repos) were discarded from the working tree.
+> Phase 1 artifacts (schema.ts, index.ts, drizzle/ migrations) remain committed.
+
+- [ ] Migrate `AppSettingsRepository.ts` to Drizzle (reverted — redo with tests)
+- [ ] Migrate `QualityProfileRepository.ts` to Drizzle (reverted — redo with tests)
+- [ ] Migrate `MediaRepository.ts` to Drizzle (uncommitted work lost)
+- [ ] Migrate `MovieRepository.ts` to Drizzle (uncommitted work lost)
+- [ ] Migrate `SeriesRepository.ts` to Drizzle (uncommitted work lost)
+- [ ] Migrate `IndexerRepository.ts` to Drizzle (uncommitted work lost)
+- [ ] Migrate `TorrentRepository.ts` to Drizzle (uncommitted work lost)
+- [ ] Migrate `PlaybackRepository.ts` to Drizzle (uncommitted work lost)
+- [ ] Migrate `CollectionRepository.ts` to Drizzle (uncommitted work lost)
 - [ ] Update `main.ts` to pass `db` (Drizzle) instead of `prisma` to the repositories migrated so far
-- [ ] Run `CI=true bun test` — confirm migrated repositories pass their tests
+- [ ] Run `CI=true npx vitest run server/` — confirm migrated repositories pass their tests
 
 ## Phase 3 — Migrate Remaining Repositories and Transactions
+
+> **Status: PAUSED.** Same reason as Phase 2.
 
 - [ ] Migrate `ActivityEventRepository.ts` to Drizzle
 - [ ] Migrate `BlocklistRepository.ts` to Drizzle
@@ -40,9 +50,11 @@
 - [ ] Migrate any `$executeRawUnsafe` call sites to Drizzle `sql` tagged template
 - [ ] Remove all `import { PrismaClient }` and `import { Prisma }` from the entire server
 - [ ] Update `main.ts` — create `db` once and pass to all services/repositories; remove `new PrismaClient()`
-- [ ] Run `CI=true bun test` — full server suite; confirm only pre-existing 4 failures
+- [ ] Run `CI=true npx vitest run server/` — full server suite; confirm only pre-existing failures
 
 ## Phase 4 — Runtime Switch, Prisma Removal, and Final Verification
+
+> **Status: PAUSED.** Same reason as Phase 2.
 
 - [ ] Update `server/package.json` dev script: `"dev": "bun --watch src/main.ts"`
 - [ ] Update root `package.json` dev script to use `bun --watch` for server
@@ -51,5 +63,5 @@
 - [ ] Run `bun install` — confirm no Prisma references remain in lock file
 - [ ] Boot the server with `bun --watch src/main.ts` — confirm startup log, no errors
 - [ ] Hit at least 5 API endpoints manually (or via existing integration tests) — confirm correct responses
-- [ ] Run `CI=true bun test` — final full suite; confirm only pre-existing 4 failures
+- [ ] Run `CI=true npx vitest run server/` — final full suite; confirm only pre-existing failures
 - [ ] Run `cd app && npm run build` — confirm frontend build unaffected

@@ -62,10 +62,8 @@ Parallel:
 
 ---
 
-### Active
-- [~] **Track: Cleanup Uncommitted Work** *Phases: 3 | Link: [./tracks/chore_cleanup_uncommitted_work_20260401/](./tracks/chore_cleanup_uncommitted_work_20260401/)*
-
 ---
+
 
 - [ ] **Track: Form Standardization Completion** *Phases: 3 | Link: [./tracks/chore_form_standardization_completion_20260330/](./tracks/chore_form_standardization_completion_20260330/)*
 - [ ] **Track: Playback Resume & Continue Watching** *Phases: 4 | Link: [./tracks/feature_playback_resume_sync_20260330/](./tracks/feature_playback_resume_sync_20260330/)*
@@ -91,6 +89,8 @@ Parallel:
 ---
 
 ## Archived Tracks
+
+- [x] **Track: Cleanup Uncommitted Work** *Phases: 3 | Link: [./archive/chore_cleanup_uncommitted_work_20260401/](./archive/chore_cleanup_uncommitted_work_20260401/)* — 3 commits; reverted .env secrets, removed junk, committed form migration + Flutter fixes
 
 - [x] **Track: Corner-Case Testing — WantedSearch + ImportManager** *Phases: 4 | Link: [./archive/bug_corner_case_testing_wantedsearch_import_20260331/](./archive/bug_corner_case_testing_wantedsearch_import_20260331/)* — 19 tests; 1 bug found (ImportManager episode-to-movie fallback)
 - [x] **Track: Flutter mDNS Discovery Fix** *Phases: 2 | Link: [./archive/bug_flutter_mdns_discovery_20260330/](./archive/bug_flutter_mdns_discovery_20260330/)* — mDNS resolve(), provider defaults, playback tests all fixed

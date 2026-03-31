@@ -1,0 +1,10 @@
+{
+  "id": "chore_cleanup_uncommitted_work_20260401",
+  "title": "Cleanup — Commit uncommitted work, remove junk files, verify green suite",
+  "type": "chore",
+  "status": "done",
+  "completed": "2026-04-01",
+  "created": "2026-04-01",
+  "phases": 3,
+  "description": "62 uncommitted files from prior tracks need to be sorted, committed, or discarded. Junk/temp files removed. Green suite verified."
+}

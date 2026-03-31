@@ -1,0 +1,1 @@
+Track completed: 19 tests (9 WantedSearchService titlesMatch, 5 ImportManager slowPath, 5 ImportManager helpers). Bug found: ImportManager line 439 'if (!parsed)' prevents episode-to-movie fallback.

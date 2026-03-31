@@ -22,6 +22,14 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
   bool _isConnecting = false;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(discoveryServiceProvider.notifier).startScan();
+    });
+  }
+
+  @override
   void dispose() {
     _hostController.dispose();
     _portController.dispose();
@@ -51,13 +59,7 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Watch discovery state if the provider is overridden
-    DiscoveryState? discoveryState;
-    try {
-      discoveryState = ref.watch(discoveryServiceProvider);
-    } catch (_) {
-      // Provider not overridden — show manual-only mode
-    }
+    final discoveryState = ref.watch(discoveryServiceProvider);
 
     return Scaffold(
       body: Center(
@@ -73,10 +75,7 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
                 size: 80,
               ),
               const SizedBox(height: 24),
-              Text(
-                'Mediarr',
-                style: Theme.of(context).textTheme.headlineLarge,
-              ),
+              Text('Mediarr', style: Theme.of(context).textTheme.headlineLarge),
               const SizedBox(height: 8),
               Text(
                 _getStatusText(discoveryState),
@@ -86,7 +85,7 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
 
               // Scanning indicator
               if (_isConnecting ||
-                  discoveryState?.phase == DiscoveryPhase.scanning)
+                  discoveryState.phase == DiscoveryPhase.scanning)
                 const SizedBox(
                   width: 48,
                   height: 48,
@@ -97,24 +96,26 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
                 ),
 
               // Discovered servers list
-              if (discoveryState != null &&
-                  discoveryState.servers.isNotEmpty) ...[
+              if (discoveryState.servers.isNotEmpty) ...[
                 const SizedBox(height: 24),
-                ...discoveryState.servers.map((server) => Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: FocusableCard(
-                        onPressed: () =>
-                            _connectToServer(server.host, server.port),
-                        child: ListTile(
-                          leading: const Icon(Icons.dns,
-                              color: MediarrColors.accentPrimary),
-                          title: Text(server.name),
-                          subtitle: Text(server.url),
-                          trailing: const Icon(Icons.arrow_forward_ios,
-                              size: 16),
+                ...discoveryState.servers.map(
+                  (server) => Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: FocusableCard(
+                      onPressed: () =>
+                          _connectToServer(server.host, server.port),
+                      child: ListTile(
+                        leading: const Icon(
+                          Icons.dns,
+                          color: MediarrColors.accentPrimary,
                         ),
+                        title: Text(server.name),
+                        subtitle: Text(server.url),
+                        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                       ),
-                    )),
+                    ),
+                  ),
+                ),
               ],
 
               // Manual entry
@@ -193,9 +194,8 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
     );
   }
 
-  String _getStatusText(DiscoveryState? state) {
+  String _getStatusText(DiscoveryState state) {
     if (_isConnecting) return 'Connecting...';
-    if (state == null) return 'Enter server address to connect';
     switch (state.phase) {
       case DiscoveryPhase.scanning:
         return 'Searching for server on your network...';

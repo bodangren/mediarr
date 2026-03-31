@@ -102,15 +102,7 @@ class PlaybackService extends StateNotifier<PlaybackState> {
     );
 
     try {
-      // Check for resume position
-      final resumeMs = await _apiClient.getPlaybackProgress(mediaId, mediaType);
-
       await _player.open(Media(streamUrl));
-
-      if (resumeMs != null && resumeMs > 0) {
-        await _player.seek(Duration(milliseconds: resumeMs));
-      }
-
       _startProgressReporting();
       _startOverlayTimer();
     } catch (e) {
@@ -245,9 +237,9 @@ class PlaybackService extends StateNotifier<PlaybackState> {
     try {
       await _apiClient.reportPlaybackProgress(
         mediaId: id,
-        mediaType: type,
-        positionMs: state.position.inMilliseconds,
-        durationMs: state.duration.inMilliseconds,
+        type: type,
+        positionSeconds: state.position.inSeconds,
+        durationSeconds: state.duration.inSeconds,
       );
     } catch (_) {
       // Best-effort — don't interrupt playback for sync failures

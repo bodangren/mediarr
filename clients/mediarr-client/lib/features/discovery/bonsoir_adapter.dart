@@ -21,16 +21,28 @@ class BonsoirMdnsAdapter implements MdnsDiscoveryAdapter {
     await _discovery!.ready;
 
     _discovery!.eventStream?.listen((event) {
-      if (event.type == BonsoirDiscoveryEventType.discoveryServiceFound) {
-        final service = event.service;
-        if (service != null) {
-          final host = service is ResolvedBonsoirService ? service.host : null;
-          _controller.add(DiscoveredServer(
-            name: service.name,
-            host: host ?? '',
-            port: service.port,
-          ));
-        }
+      switch (event.type) {
+        case BonsoirDiscoveryEventType.discoveryServiceFound:
+          final service = event.service;
+          if (service != null) {
+            service.resolve(_discovery!.serviceResolver);
+          }
+        case BonsoirDiscoveryEventType.discoveryServiceResolved:
+          final service = event.service;
+          if (service is ResolvedBonsoirService) {
+            final host = service.host;
+            if (host != null && host.isNotEmpty) {
+              _controller.add(
+                DiscoveredServer(
+                  name: service.name,
+                  host: host,
+                  port: service.port,
+                ),
+              );
+            }
+          }
+        default:
+          break;
       }
     });
 

@@ -4,9 +4,7 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../models/episode.dart';
 import '../models/movie.dart';
-import '../models/season.dart';
 import '../models/series.dart';
 
 /// System status response from the server.
@@ -38,21 +36,25 @@ class ApiClientState {
     this.status = ConnectionStatus.disconnected,
     this.baseUrl,
     this.lastError,
+    this.serverVersion,
   });
 
   final ConnectionStatus status;
   final String? baseUrl;
   final String? lastError;
+  final String? serverVersion;
 
   ApiClientState copyWith({
     ConnectionStatus? status,
     String? baseUrl,
     String? lastError,
+    String? serverVersion,
   }) {
     return ApiClientState(
       status: status ?? this.status,
       baseUrl: baseUrl ?? this.baseUrl,
       lastError: lastError,
+      serverVersion: serverVersion ?? this.serverVersion,
     );
   }
 }
@@ -75,12 +77,15 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
 
     _dio.options.baseUrl = baseUrl;
     _dio.options.connectTimeout = const Duration(seconds: 5);
-    _dio.options.receiveTimeout = const Duration(seconds: 10);
+    _dio.options.receiveTimeout = const Duration(seconds: 30);
 
     try {
       final status = await getSystemStatus();
       if (status != null) {
-        state = state.copyWith(status: ConnectionStatus.connected);
+        state = state.copyWith(
+          status: ConnectionStatus.connected,
+          serverVersion: status.version,
+        );
         _startHealthCheck();
         return true;
       }
@@ -119,139 +124,140 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
     });
   }
 
+  // --- Helpers ---
+
+  /// Decode raw response data (handles String or already-decoded Map/List).
+  dynamic _decode(dynamic rawData) {
+    if (rawData is String) return jsonDecode(rawData);
+    return rawData;
+  }
+
+  /// Unwrap the server envelope: {ok: true, data: ...} → data
+  dynamic _unwrap(dynamic rawData) {
+    final raw = _decode(rawData);
+    if (raw is Map<String, dynamic> && raw.containsKey('data')) {
+      return raw['data'];
+    }
+    return raw;
+  }
+
   // --- API Methods ---
 
   Future<SystemStatus?> getSystemStatus() async {
     final response = await _dio.get('/api/system/status');
     if (response.statusCode == 200 && response.data != null) {
-      final data = response.data is String
-          ? jsonDecode(response.data as String)
-          : response.data;
+      final data = _decode(response.data);
       return SystemStatus.fromJson(data as Map<String, dynamic>);
     }
     return null;
   }
 
+  /// Fetch ALL movies from the library (handles server pagination).
+  /// The server returns {ok, data: {items: [...], pagination: {page, pageSize, totalCount}}}.
   Future<List<Movie>> getMovies() async {
-    final response = await _dio.get('/api/movies');
-    if (response.statusCode == 200 && response.data != null) {
-      final raw = response.data is String
-          ? jsonDecode(response.data as String)
-          : response.data;
-      final data = raw is Map<String, dynamic> ? raw['data'] ?? raw : raw;
-      return (data as List)
-          .map((json) => Movie.fromJson(json as Map<String, dynamic>))
-          .toList();
-    }
-    return [];
+    return _fetchAllPaginated(
+      '/api/movies',
+      (json) => Movie.fromJson(json as Map<String, dynamic>),
+    );
   }
 
   Future<Movie?> getMovie(int id) async {
     final response = await _dio.get('/api/movies/$id');
     if (response.statusCode == 200 && response.data != null) {
-      final data = response.data is String
-          ? jsonDecode(response.data as String)
-          : response.data;
+      final data = _unwrap(response.data);
       return Movie.fromJson(data as Map<String, dynamic>);
     }
     return null;
   }
 
+  /// Fetch ALL series from the library (handles server pagination).
   Future<List<Series>> getSeries() async {
-    final response = await _dio.get('/api/series');
-    if (response.statusCode == 200 && response.data != null) {
-      final raw = response.data is String
-          ? jsonDecode(response.data as String)
-          : response.data;
-      final data = raw is Map<String, dynamic> ? raw['data'] ?? raw : raw;
-      return (data as List)
-          .map((json) => Series.fromJson(json as Map<String, dynamic>))
-          .toList();
-    }
-    return [];
+    return _fetchAllPaginated(
+      '/api/series',
+      (json) => Series.fromJson(json as Map<String, dynamic>),
+    );
   }
 
-  Future<Series?> getSeriesById(int id) async {
+  /// Fetch full series detail with nested seasons and episodes.
+  Future<Series?> getSeriesDetail(int id) async {
     final response = await _dio.get('/api/series/$id');
     if (response.statusCode == 200 && response.data != null) {
-      final data = response.data is String
-          ? jsonDecode(response.data as String)
-          : response.data;
+      final data = _unwrap(response.data);
       return Series.fromJson(data as Map<String, dynamic>);
     }
     return null;
   }
 
-  Future<List<Season>> getSeasons(int seriesId) async {
-    final response = await _dio.get('/api/series/$seriesId/seasons');
-    if (response.statusCode == 200 && response.data != null) {
-      final raw = response.data is String
-          ? jsonDecode(response.data as String)
-          : response.data;
-      final data = raw is Map<String, dynamic> ? raw['data'] ?? raw : raw;
-      return (data as List)
-          .map((json) => Season.fromJson(json as Map<String, dynamic>))
-          .toList();
-    }
-    return [];
-  }
-
-  Future<List<Episode>> getEpisodes(int seriesId, {int? seasonNumber}) async {
-    String path = '/api/series/$seriesId/episodes';
-    if (seasonNumber != null) {
-      path += '?seasonNumber=$seasonNumber';
-    }
-    final response = await _dio.get(path);
-    if (response.statusCode == 200 && response.data != null) {
-      final raw = response.data is String
-          ? jsonDecode(response.data as String)
-          : response.data;
-      final data = raw is Map<String, dynamic> ? raw['data'] ?? raw : raw;
-      return (data as List)
-          .map((json) => Episode.fromJson(json as Map<String, dynamic>))
-          .toList();
-    }
-    return [];
-  }
-
   /// Report playback position to the server.
+  /// Server expects: {type, mediaId, position (seconds), duration (seconds)}
   Future<void> reportPlaybackProgress({
     required int mediaId,
-    required String mediaType,
-    required int positionMs,
-    required int durationMs,
+    required String type,
+    required int positionSeconds,
+    required int durationSeconds,
   }) async {
     await _dio.post('/api/playback/progress', data: {
+      'type': type,
       'mediaId': mediaId,
-      'mediaType': mediaType,
-      'positionMs': positionMs,
-      'durationMs': durationMs,
+      'position': positionSeconds,
+      'duration': durationSeconds,
     });
   }
 
-  /// Get last playback position for a media item.
-  Future<int?> getPlaybackProgress(int mediaId, String mediaType) async {
-    try {
-      final response = await _dio.get(
-        '/api/playback/progress',
-        queryParameters: {'mediaId': mediaId, 'mediaType': mediaType},
-      );
-      if (response.statusCode == 200 && response.data != null) {
-        final data = response.data is String
-            ? jsonDecode(response.data as String)
-            : response.data;
-        return (data as Map<String, dynamic>)['positionMs'] as int?;
-      }
-    } catch (_) {
-      // Playback progress is best-effort
-    }
-    return null;
+  /// Get the streaming URL for a media item by its ID and type.
+  /// Server uses: GET /api/stream/:id?type=movie|episode
+  String getStreamUrl(int mediaId, String type) {
+    return '${state.baseUrl}/api/stream/$mediaId?type=$type';
   }
 
-  /// Get the streaming URL for a media file.
-  String getStreamUrl(String filePath) {
-    final encoded = Uri.encodeComponent(filePath);
-    return '${state.baseUrl}/api/stream?path=$encoded';
+  /// Fetch all pages for a paginated endpoint.
+  /// Requests pageSize=500 to minimize round-trips for large libraries.
+  Future<List<T>> _fetchAllPaginated<T>(
+    String path,
+    T Function(dynamic json) fromJson,
+  ) async {
+    const pageSize = 500;
+    final allItems = <T>[];
+    var page = 1;
+
+    while (true) {
+      final response = await _dio.get(path, queryParameters: {
+        'page': page,
+        'pageSize': pageSize,
+      });
+
+      if (response.statusCode != 200 || response.data == null) break;
+
+      final envelope = _unwrap(response.data);
+
+      // The server returns either {items: [...], pagination: {...}}
+      // or a flat list depending on the endpoint.
+      List<dynamic> items;
+      int totalCount;
+
+      if (envelope is Map<String, dynamic> &&
+          envelope.containsKey('items')) {
+        items = envelope['items'] as List<dynamic>;
+        final pagination =
+            envelope['pagination'] as Map<String, dynamic>?;
+        totalCount = (pagination?['totalCount'] as int?) ?? items.length;
+      } else if (envelope is List) {
+        items = envelope;
+        totalCount = items.length;
+      } else {
+        break;
+      }
+
+      allItems.addAll(items.map(fromJson));
+
+      // If we've fetched everything, stop
+      if (allItems.length >= totalCount || items.length < pageSize) {
+        break;
+      }
+      page++;
+    }
+
+    return allItems;
   }
 
   @override

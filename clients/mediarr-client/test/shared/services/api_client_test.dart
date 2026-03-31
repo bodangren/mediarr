@@ -273,10 +273,9 @@ void main() {
       ));
 
       await client.connect('http://192.168.1.100:5174');
-      final url = client.getStreamUrl('/data/media/movies/Inception (2010)/Inception.mkv');
+      final url = client.getStreamUrl(42, 'movie');
 
-      expect(url, startsWith('http://192.168.1.100:5174/api/stream?path='));
-      expect(url, contains('Inception'));
+      expect(url, 'http://192.168.1.100:5174/api/stream/42?type=movie');
     });
   });
 

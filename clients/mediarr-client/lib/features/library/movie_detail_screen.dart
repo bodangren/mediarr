@@ -84,7 +84,7 @@ class MovieDetailScreen extends ConsumerWidget {
                     ],
                   ),
                   // Play button
-                  if (movie.hasFile && movie.path != null) ...[
+                  if (movie.hasFile) ...[
                     const SizedBox(height: 20),
                     ElevatedButton.icon(
                       icon: const Icon(Icons.play_arrow, size: 28),
@@ -103,7 +103,8 @@ class MovieDetailScreen extends ConsumerWidget {
                       ),
                       onPressed: () {
                         final apiClient = ref.read(apiClientProvider.notifier);
-                        final streamUrl = apiClient.getStreamUrl(movie.path!);
+                        final streamUrl =
+                            apiClient.getStreamUrl(movie.id, 'movie');
                         Navigator.of(context).push(
                           MaterialPageRoute(
                             builder: (_) => PlaybackScreen(

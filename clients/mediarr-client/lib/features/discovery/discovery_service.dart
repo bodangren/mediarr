@@ -101,10 +101,7 @@ class DiscoveryService extends StateNotifier<DiscoveryState> {
   void _onServerFound(DiscoveredServer server) {
     if (!state.servers.contains(server)) {
       final updated = [...state.servers, server];
-      state = state.copyWith(
-        phase: DiscoveryPhase.found,
-        servers: updated,
-      );
+      state = state.copyWith(phase: DiscoveryPhase.found, servers: updated);
     }
   }
 
@@ -155,11 +152,23 @@ class DiscoveryService extends StateNotifier<DiscoveryState> {
   }
 }
 
+/// A no-op mDNS adapter that never discovers anything.
+/// Used as the default so the provider never throws — safe to read without override.
+class NoOpMdnsAdapter implements MdnsDiscoveryAdapter {
+  @override
+  Stream<DiscoveredServer> get onServerFound =>
+      const Stream<DiscoveredServer>.empty();
+
+  @override
+  Future<void> startDiscovery() async {}
+
+  @override
+  Future<void> stopDiscovery() async {}
+}
+
 /// Provider for the discovery service.
+/// Defaults to a no-op adapter; overridden in main.dart with BonsoirMdnsAdapter.
 final discoveryServiceProvider =
     StateNotifierProvider<DiscoveryService, DiscoveryState>((ref) {
-  // The real mDNS adapter will be provided via an override in main.dart
-  throw UnimplementedError(
-    'discoveryServiceProvider must be overridden with a real MdnsDiscoveryAdapter',
-  );
-});
+      return DiscoveryService(mdnsAdapter: NoOpMdnsAdapter());
+    });

@@ -1,0 +1,1 @@
+Reverted Drizzle Phase 2 repo migrations (AppSettingsRepository, QualityProfileRepository) back to Prisma. Uncommitted work on 18 additional repos was discarded. Test suite restored from 121 failures to 0. Drizzle track paused per directive lock — corner-case testing requires green baseline.

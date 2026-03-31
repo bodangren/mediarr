@@ -64,6 +64,9 @@ Parallel:
 
 ## Active Tracks
 
+### Directive: Corner-Case Testing
+- [~] **Track: Corner-Case Testing — WantedSearch + ImportManager** *Phases: 4 | Link: [./tracks/bug_corner_case_testing_wantedsearch_import_20260331/](./tracks/bug_corner_case_testing_wantedsearch_import_20260331/)*
+
 ### Phase A: Fix What's Broken
 - [ ] **Track: Form Standardization Completion** *Phases: 3 | Link: [./tracks/chore_form_standardization_completion_20260330/](./tracks/chore_form_standardization_completion_20260330/)*
 - [ ] **Track: Playback Resume & Continue Watching** *Phases: 4 | Link: [./tracks/feature_playback_resume_sync_20260330/](./tracks/feature_playback_resume_sync_20260330/)*

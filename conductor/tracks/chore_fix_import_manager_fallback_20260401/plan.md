@@ -2,9 +2,9 @@
 
 ## Phase 1 — Fix the Bug and Update Existing Test
 
-- [ ] Modify `ImportManager.ts:439`: replace `if (!parsed)` with a flag-based condition that allows movie fallback when episode path found no DB match
-- [ ] Update `ImportManager.slowPath.test.ts:136` ("BUG" test): change assertions to expect movie import succeeds instead of IMPORT_FAILED
-- [ ] Run `CI=true bun run test --run 2>&1 | tail -40` — confirm updated test passes
+- [x] Modify `ImportManager.ts:439`: replace `if (!parsed)` with a flag-based condition that allows movie fallback when episode path found no DB match
+- [x] Update `ImportManager.slowPath.test.ts:136` ("BUG" test): change assertions to expect movie import succeeds instead of IMPORT_FAILED
+- [x] Run `CI=true bun run test --run 2>&1 | tail -40` — confirm updated test passes
 
 ## Phase 2 — Add Adjacent Coverage
 

@@ -241,4 +241,59 @@ describe('ImportManager — parser-based slow path', () => {
     expect(importFailed).toBeDefined();
     expect(importFailed![0].details.reason).toContain('movie root folder');
   });
+
+  it('parsed as episode but series NOT found falls through to movie path', async () => {
+    const movie = { id: 5, title: 'Unknown Film', year: 2024, path: '/media/movies' };
+
+    const prisma = makePrisma({
+      series: null,
+      episode: null,
+      movie,
+      appSettings: { movieRootFolder: '/media/movies' },
+      seriesFindFirst: vi.fn().mockResolvedValue(null),
+      episodeFindFirst: vi.fn().mockResolvedValue(null),
+      movieFindFirst: vi.fn().mockResolvedValue(movie),
+    });
+
+    const torrent = {
+      infoHash: 'series-not-found',
+      name: 'Nonexistent.Show.S01E01.1080p.mkv',
+      path: '/downloads/complete/Nonexistent.Show.S01E01.1080p.mkv',
+    };
+
+    const { org, ae } = await fireTorrentCompleted(prisma, torrent);
+
+    expect(org.organizeMovieFile).toHaveBeenCalled();
+    expect(ae.emit).toHaveBeenCalledWith(
+      expect.objectContaining({ eventType: 'MOVIE_IMPORTED', success: true }),
+    );
+  });
+
+  it('parsed as episode, series found but episode NOT found, movie also NOT found → IMPORT_FAILED', async () => {
+    const series = { id: 1, title: 'Breaking Bad', cleanTitle: 'breakingbad', path: '/media/tv' };
+
+    const prisma = makePrisma({
+      series,
+      episode: null,
+      movie: null,
+      seriesFindFirst: vi.fn().mockResolvedValue(series),
+      episodeFindFirst: vi.fn().mockResolvedValue(null),
+      movieFindFirst: vi.fn().mockResolvedValue(null),
+    });
+
+    const torrent = {
+      infoHash: 'no-match-at-all',
+      name: 'Breaking.Bad.S99E99.Nonexistent.mkv',
+      path: '/downloads/complete/Breaking.Bad.S99E99.Nonexistent.mkv',
+    };
+
+    const { org, ae } = await fireTorrentCompleted(prisma, torrent);
+
+    expect(org.organizeMovieFile).not.toHaveBeenCalled();
+    const importFailed = ae.emit.mock.calls.find(
+      (call: any[]) => call[0]?.eventType === 'IMPORT_FAILED',
+    );
+    expect(importFailed).toBeDefined();
+    expect(importFailed![0].details.reason).toContain('no match found');
+  });
 });

@@ -1,0 +1,1 @@
+19 tests added across 3 new test files. Bug discovered: ImportManager parsed episode with no DB match does NOT fall through to movie path (ImportManager.ts line 439 guards with 'if (!parsed)'). 682 tests green, 94 files.

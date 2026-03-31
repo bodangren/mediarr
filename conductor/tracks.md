@@ -62,10 +62,6 @@ Parallel:
 
 ---
 
-### Active (Directive: Corner-Case Testing)
-- [~] **Track: Fix ImportManager Episode-to-Movie Fallback Bug** *Phases: 3 | Link: [./tracks/chore_fix_import_manager_fallback_20260401/](./tracks/chore_fix_import_manager_fallback_20260401/)* — fix bug found by 2026-03-31 testing
-
----
 
 - [ ] **Track: Form Standardization Completion** *Phases: 3 | Link: [./tracks/chore_form_standardization_completion_20260330/](./tracks/chore_form_standardization_completion_20260330/)*
 - [ ] **Track: Playback Resume & Continue Watching** *Phases: 4 | Link: [./tracks/feature_playback_resume_sync_20260330/](./tracks/feature_playback_resume_sync_20260330/)*
@@ -92,6 +88,7 @@ Parallel:
 
 ## Archived Tracks
 
+- [x] **Track: Fix ImportManager Episode-to-Movie Fallback Bug** *Phases: 3 | Link: [./archive/chore_fix_import_manager_fallback_20260401/](./archive/chore_fix_import_manager_fallback_20260401/)* — fixed `if (!parsed)` → `if (!episodeImported)`; 7 slow-path tests
 - [x] **Track: Cleanup Uncommitted Work** *Phases: 3 | Link: [./archive/chore_cleanup_uncommitted_work_20260401/](./archive/chore_cleanup_uncommitted_work_20260401/)* — 3 commits; reverted .env secrets, removed junk, committed form migration + Flutter fixes
 
 - [x] **Track: Corner-Case Testing — WantedSearch + ImportManager** *Phases: 4 | Link: [./archive/bug_corner_case_testing_wantedsearch_import_20260331/](./archive/bug_corner_case_testing_wantedsearch_import_20260331/)* — 19 tests; 1 bug found (ImportManager episode-to-movie fallback)

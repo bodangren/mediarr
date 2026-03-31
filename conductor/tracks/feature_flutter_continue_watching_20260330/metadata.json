@@ -1,0 +1,11 @@
+{
+  "track_id": "feature_flutter_continue_watching_20260330",
+  "type": "feature",
+  "status": "new",
+  "created_at": "2026-03-30T00:00:00Z",
+  "updated_at": "2026-03-30T00:00:00Z",
+  "description": "Continue Watching home widget and upcoming releases calendar on the Flutter client. One-tap resume, progress bars, and a leanback calendar view.",
+  "estimated_tasks": 8,
+  "actual_tasks": null,
+  "deviation_notes": "Depends on feature_playback_resume_sync_20260330 (server endpoint) and feature_flutter_activity_queue_20260330 (navigation structure)."
+}

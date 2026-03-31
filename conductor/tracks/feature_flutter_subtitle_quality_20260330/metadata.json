@@ -1,0 +1,11 @@
+{
+  "track_id": "feature_flutter_subtitle_quality_20260330",
+  "type": "feature",
+  "status": "new",
+  "created_at": "2026-03-30T00:00:00Z",
+  "updated_at": "2026-03-30T00:00:00Z",
+  "description": "Subtitle search/download and quality upgrade triggers from the Flutter client. Manage subtitles and request quality upgrades from the couch.",
+  "estimated_tasks": 8,
+  "actual_tasks": null,
+  "deviation_notes": "Depends on feature_flutter_search_add_20260330 (navigation structure) and feature_flutter_activity_queue_20260330 (ApiClient additions)."
+}

@@ -1,0 +1,11 @@
+{
+  "track_id": "chore_form_standardization_completion_20260330",
+  "type": "chore",
+  "status": "new",
+  "created_at": "2026-03-30T00:00:00Z",
+  "updated_at": "2026-03-30T00:00:00Z",
+  "description": "Complete the form standardization migration: migrate remaining modal forms to react-hook-form + zod, delete the dead form-compat.tsx shim, and validate with build + tests.",
+  "estimated_tasks": 12,
+  "actual_tasks": null,
+  "deviation_notes": "Supersedes chore_form_standardization_20260314. Phase 1 (settings pages) was already complete. This track covers Phase 2 only."
+}

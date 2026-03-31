@@ -1,0 +1,11 @@
+{
+  "track_id": "feature_smart_defaults_20260330",
+  "type": "feature",
+  "status": "new",
+  "created_at": "2026-03-30T00:00:00Z",
+  "updated_at": "2026-03-30T00:00:00Z",
+  "description": "Convention-over-configuration engine: auto-create quality profiles, auto-assign download client, auto-configure import paths, and sensible defaults for every setting so the system works without manual tuning.",
+  "estimated_tasks": 10,
+  "actual_tasks": null,
+  "deviation_notes": ""
+}

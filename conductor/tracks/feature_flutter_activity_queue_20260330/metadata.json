@@ -1,0 +1,11 @@
+{
+  "track_id": "feature_flutter_activity_queue_20260330",
+  "type": "feature",
+  "status": "new",
+  "created_at": "2026-03-30T00:00:00Z",
+  "updated_at": "2026-03-30T00:00:00Z",
+  "description": "Activity and queue monitoring on the Flutter client: download queue with per-item progress, history view, and real-time updates via SSE.",
+  "estimated_tasks": 6,
+  "actual_tasks": null,
+  "deviation_notes": ""
+}

@@ -62,6 +62,10 @@ Parallel:
 
 ---
 
+### Active
+- [~] **Track: Cleanup Uncommitted Work** *Phases: 3 | Link: [./tracks/chore_cleanup_uncommitted_work_20260401/](./tracks/chore_cleanup_uncommitted_work_20260401/)*
+
+---
 
 - [ ] **Track: Form Standardization Completion** *Phases: 3 | Link: [./tracks/chore_form_standardization_completion_20260330/](./tracks/chore_form_standardization_completion_20260330/)*
 - [ ] **Track: Playback Resume & Continue Watching** *Phases: 4 | Link: [./tracks/feature_playback_resume_sync_20260330/](./tracks/feature_playback_resume_sync_20260330/)*

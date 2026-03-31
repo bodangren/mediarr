@@ -1,0 +1,11 @@
+{
+  "track_id": "feature_setup_wizard_20260330",
+  "type": "feature",
+  "status": "new",
+  "created_at": "2026-03-30T00:00:00Z",
+  "updated_at": "2026-03-30T00:00:00Z",
+  "description": "First-run setup wizard that detects fresh installs, guides users through root folders, default indexers, and quality profiles, with a one-click 'just work' zero-config mode.",
+  "estimated_tasks": 12,
+  "actual_tasks": null,
+  "deviation_notes": ""
+}

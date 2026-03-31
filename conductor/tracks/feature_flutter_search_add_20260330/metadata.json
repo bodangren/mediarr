@@ -1,0 +1,11 @@
+{
+  "track_id": "feature_flutter_search_add_20260330",
+  "type": "feature",
+  "status": "new",
+  "created_at": "2026-03-30T00:00:00Z",
+  "updated_at": "2026-03-30T00:00:00Z",
+  "description": "Search and add media from the Flutter client: search screen wired to server API, add-to-library, and media detail pages with grab actions.",
+  "estimated_tasks": 10,
+  "actual_tasks": null,
+  "deviation_notes": ""
+}

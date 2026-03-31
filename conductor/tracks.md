@@ -62,8 +62,10 @@ Parallel:
 
 ---
 
----
+### Active (Directive: Corner-Case Testing)
+- [~] **Track: Fix ImportManager Episode-to-Movie Fallback Bug** *Phases: 3 | Link: [./tracks/chore_fix_import_manager_fallback_20260401/](./tracks/chore_fix_import_manager_fallback_20260401/)* — fix bug found by 2026-03-31 testing
 
+---
 
 - [ ] **Track: Form Standardization Completion** *Phases: 3 | Link: [./tracks/chore_form_standardization_completion_20260330/](./tracks/chore_form_standardization_completion_20260330/)*
 - [ ] **Track: Playback Resume & Continue Watching** *Phases: 4 | Link: [./tracks/feature_playback_resume_sync_20260330/](./tracks/feature_playback_resume_sync_20260330/)*

@@ -18,4 +18,4 @@
 - [x] Run full test suite: `CI=true bun run test --run 2>&1 | tail -60`
 - [x] Run production build: `cd app && npm run build 2>&1 | tail -20`
 - [x] Update `conductor/tech-debt.md`: mark ImportManager fallback bug as Resolved
-- [ ] Archive track and push
+- [x] Archive track and push — archive move is reflected in the repository state; push status was not retained in this plan

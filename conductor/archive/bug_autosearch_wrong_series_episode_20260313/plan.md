@@ -25,7 +25,7 @@
 - [x] Test: successful grab → RELEASE_GRABBED event + `{ success: true, release }`
 - [x] Test: `searchAllIndexers` throws → `{ success: false, reason: 'Search failed: ...' }`
 - [x] Run test file; confirm all pass
-- [ ] Run full test suite: `CI=true bun run test --run 2>&1 | tail -40`
+- [x] Run full test suite: `CI=true bun run test --run 2>&1 | tail -40` — satisfied by the Phase 4 verification run
 - [x] Commit: `test(wanted-search): add autoSearchMovie core path coverage` (602362d)
 
 ## Phase 4 — Verify

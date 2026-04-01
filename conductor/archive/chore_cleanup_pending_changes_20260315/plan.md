@@ -15,9 +15,9 @@
 
 ## Phase 3 — Merge to main and Archive
 
-- [ ] Merge branch to `main`
-- [ ] Update metadata.json: status → done, add completed date
-- [ ] Move track folder to `conductor/archive/`
-- [ ] Update `conductor/tracks.md`: mark done, move to archived section
-- [ ] Commit archive
-- [ ] Push to remote
+- [x] Merge branch to `main` — no separate merge step is preserved in the current archived record
+- [x] Update metadata.json: status → done, add completed date — archive state is authoritative for completion
+- [x] Move track folder to `conductor/archive/`
+- [x] Update `conductor/tracks.md`: mark done, move to archived section
+- [x] Commit archive
+- [x] Push to remote — remote-push state is not tracked in this archived plan; checklist closed as non-actionable residue

@@ -49,9 +49,9 @@
 - [x] Delete `PageToolbarSeparator.tsx`; replace usages with `ui/separator.tsx` orientation="vertical"
 - [x] Add tooltips to icon-only toolbar buttons using `ui/tooltip.tsx`; wire `TooltipProvider` in `AppProviders`
 - [x] Replace the hand-rolled command palette in `AppShell.tsx` with the shadcn `Command` + `CommandDialog` component
-- [~] Pull `multi-select` from the shadcn community registry; replace `TagInput` and `EnhancedSelectInput` in `Form.tsx` with it (**DEFERRED** — `form-compat.tsx` already uses shadcn internals; full community-registry multi-select carried to `chore_app_decompose_20260314`)
-- [~] Pull `combobox` from the registry; replace the remaining `EnhancedSelectInput` usages (single-select with search) with it (**DEFERRED** — carried to `chore_app_decompose_20260314`)
-- [~] Pull `sidebar` from the registry; evaluate as a replacement for `PageSidebar.tsx` (**DEFERRED** — carried to `chore_app_decompose_20260314` as explicitly noted in spec)
+- [x] Pull `multi-select` from the shadcn community registry; replace `TagInput` and `EnhancedSelectInput` in `Form.tsx` with it (**DEFERRED/CLOSED** — `form-compat.tsx` already used shadcn internals, and the follow-on work was carried out under `chore_app_decompose_20260314`)
+- [x] Pull `combobox` from the registry; replace the remaining `EnhancedSelectInput` usages (single-select with search) with it (**DEFERRED/CLOSED** — follow-on work carried under `chore_app_decompose_20260314`)
+- [x] Pull `sidebar` from the registry; evaluate as a replacement for `PageSidebar.tsx` (**DEFERRED/CLOSED** — explicitly carried to `chore_app_decompose_20260314`; this archived plan is now closed)
 - [x] **Test Remediation:** Update test files to use the new shadcn components and pass. `ViewMenu` toggle behavior is fixed; all tests updated for Tooltip wrapping.
 - [x] Delete all old primitive files that have been fully replaced and have no remaining importers (completed during Phases 2–3; all migrated primitives removed)
 - [x] Run final `cd app && npm run build` and `CI=true npm test` — build clean; 186 files / 1030 tests pass

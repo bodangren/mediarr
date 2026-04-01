@@ -21,10 +21,10 @@ They will be fully rewritten as part of the Drizzle migration track.
 - Status: COMPLETED (12/12 tests passing)
 
 ### Task 1.2: Fix torrent-completion tests (5 failures)
-- [ ] Run test to see exact errors
-- [ ] Analyze failures
-- [ ] Fix test or implementation
-- Status:
+- [x] Run test to see exact errors — later audit confirmed the suite was already passing
+- [x] Analyze failures — obviated by the revised no-Prisma audit below
+- [x] Fix test or implementation — no change required once rechecked
+- Status: COMPLETE — already passing when revisited during Task 1.3 (revised)
 
 ### Task 1.3: SKIP — api-route-map test (1 failure) — Prisma-coupled, rewrite in Drizzle track
 - [x] Deferred: mocks prisma directly; will be rewritten in chore_drizzle_migration_20260314

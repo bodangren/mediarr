@@ -1,0 +1,9 @@
+Track closure: feature_local_llm_gateway_20260401
+
+Summary:
+- marked the track done and moved it to conductor/archive
+- updated conductor/tracks.md so the urgent entry no longer appears in active work
+
+Verification:
+- track artifacts now live under conductor/archive/feature_local_llm_gateway_20260401
+- active track list returned to the roadmap tracks plus the paused Drizzle migration

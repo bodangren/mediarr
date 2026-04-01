@@ -1,0 +1,8 @@
+{
+  "id": "bug_seed_limit_import_guard_20260402",
+  "title": "Fix TorrentManager.checkSeedLimits deleting unimported torrents",
+  "type": "bug",
+  "status": "done",
+  "created": "2026-04-02",
+  "completed": "2026-04-02"
+}

@@ -30,3 +30,4 @@
 | 2026-03-30 | chore_drizzle_migration_20260314 | `server/src/db/index.ts` uses `bun:sqlite` — no type declarations in tsx/tsc context | Low | Open | Works at runtime under Bun; add `declare module 'bun:sqlite'` shim if strict tsc needed before full Bun switch |
 | 2026-03-30 | chore_drizzle_migration_20260314 | 18 of 20 repos still on Prisma; `main.ts` in mixed state during Phase 2 | High | Resolved | Phase 2 repo migrations reverted to restore green test suite (b44ed6c); track paused |
 | 2026-03-31 | bug_corner_case_testing_20260331 | ImportManager parsed-episode fallback to movie path broken | High | Resolved | Replaced `if (!parsed)` with `if (!episodeImported)` flag; 7 slow-path tests pass (b67ebbf) |
+| 2026-04-02 | bug_seed_limit_import_guard_20260402 | TorrentManager.checkSeedLimits deleted unimported torrents (no import guard) | High | Resolved | Extracted shared isImportIncomplete(); added prisma to TorrentManager via setPrisma(); 10 new tests (c012709) |

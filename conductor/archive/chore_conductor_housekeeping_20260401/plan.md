@@ -10,10 +10,10 @@
 
 - [x] Task: Update the targeted archived plans so stale open or in-progress items are recorded as closed historical outcomes with explicit notes where needed
 - [x] Task: Trim `conductor/lessons-learned.md` to 50 lines or fewer while keeping near-term Mediarr guidance intact
-- [ ] Task: Conductor - Checkpoint Phase 2
+- [x] Task: Conductor - Checkpoint Phase 2
 
 ## Phase 3 — Verify and Archive
 
-- [~] Task: Run a Conductor status audit and confirm the targeted archived-plan anomalies no longer distort the report
-- [ ] Task: Archive the cleanup track, update `conductor/tracks.md`, and set cleanup-track metadata to done
-- [ ] Task: Commit the cleanup-track archive state with verification evidence
+- [x] Task: Run a Conductor status audit and confirm the targeted archived-plan anomalies no longer distort the report
+- [x] Task: Archive the cleanup track, update `conductor/tracks.md`, and set cleanup-track metadata to done
+- [x] Task: Commit the cleanup-track archive state with verification evidence

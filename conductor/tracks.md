@@ -84,6 +84,9 @@ Parallel:
 ### Parallel: Backend Performance
 - [!] **Track: Drizzle ORM Migration** *Phases: 4 | PAUSED — broke 121 tests, reverted to green* | Link: [./tracks/chore_drizzle_migration_20260314/](./tracks/chore_drizzle_migration_20260314/)*
 
+### Governance
+- [~] **Track: Conductor Housekeeping Cleanup** *Phases: 3 | Link: [./tracks/chore_conductor_housekeeping_20260401/](./tracks/chore_conductor_housekeeping_20260401/)*
+
 ---
 
 ## Archived Tracks

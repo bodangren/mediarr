@@ -37,6 +37,9 @@ reference/
 /app/generated/prisma
 *.db
 
+# Conductor / Agent logs
+conductor/opencode-cron.log
+
 # Compiled TypeScript in app/src (Vite handles this)
 /app/src/**/*.js
 /app/src/**/*.js.map

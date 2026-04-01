@@ -94,6 +94,7 @@ Parallel:
 
 ## Archived Tracks
 
+- [x] **Track: Daily Cleanup — Stage Deletions, Verify Green Suite** *Phases: 3 | Link: [./archive/chore_daily_cleanup_20260402/](./archive/chore_daily_cleanup_20260402/)* — excluded redundant legacy test; 195 passed, 0 failures
 - [x] **Track: Local LLM Gateway Routing** *Phases: 3 | Link: [./archive/feature_local_llm_gateway_20260401/](./archive/feature_local_llm_gateway_20260401/)* — ReleaseParser now prefers `AI_GATEWAY_BASE_URL` + model envs, falls back to OpenRouter, then regex-only parsing
 - [x] **Track: Conductor Housekeeping Cleanup** *Phases: 3 | Link: [./archive/chore_conductor_housekeeping_20260401/](./archive/chore_conductor_housekeeping_20260401/)* — cleaned recent archive-plan residue and trimmed `lessons-learned.md` to 40 lines
 - [x] **Track: Fix ImportManager Episode-to-Movie Fallback Bug** *Phases: 3 | Link: [./archive/chore_fix_import_manager_fallback_20260401/](./archive/chore_fix_import_manager_fallback_20260401/)* — fixed `if (!parsed)` → `if (!episodeImported)`; 7 slow-path tests

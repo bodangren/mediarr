@@ -1,0 +1,9 @@
+Phase 1 - Conductor Housekeeping Cleanup
+
+Summary:
+- created track conductor/tracks/chore_conductor_housekeeping_20260401
+- added spec, plan, metadata, and index artifacts
+- registered the cleanup track as active in conductor/tracks.md
+
+Why:
+- make the cleanup itself auditable before normalizing archived-plan residue and lessons-learned budget

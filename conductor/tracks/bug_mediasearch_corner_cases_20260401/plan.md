@@ -1,10 +1,10 @@
 # Plan: MediaSearchService Corner-Case Testing
 
 ## Phase 1 — searchAllIndexers: empty state, dedup, ranking
-- [ ] Test: empty indexer list returns empty result without querying
-- [ ] Test: infoHash deduplication keeps higher-ranked release
-- [ ] Test: releases sorted by customFormatScore (desc), then seeders (desc), then size (desc)
-- [ ] Test: dedup preserves releases without infoHash (no dedup for them)
+- [x] Test: empty indexer list returns empty result without querying
+- [x] Test: infoHash deduplication keeps higher-ranked release
+- [x] Test: releases sorted by customFormatScore (desc), then seeders (desc), then size (desc)
+- [x] Test: dedup preserves releases without infoHash (no dedup for them)
 
 ## Phase 2 — searchAllIndexers: fallback, failures, events
 - [ ] Test: movie IMDB fallback succeeds when primary returns empty

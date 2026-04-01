@@ -8,6 +8,10 @@ vi.mock('@openrouter/ai-sdk-provider', () => ({
   createOpenRouter: vi.fn(() => vi.fn(() => 'mock-openrouter-model')),
 }));
 
+vi.mock('@ai-sdk/openai', () => ({
+  createOpenAI: vi.fn(() => vi.fn(() => 'mock-openai-compatible-model')),
+}));
+
 vi.mock('ai', () => ({
   generateText: vi.fn(),
   Output: {
@@ -15,7 +19,11 @@ vi.mock('ai', () => ({
   },
 }));
 
+import { createOpenAI } from '@ai-sdk/openai';
+import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { generateText } from 'ai';
+const mockCreateOpenAI = vi.mocked(createOpenAI);
+const mockCreateOpenRouter = vi.mocked(createOpenRouter);
 const mockGenerateText = vi.mocked(generateText);
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -46,8 +54,11 @@ function makeScored(overrides: Partial<ParsedReleaseWithScore> = {}): ParsedRele
 
 describe('ReleaseParser — parse()', () => {
   beforeEach(() => {
+    vi.unstubAllEnvs();
     vi.stubEnv('OPENROUTER_API_KEY', 'test-key');
     mockGenerateText.mockReset();
+    mockCreateOpenAI.mockClear();
+    mockCreateOpenRouter.mockClear();
   });
 
   afterEach(() => {
@@ -95,6 +106,39 @@ describe('ReleaseParser — parse()', () => {
     expect(mockGenerateText).not.toHaveBeenCalled();
     expect(result?.seasonNumber).toBe(2);
     expect(result?.episodeNumbers).toEqual([3]);
+  });
+
+  it('prefers the local gateway when AI_GATEWAY_BASE_URL is configured', async () => {
+    vi.stubEnv('AI_GATEWAY_BASE_URL', 'http://127.0.0.1:3030/api/v1');
+    vi.stubEnv('AI_GATEWAY_MODEL', 'openai/gpt-4o-mini');
+    vi.stubEnv('AI_GATEWAY_API_KEY', 'gateway-secret');
+    const expected = makeParsed({ title: 'Gateway Parsed' });
+    mockGenerateText.mockResolvedValueOnce(makeTextResult(expected) as never);
+
+    const result = await releaseParser.parse('Gateway.Show.S01E01.mkv');
+
+    expect(result?.title).toBe('Gateway Parsed');
+    expect(mockCreateOpenAI).toHaveBeenCalledWith({
+      baseURL: 'http://127.0.0.1:3030/api/v1',
+      apiKey: 'gateway-secret',
+    });
+    expect(mockCreateOpenRouter).not.toHaveBeenCalled();
+    expect(mockGenerateText.mock.calls[0]?.[0]).toMatchObject({
+      model: 'mock-openai-compatible-model',
+    });
+  });
+
+  it('uses OPENROUTER_MODEL as the gateway model fallback when AI_GATEWAY_MODEL is absent', async () => {
+    vi.stubEnv('AI_GATEWAY_BASE_URL', 'http://127.0.0.1:3030/api/v1');
+    vi.stubEnv('OPENROUTER_MODEL', 'openai/gpt-4.1-mini');
+    mockGenerateText.mockResolvedValueOnce(makeTextResult(makeParsed({ title: 'Fallback Model' })) as never);
+
+    await releaseParser.parse('Gateway.Fallback.S01E01.mkv');
+
+    expect(mockCreateOpenAI).toHaveBeenCalled();
+    expect(mockGenerateText.mock.calls[0]?.[0]).toMatchObject({
+      model: 'mock-openai-compatible-model',
+    });
   });
 
   it('regex fallback recognises lone season marker as season_pack', async () => {
@@ -153,8 +197,11 @@ describe('ReleaseParser — parse()', () => {
 
 describe('ReleaseParser — parseBatch()', () => {
   beforeEach(() => {
+    vi.unstubAllEnvs();
     vi.stubEnv('OPENROUTER_API_KEY', 'test-key');
     mockGenerateText.mockReset();
+    mockCreateOpenAI.mockClear();
+    mockCreateOpenRouter.mockClear();
   });
 
   afterEach(() => {
@@ -207,6 +254,21 @@ describe('ReleaseParser — parseBatch()', () => {
     const output = await releaseParser.parseBatch(['Some.Show.S01.mkv']);
     expect(output).toEqual([]);
     expect(mockGenerateText).not.toHaveBeenCalled();
+  });
+
+  it('uses the local gateway for parseBatch when configured', async () => {
+    vi.stubEnv('AI_GATEWAY_BASE_URL', 'http://127.0.0.1:3030/api/v1');
+    vi.stubEnv('AI_GATEWAY_MODEL', 'openai/gpt-4o-mini');
+    mockGenerateText.mockResolvedValueOnce(makeTextResult({ results: [makeScored({ title: 'Gateway Batch' })] }) as never);
+
+    const output = await releaseParser.parseBatch(['Gateway.Batch.S01E01.mkv']);
+
+    expect(output[0]?.title).toBe('Gateway Batch');
+    expect(mockCreateOpenAI).toHaveBeenCalledTimes(1);
+    expect(mockCreateOpenRouter).not.toHaveBeenCalled();
+    expect(mockGenerateText.mock.calls[0]?.[0]).toMatchObject({
+      model: 'mock-openai-compatible-model',
+    });
   });
 
   it('returns [] when titles array is empty', async () => {

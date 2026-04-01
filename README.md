@@ -33,6 +33,30 @@ npm run dev
 
 This starts both the Vite dev server (frontend on `:5173`) and the Fastify API server (backend on `:5174`).
 
+### AI Provider Routing
+
+`server/src/services/ReleaseParser.ts` supports two environment-driven AI routes:
+
+- Local OpenAI-compatible gateway first:
+  - `AI_GATEWAY_BASE_URL=http://localhost:3030/api/v1`
+  - `AI_GATEWAY_MODEL=openai/gpt-4o-mini`
+  - `AI_GATEWAY_API_KEY=...` optional for local dev; if omitted, the server sends a placeholder key
+- OpenRouter fallback:
+  - `OPENROUTER_API_KEY=...`
+  - `OPENROUTER_MODEL=minimax/minimax-m2.7` optional
+
+Routing order is:
+1. Use the local gateway when `AI_GATEWAY_BASE_URL` is set and a model is available (`AI_GATEWAY_MODEL` or `OPENROUTER_MODEL`).
+2. Otherwise use OpenRouter when `OPENROUTER_API_KEY` is set.
+3. Otherwise fall back to regex-only parsing.
+
+Smoke commands:
+
+```bash
+AI_GATEWAY_BASE_URL=http://localhost:3030/api/v1 AI_GATEWAY_MODEL=openai/gpt-4o-mini bun server/smoke-releaseparser.ts
+OPENROUTER_API_KEY=sk-or-v1-... bun server/smoke-releaseparser.ts
+```
+
 ### Testing
 
 ```bash

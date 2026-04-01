@@ -84,6 +84,9 @@ Parallel:
 ### Parallel: Backend Performance
 - [!] **Track: Drizzle ORM Migration** *Phases: 4 | PAUSED — broke 121 tests, reverted to green* | Link: [./tracks/chore_drizzle_migration_20260314/](./tracks/chore_drizzle_migration_20260314/)*
 
+### Urgent
+- [~] **Track: Local LLM Gateway Routing** *Phases: 3 | Link: [./tracks/feature_local_llm_gateway_20260401/](./tracks/feature_local_llm_gateway_20260401/)*
+
 ---
 
 ## Archived Tracks

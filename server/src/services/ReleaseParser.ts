@@ -1,11 +1,7 @@
 import { generateText, Output } from 'ai';
-import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { z } from 'zod';
 import path from 'node:path';
-
-const openrouter = createOpenRouter({
-  apiKey: process.env.OPENROUTER_API_KEY,
-});
+import { resolveReleaseParserAiConfig } from './ReleaseParserProvider';
 
 // ── Schemas ─────────────────────────────────────────────────────────────────
 
@@ -213,7 +209,8 @@ class ReleaseParserService {
 
   // parse() — single title, serial queue, regex fallback on failure
   async parse(title: string): Promise<ParsedRelease | null> {
-    if (!process.env.OPENROUTER_API_KEY) {
+    const aiConfig = resolveReleaseParserAiConfig();
+    if (!aiConfig.enabled) {
       return regexFallback(title);
     }
 
@@ -225,15 +222,18 @@ class ReleaseParserService {
     // Serial queue: each call waits for the previous to finish.
     // The .catch at the tail keeps the chain alive across failures.
     this.queue = this.queue
-      .then(() => this._parseSingle(title))
+      .then(() => this._parseSingle(title, aiConfig))
       .then(result => resultResolve(result))
       .catch(() => resultResolve(regexFallback(title)));
 
     return resultPromise;
   }
 
-  private async _parseSingle(title: string): Promise<ParsedRelease | null> {
-    const model = openrouter(process.env.OPENROUTER_MODEL ?? 'minimax/minimax-m2.7');
+  private async _parseSingle(title: string, aiConfig = resolveReleaseParserAiConfig()): Promise<ParsedRelease | null> {
+    if (!aiConfig.enabled) {
+      return regexFallback(title);
+    }
+
     const delays = [1000, 2000];
 
     for (let attempt = 0; attempt <= delays.length; attempt++) {
@@ -241,10 +241,10 @@ class ReleaseParserService {
         // Use Output.json() to avoid provider-side schema enforcement on nullable fields.
         // Validate the returned JSON ourselves with Zod's .catch() fallbacks.
         const { output } = await generateText({
-          model,
+          model: aiConfig.model!,
           output: Output.json(),
           prompt: PARSE_PROMPT(title),
-          providerOptions: { openrouter: {} },
+          ...(aiConfig.providerOptions ? { providerOptions: aiConfig.providerOptions } : {}),
           abortSignal: AbortSignal.timeout(15000),
         });
 
@@ -262,7 +262,8 @@ class ReleaseParserService {
 
   // parseBatch() — one AI call for all titles, no queue
   async parseBatch(titles: string[], context?: SearchContext): Promise<ParsedReleaseWithScore[]> {
-    if (!process.env.OPENROUTER_API_KEY || titles.length === 0) {
+    const aiConfig = resolveReleaseParserAiConfig();
+    if (!aiConfig.enabled || titles.length === 0) {
       return [];
     }
 
@@ -270,10 +271,10 @@ class ReleaseParserService {
 
     try {
       const { output } = await generateText({
-        model: openrouter(process.env.OPENROUTER_MODEL ?? 'minimax/minimax-m2.7'),
+        model: aiConfig.model!,
         output: Output.json(),
         prompt: BATCH_PROMPT(titles, contextBlock),
-        providerOptions: { openrouter: {} },
+        ...(aiConfig.providerOptions ? { providerOptions: aiConfig.providerOptions } : {}),
         abortSignal: AbortSignal.timeout(20000),
       });
 
@@ -299,7 +300,8 @@ class ReleaseParserService {
       quality: null,
     });
 
-    if (!process.env.OPENROUTER_API_KEY) {
+    const aiConfig = resolveReleaseParserAiConfig();
+    if (!aiConfig.enabled) {
       return regexResults();
     }
 
@@ -313,10 +315,10 @@ class ReleaseParserService {
 
       try {
         const { output } = await generateText({
-          model: openrouter(process.env.OPENROUTER_MODEL ?? 'minimax/minimax-m2.7'),
+          model: aiConfig.model!,
           output: Output.json(),
           prompt: FILES_PROMPT(batch),
-          providerOptions: { openrouter: {} },
+          ...(aiConfig.providerOptions ? { providerOptions: aiConfig.providerOptions } : {}),
           abortSignal: AbortSignal.timeout(20000),
         });
 

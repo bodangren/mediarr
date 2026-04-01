@@ -8,6 +8,8 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 - [x] **Track: MediaSearchService Corner-Case Testing** *Phases: 4 | Link: [./archive/bug_mediasearch_corner_cases_20260401/](./archive/bug_mediasearch_corner_cases_20260401/)* — 19 tests; no bugs found
 
+- [~] **Track: Fix TorrentManager Seed-Limit Import Guard** *Phases: 4 | Link: [./tracks/bug_seed_limit_import_guard_20260402/](./tracks/bug_seed_limit_import_guard_20260402/)* — checkSeedLimits deletes unimported torrents
+
 ---
 
 ## Execution Order and Dependencies

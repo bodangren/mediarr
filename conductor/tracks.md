@@ -4,7 +4,7 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ---
 
-- [~] **Track: Cleanup Uncommitted Work** *Phases: 2 | Link: [./tracks/chore_cleanup_uncommitted_work_20260401/](./tracks/chore_cleanup_uncommitted_work_20260401/)*
+- [x] **Track: Cleanup Uncommitted Work** *Phases: 2 | Link: [./archive/chore_cleanup_uncommitted_work_20260401/](./archive/chore_cleanup_uncommitted_work_20260401/)* — staged deleted track files, updated .gitignore
 
 ---
 

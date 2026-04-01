@@ -263,3 +263,147 @@ describe('MediaSearchService.searchAllIndexers — ranking', () => {
     expect(result.releases[0]!.seeders).toBeGreaterThanOrEqual(result.releases[1]!.seeders);
   });
 });
+
+// ─── Phase 2: searchAllIndexers — fallback, failures, events ───────────────
+
+describe('MediaSearchService.searchAllIndexers — IMDB fallback', () => {
+  beforeEach(() => {
+    mockParseBatch.mockResolvedValue([]);
+  });
+
+  it('uses IMDB fallback results when primary movie search returns empty', async () => {
+    const indexer = {
+      search: vi.fn().mockImplementation((query: any) => {
+        if (query.imdbid) {
+          return Promise.resolve([]);
+        }
+        return Promise.resolve([
+          makeIndexerResult({
+            title: 'Movie.2024.1080p.BluRay',
+            guid: 'fallback-guid',
+            seeders: 15,
+            categories: [2000],
+          }),
+        ]);
+      }),
+    };
+
+    const { service, indexerFactory } = makeService({
+      indexerRecords: [makeIndexerRecord(1, 'YTS')],
+    });
+    indexerFactory.fromDatabaseRecord.mockReturnValue(indexer);
+
+    const result = await service.searchAllIndexers({
+      type: 'movie',
+      title: 'Test Movie',
+      year: 2024,
+      imdbId: 'tt1234567',
+    });
+
+    expect(indexer.search).toHaveBeenCalledTimes(2);
+    expect(result.releases).toHaveLength(1);
+    expect(result.releases[0]!.title).toBe('Movie.2024.1080p.BluRay');
+  });
+
+  it('does NOT trigger IMDB fallback for non-movie search types', async () => {
+    const indexer = {
+      search: vi.fn().mockResolvedValue([]),
+    };
+
+    const { service, indexerFactory } = makeService({
+      indexerRecords: [makeIndexerRecord(1, 'TVIndexer')],
+    });
+    indexerFactory.fromDatabaseRecord.mockReturnValue(indexer);
+
+    await service.searchAllIndexers({
+      type: 'tvsearch',
+      query: 'Some Show',
+      imdbId: 'tt9999999',
+    });
+
+    expect(indexer.search).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('MediaSearchService.searchAllIndexers — all indexers fail', () => {
+  beforeEach(() => {
+    mockParseBatch.mockResolvedValue([]);
+  });
+
+  it('returns empty releases with all indexer statuses marked as error', async () => {
+    const indexer1 = {
+      search: vi.fn().mockRejectedValue(new Error('connection refused')),
+    };
+    const indexer2 = {
+      search: vi.fn().mockRejectedValue(new Error('DNS resolution failed')),
+    };
+
+    const { service, indexerFactory } = makeService({
+      indexerRecords: [
+        makeIndexerRecord(1, 'Broken1'),
+        makeIndexerRecord(2, 'Broken2'),
+      ],
+    });
+    indexerFactory.fromDatabaseRecord
+      .mockReturnValueOnce(indexer1)
+      .mockReturnValueOnce(indexer2);
+
+    const result = await service.searchAllIndexers({ query: 'test' });
+
+    expect(result.releases).toHaveLength(0);
+    expect(result.totalResults).toBe(0);
+    expect(result.indexerResults).toHaveLength(2);
+    expect(result.indexerResults[0]!.status).toBe('error');
+    expect(result.indexerResults[1]!.status).toBe('error');
+  });
+
+  it('marks timeout errors with status=timeout', async () => {
+    const indexer = {
+      search: vi.fn().mockRejectedValue(new Error('Indexer search timed out after 30000ms')),
+    };
+
+    const { service, indexerFactory } = makeService({
+      indexerRecords: [makeIndexerRecord(1, 'SlowIndexer')],
+    });
+    indexerFactory.fromDatabaseRecord.mockReturnValue(indexer);
+
+    const result = await service.searchAllIndexers({ query: 'test' });
+
+    expect(result.indexerResults[0]!.status).toBe('timeout');
+  });
+});
+
+describe('MediaSearchService.searchAllIndexers — activity events', () => {
+  beforeEach(() => {
+    mockParseBatch.mockResolvedValue([]);
+  });
+
+  it('emits SEARCH_EXECUTED activity event on successful search', async () => {
+    const activityEventEmitter = { emit: vi.fn().mockResolvedValue(undefined) };
+    const indexer = {
+      search: vi.fn().mockResolvedValue([
+        makeIndexerResult({
+          title: 'Found.Release.1080p',
+          guid: 'found-guid',
+          seeders: 10,
+        }),
+      ]),
+    };
+
+    const { service, indexerFactory } = makeService({
+      indexerRecords: [makeIndexerRecord(1, 'TestIndexer')],
+      activityEventEmitter,
+    });
+    indexerFactory.fromDatabaseRecord.mockReturnValue(indexer);
+
+    await service.searchAllIndexers({ query: 'test' });
+
+    const searchEvents = activityEventEmitter.emit.mock.calls.filter(
+      (call: any) => call[0].eventType === 'SEARCH_EXECUTED',
+    );
+    expect(searchEvents.length).toBeGreaterThanOrEqual(1);
+    const event = searchEvents[0][0];
+    expect(event.success).toBe(true);
+    expect(event.details.totalResults).toBe(1);
+  });
+});

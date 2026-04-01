@@ -36,5 +36,6 @@
 
 ### Patterns That Worked Well
 
+- (2026-04-01, bug_mediasearch_corner_cases) **`deduplicateByInfoHash` ranking uses `customFormatScore` which includes confidence from Levenshtein.** Two releases with the same infoHash but different titles get different confidence scores (based on Levenshtein distance to search query). The "higher-ranked" release in dedup is determined by `compareReleasesForRanking` which checks `customFormatScore` first, then seeders. Tests comparing dedup behavior must use identical titles to isolate the seeders/size ranking dimension.
 - (2026-03-16, feature_ai_parsing) Wrapping a singleton AI client in a guard (`if (!API_KEY) return null`) + TDD fallback tests lets the entire codebase degrade gracefully to regex without any code changes to callers.
 - (2026-03-11, feature_system_routes_coverage) TDD on routes with in-memory state: export a proxy state object; reset it in `beforeEach`. Filter-predicate bugs only surface with coverage — write tests first.

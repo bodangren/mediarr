@@ -698,5 +698,54 @@ describe('TorrentManager', () => {
 
       await manager.destroy();
     });
+
+    it('3.9 handles DB errors gracefully — does not remove when episode.findUnique throws', async () => {
+      const { manager } = makeManager();
+      (manager as any).seedRatioLimit = 1.0;
+      (manager as any).seedLimitAction = 'remove';
+      const prisma = {
+        episode: { findUnique: vi.fn().mockRejectedValue(new Error('DB connection lost')) },
+        movie: { findUnique: vi.fn() },
+      };
+      (manager as any).prisma = prisma;
+      const removeSpy = vi.spyOn(manager, 'removeTorrent').mockResolvedValue();
+
+      await manager.checkSeedLimits(
+        makeDbTorrent({
+          status: 'seeding',
+          episodeId: 10,
+          ratio: 2.0,
+          stopAtRatio: 1.0,
+          completedAt: new Date(Date.now() - 1_000),
+        }),
+      );
+
+      expect(removeSpy).not.toHaveBeenCalled();
+    });
+
+    it('3.10 guards both episodeId and movieId when both are set', async () => {
+      const { manager } = makeManager();
+      (manager as any).seedRatioLimit = 1.0;
+      (manager as any).seedLimitAction = 'remove';
+      const prisma = {
+        episode: { findUnique: vi.fn().mockResolvedValue({ id: 10, path: '/tv/Show/S01E01.mkv' }) },
+        movie: { findUnique: vi.fn().mockResolvedValue({ id: 20, path: null }) },
+      };
+      (manager as any).prisma = prisma;
+      const removeSpy = vi.spyOn(manager, 'removeTorrent').mockResolvedValue();
+
+      await manager.checkSeedLimits(
+        makeDbTorrent({
+          status: 'seeding',
+          episodeId: 10,
+          movieId: 20,
+          ratio: 2.0,
+          stopAtRatio: 1.0,
+          completedAt: new Date(Date.now() - 1_000),
+        }),
+      );
+
+      expect(removeSpy).not.toHaveBeenCalled();
+    });
   });
 });

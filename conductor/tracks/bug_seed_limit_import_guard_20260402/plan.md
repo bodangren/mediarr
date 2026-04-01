@@ -25,10 +25,10 @@
 
 ## Phase 3 — Refactor & expand coverage
 
-- [ ] 3.1 Update `SeedingProtector` to use the shared `isImportIncomplete()` function instead of its private method
-- [ ] 3.2 Test: `checkSeedLimits` handles DB errors gracefully (episode.findUnique throws) — continues to next torrent without deleting
-- [ ] 3.3 Test: `checkSeedLimits` skips guard when `prisma` is not provided (backward compat) — removes normally
-- [ ] 3.4 Test: `checkSeedLimits` with both episodeId and movieId set — guards both
+- [x] 3.1 Update `SeedingProtector` to use the shared `isImportIncomplete()` function instead of its private method
+- [x] 3.2 Test: `checkSeedLimits` handles DB errors gracefully (episode.findUnique throws) — continues to next torrent without deleting
+- [x] 3.3 Test: `checkSeedLimits` skips guard when `prisma` is not provided (backward compat) — removes normally
+- [x] 3.4 Test: `checkSeedLimits` with both episodeId and movieId set — guards both
 
 **Checkpoint:** Run `CI=true bun run test --run`. All tests pass.
 

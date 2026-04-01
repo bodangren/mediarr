@@ -182,10 +182,18 @@ export class TorrentManager extends EventEmitter {
     }
 
     if (limitReached) {
-      const importGuard = await isImportIncomplete(this.prisma, dbTorrent);
-      if (importGuard.incomplete) {
-        console.log(
-          `TorrentManager: Skipping seed-limit action for ${dbTorrent.infoHash} — linked media not yet imported (${importGuard.reason}).`,
+      try {
+        const importGuard = await isImportIncomplete(this.prisma, dbTorrent);
+        if (importGuard.incomplete) {
+          console.log(
+            `TorrentManager: Skipping seed-limit action for ${dbTorrent.infoHash} — linked media not yet imported (${importGuard.reason}).`,
+          );
+          return;
+        }
+      } catch (error) {
+        console.error(
+          `TorrentManager: Import guard check failed for ${dbTorrent.infoHash}, preserving torrent:`,
+          error,
         );
         return;
       }

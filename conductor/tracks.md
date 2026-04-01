@@ -4,6 +4,10 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ---
 
+- [~] **Track: Cleanup Uncommitted Work** *Phases: 2 | Link: [./tracks/chore_cleanup_uncommitted_work_20260401/](./tracks/chore_cleanup_uncommitted_work_20260401/)*
+
+---
+
 ## Execution Order and Dependencies
 
 ### Completed Stack Modernisation (2026-03-14)

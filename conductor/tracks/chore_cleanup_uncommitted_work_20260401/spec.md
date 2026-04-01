@@ -1,17 +1,19 @@
 # Spec: Cleanup Uncommitted Work
 
 ## Problem
-62 uncommitted files exist in the working tree from multiple prior tracks. These include:
-- Frontend form migration (legacy `form-compat` → shadcn `Input`/`Label`/`Checkbox`)
-- Flutter client mDNS fixes and model updates
-- Conductor track archival moves (deletions + new archive entries)
-- Pre-planned track folders from the roadmap
-- Junk/temp files (cron logs, test artifacts, DB backup, test-real-batch.ts)
+Uncommitted changes from prior sessions are polluting the working tree:
+- Deleted track folder files (leftover from archiving)
+- Modified `.env` with new gateway keys (not secrets — local dev config)
+- Minor artifact timestamp change
+- `conductor/opencode-cron.log` untracked file
 
 ## Acceptance Criteria
-1. All source code changes committed in logical, descriptive commits (NOT one giant commit)
-2. `.env` changes reverted (API keys must not be committed)
-3. Junk/temp files removed from the working tree
-4. Conductor track archival state is consistent
-5. Full test suite passes (`CI=true npx vitest run server/`)
-6. Frontend build passes (`cd app && npm run build`)
+- Working tree is clean (no modified or untracked files except `.env` local changes)
+- No track files remain in `conductor/tracks/` that have been deleted on disk but not staged
+- Pre-existing test failure in `tests/import-manager.test.js` is documented as known (already in tech-debt)
+
+## Scope
+- Commit the deletion of previously-archived track files
+- Commit the artifact timestamp update
+- Remove or gitignore `conductor/opencode-cron.log`
+- Verify test suite passes at same baseline (1 pre-existing failure)

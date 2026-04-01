@@ -424,6 +424,194 @@ describe('TorrentManager', () => {
     });
   });
 
+  describe('checkSeedLimits — import guard', () => {
+    it('4.1 does NOT remove a torrent whose linked episode has path:null (import pending)', async () => {
+      const { manager } = makeManager();
+      (manager as any).seedRatioLimit = 1.0;
+      (manager as any).seedLimitAction = 'remove';
+      const prisma = {
+        episode: { findUnique: vi.fn().mockResolvedValue({ id: 10, path: null }) },
+        movie: { findUnique: vi.fn() },
+      };
+      (manager as any).prisma = prisma;
+      const removeSpy = vi.spyOn(manager, 'removeTorrent').mockResolvedValue();
+
+      await manager.checkSeedLimits(
+        makeDbTorrent({
+          status: 'seeding',
+          episodeId: 10,
+          ratio: 2.0,
+          stopAtRatio: 1.0,
+          completedAt: new Date(Date.now() - 1_000),
+        }),
+      );
+
+      expect(removeSpy).not.toHaveBeenCalled();
+    });
+
+    it('4.2 does NOT remove a torrent whose linked episode no longer exists in DB', async () => {
+      const { manager } = makeManager();
+      (manager as any).seedRatioLimit = 1.0;
+      (manager as any).seedLimitAction = 'remove';
+      const prisma = {
+        episode: { findUnique: vi.fn().mockResolvedValue(null) },
+        movie: { findUnique: vi.fn() },
+      };
+      (manager as any).prisma = prisma;
+      const removeSpy = vi.spyOn(manager, 'removeTorrent').mockResolvedValue();
+
+      await manager.checkSeedLimits(
+        makeDbTorrent({
+          status: 'seeding',
+          episodeId: 99,
+          ratio: 2.0,
+          stopAtRatio: 1.0,
+          completedAt: new Date(Date.now() - 1_000),
+        }),
+      );
+
+      expect(removeSpy).not.toHaveBeenCalled();
+    });
+
+    it('4.3 removes a torrent whose linked episode HAS been imported (path set)', async () => {
+      const { manager } = makeManager();
+      (manager as any).seedRatioLimit = 1.0;
+      (manager as any).seedLimitAction = 'remove';
+      const prisma = {
+        episode: { findUnique: vi.fn().mockResolvedValue({ id: 10, path: '/tv/Show/S01E01.mkv' }) },
+        movie: { findUnique: vi.fn() },
+      };
+      (manager as any).prisma = prisma;
+      const removeSpy = vi.spyOn(manager, 'removeTorrent').mockResolvedValue();
+
+      await manager.checkSeedLimits(
+        makeDbTorrent({
+          status: 'seeding',
+          episodeId: 10,
+          ratio: 2.0,
+          stopAtRatio: 1.0,
+          completedAt: new Date(Date.now() - 1_000),
+        }),
+      );
+
+      expect(removeSpy).toHaveBeenCalledWith(HASH_A);
+    });
+
+    it('4.4 does NOT remove a torrent whose linked movie has path:null (import pending)', async () => {
+      const { manager } = makeManager();
+      (manager as any).seedRatioLimit = 1.0;
+      (manager as any).seedLimitAction = 'remove';
+      const prisma = {
+        episode: { findUnique: vi.fn() },
+        movie: { findUnique: vi.fn().mockResolvedValue({ id: 20, path: null }) },
+      };
+      (manager as any).prisma = prisma;
+      const removeSpy = vi.spyOn(manager, 'removeTorrent').mockResolvedValue();
+
+      await manager.checkSeedLimits(
+        makeDbTorrent({
+          status: 'seeding',
+          movieId: 20,
+          ratio: 2.0,
+          stopAtRatio: 1.0,
+          completedAt: new Date(Date.now() - 1_000),
+        }),
+      );
+
+      expect(removeSpy).not.toHaveBeenCalled();
+    });
+
+    it('4.5 does NOT remove a torrent whose linked movie no longer exists in DB', async () => {
+      const { manager } = makeManager();
+      (manager as any).seedRatioLimit = 1.0;
+      (manager as any).seedLimitAction = 'remove';
+      const prisma = {
+        episode: { findUnique: vi.fn() },
+        movie: { findUnique: vi.fn().mockResolvedValue(null) },
+      };
+      (manager as any).prisma = prisma;
+      const removeSpy = vi.spyOn(manager, 'removeTorrent').mockResolvedValue();
+
+      await manager.checkSeedLimits(
+        makeDbTorrent({
+          status: 'seeding',
+          movieId: 99,
+          ratio: 2.0,
+          stopAtRatio: 1.0,
+          completedAt: new Date(Date.now() - 1_000),
+        }),
+      );
+
+      expect(removeSpy).not.toHaveBeenCalled();
+    });
+
+    it('4.6 removes a torrent whose linked movie HAS been imported (path set)', async () => {
+      const { manager } = makeManager();
+      (manager as any).seedRatioLimit = 1.0;
+      (manager as any).seedLimitAction = 'remove';
+      const prisma = {
+        episode: { findUnique: vi.fn() },
+        movie: { findUnique: vi.fn().mockResolvedValue({ id: 20, path: '/movies/Film (2020)' }) },
+      };
+      (manager as any).prisma = prisma;
+      const removeSpy = vi.spyOn(manager, 'removeTorrent').mockResolvedValue();
+
+      await manager.checkSeedLimits(
+        makeDbTorrent({
+          status: 'seeding',
+          movieId: 20,
+          ratio: 2.0,
+          stopAtRatio: 1.0,
+          completedAt: new Date(Date.now() - 1_000),
+        }),
+      );
+
+      expect(removeSpy).toHaveBeenCalledWith(HASH_A);
+    });
+
+    it('4.7 does NOT pause an unimported torrent (pause action also guarded)', async () => {
+      const { manager } = makeManager();
+      (manager as any).seedRatioLimit = 1.0;
+      (manager as any).seedLimitAction = 'pause';
+      const prisma = {
+        episode: { findUnique: vi.fn().mockResolvedValue({ id: 10, path: null }) },
+        movie: { findUnique: vi.fn() },
+      };
+      (manager as any).prisma = prisma;
+      const pauseSpy = vi.spyOn(manager, 'pauseTorrent').mockResolvedValue();
+
+      await manager.checkSeedLimits(
+        makeDbTorrent({
+          status: 'seeding',
+          episodeId: 10,
+          ratio: 2.0,
+          stopAtRatio: 1.0,
+          completedAt: new Date(Date.now() - 1_000),
+        }),
+      );
+
+      expect(pauseSpy).not.toHaveBeenCalled();
+    });
+
+    it('4.8 removes unlinked torrent when prisma is not set (backward compat)', async () => {
+      const { manager } = makeManager();
+      (manager as any).seedRatioLimit = 1.0;
+      (manager as any).seedLimitAction = 'remove';
+      const removeSpy = vi.spyOn(manager, 'removeTorrent').mockResolvedValue();
+
+      await manager.checkSeedLimits(
+        makeDbTorrent({
+          status: 'seeding',
+          ratio: 2.0,
+          stopAtRatio: 1.0,
+          completedAt: new Date(Date.now() - 1_000),
+        }),
+      );
+
+      expect(removeSpy).toHaveBeenCalledWith(HASH_A);
+    });
+  });
+
   describe('promoteNextQueued', () => {
     it('3.5 is a no-op when there are no queued torrents', async () => {
       const { manager, repo } = makeManager();

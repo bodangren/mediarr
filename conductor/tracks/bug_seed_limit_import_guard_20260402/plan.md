@@ -2,24 +2,24 @@
 
 ## Phase 1 — Red: Write failing tests for the import guard
 
-- [ ] 1.1 Test: `checkSeedLimits` removes an unlinked torrent when ratio limit is reached (baseline — should already pass, confirms setup)
-- [ ] 1.2 Test: `checkSeedLimits` does NOT remove a torrent whose linked episode has `path: null` (import pending)
-- [ ] 1.3 Test: `checkSeedLimits` does NOT remove a torrent whose linked episode no longer exists in DB
-- [ ] 1.4 Test: `checkSeedLimits` removes a torrent whose linked episode HAS been imported (path is set)
-- [ ] 1.5 Test: `checkSeedLimits` does NOT remove a torrent whose linked movie has `path: null`
-- [ ] 1.6 Test: `checkSeedLimits` does NOT remove a torrent whose linked movie no longer exists in DB
-- [ ] 1.7 Test: `checkSeedLimits` removes a torrent whose linked movie HAS been imported (path is set)
-- [ ] 1.8 Test: `checkSeedLimits` import guard also applies when `seedLimitAction` is `'pause'` — should NOT pause an unimported torrent
+- [x] 1.1 Test: `checkSeedLimits` removes an unlinked torrent when ratio limit is reached (baseline — should already pass, confirms setup)
+- [x] 1.2 Test: `checkSeedLimits` does NOT remove a torrent whose linked episode has `path: null` (import pending)
+- [x] 1.3 Test: `checkSeedLimits` does NOT remove a torrent whose linked episode no longer exists in DB
+- [x] 1.4 Test: `checkSeedLimits` removes a torrent whose linked episode HAS been imported (path is set)
+- [x] 1.5 Test: `checkSeedLimits` does NOT remove a torrent whose linked movie has `path: null`
+- [x] 1.6 Test: `checkSeedLimits` does NOT remove a torrent whose linked movie no longer exists in DB
+- [x] 1.7 Test: `checkSeedLimits` removes a torrent whose linked movie HAS been imported (path is set)
+- [x] 1.8 Test: `checkSeedLimits` import guard also applies when `seedLimitAction` is `'pause'` — should NOT pause an unimported torrent
 
 **Checkpoint:** Run `CI=true bun run test --run`. Tests 1.2–1.3 and 1.5–1.6 should FAIL (import guard doesn't exist yet).
 
 ## Phase 2 — Green: Add import guard to TorrentManager
 
-- [ ] 2.1 Add a `prisma` dependency to `TorrentManager` (constructor injection, optional — same pattern as `SeedingProtector`)
-- [ ] 2.2 Extract shared `isImportIncomplete()` logic into a standalone function (used by both `TorrentManager` and `SeedingProtector`) to avoid duplication
-- [ ] 2.3 Wire the import guard into `checkSeedLimits()` before the pause/remove action
-- [ ] 2.4 Update `main.ts` to pass `prisma` to `TorrentManager` (via constructor or setter)
-- [ ] 2.5 Run full test suite — all Phase 1 tests must pass
+- [x] 2.1 Add a `prisma` dependency to `TorrentManager` (constructor injection, optional — same pattern as `SeedingProtector`)
+- [x] 2.2 Extract shared `isImportIncomplete()` logic into a standalone function (used by both `TorrentManager` and `SeedingProtector`) to avoid duplication
+- [x] 2.3 Wire the import guard into `checkSeedLimits()` before the pause/remove action
+- [x] 2.4 Update `main.ts` to pass `prisma` to `TorrentManager` (via constructor or setter)
+- [x] 2.5 Run full test suite — all Phase 1 tests must pass
 
 **Checkpoint:** Run `CI=true bun run test --run`. All tests pass.
 

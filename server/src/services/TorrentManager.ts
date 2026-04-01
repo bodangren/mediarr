@@ -3,6 +3,7 @@ import type { Torrent } from '@prisma/client';
 import { promises as fs, constants as fsConstants } from 'fs';
 import path from 'path';
 import { EventEmitter } from 'events';
+import { isImportIncomplete } from './importGuard';
 
 export interface AddTorrentOptions {
   magnetUrl?: string;
@@ -57,8 +58,17 @@ export class TorrentManager extends EventEmitter {
   // so that lifetime upload totals survive WebTorrent restarting its session counters.
   private sessionUploadedBaselines = new Map<string, bigint>();
 
+  private prisma?: {
+    episode: { findUnique: (args: { where: { id: number }; select: { path: true } }) => Promise<{ path: string | null } | null> };
+    movie: { findUnique: (args: { where: { id: number }; select: { path: true } }) => Promise<{ path: string | null } | null> };
+  };
+
   private constructor(private repository: TorrentRepository) {
     super();
+  }
+
+  setPrisma(prisma: NonNullable<TorrentManager['prisma']>): void {
+    this.prisma = prisma;
   }
 
   /**
@@ -172,6 +182,14 @@ export class TorrentManager extends EventEmitter {
     }
 
     if (limitReached) {
+      const importGuard = await isImportIncomplete(this.prisma, dbTorrent);
+      if (importGuard.incomplete) {
+        console.log(
+          `TorrentManager: Skipping seed-limit action for ${dbTorrent.infoHash} — linked media not yet imported (${importGuard.reason}).`,
+        );
+        return;
+      }
+
       const { infoHash, name } = dbTorrent;
       const action = this.seedLimitAction;
       console.log(`Torrent ${infoHash} reached seed limit (${reason}). Action: ${action}`);

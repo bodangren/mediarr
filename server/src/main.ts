@@ -113,6 +113,7 @@ interface RuntimeTorrentManager {
   initialize?: () => Promise<void>;
   destroy?: () => Promise<void>;
   setDownloadPaths?: (paths: { incomplete?: string; complete?: string }) => void;
+  setPrisma?: (prisma: any) => void;
   addTorrent: (input: {
     magnetUrl?: string;
     path?: string;
@@ -532,6 +533,7 @@ async function startApi(): Promise<void> {
   const organizer = new Organizer();
 
   const seedingProtector = new SeedingProtector(torrentManager as any, torrentRepository, prisma as any);
+  torrentManager.setPrisma?.(prisma as any);
   seedingProtector.start();
 
   const openSubtitlesProvider = new OpenSubtitlesProvider(httpClient, settingsService);

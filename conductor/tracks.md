@@ -11,6 +11,8 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 - [x] **Track: Daily Cleanup — Commit Stale Changes, Review Yesterday's Code** *Phases: 3 | Link: [./archive/chore_daily_cleanup_20260403/](./archive/chore_daily_cleanup_20260403/)* — committed stale deletions, fixed SeedingProtector import guard error handling
 
+- [~] **Track: RssMediaMonitor + RssSyncService Corner-Case Testing** *Phases: 4 | Link: [./tracks/bug_rss_pipeline_corner_cases_20260403/](./tracks/bug_rss_pipeline_corner_cases_20260403/)* — TV/movie auto-grab, scoring, availability, RSS sync
+
 ---
 
 ## Execution Order and Dependencies

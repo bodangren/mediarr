@@ -53,7 +53,16 @@ export class SeedingProtector {
 
       if (!shouldStop) continue;
 
-      const importGuard = await isImportIncomplete(this.prisma, torrent);
+      let importGuard;
+      try {
+        importGuard = await isImportIncomplete(this.prisma, torrent);
+      } catch (error) {
+        console.error(
+          `SeedingProtector: Import guard check failed for ${torrent.infoHash}, preserving torrent:`,
+          error,
+        );
+        continue;
+      }
       if (importGuard.incomplete) {
         console.log(
           `SeedingProtector: Skipping removal of ${torrent.infoHash} — linked media not yet imported (${importGuard.reason}).`,

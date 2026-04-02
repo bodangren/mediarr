@@ -198,6 +198,17 @@ describe('SeedingProtector', () => {
 
       expect(manager.removeTorrent).toHaveBeenCalledTimes(2);
     });
+
+    it('preserves torrent when import guard check throws (DB error)', async () => {
+      repository.findAll.mockResolvedValue([
+        makeTorrent({ episodeId: 10, ratio: 2.0, stopAtRatio: 1.0 }),
+      ]);
+      prisma.episode.findUnique.mockRejectedValue(new Error('DB connection lost'));
+
+      await protector.checkLimits();
+
+      expect(manager.removeTorrent).not.toHaveBeenCalled();
+    });
   });
 
   describe('start / stop', () => {

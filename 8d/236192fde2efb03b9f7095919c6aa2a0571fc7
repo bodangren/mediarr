@@ -1,0 +1,1 @@
+32 corner-case tests for RSS pipeline (RssMediaMonitor + RssSyncService). No bugs found. 23 RssMediaMonitor tests (TV matching, movie/availability, scoring/errors) + 9 RssSyncService tests (sync, indexer failures, events, health repo). All 1235 tests pass, build green.

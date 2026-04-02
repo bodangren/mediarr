@@ -1,0 +1,10 @@
+{
+  "id": "bug_rss_pipeline_corner_cases_20260403",
+  "title": "RssMediaMonitor + RssSyncService Corner-Case Testing",
+  "type": "bug",
+  "status": "done",
+  "completed": "2026-04-03",
+  "created": "2026-04-03",
+  "directive_ref": "Comprehensive Corner-Case Testing for Core User Workflows",
+  "scope": "RssMediaMonitor (TV/movie auto-grab via RSS) and RssSyncService (RSS feed sync + release storage)"
+}

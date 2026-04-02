@@ -9,6 +9,8 @@ This file tracks all major tracks for the project. Each track has its own detail
 - [x] **Track: SeriesMonitoringService Corner-Case Testing** *Phases: 4 | Link: [./archive/bug_series_monitoring_corner_cases_20260402/](./archive/bug_series_monitoring_corner_cases_20260402/)* — 39 tests; no bugs found
 - [x] **Track: MediaSearchService Corner-Case Testing** *Phases: 4 | Link: [./archive/bug_mediasearch_corner_cases_20260401/](./archive/bug_mediasearch_corner_cases_20260401/)* — 19 tests; no bugs found
 
+- [~] **Track: Daily Cleanup — Commit Stale Changes, Review Yesterday's Code** *Phases: 3 | Link: [./tracks/chore_daily_cleanup_20260403/](./tracks/chore_daily_cleanup_20260403/)*
+
 ---
 
 ## Execution Order and Dependencies

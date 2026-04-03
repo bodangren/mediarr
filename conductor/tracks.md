@@ -11,8 +11,6 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 - [x] **Track: Daily Cleanup — Commit Stale Changes, Review Yesterday's Code** *Phases: 3 | Link: [./archive/chore_daily_cleanup_20260403/](./archive/chore_daily_cleanup_20260403/)* — committed stale deletions, fixed SeedingProtector import guard error handling
 
-- [~] **Track: TorrentManager Lifecycle & importGuard Corner-Case Testing** *Phases: 5 | Link: [./tracks/bug_torrent_lifecycle_corner_cases_20260403/](./tracks/bug_torrent_lifecycle_corner_cases_20260403/)*
-
 ---
 
 ## Execution Order and Dependencies
@@ -100,6 +98,7 @@ Parallel:
 ## Archived Tracks
 
 - [x] **Track: Fix TorrentManager Seed-Limit Import Guard** *Phases: 4 | Link: [./archive/bug_seed_limit_import_guard_20260402/](./archive/bug_seed_limit_import_guard_20260402/)* — extracted shared importGuard.ts; 10 new tests; TorrentManager + SeedingProtector both guarded
+- [x] **Track: TorrentManager Lifecycle & importGuard Corner-Case Testing** *Phases: 5 | Link: [./archive/bug_torrent_lifecycle_corner_cases_20260403/](./archive/bug_torrent_lifecycle_corner_cases_20260403/)* — 12 importGuard tests, 10 removeTorrent tests, 12 syncStats tests, 5 queued-torrent tests; no bugs found
 - [x] **Track: RssMediaMonitor + RssSyncService Corner-Case Testing** *Phases: 4 | Link: [./archive/bug_rss_pipeline_corner_cases_20260403/](./archive/bug_rss_pipeline_corner_cases_20260403/)* — 32 tests; no bugs found; RSS pipeline solid
 - [x] **Track: Daily Cleanup — Stage Deletions, Verify Green Suite** *Phases: 3 | Link: [./archive/chore_daily_cleanup_20260402/](./archive/chore_daily_cleanup_20260402/)* — excluded redundant legacy test; 195 passed, 0 failures
 - [x] **Track: Local LLM Gateway Routing** *Phases: 3 | Link: [./archive/feature_local_llm_gateway_20260401/](./archive/feature_local_llm_gateway_20260401/)* — ReleaseParser now prefers `AI_GATEWAY_BASE_URL` + model envs, falls back to OpenRouter, then regex-only parsing

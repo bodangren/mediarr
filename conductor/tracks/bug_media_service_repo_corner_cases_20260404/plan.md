@@ -19,11 +19,11 @@
 
 ## Phase 2 — MediaRepository.upsertMovie / upsertSeries Corner Cases
 
-- [ ] Write tests for upsertMovie: create new movie + media record
-- [ ] Write tests for upsertMovie: update existing movie (tmdbId match)
-- [ ] Write tests for upsertSeries: create new series + media record
-- [ ] Write tests for upsertSeries: update existing series (tvdbId match)
-- [ ] Write tests for optional fields (imdbId, posterUrl, overview, etc.)
+- [x] Write tests for upsertMovie: create new movie + media record
+- [x] Write tests for upsertMovie: update existing movie (tmdbId match)
+- [x] Write tests for upsertSeries: create new series + media record
+- [x] Write tests for upsertSeries: update existing series (tvdbId match)
+- [x] Write tests for optional fields (imdbId, posterUrl, overview, etc.)
 - [ ] Run full test suite — confirm green
 
 ## Phase 3 — MediaService Corner Cases

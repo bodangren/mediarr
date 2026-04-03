@@ -43,11 +43,11 @@
 
 ## Phase 4 — addTorrent queued path with torrent file
 
-- [ ] Write tests:
-  - [ ] Queued torrent with torrentFile (no magnet) generates placeholder infoHash
-  - [ ] Queued torrent with torrentFile preserves the file buffer in DB
-  - [ ] Promotion of queued torrent-file torrent: uses torrentFile when no magnetUrl
-  - [ ] Promotion failure marks torrent as error
+- [x] Write tests:
+  - [x] Queued torrent with torrentFile (no magnet) generates placeholder infoHash
+  - [x] Queued torrent with torrentFile preserves the file buffer in DB
+  - [x] Promotion of queued torrent-file torrent: uses torrentFile when no magnetUrl
+  - [x] Promotion failure marks torrent as error
 
 - Test-run checkpoint: `npx vitest run server/src/services/TorrentManager.test.ts`
 

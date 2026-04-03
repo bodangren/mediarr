@@ -979,4 +979,106 @@ describe('TorrentManager', () => {
       expect((manager as any).normalizeEtaSeconds(veryLarge)).toBe(2_147_483_647);
     });
   });
+
+  // =========================================================================
+  // Phase 7 — addTorrent queued path with torrent file (no magnet)
+  // =========================================================================
+  describe('addTorrent — queued with torrent file', () => {
+    it('7.1 queued torrent with torrentFile (no magnet) generates placeholder infoHash', async () => {
+      const { manager, repo } = makeManager();
+      (manager as any).maxActiveDownloads = 1;
+      repo.countByStatus.mockResolvedValue(1);
+      repo.findByInfoHash.mockResolvedValue(null);
+      repo.upsert.mockResolvedValue(makeDbTorrent({ status: 'queued' }));
+
+      const result = await manager.addTorrent({
+        torrentFile: Buffer.from('fake-torrent'),
+        name: 'File.Only.Torrent',
+      });
+
+      expect(repo.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: 'queued',
+          magnetUrl: null,
+          torrentFile: Buffer.from('fake-torrent'),
+        }),
+      );
+      expect(result.infoHash).toMatch(/^queued-\d+-[a-z0-9]+$/);
+      expect(result.name).toBe('File.Only.Torrent');
+    });
+
+    it('7.2 queued torrent with torrentFile preserves the file buffer in DB', async () => {
+      const { manager, repo } = makeManager();
+      (manager as any).maxActiveDownloads = 1;
+      repo.countByStatus.mockResolvedValue(1);
+      repo.findByInfoHash.mockResolvedValue(null);
+      repo.upsert.mockResolvedValue(makeDbTorrent({ status: 'queued' }));
+
+      const fileBuffer = Buffer.from('torrent-file-data');
+      await manager.addTorrent({ torrentFile: fileBuffer });
+
+      const upsertCall = repo.upsert.mock.calls[0][0];
+      expect(upsertCall.torrentFile).toBe(fileBuffer);
+    });
+
+    it('7.3 promotion of queued torrent-file torrent: uses torrentFile when no magnetUrl', async () => {
+      const { manager, repo } = makeManager();
+      const fileBuffer = Buffer.from('torrent-data');
+      const queued = makeDbTorrent({
+        infoHash: 'queued-placeholder',
+        status: 'queued',
+        magnetUrl: null,
+        torrentFile: fileBuffer,
+      });
+      repo.findOldestQueued.mockResolvedValue(queued);
+      repo.countByStatus.mockResolvedValue(0);
+
+      const promotedTorrent = makeClientTorrent({ infoHash: HASH_A });
+      wtMocks.clientInstance.add.mockReturnValue(promotedTorrent);
+
+      await (manager as any).promoteNextQueued();
+
+      expect(wtMocks.clientInstance.add).toHaveBeenCalledWith(fileBuffer, expect.any(Object));
+    });
+
+    it('7.4 promotion failure marks torrent as error', async () => {
+      const { manager, repo } = makeManager();
+      const queued = makeDbTorrent({
+        infoHash: 'queued-placeholder',
+        status: 'queued',
+        magnetUrl: null,
+        torrentFile: Buffer.from('bad-torrent'),
+      });
+      repo.findOldestQueued.mockResolvedValue(queued);
+      repo.countByStatus.mockResolvedValue(0);
+      wtMocks.clientInstance.add.mockImplementation(() => { throw new Error('invalid torrent'); });
+
+      await (manager as any).promoteNextQueued();
+
+      expect(repo.updateStatus).toHaveBeenCalledWith('queued-placeholder', 'error');
+    });
+
+    it('7.5 promotion replaces placeholder infoHash when real hash resolves', async () => {
+      const { manager, repo } = makeManager();
+      const placeholderHash = 'queued-placeholder-123';
+      const queued = makeDbTorrent({
+        infoHash: placeholderHash,
+        status: 'queued',
+        magnetUrl: null,
+        torrentFile: Buffer.from('torrent-data'),
+      });
+      repo.findOldestQueued.mockResolvedValue(queued);
+      repo.countByStatus.mockResolvedValue(0);
+
+      const promotedTorrent = makeClientTorrent({ infoHash: HASH_A });
+      wtMocks.clientInstance.add.mockReturnValue(promotedTorrent);
+
+      await (manager as any).promoteNextQueued();
+
+      expect(repo.delete).toHaveBeenCalledWith(placeholderHash);
+      expect(repo.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({ infoHash: HASH_A, status: 'downloading' }),
+      );
+    });
+  });
 });

@@ -855,4 +855,128 @@ describe('TorrentManager', () => {
       await expect(manager.removeTorrent(HASH_A)).rejects.toThrow('internal error');
     });
   });
+
+  // =========================================================================
+  // Phase 6 — syncStats corner cases
+  // =========================================================================
+  describe('syncStats', () => {
+    it('6.1 skips torrents with no infoHash', async () => {
+      const { manager, repo } = makeManager();
+      wtMocks.clientInstance.torrents = [{ infoHash: null }, { infoHash: undefined }, {}];
+
+      await manager.syncStats();
+
+      expect(repo.updateProgress).not.toHaveBeenCalled();
+    });
+
+    it('6.2 handles P2025 error by removing unmanaged torrent from client', async () => {
+      const { manager, repo } = makeManager();
+      const torrent = makeClientTorrent({ infoHash: HASH_A });
+      wtMocks.clientInstance.torrents = [torrent];
+      const p2025Error = new Error('Record not found') as Error & { code: string };
+      p2025Error.code = 'P2025';
+      repo.findByInfoHash.mockRejectedValue(p2025Error);
+
+      await manager.syncStats();
+
+      expect(wtMocks.clientInstance.remove).toHaveBeenCalledWith(torrent);
+    });
+
+    it('6.3 skips sync when statsSyncInFlight is true (backpressure)', async () => {
+      const { manager, repo } = makeManager();
+      (manager as any).statsSyncInFlight = true;
+
+      await manager.syncStats();
+
+      expect(repo.updateProgress).not.toHaveBeenCalled();
+    });
+
+    it('6.4 accumulates session uploaded baselines correctly', async () => {
+      const { manager, repo } = makeManager();
+      const torrent = makeClientTorrent({
+        infoHash: HASH_A,
+        downloaded: 1000,
+        uploaded: 500,
+      });
+      wtMocks.clientInstance.torrents = [torrent];
+
+      repo.findByInfoHash.mockResolvedValue(makeDbTorrent({ uploaded: BigInt(2000) }));
+      repo.updateProgress.mockResolvedValue(makeDbTorrent({ status: 'downloading' }));
+
+      await manager.syncStats();
+
+      const call = repo.updateProgress.mock.calls[0];
+      const lifetimeUploaded = call[5];
+      expect(lifetimeUploaded).toEqual(BigInt(2000) + BigInt(500));
+    });
+
+    it('6.5 computes ratio as 0 when downloaded is 0', async () => {
+      const { manager, repo } = makeManager();
+      const torrent = makeClientTorrent({
+        infoHash: HASH_A,
+        downloaded: 0,
+        uploaded: 500,
+      });
+      wtMocks.clientInstance.torrents = [torrent];
+      repo.findByInfoHash.mockResolvedValue(makeDbTorrent({ uploaded: BigInt(0) }));
+      repo.updateProgress.mockResolvedValue(makeDbTorrent({ status: 'downloading' }));
+
+      await manager.syncStats();
+
+      const call = repo.updateProgress.mock.calls[0];
+      expect(call[6]).toBe(0);
+    });
+
+    it('6.6 resets statsSyncInFlight to false after completion', async () => {
+      const { manager, repo } = makeManager();
+      wtMocks.clientInstance.torrents = [];
+      (manager as any).statsSyncInFlight = false;
+
+      await manager.syncStats();
+
+      expect((manager as any).statsSyncInFlight).toBe(false);
+    });
+
+    it('6.7 resets statsSyncInFlight to false even when an error occurs', async () => {
+      const { manager, repo } = makeManager();
+      const torrent = makeClientTorrent({ infoHash: HASH_A });
+      wtMocks.clientInstance.torrents = [torrent];
+      repo.findByInfoHash.mockRejectedValue(new Error('unexpected'));
+
+      await manager.syncStats();
+
+      expect((manager as any).statsSyncInFlight).toBe(false);
+    });
+  });
+
+  describe('normalizeEtaSeconds', () => {
+    it('returns null for non-number values', async () => {
+      const { manager } = makeManager();
+      expect((manager as any).normalizeEtaSeconds('abc')).toBeNull();
+      expect((manager as any).normalizeEtaSeconds(null)).toBeNull();
+      expect((manager as any).normalizeEtaSeconds(undefined)).toBeNull();
+    });
+
+    it('returns null for Infinity and NaN', async () => {
+      const { manager } = makeManager();
+      expect((manager as any).normalizeEtaSeconds(Infinity)).toBeNull();
+      expect((manager as any).normalizeEtaSeconds(NaN)).toBeNull();
+    });
+
+    it('returns null for negative values', async () => {
+      const { manager } = makeManager();
+      expect((manager as any).normalizeEtaSeconds(-1000)).toBeNull();
+    });
+
+    it('converts milliseconds to seconds', async () => {
+      const { manager } = makeManager();
+      expect((manager as any).normalizeEtaSeconds(5000)).toBe(5);
+    });
+
+    it('clamps to SQLITE_INT_MAX', async () => {
+      const { manager } = makeManager();
+      const veryLarge = 2_147_483_647_000;
+      expect((manager as any).normalizeEtaSeconds(veryLarge)).toBe(2_147_483_647);
+    });
+  });
 });

@@ -31,13 +31,13 @@
 
 ## Phase 3 — syncStats loop corner cases
 
-- [ ] Write tests for syncStats:
-  - [ ] Skips torrents with no infoHash in the client
-  - [ ] Handles P2025 error by removing unmanaged torrent from client
-  - [ ] Does not trigger another sync cycle when statsSyncInFlight is true (backpressure)
-  - [ ] Accumulates session uploaded baselines correctly (first encounter snapshots DB value, subsequent add session delta)
-  - [ ] Computes ratio correctly when downloaded is 0 (returns 0, not NaN/Infinity)
-  - [ ] Normalizes ETA (null for non-finite, clamped to SQLITE_INT_MAX)
+- [x] Write tests for syncStats:
+  - [x] Skips torrents with no infoHash in the client
+  - [x] Handles P2025 error by removing unmanaged torrent from client
+  - [x] Does not trigger another sync cycle when statsSyncInFlight is true (backpressure)
+  - [x] Accumulates session uploaded baselines correctly (first encounter snapshots DB value, subsequent add session delta)
+  - [x] Computes ratio correctly when downloaded is 0 (returns 0, not NaN/Infinity)
+  - [x] Normalizes ETA (null for non-finite, clamped to SQLITE_INT_MAX)
 
 - Test-run checkpoint: `npx vitest run server/src/services/TorrentManager.test.ts`
 

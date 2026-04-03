@@ -13,6 +13,8 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 - [x] **Track: Daily Cleanup — Commit Stale Deletions, Verify Green Suite** *Phases: 2 | Link: [./archive/chore_daily_cleanup_20260404/](./archive/chore_daily_cleanup_20260404/)* — committed stale Apr 3 deletions; 1274 tests green
 
+- [~] **Track: Organize Services Corner-Case Testing** *Phases: 5 | Link: [./tracks/bug_organize_services_corner_cases_20260404/](./tracks/bug_organize_services_corner_cases_20260404/)* — in progress
+
 ---
 
 ## Execution Order and Dependencies

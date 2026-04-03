@@ -114,6 +114,7 @@ describe('ImportManager', () => {
     prisma: ReturnType<typeof makePrisma>,
     torrent = TORRENT,
     hooks?: { onMovieImported?: (id: number) => Promise<void> | void; onEpisodeImported?: (id: number) => Promise<void> | void },
+    notificationDispatchService?: { notifyDownload: ReturnType<typeof vi.fn> },
   ) {
     new ImportManager(
       torrentManager as any,
@@ -121,6 +122,7 @@ describe('ImportManager', () => {
       prisma as any,
       activityEmitter as any,
       hooks,
+      notificationDispatchService as any,
     );
     // Fire the event
     await new Promise<void>((resolve) => {
@@ -620,5 +622,112 @@ describe('ImportManager', () => {
     );
 
     await expect(manager.retryImportByActivityEventId(10)).rejects.toThrow(/not an import failure/i);
+  });
+
+  // ───────── Slow-path: organizeMovieFile throws ─────────
+
+  it('slow-path movie: organizeMovieFile throws — emits IMPORT_FAILED and does not rethrow', async () => {
+    const movie = { id: 5, title: 'The Matrix', year: 1999, path: '/media/movies' };
+    const prisma = makePrisma({ series: null, episode: null, movie: null });
+
+    prisma.movie.findFirst.mockResolvedValue(movie);
+    organizer.organizeMovieFile.mockRejectedValue(new Error('permission denied'));
+
+    const torrent = {
+      infoHash: 'mv-throw-slow',
+      name: 'The.Matrix.1999.1080p.BluRay.mkv',
+      path: '/downloads/complete/The.Matrix.1999.1080p.BluRay.mkv',
+    };
+
+    await expect(fireTorrentCompleted(prisma, torrent)).resolves.not.toThrow();
+
+    expect(activityEmitter.emit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: 'IMPORT_FAILED',
+        success: false,
+        details: expect.objectContaining({ reason: 'permission denied' }),
+      }),
+    );
+  });
+
+  // ───────── Fast-path: organizeMovieFile throws for linked movie ─────────
+
+  it('fast-path movie: organizeMovieFile throws — emits IMPORT_FAILED', async () => {
+    const movie = { id: 5, title: 'Inception', year: 2010, path: '/media/movies' };
+    const prisma = makePrisma({
+      torrent: { episodeId: null, movieId: 5 },
+      movie,
+      series: null,
+      episode: null,
+    });
+
+    organizer.organizeMovieFile.mockRejectedValue(new Error('disk full'));
+
+    const torrent = {
+      infoHash: 'mv-throw-fast',
+      name: 'Inception.2010.mkv',
+      path: '/downloads/complete/Inception.2010.mkv',
+    };
+
+    await expect(fireTorrentCompleted(prisma, torrent)).resolves.not.toThrow();
+
+    expect(activityEmitter.emit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: 'IMPORT_FAILED',
+        success: false,
+        details: expect.objectContaining({ reason: 'disk full' }),
+      }),
+    );
+  });
+
+  // ───────── Notification dispatch: movie import ─────────
+
+  it('movie import: notificationDispatchService.notifyDownload called with movie title', async () => {
+    const movie = { id: 5, title: 'The Matrix', year: 1999, path: '/media/movies' };
+    const prisma = makePrisma({ series: null, episode: null, movie });
+    const notifyDownload = vi.fn().mockResolvedValue(undefined);
+
+    await fireTorrentCompleted(prisma, TORRENT, undefined, { notifyDownload });
+
+    expect(notifyDownload).toHaveBeenCalledWith({
+      title: 'The Matrix',
+      mediaType: 'movie',
+    });
+  });
+
+  // ───────── Notification dispatch: episode import ─────────
+
+  it('episode import: notificationDispatchService.notifyDownload called with series title', async () => {
+    const series = { id: 1, title: 'Breaking Bad', cleanTitle: 'breakingbad', path: '/media/tv' };
+    const episode = { id: 10, seasonNumber: 1, episodeNumber: 1, title: 'Pilot' };
+    const prisma = makePrisma({ series, episode });
+    const notifyDownload = vi.fn().mockResolvedValue(undefined);
+
+    const torrent = {
+      infoHash: 'ep-notify',
+      name: 'Breaking.Bad.S01E01.Pilot.mkv',
+      path: '/downloads/complete/Breaking.Bad.S01E01.Pilot.mkv',
+    };
+
+    await fireTorrentCompleted(prisma, torrent, undefined, { notifyDownload });
+
+    expect(notifyDownload).toHaveBeenCalledWith(
+      expect.objectContaining({
+        mediaType: 'episode',
+      }),
+    );
+    const call = notifyDownload.mock.calls[0][0];
+    expect(call.title).toContain('Breaking Bad');
+  });
+
+  // ───────── Notification dispatch: not called on failure ─────────
+
+  it('import failure: notificationDispatchService.notifyDownload NOT called', async () => {
+    const prisma = makePrisma({ series: null, episode: null, movie: null });
+    const notifyDownload = vi.fn().mockResolvedValue(undefined);
+
+    await fireTorrentCompleted(prisma, TORRENT, undefined, { notifyDownload });
+
+    expect(notifyDownload).not.toHaveBeenCalled();
   });
 });

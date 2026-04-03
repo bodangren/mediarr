@@ -748,4 +748,111 @@ describe('TorrentManager', () => {
       expect(removeSpy).not.toHaveBeenCalled();
     });
   });
+
+  // =========================================================================
+  // Phase 5 — removeTorrent corner cases
+  // =========================================================================
+  describe('removeTorrent', () => {
+    it('5.1 removes from DB even when torrent is not in WebTorrent client', async () => {
+      const { manager, repo } = makeManager();
+      repo.findByInfoHash.mockResolvedValue(makeDbTorrent({ status: 'seeding' }));
+      wtMocks.clientInstance.get.mockReturnValue(null);
+
+      await manager.removeTorrent(HASH_A);
+
+      expect(repo.delete).toHaveBeenCalledWith(HASH_A);
+    });
+
+    it('5.2 skips WebTorrent removal for queued torrents (DB-only)', async () => {
+      const { manager, repo } = makeManager();
+      repo.findByInfoHash.mockResolvedValue(makeDbTorrent({ status: 'queued' }));
+
+      await manager.removeTorrent(HASH_A);
+
+      expect(wtMocks.clientInstance.remove).not.toHaveBeenCalled();
+      expect(repo.delete).toHaveBeenCalledWith(HASH_A);
+    });
+
+    it('5.3 does NOT delete files when DB record is null', async () => {
+      const { manager, repo } = makeManager();
+      repo.findByInfoHash.mockResolvedValue(null);
+
+      await manager.removeTorrent(HASH_A);
+
+      expect(fsMocks.rm).not.toHaveBeenCalled();
+      expect(repo.delete).toHaveBeenCalledWith(HASH_A);
+    });
+
+    it('5.4 does NOT delete files when DB record has no path', async () => {
+      const { manager, repo } = makeManager();
+      repo.findByInfoHash.mockResolvedValue(makeDbTorrent({ path: null }));
+
+      await manager.removeTorrent(HASH_A);
+
+      expect(fsMocks.rm).not.toHaveBeenCalled();
+    });
+
+    it('5.5 handles file deletion failure gracefully (logs error, continues with DB delete)', async () => {
+      const { manager, repo } = makeManager();
+      repo.findByInfoHash.mockResolvedValue(makeDbTorrent({ status: 'seeding' }));
+      fsMocks.rm.mockRejectedValue(new Error('ENOENT: no such file'));
+
+      await manager.removeTorrent(HASH_A);
+
+      expect(repo.delete).toHaveBeenCalledWith(HASH_A);
+    });
+
+    it('5.6 promotes queued torrent when removing a downloading torrent', async () => {
+      const { manager, repo } = makeManager();
+      const downloadingTorrent = makeDbTorrent({ status: 'downloading' });
+      repo.findByInfoHash.mockResolvedValue(downloadingTorrent);
+      repo.findOldestQueued.mockResolvedValue(makeDbTorrent({ infoHash: HASH_B, status: 'queued', magnetUrl: `magnet:?xt=urn:btih:${HASH_B}` }));
+      repo.countByStatus.mockResolvedValue(0);
+      wtMocks.clientInstance.get.mockReturnValue(null);
+
+      const promotedTorrent = makeClientTorrent({ infoHash: HASH_B });
+      wtMocks.clientInstance.add.mockReturnValue(promotedTorrent);
+
+      await manager.removeTorrent(HASH_A);
+
+      expect(repo.delete).toHaveBeenCalledWith(HASH_A);
+      expect(repo.updateStatus).toHaveBeenCalledWith(HASH_B, 'downloading');
+    });
+
+    it('5.7 does NOT promote queued torrent when removing a non-downloading torrent', async () => {
+      const { manager, repo } = makeManager();
+      repo.findByInfoHash.mockResolvedValue(makeDbTorrent({ status: 'seeding' }));
+
+      await manager.removeTorrent(HASH_A);
+
+      expect(repo.findOldestQueued).not.toHaveBeenCalled();
+    });
+
+    it('5.8 clears session baseline on removal', async () => {
+      const { manager, repo } = makeManager();
+      repo.findByInfoHash.mockResolvedValue(makeDbTorrent({ status: 'seeding' }));
+      (manager as any).sessionUploadedBaselines.set(HASH_A, BigInt(500));
+
+      await manager.removeTorrent(HASH_A);
+
+      expect((manager as any).sessionUploadedBaselines.has(HASH_A)).toBe(false);
+    });
+
+    it('5.9 does not throw when WebTorrent removal fails with "not found"', async () => {
+      const { manager, repo } = makeManager();
+      repo.findByInfoHash.mockResolvedValue(makeDbTorrent({ status: 'seeding' }));
+      wtMocks.clientInstance.get.mockImplementation(() => { throw new Error('not found'); });
+
+      await expect(manager.removeTorrent(HASH_A)).resolves.not.toThrow();
+      expect(repo.delete).toHaveBeenCalledWith(HASH_A);
+    });
+
+    it('5.10 throws when WebTorrent removal fails with a non-"not found" error', async () => {
+      const { manager, repo } = makeManager();
+      repo.findByInfoHash.mockResolvedValue(makeDbTorrent({ status: 'seeding' }));
+      wtMocks.clientInstance.get.mockImplementation(() => { throw new Error('internal error'); });
+
+      await expect(manager.removeTorrent(HASH_A)).rejects.toThrow('internal error');
+    });
+  });
 });

@@ -18,14 +18,14 @@
 
 ## Phase 2 — removeTorrent corner cases
 
-- [ ] Write tests in a new `TorrentManager.removeTorrent.test.ts` or append to existing file:
-  - [ ] Removes from DB even when torrent is not in WebTorrent client (already handled via "not found" catch)
-  - [ ] Skips WebTorrent removal for queued torrents (DB-only)
-  - [ ] Does NOT delete files when DB record is null (no path/name)
-  - [ ] Handles file deletion failure gracefully (logs error, continues with DB delete)
-  - [ ] Promotes queued torrent when removing a downloading torrent
-  - [ ] Does NOT promote queued torrent when removing a non-downloading torrent
-  - [ ] Removes from DB and clears session baseline
+- [x] Write tests in a new `TorrentManager.removeTorrent.test.ts` or append to existing file:
+  - [x] Removes from DB even when torrent is not in WebTorrent client (already handled via "not found" catch)
+  - [x] Skips WebTorrent removal for queued torrents (DB-only)
+  - [x] Does NOT delete files when DB record is null (no path/name)
+  - [x] Handles file deletion failure gracefully (logs error, continues with DB delete)
+  - [x] Promotes queued torrent when removing a downloading torrent
+  - [x] Does NOT promote queued torrent when removing a non-downloading torrent
+  - [x] Removes from DB and clears session baseline
 
 - Test-run checkpoint: `npx vitest run server/src/services/TorrentManager.test.ts`
 

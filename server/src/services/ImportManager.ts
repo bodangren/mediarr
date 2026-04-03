@@ -181,6 +181,8 @@ export class ImportManager {
     for (const filePath of files) {
       const filename = path.basename(filePath);
 
+      try {
+
       // ── Fast path: torrent was grabbed for a known episode ───────────────
       const linkedEpisodeId = torrentRow?.episodeId ?? null;
       if (linkedEpisodeId) {
@@ -513,6 +515,22 @@ export class ImportManager {
         },
         occurredAt: new Date(),
       });
+
+      } catch (err) {
+        await this.activityEventEmitter?.emit({
+          eventType: 'IMPORT_FAILED',
+          sourceModule: 'import-manager',
+          entityRef: `torrent:${torrent.infoHash}`,
+          summary: `Import failed for ${filename}`,
+          success: false,
+          details: {
+            sourcePath: filePath,
+            torrentName: torrent.name,
+            reason: err instanceof Error ? err.message : 'unknown error',
+          },
+          occurredAt: new Date(),
+        });
+      }
     }
   }
 

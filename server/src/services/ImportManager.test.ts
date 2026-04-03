@@ -730,4 +730,142 @@ describe('ImportManager', () => {
 
     expect(notifyDownload).not.toHaveBeenCalled();
   });
+
+  // ───────── Multi-file torrent: mixed match results ─────────
+
+  it('multi-file directory: matching files import, non-matching emit IMPORT_FAILED independently', async () => {
+    // Directory with 3 video files: one doesn't match anything, two match as movies.
+    vi.mocked(fs.stat).mockImplementation(async (p: any) => {
+      const pathStr = typeof p === 'string' ? p : '';
+      if (pathStr.endsWith('.mkv')) return { isDirectory: () => false } as any;
+      // root directory path
+      return { isDirectory: () => true } as any;
+    });
+    vi.mocked(fs.readdir).mockResolvedValueOnce([
+      'TotallyRandomVideo.mkv',
+      'Matrix.1999.1080p.mkv',
+      'Matrix.2003.DVDRip.mkv',
+    ] as any);
+
+    const movie = { id: 5, title: 'Matrix', year: 1999, path: '/media/movies' };
+    const prisma = makePrisma({
+      series: null, episode: null, movie: null,
+    });
+    prisma.series.findFirst.mockResolvedValue(null);
+    prisma.episode.findFirst.mockResolvedValue(null);
+    // Return movie only when the title clause includes "matrix"
+    prisma.movie.findFirst.mockImplementation(async ({ where }: any) => {
+      const clauses = Array.isArray(where?.OR) ? where.OR : [];
+      const hasMatrix = clauses.some((c: any) =>
+        c?.title?.contains?.toLowerCase?.() === 'matrix' ||
+        c?.cleanTitle?.contains?.toLowerCase?.() === 'matrix',
+      );
+      return hasMatrix ? movie : null;
+    });
+
+    const dirTorrent = {
+      infoHash: 'multi-dir-1',
+      name: 'Mixed.Batch',
+      path: '/downloads/complete/Mixed.Batch',
+    };
+
+    await fireTorrentCompleted(prisma, dirTorrent);
+
+    // organizeMovieFile called for the 2 files that matched (Show S01E01 has no movie match either)
+    expect(organizer.organizeMovieFile).toHaveBeenCalledTimes(2);
+
+    const importEvents = activityEmitter.emit.mock.calls
+      .filter((c: any[]) => c[0]?.eventType === 'MOVIE_IMPORTED');
+    const failEvents = activityEmitter.emit.mock.calls
+      .filter((c: any[]) => c[0]?.eventType === 'IMPORT_FAILED');
+
+    expect(importEvents).toHaveLength(2);
+    expect(failEvents).toHaveLength(1);
+    expect(failEvents[0][0].details.reason).toContain('no match found');
+  });
+
+  // ───────── Multi-file torrent: organizer throws on one file, others still import ─────────
+
+  it('multi-file directory: organizer failure on one file does not abort remaining files', async () => {
+    vi.mocked(fs.stat).mockImplementation(async (p: any) => {
+      const pathStr = typeof p === 'string' ? p : '';
+      if (pathStr.endsWith('.mkv')) return { isDirectory: () => false } as any;
+      return { isDirectory: () => true } as any;
+    });
+    vi.mocked(fs.readdir).mockResolvedValueOnce([
+      'Bad.Movie.2020.mkv',
+      'Good.Movie.2021.mkv',
+    ] as any);
+
+    const badMovie = { id: 1, title: 'Bad Movie', year: 2020, path: '/media/movies' };
+    const goodMovie = { id: 2, title: 'Good Movie', year: 2021, path: '/media/movies' };
+    const prisma = makePrisma({ series: null, episode: null, movie: null });
+
+    prisma.series.findFirst.mockResolvedValue(null);
+    prisma.movie.findFirst
+      .mockResolvedValueOnce(badMovie)
+      .mockResolvedValueOnce(goodMovie);
+
+    // First organizeMovieFile call throws, second succeeds
+    organizer.organizeMovieFile
+      .mockRejectedValueOnce(new Error('permission denied'))
+      .mockResolvedValueOnce('/media/movies/Good Movie (2021)/Good.Movie.2021.mkv');
+
+    const dirTorrent = {
+      infoHash: 'multi-throw',
+      name: 'Mixed.Movies',
+      path: '/downloads/complete/Mixed.Movies',
+    };
+
+    await fireTorrentCompleted(prisma, dirTorrent);
+
+    // Both files processed: one failed, one imported
+    expect(organizer.organizeMovieFile).toHaveBeenCalledTimes(2);
+
+    const failEvents = activityEmitter.emit.mock.calls
+      .filter((c: any[]) => c[0]?.eventType === 'IMPORT_FAILED');
+    const importEvents = activityEmitter.emit.mock.calls
+      .filter((c: any[]) => c[0]?.eventType === 'MOVIE_IMPORTED');
+
+    expect(failEvents).toHaveLength(1);
+    expect(failEvents[0][0].details.reason).toBe('permission denied');
+    expect(importEvents).toHaveLength(1);
+  });
+
+  // ───────── Multi-file torrent: only non-video files ─────────
+
+  it('multi-file directory: only non-video files — emits IMPORT_FAILED', async () => {
+    vi.mocked(fs.stat).mockImplementation(async (p: any) => {
+      const pathStr = typeof p === 'string' ? p : '';
+      if (/\.(nfo|srt|txt)$/i.test(pathStr)) return { isDirectory: () => false } as any;
+      return { isDirectory: () => true } as any;
+    });
+    vi.mocked(fs.readdir).mockResolvedValueOnce([
+      'movie.nfo',
+      'movie.srt',
+      'readme.txt',
+    ] as any);
+
+    const prisma = makePrisma({ series: null, episode: null, movie: null });
+
+    const dirTorrent = {
+      infoHash: 'non-video',
+      name: 'Some.Release',
+      path: '/downloads/complete/Some.Release',
+    };
+
+    await fireTorrentCompleted(prisma, dirTorrent);
+
+    expect(organizer.organizeFile).not.toHaveBeenCalled();
+    expect(organizer.organizeMovieFile).not.toHaveBeenCalled();
+    expect(activityEmitter.emit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: 'IMPORT_FAILED',
+        success: false,
+        details: expect.objectContaining({
+          reason: expect.stringMatching(/no importable/i),
+        }),
+      }),
+    );
+  });
 });

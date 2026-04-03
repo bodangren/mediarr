@@ -136,4 +136,73 @@ describe('ImportManager — retry and helper edge cases', () => {
     expect(seriesImported).toBeDefined();
     expect(seriesImported![0].success).toBe(true);
   });
+
+  it('retryImportByInfoHash throws when resolved path does not exist on disk', async () => {
+    const mod = await import('node:fs/promises');
+    const mockedFs = (mod as any).default;
+    mockedFs.stat.mockRejectedValue(new Error('ENOENT'));
+
+    prisma.torrent.findUnique = vi.fn().mockResolvedValue({
+      infoHash: 'missing-path',
+      name: 'Movie.2020.mkv',
+      path: '/downloads/complete',
+    });
+
+    const manager = new ImportManager({} as any, {} as any, prisma as any);
+
+    await expect(manager.retryImportByInfoHash('missing-path')).rejects.toThrow(
+      /no importable files found/i,
+    );
+  });
+
+  it('resolveRetryImportPath prefers rootPath/name over bare rootPath', async () => {
+    const mod = await import('node:fs/promises');
+    const mockedFs = (mod as any).default;
+    // Both joined path and base path exist on disk
+    mockedFs.stat
+      .mockResolvedValueOnce({ isDirectory: () => false } as any)  // rootPath/name exists
+      .mockResolvedValueOnce({ isDirectory: () => false } as any); // rootPath also exists
+
+    const movie = { id: 5, title: 'The Matrix', year: 1999, path: '/media/movies' };
+    prisma.torrent.findUnique = vi.fn().mockResolvedValue({
+      infoHash: 'pref-test',
+      name: 'The.Matrix.1999.mkv',
+      path: '/downloads/complete',
+    });
+    prisma.movie.findFirst = vi.fn().mockResolvedValue(movie);
+    prisma.series.findFirst = vi.fn().mockResolvedValue(null);
+    prisma.episode.findFirst = vi.fn().mockResolvedValue(null);
+    prisma.movie.findUnique = vi.fn().mockResolvedValue(movie);
+
+    const organizer = {
+      organizeMovieFile: vi.fn().mockResolvedValue('/media/movies/The Matrix (1999)/The.Matrix.1999.mkv'),
+    };
+    const manager = new ImportManager({} as any, organizer as any, prisma as any);
+
+    await manager.retryImportByInfoHash('pref-test');
+
+    // Should use the joined path (rootPath/name), not bare rootPath
+    expect(organizer.organizeMovieFile).toHaveBeenCalledWith(
+      '/downloads/complete/The.Matrix.1999.mkv',
+      expect.anything(),
+    );
+  });
+
+  it('retryImportByActivityEventId throws when sourcePath is empty string', async () => {
+    prisma.activityEvent.findUnique = vi.fn().mockResolvedValue({
+      id: 42,
+      eventType: 'IMPORT_FAILED',
+      entityRef: 'torrent:abc123',
+      details: {
+        sourcePath: '',
+        torrentName: 'Movie.2020.mkv',
+      },
+    });
+
+    const manager = new ImportManager({} as any, {} as any, prisma as any);
+
+    await expect(manager.retryImportByActivityEventId(42)).rejects.toThrow(
+      /no retryable source path/i,
+    );
+  });
 });

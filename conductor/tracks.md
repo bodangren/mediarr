@@ -15,7 +15,7 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 - [x] **Track: Daily Cleanup — Commit Stale Deletions, Verify Green Suite** *Phases: 2 | Link: [./archive/chore_daily_cleanup_20260404/](./archive/chore_daily_cleanup_20260404/)* — committed stale Apr 3 deletions; 1274 tests green
 
-- [~] **Track: Daily Cleanup — Finish Stale Archives, Verify Green Suite** *Phases: 2 | Link: [./tracks/chore_daily_cleanup_20260404b/](./tracks/chore_daily_cleanup_20260404b/)*
+- [x] **Track: Daily Cleanup — Finish Stale Archives, Verify Green Suite** *Phases: 2 | Link: [./archive/chore_daily_cleanup_20260404b/](./archive/chore_daily_cleanup_20260404b/)* — moved stale track to archive; 1341 tests green; build clean
 
 ---
 

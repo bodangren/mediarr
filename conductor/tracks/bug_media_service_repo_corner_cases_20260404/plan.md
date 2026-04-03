@@ -28,14 +28,19 @@
 
 ## Phase 3 — MediaService Corner Cases
 
-- [ ] Write tests for deleteMedia MOVIE: successful deletion + file deletion
-- [ ] Write tests for deleteMedia MOVIE: no mediaId (skip media delete)
-- [ ] Write tests for deleteMedia MOVIE: deleteFiles=false (no fs.rm)
-- [ ] Write tests for deleteMedia TV: manual cascade (episodes → seasons → series)
-- [ ] Write tests for deleteMedia TV: file deletion on success
-- [ ] Write tests for getMovieCandidatesForSearch: with metadataProvider
-- [ ] Write tests for getMovieCandidatesForSearch: without metadataProvider (fallback)
-- [ ] Write tests for getAllMedia: with and without media.findMany
+- [x] Write tests for deleteMedia MOVIE: successful deletion + file deletion
+- [x] Write tests for deleteMedia MOVIE: no mediaId (skip media delete)
+- [x] Write tests for deleteMedia MOVIE: deleteFiles=false (no fs.rm)
+- [x] Write tests for deleteMedia TV: manual cascade (episodes → seasons → series)
+- [x] Write tests for deleteMedia TV: file deletion on success
+- [x] Write tests for deleteMedia TV: no mediaId (skip media delete)
+- [x] Write tests for deleteMedia: media.delete failure gracefully caught
+- [x] Write tests for getMovieCandidatesForSearch: with metadataProvider (released + streaming)
+- [x] Write tests for getMovieCandidatesForSearch: without metadataProvider (fallback)
+- [x] Write tests for getMovieCandidatesForSearch: announced filtered out
+- [x] Write tests for getAllMedia: with and without media.findMany
+- [x] Write tests for addMovie: success event + failure event + no emitter
+- [x] Write tests for setMonitored: MOVIE vs TV dispatch
 - [ ] Run full test suite — confirm green
 
 ## Phase 4 — TorrentRepository Corner Cases

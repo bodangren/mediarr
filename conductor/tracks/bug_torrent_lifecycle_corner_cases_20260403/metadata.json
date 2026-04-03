@@ -1,0 +1,7 @@
+{
+  "id": "bug_torrent_lifecycle_corner_cases_20260403",
+  "title": "TorrentManager Lifecycle & importGuard Corner-Case Testing",
+  "type": "bug",
+  "status": "in_progress",
+  "created": "2026-04-03"
+}

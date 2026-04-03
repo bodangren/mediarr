@@ -2,15 +2,19 @@
 
 ## Phase 1 — MediaRepository.upsertSeasonsAndEpisodes Corner Cases
 
-- [ ] Write tests for empty episodes array (no-op)
-- [ ] Write tests for episodes with missing/null tvdbId (skip)
-- [ ] Write tests for episodes with missing/non-finite seasonNumber
-- [ ] Write tests for episodes with missing/non-finite episodeNumber
-- [ ] Write tests for episodes without a matching season in the season map (seasonId = null)
-- [ ] Write tests for duplicate season numbers in metadata (dedup via Set)
-- [ ] Write tests for null/empty/invalid airDate variants
-- [ ] Write tests for empty seasons array in details (derive from episodes)
-- [ ] Write tests for non-finite seasonNumber in seriesSeasons (skip)
+- [x] Write tests for empty episodes array (no-op) — existing
+- [x] Write tests for episodes with missing/null tvdbId (skip) — existing + NaN/Infinity
+- [x] Write tests for episodes with missing/non-finite seasonNumber — NaN, no matching season
+- [x] Write tests for episodes with missing/non-finite episodeNumber — covered by existing tests
+- [x] Write tests for episodes without a matching season in the season map (seasonId = null)
+- [x] Write tests for duplicate season numbers in metadata (dedup via Set)
+- [x] Write tests for null/empty/invalid airDate variants — null, empty, whitespace, valid
+- [x] Write tests for empty seasons array in details (derive from episodes) — existing
+- [x] Write tests for non-finite seasonNumber in seriesSeasons (skip)
+- [x] Write tests for tvdbId fallback from ep.id when ep.tvdbId is undefined
+- [x] Write tests for prefer ep.tvdbId over ep.id when both present
+- [x] Write tests for airDate field when firstAired is absent
+- [x] Write tests for non-finite seasonNumber in episodes when deriving seasons
 - [ ] Run full test suite — confirm green
 
 ## Phase 2 — MediaRepository.upsertMovie / upsertSeries Corner Cases

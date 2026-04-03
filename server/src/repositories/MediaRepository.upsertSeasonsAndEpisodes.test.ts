@@ -208,4 +208,261 @@ describe('MediaRepository.upsertSeasonsAndEpisodes', () => {
     );
     expect(prisma.episode.upsert).toHaveBeenCalledTimes(1);
   });
+
+  it('skips episodes with non-finite tvdbId (NaN, Infinity)', async () => {
+    prisma.season.upsert.mockResolvedValue({ id: 10, seasonNumber: 1 });
+    prisma.episode.upsert.mockResolvedValue({ id: 100 });
+
+    const details: SeriesDetails = {
+      series: {
+        tvdbId: 1234,
+        title: 'Test Series',
+        status: 'continuing',
+        seasons: [],
+        images: [],
+      },
+      episodes: [
+        { id: NaN, seasonNumber: 1, episodeNumber: 1, episodeName: 'NaN ID', firstAired: null, overview: null },
+        { id: Infinity, seasonNumber: 1, episodeNumber: 2, episodeName: 'Inf ID', firstAired: null, overview: null },
+        { id: -Infinity, seasonNumber: 1, episodeNumber: 3, episodeName: 'NegInf ID', firstAired: null, overview: null },
+        { id: 9001, seasonNumber: 1, episodeNumber: 4, episodeName: 'Valid', firstAired: null, overview: null },
+      ],
+    };
+
+    await repo.upsertSeasonsAndEpisodes(42, details);
+
+    expect(prisma.episode.upsert).toHaveBeenCalledTimes(1);
+    expect(prisma.episode.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { tvdbId: 9001 } }),
+    );
+  });
+
+  it('deduplicates season numbers from episodes via Set', async () => {
+    prisma.season.upsert.mockResolvedValue({ id: 10, seasonNumber: 1 });
+    prisma.episode.upsert.mockResolvedValue({ id: 100 });
+
+    const details: SeriesDetails = {
+      series: {
+        tvdbId: 1234,
+        title: 'Test Series',
+        status: 'continuing',
+        seasons: [],
+        images: [],
+      },
+      episodes: [
+        { id: 1001, seasonNumber: 1, episodeNumber: 1, episodeName: 'E1', firstAired: null, overview: null },
+        { id: 1002, seasonNumber: 1, episodeNumber: 2, episodeName: 'E2', firstAired: null, overview: null },
+        { id: 1003, seasonNumber: 1, episodeNumber: 3, episodeName: 'E3', firstAired: null, overview: null },
+      ],
+    };
+
+    await repo.upsertSeasonsAndEpisodes(42, details);
+
+    expect(prisma.season.upsert).toHaveBeenCalledTimes(1);
+  });
+
+  it('skips non-finite seasonNumber in seriesSeasons', async () => {
+    prisma.season.upsert.mockResolvedValue({ id: 10, seasonNumber: 2 });
+    prisma.episode.upsert.mockResolvedValue({ id: 100 });
+
+    const details: SeriesDetails = {
+      series: {
+        tvdbId: 1234,
+        title: 'Test Series',
+        status: 'continuing',
+        seasons: [
+          { seasonNumber: NaN },
+          { seasonNumber: Infinity },
+          { seasonNumber: 2 },
+        ],
+        images: [],
+      },
+      episodes: [
+        { id: 5001, seasonNumber: 2, episodeNumber: 1, episodeName: 'E1', firstAired: null, overview: null },
+      ],
+    };
+
+    await repo.upsertSeasonsAndEpisodes(42, details);
+
+    expect(prisma.season.upsert).toHaveBeenCalledTimes(1);
+    expect(prisma.season.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { seriesId_seasonNumber: { seriesId: 42, seasonNumber: 2 } },
+      }),
+    );
+  });
+
+  it('handles episodes with non-finite seasonNumber (seasonId = null)', async () => {
+    prisma.season.upsert.mockResolvedValue({ id: 10, seasonNumber: 1 });
+    prisma.episode.upsert.mockResolvedValue({ id: 100 });
+
+    const details: SeriesDetails = {
+      series: {
+        tvdbId: 1234,
+        title: 'Test Series',
+        status: 'continuing',
+        seasons: [{ seasonNumber: 1 }],
+        images: [],
+      },
+      episodes: [
+        { id: 6001, seasonNumber: NaN, episodeNumber: 1, episodeName: 'Bad Season', firstAired: null, overview: null },
+        { id: 6002, seasonNumber: 99, episodeNumber: 1, episodeName: 'No Matching Season', firstAired: null, overview: null },
+      ],
+    };
+
+    await repo.upsertSeasonsAndEpisodes(42, details);
+
+    expect(prisma.episode.upsert).toHaveBeenCalledTimes(2);
+    expect(prisma.episode.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { tvdbId: 6001 },
+        create: expect.objectContaining({ seasonId: null, seasonNumber: NaN }),
+      }),
+    );
+    expect(prisma.episode.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { tvdbId: 6002 },
+        create: expect.objectContaining({ seasonId: null, seasonNumber: 99 }),
+      }),
+    );
+  });
+
+  it('handles null, empty, and whitespace-only airDate', async () => {
+    prisma.season.upsert.mockResolvedValue({ id: 10, seasonNumber: 1 });
+    prisma.episode.upsert.mockResolvedValue({ id: 100 });
+
+    const details: SeriesDetails = {
+      series: {
+        tvdbId: 1234,
+        title: 'Test Series',
+        status: 'continuing',
+        seasons: [{ seasonNumber: 1 }],
+        images: [],
+      },
+      episodes: [
+        { id: 7001, seasonNumber: 1, episodeNumber: 1, episodeName: 'Null AirDate', firstAired: null, overview: null },
+        { id: 7002, seasonNumber: 1, episodeNumber: 2, episodeName: 'Empty AirDate', firstAired: '', overview: null },
+        { id: 7003, seasonNumber: 1, episodeNumber: 3, episodeName: 'Whitespace AirDate', firstAired: '   ', overview: null },
+        { id: 7004, seasonNumber: 1, episodeNumber: 4, episodeName: 'Valid AirDate', firstAired: '2020-01-01', overview: null },
+      ],
+    };
+
+    await repo.upsertSeasonsAndEpisodes(42, details);
+
+    expect(prisma.episode.upsert).toHaveBeenCalledTimes(4);
+    const calls = prisma.episode.upsert.mock.calls;
+
+    const nullAirDate = calls.find((c: any[]) => c[0].where.tvdbId === 7001);
+    expect(nullAirDate![0].create.airDateUtc).toBeNull();
+
+    const emptyAirDate = calls.find((c: any[]) => c[0].where.tvdbId === 7002);
+    expect(emptyAirDate![0].create.airDateUtc).toBeNull();
+
+    const wsAirDate = calls.find((c: any[]) => c[0].where.tvdbId === 7003);
+    expect(wsAirDate![0].create.airDateUtc).toBeNull();
+
+    const validAirDate = calls.find((c: any[]) => c[0].where.tvdbId === 7004);
+    expect(validAirDate![0].create.airDateUtc).toBeInstanceOf(Date);
+  });
+
+  it('uses tvdbId fallback from ep.id when ep.tvdbId is undefined', async () => {
+    prisma.season.upsert.mockResolvedValue({ id: 10, seasonNumber: 1 });
+    prisma.episode.upsert.mockResolvedValue({ id: 100 });
+
+    const details: SeriesDetails = {
+      series: {
+        tvdbId: 1234,
+        title: 'Test Series',
+        status: 'continuing',
+        seasons: [{ seasonNumber: 1 }],
+        images: [],
+      },
+      episodes: [
+        { seasonNumber: 1, episodeNumber: 1, episodeName: 'No tvdbId field', firstAired: null, overview: null, id: 8888 },
+      ],
+    };
+
+    await repo.upsertSeasonsAndEpisodes(42, details);
+
+    expect(prisma.episode.upsert).toHaveBeenCalledTimes(1);
+    expect(prisma.episode.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { tvdbId: 8888 } }),
+    );
+  });
+
+  it('prefers ep.tvdbId over ep.id when both are present', async () => {
+    prisma.season.upsert.mockResolvedValue({ id: 10, seasonNumber: 1 });
+    prisma.episode.upsert.mockResolvedValue({ id: 100 });
+
+    const details: SeriesDetails = {
+      series: {
+        tvdbId: 1234,
+        title: 'Test Series',
+        status: 'continuing',
+        seasons: [{ seasonNumber: 1 }],
+        images: [],
+      },
+      episodes: [
+        { tvdbId: 9999, id: 8888, seasonNumber: 1, episodeNumber: 1, episodeName: 'Both IDs', firstAired: null, overview: null },
+      ],
+    };
+
+    await repo.upsertSeasonsAndEpisodes(42, details);
+
+    expect(prisma.episode.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { tvdbId: 9999 } }),
+    );
+  });
+
+  it('uses airDate field when firstAired is absent', async () => {
+    prisma.season.upsert.mockResolvedValue({ id: 10, seasonNumber: 1 });
+    prisma.episode.upsert.mockResolvedValue({ id: 100 });
+
+    const details: SeriesDetails = {
+      series: {
+        tvdbId: 1234,
+        title: 'Test Series',
+        status: 'continuing',
+        seasons: [{ seasonNumber: 1 }],
+        images: [],
+      },
+      episodes: [
+        { id: 8001, seasonNumber: 1, episodeNumber: 1, episodeName: 'AirDate Field', airDate: '2021-06-15', overview: null },
+      ],
+    };
+
+    await repo.upsertSeasonsAndEpisodes(42, details);
+
+    expect(prisma.episode.upsert).toHaveBeenCalledTimes(1);
+    const airDateValue = prisma.episode.upsert.mock.calls[0][0].create.airDateUtc;
+    expect(airDateValue).toBeInstanceOf(Date);
+  });
+
+  it('skips non-finite seasonNumber in episodes when deriving seasons', async () => {
+    prisma.season.upsert.mockResolvedValue({ id: 10, seasonNumber: 2 });
+    prisma.episode.upsert.mockResolvedValue({ id: 100 });
+
+    const details: SeriesDetails = {
+      series: {
+        tvdbId: 1234,
+        title: 'Test Series',
+        status: 'continuing',
+        seasons: [],
+        images: [],
+      },
+      episodes: [
+        { id: 1001, seasonNumber: NaN, episodeNumber: 1, episodeName: 'Bad Season', firstAired: null, overview: null },
+        { id: 1002, seasonNumber: 2, episodeNumber: 1, episodeName: 'Good Season', firstAired: null, overview: null },
+      ],
+    };
+
+    await repo.upsertSeasonsAndEpisodes(42, details);
+
+    expect(prisma.season.upsert).toHaveBeenCalledTimes(1);
+    expect(prisma.season.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { seriesId_seasonNumber: { seriesId: 42, seasonNumber: 2 } },
+      }),
+    );
+  });
 });

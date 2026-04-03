@@ -100,6 +100,7 @@ export class SeriesOrganizeService {
               year: series.year,
               seasonNumber: episode.seasonNumber,
               episodeNumber: episode.episodeNumber,
+              absoluteEpisodeNumber: episode.absoluteEpisodeNumber ?? undefined,
               episodeTitle: episode.title ?? undefined,
               quality: variant.quality ?? undefined,
               qualityFull: variant.quality ?? undefined,

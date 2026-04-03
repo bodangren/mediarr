@@ -1,0 +1,1 @@
+Phase 2 of bug_torrent_lifecycle_corner_cases_20260403: 10 removeTorrent corner-case tests (DB-only queued, null record, file delete failure, promotion, baseline clearing, not-found handling). All 41 pass.

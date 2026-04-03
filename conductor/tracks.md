@@ -17,6 +17,8 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 - [x] **Track: Daily Cleanup — Finish Stale Archives, Verify Green Suite** *Phases: 2 | Link: [./archive/chore_daily_cleanup_20260404b/](./archive/chore_daily_cleanup_20260404b/)* — moved stale track to archive; 1341 tests green; build clean
 
+- [~] **Track: MediaService & MediaRepository Corner-Case Testing** *Phases: 4 | Link: [./tracks/bug_media_service_repo_corner_cases_20260404/](./tracks/bug_media_service_repo_corner_cases_20260404/)*
+
 ---
 
 ## Execution Order and Dependencies

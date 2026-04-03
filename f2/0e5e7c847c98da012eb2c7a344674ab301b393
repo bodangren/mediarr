@@ -1,0 +1,1 @@
+Phase 4: 16 tests for TorrentRepository — normalizeInfoHash, upsert, delete peer cleanup, syncPeers no-op, findOldestQueued null, findByStatuses, updateProgress, countByStatus

@@ -1,6 +1,17 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { SeriesOrganizeService, DEFAULT_SERIES_MANAGEMENT_SETTINGS } from './SeriesOrganizeService';
 import type { SeriesManagementSettings } from './SeriesOrganizeService';
+
+const fsMocks = vi.hoisted(() => ({
+  mkdir: vi.fn<[], Promise<void>>().mockResolvedValue(undefined),
+  rename: vi.fn<[], Promise<void>>().mockResolvedValue(undefined),
+}));
+
+vi.mock('node:fs/promises', () => ({
+  default: fsMocks,
+}));
+
+import fs from 'node:fs/promises';
 
 function makePrisma(overrides: Record<string, any> = {}) {
   return {
@@ -30,6 +41,7 @@ function buildSeries(data: Record<string, any> = {}) {
 
 function buildEpisode(overrides: Record<string, any> = {}) {
   return {
+    id: 1,
     seasonNumber: 1,
     episodeNumber: 1,
     title: 'Pilot',
@@ -329,6 +341,176 @@ describe('SeriesOrganizeService', () => {
       expect(previews[0].newPath).toMatch(
         /\/Test Show\/Season 01\/Test Show - S01E03 - Episode Three \[HDTV-720p\]\.mkv$/
       );
+    });
+  });
+
+  describe('previewRename — corner cases', () => {
+    it('returns empty array for empty seriesIds', async () => {
+      const prisma = makePrisma();
+      const svc = new SeriesOrganizeService(prisma as any, makeSettings());
+      const previews = await svc.previewRename([]);
+      expect(previews).toEqual([]);
+    });
+
+    it('skips series with no path', async () => {
+      const prisma = makePrisma({
+        series: buildSeries({ path: null, seasons: [{ episodes: [buildEpisode({ fileVariants: [buildVariant()] })] }] }),
+      });
+      const svc = new SeriesOrganizeService(prisma as any, makeSettings());
+      const previews = await svc.previewRename([1]);
+      expect(previews).toEqual([]);
+    });
+
+    it('skips series with no seasons', async () => {
+      const prisma = makePrisma({
+        series: buildSeries({ seasons: [] }),
+      });
+      const svc = new SeriesOrganizeService(prisma as any, makeSettings());
+      const previews = await svc.previewRename([1]);
+      expect(previews).toEqual([]);
+    });
+
+    it('skips episodes with no fileVariants', async () => {
+      const prisma = makePrisma({
+        series: buildSeries({ seasons: [{ episodes: [buildEpisode({ fileVariants: [] })] }] }),
+      });
+      const svc = new SeriesOrganizeService(prisma as any, makeSettings());
+      const previews = await svc.previewRename([1]);
+      expect(previews).toEqual([]);
+    });
+
+    it('isNewPath is false when path already matches', async () => {
+      const currentPath = '/media/tv/Test Show/Season 01/Test Show - S01E01 - Pilot [HDTV-720p].mkv';
+      const prisma = makePrisma({
+        series: oneEpisode({}, { path: currentPath }),
+      });
+      const svc = new SeriesOrganizeService(prisma as any, DEFAULT_SERIES_MANAGEMENT_SETTINGS);
+      const previews = await svc.previewRename([1]);
+
+      expect(previews).toHaveLength(1);
+      expect(previews[0].isNewPath).toBe(false);
+    });
+
+    it('isNewPath is true when path differs', async () => {
+      const prisma = makePrisma({
+        series: oneEpisode({}, { path: '/completely/different/path.mkv' }),
+      });
+      const svc = new SeriesOrganizeService(prisma as any, DEFAULT_SERIES_MANAGEMENT_SETTINGS);
+      const previews = await svc.previewRename([1]);
+
+      expect(previews).toHaveLength(1);
+      expect(previews[0].isNewPath).toBe(true);
+    });
+
+    it('skips series not found (null from prisma)', async () => {
+      const prisma = makePrisma({ series: null });
+      const svc = new SeriesOrganizeService(prisma as any, makeSettings());
+      const previews = await svc.previewRename([999]);
+      expect(previews).toEqual([]);
+    });
+  });
+
+  describe('applyRename — success path', () => {
+    beforeEach(() => {
+      fsMocks.mkdir.mockResolvedValue(undefined);
+      fsMocks.rename.mockResolvedValue(undefined);
+    });
+    afterEach(() => {
+      fsMocks.mkdir.mockClear();
+      fsMocks.rename.mockClear();
+    });
+
+    it('renames file and updates DB when path differs', async () => {
+      const prisma = makePrisma({
+        series: oneEpisode({}, { path: '/old/show.mkv' }),
+      });
+      const svc = new SeriesOrganizeService(prisma as any, makeSettings());
+      const result = await svc.applyRename([1]);
+
+      expect(result.renamed).toBe(1);
+      expect(result.failed).toBe(0);
+      expect(result.errors).toEqual([]);
+      expect(fsMocks.mkdir).toHaveBeenCalled();
+      expect(fsMocks.rename).toHaveBeenCalledWith('/old/show.mkv', expect.any(String));
+      expect(prisma.mediaFileVariant.updateMany).toHaveBeenCalledWith({
+        where: { episodeId: 1, path: '/old/show.mkv' },
+        data: { path: expect.any(String) },
+      });
+    });
+
+    it('skips files that already have correct path (isNewPath false)', async () => {
+      const currentPath = '/media/tv/Test Show/Season 01/Test Show - S01E01 - Pilot [HDTV-720p].mkv';
+      const prisma = makePrisma({
+        series: oneEpisode({}, { path: currentPath }),
+      });
+      const svc = new SeriesOrganizeService(prisma as any, DEFAULT_SERIES_MANAGEMENT_SETTINGS);
+      const result = await svc.applyRename([1]);
+
+      expect(result.renamed).toBe(0);
+      expect(fsMocks.rename).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('applyRename — error paths', () => {
+    beforeEach(() => {
+      fsMocks.mkdir.mockResolvedValue(undefined);
+      fsMocks.rename.mockResolvedValue(undefined);
+    });
+    afterEach(() => {
+      fsMocks.mkdir.mockClear();
+      fsMocks.rename.mockClear();
+    });
+
+    it('records error when fs.rename fails and continues', async () => {
+      fsMocks.rename.mockRejectedValue(new Error('EACCES: permission denied'));
+      const prisma = makePrisma({
+        series: oneEpisode({}, { path: '/old/show.mkv' }),
+      });
+      const svc = new SeriesOrganizeService(prisma as any, makeSettings());
+      const result = await svc.applyRename([1]);
+
+      expect(result.renamed).toBe(0);
+      expect(result.failed).toBe(1);
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0].error).toContain('permission denied');
+      expect(prisma.mediaFileVariant.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('records error when DB update fails after rename succeeds (partial state)', async () => {
+      const prisma = makePrisma({
+        series: oneEpisode({}, { path: '/old/show.mkv' }),
+      });
+      prisma.mediaFileVariant.updateMany.mockRejectedValue(new Error('DB connection lost'));
+      const svc = new SeriesOrganizeService(prisma as any, makeSettings());
+      const result = await svc.applyRename([1]);
+
+      expect(result.failed).toBe(1);
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0].error).toContain('DB connection lost');
+      expect(fsMocks.rename).toHaveBeenCalled();
+    });
+
+    it('handles mixed success and failure across multiple episodes', async () => {
+      const prisma = makePrisma({
+        series: buildSeries({
+          seasons: [{
+            episodes: [
+              buildEpisode({ id: 10, fileVariants: [buildVariant({ path: '/old/ep1.mkv' })] }),
+              buildEpisode({ id: 20, fileVariants: [buildVariant({ path: '/old/ep2.mkv' })] }),
+            ],
+          }],
+        }),
+      });
+      fsMocks.rename
+        .mockResolvedValueOnce(undefined)
+        .mockRejectedValueOnce(new Error('ENOENT'));
+
+      const svc = new SeriesOrganizeService(prisma as any, makeSettings());
+      const result = await svc.applyRename([1]);
+
+      expect(result.renamed).toBe(1);
+      expect(result.failed).toBe(1);
+      expect(result.errors).toHaveLength(1);
     });
   });
 });

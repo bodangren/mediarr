@@ -45,10 +45,15 @@
 
 ## Phase 4 — TorrentRepository Corner Cases
 
-- [ ] Write tests for normalizeInfoHash (trim + lowercase)
-- [ ] Write tests for upsert: create new torrent
-- [ ] Write tests for upsert: update existing torrent (infoHash match)
-- [ ] Write tests for delete: explicit peer cleanup before torrent delete
-- [ ] Write tests for syncPeers: no-op when torrent not found
-- [ ] Write tests for findOldestQueued: returns null when no queued torrents
+- [x] Write tests for normalizeInfoHash (trim + lowercase)
+- [x] Write tests for upsert: create new torrent
+- [x] Write tests for upsert: update existing torrent (infoHash match)
+- [x] Write tests for delete: explicit peer cleanup before torrent delete
+- [x] Write tests for syncPeers: no-op when torrent not found
+- [x] Write tests for findOldestQueued: returns null when no queued torrents
+- [x] Write tests for findByInfoHash: found and not found
+- [x] Write tests for syncPeers: delete old + create new, empty array
+- [x] Write tests for findByStatuses: status { in: [...] }
+- [x] Write tests for updateProgress: all fields + null eta
+- [x] Write tests for countByStatus: delegation
 - [ ] Run full test suite — confirm green

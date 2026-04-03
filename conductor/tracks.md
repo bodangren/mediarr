@@ -6,14 +6,14 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 - [x] **Track: Cleanup Uncommitted Work** *Phases: 2 | Link: [./archive/chore_cleanup_uncommitted_work_20260401/](./archive/chore_cleanup_uncommitted_work_20260401/)* — staged deleted track files, updated .gitignore
 
+- [x] **Track: Organize Services Corner-Case Testing** *Phases: 5 | Link: [./archive/bug_organize_services_corner_cases_20260404/](./archive/bug_organize_services_corner_cases_20260404/)* — 67 tests; 1 bug fixed (missing absoluteEpisodeNumber)
+
 - [x] **Track: SeriesMonitoringService Corner-Case Testing** *Phases: 4 | Link: [./archive/bug_series_monitoring_corner_cases_20260402/](./archive/bug_series_monitoring_corner_cases_20260402/)* — 39 tests; no bugs found
 - [x] **Track: MediaSearchService Corner-Case Testing** *Phases: 4 | Link: [./archive/bug_mediasearch_corner_cases_20260401/](./archive/bug_mediasearch_corner_cases_20260401/)* — 19 tests; no bugs found
 
 - [x] **Track: Daily Cleanup — Commit Stale Changes, Review Yesterday's Code** *Phases: 3 | Link: [./archive/chore_daily_cleanup_20260403/](./archive/chore_daily_cleanup_20260403/)* — committed stale deletions, fixed SeedingProtector import guard error handling
 
 - [x] **Track: Daily Cleanup — Commit Stale Deletions, Verify Green Suite** *Phases: 2 | Link: [./archive/chore_daily_cleanup_20260404/](./archive/chore_daily_cleanup_20260404/)* — committed stale Apr 3 deletions; 1274 tests green
-
-- [~] **Track: Organize Services Corner-Case Testing** *Phases: 5 | Link: [./tracks/bug_organize_services_corner_cases_20260404/](./tracks/bug_organize_services_corner_cases_20260404/)* — in progress
 
 ---
 

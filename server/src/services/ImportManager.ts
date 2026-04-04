@@ -724,6 +724,10 @@ export class ImportManager {
       if (yearScopedMatch) {
         return yearScopedMatch;
       }
+      // Year is present in filename but no DB movie matched it.
+      // Do NOT fall back to title-only — a different-year movie with a similar
+      // title (sequel, remake) is almost certainly the wrong grab.
+      return null;
     }
 
     return this.prisma.movie.findFirst({

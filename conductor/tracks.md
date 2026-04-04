@@ -90,6 +90,10 @@ Parallel:
 
 - [x] **Track: MovieOrganizeService {AudioChannels} Token Bug** *Phases: 4 | Link: [./archive/bug_audio_channels_token_20260404/](./archive/bug_audio_channels_token_20260404/)* — 39 tests; 1 bug fixed (wire audioChannels from variant audioTracks)
 
+- [~] **Track: ImportManager Comprehensive Corner-Case Testing** *Phases: 6 | Link: [./tracks/bug_importmanager_comprehensive_corner_cases_20260405/](./tracks/bug_importmanager_comprehensive_corner_cases_20260405/)* — All 4 import paths + failed-import lifecycle
+
+- [~] **Track: ImportManager Comprehensive Corner-Case Testing** *Phases: 6 | Link: [./tracks/bug_importmanager_comprehensive_corner_cases_20260405/](./tracks/bug_importmanager_comprehensive_corner_cases_20260405/)* — All 4 import paths + failed-import lifecycle
+
 - [ ] **Track: Form Standardization Completion** *Phases: 3 | Link: [./tracks/chore_form_standardization_completion_20260330/](./tracks/chore_form_standardization_completion_20260330/)*
 - [ ] **Track: Playback Resume & Continue Watching** *Phases: 4 | Link: [./tracks/feature_playback_resume_sync_20260330/](./tracks/feature_playback_resume_sync_20260330/)*
 

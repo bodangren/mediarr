@@ -101,6 +101,19 @@ describe('WantedSearchService — isSeasonComplete', () => {
     const episodes = [{ airDateUtc: pastDate(10) }, { airDateUtc: futureDate(3) }];
     expect(svc.isSeasonComplete(episodes)).toBe(false);
   });
+
+  it('returns false when the last episode aired less than 24h ago (grace period)', () => {
+    // Last episode aired 12 hours ago — within the 24h grace period used by isReleasedYet
+    const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000);
+    const episodes = [{ airDateUtc: pastDate(10) }, { airDateUtc: twelveHoursAgo }];
+    expect(svc.isSeasonComplete(episodes)).toBe(false);
+  });
+
+  it('returns true when the last episode aired more than 24h ago', () => {
+    const twentyFiveHoursAgo = new Date(Date.now() - 25 * 60 * 60 * 1000);
+    const episodes = [{ airDateUtc: pastDate(10) }, { airDateUtc: twentyFiveHoursAgo }];
+    expect(svc.isSeasonComplete(episodes)).toBe(true);
+  });
 });
 
 // ── autoSearchSeries — no missing episodes ────────────────────────────────────

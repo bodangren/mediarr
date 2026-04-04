@@ -376,13 +376,15 @@ export class WantedSearchService {
   }
 
   /**
-   * Returns true when all episodes in a season have an air date in the past,
+   * Returns true when all episodes in a season have an air date in the past
+   * (plus a 1-day grace period, matching `isReleasedYet`),
    * meaning the season has fully aired and is a candidate for a season pack.
    */
   private isSeasonComplete(episodes: Array<{ airDateUtc: Date | null }>): boolean {
     if (episodes.length === 0) return false;
-    const now = new Date();
-    return episodes.every(ep => ep.airDateUtc !== null && ep.airDateUtc <= now);
+    const oneDayMs = 24 * 60 * 60 * 1000;
+    const now = Date.now();
+    return episodes.every(ep => ep.airDateUtc !== null && now >= ep.airDateUtc.getTime() + oneDayMs);
   }
 
   /**

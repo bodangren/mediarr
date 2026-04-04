@@ -19,6 +19,8 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 - [x] **Track: MediaService & MediaRepository Corner-Case Testing** *Phases: 4 | Link: [./archive/bug_media_service_repo_corner_cases_20260404/](./archive/bug_media_service_repo_corner_cases_20260404/)* — 56 tests; no bugs found
 
+- [x] **Track: ImportManager Post-Import Corner-Case Testing** *Phases: 4 | Link: [./archive/bug_import_post_import_corner_cases_20260404/](./archive/bug_import_post_import_corner_cases_20260404/)* — 13 tests; 1 bug fixed (per-file try/catch)
+
 ---
 
 ## Execution Order and Dependencies

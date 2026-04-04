@@ -1,0 +1,10 @@
+{
+  "id": "bug_import_post_import_corner_cases_20260404",
+  "title": "ImportManager Post-Import Corner-Case Testing",
+  "type": "bug",
+  "status": "done",
+  "created": "2026-04-04",
+  "completed": "2026-04-04",
+  "directive": "Comprehensive Corner-Case Testing for Core User Workflows",
+  "summary": "13 new tests; 1 bug fixed (per-file try/catch in handleTorrentCompleted)"
+}

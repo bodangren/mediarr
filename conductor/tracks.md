@@ -90,8 +90,6 @@ Parallel:
 
 - [x] **Track: MovieOrganizeService {AudioChannels} Token Bug** *Phases: 4 | Link: [./archive/bug_audio_channels_token_20260404/](./archive/bug_audio_channels_token_20260404/)* — 39 tests; 1 bug fixed (wire audioChannels from variant audioTracks)
 
-- [~] **Track: Daily Cleanup — Commit Stale Archives, Verify Green Suite** *Phases: 4 | Link: [./tracks/chore_daily_cleanup_20260405/](./tracks/chore_daily_cleanup_20260405/)*
-
 - [ ] **Track: Form Standardization Completion** *Phases: 3 | Link: [./tracks/chore_form_standardization_completion_20260330/](./tracks/chore_form_standardization_completion_20260330/)*
 - [ ] **Track: Playback Resume & Continue Watching** *Phases: 4 | Link: [./tracks/feature_playback_resume_sync_20260330/](./tracks/feature_playback_resume_sync_20260330/)*
 
@@ -116,6 +114,8 @@ Parallel:
 ---
 
 ## Archived Tracks
+
+- [x] **Track: Daily Cleanup — Commit Stale Archives, Verify Green Suite** *Phases: 4 | Link: [./archive/chore_daily_cleanup_20260405/](./archive/chore_daily_cleanup_20260405/)* — 1474 tests green; build clean
 
 - [x] **Track: Fix TorrentManager Seed-Limit Import Guard** *Phases: 4 | Link: [./archive/bug_seed_limit_import_guard_20260402/](./archive/bug_seed_limit_import_guard_20260402/)* — extracted shared importGuard.ts; 10 new tests; TorrentManager + SeedingProtector both guarded
 - [x] **Track: TorrentManager Lifecycle & importGuard Corner-Case Testing** *Phases: 5 | Link: [./archive/bug_torrent_lifecycle_corner_cases_20260403/](./archive/bug_torrent_lifecycle_corner_cases_20260403/)* — 12 importGuard tests, 10 removeTorrent tests, 12 syncStats tests, 5 queued-torrent tests; no bugs found

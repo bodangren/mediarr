@@ -159,6 +159,46 @@ describe('ReleaseParser — parse()', () => {
     expect(result).toBeNull();
   });
 
+  it('regex fallback captures all episode numbers in multi-episode release S01E01E02', async () => {
+    vi.unstubAllEnvs();
+    vi.stubEnv('OPENROUTER_API_KEY', '');
+
+    const result = await releaseParser.parse('Breaking.Bad.S01E01E02.1080p.BluRay.mkv');
+    expect(result?.matchType).toBe('episode');
+    expect(result?.seasonNumber).toBe(1);
+    expect(result?.episodeNumbers).toEqual([1, 2]);
+  });
+
+  it('regex fallback captures all episode numbers in triple-episode release S01E01E02E03', async () => {
+    vi.unstubAllEnvs();
+    vi.stubEnv('OPENROUTER_API_KEY', '');
+
+    const result = await releaseParser.parse('Show.S01E01E02E03.720p.HDTV.mkv');
+    expect(result?.matchType).toBe('episode');
+    expect(result?.seasonNumber).toBe(1);
+    expect(result?.episodeNumbers).toEqual([1, 2, 3]);
+  });
+
+  it('regex fallback captures all episode numbers in multi-episode release S01E01E02', async () => {
+    vi.unstubAllEnvs();
+    vi.stubEnv('OPENROUTER_API_KEY', '');
+
+    const result = await releaseParser.parse('Breaking.Bad.S01E01E02.1080p.BluRay.mkv');
+    expect(result?.matchType).toBe('episode');
+    expect(result?.seasonNumber).toBe(1);
+    expect(result?.episodeNumbers).toEqual([1, 2]);
+  });
+
+  it('regex fallback captures all episode numbers in triple-episode release S01E01E02E03', async () => {
+    vi.unstubAllEnvs();
+    vi.stubEnv('OPENROUTER_API_KEY', '');
+
+    const result = await releaseParser.parse('Show.S01E01E02E03.720p.HDTV.mkv');
+    expect(result?.matchType).toBe('episode');
+    expect(result?.seasonNumber).toBe(1);
+    expect(result?.episodeNumbers).toEqual([1, 2, 3]);
+  });
+
   it('serial queue — second call waits for first', async () => {
     const order: number[] = [];
     mockGenerateText

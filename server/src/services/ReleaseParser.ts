@@ -88,17 +88,18 @@ export interface SearchContext {
 // ── Regex fallback (no AI dependency) ───────────────────────────────────────
 
 function regexFallback(title: string): ParsedRelease | null {
-  // SxxExx — single episode
-  const episodeMatch = title.match(/S(\d{1,2})E(\d{1,3})/i);
+  // SxxExx — single or multi-episode (S01E01, S01E01E02, S01E01E02E03)
+  const episodeMatch = title.match(/S(\d{1,2})E(\d{1,3}(?:E\d{1,3})*)/i);
   if (episodeMatch) {
     const matchIdx = title.search(/S\d{1,2}E\d{1,3}/i);
     const rawTitle = matchIdx > 0 ? title.substring(0, matchIdx) : title;
+    const episodeNumbers = episodeMatch[2]!.split('E').map(n => parseInt(n, 10));
     return {
       title: rawTitle.replace(/[._\- ]+$/, '').replace(/[._]/g, ' ').trim(),
       type: 'series',
       matchType: 'episode',
       seasonNumber: parseInt(episodeMatch[1]!, 10),
-      episodeNumbers: [parseInt(episodeMatch[2]!, 10)],
+      episodeNumbers,
       year: null,
       quality: null,
     };

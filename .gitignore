@@ -39,6 +39,7 @@ reference/
 
 # Conductor / Agent logs
 conductor/opencode-cron.log
+conductor/output.log
 
 # Compiled TypeScript in app/src (Vite handles this)
 /app/src/**/*.js

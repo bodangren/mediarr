@@ -249,4 +249,44 @@ describe('WantedSearchService — autoSearchMovie core paths', () => {
       expect.anything(),
     );
   });
+
+  it('accepts a release when the movie has no year set', async () => {
+    movieFindUnique.mockResolvedValue(baseMovie({ id: 1, title: 'The Matrix', year: null }));
+    const candidate = makeCandidate('The.Matrix.1999.1080p.BluRay.mkv', 80);
+    searchAllIndexers.mockResolvedValue({ releases: [candidate] });
+
+    const result = await service.autoSearchMovie(1);
+
+    expect(result.success).toBe(true);
+    expect(grabRelease).toHaveBeenCalledWith(
+      candidate,
+      expect.objectContaining({ movieId: 1 }),
+    );
+  });
+
+  it('rejects a release with Cardigann template syntax', async () => {
+    movieFindUnique.mockResolvedValue(baseMovie({ id: 1, title: 'The Matrix' }));
+    const candidate = makeCandidate('{{Title}}.1999.1080p.BluRay.mkv', 80);
+    searchAllIndexers.mockResolvedValue({ releases: [candidate] });
+
+    const result = await service.autoSearchMovie(1);
+
+    expect(result.success).toBe(false);
+    expect(result.reason).toMatch(/no valid candidates/i);
+    expect(grabRelease).not.toHaveBeenCalled();
+  });
+
+  it('accepts a release when the movie has no year set', async () => {
+    movieFindUnique.mockResolvedValue(baseMovie({ id: 1, title: 'The Matrix', year: null }));
+    const candidate = makeCandidate('The.Matrix.1999.1080p.BluRay.mkv', 80);
+    searchAllIndexers.mockResolvedValue({ releases: [candidate] });
+
+    const result = await service.autoSearchMovie(1);
+
+    expect(result.success).toBe(true);
+    expect(grabRelease).toHaveBeenCalledWith(
+      candidate,
+      expect.objectContaining({ movieId: 1 }),
+    );
+  });
 });

@@ -1,0 +1,11 @@
+{
+  "id": "bug_searchaggregation_comprehensive_corner_cases_20260404d",
+  "title": "SearchAggregationService Comprehensive Corner-Case Testing",
+  "type": "bug",
+  "status": "done",
+  "created": "2026-04-04",
+  "completed": "2026-04-04",
+  "directive": "Comprehensive Corner-Case Testing for Core User Workflows",
+  "subsystem": "SearchAggregationService / MediaSearchService",
+  "summary": "42 new tests across 4 phases; 1 bug fixed (AI batch parsing crash)"
+}

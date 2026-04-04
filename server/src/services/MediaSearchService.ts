@@ -556,17 +556,21 @@ export class MediaSearchService {
       if (params.season !== undefined) batchContext.seasonNumber = params.season;
       if (params.episode !== undefined) batchContext.episodeNumber = params.episode;
 
-      const parsedBatch = await releaseParser.parseBatch(
-        seededReleases.map(r => r.title),
-        batchContext,
-      );
+      try {
+        const parsedBatch = await releaseParser.parseBatch(
+          seededReleases.map(r => r.title),
+          batchContext,
+        );
 
-      for (let i = 0; i < parsedBatch.length; i++) {
-        const release = seededReleases[i];
-        const parsed = parsedBatch[i];
-        if (release && parsed) {
-          release.parsedRelease = parsed;
+        for (let i = 0; i < parsedBatch.length; i++) {
+          const release = seededReleases[i];
+          const parsed = parsedBatch[i];
+          if (release && parsed) {
+            release.parsedRelease = parsed;
+          }
         }
+      } catch {
+        // AI parsing failure — proceed with Levenshtein-only scoring
       }
     }
 

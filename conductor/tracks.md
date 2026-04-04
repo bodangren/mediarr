@@ -88,6 +88,8 @@ Parallel:
 
 - [x] **Track: SearchAggregationService Comprehensive Corner-Case Testing** *Phases: 5 | Link: [./archive/bug_searchaggregation_comprehensive_corner_cases_20260404d/](./archive/bug_searchaggregation_comprehensive_corner_cases_20260404d/)* — 42 tests; 1 bug fixed (AI batch parsing crash)
 
+- [x] **Track: MovieOrganizeService {AudioChannels} Token Bug** *Phases: 4 | Link: [./archive/bug_audio_channels_token_20260404/](./archive/bug_audio_channels_token_20260404/)* — 39 tests; 1 bug fixed (wire audioChannels from variant audioTracks)
+
 - [ ] **Track: Form Standardization Completion** *Phases: 3 | Link: [./tracks/chore_form_standardization_completion_20260330/](./tracks/chore_form_standardization_completion_20260330/)*
 - [ ] **Track: Playback Resume & Continue Watching** *Phases: 4 | Link: [./tracks/feature_playback_resume_sync_20260330/](./tracks/feature_playback_resume_sync_20260330/)*
 

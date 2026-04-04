@@ -88,6 +88,10 @@ Parallel:
 
 - [x] **Track: SearchAggregationService Comprehensive Corner-Case Testing** *Phases: 5 | Link: [./archive/bug_searchaggregation_comprehensive_corner_cases_20260404d/](./archive/bug_searchaggregation_comprehensive_corner_cases_20260404d/)* — 42 tests; 1 bug fixed (AI batch parsing crash)
 
+- [~] **Track: Daily Cleanup — Commit Stale Changes, Verify Green Suite** *Phases: 2 | Link: [./tracks/chore_daily_cleanup_20260404c/](./tracks/chore_daily_cleanup_20260404c/)* — remove stray output.log, verify green suite and build
+
+- [~] **Track: Daily Cleanup — Commit Stale Changes, Verify Green Suite** *Phases: 2 | Link: [./tracks/chore_daily_cleanup_20260404c/](./tracks/chore_daily_cleanup_20260404c/)* — remove stray output.log, verify green suite and build
+
 - [ ] **Track: Form Standardization Completion** *Phases: 3 | Link: [./tracks/chore_form_standardization_completion_20260330/](./tracks/chore_form_standardization_completion_20260330/)*
 - [ ] **Track: Playback Resume & Continue Watching** *Phases: 4 | Link: [./tracks/feature_playback_resume_sync_20260330/](./tracks/feature_playback_resume_sync_20260330/)*
 

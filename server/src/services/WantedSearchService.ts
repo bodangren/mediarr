@@ -79,9 +79,18 @@ export class WantedSearchService {
         return this.logAndReturnSkip(movieId, 'movie', movie.title, 'No releases found');
       }
 
+      // Filter candidates to only those whose title plausibly matches the movie.
+      const validCandidates = searchResult.releases.filter(r =>
+        this.titleMatchesMovie(r.title, movie.title, movie.year),
+      );
+
+      if (validCandidates.length === 0) {
+        return this.logAndReturnSkip(movieId, 'movie', movie.title, 'No valid candidates matching movie title');
+      }
+
       // The releases are already sorted by `searchAllIndexers` using `compareReleasesForRanking`
       // The best candidate is the first one.
-      const bestCandidate = searchResult.releases[0]!;
+      const bestCandidate = validCandidates[0]!;
 
       // Check if it meets the minimum threshold
       const score = bestCandidate.customFormatScore ?? 0;
@@ -452,6 +461,40 @@ export class WantedSearchService {
     )];
 
     return variants.some(v => normRelease.startsWith(v));
+  }
+
+  /**
+   * Returns true if a release title plausibly belongs to the given movie.
+   *
+   * Uses the same normalization strategy as `titlesMatch` (series name matching)
+   * but additionally validates the year when available to reject remakes and reboots.
+   */
+  private titleMatchesMovie(releaseTitle: string, movieTitle: string, movieYear: number | null): boolean {
+    if (releaseTitle.includes('{{') || releaseTitle.includes('}}')) return false;
+
+    const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+    const stripArticle = (s: string) => s.replace(/^(the|a|an) /, '');
+
+    const normRelease = norm(releaseTitle);
+    const base = norm(movieTitle);
+    const baseNoYear = base.replace(/ (19|20)\d{2}$/, '').trim();
+
+    const variants = [...new Set(
+      [base, baseNoYear].flatMap(v => [v, stripArticle(v)]).filter(Boolean)
+    )];
+
+    const titleMatches = variants.some(v => normRelease.startsWith(v));
+    if (!titleMatches) return false;
+
+    // If the movie has a known year, reject releases that contain a different year.
+    if (movieYear !== null) {
+      const yearInTitle = normRelease.match(/\b((?:19|20)\d{2})\b/);
+      if (yearInTitle && parseInt(yearInTitle[1], 10) !== movieYear) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   /**

@@ -67,19 +67,25 @@ export class MovieOrganizeService {
       const movie = await this.prisma.movie.findUnique({
         where: { id: movieId },
         include: {
-          fileVariants: true,
+          fileVariants: {
+            include: {
+              audioTracks: true,
+            },
+          },
         },
       });
 
       if (!movie || !movie.path) continue;
 
       for (const variant of movie.fileVariants) {
+        const audioChannels = this.extractAudioChannels(variant);
         const movieInfo: MovieInfo = {
           title: movie.title,
           year: movie.year,
           quality: variant.quality ?? undefined,
           qualityFull: variant.quality ?? undefined,
           resolution: this.extractResolution(variant.quality) || undefined,
+          audioChannels,
         };
 
         const newFolderPath = this.generateMovieFolderPath(movieInfo, movie.path);
@@ -198,6 +204,15 @@ export class MovieOrganizeService {
     if (!quality) return '';
     const match = quality.match(/(\d{3,4}p)/);
     return match ? match[1] : '';
+  }
+
+  /**
+   * Extract audio channels string from variant's audio tracks.
+   * Returns the channels of the first audio track, or empty string if none.
+   */
+  private extractAudioChannels(variant: { audioTracks?: Array<{ channels?: string | null }> }): string {
+    if (!variant.audioTracks || variant.audioTracks.length === 0) return '';
+    return variant.audioTracks[0].channels ?? '';
   }
 }
 

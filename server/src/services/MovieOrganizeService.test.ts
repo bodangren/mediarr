@@ -81,9 +81,45 @@ describe('MovieOrganizeService', () => {
       expect(previews[0].newPath).toContain('[720p]');
     });
 
-    it('uses audio channels token (currently unpopulated — placeholder)', async () => {
+    it('uses audio channels token from variant audio tracks', async () => {
+      const prisma = makePrisma({
+        movie: buildMovie({
+          fileVariants: [buildVariant({
+            path: '/old/movie.mkv',
+            audioTracks: [{ channels: '5.1' }],
+          })],
+        }),
+      });
+
+      const svc = new MovieOrganizeService(prisma as any, makeSettings({
+        movieFileFormat: '{Movie Title} [{AudioChannels}]',
+      }));
+      const previews = await svc.previewRename([1]);
+
+      expect(previews[0].newPath).toContain('[5.1]');
+    });
+
+    it('handles missing audio tracks gracefully', async () => {
       const prisma = makePrisma({
         movie: oneMovie({ path: '/old/movie.mkv' }),
+      });
+
+      const svc = new MovieOrganizeService(prisma as any, makeSettings({
+        movieFileFormat: '{Movie Title} [{AudioChannels}]',
+      }));
+      const previews = await svc.previewRename([1]);
+
+      expect(previews[0].newPath).toContain('[]');
+    });
+
+    it('handles null channels value gracefully', async () => {
+      const prisma = makePrisma({
+        movie: buildMovie({
+          fileVariants: [buildVariant({
+            path: '/old/movie.mkv',
+            audioTracks: [{ channels: null }],
+          })],
+        }),
       });
 
       const svc = new MovieOrganizeService(prisma as any, makeSettings({

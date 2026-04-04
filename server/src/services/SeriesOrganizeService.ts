@@ -143,14 +143,7 @@ export class SeriesOrganizeService {
 
     for (const preview of toRename) {
       try {
-        // Ensure destination directory exists
-        const destDir = path.dirname(preview.newPath);
-        await fs.mkdir(destDir, { recursive: true });
-
-        // Rename the file
-        await fs.rename(preview.currentPath, preview.newPath);
-
-        // Update database
+        // Update database first (before filesystem changes)
         await (this.prisma as any).mediaFileVariant.updateMany({
           where: {
             episodeId: preview.episodeId,
@@ -161,8 +154,30 @@ export class SeriesOrganizeService {
           },
         });
 
+        // Ensure destination directory exists
+        const destDir = path.dirname(preview.newPath);
+        await fs.mkdir(destDir, { recursive: true });
+
+        // Rename the file
+        await fs.rename(preview.currentPath, preview.newPath);
+
         result.renamed++;
       } catch (error) {
+        // Rollback: restore original path in DB if update succeeded but fs failed
+        try {
+          await (this.prisma as any).mediaFileVariant.updateMany({
+            where: {
+              episodeId: preview.episodeId,
+              path: preview.newPath,
+            },
+            data: {
+              path: preview.currentPath,
+            },
+          });
+        } catch (_rollbackError) {
+          // Rollback failed — log but don't mask the original error
+        }
+
         result.failed++;
         result.errors.push({
           episodeId: preview.episodeId,

@@ -21,6 +21,8 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 - [x] **Track: ImportManager Post-Import Corner-Case Testing** *Phases: 4 | Link: [./archive/bug_import_post_import_corner_cases_20260404/](./archive/bug_import_post_import_corner_cases_20260404/)* — 13 tests; 1 bug fixed (per-file try/catch)
 
+- [x] **Track: SeriesOrganizeService applyRename Transaction Safety** *Phases: 4 | Link: [./archive/bug_organize_rename_transaction_safety_20260404/](./archive/bug_organize_rename_transaction_safety_20260404/)* — 79 tests; reordered DB-before-fs with rollback
+
 ---
 
 ## Execution Order and Dependencies

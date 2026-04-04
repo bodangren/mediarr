@@ -369,6 +369,120 @@ describe('MovieOrganizeService', () => {
     });
   });
 
+  describe('applyRename — transaction safety (DB before fs)', () => {
+    beforeEach(() => {
+      fsMocks.mkdir.mockResolvedValue(undefined);
+      fsMocks.rename.mockResolvedValue(undefined);
+    });
+    afterEach(() => {
+      fsMocks.mkdir.mockClear();
+      fsMocks.rename.mockClear();
+    });
+
+    it('does NOT call fs.rename when DB update fails', async () => {
+      const prisma = makePrisma({
+        movie: oneMovie({ path: '/old/movie.mkv' }),
+      });
+      prisma.mediaFileVariant.updateMany.mockRejectedValue(new Error('DB connection lost'));
+      const svc = new MovieOrganizeService(prisma as any, makeSettings());
+      const result = await svc.applyRename([1]);
+
+      expect(result.failed).toBe(1);
+      expect(fsMocks.rename).not.toHaveBeenCalled();
+    });
+
+    it('rolls back DB path when fs.rename fails after DB update succeeds', async () => {
+      const oldPath = '/old/movie.mkv';
+      const prisma = makePrisma({
+        movie: oneMovie({ path: oldPath }),
+      });
+      fsMocks.rename.mockRejectedValue(new Error('EACCES: permission denied'));
+      const svc = new MovieOrganizeService(prisma as any, makeSettings());
+      const result = await svc.applyRename([1]);
+
+      expect(result.failed).toBe(1);
+      expect(prisma.mediaFileVariant.updateMany).toHaveBeenCalledTimes(2);
+      expect(prisma.mediaFileVariant.updateMany).toHaveBeenNthCalledWith(1, {
+        where: { movieId: 1, path: oldPath },
+        data: { path: expect.any(String) },
+      });
+      expect(prisma.mediaFileVariant.updateMany).toHaveBeenNthCalledWith(2, {
+        where: { movieId: 1, path: expect.any(String) },
+        data: { path: oldPath },
+      });
+    });
+
+    it('succeeds with correct order: DB update then fs.rename', async () => {
+      const oldPath = '/old/movie.mkv';
+      const prisma = makePrisma({
+        movie: oneMovie({ path: oldPath }),
+      });
+      const svc = new MovieOrganizeService(prisma as any, makeSettings());
+      const result = await svc.applyRename([1]);
+
+      expect(result.renamed).toBe(1);
+      expect(result.failed).toBe(0);
+      expect(prisma.mediaFileVariant.updateMany).toHaveBeenCalledBefore(fsMocks.rename as any);
+    });
+  });
+
+  describe('applyRename — transaction safety (DB before fs)', () => {
+    beforeEach(() => {
+      fsMocks.mkdir.mockResolvedValue(undefined);
+      fsMocks.rename.mockResolvedValue(undefined);
+    });
+    afterEach(() => {
+      fsMocks.mkdir.mockClear();
+      fsMocks.rename.mockClear();
+    });
+
+    it('does NOT call fs.rename when DB update fails', async () => {
+      const prisma = makePrisma({
+        movie: oneMovie({ path: '/old/movie.mkv' }),
+      });
+      prisma.mediaFileVariant.updateMany.mockRejectedValue(new Error('DB connection lost'));
+      const svc = new MovieOrganizeService(prisma as any, makeSettings());
+      const result = await svc.applyRename([1]);
+
+      expect(result.failed).toBe(1);
+      expect(fsMocks.rename).not.toHaveBeenCalled();
+    });
+
+    it('rolls back DB path when fs.rename fails after DB update succeeds', async () => {
+      const oldPath = '/old/movie.mkv';
+      const prisma = makePrisma({
+        movie: oneMovie({ path: oldPath }),
+      });
+      fsMocks.rename.mockRejectedValue(new Error('EACCES: permission denied'));
+      const svc = new MovieOrganizeService(prisma as any, makeSettings());
+      const result = await svc.applyRename([1]);
+
+      expect(result.failed).toBe(1);
+      expect(prisma.mediaFileVariant.updateMany).toHaveBeenCalledTimes(2);
+      expect(prisma.mediaFileVariant.updateMany).toHaveBeenNthCalledWith(1, {
+        where: { movieId: 1, path: oldPath },
+        data: { path: expect.any(String) },
+      });
+      expect(prisma.mediaFileVariant.updateMany).toHaveBeenNthCalledWith(2, {
+        where: { movieId: 1, path: expect.any(String) },
+        data: { path: oldPath },
+      });
+    });
+
+    it('succeeds with correct order: DB update then fs.rename', async () => {
+      const oldPath = '/old/movie.mkv';
+      const prisma = makePrisma({
+        movie: oneMovie({ path: oldPath }),
+      });
+      const svc = new MovieOrganizeService(prisma as any, makeSettings());
+      const result = await svc.applyRename([1]);
+
+      expect(result.renamed).toBe(1);
+      expect(result.failed).toBe(0);
+      expect(prisma.mediaFileVariant.updateMany).toHaveBeenCalledBefore(fsMocks.rename as any);
+    });
+  });
+
   describe('applyRename — error paths', () => {
     beforeEach(() => {
       fsMocks.mkdir.mockResolvedValue(undefined);
@@ -390,10 +504,10 @@ describe('MovieOrganizeService', () => {
       expect(result.renamed).toBe(0);
       expect(result.failed).toBe(1);
       expect(result.errors[0].error).toContain('permission denied');
-      expect(prisma.mediaFileVariant.updateMany).not.toHaveBeenCalled();
+      expect(prisma.mediaFileVariant.updateMany).toHaveBeenCalledTimes(2);
     });
 
-    it('records error when DB update fails after rename (partial state)', async () => {
+    it('records error when DB update fails before rename (no partial state)', async () => {
       const prisma = makePrisma({
         movie: oneMovie({ path: '/old/movie.mkv' }),
       });
@@ -403,7 +517,7 @@ describe('MovieOrganizeService', () => {
 
       expect(result.failed).toBe(1);
       expect(result.errors[0].error).toContain('DB connection lost');
-      expect(fsMocks.rename).toHaveBeenCalled();
+      expect(fsMocks.rename).not.toHaveBeenCalled();
     });
 
     it('handles mixed success and failure across multiple variants', async () => {

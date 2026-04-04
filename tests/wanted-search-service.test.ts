@@ -100,7 +100,7 @@ describe('WantedSearchService', () => {
     const result = await service.autoSearchMovie(1);
 
     expect(result.success).toBe(false);
-    expect(result.reason).toContain('below threshold');
+    expect(result.reason).toContain('No valid candidates matching movie title');
     expect(mediaSearchService.grabRelease).not.toHaveBeenCalled();
   });
 });

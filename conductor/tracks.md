@@ -115,6 +115,8 @@ Parallel:
 
 ## Archived Tracks
 
+- [x] **Track: LibraryScanService Comprehensive Corner-Case Testing** *Phases: 5 | Link: [./archive/bug_libraryscan_corner_cases_20260405/](./archive/bug_libraryscan_corner_cases_20260405/)* — 34 tests; no bugs found
+
 - [x] **Track: Daily Cleanup — Commit Stale Archives, Verify Green Suite** *Phases: 4 | Link: [./archive/chore_daily_cleanup_20260405/](./archive/chore_daily_cleanup_20260405/)* — 1474 tests green; build clean
 
 - [x] **Track: Fix TorrentManager Seed-Limit Import Guard** *Phases: 4 | Link: [./archive/bug_seed_limit_import_guard_20260402/](./archive/bug_seed_limit_import_guard_20260402/)* — extracted shared importGuard.ts; 10 new tests; TorrentManager + SeedingProtector both guarded

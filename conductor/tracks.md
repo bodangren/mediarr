@@ -94,6 +94,10 @@ Parallel:
 
 - [x] **Track: Pipeline Integration Corner-Case Testing** *Phases: 6 | Link: [./archive/bug_pipeline_integration_corner_cases_20260405/](./archive/bug_pipeline_integration_corner_cases_20260405/)* — 25 tests; no bugs found; all integration handoffs verified
 
+- [~] **Track: CustomFormatScoringEngine Comprehensive Corner-Case Testing** *Phases: 4 | Link: [./tracks/bug_customformat_scoring_corner_cases_20260405/](./tracks/bug_customformat_scoring_corner_cases_20260405/)*
+
+- [~] **Track: CustomFormatScoringEngine Comprehensive Corner-Case Testing** *Phases: 4 | Link: [./tracks/bug_customformat_scoring_corner_cases_20260405/](./tracks/bug_customformat_scoring_corner_cases_20260405/)*
+
 - [ ] **Track: Form Standardization Completion** *Phases: 3 | Link: [./tracks/chore_form_standardization_completion_20260330/](./tracks/chore_form_standardization_completion_20260330/)*
 - [ ] **Track: Playback Resume & Continue Watching** *Phases: 4 | Link: [./tracks/feature_playback_resume_sync_20260330/](./tracks/feature_playback_resume_sync_20260330/)*
 

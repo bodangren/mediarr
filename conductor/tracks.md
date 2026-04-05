@@ -92,7 +92,7 @@ Parallel:
 
 - [x] **Track: ImportManager Comprehensive Corner-Case Testing** *Phases: 6 | Link: [./archive/bug_importmanager_comprehensive_corner_cases_20260405/](./archive/bug_importmanager_comprehensive_corner_cases_20260405/)* — 20 tests; 1 bug fixed (movie year mismatch fallback)
 
-- [~] **Track: Pipeline Integration Corner-Case Testing** *Phases: 6 | Link: [./tracks/bug_pipeline_integration_corner_cases_20260405/](./tracks/bug_pipeline_integration_corner_cases_20260405/)*
+- [x] **Track: Pipeline Integration Corner-Case Testing** *Phases: 6 | Link: [./archive/bug_pipeline_integration_corner_cases_20260405/](./archive/bug_pipeline_integration_corner_cases_20260405/)* — 25 tests; no bugs found; all integration handoffs verified
 
 - [ ] **Track: Form Standardization Completion** *Phases: 3 | Link: [./tracks/chore_form_standardization_completion_20260330/](./tracks/chore_form_standardization_completion_20260330/)*
 - [ ] **Track: Playback Resume & Continue Watching** *Phases: 4 | Link: [./tracks/feature_playback_resume_sync_20260330/](./tracks/feature_playback_resume_sync_20260330/)*

@@ -121,6 +121,8 @@ Parallel:
 
 ## Archived Tracks
 
+- [x] **Track: Corner-Case Testing Directive Complete** *Phases: 1 | Link: [./archive/chore_corner_case_testing_complete_20260406/](./archive/chore_corner_case_testing_complete_20260406/)* — directive formally closed; 1625 tests green; 7 bugs fixed across all priority subsystems
+
 - [x] **Track: LibraryScanService Comprehensive Corner-Case Testing** *Phases: 5 | Link: [./archive/bug_libraryscan_corner_cases_20260405/](./archive/bug_libraryscan_corner_cases_20260405/)* — 34 tests; no bugs found
 
 - [x] **Track: Daily Cleanup — Commit Stale Archives, Verify Green Suite** *Phases: 4 | Link: [./archive/chore_daily_cleanup_20260405/](./archive/chore_daily_cleanup_20260405/)* — 1474 tests green; build clean

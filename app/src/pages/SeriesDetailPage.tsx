@@ -334,7 +334,7 @@ export function SeriesDetailPage() {
       } else {
         pushToast({ title: 'Success', variant: 'success', message: `Automated search started in background` });
       }
-    } catch (err) {
+    } catch {
       pushToast({ title: 'Error', variant: 'error', message: 'Failed to execute automated search' });
     }
   };

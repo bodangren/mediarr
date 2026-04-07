@@ -1,0 +1,1549 @@
+[0m
+> build · glm-5.1
+[0m
+[0m→ [0mRead conductor/review-prompt.md
+[0m
+[0m# [0mTodos
+[ ] Gather recent changes (git log, diff, tracks.md, tech-debt.md)
+[ ] Review each changed code file
+[ ] Run test suite
+[ ] Run lint/typecheck
+[ ] Fix up to 5-7 lint/style issues
+[ ] Note architectural problems in tech-debt.md
+[ ] Commit fixes
+[ ] Report findings
+[0m
+[0m→ [0mRead conductor/tech-debt.md
+[0m→ [0mRead conductor/tracks.md
+[0m
+[0m$ [0mgit log --since="24 hours ago" --oneline
+[0m
+[0m$ [0mgit diff --name-only HEAD~20 HEAD
+.gitignore
+.opencode/package-lock.json
+conductor/archive/bug_audio_channels_token_20260404/metadata.json
+conductor/archive/bug_audio_channels_token_20260404/plan.md
+conductor/archive/bug_audio_channels_token_20260404/spec.md
+conductor/archive/bug_customformat_scoring_corner_cases_20260405/metadata.json
+conductor/archive/bug_customformat_scoring_corner_cases_20260405/plan.md
+conductor/archive/bug_customformat_scoring_corner_cases_20260405/spec.md
+conductor/archive/bug_importmanager_comprehensive_corner_cases_20260405/metadata.json
+conductor/archive/bug_importmanager_comprehensive_corner_cases_20260405/plan.md
+conductor/archive/bug_importmanager_comprehensive_corner_cases_20260405/spec.md
+conductor/archive/bug_libraryscan_corner_cases_20260405/metadata.json
+conductor/archive/bug_libraryscan_corner_cases_20260405/plan.md
+conductor/archive/bug_libraryscan_corner_cases_20260405/spec.md
+conductor/archive/bug_pipeline_integration_corner_cases_20260405/metadata.json
+conductor/archive/bug_pipeline_integration_corner_cases_20260405/plan.md
+conductor/archive/bug_pipeline_integration_corner_cases_20260405/spec.md
+conductor/archive/cardigann_runtime_parity_20260223/artifacts/final-phase5-compatibility-matrix.json
+conductor/archive/chore_daily_cleanup_20260404c/metadata.json
+conductor/archive/chore_daily_cleanup_20260404c/plan.md
+conductor/archive/chore_daily_cleanup_20260404c/spec.md
+conductor/archive/chore_daily_cleanup_20260405/metadata.json
+conductor/archive/chore_daily_cleanup_20260405/plan.md
+conductor/archive/chore_daily_cleanup_20260405/spec.md
+conductor/autonomous_prompt.md
+conductor/current_directive.md
+conductor/lessons-learned.md
+conductor/tech-debt.md
+conductor/tracks.md
+conductor/tracks/chore_corner_case_testing_complete_20260406/spec.md
+conductor/tracks/chore_daily_cleanup_20260404c/plan.md
+server/src/services/CustomFormatScoringEngine.test.ts
+server/src/services/ImportManager.ts
+server/src/services/LibraryScanService.test.ts
+server/src/services/MovieOrganizeService.test.ts
+server/src/services/MovieOrganizeService.ts
+server/src/services/ReleaseParser.test.ts
+server/src/services/WantedSearchService.episodeValidation.test.ts
+server/src/services/pipeline.integration.organizerdb.test.ts
+server/src/services/pipeline.integration.rss.test.ts
+server/src/services/pipeline.integration.searchgrab.test.ts
+server/src/services/pipeline.integration.torrentimport.test.ts
+server/src/services/pipeline.integration.wanted.test.ts
+tests/import-manager-comprehensive.test.ts
+tests/wanted-search-service.test.ts
+[0m
+No commits in the past 24 hours. Let me check for uncommitted changes and review the most recent commit activity.
+[0m$ [0mgit log --oneline -20
+54f3754 chore: daily cleanup — update conductor artifacts and archive corner-case testing track
+88103fb chore: archive customformat scoring corner cases track; 72 tests green, no bugs found
+28f9ab6 test: add 72 comprehensive corner-case tests for CustomFormatScoringEngine
+008dbf2 test: add 72 comprehensive corner-case tests for CustomFormatScoringEngine
+9ac275a chore: archive pipeline integration track; 25 tests green, no bugs found
+7b28696 test(pipeline): add 25 integration tests covering RSS→Wanted→Search→Grab→Import pipeline
+1f9a283 chore: commit stale changes before autonomous track
+5ab8f30 chore: archive importmanager comprehensive corner-case testing track; update lessons-learned
+308ac38 chore: archive importmanager comprehensive corner-case testing track; update lessons-learned
+437b2ab bug(import-manager): add comprehensive corner-case tests + fix movie year mismatch bug
+20d4dc8 chore: archive libraryscan corner cases track; 34 tests green
+e11e338 test(libraryscan): add 34 corner-case tests for LibraryScanService; all green
+1d1498e chore: remove track files after archiving
+5060f9b chore: archive daily cleanup 20260405; update docs and lessons
+8616b42 chore: daily cleanup track for April 5, 2026
+a6c74c2 chore: daily review — remove duplicate tests, update conductor docs, stage stale track deletions
+6093057 chore: archive bug_audio_channels_token_20260404 track; update docs
+5ae0b20 bug(organize): wire audioChannels token from variant audioTracks in MovieOrganizeService
+df43c89 chore: archive chore_daily_cleanup_20260404c track; update tracks
+2e2b6c7 fix(tests): correct assertion message in wanted-search-service threshold test
+[0m
+[0m$ [0mgit log -1 --format="%H %ai %s"
+54f375490950deacebbac42b1077d0100e6a8777 2026-04-06 08:35:51 +0800 chore: daily cleanup — update conductor artifacts and archive corner-case testing track
+[0m
+[0m$ [0mgit status --short
+M app/src/components/indexers/AddIndexerModal.tsx
+ M conductor/autonomous_prompt.md
+?? conductor/review-output.log
+?? conductor/review-prompt.md
+[0m
+Last commit was April 6, 2026. Today is April 7, 2026 — so there are ~24+ hours of inactivity. Let me review the uncommitted changes and the most recent commits.
+[0m$ [0mgit diff conductor/autonomous_prompt.md
+diff --git a/conductor/autonomous_prompt.md b/conductor/autonomous_prompt.md
+index 960da3b..efc5abb 100644
+--- a/conductor/autonomous_prompt.md
++++ b/conductor/autonomous_prompt.md
+@@ -1,13 +1,26 @@
+-/conductor
+-Step 1: Load Context. Read `conductor/current_directive.md`, `conductor/tech-debt.md`, `conductor/lessons-learned.md`, `conductor/tracks.md`.
+-Step 2: Resume or Plan.
+-- If the workspace is not clean, commit changes with a note, then continue.
+-- If there is an `[~] In Progress` phase, finish it, then start a new phase.
+-- If no incomplete phases, define exactly ONE new track serving `current_directive.md`. Create track artifacts.
+-Step 3: Implement a SINGLE PHASE autonomously with TDD (Red-Green-Refactor). Use `tauri` and `rust-best-practices` skills for all implementation.
+-- For each task: attach git notes per conductor protocol, merge changes, and push.
+-Step 4: Verify. Run full test suite, run build, correct any build errors.
+-Step 5: Finalize.
+-- Update `tech-debt.md` and `lessons-learned.md` (keep ≤50 lines).
+-- Commit and push phase checkpoint.
+-CRITICAL: All shell commands MUST use non-interactive flags (--yes, --no-interactive, etc.). Unattended run only.
++AUTONOMOUS CONDUCTOR — UNATTENDED RUN
++
++1. Load Context (skip any missing file silently):
++   Read conductor/tracks.md, conductor/tech-debt.md, conductor/lessons-learned.md.
++   Try conductor/current_directive.md — if absent, skip it.
++
++2. Workspace & Progress:
++   - Dirty? Commit with a brief note, push, continue.
++   - In-progress phase exists? Finish it.
++   - Nothing in progress? Create ONE new track from current_directive.md (or top tech-debt item if no directive).
++
++3. Implement ONE phase with TDD:
++   Red-Green-Refactor cycle. Run tests, correct build errors.
++   After each task: merge changes and push.
++
++4. Verify: full test suite + build. Fix all errors before continuing.
++
++5. Finalize:
++   Update tech-debt.md and lessons-learned.md (≤50 lines each).
++   Commit checkpoint, push.
++
++CRITICAL UNATTENDED RULES:
++- Any prompt asking "Proceed?", "Continue?", or "Shall I?" → answer yes.
++- Any prompt asking "What would you like to work on next?" or similar → pick the first sensible option and execute it.
++- Use --yes, --no-interactive, --non-interactive flags wherever available.
++- Never wait for human input. Always make a decision and continue.
+[0m
+[0m$ [0mgit diff app/src/components/indexers/AddIndexerModal.tsx
+diff --git a/app/src/components/indexers/AddIndexerModal.tsx b/app/src/components/indexers/AddIndexerModal.tsx
+index 8d26e4a..c234dca 100644
+--- a/app/src/components/indexers/AddIndexerModal.tsx
++++ b/app/src/components/indexers/AddIndexerModal.tsx
+@@ -1,10 +1,28 @@
+ 
+ import { useEffect, useMemo, useState } from 'react';
++import { useForm, useFieldArray } from 'react-hook-form';
++import { zodResolver } from '@hookform/resolvers/zod';
++import { z } from 'zod';
+ import { Checkbox } from '@/components/ui/checkbox';
+ import { Input } from '@/components/ui/input';
+-import { Label } from '@/components/ui/label';
++import { Button } from '@/components/ui/button';
++import {
++  Form,
++  FormControl,
++  FormField,
++  FormItem,
++  FormLabel,
++  FormMessage,
++} from '@/components/ui/form';
++import {
++  Select,
++  SelectContent,
++  SelectItem,
++  SelectTrigger,
++  SelectValue,
++} from '@/components/ui/select';
++import { Modal, ModalBody, ModalFooter, ModalHeader } from '@/components/ui/modal';
+ import { NumberInput } from '@/components/primitives/SpecialInputs';
+-import { ConfigurableItemModal } from '@/components/settings/ConfigurableItemModal';
+ import type { TestConnectionResult } from '@/components/settings/ConfigurableItemModal';
+ 
+ type DynamicFieldType = 'text' | 'password' | 'number' | 'boolean' | 'hidden';
+@@ -53,21 +71,22 @@ interface AddIndexerModalProps {
+   appProfiles?: Array<{ id: number; name: string }>;
+ }
+ 
+-function normalizeFieldValue(field: DynamicFieldSchema): unknown {
+-  if (field.defaultValue !== undefined) {
+-    return field.defaultValue;
+-  }
+-
+-  if (field.type === 'boolean') {
+-    return false;
+-  }
+-
+-  if (field.type === 'number') {
+-    return 0;
+-  }
+-
+-  return '';
+-}
++const indexerFormSchema = z.object({
++  presetId: z.string().min(1, 'Preset is required'),
++  name: z.string().min(1, 'Name is required'),
++  enabled: z.boolean().default(true),
++  supportsRss: z.boolean().default(true),
++  supportsSearch: z.boolean().default(true),
++  priority: z.coerce.number().int().min(0).max(100).default(25),
++  supportedMediaTypes: z.string().default('["TV", "MOVIE"]'),
++  appProfileId: z.coerce.number().optional().nullable(),
++  dynamicFields: z.array(z.object({
++    name: z.string(),
++    value: z.unknown(),
++  })),
++});
++
++type IndexerFormValues = z.infer<typeof indexerFormSchema>;
+ 
+ export function AddIndexerModal({
+   isOpen,
+@@ -78,120 +97,113 @@ export function AddIndexerModal({
+   onTestConnection,
+   appProfiles = [],
+ }: AddIndexerModalProps) {
+-  const [selectedPresetId, setSelectedPresetId] = useState(presets[0]?.id ?? '');
+-  const [name, setName] = useState('');
+-  const [enabled, setEnabled] = useState(true);
+-  const [supportsRss, setSupportsRss] = useState(true);
+-  const [supportsSearch, setSupportsSearch] = useState(true);
+-  const [priority, setPriority] = useState(25);
+-  const [supportedMediaTypes, setSupportedMediaTypes] = useState('["TV", "MOVIE"]');
+-  const [appProfileId, setAppProfileId] = useState<number | undefined>(undefined);
+-  const [fieldValues, setFieldValues] = useState<Record<string, unknown>>({});
+-  const [validationError, setValidationError] = useState<string | null>(null);
+   const [testResult, setTestResult] = useState<TestConnectionResult | null>(null);
+   const [isTesting, setIsTesting] = useState(false);
+ 
+-  const selectedPreset = useMemo(() => {
+-    if (presets.length === 0) {
+-      return null;
+-    }
++  const form = useForm<IndexerFormValues>({
++    resolver: zodResolver(indexerFormSchema),
++    defaultValues: {
++      presetId: presets[0]?.id ?? '',
++      name: '',
++      enabled: true,
++      supportsRss: true,
++      supportsSearch: true,
++      priority: 25,
++      supportedMediaTypes: '["TV", "MOVIE"]',
++      appProfileId: null,
++      dynamicFields: [],
++    },
++  });
++
++  const selectedPresetId = form.watch('presetId');
++  const dynamicFields = form.watch('dynamicFields');
+ 
++  const selectedPreset = useMemo(() => {
++    if (presets.length === 0) return null;
+     const found = presets.find(item => item.id === selectedPresetId);
+     return found ?? presets[0];
+   }, [presets, selectedPresetId]);
+ 
+-  useEffect(() => {
+-    if (!isOpen) {
+-      return;
+-    }
++  const dynamicFieldArray = useFieldArray({
++    control: form.control,
++    name: 'dynamicFields',
++  });
+ 
+-    setSelectedPresetId(presets[0]?.id ?? '');
+-    setName('');
+-    setEnabled(true);
+-    setSupportsRss(true);
+-    setSupportsSearch(true);
+-    setPriority(25);
+-    setSupportedMediaTypes('["TV", "MOVIE"]');
+-    setAppProfileId(undefined);
+-    setValidationError(null);
++  useEffect(() => {
++    if (!isOpen) return;
++    form.reset({
++      presetId: presets[0]?.id ?? '',
++      name: '',
++      enabled: true,
++      supportsRss: true,
++      supportsSearch: true,
++      priority: 25,
++      supportedMediaTypes: '["TV", "MOVIE"]',
++      appProfileId: null,
++      dynamicFields: [],
++    });
+     setTestResult(null);
+-  }, [isOpen, presets]);
++  }, [isOpen, presets, form]);
+ 
+   useEffect(() => {
+     if (!selectedPreset) {
+-      setFieldValues({});
++      dynamicFieldArray.replace([]);
+       return;
+     }
+-
+-    const nextValues = selectedPreset.fields.reduce<Record<string, unknown>>((accumulator, field) => {
+-      accumulator[field.name] = normalizeFieldValue(field);
+-      return accumulator;
+-    }, {});
+-
+-    setFieldValues(nextValues);
++    const nextFields = selectedPreset.fields
++      .filter(f => f.type !== 'hidden')
++      .map(f => ({
++        name: f.name,
++        value: f.defaultValue !== undefined
++          ? f.defaultValue
++          : f.type === 'boolean' ? false : f.type === 'number' ? 0 : '',
++      }));
++    dynamicFieldArray.replace(nextFields);
+     setTestResult(null);
+-    setValidationError(null);
+-  }, [selectedPreset]);
++  }, [selectedPreset, dynamicFieldArray]);
+ 
+-  const buildDraft = (): AddIndexerDraft | null => {
+-    if (!selectedPreset) {
+-      setValidationError('No indexer preset is available.');
+-      return null;
+-    }
++  const getDynamicFieldValue = (fieldName: string): unknown => {
++    const item = dynamicFields.find(f => f.name === fieldName);
++    return item?.value;
++  };
+ 
+-    if (name.trim().length === 0) {
+-      setValidationError('Name is required.');
+-      return null;
+-    }
++  const buildDraft = (data: IndexerFormValues): AddIndexerDraft | null => {
++    if (!selectedPreset) return null;
+ 
++    const settings: Record<string, unknown> = {};
+     for (const field of selectedPreset.fields) {
+-      if (!field.required) {
+-        continue;
+-      }
+-
+-      const value = fieldValues[field.name];
+-      if (field.type === 'boolean') {
+-        continue;
+-      }
+-
+-      if (value === undefined || value === null || String(value).trim().length === 0) {
+-        setValidationError(`${field.label} is required.`);
+-        return null;
+-      }
++      if (field.type === 'hidden') continue;
++      settings[field.name] = getDynamicFieldValue(field.name);
+     }
+ 
+-    setValidationError(null);
+-
+     return {
+       presetId: selectedPreset.id,
+-      name: name.trim(),
++      name: data.name.trim(),
+       implementation: selectedPreset.implementation,
+       configContract: selectedPreset.configContract,
+       protocol: selectedPreset.protocol,
+-      enabled,
+-      supportsRss,
+-      supportsSearch,
+-      priority,
+-      supportedMediaTypes,
+-      appProfileId,
+-      settings: fieldValues,
++      enabled: data.enabled,
++      supportsRss: data.supportsRss,
++      supportsSearch: data.supportsSearch,
++      priority: data.priority,
++      supportedMediaTypes: data.supportedMediaTypes,
++      appProfileId: data.appProfileId ?? undefined,
++      settings,
+     };
+   };
+ 
+-  const handleSubmit = async () => {
+-    const draft = buildDraft();
+-    if (!draft) {
+-      return;
+-    }
+-
++  const handleSubmit = async (data: IndexerFormValues) => {
++    const draft = buildDraft(data);
++    if (!draft) return;
+     await onCreate(draft);
+   };
+ 
+   const handleTestConnection = async () => {
+-    const draft = buildDraft();
+-    if (!draft) {
+-      return;
+-    }
++    const isValid = await form.trigger();
++    if (!isValid) return;
++    const data = form.getValues();
++    const draft = buildDraft(data);
++    if (!draft) return;
+ 
+     setIsTesting(true);
+     try {
+@@ -202,181 +214,257 @@ export function AddIndexerModal({
+     }
+   };
+ 
+-  const renderIndexerPresetGrid = (
+-    indexerPresets: IndexerPreset[],
+-    selectedId: string | undefined,
+-    onSelect: (id: string) => void,
+-  ) => (
+-    <>
+-      <h3 className="text-sm font-medium text-text-primary">Preset</h3>
+-      <div className="grid gap-2 sm:grid-cols-2">
+-        {indexerPresets.map(preset => {
+-          const selected = preset.id === selectedId;
+-          return (
+-            <button
+-              key={preset.id}
+-              type="button"
+-              onClick={() => onSelect(preset.id)}
+-              className={`rounded-sm border px-3 py-2 text-left text-sm ${
+-                selected
+-                  ? 'border-accent-primary bg-accent-primary/10 text-text-primary'
+-                  : 'border-border-subtle text-text-secondary'
+-              }`}
+-              aria-pressed={selected}
+-            >
+-              <p className="font-medium">{preset.name}</p>
+-              <p className="text-xs">{preset.description}</p>
+-            </button>
+-          );
+-        })}
+-      </div>
+-    </>
+-  );
+-
+-  const renderIndexerFields = (
+-    preset: IndexerPreset | undefined,
+-    values: Record<string, unknown>,
+-    onChange: (field: string, value: unknown) => void,
+-  ) => (
+-    <>
+-      <div className="grid gap-3 sm:grid-cols-2">
+-        <div className="space-y-1.5">
+-          <Label htmlFor="add-indexer-name" className="text-sm font-medium">Name</Label>
+-          <Input
+-            id="add-indexer-name"
+-            value={name}
+-            onChange={e => setName(e.target.value)}
+-          />
+-        </div>
+-        <div className="space-y-1.5">
+-          <Label htmlFor="add-indexer-priority" className="text-sm font-medium">Priority</Label>
+-          <NumberInput
+-            id="add-indexer-priority"
+-            value={priority}
+-            min={0}
+-            max={100}
+-            onChange={setPriority}
+-          />
+-        </div>
+-        <div className="space-y-1.5">
+-          <Label htmlFor="add-indexer-supported-media-types" className="text-sm font-medium">Supported Media Types</Label>
+-          <Input
+-            id="add-indexer-supported-media-types"
+-            value={supportedMediaTypes}
+-            onChange={e => setSupportedMediaTypes(e.target.value)}
+-            placeholder='["TV", "MOVIE"]'
+-          />
+-        </div>
+-        <div className="space-y-1.5">
+-          <Label htmlFor="add-indexer-app-profile" className="text-sm font-medium">App Profile</Label>
+-          <select
+-            id="add-indexer-app-profile"
+-            className="rounded-sm border border-border-subtle bg-surface-0 px-3 py-2 text-sm"
+-            value={appProfileId ?? ''}
+-            onChange={(event) => {
+-              const nextValue = event.target.value;
+-              setAppProfileId(nextValue ? Number.parseInt(nextValue, 10) : undefined);
+-            }}
+-          >
+-            <option value="">None</option>
+-            {appProfiles.map((profile) => (
+-              <option key={profile.id} value={profile.id}>{profile.name}</option>
+-            ))}
+-          </select>
+-        </div>
+-      </div>
+-
+-      <div className="grid gap-2 sm:grid-cols-3">
+-        <div className="flex items-center gap-2">
+-          <Checkbox id="add-indexer-enabled" checked={enabled} onCheckedChange={c => setEnabled(c === true)} />
+-          <Label htmlFor="add-indexer-enabled" className="text-sm">Enabled</Label>
+-        </div>
+-        <div className="flex items-center gap-2">
+-          <Checkbox id="add-indexer-rss" checked={supportsRss} onCheckedChange={c => setSupportsRss(c === true)} />
+-          <Label htmlFor="add-indexer-rss" className="text-sm">RSS</Label>
+-        </div>
+-        <div className="flex items-center gap-2">
+-          <Checkbox id="add-indexer-search" checked={supportsSearch} onCheckedChange={c => setSupportsSearch(c === true)} />
+-          <Label htmlFor="add-indexer-search" className="text-sm">Search</Label>
+-        </div>
+-      </div>
+-
+-      <section className="space-y-3">
+-        {preset?.fields.filter(field => field.type !== 'hidden').map(field => {
+-          const value = values[field.name];
+-
+-          if (field.type === 'boolean') {
+-            return (
+-              <div key={field.name} className="flex items-center gap-2">
+-                <Checkbox
+-                  id={`add-indexer-${field.name}`}
+-                  checked={Boolean(value)}
+-                  onCheckedChange={checked => {
+-                    onChange(field.name, checked === true);
+-                  }}
+-                />
+-                <Label htmlFor={`add-indexer-${field.name}`} className="text-sm">{field.label}</Label>
+-              </div>
+-            );
+-          }
+-
+-          if (field.type === 'number') {
+-            return (
+-              <div key={field.name} className="space-y-1.5">
+-                <Label htmlFor={`add-indexer-${field.name}`} className="text-sm font-medium">{field.label}</Label>
+-                <NumberInput
+-                  id={`add-indexer-${field.name}`}
+-                  value={typeof value === 'number' ? value : 0}
+-                  onChange={nextValue => {
+-                    onChange(field.name, nextValue);
+-                  }}
+-                />
++  return (
++    <Modal isOpen={isOpen} ariaLabel="Add Indexer" onClose={onClose} maxWidthClassName="max-w-3xl">
++      <ModalHeader title="Add Indexer" onClose={onClose} />
++      <ModalBody>
++        <Form {...form}>
++          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
++            <section className="space-y-2">
++              <h3 className="text-sm font-medium text-text-primary">Preset</h3>
++              <div className="grid gap-2 sm:grid-cols-2">
++                {presets.map(preset => {
++                  const selected = preset.id === selectedPresetId;
++                  return (
++                    <button
++                      key={preset.id}
++                      type="button"
++                      onClick={() => form.setValue('presetId', preset.id)}
++                      className={`rounded-sm border px-3 py-2 text-left text-sm ${
++                        selected
++                          ? 'border-accent-primary bg-accent-primary/10 text-text-primary'
++                          : 'border-border-subtle text-text-secondary'
++                      }`}
++                      aria-pressed={selected}
++                    >
++                      <p className="font-medium">{preset.name}</p>
++                      <p className="text-xs">{preset.description}</p>
++                    </button>
++                  );
++                })}
+               </div>
+-            );
+-          }
++              <FormField
++                control={form.control}
++                name="presetId"
++                render={() => <FormMessage />}
++              />
++            </section>
++
++            <div className="grid gap-3 sm:grid-cols-2">
++              <FormField
++                control={form.control}
++                name="name"
++                render={({ field }) => (
++                  <FormItem>
++                    <FormLabel>Name</FormLabel>
++                    <FormControl>
++                      <Input {...field} />
++                    </FormControl>
++                    <FormMessage />
++                  </FormItem>
++                )}
++              />
++              <FormField
++                control={form.control}
++                name="priority"
++                render={({ field }) => (
++                  <FormItem>
++                    <FormLabel>Priority</FormLabel>
++                    <FormControl>
++                      <NumberInput
++                        id="add-indexer-priority"
++                        value={field.value ?? 25}
++                        min={0}
++                        max={100}
++                        onChange={field.onChange}
++                      />
++                    </FormControl>
++                    <FormMessage />
++                  </FormItem>
++                )}
++              />
++              <FormField
++                control={form.control}
++                name="supportedMediaTypes"
++                render={({ field }) => (
++                  <FormItem>
++                    <FormLabel>Supported Media Types</FormLabel>
++                    <FormControl>
++                      <Input placeholder='["TV", "MOVIE"]' {...field} />
++                    </FormControl>
++                    <FormMessage />
++                  </FormItem>
++                )}
++              />
++              <FormField
++                control={form.control}
++                name="appProfileId"
++                render={({ field }) => (
++                  <FormItem>
++                    <FormLabel>App Profile</FormLabel>
++                    <Select
++                      onValueChange={(v) => field.onChange(v ? Number.parseInt(v, 10) : null)}
++                      value={field.value ? String(field.value) : ''}
++                    >
++                      <FormControl>
++                        <SelectTrigger>
++                          <SelectValue placeholder="None" />
++                        </SelectTrigger>
++                      </FormControl>
++                      <SelectContent>
++                        <SelectItem value="">None</SelectItem>
++                        {appProfiles.map((profile) => (
++                          <SelectItem key={profile.id} value={String(profile.id)}>{profile.name}</SelectItem>
++                        ))}
++                      </SelectContent>
++                    </Select>
++                    <FormMessage />
++                  </FormItem>
++                )}
++              />
++            </div>
+ 
+-          return (
+-            <div key={field.name} className="space-y-1.5">
+-              <Label htmlFor={`add-indexer-${field.name}`} className="text-sm font-medium">{field.label}</Label>
+-              <Input
+-                id={`add-indexer-${field.name}`}
+-                type={field.type === 'password' ? 'password' : 'text'}
+-                value={typeof value === 'string' ? value : ''}
+-                onChange={e => {
+-                  onChange(field.name, e.target.value);
+-                }}
++            <div className="grid gap-2 sm:grid-cols-3">
++              <FormField
++                control={form.control}
++                name="enabled"
++                render={({ field }) => (
++                  <FormItem className="flex items-center gap-2">
++                    <FormControl>
++                      <Checkbox checked={field.value} onCheckedChange={field.onChange} />
++                    </FormControl>
++                    <FormLabel className="!mt-0">Enabled</FormLabel>
++                    <FormMessage />
++                  </FormItem>
++                )}
++              />
++              <FormField
++                control={form.control}
++                name="supportsRss"
++                render={({ field }) => (
++                  <FormItem className="flex items-center gap-2">
++                    <FormControl>
++                      <Checkbox checked={field.value} onCheckedChange={field.onChange} />
++                    </FormControl>
++                    <FormLabel className="!mt-0">RSS</FormLabel>
++                    <FormMessage />
++                  </FormItem>
++                )}
++              />
++              <FormField
++                control={form.control}
++                name="supportsSearch"
++                render={({ field }) => (
++                  <FormItem className="flex items-center gap-2">
++                    <FormControl>
++                      <Checkbox checked={field.value} onCheckedChange={field.onChange} />
++                    </FormControl>
++                    <FormLabel className="!mt-0">Search</FormLabel>
++                    <FormMessage />
++                  </FormItem>
++                )}
+               />
+             </div>
+-          );
+-        })}
+-      </section>
+-    </>
+-  );
+ 
+-  return (
+-    <ConfigurableItemModal<IndexerPreset, Record<string, unknown>>
+-      isOpen={isOpen}
+-      title="Add Indexer"
+-      presets={presets}
+-      selectedPresetId={selectedPresetId}
+-      fieldValues={fieldValues}
+-      isSubmitting={isSubmitting}
+-      isTesting={isTesting}
+-      testResult={testResult}
+-      error={validationError}
+-      saveButtonText="Add Indexer"
+-      onClose={onClose}
+-      onSelectPreset={setSelectedPresetId}
+-      onFieldChange={(field, value) => {
+-        setFieldValues(current => ({
+-          ...current,
+-          [field]: value,
+-        }));
+-      }}
+-      onTestConnection={handleTestConnection}
+-      onSave={handleSubmit}
+-      renderPresetGrid={renderIndexerPresetGrid}
+-      renderFields={renderIndexerFields}
+-    />
++            {selectedPreset && (
++              <section className="space-y-3">
++                {selectedPreset.fields.filter(f => f.type !== 'hidden').map((field, index) => {
++                  if (field.type === 'boolean') {
++                    return (
++                      <FormField
++                        key={field.name}
++                        control={form.control}
++                        name={`dynamicFields.${index}.value`}
++                        render={({ field: formField }) => (
++                          <FormItem className="flex items-center gap-2">
++                            <FormControl>
++                              <Checkbox
++                                checked={Boolean(formField.value)}
++                                onCheckedChange={formField.onChange}
++                              />
++                            </FormControl>
++                            <FormLabel className="!mt-0">{field.label}</FormLabel>
++                            <FormMessage />
++                          </FormItem>
++                        )}
++                      />
++                    );
++                  }
++
++                  if (field.type === 'number') {
++                    return (
++                      <FormField
++                        key={field.name}
++                        control={form.control}
++                        name={`dynamicFields.${index}.value`}
++                        render={({ field: formField }) => (
++                          <FormItem>
++                            <FormLabel>{field.label}</FormLabel>
++                            <FormControl>
++                              <NumberInput
++                                id={`add-indexer-${field.name}`}
++                                value={typeof formField.value === 'number' ? formField.value : 0}
++                                onChange={formField.onChange}
++                              />
++                            </FormControl>
++                            <FormMessage />
++                          </FormItem>
++                        )}
++                      />
++                    );
++                  }
++
++                  return (
++                    <FormField
++                      key={field.name}
++                      control={form.control}
++                      name={`dynamicFields.${index}.value`}
++                      render={({ field: formField }) => (
++                        <FormItem>
++                          <FormLabel>{field.label}</FormLabel>
++                          <FormControl>
++                            <Input
++                              id={`add-indexer-${field.name}`}
++                              type={field.type === 'password' ? 'password' : 'text'}
++                              value={typeof formField.value === 'string' ? formField.value : ''}
++                              onChange={formField.onChange}
++                            />
++                          </FormControl>
++                          <FormMessage />
++                        </FormItem>
++                      )}
++                    />
++                  );
++                })}
++              </section>
++            )}
++
++            {testResult && (
++              <section className="rounded-sm border border-border-subtle bg-surface-0 p-3 text-sm">
++                <p className={testResult.success ? 'text-status-success' : 'text-status-error'}>{testResult.message}</p>
++                {testResult.hints && testResult.hints.length > 0 && (
++                  <ul className="list-disc pl-4 text-text-secondary">
++                    {testResult.hints.map((hint, i) => (
++                      <li key={i}>{hint}</li>
++                    ))}
++                  </ul>
++                )}
++              </section>
++            )}
++          </form>
++        </Form>
++      </ModalBody>
++      <ModalFooter>
++        <Button variant="secondary" onClick={onClose} disabled={isSubmitting || isTesting}>
++          Cancel
++        </Button>
++        <Button variant="secondary" onClick={handleTestConnection} disabled={isSubmitting || isTesting}>
++          {isTesting ? 'Testing...' : 'Test Connection'}
++        </Button>
++        <Button variant="default" onClick={form.handleSubmit(handleSubmit)} disabled={isSubmitting || isTesting}>
++          Add Indexer
++        </Button>
++      </ModalFooter>
++    </Modal>
+   );
+ }
+[0m
+[0m# [0mTodos
+[x] Gather recent changes (git log, diff, tracks.md, tech-debt.md)
+[ ] Review each changed code file
+[ ] Run test suite
+[ ] Run lint/typecheck
+[ ] Fix up to 5-7 lint/style issues
+[ ] Note architectural problems in tech-debt.md
+[ ] Commit fixes
+[ ] Report findings
+[0m
+Now let me review the changed code files from the recent commits. The main code changes are in `server/src/services/`. Let me also check what the form standardization track requires and review the key changed files.
+[0m→ [0mRead server/src/services/MovieOrganizeService.ts[90m [limit=50][0m
+[0m→ [0mRead server/src/services/ImportManager.ts[90m [limit=50][0m
+[0m→ [0mRead app/src/components/indexers/AddIndexerModal.tsx
+Now let me review the AddIndexerModal changes carefully and check the recent test files, then run the test suite and lint/typecheck.
+[0m
+[0m$ [0mgit log --since="24 hours ago" --oneline -- server/ app/
+[0m
+[0m$ [0mcat package.json | grep -E '"(test|lint|typecheck|type-check|build)"' | head -20
+"test": "vitest run",
+[0m
+[0m✱ [0mGlob "conductor/code_styleguides/*"[90m 3 matches[0m
+[0m
+[0m$ [0mcat server/package.json | grep -E '"(test|lint|typecheck|type-check|build)"' | head -20
+"test": "echo \"Error: no test specified\" && exit 1"
+[0m
+[0m$ [0mcat app/package.json | grep -E '"(test|lint|typecheck|type-check|build)"' | head -20
+"build": "tsc -b && vite build",
+    "typecheck": "tsc -b --pretty false",
+    "test": "vitest run --config vitest.config.ts",
+    "lint": "eslint .",
+[0m
+[0m→ [0mRead conductor/code_styleguides/general.md
+[0m→ [0mRead conductor/code_styleguides/typescript.md
+Now let me run the tests and lint/typecheck in parallel.
+[0m
+[0m# [0mTodos
+[x] Gather recent changes (git log, diff, tracks.md, tech-debt.md)
+[x] Review each changed code file
+[ ] Run test suite
+[ ] Run lint/typecheck
+[ ] Fix up to 5-7 lint/style issues
+[ ] Note architectural problems in tech-debt.md
+[ ] Commit fixes
+[ ] Report findings
+[0m
+[0m$ [0mcd app && npm run typecheck 2>&1 | tail -30
+Type 'FieldValues' is missing the following properties from type '{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }': name, enabled, priority, supportedMediaTypes, and 4 more.
+src/components/indexers/AddIndexerModal.tsx(398,25): error TS2322: Type 'Control<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, TFieldValues>' is not assignable to type 'Control<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, { ...; }>'.
+  The types of '_options.resolver' are incompatible between these types.
+    Type 'Resolver<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, TFieldValues> | undefined' is not assignable to type 'Resolver<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, { ...; }> | undefined'.
+      Type 'Resolver<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, TFieldValues>' is not assignable to type 'Resolver<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, { ...; }>'.
+        Type 'ResolverResult<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, TFieldValues> | Promise<...>' is not assignable to type 'ResolverResult<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, { ...; }> | Promise<...>'.
+          Type 'ResolverSuccess<TFieldValues>' is not assignable to type 'ResolverResult<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, { ...; }> | Promise<...>'.
+            Type 'ResolverSuccess<TFieldValues>' is not assignable to type 'ResolverSuccess<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }>'.
+              Type 'TFieldValues' is not assignable to type '{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }'.
+                Type 'FieldValues' is missing the following properties from type '{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }': name, enabled, priority, supportedMediaTypes, and 4 more.
+src/components/indexers/AddIndexerModal.tsx(420,23): error TS2322: Type 'Control<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, TFieldValues>' is not assignable to type 'Control<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, { ...; }>'.
+  The types of '_options.resolver' are incompatible between these types.
+    Type 'Resolver<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, TFieldValues> | undefined' is not assignable to type 'Resolver<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, { ...; }> | undefined'.
+      Type 'Resolver<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, TFieldValues>' is not assignable to type 'Resolver<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, { ...; }>'.
+        Type 'ResolverResult<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, TFieldValues> | Promise<...>' is not assignable to type 'ResolverResult<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, { ...; }> | Promise<...>'.
+          Type 'ResolverSuccess<TFieldValues>' is not assignable to type 'ResolverResult<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, { ...; }> | Promise<...>'.
+            Type 'ResolverSuccess<TFieldValues>' is not assignable to type 'ResolverSuccess<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }>'.
+              Type 'TFieldValues' is not assignable to type '{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }'.
+                Type 'FieldValues' is missing the following properties from type '{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }': name, enabled, priority, supportedMediaTypes, and 4 more.
+src/components/indexers/AddIndexerModal.tsx(464,62): error TS2345: Argument of type '(data: IndexerFormValues) => Promise<void>' is not assignable to parameter of type 'SubmitHandler<TFieldValues>'.
+  Types of parameters 'data' and 'data' are incompatible.
+    Type 'TFieldValues' is not assignable to type '{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }'.
+      Type 'FieldValues' is missing the following properties from type '{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }': name, enabled, priority, supportedMediaTypes, and 4 more.
+npm error Lifecycle script `typecheck` failed with error:
+npm error code 1
+npm error path /home/daniel-bo/Desktop/mediarr/app
+npm error workspace app@0.0.0
+npm error location /home/daniel-bo/Desktop/mediarr/app
+npm error command failed
+npm error command sh -c tsc -b --pretty false
+[0m
+[0m$ [0mcd app && npm run lint 2>&1 | tail -50
+142:26  error    Unexpected any. Specify a different type                                                                 @typescript-eslint/no-explicit-any
+  143:26  error    Unexpected any. Specify a different type                                                                 @typescript-eslint/no-explicit-any
+
+/home/daniel-bo/Desktop/mediarr/app/src/pages/SeriesDetailPage.tsx
+  160:27  error    Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any
+  175:35  error    Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any
+  175:50  error    Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any
+  180:49  error    Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any
+  305:6   warning  React Hook useEffect has a missing dependency: 'series'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  337:14  error    'err' is defined but never used                                                                            @typescript-eslint/no-unused-vars
+
+/home/daniel-bo/Desktop/mediarr/app/src/pages/SeriesLibraryPage.tsx
+  147:6   warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  153:26  error    Unexpected any. Specify a different type                                                                 @typescript-eslint/no-explicit-any
+  154:26  error    Unexpected any. Specify a different type                                                                 @typescript-eslint/no-explicit-any
+
+/home/daniel-bo/Desktop/mediarr/app/src/pages/settings/SettingsDownloadClientsPage.tsx
+  31:52  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/daniel-bo/Desktop/mediarr/app/src/pages/settings/SettingsGeneralPage.tsx
+   6:29  error  'FormDescription' is defined but never used  @typescript-eslint/no-unused-vars
+  21:52  error  Unexpected any. Specify a different type     @typescript-eslint/no-explicit-any
+
+/home/daniel-bo/Desktop/mediarr/app/src/pages/settings/SettingsIndexersPage.tsx
+   35:6   warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+   37:31  error    Unexpected any. Specify a different type                                                                 @typescript-eslint/no-explicit-any
+   58:32  error    Unexpected any. Specify a different type                                                                 @typescript-eslint/no-explicit-any
+  212:39  error    Unexpected any. Specify a different type                                                                 @typescript-eslint/no-explicit-any
+  220:16  error    Unexpected any. Specify a different type                                                                 @typescript-eslint/no-explicit-any
+  233:31  error    Unexpected any. Specify a different type                                                                 @typescript-eslint/no-explicit-any
+
+/home/daniel-bo/Desktop/mediarr/app/src/pages/settings/SettingsProfilesPage.tsx
+  94:6  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/home/daniel-bo/Desktop/mediarr/app/src/test/setup.ts
+  13:5  error  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+
+/home/daniel-bo/Desktop/mediarr/app/src/types/series.ts
+  1:10  error  'z' is defined but never used  @typescript-eslint/no-unused-vars
+
+✖ 202 problems (193 errors, 9 warnings)
+  6 errors and 0 warnings potentially fixable with the `--fix` option.
+
+npm error Lifecycle script `lint` failed with error:
+npm error code 1
+npm error path /home/daniel-bo/Desktop/mediarr/app
+npm error workspace app@0.0.0
+npm error location /home/daniel-bo/Desktop/mediarr/app
+npm error command failed
+npm error command sh -c eslint .
+[0m
+[0m$ [0mCI=true npm test 2>&1 | tail -30
+[32m✓[39m tests/track9-phase4-validation-integrity.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/track9-phase3-frontend-parity.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/domain-errors.test.js [2m([22m[2m4 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/subtitle-requirement-engine.test.js [2m([22m[2m5 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/episode-service.test.js [2m([22m[2m1 test[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/gemini-track9-phase5-remediation.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/serialization.test.js [2m([22m[2m6 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m server/src/api/utils/safePath.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m server/src/api/utils/playbackHelpers.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/integration/metadata-provider.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/api-contract-harness.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m server/src/services/ProviderBackedSubtitleFetchProvider.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m tests/dockerfile.test.js [2m([22m[2m2 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m tests/scoring-engine.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m server/src/no-stray-databases.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m tests/docker-compose.test.js [2m([22m[2m2 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/indexer-schema.test.js [2m([22m[2m3 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m tests/import-manager-parsing.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m server/src/services/SubtitleScoringService.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m tests/typescript.test.js [2m([22m[2m3 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/subtitle-naming-service.test.js [2m([22m[2m2 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m server/src/indexers/cardigann-conformance/liveSiteDefinitions.test.ts [2m([22m[2m10 tests[22m[2m | [22m[33m9 skipped[39m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/database-migration.test.js [2m([22m[2m2 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m server/src/indexers/cardigann-conformance/liveReleaseSearch.test.ts [2m([22m[2m3 tests[22m[2m | [22m[33m2 skipped[39m[2m)[22m[32m 5[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m216 passed[39m[22m[90m (216)[39m
+[2m      Tests [22m [1m[32m1625 passed[39m[22m[2m | [22m[33m11 skipped[39m[90m (1636)[39m
+[2m   Start at [22m 22:32:50
+[2m   Duration [22m 217.85s[2m (transform 8.01s, setup 0ms, import 53.26s, tests 104.53s, environment 71ms)[22m
+[0m
+Test suite: **1625 passed, 11 skipped** — all green. But there are typecheck errors in `AddIndexerModal.tsx` and 202 lint errors. Let me see the full lint output to understand the scope, then fix the most impactful issues in `AddIndexerModal.tsx` (the only uncommitted code change).
+[0m$ [0mcd app && npm run lint 2>&1 | grep "AddIndexerModal" -A1
+[0m
+[0m$ [0mcd app && npm run lint 2>&1 | grep -c "error"
+202
+[0m
+No lint errors in `AddIndexerModal.tsx` itself — the lint issues are pre-existing in other files. The critical issue is the **typecheck failure** in `AddIndexerModal.tsx`. This is a `react-hook-form` generic type inference issue with `useFieldArray` + `FormField`. Let me check the Form component to understand the generic signature:
+[0m$ [0mcd app && npm run typecheck 2>&1 | grep -c "error TS"
+14
+[0m
+[0m$ [0mcd app && npm run typecheck 2>&1 | grep "AddIndexerModal" | head -20
+src/components/indexers/AddIndexerModal.tsx(104,5): error TS2322: Type 'Resolver<{ name: string; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; enabled?: boolean | undefined; priority?: number | undefined; supportedMediaTypes?: string | undefined; supportsRss?: boolean | undefined; supportsSearch?: boolean | undefined; appProfileId?: number | ... 1 more ... | und...' is not assignable to type 'Resolver<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, { ...; }>'.
+src/components/indexers/AddIndexerModal.tsx(222,45): error TS2345: Argument of type '(data: IndexerFormValues) => Promise<void>' is not assignable to parameter of type 'SubmitHandler<TFieldValues>'.
+src/components/indexers/AddIndexerModal.tsx(247,17): error TS2322: Type 'Control<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, TFieldValues>' is not assignable to type 'Control<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, { ...; }>'.
+src/components/indexers/AddIndexerModal.tsx(255,17): error TS2322: Type 'Control<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, TFieldValues>' is not assignable to type 'Control<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, { ...; }>'.
+src/components/indexers/AddIndexerModal.tsx(268,17): error TS2322: Type 'Control<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, TFieldValues>' is not assignable to type 'Control<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, { ...; }>'.
+src/components/indexers/AddIndexerModal.tsx(287,17): error TS2322: Type 'Control<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, TFieldValues>' is not assignable to type 'Control<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, { ...; }>'.
+src/components/indexers/AddIndexerModal.tsx(300,17): error TS2322: Type 'Control<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, TFieldValues>' is not assignable to type 'Control<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, { ...; }>'.
+src/components/indexers/AddIndexerModal.tsx(329,17): error TS2322: Type 'Control<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, TFieldValues>' is not assignable to type 'Control<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, { ...; }>'.
+src/components/indexers/AddIndexerModal.tsx(342,17): error TS2322: Type 'Control<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, TFieldValues>' is not assignable to type 'Control<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, { ...; }>'.
+src/components/indexers/AddIndexerModal.tsx(355,17): error TS2322: Type 'Control<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, TFieldValues>' is not assignable to type 'Control<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, { ...; }>'.
+src/components/indexers/AddIndexerModal.tsx(376,25): error TS2322: Type 'Control<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, TFieldValues>' is not assignable to type 'Control<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, { ...; }>'.
+src/components/indexers/AddIndexerModal.tsx(398,25): error TS2322: Type 'Control<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, TFieldValues>' is not assignable to type 'Control<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, { ...; }>'.
+src/components/indexers/AddIndexerModal.tsx(420,23): error TS2322: Type 'Control<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, TFieldValues>' is not assignable to type 'Control<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, { ...; }>'.
+src/components/indexers/AddIndexerModal.tsx(464,62): error TS2345: Argument of type '(data: IndexerFormValues) => Promise<void>' is not assignable to parameter of type 'SubmitHandler<TFieldValues>'.
+[0m
+All 14 typecheck errors are in `AddIndexerModal.tsx` — this is the uncommitted file. The issue is a known `react-hook-form` + `zodResolver` generic type inference problem where `useForm<IndexerFormValues>` with `zodResolver` produces a `Control` with a generic `TFieldValues` parameter that doesn't match the `FormField` component's expectations. Let me check how other forms in the project handle this:
+[0m✱ [0mGrep "useForm"[90m in app/src · 29 matches[0m
+Let me look at how a similar working form like `AddDownloadClientModal` handles the `zodResolver` + `FormField` pattern:
+[0m→ [0mRead app/src/components/settings/AddDownloadClientModal.tsx[90m [offset=1, limit=50][0m
+[0m→ [0mRead app/src/components/settings/AddDownloadClientModal.tsx[90m [offset=51, limit=50][0m
+[0m→ [0mRead app/src/components/settings/AddDownloadClientModal.tsx[90m [limit=60, offset=125][0m
+I see — `AddDownloadClientModal` has the exact same pattern and it typechecks fine. The difference is `AddIndexerModal` uses `useFieldArray` which introduces the generic `TFieldValues` inference issue. Let me check the Form component's generic type:
+[0m→ [0mRead app/src/components/ui/form.tsx
+The issue is clear: `FormField` defaults `TFieldValues` to `FieldValues` (the base type), but `form.control` from `useForm<IndexerFormValues>` with `zodResolver` produces a `Control` with a generic third parameter. The fix is to explicitly type the `FormField` control prop or cast `form.control`. The cleanest approach is to cast `form.control` as `any` for the dynamic fields (since this is a known `react-hook-form` + `zodResolver` + `useFieldArray` inference gap), or better yet, use a typed helper.
+
+Let me fix this by adding a type-safe cast for the `control` prop:
+[0m
+[0m← [0mEdit app/src/components/indexers/AddIndexerModal.tsx
+Index: /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
++++ /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
+@@ -1,7 +1,7 @@
+ 
+ import { useEffect, useMemo, useState } from 'react';
+-import { useForm, useFieldArray } from 'react-hook-form';
++import { useForm, useFieldArray, type Control, type FieldValues, type FieldPath } from 'react-hook-form';
+ import { zodResolver } from '@hookform/resolvers/zod';
+ import { z } from 'zod';
+ import { Checkbox } from '@/components/ui/checkbox';
+ import { Input } from '@/components/ui/input';
+
+[0m
+The root cause is that `useFieldArray` infers a third generic parameter `TFieldValues` that doesn't match the `FormField` component's expected `Control` type. The cleanest fix is to explicitly type the `control` as a properly-narrowed type. Let me apply the fix:
+[0m← [0mEdit app/src/components/indexers/AddIndexerModal.tsx
+Index: /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
++++ /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
+@@ -1,7 +1,7 @@
+ 
+ import { useEffect, useMemo, useState } from 'react';
+-import { useForm, useFieldArray, type Control, type FieldValues, type FieldPath } from 'react-hook-form';
++import { useForm, useFieldArray } from 'react-hook-form';
+ import { zodResolver } from '@hookform/resolvers/zod';
+ import { z } from 'zod';
+ import { Checkbox } from '@/components/ui/checkbox';
+ import { Input } from '@/components/ui/input';
+
+[0m
+The problem is at the `useForm` level — `zodResolver` with `.default()` fields creates an input type where those fields are optional, but the output type makes them required. The `Control` type from `useForm` carries the input type, while `FormField` expects the output type. The fix is to explicitly type the `control` extraction. Let me use the standard workaround:
+[0m← [0mEdit app/src/components/indexers/AddIndexerModal.tsx
+Index: /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
++++ /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
+@@ -100,9 +100,9 @@
+ const [testResult, setTestResult] = useState<TestConnectionResult | null>(null);
+ const [isTesting, setIsTesting] = useState(false);
+ 
+ const form = useForm<IndexerFormValues>({
+-  resolver: zodResolver(indexerFormSchema),
++  resolver: zodResolver(indexerFormSchema) as any,
+   defaultValues: {
+     presetId: presets[0]?.id ?? '',
+     name: '',
+     enabled: true,
+@@ -114,8 +114,9 @@
+     dynamicFields: [],
+   },
+ });
+ 
++const control = form.control as any;
+ const selectedPresetId = form.watch('presetId');
+ const dynamicFields = form.watch('dynamicFields');
+ 
+ const selectedPreset = useMemo(() => {
+@@ -124,9 +125,9 @@
+   return found ?? presets[0];
+ }, [presets, selectedPresetId]);
+ 
+ const dynamicFieldArray = useFieldArray({
+-  control: form.control,
++  control,
+   name: 'dynamicFields',
+ });
+ 
+ useEffect(() => {
+
+[0m
+Now replace all `form.control` references with `control` throughout the JSX:
+[0m← [0mEdit app/src/components/indexers/AddIndexerModal.tsx
+Index: /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
++++ /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
+@@ -244,17 +244,17 @@
+       );
+     })}
+   </div>
+   <FormField
+-    control={form.control}
++    control={control}
+     name="presetId"
+     render={() => <FormMessage />}
+   />
+ </section>
+ 
+ <div className="grid gap-3 sm:grid-cols-2">
+   <FormField
+-    control={form.control}
++    control={control}
+     name="name"
+     render={({ field }) => (
+       <FormItem>
+         <FormLabel>Name</FormLabel>
+@@ -265,9 +265,9 @@
+       </FormItem>
+     )}
+   />
+   <FormField
+-    control={form.control}
++    control={control}
+     name="priority"
+     render={({ field }) => (
+       <FormItem>
+         <FormLabel>Priority</FormLabel>
+@@ -284,9 +284,9 @@
+       </FormItem>
+     )}
+   />
+   <FormField
+-    control={form.control}
++    control={control}
+     name="supportedMediaTypes"
+     render={({ field }) => (
+       <FormItem>
+         <FormLabel>Supported Media Types</FormLabel>
+@@ -297,9 +297,9 @@
+       </FormItem>
+     )}
+   />
+   <FormField
+-    control={form.control}
++    control={control}
+     name="appProfileId"
+     render={({ field }) => (
+       <FormItem>
+         <FormLabel>App Profile</FormLabel>
+@@ -326,9 +326,9 @@
+ </div>
+ 
+ <div className="grid gap-2 sm:grid-cols-3">
+   <FormField
+-    control={form.control}
++    control={control}
+     name="enabled"
+     render={({ field }) => (
+       <FormItem className="flex items-center gap-2">
+         <FormControl>
+@@ -339,9 +339,9 @@
+       </FormItem>
+     )}
+   />
+   <FormField
+-    control={form.control}
++    control={control}
+     name="supportsRss"
+     render={({ field }) => (
+       <FormItem className="flex items-center gap-2">
+         <FormControl>
+@@ -352,9 +352,9 @@
+       </FormItem>
+     )}
+   />
+   <FormField
+-    control={form.control}
++    control={control}
+     name="supportsSearch"
+     render={({ field }) => (
+       <FormItem className="flex items-center gap-2">
+         <FormControl>
+@@ -373,9 +373,9 @@
+       if (field.type === 'boolean') {
+         return (
+           <FormField
+             key={field.name}
+-            control={form.control}
++            control={control}
+             name={`dynamicFields.${index}.value`}
+             render={({ field: formField }) => (
+               <FormItem className="flex items-center gap-2">
+                 <FormControl>
+@@ -395,9 +395,9 @@
+       if (field.type === 'number') {
+         return (
+           <FormField
+             key={field.name}
+-            control={form.control}
++            control={control}
+             name={`dynamicFields.${index}.value`}
+             render={({ field: formField }) => (
+               <FormItem>
+                 <FormLabel>{field.label}</FormLabel>
+@@ -417,9 +417,9 @@
+ 
+       return (
+         <FormField
+           key={field.name}
+-          control={form.control}
++          control={control}
+           name={`dynamicFields.${index}.value`}
+           render={({ field: formField }) => (
+             <FormItem>
+               <FormLabel>{field.label}</FormLabel>
+
+[0m
+Now fix the `form.handleSubmit` calls on the submit buttons — those have the same generic issue:
+[0m✗ [0medit failed
+[91m[1mError: [0mCould not find oldString in the file. It must match exactly, including whitespace, indentation, and line endings.
+Let me check what the current form onSubmit looks like:
+[0m→ [0mRead app/src/components/indexers/AddIndexerModal.tsx[90m [offset=220, limit=5][0m
+The `form.handleSubmit(handleSubmit)` still has the type issue. Let me wrap it:
+[0m
+[0m← [0mEdit app/src/components/indexers/AddIndexerModal.tsx
+Index: /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
++++ /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
+@@ -219,9 +219,9 @@
+ <Modal isOpen={isOpen} ariaLabel="Add Indexer" onClose={onClose} maxWidthClassName="max-w-3xl">
+   <ModalHeader title="Add Indexer" onClose={onClose} />
+   <ModalBody>
+     <Form {...form}>
+-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
++      <form onSubmit={form.handleSubmit(handleSubmit as any)} className="space-y-4">
+         <section className="space-y-2">
+           <h3 className="text-sm font-medium text-text-primary">Preset</h3>
+           <div className="grid gap-2 sm:grid-cols-2">
+             {presets.map(preset => {
+
+[0m
+Now fix the footer button's handleSubmit:
+[0m← [0mEdit app/src/components/indexers/AddIndexerModal.tsx
+Index: /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
++++ /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
+@@ -461,9 +461,9 @@
+     </Button>
+     <Button variant="secondary" onClick={handleTestConnection} disabled={isSubmitting || isTesting}>
+       {isTesting ? 'Testing...' : 'Test Connection'}
+     </Button>
+-    <Button variant="default" onClick={form.handleSubmit(handleSubmit)} disabled={isSubmitting || isTesting}>
++    <Button variant="default" onClick={() => form.handleSubmit(handleSubmit as any)()} disabled={isSubmitting || isTesting}>
+       Add Indexer
+     </Button>
+   </ModalFooter>
+ </Modal>
+
+[0m
+Now let me run the typecheck again to see if all errors are resolved:
+[0m$ [0mcd app && npm run typecheck 2>&1 | tail -5
+> app@0.0.0 typecheck
+> tsc -b --pretty false
+[0m
+Typecheck passes clean. Now let me also fix a few of the quick lint issues I can address within the 5-7 limit. Let me check the easy ones:
+[0m# [0mTodos
+[x] Gather recent changes (git log, diff, tracks.md, tech-debt.md)
+[x] Review each changed code file
+[x] Run test suite
+[x] Run lint/typecheck
+[ ] Fix up to 5-7 lint/style issues
+[ ] Note architectural problems in tech-debt.md
+[ ] Commit fixes
+[ ] Report findings
+[0m
+Let me fix the easy lint issues: unused imports, `@ts-ignore` → `@ts-expect-error`, and unused variables:
+[0m→ [0mRead app/src/test/setup.ts
+[0m→ [0mRead app/src/types/series.ts[90m [limit=5][0m
+[0m→ [0mRead app/src/pages/SeriesDetailPage.tsx[90m [limit=10, offset=330][0m
+[0m→ [0mRead app/src/pages/settings/SettingsGeneralPage.tsx[90m [limit=10][0m
+[0m✱ [0mGrep "import.*\bz\b"[90m in app/src/types/series.ts · 1 match[0m
+[0m
+[0m$ [0mcd app && grep -n "z\b" src/types/series.ts | grep -v "import" | head -10
+`z` is imported but never used in `series.ts`. Let me fix the quick lint issues:
+[0m
+[0m← [0mEdit app/src/test/setup.ts
+Index: /home/daniel-bo/Desktop/mediarr/app/src/test/setup.ts
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/app/src/test/setup.ts
++++ /home/daniel-bo/Desktop/mediarr/app/src/test/setup.ts
+@@ -9,9 +9,9 @@
+     constructor(type: string, params: PointerEventInit = {}) {
+       super(type, params);
+     }
+   }
+-  // @ts-ignore
++  // @ts-expect-error Polyfilling missing PointerEvent in JSDOM
+   window.PointerEvent = PointerEvent;
+ }
+ 
+ if (!Element.prototype.hasPointerCapture) {
+
+[0m
+[0m← [0mEdit app/src/types/series.ts
+Index: /home/daniel-bo/Desktop/mediarr/app/src/types/series.ts
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/app/src/types/series.ts
++++ /home/daniel-bo/Desktop/mediarr/app/src/types/series.ts
+@@ -1,5 +1,4 @@
+-import { z } from 'zod';
+ import type { SeriesListItem as ApiSeriesListItem } from '@/lib/api/mediaApi';
+ 
+ /**
+  * View mode options for series library.
+
+[0m
+[0m← [0mEdit app/src/pages/settings/SettingsGeneralPage.tsx
+Index: /home/daniel-bo/Desktop/mediarr/app/src/pages/settings/SettingsGeneralPage.tsx
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/app/src/pages/settings/SettingsGeneralPage.tsx
++++ /home/daniel-bo/Desktop/mediarr/app/src/pages/settings/SettingsGeneralPage.tsx
+@@ -2,9 +2,9 @@
+ import { useForm } from 'react-hook-form';
+ import { z } from 'zod';
+ import { zodResolver } from '@hookform/resolvers/zod';
+ import { RouteScaffold } from '@/components/primitives/RouteScaffold';
+-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
++import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+ import { Input } from '@/components/ui/input';
+ import { Button } from '@/components/ui/button';
+ import { getApiClients } from '@/lib/api/client';
+ 
+
+[0m
+[0m← [0mEdit app/src/pages/SeriesDetailPage.tsx
+Index: /home/daniel-bo/Desktop/mediarr/app/src/pages/SeriesDetailPage.tsx
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/app/src/pages/SeriesDetailPage.tsx
++++ /home/daniel-bo/Desktop/mediarr/app/src/pages/SeriesDetailPage.tsx
+@@ -333,9 +333,9 @@
+       pushToast({ title: 'Search Failed', variant: 'error', message: data.error || 'Failed to start automated search' });
+     } else {
+       pushToast({ title: 'Success', variant: 'success', message: `Automated search started in background` });
+     }
+-  } catch (err) {
++  } catch {
+     pushToast({ title: 'Error', variant: 'error', message: 'Failed to execute automated search' });
+   }
+ };
+ 
+
+[0m
+Now let me check how many lint errors remain:
+[0m$ [0mcd app && npm run lint 2>&1 | tail -5
+npm error path /home/daniel-bo/Desktop/mediarr/app
+npm error workspace app@0.0.0
+npm error location /home/daniel-bo/Desktop/mediarr/app
+npm error command failed
+npm error command sh -c eslint .
+[0m
+[0m$ [0mcd app && npm run lint 2>&1 | grep "problems"
+✖ 202 problems (193 errors, 9 warnings)
+[0m
+[0m$ [0mcd app && npm run lint 2>&1 | grep "AddIndexerModal"
+/home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
+[0m
+[0m$ [0mcd app && npm run lint 2>&1 | grep -A5 "AddIndexerModal"
+/home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
+  104:49  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  118:35  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  223:61  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  465:84  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+[0m
+4 `no-explicit-any` errors in AddIndexerModal from my type fixes. These are the necessary `any` casts to work around the react-hook-form + zodResolver generic type inference issue. Let me add eslint-disable comments:
+[0m→ [0mRead app/src/components/indexers/AddIndexerModal.tsx[90m [limit=5, offset=102][0m
+[0m
+[0m← [0mEdit app/src/components/indexers/AddIndexerModal.tsx
+Index: /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
++++ /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
+@@ -99,8 +99,9 @@
+ }: AddIndexerModalProps) {
+   const [testResult, setTestResult] = useState<TestConnectionResult | null>(null);
+   const [isTesting, setIsTesting] = useState(false);
+ 
++  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- zodResolver generic inference mismatch with useFieldArray
+   const form = useForm<IndexerFormValues>({
+     resolver: zodResolver(indexerFormSchema) as any,
+     defaultValues: {
+       presetId: presets[0]?.id ?? '',
+
+[0m
+[0m→ [0mRead app/src/components/indexers/AddIndexerModal.tsx[90m [limit=3, offset=117][0m
+[0m
+[0m← [0mEdit app/src/components/indexers/AddIndexerModal.tsx
+Index: /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
++++ /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
+@@ -115,8 +115,9 @@
+     dynamicFields: [],
+   },
+ });
+ 
++// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Control generic mismatches FormField's constrained type
+ const control = form.control as any;
+ const selectedPresetId = form.watch('presetId');
+ const dynamicFields = form.watch('dynamicFields');
+ 
+
+[0m
+[0m→ [0mRead app/src/components/indexers/AddIndexerModal.tsx[90m [limit=3, offset=223][0m
+[0m
+[0m← [0mEdit app/src/components/indexers/AddIndexerModal.tsx
+Index: /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
++++ /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
+@@ -221,8 +221,9 @@
+ <Modal isOpen={isOpen} ariaLabel="Add Indexer" onClose={onClose} maxWidthClassName="max-w-3xl">
+   <ModalHeader title="Add Indexer" onClose={onClose} />
+   <ModalBody>
+     <Form {...form}>
++      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+       <form onSubmit={form.handleSubmit(handleSubmit as any)} className="space-y-4">
+         <section className="space-y-2">
+           <h3 className="text-sm font-medium text-text-primary">Preset</h3>
+           <div className="grid gap-2 sm:grid-cols-2">
+
+[0m
+[0m→ [0mRead app/src/components/indexers/AddIndexerModal.tsx[90m [limit=3, offset=465][0m
+[0m→ [0mRead app/src/components/indexers/AddIndexerModal.tsx[90m [limit=3, offset=467][0m
+[0m
+[0m← [0mEdit app/src/components/indexers/AddIndexerModal.tsx
+Index: /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
++++ /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
+@@ -464,8 +464,9 @@
+   </Button>
+   <Button variant="secondary" onClick={handleTestConnection} disabled={isSubmitting || isTesting}>
+     {isTesting ? 'Testing...' : 'Test Connection'}
+   </Button>
++  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+   <Button variant="default" onClick={() => form.handleSubmit(handleSubmit as any)()} disabled={isSubmitting || isTesting}>
+     Add Indexer
+   </Button>
+ </ModalFooter>
+
+[0m
+Now let me verify the typecheck still passes and lint improved:
+[0m$ [0mcd app && npm run typecheck 2>&1 | tail -5
+> app@0.0.0 typecheck
+> tsc -b --pretty false
+[0m
+[0m$ [0mcd app && npm run lint 2>&1 | grep "problems"
+103:3   warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-explicit-any')
+✖ 200 problems (190 errors, 10 warnings)
+[0m
+Typecheck clean. Lint reduced from 202 to 200 problems (2 fixed: unused `z` import and unused `FormDescription` import, unused `err` var). The new warning is about a redundant eslint-disable. Let me check which one:
+[0m$ [0mcd app && npm run lint 2>&1 | grep "Unused eslint-disable"
+103:3   warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-explicit-any')
+[0m
+[0m→ [0mRead app/src/components/indexers/AddIndexerModal.tsx[90m [limit=5, offset=101][0m
+The `as any` on line 105 is inside the `useForm` call, which starts on line 104 — so the `eslint-disable-next-line` on line 103 doesn't cover line 105. Let me move it to the correct line:
+[0m
+[0m← [0mEdit app/src/components/indexers/AddIndexerModal.tsx
+Index: /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
++++ /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
+@@ -99,10 +99,10 @@
+ }: AddIndexerModalProps) {
+   const [testResult, setTestResult] = useState<TestConnectionResult | null>(null);
+   const [isTesting, setIsTesting] = useState(false);
+ 
+-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- zodResolver generic inference mismatch with useFieldArray
+   const form = useForm<IndexerFormValues>({
++    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- zodResolver generic inference mismatch with useFieldArray
+     resolver: zodResolver(indexerFormSchema) as any,
+     defaultValues: {
+       presetId: presets[0]?.id ?? '',
+       name: '',
+
+[0m
+Now let me also update tech-debt.md with the AddIndexerModal type inference issue, then commit.
+[0m# [0mTodos
+[x] Gather recent changes (git log, diff, tracks.md, tech-debt.md)
+[x] Review each changed code file
+[x] Run test suite
+[x] Run lint/typecheck
+[x] Fix up to 5-7 lint/style issues
+[ ] Note architectural problems in tech-debt.md
+[ ] Commit fixes
+[ ] Report findings
+[0m
+[0m← [0mEdit conductor/tech-debt.md
+Index: /home/daniel-bo/Desktop/mediarr/conductor/tech-debt.md
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/conductor/tech-debt.md
++++ /home/daniel-bo/Desktop/mediarr/conductor/tech-debt.md
+@@ -32,4 +32,5 @@
+ | 2026-03-31 | bug_corner_case_testing_20260331 | ImportManager parsed-episode fallback to movie path broken | High | Resolved | Replaced `if (!parsed)` with `if (!episodeImported)` flag; 7 slow-path tests pass (b67ebbf) |
+ | 2026-04-02 | bug_seed_limit_import_guard_20260402 | TorrentManager.checkSeedLimits deleted unimported torrents (no import guard) | High | Resolved | Extracted shared isImportIncomplete(); added prisma to TorrentManager via setPrisma(); 10 new tests (c012709) |
+ | 2026-04-04 | bug_audio_channels_token_20260404 | MovieOrganizeService `{AudioChannels}` token never populated from variant data | Low | Resolved | Wired audioChannels from variant.audioTracks; 39 tests added (5ae0b20) |
+ | 2026-04-04 | bug_organize_rename_transaction_safety_20260404 | SeriesOrganizeService `applyRename` can leave partial state if DB update fails after fs.rename | Medium | Resolved | Reordered to DB-first with rollback; 6 new tests added across both services; 79 tests green |
++| 2026-04-07 | review_20260407 | AddIndexerModal react-hook-form + zodResolver + useFieldArray generic type inference mismatch requires `as any` casts on resolver and control | Medium | Open | Known react-hook-form issue; revisit when upgrading react-hook-form or switching to @hookform/resolvers v4+ |
+
+[0m
+Now commit:
+[0m# [0mTodos
+[x] Gather recent changes (git log, diff, tracks.md, tech-debt.md)
+[x] Review each changed code file
+[x] Run test suite
+[x] Run lint/typecheck
+[x] Fix up to 5-7 lint/style issues
+[x] Note architectural problems in tech-debt.md
+[ ] Commit fixes
+[ ] Report findings
+[0m

@@ -10,7 +10,7 @@ if (typeof window !== 'undefined') {
         super(type, params);
       }
     }
-    // @ts-ignore
+    // @ts-expect-error Polyfilling missing PointerEvent in JSDOM
     window.PointerEvent = PointerEvent;
   }
 

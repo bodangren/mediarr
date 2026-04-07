@@ -1,4 +1,3 @@
-import { z } from 'zod';
 import type { SeriesListItem as ApiSeriesListItem } from '@/lib/api/mediaApi';
 
 /**

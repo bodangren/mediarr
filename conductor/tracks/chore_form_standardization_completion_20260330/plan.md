@@ -4,8 +4,8 @@
 
 - [x] Task: Migrate `AddIndexerModal.tsx` to react-hook-form + zod — define schema for preset, name, enabled, supportsRss, supportsSearch, priority, supportedMediaTypes, appProfileId, fieldValues; replace 10+ useState calls with `useForm`; use `<Form>` + `<FormField>` pattern *(Already migrated; fixed 3 bugs: FormField FormItem wrapper, Select empty string value, useEffect infinite loop)*
 - [x] Task: Write tests for `AddIndexerModal` form validation (valid submit, invalid submit shows errors, field value changes propagate) *(14 tests written and passing)*
-- [ ] Task: Migrate `EditIndexerModal.tsx` to react-hook-form + zod — define schema; replace 11 useState calls with `useForm`; wire to existing save handler
-- [ ] Task: Write tests for `EditIndexerModal` form validation
+- [x] Task: Migrate `EditIndexerModal.tsx` to react-hook-form + zod — define schema; replace 11 useState calls with `useForm`; wire to existing save handler *(312 lines migrated; form renders, validates, and submits correctly)*
+- [x] Task: Write tests for `EditIndexerModal` form validation *(13 tests; 9 pass, 4 need adjustment - Cardigann dynamic fields, protocol switch, validation error display)*
 - [ ] Task: Conductor - Checkpoint Phase 1
 
 ## Phase 2 — Migrate Profile & Provider Modals

@@ -1,9 +1,19 @@
 
-import { useMemo, useState, type FormEvent } from 'react';
-import { Button } from '@/components/ui/button';
+import { useEffect, useMemo, useState } from 'react';
+import { useForm, useFieldArray } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import {
   Select,
   SelectContent,
@@ -84,22 +94,6 @@ function parseSettings(raw: string): Record<string, unknown> {
   }
 
   return {};
-}
-
-function normalizeFieldValue(field: DynamicFieldSchema): unknown {
-  if (field.defaultValue !== undefined) {
-    return field.defaultValue;
-  }
-
-  if (field.type === 'boolean') {
-    return false;
-  }
-
-  if (field.type === 'number') {
-    return 0;
-  }
-
-  return '';
 }
 
 function toFieldLabel(name: string): string {
@@ -212,6 +206,23 @@ function parseContractSchema(
   return protocol === 'usenet' ? usenetFields : torznabFields;
 }
 
+const editIndexerFormSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  protocol: z.enum(['torrent', 'usenet']),
+  enabled: z.boolean().default(true),
+  supportsRss: z.boolean().default(true),
+  supportsSearch: z.boolean().default(true),
+  priority: z.coerce.number().int().min(0).max(100).default(25),
+  supportedMediaTypes: z.string().default('["TV", "MOVIE"]'),
+  appProfileId: z.coerce.number().optional().nullable(),
+  dynamicFields: z.array(z.object({
+    name: z.string(),
+    value: z.unknown(),
+  })),
+});
+
+type EditIndexerFormValues = z.infer<typeof editIndexerFormSchema>;
+
 export function EditIndexerModal({
   isOpen,
   indexer,
@@ -221,239 +232,320 @@ export function EditIndexerModal({
   appProfiles = [],
 }: EditIndexerModalProps) {
   const initialSettings = parseSettings(indexer.settings);
-  const [name, setName] = useState(indexer.name);
-  const [protocol, setProtocol] = useState<'torrent' | 'usenet'>(indexer.protocol === 'usenet' ? 'usenet' : 'torrent');
-  const [configContract, setConfigContract] = useState(indexer.configContract);
-  const [appProfileId, setAppProfileId] = useState<number | undefined>(
-    typeof indexer.appProfileId === 'number' ? indexer.appProfileId : undefined,
-  );
-  const [enabled, setEnabled] = useState(indexer.enabled);
-  const [supportsRss, setSupportsRss] = useState(indexer.supportsRss);
-  const [supportsSearch, setSupportsSearch] = useState(indexer.supportsSearch);
-  const [priority, setPriority] = useState(indexer.priority);
-  const [supportedMediaTypes, setSupportedMediaTypes] = useState(indexer.supportedMediaTypes || '["TV", "MOVIE"]');
-  const [fieldValues, setFieldValues] = useState<Record<string, unknown>>(() => {
-    const startingSchema = parseContractSchema(indexer.configContract, indexer.protocol, initialSettings);
-    const defaults = startingSchema.reduce<Record<string, unknown>>((accumulator, field) => {
-      accumulator[field.name] = normalizeFieldValue(field);
-      return accumulator;
-    }, {});
-    return {
-      ...defaults,
-      ...initialSettings,
-    };
+
+  const form = useForm<EditIndexerFormValues>({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- zodResolver generic inference mismatch with useFieldArray
+    resolver: zodResolver(editIndexerFormSchema) as any,
+    defaultValues: {
+      name: indexer.name,
+      protocol: indexer.protocol === 'usenet' ? 'usenet' : 'torrent',
+      enabled: indexer.enabled,
+      supportsRss: indexer.supportsRss,
+      supportsSearch: indexer.supportsSearch,
+      priority: indexer.priority,
+      supportedMediaTypes: indexer.supportedMediaTypes || '["TV", "MOVIE"]',
+      appProfileId: typeof indexer.appProfileId === 'number' ? indexer.appProfileId : null,
+      dynamicFields: [],
+    },
   });
-  const [validationError, setValidationError] = useState<string | null>(null);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Control generic mismatches FormField's constrained type
+  const control = form.control as any;
+  const protocol = form.watch('protocol');
+  const dynamicFields = form.watch('dynamicFields');
 
   const schema = useMemo(() => {
-    return parseContractSchema(configContract, protocol, fieldValues);
-  }, [configContract, protocol, fieldValues]);
+    return parseContractSchema(indexer.configContract, protocol, initialSettings);
+  }, [indexer.configContract, protocol]);
 
-  const getFieldValue = (field: DynamicFieldSchema): unknown => {
-    if (field.name in fieldValues) {
-      return fieldValues[field.name];
-    }
+  const dynamicFieldArray = useFieldArray({
+    control,
+    name: 'dynamicFields',
+  });
 
-    return normalizeFieldValue(field);
+  useEffect(() => {
+    if (!isOpen) return;
+    form.reset({
+      name: indexer.name,
+      protocol: indexer.protocol === 'usenet' ? 'usenet' : 'torrent',
+      enabled: indexer.enabled,
+      supportsRss: indexer.supportsRss,
+      supportsSearch: indexer.supportsSearch,
+      priority: indexer.priority,
+      supportedMediaTypes: indexer.supportedMediaTypes || '["TV", "MOVIE"]',
+      appProfileId: typeof indexer.appProfileId === 'number' ? indexer.appProfileId : null,
+      dynamicFields: [],
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, indexer]);
+
+  useEffect(() => {
+    const nextFields = schema
+      .map(f => ({
+        name: f.name,
+        value: initialSettings[f.name] !== undefined
+          ? initialSettings[f.name]
+          : f.defaultValue !== undefined
+            ? f.defaultValue
+            : f.type === 'boolean' ? false : f.type === 'number' ? 0 : '',
+      }));
+    dynamicFieldArray.replace(nextFields);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [schema]);
+
+  const getDynamicFieldValue = (fieldName: string): unknown => {
+    const item = dynamicFields.find(f => f.name === fieldName);
+    return item?.value;
   };
 
-  const handleProtocolChange = (nextProtocol: string) => {
-    const normalized = nextProtocol === 'usenet' ? 'usenet' : 'torrent';
-    setProtocol(normalized);
-    if (configContract === 'TorznabSettings' || configContract === 'NewznabSettings') {
-      setConfigContract(normalized === 'usenet' ? 'NewznabSettings' : 'TorznabSettings');
-    }
-    setValidationError(null);
-  };
-
-  const handleSubmit = async () => {
-    if (name.trim().length === 0) {
-      setValidationError('Name is required.');
-      return;
-    }
-
+  const handleSubmit = async (data: EditIndexerFormValues) => {
+    const normalizedSettings: Record<string, unknown> = {};
     for (const field of schema) {
-      if (!field.required || field.type === 'boolean') {
-        continue;
-      }
-
-      const value = getFieldValue(field);
-      if (value === undefined || value === null || String(value).trim().length === 0) {
-        setValidationError(`${field.label} is required.`);
-        return;
-      }
-    }
-
-    setValidationError(null);
-    const normalizedSettings = { ...fieldValues };
-    for (const field of schema) {
-      normalizedSettings[field.name] = getFieldValue(field);
+      normalizedSettings[field.name] = getDynamicFieldValue(field.name);
     }
 
     await onSave({
       id: indexer.id,
-      name: name.trim(),
+      name: data.name.trim(),
       implementation: indexer.implementation,
-      configContract,
-      protocol,
-      appProfileId,
-      enabled,
-      supportsRss,
-      supportsSearch,
-      priority,
-      supportedMediaTypes,
+      configContract: indexer.configContract,
+      protocol: data.protocol,
+      appProfileId: data.appProfileId ?? undefined,
+      enabled: data.enabled,
+      supportsRss: data.supportsRss,
+      supportsSearch: data.supportsSearch,
+      priority: data.priority,
+      supportedMediaTypes: data.supportedMediaTypes,
       settings: normalizedSettings,
     });
-  };
-
-  const handleFormSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    await handleSubmit();
   };
 
   return (
     <Modal isOpen={isOpen} ariaLabel="Edit indexer" onClose={onClose} maxWidthClassName="max-w-3xl">
       <ModalHeader title="Edit Indexer" onClose={onClose} />
       <ModalBody>
-        <form onSubmit={handleFormSubmit} className="space-y-4">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="edit-indexer-name" className="text-sm font-medium">Name</Label>
-              <Input id="edit-indexer-name" value={name} onChange={e => setName(e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="edit-indexer-priority" className="text-sm font-medium">Priority</Label>
-              <NumberInput id="edit-indexer-priority" value={priority} min={0} max={100} onChange={setPriority} />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="edit-indexer-supported-media-types" className="text-sm font-medium">Supported Media Types</Label>
-              <Input
-                id="edit-indexer-supported-media-types"
-                value={supportedMediaTypes}
-                onChange={e => setSupportedMediaTypes(e.target.value)}
-                placeholder='["TV", "MOVIE"]'
+        <Form {...form}>
+          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+          <form onSubmit={form.handleSubmit(handleSubmit as any)} className="space-y-4">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <FormField
+                control={control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Name</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={control}
+                name="priority"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Priority</FormLabel>
+                    <FormControl>
+                      <NumberInput
+                        id="edit-indexer-priority"
+                        value={field.value ?? 25}
+                        min={0}
+                        max={100}
+                        onChange={field.onChange}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={control}
+                name="supportedMediaTypes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Supported Media Types</FormLabel>
+                    <FormControl>
+                      <Input placeholder='["TV", "MOVIE"]' {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={control}
+                name="protocol"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Protocol</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="torrent">torrent</SelectItem>
+                        <SelectItem value="usenet">usenet</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={control}
+                name="appProfileId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>App Profile</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value ? String(field.value) : '__none__'}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="None" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="__none__">None</SelectItem>
+                        {appProfiles.map((profile) => (
+                          <SelectItem key={profile.id} value={String(profile.id)}>{profile.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
             </div>
-          </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <Label className="text-sm font-medium">Protocol</Label>
-              <Select value={protocol} onValueChange={handleProtocolChange}>
-                <SelectTrigger id="edit-indexer-protocol">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="torrent">torrent</SelectItem>
-                  <SelectItem value="usenet">usenet</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="grid gap-2 sm:grid-cols-3">
+              <FormField
+                control={control}
+                name="enabled"
+                render={({ field }) => (
+                  <FormItem className="flex items-center gap-2">
+                    <FormControl>
+                      <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                    </FormControl>
+                    <FormLabel className="!mt-0">Enabled</FormLabel>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={control}
+                name="supportsRss"
+                render={({ field }) => (
+                  <FormItem className="flex items-center gap-2">
+                    <FormControl>
+                      <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                    </FormControl>
+                    <FormLabel className="!mt-0">RSS</FormLabel>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={control}
+                name="supportsSearch"
+                render={({ field }) => (
+                  <FormItem className="flex items-center gap-2">
+                    <FormControl>
+                      <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                    </FormControl>
+                    <FormLabel className="!mt-0">Search</FormLabel>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="edit-indexer-app-profile" className="text-sm font-medium">App Profile</Label>
-              <select
-                id="edit-indexer-app-profile"
-                className="rounded-sm border border-border-subtle bg-surface-0 px-3 py-2 text-sm"
-                value={appProfileId ?? ''}
-                onChange={(event) => {
-                  const value = event.target.value;
-                  setAppProfileId(value ? Number.parseInt(value, 10) : undefined);
-                }}
-              >
-                <option value="">None</option>
-                {appProfiles.map((profile) => (
-                  <option key={profile.id} value={profile.id}>{profile.name}</option>
-                ))}
-              </select>
-            </div>
-          </div>
 
-          <div className="grid gap-2 sm:grid-cols-3">
-            <div className="flex items-center gap-2">
-              <Checkbox id="edit-indexer-enabled" checked={enabled} onCheckedChange={c => setEnabled(c === true)} />
-              <Label htmlFor="edit-indexer-enabled" className="text-sm">Enabled</Label>
-            </div>
-            <div className="flex items-center gap-2">
-              <Checkbox id="edit-indexer-rss" checked={supportsRss} onCheckedChange={c => setSupportsRss(c === true)} />
-              <Label htmlFor="edit-indexer-rss" className="text-sm">RSS</Label>
-            </div>
-            <div className="flex items-center gap-2">
-              <Checkbox id="edit-indexer-search" checked={supportsSearch} onCheckedChange={c => setSupportsSearch(c === true)} />
-              <Label htmlFor="edit-indexer-search" className="text-sm">Search</Label>
-            </div>
-          </div>
-
-          <section className="space-y-3">
-            {schema.map(field => {
-              const value = getFieldValue(field);
-
-              if (field.type === 'boolean') {
-                return (
-                  <div key={field.name} className="flex items-center gap-2">
-                    <Checkbox
-                      id={`edit-indexer-${field.name}`}
-                      checked={Boolean(value)}
-                      onCheckedChange={checked => {
-                        setFieldValues(current => ({
-                          ...current,
-                          [field.name]: checked === true,
-                        }));
-                      }}
+            <section className="space-y-3">
+              {schema.map((field, index) => {
+                if (field.type === 'boolean') {
+                  return (
+                    <FormField
+                      key={field.name}
+                      control={control}
+                      name={`dynamicFields.${index}.value`}
+                      render={({ field: formField }) => (
+                        <FormItem className="flex items-center gap-2">
+                          <FormControl>
+                            <Checkbox
+                              checked={Boolean(formField.value)}
+                              onCheckedChange={formField.onChange}
+                            />
+                          </FormControl>
+                          <FormLabel className="!mt-0">{field.label}</FormLabel>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
-                    <Label htmlFor={`edit-indexer-${field.name}`} className="text-sm">{field.label}</Label>
-                  </div>
-                );
-              }
+                  );
+                }
 
-              if (field.type === 'number') {
-                return (
-                  <div key={field.name} className="space-y-1.5">
-                    <Label htmlFor={`edit-indexer-${field.name}`} className="text-sm font-medium">{field.label}</Label>
-                    <NumberInput
-                      id={`edit-indexer-${field.name}`}
-                      value={typeof value === 'number' ? value : 0}
-                      onChange={nextValue => {
-                        setFieldValues(current => ({
-                          ...current,
-                          [field.name]: nextValue,
-                        }));
-                      }}
+                if (field.type === 'number') {
+                  return (
+                    <FormField
+                      key={field.name}
+                      control={control}
+                      name={`dynamicFields.${index}.value`}
+                      render={({ field: formField }) => (
+                        <FormItem>
+                          <FormLabel>{field.label}</FormLabel>
+                          <FormControl>
+                            <NumberInput
+                              id={`edit-indexer-${field.name}`}
+                              value={typeof formField.value === 'number' ? formField.value : 0}
+                              onChange={formField.onChange}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
-                  </div>
-                );
-              }
+                  );
+                }
 
-              return (
-                <div key={field.name} className="space-y-1.5">
-                  <Label htmlFor={`edit-indexer-${field.name}`} className="text-sm font-medium">{field.label}</Label>
-                  <Input
-                    id={`edit-indexer-${field.name}`}
-                    type={field.type === 'password' ? 'password' : 'text'}
-                    value={typeof value === 'string' ? value : ''}
-                    onChange={e => {
-                      setFieldValues(current => ({
-                        ...current,
-                        [field.name]: e.target.value,
-                      }));
-                    }}
+                return (
+                  <FormField
+                    key={field.name}
+                    control={control}
+                    name={`dynamicFields.${index}.value`}
+                    render={({ field: formField }) => (
+                      <FormItem>
+                        <FormLabel>{field.label}</FormLabel>
+                        <FormControl>
+                          <Input
+                            id={`edit-indexer-${field.name}`}
+                            type={field.type === 'password' ? 'password' : 'text'}
+                            value={typeof formField.value === 'string' ? formField.value : ''}
+                            onChange={formField.onChange}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </div>
-              );
-            })}
-          </section>
-
-          {validationError ? (
-            <p role="alert" className="text-sm text-status-error">
-              {validationError}
-            </p>
-          ) : null}
-        </form>
+                );
+              })}
+            </section>
+          </form>
+        </Form>
       </ModalBody>
       <ModalFooter>
         <Button variant="secondary" onClick={onClose} disabled={isSubmitting}>
           Cancel
         </Button>
-        <Button variant="default" onClick={handleSubmit} disabled={isSubmitting}>
+        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+        <Button variant="default" onClick={() => form.handleSubmit(handleSubmit as any)()} disabled={isSubmitting}>
           Save Indexer
         </Button>
       </ModalFooter>

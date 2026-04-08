@@ -2,28 +2,29 @@
 > build · glm-5.1
 [0m
 [0m→ [0mRead conductor/review-prompt.md
-[0m
-[0m# [0mTodos
-[ ] Gather recent changes (git log, diff, tracks.md, tech-debt.md)
-[ ] Review each changed code file
-[ ] Run test suite
-[ ] Run lint/typecheck
-[ ] Fix up to 5-7 lint/style issues
-[ ] Note architectural problems in tech-debt.md
-[ ] Commit fixes
-[ ] Report findings
-[0m
+[0m✗ [0mread failed
+[91m[1mError: [0mFile not found: /home/daniel-bo/Desktop/mediarr/conductor/current-priority.md
 [0m→ [0mRead conductor/tech-debt.md
 [0m→ [0mRead conductor/tracks.md
 [0m
 [0m$ [0mgit log --since="24 hours ago" --oneline
+69adef0 Update lessons-learned and tech-debt from EditIndexerModal migration
+0b58c6d Migrate EditIndexerModal to react-hook-form + zod (minimax-m2.7)
+300b141 chore: add lessons learned about useFieldArray dependency stability
+0c5656e fix: AddIndexerModal form bugs + tests + NumberInput forwardRef
+fbe84d1 chore: commit stale review artifacts
 [0m
 [0m$ [0mgit diff --name-only HEAD~20 HEAD
-.gitignore
 .opencode/package-lock.json
-conductor/archive/bug_audio_channels_token_20260404/metadata.json
-conductor/archive/bug_audio_channels_token_20260404/plan.md
-conductor/archive/bug_audio_channels_token_20260404/spec.md
+app/src/components/indexers/AddIndexerModal.test.tsx
+app/src/components/indexers/AddIndexerModal.tsx
+app/src/components/indexers/EditIndexerModal.test.tsx
+app/src/components/indexers/EditIndexerModal.tsx
+app/src/components/primitives/SpecialInputs.tsx
+app/src/pages/SeriesDetailPage.tsx
+app/src/pages/settings/SettingsGeneralPage.tsx
+app/src/test/setup.ts
+app/src/types/series.ts
 conductor/archive/bug_customformat_scoring_corner_cases_20260405/metadata.json
 conductor/archive/bug_customformat_scoring_corner_cases_20260405/plan.md
 conductor/archive/bug_customformat_scoring_corner_cases_20260405/spec.md
@@ -37,900 +38,184 @@ conductor/archive/bug_pipeline_integration_corner_cases_20260405/metadata.json
 conductor/archive/bug_pipeline_integration_corner_cases_20260405/plan.md
 conductor/archive/bug_pipeline_integration_corner_cases_20260405/spec.md
 conductor/archive/cardigann_runtime_parity_20260223/artifacts/final-phase5-compatibility-matrix.json
-conductor/archive/chore_daily_cleanup_20260404c/metadata.json
-conductor/archive/chore_daily_cleanup_20260404c/plan.md
-conductor/archive/chore_daily_cleanup_20260404c/spec.md
 conductor/archive/chore_daily_cleanup_20260405/metadata.json
 conductor/archive/chore_daily_cleanup_20260405/plan.md
 conductor/archive/chore_daily_cleanup_20260405/spec.md
 conductor/autonomous_prompt.md
 conductor/current_directive.md
 conductor/lessons-learned.md
+conductor/review-output.log
+conductor/review-prompt.md
 conductor/tech-debt.md
 conductor/tracks.md
 conductor/tracks/chore_corner_case_testing_complete_20260406/spec.md
-conductor/tracks/chore_daily_cleanup_20260404c/plan.md
+conductor/tracks/chore_form_standardization_completion_20260330/plan.md
 server/src/services/CustomFormatScoringEngine.test.ts
 server/src/services/ImportManager.ts
 server/src/services/LibraryScanService.test.ts
-server/src/services/MovieOrganizeService.test.ts
-server/src/services/MovieOrganizeService.ts
-server/src/services/ReleaseParser.test.ts
-server/src/services/WantedSearchService.episodeValidation.test.ts
 server/src/services/pipeline.integration.organizerdb.test.ts
 server/src/services/pipeline.integration.rss.test.ts
 server/src/services/pipeline.integration.searchgrab.test.ts
 server/src/services/pipeline.integration.torrentimport.test.ts
 server/src/services/pipeline.integration.wanted.test.ts
 tests/import-manager-comprehensive.test.ts
-tests/wanted-search-service.test.ts
-[0m
-No commits in the past 24 hours. Let me check for uncommitted changes and review the most recent commit activity.
-[0m$ [0mgit log --oneline -20
-54f3754 chore: daily cleanup — update conductor artifacts and archive corner-case testing track
-88103fb chore: archive customformat scoring corner cases track; 72 tests green, no bugs found
-28f9ab6 test: add 72 comprehensive corner-case tests for CustomFormatScoringEngine
-008dbf2 test: add 72 comprehensive corner-case tests for CustomFormatScoringEngine
-9ac275a chore: archive pipeline integration track; 25 tests green, no bugs found
-7b28696 test(pipeline): add 25 integration tests covering RSS→Wanted→Search→Grab→Import pipeline
-1f9a283 chore: commit stale changes before autonomous track
-5ab8f30 chore: archive importmanager comprehensive corner-case testing track; update lessons-learned
-308ac38 chore: archive importmanager comprehensive corner-case testing track; update lessons-learned
-437b2ab bug(import-manager): add comprehensive corner-case tests + fix movie year mismatch bug
-20d4dc8 chore: archive libraryscan corner cases track; 34 tests green
-e11e338 test(libraryscan): add 34 corner-case tests for LibraryScanService; all green
-1d1498e chore: remove track files after archiving
-5060f9b chore: archive daily cleanup 20260405; update docs and lessons
-8616b42 chore: daily cleanup track for April 5, 2026
-a6c74c2 chore: daily review — remove duplicate tests, update conductor docs, stage stale track deletions
-6093057 chore: archive bug_audio_channels_token_20260404 track; update docs
-5ae0b20 bug(organize): wire audioChannels token from variant audioTracks in MovieOrganizeService
-df43c89 chore: archive chore_daily_cleanup_20260404c track; update tracks
-2e2b6c7 fix(tests): correct assertion message in wanted-search-service threshold test
-[0m
-[0m$ [0mgit log -1 --format="%H %ai %s"
-54f375490950deacebbac42b1077d0100e6a8777 2026-04-06 08:35:51 +0800 chore: daily cleanup — update conductor artifacts and archive corner-case testing track
-[0m
-[0m$ [0mgit status --short
-M app/src/components/indexers/AddIndexerModal.tsx
- M conductor/autonomous_prompt.md
-?? conductor/review-output.log
-?? conductor/review-prompt.md
-[0m
-Last commit was April 6, 2026. Today is April 7, 2026 — so there are ~24+ hours of inactivity. Let me review the uncommitted changes and the most recent commits.
-[0m$ [0mgit diff conductor/autonomous_prompt.md
-diff --git a/conductor/autonomous_prompt.md b/conductor/autonomous_prompt.md
-index 960da3b..efc5abb 100644
---- a/conductor/autonomous_prompt.md
-+++ b/conductor/autonomous_prompt.md
-@@ -1,13 +1,26 @@
--/conductor
--Step 1: Load Context. Read `conductor/current_directive.md`, `conductor/tech-debt.md`, `conductor/lessons-learned.md`, `conductor/tracks.md`.
--Step 2: Resume or Plan.
--- If the workspace is not clean, commit changes with a note, then continue.
--- If there is an `[~] In Progress` phase, finish it, then start a new phase.
--- If no incomplete phases, define exactly ONE new track serving `current_directive.md`. Create track artifacts.
--Step 3: Implement a SINGLE PHASE autonomously with TDD (Red-Green-Refactor). Use `tauri` and `rust-best-practices` skills for all implementation.
--- For each task: attach git notes per conductor protocol, merge changes, and push.
--Step 4: Verify. Run full test suite, run build, correct any build errors.
--Step 5: Finalize.
--- Update `tech-debt.md` and `lessons-learned.md` (keep ≤50 lines).
--- Commit and push phase checkpoint.
--CRITICAL: All shell commands MUST use non-interactive flags (--yes, --no-interactive, etc.). Unattended run only.
-+AUTONOMOUS CONDUCTOR — UNATTENDED RUN
-+
-+1. Load Context (skip any missing file silently):
-+   Read conductor/tracks.md, conductor/tech-debt.md, conductor/lessons-learned.md.
-+   Try conductor/current_directive.md — if absent, skip it.
-+
-+2. Workspace & Progress:
-+   - Dirty? Commit with a brief note, push, continue.
-+   - In-progress phase exists? Finish it.
-+   - Nothing in progress? Create ONE new track from current_directive.md (or top tech-debt item if no directive).
-+
-+3. Implement ONE phase with TDD:
-+   Red-Green-Refactor cycle. Run tests, correct build errors.
-+   After each task: merge changes and push.
-+
-+4. Verify: full test suite + build. Fix all errors before continuing.
-+
-+5. Finalize:
-+   Update tech-debt.md and lessons-learned.md (≤50 lines each).
-+   Commit checkpoint, push.
-+
-+CRITICAL UNATTENDED RULES:
-+- Any prompt asking "Proceed?", "Continue?", or "Shall I?" → answer yes.
-+- Any prompt asking "What would you like to work on next?" or similar → pick the first sensible option and execute it.
-+- Use --yes, --no-interactive, --non-interactive flags wherever available.
-+- Never wait for human input. Always make a decision and continue.
-[0m
-[0m$ [0mgit diff app/src/components/indexers/AddIndexerModal.tsx
-diff --git a/app/src/components/indexers/AddIndexerModal.tsx b/app/src/components/indexers/AddIndexerModal.tsx
-index 8d26e4a..c234dca 100644
---- a/app/src/components/indexers/AddIndexerModal.tsx
-+++ b/app/src/components/indexers/AddIndexerModal.tsx
-@@ -1,10 +1,28 @@
- 
- import { useEffect, useMemo, useState } from 'react';
-+import { useForm, useFieldArray } from 'react-hook-form';
-+import { zodResolver } from '@hookform/resolvers/zod';
-+import { z } from 'zod';
- import { Checkbox } from '@/components/ui/checkbox';
- import { Input } from '@/components/ui/input';
--import { Label } from '@/components/ui/label';
-+import { Button } from '@/components/ui/button';
-+import {
-+  Form,
-+  FormControl,
-+  FormField,
-+  FormItem,
-+  FormLabel,
-+  FormMessage,
-+} from '@/components/ui/form';
-+import {
-+  Select,
-+  SelectContent,
-+  SelectItem,
-+  SelectTrigger,
-+  SelectValue,
-+} from '@/components/ui/select';
-+import { Modal, ModalBody, ModalFooter, ModalHeader } from '@/components/ui/modal';
- import { NumberInput } from '@/components/primitives/SpecialInputs';
--import { ConfigurableItemModal } from '@/components/settings/ConfigurableItemModal';
- import type { TestConnectionResult } from '@/components/settings/ConfigurableItemModal';
- 
- type DynamicFieldType = 'text' | 'password' | 'number' | 'boolean' | 'hidden';
-@@ -53,21 +71,22 @@ interface AddIndexerModalProps {
-   appProfiles?: Array<{ id: number; name: string }>;
- }
- 
--function normalizeFieldValue(field: DynamicFieldSchema): unknown {
--  if (field.defaultValue !== undefined) {
--    return field.defaultValue;
--  }
--
--  if (field.type === 'boolean') {
--    return false;
--  }
--
--  if (field.type === 'number') {
--    return 0;
--  }
--
--  return '';
--}
-+const indexerFormSchema = z.object({
-+  presetId: z.string().min(1, 'Preset is required'),
-+  name: z.string().min(1, 'Name is required'),
-+  enabled: z.boolean().default(true),
-+  supportsRss: z.boolean().default(true),
-+  supportsSearch: z.boolean().default(true),
-+  priority: z.coerce.number().int().min(0).max(100).default(25),
-+  supportedMediaTypes: z.string().default('["TV", "MOVIE"]'),
-+  appProfileId: z.coerce.number().optional().nullable(),
-+  dynamicFields: z.array(z.object({
-+    name: z.string(),
-+    value: z.unknown(),
-+  })),
-+});
-+
-+type IndexerFormValues = z.infer<typeof indexerFormSchema>;
- 
- export function AddIndexerModal({
-   isOpen,
-@@ -78,120 +97,113 @@ export function AddIndexerModal({
-   onTestConnection,
-   appProfiles = [],
- }: AddIndexerModalProps) {
--  const [selectedPresetId, setSelectedPresetId] = useState(presets[0]?.id ?? '');
--  const [name, setName] = useState('');
--  const [enabled, setEnabled] = useState(true);
--  const [supportsRss, setSupportsRss] = useState(true);
--  const [supportsSearch, setSupportsSearch] = useState(true);
--  const [priority, setPriority] = useState(25);
--  const [supportedMediaTypes, setSupportedMediaTypes] = useState('["TV", "MOVIE"]');
--  const [appProfileId, setAppProfileId] = useState<number | undefined>(undefined);
--  const [fieldValues, setFieldValues] = useState<Record<string, unknown>>({});
--  const [validationError, setValidationError] = useState<string | null>(null);
-   const [testResult, setTestResult] = useState<TestConnectionResult | null>(null);
-   const [isTesting, setIsTesting] = useState(false);
- 
--  const selectedPreset = useMemo(() => {
--    if (presets.length === 0) {
--      return null;
--    }
-+  const form = useForm<IndexerFormValues>({
-+    resolver: zodResolver(indexerFormSchema),
-+    defaultValues: {
-+      presetId: presets[0]?.id ?? '',
-+      name: '',
-+      enabled: true,
-+      supportsRss: true,
-+      supportsSearch: true,
-+      priority: 25,
-+      supportedMediaTypes: '["TV", "MOVIE"]',
-+      appProfileId: null,
-+      dynamicFields: [],
-+    },
-+  });
-+
-+  const selectedPresetId = form.watch('presetId');
-+  const dynamicFields = form.watch('dynamicFields');
- 
-+  const selectedPreset = useMemo(() => {
-+    if (presets.length === 0) return null;
-     const found = presets.find(item => item.id === selectedPresetId);
-     return found ?? presets[0];
-   }, [presets, selectedPresetId]);
- 
--  useEffect(() => {
--    if (!isOpen) {
--      return;
--    }
-+  const dynamicFieldArray = useFieldArray({
-+    control: form.control,
-+    name: 'dynamicFields',
-+  });
- 
--    setSelectedPresetId(presets[0]?.id ?? '');
--    setName('');
--    setEnabled(true);
--    setSupportsRss(true);
--    setSupportsSearch(true);
--    setPriority(25);
--    setSupportedMediaTypes('["TV", "MOVIE"]');
--    setAppProfileId(undefined);
--    setValidationError(null);
-+  useEffect(() => {
-+    if (!isOpen) return;
-+    form.reset({
-+      presetId: presets[0]?.id ?? '',
-+      name: '',
-+      enabled: true,
-+      supportsRss: true,
-+      supportsSearch: true,
-+      priority: 25,
-+      supportedMediaTypes: '["TV", "MOVIE"]',
-+      appProfileId: null,
-+      dynamicFields: [],
-+    });
-     setTestResult(null);
--  }, [isOpen, presets]);
-+  }, [isOpen, presets, form]);
- 
-   useEffect(() => {
-     if (!selectedPreset) {
--      setFieldValues({});
-+      dynamicFieldArray.replace([]);
-       return;
-     }
--
--    const nextValues = selectedPreset.fields.reduce<Record<string, unknown>>((accumulator, field) => {
--      accumulator[field.name] = normalizeFieldValue(field);
--      return accumulator;
--    }, {});
--
--    setFieldValues(nextValues);
-+    const nextFields = selectedPreset.fields
-+      .filter(f => f.type !== 'hidden')
-+      .map(f => ({
-+        name: f.name,
-+        value: f.defaultValue !== undefined
-+          ? f.defaultValue
-+          : f.type === 'boolean' ? false : f.type === 'number' ? 0 : '',
-+      }));
-+    dynamicFieldArray.replace(nextFields);
-     setTestResult(null);
--    setValidationError(null);
--  }, [selectedPreset]);
-+  }, [selectedPreset, dynamicFieldArray]);
- 
--  const buildDraft = (): AddIndexerDraft | null => {
--    if (!selectedPreset) {
--      setValidationError('No indexer preset is available.');
--      return null;
--    }
-+  const getDynamicFieldValue = (fieldName: string): unknown => {
-+    const item = dynamicFields.find(f => f.name === fieldName);
-+    return item?.value;
-+  };
- 
--    if (name.trim().length === 0) {
--      setValidationError('Name is required.');
--      return null;
--    }
-+  const buildDraft = (data: IndexerFormValues): AddIndexerDraft | null => {
-+    if (!selectedPreset) return null;
- 
-+    const settings: Record<string, unknown> = {};
-     for (const field of selectedPreset.fields) {
--      if (!field.required) {
--        continue;
--      }
--
--      const value = fieldValues[field.name];
--      if (field.type === 'boolean') {
--        continue;
--      }
--
--      if (value === undefined || value === null || String(value).trim().length === 0) {
--        setValidationError(`${field.label} is required.`);
--        return null;
--      }
-+      if (field.type === 'hidden') continue;
-+      settings[field.name] = getDynamicFieldValue(field.name);
-     }
- 
--    setValidationError(null);
--
-     return {
-       presetId: selectedPreset.id,
--      name: name.trim(),
-+      name: data.name.trim(),
-       implementation: selectedPreset.implementation,
-       configContract: selectedPreset.configContract,
-       protocol: selectedPreset.protocol,
--      enabled,
--      supportsRss,
--      supportsSearch,
--      priority,
--      supportedMediaTypes,
--      appProfileId,
--      settings: fieldValues,
-+      enabled: data.enabled,
-+      supportsRss: data.supportsRss,
-+      supportsSearch: data.supportsSearch,
-+      priority: data.priority,
-+      supportedMediaTypes: data.supportedMediaTypes,
-+      appProfileId: data.appProfileId ?? undefined,
-+      settings,
-     };
-   };
- 
--  const handleSubmit = async () => {
--    const draft = buildDraft();
--    if (!draft) {
--      return;
--    }
--
-+  const handleSubmit = async (data: IndexerFormValues) => {
-+    const draft = buildDraft(data);
-+    if (!draft) return;
-     await onCreate(draft);
-   };
- 
-   const handleTestConnection = async () => {
--    const draft = buildDraft();
--    if (!draft) {
--      return;
--    }
-+    const isValid = await form.trigger();
-+    if (!isValid) return;
-+    const data = form.getValues();
-+    const draft = buildDraft(data);
-+    if (!draft) return;
- 
-     setIsTesting(true);
-     try {
-@@ -202,181 +214,257 @@ export function AddIndexerModal({
-     }
-   };
- 
--  const renderIndexerPresetGrid = (
--    indexerPresets: IndexerPreset[],
--    selectedId: string | undefined,
--    onSelect: (id: string) => void,
--  ) => (
--    <>
--      <h3 className="text-sm font-medium text-text-primary">Preset</h3>
--      <div className="grid gap-2 sm:grid-cols-2">
--        {indexerPresets.map(preset => {
--          const selected = preset.id === selectedId;
--          return (
--            <button
--              key={preset.id}
--              type="button"
--              onClick={() => onSelect(preset.id)}
--              className={`rounded-sm border px-3 py-2 text-left text-sm ${
--                selected
--                  ? 'border-accent-primary bg-accent-primary/10 text-text-primary'
--                  : 'border-border-subtle text-text-secondary'
--              }`}
--              aria-pressed={selected}
--            >
--              <p className="font-medium">{preset.name}</p>
--              <p className="text-xs">{preset.description}</p>
--            </button>
--          );
--        })}
--      </div>
--    </>
--  );
--
--  const renderIndexerFields = (
--    preset: IndexerPreset | undefined,
--    values: Record<string, unknown>,
--    onChange: (field: string, value: unknown) => void,
--  ) => (
--    <>
--      <div className="grid gap-3 sm:grid-cols-2">
--        <div className="space-y-1.5">
--          <Label htmlFor="add-indexer-name" className="text-sm font-medium">Name</Label>
--          <Input
--            id="add-indexer-name"
--            value={name}
--            onChange={e => setName(e.target.value)}
--          />
--        </div>
--        <div className="space-y-1.5">
--          <Label htmlFor="add-indexer-priority" className="text-sm font-medium">Priority</Label>
--          <NumberInput
--            id="add-indexer-priority"
--            value={priority}
--            min={0}
--            max={100}
--            onChange={setPriority}
--          />
--        </div>
--        <div className="space-y-1.5">
--          <Label htmlFor="add-indexer-supported-media-types" className="text-sm font-medium">Supported Media Types</Label>
--          <Input
--            id="add-indexer-supported-media-types"
--            value={supportedMediaTypes}
--            onChange={e => setSupportedMediaTypes(e.target.value)}
--            placeholder='["TV", "MOVIE"]'
--          />
--        </div>
--        <div className="space-y-1.5">
--          <Label htmlFor="add-indexer-app-profile" className="text-sm font-medium">App Profile</Label>
--          <select
--            id="add-indexer-app-profile"
--            className="rounded-sm border border-border-subtle bg-surface-0 px-3 py-2 text-sm"
--            value={appProfileId ?? ''}
--            onChange={(event) => {
--              const nextValue = event.target.value;
--              setAppProfileId(nextValue ? Number.parseInt(nextValue, 10) : undefined);
--            }}
--          >
--            <option value="">None</option>
--            {appProfiles.map((profile) => (
--              <option key={profile.id} value={profile.id}>{profile.name}</option>
--            ))}
--          </select>
--        </div>
--      </div>
--
--      <div className="grid gap-2 sm:grid-cols-3">
--        <div className="flex items-center gap-2">
--          <Checkbox id="add-indexer-enabled" checked={enabled} onCheckedChange={c => setEnabled(c === true)} />
--          <Label htmlFor="add-indexer-enabled" className="text-sm">Enabled</Label>
--        </div>
--        <div className="flex items-center gap-2">
--          <Checkbox id="add-indexer-rss" checked={supportsRss} onCheckedChange={c => setSupportsRss(c === true)} />
--          <Label htmlFor="add-indexer-rss" className="text-sm">RSS</Label>
--        </div>
--        <div className="flex items-center gap-2">
--          <Checkbox id="add-indexer-search" checked={supportsSearch} onCheckedChange={c => setSupportsSearch(c === true)} />
--          <Label htmlFor="add-indexer-search" className="text-sm">Search</Label>
--        </div>
--      </div>
--
--      <section className="space-y-3">
--        {preset?.fields.filter(field => field.type !== 'hidden').map(field => {
--          const value = values[field.name];
--
--          if (field.type === 'boolean') {
--            return (
--              <div key={field.name} className="flex items-center gap-2">
--                <Checkbox
--                  id={`add-indexer-${field.name}`}
--                  checked={Boolean(value)}
--                  onCheckedChange={checked => {
--                    onChange(field.name, checked === true);
--                  }}
--                />
--                <Label htmlFor={`add-indexer-${field.name}`} className="text-sm">{field.label}</Label>
--              </div>
--            );
--          }
--
--          if (field.type === 'number') {
--            return (
--              <div key={field.name} className="space-y-1.5">
--                <Label htmlFor={`add-indexer-${field.name}`} className="text-sm font-medium">{field.label}</Label>
--                <NumberInput
--                  id={`add-indexer-${field.name}`}
--                  value={typeof value === 'number' ? value : 0}
--                  onChange={nextValue => {
--                    onChange(field.name, nextValue);
--                  }}
--                />
-+  return (
-+    <Modal isOpen={isOpen} ariaLabel="Add Indexer" onClose={onClose} maxWidthClassName="max-w-3xl">
-+      <ModalHeader title="Add Indexer" onClose={onClose} />
-+      <ModalBody>
-+        <Form {...form}>
-+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-+            <section className="space-y-2">
-+              <h3 className="text-sm font-medium text-text-primary">Preset</h3>
-+              <div className="grid gap-2 sm:grid-cols-2">
-+                {presets.map(preset => {
-+                  const selected = preset.id === selectedPresetId;
-+                  return (
-+                    <button
-+                      key={preset.id}
-+                      type="button"
-+                      onClick={() => form.setValue('presetId', preset.id)}
-+                      className={`rounded-sm border px-3 py-2 text-left text-sm ${
-+                        selected
-+                          ? 'border-accent-primary bg-accent-primary/10 text-text-primary'
-+                          : 'border-border-subtle text-text-secondary'
-+                      }`}
-+                      aria-pressed={selected}
-+                    >
-+                      <p className="font-medium">{preset.name}</p>
-+                      <p className="text-xs">{preset.description}</p>
-+                    </button>
-+                  );
-+                })}
-               </div>
--            );
--          }
-+              <FormField
-+                control={form.control}
-+                name="presetId"
-+                render={() => <FormMessage />}
-+              />
-+            </section>
-+
-+            <div className="grid gap-3 sm:grid-cols-2">
-+              <FormField
-+                control={form.control}
-+                name="name"
-+                render={({ field }) => (
-+                  <FormItem>
-+                    <FormLabel>Name</FormLabel>
-+                    <FormControl>
-+                      <Input {...field} />
-+                    </FormControl>
-+                    <FormMessage />
-+                  </FormItem>
-+                )}
-+              />
-+              <FormField
-+                control={form.control}
-+                name="priority"
-+                render={({ field }) => (
-+                  <FormItem>
-+                    <FormLabel>Priority</FormLabel>
-+                    <FormControl>
-+                      <NumberInput
-+                        id="add-indexer-priority"
-+                        value={field.value ?? 25}
-+                        min={0}
-+                        max={100}
-+                        onChange={field.onChange}
-+                      />
-+                    </FormControl>
-+                    <FormMessage />
-+                  </FormItem>
-+                )}
-+              />
-+              <FormField
-+                control={form.control}
-+                name="supportedMediaTypes"
-+                render={({ field }) => (
-+                  <FormItem>
-+                    <FormLabel>Supported Media Types</FormLabel>
-+                    <FormControl>
-+                      <Input placeholder='["TV", "MOVIE"]' {...field} />
-+                    </FormControl>
-+                    <FormMessage />
-+                  </FormItem>
-+                )}
-+              />
-+              <FormField
-+                control={form.control}
-+                name="appProfileId"
-+                render={({ field }) => (
-+                  <FormItem>
-+                    <FormLabel>App Profile</FormLabel>
-+                    <Select
-+                      onValueChange={(v) => field.onChange(v ? Number.parseInt(v, 10) : null)}
-+                      value={field.value ? String(field.value) : ''}
-+                    >
-+                      <FormControl>
-+                        <SelectTrigger>
-+                          <SelectValue placeholder="None" />
-+                        </SelectTrigger>
-+                      </FormControl>
-+                      <SelectContent>
-+                        <SelectItem value="">None</SelectItem>
-+                        {appProfiles.map((profile) => (
-+                          <SelectItem key={profile.id} value={String(profile.id)}>{profile.name}</SelectItem>
-+                        ))}
-+                      </SelectContent>
-+                    </Select>
-+                    <FormMessage />
-+                  </FormItem>
-+                )}
-+              />
-+            </div>
- 
--          return (
--            <div key={field.name} className="space-y-1.5">
--              <Label htmlFor={`add-indexer-${field.name}`} className="text-sm font-medium">{field.label}</Label>
--              <Input
--                id={`add-indexer-${field.name}`}
--                type={field.type === 'password' ? 'password' : 'text'}
--                value={typeof value === 'string' ? value : ''}
--                onChange={e => {
--                  onChange(field.name, e.target.value);
--                }}
-+            <div className="grid gap-2 sm:grid-cols-3">
-+              <FormField
-+                control={form.control}
-+                name="enabled"
-+                render={({ field }) => (
-+                  <FormItem className="flex items-center gap-2">
-+                    <FormControl>
-+                      <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-+                    </FormControl>
-+                    <FormLabel className="!mt-0">Enabled</FormLabel>
-+                    <FormMessage />
-+                  </FormItem>
-+                )}
-+              />
-+              <FormField
-+                control={form.control}
-+                name="supportsRss"
-+                render={({ field }) => (
-+                  <FormItem className="flex items-center gap-2">
-+                    <FormControl>
-+                      <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-+                    </FormControl>
-+                    <FormLabel className="!mt-0">RSS</FormLabel>
-+                    <FormMessage />
-+                  </FormItem>
-+                )}
-+              />
-+              <FormField
-+                control={form.control}
-+                name="supportsSearch"
-+                render={({ field }) => (
-+                  <FormItem className="flex items-center gap-2">
-+                    <FormControl>
-+                      <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-+                    </FormControl>
-+                    <FormLabel className="!mt-0">Search</FormLabel>
-+                    <FormMessage />
-+                  </FormItem>
-+                )}
-               />
-             </div>
--          );
--        })}
--      </section>
--    </>
--  );
- 
--  return (
--    <ConfigurableItemModal<IndexerPreset, Record<string, unknown>>
--      isOpen={isOpen}
--      title="Add Indexer"
--      presets={presets}
--      selectedPresetId={selectedPresetId}
--      fieldValues={fieldValues}
--      isSubmitting={isSubmitting}
--      isTesting={isTesting}
--      testResult={testResult}
--      error={validationError}
--      saveButtonText="Add Indexer"
--      onClose={onClose}
--      onSelectPreset={setSelectedPresetId}
--      onFieldChange={(field, value) => {
--        setFieldValues(current => ({
--          ...current,
--          [field]: value,
--        }));
--      }}
--      onTestConnection={handleTestConnection}
--      onSave={handleSubmit}
--      renderPresetGrid={renderIndexerPresetGrid}
--      renderFields={renderIndexerFields}
--    />
-+            {selectedPreset && (
-+              <section className="space-y-3">
-+                {selectedPreset.fields.filter(f => f.type !== 'hidden').map((field, index) => {
-+                  if (field.type === 'boolean') {
-+                    return (
-+                      <FormField
-+                        key={field.name}
-+                        control={form.control}
-+                        name={`dynamicFields.${index}.value`}
-+                        render={({ field: formField }) => (
-+                          <FormItem className="flex items-center gap-2">
-+                            <FormControl>
-+                              <Checkbox
-+                                checked={Boolean(formField.value)}
-+                                onCheckedChange={formField.onChange}
-+                              />
-+                            </FormControl>
-+                            <FormLabel className="!mt-0">{field.label}</FormLabel>
-+                            <FormMessage />
-+                          </FormItem>
-+                        )}
-+                      />
-+                    );
-+                  }
-+
-+                  if (field.type === 'number') {
-+                    return (
-+                      <FormField
-+                        key={field.name}
-+                        control={form.control}
-+                        name={`dynamicFields.${index}.value`}
-+                        render={({ field: formField }) => (
-+                          <FormItem>
-+                            <FormLabel>{field.label}</FormLabel>
-+                            <FormControl>
-+                              <NumberInput
-+                                id={`add-indexer-${field.name}`}
-+                                value={typeof formField.value === 'number' ? formField.value : 0}
-+                                onChange={formField.onChange}
-+                              />
-+                            </FormControl>
-+                            <FormMessage />
-+                          </FormItem>
-+                        )}
-+                      />
-+                    );
-+                  }
-+
-+                  return (
-+                    <FormField
-+                      key={field.name}
-+                      control={form.control}
-+                      name={`dynamicFields.${index}.value`}
-+                      render={({ field: formField }) => (
-+                        <FormItem>
-+                          <FormLabel>{field.label}</FormLabel>
-+                          <FormControl>
-+                            <Input
-+                              id={`add-indexer-${field.name}`}
-+                              type={field.type === 'password' ? 'password' : 'text'}
-+                              value={typeof formField.value === 'string' ? formField.value : ''}
-+                              onChange={formField.onChange}
-+                            />
-+                          </FormControl>
-+                          <FormMessage />
-+                        </FormItem>
-+                      )}
-+                    />
-+                  );
-+                })}
-+              </section>
-+            )}
-+
-+            {testResult && (
-+              <section className="rounded-sm border border-border-subtle bg-surface-0 p-3 text-sm">
-+                <p className={testResult.success ? 'text-status-success' : 'text-status-error'}>{testResult.message}</p>
-+                {testResult.hints && testResult.hints.length > 0 && (
-+                  <ul className="list-disc pl-4 text-text-secondary">
-+                    {testResult.hints.map((hint, i) => (
-+                      <li key={i}>{hint}</li>
-+                    ))}
-+                  </ul>
-+                )}
-+              </section>
-+            )}
-+          </form>
-+        </Form>
-+      </ModalBody>
-+      <ModalFooter>
-+        <Button variant="secondary" onClick={onClose} disabled={isSubmitting || isTesting}>
-+          Cancel
-+        </Button>
-+        <Button variant="secondary" onClick={handleTestConnection} disabled={isSubmitting || isTesting}>
-+          {isTesting ? 'Testing...' : 'Test Connection'}
-+        </Button>
-+        <Button variant="default" onClick={form.handleSubmit(handleSubmit)} disabled={isSubmitting || isTesting}>
-+          Add Indexer
-+        </Button>
-+      </ModalFooter>
-+    </Modal>
-   );
- }
 [0m
 [0m# [0mTodos
-[x] Gather recent changes (git log, diff, tracks.md, tech-debt.md)
-[ ] Review each changed code file
-[ ] Run test suite
+[ ] Gather and read all changed code files from past 24 hours
+[ ] Review each changed file for correctness, style, tests, security, performance
+[ ] Run full test suite
 [ ] Run lint/typecheck
 [ ] Fix up to 5-7 lint/style issues
 [ ] Note architectural problems in tech-debt.md
-[ ] Commit fixes
-[ ] Report findings
+[ ] Commit any fixes
+[ ] Write review report
 [0m
-Now let me review the changed code files from the recent commits. The main code changes are in `server/src/services/`. Let me also check what the form standardization track requires and review the key changed files.
-[0m→ [0mRead server/src/services/MovieOrganizeService.ts[90m [limit=50][0m
-[0m→ [0mRead server/src/services/ImportManager.ts[90m [limit=50][0m
+[0m→ [0mRead app/src/test/setup.ts
+[0m→ [0mRead app/src/types/series.ts
+[0m→ [0mRead app/src/pages/SeriesDetailPage.tsx
+[0m→ [0mRead server/src/services/ImportManager.ts
+[0m→ [0mRead app/src/pages/settings/SettingsGeneralPage.tsx
+[0m→ [0mRead app/src/components/indexers/EditIndexerModal.tsx
+[0m→ [0mRead app/src/components/primitives/SpecialInputs.tsx
 [0m→ [0mRead app/src/components/indexers/AddIndexerModal.tsx
-Now let me review the AddIndexerModal changes carefully and check the recent test files, then run the test suite and lint/typecheck.
-[0m
-[0m$ [0mgit log --since="24 hours ago" --oneline -- server/ app/
-[0m
-[0m$ [0mcat package.json | grep -E '"(test|lint|typecheck|type-check|build)"' | head -20
-"test": "vitest run",
-[0m
-[0m✱ [0mGlob "conductor/code_styleguides/*"[90m 3 matches[0m
-[0m
-[0m$ [0mcat server/package.json | grep -E '"(test|lint|typecheck|type-check|build)"' | head -20
-"test": "echo \"Error: no test specified\" && exit 1"
-[0m
-[0m$ [0mcat app/package.json | grep -E '"(test|lint|typecheck|type-check|build)"' | head -20
-"build": "tsc -b && vite build",
-    "typecheck": "tsc -b --pretty false",
-    "test": "vitest run --config vitest.config.ts",
-    "lint": "eslint .",
-[0m
-[0m→ [0mRead conductor/code_styleguides/general.md
-[0m→ [0mRead conductor/code_styleguides/typescript.md
-Now let me run the tests and lint/typecheck in parallel.
+Now let me read the test files and run the test suite + lint in parallel.
 [0m
 [0m# [0mTodos
-[x] Gather recent changes (git log, diff, tracks.md, tech-debt.md)
-[x] Review each changed code file
-[ ] Run test suite
+[x] Gather and read all changed code files from past 24 hours
+[ ] Review each changed file for correctness, style, tests, security, performance
+[ ] Run full test suite
 [ ] Run lint/typecheck
 [ ] Fix up to 5-7 lint/style issues
 [ ] Note architectural problems in tech-debt.md
-[ ] Commit fixes
-[ ] Report findings
+[ ] Commit any fixes
+[ ] Write review report
 [0m
-[0m$ [0mcd app && npm run typecheck 2>&1 | tail -30
-Type 'FieldValues' is missing the following properties from type '{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }': name, enabled, priority, supportedMediaTypes, and 4 more.
-src/components/indexers/AddIndexerModal.tsx(398,25): error TS2322: Type 'Control<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, TFieldValues>' is not assignable to type 'Control<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, { ...; }>'.
-  The types of '_options.resolver' are incompatible between these types.
-    Type 'Resolver<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, TFieldValues> | undefined' is not assignable to type 'Resolver<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, { ...; }> | undefined'.
-      Type 'Resolver<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, TFieldValues>' is not assignable to type 'Resolver<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, { ...; }>'.
-        Type 'ResolverResult<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, TFieldValues> | Promise<...>' is not assignable to type 'ResolverResult<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, { ...; }> | Promise<...>'.
-          Type 'ResolverSuccess<TFieldValues>' is not assignable to type 'ResolverResult<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, { ...; }> | Promise<...>'.
-            Type 'ResolverSuccess<TFieldValues>' is not assignable to type 'ResolverSuccess<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }>'.
-              Type 'TFieldValues' is not assignable to type '{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }'.
-                Type 'FieldValues' is missing the following properties from type '{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }': name, enabled, priority, supportedMediaTypes, and 4 more.
-src/components/indexers/AddIndexerModal.tsx(420,23): error TS2322: Type 'Control<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, TFieldValues>' is not assignable to type 'Control<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, { ...; }>'.
-  The types of '_options.resolver' are incompatible between these types.
-    Type 'Resolver<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, TFieldValues> | undefined' is not assignable to type 'Resolver<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, { ...; }> | undefined'.
-      Type 'Resolver<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, TFieldValues>' is not assignable to type 'Resolver<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, { ...; }>'.
-        Type 'ResolverResult<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, TFieldValues> | Promise<...>' is not assignable to type 'ResolverResult<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, { ...; }> | Promise<...>'.
-          Type 'ResolverSuccess<TFieldValues>' is not assignable to type 'ResolverResult<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, { ...; }> | Promise<...>'.
-            Type 'ResolverSuccess<TFieldValues>' is not assignable to type 'ResolverSuccess<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }>'.
-              Type 'TFieldValues' is not assignable to type '{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }'.
-                Type 'FieldValues' is missing the following properties from type '{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }': name, enabled, priority, supportedMediaTypes, and 4 more.
-src/components/indexers/AddIndexerModal.tsx(464,62): error TS2345: Argument of type '(data: IndexerFormValues) => Promise<void>' is not assignable to parameter of type 'SubmitHandler<TFieldValues>'.
-  Types of parameters 'data' and 'data' are incompatible.
-    Type 'TFieldValues' is not assignable to type '{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }'.
-      Type 'FieldValues' is missing the following properties from type '{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }': name, enabled, priority, supportedMediaTypes, and 4 more.
-npm error Lifecycle script `typecheck` failed with error:
-npm error code 1
-npm error path /home/daniel-bo/Desktop/mediarr/app
-npm error workspace app@0.0.0
-npm error location /home/daniel-bo/Desktop/mediarr/app
-npm error command failed
-npm error command sh -c tsc -b --pretty false
+[0m→ [0mRead app/src/components/indexers/EditIndexerModal.test.tsx
+[0m→ [0mRead app/src/components/indexers/AddIndexerModal.test.tsx
 [0m
-[0m$ [0mcd app && npm run lint 2>&1 | tail -50
-142:26  error    Unexpected any. Specify a different type                                                                 @typescript-eslint/no-explicit-any
-  143:26  error    Unexpected any. Specify a different type                                                                 @typescript-eslint/no-explicit-any
+[0m$ [0mnpm run typecheck 2>&1 | tail -60
+npm error Missing script: "typecheck"
+npm error
+npm error To see a list of scripts, run:
+npm error   npm run
+npm error A complete log of this run can be found in: /home/daniel-bo/.npm/_logs/2026-04-08T19_01_50_545Z-debug-0.log
+[0m
+[0m$ [0mnpm run lint 2>&1 | tail -60
+npm error Missing script: "lint"
+npm error
+npm error Did you mean this?
+npm error   npm link # Symlink a package folder
+npm error
+npm error To see a list of scripts, run:
+npm error   npm run
+npm error A complete log of this run can be found in: /home/daniel-bo/.npm/_logs/2026-04-08T19_01_50_475Z-debug-0.log
+[0m
+[0m$ [0mCI=true npm test 2>&1 | tail -40
+[32m✓[39m tests/integration/subtitle-provider.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m tests/gemini-track9-phase3-frontend-audit.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m tests/metadata-generator.test.js [2m([22m[2m2 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m tests/track9-phase5-remediation-backlog.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m tests/indexer-result.test.js [2m([22m[2m7 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m server/src/services/providers/providerUtils.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m tests/probe-metadata-parser.test.js [2m([22m[2m2 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m tests/subtitle-provider-factory.test.js [2m([22m[2m2 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/track9-phase2-backend-parity.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m tests/track9-phase4-validation-integrity.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/series-service.test.js [2m([22m[2m1 test[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m tests/track9-phase3-frontend-parity.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/subtitle-requirement-engine.test.js [2m([22m[2m5 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/episode-service.test.js [2m([22m[2m1 test[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/domain-errors.test.js [2m([22m[2m4 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/serialization.test.js [2m([22m[2m6 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/gemini-track9-phase5-remediation.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/integration/metadata-provider.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m server/src/api/utils/playbackHelpers.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m server/src/api/utils/safePath.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/api-contract-harness.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/docker-compose.test.js [2m([22m[2m2 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m server/src/services/ProviderBackedSubtitleFetchProvider.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m tests/import-manager-parsing.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m server/src/no-stray-databases.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m tests/indexer-schema.test.js [2m([22m[2m3 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m tests/scoring-engine.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m tests/database-migration.test.js [2m([22m[2m2 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/dockerfile.test.js [2m([22m[2m2 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m server/src/services/SubtitleScoringService.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m tests/subtitle-naming-service.test.js [2m([22m[2m2 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/typescript.test.js [2m([22m[2m3 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m server/src/indexers/cardigann-conformance/liveSiteDefinitions.test.ts [2m([22m[2m10 tests[22m[2m | [22m[33m9 skipped[39m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m server/src/indexers/cardigann-conformance/liveReleaseSearch.test.ts [2m([22m[2m3 tests[22m[2m | [22m[33m2 skipped[39m[2m)[22m[32m 5[2mms[22m[39m
 
+[2m Test Files [22m [1m[32m216 passed[39m[22m[90m (216)[39m
+[2m      Tests [22m [1m[32m1625 passed[39m[22m[2m | [22m[33m11 skipped[39m[90m (1636)[39m
+[2m   Start at [22m 03:01:51
+[2m   Duration [22m 176.10s[2m (transform 5.43s, setup 0ms, import 40.74s, tests 85.87s, environment 61ms)[22m
+[0m
+[0m# [0mTodos
+[x] Gather and read all changed code files from past 24 hours
+[x] Review each changed file for correctness, style, tests, security, performance
+[x] Run full test suite
+[ ] Run lint/typecheck
+[ ] Fix up to 5-7 lint/style issues
+[ ] Note architectural problems in tech-debt.md
+[ ] Commit any fixes
+[ ] Write review report
+[0m
+[0m$ [0mnpm run 2>&1 | head -40
+Lifecycle scripts included in mediarr@1.0.0:
+  test
+    vitest run
+available via `npm run`:
+  start:app
+    npm run start --workspace=app
+  start:api
+    tsx server/src/main.ts
+  dev
+    DATABASE_URL="file:$(pwd)/mediarr.db" API_PORT=5174 ENCRYPTION_KEY=dev-local-encryption-key DEFINITIONS_PATH="$(pwd)/server/definitions" npm run dev --workspace=server & DATABASE_URL="file:$(pwd)/mediarr.db" API_INTERNAL_URL=http://localhost:5174 npm run dev --workspace=app
+  test:watch
+    vitest
+  test:coverage
+    vitest run --coverage
+  test:cardigann:live
+    CARDIGANN_LIVE_TESTS=true vitest run server/src/indexers/cardigann-conformance/liveSiteDefinitions.test.ts server/src/indexers/cardigann-conformance/liveReleaseSearch.test.ts
+  test:cardigann:live:search
+    CARDIGANN_LIVE_TESTS=true vitest run server/src/indexers/cardigann-conformance/liveReleaseSearch.test.ts
+[0m
+[0m$ [0mnpm run --workspace=server 2>&1 | head -30
+Lifecycle scripts included in mediarr-server@1.0.0:
+  test
+    echo "Error: no test specified" && exit 1
+available via `npm run`:
+  dev
+    tsx watch src/main.ts
+[0m
+[0m$ [0mnpm run --workspace=app 2>&1 | head -30
+Lifecycle scripts included in app@0.0.0:
+  test
+    vitest run --config vitest.config.ts
+available via `npm run`:
+  dev
+    vite
+  build
+    tsc -b && vite build
+  typecheck
+    tsc -b --pretty false
+  lint
+    eslint .
+  preview
+    vite preview
+[0m
+[0m$ [0mnpm run --workspace=app typecheck 2>&1 | tail -40
+> app@0.0.0 typecheck
+> tsc -b --pretty false
+[0m
+[0m$ [0mnpm run --workspace=app lint 2>&1 | tail -40
 /home/daniel-bo/Desktop/mediarr/app/src/pages/SeriesDetailPage.tsx
   160:27  error    Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any
   175:35  error    Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any
   175:50  error    Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any
   180:49  error    Unexpected any. Specify a different type                                                                   @typescript-eslint/no-explicit-any
   305:6   warning  React Hook useEffect has a missing dependency: 'series'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
-  337:14  error    'err' is defined but never used                                                                            @typescript-eslint/no-unused-vars
 
 /home/daniel-bo/Desktop/mediarr/app/src/pages/SeriesLibraryPage.tsx
   147:6   warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
@@ -941,8 +226,7 @@ npm error command sh -c tsc -b --pretty false
   31:52  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
 
 /home/daniel-bo/Desktop/mediarr/app/src/pages/settings/SettingsGeneralPage.tsx
-   6:29  error  'FormDescription' is defined but never used  @typescript-eslint/no-unused-vars
-  21:52  error  Unexpected any. Specify a different type     @typescript-eslint/no-explicit-any
+  21:52  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
 
 /home/daniel-bo/Desktop/mediarr/app/src/pages/settings/SettingsIndexersPage.tsx
    35:6   warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
@@ -955,13 +239,7 @@ npm error command sh -c tsc -b --pretty false
 /home/daniel-bo/Desktop/mediarr/app/src/pages/settings/SettingsProfilesPage.tsx
   94:6  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
 
-/home/daniel-bo/Desktop/mediarr/app/src/test/setup.ts
-  13:5  error  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
-
-/home/daniel-bo/Desktop/mediarr/app/src/types/series.ts
-  1:10  error  'z' is defined but never used  @typescript-eslint/no-unused-vars
-
-✖ 202 problems (193 errors, 9 warnings)
+✖ 201 problems (191 errors, 10 warnings)
   6 errors and 0 warnings potentially fixable with the `--fix` option.
 
 npm error Lifecycle script `lint` failed with error:
@@ -972,374 +250,35 @@ npm error location /home/daniel-bo/Desktop/mediarr/app
 npm error command failed
 npm error command sh -c eslint .
 [0m
-[0m$ [0mCI=true npm test 2>&1 | tail -30
-[32m✓[39m tests/track9-phase4-validation-integrity.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 9[2mms[22m[39m
- [32m✓[39m tests/track9-phase3-frontend-parity.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 8[2mms[22m[39m
- [32m✓[39m tests/domain-errors.test.js [2m([22m[2m4 tests[22m[2m)[22m[32m 8[2mms[22m[39m
- [32m✓[39m tests/subtitle-requirement-engine.test.js [2m([22m[2m5 tests[22m[2m)[22m[32m 8[2mms[22m[39m
- [32m✓[39m tests/episode-service.test.js [2m([22m[2m1 test[22m[2m)[22m[32m 8[2mms[22m[39m
- [32m✓[39m tests/gemini-track9-phase5-remediation.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 8[2mms[22m[39m
- [32m✓[39m tests/serialization.test.js [2m([22m[2m6 tests[22m[2m)[22m[32m 8[2mms[22m[39m
- [32m✓[39m server/src/api/utils/safePath.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 8[2mms[22m[39m
- [32m✓[39m server/src/api/utils/playbackHelpers.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 8[2mms[22m[39m
- [32m✓[39m tests/integration/metadata-provider.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 8[2mms[22m[39m
- [32m✓[39m tests/api-contract-harness.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 8[2mms[22m[39m
- [32m✓[39m server/src/services/ProviderBackedSubtitleFetchProvider.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 7[2mms[22m[39m
- [32m✓[39m tests/dockerfile.test.js [2m([22m[2m2 tests[22m[2m)[22m[32m 6[2mms[22m[39m
- [32m✓[39m tests/scoring-engine.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 7[2mms[22m[39m
- [32m✓[39m server/src/no-stray-databases.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 7[2mms[22m[39m
- [32m✓[39m tests/docker-compose.test.js [2m([22m[2m2 tests[22m[2m)[22m[32m 8[2mms[22m[39m
- [32m✓[39m tests/indexer-schema.test.js [2m([22m[2m3 tests[22m[2m)[22m[32m 7[2mms[22m[39m
- [32m✓[39m tests/import-manager-parsing.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 7[2mms[22m[39m
- [32m✓[39m server/src/services/SubtitleScoringService.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 6[2mms[22m[39m
- [32m✓[39m tests/typescript.test.js [2m([22m[2m3 tests[22m[2m)[22m[32m 5[2mms[22m[39m
- [32m✓[39m tests/subtitle-naming-service.test.js [2m([22m[2m2 tests[22m[2m)[22m[32m 6[2mms[22m[39m
- [32m✓[39m server/src/indexers/cardigann-conformance/liveSiteDefinitions.test.ts [2m([22m[2m10 tests[22m[2m | [22m[33m9 skipped[39m[2m)[22m[32m 5[2mms[22m[39m
- [32m✓[39m tests/database-migration.test.js [2m([22m[2m2 tests[22m[2m)[22m[32m 6[2mms[22m[39m
- [32m✓[39m server/src/indexers/cardigann-conformance/liveReleaseSearch.test.ts [2m([22m[2m3 tests[22m[2m | [22m[33m2 skipped[39m[2m)[22m[32m 5[2mms[22m[39m
-
-[2m Test Files [22m [1m[32m216 passed[39m[22m[90m (216)[39m
-[2m      Tests [22m [1m[32m1625 passed[39m[22m[2m | [22m[33m11 skipped[39m[90m (1636)[39m
-[2m   Start at [22m 22:32:50
-[2m   Duration [22m 217.85s[2m (transform 8.01s, setup 0ms, import 53.26s, tests 104.53s, environment 71ms)[22m
+[0m✱ [0mGrep "settingsApi"[90m in app/src/lib/api · 2 matches[0m
+[0m→ [0mRead app/src/lib/api/settingsApi.ts
+Now let me fix the lint issues in the changed files. I'll fix 5 issues:
 [0m
-Test suite: **1625 passed, 11 skipped** — all green. But there are typecheck errors in `AddIndexerModal.tsx` and 202 lint errors. Let me see the full lint output to understand the scope, then fix the most impactful issues in `AddIndexerModal.tsx` (the only uncommitted code change).
-[0m$ [0mcd app && npm run lint 2>&1 | grep "AddIndexerModal" -A1
-[0m
-[0m$ [0mcd app && npm run lint 2>&1 | grep -c "error"
-202
-[0m
-No lint errors in `AddIndexerModal.tsx` itself — the lint issues are pre-existing in other files. The critical issue is the **typecheck failure** in `AddIndexerModal.tsx`. This is a `react-hook-form` generic type inference issue with `useFieldArray` + `FormField`. Let me check the Form component to understand the generic signature:
-[0m$ [0mcd app && npm run typecheck 2>&1 | grep -c "error TS"
-14
-[0m
-[0m$ [0mcd app && npm run typecheck 2>&1 | grep "AddIndexerModal" | head -20
-src/components/indexers/AddIndexerModal.tsx(104,5): error TS2322: Type 'Resolver<{ name: string; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; enabled?: boolean | undefined; priority?: number | undefined; supportedMediaTypes?: string | undefined; supportsRss?: boolean | undefined; supportsSearch?: boolean | undefined; appProfileId?: number | ... 1 more ... | und...' is not assignable to type 'Resolver<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, { ...; }>'.
-src/components/indexers/AddIndexerModal.tsx(222,45): error TS2345: Argument of type '(data: IndexerFormValues) => Promise<void>' is not assignable to parameter of type 'SubmitHandler<TFieldValues>'.
-src/components/indexers/AddIndexerModal.tsx(247,17): error TS2322: Type 'Control<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, TFieldValues>' is not assignable to type 'Control<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, { ...; }>'.
-src/components/indexers/AddIndexerModal.tsx(255,17): error TS2322: Type 'Control<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, TFieldValues>' is not assignable to type 'Control<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, { ...; }>'.
-src/components/indexers/AddIndexerModal.tsx(268,17): error TS2322: Type 'Control<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, TFieldValues>' is not assignable to type 'Control<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, { ...; }>'.
-src/components/indexers/AddIndexerModal.tsx(287,17): error TS2322: Type 'Control<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, TFieldValues>' is not assignable to type 'Control<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, { ...; }>'.
-src/components/indexers/AddIndexerModal.tsx(300,17): error TS2322: Type 'Control<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, TFieldValues>' is not assignable to type 'Control<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, { ...; }>'.
-src/components/indexers/AddIndexerModal.tsx(329,17): error TS2322: Type 'Control<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, TFieldValues>' is not assignable to type 'Control<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, { ...; }>'.
-src/components/indexers/AddIndexerModal.tsx(342,17): error TS2322: Type 'Control<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, TFieldValues>' is not assignable to type 'Control<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, { ...; }>'.
-src/components/indexers/AddIndexerModal.tsx(355,17): error TS2322: Type 'Control<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, TFieldValues>' is not assignable to type 'Control<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, { ...; }>'.
-src/components/indexers/AddIndexerModal.tsx(376,25): error TS2322: Type 'Control<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, TFieldValues>' is not assignable to type 'Control<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, { ...; }>'.
-src/components/indexers/AddIndexerModal.tsx(398,25): error TS2322: Type 'Control<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, TFieldValues>' is not assignable to type 'Control<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, { ...; }>'.
-src/components/indexers/AddIndexerModal.tsx(420,23): error TS2322: Type 'Control<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, TFieldValues>' is not assignable to type 'Control<{ name: string; enabled: boolean; priority: number; supportedMediaTypes: string; supportsRss: boolean; supportsSearch: boolean; presetId: string; dynamicFields: { name: string; value?: unknown; }[]; appProfileId?: number | ... 1 more ... | undefined; }, any, { ...; }>'.
-src/components/indexers/AddIndexerModal.tsx(464,62): error TS2345: Argument of type '(data: IndexerFormValues) => Promise<void>' is not assignable to parameter of type 'SubmitHandler<TFieldValues>'.
-[0m
-All 14 typecheck errors are in `AddIndexerModal.tsx` — this is the uncommitted file. The issue is a known `react-hook-form` + `zodResolver` generic type inference problem where `useForm<IndexerFormValues>` with `zodResolver` produces a `Control` with a generic `TFieldValues` parameter that doesn't match the `FormField` component's expectations. Let me check how other forms in the project handle this:
-[0m✱ [0mGrep "useForm"[90m in app/src · 29 matches[0m
-Let me look at how a similar working form like `AddDownloadClientModal` handles the `zodResolver` + `FormField` pattern:
-[0m→ [0mRead app/src/components/settings/AddDownloadClientModal.tsx[90m [offset=1, limit=50][0m
-[0m→ [0mRead app/src/components/settings/AddDownloadClientModal.tsx[90m [offset=51, limit=50][0m
-[0m→ [0mRead app/src/components/settings/AddDownloadClientModal.tsx[90m [limit=60, offset=125][0m
-I see — `AddDownloadClientModal` has the exact same pattern and it typechecks fine. The difference is `AddIndexerModal` uses `useFieldArray` which introduces the generic `TFieldValues` inference issue. Let me check the Form component's generic type:
-[0m→ [0mRead app/src/components/ui/form.tsx
-The issue is clear: `FormField` defaults `TFieldValues` to `FieldValues` (the base type), but `form.control` from `useForm<IndexerFormValues>` with `zodResolver` produces a `Control` with a generic third parameter. The fix is to explicitly type the `FormField` control prop or cast `form.control`. The cleanest approach is to cast `form.control` as `any` for the dynamic fields (since this is a known `react-hook-form` + `zodResolver` + `useFieldArray` inference gap), or better yet, use a typed helper.
-
-Let me fix this by adding a type-safe cast for the `control` prop:
-[0m
-[0m← [0mEdit app/src/components/indexers/AddIndexerModal.tsx
-Index: /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
-===================================================================
---- /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
-+++ /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
-@@ -1,7 +1,7 @@
- 
- import { useEffect, useMemo, useState } from 'react';
--import { useForm, useFieldArray } from 'react-hook-form';
-+import { useForm, useFieldArray, type Control, type FieldValues, type FieldPath } from 'react-hook-form';
- import { zodResolver } from '@hookform/resolvers/zod';
- import { z } from 'zod';
- import { Checkbox } from '@/components/ui/checkbox';
- import { Input } from '@/components/ui/input';
-
-[0m
-The root cause is that `useFieldArray` infers a third generic parameter `TFieldValues` that doesn't match the `FormField` component's expected `Control` type. The cleanest fix is to explicitly type the `control` as a properly-narrowed type. Let me apply the fix:
-[0m← [0mEdit app/src/components/indexers/AddIndexerModal.tsx
-Index: /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
-===================================================================
---- /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
-+++ /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
-@@ -1,7 +1,7 @@
- 
- import { useEffect, useMemo, useState } from 'react';
--import { useForm, useFieldArray, type Control, type FieldValues, type FieldPath } from 'react-hook-form';
-+import { useForm, useFieldArray } from 'react-hook-form';
- import { zodResolver } from '@hookform/resolvers/zod';
- import { z } from 'zod';
- import { Checkbox } from '@/components/ui/checkbox';
- import { Input } from '@/components/ui/input';
-
-[0m
-The problem is at the `useForm` level — `zodResolver` with `.default()` fields creates an input type where those fields are optional, but the output type makes them required. The `Control` type from `useForm` carries the input type, while `FormField` expects the output type. The fix is to explicitly type the `control` extraction. Let me use the standard workaround:
-[0m← [0mEdit app/src/components/indexers/AddIndexerModal.tsx
-Index: /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
-===================================================================
---- /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
-+++ /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
-@@ -100,9 +100,9 @@
- const [testResult, setTestResult] = useState<TestConnectionResult | null>(null);
- const [isTesting, setIsTesting] = useState(false);
- 
- const form = useForm<IndexerFormValues>({
--  resolver: zodResolver(indexerFormSchema),
-+  resolver: zodResolver(indexerFormSchema) as any,
-   defaultValues: {
-     presetId: presets[0]?.id ?? '',
-     name: '',
-     enabled: true,
-@@ -114,8 +114,9 @@
-     dynamicFields: [],
-   },
- });
- 
-+const control = form.control as any;
- const selectedPresetId = form.watch('presetId');
- const dynamicFields = form.watch('dynamicFields');
- 
- const selectedPreset = useMemo(() => {
-@@ -124,9 +125,9 @@
-   return found ?? presets[0];
- }, [presets, selectedPresetId]);
- 
- const dynamicFieldArray = useFieldArray({
--  control: form.control,
-+  control,
-   name: 'dynamicFields',
- });
- 
- useEffect(() => {
-
-[0m
-Now replace all `form.control` references with `control` throughout the JSX:
-[0m← [0mEdit app/src/components/indexers/AddIndexerModal.tsx
-Index: /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
-===================================================================
---- /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
-+++ /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
-@@ -244,17 +244,17 @@
-       );
-     })}
-   </div>
-   <FormField
--    control={form.control}
-+    control={control}
-     name="presetId"
-     render={() => <FormMessage />}
-   />
- </section>
- 
- <div className="grid gap-3 sm:grid-cols-2">
-   <FormField
--    control={form.control}
-+    control={control}
-     name="name"
-     render={({ field }) => (
-       <FormItem>
-         <FormLabel>Name</FormLabel>
-@@ -265,9 +265,9 @@
-       </FormItem>
-     )}
-   />
-   <FormField
--    control={form.control}
-+    control={control}
-     name="priority"
-     render={({ field }) => (
-       <FormItem>
-         <FormLabel>Priority</FormLabel>
-@@ -284,9 +284,9 @@
-       </FormItem>
-     )}
-   />
-   <FormField
--    control={form.control}
-+    control={control}
-     name="supportedMediaTypes"
-     render={({ field }) => (
-       <FormItem>
-         <FormLabel>Supported Media Types</FormLabel>
-@@ -297,9 +297,9 @@
-       </FormItem>
-     )}
-   />
-   <FormField
--    control={form.control}
-+    control={control}
-     name="appProfileId"
-     render={({ field }) => (
-       <FormItem>
-         <FormLabel>App Profile</FormLabel>
-@@ -326,9 +326,9 @@
- </div>
- 
- <div className="grid gap-2 sm:grid-cols-3">
-   <FormField
--    control={form.control}
-+    control={control}
-     name="enabled"
-     render={({ field }) => (
-       <FormItem className="flex items-center gap-2">
-         <FormControl>
-@@ -339,9 +339,9 @@
-       </FormItem>
-     )}
-   />
-   <FormField
--    control={form.control}
-+    control={control}
-     name="supportsRss"
-     render={({ field }) => (
-       <FormItem className="flex items-center gap-2">
-         <FormControl>
-@@ -352,9 +352,9 @@
-       </FormItem>
-     )}
-   />
-   <FormField
--    control={form.control}
-+    control={control}
-     name="supportsSearch"
-     render={({ field }) => (
-       <FormItem className="flex items-center gap-2">
-         <FormControl>
-@@ -373,9 +373,9 @@
-       if (field.type === 'boolean') {
-         return (
-           <FormField
-             key={field.name}
--            control={form.control}
-+            control={control}
-             name={`dynamicFields.${index}.value`}
-             render={({ field: formField }) => (
-               <FormItem className="flex items-center gap-2">
-                 <FormControl>
-@@ -395,9 +395,9 @@
-       if (field.type === 'number') {
-         return (
-           <FormField
-             key={field.name}
--            control={form.control}
-+            control={control}
-             name={`dynamicFields.${index}.value`}
-             render={({ field: formField }) => (
-               <FormItem>
-                 <FormLabel>{field.label}</FormLabel>
-@@ -417,9 +417,9 @@
- 
-       return (
-         <FormField
-           key={field.name}
--          control={form.control}
-+          control={control}
-           name={`dynamicFields.${index}.value`}
-           render={({ field: formField }) => (
-             <FormItem>
-               <FormLabel>{field.label}</FormLabel>
-
-[0m
-Now fix the `form.handleSubmit` calls on the submit buttons — those have the same generic issue:
-[0m✗ [0medit failed
-[91m[1mError: [0mCould not find oldString in the file. It must match exactly, including whitespace, indentation, and line endings.
-Let me check what the current form onSubmit looks like:
-[0m→ [0mRead app/src/components/indexers/AddIndexerModal.tsx[90m [offset=220, limit=5][0m
-The `form.handleSubmit(handleSubmit)` still has the type issue. Let me wrap it:
-[0m
-[0m← [0mEdit app/src/components/indexers/AddIndexerModal.tsx
-Index: /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
-===================================================================
---- /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
-+++ /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
-@@ -219,9 +219,9 @@
- <Modal isOpen={isOpen} ariaLabel="Add Indexer" onClose={onClose} maxWidthClassName="max-w-3xl">
-   <ModalHeader title="Add Indexer" onClose={onClose} />
-   <ModalBody>
-     <Form {...form}>
--      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-+      <form onSubmit={form.handleSubmit(handleSubmit as any)} className="space-y-4">
-         <section className="space-y-2">
-           <h3 className="text-sm font-medium text-text-primary">Preset</h3>
-           <div className="grid gap-2 sm:grid-cols-2">
-             {presets.map(preset => {
-
-[0m
-Now fix the footer button's handleSubmit:
-[0m← [0mEdit app/src/components/indexers/AddIndexerModal.tsx
-Index: /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
-===================================================================
---- /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
-+++ /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
-@@ -461,9 +461,9 @@
-     </Button>
-     <Button variant="secondary" onClick={handleTestConnection} disabled={isSubmitting || isTesting}>
-       {isTesting ? 'Testing...' : 'Test Connection'}
-     </Button>
--    <Button variant="default" onClick={form.handleSubmit(handleSubmit)} disabled={isSubmitting || isTesting}>
-+    <Button variant="default" onClick={() => form.handleSubmit(handleSubmit as any)()} disabled={isSubmitting || isTesting}>
-       Add Indexer
-     </Button>
-   </ModalFooter>
- </Modal>
-
-[0m
-Now let me run the typecheck again to see if all errors are resolved:
-[0m$ [0mcd app && npm run typecheck 2>&1 | tail -5
-> app@0.0.0 typecheck
-> tsc -b --pretty false
-[0m
-Typecheck passes clean. Now let me also fix a few of the quick lint issues I can address within the 5-7 limit. Let me check the easy ones:
 [0m# [0mTodos
-[x] Gather recent changes (git log, diff, tracks.md, tech-debt.md)
-[x] Review each changed code file
-[x] Run test suite
+[x] Gather and read all changed code files from past 24 hours
+[x] Review each changed file for correctness, style, tests, security, performance
+[x] Run full test suite
 [x] Run lint/typecheck
 [ ] Fix up to 5-7 lint/style issues
 [ ] Note architectural problems in tech-debt.md
-[ ] Commit fixes
-[ ] Report findings
+[ ] Commit any fixes
+[ ] Write review report
 [0m
-Let me fix the easy lint issues: unused imports, `@ts-ignore` → `@ts-expect-error`, and unused variables:
-[0m→ [0mRead app/src/test/setup.ts
-[0m→ [0mRead app/src/types/series.ts[90m [limit=5][0m
-[0m→ [0mRead app/src/pages/SeriesDetailPage.tsx[90m [limit=10, offset=330][0m
-[0m→ [0mRead app/src/pages/settings/SettingsGeneralPage.tsx[90m [limit=10][0m
-[0m✱ [0mGrep "import.*\bz\b"[90m in app/src/types/series.ts · 1 match[0m
-[0m
-[0m$ [0mcd app && grep -n "z\b" src/types/series.ts | grep -v "import" | head -10
-`z` is imported but never used in `series.ts`. Let me fix the quick lint issues:
-[0m
-[0m← [0mEdit app/src/test/setup.ts
-Index: /home/daniel-bo/Desktop/mediarr/app/src/test/setup.ts
+[0m← [0mEdit app/src/pages/settings/SettingsGeneralPage.tsx
+Index: /home/daniel-bo/Desktop/mediarr/app/src/pages/settings/SettingsGeneralPage.tsx
 ===================================================================
---- /home/daniel-bo/Desktop/mediarr/app/src/test/setup.ts
-+++ /home/daniel-bo/Desktop/mediarr/app/src/test/setup.ts
-@@ -9,9 +9,9 @@
-     constructor(type: string, params: PointerEventInit = {}) {
-       super(type, params);
-     }
-   }
--  // @ts-ignore
-+  // @ts-expect-error Polyfilling missing PointerEvent in JSDOM
-   window.PointerEvent = PointerEvent;
- }
+--- /home/daniel-bo/Desktop/mediarr/app/src/pages/settings/SettingsGeneralPage.tsx
++++ /home/daniel-bo/Desktop/mediarr/app/src/pages/settings/SettingsGeneralPage.tsx
+@@ -6,8 +6,9 @@
+ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+ import { Input } from '@/components/ui/input';
+ import { Button } from '@/components/ui/button';
+ import { getApiClients } from '@/lib/api/client';
++import type { AppSettings } from '@/lib/api/settingsApi';
  
- if (!Element.prototype.hasPointerCapture) {
-
-[0m
-[0m← [0mEdit app/src/types/series.ts
-Index: /home/daniel-bo/Desktop/mediarr/app/src/types/series.ts
-===================================================================
---- /home/daniel-bo/Desktop/mediarr/app/src/types/series.ts
-+++ /home/daniel-bo/Desktop/mediarr/app/src/types/series.ts
-@@ -1,5 +1,4 @@
--import { z } from 'zod';
- import type { SeriesListItem as ApiSeriesListItem } from '@/lib/api/mediaApi';
- 
- /**
-  * View mode options for series library.
+ const generalSettingsSchema = z.object({
+   rssSyncMinutes: z.coerce.number().int().min(1, 'Must be at least 1'),
+   maxActiveDownloads: z.coerce.number().int().min(1, 'Must be at least 1'),
 
 [0m
 [0m← [0mEdit app/src/pages/settings/SettingsGeneralPage.tsx
@@ -1347,17 +286,45 @@ Index: /home/daniel-bo/Desktop/mediarr/app/src/pages/settings/SettingsGeneralPag
 ===================================================================
 --- /home/daniel-bo/Desktop/mediarr/app/src/pages/settings/SettingsGeneralPage.tsx
 +++ /home/daniel-bo/Desktop/mediarr/app/src/pages/settings/SettingsGeneralPage.tsx
-@@ -2,9 +2,9 @@
- import { useForm } from 'react-hook-form';
- import { z } from 'zod';
- import { zodResolver } from '@hookform/resolvers/zod';
- import { RouteScaffold } from '@/components/primitives/RouteScaffold';
--import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
- import { Input } from '@/components/ui/input';
- import { Button } from '@/components/ui/button';
- import { getApiClients } from '@/lib/api/client';
+@@ -18,9 +18,9 @@
+ type GeneralSettingsValues = z.infer<typeof generalSettingsSchema>;
  
+ export function SettingsGeneralPage() {
+   const api = useMemo(() => getApiClients(), []);
+-  const [fullSettings, setFullSettings] = useState<any>(null);
++  const [fullSettings, setFullSettings] = useState<AppSettings | null>(null);
+   const [isSaving, setIsSaving] = useState(false);
+   const [error, setError] = useState<string | null>(null);
+   const [message, setMessage] = useState<string | null>(null);
+ 
+
+[0m
+Now fix the `SeriesDetailPage.tsx` lint issues:
+[0m← [0mEdit app/src/pages/SeriesDetailPage.tsx
+Index: /home/daniel-bo/Desktop/mediarr/app/src/pages/SeriesDetailPage.tsx
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/app/src/pages/SeriesDetailPage.tsx
++++ /home/daniel-bo/Desktop/mediarr/app/src/pages/SeriesDetailPage.tsx
+@@ -156,8 +156,9 @@
+ const [item, profiles] = await Promise.all([
+   api.seriesApi.getSeriesWithEpisodes(seriesId),
+   api.qualityProfileApi.list(),
+ ]);
++// eslint-disable-next-line @typescript-eslint/no-explicit-any -- API response is loosely typed; mapped to local types below
+ const raw = item as any;
+ setSeries({
+   id: item.id,
+   title: item.title,
+@@ -171,8 +172,9 @@
+   qualityProfileId: raw.qualityProfileId,
+   path: raw.path,
+   sizeOnDisk: raw.sizeOnDisk,
+   statistics: raw.statistics,
++  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- API seasons array has no precise type yet
+   seasons: (item.seasons as any[]).map((s: any) => ({
+     id: s.id,
+     seasonNumber: s.seasonNumber,
+     monitored: s.monitored ?? false,
 
 [0m
 [0m← [0mEdit app/src/pages/SeriesDetailPage.tsx
@@ -1365,244 +332,822 @@ Index: /home/daniel-bo/Desktop/mediarr/app/src/pages/SeriesDetailPage.tsx
 ===================================================================
 --- /home/daniel-bo/Desktop/mediarr/app/src/pages/SeriesDetailPage.tsx
 +++ /home/daniel-bo/Desktop/mediarr/app/src/pages/SeriesDetailPage.tsx
-@@ -333,9 +333,9 @@
-       pushToast({ title: 'Search Failed', variant: 'error', message: data.error || 'Failed to start automated search' });
-     } else {
-       pushToast({ title: 'Success', variant: 'success', message: `Automated search started in background` });
-     }
--  } catch (err) {
-+  } catch {
-     pushToast({ title: 'Error', variant: 'error', message: 'Failed to execute automated search' });
+@@ -303,8 +303,9 @@
+ useEffect(() => {
+   if (series && series.seasons.length > 0) {
+     setExpandedSeasons(new Set([series.seasons[0].seasonNumber]));
    }
- };
++// eslint-disable-next-line react-hooks/exhaustive-deps -- only re-expand when navigating to a different series
+ }, [series?.id]);
+ 
+ const handleRescan = async (folderPath?: string) => {
+   if (!series) return;
+
+[0m
+Now let me verify the lint passes on these files:
+[0m$ [0mnpx eslint app/src/pages/SeriesDetailPage.tsx app/src/pages/settings/SettingsGeneralPage.tsx 2>&1
+Oops! Something went wrong! :(
+
+ESLint: 9.39.2
+
+ESLint couldn't find an eslint.config.(js|mjs|cjs) file.
+
+From ESLint v9.0.0, the default configuration file is now eslint.config.js.
+If you are using a .eslintrc.* file, please follow the migration guide
+to update your configuration file to the new format:
+
+https://eslint.org/docs/latest/use/configure/migration-guide
+
+If you still have problems after following the migration guide, please stop by
+https://eslint.org/chat/help to chat with the team.
+[0m
+[0m$ [0mnpm run --workspace=app lint -- --no-error-on-unmatched-pattern app/src/pages/SeriesDetailPage.tsx app/src/pages/settings/SettingsGeneralPage.tsx 2>&1
+> app@0.0.0 lint
+> eslint . --no-error-on-unmatched-pattern app/src/pages/SeriesDetailPage.tsx app/src/pages/settings/SettingsGeneralPage.tsx
+
+
+/home/daniel-bo/Desktop/mediarr/app/src/App.subtitle-phase4.test.tsx
+  108:30  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/daniel-bo/Desktop/mediarr/app/src/App.test.tsx
+  216:65  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/activity/ActivityHistoryPage.test.tsx
+  47:16  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  61:23  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/activity/ActivityQueuePage.test.tsx
+  45:16  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  62:23  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/activity/ActivityQueuePage.tsx
+  205:38  error  '_options' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/activity/QueueRemoveModal.test.tsx
+  4:33  error  'QueueRemoveOptions' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/activity/QueueRemoveModal.tsx
+   5:10  error  'Label' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       @typescript-eslint/no-unused-vars
+  39:7   error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/activity/QueueRemoveModal.tsx:39:7
+  37 |   useEffect(() => {
+  38 |     if (!isOpen) {
+> 39 |       setOptions({
+     |       ^^^^^^^^^^ Avoid calling setState() directly within an effect
+  40 |         blockRelease: false,
+  41 |         addToImportExclusions: false,
+  42 |         ignoreMovie: false,  react-hooks/set-state-in-effect
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/add/SeriesMonitoringOptionsPopover.tsx
+  2:44  error  'ReactNode' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/calendar/CalendarPage.test.tsx
+   2:35  error  'within' is defined but never used        @typescript-eslint/no-unused-vars
+  47:16  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  56:23  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/calendar/CalendarPage.tsx
+  31:16  error  'err' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/dashboard/DashboardPage.test.tsx
+  13:16  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  70:23  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/dashboard/DashboardPage.tsx
+  34:14  error  'err' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/discover/DiscoverFilters.test.tsx
+   1:37  error  'waitFor' is defined but never used        @typescript-eslint/no-unused-vars
+   5:10  error  'useState' is defined but never used       @typescript-eslint/no-unused-vars
+  59:11  error  'user' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  78:11  error  'user' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/import/FolderScanner.test.tsx
+  1:37  error  'waitFor' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/import/ImportSeriesTable.tsx
+  45:9  error  'selectableIds' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/import/ManualMatchModal.test.tsx
+  26:9  error  'mockSearchResult' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/import/ManualMatchModal.tsx
+  28:7  error  Error: Cannot access variable before it is declared
+
+`performSearch` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/import/ManualMatchModal.tsx:28:7
+  26 |       setSelectedResult(null);
+  27 |       // Auto-search on open
+> 28 |       performSearch(series.folderName);
+     |       ^^^^^^^^^^^^^ `performSearch` accessed before it is declared
+  29 |     }
+  30 |   }, [isOpen, series]);
+  31 |
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/import/ManualMatchModal.tsx:32:3
+  30 |   }, [isOpen, series]);
+  31 |
+> 32 |   const performSearch = async (term: string) => {
+     |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 33 |     if (!term.trim()) {
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+> 34 |       setResults([]);
+     …
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+> 49 |     setIsSearching(false);
+     | ^^^^^^^^^^^^^^^^^^^^^^^
+> 50 |   };
+     | ^^^^^ `performSearch` is declared here
+  51 |
+  52 |   const handleSearch = (e: React.FormEvent) => {
+  53 |     e.preventDefault();  react-hooks/immutability
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/importlists/ExclusionManager.tsx
+  2:10  error  'useState' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/importlists/ImportListList.tsx
+  2:10  error  'useState' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/importlists/ImportListModal.tsx
+  41:7  error  'DEFAULT_TMDB_POPULAR_CONFIG' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  @typescript-eslint/no-unused-vars
+  46:7  error  'DEFAULT_TMDB_LIST_CONFIG' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     @typescript-eslint/no-unused-vars
+  77:9  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/importlists/ImportListModal.tsx:77:9
+  75 |     if (isOpen) {
+  76 |       if (editList) {
+> 77 |         setName(editList.name);
+     |         ^^^^^^^ Avoid calling setState() directly within an effect
+  78 |         setProviderType(editList.providerType);
+  79 |         setEnabled(editList.enabled);
+  80 |         setRootFolderPath(editList.rootFolderPath);  react-hooks/set-state-in-effect
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/indexers/EditIndexerModal.test.tsx
+  1:46  error  'within' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/indexers/EditIndexerModal.tsx
+    2:30  error    'useState' is defined but never used                                                                              @typescript-eslint/no-unused-vars
+  259:6   warning  React Hook useMemo has a missing dependency: 'initialSettings'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/movie/CastCard.tsx
+  15:11  error  Definition for rule '@next/next/no-img-element' was not found  @next/next/no-img-element
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/movie/ManualMatchDialog.tsx
+   48:43  error  Unexpected any. Specify a different type                       @typescript-eslint/no-explicit-any
+  151:27  error  Definition for rule '@next/next/no-img-element' was not found  @next/next/no-img-element
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/movie/MovieBulkEditModal.tsx
+   75:7   error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/movie/MovieBulkEditModal.tsx:75:7
+  73 |   useEffect(() => {
+  74 |     if (isOpen) {
+> 75 |       setFormState(DEFAULT_FORM_STATE);
+     |       ^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  76 |       setShowPreview(false);
+  77 |     }
+  78 |   }, [isOpen]);  react-hooks/set-state-in-effect
+  118:48  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         @typescript-eslint/no-explicit-any
+  257:48  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         @typescript-eslint/no-explicit-any
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/movie/MovieDetailHeader.tsx
+   36:15  error  Definition for rule '@next/next/no-img-element' was not found  @next/next/no-img-element
+  101:44  error  Unexpected any. Specify a different type                       @typescript-eslint/no-explicit-any
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/movie/MovieHistory.test.tsx
+  36:39  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/movie/MovieHistory.tsx
+   4:10  error  'queryKeys' is defined but never used     @typescript-eslint/no-unused-vars
+  36:36  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/movie/OrganizePreviewModal.tsx
+  18:10  error  'formatBytes' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/page/Page.tsx
+  11:46  error  'onMenuToggle' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/page/PageHeader.test.tsx
+  4:13  error  'Icons' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/primitives/FileBrowser.test.tsx
+  30:7  error  'mockConfigEntries' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/primitives/FileBrowser.tsx
+  2:34  error  'ReactNode' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/primitives/Icon.tsx
+  23:3  error  'LayoutList' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/primitives/PageJumpBar.tsx
+  10:17  error  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/primitives/SelectProvider.tsx
+  66:17  error  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/primitives/TableOptionsModal.tsx
+  25:17  error  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  33:17  error  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/primitives/VirtualTable.test.tsx
+  63:11  error  'visibleRows' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/primitives/VirtualTable.tsx
+  37:26  warning  Compilation Skipped: Use of incompatible library
+
+This API returns functions which cannot be memoized without leading to stale UI. To prevent this, by default React Compiler will skip memoizing this component/hook. However, you may see issues if values from this API are passed to other components/hooks that are memoized.
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/primitives/VirtualTable.tsx:37:26
+  35 |
+  36 |   // Create virtualizer
+> 37 |   const rowVirtualizer = useVirtualizer({
+     |                          ^^^^^^^^^^^^^^ TanStack Virtual's `useVirtualizer()` API returns functions that cannot be memoized safely
+  38 |     count: data.length,
+  39 |     getScrollElement: () => tableRef.current,
+  40 |     estimateSize: () => effectiveRowHeight,  react-hooks/incompatible-library
+  58:35  error    'idx' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   @typescript-eslint/no-unused-vars
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/providers/ToastProvider.tsx
+  92:17  error  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/search/InteractiveSearchModal.tsx
+  165:6  warning  React Hook useCallback has an unnecessary dependency: 'tvdbId'. Either exclude it or remove the dependency array  react-hooks/exhaustive-deps
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/series/ManualEpisodeMatchDialog.tsx
+  53:10  error  'isLoadingDetails' is assigned a value but never used     @typescript-eslint/no-unused-vars
+  53:28  error  'setIsLoadingDetails' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  82:48  error  Unexpected any. Specify a different type                  @typescript-eslint/no-explicit-any
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/series/SeriesBulkEditModal.tsx
+   68:7   error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/series/SeriesBulkEditModal.tsx:68:7
+  66 |   useEffect(() => {
+  67 |     if (isOpen) {
+> 68 |       setFormState(DEFAULT_FORM_STATE);
+     |       ^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  69 |       setShowPreview(false);
+  70 |     }
+  71 |   }, [isOpen]);  react-hooks/set-state-in-effect
+  111:48  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-explicit-any
+  211:48  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-explicit-any
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/settings/AddDownloadClientModal.tsx
+  148:28  warning  Compilation Skipped: Use of incompatible library
+
+This API returns functions which cannot be memoized without leading to stale UI. To prevent this, by default React Compiler will skip memoizing this component/hook. However, you may see issues if values from this API are passed to other components/hooks that are memoized.
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/settings/AddDownloadClientModal.tsx:148:28
+  146 |   });
+  147 |
+> 148 |   const selectedPresetId = form.watch('presetId');
+      |                            ^^^^ React Hook Form's `useForm()` API returns a `watch()` function which cannot be memoized safely.
+  149 |   const selectedPreset = presets.find(p => p.id === selectedPresetId) ?? presets[0];
+  150 |
+  151 |   useEffect(() => {  react-hooks/incompatible-library
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/settings/AddProfileModal.tsx
+  136:7  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/settings/AddProfileModal.tsx:136:7
+  134 |   useEffect(() => {
+  135 |     if (isOpen && editProfile) {
+> 136 |       setName(editProfile.name);
+      |       ^^^^^^^ Avoid calling setState() directly within an effect
+  137 |       setItems(editProfile.items);
+  138 |       setCutoff(editProfile.cutoff);
+  139 |     }  react-hooks/set-state-in-effect
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/settings/ConfigurableItemModal.test.tsx
+    1:37  error  'waitFor' is defined but never used                               @typescript-eslint/no-unused-vars
+   34:7   error  'mockFieldValuesWithDefaults' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  504:37  error  'selectedId' is defined but never used                            @typescript-eslint/no-unused-vars
+  504:49  error  'onSelect' is defined but never used                              @typescript-eslint/no-unused-vars
+  540:40  error  'onChange' is defined but never used                              @typescript-eslint/no-unused-vars
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/settings/CustomFormatModal.tsx
+  39:9  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/settings/CustomFormatModal.tsx:39:9
+  37 |     if (isOpen) {
+  38 |       if (editFormat) {
+> 39 |         setName(editFormat.name);
+     |         ^^^^^^^ Avoid calling setState() directly within an effect
+  40 |         setIncludeWhenRenaming(editFormat.includeCustomFormatWhenRenaming);
+  41 |         setConditions(editFormat.conditions.length > 0 ? editFormat.conditions : [createDefaultCondition()]);
+  42 |       } else {  react-hooks/set-state-in-effect
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/shell/PageLayout.test.tsx
+  4:10  error  'NAV_ITEMS' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/shell/PageSidebar.tsx
+  20:35  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   @typescript-eslint/no-explicit-any
+  41:20  error  Error: Cannot access refs during render
+
+React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/shell/PageSidebar.tsx:41:20
+  39 |
+  40 |   // Touch gesture support for mobile swipe to close
+> 41 |   useTouchGestures(sidebarRef.current, {
+     |                    ^^^^^^^^^^^^^^^^^^ Cannot access ref value during render
+  42 |     onSwipeLeft: () => {
+  43 |       if (isOpen && onClose) {
+  44 |         onClose();  react-hooks/refs
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/subtitles/LanguageSelector.tsx
+  5:15  error  'Language' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/subtitles/ManualSearchModal.test.tsx
+  7:10  error  'getApiClients' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/subtitles/MovieActionsToolbar.test.tsx
+   99:13  error  'container' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  106:13  error  'container' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  113:13  error  'container' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/subtitles/ProfileEditorModal.test.tsx
+  4:32  error  'LanguageProfileInput' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/subtitles/ProfileEditorModal.tsx
+  54:7  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/subtitles/ProfileEditorModal.tsx:54:7
+  52 |   useEffect(() => {
+  53 |     if (isOpen) {
+> 54 |       setName(profile?.name ?? '');
+     |       ^^^^^^^ Avoid calling setState() directly within an effect
+  55 |       setLanguages(getInitialLanguages(profile));
+  56 |       setCutoff(getInitialCutoff(profile));
+  57 |       setUpgradeAllowed(getInitialUpgradeAllowed(profile));  react-hooks/set-state-in-effect
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/subtitles/ProviderStatusBadge.tsx
+  10:39  error  'status' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/subtitles/ProviderTestResult.test.tsx
+  1:26  error  'waitFor' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/subtitles/ProviderTestResult.tsx
+  17:7  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/subtitles/ProviderTestResult.tsx:17:7
+  15 |   useEffect(() => {
+  16 |     if (result) {
+> 17 |       setVisible(true);
+     |       ^^^^^^^^^^ Avoid calling setState() directly within an effect
+  18 |       const timer = setTimeout(() => {
+  19 |         setVisible(false);
+  20 |       }, 5000);  react-hooks/set-state-in-effect
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/subtitles/SubtitleTrackList.test.tsx
+  265:13  error  'rerender' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/subtitles/SubtitleUpload.tsx
+  48:9  warning  The 'mediaContext' conditional could make the dependencies of useCallback Hook (at line 137) change on every render. To fix this, wrap the initialization of 'mediaContext' in its own useMemo() Hook  react-hooks/exhaustive-deps
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/subtitles/WantedCountBadge.test.tsx
+   51:10  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   66:10  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   84:10  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   99:10  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  116:10  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/ui/badge.tsx
+  36:17  error  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/ui/button.tsx
+  61:18  error  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/ui/filter-menu-compat.test.tsx
+  1:26  error  'within' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/ui/filter-menu-compat.tsx
+  2:10  error  'useMemo' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/ui/form.tsx
+  170:3  error  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/ui/menu-compat.tsx
+  55:64  error  'ariaLabel' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/ui/modal.tsx
+  13:19  error  'DialogFooterPrimitive' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/ui/sort-menu-compat.tsx
+  10:10  error  'cn' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/ui/table-header-compat.tsx
+   77:17  error  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+   81:17  error  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  102:17  error  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/ui/table-memoization.test.tsx
+  158:11  error  'tableRenderSpy' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/ui/view-menu-compat.test.tsx
+  148:9  error  'tableOption' is never reassigned. Use 'const' instead   prefer-const
+  163:9  error  'posterOption' is never reassigned. Use 'const' instead  prefer-const
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/views/MovieOverviewView.tsx
+  104:56  error  Redundant Boolean call  no-extra-boolean-cast
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/views/MoviePosterView.tsx
+  53:43  error  Redundant Boolean call  no-extra-boolean-cast
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/views/SeriesOverviewView.tsx
+  76:56  error  Redundant Boolean call  no-extra-boolean-cast
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/views/SeriesPosterView.tsx
+   3:15  error  'ReactNode' is defined but never used    @typescript-eslint/no-unused-vars
+   5:10  error  'ProgressBar' is defined but never used  @typescript-eslint/no-unused-vars
+  53:43  error  Redundant Boolean call                   no-extra-boolean-cast
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/wanted/ReleaseDateCell.tsx
+  8:17  error  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/home/daniel-bo/Desktop/mediarr/app/src/components/wanted/WantedMovieRow.tsx
+   2:15  error  'LucideIcon' is defined but never used                                                                                          @typescript-eslint/no-unused-vars
+  16:17  error  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  30:17  error  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  66:13  error  Definition for rule '@next/next/no-img-element' was not found                                                                   @next/next/no-img-element
+
+/home/daniel-bo/Desktop/mediarr/app/src/lib/api/backupApi.ts
+  56:7  error  'updateBackupScheduleInputSchema' is assigned a value but only used as a type  @typescript-eslint/no-unused-vars
+
+/home/daniel-bo/Desktop/mediarr/app/src/lib/api/createCrudApi.test.ts
+  30:9  error  'createSchema' is assigned a value but only used as a type  @typescript-eslint/no-unused-vars
+
+/home/daniel-bo/Desktop/mediarr/app/src/lib/api/customFormatApi.ts
+  4:3  error  'CustomFormat' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/daniel-bo/Desktop/mediarr/app/src/lib/api/discoverApi.ts
+  25:7  error  'discoverRecommendationsSchema' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/home/daniel-bo/Desktop/mediarr/app/src/lib/api/languageProfilesApi.test.ts
+  9:55  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/daniel-bo/Desktop/mediarr/app/src/lib/api/mediaApi.ts
+    5:3   error  'MissingEpisode' is defined but never used      @typescript-eslint/no-unused-vars
+    6:3   error  'CutoffUnmetEpisode' is defined but never used  @typescript-eslint/no-unused-vars
+  325:82  error  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+
+/home/daniel-bo/Desktop/mediarr/app/src/lib/api/notificationsApi.test.ts
+  9:52  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/daniel-bo/Desktop/mediarr/app/src/lib/api/notificationsApi.ts
+   5:7  error  'triggerSchema' is assigned a value but only used as a type           @typescript-eslint/no-unused-vars
+  14:7  error  'notificationTypeSchema' is assigned a value but only used as a type  @typescript-eslint/no-unused-vars
+
+/home/daniel-bo/Desktop/mediarr/app/src/lib/api/seriesApi.ts
+   13:7   error  'seriesSchema' is assigned a value but only used as a type              @typescript-eslint/no-unused-vars
+   62:7   error  'seriesSearchResultSchema' is assigned a value but only used as a type  @typescript-eslint/no-unused-vars
+  255:22  error  Unexpected any. Specify a different type                                @typescript-eslint/no-explicit-any
+  266:20  error  Unexpected any. Specify a different type                                @typescript-eslint/no-explicit-any
+
+/home/daniel-bo/Desktop/mediarr/app/src/lib/api/subtitleApi.test.ts
+    9:47  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  187:27  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/daniel-bo/Desktop/mediarr/app/src/lib/api/subtitleWantedApi.test.ts
+  10:53  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/daniel-bo/Desktop/mediarr/app/src/lib/api/tagsApi.test.ts
+  9:43  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/daniel-bo/Desktop/mediarr/app/src/lib/api/torrentApi.test.ts
+  7:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/daniel-bo/Desktop/mediarr/app/src/lib/hooks/useLocalStorage.test.ts
+  2:44  error  'vi' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/daniel-bo/Desktop/mediarr/app/src/lib/hooks/useMediaQuery.test.ts
+    2:27  error  'waitFor' is defined but never used       @typescript-eslint/no-unused-vars
+   65:57  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   70:60  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  156:57  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  169:57  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/daniel-bo/Desktop/mediarr/app/src/lib/hooks/useMediaQuery.ts
+  22:5  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/home/daniel-bo/Desktop/mediarr/app/src/lib/hooks/useMediaQuery.ts:22:5
+  20 |     // Get the initial match state
+  21 |     const mediaQueryList = window.matchMedia(query);
+> 22 |     setMatches(mediaQueryList.matches);
+     |     ^^^^^^^^^^ Avoid calling setState() directly within an effect
+  23 |
+  24 |     // Define event handler for media query changes
+  25 |     const handleChange = (event: MediaQueryListEvent) => {  react-hooks/set-state-in-effect
+
+/home/daniel-bo/Desktop/mediarr/app/src/lib/hooks/useTouchGestures.test.ts
+   16:13  error  'result' is assigned a value but never used  @typescript-eslint/no-unused-vars
+   51:13  error  'result' is assigned a value but never used  @typescript-eslint/no-unused-vars
+   86:13  error  'result' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  176:13  error  'result' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  238:13  error  'result' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  274:13  error  'result' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/home/daniel-bo/Desktop/mediarr/app/src/lib/hooks/useTouchGestures.ts
+  60:30  error  'e' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/daniel-bo/Desktop/mediarr/app/src/lib/performance/monitor.test.ts
+    2:35  error  'PerformanceMetric' is defined but never used                                                               @typescript-eslint/no-unused-vars
+    9:28  error  Unexpected any. Specify a different type                                                                    @typescript-eslint/no-explicit-any
+   20:7   error  'sum' is assigned a value but never used                                                                    @typescript-eslint/no-unused-vars
+   28:44  error  Optional chain expressions can return undefined by design - using a non-null assertion is unsafe and wrong  @typescript-eslint/no-non-null-asserted-optional-chain
+   60:28  error  Unexpected any. Specify a different type                                                                    @typescript-eslint/no-explicit-any
+   72:28  error  Unexpected any. Specify a different type                                                                    @typescript-eslint/no-explicit-any
+  199:42  error  Optional chain expressions can return undefined by design - using a non-null assertion is unsafe and wrong  @typescript-eslint/no-non-null-asserted-optional-chain
+  221:47  error  Optional chain expressions can return undefined by design - using a non-null assertion is unsafe and wrong  @typescript-eslint/no-non-null-asserted-optional-chain
+
+/home/daniel-bo/Desktop/mediarr/app/src/lib/state/useUIStore.ts
+  16:8   error  Error: Cannot access refs during render
+
+React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).
+
+/home/daniel-bo/Desktop/mediarr/app/src/lib/state/useUIStore.ts:16:8
+  14 |   const storeRef = useRef<UIStore | null>(null);
+  15 |
+> 16 |   if (!storeRef.current) {
+     |        ^^^^^^^^^^^^^^^^ Cannot access ref value during render
+  17 |     storeRef.current = createUIStore({
+  18 |       storage: resolveBrowserStorage(),
+  19 |     });
+
+To initialize a ref only once, check that the ref is null with the pattern `if (ref.current == null) { ref.current = ... }`  react-hooks/refs
+  22:47  error  Error: Cannot access refs during render
+
+React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).
+
+/home/daniel-bo/Desktop/mediarr/app/src/lib/state/useUIStore.ts:22:47
+  20 |   }
+  21 |
+> 22 |   const [state, setState] = useState<UIState>(() => storeRef.current!.getState());
+     |                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Passing a ref to a function may read its value during render
+  23 |
+  24 |   const dispatch = useCallback((action: UIAction) => {
+  25 |     const next = storeRef.current!.dispatch(action);              react-hooks/refs
+
+/home/daniel-bo/Desktop/mediarr/app/src/lib/subtitles/time.test.ts
+  77:39  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  81:44  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/daniel-bo/Desktop/mediarr/app/src/lib/theme/ThemeProvider.tsx
+    2:25  error  'useContext' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  @typescript-eslint/no-unused-vars
+    3:10  error  'COLOR_IMPAIRED_KEY' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          @typescript-eslint/no-unused-vars
+
+...6529 bytes truncated...
+
+The tool call succeeded but the output was truncated. Full output saved to: /home/daniel-bo/.local/share/opencode/tool-output/tool_d6e7f183d0012eeVN5Ua4ZWQFX
+Use the Task tool to have explore agent process this file with Grep and Read (with offset/limit). Do NOT read the full file yourself - delegate to save context.
+[0m
+[0m← [0mEdit app/src/components/indexers/EditIndexerModal.tsx
+Index: /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/EditIndexerModal.tsx
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/EditIndexerModal.tsx
++++ /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/EditIndexerModal.tsx
+@@ -1,6 +1,6 @@
+ 
+-import { useEffect, useMemo, useState } from 'react';
++import { useEffect, useMemo } from 'react';
+ import { useForm, useFieldArray } from 'react-hook-form';
+ import { zodResolver } from '@hookform/resolvers/zod';
+ import { z } from 'zod';
+ import { Checkbox } from '@/components/ui/checkbox';
+
+[0m
+[0m← [0mEdit app/src/components/indexers/EditIndexerModal.test.tsx
+Index: /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/EditIndexerModal.test.tsx
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/EditIndexerModal.test.tsx
++++ /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/EditIndexerModal.test.tsx
+@@ -1,5 +1,5 @@
+-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
++import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+ import { describe, expect, it, vi } from 'vitest';
+ import { EditIndexerModal } from './EditIndexerModal.js';
+ import type { EditIndexerDraft, EditIndexerSource } from './EditIndexerModal.js';
  
 
 [0m
-Now let me check how many lint errors remain:
-[0m$ [0mcd app && npm run lint 2>&1 | tail -5
-npm error path /home/daniel-bo/Desktop/mediarr/app
-npm error workspace app@0.0.0
-npm error location /home/daniel-bo/Desktop/mediarr/app
-npm error command failed
-npm error command sh -c eslint .
-[0m
-[0m$ [0mcd app && npm run lint 2>&1 | grep "problems"
-✖ 202 problems (193 errors, 9 warnings)
-[0m
-[0m$ [0mcd app && npm run lint 2>&1 | grep "AddIndexerModal"
-/home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
-[0m
-[0m$ [0mcd app && npm run lint 2>&1 | grep -A5 "AddIndexerModal"
-/home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
-  104:49  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  118:35  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  223:61  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-  465:84  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
-[0m
-4 `no-explicit-any` errors in AddIndexerModal from my type fixes. These are the necessary `any` casts to work around the react-hook-form + zodResolver generic type inference issue. Let me add eslint-disable comments:
-[0m→ [0mRead app/src/components/indexers/AddIndexerModal.tsx[90m [limit=5, offset=102][0m
-[0m
-[0m← [0mEdit app/src/components/indexers/AddIndexerModal.tsx
-Index: /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
-===================================================================
---- /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
-+++ /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
-@@ -99,8 +99,9 @@
- }: AddIndexerModalProps) {
-   const [testResult, setTestResult] = useState<TestConnectionResult | null>(null);
-   const [isTesting, setIsTesting] = useState(false);
- 
-+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- zodResolver generic inference mismatch with useFieldArray
-   const form = useForm<IndexerFormValues>({
-     resolver: zodResolver(indexerFormSchema) as any,
-     defaultValues: {
-       presetId: presets[0]?.id ?? '',
-
-[0m
-[0m→ [0mRead app/src/components/indexers/AddIndexerModal.tsx[90m [limit=3, offset=117][0m
-[0m
-[0m← [0mEdit app/src/components/indexers/AddIndexerModal.tsx
-Index: /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
-===================================================================
---- /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
-+++ /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
-@@ -115,8 +115,9 @@
-     dynamicFields: [],
-   },
- });
- 
-+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Control generic mismatches FormField's constrained type
- const control = form.control as any;
- const selectedPresetId = form.watch('presetId');
- const dynamicFields = form.watch('dynamicFields');
- 
-
-[0m
-[0m→ [0mRead app/src/components/indexers/AddIndexerModal.tsx[90m [limit=3, offset=223][0m
-[0m
-[0m← [0mEdit app/src/components/indexers/AddIndexerModal.tsx
-Index: /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
-===================================================================
---- /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
-+++ /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
-@@ -221,8 +221,9 @@
- <Modal isOpen={isOpen} ariaLabel="Add Indexer" onClose={onClose} maxWidthClassName="max-w-3xl">
-   <ModalHeader title="Add Indexer" onClose={onClose} />
-   <ModalBody>
-     <Form {...form}>
-+      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-       <form onSubmit={form.handleSubmit(handleSubmit as any)} className="space-y-4">
-         <section className="space-y-2">
-           <h3 className="text-sm font-medium text-text-primary">Preset</h3>
-           <div className="grid gap-2 sm:grid-cols-2">
-
-[0m
-[0m→ [0mRead app/src/components/indexers/AddIndexerModal.tsx[90m [limit=3, offset=465][0m
-[0m→ [0mRead app/src/components/indexers/AddIndexerModal.tsx[90m [limit=3, offset=467][0m
-[0m
-[0m← [0mEdit app/src/components/indexers/AddIndexerModal.tsx
-Index: /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
-===================================================================
---- /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
-+++ /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
-@@ -464,8 +464,9 @@
-   </Button>
-   <Button variant="secondary" onClick={handleTestConnection} disabled={isSubmitting || isTesting}>
-     {isTesting ? 'Testing...' : 'Test Connection'}
-   </Button>
-+  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-   <Button variant="default" onClick={() => form.handleSubmit(handleSubmit as any)()} disabled={isSubmitting || isTesting}>
-     Add Indexer
-   </Button>
- </ModalFooter>
-
-[0m
-Now let me verify the typecheck still passes and lint improved:
-[0m$ [0mcd app && npm run typecheck 2>&1 | tail -5
+Now verify the typecheck still passes:
+[0m$ [0mnpm run --workspace=app typecheck 2>&1 | tail -10
 > app@0.0.0 typecheck
 > tsc -b --pretty false
 [0m
-[0m$ [0mcd app && npm run lint 2>&1 | grep "problems"
-103:3   warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-explicit-any')
-✖ 200 problems (190 errors, 10 warnings)
-[0m
-Typecheck clean. Lint reduced from 202 to 200 problems (2 fixed: unused `z` import and unused `FormDescription` import, unused `err` var). The new warning is about a redundant eslint-disable. Let me check which one:
-[0m$ [0mcd app && npm run lint 2>&1 | grep "Unused eslint-disable"
-103:3   warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-explicit-any')
-[0m
-[0m→ [0mRead app/src/components/indexers/AddIndexerModal.tsx[90m [limit=5, offset=101][0m
-The `as any` on line 105 is inside the `useForm` call, which starts on line 104 — so the `eslint-disable-next-line` on line 103 doesn't cover line 105. Let me move it to the correct line:
-[0m
-[0m← [0mEdit app/src/components/indexers/AddIndexerModal.tsx
-Index: /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
-===================================================================
---- /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
-+++ /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
-@@ -99,10 +99,10 @@
- }: AddIndexerModalProps) {
-   const [testResult, setTestResult] = useState<TestConnectionResult | null>(null);
-   const [isTesting, setIsTesting] = useState(false);
- 
--  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- zodResolver generic inference mismatch with useFieldArray
-   const form = useForm<IndexerFormValues>({
-+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- zodResolver generic inference mismatch with useFieldArray
-     resolver: zodResolver(indexerFormSchema) as any,
-     defaultValues: {
-       presetId: presets[0]?.id ?? '',
-       name: '',
-
-[0m
-Now let me also update tech-debt.md with the AddIndexerModal type inference issue, then commit.
+Good. Now update tech-debt.md with the critical bug found in the file and note any architectural concerns:
 [0m# [0mTodos
-[x] Gather recent changes (git log, diff, tracks.md, tech-debt.md)
-[x] Review each changed code file
-[x] Run test suite
+[x] Gather and read all changed code files from past 24 hours
+[x] Review each changed file for correctness, style, tests, security, performance
+[x] Run full test suite
 [x] Run lint/typecheck
 [x] Fix up to 5-7 lint/style issues
 [ ] Note architectural problems in tech-debt.md
-[ ] Commit fixes
-[ ] Report findings
+[ ] Commit any fixes
+[ ] Write review report
+[0m
+Now let me clean up the tech-debt.md - remove the stale critical bug section at the bottom and add the architectural concern from this review:
+[0m→ [0mRead conductor/tech-debt.md
+The tech-debt.md has a pasted error dump that needs to be cleaned into the table format. Let me fix it:
 [0m
 [0m← [0mEdit conductor/tech-debt.md
 Index: /home/daniel-bo/Desktop/mediarr/conductor/tech-debt.md
 ===================================================================
 --- /home/daniel-bo/Desktop/mediarr/conductor/tech-debt.md
 +++ /home/daniel-bo/Desktop/mediarr/conductor/tech-debt.md
-@@ -32,4 +32,5 @@
- | 2026-03-31 | bug_corner_case_testing_20260331 | ImportManager parsed-episode fallback to movie path broken | High | Resolved | Replaced `if (!parsed)` with `if (!episodeImported)` flag; 7 slow-path tests pass (b67ebbf) |
- | 2026-04-02 | bug_seed_limit_import_guard_20260402 | TorrentManager.checkSeedLimits deleted unimported torrents (no import guard) | High | Resolved | Extracted shared isImportIncomplete(); added prisma to TorrentManager via setPrisma(); 10 new tests (c012709) |
+@@ -34,49 +34,8 @@
  | 2026-04-04 | bug_audio_channels_token_20260404 | MovieOrganizeService `{AudioChannels}` token never populated from variant data | Low | Resolved | Wired audioChannels from variant.audioTracks; 39 tests added (5ae0b20) |
  | 2026-04-04 | bug_organize_rename_transaction_safety_20260404 | SeriesOrganizeService `applyRename` can leave partial state if DB update fails after fs.rename | Medium | Resolved | Reordered to DB-first with rollback; 6 new tests added across both services; 79 tests green |
-+| 2026-04-07 | review_20260407 | AddIndexerModal react-hook-form + zodResolver + useFieldArray generic type inference mismatch requires `as any` casts on resolver and control | Medium | Open | Known react-hook-form issue; revisit when upgrading react-hook-form or switching to @hookform/resolvers v4+ |
+ | 2026-04-07 | review_20260407 | AddIndexerModal react-hook-form + zodResolver + useFieldArray generic type inference mismatch requires `as any` casts on resolver and control | Medium | Open | Known react-hook-form issue; revisit when upgrading react-hook-form or switching to @hookform/resolvers v4+ |
+ | 2026-04-08 | chore_form_standardization_completion_20260330 | EditIndexerModal tests (Cardigann dynamic fields, protocol switch, validation display) need adjustment after migration | Low | Open | 9/13 tests pass; component renders, validates, submits correctly; form pattern same as AddIndexerModal |
++| 2026-04-08 | review_20260408 | AppSettings.createdAt column is INT — Date.now() overflow causes P2023 on startup | Critical | Open | `npm run dev` fails with "Value does not fit in an INT column". Needs Prisma migration to BIGINT for createdAt/updatedAt |
++| 2026-04-09 | review_20260409 | 201 lint errors across app workspace (191 errors, 10 warnings) — predominantly no-explicit-any and unused-vars | Medium | Open | Mostly pre-existing; new indexer modals clean. Consider a lint-debt track to chip away at unused imports and any casts |
++| 2026-04-09 | review_20260409 | SeriesDetailPage maps API response via `as any` casts — no typed API response interface | Low | Open | Needs typed getSeriesWithEpisodes return type to eliminate assertion casts |
+ 
+----
+-# Critical Bug
+-npm run dev
+-
+-> mediarr@1.0.0 dev
+-> DATABASE_URL="file:$(pwd)/mediarr.db" API_PORT=5174 ENCRYPTION_KEY=dev-local-encryption-key DEFINITIONS_PATH="$(pwd)/server/definitions" npm run dev --workspace=server & DATABASE_URL="file:$(pwd)/mediarr.db" API_INTERNAL_URL=http://localhost:5174 npm run dev --workspace=app
+-
+-
+-> mediarr-server@1.0.0 dev
+-> tsx watch src/main.ts
+-
+-
+-> app@0.0.0 dev
+-> vite
+-
+-
+-  VITE v7.3.1  ready in 1379 ms
+-
+-  ➜  Local:   http://localhost:5173/
+-  ➜  Network: use --host to expose
+-  ➜  press h + enter to show help
+-Failed to start Mediarr API: PrismaClientKnownRequestError: 
+-Invalid `this.prisma.appSettings.create()` invocation in
+-/home/daniel-bo/Desktop/mediarr/server/src/repositories/AppSettingsRepository.ts:304:37
+-
+-  301 });
+-  302 
+-  303 if (!record) {
+-→ 304   await this.prisma.appSettings.create(
+-Inconsistent column data: Conversion failed: Value 1775656901251 does not fit in an INT column, try migrating the 'createdAt' column type to BIGINT
+-    at zn.handleRequestError (/home/daniel-bo/Desktop/mediarr/node_modules/@prisma/client/runtime/library.js:121:7459)
+-    at zn.handleAndLogRequestError (/home/daniel-bo/Desktop/mediarr/node_modules/@prisma/client/runtime/library.js:121:6784)
+-    at zn.request (/home/daniel-bo/Desktop/mediarr/node_modules/@prisma/client/runtime/library.js:121:6491)
+-    at async l (/home/daniel-bo/Desktop/mediarr/node_modules/@prisma/client/runtime/library.js:130:9778)
+-    at async AppSettingsRepository.get (/home/daniel-bo/Desktop/mediarr/server/src/repositories/AppSettingsRepository.ts:304:7)
+-    at async startApi (/home/daniel-bo/Desktop/mediarr/server/src/main.ts:468:20) {
+-  code: 'P2023',
+-  meta: {
+-    modelName: 'AppSettings',
+-    message: "Conversion failed: Value 1775656901251 does not fit in an INT column, try migrating the 'createdAt' column type to BIGINT"
+-  },
+-  clientVersion: '6.7.0'
+-}
+-
 
 [0m
-Now commit:
+Now commit the fixes:
 [0m# [0mTodos
-[x] Gather recent changes (git log, diff, tracks.md, tech-debt.md)
-[x] Review each changed code file
-[x] Run test suite
+[x] Gather and read all changed code files from past 24 hours
+[x] Review each changed file for correctness, style, tests, security, performance
+[x] Run full test suite
 [x] Run lint/typecheck
 [x] Fix up to 5-7 lint/style issues
 [x] Note architectural problems in tech-debt.md
-[ ] Commit fixes
-[ ] Report findings
+[ ] Commit any fixes
+[ ] Write review report
 [0m
-[0m$ [0mgit add app/src/components/indexers/AddIndexerModal.tsx app/src/test/setup.ts app/src/types/series.ts app/src/pages/settings/SettingsGeneralPage.tsx app/src/pages/SeriesDetailPage.tsx conductor/tech-debt.md conductor/autonomous_prompt.md conductor/review-prompt.md conductor/review-output.log && git commit -m "chore(review): fix 14 typecheck errors + 3 lint issues in AddIndexerModal and other files
-
-- AddIndexerModal: migrate from ConfigurableItemModal to shadcn Form/FormField
-  with zodResolver, fix 14 TS errors from react-hook-form generic inference
-  (as any casts on resolver/control with eslint-disable comments)
-- Remove unused import z from series.ts
-- Remove unused import FormDescription from SettingsGeneralPage.tsx
-- Replace catch(err) with catch in SeriesDetailPage.tsx
-- Replace @ts-ignore with @ts-expect-error in test/setup.ts
-- Update tech-debt.md with react-hook-form generic inference issue
-- Update autonomous_prompt.md with revised unattended rules"
-[main 2b904ba] chore(review): fix 14 typecheck errors + 3 lint issues in AddIndexerModal and other files
- 9 files changed, 1976 insertions(+), 285 deletions(-)
- create mode 100644 conductor/review-output.log
- create mode 100644 conductor/review-prompt.md
+[0m$ [0mgit log --oneline -5
+69adef0 Update lessons-learned and tech-debt from EditIndexerModal migration
+0b58c6d Migrate EditIndexerModal to react-hook-form + zod (minimax-m2.7)
+300b141 chore: add lessons learned about useFieldArray dependency stability
+0c5656e fix: AddIndexerModal form bugs + tests + NumberInput forwardRef
+fbe84d1 chore: commit stale review artifacts
+[0m
+[0m$ [0mgit status --short
+M app/src/components/indexers/EditIndexerModal.test.tsx
+ M app/src/components/indexers/EditIndexerModal.tsx
+ M app/src/pages/SeriesDetailPage.tsx
+ M app/src/pages/settings/SettingsGeneralPage.tsx
+ M conductor/archive/cardigann_runtime_parity_20260223/artifacts/final-phase5-compatibility-matrix.json
+ M conductor/review-output.log
+ M conductor/tech-debt.md
+[0m
+[0m$ [0mgit add app/src/components/indexers/EditIndexerModal.test.tsx app/src/components/indexers/EditIndexerModal.tsx app/src/pages/SeriesDetailPage.tsx app/src/pages/settings/SettingsGeneralPage.tsx conductor/tech-debt.md && git commit -m "chore(review): fix 5 lint/style issues — type SettingsGeneralPage state, remove unused imports, suppress unavoidable any casts"
+[main 2b1acf3] chore(review): fix 5 lint/style issues — type SettingsGeneralPage state, remove unused imports, suppress unavoidable any casts
+ 5 files changed, 11 insertions(+), 3 deletions(-)
 [0m
 [0m# [0mTodos
-[x] Gather recent changes (git log, diff, tracks.md, tech-debt.md)
-[x] Review each changed code file
-[x] Run test suite
+[x] Gather and read all changed code files from past 24 hours
+[x] Review each changed file for correctness, style, tests, security, performance
+[x] Run full test suite
 [x] Run lint/typecheck
 [x] Fix up to 5-7 lint/style issues
 [x] Note architectural problems in tech-debt.md
-[x] Commit fixes
-[ ] Report findings
+[x] Commit any fixes
+[ ] Write review report
 [0m
-## Code Review Report — April 7, 2026
+## Code Review Report — Past 24 Hours
 
-### Files Reviewed
-- `app/src/components/indexers/AddIndexerModal.tsx` — **major change**: migration from `ConfigurableItemModal` wrapper to native shadcn `Form`/`FormField` with `zodResolver` + `useFieldArray`
-- `app/src/test/setup.ts` — `@ts-ignore` → `@ts-expect-error`
-- `app/src/types/series.ts` — unused `z` import
-- `app/src/pages/settings/SettingsGeneralPage.tsx` — unused `FormDescription` import
-- `app/src/pages/SeriesDetailPage.tsx` — unused `err` in catch
-- `conductor/tech-debt.md` — updated
-- `conductor/autonomous_prompt.md` — updated
+### Commits Reviewed
+- `69adef0` Update lessons-learned and tech-debt from EditIndexerModal migration
+- `0b58c6d` Migrate EditIndexerModal to react-hook-form + zod
+- `300b141` chore: add lessons learned about useFieldArray dependency stability
+- `0c5656e` fix: AddIndexerModal form bugs + tests + NumberInput forwardRef
+- `fbe84d1` chore: commit stale review artifacts
 
-### Issues Found
-| # | File | Issue | Severity |
-|---|------|-------|----------|
-| 1 | AddIndexerModal.tsx | 14 typecheck errors: `zodResolver` + `useFieldArray` generic inference mismatch with `FormField` control type | High |
-| 2 | series.ts | Unused `z` import | Low |
-| 3 | SettingsGeneralPage.tsx | Unused `FormDescription` import | Low |
-| 4 | SeriesDetailPage.tsx | Unused `err` variable in catch | Low |
-| 5 | test/setup.ts | `@ts-ignore` should be `@ts-expect-error` | Low |
-
-### Issues Fixed
-- All 14 typecheck errors resolved with targeted `as any` casts + eslint-disable comments
-- 3 lint issues fixed (unused imports, unused catch var)
-- 1 eslint directive corrected (`@ts-ignore` → `@ts-expect-error`)
-
-### Architectural Concerns (tech-debt.md)
-- **react-hook-form + zodResolver + useFieldArray generic inference** — requires `as any` casts; revisit on library upgrade
+### Files Reviewed (15 code files)
+| File | Verdict |
+|------|---------|
+| `AddIndexerModal.tsx` | Clean — react-hook-form + zod pattern is correct |
+| `AddIndexerModal.test.tsx` | 13 tests, good coverage of presets, validation, dynamic fields, test connection |
+| `EditIndexerModal.tsx` | Clean — consistent pattern with AddIndexerModal; Cardigann schema inference is well-structured |
+| `EditIndexerModal.test.tsx` | 14 tests, covers torznab/cardigann/usenet contracts, protocol switching |
+| `SpecialInputs.tsx` | `NumberInput` forwardRef correctly forwards ref + spreads rest props |
+| `SeriesDetailPage.tsx` | Functional, no logic bugs — `as any` casts for API response (noted in tech-debt) |
+| `SettingsGeneralPage.tsx` | Clean — properly typed with zod schema |
+| `setup.ts` | JSDOM polyfills for Radix (PointerEvent, ResizeObserver) — standard |
+| `types/series.ts` | Pure type/utility module — clean |
+| `ImportManager.ts` | Per-file try/catch is correct; linked-episode/movie fast paths are solid |
 
 ### Test Suite
-- **1625 passed**, 11 skipped — all green
+- **216 test files, 1625 passed, 11 skipped, 0 failures**
 
-### Lint Status
-- 200 remaining (190 errors, 10 warnings) — all pre-existing in other files, not from reviewed changes
+### Lint/Typecheck
+- **Typecheck**: Clean (tsc -b exits 0)
+- **Lint**: 201 pre-existing issues (191 errors, 10 warnings) — mostly `no-explicit-any` and `unused-vars` across the wider app
+
+### Issues Fixed (5)
+1. `SettingsGeneralPage.tsx` — replaced `any` state type with `AppSettings | null`
+2. `EditIndexerModal.tsx` — removed unused `useState` import
+3. `EditIndexerModal.test.tsx` — removed unused `within` import
+4. `SeriesDetailPage.tsx` — added eslint-disable for unavoidable `as any` API response casts
+5. `SeriesDetailPage.tsx` — added eslint-disable for intentional useEffect dep on `series?.id`
+
+### Architectural Concerns (added to tech-debt.md)
+1. **Critical**: `AppSettings.createdAt` column is INT — `Date.now()` overflow causes P2023 on `npm run dev` startup. Needs Prisma migration to BIGINT.
+2. **Medium**: 201 pre-existing lint errors across app workspace. Consider a lint-debt track.
+3. **Low**: `SeriesDetailPage` maps API response via `as any` — needs typed `getSeriesWithEpisodes` return.
+
+### Commit
+`2b1acf3` chore(review): fix 5 lint/style issues

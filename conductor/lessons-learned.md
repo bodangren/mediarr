@@ -37,3 +37,4 @@
 - (2026-03-11, feature_system_routes_coverage) TDD on routes: export proxy state object; reset in `beforeEach`.
 - (2026-04-05, bug_pipeline_integration_corner_cases) **Integration tests across service boundaries catch data-flow bugs.** Use event-emitter mocks with manual `emit()` + microtask flush.
 - (2026-04-05, bug_customformat_scoring_corner_cases) `scoreCandidateUnified` casts to ReleaseCandidate. Callers must pass full candidate objects with all fields.
+- (2026-04-08, chore_form_standardization_completion) **useFieldArray return value is NOT stable** — do NOT put `dynamicFieldArray` from `useFieldArray` in useEffect dependency arrays; causes infinite loops. Only put primitive dependencies like `selectedPreset`.

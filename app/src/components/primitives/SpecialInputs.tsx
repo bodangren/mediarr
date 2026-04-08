@@ -1,5 +1,5 @@
 
-import { useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 
 interface PasswordInputProps {
   id: string;
@@ -107,11 +107,12 @@ export function PathInput({ id, value, onChange, onBrowse, disabled = false, pla
   );
 }
 
-export function NumberInput({ id, value, onChange, min, max, step = 1, disabled = false }: NumberInputProps) {
+export const NumberInput = React.forwardRef<HTMLInputElement, NumberInputProps>(({ id: explicitId, value, onChange, min, max, step = 1, disabled = false, ...props }, ref) => {
   return (
     <input
-      id={id}
-      aria-label={id}
+      ref={ref}
+      id={explicitId}
+      aria-label={explicitId}
       type="number"
       value={value}
       min={min}
@@ -127,9 +128,11 @@ export function NumberInput({ id, value, onChange, min, max, step = 1, disabled 
         onChange(clampValue(parsed, min, max));
       }}
       className="w-full rounded-sm border border-border-subtle bg-surface-1 px-3 py-2 text-sm"
+      {...props}
     />
   );
-}
+});
+NumberInput.displayName = 'NumberInput';
 
 export function AutoCompleteInput({
   id,

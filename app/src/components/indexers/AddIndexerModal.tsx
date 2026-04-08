@@ -146,7 +146,8 @@ export function AddIndexerModal({
       dynamicFields: [],
     });
     setTestResult(null);
-  }, [isOpen, presets, form]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, presets]);
 
   useEffect(() => {
     if (!selectedPreset) {
@@ -163,7 +164,8 @@ export function AddIndexerModal({
       }));
     dynamicFieldArray.replace(nextFields);
     setTestResult(null);
-  }, [selectedPreset, dynamicFieldArray]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPreset]);
 
   const getDynamicFieldValue = (fieldName: string): unknown => {
     const item = dynamicFields.find(f => f.name === fieldName);
@@ -250,7 +252,11 @@ export function AddIndexerModal({
               <FormField
                 control={control}
                 name="presetId"
-                render={() => <FormMessage />}
+                render={() => (
+                  <FormItem>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
             </section>
 
@@ -307,8 +313,8 @@ export function AddIndexerModal({
                   <FormItem>
                     <FormLabel>App Profile</FormLabel>
                     <Select
-                      onValueChange={(v) => field.onChange(v ? Number.parseInt(v, 10) : null)}
-                      value={field.value ? String(field.value) : ''}
+                      onValueChange={(v) => field.onChange(v === '__none__' ? null : Number.parseInt(v, 10))}
+                      value={field.value ? String(field.value) : '__none__'}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -316,7 +322,7 @@ export function AddIndexerModal({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">None</SelectItem>
+                        <SelectItem value="__none__">None</SelectItem>
                         {appProfiles.map((profile) => (
                           <SelectItem key={profile.id} value={String(profile.id)}>{profile.name}</SelectItem>
                         ))}

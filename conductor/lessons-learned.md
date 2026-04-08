@@ -29,6 +29,7 @@
 - (2026-04-04, bug_wantedsearch_comprehensive_corner_cases) **`autoSearchMovie` must validate release title + year** like `autoSearchEpisode`. Air-date guards must use consistent grace periods.
 - (2026-04-05, bug_importmanager_comprehensive_corner_cases) **`findMovieMatch` must NOT fall back to title-only when year is present but unmatched.**
 - (2026-04-04, bug_searchaggregation_comprehensive_corner_cases) **External service calls need try/catch with graceful degradation.** `toSearchCandidate` passes raw flags; normalization happens in `toScoringCandidate`.
+- (2026-04-09, bug_appsettings_int_overflow) **SQLite datetime storage mismatch: INTEGER vs TEXT.** `strftime('%s','now')` gives Unix seconds, Prisma's `Date.now()` passes milliseconds. Store as TEXT ISO 8601 ("2026-04-09T00:00:00.000Z") for Prisma SQLite compatibility.
 
 ### Patterns That Worked Well
 

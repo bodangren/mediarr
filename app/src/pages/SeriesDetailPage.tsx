@@ -157,6 +157,7 @@ export function SeriesDetailPage() {
         api.seriesApi.getSeriesWithEpisodes(seriesId),
         api.qualityProfileApi.list(),
       ]);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- API response is loosely typed; mapped to local types below
       const raw = item as any;
       setSeries({
         id: item.id,
@@ -172,6 +173,7 @@ export function SeriesDetailPage() {
         path: raw.path,
         sizeOnDisk: raw.sizeOnDisk,
         statistics: raw.statistics,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- API seasons array has no precise type yet
         seasons: (item.seasons as any[]).map((s: any) => ({
           id: s.id,
           seasonNumber: s.seasonNumber,
@@ -302,6 +304,7 @@ export function SeriesDetailPage() {
     if (series && series.seasons.length > 0) {
       setExpandedSeasons(new Set([series.seasons[0].seasonNumber]));
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- only re-expand when navigating to a different series
   }, [series?.id]);
 
   const handleRescan = async (folderPath?: string) => {

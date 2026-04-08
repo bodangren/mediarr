@@ -7,6 +7,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { getApiClients } from '@/lib/api/client';
+import type { AppSettings } from '@/lib/api/settingsApi';
 
 const generalSettingsSchema = z.object({
   rssSyncMinutes: z.coerce.number().int().min(1, 'Must be at least 1'),
@@ -18,7 +19,7 @@ type GeneralSettingsValues = z.infer<typeof generalSettingsSchema>;
 
 export function SettingsGeneralPage() {
   const api = useMemo(() => getApiClients(), []);
-  const [fullSettings, setFullSettings] = useState<any>(null);
+  const [fullSettings, setFullSettings] = useState<AppSettings | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { EditIndexerModal } from './EditIndexerModal.js';
 import type { EditIndexerDraft, EditIndexerSource } from './EditIndexerModal.js';

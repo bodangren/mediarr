@@ -96,15 +96,11 @@ Parallel:
 
 - [x] **Track: CustomFormatScoringEngine Comprehensive Corner-Case Testing** *Phases: 4 | Link: [./archive/bug_customformat_scoring_corner_cases_20260405/](./archive/bug_customformat_scoring_corner_cases_20260405/)* — 72 tests; no bugs found; all condition types, negation, and unified scoring verified
 
-- [ ] **Track: Form Standardization Completion** *Phases: 3 | Link: [./tracks/chore_form_standardization_completion_20260330/](./tracks/chore_form_standardization_completion_20260330/)*
-- [ ] **Track: Playback Resume & Continue Watching** *Phases: 4 | Link: [./tracks/feature_playback_resume_sync_20260330/](./tracks/feature_playback_resume_sync_20260330/)*
-
 ### Phase B: External Comms
-- [ ] **Track: Notification Transport Layer** *Phases: 4 | Link: [./tracks/feature_notification_transports_20260330/](./tracks/feature_notification_transports_20260330/)*
-- [ ] **Track: Real Auto-Update System** *Phases: 4 | Link: [./tracks/feature_auto_update_20260330/](./tracks/feature_auto_update_20260330/)*
+- [x] **Track: Real Auto-Update System** *Phases: 4 | Link: [./archive/feature_auto_update_20260330/](./archive/feature_auto_update_20260330/)* — real release-check/download/install flow shipped; daily scheduler wired; full `CI=true npm test` green (224 files / 1664 tests)
 
 ### Phase C: Zero-Config Setup
-- [ ] **Track: Setup Wizard & First-Run** *Phases: 2 | Link: [./tracks/feature_setup_wizard_20260330/](./tracks/feature_setup_wizard_20260330/)*
+- [~] **Track: Setup Wizard & First-Run** *Phases: 2 | In progress* | Link: [./tracks/feature_setup_wizard_20260330/](./tracks/feature_setup_wizard_20260330/)*
 - [ ] **Track: Indexer Auto-Discovery** *Phases: 4 | Link: [./tracks/feature_indexer_discovery_20260330/](./tracks/feature_indexer_discovery_20260330/)*
 - [ ] **Track: Smart Defaults Engine** *Phases: 3 | Link: [./tracks/feature_smart_defaults_20260330/](./tracks/feature_smart_defaults_20260330/)*
 
@@ -120,6 +116,14 @@ Parallel:
 ---
 
 ## Archived Tracks
+
+- [x] **Track: Real Auto-Update System** *Phases: 4 | Link: [./archive/feature_auto_update_20260330/](./archive/feature_auto_update_20260330/)* — real release-check/download/install flow shipped; daily scheduler wired; full `CI=true npm test` green (224 files / 1664 tests)
+
+- [x] **Track: Notification Transport Layer** *Phases: 4 | Link: [./archive/feature_notification_transports_20260330/](./archive/feature_notification_transports_20260330/)* — webhook/discord/telegram/gotify/email transports implemented with registry + dispatch wiring; full root CI green (223 files / 1653 tests)
+
+- [x] **Track: Playback Resume & Continue Watching** *Phases: 4 | Link: [./archive/feature_playback_resume_sync_20260330/](./archive/feature_playback_resume_sync_20260330/)* — server continue-watching endpoint shipped, Flutter + SPA resume widgets integrated, app build + full Flutter suite + root CI (`npm test`) green
+
+- [x] **Track: Form Standardization Completion** *Phases: 3 | Link: [./archive/chore_form_standardization_completion_20260330/](./archive/chore_form_standardization_completion_20260330/)* — modal form migration finished; dead form-compat removed; legacy Prisma-era suites rewritten for Drizzle; full CI green (216 files / 1625 tests)
 
 - [x] **Track: AppSettings INT Overflow Bug Fix** *Phases: 4 | Link: [./archive/bug_appsettings_int_overflow_20260409/](./archive/bug_appsettings_int_overflow_20260409/)* — migration created; server starts without P2023; 1158 tests green
 

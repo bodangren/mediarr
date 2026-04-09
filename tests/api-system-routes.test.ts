@@ -7,9 +7,134 @@ import { updatesState } from '../server/src/api/routes/updatesRoutes';
 import type { FastifyInstance } from 'fastify';
 import Fastify from 'fastify';
 
+function createMockUpdateService() {
+  const progressMap = new Map<string, any>();
+  const history: any[] = [];
+  let updateCounter = 1;
+  let available: any = null;
+
+  return {
+    getCurrentVersionInfo() {
+      return {
+        version: '1.0.0',
+        branch: 'main',
+        commit: 'abc123',
+        buildDate: '2026-04-09T00:00:00.000Z',
+      };
+    },
+    getLatestRelease() {
+      return available;
+    },
+    listHistory() {
+      return [...history];
+    },
+    listProgress() {
+      return Array.from(progressMap.values());
+    },
+    async checkForUpdate() {
+      available = {
+        version: '1.1.0',
+        tagName: 'v1.1.0',
+        changelog: 'mock changelog',
+        publishedAt: '2026-04-09T12:00:00.000Z',
+        downloadUrl: 'https://example.com/download',
+        assetName: 'mediarr-linux-x64',
+        assetContentType: 'application/octet-stream',
+        expectedChecksum: null,
+      };
+
+      return {
+        checkedAt: '2026-04-09T12:00:00.000Z',
+        currentVersion: '1.0.0',
+        updateAvailable: true,
+        isDocker: false,
+        release: available,
+      };
+    },
+    async downloadUpdate(input?: { version?: string }) {
+      const version = input?.version ?? available?.version ?? '1.1.0';
+      const updateId = `update-${updateCounter++}`;
+      const progress = {
+        updateId,
+        version,
+        status: 'completed',
+        progress: 100,
+        bytesDownloaded: 1000,
+        totalBytes: 1000,
+        message: 'Download completed',
+        startedAt: '2026-04-09T12:00:00.000Z',
+        completedAt: '2026-04-09T12:01:00.000Z',
+        stagedPath: `/tmp/mediarr-${version}`,
+      };
+      progressMap.set(updateId, progress);
+      return progress;
+    },
+    async installUpdate(input: { version?: string; updateId?: string }) {
+      const fromProgress = input.updateId ? progressMap.get(input.updateId) : null;
+      const version = input.version ?? fromProgress?.version ?? '1.1.0';
+      history.unshift({
+        id: history.length + 1,
+        version,
+        installedDate: '2026-04-09T12:02:00.000Z',
+        status: 'success',
+        branch: 'master',
+        message: 'Installed',
+      });
+      return {
+        mode: 'binary',
+        status: 'installed',
+        version,
+        message: 'Installed',
+      };
+    },
+    getProgress(updateId: string) {
+      return progressMap.get(updateId) ?? null;
+    },
+    resetForTests() {
+      available = null;
+      history.splice(0, history.length);
+      progressMap.clear();
+      updateCounter = 1;
+    },
+  };
+}
+
 // Minimal deps for system routes (they use in-memory state)
 const createMinimalDeps = () => ({
   prisma: {},
+  settingsService: (() => {
+    const state = {
+      mediaManagement: {
+        movieRootFolder: '',
+        tvRootFolder: '',
+      },
+      update: {
+        branch: 'master',
+        autoUpdateEnabled: false,
+        mechanicsEnabled: false,
+        updateScriptPath: null,
+        setupCompleted: false,
+      },
+    };
+
+    return {
+      get: async () => state,
+      update: async (partial: { update?: { setupCompleted?: boolean } }) => {
+        if (partial?.update) {
+          state.update = {
+            ...state.update,
+            ...partial.update,
+          };
+        }
+
+        return state;
+      },
+    };
+  })(),
+  indexerRepository: {
+    findAll: async () => [],
+  },
+  updateService: createMockUpdateService(),
 });
 
 function createTestApp() {
@@ -637,12 +762,12 @@ describe('Updates routes', () => {
     });
   });
 
-  describe('POST /api/updates/check', () => {
+  describe('GET /api/updates/check', () => {
     it('checks for updates', async () => {
       const app = createTestApp();
       apps.push(app);
 
-      const response = await app.inject({ method: 'POST', url: '/api/updates/check' });
+      const response = await app.inject({ method: 'GET', url: '/api/updates/check' });
       const payload = response.json();
 
       expect(response.statusCode).toBe(200);
@@ -650,6 +775,34 @@ describe('Updates routes', () => {
       expect(payload.data).toHaveProperty('checked');
       expect(payload.data.checked).toBe(true);
       expect(payload.data).toHaveProperty('timestamp');
+      expect(payload.data).toHaveProperty('available');
+    });
+  });
+
+  describe('POST /api/updates/download', () => {
+    it('starts update download', async () => {
+      const app = createTestApp();
+      apps.push(app);
+
+      await app.inject({
+        method: 'POST',
+        url: '/api/updates/check',
+      });
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/updates/download',
+        payload: { version: '1.1.0' },
+      });
+      const payload = response.json();
+
+      expect(response.statusCode).toBe(202);
+      expect(payload.ok).toBe(true);
+      expect(payload.data).toHaveProperty('updateId');
+      expect(payload.data).toHaveProperty('version');
+      expect(payload.data).toHaveProperty('bytesDownloaded');
+      expect(payload.data).toHaveProperty('totalBytes');
+      expect(payload.data).toHaveProperty('status');
     });
   });
 
@@ -667,9 +820,9 @@ describe('Updates routes', () => {
 
       expect(response.statusCode).toBe(202);
       expect(payload.ok).toBe(true);
-      expect(payload.data).toHaveProperty('updateId');
+      expect(payload.data).toHaveProperty('mode');
       expect(payload.data).toHaveProperty('version');
-      expect(payload.data).toHaveProperty('startedAt');
+      expect(payload.data).toHaveProperty('message');
       expect(payload.data).toHaveProperty('status');
     });
   });
@@ -690,14 +843,19 @@ describe('Updates routes', () => {
       const app = createTestApp();
       apps.push(app);
 
-      // First start an update
-      const installResponse = await app.inject({
+      await app.inject({
         method: 'POST',
-        url: '/api/updates/install',
+        url: '/api/updates/check',
+      });
+
+      // First download an update
+      const downloadResponse = await app.inject({
+        method: 'POST',
+        url: '/api/updates/download',
         payload: { version: '1.2.0' },
       });
-      const installPayload = installResponse.json();
-      const updateId = installPayload.data.updateId;
+      const downloadPayload = downloadResponse.json();
+      const updateId = downloadPayload.data.updateId;
 
       // Check progress
       const response = await app.inject({ method: 'GET', url: `/api/updates/progress/${updateId}` });
@@ -712,5 +870,62 @@ describe('Updates routes', () => {
       expect(payload.data).toHaveProperty('message');
       expect(payload.data).toHaveProperty('startedAt');
     });
+  });
+});
+
+describe('Setup routes', () => {
+  const apps: FastifyInstance[] = [];
+
+  afterEach(async () => {
+    for (const app of apps) {
+      await app.close();
+    }
+    apps.length = 0;
+  });
+
+  it('GET /api/setup/status returns setup status envelope', async () => {
+    const app = createTestApp();
+    apps.push(app);
+
+    const response = await app.inject({ method: 'GET', url: '/api/setup/status' });
+    const payload = response.json();
+
+    expect(response.statusCode).toBe(200);
+    expect(payload.ok).toBe(true);
+    expect(payload.data).toHaveProperty('isConfigured');
+    expect(payload.data).toHaveProperty('completedSteps');
+    expect(Array.isArray(payload.data.completedSteps)).toBe(true);
+  });
+
+  it('POST /api/setup/complete marks setup complete', async () => {
+    const app = createTestApp();
+    apps.push(app);
+
+    const completeResponse = await app.inject({ method: 'POST', url: '/api/setup/complete' });
+    const completePayload = completeResponse.json();
+
+    expect(completeResponse.statusCode).toBe(200);
+    expect(completePayload.ok).toBe(true);
+    expect(completePayload.data.isConfigured).toBe(true);
+
+    const statusResponse = await app.inject({ method: 'GET', url: '/api/setup/status' });
+    const statusPayload = statusResponse.json();
+    expect(statusPayload.data.isConfigured).toBe(true);
+    expect(statusPayload.data.completedSteps).toContain('complete');
+  });
+
+  it('setup mode keeps media/library GET endpoints empty-safe', async () => {
+    const app = createTestApp();
+    apps.push(app);
+
+    const moviesResponse = await app.inject({ method: 'GET', url: '/api/movies' });
+    const moviesPayload = moviesResponse.json();
+    expect(moviesResponse.statusCode).toBe(200);
+    expect(Array.isArray(moviesPayload.data)).toBe(true);
+
+    const seriesResponse = await app.inject({ method: 'GET', url: '/api/series' });
+    const seriesPayload = seriesResponse.json();
+    expect(seriesResponse.statusCode).toBe(200);
+    expect(Array.isArray(seriesPayload.data)).toBe(true);
   });
 });

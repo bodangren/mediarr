@@ -1,10 +1,8 @@
 import { describe, it, expect, beforeEach, afterAll } from 'vitest';
-import { PrismaClient } from '@prisma/client';
-import { PrismaBetterSQLite3 } from '@prisma/adapter-better-sqlite3';
+import { createTestPrismaClient } from './helpers/test-prisma-client';
 import 'dotenv/config';
 
-const adapter = new PrismaBetterSQLite3({ url: 'file:prisma/dev.db' });
-const prisma = new PrismaClient({ adapter });
+const prisma = createTestPrismaClient();
 
 describe('Torrent Schema', () => {
   beforeEach(async () => {
@@ -38,8 +36,7 @@ describe('Torrent Schema', () => {
 
     expect(created.infoHash).toBe(torrentData.infoHash);
     expect(created.name).toBe(torrentData.name);
-    // BigInts are returned as BigInts, so we can compare directly
-    expect(created.size).toBe(torrentData.size);
+    expect(created.size).toBe(Number(torrentData.size));
 
     const retrieved = await prisma.torrent.findUnique({
       where: { infoHash: 'abc123def456' },

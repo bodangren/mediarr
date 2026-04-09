@@ -172,7 +172,6 @@ describe('UpdatesApi', () => {
       expect(mockRequest).toHaveBeenCalledWith(
         {
           path: '/api/updates/check',
-          method: 'POST',
         },
         expect.any(Object),
       );
@@ -184,13 +183,55 @@ describe('UpdatesApi', () => {
     });
   });
 
-  describe('installUpdate', () => {
-    it('should trigger update installation', async () => {
+  describe('downloadUpdate', () => {
+    it('should trigger update download', async () => {
       const mockRequest = vi.fn().mockResolvedValue({
         updateId: 'update-123',
         version: '1.1.0',
+        status: 'downloading' as const,
+        progress: 35,
+        bytesDownloaded: 350,
+        totalBytes: 1000,
+        message: 'Downloading update binary',
         startedAt: '2026-02-15T12:00:00Z',
-        status: 'started' as const,
+      });
+
+      const client = {
+        request: mockRequest,
+      } as unknown as ApiHttpClient;
+
+      const updatesApi = createUpdatesApi(client);
+      const result = await updatesApi.downloadUpdate('1.1.0');
+
+      expect(mockRequest).toHaveBeenCalledWith(
+        {
+          path: '/api/updates/download',
+          method: 'POST',
+          body: { version: '1.1.0' },
+        },
+        expect.any(Object),
+      );
+
+      expect(result).toEqual({
+        updateId: 'update-123',
+        version: '1.1.0',
+        status: 'downloading',
+        progress: 35,
+        bytesDownloaded: 350,
+        totalBytes: 1000,
+        message: 'Downloading update binary',
+        startedAt: '2026-02-15T12:00:00Z',
+      });
+    });
+  });
+
+  describe('installUpdate', () => {
+    it('should trigger update installation', async () => {
+      const mockRequest = vi.fn().mockResolvedValue({
+        mode: 'binary' as const,
+        version: '1.1.0',
+        status: 'installed' as const,
+        message: 'Binary replaced. Restart Mediarr to run the new version.',
       });
 
       const client = {
@@ -210,10 +251,10 @@ describe('UpdatesApi', () => {
       );
 
       expect(result).toEqual({
-        updateId: 'update-123',
+        mode: 'binary',
         version: '1.1.0',
-        startedAt: '2026-02-15T12:00:00Z',
-        status: 'started',
+        status: 'installed',
+        message: 'Binary replaced. Restart Mediarr to run the new version.',
       });
     });
   });
@@ -225,9 +266,10 @@ describe('UpdatesApi', () => {
         version: '1.1.0',
         status: 'downloading' as const,
         progress: 45,
+        bytesDownloaded: 450,
+        totalBytes: 1000,
         message: 'Downloading update...',
         startedAt: '2026-02-15T12:00:00Z',
-        estimatedTimeRemaining: 300,
       });
 
       const client = {
@@ -249,9 +291,10 @@ describe('UpdatesApi', () => {
         version: '1.1.0',
         status: 'downloading',
         progress: 45,
+        bytesDownloaded: 450,
+        totalBytes: 1000,
         message: 'Downloading update...',
         startedAt: '2026-02-15T12:00:00Z',
-        estimatedTimeRemaining: 300,
       });
     });
 
@@ -261,6 +304,8 @@ describe('UpdatesApi', () => {
         version: '1.1.0',
         status: 'completed' as const,
         progress: 100,
+        bytesDownloaded: 1000,
+        totalBytes: 1000,
         message: 'Update installed successfully',
         startedAt: '2026-02-15T12:00:00Z',
         completedAt: '2026-02-15T12:02:00Z',
@@ -283,6 +328,8 @@ describe('UpdatesApi', () => {
         version: '1.1.0',
         status: 'failed' as const,
         progress: 30,
+        bytesDownloaded: 300,
+        totalBytes: 1000,
         message: 'Update failed: Download interrupted',
         startedAt: '2026-02-15T12:00:00Z',
         error: 'Download interrupted',

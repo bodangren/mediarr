@@ -12,6 +12,7 @@ import path from 'node:path';
 import { latestPlaybackMap, serializePlaybackState } from '../utils/playbackHelpers';
 import { parseLibraryFilters, applyLibraryFilters } from '../utils/queryHelpers';
 import { safePath } from '../utils/safePath';
+import { getSetupStatus } from './setupRoutes';
 
 function filterMovies(items: any[], query: Record<string, unknown>): any[] {
   const filters = parseLibraryFilters(query);
@@ -38,13 +39,21 @@ export function registerMovieRoutes(
       },
     },
   }, async (request, reply) => {
-    const prismaMovies = (deps.prisma as any).movie;
-    if (!prismaMovies?.findMany) {
-      throw new ValidationError('Movie data source is not configured');
-    }
-
     const query = request.query as Record<string, unknown>;
     const pagination = parsePaginationParams(query);
+    const prismaMovies = (deps.prisma as any).movie;
+    if (!prismaMovies?.findMany) {
+      const setupStatus = await getSetupStatus(deps);
+      if (!setupStatus.isConfigured) {
+        return sendPaginatedSuccess(reply, [], {
+          page: pagination.page,
+          pageSize: pagination.pageSize,
+          totalCount: 0,
+        });
+      }
+
+      throw new ValidationError('Movie data source is not configured');
+    }
 
     const allItems = await prismaMovies.findMany({
       include: {

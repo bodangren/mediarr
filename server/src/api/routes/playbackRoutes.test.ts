@@ -16,6 +16,7 @@ function createApp(overrides: Partial<Record<string, any>> = {}): TestContext {
   const playbackService: Record<string, any> = {
     resolveStreamSource: vi.fn(),
     buildManifest: vi.fn(),
+    getContinueWatching: vi.fn(),
     recordHeartbeat: vi.fn(),
     resolveSubtitleTrack: vi.fn(),
     ...overrides.playbackService,
@@ -165,6 +166,49 @@ describe('playbackRoutes', () => {
       mediaId: 2,
       userId: 'living-room',
     });
+
+    await app.close();
+  });
+
+  it('returns continue watching items with default limit', async () => {
+    const { app, deps } = createApp();
+    deps.playbackService.getContinueWatching.mockResolvedValue([
+      {
+        mediaType: 'MOVIE',
+        mediaId: 2,
+        title: 'Dune',
+        position: 1200,
+        duration: 7200,
+        progress: 0.1666,
+        isWatched: false,
+        lastWatched: '2026-04-09T00:00:00.000Z',
+      },
+    ]);
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/api/playback/continue-watching',
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().data).toHaveLength(1);
+    expect(response.json().data[0].title).toBe('Dune');
+    expect(deps.playbackService.getContinueWatching).toHaveBeenCalledWith(20);
+
+    await app.close();
+  });
+
+  it('uses custom continue-watching limit from query string', async () => {
+    const { app, deps } = createApp();
+    deps.playbackService.getContinueWatching.mockResolvedValue([]);
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/api/playback/continue-watching?limit=5',
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(deps.playbackService.getContinueWatching).toHaveBeenCalledWith(5);
 
     await app.close();
   });

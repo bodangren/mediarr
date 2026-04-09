@@ -34,6 +34,7 @@ import { registerSubtitleRoutes } from './routes/subtitleRoutes';
 import { registerSystemRoutes } from './routes/systemRoutes';
 import { registerTorrentRoutes } from './routes/torrentRoutes';
 import { registerUpdatesRoutes } from './routes/updatesRoutes';
+import { registerSetupRoutes } from './routes/setupRoutes';
 import { registerImageRoutes } from './routes/imageRoutes';
 import type { ApiDependencies, ApiServerOptions } from './types';
 
@@ -172,6 +173,7 @@ export function createApiServer(
   registerBackupRoutes(app, dependencies);
   registerLogsRoutes(app, dependencies);
   registerUpdatesRoutes(app, dependencies);
+  registerSetupRoutes(app, dependencies);
   registerNotificationRoutes(app, dependencies);
   registerBlocklistRoutes(app, dependencies);
   registerQualityProfileRoutes(app, dependencies);

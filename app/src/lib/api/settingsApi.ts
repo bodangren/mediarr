@@ -8,6 +8,8 @@ const settingsSchema = z.object({
     maxActiveSeeds: z.number(),
     globalDownloadLimitKbps: z.number().nullable(),
     globalUploadLimitKbps: z.number().nullable(),
+    incompleteDirectory: z.string().optional(),
+    completeDirectory: z.string().optional(),
   }),
   schedulerIntervals: z.object({
     rssSyncMinutes: z.number(),
@@ -49,6 +51,7 @@ const settingsSchema = z.object({
     autoUpdateEnabled: z.boolean(),
     mechanicsEnabled: z.boolean(),
     updateScriptPath: z.string().nullable().optional(),
+    setupCompleted: z.boolean().optional(),
   }).optional(),
   streaming: z.object({
     discoveryEnabled: z.boolean(),

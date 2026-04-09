@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mediarr_client/core/theme/mediarr_theme.dart';
+import 'package:mediarr_client/features/library/continue_watching_section.dart';
 import 'package:mediarr_client/features/library/series_screen.dart';
 import 'package:mediarr_client/shared/models/series.dart';
+import 'package:mediarr_client/shared/services/api_client.dart';
 
 void main() {
   group('SeriesScreen', () {
@@ -13,6 +15,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            continueWatchingProvider.overrideWith((ref) async => <ContinueWatchingItem>[]),
             seriesListProvider.overrideWith((ref) async {
               // Never resolves — stays in loading state
               await Completer<void>().future;
@@ -34,6 +37,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            continueWatchingProvider.overrideWith((ref) async => <ContinueWatchingItem>[]),
             seriesListProvider.overrideWith((ref) async => [
                   const Series(
                     id: 1,
@@ -71,6 +75,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            continueWatchingProvider.overrideWith((ref) async => <ContinueWatchingItem>[]),
             seriesListProvider.overrideWith((ref) async => <Series>[]),
           ],
           child: MaterialApp(

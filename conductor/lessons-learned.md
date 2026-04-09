@@ -32,6 +32,9 @@
 - (2026-04-09, bug_appsettings_int_overflow) **SQLite datetime storage mismatch: INTEGER vs TEXT.** `strftime('%s','now')` gives Unix seconds, Prisma's `Date.now()` passes milliseconds. Store as TEXT ISO 8601 ("2026-04-09T00:00:00.000Z") for Prisma SQLite compatibility.
 - (2026-04-09, chore_drizzle_migration) **Avoid static Bun-only imports in Node-compatible code paths.** `drizzle-orm/bun-sqlite` eagerly requires `bun:sqlite`; load Bun/Node adapters lazily via `createRequire` runtime detection.
 - (2026-04-09, chore_drizzle_migration) **Bun + WebTorrent native addons can hard-crash on hosts missing libuv/N-API coverage.** Launch daemon with `bun --no-addons` to disable addon loading and allow graceful fallback manager startup.
+- (2026-04-09, chore_form_standardization_completion) **Prisma-compat semantics matter for Drizzle test/runtime parity.** Ignore `undefined` `where` keys, support empty `upsert.update {}`, handle `{ increment: n }` updates, and apply nested relation `create` writes in `create()` paths.
+- (2026-04-09, feature_playback_resume_sync) **Router-level Flutter widget tests must override every network-backed provider used by shell screens.** New top sections (like continue-watching) can trigger unmocked Dio calls and pending discovery timers unless explicitly overridden in `app_router_test.dart`.
+- (2026-04-09, feature_notification_transports) **Treat `CI=true npm test` as the authoritative suite in this repo.** `bun test` is useful for spot checks but can hang/fail on Vitest-specific semantics; keep Bun-runner deviations explicit in track metadata.
 
 ### Patterns That Worked Well
 

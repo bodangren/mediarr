@@ -1,21 +1,10 @@
 import { describe, it, expect, beforeEach, afterAll } from 'vitest';
-import { PrismaClient } from '@prisma/client';
-import { PrismaBetterSQLite3 } from '@prisma/adapter-better-sqlite3';
+import { createTestPrismaClient } from './helpers/test-prisma-client';
 import 'dotenv/config';
 import { AppSettingsRepository } from '../server/src/repositories/AppSettingsRepository';
 import { SettingsService } from '../server/src/services/SettingsService';
 
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-function resolveTestDatabaseUrl() {
-  return `file:${path.join(__dirname, '..', 'prisma', 'dev.db')}`;
-}
-
-const adapter = new PrismaBetterSQLite3({ url: resolveTestDatabaseUrl() });
-const prisma = new PrismaClient({ adapter });
+const prisma = createTestPrismaClient();
 const repository = new AppSettingsRepository(prisma);
 const service = new SettingsService(repository);
 
@@ -106,6 +95,7 @@ describe('AppSettingsRepository', () => {
         autoUpdateEnabled: true,
         mechanicsEnabled: true,
         updateScriptPath: '/path/to/script.sh',
+        setupCompleted: false,
       },
     });
 

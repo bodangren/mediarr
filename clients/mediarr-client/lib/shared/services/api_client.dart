@@ -28,6 +28,149 @@ class SystemStatus {
   }
 }
 
+class PlaybackManifestMetadata {
+  const PlaybackManifestMetadata({
+    required this.mediaType,
+    required this.mediaId,
+    required this.title,
+    this.overview,
+    this.posterUrl,
+    this.backdropUrl,
+  });
+
+  final String mediaType;
+  final int mediaId;
+  final String title;
+  final String? overview;
+  final String? posterUrl;
+  final String? backdropUrl;
+
+  factory PlaybackManifestMetadata.fromJson(Map<String, dynamic> json) {
+    return PlaybackManifestMetadata(
+      mediaType: json['mediaType'] as String? ?? '',
+      mediaId: json['mediaId'] as int? ?? 0,
+      title: json['title'] as String? ?? '',
+      overview: json['overview'] as String?,
+      posterUrl: json['posterUrl'] as String?,
+      backdropUrl: json['backdropUrl'] as String?,
+    );
+  }
+}
+
+class PlaybackManifestResume {
+  const PlaybackManifestResume({
+    required this.userId,
+    required this.position,
+    required this.duration,
+    required this.progress,
+    required this.isWatched,
+    required this.lastWatched,
+  });
+
+  final String userId;
+  final int position;
+  final int duration;
+  final double progress;
+  final bool isWatched;
+  final DateTime lastWatched;
+
+  factory PlaybackManifestResume.fromJson(Map<String, dynamic> json) {
+    return PlaybackManifestResume(
+      userId: json['userId'] as String? ?? 'lan-default',
+      position: json['position'] as int? ?? 0,
+      duration: json['duration'] as int? ?? 0,
+      progress: (json['progress'] as num?)?.toDouble() ?? 0,
+      isWatched: json['isWatched'] as bool? ?? false,
+      lastWatched: DateTime.tryParse(json['lastWatched'] as String? ?? '') ??
+          DateTime.fromMillisecondsSinceEpoch(0),
+    );
+  }
+}
+
+class PlaybackManifest {
+  const PlaybackManifest({
+    required this.streamUrl,
+    required this.metadata,
+    this.resume,
+  });
+
+  final String streamUrl;
+  final PlaybackManifestMetadata metadata;
+  final PlaybackManifestResume? resume;
+
+  factory PlaybackManifest.fromJson(Map<String, dynamic> json) {
+    return PlaybackManifest(
+      streamUrl: json['streamUrl'] as String? ?? '',
+      metadata: PlaybackManifestMetadata.fromJson(
+        json['metadata'] as Map<String, dynamic>? ?? <String, dynamic>{},
+      ),
+      resume: json['resume'] != null
+          ? PlaybackManifestResume.fromJson(
+              json['resume'] as Map<String, dynamic>,
+            )
+          : null,
+    );
+  }
+}
+
+class ContinueWatchingItem {
+  const ContinueWatchingItem({
+    required this.mediaType,
+    required this.mediaId,
+    required this.title,
+    required this.position,
+    required this.duration,
+    required this.progress,
+    required this.lastWatched,
+    this.episodeTitle,
+    this.seriesId,
+    this.seasonNumber,
+    this.episodeNumber,
+    this.posterUrl,
+    this.backdropUrl,
+  });
+
+  final String mediaType;
+  final int mediaId;
+  final String title;
+  final int position;
+  final int duration;
+  final double progress;
+  final DateTime lastWatched;
+  final String? episodeTitle;
+  final int? seriesId;
+  final int? seasonNumber;
+  final int? episodeNumber;
+  final String? posterUrl;
+  final String? backdropUrl;
+
+  String get mediaTypeQueryValue {
+    final normalized = mediaType.toLowerCase();
+    if (normalized == 'episode') return 'episode';
+    if (normalized == 'movie') return 'movie';
+    return normalized;
+  }
+
+  factory ContinueWatchingItem.fromJson(Map<String, dynamic> json) {
+    return ContinueWatchingItem(
+      mediaType: json['mediaType'] as String? ?? '',
+      mediaId: json['mediaId'] as int? ?? 0,
+      title: json['title'] as String? ?? '',
+      position: json['position'] as int? ?? 0,
+      duration: json['duration'] as int? ?? 0,
+      progress: (json['progress'] as num?)?.toDouble() ?? 0,
+      lastWatched: DateTime.tryParse(json['lastWatched'] as String? ?? '') ??
+          DateTime.fromMillisecondsSinceEpoch(0),
+      episodeTitle: json['episodeTitle'] as String?,
+      seriesId: json['seriesId'] as int?,
+      seasonNumber: json['seasonNumber'] as int?,
+      episodeNumber: json['episodeNumber'] as int?,
+      posterUrl: json['posterUrl'] as String?,
+      backdropUrl: json['backdropUrl'] as String?,
+    );
+  }
+}
+
 /// Connection state for the API client.
 enum ConnectionStatus { disconnected, connecting, connected, error }
 
@@ -168,6 +311,43 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
       return Movie.fromJson(data as Map<String, dynamic>);
     }
     return null;
+  }
+
+  Future<PlaybackManifest?> getPlaybackManifest({
+    required int mediaId,
+    required String type,
+    String? userId,
+  }) async {
+    final queryParameters = <String, dynamic>{'type': type};
+    if (userId != null && userId.trim().isNotEmpty) {
+      queryParameters['userId'] = userId.trim();
+    }
+
+    final response = await _dio.get(
+      '/api/playback/$mediaId',
+      queryParameters: queryParameters,
+    );
+    if (response.statusCode == 200 && response.data != null) {
+      final data = _unwrap(response.data);
+      return PlaybackManifest.fromJson(data as Map<String, dynamic>);
+    }
+    return null;
+  }
+
+  Future<List<ContinueWatchingItem>> getContinueWatching({int limit = 20}) async {
+    final response = await _dio.get(
+      '/api/playback/continue-watching',
+      queryParameters: {'limit': limit},
+    );
+    if (response.statusCode == 200 && response.data != null) {
+      final data = _unwrap(response.data);
+      if (data is List) {
+        return data
+            .map((item) => ContinueWatchingItem.fromJson(item as Map<String, dynamic>))
+            .toList();
+      }
+    }
+    return const [];
   }
 
   /// Fetch ALL series from the library (handles server pagination).

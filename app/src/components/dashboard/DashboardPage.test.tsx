@@ -48,6 +48,24 @@ describe('DashboardPage', () => {
             usedPercent: 50,
           },
         ]),
+        getContinueWatching: vi.fn().mockResolvedValue([
+          {
+            mediaType: 'MOVIE',
+            mediaId: 10,
+            seriesId: null,
+            title: 'Resume Movie',
+            episodeTitle: null,
+            seasonNumber: null,
+            episodeNumber: null,
+            posterUrl: null,
+            backdropUrl: null,
+            position: 120,
+            duration: 600,
+            progress: 0.2,
+            isWatched: false,
+            lastWatched: '2026-04-09T00:00:00.000Z',
+          },
+        ]),
       },
       torrentApi: {
         list: vi.fn().mockResolvedValue({
@@ -79,7 +97,7 @@ describe('DashboardPage', () => {
       </BrowserRouter>,
     );
 
-  it('renders dashboard with all four widgets', async () => {
+  it('renders dashboard with all core widgets', async () => {
     renderPage();
 
     await waitFor(() => {
@@ -90,6 +108,7 @@ describe('DashboardPage', () => {
     expect(screen.getByText('Upcoming')).toBeInTheDocument();
     expect(screen.getByText('Active Downloads')).toBeInTheDocument();
     expect(screen.getByText('Disk Space')).toBeInTheDocument();
+    expect(screen.getByText('Continue Watching')).toBeInTheDocument();
   });
 
   it('loads and displays recent activity', async () => {
@@ -122,6 +141,16 @@ describe('DashboardPage', () => {
     expect(mockApi.dashboardApi.getDiskSpace).toHaveBeenCalled();
   });
 
+  it('loads and displays continue watching data', async () => {
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByText('Resume Movie')).toBeInTheDocument();
+    });
+
+    expect(mockApi.dashboardApi.getContinueWatching).toHaveBeenCalled();
+  });
+
   it('loads and displays active downloads', async () => {
     renderPage();
 
@@ -136,7 +165,7 @@ describe('DashboardPage', () => {
     renderPage();
 
     const loadingMessages = screen.getAllByText('Loading...');
-    expect(loadingMessages.length).toBe(4);
+    expect(loadingMessages.length).toBe(5);
 
     // Wait for loading to finish to avoid act() warnings from state updates
     await waitFor(() => {
@@ -148,6 +177,7 @@ describe('DashboardPage', () => {
     mockApi.activityApi.list.mockRejectedValue(new Error('API Error'));
     mockApi.dashboardApi.getUpcoming.mockRejectedValue(new Error('API Error'));
     mockApi.dashboardApi.getDiskSpace.mockRejectedValue(new Error('API Error'));
+    mockApi.dashboardApi.getContinueWatching.mockRejectedValue(new Error('API Error'));
     mockApi.torrentApi.list.mockRejectedValue(new Error('API Error'));
 
     renderPage();

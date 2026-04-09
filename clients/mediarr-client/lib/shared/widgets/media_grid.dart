@@ -12,6 +12,7 @@ class MediaGrid extends StatelessWidget {
     this.searchController,
     this.onSearchChanged,
     this.filterWidget,
+    this.topSection,
     this.isLoading = false,
     this.isEmpty = false,
     this.emptyMessage = 'No items found',
@@ -23,6 +24,7 @@ class MediaGrid extends StatelessWidget {
   final TextEditingController? searchController;
   final ValueChanged<String>? onSearchChanged;
   final Widget? filterWidget;
+  final Widget? topSection;
   final bool isLoading;
   final bool isEmpty;
   final String emptyMessage;
@@ -81,7 +83,7 @@ class MediaGrid extends StatelessWidget {
                     color: MediarrColors.accentPrimary,
                   ),
                 )
-              : isEmpty
+                  : isEmpty
                   ? Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -102,17 +104,24 @@ class MediaGrid extends StatelessWidget {
                         ],
                       ),
                     )
-                  : GridView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      gridDelegate:
-                          const SliverGridDelegateWithMaxCrossAxisExtent(
-                        maxCrossAxisExtent: 200,
-                        childAspectRatio: 0.6,
-                        crossAxisSpacing: 16,
-                        mainAxisSpacing: 16,
-                      ),
-                      itemCount: itemCount,
-                      itemBuilder: itemBuilder,
+                  : Column(
+                      children: [
+                        if (topSection != null) topSection!,
+                        Expanded(
+                          child: GridView.builder(
+                            padding: const EdgeInsets.symmetric(horizontal: 24),
+                            gridDelegate:
+                                const SliverGridDelegateWithMaxCrossAxisExtent(
+                              maxCrossAxisExtent: 200,
+                              childAspectRatio: 0.6,
+                              crossAxisSpacing: 16,
+                              mainAxisSpacing: 16,
+                            ),
+                            itemCount: itemCount,
+                            itemBuilder: itemBuilder,
+                          ),
+                        ),
+                      ],
                     ),
         ),
       ],

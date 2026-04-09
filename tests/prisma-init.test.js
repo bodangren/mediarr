@@ -1,11 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { PrismaClient } from '@prisma/client';
-import { PrismaBetterSQLite3 } from '@prisma/adapter-better-sqlite3';
+import { createTestPrismaClient } from './helpers/test-prisma-client';
 
 describe('Prisma Initialization', () => {
-  it('should initialize PrismaClient with better-sqlite3 adapter', async () => {
-    const adapter = new PrismaBetterSQLite3({ url: 'file:prisma/dev.db' });
-    const prisma = new PrismaClient({ adapter });
+  it('should initialize PrismaClient compatibility runtime on Drizzle', async () => {
+    const prisma = createTestPrismaClient();
     expect(prisma).toBeDefined();
 
     // Verify connection works by making a simple query

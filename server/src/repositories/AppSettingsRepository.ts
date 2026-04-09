@@ -57,6 +57,7 @@ export interface UpdateSettings {
   autoUpdateEnabled: boolean;
   mechanicsEnabled: boolean;
   updateScriptPath: string | null;
+  setupCompleted: boolean;
 }
 
 export interface MediaManagementSettings {
@@ -151,6 +152,7 @@ export const DEFAULT_APP_SETTINGS: AppSettingsPayload = {
     autoUpdateEnabled: false,
     mechanicsEnabled: false,
     updateScriptPath: null,
+    setupCompleted: false,
   },
   mediaManagement: DEFAULT_MEDIA_MANAGEMENT_SETTINGS,
   streaming: DEFAULT_STREAMING_SETTINGS,
@@ -634,6 +636,10 @@ export class AppSettingsRepository {
         updateScriptPath: readNullableString(
           update.updateScriptPath,
           DEFAULT_APP_SETTINGS.update.updateScriptPath,
+        ),
+        setupCompleted: readBoolean(
+          update.setupCompleted,
+          DEFAULT_APP_SETTINGS.update.setupCompleted,
         ),
       },
       mediaManagement: {

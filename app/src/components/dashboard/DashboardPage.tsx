@@ -4,12 +4,13 @@ import { RouteScaffold } from '@/components/primitives/RouteScaffold';
 import { useToast } from '@/components/providers/ToastProvider';
 import { Icon } from '@/components/primitives/Icon';
 import type { ActivityItem } from '@/lib/api/activityApi';
-import type { DiskSpaceInfo, UpcomingItem } from '@/lib/api/dashboardApi';
+import type { ContinueWatchingItem, DiskSpaceInfo, UpcomingItem } from '@/lib/api/dashboardApi';
 import type { TorrentItem } from '@/lib/api/torrentApi';
 import { DiskSpaceWidget } from './DiskSpaceWidget';
 import { RecentlyAddedWidget } from './RecentlyAddedWidget';
 import { UpcomingWidget } from './UpcomingWidget';
 import { ActiveDownloadsWidget } from './ActiveDownloadsWidget';
+import { ContinueWatchingWidget } from './ContinueWatchingWidget';
 
 export function DashboardPage() {
   const api = useMemo(() => getApiClients(), []);
@@ -18,11 +19,13 @@ export function DashboardPage() {
   const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
   const [upcoming, setUpcoming] = useState<UpcomingItem[]>([]);
   const [diskSpace, setDiskSpace] = useState<DiskSpaceInfo[]>([]);
+  const [continueWatching, setContinueWatching] = useState<ContinueWatchingItem[]>([]);
   const [torrents, setTorrents] = useState<TorrentItem[]>([]);
 
   const [isLoadingActivity, setIsLoadingActivity] = useState(true);
   const [isLoadingUpcoming, setIsLoadingUpcoming] = useState(true);
   const [isLoadingDiskSpace, setIsLoadingDiskSpace] = useState(true);
+  const [isLoadingContinueWatching, setIsLoadingContinueWatching] = useState(true);
   const [isLoadingTorrents, setIsLoadingTorrents] = useState(true);
   const [isSearchingMissing, setIsSearchingMissing] = useState(false);
 
@@ -87,6 +90,22 @@ export function DashboardPage() {
   }, [api]);
 
   useEffect(() => {
+    const loadContinueWatching = async () => {
+      setIsLoadingContinueWatching(true);
+      try {
+        const result = await api.dashboardApi.getContinueWatching();
+        setContinueWatching(result);
+      } catch {
+        setContinueWatching([]);
+      } finally {
+        setIsLoadingContinueWatching(false);
+      }
+    };
+
+    void loadContinueWatching();
+  }, [api]);
+
+  useEffect(() => {
     const loadTorrents = async () => {
       setIsLoadingTorrents(true);
       try {
@@ -119,6 +138,7 @@ export function DashboardPage() {
       }
     >
       <div className="grid gap-4 lg:grid-cols-2">
+        <ContinueWatchingWidget items={continueWatching} isLoading={isLoadingContinueWatching} />
         <RecentlyAddedWidget items={recentActivity} isLoading={isLoadingActivity} />
         <UpcomingWidget items={upcoming} isLoading={isLoadingUpcoming} />
         <ActiveDownloadsWidget torrents={torrents} isLoading={isLoadingTorrents} />

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 
 import '../../core/theme/mediarr_theme.dart';
+import '../../shared/services/api_client.dart';
 import 'playback_service.dart';
 
 /// Full-screen media player with transport overlay.
@@ -32,18 +33,17 @@ class PlaybackScreen extends ConsumerStatefulWidget {
 class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
   late final VideoController _videoController;
   final FocusNode _focusNode = FocusNode();
+  late String _resolvedStreamUrl;
+  late String _resolvedTitle;
 
   @override
   void initState() {
     super.initState();
+    _resolvedStreamUrl = widget.streamUrl;
+    _resolvedTitle = widget.title;
     final service = ref.read(playbackServiceProvider.notifier);
     _videoController = VideoController(service.player);
-    service.play(
-      streamUrl: widget.streamUrl,
-      title: widget.title,
-      mediaId: widget.mediaId,
-      mediaType: widget.mediaType,
-    );
+    Future.microtask(_startPlayback);
   }
 
   @override
@@ -121,7 +121,7 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
                 _TransportOverlay(
                   state: playbackState,
                   service: service,
-                  title: widget.title,
+                  title: playbackState.mediaTitle ?? _resolvedTitle,
                   onBack: () async {
                     await service.stop();
                     if (context.mounted) Navigator.of(context).pop();
@@ -133,10 +133,11 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
               if (playbackState.status == PlaybackStatus.completed)
                 _CompletedOverlay(
                   onReplay: () => service.play(
-                    streamUrl: widget.streamUrl,
-                    title: widget.title,
+                    streamUrl: _resolvedStreamUrl,
+                    title: _resolvedTitle,
                     mediaId: widget.mediaId,
                     mediaType: widget.mediaType,
+                    resumeFrom: Duration.zero,
                   ),
                   onNext: widget.nextEpisode,
                   onBack: () async {
@@ -148,6 +149,41 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Future<void> _startPlayback() async {
+    final service = ref.read(playbackServiceProvider.notifier);
+    final apiClient = ref.read(apiClientProvider.notifier);
+
+    Duration resumeFrom = Duration.zero;
+    try {
+      final manifest = await apiClient.getPlaybackManifest(
+        mediaId: widget.mediaId,
+        type: widget.mediaType,
+      );
+      if (manifest != null) {
+        final baseUrl = apiClient.state.baseUrl ?? '';
+        _resolvedStreamUrl = manifest.streamUrl.startsWith('http')
+            ? manifest.streamUrl
+            : '$baseUrl${manifest.streamUrl}';
+        _resolvedTitle = manifest.metadata.title;
+        resumeFrom = Duration(seconds: manifest.resume?.position ?? 0);
+      }
+    } catch (_) {
+      // Manifest fetch is best-effort; fallback to route-provided stream URL.
+    }
+
+    if (!mounted) {
+      return;
+    }
+
+    await service.play(
+      streamUrl: _resolvedStreamUrl,
+      title: _resolvedTitle,
+      mediaId: widget.mediaId,
+      mediaType: widget.mediaType,
+      resumeFrom: resumeFrom,
     );
   }
 

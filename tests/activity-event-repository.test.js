@@ -1,11 +1,9 @@
 import { describe, it, expect, beforeEach, afterAll } from 'vitest';
-import { PrismaClient } from '@prisma/client';
-import { PrismaBetterSQLite3 } from '@prisma/adapter-better-sqlite3';
+import { createTestPrismaClient } from './helpers/test-prisma-client';
 import 'dotenv/config';
 import { ActivityEventRepository } from '../server/src/repositories/ActivityEventRepository';
 
-const adapter = new PrismaBetterSQLite3({ url: 'file:prisma/dev.db' });
-const prisma = new PrismaClient({ adapter });
+const prisma = createTestPrismaClient();
 const repository = new ActivityEventRepository(prisma);
 
 describe('ActivityEventRepository', () => {

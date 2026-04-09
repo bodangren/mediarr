@@ -18,6 +18,7 @@ import { latestPlaybackMap, serializePlaybackState } from '../utils/playbackHelp
 import { parseLibraryFilters, applyLibraryFilters } from '../utils/queryHelpers';
 import { determineEpisodeStatus, type EpisodeStatus } from '../utils/episodeStatusHelpers';
 import { safePath } from '../utils/safePath';
+import { getSetupStatus } from './setupRoutes';
 
 // Response type for calendar endpoint
 interface CalendarEpisode {
@@ -112,13 +113,21 @@ export function registerSeriesRoutes(
       },
     },
   }, async (request, reply) => {
-    const prismaSeries = (deps.prisma as any).series;
-    if (!prismaSeries?.findMany) {
-      throw new ValidationError('Series data source is not configured');
-    }
-
     const query = request.query as Record<string, unknown>;
     const pagination = parsePaginationParams(query);
+    const prismaSeries = (deps.prisma as any).series;
+    if (!prismaSeries?.findMany) {
+      const setupStatus = await getSetupStatus(deps);
+      if (!setupStatus.isConfigured) {
+        return sendPaginatedSuccess(reply, [], {
+          page: pagination.page,
+          pageSize: pagination.pageSize,
+          totalCount: 0,
+        });
+      }
+
+      throw new ValidationError('Series data source is not configured');
+    }
 
     const allItems = await prismaSeries.findMany({
       include: {

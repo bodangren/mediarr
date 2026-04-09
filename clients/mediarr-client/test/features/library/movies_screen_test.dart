@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mediarr_client/core/theme/mediarr_theme.dart';
+import 'package:mediarr_client/features/library/continue_watching_section.dart';
 import 'package:mediarr_client/features/library/movies_screen.dart';
 import 'package:mediarr_client/shared/models/movie.dart';
+import 'package:mediarr_client/shared/services/api_client.dart';
 
 void main() {
   group('MoviesScreen', () {
@@ -14,6 +16,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            continueWatchingProvider.overrideWith((ref) async => <ContinueWatchingItem>[]),
             moviesProvider.overrideWith((ref) async {
               // Never resolves — stays in loading state
               await Completer<void>().future;
@@ -35,6 +38,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            continueWatchingProvider.overrideWith((ref) async => <ContinueWatchingItem>[]),
             moviesProvider.overrideWith((ref) async => [
                   const Movie(
                     id: 1,
@@ -70,6 +74,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            continueWatchingProvider.overrideWith((ref) async => <ContinueWatchingItem>[]),
             moviesProvider.overrideWith((ref) async => <Movie>[]),
           ],
           child: MaterialApp(
@@ -88,6 +93,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            continueWatchingProvider.overrideWith((ref) async => <ContinueWatchingItem>[]),
             moviesProvider.overrideWith((ref) async {
               throw Exception('Network error');
             }),

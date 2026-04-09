@@ -1,13 +1,11 @@
 import { describe, it, expect, beforeEach, afterAll } from 'vitest';
-import { PrismaClient } from '@prisma/client';
-import { PrismaBetterSQLite3 } from '@prisma/adapter-better-sqlite3';
+import { createTestPrismaClient } from './helpers/test-prisma-client';
 import 'dotenv/config';
 import { SubtitleVariantRepository } from '../server/src/repositories/SubtitleVariantRepository';
 import { ProbeMetadataParser } from '../server/src/services/ProbeMetadataParser';
 import { VariantInventoryIndexer } from '../server/src/services/VariantInventoryIndexer';
 
-const adapter = new PrismaBetterSQLite3({ url: 'file:prisma/dev.db' });
-const prisma = new PrismaClient({ adapter });
+const prisma = createTestPrismaClient();
 const repository = new SubtitleVariantRepository(prisma);
 const indexer = new VariantInventoryIndexer(repository, new ProbeMetadataParser());
 
@@ -154,7 +152,7 @@ describe('VariantInventoryIndexer', () => {
 
     const variants = await repository.listMovieVariants(movie.id);
     expect(variants).toHaveLength(1);
-    expect(variants[0].fileSize).toBe(BigInt(2_200_000_000));
+    expect(variants[0].fileSize).toBe(2_200_000_000);
   });
 
   it('should index multiple episode variants under a single episode', async () => {

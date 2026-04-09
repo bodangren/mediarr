@@ -73,6 +73,7 @@ import { globalLogBuffer } from './services/LogReaderService';
 import { NotificationDispatchService } from './services/NotificationDispatchService';
 import { SeedingProtector } from './services/SeedingProtector';
 import { SystemHealthService } from './services/SystemHealthService';
+import { UpdateService } from './services/updates/UpdateService';
 import { ApiEventHub } from './api/eventHub';
 
 function parsePort(rawPort: string | undefined, fallback: number): number {
@@ -436,10 +437,18 @@ async function startApi(): Promise<void> {
   // Create the event hub early so NotificationDispatchService can publish to it
   const eventHub = new ApiEventHub();
 
-  const notificationDispatchService = new NotificationDispatchService(eventHub);
+  const notificationDispatchService = new NotificationDispatchService(
+    eventHub,
+    notificationRepository,
+  );
 
   const httpClient = new HttpClient();
   const settingsService = new SettingsService(appSettingsRepository);
+  const updateService = new UpdateService({
+    currentVersion: process.env.npm_package_version ?? '1.0.0',
+    githubRepo: process.env.UPDATE_GITHUB_REPO,
+    stagingDir: process.env.UPDATE_STAGING_DIR,
+  });
   const metadataProvider = new MetadataProvider(httpClient, settingsService);
   const collectionService = new CollectionService(prisma, httpClient, settingsService);
   const playbackService = new PlaybackService(
@@ -630,6 +639,31 @@ async function startApi(): Promise<void> {
     console.error('Failed to schedule library scan:', error);
   }
 
+  try {
+    scheduler.schedule('auto-update-check', '0 4 * * *', async () => {
+      const latestSettings = await settingsService.get();
+      if (!latestSettings.update.autoUpdateEnabled) {
+        return;
+      }
+
+      const check = await updateService.checkForUpdate({
+        branch: latestSettings.update.branch,
+      });
+
+      if (!check.updateAvailable || !check.release) {
+        return;
+      }
+
+      await updateService.downloadUpdate({
+        version: check.release.version,
+      });
+      console.log(`Auto-update download completed for ${check.release.version}`);
+    });
+    console.log('Auto-update check scheduled daily at 4 AM (download-only when enabled).');
+  } catch (error) {
+    console.error('Failed to schedule auto-update check:', error);
+  }
+
 
   // Derive db path from database URL (strip "file:" prefix)
   const dbFilePath = databaseUrl.replace(/^file:/, '');
@@ -673,6 +707,7 @@ async function startApi(): Promise<void> {
     backupService,
     libraryScanService,
     systemHealthService,
+    updateService,
   });
 
   const staticDir = process.env.STATIC_DIR ?? path.resolve(process.cwd(), 'app/dist');

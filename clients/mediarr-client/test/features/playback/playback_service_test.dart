@@ -2,6 +2,22 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mediarr_client/features/playback/playback_service.dart';
 
 void main() {
+  group('normalizeResumeOffset', () {
+    test('keeps positive offsets unchanged', () {
+      expect(
+        normalizeResumeOffset(const Duration(seconds: 90)),
+        const Duration(seconds: 90),
+      );
+    });
+
+    test('clamps negative offsets to zero', () {
+      expect(
+        normalizeResumeOffset(const Duration(seconds: -5)),
+        Duration.zero,
+      );
+    });
+  });
+
   group('PlaybackState', () {
     test('default state is idle', () {
       const state = PlaybackState();

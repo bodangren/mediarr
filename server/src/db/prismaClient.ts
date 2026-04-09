@@ -351,6 +351,10 @@ function normalizeWhereObject(input: unknown): unknown {
 
   const output: AnyRecord = {};
   for (const [key, value] of Object.entries(input)) {
+    if (value === undefined) {
+      continue;
+    }
+
     if (key === 'AND' || key === 'OR' || key === 'NOT') {
       output[key] = normalizeWhereObject(value);
       continue;
@@ -535,7 +539,16 @@ export class PrismaClient {
       throw new Error('Unsupported $queryRaw invocation');
     }
 
-    return this.sqlite.query(sqlText).all(...sqlParams) as T;
+    if (typeof this.sqlite.query === 'function') {
+      return this.sqlite.query(sqlText).all(...sqlParams) as T;
+    }
+
+    const statement = this.sqlite.prepare(sqlText);
+    return statement.all(...sqlParams) as T;
+  }
+
+  async $queryRawUnsafe<T = unknown>(query: string, ...params: unknown[]): Promise<T> {
+    return this.$queryRaw(query, ...params);
   }
 
   async $transaction<T>(
@@ -637,13 +650,16 @@ export class PrismaClient {
     ctx: QueryContext = this.createContext(),
   ): Promise<any> {
     const config = MODEL_CONFIG[model];
-    const data = this.normalizeWriteData(model, args.data);
+    const { data: rawData, nestedManyCreates } = this.extractNestedManyCreates(model, args.data);
+    const data = this.normalizeWriteData(model, rawData);
     const inserted = await this.db.insert(config.table as any).values(data as any).returning();
     const created = inserted?.[0] ?? null;
 
     if (!created) {
       return this.findFirst(model, { where: this.extractSimpleWhere(args.data), ...args }, ctx);
     }
+
+    await this.applyNestedManyCreates(model, created, nestedManyCreates);
 
     return this.findUnique(
       model,
@@ -679,11 +695,13 @@ export class PrismaClient {
       throw new Error(`${model}.update failed: record not found`);
     }
 
-    const updateData = this.normalizeWriteData(model, args.data);
-    await this.db
-      .update(config.table as any)
-      .set(updateData as any)
-      .where(eq((config.table as any)[config.primaryKey], existing[config.primaryKey]));
+    const updateData = this.resolveUpdateData(model, args.data, existing);
+    if (Object.keys(updateData).length > 0) {
+      await this.db
+        .update(config.table as any)
+        .set(updateData as any)
+        .where(eq((config.table as any)[config.primaryKey], existing[config.primaryKey]));
+    }
 
     return this.findUnique(model, {
       where: { [config.primaryKey]: existing[config.primaryKey] },
@@ -698,16 +716,20 @@ export class PrismaClient {
   ): Promise<{ count: number }> {
     const config = MODEL_CONFIG[model];
     const rows = await this.findMany(model, { where: args.where, select: { [config.primaryKey]: true } });
-    const updateData = this.normalizeWriteData(model, args.data);
-
+    let updatedCount = 0;
     for (const row of rows) {
+      const updateData = this.resolveUpdateData(model, args.data, row);
+      if (Object.keys(updateData).length === 0) {
+        continue;
+      }
       await this.db
         .update(config.table as any)
         .set(updateData as any)
         .where(eq((config.table as any)[config.primaryKey], row[config.primaryKey]));
+      updatedCount += 1;
     }
 
-    return { count: rows.length };
+    return { count: updatedCount };
   }
 
   private async delete(
@@ -811,7 +833,124 @@ export class PrismaClient {
       }
     }
 
+    for (const [key, value] of Object.entries(data)) {
+      if (value === undefined) {
+        delete data[key];
+      }
+    }
+
     return data;
+  }
+
+  private resolveUpdateData(model: ModelName, input: AnyRecord, existing: AnyRecord): AnyRecord {
+    const normalized = this.normalizeWriteData(model, input);
+    const out: AnyRecord = {};
+
+    for (const [key, rawValue] of Object.entries(normalized)) {
+      if (!isPlainObject(rawValue)) {
+        out[key] = rawValue;
+        continue;
+      }
+
+      const hasOps = 'set' in rawValue || 'increment' in rawValue || 'decrement' in rawValue || 'multiply' in rawValue || 'divide' in rawValue;
+      if (!hasOps) {
+        out[key] = rawValue;
+        continue;
+      }
+
+      const currentValue = existing[key];
+      if ('set' in rawValue) {
+        out[key] = rawValue.set;
+        continue;
+      }
+
+      if (typeof currentValue === 'bigint') {
+        let next = currentValue;
+        if ('increment' in rawValue) next += BigInt(rawValue.increment ?? 0);
+        if ('decrement' in rawValue) next -= BigInt(rawValue.decrement ?? 0);
+        if ('multiply' in rawValue) next *= BigInt(rawValue.multiply ?? 1);
+        if ('divide' in rawValue) next /= BigInt(rawValue.divide ?? 1);
+        out[key] = next;
+        continue;
+      }
+
+      let next = Number(currentValue ?? 0);
+      if ('increment' in rawValue) next += Number(rawValue.increment ?? 0);
+      if ('decrement' in rawValue) next -= Number(rawValue.decrement ?? 0);
+      if ('multiply' in rawValue) next *= Number(rawValue.multiply ?? 1);
+      if ('divide' in rawValue) next /= Number(rawValue.divide ?? 1);
+      out[key] = next;
+    }
+
+    return out;
+  }
+
+  private extractNestedManyCreates(
+    model: ModelName,
+    input: AnyRecord,
+  ): { data: AnyRecord; nestedManyCreates: Array<{ relation: RelationConfig; rows: AnyRecord[] }> } {
+    const data: AnyRecord = { ...input };
+    const nestedManyCreates: Array<{ relation: RelationConfig; rows: AnyRecord[] }> = [];
+    const relations = MODEL_CONFIG[model].relations;
+
+    for (const [relationName, relation] of Object.entries(relations)) {
+      if (relation.kind !== 'many' || !(relationName in data)) {
+        continue;
+      }
+
+      const relationValue = data[relationName];
+      delete data[relationName];
+      if (!isPlainObject(relationValue)) {
+        continue;
+      }
+
+      const rows: AnyRecord[] = [];
+      if (Array.isArray(relationValue.create)) {
+        rows.push(...relationValue.create.filter(isPlainObject));
+      } else if (isPlainObject(relationValue.create)) {
+        rows.push(relationValue.create);
+      }
+
+      if (isPlainObject(relationValue.createMany) && Array.isArray(relationValue.createMany.data)) {
+        rows.push(...relationValue.createMany.data.filter(isPlainObject));
+      }
+
+      if (rows.length > 0) {
+        nestedManyCreates.push({ relation, rows });
+      }
+    }
+
+    return { data, nestedManyCreates };
+  }
+
+  private async applyNestedManyCreates(
+    model: ModelName,
+    createdParent: AnyRecord,
+    nestedManyCreates: Array<{ relation: RelationConfig; rows: AnyRecord[] }>,
+  ): Promise<void> {
+    if (nestedManyCreates.length === 0) {
+      return;
+    }
+
+    const parentConfig = MODEL_CONFIG[model];
+    const parentId = createdParent[parentConfig.primaryKey];
+
+    for (const entry of nestedManyCreates) {
+      const childModel = entry.relation.model;
+      const childConfig = MODEL_CONFIG[childModel];
+      const childRows = entry.rows.map((row) =>
+        this.normalizeWriteData(childModel, {
+          ...row,
+          [entry.relation.targetField]: parentId,
+        }),
+      );
+
+      if (childRows.length === 0) {
+        continue;
+      }
+
+      await this.db.insert(childConfig.table as any).values(childRows as any);
+    }
   }
 
   private async filterRows(

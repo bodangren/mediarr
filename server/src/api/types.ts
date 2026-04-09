@@ -33,6 +33,7 @@ import type { LogReaderService } from '../services/LogReaderService';
 import type { BackupService } from '../services/BackupService';
 import type { LibraryScanService } from '../services/LibraryScanService';
 import type { SystemHealthService } from '../services/SystemHealthService';
+import type { UpdateService } from '../services/updates/UpdateService';
 
 
 export interface ApiDependencies {
@@ -88,7 +89,7 @@ export interface ApiDependencies {
   >;
   playbackService?: Pick<
     PlaybackService,
-    'resolveStreamSource' | 'buildManifest' | 'recordHeartbeat' | 'resolveSubtitleTrack'
+    'resolveStreamSource' | 'buildManifest' | 'recordHeartbeat' | 'resolveSubtitleTrack' | 'getContinueWatching'
   >;
   settingsService?: Pick<SettingsService, 'get' | 'update'>;
   activityEventRepository?: Pick<ActivityEventRepository, 'query' | 'clear' | 'markAsFailed' | 'export'>;
@@ -142,6 +143,18 @@ export interface ApiDependencies {
   systemHealthService?: Pick<
     SystemHealthService,
     'getDiskSpace' | 'getProcessInfo' | 'checkDatabase' | 'checkRootFolders' | 'detectFFmpeg'
+  >;
+  updateService?: Pick<
+    UpdateService,
+    | 'getCurrentVersionInfo'
+    | 'getLatestRelease'
+    | 'listHistory'
+    | 'checkForUpdate'
+    | 'downloadUpdate'
+    | 'installUpdate'
+    | 'getProgress'
+    | 'listProgress'
+    | 'resetForTests'
   >;
 
 }

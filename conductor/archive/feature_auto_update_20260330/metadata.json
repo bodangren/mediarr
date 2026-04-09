@@ -1,0 +1,11 @@
+{
+  "track_id": "feature_auto_update_20260330",
+  "type": "feature",
+  "status": "completed",
+  "created_at": "2026-03-30T00:00:00Z",
+  "updated_at": "2026-04-09T23:00:00Z",
+  "description": "Replace simulated auto-update with real GitHub release checking, binary download, checksum verification, and self-update. Add SPA Updates settings page.",
+  "estimated_tasks": 14,
+  "actual_tasks": 20,
+  "deviation_notes": "CI=true bun test has pre-existing baseline failures (vi.hoisted + legacy behavior tests) unrelated to auto-update scope; track validation used targeted update suites plus full CI=true npm test and app build."
+}

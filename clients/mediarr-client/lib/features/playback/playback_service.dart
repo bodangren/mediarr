@@ -8,6 +8,9 @@ import '../../shared/services/api_client.dart';
 /// Playback state.
 enum PlaybackStatus { idle, loading, playing, paused, buffering, error, completed }
 
+Duration normalizeResumeOffset(Duration resumeFrom) =>
+    resumeFrom < Duration.zero ? Duration.zero : resumeFrom;
+
 /// Immutable playback state.
 class PlaybackState {
   const PlaybackState({
@@ -90,19 +93,24 @@ class PlaybackService extends StateNotifier<PlaybackState> {
     required String title,
     required int mediaId,
     required String mediaType,
+    Duration resumeFrom = Duration.zero,
   }) async {
+    final startPosition = normalizeResumeOffset(resumeFrom);
     state = state.copyWith(
       status: PlaybackStatus.loading,
       mediaTitle: title,
       mediaId: mediaId,
       mediaType: mediaType,
-      position: Duration.zero,
+      position: startPosition,
       duration: Duration.zero,
       error: null,
     );
 
     try {
       await _player.open(Media(streamUrl));
+      if (startPosition > Duration.zero) {
+        await _player.seek(startPosition);
+      }
       _startProgressReporting();
       _startOverlayTimer();
     } catch (e) {

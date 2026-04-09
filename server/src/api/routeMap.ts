@@ -39,6 +39,7 @@ export const API_ROUTE_MAP: ApiRouteDefinition[] = [
 
   { method: 'GET', path: '/api/stream/:id' },
   { method: 'GET', path: '/api/playback/:id' },
+  { method: 'GET', path: '/api/playback/continue-watching' },
   { method: 'POST', path: '/api/playback/progress' },
   { method: 'GET', path: '/api/playback/subtitles/:trackId' },
 
@@ -150,10 +151,16 @@ export const API_ROUTE_MAP: ApiRouteDefinition[] = [
   // Updates routes
   { method: 'GET', path: '/api/updates/current' },
   { method: 'GET', path: '/api/updates/available' },
+  { method: 'GET', path: '/api/updates/check' },
   { method: 'POST', path: '/api/updates/check' },
+  { method: 'POST', path: '/api/updates/download' },
   { method: 'POST', path: '/api/updates/install' },
   { method: 'GET', path: '/api/updates/history' },
   { method: 'GET', path: '/api/updates/progress/:updateId' },
+
+  // Setup wizard routes
+  { method: 'GET', path: '/api/setup/status' },
+  { method: 'POST', path: '/api/setup/complete' },
 
   // Notification routes (push-status only; full CRUD deferred to notification-management feature)
   { method: 'GET', path: '/api/notifications/push-status' },

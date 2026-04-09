@@ -5,6 +5,8 @@ import '../../shared/models/movie.dart';
 import '../../shared/services/api_client.dart';
 import '../../shared/widgets/media_grid.dart';
 import '../../shared/widgets/poster_card.dart';
+import '../playback/playback_screen.dart';
+import 'continue_watching_section.dart';
 import 'movie_detail_screen.dart';
 
 /// Provider that fetches the movie list from the API.
@@ -42,6 +44,7 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
   @override
   Widget build(BuildContext context) {
     final moviesAsync = ref.watch(moviesProvider);
+    final continueWatchingAsync = ref.watch(continueWatchingProvider);
 
     return moviesAsync.when(
       loading: () => const MediaGrid(
@@ -63,6 +66,11 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
           title: 'Movies',
           searchController: _searchController,
           onSearchChanged: (value) => setState(() => _searchQuery = value),
+          topSection: ContinueWatchingSection(
+            items: continueWatchingAsync.value ?? const [],
+            isLoading: continueWatchingAsync.isLoading,
+            onResume: _resumeContinueWatching,
+          ),
           itemCount: filtered.length,
           isEmpty: filtered.isEmpty,
           emptyMessage: _searchQuery.isEmpty
@@ -90,6 +98,26 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => MovieDetailScreen(movie: movie),
+      ),
+    );
+  }
+
+  void _resumeContinueWatching(ContinueWatchingItem item) {
+    final apiClient = ref.read(apiClientProvider.notifier);
+    final type = item.mediaTypeQueryValue;
+    final streamUrl = apiClient.getStreamUrl(item.mediaId, type);
+    final title = item.episodeTitle != null
+        ? '${item.title} - ${item.episodeTitle}'
+        : item.title;
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => PlaybackScreen(
+          streamUrl: streamUrl,
+          title: title,
+          mediaId: item.mediaId,
+          mediaType: type,
+        ),
       ),
     );
   }

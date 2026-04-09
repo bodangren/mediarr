@@ -162,9 +162,13 @@ export const routeMap = {
   updatesCurrent: '/api/updates/current',
   updatesAvailable: '/api/updates/available',
   updatesCheck: '/api/updates/check',
+  updatesDownload: '/api/updates/download',
   updatesInstall: '/api/updates/install',
   updatesHistory: '/api/updates/history',
   updatesProgress: (updateId: string) => `/api/updates/progress/${updateId}`,
+
+  setupStatus: '/api/setup/status',
+  setupComplete: '/api/setup/complete',
 
   collections: '/api/collections',
   collectionDetail: (id: number) => `/api/collections/${id}`,

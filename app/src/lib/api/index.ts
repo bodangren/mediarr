@@ -22,6 +22,7 @@ import { createMovieApi } from './movieApi';
 import { createQualityProfileApi } from './qualityProfileApi';
 import { createReleaseApi } from './releaseApi';
 import { createSeriesApi } from './seriesApi';
+import { createSetupApi } from './setupApi';
 import { createSettingsApi } from './settingsApi';
 import { createProxySettingsApi } from './proxySettingsApi';
 import { createSubtitleApi } from './subtitleApi';
@@ -77,6 +78,7 @@ export function createApiClients(config: ApiHttpClientConfig = {}) {
     backupApi: createBackupApi(httpClient),
     logsApi: createLogsApi(httpClient),
     updatesApi: createUpdatesApi(httpClient),
+    setupApi: createSetupApi(httpClient),
     qualityProfileApi: createQualityProfileApi(httpClient),
     customFormatApi: createCustomFormatApi(httpClient),
     languageProfilesApi: createLanguageProfilesApi(httpClient),

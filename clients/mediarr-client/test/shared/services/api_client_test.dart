@@ -277,6 +277,97 @@ void main() {
 
       expect(url, 'http://192.168.1.100:5174/api/stream/42?type=movie');
     });
+
+    test('getPlaybackManifest parses resume payload', () async {
+      dio.interceptors.add(InterceptorsWrapper(
+        onRequest: (options, handler) {
+          if (options.path.contains('/api/playback/42')) {
+            handler.resolve(Response(
+              requestOptions: options,
+              statusCode: 200,
+              data: {
+                'ok': true,
+                'data': {
+                  'streamUrl': '/api/stream/42?type=movie',
+                  'metadata': {
+                    'mediaType': 'MOVIE',
+                    'mediaId': 42,
+                    'title': 'Inception',
+                  },
+                  'resume': {
+                    'userId': 'lan-default',
+                    'position': 120,
+                    'duration': 600,
+                    'progress': 0.2,
+                    'isWatched': false,
+                    'lastWatched': '2026-04-09T00:00:00.000Z',
+                  },
+                },
+              },
+            ));
+            return;
+          }
+
+          handler.resolve(Response(
+            requestOptions: options,
+            statusCode: 200,
+            data: {'version': '1.0.0', 'startTime': ''},
+          ));
+        },
+      ));
+
+      await client.connect('http://localhost:5174');
+      final manifest = await client.getPlaybackManifest(
+        mediaId: 42,
+        type: 'movie',
+      );
+
+      expect(manifest, isNotNull);
+      expect(manifest?.metadata.title, 'Inception');
+      expect(manifest?.resume?.position, 120);
+    });
+
+    test('getContinueWatching parses list payload', () async {
+      dio.interceptors.add(InterceptorsWrapper(
+        onRequest: (options, handler) {
+          if (options.path.contains('/api/playback/continue-watching')) {
+            handler.resolve(Response(
+              requestOptions: options,
+              statusCode: 200,
+              data: {
+                'ok': true,
+                'data': [
+                  {
+                    'mediaType': 'MOVIE',
+                    'mediaId': 2,
+                    'title': 'Dune',
+                    'position': 300,
+                    'duration': 1200,
+                    'progress': 0.25,
+                    'isWatched': false,
+                    'lastWatched': '2026-04-09T00:00:00.000Z',
+                  },
+                ],
+              },
+            ));
+            return;
+          }
+
+          handler.resolve(Response(
+            requestOptions: options,
+            statusCode: 200,
+            data: {'version': '1.0.0', 'startTime': ''},
+          ));
+        },
+      ));
+
+      await client.connect('http://localhost:5174');
+      final items = await client.getContinueWatching(limit: 5);
+
+      expect(items, hasLength(1));
+      expect(items.first.title, 'Dune');
+      expect(items.first.mediaTypeQueryValue, 'movie');
+    });
   });
 
   group('Movie model', () {

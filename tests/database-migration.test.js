@@ -6,11 +6,13 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 describe('Database Migration', () => {
-  const migrationDir = path.join(__dirname, '..', 'prisma', 'migrations');
+  const deprecatedPrismaDir = path.join(__dirname, '..', 'prisma');
+  const drizzleSchemaPath = path.join(__dirname, '..', 'server', 'src', 'db', 'schema.ts');
   const dbPath = path.join(__dirname, '..', 'mediarr.db');
 
-  it('should have migration files in prisma/migrations', () => {
-    expect(fs.existsSync(migrationDir)).toBe(true);
+  it('should use Drizzle schema files instead of prisma migrations', () => {
+    expect(fs.existsSync(drizzleSchemaPath)).toBe(true);
+    expect(fs.existsSync(deprecatedPrismaDir)).toBe(false);
   });
 
   it('should have a mediarr.db database file', () => {

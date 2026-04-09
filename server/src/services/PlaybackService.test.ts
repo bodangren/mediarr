@@ -30,6 +30,7 @@ describe('PlaybackService', () => {
     getProgress: ReturnType<typeof vi.fn>;
     getLatestProgressForMedia: ReturnType<typeof vi.fn>;
     upsertProgress: ReturnType<typeof vi.fn>;
+    findContinueWatching: ReturnType<typeof vi.fn>;
   };
   let tempDir: string;
 
@@ -39,6 +40,7 @@ describe('PlaybackService', () => {
       getProgress: vi.fn(),
       getLatestProgressForMedia: vi.fn(),
       upsertProgress: vi.fn(),
+      findContinueWatching: vi.fn(),
     };
     tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'mediarr-playback-service-'));
   });
@@ -262,5 +264,27 @@ describe('PlaybackService', () => {
 
     const subtitle = await service.resolveSubtitleTrack(88);
     expect(subtitle.filePath).toBe(subtitlePath);
+  });
+
+  it('returns continue-watching rows from repository', async () => {
+    playbackRepository.findContinueWatching.mockResolvedValue([
+      {
+        mediaType: 'MOVIE',
+        mediaId: 1,
+        title: 'Movie One',
+      },
+    ]);
+
+    const service = createService();
+    const rows = await service.getContinueWatching(10);
+
+    expect(playbackRepository.findContinueWatching).toHaveBeenCalledWith(10);
+    expect(rows).toEqual([
+      {
+        mediaType: 'MOVIE',
+        mediaId: 1,
+        title: 'Movie One',
+      },
+    ]);
   });
 });

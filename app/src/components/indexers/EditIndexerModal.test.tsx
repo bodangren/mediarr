@@ -105,6 +105,7 @@ describe('EditIndexerModal', () => {
       />,
     );
 
+    fireEvent.change(screen.getByLabelText(/name/i), { target: { value: '' } });
     fireEvent.click(screen.getByRole('button', { name: /save indexer/i }));
     await waitFor(() => {
       expect(screen.getByText(/name is required/i)).toBeInTheDocument();
@@ -165,9 +166,9 @@ describe('EditIndexerModal', () => {
       />,
     );
 
-    expect(screen.getByText('Definition ID')).toBeInTheDocument();
-    expect(screen.getByText('Sitelink')).toBeInTheDocument();
-    expect(screen.getByText('Cookie')).toBeInTheDocument();
+    expect(screen.getByText(/definition id/i)).toBeInTheDocument();
+    expect(screen.getByText(/sitelink/i)).toBeInTheDocument();
+    expect(screen.getByText(/cookie/i)).toBeInTheDocument();
   });
 
   it('renders app profile selector when appProfiles provided', () => {
@@ -199,11 +200,16 @@ describe('EditIndexerModal', () => {
     expect(screen.getByRole('button', { name: /cancel/i })).toBeDisabled();
   });
 
-  it('switches config contract when protocol changes', () => {
+  it('switches dynamic fields when protocol changes for fallback contracts', async () => {
+    const fallbackIndexer: EditIndexerSource = {
+      ...mockTorznabIndexer,
+      configContract: 'UnknownSettings',
+    };
+
     render(
       <EditIndexerModal
         isOpen
-        indexer={mockTorznabIndexer}
+        indexer={fallbackIndexer}
         onClose={noop}
         onSave={noop}
       />,
@@ -211,10 +217,13 @@ describe('EditIndexerModal', () => {
 
     expect(screen.getByText('Indexer URL')).toBeInTheDocument();
 
-    const protocolSelect = screen.getByRole('combobox', { name: /protocol/i });
-    fireEvent.change(protocolSelect, { target: { value: 'usenet' } });
+    const protocolTrigger = screen.getByRole('combobox', { name: /protocol/i });
+    fireEvent.click(protocolTrigger);
+    fireEvent.click(screen.getByRole('option', { name: 'usenet' }));
 
-    expect(screen.getByText('Host')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Host')).toBeInTheDocument();
+    });
   });
 
   it('populates initial values from indexer prop', () => {
@@ -231,23 +240,29 @@ describe('EditIndexerModal', () => {
     expect(nameInput.value).toBe('My Torznab');
   });
 
-  it('clears validation error when user starts typing', async () => {
+  it('clears validation error after user enters a valid name and resubmits', async () => {
+    const onSave = vi.fn().mockResolvedValue(undefined);
     render(
       <EditIndexerModal
         isOpen
         indexer={mockTorznabIndexer}
         onClose={noop}
-        onSave={noop}
+        onSave={onSave}
       />,
     );
 
+    fireEvent.change(screen.getByLabelText(/name/i), { target: { value: '' } });
     fireEvent.click(screen.getByRole('button', { name: /save indexer/i }));
     await waitFor(() => {
       expect(screen.getByText(/name is required/i)).toBeInTheDocument();
     });
 
     fireEvent.change(screen.getByLabelText(/name/i), { target: { value: 'T' } });
-    expect(screen.queryByText(/name is required/i)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /save indexer/i }));
+    await waitFor(() => {
+      expect(screen.queryByText(/name is required/i)).not.toBeInTheDocument();
+      expect(onSave).toHaveBeenCalledTimes(1);
+    });
   });
 
   it('submits correct data for usenet indexer', async () => {

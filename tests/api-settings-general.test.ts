@@ -59,6 +59,7 @@ describe('Settings General Sections (host/security/logging/update)', () => {
       expect(DEFAULT_APP_SETTINGS.update.branch).toBe('master');
       expect(DEFAULT_APP_SETTINGS.update.mechanicsEnabled).toBe(false);
       expect(DEFAULT_APP_SETTINGS.update.updateScriptPath).toBeNull();
+      expect(DEFAULT_APP_SETTINGS.update.setupCompleted).toBe(false);
     });
   });
 
@@ -107,6 +108,7 @@ describe('Settings General Sections (host/security/logging/update)', () => {
       expect(payload.data.update).toHaveProperty('branch');
       expect(payload.data.update).toHaveProperty('mechanicsEnabled');
       expect(payload.data.update).toHaveProperty('updateScriptPath');
+      expect(payload.data.update).toHaveProperty('setupCompleted');
     });
   });
 
@@ -223,6 +225,7 @@ describe('Settings General Sections (host/security/logging/update)', () => {
         branch: 'develop' as const,
         mechanicsEnabled: true,
         updateScriptPath: '/opt/mediarr/update.sh',
+        setupCompleted: false,
       };
       
       let storedSettings = { ...DEFAULT_APP_SETTINGS, update: { ...DEFAULT_APP_SETTINGS.update } };

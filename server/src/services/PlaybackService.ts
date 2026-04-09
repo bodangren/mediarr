@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { PrismaClient, PlaybackMediaType } from '@prisma/client';
 import { NotFoundError, ValidationError } from '../errors/domainErrors';
-import type { PlaybackRepository } from '../repositories/PlaybackRepository';
+import type { ContinueWatchingItem, PlaybackRepository } from '../repositories/PlaybackRepository';
 import type { SettingsService } from './SettingsService';
 
 const DEFAULT_USER_ID = 'lan-default';
@@ -124,7 +124,7 @@ export class PlaybackService {
     private readonly prisma: PrismaClient,
     private readonly playbackRepository: Pick<
       PlaybackRepository,
-      'getProgress' | 'getLatestProgressForMedia' | 'upsertProgress'
+      'getProgress' | 'getLatestProgressForMedia' | 'upsertProgress' | 'findContinueWatching'
     >,
     private readonly settingsService?: Pick<SettingsService, 'get'>,
   ) {}
@@ -221,6 +221,10 @@ export class PlaybackService {
       isWatched: saved.isWatched,
       lastWatched: saved.lastWatched.toISOString(),
     };
+  }
+
+  async getContinueWatching(limit = 20): Promise<ContinueWatchingItem[]> {
+    return this.playbackRepository.findContinueWatching(limit);
   }
 
   async resolveSubtitleTrack(trackId: number): Promise<SubtitleSource> {

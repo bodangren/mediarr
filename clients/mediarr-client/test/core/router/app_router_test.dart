@@ -2,10 +2,25 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mediarr_client/core/router/app_router.dart';
+import 'package:mediarr_client/features/discovery/discovery_service.dart';
+import 'package:mediarr_client/features/library/continue_watching_section.dart';
 import 'package:mediarr_client/features/library/movies_screen.dart';
 import 'package:mediarr_client/features/library/series_screen.dart';
 import 'package:mediarr_client/shared/models/movie.dart';
 import 'package:mediarr_client/shared/models/series.dart';
+
+class _RouterTestDiscoveryService extends DiscoveryService {
+  _RouterTestDiscoveryService()
+    : super(mdnsAdapter: NoOpMdnsAdapter(), scanTimeoutDuration: Duration.zero);
+
+  @override
+  Future<void> startScan() async {
+    state = const DiscoveryState(phase: DiscoveryPhase.idle);
+  }
+
+  @override
+  Future<void> stopScan() async {}
+}
 
 void main() {
   group('AppRoutes', () {
@@ -39,8 +54,22 @@ void main() {
   });
 
   group('Router navigation', () {
+    ProviderContainer createRouterTestContainer({
+      List<Override> overrides = const [],
+    }) {
+      return ProviderContainer(
+        overrides: [
+          discoveryServiceProvider.overrideWith(
+            (ref) => _RouterTestDiscoveryService(),
+          ),
+          continueWatchingProvider.overrideWith((ref) async => const []),
+          ...overrides,
+        ],
+      );
+    }
+
     testWidgets('discovery screen renders at initial route', (tester) async {
-      final container = ProviderContainer();
+      final container = createRouterTestContainer();
       addTearDown(container.dispose);
 
       await tester.pumpWidget(
@@ -55,14 +84,12 @@ void main() {
       await tester.pump();
 
       expect(find.text('Mediarr'), findsOneWidget);
-      expect(find.text('Enter server address to connect'), findsOneWidget);
+      expect(find.text('Connect manually'), findsOneWidget);
     });
 
     testWidgets('navigates to movies screen via shell route', (tester) async {
-      final container = ProviderContainer(
-        overrides: [
-          moviesProvider.overrideWith((ref) async => <Movie>[]),
-        ],
+      final container = createRouterTestContainer(
+        overrides: [moviesProvider.overrideWith((ref) async => <Movie>[])],
       );
       addTearDown(container.dispose);
 
@@ -84,10 +111,8 @@ void main() {
     });
 
     testWidgets('navigates to series screen via shell route', (tester) async {
-      final container = ProviderContainer(
-        overrides: [
-          seriesListProvider.overrideWith((ref) async => <Series>[]),
-        ],
+      final container = createRouterTestContainer(
+        overrides: [seriesListProvider.overrideWith((ref) async => <Series>[])],
       );
       addTearDown(container.dispose);
 
@@ -108,7 +133,7 @@ void main() {
     });
 
     testWidgets('navigates to settings screen via shell route', (tester) async {
-      final container = ProviderContainer(
+      final container = createRouterTestContainer(
         overrides: [
           moviesProvider.overrideWith((ref) async => <Movie>[]),
           seriesListProvider.overrideWith((ref) async => <Series>[]),

@@ -44,6 +44,7 @@
     "js-yaml": "^4.1.1",
     "linkedom": "^0.18.12",
     "node-cron": "^4.2.1",
+    "nodemailer": "^8.0.5",
     "webtorrent": "^2.8.5",
     "zod": "^3.25.76"
   }

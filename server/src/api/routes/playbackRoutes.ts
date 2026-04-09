@@ -38,6 +38,22 @@ function parsePlaybackType(rawType: unknown): PlaybackMediaType {
   throw new ValidationError('Query parameter "type" must be "movie" or "episode"');
 }
 
+function parseContinueWatchingLimit(rawLimit: unknown): number {
+  if (rawLimit === undefined || rawLimit === null || rawLimit === '') {
+    return 20;
+  }
+
+  const parsed = typeof rawLimit === 'number'
+    ? rawLimit
+    : Number.parseInt(String(rawLimit), 10);
+
+  if (!Number.isFinite(parsed) || parsed < 1 || parsed > 50) {
+    throw new ValidationError('Query parameter "limit" must be an integer between 1 and 50');
+  }
+
+  return Math.trunc(parsed);
+}
+
 function parseRangeHeader(rangeHeader: string, fileSize: number): ByteRange | null {
   const match = /^bytes=(\d*)-(\d*)$/i.exec(rangeHeader.trim());
   if (!match) {
@@ -198,6 +214,26 @@ export function registerPlaybackRoutes(
     });
 
     return sendSuccess(reply, manifest);
+  });
+
+  app.get('/api/playback/continue-watching', {
+    schema: {
+      querystring: {
+        type: 'object',
+        properties: {
+          limit: { type: 'number', minimum: 1, maximum: 50 },
+        },
+      },
+    },
+  }, async (request, reply) => {
+    if (!deps.playbackService?.getContinueWatching) {
+      throw new ValidationError('Playback service is not configured');
+    }
+
+    const query = request.query as { limit?: number | string };
+    const limit = parseContinueWatchingLimit(query.limit);
+    const items = await deps.playbackService.getContinueWatching(limit);
+    return sendSuccess(reply, items);
   });
 
   app.post('/api/playback/progress', {

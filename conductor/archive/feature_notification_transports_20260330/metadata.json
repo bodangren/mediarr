@@ -1,0 +1,11 @@
+{
+  "track_id": "feature_notification_transports_20260330",
+  "type": "feature",
+  "status": "done",
+  "created_at": "2026-03-30T00:00:00Z",
+  "updated_at": "2026-04-09T22:30:00Z",
+  "description": "Implement real notification delivery transports (webhook, email, Discord, Telegram, Gotify) wired to the existing NotificationRepository and NotificationDispatchService.",
+  "estimated_tasks": 16,
+  "actual_tasks": 20,
+  "deviation_notes": "Executed CI=true bun test earlier in this run (repository-wide) and scoped notification bun tests; Bun runner remains non-authoritative here due existing Vitest-specific/hanging suites. Canonical CI gate (CI=true npm test) passed fully after transport integration."
+}

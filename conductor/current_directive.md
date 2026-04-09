@@ -1,7 +1,21 @@
 # Current Strategic Directive
 
-> **STATUS: COMPLETE** — All priority subsystems tested. 1625 tests green. 7 critical bugs found and fixed.
-> **Completed: 2026-04-06**
+> **STATUS: ACTIVE** — Setup Wizard complete. Next: Phase C Zero-Config Setup tracks.
+> **Updated: 2026-04-10**
+
+---
+
+## Directive: Complete Phase C Zero-Config Setup
+
+Track `feature_setup_wizard_20260330` is complete (1672 tests green; SPA build clean). Proceed to next Phase C tracks:
+
+1. `feature_smart_defaults_20260330` — Smart Defaults Engine (Phase C priority)
+2. `feature_indexer_discovery_20260330` — Indexer Auto-Discovery
+
+### What Was Completed
+
+| Subsystem | Tests | Bugs Fixed |
+|----------|-------|-----------|
 
 ---
 

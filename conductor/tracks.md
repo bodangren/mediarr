@@ -100,7 +100,7 @@ Parallel:
 - [x] **Track: Real Auto-Update System** *Phases: 4 | Link: [./archive/feature_auto_update_20260330/](./archive/feature_auto_update_20260330/)* — real release-check/download/install flow shipped; daily scheduler wired; full `CI=true npm test` green (224 files / 1664 tests)
 
 ### Phase C: Zero-Config Setup
-- [~] **Track: Setup Wizard & First-Run** *Phases: 2 | In progress* | Link: [./tracks/feature_setup_wizard_20260330/](./tracks/feature_setup_wizard_20260330/)*
+- [x] **Track: Setup Wizard & First-Run** *Phases: 2 | Link: [./archive/feature_setup_wizard_20260330/](./archive/feature_setup_wizard_20260330/)* — setup detection API, 5-step wizard, Just Work zero-config mode, route guard; 1672 tests green; SPA build clean
 - [ ] **Track: Indexer Auto-Discovery** *Phases: 4 | Link: [./tracks/feature_indexer_discovery_20260330/](./tracks/feature_indexer_discovery_20260330/)*
 - [ ] **Track: Smart Defaults Engine** *Phases: 3 | Link: [./tracks/feature_smart_defaults_20260330/](./tracks/feature_smart_defaults_20260330/)*
 

@@ -9,6 +9,10 @@
     // See also https://aka.ms/tsconfig/module
     "module": "preserve",
     "moduleResolution": "bundler",
+    "baseUrl": ".",
+    "paths": {
+      "@prisma/client": ["./src/types/prisma"]
+    },
     "target": "esnext",
     "types": [],
     // For nodejs:

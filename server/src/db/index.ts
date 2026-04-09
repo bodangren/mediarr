@@ -1,12 +1,26 @@
-import { drizzle } from "drizzle-orm/bun-sqlite";
+import { createRequire } from "node:module";
 import * as schema from "./schema.js";
-import Database from "bun:sqlite";
-
+const require = createRequire(import.meta.url);
 const dbPath = process.env.DATABASE_URL?.replace("file:", "") || "./mediarr.db";
 
-const sqlite = new Database(dbPath);
-sqlite.exec("PRAGMA journal_mode = WAL;");
-sqlite.exec("PRAGMA foreign_keys = ON;");
+let sqlite: any;
+let db: any;
+try {
+  const bunSqlite = require("bun:sqlite");
+  const { drizzle: drizzleBun } = require("drizzle-orm/bun-sqlite");
+  const BunDatabase = bunSqlite.default ?? bunSqlite.Database ?? bunSqlite;
+  sqlite = new BunDatabase(dbPath);
+  sqlite.exec("PRAGMA journal_mode = WAL;");
+  sqlite.exec("PRAGMA foreign_keys = ON;");
+  db = drizzleBun(sqlite, { schema });
+} catch {
+  const { drizzle: drizzleBetterSqlite } = require("drizzle-orm/better-sqlite3");
+  const BetterSqlite3 = require("better-sqlite3");
+  sqlite = new BetterSqlite3(dbPath);
+  sqlite.exec("PRAGMA journal_mode = WAL;");
+  sqlite.exec("PRAGMA foreign_keys = ON;");
+  db = drizzleBetterSqlite(sqlite, { schema });
+}
 
-export const db = drizzle(sqlite, { schema });
+export { db };
 export type DB = typeof db;

@@ -30,6 +30,8 @@
 - (2026-04-05, bug_importmanager_comprehensive_corner_cases) **`findMovieMatch` must NOT fall back to title-only when year is present but unmatched.**
 - (2026-04-04, bug_searchaggregation_comprehensive_corner_cases) **External service calls need try/catch with graceful degradation.** `toSearchCandidate` passes raw flags; normalization happens in `toScoringCandidate`.
 - (2026-04-09, bug_appsettings_int_overflow) **SQLite datetime storage mismatch: INTEGER vs TEXT.** `strftime('%s','now')` gives Unix seconds, Prisma's `Date.now()` passes milliseconds. Store as TEXT ISO 8601 ("2026-04-09T00:00:00.000Z") for Prisma SQLite compatibility.
+- (2026-04-09, chore_drizzle_migration) **Avoid static Bun-only imports in Node-compatible code paths.** `drizzle-orm/bun-sqlite` eagerly requires `bun:sqlite`; load Bun/Node adapters lazily via `createRequire` runtime detection.
+- (2026-04-09, chore_drizzle_migration) **Bun + WebTorrent native addons can hard-crash on hosts missing libuv/N-API coverage.** Launch daemon with `bun --no-addons` to disable addon loading and allow graceful fallback manager startup.
 
 ### Patterns That Worked Well
 

@@ -1,4 +1,4 @@
-import { PrismaClient, type Notification } from '@prisma/client';
+import type { PrismaClient, Notification } from '@prisma/client';
 import { encrypt, decrypt } from '../utils/encryption';
 
 // Fields that should be encrypted in config

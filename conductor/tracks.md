@@ -115,7 +115,7 @@ Parallel:
 - [ ] **Track: Flutter Subtitle & Quality Control** *Phases: 2 | Link: [./tracks/feature_flutter_subtitle_quality_20260330/](./tracks/feature_flutter_subtitle_quality_20260330/)*
 
 ### Parallel: Backend Performance
-- [!] **Track: Drizzle ORM Migration** *Phases: 4 | PAUSED — broke 121 tests, reverted to green* | Link: [./tracks/chore_drizzle_migration_20260314/](./tracks/chore_drizzle_migration_20260314/)*
+- [x] **Track: Drizzle ORM Migration** *Phases: 4 | Link: [./archive/chore_drizzle_migration_20260314/](./archive/chore_drizzle_migration_20260314/)* — Drizzle-backed runtime complete; Bun startup stabilized via `--no-addons`; 116 files / 1158 tests passed
 
 ---
 

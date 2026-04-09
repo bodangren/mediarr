@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "tsx watch src/main.ts",
+    "dev": "DATABASE_URL=\"file:$(pwd)/../mediarr.db\" bun --no-addons --watch src/main.ts || DATABASE_URL=\"file:$(pwd)/../mediarr.db\" tsx watch src/main.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

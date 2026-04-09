@@ -2,8 +2,8 @@ import 'dotenv/config';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import os from 'node:os';
-import { PrismaClient } from '@prisma/client';
 import path from 'node:path';
+import { PrismaClient } from './db/prismaClient';
 import { createApiServer } from './api/createApiServer';
 import { registerStaticServing } from './api/staticServing';
 import { DefinitionLoader } from './indexers/DefinitionLoader';
@@ -403,7 +403,7 @@ async function startApi(): Promise<void> {
     return undefined;
   })();
 
-  const prisma = new PrismaClient({
+  const prisma: any = new PrismaClient({
     datasources: {
       db: {
         url: databaseUrl

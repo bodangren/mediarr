@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import type { PrismaClient } from '../db/prismaClient';
 
 /**
  * Quality source types matching Sonarr/Radarr conventions

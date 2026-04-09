@@ -10,10 +10,10 @@
 
 ## Phase 2 — Migrate Profile & Provider Modals
 
-- [ ] Task: Migrate `AddProfileModal.tsx` to react-hook-form + zod — use `useFieldArray` for profile items list; use `Controller` for drag-and-drop reordering with `@dnd-kit`
-- [ ] Task: Write tests for `AddProfileModal` form validation and item ordering
-- [ ] Task: Migrate `ProviderSettingsModal.tsx` to react-hook-form + zod — dynamic schema built from provider field definitions; use `Controller` for dynamic field rendering
-- [ ] Task: Write tests for `ProviderSettingsModal` with sample provider config
+- [x] Task: Migrate `AddProfileModal.tsx` to react-hook-form + zod — use `useFieldArray` for profile items list; use `Controller` for drag-and-drop reordering with `@dnd-kit`
+- [x] Task: Write tests for `AddProfileModal` form validation and item ordering
+- [x] Task: Migrate `ProviderSettingsModal.tsx` to react-hook-form + zod — dynamic schema built from provider field definitions; use `Controller` for dynamic field rendering
+- [x] Task: Write tests for `ProviderSettingsModal` with sample provider config
 - [ ] Task: Conductor - Checkpoint Phase 2
 
 ## Phase 3 — Cleanup & Validation

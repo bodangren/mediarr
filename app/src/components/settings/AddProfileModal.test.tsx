@@ -42,20 +42,23 @@ describe('AddProfileModal', () => {
     expect(screen.getByLabelText(/toggle Bluray-1080p/i)).toBeChecked();
   });
 
-  it('cutoff selector shows only allowed qualities', () => {
+  it('cutoff selector shows only allowed qualities when opened', () => {
     render(<AddProfileModal isOpen onClose={noop} onSave={noop} editProfile={mockProfile} />);
-    const cutoffSelect = screen.getByRole('combobox', { name: /cutoff quality/i });
-    const optionTexts = within(cutoffSelect).getAllByRole('option').map(o => o.textContent);
+    const cutoffTrigger = screen.getByRole('combobox', { name: /cutoff quality/i });
+    fireEvent.click(cutoffTrigger);
+    const selectContent = screen.getByRole('listbox');
+    const options = within(selectContent).getAllByRole('option');
+    const optionTexts = options.map(o => o.textContent);
     expect(optionTexts).toContain('WEB-DL 1080p');
     expect(optionTexts).toContain('Bluray-1080p');
     expect(optionTexts).not.toContain('SDTV');
+    fireEvent.keyDown(document.body, { key: 'Escape' });
   });
 
-  it('cutoff selector has the profile cutoff quality pre-selected', () => {
+  it('cutoff selector displays selected quality text when pre-selected', () => {
     render(<AddProfileModal isOpen onClose={noop} onSave={noop} editProfile={mockProfile} />);
-    const cutoffSelect = screen.getByRole('combobox', { name: /cutoff quality/i }) as HTMLSelectElement;
-    // cutoff is quality id=2 which is 'WEB-DL 1080p'
-    expect(cutoffSelect.value).toBe('2');
+    const cutoffTrigger = screen.getByRole('combobox', { name: /cutoff quality/i });
+    expect(cutoffTrigger).toHaveTextContent('WEB-DL 1080p');
   });
 
   it('first up button is disabled; last down button is disabled', () => {
@@ -91,7 +94,6 @@ describe('AddProfileModal', () => {
     expect(payload.cutoff).toBe(2);
     expect(Array.isArray(payload.items)).toBe(true);
     expect(payload.items).toHaveLength(3);
-    // items must use the real API shape: { quality: { id, name, ... }, allowed: boolean }
     expect(payload.items[0]).toHaveProperty('quality');
     expect(payload.items[0]).toHaveProperty('allowed');
     expect(typeof payload.items[0].quality.id).toBe('number');
@@ -100,18 +102,19 @@ describe('AddProfileModal', () => {
   it('toggling an allowed quality off removes it from the cutoff options', () => {
     render(<AddProfileModal isOpen onClose={noop} onSave={noop} editProfile={mockProfile} />);
     fireEvent.click(screen.getByLabelText(/toggle WEB-DL 1080p/i));
-    const cutoffSelect = screen.getByRole('combobox', { name: /cutoff quality/i });
-    const optionTexts = within(cutoffSelect).getAllByRole('option').map(o => o.textContent);
+    const cutoffTrigger = screen.getByRole('combobox', { name: /cutoff quality/i });
+    fireEvent.click(cutoffTrigger);
+    const selectContent = screen.getByRole('listbox');
+    const options = within(selectContent).getAllByRole('option');
+    const optionTexts = options.map(o => o.textContent);
     expect(optionTexts).not.toContain('WEB-DL 1080p');
   });
 
   it('if the current cutoff is toggled off, cutoff auto-moves to another allowed quality', () => {
     render(<AddProfileModal isOpen onClose={noop} onSave={noop} editProfile={mockProfile} />);
-    // cutoff is quality id=2 (WEB-DL 1080p) — toggle it off
     fireEvent.click(screen.getByLabelText(/toggle WEB-DL 1080p/i));
-    const cutoffSelect = screen.getByRole('combobox', { name: /cutoff quality/i }) as HTMLSelectElement;
-    // cutoff should now be Bluray-1080p (id=3), the only remaining allowed
-    expect(cutoffSelect.value).toBe('3');
+    const cutoffTrigger = screen.getByRole('combobox', { name: /cutoff quality/i });
+    expect(cutoffTrigger).toHaveTextContent('Bluray-1080p');
   });
 
   it('shows "Edit: <name>" title in edit mode', () => {

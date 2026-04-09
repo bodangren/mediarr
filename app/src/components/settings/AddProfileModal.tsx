@@ -1,7 +1,25 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { Alert } from '@/components/ui/alert-compat';
 import { Button } from '@/components/ui/button';
 import { Modal, ModalBody, ModalFooter, ModalHeader } from '@/components/ui/modal';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import type {
   CreateQualityProfileInput,
   QualityProfileItem,
@@ -23,6 +41,24 @@ function moveItem<T>(arr: T[], from: number, to: number): T[] {
   next.splice(to, 0, item);
   return next;
 }
+
+const qualityRuleSchema = z.object({
+  quality: z.object({
+    id: z.number(),
+    name: z.string(),
+    resolution: z.number(),
+    source: z.string(),
+  }),
+  allowed: z.boolean(),
+});
+
+const profileFormSchema = z.object({
+  name: z.string().min(1, 'Profile name is required'),
+  items: z.array(qualityRuleSchema),
+  cutoff: z.number().min(1, 'Cutoff quality is required'),
+});
+
+type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
 interface QualityRowProps {
   rule: QualityProfileRule;
@@ -57,8 +93,6 @@ function QualityRow({
     <li
       draggable
       onDragStart={e => {
-        // Replace the browser ghost image with an invisible pixel so the
-        // native floating ghost doesn't appear — feedback is via opacity only.
         const ghost = document.createElement('div');
         ghost.style.cssText = 'position:fixed;top:-999px;left:-999px;width:1px;height:1px';
         document.body.appendChild(ghost);
@@ -126,141 +160,194 @@ export function AddProfileModal({
   editProfile,
   isLoading = false,
 }: AddProfileModalProps) {
-  const [name, setName] = useState('');
-  const [items, setItems] = useState<QualityProfileRule[]>([]);
-  const [cutoff, setCutoff] = useState<number>(0);
   const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
+
+  const form = useForm<ProfileFormValues>({
+    resolver: zodResolver(profileFormSchema) as any,
+    mode: 'onChange',
+    defaultValues: {
+      name: editProfile?.name ?? '',
+      items: editProfile?.items ?? [],
+      cutoff: editProfile?.cutoff ?? 0,
+    },
+  });
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const control = form.control as any;
+  const items = form.watch('items');
+  const cutoff = form.watch('cutoff');
+
+  const allowedItems = useMemo(() => items.filter(r => r.allowed), [items]);
 
   useEffect(() => {
     if (isOpen && editProfile) {
-      setName(editProfile.name);
-      setItems(editProfile.items);
-      setCutoff(editProfile.cutoff);
+      form.reset({
+        name: editProfile.name,
+        items: editProfile.items,
+        cutoff: editProfile.cutoff,
+      });
+    } else if (isOpen) {
+      form.reset({
+        name: '',
+        items: [],
+        cutoff: 0,
+      });
     }
-  }, [isOpen, editProfile]);
+  }, [isOpen, editProfile, form]);
+
+  useEffect(() => {
+    if (isOpen) {
+      const timeout = setTimeout(() => {
+        void form.trigger();
+      }, 50);
+      return () => clearTimeout(timeout);
+    }
+  }, [isOpen, form]);
 
   const handleDragStart = (index: number) => setDraggingIndex(index);
 
   const handleDragEnter = (index: number) => {
     if (draggingIndex === null || draggingIndex === index) return;
-    setItems(current => moveItem(current, draggingIndex, index));
+    const reordered = moveItem(items, draggingIndex, index);
+    form.setValue('items', reordered, { shouldValidate: false });
     setDraggingIndex(index);
   };
 
   const handleDragEnd = () => setDraggingIndex(null);
 
   const handleMoveUp = (index: number) => {
-    setItems(current => moveItem(current, index, index - 1));
+    const reordered = moveItem(items, index, index - 1);
+    form.setValue('items', reordered, { shouldValidate: false });
   };
 
   const handleMoveDown = (index: number) => {
-    setItems(current => moveItem(current, index, index + 1));
+    const reordered = moveItem(items, index, index + 1);
+    form.setValue('items', reordered, { shouldValidate: false });
   };
 
   const handleToggle = (qualityId: number) => {
-    const rule = items.find(r => r.quality.id === qualityId);
-    setItems(current =>
-      current.map(r => r.quality.id === qualityId ? { ...r, allowed: !r.allowed } : r),
+    const currentItems = form.getValues('items');
+    const updatedItems = currentItems.map(r =>
+      r.quality.id === qualityId ? { ...r, allowed: !r.allowed } : r,
     );
+    form.setValue('items', updatedItems, { shouldValidate: false });
+
+    const rule = currentItems.find(r => r.quality.id === qualityId);
     if (rule?.allowed && cutoff === qualityId) {
-      const nextAllowed = items.find(r => r.allowed && r.quality.id !== qualityId);
-      setCutoff(nextAllowed?.quality.id ?? 0);
+      const nextAllowed = updatedItems.find(r => r.allowed && r.quality.id !== qualityId);
+      form.setValue('cutoff', nextAllowed?.quality.id ?? 0, { shouldValidate: false });
     }
   };
 
-  const allowedItems = items.filter(r => r.allowed);
-  const canSave = name.trim() !== '' && allowedItems.length > 0 && cutoff !== 0;
-
-  const handleSave = () => {
-    if (!canSave) return;
-    void onSave({ name: name.trim(), cutoff, items });
+  const handleSubmit = (data: ProfileFormValues) => {
+    void onSave({ name: data.name.trim(), cutoff: data.cutoff, items: data.items });
   };
+
+  const nameValue = form.watch('name');
+  const canSave = nameValue?.trim() !== '' && allowedItems.length > 0 && cutoff > 0;
 
   return (
     <Modal isOpen={isOpen} ariaLabel={editProfile ? `Edit: ${editProfile.name}` : 'Add Quality Profile'} onClose={onClose}>
       <ModalHeader title={editProfile ? `Edit: ${editProfile.name}` : 'Add Quality Profile'} onClose={onClose} />
       <ModalBody>
-        <div className="space-y-4">
-          <div>
-            <label htmlFor="profile-name" className="block text-sm font-medium text-text-primary">
-              Profile Name <span className="text-accent-danger">*</span>
-            </label>
-            <input
-              id="profile-name"
-              type="text"
-              className="mt-1 w-full rounded-sm border border-border-subtle bg-surface-0 px-3 py-2 text-sm outline-none focus:border-accent-primary"
-              placeholder="e.g., HD - 1080p"
-              value={name}
-              onChange={e => setName(e.target.value)}
+        <Form {...form}>
+          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+          <form onSubmit={form.handleSubmit(handleSubmit as any)} className="space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="profile-name" className="text-sm font-medium text-text-primary">
+                Profile Name <span className="text-accent-danger">*</span>
+              </label>
+              <input
+                id="profile-name"
+                type="text"
+                className="mt-1 w-full rounded-sm border border-border-subtle bg-surface-0 px-3 py-2 text-sm outline-none focus:border-accent-primary"
+                placeholder="e.g., HD - 1080p"
+                {...form.register('name')}
+              />
+              {form.formState.errors.name && (
+                <p className="text-sm text-status-error">{form.formState.errors.name.message}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-text-primary">
+                Qualities <span className="text-accent-danger">*</span>
+              </label>
+              <p className="mb-2 text-xs text-text-muted">
+                Drag rows or use ↑↓ to set priority. Check to allow. Top = highest priority.
+              </p>
+              {items.length === 0 ? (
+                <p className="text-sm text-text-muted">No qualities available.</p>
+              ) : (
+                <ul className="max-h-80 space-y-1 overflow-y-auto rounded-sm border border-border-subtle bg-surface-0 p-2">
+                  {items.map((rule, index) => (
+                    <QualityRow
+                      key={rule.quality.id}
+                      rule={rule}
+                      index={index}
+                      total={items.length}
+                      isCutoff={cutoff === rule.quality.id}
+                      isDragging={draggingIndex === index}
+                      onDragStart={handleDragStart}
+                      onDragEnter={handleDragEnter}
+                      onDragEnd={handleDragEnd}
+                      onMoveUp={() => handleMoveUp(index)}
+                      onMoveDown={() => handleMoveDown(index)}
+                      onToggle={handleToggle}
+                    />
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <FormField
+              control={control}
+              name="cutoff"
+              render={({ field }) => (
+                <FormItem>
+                  <div className="space-y-1.5">
+                    <label htmlFor="cutoff-quality" className="text-sm font-medium text-text-primary">
+                      Cutoff Quality <span className="text-accent-danger">*</span>
+                    </label>
+                    <p className="text-xs text-text-muted">
+                      Mediarr stops upgrading once a file at this quality is grabbed.
+                    </p>
+                    <Select
+                      onValueChange={(v) => field.onChange(Number(v))}
+                      value={field.value > 0 ? String(field.value) : undefined}
+                      disabled={allowedItems.length === 0}
+                    >
+                      <SelectTrigger id="cutoff-quality">
+                        <SelectValue placeholder="Select cutoff quality" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {allowedItems.map(rule => (
+                          <SelectItem key={rule.quality.id} value={String(rule.quality.id)}>
+                            {rule.quality.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
 
-          <div>
-            <label className="block text-sm font-medium text-text-primary">
-              Qualities <span className="text-accent-danger">*</span>
-            </label>
-            <p className="mb-2 text-xs text-text-muted">
-              Drag rows or use ↑↓ to set priority. Check to allow. Top = highest priority.
-            </p>
-            {items.length === 0 ? (
-              <p className="text-sm text-text-muted">No qualities available.</p>
-            ) : (
-              <ul className="max-h-80 space-y-1 overflow-y-auto rounded-sm border border-border-subtle bg-surface-0 p-2">
-                {items.map((rule, index) => (
-                  <QualityRow
-                    key={rule.quality.id}
-                    rule={rule}
-                    index={index}
-                    total={items.length}
-                    isCutoff={cutoff === rule.quality.id}
-                    isDragging={draggingIndex === index}
-                    onDragStart={handleDragStart}
-                    onDragEnter={handleDragEnter}
-                    onDragEnd={handleDragEnd}
-                    onMoveUp={() => handleMoveUp(index)}
-                    onMoveDown={() => handleMoveDown(index)}
-                    onToggle={handleToggle}
-                  />
-                ))}
-              </ul>
+            {!canSave && (
+              <Alert variant="warning">
+                Please provide a profile name, allow at least one quality, and set a cutoff.
+              </Alert>
             )}
-          </div>
-
-          <div>
-            <label htmlFor="cutoff-quality" className="block text-sm font-medium text-text-primary">
-              Cutoff Quality <span className="text-accent-danger">*</span>
-            </label>
-            <p className="mb-1 text-xs text-text-muted">
-              Mediarr stops upgrading once a file at this quality is grabbed.
-            </p>
-            <select
-              id="cutoff-quality"
-              aria-label="Cutoff quality"
-              className="w-full rounded-sm border border-border-subtle bg-surface-0 px-3 py-2 text-sm outline-none focus:border-accent-primary"
-              value={cutoff}
-              onChange={e => setCutoff(Number(e.target.value))}
-              disabled={allowedItems.length === 0}
-            >
-              {allowedItems.map(rule => (
-                <option key={rule.quality.id} value={rule.quality.id}>
-                  {rule.quality.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {!canSave && (
-            <Alert variant="warning">
-              Please provide a profile name, allow at least one quality, and set a cutoff.
-            </Alert>
-          )}
-        </div>
+          </form>
+        </Form>
       </ModalBody>
       <ModalFooter>
         <Button variant="secondary" onClick={onClose} disabled={isLoading}>
           Cancel
         </Button>
-        <Button variant="default" onClick={handleSave} disabled={!canSave || isLoading}>
+        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+        <Button variant="default" onClick={() => form.handleSubmit(handleSubmit as any)()} disabled={!canSave || isLoading}>
           {isLoading ? 'Saving...' : editProfile ? 'Save Changes' : 'Add Profile'}
         </Button>
       </ModalFooter>

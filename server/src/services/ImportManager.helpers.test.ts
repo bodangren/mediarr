@@ -1,6 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ImportManager } from './ImportManager';
 
+vi.mock('node:fs', () => ({
+  default: {
+    statSync: vi.fn().mockReturnValue({ dev: 2049 }),
+  },
+}));
+
 function makePrisma(overrides: Record<string, any> = {}) {
   return {
     torrent: { findUnique: vi.fn().mockResolvedValue(null) },
@@ -185,6 +191,7 @@ describe('ImportManager — retry and helper edge cases', () => {
     expect(organizer.organizeMovieFile).toHaveBeenCalledWith(
       '/downloads/complete/The.Matrix.1999.mkv',
       expect.anything(),
+      { move: true },
     );
   });
 

@@ -2,6 +2,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ImportManager } from './ImportManager';
 import fs from 'node:fs/promises';
 
+vi.mock('node:fs', () => ({
+  default: {
+    statSync: vi.fn().mockReturnValue({ dev: 2049 }),
+  },
+}));
+
 function makeTorrentManager() {
   const listeners: Record<string, ((payload: any) => void)[]> = {};
   return {
@@ -208,6 +214,7 @@ describe('ImportManager — parser-based slow path', () => {
     expect(org.organizeMovieFile).toHaveBeenCalledWith(
       torrent.path,
       expect.objectContaining({ id: 5, title: 'The Matrix', year: 1999 }),
+      { move: true },
     );
     expect(ae.emit).toHaveBeenCalledWith(
       expect.objectContaining({ eventType: 'MOVIE_IMPORTED', success: true }),

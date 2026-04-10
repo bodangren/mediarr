@@ -2,6 +2,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ImportManager } from './ImportManager';
 import fs from 'node:fs/promises';
 
+vi.mock('node:fs', () => ({
+  default: {
+    statSync: vi.fn().mockReturnValue({ dev: 2049 }),
+  },
+}));
+
 // --- Helpers ---
 
 function makeTorrentManager() {
@@ -153,6 +159,7 @@ describe('ImportManager', () => {
       torrent.path,
       series,
       episode,
+      { move: true },
     );
     expect(prisma.episode.update).toHaveBeenCalledWith(
       expect.objectContaining({ where: { id: episode.id } }),
@@ -176,6 +183,7 @@ describe('ImportManager', () => {
     expect(organizer.organizeMovieFile).toHaveBeenCalledWith(
       TORRENT.path,
       movie,
+      { move: true },
     );
     expect(prisma.mediaFileVariant.upsert).toHaveBeenCalled();
     expect(activityEmitter.emit).toHaveBeenCalledWith(
@@ -214,6 +222,7 @@ describe('ImportManager', () => {
     expect(organizer.organizeMovieFile).toHaveBeenCalledWith(
       torrent.path,
       movie,
+      { move: true },
     );
     expect(activityEmitter.emit).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -296,6 +305,7 @@ describe('ImportManager', () => {
         path: '/media/tv/A Knight of the Seven Kingdoms (2026)',
       }),
       episode,
+      { move: true },
     );
   });
 
@@ -320,6 +330,7 @@ describe('ImportManager', () => {
         id: movie.id,
         path: '/media/movies/The Matrix (1999)',
       }),
+      { move: true },
     );
   });
 
@@ -356,6 +367,7 @@ describe('ImportManager', () => {
     expect(organizer.organizeMovieFile).toHaveBeenCalledWith(
       '/downloads/complete/The.Matrix.1999.mkv',
       movie,
+      { move: true },
     );
   });
 
@@ -398,6 +410,7 @@ describe('ImportManager', () => {
     expect(organizer.organizeMovieFile).toHaveBeenCalledWith(
       '/downloads/complete/The.Matrix.1999.mkv',
       movie,
+      { move: true },
     );
   });
 

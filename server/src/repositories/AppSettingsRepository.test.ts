@@ -47,8 +47,8 @@ describe('AppSettingsRepository — TorrentLimitsSettings new fields', () => {
     expect(DEFAULT_APP_SETTINGS.torrentLimits.seedLimitAction).toBe('pause');
   });
 
-  it('DEFAULT_APP_SETTINGS has wantedLanguages defaulting to []', () => {
-    expect(DEFAULT_APP_SETTINGS.wantedLanguages).toEqual([]);
+  it('DEFAULT_APP_SETTINGS has wantedLanguages defaulting to ["en"]', () => {
+    expect(DEFAULT_APP_SETTINGS.wantedLanguages).toEqual(['en']);
   });
 
   it('DEFAULT_APP_SETTINGS.apiKeys includes subtitle provider credentials defaults', () => {

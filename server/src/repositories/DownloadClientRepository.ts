@@ -9,7 +9,8 @@ export type DownloadClientType =
   | 'rtorrent'
   | 'utorrent'
   | 'sabnzbd'
-  | 'nzbget';
+  | 'nzbget'
+  | 'builtin';
 
 export interface DownloadClientConfig {
   host: string;

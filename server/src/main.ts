@@ -29,6 +29,7 @@ import { SubtitleVariantRepository } from './repositories/SubtitleVariantReposit
 import { TorrentRepository } from './repositories/TorrentRepository';
 import { seedCategories } from './seeds/categories';
 import { seedQualityDefinitions, seedQualityProfiles } from './seeds/qualities';
+import { seedSmartDefaults } from './seeds/smartDefaults';
 import { ActivityEventEmitter } from './services/ActivityEventEmitter';
 import { ImportManager } from './services/ImportManager';
 import { Organizer } from './services/Organizer';
@@ -108,6 +109,7 @@ async function ensureBaselineData(prisma: PrismaClient): Promise<void> {
   await seedQualityDefinitions(prisma);
   await seedQualityProfiles(prisma);
   await migrateOldQualityProfiles(prisma);
+  await seedSmartDefaults(prisma);
 }
 
 interface RuntimeTorrentManager {
@@ -623,7 +625,10 @@ async function startApi(): Promise<void> {
 
   // Initialize background automation services
   new RssMediaMonitor(rssSyncService, torrentManager, prisma, metadataProvider, customFormatRepository);
-  scheduler.scheduleWantedSearch(wantedSearchService);
+  const wantedSearchInterval = settings.schedulerIntervals.wantedSearchMinutes;
+  const wantedSearchCron = `*/${wantedSearchInterval} * * * *`;
+  scheduler.scheduleWantedSearch(wantedSearchService, 'wanted-search', wantedSearchCron);
+  console.log(`Wanted search scheduled every ${wantedSearchInterval} minutes (${wantedSearchCron}).`);
   const subtitleScanInterval = Math.max(5, settings.schedulerIntervals.availabilityCheckMinutes);
   const subtitleScanCron = `*/${subtitleScanInterval} * * * *`;
   scheduler.scheduleSubtitleWantedSearch(

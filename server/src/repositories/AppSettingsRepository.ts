@@ -16,6 +16,7 @@ export interface SchedulerIntervalsSettings {
   rssSyncMinutes: number;
   availabilityCheckMinutes: number;
   torrentMonitoringSeconds: number;
+  wantedSearchMinutes: number;
 }
 
 export interface PathVisibilitySettings {
@@ -63,6 +64,8 @@ export interface UpdateSettings {
 export interface MediaManagementSettings {
   movieRootFolder: string;
   tvRootFolder: string;
+  movieNamingPattern: string;
+  seriesNamingPattern: string;
 }
 
 export interface StreamingSettings {
@@ -90,6 +93,8 @@ export interface AppSettingsPayload {
 export const DEFAULT_MEDIA_MANAGEMENT_SETTINGS: MediaManagementSettings = {
   movieRootFolder: '',
   tvRootFolder: '',
+  movieNamingPattern: '{Movie.Title}.{Release.Year}.{Quality.Full}.{MediaInfo.VideoCodec}',
+  seriesNamingPattern: '{Series.Title}.S{season:00}E{episode:00}.{Episode.Title}.{Quality.Full}',
 };
 
 export const DEFAULT_STREAMING_SETTINGS: StreamingSettings = {
@@ -116,6 +121,7 @@ export const DEFAULT_APP_SETTINGS: AppSettingsPayload = {
     rssSyncMinutes: 15,
     availabilityCheckMinutes: 30,
     torrentMonitoringSeconds: 5,
+    wantedSearchMinutes: 60,
   },
   pathVisibility: {
     showDownloadPath: true,
@@ -127,7 +133,7 @@ export const DEFAULT_APP_SETTINGS: AppSettingsPayload = {
     assrtApiToken: null,
     subdlApiKey: null,
   },
-  wantedLanguages: [],
+  wantedLanguages: ['en'],
   host: {
     bindAddress: '*',
     port: 9696,
@@ -529,6 +535,10 @@ export class AppSettingsRepository {
           schedulerIntervals.torrentMonitoringSeconds,
           DEFAULT_APP_SETTINGS.schedulerIntervals.torrentMonitoringSeconds,
         ),
+        wantedSearchMinutes: readNumber(
+          schedulerIntervals.wantedSearchMinutes,
+          DEFAULT_APP_SETTINGS.schedulerIntervals.wantedSearchMinutes,
+        ),
       },
       pathVisibility: {
         showDownloadPath: readBoolean(
@@ -650,6 +660,14 @@ export class AppSettingsRepository {
         tvRootFolder: readString(
           mediaManagement.tvRootFolder,
           DEFAULT_MEDIA_MANAGEMENT_SETTINGS.tvRootFolder,
+        ),
+        movieNamingPattern: readString(
+          mediaManagement.movieNamingPattern,
+          DEFAULT_MEDIA_MANAGEMENT_SETTINGS.movieNamingPattern,
+        ),
+        seriesNamingPattern: readString(
+          mediaManagement.seriesNamingPattern,
+          DEFAULT_MEDIA_MANAGEMENT_SETTINGS.seriesNamingPattern,
         ),
       },
       streaming: {

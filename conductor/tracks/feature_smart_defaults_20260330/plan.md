@@ -2,11 +2,11 @@
 
 ## Phase 1 — Expanded Baseline Seeding
 
-- [ ] Task: Expand `ensureBaselineData()` in server startup to auto-configure: naming patterns (movie + series), RSS sync interval (15 min), wanted search interval (60 min), default subtitle language (English)
-- [ ] Task: Auto-configure built-in WebTorrent as default download client when no download client exists — set paths to `/data/downloads/incomplete` and `/data/downloads/complete`
-- [ ] Task: Implement idempotency guard — each auto-config step checks if the setting is already non-default before writing
-- [ ] Task: Write tests for expanded `ensureBaselineData` — fresh install sets all defaults, existing settings are preserved, re-running is idempotent
-- [ ] Task: Conductor - Checkpoint Phase 1
+- [x] Task: Expand `ensureBaselineData()` in server startup to auto-configure: naming patterns (movie + series), RSS sync interval (15 min), wanted search interval (60 min), default subtitle language (English)
+- [x] Task: Auto-configure built-in WebTorrent as default download client when no download client exists — set paths to `/data/downloads/incomplete` and `/data/downloads/complete`
+- [x] Task: Implement idempotency guard — each auto-config step checks if the setting is already non-default before writing
+- [x] Task: Write tests for expanded `ensureBaselineData` — fresh install sets all defaults, existing settings are preserved, re-running is idempotent
+- [x] Task: Conductor - Checkpoint Phase 1
 
 ## Phase 2 — Settings Inference & Import Behavior
 

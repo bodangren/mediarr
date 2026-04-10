@@ -10,10 +10,10 @@
 
 ## Phase 2 — Settings Inference & Import Behavior
 
-- [ ] Task: Implement root folder type inference — when adding a root folder, infer movie vs series from path convention (`/data/media/movies` → movies, `/data/media/tv` → series); store type in root folder metadata
-- [ ] Task: Implement same-volume detection for import behavior — compare `fs.statSync().dev` of source and destination; if same device, default to "move"; if different, default to "copy"
-- [ ] Task: Write tests for type inference and volume detection — path conventions, same-volume move, cross-volume copy
-- [ ] Task: Conductor - Checkpoint Phase 2
+- [x] Task: Implement root folder type inference — when adding a root folder, infer movie vs series from path convention (`/data/media/movies` → movies, `/data/media/tv` → series); store type in root folder metadata
+- [x] Task: Implement same-volume detection for import behavior — compare `fs.statSync().dev` of source and destination; if same device, default to "move"; if different, default to "copy"
+- [x] Task: Write tests for type inference and volume detection — path conventions, same-volume move, cross-volume copy
+- [x] Task: Conductor - Checkpoint Phase 2
 
 ## Phase 3 — Integration & Validation
 

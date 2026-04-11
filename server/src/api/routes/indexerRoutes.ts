@@ -1,4 +1,6 @@
 import type { FastifyInstance } from 'fastify';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import { NotFoundError, ValidationError } from '../../errors/domainErrors';
 import { sendSuccess } from '../contracts';
 import { parseIdParam } from '../routeUtils';
@@ -470,4 +472,129 @@ export function registerIndexerRoutes(
 
     return sendSuccess(reply, cloned, 201);
   });
+
+  app.get('/api/indexers/catalog', async (_request, reply) => {
+    if (!deps.indexerRepository?.findAll) {
+      throw new ValidationError('Indexer repository is not configured');
+    }
+
+    const catalogPath = path.resolve(process.cwd(), 'server/src/data/popular-indexers.json');
+    let catalog: CatalogEntry[];
+    try {
+      const content = await fs.promises.readFile(catalogPath, 'utf-8');
+      catalog = JSON.parse(content);
+    } catch {
+      catalog = [];
+    }
+
+    const existingIndexers = await deps.indexerRepository.findAll();
+    const configuredIds = new Set(existingIndexers.map(i => i.name.toLowerCase()));
+
+    const result = catalog.map(entry => ({
+      ...entry,
+      isConfigured: configuredIds.has(entry.name.toLowerCase()),
+    }));
+
+    return sendSuccess(reply, result);
+  });
+
+  app.post('/api/indexers/catalog/:id/add', {
+    schema: {
+      params: {
+        type: 'object',
+        required: ['id'],
+        properties: {
+          id: { type: 'string' },
+        },
+      },
+      body: {
+        type: 'object',
+        properties: {
+          apiKey: { type: 'string' },
+        },
+      },
+    },
+  }, async (request, reply) => {
+    if (!deps.indexerRepository?.findAll || !deps.indexerRepository?.create) {
+      throw new ValidationError('Indexer repository is not configured');
+    }
+
+    const { id } = request.params as { id: string };
+    const { apiKey } = request.body as { apiKey?: string } ?? {};
+
+    const catalogPath = path.resolve(process.cwd(), 'server/src/data/popular-indexers.json');
+    let catalog: CatalogEntry[];
+    try {
+      const content = await fs.promises.readFile(catalogPath, 'utf-8');
+      catalog = JSON.parse(content);
+    } catch {
+      throw new NotFoundError('Catalog not found');
+    }
+
+    const entry = catalog.find(e => e.id === id);
+    if (!entry) {
+      throw new NotFoundError(`Catalog entry '${id}' not found`);
+    }
+
+    const settings = buildSettingsFromEntry(entry, apiKey);
+
+    const created = await deps.indexerRepository.create({
+      name: entry.name,
+      implementation: entry.implementation,
+      configContract: entry.configContract,
+      settings: JSON.stringify(settings),
+      protocol: entry.type === 'newznab' ? 'nzb' : 'torrent',
+      supportedMediaTypes: JSON.stringify(entry.supportedMediaTypes),
+      enabled: true,
+      supportsRss: entry.supportsRss,
+      supportsSearch: entry.supportsSearch,
+      priority: 25,
+    });
+
+    return sendSuccess(reply, created, 201);
+  });
+}
+
+interface CatalogEntry {
+  id: string;
+  name: string;
+  description: string;
+  type: string;
+  baseUrl: string;
+  categories: string[];
+  requiresApiKey: boolean;
+  signupUrl: string;
+  implementation: string;
+  configContract: string;
+  supportedMediaTypes: string[];
+  supportsSearch: boolean;
+  supportsRss: boolean;
+}
+
+function buildSettingsFromEntry(entry: CatalogEntry, apiKey?: string): Record<string, string> {
+  if (entry.configContract === 'CardigannSettings') {
+    const settings: Record<string, string> = {
+      definitionId: entry.id,
+    };
+    if (apiKey) {
+      settings.apiKey = apiKey;
+    }
+    return settings;
+  }
+
+  if (entry.configContract === 'TorznabSettings') {
+    return {
+      url: entry.baseUrl,
+      apiKey: apiKey ?? '',
+    };
+  }
+
+  if (entry.configContract === 'NewznabSettings') {
+    return {
+      host: entry.baseUrl,
+      apiKey: apiKey ?? '',
+    };
+  }
+
+  return {};
 }

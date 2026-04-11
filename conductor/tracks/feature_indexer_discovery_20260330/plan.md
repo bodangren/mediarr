@@ -2,10 +2,10 @@
 
 ## Phase 1 — Curated Catalog & One-Click Add
 
-- [ ] Task: Create `server/src/data/popular-indexers.json` — top 15 indexers with name, type, baseUrl, categories, requiresApiKey, signupUrl, description; include public (1337x, RuTracker), semi-private (NZBgeek, Drunkenslug), private (broadcasTheNet, HDBits)
-- [ ] Task: Add `GET /api/indexers/catalog` endpoint — returns the curated catalog with `isConfigured: true/false` flag per entry (checks if matching indexer already exists)
-- [ ] Task: Add `POST /api/indexers/catalog/:id/add` — creates an indexer from the catalog entry, using default field values; accepts optional `apiKey` body parameter
-- [ ] Task: Write tests for catalog endpoints — returns catalog, marks configured entries, one-click add creates correct indexer
+- [x] Task: Create `server/src/data/popular-indexers.json` — top 15 indexers with name, type, baseUrl, categories, requiresApiKey, signupUrl, description; include public (1337x, RuTracker), semi-private (NZBgeek, Drunkenslug), private (broadcasTheNet, HDBits)
+- [x] Task: Add `GET /api/indexers/catalog` endpoint — returns the curated catalog with `isConfigured: true/false` flag per entry (checks if matching indexer already exists)
+- [x] Task: Add `POST /api/indexers/catalog/:id/add` — creates an indexer from the catalog entry, using default field values; accepts optional `apiKey` body parameter
+- [x] Task: Write tests for catalog endpoints — returns catalog, marks configured entries, one-click add creates correct indexer
 - [ ] Task: Conductor - Checkpoint Phase 1
 
 ## Phase 2 — SPA: Catalog UI

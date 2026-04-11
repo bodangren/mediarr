@@ -102,7 +102,7 @@ Parallel:
 ### Phase C: Zero-Config Setup
 - [x] **Track: Setup Wizard & First-Run** *Phases: 2 | Link: [./archive/feature_setup_wizard_20260330/](./archive/feature_setup_wizard_20260330/)* — setup detection API, 5-step wizard, Just Work zero-config mode, route guard; 1672 tests green; SPA build clean
 - [ ] **Track: Indexer Auto-Discovery** *Phases: 4 | Link: [./tracks/feature_indexer_discovery_20260330/](./tracks/feature_indexer_discovery_20260330/)*
-- [ ] **Track: Smart Defaults Engine** *Phases: 3 | Link: [./tracks/feature_smart_defaults_20260330/](./tracks/feature_smart_defaults_20260330/)*
+- [x] **Track: Smart Defaults Engine** *Phases: 3 | Link: [./archive/feature_smart_defaults_20260330/](./archive/feature_smart_defaults_20260330/)* — built-in WebTorrent auto-config, naming patterns (movie + series), scheduler intervals (RSS 15min, wanted search 60min), wanted languages (en); idempotent; 18 E2E tests; full CI green (1723 tests)
 
 ### Phase D: Flutter Living Room
 - [ ] **Track: Flutter Search & Add Media** *Phases: 3 | Link: [./tracks/feature_flutter_search_add_20260330/](./tracks/feature_flutter_search_add_20260330/)*

@@ -17,6 +17,6 @@
 
 ## Phase 3 — Integration & Validation
 
-- [ ] Task: End-to-end test: fresh install → setup wizard "Just Work" → system is fully configured → trigger wanted search → verify search executes with correct naming, paths, and download client
-- [ ] Task: Run `CI=true bun test` — all tests pass
-- [ ] Task: Conductor - Checkpoint Phase 3
+- [x] Task: End-to-end test: fresh install → setup wizard "Just Work" → system is fully configured → trigger wanted search → verify search executes with correct naming, paths, and download client
+- [x] Task: Run `CI=true bun test` — all tests pass
+- [x] Task: Conductor - Checkpoint Phase 3

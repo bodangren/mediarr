@@ -6,7 +6,7 @@
 - [x] Task: Add `GET /api/indexers/catalog` endpoint — returns the curated catalog with `isConfigured: true/false` flag per entry (checks if matching indexer already exists)
 - [x] Task: Add `POST /api/indexers/catalog/:id/add` — creates an indexer from the catalog entry, using default field values; accepts optional `apiKey` body parameter
 - [x] Task: Write tests for catalog endpoints — returns catalog, marks configured entries, one-click add creates correct indexer
-- [ ] Task: Conductor - Checkpoint Phase 1
+- [x] Task: Conductor - Checkpoint Phase 1
 
 ## Phase 2 — SPA: Catalog UI
 

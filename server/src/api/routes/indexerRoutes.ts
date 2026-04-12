@@ -8,6 +8,8 @@ import type { ApiDependencies } from '../types';
 
 type DynamicSchemaFieldType = 'text' | 'password' | 'number' | 'boolean';
 
+const CATALOG_PATH = path.resolve(process.cwd(), 'server/src/data/popular-indexers.json');
+
 interface DynamicSchemaField {
   name: string;
   label: string;
@@ -478,10 +480,9 @@ export function registerIndexerRoutes(
       throw new ValidationError('Indexer repository is not configured');
     }
 
-    const catalogPath = path.resolve(process.cwd(), 'server/src/data/popular-indexers.json');
     let catalog: CatalogEntry[];
     try {
-      const content = await fs.promises.readFile(catalogPath, 'utf-8');
+      const content = await fs.promises.readFile(CATALOG_PATH, 'utf-8');
       catalog = JSON.parse(content);
     } catch {
       catalog = [];
@@ -520,12 +521,11 @@ export function registerIndexerRoutes(
     }
 
     const { id } = request.params as { id: string };
-    const { apiKey } = request.body as { apiKey?: string } ?? {};
+    const { apiKey } = (request.body as { apiKey?: string } | undefined) ?? {};
 
-    const catalogPath = path.resolve(process.cwd(), 'server/src/data/popular-indexers.json');
     let catalog: CatalogEntry[];
     try {
-      const content = await fs.promises.readFile(catalogPath, 'utf-8');
+      const content = await fs.promises.readFile(CATALOG_PATH, 'utf-8');
       catalog = JSON.parse(content);
     } catch {
       throw new NotFoundError('Catalog not found');

@@ -26,6 +26,7 @@ function createFreshPrismaMock() {
   return {
     downloadClient: {
       findAll: vi.fn(async () => [...db.downloadClient]),
+      findMany: vi.fn(async () => [...db.downloadClient]),
       create: vi.fn(async (data: unknown) => {
         const record = { id: db.downloadClient.length + 1, ...((data as any).data as object) };
         db.downloadClient.push(record);
@@ -62,6 +63,7 @@ function createConfiguredPrismaMock(existingSettings: any) {
   return {
     downloadClient: {
       findAll: vi.fn(async () => [...db.downloadClient]),
+      findMany: vi.fn(async () => [...db.downloadClient]),
       create: vi.fn(async (data: unknown) => {
         const record = { id: db.downloadClient.length + 1, ...((data as any).data as object) };
         db.downloadClient.push(record);

@@ -23,7 +23,7 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 - [x] **Track: SeriesOrganizeService applyRename Transaction Safety** *Phases: 4 | Link: [./archive/bug_organize_rename_transaction_safety_20260404/](./archive/bug_organize_rename_transaction_safety_20260404/)* — 79 tests; reordered DB-before-fs with rollback
 
-- [~] **Track: Connectivity E2E Test Harness (podman compose)** *Phases: 2 | Link: [./tracks/feature_connectivity_e2e_compose_20260412/](./tracks/feature_connectivity_e2e_compose_20260412/)* — reproducible client↔server E2E: mDNS + library fetch + ranged streaming + SSE round-trip
+- [x] **Track: Connectivity E2E Test Harness (podman compose)** *Phases: 2 | Link: [./archive/feature_connectivity_e2e_compose_20260412/](./archive/feature_connectivity_e2e_compose_20260412/)* — 6/6 assertions green: connect, movie library, series/episode, movie stream 206, episode stream 206, SSE round-trip
 
 ---
 

@@ -10,10 +10,8 @@ services:
       NODE_ENV: test
       API_PORT: "8080"
       ENCRYPTION_KEY: connectivity-test-key
-    # Use host networking so mDNS multicast works without avahi-reflector.
-    # On rootless podman the bridge driver may not forward multicast; host
-    # networking sidesteps this while keeping the test hermetic.
-    network_mode: host
+    networks:
+      - e2e
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://localhost:8080/api/system/status"]
       interval: 3s
@@ -25,12 +23,17 @@ services:
     build:
       context: ../..
       dockerfile: tests/connectivity/Containerfile.client
-    network_mode: host
+    networks:
+      - e2e
     environment:
-      # Override to skip mDNS and connect directly (useful in CI).
-      # Leave unset to let the client discover via mDNS.
-      MEDIARR_DIRECT_URL: "http://127.0.0.1:8080"
+      # Connect directly to the server service via compose DNS (bypasses mDNS).
+      # The Dart client skips mDNS discovery when this variable is set.
+      MEDIARR_DIRECT_URL: "http://server:8080"
       MEDIARR_MDNS_TIMEOUT_SECS: "10"
     depends_on:
       server:
         condition: service_healthy
+
+networks:
+  e2e:
+    driver: bridge

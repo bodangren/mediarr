@@ -9,3 +9,10 @@ coverage
 conductor
 reference
 *.log
+clients/mediarr-client/build
+clients/mediarr-client/.dart_tool
+clients/mediarr-client/android
+clients/mediarr-client/linux
+clients/mediarr-client/macos
+clients/mediarr-client/windows
+clients/android-tv

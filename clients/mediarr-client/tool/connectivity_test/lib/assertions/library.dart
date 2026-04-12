@@ -16,9 +16,9 @@ Future<int> assertMovieLibrary(String baseUrl) async {
     );
   }
 
+  // Response shape: { "ok": true, "data": [...], "meta": {...} }
   final body = jsonDecode(resp.body) as Map<String, dynamic>;
-  final data = body['data'] as Map<String, dynamic>? ?? body;
-  final items = (data['items'] as List?) ?? (body['data'] as List?) ?? [];
+  final items = (body['data'] as List?) ?? [];
 
   for (final item in items) {
     final m = item as Map<String, dynamic>;
@@ -45,11 +45,9 @@ Future<int> assertSeriesLibrary(String baseUrl) async {
     );
   }
 
+  // Response shape: { "ok": true, "data": [...], "meta": {...} }
   final seriesBody = jsonDecode(seriesResp.body) as Map<String, dynamic>;
-  final seriesData = seriesBody['data'] as Map<String, dynamic>? ?? seriesBody;
-  final seriesList = (seriesData['items'] as List?) ??
-      (seriesBody['data'] as List?) ??
-      [];
+  final seriesList = (seriesBody['data'] as List?) ?? [];
 
   int? seriesId;
   for (final item in seriesList) {
@@ -75,9 +73,9 @@ Future<int> assertSeriesLibrary(String baseUrl) async {
     );
   }
 
+  // Response shape: { "ok": true, "data": { "seasons": [...], ... } }
   final detail = jsonDecode(detailResp.body) as Map<String, dynamic>;
-  final detailData =
-      (detail['data'] as Map<String, dynamic>?) ?? detail;
+  final detailData = (detail['data'] as Map<String, dynamic>?) ?? detail;
   final seasons = (detailData['seasons'] as List?) ?? [];
 
   for (final season in seasons) {

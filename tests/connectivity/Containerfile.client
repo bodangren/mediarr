@@ -1,7 +1,7 @@
 # Dart CLI test runner for Mediarr connectivity E2E.
 # Pure Dart — no Flutter engine, no GTK.
 
-FROM dart:stable-slim AS base
+FROM dart:stable AS base
 
 WORKDIR /test
 

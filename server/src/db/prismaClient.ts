@@ -521,7 +521,12 @@ export class PrismaClient {
   }
 
   async $executeRawUnsafe(query: string, ...params: unknown[]): Promise<number> {
-    const result = this.sqlite.query(query).run(...params);
+    let result: any;
+    if (typeof this.sqlite.query === 'function') {
+      result = this.sqlite.query(query).run(...params);
+    } else {
+      result = this.sqlite.prepare(query).run(...params);
+    }
     return Number(result.changes ?? 0);
   }
 

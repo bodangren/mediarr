@@ -1,36 +1,39 @@
 # Mediarr server container for connectivity E2E tests.
-# Uses Bun for speed; installs ffmpeg to generate deterministic fixture MP4s.
+# Uses Node 20 + tsx — simpler than Bun in containers because better-sqlite3
+# and drizzle-kit both compile and run against the same Node ABI.
 
-FROM oven/bun:1.2 AS base
+FROM node:20-slim
 
-# ── System deps ────────────────────────────────────────────────────────────────
 RUN apt-get update -y && \
     apt-get install -y --no-install-recommends \
         ffmpeg \
-        avahi-daemon \
-        avahi-utils \
-        dbus \
-        libnss-mdns \
+        python3 \
+        make \
+        g++ \
+        curl \
+        sqlite3 \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# ── Node/Bun dependencies ─────────────────────────────────────────────────────
-COPY package.json bun.lock* package-lock.json* ./
+# ── Dependencies ──────────────────────────────────────────────────────────────
+COPY package.json package-lock.json* ./
 COPY server/package.json ./server/
 COPY app/package.json ./app/
-RUN bun install --frozen-lockfile 2>/dev/null || bun install
+# Build better-sqlite3 native bindings for Node 20.
+RUN npm ci
 
 # ── Source ────────────────────────────────────────────────────────────────────
 COPY server/ ./server/
 COPY drizzle/ ./drizzle/
 COPY drizzle.config.ts ./
 COPY tsconfig.json ./
+COPY tests/connectivity/scripts/ ./tests/connectivity/scripts/
 
 # ── Generate fixture MP4s at build time (~50KB each, deterministic) ──────────
 RUN mkdir -p \
-    /data/media/movies/connectivity-test-movie \
-    /data/media/tv/connectivity-test-series/Season\ 01 && \
+    "/data/media/movies/connectivity-test-movie" \
+    "/data/media/tv/connectivity-test-series/Season 01" && \
     ffmpeg -y -f lavfi -i testsrc=duration=2:size=320x240:rate=24 \
            -c:v libx264 -pix_fmt yuv420p -movflags +faststart \
            "/data/media/movies/connectivity-test-movie/Connectivity Test Movie (2026).mp4" && \
@@ -38,14 +41,9 @@ RUN mkdir -p \
            -c:v libx264 -pix_fmt yuv420p -movflags +faststart \
            "/data/media/tv/connectivity-test-series/Season 01/Connectivity Test Series - S01E01.mp4"
 
-# ── Entrypoint script ─────────────────────────────────────────────────────────
-COPY tests/connectivity/scripts/ ./tests/connectivity/scripts/
-
+# ── Entrypoint ────────────────────────────────────────────────────────────────
 COPY tests/connectivity/server-entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
-
-# Volumes for data (pre-populated at build time above)
-VOLUME ["/data"]
 
 ENV DATABASE_URL=file:/tmp/connectivity.db
 ENV NODE_ENV=test
@@ -55,7 +53,7 @@ ENV DEFINITIONS_PATH=/app/server/definitions
 
 EXPOSE 8080
 
-HEALTHCHECK --interval=3s --timeout=5s --start-period=30s --retries=10 \
+HEALTHCHECK --interval=3s --timeout=5s --start-period=60s --retries=20 \
   CMD curl -sf http://localhost:8080/api/system/status || exit 1
 
 ENTRYPOINT ["/entrypoint.sh"]

@@ -12,7 +12,7 @@
  *   DATABASE_URL=file:/tmp/connectivity.db bun tests/connectivity/scripts/seed-fixtures.ts
  */
 
-import { db } from '../../server/src/db/index.js';
+import { db } from '../../../server/src/db/index.js';
 import {
   qualityProfiles,
   movies,
@@ -20,7 +20,7 @@ import {
   seasons,
   episodes,
   mediaFileVariants,
-} from '../../server/src/db/schema.js';
+} from '../../../server/src/db/schema.js';
 import { eq } from 'drizzle-orm';
 
 const MOVIE_TMDB_ID = 999_000_001;

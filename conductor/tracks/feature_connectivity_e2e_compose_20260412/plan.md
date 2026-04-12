@@ -7,8 +7,8 @@
 - [x] Task: Write `tests/connectivity/scripts/seed-fixtures.ts` — Drizzle-based seed that runs migrations then inserts the movie + series/season/episode fixtures with `hasFile=true` and correct file paths; idempotent
 - [x] Task: Add test-only SSE trigger route `POST /api/__test__/emit-event` behind `NODE_ENV==='test'` guard in `server/src/api/routes/`; emits a known event through `ApiEventHub`
 - [x] Task: Write `compose.yml` — two services (`server`, `client-test`), host network, server exposes 8080; client-test `depends_on: { server: { condition: service_healthy } }`; server healthcheck hits `/api/system/status`
-- [ ] Task: Verify `podman compose up server` starts the server clean, DB seeds, `curl http://localhost:8080/api/system/status` returns 200, and `avahi-browse -r _mediarr._tcp` (on host) shows the advertisement
-- [ ] Task: Conductor - Checkpoint Phase 1
+- [x] Task: Verify `podman compose up server` starts the server clean, DB seeds, `curl http://localhost:8080/api/system/status` returns 200, and `avahi-browse -r _mediarr._tcp` (on host) shows the advertisement
+- [x] Task: Conductor - Checkpoint Phase 1
 
 ## Phase 2 — Dart CLI Connectivity Runner
 
@@ -22,4 +22,4 @@
 - [x] Task: Wire `client-test` service in `compose.yml` to invoke the runner; verify green run end-to-end with `podman compose up --build --abort-on-container-exit --exit-code-from client-test`
 - [x] Task: Add `npm run test:connectivity` script in root `package.json` invoking the compose pipeline
 - [x] Task: Write `tests/connectivity/README.md` — what it tests, how to run, troubleshooting (multicast on rootless podman, avahi, firewalls)
-- [ ] Task: Conductor - Checkpoint Phase 2
+- [x] Task: Conductor - Checkpoint Phase 2

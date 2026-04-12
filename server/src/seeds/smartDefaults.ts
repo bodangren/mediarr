@@ -9,7 +9,7 @@ export const BUILTIN_WEBTORRENT_NAME = 'Built-in WebTorrent';
 export const BUILTIN_WEBTORRENT_INCOMPLETE_DIR = '/data/downloads/incomplete';
 
 export async function seedSmartDefaults(prisma: PrismaClient): Promise<void> {
-  const existingClients = await prisma.downloadClient.findAll();
+  const existingClients = await prisma.downloadClient.findMany();
   const hasNoDownloadClients = existingClients.length === 0;
 
   if (hasNoDownloadClients) {

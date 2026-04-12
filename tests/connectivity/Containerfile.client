@@ -1,0 +1,21 @@
+# Dart CLI test runner for Mediarr connectivity E2E.
+# Pure Dart — no Flutter engine, no GTK.
+
+FROM dart:stable-slim AS base
+
+WORKDIR /test
+
+COPY clients/mediarr-client/tool/connectivity_test/pubspec.yaml ./
+RUN dart pub get
+
+COPY clients/mediarr-client/tool/connectivity_test/ ./
+
+# Pre-compile to a native executable for a fast container startup
+RUN dart compile exe bin/run.dart -o /usr/local/bin/connectivity-test
+
+FROM debian:bookworm-slim
+
+COPY --from=base /usr/local/bin/connectivity-test /usr/local/bin/connectivity-test
+
+# multicast_dns needs network access; no extra deps required on Debian
+ENTRYPOINT ["/usr/local/bin/connectivity-test"]

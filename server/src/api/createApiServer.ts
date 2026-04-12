@@ -9,6 +9,7 @@ import { registerCategorySettingsRoutes } from './routes/categorySettingsRoutes'
 import { registerCustomFormatRoutes } from './routes/customFormatRoutes';
 import { registerDownloadClientRoutes } from './routes/downloadClientRoutes';
 import { registerEventsRoutes } from './routes/eventsRoutes';
+import { registerTestRoutes } from './routes/testRoutes';
 import { registerFilesystemRoutes } from './routes/filesystemRoutes';
 import { registerFilterRoutes } from './routes/filterRoutes';
 import { registerImportListRoutes } from './routes/importListRoutes';
@@ -188,6 +189,7 @@ export function createApiServer(
   registerFilesystemRoutes(app, dependencies);
   registerImportRoutes(app, dependencies);
   registerLibraryRoutes(app, dependencies);
+  registerTestRoutes(app, eventHub);
 
   const pollState: PollState = {};
   const intervals: NodeJS.Timeout[] = [];

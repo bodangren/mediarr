@@ -1,0 +1,14 @@
+name: connectivity_test
+description: Mediarr client-server connectivity E2E runner. Pure Dart CLI — no Flutter.
+version: 1.0.0
+publish_to: none
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  http: ^1.2.0
+  multicast_dns: ^0.3.2+2
+
+dev_dependencies:
+  lints: ^3.0.0

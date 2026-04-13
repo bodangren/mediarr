@@ -10,11 +10,11 @@
 
 ## Phase 2 — SPA: Catalog UI
 
-- [ ] Task: Refactor `AddIndexerModal.tsx` (or create new `IndexerCatalogPanel`) — show catalog as card grid grouped by type (Public / Semi-Private / Private); each card shows name, description, requiresApiKey badge, signup link
-- [ ] Task: Implement one-click "Add" button for public indexers — calls `POST /api/indexers/catalog/:id/add`, shows success toast, refreshes indexer list
-- [ ] Task: Implement API key flow for private indexers — inline key input, "Add" button calls catalog add with key
-- [ ] Task: Write tests for catalog panel — renders groups, one-click add calls API, API key input renders when required
-- [ ] Task: Conductor - Checkpoint Phase 2
+- [x] Task: Refactor `AddIndexerModal.tsx` (or create new `IndexerCatalogPanel`) — show catalog as card grid grouped by type (Public / Semi-Private / Private); each card shows name, description, requiresApiKey badge, signup link
+- [x] Task: Implement one-click "Add" button for public indexers — calls `POST /api/indexers/catalog/:id/add`, shows success toast, refreshes indexer list
+- [x] Task: Implement API key flow for private indexers — inline key input, "Add" button calls catalog add with key
+- [x] Task: Write tests for catalog panel — renders groups, one-click add calls API, API key input renders when required
+- [x] Task: Conductor - Checkpoint Phase 2
 
 ## Phase 3 — LAN Prowlarr/Jackett Detection
 

@@ -53,6 +53,25 @@ const indexerConfigSchemaResponse = z.object({
 export type IndexerSchemaField = z.infer<typeof indexerSchemaField>;
 export type IndexerConfigSchemaResponse = z.infer<typeof indexerConfigSchemaResponse>;
 
+const catalogEntrySchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string(),
+  type: z.string(),
+  baseUrl: z.string(),
+  categories: z.array(z.string()),
+  requiresApiKey: z.boolean(),
+  signupUrl: z.string(),
+  implementation: z.string(),
+  configContract: z.string(),
+  supportedMediaTypes: z.array(z.string()),
+  supportsSearch: z.boolean(),
+  supportsRss: z.boolean(),
+  isConfigured: z.boolean(),
+});
+
+export type CatalogEntry = z.infer<typeof catalogEntrySchema>;
+
 export function createIndexerApi(client: ApiHttpClient) {
   const crudApi = createCrudApi<IndexerItem, CreateIndexerInput>(client, {
     basePath: '/api/indexers',
@@ -82,6 +101,25 @@ export function createIndexerApi(client: ApiHttpClient) {
           method: 'GET',
         },
         indexerConfigSchemaResponse,
+      );
+    },
+    getCatalog(): Promise<CatalogEntry[]> {
+      return client.request(
+        {
+          path: routeMap.indexerCatalog,
+          method: 'GET',
+        },
+        z.array(catalogEntrySchema),
+      );
+    },
+    addFromCatalog(id: string, apiKey?: string): Promise<IndexerItem> {
+      return client.request(
+        {
+          path: routeMap.indexerCatalogAdd(id),
+          method: 'POST',
+          body: apiKey ? { apiKey } : undefined,
+        },
+        indexerSchema,
       );
     },
   };

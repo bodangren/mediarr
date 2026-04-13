@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { RouteScaffold } from '@/components/primitives/RouteScaffold';
 import { AddIndexerModal } from '@/components/indexers/AddIndexerModal';
 import { EditIndexerModal } from '@/components/indexers/EditIndexerModal';
+import { IndexerCatalogPanel } from '@/components/indexers/IndexerCatalogPanel';
 import { useToast } from '@/components/providers/ToastProvider';
 import { getApiClients } from '@/lib/api/client';
 import { getPopularPresets } from '@/lib/indexer/indexerPresets';
@@ -15,6 +16,7 @@ export function SettingsIndexersPage() {
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<IndexerItem | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isAddCatalogMode, setIsAddCatalogMode] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const load = async () => {
@@ -129,13 +131,18 @@ export function SettingsIndexersPage() {
       description="Single global indexer list used by both movie and TV search via the monolith search aggregation service."
     >
       <div className="flex gap-2">
-        <button
-          type="button"
-          className="rounded-sm border border-border-subtle bg-surface-2 px-3 py-1.5 text-sm font-medium"
-          onClick={() => setIsAddModalOpen(true)}
-        >
-          Add Indexer
-        </button>
+        <div className="relative inline-block">
+          <button
+            type="button"
+            className="rounded-sm border border-border-subtle bg-surface-2 px-3 py-1.5 text-sm font-medium"
+            onClick={() => {
+              setIsAddCatalogMode(true);
+              setIsAddModalOpen(true);
+            }}
+          >
+            Add Indexer
+          </button>
+        </div>
         <button
           type="button"
           className="rounded-sm border border-border-subtle bg-surface-1 px-3 py-1.5 text-sm"
@@ -207,24 +214,59 @@ export function SettingsIndexersPage() {
         )}
       </ul>
 
-      <AddIndexerModal
-        isOpen={isAddModalOpen}
-        presets={addIndexerPresets as any}
-        isSubmitting={isSubmitting}
-        onClose={() => setIsAddModalOpen(false)}
-        onCreate={onAdd}
-        onTestConnection={async (draft) => {
-          const res = await api.indexerApi.testDraft({
-            ...draft,
-            settings: JSON.stringify(draft.settings),
-          } as any);
-          return {
-            success: res.success,
-            message: res.message,
-            hints: res.diagnostics?.remediationHints ?? [],
-          };
-        }}
-      />
+      {isAddModalOpen && isAddCatalogMode ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="max-h-[90vh] w-full max-w-4xl overflow-auto rounded-md border border-border-subtle bg-surface-0 p-6 shadow-lg">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold">Add Indexer</h2>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  className="rounded-sm border border-border-subtle bg-surface-2 px-3 py-1.5 text-sm font-medium"
+                  onClick={() => setIsAddCatalogMode(false)}
+                >
+                  Manual
+                </button>
+                <button
+                  type="button"
+                  className="rounded-sm border border-border-subtle px-3 py-1.5 text-sm hover:bg-surface-2"
+                  onClick={() => setIsAddModalOpen(false)}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+            <IndexerCatalogPanel
+              onIndexerAdded={() => {
+                setIsAddModalOpen(false);
+                void load();
+              }}
+            />
+          </div>
+        </div>
+      ) : (
+        <AddIndexerModal
+          isOpen={isAddModalOpen}
+          presets={addIndexerPresets as any}
+          isSubmitting={isSubmitting}
+          onClose={() => {
+            setIsAddModalOpen(false);
+            setIsAddCatalogMode(true);
+          }}
+          onCreate={onAdd}
+          onTestConnection={async (draft) => {
+            const res = await api.indexerApi.testDraft({
+              ...draft,
+              settings: JSON.stringify(draft.settings),
+            } as any);
+            return {
+              success: res.success,
+              message: res.message,
+              hints: res.diagnostics?.remediationHints ?? [],
+            };
+          }}
+        />
+      )}
 
       {editing ? (
         <EditIndexerModal

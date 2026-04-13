@@ -56,6 +56,8 @@ export const routeMap = {
   indexerTest: (id: number) => `/api/indexers/${id}/test`,
   indexerClone: (id: number) => `/api/indexers/${id}/clone`,
   indexerTestDraft: '/api/indexers/test',
+  indexerCatalog: '/api/indexers/catalog',
+  indexerCatalogAdd: (id: string) => `/api/indexers/catalog/${id}/add`,
 
 
 

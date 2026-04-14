@@ -6,7 +6,7 @@ import { IndexerCatalogPanel } from '@/components/indexers/IndexerCatalogPanel';
 import { useToast } from '@/components/providers/ToastProvider';
 import { getApiClients } from '@/lib/api/client';
 import { getPopularPresets } from '@/lib/indexer/indexerPresets';
-import type { IndexerItem } from '@/lib/api/indexerApi';
+import type { IndexerItem, DiscoveredService } from '@/lib/api/indexerApi';
 
 export function SettingsIndexersPage() {
   const api = useMemo(() => getApiClients(), []);
@@ -18,6 +18,9 @@ export function SettingsIndexersPage() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isAddCatalogMode, setIsAddCatalogMode] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [discoveredServices, setDiscoveredServices] = useState<DiscoveredService[]>([]);
+  const [isDetecting, setIsDetecting] = useState(true);
+  const [isImporting, setIsImporting] = useState(false);
 
   const load = async () => {
     setIsLoading(true);
@@ -34,7 +37,39 @@ export function SettingsIndexersPage() {
 
   useEffect(() => {
     void load();
+    void (async () => {
+      try {
+        const detected = await api.indexerApi.detect();
+        setDiscoveredServices(detected);
+      } catch {
+        setDiscoveredServices([]);
+      } finally {
+        setIsDetecting(false);
+      }
+    })();
   }, []);
+
+  const handleImportFrom = async (service: DiscoveredService) => {
+    setIsImporting(true);
+    try {
+      const result = await api.indexerApi.importFrom(service.type, service.url);
+      pushToast({
+        title: 'Import complete',
+        message: `Imported ${result.imported} indexers from ${service.name ?? service.type}`,
+        variant: 'success',
+      });
+      setDiscoveredServices(prev => prev.filter(s => s.url !== service.url));
+      await load();
+    } catch (err) {
+      pushToast({
+        title: 'Import failed',
+        message: err instanceof Error ? err.message : 'Failed to import indexers',
+        variant: 'error',
+      });
+    } finally {
+      setIsImporting(false);
+    }
+  };
 
   const onAdd = async (draft: any) => {
     setIsSubmitting(true);
@@ -151,6 +186,42 @@ export function SettingsIndexersPage() {
           Refresh
         </button>
       </div>
+
+      {isDetecting ? (
+        <p className="text-sm text-text-secondary">Checking for LAN indexer services...</p>
+      ) : discoveredServices.length > 0 ? (
+        <div className="rounded-md border border-status-info/30 bg-status-info/10 p-4">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="font-medium text-status-info">LAN Indexer Service Detected</p>
+              <div className="mt-2 space-y-2">
+                {discoveredServices.map(service => (
+                  <div key={service.url} className="flex items-center gap-3 text-sm">
+                    <span className="text-text-secondary">
+                      {service.type === 'prowlarr' ? 'Prowlarr' : 'Jackett'}
+                      {service.name ? ` (${service.name})` : ''} detected at {service.url}
+                      {service.indexerCount != null && ` — ${service.indexerCount} indexers`}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="flex gap-2">
+              {discoveredServices.map(service => (
+                <button
+                  key={service.url}
+                  type="button"
+                  className="rounded-sm bg-status-info px-3 py-1.5 text-sm font-medium text-status-info-content hover:bg-status-info/80 disabled:opacity-50"
+                  disabled={isImporting}
+                  onClick={() => void handleImportFrom(service)}
+                >
+                  {isImporting ? 'Importing...' : `Import from ${service.type === 'prowlarr' ? 'Prowlarr' : 'Jackett'}`}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {error ? <p className="text-sm text-status-error">{error}</p> : null}
       {isLoading ? <p className="text-sm text-text-secondary">Loading indexers...</p> : null}

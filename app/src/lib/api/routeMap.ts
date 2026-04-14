@@ -58,6 +58,8 @@ export const routeMap = {
   indexerTestDraft: '/api/indexers/test',
   indexerCatalog: '/api/indexers/catalog',
   indexerCatalogAdd: (id: string) => `/api/indexers/catalog/${id}/add`,
+  indexerDetect: '/api/indexers/detect',
+  indexerImportFrom: (type: string) => `/api/indexers/import-from/${type}`,
 
 
 

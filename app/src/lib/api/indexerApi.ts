@@ -72,6 +72,21 @@ const catalogEntrySchema = z.object({
 
 export type CatalogEntry = z.infer<typeof catalogEntrySchema>;
 
+export interface DiscoveredService {
+  type: 'prowlarr' | 'jackett';
+  url: string;
+  host: string;
+  port: number;
+  name?: string;
+  version?: string;
+  indexerCount?: number;
+}
+
+export interface ImportFromResult {
+  imported: number;
+  indexers: IndexerItem[];
+}
+
 export function createIndexerApi(client: ApiHttpClient) {
   const crudApi = createCrudApi<IndexerItem, CreateIndexerInput>(client, {
     basePath: '/api/indexers',
@@ -120,6 +135,36 @@ export function createIndexerApi(client: ApiHttpClient) {
           body: apiKey ? { apiKey } : undefined,
         },
         indexerSchema,
+      );
+    },
+    detect(): Promise<DiscoveredService[]> {
+      return client.request(
+        {
+          path: routeMap.indexerDetect,
+          method: 'GET',
+        },
+        z.array(z.object({
+          type: z.enum(['prowlarr', 'jackett']),
+          url: z.string(),
+          host: z.string(),
+          port: z.number(),
+          name: z.string().optional(),
+          version: z.string().optional(),
+          indexerCount: z.number().optional(),
+        })),
+      );
+    },
+    importFrom(type: 'prowlarr' | 'jackett', url: string, apiKey?: string): Promise<ImportFromResult> {
+      return client.request(
+        {
+          path: routeMap.indexerImportFrom(type),
+          method: 'POST',
+          body: { url, apiKey },
+        },
+        z.object({
+          imported: z.number(),
+          indexers: z.array(indexerSchema),
+        }),
       );
     },
   };

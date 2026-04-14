@@ -22,15 +22,15 @@
 - [x] Task: Add `GET /api/indexers/detect` endpoint — runs detection scan and returns found services
 - [x] Task: Add `POST /api/indexers/import-from/:type` — fetches indexer list from detected Prowlarr/Jackett API, maps to Mediarr indexer schema, creates them
 - [x] Task: Write tests for `IndexerServiceDiscovery` — mock HTTP probes, Prowlarr detected, Jackett detected, nothing detected, timeout
-- [ ] Task: Conductor - Checkpoint Phase 3
+- [x] Task: Conductor - Checkpoint Phase 3
 
 ## Phase 4 — SPA: Detection Banner
 
-- [ ] Task: Add detection check to SPA settings indexers page — call `GET /api/indexers/detect` on mount (or after setup wizard completion)
-- [ ] Task: Show banner when Prowlarr/Jackett detected: "Prowlarr detected at <url> — Import <N> indexers?" with "Import" button
-- [ ] Task: Import button calls `POST /api/indexers/import-from/prowlarr`, shows progress, refreshes list on completion
-- [ ] Task: Write tests for detection banner — renders when service detected, hidden when none, import button calls API
-- [ ] Task: Run `cd app && npm run build` — zero TS errors
-- [ ] Task: Run `CI=true npm test` — all tests pass
-- [ ] Task: Run `CI=true bun test` — all server tests pass
-- [ ] Task: Conductor - Checkpoint Phase 4
+- [x] Task: Add detection check to SPA settings indexers page — call `GET /api/indexers/detect` on mount (or after setup wizard completion)
+- [x] Task: Show banner when Prowlarr/Jackett detected: "Prowlarr detected at <url> — Import <N> indexers?" with "Import" button
+- [x] Task: Import button calls `POST /api/indexers/import-from/prowlarr`, shows progress, refreshes list on completion
+- [x] Task: Write tests for detection banner — renders when service detected, hidden when none, import button calls API
+- [x] Task: Run `cd app && npm run build` — zero TS errors
+- [x] Task: Run `CI=true npm test` — all tests pass
+- [x] Task: Run `CI=true bun test` — all server tests pass
+- [x] Task: Conductor - Checkpoint Phase 4

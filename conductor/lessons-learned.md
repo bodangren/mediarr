@@ -23,6 +23,7 @@
 - (2026-04-02, bug_seed_limit_import_guard) **Duplicate seed-limit checking creates race conditions.** Extract shared guard logic; apply in fastest path.
 - (2026-04-03, bug_rss_pipeline_corner_cases) Season packs produce empty `episodeNumbers[]` — `parsed.episodeNumbers[0]` is `undefined`. Prisma ignores `undefined` in `where`. Use class-based mocks in `vi.mock()` factories — `vi.clearAllMocks()` clears implementations.
 - (2026-04-03, bug_torrent_lifecycle_corner_cases) `removeTorrent` does NOT check import guard — only `checkSeedLimits` does. Manual removal is intentional user action.
+- (2026-04-14, feature_indexer_discovery) **`vi.useFakeTimers()` breaks Promises with internal `setTimeout`** — tests using `vi.useFakeTimers()` combined with `AbortController` timeouts fail because the internal `setTimeout` never fires. Use `vi.useFakeTimers()` with `vi.advanceTimersByTime()` OR avoid fake timers for fetch-based services.
 - (2026-04-04, bug_organize_services_corner_cases) **Missing field in DTOs is a silent bug.** Verify DTO construction copies source fields for naming tokens.
 - (2026-04-04, bug_organize_rename_transaction_safety) **DB-before-fs rename pattern.** DB first, then fs rename. Rollback DB on fs failure. Don't mask original error.
 - (2026-04-04, bug_import_post_import_corner_cases) **Per-item try/catch in for-loops.** Independent items must not abort the batch. `vi.mock` with `default` export requires `.default` access from dynamic import.
@@ -38,7 +39,6 @@
 
 ### Patterns That Worked Well
 
-- (2026-04-01, bug_mediasearch_corner_cases) `deduplicateByInfoHash` uses `customFormatScore` (includes Levenshtein confidence). Tests must use identical titles to isolate seeders/size ranking.
 - (2026-03-16, feature_ai_parsing) AI client guard (`if (!API_KEY) return null`) + TDD fallback = graceful degradation to regex.
 - (2026-03-11, feature_system_routes_coverage) TDD on routes: export proxy state object; reset in `beforeEach`.
 - (2026-04-05, bug_pipeline_integration_corner_cases) **Integration tests across service boundaries catch data-flow bugs.** Use event-emitter mocks with manual `emit()` + microtask flush.

@@ -18,10 +18,10 @@
 
 ## Phase 3 — LAN Prowlarr/Jackett Detection
 
-- [ ] Task: Create `server/src/services/discovery/IndexerServiceDiscovery.ts` — probe common ports (9696 Prowlarr, 9117 Jackett) on the LAN subnet via HTTP GET with 2s timeout; returns detected services with URL and type
-- [ ] Task: Add `GET /api/indexers/detect` endpoint — runs detection scan and returns found services
-- [ ] Task: Add `POST /api/indexers/import-from/:type` — fetches indexer list from detected Prowlarr/Jackett API, maps to Mediarr indexer schema, creates them
-- [ ] Task: Write tests for `IndexerServiceDiscovery` — mock HTTP probes, Prowlarr detected, Jackett detected, nothing detected, timeout
+- [x] Task: Create `server/src/services/discovery/IndexerServiceDiscovery.ts` — probe common ports (9696 Prowlarr, 9117 Jackett) on the LAN subnet via HTTP GET with 2s timeout; returns detected services with URL and type
+- [x] Task: Add `GET /api/indexers/detect` endpoint — runs detection scan and returns found services
+- [x] Task: Add `POST /api/indexers/import-from/:type` — fetches indexer list from detected Prowlarr/Jackett API, maps to Mediarr indexer schema, creates them
+- [x] Task: Write tests for `IndexerServiceDiscovery` — mock HTTP probes, Prowlarr detected, Jackett detected, nothing detected, timeout
 - [ ] Task: Conductor - Checkpoint Phase 3
 
 ## Phase 4 — SPA: Detection Banner

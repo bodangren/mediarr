@@ -5,6 +5,7 @@ import { NotFoundError, ValidationError } from '../../errors/domainErrors';
 import { sendSuccess } from '../contracts';
 import { parseIdParam } from '../routeUtils';
 import type { ApiDependencies } from '../types';
+import { IndexerServiceDiscovery, type DiscoveredService } from '../../services/discovery/IndexerServiceDiscovery';
 
 type DynamicSchemaFieldType = 'text' | 'password' | 'number' | 'boolean';
 
@@ -552,6 +553,134 @@ export function registerIndexerRoutes(
     });
 
     return sendSuccess(reply, created, 201);
+  });
+
+  app.get('/api/indexers/detect', async (_request, reply) => {
+    const discovery = new IndexerServiceDiscovery({
+      probeTimeoutMs: 2000,
+    });
+
+    const discovered = await discovery.detect();
+    return sendSuccess(reply, discovered);
+  });
+
+  app.post('/api/indexers/import-from/:type', {
+    schema: {
+      params: {
+        type: 'object',
+        required: ['type'],
+        properties: {
+          type: { type: 'string' },
+        },
+      },
+      body: {
+        type: 'object',
+        required: ['url'],
+        properties: {
+          url: { type: 'string' },
+          apiKey: { type: 'string' },
+        },
+      },
+    },
+  }, async (request, reply) => {
+    if (!deps.indexerRepository?.create) {
+      throw new ValidationError('Indexer repository is not configured');
+    }
+
+    const { type } = request.params as { type: string };
+    const { url, apiKey } = request.body as { url: string; apiKey?: string };
+
+    if (type !== 'prowlarr' && type !== 'jackett') {
+      throw new ValidationError('type must be "prowlarr" or "jackett"');
+    }
+
+    let indexerConfigs: Array<{
+      name: string;
+      implementation: string;
+      configContract: string;
+      settings: Record<string, string>;
+      protocol: string;
+      supportedMediaTypes: string[];
+      supportsSearch: boolean;
+      supportsRss: boolean;
+    }> = [];
+
+    try {
+      const statusUrl = type === 'prowlarr'
+        ? `${url}/api/v1/system/status`
+        : `${url}/api/v2.0/indexers`;
+
+      const response = await fetch(statusUrl, {
+        headers: {
+          ...(apiKey ? { 'Authorization': `Bearer ${apiKey}` } : {}),
+          'Accept': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new ValidationError(`Failed to connect to ${type}: ${response.statusText}`);
+      }
+
+      if (type === 'prowlarr') {
+        const data = await response.json() as {
+          name?: string;
+          version?: string;
+        };
+        indexerConfigs = [{
+          name: data.name ?? `Prowlarr (${url})`,
+          implementation: 'Torznab',
+          configContract: 'TorznabSettings',
+          settings: {
+            url: `${url}/api/v1/search`,
+            apiKey: apiKey ?? '',
+          } as Record<string, string>,
+          protocol: 'torrent',
+          supportedMediaTypes: ['TV', 'MOVIE'],
+          supportsSearch: true,
+          supportsRss: true,
+        }];
+      } else {
+        const data = await response.json() as { indexers?: Array<{ id: string; name: string }> };
+        indexerConfigs = (data.indexers ?? []).map(idx => ({
+          name: idx.name,
+          implementation: 'Torznab',
+          configContract: 'TorznabSettings',
+          settings: {
+            url: `${url}/api/v1/search?query=`,
+            apiKey: apiKey ?? '',
+          } as Record<string, string>,
+          protocol: 'torrent',
+          supportedMediaTypes: ['TV', 'MOVIE'],
+          supportsSearch: true,
+          supportsRss: true,
+        }));
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      throw new ValidationError(`Failed to import from ${type}: ${message}`);
+    }
+
+    const created: unknown[] = [];
+    for (const config of indexerConfigs) {
+      const entry = await deps.indexerRepository.create({
+        name: config.name,
+        implementation: config.implementation,
+        configContract: config.configContract,
+        settings: JSON.stringify(config.settings),
+        protocol: config.protocol,
+        supportedMediaTypes: config.supportedMediaTypes,
+        enabled: true,
+        supportsRss: config.supportsRss,
+        supportsSearch: config.supportsSearch,
+        priority: 25,
+      });
+      created.push(entry);
+    }
+
+    return sendSuccess(reply, {
+      imported: created.length,
+      indexers: created,
+    }, 201);
   });
 }
 

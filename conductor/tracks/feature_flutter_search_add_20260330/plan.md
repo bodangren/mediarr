@@ -15,7 +15,7 @@
 - [x] Task: Create `SearchResultDetailSheet` — bottom sheet showing metadata (poster, overview, year, rating), list of available releases (title, quality, size, seeders, score), and "Grab" button per release
 - [x] Task: Wire "Grab" button to `ApiClient.grabRelease()` — show loading spinner, success toast, navigate back
 - [x] Task: Write tests for `SearchResultDetailSheet` — renders metadata, renders release list, grab button calls API
-- [ ] Task: Conductor - Checkpoint Phase 2
+- [x] Task: Conductor - Checkpoint Phase 2
 
 ## Phase 3 — Add to Library & Status
 

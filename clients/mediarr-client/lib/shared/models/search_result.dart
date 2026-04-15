@@ -6,7 +6,7 @@ class SearchResult {
     this.year,
     this.overview,
     this.posterUrl,
-    this.mediaType,
+    this.mediaType = 'movie',
   });
 
   final int tmdbId;

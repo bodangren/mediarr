@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/movie.dart';
+import '../models/search_result.dart';
 import '../models/series.dart';
 
 /// System status response from the server.
@@ -366,6 +367,128 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
       return Series.fromJson(data as Map<String, dynamic>);
     }
     return null;
+  }
+
+  /// Search for movies and series by query term.
+  Future<List<SearchResult>> search(String query, {String? mediaType}) async {
+    final queryParams = <String, dynamic>{'term': query};
+    if (mediaType != null) {
+      queryParams['mediaType'] = mediaType;
+    }
+    final response = await _dio.get('/api/search', queryParameters: queryParams);
+    if (response.statusCode == 200 && response.data != null) {
+      final data = _unwrap(response.data);
+      if (data is List) {
+        return data
+            .map((item) => SearchResult.fromJson(item as Map<String, dynamic>))
+            .toList();
+      }
+    }
+    return const [];
+  }
+
+  /// Search for releases (torrents) matching a search result.
+  Future<List<Release>> searchReleases({
+    String? query,
+    String? type,
+    int? tmdbId,
+    int? tvdbId,
+    int? year,
+    int? qualityProfileId,
+  }) async {
+    final body = <String, dynamic>{};
+    if (query != null) body['query'] = query;
+    if (type != null) body['type'] = type;
+    if (tmdbId != null) body['tmdbId'] = tmdbId;
+    if (tvdbId != null) body['tvdbId'] = tvdbId;
+    if (year != null) body['year'] = year;
+    if (qualityProfileId != null) body['qualityProfileId'] = qualityProfileId;
+
+    final response = await _dio.post('/api/releases/search', data: body);
+    if (response.statusCode == 200 && response.data != null) {
+      final data = _unwrap(response.data);
+      if (data is Map<String, dynamic> && data['items'] is List) {
+        return (data['items'] as List)
+            .map((item) => Release.fromJson(item as Map<String, dynamic>))
+            .toList();
+      }
+      if (data is List) {
+        return data
+            .map((item) => Release.fromJson(item as Map<String, dynamic>))
+            .toList();
+      }
+    }
+    return const [];
+  }
+
+  /// Grab a specific release by GUID and indexer ID.
+  Future<void> grabRelease({
+    required String guid,
+    required int indexerId,
+    int? downloadClientId,
+  }) async {
+    final body = <String, dynamic>{
+      'guid': guid,
+      'indexerId': indexerId,
+    };
+    if (downloadClientId != null) {
+      body['downloadClientId'] = downloadClientId;
+    }
+    await _dio.post('/api/releases/grab', data: body);
+  }
+
+  /// Add a movie to the library.
+  Future<void> addMovie({
+    required int tmdbId,
+    required String title,
+    required int year,
+    int? qualityProfileId,
+    bool monitored = true,
+    bool searchNow = true,
+    String? overview,
+    String? posterUrl,
+    int? imdbId,
+  }) async {
+    await _dio.post('/api/media', data: {
+      'mediaType': 'MOVIE',
+      'tmdbId': tmdbId,
+      'title': title,
+      'year': year,
+      'qualityProfileId': qualityProfileId ?? 1,
+      'monitored': monitored,
+      'searchNow': searchNow,
+      if (overview != null) 'overview': overview,
+      if (posterUrl != null) 'posterUrl': posterUrl,
+      if (imdbId != null) 'imdbId': imdbId,
+    });
+  }
+
+  /// Add a series to the library.
+  Future<void> addSeries({
+    required int tvdbId,
+    required String title,
+    required int year,
+    int? qualityProfileId,
+    bool monitored = true,
+    bool searchNow = true,
+    String? overview,
+    String? posterUrl,
+    int? tmdbId,
+    String? imdbId,
+  }) async {
+    await _dio.post('/api/media', data: {
+      'mediaType': 'TV',
+      'tvdbId': tvdbId,
+      'title': title,
+      'year': year,
+      'qualityProfileId': qualityProfileId ?? 1,
+      'monitored': monitored,
+      'searchNow': searchNow,
+      if (overview != null) 'overview': overview,
+      if (posterUrl != null) 'posterUrl': posterUrl,
+      if (tmdbId != null) 'tmdbId': tmdbId,
+      if (imdbId != null) 'imdbId': imdbId,
+    });
   }
 
   /// Report playback position to the server.

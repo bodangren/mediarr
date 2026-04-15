@@ -2,13 +2,13 @@
 
 ## Phase 1 — Search Screen & API Integration
 
-- [ ] Task: Add `search(query: String)` method to `ApiClient` — calls `GET /api/search?query=<query>&type=movie,series`; returns list of search results with title, year, type, posterUrl, tmdbId/tvdbId
-- [ ] Task: Add `grabRelease(releaseId: String)` method to `ApiClient` — calls `POST /api/search/grab/:releaseId`
-- [ ] Task: Add `addMovie(tmdbId, qualityProfileId, rootFolderPath)` and `addSeries(tvdbId, qualityProfileId, rootFolderPath)` methods to `ApiClient`
-- [ ] Task: Create `SearchScreen` — search bar (TextField with auto-focus), results grid (GridView.builder with poster cards), loading/empty/error states
-- [ ] Task: Add `SearchScreen` to router at `/search` and to `LeanbackScaffold` bottom nav
-- [ ] Task: Write tests for `SearchScreen` — renders search bar, shows results, handles empty query, handles API error
-- [ ] Task: Conductor - Checkpoint Phase 1
+- [x] Task: Add `search(query: String)` method to `ApiClient` — calls `GET /api/search?query=<query>&type=movie,series`; returns list of search results with title, year, type, posterUrl, tmdbId/tvdbId
+- [x] Task: Add `grabRelease(releaseId: String)` method to `ApiClient` — calls `POST /api/search/grab/:releaseId`
+- [x] Task: Add `addMovie(tmdbId, qualityProfileId, rootFolderPath)` and `addSeries(tvdbId, qualityProfileId, rootFolderPath)` methods to `ApiClient`
+- [x] Task: Create `SearchScreen` — search bar (TextField with auto-focus), results grid (GridView.builder with poster cards), loading/empty/error states
+- [x] Task: Add `SearchScreen` to router at `/search` and to `LeanbackScaffold` bottom nav
+- [x] Task: Write tests for `SearchScreen` — renders search bar, shows results, handles empty query, handles API error
+- [x] Task: Conductor - Checkpoint Phase 1
 
 ## Phase 2 — Result Detail & Grab
 
@@ -19,8 +19,8 @@
 
 ## Phase 3 — Add to Library & Status
 
-- [ ] Task: Add "Add to Library" button to `SearchResultDetailSheet` — calls `ApiClient.addMovie()` or `ApiClient.addSeries()` based on result type; uses default quality profile and root folder from server defaults
-- [ ] Task: After adding, update the detail sheet to show "Added — Status: Wanted" and a link to the media detail screen
+- [x] Task: Add "Add to Library" button to `SearchResultDetailSheet` — calls `ApiClient.addMovie()` or `ApiClient.addSeries()` based on result type; uses default quality profile and root folder from server defaults
+- [x] Task: After adding, update the detail sheet to show "Added — Status: Wanted" and a link to the media detail screen
 - [ ] Task: Write tests for add-to-library flow — button renders, calls correct API, shows success state
 - [ ] Task: Run `cd clients/mediarr-client && flutter test` — all pass
 - [ ] Task: Conductor - Checkpoint Phase 3

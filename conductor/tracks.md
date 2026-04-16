@@ -107,7 +107,10 @@ Parallel:
 - [x] **Track: Smart Defaults Engine** *Phases: 3 | Link: [./archive/feature_smart_defaults_20260330/](./archive/feature_smart_defaults_20260330/)* — built-in WebTorrent auto-config, naming patterns (movie + series), scheduler intervals (RSS 15min, wanted search 60min), wanted languages (en); idempotent; 18 E2E tests; full CI green (1723 tests)
 
 ### Phase D: Flutter Living Room
-- [ ] **Track: Flutter Search & Add Media** *Phases: 3 | Link: [./tracks/feature_flutter_search_add_20260330/](./tracks/feature_flutter_search_add_20260330/)*
+- [x] **Track: Flutter Search & Add Media** *Phases: 3 | Link: [./archive/feature_flutter_search_add_20260330/](./archive/feature_flutter_search_add_20260330/)* — SearchScreen with poster grid, SearchResultDetailSheet with releases/grab/add-to-library; 165 Flutter tests green; root CI green (230 files / 1738 tests)
+- [ ] **Track: Flutter Activity & Queue** *Phases: 3 | Link: [./tracks/feature_flutter_activity_queue_20260330/](./tracks/feature_flutter_activity_queue_20260330/)*
+- [ ] **Track: Flutter Continue Watching & Calendar** *Phases: 2 | Link: [./tracks/feature_flutter_continue_watching_20260330/](./tracks/feature_flutter_continue_watching_20260330/)*
+- [ ] **Track: Flutter Subtitle & Quality Control** *Phases: 2 | Link: [./tracks/feature_flutter_subtitle_quality_20260330/](./tracks/feature_flutter_subtitle_quality_20260330/)*
 - [ ] **Track: Flutter Activity & Queue** *Phases: 3 | Link: [./tracks/feature_flutter_activity_queue_20260330/](./tracks/feature_flutter_activity_queue_20260330/)*
 - [ ] **Track: Flutter Continue Watching & Calendar** *Phases: 2 | Link: [./tracks/feature_flutter_continue_watching_20260330/](./tracks/feature_flutter_continue_watching_20260330/)*
 - [ ] **Track: Flutter Subtitle & Quality Control** *Phases: 2 | Link: [./tracks/feature_flutter_subtitle_quality_20260330/](./tracks/feature_flutter_subtitle_quality_20260330/)*

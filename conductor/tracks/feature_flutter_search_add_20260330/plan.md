@@ -21,6 +21,6 @@
 
 - [x] Task: Add "Add to Library" button to `SearchResultDetailSheet` — calls `ApiClient.addMovie()` or `ApiClient.addSeries()` based on result type; uses default quality profile and root folder from server defaults
 - [x] Task: After adding, update the detail sheet to show "Added — Status: Wanted" and a link to the media detail screen
-- [ ] Task: Write tests for add-to-library flow — button renders, calls correct API, shows success state
-- [ ] Task: Run `cd clients/mediarr-client && flutter test` — all pass
-- [ ] Task: Conductor - Checkpoint Phase 3
+- [x] Task: Write tests for add-to-library flow — button renders, calls correct API, shows success state
+- [x] Task: Run `cd clients/mediarr-client && flutter test` — all pass (165 tests green)
+- [x] Task: Conductor - Checkpoint Phase 3

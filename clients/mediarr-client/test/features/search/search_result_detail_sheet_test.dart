@@ -5,7 +5,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mediarr_client/core/theme/mediarr_theme.dart';
 import 'package:mediarr_client/features/search/search_result_detail_sheet.dart';
+import 'package:mediarr_client/shared/models/episode.dart';
+import 'package:mediarr_client/shared/models/movie.dart';
 import 'package:mediarr_client/shared/models/search_result.dart';
+import 'package:mediarr_client/shared/models/series.dart';
 import 'package:mediarr_client/shared/services/api_client.dart';
 
 void main() {
@@ -256,5 +259,210 @@ void main() {
       expect(find.text('1080p'), findsOneWidget);
       expect(find.text('720p'), findsOneWidget);
     });
+
+    testWidgets('tapping Add to Library calls addMovie for movie result', (tester) async {
+      bool addMovieCalled = false;
+      final mockClient = _MockMediarrApiClient(
+        onAddMovie: () async { addMovieCalled = true; },
+        onAddSeries: () async {},
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            releasesProvider.overrideWith((ref, result) async => []),
+            apiClientProvider.overrideWith((ref) => mockClient),
+          ],
+          child: MaterialApp(
+            theme: mediarrDarkTheme,
+            home: Scaffold(
+              body: SearchResultDetailSheet(result: testResult),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Add to Library'));
+      await tester.pump();
+
+      expect(addMovieCalled, true);
+    });
+
+    testWidgets('tapping Add to Library calls addSeries for series result', (tester) async {
+      bool addSeriesCalled = false;
+      final mockClient = _MockMediarrApiClient(
+        onAddMovie: () async {},
+        onAddSeries: () async { addSeriesCalled = true; },
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            releasesProvider.overrideWith((ref, result) async => []),
+            apiClientProvider.overrideWith((ref) => mockClient),
+          ],
+          child: MaterialApp(
+            theme: mediarrDarkTheme,
+            home: Scaffold(
+              body: SearchResultDetailSheet(result: testSeriesResult),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Add to Library'));
+      await tester.pump();
+
+      expect(addSeriesCalled, true);
+    });
+
+    testWidgets('sheet closes and addMovie succeeds for movie result', (tester) async {
+      final mockClient = _MockMediarrApiClient(
+        onAddMovie: () async {},
+        onAddSeries: () async {},
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            releasesProvider.overrideWith((ref, result) async => []),
+            apiClientProvider.overrideWith((ref) => mockClient),
+          ],
+          child: MaterialApp(
+            theme: mediarrDarkTheme,
+            home: Scaffold(
+              body: SearchResultDetailSheet(result: testResult),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Add to Library'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Add to Library'), findsNothing);
+    });
   });
+}
+
+class _MockMediarrApiClient extends StateNotifier<ApiClientState>
+    implements MediarrApiClient {
+  _MockMediarrApiClient({
+    required Future<void> Function() this.onAddMovie,
+    required Future<void> Function() this.onAddSeries,
+  }) : super(const ApiClientState(
+          status: ConnectionStatus.connected,
+          baseUrl: 'http://localhost:5174',
+        ));
+
+  final Future<void> Function() onAddMovie;
+  final Future<void> Function() onAddSeries;
+
+  @override
+  Future<void> addMovie({
+    required int tmdbId,
+    required String title,
+    required int year,
+    int? qualityProfileId,
+    bool monitored = true,
+    bool searchNow = true,
+    String? overview,
+    String? posterUrl,
+    int? imdbId,
+  }) async {
+    await onAddMovie();
+  }
+
+  @override
+  Future<void> addSeries({
+    required int tvdbId,
+    required String title,
+    required int year,
+    int? qualityProfileId,
+    bool monitored = true,
+    bool searchNow = true,
+    String? overview,
+    String? posterUrl,
+    int? tmdbId,
+    String? imdbId,
+  }) async {
+    await onAddSeries();
+  }
+
+  @override
+  Future<void> grabRelease({
+    required String guid,
+    required int indexerId,
+    int? downloadClientId,
+  }) async {}
+
+  @override
+  Future<bool> connect(String baseUrl) async => true;
+
+  @override
+  void disconnect() {}
+
+  @override
+  Future<SystemStatus?> getSystemStatus() async => null;
+
+  @override
+  Future<List<Movie>> getMovies({Map<String, String>? params}) async => [];
+
+  @override
+  Future<List<Series>> getSeries({Map<String, String>? params}) async => [];
+
+  @override
+  Future<List<SearchResult>> search(String query, {String? mediaType}) async => [];
+
+  @override
+  Future<List<Release>> searchReleases({
+    String? query,
+    String? type,
+    int? tmdbId,
+    int? tvdbId,
+    int? year,
+    int? qualityProfileId,
+  }) async => [];
+
+  @override
+  Future<List<Episode>> getEpisodes(int seriesId) async => [];
+
+  @override
+  Future<Movie?> getMovie(int id) async => null;
+
+  @override
+  Future<Series?> getSeriesWithEpisodes(int id) async => null;
+
+  @override
+  Future<Series?> getSeriesDetail(int id) async => null;
+
+  @override
+  Future<PlaybackManifest?> getPlaybackManifest({
+    required int mediaId,
+    required String type,
+    String? userId,
+  }) async => null;
+
+  @override
+  Future<void> reportPlaybackProgress({
+    required int mediaId,
+    required String type,
+    required int positionSeconds,
+    required int durationSeconds,
+  }) async {}
+
+  @override
+  Future<List<ContinueWatchingItem>> getContinueWatching({int limit = 20}) async => [];
+
+  @override
+  String getStreamUrl(int mediaId, String type) => '';
+
+  @override
+  void dispose() {}
 }

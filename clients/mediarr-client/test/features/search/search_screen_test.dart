@@ -13,12 +13,17 @@ void main() {
     testWidgets('shows search bar and hint text', (tester) async {
       await tester.pumpWidget(
         ProviderScope(
+          overrides: [
+            searchResultsProvider.overrideWith((ref) async => <SearchResult>[]),
+          ],
           child: MaterialApp(
             theme: mediarrDarkTheme,
             home: const Scaffold(body: SearchScreen()),
           ),
         ),
       );
+
+      await tester.pumpAndSettle();
 
       expect(find.text('Search'), findsOneWidget);
       expect(find.byType(TextField), findsOneWidget);
@@ -44,10 +49,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            searchQueryProvider.overrideWith((ref) {
-              ref.state = 'inception';
-              return 'inception';
-            }),
+            searchQueryProvider.overrideWith((ref) => 'inception'),
             searchResultsProvider.overrideWith((ref) async {
               await Completer<void>().future;
               return <SearchResult>[];
@@ -68,10 +70,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            searchQueryProvider.overrideWith((ref) {
-              ref.state = 'inception';
-              return 'inception';
-            }),
+            searchQueryProvider.overrideWith((ref) => 'inception'),
             searchResultsProvider.overrideWith((ref) async => [
                   const SearchResult(
                     tmdbId: 27205,
@@ -109,10 +108,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            searchQueryProvider.overrideWith((ref) {
-              ref.state = 'xyznonexistent123';
-              return 'xyznonexistent123';
-            }),
+            searchQueryProvider.overrideWith((ref) => 'xyznonexistent123'),
             searchResultsProvider.overrideWith((ref) async => <SearchResult>[]),
           ],
           child: MaterialApp(
@@ -131,10 +127,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            searchQueryProvider.overrideWith((ref) {
-              ref.state = 'test';
-              return 'test';
-            }),
+            searchQueryProvider.overrideWith((ref) => 'test'),
             searchResultsProvider.overrideWith((ref) async {
               throw Exception('Network error');
             }),
@@ -155,10 +148,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            searchQueryProvider.overrideWith((ref) {
-              ref.state = 'inception';
-              return 'inception';
-            }),
+            searchQueryProvider.overrideWith((ref) => 'inception'),
             searchResultsProvider.overrideWith((ref) async => [
               const SearchResult(
                 tmdbId: 27205,
@@ -185,10 +175,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            searchQueryProvider.overrideWith((ref) {
-              ref.state = 'inception';
-              return 'inception';
-            }),
+            searchQueryProvider.overrideWith((ref) => 'inception'),
             searchResultsProvider.overrideWith((ref) async => [
               const SearchResult(
                 tmdbId: 0,

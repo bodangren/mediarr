@@ -172,6 +172,130 @@ class ContinueWatchingItem {
   }
 }
 
+class TorrentItem {
+  const TorrentItem({
+    required this.infoHash,
+    required this.name,
+    required this.status,
+    required this.progress,
+    required this.downloadSpeed,
+    required this.uploadSpeed,
+    required this.size,
+    this.eta,
+    this.downloaded,
+    this.uploaded,
+    this.ratio,
+    this.added,
+    this.completedAt,
+    this.path,
+    this.magnetUrl,
+    this.episodeId,
+    this.movieId,
+  });
+
+  final String infoHash;
+  final String name;
+  final String status;
+  final double progress;
+  final int downloadSpeed;
+  final int uploadSpeed;
+  final int size;
+  final int? eta;
+  final int? downloaded;
+  final int? uploaded;
+  final double? ratio;
+  final DateTime? added;
+  final DateTime? completedAt;
+  final String? path;
+  final String? magnetUrl;
+  final int? episodeId;
+  final int? movieId;
+
+  bool get isDownloading => status == 'downloading' || status == 'Downloading';
+  bool get isPaused => status == 'paused' || status == 'Paused';
+  bool get isSeeding => status == 'seeding' || status == 'Seeding';
+  bool get isCompleted => progress >= 100 || status == 'completed' || status == 'Completed';
+
+  String get formattedSize {
+    if (size < 1024) return '$size B';
+    if (size < 1024 * 1024) return '${(size / 1024).toStringAsFixed(1)} KB';
+    if (size < 1024 * 1024 * 1024) return '${(size / (1024 * 1024)).toStringAsFixed(1)} MB';
+    return '${(size / (1024 * 1024 * 1024)).toStringAsFixed(2)} GB';
+  }
+
+  String get formattedSpeed {
+    if (downloadSpeed < 1024) return '$downloadSpeed B/s';
+    if (downloadSpeed < 1024 * 1024) return '${(downloadSpeed / 1024).toStringAsFixed(1)} KB/s';
+    return '${(downloadSpeed / (1024 * 1024)).toStringAsFixed(1)} MB/s';
+  }
+
+  String get formattedEta {
+    if (eta == null || eta! <= 0) return '--';
+    final seconds = eta!;
+    if (seconds < 60) return '${seconds}s';
+    if (seconds < 3600) return '${seconds ~/ 60}m ${seconds % 60}s';
+    return '${seconds ~/ 3600}h ${(seconds % 3600) ~/ 60}m';
+  }
+
+  factory TorrentItem.fromJson(Map<String, dynamic> json) {
+    return TorrentItem(
+      infoHash: json['infoHash'] as String? ?? '',
+      name: json['name'] as String? ?? '',
+      status: json['status'] as String? ?? 'unknown',
+      progress: (json['progress'] as num?)?.toDouble() ?? 0,
+      downloadSpeed: json['downloadSpeed'] as int? ?? 0,
+      uploadSpeed: json['uploadSpeed'] as int? ?? 0,
+      size: json['size'] as int? ?? 0,
+      eta: json['eta'] as int?,
+      downloaded: json['downloaded'] as int?,
+      uploaded: json['uploaded'] as int?,
+      ratio: (json['ratio'] as num?)?.toDouble(),
+      added: json['added'] != null ? DateTime.tryParse(json['added'] as String) : null,
+      completedAt: json['completedAt'] != null ? DateTime.tryParse(json['completedAt'] as String) : null,
+      path: json['path'] as String?,
+      magnetUrl: json['magnetUrl'] as String?,
+      episodeId: json['episodeId'] as int?,
+      movieId: json['movieId'] as int?,
+    );
+  }
+}
+
+class ActivityEvent {
+  const ActivityEvent({
+    required this.id,
+    required this.eventType,
+    required this.sourceModule,
+    required this.success,
+    required this.summary,
+    required this.occurredAt,
+    this.entityRef,
+    this.details,
+  });
+
+  final int id;
+  final String eventType;
+  final String sourceModule;
+  final bool success;
+  final String summary;
+  final DateTime occurredAt;
+  final String? entityRef;
+  final Map<String, dynamic>? details;
+
+  factory ActivityEvent.fromJson(Map<String, dynamic> json) {
+    return ActivityEvent(
+      id: json['id'] as int? ?? 0,
+      eventType: json['eventType'] as String? ?? '',
+      sourceModule: json['sourceModule'] as String? ?? '',
+      success: json['success'] as bool? ?? false,
+      summary: json['summary'] as String? ?? '',
+      occurredAt: DateTime.tryParse(json['occurredAt'] as String? ?? '') ??
+          DateTime.fromMillisecondsSinceEpoch(0),
+      entityRef: json['entityRef'] as String?,
+      details: json['details'] as Map<String, dynamic>?,
+    );
+  }
+}
+
 /// Connection state for the API client.
 enum ConnectionStatus { disconnected, connecting, connected, error }
 
@@ -511,6 +635,73 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
   /// Server uses: GET /api/stream/:id?type=movie|episode
   String getStreamUrl(int mediaId, String type) {
     return '${state.baseUrl}/api/stream/$mediaId?type=$type';
+  }
+
+  /// Fetch all active torrents.
+  Future<List<TorrentItem>> getTorrents() async {
+    final response = await _dio.get('/api/torrents');
+    if (response.statusCode == 200 && response.data != null) {
+      final data = _unwrap(response.data);
+      if (data is Map<String, dynamic> && data['items'] is List) {
+        return (data['items'] as List)
+            .map((item) => TorrentItem.fromJson(item as Map<String, dynamic>))
+            .toList();
+      }
+      if (data is List) {
+        return data
+            .map((item) => TorrentItem.fromJson(item as Map<String, dynamic>))
+            .toList();
+      }
+    }
+    return const [];
+  }
+
+  /// Fetch activity events from the server.
+  Future<List<ActivityEvent>> getActivity({
+    int page = 1,
+    int pageSize = 50,
+    String? eventType,
+    String? sourceModule,
+    bool? success,
+  }) async {
+    final queryParams = <String, dynamic>{
+      'page': page,
+      'pageSize': pageSize,
+    };
+    if (eventType != null) queryParams['eventType'] = eventType;
+    if (sourceModule != null) queryParams['sourceModule'] = sourceModule;
+    if (success != null) queryParams['success'] = success;
+
+    final response = await _dio.get('/api/activity', queryParameters: queryParams);
+    if (response.statusCode == 200 && response.data != null) {
+      final data = _unwrap(response.data);
+      if (data is Map<String, dynamic> && data['items'] is List) {
+        return (data['items'] as List)
+            .map((item) => ActivityEvent.fromJson(item as Map<String, dynamic>))
+            .toList();
+      }
+      if (data is List) {
+        return data
+            .map((item) => ActivityEvent.fromJson(item as Map<String, dynamic>))
+            .toList();
+      }
+    }
+    return const [];
+  }
+
+  /// Pause a torrent by info hash.
+  Future<void> pauseTorrent(String infoHash) async {
+    await _dio.patch('/api/torrents/$infoHash/pause');
+  }
+
+  /// Resume a torrent by info hash.
+  Future<void> resumeTorrent(String infoHash) async {
+    await _dio.patch('/api/torrents/$infoHash/resume');
+  }
+
+  /// Remove a torrent by info hash.
+  Future<void> removeTorrent(String infoHash) async {
+    await _dio.delete('/api/torrents/$infoHash');
   }
 
   /// Fetch all pages for a paginated endpoint.

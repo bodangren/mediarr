@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/widgets/leanback_scaffold.dart';
+import '../../features/activity/activity_screen.dart';
 import '../../features/discovery/discovery_screen.dart';
 import '../../features/library/movies_screen.dart';
 import '../../features/library/series_screen.dart';
@@ -14,6 +15,7 @@ class AppRoutes {
   AppRoutes._();
 
   static const String discovery = '/discovery';
+  static const String activity = '/activity';
   static const String search = '/search';
   static const String movies = '/movies';
   static const String series = '/series';
@@ -43,6 +45,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           );
         },
         routes: [
+          GoRoute(
+            path: AppRoutes.activity,
+            builder: (context, state) => const ActivityScreen(),
+          ),
           GoRoute(
             path: AppRoutes.search,
             builder: (context, state) => const SearchScreen(),

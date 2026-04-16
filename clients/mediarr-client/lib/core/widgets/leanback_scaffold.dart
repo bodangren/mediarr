@@ -21,6 +21,12 @@ class _NavDestination {
 
 const _destinations = [
   _NavDestination(
+    path: AppRoutes.activity,
+    icon: Icons.downloading_outlined,
+    selectedIcon: Icons.downloading,
+    label: 'Activity',
+  ),
+  _NavDestination(
     path: AppRoutes.search,
     icon: Icons.search,
     selectedIcon: Icons.search,

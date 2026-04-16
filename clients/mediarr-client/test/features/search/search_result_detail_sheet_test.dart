@@ -464,5 +464,27 @@ class _MockMediarrApiClient extends StateNotifier<ApiClientState>
   String getStreamUrl(int mediaId, String type) => '';
 
   @override
+  Future<List<TorrentItem>> getTorrents() async => [];
+
+  @override
+  Future<List<ActivityEvent>> getActivity({
+    int page = 1,
+    int pageSize = 50,
+    String? eventType,
+    String? sourceModule,
+    bool? success,
+  }) async =>
+      [];
+
+  @override
+  Future<void> pauseTorrent(String infoHash) async {}
+
+  @override
+  Future<void> resumeTorrent(String infoHash) async {}
+
+  @override
+  Future<void> removeTorrent(String infoHash) async {}
+
+  @override
   void dispose() {}
 }

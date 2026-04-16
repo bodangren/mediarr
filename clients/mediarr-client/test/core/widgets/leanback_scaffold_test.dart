@@ -23,6 +23,8 @@ void main() {
       await tester.pumpWidget(buildTestApp(currentPath: AppRoutes.movies));
 
       expect(find.byType(NavigationRail), findsOneWidget);
+      expect(find.text('Activity'), findsOneWidget);
+      expect(find.text('Search'), findsOneWidget);
       expect(find.text('Movies'), findsOneWidget);
       expect(find.text('Series'), findsOneWidget);
       expect(find.text('Settings'), findsOneWidget);
@@ -46,25 +48,32 @@ void main() {
       expect(find.text('Movie Grid'), findsOneWidget);
     });
 
+    testWidgets('highlights Activity when on /activity path', (tester) async {
+      await tester.pumpWidget(buildTestApp(currentPath: AppRoutes.activity));
+
+      final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
+      expect(rail.selectedIndex, 0);
+    });
+
     testWidgets('highlights Movies when on /movies path', (tester) async {
       await tester.pumpWidget(buildTestApp(currentPath: AppRoutes.movies));
 
       final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
-      expect(rail.selectedIndex, 1);
+      expect(rail.selectedIndex, 2);
     });
 
     testWidgets('highlights Series when on /series path', (tester) async {
       await tester.pumpWidget(buildTestApp(currentPath: AppRoutes.series));
 
       final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
-      expect(rail.selectedIndex, 2);
+      expect(rail.selectedIndex, 3);
     });
 
     testWidgets('highlights Settings when on /settings path', (tester) async {
       await tester.pumpWidget(buildTestApp(currentPath: AppRoutes.settings));
 
       final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
-      expect(rail.selectedIndex, 3);
+      expect(rail.selectedIndex, 4);
     });
 
     testWidgets('defaults to index 0 for unknown path', (tester) async {

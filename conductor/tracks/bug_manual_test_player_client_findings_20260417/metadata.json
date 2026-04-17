@@ -1,0 +1,11 @@
+{
+  "track_id": "bug_manual_test_player_client_findings_20260417",
+  "type": "bug",
+  "status": "in_progress",
+  "created_at": "2026-04-17T00:00:00Z",
+  "updated_at": "2026-04-17T20:00:00Z",
+  "description": "Debug and correct manual test findings from the April 17 smoke pass: movie search returns no results, TV add fails with a foreign-key constraint, Flutter same-machine discovery fails, SSE event naming differs from the plan, and the Flutter client feels server-admin-first instead of player-first.",
+  "estimated_tasks": 22,
+  "actual_tasks": null,
+  "deviation_notes": "Created from manual test findings reported after validating the SPA, server API, SSE stream, and Flutter client on 2026-04-17."
+}

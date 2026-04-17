@@ -55,6 +55,7 @@ export class MetadataProvider {
 
   async searchMedia(request: MediaSearchRequest, fetchFn?: any): Promise<BaseMedia[]> {
     if (!request.mediaType) {
+      console.log('[DIAG:searchMedia] unified search for term=%j', request.term);
       const results = await Promise.allSettled([
         this.searchSeries(request.term, fetchFn),
         this.searchMovies(request.term, fetchFn),
@@ -64,9 +65,13 @@ export class MetadataProvider {
       const movieResults = results[1].status === 'fulfilled' ? results[1].value : [];
 
       if (results.some(r => r.status === 'rejected')) {
-        console.error('One or more metadata providers failed during unified search:', 
-          results.filter(r => r.status === 'rejected').map(r => (r as PromiseRejectedResult).reason)
+        console.error('[DIAG:searchMedia] unified search had failures. TV=%s (%d results), Movies=%s (%d results). Rejection reasons:',
+          results[0].status, tvResults.length,
+          results[1].status, movieResults.length,
+          results.filter(r => r.status === 'rejected').map(r => String((r as PromiseRejectedResult).reason))
         );
+      } else {
+        console.log('[DIAG:searchMedia] unified search OK. TV=%d, Movies=%d', tvResults.length, movieResults.length);
       }
 
       const mappedTv = tvResults.map(result => ({
@@ -116,7 +121,9 @@ export class MetadataProvider {
       }));
     }
 
+    console.log('[DIAG:searchMedia] movie-only search for term=%j', request.term);
     const results = await this.searchMovies(request.term, fetchFn);
+    console.log('[DIAG:searchMedia] movie-only search returned %d results', results.length);
     return results.map(result => ({
       mediaType: 'MOVIE',
       tmdbId: result.tmdbId,
@@ -271,18 +278,23 @@ export class MetadataProvider {
     const apiKey = settings.apiKeys.tmdbApiKey;
 
     if (!apiKey) {
+      console.error('[DIAG:searchMovies] TMDB API key is missing in settings.apiKeys.tmdbApiKey');
       throw new Error('TMDB API Key is missing. Please configure it in settings.');
     }
+    console.log('[DIAG:searchMovies] term=%j, apiKey present=%s', term, apiKey ? 'yes' : 'no');
     const encodedTerm = encodeURIComponent(term.toLowerCase().trim());
     const url = `${this.movieBaseUrl}/search/movie?api_key=${encodeURIComponent(apiKey)}&query=${encodedTerm}`;
+    console.log('[DIAG:searchMovies] requesting %s/search/movie?query=%s (key redacted)', this.movieBaseUrl, encodedTerm);
     const response = await this.httpClient.get(url, {}, fetchFn);
 
     if (!response.ok) {
+      console.error('[DIAG:searchMovies] TMDB responded with status=%d body=%s', response.status, response.body?.substring(0, 200));
       throw new Error(`Failed to search movies: ${response.status} ${response.body}`);
     }
 
     const payload = JSON.parse(response.body);
     const results = Array.isArray(payload.results) ? payload.results : [];
+    console.log('[DIAG:searchMovies] TMDB returned %d results for term=%j', results.length, term);
     return results.map((movie: any) => ({
       tmdbId: movie.id,
       title: movie.title,

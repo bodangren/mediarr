@@ -171,6 +171,7 @@ export function registerMediaRoutes(
     },
   }, async (request, reply) => {
     const query = request.query as { term: string; mediaType?: string };
+    console.log('[DIAG:/api/search] term=%j, mediaType=%s', query.term, query.mediaType ?? '(none — unified)');
     if (!deps.metadataProvider?.searchMedia) {
       throw new ValidationError('Metadata provider is not configured');
     }
@@ -181,6 +182,11 @@ export function registerMediaRoutes(
         mediaType: query.mediaType ? normalizeMediaType(query.mediaType) : undefined,
       });
 
+      console.log('[DIAG:/api/search] returning %d results (%d TV, %d movies)',
+        results.length,
+        results.filter(r => r.mediaType === 'TV').length,
+        results.filter(r => r.mediaType === 'MOVIE').length,
+      );
       return sendSuccess(reply, results);
     } catch (error) {
       if (error instanceof ValidationError) {
@@ -212,6 +218,9 @@ export function registerMediaRoutes(
     const monitored = body.monitored ?? true;
     const qualityProfileId = body.qualityProfileId ?? 1;
     const { movieRootFolder, tvRootFolder } = await resolveRootFolders();
+
+    console.log('[DIAG:handleCreateMedia] mediaType=%s, qualityProfileId=%d (body provided: %s), title=%j',
+      mediaType, qualityProfileId, body.qualityProfileId !== undefined ? String(body.qualityProfileId) : 'none (defaulted to 1)', body.title);
 
     if (mediaType === 'MOVIE') {
       if (!body.tmdbId || !body.title || !body.year) {
@@ -282,6 +291,21 @@ export function registerMediaRoutes(
 
     if (!body.tvdbId || !body.title || !body.year) {
       throw new ValidationError('tvdbId, title, and year are required for TV');
+    }
+
+    console.log('[DIAG:handleCreateMedia:TV] tvdbId=%s, title=%j, qualityProfileId=%d — verifying QualityProfile exists before write',
+      body.tvdbId, body.title, qualityProfileId);
+    if ((deps.prisma as any).qualityProfile?.findUnique) {
+      const qpCheck = await (deps.prisma as any).qualityProfile.findUnique({ where: { id: qualityProfileId } });
+      if (!qpCheck) {
+        console.error('[DIAG:handleCreateMedia:TV] FK FAIL: QualityProfile id=%d does NOT exist in database!', qualityProfileId);
+        if ((deps.prisma as any).qualityProfile?.findMany) {
+          const allQPs = await (deps.prisma as any).qualityProfile.findMany({ select: { id: true, name: true } });
+          console.error('[DIAG:handleCreateMedia:TV] Available QualityProfiles: %j', allQPs);
+        }
+      } else {
+        console.log('[DIAG:handleCreateMedia:TV] QualityProfile id=%d exists (%j)', qualityProfileId, qpCheck.name);
+      }
     }
 
     const duplicate = deps.mediaRepository?.findSeriesByTvdbId

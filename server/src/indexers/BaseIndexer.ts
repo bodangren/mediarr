@@ -105,6 +105,7 @@ export class TorznabIndexer extends BaseIndexer {
   buildSearchUrl(query: SearchQuery): string {
     const params = new URLSearchParams();
     params.set('t', 'search');
+    console.log('[DIAG:buildSearchUrl] query=%j (NOTE: always using t=search, ignoring tmdbid=%j)', query, query.tmdbid);
     params.set('apikey', this.apiKey);
 
     if (query.q) {

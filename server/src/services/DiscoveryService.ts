@@ -78,6 +78,9 @@ export class DiscoveryService {
       ),
     );
 
+    console.log('[DIAG:DiscoveryService] starting mDNS broadcast: name=%j type=%j port=%d host=%j aliases=%j txt=%j',
+      serviceName, serviceType, options.port, options.host ?? '(auto)', aliasTypes, options.txt);
+
     const bonjour = this.bonjourFactory();
     const publications: BonjourPublication[] = [];
 

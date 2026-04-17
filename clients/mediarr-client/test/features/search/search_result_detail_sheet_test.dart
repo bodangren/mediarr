@@ -486,5 +486,8 @@ class _MockMediarrApiClient extends StateNotifier<ApiClientState>
   Future<void> removeTorrent(String infoHash) async {}
 
   @override
+  Stream<SseEvent> streamEvents() => const Stream.empty();
+
+  @override
   void dispose() {}
 }

@@ -8,6 +8,13 @@ import '../models/movie.dart';
 import '../models/search_result.dart';
 import '../models/series.dart';
 
+class SseEvent {
+  const SseEvent({required this.event, required this.data});
+
+  final String event;
+  final dynamic data;
+}
+
 /// System status response from the server.
 class SystemStatus {
   const SystemStatus({
@@ -702,6 +709,91 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
   /// Remove a torrent by info hash.
   Future<void> removeTorrent(String infoHash) async {
     await _dio.delete('/api/torrents/$infoHash');
+  }
+
+  /// Connects to the server's SSE stream and yields parsed events.
+  /// The returned stream emits SseEvent objects with event type and data.
+  /// The caller is responsible for canceling the subscription when done.
+  Stream<SseEvent> streamEvents() {
+    final controller = StreamController<SseEvent>();
+
+    void parseSseData(String raw) {
+      final lines = raw.split('\n');
+      String? eventType;
+      String? data;
+
+      for (final line in lines) {
+        if (line.startsWith('event:')) {
+          eventType = line.substring(6).trim();
+        } else if (line.startsWith('data:')) {
+          data = line.substring(5).trim();
+        }
+      }
+
+      if (eventType != null && data != null) {
+        dynamic parsed;
+        try {
+          parsed = jsonDecode(data);
+        } catch (_) {
+          parsed = data;
+        }
+        controller.add(SseEvent(event: eventType, data: parsed));
+      }
+    }
+
+    Future<void> connect() async {
+      if (state.baseUrl == null) {
+        controller.close();
+        return;
+      }
+
+      try {
+        final response = await _dio.get<ResponseBody>(
+          '/api/events/stream',
+          options: Options(
+            responseType: ResponseType.stream,
+            headers: {
+              'Accept': 'text/event-stream',
+              'Cache-Control': 'no-cache',
+            },
+          ),
+        );
+
+        if (response.data == null) {
+          controller.close();
+          return;
+        }
+
+        String buffer = '';
+
+        await for (final chunk in response.data!.stream) {
+          final str = utf8.decode(chunk, allowMalformed: true);
+          buffer += str;
+
+          while (buffer.contains('\n\n')) {
+            final frameEnd = buffer.indexOf('\n\n');
+            final frame = buffer.substring(0, frameEnd);
+            buffer = buffer.substring(frameEnd + 2);
+
+            if (frame.startsWith('data:') || frame.startsWith('event:')) {
+              parseSseData(frame);
+            }
+          }
+        }
+      } catch (e) {
+        if (!controller.isClosed) {
+          controller.addError(e);
+        }
+      } finally {
+        if (!controller.isClosed) {
+          controller.close();
+        }
+      }
+    }
+
+    connect();
+
+    return controller.stream;
   }
 
   /// Fetch all pages for a paginated endpoint.

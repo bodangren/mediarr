@@ -7,14 +7,162 @@ import 'package:mediarr_client/core/theme/mediarr_theme.dart';
 import 'package:mediarr_client/features/activity/activity_screen.dart';
 import 'package:mediarr_client/shared/services/api_client.dart';
 
+class MockTorrentsNotifier extends TorrentsNotifier {
+  MockTorrentsNotifier(TorrentsState initialState) : super(_FakeRef(), skipInit: true) {
+    state = initialState;
+  }
+
+  @override
+  Future<void> refresh() async {}
+}
+
+class MockActivityNotifier extends ActivityNotifier {
+  MockActivityNotifier(ActivityState initialState) : super(_FakeRef(), skipInit: true) {
+    state = initialState;
+  }
+
+  @override
+  Future<void> refresh() async {}
+}
+
+class _FakeRef implements Ref {
+  @override
+  T read<T>(ProviderListenable<T> provider) {
+    throw UnimplementedError();
+  }
+
+  @override
+  ProviderSubscription<T> listen<T>(
+    ProviderListenable<T> provider,
+    void Function(T previous, T next)? onChange, {
+    bool fireImmediately = false,
+    void Function(Object error, StackTrace stackTrace)? onError,
+  }) {
+    throw UnimplementedError();
+  }
+
+  @override
+  void listenManual<T>(
+    ProviderListenable<T> provider,
+    void Function(T previous, T next)? onChange, {
+    bool fireImmediately = false,
+    void Function(Object error, StackTrace stackTrace)? onError,
+  }) {
+    throw UnimplementedError();
+  }
+
+  @override
+  ProviderContainer get container => throw UnimplementedError();
+
+  @override
+  void invalidate(ProviderOrFamily provider) {
+    throw UnimplementedError();
+  }
+
+  @override
+  void invalidateSelf() {
+    throw UnimplementedError();
+  }
+
+  @override
+  T addListener<T>(
+    ProviderListenable<T> provider,
+    void Function(T state) listener, {
+    bool fireImmediately = false,
+  }) {
+    throw UnimplementedError();
+  }
+
+  @override
+  void removeListener<T>(
+    ProviderListenable<T> provider,
+    void Function(T state) listener,
+  ) {
+    throw UnimplementedError();
+  }
+
+  @override
+  ProviderSubscription<T> on<T>(
+    ProviderListenable<T> provider, {
+    bool fireImmediately = false,
+    void Function(T previous, T next)? onChange,
+    void Function(Object error, StackTrace stackTrace)? onError,
+  }) {
+    throw UnimplementedError();
+  }
+
+  @override
+  bool exists(ProviderBase<Object?> provider) {
+    throw UnimplementedError();
+  }
+
+  @override
+  KeepAliveLink keepAlive() {
+    throw UnimplementedError();
+  }
+
+  @override
+  void listenSelf(
+    void Function(Object? previous, Object? next)? onChange, {
+    bool fireImmediately = false,
+    void Function(Object error, StackTrace stackTrace)? onError,
+  }) {
+    throw UnimplementedError();
+  }
+
+  @override
+  void notifyListeners() {
+    throw UnimplementedError();
+  }
+
+  @override
+  void onAddListener(void Function() cb) {
+    throw UnimplementedError();
+  }
+
+  @override
+  void onCancel(void Function() cb) {
+    throw UnimplementedError();
+  }
+
+  @override
+  void onDispose(void Function() cb) {
+    throw UnimplementedError();
+  }
+
+  @override
+  void onRemoveListener(void Function() cb) {
+    throw UnimplementedError();
+  }
+
+  @override
+  void onResume(void Function() cb) {
+    throw UnimplementedError();
+  }
+
+  @override
+  T refresh<T>(Refreshable<T> provider) {
+    throw UnimplementedError();
+  }
+
+  @override
+  T watch<T>(ProviderListenable<T> provider) {
+    throw UnimplementedError();
+  }
+}
+
 void main() {
   group('ActivityScreen', () {
     testWidgets('renders Activity title and tab bar', (tester) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            torrentsProvider.overrideWith((ref) async => <TorrentItem>[]),
-            activityProvider.overrideWith((ref) async => <ActivityEvent>[]),
+            torrentsProvider.overrideWith((ref) => MockTorrentsNotifier(
+              const TorrentsState(items: [], isLoading: false),
+            )),
+            activityProvider.overrideWith((ref) => MockActivityNotifier(
+              const ActivityState(events: [], isLoading: false),
+            )),
           ],
           child: MaterialApp(
             theme: mediarrDarkTheme,
@@ -34,8 +182,12 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            torrentsProvider.overrideWith((ref) async => <TorrentItem>[]),
-            activityProvider.overrideWith((ref) async => <ActivityEvent>[]),
+            torrentsProvider.overrideWith((ref) => MockTorrentsNotifier(
+              const TorrentsState(items: [], isLoading: false),
+            )),
+            activityProvider.overrideWith((ref) => MockActivityNotifier(
+              const ActivityState(events: [], isLoading: false),
+            )),
           ],
           child: MaterialApp(
             theme: mediarrDarkTheme,
@@ -53,8 +205,12 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            torrentsProvider.overrideWith((ref) async => <TorrentItem>[]),
-            activityProvider.overrideWith((ref) async => <ActivityEvent>[]),
+            torrentsProvider.overrideWith((ref) => MockTorrentsNotifier(
+              const TorrentsState(items: [], isLoading: false),
+            )),
+            activityProvider.overrideWith((ref) => MockActivityNotifier(
+              const ActivityState(events: [], isLoading: false),
+            )),
           ],
           child: MaterialApp(
             theme: mediarrDarkTheme,
@@ -72,8 +228,10 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            torrentsProvider.overrideWith((ref) async => [
-                  const TorrentItem(
+            torrentsProvider.overrideWith((ref) => MockTorrentsNotifier(
+              const TorrentsState(
+                items: [
+                  TorrentItem(
                     infoHash: 'abc123',
                     name: 'Test.Movie.2024.S01E01.1080p.WEB',
                     status: 'downloading',
@@ -83,8 +241,13 @@ void main() {
                     size: 1500000000,
                     eta: 3600,
                   ),
-                ]),
-            activityProvider.overrideWith((ref) async => <ActivityEvent>[]),
+                ],
+                isLoading: false,
+              ),
+            )),
+            activityProvider.overrideWith((ref) => MockActivityNotifier(
+              const ActivityState(events: [], isLoading: false),
+            )),
           ],
           child: MaterialApp(
             theme: mediarrDarkTheme,
@@ -104,11 +267,12 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            torrentsProvider.overrideWith((ref) async {
-              await Completer<void>().future;
-              return <TorrentItem>[];
-            }),
-            activityProvider.overrideWith((ref) async => <ActivityEvent>[]),
+            torrentsProvider.overrideWith((ref) => MockTorrentsNotifier(
+              const TorrentsState(items: [], isLoading: true),
+            )),
+            activityProvider.overrideWith((ref) => MockActivityNotifier(
+              const ActivityState(events: [], isLoading: false),
+            )),
           ],
           child: MaterialApp(
             theme: mediarrDarkTheme,
@@ -125,8 +289,12 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            torrentsProvider.overrideWith((ref) async => <TorrentItem>[]),
-            activityProvider.overrideWith((ref) async => <ActivityEvent>[]),
+            torrentsProvider.overrideWith((ref) => MockTorrentsNotifier(
+              const TorrentsState(items: [], isLoading: false),
+            )),
+            activityProvider.overrideWith((ref) => MockActivityNotifier(
+              const ActivityState(events: [], isLoading: false),
+            )),
           ],
           child: MaterialApp(
             theme: mediarrDarkTheme,
@@ -147,8 +315,12 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            torrentsProvider.overrideWith((ref) async => <TorrentItem>[]),
-            activityProvider.overrideWith((ref) async => [
+            torrentsProvider.overrideWith((ref) => MockTorrentsNotifier(
+              const TorrentsState(items: [], isLoading: false),
+            )),
+            activityProvider.overrideWith((ref) => MockActivityNotifier(
+              ActivityState(
+                events: [
                   ActivityEvent(
                     id: 1,
                     eventType: 'download',
@@ -157,7 +329,10 @@ void main() {
                     summary: 'Downloaded Test.Movie.2024.mkv',
                     occurredAt: DateTime.now().subtract(const Duration(hours: 1)),
                   ),
-                ]),
+                ],
+                isLoading: false,
+              ),
+            )),
           ],
           child: MaterialApp(
             theme: mediarrDarkTheme,
@@ -178,10 +353,16 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            torrentsProvider.overrideWith((ref) async {
-              throw Exception('Failed to load torrents');
-            }),
-            activityProvider.overrideWith((ref) async => <ActivityEvent>[]),
+            torrentsProvider.overrideWith((ref) => MockTorrentsNotifier(
+              const TorrentsState(
+                items: [],
+                isLoading: false,
+                error: 'Failed to load torrents',
+              ),
+            )),
+            activityProvider.overrideWith((ref) => MockActivityNotifier(
+              const ActivityState(events: [], isLoading: false),
+            )),
           ],
           child: MaterialApp(
             theme: mediarrDarkTheme,
@@ -199,10 +380,16 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            torrentsProvider.overrideWith((ref) async => <TorrentItem>[]),
-            activityProvider.overrideWith((ref) async {
-              throw Exception('Failed to load activity');
-            }),
+            torrentsProvider.overrideWith((ref) => MockTorrentsNotifier(
+              const TorrentsState(items: [], isLoading: false),
+            )),
+            activityProvider.overrideWith((ref) => MockActivityNotifier(
+              const ActivityState(
+                events: [],
+                isLoading: false,
+                error: 'Failed to load activity',
+              ),
+            )),
           ],
           child: MaterialApp(
             theme: mediarrDarkTheme,
@@ -223,8 +410,10 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            torrentsProvider.overrideWith((ref) async => [
-                  const TorrentItem(
+            torrentsProvider.overrideWith((ref) => MockTorrentsNotifier(
+              const TorrentsState(
+                items: [
+                  TorrentItem(
                     infoHash: 'abc123',
                     name: 'Complete.Movie.2024.1080p',
                     status: 'completed',
@@ -233,8 +422,13 @@ void main() {
                     uploadSpeed: 50000,
                     size: 2000000000,
                   ),
-                ]),
-            activityProvider.overrideWith((ref) async => <ActivityEvent>[]),
+                ],
+                isLoading: false,
+              ),
+            )),
+            activityProvider.overrideWith((ref) => MockActivityNotifier(
+              const ActivityState(events: [], isLoading: false),
+            )),
           ],
           child: MaterialApp(
             theme: mediarrDarkTheme,
@@ -253,8 +447,10 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            torrentsProvider.overrideWith((ref) async => [
-                  const TorrentItem(
+            torrentsProvider.overrideWith((ref) => MockTorrentsNotifier(
+              const TorrentsState(
+                items: [
+                  TorrentItem(
                     infoHash: 'abc123',
                     name: 'Paused.Movie.2024.1080p',
                     status: 'paused',
@@ -263,8 +459,13 @@ void main() {
                     uploadSpeed: 0,
                     size: 2000000000,
                   ),
-                ]),
-            activityProvider.overrideWith((ref) async => <ActivityEvent>[]),
+                ],
+                isLoading: false,
+              ),
+            )),
+            activityProvider.overrideWith((ref) => MockActivityNotifier(
+              const ActivityState(events: [], isLoading: false),
+            )),
           ],
           child: MaterialApp(
             theme: mediarrDarkTheme,
@@ -283,8 +484,12 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            torrentsProvider.overrideWith((ref) async => <TorrentItem>[]),
-            activityProvider.overrideWith((ref) async => [
+            torrentsProvider.overrideWith((ref) => MockTorrentsNotifier(
+              const TorrentsState(items: [], isLoading: false),
+            )),
+            activityProvider.overrideWith((ref) => MockActivityNotifier(
+              ActivityState(
+                events: [
                   ActivityEvent(
                     id: 1,
                     eventType: 'import',
@@ -293,7 +498,10 @@ void main() {
                     summary: 'Failed to import episode',
                     occurredAt: DateTime.now(),
                   ),
-                ]),
+                ],
+                isLoading: false,
+              ),
+            )),
           ],
           child: MaterialApp(
             theme: mediarrDarkTheme,

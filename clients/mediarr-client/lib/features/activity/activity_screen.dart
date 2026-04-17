@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -5,14 +7,179 @@ import '../../core/theme/mediarr_theme.dart';
 import '../../shared/services/api_client.dart';
 import 'queue_item_detail_sheet.dart';
 
-final torrentsProvider = FutureProvider<List<TorrentItem>>((ref) async {
-  final client = ref.read(apiClientProvider.notifier);
-  return client.getTorrents();
+class TorrentsState {
+  const TorrentsState({
+    this.items = const [],
+    this.isLoading = true,
+    this.error,
+  });
+
+  final List<TorrentItem> items;
+  final bool isLoading;
+  final String? error;
+
+  TorrentsState copyWith({
+    List<TorrentItem>? items,
+    bool? isLoading,
+    String? error,
+  }) {
+    return TorrentsState(
+      items: items ?? this.items,
+      isLoading: isLoading ?? this.isLoading,
+      error: error,
+    );
+  }
+}
+
+class TorrentsNotifier extends StateNotifier<TorrentsState> {
+  TorrentsNotifier(this._ref, {bool skipInit = false})
+      : super(const TorrentsState()) {
+    if (!skipInit) {
+      _init();
+    }
+  }
+
+  final Ref _ref;
+  StreamSubscription<SseEvent>? _sseSub;
+
+  Future<void> _init() async {
+    await refresh();
+    _connectSse();
+  }
+
+  void _connectSse() {
+    final client = _ref.read(apiClientProvider.notifier);
+    _sseSub = client.streamEvents().listen(
+      (event) {
+        if (event.event == 'torrent:stats') {
+          _handleTorrentStats(event.data);
+        }
+      },
+      onError: (error) {
+        // SSE error - fall back to polling on next refresh
+      },
+    );
+  }
+
+  void _handleTorrentStats(dynamic data) {
+    if (data is! List) return;
+
+    final torrents = data
+        .map((item) => TorrentItem.fromJson(item as Map<String, dynamic>))
+        .toList();
+
+    state = state.copyWith(items: torrents, isLoading: false, error: null);
+  }
+
+  Future<void> refresh() async {
+    state = state.copyWith(isLoading: true);
+    try {
+      final client = _ref.read(apiClientProvider.notifier);
+      final torrents = await client.getTorrents();
+      state = state.copyWith(items: torrents, isLoading: false, error: null);
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
+  @override
+  void dispose() {
+    _sseSub?.cancel();
+    super.dispose();
+  }
+}
+
+final torrentsProvider =
+    StateNotifierProvider<TorrentsNotifier, TorrentsState>((ref) {
+  return TorrentsNotifier(ref);
 });
 
-final activityProvider = FutureProvider<List<ActivityEvent>>((ref) async {
-  final client = ref.read(apiClientProvider.notifier);
-  return client.getActivity();
+class ActivityState {
+  const ActivityState({
+    this.events = const [],
+    this.isLoading = true,
+    this.error,
+  });
+
+  final List<ActivityEvent> events;
+  final bool isLoading;
+  final String? error;
+
+  ActivityState copyWith({
+    List<ActivityEvent>? events,
+    bool? isLoading,
+    String? error,
+  }) {
+    return ActivityState(
+      events: events ?? this.events,
+      isLoading: isLoading ?? this.isLoading,
+      error: error,
+    );
+  }
+}
+
+class ActivityNotifier extends StateNotifier<ActivityState> {
+  ActivityNotifier(this._ref, {bool skipInit = false})
+      : super(const ActivityState()) {
+    if (!skipInit) {
+      _init();
+    }
+  }
+
+  final Ref _ref;
+  StreamSubscription<SseEvent>? _sseSub;
+
+  Future<void> _init() async {
+    await refresh();
+    _connectSse();
+  }
+
+  void _connectSse() {
+    final client = _ref.read(apiClientProvider.notifier);
+    _sseSub = client.streamEvents().listen(
+      (event) {
+        if (event.event == 'activity:new') {
+          _handleActivityNew(event.data);
+        }
+      },
+      onError: (error) {
+        // SSE error - fall back to polling on next refresh
+      },
+    );
+  }
+
+  void _handleActivityNew(dynamic data) {
+    if (data is! Map<String, dynamic>) return;
+
+    final newEvent = ActivityEvent.fromJson(data);
+    state = state.copyWith(
+      events: [newEvent, ...state.events],
+      isLoading: false,
+      error: null,
+    );
+  }
+
+  Future<void> refresh() async {
+    state = state.copyWith(isLoading: true);
+    try {
+      final client = _ref.read(apiClientProvider.notifier);
+      final events = await client.getActivity();
+      state = state.copyWith(events: events, isLoading: false, error: null);
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
+  @override
+  void dispose() {
+    _sseSub?.cancel();
+    super.dispose();
+  }
+}
+
+final activityProvider =
+    StateNotifierProvider<ActivityNotifier, ActivityState>((ref) {
+  return ActivityNotifier(ref);
 });
 
 class ActivityScreen extends ConsumerStatefulWidget {
@@ -85,15 +252,18 @@ class _QueueTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final torrentsAsync = ref.watch(torrentsProvider);
+    final torrentsState = ref.watch(torrentsProvider);
 
-    return torrentsAsync.when(
-      loading: () => const Center(
+    if (torrentsState.isLoading && torrentsState.items.isEmpty) {
+      return const Center(
         child: CircularProgressIndicator(
           color: MediarrColors.accentPrimary,
         ),
-      ),
-      error: (error, _) => Center(
+      );
+    }
+
+    if (torrentsState.error != null && torrentsState.items.isEmpty) {
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -104,7 +274,7 @@ class _QueueTab extends ConsumerWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              'Failed to load queue: $error',
+              'Failed to load queue: ${torrentsState.error}',
               style: const TextStyle(
                 color: MediarrColors.textMuted,
                 fontSize: 16,
@@ -112,54 +282,55 @@ class _QueueTab extends ConsumerWidget {
             ),
           ],
         ),
-      ),
-      data: (torrents) {
-        if (torrents.isEmpty) {
-          return const Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.download_outlined,
-                  color: MediarrColors.textMuted,
-                  size: 64,
-                ),
-                SizedBox(height: 16),
-                Text(
-                  'No active downloads',
-                  style: TextStyle(
-                    color: MediarrColors.textMuted,
-                    fontSize: 16,
-                  ),
-                ),
-                SizedBox(height: 8),
-                Text(
-                  'Downloads will appear here',
-                  style: TextStyle(
-                    color: MediarrColors.textMuted,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
+      );
+    }
 
-        return RefreshIndicator(
-          onRefresh: () async {
-            ref.invalidate(torrentsProvider);
-          },
-          color: MediarrColors.accentPrimary,
-          child: ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: torrents.length,
-            itemBuilder: (context, index) {
-              final torrent = torrents[index];
-              return _TorrentCard(torrent: torrent);
-            },
-          ),
-        );
+    final torrents = torrentsState.items;
+
+    if (torrents.isEmpty) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.download_outlined,
+              color: MediarrColors.textMuted,
+              size: 64,
+            ),
+            SizedBox(height: 16),
+            Text(
+              'No active downloads',
+              style: TextStyle(
+                color: MediarrColors.textMuted,
+                fontSize: 16,
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Downloads will appear here',
+              style: TextStyle(
+                color: MediarrColors.textMuted,
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: () async {
+        await ref.read(torrentsProvider.notifier).refresh();
       },
+      color: MediarrColors.accentPrimary,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: torrents.length,
+        itemBuilder: (context, index) {
+          final torrent = torrents[index];
+          return _TorrentCard(torrent: torrent);
+        },
+      ),
     );
   }
 }
@@ -373,15 +544,18 @@ class _HistoryTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final activityAsync = ref.watch(activityProvider);
+    final activityState = ref.watch(activityProvider);
 
-    return activityAsync.when(
-      loading: () => const Center(
+    if (activityState.isLoading && activityState.events.isEmpty) {
+      return const Center(
         child: CircularProgressIndicator(
           color: MediarrColors.accentPrimary,
         ),
-      ),
-      error: (error, _) => Center(
+      );
+    }
+
+    if (activityState.error != null && activityState.events.isEmpty) {
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -392,7 +566,7 @@ class _HistoryTab extends ConsumerWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              'Failed to load history: $error',
+              'Failed to load history: ${activityState.error}',
               style: const TextStyle(
                 color: MediarrColors.textMuted,
                 fontSize: 16,
@@ -400,54 +574,55 @@ class _HistoryTab extends ConsumerWidget {
             ),
           ],
         ),
-      ),
-      data: (events) {
-        if (events.isEmpty) {
-          return const Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.history,
-                  color: MediarrColors.textMuted,
-                  size: 64,
-                ),
-                SizedBox(height: 16),
-                Text(
-                  'No activity yet',
-                  style: TextStyle(
-                    color: MediarrColors.textMuted,
-                    fontSize: 16,
-                  ),
-                ),
-                SizedBox(height: 8),
-                Text(
-                  'Recent events will appear here',
-                  style: TextStyle(
-                    color: MediarrColors.textMuted,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
+      );
+    }
 
-        return RefreshIndicator(
-          onRefresh: () async {
-            ref.invalidate(activityProvider);
-          },
-          color: MediarrColors.accentPrimary,
-          child: ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: events.length,
-            itemBuilder: (context, index) {
-              final event = events[index];
-              return _ActivityEventCard(event: event);
-            },
-          ),
-        );
+    final events = activityState.events;
+
+    if (events.isEmpty) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.history,
+              color: MediarrColors.textMuted,
+              size: 64,
+            ),
+            SizedBox(height: 16),
+            Text(
+              'No activity yet',
+              style: TextStyle(
+                color: MediarrColors.textMuted,
+                fontSize: 16,
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Recent events will appear here',
+              style: TextStyle(
+                color: MediarrColors.textMuted,
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: () async {
+        await ref.read(activityProvider.notifier).refresh();
       },
+      color: MediarrColors.accentPrimary,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: events.length,
+        itemBuilder: (context, index) {
+          final event = events[index];
+          return _ActivityEventCard(event: event);
+        },
+      ),
     );
   }
 }

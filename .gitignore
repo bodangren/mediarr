@@ -47,3 +47,5 @@ conductor/output.log
 /app/src/**/*.d.ts
 /app/src/**/*.d.ts.map
 !/app/src/**/*.test.js
+*.db-shm
+*.db-wal

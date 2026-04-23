@@ -28,8 +28,8 @@
 
 ## Phase 4 — Player-First Flutter Shell Decision
 
-- [ ] Task: Audit current Flutter screens and navigation against the media-player-first product goal.
-- [ ] Task: Draft the target player-first navigation model and identify which admin surfaces should be secondary.
-- [ ] Task: Update or create follow-on Conductor work for Home/Continue Watching/default-route changes.
-- [ ] Task: Record manual verification notes from the Flutter client after the decision.
-- [ ] Task: Conductor - Checkpoint Phase 4
+- [x] Task: Audit current Flutter screens and navigation against the media-player-first product goal.
+- [x] Task: Draft the target player-first navigation model and identify which admin surfaces should be secondary.
+- [x] Task: Update or create follow-on Conductor work for Home/Continue Watching/default-route changes.
+- [x] Task: Record manual verification notes from the Flutter client after the decision.
+- [x] Task: Conductor - Checkpoint Phase 4

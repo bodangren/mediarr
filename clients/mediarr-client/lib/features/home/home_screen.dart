@@ -14,7 +14,7 @@ final upcomingProvider = FutureProvider<List<UpcomingItem>>((ref) async {
 
 final recentlyAddedProvider = FutureProvider<List<ActivityEvent>>((ref) async {
   final client = ref.read(apiClientProvider.notifier);
-  return client.getActivity(pageSize: 10);
+  return client.getActivity(types: 'download,import', pageSize: 10);
 });
 
 class HomeScreen extends ConsumerWidget {

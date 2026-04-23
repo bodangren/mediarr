@@ -727,6 +727,7 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
     String? eventType,
     String? sourceModule,
     bool? success,
+    String? types,
   }) async {
     final queryParams = <String, dynamic>{
       'page': page,
@@ -735,6 +736,7 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
     if (eventType != null) queryParams['eventType'] = eventType;
     if (sourceModule != null) queryParams['sourceModule'] = sourceModule;
     if (success != null) queryParams['success'] = success;
+    if (types != null) queryParams['types'] = types;
 
     final response = await _dio.get('/api/activity', queryParameters: queryParams);
     if (response.statusCode == 200 && response.data != null) {

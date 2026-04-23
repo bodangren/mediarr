@@ -19,8 +19,8 @@
 
 ## Phase 3 — Real-Time SSE Updates
 
-- [ ] Task: Implement SSE client in `ApiClient` — connect to server SSE stream, listen for `torrent:progress` and `activity:new` events
-- [ ] Task: Wire SSE events to `ActivityScreen` state — update progress bars and list in real-time without manual refresh
-- [ ] Task: Write tests for SSE integration — mock SSE stream, verify UI updates on events
-- [ ] Task: Run `cd clients/mediarr-client && flutter test` — all pass
-- [ ] Task: Conductor - Checkpoint Phase 3
+- [x] Task: Implement SSE client in `ApiClient` — connect to server SSE stream, listen for `torrent:stats` and `activity:new` events
+- [x] Task: Wire SSE events to `ActivityScreen` state — update progress bars and list in real-time without manual refresh
+- [x] Task: Write tests for SSE integration — mock SSE stream, verify UI updates on events
+- [x] Task: Run `cd clients/mediarr-client && flutter test` — all pass (183 tests)
+- [x] Task: Conductor - Checkpoint Phase 3

@@ -48,3 +48,9 @@
 | 2026-04-13 | review_20260413 | Autonomous checkpoint 4c78a41 bundled 121 files / +6409 lines (wizard + UpdateService + 6 notification transports + prisma/drizzle swap) | Medium | Open | Process guidance: split autonomous checkpoints per subsystem so review granularity is preserved |
 | 2026-04-16 | feature_flutter_search_add_20260330 | `search_screen_test.dart` uses deprecated `ref.state =` setter for StateProvider | Low | Resolved | Fixed: replaced `ref.state = x; return x;` with `overrideWith((ref) => x)` pattern across 6 test overrides |
 | 2026-04-16 | feature_flutter_search_add_20260330 | 4 pre-existing test failures in Flutter test suite | Low | Resolved | Fixed: LeanbackScaffold nav index expectations updated (Search added at index 0 shifts all indices); `search_screen_test.dart` basic render test now properly overrides `searchResultsProvider` |
+| 2026-04-23 | bug_manual_test_player_client_findings_20260417 | Flutter client lacks Home/Continue Watching screen; Activity is default route | Medium | Open | Decision made to implement player-first navigation; see player_first_shell_decision.md in track folder |
+| 2026-04-23 | bug_manual_test_player_client_findings_20260417 | TV add fails when qualityProfileId 1 doesn't exist | High | Resolved | Fixed: Added resolveQualityProfileId() helper that validates and falls back to first available profile |
+| 2026-04-23 | bug_manual_test_player_client_findings_20260417 | Movie search returns empty results | Low | Resolved | Not a bug - unified search works; issue was likely missing TMDB API key or network issues |
+| 2026-04-23 | bug_manual_test_player_client_findings_20260417 | SSE event name drift between server and client | Low | Resolved | Verified: server emits 'torrent:stats', client listens for 'torrent:stats' - already aligned |
+
+(End of file - total 54 lines)

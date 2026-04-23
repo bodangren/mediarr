@@ -54,3 +54,8 @@
 - (2026-04-16, feature_flutter_search_add) **Mocking `MediarrApiClient` requires all interface methods** — `implements MediarrApiClient` demands every method signature match exactly. Use correct param names (`positionSeconds`, `durationSeconds`, `userId: String?`) and return types (`Future<bool>` for `connect`).
 - (2026-04-17, feature_flutter_activity_queue) **Flutter nav index shifts when adding destinations** — LeanbackScaffold `_destinations` order change requires updating all `selectedIndex` test expectations. Activity added at index 0 shifts Search/Movies/Series/Settings.
 - (2026-04-17, feature_flutter_activity_queue) **Flutter mock class must implement ALL interface methods** — Adding new methods to `MediarrApiClient` breaks any `_MockMediarrApiClient` that uses `implements`. Must add empty implementations for `getTorrents`, `getActivity`, `pauseTorrent`, `resumeTorrent`, `removeTorrent`.
+- (2026-04-23, bug_manual_test_player_client_findings) **Quality profile ID resolution must not assume ID 1 exists.** Always validate requested ID against database and fall back to first available profile. Prevents FK constraint failures when adding media.
+- (2026-04-23, bug_manual_test_player_client_findings) **SSE event contracts need explicit documentation.** Server and client must agree on event names (e.g., 'torrent:stats' not 'torrent:progress'). Add regression tests to prevent drift.
+- (2026-04-23, bug_manual_test_player_client_findings) **Player-first navigation requires explicit product decision.** Admin surfaces (Activity, Search) should not be default routes. Home/Continue Watching should be the primary entry point for a media player client.
+
+(End of file - total 59 lines)

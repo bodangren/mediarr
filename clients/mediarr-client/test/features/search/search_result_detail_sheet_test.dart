@@ -480,6 +480,9 @@ class _MockMediarrApiClient extends StateNotifier<ApiClientState>
   Future<List<UpcomingItem>> getUpcoming() async => [];
 
   @override
+  Future<Map<String, List<UpcomingItem>>> getCalendarData(int year, int month) async => {};
+
+  @override
   Future<void> pauseTorrent(String infoHash) async {}
 
   @override

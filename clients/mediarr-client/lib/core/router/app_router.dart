@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/widgets/leanback_scaffold.dart';
 import '../../features/activity/activity_screen.dart';
+import '../../features/calendar/calendar_screen.dart';
 import '../../features/discovery/discovery_screen.dart';
 import '../../features/home/home_screen.dart';
 import '../../features/library/movies_screen.dart';
@@ -21,6 +22,7 @@ class AppRoutes {
   static const String search = '/search';
   static const String movies = '/movies';
   static const String series = '/series';
+  static const String calendar = '/calendar';
   static const String settings = '/settings';
 }
 
@@ -66,6 +68,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: AppRoutes.series,
             builder: (context, state) => const SeriesScreen(),
+          ),
+          GoRoute(
+            path: AppRoutes.calendar,
+            builder: (context, state) => const CalendarScreen(),
           ),
           GoRoute(
             path: AppRoutes.settings,

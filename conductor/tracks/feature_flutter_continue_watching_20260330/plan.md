@@ -12,10 +12,10 @@
 
 ## Phase 2 — Calendar Screen
 
-- [ ] Task: Create `CalendarScreen` — monthly grid using `TableCalendar` or custom grid; days with releases show a dot indicator; D-pad navigable with focus ring
-- [ ] Task: Add `getCalendarData(month, year)` method to `ApiClient` — calls `GET /api/dashboard/upcoming?range=month&month=<month>&year=<year>`; returns map of date → releases
-- [ ] Task: Implement day tap → bottom sheet showing release list for that day (episode title, series name, air time; movie title, release date)
-- [ ] Task: Add `CalendarScreen` to router at `/calendar` and to `LeanbackScaffold` nav
-- [ ] Task: Write tests for `CalendarScreen` — renders grid, shows dot indicators, day tap opens sheet
-- [ ] Task: Run `cd clients/mediarr-client && flutter test` — all pass
-- [ ] Task: Conductor - Checkpoint Phase 2
+- [x] Task: Create `CalendarScreen` — monthly grid using `TableCalendar` or custom grid; days with releases show a dot indicator; D-pad navigable with focus ring
+- [x] Task: Add `getCalendarData(month, year)` method to `ApiClient` — calls `GET /api/dashboard/upcoming?range=month&month=<month>&year=<year>`; returns map of date → releases
+- [x] Task: Implement day tap → bottom sheet showing release list for that day (episode title, series name, air time; movie title, release date)
+- [x] Task: Add `CalendarScreen` to router at `/calendar` and to `LeanbackScaffold` nav
+- [x] Task: Write tests for `CalendarScreen` — renders grid, shows dot indicators, day tap opens sheet
+- [x] Task: Run `cd clients/mediarr-client && flutter test` — all pass
+- [x] Task: Conductor - Checkpoint Phase 2

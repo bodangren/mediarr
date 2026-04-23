@@ -701,6 +701,33 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
     return const [];
   }
 
+  /// Fetch calendar data for a specific month.
+  Future<Map<String, List<UpcomingItem>>> getCalendarData(int year, int month) async {
+    final response = await _dio.get('/api/dashboard/upcoming', queryParameters: {
+      'range': 'month',
+      'year': year,
+      'month': month,
+    });
+    if (response.statusCode == 200 && response.data != null) {
+      final data = _unwrap(response.data);
+      List<dynamic> items;
+      if (data is Map<String, dynamic> && data['items'] is List) {
+        items = data['items'] as List;
+      } else if (data is List) {
+        items = data;
+      } else {
+        return {};
+      }
+      final result = <String, List<UpcomingItem>>{};
+      for (final item in items) {
+        final upcoming = UpcomingItem.fromJson(item as Map<String, dynamic>);
+        result.putIfAbsent(upcoming.date, () => []).add(upcoming);
+      }
+      return result;
+    }
+    return {};
+  }
+
   /// Fetch all active torrents.
   Future<List<TorrentItem>> getTorrents() async {
     final response = await _dio.get('/api/torrents');

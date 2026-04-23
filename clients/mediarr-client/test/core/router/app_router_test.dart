@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mediarr_client/core/router/app_router.dart';
 import 'package:mediarr_client/features/discovery/discovery_service.dart';
+import 'package:mediarr_client/features/calendar/calendar_screen.dart';
 import 'package:mediarr_client/features/library/continue_watching_section.dart';
 import 'package:mediarr_client/features/library/movies_screen.dart';
 import 'package:mediarr_client/features/library/series_screen.dart';
@@ -29,6 +30,7 @@ void main() {
       expect(AppRoutes.home, '/home');
       expect(AppRoutes.movies, '/movies');
       expect(AppRoutes.series, '/series');
+      expect(AppRoutes.calendar, '/calendar');
       expect(AppRoutes.settings, '/settings');
     });
   });
@@ -64,6 +66,7 @@ void main() {
             (ref) => _RouterTestDiscoveryService(),
           ),
           continueWatchingProvider.overrideWith((ref) async => const []),
+          calendarProvider.overrideWith((ref, params) async => {}),
           ...overrides,
         ],
       );
@@ -85,6 +88,26 @@ void main() {
 
       expect(find.text('Home'), findsWidgets);
       expect(find.text('Upcoming'), findsOneWidget);
+    });
+
+    testWidgets('navigates to calendar screen via shell route', (tester) async {
+      final container = createRouterTestContainer();
+      addTearDown(container.dispose);
+
+      final router = container.read(appRouterProvider);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp.router(routerConfig: router),
+        ),
+      );
+      await tester.pump();
+
+      router.go(AppRoutes.calendar);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Calendar'), findsWidgets);
     });
 
     testWidgets('navigates to movies screen via shell route', (tester) async {

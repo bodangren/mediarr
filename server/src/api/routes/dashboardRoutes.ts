@@ -155,11 +155,23 @@ export function registerDashboardRoutes(
     return sendSuccess(reply, diskSpaceResults);
   });
 
-  app.get('/api/dashboard/upcoming', async (_request, reply) => {
+  app.get('/api/dashboard/upcoming', async (request, reply) => {
     const prisma = deps.prisma as any;
+    const query = request.query as Record<string, string>;
+    const range = query.range || 'week';
     
-    const now = new Date();
-    const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    let windowStart: Date;
+    let windowEnd: Date;
+    
+    if (range === 'month') {
+      const year = parseInt(query.year || String(new Date().getFullYear()), 10);
+      const month = parseInt(query.month || String(new Date().getMonth() + 1), 10);
+      windowStart = new Date(year, month - 1, 1);
+      windowEnd = new Date(year, month, 0, 23, 59, 59, 999);
+    } else {
+      windowStart = new Date();
+      windowEnd = new Date(windowStart.getTime() + 7 * 24 * 60 * 60 * 1000);
+    }
     
     const upcomingItems: UpcomingItem[] = [];
 
@@ -167,8 +179,8 @@ export function registerDashboardRoutes(
       const episodes = await prisma.episode.findMany({
         where: {
           airDateUtc: {
-            gte: now,
-            lte: sevenDaysFromNow,
+            gte: windowStart,
+            lte: windowEnd,
           },
           monitored: true,
         },
@@ -177,7 +189,6 @@ export function registerDashboardRoutes(
           fileVariants: { select: { id: true } },
         },
         orderBy: { airDateUtc: 'asc' },
-        take: 10,
       });
 
       for (const ep of episodes) {
@@ -200,8 +211,8 @@ export function registerDashboardRoutes(
       const movies = await prisma.movie.findMany({
         where: {
           OR: [
-            { digitalRelease: { gte: now, lte: sevenDaysFromNow } },
-            { physicalRelease: { gte: now, lte: sevenDaysFromNow } },
+            { digitalRelease: { gte: windowStart, lte: windowEnd } },
+            { physicalRelease: { gte: windowStart, lte: windowEnd } },
           ],
           monitored: true,
         },
@@ -212,7 +223,6 @@ export function registerDashboardRoutes(
           { digitalRelease: 'asc' },
           { physicalRelease: 'asc' },
         ],
-        take: 10,
       });
 
       for (const movie of movies) {
@@ -220,8 +230,8 @@ export function registerDashboardRoutes(
         const relevantDate = pickUpcomingMovieDate(
           movie.digitalRelease,
           movie.physicalRelease,
-          now,
-          sevenDaysFromNow,
+          windowStart,
+          windowEnd,
         );
         
         upcomingItems.push({
@@ -237,6 +247,6 @@ export function registerDashboardRoutes(
 
     upcomingItems.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-    return sendSuccess(reply, upcomingItems.slice(0, 10));
+    return sendSuccess(reply, upcomingItems);
   });
 }

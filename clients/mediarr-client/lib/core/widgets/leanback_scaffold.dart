@@ -39,6 +39,12 @@ const _destinations = [
     label: 'Search',
   ),
   _NavDestination(
+    path: AppRoutes.calendar,
+    icon: Icons.calendar_month_outlined,
+    selectedIcon: Icons.calendar_month,
+    label: 'Calendar',
+  ),
+  _NavDestination(
     path: AppRoutes.movies,
     icon: Icons.movie_outlined,
     selectedIcon: Icons.movie,

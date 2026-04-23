@@ -26,6 +26,7 @@ void main() {
       expect(find.text('Home'), findsOneWidget);
       expect(find.text('Activity'), findsOneWidget);
       expect(find.text('Search'), findsOneWidget);
+      expect(find.text('Calendar'), findsOneWidget);
       expect(find.text('Movies'), findsOneWidget);
       expect(find.text('Series'), findsOneWidget);
       expect(find.text('Settings'), findsOneWidget);
@@ -67,21 +68,21 @@ void main() {
       await tester.pumpWidget(buildTestApp(currentPath: AppRoutes.movies));
 
       final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
-      expect(rail.selectedIndex, 3);
+      expect(rail.selectedIndex, 4);
     });
 
     testWidgets('highlights Series when on /series path', (tester) async {
       await tester.pumpWidget(buildTestApp(currentPath: AppRoutes.series));
 
       final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
-      expect(rail.selectedIndex, 4);
+      expect(rail.selectedIndex, 5);
     });
 
     testWidgets('highlights Settings when on /settings path', (tester) async {
       await tester.pumpWidget(buildTestApp(currentPath: AppRoutes.settings));
 
       final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
-      expect(rail.selectedIndex, 5);
+      expect(rail.selectedIndex, 6);
     });
 
     testWidgets('defaults to index 0 for unknown path', (tester) async {

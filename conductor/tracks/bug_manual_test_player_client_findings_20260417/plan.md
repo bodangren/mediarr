@@ -19,12 +19,12 @@
 
 ## Phase 3 — Flutter Discovery and SSE Contract
 
-- [ ] Task: Write or update Flutter discovery tests for same-machine/manual-localhost behavior.
-- [ ] Task: Fix Flutter automatic discovery where supported, preserving manual URL fallback.
-- [ ] Task: Decide canonical torrent SSE event name and update server/client/docs to match.
-- [ ] Task: Add SSE contract coverage for torrent stats and activity events.
-- [ ] Task: Run `cd clients/mediarr-client && flutter test`.
-- [ ] Task: Conductor - Checkpoint Phase 3
+- [x] Task: Write or update Flutter discovery tests for same-machine/manual-localhost behavior.
+- [x] Task: Fix Flutter automatic discovery where supported, preserving manual URL fallback.
+- [x] Task: Decide canonical torrent SSE event name and update server/client/docs to match.
+- [x] Task: Add SSE contract coverage for torrent stats and activity events.
+- [x] Task: Run `cd clients/mediarr-client && flutter test`.
+- [x] Task: Conductor - Checkpoint Phase 3
 
 ## Phase 4 — Player-First Flutter Shell Decision
 

@@ -2,7 +2,6 @@
   "id": "chore_daily_cleanup_20260404b",
   "title": "Daily Cleanup — Finish Stale Archives, Verify Green Suite",
   "type": "chore",
-  "status": "done",
-  "created": "2026-04-04",
-  "completed": "2026-04-04"
+  "status": "in_progress",
+  "created": "2026-04-04"
 }

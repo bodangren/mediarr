@@ -1,0 +1,11 @@
+{
+  "track_id": "chore_test_quality_strengthening_20260424",
+  "type": "chore",
+  "status": "pending",
+  "created_at": "2026-04-24T00:00:00Z",
+  "updated_at": "2026-04-24T00:00:00Z",
+  "description": "Strengthen 5 weak test suites: table-memoization, modal backdrop-close, FilesystemBrowser, VirtualTable, and FileBrowser tests",
+  "estimated_tasks": 5,
+  "actual_tasks": null,
+  "deviation_notes": ""
+}

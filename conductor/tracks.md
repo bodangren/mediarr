@@ -113,6 +113,18 @@ Parallel:
 - [x] **Track: Flutter Continue Watching & Calendar** *Phases: 2 | Link: [./archive/feature_flutter_continue_watching_20260330/](./archive/feature_flutter_continue_watching_20260330/)* — HomeScreen with Continue Watching, Recently Added, Upcoming sections; CalendarScreen with monthly grid, dot indicators, day detail sheet; 1746 tests green
 - [ ] **Track: Flutter Subtitle & Quality Control** *Phases: 2 | Link: [./tracks/feature_flutter_subtitle_quality_20260330/](./tracks/feature_flutter_subtitle_quality_20260330/)*
 
+- [ ] **Track: Lint Debt Reduction**
+      *Reduce 201 lint errors across app workspace — fix unused-vars, no-explicit-any, and warnings*
+      *Link: [./conductor/tracks/chore_lint_debt_reduction_20260424/](./conductor/tracks/chore_lint_debt_reduction_20260424/)*
+
+- [ ] **Track: Indexer Catalog Endpoint Caching**
+      *Add in-memory caching for catalog endpoints that read popular-indexers.json from disk on every request*
+      *Link: [./conductor/tracks/feature_catalog_endpoint_caching_20260424/](./conductor/tracks/feature_catalog_endpoint_caching_20260424/)*
+
+- [ ] **Track: Test Quality Strengthening**
+      *Strengthen 5 weak test suites with meaningful assertions: table-memoization, modal, FilesystemBrowser, VirtualTable, FileBrowser*
+      *Link: [./conductor/tracks/chore_test_quality_strengthening_20260424/](./conductor/tracks/chore_test_quality_strengthening_20260424/)*
+
 ### Parallel: Backend Performance
 - [x] **Track: Drizzle ORM Migration** *Phases: 4 | Link: [./archive/chore_drizzle_migration_20260314/](./archive/chore_drizzle_migration_20260314/)* — Drizzle-backed runtime complete; Bun startup stabilized via `--no-addons`; 116 files / 1158 tests passed
 

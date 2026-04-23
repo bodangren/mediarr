@@ -56,4 +56,4 @@
 - [x] Write tests for findByStatuses: status { in: [...] }
 - [x] Write tests for updateProgress: all fields + null eta
 - [x] Write tests for countByStatus: delegation
-- [x] Run full test suite — confirm green
+- [ ] Run full test suite — confirm green

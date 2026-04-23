@@ -1,0 +1,11 @@
+{
+  "track_id": "feature_catalog_endpoint_caching_20260424",
+  "type": "feature",
+  "status": "pending",
+  "created_at": "2026-04-24T00:00:00Z",
+  "updated_at": "2026-04-24T00:00:00Z",
+  "description": "Add in-memory caching for indexer catalog endpoints that currently read popular-indexers.json from disk on every request",
+  "estimated_tasks": 4,
+  "actual_tasks": null,
+  "deviation_notes": ""
+}

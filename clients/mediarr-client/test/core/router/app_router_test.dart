@@ -26,6 +26,7 @@ void main() {
   group('AppRoutes', () {
     test('defines expected route paths', () {
       expect(AppRoutes.discovery, '/discovery');
+      expect(AppRoutes.home, '/home');
       expect(AppRoutes.movies, '/movies');
       expect(AppRoutes.series, '/series');
       expect(AppRoutes.settings, '/settings');
@@ -41,14 +42,14 @@ void main() {
       expect(router, isNotNull);
     });
 
-    test('initial location is discovery', () {
+    test('initial location is home', () {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
       final router = container.read(appRouterProvider);
       expect(
         router.routeInformationProvider.value.uri.path,
-        AppRoutes.discovery,
+        AppRoutes.home,
       );
     });
   });
@@ -68,7 +69,7 @@ void main() {
       );
     }
 
-    testWidgets('discovery screen renders at initial route', (tester) async {
+    testWidgets('home screen renders at initial route', (tester) async {
       final container = createRouterTestContainer();
       addTearDown(container.dispose);
 
@@ -80,11 +81,10 @@ void main() {
           ),
         ),
       );
-      await tester.pump();
-      await tester.pump();
+      await tester.pumpAndSettle();
 
-      expect(find.text('Mediarr'), findsOneWidget);
-      expect(find.text('Connect manually'), findsOneWidget);
+      expect(find.text('Home'), findsWidgets);
+      expect(find.text('Upcoming'), findsOneWidget);
     });
 
     testWidgets('navigates to movies screen via shell route', (tester) async {

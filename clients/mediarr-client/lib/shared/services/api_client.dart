@@ -179,6 +179,44 @@ class ContinueWatchingItem {
   }
 }
 
+class UpcomingItem {
+  const UpcomingItem({
+    required this.id,
+    required this.type,
+    required this.title,
+    required this.date,
+    this.status,
+    this.posterUrl,
+    this.seasonNumber,
+    this.episodeNumber,
+    this.episodeTitle,
+  });
+
+  final int id;
+  final String type;
+  final String title;
+  final String date;
+  final String? status;
+  final String? posterUrl;
+  final int? seasonNumber;
+  final int? episodeNumber;
+  final String? episodeTitle;
+
+  factory UpcomingItem.fromJson(Map<String, dynamic> json) {
+    return UpcomingItem(
+      id: json['id'] as int? ?? 0,
+      type: json['type'] as String? ?? '',
+      title: json['title'] as String? ?? '',
+      date: json['date'] as String? ?? '',
+      status: json['status'] as String?,
+      posterUrl: json['posterUrl'] as String?,
+      seasonNumber: json['seasonNumber'] as int?,
+      episodeNumber: json['episodeNumber'] as int?,
+      episodeTitle: json['episodeTitle'] as String?,
+    );
+  }
+}
+
 class TorrentItem {
   const TorrentItem({
     required this.infoHash,
@@ -642,6 +680,25 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
   /// Server uses: GET /api/stream/:id?type=movie|episode
   String getStreamUrl(int mediaId, String type) {
     return '${state.baseUrl}/api/stream/$mediaId?type=$type';
+  }
+
+  /// Fetch upcoming releases for the next 7 days.
+  Future<List<UpcomingItem>> getUpcoming() async {
+    final response = await _dio.get('/api/dashboard/upcoming');
+    if (response.statusCode == 200 && response.data != null) {
+      final data = _unwrap(response.data);
+      if (data is Map<String, dynamic> && data['items'] is List) {
+        return (data['items'] as List)
+            .map((item) => UpcomingItem.fromJson(item as Map<String, dynamic>))
+            .toList();
+      }
+      if (data is List) {
+        return data
+            .map((item) => UpcomingItem.fromJson(item as Map<String, dynamic>))
+            .toList();
+      }
+    }
+    return const [];
   }
 
   /// Fetch all active torrents.

@@ -477,6 +477,9 @@ class _MockMediarrApiClient extends StateNotifier<ApiClientState>
       [];
 
   @override
+  Future<List<UpcomingItem>> getUpcoming() async => [];
+
+  @override
   Future<void> pauseTorrent(String infoHash) async {}
 
   @override

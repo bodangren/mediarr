@@ -207,6 +207,28 @@ export function registerMediaRoutes(
     };
   }
 
+  async function resolveQualityProfileId(requestedId?: number): Promise<number> {
+    // If a specific ID was requested, validate it exists
+    if (requestedId !== undefined && (deps.prisma as any).qualityProfile?.findUnique) {
+      const exists = await (deps.prisma as any).qualityProfile.findUnique({
+        where: { id: requestedId },
+        select: { id: true },
+      });
+      if (exists) return requestedId;
+    }
+
+    // Look up the first available quality profile
+    if ((deps.prisma as any).qualityProfile?.findFirst) {
+      const firstProfile = await (deps.prisma as any).qualityProfile.findFirst({
+        select: { id: true },
+      });
+      if (firstProfile) return firstProfile.id;
+    }
+
+    // Fall back to default of 1 (will likely fail FK constraint if no profiles exist)
+    return 1;
+  }
+
   function buildMediaPath(rootFolder: string, title: string, year: number): string | null {
     if (!rootFolder) return null;
     return `${rootFolder}/${title} (${year})`;
@@ -216,11 +238,11 @@ export function registerMediaRoutes(
     const body = request.body as CreateMediaBody;
     const mediaType = normalizeMediaType(body.mediaType);
     const monitored = body.monitored ?? true;
-    const qualityProfileId = body.qualityProfileId ?? 1;
+    const qualityProfileId = await resolveQualityProfileId(body.qualityProfileId);
     const { movieRootFolder, tvRootFolder } = await resolveRootFolders();
 
-    console.log('[DIAG:handleCreateMedia] mediaType=%s, qualityProfileId=%d (body provided: %s), title=%j',
-      mediaType, qualityProfileId, body.qualityProfileId !== undefined ? String(body.qualityProfileId) : 'none (defaulted to 1)', body.title);
+    console.log('[DIAG:handleCreateMedia] mediaType=%s, qualityProfileId=%d (body provided: %s, resolved: %s), title=%j',
+      mediaType, qualityProfileId, body.qualityProfileId !== undefined ? String(body.qualityProfileId) : 'none', body.qualityProfileId !== undefined ? 'validated' : 'resolved', body.title);
 
     if (mediaType === 'MOVIE') {
       if (!body.tmdbId || !body.title || !body.year) {
@@ -291,21 +313,6 @@ export function registerMediaRoutes(
 
     if (!body.tvdbId || !body.title || !body.year) {
       throw new ValidationError('tvdbId, title, and year are required for TV');
-    }
-
-    console.log('[DIAG:handleCreateMedia:TV] tvdbId=%s, title=%j, qualityProfileId=%d — verifying QualityProfile exists before write',
-      body.tvdbId, body.title, qualityProfileId);
-    if ((deps.prisma as any).qualityProfile?.findUnique) {
-      const qpCheck = await (deps.prisma as any).qualityProfile.findUnique({ where: { id: qualityProfileId } });
-      if (!qpCheck) {
-        console.error('[DIAG:handleCreateMedia:TV] FK FAIL: QualityProfile id=%d does NOT exist in database!', qualityProfileId);
-        if ((deps.prisma as any).qualityProfile?.findMany) {
-          const allQPs = await (deps.prisma as any).qualityProfile.findMany({ select: { id: true, name: true } });
-          console.error('[DIAG:handleCreateMedia:TV] Available QualityProfiles: %j', allQPs);
-        }
-      } else {
-        console.log('[DIAG:handleCreateMedia:TV] QualityProfile id=%d exists (%j)', qualityProfileId, qpCheck.name);
-      }
     }
 
     const duplicate = deps.mediaRepository?.findSeriesByTvdbId

@@ -10,12 +10,12 @@
 
 ## Phase 2 — Movie Search and TV Add Fixes
 
-- [ ] Task: Write failing regression tests for movie search returning zero results when provider data is available.
-- [ ] Task: Fix movie search routing/provider handling without regressing TV search.
-- [ ] Task: Write failing regression tests for TV show add foreign-key constraint failure.
-- [ ] Task: Fix TV add persistence so required related rows exist before insert, or validate cleanly before database write.
-- [ ] Task: Run `CI=true npm test`.
-- [ ] Task: Conductor - Checkpoint Phase 2
+- [x] Task: Write failing regression tests for movie search returning zero results when provider data is available.
+- [x] Task: Fix movie search routing/provider handling without regressing TV search.
+- [x] Task: Write failing regression tests for TV show add foreign-key constraint failure.
+- [x] Task: Fix TV add persistence so required related rows exist before insert, or validate cleanly before database write.
+- [x] Task: Run `CI=true npm test`.
+- [x] Task: Conductor - Checkpoint Phase 2
 
 ## Phase 3 — Flutter Discovery and SSE Contract
 

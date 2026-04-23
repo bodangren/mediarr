@@ -110,7 +110,7 @@ Parallel:
 - [x] **Track: Flutter Search & Add Media** *Phases: 3 | Link: [./archive/feature_flutter_search_add_20260330/](./archive/feature_flutter_search_add_20260330/)* — SearchScreen with poster grid, SearchResultDetailSheet with releases/grab/add-to-library; 165 Flutter tests green; root CI green (230 files / 1738 tests)
 - [x] **Track: Flutter Activity & Queue** *Phases: 3 | Link: [./archive/feature_flutter_activity_queue_20260330/](./archive/feature_flutter_activity_queue_20260330/)* — Activity & Queue screens with torrent management; SSE real-time updates; 183 tests green
 - [x] **Track: Manual Test Findings and Player-First Client Debugging** *Phases: 4 | Link: [./archive/bug_manual_test_player_client_findings_20260417/](./archive/bug_manual_test_player_client_findings_20260417/)* — movie search empty (not a bug - works), TV add FK failure (fixed with resolveQualityProfileId), Flutter discovery (documented limitation), SSE event-name drift (already aligned), player-first UX decision (approved)
-- [ ] **Track: Flutter Continue Watching & Calendar** *Phases: 2 | Link: [./tracks/feature_flutter_continue_watching_20260330/](./tracks/feature_flutter_continue_watching_20260330/)*
+- [x] **Track: Flutter Continue Watching & Calendar** *Phases: 2 | Link: [./archive/feature_flutter_continue_watching_20260330/](./archive/feature_flutter_continue_watching_20260330/)* — HomeScreen with Continue Watching, Recently Added, Upcoming sections; CalendarScreen with monthly grid, dot indicators, day detail sheet; 1746 tests green
 - [ ] **Track: Flutter Subtitle & Quality Control** *Phases: 2 | Link: [./tracks/feature_flutter_subtitle_quality_20260330/](./tracks/feature_flutter_subtitle_quality_20260330/)*
 
 ### Parallel: Backend Performance

@@ -5,19 +5,6 @@
 
 ### Architecture & Design
 
-- (2026-03-14, code-review) **Inquiry vs. Directive Mandate:** NEVER modify the codebase during an Inquiry phase. Directives for implementation must be explicitly issued by the user.
-- (2026-03-10, refactor_search_release_date_ui_cleanup) Movie model has no single `releaseDate` — uses `inCinemas`, `physicalRelease`, `digitalRelease`; use earliest non-null as guard.
-- (2026-03-10, feature_android_push_notifications) Create `ApiEventHub` BEFORE services that need it in `main.ts` — avoids circular dependency.
-- (2026-03-10, feature_system_health) `vi.hoisted()` required for mock variables inside `vi.mock()` factories.
-
-### Recurring Gotchas
-
-- (2026-03-15, chore_server_module_alignment) For tsx/transpiler servers, use `"module": "preserve"` + `"moduleResolution": "bundler"` — NOT `module:nodenext`.
-- (2026-03-15, chore_server_module_alignment) Vitest mocks must match import style: named imports need named mock exports, not `default:`.
-- (2026-03-15, bug_torrent_manager_corner_cases) `vi.fn()` with constructor: use `vi.fn(function() { return impl; })` not arrow function. `vi.resetAllMocks()` in `afterEach` + `beforeEach` to restore hoisted defaults.
-- (2026-03-16, bug_autosearch_all_corner_cases) Fire-and-forget with `setTimeout` needs `vi.useFakeTimers()` + microtask flushes. Background loops need `isRunning` guard + `finally` reset.
-- (2026-03-16, bug_series_routes_import_rescan) `prisma.X.upsert` — always include owning FK in **update** clause too. Batch import paths must never early-return; failed++ per item.
-- (2026-03-18, feature_ai_release_parser) **READ AND FOLLOW THE SPEC. When the spec says replace X with Y, that means X is gone.**
 - (2026-03-30, chore_drizzle_migration) **Drizzle SQLite gotchas:** `integer()` has no `mode: "bigint"`; `onDelete` lowercase; `drizzle-kit generate` crashes on `0n` defaults (use `sql\`0\``).
 - (2026-03-31, bug_corner_case_testing) **`if (!parsed)` guard prevents episode-to-movie fallback.** Track "no episode found" condition separately. Test private methods indirectly through public API.
 - (2026-04-02, bug_seed_limit_import_guard) **Duplicate seed-limit checking creates race conditions.** Extract shared guard logic; apply in fastest path.
@@ -57,5 +44,7 @@
 - (2026-04-23, bug_manual_test_player_client_findings) **Quality profile ID resolution must not assume ID 1 exists.** Always validate requested ID against database and fall back to first available profile. Prevents FK constraint failures when adding media.
 - (2026-04-23, bug_manual_test_player_client_findings) **SSE event contracts need explicit documentation.** Server and client must agree on event names (e.g., 'torrent:stats' not 'torrent:progress'). Add regression tests to prevent drift.
 - (2026-04-23, bug_manual_test_player_client_findings) **Player-first navigation requires explicit product decision.** Admin surfaces (Activity, Search) should not be default routes. Home/Continue Watching should be the primary entry point for a media player client.
+- (2026-04-24, feature_flutter_continue_watching) **Server endpoints should support range parameters for calendar views.** Extending `/api/dashboard/upcoming` with `range=month&year=&month=` avoids client-side filtering and reduces API calls. Keep default behavior backward-compatible.
+- (2026-04-24, feature_flutter_continue_watching) **Custom calendar grids are simpler than TableCalendar for leanback UIs.** Focus ring + D-pad navigation work better with FocusableActionDetector on custom cells than third-party packages.
 
 (End of file - total 59 lines)

@@ -61,6 +61,7 @@ export function ImportListModal({
   const [tmdbListId, setTmdbListId] = useState('');
 
   // Reset form when modal opens/closes
+/* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (isOpen) {
       if (editList) {

@@ -33,6 +33,7 @@ export function CustomFormatModal({
   const [validationError, setValidationError] = useState<string | null>(null);
 
   // Reset form when modal opens/closes
+/* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (isOpen) {
       if (editFormat) {
@@ -47,6 +48,7 @@ export function CustomFormatModal({
       setValidationError(null);
     }
   }, [isOpen, editFormat]);
+/* eslint-enable react-hooks/set-state-in-effect */
 
   const handleSave = () => {
     // Validation

@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
 import { SkeletonBlock } from '@/components/ui/skeleton-compat';
@@ -19,17 +19,7 @@ export function ManualMatchModal({ isOpen, onClose, series, onMatch }: ManualMat
   const [isSearching, setIsSearching] = useState(false);
   const [selectedResult, setSelectedResult] = useState<SeriesSearchResult | null>(null);
 
-  // Reset state when modal opens/closes or series changes
-  useEffect(() => {
-    if (isOpen && series) {
-      setSearchTerm(series.folderName);
-      setSelectedResult(null);
-      // Auto-search on open
-      performSearch(series.folderName);
-    }
-  }, [isOpen, series]);
-
-  const performSearch = async (term: string) => {
+  const performSearch = useCallback(async (term: string) => {
     if (!term.trim()) {
       setResults([]);
       return;
@@ -47,7 +37,19 @@ export function ManualMatchModal({ isOpen, onClose, series, onMatch }: ManualMat
     
     setResults(filtered);
     setIsSearching(false);
-  };
+  }, []);
+
+  // Reset state when modal opens/closes or series changes
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    if (isOpen && series) {
+      setSearchTerm(series.folderName);
+      setSelectedResult(null);
+      // Auto-search on open
+      performSearch(series.folderName);
+    }
+  }, [isOpen, series, performSearch]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();

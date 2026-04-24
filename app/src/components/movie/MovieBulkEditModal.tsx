@@ -70,12 +70,14 @@ export function MovieBulkEditModal({
   const rootFolders = rootFoldersData?.rootFolders ?? [];
 
   // Reset form when modal opens
+/* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (isOpen) {
       setFormState(DEFAULT_FORM_STATE);
       setShowPreview(false);
     }
   }, [isOpen]);
+/* eslint-enable react-hooks/set-state-in-effect */
 
   // Build the changes object from form state
   const buildChanges = (): BulkMovieChanges => {

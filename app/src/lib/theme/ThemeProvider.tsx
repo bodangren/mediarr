@@ -116,10 +116,6 @@ export function ThemeProvider({
     applyThemeToDocument(theme);
   }, [theme]);
 
-  useEffect(() => {
-    setColorImpairedMode(loadColorImpairedMode());
-  }, []);
-
   const setTheme = (nextTheme: ThemePreference) => {
     setThemeState(nextTheme);
     saveThemePreference(nextTheme, storageKey);

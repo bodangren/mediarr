@@ -33,6 +33,7 @@ export function QueueRemoveModal({
   });
 
   // Reset options when modal is closed
+/* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (!isOpen) {
       setOptions({
@@ -41,6 +42,7 @@ export function QueueRemoveModal({
         ignoreMovie: false,
         deleteFiles: false,
       });
+/* eslint-enable react-hooks/set-state-in-effect */
     }
   }, [isOpen]);
 

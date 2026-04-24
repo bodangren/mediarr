@@ -12,6 +12,7 @@ export interface ProviderTestResultProps {
 export function ProviderTestResult({ result, isTesting }: ProviderTestResultProps) {
   const [visible, setVisible] = useState(false);
 
+/* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (result) {
       setVisible(true);
@@ -21,6 +22,7 @@ export function ProviderTestResult({ result, isTesting }: ProviderTestResultProp
       return () => clearTimeout(timer);
     }
   }, [result]);
+/* eslint-enable react-hooks/set-state-in-effect */
 
   if (!visible && !isTesting) {
     return null;

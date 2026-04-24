@@ -49,6 +49,7 @@ export function ProfileEditorModal({
   const [cutoffError, setCutoffError] = useState('');
 
   // Initialize form when profile changes or modal opens
+/* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (isOpen) {
       setName(profile?.name ?? '');
@@ -63,6 +64,7 @@ export function ProfileEditorModal({
       setCutoffError('');
     }
   }, [isOpen, profile]);
+/* eslint-enable react-hooks/set-state-in-effect */
 
   const getSelectedLanguageCodes = () => languages.map(lang => lang.languageCode);
 

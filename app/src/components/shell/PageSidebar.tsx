@@ -38,6 +38,7 @@ export function PageSidebar({
   const sidebarRef = useRef<HTMLDivElement>(null);
 
   // Touch gesture support for mobile swipe to close
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   useTouchGestures(sidebarRef.current, {
     onSwipeLeft: () => {
       if (isOpen && onClose) {

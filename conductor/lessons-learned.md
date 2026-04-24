@@ -5,6 +5,9 @@
 
 ### Architecture & Design
 
+- (2026-04-24, chore_test_quality_strengthening) **DOM node identity (`toBe`) does not verify memoization.** Use render-count instrumentation with `React.memo`-wrapped spy components. Tests that count renders will catch when memoization fails — the table-memoization suite revealed components re-render despite `memo()` wrappers.
+- (2026-04-24, chore_test_quality_strengthening) **Radix Dialog backdrop clicks need `userEvent`, not `fireEvent`.** The overlay's pointer-event detection requires full event simulation; `userEvent.click(overlay)` triggers `onOpenChange` correctly where `fireEvent.click` fails silently.
+- (2026-04-24, chore_test_quality_strengthening) **Async component tests need `act()` wrappers for all state transitions.** FilesystemBrowser's `useEffect` + API calls cause act warnings unless renders and event fires are both wrapped. Pattern: `await act(async () => { render(...) })` followed by `await act(async () => { fireEvent.click(...) })`.
 - (2026-03-30, chore_drizzle_migration) **Drizzle SQLite gotchas:** `integer()` has no `mode: "bigint"`; `onDelete` lowercase; `drizzle-kit generate` crashes on `0n` defaults (use `sql\`0\``).
 - (2026-03-31, bug_corner_case_testing) **`if (!parsed)` guard prevents episode-to-movie fallback.** Track "no episode found" condition separately. Test private methods indirectly through public API.
 - (2026-04-02, bug_seed_limit_import_guard) **Duplicate seed-limit checking creates race conditions.** Extract shared guard logic; apply in fastest path.

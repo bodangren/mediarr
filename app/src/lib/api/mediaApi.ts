@@ -57,6 +57,7 @@ const cutoffUnmetEpisodeSchema = z.object({
 }).passthrough();
 
 const metadataResultSchema = z.object({
+  id: z.number(),
   mediaType: z.union([z.literal('TV'), z.literal('MOVIE')]),
   title: z.string(),
   tmdbId: z.number().optional(),

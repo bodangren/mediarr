@@ -48,11 +48,10 @@ export function ManualMatchDialog({
       setResults(response.results.map((m) => ({
         id: m.id || m.tmdbId,
         title: m.title,
-        year: m.year || (m.releaseDate ? new Date(m.releaseDate).getFullYear() : undefined),
+        year: m.year,
         overview: m.overview,
-        posterUrl: m.posterUrl || m.posterPath,
+        posterUrl: m.posterUrl,
         tmdbId: m.tmdbId || m.id,
-        imdbId: m.imdbId,
       })));
     } catch (error) {
       console.error('Search failed:', error);

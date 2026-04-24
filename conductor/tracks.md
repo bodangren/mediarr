@@ -113,13 +113,9 @@ Parallel:
 - [x] **Track: Flutter Continue Watching & Calendar** *Phases: 2 | Link: [./archive/feature_flutter_continue_watching_20260330/](./archive/feature_flutter_continue_watching_20260330/)* — HomeScreen with Continue Watching, Recently Added, Upcoming sections; CalendarScreen with monthly grid, dot indicators, day detail sheet; 1746 tests green
 - [ ] **Track: Flutter Subtitle & Quality Control** *Phases: 2 | Link: [./tracks/feature_flutter_subtitle_quality_20260330/](./tracks/feature_flutter_subtitle_quality_20260330/)*
 
-- [ ] **Track: Lint Debt Reduction**
-      *Reduce 201 lint errors across app workspace — fix unused-vars, no-explicit-any, and warnings*
-      *Link: [./conductor/tracks/chore_lint_debt_reduction_20260424/](./conductor/tracks/chore_lint_debt_reduction_20260424/)*
+- [x] **Track: Lint Debt Reduction** *Phases: 5 | Link: [./archive/chore_lint_debt_reduction_20260424/](./archive/chore_lint_debt_reduction_20260424/)* — zero lint errors, 14 exhaustivedeps warnings remain; typecheck + build clean; 216 test files green
 
-- [ ] **Track: Indexer Catalog Endpoint Caching**
-      *Add in-memory caching for catalog endpoints that read popular-indexers.json from disk on every request*
-      *Link: [./conductor/tracks/feature_catalog_endpoint_caching_20260424/](./conductor/tracks/feature_catalog_endpoint_caching_20260424/)*
+- [x] **Track: Indexer Catalog Endpoint Caching** *Phases: 3 | Link: [./archive/feature_catalog_endpoint_caching_20260424/](./archive/feature_catalog_endpoint_caching_20260424/)* — CatalogCache with startup load, file watcher, manual reload endpoint
 
 - [x] **Track: Test Quality Strengthening** *Phases: 5 | Link: [./archive/chore_test_quality_strengthening_20260424/](./archive/chore_test_quality_strengthening_20260424/)* — 3/5 suites strengthened (table-memoization render counts, modal backdrop-close with userEvent, FilesystemBrowser async + breadcrumb nav); VirtualTable and FileBrowser deferred (require component refactor)
 

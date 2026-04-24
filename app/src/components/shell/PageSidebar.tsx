@@ -17,7 +17,7 @@ interface PageSidebarProps {
 
 // Icon mapping component
 function LucideIcon({ name }: { name: string }) {
-  const IconComponent = (Icons as Record<string, React.ComponentType<{ className?: string }>>)[name];
+  const IconComponent = (Icons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[name];
 
   if (!IconComponent) {
     return null;

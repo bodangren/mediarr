@@ -170,7 +170,7 @@ export function AddProfileModal({
     },
   });
 
-  const control = form.control as unknown;
+  const control = form.control;
   const items = form.watch('items');
   const cutoff = form.watch('cutoff');
 

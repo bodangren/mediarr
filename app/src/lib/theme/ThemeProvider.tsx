@@ -51,7 +51,7 @@ function applyThemeToDocument(theme: ThemePreference, doc?: Document): void {
     doc = document;
   }
 
-  const resolvedTheme = resolveThemePreference(theme, doc);
+  const resolvedTheme = resolveThemePreference(theme);
   doc.documentElement.dataset.theme = resolvedTheme;
 }
 

@@ -107,7 +107,7 @@ export function AppShell({ pathname, children }: AppShellProps) {
   return (
     <PageLayout
       pathname={pathname}
-      sidebarCollapsed={uiState.sidebarCollapsed}
+      sidebarCollapsed={uiState?.sidebarCollapsed ?? false}
       onToggleSidebar={toggleSidebarCollapsed}
       header={
         <div className="flex items-center justify-between gap-3">

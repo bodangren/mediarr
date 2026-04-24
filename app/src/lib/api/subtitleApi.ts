@@ -2,6 +2,14 @@ import { z } from 'zod';
 import { ApiHttpClient } from './httpClient';
 import { routeMap } from './routeMap';
 
+const subtitleTrackSchema = z.object({
+  languageCode: z.string(),
+  isForced: z.boolean(),
+  isHi: z.boolean(),
+  path: z.string(),
+  provider: z.string(),
+});
+
 const subtitleVariantSchema = z.object({
   variantId: z.number(),
   path: z.string(),
@@ -20,15 +28,6 @@ const manualSearchCandidateSchema = z.object({
 
 const manualDownloadSchema = z.object({
   storedPath: z.string(),
-});
-
-// Series support schemas
-const subtitleTrackSchema = z.object({
-  languageCode: z.string(),
-  isForced: z.boolean(),
-  isHi: z.boolean(),
-  path: z.string(),
-  provider: z.string(),
 });
 
 const episodeSubtitleSchema = z.object({

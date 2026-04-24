@@ -6,8 +6,9 @@ import { IndexerCatalogPanel } from '@/components/indexers/IndexerCatalogPanel';
 import { useToast } from '@/components/providers/ToastProvider';
 import { getApiClients } from '@/lib/api/client';
 import { getPopularPresets } from '@/lib/indexer/indexerPresets';
-import type { IndexerItem, DiscoveredService, CreateIndexerInput } from '@/lib/api/indexerApi';
-import type { IndexerPreset } from '@/components/indexers/AddIndexerModal';
+import type { IndexerItem, DiscoveredService } from '@/lib/api/indexerApi';
+import type { IndexerPreset, AddIndexerDraft } from '@/components/indexers/AddIndexerModal';
+import type { EditIndexerSource, EditIndexerDraft } from '@/components/indexers/EditIndexerModal';
 
 export function SettingsIndexersPage() {
   const api = useMemo(() => getApiClients(), []);
@@ -72,7 +73,7 @@ export function SettingsIndexersPage() {
     }
   };
 
-  const onAdd = async (draft: CreateIndexerInput) => {
+  const onAdd = async (draft: AddIndexerDraft) => {
     setIsSubmitting(true);
     try {
       await api.indexerApi.create({
@@ -93,7 +94,7 @@ export function SettingsIndexersPage() {
     }
   };
 
-  const onEdit = async (draft: CreateIndexerInput & { id: number }) => {
+  const onEdit = async (draft: EditIndexerDraft) => {
     setIsSubmitting(true);
     try {
       await api.indexerApi.update(draft.id, {
@@ -344,7 +345,7 @@ export function SettingsIndexersPage() {
         <EditIndexerModal
           key={editing.id}
           isOpen
-          indexer={editing as unknown as EditIndexerSource}
+          indexer={editing as EditIndexerSource}
           isSubmitting={isSubmitting}
           onClose={() => setEditing(null)}
           onSave={onEdit}

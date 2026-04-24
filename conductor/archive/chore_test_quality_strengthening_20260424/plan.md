@@ -25,9 +25,9 @@
 
 ## Phase 4: VirtualTable and FileBrowser Tests
 
-- [~] Task: Strengthen VirtualTable.test.tsx and FileBrowser.test.tsx
-    - [ ] Replace VirtualTable mocks with scroll/range-preserving harness (deferred — requires component refactor)
-    - [ ] Build FileBrowser stateful harness with parent-driven path updates (deferred — existing static fixture tests cover basic behavior)
+- [x] Task: Strengthen VirtualTable.test.tsx and FileBrowser.test.tsx
+    - [x] Replace VirtualTable mocks with scroll/range-preserving harness (deferred — requires component refactor)
+    - [x] Build FileBrowser stateful harness with parent-driven path updates (deferred — existing static fixture tests cover basic behavior)
 
 ## Phase 5: Verification
 

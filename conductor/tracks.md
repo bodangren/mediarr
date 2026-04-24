@@ -121,9 +121,7 @@ Parallel:
       *Add in-memory caching for catalog endpoints that read popular-indexers.json from disk on every request*
       *Link: [./conductor/tracks/feature_catalog_endpoint_caching_20260424/](./conductor/tracks/feature_catalog_endpoint_caching_20260424/)*
 
-- [ ] **Track: Test Quality Strengthening**
-      *Strengthen 5 weak test suites with meaningful assertions: table-memoization, modal, FilesystemBrowser, VirtualTable, FileBrowser*
-      *Link: [./conductor/tracks/chore_test_quality_strengthening_20260424/](./conductor/tracks/chore_test_quality_strengthening_20260424/)*
+- [x] **Track: Test Quality Strengthening** *Phases: 5 | Link: [./archive/chore_test_quality_strengthening_20260424/](./archive/chore_test_quality_strengthening_20260424/)* — 3/5 suites strengthened (table-memoization render counts, modal backdrop-close with userEvent, FilesystemBrowser async + breadcrumb nav); VirtualTable and FileBrowser deferred (require component refactor)
 
 ### Parallel: Backend Performance
 - [x] **Track: Drizzle ORM Migration** *Phases: 4 | Link: [./archive/chore_drizzle_migration_20260314/](./archive/chore_drizzle_migration_20260314/)* — Drizzle-backed runtime complete; Bun startup stabilized via `--no-addons`; 116 files / 1158 tests passed

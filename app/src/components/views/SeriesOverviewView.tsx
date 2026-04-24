@@ -73,7 +73,7 @@ function SeriesOverviewCard({ item, onToggleMonitored, onDelete, onRefresh }: Se
           <button
             type="button"
             className="flex-shrink-0 rounded-md p-1.5 transition-colors hover:bg-surface-3"
-            onClick={() => onToggleMonitored(item.id, !Boolean(item.monitored))}
+            onClick={() => onToggleMonitored(item.id, !item.monitored)}
             aria-label={item.monitored ? 'Disable monitoring' : 'Enable monitoring'}
           >
             {item.monitored ? (

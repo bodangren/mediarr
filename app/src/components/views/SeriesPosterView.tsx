@@ -50,7 +50,7 @@ function SeriesPosterCard({ item, onToggleMonitored, onDelete, onRefresh }: Seri
             onClick={event => {
               event.preventDefault();
               event.stopPropagation();
-              onToggleMonitored(item.id, !Boolean(item.monitored));
+              onToggleMonitored(item.id, !item.monitored);
             }}
             aria-label={item.monitored ? 'Disable monitoring' : 'Enable monitoring'}
           >

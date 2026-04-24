@@ -145,7 +145,7 @@ describe('ViewMenu', () => {
     const button = screen.getByRole('button', { name: /view: poster/i });
     await user.click(button);
 
-    let tableOption = await screen.findByRole('menuitem', { name: 'Table' });
+    const tableOption = await screen.findByRole('menuitem', { name: 'Table' });
 
     // Click table option
     await user.click(tableOption);
@@ -160,7 +160,7 @@ describe('ViewMenu', () => {
     await user.click(button);
 
     // Click poster option
-    let posterOption = await screen.findByRole('menuitem', { name: 'Poster' });
+    const posterOption = await screen.findByRole('menuitem', { name: 'Poster' });
     await user.click(posterOption);
 
     expect(mockOnChange).toHaveBeenLastCalledWith('poster');

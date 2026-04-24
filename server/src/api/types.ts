@@ -34,6 +34,7 @@ import type { BackupService } from '../services/BackupService';
 import type { LibraryScanService } from '../services/LibraryScanService';
 import type { SystemHealthService } from '../services/SystemHealthService';
 import type { UpdateService } from '../services/updates/UpdateService';
+import type { CatalogCache } from '../services/indexers/CatalogCache';
 
 
 export interface ApiDependencies {
@@ -156,6 +157,7 @@ export interface ApiDependencies {
     | 'listProgress'
     | 'resetForTests'
   >;
+  catalogCache?: Pick<CatalogCache, 'get' | 'load' | 'invalidate'>;
 
 }
 

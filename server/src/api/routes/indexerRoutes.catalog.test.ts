@@ -1,12 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import Fastify, { type FastifyInstance } from 'fastify';
-import * as fs from 'node:fs';
-import * as path from 'node:path';
 import { registerApiErrorHandler } from '../errors';
 import type { ApiDependencies } from '../types';
 import { registerIndexerRoutes } from './indexerRoutes';
-
-vi.mock('node:fs');
+import { CatalogCache } from '../../services/indexers/CatalogCache';
 
 function createIndexerRepositoryMock() {
   return {
@@ -18,7 +15,7 @@ function createIndexerRepositoryMock() {
   };
 }
 
-function createApp(indexerRepository: ReturnType<typeof createIndexerRepositoryMock>): FastifyInstance {
+function createApp(indexerRepository: ReturnType<typeof createIndexerRepositoryMock>, catalogCache: CatalogCache): FastifyInstance {
   const app = Fastify();
   const deps: ApiDependencies = {
     prisma: {},
@@ -31,6 +28,7 @@ function createApp(indexerRepository: ReturnType<typeof createIndexerRepositoryM
       getDefinition: vi.fn(),
       getCompatibilityReport: vi.fn(),
     },
+    catalogCache,
   };
 
   app.setErrorHandler((error, request, reply) => registerApiErrorHandler(request, reply, error));
@@ -38,7 +36,7 @@ function createApp(indexerRepository: ReturnType<typeof createIndexerRepositoryM
   return app;
 }
 
-const MOCK_CATALOG = JSON.stringify([
+const MOCK_CATALOG = [
   {
     id: '1337x',
     name: '1337x',
@@ -69,16 +67,21 @@ const MOCK_CATALOG = JSON.stringify([
     supportsSearch: true,
     supportsRss: true,
   },
-]);
+];
 
 describe('indexerRoutes catalog endpoints', () => {
   let indexerRepository: ReturnType<typeof createIndexerRepositoryMock>;
+  let catalogCache: CatalogCache;
   let app: FastifyInstance;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     indexerRepository = createIndexerRepositoryMock();
-    app = createApp(indexerRepository);
-    vi.mocked(fs.promises.readFile).mockResolvedValue(MOCK_CATALOG);
+    catalogCache = new CatalogCache('/mock/path.json');
+    vi.spyOn(catalogCache as any, 'load').mockImplementation(async () => {
+      (catalogCache as any).catalog = MOCK_CATALOG;
+    });
+    await catalogCache.load();
+    app = createApp(indexerRepository, catalogCache);
   });
 
   describe('GET /api/indexers/catalog', () => {
@@ -129,9 +132,9 @@ describe('indexerRoutes catalog endpoints', () => {
       expect(entryNzbgear.isConfigured).toBe(false);
     });
 
-    it('returns empty array when catalog file not found', async () => {
+    it('returns empty array when catalog cache is empty', async () => {
       indexerRepository.findAll.mockResolvedValue([]);
-      vi.mocked(fs.promises.readFile).mockRejectedValue(new Error('File not found'));
+      (catalogCache as any).catalog = [];
 
       const response = await app.inject({
         method: 'GET',
@@ -277,6 +280,22 @@ describe('indexerRoutes catalog endpoints', () => {
           protocol: 'nzb',
         }),
       );
+    });
+  });
+
+  describe('POST /api/indexers/catalog/reload', () => {
+    it('reloads catalog cache', async () => {
+      const reloadSpy = vi.spyOn(catalogCache, 'load').mockResolvedValue(undefined);
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/indexers/catalog/reload',
+      });
+
+      expect(response.statusCode).toBe(200);
+      const body = JSON.parse(response.body);
+      expect(body.data.reloaded).toBe(true);
+      expect(reloadSpy).toHaveBeenCalled();
     });
   });
 });

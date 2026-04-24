@@ -6,6 +6,7 @@ import path from 'node:path';
 import { PrismaClient } from './db/prismaClient';
 import { createApiServer } from './api/createApiServer';
 import { registerStaticServing } from './api/staticServing';
+import { CatalogCache } from './services/indexers/CatalogCache';
 import { DefinitionLoader } from './indexers/DefinitionLoader';
 import { IndexerFactory } from './indexers/IndexerFactory';
 import { HttpClient } from './indexers/HttpClient';
@@ -676,6 +677,10 @@ async function startApi(): Promise<void> {
   const backupService = new BackupService(dbFilePath, backupDir);
   const systemHealthService = new SystemHealthService(prisma);
 
+  const catalogCache = new CatalogCache();
+  await catalogCache.load();
+  catalogCache.watch();
+
   const app = createApiServer({
     prisma,
     eventHub,
@@ -713,6 +718,7 @@ async function startApi(): Promise<void> {
     libraryScanService,
     systemHealthService,
     updateService,
+    catalogCache,
   });
 
   const staticDir = process.env.STATIC_DIR ?? path.resolve(process.cwd(), 'app/dist');

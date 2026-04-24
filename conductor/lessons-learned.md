@@ -5,6 +5,8 @@
 
 ### Architecture & Design
 
+- (2026-04-24, feature_catalog_endpoint_caching) **In-memory caching with file watchers eliminates disk I/O from hot paths.** CatalogCache loads JSON at startup and watches for changes; routes serve from memory. For small static data, this is simpler than Redis and avoids process.cwd() path resolution issues by using __dirname-relative paths.
+
 - (2026-04-24, chore_test_quality_strengthening) **DOM node identity (`toBe`) does not verify memoization.** Use render-count instrumentation with `React.memo`-wrapped spy components. Tests that count renders will catch when memoization fails — the table-memoization suite revealed components re-render despite `memo()` wrappers.
 - (2026-04-24, chore_test_quality_strengthening) **Radix Dialog backdrop clicks need `userEvent`, not `fireEvent`.** The overlay's pointer-event detection requires full event simulation; `userEvent.click(overlay)` triggers `onOpenChange` correctly where `fireEvent.click` fails silently.
 - (2026-04-24, chore_test_quality_strengthening) **Async component tests need `act()` wrappers for all state transitions.** FilesystemBrowser's `useEffect` + API calls cause act warnings unless renders and event fires are both wrapped. Pattern: `await act(async () => { render(...) })` followed by `await act(async () => { fireEvent.click(...) })`.

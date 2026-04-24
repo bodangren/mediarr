@@ -2,11 +2,11 @@
 
 ## Phase 1: Cache Implementation
 
-- [ ] Task: Build in-memory catalog cache
-    - [ ] Write tests for cache load, serve, and reload
-    - [ ] Implement CatalogCache class with startup load
-    - [ ] Add file watcher for automatic invalidation
-    - [ ] Fix CATALOG_PATH to use __dirname-relative resolution
+- [x] Task: Build in-memory catalog cache
+    - [x] Write tests for cache load, serve, and reload
+    - [x] Implement CatalogCache class with startup load
+    - [x] Add file watcher for automatic invalidation
+    - [x] Fix CATALOG_PATH to use __dirname-relative resolution
 
 ## Phase 2: Endpoint Integration
 

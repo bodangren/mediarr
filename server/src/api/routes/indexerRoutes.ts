@@ -1,15 +1,12 @@
 import type { FastifyInstance } from 'fastify';
-import * as fs from 'node:fs';
-import * as path from 'node:path';
 import { NotFoundError, ValidationError } from '../../errors/domainErrors';
 import { sendSuccess } from '../contracts';
 import { parseIdParam } from '../routeUtils';
 import type { ApiDependencies } from '../types';
 import { IndexerServiceDiscovery, type DiscoveredService } from '../../services/discovery/IndexerServiceDiscovery';
+import type { CatalogEntry } from '../../services/indexers/CatalogCache';
 
 type DynamicSchemaFieldType = 'text' | 'password' | 'number' | 'boolean';
-
-const CATALOG_PATH = path.resolve(process.cwd(), 'server/src/data/popular-indexers.json');
 
 interface DynamicSchemaField {
   name: string;
@@ -481,13 +478,11 @@ export function registerIndexerRoutes(
       throw new ValidationError('Indexer repository is not configured');
     }
 
-    let catalog: CatalogEntry[];
-    try {
-      const content = await fs.promises.readFile(CATALOG_PATH, 'utf-8');
-      catalog = JSON.parse(content);
-    } catch {
-      catalog = [];
+    if (!deps.catalogCache?.get) {
+      throw new ValidationError('Catalog cache is not configured');
     }
+
+    const catalog = deps.catalogCache.get();
 
     const existingIndexers = await deps.indexerRepository.findAll();
     const configuredIds = new Set(existingIndexers.map(i => i.name.toLowerCase()));
@@ -521,17 +516,14 @@ export function registerIndexerRoutes(
       throw new ValidationError('Indexer repository is not configured');
     }
 
+    if (!deps.catalogCache?.get) {
+      throw new ValidationError('Catalog cache is not configured');
+    }
+
     const { id } = request.params as { id: string };
     const { apiKey } = (request.body as { apiKey?: string } | undefined) ?? {};
 
-    let catalog: CatalogEntry[];
-    try {
-      const content = await fs.promises.readFile(CATALOG_PATH, 'utf-8');
-      catalog = JSON.parse(content);
-    } catch {
-      throw new NotFoundError('Catalog not found');
-    }
-
+    const catalog = deps.catalogCache.get();
     const entry = catalog.find(e => e.id === id);
     if (!entry) {
       throw new NotFoundError(`Catalog entry '${id}' not found`);
@@ -553,6 +545,15 @@ export function registerIndexerRoutes(
     });
 
     return sendSuccess(reply, created, 201);
+  });
+
+  app.post('/api/indexers/catalog/reload', async (_request, reply) => {
+    if (!deps.catalogCache?.load) {
+      throw new ValidationError('Catalog cache is not configured');
+    }
+
+    await deps.catalogCache.load();
+    return sendSuccess(reply, { reloaded: true });
   });
 
   app.get('/api/indexers/detect', async (_request, reply) => {
@@ -682,22 +683,6 @@ export function registerIndexerRoutes(
       indexers: created,
     }, 201);
   });
-}
-
-interface CatalogEntry {
-  id: string;
-  name: string;
-  description: string;
-  type: string;
-  baseUrl: string;
-  categories: string[];
-  requiresApiKey: boolean;
-  signupUrl: string;
-  implementation: string;
-  configContract: string;
-  supportedMediaTypes: string[];
-  supportsSearch: boolean;
-  supportsRss: boolean;
 }
 
 function buildSettingsFromEntry(entry: CatalogEntry, apiKey?: string): Record<string, string> {

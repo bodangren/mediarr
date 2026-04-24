@@ -4,187 +4,21 @@
 [0m→ [0mSkill "conductor"
 [0m→ [0mRead ../../.claude/skills/conductor/references/review.md
 [0m→ [0mRead conductor/index.md
+Running the Conductor review workflow. Starting with setup verification.
 [0m→ [0mRead conductor/tracks.md
-[0m→ [0mRead conductor/product.md
-[0m→ [0mRead conductor/tech-stack.md
-[0m→ [0mRead conductor/workflow.md
-Let me start the Review workflow by verifying the Conductor setup.
+[0m→ [0mRead conductor/product.md[90m [limit=5][0m
+[0m→ [0mRead conductor/product-guidelines.md[90m [limit=5][0m
+[0m→ [0mRead conductor/tech-stack.md[90m [limit=5][0m
+[0m→ [0mRead conductor/workflow.md[90m [limit=5][0m
+Conductor is set up. All core files verified.
 
-**Step 1.0: Setup Check** — Verifying core context files.
-[0m→ [0mRead conductor/product-guidelines.md
-[0m✱ [0mGlob "conductor/code_styleguides/*.md"[90m in . · 3 matches[0m
-[0m✱ [0mGlob ".claude/skills/*/SKILL.md"[90m in . · 1 match[0m
-All core files verified. Now loading remaining context.
-[0m
-[0m$ [0mwc -l /home/daniel-bo/Desktop/mediarr/conductor/lessons-learned.md 2>/dev/null || echo "NOT_FOUND"
-61 /home/daniel-bo/Desktop/mediarr/conductor/lessons-learned.md
-[0m
-[0m✱ [0mGlob "conductor/tracks/*/metadata.json"[90m in . · 5 matches[0m
-[0m→ [0mRead conductor/code_styleguides/typescript.md
-[0m→ [0mRead conductor/code_styleguides/general.md
-[0m→ [0mRead conductor/code_styleguides/javascript.md
-[0m→ [0mRead conductor/lessons-learned.md
-[0m
-[0m$ [0mgit status --short
-M conductor/review-output.log
-[0m
-**Step 2.1: Identify Scope**
+No tracks are currently marked `[~] In Progress`. Here are the active tracks:
 
-No tracks are marked `[~] In Progress`. Let me check for uncommitted changes that may be the review target.
-[0m$ [0mgit log --oneline -15
-31bc799 Flutter Continue Watching Phase 1: HomeScreen with sections, nav, tests
-dcc80e9 feat(flutter): Complete Activity & Queue Phase 3 — SSE real-time updates
-2249df1 chore(conductor): Archive bug_manual_test_player_client_findings track
-68c8ef3 chore(conductor): Update tech-debt and lessons-learned
-911e658 docs(manual-test-findings): Phase 4 - Player-First Flutter Shell Decision
-0f8585d fix(manual-test-findings): Phase 3 - SSE contract verified, discovery documented
-464e31e fix(manual-test-findings): Phase 2 - Movie search and TV add FK fixes
-ad2687e chore: add SQLite WAL files to .gitignore [daily-report]
-311a721 feat(flutter): Activity & Queue screens with SSE events, torrent management, and test coverage
-38e817c diag: Phase 1 — instrument movie search, TV add FK, mDNS discovery with diagnostic logging
-443c0b8 chore: update tracks.md for Flutter Activity & Queue Phase 1-2
-7f4e66a docs: add Flutter Activity & Queue lessons learned
-ae0afbc feat(flutter): Activity & Queue screens with torrent management
-c82b345 archive: feature_flutter_search_add moved to archive
-d1c31c0 archive: feature_flutter_search_add complete; Phase D continues; lessons learned
-[0m
-[0m→ [0mRead conductor/tracks/feature_flutter_continue_watching_20260330/metadata.json
-[0m→ [0mRead conductor/tracks/feature_flutter_continue_watching_20260330/spec.md
-The most recent commit is `31bc799` — **Flutter Continue Watching Phase 1**. I'll review this commit against its track.
-[0m→ [0mRead conductor/tracks/feature_flutter_continue_watching_20260330/plan.md
-[0m
-[0m$ [0mgit diff HEAD~1..HEAD --stat
-.../mediarr-client/lib/core/router/app_router.dart |   8 +-
- .../lib/core/widgets/leanback_scaffold.dart        |   6 +
- .../lib/features/home/home_screen.dart             | 318 +++++++++++++++++++++
- .../lib/shared/services/api_client.dart            |  57 ++++
- .../test/core/router/app_router_test.dart          |  14 +-
- .../test/core/widgets/leanback_scaffold_test.dart  |  16 +-
- .../test/features/home/home_screen_test.dart       | 292 +++++++++++++++++++
- .../search/search_result_detail_sheet_test.dart    |   3 +
- .../plan.md                                        |  14 +-
- 9 files changed, 709 insertions(+), 19 deletions(-)
-[0m
-**Step 2.3: Load and Analyze Changes**
-[0m$ [0mgit diff HEAD~1..HEAD --name-only
-clients/mediarr-client/lib/core/router/app_router.dart
-clients/mediarr-client/lib/core/widgets/leanback_scaffold.dart
-clients/mediarr-client/lib/features/home/home_screen.dart
-clients/mediarr-client/lib/shared/services/api_client.dart
-clients/mediarr-client/test/core/router/app_router_test.dart
-clients/mediarr-client/test/core/widgets/leanback_scaffold_test.dart
-clients/mediarr-client/test/features/home/home_screen_test.dart
-clients/mediarr-client/test/features/search/search_result_detail_sheet_test.dart
-conductor/tracks/feature_flutter_continue_watching_20260330/plan.md
-[0m
-[0m→ [0mRead clients/mediarr-client/lib/features/home/home_screen.dart
-[0m→ [0mRead clients/mediarr-client/lib/shared/services/api_client.dart
-709 lines changed — large changeset. Using iterative review mode. Loading all changed files.
-[0m→ [0mRead clients/mediarr-client/lib/core/router/app_router.dart
-[0m→ [0mRead clients/mediarr-client/lib/core/widgets/leanback_scaffold.dart
-[0m✱ [0mGlob "continue_watching_section.dart"[90m in clients/mediarr-client/lib/features/library · 1 match[0m
-[0m→ [0mRead clients/mediarr-client/test/features/home/home_screen_test.dart
-[0m→ [0mRead clients/mediarr-client/test/core/router/app_router_test.dart
-[0m→ [0mRead clients/mediarr-client/test/core/widgets/leanback_scaffold_test.dart
-[0m→ [0mRead clients/mediarr-client/lib/features/library/continue_watching_section.dart
-[0m
-[0m$ [0mgit diff HEAD~1..HEAD -- clients/mediarr-client/test/features/search/search_result_detail_sheet_test.dart
-diff --git a/clients/mediarr-client/test/features/search/search_result_detail_sheet_test.dart b/clients/mediarr-client/test/features/search/search_result_detail_sheet_test.dart
-index 11f9471..e9fb50d 100644
---- a/clients/mediarr-client/test/features/search/search_result_detail_sheet_test.dart
-+++ b/clients/mediarr-client/test/features/search/search_result_detail_sheet_test.dart
-@@ -476,6 +476,9 @@ class _MockMediarrApiClient extends StateNotifier<ApiClientState>
-   }) async =>
-       [];
- 
-+  @override
-+  Future<List<UpcomingItem>> getUpcoming() async => [];
-+
-   @override
-   Future<void> pauseTorrent(String infoHash) async {}
-[0m
-[0m$ [0mgit diff HEAD~1..HEAD -- clients/mediarr-client/lib/features/library/continue_watching_section.dart | head -5
-(no output)
-[0m
-[0m$ [0mcd /home/daniel-bo/Desktop/mediarr/clients/mediarr-client && flutter test 2>&1
-/bin/bash: line 1: flutter: command not found
-[0m
-[0m$ [0mgit show HEAD~1 --name-only | grep continue_watching_section 2>/dev/null; git log --oneline --follow -- clients/mediarr-client/lib/features/library/continue_watching_section.dart | head -3
-4c78a41 autonomous: checkpoint stale changes before resuming setup wizard
-[0m
-Flutter CLI not available in this environment — proceeding with static analysis only.
+1. **Flutter Subtitle & Quality Control** — `tracks/feature_flutter_subtitle_quality_20260330/`
+2. **Lint Debt Reduction** — `conductor/tracks/chore_lint_debt_reduction_20260424/`
+3. **Indexer Catalog Endpoint Caching** — `conductor/tracks/feature_catalog_endpoint_caching_20260424/`
 
----
-
-## Review Report: Flutter Continue Watching Phase 1
-
-**Commit:** `31bc799` — *Flutter Continue Watching Phase 1: HomeScreen with sections, nav, tests*
-**Track:** `feature_flutter_continue_watching_20260330`
-**Scope:** 9 files, 709 insertions
-
----
-
-### Summary
-
-Phase 1 implementation is **largely correct** and follows the spec well. The HomeScreen renders all three sections, Continue Watching has progress bars and one-tap resume, and the router/scaffold were updated with Home as the default route. 8 tests cover the main scenarios. Two issues found.
-
----
-
-### Verification Checks
-
-| Check | Status |
-|---|---|
-| Plan compliance | ✅ 7/7 tasks implemented |
-| Style compliance | ✅ Follows existing Flutter patterns |
-| New tests | ✅ `home_screen_test.dart` (8 tests), router/scaffold tests updated |
-| Test execution | ⚠️ Flutter CLI not available — static review only |
-| Lessons learned check | ✅ No recurring gotchas triggered |
-
----
-
-### Findings
-
-#### 1. Missing `types` filter on Recently Added endpoint — **Medium**
-
-**File:** `clients/mediarr-client/lib/shared/services/api_client.dart:724`
-**Context:** `getActivity()` in `recentlyAddedProvider`
-
-The spec requires `GET /api/activity?types=download,import&limit=10` for the Recently Added section, but `getActivity()` doesn't accept a `types` parameter — it fetches all activity types (including health events, RSS syncs, etc.).
-
-**Suggested fix:** Add a `types` parameter to `getActivity()` and pass it from `recentlyAddedProvider`:
-```dart
-// In api_client.dart
-Future<List<ActivityEvent>> getActivity({
-  int page = 1,
-  int pageSize = 50,
-  String? types, // <-- add this
-  ...
-}) async {
-  ...
-  if (types != null) queryParams['types'] = types;
-  ...
-}
-
-// In home_screen.dart
-final recentlyAddedProvider = FutureProvider<List<ActivityEvent>>((ref) async {
-  final client = ref.read(apiClientProvider.notifier);
-  return client.getActivity(types: 'download,import', pageSize: 10);
-});
-```
-
-#### 2. No poster images on Continue Watching cards — **Low**
-
-**File:** `clients/mediarr-client/lib/features/library/continue_watching_section.dart:80-143`
-
-The spec says *"horizontal scrollable row of media cards with progress bars"* and the `ContinueWatchingItem` model has `posterUrl`/`backdropUrl` fields, but the cards render only text + progress bar. The API returns poster URLs. This is acceptable for Phase 1 but worth noting for polish.
-
----
-
-### Recommendation
-
-**Apply Fix (A)** for finding #1 — it's a spec deviation that will show irrelevant activity types on the home screen. Finding #2 can be deferred to a polish pass.
-
-Would you like me to:
-- **(A)** Apply the `types` filter fix automatically
-- **(B)** Wait for you to fix manually
-- **(C)** Skip and mark Phase 1 complete as-is
+What would you like to review? Options:
+- One of the tracks above
+- Recent uncommitted changes (working tree diff)
+- A specific file or directory

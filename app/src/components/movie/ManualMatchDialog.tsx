@@ -148,7 +148,6 @@ export function ManualMatchDialog({
                       {/* Poster thumbnail */}
                       <div className="w-12 h-18 shrink-0 bg-surface-2 rounded overflow-hidden">
                         {movie.posterUrl ? (
-                          // eslint-disable-next-line @next/next/no-img-element
                           <img
                             src={movie.posterUrl}
                             alt={movie.title}

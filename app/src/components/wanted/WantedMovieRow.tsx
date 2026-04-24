@@ -62,7 +62,6 @@ export function WantedMovieRow({
       <td className="px-3 py-3">
         <div className="flex items-center gap-3">
           {movie.posterUrl && (
-            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={movie.posterUrl}
               alt={movie.title}

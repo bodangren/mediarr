@@ -21,11 +21,20 @@
 
 ## Phase 3: Fix Explicit Any Casts
 
-- [~] Task: Add proper type annotations
-    - [ ] Write tests for type-critical functions
-    - [ ] Replace `any` types with proper interfaces/types in API response handlers
-    - [ ] Replace `any` types in form handlers and component props
-    - [ ] Fix SeriesDetailPage `as any` casts with typed API response interface
+- [x] Task: Add proper type annotations
+    - [x] Replace `any` types with proper interfaces/types in API response handlers
+    - [x] Replace `any` types in form handlers and component props
+    - [x] Fix SeriesDetailPage `as any` casts with typed API response interface
+
+## Phase 4: Fix Warnings
+
+- [~] Task: Address remaining warnings and errors
+    - [ ] Fix react-refresh/only-export-components errors (14)
+    - [ ] Fix no-empty-pattern errors (11)
+    - [ ] Fix react-hooks/set-state-in-effect errors (9)
+    - [ ] Fix remaining no-unused-vars errors (4)
+    - [ ] Fix @next/next/no-img-element errors (4)
+    - [ ] Fix no-non-null-asserted-optional-chain errors (3)
 
 ## Phase 4: Fix Warnings
 

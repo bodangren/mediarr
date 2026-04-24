@@ -262,7 +262,7 @@ describe('SubtitleTrackList', () => {
 
   it('disables delete button when deleting', () => {
     const handleDelete = vi.fn();
-    const { } = render(
+    render(
       <SubtitleTrackList
         tracks={mockTracks}
         missingLanguages={[]}

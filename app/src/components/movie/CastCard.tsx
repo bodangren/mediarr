@@ -12,7 +12,6 @@ export function CastCard({ cast }: CastCardProps) {
     <div className="group flex flex-col gap-2">
       <div className="aspect-[2/3] overflow-hidden rounded-lg bg-surface-2 shadow-elevation-1">
         {profileUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
           <img
             src={profileUrl}
             alt={name}

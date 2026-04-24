@@ -8,7 +8,6 @@ import type {
   CreateImportListInput,
   UpdateImportListInput,
   TMDBPopularConfig,
-  TMDBListConfig,
 } from '@/lib/api/importListsApi';
 import type { QualityProfile } from '@/types/qualityProfile';
 

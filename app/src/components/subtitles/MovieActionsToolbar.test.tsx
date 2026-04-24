@@ -96,21 +96,21 @@ describe('MovieActionsToolbar', () => {
   });
 
   it('adds spinning animation to refresh icon when syncing', () => {
-    const { } = render(<MovieActionsToolbar {...mockHandlers} isSyncing />);
+    render(<MovieActionsToolbar {...mockHandlers} isSyncing />);
 
     const syncButton = screen.getByRole('button', { name: /sync movie/i });
     expect(syncButton).toContainHTML('animate-spin');
   });
 
   it('adds spinning animation to disk icon when scanning', () => {
-    const { } = render(<MovieActionsToolbar {...mockHandlers} isScanning />);
+    render(<MovieActionsToolbar {...mockHandlers} isScanning />);
 
     const scanButton = screen.getByRole('button', { name: /scan disk/i });
     expect(scanButton).toContainHTML('animate-spin');
   });
 
   it('adds spinning animation to search icon when searching', () => {
-    const { } = render(<MovieActionsToolbar {...mockHandlers} isSearching />);
+    render(<MovieActionsToolbar {...mockHandlers} isSearching />);
 
     const searchButton = screen.getByRole('button', { name: /search all/i });
     expect(searchButton).toContainHTML('animate-spin');

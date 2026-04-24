@@ -9,7 +9,7 @@ import { StatusBadge } from '@/components/ui/status-badge-compat';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/providers/ToastProvider';
 import { formatBytes, formatSpeed, formatTimeRemaining, formatPercent } from '@/lib/format';
-import { QueueRemoveModal, type QueueRemoveOptions } from './QueueRemoveModal';
+import { QueueRemoveModal } from './QueueRemoveModal';
 import { Pause, Play, Trash2, Settings2, RotateCcw } from 'lucide-react';
 
 function normalizeQueueStatus(status: string | undefined): 'downloading' | 'seeding' | 'paused' | 'error' | 'queued' {

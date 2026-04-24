@@ -1,7 +1,7 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { ManualMatchModal } from './ManualMatchModal';
-import type { DetectedSeries, SeriesSearchResult } from './types';
+import type { DetectedSeries } from './types';
 
 describe('ManualMatchModal', () => {
   const mockSeries: DetectedSeries = {

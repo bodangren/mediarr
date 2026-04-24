@@ -25,7 +25,7 @@ describe('Performance Monitor', () => {
     expect(metric).toBeDefined();
     expect(metric?.name).toBe(metricName);
     expect(metric?.duration).toBeGreaterThan(0);
-    expect(metric?.startTime).toBeLessThan(metric?.endTime!);
+    expect(metric!.startTime).toBeLessThan(metric!.endTime);
   });
 
   it('measures async operations', async () => {
@@ -196,7 +196,7 @@ describe('Performance Monitor', () => {
     expect(m2).toBeDefined();
     expect(m3).toBeDefined();
 
-    expect(m1?.duration).toBeGreaterThan(m3?.duration!);
+    expect(m1!.duration).toBeGreaterThan(m3!.duration);
   });
 
   it('tracks metrics statistics', () => {
@@ -218,7 +218,7 @@ describe('Performance Monitor', () => {
     expect(stats).toBeDefined();
     expect(stats?.count).toBe(10);
     expect(stats?.min).toBeGreaterThan(0);
-    expect(stats?.max).toBeGreaterThanOrEqual(stats?.min!);
+    expect(stats!.max).toBeGreaterThanOrEqual(stats!.min);
     expect(stats?.average).toBeGreaterThan(0);
   });
 

@@ -33,7 +33,6 @@ export function MovieDetailHeader({ movie, onMonitoredChange, onPreviousMovie, o
         <div className="flex-shrink-0">
           <div className="h-80 w-56 overflow-hidden rounded-lg bg-surface-2 shadow-elevation-1">
             {posterUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
               <img src={posterUrl} alt={title} className="h-full w-full object-cover" />
             ) : (
               <div className="flex h-full w-full items-center justify-center text-text-muted">

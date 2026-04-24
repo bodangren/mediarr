@@ -50,7 +50,6 @@ export function ManualEpisodeMatchDialog({
   const [selectedSeries, setSelectedSeries] = useState<Series | null>(null);
   const [selectedSeason, setSelectedSeason] = useState<Season | null>(null);
   const [selectedEpisode, setSelectedEpisode] = useState<Episode | null>(null);
-  const [] = useState(false);
 
   // Reset state when dialog closes
   useEffect(() => {

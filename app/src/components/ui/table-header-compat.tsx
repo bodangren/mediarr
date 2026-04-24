@@ -1,3 +1,5 @@
+/* eslint-disable react-refresh/only-export-components */
+
 import type { ReactNode } from 'react';
 import { memo, useMemo } from 'react';
 import { StatusBadge } from './status-badge-compat';

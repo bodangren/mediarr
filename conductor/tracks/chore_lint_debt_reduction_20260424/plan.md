@@ -29,12 +29,13 @@
 ## Phase 4: Fix Warnings
 
 - [~] Task: Address remaining warnings and errors
+    - [x] Fix no-empty-pattern errors (11)
+    - [x] Fix no-non-null-asserted-optional-chain errors (3)
+    - [x] Fix @next/next/no-img-element errors (4)
+    - [x] Fix remaining no-unused-vars errors (4)
     - [ ] Fix react-refresh/only-export-components errors (14)
-    - [ ] Fix no-empty-pattern errors (11)
     - [ ] Fix react-hooks/set-state-in-effect errors (9)
-    - [ ] Fix remaining no-unused-vars errors (4)
-    - [ ] Fix @next/next/no-img-element errors (4)
-    - [ ] Fix no-non-null-asserted-optional-chain errors (3)
+    - [ ] Fix remaining render errors (3)
 
 ## Phase 4: Fix Warnings
 

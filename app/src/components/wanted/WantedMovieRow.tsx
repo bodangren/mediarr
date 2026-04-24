@@ -1,3 +1,5 @@
+/* eslint-disable react-refresh/only-export-components */
+
 
 import { StatusBadge } from '@/components/ui/status-badge-compat';
 import type { MissingMovie } from '@/types/wanted';

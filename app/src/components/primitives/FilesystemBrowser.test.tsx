@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, act } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FilesystemBrowser } from './FilesystemBrowser';
 import { ToastProvider } from '@/components/providers/ToastProvider';
@@ -61,7 +61,9 @@ describe('FilesystemBrowser', () => {
   });
 
   it('shows directory entries after load', async () => {
-    renderWithToast(<FilesystemBrowser {...defaultProps} />);
+    await act(async () => {
+      renderWithToast(<FilesystemBrowser {...defaultProps} />);
+    });
 
     await waitFor(() => {
       expect(screen.getByText('home')).toBeInTheDocument();
@@ -71,7 +73,9 @@ describe('FilesystemBrowser', () => {
   });
 
   it('shows breadcrumb for root path', async () => {
-    renderWithToast(<FilesystemBrowser {...defaultProps} />);
+    await act(async () => {
+      renderWithToast(<FilesystemBrowser {...defaultProps} />);
+    });
 
     await waitFor(() => expect(screen.getByText('home')).toBeInTheDocument());
     // Root breadcrumb should be present
@@ -85,11 +89,15 @@ describe('FilesystemBrowser', () => {
       .mockResolvedValueOnce(rootResponse)
       .mockResolvedValueOnce(homeResponse);
 
-    renderWithToast(<FilesystemBrowser {...defaultProps} />);
+    await act(async () => {
+      renderWithToast(<FilesystemBrowser {...defaultProps} />);
+    });
 
     await waitFor(() => expect(screen.getByText('home')).toBeInTheDocument());
 
-    fireEvent.click(screen.getByText('home'));
+    await act(async () => {
+      fireEvent.click(screen.getByText('home'));
+    });
 
     await waitFor(() => {
       expect(mockFilesystemList).toHaveBeenCalledWith('/home');
@@ -102,46 +110,249 @@ describe('FilesystemBrowser', () => {
       .mockResolvedValueOnce(rootResponse)
       .mockResolvedValueOnce(homeResponse);
 
-    renderWithToast(<FilesystemBrowser {...defaultProps} />);
+    await act(async () => {
+      renderWithToast(<FilesystemBrowser {...defaultProps} />);
+    });
 
     await waitFor(() => expect(screen.getByText('home')).toBeInTheDocument());
-    fireEvent.click(screen.getByText('home'));
+    
+    await act(async () => {
+      fireEvent.click(screen.getByText('home'));
+    });
 
     await waitFor(() => {
       expect(screen.getByRole('button', { name: 'home' })).toBeInTheDocument();
     });
   });
 
-  // ── Selection ─────────────────────────────────────────────────────────────
+  it('navigates back via breadcrumb click', async () => {
+    mockFilesystemList
+      .mockResolvedValueOnce(rootResponse)
+      .mockResolvedValueOnce(homeResponse)
+      .mockResolvedValueOnce(rootResponse);
 
-  it('calls onSelect with the selected path when Select button is clicked', async () => {
-    const onSelect = vi.fn();
-    renderWithToast(<FilesystemBrowser {...defaultProps} onSelect={onSelect} />);
+    await act(async () => {
+      renderWithToast(<FilesystemBrowser {...defaultProps} />);
+    });
 
     await waitFor(() => expect(screen.getByText('home')).toBeInTheDocument());
 
-    // Click a directory row to highlight it
-    fireEvent.click(screen.getByText('home'));
+    // Navigate into /home
+    await act(async () => {
+      fireEvent.click(screen.getByText('home'));
+    });
 
-    // Wait for navigation to complete
-    mockFilesystemList.mockResolvedValueOnce(homeResponse);
+    await waitFor(() => {
+      expect(screen.getByText('user')).toBeInTheDocument();
+    });
+
+    // Click root breadcrumb to navigate back
+    const rootCrumb = screen.getByRole('button', { name: /root|^\/$/ });
+    
+    await act(async () => {
+      fireEvent.click(rootCrumb);
+    });
+
+    await waitFor(() => {
+      expect(mockFilesystemList).toHaveBeenLastCalledWith('/');
+      expect(screen.getByText('home')).toBeInTheDocument();
+    });
+  });
+
+  // ── Selection ─────────────────────────────────────────────────────────────
+
+  it('calls onSelect with exact path when Select button is clicked', async () => {
+    const onSelect = vi.fn();
+    mockFilesystemList.mockResolvedValue(homeResponse);
+
+    await act(async () => {
+      renderWithToast(<FilesystemBrowser {...defaultProps} onSelect={onSelect} initialPath="/home" />);
+    });
+
+    await waitFor(() => expect(screen.getByText('user')).toBeInTheDocument());
 
     // Click Select button
     const selectButton = screen.getByRole('button', { name: /select/i });
-    fireEvent.click(selectButton);
+    
+    await act(async () => {
+      fireEvent.click(selectButton);
+    });
 
-    expect(onSelect).toHaveBeenCalled();
+    expect(onSelect).toHaveBeenCalledTimes(1);
+    expect(onSelect).toHaveBeenCalledWith('/home');
+  });
+
+  it('calls onSelect with updated path after navigation', async () => {
+    const onSelect = vi.fn();
+    mockFilesystemList
+      .mockResolvedValueOnce(rootResponse)
+      .mockResolvedValueOnce(homeResponse);
+
+    await act(async () => {
+      renderWithToast(<FilesystemBrowser {...defaultProps} onSelect={onSelect} />);
+    });
+
+    await waitFor(() => expect(screen.getByText('home')).toBeInTheDocument());
+
+    // Navigate into /home
+    await act(async () => {
+      fireEvent.click(screen.getByText('home'));
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('user')).toBeInTheDocument();
+    });
+
+    // Click Select button
+    const selectButton = screen.getByRole('button', { name: /select/i });
+    
+    await act(async () => {
+      fireEvent.click(selectButton);
+    });
+
+    expect(onSelect).toHaveBeenCalledTimes(1);
+    expect(onSelect).toHaveBeenCalledWith('/home');
   });
 
   it('calls onClose when the Cancel button is clicked', async () => {
     const onClose = vi.fn();
-    renderWithToast(<FilesystemBrowser {...defaultProps} onClose={onClose} />);
+
+    await act(async () => {
+      renderWithToast(<FilesystemBrowser {...defaultProps} onClose={onClose} />);
+    });
 
     await waitFor(() => expect(screen.getByText('home')).toBeInTheDocument());
 
     const cancelButton = screen.getByRole('button', { name: /cancel/i });
-    fireEvent.click(cancelButton);
+    
+    await act(async () => {
+      fireEvent.click(cancelButton);
+    });
 
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('calls onClose when a directory is selected', async () => {
+    const onClose = vi.fn();
+    const onSelect = vi.fn();
+
+    await act(async () => {
+      renderWithToast(
+        <FilesystemBrowser {...defaultProps} onClose={onClose} onSelect={onSelect} />,
+      );
+    });
+
+    await waitFor(() => expect(screen.getByText('home')).toBeInTheDocument());
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /select/i }));
+    });
+
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  // ── Error Handling ────────────────────────────────────────────────────────
+
+  it('displays error message when directory loading fails', async () => {
+    mockFilesystemList.mockRejectedValue(new Error('Permission denied'));
+
+    await act(async () => {
+      renderWithToast(<FilesystemBrowser {...defaultProps} />);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Permission denied')).toBeInTheDocument();
+    });
+  });
+
+  it('displays generic error for non-Error throws', async () => {
+    mockFilesystemList.mockRejectedValue('String error');
+
+    await act(async () => {
+      renderWithToast(<FilesystemBrowser {...defaultProps} />);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Failed to load directory')).toBeInTheDocument();
+    });
+  });
+
+  // ── Loading State ─────────────────────────────────────────────────────────
+
+  it('shows loading skeletons while loading', async () => {
+    // Create a delayed promise so loading state is visible
+    let resolvePromise: (value: typeof rootResponse) => void = () => {};
+    mockFilesystemList.mockImplementation(
+      () => new Promise(resolve => {
+        resolvePromise = resolve;
+      }),
+    );
+
+    await act(async () => {
+      renderWithToast(<FilesystemBrowser {...defaultProps} />);
+    });
+
+    // Should show skeletons while loading
+    const skeletons = document.querySelectorAll('.animate-pulse');
+    expect(skeletons.length).toBeGreaterThan(0);
+
+    // Resolve the promise
+    await act(async () => {
+      resolvePromise(rootResponse);
+    });
+
+    // Should show actual content after loading
+    await waitFor(() => {
+      expect(screen.getByText('home')).toBeInTheDocument();
+    });
+  });
+
+  // ── Initial Path ──────────────────────────────────────────────────────────
+
+  it('loads initialPath on open', async () => {
+    mockFilesystemList.mockResolvedValue(homeResponse);
+
+    await act(async () => {
+      renderWithToast(<FilesystemBrowser {...defaultProps} initialPath="/home" />);
+    });
+
+    await waitFor(() => {
+      expect(mockFilesystemList).toHaveBeenCalledWith('/home');
+      expect(screen.getByText('user')).toBeInTheDocument();
+    });
+  });
+
+  it('displays empty state when directory has no subdirectories', async () => {
+    mockFilesystemList.mockResolvedValue({
+      path: '/empty',
+      entries: [],
+    });
+
+    await act(async () => {
+      renderWithToast(<FilesystemBrowser {...defaultProps} initialPath="/empty" />);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('No subdirectories found.')).toBeInTheDocument();
+    });
+  });
+
+  it('filters out non-directory entries', async () => {
+    mockFilesystemList.mockResolvedValue({
+      path: '/mixed',
+      entries: [
+        { name: 'file.txt', path: '/mixed/file.txt', isDirectory: false, readable: true, writable: true },
+        { name: 'folder', path: '/mixed/folder', isDirectory: true, readable: true, writable: true },
+      ],
+    });
+
+    await act(async () => {
+      renderWithToast(<FilesystemBrowser {...defaultProps} initialPath="/mixed" />);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('folder')).toBeInTheDocument();
+      expect(screen.queryByText('file.txt')).not.toBeInTheDocument();
+    });
   });
 });

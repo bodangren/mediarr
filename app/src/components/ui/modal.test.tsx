@@ -1,9 +1,10 @@
 import { fireEvent, render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { ConfirmModal, Modal, ModalBody, ModalFooter, ModalHeader } from './modal';
 
 describe('Modal primitives', () => {
-  it('renders dialog content and closes on backdrop click', () => {
+  it('renders dialog content', () => {
     const onClose = vi.fn();
 
     render(
@@ -18,12 +19,70 @@ describe('Modal primitives', () => {
     // shadcn DialogTitle renders the name for the dialog
     expect(screen.getByRole('dialog', { name: 'Manage indexer' })).toBeInTheDocument();
     expect(screen.getByText('Body content')).toBeInTheDocument();
+  });
 
-    // Radix UI Dialog uses an overlay. We can't easily click it via test-id "modal-backdrop"
-    // instead we can trigger onOpenChange or just test that it renders.
-    // For now, let's test the Close button in ModalHeader
+  it('closes on close button click', () => {
+    const onClose = vi.fn();
+
+    render(
+      <Modal isOpen onClose={onClose} ariaLabel="Indexers modal">
+        <ModalHeader title="Manage indexer" onClose={onClose} />
+        <ModalBody>
+          <p>Body content</p>
+        </ModalBody>
+      </Modal>,
+    );
+
     fireEvent.click(screen.getByRole('button', { name: 'Close modal' }));
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('closes on backdrop click when closeOnBackdropClick is true', async () => {
+    const onClose = vi.fn();
+    const user = userEvent.setup();
+
+    render(
+      <Modal isOpen onClose={onClose} ariaLabel="Backdrop modal">
+        <ModalHeader title="Backdrop test" />
+        <ModalBody>
+          <p>Content</p>
+        </ModalBody>
+      </Modal>,
+    );
+
+    // Radix Dialog overlay has data-state="open" and is behind the content
+    // Clicking the overlay should trigger onOpenChange(false) -> onClose()
+    const overlay = document.querySelector('[data-state="open"]');
+    expect(overlay).toBeInTheDocument();
+
+    // Use userEvent for proper pointer event simulation that Radix expects
+    if (overlay) {
+      await user.click(overlay);
+    }
+
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('does NOT close on backdrop click when closeOnBackdropClick is false', () => {
+    const onClose = vi.fn();
+
+    render(
+      <Modal isOpen onClose={onClose} ariaLabel="Locked modal" closeOnBackdropClick={false}>
+        <ModalHeader title="Locked modal" />
+        <ModalBody>
+          <p>Content</p>
+        </ModalBody>
+      </Modal>,
+    );
+
+    const overlay = document.querySelector('[data-state="open"]');
+    expect(overlay).toBeInTheDocument();
+
+    if (overlay) {
+      fireEvent.click(overlay);
+    }
+
+    expect(onClose).not.toHaveBeenCalled();
   });
 
   it('does not render when closed', () => {

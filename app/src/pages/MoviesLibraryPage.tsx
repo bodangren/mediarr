@@ -139,8 +139,8 @@ export function MoviesLibraryPage() {
     const sign = sortDir === 'desc' ? -1 : 1;
     const field = sortBy === 'title' ? 'sortTitle' : sortBy;
     return [...movies].sort((a, b) => {
-      const aVal = (a as any)[field] ?? (sortBy === 'title' ? a.title : 0);
-      const bVal = (b as any)[field] ?? (sortBy === 'title' ? b.title : 0);
+      const aVal = (a as Record<string, unknown>)[field] ?? (sortBy === 'title' ? a.title : 0);
+      const bVal = (b as Record<string, unknown>)[field] ?? (sortBy === 'title' ? b.title : 0);
       if (typeof aVal === 'number' && typeof bVal === 'number') return (aVal - bVal) * sign;
       return String(aVal ?? '').localeCompare(String(bVal ?? '')) * sign;
     });

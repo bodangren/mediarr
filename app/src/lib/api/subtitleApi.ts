@@ -5,6 +5,8 @@ import { routeMap } from './routeMap';
 const subtitleVariantSchema = z.object({
   variantId: z.number(),
   path: z.string(),
+  subtitleTracks: z.array(subtitleTrackSchema).optional(),
+  missingSubtitles: z.array(z.string()).optional(),
 }).passthrough();
 
 const manualSearchCandidateSchema = z.object({

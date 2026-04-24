@@ -21,7 +21,7 @@
 
 ## Phase 3: Fix Explicit Any Casts
 
-- [ ] Task: Add proper type annotations
+- [~] Task: Add proper type annotations
     - [ ] Write tests for type-critical functions
     - [ ] Replace `any` types with proper interfaces/types in API response handlers
     - [ ] Replace `any` types in form handlers and component props

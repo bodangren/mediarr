@@ -2,6 +2,7 @@
  * Test suite for time formatting utilities
  */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect } from 'vitest';
 import { formatRelativeTime } from './time';
 

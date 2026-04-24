@@ -1,6 +1,6 @@
 
 import { useEffect, useMemo, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { type SubtitleProvider, type ProviderSettings, type ProviderTestResult } from '@/lib/api';
@@ -96,7 +96,7 @@ export function ProviderSettingsModal({
   }, [provider?.type]);
 
   const form = useForm<SettingsFormValues>({
-    resolver: zodResolver(providerSchema) as any,
+    resolver: zodResolver(providerSchema) as unknown as Resolver<SettingsFormValues>,
     defaultValues: {
       username: '',
       password: '',

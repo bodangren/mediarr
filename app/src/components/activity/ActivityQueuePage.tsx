@@ -202,7 +202,7 @@ export function ActivityQueuePage() {
     );
   };
 
-  const handleRemoveConfirm = async (
+  const handleRemoveConfirm = async () => {
     if (removeTargets.length === 0) return;
 
     setIsRemoving(true);

@@ -40,6 +40,26 @@ type SeasonItem = {
   };
 };
 
+// Raw API response shapes (loosely typed)
+interface RawEpisode {
+  id: number;
+  seasonNumber?: number;
+  episodeNumber: number;
+  title?: string;
+  airDateUtc?: string | null;
+  monitored?: boolean;
+  hasFile?: boolean;
+  isDownloading?: boolean;
+}
+
+interface RawSeason {
+  id: number;
+  seasonNumber: number;
+  monitored?: boolean;
+  statistics?: SeasonItem['statistics'];
+  episodes?: RawEpisode[];
+}
+
 type SeriesDetail = {
   id: number;
   title: string;
@@ -157,29 +177,27 @@ export function SeriesDetailPage() {
         api.seriesApi.getSeriesWithEpisodes(seriesId),
         api.qualityProfileApi.list(),
       ]);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- API response is loosely typed; mapped to local types below
-      const raw = item as any;
+        const raw = item as Record<string, unknown>;
       setSeries({
         id: item.id,
         title: item.title,
-        year: raw.year,
-        status: raw.status,
-        overview: raw.overview,
-        network: raw.network,
-        posterUrl: raw.posterUrl,
-        tvdbId: raw.tvdbId,
-        monitored: raw.monitored ?? false,
-        qualityProfileId: raw.qualityProfileId,
-        path: raw.path,
-        sizeOnDisk: raw.sizeOnDisk,
-        statistics: raw.statistics,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- API seasons array has no precise type yet
-        seasons: (item.seasons as any[]).map((s: any) => ({
+        year: raw.year as number | undefined,
+        status: raw.status as string | undefined,
+        overview: raw.overview as string | undefined,
+        network: raw.network as string | undefined,
+        posterUrl: raw.posterUrl as string | undefined,
+        tvdbId: raw.tvdbId as number | undefined,
+        monitored: (raw.monitored as boolean | undefined) ?? false,
+        qualityProfileId: raw.qualityProfileId as number | undefined,
+        path: raw.path as string | undefined,
+        sizeOnDisk: raw.sizeOnDisk as number | undefined,
+        statistics: raw.statistics as SeriesDetail['statistics'],
+        seasons: ((item.seasons ?? []) as RawSeason[]).map((s) => ({
           id: s.id,
           seasonNumber: s.seasonNumber,
           monitored: s.monitored ?? false,
           statistics: s.statistics,
-          episodes: (s.episodes ?? []).map((ep: any) => ({
+          episodes: (s.episodes ?? []).map((ep) => ({
             id: ep.id,
             seasonNumber: ep.seasonNumber ?? s.seasonNumber,
             episodeNumber: ep.episodeNumber,

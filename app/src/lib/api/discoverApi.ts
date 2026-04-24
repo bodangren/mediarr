@@ -22,6 +22,8 @@ const discoverMovieSchema = z.object({
 
 export type DiscoverMovie = z.infer<typeof discoverMovieSchema>;
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const discoverRecommendationsSchema = z.object({
   mode: z.enum(['popular', 'top-rated', 'new-releases', 'upcoming']),
   movies: z.array(discoverMovieSchema),
 });

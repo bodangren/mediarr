@@ -115,7 +115,7 @@ export function MovieBulkEditModal({
     const changes = buildChanges();
 
     if (changes.qualityProfileId !== undefined) {
-      const profile = qualityProfiles.find((p: any) => p.id === changes.qualityProfileId);
+      const profile = qualityProfiles.find((p) => p.id === changes.qualityProfileId);
       summary.push(`Quality Profile: ${profile?.name ?? changes.qualityProfileId}`);
     }
     if (changes.monitored !== undefined) {
@@ -254,7 +254,7 @@ export function MovieBulkEditModal({
                 className="w-full rounded-sm border border-border-subtle bg-surface-0 px-3 py-2 text-sm"
               >
                 <option value="">-- No Change --</option>
-                {qualityProfiles.map((profile: any) => (
+                {qualityProfiles.map((profile) => (
                   <option key={profile.id} value={profile.id}>
                     {profile.name}
                   </option>

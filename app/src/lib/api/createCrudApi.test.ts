@@ -27,6 +27,8 @@ describe('createCrudApi', () => {
     enabled: z.boolean(),
   });
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const createSchema = z.object({
     name: z.string(),
     value: z.string(),
     enabled: z.boolean(),

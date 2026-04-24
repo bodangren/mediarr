@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 import {renderHook, act} from '@testing-library/react';
 import { useMediaQuery } from './useMediaQuery';

@@ -32,7 +32,7 @@ function formatActivityToHistoryEvent(activity: ActivityItem): MovieHistoryEvent
   // Extract quality from details if available
   let quality: string | undefined;
   if (activity.details && typeof activity.details === 'object') {
-    quality = (activity.details as any).quality;
+    quality = (activity.details as { quality?: string }).quality;
   }
 
   // Extract source from sourceModule

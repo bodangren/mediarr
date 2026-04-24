@@ -6,7 +6,8 @@ import { IndexerCatalogPanel } from '@/components/indexers/IndexerCatalogPanel';
 import { useToast } from '@/components/providers/ToastProvider';
 import { getApiClients } from '@/lib/api/client';
 import { getPopularPresets } from '@/lib/indexer/indexerPresets';
-import type { IndexerItem, DiscoveredService } from '@/lib/api/indexerApi';
+import type { IndexerItem, DiscoveredService, CreateIndexerInput } from '@/lib/api/indexerApi';
+import type { IndexerPreset } from '@/components/indexers/AddIndexerModal';
 
 export function SettingsIndexersPage() {
   const api = useMemo(() => getApiClients(), []);
@@ -71,7 +72,7 @@ export function SettingsIndexersPage() {
     }
   };
 
-  const onAdd = async (draft: any) => {
+  const onAdd = async (draft: CreateIndexerInput) => {
     setIsSubmitting(true);
     try {
       await api.indexerApi.create({
@@ -92,7 +93,7 @@ export function SettingsIndexersPage() {
     }
   };
 
-  const onEdit = async (draft: any) => {
+  const onEdit = async (draft: CreateIndexerInput & { id: number }) => {
     setIsSubmitting(true);
     try {
       await api.indexerApi.update(draft.id, {
@@ -143,7 +144,7 @@ export function SettingsIndexersPage() {
     }
   };
 
-  const addIndexerPresets = useMemo(() => [
+  const addIndexerPresets = useMemo<IndexerPreset[]>(() => [
     ...getPopularPresets(),
     {
       id: 'torznab-generic',
@@ -318,7 +319,7 @@ export function SettingsIndexersPage() {
       ) : (
         <AddIndexerModal
           isOpen={isAddModalOpen}
-          presets={addIndexerPresets as any}
+          presets={addIndexerPresets}
           isSubmitting={isSubmitting}
           onClose={() => {
             setIsAddModalOpen(false);
@@ -329,7 +330,7 @@ export function SettingsIndexersPage() {
             const res = await api.indexerApi.testDraft({
               ...draft,
               settings: JSON.stringify(draft.settings),
-            } as any);
+            });
             return {
               success: res.success,
               message: res.message,
@@ -343,7 +344,7 @@ export function SettingsIndexersPage() {
         <EditIndexerModal
           key={editing.id}
           isOpen
-          indexer={editing as any}
+          indexer={editing as unknown as EditIndexerSource}
           isSubmitting={isSubmitting}
           onClose={() => setEditing(null)}
           onSave={onEdit}

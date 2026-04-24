@@ -42,10 +42,6 @@ function ImportSeriesTableContent({
 }: ImportSeriesTableProps) {
   const { selectedIds, isSelected, toggleRow, clearSelection } = useSelectContext();
 
-    () => detectedSeries.filter(s => s.status === 'matched').map(s => s.id),
-    [detectedSeries]
-  );
-
   const matchedSeries = detectedSeries.filter(s => s.status === 'matched');
 
   if (detectedSeries.length === 0) {

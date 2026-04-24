@@ -98,7 +98,7 @@ export function MovieDetailHeader({ movie, onMonitoredChange, onPreviousMovie, o
               <span className="rounded-sm bg-surface-2 px-2 py-1 text-xs text-text-secondary">{certification}</span>
             )}
 
-            <StatusBadge status={status as any} />
+            <StatusBadge status={status} />
 
             {qualityProfileName && (
               <span className="rounded-sm bg-surface-2 px-2 py-1 text-xs text-text-secondary">{qualityProfileName}</span>

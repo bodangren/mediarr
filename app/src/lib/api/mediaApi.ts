@@ -320,14 +320,24 @@ export function createMediaApi(client: ApiHttpClient) {
       );
     },
 
-    triggerAutoSearch(id: number, type: 'movie' | 'episode' | 'series'): Promise<any> {
+    triggerAutoSearch(id: number, type: 'movie' | 'episode' | 'series'): Promise<{
+      success: boolean;
+      error?: string;
+      data?: { release?: { title?: string } };
+    }> {
       return client.request(
         {
           path: `/api/media/${id}/auto-search`,
           method: 'POST',
           body: { type },
         },
-        z.any(),
+        z.object({
+          success: z.boolean(),
+          error: z.string().optional(),
+          data: z.object({
+            release: z.object({ title: z.string().optional() }).optional(),
+          }).optional(),
+        }),
       );
     },
 

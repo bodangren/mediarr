@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Alert } from '@/components/ui/alert-compat';
@@ -161,7 +161,7 @@ export function AddProfileModal({
   const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
 
   const form = useForm<ProfileFormValues>({
-    resolver: zodResolver(profileFormSchema) as any,
+    resolver: zodResolver(profileFormSchema) as unknown as Resolver<ProfileFormValues>,
     mode: 'onChange',
     defaultValues: {
       name: editProfile?.name ?? '',
@@ -170,8 +170,7 @@ export function AddProfileModal({
     },
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const control = form.control as any;
+  const control = form.control as unknown;
   const items = form.watch('items');
   const cutoff = form.watch('cutoff');
 

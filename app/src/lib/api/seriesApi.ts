@@ -10,6 +10,8 @@ const episodeStatisticsSchema = z.object({
 });
 
 // Series schema for type inference
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const seriesSchema = z.object({
   id: z.number(),
   title: z.string(),
   year: z.number(),
@@ -58,6 +60,8 @@ const episodeImportFileSchema = z.object({
 });
 
 // Series search result schema for manual match
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const seriesSearchResultSchema = z.object({
   id: z.number(),
   title: z.string(),
   year: z.number().optional(),
@@ -250,7 +254,7 @@ export function createSeriesApi(client: ApiHttpClient) {
         id: number;
         seasonNumber: number;
         monitored?: boolean | null;
-        statistics?: any;
+        statistics?: unknown;
         episodes: Array<{
           id: number;
           episodeNumber: number;
@@ -261,7 +265,7 @@ export function createSeriesApi(client: ApiHttpClient) {
           isDownloading?: boolean | null;
         }>;
       }>;
-      statistics?: any;
+      statistics?: unknown;
     }> {
       return client.request(
         {

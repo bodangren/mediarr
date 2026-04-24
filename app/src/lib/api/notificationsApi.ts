@@ -2,6 +2,8 @@ import { z } from 'zod';
 import { ApiHttpClient } from './httpClient';
 import { routeMap } from './routeMap';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const triggerSchema = z.enum([
   'OnGrab',
   'OnDownload',
   'OnImport',
@@ -10,6 +12,8 @@ import { routeMap } from './routeMap';
   'OnDelete',
 ]);
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const notificationTypeSchema = z.enum([
   'Discord',
   'Telegram',
   'Email',

@@ -27,10 +27,6 @@ const mockMoviesEntries: FileBrowserItem[] = [
   { name: 'The Matrix.mkv', path: '/data/media/movies/The Matrix.mkv', type: 'file', size: 1073741824, modified: new Date('2024-02-20') },
 ];
 
-const : FileBrowserItem[] = [
-  { name: 'settings.json', path: '/config/settings.json', type: 'file', size: 1024, modified: new Date('2024-03-01') },
-];
-
 describe('FileBrowser component', () => {
   it('renders modal with file list', () => {
     const onSelect = vi.fn();

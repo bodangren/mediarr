@@ -45,7 +45,7 @@ export function ManualMatchDialog({
     try {
       // Use discover API to search for movies
       const response = await discoverApi.searchMovies({ query: searchQuery });
-      setResults(response.results.map((m: any) => ({
+      setResults(response.results.map((m) => ({
         id: m.id || m.tmdbId,
         title: m.title,
         year: m.year || (m.releaseDate ? new Date(m.releaseDate).getFullYear() : undefined),

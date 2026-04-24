@@ -53,6 +53,8 @@ const deleteBackupResultSchema = z.object({
 });
 
 // Update backup schedule input schema
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const updateBackupScheduleInputSchema = z.object({
   enabled: z.boolean(),
   interval: z.enum(['hourly', 'daily', 'weekly', 'monthly']),
   retentionDays: z.number(),

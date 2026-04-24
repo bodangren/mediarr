@@ -23,15 +23,7 @@ describe('ManualMatchModal', () => {
     status: 'unmatched',
   };
 
-  const 
-    id: 101,
-    title: 'The Office',
-    year: 2005,
-    overview: 'A mockumentary on a group of typical office workers.',
-    network: 'NBC',
-    status: 'ended',
-    tvdbId: 73244,
-  };
+
 
   const mockOnClose = vi.fn();
   const mockOnMatch = vi.fn();

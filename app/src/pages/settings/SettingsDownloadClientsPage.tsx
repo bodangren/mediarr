@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/providers/ToastProvider';
 import { getApiClients } from '@/lib/api/client';
+import type { TorrentLimitsSettings } from '@/lib/api/downloadClientsApi';
 
 const downloadClientSchema = z.object({
   incompleteDirectory: z.string().min(1, 'Incomplete directory is required'),
@@ -28,7 +29,7 @@ type DownloadClientValues = z.infer<typeof downloadClientSchema>;
 export function SettingsClientsPage() {
   const api = useMemo(() => getApiClients(), []);
   const { pushToast } = useToast();
-  const [fullSettings, setFullSettings] = useState<any>(null);
+  const [fullSettings, setFullSettings] = useState<TorrentLimitsSettings | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeBrowser, setActiveBrowser] = useState<'incomplete' | 'complete' | null>(null);

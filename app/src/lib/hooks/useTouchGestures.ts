@@ -57,7 +57,7 @@ export function useTouchGestures(
       touchStartRef.current = { x: touch.clientX, y: touch.clientY };
     };
 
-    const handleTouchMove = (
+    const handleTouchMove = (_event: TouchEvent) => {
       // Optional: Prevent default behavior if needed
       // e.preventDefault();
     };

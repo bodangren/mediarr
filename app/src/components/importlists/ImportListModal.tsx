@@ -38,15 +38,6 @@ const MONITOR_TYPES = [
   { value: 'none', label: 'None' },
 ];
 
-const 
-  mediaType: 'movie',
-  limit: 20,
-};
-
-const 
-  listId: '',
-};
-
 export function ImportListModal({
   isOpen,
   onClose,

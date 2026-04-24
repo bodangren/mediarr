@@ -52,13 +52,13 @@ export function MovieDetailPage() {
     try {
       const variants = await api.subtitleApi.listMovieVariants(targetMovieId);
       const available = variants.flatMap(variant =>
-        ((variant as any).subtitleTracks ?? [])
-          .map((track: any) => String(track.languageCode ?? '').toLowerCase())
+        (variant.subtitleTracks ?? [])
+          .map((track) => String(track.languageCode ?? '').toLowerCase())
           .filter(Boolean),
       );
       const missing = variants.flatMap(variant =>
-        ((variant as any).missingSubtitles ?? [])
-          .map((item: any) => String(item.languageCode ?? '').toLowerCase())
+        (variant.missingSubtitles ?? [])
+          .map((item) => String(item ?? '').toLowerCase())
           .filter(Boolean),
       );
       setMovieSubtitleSummary(summarizeSubtitleCoverage(available, missing));
@@ -92,11 +92,11 @@ export function MovieDetailPage() {
           tmdbId: item.tmdbId ?? undefined,
           imdbId: item.imdbId ?? undefined,
           posterUrl: item.posterUrl ?? undefined,
-          genres: (item as any).genres as string[] | undefined,
+          genres: item.genres ?? undefined,
           qualityProfileId: item.qualityProfileId,
-          path: (item as any).path ?? undefined,
+          path: item.path ?? undefined,
           sizeOnDisk: item.sizeOnDisk ?? undefined,
-          collection: (item as any).collection ?? null,
+          collection: item.collection ?? null,
         });
         setQualityProfiles(profiles);
         await loadMovieSubtitleSummary(item.id);
@@ -235,7 +235,7 @@ export function MovieDetailPage() {
                 onCollectionAdded={() => {
                   // Re-fetch movie to get updated collection link
                   void api.movieApi.getById(movie.id).then(item => {
-                    setMovie(prev => prev ? { ...prev, collection: (item as any).collection ?? null } : prev);
+                    setMovie(prev => prev ? { ...prev, collection: item.collection ?? null } : prev);
                   });
                 }}
               />

@@ -79,7 +79,7 @@ export function ManualEpisodeMatchDialog({
       const response = await mediaApi.searchMetadata({ term: searchQuery, mediaType: 'TV' });
       // The search returns basic metadata, we need to get full details for each
       const results = await Promise.all(
-        response.slice(0, 10).map(async (item: any) => {
+        response.slice(0, 10).map(async (item) => {
           try {
             const details = await seriesApi.getSeriesWithEpisodes(item.id);
             return details;

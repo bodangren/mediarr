@@ -1,6 +1,6 @@
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import { COLOR_IMPAIRED_KEY, loadColorImpairedMode, toggleColorImpairedMode } from './colorImpaired';
+import {createContext, useEffect, useState, type ReactNode} from 'react';
+import {loadColorImpairedMode, toggleColorImpairedMode} from './colorImpaired';
 
 export type ThemePreference = 'light' | 'dark' | 'auto';
 
@@ -24,8 +24,7 @@ const ThemeContext = createContext<ThemeContextValue | null>(null);
  * Resolves the effective theme based on preference and system setting.
  */
 function resolveThemePreference(
-  theme: ThemePreference,
-  doc?: Document
+  theme: ThemePreference
 ): 'light' | 'dark' {
   if (theme === 'light' || theme === 'dark') {
     return theme;

@@ -1,5 +1,5 @@
 
-import { useState, useRef, useEffect, type ReactNode } from 'react';
+import {useState, useRef, useEffect} from 'react';
 import { Icon } from '@/components/primitives/Icon';
 
 export type MonitoringOption = 'all' | 'future' | 'missing' | 'existing' | 'pilot' | 'firstSeason' | 'none';

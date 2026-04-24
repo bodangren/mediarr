@@ -1,8 +1,6 @@
 
 import { Link } from 'react-router-dom';
-import type { ReactNode } from 'react';
 import { Icon } from '@/components/primitives/Icon';
-import { ProgressBar } from '@/components/ui/progress-bar-compat';
 import { StatusBadge } from '@/components/ui/status-badge-compat';
 import { calculateEpisodeProgress, type SeriesListItem } from '@/types/series';
 

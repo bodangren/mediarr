@@ -1,7 +1,6 @@
 
 import { useMemo } from 'react';
 import { useApiQuery } from '@/lib/query/useApiQuery';
-import { queryKeys } from '@/lib/query/queryKeys';
 import { getApiClients } from '@/lib/api/client';
 import { QueryPanel } from '@/components/ui/query-panel';
 import { EmptyPanel } from '@/components/ui/empty-panel';

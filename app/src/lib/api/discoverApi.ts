@@ -22,7 +22,6 @@ const discoverMovieSchema = z.object({
 
 export type DiscoverMovie = z.infer<typeof discoverMovieSchema>;
 
-const discoverRecommendationsSchema = z.object({
   mode: z.enum(['popular', 'top-rated', 'new-releases', 'upcoming']),
   movies: z.array(discoverMovieSchema),
 });

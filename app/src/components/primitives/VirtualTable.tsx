@@ -55,7 +55,7 @@ export const VirtualTable = memo(function VirtualTable<RowType>({
       <table className="min-w-full text-left text-sm">
         <thead className="bg-surface-2 text-text-secondary sticky top-0">
           <tr>
-            {columns.map((column, idx) => (
+            {columns.map((column) => (
               <th
                 key={column.key}
                 className="px-3 py-2 font-semibold"

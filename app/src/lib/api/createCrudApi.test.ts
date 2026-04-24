@@ -27,7 +27,6 @@ describe('createCrudApi', () => {
     enabled: z.boolean(),
   });
 
-  const createSchema = z.object({
     name: z.string(),
     value: z.string(),
     enabled: z.boolean(),

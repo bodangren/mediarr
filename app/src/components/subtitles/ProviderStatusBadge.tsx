@@ -7,7 +7,7 @@ export interface ProviderStatusBadgeProps {
   provider?: SubtitleProvider;
 }
 
-export function ProviderStatusBadge({ status, lastError, provider }: ProviderStatusBadgeProps) {
+export function ProviderStatusBadge({ lastError, provider }: ProviderStatusBadgeProps) {
   const displayStatus = provider?.enabled ? (provider.status === 'error' ? 'error' : 'active') : 'disabled';
   const errorMessage = lastError ?? provider?.lastError;
 

@@ -53,7 +53,6 @@ const deleteBackupResultSchema = z.object({
 });
 
 // Update backup schedule input schema
-const updateBackupScheduleInputSchema = z.object({
   enabled: z.boolean(),
   interval: z.enum(['hourly', 'daily', 'weekly', 'monthly']),
   retentionDays: z.number(),

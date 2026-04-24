@@ -13,7 +13,7 @@ describe('useTouchGestures', () => {
 
   it('detects left swipe gesture', () => {
     const onSwipeLeft = vi.fn();
-    const { result } = renderHook(() =>
+    const { } = renderHook(() =>
       useTouchGestures(mockElement, {
         onSwipeLeft,
         threshold: 50,
@@ -48,7 +48,7 @@ describe('useTouchGestures', () => {
 
   it('detects right swipe gesture', () => {
     const onSwipeRight = vi.fn();
-    const { result } = renderHook(() =>
+    const { } = renderHook(() =>
       useTouchGestures(mockElement, {
         onSwipeRight,
         threshold: 50,
@@ -83,7 +83,7 @@ describe('useTouchGestures', () => {
 
   it('does not trigger swipe below threshold', () => {
     const onSwipeLeft = vi.fn();
-    const { result } = renderHook(() =>
+    const { } = renderHook(() =>
       useTouchGestures(mockElement, {
         onSwipeLeft,
         threshold: 50,
@@ -173,7 +173,7 @@ describe('useTouchGestures', () => {
 
   it('resets swipe state after gesture completes', () => {
     const onSwipeLeft = vi.fn();
-    const { result } = renderHook(() =>
+    const { } = renderHook(() =>
       useTouchGestures(mockElement, {
         onSwipeLeft,
         threshold: 50,
@@ -235,7 +235,7 @@ describe('useTouchGestures', () => {
 
   it('handles diagonal swipes correctly based on dominant direction', () => {
     const onSwipeLeft = vi.fn();
-    const { result } = renderHook(() =>
+    const { } = renderHook(() =>
       useTouchGestures(mockElement, {
         onSwipeLeft,
         threshold: 50,
@@ -271,7 +271,7 @@ describe('useTouchGestures', () => {
 
   it('supports custom threshold values', () => {
     const onSwipeRight = vi.fn();
-    const { result } = renderHook(() =>
+    const { } = renderHook(() =>
       useTouchGestures(mockElement, {
         onSwipeRight,
         threshold: 100, // Higher threshold

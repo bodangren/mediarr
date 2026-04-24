@@ -4,11 +4,10 @@ import type { ReactNode } from 'react';
 interface PageProps {
   title: string;
   headerActions?: ReactNode;
-  onMenuToggle: () => void;
   children: ReactNode;
 }
 
-export function Page({ title, headerActions, onMenuToggle, children }: PageProps) {
+export function Page({ title, headerActions, children }: PageProps) {
   return (
     <div className="h-full">
       <div className="px-4 py-3 sm:px-4 sm:py-4 lg:px-6 lg:py-4">

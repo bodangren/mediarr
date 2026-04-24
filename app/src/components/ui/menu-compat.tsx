@@ -52,7 +52,7 @@ export function MenuTrigger({ children, onClick, disabled = false, ariaLabel }: 
   );
 }
 
-export function Menu({ isOpen, onClose, items, align = 'left', ariaLabel = 'Menu' }: MenuProps) {
+export function Menu({ isOpen, onClose, items, align = 'left' }: MenuProps) {
   return (
     <DropdownMenu open={isOpen} onOpenChange={(open) => !open && onClose()}>
       {/* 

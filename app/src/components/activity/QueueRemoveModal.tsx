@@ -2,7 +2,6 @@
 import { useEffect, useState } from 'react';
 import { Modal, ModalBody, ModalFooter, ModalHeader } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label-badge';
 
 export interface QueueRemoveModalProps {
   isOpen: boolean;

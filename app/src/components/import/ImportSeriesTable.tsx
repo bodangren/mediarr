@@ -42,7 +42,6 @@ function ImportSeriesTableContent({
 }: ImportSeriesTableProps) {
   const { selectedIds, isSelected, toggleRow, clearSelection } = useSelectContext();
 
-  const selectableIds = useMemo(
     () => detectedSeries.filter(s => s.status === 'matched').map(s => s.id),
     [detectedSeries]
   );

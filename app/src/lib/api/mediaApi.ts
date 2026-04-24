@@ -2,8 +2,6 @@ import { z } from 'zod';
 import { ApiHttpClient, type PaginatedResult } from './httpClient';
 import { routeMap } from './routeMap';
 import type {
-  MissingEpisode,
-  CutoffUnmetEpisode,
   MissingEpisodesQuery,
   CutoffUnmetEpisodesQuery,
 } from '../../types/wanted';

@@ -28,7 +28,7 @@ export function CalendarPage() {
         
         const data = await api.calendarApi.list({ start, end });
         setItems(data);
-      } catch (err) {
+      } catch {
         pushToast({ variant: 'error', title: 'Error', message: 'Failed to load calendar' });
       } finally {
         setIsLoading(false);

@@ -115,7 +115,7 @@ export function MovieDetailPage() {
     try {
       await api.mediaApi.setMovieMonitored(movie.id, !movie.monitored);
       setMovie(prev => prev ? { ...prev, monitored: !prev.monitored } : prev);
-    } catch (err) {
+    } catch {
       pushToast({ title: 'Error', variant: 'error', message: 'Failed to update monitoring' });
     }
   };
@@ -125,7 +125,7 @@ export function MovieDetailPage() {
     try {
       await api.movieApi.update(movie.id, { qualityProfileId: profileId });
       setMovie(prev => prev ? { ...prev, qualityProfileId: profileId } : prev);
-    } catch (err) {
+    } catch {
       pushToast({ title: 'Error', variant: 'error', message: 'Failed to update quality profile' });
     }
   };
@@ -139,7 +139,7 @@ export function MovieDetailPage() {
       const msg = deleteFiles ? `"${movie.title}" removed from library and deleted from disk` : `"${movie.title}" removed from library`;
       pushToast({ title: 'Success', variant: 'success', message: msg });
       navigate('/library/movies');
-    } catch (err) {
+    } catch {
       pushToast({ title: 'Error', variant: 'error', message: 'Failed to remove movie' });
     }
   };
@@ -173,7 +173,7 @@ export function MovieDetailPage() {
       } else {
         pushToast({ title: 'Success', variant: 'success', message: `Grabbed ${data.data?.release?.title || 'a release'}` });
       }
-    } catch (err) {
+    } catch {
       pushToast({ title: 'Error', variant: 'error', message: 'Failed to execute automated search' });
     }
   };

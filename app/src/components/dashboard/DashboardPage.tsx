@@ -34,7 +34,7 @@ export function DashboardPage() {
     try {
       await api.wantedApi.triggerAutoSearchAll();
       pushToast({ title: 'Background Search Started', message: 'Searching for all missing media...', variant: 'success' });
-    } catch (err) {
+    } catch {
       pushToast({ title: 'Search Failed', message: 'Could not trigger background search', variant: 'error' });
     } finally {
       setIsSearchingMissing(false);

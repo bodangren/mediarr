@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import {fireEvent, render, screen} from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { ConfigurableItemModal } from './ConfigurableItemModal';
 
@@ -31,7 +31,7 @@ const mockFieldValues: TestFieldValues = {
   port: 8080,
 };
 
-const mockFieldValuesWithDefaults: TestFieldValues = {
+const 
   name: 'Test Client',
   port: 9091,
 };
@@ -501,7 +501,7 @@ describe('ConfigurableItemModal', () => {
         onTestConnection={onTestConnection}
         onSelectPreset={onSelectPreset}
         onFieldChange={onFieldChange}
-        renderPresetGrid={(presets, selectedId, onSelect) => (
+        renderPresetGrid={(presets, _selectedId, _onSelect) => (
           <div data-testid="custom-preset-grid">
             {presets.map(preset => (
               <div key={preset.id}>{preset.name} (ID: {preset.id})</div>
@@ -537,7 +537,7 @@ describe('ConfigurableItemModal', () => {
         onSelectPreset={onSelectPreset}
         onFieldChange={onFieldChange}
         renderPresetGrid={() => <div>Preset Grid</div>}
-        renderFields={(preset, values, onChange) => (
+        renderFields={(preset, values, _onChange) => (
           <div data-testid="custom-fields">
             <div>Current name: {values.name}</div>
             <div>Current port: {values.port}</div>

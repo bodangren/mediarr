@@ -10,7 +10,6 @@ const episodeStatisticsSchema = z.object({
 });
 
 // Series schema for type inference
-const seriesSchema = z.object({
   id: z.number(),
   title: z.string(),
   year: z.number(),
@@ -59,7 +58,6 @@ const episodeImportFileSchema = z.object({
 });
 
 // Series search result schema for manual match
-const seriesSearchResultSchema = z.object({
   id: z.number(),
   title: z.string(),
   year: z.number().optional(),

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { performanceMonitor, type PerformanceMetric } from './monitor';
+import {performanceMonitor} from './monitor';
 
 describe('Performance Monitor', () => {
   beforeEach(() => {
@@ -15,9 +15,8 @@ describe('Performance Monitor', () => {
     performanceMonitor.start(metricName);
 
     // Perform some work
-    let sum = 0;
     for (let i = 0; i < 1000; i++) {
-      sum += i;
+      Math.random();
     }
 
     const metric = performanceMonitor.stop(metricName);

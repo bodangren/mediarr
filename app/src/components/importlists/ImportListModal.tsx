@@ -38,12 +38,12 @@ const MONITOR_TYPES = [
   { value: 'none', label: 'None' },
 ];
 
-const DEFAULT_TMDB_POPULAR_CONFIG: TMDBPopularConfig = {
+const 
   mediaType: 'movie',
   limit: 20,
 };
 
-const DEFAULT_TMDB_LIST_CONFIG: TMDBListConfig = {
+const 
   listId: '',
 };
 

@@ -60,7 +60,6 @@ describe('VirtualTable', () => {
     const data = generateData(1000);
     const rowHeight = 50;
     const height = 400;
-    const visibleRows = Math.ceil(height / rowHeight);
 
     render(
       <VirtualTable<RowModel>

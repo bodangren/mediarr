@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { PageHeader } from './PageHeader';
-import * as Icons from 'lucide-react';
 
 describe('PageHeader', () => {
   it('renders title', () => {

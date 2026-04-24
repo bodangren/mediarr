@@ -1,7 +1,6 @@
 import { z } from 'zod';
 import { ApiHttpClient } from './httpClient';
 import type {
-  CustomFormat,
   CreateCustomFormatInput,
   UpdateCustomFormatInput,
   CustomFormatTestResult,

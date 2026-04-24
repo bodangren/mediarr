@@ -23,7 +23,7 @@ describe('ManualMatchModal', () => {
     status: 'unmatched',
   };
 
-  const mockSearchResult: SeriesSearchResult = {
+  const 
     id: 101,
     title: 'The Office',
     year: 2005,

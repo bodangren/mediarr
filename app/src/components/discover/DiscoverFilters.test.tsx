@@ -1,8 +1,7 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import {render, screen, fireEvent} from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import userEvent from '@testing-library/user-event';
 import { DiscoverFilters } from './DiscoverFilters';
-import { useState } from 'react';
 
 const mockOnApply = vi.fn();
 const mockOnClear = vi.fn();
@@ -56,7 +55,6 @@ describe('DiscoverFilters', () => {
   });
 
   it('updates min year filter', async () => {
-    const user = userEvent.setup();
     const onChange = vi.fn();
 
     render(
@@ -75,7 +73,6 @@ describe('DiscoverFilters', () => {
   });
 
   it('updates max year filter', async () => {
-    const user = userEvent.setup();
     const onChange = vi.fn();
 
     render(

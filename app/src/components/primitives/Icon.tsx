@@ -20,7 +20,6 @@ import {
   Heart,
   History,
   Info,
-  LayoutList,
   List,
   Monitor,
   Package,

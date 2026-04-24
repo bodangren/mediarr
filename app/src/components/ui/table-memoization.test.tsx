@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import {render} from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { Table } from '@/components/ui/table-compat';
 import { TableBody, TableCell, TableRow } from '@/components/ui/table-body-compat';

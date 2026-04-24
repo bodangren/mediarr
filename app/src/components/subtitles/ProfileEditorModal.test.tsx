@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ProfileEditorModal } from './ProfileEditorModal';
-import type { LanguageProfile, LanguageProfileInput } from '@/lib/api/languageProfilesApi';
+import type {LanguageProfile} from '@/lib/api/languageProfilesApi';
 
 describe('ProfileEditorModal', () => {
   const mockOnSave = vi.fn();

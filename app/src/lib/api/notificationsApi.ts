@@ -2,7 +2,6 @@ import { z } from 'zod';
 import { ApiHttpClient } from './httpClient';
 import { routeMap } from './routeMap';
 
-const triggerSchema = z.enum([
   'OnGrab',
   'OnDownload',
   'OnImport',
@@ -11,7 +10,6 @@ const triggerSchema = z.enum([
   'OnDelete',
 ]);
 
-const notificationTypeSchema = z.enum([
   'Discord',
   'Telegram',
   'Email',

@@ -2,7 +2,6 @@
 import { useState, useMemo } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { COMMON_LANGUAGES } from '@/lib/constants/languages';
-import type { Language } from '@/lib/constants/languages';
 
 export interface LanguageSelectorProps {
   value: string;

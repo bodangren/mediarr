@@ -10,7 +10,6 @@ import {
   DialogContent,
   DialogHeader as DialogHeaderPrimitive,
   DialogTitle,
-  DialogFooter as DialogFooterPrimitive,
 } from '@/components/ui/dialog';
 
 // ────────────────────────────────────────────────────────────────────────────

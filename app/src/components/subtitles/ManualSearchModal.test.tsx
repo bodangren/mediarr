@@ -4,7 +4,6 @@ import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ManualSearchModal } from './ManualSearchModal';
 import { ToastProvider } from '@/components/providers/ToastProvider';
-import { getApiClients } from '@/lib/api/client';
 
 // Mock the API clients
 const mockManualSearch = vi.fn().mockResolvedValue([

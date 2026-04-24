@@ -1,7 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { PageLayout } from '@/components/shell/PageLayout';
-import { NAV_ITEMS } from '@/lib/navigation';
 
 vi.mock('@/components/shell/PageSidebar', () => ({
   PageSidebar: () => <div data-testid="page-sidebar">PageSidebar</div>,

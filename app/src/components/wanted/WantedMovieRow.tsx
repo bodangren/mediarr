@@ -1,5 +1,4 @@
 
-import { type LucideIcon } from 'lucide-react';
 import { StatusBadge } from '@/components/ui/status-badge-compat';
 import type { MissingMovie } from '@/types/wanted';
 

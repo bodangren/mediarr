@@ -67,12 +67,12 @@ npm run test:coverage # with coverage
 
 ## Development Workflow
 
-This project follows the **Conductor Workflow**. All major features and fixes are organized into **Tracks**.
+This project follows the **Measure Workflow**. All major features and fixes are organized into **Tracks**.
 
-- **Project Context:** [conductor/index.md](./conductor/index.md)
-- **Tracks Registry:** [conductor/tracks.md](./conductor/tracks.md)
+- **Project Context:** [measure/index.md](./measure/index.md)
+- **Tracks Registry:** [measure/tracks.md](./measure/tracks.md)
 
-To contribute or implement features, please refer to the active track plans in `conductor/tracks/`.
+To contribute or implement features, please refer to the active track plans in `measure/tracks/`.
 
 ## Library Statistics & Analytics
 

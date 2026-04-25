@@ -1,14 +1,34 @@
 # Agent Instructions (AGENTS.md)
 
-Welcome, Agent. This project uses the **Conductor Methodology** for spec-driven development.
+## Measure Workflow
+
+All development runs through the **Measure** spec-driven development framework exclusively. At the start of every session:
+
+1. Load the `measure` skill
+2. Read `measure/index.md` to understand the project context
+3. Follow the workflow defined in `measure/workflow.md`
+
+Key reference files:
+- `measure/tracks.md` — Active work registry
+- `measure/tracks/<track_id>/plan.md` — Task checklist
+- `measure/product.md` — Product vision
+- `measure/tech-stack.md` — Technology choices
+- `measure/lessons-learned.md` — Project memory
+- `measure/tech-debt.md` — Known shortcuts
+
+Never start significant work without an active track. Always update `measure/tracks.md` and the current track's `plan.md` before and after work.
+
+
+Welcome, Agent. This project uses the **Measure Methodology** for spec-driven development.
+
 
 ## Core Mandates
-1. **Context First:** Always start by reading `conductor/index.md` to understand the product, tech stack, and workflow.
-2. **Track-Based Work:** Never perform significant work without an active Track. Check `conductor/tracks.md` for `in_progress` tracks.
+1. **Context First:** Always start by reading `measure/index.md` to understand the product, tech stack, and workflow.
+2. **Track-Based Work:** Never perform significant work without an active Track. Check `measure/tracks.md` for `in_progress` tracks.
 3. **Follow the Spec:** Each active track has a `spec.md` and `plan.md`. Read them. Implement strictly against the plan. Update the `[ ]` checkboxes in `plan.md` as you go.
 4. **Monolith Architecture:** Mediarr is a single, unified monolith. Do not build siloed microservices or sync logic between domains (Movies vs. TV). They share the same database and memory space.
 5. **No Next.js:** We use a pure React SPA (Vite) frontend communicating with a Bun/Node daemon. Do not attempt to use Next.js App Router features.
 6. **Flutter Client Only:** The cross-platform client lives at `clients/mediarr-client/` (Flutter). The legacy Kotlin Android TV app at `clients/android-tv/` is **deprecated** — do NOT develop, fix, or extend it. All client work targets the Flutter codebase.
-7. **Archiving:** When a plan is 100% complete, archive the track folder to `conductor/archive/` and update `tracks.md`. Do not ask for permission.
+7. **Archiving:** When a plan is 100% complete, archive the track folder to `measure/archive/` and update `tracks.md`. Do not ask for permission.
 8. **Commit:** Commit work with a note after each phase of a track.
-9. **Memory:** Use conductor/tech-debt.md and conductor/lessons-learned.md
+9. **Memory:** Use measure/tech-debt.md and measure/lessons-learned.md

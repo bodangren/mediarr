@@ -1,0 +1,9 @@
+{
+  "id": "typescript_strictness_20260426",
+  "title": "TypeScript Strictness Re-enablement",
+  "status": "pending",
+  "priority": "medium",
+  "type": "chore",
+  "created": "2026-04-26",
+  "depends_on": []
+}

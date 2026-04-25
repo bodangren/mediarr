@@ -1,0 +1,9 @@
+{
+  "id": "legacy_test_audit_20260426",
+  "title": "Legacy Test Audit",
+  "status": "pending",
+  "priority": "medium",
+  "type": "chore",
+  "created": "2026-04-26",
+  "depends_on": []
+}

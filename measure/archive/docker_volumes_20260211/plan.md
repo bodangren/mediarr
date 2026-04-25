@@ -1,0 +1,33 @@
+# Implementation Plan: Docker Volume Architecture & Hard Link Support
+
+## Phase 1: Docker Configuration & Database Migration [checkpoint: cf46dd1]
+Update the container infrastructure and database location.
+
+- [x] Task: Update `Dockerfile` to create `/config` and `/data` directory structures and set `DATABASE_URL` default to `file:/config/mediarr.db`. (5912bf3)
+- [x] Task: Update `docker-compose.yml` to use named volumes for `/config` and `/data`, and set environment variables accordingly. (7499950)
+- [x] Task: Update `.env` and `prisma.config.ts` to reference the new database path for local development. (95f5295)
+
+## Phase 2: Startup Directory Initialization [checkpoint: 55905f8]
+Ensure required directories exist at server startup.
+
+- [x] Task: Write Tests: Verify a startup initializer creates the required subdirectory structure under `/data` (`downloads/incomplete`, `downloads/complete`, `media/tv`, `media/movies`). (f23ed3d)
+- [x] Task: Implement `DataDirectoryInitializer` service that ensures all required subdirectories exist on server startup. (5c0f656)
+
+## Phase 3: TorrentManager Path Update [checkpoint: 0e69f8b]
+Update download paths from hardcoded `/downloads/` to `/data/downloads/`.
+
+- [x] Task: Write Tests: Verify `TorrentManager` uses `/data/downloads/incomplete` and `/data/downloads/complete` as default paths. (fc0ac07)
+- [x] Task: Update `TorrentManager` constants and file move logic to use the new `/data/downloads/` paths. (4c72d65)
+
+## Phase 4: Hard Link Support in Organizer [checkpoint: 8eae00d]
+Replace `fs.rename()` with hard link strategy and move fallback.
+
+- [x] Task: Write Tests: Verify `Organizer.organizeFile()` creates a hard link when source and destination are on the same filesystem. (ad03dd2)
+- [x] Task: Write Tests: Verify `Organizer.organizeFile()` falls back to `fs.rename()` when hard linking fails (cross-device) and logs a warning. (ad03dd2)
+- [x] Task: Implement hard link with move fallback in `Organizer.organizeFile()`. (1a47cde)
+
+## Phase 5: Integration Verification [checkpoint: 6a59c06]
+Ensure all existing functionality works with the new paths.
+
+- [x] Task: Update any remaining hardcoded path references in tests and configuration. (1485caa)
+- [x] Task: Measure - User Manual Verification 'Phase 5: Integration Verification' (Protocol in workflow.md) (6a59c06)

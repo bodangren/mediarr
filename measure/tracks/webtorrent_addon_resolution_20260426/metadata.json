@@ -1,0 +1,9 @@
+{
+  "id": "webtorrent_addon_resolution_20260426",
+  "title": "WebTorrent Native Addon Resolution",
+  "status": "pending",
+  "priority": "high",
+  "type": "bug",
+  "created": "2026-04-26",
+  "depends_on": []
+}

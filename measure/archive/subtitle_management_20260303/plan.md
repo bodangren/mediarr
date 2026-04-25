@@ -1,0 +1,84 @@
+# Implementation Plan: Subtitle Management
+
+## Phase 1: Provider and Scoring Foundation
+> Goal: Deliver production-usable provider integrations and candidate ranking.
+
+- [x] Task: Complete OpenSubtitles provider flow [7e0e38b]
+  - [x] Sub-task: Implement real download behavior in `OpenSubtitlesProvider`.
+  - [x] Sub-task: Ensure provider outputs normalized language/forced/HI metadata.
+- [x] Task: Add additional providers [7e0e38b]
+  - [x] Sub-task: Implement ASSRT provider adapter (Chinese).
+  - [x] Sub-task: Implement SubDL provider adapter (Thai-capable).
+  - [x] Sub-task: Wire providers into `SubtitleProviderFactory` with configurable selection.
+- [x] Task: Implement scoring service [7e0e38b]
+  - [x] Sub-task: Add `SubtitleScoringService` and apply to manual and automated selection.
+- [x] Task: Add backend tests for provider and scoring behavior. [7e0e38b]
+
+## Phase 2: Wanted Languages and Automation Engine
+> Goal: Configure target languages and automate missing subtitle fetches.
+
+- [x] Task: Add global wanted languages to settings [6941a19]
+  - [x] Sub-task: Add `wantedLanguages` to backend settings model/repository/validation.
+  - [x] Sub-task: Add `wantedLanguages` to frontend settings client schema.
+- [x] Task: Build automated subtitle orchestration [6941a19]
+  - [x] Sub-task: Scan variants for missing subtitles from wanted languages.
+  - [x] Sub-task: Sync `VariantMissingSubtitle` and `WantedSubtitle` records.
+  - [x] Sub-task: Run fetch loop with state transitions and history recording.
+- [x] Task: Integrate triggers [6941a19]
+  - [x] Sub-task: Trigger subtitle automation on import events.
+  - [x] Sub-task: Add periodic scheduler job for subtitle wanted scan/search.
+- [x] Task: Add backend tests for settings + automation + scheduler/import hooks. [6941a19]
+
+## Phase 3: Subtitle API Contract Completion
+> Goal: Expose a complete subtitle API surface aligned with current frontend route map.
+
+- [x] Task: Implement providers endpoints [8be73fd]
+  - [x] Sub-task: `GET/PUT /api/subtitles/providers/:id`, `GET /api/subtitles/providers`, `POST /test`, `POST /reset`.
+- [x] Task: Implement wanted endpoints [8be73fd]
+  - [x] Sub-task: Series/movies wanted list endpoints with pagination/filtering.
+  - [x] Sub-task: Trigger search endpoints and wanted count endpoint.
+- [x] Task: Implement history and blacklist endpoints [8be73fd]
+  - [x] Sub-task: History list/stats/clear endpoints.
+  - [x] Sub-task: Blacklist list/remove/clear endpoints.
+- [x] Task: Implement movie/series sync/scan/search convenience endpoints. [8be73fd]
+- [x] Task: Align server `routeMap` and dependency wiring with implemented routes. [8be73fd]
+- [x] Task: Add route-level tests for all new subtitle endpoints. [8be73fd]
+
+## Phase 4: Frontend Integration and Badges
+> Goal: Wire subtitle APIs into UI and render accurate subtitle status badges.
+
+- [x] Task: Settings integration [0b36d1f2]
+  - [x] Sub-task: Add wanted languages controls in subtitle settings page.
+  - [x] Sub-task: Keep provider status and credentials working with new endpoints.
+- [x] Task: Subtitle status rendering [0b36d1f2]
+  - [x] Sub-task: Render language badges on movie/episode list/detail surfaces.
+  - [x] Sub-task: Render aggregate series/season partial vs complete subtitle status.
+- [x] Task: Manual subtitle UX [0b36d1f2]
+  - [x] Sub-task: Connect manual search modal and download actions to live API.
+- [x] Task: Add frontend tests for settings, badge logic, and manual subtitle flows. [0b36d1f2]
+
+## Phase 5: Track Hardening and Final Verification
+> Goal: Run full validation and finalize measure tracking in one pass.
+
+- [x] Task: Run automated verification [e5ef335f]
+  - [x] Sub-task: Execute relevant test suites for server/app subtitle changes.
+  - [x] Sub-task: Execute coverage checks for modified modules.
+- [x] Task: Perform manual verification at end of track only [e5ef335f]
+  - [x] Sub-task: Run full manual verification protocol for all phases in one session.
+- [x] Task: Finalize measure records [e5ef335f]
+  - [x] Sub-task: Mark all completed tasks/phase checkboxes with commit SHAs.
+  - [x] Sub-task: Prepare track completion summary for archive handoff.
+
+## Completion Summary (Archive Handoff)
+
+- Implemented full subtitle management rollout across provider foundation, automation, API contracts, and frontend integration.
+- Final frontend integration includes wanted languages controls, provider credential support for OpenSubtitles/ASSRT/SubDL, subtitle status badges on library/detail surfaces, and live manual subtitle modal wiring.
+- Verification executed at end of track:
+  - `npm run test -- server/src/services/SubtitleScoringService.test.ts server/src/services/SubtitleInventoryApiService.test.ts server/src/services/SubtitleInventoryApiService.manual.test.ts server/src/services/SubtitleAutomationService.test.ts server/src/services/ProviderBackedSubtitleFetchProvider.test.ts server/src/services/Scheduler.subtitle.test.ts server/src/services/providers/OpenSubtitlesProvider.test.ts server/src/api/routes/subtitleRoutes.phase3.test.ts server/src/api/routes/movieRoutes.search.test.ts server/src/api/routes/movieRoutes.collection.test.ts`
+  - `npm run test:coverage -- server/src/api/routes/subtitleRoutes.phase3.test.ts server/src/api/routes/movieRoutes.search.test.ts server/src/api/routes/movieRoutes.collection.test.ts --coverage.include=server/src/api/routes/subtitleRoutes.ts --coverage.include=server/src/api/routes/movieRoutes.ts --coverage.reporter=text --coverage.reporter=text-summary`
+  - `npm run test --workspace=app -- --coverage src/App.subtitle-phase4.test.tsx src/App.test.tsx src/App.detailPages.test.tsx src/components/views/MovieOverviewView.test.tsx --coverage.include=src/App.tsx --coverage.include=src/components/views/MovieOverviewView.tsx --coverage.reporter=text --coverage.reporter=text-summary`
+
+## Post-Archive Maintenance (2026-03-05)
+
+- `394e1ddb` added client-side fallback support for legacy non-envelope subtitle provider payloads.
+- `c9c377e5` extended provider payload normalization for legacy status values (for example `ok`) to avoid settings page provider status contract errors.

@@ -229,4 +229,4 @@ Parallel:
 - [x] **Track: Fix Core Parity Wiring** *Phases: 4 | Link: [./archive/fix_core_parity_wiring_20260212/](./archive/fix_core_parity_wiring_20260212/)*
 - [x] **Track: Radarr UI Cloning** *Phases: 11 | Link: [./archive/radarr_ui_cloning_20260214/](./archive/radarr_ui_cloning_20260214/)*
 
-- [~] [Visual Refresh: Define Unique Identity](tracks/visual_refresh_20260425/index.md)
+- [x] **Track: Visual Refresh — Define Unique Identity** *Phases: 2 | Link: [./archive/visual_refresh_20260425/](./archive/visual_refresh_20260425/)* — Near-Zero Tesla theme; DESIGN.md lint passed; 232 test files green

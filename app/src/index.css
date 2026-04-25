@@ -3,72 +3,71 @@
 :root {
   color-scheme: dark;
 
-  /* Surface ramp */
-  --surface-0: #0b111b;
-  --surface-1: #131d2b;
-  --surface-2: #1a2739;
-  --surface-3: #24354f;
+  /* The Void - OLED Absolute Black */
+  --surface-0: #000000;
+  --surface-1: #000000;
+  --surface-2: #050505;
+  --surface-3: #111111;
 
-  /* Text tokens */
-  --text-primary: #e6edf9;
-  --text-secondary: #b7c6de;
-  --text-muted: #8ea3c2;
-  --text-inverse: #0d1522;
+  /* Materiality - White light on black glass */
+  --text-primary: #ffffff;
+  --text-secondary: #a1a1a1;
+  --text-muted: #666666;
+  --text-inverse: #000000;
 
   /* Accent tokens */
-  --accent-primary: #4bc1ff;
-  --accent-success: #41d37d;
-  --accent-warning: #ffbf57;
-  --accent-danger: #ff6f6f;
-  --accent-info: #74a8ff;
+  --accent-primary: #ffffff;
+  --accent-success: #ffffff;
+  --accent-warning: #ffffff;
+  --accent-danger: #E82127; /* Cyber Red */
+  --accent-info: #ffffff;
 
-  /* Semantic states */
-  --status-monitored: #69d4ff;
-  --status-wanted: #ffbf57;
-  --status-downloading: #74a8ff;
-  --status-seeding: #41d37d;
-  --status-completed: #3ed29d;
-  --status-error: #ff6f6f;
+  /* Semantic states - Subtracted to pure functional status */
+  --status-monitored: #ffffff;
+  --status-wanted: #a1a1a1;
+  --status-downloading: #ffffff;
+  --status-seeding: #ffffff;
+  --status-completed: #ffffff;
+  --status-error: #E82127;
 
-  --border-subtle: #2a3b54;
+  --border-subtle: rgba(255, 255, 255, 0.05);
 
-  /* 4px spacing scale */
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-6: 24px;
-  --space-8: 32px;
-  --space-12: 48px;
-  --space-16: 64px;
+  /* 8px spacing scale (Tesla-style generous) */
+  --space-1: 8px;
+  --space-2: 16px;
+  --space-3: 24px;
+  --space-4: 32px;
+  --space-6: 48px;
+  --space-8: 64px;
+  --space-12: 96px;
+  --space-16: 128px;
 
-  /* Typography scale */
+  /* Typography scale - Extreme variance */
+  --font-size-10: 0.625rem;
   --font-size-12: 0.75rem;
   --font-size-14: 0.875rem;
   --font-size-16: 1rem;
-  --font-size-20: 1.25rem;
   --font-size-24: 1.5rem;
-  --font-size-32: 2rem;
+  --font-size-48: 3rem;
 
-  /* Radius scale */
+  /* Radius scale - Molded feel */
   --radius-none: 0;
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
+  --radius-sm: 2px;
+  --radius-md: 12px;
+  --radius-lg: 24px;
   --radius-full: 9999px;
 
-  /* Elevation */
-  --shadow-1: 0 2px 8px rgba(5, 8, 14, 0.34);
-  --shadow-2: 0 8px 24px rgba(5, 8, 14, 0.45);
-  --shadow-3: 0 18px 48px rgba(4, 8, 14, 0.58);
+  /* Elevation - Zero UI philosophy (no shadows) */
+  --shadow-1: none;
+  --shadow-2: none;
+  --shadow-3: none;
 
-  /* shadcn/ui variable bridge — do not remove, shadcn components depend on these.
-     Mediarr design tokens remain the source of truth; these are aliases only.      */
+  /* shadcn/ui variable bridge — Near-Zero Implementation */
   --background: var(--surface-0);
   --foreground: var(--text-primary);
-  --card: var(--surface-1);
+  --card: var(--surface-0);
   --card-foreground: var(--text-primary);
-  --popover: var(--surface-2);
+  --popover: var(--surface-1);
   --popover-foreground: var(--text-primary);
   --primary: var(--accent-primary);
   --primary-foreground: var(--text-inverse);
@@ -79,53 +78,16 @@
   --accent: var(--surface-3);
   --accent-foreground: var(--text-primary);
   --destructive: var(--accent-danger);
-  --destructive-foreground: var(--text-inverse);
+  --destructive-foreground: var(--text-primary);
   --border: var(--border-subtle);
-  --input: var(--surface-1);
-  --ring: var(--accent-primary);
+  --input: var(--surface-0);
+  --ring: var(--text-primary);
   --radius: var(--radius-sm);
 }
 
+/* Light mode is deprecated in "Near-Zero" - mapping to dark for OLED consistency */
 :root[data-theme='light'] {
-  color-scheme: light;
-
-  --surface-0: #f2f6fc;
-  --surface-1: #ffffff;
-  --surface-2: #e9f0fb;
-  --surface-3: #dce7f7;
-
-  --text-primary: #0f1b2f;
-  --text-secondary: #3d5578;
-  --text-muted: #6d82a5;
-  --text-inverse: #f4f8ff;
-
-  --accent-primary: #0b67d1;
-  --accent-success: #1c9c57;
-  --accent-warning: #c98014;
-  --accent-danger: #c43d43;
-  --accent-info: #205bc5;
-
-  --status-monitored: #0b67d1;
-  --status-wanted: #c98014;
-  --status-downloading: #205bc5;
-  --status-seeding: #1c9c57;
-  --status-completed: #1c9c57;
-  --status-error: #c43d43;
-
-  --border-subtle: #bfd0e8;
-
-  /* shadcn/ui bridge — light theme overrides cascade automatically via the token aliases above */
-  --destructive: var(--accent-danger);
-  --primary: var(--accent-primary);
-}
-
-:root[data-color-impaired='true'] {
-  --status-monitored: #176fe5;
-  --status-wanted: #9b6a15;
-  --status-downloading: #006ea6;
-  --status-seeding: #2f8b2f;
-  --status-completed: #2f8b2f;
-  --status-error: #af2f2f;
+  color-scheme: dark;
 }
 
 @theme inline {
@@ -154,8 +116,8 @@
 
   --color-border-subtle: var(--border-subtle);
 
-  --font-sans: system-ui, sans-serif;
-  --font-mono: ui-monospace, monospace;
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 
   --radius-sm: var(--radius-sm);
   --radius-md: var(--radius-md);
@@ -169,21 +131,31 @@
 
 * {
   border-color: var(--border-subtle);
+  outline-color: var(--accent-primary);
 }
 
 html,
 body {
   min-height: 100%;
+  background: var(--surface-0);
 }
 
 body {
   margin: 0;
-  background:
-    radial-gradient(80vw 60vh at 10% -10%, rgba(88, 198, 255, 0.15), transparent),
-    radial-gradient(80vw 60vh at 90% -15%, rgba(116, 168, 255, 0.15), transparent),
-    var(--surface-0);
+  background: var(--surface-0);
   color: var(--text-primary);
   font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Radical Subtraction: Hide Scrollbars */
+::-webkit-scrollbar {
+  display: none;
+}
+* {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 code,
@@ -193,21 +165,11 @@ samp {
   font-family: var(--font-mono);
 }
 
-@keyframes indeterminate {
-  0% {
-    transform: translateX(-100%);
-    width: 40%;
-  }
-  50% {
-    transform: translateX(40%);
-    width: 55%;
-  }
-  100% {
-    transform: translateX(150%);
-    width: 40%;
-  }
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
-.animate-indeterminate {
-  animation: indeterminate 1.3s linear infinite;
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s ease-in-out infinite;
 }

@@ -168,27 +168,33 @@ export function AppShell({ pathname, children }: AppShellProps) {
 
       {shortcutHelpOpen ? (
         <div
-          className="fixed inset-0 z-40 flex items-start justify-center bg-surface-3/80 px-3 pt-[12vh]"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-8 backdrop-blur-2xl"
           onClick={() => setShortcutHelpOpen(false)}
         >
           <div
             role="dialog"
             aria-label="Keyboard Shortcuts"
-            className="w-full max-w-xl rounded-lg border border-border-subtle bg-surface-1 p-4 shadow-elevation-3"
+            className="w-full max-w-4xl p-0"
             onClick={event => event.stopPropagation()}
           >
-            <h2 className="text-base font-semibold">Keyboard Shortcuts</h2>
-            <p className="mt-1 text-xs text-text-secondary">Use these shortcuts throughout the app shell and settings pages.</p>
-            <ul className="mt-4 space-y-2">
+            <h2 className="text-5xl font-bold tracking-tight text-white mb-2">Shortcuts</h2>
+            <p className="text-lg text-text-secondary mb-12 opacity-60">System-wide command interface</p>
+            <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-20 gap-y-8">
               {KEYBOARD_SHORTCUTS.map(shortcut => (
-                <li key={shortcut.id} className="flex items-center justify-between gap-3 rounded-sm border border-border-subtle bg-surface-0 px-3 py-2">
-                  <span className="text-sm text-text-secondary">{shortcut.description}</span>
-                  <kbd className="rounded-sm border border-border-subtle bg-surface-2 px-2 py-1 text-xs font-semibold text-text-primary">
-                    {shortcut.keyCombo}
+                <li key={shortcut.id} className="flex items-center justify-between py-4 border-b border-white/10">
+                  <span className="text-xl text-text-secondary">{shortcut.description}</span>
+                  <kbd className="text-sm font-bold tracking-widest text-white">
+                    {shortcut.keyCombo.toUpperCase()}
                   </kbd>
                 </li>
               ))}
             </ul>
+            <button 
+              className="mt-16 text-xs font-bold tracking-widest text-text-muted hover:text-white transition-colors"
+              onClick={() => setShortcutHelpOpen(false)}
+            >
+              CLOSE (ESC)
+            </button>
           </div>
         </div>
       ) : null}

@@ -49,10 +49,10 @@ export function PageLayout({
   const overflowNavItems = allNavItems.slice(4); // Remaining items in More menu
 
   return (
-    <div className="min-h-screen bg-surface-0 text-text-primary">
+    <div className="min-h-screen bg-black text-white selection:bg-white selection:text-black">
       <div
-        className={`mx-auto grid min-h-screen max-w-[1600px] grid-cols-1 ${
-          sidebarCollapsed ? 'lg:grid-cols-[88px_1fr]' : 'lg:grid-cols-[240px_1fr]'
+        className={`grid min-h-screen grid-cols-1 ${
+          sidebarCollapsed ? 'lg:grid-cols-[64px_1fr]' : 'lg:grid-cols-[300px_1fr]'
         }`}
       >
         <PageSidebar
@@ -65,21 +65,21 @@ export function PageLayout({
         />
 
         <div className="flex min-h-screen flex-col">
-          <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-border-subtle bg-surface-1/90 px-4 py-3 backdrop-blur lg:gap-0">
+          <header className="sticky top-0 z-20 flex items-center gap-6 px-8 py-10 lg:px-12">
             {/* Mobile menu button */}
             <button
               type="button"
-              className="rounded-sm p-1 text-text-secondary hover:bg-surface-2 lg:hidden"
+              className="p-2 text-text-secondary hover:text-white lg:hidden"
               onClick={() => setIsMobileSidebarOpen(true)}
               aria-label="Open navigation menu"
             >
-              <Icons.Menu className="h-5 w-5" />
+              <Icons.Menu className="h-6 w-6" />
             </button>
 
             <div className="flex-1">{header}</div>
           </header>
 
-          <main className="flex-1 px-3 pb-20 pt-3 sm:px-4 sm:pt-4 lg:pb-4">{children}</main>
+          <main className="flex-1 px-8 pb-32 pt-0 lg:px-12">{children}</main>
         </div>
       </div>
 

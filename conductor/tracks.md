@@ -228,3 +228,5 @@ Parallel:
 - [x] **Track: UI Stub Closure & Deduplication** *Phases: 5 | Link: [./archive/ui_stub_closure_20260217/](./archive/ui_stub_closure_20260217/)*
 - [x] **Track: Fix Core Parity Wiring** *Phases: 4 | Link: [./archive/fix_core_parity_wiring_20260212/](./archive/fix_core_parity_wiring_20260212/)*
 - [x] **Track: Radarr UI Cloning** *Phases: 11 | Link: [./archive/radarr_ui_cloning_20260214/](./archive/radarr_ui_cloning_20260214/)*
+
+- [~] [Visual Refresh: Define Unique Identity](tracks/visual_refresh_20260425/index.md)

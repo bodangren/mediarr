@@ -19,20 +19,20 @@ function trendText(trend: 'up' | 'down' | 'flat' | undefined): string {
 
 export function MetricCard({ label, value, trend, onAction }: MetricCardProps) {
   return (
-    <article className="rounded-lg border border-border-subtle bg-surface-1 px-4 py-3 shadow-elevation-1">
-      <p className="text-xs uppercase tracking-wide text-text-muted">{label}</p>
-      <div className="mt-2 flex items-end justify-between gap-3">
-        <p className="text-2xl font-semibold text-text-primary">{value}</p>
-        <span className="text-xs text-text-secondary">{trendText(trend)}</span>
+    <article className="px-0 py-6">
+      <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-text-muted">{label}</p>
+      <div className="mt-4 flex items-baseline justify-between gap-6">
+        <p className="text-5xl font-bold tracking-tight text-white">{value}</p>
+        <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-text-secondary opacity-40">{trendText(trend)}</span>
       </div>
       {onAction ? (
         <button
           type="button"
-          className="mt-3 rounded-sm border border-border-subtle px-2 py-1 text-xs font-medium text-text-primary hover:bg-surface-2"
+          className="mt-6 text-xs font-bold uppercase tracking-widest text-text-secondary hover:text-white transition-colors"
           onClick={onAction}
           aria-label={`Open ${label}`}
         >
-          Open {label}
+          {label} DETAILS
         </button>
       ) : null}
     </article>

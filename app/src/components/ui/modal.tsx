@@ -88,13 +88,13 @@ export function Modal({
 
 export function ModalHeader({ title, onClose, actions }: ModalHeaderProps) {
   return (
-    <DialogHeaderPrimitive className="flex-row items-center justify-between gap-3 border-b border-border-subtle px-4 py-3 space-y-0">
-      <DialogTitle className="text-base font-semibold">{title}</DialogTitle>
-      <div className="flex items-center gap-2">
+    <DialogHeaderPrimitive className="flex-row items-center justify-between gap-6 px-12 py-10 space-y-0">
+      <DialogTitle className="text-3xl font-bold tracking-tight">{title}</DialogTitle>
+      <div className="flex items-center gap-4">
         {actions}
         {onClose ? (
-          <Button variant="secondary" size="sm" onClick={onClose} aria-label="Close modal">
-            Close
+          <Button variant="ghost" size="sm" onClick={onClose} aria-label="Close modal" className="text-text-muted hover:text-white">
+            ESC
           </Button>
         ) : null}
       </div>
@@ -103,12 +103,12 @@ export function ModalHeader({ title, onClose, actions }: ModalHeaderProps) {
 }
 
 export function ModalBody({ children, className = '' }: ModalBodyProps) {
-  return <div className={`flex-1 overflow-y-auto px-4 py-3 ${className}`}>{children}</div>;
+  return <div className={`flex-1 px-12 pb-12 pt-0 ${className}`}>{children}</div>;
 }
 
 export function ModalFooter({ children }: ModalFooterProps) {
   return (
-    <footer className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 border-t border-border-subtle px-4 py-3 sticky bottom-0 bg-background z-10">
+    <footer className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-6 px-12 py-10 sticky bottom-0 bg-black/90 backdrop-blur-md z-10">
       {children}
     </footer>
   );

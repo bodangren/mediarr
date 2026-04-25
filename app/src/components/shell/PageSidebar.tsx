@@ -89,21 +89,21 @@ export function PageSidebar({
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className="hidden border-r border-border-subtle bg-surface-1 p-4 lg:block">
+      <aside className="hidden bg-black p-8 lg:block">
         <div
-          className={`mb-4 flex items-center ${collapsed ? 'justify-center' : 'justify-between gap-2'}`}
+          className={`mb-12 flex items-center ${collapsed ? 'justify-center' : 'justify-between gap-4'}`}
         >
-          <p className="text-xs uppercase tracking-wide text-text-muted">{collapsed ? 'MR' : 'Mediarr'}</p>
+          <p className="text-sm font-bold tracking-[0.2em] text-white">{collapsed ? 'M' : 'MEDIARR'}</p>
           <button
             type="button"
             aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            className="rounded-sm border border-border-subtle px-2 py-1 text-xs text-text-secondary hover:text-text-primary"
+            className="text-text-secondary hover:text-white transition-colors"
             onClick={onToggle}
           >
-            {collapsed ? '>' : '<'}
+            {collapsed ? <Icons.ChevronRight className="h-5 w-5" /> : <Icons.ChevronLeft className="h-5 w-5" />}
           </button>
         </div>
-        <nav className="space-y-4" aria-label="Sidebar Navigation">
+        <nav className="space-y-8" aria-label="Sidebar Navigation">
           {items.map(section => {
             const isCollapsed = collapsedSections.has(section.id);
 
@@ -112,38 +112,41 @@ export function PageSidebar({
                 {!collapsed && (
                   <button
                     type="button"
-                    className="mb-2 flex w-full items-center justify-between text-xs font-semibold uppercase tracking-wide text-text-muted hover:text-text-primary"
+                    className="mb-4 flex w-full items-center justify-between text-[10px] font-bold uppercase tracking-[0.3em] text-text-muted hover:text-white transition-colors"
                     onClick={() => toggleSection(section.id)}
                     aria-expanded={!isCollapsed}
                     aria-controls={`section-${section.id}`}
                   >
                     <span>{section.label}</span>
-                    <span className="text-xs">{isCollapsed ? '+' : '-'}</span>
                   </button>
                 )}
                 {!isCollapsed && (
-                  <ul className={`space-y-1 ${collapsed ? '' : ''}`}>
+                  <ul className="space-y-4">
                     {section.items.map(item => {
                       const active = isNavActive(pathname, item.path);
                       return (
                         <li key={item.path}>
                           <Link
                             to={item.path}
-                            className={`flex items-center gap-2 rounded-sm px-3 py-2 text-sm ${
+                            className={`flex items-center gap-4 text-sm transition-all ${
                               active
-                                ? 'bg-accent-primary/20 text-text-primary'
-                                : 'text-text-secondary hover:bg-surface-2'
+                                ? 'text-white'
+                                : 'text-text-secondary hover:text-white'
                             } ${collapsed ? 'justify-center' : ''}`}
                             aria-current={active ? 'page' : undefined}
                           >
-                            <LucideIcon name={item.icon} />
+                            <div className="relative">
+                              <LucideIcon name={item.icon} />
+                              {active && !collapsed && (
+                                <div className="absolute -left-4 top-1/2 h-1 w-1 -translate-y-1/2 rounded-full bg-white" />
+                              )}
+                            </div>
                             {!collapsed && (
                               <>
                                 <span>{item.label}</span>
-                                {item.showBadge && <WantedCountBadge className="ml-auto" />}
+                                {item.showBadge && <WantedCountBadge className="ml-auto bg-white text-black rounded-full" />}
                               </>
                             )}
-                            {collapsed && <span className="text-xs">{item.shortLabel}</span>}
                           </Link>
                         </li>
                       );
@@ -161,7 +164,7 @@ export function PageSidebar({
         <>
           {/* Overlay backdrop */}
           <div
-            className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+            className="fixed inset-0 z-40 bg-black/80 backdrop-blur-sm lg:hidden"
             onClick={onClose}
             aria-hidden="true"
           />
@@ -169,21 +172,21 @@ export function PageSidebar({
           {/* Mobile sidebar */}
           <aside
             ref={sidebarRef}
-            className="fixed left-0 top-0 z-50 h-full w-64 border-r border-border-subtle bg-surface-1 p-4 lg:hidden"
+            className="fixed left-0 top-0 z-50 h-full w-full bg-black p-12 lg:hidden"
             aria-label="Mobile Navigation"
           >
-            <div className="mb-4 flex items-center justify-between gap-2">
-              <p className="text-xs uppercase tracking-wide text-text-muted">Mediarr</p>
+            <div className="mb-12 flex items-center justify-between">
+              <p className="text-sm font-bold tracking-[0.2em] text-white">MEDIARR</p>
               <button
                 type="button"
                 aria-label="Close sidebar"
-                className="rounded-sm border border-border-subtle p-1 text-text-secondary hover:text-text-primary"
+                className="text-text-secondary hover:text-white"
                 onClick={onClose}
               >
-                <Icons.X className="h-4 w-4" />
+                <Icons.X className="h-8 w-8" />
               </button>
             </div>
-            <nav className="space-y-4">
+            <nav className="space-y-10">
               {items.map(section => {
                 const isCollapsed = collapsedSections.has(section.id);
 
@@ -191,16 +194,15 @@ export function PageSidebar({
                   <div key={section.id}>
                     <button
                       type="button"
-                      className="mb-2 flex w-full items-center justify-between text-xs font-semibold uppercase tracking-wide text-text-muted hover:text-text-primary"
+                      className="mb-6 flex w-full items-center justify-between text-[10px] font-bold uppercase tracking-[0.3em] text-text-muted"
                       onClick={() => toggleSection(section.id)}
                       aria-expanded={!isCollapsed}
                       aria-controls={`section-${section.id}`}
                     >
                       <span>{section.label}</span>
-                      <span className="text-xs">{isCollapsed ? '+' : '-'}</span>
                     </button>
                     {!isCollapsed && (
-                      <ul className="space-y-1">
+                      <ul className="space-y-6">
                         {section.items.map(item => {
                           const active = isNavActive(pathname, item.path);
                           return (
@@ -208,16 +210,16 @@ export function PageSidebar({
                               <Link
                                 to={item.path}
                                 onClick={onClose}
-                                className={`flex items-center gap-2 rounded-sm px-3 py-3 text-sm ${
+                                className={`flex items-center gap-6 text-xl transition-colors ${
                                   active
-                                    ? 'bg-accent-primary/20 text-text-primary'
-                                    : 'text-text-secondary hover:bg-surface-2'
+                                    ? 'text-white'
+                                    : 'text-text-secondary hover:text-white'
                                 }`}
                                 aria-current={active ? 'page' : undefined}
                               >
                                 <LucideIcon name={item.icon} />
                                 <span>{item.label}</span>
-                                {item.showBadge && <WantedCountBadge className="ml-auto" />}
+                                {item.showBadge && <WantedCountBadge className="ml-auto bg-white text-black rounded-full" />}
                               </Link>
                             </li>
                           );

@@ -7,30 +7,30 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[2px] text-sm font-medium transition-all focus-visible:outline-none disabled:pointer-events-none disabled:opacity-20 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/90",
-        primary: "bg-primary text-primary-foreground hover:bg-primary/90",
+        default: "bg-transparent text-text-secondary hover:text-text-primary",
+        primary: "bg-white text-black hover:bg-white/90 font-bold",
         destructive:
-          "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+          "bg-transparent text-accent-danger hover:bg-accent-danger/10",
         danger:
-          "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+          "bg-transparent text-accent-danger hover:bg-accent-danger/10",
         outline:
-          "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
+          "border border-border-subtle bg-transparent hover:border-white hover:text-white",
         secondary:
-          "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        ghost: "hover:bg-accent hover:text-accent-foreground",
-        link: "text-primary underline-offset-4 hover:underline",
+          "bg-white/10 text-white hover:bg-white/20",
+        ghost: "bg-transparent text-text-secondary hover:text-text-primary",
+        link: "text-white underline-offset-8 hover:underline opacity-60 hover:opacity-100",
       },
       size: {
-        default: "h-10 px-4 py-2",
-        sm: "h-9 rounded-md px-3",
-        xs: "h-7 rounded-md px-2 text-xs",
-        lg: "h-11 rounded-md px-8",
-        icon: "h-10 w-10",
-        "icon-sm": "h-8 w-8 p-1.5",
+        default: "h-12 px-8 py-3",
+        sm: "h-9 px-4 py-2",
+        xs: "h-7 px-2 text-xs",
+        lg: "h-16 px-12 text-lg rounded-[24px]",
+        icon: "h-12 w-12",
+        "icon-sm": "h-9 w-9",
       },
     },
     defaultVariants: {

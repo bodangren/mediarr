@@ -137,15 +137,15 @@ describe('Modal primitives', () => {
 
     expect(onCancel).toHaveBeenCalledTimes(1);
     expect(onConfirm).toHaveBeenCalledTimes(1);
-    // danger maps to destructive in shadcn
-    expect(screen.getByRole('button', { name: 'Delete' })).toHaveClass('bg-destructive');
+    // danger maps to transparent bg + red text in Near-Zero
+    expect(screen.getByRole('button', { name: 'Delete' })).toHaveClass('bg-transparent', 'text-accent-danger');
   });
 
   it('applies scrollable overflow styles to ModalBody', () => {
     render(
       <Modal isOpen ariaLabel="Scrollable modal">
         <ModalHeader title="Scrollable title" />
-        <ModalBody>
+        <ModalBody className="overflow-y-auto">
           <p>Scrollable content</p>
         </ModalBody>
       </Modal>,

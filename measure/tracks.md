@@ -239,6 +239,4 @@ Parallel:
   *Link: [./tracks/typescript_strictness_20260426/](./tracks/typescript_strictness_20260426/)*
   Re-enable exactOptionalPropertyTypes and noUncheckedIndexedAccess, fix all type errors.
 
-- [ ] **Track: WebTorrent Native Addon Resolution**
-  *Link: [./tracks/webtorrent_addon_resolution_20260426/](./tracks/webtorrent_addon_resolution_20260426/)*
-  Investigate libuv crash, find alternative torrent engine or implement graceful fallback.
+- [x] **Track: WebTorrent Native Addon Resolution** *Phases: 3 | Link: [./archive/webtorrent_addon_resolution_20260426/](./archive/webtorrent_addon_resolution_20260426/)* — patched `node-datachannel` to handle `ERR_DLOPEN_DISABLED`; WebTorrent now operates in TCP-only mode without falling back to stub manager; 224 test files passed

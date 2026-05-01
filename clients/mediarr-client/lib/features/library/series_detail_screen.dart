@@ -8,6 +8,7 @@ import '../../shared/models/season.dart';
 import '../../shared/models/series.dart';
 import '../../shared/services/api_client.dart';
 import '../playback/playback_screen.dart';
+import 'subtitle_search_sheet.dart';
 
 /// Series detail view with seasons and episodes.
 class SeriesDetailScreen extends ConsumerStatefulWidget {
@@ -205,6 +206,7 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
                   },
                   onPlayEpisode: (episode) =>
                       _playEpisode(episode, season),
+                  onSearchSubtitles: (episode) => _showSubtitleSearch(episode),
                 )),
           ] else ...[
             const Padding(
@@ -214,6 +216,18 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
             ),
           ],
         ],
+      ),
+    );
+  }
+
+  void _showSubtitleSearch(Episode episode) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => SubtitleSearchSheet(
+        episodeId: episode.id,
+        onDownloaded: () {},
       ),
     );
   }
@@ -280,12 +294,14 @@ class _SeasonTile extends StatelessWidget {
     required this.isExpanded,
     required this.onToggle,
     required this.onPlayEpisode,
+    this.onSearchSubtitles,
   });
 
   final Season season;
   final bool isExpanded;
   final VoidCallback onToggle;
   final void Function(Episode) onPlayEpisode;
+  final void Function(Episode)? onSearchSubtitles;
 
   @override
   Widget build(BuildContext context) {
@@ -356,6 +372,9 @@ class _SeasonTile extends StatelessWidget {
             ...season.episodes.map((ep) => _EpisodeRow(
                   episode: ep,
                   onPlay: () => onPlayEpisode(ep),
+                  onSearchSubtitles: onSearchSubtitles != null
+                      ? () => onSearchSubtitles!(ep)
+                      : null,
                 )),
           if (isExpanded && season.episodes.isEmpty)
             const Padding(
@@ -377,10 +396,12 @@ class _EpisodeRow extends StatelessWidget {
   const _EpisodeRow({
     required this.episode,
     required this.onPlay,
+    this.onSearchSubtitles,
   });
 
   final Episode episode;
   final VoidCallback onPlay;
+  final VoidCallback? onSearchSubtitles;
 
   @override
   Widget build(BuildContext context) {
@@ -498,6 +519,16 @@ class _EpisodeRow extends StatelessWidget {
                 child: Icon(Icons.check_circle,
                     color: MediarrColors.statusSuccess, size: 16),
               ),
+            // Subtitle button
+            if (episode.hasFile && onSearchSubtitles != null) ...[
+              IconButton(
+                icon: const Icon(Icons.subtitles, color: MediarrColors.textSecondary, size: 18),
+                onPressed: onSearchSubtitles,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              ),
+              const SizedBox(width: 4),
+            ],
             // Play button
             if (episode.hasFile)
               const Icon(Icons.play_arrow,

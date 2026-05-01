@@ -4,17 +4,63 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/mediarr_theme.dart';
 import '../../shared/models/movie.dart';
+import '../../shared/models/subtitle_models.dart';
 import '../../shared/services/api_client.dart';
 import '../playback/playback_screen.dart';
+import 'subtitle_search_sheet.dart';
 
 /// Movie detail view showing metadata, file info, and status.
-class MovieDetailScreen extends ConsumerWidget {
+class MovieDetailScreen extends ConsumerStatefulWidget {
   const MovieDetailScreen({super.key, required this.movie});
 
   final Movie movie;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MovieDetailScreen> createState() => _MovieDetailScreenState();
+}
+
+class _MovieDetailScreenState extends ConsumerState<MovieDetailScreen> {
+  List<VariantInventory> _subtitles = const [];
+  bool _loadingSubtitles = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSubtitles();
+  }
+
+  Future<void> _loadSubtitles() async {
+    if (!widget.movie.hasFile) return;
+    setState(() => _loadingSubtitles = true);
+    try {
+      final client = ref.read(apiClientProvider.notifier);
+      final subtitles = await client.getMovieSubtitles(widget.movie.id);
+      if (mounted) {
+        setState(() {
+          _subtitles = subtitles;
+          _loadingSubtitles = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _loadingSubtitles = false);
+    }
+  }
+
+  void _showSubtitleSearch() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => SubtitleSearchSheet(
+        movieId: widget.movie.id,
+        onDownloaded: _loadSubtitles,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final movie = widget.movie;
     return Scaffold(
       body: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -146,6 +192,75 @@ class MovieDetailScreen extends ConsumerWidget {
                         label: 'Size',
                         value: _formatSize(movie.sizeOnDisk!),
                       ),
+                  ],
+                  // Subtitles
+                  if (movie.hasFile) ...[
+                    const SizedBox(height: 24),
+                    Row(
+                      children: [
+                        Text(
+                          'Subtitles',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        const Spacer(),
+                        TextButton.icon(
+                          onPressed: _showSubtitleSearch,
+                          icon: const Icon(Icons.search, size: 18),
+                          label: const Text('Search'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    if (_loadingSubtitles)
+                      const SizedBox(
+                        height: 40,
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: MediarrColors.accentPrimary,
+                          ),
+                        ),
+                      )
+                    else if (_subtitles.isEmpty)
+                      const Text(
+                        'No subtitle data available',
+                        style: TextStyle(color: MediarrColors.textMuted),
+                      )
+                    else
+                      ..._subtitles.expand((variant) => [
+                        if (variant.subtitleTracks.isNotEmpty)
+                          ...variant.subtitleTracks.map((track) => Padding(
+                            padding: const EdgeInsets.only(bottom: 4),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.subtitles,
+                                  size: 16,
+                                  color: MediarrColors.textSecondary,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    track.displayLabel,
+                                    style: const TextStyle(
+                                      color: MediarrColors.textPrimary,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ),
+                                _MetadataChip(
+                                  label: track.source,
+                                  color: MediarrColors.textMuted,
+                                ),
+                              ],
+                            ),
+                          ))
+                        else
+                          const Text(
+                            'No subtitle tracks',
+                            style: TextStyle(color: MediarrColors.textMuted),
+                          ),
+                      ]),
                   ],
                 ],
               ),

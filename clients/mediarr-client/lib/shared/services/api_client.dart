@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/movie.dart';
 import '../models/search_result.dart';
 import '../models/series.dart';
+import '../models/subtitle_models.dart';
 
 class SseEvent {
   const SseEvent({required this.event, required this.data});
@@ -880,6 +881,90 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
     connect();
 
     return controller.stream;
+  }
+
+  // --- Subtitle Methods ---
+
+  /// Fetch subtitle variants for a movie.
+  Future<List<VariantInventory>> getMovieSubtitles(int movieId) async {
+    final response = await _dio.get('/api/subtitles/movie/$movieId/variants');
+    if (response.statusCode == 200 && response.data != null) {
+      final data = _unwrap(response.data);
+      if (data is List) {
+        return data
+            .map((item) => VariantInventory.fromJson(item as Map<String, dynamic>))
+            .toList();
+      }
+    }
+    return const [];
+  }
+
+  /// Fetch subtitle variants for an episode.
+  Future<List<VariantInventory>> getEpisodeSubtitles(int episodeId) async {
+    final response = await _dio.get('/api/subtitles/episode/$episodeId/variants');
+    if (response.statusCode == 200 && response.data != null) {
+      final data = _unwrap(response.data);
+      if (data is List) {
+        return data
+            .map((item) => VariantInventory.fromJson(item as Map<String, dynamic>))
+            .toList();
+      }
+    }
+    return const [];
+  }
+
+  /// Search for subtitles for a movie or episode.
+  Future<List<SubtitleSearchResult>> searchSubtitles({
+    int? movieId,
+    int? episodeId,
+    int? variantId,
+  }) async {
+    final body = <String, dynamic>{};
+    if (movieId != null) body['movieId'] = movieId;
+    if (episodeId != null) body['episodeId'] = episodeId;
+    if (variantId != null) body['variantId'] = variantId;
+
+    final response = await _dio.post('/api/subtitles/search', data: body);
+    if (response.statusCode == 200 && response.data != null) {
+      final data = _unwrap(response.data);
+      if (data is List) {
+        return data
+            .map((item) => SubtitleSearchResult.fromJson(item as Map<String, dynamic>))
+            .toList();
+      }
+    }
+    return const [];
+  }
+
+  /// Download a subtitle candidate.
+  Future<String?> downloadSubtitle({
+    required SubtitleSearchResult candidate,
+    int? movieId,
+    int? episodeId,
+    int? variantId,
+  }) async {
+    final body = <String, dynamic>{
+      'candidate': {
+        'languageCode': candidate.languageCode,
+        'isForced': candidate.isForced,
+        'isHi': candidate.isHi,
+        'provider': candidate.provider,
+        'score': candidate.score,
+        if (candidate.extension != null) 'extension': candidate.extension,
+      },
+    };
+    if (movieId != null) body['movieId'] = movieId;
+    if (episodeId != null) body['episodeId'] = episodeId;
+    if (variantId != null) body['variantId'] = variantId;
+
+    final response = await _dio.post('/api/subtitles/download', data: body);
+    if (response.statusCode == 200 && response.data != null) {
+      final data = _unwrap(response.data);
+      if (data is Map<String, dynamic>) {
+        return data['storedPath'] as String?;
+      }
+    }
+    return null;
   }
 
   /// Fetch all pages for a paginated endpoint.

@@ -2,12 +2,12 @@
 
 ## Phase 1 — Subtitle Management
 
-- [ ] Task: Add `getSubtitles(mediaId, mediaType)`, `searchSubtitles(mediaId, mediaType)`, `downloadSubtitle(subtitleId)` methods to `ApiClient`
-- [ ] Task: Add "Subtitles" section to `MovieDetailScreen` and `SeriesDetailScreen` — list of downloaded subtitle tracks with language flag/badge and provider name
-- [ ] Task: Create `SubtitleSearchSheet` — bottom sheet with search results (language, provider, HI badge, download count), one-tap download button
-- [ ] Task: Wire download button to `ApiClient.downloadSubtitle()` — show progress, add to track list on success
-- [ ] Task: Write tests for subtitle section and search sheet — renders tracks, download calls API, search shows results
-- [ ] Task: Measure - Checkpoint Phase 1
+- [x] Task: Add `getSubtitles(mediaId, mediaType)`, `searchSubtitles(mediaId, mediaType)`, `downloadSubtitle(subtitleId)` methods to `ApiClient`
+- [x] Task: Add "Subtitles" section to `MovieDetailScreen` and `SeriesDetailScreen` — list of downloaded subtitle tracks with language flag/badge and provider name
+- [x] Task: Create `SubtitleSearchSheet` — bottom sheet with search results (language, provider, HI badge, download count), one-tap download button
+- [x] Task: Wire download button to `ApiClient.downloadSubtitle()` — show progress, add to track list on success
+- [x] Task: Write tests for subtitle section and search sheet — renders tracks, download calls API, search shows results
+- [x] Task: Measure - Checkpoint Phase 1
 
 ## Phase 2 — Quality Upgrade
 

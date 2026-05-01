@@ -963,3 +963,55 @@ M clients/mediarr-client/lib/features/library/movie_detail_screen.dart
 ?? clients/mediarr-client/lib/features/library/quality_upgrade_sheet.dart
 ?? clients/mediarr-client/test/features/library/quality_upgrade_sheet_test.dart
 [0m
+[0m$ [0mgit add -A && git commit -m "feat(flutter): Phase 2 — Quality Upgrade
+
+- Add QualityUpgradeSheet with release search results, quality badges, seeders/leechers
+- Add Quality Upgrade section to MovieDetailScreen with current quality display
+- Add quality upgrade button to SeriesDetailScreen episode rows
+- Wire grabRelease API for one-tap quality upgrades with loading states
+- Write widget tests for QualityUpgradeSheet (loading, results, empty, error, grab)
+
+Phase 2 of feature_flutter_subtitle_quality_20260330 complete."
+[main df77ee9] feat(flutter): Phase 2 — Quality Upgrade
+ 6 files changed, 990 insertions(+), 7 deletions(-)
+ create mode 100644 clients/mediarr-client/lib/features/library/quality_upgrade_sheet.dart
+ create mode 100644 clients/mediarr-client/test/features/library/quality_upgrade_sheet_test.dart
+[0m
+[0m$ [0mmv measure/tracks/feature_flutter_subtitle_quality_20260330 measure/archive/
+(no output)
+[0m
+[0m← [0mEdit measure/tracks.md
+Index: /home/daniel-bo/Desktop/mediarr/measure/tracks.md
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/measure/tracks.md
++++ /home/daniel-bo/Desktop/mediarr/measure/tracks.md
+@@ -110,9 +110,9 @@
+ - [x] **Track: Flutter Search & Add Media** *Phases: 3 | Link: [./archive/feature_flutter_search_add_20260330/](./archive/feature_flutter_search_add_20260330/)* — SearchScreen with poster grid, SearchResultDetailSheet with releases/grab/add-to-library; 165 Flutter tests green; root CI green (230 files / 1738 tests)
+ - [x] **Track: Flutter Activity & Queue** *Phases: 3 | Link: [./archive/feature_flutter_activity_queue_20260330/](./archive/feature_flutter_activity_queue_20260330/)* — Activity & Queue screens with torrent management; SSE real-time updates; 183 tests green
+ - [x] **Track: Manual Test Findings and Player-First Client Debugging** *Phases: 4 | Link: [./archive/bug_manual_test_player_client_findings_20260417/](./archive/bug_manual_test_player_client_findings_20260417/)* — movie search empty (not a bug - works), TV add FK failure (fixed with resolveQualityProfileId), Flutter discovery (documented limitation), SSE event-name drift (already aligned), player-first UX decision (approved)
+ - [x] **Track: Flutter Continue Watching & Calendar** *Phases: 2 | Link: [./archive/feature_flutter_continue_watching_20260330/](./archive/feature_flutter_continue_watching_20260330/)* — HomeScreen with Continue Watching, Recently Added, Upcoming sections; CalendarScreen with monthly grid, dot indicators, day detail sheet; 1746 tests green
+-- [ ] **Track: Flutter Subtitle & Quality Control** *Phases: 2 | Link: [./tracks/feature_flutter_subtitle_quality_20260330/](./tracks/feature_flutter_subtitle_quality_20260330/)*
++- [x] **Track: Flutter Subtitle & Quality Control** *Phases: 2 | Link: [./archive/feature_flutter_subtitle_quality_20260330/](./archive/feature_flutter_subtitle_quality_20260330/)* — subtitle management with search/download, quality upgrade with release grab; Phase D complete
+ 
+ - [x] **Track: Lint Debt Reduction** *Phases: 5 | Link: [./archive/chore_lint_debt_reduction_20260424/](./archive/chore_lint_debt_reduction_20260424/)* — zero lint errors, 14 exhaustivedeps warnings remain; typecheck + build clean; 216 test files green
+ 
+ - [x] **Track: Indexer Catalog Endpoint Caching** *Phases: 3 | Link: [./archive/feature_catalog_endpoint_caching_20260424/](./archive/feature_catalog_endpoint_caching_20260424/)* — CatalogCache with startup load, file watcher, manual reload endpoint
+
+[0m
+[0m→ [0mRead measure/tech-debt.md
+[0m→ [0mRead measure/lessons-learned.md
+[0m
+[0m← [0mEdit measure/lessons-learned.md
+Index: /home/daniel-bo/Desktop/mediarr/measure/lessons-learned.md
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/measure/lessons-learned.md
++++ /home/daniel-bo/Desktop/mediarr/measure/lessons-learned.md
+@@ -35,4 +35,6 @@
+ - (2026-04-23, bug_manual_test_player_client_findings) **Player-first navigation requires explicit product decision.** Admin surfaces (Activity, Search) should not be default routes. Home/Continue Watching should be the primary entry point for a media player client.
+ - (2026-04-24, feature_flutter_continue_watching) **Server endpoints should support range parameters for calendar views.** Extending `/api/dashboard/upcoming` with `range=month&year=&month=` avoids client-side filtering and reduces API calls. Keep default behavior backward-compatible.
+ - (2026-04-24, feature_flutter_continue_watching) **Custom calendar grids are simpler than TableCalendar for leanback UIs.** Focus ring + D-pad navigation work better with FocusableActionDetector on custom cells than third-party packages.
+ - (2026-04-25, visual_refresh) **A CSS variable bridge enables gradual theme migration without breaking existing components.** Mapping `--background`, `--primary`, etc. to new Near-Zero tokens lets shadcn components work immediately while explicit tokens (`text-text-primary`) are adopted incrementally.
++- (2026-05-01, feature_flutter_subtitle_quality) **Flutter detail screens should use ConsumerStatefulWidget for async sections.** Converting MovieDetailScreen from ConsumerWidget to ConsumerStatefulWidget allows subtitle inventory to load on mount without blocking the main UI. Stateful local loading keeps the scaffold responsive while async data populates.
++- (2026-05-01, feature_flutter_subtitle_quality) **Reusable bottom sheet pattern with callback refresh keeps detail screens in sync.** SubtitleSearchSheet and QualityUpgradeSheet both accept `onDownloaded`/`onGrabbed` callbacks that trigger parent reload. This avoids provider complexity for one-off modal flows.
+
+[0m

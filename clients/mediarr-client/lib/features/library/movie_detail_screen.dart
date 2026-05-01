@@ -7,6 +7,7 @@ import '../../shared/models/movie.dart';
 import '../../shared/models/subtitle_models.dart';
 import '../../shared/services/api_client.dart';
 import '../playback/playback_screen.dart';
+import 'quality_upgrade_sheet.dart';
 import 'subtitle_search_sheet.dart';
 
 /// Movie detail view showing metadata, file info, and status.
@@ -54,6 +55,21 @@ class _MovieDetailScreenState extends ConsumerState<MovieDetailScreen> {
       builder: (context) => SubtitleSearchSheet(
         movieId: widget.movie.id,
         onDownloaded: _loadSubtitles,
+      ),
+    );
+  }
+
+  void _showQualityUpgrade(Movie movie) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => QualityUpgradeSheet(
+        query: movie.title,
+        type: 'movie',
+        year: movie.year,
+        currentQuality: movie.quality,
+        onGrabbed: () {},
       ),
     );
   }
@@ -261,6 +277,38 @@ class _MovieDetailScreenState extends ConsumerState<MovieDetailScreen> {
                             style: TextStyle(color: MediarrColors.textMuted),
                           ),
                       ]),
+                  ],
+                  // Quality Upgrade
+                  if (movie.hasFile) ...[
+                    const SizedBox(height: 24),
+                    Row(
+                      children: [
+                        Text(
+                          'Quality Upgrade',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        const Spacer(),
+                        TextButton.icon(
+                          onPressed: () => _showQualityUpgrade(movie),
+                          icon: const Icon(Icons.upgrade, size: 18),
+                          label: const Text('Search for Upgrade'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    if (movie.quality != null)
+                      Text(
+                        'Current quality: ${movie.quality}',
+                        style: const TextStyle(
+                          color: MediarrColors.textSecondary,
+                          fontSize: 14,
+                        ),
+                      )
+                    else
+                      const Text(
+                        'No quality information available',
+                        style: TextStyle(color: MediarrColors.textMuted),
+                      ),
                   ],
                 ],
               ),

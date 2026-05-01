@@ -11,10 +11,10 @@
 
 ## Phase 2 — Quality Upgrade
 
-- [ ] Task: Add `searchQualityUpgrade(mediaId, mediaType)` and `grabRelease(releaseId)` methods to `ApiClient` (grabRelease may already exist from D1)
-- [ ] Task: Add "Quality Upgrade" section to media detail screens — shows current quality profile and quality, "Search for Upgrade" button
-- [ ] Task: Create `QualityUpgradeSheet` — bottom sheet listing available higher-quality releases (title, quality, size, score), one-tap grab
-- [ ] Task: Wire grab to `ApiClient.grabRelease()` — show success toast, update media status
-- [ ] Task: Write tests for quality upgrade section and sheet — renders current quality, search calls API, grab calls API
-- [ ] Task: Run `cd clients/mediarr-client && flutter test` — all pass
-- [ ] Task: Measure - Checkpoint Phase 2
+- [x] Task: Add `searchQualityUpgrade(mediaId, mediaType)` and `grabRelease(releaseId)` methods to `ApiClient` (grabRelease may already exist from D1)
+- [x] Task: Add "Quality Upgrade" section to media detail screens — shows current quality profile and quality, "Search for Upgrade" button
+- [x] Task: Create `QualityUpgradeSheet` — bottom sheet listing available higher-quality releases (title, quality, size, score), one-tap grab
+- [x] Task: Wire grab to `ApiClient.grabRelease()` — show success toast, update media status
+- [x] Task: Write tests for quality upgrade section and sheet — renders current quality, search calls API, grab calls API
+- [x] Task: Run `cd clients/mediarr-client && flutter test` — all pass
+- [x] Task: Measure - Checkpoint Phase 2

@@ -8,6 +8,7 @@ import '../../shared/models/season.dart';
 import '../../shared/models/series.dart';
 import '../../shared/services/api_client.dart';
 import '../playback/playback_screen.dart';
+import 'quality_upgrade_sheet.dart';
 import 'subtitle_search_sheet.dart';
 
 /// Series detail view with seasons and episodes.
@@ -207,6 +208,7 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
                   onPlayEpisode: (episode) =>
                       _playEpisode(episode, season),
                   onSearchSubtitles: (episode) => _showSubtitleSearch(episode),
+                  onQualityUpgrade: (episode) => _showQualityUpgrade(episode),
                 )),
           ] else ...[
             const Padding(
@@ -228,6 +230,20 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
       builder: (context) => SubtitleSearchSheet(
         episodeId: episode.id,
         onDownloaded: () {},
+      ),
+    );
+  }
+
+  void _showQualityUpgrade(Episode episode) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => QualityUpgradeSheet(
+        query: '${widget.series.title} S${episode.seasonNumber.toString().padLeft(2, '0')}E${episode.episodeNumber.toString().padLeft(2, '0')}',
+        type: 'episode',
+        currentQuality: episode.quality,
+        onGrabbed: () {},
       ),
     );
   }
@@ -295,6 +311,7 @@ class _SeasonTile extends StatelessWidget {
     required this.onToggle,
     required this.onPlayEpisode,
     this.onSearchSubtitles,
+    this.onQualityUpgrade,
   });
 
   final Season season;
@@ -302,6 +319,7 @@ class _SeasonTile extends StatelessWidget {
   final VoidCallback onToggle;
   final void Function(Episode) onPlayEpisode;
   final void Function(Episode)? onSearchSubtitles;
+  final void Function(Episode)? onQualityUpgrade;
 
   @override
   Widget build(BuildContext context) {
@@ -375,6 +393,9 @@ class _SeasonTile extends StatelessWidget {
                   onSearchSubtitles: onSearchSubtitles != null
                       ? () => onSearchSubtitles!(ep)
                       : null,
+                  onQualityUpgrade: onQualityUpgrade != null
+                      ? () => onQualityUpgrade!(ep)
+                      : null,
                 )),
           if (isExpanded && season.episodes.isEmpty)
             const Padding(
@@ -397,11 +418,13 @@ class _EpisodeRow extends StatelessWidget {
     required this.episode,
     required this.onPlay,
     this.onSearchSubtitles,
+    this.onQualityUpgrade,
   });
 
   final Episode episode;
   final VoidCallback onPlay;
   final VoidCallback? onSearchSubtitles;
+  final VoidCallback? onQualityUpgrade;
 
   @override
   Widget build(BuildContext context) {
@@ -524,6 +547,16 @@ class _EpisodeRow extends StatelessWidget {
               IconButton(
                 icon: const Icon(Icons.subtitles, color: MediarrColors.textSecondary, size: 18),
                 onPressed: onSearchSubtitles,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              ),
+              const SizedBox(width: 4),
+            ],
+            // Quality upgrade button
+            if (episode.hasFile && onQualityUpgrade != null) ...[
+              IconButton(
+                icon: const Icon(Icons.upgrade, color: MediarrColors.textSecondary, size: 18),
+                onPressed: onQualityUpgrade,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
               ),

@@ -239,6 +239,14 @@ Parallel:
   *Link: [./tracks/typescript_strictness_20260426/](./tracks/typescript_strictness_20260426/)*
   Re-enable exactOptionalPropertyTypes and noUncheckedIndexedAccess, fix all type errors.
 
+- [ ] **Track: WebTorrent Download Management UI**
+  *Link: [./tracks/webtorrent_download_management_20260503/](./tracks/webtorrent_download_management_20260503/)*
+  Frontend interface for managing WebTorrent downloads with real-time progress, controls, and bulk operations.
+
+- [ ] **Track: Dashboard Statistics & Analytics**
+  *Link: [./tracks/dashboard_statistics_20260503/](./tracks/dashboard_statistics_20260503/)*
+  Statistics dashboard with library composition charts, download metrics, and system health monitoring.
+
 - [~] **Track: Flutter Home & Library Browsing Screen** (Phases 1-2 complete)
   *Link: [./tracks/feature_flutter_home_screen_20260502/](./tracks/feature_flutter_home_screen_20260502/)*
   Add HomeScreen with Movies/TV Shows poster grids, sort/filter, and navigation to detail screens.

@@ -271,7 +271,7 @@ describe('indexerRoutes catalog endpoints', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/api/indexers/catalog/nzbgear/add',
-        payload: {},
+        payload: { apiKey: 'test-key' },
       });
 
       expect(response.statusCode).toBe(201);
@@ -280,6 +280,31 @@ describe('indexerRoutes catalog endpoints', () => {
           protocol: 'nzb',
         }),
       );
+    });
+
+    it('returns 400 when adding indexer that requires API key without one', async () => {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/indexers/catalog/nzbgear/add',
+        payload: {},
+      });
+
+      expect(response.statusCode).toBe(422);
+      const body = JSON.parse(response.body);
+      expect(body.error.code).toBe('VALIDATION_ERROR');
+      expect(body.error.message).toContain('requires an API key');
+      expect(indexerRepository.create).not.toHaveBeenCalled();
+    });
+
+    it('returns 400 when adding indexer with empty API key', async () => {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/indexers/catalog/nzbgear/add',
+        payload: { apiKey: '' },
+      });
+
+      expect(response.statusCode).toBe(422);
+      expect(indexerRepository.create).not.toHaveBeenCalled();
     });
   });
 

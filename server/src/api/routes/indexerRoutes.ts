@@ -5,6 +5,7 @@ import { parseIdParam } from '../routeUtils';
 import type { ApiDependencies } from '../types';
 import { IndexerServiceDiscovery, type DiscoveredService } from '../../services/discovery/IndexerServiceDiscovery';
 import type { CatalogEntry } from '../../services/indexers/CatalogCache';
+import { validateCatalogEntry } from '../../services/indexers/indexerValidation';
 
 type DynamicSchemaFieldType = 'text' | 'password' | 'number' | 'boolean';
 
@@ -527,6 +528,11 @@ export function registerIndexerRoutes(
     const entry = catalog.find(e => e.id === id);
     if (!entry) {
       throw new NotFoundError(`Catalog entry '${id}' not found`);
+    }
+
+    const validation = validateCatalogEntry(entry, apiKey);
+    if (!validation.valid) {
+      throw new ValidationError(validation.message ?? 'API key is required');
     }
 
     const settings = buildSettingsFromEntry(entry, apiKey);

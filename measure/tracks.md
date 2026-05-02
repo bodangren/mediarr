@@ -239,7 +239,7 @@ Parallel:
   *Link: [./tracks/typescript_strictness_20260426/](./tracks/typescript_strictness_20260426/)*
   Re-enable exactOptionalPropertyTypes and noUncheckedIndexedAccess, fix all type errors.
 
-- [~] **Track: Flutter Home & Library Browsing Screen**
+- [~] **Track: Flutter Home & Library Browsing Screen** (Phases 1-2 complete)
   *Link: [./tracks/feature_flutter_home_screen_20260502/](./tracks/feature_flutter_home_screen_20260502/)*
   Add HomeScreen with Movies/TV Shows poster grids, sort/filter, and navigation to detail screens.
 

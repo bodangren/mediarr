@@ -243,8 +243,6 @@ Parallel:
   *Link: [./tracks/feature_flutter_home_screen_20260502/](./tracks/feature_flutter_home_screen_20260502/)*
   Add HomeScreen with Movies/TV Shows poster grids, sort/filter, and navigation to detail screens.
 
-- [ ] **Track: Catalog Indexer API Key Validation Guard**
-  *Link: [./tracks/chore_catalog_apikey_validation_20260502/](./tracks/chore_catalog_apikey_validation_20260502/)*
-  Reject one-click catalog add when entry requires API key but none provided; prompt user for key.
+- [x] **Track: Catalog Indexer API Key Validation Guard** *Phases: 4 | Link: [./archive/chore_catalog_apikey_validation_20260502/](./archive/chore_catalog_apikey_validation_20260502/)* — server validation guard with 422 response; frontend inline inputs already handle UX; 11 catalog route tests pass
 
 - [x] **Track: WebTorrent Native Addon Resolution** *Phases: 3 | Link: [./archive/webtorrent_addon_resolution_20260426/](./archive/webtorrent_addon_resolution_20260426/)* — patched `node-datachannel` to handle `ERR_DLOPEN_DISABLED`; WebTorrent now operates in TCP-only mode without falling back to stub manager; 224 test files passed

@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mediarr_client/shared/models/episode.dart';
+import 'package:mediarr_client/shared/models/library_item.dart';
 import 'package:mediarr_client/shared/models/movie.dart';
 import 'package:mediarr_client/shared/models/series.dart';
 import 'package:mediarr_client/shared/services/api_client.dart';
@@ -434,6 +435,130 @@ void main() {
       expect(episode.seasonNumber, 1);
       expect(episode.episodeNumber, 1);
       expect(episode.hasFile, true);
+    });
+  });
+
+  group('LibraryItem model', () {
+    test('fromJson with all fields', () {
+      final item = LibraryItem.fromJson({
+        'id': 1,
+        'title': 'Inception',
+        'type': 'movie',
+        'year': 2010,
+        'posterUrl': 'https://example.com/poster.jpg',
+        'status': 'released',
+        'monitored': true,
+      });
+      expect(item.id, 1);
+      expect(item.title, 'Inception');
+      expect(item.type, 'movie');
+      expect(item.year, 2010);
+      expect(item.posterUrl, 'https://example.com/poster.jpg');
+      expect(item.status, 'released');
+      expect(item.monitored, true);
+    });
+
+    test('fromJson with minimal fields', () {
+      final item = LibraryItem.fromJson({
+        'id': 1,
+        'title': 'Test',
+        'type': 'series',
+      });
+      expect(item.monitored, false);
+      expect(item.year, isNull);
+      expect(item.posterUrl, isNull);
+    });
+  });
+
+  group('ApiClient.getLibrary', () {
+    test('parses paginated library response', () async {
+      final dio = Dio();
+      final client = MediarrApiClient(dio: dio);
+
+      dio.interceptors.add(InterceptorsWrapper(
+        onRequest: (options, handler) {
+          if (options.path.contains('/api/media/library')) {
+            handler.resolve(Response(
+              requestOptions: options,
+              statusCode: 200,
+              data: {
+                'ok': true,
+                'data': [
+                  {
+                    'id': 1,
+                    'title': 'Inception',
+                    'type': 'movie',
+                    'year': 2010,
+                    'posterUrl': 'https://example.com/inception.jpg',
+                  },
+                  {
+                    'id': 2,
+                    'title': 'Breaking Bad',
+                    'type': 'series',
+                    'year': 2008,
+                  },
+                ],
+                'meta': {
+                  'page': 1,
+                  'pageSize': 25,
+                  'totalCount': 2,
+                  'totalPages': 1,
+                },
+              },
+            ));
+            return;
+          }
+
+          handler.resolve(Response(
+            requestOptions: options,
+            statusCode: 200,
+            data: {'version': '1.0.0', 'startTime': ''},
+          ));
+        },
+      ));
+
+      await client.connect('http://localhost:5174');
+      final result = await client.getLibrary();
+
+      expect(result.items, hasLength(2));
+      expect(result.items[0].title, 'Inception');
+      expect(result.items[0].type, 'movie');
+      expect(result.items[1].title, 'Breaking Bad');
+      expect(result.items[1].type, 'series');
+      expect(result.totalCount, 2);
+      expect(result.page, 1);
+      expect(result.totalPages, 1);
+    });
+
+    test('returns empty result on error', () async {
+      final dio = Dio();
+      final client = MediarrApiClient(dio: dio);
+
+      dio.interceptors.add(InterceptorsWrapper(
+        onRequest: (options, handler) {
+          if (options.path.contains('/api/media/library')) {
+            handler.resolve(Response(
+              requestOptions: options,
+              statusCode: 500,
+              data: {'error': 'Internal server error'},
+            ));
+            return;
+          }
+
+          handler.resolve(Response(
+            requestOptions: options,
+            statusCode: 200,
+            data: {'version': '1.0.0', 'startTime': ''},
+          ));
+        },
+      ));
+
+      await client.connect('http://localhost:5174');
+      final result = await client.getLibrary();
+
+      expect(result.items, isEmpty);
+      expect(result.totalCount, 0);
+      expect(result.totalPages, 0);
     });
   });
 }

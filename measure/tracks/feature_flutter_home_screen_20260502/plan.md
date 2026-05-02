@@ -1,12 +1,12 @@
 # Plan: Flutter Home & Library Browsing Screen
 
-## Phase 1: Server — Library List Endpoint [~]
-- [~] Write tests for `GET /api/media/library` endpoint (sort, filter, pagination params)
-- [ ] Implement `mediaRoutes.ts` endpoint querying Drizzle for movies/series with sort/filter
-- [ ] Verify all new tests pass
+## Phase 1: Server — Library List Endpoint [x]
+- [x] Write tests for `GET /api/media/library` endpoint (sort, filter, pagination params)
+- [x] Implement `mediaRoutes.ts` endpoint querying Drizzle for movies/series with sort/filter
+- [x] Verify all new tests pass
 
-## Phase 2: Flutter — API Client & Models
-- [ ] Write tests for `MediaApiClient.getLibrary()` method
+## Phase 2: Flutter — API Client & Models [~]
+- [~] Write tests for `MediaApiClient.getLibrary()` method
 - [ ] Add `getLibrary({ type, sort, filter, page, pageSize })` to `api_client.dart`
 - [ ] Create `LibraryItem` model for grid display (id, title, posterUrl, year, rating, type)
 - [ ] Verify all new tests pass

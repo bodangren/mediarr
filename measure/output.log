@@ -1937,3 +1937,465 @@ bash tool terminated command after exceeding timeout 180000 ms. If this command 
 > tsc -b --pretty false
 [0m
 Build clean. Committing Phase 1 completion.
+[0m$ [0mgit add -A && git commit -m "feat(flutter-home): Add GET /api/media/library endpoint with tests (Phase 1)
+
+- New endpoint queries movies/series with sort/filter/pagination
+- 9 tests covering empty state, filtering, sorting, pagination
+- All tests passing" && git push
+[main 59445ca] feat(flutter-home): Add GET /api/media/library endpoint with tests (Phase 1)
+ 6 files changed, 2232 insertions(+), 4 deletions(-)
+ create mode 100644 server/src/api/routes/mediaRoutes.library.test.ts
+To https://github.com/bodangren/mediarr.git
+   64b4f82..59445ca  main -> main
+[0m
+[0m$ [0mps aux | grep "main.ts" | grep -v grep | awk '{print $2}' | xargs -I {} kill {} 2>/dev/null; sleep 2; echo "Server stopped"
+Server stopped
+[0m
+[0m$ [0mcd /home/daniel-bo/Desktop/mediarr/server && DATABASE_URL="file:/home/daniel-bo/Desktop/mediarr/mediarr.db" DEFINITIONS_PATH="/home/daniel-bo/Desktop/mediarr/server/definitions" bun --no-addons src/main.ts &
+Scheduler started. RSS Sync scheduled for every 12 minutes (*/12 * * * *).
+Import list sync scheduled for every 6 hours.
+Loaded 10 indexer definitions from /home/daniel-bo/Desktop/mediarr/server/definitions
+WebTorrent: uTP not supported warn: Cannot load native addon because loading addons is disabled.
+ code: "ERR_DLOPEN_DISABLED"
+
+      at load (/home/daniel-bo/Desktop/mediarr/node_modules/node-gyp-build/node-gyp-build.js:22:10)
+      at <anonymous> (/home/daniel-bo/Desktop/mediarr/node_modules/utp-native/lib/binding.js:3:8)
+      at <anonymous> (/home/daniel-bo/Desktop/mediarr/node_modules/utp-native/index.js:1:7)
+      at <anonymous> (/home/daniel-bo/Desktop/mediarr/node_modules/webtorrent/lib/utp.cjs:7:5)
+      at <anonymous> (/home/daniel-bo/Desktop/mediarr/node_modules/webtorrent/lib/utp.cjs:10:13)
+
+node-datachannel: native addon unavailable, WebRTC peer connections will be disabled
+Wanted search scheduled every 60 minutes (*/60 * * * *).
+Library scan scheduled daily at 2 AM.
+Auto-update check scheduled daily at 4 AM (download-only when enabled).
+[DIAG:DiscoveryService] starting mDNS broadcast: name="Mediarr" type="mediarr" port=3001 host="10.10.244.222" aliases=["http"] txt={"version":"1.0.0"}
+Discovery broadcast active as _mediarr._tcp on port 3001
+Mediarr API listening on http://0.0.0.0:3001
+
+
+<bash_metadata>
+bash tool terminated command after exceeding timeout 15000 ms. If this command is expected to take longer and is not waiting for interactive input, retry with a larger timeout value in milliseconds.
+</bash_metadata>
+[0m
+[0m$ [0mcurl -s http://localhost:3001/api/media/library | head -200
+(no output)
+[0m
+[0m$ [0mcurl -s --max-time 5 http://localhost:3001/api/media/library
+(no output)
+[0m
+[0m$ [0mps aux | grep "main.ts" | grep -v grep
+(no output)
+[0m
+[0m← [0mEdit measure/tracks/feature_flutter_home_screen_20260502/plan.md
+Index: /home/daniel-bo/Desktop/mediarr/measure/tracks/feature_flutter_home_screen_20260502/plan.md
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/measure/tracks/feature_flutter_home_screen_20260502/plan.md
++++ /home/daniel-bo/Desktop/mediarr/measure/tracks/feature_flutter_home_screen_20260502/plan.md
+@@ -1,10 +1,10 @@
+ # Plan: Flutter Home & Library Browsing Screen
+ 
+-## Phase 1: Server — Library List Endpoint [~]
+-- [~] Write tests for `GET /api/media/library` endpoint (sort, filter, pagination params)
+-- [ ] Implement `mediaRoutes.ts` endpoint querying Drizzle for movies/series with sort/filter
+-- [ ] Verify all new tests pass
++## Phase 1: Server — Library List Endpoint [x]
++- [x] Write tests for `GET /api/media/library` endpoint (sort, filter, pagination params)
++- [x] Implement `mediaRoutes.ts` endpoint querying Drizzle for movies/series with sort/filter
++- [x] Verify all new tests pass
+ 
+ ## Phase 2: Flutter — API Client & Models
+ - [ ] Write tests for `MediaApiClient.getLibrary()` method
+ - [ ] Add `getLibrary({ type, sort, filter, page, pageSize })` to `api_client.dart`
+
+[0m
+[0m← [0mEdit measure/tracks/feature_flutter_home_screen_20260502/plan.md
+Index: /home/daniel-bo/Desktop/mediarr/measure/tracks/feature_flutter_home_screen_20260502/plan.md
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/measure/tracks/feature_flutter_home_screen_20260502/plan.md
++++ /home/daniel-bo/Desktop/mediarr/measure/tracks/feature_flutter_home_screen_20260502/plan.md
+@@ -4,10 +4,10 @@
+ - [x] Write tests for `GET /api/media/library` endpoint (sort, filter, pagination params)
+ - [x] Implement `mediaRoutes.ts` endpoint querying Drizzle for movies/series with sort/filter
+ - [x] Verify all new tests pass
+ 
+-## Phase 2: Flutter — API Client & Models
+-- [ ] Write tests for `MediaApiClient.getLibrary()` method
++## Phase 2: Flutter — API Client & Models [~]
++- [~] Write tests for `MediaApiClient.getLibrary()` method
+ - [ ] Add `getLibrary({ type, sort, filter, page, pageSize })` to `api_client.dart`
+ - [ ] Create `LibraryItem` model for grid display (id, title, posterUrl, year, rating, type)
+ - [ ] Verify all new tests pass
+ 
+
+[0m
+[0m✱ [0mGlob "clients/mediarr-client/lib/**/*.dart"[90m 35 matches[0m
+[0m→ [0mRead clients/mediarr-client/lib/shared/services/api_client.dart[90m [limit=100][0m
+[0m→ [0mRead clients/mediarr-client/lib/shared/models/movie.dart
+[0m→ [0mRead clients/mediarr-client/lib/shared/models/series.dart
+[0m→ [0mRead clients/mediarr-client/lib/shared/services/api_client.dart[90m [limit=150, offset=100][0m
+[0m✱ [0mGlob "clients/mediarr-client/test/**/*.dart"[90m 25 matches[0m
+[0m→ [0mRead clients/mediarr-client/test/shared/services/api_client_test.dart[90m [limit=100][0m
+[0m→ [0mRead clients/mediarr-client/test/shared/services/api_client_test.dart[90m [limit=150, offset=250][0m
+[0m✱ [0mGrep "getMovies|getSeries|Future.*get"[90m in clients/mediarr-client/lib/shared/services/api_client.dart · 13 matches[0m
+[0m→ [0mRead clients/mediarr-client/lib/shared/services/api_client.dart[90m [limit=80, offset=460][0m
+[0m✱ [0mGrep "_fetchAllPaginated|_unwrap|_decode"[90m in clients/mediarr-client/lib/shared/services/api_client.dart · 22 matches[0m
+[0m→ [0mRead clients/mediarr-client/lib/shared/services/api_client.dart[90m [limit=80, offset=440][0m
+[0m→ [0mRead clients/mediarr-client/lib/shared/services/api_client.dart[90m [limit=40, offset=970][0m
+[0m→ [0mRead server/src/api/routes/movieRoutes.ts[90m [limit=50][0m
+[0m→ [0mRead server/src/api/routes/movieRoutes.ts[90m [limit=60, offset=50][0m
+[0m→ [0mRead server/src/api/routes/movieRoutes.ts[90m [limit=40, offset=110][0m
+[0m→ [0mRead clients/mediarr-client/lib/shared/widgets/media_grid.dart[90m [limit=50][0m
+[0m→ [0mRead clients/mediarr-client/lib/shared/widgets/poster_card.dart[90m [limit=80][0m
+[0m
+[0m← [0mWrite clients/mediarr-client/lib/shared/models/library_item.dart
+Wrote file successfully.
+[0m
+[0m→ [0mRead clients/mediarr-client/lib/shared/services/api_client.dart[90m [limit=30, offset=520][0m
+[0m
+[0m← [0mEdit clients/mediarr-client/lib/shared/services/api_client.dart
+Index: /home/daniel-bo/Desktop/mediarr/clients/mediarr-client/lib/shared/services/api_client.dart
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/clients/mediarr-client/lib/shared/services/api_client.dart
++++ /home/daniel-bo/Desktop/mediarr/clients/mediarr-client/lib/shared/services/api_client.dart
+@@ -3,8 +3,9 @@
+ 
+ import 'package:dio/dio.dart';
+ import 'package:flutter_riverpod/flutter_riverpod.dart';
+ 
++import '../models/library_item.dart';
+ import '../models/movie.dart';
+ import '../models/search_result.dart';
+ import '../models/series.dart';
+ import '../models/subtitle_models.dart';
+
+[0m
+[0m← [0mEdit clients/mediarr-client/lib/shared/services/api_client.dart
+Index: /home/daniel-bo/Desktop/mediarr/clients/mediarr-client/lib/shared/services/api_client.dart
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/clients/mediarr-client/lib/shared/services/api_client.dart
++++ /home/daniel-bo/Desktop/mediarr/clients/mediarr-client/lib/shared/services/api_client.dart
+@@ -529,8 +529,54 @@
+     (json) => Series.fromJson(json as Map<String, dynamic>),
+   );
+ }
+ 
++/// Fetch paginated library items (movies and/or series).
++Future<({List<LibraryItem> items, int page, int pageSize, int totalCount, int totalPages})> getLibrary({
++  String? type,
++  String? sortBy,
++  String? sortDir,
++  int page = 1,
++  int pageSize = 25,
++}) async {
++  final response = await _dio.get(
++    '/api/media/library',
++    queryParameters: {
++      if (type != null) 'type': type,
++      if (sortBy != null) 'sortBy': sortBy,
++      if (sortDir != null) 'sortDir': sortDir,
++      'page': page,
++      'pageSize': pageSize,
++    },
++  );
++
++  if (response.statusCode == 200 && response.data != null) {
++    final envelope = _decode(response.data) as Map<String, dynamic>;
++    final data = envelope['data'] as List<dynamic>;
++    final meta = envelope['meta'] as Map<String, dynamic>;
++
++    final items = data
++        .map((json) => LibraryItem.fromJson(json as Map<String, dynamic>))
++        .toList();
++
++    return (
++      items: items,
++      page: (meta['page'] as int?) ?? page,
++      pageSize: (meta['pageSize'] as int?) ?? pageSize,
++      totalCount: (meta['totalCount'] as int?) ?? items.length,
++      totalPages: (meta['totalPages'] as int?) ?? 1,
++    );
++  }
++
++  return (
++    items: const <LibraryItem>[],
++    page: page,
++    pageSize: pageSize,
++    totalCount: 0,
++    totalPages: 0,
++  );
++}
++
+ /// Fetch full series detail with nested seasons and episodes.
+ Future<Series?> getSeriesDetail(int id) async {
+   final response = await _dio.get('/api/series/$id');
+   if (response.statusCode == 200 && response.data != null) {
+
+[0m
+[0m→ [0mRead clients/mediarr-client/pubspec.yaml[90m [limit=50][0m
+[0m
+[0m← [0mWrite clients/mediarr-client/lib/shared/models/library_item.dart
+Wrote file successfully.
+[0m
+[0m→ [0mRead clients/mediarr-client/test/shared/services/api_client_test.dart[90m [limit=50, offset=390][0m
+[0m
+[0m← [0mEdit clients/mediarr-client/test/shared/services/api_client_test.dart
+Index: /home/daniel-bo/Desktop/mediarr/clients/mediarr-client/test/shared/services/api_client_test.dart
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/clients/mediarr-client/test/shared/services/api_client_test.dart
++++ /home/daniel-bo/Desktop/mediarr/clients/mediarr-client/test/shared/services/api_client_test.dart
+@@ -1,7 +1,8 @@
+ import 'package:dio/dio.dart';
+ import 'package:flutter_test/flutter_test.dart';
+ import 'package:mediarr_client/shared/models/episode.dart';
++import 'package:mediarr_client/shared/models/library_item.dart';
+ import 'package:mediarr_client/shared/models/movie.dart';
+ import 'package:mediarr_client/shared/models/series.dart';
+ import 'package:mediarr_client/shared/services/api_client.dart';
+ 
+
+[0m
+[0m← [0mEdit clients/mediarr-client/test/shared/services/api_client_test.dart
+Index: /home/daniel-bo/Desktop/mediarr/clients/mediarr-client/test/shared/services/api_client_test.dart
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/clients/mediarr-client/test/shared/services/api_client_test.dart
++++ /home/daniel-bo/Desktop/mediarr/clients/mediarr-client/test/shared/services/api_client_test.dart
+@@ -436,5 +436,129 @@
+       expect(episode.episodeNumber, 1);
+       expect(episode.hasFile, true);
+     });
+   });
++
++  group('LibraryItem model', () {
++    test('fromJson with all fields', () {
++      final item = LibraryItem.fromJson({
++        'id': 1,
++        'title': 'Inception',
++        'type': 'movie',
++        'year': 2010,
++        'posterUrl': 'https://example.com/poster.jpg',
++        'status': 'released',
++        'monitored': true,
++      });
++      expect(item.id, 1);
++      expect(item.title, 'Inception');
++      expect(item.type, 'movie');
++      expect(item.year, 2010);
++      expect(item.posterUrl, 'https://example.com/poster.jpg');
++      expect(item.status, 'released');
++      expect(item.monitored, true);
++    });
++
++    test('fromJson with minimal fields', () {
++      final item = LibraryItem.fromJson({
++        'id': 1,
++        'title': 'Test',
++        'type': 'series',
++      });
++      expect(item.monitored, false);
++      expect(item.year, isNull);
++      expect(item.posterUrl, isNull);
++    });
++  });
++
++  group('ApiClient.getLibrary', () {
++    test('parses paginated library response', () async {
++      final dio = Dio();
++      final client = MediarrApiClient(dio: dio);
++
++      dio.interceptors.add(InterceptorsWrapper(
++        onRequest: (options, handler) {
++          if (options.path.contains('/api/media/library')) {
++            handler.resolve(Response(
++              requestOptions: options,
++              statusCode: 200,
++              data: {
++                'ok': true,
++                'data': [
++                  {
++                    'id': 1,
++                    'title': 'Inception',
++                    'type': 'movie',
++                    'year': 2010,
++                    'posterUrl': 'https://example.com/inception.jpg',
++                  },
++                  {
++                    'id': 2,
++                    'title': 'Breaking Bad',
++                    'type': 'series',
++                    'year': 2008,
++                  },
++                ],
++                'meta': {
++                  'page': 1,
++                  'pageSize': 25,
++                  'totalCount': 2,
++                  'totalPages': 1,
++                },
++              },
++            ));
++            return;
++          }
++
++          handler.resolve(Response(
++            requestOptions: options,
++            statusCode: 200,
++            data: {'version': '1.0.0', 'startTime': ''},
++          ));
++        },
++      ));
++
++      await client.connect('http://localhost:5174');
++      final result = await client.getLibrary();
++
++      expect(result.items, hasLength(2));
++      expect(result.items[0].title, 'Inception');
++      expect(result.items[0].type, 'movie');
++      expect(result.items[1].title, 'Breaking Bad');
++      expect(result.items[1].type, 'series');
++      expect(result.totalCount, 2);
++      expect(result.page, 1);
++      expect(result.totalPages, 1);
++    });
++
++    test('returns empty result on error', () async {
++      final dio = Dio();
++      final client = MediarrApiClient(dio: dio);
++
++      dio.interceptors.add(InterceptorsWrapper(
++        onRequest: (options, handler) {
++          if (options.path.contains('/api/media/library')) {
++            handler.resolve(Response(
++              requestOptions: options,
++              statusCode: 500,
++              data: {'error': 'Internal server error'},
++            ));
++            return;
++          }
++
++          handler.resolve(Response(
++            requestOptions: options,
++            statusCode: 200,
++            data: {'version': '1.0.0', 'startTime': ''},
++          ));
++        },
++      ));
++
++      await client.connect('http://localhost:5174');
++      final result = await client.getLibrary();
++
++      expect(result.items, isEmpty);
++      expect(result.totalCount, 0);
++      expect(result.totalPages, 0);
++    });
++  });
+ }
+
+[0m
+[0m$ [0mcd /home/daniel-bo/Desktop/mediarr/clients/mediarr-client && flutter test test/shared/services/api_client_test.dart
+/bin/bash: line 1: flutter: command not found
+[0m
+[0m$ [0mcd /home/daniel-bo/Desktop/mediarr/clients/mediarr-client && ls -la
+total 112
+drwxrwxr-x 12 daniel-bo daniel-bo  4096 Apr 12 21:10 .
+drwxrwxr-x  4 daniel-bo daniel-bo  4096 Apr  4 17:01 ..
+-rw-rw-r--  1 daniel-bo daniel-bo  1420 Mar 28 07:22 analysis_options.yaml
+drwxrwxr-x  5 daniel-bo daniel-bo  4096 Mar 28 09:36 android
+drwxrwxr-x 10 daniel-bo daniel-bo  4096 Apr 17 19:18 build
+drwxrwxr-x  3 daniel-bo daniel-bo  4096 Mar 28 13:06 .dart_tool
+-rw-rw-r--  1 daniel-bo daniel-bo 10567 Apr 17 18:38 .flutter-plugins-dependencies
+-rw-rw-r--  1 daniel-bo daniel-bo   709 Mar 28 07:22 .gitignore
+drwxrwxr-x  4 daniel-bo daniel-bo  4096 Mar 28 07:22 .idea
+drwxrwxr-x  2 daniel-bo daniel-bo  4096 Mar 28 08:50 integration_test
+drwxrwxr-x  5 daniel-bo daniel-bo  4096 Mar 28 07:37 lib
+drwxrwxr-x  4 daniel-bo daniel-bo  4096 Mar 28 07:22 linux
+drwxrwxr-x  7 daniel-bo daniel-bo  4096 Mar 28 07:22 macos
+-rw-rw-r--  1 daniel-bo daniel-bo   842 Mar 28 07:22 mediarr_client.iml
+-rw-rw-r--  1 daniel-bo daniel-bo  1264 Mar 28 07:22 .metadata
+-rw-rw-r--  1 daniel-bo daniel-bo 25323 Apr 17 18:47 pubspec.lock
+-rw-rw-r--  1 daniel-bo daniel-bo   837 Mar 31 22:58 pubspec.yaml
+-rw-rw-r--  1 daniel-bo daniel-bo   557 Mar 28 07:22 README.md
+drwxrwxr-x  5 daniel-bo daniel-bo  4096 Mar 28 07:48 test
+drwxrwxr-x  3 daniel-bo daniel-bo  4096 Apr 12 21:10 tool
+[0m
+[0m$ [0mwhich dart
+(no output)
+[0m
+[0m→ [0mRead clients/mediarr-client/lib/shared/services/api_client.dart[90m [limit=60, offset=520][0m
+[0m
+[0m$ [0mnpm test -- server/src/api/routes/mediaRoutes.library.test.ts
+> mediarr@1.0.0 test
+> vitest run server/src/api/routes/mediaRoutes.library.test.ts
+
+
+[1m[46m RUN [49m[22m [36mv4.0.18 [39m[90m/home/daniel-bo/Desktop/mediarr[39m
+
+[90mstderr[2m | server/src/api/routes/mediaRoutes.library.test.ts[2m > [22m[2mGET /api/media/library[2m > [22m[2mreturns empty paginated response when no media exists
+[22m[39mstrict mode: use allowUnionTypes to allow union type keyword at "#/properties/page" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/pageSize" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/page" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/pageSize" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/id" (strictTypes)
+
+[90mstderr[2m | server/src/api/routes/mediaRoutes.library.test.ts[2m > [22m[2mGET /api/media/library[2m > [22m[2mreturns movies and series with unified shape
+[22m[39mstrict mode: use allowUnionTypes to allow union type keyword at "#/properties/page" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/pageSize" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/page" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/pageSize" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/id" (strictTypes)
+
+[90mstderr[2m | server/src/api/routes/mediaRoutes.library.test.ts[2m > [22m[2mGET /api/media/library[2m > [22m[2mfilters by type=movie
+[22m[39mstrict mode: use allowUnionTypes to allow union type keyword at "#/properties/page" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/pageSize" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/page" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/pageSize" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/id" (strictTypes)
+
+[90mstderr[2m | server/src/api/routes/mediaRoutes.library.test.ts[2m > [22m[2mGET /api/media/library[2m > [22m[2mfilters by type=series
+[22m[39mstrict mode: use allowUnionTypes to allow union type keyword at "#/properties/page" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/pageSize" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/page" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/pageSize" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/id" (strictTypes)
+
+[90mstderr[2m | server/src/api/routes/mediaRoutes.library.test.ts[2m > [22m[2mGET /api/media/library[2m > [22m[2msorts by title ascending
+[22m[39mstrict mode: use allowUnionTypes to allow union type keyword at "#/properties/page" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/pageSize" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/page" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/pageSize" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/id" (strictTypes)
+
+[90mstderr[2m | server/src/api/routes/mediaRoutes.library.test.ts[2m > [22m[2mGET /api/media/library[2m > [22m[2msorts by year descending
+[22m[39mstrict mode: use allowUnionTypes to allow union type keyword at "#/properties/page" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/pageSize" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/page" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/pageSize" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/id" (strictTypes)
+
+[90mstderr[2m | server/src/api/routes/mediaRoutes.library.test.ts[2m > [22m[2mGET /api/media/library[2m > [22m[2mpaginates results
+[22m[39mstrict mode: use allowUnionTypes to allow union type keyword at "#/properties/page" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/pageSize" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/page" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/pageSize" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/id" (strictTypes)
+
+[90mstderr[2m | server/src/api/routes/mediaRoutes.library.test.ts[2m > [22m[2mGET /api/media/library[2m > [22m[2mreturns second page correctly
+[22m[39mstrict mode: use allowUnionTypes to allow union type keyword at "#/properties/page" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/pageSize" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/page" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/pageSize" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/id" (strictTypes)
+
+[90mstderr[2m | server/src/api/routes/mediaRoutes.library.test.ts[2m > [22m[2mGET /api/media/library[2m > [22m[2mdefaults sort to title ascending when invalid sortBy provided
+[22m[39mstrict mode: use allowUnionTypes to allow union type keyword at "#/properties/page" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/pageSize" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/page" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/pageSize" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/id" (strictTypes)
+
+ [32m✓[39m server/src/api/routes/mediaRoutes.library.test.ts [2m([22m[2m9 tests[22m[2m)[22m[33m 489[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m9 passed[39m[22m[90m (9)[39m
+[2m   Start at [22m 02:55:21
+[2m   Duration [22m 1.16s[2m (transform 181ms, setup 0ms, import 451ms, tests 489ms, environment 0ms)[22m
+[0m

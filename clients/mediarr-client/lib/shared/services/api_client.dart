@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../models/library_item.dart';
 import '../models/movie.dart';
 import '../models/search_result.dart';
 import '../models/series.dart';
@@ -526,6 +527,52 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
     return _fetchAllPaginated(
       '/api/series',
       (json) => Series.fromJson(json as Map<String, dynamic>),
+    );
+  }
+
+  /// Fetch paginated library items (movies and/or series).
+  Future<({List<LibraryItem> items, int page, int pageSize, int totalCount, int totalPages})> getLibrary({
+    String? type,
+    String? sortBy,
+    String? sortDir,
+    int page = 1,
+    int pageSize = 25,
+  }) async {
+    final response = await _dio.get(
+      '/api/media/library',
+      queryParameters: {
+        if (type != null) 'type': type,
+        if (sortBy != null) 'sortBy': sortBy,
+        if (sortDir != null) 'sortDir': sortDir,
+        'page': page,
+        'pageSize': pageSize,
+      },
+    );
+
+    if (response.statusCode == 200 && response.data != null) {
+      final envelope = _decode(response.data) as Map<String, dynamic>;
+      final data = envelope['data'] as List<dynamic>;
+      final meta = envelope['meta'] as Map<String, dynamic>;
+
+      final items = data
+          .map((json) => LibraryItem.fromJson(json as Map<String, dynamic>))
+          .toList();
+
+      return (
+        items: items,
+        page: (meta['page'] as int?) ?? page,
+        pageSize: (meta['pageSize'] as int?) ?? pageSize,
+        totalCount: (meta['totalCount'] as int?) ?? items.length,
+        totalPages: (meta['totalPages'] as int?) ?? 1,
+      );
+    }
+
+    return (
+      items: const <LibraryItem>[],
+      page: page,
+      pageSize: pageSize,
+      totalCount: 0,
+      totalPages: 0,
     );
   }
 

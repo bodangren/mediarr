@@ -1,6 +1,6 @@
 # TypeScript Strictness Re-enablement — Implementation Plan
 
-## Phase 1: Enable and Assess [ ]
+## Phase 1: Enable and Assess [~]
 - [ ] Enable `exactOptionalPropertyTypes` in tsconfig
 - [ ] Enable `noUncheckedIndexedAccess` in tsconfig
 - [ ] Run `tsc --noEmit` to catalog all type errors

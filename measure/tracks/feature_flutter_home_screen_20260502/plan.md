@@ -1,7 +1,7 @@
 # Plan: Flutter Home & Library Browsing Screen
 
-## Phase 1: Server — Library List Endpoint
-- [ ] Write tests for `GET /api/media/library` endpoint (sort, filter, pagination params)
+## Phase 1: Server — Library List Endpoint [~]
+- [~] Write tests for `GET /api/media/library` endpoint (sort, filter, pagination params)
 - [ ] Implement `mediaRoutes.ts` endpoint querying Drizzle for movies/series with sort/filter
 - [ ] Verify all new tests pass
 

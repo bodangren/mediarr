@@ -51,6 +51,77 @@ export function registerMediaRoutes(
   app: FastifyInstance,
   deps: ApiDependencies,
 ): void {
+  app.get('/api/media/library', {
+    schema: {
+      querystring: {
+        type: 'object',
+        properties: {
+          page: { type: ['number', 'string'] },
+          pageSize: { type: ['number', 'string'] },
+          sortBy: { type: 'string' },
+          sortDir: { type: 'string' },
+          type: { type: 'string' },
+        },
+      },
+    },
+  }, async (request, reply) => {
+    const query = request.query as Record<string, unknown>;
+    const pagination = parsePaginationParams(query);
+    const typeFilter =
+      typeof query.type === 'string' && query.type.trim().length > 0
+        ? query.type.toLowerCase()
+        : undefined;
+
+    const allowedSortFields = ['title', 'year', 'added'];
+    const sortBy = sanitizeSort(pagination.sortBy, 'title', allowedSortFields);
+    const sortDir = pagination.sortDir ?? 'asc';
+
+    let movies: any[] = [];
+    let series: any[] = [];
+
+    if (!typeFilter || typeFilter === 'movie') {
+      movies = await (deps.prisma as any).movie?.findMany?.() ?? [];
+    }
+
+    if (!typeFilter || typeFilter === 'series') {
+      series = await (deps.prisma as any).series?.findMany?.() ?? [];
+    }
+
+    const unifiedMovies = movies.map((m: any) => ({
+      id: m.id,
+      title: m.title,
+      year: m.year,
+      posterUrl: m.posterUrl,
+      added: m.added,
+      status: m.status,
+      monitored: m.monitored,
+      type: 'movie' as const,
+    }));
+
+    const unifiedSeries = series.map((s: any) => ({
+      id: s.id,
+      title: s.title,
+      year: s.year,
+      posterUrl: s.posterUrl,
+      added: s.added,
+      status: s.status,
+      monitored: s.monitored,
+      type: 'series' as const,
+    }));
+
+    const combined = [...unifiedMovies, ...unifiedSeries];
+
+    const sorted = sortByField(combined, sortBy, sortDir);
+
+    const paged = paginateArray(sorted, pagination.page, pagination.pageSize);
+
+    return sendPaginatedSuccess(reply, paged.items, {
+      page: pagination.page,
+      pageSize: pagination.pageSize,
+      totalCount: paged.totalCount,
+    });
+  });
+
   app.get('/api/media/wanted', {
     schema: {
       querystring: {

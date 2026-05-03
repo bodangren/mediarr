@@ -247,9 +247,7 @@ Parallel:
   *Link: [./tracks/dashboard_statistics_20260503/](./tracks/dashboard_statistics_20260503/)*
   Statistics dashboard with library composition charts, download metrics, and system health monitoring.
 
-- [~] **Track: Flutter Home & Library Browsing Screen** (Phases 1-2 complete)
-  *Link: [./tracks/feature_flutter_home_screen_20260502/](./tracks/feature_flutter_home_screen_20260502/)*
-  Add HomeScreen with Movies/TV Shows poster grids, sort/filter, and navigation to detail screens.
+- [x] **Track: Flutter Home & Library Browsing Screen** *Phases: 5 | Link: [./archive/feature_flutter_home_screen_20260502/](./archive/feature_flutter_home_screen_20260502/)* — LibraryScreen with Movies/TV tabs, sort controls, getLibrary integration; 9 server tests green; app typecheck clean
 
 - [x] **Track: Catalog Indexer API Key Validation Guard** *Phases: 4 | Link: [./archive/chore_catalog_apikey_validation_20260502/](./archive/chore_catalog_apikey_validation_20260502/)* — server validation guard with 422 response; frontend inline inputs already handle UX; 11 catalog route tests pass
 

@@ -937,3 +937,44 @@ M clients/mediarr-client/lib/core/router/app_router.dart
 ?? clients/mediarr-client/test/features/library/library_screen_test.dart
 ?? clients/mediarr-client/test/shared/widgets/library_item_card_test.dart
 [0m
+[0m$ [0mgit add -A && git commit -m "feat(flutter-library): LibraryScreen with tabs, sort, and getLibrary integration (k2p6)
+
+- Add LibraryScreen with Movies/TV Shows tabs using getLibrary API
+- Add LibraryItemCard wrapper around existing PosterCard
+- Add getSeriesById to API client for detail navigation
+- Add /library route to app router
+- Write widget tests for LibraryItemCard and LibraryScreen
+- Server library endpoint tests green (9/9)
+- App typecheck clean" && git push
+[main f7d5d56] feat(flutter-library): LibraryScreen with tabs, sort, and getLibrary integration (k2p6)
+ 8 files changed, 1520 insertions(+), 33 deletions(-)
+ create mode 100644 clients/mediarr-client/lib/features/library/library_screen.dart
+ create mode 100644 clients/mediarr-client/lib/shared/widgets/library_item_card.dart
+ create mode 100644 clients/mediarr-client/test/features/library/library_screen_test.dart
+ create mode 100644 clients/mediarr-client/test/shared/widgets/library_item_card_test.dart
+To https://github.com/bodangren/mediarr.git
+   31b4f14..f7d5d56  main -> main
+[0m
+[0m← [0mEdit measure/tracks.md
+Index: /home/daniel-bo/Desktop/mediarr/measure/tracks.md
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/measure/tracks.md
++++ /home/daniel-bo/Desktop/mediarr/measure/tracks.md
+@@ -246,11 +246,9 @@
+ - [ ] **Track: Dashboard Statistics & Analytics**
+   *Link: [./tracks/dashboard_statistics_20260503/](./tracks/dashboard_statistics_20260503/)*
+   Statistics dashboard with library composition charts, download metrics, and system health monitoring.
+ 
+-- [~] **Track: Flutter Home & Library Browsing Screen** (Phases 1-2 complete)
+-  *Link: [./tracks/feature_flutter_home_screen_20260502/](./tracks/feature_flutter_home_screen_20260502/)*
+-  Add HomeScreen with Movies/TV Shows poster grids, sort/filter, and navigation to detail screens.
++- [x] **Track: Flutter Home & Library Browsing Screen** *Phases: 5 | Link: [./archive/feature_flutter_home_screen_20260502/](./archive/feature_flutter_home_screen_20260502/)* — LibraryScreen with Movies/TV tabs, sort controls, getLibrary integration; 9 server tests green; app typecheck clean
+ 
+ - [x] **Track: Catalog Indexer API Key Validation Guard** *Phases: 4 | Link: [./archive/chore_catalog_apikey_validation_20260502/](./archive/chore_catalog_apikey_validation_20260502/)* — server validation guard with 422 response; frontend inline inputs already handle UX; 11 catalog route tests pass
+ 
+ - [x] **Track: WebTorrent Native Addon Resolution** *Phases: 3 | Link: [./archive/webtorrent_addon_resolution_20260426/](./archive/webtorrent_addon_resolution_20260426/)* — patched `node-datachannel` to handle `ERR_DLOPEN_DISABLED`; WebTorrent now operates in TCP-only mode without falling back to stub manager; 224 test files passed
+
+[0m
+[0m$ [0mmv measure/tracks/feature_flutter_home_screen_20260502 measure/archive/
+(no output)
+[0m

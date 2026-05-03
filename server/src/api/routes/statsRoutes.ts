@@ -178,4 +178,125 @@ export function registerStatsRoutes(app: FastifyInstance, deps: ApiDependencies)
 
     return sendSuccess(reply, stats);
   });
+
+  app.get('/api/stats/downloads', async (_request, reply) => {
+    const prisma = deps.prisma as any;
+
+    const [
+      totalTorrents,
+      activeTorrents,
+      completedTorrents,
+      failedTorrents,
+    ] = await Promise.all([
+      prisma.torrent?.count?.() ?? 0,
+      prisma.torrent?.count?.({
+        where: { status: { in: ['downloading', 'metaDL', 'checking'] } },
+      }) ?? 0,
+      prisma.torrent?.count?.({ where: { status: 'completed' } }) ?? 0,
+      prisma.torrent?.count?.({ where: { status: 'error' } }) ?? 0,
+    ]);
+
+    const [totalDownloaded, totalUploaded, avgSpeed] = await Promise.all([
+      getAggregateSum(prisma, 'Torrent', 'downloaded'),
+      getAggregateSum(prisma, 'Torrent', 'uploaded'),
+      getAverageDownloadSpeed(prisma),
+    ]);
+
+    return sendSuccess(reply, {
+      totalTorrents,
+      activeDownloads: activeTorrents,
+      completedDownloads: completedTorrents,
+      failedDownloads: failedTorrents,
+      totalDownloadedBytes: totalDownloaded,
+      totalUploadedBytes: totalUploaded,
+      averageDownloadSpeed: avgSpeed,
+    });
+  });
+
+  app.get('/api/stats/system', async (_request, reply) => {
+    const prisma = deps.prisma as any;
+
+    const dbSize = await getDatabaseSize(prisma);
+    const uptime = process.uptime();
+
+    const diskSpace: Array<{
+      path: string;
+      freeBytes: number;
+      totalBytes: number;
+      usedPercent: number;
+    }> = [];
+
+    if (deps.systemHealthService) {
+      try {
+        const settings = await deps.settingsService?.get?.() ?? {};
+        const paths = [
+          {
+            path: settings.mediaManagement?.movieRootFolder ?? '/',
+            label: 'Movies',
+          },
+          {
+            path: settings.mediaManagement?.tvRootFolder ?? '/',
+            label: 'TV Shows',
+          },
+        ];
+        const diskInfo = await deps.systemHealthService.getDiskSpace(paths);
+        diskSpace.push(
+          ...diskInfo.map((d) => ({
+            path: d.path,
+            freeBytes: d.free,
+            totalBytes: d.total,
+            usedPercent: Math.round(((d.total - d.free) / d.total) * 100),
+          })),
+        );
+      } catch {
+        // Disk space check is best-effort
+      }
+    }
+
+    return sendSuccess(reply, {
+      dbSizeBytes: dbSize,
+      uptimeSeconds: Math.round(uptime),
+      diskSpace,
+    });
+  });
+}
+
+async function getAggregateSum(
+  prisma: any,
+  table: string,
+  field: string,
+): Promise<number> {
+  try {
+    const result = await prisma.$queryRawUnsafe?.(
+      `SELECT SUM(${field}) as total FROM ${table}`,
+    );
+    const total = Array.isArray(result) ? result[0]?.total : 0;
+    return Number(total) || 0;
+  } catch {
+    return 0;
+  }
+}
+
+async function getAverageDownloadSpeed(prisma: any): Promise<number> {
+  try {
+    const result = await prisma.$queryRawUnsafe?.(
+      `SELECT AVG(downloadSpeed) as avg FROM Torrent WHERE status IN ('downloading', 'metaDL')`,
+    );
+    const avg = Array.isArray(result) ? result[0]?.avg : 0;
+    return Number(avg) || 0;
+  } catch {
+    return 0;
+  }
+}
+
+async function getDatabaseSize(prisma: any): Promise<number> {
+  try {
+    const result = await prisma.$queryRawUnsafe?.(
+      `SELECT page_count * page_size as size FROM pragma_page_count(), pragma_page_size()`,
+    );
+    const size = Array.isArray(result) ? result[0]?.size : 0;
+    return Number(size) || 0;
+  } catch {
+    return 0;
+  }
 }

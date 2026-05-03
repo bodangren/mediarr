@@ -21,6 +21,10 @@ function createPrismaMock() {
     activityEvent: {
       count: vi.fn().mockResolvedValue(0),
     },
+    torrent: {
+      count: vi.fn().mockResolvedValue(0),
+    },
+    $queryRawUnsafe: vi.fn().mockResolvedValue([{ total: 0, avg: 0, size: 0 }]),
   };
 }
 
@@ -172,5 +176,80 @@ describe('buildQualityBreakdown', () => {
     expect(result.hd1080p).toBe(2);
     expect(result.hd720p).toBe(1);
     expect(result.unknown).toBe(1);
+  });
+});
+
+describe('statsRoutes — GET /api/stats/downloads', () => {
+  let app: FastifyInstance;
+  let prisma: ReturnType<typeof createPrismaMock>;
+
+  beforeEach(() => {
+    prisma = createPrismaMock();
+    app = createApp(prisma);
+  });
+
+  it('returns zero counts when no torrents exist', async () => {
+    const res = await app.inject({ method: 'GET', url: '/api/stats/downloads' });
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.body);
+    expect(body.data).toMatchObject({
+      totalTorrents: 0,
+      activeDownloads: 0,
+      completedDownloads: 0,
+      failedDownloads: 0,
+      totalDownloadedBytes: 0,
+      totalUploadedBytes: 0,
+      averageDownloadSpeed: 0,
+    });
+  });
+
+  it('returns correct download statistics', async () => {
+    prisma.torrent.count
+      .mockResolvedValueOnce(100)
+      .mockResolvedValueOnce(10)
+      .mockResolvedValueOnce(80)
+      .mockResolvedValueOnce(5);
+
+    prisma.$queryRawUnsafe
+      .mockResolvedValueOnce([{ total: 5000000000 }])
+      .mockResolvedValueOnce([{ total: 2000000000 }])
+      .mockResolvedValueOnce([{ avg: 1024000 }]);
+
+    const res = await app.inject({ method: 'GET', url: '/api/stats/downloads' });
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.body);
+    expect(body.data).toMatchObject({
+      totalTorrents: 100,
+      activeDownloads: 10,
+      completedDownloads: 80,
+      failedDownloads: 5,
+      totalDownloadedBytes: 5000000000,
+      totalUploadedBytes: 2000000000,
+      averageDownloadSpeed: 1024000,
+    });
+  });
+});
+
+describe('statsRoutes — GET /api/stats/system', () => {
+  let app: FastifyInstance;
+  let prisma: ReturnType<typeof createPrismaMock>;
+
+  beforeEach(() => {
+    prisma = createPrismaMock();
+    app = createApp(prisma);
+  });
+
+  it('returns system stats with DB size', async () => {
+    prisma.$queryRawUnsafe.mockResolvedValue([{ size: 10485760 }]);
+
+    const res = await app.inject({ method: 'GET', url: '/api/stats/system' });
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.body);
+    expect(body.data).toMatchObject({
+      dbSizeBytes: 10485760,
+      uptimeSeconds: expect.any(Number),
+      diskSpace: [],
+    });
+    expect(body.data.uptimeSeconds).toBeGreaterThanOrEqual(0);
   });
 });

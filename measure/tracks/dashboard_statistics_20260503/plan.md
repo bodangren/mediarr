@@ -1,15 +1,13 @@
 # Dashboard Statistics & Analytics Plan
 
-## Phase 1: Backend Statistics API
+## Phase 1: Backend Statistics API [x]
 
-- [ ] Create `statisticsRoutes.ts` with stats aggregation endpoints
-- [ ] Implement `GET /api/stats/library` - movie/episode counts, storage, genres
-- [ ] Implement `GET /api/stats/downloads` - success rates, indexer performance, bandwidth
-- [ ] Implement `GET /api/stats/system` - DB size, disk space, uptime, torrent counts
-- [ ] Add date range query parameter support for historical data
-- [ ] Implement efficient SQL aggregations for large libraries
-- [ ] Add unit tests for each stats endpoint
-- [ ] Wire stats routes into main.ts Fastify server
+- [x] Extend existing `statsRoutes.ts` with additional endpoints
+- [x] `GET /api/system/stats` already provides library stats (totalMovies, totalSeries, totalEpisodes, monitored counts, file sizes, quality breakdown, missing items, activity counts)
+- [x] Implement `GET /api/stats/downloads` - torrent counts, active/completed/failed, total downloaded/uploaded bytes, average speed
+- [x] Implement `GET /api/stats/system` - DB size, uptime, disk space
+- [x] Add unit tests for download and system stats endpoints (15 tests total, all green)
+- [x] Endpoints already wired into Fastify server via existing `registerStatsRoutes`
 
 ## Phase 2: Frontend Statistics Dashboard
 

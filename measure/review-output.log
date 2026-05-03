@@ -1,771 +1,1526 @@
 [0m
-> build · mimo-v2.5-pro
+> build · deepseek-v4-pro
 [0m
 [0m→ [0mRead measure/review-prompt.md
+[0m→ [0mSkill "measure"
+[0m→ [0mRead ../../.agents/skills/measure/references/review.md
 [0m
 [0m$ [0mgit log --since="24 hours ago" --oneline
-d1e9237 feat(indexer): Complete catalog API key validation track (Phases 3-4)
-b229bc7 feat(indexer): Add catalog API key validation guard (Phases 1-2)
-d8ce439 chore(measure): Add pending tracks for autonomous run
-1e1f589 chore(measure): update autonomous prompt to use browser-harness skill
-c9f6a5e fix(webtorrent): Complete Phase 1-3 of addon resolution track
-60d9050 fix(webtorrent): Patch node-datachannel for native addon disabled environments
+4b8d02e chore(measure): Update lessons-learned — audit existing endpoints before duplication (k2p6)
+b51e3d8 feat(stats): Add download and system stats endpoints (k2p6)
+dcd84f9 chore(measure): Archive feature_flutter_home_screen track; mark complete
+f7d5d56 feat(flutter-library): LibraryScreen with tabs, sort, and getLibrary integration (k2p6)
+31b4f14 chore: update measure output log
+2142c23 chore(measure): create 2 new pending tracks
+84e2ad7 docs(flutter-home): Update plan — Phases 1-2 complete
+8861e1b feat(flutter-home): Add LibraryItem model and getLibrary API client method (Phase 2)
+59445ca feat(flutter-home): Add GET /api/media/library endpoint with tests (Phase 1)
+64b4f82 chore(measure): Update log files
 [0m
 [0m→ [0mRead measure/tracks.md
-[0m
-[0m$ [0mgit diff --name-only HEAD~20 HEAD 2>/dev/null || git diff --name-only HEAD~5 HEAD
-AGENTS.md
-DESIGN.md
-README.md
-app/eslint.config.js
-app/src/App.subtitle-phase4.test.tsx
-app/src/App.test.tsx
-app/src/components/activity/ActivityHistoryPage.test.tsx
-app/src/components/activity/ActivityQueuePage.test.tsx
-app/src/components/activity/ActivityQueuePage.tsx
-app/src/components/activity/QueueRemoveModal.tsx
-app/src/components/calendar/CalendarPage.test.tsx
-app/src/components/dashboard/DashboardPage.test.tsx
-app/src/components/import/ImportSeriesTable.tsx
-app/src/components/import/ManualMatchModal.test.tsx
-app/src/components/import/ManualMatchModal.tsx
-app/src/components/importlists/ImportListModal.tsx
-app/src/components/indexers/IndexerCatalogPanel.test.tsx
-app/src/components/movie/CastCard.tsx
-app/src/components/movie/ManualMatchDialog.tsx
-app/src/components/movie/MovieBulkEditModal.tsx
-app/src/components/movie/MovieDetailHeader.tsx
-app/src/components/movie/MovieHistory.test.tsx
-app/src/components/movie/MovieHistory.tsx
-app/src/components/primitives/FileBrowser.test.tsx
-app/src/components/primitives/MetricCard.tsx
-app/src/components/primitives/PageJumpBar.tsx
-app/src/components/primitives/SelectProvider.tsx
-app/src/components/primitives/TableOptionsModal.tsx
-app/src/components/providers/ToastProvider.tsx
-app/src/components/series/ManualEpisodeMatchDialog.tsx
-app/src/components/series/SeriesBulkEditModal.tsx
-app/src/components/settings/AddProfileModal.tsx
-app/src/components/settings/ConfigurableItemModal.test.tsx
-app/src/components/settings/CustomFormatModal.tsx
-app/src/components/shell/AppShell.tsx
-app/src/components/shell/PageLayout.tsx
-app/src/components/shell/PageSidebar.tsx
-app/src/components/subtitles/MovieActionsToolbar.test.tsx
-app/src/components/subtitles/ProfileEditorModal.tsx
-app/src/components/subtitles/ProviderSettingsModal.tsx
-app/src/components/subtitles/ProviderTestResult.tsx
-app/src/components/subtitles/SubtitleTrackList.test.tsx
-app/src/components/subtitles/WantedCountBadge.test.tsx
-app/src/components/ui/badge.tsx
-app/src/components/ui/button.tsx
-app/src/components/ui/checkbox.tsx
-app/src/components/ui/dialog.tsx
-app/src/components/ui/form.tsx
-app/src/components/ui/input.tsx
-app/src/components/ui/modal.test.tsx
-app/src/components/ui/modal.tsx
-app/src/components/ui/progress.tsx
-app/src/components/ui/select.tsx
-app/src/components/ui/switch.tsx
-app/src/components/ui/table-header-compat.tsx
-app/src/components/ui/table.tsx
-app/src/components/wanted/ReleaseDateCell.tsx
-app/src/components/wanted/WantedMovieRow.tsx
-app/src/index.css
-app/src/lib/api/backupApi.ts
-app/src/lib/api/createCrudApi.test.ts
-app/src/lib/api/discoverApi.ts
-app/src/lib/api/languageProfilesApi.test.ts
-app/src/lib/api/mediaApi.ts
-app/src/lib/api/notificationsApi.test.ts
-app/src/lib/api/notificationsApi.ts
-app/src/lib/api/seriesApi.ts
-app/src/lib/api/subtitleApi.test.ts
-app/src/lib/api/subtitleApi.ts
-app/src/lib/api/subtitleWantedApi.test.ts
-app/src/lib/api/tagsApi.test.ts
-app/src/lib/api/torrentApi.test.ts
-app/src/lib/hooks/useMediaQuery.test.ts
-app/src/lib/hooks/useMediaQuery.ts
-app/src/lib/hooks/useTouchGestures.test.ts
-app/src/lib/hooks/useTouchGestures.ts
-app/src/lib/performance/monitor.test.ts
-app/src/lib/state/useUIStore.ts
-app/src/lib/subtitles/time.test.ts
-app/src/lib/theme/ThemeProvider.tsx
-app/src/pages/MovieDetailPage.tsx
-app/src/pages/MoviesLibraryPage.tsx
-app/src/pages/SeriesDetailPage.tsx
-app/src/pages/SeriesLibraryPage.tsx
-app/src/pages/settings/SettingsDownloadClientsPage.tsx
-app/src/pages/settings/SettingsIndexersPage.tsx
-app_package.json.backup
-bun.lock
-clients/mediarr-client/lib/features/library/movie_detail_screen.dart
-clients/mediarr-client/lib/features/library/quality_upgrade_sheet.dart
-clients/mediarr-client/lib/features/library/series_detail_screen.dart
-clients/mediarr-client/lib/features/library/subtitle_search_sheet.dart
-clients/mediarr-client/lib/shared/models/subtitle_models.dart
-clients/mediarr-client/lib/shared/services/api_client.dart
-clients/mediarr-client/test/features/library/quality_upgrade_sheet_test.dart
-clients/mediarr-client/test/features/library/subtitle_search_sheet_test.dart
-clients/mediarr-client/test/shared/services/subtitle_api_test.dart
-conductor/archive/cardigann_runtime_parity_20260223/artifacts/final-phase5-compatibility-matrix.json
-conductor/archive/chore_conductor_housekeeping_20260401/metadata.json
-conductor/archive/chore_daily_cleanup_20260404/spec.md
-conductor/autonomous_prompt.md
-conductor/review-output.log
-conductor/tracks/chore_lint_debt_reduction_20260424/plan.md
-drizzle/0001_panoramic_mindworm.sql
-drizzle/meta/0001_snapshot.json
-drizzle/meta/_journal.json
-gemini_design_update.log
-measure/archive/android_tv_client_20260304/index.md
-measure/archive/android_tv_client_20260304/metadata.json
-measure/archive/android_tv_client_20260304/plan.md
-measure/archive/android_tv_client_20260304/spec.md
-measure/archive/android_tv_client_20260304/verification_20260305.md
-measure/archive/automated_search_download_20260303/index.md
-measure/archive/automated_search_download_20260303/metadata.json
-measure/archive/automated_search_download_20260303/plan.md
-measure/archive/automated_search_download_20260303/spec.md
-measure/archive/bazarr_parity_20260217/metadata.json
-measure/archive/bazarr_parity_20260217/plan.md
-measure/archive/bazarr_parity_20260217/spec.md
-measure/archive/bazarr_ui_cloning_20260214/COMPLETION_REPORT.md
-measure/archive/bazarr_ui_cloning_20260214/metadata.json
-measure/archive/bazarr_ui_cloning_20260214/plan.md
-measure/archive/bazarr_ui_cloning_20260214/spec.md
-measure/archive/bug_appsettings_int_overflow_20260409/metadata.json
-measure/archive/bug_appsettings_int_overflow_20260409/plan.md
-measure/archive/bug_appsettings_int_overflow_20260409/spec.md
-measure/archive/bug_audio_channels_token_20260404/metadata.json
-measure/archive/bug_audio_channels_token_20260404/plan.md
-measure/archive/bug_audio_channels_token_20260404/spec.md
-measure/archive/bug_autosearch_all_corner_cases_20260316/metadata.json
-measure/archive/bug_autosearch_all_corner_cases_20260316/plan.md
-measure/archive/bug_autosearch_all_corner_cases_20260316/spec.md
-measure/archive/bug_autosearch_wrong_series_episode_20260313/metadata.json
-measure/archive/bug_autosearch_wrong_series_episode_20260313/plan.md
-measure/archive/bug_autosearch_wrong_series_episode_20260313/spec.md
-measure/archive/bug_corner_case_testing_wantedsearch_import_20260331/metadata.json
-measure/archive/bug_corner_case_testing_wantedsearch_import_20260331/plan.md
-measure/archive/bug_corner_case_testing_wantedsearch_import_20260331/spec.md
-measure/archive/bug_customformat_scoring_corner_cases_20260405/metadata.json
-measure/archive/bug_customformat_scoring_corner_cases_20260405/plan.md
-measure/archive/bug_customformat_scoring_corner_cases_20260405/spec.md
-measure/archive/bug_episode_matching_corner_cases_20260311/metadata.json
-measure/archive/bug_episode_matching_corner_cases_20260311/plan.md
-measure/archive/bug_episode_matching_corner_cases_20260311/spec.md
-measure/archive/bug_flutter_mdns_discovery_20260330/metadata.json
-measure/archive/bug_flutter_mdns_discovery_20260330/plan.md
-measure/archive/bug_flutter_mdns_discovery_20260330/spec.md
-measure/archive/bug_import_manager_corner_cases_20260313/metadata.json
-measure/archive/bug_import_manager_corner_cases_20260313/plan.md
-measure/archive/bug_import_manager_corner_cases_20260313/spec.md
-measure/archive/bug_import_post_import_corner_cases_20260404/metadata.json
-measure/archive/bug_import_post_import_corner_cases_20260404/plan.md
-measure/archive/bug_import_post_import_corner_cases_20260404/spec.md
-measure/archive/bug_importmanager_comprehensive_corner_cases_20260405/metadata.json
-measure/archive/bug_importmanager_comprehensive_corner_cases_20260405/plan.md
-measure/archive/bug_importmanager_comprehensive_corner_cases_20260405/spec.md
-measure/archive/bug_libraryscan_corner_cases_20260405/metadata.json
-measure/archive/bug_libraryscan_corner_cases_20260405/plan.md
-measure/archive/bug_libraryscan_corner_cases_20260405/spec.md
-measure/archive/bug_manual_test_player_client_findings_20260417/index.md
-measure/archive/bug_manual_test_player_client_findings_20260417/metadata.json
-measure/archive/bug_manual_test_player_client_findings_20260417/plan.md
-measure/archive/bug_manual_test_player_client_findings_20260417/player_first_shell_decision.md
-measure/archive/bug_manual_test_player_client_findings_20260417/spec.md
-measure/archive/bug_media_service_repo_corner_cases_20260404/metadata.json
-measure/archive/bug_media_service_repo_corner_cases_20260404/plan.md
-measure/archive/bug_media_service_repo_corner_cases_20260404/spec.md
-measure/archive/bug_mediasearch_corner_cases_20260401/metadata.json
-measure/archive/bug_mediasearch_corner_cases_20260401/plan.md
-measure/archive/bug_mediasearch_corner_cases_20260401/spec.md
-measure/archive/bug_organize_rename_transaction_safety_20260404/metadata.json
-measure/archive/bug_organize_rename_transaction_safety_20260404/plan.md
-measure/archive/bug_organize_rename_transaction_safety_20260404/spec.md
-measure/archive/bug_organize_services_corner_cases_20260404/metadata.json
-measure/archive/bug_organize_services_corner_cases_20260404/plan.md
-measure/archive/bug_organize_services_corner_cases_20260404/spec.md
-measure/archive/bug_pipeline_integration_corner_cases_20260405/metadata.json
-measure/archive/bug_pipeline_integration_corner_cases_20260405/plan.md
-measure/archive/bug_pipeline_integration_corner_cases_20260405/spec.md
-measure/archive/bug_rss_media_monitor_corner_cases_20260313/metadata.json
-measure/archive/bug_rss_media_monitor_corner_cases_20260313/plan.md
-measure/archive/bug_rss_media_monitor_corner_cases_20260313/spec.md
-measure/archive/bug_rss_pipeline_corner_cases_20260403/metadata.json
-measure/archive/bug_rss_pipeline_corner_cases_20260403/plan.md
-measure/archive/bug_rss_pipeline_corner_cases_20260403/spec.md
-measure/archive/bug_search_aggregation_corner_cases_20260313/metadata.json
-measure/archive/bug_search_aggregation_corner_cases_20260313/plan.md
-measure/archive/bug_search_aggregation_corner_cases_20260313/spec.md
-measure/archive/bug_searchaggregation_comprehensive_corner_cases_20260404d/metadata.json
-measure/archive/bug_searchaggregation_comprehensive_corner_cases_20260404d/plan.md
-measure/archive/bug_searchaggregation_comprehensive_corner_cases_20260404d/spec.md
-measure/archive/bug_seed_limit_import_guard_20260402/metadata.json
-measure/archive/bug_seed_limit_import_guard_20260402/plan.md
-measure/archive/bug_seed_limit_import_guard_20260402/spec.md
-measure/archive/bug_seeding_protector_grab_corner_cases_20260312/metadata.json
-measure/archive/bug_seeding_protector_grab_corner_cases_20260312/plan.md
-measure/archive/bug_seeding_protector_grab_corner_cases_20260312/spec.md
-measure/archive/bug_series_monitoring_corner_cases_20260402/metadata.json
-measure/archive/bug_series_monitoring_corner_cases_20260402/plan.md
-measure/archive/bug_series_monitoring_corner_cases_20260402/spec.md
-measure/archive/bug_series_routes_import_rescan_20260316/metadata.json
-measure/archive/bug_series_routes_import_rescan_20260316/plan.md
-measure/archive/bug_series_routes_import_rescan_20260316/spec.md
-measure/archive/bug_torrent_lifecycle_corner_cases_20260403/metadata.json
-measure/archive/bug_torrent_lifecycle_corner_cases_20260403/plan.md
-measure/archive/bug_torrent_lifecycle_corner_cases_20260403/spec.md
-measure/archive/bug_torrent_manager_corner_cases_20260315/metadata.json
-measure/archive/bug_torrent_manager_corner_cases_20260315/plan.md
-measure/archive/bug_torrent_manager_corner_cases_20260315/spec.md
-measure/archive/bug_wanted_series_pack_corner_cases_20260313/metadata.json
-measure/archive/bug_wanted_series_pack_corner_cases_20260313/plan.md
-measure/archive/bug_wanted_series_pack_corner_cases_20260313/spec.md
-measure/archive/bug_wantedsearch_comprehensive_corner_cases_20260404c/metadata.json
-measure/archive/bug_wantedsearch_comprehensive_corner_cases_20260404c/plan.md
-measure/archive/bug_wantedsearch_comprehensive_corner_cases_20260404c/spec.md
-measure/archive/cardigann_runtime_parity_20260223/artifacts/final-phase5-compatibility-matrix.json
-measure/archive/cardigann_runtime_parity_20260223/artifacts/phase1-baseline-compatibility-matrix.json
-measure/archive/cardigann_runtime_parity_20260223/artifacts/phase5-out-of-scope-notes.md
-measure/archive/cardigann_runtime_parity_20260223/metadata.json
-measure/archive/cardigann_runtime_parity_20260223/plan.md
-measure/archive/cardigann_runtime_parity_20260223/spec.md
-measure/archive/chore_app_decompose_20260314/metadata.json
-measure/archive/chore_app_decompose_20260314/plan.md
-measure/archive/chore_app_decompose_20260314/spec.md
-measure/archive/chore_catalog_apikey_validation_20260502/metadata.json
-measure/archive/chore_catalog_apikey_validation_20260502/plan.md
-measure/archive/chore_catalog_apikey_validation_20260502/spec.md
-measure/archive/chore_cleanup_pending_changes_20260315/metadata.json
-measure/archive/chore_cleanup_pending_changes_20260315/plan.md
-measure/archive/chore_cleanup_pending_changes_20260315/spec.md
-measure/archive/chore_cleanup_uncommitted_work_20260401/metadata.json
-measure/archive/chore_cleanup_uncommitted_work_20260401/plan.md
-measure/archive/chore_cleanup_uncommitted_work_20260401/spec.md
-measure/archive/chore_conductor_housekeeping_20260401/index.md
-measure/archive/chore_conductor_housekeeping_20260401/metadata.json
-measure/archive/chore_conductor_housekeeping_20260401/plan.md
-measure/archive/chore_conductor_housekeeping_20260401/spec.md
-measure/archive/chore_corner_case_testing_complete_20260406/spec.md
-measure/archive/chore_daily_cleanup_20260402/metadata.json
-measure/archive/chore_daily_cleanup_20260402/plan.md
-measure/archive/chore_daily_cleanup_20260402/spec.md
-measure/archive/chore_daily_cleanup_20260403/metadata.json
-measure/archive/chore_daily_cleanup_20260403/plan.md
-measure/archive/chore_daily_cleanup_20260403/spec.md
-measure/archive/chore_daily_cleanup_20260404/metadata.json
-measure/archive/chore_daily_cleanup_20260404/plan.md
-measure/archive/chore_daily_cleanup_20260404/spec.md
-measure/archive/chore_daily_cleanup_20260404b/metadata.json
-measure/archive/chore_daily_cleanup_20260404b/plan.md
-measure/archive/chore_daily_cleanup_20260404b/spec.md
-measure/archive/chore_daily_cleanup_20260404c/metadata.json
-measure/archive/chore_daily_cleanup_20260404c/plan.md
-measure/archive/chore_daily_cleanup_20260404c/spec.md
-measure/archive/chore_daily_cleanup_20260405/metadata.json
-measure/archive/chore_daily_cleanup_20260405/plan.md
-measure/archive/chore_daily_cleanup_20260405/spec.md
-measure/archive/chore_drizzle_migration_20260314/metadata.json
-measure/archive/chore_drizzle_migration_20260314/plan.md
-measure/archive/chore_drizzle_migration_20260314/spec.md
-measure/archive/chore_fix_failing_tests_20260314/metadata.json
-measure/archive/chore_fix_failing_tests_20260314/plan.md
-measure/archive/chore_fix_failing_tests_20260314/spec.md
-measure/archive/chore_fix_import_manager_fallback_20260401/metadata.json
-measure/archive/chore_fix_import_manager_fallback_20260401/plan.md
-measure/archive/chore_fix_import_manager_fallback_20260401/spec.md
-measure/archive/chore_flutter_client_cleanup_20260328/index.md
-measure/archive/chore_flutter_client_cleanup_20260328/metadata.json
-measure/archive/chore_flutter_client_cleanup_20260328/plan.md
-measure/archive/chore_flutter_client_cleanup_20260328/spec.md
-measure/archive/chore_form_standardization_20260314/metadata.json
-measure/archive/chore_form_standardization_20260314/plan.md
-measure/archive/chore_form_standardization_20260314/spec.md
-measure/archive/chore_form_standardization_completion_20260330/metadata.json
-measure/archive/chore_form_standardization_completion_20260330/plan.md
-measure/archive/chore_form_standardization_completion_20260330/spec.md
-measure/archive/chore_import_cleanup_20260312/metadata.json
-measure/archive/chore_import_cleanup_20260312/plan.md
-measure/archive/chore_import_cleanup_20260312/spec.md
-measure/archive/chore_lint_debt_reduction_20260424/metadata.json
-measure/archive/chore_lint_debt_reduction_20260424/plan.md
-measure/archive/chore_lint_debt_reduction_20260424/spec.md
-measure/archive/chore_openrouter_migration_20260329/index.md
-measure/archive/chore_openrouter_migration_20260329/metadata.json
-measure/archive/chore_openrouter_migration_20260329/plan.md
-measure/archive/chore_openrouter_migration_20260329/spec.md
-measure/archive/chore_organizer_coverage_20260316/metadata.json
-measure/archive/chore_organizer_coverage_20260316/plan.md
-measure/archive/chore_organizer_coverage_20260316/spec.md
-measure/archive/chore_seeding_protector_wiring_20260313/metadata.json
-measure/archive/chore_seeding_protector_wiring_20260313/plan.md
-measure/archive/chore_seeding_protector_wiring_20260313/spec.md
-measure/archive/chore_server_module_alignment_20260315/metadata.json
-measure/archive/chore_server_module_alignment_20260315/plan.md
-measure/archive/chore_server_module_alignment_20260315/spec.md
-measure/archive/chore_shadcn_setup_20260314/metadata.json
-measure/archive/chore_shadcn_setup_20260314/plan.md
-measure/archive/chore_shadcn_setup_20260314/spec.md
-measure/archive/chore_test_quality_strengthening_20260424/metadata.json
-measure/archive/chore_test_quality_strengthening_20260424/plan.md
-measure/archive/chore_test_quality_strengthening_20260424/spec.md
-measure/archive/chore_ui_foundation_20260314/metadata.json
-measure/archive/chore_ui_foundation_20260314/plan.md
-measure/archive/chore_ui_foundation_20260314/spec.md
-measure/archive/clone_parity_gap_investigation_20260212/artifacts/audit-execution-template.md
-measure/archive/clone_parity_gap_investigation_20260212/artifacts/backend-findings.md
-measure/archive/clone_parity_gap_investigation_20260212/artifacts/backend-probe-report.json
-measure/archive/clone_parity_gap_investigation_20260212/artifacts/capability-baseline.json
-measure/archive/clone_parity_gap_investigation_20260212/artifacts/command-log.md
-measure/archive/clone_parity_gap_investigation_20260212/artifacts/final-investigation-package.md
-measure/archive/clone_parity_gap_investigation_20260212/artifacts/frontend-findings.md
-measure/archive/clone_parity_gap_investigation_20260212/artifacts/frontend-parity-report.json
-measure/archive/clone_parity_gap_investigation_20260212/artifacts/gap-register.json
-measure/archive/clone_parity_gap_investigation_20260212/artifacts/gemini-backend-findings.md
-measure/archive/clone_parity_gap_investigation_20260212/artifacts/gemini-backend-probe-report.json
-measure/archive/clone_parity_gap_investigation_20260212/artifacts/gemini-capability-baseline.json
-measure/archive/clone_parity_gap_investigation_20260212/artifacts/gemini-final-investigation-package.md
-measure/archive/clone_parity_gap_investigation_20260212/artifacts/gemini-frontend-findings.md
-measure/archive/clone_parity_gap_investigation_20260212/artifacts/gemini-parity-matrix.json
-measure/archive/clone_parity_gap_investigation_20260212/artifacts/gemini-remediation-backlog.json
-measure/archive/clone_parity_gap_investigation_20260212/artifacts/gemini-severity-rubric.json
-measure/archive/clone_parity_gap_investigation_20260212/artifacts/gemini-track-realignment.md
-measure/archive/clone_parity_gap_investigation_20260212/artifacts/gemini-validation-integrity.md
-measure/archive/clone_parity_gap_investigation_20260212/artifacts/opus-evaluation/01-backend-findings.md
-measure/archive/clone_parity_gap_investigation_20260212/artifacts/opus-evaluation/02-frontend-findings.md
-measure/archive/clone_parity_gap_investigation_20260212/artifacts/opus-evaluation/03-test-integrity-findings.md
-measure/archive/clone_parity_gap_investigation_20260212/artifacts/opus-evaluation/04-remediation-roadmap.md
-measure/archive/clone_parity_gap_investigation_20260212/artifacts/opus-evaluation/05-final-summary.md
-measure/archive/clone_parity_gap_investigation_20260212/artifacts/opus-evaluation/06-parity-matrix.json
-measure/archive/clone_parity_gap_investigation_20260212/artifacts/parity-matrix.json
-measure/archive/clone_parity_gap_investigation_20260212/artifacts/remediation-backlog.json
-measure/archive/clone_parity_gap_investigation_20260212/artifacts/severity-rubric.json
-measure/archive/clone_parity_gap_investigation_20260212/artifacts/synthesized-action-plan.md
-measure/archive/clone_parity_gap_investigation_20260212/artifacts/track-realignment-recommendations.md
-measure/archive/clone_parity_gap_investigation_20260212/artifacts/validation-findings.md
-measure/archive/clone_parity_gap_investigation_20260212/artifacts/validation-integrity-report.json
-measure/archive/clone_parity_gap_investigation_20260212/artifacts/validation-integrity-summary.md
-measure/archive/clone_parity_gap_investigation_20260212/evidence/frontend/phase3-walkthrough.md
-measure/archive/clone_parity_gap_investigation_20260212/evidence/frontend/runtime/api/add-media-search-movie.headers.txt
-measure/archive/clone_parity_gap_investigation_20260212/evidence/frontend/runtime/api/add-media-search-movie.json
-measure/archive/clone_parity_gap_investigation_20260212/evidence/frontend/runtime/api/indexers-list.headers.txt
-measure/archive/clone_parity_gap_investigation_20260212/evidence/frontend/runtime/api/indexers-list.json
-measure/archive/clone_parity_gap_investigation_20260212/evidence/frontend/runtime/api/queue-list.headers.txt
-measure/archive/clone_parity_gap_investigation_20260212/evidence/frontend/runtime/api/queue-list.json
-measure/archive/clone_parity_gap_investigation_20260212/evidence/frontend/runtime/api/queue-pause.headers.txt
-measure/archive/clone_parity_gap_investigation_20260212/evidence/frontend/runtime/api/queue-pause.json
-measure/archive/clone_parity_gap_investigation_20260212/evidence/frontend/runtime/api/queue-resume.headers.txt
-measure/archive/clone_parity_gap_investigation_20260212/evidence/frontend/runtime/api/queue-resume.json
-measure/archive/clone_parity_gap_investigation_20260212/evidence/frontend/runtime/api/release-search.headers.txt
-measure/archive/clone_parity_gap_investigation_20260212/evidence/frontend/runtime/api/release-search.json
-measure/archive/clone_parity_gap_investigation_20260212/evidence/frontend/runtime/api/settings-get.headers.txt
-measure/archive/clone_parity_gap_investigation_20260212/evidence/frontend/runtime/api/settings-get.json
-measure/archive/clone_parity_gap_investigation_20260212/evidence/frontend/runtime/api/settings-patch.headers.txt
-measure/archive/clone_parity_gap_investigation_20260212/evidence/frontend/runtime/api/settings-patch.json
-measure/archive/clone_parity_gap_investigation_20260212/evidence/frontend/runtime/api/status-summary.txt
-measure/archive/clone_parity_gap_investigation_20260212/evidence/frontend/runtime/api/subtitles-search.headers.txt
-measure/archive/clone_parity_gap_investigation_20260212/evidence/frontend/runtime/api/subtitles-search.json
-measure/archive/clone_parity_gap_investigation_20260212/evidence/frontend/runtime/api/wanted-list.headers.txt
-measure/archive/clone_parity_gap_investigation_20260212/evidence/frontend/runtime/api/wanted-list.json
-measure/archive/clone_parity_gap_investigation_20260212/evidence/frontend/runtime/pages/_activity.headers.txt
-measure/archive/clone_parity_gap_investigation_20260212/evidence/frontend/runtime/pages/_activity.html
-measure/archive/clone_parity_gap_investigation_20260212/evidence/frontend/runtime/pages/_add.headers.txt
-measure/archive/clone_parity_gap_investigation_20260212/evidence/frontend/runtime/pages/_add.html
-measure/archive/clone_parity_gap_investigation_20260212/evidence/frontend/runtime/pages/_indexers.headers.txt
-measure/archive/clone_parity_gap_investigation_20260212/evidence/frontend/runtime/pages/_indexers.html
-measure/archive/clone_parity_gap_investigation_20260212/evidence/frontend/runtime/pages/_library_movies.headers.txt
-measure/archive/clone_parity_gap_investigation_20260212/evidence/frontend/runtime/pages/_library_movies.html
-measure/archive/clone_parity_gap_investigation_20260212/evidence/frontend/runtime/pages/_library_series.headers.txt
-measure/archive/clone_parity_gap_investigation_20260212/evidence/frontend/runtime/pages/_library_series.html
-measure/archive/clone_parity_gap_investigation_20260212/evidence/frontend/runtime/pages/_queue.headers.txt
-measure/archive/clone_parity_gap_investigation_20260212/evidence/frontend/runtime/pages/_queue.html
-measure/archive/clone_parity_gap_investigation_20260212/evidence/frontend/runtime/pages/_settings.headers.txt
-measure/archive/clone_parity_gap_investigation_20260212/evidence/frontend/runtime/pages/_settings.html
-measure/archive/clone_parity_gap_investigation_20260212/evidence/frontend/runtime/pages/_subtitles.headers.txt
-measure/archive/clone_parity_gap_investigation_20260212/evidence/frontend/runtime/pages/_subtitles.html
-measure/archive/clone_parity_gap_investigation_20260212/evidence/frontend/runtime/pages/_wanted.headers.txt
-measure/archive/clone_parity_gap_investigation_20260212/evidence/frontend/runtime/pages/_wanted.html
-measure/archive/clone_parity_gap_investigation_20260212/evidence/frontend/runtime/pages/content-hints.txt
-measure/archive/clone_parity_gap_investigation_20260212/evidence/frontend/runtime/pages/root.headers.txt
-measure/archive/clone_parity_gap_investigation_20260212/evidence/frontend/runtime/pages/root.html
-measure/archive/clone_parity_gap_investigation_20260212/evidence/frontend/runtime/pages/status-summary.txt
-measure/archive/clone_parity_gap_investigation_20260212/evidence/gemini-phase1-manual-verification.md
-measure/archive/clone_parity_gap_investigation_20260212/evidence/gemini-phase2-manual-verification.md
-measure/archive/clone_parity_gap_investigation_20260212/evidence/gemini-phase3-manual-verification.md
-measure/archive/clone_parity_gap_investigation_20260212/evidence/gemini-phase4-manual-verification.md
-measure/archive/clone_parity_gap_investigation_20260212/evidence/gemini-phase5-manual-verification.md
-measure/archive/clone_parity_gap_investigation_20260212/evidence/phase1-manual-verification.md
-measure/archive/clone_parity_gap_investigation_20260212/evidence/phase2-manual-verification.md
-measure/archive/clone_parity_gap_investigation_20260212/evidence/phase3-manual-verification.md
-measure/archive/clone_parity_gap_investigation_20260212/evidence/phase4-manual-verification.md
-measure/archive/clone_parity_gap_investigation_20260212/evidence/phase5-manual-verification.md
-measure/archive/clone_parity_gap_investigation_20260212/evidence/runtime/activity-after-grab-body.json
-measure/archive/clone_parity_gap_investigation_20260212/evidence/runtime/activity-after-grab-body.v2.json
-measure/archive/clone_parity_gap_investigation_20260212/evidence/runtime/activity-after-grab-headers.txt
-measure/archive/clone_parity_gap_investigation_20260212/evidence/runtime/activity-after-grab-headers.v2.txt
-measure/archive/clone_parity_gap_investigation_20260212/evidence/runtime/definition-wiring-probe.txt
-measure/archive/clone_parity_gap_investigation_20260212/evidence/runtime/indexer-cardigann-id.txt
-measure/archive/clone_parity_gap_investigation_20260212/evidence/runtime/indexer-cardigann-id.v2.txt
-measure/archive/clone_parity_gap_investigation_20260212/evidence/runtime/indexer-cardigann-test-body.json
-measure/archive/clone_parity_gap_investigation_20260212/evidence/runtime/indexer-cardigann-test-body.v2.json
-measure/archive/clone_parity_gap_investigation_20260212/evidence/runtime/indexer-cardigann-test-headers.txt
-measure/archive/clone_parity_gap_investigation_20260212/evidence/runtime/indexer-cardigann-test-headers.v2.txt
-measure/archive/clone_parity_gap_investigation_20260212/evidence/runtime/indexer-create-cardigann-body.json
-measure/archive/clone_parity_gap_investigation_20260212/evidence/runtime/indexer-create-cardigann-body.v2.json
-measure/archive/clone_parity_gap_investigation_20260212/evidence/runtime/indexer-create-cardigann-headers.txt
-measure/archive/clone_parity_gap_investigation_20260212/evidence/runtime/indexer-create-cardigann-headers.v2.txt
-measure/archive/clone_parity_gap_investigation_20260212/evidence/runtime/indexer-create-invalid-body.json
-measure/archive/clone_parity_gap_investigation_20260212/evidence/runtime/indexer-create-invalid-body.v2.json
-measure/archive/clone_parity_gap_investigation_20260212/evidence/runtime/indexer-create-invalid-headers.txt
-measure/archive/clone_parity_gap_investigation_20260212/evidence/runtime/indexer-create-invalid-headers.v2.txt
-measure/archive/clone_parity_gap_investigation_20260212/evidence/runtime/indexer-create-valid-body.json
-measure/archive/clone_parity_gap_investigation_20260212/evidence/runtime/indexer-create-valid-body.v2.json
-measure/archive/clone_parity_gap_investigation_20260212/evidence/runtime/indexer-create-valid-headers.txt
-measure/archive/clone_parity_gap_investigation_20260212/evidence/runtime/indexer-create-valid-headers.v2.txt
-measure/archive/clone_parity_gap_investigation_20260212/evidence/runtime/indexer-created-id.txt
-measure/archive/clone_parity_gap_investigation_20260212/evidence/runtime/indexer-created-id.v2.txt
-measure/archive/clone_parity_gap_investigation_20260212/evidence/runtime/indexer-test-body.json
-measure/archive/clone_parity_gap_investigation_20260212/evidence/runtime/indexer-test-body.v2.json
-measure/archive/clone_parity_gap_investigation_20260212/evidence/runtime/indexer-test-headers.txt
-measure/archive/clone_parity_gap_investigation_20260212/evidence/runtime/indexer-test-headers.v2.txt
-measure/archive/clone_parity_gap_investigation_20260212/evidence/runtime/metadata-api-key-probe.txt
-measure/archive/clone_parity_gap_investigation_20260212/evidence/runtime/metadata-movie-search-body.json
-measure/archive/clone_parity_gap_investigation_20260212/evidence/runtime/metadata-movie-search-body.v2.json
-measure/archive/clone_parity_gap_investigation_20260212/evidence/runtime/metadata-movie-search-headers.txt
-measure/archive/clone_parity_gap_investigation_20260212/evidence/runtime/metadata-movie-search-headers.v2.txt
-measure/archive/clone_parity_gap_investigation_20260212/evidence/runtime/metadata-tv-search-body.json
-measure/archive/clone_parity_gap_investigation_20260212/evidence/runtime/metadata-tv-search-body.v2.json
-measure/archive/clone_parity_gap_investigation_20260212/evidence/runtime/metadata-tv-search-headers.txt
-measure/archive/clone_parity_gap_investigation_20260212/evidence/runtime/metadata-tv-search-headers.v2.txt
-measure/archive/clone_parity_gap_investigation_20260212/evidence/runtime/release-grab-body.json
-measure/archive/clone_parity_gap_investigation_20260212/evidence/runtime/release-grab-body.v2.json
-measure/archive/clone_parity_gap_investigation_20260212/evidence/runtime/release-grab-headers.txt
-measure/archive/clone_parity_gap_investigation_20260212/evidence/runtime/release-grab-headers.v2.txt
-measure/archive/clone_parity_gap_investigation_20260212/evidence/runtime/release-search-body.v2.json
-measure/archive/clone_parity_gap_investigation_20260212/evidence/runtime/release-search-headers.v2.txt
-measure/archive/clone_parity_gap_investigation_20260212/evidence/runtime/subtitles-download-missing-ids-body.json
-measure/archive/clone_parity_gap_investigation_20260212/evidence/runtime/subtitles-download-missing-ids-headers.txt
-measure/archive/clone_parity_gap_investigation_20260212/evidence/runtime/subtitles-download-movie-multi-variant-body.json
-measure/archive/clone_parity_gap_investigation_20260212/evidence/runtime/subtitles-download-movie-multi-variant-headers.txt
-measure/archive/clone_parity_gap_investigation_20260212/evidence/runtime/subtitles-search-missing-ids-body.json
-measure/archive/clone_parity_gap_investigation_20260212/evidence/runtime/subtitles-search-missing-ids-headers.txt
-measure/archive/clone_parity_gap_investigation_20260212/evidence/runtime/subtitles-search-movie-multi-variant-body.json
-measure/archive/clone_parity_gap_investigation_20260212/evidence/runtime/subtitles-search-movie-multi-variant-headers.txt
-measure/archive/clone_parity_gap_investigation_20260212/evidence/runtime/torrents-after-grab-body.json
-measure/archive/clone_parity_gap_investigation_20260212/evidence/runtime/torrents-after-grab-body.v2.json
-measure/archive/clone_parity_gap_investigation_20260212/evidence/runtime/torrents-after-grab-headers.txt
-measure/archive/clone_parity_gap_investigation_20260212/evidence/runtime/torrents-after-grab-headers.v2.txt
-measure/archive/clone_parity_gap_investigation_20260212/metadata.json
-measure/archive/clone_parity_gap_investigation_20260212/plan.md
-measure/archive/clone_parity_gap_investigation_20260212/scripts/generate-validation-integrity-report.mjs
-measure/archive/clone_parity_gap_investigation_20260212/spec.md
-measure/archive/collections_20260301/metadata.json
-measure/archive/collections_20260301/plan.md
-measure/archive/collections_20260301/spec.md
-measure/archive/cross_cutting_parity_20260217/metadata.json
-measure/archive/cross_cutting_parity_20260217/plan.md
-measure/archive/cross_cutting_parity_20260217/spec.md
-measure/archive/docker_volumes_20260211/metadata.json
-measure/archive/docker_volumes_20260211/plan.md
-measure/archive/docker_volumes_20260211/spec.md
-measure/archive/existing_library_import_20260301/metadata.json
-measure/archive/existing_library_import_20260301/plan.md
-measure/archive/existing_library_import_20260301/spec.md
-measure/archive/feature_ai_parsing_20260316/index.md
-measure/archive/feature_ai_parsing_20260316/metadata.json
-measure/archive/feature_ai_parsing_20260316/plan.md
-measure/archive/feature_ai_parsing_20260316/spec.md
-measure/archive/feature_ai_release_parser_20260316/metadata.json
-measure/archive/feature_ai_release_parser_20260316/plan.md
-measure/archive/feature_ai_release_parser_20260316/spec.md
-measure/archive/feature_android_push_notifications_20260310/metadata.json
-measure/archive/feature_android_push_notifications_20260310/plan.md
-measure/archive/feature_android_push_notifications_20260310/spec.md
-measure/archive/feature_auto_update_20260330/metadata.json
-measure/archive/feature_auto_update_20260330/plan.md
-measure/archive/feature_auto_update_20260330/spec.md
-measure/archive/feature_catalog_endpoint_caching_20260424/metadata.json
-measure/archive/feature_catalog_endpoint_caching_20260424/plan.md
-measure/archive/feature_catalog_endpoint_caching_20260424/spec.md
-measure/archive/feature_connectivity_e2e_compose_20260412/metadata.json
-measure/archive/feature_connectivity_e2e_compose_20260412/plan.md
-measure/archive/feature_connectivity_e2e_compose_20260412/spec.md
-measure/archive/feature_flutter_activity_queue_20260330/metadata.json
-measure/archive/feature_flutter_activity_queue_20260330/plan.md
-measure/archive/feature_flutter_activity_queue_20260330/spec.md
-measure/archive/feature_flutter_client_20260328/index.md
-measure/archive/feature_flutter_client_20260328/metadata.json
-measure/archive/feature_flutter_client_20260328/plan.md
-measure/archive/feature_flutter_client_20260328/spec.md
-measure/archive/feature_flutter_continue_watching_20260330/metadata.json
-measure/archive/feature_flutter_continue_watching_20260330/plan.md
-measure/archive/feature_flutter_continue_watching_20260330/spec.md
-measure/archive/feature_flutter_search_add_20260330/metadata.json
-measure/archive/feature_flutter_search_add_20260330/plan.md
-measure/archive/feature_flutter_search_add_20260330/spec.md
-measure/archive/feature_flutter_subtitle_quality_20260330/metadata.json
-measure/archive/feature_flutter_subtitle_quality_20260330/plan.md
-measure/archive/feature_flutter_subtitle_quality_20260330/spec.md
-measure/archive/feature_indexer_discovery_20260330/metadata.json
-measure/archive/feature_indexer_discovery_20260330/plan.md
-measure/archive/feature_indexer_discovery_20260330/spec.md
-measure/archive/feature_local_llm_gateway_20260401/index.md
-measure/archive/feature_local_llm_gateway_20260401/metadata.json
-measure/archive/feature_local_llm_gateway_20260401/plan.md
-measure/archive/feature_local_llm_gateway_20260401/spec.md
-measure/archive/feature_notification_dispatch_20260310/metadata.json
-measure/archive/feature_notification_dispatch_20260310/plan.md
-measure/archive/feature_notification_dispatch_20260310/spec.md
-measure/archive/feature_notification_transports_20260330/metadata.json
-measure/archive/feature_notification_transports_20260330/plan.md
-measure/archive/feature_notification_transports_20260330/spec.md
-measure/archive/feature_playback_resume_sync_20260330/metadata.json
-measure/archive/feature_playback_resume_sync_20260330/plan.md
-measure/archive/feature_playback_resume_sync_20260330/spec.md
-measure/archive/feature_setup_wizard_20260330/metadata.json
-measure/archive/feature_setup_wizard_20260330/plan.md
-measure/archive/feature_setup_wizard_20260330/spec.md
-measure/archive/feature_smart_defaults_20260330/metadata.json
-measure/archive/feature_smart_defaults_20260330/plan.md
-measure/archive/feature_smart_defaults_20260330/spec.md
-measure/archive/feature_system_events_ui_20260311/metadata.json
-measure/archive/feature_system_events_ui_20260311/plan.md
-measure/archive/feature_system_events_ui_20260311/spec.md
-measure/archive/feature_system_health_20260310/metadata.json
-measure/archive/feature_system_health_20260310/plan.md
-measure/archive/feature_system_health_20260310/spec.md
-measure/archive/feature_system_routes_coverage_20260311/metadata.json
-measure/archive/feature_system_routes_coverage_20260311/plan.md
-measure/archive/feature_system_routes_coverage_20260311/spec.md
-measure/archive/fix_core_parity_wiring_20260212/index.md
-measure/archive/fix_core_parity_wiring_20260212/metadata.json
-measure/archive/fix_core_parity_wiring_20260212/plan.md
-measure/archive/fix_core_parity_wiring_20260212/spec.md
-measure/archive/foundation_20260210/index.md
-measure/archive/foundation_20260210/metadata.json
-measure/archive/foundation_20260210/plan.md
-measure/archive/foundation_20260210/spec.md
-measure/archive/import_pipeline_20260228/index.md
-measure/archive/import_pipeline_20260228/metadata.json
-measure/archive/import_pipeline_20260228/plan.md
-measure/archive/import_pipeline_20260228/spec.md
-measure/archive/indexer_engine_20260210/index.md
-measure/archive/indexer_engine_20260210/metadata.json
-measure/archive/indexer_engine_20260210/plan.md
-measure/archive/indexer_engine_20260210/spec.md
-measure/archive/library_scan_import_fix_20260308/metadata.json
-measure/archive/library_scan_import_fix_20260308/plan.md
-measure/archive/library_scan_import_fix_20260308/spec.md
-measure/archive/library_visibility_20260301/metadata.json
-measure/archive/library_visibility_20260301/plan.md
-measure/archive/library_visibility_20260301/spec.md
-measure/archive/manual_search_queue_20260228/index.md
-measure/archive/manual_search_queue_20260228/metadata.json
-measure/archive/manual_search_queue_20260228/plan.md
-measure/archive/manual_search_queue_20260228/spec.md
-measure/archive/media_detail_pages_20260228/index.md
-measure/archive/media_detail_pages_20260228/metadata.json
-measure/archive/media_detail_pages_20260228/plan.md
-measure/archive/media_detail_pages_20260228/spec.md
-measure/archive/monolith_unification_refactor_20260226/metadata.json
-measure/archive/monolith_unification_refactor_20260226/plan.md
-measure/archive/monolith_unification_refactor_20260226/spec.md
-measure/archive/movie_management_20260211/index.md
-measure/archive/movie_management_20260211/metadata.json
-measure/archive/movie_management_20260211/plan.md
-measure/archive/movie_management_20260211/spec.md
-measure/archive/prowlarr_parity_20260217/metadata.json
-measure/archive/prowlarr_parity_20260217/phase1-manual-verification.md
-measure/archive/prowlarr_parity_20260217/phase3-manual-verification.md
-measure/archive/prowlarr_parity_20260217/plan.md
-measure/archive/prowlarr_parity_20260217/spec.md
-measure/archive/prowlarr_ui_cloning_20260214/artifacts/next-session-handoff-20260214.md
-measure/archive/prowlarr_ui_cloning_20260214/artifacts/parity-audit-20260215.md
-measure/archive/prowlarr_ui_cloning_20260214/artifacts/phase1-manual-verification.md
-measure/archive/prowlarr_ui_cloning_20260214/artifacts/phase1-task1.1-tech-stack-audit.md
-measure/archive/prowlarr_ui_cloning_20260214/artifacts/phase10.4-deployment-notes.md
-measure/archive/prowlarr_ui_cloning_20260214/artifacts/phase2-manual-verification.md
-measure/archive/prowlarr_ui_cloning_20260214/artifacts/phase3-manual-verification.md
-measure/archive/prowlarr_ui_cloning_20260214/artifacts/phase4-manual-verification.md
-measure/archive/prowlarr_ui_cloning_20260214/artifacts/phase5-manual-verification.md
-measure/archive/prowlarr_ui_cloning_20260214/metadata.json
-measure/archive/prowlarr_ui_cloning_20260214/plan.md
-measure/archive/prowlarr_ui_cloning_20260214/spec.md
-measure/archive/queue_mass_actions_tooltips_20260304/index.md
-measure/archive/queue_mass_actions_tooltips_20260304/metadata.json
-measure/archive/queue_mass_actions_tooltips_20260304/plan.md
-measure/archive/queue_mass_actions_tooltips_20260304/spec.md
-measure/archive/radarr_parity_20260217/metadata.json
-measure/archive/radarr_parity_20260217/plan.md
-measure/archive/radarr_parity_20260217/spec.md
-measure/archive/radarr_ui_cloning_20260214/metadata.json
-measure/archive/radarr_ui_cloning_20260214/plan.md
-measure/archive/radarr_ui_cloning_20260214/spec.md
-measure/archive/refactor_dedup_security_20260308/index.md
-measure/archive/refactor_dedup_security_20260308/metadata.json
-measure/archive/refactor_dedup_security_20260308/plan.md
-measure/archive/refactor_dedup_security_20260308/spec.md
-measure/archive/refactor_search_release_date_ui_cleanup_20260310/metadata.md
-measure/archive/refactor_search_release_date_ui_cleanup_20260310/plan.md
-measure/archive/refactor_search_release_date_ui_cleanup_20260310/spec.md
-measure/archive/refactor_security_code_quality_20260311/metadata.json
-measure/archive/refactor_security_code_quality_20260311/plan.md
-measure/archive/refactor_security_code_quality_20260311/spec.md
-measure/archive/refactor_subtitle_dedup_20260309/metadata.json
-measure/archive/refactor_subtitle_dedup_20260309/plan.md
-measure/archive/refactor_subtitle_dedup_20260309/spec.md
-measure/archive/search_add_wanted_20260227/index.md
-measure/archive/search_add_wanted_20260227/metadata.json
-measure/archive/search_add_wanted_20260227/plan.md
-measure/archive/search_add_wanted_20260227/spec.md
-measure/archive/sonarr_parity_20260217/metadata.json
-measure/archive/sonarr_parity_20260217/plan.md
-measure/archive/sonarr_parity_20260217/spec.md
-measure/archive/sonarr_ui_cloning_20260214/metadata.json
-measure/archive/sonarr_ui_cloning_20260214/plan.md
-measure/archive/sonarr_ui_cloning_20260214/spec.md
-measure/archive/stats-analytics-dashboard_20260309/metadata.json
-measure/archive/stats-analytics-dashboard_20260309/plan.md
-measure/archive/stats-analytics-dashboard_20260309/spec.md
-measure/archive/streaming_server_20260304/index.md
-measure/archive/streaming_server_20260304/metadata.json
-measure/archive/streaming_server_20260304/plan.md
-measure/archive/streaming_server_20260304/spec.md
-measure/archive/streaming_settings_panel_20260305/index.md
-measure/archive/streaming_settings_panel_20260305/metadata.json
-measure/archive/streaming_settings_panel_20260305/plan.md
-measure/archive/streaming_settings_panel_20260305/spec.md
-measure/archive/subtitle_audio_engine_20260211/index.md
-measure/archive/subtitle_audio_engine_20260211/metadata.json
-measure/archive/subtitle_audio_engine_20260211/plan.md
-measure/archive/subtitle_audio_engine_20260211/spec.md
-measure/archive/subtitle_inventory_disk_import_recovery_20260307/index.md
-measure/archive/subtitle_inventory_disk_import_recovery_20260307/metadata.json
-measure/archive/subtitle_inventory_disk_import_recovery_20260307/plan.md
-measure/archive/subtitle_inventory_disk_import_recovery_20260307/spec.md
-measure/archive/subtitle_management_20260303/index.md
-measure/archive/subtitle_management_20260303/metadata.json
-measure/archive/subtitle_management_20260303/plan.md
-measure/archive/subtitle_management_20260303/spec.md
-measure/archive/subtitle_ui_reporting_20260308/metadata.json
-measure/archive/subtitle_ui_reporting_20260308/plan.md
-measure/archive/subtitle_ui_reporting_20260308/spec.md
-measure/archive/system-pages-completion_20260309/metadata.json
-measure/archive/system-pages-completion_20260309/plan.md
-measure/archive/system-pages-completion_20260309/spec.md
-measure/archive/system_admin_pages_20260308/metadata.json
-measure/archive/system_admin_pages_20260308/plan.md
-measure/archive/system_admin_pages_20260308/spec.md
-measure/archive/torrent_engine_20260211/index.md
-measure/archive/torrent_engine_20260211/metadata.json
-measure/archive/torrent_engine_20260211/plan.md
-measure/archive/torrent_engine_20260211/spec.md
-measure/archive/tv_management_20260211/index.md
-measure/archive/tv_management_20260211/metadata.json
-measure/archive/tv_management_20260211/plan.md
-measure/archive/tv_management_20260211/spec.md
-measure/archive/ui_api_surface_contracts_20260211/metadata.json
-measure/archive/ui_api_surface_contracts_20260211/plan.md
-measure/archive/ui_api_surface_contracts_20260211/spec.md
-measure/archive/ui_core_operations_20260211/metadata.json
-measure/archive/ui_core_operations_20260211/plan.md
-measure/archive/ui_core_operations_20260211/spec.md
-measure/archive/ui_dashboard_settings_20260211/metadata.json
-measure/archive/ui_dashboard_settings_20260211/plan.md
-measure/archive/ui_dashboard_settings_20260211/spec.md
-measure/archive/ui_e2e_hardening_20260211/metadata.json
-measure/archive/ui_e2e_hardening_20260211/plan.md
-measure/archive/ui_e2e_hardening_20260211/spec.md
-measure/archive/ui_operational_hardening_20260211/metadata.json
-measure/archive/ui_operational_hardening_20260211/plan.md
-measure/archive/ui_operational_hardening_20260211/spec.md
-measure/archive/ui_platform_prereqs_20260211/contracts.md
-measure/archive/ui_platform_prereqs_20260211/metadata.json
-measure/archive/ui_platform_prereqs_20260211/plan.md
-measure/archive/ui_platform_prereqs_20260211/spec.md
-measure/archive/ui_stub_closure_20260217/metadata.json
-measure/archive/ui_stub_closure_20260217/plan.md
-measure/archive/ui_stub_closure_20260217/spec.md
-measure/archive/unified_ui_dashboard_20260211_superseded/metadata.json
-measure/archive/unified_ui_dashboard_20260211_superseded/plan.md
-measure/archive/unified_ui_dashboard_20260211_superseded/spec.md
-measure/archive/visual_refresh_20260425/metadata.json
-measure/archive/visual_refresh_20260425/plan.md
-measure/archive/visual_refresh_20260425/spec.md
-measure/archive/vite_parity_recovery_20260226/artifacts/phase1-build-type-baseline.md
-measure/archive/vite_parity_recovery_20260226/artifacts/phase1-parity-matrix.md
-measure/archive/vite_parity_recovery_20260226/artifacts/phase4-settings-operability.md
-measure/archive/vite_parity_recovery_20260226/index.md
-measure/archive/vite_parity_recovery_20260226/metadata.json
-measure/archive/vite_parity_recovery_20260226/plan.md
-measure/archive/vite_parity_recovery_20260226/spec.md
-measure/archive/vite_parity_recovery_20260226/status.md
-measure/archive/webtorrent_addon_resolution_20260426/metadata.json
-measure/archive/webtorrent_addon_resolution_20260426/plan.md
-measure/archive/webtorrent_addon_resolution_20260426/spec.md
-measure/autonomous_prompt.md
-measure/claude-conductor.log
-measure/code_styleguides/general.md
-measure/code_styleguides/javascript.md
-measure/code_styleguides/typescript.md
-measure/current_directive.md
-measure/dependency_scan_report.md
-measure/design_tokens_7c.md
-measure/import-failures.txt
-measure/index.md
-measure/lessons-learned.md
-measure/opencode-cron.log
-measure/output.log
-measure/product-guidelines.md
-measure/product.md
-measure/reference_analysis.md
-measure/review-output.log
-measure/review-prompt.md
-measure/security_audit_report.md
-measure/setup_state.json
-measure/tech-debt.md
-measure/tech-stack.md
-measure/tracks.md
-measure/tracks/feature_flutter_home_screen_20260502/metadata.json
-measure/tracks/feature_flutter_home_screen_20260502/plan.md
-measure/tracks/feature_flutter_home_screen_20260502/spec.md
-measure/tracks/legacy_test_audit_20260426/metadata.json
-measure/tracks/legacy_test_audit_20260426/plan.md
-measure/tracks/legacy_test_audit_20260426/spec.md
-measure/tracks/typescript_strictness_20260426/metadata.json
-measure/tracks/typescript_strictness_20260426/plan.md
-measure/tracks/typescript_strictness_20260426/spec.md
-measure/workflow.md
-package.json
-scripts/apply-patches.js
-server/src/api/routes/indexerRoutes.catalog.test.ts
-server/src/api/routes/indexerRoutes.ts
-server/src/services/indexers/indexerValidation.test.ts
-server/src/services/indexers/indexerValidation.ts
-visual_refresh_track.log
-[0m
-I'll run the code review for the past 24 hours. Let me gather the data.
 [0m→ [0mRead measure/tech-debt.md
-[0m→ [0mRead server/src/services/indexers/indexerValidation.ts
-Now let me review the actual code changes in detail.
-[0m→ [0mRead server/src/api/routes/indexerRoutes.catalog.test.ts
-[0m→ [0mRead server/src/api/routes/indexerRoutes.ts
-[0m→ [0mRead server/src/services/indexers/indexerValidation.test.ts
-Now let me run the test suite and lint/typecheck.
+[0m→ [0mRead measure/product-guidelines.md
+[0m→ [0mRead measure/tech-stack.md
+[0m→ [0mRead measure/lessons-learned.md
+[0m✱ [0mGlob "measure/code_styleguides/**/*.md"[90m 3 matches[0m
 [0m
-[0m$ [0mnpm run typecheck 2>&1 | tail -30
+[0m$ [0mgit diff --shortstat HEAD~20 HEAD
+58 files changed, 10527 insertions(+), 995 deletions(-)
+[0m
+[0m$ [0mgit diff --name-only HEAD~10 HEAD
+clients/mediarr-client/lib/core/router/app_router.dart
+clients/mediarr-client/lib/features/library/library_screen.dart
+clients/mediarr-client/lib/shared/models/library_item.dart
+clients/mediarr-client/lib/shared/services/api_client.dart
+clients/mediarr-client/lib/shared/widgets/library_item_card.dart
+clients/mediarr-client/test/features/library/library_screen_test.dart
+clients/mediarr-client/test/shared/services/api_client_test.dart
+clients/mediarr-client/test/shared/widgets/library_item_card_test.dart
+conductor/archive/cardigann_runtime_parity_20260223/artifacts/final-phase5-compatibility-matrix.json
+measure/archive/feature_flutter_home_screen_20260502/metadata.json
+measure/archive/feature_flutter_home_screen_20260502/plan.md
+measure/archive/feature_flutter_home_screen_20260502/spec.md
+measure/current_directive.md
+measure/lessons-learned.md
+measure/output.log
+measure/review-output.log
+measure/tracks.md
+measure/tracks/dashboard_statistics_20260503/metadata.json
+measure/tracks/dashboard_statistics_20260503/plan.md
+measure/tracks/dashboard_statistics_20260503/spec.md
+measure/tracks/feature_flutter_home_screen_20260502/plan.md
+measure/tracks/webtorrent_download_management_20260503/metadata.json
+measure/tracks/webtorrent_download_management_20260503/plan.md
+measure/tracks/webtorrent_download_management_20260503/spec.md
+server/src/api/routes/mediaRoutes.library.test.ts
+server/src/api/routes/mediaRoutes.ts
+server/src/api/routes/statsRoutes.test.ts
+server/src/api/routes/statsRoutes.ts
+[0m
+[0m→ [0mRead measure/code_styleguides/typescript.md
+[0m→ [0mRead measure/code_styleguides/general.md
+[0m→ [0mRead measure/code_styleguides/javascript.md
+[0m
+[0m$ [0mgit diff HEAD~10 HEAD -- server/src/ clients/mediarr-client/ -- ':!measure/' ':!conductor/' --stat
+diff --git a/clients/mediarr-client/lib/core/router/app_router.dart b/clients/mediarr-client/lib/core/router/app_router.dart
+index 66ace47..f343ff5 100644
+--- a/clients/mediarr-client/lib/core/router/app_router.dart
++++ b/clients/mediarr-client/lib/core/router/app_router.dart
+@@ -8,6 +8,7 @@ import '../../features/calendar/calendar_screen.dart';
+ import '../../features/discovery/discovery_screen.dart';
+ import '../../features/home/home_screen.dart';
+ import '../../features/library/movies_screen.dart';
++import '../../features/library/library_screen.dart';
+ import '../../features/library/series_screen.dart';
+ import '../../features/search/search_screen.dart';
+ import '../../features/settings/settings_screen.dart';
+@@ -22,6 +23,7 @@ class AppRoutes {
+   static const String search = '/search';
+   static const String movies = '/movies';
+   static const String series = '/series';
++  static const String library = '/library';
+   static const String calendar = '/calendar';
+   static const String settings = '/settings';
+ }
+@@ -69,6 +71,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
+             path: AppRoutes.series,
+             builder: (context, state) => const SeriesScreen(),
+           ),
++          GoRoute(
++            path: AppRoutes.library,
++            builder: (context, state) => const LibraryScreen(),
++          ),
+           GoRoute(
+             path: AppRoutes.calendar,
+             builder: (context, state) => const CalendarScreen(),
+diff --git a/clients/mediarr-client/lib/features/library/library_screen.dart b/clients/mediarr-client/lib/features/library/library_screen.dart
+new file mode 100644
+index 0000000..7daacec
+--- /dev/null
++++ b/clients/mediarr-client/lib/features/library/library_screen.dart
+@@ -0,0 +1,341 @@
++import 'package:flutter/material.dart';
++import 'package:flutter_riverpod/flutter_riverpod.dart';
++
++import '../../core/router/app_router.dart';
++import '../../core/theme/mediarr_theme.dart';
++import '../../shared/models/library_item.dart';
++import '../../shared/services/api_client.dart';
++import '../../shared/widgets/library_item_card.dart';
++import '../../shared/widgets/media_grid.dart';
++import '../library/movie_detail_screen.dart';
++import '../library/series_detail_screen.dart';
++
++/// Sort options for the library grid.
++enum LibrarySort {
++  titleAsc('Title (A–Z)'),
++  titleDesc('Title (Z–A)'),
++  yearDesc('Year (newest)'),
++  yearAsc('Year (oldest)'),
++  addedDesc('Recently added');
++
++  const LibrarySort(this.label);
++  final String label;
++
++  String get sortBy {
++    switch (this) {
++      case LibrarySort.titleAsc:
++      case LibrarySort.titleDesc:
++        return 'title';
++      case LibrarySort.yearDesc:
++      case LibrarySort.yearAsc:
++        return 'year';
++      case LibrarySort.addedDesc:
++        return 'added';
++    }
++  }
++
++  String get sortDir {
++    switch (this) {
++      case LibrarySort.titleAsc:
++      case LibrarySort.yearAsc:
++        return 'asc';
++      case LibrarySort.titleDesc:
++      case LibrarySort.yearDesc:
++      case LibrarySort.addedDesc:
++        return 'desc';
++    }
++  }
++}
++
++/// Current library query parameters.
++class LibraryQuery {
++  const LibraryQuery({
++    this.type,
++    this.sort = LibrarySort.titleAsc,
++    this.page = 1,
++    this.pageSize = 50,
++  });
++
++  final String? type; // 'movie' or 'series'
++  final LibrarySort sort;
++  final int page;
++  final int pageSize;
++
++  LibraryQuery copyWith({
++    String? type,
++    LibrarySort? sort,
++    int? page,
++    int? pageSize,
++  }) {
++    return LibraryQuery(
++      type: type ?? this.type,
++      sort: sort ?? this.sort,
++      page: page ?? this.page,
++      pageSize: pageSize ?? this.pageSize,
++    );
++  }
++}
++
++/// Provider that fetches paginated library items.
++final libraryProvider = FutureProvider.family<
++    ({List<LibraryItem> items, int totalCount, int totalPages}),
++    LibraryQuery>((ref, query) async {
++  final client = ref.read(apiClientProvider.notifier);
++  final result = await client.getLibrary(
++    type: query.type,
++    sortBy: query.sort.sortBy,
++    sortDir: query.sort.sortDir,
++    page: query.page,
++    pageSize: query.pageSize,
++  );
++  return (
++    items: result.items,
++    totalCount: result.totalCount,
++    totalPages: result.totalPages,
++  );
++});
++
++/// A unified library browsing screen with Movies / TV Shows tabs,
++/// sort controls, and pull-to-refresh.
++class LibraryScreen extends ConsumerStatefulWidget {
++  const LibraryScreen({super.key});
++
++  @override
++  ConsumerState<LibraryScreen> createState() => _LibraryScreenState();
++}
++
++class _LibraryScreenState extends ConsumerState<LibraryScreen>
++    with SingleTickerProviderStateMixin {
++  late final TabController _tabController;
++  LibraryQuery _query = const LibraryQuery();
++  int _selectedTab = 0;
++
++  @override
++  void initState() {
++    super.initState();
++    _tabController = TabController(length: 2, vsync: this);
++    _tabController.addListener(_onTabChanged);
++  }
++
++  @override
++  void dispose() {
++    _tabController.removeListener(_onTabChanged);
++    _tabController.dispose();
++    super.dispose();
++  }
++
++  void _onTabChanged() {
++    if (!_tabController.indexIsChanging) {
++      setState(() {
++        _selectedTab = _tabController.index;
++        _query = _query.copyWith(
++          type: _tabController.index == 0 ? 'movie' : 'series',
++          page: 1,
++        );
++      });
++    }
++  }
++
++  Future<void> _refresh() async {
++    ref.invalidate(libraryProvider(_query));
++    await ref.read(libraryProvider(_query).future);
++  }
++
++  void _onSortChanged(LibrarySort? sort) {
++    if (sort == null) return;
++    setState(() {
++      _query = _query.copyWith(sort: sort, page: 1);
++    });
++  }
++
++  Future<void> _openDetail(LibraryItem item) async {
++    final client = ref.read(apiClientProvider.notifier);
++
++    if (item.type == 'movie') {
++      final movie = await client.getMovie(item.id);
++      if (movie != null && mounted) {
++        Navigator.of(context).push(
++          MaterialPageRoute(
++            builder: (_) => MovieDetailScreen(movie: movie),
++          ),
++        );
++      }
++    } else {
++      final series = await client.getSeriesById(item.id);
++      if (series != null && mounted) {
++        Navigator.of(context).push(
++          MaterialPageRoute(
++            builder: (_) => SeriesDetailScreen(series: series),
++          ),
++        );
++      }
++    }
++  }
++
++  @override
++  Widget build(BuildContext context) {
++    final libraryAsync = ref.watch(libraryProvider(_query));
++
++    return Scaffold(
++      backgroundColor: MediarrColors.surfaceBase,
++      body: Column(
++        crossAxisAlignment: CrossAxisAlignment.start,
++        children: [
++          // Header with tabs and sort
++          Padding(
++            padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
++            child: Row(
++              children: [
++                Expanded(
++                  child: TabBar(
++                    controller: _tabController,
++                    isScrollable: true,
++                    labelColor: MediarrColors.accentPrimary,
++                    unselectedLabelColor: MediarrColors.textMuted,
++                    indicatorColor: MediarrColors.accentPrimary,
++                    tabs: const [
++                      Tab(text: 'Movies'),
++                      Tab(text: 'TV Shows'),
++                    ],
++                  ),
++                ),
++                const SizedBox(width: 16),
++                _SortDropdown(
++                  value: _query.sort,
++                  onChanged: _onSortChanged,
++                ),
++              ],
++            ),
++          ),
++          const SizedBox(height: 16),
++          // Content
++          Expanded(
++            child: libraryAsync.when(
++              loading: () => const Center(
++                child: CircularProgressIndicator(
++                  color: MediarrColors.accentPrimary,
++                ),
++              ),
++              error: (error, _) => Center(
++                child: Text(
++                  'Failed to load library: $error',
++                  style: const TextStyle(color: MediarrColors.textMuted),
++                ),
++              ),
++              data: (result) {
++                if (result.items.isEmpty) {
++                  return _EmptyLibrary(
++                    onAddMedia: () => context.go(AppRoutes.search),
++                  );
++                }
++
++                return RefreshIndicator(
++                  onRefresh: _refresh,
++                  color: MediarrColors.accentPrimary,
++                  backgroundColor: MediarrColors.surfaceCard,
++                  child: GridView.builder(
++                    padding: const EdgeInsets.symmetric(horizontal: 24),
++                    gridDelegate:
++                        const SliverGridDelegateWithMaxCrossAxisExtent(
++                      maxCrossAxisExtent: 200,
++                      childAspectRatio: 0.6,
++                      crossAxisSpacing: 16,
++                      mainAxisSpacing: 16,
++                    ),
++                    itemCount: result.items.length,
++                    itemBuilder: (context, index) {
++                      final item = result.items[index];
++                      return LibraryItemCard(
++                        item: item,
++                        autofocus: index == 0,
++                        onTap: () => _openDetail(item),
++                      );
++                    },
++                  ),
++                );
++              },
++            ),
++          ),
++        ],
++      ),
++    );
++  }
++}
++
++class _SortDropdown extends StatelessWidget {
++  const _SortDropdown({
++    required this.value,
++    required this.onChanged,
++  });
++
++  final LibrarySort value;
++  final ValueChanged<LibrarySort?> onChanged;
++
++  @override
++  Widget build(BuildContext context) {
++    return DropdownButton<LibrarySort>(
++      value: value,
++      dropdownColor: MediarrColors.surfaceCard,
++      style: const TextStyle(color: MediarrColors.textPrimary, fontSize: 14),
++      icon: const Icon(Icons.sort, color: MediarrColors.textMuted, size: 18),
++      underline: const SizedBox(),
++      onChanged: onChanged,
++      items: LibrarySort.values.map((sort) {
++        return DropdownMenuItem<LibrarySort>(
++          value: sort,
++          child: Text(sort.label),
++        );
++      }).toList(),
++    );
++  }
++}
++
++class _EmptyLibrary extends StatelessWidget {
++  const _EmptyLibrary({required this.onAddMedia});
++
++  final VoidCallback onAddMedia;
++
++  @override
++  Widget build(BuildContext context) {
++    return Center(
++      child: Column(
++        mainAxisAlignment: MainAxisAlignment.center,
++        children: [
++          const Icon(
++            Icons.movie_outlined,
++            color: MediarrColors.textMuted,
++            size: 64,
++          ),
++          const SizedBox(height: 16),
++          const Text(
++            'Your library is empty',
++            style: TextStyle(
++              color: MediarrColors.textMuted,
++              fontSize: 18,
++              fontWeight: FontWeight.w600,
++            ),
++          ),
++          const SizedBox(height: 8),
++          const Text(
++            'Add movies and TV shows to get started',
++            style: TextStyle(
++              color: MediarrColors.textMuted,
++              fontSize: 14,
++            ),
++          ),
++          const SizedBox(height: 24),
++          ElevatedButton.icon(
++            onPressed: onAddMedia,
++            icon: const Icon(Icons.search),
++            label: const Text('Add Media'),
++            style: ElevatedButton.styleFrom(
++              backgroundColor: MediarrColors.accentPrimary,
++              foregroundColor: Colors.white,
++              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
++            ),
++          ),
++        ],
++      ),
++    );
++  }
++}
+diff --git a/clients/mediarr-client/lib/shared/models/library_item.dart b/clients/mediarr-client/lib/shared/models/library_item.dart
+new file mode 100644
+index 0000000..92eb0b6
+--- /dev/null
++++ b/clients/mediarr-client/lib/shared/models/library_item.dart
+@@ -0,0 +1,44 @@
++/// Unified model for library grid items (movies or series).
++class LibraryItem {
++  const LibraryItem({
++    required this.id,
++    required this.title,
++    required this.type,
++    this.year,
++    this.posterUrl,
++    this.status,
++    this.monitored = false,
++  });
++
++  final int id;
++  final String title;
++  final String type;
++  final int? year;
++  final String? posterUrl;
++  final String? status;
++  final bool monitored;
++
++  factory LibraryItem.fromJson(Map<String, dynamic> json) {
++    return LibraryItem(
++      id: json['id'] as int,
++      title: json['title'] as String,
++      type: json['type'] as String,
++      year: json['year'] as int?,
++      posterUrl: json['posterUrl'] as String?,
++      status: json['status'] as String?,
++      monitored: json['monitored'] as bool? ?? false,
++    );
++  }
++
++  Map<String, dynamic> toJson() {
++    return {
++      'id': id,
++      'title': title,
++      'type': type,
++      'year': year,
++      'posterUrl': posterUrl,
++      'status': status,
++      'monitored': monitored,
++    };
++  }
++}
+diff --git a/clients/mediarr-client/lib/shared/services/api_client.dart b/clients/mediarr-client/lib/shared/services/api_client.dart
+index 4cc53a5..3e3b9a9 100644
+--- a/clients/mediarr-client/lib/shared/services/api_client.dart
++++ b/clients/mediarr-client/lib/shared/services/api_client.dart
+@@ -4,6 +4,7 @@ import 'dart:convert';
+ import 'package:dio/dio.dart';
+ import 'package:flutter_riverpod/flutter_riverpod.dart';
+ 
++import '../models/library_item.dart';
+ import '../models/movie.dart';
+ import '../models/search_result.dart';
+ import '../models/series.dart';
+@@ -529,6 +530,62 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
+     );
+   }
+ 
++  /// Fetch a single series by ID.
++  Future<Series?> getSeriesById(int id) async {
++    final response = await _dio.get('/api/series/$id');
++    if (response.statusCode == 200 && response.data != null) {
++      final data = _unwrap(response.data);
++      return Series.fromJson(data as Map<String, dynamic>);
++    }
++    return null;
++  }
++
++  /// Fetch paginated library items (movies and/or series).
++  Future<({List<LibraryItem> items, int page, int pageSize, int totalCount, int totalPages})> getLibrary({
++    String? type,
++    String? sortBy,
++    String? sortDir,
++    int page = 1,
++    int pageSize = 25,
++  }) async {
++    final response = await _dio.get(
++      '/api/media/library',
++      queryParameters: {
++        if (type != null) 'type': type,
++        if (sortBy != null) 'sortBy': sortBy,
++        if (sortDir != null) 'sortDir': sortDir,
++        'page': page,
++        'pageSize': pageSize,
++      },
++    );
++
++    if (response.statusCode == 200 && response.data != null) {
++      final envelope = _decode(response.data) as Map<String, dynamic>;
++      final data = envelope['data'] as List<dynamic>;
++      final meta = envelope['meta'] as Map<String, dynamic>;
++
++      final items = data
++          .map((json) => LibraryItem.fromJson(json as Map<String, dynamic>))
++          .toList();
++
++      return (
++        items: items,
++        page: (meta['page'] as int?) ?? page,
++        pageSize: (meta['pageSize'] as int?) ?? pageSize,
++        totalCount: (meta['totalCount'] as int?) ?? items.length,
++        totalPages: (meta['totalPages'] as int?) ?? 1,
++      );
++    }
++
++    return (
++      items: const <LibraryItem>[],
++      page: page,
++      pageSize: pageSize,
++      totalCount: 0,
++      totalPages: 0,
++    );
++  }
++
+   /// Fetch full series detail with nested seasons and episodes.
+   Future<Series?> getSeriesDetail(int id) async {
+     final response = await _dio.get('/api/series/$id');
+diff --git a/clients/mediarr-client/lib/shared/widgets/library_item_card.dart b/clients/mediarr-client/lib/shared/widgets/library_item_card.dart
+new file mode 100644
+index 0000000..cca7240
+--- /dev/null
++++ b/clients/mediarr-client/lib/shared/widgets/library_item_card.dart
+@@ -0,0 +1,36 @@
++import 'package:flutter/material.dart';
++
++import '../../core/theme/mediarr_theme.dart';
++import '../../shared/models/library_item.dart';
++import 'poster_card.dart';
++
++/// A poster card specialized for [LibraryItem] display.
++///
++/// Wraps the generic [PosterCard] with LibraryItem-specific defaults
++/// and navigation-friendly tap handling.
++class LibraryItemCard extends StatelessWidget {
++  const LibraryItemCard({
++    super.key,
++    required this.item,
++    this.onTap,
++    this.autofocus = false,
++  });
++
++  final LibraryItem item;
++  final VoidCallback? onTap;
++  final bool autofocus;
++
++  @override
++  Widget build(BuildContext context) {
++    return PosterCard(
++      title: item.title,
++      posterUrl: item.posterUrl,
++      year: item.year,
++      monitored: item.monitored,
++      // Library items don't carry quality/hasFile from the list endpoint;
++      // those are detail-level fields.
++      onPressed: onTap,
++      autofocus: autofocus,
++    );
++  }
++}
+diff --git a/clients/mediarr-client/test/features/library/library_screen_test.dart b/clients/mediarr-client/test/features/library/library_screen_test.dart
+new file mode 100644
+index 0000000..f14a89d
+--- /dev/null
++++ b/clients/mediarr-client/test/features/library/library_screen_test.dart
+@@ -0,0 +1,117 @@
++import 'dart:async';
++
++import 'package:flutter/material.dart';
++import 'package:flutter_riverpod/flutter_riverpod.dart';
++import 'package:flutter_test/flutter_test.dart';
++import 'package:mediarr_client/core/theme/mediarr_theme.dart';
++import 'package:mediarr_client/features/library/library_screen.dart';
++import 'package:mediarr_client/shared/models/library_item.dart';
++import 'package:mediarr_client/shared/services/api_client.dart';
++
++void main() {
++  group('LibraryScreen', () {
++    testWidgets('shows loading state initially', (tester) async {
++      await tester.pumpWidget(
++        ProviderScope(
++          overrides: [
++            libraryProvider.overrideWith((ref, query) async {
++              await Completer<void>().future;
++              return (items: <LibraryItem>[], totalCount: 0, totalPages: 0);
++            }),
++          ],
++          child: MaterialApp(
++            theme: mediarrDarkTheme,
++            home: const Scaffold(body: LibraryScreen()),
++          ),
++        ),
++      );
++
++      expect(find.text('Movies'), findsOneWidget);
++      expect(find.text('TV Shows'), findsOneWidget);
++      expect(find.byType(CircularProgressIndicator), findsOneWidget);
++    });
++
++    testWidgets('shows movie grid when data loaded', (tester) async {
++      await tester.pumpWidget(
++        ProviderScope(
++          overrides: [
++            libraryProvider.overrideWith((ref, query) async {
++              return (
++                items: [
++                  const LibraryItem(
++                    id: 1,
++                    title: 'Inception',
++                    type: 'movie',
++                    year: 2010,
++                  ),
++                  const LibraryItem(
++                    id: 2,
++                    title: 'The Matrix',
++                    type: 'movie',
++                    year: 1999,
++                  ),
++                ],
++                totalCount: 2,
++                totalPages: 1,
++              );
++            }),
++          ],
++          child: MaterialApp(
++            theme: mediarrDarkTheme,
++            home: const Scaffold(body: LibraryScreen()),
++          ),
++        ),
++      );
++
++      await tester.pumpAndSettle();
++
++      expect(find.text('Inception'), findsOneWidget);
++      expect(find.text('The Matrix'), findsOneWidget);
++    });
++
++    testWidgets('shows empty state when no items', (tester) async {
++      await tester.pumpWidget(
++        ProviderScope(
++          overrides: [
++            libraryProvider.overrideWith((ref, query) async {
++              return (
++                items: <LibraryItem>[],
++                totalCount: 0,
++                totalPages: 0,
++              );
++            }),
++          ],
++          child: MaterialApp(
++            theme: mediarrDarkTheme,
++            home: const Scaffold(body: LibraryScreen()),
++          ),
++        ),
++      );
++
++      await tester.pumpAndSettle();
++
++      expect(find.text('Your library is empty'), findsOneWidget);
++      expect(find.text('Add Media'), findsOneWidget);
++    });
++
++    testWidgets('shows error state on failure', (tester) async {
++      await tester.pumpWidget(
++        ProviderScope(
++          overrides: [
++            libraryProvider.overrideWith((ref, query) async {
++              throw Exception('Network error');
++            }),
++          ],
++          child: MaterialApp(
++            theme: mediarrDarkTheme,
++            home: const Scaffold(body: LibraryScreen()),
++          ),
++        ),
++      );
++
++      await tester.pumpAndSettle();
++
++      expect(find.textContaining('Failed to load'), findsOneWidget);
++    });
++  });
++}
+diff --git a/clients/mediarr-client/test/shared/services/api_client_test.dart b/clients/mediarr-client/test/shared/services/api_client_test.dart
+index 9733ce3..c88d8fe 100644
+--- a/clients/mediarr-client/test/shared/services/api_client_test.dart
++++ b/clients/mediarr-client/test/shared/services/api_client_test.dart
+@@ -1,6 +1,7 @@
+ import 'package:dio/dio.dart';
+ import 'package:flutter_test/flutter_test.dart';
+ import 'package:mediarr_client/shared/models/episode.dart';
++import 'package:mediarr_client/shared/models/library_item.dart';
+ import 'package:mediarr_client/shared/models/movie.dart';
+ import 'package:mediarr_client/shared/models/series.dart';
+ import 'package:mediarr_client/shared/services/api_client.dart';
+@@ -436,4 +437,128 @@ void main() {
+       expect(episode.hasFile, true);
+     });
+   });
++
++  group('LibraryItem model', () {
++    test('fromJson with all fields', () {
++      final item = LibraryItem.fromJson({
++        'id': 1,
++        'title': 'Inception',
++        'type': 'movie',
++        'year': 2010,
++        'posterUrl': 'https://example.com/poster.jpg',
++        'status': 'released',
++        'monitored': true,
++      });
++      expect(item.id, 1);
++      expect(item.title, 'Inception');
++      expect(item.type, 'movie');
++      expect(item.year, 2010);
++      expect(item.posterUrl, 'https://example.com/poster.jpg');
++      expect(item.status, 'released');
++      expect(item.monitored, true);
++    });
++
++    test('fromJson with minimal fields', () {
++      final item = LibraryItem.fromJson({
++        'id': 1,
++        'title': 'Test',
++        'type': 'series',
++      });
++      expect(item.monitored, false);
++      expect(item.year, isNull);
++      expect(item.posterUrl, isNull);
++    });
++  });
++
++  group('ApiClient.getLibrary', () {
++    test('parses paginated library response', () async {
++      final dio = Dio();
++      final client = MediarrApiClient(dio: dio);
++
++      dio.interceptors.add(InterceptorsWrapper(
++        onRequest: (options, handler) {
++          if (options.path.contains('/api/media/library')) {
++            handler.resolve(Response(
++              requestOptions: options,
++              statusCode: 200,
++              data: {
++                'ok': true,
++                'data': [
++                  {
++                    'id': 1,
++                    'title': 'Inception',
++                    'type': 'movie',
++                    'year': 2010,
++                    'posterUrl': 'https://example.com/inception.jpg',
++                  },
++                  {
++                    'id': 2,
++                    'title': 'Breaking Bad',
++                    'type': 'series',
++                    'year': 2008,
++                  },
++                ],
++                'meta': {
++                  'page': 1,
++                  'pageSize': 25,
++                  'totalCount': 2,
++                  'totalPages': 1,
++                },
++              },
++            ));
++            return;
++          }
++
++          handler.resolve(Response(
++            requestOptions: options,
++            statusCode: 200,
++            data: {'version': '1.0.0', 'startTime': ''},
++          ));
++        },
++      ));
++
++      await client.connect('http://localhost:5174');
++      final result = await client.getLibrary();
++
++      expect(result.items, hasLength(2));
++      expect(result.items[0].title, 'Inception');
++      expect(result.items[0].type, 'movie');
++      expect(result.items[1].title, 'Breaking Bad');
++      expect(result.items[1].type, 'series');
++      expect(result.totalCount, 2);
++      expect(result.page, 1);
++      expect(result.totalPages, 1);
++    });
++
++    test('returns empty result on error', () async {
++      final dio = Dio();
++      final client = MediarrApiClient(dio: dio);
++
++      dio.interceptors.add(InterceptorsWrapper(
++        onRequest: (options, handler) {
++          if (options.path.contains('/api/media/library')) {
++            handler.resolve(Response(
++              requestOptions: options,
++              statusCode: 500,
++              data: {'error': 'Internal server error'},
++            ));
++            return;
++          }
++
++          handler.resolve(Response(
++            requestOptions: options,
++            statusCode: 200,
++            data: {'version': '1.0.0', 'startTime': ''},
++          ));
++        },
++      ));
++
++      await client.connect('http://localhost:5174');
++      final result = await client.getLibrary();
++
++      expect(result.items, isEmpty);
++      expect(result.totalCount, 0);
++      expect(result.totalPages, 0);
++    });
++  });
+ }
+diff --git a/clients/mediarr-client/test/shared/widgets/library_item_card_test.dart b/clients/mediarr-client/test/shared/widgets/library_item_card_test.dart
+new file mode 100644
+index 0000000..d919680
+--- /dev/null
++++ b/clients/mediarr-client/test/shared/widgets/library_item_card_test.dart
+@@ -0,0 +1,77 @@
++import 'package:flutter/material.dart';
++import 'package:flutter_riverpod/flutter_riverpod.dart';
++import 'package:flutter_test/flutter_test.dart';
++import 'package:mediarr_client/core/theme/mediarr_theme.dart';
++import 'package:mediarr_client/shared/models/library_item.dart';
++import 'package:mediarr_client/shared/widgets/library_item_card.dart';
++
++void main() {
++  Widget buildTestApp({required Widget child}) {
++    return MaterialApp(theme: mediarrDarkTheme, home: Scaffold(body: child));
++  }
++
++  group('LibraryItemCard', () {
++    testWidgets('renders title from LibraryItem', (tester) async {
++      await tester.pumpWidget(buildTestApp(
++        child: const LibraryItemCard(
++          item: LibraryItem(
++            id: 1,
++            title: 'Inception',
++            type: 'movie',
++            year: 2010,
++          ),
++        ),
++      ));
++
++      expect(find.text('Inception'), findsWidgets);
++      expect(find.text('2010'), findsOneWidget);
++    });
++
++    testWidgets('renders without year when null', (tester) async {
++      await tester.pumpWidget(buildTestApp(
++        child: const LibraryItemCard(
++          item: LibraryItem(
++            id: 1,
++            title: 'Unknown Movie',
++            type: 'movie',
++          ),
++        ),
++      ));
++
++      expect(find.text('Unknown Movie'), findsWidgets);
++    });
++
++    testWidgets('triggers onTap', (tester) async {
++      var tapped = false;
++      await tester.pumpWidget(buildTestApp(
++        child: LibraryItemCard(
++          item: const LibraryItem(
++            id: 1,
++            title: 'Tap Me',
++            type: 'series',
++          ),
++          onTap: () => tapped = true,
++        ),
++      ));
++
++      await tester.tap(find.text('Tap Me').first);
++      expect(tapped, true);
++    });
++
++    testWidgets('passes autofocus to PosterCard', (tester) async {
++      await tester.pumpWidget(buildTestApp(
++        child: const LibraryItemCard(
++          item: LibraryItem(
++            id: 1,
++            title: 'Focused',
++            type: 'movie',
++          ),
++          autofocus: true,
++        ),
++      ));
++
++      // PosterCard should be present; autofocus is forwarded internally
++      expect(find.byType(LibraryItemCard), findsOneWidget);
++    });
++  });
++}
+diff --git a/server/src/api/routes/mediaRoutes.library.test.ts b/server/src/api/routes/mediaRoutes.library.test.ts
+new file mode 100644
+index 0000000..91999f0
+--- /dev/null
++++ b/server/src/api/routes/mediaRoutes.library.test.ts
+@@ -0,0 +1,245 @@
++import { beforeEach, describe, expect, it, vi } from 'vitest';
++import Fastify, { type FastifyInstance } from 'fastify';
++import { registerApiErrorHandler } from '../errors';
++import type { ApiDependencies } from '../types';
++import { registerMediaRoutes } from './mediaRoutes';
++
++function buildApp(deps: ApiDependencies): FastifyInstance {
++  const app = Fastify({ logger: false });
++  app.setErrorHandler((error, request, reply) => registerApiErrorHandler(request, reply, error));
++  registerMediaRoutes(app, deps);
++  return app;
++}
++
++describe('GET /api/media/library', () => {
++  let app: FastifyInstance;
++  let prismaMock: any;
++
++  beforeEach(() => {
++    prismaMock = {
++      movie: {
++        findMany: vi.fn(),
++        count: vi.fn(),
++      },
++      series: {
++        findMany: vi.fn(),
++        count: vi.fn(),
++      },
++    };
++
++    const deps: ApiDependencies = {
++      prisma: prismaMock,
++    };
++
++    app = buildApp(deps);
++  });
++
++  it('returns empty paginated response when no media exists', async () => {
++    prismaMock.movie.findMany.mockResolvedValue([]);
++    prismaMock.series.findMany.mockResolvedValue([]);
++
++    const response = await app.inject({
++      method: 'GET',
++      url: '/api/media/library',
++    });
++
++    expect(response.statusCode).toBe(200);
++    const body = JSON.parse(response.body);
++    expect(body.data).toEqual([]);
++    expect(body.meta).toMatchObject({
++      page: 1,
++      pageSize: 25,
++      totalCount: 0,
++      totalPages: 0,
++    });
++  });
++
++  it('returns movies and series with unified shape', async () => {
++    prismaMock.movie.findMany.mockResolvedValue([
++      {
++        id: 1,
++        title: 'Inception',
++        year: 2010,
++        posterUrl: 'https://example.com/inception.jpg',
++        added: new Date('2024-01-15'),
++        status: 'released',
++        monitored: true,
++      },
++    ]);
++    prismaMock.series.findMany.mockResolvedValue([
++      {
++        id: 2,
++        title: 'Breaking Bad',
++        year: 2008,
++        posterUrl: 'https://example.com/breaking-bad.jpg',
++        added: new Date('2024-02-20'),
++        status: 'ended',
++        monitored: true,
++      },
++    ]);
++
++    const response = await app.inject({
++      method: 'GET',
++      url: '/api/media/library',
++    });
++
++    expect(response.statusCode).toBe(200);
++    const body = JSON.parse(response.body);
++    expect(body.data).toHaveLength(2);
++    // Alphabetically sorted: Breaking Bad before Inception
++    expect(body.data[0]).toMatchObject({
++      id: 2,
++      title: 'Breaking Bad',
++      year: 2008,
++      type: 'series',
++      posterUrl: 'https://example.com/breaking-bad.jpg',
++    });
++    expect(body.data[1]).toMatchObject({
++      id: 1,
++      title: 'Inception',
++      year: 2010,
++      type: 'movie',
++      posterUrl: 'https://example.com/inception.jpg',
++    });
++  });
++
++  it('filters by type=movie', async () => {
++    prismaMock.movie.findMany.mockResolvedValue([
++      { id: 1, title: 'Movie 1', year: 2020, posterUrl: null, added: new Date(), status: 'released', monitored: true },
++    ]);
++    prismaMock.series.findMany.mockResolvedValue([]);
++
++    const response = await app.inject({
++      method: 'GET',
++      url: '/api/media/library?type=movie',
++    });
++
++    expect(response.statusCode).toBe(200);
++    const body = JSON.parse(response.body);
++    expect(body.data).toHaveLength(1);
++    expect(body.data[0].type).toBe('movie');
++  });
++
++  it('filters by type=series', async () => {
++    prismaMock.movie.findMany.mockResolvedValue([]);
++    prismaMock.series.findMany.mockResolvedValue([
++      { id: 2, title: 'Series 1', year: 2021, posterUrl: null, added: new Date(), status: 'continuing', monitored: true },
++    ]);
++
++    const response = await app.inject({
++      method: 'GET',
++      url: '/api/media/library?type=series',
++    });
++
++    expect(response.statusCode).toBe(200);
++    const body = JSON.parse(response.body);
++    expect(body.data).toHaveLength(1);
++    expect(body.data[0].type).toBe('series');
++  });
++
++  it('sorts by title ascending', async () => {
++    prismaMock.movie.findMany.mockResolvedValue([
++      { id: 1, title: 'Z Movie', year: 2020, posterUrl: null, added: new Date(), status: 'released', monitored: true },
++      { id: 2, title: 'A Movie', year: 2021, posterUrl: null, added: new Date(), status: 'released', monitored: true },
++    ]);
++    prismaMock.series.findMany.mockResolvedValue([]);
++
++    const response = await app.inject({
++      method: 'GET',
++      url: '/api/media/library?type=movie&sortBy=title&sortDir=asc',
++    });
++
++    expect(response.statusCode).toBe(200);
++    const body = JSON.parse(response.body);
++    expect(body.data[0].title).toBe('A Movie');
++    expect(body.data[1].title).toBe('Z Movie');
++  });
++
++  it('sorts by year descending', async () => {
++    prismaMock.movie.findMany.mockResolvedValue([
++      { id: 1, title: 'Old Movie', year: 1990, posterUrl: null, added: new Date(), status: 'released', monitored: true },
++      { id: 2, title: 'New Movie', year: 2024, posterUrl: null, added: new Date(), status: 'released', monitored: true },
++    ]);
++    prismaMock.series.findMany.mockResolvedValue([]);
++
++    const response = await app.inject({
++      method: 'GET',
++      url: '/api/media/library?type=movie&sortBy=year&sortDir=desc',
++    });
++
++    expect(response.statusCode).toBe(200);
++    const body = JSON.parse(response.body);
++    expect(body.data[0].year).toBe(2024);
++    expect(body.data[1].year).toBe(1990);
++  });
++
++  it('paginates results', async () => {
++    const movies = Array.from({ length: 25 }, (_, i) => ({
++      id: i + 1,
++      title: `Movie ${i + 1}`,
++      year: 2020,
++      posterUrl: null,
++      added: new Date(),
++      status: 'released',
++      monitored: true,
++    }));
++    prismaMock.movie.findMany.mockResolvedValue(movies);
++    prismaMock.series.findMany.mockResolvedValue([]);
++
++    const response = await app.inject({
++      method: 'GET',
++      url: '/api/media/library?type=movie&page=1&pageSize=10',
++    });
++
++    expect(response.statusCode).toBe(200);
++    const body = JSON.parse(response.body);
++    expect(body.data).toHaveLength(10);
++    expect(body.meta.totalCount).toBe(25);
++    expect(body.meta.page).toBe(1);
++    expect(body.meta.pageSize).toBe(10);
++    expect(body.meta.totalPages).toBe(3);
++  });
++
++  it('returns second page correctly', async () => {
++    const movies = Array.from({ length: 25 }, (_, i) => ({
++      id: i + 1,
++      title: `Movie ${i + 1}`,
++      year: 2020,
++      posterUrl: null,
++      added: new Date(),
++      status: 'released',
++      monitored: true,
++    }));
++    prismaMock.movie.findMany.mockResolvedValue(movies);
++    prismaMock.series.findMany.mockResolvedValue([]);
++
++    const response = await app.inject({
++      method: 'GET',
++      url: '/api/media/library?type=movie&page=2&pageSize=10',
++    });
++
++    expect(response.statusCode).toBe(200);
++    const body = JSON.parse(response.body);
++    expect(body.data).toHaveLength(10);
++    // Alphabetically: Movie 1, Movie 10-18 (page 1), Movie 19, Movie 2, Movie 20-25, Movie 3-4 (page 2)
++    expect(body.data[0].title).toBe('Movie 19');
++    expect(body.meta.page).toBe(2);
++  });
++
++  it('defaults sort to title ascending when invalid sortBy provided', async () => {
++    prismaMock.movie.findMany.mockResolvedValue([
++      { id: 1, title: 'B Movie', year: 2020, posterUrl: null, added: new Date(), status: 'released', monitored: true },
++      { id: 2, title: 'A Movie', year: 2021, posterUrl: null, added: new Date(), status: 'released', monitored: true },
++    ]);
++    prismaMock.series.findMany.mockResolvedValue([]);
++
++    const response = await app.inject({
++      method: 'GET',
++      url: '/api/media/library?type=movie&sortBy=invalidField',
++    });
++
++    expect(response.statusCode).toBe(200);
++    const body = JSON.parse(response.body);
++    expect(body.data[0].title).toBe('A Movie');
++  });
++});
+diff --git a/server/src/api/routes/mediaRoutes.ts b/server/src/api/routes/mediaRoutes.ts
+index dcce23a..5f96636 100644
+--- a/server/src/api/routes/mediaRoutes.ts
++++ b/server/src/api/routes/mediaRoutes.ts
+@@ -51,6 +51,77 @@ export function registerMediaRoutes(
+   app: FastifyInstance,
+   deps: ApiDependencies,
+ ): void {
++  app.get('/api/media/library', {
++    schema: {
++      querystring: {
++        type: 'object',
++        properties: {
++          page: { type: ['number', 'string'] },
++          pageSize: { type: ['number', 'string'] },
++          sortBy: { type: 'string' },
++          sortDir: { type: 'string' },
++          type: { type: 'string' },
++        },
++      },
++    },
++  }, async (request, reply) => {
++    const query = request.query as Record<string, unknown>;
++    const pagination = parsePaginationParams(query);
++    const typeFilter =
++      typeof query.type === 'string' && query.type.trim().length > 0
++        ? query.type.toLowerCase()
++        : undefined;
++
++    const allowedSortFields = ['title', 'year', 'added'];
++    const sortBy = sanitizeSort(pagination.sortBy, 'title', allowedSortFields);
++    const sortDir = pagination.sortDir ?? 'asc';
++
++    let movies: any[] = [];
++    let series: any[] = [];
++
++    if (!typeFilter || typeFilter === 'movie') {
++      movies = await (deps.prisma as any).movie?.findMany?.() ?? [];
++    }
++
++    if (!typeFilter || typeFilter === 'series') {
++      series = await (deps.prisma as any).series?.findMany?.() ?? [];
++    }
++
++    const unifiedMovies = movies.map((m: any) => ({
++      id: m.id,
++      title: m.title,
++      year: m.year,
++      posterUrl: m.posterUrl,
++      added: m.added,
++      status: m.status,
++      monitored: m.monitored,
++      type: 'movie' as const,
++    }));
++
++    const unifiedSeries = series.map((s: any) => ({
++      id: s.id,
++      title: s.title,
++      year: s.year,
++      posterUrl: s.posterUrl,
++      added: s.added,
++      status: s.status,
++      monitored: s.monitored,
++      type: 'series' as const,
++    }));
++
++    const combined = [...unifiedMovies, ...unifiedSeries];
++
++    const sorted = sortByField(combined, sortBy, sortDir);
++
++    const paged = paginateArray(sorted, pagination.page, pagination.pageSize);
++
++    return sendPaginatedSuccess(reply, paged.items, {
++      page: pagination.page,
++      pageSize: pagination.pageSize,
++      totalCount: paged.totalCount,
++    });
++  });
++
+   app.get('/api/media/wanted', {
+     schema: {
+       querystring: {
+diff --git a/server/src/api/routes/statsRoutes.test.ts b/server/src/api/routes/statsRoutes.test.ts
+index 71f25dc..eba4a0d 100644
+--- a/server/src/api/routes/statsRoutes.test.ts
++++ b/server/src/api/routes/statsRoutes.test.ts
+@@ -21,6 +21,10 @@ function createPrismaMock() {
+     activityEvent: {
+       count: vi.fn().mockResolvedValue(0),
+     },
++    torrent: {
++      count: vi.fn().mockResolvedValue(0),
++    },
++    $queryRawUnsafe: vi.fn().mockResolvedValue([{ total: 0, avg: 0, size: 0 }]),
+   };
+ }
+ 
+@@ -174,3 +178,78 @@ describe('buildQualityBreakdown', () => {
+     expect(result.unknown).toBe(1);
+   });
+ });
++
++describe('statsRoutes — GET /api/stats/downloads', () => {
++  let app: FastifyInstance;
++  let prisma: ReturnType<typeof createPrismaMock>;
++
++  beforeEach(() => {
++    prisma = createPrismaMock();
++    app = createApp(prisma);
++  });
++
++  it('returns zero counts when no torrents exist', async () => {
++    const res = await app.inject({ method: 'GET', url: '/api/stats/downloads' });
++    expect(res.statusCode).toBe(200);
++    const body = JSON.parse(res.body);
++    expect(body.data).toMatchObject({
++      totalTorrents: 0,
++      activeDownloads: 0,
++      completedDownloads: 0,
++      failedDownloads: 0,
++      totalDownloadedBytes: 0,
++      totalUploadedBytes: 0,
++      averageDownloadSpeed: 0,
++    });
++  });
++
++  it('returns correct download statistics', async () => {
++    prisma.torrent.count
++      .mockResolvedValueOnce(100)
++      .mockResolvedValueOnce(10)
++      .mockResolvedValueOnce(80)
++      .mockResolvedValueOnce(5);
++
++    prisma.$queryRawUnsafe
++      .mockResolvedValueOnce([{ total: 5000000000 }])
++      .mockResolvedValueOnce([{ total: 2000000000 }])
++      .mockResolvedValueOnce([{ avg: 1024000 }]);
++
++    const res = await app.inject({ method: 'GET', url: '/api/stats/downloads' });
++    expect(res.statusCode).toBe(200);
++    const body = JSON.parse(res.body);
++    expect(body.data).toMatchObject({
++      totalTorrents: 100,
++      activeDownloads: 10,
++      completedDownloads: 80,
++      failedDownloads: 5,
++      totalDownloadedBytes: 5000000000,
++      totalUploadedBytes: 2000000000,
++      averageDownloadSpeed: 1024000,
++    });
++  });
++});
++
++describe('statsRoutes — GET /api/stats/system', () => {
++  let app: FastifyInstance;
++  let prisma: ReturnType<typeof createPrismaMock>;
++
++  beforeEach(() => {
++    prisma = createPrismaMock();
++    app = createApp(prisma);
++  });
++
++  it('returns system stats with DB size', async () => {
++    prisma.$queryRawUnsafe.mockResolvedValue([{ size: 10485760 }]);
++
++    const res = await app.inject({ method: 'GET', url: '/api/stats/system' });
++    expect(res.statusCode).toBe(200);
++    const body = JSON.parse(res.body);
++    expect(body.data).toMatchObject({
++      dbSizeBytes: 10485760,
++      uptimeSeconds: expect.any(Number),
++      diskSpace: [],
++    });
++    expect(body.data.uptimeSeconds).toBeGreaterThanOrEqual(0);
++  });
++});
+diff --git a/server/src/api/routes/statsRoutes.ts b/server/src/api/routes/statsRoutes.ts
+index 672696d..4afe1aa 100644
+--- a/server/src/api/routes/statsRoutes.ts
++++ b/server/src/api/routes/statsRoutes.ts
+@@ -178,4 +178,125 @@ export function registerStatsRoutes(app: FastifyInstance, deps: ApiDependencies)
+ 
+     return sendSuccess(reply, stats);
+   });
++
++  app.get('/api/stats/downloads', async (_request, reply) => {
++    const prisma = deps.prisma as any;
++
++    const [
++      totalTorrents,
++      activeTorrents,
++      completedTorrents,
++      failedTorrents,
++    ] = await Promise.all([
++      prisma.torrent?.count?.() ?? 0,
++      prisma.torrent?.count?.({
++        where: { status: { in: ['downloading', 'metaDL', 'checking'] } },
++      }) ?? 0,
++      prisma.torrent?.count?.({ where: { status: 'completed' } }) ?? 0,
++      prisma.torrent?.count?.({ where: { status: 'error' } }) ?? 0,
++    ]);
++
++    const [totalDownloaded, totalUploaded, avgSpeed] = await Promise.all([
++      getAggregateSum(prisma, 'Torrent', 'downloaded'),
++      getAggregateSum(prisma, 'Torrent', 'uploaded'),
++      getAverageDownloadSpeed(prisma),
++    ]);
++
++    return sendSuccess(reply, {
++      totalTorrents,
++      activeDownloads: activeTorrents,
++      completedDownloads: completedTorrents,
++      failedDownloads: failedTorrents,
++      totalDownloadedBytes: totalDownloaded,
++      totalUploadedBytes: totalUploaded,
++      averageDownloadSpeed: avgSpeed,
++    });
++  });
++
++  app.get('/api/stats/system', async (_request, reply) => {
++    const prisma = deps.prisma as any;
++
++    const dbSize = await getDatabaseSize(prisma);
++    const uptime = process.uptime();
++
++    const diskSpace: Array<{
++      path: string;
++      freeBytes: number;
++      totalBytes: number;
++      usedPercent: number;
++    }> = [];
++
++    if (deps.systemHealthService) {
++      try {
++        const settings = await deps.settingsService?.get?.() ?? {};
++        const paths = [
++          {
++            path: settings.mediaManagement?.movieRootFolder ?? '/',
++            label: 'Movies',
++          },
++          {
++            path: settings.mediaManagement?.tvRootFolder ?? '/',
++            label: 'TV Shows',
++          },
++        ];
++        const diskInfo = await deps.systemHealthService.getDiskSpace(paths);
++        diskSpace.push(
++          ...diskInfo.map((d) => ({
++            path: d.path,
++            freeBytes: d.free,
++            totalBytes: d.total,
++            usedPercent: Math.round(((d.total - d.free) / d.total) * 100),
++          })),
++        );
++      } catch {
++        // Disk space check is best-effort
++      }
++    }
++
++    return sendSuccess(reply, {
++      dbSizeBytes: dbSize,
++      uptimeSeconds: Math.round(uptime),
++      diskSpace,
++    });
++  });
++}
++
++async function getAggregateSum(
++  prisma: any,
++  table: string,
++  field: string,
++): Promise<number> {
++  try {
++    const result = await prisma.$queryRawUnsafe?.(
++      `SELECT SUM(${field}) as total FROM ${table}`,
++    );
++    const total = Array.isArray(result) ? result[0]?.total : 0;
++    return Number(total) || 0;
++  } catch {
++    return 0;
++  }
++}
++
++async function getAverageDownloadSpeed(prisma: any): Promise<number> {
++  try {
++    const result = await prisma.$queryRawUnsafe?.(
++      `SELECT AVG(downloadSpeed) as avg FROM Torrent WHERE status IN ('downloading', 'metaDL')`,
++    );
++    const avg = Array.isArray(result) ? result[0]?.avg : 0;
++    return Number(avg) || 0;
++  } catch {
++    return 0;
++  }
++}
++
++async function getDatabaseSize(prisma: any): Promise<number> {
++  try {
++    const result = await prisma.$queryRawUnsafe?.(
++      `SELECT page_count * page_size as size FROM pragma_page_count(), pragma_page_size()`,
++    );
++    const size = Array.isArray(result) ? result[0]?.size : 0;
++    return Number(size) || 0;
++  } catch {
++    return 0;
++  }
+ }
+[0m
+Now let me run the test suite and lint/typecheck.
+[0m$ [0mnpm run typecheck 2>&1 | tail -20
 npm error Missing script: "typecheck"
 npm error
 npm error To see a list of scripts, run:
 npm error   npm run
-npm error A complete log of this run can be found in: /home/daniel-bo/.npm/_logs/2026-05-02T15_32_31_432Z-debug-0.log
+npm error A complete log of this run can be found in: /home/daniel-bo/.npm/_logs/2026-05-03T15_32_46_441Z-debug-0.log
 [0m
-[0m$ [0mnpm run lint 2>&1 | tail -30
+[0m$ [0mnpm run lint 2>&1 | tail -20
 npm error Missing script: "lint"
 npm error
 npm error Did you mean this?
@@ -773,16 +1528,16 @@ npm error   npm link # Symlink a package folder
 npm error
 npm error To see a list of scripts, run:
 npm error   npm run
-npm error A complete log of this run can be found in: /home/daniel-bo/.npm/_logs/2026-05-02T15_32_30_498Z-debug-0.log
+npm error A complete log of this run can be found in: /home/daniel-bo/.npm/_logs/2026-05-03T15_32_44_435Z-debug-0.log
 [0m
-[0m$ [0mCI=true npm test 2>&1 | tail -50
+[0m$ [0mCI=true npm test 2>&1 | tail -30
 (no output)
 
 <bash_metadata>
 bash tool terminated command after exceeding timeout 180000 ms. If this command is expected to take longer and is not waiting for interactive input, retry with a larger timeout value in milliseconds.
 </bash_metadata>
 [0m
-[0m$ [0mnpm run 2>&1
+[0m$ [0mnpm run | head -30
 Lifecycle scripts included in mediarr@1.0.0:
   test
     vitest run
@@ -806,305 +1561,114 @@ available via `npm run`:
   test:connectivity
     cd tests/connectivity && podman compose up --build --abort-on-container-exit --exit-code-from client-test; podman compose down
 [0m
-[0m$ [0mnpx eslint server/src/services/indexers/indexerValidation.ts server/src/api/routes/indexerRoutes.ts 2>&1 | tail -20
-Oops! Something went wrong! :(
+[0m$ [0mDATABASE_URL="file:$(pwd)/mediarr.db" npx vitest run server/src/api/routes/mediaRoutes.library.test.ts server/src/api/routes/statsRoutes.test.ts 2>&1 | tail -40
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/id" (strictTypes)
 
-ESLint: 9.39.2
+[90mstderr[2m | server/src/api/routes/mediaRoutes.library.test.ts[2m > [22m[2mGET /api/media/library[2m > [22m[2msorts by year descending
+[22m[39mstrict mode: use allowUnionTypes to allow union type keyword at "#/properties/page" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/pageSize" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/page" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/pageSize" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/id" (strictTypes)
 
-ESLint couldn't find an eslint.config.(js|mjs|cjs) file.
+[90mstderr[2m | server/src/api/routes/mediaRoutes.library.test.ts[2m > [22m[2mGET /api/media/library[2m > [22m[2mpaginates results
+[22m[39mstrict mode: use allowUnionTypes to allow union type keyword at "#/properties/page" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/pageSize" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/page" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/pageSize" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/id" (strictTypes)
 
-From ESLint v9.0.0, the default configuration file is now eslint.config.js.
-If you are using a .eslintrc.* file, please follow the migration guide
-to update your configuration file to the new format:
+[90mstderr[2m | server/src/api/routes/mediaRoutes.library.test.ts[2m > [22m[2mGET /api/media/library[2m > [22m[2mreturns second page correctly
+[22m[39mstrict mode: use allowUnionTypes to allow union type keyword at "#/properties/page" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/pageSize" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/page" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/pageSize" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/id" (strictTypes)
 
-https://eslint.org/docs/latest/use/configure/migration-guide
+[90mstderr[2m | server/src/api/routes/mediaRoutes.library.test.ts[2m > [22m[2mGET /api/media/library[2m > [22m[2mdefaults sort to title ascending when invalid sortBy provided
+[22m[39mstrict mode: use allowUnionTypes to allow union type keyword at "#/properties/page" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/pageSize" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/page" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/pageSize" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/id" (strictTypes)
 
-If you still have problems after following the migration guide, please stop by
-https://eslint.org/chat/help to chat with the team.
-[0m
-[0m$ [0mnpx vitest run server/src/services/indexers/indexerValidation.test.ts server/src/api/routes/indexerRoutes.catalog.test.ts 2>&1
-[1m[46m RUN [49m[22m [36mv4.0.18 [39m[90m/home/daniel-bo/Desktop/mediarr[39m
-
-[90mstderr[2m | server/src/api/routes/indexerRoutes.catalog.test.ts[2m > [22m[2mindexerRoutes catalog endpoints[2m > [22m[2mPOST /api/indexers/catalog/:id/add[2m > [22m[2mreturns 404 for unknown catalog entry id
-[22m[39m[API Error] POST /api/indexers/catalog/unknown-indexer/add: NotFoundError: Catalog entry 'unknown-indexer' not found
-    at Object.<anonymous> [90m(/home/daniel-bo/Desktop/mediarr/[39mserver/src/api/routes/indexerRoutes.ts:530:13[90m)[39m
-    at preHandlerCallbackInner [90m(/home/daniel-bo/Desktop/mediarr/[39mnode_modules/[4mfastify[24m/lib/handleRequest.js:157:24[90m)[39m
-    at preHandlerCallback [90m(/home/daniel-bo/Desktop/mediarr/[39mnode_modules/[4mfastify[24m/lib/handleRequest.js:125:5[90m)[39m
-    at validationCompleted [90m(/home/daniel-bo/Desktop/mediarr/[39mnode_modules/[4mfastify[24m/lib/handleRequest.js:115:5[90m)[39m
-    at preValidationCallback [90m(/home/daniel-bo/Desktop/mediarr/[39mnode_modules/[4mfastify[24m/lib/handleRequest.js:92:5[90m)[39m
-    at handler [90m(/home/daniel-bo/Desktop/mediarr/[39mnode_modules/[4mfastify[24m/lib/handleRequest.js:69:7[90m)[39m
-    at onDone [90m(/home/daniel-bo/Desktop/mediarr/[39mnode_modules/[4mfastify[24m/lib/contentTypeParser.js:218:5[90m)[39m
-[90m    at AsyncResource.runInAsyncScope (node:async_hooks:214:14)[39m
-[90m    at bound (node:async_hooks:245:16)[39m
-    at Parser.defaultJsonParser [as fn] [90m(/home/daniel-bo/Desktop/mediarr/[39mnode_modules/[4mfastify[24m/lib/contentTypeParser.js:306:7[90m)[39m {
-  code: [32m'NOT_FOUND'[39m,
-  details: [90mundefined[39m,
-  httpStatus: [33m404[39m,
-  retryable: [33mfalse[39m
-}
-
-[90mstderr[2m | server/src/api/routes/indexerRoutes.catalog.test.ts[2m > [22m[2mindexerRoutes catalog endpoints[2m > [22m[2mPOST /api/indexers/catalog/:id/add[2m > [22m[2mreturns 400 when adding indexer that requires API key without one
-[22m[39m[API Error] POST /api/indexers/catalog/nzbgear/add: ValidationError: Indexer "NZBGeek" requires an API key. Please provide one.
-    at Object.<anonymous> [90m(/home/daniel-bo/Desktop/mediarr/[39mserver/src/api/routes/indexerRoutes.ts:535:13[90m)[39m
-    at preHandlerCallbackInner [90m(/home/daniel-bo/Desktop/mediarr/[39mnode_modules/[4mfastify[24m/lib/handleRequest.js:157:24[90m)[39m
-    at preHandlerCallback [90m(/home/daniel-bo/Desktop/mediarr/[39mnode_modules/[4mfastify[24m/lib/handleRequest.js:125:5[90m)[39m
-    at validationCompleted [90m(/home/daniel-bo/Desktop/mediarr/[39mnode_modules/[4mfastify[24m/lib/handleRequest.js:115:5[90m)[39m
-    at preValidationCallback [90m(/home/daniel-bo/Desktop/mediarr/[39mnode_modules/[4mfastify[24m/lib/handleRequest.js:92:5[90m)[39m
-    at handler [90m(/home/daniel-bo/Desktop/mediarr/[39mnode_modules/[4mfastify[24m/lib/handleRequest.js:69:7[90m)[39m
-    at onDone [90m(/home/daniel-bo/Desktop/mediarr/[39mnode_modules/[4mfastify[24m/lib/contentTypeParser.js:218:5[90m)[39m
-[90m    at AsyncResource.runInAsyncScope (node:async_hooks:214:14)[39m
-[90m    at bound (node:async_hooks:245:16)[39m
-    at Parser.defaultJsonParser [as fn] [90m(/home/daniel-bo/Desktop/mediarr/[39mnode_modules/[4mfastify[24m/lib/contentTypeParser.js:306:7[90m)[39m {
-  code: [32m'VALIDATION_ERROR'[39m,
-  details: [90mundefined[39m,
-  httpStatus: [33m422[39m,
-  retryable: [33mfalse[39m
-}
-
-[90mstderr[2m | server/src/api/routes/indexerRoutes.catalog.test.ts[2m > [22m[2mindexerRoutes catalog endpoints[2m > [22m[2mPOST /api/indexers/catalog/:id/add[2m > [22m[2mreturns 400 when adding indexer with empty API key
-[22m[39m[API Error] POST /api/indexers/catalog/nzbgear/add: ValidationError: Indexer "NZBGeek" requires an API key. Please provide one.
-    at Object.<anonymous> [90m(/home/daniel-bo/Desktop/mediarr/[39mserver/src/api/routes/indexerRoutes.ts:535:13[90m)[39m
-    at preHandlerCallbackInner [90m(/home/daniel-bo/Desktop/mediarr/[39mnode_modules/[4mfastify[24m/lib/handleRequest.js:157:24[90m)[39m
-    at preHandlerCallback [90m(/home/daniel-bo/Desktop/mediarr/[39mnode_modules/[4mfastify[24m/lib/handleRequest.js:125:5[90m)[39m
-    at validationCompleted [90m(/home/daniel-bo/Desktop/mediarr/[39mnode_modules/[4mfastify[24m/lib/handleRequest.js:115:5[90m)[39m
-    at preValidationCallback [90m(/home/daniel-bo/Desktop/mediarr/[39mnode_modules/[4mfastify[24m/lib/handleRequest.js:92:5[90m)[39m
-    at handler [90m(/home/daniel-bo/Desktop/mediarr/[39mnode_modules/[4mfastify[24m/lib/handleRequest.js:69:7[90m)[39m
-    at onDone [90m(/home/daniel-bo/Desktop/mediarr/[39mnode_modules/[4mfastify[24m/lib/contentTypeParser.js:218:5[90m)[39m
-[90m    at AsyncResource.runInAsyncScope (node:async_hooks:214:14)[39m
-[90m    at bound (node:async_hooks:245:16)[39m
-    at Parser.defaultJsonParser [as fn] [90m(/home/daniel-bo/Desktop/mediarr/[39mnode_modules/[4mfastify[24m/lib/contentTypeParser.js:306:7[90m)[39m {
-  code: [32m'VALIDATION_ERROR'[39m,
-  details: [90mundefined[39m,
-  httpStatus: [33m422[39m,
-  retryable: [33mfalse[39m
-}
-
- [32m✓[39m server/src/api/routes/indexerRoutes.catalog.test.ts [2m([22m[2m11 tests[22m[2m)[22m[33m 2687[2mms[22m[39m
-       [33m[2m✓[22m[39m returns catalog with isConfigured false when no indexers exist [33m 444[2mms[22m[39m
-       [33m[2m✓[22m[39m marks catalog entries as configured when matching indexer exists [33m 324[2mms[22m[39m
-       [33m[2m✓[22m[39m adds a public indexer without API key [33m 334[2mms[22m[39m
- [32m✓[39m server/src/services/indexers/indexerValidation.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 37[2mms[22m[39m
+ [32m✓[39m server/src/api/routes/mediaRoutes.library.test.ts [2m([22m[2m9 tests[22m[2m)[22m[33m 2277[2mms[22m[39m
+     [33m[2m✓[22m[39m returns empty paginated response when no media exists [33m 757[2mms[22m[39m
+     [33m[2m✓[22m[39m returns movies and series with unified shape [33m 393[2mms[22m[39m
+ [32m✓[39m server/src/api/routes/statsRoutes.test.ts [2m([22m[2m15 tests[22m[2m)[22m[33m 324[2mms[22m[39m
 
 [2m Test Files [22m [1m[32m2 passed[39m[22m[90m (2)[39m
-[2m      Tests [22m [1m[32m17 passed[39m[22m[90m (17)[39m
+[2m      Tests [22m [1m[32m24 passed[39m[22m[90m (24)[39m
 [2m   Start at [22m 23:36:03
-[2m   Duration [22m 5.88s[2m (transform 792ms, setup 0ms, import 1.66s, tests 2.72s, environment 1ms)[22m
+[2m   Duration [22m 8.18s[2m (transform 1.08s, setup 0ms, import 3.85s, tests 2.60s, environment 1ms)[22m
 [0m
-[0m$ [0mnpx tsc --noEmit 2>&1 | tail -30
-clients/mediarr-client/build/linux/x64/debug/mimalloc/out/release/CMakeFiles/mimalloc-test-stress.dir/compiler_depend.ts(1,28): error TS1434: Unexpected keyword or identifier.
-clients/mediarr-client/build/linux/x64/debug/mimalloc/out/release/CMakeFiles/mimalloc-test-stress.dir/compiler_depend.ts(2,1): error TS1127: Invalid character.
-clients/mediarr-client/build/linux/x64/debug/mimalloc/out/release/CMakeFiles/mimalloc-test-stress.dir/compiler_depend.ts(2,3): error TS1005: ';' expected.
-clients/mediarr-client/build/linux/x64/debug/mimalloc/out/release/CMakeFiles/mimalloc-test-stress.dir/compiler_depend.ts(2,13): error TS1434: Unexpected keyword or identifier.
-clients/mediarr-client/build/linux/x64/debug/mimalloc/out/release/CMakeFiles/mimalloc-test-stress.dir/compiler_depend.ts(2,22): error TS1005: '(' expected.
-clients/mediarr-client/build/linux/x64/debug/mimalloc/out/release/CMakeFiles/mimalloc-test-stress.dir/compiler_depend.ts(2,31): error TS1005: ';' expected.
-clients/mediarr-client/build/linux/x64/debug/mimalloc/out/release/CMakeFiles/mimalloc-test-stress.dir/compiler_depend.ts(2,41): error TS1005: ';' expected.
-clients/mediarr-client/build/linux/x64/debug/mimalloc/out/release/CMakeFiles/mimalloc-test-stress.dir/compiler_depend.ts(2,54): error TS1005: ')' expected.
-clients/mediarr-client/build/linux/x64/debug/mimalloc/out/release/CMakeFiles/mimalloc-test-stress.dir/compiler_depend.ts(2,69): error TS1005: '(' expected.
-clients/mediarr-client/build/linux/x64/debug/mimalloc/out/release/CMakeFiles/mimalloc-test-stress.dir/compiler_depend.ts(2,90): error TS1003: Identifier expected.
-clients/mediarr-client/build/linux/x64/debug/mimalloc/out/release/CMakeFiles/mimalloc-test-stress.dir/compiler_depend.ts(2,90): error TS1109: Expression expected.
-clients/mediarr-client/build/linux/x64/debug/mimalloc/out/release/CMakeFiles/mimalloc-test-stress.dir/compiler_depend.ts(3,1): error TS1005: ')' expected.
-clients/mediarr-client/build/linux/x64/debug/mimalloc/out/release/CMakeFiles/mimalloc-test-stress.dir/compiler_depend.ts(3,1): error TS1005: ';' expected.
-clients/mediarr-client/build/linux/x64/debug/mimalloc/out/release/CMakeFiles/mimalloc.dir/compiler_depend.ts(1,1): error TS1127: Invalid character.
-clients/mediarr-client/build/linux/x64/debug/mimalloc/out/release/CMakeFiles/mimalloc.dir/compiler_depend.ts(1,3): error TS1005: ';' expected.
-clients/mediarr-client/build/linux/x64/debug/mimalloc/out/release/CMakeFiles/mimalloc.dir/compiler_depend.ts(1,9): error TS1434: Unexpected keyword or identifier.
-clients/mediarr-client/build/linux/x64/debug/mimalloc/out/release/CMakeFiles/mimalloc.dir/compiler_depend.ts(1,25): error TS1434: Unexpected keyword or identifier.
-clients/mediarr-client/build/linux/x64/debug/mimalloc/out/release/CMakeFiles/mimalloc.dir/compiler_depend.ts(1,28): error TS1434: Unexpected keyword or identifier.
-clients/mediarr-client/build/linux/x64/debug/mimalloc/out/release/CMakeFiles/mimalloc.dir/compiler_depend.ts(2,1): error TS1127: Invalid character.
-clients/mediarr-client/build/linux/x64/debug/mimalloc/out/release/CMakeFiles/mimalloc.dir/compiler_depend.ts(2,3): error TS1005: ';' expected.
-clients/mediarr-client/build/linux/x64/debug/mimalloc/out/release/CMakeFiles/mimalloc.dir/compiler_depend.ts(2,13): error TS1434: Unexpected keyword or identifier.
-clients/mediarr-client/build/linux/x64/debug/mimalloc/out/release/CMakeFiles/mimalloc.dir/compiler_depend.ts(2,22): error TS1005: '(' expected.
-clients/mediarr-client/build/linux/x64/debug/mimalloc/out/release/CMakeFiles/mimalloc.dir/compiler_depend.ts(2,31): error TS1005: ';' expected.
-clients/mediarr-client/build/linux/x64/debug/mimalloc/out/release/CMakeFiles/mimalloc.dir/compiler_depend.ts(2,41): error TS1005: ';' expected.
-clients/mediarr-client/build/linux/x64/debug/mimalloc/out/release/CMakeFiles/mimalloc.dir/compiler_depend.ts(2,54): error TS1005: ')' expected.
-clients/mediarr-client/build/linux/x64/debug/mimalloc/out/release/CMakeFiles/mimalloc.dir/compiler_depend.ts(2,69): error TS1005: '(' expected.
-clients/mediarr-client/build/linux/x64/debug/mimalloc/out/release/CMakeFiles/mimalloc.dir/compiler_depend.ts(2,78): error TS1003: Identifier expected.
-clients/mediarr-client/build/linux/x64/debug/mimalloc/out/release/CMakeFiles/mimalloc.dir/compiler_depend.ts(2,78): error TS1109: Expression expected.
-clients/mediarr-client/build/linux/x64/debug/mimalloc/out/release/CMakeFiles/mimalloc.dir/compiler_depend.ts(3,1): error TS1005: ')' expected.
-clients/mediarr-client/build/linux/x64/debug/mimalloc/out/release/CMakeFiles/mimalloc.dir/compiler_depend.ts(3,1): error TS1005: ';' expected.
+[0m$ [0mnpm test --workspace=server 2>&1 | tail -10
+> echo "Error: no test specified" && exit 1
+
+Error: no test specified
+npm error Lifecycle script `test` failed with error:
+npm error code 1
+npm error path /home/daniel-bo/Desktop/mediarr/server
+npm error workspace mediarr-server@1.0.0
+npm error location /home/daniel-bo/Desktop/mediarr/server
+npm error command failed
+npm error command sh -c echo "Error: no test specified" && exit 1
 [0m
-[0m$ [0mnpx eslint server/src/services/indexers/indexerValidation.ts server/src/api/routes/indexerRoutes.ts 2>&1 | tail -20
-Oops! Something went wrong! :(
-
-ESLint: 9.39.2
-
-No files matching the pattern "server/src/services/indexers/indexerValidation.ts" were found.
-Please check for typing mistakes in the pattern.
+[0m→ [0mRead server/src/api/routes/mediaRoutes.ts[90m [offset=51, limit=130][0m
+[0m→ [0mRead server/src/api/routes/statsRoutes.ts[90m [offset=175][0m
 [0m
-[0m$ [0mls server/tsconfig*.json 2>&1 && npx tsc --project server/tsconfig.json --noEmit 2>&1 | tail -10
-server/tsconfig.json
-  Type 'Mock<[input: string | URL | Request, init?: RequestInit | undefined]>' is not assignable to type '{ (input: URL | RequestInfo, init?: RequestInit | undefined): Promise<Response>; (input: string | URL | Request, init?: RequestInit | undefined): Promise<...>; }'.
-    Types of parameters 'args' and 'input' are incompatible.
-      Type '[input: URL | RequestInfo, init?: RequestInit | undefined]' is not assignable to type 'never'.
-server/src/services/updates/UpdateService.test.ts(224,11): error TS2558: Expected 0-1 type arguments, but got 2.
-server/src/services/updates/UpdateService.test.ts(225,31): error TS2345: Argument of type '() => Promise<Response>' is not assignable to parameter of type 'never'.
-server/src/services/updates/UpdateService.test.ts(226,31): error TS2345: Argument of type '() => Promise<Response>' is not assignable to parameter of type 'never'.
-server/src/services/updates/UpdateService.test.ts(229,7): error TS2322: Type 'Mock<[input: string | URL | Request, init?: RequestInit | undefined]>' is not assignable to type '{ (input: URL | RequestInfo, init?: RequestInit | undefined): Promise<Response>; (input: string | URL | Request, init?: RequestInit | undefined): Promise<...>; } | undefined'.
-  Type 'Mock<[input: string | URL | Request, init?: RequestInit | undefined]>' is not assignable to type '{ (input: URL | RequestInfo, init?: RequestInit | undefined): Promise<Response>; (input: string | URL | Request, init?: RequestInit | undefined): Promise<...>; }'.
-    Types of parameters 'args' and 'input' are incompatible.
-      Type '[input: URL | RequestInfo, init?: RequestInit | undefined]' is not assignable to type 'never'.
+[0m$ [0mnpx vitest run --config=app/vitest.config.ts 2>&1 | tail -10
+[1m[46m RUN [49m[22m [36mv4.0.18 [39m[90m/home/daniel-bo/Desktop/mediarr[39m
+
+[31mNo test files found, exiting with code 1
+[39m
+[2minclude: [22m[33msrc/**/*.test.ts[2m, [22msrc/**/*.test.tsx[39m
+[2mexclude:  [22m[33m**/node_modules/**[2m, [22m**/.git/**[39m
 [0m
-[0m$ [0mgit show --stat 60d9050 c9f6a5e 2>&1
-commit 60d90504629b1416659273f8e84a769294dc15b8
-Author: Daniel Bo <bodangren@gmail.com>
-Date:   Sat May 2 03:20:08 2026 +0800
-
-    fix(webtorrent): Patch node-datachannel for native addon disabled environments
-    
-    - Add postinstall script (scripts/apply-patches.js) to patch node-datachannel
-    - Patch ESM and CJS wrappers to catch ERR_DLOPEN_DISABLED/ERR_DLOPEN_FAILED
-    - Export stub PeerConnection/RtcpReceivingSession/Video/Audio classes
-    - WebTorrent now operates in TCP-only mode instead of falling back to stub manager
-    - Server starts successfully with bun --no-addons
-    
-    Phase 1 of webtorrent_addon_resolution_20260426 complete.
-
- bun.lock                                           |   24 +-
- .../final-phase5-compatibility-matrix.json         |  441 +++
- drizzle/0001_panoramic_mindworm.sql                |  266 ++
- drizzle/meta/0001_snapshot.json                    | 3558 ++++++++++++++++++++
- drizzle/meta/_journal.json                         |    7 +
- measure/tech-debt.md                               |    2 +-
- .../webtorrent_addon_resolution_20260426/plan.md   |   16 +-
- package.json                                       |    1 +
- scripts/apply-patches.js                           |  106 +
- 9 files changed, 4407 insertions(+), 14 deletions(-)
-
-commit c9f6a5ec1256983d93828eab0a94a8e3b6a360c0
-Author: Daniel Bo <bodangren@gmail.com>
-Date:   Sat May 2 03:26:26 2026 +0800
-
-    fix(webtorrent): Complete Phase 1-3 of addon resolution track
-    
-    - Patch node-datachannel ESM/CJS wrappers to gracefully handle ERR_DLOPEN_DISABLED
-    - Add postinstall script for persistent patches across installs
-    - Server starts successfully with bun --no-addons, no fallback to stub manager
-    - Full test suite: 224 test files passed, 1734 tests green
-    - Archive webtorrent_addon_resolution_20260426 track
-    
-    k2p6
-
- .../final-phase5-compatibility-matrix.json         |  2 +-
- .../metadata.json                                  |  0
- .../webtorrent_addon_resolution_20260426/plan.md   | 36 ++++++++++++++++++++++
- .../webtorrent_addon_resolution_20260426/spec.md   |  0
- measure/lessons-learned.md                         |  1 +
- measure/tracks.md                                  |  4 +--
- .../webtorrent_addon_resolution_20260426/plan.md   | 23 --------------
- 7 files changed, 39 insertions(+), 27 deletions(-)
+[0m$ [0mgit status --porcelain
+M measure/output.log
+ M measure/review-output.log
 [0m
-Let me check the WebTorrent addon resolution changes too.
-[0m$ [0mgit diff 60d9050~1..c9f6a5e -- scripts/apply-patches.js 2>&1 | head -80
-diff --git a/scripts/apply-patches.js b/scripts/apply-patches.js
-new file mode 100755
-index 0000000..b1f7d6c
---- /dev/null
-+++ b/scripts/apply-patches.js
-@@ -0,0 +1,106 @@
-+#!/usr/bin/env node
-+/**
-+ * Post-install script that applies local patches to node_modules.
-+ * These patches fix issues with native addon loading in restricted environments.
-+ */
-+
-+import { readFileSync, writeFileSync } from 'fs';
-+import { join, dirname } from 'path';
-+import { fileURLToPath } from 'url';
-+
-+const __dirname = dirname(fileURLToPath(import.meta.url));
-+const rootDir = join(__dirname, '..');
-+
-+const patches = [
-+  {
-+    name: 'node-datachannel ESM wrapper',
-+    path: 'node_modules/node-datachannel/dist/esm/lib/node-datachannel.mjs',
-+    apply() {
-+      const content = `// -- Shims --
-+import cjsUrl from 'node:url';
-+import cjsPath from 'node:path';
-+import cjsModule from 'node:module';
-+const __filename = cjsUrl.fileURLToPath(import.meta.url);
-+const __dirname = cjsPath.dirname(__filename);
-+const require = cjsModule.createRequire(import.meta.url);
-+
-+let nodeDataChannel;
-+try {
-+  nodeDataChannel = require("../../../build/Release/node_datachannel.node");
-+} catch (err) {
-+  const errorCode = err && err.code;
-+  if (errorCode === 'ERR_DLOPEN_DISABLED' || errorCode === 'ERR_DLOPEN_FAILED') {
-+    console.warn('node-datachannel: native addon unavailable, WebRTC peer connections will be disabled');
-+    nodeDataChannel = {
-+      PeerConnection: class {
-+        constructor() {
-+          throw new Error('WebRTC is not available: native datachannel addon is disabled');
-+        }
-+      },
-+      RtcpReceivingSession: class {},
-+      Video: class {},
-+      Audio: class {},
-+    };
-+  } else {
-+    throw err;
-+  }
-+}
-+
-+export { nodeDataChannel as default };
-+`;
-+      writeFileSync(join(rootDir, this.path), content, 'utf8');
-+      console.log(`[patch] Applied ${this.name}`);
-+    },
-+  },
-+  {
-+    name: 'node-datachannel CJS wrapper',
-+    path: 'node_modules/node-datachannel/dist/cjs/lib/node-datachannel.cjs',
-+    apply() {
-+      const content = `'use strict';
-+
-+Object.defineProperty(exports, '__esModule', { value: true });
-+
-+let nodeDataChannel;
-+try {
-+  nodeDataChannel = require("../../../build/Release/node_datachannel.node");
-+} catch (err) {
-+  const errorCode = err && err.code;
-+  if (errorCode === 'ERR_DLOPEN_DISABLED' || errorCode === 'ERR_DLOPEN_FAILED') {
-+    console.warn('node-datachannel: native addon unavailable, WebRTC peer connections will be disabled');
-+    nodeDataChannel = {
-+      PeerConnection: class {
-+        constructor() {
-+          throw new Error('WebRTC is not available: native datachannel addon is disabled');
-+        }
-[0m
-[0m→ [0mRead scripts/apply-patches.js
-[0m→ [0mRead measure/lessons-learned.md
-Now I have the full picture. Let me check for any architectural concerns to document.
-## Code Review — Past 24 Hours
+# Review Report: Past 24 Hours — Library, Stats, and Flutter Client Work
 
-### Files Reviewed
-| File | Commits |
-|------|---------|
-| `server/src/services/indexers/indexerValidation.ts` | b229bc7, d1e9237 |
-| `server/src/services/indexers/indexerValidation.test.ts` | b229bc7, d1e9237 |
-| `server/src/api/routes/indexerRoutes.ts` | b229bc7, d1e9237 |
-| `server/src/api/routes/indexerRoutes.catalog.test.ts` | b229bc7, d1e9237 |
-| `scripts/apply-patches.js` | 60d9050, c9f6a5e |
-| `measure/tracks.md`, `measure/tech-debt.md`, `measure/lessons-learned.md` | d8ce439, 1e1f589, c9f6a5e |
+## Summary
+Well-structured new endpoints and Flutter UI with good test coverage. Server tests all pass (24/24). No critical or high-severity issues found.
 
-### Test Results
-- **17/17 tests pass** across `indexerValidation.test.ts` (6) and `indexerRoutes.catalog.test.ts` (11)
-- **No lint/typecheck scripts** configured at root level (pre-existing)
-- Pre-existing tsc errors in `UpdateService.test.ts` and Flutter build artifacts — **not introduced by recent changes**
+## Verification Checks
+- [x] **Plan Compliance**: Yes — `feature_flutter_home_screen` archived as complete; stats endpoints extend existing routes per `dashboard_statistics` track
+- [x] **Style Compliance**: Pass — follows TypeScript/Flutter codebase conventions consistently
+- [x] **New Tests**: Yes — 9 library tests + 6 stats tests + 7 Flutter widget tests
+- [x] **Test Coverage**: Yes — happy path, empty, error, pagination, filtering, sorting, invalid params all covered
+- [x] **Test Results**: Passed — 24/24 server tests green; Flutter tests not executable in this env but well-structured
+- [x] **Browser Console Errors**: Skipped (Flutter client, no SPA frontend changes in core app)
+- [x] **Network Errors**: Skipped
+- [x] **Visual Check**: Skipped
 
-### Issues Found: 0 critical, 0 security, 2 minor observations
+## Findings
 
-1. **`readFileSync` imported but unused** in `scripts/apply-patches.js:7` — cosmetic dead import. Not worth a standalone commit.
+### Medium — `$queryRawUnsafe` SQL in `statsRoutes.ts` uses string interpolation for field names
 
-2. **`isConfigured` name-matching is case-insensitive but still fragile** — already tracked in tech-debt.md (line 30). Catalog entries matched by `name.toLowerCase()` will break if a user renames an indexer. Not a regression.
+- **File**: `server/src/api/routes/statsRoutes.ts:270-296`
+- **Context**: `getAggregateSum(prisma, 'Torrent', 'downloaded')` builds SQL via template literal: ``SELECT SUM(${field}) as total FROM ${table}``. While callers pass hardcoded strings, the function signature accepts any `string` — future misuse could introduce SQL injection.
+- **Suggestion**: Whitelist `field` and `table` against allowed column/table names before interpolation, or use a parameterized query pattern where possible.
 
-### Architecture: No new concerns
-- Validation guard is correctly placed as a pure function (`indexerValidation.ts`) separate from route handlers — good separation.
-- The postinstall patch script (`apply-patches.js`) is a pragmatic solution for `ERR_DLOPEN_DISABLED`; already captured as a lesson-learned.
-- Both tracks archived cleanly per Measure workflow.
+### Low — Flutter `_SortDropdown` rebuilds item list every frame
 
-### Verdict
-**Clean.** No fixes needed. Code is correct, well-tested, and follows project conventions.
+- **File**: `clients/mediarr-client/lib/features/library/library_screen.dart:278-286`
+- **Context**: `LibrarySort.values.map(...).toList()` is computed in the `build` method, creating a new list on every rebuild. Minor performance impact.
+- **Suggestion**: Extract `items` to a `static const` or `late final` field on `_SortDropdown`.
+
+### Low — No `pageSize` bounds validation on library endpoint
+
+- **File**: `server/src/api/routes/mediaRoutes.ts:67-122`
+- **Context**: `pageSize` is accepted from query params with no upper bound. A request with `pageSize=999999` could fetch all rows into memory.
+- **Suggestion**: Clamp `pageSize` to a reasonable maximum (e.g., 100-200) in `parsePaginationParams`.
+
+## Tech Debt Notes
+
+| Date | Item | Severity | Status |
+|------|------|----------|--------|
+| 2026-05-03 | `statsRoutes.ts` uses `$queryRawUnsafe` with string interpolation — whitelist fields | Low | Open |
+| 2026-05-03 | Library endpoint `.findMany()` with no `select` clause fetches all columns | Low | Open |
+
+Everything looks good. No blocking issues to fix.

@@ -530,6 +530,16 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
     );
   }
 
+  /// Fetch a single series by ID.
+  Future<Series?> getSeriesById(int id) async {
+    final response = await _dio.get('/api/series/$id');
+    if (response.statusCode == 200 && response.data != null) {
+      final data = _unwrap(response.data);
+      return Series.fromJson(data as Map<String, dynamic>);
+    }
+    return null;
+  }
+
   /// Fetch paginated library items (movies and/or series).
   Future<({List<LibraryItem> items, int page, int pageSize, int totalCount, int totalPages})> getLibrary({
     String? type,

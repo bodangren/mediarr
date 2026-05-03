@@ -1391,3 +1391,116 @@ M measure/current_directive.md
  M server/src/api/routes/statsRoutes.test.ts
  M server/src/api/routes/statsRoutes.ts
 [0m
+[0m$ [0mgit add -A && git commit -m "feat(stats): Add download and system stats endpoints (k2p6)
+
+- Extend existing statsRoutes with GET /api/stats/downloads
+  (torrent counts, active/completed/failed, bandwidth, speed)
+- Add GET /api/stats/system (DB size, uptime, disk space)
+- 15 tests green; library stats already provided by /api/system/stats
+- Update dashboard_statistics track plan — Phase 1 complete" && git push
+[main b51e3d8] feat(stats): Add download and system stats endpoints (k2p6)
+ 5 files changed, 631 insertions(+), 45 deletions(-)
+To https://github.com/bodangren/mediarr.git
+   dcd84f9..b51e3d8  main -> main
+[0m
+[0m$ [0mCI=true npm test -- server/src/api/routes/statsRoutes.test.ts server/src/api/routes/mediaRoutes.library.test.ts
+> mediarr@1.0.0 test
+> vitest run server/src/api/routes/statsRoutes.test.ts server/src/api/routes/mediaRoutes.library.test.ts
+
+
+[1m[46m RUN [49m[22m [36mv4.0.18 [39m[90m/home/daniel-bo/Desktop/mediarr[39m
+
+[90mstderr[2m | server/src/api/routes/mediaRoutes.library.test.ts[2m > [22m[2mGET /api/media/library[2m > [22m[2mreturns empty paginated response when no media exists
+[22m[39mstrict mode: use allowUnionTypes to allow union type keyword at "#/properties/page" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/pageSize" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/page" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/pageSize" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/id" (strictTypes)
+
+[90mstderr[2m | server/src/api/routes/mediaRoutes.library.test.ts[2m > [22m[2mGET /api/media/library[2m > [22m[2mreturns movies and series with unified shape
+[22m[39mstrict mode: use allowUnionTypes to allow union type keyword at "#/properties/page" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/pageSize" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/page" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/pageSize" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/id" (strictTypes)
+
+[90mstderr[2m | server/src/api/routes/mediaRoutes.library.test.ts[2m > [22m[2mGET /api/media/library[2m > [22m[2mfilters by type=movie
+[22m[39mstrict mode: use allowUnionTypes to allow union type keyword at "#/properties/page" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/pageSize" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/page" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/pageSize" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/id" (strictTypes)
+
+[90mstderr[2m | server/src/api/routes/mediaRoutes.library.test.ts[2m > [22m[2mGET /api/media/library[2m > [22m[2mfilters by type=series
+[22m[39mstrict mode: use allowUnionTypes to allow union type keyword at "#/properties/page" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/pageSize" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/page" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/pageSize" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/id" (strictTypes)
+
+[90mstderr[2m | server/src/api/routes/mediaRoutes.library.test.ts[2m > [22m[2mGET /api/media/library[2m > [22m[2msorts by title ascending
+[22m[39mstrict mode: use allowUnionTypes to allow union type keyword at "#/properties/page" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/pageSize" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/page" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/pageSize" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/id" (strictTypes)
+
+[90mstderr[2m | server/src/api/routes/mediaRoutes.library.test.ts[2m > [22m[2mGET /api/media/library[2m > [22m[2msorts by year descending
+[22m[39mstrict mode: use allowUnionTypes to allow union type keyword at "#/properties/page" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/pageSize" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/page" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/pageSize" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/id" (strictTypes)
+
+[90mstderr[2m | server/src/api/routes/mediaRoutes.library.test.ts[2m > [22m[2mGET /api/media/library[2m > [22m[2mpaginates results
+[22m[39mstrict mode: use allowUnionTypes to allow union type keyword at "#/properties/page" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/pageSize" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/page" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/pageSize" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/id" (strictTypes)
+
+[90mstderr[2m | server/src/api/routes/mediaRoutes.library.test.ts[2m > [22m[2mGET /api/media/library[2m > [22m[2mreturns second page correctly
+[22m[39mstrict mode: use allowUnionTypes to allow union type keyword at "#/properties/page" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/pageSize" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/page" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/pageSize" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/id" (strictTypes)
+
+[90mstderr[2m | server/src/api/routes/mediaRoutes.library.test.ts[2m > [22m[2mGET /api/media/library[2m > [22m[2mdefaults sort to title ascending when invalid sortBy provided
+[22m[39mstrict mode: use allowUnionTypes to allow union type keyword at "#/properties/page" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/pageSize" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/page" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/pageSize" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/id" (strictTypes)
+
+ [32m✓[39m server/src/api/routes/mediaRoutes.library.test.ts [2m([22m[2m9 tests[22m[2m)[22m[33m 1576[2mms[22m[39m
+     [33m[2m✓[22m[39m returns empty paginated response when no media exists [33m 433[2mms[22m[39m
+ [32m✓[39m server/src/api/routes/statsRoutes.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 293[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m2 passed[39m[22m[90m (2)[39m
+[2m      Tests [22m [1m[32m24 passed[39m[22m[90m (24)[39m
+[2m   Start at [22m 21:00:26
+[2m   Duration [22m 6.06s[2m (transform 817ms, setup 0ms, import 2.81s, tests 1.87s, environment 1ms)[22m
+[0m
+[0m$ [0mnpm run typecheck --workspace=app
+> app@0.0.0 typecheck
+> tsc -b --pretty false
+[0m
+[0m$ [0mwc -l measure/tech-debt.md measure/lessons-learned.md
+36 measure/tech-debt.md
+   41 measure/lessons-learned.md
+   77 total
+[0m
+[0m← [0mEdit measure/lessons-learned.md
+Index: /home/daniel-bo/Desktop/mediarr/measure/lessons-learned.md
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/measure/lessons-learned.md
++++ /home/daniel-bo/Desktop/mediarr/measure/lessons-learned.md
+@@ -38,4 +38,5 @@
+ - (2026-05-02, webtorrent_addon_resolution) **Native addon failures in dependencies can be patched via postinstall scripts.** `node-datachannel` throws `ERR_DLOPEN_DISABLED` when Bun runs with `--no-addons`. Patching the ESM/CJS entry points to catch this error and export stubs allows WebTorrent to function in TCP-only mode without falling back to a non-functional stub manager.
+ - (2026-04-25, visual_refresh) **A CSS variable bridge enables gradual theme migration without breaking existing components.** Mapping `--background`, `--primary`, etc. to new Near-Zero tokens lets shadcn components work immediately while explicit tokens (`text-text-primary`) are adopted incrementally.
+ - (2026-05-01, feature_flutter_subtitle_quality) **Flutter detail screens should use ConsumerStatefulWidget for async sections.** Converting MovieDetailScreen from ConsumerWidget to ConsumerStatefulWidget allows subtitle inventory to load on mount without blocking the main UI. Stateful local loading keeps the scaffold responsive while async data populates.
+ - (2026-05-01, feature_flutter_subtitle_quality) **Reusable bottom sheet pattern with callback refresh keeps detail screens in sync.** SubtitleSearchSheet and QualityUpgradeSheet both accept `onDownloaded`/`onGrabbed` callbacks that trigger parent reload. This avoids provider complexity for one-off modal flows.
++- (2026-05-03, dashboard_statistics) **Audit existing endpoints before creating new ones.** `/api/system/stats` already provided comprehensive library statistics; the Dashboard Statistics track initially planned a duplicate. Extended the existing `statsRoutes.ts` with `/api/stats/downloads` and `/api/stats/system` instead.
+
+[0m

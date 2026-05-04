@@ -1,20 +1,20 @@
 # Current Strategic Directive
 
-> **STATUS: ACTIVE** — Phase D/Living Room complete. Next: Feature tracks.
-> **Updated: 2026-05-03**
+> **STATUS: ACTIVE** — Dashboard Statistics complete. Next: WebTorrent download management.
+> **Updated: 2026-05-05**
 
 ---
 
-## Directive: Feature Development — Dashboard Statistics
+## Directive: Feature Development — WebTorrent Download Management
 
-Track `feature_flutter_home_screen_20260502` is complete. Proceed to pending feature tracks:
+Track `dashboard_statistics_20260503` is complete. All phases finished:
+- Phase 1: Backend Statistics API (complete)
+- Phase 2: Frontend Statistics Dashboard (complete)
+- Phase 3: Integration & Polish (complete)
 
-1. `dashboard_statistics_20260503` — Statistics dashboard with library composition charts, download metrics, and system health monitoring (in progress)
-2. `webtorrent_download_management_20260503` — Frontend interface for managing WebTorrent downloads
+Next pending feature track:
+1. `webtorrent_download_management_20260503` — Frontend interface for managing WebTorrent downloads
 
 ### Active Track
 
-- [~] **Dashboard Statistics & Analytics** *Link: [./tracks/dashboard_statistics_20260503/](./tracks/dashboard_statistics_20260503/)*
-  - Phase 1: Backend Statistics API (complete)
-  - Phase 2: Frontend Statistics Dashboard (complete)
-  - Phase 3: Integration & Polish (in progress)
+- [~] **WebTorrent Download Management** *Link: [./tracks/webtorrent_download_management_20260503/](./tracks/webtorrent_download_management_20260503/)*

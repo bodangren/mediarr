@@ -5,6 +5,12 @@ import { formatBytes } from '@/lib/format';
 import type { LibraryStats, QualityBreakdown, DownloadStats, SystemStats } from '@/lib/api/statsApi';
 import { RouteScaffold } from '@/components/primitives/RouteScaffold';
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
   PieChart,
   Pie,
   Cell,
@@ -178,6 +184,58 @@ function formatDuration(seconds: number): string {
   return `${minutes}m`;
 }
 
+function exportStats(format: 'json' | 'csv', data: { library: LibraryStats | null; downloads: DownloadStats | null; system: SystemStats | null }) {
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  
+  if (format === 'json') {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `mediarr-stats-${timestamp}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  } else {
+    const rows: string[] = ['Category,Metric,Value'];
+    
+    if (data.library) {
+      rows.push(`Library,Movies,${data.library.library.totalMovies}`);
+      rows.push(`Library,TV Shows,${data.library.library.totalSeries}`);
+      rows.push(`Library,Episodes,${data.library.library.totalEpisodes}`);
+      rows.push(`Library,Total Files,${data.library.files.totalFiles}`);
+      rows.push(`Library,Total Size,${data.library.files.totalSizeBytes}`);
+      rows.push(`Library,Missing Movies,${data.library.missing.movies}`);
+      rows.push(`Library,Missing Episodes,${data.library.missing.episodes}`);
+    }
+    
+    if (data.downloads) {
+      rows.push(`Downloads,Total Torrents,${data.downloads.totalTorrents}`);
+      rows.push(`Downloads,Active,${data.downloads.activeDownloads}`);
+      rows.push(`Downloads,Completed,${data.downloads.completedDownloads}`);
+      rows.push(`Downloads,Failed,${data.downloads.failedDownloads}`);
+      rows.push(`Downloads,Total Downloaded,${data.downloads.totalDownloadedBytes}`);
+      rows.push(`Downloads,Total Uploaded,${data.downloads.totalUploadedBytes}`);
+    }
+    
+    if (data.system) {
+      rows.push(`System,Uptime Seconds,${data.system.uptimeSeconds}`);
+      rows.push(`System,DB Size,${data.system.dbSizeBytes}`);
+    }
+    
+    const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `mediarr-stats-${timestamp}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+}
+
 export function StatsPage() {
   const [libraryStats, setLibraryStats] = useState<LibraryStats | null>(null);
   const [downloadStats, setDownloadStats] = useState<DownloadStats | null>(null);
@@ -189,10 +247,7 @@ export function StatsPage() {
     const api = getApiClients();
 
     Promise.all([
-      api.statsApi.getStats().catch((err: unknown) => {
-        console.error('Failed to load library stats:', err);
-        return null;
-      }),
+      api.statsApi.getStats(),
       api.statsApi.getDownloadStats().catch((err: unknown) => {
         console.error('Failed to load download stats:', err);
         return null;
@@ -215,10 +270,38 @@ export function StatsPage() {
       });
   }, []);
 
+  const allStats = {
+    library: libraryStats,
+    downloads: downloadStats,
+    system: systemStats,
+  };
+
   return (
     <RouteScaffold
       title="Statistics"
       description="Library composition, quality distribution, storage usage, download metrics, and system health."
+      actions={
+        !loading && !error ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="rounded-md border border-border-subtle bg-surface-1 px-3 py-1.5 text-sm text-text-secondary hover:text-text-primary hover:bg-surface-2 transition-colors"
+              >
+                Export
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => exportStats('json', allStats)}>
+                Export as JSON
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => exportStats('csv', allStats)}>
+                Export as CSV
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : null
+      }
     >
       {loading ? (
         <div className="rounded-md border border-border-subtle bg-surface-1 p-8 text-center text-text-secondary">

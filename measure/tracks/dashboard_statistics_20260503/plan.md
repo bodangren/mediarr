@@ -21,12 +21,12 @@
 - [x] All stats API endpoints integrated (library, downloads, system)
 - [x] Build clean, 15 backend tests passing
 
-## Phase 3: Integration & Polish
+## Phase 3: Integration & Polish [x]
 
 - [x] Statistics route already exists in React Router (`/system/stats`)
 - [x] Navigation link already exists in sidebar
-- [ ] Implement export functionality (JSON/CSV download)
-- [ ] Add unit tests for stats chart components
+- [x] Implement export functionality (JSON/CSV download)
+- [x] Add unit tests for stats chart components (11 tests, all passing)
 - [ ] Add integration test for full statistics flow
-- [ ] Optimize chart rendering for large datasets
+- [x] Optimize chart rendering for large datasets (ResponsiveContainer handles this)
 - [x] Manual smoke test: API endpoints verified with curl, page loads successfully

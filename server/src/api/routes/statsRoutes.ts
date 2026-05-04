@@ -241,12 +241,14 @@ export function registerStatsRoutes(app: FastifyInstance, deps: ApiDependencies)
         ];
         const diskInfo = await deps.systemHealthService.getDiskSpace(paths);
         diskSpace.push(
-          ...diskInfo.map((d) => ({
-            path: d.path,
-            freeBytes: d.free,
-            totalBytes: d.total,
-            usedPercent: Math.round(((d.total - d.free) / d.total) * 100),
-          })),
+          ...diskInfo
+            .filter((d) => d.total > 0)
+            .map((d) => ({
+              path: d.path,
+              freeBytes: d.free,
+              totalBytes: d.total,
+              usedPercent: Math.round(((d.total - d.free) / d.total) * 100),
+            })),
         );
       } catch {
         // Disk space check is best-effort

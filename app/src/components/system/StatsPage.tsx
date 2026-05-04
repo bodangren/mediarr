@@ -2,8 +2,20 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getApiClients } from '@/lib/api/client';
 import { formatBytes } from '@/lib/format';
-import type { LibraryStats, QualityBreakdown } from '@/lib/api/statsApi';
+import type { LibraryStats, QualityBreakdown, DownloadStats, SystemStats } from '@/lib/api/statsApi';
 import { RouteScaffold } from '@/components/primitives/RouteScaffold';
+import {
+  PieChart,
+  Pie,
+  Cell,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from 'recharts';
 
 function StatCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
   return (
@@ -24,50 +36,52 @@ const QUALITY_LABELS: Record<keyof QualityBreakdown, string> = {
 };
 
 const QUALITY_COLORS: Record<keyof QualityBreakdown, string> = {
-  uhd4k: 'bg-purple-500',
-  hd1080p: 'bg-blue-500',
-  hd720p: 'bg-green-500',
-  sd: 'bg-yellow-500',
-  unknown: 'bg-gray-500',
+  uhd4k: '#a855f7',
+  hd1080p: '#3b82f6',
+  hd720p: '#22c55e',
+  sd: '#eab308',
+  unknown: '#6b7280',
 };
 
-function QualityBar({ breakdown, total }: { breakdown: QualityBreakdown; total: number }) {
+function QualityPieChart({ breakdown, total }: { breakdown: QualityBreakdown; total: number }) {
   if (total === 0) {
     return <p className="text-sm text-text-secondary">No files</p>;
   }
 
-  const keys = Object.keys(breakdown) as Array<keyof QualityBreakdown>;
+  const data = Object.entries(breakdown)
+    .filter(([, count]) => count > 0)
+    .map(([key, count]) => ({
+      name: QUALITY_LABELS[key as keyof QualityBreakdown],
+      value: count,
+      color: QUALITY_COLORS[key as keyof QualityBreakdown],
+    }));
 
   return (
-    <div className="space-y-2">
-      <div className="flex h-3 overflow-hidden rounded-full">
-        {keys.map(key => {
-          const pct = total > 0 ? (breakdown[key] / total) * 100 : 0;
-          if (pct === 0) return null;
-          return (
-            <div
-              key={key}
-              className={QUALITY_COLORS[key]}
-              style={{ width: `${pct}%` }}
-              title={`${QUALITY_LABELS[key]}: ${breakdown[key]}`}
-            />
-          );
-        })}
-      </div>
-      <div className="flex flex-wrap gap-x-4 gap-y-1">
-        {keys.map(key => {
-          const count = breakdown[key];
-          if (count === 0) return null;
-          const pct = Math.round((count / total) * 100);
-          return (
-            <span key={key} className="flex items-center gap-1.5 text-xs text-text-secondary">
-              <span className={`inline-block h-2 w-2 rounded-full ${QUALITY_COLORS[key]}`} />
-              {QUALITY_LABELS[key]}: {count} ({pct}%)
-            </span>
-          );
-        })}
-      </div>
-    </div>
+    <ResponsiveContainer width="100%" height={200}>
+      <PieChart>
+        <Pie
+          data={data}
+          cx="50%"
+          cy="50%"
+          innerRadius={60}
+          outerRadius={80}
+          paddingAngle={2}
+          dataKey="value"
+        >
+          {data.map((entry, index) => (
+            <Cell key={`cell-${index}`} fill={entry.color} />
+          ))}
+        </Pie>
+        <Tooltip
+          formatter={(value: number | undefined) => [`${value ?? 0} files`, 'Count']}
+          contentStyle={{
+            backgroundColor: 'var(--surface-1)',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: '6px',
+          }}
+        />
+      </PieChart>
+    </ResponsiveContainer>
   );
 }
 
@@ -98,17 +112,100 @@ function StorageBar({ movieBytes, episodeBytes }: { movieBytes: number; episodeB
   );
 }
 
+function DownloadBarChart({ stats }: { stats: DownloadStats }) {
+  const data = [
+    { name: 'Active', value: stats.activeDownloads, color: '#3b82f6' },
+    { name: 'Completed', value: stats.completedDownloads, color: '#22c55e' },
+    { name: 'Failed', value: stats.failedDownloads, color: '#ef4444' },
+  ];
+
+  return (
+    <ResponsiveContainer width="100%" height={200}>
+      <BarChart data={data}>
+        <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" />
+        <XAxis dataKey="name" tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} />
+        <YAxis tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} />
+        <Tooltip
+          contentStyle={{
+            backgroundColor: 'var(--surface-1)',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: '6px',
+          }}
+        />
+        <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+          {data.map((entry, index) => (
+            <Cell key={`cell-${index}`} fill={entry.color} />
+          ))}
+        </Bar>
+      </BarChart>
+    </ResponsiveContainer>
+  );
+}
+
+function DiskUsageBar({ disk }: { disk: { path: string; freeBytes: number; totalBytes: number; usedPercent: number } }) {
+  const isWarning = disk.usedPercent > 85;
+  const isCritical = disk.usedPercent > 95;
+
+  return (
+    <div className="space-y-2">
+      <div className="flex justify-between text-sm">
+        <span className="text-text-secondary">{disk.path}</span>
+        <span className={isCritical ? 'text-status-danger' : isWarning ? 'text-status-warning' : 'text-text-secondary'}>
+          {disk.usedPercent}% used
+        </span>
+      </div>
+      <div className="flex h-2 overflow-hidden rounded-full bg-surface-2">
+        <div
+          className={`transition-all ${isCritical ? 'bg-status-danger' : isWarning ? 'bg-status-warning' : 'bg-accent-primary'}`}
+          style={{ width: `${disk.usedPercent}%` }}
+        />
+      </div>
+      <div className="flex justify-between text-xs text-text-secondary">
+        <span>{formatBytes(disk.totalBytes - disk.freeBytes)} used</span>
+        <span>{formatBytes(disk.freeBytes)} free</span>
+      </div>
+    </div>
+  );
+}
+
+function formatDuration(seconds: number): string {
+  const days = Math.floor(seconds / 86400);
+  const hours = Math.floor((seconds % 86400) / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+
+  if (days > 0) return `${days}d ${hours}h ${minutes}m`;
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  return `${minutes}m`;
+}
+
 export function StatsPage() {
-  const [stats, setStats] = useState<LibraryStats | null>(null);
+  const [libraryStats, setLibraryStats] = useState<LibraryStats | null>(null);
+  const [downloadStats, setDownloadStats] = useState<DownloadStats | null>(null);
+  const [systemStats, setSystemStats] = useState<SystemStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const api = getApiClients();
-    api.statsApi
-      .getStats()
-      .then(data => {
-        setStats(data);
+
+    Promise.all([
+      api.statsApi.getStats().catch((err: unknown) => {
+        console.error('Failed to load library stats:', err);
+        return null;
+      }),
+      api.statsApi.getDownloadStats().catch((err: unknown) => {
+        console.error('Failed to load download stats:', err);
+        return null;
+      }),
+      api.statsApi.getSystemStats().catch((err: unknown) => {
+        console.error('Failed to load system stats:', err);
+        return null;
+      }),
+    ])
+      .then(([library, downloads, system]) => {
+        setLibraryStats(library);
+        setDownloadStats(downloads);
+        setSystemStats(system);
       })
       .catch((err: unknown) => {
         setError(err instanceof Error ? err.message : 'Failed to load statistics');
@@ -121,7 +218,7 @@ export function StatsPage() {
   return (
     <RouteScaffold
       title="Statistics"
-      description="Library composition, quality distribution, storage usage, and activity metrics."
+      description="Library composition, quality distribution, storage usage, download metrics, and system health."
     >
       {loading ? (
         <div className="rounded-md border border-border-subtle bg-surface-1 p-8 text-center text-text-secondary">
@@ -131,85 +228,134 @@ export function StatsPage() {
         <div className="rounded-md border border-border-subtle bg-surface-1 p-8 text-center text-status-danger">
           {error}
         </div>
-      ) : stats ? (
-        <div className="space-y-4">
-          {/* Library counts */}
-          <section>
-            <h2 className="mb-3 text-sm font-medium text-text-secondary uppercase tracking-wide">Library</h2>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <StatCard label="Movies" value={stats.library.totalMovies} sub={`${stats.library.monitoredMovies} monitored`} />
-              <StatCard label="TV Shows" value={stats.library.totalSeries} sub={`${stats.library.monitoredSeries} monitored`} />
-              <StatCard label="Episodes" value={stats.library.totalEpisodes.toLocaleString()} sub={`${stats.library.monitoredEpisodes.toLocaleString()} monitored`} />
-              <StatCard label="Total Files" value={stats.files.totalFiles.toLocaleString()} sub={formatBytes(stats.files.totalSizeBytes)} />
-            </div>
-          </section>
-
-          {/* Storage breakdown */}
-          <section className="rounded-md border border-border-subtle bg-surface-1 p-4">
-            <h2 className="mb-3 text-sm font-semibold">Storage Usage</h2>
-            <p className="mb-3 text-2xl font-semibold tabular-nums">{formatBytes(stats.files.totalSizeBytes)}</p>
-            <StorageBar movieBytes={stats.files.movieSizeBytes} episodeBytes={stats.files.episodeSizeBytes} />
-          </section>
-
-          {/* Quality distribution */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <section className="rounded-md border border-border-subtle bg-surface-1 p-4">
-              <h2 className="mb-3 text-sm font-semibold">Movie Quality</h2>
-              <p className="mb-3 text-sm text-text-secondary">{stats.files.movieFiles} files</p>
-              <QualityBar breakdown={stats.quality.movies} total={stats.files.movieFiles} />
-            </section>
-            <section className="rounded-md border border-border-subtle bg-surface-1 p-4">
-              <h2 className="mb-3 text-sm font-semibold">Episode Quality</h2>
-              <p className="mb-3 text-sm text-text-secondary">{stats.files.episodeFiles} files</p>
-              <QualityBar breakdown={stats.quality.episodes} total={stats.files.episodeFiles} />
-            </section>
-          </div>
-
-          {/* Missing media */}
-          <section>
-            <h2 className="mb-3 text-sm font-medium text-text-secondary uppercase tracking-wide">Missing Media</h2>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-md border border-border-subtle bg-surface-1 p-4">
-                <p className="text-sm text-text-secondary">Missing Movies</p>
-                <p className={`mt-1 text-2xl font-semibold tabular-nums ${stats.missing.movies > 0 ? 'text-status-warning' : 'text-status-success'}`}>
-                  {stats.missing.movies}
-                </p>
-                {stats.missing.movies > 0 ? (
-                  <Link to="/library/movies" className="mt-1 text-xs text-accent-primary hover:underline">
-                    View library →
-                  </Link>
-                ) : (
-                  <p className="mt-0.5 text-xs text-text-secondary">All caught up</p>
-                )}
+      ) : (
+        <div className="space-y-6">
+          {/* Library Overview */}
+          {libraryStats && (
+            <section>
+              <h2 className="mb-3 text-sm font-medium text-text-secondary uppercase tracking-wide">Library Overview</h2>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <StatCard label="Movies" value={libraryStats.library.totalMovies} sub={`${libraryStats.library.monitoredMovies} monitored`} />
+                <StatCard label="TV Shows" value={libraryStats.library.totalSeries} sub={`${libraryStats.library.monitoredSeries} monitored`} />
+                <StatCard label="Episodes" value={libraryStats.library.totalEpisodes.toLocaleString()} sub={`${libraryStats.library.monitoredEpisodes.toLocaleString()} monitored`} />
+                <StatCard label="Total Files" value={libraryStats.files.totalFiles.toLocaleString()} sub={formatBytes(libraryStats.files.totalSizeBytes)} />
               </div>
-              <div className="rounded-md border border-border-subtle bg-surface-1 p-4">
-                <p className="text-sm text-text-secondary">Missing Episodes</p>
-                <p className={`mt-1 text-2xl font-semibold tabular-nums ${stats.missing.episodes > 0 ? 'text-status-warning' : 'text-status-success'}`}>
-                  {stats.missing.episodes.toLocaleString()}
-                </p>
-                {stats.missing.episodes > 0 ? (
-                  <Link to="/library/tv" className="mt-1 text-xs text-accent-primary hover:underline">
-                    View library →
-                  </Link>
-                ) : (
-                  <p className="mt-0.5 text-xs text-text-secondary">All caught up</p>
-                )}
-              </div>
-            </div>
-          </section>
+            </section>
+          )}
 
-          {/* Activity */}
-          <section>
-            <h2 className="mb-3 text-sm font-medium text-text-secondary uppercase tracking-wide">Recent Activity</h2>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <StatCard label="Downloads (7d)" value={stats.activity.downloadsThisWeek} />
-              <StatCard label="Downloads (30d)" value={stats.activity.downloadsThisMonth} />
-              <StatCard label="Searches (7d)" value={stats.activity.searchesThisWeek} />
-              <StatCard label="Subtitles (7d)" value={stats.activity.subtitlesThisWeek} />
+          {/* Quality Distribution */}
+          {libraryStats && (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <section className="rounded-md border border-border-subtle bg-surface-1 p-4">
+                <h2 className="mb-3 text-sm font-semibold">Movie Quality</h2>
+                <p className="mb-3 text-sm text-text-secondary">{libraryStats.files.movieFiles} files</p>
+                <QualityPieChart breakdown={libraryStats.quality.movies} total={libraryStats.files.movieFiles} />
+              </section>
+              <section className="rounded-md border border-border-subtle bg-surface-1 p-4">
+                <h2 className="mb-3 text-sm font-semibold">Episode Quality</h2>
+                <p className="mb-3 text-sm text-text-secondary">{libraryStats.files.episodeFiles} files</p>
+                <QualityPieChart breakdown={libraryStats.quality.episodes} total={libraryStats.files.episodeFiles} />
+              </section>
             </div>
-          </section>
+          )}
+
+          {/* Storage Breakdown */}
+          {libraryStats && (
+            <section className="rounded-md border border-border-subtle bg-surface-1 p-4">
+              <h2 className="mb-3 text-sm font-semibold">Storage Usage</h2>
+              <p className="mb-3 text-2xl font-semibold tabular-nums">{formatBytes(libraryStats.files.totalSizeBytes)}</p>
+              <StorageBar movieBytes={libraryStats.files.movieSizeBytes} episodeBytes={libraryStats.files.episodeSizeBytes} />
+            </section>
+          )}
+
+          {/* Download Statistics */}
+          {downloadStats && (
+            <section className="rounded-md border border-border-subtle bg-surface-1 p-4">
+              <h2 className="mb-3 text-sm font-semibold">Download Statistics</h2>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 mb-4">
+                <StatCard label="Total Torrents" value={downloadStats.totalTorrents} />
+                <StatCard label="Active" value={downloadStats.activeDownloads} />
+                <StatCard label="Completed" value={downloadStats.completedDownloads} />
+                <StatCard label="Failed" value={downloadStats.failedDownloads} />
+              </div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 mb-4">
+                <StatCard label="Downloaded" value={formatBytes(downloadStats.totalDownloadedBytes)} />
+                <StatCard label="Uploaded" value={formatBytes(downloadStats.totalUploadedBytes)} />
+                <StatCard label="Avg Speed" value={`${formatBytes(downloadStats.averageDownloadSpeed)}/s`} />
+              </div>
+              <DownloadBarChart stats={downloadStats} />
+            </section>
+          )}
+
+          {/* System Health */}
+          {systemStats && (
+            <section className="rounded-md border border-border-subtle bg-surface-1 p-4">
+              <h2 className="mb-3 text-sm font-semibold">System Health</h2>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 mb-4">
+                <StatCard label="Uptime" value={formatDuration(systemStats.uptimeSeconds)} />
+                <StatCard label="DB Size" value={formatBytes(systemStats.dbSizeBytes)} />
+                <StatCard label="Disk Volumes" value={systemStats.diskSpace.length} />
+              </div>
+              {systemStats.diskSpace.length > 0 && (
+                <div className="space-y-4">
+                  <h3 className="text-sm font-medium text-text-secondary">Disk Usage</h3>
+                  {systemStats.diskSpace.map((disk, index) => (
+                    <DiskUsageBar key={index} disk={disk} />
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
+
+          {/* Missing Media */}
+          {libraryStats && (
+            <section>
+              <h2 className="mb-3 text-sm font-medium text-text-secondary uppercase tracking-wide">Missing Media</h2>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-md border border-border-subtle bg-surface-1 p-4">
+                  <p className="text-sm text-text-secondary">Missing Movies</p>
+                  <p className={`mt-1 text-2xl font-semibold tabular-nums ${libraryStats.missing.movies > 0 ? 'text-status-warning' : 'text-status-success'}`}>
+                    {libraryStats.missing.movies}
+                  </p>
+                  {libraryStats.missing.movies > 0 ? (
+                    <Link to="/library/movies" className="mt-1 text-xs text-accent-primary hover:underline">
+                      View library →
+                    </Link>
+                  ) : (
+                    <p className="mt-0.5 text-xs text-text-secondary">All caught up</p>
+                  )}
+                </div>
+                <div className="rounded-md border border-border-subtle bg-surface-1 p-4">
+                  <p className="text-sm text-text-secondary">Missing Episodes</p>
+                  <p className={`mt-1 text-2xl font-semibold tabular-nums ${libraryStats.missing.episodes > 0 ? 'text-status-warning' : 'text-status-success'}`}>
+                    {libraryStats.missing.episodes.toLocaleString()}
+                  </p>
+                  {libraryStats.missing.episodes > 0 ? (
+                    <Link to="/library/tv" className="mt-1 text-xs text-accent-primary hover:underline">
+                      View library →
+                    </Link>
+                  ) : (
+                    <p className="mt-0.5 text-xs text-text-secondary">All caught up</p>
+                  )}
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* Recent Activity */}
+          {libraryStats && (
+            <section>
+              <h2 className="mb-3 text-sm font-medium text-text-secondary uppercase tracking-wide">Recent Activity</h2>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <StatCard label="Downloads (7d)" value={libraryStats.activity.downloadsThisWeek} />
+                <StatCard label="Downloads (30d)" value={libraryStats.activity.downloadsThisMonth} />
+                <StatCard label="Searches (7d)" value={libraryStats.activity.searchesThisWeek} />
+                <StatCard label="Subtitles (7d)" value={libraryStats.activity.subtitlesThisWeek} />
+              </div>
+            </section>
+          )}
         </div>
-      ) : null}
+      )}
     </RouteScaffold>
   );
 }

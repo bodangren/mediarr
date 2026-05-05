@@ -6348,3 +6348,49 @@ M conductor/archive/cardigann_runtime_parity_20260223/artifacts/final-phase5-com
  M server/src/types/prisma.ts
 ?? server/src/types/nodemailer.d.ts
 [0m
+[0m$ [0mgit add -A && git commit -m "fix(server): resolve all TypeScript strict-mode errors and test regressions
+
+- Fix remaining noUncheckedIndexedAccess and exactOptionalPropertyTypes errors
+- Add TransactionClient to Prisma compat layer, nodemailer ambient types
+- Update test mocks to match new strict types (vi.fn signatures, non-null assertions)
+- Fix 3 test regressions:
+  - setupRoutes: mock findAll to return non-empty array for indexer count
+  - mediaSettingsRoutes: expect default naming patterns from route handler
+  - UpdateService: align isDockerFn mock with assertion
+- Server tsc: 0 errors. Full suite: 1800 passing, 11 skipped, 0 failed."
+[main 3e327c6] fix(server): resolve all TypeScript strict-mode errors and test regressions
+ 73 files changed, 6700 insertions(+), 303 deletions(-)
+ create mode 100644 server/src/types/nodemailer.d.ts
+[0m
+[0m→ [0mRead measure/tracks.md[90m [limit=30][0m
+[0m✱ [0mGrep "typescript_strictness_20260426"[90m in measure · 20 matches[0m
+[0m→ [0mRead measure/tracks.md[90m [limit=20, offset=230][0m
+[0m
+[0m← [0mEdit measure/tracks.md
+Index: /home/daniel-bo/Desktop/mediarr/measure/tracks.md
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/measure/tracks.md
++++ /home/daniel-bo/Desktop/mediarr/measure/tracks.md
+@@ -232,11 +232,9 @@
+ - [x] **Track: Visual Refresh — Define Unique Identity** *Phases: 2 | Link: [./archive/visual_refresh_20260425/](./archive/visual_refresh_20260425/)* — Near-Zero Tesla theme; DESIGN.md lint passed; 232 test files green
+ 
+ - [x] **Track: Legacy Test Audit** *Phases: 3 | Link: [./archive/legacy_test_audit_20260426/](./archive/legacy_test_audit_20260426/)* — Deleted 340 obsolete backup tests; 1800 tests green; no regressions
+ 
+-- [ ] **Track: TypeScript Strictness Re-enablement**
+-  *Link: [./tracks/typescript_strictness_20260426/](./tracks/typescript_strictness_20260426/)*
+-  Re-enable exactOptionalPropertyTypes and noUncheckedIndexedAccess, fix all type errors.
++- [x] **Track: TypeScript Strictness Re-enablement** *Phases: 3 | Link: [./archive/typescript_strictness_20260426/](./archive/typescript_strictness_20260426/)* — Re-enabled exactOptionalPropertyTypes and noUncheckedIndexedAccess; fixed 853 server errors + 381 app errors; 1800 tests green; 0 tsc errors
+ 
+ - [x] **Track: WebTorrent Download Management UI** *Phases: 3 | Link: [./archive/webtorrent_download_management_20260503/](./archive/webtorrent_download_management_20260503/)* — Backend torrent routes (25 tests), enhanced ActivityQueuePage with sort/filter/search/SSE/priority, app build clean, 1800 tests green
+ 
+ - [ ] **Track: Dashboard Statistics & Analytics**
+
+[0m
+[0m$ [0mmv measure/tracks/typescript_strictness_20260426 measure/archive/
+(no output)
+[0m
+[0m→ [0mRead measure/current_directive.md
+[0m
+[0m← [0mWrite measure/current_directive.md
+Wrote file successfully.
+[0m

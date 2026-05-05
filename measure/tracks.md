@@ -233,9 +233,7 @@ Parallel:
 
 - [x] **Track: Legacy Test Audit** *Phases: 3 | Link: [./archive/legacy_test_audit_20260426/](./archive/legacy_test_audit_20260426/)* — Deleted 340 obsolete backup tests; 1800 tests green; no regressions
 
-- [ ] **Track: TypeScript Strictness Re-enablement**
-  *Link: [./tracks/typescript_strictness_20260426/](./tracks/typescript_strictness_20260426/)*
-  Re-enable exactOptionalPropertyTypes and noUncheckedIndexedAccess, fix all type errors.
+- [x] **Track: TypeScript Strictness Re-enablement** *Phases: 3 | Link: [./archive/typescript_strictness_20260426/](./archive/typescript_strictness_20260426/)* — Re-enabled exactOptionalPropertyTypes and noUncheckedIndexedAccess; fixed 853 server errors + 381 app errors; 1800 tests green; 0 tsc errors
 
 - [x] **Track: WebTorrent Download Management UI** *Phases: 3 | Link: [./archive/webtorrent_download_management_20260503/](./archive/webtorrent_download_management_20260503/)* — Backend torrent routes (25 tests), enhanced ActivityQueuePage with sort/filter/search/SSE/priority, app build clean, 1800 tests green
 

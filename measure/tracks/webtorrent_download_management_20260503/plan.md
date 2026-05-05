@@ -2,14 +2,14 @@
 
 ## Phase 1: Backend API Endpoints
 
-- [ ] Create `torrentRoutes.ts` with comprehensive torrent management endpoints
-- [ ] Implement `GET /api/torrents` - list all torrents with progress/speed/peers
-- [ ] Implement `POST /api/torrents/:id/pause` - pause torrent download
-- [ ] Implement `POST /api/torrents/:id/resume` - resume torrent download
-- [ ] Implement `DELETE /api/torrents/:id` - remove torrent (with optional data removal query param)
-- [ ] Implement `PATCH /api/torrents/:id/priority` - update torrent priority
-- [ ] Add unit tests for each endpoint with mock WebTorrent client
-- [ ] Wire SSE events for real-time torrent stats updates
+- [x] Create `torrentRoutes.ts` with comprehensive torrent management endpoints
+- [x] Implement `GET /api/torrents` - list all torrents with progress/speed/peers
+- [x] Implement `POST /api/torrents/:id/pause` - pause torrent download
+- [x] Implement `POST /api/torrents/:id/resume` - resume torrent download
+- [x] Implement `DELETE /api/torrents/:id` - remove torrent (with optional data removal query param)
+- [x] Implement `PATCH /api/torrents/:id/priority` - update torrent priority
+- [x] Add unit tests for each endpoint with mock WebTorrent client (25 tests)
+- [x] Wire SSE events for real-time torrent stats updates (pollTorrentStats in createApiServer.ts)
 
 ## Phase 2: Frontend Download List
 

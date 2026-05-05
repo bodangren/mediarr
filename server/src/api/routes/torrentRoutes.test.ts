@@ -312,4 +312,31 @@ describe('torrentRoutes', () => {
       expect(response.statusCode).toBeGreaterThanOrEqual(400);
     });
   });
+
+  describe('PATCH /api/torrents/speed-limits', () => {
+    it('updates speed limits', async () => {
+      const response = await app.inject({
+        method: 'PATCH',
+        url: '/api/torrents/speed-limits',
+        payload: { download: 1024000, upload: 512000 },
+      });
+
+      expect(response.statusCode).toBe(200);
+      const body = JSON.parse(response.body) as { data: { updated: boolean; limits: Record<string, number> } };
+      expect(body.data.updated).toBe(true);
+      expect(body.data.limits).toEqual({ download: 1024000, upload: 512000 });
+      expect(torrentManager.setSpeedLimits).toHaveBeenCalledWith({ download: 1024000, upload: 512000 });
+    });
+
+    it('returns validation error when torrent manager is not configured', async () => {
+      const appWithoutManager = createApp();
+      const response = await appWithoutManager.inject({
+        method: 'PATCH',
+        url: '/api/torrents/speed-limits',
+        payload: { download: 1024000 },
+      });
+
+      expect(response.statusCode).toBeGreaterThanOrEqual(400);
+    });
+  });
 });

@@ -27,3 +27,134 @@ measure/output.log                     |  31 ++-------
  server/src/services/TorrentManager.ts  |  20 ++++--
  4 files changed, 137 insertions(+), 30 deletions(-)
 [0m
+[0m$ [0mgit add -A && git commit -m "wip: Phase 1 backend torrent routes and tests
+
+Progress on WebTorrent download management track.
+k2p6 model."
+[main 5dde54c] wip: Phase 1 backend torrent routes and tests
+ 5 files changed, 458 insertions(+), 28 deletions(-)
+ create mode 100644 server/src/api/routes/torrentRoutes.test.ts
+[0m
+[0m→ [0mRead server/src/api/routes/torrentRoutes.ts
+[0m→ [0mRead server/src/services/TorrentManager.ts[90m [limit=100][0m
+[0m→ [0mRead server/src/api/routes/torrentRoutes.test.ts
+Phase 1 backend routes are implemented with tests. Let me add the missing tests and wire up SSE events.
+[0m→ [0mRead server/src/services/TorrentManager.ts[90m [limit=200, offset=900][0m
+[0m→ [0mRead server/src/api/eventHub.ts
+[0m✱ [0mGrep "eventHub\.publish"[90m in server/src · 15 matches[0m
+[0m✱ [0mGrep "registerTorrentRoutes"[90m in server/src · 7 matches[0m
+[0m→ [0mRead server/src/api/routes/torrentRoutes.retryImport.test.ts
+[0m→ [0mRead server/src/api/routes/torrentRoutes.test.ts[90m [limit=20, offset=300][0m
+[0m
+[0m← [0mEdit server/src/api/routes/torrentRoutes.test.ts
+Index: /home/daniel-bo/Desktop/mediarr/server/src/api/routes/torrentRoutes.test.ts
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/server/src/api/routes/torrentRoutes.test.ts
++++ /home/daniel-bo/Desktop/mediarr/server/src/api/routes/torrentRoutes.test.ts
+@@ -311,5 +311,32 @@
+ 
+       expect(response.statusCode).toBeGreaterThanOrEqual(400);
+     });
+   });
++
++  describe('PATCH /api/torrents/speed-limits', () => {
++    it('updates speed limits', async () => {
++      const response = await app.inject({
++        method: 'PATCH',
++        url: '/api/torrents/speed-limits',
++        payload: { download: 1024000, upload: 512000 },
++      });
++
++      expect(response.statusCode).toBe(200);
++      const body = JSON.parse(response.body) as { data: { updated: boolean; limits: Record<string, number> } };
++      expect(body.data.updated).toBe(true);
++      expect(body.data.limits).toEqual({ download: 1024000, upload: 512000 });
++      expect(torrentManager.setSpeedLimits).toHaveBeenCalledWith({ download: 1024000, upload: 512000 });
++    });
++
++    it('returns validation error when torrent manager is not configured', async () => {
++      const appWithoutManager = createApp();
++      const response = await appWithoutManager.inject({
++        method: 'PATCH',
++        url: '/api/torrents/speed-limits',
++        payload: { download: 1024000 },
++      });
++
++      expect(response.statusCode).toBeGreaterThanOrEqual(400);
++    });
++  });
+ });
+
+[0m
+[0m→ [0mRead server/src/api/createApiServer.ts[90m [limit=150][0m
+[0m→ [0mRead server/src/api/createApiServer.ts[90m [limit=100, offset=150][0m
+[0m
+[0m# [0mTodos
+[ ] Phase 1: Backend API Endpoints - Verify all tests pass
+[ ] Phase 2: Frontend Download List components
+[ ] Phase 3: Integration & Testing
+[ ] Finalize: Commit, update docs
+[0m
+[0m$ [0mCI=true npm test -- server/src/api/routes/torrentRoutes.test.ts server/src/api/routes/torrentRoutes.retryImport.test.ts 2>&1 | tail -30
+at Object.routeHandler [as handler] [90m(/home/daniel-bo/Desktop/mediarr/[39mnode_modules/[4mfastify[24m/lib/route.js:507:7[90m)[39m
+    at Router.callHandler [90m(/home/daniel-bo/Desktop/mediarr/[39mnode_modules/[4mfind-my-way[24m/index.js:562:14[90m)[39m {
+  code: [32m'VALIDATION_ERROR'[39m,
+  details: [90mundefined[39m,
+  httpStatus: [33m422[39m,
+  retryable: [33mfalse[39m
+}
+
+[90mstderr[2m | server/src/api/routes/torrentRoutes.retryImport.test.ts[2m > [22m[2mtorrentRoutes — POST /api/torrents/:infoHash/retry-import[2m > [22m[2mmaps missing torrent to not found
+[22m[39mstrict mode: use allowUnionTypes to allow union type keyword at "#/properties/page" (strictTypes)
+strict mode: use allowUnionTypes to allow union type keyword at "#/properties/pageSize" (strictTypes)
+
+[90mstderr[2m | server/src/api/routes/torrentRoutes.retryImport.test.ts[2m > [22m[2mtorrentRoutes — POST /api/torrents/:infoHash/retry-import[2m > [22m[2mmaps missing torrent to not found
+[22m[39m[API Error] POST /api/torrents/missing/retry-import: NotFoundError: not found
+    at maybeNotFound [90m(/home/daniel-bo/Desktop/mediarr/[39mserver/src/api/routes/torrentRoutes.ts:13:11[90m)[39m
+    at Object.<anonymous> [90m(/home/daniel-bo/Desktop/mediarr/[39mserver/src/api/routes/torrentRoutes.ts:334:7[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:105:5)[39m {
+  code: [32m'NOT_FOUND'[39m,
+  details: [90mundefined[39m,
+  httpStatus: [33m404[39m,
+  retryable: [33mfalse[39m
+}
+
+ [32m✓[39m server/src/api/routes/torrentRoutes.retryImport.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 253[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m2 passed[39m[22m[90m (2)[39m
+[2m      Tests [22m [1m[32m25 passed[39m[22m[90m (25)[39m
+[2m   Start at [22m 14:34:33
+[2m   Duration [22m 2.96s[2m (transform 234ms, setup 0ms, import 1.08s, tests 1.32s, environment 1ms)[22m
+[0m
+[0m← [0mEdit measure/tracks/webtorrent_download_management_20260503/plan.md
+Index: /home/daniel-bo/Desktop/mediarr/measure/tracks/webtorrent_download_management_20260503/plan.md
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/measure/tracks/webtorrent_download_management_20260503/plan.md
++++ /home/daniel-bo/Desktop/mediarr/measure/tracks/webtorrent_download_management_20260503/plan.md
+@@ -1,16 +1,16 @@
+ # WebTorrent Download Management UI Plan
+ 
+ ## Phase 1: Backend API Endpoints
+ 
+-- [ ] Create `torrentRoutes.ts` with comprehensive torrent management endpoints
+-- [ ] Implement `GET /api/torrents` - list all torrents with progress/speed/peers
+-- [ ] Implement `POST /api/torrents/:id/pause` - pause torrent download
+-- [ ] Implement `POST /api/torrents/:id/resume` - resume torrent download
+-- [ ] Implement `DELETE /api/torrents/:id` - remove torrent (with optional data removal query param)
+-- [ ] Implement `PATCH /api/torrents/:id/priority` - update torrent priority
+-- [ ] Add unit tests for each endpoint with mock WebTorrent client
+-- [ ] Wire SSE events for real-time torrent stats updates
++- [x] Create `torrentRoutes.ts` with comprehensive torrent management endpoints
++- [x] Implement `GET /api/torrents` - list all torrents with progress/speed/peers
++- [x] Implement `POST /api/torrents/:id/pause` - pause torrent download
++- [x] Implement `POST /api/torrents/:id/resume` - resume torrent download
++- [x] Implement `DELETE /api/torrents/:id` - remove torrent (with optional data removal query param)
++- [x] Implement `PATCH /api/torrents/:id/priority` - update torrent priority
++- [x] Add unit tests for each endpoint with mock WebTorrent client (25 tests)
++- [x] Wire SSE events for real-time torrent stats updates (pollTorrentStats in createApiServer.ts)
+ 
+ ## Phase 2: Frontend Download List
+ 
+ - [ ] Create `DownloadList.tsx` component with sortable table
+
+[0m

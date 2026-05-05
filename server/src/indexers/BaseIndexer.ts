@@ -155,7 +155,7 @@ export interface ScrapingIndexerConfig extends IndexerConfig {
  */
 export class ScrapingIndexer extends BaseIndexer {
   readonly definition: CardigannDefinition;
-  readonly compatibility?: DefinitionCompatibilityReport;
+  readonly compatibility?: DefinitionCompatibilityReport | undefined;
 
   constructor(config: ScrapingIndexerConfig) {
     super(config);

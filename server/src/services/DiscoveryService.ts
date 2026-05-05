@@ -19,21 +19,21 @@ interface BonjourInstance {
 }
 
 export interface DiscoveryServiceOptions {
-  name?: string;
-  type?: string;
-  aliases?: string[];
+  name?: string | undefined;
+  type?: string | undefined;
+  aliases?: string[] | undefined;
   port: number;
-  host?: string; // explicit LAN IP to advertise; avoids hostname→loopback resolution
-  txt?: Record<string, string>;
+  host?: string | undefined; // explicit LAN IP to advertise; avoids hostname→loopback resolution
+  txt?: Record<string, string> | undefined;
 }
 
 export interface DiscoveryAnnouncement {
   name: string;
   type: string;
-  aliases?: string[];
+  aliases?: string[] | undefined;
   port: number;
-  host?: string;
-  txt?: Record<string, string>;
+  host?: string | undefined;
+  txt?: Record<string, string> | undefined;
 }
 
 export type BonjourFactory = () => BonjourInstance;
@@ -45,9 +45,9 @@ const DEFAULT_SERVICE_TYPE = 'mediarr';
  * Broadcasts Mediarr presence over mDNS so local clients can discover the API.
  */
 export class DiscoveryService {
-  private bonjour?: BonjourInstance;
+  private bonjour?: BonjourInstance | undefined;
   private publications: BonjourPublication[] = [];
-  private announcement?: DiscoveryAnnouncement;
+  private announcement?: DiscoveryAnnouncement | undefined;
 
   constructor(private readonly bonjourFactory: BonjourFactory = () => new Bonjour() as BonjourInstance) {}
 

@@ -16,12 +16,12 @@ export interface LogEntry {
 }
 
 export interface LogEntriesFilter {
-  level?: LogLevel;
-  search?: string;
+  level?: LogLevel | undefined;
+  search?: string | undefined;
   /** ISO date string — only entries at or after this timestamp */
-  startDate?: string;
+  startDate?: string | undefined;
   /** ISO date string — only entries before or at this timestamp */
-  endDate?: string;
+  endDate?: string | undefined;
 }
 
 export interface LogEntriesPage {

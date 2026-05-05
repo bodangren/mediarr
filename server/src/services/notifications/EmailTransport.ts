@@ -17,8 +17,8 @@ export type CreateTransportFn = (options: {
   secure: boolean;
   auth?: {
     user: string;
-    pass?: string;
-  };
+    pass?: string | undefined;
+  } | undefined;
 }) => Promise<EmailTransporter> | EmailTransporter;
 
 export class EmailTransport implements NotificationTransport {
@@ -73,8 +73,8 @@ async function defaultCreateTransport(options: {
   secure: boolean;
   auth?: {
     user: string;
-    pass?: string;
-  };
+    pass?: string | undefined;
+  } | undefined;
 }): Promise<EmailTransporter> {
   const nodemailerModule = await import('nodemailer');
   const nodemailer = (nodemailerModule.default ?? nodemailerModule) as {

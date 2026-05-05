@@ -78,11 +78,11 @@ export type ParsedRelease = z.infer<typeof ParsedReleaseSchema>;
 export type ParsedReleaseWithScore = z.infer<typeof ParsedReleaseWithScoreSchema>;
 
 export interface SearchContext {
-  seriesTitle?: string;
-  movieTitle?: string;
-  seasonNumber?: number;
-  episodeNumber?: number;
-  preferredResolution?: string;
+  seriesTitle?: string | undefined;
+  movieTitle?: string | undefined;
+  seasonNumber?: number | undefined;
+  episodeNumber?: number | undefined;
+  preferredResolution?: string | undefined;
 }
 
 // ── Regex fallback (no AI dependency) ───────────────────────────────────────

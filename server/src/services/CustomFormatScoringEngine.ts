@@ -19,7 +19,7 @@ export interface ReleaseCandidate {
   resolution?: number | undefined;
   qualityModifier?: string | undefined;
   indexerFlags?: string[] | undefined;
-  seeders?: number;
+  seeders?: number | undefined;
 }
 
 /**
@@ -44,10 +44,10 @@ export interface UnifiedScoringResult extends ScoringResult {
 }
 
 export interface TargetParams {
-  title?: string;
-  year?: number;
-  season?: number;
-  episode?: number;
+  title?: string | undefined;
+  year?: number | undefined;
+  season?: number | undefined;
+  episode?: number | undefined;
 }
 
 /**
@@ -61,7 +61,7 @@ export class CustomFormatScoringEngine {
    * Calculates a comprehensive score that includes Custom Formats, Title Confidence, Indexer Priority, and Seeders.
    */
   scoreCandidateUnified(
-    candidate: { title: string; seeders?: number },
+    candidate: { title: string; seeders?: number | undefined },
     formatScores: Array<{ customFormat: CustomFormatWithScores; score: number }>,
     targetParams: TargetParams,
     indexerPriority: number = 0,

@@ -31,14 +31,14 @@ interface SeriesInfo {
   year: number;
   seasonNumber: number;
   episodeNumber: number;
-  absoluteEpisodeNumber?: number;
-  episodeTitle?: string;
-  quality?: string;
-  qualityFull?: string;
-  mediaInfo?: string;
-  resolution?: string;
-  codec?: string;
-  audioCodec?: string;
+  absoluteEpisodeNumber?: number | undefined;
+  episodeTitle?: string | undefined;
+  quality?: string | undefined;
+  qualityFull?: string | undefined;
+  mediaInfo?: string | undefined;
+  resolution?: string | undefined;
+  codec?: string | undefined;
+  audioCodec?: string | undefined;
 }
 
 interface EpisodeRenamePreview {
@@ -47,7 +47,7 @@ interface EpisodeRenamePreview {
   seasonNumber: number;
   episodeId: number;
   episodeNumber: number;
-  episodeTitle?: string;
+  episodeTitle?: string | undefined;
   currentPath: string;
   newPath: string;
   isNewPath: boolean;

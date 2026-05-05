@@ -29,8 +29,8 @@ export interface SubtitleFetchCandidate {
   isHi: boolean;
   provider: string;
   score: number;
-  content?: Buffer;
-  extension?: string;
+  content?: Buffer | undefined;
+  extension?: string | undefined;
 }
 
 export interface SubtitleFetchProvider {

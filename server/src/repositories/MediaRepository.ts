@@ -3,38 +3,38 @@ import type { SeriesDetails } from '../services/MetadataProvider';
 
 export interface UpsertMovieInput {
   tmdbId: number;
-  imdbId?: string;
+  imdbId?: string | undefined;
   title: string;
   cleanTitle: string;
   sortTitle: string;
   status: string;
-  overview?: string;
+  overview?: string | undefined;
   monitored: boolean;
   qualityProfileId: number;
-  path?: string;
+  path?: string | undefined;
   year: number;
-  posterUrl?: string;
-  minimumAvailability?: string;
-  inCinemas?: Date;
-  digitalRelease?: Date;
-  physicalRelease?: Date;
+  posterUrl?: string | undefined;
+  minimumAvailability?: string | undefined;
+  inCinemas?: Date | undefined;
+  digitalRelease?: Date | undefined;
+  physicalRelease?: Date | undefined;
 }
 
 export interface UpsertSeriesInput {
   tvdbId: number;
-  tmdbId?: number;
-  imdbId?: string;
+  tmdbId?: number | undefined;
+  imdbId?: string | undefined;
   title: string;
   cleanTitle: string;
   sortTitle: string;
   status: string;
-  overview?: string;
+  overview?: string | undefined;
   monitored: boolean;
   qualityProfileId: number;
-  path?: string;
+  path?: string | undefined;
   year: number;
-  network?: string;
-  posterUrl?: string;
+  network?: string | undefined;
+  posterUrl?: string | undefined;
 }
 
 /**

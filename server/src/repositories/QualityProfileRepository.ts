@@ -18,7 +18,7 @@ export interface CreateQualityProfileData {
   name: string;
   cutoff: number;
   items: QualityProfileItem[];
-  languageProfileId?: number | null;
+  languageProfileId?: number | null | undefined;
 }
 
 export interface UpdateQualityProfileData {

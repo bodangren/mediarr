@@ -7,12 +7,12 @@ type AnyRecord = Record<string, any>;
 type SortDirection = 'asc' | 'desc';
 
 type QueryArgs = {
-  where?: AnyRecord;
-  select?: AnyRecord;
-  include?: AnyRecord;
-  orderBy?: AnyRecord | AnyRecord[];
-  skip?: number;
-  take?: number;
+  where?: AnyRecord | undefined;
+  select?: AnyRecord | undefined;
+  include?: AnyRecord | undefined;
+  orderBy?: AnyRecord | AnyRecord[] | undefined;
+  skip?: number | undefined;
+  take?: number | undefined;
 };
 
 type RelationConfig = {

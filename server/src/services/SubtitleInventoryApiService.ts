@@ -12,10 +12,10 @@ export interface ManualSearchCandidate {
   isHi: boolean;
   provider: string;
   score: number;
-  releaseName?: string;
-  providerData?: Record<string, unknown>;
-  content?: Buffer;
-  extension?: string;
+  releaseName?: string | undefined;
+  providerData?: Record<string, unknown> | undefined;
+  content?: Buffer | undefined;
+  extension?: string | undefined;
 }
 
 export interface ManualSubtitleProvider {
@@ -538,7 +538,7 @@ export class SubtitleInventoryApiService {
 
   private async scanExternalSubtitleTracks(videoPath: string): Promise<Array<{
     source: 'EXTERNAL';
-    languageCode?: string;
+    languageCode?: string | undefined;
     isForced: boolean;
     isHi: boolean;
     filePath: string;
@@ -588,7 +588,7 @@ export class SubtitleInventoryApiService {
     videoBaseName: string,
     entryName: string,
   ): {
-    languageCode?: string;
+    languageCode?: string | undefined;
     isForced: boolean;
     isHi: boolean;
   } {

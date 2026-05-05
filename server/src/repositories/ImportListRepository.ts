@@ -14,29 +14,29 @@ export interface CreateImportListData {
   config: Record<string, unknown>;
   rootFolderPath: string;
   qualityProfileId: number;
-  languageProfileId?: number | null;
+  languageProfileId?: number | null | undefined;
   monitorType: string;
-  enabled?: boolean;
-  syncInterval?: number;
+  enabled?: boolean | undefined;
+  syncInterval?: number | undefined;
 }
 
 export interface UpdateImportListData {
-  name?: string;
-  providerType?: string;
-  config?: Record<string, unknown>;
-  rootFolderPath?: string;
-  qualityProfileId?: number;
-  languageProfileId?: number | null;
-  monitorType?: string;
+  name?: string | undefined;
+  providerType?: string | undefined;
+  config?: Record<string, unknown> | undefined;
+  rootFolderPath?: string | undefined;
+  qualityProfileId?: number | undefined;
+  languageProfileId?: number | null | undefined;
+  monitorType?: string | undefined;
   enabled?: boolean;
   syncInterval?: number;
 }
 
 export interface CreateExclusionData {
-  importListId?: number | null;
-  tmdbId?: number | null;
-  imdbId?: string | null;
-  tvdbId?: number | null;
+  importListId?: number | undefined;
+  tmdbId?: number | undefined;
+  imdbId?: string | undefined;
+  tvdbId?: number | undefined;
   title: string;
 }
 

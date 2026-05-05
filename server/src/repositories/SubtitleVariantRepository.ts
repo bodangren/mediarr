@@ -13,51 +13,51 @@ import type {
 
 export interface UpsertVariantInput {
   mediaType: VariantMediaType;
-  movieId?: number;
-  episodeId?: number;
+  movieId?: number | undefined;
+  episodeId?: number | undefined;
   path: string;
   fileSize: bigint;
-  monitored?: boolean;
-  probeFingerprint?: string;
-  releaseName?: string;
-  quality?: string;
+  monitored?: boolean | undefined;
+  probeFingerprint?: string | undefined;
+  releaseName?: string | undefined;
+  quality?: string | undefined;
 }
 
 export interface UpsertAudioTrackInput {
   streamIndex: number;
-  languageCode?: string;
-  codec?: string;
-  channels?: string;
-  isDefault?: boolean;
-  isForced?: boolean;
-  isCommentary?: boolean;
-  name?: string;
+  languageCode?: string | undefined;
+  codec?: string | undefined;
+  channels?: string | undefined;
+  isDefault?: boolean | undefined;
+  isForced?: boolean | undefined;
+  isCommentary?: boolean | undefined;
+  name?: string | undefined;
 }
 
 export interface UpsertSubtitleTrackInput {
   source: SubtitleTrackSource;
-  streamIndex?: number;
-  languageCode?: string;
-  isForced?: boolean;
-  isHi?: boolean;
-  codec?: string;
-  filePath?: string;
-  fileSize?: bigint;
+  streamIndex?: number | undefined;
+  languageCode?: string | undefined;
+  isForced?: boolean | undefined;
+  isHi?: boolean | undefined;
+  codec?: string | undefined;
+  filePath?: string | undefined;
+  fileSize?: bigint | undefined;
 }
 
 export interface UpsertWantedSubtitleInput {
   variantId: number;
   languageCode: string;
-  isForced?: boolean;
-  isHi?: boolean;
+  isForced?: boolean | undefined;
+  isHi?: boolean | undefined;
 }
 
 export interface CreateSubtitleHistoryInput {
   variantId: number;
-  wantedSubtitleId?: number;
+  wantedSubtitleId?: number | undefined;
   languageCode: string;
-  provider?: string;
-  score?: number;
+  provider?: string | undefined;
+  score?: number | undefined;
   storedPath?: string;
   message?: string;
 }

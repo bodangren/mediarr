@@ -124,13 +124,7 @@ export class InternalError extends DomainError {
 
 export interface DomainHttpEnvelope {
   httpStatus: number;
-  error: {
-    code: DomainErrorCode;
-    message: string;
-    details?: unknown;
-    retryable: boolean;
-    path?: string;
-  };
+  error: { code: DomainErrorCode; message: string; details?: unknown | undefined; retryable: boolean; path?: string | undefined; };
 }
 
 function toDomainError(error: unknown): DomainError {

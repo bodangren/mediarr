@@ -7,22 +7,22 @@ import type {
 export interface CreateActivityEventInput {
   eventType: string;
   sourceModule: string;
-  entityRef?: string;
+  entityRef?: string | undefined;
   summary: string;
   success: boolean;
   details?: unknown;
-  occurredAt?: Date;
+  occurredAt?: Date | undefined;
 }
 
 export interface QueryActivityEventsInput {
-  eventType?: string;
-  sourceModule?: string;
-  entityRef?: string;
-  success?: boolean;
-  from?: Date;
-  to?: Date;
-  page?: number;
-  pageSize?: number;
+  eventType?: string | undefined;
+  sourceModule?: string | undefined;
+  entityRef?: string | undefined;
+  success?: boolean | undefined;
+  from?: Date | undefined;
+  to?: Date | undefined;
+  page?: number | undefined;
+  pageSize?: number | undefined;
 }
 
 export interface QueryActivityEventsResult {

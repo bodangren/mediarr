@@ -6,13 +6,13 @@ import { EventEmitter } from 'events';
 import { isImportIncomplete } from './importGuard';
 
 export interface AddTorrentOptions {
-  magnetUrl?: string;
-  torrentFile?: Buffer;
-  path?: string;
-  name?: string;
-  size?: number;
-  episodeId?: number;
-  movieId?: number;
+  magnetUrl?: string | undefined;
+  torrentFile?: Buffer | undefined;
+  path?: string | undefined;
+  name?: string | undefined;
+  size?: number | undefined;
+  episodeId?: number | undefined;
+  movieId?: number | undefined;
 }
 
 export interface TorrentInfo {
@@ -518,7 +518,7 @@ export class TorrentManager extends EventEmitter {
   /**
    * Sets both download and upload speed limits at once.
    */
-  setSpeedLimits(limits: { download?: number; upload?: number }): void {
+  setSpeedLimits(limits: { download?: number | undefined; upload?: number | undefined }): void {
     if (limits.download !== undefined) {
       this.setDownloadSpeedLimit(limits.download);
     }

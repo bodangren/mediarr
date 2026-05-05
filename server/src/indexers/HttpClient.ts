@@ -65,12 +65,15 @@ export class HttpClient {
     const timer = setTimeout(() => controller.abort(), this.timeout);
 
     try {
-      const response = await fetchFn(url, {
+      const init: RequestInit = {
         method: 'POST',
         headers: this.buildHeaders(options.headers),
-        body: options.body,
         signal: controller.signal,
-      });
+      };
+      if (options.body !== undefined) {
+        init.body = options.body;
+      }
+      const response = await fetchFn(url, init);
 
       return this.toHttpResponse(response);
     } finally {

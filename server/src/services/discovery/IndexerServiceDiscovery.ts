@@ -5,15 +5,15 @@ export interface DiscoveredService {
   url: string;
   host: string;
   port: number;
-  name?: string;
-  version?: string;
-  indexerCount?: number;
+  name?: string | undefined;
+  version?: string | undefined;
+  indexerCount?: number | undefined;
 }
 
 export interface IndexerServiceDiscoveryOptions {
-  probeTimeoutMs?: number;
-  ports?: { prowlarr: number; jackett: number };
-  fetchFn?: typeof fetch;
+  probeTimeoutMs?: number | undefined;
+  ports?: { prowlarr: number; jackett: number } | undefined;
+  fetchFn?: typeof fetch | undefined;
 }
 
 const DEFAULT_PORTS = {

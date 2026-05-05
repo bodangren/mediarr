@@ -4,30 +4,30 @@ import yaml from 'js-yaml';
 
 export interface FilterBlock {
   name: string;
-  args?: any[];
+  args?: any[] | undefined;
 }
 
 export interface SelectorBlock {
-  selector?: string;
-  attribute?: string;
-  text?: string;
-  optional?: boolean;
-  default?: string;
-  remove?: string;
-  filters?: FilterBlock[];
-  case?: Record<string, string>;
+  selector?: string | undefined;
+  attribute?: string | undefined;
+  text?: string | undefined;
+  optional?: boolean | undefined;
+  default?: string | undefined;
+  remove?: string | undefined;
+  filters?: FilterBlock[] | undefined;
+  case?: Record<string, string> | undefined;
 }
 
 export interface CategoryMapping {
   id: string;
   cat: string;
-  desc?: string;
-  default?: boolean;
+  desc?: string | undefined;
+  default?: boolean | undefined;
 }
 
 export interface CapabilitiesBlock {
-  categories?: Record<string, string>;
-  categorymappings?: CategoryMapping[];
+  categories?: Record<string, string> | undefined;
+  categorymappings?: CategoryMapping[] | undefined;
   modes?: Record<string, string[]>;
   allowrawsearch?: boolean;
 }

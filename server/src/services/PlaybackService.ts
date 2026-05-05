@@ -16,7 +16,7 @@ export interface PlaybackTarget {
 }
 
 export interface PlaybackManifestRequest extends PlaybackTarget {
-  userId?: string;
+  userId?: string | undefined;
 }
 
 export interface PlaybackProgressInput extends PlaybackManifestRequest {

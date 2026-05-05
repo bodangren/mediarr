@@ -94,9 +94,9 @@ export function registerTorrentRoutes(
     };
 
     const options: {
-      magnetUrl?: string;
-      path?: string;
-      torrentFile?: Buffer;
+      magnetUrl?: string | undefined;
+      path?: string | undefined;
+      torrentFile?: Buffer | undefined;
     } = {
       magnetUrl: body.magnetUrl,
       path: body.path,

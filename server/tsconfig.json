@@ -25,9 +25,9 @@
     "declaration": true,
     "declarationMap": true,
 
-    // Stricter Typechecking Options — disabled: too aggressive for existing codebase
-    // "noUncheckedIndexedAccess": true,
-    // "exactOptionalPropertyTypes": true,
+    // Stricter Typechecking Options
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
 
     // Style Options
     // "noImplicitReturns": true,

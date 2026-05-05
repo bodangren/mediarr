@@ -2,7 +2,7 @@ export type ConformanceCaseStatus = 'pass' | 'fail';
 
 export interface ConformanceCaseResult {
   status: ConformanceCaseStatus;
-  reason?: string;
+  reason?: string | undefined;
 }
 
 export interface ConformanceCase {

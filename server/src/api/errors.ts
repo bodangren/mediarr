@@ -6,9 +6,9 @@ export interface ErrorEnvelope {
   error: {
     code: string;
     message: string;
-    details?: unknown;
+    details?: unknown | undefined;
     retryable: boolean;
-    path?: string;
+    path?: string | undefined;
   };
 }
 

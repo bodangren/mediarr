@@ -13,20 +13,20 @@ import type { NotificationEvent, NotificationTransport } from './notifications/t
 
 export interface GrabPayload {
   title: string;
-  indexer?: string;
-  size?: number;
-  quality?: string;
+  indexer?: string | undefined;
+  size?: number | undefined;
+  quality?: string | undefined;
 }
 
 export interface DownloadPayload {
   title: string;
   mediaType: 'movie' | 'episode';
-  isUpgrade?: boolean;
+  isUpgrade?: boolean | undefined;
 }
 
 export interface SeriesAddPayload {
   title: string;
-  year?: number;
+  year?: number | undefined;
 }
 
 export interface EpisodeDeletePayload {

@@ -19,8 +19,8 @@ export interface PaginationInput {
 export interface ParsedPaginationParams {
   page: number;
   pageSize: number;
-  sortBy?: string;
-  sortDir?: SortDirection;
+  sortBy?: string | undefined;
+  sortDir?: SortDirection | undefined;
 }
 
 export interface SuccessEnvelope<T> {

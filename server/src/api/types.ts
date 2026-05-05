@@ -42,14 +42,14 @@ export interface ApiDependencies {
   mediaService?: Pick<
     MediaService,
     'setMonitored' | 'deleteMedia' | 'getMovieCandidatesForSearch' | 'setEpisodeMonitored'
-  >;
+  > | undefined;
   mediaSearchService?: Pick<
     MediaSearchService,
     'getSearchCandidates' | 'grabRelease' | 'searchMovie' | 'searchAllIndexers' | 'grabReleaseByGuid'
-  >;
-  searchAggregationService?: Pick<SearchAggregationService, 'searchAllIndexers'>;
-  wantedService?: Pick<WantedService, 'getMissingEpisodes'>;
-  wantedSearchService?: Pick<WantedSearchService, 'autoSearchMovie' | 'autoSearchEpisode' | 'autoSearchAll' | 'autoSearchSeries'>;
+  > | undefined;
+  searchAggregationService?: Pick<SearchAggregationService, 'searchAllIndexers'> | undefined;
+  wantedService?: Pick<WantedService, 'getMissingEpisodes'> | undefined;
+  wantedSearchService?: Pick<WantedSearchService, 'autoSearchMovie' | 'autoSearchEpisode' | 'autoSearchAll' | 'autoSearchSeries'> | undefined;
   torrentManager?: Pick<
     TorrentManager,
     | 'addTorrent'
@@ -62,15 +62,15 @@ export interface ApiDependencies {
     | 'getTorrentsStatus'
     | 'getTorrentStatus'
     | 'getActiveTorrents'
-  >;
+  > | undefined;
   importManager?: Pick<
     ImportManager,
     'retryImportByInfoHash' | 'retryImportByActivityEventId'
-  >;
-  indexerRepository?: Pick<IndexerRepository, 'findAll' | 'findById' | 'create' | 'update' | 'delete'>;
-  mediaRepository?: Pick<MediaRepository, 'findMovieByTmdbId' | 'upsertMovie' | 'upsertSeries' | 'findSeriesByTvdbId' | 'upsertSeasonsAndEpisodes'>;
-  indexerTester?: Pick<IndexerTester, 'test'>;
-  indexerFactory?: Pick<IndexerFactory, 'fromDatabaseRecord' | 'getDefinition' | 'getCompatibilityReport'>;
+  > | undefined;
+  indexerRepository?: Pick<IndexerRepository, 'findAll' | 'findById' | 'create' | 'update' | 'delete'> | undefined;
+  mediaRepository?: Pick<MediaRepository, 'findMovieByTmdbId' | 'upsertMovie' | 'upsertSeries' | 'findSeriesByTvdbId' | 'upsertSeasonsAndEpisodes'> | undefined;
+  indexerTester?: Pick<IndexerTester, 'test'> | undefined;
+  indexerFactory?: Pick<IndexerFactory, 'fromDatabaseRecord' | 'getDefinition' | 'getCompatibilityReport'> | undefined;
   subtitleInventoryApiService?: Pick<
     SubtitleInventoryApiService,
     | 'listMovieVariantInventory'
@@ -80,40 +80,40 @@ export interface ApiDependencies {
     | 'uploadSubtitle'
     | 'scanMovieDisk'
     | 'scanEpisodeDisk'
-  >;
+  > | undefined;
   subtitleProviderFactory?: Pick<
     SubtitleProviderFactory,
     'getProviderNames' | 'resolveManualProvider'
-  >;
+  > | undefined;
   subtitleAutomationService?: Pick<
     SubtitleAutomationService,
     'runAutomationCycle' | 'runTargetedAutomationCycle' | 'onMovieImported' | 'onEpisodeImported'
-  >;
+  > | undefined;
   playbackService?: Pick<
     PlaybackService,
     'resolveStreamSource' | 'buildManifest' | 'recordHeartbeat' | 'resolveSubtitleTrack' | 'getContinueWatching'
-  >;
-  settingsService?: Pick<SettingsService, 'get' | 'update'>;
-  activityEventRepository?: Pick<ActivityEventRepository, 'query' | 'clear' | 'markAsFailed' | 'export'>;
-  indexerHealthRepository?: Pick<IndexerHealthRepository, 'getByIndexerId'>;
+  > | undefined;
+  settingsService?: Pick<SettingsService, 'get' | 'update'> | undefined;
+  activityEventRepository?: Pick<ActivityEventRepository, 'query' | 'clear' | 'markAsFailed' | 'export'> | undefined;
+  indexerHealthRepository?: Pick<IndexerHealthRepository, 'getByIndexerId'> | undefined;
   notificationRepository?: Pick<
     NotificationRepository,
     'findAll' | 'findById' | 'create' | 'update' | 'delete' | 'exists' | 'nameExists'
-  >;
+  > | undefined;
   qualityProfileRepository?: Pick<
     QualityProfileRepository,
     'findAll' | 'findById' | 'findByName' | 'create' | 'update' | 'delete' | 'isInUse'
-  >;
+  > | undefined;
   downloadClientRepository?: Pick<
     DownloadClientRepository,
     'findAll' | 'findById' | 'create' | 'update' | 'delete' | 'exists' | 'nameExists'
-  >;
+  > | undefined;
   customFormatRepository?: Pick<
     CustomFormatRepository,
     'findAll' | 'findById' | 'findByName' | 'create' | 'update' | 'delete' | 'exists' | 'nameExists' | 'findByQualityProfileId'
-  >;
-  metadataProvider?: Pick<MetadataProvider, 'searchMedia' | 'getMediaDetails' | 'getSeriesDetails' | 'findMovieByImdbId'>;
-  eventHub?: ApiEventHub;
+  > | undefined;
+  metadataProvider?: Pick<MetadataProvider, 'searchMedia' | 'getMediaDetails' | 'getSeriesDetails' | 'findMovieByImdbId'> | undefined;
+  eventHub?: ApiEventHub | undefined;
   importListRepository?: Pick<
     ImportListRepository,
     | 'findAll'
@@ -127,25 +127,25 @@ export interface ApiDependencies {
     | 'createExclusion'
     | 'deleteExclusion'
     | 'isExcluded'
-  >;
-  importListProviderRegistry?: ImportListProviderFactory;
-  importListSyncService?: Pick<ImportListSyncService, 'syncList' | 'syncAllEnabled'>;
+  > | undefined;
+  importListProviderRegistry?: ImportListProviderFactory | undefined;
+  importListSyncService?: Pick<ImportListSyncService, 'syncList' | 'syncAllEnabled'> | undefined;
   collectionRepository?: Pick<
     CollectionRepository,
     'findAll' | 'findById' | 'findByTmdbCollectionId' | 'create' | 'update' | 'delete' | 'getMovieCount' | 'getInLibraryCount' | 'exists' | 'existsByTmdbId'
-  >;
+  > | undefined;
   collectionService?: Pick<
     CollectionService,
     'fetchFromTMDB' | 'createCollection' | 'syncCollectionMovies' | 'searchMissingMovies' | 'linkMovieToCollection' | 'detectMovieCollection'
-  >;
-  scheduler?: Pick<Scheduler, 'listJobsMeta' | 'runNow' | 'listJobs'>;
-  logReaderService?: Pick<LogReaderService, 'getEntries'>;
-  backupService?: Pick<BackupService, 'create' | 'list' | 'delete' | 'getFilePath'>;
-  libraryScanService?: Pick<LibraryScanService, 'scanAll'>;
+  > | undefined;
+  scheduler?: Pick<Scheduler, 'listJobsMeta' | 'runNow' | 'listJobs'> | undefined;
+  logReaderService?: Pick<LogReaderService, 'getEntries'> | undefined;
+  backupService?: Pick<BackupService, 'create' | 'list' | 'delete' | 'getFilePath'> | undefined;
+  libraryScanService?: Pick<LibraryScanService, 'scanAll'> | undefined;
   systemHealthService?: Pick<
     SystemHealthService,
     'getDiskSpace' | 'getProcessInfo' | 'checkDatabase' | 'checkRootFolders' | 'detectFFmpeg'
-  >;
+  > | undefined;
   updateService?: Pick<
     UpdateService,
     | 'getCurrentVersionInfo'
@@ -157,15 +157,15 @@ export interface ApiDependencies {
     | 'getProgress'
     | 'listProgress'
     | 'resetForTests'
-  >;
-  catalogCache?: Pick<CatalogCache, 'get' | 'load' | 'invalidate'>;
+  > | undefined;
+  catalogCache?: Pick<CatalogCache, 'get' | 'load' | 'invalidate'> | undefined;
 
 }
 
 export interface ApiServerOptions {
-  logger?: boolean;
-  heartbeatIntervalMs?: number;
-  torrentStatsIntervalMs?: number;
-  activityPollIntervalMs?: number;
-  healthPollIntervalMs?: number;
+  logger?: boolean | undefined;
+  heartbeatIntervalMs?: number | undefined;
+  torrentStatsIntervalMs?: number | undefined;
+  activityPollIntervalMs?: number | undefined;
+  healthPollIntervalMs?: number | undefined;
 }

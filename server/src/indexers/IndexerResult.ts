@@ -5,18 +5,18 @@
 export interface IndexerResult {
   title: string;
   guid: string;
-  downloadUrl?: string;
-  infoUrl?: string;
-  magnetUrl?: string;
+  downloadUrl?: string | undefined;
+  infoUrl?: string | undefined;
+  magnetUrl?: string | undefined;
   publishDate: Date;
-  size?: bigint;
-  seeders?: number;
-  leechers?: number;
+  size?: bigint | undefined;
+  seeders?: number | undefined;
+  leechers?: number | undefined;
   categories: number[];
   protocol: string;
-  indexerFlags?: string;
-  indexerId?: number;
-  indexerName?: string;
+  indexerFlags?: string | undefined;
+  indexerId?: number | undefined;
+  indexerName?: string | undefined;
 }
 
 /**

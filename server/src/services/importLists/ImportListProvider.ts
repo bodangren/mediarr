@@ -1,9 +1,9 @@
 export interface ImportListItem {
-  tmdbId?: number;
-  imdbId?: string;
-  tvdbId?: number;
+  tmdbId?: number | undefined;
+  imdbId?: string | undefined;
+  tvdbId?: number | undefined;
   title: string;
-  year?: number;
+  year?: number | undefined;
   mediaType: 'movie' | 'series';
 }
 

@@ -141,11 +141,11 @@ export class CollectionService {
   }
 
   async createCollection(tmdbCollectionId: number, options?: {
-    monitored?: boolean;
-    qualityProfileId?: number;
-    rootFolderPath?: string;
-    addMoviesAutomatically?: boolean;
-    searchOnAdd?: boolean;
+    monitored?: boolean | undefined;
+    qualityProfileId?: number | undefined;
+    rootFolderPath?: string | undefined;
+    addMoviesAutomatically?: boolean | undefined;
+    searchOnAdd?: boolean | undefined;
   }): Promise<{ id: number; name: string; moviesAdded: number }> {
     // Check if collection already exists
     const existing = await (this.prisma as any).collection?.findUnique({

@@ -1,9 +1,9 @@
 import { parseBoolean } from '../routeUtils';
 
 export interface ParsedLibraryFilters {
-  monitored?: boolean;
-  status?: string;
-  search?: string;
+  monitored?: boolean | undefined;
+  status?: string | undefined;
+  search?: string | undefined;
 }
 
 /**

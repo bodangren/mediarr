@@ -86,16 +86,16 @@ export interface InstallUpdateResult {
 }
 
 interface UpdateServiceOptions {
-  fetchFn?: typeof fetch;
-  githubRepo?: string;
-  githubToken?: string;
-  stagingDir?: string;
-  currentVersion?: string;
-  currentExecutablePath?: string;
-  nowFn?: () => Date;
-  isDockerFn?: () => boolean | Promise<boolean>;
-  platform?: NodeJS.Platform;
-  arch?: string;
+  fetchFn?: typeof fetch | undefined;
+  githubRepo?: string | undefined;
+  githubToken?: string | undefined;
+  stagingDir?: string | undefined;
+  currentVersion?: string | undefined;
+  currentExecutablePath?: string | undefined;
+  nowFn?: (() => Date) | undefined;
+  isDockerFn?: (() => boolean | Promise<boolean>) | undefined;
+  platform?: NodeJS.Platform | undefined;
+  arch?: string | undefined;
 }
 
 const UPDATE_ID_PREFIX = 'update-';
@@ -178,11 +178,11 @@ function extractChecksum(markdown: string): string | null {
 export class UpdateService {
   private readonly fetchFn: typeof fetch;
   private readonly githubRepo: string;
-  private readonly githubToken?: string;
+  private readonly githubToken: string | undefined;
   private readonly stagingDir: string;
   private readonly currentExecutablePath: string;
   private readonly nowFn: () => Date;
-  private readonly isDockerFn?: () => boolean | Promise<boolean>;
+  private readonly isDockerFn: (() => boolean | Promise<boolean>) | undefined;
   private readonly platform: NodeJS.Platform;
   private readonly arch: string;
   private readonly currentVersion: string;
@@ -274,7 +274,7 @@ export class UpdateService {
     };
   }
 
-  async downloadUpdate(input: { version?: string } = {}): Promise<UpdateProgressEntry> {
+  async downloadUpdate(input: { version?: string | undefined } = {}): Promise<UpdateProgressEntry> {
     const release = this.resolveReleaseForDownload(input.version);
 
     const updateId = `${UPDATE_ID_PREFIX}${this.nextUpdateId++}`;
@@ -327,7 +327,7 @@ export class UpdateService {
     }
   }
 
-  async installUpdate(input: { version?: string; updateId?: string }): Promise<InstallUpdateResult> {
+  async installUpdate(input: { version?: string | undefined; updateId?: string | undefined }): Promise<InstallUpdateResult> {
     const version = input.version ?? this.resolveVersionFromUpdateId(input.updateId);
 
     if (!version) {

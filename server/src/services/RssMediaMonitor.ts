@@ -157,7 +157,7 @@ export class RssMediaMonitor {
     await this.torrentManager.addTorrent({ magnetUrl: release.magnetUrl, movieId: movie.id });
   }
 
-  private parseMovieTitle(title: string): { title: string; year?: number } | null {
+  private parseMovieTitle(title: string): { title: string; year?: number | undefined } | null {
     const normalized = title.replace(/[._-]+/g, ' ').replace(/\s+/g, ' ').trim();
     const yearMatch = normalized.match(/^(.*?)(?:\s+)(19\d{2}|20\d{2})(?:\s|$)/i);
 

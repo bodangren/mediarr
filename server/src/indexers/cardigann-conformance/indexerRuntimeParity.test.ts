@@ -6,7 +6,7 @@ import { SearchTranslator } from '../SearchTranslator';
 
 class StubHttpClient {
   responses: Record<string, HttpResponse> = {};
-  calls: Array<{ url: string; headers?: Record<string, string> }> = [];
+  calls: Array<{ url: string; headers?: Record<string, string> | undefined }> = [];
 
   setResponse(urlPart: string, response: HttpResponse): void {
     this.responses[urlPart] = response;

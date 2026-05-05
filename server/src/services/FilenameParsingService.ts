@@ -7,12 +7,12 @@ import { releaseParser } from './ReleaseParser';
  */
 export interface ParsedMovieInfo {
   title: string;
-  year?: number;
-  quality?: string;
-  resolution?: string;
-  source?: string;
-  codec?: string;
-  group?: string;
+  year?: number | undefined;
+  quality?: string | undefined;
+  resolution?: string | undefined;
+  source?: string | undefined;
+  codec?: string | undefined;
+  group?: string | undefined;
 }
 
 /**
@@ -20,16 +20,16 @@ export interface ParsedMovieInfo {
  */
 export interface ParsedEpisodeInfo {
   seriesTitle: string;
-  seasonNumber?: number;
-  episodeNumber?: number;
-  absoluteEpisodeNumber?: number;
-  endingEpisodeNumber?: number; // For multi-episode files
-  year?: number;
-  quality?: string;
-  resolution?: string;
-  source?: string;
-  codec?: string;
-  group?: string;
+  seasonNumber?: number | undefined;
+  episodeNumber?: number | undefined;
+  absoluteEpisodeNumber?: number | undefined;
+  endingEpisodeNumber?: number | undefined; // For multi-episode files
+  year?: number | undefined;
+  quality?: string | undefined;
+  resolution?: string | undefined;
+  source?: string | undefined;
+  codec?: string | undefined;
+  group?: string | undefined;
 }
 
 /**
@@ -38,17 +38,17 @@ export interface ParsedEpisodeInfo {
 export interface EpisodeFileMatch {
   path: string;
   size: number;
-  parsedSeriesTitle?: string;
-  parsedSeasonNumber?: number;
-  parsedEpisodeNumber?: number;
-  parsedEndingEpisodeNumber?: number;
-  parsedQuality?: string;
+  parsedSeriesTitle?: string | undefined;
+  parsedSeasonNumber?: number | undefined;
+  parsedEpisodeNumber?: number | undefined;
+  parsedEndingEpisodeNumber?: number | undefined;
+  parsedQuality?: string | undefined;
   match?: {
     seriesId: number;
-    seasonId?: number;
-    episodeId?: number;
+    seasonId?: number | undefined;
+    episodeId?: number | undefined;
     confidence: number; // 0-1
-  };
+  } | undefined;
 }
 
 /**
@@ -57,15 +57,15 @@ export interface EpisodeFileMatch {
 export interface FileMatch {
   path: string;
   size: number;
-  parsedMovieTitle?: string;
-  parsedYear?: number;
-  parsedQuality?: string;
+  parsedMovieTitle?: string | undefined;
+  parsedYear?: number | undefined;
+  parsedQuality?: string | undefined;
   match?: {
     movieId: number;
     title: string;
     year: number;
     confidence: number; // 0-1
-  };
+  } | undefined;
 }
 
 /**
@@ -421,11 +421,11 @@ export class FilenameParsingService {
         }>;
       }>;
     }>
-  ): { series: typeof series[0]; seasonId?: number; episodeId?: number; confidence: number } | null {
+  ): { series: typeof series[0]; seasonId?: number | undefined; episodeId?: number | undefined; confidence: number } | null {
     if (!parsed.seriesTitle) return null;
 
     const normalizedParsedTitle = normalizeTitle(parsed.seriesTitle);
-    let bestMatch: { series: typeof series[0]; seasonId?: number; episodeId?: number; confidence: number } | null = null;
+    let bestMatch: { series: typeof series[0]; seasonId?: number | undefined; episodeId?: number | undefined; confidence: number } | null = null;
 
     for (const s of series) {
       const normalizedSeriesTitle = normalizeTitle(s.title);

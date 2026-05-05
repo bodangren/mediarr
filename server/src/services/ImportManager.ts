@@ -744,7 +744,7 @@ export class ImportManager {
     });
   }
 
-  private parseMovieTitle(filename: string): { title: string; year?: number } | null {
+  private parseMovieTitle(filename: string): { title: string; year?: number | undefined } | null {
     const basename = path.basename(filename, path.extname(filename));
     const normalized = basename.replace(/[._-]+/g, ' ').replace(/\s+/g, ' ').trim();
     if (!normalized) {

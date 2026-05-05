@@ -15,35 +15,35 @@ export interface SearchCandidate {
   guid: string;
   size: number;
   seeders: number;
-  leechers?: number;
-  indexerFlags?: string;
-  quality?: string;
-  age?: number;
-  magnetUrl?: string;
-  downloadUrl?: string;
-  infoHash?: string;
-  publishDate?: Date;
-  categories?: number[];
-  protocol?: string;
-  customFormatScore?: number;
-  parsedRelease?: ParsedReleaseWithScore;
+  leechers?: number | undefined;
+  indexerFlags?: string | undefined;
+  quality?: string | undefined;
+  age?: number | undefined;
+  magnetUrl?: string | undefined;
+  downloadUrl?: string | undefined;
+  infoHash?: string | undefined;
+  publishDate?: Date | undefined;
+  categories?: number[] | undefined;
+  protocol?: string | undefined;
+  customFormatScore?: number | undefined;
+  parsedRelease?: ParsedReleaseWithScore | undefined;
 }
 
 export interface SearchParams {
-  query?: string;
-  type?: 'generic' | 'tvsearch' | 'movie' | 'music' | 'book';
-  season?: number;
-  episode?: number;
-  tvdbId?: number;
-  imdbId?: string;
-  tmdbId?: number;
-  year?: number;
-  artist?: string;
-  album?: string;
-  author?: string;
-  title?: string;
-  categories?: number[];
-  qualityProfileId?: number;
+  query?: string | undefined;
+  type?: 'generic' | 'tvsearch' | 'movie' | 'music' | 'book' | undefined;
+  season?: number | undefined;
+  episode?: number | undefined;
+  tvdbId?: number | undefined;
+  imdbId?: string | undefined;
+  tmdbId?: number | undefined;
+  year?: number | undefined;
+  artist?: string | undefined;
+  album?: string | undefined;
+  author?: string | undefined;
+  title?: string | undefined;
+  categories?: number[] | undefined;
+  qualityProfileId?: number | undefined;
 }
 
 export interface IndexerSearchResult {
@@ -51,7 +51,7 @@ export interface IndexerSearchResult {
   indexerName: string;
   status: 'success' | 'error' | 'timeout';
   resultCount: number;
-  errorMessage?: string;
+  errorMessage?: string | undefined;
 }
 
 export interface AggregatedSearchResult {
@@ -406,7 +406,7 @@ export class MediaSearchService {
   private async applyUnifiedScoring(
     releases: SearchCandidate[],
     indexerRecords: Array<{ id: number; priority: number }>,
-    targetParams: { title?: string; season?: number; episode?: number; year?: number },
+    targetParams: { title?: string | undefined; season?: number | undefined; episode?: number | undefined; year?: number | undefined },
     qualityProfileId?: number,
   ): Promise<SearchCandidate[]> {
     let formatScores: Array<{ customFormat: CustomFormatWithScores; score: number }> = [];
@@ -660,7 +660,7 @@ export class MediaSearchService {
   /**
    * Search for a movie and grab the best release.
    */
-  async searchMovie(movie: { title: string; year?: number; tmdbId?: number; imdbId?: string }): Promise<{ infoHash: string; name: string } | null> {
+  async searchMovie(movie: { title: string; year?: number | undefined; tmdbId?: number | undefined; imdbId?: string | undefined }): Promise<{ infoHash: string; name: string } | null> {
     const yearPart = movie.year ? ` ${movie.year}` : '';
     const query = `${movie.title}${yearPart}`.trim();
 

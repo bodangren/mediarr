@@ -2,25 +2,25 @@ export type MediaType = 'TV' | 'MOVIE';
 
 export interface BaseMedia {
   mediaType: MediaType;
-  tmdbId?: number;
-  tvdbId?: number;
-  imdbId?: string;
+  tmdbId?: number | undefined;
+  tvdbId?: number | undefined;
+  imdbId?: string | undefined;
   title: string;
-  status?: string;
-  overview?: string;
-  year?: number;
-  network?: string;
-  images?: Array<{ coverType: string; url: string }>;
-  tmdbCollectionId?: number;
+  status?: string | undefined;
+  overview?: string | undefined;
+  year?: number | undefined;
+  network?: string | undefined;
+  images?: Array<{ coverType: string; url: string }> | undefined;
+  tmdbCollectionId?: number | undefined;
 }
 
 export interface MediaSearchRequest {
-  mediaType?: MediaType;
+  mediaType?: MediaType | undefined;
   term: string;
 }
 
 export interface MediaDetailsRequest {
   mediaType: MediaType;
-  tmdbId?: number;
-  tvdbId?: number;
+  tmdbId?: number | undefined;
+  tvdbId?: number | undefined;
 }

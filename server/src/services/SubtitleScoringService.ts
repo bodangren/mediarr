@@ -28,8 +28,8 @@ export class SubtitleScoringService {
   scoreCandidate(
     candidate: ManualSearchCandidate,
     options: {
-      variantReleaseName?: string | null;
-      wanted?: WantedSubtitlePreference;
+      variantReleaseName?: string | null | undefined;
+      wanted?: WantedSubtitlePreference | undefined;
     } = {},
   ): number {
     let total = Number.isFinite(candidate.score) ? candidate.score : 0;

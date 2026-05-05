@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/providers/ToastProvider';
 import { formatBytes, formatSpeed, formatTimeRemaining, formatPercent } from '@/lib/format';
 import { QueueRemoveModal } from './QueueRemoveModal';
-import { Pause, Play, Trash2, Settings2, RotateCcw, ArrowUpDown, Search, ArrowUp, ArrowDown } from 'lucide-react';
+import { Pause, Play, Trash2, Settings2, RotateCcw, ArrowUpDown, Search, ArrowUp, ArrowDown, ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
 import { createEventsApi } from '@/lib/api/eventsApi';
 
 function normalizeQueueStatus(status: string | undefined): 'downloading' | 'seeding' | 'paused' | 'error' | 'queued' {
@@ -38,7 +38,7 @@ export function ActivityQueuePage() {
   const [removeTargets, setRemoveTargets] = useState<TorrentItem[]>([]);
   const [isRemoving, setIsRemoving] = useState(false);
   const [retryingInfoHash, setRetryingInfoHash] = useState<string | null>(null);
-  const [bulkAction, setBulkAction] = useState<'pause' | 'resume' | 'retry' | null>(null);
+  const [bulkAction, setBulkAction] = useState<'pause' | 'resume' | 'retry' | 'priority' | null>(null);
   const selectAllRef = useRef<HTMLInputElement>(null);
 
   const [downloadLimit, setDownloadLimit] = useState<number | undefined>(0);
@@ -286,39 +286,19 @@ export function ActivityQueuePage() {
     }
   };
 
-  const handleSort = (field: keyof TorrentItem) => {
-    if (sortField === field) {
-      setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
-    } else {
-      setSortField(field);
-      setSortDirection('desc');
-    }
-  };
-
-  const sortedTorrents = useMemo(() => {
-    let result = [...torrents];
-
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      result = result.filter((t) => t.name.toLowerCase().includes(query));
-    }
-
-    if (statusFilter !== 'all') {
-      result = result.filter((t) => normalizeQueueStatus(t.status) === statusFilter);
-    }
-
-    if (sortField) {
-      result.sort((a, b) => {
-        const aVal = a[sortField] ?? 0;
-        const bVal = b[sortField] ?? 0;
-        if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
-        if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
-        return 0;
+  const handleSetPriority = async (torrent: TorrentItem, priority: number) => {
+    try {
+      await api.torrentApi.setPriority(torrent.infoHash, priority);
+      pushToast({ title: `Priority updated`, variant: 'success' });
+      void fetchTorrents(true);
+    } catch (err) {
+      pushToast({
+        title: 'Priority update failed',
+        message: err instanceof Error ? err.message : 'Unknown error',
+        variant: 'error',
       });
     }
-
-    return result;
-  }, [torrents, sortField, sortDirection, statusFilter, searchQuery]);
+  };
 
   const handleUpdateLimits = async () => {
     setIsUpdatingLimits(true);
@@ -457,6 +437,26 @@ export function ActivityQueuePage() {
           title="Retry import"
         >
           <RotateCcw size={14} />
+        </Button>
+        <Button
+          variant="secondary"
+          onClick={() => handleSetPriority(torrent, 100)}
+          disabled={isBulkBusy}
+          aria-label="Set high priority"
+          title="Set high priority"
+          className="px-1.5"
+        >
+          <ArrowUpCircle size={14} />
+        </Button>
+        <Button
+          variant="secondary"
+          onClick={() => handleSetPriority(torrent, 25)}
+          disabled={isBulkBusy}
+          aria-label="Set normal priority"
+          title="Set normal priority"
+          className="px-1.5"
+        >
+          <ArrowDownCircle size={14} />
         </Button>
         <Button
           variant="destructive"

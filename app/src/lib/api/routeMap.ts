@@ -41,6 +41,7 @@ export const routeMap = {
   torrentDelete: (infoHash: string) => `/api/torrents/${infoHash}`,
   torrentRetryImport: (infoHash: string) => `/api/torrents/${infoHash}/retry-import`,
   torrentSpeedLimits: '/api/torrents/speed-limits',
+  torrentPriority: (infoHash: string) => `/api/torrents/${infoHash}/priority`,
 
   indexers: '/api/indexers',
   indexerSchema: (configContract: string, definitionId?: string) => {

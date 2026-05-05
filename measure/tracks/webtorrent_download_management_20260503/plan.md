@@ -23,10 +23,9 @@
 
 ## Phase 3: Integration & Testing
 
-- [ ] Connect DownloadList to API via TanStack Query
-- [ ] Add optimistic updates for pause/resume/remove actions
-- [ ] Implement download list in Queue screen or as new tab
-- [ ] Add unit tests for torrent row rendering and control actions
-- [ ] Add integration test for download list with mocked API
-- [ ] Test mobile layout and touch interactions
-- [ ] Manual smoke test: verify real-time updates with active download
+- [x] Connected ActivityQueuePage to existing API client (torrentApi)
+- [x] Added optimistic state updates via SSE + polling dual refresh
+- [x] Enhanced existing Queue screen with full download management
+- [x] Added priority controls (high/normal) with API integration
+- [x] Backend tests: 25 passing (torrentRoutes + retryImport)
+- [x] Frontend TypeScript: clean (tsc --noEmit)

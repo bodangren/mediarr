@@ -136,5 +136,19 @@ export function createTorrentApi(client: ApiHttpClient) {
         }),
       );
     },
+
+    setPriority(infoHash: string, priority: number): Promise<{ infoHash: string; priority: number }> {
+      return client.request(
+        {
+          path: routeMap.torrentPriority(infoHash),
+          method: 'PATCH',
+          body: { priority },
+        },
+        z.object({
+          infoHash: z.string(),
+          priority: z.number(),
+        }),
+      );
+    },
   };
 }

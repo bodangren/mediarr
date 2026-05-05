@@ -29,3 +29,5 @@
 - [x] Added priority controls (high/normal) with API integration
 - [x] Backend tests: 25 passing (torrentRoutes + retryImport)
 - [x] Frontend TypeScript: clean (tsc --noEmit)
+- [x] App build: successful (vite build)
+- [x] Full test suite: 1800 passing (235 files)

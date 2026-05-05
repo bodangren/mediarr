@@ -246,3 +246,15 @@ Parallel:
 - [x] **Track: Catalog Indexer API Key Validation Guard** *Phases: 4 | Link: [./archive/chore_catalog_apikey_validation_20260502/](./archive/chore_catalog_apikey_validation_20260502/)* — server validation guard with 422 response; frontend inline inputs already handle UX; 11 catalog route tests pass
 
 - [x] **Track: WebTorrent Native Addon Resolution** *Phases: 3 | Link: [./archive/webtorrent_addon_resolution_20260426/](./archive/webtorrent_addon_resolution_20260426/)* — patched `node-datachannel` to handle `ERR_DLOPEN_DISABLED`; WebTorrent now operates in TCP-only mode without falling back to stub manager; 224 test files passed
+
+- [ ] **Track: Flutter Player-First Navigation & Shell Default Route**
+  *Link: [./tracks/flutter_player_first_navigation_20260506/](./tracks/flutter_player_first_navigation_20260506/)*
+  Fix Flutter client to default to Home/Continue Watching instead of Activity; correct shell navigation order.
+
+- [ ] **Track: Backend Drizzle Migration Cleanup & Type Safety**
+  *Link: [./tracks/drizzle_cleanup_type_safety_20260506/](./tracks/drizzle_cleanup_type_safety_20260506/)*
+  Complete Prisma→Drizzle transition: rename files, remove shims, fix unsafe casts.
+
+- [ ] **Track: Legacy Code & Test Infrastructure Cleanup**
+  *Link: [./tracks/legacy_test_cleanup_20260506/](./tracks/legacy_test_cleanup_20260506/)*
+  Audit and remove obsolete legacy tests, strengthen primitive smoke tests, resolve VirtualTable coverage.

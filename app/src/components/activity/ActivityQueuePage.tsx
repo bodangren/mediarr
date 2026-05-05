@@ -319,6 +319,40 @@ export function ActivityQueuePage() {
     }
   };
 
+  const handleSort = (field: keyof TorrentItem) => {
+    if (sortField === field) {
+      setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortField(field);
+      setSortDirection('desc');
+    }
+  };
+
+  const sortedTorrents = useMemo(() => {
+    let result = [...torrents];
+
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter((t) => t.name.toLowerCase().includes(query));
+    }
+
+    if (statusFilter !== 'all') {
+      result = result.filter((t) => normalizeQueueStatus(t.status) === statusFilter);
+    }
+
+    if (sortField) {
+      result.sort((a, b) => {
+        const aVal = a[sortField] ?? 0;
+        const bVal = b[sortField] ?? 0;
+        if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+        if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+
+    return result;
+  }, [torrents, sortField, sortDirection, statusFilter, searchQuery]);
+
   const SortHeader = ({ field, label }: { field: keyof TorrentItem; label: string }) => (
     <button
       className="flex items-center gap-1 font-medium hover:text-accent"
@@ -478,17 +512,7 @@ export function ActivityQueuePage() {
   return (
     <RouteScaffold
       title="Queue"
-      description={
-        <span className="flex items-center gap-2">
-          Unified download queue across all monitored media.
-          {isSseConnected && (
-            <span className="inline-flex items-center gap-1 text-xs text-status-success">
-              <span className="h-2 w-2 rounded-full bg-status-success animate-pulse" />
-              Live
-            </span>
-          )}
-        </span>
-      }
+      description="Unified download queue across all monitored media."
     >
       <div className="flex flex-col gap-6">
         {/* Search and Filter Controls */}

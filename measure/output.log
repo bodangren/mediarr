@@ -863,3 +863,260 @@ Index: /home/daniel-bo/Desktop/mediarr/measure/tracks/webtorrent_download_manage
 +- [x] Frontend TypeScript: clean (tsc --noEmit)
 
 [0m
+[0m$ [0mgit add -A && git commit -m "feat: Phase 3 - Integration & priority controls
+
+- Add setPriority to torrentApi.ts and routeMap
+- Add priority controls to ActivityQueuePage row actions
+- Backend tests: 25 passing
+- Frontend TypeScript: clean
+- k2p6 model"
+[main 8180417] feat: Phase 3 - Integration & priority controls
+ 5 files changed, 305 insertions(+), 40 deletions(-)
+[0m
+[0m$ [0mCI=true npm test 2>&1 | tail -20
+[32m✓[39m server/src/services/ProviderBackedSubtitleFetchProvider.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/scoring-engine.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m tests/import-manager-parsing.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m tests/reference-repos.test.js [2m([22m[2m4 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m tests/dockerfile.test.js [2m([22m[2m2 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m server/src/services/SubtitleScoringService.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m server/src/no-stray-databases.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m tests/subtitle-naming-service.test.js [2m([22m[2m2 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/docker-compose.test.js [2m([22m[2m2 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m tests/typescript.test.js [2m([22m[2m3 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m server/src/indexers/cardigann-conformance/liveSiteDefinitions.test.ts [2m([22m[2m10 tests[22m[2m | [22m[33m9 skipped[39m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m tests/database-migration.test.js [2m([22m[2m2 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/prisma-schema.test.js [2m([22m[2m1 test[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m server/src/indexers/cardigann-conformance/liveReleaseSearch.test.ts [2m([22m[2m3 tests[22m[2m | [22m[33m2 skipped[39m[2m)[22m[32m 5[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m235 passed[39m[22m[90m (235)[39m
+[2m      Tests [22m [1m[32m1800 passed[39m[22m[2m | [22m[33m11 skipped[39m[90m (1811)[39m
+[2m   Start at [22m 14:46:47
+[2m   Duration [22m 225.44s[2m (transform 6.41s, setup 0ms, import 74.98s, tests 88.05s, environment 75ms)[22m
+[0m
+[0m$ [0mnpm run dev 2>&1 &
+echo $! > /tmp/mediarr_dev.pid
+sleep 5
+echo "Dev server started"
+> mediarr@1.0.0 dev
+> DATABASE_URL="file:$(pwd)/mediarr.db" API_PORT=5174 ENCRYPTION_KEY=dev-local-encryption-key DEFINITIONS_PATH="$(pwd)/server/definitions" npm run dev --workspace=server & DATABASE_URL="file:$(pwd)/mediarr.db" API_INTERNAL_URL=http://localhost:5174 npm run dev --workspace=app
+
+
+> app@0.0.0 dev
+> vite
+
+
+> mediarr-server@1.0.0 dev
+> DATABASE_URL="file:$(pwd)/../mediarr.db" bun --no-addons --watch src/main.ts || DATABASE_URL="file:$(pwd)/../mediarr.db" tsx watch src/main.ts
+
+Port 5173 is in use, trying another one...
+
+  VITE v7.3.1  ready in 989 ms
+
+  ➜  Local:   http://localhost:5174/
+  ➜  Network: use --host to expose
+Scheduler started. RSS Sync scheduled for every 12 minutes (*/12 * * * *).
+Import list sync scheduled for every 6 hours.
+Loaded 10 indexer definitions from /home/daniel-bo/Desktop/mediarr/server/definitions
+WebTorrent: uTP not supported warn: Cannot load native addon because loading addons is disabled.
+ code: "ERR_DLOPEN_DISABLED"
+
+      at load (/home/daniel-bo/Desktop/mediarr/node_modules/node-gyp-build/node-gyp-build.js:22:10)
+      at <anonymous> (/home/daniel-bo/Desktop/mediarr/node_modules/utp-native/lib/binding.js:3:8)
+      at <anonymous> (/home/daniel-bo/Desktop/mediarr/node_modules/utp-native/index.js:1:7)
+      at <anonymous> (/home/daniel-bo/Desktop/mediarr/node_modules/webtorrent/lib/utp.cjs:7:5)
+      at <anonymous> (/home/daniel-bo/Desktop/mediarr/node_modules/webtorrent/lib/utp.cjs:10:13)
+
+node-datachannel: native addon unavailable, WebRTC peer connections will be disabled
+Wanted search scheduled every 60 minutes (*/60 * * * *).
+Library scan scheduled daily at 2 AM.
+Auto-update check scheduled daily at 4 AM (download-only when enabled).
+Failed to start Mediarr API: 267 |       server.removeListener('listening', listeningEventHandler)
+268 |     }
+269 |     server.once('error', errEventHandler)
+270 |     server.once('listening', listeningEventHandler)
+271 | 
+272 |     server.listen(listenOptions)
+                 ^
+error: Failed to start server. Is port 5174 in use?
+ syscall: "listen",
+   errno: 0,
+    code: "EADDRINUSE"
+
+      at <anonymous> (node:_http_server:275:39)
+      at <anonymous> (node:_http_server:252:33)
+      at <anonymous> (/home/daniel-bo/Desktop/mediarr/node_modules/fastify/lib/server.js:272:12)
+
+Dev server started
+Scheduler started. RSS Sync scheduled for every 12 minutes (*/12 * * * *).
+Import list sync scheduled for every 6 hours.
+Loaded 10 indexer definitions from /home/daniel-bo/Desktop/mediarr/server/definitions
+Wanted search scheduled every 60 minutes (*/60 * * * *).
+Library scan scheduled daily at 2 AM.
+Auto-update check scheduled daily at 4 AM (download-only when enabled).
+Failed to start Mediarr API: Error: listen EADDRINUSE: address already in use 0.0.0.0:5174
+    at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+    at listenInCluster (node:net:1997:12)
+    at node:net:2206:7
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 5174
+}
+
+
+<shell_metadata>
+shell tool terminated command after exceeding timeout 30000 ms. If this command is expected to take longer and is not waiting for interactive input, retry with a larger timeout value in milliseconds.
+</shell_metadata>
+[0m
+[0m$ [0mpkill -f "vite" && pkill -f "bun.*main.ts" && pkill -f "tsx.*main.ts" && sleep 2 && echo "Killed existing dev servers"
+(no output)
+
+<shell_metadata>
+shell tool terminated command after exceeding timeout 10000 ms. If this command is expected to take longer and is not waiting for interactive input, retry with a larger timeout value in milliseconds.
+</shell_metadata>
+[0m
+[0m$ [0mpkill -9 -f "vite|bun.*main.ts|tsx.*main.ts" 2>/dev/null; sleep 2; echo "done"
+(no output)
+
+<shell_metadata>
+shell tool terminated command after exceeding timeout 10000 ms. If this command is expected to take longer and is not waiting for interactive input, retry with a larger timeout value in milliseconds.
+</shell_metadata>
+[0m
+[0m$ [0mcd /home/daniel-bo/Desktop/mediarr/app && npm run build 2>&1 | tail -20
+> app@0.0.0 build
+> tsc -b && vite build
+
+src/components/activity/ActivityQueuePage.tsx(325,22): error TS2304: Cannot find name 'handleSort'.
+src/components/activity/ActivityQueuePage.tsx(481,7): error TS2322: Type 'Element' is not assignable to type 'string'.
+src/components/activity/ActivityQueuePage.tsx(626,17): error TS2552: Cannot find name 'sortedTorrents'. Did you mean 'setTorrents'?
+src/components/activity/ActivityQueuePage.tsx(632,47): error TS2552: Cannot find name 'sortedTorrents'. Did you mean 'setTorrents'?
+src/components/activity/ActivityQueuePage.tsx(635,71): error TS2552: Cannot find name 'sortedTorrents'. Did you mean 'setTorrents'?
+src/components/activity/ActivityQueuePage.tsx(640,24): error TS2552: Cannot find name 'sortedTorrents'. Did you mean 'setTorrents'?
+npm error Lifecycle script `build` failed with error:
+npm error code 1
+npm error path /home/daniel-bo/Desktop/mediarr/app
+npm error workspace app@0.0.0
+npm error location /home/daniel-bo/Desktop/mediarr/app
+npm error command failed
+npm error command sh -c tsc -b && vite build
+[0m
+[0m→ [0mRead app/src/components/activity/ActivityQueuePage.tsx[90m [limit=50, offset=300][0m
+[0m→ [0mRead app/src/components/activity/ActivityQueuePage.tsx[90m [limit=100, offset=80][0m
+[0m→ [0mRead app/src/components/activity/ActivityQueuePage.tsx[90m [limit=50, offset=175][0m
+[0m✱ [0mGrep "const handleSort|const sortedTorrents"[90m in app/src/components/activity/ActivityQueuePage.tsx · 0 matches[0m
+[0m→ [0mRead app/src/components/activity/ActivityQueuePage.tsx[90m [limit=200, offset=250][0m
+[0m✱ [0mGrep "handleSort|sortedTorrents"[90m in app/src/components/activity/ActivityQueuePage.tsx · 5 matches[0m
+[0m
+[0m← [0mEdit app/src/components/activity/ActivityQueuePage.tsx
+Index: /home/daniel-bo/Desktop/mediarr/app/src/components/activity/ActivityQueuePage.tsx
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/app/src/components/activity/ActivityQueuePage.tsx
++++ /home/daniel-bo/Desktop/mediarr/app/src/components/activity/ActivityQueuePage.tsx
+@@ -318,8 +318,42 @@
+     setIsUpdatingLimits(false);
+   }
+ };
+ 
++const handleSort = (field: keyof TorrentItem) => {
++  if (sortField === field) {
++    setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
++  } else {
++    setSortField(field);
++    setSortDirection('desc');
++  }
++};
++
++const sortedTorrents = useMemo(() => {
++  let result = [...torrents];
++
++  if (searchQuery.trim()) {
++    const query = searchQuery.toLowerCase();
++    result = result.filter((t) => t.name.toLowerCase().includes(query));
++  }
++
++  if (statusFilter !== 'all') {
++    result = result.filter((t) => normalizeQueueStatus(t.status) === statusFilter);
++  }
++
++  if (sortField) {
++    result.sort((a, b) => {
++      const aVal = a[sortField] ?? 0;
++      const bVal = b[sortField] ?? 0;
++      if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
++      if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
++      return 0;
++    });
++  }
++
++  return result;
++}, [torrents, sortField, sortDirection, statusFilter, searchQuery]);
++
+ const SortHeader = ({ field, label }: { field: keyof TorrentItem; label: string }) => (
+   <button
+     className="flex items-center gap-1 font-medium hover:text-accent"
+     onClick={() => handleSort(field)}
+
+[0m
+[0m✱ [0mGrep "description.*string|description.*ReactNode"[90m in app/src/components/primitives · 2 matches[0m
+[0m
+[0m← [0mEdit app/src/components/activity/ActivityQueuePage.tsx
+Index: /home/daniel-bo/Desktop/mediarr/app/src/components/activity/ActivityQueuePage.tsx
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/app/src/components/activity/ActivityQueuePage.tsx
++++ /home/daniel-bo/Desktop/mediarr/app/src/components/activity/ActivityQueuePage.tsx
+@@ -511,19 +511,9 @@
+ 
+ return (
+   <RouteScaffold
+     title="Queue"
+-    description={
+-      <span className="flex items-center gap-2">
+-        Unified download queue across all monitored media.
+-        {isSseConnected && (
+-          <span className="inline-flex items-center gap-1 text-xs text-status-success">
+-            <span className="h-2 w-2 rounded-full bg-status-success animate-pulse" />
+-            Live
+-          </span>
+-        )}
+-      </span>
+-    }
++    description="Unified download queue across all monitored media."
+   >
+     <div className="flex flex-col gap-6">
+       {/* Search and Filter Controls */}
+       <div className="flex flex-wrap items-center gap-3">
+
+[0m
+[0m$ [0mcd /home/daniel-bo/Desktop/mediarr/app && npm run build 2>&1 | tail -20
+> app@0.0.0 build
+> tsc -b && vite build
+
+vite v7.3.1 building client environment for production...
+transforming...
+✓ 2958 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                     0.45 kB │ gzip:   0.29 kB
+dist/assets/index-Brmv0rOB.css     70.96 kB │ gzip:  11.64 kB
+dist/assets/index-BZCOriHQ.js   1,892.47 kB │ gzip: 521.69 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 18.44s
+[0m
+[0m$ [0mCI=true npm test 2>&1 | tail -10
+[32m✓[39m tests/subtitle-naming-service.test.js [2m([22m[2m2 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/database-migration.test.js [2m([22m[2m2 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m server/src/indexers/cardigann-conformance/liveReleaseSearch.test.ts [2m([22m[2m3 tests[22m[2m | [22m[33m2 skipped[39m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m tests/prisma-schema.test.js [2m([22m[2m1 test[22m[2m)[22m[32m 5[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m235 passed[39m[22m[90m (235)[39m
+[2m      Tests [22m [1m[32m1800 passed[39m[22m[2m | [22m[33m11 skipped[39m[90m (1811)[39m
+[2m   Start at [22m 14:55:36
+[2m   Duration [22m 227.93s[2m (transform 6.24s, setup 0ms, import 74.32s, tests 89.84s, environment 81ms)[22m
+[0m

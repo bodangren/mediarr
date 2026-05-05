@@ -13,13 +13,13 @@
 
 ## Phase 2: Frontend Download List
 
-- [ ] Create `DownloadList.tsx` component with sortable table
-- [ ] Implement `TorrentRow.tsx` with progress bar, speeds, ETA display
-- [ ] Add `TorrentControls.tsx` for pause/resume/remove/priority buttons
-- [ ] Create `BulkActions.tsx` for batch selection and operations
-- [ ] Implement sort/filter/search controls above the list
-- [ ] Add CSS styles for download list with responsive design
-- [ ] Wire up SSE listener for real-time speed/progress updates
+- [x] Enhanced `ActivityQueuePage` with sortable columns (name, progress, seeders, size, speed, ETA)
+- [x] Added search by torrent name and filter by status (downloading/seeding/paused/queued/error)
+- [x] Implemented row-level pause/resume/remove/retry-import controls
+- [x] Added bulk selection with batch pause/resume/retry/remove operations
+- [x] Added global speed limits panel (download/upload in KB/s)
+- [x] Wired SSE `torrent:stats` events for real-time progress updates with connection indicator
+- [x] TypeScript typecheck clean
 
 ## Phase 3: Integration & Testing
 

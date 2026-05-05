@@ -10,7 +10,8 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/providers/ToastProvider';
 import { formatBytes, formatSpeed, formatTimeRemaining, formatPercent } from '@/lib/format';
 import { QueueRemoveModal } from './QueueRemoveModal';
-import { Pause, Play, Trash2, Settings2, RotateCcw } from 'lucide-react';
+import { Pause, Play, Trash2, Settings2, RotateCcw, ArrowUpDown, Search, ArrowUp, ArrowDown } from 'lucide-react';
+import { createEventsApi } from '@/lib/api/eventsApi';
 
 function normalizeQueueStatus(status: string | undefined): 'downloading' | 'seeding' | 'paused' | 'error' | 'queued' {
   const normalized = (status ?? '').toLowerCase();
@@ -44,6 +45,13 @@ export function ActivityQueuePage() {
   const [uploadLimit, setUploadLimit] = useState<number | undefined>(0);
   const [isUpdatingLimits, setIsUpdatingLimits] = useState(false);
 
+  // Sort, filter, search state
+  const [sortField, setSortField] = useState<keyof TorrentItem | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSseConnected, setIsSseConnected] = useState(false);
+
   const fetchTorrents = useCallback(async (quiet = false) => {
     if (!quiet) setIsLoading(true);
     try {
@@ -73,6 +81,33 @@ export function ActivityQueuePage() {
 
     return () => clearInterval(interval);
   }, [fetchTorrents]);
+
+  // SSE for real-time torrent stats
+  useEffect(() => {
+    const eventsApi = createEventsApi();
+    eventsApi.onStateChange((state) => {
+      setIsSseConnected(state === 'open');
+    });
+    eventsApi.on('torrent:stats', (stats) => {
+      if (Array.isArray(stats)) {
+        setTorrents((current) => {
+          const updatedMap = new Map(stats.map((s) => [s.infoHash, s]));
+          return current.map((torrent) => {
+            const update = updatedMap.get(torrent.infoHash);
+            if (update) {
+              return { ...torrent, ...update };
+            }
+            return torrent;
+          });
+        });
+      }
+    });
+    eventsApi.connect();
+
+    return () => {
+      eventsApi.disconnect();
+    };
+  }, []);
 
   useEffect(() => {
     setSelectedInfoHashes(current =>
@@ -251,6 +286,40 @@ export function ActivityQueuePage() {
     }
   };
 
+  const handleSort = (field: keyof TorrentItem) => {
+    if (sortField === field) {
+      setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortField(field);
+      setSortDirection('desc');
+    }
+  };
+
+  const sortedTorrents = useMemo(() => {
+    let result = [...torrents];
+
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter((t) => t.name.toLowerCase().includes(query));
+    }
+
+    if (statusFilter !== 'all') {
+      result = result.filter((t) => normalizeQueueStatus(t.status) === statusFilter);
+    }
+
+    if (sortField) {
+      result.sort((a, b) => {
+        const aVal = a[sortField] ?? 0;
+        const bVal = b[sortField] ?? 0;
+        if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+        if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+
+    return result;
+  }, [torrents, sortField, sortDirection, statusFilter, searchQuery]);
+
   const handleUpdateLimits = async () => {
     setIsUpdatingLimits(true);
     try {
@@ -269,6 +338,21 @@ export function ActivityQueuePage() {
       setIsUpdatingLimits(false);
     }
   };
+
+  const SortHeader = ({ field, label }: { field: keyof TorrentItem; label: string }) => (
+    <button
+      className="flex items-center gap-1 font-medium hover:text-accent"
+      onClick={() => handleSort(field)}
+      type="button"
+    >
+      {label}
+      {sortField === field ? (
+        sortDirection === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />
+      ) : (
+        <ArrowUpDown size={14} className="opacity-30" />
+      )}
+    </button>
+  );
 
   const columns: DataTableColumn<TorrentItem>[] = [
     {
@@ -296,7 +380,7 @@ export function ActivityQueuePage() {
     },
     {
       key: 'name',
-      header: 'Title',
+      header: <SortHeader field="name" label="Title" />,
       render: (torrent) => (
         <div className="flex flex-col gap-1 max-w-md">
           <span className="font-medium truncate" title={torrent.name}>{torrent.name}</span>
@@ -311,7 +395,7 @@ export function ActivityQueuePage() {
     },
     {
       key: 'progress',
-      header: 'Progress',
+      header: <SortHeader field="progress" label="Progress" />,
       render: torrent => {
         const progressValue = Math.max(0, Math.min(100, (torrent.progress ?? 0) * 100));
         return (
@@ -324,29 +408,29 @@ export function ActivityQueuePage() {
     },
     {
       key: 'seeders',
-      header: 'Seeders',
+      header: <SortHeader field="seeders" label="Seeders" />,
       render: torrent => (
         <span>{typeof torrent.seeders === 'number' ? torrent.seeders.toLocaleString() : '-'}</span>
       ),
     },
     {
       key: 'size',
-      header: 'Size',
+      header: <SortHeader field="size" label="Size" />,
       render: torrent => formatBytes(Number(torrent.size)),
     },
     {
       key: 'downloadSpeed',
-      header: '↓ Speed',
+      header: <SortHeader field="downloadSpeed" label="↓ Speed" />,
       render: torrent => formatSpeed(torrent.downloadSpeed),
     },
     {
       key: 'uploadSpeed',
-      header: '↑ Speed',
+      header: <SortHeader field="uploadSpeed" label="↑ Speed" />,
       render: torrent => formatSpeed(torrent.uploadSpeed),
     },
     {
       key: 'eta',
-      header: 'ETA',
+      header: <SortHeader field="eta" label="ETA" />,
       render: torrent => formatTimeRemaining(torrent.eta ?? undefined),
     },
   ];
@@ -391,14 +475,53 @@ export function ActivityQueuePage() {
     ? removeTargets[0].name
     : `${removeTargets.length} selected torrents`;
 
-  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
-
   return (
     <RouteScaffold
       title="Queue"
-      description="Unified download queue across all monitored media."
+      description={
+        <span className="flex items-center gap-2">
+          Unified download queue across all monitored media.
+          {isSseConnected && (
+            <span className="inline-flex items-center gap-1 text-xs text-status-success">
+              <span className="h-2 w-2 rounded-full bg-status-success animate-pulse" />
+              Live
+            </span>
+          )}
+        </span>
+      }
     >
       <div className="flex flex-col gap-6">
+        {/* Search and Filter Controls */}
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search size={16} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-secondary" />
+            <input
+              type="text"
+              placeholder="Search torrents..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full rounded-sm border border-border-subtle bg-surface-0 pl-8 pr-3 py-1.5 text-sm"
+            />
+          </div>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="rounded-sm border border-border-subtle bg-surface-0 px-3 py-1.5 text-sm"
+          >
+            <option value="all">All Statuses</option>
+            <option value="downloading">Downloading</option>
+            <option value="seeding">Seeding</option>
+            <option value="paused">Paused</option>
+            <option value="queued">Queued</option>
+            <option value="error">Error</option>
+          </select>
+          {(searchQuery || statusFilter !== 'all') && (
+            <Button variant="secondary" onClick={() => { setSearchQuery(''); setStatusFilter('all'); }}>
+              Clear Filters
+            </Button>
+          )}
+        </div>
+
         {/* Global Speed Limits */}
         <section className="rounded-md border border-border-subtle bg-surface-1 p-4">
           <div className="mb-4 flex items-center gap-2">
@@ -500,23 +623,27 @@ export function ActivityQueuePage() {
 
         {/* Queue Table */}
         <DataTable
-          data={torrents}
+          data={sortedTorrents}
           columns={columns}
           getRowId={t => t.infoHash}
           rowActions={rowActions}
           pagination={{
             page,
-            totalPages,
+            totalPages: Math.max(1, Math.ceil(sortedTorrents.length / pageSize)),
             pageSize,
             onPrev: () => setPage(p => Math.max(1, p - 1)),
-            onNext: () => setPage(p => Math.min(totalPages, p + 1)),
+            onNext: () => setPage(p => Math.min(Math.max(1, Math.ceil(sortedTorrents.length / pageSize)), p + 1)),
           }}
         />
 
         {error && <p className="text-sm text-status-error">{error}</p>}
-        {!isLoading && torrents.length === 0 && (
+        {!isLoading && sortedTorrents.length === 0 && (
           <div className="rounded-md border border-dashed border-border-subtle p-12 text-center">
-            <p className="text-text-secondary">No active downloads in the queue.</p>
+            <p className="text-text-secondary">
+              {torrents.length === 0
+                ? 'No active downloads in the queue.'
+                : 'No torrents match the current filters.'}
+            </p>
           </div>
         )}
       </div>

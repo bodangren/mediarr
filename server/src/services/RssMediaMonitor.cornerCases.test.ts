@@ -89,7 +89,7 @@ describe('RssMediaMonitor — TV matching corner cases', () => {
       }),
     );
 
-    const callArgs = prisma.episode.findFirst.mock.calls[0][0] as any;
+    const callArgs = prisma.episode.findFirst.mock.calls[0]![0] as any;
     expect(callArgs.where.episodeNumber).toBeUndefined();
     expect(torrentManager.addTorrent).toHaveBeenCalledOnce();
     expect(torrentManager.addTorrent).toHaveBeenCalledWith(

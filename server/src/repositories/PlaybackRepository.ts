@@ -152,11 +152,11 @@ export class PlaybackRepository {
     }
 
     const movieIds = rows
-      .filter((row) => row.mediaType === 'MOVIE')
-      .map((row) => row.mediaId);
+      .filter((row: { mediaType: string; mediaId: number }) => row.mediaType === 'MOVIE')
+      .map((row: { mediaType: string; mediaId: number }) => row.mediaId);
     const episodeIds = rows
-      .filter((row) => row.mediaType === 'EPISODE')
-      .map((row) => row.mediaId);
+      .filter((row: { mediaType: string; mediaId: number }) => row.mediaType === 'EPISODE')
+      .map((row: { mediaType: string; mediaId: number }) => row.mediaId);
 
     const [movies, episodes] = await Promise.all([
       movieIds.length > 0

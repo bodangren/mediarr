@@ -228,7 +228,7 @@ export function registerStatsRoutes(app: FastifyInstance, deps: ApiDependencies)
 
     if (deps.systemHealthService) {
       try {
-        const settings = await deps.settingsService?.get?.() ?? {};
+        const settings = await deps.settingsService?.get?.() ?? {} as import('../../repositories/AppSettingsRepository').AppSettingsPayload;
         const paths = [
           {
             path: settings.mediaManagement?.movieRootFolder ?? '/',

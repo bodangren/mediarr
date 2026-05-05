@@ -22,11 +22,11 @@ describe('Cardigann per-site filter coverage', async () => {
         expect(sample).toBeDefined();
 
         const output = applyCardigannFilter(
-          sample.input,
-          { name: filterName, args: sample.args },
+          sample!.input,
+          { name: filterName, args: sample!.args },
           { strict: true, now: fixedNow },
         );
-        expect(output).toBe(sample.expected);
+        expect(output).toBe(sample!.expected);
       }
     });
   }

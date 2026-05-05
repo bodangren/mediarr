@@ -5,10 +5,10 @@ import { TorrentManager } from './TorrentManager';
 // Hoist helper mocks so they're available inside vi.mock() factory closures
 // ---------------------------------------------------------------------------
 const fsMocks = vi.hoisted(() => ({
-  mkdir: vi.fn<[], Promise<void>>().mockResolvedValue(undefined),
-  rename: vi.fn<[], Promise<void>>().mockResolvedValue(undefined),
-  rm: vi.fn<[], Promise<void>>().mockResolvedValue(undefined),
-  access: vi.fn<[], Promise<void>>().mockResolvedValue(undefined),
+  mkdir: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
+  rename: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
+  rm: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
+  access: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
 }));
 
 const wtMocks = vi.hoisted(() => {
@@ -905,7 +905,7 @@ describe('TorrentManager', () => {
 
       await manager.syncStats();
 
-      const call = repo.updateProgress.mock.calls[0];
+      const call = repo.updateProgress.mock.calls[0]!;
       const lifetimeUploaded = call[5];
       expect(lifetimeUploaded).toEqual(BigInt(2000) + BigInt(500));
     });
@@ -923,7 +923,7 @@ describe('TorrentManager', () => {
 
       await manager.syncStats();
 
-      const call = repo.updateProgress.mock.calls[0];
+      const call = repo.updateProgress.mock.calls[0]!;
       expect(call[6]).toBe(0);
     });
 
@@ -1017,7 +1017,7 @@ describe('TorrentManager', () => {
       const fileBuffer = Buffer.from('torrent-file-data');
       await manager.addTorrent({ torrentFile: fileBuffer });
 
-      const upsertCall = repo.upsert.mock.calls[0][0];
+      const upsertCall = repo.upsert.mock.calls[0]![0];
       expect(upsertCall.torrentFile).toBe(fileBuffer);
     });
 

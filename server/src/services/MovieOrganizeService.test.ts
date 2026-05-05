@@ -3,8 +3,8 @@ import { MovieOrganizeService, DEFAULT_MEDIA_MANAGEMENT_SETTINGS } from './Movie
 import type { MediaManagementSettings } from './MovieOrganizeService';
 
 const fsMocks = vi.hoisted(() => ({
-  mkdir: vi.fn<[], Promise<void>>().mockResolvedValue(undefined),
-  rename: vi.fn<[], Promise<void>>().mockResolvedValue(undefined),
+  mkdir: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
+  rename: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
 }));
 
 vi.mock('node:fs/promises', () => ({
@@ -62,7 +62,7 @@ describe('MovieOrganizeService', () => {
       const previews = await svc.previewRename([1]);
 
       expect(previews).toHaveLength(1);
-      const p = previews[0];
+      const p = previews[0]!;
       expect(p.newPath).toContain('Test Movie');
       expect(p.newPath).toContain('2024');
       expect(p.newPath).toMatch(/\.mkv$/);
@@ -78,7 +78,7 @@ describe('MovieOrganizeService', () => {
       }));
       const previews = await svc.previewRename([1]);
 
-      expect(previews[0].newPath).toContain('[720p]');
+      expect(previews[0]!.newPath).toContain('[720p]');
     });
 
     it('uses audio channels token from variant audio tracks', async () => {
@@ -96,7 +96,7 @@ describe('MovieOrganizeService', () => {
       }));
       const previews = await svc.previewRename([1]);
 
-      expect(previews[0].newPath).toContain('[5.1]');
+      expect(previews[0]!.newPath).toContain('[5.1]');
     });
 
     it('handles missing audio tracks gracefully', async () => {
@@ -109,7 +109,7 @@ describe('MovieOrganizeService', () => {
       }));
       const previews = await svc.previewRename([1]);
 
-      expect(previews[0].newPath).toContain('[]');
+      expect(previews[0]!.newPath).toContain('[]');
     });
 
     it('handles null channels value gracefully', async () => {
@@ -127,7 +127,7 @@ describe('MovieOrganizeService', () => {
       }));
       const previews = await svc.previewRename([1]);
 
-      expect(previews[0].newPath).toContain('[]');
+      expect(previews[0]!.newPath).toContain('[]');
     });
   });
 
@@ -143,7 +143,7 @@ describe('MovieOrganizeService', () => {
       const previews = await svc.previewRename([1]);
 
       expect(previews).toHaveLength(1);
-      expect(previews[0].newPath).not.toContain('undefined');
+      expect(previews[0]!.newPath).not.toContain('undefined');
     });
 
     it('handles missing qualityFull gracefully', async () => {
@@ -156,7 +156,7 @@ describe('MovieOrganizeService', () => {
       }));
       const previews = await svc.previewRename([1]);
 
-      expect(previews[0].newPath).not.toContain('undefined');
+      expect(previews[0]!.newPath).not.toContain('undefined');
     });
 
     it('handles missing mediaInfo gracefully', async () => {
@@ -169,7 +169,7 @@ describe('MovieOrganizeService', () => {
       }));
       const previews = await svc.previewRename([1]);
 
-      expect(previews[0].newPath).not.toContain('undefined');
+      expect(previews[0]!.newPath).not.toContain('undefined');
     });
   });
 
@@ -187,7 +187,7 @@ describe('MovieOrganizeService', () => {
       }));
       const previews = await svc.previewRename([1]);
 
-      expect(previews[0].newPath).toContain('Matrix, The');
+      expect(previews[0]!.newPath).toContain('Matrix, The');
     });
 
     it('sorts "A" prefix titles', async () => {
@@ -203,7 +203,7 @@ describe('MovieOrganizeService', () => {
       }));
       const previews = await svc.previewRename([1]);
 
-      expect(previews[0].newPath).toContain('Quiet Place, A');
+      expect(previews[0]!.newPath).toContain('Quiet Place, A');
     });
 
     it('leaves non-prefix titles unchanged', async () => {
@@ -219,7 +219,7 @@ describe('MovieOrganizeService', () => {
       }));
       const previews = await svc.previewRename([1]);
 
-      expect(previews[0].newPath).toContain('Inception');
+      expect(previews[0]!.newPath).toContain('Inception');
     });
   });
 
@@ -246,7 +246,7 @@ describe('MovieOrganizeService', () => {
       }));
       const previews = await svc.previewRename([1]);
 
-      expect(previews[0].newPath).toContain(expected);
+      expect(previews[0]!.newPath).toContain(expected);
     });
   });
 
@@ -261,7 +261,7 @@ describe('MovieOrganizeService', () => {
       }));
       const previews = await svc.previewRename([1]);
 
-      expect(previews[0].newPath).toContain('[1080p]');
+      expect(previews[0]!.newPath).toContain('[1080p]');
     });
 
     it('returns empty for quality without resolution', async () => {
@@ -274,7 +274,7 @@ describe('MovieOrganizeService', () => {
       }));
       const previews = await svc.previewRename([1]);
 
-      expect(previews[0].newPath).toContain('[]');
+      expect(previews[0]!.newPath).toContain('[]');
     });
 
     it('handles null quality without error', async () => {
@@ -288,7 +288,7 @@ describe('MovieOrganizeService', () => {
       const previews = await svc.previewRename([1]);
 
       expect(previews).toHaveLength(1);
-      expect(previews[0].newPath).toContain('[]');
+      expect(previews[0]!.newPath).toContain('[]');
     });
   });
 
@@ -301,7 +301,7 @@ describe('MovieOrganizeService', () => {
       const svc = new MovieOrganizeService(prisma as any, DEFAULT_MEDIA_MANAGEMENT_SETTINGS);
       const previews = await svc.previewRename([1]);
 
-      expect(previews[0].newPath).toMatch(
+      expect(previews[0]!.newPath).toMatch(
         /\/Test Movie \(2024\)\/Test Movie \(2024\) BluRay-1080p\.mkv$/
       );
     });
@@ -342,7 +342,7 @@ describe('MovieOrganizeService', () => {
       const previews = await svc.previewRename([1]);
 
       expect(previews).toHaveLength(1);
-      expect(previews[0].isNewPath).toBe(false);
+      expect(previews[0]!.isNewPath).toBe(false);
     });
 
     it('isNewPath is true when path differs', async () => {
@@ -353,7 +353,7 @@ describe('MovieOrganizeService', () => {
       const previews = await svc.previewRename([1]);
 
       expect(previews).toHaveLength(1);
-      expect(previews[0].isNewPath).toBe(true);
+      expect(previews[0]!.isNewPath).toBe(true);
     });
 
     it('skips movie not found (null from prisma)', async () => {
@@ -539,7 +539,7 @@ describe('MovieOrganizeService', () => {
 
       expect(result.renamed).toBe(0);
       expect(result.failed).toBe(1);
-      expect(result.errors[0].error).toContain('permission denied');
+      expect(result.errors[0]!.error).toContain('permission denied');
       expect(prisma.mediaFileVariant.updateMany).toHaveBeenCalledTimes(2);
     });
 
@@ -552,7 +552,7 @@ describe('MovieOrganizeService', () => {
       const result = await svc.applyRename([1]);
 
       expect(result.failed).toBe(1);
-      expect(result.errors[0].error).toContain('DB connection lost');
+      expect(result.errors[0]!.error).toContain('DB connection lost');
       expect(fsMocks.rename).not.toHaveBeenCalled();
     });
 

@@ -26,7 +26,7 @@ describe('ApiEventHub', () => {
 
     expect(write1).toHaveBeenCalledOnce();
     expect(write2).toHaveBeenCalledOnce();
-    const frame: string = write1.mock.calls[0][0];
+    const frame: string = write1.mock.calls[0]![0];
     expect(frame).toContain('event: test\n');
     expect(frame).toContain('"hello":"world"');
     expect(frame.endsWith('\n\n')).toBe(true);
@@ -50,7 +50,7 @@ describe('ApiEventHub', () => {
 
     expect(() => hub.publish('test', circular)).not.toThrow();
     expect(write).toHaveBeenCalledOnce();
-    const frame: string = write.mock.calls[0][0];
+    const frame: string = write.mock.calls[0]![0];
     expect(frame).toContain('"error":"serialization_failed"');
   });
 

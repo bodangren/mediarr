@@ -69,7 +69,7 @@ export class CollectionRepository {
       orderBy: { name: 'asc' },
     });
 
-    return collections.map(collection => ({
+    return collections.map((collection: any) => ({
       ...collection,
       movieCount: collection._count.movies,
       moviesInLibrary: collection.movies.length,
@@ -212,7 +212,7 @@ export class CollectionRepository {
       },
     });
 
-    return movies.filter(movie => movie._count.fileVariants > 0).length;
+    return movies.filter((movie: any) => movie._count.fileVariants > 0).length;
   }
 
   async exists(id: number): Promise<boolean> {

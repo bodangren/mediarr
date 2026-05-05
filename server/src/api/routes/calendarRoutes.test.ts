@@ -273,6 +273,6 @@ describe('calendarRoutes — GET /api/calendar', () => {
     expect(response.statusCode).toBe(200);
     const body = JSON.parse(response.body) as { data: Array<{ date: string }> };
     expect(body.data).toHaveLength(1);
-    expect(body.data[0].date).toBe('2026-03-10');
+    expect(body.data[0]!.date).toBe('2026-03-10');
   });
 });

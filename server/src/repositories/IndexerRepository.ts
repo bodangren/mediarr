@@ -37,7 +37,7 @@ export class IndexerRepository {
 
   async findAll(): Promise<Indexer[]> {
     const indexers = await this.prisma.indexer.findMany();
-    return indexers.map((indexer) => ({
+    return indexers.map((indexer: any) => ({
       ...indexer,
       settings: decrypt(indexer.settings),
     }));
@@ -47,7 +47,7 @@ export class IndexerRepository {
     const indexers = await this.prisma.indexer.findMany({
       where: { enabled: true },
     });
-    return indexers.map((indexer) => ({
+    return indexers.map((indexer: any) => ({
       ...indexer,
       settings: decrypt(indexer.settings),
     }));

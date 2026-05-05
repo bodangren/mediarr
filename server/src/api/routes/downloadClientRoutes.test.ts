@@ -32,9 +32,9 @@ function createApp(
 ): FastifyInstance {
   const app = Fastify();
   const deps: ApiDependencies = {
-    prisma: {},
-    settingsService,
-    ...(torrentManager ? { torrentManager } : {}),
+    prisma: {} as any,
+    settingsService: settingsService as any,
+    ...(torrentManager ? { torrentManager: torrentManager as any } : {}),
   };
 
   app.setErrorHandler((error, request, reply) => registerApiErrorHandler(request, reply, error));

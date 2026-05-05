@@ -40,7 +40,7 @@ describe('LibraryScanService', () => {
 
   describe('scanAll()', () => {
     it('returns zero summary when both roots are empty', async () => {
-      vi.mocked(fs.default.readdir).mockResolvedValue([]);
+      (vi.mocked(fs.default.readdir) as any).mockResolvedValue([]);
       prisma.movie.findMany.mockResolvedValue([]);
       prisma.episode.findMany.mockResolvedValue([]);
 
@@ -57,7 +57,7 @@ describe('LibraryScanService', () => {
     });
 
     it('skips movie scan when movieRootFolder is empty string', async () => {
-      vi.mocked(fs.default.readdir).mockResolvedValue([]);
+      (vi.mocked(fs.default.readdir) as any).mockResolvedValue([]);
       prisma.episode.findMany.mockResolvedValue([]);
 
       await service.scanAll({ movieRootFolder: '', tvRootFolder: '/tv' });
@@ -66,7 +66,7 @@ describe('LibraryScanService', () => {
     });
 
     it('skips episode scan when tvRootFolder is empty string', async () => {
-      vi.mocked(fs.default.readdir).mockResolvedValue([]);
+      (vi.mocked(fs.default.readdir) as any).mockResolvedValue([]);
       prisma.movie.findMany.mockResolvedValue([]);
 
       await service.scanAll({ movieRootFolder: '/movies', tvRootFolder: '' });
@@ -75,7 +75,7 @@ describe('LibraryScanService', () => {
     });
 
     it('scans both roots when both are set', async () => {
-      vi.mocked(fs.default.readdir).mockResolvedValue([]);
+      (vi.mocked(fs.default.readdir) as any).mockResolvedValue([]);
       prisma.movie.findMany.mockResolvedValue([]);
       prisma.episode.findMany.mockResolvedValue([]);
 
@@ -86,7 +86,7 @@ describe('LibraryScanService', () => {
     });
 
     it('aggregates summary from both scans', async () => {
-      vi.mocked(fs.default.readdir).mockImplementation(async (dir: string) => {
+      (vi.mocked(fs.default.readdir) as any).mockImplementation(async (dir: string) => {
         if (String(dir).includes('movies')) {
           return [{ name: 'Movie (2020).mkv', isDirectory: () => false }];
         }
@@ -104,7 +104,7 @@ describe('LibraryScanService', () => {
 
   describe('scanMovies() — DB-to-disk reconciliation', () => {
     it('marks movie as missing when file is deleted', async () => {
-      vi.mocked(fs.default.readdir).mockResolvedValue([]);
+      (vi.mocked(fs.default.readdir) as any).mockResolvedValue([]);
       vi.mocked(fs.default.access).mockRejectedValue(new Error('ENOENT'));
       prisma.movie.findMany.mockResolvedValue([
         { id: 1, path: '/movies/Existing Movie (2020).mkv', title: 'Existing Movie', year: 2020 },
@@ -119,7 +119,7 @@ describe('LibraryScanService', () => {
     });
 
     it('does not mark movie as missing when file exists', async () => {
-      vi.mocked(fs.default.readdir).mockResolvedValue([]);
+      (vi.mocked(fs.default.readdir) as any).mockResolvedValue([]);
       vi.mocked(fs.default.access).mockResolvedValue(undefined);
       prisma.movie.findMany.mockResolvedValue([
         { id: 1, path: '/movies/Existing Movie (2020).mkv', title: 'Existing Movie', year: 2020 },
@@ -132,7 +132,7 @@ describe('LibraryScanService', () => {
     });
 
     it('skips movies with null path', async () => {
-      vi.mocked(fs.default.readdir).mockResolvedValue([]);
+      (vi.mocked(fs.default.readdir) as any).mockResolvedValue([]);
       prisma.movie.findMany.mockResolvedValue([
         { id: 1, path: null, title: 'Unpathed Movie', year: 2020 },
       ]);
@@ -144,7 +144,7 @@ describe('LibraryScanService', () => {
     });
 
     it('handles empty movie DB', async () => {
-      vi.mocked(fs.default.readdir).mockResolvedValue([]);
+      (vi.mocked(fs.default.readdir) as any).mockResolvedValue([]);
       prisma.movie.findMany.mockResolvedValue([]);
 
       const result = await (service as any).scanMovies('/movies');
@@ -153,7 +153,7 @@ describe('LibraryScanService', () => {
     });
 
     it('counts multiple missing movies correctly', async () => {
-      vi.mocked(fs.default.readdir).mockResolvedValue([]);
+      (vi.mocked(fs.default.readdir) as any).mockResolvedValue([]);
       vi.mocked(fs.default.access).mockRejectedValue(new Error('ENOENT'));
       prisma.movie.findMany.mockResolvedValue([
         { id: 1, path: '/movies/Movie A (2020).mkv', title: 'Movie A', year: 2020 },
@@ -168,7 +168,7 @@ describe('LibraryScanService', () => {
     });
 
     it('marks movie missing on any fs.access error including permission denied', async () => {
-      vi.mocked(fs.default.readdir).mockResolvedValue([]);
+      (vi.mocked(fs.default.readdir) as any).mockResolvedValue([]);
       vi.mocked(fs.default.access).mockRejectedValue(new Error('EACCES: permission denied'));
       prisma.movie.findMany.mockResolvedValue([
         { id: 1, path: '/movies/Secret Movie (2020).mkv', title: 'Secret Movie', year: 2020 },
@@ -187,7 +187,7 @@ describe('LibraryScanService', () => {
 
   describe('scanMovies() — disk-to-DB auto-matching', () => {
     it('matches unpathed movie by exact title+year', async () => {
-      vi.mocked(fs.default.readdir).mockResolvedValue([
+      (vi.mocked(fs.default.readdir) as any).mockResolvedValue([
         { name: 'The Matrix (1999).mkv', isDirectory: () => false },
       ]);
       vi.mocked(fs.default.access).mockResolvedValue(undefined);
@@ -205,7 +205,7 @@ describe('LibraryScanService', () => {
     });
 
     it('matches title with substring — "It" matches "It Chapter Two"', async () => {
-      vi.mocked(fs.default.readdir).mockResolvedValue([
+      (vi.mocked(fs.default.readdir) as any).mockResolvedValue([
         { name: 'It Chapter Two (2019).mkv', isDirectory: () => false },
       ]);
       vi.mocked(fs.default.access).mockResolvedValue(undefined);
@@ -220,7 +220,7 @@ describe('LibraryScanService', () => {
     });
 
     it('does not match when year differs', async () => {
-      vi.mocked(fs.default.readdir).mockResolvedValue([
+      (vi.mocked(fs.default.readdir) as any).mockResolvedValue([
         { name: 'The Matrix (1999).mkv', isDirectory: () => false },
       ]);
       vi.mocked(fs.default.access).mockResolvedValue(undefined);
@@ -235,7 +235,7 @@ describe('LibraryScanService', () => {
     });
 
     it('does not re-match movies that already have a path', async () => {
-      vi.mocked(fs.default.readdir).mockResolvedValue([
+      (vi.mocked(fs.default.readdir) as any).mockResolvedValue([
         { name: 'The Matrix (1999).mkv', isDirectory: () => false },
       ]);
       vi.mocked(fs.default.access).mockResolvedValue(undefined);
@@ -250,7 +250,7 @@ describe('LibraryScanService', () => {
     });
 
     it('ignores video files already in DB', async () => {
-      vi.mocked(fs.default.readdir).mockResolvedValue([
+      (vi.mocked(fs.default.readdir) as any).mockResolvedValue([
         { name: 'The Matrix (1999).mkv', isDirectory: () => false },
       ]);
       vi.mocked(fs.default.access).mockResolvedValue(undefined);
@@ -264,7 +264,7 @@ describe('LibraryScanService', () => {
     });
 
     it('ignores files with no matching movie', async () => {
-      vi.mocked(fs.default.readdir).mockResolvedValue([
+      (vi.mocked(fs.default.readdir) as any).mockResolvedValue([
         { name: 'Unknown Movie (2025).mkv', isDirectory: () => false },
       ]);
       vi.mocked(fs.default.access).mockResolvedValue(undefined);
@@ -278,7 +278,7 @@ describe('LibraryScanService', () => {
     });
 
     it('matches multiple unpathed movies to distinct files', async () => {
-      vi.mocked(fs.default.readdir).mockResolvedValue([
+      (vi.mocked(fs.default.readdir) as any).mockResolvedValue([
         { name: 'The Matrix (1999).mkv', isDirectory: () => false },
         { name: 'Inception (2010).mkv', isDirectory: () => false },
       ]);
@@ -295,7 +295,7 @@ describe('LibraryScanService', () => {
     });
 
     it('first match wins when multiple movies could match the same file', async () => {
-      vi.mocked(fs.default.readdir).mockResolvedValue([
+      (vi.mocked(fs.default.readdir) as any).mockResolvedValue([
         { name: 'Star Wars Episode IV (1977).mkv', isDirectory: () => false },
       ]);
       vi.mocked(fs.default.access).mockResolvedValue(undefined);
@@ -313,7 +313,7 @@ describe('LibraryScanService', () => {
     });
 
     it('counts subtitle files detected', async () => {
-      vi.mocked(fs.default.readdir).mockResolvedValue([
+      (vi.mocked(fs.default.readdir) as any).mockResolvedValue([
         { name: 'Movie (2020).mkv', isDirectory: () => false },
         { name: 'Movie (2020).srt', isDirectory: () => false },
         { name: 'Movie (2020).ass', isDirectory: () => false },
@@ -327,7 +327,7 @@ describe('LibraryScanService', () => {
     });
 
     it('ignores non-video files during auto-matching', async () => {
-      vi.mocked(fs.default.readdir).mockResolvedValue([
+      (vi.mocked(fs.default.readdir) as any).mockResolvedValue([
         { name: 'Movie (2020).txt', isDirectory: () => false },
         { name: 'Movie (2020).nfo', isDirectory: () => false },
       ]);
@@ -344,7 +344,7 @@ describe('LibraryScanService', () => {
 
   describe('scanEpisodes() — DB-to-disk reconciliation', () => {
     it('marks episode as missing when file is deleted', async () => {
-      vi.mocked(fs.default.readdir).mockResolvedValue([]);
+      (vi.mocked(fs.default.readdir) as any).mockResolvedValue([]);
       vi.mocked(fs.default.access).mockRejectedValue(new Error('ENOENT'));
       prisma.episode.findMany.mockResolvedValue([
         { id: 1, path: '/tv/Show/S01/S01E01.mkv' },
@@ -360,7 +360,7 @@ describe('LibraryScanService', () => {
     });
 
     it('does not mark episode as missing when file exists', async () => {
-      vi.mocked(fs.default.readdir).mockResolvedValue([]);
+      (vi.mocked(fs.default.readdir) as any).mockResolvedValue([]);
       vi.mocked(fs.default.access).mockResolvedValue(undefined);
       prisma.episode.findMany.mockResolvedValue([
         { id: 1, path: '/tv/Show/S01/S01E01.mkv' },
@@ -373,7 +373,7 @@ describe('LibraryScanService', () => {
     });
 
     it('skips episodes with null path', async () => {
-      vi.mocked(fs.default.readdir).mockResolvedValue([]);
+      (vi.mocked(fs.default.readdir) as any).mockResolvedValue([]);
       prisma.episode.findMany.mockResolvedValue([
         { id: 1, path: null },
       ]);
@@ -385,7 +385,7 @@ describe('LibraryScanService', () => {
     });
 
     it('handles empty episode DB', async () => {
-      vi.mocked(fs.default.readdir).mockResolvedValue([]);
+      (vi.mocked(fs.default.readdir) as any).mockResolvedValue([]);
       prisma.episode.findMany.mockResolvedValue([]);
 
       const result = await (service as any).scanEpisodes('/tv');
@@ -394,7 +394,7 @@ describe('LibraryScanService', () => {
     });
 
     it('counts multiple missing episodes correctly', async () => {
-      vi.mocked(fs.default.readdir).mockResolvedValue([]);
+      (vi.mocked(fs.default.readdir) as any).mockResolvedValue([]);
       vi.mocked(fs.default.access).mockRejectedValue(new Error('ENOENT'));
       prisma.episode.findMany.mockResolvedValue([
         { id: 1, path: '/tv/Show/S01/S01E01.mkv' },
@@ -410,7 +410,7 @@ describe('LibraryScanService', () => {
 
   describe('scanEpisodes() — orphan counting', () => {
     it('counts video files not in DB as added', async () => {
-      vi.mocked(fs.default.readdir).mockResolvedValue([
+      (vi.mocked(fs.default.readdir) as any).mockResolvedValue([
         { name: 'S01E01.mkv', isDirectory: () => false },
         { name: 'S01E02.mkv', isDirectory: () => false },
       ]);
@@ -423,7 +423,7 @@ describe('LibraryScanService', () => {
     });
 
     it('does not count already-pathed episodes as added', async () => {
-      vi.mocked(fs.default.readdir).mockResolvedValue([
+      (vi.mocked(fs.default.readdir) as any).mockResolvedValue([
         { name: 'S01E01.mkv', isDirectory: () => false },
         { name: 'S01E02.mkv', isDirectory: () => false },
       ]);
@@ -438,7 +438,7 @@ describe('LibraryScanService', () => {
     });
 
     it('counts subtitle files detected', async () => {
-      vi.mocked(fs.default.readdir).mockResolvedValue([
+      (vi.mocked(fs.default.readdir) as any).mockResolvedValue([
         { name: 'S01E01.mkv', isDirectory: () => false },
         { name: 'S01E01.srt', isDirectory: () => false },
         { name: 'S01E01.vtt', isDirectory: () => false },
@@ -452,7 +452,7 @@ describe('LibraryScanService', () => {
     });
 
     it('does not count subtitle files as added', async () => {
-      vi.mocked(fs.default.readdir).mockResolvedValue([
+      (vi.mocked(fs.default.readdir) as any).mockResolvedValue([
         { name: 'S01E01.srt', isDirectory: () => false },
         { name: 'S01E01.ass', isDirectory: () => false },
       ]);
@@ -467,7 +467,7 @@ describe('LibraryScanService', () => {
 
   describe('walkDir error handling', () => {
     it('returns empty array when root folder does not exist', async () => {
-      vi.mocked(fs.default.readdir).mockRejectedValue(new Error('ENOENT'));
+      (vi.mocked(fs.default.readdir) as any).mockRejectedValue(new Error('ENOENT'));
       prisma.movie.findMany.mockResolvedValue([]);
 
       const result = await (service as any).scanMovies('/nonexistent');
@@ -476,7 +476,7 @@ describe('LibraryScanService', () => {
     });
 
     it('returns empty array on permission denied', async () => {
-      vi.mocked(fs.default.readdir).mockRejectedValue(new Error('EACCES'));
+      (vi.mocked(fs.default.readdir) as any).mockRejectedValue(new Error('EACCES'));
       prisma.movie.findMany.mockResolvedValue([]);
 
       const result = await (service as any).scanMovies('/restricted');
@@ -485,7 +485,7 @@ describe('LibraryScanService', () => {
     });
 
     it('returns empty array on permission denied', async () => {
-      vi.mocked(fs.default.readdir).mockRejectedValue(new Error('EACCES'));
+      (vi.mocked(fs.default.readdir) as any).mockRejectedValue(new Error('EACCES'));
       prisma.movie.findMany.mockResolvedValue([]);
 
       const result = await (service as any).scanMovies('/restricted');
@@ -494,7 +494,7 @@ describe('LibraryScanService', () => {
     });
 
     it('handles nested directory traversal', async () => {
-      vi.mocked(fs.default.readdir)
+      (vi.mocked(fs.default.readdir) as any)
         .mockResolvedValueOnce([
           { name: 'SubDir', isDirectory: () => true },
           { name: 'Movie (2020).mkv', isDirectory: () => false },

@@ -291,8 +291,8 @@ export function registerTorrentRoutes(
     );
 
     const succeeded = results
-      .filter((r): r is PromiseFulfilledResult<Record<string, unknown>> => r.status === 'fulfilled')
-      .map((r) => r.value);
+      .filter((r) => r.status === 'fulfilled')
+      .map((r) => (r as PromiseFulfilledResult<Record<string, unknown>>).value);
 
     const failed = results
       .filter((r): r is PromiseRejectedResult => r.status === 'rejected')

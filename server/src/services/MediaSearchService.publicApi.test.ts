@@ -125,7 +125,7 @@ describe('MediaSearchService.searchEpisode', () => {
     expect(result!.infoHash).toBe('eeee5555eeee5555eeee5555eeee5555eeee5555');
     expect(torrentManager.addTorrent).toHaveBeenCalled();
 
-    const addTorrentCall = torrentManager.addTorrent.mock.calls[0][0];
+    const addTorrentCall = torrentManager.addTorrent.mock.calls[0]![0];
     expect(addTorrentCall.magnetUrl).toContain('eeee5555eeee5555eeee5555eeee5555eeee5555');
   });
 });
@@ -191,7 +191,7 @@ describe('MediaSearchService.searchMovie', () => {
 
     await service.searchMovie({ title: 'Dune', year: 2024 });
 
-    const searchCall = indexer.search.mock.calls[0][0];
+    const searchCall = indexer.search.mock.calls[0]![0];
     expect(searchCall.q).toContain('2024');
     expect(searchCall.q).toContain('Dune');
   });
@@ -229,7 +229,7 @@ describe('MediaSearchService.getSearchCandidates', () => {
     expect(candidates).toHaveLength(1);
     expect(candidates[0]!.title).toBe('Legacy.Query.S02E05.720p');
 
-    const searchCall = indexer.search.mock.calls[0][0];
+    const searchCall = indexer.search.mock.calls[0]![0];
     expect(searchCall.season).toBe(2);
     expect(searchCall.ep).toBe(5);
     expect(searchCall.imdbid).toBe('tt11223344');
@@ -247,7 +247,7 @@ describe('MediaSearchService.getSearchCandidates', () => {
 
     await service.getSearchCandidates({ q: 'Test', tmdbid: '12345' });
 
-    const searchCall = indexer.search.mock.calls[0][0];
+    const searchCall = indexer.search.mock.calls[0]![0];
     expect(searchCall.tmdbid).toBe(12345);
   });
 

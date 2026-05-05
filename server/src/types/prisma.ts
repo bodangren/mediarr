@@ -5,15 +5,28 @@ export type PrismaJsonValue = string | number | boolean | null | PrismaJsonObjec
 export namespace Prisma {
   export type JsonValue = PrismaJsonValue;
   export type InputJsonValue = PrismaJsonValue;
+  // Input/filter types for repository method signatures
+  export type ActivityEventWhereInput = any;
+  export type BlocklistCreateInput = any;
+  export type BlocklistOrderByWithRelationInput = any;
+  export type BlocklistWhereInput = any;
+  export type CollectionCreateInput = any;
+  export type CollectionUpdateInput = any;
+  export type CustomFormatUpdateInput = any;
+  export type DateTimeFilter = any;
+  export type ImportListExclusionWhereInput = any;
+  export type ImportListUpdateInput = any;
+  export type QualityProfileUpdateInput = any;
+  export type TransactionClient = any;
 }
 
 export interface PrismaClient {
   [key: string]: any;
   $connect?: () => Promise<void>;
   $disconnect?: () => Promise<void>;
-  $transaction?: (...args: any[]) => Promise<any>;
-  $queryRaw?: (...args: any[]) => Promise<any>;
-  $executeRawUnsafe?: (...args: any[]) => Promise<any>;
+  $transaction: (...args: any[]) => Promise<any>;
+  $queryRaw: <T = unknown>(...args: any[]) => Promise<T>;
+  $executeRawUnsafe: (...args: any[]) => Promise<any>;
 }
 
 export type Media = any;
@@ -52,3 +65,5 @@ export type Blocklist = any;
 
 export type PlaybackMediaType = 'MOVIE' | 'EPISODE';
 export type WantedSubtitleState = 'PENDING' | 'SEARCHING' | 'DOWNLOADED' | 'FAILED';
+export type VariantMediaType = 'EPISODE' | 'MOVIE';
+export type SubtitleTrackSource = 'EMBEDDED' | 'EXTERNAL';

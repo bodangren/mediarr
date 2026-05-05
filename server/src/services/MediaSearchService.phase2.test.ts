@@ -32,6 +32,7 @@ function makeIndexerResult(overrides: Partial<{
   publishDate: Date;
   categories: number[];
   protocol: string;
+  indexerFlags?: string;
 }> = {}) {
   return {
     title: 'Show.S01E01.1080p.WEB-DL',

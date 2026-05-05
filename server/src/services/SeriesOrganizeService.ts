@@ -247,7 +247,7 @@ export class SeriesOrganizeService {
   private extractResolution(quality: string | null): string {
     if (!quality) return '';
     const match = quality.match(/(\d{3,4}p)/);
-    return match ? match[1] : '';
+    return match ? match[1]! : '';
   }
 }
 

@@ -1,4 +1,4 @@
-import type { PrismaClient, Series } from '@prisma/client';
+import type { PrismaClient, Series, Prisma } from '@prisma/client';
 
 /**
  * Input type for bulk series updates
@@ -75,7 +75,7 @@ export class SeriesRepository {
     }
 
     // Execute updates within a transaction
-    await this.prisma.$transaction(async (tx) => {
+    await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       for (const seriesId of seriesIds) {
         try {
           await (tx as any).series.update({

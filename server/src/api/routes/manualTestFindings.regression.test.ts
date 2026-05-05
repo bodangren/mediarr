@@ -203,7 +203,7 @@ describe('Manual Test Findings - Regression Tests', () => {
       };
 
       // The fix should look up an available quality profile instead of assuming ID 1
-      expect(availableProfiles[0].id).toBe(5); // Not 1
+      expect(availableProfiles[0]!.id).toBe(5); // Not 1
     });
   });
 

@@ -64,7 +64,7 @@ describe('UpdateService', () => {
   it('checks GitHub releases and caches latest when newer version exists', async () => {
     const fetchFn = vi.fn(async () => jsonResponse(releasePayload()));
     const service = new UpdateService({
-      fetchFn,
+      fetchFn: fetchFn as any,
       currentVersion: '1.0.0',
       githubRepo: 'test/mediarr',
       stagingDir: tempRoot,
@@ -85,7 +85,7 @@ describe('UpdateService', () => {
   it('returns updateAvailable=false and clears cache when already up-to-date', async () => {
     const fetchFn = vi.fn(async () => jsonResponse(releasePayload({ tag_name: 'v1.0.0' })));
     const service = new UpdateService({
-      fetchFn,
+      fetchFn: fetchFn as any,
       currentVersion: '1.0.0',
       githubRepo: 'test/mediarr',
       stagingDir: tempRoot,
@@ -102,7 +102,7 @@ describe('UpdateService', () => {
   it('throws ProviderUnavailableError on GitHub rate-limit responses', async () => {
     const fetchFn = vi.fn(async () => jsonResponse({ message: 'rate limited' }, 403));
     const service = new UpdateService({
-      fetchFn,
+      fetchFn: fetchFn as any,
       currentVersion: '1.0.0',
       githubRepo: 'test/mediarr',
       stagingDir: tempRoot,
@@ -115,7 +115,7 @@ describe('UpdateService', () => {
   it('detects docker mode via injected detector', async () => {
     const fetchFn = vi.fn(async () => jsonResponse(releasePayload()));
     const service = new UpdateService({
-      fetchFn,
+      fetchFn: fetchFn as any,
       currentVersion: '1.0.0',
       githubRepo: 'test/mediarr',
       stagingDir: tempRoot,
@@ -131,12 +131,12 @@ describe('UpdateService', () => {
     const checksum = createHash('sha256').update(bytes).digest('hex');
 
     const fetchFn = vi
-      .fn<Parameters<typeof fetch>, Promise<Response>>()
+      .fn<typeof fetch>()
       .mockImplementationOnce(async () => jsonResponse(releasePayload({ body: `sha256: ${checksum}` })))
       .mockImplementationOnce(async () => streamResponse(bytes));
 
     const service = new UpdateService({
-      fetchFn,
+      fetchFn: fetchFn as any,
       currentVersion: '1.0.0',
       githubRepo: 'test/mediarr',
       stagingDir: tempRoot,
@@ -160,14 +160,15 @@ describe('UpdateService', () => {
 
   it('fails download when checksum does not match', async () => {
     const bytes = Buffer.from('corrupted-binary');
+    const checksum = createHash('sha256').update(Buffer.from('valid-binary')).digest('hex');
 
     const fetchFn = vi
-      .fn<Parameters<typeof fetch>, Promise<Response>>()
-      .mockImplementationOnce(async () => jsonResponse(releasePayload({ body: 'sha256: ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff' })))
+      .fn<typeof fetch>()
+      .mockImplementationOnce(async () => jsonResponse(releasePayload({ body: `sha256: ${checksum}` })))
       .mockImplementationOnce(async () => streamResponse(bytes));
 
     const service = new UpdateService({
-      fetchFn,
+      fetchFn: fetchFn as any,
       currentVersion: '1.0.0',
       githubRepo: 'test/mediarr',
       stagingDir: tempRoot,
@@ -181,12 +182,12 @@ describe('UpdateService', () => {
 
   it('fails download when release asset request fails', async () => {
     const fetchFn = vi
-      .fn<Parameters<typeof fetch>, Promise<Response>>()
+      .fn<typeof fetch>()
       .mockImplementationOnce(async () => jsonResponse(releasePayload()))
       .mockImplementationOnce(async () => new Response('boom', { status: 500 }));
 
     const service = new UpdateService({
-      fetchFn,
+      fetchFn: fetchFn as any,
       currentVersion: '1.0.0',
       githubRepo: 'test/mediarr',
       stagingDir: tempRoot,
@@ -221,12 +222,12 @@ describe('UpdateService', () => {
     await fs.writeFile(currentExecutablePath, 'old-binary');
 
     const fetchFn = vi
-      .fn<Parameters<typeof fetch>, Promise<Response>>()
+      .fn<typeof fetch>()
       .mockImplementationOnce(async () => jsonResponse(releasePayload({ body: `sha256: ${checksum}` })))
       .mockImplementationOnce(async () => streamResponse(bytes));
 
     const service = new UpdateService({
-      fetchFn,
+      fetchFn: fetchFn as any,
       currentVersion: '1.0.0',
       githubRepo: 'test/mediarr',
       stagingDir: tempRoot,

@@ -461,7 +461,7 @@ export class UpdateService {
         }
       }
 
-      return mapped[0];
+      return mapped[0]!;
     }
 
     const latest = await this.fetchGitHubJson(`https://api.github.com/repos/${this.githubRepo}/releases/latest`) as GitHubRelease;
@@ -519,7 +519,7 @@ export class UpdateService {
       return name.includes(platformToken) && name.includes(archToken);
     });
     const platformOnly = selectable.find(asset => asset.name.toLowerCase().includes(platformToken));
-    const selected = exact ?? platformOnly ?? selectable[0];
+    const selected = exact ?? platformOnly ?? selectable[0]!;
 
     return {
       version,

@@ -74,7 +74,7 @@ export class SeriesMonitoringService {
       },
     });
 
-    return episodes.map(ep => ({
+    return episodes.map((ep: { id: number; seasonNumber: number; episodeNumber: number; monitored: boolean; airDateUtc: Date | null; fileVariants: { id: number }[] }) => ({
       id: ep.id,
       seasonNumber: ep.seasonNumber,
       episodeNumber: ep.episodeNumber,
@@ -286,12 +286,12 @@ export class SeriesMonitoringService {
       throw new NotFoundError(`Series with ID ${seriesId} not found`);
     }
 
-    const seasons = series.seasons.map(season => ({
+    const seasons = series.seasons.map((season: { seasonNumber: number; episodes: Array<{ monitored: boolean; fileVariants: { length: number } }> }) => ({
       seasonNumber: season.seasonNumber,
       totalEpisodes: season.episodes.length,
-      monitoredEpisodes: season.episodes.filter(ep => ep.monitored).length,
+      monitoredEpisodes: season.episodes.filter((ep: { monitored: boolean }) => ep.monitored).length,
       episodesWithFiles: season.episodes.filter(
-        ep => ep.fileVariants.length > 0,
+        (ep: { fileVariants: { length: number } }) => ep.fileVariants.length > 0,
       ).length,
     }));
 

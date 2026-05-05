@@ -74,8 +74,8 @@ describe('SystemHealthService', () => {
       ]);
 
       expect(result).toHaveLength(2);
-      expect(result[0].total).toBe(2000 * 512);
-      expect(result[1].total).toBe(0);
+      expect(result[0]!.total).toBe(2000 * 512);
+      expect(result[1]!.total).toBe(0);
     });
   });
 
@@ -156,8 +156,8 @@ describe('SystemHealthService', () => {
       const svc = new SystemHealthService(makePrisma() as any);
       const results = await svc.checkRootFolders([{ path: '/data/media', label: 'Media Root' }]);
 
-      expect(results[0].status).toBe('ok');
-      expect(results[0].message).toContain('accessible');
+      expect(results[0]!.status).toBe('ok');
+      expect(results[0]!.message).toContain('accessible');
     });
 
     it('returns error for inaccessible paths', async () => {
@@ -166,8 +166,8 @@ describe('SystemHealthService', () => {
       const svc = new SystemHealthService(makePrisma() as any);
       const results = await svc.checkRootFolders([{ path: '/locked', label: 'Locked Folder' }]);
 
-      expect(results[0].status).toBe('error');
-      expect(results[0].message).toContain('not accessible');
+      expect(results[0]!.status).toBe('error');
+      expect(results[0]!.message).toContain('not accessible');
     });
 
     it('handles empty paths array', async () => {

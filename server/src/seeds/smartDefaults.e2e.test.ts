@@ -18,7 +18,7 @@ const COMPLETE_DIR = '/data/downloads/complete';
 // ─── Mock Helpers ─────────────────────────────────────────────────────────────
 
 function createFreshPrismaMock() {
-  const db: Record<string, Record<string, unknown>[]> = {
+  const db: any = {
     downloadClient: [],
     appSettings: [],
   };
@@ -55,7 +55,7 @@ function createFreshPrismaMock() {
 }
 
 function createConfiguredPrismaMock(existingSettings: any) {
-  const db: Record<string, Record<string, unknown>[]> = {
+  const db: any = {
     downloadClient: [{ id: 1, name: 'My qBittorrent', protocol: 'torrent', type: 'qbittorrent', enabled: true, priority: 1 }],
     appSettings: [existingSettings],
   };
@@ -278,7 +278,7 @@ describe('Smart Defaults E2E — "Just Work" Zero-Config Flow', () => {
       await seedSmartDefaults(prisma as any);
 
       const allClients = prisma._db.downloadClient;
-      const builtinClients = allClients.filter((c: any) => c.type === 'builtin');
+      const builtinClients = allClients!.filter((c: any) => c.type === 'builtin');
       expect(builtinClients).toHaveLength(1);
     });
 

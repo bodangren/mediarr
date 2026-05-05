@@ -77,7 +77,7 @@ describe('Wanted → Search → Grab → Import Pipeline', () => {
       deduplicatedCount: 0,
     });
 
-    const service = new WantedSearchService(mediaSearchService, prisma as any, activityEventEmitter);
+    const service = new WantedSearchService(mediaSearchService as any, prisma as any, activityEventEmitter);
     const result = await service.autoSearchEpisode(42);
 
     expect(result.success).toBe(true);
@@ -108,7 +108,7 @@ describe('Wanted → Search → Grab → Import Pipeline', () => {
 
     const prisma = makePrisma({ episode });
 
-    const service = new WantedSearchService(mediaSearchService, prisma as any, activityEventEmitter);
+    const service = new WantedSearchService(mediaSearchService as any, prisma as any, activityEventEmitter);
     const result = await service.autoSearchEpisode(42);
 
     expect(result.success).toBe(false);
@@ -146,7 +146,7 @@ describe('Wanted → Search → Grab → Import Pipeline', () => {
       deduplicatedCount: 0,
     });
 
-    const service = new WantedSearchService(mediaSearchService, prisma as any, activityEventEmitter);
+    const service = new WantedSearchService(mediaSearchService as any, prisma as any, activityEventEmitter);
     const result = await service.autoSearchMovie(7);
 
     expect(result.success).toBe(true);
@@ -177,7 +177,7 @@ describe('Wanted → Search → Grab → Import Pipeline', () => {
       deduplicatedCount: 0,
     });
 
-    const service = new WantedSearchService(mediaSearchService, prisma as any, activityEventEmitter);
+    const service = new WantedSearchService(mediaSearchService as any, prisma as any, activityEventEmitter);
     const result = await service.autoSearchMovie(7);
 
     expect(result.success).toBe(false);
@@ -202,7 +202,7 @@ describe('Wanted → Search → Grab → Import Pipeline', () => {
 
     mediaSearchService.searchAllIndexers.mockRejectedValue(new Error('All indexers unreachable'));
 
-    const service = new WantedSearchService(mediaSearchService, prisma as any, activityEventEmitter);
+    const service = new WantedSearchService(mediaSearchService as any, prisma as any, activityEventEmitter);
     const result = await service.autoSearchMovie(7);
 
     expect(result.success).toBe(false);

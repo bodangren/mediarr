@@ -102,7 +102,7 @@ export class NotificationRepository {
 
   async findAll(): Promise<Notification[]> {
     const notifications = await this.prisma.notification.findMany();
-    return notifications.map((notification) => ({
+    return notifications.map((notification: { type: string; config: unknown }) => ({
       ...notification,
       config: decryptSensitiveFields(notification.type, notification.config as NotificationConfig) as unknown as import('@prisma/client').Prisma.JsonValue,
     }));
@@ -112,7 +112,7 @@ export class NotificationRepository {
     const notifications = await this.prisma.notification.findMany({
       where: { enabled: true },
     });
-    return notifications.map((notification) => ({
+    return notifications.map((notification: { type: string; config: unknown }) => ({
       ...notification,
       config: decryptSensitiveFields(notification.type, notification.config as NotificationConfig) as unknown as import('@prisma/client').Prisma.JsonValue,
     }));

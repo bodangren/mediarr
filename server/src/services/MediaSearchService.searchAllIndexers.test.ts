@@ -402,7 +402,7 @@ describe('MediaSearchService.searchAllIndexers — activity events', () => {
       (call: any) => call[0].eventType === 'SEARCH_EXECUTED',
     );
     expect(searchEvents.length).toBeGreaterThanOrEqual(1);
-    const event = searchEvents[0][0];
+    const event = searchEvents[0]![0];
     expect(event.success).toBe(true);
     expect(event.details.totalResults).toBe(1);
   });

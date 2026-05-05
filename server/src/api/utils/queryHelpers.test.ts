@@ -56,12 +56,12 @@ describe('applyLibraryFilters', () => {
   it('filters by search', () => {
     const result = applyLibraryFilters(items, { search: 'break' });
     expect(result).toHaveLength(1);
-    expect(result[0].title).toBe('Breaking Bad');
+    expect(result[0]!.title).toBe('Breaking Bad');
   });
 
   it('combines filters', () => {
     const result = applyLibraryFilters(items, { monitored: true, status: 'continuing' });
     expect(result).toHaveLength(1);
-    expect(result[0].title).toBe('Stranger Things');
+    expect(result[0]!.title).toBe('Stranger Things');
   });
 });

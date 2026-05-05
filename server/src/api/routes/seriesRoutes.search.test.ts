@@ -128,7 +128,7 @@ describe('seriesRoutes search aggregation wiring', () => {
       qualityProfileId: 7,
     }));
     // season and episode must NOT be present for a series-level search
-    const callArgs = searchAllIndexers.mock.calls[0][0];
+    const callArgs = searchAllIndexers.mock.calls[0]![0];
     expect(callArgs.season).toBeUndefined();
     expect(callArgs.episode).toBeUndefined();
   });
@@ -179,7 +179,7 @@ describe('seriesRoutes search aggregation wiring', () => {
     });
 
     expect(response.statusCode).toBe(200);
-    const callArgs = searchAllIndexers.mock.calls[0][0];
+    const callArgs = searchAllIndexers.mock.calls[0]![0];
     expect(callArgs.tvdbId).toBeUndefined();
     expect(callArgs.season).toBe(1);
   });

@@ -10,7 +10,7 @@ const INCOMPLETE_DIR = '/data/downloads/incomplete';
 const COMPLETE_DIR = '/data/downloads/complete';
 
 function createPrismaMock() {
-  const db: Record<string, Record<string, unknown>[]> = {
+  const db: any = {
     qualityDefinition: [],
     qualityProfile: [],
     category: [],
@@ -26,7 +26,7 @@ function createPrismaMock() {
           Object.assign(existing, update);
           return existing;
         }
-        const record = { ...create };
+        const record = { ...(create as object) };
         db.qualityDefinition.push(record);
         return record;
       }),
@@ -38,7 +38,7 @@ function createPrismaMock() {
           Object.assign(existing, update);
           return existing;
         }
-        const record = { ...create };
+        const record = { ...(create as object) };
         db.qualityProfile.push(record);
         return record;
       }),
@@ -50,7 +50,7 @@ function createPrismaMock() {
           Object.assign(existing, update);
           return existing;
         }
-        const record = { ...create };
+        const record = { ...(create as object) };
         db.category.push(record);
         return record;
       }),
@@ -58,7 +58,7 @@ function createPrismaMock() {
     downloadClient: {
       findAll: vi.fn(async () => [...db.downloadClient]),
       create: vi.fn(async (data: unknown) => {
-        const record = { id: db.downloadClient.length + 1, ...(data as object).data };
+        const record = { id: db.downloadClient.length + 1, ...(data as any).data };
         db.downloadClient.push(record);
         return record;
       }),
@@ -69,7 +69,7 @@ function createPrismaMock() {
         return db.appSettings.find((r: any) => r.id === where.id) ?? null;
       }),
       create: vi.fn(async (data: unknown) => {
-        const record = { id: 1, ...(data as object).data };
+        const record = { id: 1, ...(data as any).data };
         db.appSettings.push(record);
         return record;
       }),
@@ -91,11 +91,11 @@ function createPrismaMock() {
 }
 
 async function seedSmartDefaults(prisma: any) {
-  const existingClients = await prisma.downloadClient.findAll();
+  const existingClients = await prisma.downloadClient!.findAll();
   const hasNoDownloadClients = existingClients.length === 0;
 
   if (hasNoDownloadClients) {
-    await prisma.downloadClient.create({
+    await prisma.downloadClient!.create({
       data: {
         name: BUILTIN_WEBTORRENT_NAME,
         protocol: 'torrent',
@@ -112,7 +112,7 @@ async function seedSmartDefaults(prisma: any) {
     });
   }
 
-  const settingsRecord = await prisma.appSettings.findUnique({ where: { id: 1 } });
+  const settingsRecord = await prisma.appSettings!.findUnique({ where: { id: 1 } });
   const current = settingsRecord ? JSON.parse(JSON.stringify(settingsRecord)) : null;
 
   let hasAnyChange = false;
@@ -148,7 +148,7 @@ async function seedSmartDefaults(prisma: any) {
     return;
   }
 
-  await prisma.appSettings.upsert({
+  await prisma.appSettings!.upsert({
     where: { id: 1 },
     create: {
       id: 1,
@@ -207,8 +207,8 @@ describe('seedSmartDefaults', () => {
     it('creates built-in WebTorrent when no download clients exist', async () => {
       await seedSmartDefaults(prisma);
 
-      expect(prisma.downloadClient.create).toHaveBeenCalledTimes(1);
-      const createCall = (prisma.downloadClient.create as ReturnType<typeof vi.fn>).mock.calls[0][0];
+      expect(prisma.downloadClient!.create).toHaveBeenCalledTimes(1);
+      const createCall = (prisma.downloadClient!.create as ReturnType<typeof vi.fn>).mock.calls[0]![0];
       expect(createCall.data.name).toBe(BUILTIN_WEBTORRENT_NAME);
       expect(createCall.data.protocol).toBe('torrent');
       expect(createCall.data.type).toBe('builtin');
@@ -217,13 +217,13 @@ describe('seedSmartDefaults', () => {
     });
 
     it('does NOT create built-in WebTorrent when other download clients exist', async () => {
-      (prisma.downloadClient.findAll as ReturnType<typeof vi.fn>).mockResolvedValue([
+      (prisma.downloadClient!.findAll as ReturnType<typeof vi.fn>).mockResolvedValue([
         { id: 1, name: 'My qBittorrent', protocol: 'torrent', type: 'qbittorrent' },
       ]);
 
       await seedSmartDefaults(prisma);
 
-      expect(prisma.downloadClient.create).not.toHaveBeenCalled();
+      expect(prisma.downloadClient!.create).not.toHaveBeenCalled();
     });
 
     it('is idempotent — calling twice does not create duplicate WebTorrent clients', async () => {
@@ -240,16 +240,16 @@ describe('seedSmartDefaults', () => {
     it('sets movie naming pattern when not already set', async () => {
       await seedSmartDefaults(prisma);
 
-      expect(prisma.appSettings.upsert).toHaveBeenCalled();
-      const upsertCall = (prisma.appSettings.upsert as ReturnType<typeof vi.fn>).mock.calls[0][0];
+      expect(prisma.appSettings!.upsert).toHaveBeenCalled();
+      const upsertCall = (prisma.appSettings!.upsert as ReturnType<typeof vi.fn>).mock.calls[0]![0];
       expect(upsertCall.create.mediaManagement.movieNamingPattern).toBe(MOVIE_NAMING_PATTERN);
     });
 
     it('sets series naming pattern when not already set', async () => {
       await seedSmartDefaults(prisma);
 
-      expect(prisma.appSettings.upsert).toHaveBeenCalled();
-      const upsertCall = (prisma.appSettings.upsert as ReturnType<typeof vi.fn>).mock.calls[0][0];
+      expect(prisma.appSettings!.upsert).toHaveBeenCalled();
+      const upsertCall = (prisma.appSettings!.upsert as ReturnType<typeof vi.fn>).mock.calls[0]![0];
       expect(upsertCall.create.mediaManagement.seriesNamingPattern).toBe(SERIES_NAMING_PATTERN);
     });
 
@@ -271,11 +271,11 @@ describe('seedSmartDefaults', () => {
         },
         streaming: {},
       };
-      (prisma.appSettings.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue(existingSettings);
+      (prisma.appSettings!.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue(existingSettings);
 
       await seedSmartDefaults(prisma);
 
-      expect(prisma.appSettings.upsert).not.toHaveBeenCalled();
+      expect(prisma.appSettings!.upsert).not.toHaveBeenCalled();
     });
 
     it('does NOT overwrite existing series naming pattern', async () => {
@@ -296,11 +296,11 @@ describe('seedSmartDefaults', () => {
         },
         streaming: {},
       };
-      (prisma.appSettings.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue(existingSettings);
+      (prisma.appSettings!.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue(existingSettings);
 
       await seedSmartDefaults(prisma);
 
-      expect(prisma.appSettings.upsert).not.toHaveBeenCalled();
+      expect(prisma.appSettings!.upsert).not.toHaveBeenCalled();
     });
   });
 
@@ -308,14 +308,14 @@ describe('seedSmartDefaults', () => {
     it('sets wantedSearchMinutes to 60 when not set', async () => {
       await seedSmartDefaults(prisma);
 
-      const upsertCall = (prisma.appSettings.upsert as ReturnType<typeof vi.fn>).mock.calls[0][0];
+      const upsertCall = (prisma.appSettings!.upsert as ReturnType<typeof vi.fn>).mock.calls[0]![0];
       expect(upsertCall.create.schedulerIntervals.wantedSearchMinutes).toBe(DEFAULT_WANTED_SEARCH_MINUTES);
     });
 
     it('sets rssSyncMinutes to 15 when not set', async () => {
       await seedSmartDefaults(prisma);
 
-      const upsertCall = (prisma.appSettings.upsert as ReturnType<typeof vi.fn>).mock.calls[0][0];
+      const upsertCall = (prisma.appSettings!.upsert as ReturnType<typeof vi.fn>).mock.calls[0]![0];
       expect(upsertCall.create.schedulerIntervals.rssSyncMinutes).toBe(DEFAULT_RSS_SYNC_MINUTES);
     });
 
@@ -333,11 +333,11 @@ describe('seedSmartDefaults', () => {
         mediaManagement: { movieNamingPattern: MOVIE_NAMING_PATTERN, seriesNamingPattern: SERIES_NAMING_PATTERN },
         streaming: {},
       };
-      (prisma.appSettings.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue(existingSettings);
+      (prisma.appSettings!.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue(existingSettings);
 
       await seedSmartDefaults(prisma);
 
-      expect(prisma.appSettings.upsert).not.toHaveBeenCalled();
+      expect(prisma.appSettings!.upsert).not.toHaveBeenCalled();
     });
 
     it('does NOT overwrite existing rssSyncMinutes', async () => {
@@ -354,11 +354,11 @@ describe('seedSmartDefaults', () => {
         mediaManagement: { movieNamingPattern: MOVIE_NAMING_PATTERN, seriesNamingPattern: SERIES_NAMING_PATTERN },
         streaming: {},
       };
-      (prisma.appSettings.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue(existingSettings);
+      (prisma.appSettings!.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue(existingSettings);
 
       await seedSmartDefaults(prisma);
 
-      expect(prisma.appSettings.upsert).not.toHaveBeenCalled();
+      expect(prisma.appSettings!.upsert).not.toHaveBeenCalled();
     });
   });
 
@@ -366,7 +366,7 @@ describe('seedSmartDefaults', () => {
     it('sets wantedLanguages to ["en"] when empty', async () => {
       await seedSmartDefaults(prisma);
 
-      const upsertCall = (prisma.appSettings.upsert as ReturnType<typeof vi.fn>).mock.calls[0][0];
+      const upsertCall = (prisma.appSettings!.upsert as ReturnType<typeof vi.fn>).mock.calls[0]![0];
       expect(upsertCall.create.update.wantedLanguages).toEqual(DEFAULT_WANTED_LANGUAGES);
     });
 
@@ -384,11 +384,11 @@ describe('seedSmartDefaults', () => {
         mediaManagement: { movieNamingPattern: MOVIE_NAMING_PATTERN, seriesNamingPattern: SERIES_NAMING_PATTERN },
         streaming: {},
       };
-      (prisma.appSettings.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue(existingSettings);
+      (prisma.appSettings!.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue(existingSettings);
 
       await seedSmartDefaults(prisma);
 
-      expect(prisma.appSettings.upsert).not.toHaveBeenCalled();
+      expect(prisma.appSettings!.upsert).not.toHaveBeenCalled();
     });
 
     it('overwrites empty-string wantedLanguages with ["en"]', async () => {
@@ -405,12 +405,12 @@ describe('seedSmartDefaults', () => {
         mediaManagement: { movieNamingPattern: MOVIE_NAMING_PATTERN, seriesNamingPattern: SERIES_NAMING_PATTERN },
         streaming: {},
       };
-      (prisma.appSettings.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue(existingSettings);
+      (prisma.appSettings!.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue(existingSettings);
 
       await seedSmartDefaults(prisma);
 
-      expect(prisma.appSettings.upsert).toHaveBeenCalled();
-      const upsertCall = (prisma.appSettings.upsert as ReturnType<typeof vi.fn>).mock.calls[0][0];
+      expect(prisma.appSettings!.upsert).toHaveBeenCalled();
+      const upsertCall = (prisma.appSettings!.upsert as ReturnType<typeof vi.fn>).mock.calls[0]![0];
       expect(upsertCall.create.update.wantedLanguages).toEqual(['en']);
     });
   });
@@ -419,10 +419,10 @@ describe('seedSmartDefaults', () => {
     it('seeds all defaults in a single call on fresh install', async () => {
       await seedSmartDefaults(prisma);
 
-      expect(prisma.downloadClient.create).toHaveBeenCalledTimes(1);
-      expect(prisma.appSettings.upsert).toHaveBeenCalledTimes(1);
+      expect(prisma.downloadClient!.create).toHaveBeenCalledTimes(1);
+      expect(prisma.appSettings!.upsert).toHaveBeenCalledTimes(1);
 
-      const upsertCall = (prisma.appSettings.upsert as ReturnType<typeof vi.fn>).mock.calls[0][0];
+      const upsertCall = (prisma.appSettings!.upsert as ReturnType<typeof vi.fn>).mock.calls[0]![0];
       const created = upsertCall.create;
 
       expect(created.mediaManagement.movieNamingPattern).toBe(MOVIE_NAMING_PATTERN);

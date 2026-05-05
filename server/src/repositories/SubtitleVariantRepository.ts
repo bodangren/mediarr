@@ -296,7 +296,7 @@ export class SubtitleVariantRepository {
       select: { variantId: true },
       distinct: ['variantId'],
     });
-    return failedWanted.map(w => ({ id: w.variantId }));
+    return failedWanted.map((w: { variantId: number }) => ({ id: w.variantId }));
   }
 
   async getVariantInventory(variantId: number): Promise<{
@@ -462,10 +462,10 @@ export class SubtitleVariantRepository {
     );
     const staleIds = existing
       .filter(
-        item =>
+        (item: { languageCode: string; isForced: boolean; isHi: boolean }) =>
           !allowed.has(`${item.languageCode}|${item.isForced}|${item.isHi}`),
       )
-      .map(item => item.id);
+      .map((item: { id: number }) => item.id);
 
     if (staleIds.length === 0) {
       return;
@@ -513,14 +513,14 @@ export class SubtitleVariantRepository {
 
     const subtitleTracks = await this.prisma.variantSubtitleTrack.findMany({
       where: {
-        variantId: { in: siblingVariants.map(item => item.id) },
+        variantId: { in: siblingVariants.map((item: { id: number }) => item.id) },
         filePath: { not: null },
       },
       select: { filePath: true },
     });
 
     return subtitleTracks
-      .map(track => track.filePath)
-      .filter((path): path is string => Boolean(path));
+      .map((track: { filePath: string | null }) => track.filePath)
+      .filter((path: string | null): path is string => Boolean(path));
   }
 }

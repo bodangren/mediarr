@@ -127,7 +127,7 @@ describe('MediaSearchService.searchAllIndexers — toSearchQuery edge cases', ()
       tmdbId: 0,
     });
 
-    const searchQuery = indexer.search.mock.calls[0][0];
+    const searchQuery = indexer.search.mock.calls[0]![0];
     expect(searchQuery.tmdbid).toBe(0);
   });
 
@@ -147,7 +147,7 @@ describe('MediaSearchService.searchAllIndexers — toSearchQuery edge cases', ()
       tvdbId: 0,
     });
 
-    const searchQuery = indexer.search.mock.calls[0][0];
+    const searchQuery = indexer.search.mock.calls[0]![0];
     expect(searchQuery.tvdbid).toBe(0);
   });
 
@@ -167,7 +167,7 @@ describe('MediaSearchService.searchAllIndexers — toSearchQuery edge cases', ()
       categories: [9999],
     });
 
-    const searchQuery = indexer.search.mock.calls[0][0];
+    const searchQuery = indexer.search.mock.calls[0]![0];
     expect(searchQuery.categories).toEqual([9999]);
   });
 
@@ -187,7 +187,7 @@ describe('MediaSearchService.searchAllIndexers — toSearchQuery edge cases', ()
       imdbId: '1234567',
     });
 
-    const searchQuery = indexer.search.mock.calls[0][0];
+    const searchQuery = indexer.search.mock.calls[0]![0];
     expect(searchQuery.imdbid).toBe('tt1234567');
   });
 
@@ -207,7 +207,7 @@ describe('MediaSearchService.searchAllIndexers — toSearchQuery edge cases', ()
       imdbId: 'tt1234567',
     });
 
-    const searchQuery = indexer.search.mock.calls[0][0];
+    const searchQuery = indexer.search.mock.calls[0]![0];
     expect(searchQuery.imdbid).toBe('tt1234567');
   });
 
@@ -227,7 +227,7 @@ describe('MediaSearchService.searchAllIndexers — toSearchQuery edge cases', ()
       imdbId: '',
     });
 
-    const searchQuery = indexer.search.mock.calls[0][0];
+    const searchQuery = indexer.search.mock.calls[0]![0];
     expect(searchQuery.imdbid).toBeUndefined();
   });
 });
@@ -252,7 +252,7 @@ describe('MediaSearchService.getSearchCandidates — legacy API edge cases', () 
 
     await service.getSearchCandidates({ q: 'test', tmdbid: 'not-a-number' });
 
-    const searchQuery = indexer.search.mock.calls[0][0];
+    const searchQuery = indexer.search.mock.calls[0]![0];
     // NaN is passed through; indexer should handle it gracefully
     expect(Number.isNaN(searchQuery.tmdbid)).toBe(true);
   });
@@ -269,7 +269,7 @@ describe('MediaSearchService.getSearchCandidates — legacy API edge cases', () 
 
     await service.getSearchCandidates({ q: 'test', tmdbid: '12345' });
 
-    const searchQuery = indexer.search.mock.calls[0][0];
+    const searchQuery = indexer.search.mock.calls[0]![0];
     expect(searchQuery.tmdbid).toBe(12345);
   });
 
@@ -285,7 +285,7 @@ describe('MediaSearchService.getSearchCandidates — legacy API edge cases', () 
 
     await service.getSearchCandidates({ q: 'test', categories: [2000, 8000] });
 
-    const searchQuery = indexer.search.mock.calls[0][0];
+    const searchQuery = indexer.search.mock.calls[0]![0];
     expect(searchQuery.categories).toEqual([2000, 8000]);
   });
 });
@@ -329,7 +329,7 @@ describe('MediaSearchService.grabReleaseByGuid — downloadClientId ignored', ()
     expect(result.infoHash).toBe('eeee5555eeee5555eeee5555eeee5555eeee5555');
     expect(tm.addTorrent).toHaveBeenCalledOnce();
     // downloadClientId is not forwarded to addTorrent
-    const callArgs = tm.addTorrent.mock.calls[0][0];
+    const callArgs = tm.addTorrent.mock.calls[0]![0];
     expect(callArgs).not.toHaveProperty('downloadClientId');
   });
 });

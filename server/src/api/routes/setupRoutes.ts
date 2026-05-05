@@ -103,7 +103,7 @@ export function registerSetupRoutes(app: FastifyInstance, deps: ApiDependencies)
     await deps.settingsService.update({
       update: {
         setupCompleted: true,
-      },
+      } as import('../../repositories/AppSettingsRepository').UpdateSettings,
     });
 
     const status = await getSetupStatus(deps);

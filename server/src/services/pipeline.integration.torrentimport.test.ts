@@ -234,7 +234,7 @@ describe('Grab → TorrentManager → ImportManager Handoff', () => {
     });
 
     expect(activityEmitter.emit).toHaveBeenCalled();
-    const emittedEvent = activityEmitter.emit.mock.calls[0][0];
+    const emittedEvent = activityEmitter.emit.mock.calls[0]![0];
     expect(emittedEvent.eventType).toBe('IMPORT_FAILED');
   });
 

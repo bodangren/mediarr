@@ -49,7 +49,7 @@ export class DiscoveryService {
   private publications: BonjourPublication[] = [];
   private announcement?: DiscoveryAnnouncement | undefined;
 
-  constructor(private readonly bonjourFactory: BonjourFactory = () => new Bonjour() as BonjourInstance) {}
+  constructor(private readonly bonjourFactory: BonjourFactory = () => new Bonjour() as unknown as BonjourInstance) {}
 
   isStarted(): boolean {
     return Boolean(this.bonjour && this.publications.length > 0 && this.announcement);

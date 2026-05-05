@@ -116,9 +116,9 @@ export class DownloadClientRepository {
       orderBy: { priority: 'asc' },
     });
 
-    return clients.map((client) => ({
+    return clients.map((client: { config: unknown }) => ({
       ...client,
-      config: this.decryptConfig(client.config),
+      config: this.decryptConfig(client.config as string),
     }));
   }
 
@@ -128,9 +128,9 @@ export class DownloadClientRepository {
       orderBy: { priority: 'asc' },
     });
 
-    return clients.map((client) => ({
+    return clients.map((client: { config: unknown }) => ({
       ...client,
-      config: this.decryptConfig(client.config),
+      config: this.decryptConfig(client.config as string),
     }));
   }
 
@@ -140,9 +140,9 @@ export class DownloadClientRepository {
       orderBy: { priority: 'asc' },
     });
 
-    return clients.map((client) => ({
+    return clients.map((client: { config: unknown }) => ({
       ...client,
-      config: this.decryptConfig(client.config),
+      config: this.decryptConfig(client.config as string),
     }));
   }
 

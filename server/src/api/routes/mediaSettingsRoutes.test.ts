@@ -23,6 +23,8 @@ function createApp(settingsService: ReturnType<typeof createSettingsServiceMock>
 const defaultMediaSettings: MediaManagementSettings = {
   movieRootFolder: '',
   tvRootFolder: '',
+  movieNamingPattern: '',
+  seriesNamingPattern: '',
 };
 
 const defaultAppSettings = {
@@ -108,6 +110,8 @@ describe('mediaSettingsRoutes — PUT /api/settings/media', () => {
     const payload: MediaManagementSettings = {
       movieRootFolder: '/media/movies',
       tvRootFolder: '/media/tv',
+      movieNamingPattern: '{Movie.Title}.{Release.Year}.{Quality.Full}.{MediaInfo.VideoCodec}',
+      seriesNamingPattern: '{Series.Title}.S{season:00}E{episode:00}.{Episode.Title}.{Quality.Full}',
     };
     settingsService.update.mockResolvedValue({ ...defaultAppSettings, mediaManagement: payload });
 
@@ -125,6 +129,8 @@ describe('mediaSettingsRoutes — PUT /api/settings/media', () => {
     const payload: MediaManagementSettings = {
       movieRootFolder: '/movies',
       tvRootFolder: '/tv',
+      movieNamingPattern: '',
+      seriesNamingPattern: '',
     };
     settingsService.update.mockResolvedValue({ ...defaultAppSettings, mediaManagement: payload });
 

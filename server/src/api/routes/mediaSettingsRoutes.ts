@@ -20,6 +20,7 @@ function validateMediaManagementBody(body: unknown): MediaManagementSettings {
   }
 
   return {
+    ...DEFAULT_MEDIA_MANAGEMENT_SETTINGS,
     movieRootFolder: b.movieRootFolder,
     tvRootFolder: b.tvRootFolder,
   };

@@ -754,7 +754,7 @@ export class ImportManager {
     const yearMatch = normalized.match(/^(.*?)(?:\s+)(19\d{2}|20\d{2})(?:\s|$)/i);
     if (yearMatch) {
       const title = yearMatch[1]?.trim();
-      const year = parseInt(yearMatch[2], 10);
+      const year = parseInt(yearMatch[2]!, 10);
       if (title) {
         return {
           title,

@@ -121,7 +121,7 @@ describe('Search → Scoring → Dedup → Grab Handoff', () => {
     await service.grabRelease(candidate, { episodeId: 42 });
 
     expect(activityEventEmitter.emit).toHaveBeenCalledOnce();
-    const emittedEvent = activityEventEmitter.emit.mock.calls[0][0];
+    const emittedEvent = activityEventEmitter.emit.mock.calls[0]![0];
     expect(emittedEvent.eventType).toBe('RELEASE_GRABBED');
     expect(emittedEvent.sourceModule).toBe('media-search-service');
     expect(emittedEvent.success).toBe(true);

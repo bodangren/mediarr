@@ -156,7 +156,7 @@ describe('MediaSearchService.grabRelease — addTorrent failure and mediaContext
 
     await service.grabRelease(candidate);
 
-    const callArg = torrentManager.addTorrent.mock.calls[0][0];
+    const callArg = torrentManager.addTorrent.mock.calls[0]![0];
     expect(callArg).not.toHaveProperty('episodeId');
     expect(callArg).not.toHaveProperty('movieId');
   });

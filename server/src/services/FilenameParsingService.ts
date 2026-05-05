@@ -110,7 +110,7 @@ export class FilenameParsingService {
     // Extract year (4 digits, typically 1900-2099)
     const yearMatch = name.match(/[\.\s\(\[]?(19\d{2}|20\d{2})[\.\s\)\]]?/);
     if (yearMatch) {
-      result.year = parseInt(yearMatch[1], 10);
+      result.year = parseInt(yearMatch[1]!, 10);
     }
 
     // Extract resolution
@@ -159,7 +159,7 @@ export class FilenameParsingService {
 
     // Remove year and everything after
     if (yearMatch) {
-      title = title.substring(0, title.indexOf(yearMatch[1]));
+      title = title.substring(0, title.indexOf(yearMatch[1]!));
     } else {
       // Remove quality indicators and everything after
       const qualityIndex = title.search(/\d{3,4}p|BluRay|WEB|HDTV|DVD/i);
@@ -221,8 +221,8 @@ export class FilenameParsingService {
     let seasonEpisodeMatch = name.match(/\.?S(\d{1,2})E(\d{1,3})(?:-?E(\d{1,3}))?\.?/i);
     
     if (seasonEpisodeMatch) {
-      result.seasonNumber = parseInt(seasonEpisodeMatch[1], 10);
-      result.episodeNumber = parseInt(seasonEpisodeMatch[2], 10);
+      result.seasonNumber = parseInt(seasonEpisodeMatch[1]!, 10);
+      result.episodeNumber = parseInt(seasonEpisodeMatch[2]!, 10);
       if (seasonEpisodeMatch[3]) {
         result.endingEpisodeNumber = parseInt(seasonEpisodeMatch[3], 10);
       }
@@ -232,8 +232,8 @@ export class FilenameParsingService {
     if (!seasonEpisodeMatch) {
       seasonEpisodeMatch = name.match(/[.\s-](\d{1,2})x(\d{1,3})(?:-\d{1,2}x(\d{1,3}))?[.\s-]/i);
       if (seasonEpisodeMatch) {
-        result.seasonNumber = parseInt(seasonEpisodeMatch[1], 10);
-        result.episodeNumber = parseInt(seasonEpisodeMatch[2], 10);
+        result.seasonNumber = parseInt(seasonEpisodeMatch[1]!, 10);
+        result.episodeNumber = parseInt(seasonEpisodeMatch[2]!, 10);
         if (seasonEpisodeMatch[3]) {
           result.endingEpisodeNumber = parseInt(seasonEpisodeMatch[3], 10);
         }
@@ -244,7 +244,7 @@ export class FilenameParsingService {
     if (!seasonEpisodeMatch) {
       const episodeOnlyMatch = name.match(/[.\s]E(?:p)?(\d{1,4})[.\s]/i);
       if (episodeOnlyMatch) {
-        result.episodeNumber = parseInt(episodeOnlyMatch[1], 10);
+        result.episodeNumber = parseInt(episodeOnlyMatch[1]!, 10);
         result.seasonNumber = 1;
       }
     }
@@ -253,7 +253,7 @@ export class FilenameParsingService {
     if (!seasonEpisodeMatch) {
       const absoluteMatch = name.match(/[.\s](\d{3,4})[.\s]/);
       if (absoluteMatch) {
-        const num = parseInt(absoluteMatch[1], 10);
+        const num = parseInt(absoluteMatch[1]!, 10);
         if (num >= 100 && num < 10000) {
           result.seasonNumber = Math.floor(num / 100);
           result.episodeNumber = num % 100;
@@ -265,7 +265,7 @@ export class FilenameParsingService {
     // Extract year (4 digits, typically 1900-2099) - for series year
     const yearMatch = name.match(/[\.\s\(\[]?(19\d{2}|20\d{2})[\.\s\)\]]?/);
     if (yearMatch) {
-      result.year = parseInt(yearMatch[1], 10);
+      result.year = parseInt(yearMatch[1]!, 10);
     }
 
     // Extract resolution

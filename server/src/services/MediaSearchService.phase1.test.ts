@@ -480,7 +480,7 @@ describe('MediaSearchService.searchMovie — scoring without qualityProfileId', 
 
     // Verify the search was called (query construction includes year)
     expect(indexer.search).toHaveBeenCalledOnce();
-    const searchQuery = indexer.search.mock.calls[0][0];
+    const searchQuery = indexer.search.mock.calls[0]![0];
     expect(searchQuery.q).toContain('The Matrix');
     expect(searchQuery.q).toContain('1999');
   });

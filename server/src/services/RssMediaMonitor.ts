@@ -166,7 +166,7 @@ export class RssMediaMonitor {
     }
 
     const parsedTitle = yearMatch[1]?.trim();
-    const year = parseInt(yearMatch[2], 10);
+    const year = parseInt(yearMatch[2]!, 10);
 
     if (!parsedTitle) {
       return null;

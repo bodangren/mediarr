@@ -104,7 +104,7 @@ describe('MediaSearchService.grabRelease — URL normalisation', () => {
 
     await service.grabRelease(candidate);
 
-    const callArgs = torrentManager.addTorrent.mock.calls[0][0];
+    const callArgs = torrentManager.addTorrent.mock.calls[0]![0];
     expect(callArgs.magnetUrl).toBe(candidate.magnetUrl);
     expect(callArgs.downloadUrl).toBeUndefined();
   });
@@ -121,7 +121,7 @@ describe('MediaSearchService.grabRelease — URL normalisation', () => {
 
     await service.grabRelease(candidate);
 
-    const callArgs = torrentManager.addTorrent.mock.calls[0][0];
+    const callArgs = torrentManager.addTorrent.mock.calls[0]![0];
     expect(callArgs.magnetUrl).toBe(candidate.downloadUrl);
     expect(callArgs.downloadUrl).toBeUndefined();
   });

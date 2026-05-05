@@ -80,11 +80,11 @@ describe('CatalogCache', () => {
 
     const cache = new CatalogCache('/mock/path.json');
     await cache.load();
-    expect(cache.get()[0].name).toBe('1337x');
+    expect(cache.get()[0]!.name).toBe('1337x');
 
     cache.invalidate();
     await cache.load();
-    expect(cache.get()[0].name).toBe('Updated');
+    expect(cache.get()[0]!.name).toBe('Updated');
   });
 
   it('watch triggers reload on file change', async () => {
@@ -101,7 +101,7 @@ describe('CatalogCache', () => {
 
     expect(fs.watch).toHaveBeenCalledWith('/mock/path.json', expect.any(Function));
 
-    const watchCallback = vi.mocked(fs.watch).mock.calls[0][1] as (eventType: string) => void;
+    const watchCallback = vi.mocked(fs.watch).mock.calls[0]![1] as (eventType: string) => void;
     watchCallback('change');
 
     await new Promise(resolve => setTimeout(resolve, 10));
@@ -121,7 +121,7 @@ describe('CatalogCache', () => {
     await cache.load();
     cache.watch();
 
-    const watchCallback = vi.mocked(fs.watch).mock.calls[0][1] as (eventType: string) => void;
+    const watchCallback = vi.mocked(fs.watch).mock.calls[0]![1] as (eventType: string) => void;
     watchCallback('rename');
 
     await new Promise(resolve => setTimeout(resolve, 10));

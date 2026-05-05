@@ -96,6 +96,10 @@ describe('setupRoutes', () => {
 
     const indexerRepository = {
       findAll: vi.fn().mockResolvedValue([]),
+      findById: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
     };
 
     const app = createApp({ settingsService, indexerRepository });
@@ -126,6 +130,10 @@ describe('setupRoutes', () => {
 
     const indexerRepository = {
       findAll: vi.fn().mockResolvedValue([{ id: 1 }]),
+      findById: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
     };
 
     const app = createApp({ settingsService, indexerRepository });
@@ -157,6 +165,10 @@ describe('setupRoutes', () => {
 
     const indexerRepository = {
       findAll: vi.fn().mockResolvedValue([]),
+      findById: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
     };
 
     const app = createApp({ settingsService, indexerRepository });

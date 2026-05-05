@@ -502,7 +502,10 @@ export class ScrapingParser {
       const hasTextTemplate = typeof def.text === 'string' && def.text.includes('{{');
       const hasDefaultTemplate = typeof def.default === 'string' && def.default.includes('{{');
       if (hasTextTemplate || hasDefaultTemplate) {
-        extracted[name] = this.renderFieldTemplate(extracted[name], extracted);
+        const value = extracted[name];
+        if (value !== undefined) {
+          extracted[name] = this.renderFieldTemplate(value, extracted);
+        }
       }
     }
 
@@ -609,7 +612,10 @@ export class ScrapingParser {
       const hasTextTemplate = typeof def.text === 'string' && def.text.includes('{{');
       const hasDefaultTemplate = typeof def.default === 'string' && def.default.includes('{{');
       if (hasTextTemplate || hasDefaultTemplate) {
-        extracted[name] = this.renderFieldTemplate(extracted[name], extracted);
+        const value = extracted[name];
+        if (value !== undefined) {
+          extracted[name] = this.renderFieldTemplate(value, extracted);
+        }
       }
     }
 

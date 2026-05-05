@@ -43,7 +43,7 @@ export class QualityProfileRepository {
       orderBy: { name: 'asc' },
     });
 
-    return profiles.map(profile => ({
+    return profiles.map((profile: any) => ({
       ...profile,
       items: parseItems(profile.items),
     }));

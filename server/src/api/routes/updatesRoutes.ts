@@ -52,7 +52,7 @@ function toAvailablePayload(release: ReturnType<UpdateService['getLatestRelease'
 }
 
 function getService(deps: ApiDependencies): UpdateService {
-  return deps.updateService ?? sharedUpdateService;
+  return (deps.updateService as UpdateService | undefined) ?? sharedUpdateService;
 }
 
 export const updatesState = {

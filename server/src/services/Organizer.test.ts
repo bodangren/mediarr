@@ -5,12 +5,12 @@ import { Organizer } from './Organizer';
 // Hoisted fs mock — gives us access to vi.fn() instances from outside the factory
 // ---------------------------------------------------------------------------
 const fsMocks = vi.hoisted(() => ({
-  mkdir: vi.fn<[], Promise<void>>().mockResolvedValue(undefined),
-  link: vi.fn<[], Promise<void>>().mockResolvedValue(undefined),
-  rename: vi.fn<[], Promise<void>>().mockResolvedValue(undefined),
-  copyFile: vi.fn<[], Promise<void>>().mockResolvedValue(undefined),
-  unlink: vi.fn<[], Promise<void>>().mockResolvedValue(undefined),
-  writeFile: vi.fn<[], Promise<void>>().mockResolvedValue(undefined),
+  mkdir: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
+  link: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
+  rename: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
+  copyFile: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
+  unlink: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
+  writeFile: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
 }));
 
 vi.mock('node:fs/promises', () => ({

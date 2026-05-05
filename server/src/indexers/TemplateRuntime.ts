@@ -103,7 +103,7 @@ function splitTopLevelArguments(value: string): string[] {
       }
     }
 
-    if (!inQuote && depth === 0 && /\s/.test(character)) {
+    if (!inQuote && depth === 0 && character !== undefined && /\s/.test(character)) {
       if (buffer.trim().length > 0) {
         argumentsList.push(buffer.trim());
         buffer = '';
@@ -190,8 +190,8 @@ function evaluateCondition(
       throw new Error(`Unsupported template node: if ${expression}`);
     }
 
-    const left = resolveConditionValue(argumentsList[0], context, strict);
-    const right = resolveConditionValue(argumentsList[1], context, strict);
+    const left = resolveConditionValue(argumentsList[0]!, context, strict);
+    const right = resolveConditionValue(argumentsList[1]!, context, strict);
     return left === right;
   }
 

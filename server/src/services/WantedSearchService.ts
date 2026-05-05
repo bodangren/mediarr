@@ -248,8 +248,8 @@ export class WantedSearchService {
     if (!series) return;
 
     const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-    const regularSeasons = series.seasons.filter(s => s.seasonNumber > 0);
-    const seasonsWithMissing = regularSeasons.filter(s => s.episodes.some(e => !e.path));
+    const regularSeasons = series.seasons.filter((s: { seasonNumber: number }) => s.seasonNumber > 0);
+    const seasonsWithMissing = regularSeasons.filter((s: { episodes: Array<{ path: string | null }> }) => s.episodes.some((e: { path: string | null }) => !e.path));
 
     if (seasonsWithMissing.length > 0) {
       // For ended series, try a complete series pack first.
@@ -262,7 +262,7 @@ export class WantedSearchService {
       // Per-season strategy (skipped when a series pack was already grabbed)
       if (!packGrabbed) {
         for (const season of seasonsWithMissing) {
-          const missingEpisodes = season.episodes.filter(e => !e.path);
+          const missingEpisodes = season.episodes.filter((e: { path: string | null }) => !e.path);
 
           if (this.isSeasonComplete(season.episodes)) {
             // All episodes have aired — prefer a season pack
@@ -284,9 +284,9 @@ export class WantedSearchService {
     }
 
     // Specials are always searched individually (skipping pre-air ones)
-    const specialsSeason = series.seasons.find(s => s.seasonNumber === 0);
+    const specialsSeason = series.seasons.find((s: { seasonNumber: number }) => s.seasonNumber === 0);
     if (specialsSeason) {
-      for (const episode of specialsSeason.episodes.filter(e => !e.path && this.isReleasedYet(e.airDateUtc))) {
+      for (const episode of specialsSeason.episodes.filter((e: { path: string | null; airDateUtc: Date | null }) => !e.path && this.isReleasedYet(e.airDateUtc))) {
         await this.autoSearchEpisode(episode.id);
         await delay(2000);
       }
@@ -491,7 +491,7 @@ export class WantedSearchService {
     // If the movie has a known year, reject releases that contain a different year.
     if (movieYear !== null) {
       const yearInTitle = normRelease.match(/\b((?:19|20)\d{2})\b/);
-      if (yearInTitle && parseInt(yearInTitle[1], 10) !== movieYear) {
+      if (yearInTitle && parseInt(yearInTitle[1]!, 10) !== movieYear) {
         return false;
       }
     }

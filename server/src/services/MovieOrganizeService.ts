@@ -203,7 +203,7 @@ export class MovieOrganizeService {
   private extractResolution(quality: string | null): string {
     if (!quality) return '';
     const match = quality.match(/(\d{3,4}p)/);
-    return match ? match[1] : '';
+    return match ? match[1]! : '';
   }
 
   /**
@@ -212,7 +212,7 @@ export class MovieOrganizeService {
    */
   private extractAudioChannels(variant: { audioTracks?: Array<{ channels?: string | null }> }): string {
     if (!variant.audioTracks || variant.audioTracks.length === 0) return '';
-    return variant.audioTracks[0].channels ?? '';
+    return variant.audioTracks[0]!.channels ?? '';
   }
 }
 

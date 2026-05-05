@@ -729,7 +729,7 @@ describe('ImportManager', () => {
         mediaType: 'episode',
       }),
     );
-    const call = notifyDownload.mock.calls[0][0];
+    const call = notifyDownload.mock.calls[0]![0];
     expect(call.title).toContain('Breaking Bad');
   });
 
@@ -794,7 +794,7 @@ describe('ImportManager', () => {
 
     expect(importEvents).toHaveLength(2);
     expect(failEvents).toHaveLength(1);
-    expect(failEvents[0][0].details.reason).toContain('no match found');
+    expect(failEvents[0]![0].details.reason).toContain('no match found');
   });
 
   // ───────── Multi-file torrent: organizer throws on one file, others still import ─────────
@@ -841,7 +841,7 @@ describe('ImportManager', () => {
       .filter((c: any[]) => c[0]?.eventType === 'MOVIE_IMPORTED');
 
     expect(failEvents).toHaveLength(1);
-    expect(failEvents[0][0].details.reason).toBe('permission denied');
+    expect(failEvents[0]![0].details.reason).toBe('permission denied');
     expect(importEvents).toHaveLength(1);
   });
 

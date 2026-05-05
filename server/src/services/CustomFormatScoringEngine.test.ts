@@ -546,7 +546,7 @@ describe('CustomFormatScoringEngine — evaluate() and scoreRelease()', () => {
       const result = engine.scoreRelease(release, formats);
       expect(result.totalScore).toBe(10);
       expect(result.matchedFormats).toHaveLength(1);
-      expect(result.matchedFormats[0].id).toBe(1);
+      expect(result.matchedFormats[0]!.id).toBe(1);
     });
 
     it('returns zero score when no formats match', () => {

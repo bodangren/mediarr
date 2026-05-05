@@ -61,9 +61,9 @@ export async function getDiskSpaceForPath(
       const parts = lastLine.split(/\s+/);
       
       if (parts.length >= 4) {
-        const total = parseInt(parts[1], 10);
-        const used = parseInt(parts[2], 10);
-        const available = parseInt(parts[3], 10);
+        const total = parseInt(parts[1]!, 10);
+        const used = parseInt(parts[2]!, 10);
+        const available = parseInt(parts[3]!, 10);
         
         if (!Number.isNaN(total) && !Number.isNaN(available)) {
           const usedPercent = total > 0 ? Math.round((used / total) * 100) : 0;
@@ -113,10 +113,10 @@ function pickUpcomingMovieDate(
     .sort((a, b) => a.getTime() - b.getTime());
 
   if (inWindow.length > 0) {
-    return inWindow[0];
+    return inWindow[0]!;
   }
 
-  return releases.sort((a, b) => a.getTime() - b.getTime())[0];
+  return releases.sort((a, b) => a.getTime() - b.getTime())[0]!;
 }
 
 export function registerDashboardRoutes(
@@ -200,7 +200,7 @@ export function registerDashboardRoutes(
           episodeTitle: ep.title,
           seasonNumber: ep.seasonNumber,
           episodeNumber: ep.episodeNumber,
-          date: ep.airDateUtc ? new Date(ep.airDateUtc).toISOString().split('T')[0] : '',
+          date: ep.airDateUtc ? new Date(ep.airDateUtc).toISOString().split('T')[0]! : '',
           status: determineEpisodeStatus(ep.airDateUtc, hasFile),
           hasFile,
         });
@@ -238,7 +238,7 @@ export function registerDashboardRoutes(
           id: movie.id,
           type: 'movie',
           title: movie.title,
-          date: relevantDate ? new Date(relevantDate).toISOString().split('T')[0] : '',
+          date: relevantDate ? new Date(relevantDate).toISOString().split('T')[0]! : '',
           status: determineMovieStatus(relevantDate, hasFile),
           hasFile,
         });

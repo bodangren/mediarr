@@ -60,7 +60,7 @@ export class ImportListRepository {
       orderBy: { name: 'asc' },
     });
 
-    return lists.map(list => ({
+    return lists.map((list: { config: unknown }) => ({
       ...list,
       config: parseConfig(list.config),
     }));
@@ -95,7 +95,7 @@ export class ImportListRepository {
       orderBy: { name: 'asc' },
     });
 
-    return lists.map(list => ({
+    return lists.map((list: { config: unknown }) => ({
       ...list,
       config: parseConfig(list.config),
     }));

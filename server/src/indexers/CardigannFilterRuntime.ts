@@ -78,6 +78,9 @@ function parseRelativeDate(value: string, now: Date): Date | undefined {
 
   const amount = Number(match[1]);
   const unit = match[2];
+  if (!unit) {
+    return undefined;
+  }
 
   const millisByUnit: Record<string, number> = {
     second: 1000,

@@ -1,4 +1,4 @@
-import type { PrismaClient, Movie } from '@prisma/client';
+import type { PrismaClient, Movie, Prisma } from '@prisma/client';
 
 /**
  * Input type for bulk movie updates
@@ -73,7 +73,7 @@ export class MovieRepository {
     }
 
     // Execute updates within a transaction
-    await this.prisma.$transaction(async (tx) => {
+    await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       for (const movieId of movieIds) {
         try {
           await (tx as any).movie.update({

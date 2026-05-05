@@ -31,7 +31,19 @@ export async function seedSmartDefaults(prisma: PrismaClient): Promise<void> {
   }
 
   const settingsRecord = await prisma.appSettings.findUnique({ where: { id: 1 } });
-  const current = settingsRecord ? JSON.parse(JSON.stringify(settingsRecord)) as Record<string, unknown> : null;
+  const current = settingsRecord ? JSON.parse(JSON.stringify(settingsRecord)) as {
+    [key: string]: unknown;
+    mediaManagement?: Record<string, unknown>;
+    schedulerIntervals?: Record<string, unknown>;
+    update?: Record<string, unknown>;
+    torrentLimits?: Record<string, unknown>;
+    pathVisibility?: Record<string, unknown>;
+    apiKeys?: Record<string, unknown>;
+    host?: Record<string, unknown>;
+    security?: Record<string, unknown>;
+    logging?: Record<string, unknown>;
+    streaming?: Record<string, unknown>;
+  } : null;
 
   let hasAnyChange = false;
 

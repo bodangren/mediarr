@@ -235,7 +235,7 @@ describe('GET /api/system/status', () => {
     await app.inject({ method: 'GET', url: '/api/system/status' });
 
     expect(settingsService.get).toHaveBeenCalled();
-    const callArgs = svc.getDiskSpace.mock.calls[0][0] as Array<{ path: string; label: string }>;
+    const callArgs = svc.getDiskSpace.mock.calls[0]![0] as Array<{ path: string; label: string }>;
     const paths = callArgs.map(p => p.path);
     expect(paths).toContain('/srv/movies');
     expect(paths).toContain('/srv/tv');
@@ -255,7 +255,7 @@ describe('GET /api/system/status', () => {
 
     await app.inject({ method: 'GET', url: '/api/system/status' });
 
-    const callArgs = svc.getDiskSpace.mock.calls[0][0] as Array<{ path: string }>;
+    const callArgs = svc.getDiskSpace.mock.calls[0]![0] as Array<{ path: string }>;
     const paths = callArgs.map(p => p.path);
     // Unique paths only
     expect(new Set(paths).size).toBe(paths.length);
@@ -333,8 +333,8 @@ describe('GET /api/tasks/scheduled', () => {
     expect(scheduler.listJobsMeta).toHaveBeenCalled();
     const body = JSON.parse(response.body) as { data: Array<{ id: string; taskName: string }> };
     expect(body.data).toHaveLength(2);
-    expect(body.data[0].id).toBe('rss-sync');
-    expect(body.data[0].taskName).toBe('Rss Sync');
+    expect(body.data[0]!.id).toBe('rss-sync');
+    expect(body.data[0]!.taskName).toBe('Rss Sync');
   });
 });
 
@@ -516,7 +516,7 @@ describe('GET /api/tasks/history', () => {
     };
     const dates = body.data.map(t => new Date(t.started).getTime());
     for (let i = 1; i < dates.length; i++) {
-      expect(dates[i - 1]).toBeGreaterThanOrEqual(dates[i]);
+      expect(dates[i - 1]).toBeGreaterThanOrEqual(dates[i]!);
     }
   });
 });
@@ -636,7 +636,7 @@ describe('GET /api/system/events', () => {
     const body = JSON.parse(response.body) as { data: Array<{ timestamp: string }> };
     const times = body.data.map(e => new Date(e.timestamp).getTime());
     for (let i = 1; i < times.length; i++) {
-      expect(times[i - 1]).toBeGreaterThanOrEqual(times[i]);
+      expect(times[i - 1]).toBeGreaterThanOrEqual(times[i]!);
     }
   });
 });

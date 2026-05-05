@@ -380,6 +380,7 @@ export class TorrentManager extends EventEmitter {
 
   private normalizeMagnetParameters(magnetUrl: string): string {
     const [base, query = ''] = magnetUrl.split('?', 2);
+    if (!base) return magnetUrl;
     const params = query
       .split('&')
       .filter(Boolean)

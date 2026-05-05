@@ -434,7 +434,7 @@ describe('MediaRepository.upsertSeasonsAndEpisodes', () => {
     await repo.upsertSeasonsAndEpisodes(42, details);
 
     expect(prisma.episode.upsert).toHaveBeenCalledTimes(1);
-    const airDateValue = prisma.episode.upsert.mock.calls[0][0].create.airDateUtc;
+    const airDateValue = prisma.episode.upsert.mock.calls[0]![0].create.airDateUtc;
     expect(airDateValue).toBeInstanceOf(Date);
   });
 

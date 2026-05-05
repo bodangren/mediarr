@@ -3,8 +3,8 @@ import { SeriesOrganizeService, DEFAULT_SERIES_MANAGEMENT_SETTINGS } from './Ser
 import type { SeriesManagementSettings } from './SeriesOrganizeService';
 
 const fsMocks = vi.hoisted(() => ({
-  mkdir: vi.fn<[], Promise<void>>().mockResolvedValue(undefined),
-  rename: vi.fn<[], Promise<void>>().mockResolvedValue(undefined),
+  mkdir: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
+  rename: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
 }));
 
 vi.mock('node:fs/promises', () => ({
@@ -82,7 +82,7 @@ describe('SeriesOrganizeService', () => {
       const previews = await svc.previewRename([1]);
 
       expect(previews).toHaveLength(1);
-      const p = previews[0];
+      const p = previews[0]!;
       expect(p.newPath).toContain('Test Show');
       expect(p.newPath).toContain('S02');
       expect(p.newPath).toContain('E05');
@@ -101,7 +101,7 @@ describe('SeriesOrganizeService', () => {
       }));
       const previews = await svc.previewRename([1]);
 
-      expect(previews[0].newPath).toContain('[720p]');
+      expect(previews[0]!.newPath).toContain('[720p]');
     });
 
     it('uses absolute episode number token', async () => {
@@ -114,7 +114,7 @@ describe('SeriesOrganizeService', () => {
       }));
       const previews = await svc.previewRename([1]);
 
-      expect(previews[0].newPath).toContain('100');
+      expect(previews[0]!.newPath).toContain('100');
     });
   });
 
@@ -130,8 +130,8 @@ describe('SeriesOrganizeService', () => {
       const previews = await svc.previewRename([1]);
 
       expect(previews).toHaveLength(1);
-      expect(previews[0].newPath).not.toContain('undefined');
-      expect(previews[0].newPath).not.toContain('null');
+      expect(previews[0]!.newPath).not.toContain('undefined');
+      expect(previews[0]!.newPath).not.toContain('null');
     });
 
     it('handles missing quality gracefully', async () => {
@@ -144,7 +144,7 @@ describe('SeriesOrganizeService', () => {
       }));
       const previews = await svc.previewRename([1]);
 
-      expect(previews[0].newPath).not.toContain('undefined');
+      expect(previews[0]!.newPath).not.toContain('undefined');
     });
 
     it('handles missing absoluteEpisodeNumber (defaults to 0)', async () => {
@@ -157,7 +157,7 @@ describe('SeriesOrganizeService', () => {
       }));
       const previews = await svc.previewRename([1]);
 
-      expect(previews[0].newPath).toContain('0');
+      expect(previews[0]!.newPath).toContain('0');
     });
   });
 
@@ -175,7 +175,7 @@ describe('SeriesOrganizeService', () => {
       }));
       const previews = await svc.previewRename([1]);
 
-      expect(previews[0].newPath).toContain('Office, The');
+      expect(previews[0]!.newPath).toContain('Office, The');
     });
 
     it('sorts "A" prefix titles', async () => {
@@ -191,7 +191,7 @@ describe('SeriesOrganizeService', () => {
       }));
       const previews = await svc.previewRename([1]);
 
-      expect(previews[0].newPath).toContain('Beautiful Mind, A');
+      expect(previews[0]!.newPath).toContain('Beautiful Mind, A');
     });
 
     it('sorts "An" prefix titles', async () => {
@@ -207,7 +207,7 @@ describe('SeriesOrganizeService', () => {
       }));
       const previews = await svc.previewRename([1]);
 
-      expect(previews[0].newPath).toContain('American Tale, An');
+      expect(previews[0]!.newPath).toContain('American Tale, An');
     });
 
     it('leaves non-prefix titles unchanged', async () => {
@@ -223,7 +223,7 @@ describe('SeriesOrganizeService', () => {
       }));
       const previews = await svc.previewRename([1]);
 
-      expect(previews[0].newPath).toContain('Breaking Bad');
+      expect(previews[0]!.newPath).toContain('Breaking Bad');
     });
   });
 
@@ -251,7 +251,7 @@ describe('SeriesOrganizeService', () => {
       }));
       const previews = await svc.previewRename([1]);
 
-      expect(previews[0].newPath).toContain(expected);
+      expect(previews[0]!.newPath).toContain(expected);
     });
   });
 
@@ -266,7 +266,7 @@ describe('SeriesOrganizeService', () => {
       }));
       const previews = await svc.previewRename([1]);
 
-      expect(previews[0].newPath).toContain('[1080p]');
+      expect(previews[0]!.newPath).toContain('[1080p]');
     });
 
     it('extracts 2160p from quality string', async () => {
@@ -279,7 +279,7 @@ describe('SeriesOrganizeService', () => {
       }));
       const previews = await svc.previewRename([1]);
 
-      expect(previews[0].newPath).toContain('[2160p]');
+      expect(previews[0]!.newPath).toContain('[2160p]');
     });
 
     it('returns empty string for quality without resolution pattern', async () => {
@@ -292,7 +292,7 @@ describe('SeriesOrganizeService', () => {
       }));
       const previews = await svc.previewRename([1]);
 
-      expect(previews[0].newPath).toContain('[]');
+      expect(previews[0]!.newPath).toContain('[]');
     });
 
     it('handles null quality without error', async () => {
@@ -306,7 +306,7 @@ describe('SeriesOrganizeService', () => {
       const previews = await svc.previewRename([1]);
 
       expect(previews).toHaveLength(1);
-      expect(previews[0].newPath).toContain('[]');
+      expect(previews[0]!.newPath).toContain('[]');
     });
   });
 
@@ -321,8 +321,8 @@ describe('SeriesOrganizeService', () => {
       }));
       const previews = await svc.previewRename([1]);
 
-      expect(previews[0].newPath).not.toContain('Season');
-      expect(previews[0].newPath).toMatch(/\/Test Show\/[^/]+\.mkv$/);
+      expect(previews[0]!.newPath).not.toContain('Season');
+      expect(previews[0]!.newPath).toMatch(/\/Test Show\/[^/]+\.mkv$/);
     });
   });
 
@@ -338,7 +338,7 @@ describe('SeriesOrganizeService', () => {
       const svc = new SeriesOrganizeService(prisma as any, DEFAULT_SERIES_MANAGEMENT_SETTINGS);
       const previews = await svc.previewRename([1]);
 
-      expect(previews[0].newPath).toMatch(
+      expect(previews[0]!.newPath).toMatch(
         /\/Test Show\/Season 01\/Test Show - S01E03 - Episode Three \[HDTV-720p\]\.mkv$/
       );
     });
@@ -388,7 +388,7 @@ describe('SeriesOrganizeService', () => {
       const previews = await svc.previewRename([1]);
 
       expect(previews).toHaveLength(1);
-      expect(previews[0].isNewPath).toBe(false);
+      expect(previews[0]!.isNewPath).toBe(false);
     });
 
     it('isNewPath is true when path differs', async () => {
@@ -399,7 +399,7 @@ describe('SeriesOrganizeService', () => {
       const previews = await svc.previewRename([1]);
 
       expect(previews).toHaveLength(1);
-      expect(previews[0].isNewPath).toBe(true);
+      expect(previews[0]!.isNewPath).toBe(true);
     });
 
     it('skips series not found (null from prisma)', async () => {
@@ -586,7 +586,7 @@ describe('SeriesOrganizeService', () => {
       expect(result.renamed).toBe(0);
       expect(result.failed).toBe(1);
       expect(result.errors).toHaveLength(1);
-      expect(result.errors[0].error).toContain('permission denied');
+      expect(result.errors[0]!.error).toContain('permission denied');
       expect(prisma.mediaFileVariant.updateMany).toHaveBeenCalledTimes(2);
     });
 
@@ -600,7 +600,7 @@ describe('SeriesOrganizeService', () => {
 
       expect(result.failed).toBe(1);
       expect(result.errors).toHaveLength(1);
-      expect(result.errors[0].error).toContain('DB connection lost');
+      expect(result.errors[0]!.error).toContain('DB connection lost');
       expect(fsMocks.rename).not.toHaveBeenCalled();
     });
 

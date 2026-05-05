@@ -61,7 +61,7 @@ export class CustomFormatRepository {
       orderBy: { name: 'asc' },
     });
 
-    return formats.map(format => this.toCustomFormatWithScores(format));
+    return formats.map((format: CustomFormat & { scores: CustomFormatScore[] }) => this.toCustomFormatWithScores(format));
   }
 
   async findById(id: number): Promise<CustomFormatWithScores | null> {
@@ -215,7 +215,7 @@ export class CustomFormatRepository {
       },
     });
 
-    return scores.map(score => ({
+    return scores.map((score: { customFormat: CustomFormat & { scores: CustomFormatScore[] }; score: number }) => ({
       customFormat: this.toCustomFormatWithScores(score.customFormat),
       score: score.score,
     }));
@@ -231,7 +231,7 @@ export class CustomFormatRepository {
       conditions: parseConditions(format.conditions),
       createdAt: format.createdAt,
       updatedAt: format.updatedAt,
-      scores: format.scores.map(score => ({
+      scores: format.scores.map((score: CustomFormatScore) => ({
         id: score.id,
         qualityProfileId: score.qualityProfileId,
         score: score.score,

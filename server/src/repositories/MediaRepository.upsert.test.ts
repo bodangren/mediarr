@@ -110,7 +110,7 @@ describe('MediaRepository.upsertMovie', () => {
 
     await repo.upsertMovie(fullInput);
 
-    const movieCreate = prisma.movie.upsert.mock.calls[0][0].create;
+    const movieCreate = prisma.movie.upsert.mock.calls[0]![0].create;
     expect(movieCreate.imdbId).toBe('tt1234567');
     expect(movieCreate.overview).toBe('A great movie');
     expect(movieCreate.path).toBe('/movies/Test Movie');
@@ -127,7 +127,7 @@ describe('MediaRepository.upsertMovie', () => {
 
     await repo.upsertMovie(baseMovieInput);
 
-    const movieCreate = prisma.movie.upsert.mock.calls[0][0].create;
+    const movieCreate = prisma.movie.upsert.mock.calls[0]![0].create;
     expect(movieCreate.imdbId).toBeUndefined();
     expect(movieCreate.overview).toBeUndefined();
     expect(movieCreate.path).toBeUndefined();
@@ -201,7 +201,7 @@ describe('MediaRepository.upsertSeries', () => {
 
     await repo.upsertSeries(fullInput);
 
-    const seriesCreate = prisma.series.upsert.mock.calls[0][0].create;
+    const seriesCreate = prisma.series.upsert.mock.calls[0]![0].create;
     expect(seriesCreate.tmdbId).toBe(300);
     expect(seriesCreate.imdbId).toBe('tt9876543');
     expect(seriesCreate.overview).toBe('A great series');
@@ -216,7 +216,7 @@ describe('MediaRepository.upsertSeries', () => {
 
     await repo.upsertSeries(baseSeriesInput);
 
-    const seriesCreate = prisma.series.upsert.mock.calls[0][0].create;
+    const seriesCreate = prisma.series.upsert.mock.calls[0]![0].create;
     expect(seriesCreate.tmdbId).toBeUndefined();
     expect(seriesCreate.imdbId).toBeUndefined();
     expect(seriesCreate.overview).toBeUndefined();
@@ -231,10 +231,10 @@ describe('MediaRepository.upsertSeries', () => {
     const inputWithPoster = { ...baseSeriesInput, posterUrl: 'https://example.com/poster.jpg' };
     await repo.upsertSeries(inputWithPoster);
 
-    const mediaCreate = prisma.media.upsert.mock.calls[0][0].create;
+    const mediaCreate = prisma.media.upsert.mock.calls[0]![0].create;
     expect(mediaCreate.posterUrl).toBeUndefined();
 
-    const seriesCreate = prisma.series.upsert.mock.calls[0][0].create;
+    const seriesCreate = prisma.series.upsert.mock.calls[0]![0].create;
     expect(seriesCreate.posterUrl).toBe('https://example.com/poster.jpg');
   });
 });

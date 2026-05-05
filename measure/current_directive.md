@@ -1,20 +1,20 @@
 # Current Strategic Directive
 
-> **STATUS: ACTIVE** — Dashboard Statistics complete. Next: WebTorrent download management.
+> **STATUS: ACTIVE** — WebTorrent Download Management complete. Next: Legacy Test Audit.
 > **Updated: 2026-05-05**
 
 ---
 
-## Directive: Feature Development — WebTorrent Download Management
+## Directive: Quality — Legacy Test Audit
 
-Track `dashboard_statistics_20260503` is complete. All phases finished:
-- Phase 1: Backend Statistics API (complete)
-- Phase 2: Frontend Statistics Dashboard (complete)
-- Phase 3: Integration & Polish (complete)
+Track `webtorrent_download_management_20260503` is complete. All phases finished:
+- Phase 1: Backend API Endpoints (complete)
+- Phase 2: Frontend Download List (complete)
+- Phase 3: Integration & Testing (complete)
 
-Next pending feature track:
-1. `webtorrent_download_management_20260503` — Frontend interface for managing WebTorrent downloads
+Next pending track:
+1. `legacy_test_audit_20260426` — Audit 300+ disabled tests in app_src_backup, restore valuable ones, delete obsolete ones.
 
 ### Active Track
 
-- [~] **WebTorrent Download Management** *Link: [./tracks/webtorrent_download_management_20260503/](./tracks/webtorrent_download_management_20260503/)*
+- [~] **Legacy Test Audit** *Link: [./tracks/legacy_test_audit_20260426/](./tracks/legacy_test_audit_20260426/)*

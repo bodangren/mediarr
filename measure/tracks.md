@@ -231,9 +231,7 @@ Parallel:
 
 - [x] **Track: Visual Refresh — Define Unique Identity** *Phases: 2 | Link: [./archive/visual_refresh_20260425/](./archive/visual_refresh_20260425/)* — Near-Zero Tesla theme; DESIGN.md lint passed; 232 test files green
 
-- [ ] **Track: Legacy Test Audit**
-  *Link: [./tracks/legacy_test_audit_20260426/](./tracks/legacy_test_audit_20260426/)*
-  Audit 300+ disabled tests in app_src_backup, restore valuable ones, delete obsolete ones.
+- [x] **Track: Legacy Test Audit** *Phases: 3 | Link: [./archive/legacy_test_audit_20260426/](./archive/legacy_test_audit_20260426/)* — Deleted 340 obsolete backup tests; 1800 tests green; no regressions
 
 - [ ] **Track: TypeScript Strictness Re-enablement**
   *Link: [./tracks/typescript_strictness_20260426/](./tracks/typescript_strictness_20260426/)*

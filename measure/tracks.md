@@ -239,9 +239,7 @@ Parallel:
   *Link: [./tracks/typescript_strictness_20260426/](./tracks/typescript_strictness_20260426/)*
   Re-enable exactOptionalPropertyTypes and noUncheckedIndexedAccess, fix all type errors.
 
-- [ ] **Track: WebTorrent Download Management UI**
-  *Link: [./tracks/webtorrent_download_management_20260503/](./tracks/webtorrent_download_management_20260503/)*
-  Frontend interface for managing WebTorrent downloads with real-time progress, controls, and bulk operations.
+- [x] **Track: WebTorrent Download Management UI** *Phases: 3 | Link: [./archive/webtorrent_download_management_20260503/](./archive/webtorrent_download_management_20260503/)* — Backend torrent routes (25 tests), enhanced ActivityQueuePage with sort/filter/search/SSE/priority, app build clean, 1800 tests green
 
 - [ ] **Track: Dashboard Statistics & Analytics**
   *Link: [./tracks/dashboard_statistics_20260503/](./tracks/dashboard_statistics_20260503/)*

@@ -175,6 +175,12 @@ export function registerTorrentRoutes(
           infoHash: { type: 'string' },
         },
       },
+      querystring: {
+        type: 'object',
+        properties: {
+          deleteData: { type: 'boolean' },
+        },
+      },
     },
   }, async (request, reply) => {
     if (!deps.torrentManager?.removeTorrent) {
@@ -182,9 +188,10 @@ export function registerTorrentRoutes(
     }
 
     const infoHash = (request.params as { infoHash: string }).infoHash;
+    const deleteData = (request.query as { deleteData?: boolean }).deleteData ?? true;
 
     try {
-      await deps.torrentManager.removeTorrent(infoHash);
+      await deps.torrentManager.removeTorrent(infoHash, deleteData);
       return sendSuccess(reply, {
         infoHash,
         removed: true,
@@ -192,6 +199,112 @@ export function registerTorrentRoutes(
     } catch (error) {
       maybeNotFound(error);
     }
+  });
+
+  app.patch('/api/torrents/:infoHash/priority', {
+    schema: {
+      params: {
+        type: 'object',
+        required: ['infoHash'],
+        properties: {
+          infoHash: { type: 'string' },
+        },
+      },
+      body: {
+        type: 'object',
+        required: ['priority'],
+        properties: {
+          priority: { type: 'number' },
+        },
+      },
+    },
+  }, async (request, reply) => {
+    if (!deps.torrentManager?.setPriority) {
+      throw new ValidationError('Torrent manager is not configured');
+    }
+
+    const infoHash = (request.params as { infoHash: string }).infoHash;
+    const { priority } = request.body as { priority: number };
+
+    try {
+      await deps.torrentManager.setPriority(infoHash, priority);
+      return sendSuccess(reply, {
+        infoHash,
+        priority,
+      });
+    } catch (error) {
+      maybeNotFound(error);
+    }
+  });
+
+  app.post('/api/torrents/bulk', {
+    schema: {
+      body: {
+        type: 'object',
+        required: ['action', 'infoHashes'],
+        properties: {
+          action: { type: 'string', enum: ['pause', 'resume', 'remove', 'priority'] },
+          infoHashes: { type: 'array', items: { type: 'string' } },
+          priority: { type: 'number' },
+          deleteData: { type: 'boolean' },
+        },
+      },
+    },
+  }, async (request, reply) => {
+    if (!deps.torrentManager) {
+      throw new ValidationError('Torrent manager is not configured');
+    }
+
+    const body = request.body as {
+      action: 'pause' | 'resume' | 'remove' | 'priority';
+      infoHashes: string[];
+      priority?: number;
+      deleteData?: boolean;
+    };
+
+    const results = await Promise.allSettled(
+      body.infoHashes.map(async (infoHash) => {
+        try {
+          switch (body.action) {
+            case 'pause':
+              await deps.torrentManager!.pauseTorrent!(infoHash);
+              return { infoHash, status: 'paused' };
+            case 'resume':
+              await deps.torrentManager!.resumeTorrent!(infoHash);
+              return { infoHash, status: 'downloading' };
+            case 'remove':
+              await deps.torrentManager!.removeTorrent!(infoHash, body.deleteData ?? true);
+              return { infoHash, removed: true };
+            case 'priority':
+              await deps.torrentManager!.setPriority!(infoHash, body.priority ?? 25);
+              return { infoHash, priority: body.priority ?? 25 };
+            default:
+              throw new ValidationError(`Unknown action: ${body.action}`);
+          }
+        } catch (error) {
+          if (error instanceof Error && /not found/i.test(error.message)) {
+            return { infoHash, error: 'not found' };
+          }
+          throw error;
+        }
+      }),
+    );
+
+    const succeeded = results
+      .filter((r): r is PromiseFulfilledResult<Record<string, unknown>> => r.status === 'fulfilled')
+      .map((r) => r.value);
+
+    const failed = results
+      .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
+      .map((r) => r.reason);
+
+    return sendSuccess(reply, {
+      action: body.action,
+      succeeded,
+      failed: failed.map((err) =>
+        err instanceof Error ? err.message : String(err),
+      ),
+    });
   });
 
   app.post('/api/torrents/:infoHash/retry-import', {

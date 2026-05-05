@@ -56,6 +56,7 @@ export interface ApiDependencies {
     | 'pauseTorrent'
     | 'resumeTorrent'
     | 'removeTorrent'
+    | 'setPriority'
     | 'setSpeedLimits'
     | 'setDownloadPaths'
     | 'getTorrentsStatus'

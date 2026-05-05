@@ -585,9 +585,19 @@ export class TorrentManager extends EventEmitter {
   }
 
   /**
-   * Removes a torrent from the client, deletes its files from disk, and deletes it from the database.
+   * Updates the priority of a torrent in the database.
    */
-  async removeTorrent(infoHash: string): Promise<void> {
+  async setPriority(infoHash: string, priority: number): Promise<void> {
+    this.ensureInitialized();
+    await this.findTorrentOrThrow(infoHash);
+    await this.repository.update(infoHash, { priority });
+  }
+
+  /**
+   * Removes a torrent from the client and deletes it from the database.
+   * Optionally deletes downloaded files from disk.
+   */
+  async removeTorrent(infoHash: string, deleteData = true): Promise<void> {
     this.ensureInitialized();
 
     // Fetch DB record first to get the path and status before we delete it
@@ -597,16 +607,16 @@ export class TorrentManager extends EventEmitter {
     if (dbTorrent?.status !== 'queued') {
       try {
         const torrent = await this.findTorrentOrThrow(infoHash);
-        (this.client as any).remove(torrent, { destroyStore: true });
+        (this.client as any).remove(torrent, { destroyStore: deleteData });
       } catch (error) {
         if (!(error instanceof Error) || !/not found/i.test(error.message)) {
           throw error;
         }
       }
     }
-    
+
     // Delete files manually to be safe, especially if they were moved to the completed folder
-    if (dbTorrent && dbTorrent.path && dbTorrent.name) {
+    if (deleteData && dbTorrent && dbTorrent.path && dbTorrent.name) {
       try {
         const fullPath = path.join(dbTorrent.path, dbTorrent.name);
         await fs.rm(fullPath, { recursive: true, force: true });

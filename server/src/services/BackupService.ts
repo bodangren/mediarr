@@ -106,7 +106,7 @@ export class BackupService {
     const cutoff = Date.now() - retentionDays * 24 * 60 * 60 * 1000;
     let deleted = 0;
     for (const entry of entries) {
-      if (new Date(entry.createdAt).getTime() < cutoff) {
+      if (retentionDays === 0 || new Date(entry.createdAt).getTime() < cutoff) {
         try {
           await fs.unlink(entry.filePath);
           deleted++;

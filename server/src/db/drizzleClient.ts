@@ -412,7 +412,7 @@ type QueryContext = {
   rowsCache: Map<ModelName, Promise<any[]>>;
 };
 
-export class PrismaClient {
+export class DatabaseClient {
   private readonly sqlite: any;
 
   private readonly db: any;

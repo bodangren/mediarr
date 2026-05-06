@@ -1,4 +1,4 @@
-import type { PrismaClient } from '../db/prismaClient';
+import type { DatabaseClient } from '../db/drizzleClient';
 
 export const MOVIE_NAMING_PATTERN = '{Movie.Title}.{Release.Year}.{Quality.Full}.{MediaInfo.VideoCodec}';
 export const SERIES_NAMING_PATTERN = '{Series.Title}.S{season:00}E{episode:00}.{Episode.Title}.{Quality.Full}';
@@ -8,7 +8,7 @@ export const DEFAULT_RSS_SYNC_MINUTES = 15;
 export const BUILTIN_WEBTORRENT_NAME = 'Built-in WebTorrent';
 export const BUILTIN_WEBTORRENT_INCOMPLETE_DIR = '/data/downloads/incomplete';
 
-export async function seedSmartDefaults(prisma: PrismaClient): Promise<void> {
+export async function seedSmartDefaults(prisma: DatabaseClient): Promise<void> {
   const existingClients = await prisma.downloadClient.findMany();
   const hasNoDownloadClients = existingClients.length === 0;
 

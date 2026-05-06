@@ -12,7 +12,7 @@ import { MetadataProvider } from '../../services/MetadataProvider';
 import { SettingsService } from '../../services/SettingsService';
 import { HttpClient } from '../../indexers/HttpClient';
 import { AppSettingsRepository } from '../../repositories/AppSettingsRepository';
-import { PrismaClient } from '../../db/prismaClient';
+import { DatabaseClient } from '../../db/drizzleClient';
 import { registerMediaRoutes } from './mediaRoutes';
 import { ApiEventHub } from '../../api/eventHub';
 

@@ -1,4 +1,4 @@
-import type { PrismaClient } from '../db/prismaClient';
+import type { DatabaseClient } from '../db/drizzleClient';
 
 interface CategoryDef {
   id: number;
@@ -105,7 +105,7 @@ export const STANDARD_CATEGORIES: CategoryDef[] = [
  * Seeds standard Newznab categories into the database.
  * Uses upsert for idempotency — safe to call multiple times.
  */
-export async function seedCategories(prisma: PrismaClient): Promise<number> {
+export async function seedCategories(prisma: DatabaseClient): Promise<number> {
   for (const cat of STANDARD_CATEGORIES) {
     await prisma.category.upsert({
       where: { id: cat.id },

@@ -1,4 +1,4 @@
-import type { PrismaClient } from '../db/prismaClient';
+import type { DatabaseClient } from '../db/drizzleClient';
 
 /**
  * Quality source types matching Sonarr/Radarr conventions
@@ -54,7 +54,7 @@ export const QUALITY_DEFINITIONS: QualityDefinitionData[] = [
  * Seeds quality definitions into the database.
  * Uses upsert for idempotency — safe to call multiple times.
  */
-export async function seedQualityDefinitions(prisma: PrismaClient): Promise<number> {
+export async function seedQualityDefinitions(prisma: DatabaseClient): Promise<number> {
   for (const quality of QUALITY_DEFINITIONS) {
     await prisma.qualityDefinition.upsert({
       where: { id: quality.id },
@@ -122,7 +122,7 @@ const QUALITY_PROFILE_PRESETS: QualityProfilePreset[] = [
  * Uses upsert for idempotency — safe to call multiple times.
  * Existing profiles with matching names are updated in place, not duplicated.
  */
-export async function seedQualityProfiles(prisma: PrismaClient): Promise<number> {
+export async function seedQualityProfiles(prisma: DatabaseClient): Promise<number> {
   for (const preset of QUALITY_PROFILE_PRESETS) {
     const items = buildItems(preset.allowedIds);
     await prisma.qualityProfile.upsert({

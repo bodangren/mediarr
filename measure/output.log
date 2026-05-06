@@ -2513,3 +2513,276 @@ M clients/mediarr-client/lib/core/widgets/leanback_scaffold.dart
  M measure/output.log
  M measure/tracks/flutter_player_first_navigation_20260506/plan.md
 [0m
+[0m$ [0mgit add -A && git commit -m "feat(flutter): Player-first navigation - add Library to nav, fix compilation errors (k2p6)"
+[main 48ecefe] feat(flutter): Player-first navigation - add Library to nav, fix compilation errors (k2p6)
+ 7 files changed, 2546 insertions(+), 19 deletions(-)
+[0m
+[0m$ [0mmv measure/tracks/flutter_player_first_navigation_20260506 measure/archive/
+(no output)
+[0m
+[0m← [0mEdit measure/tracks.md
+Index: /home/daniel-bo/Desktop/mediarr/measure/tracks.md
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/measure/tracks.md
++++ /home/daniel-bo/Desktop/mediarr/measure/tracks.md
+@@ -244,11 +244,9 @@
+ - [x] **Track: Catalog Indexer API Key Validation Guard** *Phases: 4 | Link: [./archive/chore_catalog_apikey_validation_20260502/](./archive/chore_catalog_apikey_validation_20260502/)* — server validation guard with 422 response; frontend inline inputs already handle UX; 11 catalog route tests pass
+ 
+ - [x] **Track: WebTorrent Native Addon Resolution** *Phases: 3 | Link: [./archive/webtorrent_addon_resolution_20260426/](./archive/webtorrent_addon_resolution_20260426/)* — patched `node-datachannel` to handle `ERR_DLOPEN_DISABLED`; WebTorrent now operates in TCP-only mode without falling back to stub manager; 224 test files passed
+ 
+-- [ ] **Track: Flutter Player-First Navigation & Shell Default Route**
+-  *Link: [./tracks/flutter_player_first_navigation_20260506/](./tracks/flutter_player_first_navigation_20260506/)*
+-  Fix Flutter client to default to Home/Continue Watching instead of Activity; correct shell navigation order.
++- [x] **Track: Flutter Player-First Navigation & Shell Default Route** *Phases: 2 | Link: [./archive/flutter_player_first_navigation_20260506/](./archive/flutter_player_first_navigation_20260506/)* — Library added to nav before Activity; default route already /home; compilation fixes for library_screen + quality_upgrade_sheet; viewport fixes for widget tests
+ 
+ - [ ] **Track: Backend Drizzle Migration Cleanup & Type Safety**
+   *Link: [./tracks/drizzle_cleanup_type_safety_20260506/](./tracks/drizzle_cleanup_type_safety_20260506/)*
+   Complete Prisma→Drizzle transition: rename files, remove shims, fix unsafe casts.
+
+[0m
+[0m← [0mEdit measure/tech-debt.md
+Index: /home/daniel-bo/Desktop/mediarr/measure/tech-debt.md
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/measure/tech-debt.md
++++ /home/daniel-bo/Desktop/mediarr/measure/tech-debt.md
+@@ -32,5 +32,5 @@
+ | 2026-04-13 | review_20260413 | `seedSmartDefaults` deep-clones AppSettings via `JSON.parse(JSON.stringify(...))` | Low | Open | Silently coerces `Date` fields to strings; fragile if downstream code grows to read timestamps. Use typed field access |
+ | 2026-04-13 | review_20260413 | Autonomous checkpoint 4c78a41 bundled 121 files / +6409 lines | Medium | Open | Process guidance: split autonomous checkpoints per subsystem so review granularity is preserved |
+ | 2026-04-08 | chore_form_standardization_completion_20260330 | EditIndexerModal tests (Cardigann dynamic fields, protocol switch, validation display) need adjustment after migration | Low | Resolved | Updated expectations for react-hook-form contract; added cross-modal smoke coverage; full CI now green |
+ | 2026-04-08 | review_20260408 | AppSettings.createdAt column is INT — Date.now() overflow causes P2023 on startup | Critical | Resolved | Fixed: changed createdAt/updatedAt to TEXT storing ISO 8601 datetime strings; migration at prisma/migrations/20260409000000_fix_appsettings_timestamp |
+-| 2026-04-23 | bug_manual_test_player_client_findings_20260417 | Flutter client lacks Home/Continue Watching screen; Activity is default route | Medium | Open | Decision made to implement player-first navigation; see player_first_shell_decision.md in track folder |
++| 2026-04-23 | bug_manual_test_player_client_findings_20260417 | Flutter client lacks Home/Continue Watching screen; Activity is default route | Medium | Resolved | Library added to nav rail before Activity; default route already /home; track flutter_player_first_navigation_20260506 complete |
+
+[0m
+[0m$ [0mgit add measure/tracks.md measure/tech-debt.md measure/archive/flutter_player_first_navigation_20260506/ && git commit -m "Archive flutter_player_first_navigation track, update tech-debt (k2p6)"
+[main a4e8f16] Archive flutter_player_first_navigation track, update tech-debt (k2p6)
+ 5 files changed, 42 insertions(+), 4 deletions(-)
+ create mode 100644 measure/archive/flutter_player_first_navigation_20260506/metadata.json
+ create mode 100644 measure/archive/flutter_player_first_navigation_20260506/plan.md
+ create mode 100644 measure/archive/flutter_player_first_navigation_20260506/spec.md
+[0m
+[0m→ [0mRead measure/current_directive.md
+[0m
+[0m← [0mWrite measure/current_directive.md
+Wrote file successfully.
+[0m
+[0m$ [0mgit add measure/current_directive.md && git commit -m "Update current_directive: flutter nav complete, next drizzle cleanup (k2p6)"
+[main 434fc2c] Update current_directive: flutter nav complete, next drizzle cleanup (k2p6)
+ 1 file changed, 10 insertions(+), 10 deletions(-)
+[0m
+[0m→ [0mRead measure/tracks/drizzle_cleanup_type_safety_20260506/spec.md
+[0m→ [0mRead measure/tracks/drizzle_cleanup_type_safety_20260506/plan.md
+[0m✱ [0mGlob "server/src/db/**/*"[90m 3 matches[0m
+[0m✱ [0mGrep "prismaClient|prismaClient\.ts"[90m in . · 10 matches[0m
+[0m→ [0mRead server/src/db/prismaClient.ts
+[0m→ [0mRead server/src/db/index.ts
+[0m
+[0m$ [0mgit mv server/src/db/prismaClient.ts server/src/db/drizzleClient.ts
+(no output)
+[0m
+[0m$ [0mgrep -r "prismaClient" --include="*.ts" --include="*.js" --include="*.tsx" server/ tests/ | grep -v "node_modules" | grep -v ".git"
+server/src/main.ts:import { PrismaClient } from './db/prismaClient';
+server/src/api/routes/manualTestFindings.regression.test.ts:import { PrismaClient } from '../../db/prismaClient';
+server/src/seeds/qualities.ts:import type { PrismaClient } from '../db/prismaClient';
+server/src/seeds/categories.ts:import type { PrismaClient } from '../db/prismaClient';
+server/src/seeds/smartDefaults.ts:import type { PrismaClient } from '../db/prismaClient';
+tests/helpers/test-prisma-client.js:import { PrismaClient } from '../../server/src/db/prismaClient';
+[0m
+[0m$ [0mfind server tests -type f \( -name "*.ts" -o -name "*.js" -o -name "*.tsx" \) -exec sed -i 's|prismaClient|drizzleClient|g' {} +
+(no output)
+[0m
+[0m✱ [0mGrep "\$executeRawUnsafe|\$queryRaw|\$queryRawUnsafe|PrismaClient"[90m in server · 118 matches[0m
+[0m
+[0m$ [0mgrep -r "import.*@prisma/client" server/src --include="*.ts" --include="*.tsx" | wc -l
+60
+[0m
+[0m← [0mEdit server/src/db/drizzleClient.ts
+Index: /home/daniel-bo/Desktop/mediarr/server/src/db/drizzleClient.ts
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/server/src/db/drizzleClient.ts
++++ /home/daniel-bo/Desktop/mediarr/server/src/db/drizzleClient.ts
+@@ -411,9 +411,9 @@
+ type QueryContext = {
+   rowsCache: Map<ModelName, Promise<any[]>>;
+ };
+ 
+-export class PrismaClient {
++export class DatabaseClient {
+   private readonly sqlite: any;
+ 
+   private readonly db: any;
+ 
+
+[0m
+[0m✱ [0mGrep "import.*drizzleClient"[90m in . · 6 matches[0m
+[0m
+[0m$ [0msed -i 's/PrismaClient/DatabaseClient/g' tests/helpers/test-prisma-client.js server/src/seeds/smartDefaults.ts server/src/seeds/categories.ts server/src/seeds/qualities.ts server/src/api/routes/manualTestFindings.regression.test.ts server/src/main.ts
+(no output)
+[0m
+[0m✱ [0mGrep "\$executeRawUnsafe|\$queryRaw"[90m in server · 35 matches[0m
+[0m
+[0m$ [0mcd /home/daniel-bo/Desktop/mediarr && npx tsc --noEmit -p server/tsconfig.json 2>&1 | head -50
+(no output)
+[0m
+[0m$ [0mcd /home/daniel-bo/Desktop/mediarr && CI=true npm test -- --run server/src/db/drizzleClient.test.ts 2>&1 | tail -20
+> mediarr@1.0.0 test
+> vitest run --run server/src/db/drizzleClient.test.ts
+
+
+[1m[46m RUN [49m[22m [36mv4.0.18 [39m[90m/home/daniel-bo/Desktop/mediarr[39m
+
+[31mNo test files found, exiting with code 1
+[39m
+[2mfilter: [22m[33mserver/src/db/drizzleClient.test.ts[39m
+[2minclude: [22m[33m**/*.{test,spec}.?(c|m)[jt]s?(x)[39m
+[2mexclude:  [22m[33m**/node_modules/**[2m, [22m**/reference/**[2m, [22m**/dist/**[2m, [22mapp_src_backup/**[2m, [22mapp/src/**/*.test.{ts,tsx,js,jsx}[2m, [22mtests/import-manager.test.js[39m
+[0m
+[0m$ [0mcd /home/daniel-bo/Desktop/mediarr && CI=true npm test -- --run server/src/main.test.ts 2>&1 | tail -30
+> mediarr@1.0.0 test
+> vitest run --run server/src/main.test.ts
+
+
+[1m[46m RUN [49m[22m [36mv4.0.18 [39m[90m/home/daniel-bo/Desktop/mediarr[39m
+
+[31mNo test files found, exiting with code 1
+[39m
+[2mfilter: [22m[33mserver/src/main.test.ts[39m
+[2minclude: [22m[33m**/*.{test,spec}.?(c|m)[jt]s?(x)[39m
+[2mexclude:  [22m[33m**/node_modules/**[2m, [22m**/reference/**[2m, [22m**/dist/**[2m, [22mapp_src_backup/**[2m, [22mapp/src/**/*.test.{ts,tsx,js,jsx}[2m, [22mtests/import-manager.test.js[39m
+[0m
+[0m$ [0mcd /home/daniel-bo/Desktop/mediarr && find server -name "*.test.ts" | head -5
+server/src/indexers/cardigann-conformance/templateRuntime.test.ts
+server/src/indexers/cardigann-conformance/compatibilityValidation.test.ts
+server/src/indexers/cardigann-conformance/responseParsingParity.test.ts
+server/src/indexers/cardigann-conformance/timeDateFilters.test.ts
+server/src/indexers/cardigann-conformance/finalConformanceGate.test.ts
+[0m
+[0m$ [0mcd /home/daniel-bo/Desktop/mediarr && CI=true npm test -- --run server/src/services/SystemHealthService.test.ts 2>&1 | tail -30
+> mediarr@1.0.0 test
+> vitest run --run server/src/services/SystemHealthService.test.ts
+
+
+[1m[46m RUN [49m[22m [36mv4.0.18 [39m[90m/home/daniel-bo/Desktop/mediarr[39m
+
+ [32m✓[39m server/src/services/SystemHealthService.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 20[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m14 passed[39m[22m[90m (14)[39m
+[2m   Start at [22m 21:07:23
+[2m   Duration [22m 412ms[2m (transform 113ms, setup 0ms, import 149ms, tests 20ms, environment 0ms)[22m
+[0m
+[0m$ [0mcd /home/daniel-bo/Desktop/mediarr && CI=true npm test -- --run server/src/api/routes/statsRoutes.test.ts 2>&1 | tail -30
+> mediarr@1.0.0 test
+> vitest run --run server/src/api/routes/statsRoutes.test.ts
+
+
+[1m[46m RUN [49m[22m [36mv4.0.18 [39m[90m/home/daniel-bo/Desktop/mediarr[39m
+
+ [32m✓[39m server/src/api/routes/statsRoutes.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 107[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m15 passed[39m[22m[90m (15)[39m
+[2m   Start at [22m 21:07:35
+[2m   Duration [22m 838ms[2m (transform 158ms, setup 0ms, import 511ms, tests 107ms, environment 0ms)[22m
+[0m
+[0m$ [0mcd /home/daniel-bo/Desktop/mediarr && CI=true npm test 2>&1 | tail -40
+[90m 17| [39m[35mconst[39m prisma [33m=[39m [34mcreateTestPrismaClient[39m()[33m;[39m
+    [90m   | [39m               [31m^[39m
+    [90m 18| [39m[35mconst[39m repository [33m=[39m [35mnew[39m [33mSubtitleVariantRepository[39m(prisma)[33m;[39m
+    [90m 19| [39m[35mconst[39m fetchService [33m=[39m [35mnew[39m [33mVariantSubtitleFetchService[39m(repository)[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[19/21]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/variant-wanted-service.test.js[2m [ tests/variant-wanted-service.test.js ][22m
+[31m[1mTypeError[22m: (0 , __vite_ssr_import_1__.createTestPrismaClient) is not a function[39m
+[36m [2m❯[22m tests/variant-wanted-service.test.js:[2m7:38[22m[39m
+    [90m  5| [39mimport { VariantWantedService } from '../server/src/services/VariantWa…
+    [90m  6| [39m
+    [90m  7| [39m[35mconst[39m prisma [33m=[39m [34mcreateTestPrismaClient[39m()[33m;[39m
+    [90m   | [39m                                     [31m^[39m
+    [90m  8| [39m[35mconst[39m repository [33m=[39m [35mnew[39m [33mSubtitleVariantRepository[39m(prisma)[33m;[39m
+    [90m  9| [39m[35mconst[39m service [33m=[39m [35mnew[39m [33mVariantWantedService[39m(repository)[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[20/21]⎯[22m[39m
+
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 1 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m tests/prisma-init.test.js[2m > [22mPrisma Initialization[2m > [22mshould initialize PrismaClient compatibility runtime on Drizzle
+[31m[1mTypeError[22m: (0 , __vite_ssr_import_1__.createTestPrismaClient) is not a function[39m
+[36m [2m❯[22m tests/prisma-init.test.js:[2m6:42[22m[39m
+    [90m  4| [39m[34mdescribe[39m([32m'Prisma Initialization'[39m[33m,[39m () [33m=>[39m {
+    [90m  5| [39m  it('should initialize PrismaClient compatibility runtime on Drizzle'…
+    [90m  6| [39m    [35mconst[39m prisma [33m=[39m [34mcreateTestPrismaClient[39m()[33m;[39m
+    [90m   | [39m                                         [31m^[39m
+    [90m  7| [39m    [34mexpect[39m(prisma)[33m.[39m[34mtoBeDefined[39m()[33m;[39m
+    [90m  8| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[21/21]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m21 failed[39m[22m[2m | [22m[1m[32m215 passed[39m[22m[90m (236)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m1747 passed[39m[22m[2m | [22m[33m11 skipped[39m[90m (1759)[39m
+[2m   Start at [22m 21:07:49
+[2m   Duration [22m 196.26s[2m (transform 5.67s, setup 0ms, import 42.17s, tests 81.66s, environment 70ms)[22m
+[0m
+[0m→ [0mRead tests/helpers/test-prisma-client.js
+[0m✱ [0mGrep "createTestPrismaClient"[90m 47 matches[0m
+[0m
+[0m← [0mEdit tests/helpers/test-prisma-client.js
+Index: /home/daniel-bo/Desktop/mediarr/tests/helpers/test-prisma-client.js
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/tests/helpers/test-prisma-client.js
++++ /home/daniel-bo/Desktop/mediarr/tests/helpers/test-prisma-client.js
+@@ -9,5 +9,8 @@
+ export function createTestDatabaseClient() {
+   return new DatabaseClient({ datasources: { db: { url: databaseUrl } } });
+ }
+ 
++// Backwards-compatible alias for existing tests
++export { createTestDatabaseClient as createTestPrismaClient };
++
+ export { databaseUrl as TEST_DATABASE_URL };
+
+[0m
+[0m$ [0mcd /home/daniel-bo/Desktop/mediarr && CI=true npm test 2>&1 | tail -40
+[32m✓[39m tests/metadata-generator.test.js [2m([22m[2m2 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m tests/indexer-result.test.js [2m([22m[2m7 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m server/src/indexers/cardigann-conformance/templateRuntime.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m server/src/api/utils/queryHelpers.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m tests/gemini-track9-phase3-frontend-audit.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m server/src/no-stray-databases.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m tests/integration/subtitle-provider.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m tests/subtitle-requirement-engine.test.js [2m([22m[2m5 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/typescript.test.js [2m([22m[2m3 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/track9-phase2-backend-parity.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/probe-metadata-parser.test.js [2m([22m[2m2 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m tests/track9-phase5-remediation-backlog.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m tests/series-service.test.js [2m([22m[2m1 test[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/track9-phase4-validation-integrity.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/subtitle-provider-factory.test.js [2m([22m[2m2 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m server/src/services/ProviderBackedSubtitleFetchProvider.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m tests/dockerfile.test.js [2m([22m[2m2 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m tests/episode-service.test.js [2m([22m[2m1 test[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/track9-phase3-frontend-parity.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/serialization.test.js [2m([22m[2m6 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m tests/domain-errors.test.js [2m([22m[2m4 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/gemini-track9-phase5-remediation.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/api-contract-harness.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m server/src/api/utils/safePath.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m server/src/services/notifications/NotificationTransportRegistry.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m server/src/services/indexers/indexerValidation.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m tests/docker-compose.test.js [2m([22m[2m2 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m server/src/services/SubtitleScoringService.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m tests/import-manager-parsing.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m tests/subtitle-naming-service.test.js [2m([22m[2m2 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/prisma-schema.test.js [2m([22m[2m1 test[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/database-migration.test.js [2m([22m[2m2 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m server/src/indexers/cardigann-conformance/liveReleaseSearch.test.ts [2m([22m[2m3 tests[22m[2m | [22m[33m2 skipped[39m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m server/src/indexers/cardigann-conformance/liveSiteDefinitions.test.ts [2m([22m[2m10 tests[22m[2m | [22m[33m9 skipped[39m[2m)[22m[32m 6[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m236 passed[39m[22m[90m (236)[39m
+[2m      Tests [22m [1m[32m1802 passed[39m[22m[2m | [22m[33m11 skipped[39m[90m (1813)[39m
+[2m   Start at [22m 21:12:08
+[2m   Duration [22m 203.16s[2m (transform 5.53s, setup 0ms, import 65.13s, tests 82.78s, environment 68ms)[22m
+[0m

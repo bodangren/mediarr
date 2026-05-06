@@ -3,7 +3,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { PrismaClient } from './db/prismaClient';
+import { DatabaseClient } from './db/drizzleClient';
 import { createApiServer } from './api/createApiServer';
 import { registerStaticServing } from './api/staticServing';
 import { CatalogCache } from './services/indexers/CatalogCache';
@@ -87,7 +87,7 @@ function parsePort(rawPort: string | undefined, fallback: number): number {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
-async function migrateOldQualityProfiles(prisma: PrismaClient): Promise<void> {
+async function migrateOldQualityProfiles(prisma: DatabaseClient): Promise<void> {
   // Migrate legacy "UltraHD" profile (created before standardized presets) to "Ultra-HD"
   const oldProfile = await (prisma as any).qualityProfile.findUnique({ where: { name: 'UltraHD' } });
   if (!oldProfile) return;
@@ -105,7 +105,7 @@ async function migrateOldQualityProfiles(prisma: PrismaClient): Promise<void> {
   await (prisma as any).qualityProfile.delete({ where: { id: oldProfile.id } });
 }
 
-async function ensureBaselineData(prisma: PrismaClient): Promise<void> {
+async function ensureBaselineData(prisma: DatabaseClient): Promise<void> {
   await seedCategories(prisma);
   await seedQualityDefinitions(prisma);
   await seedQualityProfiles(prisma);
@@ -292,7 +292,7 @@ async function resolveDatabaseUrl(configuredUrl: string | undefined): Promise<st
   }
 }
 
-async function repairMalformedJsonColumns(prisma: PrismaClient): Promise<void> {
+async function repairMalformedJsonColumns(prisma: DatabaseClient): Promise<void> {
   const requiredAppSettingsDefaults: Record<string, string> = {
     torrentLimits: JSON.stringify(DEFAULT_APP_SETTINGS.torrentLimits),
     schedulerIntervals: JSON.stringify(DEFAULT_APP_SETTINGS.schedulerIntervals),
@@ -407,7 +407,7 @@ async function startApi(): Promise<void> {
     return undefined;
   })();
 
-  const prisma: any = new PrismaClient({
+  const prisma: any = new DatabaseClient({
     datasources: {
       db: {
         url: databaseUrl

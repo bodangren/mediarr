@@ -237,9 +237,7 @@ Parallel:
 
 - [x] **Track: WebTorrent Download Management UI** *Phases: 3 | Link: [./archive/webtorrent_download_management_20260503/](./archive/webtorrent_download_management_20260503/)* — Backend torrent routes (25 tests), enhanced ActivityQueuePage with sort/filter/search/SSE/priority, app build clean, 1800 tests green
 
-- [ ] **Track: Dashboard Statistics & Analytics**
-  *Link: [./tracks/dashboard_statistics_20260503/](./tracks/dashboard_statistics_20260503/)*
-  Statistics dashboard with library composition charts, download metrics, and system health monitoring.
+- [x] **Track: Dashboard Statistics & Analytics** *Phases: 3 | Link: [./archive/dashboard_statistics_20260503/](./archive/dashboard_statistics_20260503/)* — statistics dashboard with library composition charts, download metrics, system health monitoring; 17 tests green (15 backend + 2 integration)
 
 - [x] **Track: Flutter Home & Library Browsing Screen** *Phases: 5 | Link: [./archive/feature_flutter_home_screen_20260502/](./archive/feature_flutter_home_screen_20260502/)* — LibraryScreen with Movies/TV tabs, sort controls, getLibrary integration; 9 server tests green; app typecheck clean
 

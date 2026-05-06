@@ -27,6 +27,12 @@ const _destinations = [
     label: 'Home',
   ),
   _NavDestination(
+    path: AppRoutes.library,
+    icon: Icons.video_library_outlined,
+    selectedIcon: Icons.video_library,
+    label: 'Library',
+  ),
+  _NavDestination(
     path: AppRoutes.activity,
     icon: Icons.downloading_outlined,
     selectedIcon: Icons.downloading,

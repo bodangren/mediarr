@@ -18,12 +18,21 @@ void main() {
     );
   }
 
+  void setLargeViewport(WidgetTester tester) {
+    tester.view.physicalSize = const Size(800, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+  }
+
   group('LeanbackScaffold', () {
     testWidgets('renders NavigationRail with destinations', (tester) async {
+      setLargeViewport(tester);
       await tester.pumpWidget(buildTestApp(currentPath: AppRoutes.movies));
 
       expect(find.byType(NavigationRail), findsOneWidget);
       expect(find.text('Home'), findsOneWidget);
+      expect(find.text('Library'), findsOneWidget);
       expect(find.text('Activity'), findsOneWidget);
       expect(find.text('Search'), findsOneWidget);
       expect(find.text('Calendar'), findsOneWidget);
@@ -33,6 +42,7 @@ void main() {
     });
 
     testWidgets('renders Mediarr branding in leading', (tester) async {
+      setLargeViewport(tester);
       await tester.pumpWidget(buildTestApp(currentPath: AppRoutes.movies));
 
       expect(find.text('Mediarr'), findsOneWidget);
@@ -40,6 +50,7 @@ void main() {
     });
 
     testWidgets('renders child content', (tester) async {
+      setLargeViewport(tester);
       await tester.pumpWidget(
         buildTestApp(
           currentPath: AppRoutes.movies,
@@ -51,41 +62,55 @@ void main() {
     });
 
     testWidgets('highlights Home when on /home path', (tester) async {
+      setLargeViewport(tester);
       await tester.pumpWidget(buildTestApp(currentPath: AppRoutes.home));
 
       final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
       expect(rail.selectedIndex, 0);
     });
 
-    testWidgets('highlights Activity when on /activity path', (tester) async {
-      await tester.pumpWidget(buildTestApp(currentPath: AppRoutes.activity));
+    testWidgets('highlights Library when on /library path', (tester) async {
+      setLargeViewport(tester);
+      await tester.pumpWidget(buildTestApp(currentPath: AppRoutes.library));
 
       final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
       expect(rail.selectedIndex, 1);
     });
 
-    testWidgets('highlights Movies when on /movies path', (tester) async {
-      await tester.pumpWidget(buildTestApp(currentPath: AppRoutes.movies));
+    testWidgets('highlights Activity when on /activity path', (tester) async {
+      setLargeViewport(tester);
+      await tester.pumpWidget(buildTestApp(currentPath: AppRoutes.activity));
 
       final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
-      expect(rail.selectedIndex, 4);
+      expect(rail.selectedIndex, 2);
     });
 
-    testWidgets('highlights Series when on /series path', (tester) async {
-      await tester.pumpWidget(buildTestApp(currentPath: AppRoutes.series));
+    testWidgets('highlights Movies when on /movies path', (tester) async {
+      setLargeViewport(tester);
+      await tester.pumpWidget(buildTestApp(currentPath: AppRoutes.movies));
 
       final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
       expect(rail.selectedIndex, 5);
     });
 
-    testWidgets('highlights Settings when on /settings path', (tester) async {
-      await tester.pumpWidget(buildTestApp(currentPath: AppRoutes.settings));
+    testWidgets('highlights Series when on /series path', (tester) async {
+      setLargeViewport(tester);
+      await tester.pumpWidget(buildTestApp(currentPath: AppRoutes.series));
 
       final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
       expect(rail.selectedIndex, 6);
     });
 
+    testWidgets('highlights Settings when on /settings path', (tester) async {
+      setLargeViewport(tester);
+      await tester.pumpWidget(buildTestApp(currentPath: AppRoutes.settings));
+
+      final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
+      expect(rail.selectedIndex, 7);
+    });
+
     testWidgets('defaults to index 0 for unknown path', (tester) async {
+      setLargeViewport(tester);
       await tester.pumpWidget(buildTestApp(currentPath: '/unknown'));
 
       final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
@@ -94,6 +119,7 @@ void main() {
 
     testWidgets('renders vertical divider between rail and content',
         (tester) async {
+      setLargeViewport(tester);
       await tester.pumpWidget(buildTestApp(currentPath: AppRoutes.movies));
 
       expect(find.byType(VerticalDivider), findsOneWidget);

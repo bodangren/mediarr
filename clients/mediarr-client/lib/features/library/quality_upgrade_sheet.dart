@@ -285,7 +285,7 @@ class _QualityUpgradeSheetState extends ConsumerState<QualityUpgradeSheet> {
                             ),
                           const SizedBox(width: 8),
                           _MetadataChip(
-                            label: release.indexer,
+                            label: release.indexerName ?? 'Unknown',
                           ),
                           const SizedBox(width: 8),
                           if (release.size != null)

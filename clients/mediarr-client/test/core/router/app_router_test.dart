@@ -24,6 +24,13 @@ class _RouterTestDiscoveryService extends DiscoveryService {
 }
 
 void main() {
+  void setLargeViewport(WidgetTester tester) {
+    tester.view.physicalSize = const Size(800, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+  }
+
   group('AppRoutes', () {
     test('defines expected route paths', () {
       expect(AppRoutes.discovery, '/discovery');
@@ -73,6 +80,7 @@ void main() {
     }
 
     testWidgets('home screen renders at initial route', (tester) async {
+      setLargeViewport(tester);
       final container = createRouterTestContainer();
       addTearDown(container.dispose);
 
@@ -91,6 +99,7 @@ void main() {
     });
 
     testWidgets('navigates to calendar screen via shell route', (tester) async {
+      setLargeViewport(tester);
       final container = createRouterTestContainer();
       addTearDown(container.dispose);
 
@@ -111,6 +120,7 @@ void main() {
     });
 
     testWidgets('navigates to movies screen via shell route', (tester) async {
+      setLargeViewport(tester);
       final container = createRouterTestContainer(
         overrides: [moviesProvider.overrideWith((ref) async => <Movie>[])],
       );
@@ -134,6 +144,7 @@ void main() {
     });
 
     testWidgets('navigates to series screen via shell route', (tester) async {
+      setLargeViewport(tester);
       final container = createRouterTestContainer(
         overrides: [seriesListProvider.overrideWith((ref) async => <Series>[])],
       );
@@ -156,6 +167,7 @@ void main() {
     });
 
     testWidgets('navigates to settings screen via shell route', (tester) async {
+      setLargeViewport(tester);
       final container = createRouterTestContainer(
         overrides: [
           moviesProvider.overrideWith((ref) async => <Movie>[]),

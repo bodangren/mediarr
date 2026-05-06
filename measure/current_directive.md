@@ -1,20 +1,20 @@
 # Current Strategic Directive
 
-> **STATUS: ACTIVE** — TypeScript Strictness Re-enablement complete. Next: Dashboard Statistics & Analytics.
-> **Updated: 2026-05-05**
+> **STATUS: ACTIVE** — Flutter Player-First Navigation complete. Next: Drizzle Migration Cleanup.
+> **Updated: 2026-05-06**
 
 ---
 
-## Directive: Quality — TypeScript Strictness Re-enablement
+## Directive: Quality — Backend Cleanup
 
-Track `typescript_strictness_20260426` is complete. All phases finished:
-- Phase 1: Enable and Assess (complete — exactOptionalPropertyTypes + noUncheckedIndexedAccess enabled)
-- Phase 2: Fix Type Errors (complete — 853 server + 381 app errors fixed)
-- Phase 3: Verify (complete — 1800 tests green, 0 tsc errors)
+Track `flutter_player_first_navigation_20260506` is complete. All phases finished:
+- Phase 1: Default Route Fix (complete — /home already default, continue-watching visible)
+- Phase 2: Shell Navigation Reorder (complete — Library added before Activity, tests green)
 
-Next pending track:
-1. `dashboard_statistics_20260503` — Statistics dashboard with library composition charts, download metrics, and system health monitoring.
+Next pending tracks:
+1. `drizzle_cleanup_type_safety_20260506` — Complete Prisma→Drizzle transition: rename files, remove shims, fix unsafe casts.
+2. `legacy_test_cleanup_20260506` — Audit and remove obsolete legacy tests, strengthen primitive smoke tests.
 
 ### Active Track
 
-- [~] **Dashboard Statistics & Analytics** *Link: [./tracks/dashboard_statistics_20260503/](./tracks/dashboard_statistics_20260503/)*
+- [~] **Backend Drizzle Migration Cleanup & Type Safety** *Link: [./tracks/drizzle_cleanup_type_safety_20260506/](./tracks/drizzle_cleanup_type_safety_20260506/)*

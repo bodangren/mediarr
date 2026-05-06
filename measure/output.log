@@ -3611,3 +3611,48 @@ Index: /home/daniel-bo/Desktop/mediarr/measure/tracks.md
 [0m$ [0mmv /home/daniel-bo/Desktop/mediarr/measure/tracks/bug_catalog_isconfigured_matching_20260507 /home/daniel-bo/Desktop/mediarr/measure/archive/
 (no output)
 [0m
+[0m$ [0mgit add -A && git commit -m "fix: catalog isConfigured matches renamed indexers by definitionId/baseUrl
+
+Track: bug_catalog_isconfigured_matching_20260507
+
+- Cardigann indexers now match by settings.definitionId === catalogEntry.id
+- Torznab/Newznab indexers now match by settings.baseUrl/url/host === catalogEntry.baseUrl
+- Preserved name-based matching as backwards-compatible fallback
+- Added 3 regression tests for renamed indexer scenarios
+- 1805 tests green; build clean"
+[main 9ab0812] fix: catalog isConfigured matches renamed indexers by definitionId/baseUrl
+ 10 files changed, 1669 insertions(+), 4 deletions(-)
+ create mode 100644 measure/archive/bug_catalog_isconfigured_matching_20260507/index.md
+ create mode 100644 measure/archive/bug_catalog_isconfigured_matching_20260507/metadata.json
+ create mode 100644 measure/archive/bug_catalog_isconfigured_matching_20260507/plan.md
+ create mode 100644 measure/archive/bug_catalog_isconfigured_matching_20260507/spec.md
+[0m
+[0m$ [0mlsof -i :5173 -i :5174 2>/dev/null | grep LISTEN | awk '{print $2}' | sort -u | xargs -r kill -9 2>/dev/null; echo "Dev servers stopped"
+Dev servers stopped
+[0m
+[0m$ [0mwc -l /home/daniel-bo/Desktop/mediarr/measure/tech-debt.md /home/daniel-bo/Desktop/mediarr/measure/lessons-learned.md
+36 /home/daniel-bo/Desktop/mediarr/measure/tech-debt.md
+   44 /home/daniel-bo/Desktop/mediarr/measure/lessons-learned.md
+   80 total
+[0m
+[0m$ [0mgit push
+To https://github.com/bodangren/mediarr.git
+   6b4bf14..9ab0812  main -> main
+[0m
+Autonomous session complete.
+
+**What happened:**
+1. Committed dirty log artifacts
+2. Fixed a pre-existing failing test (`BackupService.applyRetention(0)` now deletes all files)
+3. Created and executed track `bug_catalog_isconfigured_matching_20260507`
+
+**Track results:**
+- Fixed catalog `isConfigured` matching to use `implementation` + `definitionId`/`baseUrl` instead of name alone
+- Added 3 regression tests for renamed indexer scenarios
+- 1805 tests green, build clean
+- Tech-debt item resolved and archived
+
+**Commits pushed:**
+- `chore: commit log artifacts from previous session`
+- `fix: BackupService.applyRetention(0) now deletes all files`
+- `fix: catalog isConfigured matches renamed indexers by definitionId/baseUrl`

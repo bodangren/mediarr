@@ -247,9 +247,7 @@ Parallel:
 
 - [x] **Track: Flutter Player-First Navigation & Shell Default Route** *Phases: 2 | Link: [./archive/flutter_player_first_navigation_20260506/](./archive/flutter_player_first_navigation_20260506/)* — Library added to nav before Activity; default route already /home; compilation fixes for library_screen + quality_upgrade_sheet; viewport fixes for widget tests
 
-- [ ] **Track: Backend Drizzle Migration Cleanup & Type Safety**
-  *Link: [./tracks/drizzle_cleanup_type_safety_20260506/](./tracks/drizzle_cleanup_type_safety_20260506/)*
-  Complete Prisma→Drizzle transition: rename files, remove shims, fix unsafe casts.
+- [x] **Track: Backend Drizzle Migration Cleanup & Type Safety** *Phases: 3 | Link: [./archive/drizzle_cleanup_type_safety_20260506/](./archive/drizzle_cleanup_type_safety_20260506/)* — prismaClient.ts → drizzleClient.ts + DatabaseClient rename; removed $executeRawUnsafe/$queryRaw shims; fixed seedSmartDefaults JSON round-trip; removed as any casts from AddIndexerModal/EditIndexerModal/AddProfileModal; 1802 tests green; app typecheck clean
 
 - [ ] **Track: Legacy Code & Test Infrastructure Cleanup**
   *Link: [./tracks/legacy_test_cleanup_20260506/](./tracks/legacy_test_cleanup_20260506/)*

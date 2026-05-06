@@ -486,11 +486,56 @@ export function registerIndexerRoutes(
     const catalog = deps.catalogCache.get();
 
     const existingIndexers = await deps.indexerRepository.findAll();
-    const configuredIds = new Set(existingIndexers.map(i => i.name.toLowerCase()));
+
+    function isConfigured(entry: CatalogEntry): boolean {
+      return existingIndexers.some(indexer => {
+        // Name-based fallback (backwards compatibility)
+        if (indexer.name.toLowerCase() === entry.name.toLowerCase()) {
+          return true;
+        }
+
+        const settings = (() => {
+          try {
+            return JSON.parse(indexer.settings) as Record<string, unknown>;
+          } catch {
+            return {};
+          }
+        })();
+
+        // Cardigann: match by definitionId
+        if (
+          indexer.implementation === 'Cardigann' &&
+          entry.implementation === 'Cardigann' &&
+          settings.definitionId === entry.id
+        ) {
+          return true;
+        }
+
+        // Torznab / Newznab: match by baseUrl / url / host
+        if (
+          (indexer.implementation === 'Torznab' || indexer.implementation === 'Newznab') &&
+          (entry.implementation === 'Torznab' || entry.implementation === 'Newznab')
+        ) {
+          const indexerUrl =
+            typeof settings.baseUrl === 'string'
+              ? settings.baseUrl
+              : typeof settings.url === 'string'
+                ? settings.url
+                : typeof settings.host === 'string'
+                  ? settings.host
+                  : null;
+          if (indexerUrl && indexerUrl === entry.baseUrl) {
+            return true;
+          }
+        }
+
+        return false;
+      });
+    }
 
     const result = catalog.map(entry => ({
       ...entry,
-      isConfigured: configuredIds.has(entry.name.toLowerCase()),
+      isConfigured: isConfigured(entry),
     }));
 
     return sendSuccess(reply, result);

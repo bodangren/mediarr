@@ -145,6 +145,90 @@ describe('indexerRoutes catalog endpoints', () => {
       const body = JSON.parse(response.body);
       expect(body.data).toHaveLength(0);
     });
+
+    it('marks renamed Cardigann indexer as configured via definitionId', async () => {
+      indexerRepository.findAll.mockResolvedValue([
+        {
+          id: 1,
+          name: 'My Custom 1337x',
+          implementation: 'Cardigann',
+          configContract: 'CardigannSettings',
+          settings: '{"definitionId":"1337x"}',
+          protocol: 'torrent',
+          supportedMediaTypes: '[]',
+          enabled: true,
+          supportsRss: false,
+          supportsSearch: true,
+          priority: 25,
+        },
+      ]);
+
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/indexers/catalog',
+      });
+
+      expect(response.statusCode).toBe(200);
+      const body = JSON.parse(response.body);
+      const entry1337x = body.data.find((e: any) => e.id === '1337x');
+      expect(entry1337x.isConfigured).toBe(true);
+    });
+
+    it('marks renamed Newznab indexer as configured via host match', async () => {
+      indexerRepository.findAll.mockResolvedValue([
+        {
+          id: 2,
+          name: 'My NZBGeek',
+          implementation: 'Newznab',
+          configContract: 'NewznabSettings',
+          settings: '{"host":"https://api.nzbgamer.com","apiKey":"secret"}',
+          protocol: 'nzb',
+          supportedMediaTypes: '[]',
+          enabled: true,
+          supportsRss: true,
+          supportsSearch: true,
+          priority: 25,
+        },
+      ]);
+
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/indexers/catalog',
+      });
+
+      expect(response.statusCode).toBe(200);
+      const body = JSON.parse(response.body);
+      const entryNzbgear = body.data.find((e: any) => e.id === 'nzbgear');
+      expect(entryNzbgear.isConfigured).toBe(true);
+    });
+
+    it('marks renamed Torznab indexer as configured via baseUrl match', async () => {
+      indexerRepository.findAll.mockResolvedValue([
+        {
+          id: 3,
+          name: 'My Torznab',
+          implementation: 'Torznab',
+          configContract: 'TorznabSettings',
+          settings: '{"baseUrl":"https://torznab.example.com","apiKey":"secret"}',
+          protocol: 'torrent',
+          supportedMediaTypes: '[]',
+          enabled: true,
+          supportsRss: true,
+          supportsSearch: true,
+          priority: 25,
+        },
+      ]);
+
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/indexers/catalog',
+      });
+
+      expect(response.statusCode).toBe(200);
+      const body = JSON.parse(response.body);
+      const entry = body.data.find((e: any) => e.id === 'nzbgear');
+      expect(entry.isConfigured).toBe(false);
+    });
   });
 
   describe('POST /api/indexers/catalog/:id/add', () => {

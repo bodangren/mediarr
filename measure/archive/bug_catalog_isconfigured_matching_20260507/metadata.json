@@ -1,0 +1,11 @@
+{
+  "track_id": "bug_catalog_isconfigured_matching_20260507",
+  "type": "bug",
+  "status": "completed",
+  "created_at": "2026-05-07T02:45:00Z",
+  "updated_at": "2026-05-07T02:45:00Z",
+  "description": "Fix catalog isConfigured flag to match on implementation + definitionId/baseUrl instead of name, so user-renamed indexers still appear configured",
+  "estimated_tasks": 3,
+  "actual_tasks": 3,
+  "deviation_notes": ""
+}

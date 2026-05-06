@@ -4,6 +4,8 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ---
 
+- [x] **Track: Fix Catalog `isConfigured` Matching for Renamed Indexers** *Phases: 3 | Link: [./archive/bug_catalog_isconfigured_matching_20260507/](./archive/bug_catalog_isconfigured_matching_20260507/)* — 3 regression tests; Cardigann definitionId + Torznab/Newznab baseUrl matching with name fallback
+
 - [x] **Track: Cleanup Uncommitted Work** *Phases: 2 | Link: [./archive/chore_cleanup_uncommitted_work_20260401/](./archive/chore_cleanup_uncommitted_work_20260401/)* — staged deleted track files, updated .gitignore
 
 - [x] **Track: Organize Services Corner-Case Testing** *Phases: 5 | Link: [./archive/bug_organize_services_corner_cases_20260404/](./archive/bug_organize_services_corner_cases_20260404/)* — 67 tests; 1 bug fixed (missing absoluteEpisodeNumber)

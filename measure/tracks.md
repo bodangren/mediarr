@@ -245,9 +245,7 @@ Parallel:
 
 - [x] **Track: WebTorrent Native Addon Resolution** *Phases: 3 | Link: [./archive/webtorrent_addon_resolution_20260426/](./archive/webtorrent_addon_resolution_20260426/)* — patched `node-datachannel` to handle `ERR_DLOPEN_DISABLED`; WebTorrent now operates in TCP-only mode without falling back to stub manager; 224 test files passed
 
-- [ ] **Track: Flutter Player-First Navigation & Shell Default Route**
-  *Link: [./tracks/flutter_player_first_navigation_20260506/](./tracks/flutter_player_first_navigation_20260506/)*
-  Fix Flutter client to default to Home/Continue Watching instead of Activity; correct shell navigation order.
+- [x] **Track: Flutter Player-First Navigation & Shell Default Route** *Phases: 2 | Link: [./archive/flutter_player_first_navigation_20260506/](./archive/flutter_player_first_navigation_20260506/)* — Library added to nav before Activity; default route already /home; compilation fixes for library_screen + quality_upgrade_sheet; viewport fixes for widget tests
 
 - [ ] **Track: Backend Drizzle Migration Cleanup & Type Safety**
   *Link: [./tracks/drizzle_cleanup_type_safety_20260506/](./tracks/drizzle_cleanup_type_safety_20260506/)*

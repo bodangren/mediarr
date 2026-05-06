@@ -1,20 +1,20 @@
 [0m
 > build · k2p6
 [0m
+[0m→ [0mSkill "measure"
 [0m→ [0mRead measure/autonomous_prompt.md
-This file defines the **autonomous Measure workflow** — instructions for unattended agent runs that cycle through tracks automatically.
-
-**Key sections:**
-
-1. **Load Context** — Read `tracks.md`, `tech-debt.md`, `lessons-learned.md`, and optional `current_directive.md`
-2. **Workspace & Progress** — Commit dirty state, finish in-progress phases, or create new tracks from directives/tech-debt
-3. **Functionality Review (mandatory)** — Before new work: start dev server, use browser-harness to verify the previous phase actually renders and works, fix anything broken
-4. **Implement with TDD** — Red-Green-Refactor, with test/build/smoke-test gates after each task
-5. **Verify (mandatory)** — Full test suite, build, app launch, core journey, phase feature, console errors, screenshot check
-6. **Finalize** — Enforce 50-line limits on memory files, update tech-debt/lessons-learned, commit with model name
-
-**Critical rules:**
-- Auto-answer "yes" to proceed prompts, pick first option when asked what to do next
-- Never mark work complete if the app is broken or doesn't launch
-- Tests passing ≠ feature working; must verify in real browser
-- Never start new work on top of broken functionality
+[0m→ [0mRead measure/tracks.md
+[0m→ [0mRead measure/tech-debt.md
+[0m→ [0mRead measure/lessons-learned.md
+[0m→ [0mRead measure/current_directive.md
+[0m→ [0mRead measure/tracks/dashboard_statistics_20260503/plan.md
+[0m→ [0mRead measure/tracks/dashboard_statistics_20260503/metadata.json
+[0m→ [0mRead measure/tracks/dashboard_statistics_20260503/spec.md
+[0m
+[0m$ [0mgit status --short
+M measure/output.log
+[0m
+[0m$ [0mgit diff --stat
+measure/output.log | 28 ++++++++++++----------------
+ 1 file changed, 12 insertions(+), 16 deletions(-)
+[0m

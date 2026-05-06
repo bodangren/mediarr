@@ -249,7 +249,7 @@ export function AddProfileModal({
       <ModalBody>
         <Form {...form}>
           {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-          <form onSubmit={form.handleSubmit(handleSubmit as any)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
             <div className="space-y-2">
               <label htmlFor="profile-name" className="text-sm font-medium text-text-primary">
                 Profile Name <span className="text-accent-danger">*</span>
@@ -344,7 +344,7 @@ export function AddProfileModal({
           Cancel
         </Button>
         {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-        <Button variant="default" onClick={() => form.handleSubmit(handleSubmit as any)()} disabled={!canSave || isLoading}>
+        <Button variant="default" onClick={() => form.handleSubmit(handleSubmit)()} disabled={!canSave || isLoading}>
           {isLoading ? 'Saving...' : editProfile ? 'Save Changes' : 'Add Profile'}
         </Button>
       </ModalFooter>

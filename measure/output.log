@@ -3055,3 +3055,311 @@ Index: /home/daniel-bo/Desktop/mediarr/tests/prisma-init.test.js
 [2m   Start at [22m 21:25:58
 [2m   Duration [22m 201.84s[2m (transform 5.44s, setup 0ms, import 65.52s, tests 81.24s, environment 67ms)[22m
 [0m
+[0m$ [0mgit add -A && git commit -m "refactor(db): Remove raw query shims, use direct sqlite calls (k2p6)"
+[main dec637d] refactor(db): Remove raw query shims, use direct sqlite calls (k2p6)
+ 5 files changed, 287 insertions(+), 48 deletions(-)
+[0m
+[0m→ [0mRead server/src/seeds/smartDefaults.ts
+[0m
+[0m← [0mEdit server/src/seeds/smartDefaults.ts
+Index: /home/daniel-bo/Desktop/mediarr/server/src/seeds/smartDefaults.ts
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/server/src/seeds/smartDefaults.ts
++++ /home/daniel-bo/Desktop/mediarr/server/src/seeds/smartDefaults.ts
+@@ -30,20 +30,19 @@
+   });
+ }
+ 
+ const settingsRecord = await prisma.appSettings.findUnique({ where: { id: 1 } });
+-const current = settingsRecord ? JSON.parse(JSON.stringify(settingsRecord)) as {
+-  [key: string]: unknown;
+-  mediaManagement?: Record<string, unknown>;
+-  schedulerIntervals?: Record<string, unknown>;
+-  update?: Record<string, unknown>;
+-  torrentLimits?: Record<string, unknown>;
+-  pathVisibility?: Record<string, unknown>;
+-  apiKeys?: Record<string, unknown>;
+-  host?: Record<string, unknown>;
+-  security?: Record<string, unknown>;
+-  logging?: Record<string, unknown>;
+-  streaming?: Record<string, unknown>;
++const current = settingsRecord ? {
++  mediaManagement: settingsRecord.mediaManagement as Record<string, unknown> | undefined,
++  schedulerIntervals: settingsRecord.schedulerIntervals as Record<string, unknown> | undefined,
++  update: settingsRecord.update as Record<string, unknown> | undefined,
++  torrentLimits: settingsRecord.torrentLimits as Record<string, unknown> | undefined,
++  pathVisibility: settingsRecord.pathVisibility as Record<string, unknown> | undefined,
++  apiKeys: settingsRecord.apiKeys as Record<string, unknown> | undefined,
++  host: settingsRecord.host as Record<string, unknown> | undefined,
++  security: settingsRecord.security as Record<string, unknown> | undefined,
++  logging: settingsRecord.logging as Record<string, unknown> | undefined,
++  streaming: settingsRecord.streaming as Record<string, unknown> | undefined,
+ } : null;
+ 
+ let hasAnyChange = false;
+ 
+
+[0m
+[0m✱ [0mGrep "as any"[90m in app/src · 37 matches[0m
+[0m✱ [0mGrep "as any"[90m in app/src/components · 27 matches[0m
+[0m✱ [0mGrep "as any"[90m in app/src/components/series · 0 matches[0m
+[0m✱ [0mGlob "app/src/**/*SeriesDetail*"[90m 1 match[0m
+[0m✱ [0mGrep "as any"[90m in app/src/pages/SeriesDetailPage.tsx · 0 matches[0m
+[0m→ [0mRead app/src/components/indexers/AddIndexerModal.tsx[90m [limit=30][0m
+[0m→ [0mRead app/src/components/indexers/AddIndexerModal.tsx[90m [limit=40, offset=95][0m
+[0m
+[0m$ [0mgit add server/src/seeds/smartDefaults.ts && git commit -m "refactor(seeds): Remove JSON.parse(JSON.stringify) round-trip in smartDefaults (k2p6)"
+[main 7c44515] refactor(seeds): Remove JSON.parse(JSON.stringify) round-trip in smartDefaults (k2p6)
+ 1 file changed, 11 insertions(+), 12 deletions(-)
+[0m
+[0m→ [0mRead app/src/components/indexers/AddIndexerModal.tsx[90m [limit=10, offset=1][0m
+[0m
+[0m← [0mEdit app/src/components/indexers/AddIndexerModal.tsx
+Index: /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
++++ /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
+@@ -1,7 +1,7 @@
+ 
+ import { useEffect, useMemo, useState } from 'react';
+-import { useForm, useFieldArray } from 'react-hook-form';
++import { useForm, useFieldArray, type Resolver } from 'react-hook-form';
+ import { zodResolver } from '@hookform/resolvers/zod';
+ import { z } from 'zod';
+ import { Checkbox } from '@/components/ui/checkbox';
+ import { Input } from '@/components/ui/input';
+
+[0m
+[0m← [0mEdit app/src/components/indexers/AddIndexerModal.tsx
+Index: /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
++++ /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
+@@ -100,10 +100,9 @@
+ const [testResult, setTestResult] = useState<TestConnectionResult | null>(null);
+ const [isTesting, setIsTesting] = useState(false);
+ 
+ const form = useForm<IndexerFormValues>({
+-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- zodResolver generic inference mismatch with useFieldArray
+-  resolver: zodResolver(indexerFormSchema) as any,
++  resolver: zodResolver(indexerFormSchema) as Resolver<IndexerFormValues>,
+   defaultValues: {
+     presetId: presets[0]?.id ?? '',
+     name: '',
+     enabled: true,
+
+[0m
+[0m← [0mEdit app/src/components/indexers/AddIndexerModal.tsx
+Index: /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
++++ /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
+@@ -114,10 +114,9 @@
+     dynamicFields: [],
+   },
+ });
+ 
+-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Control generic mismatches FormField's constrained type
+-const control = form.control as any;
++const control = form.control;
+ const selectedPresetId = form.watch('presetId');
+ const dynamicFields = form.watch('dynamicFields');
+ 
+ const selectedPreset = useMemo(() => {
+
+[0m
+[0m→ [0mRead app/src/components/indexers/AddIndexerModal.tsx[90m [limit=30, offset=220][0m
+[0m✱ [0mGrep "function handleSubmit|const handleSubmit"[90m in app/src/components/indexers/AddIndexerModal.tsx · 1 match[0m
+[0m
+[0m← [0mEdit app/src/components/indexers/AddIndexerModal.tsx
+Index: /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
++++ /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
+@@ -221,10 +221,9 @@
+ <Modal isOpen={isOpen} ariaLabel="Add Indexer" onClose={onClose} maxWidthClassName="max-w-3xl">
+   <ModalHeader title="Add Indexer" onClose={onClose} />
+   <ModalBody>
+     <Form {...form}>
+-      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+-      <form onSubmit={form.handleSubmit(handleSubmit as any)} className="space-y-4">
++      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+         <section className="space-y-2">
+           <h3 className="text-sm font-medium text-text-primary">Preset</h3>
+           <div className="grid gap-2 sm:grid-cols-2">
+             {presets.map(preset => {
+
+[0m
+[0m✱ [0mGrep "handleSubmit as any"[90m 6 matches[0m
+[0m
+[0m← [0mEdit app/src/components/indexers/AddIndexerModal.tsx
+Index: /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
++++ /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/AddIndexerModal.tsx
+@@ -468,9 +468,9 @@
+     <Button variant="secondary" onClick={handleTestConnection} disabled={isSubmitting || isTesting}>
+       {isTesting ? 'Testing...' : 'Test Connection'}
+     </Button>
+     {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+-    <Button variant="default" onClick={() => form.handleSubmit(handleSubmit as any)()} disabled={isSubmitting || isTesting}>
++    <Button variant="default" onClick={() => form.handleSubmit(handleSubmit)()} disabled={isSubmitting || isTesting}>
+       Add Indexer
+     </Button>
+   </ModalFooter>
+ </Modal>
+
+[0m
+[0m→ [0mRead app/src/components/indexers/EditIndexerModal.tsx[90m [limit=30][0m
+[0m
+[0m← [0mEdit app/src/components/indexers/EditIndexerModal.tsx
+Index: /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/EditIndexerModal.tsx
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/EditIndexerModal.tsx
++++ /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/EditIndexerModal.tsx
+@@ -1,7 +1,7 @@
+ 
+ import { useEffect, useMemo } from 'react';
+-import { useForm, useFieldArray } from 'react-hook-form';
++import { useForm, useFieldArray, type Resolver } from 'react-hook-form';
+ import { zodResolver } from '@hookform/resolvers/zod';
+ import { z } from 'zod';
+ import { Checkbox } from '@/components/ui/checkbox';
+ import { Input } from '@/components/ui/input';
+
+[0m
+[0m← [0mEdit app/src/components/indexers/EditIndexerModal.tsx
+Index: /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/EditIndexerModal.tsx
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/EditIndexerModal.tsx
++++ /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/EditIndexerModal.tsx
+@@ -233,10 +233,9 @@
+ }: EditIndexerModalProps) {
+   const initialSettings = parseSettings(indexer.settings);
+ 
+   const form = useForm<EditIndexerFormValues>({
+-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- zodResolver generic inference mismatch with useFieldArray
+-    resolver: zodResolver(editIndexerFormSchema) as any,
++    resolver: zodResolver(editIndexerFormSchema) as Resolver<EditIndexerFormValues>,
+     defaultValues: {
+       name: indexer.name,
+       protocol: indexer.protocol === 'usenet' ? 'usenet' : 'torrent',
+       enabled: indexer.enabled,
+
+[0m
+[0m← [0mEdit app/src/components/indexers/EditIndexerModal.tsx
+Index: /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/EditIndexerModal.tsx
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/EditIndexerModal.tsx
++++ /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/EditIndexerModal.tsx
+@@ -247,10 +247,9 @@
+     dynamicFields: [],
+   },
+ });
+ 
+-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Control generic mismatches FormField's constrained type
+-const control = form.control as any;
++const control = form.control;
+ const protocol = form.watch('protocol');
+ const dynamicFields = form.watch('dynamicFields');
+ 
+ const schema = useMemo(() => {
+
+[0m
+[0m← [0mEdit app/src/components/indexers/EditIndexerModal.tsx
+Index: /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/EditIndexerModal.tsx
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/EditIndexerModal.tsx
++++ /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/EditIndexerModal.tsx
+@@ -322,10 +322,9 @@
+ <Modal isOpen={isOpen} ariaLabel="Edit indexer" onClose={onClose} maxWidthClassName="max-w-3xl">
+   <ModalHeader title="Edit Indexer" onClose={onClose} />
+   <ModalBody>
+     <Form {...form}>
+-      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+-      <form onSubmit={form.handleSubmit(handleSubmit as any)} className="space-y-4">
++      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+         <div className="grid gap-3 sm:grid-cols-2">
+           <FormField
+             control={control}
+             name="name"
+
+[0m
+[0m← [0mEdit app/src/components/indexers/EditIndexerModal.tsx
+Index: /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/EditIndexerModal.tsx
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/EditIndexerModal.tsx
++++ /home/daniel-bo/Desktop/mediarr/app/src/components/indexers/EditIndexerModal.tsx
+@@ -541,9 +541,9 @@
+     <Button variant="secondary" onClick={onClose} disabled={isSubmitting}>
+       Cancel
+     </Button>
+     {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+-    <Button variant="default" onClick={() => form.handleSubmit(handleSubmit as any)()} disabled={isSubmitting}>
++    <Button variant="default" onClick={() => form.handleSubmit(handleSubmit)()} disabled={isSubmitting}>
+       Save Indexer
+     </Button>
+   </ModalFooter>
+ </Modal>
+
+[0m
+[0m← [0mEdit app/src/components/settings/AddProfileModal.tsx
+Index: /home/daniel-bo/Desktop/mediarr/app/src/components/settings/AddProfileModal.tsx
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/app/src/components/settings/AddProfileModal.tsx
++++ /home/daniel-bo/Desktop/mediarr/app/src/components/settings/AddProfileModal.tsx
+@@ -248,9 +248,9 @@
+ <ModalHeader title={editProfile ? `Edit: ${editProfile.name}` : 'Add Quality Profile'} onClose={onClose} />
+ <ModalBody>
+   <Form {...form}>
+     {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+-    <form onSubmit={form.handleSubmit(handleSubmit as any)} className="space-y-4">
++    <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+       <div className="space-y-2">
+         <label htmlFor="profile-name" className="text-sm font-medium text-text-primary">
+           Profile Name <span className="text-accent-danger">*</span>
+         </label>
+
+[0m
+[0m← [0mEdit app/src/components/settings/AddProfileModal.tsx
+Index: /home/daniel-bo/Desktop/mediarr/app/src/components/settings/AddProfileModal.tsx
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/app/src/components/settings/AddProfileModal.tsx
++++ /home/daniel-bo/Desktop/mediarr/app/src/components/settings/AddProfileModal.tsx
+@@ -343,9 +343,9 @@
+     <Button variant="secondary" onClick={onClose} disabled={isLoading}>
+       Cancel
+     </Button>
+     {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+-    <Button variant="default" onClick={() => form.handleSubmit(handleSubmit as any)()} disabled={!canSave || isLoading}>
++    <Button variant="default" onClick={() => form.handleSubmit(handleSubmit)()} disabled={!canSave || isLoading}>
+       {isLoading ? 'Saving...' : editProfile ? 'Save Changes' : 'Add Profile'}
+     </Button>
+   </ModalFooter>
+ </Modal>
+
+[0m
+[0m$ [0mcd /home/daniel-bo/Desktop/mediarr/app && npx tsc --noEmit 2>&1 | head -30
+(no output)
+[0m
+[0m$ [0mcd /home/daniel-bo/Desktop/mediarr && CI=true npm test 2>&1 | tail -20
+[32m✓[39m server/src/services/indexers/indexerValidation.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/scoring-engine.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m tests/import-manager-parsing.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m tests/reference-repos.test.js [2m([22m[2m4 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m server/src/services/SubtitleScoringService.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m server/src/no-stray-databases.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m tests/dockerfile.test.js [2m([22m[2m2 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m tests/docker-compose.test.js [2m([22m[2m2 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m tests/typescript.test.js [2m([22m[2m3 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m tests/subtitle-naming-service.test.js [2m([22m[2m2 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m server/src/indexers/cardigann-conformance/liveSiteDefinitions.test.ts [2m([22m[2m10 tests[22m[2m | [22m[33m9 skipped[39m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/database-migration.test.js [2m([22m[2m2 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/prisma-schema.test.js [2m([22m[2m1 test[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m server/src/indexers/cardigann-conformance/liveReleaseSearch.test.ts [2m([22m[2m3 tests[22m[2m | [22m[33m2 skipped[39m[2m)[22m[32m 5[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m236 passed[39m[22m[90m (236)[39m
+[2m      Tests [22m [1m[32m1802 passed[39m[22m[2m | [22m[33m11 skipped[39m[90m (1813)[39m
+[2m   Start at [22m 21:38:53
+[2m   Duration [22m 257.25s[2m (transform 7.56s, setup 0ms, import 91.73s, tests 90.85s, environment 122ms)[22m
+[0m

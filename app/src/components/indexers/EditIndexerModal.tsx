@@ -1,6 +1,6 @@
 
 import { useEffect, useMemo } from 'react';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm, useFieldArray, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -234,8 +234,7 @@ export function EditIndexerModal({
   const initialSettings = parseSettings(indexer.settings);
 
   const form = useForm<EditIndexerFormValues>({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- zodResolver generic inference mismatch with useFieldArray
-    resolver: zodResolver(editIndexerFormSchema) as any,
+    resolver: zodResolver(editIndexerFormSchema) as Resolver<EditIndexerFormValues>,
     defaultValues: {
       name: indexer.name,
       protocol: indexer.protocol === 'usenet' ? 'usenet' : 'torrent',
@@ -249,8 +248,7 @@ export function EditIndexerModal({
     },
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Control generic mismatches FormField's constrained type
-  const control = form.control as any;
+  const control = form.control;
   const protocol = form.watch('protocol');
   const dynamicFields = form.watch('dynamicFields');
 
@@ -325,8 +323,7 @@ export function EditIndexerModal({
       <ModalHeader title="Edit Indexer" onClose={onClose} />
       <ModalBody>
         <Form {...form}>
-          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-          <form onSubmit={form.handleSubmit(handleSubmit as any)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
             <div className="grid gap-3 sm:grid-cols-2">
               <FormField
                 control={control}
@@ -545,7 +542,7 @@ export function EditIndexerModal({
           Cancel
         </Button>
         {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-        <Button variant="default" onClick={() => form.handleSubmit(handleSubmit as any)()} disabled={isSubmitting}>
+        <Button variant="default" onClick={() => form.handleSubmit(handleSubmit)()} disabled={isSubmitting}>
           Save Indexer
         </Button>
       </ModalFooter>

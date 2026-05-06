@@ -1,20 +1,33 @@
 [0m
 > build · k2p6
 [0m
-[0m→ [0mSkill "measure"
+[0m✱ [0mGlob "**/autonomous_prompt.md"[90m 1 match[0m
 [0m→ [0mRead measure/autonomous_prompt.md
+[0m→ [0mSkill "measure"
 [0m→ [0mRead measure/tracks.md
 [0m→ [0mRead measure/tech-debt.md
 [0m→ [0mRead measure/lessons-learned.md
 [0m→ [0mRead measure/current_directive.md
-[0m→ [0mRead measure/tracks/dashboard_statistics_20260503/plan.md
-[0m→ [0mRead measure/tracks/dashboard_statistics_20260503/metadata.json
-[0m→ [0mRead measure/tracks/dashboard_statistics_20260503/spec.md
 [0m
 [0m$ [0mgit status --short
-M measure/output.log
+M conductor/archive/cardigann_runtime_parity_20260223/artifacts/final-phase5-compatibility-matrix.json
+ M measure/output.log
+ D measure/tracks/dashboard_statistics_20260503/metadata.json
+ D measure/tracks/dashboard_statistics_20260503/plan.md
+ D measure/tracks/dashboard_statistics_20260503/spec.md
+?? measure/archive/dashboard_statistics_20260503/
 [0m
-[0m$ [0mgit diff --stat
-measure/output.log | 28 ++++++++++++----------------
- 1 file changed, 12 insertions(+), 16 deletions(-)
+[0m→ [0mRead measure/tracks/flutter_player_first_navigation_20260506/plan.md
+[0m→ [0mRead measure/tracks/drizzle_cleanup_type_safety_20260506/plan.md
+[0m→ [0mRead measure/tracks/legacy_test_cleanup_20260506/plan.md
+[0m
+[0m$ [0mls -la measure/archive/dashboard_statistics_20260503/ && echo "---" && ls -la measure/tracks/dashboard_statistics_20260503/ 2>/dev/null || echo "tracks dir does not exist or is empty"
+total 28
+drwxrwxr-x   2 daniel-bo daniel-bo  4096 May  3 05:04 .
+drwxrwxr-x 139 daniel-bo daniel-bo 12288 May  6 14:48 ..
+-rw-rw-r--   1 daniel-bo daniel-bo   167 May  6 14:48 metadata.json
+-rw-rw-r--   1 daniel-bo daniel-bo  1859 May  6 14:40 plan.md
+-rw-rw-r--   1 daniel-bo daniel-bo  2094 May  3 05:04 spec.md
+---
+tracks dir does not exist or is empty
 [0m

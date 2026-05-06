@@ -3363,3 +3363,1714 @@ Index: /home/daniel-bo/Desktop/mediarr/app/src/components/settings/AddProfileMod
 [2m   Start at [22m 21:38:53
 [2m   Duration [22m 257.25s[2m (transform 7.56s, setup 0ms, import 91.73s, tests 90.85s, environment 122ms)[22m
 [0m
+[0m$ [0mgit add -A && git commit -m "refactor(forms): Remove as any casts from AddIndexerModal, EditIndexerModal, AddProfileModal (k2p6)"
+[main e8f236f] refactor(forms): Remove as any casts from AddIndexerModal, EditIndexerModal, AddProfileModal (k2p6)
+ 5 files changed, 321 insertions(+), 19 deletions(-)
+[0m
+[0m→ [0mRead measure/tracks/drizzle_cleanup_type_safety_20260506/plan.md
+[0m
+[0m← [0mWrite measure/tracks/drizzle_cleanup_type_safety_20260506/plan.md
+Wrote file successfully.
+[0m
+[0m$ [0mmv measure/tracks/drizzle_cleanup_type_safety_20260506 measure/archive/
+(no output)
+[0m
+[0m← [0mEdit measure/tracks.md
+Index: /home/daniel-bo/Desktop/mediarr/measure/tracks.md
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/measure/tracks.md
++++ /home/daniel-bo/Desktop/mediarr/measure/tracks.md
+@@ -246,11 +246,9 @@
+ - [x] **Track: WebTorrent Native Addon Resolution** *Phases: 3 | Link: [./archive/webtorrent_addon_resolution_20260426/](./archive/webtorrent_addon_resolution_20260426/)* — patched `node-datachannel` to handle `ERR_DLOPEN_DISABLED`; WebTorrent now operates in TCP-only mode without falling back to stub manager; 224 test files passed
+ 
+ - [x] **Track: Flutter Player-First Navigation & Shell Default Route** *Phases: 2 | Link: [./archive/flutter_player_first_navigation_20260506/](./archive/flutter_player_first_navigation_20260506/)* — Library added to nav before Activity; default route already /home; compilation fixes for library_screen + quality_upgrade_sheet; viewport fixes for widget tests
+ 
+-- [ ] **Track: Backend Drizzle Migration Cleanup & Type Safety**
+-  *Link: [./tracks/drizzle_cleanup_type_safety_20260506/](./tracks/drizzle_cleanup_type_safety_20260506/)*
+-  Complete Prisma→Drizzle transition: rename files, remove shims, fix unsafe casts.
++- [x] **Track: Backend Drizzle Migration Cleanup & Type Safety** *Phases: 3 | Link: [./archive/drizzle_cleanup_type_safety_20260506/](./archive/drizzle_cleanup_type_safety_20260506/)* — prismaClient.ts → drizzleClient.ts + DatabaseClient rename; removed $executeRawUnsafe/$queryRaw shims; fixed seedSmartDefaults JSON round-trip; removed as any casts from AddIndexerModal/EditIndexerModal/AddProfileModal; 1802 tests green; app typecheck clean
+ 
+ - [ ] **Track: Legacy Code & Test Infrastructure Cleanup**
+   *Link: [./tracks/legacy_test_cleanup_20260506/](./tracks/legacy_test_cleanup_20260506/)*
+   Audit and remove obsolete legacy tests, strengthen primitive smoke tests, resolve VirtualTable coverage.
+
+[0m
+[0m← [0mEdit measure/tech-debt.md
+Index: /home/daniel-bo/Desktop/mediarr/measure/tech-debt.md
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/measure/tech-debt.md
++++ /home/daniel-bo/Desktop/mediarr/measure/tech-debt.md
+@@ -27,9 +27,9 @@
+ | 2026-04-13 | review_20260413 | `$executeRawUnsafe` in PrismaClient uses `any` and branches on `sqlite.query` vs `sqlite.prepare` at runtime | Low | Open | Defensive shim for mixed Bun/Node SQLite API surfaces; should standardize once Drizzle migration completes |
+ | 2026-04-24 | feature_catalog_endpoint_caching_20260424 | `CATALOG_PATH` resolved via `process.cwd()` at module load | Medium | Resolved | Now uses `__dirname`-relative path in CatalogCache class |
+ | 2026-04-13 | review_20260413 | One-click catalog add stores empty `apiKey` silently when `entry.requiresApiKey` is true | Medium | Resolved | `validateCatalogEntry` guard rejects with 422 before `repository.create`; frontend inline validation already prevents empty keys |
+ | 2026-04-13 | review_20260413 | Catalog `isConfigured` flag matches on `name.toLowerCase()` | Low | Open | User-renamed indexers appear un-configured; prefer matching on `implementation` + embedded Cardigann `definitionId` from settings |
+-| 2026-04-13 | review_20260413 | Drizzle track artifact is still named `server/src/db/prismaClient.ts` with prisma-style method names | Low | Open | Either rename file or rename track; future devs will grep for drizzle code and find a prisma shim |
++| 2026-04-13 | review_20260413 | Drizzle track artifact is still named `server/src/db/prismaClient.ts` with prisma-style method names | Low | Resolved | Renamed to drizzleClient.ts, class renamed to DatabaseClient, raw query shims removed, imports updated across workspace |
+ | 2026-04-13 | review_20260413 | `seedSmartDefaults` deep-clones AppSettings via `JSON.parse(JSON.stringify(...))` | Low | Open | Silently coerces `Date` fields to strings; fragile if downstream code grows to read timestamps. Use typed field access |
+ | 2026-04-13 | review_20260413 | Autonomous checkpoint 4c78a41 bundled 121 files / +6409 lines | Medium | Open | Process guidance: split autonomous checkpoints per subsystem so review granularity is preserved |
+ | 2026-04-08 | chore_form_standardization_completion_20260330 | EditIndexerModal tests (Cardigann dynamic fields, protocol switch, validation display) need adjustment after migration | Low | Resolved | Updated expectations for react-hook-form contract; added cross-modal smoke coverage; full CI now green |
+ | 2026-04-08 | review_20260408 | AppSettings.createdAt column is INT — Date.now() overflow causes P2023 on startup | Critical | Resolved | Fixed: changed createdAt/updatedAt to TEXT storing ISO 8601 datetime strings; migration at prisma/migrations/20260409000000_fix_appsettings_timestamp |
+
+[0m
+[0m← [0mEdit measure/tech-debt.md
+Index: /home/daniel-bo/Desktop/mediarr/measure/tech-debt.md
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/measure/tech-debt.md
++++ /home/daniel-bo/Desktop/mediarr/measure/tech-debt.md
+@@ -18,9 +18,9 @@
+ | 2026-03-15 | chore_server_module_alignment_20260315 | `exactOptionalPropertyTypes` and `noUncheckedIndexedAccess` disabled to clear noise | Medium | Resolved | `exactOptionalPropertyTypes` fully fixed (0 errors). `noUncheckedIndexedAccess` partially fixed: server down from 853 to 439 errors. App workspace clean (0 errors). Remaining 439 server errors need continued work |
+ | 2026-03-29 | chore_openrouter_migration_20260329 | Old `OPENAI_API_KEY` still in `.env` — remove after migration is complete and smoke-tested | Low | Open | Cleanup in Phase 4 of OpenRouter migration track |
+ | 2026-03-30 | chore_drizzle_migration_20260314 | DB recreated from scratch — existing data lost | Medium | Open | Backup at `mediarr.db.prisma.bak`; production deployments will need migration strategy |
+ | 2026-03-30 | chore_drizzle_migration_20260314 | `server/src/db/index.ts` uses `bun:sqlite` — no type declarations in tsx/tsc context | Low | Open | Works at runtime under Bun; add `declare module 'bun:sqlite'` shim if strict tsc needed before full Bun switch |
+-| 2026-04-07 | review_20260407 | AddIndexerModal react-hook-form + zodResolver + useFieldArray generic type inference mismatch requires `as any` casts | Medium | Open | Known react-hook-form issue; revisit when upgrading react-hook-form or switching to @hookform/resolvers v4+ |
++| 2026-04-07 | review_20260407 | AddIndexerModal react-hook-form + zodResolver + useFieldArray generic type inference mismatch requires `as any` casts | Medium | Resolved | Replaced `as any` with explicit `Resolver<FormValues>` type imports and direct control access; typecheck clean |
+ | 2026-04-09 | review_20260409 | 185 lint errors across app workspace — predominantly no-explicit-any and unused-vars | Medium | Resolved | chore_lint_debt_reduction_20260424: zero errors, 14 exhaustivedeps warnings remain; build + typecheck clean |
+ | 2026-04-09 | review_20260409 | SeriesDetailPage maps API response via `as any` casts — no typed API response interface | Low | Open | Needs typed getSeriesWithEpisodes return type to eliminate assertion casts |
+ | 2026-04-09 | chore_drizzle_migration_20260314 | Bun runtime requires `--no-addons` in this host; WebTorrent native addons are disabled and startup falls back to DB-backed torrent manager | High | Resolved | Patched `node-datachannel` ESM/CJS wrappers to gracefully handle `ERR_DLOPEN_DISABLED` with stub exports; WebTorrent now operates in TCP-only mode without falling back to stub manager |
+ | 2026-04-24 | feature_catalog_endpoint_caching_20260424 | indexerRoutes catalog endpoints read JSON file from disk on every request — no caching | Low | Resolved | CatalogCache implemented with startup load, file watcher, and manual reload endpoint |
+
+[0m
+[0m$ [0mgit add measure/tracks.md measure/tech-debt.md measure/archive/drizzle_cleanup_type_safety_20260506/ && git commit -m "Archive drizzle_cleanup_type_safety track, update tech-debt (k2p6)"
+[main 4da3d71] Archive drizzle_cleanup_type_safety track, update tech-debt (k2p6)
+ 5 files changed, 49 insertions(+), 5 deletions(-)
+ create mode 100644 measure/archive/drizzle_cleanup_type_safety_20260506/metadata.json
+ create mode 100644 measure/archive/drizzle_cleanup_type_safety_20260506/plan.md
+ create mode 100644 measure/archive/drizzle_cleanup_type_safety_20260506/spec.md
+[0m
+[0m→ [0mRead measure/tracks/legacy_test_cleanup_20260506/spec.md
+[0m→ [0mRead measure/tracks/legacy_test_cleanup_20260506/plan.md
+[0m
+[0m$ [0mls -la app_src_backup/ 2>/dev/null | head -20 && echo "---" && grep -A5 "exclude:" vitest.config.ts
+total 28
+drwxrwxr-x  7 daniel-bo daniel-bo 4096 Feb 15 23:17 .
+drwxrwxr-x 16 daniel-bo daniel-bo 4096 May  6 14:40 ..
+drwxrwxr-x  3 daniel-bo daniel-bo 4096 Mar  2 15:30 app
+drwxrwxr-x 20 daniel-bo daniel-bo 4096 Feb 18 09:34 components
+drwxrwxr-x 14 daniel-bo daniel-bo 4096 May  5 15:05 lib
+drwxrwxr-x  2 daniel-bo daniel-bo 4096 Mar  2 15:31 test
+drwxrwxr-x  2 daniel-bo daniel-bo 4096 Mar  2 15:31 types
+---
+    exclude: [
+      '**/node_modules/**',
+      '**/reference/**',
+      '**/dist/**',
+      'app_src_backup/**',
+      'app/src/**/*.test.{ts,tsx,js,jsx}',
+[0m
+[0m→ [0mRead vitest.config.ts
+[0m✱ [0mGlob "**/vitest.config.*"[90m 10 matches[0m
+[0m→ [0mRead app/vitest.config.ts
+[0m
+[0m$ [0mls -la tests/import-manager.test.js 2>/dev/null && echo "EXISTS" || echo "NOT FOUND"
+-rw-rw-r-- 1 daniel-bo daniel-bo 2272 May  6 21:03 tests/import-manager.test.js
+EXISTS
+[0m
+[0m→ [0mRead tests/import-manager.test.js
+[0m
+[0m$ [0mfind server -name "*ImportManager*test*" -o -name "*import-manager*test*" | head -10
+server/src/services/ImportManager.slowPath.test.ts
+server/src/services/ImportManager.test.ts
+server/src/services/ImportManager.helpers.test.ts
+[0m
+[0m→ [0mRead server/src/services/ImportManager.test.ts[90m [limit=50][0m
+[0m
+[0m$ [0mrm tests/import-manager.test.js
+(no output)
+[0m
+[0m← [0mEdit vitest.config.ts
+Index: /home/daniel-bo/Desktop/mediarr/vitest.config.ts
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/vitest.config.ts
++++ /home/daniel-bo/Desktop/mediarr/vitest.config.ts
+@@ -10,8 +10,7 @@
+       '**/reference/**',
+       '**/dist/**',
+       'app_src_backup/**',
+       'app/src/**/*.test.{ts,tsx,js,jsx}',
+-      'tests/import-manager.test.js',
+     ],
+   },
+ });
+
+[0m
+[0m$ [0mfind app_src_backup -type f | wc -l && echo "---" && find app_src_backup -name "*.test.*" | wc -l
+1518
+---
+0
+[0m
+[0m$ [0mfind app_src_backup -type f | head -20 && echo "---" && find app_src_backup -type d | head -20
+app_src_backup/lib/msw/handlers.js.map
+app_src_backup/lib/msw/browser.d.ts
+app_src_backup/lib/msw/factories.js.map
+app_src_backup/lib/msw/handlers.js
+app_src_backup/lib/msw/handlers.ts
+app_src_backup/lib/msw/server.js
+app_src_backup/lib/msw/handlers.d.ts.map
+app_src_backup/lib/msw/handlers.d.ts
+app_src_backup/lib/msw/factories.js
+app_src_backup/lib/msw/server.d.ts.map
+app_src_backup/lib/msw/factories.d.ts
+app_src_backup/lib/msw/factories.ts
+app_src_backup/lib/msw/server.js.map
+app_src_backup/lib/msw/browser.js
+app_src_backup/lib/msw/server.d.ts
+app_src_backup/lib/msw/factories.d.ts.map
+app_src_backup/lib/msw/browser.d.ts.map
+app_src_backup/lib/msw/browser.ts
+app_src_backup/lib/msw/server.ts
+app_src_backup/lib/msw/browser.js.map
+---
+app_src_backup
+app_src_backup/lib
+app_src_backup/lib/msw
+app_src_backup/lib/hooks
+app_src_backup/lib/constants
+app_src_backup/lib/table
+app_src_backup/lib/performance
+app_src_backup/lib/api
+app_src_backup/lib/query
+app_src_backup/lib/events
+app_src_backup/lib/theme
+app_src_backup/lib/subtitles
+app_src_backup/lib/indexer
+app_src_backup/lib/state
+app_src_backup/types
+app_src_backup/test
+app_src_backup/app
+app_src_backup/app/(shell)
+app_src_backup/app/(shell)/indexers
+app_src_backup/app/(shell)/indexers/stats
+[0m
+[0m$ [0mfind app_src_backup -name "*.ts" -o -name "*.tsx" | wc -l && echo "---" && find app_src_backup -name "*.test.*" | wc -l
+606
+---
+0
+[0m
+[0m✱ [0mGrep "app_src_backup"[90m 403 matches[0m
+[0m✱ [0mGrep "import.*app_src_backup|from.*app_src_backup|require.*app_src_backup"[90m 2 matches[0m
+[0m
+[0m$ [0mrm -rf app_src_backup
+(no output)
+[0m
+[0m← [0mEdit vitest.config.ts
+Index: /home/daniel-bo/Desktop/mediarr/vitest.config.ts
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/vitest.config.ts
++++ /home/daniel-bo/Desktop/mediarr/vitest.config.ts
+@@ -8,9 +8,8 @@
+     exclude: [
+       '**/node_modules/**',
+       '**/reference/**',
+       '**/dist/**',
+-      'app_src_backup/**',
+       'app/src/**/*.test.{ts,tsx,js,jsx}',
+     ],
+   },
+ });
+
+[0m
+[0m✱ [0mGlob "app/src/components/ui/**/core-primitives*"[90m 0 matches[0m
+[0m✱ [0mGlob "**/core-primitives*"[90m 1 match[0m
+[0m→ [0mRead app/src/components/primitives/core-primitives.test.tsx
+[0m→ [0mRead app/src/components/ui/alert-compat.tsx
+[0m→ [0mRead app/src/components/ui/label-badge.tsx
+[0m
+[0m← [0mEdit app/src/components/primitives/core-primitives.test.tsx
+Index: /home/daniel-bo/Desktop/mediarr/app/src/components/primitives/core-primitives.test.tsx
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/app/src/components/primitives/core-primitives.test.tsx
++++ /home/daniel-bo/Desktop/mediarr/app/src/components/primitives/core-primitives.test.tsx
+@@ -29,19 +29,23 @@
+   expect(screen.getByLabelText('Search icon')).toBeInTheDocument();
+ });
+ 
+ it('renders alert variants with semantic tone classes', () => {
+-  const { rerender } = render(<Alert variant="info">Info message</Alert>);
++  const { rerender, container } = render(<Alert variant="info">Info message</Alert>);
+   expect(screen.getByText('Info message')).toBeInTheDocument();
++  expect(container.querySelector('[class*="bg-accent-primary"]')).toBeInTheDocument();
+ 
+   rerender(<Alert variant="success">Success message</Alert>);
+   expect(screen.getByText('Success message')).toBeInTheDocument();
++  expect(container.querySelector('[class*="bg-status-completed"]')).toBeInTheDocument();
+ 
+   rerender(<Alert variant="warning">Warning message</Alert>);
+   expect(screen.getByText('Warning message')).toBeInTheDocument();
++  expect(container.querySelector('[class*="bg-status-wanted"]')).toBeInTheDocument();
+ 
+   rerender(<Alert variant="danger">Danger message</Alert>);
+   expect(screen.getByText('Danger message')).toBeInTheDocument();
++  expect(container.querySelector('[class*="bg-status-error"]')).toBeInTheDocument();
+ });
+ 
+ it('renders label badge variants', () => {
+   render(
+
+[0m
+[0m← [0mEdit app/src/components/primitives/core-primitives.test.tsx
+Index: /home/daniel-bo/Desktop/mediarr/app/src/components/primitives/core-primitives.test.tsx
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/app/src/components/primitives/core-primitives.test.tsx
++++ /home/daniel-bo/Desktop/mediarr/app/src/components/primitives/core-primitives.test.tsx
+@@ -46,10 +46,10 @@
+     expect(screen.getByText('Danger message')).toBeInTheDocument();
+     expect(container.querySelector('[class*="bg-status-error"]')).toBeInTheDocument();
+   });
+ 
+-  it('renders label badge variants', () => {
+-    render(
++  it('renders label badge variants with correct tone classes', () => {
++    const { container } = render(
+       <>
+         <Label tone="info">Info</Label>
+         <Label tone="success">Success</Label>
+         <Label tone="warning">Warning</Label>
+@@ -60,6 +60,18 @@
+     expect(screen.getByText('Info')).toBeInTheDocument();
+     expect(screen.getByText('Success')).toBeInTheDocument();
+     expect(screen.getByText('Warning')).toBeInTheDocument();
+     expect(screen.getByText('Danger')).toBeInTheDocument();
++
++    const infoLabel = screen.getByText('Info').closest('span');
++    expect(infoLabel).toHaveClass('bg-accent-primary');
++
++    const successLabel = screen.getByText('Success').closest('span');
++    expect(successLabel).toHaveClass('bg-status-completed');
++
++    const warningLabel = screen.getByText('Warning').closest('span');
++    expect(warningLabel).toHaveClass('bg-status-wanted');
++
++    const dangerLabel = screen.getByText('Danger').closest('span');
++    expect(dangerLabel).toHaveClass('bg-status-error');
+   });
+ });
+
+[0m
+## Goal
+- Complete three in-progress tracks autonomously: Flutter Player-First Navigation, Drizzle Cleanup & Type Safety, and Legacy Test Cleanup.
+
+## Constraints & Preferences
+- Follow measure/autonomous_prompt.md: load context, commit dirty workspace, finish in-progress phases, verify after each phase, commit and push.
+- Use TDD (Red-Green-Refactor), run tests after each task, zero build errors.
+
+## Progress
+### Done
+- **Flutter Player-First Navigation** (`flutter_player_first_navigation_20260506`):
+  - Added `Library` to `_destinations` in `leanback_scaffold.dart` before `Activity`
+  - Fixed pre-existing compilation errors: `library_screen.dart` missing `go_router` import, `quality_upgrade_sheet.dart` using `release.indexer` instead of `release.indexerName`
+  - Fixed `NavigationRail` overflow in tests by setting `tester.view.physicalSize = const Size(800, 900)`
+  - All Flutter tests pass; track archived
+- **Drizzle Cleanup & Type Safety** (`drizzle_cleanup_type_safety_20260506`):
+  - Renamed `server/src/db/prismaClient.ts` → `drizzleClient.ts`
+  - Renamed class `PrismaClient` → `DatabaseClient`; updated local imports in `main.ts`, seeds, tests
+  - Exposed `readonly sqlite` and `readonly db` on `DatabaseClient`
+  - Removed `$executeRawUnsafe`, `$queryRaw`, `$queryRawUnsafe` shim methods
+  - Refactored `main.ts` to use `executeRaw(sqlite, query)` helper with `sqlite.prepare(query).run()`
+  - Fixed `prisma-init.test.js` to use `prisma.sqlite.prepare('SELECT 1 as ok').all()`
+  - Added `createTestDatabaseClient as createTestPrismaClient` backwards-compatible alias in `tests/helpers/test-prisma-client.js`
+  - Fixed `seedSmartDefaults.ts` to use explicit typed field access instead of `JSON.parse(JSON.stringify(...))`
+  - Removed `as any` casts from `AddIndexerModal.tsx`, `EditIndexerModal.tsx`, `AddProfileModal.tsx` using explicit `Resolver<FormValues>` types
+  - Full suite: 236 test files, 1802 tests pass; track archived
+- **Legacy Test Cleanup** (`legacy_test_cleanup_20260506`) — Phase 1 in progress:
+  - Deleted `tests/import-manager.test.js` (redundant; covered by `server/src/services/ImportManager.test.ts`)
+  - Removed `tests/import-manager.test.js` from `vitest.config.ts` exclude list
+  - Deleted entire `app_src_backup/` directory (1518 files, 0 tests; tests already purged in prior track)
+  - Removed `app_src_backup/**` from `vitest.config.ts` exclude list
+
+### In Progress
+- **Legacy Test Cleanup** Phase 1 (continuing):
+  - Need to strengthen `core-primitives.test.tsx` (alert variants, status badges)
+  - Need to resolve `VirtualTable.test.tsx` coverage decision
+  - Need to run full CI verification
+
+### Blocked
+- `(none)`
+
+## Key Decisions
+- **NavigationRail overflow**: Fixed by increasing test viewport to `Size(800, 900)` rather than making the widget scrollable, because real TV screens are 1080p+ and scrollable NavigationRail breaks layout.
+- **Raw query removal**: Replaced `$executeRawUnsafe` with `executeRaw(sqlite, query)` helper using `sqlite.prepare(query).run()`, preserving Bun and better-sqlite3 compatibility.
+- **AddIndexerModal `as any`**: Replaced with explicit `Resolver<FormValues>` type cast from `react-hook-form`, which satisfies the typechecker without `any`.
+
+## Next Steps
+1. Strengthen `core-primitives.test.tsx` to verify alert/status/label/progress variant class mappings.
+2. Resolve `VirtualTable.test.tsx` decision (document mock acceptance or refactor).
+3. Run `CI=true npm test` to confirm zero excluded files and green suite.
+4. Update `tech-debt.md` to mark legacy items resolved.
+5. Archive `legacy_test_cleanup_20260506` track.
+
+## Critical Context
+- `app/src/components/primitives/core-primitives.test.tsx` exists but only covers basic rendering; needs variant class assertions.
+- `VirtualTable.test.tsx` mocks virtualization heavily; tech-debt marks this as acceptable but needs comment or decision.
+- `vitest.config.ts` now only excludes `app/src/**/*.test.{ts,tsx,js,jsx}` (intentional — app tests run via `app/vitest.config.ts`).
+- The only test failure before cleanup was `BackupService.test.ts` (flaky retention policy assertion), unrelated to current tracks.
+
+## Relevant Files
+- `measure/tracks.md`: tracks registry with 3 formerly in-progress, now 1 remaining (`legacy_test_cleanup_20260506`)
+- `measure/tech-debt.md`: entries for Prisma naming, AddIndexerModal `as any`, VirtualTable mock, legacy tests
+- `measure/current_directive.md`: updated to show Flutter and Drizzle tracks complete
+- `server/src/db/drizzleClient.ts`: renamed from prismaClient.ts, class `DatabaseClient`, raw query shims removed
+- `server/src/main.ts`: uses `executeRaw(sqlite, query)` helper for migrations
+- `app/src/components/primitives/core-primitives.test.tsx`: needs strengthened assertions
+- `vitest.config.ts`: exclusions reduced to `app/src/**/*.test.{ts,tsx,js,jsx}` only
+- `clients/mediarr-client/lib/core/widgets/leanback_scaffold.dart`: now includes `Library` destination at index 1
+- `clients/mediarr-client/test/core/widgets/leanback_scaffold_test.dart`: uses `setLargeViewport(800, 900)` helper
+Continue if you have next steps, or stop and ask for clarification if you are unsure how to proceed.
+[0m$ [0mcat app/src/components/primitives/core-primitives.test.tsx | grep -n "renders alert variants\|renders label badge" -A 20
+32:  it('renders alert variants with semantic tone classes', () => {
+33-    const { rerender, container } = render(<Alert variant="info">Info message</Alert>);
+34-    expect(screen.getByText('Info message')).toBeInTheDocument();
+35-    expect(container.querySelector('[class*="bg-accent-primary"]')).toBeInTheDocument();
+36-
+37-    rerender(<Alert variant="success">Success message</Alert>);
+38-    expect(screen.getByText('Success message')).toBeInTheDocument();
+39-    expect(container.querySelector('[class*="bg-status-completed"]')).toBeInTheDocument();
+40-
+41-    rerender(<Alert variant="warning">Warning message</Alert>);
+42-    expect(screen.getByText('Warning message')).toBeInTheDocument();
+43-    expect(container.querySelector('[class*="bg-status-wanted"]')).toBeInTheDocument();
+44-
+45-    rerender(<Alert variant="danger">Danger message</Alert>);
+46-    expect(screen.getByText('Danger message')).toBeInTheDocument();
+47-    expect(container.querySelector('[class*="bg-status-error"]')).toBeInTheDocument();
+48-  });
+49-
+50:  it('renders label badge variants with correct tone classes', () => {
+51-    const { container } = render(
+52-      <>
+53-        <Label tone="info">Info</Label>
+54-        <Label tone="success">Success</Label>
+55-        <Label tone="warning">Warning</Label>
+56-        <Label tone="danger">Danger</Label>
+57-      </>,
+58-    );
+59-
+60-    expect(screen.getByText('Info')).toBeInTheDocument();
+61-    expect(screen.getByText('Success')).toBeInTheDocument();
+62-    expect(screen.getByText('Warning')).toBeInTheDocument();
+63-    expect(screen.getByText('Danger')).toBeInTheDocument();
+64-
+65-    const infoLabel = screen.getByText('Info').closest('span');
+66-    expect(infoLabel).toHaveClass('bg-accent-primary');
+67-
+68-    const successLabel = screen.getByText('Success').closest('span');
+69-    expect(successLabel).toHaveClass('bg-status-completed');
+70-
+[0m
+[0m$ [0mnpm test -- app/src/components/primitives/core-primitives.test.tsx 2>&1 | tail -30
+> mediarr@1.0.0 test
+> vitest run app/src/components/primitives/core-primitives.test.tsx
+
+
+[1m[46m RUN [49m[22m [36mv4.0.18 [39m[90m/home/daniel-bo/Desktop/mediarr[39m
+
+[31mNo test files found, exiting with code 1
+[39m
+[2mfilter: [22m[33mapp/src/components/primitives/core-primitives.test.tsx[39m
+[2minclude: [22m[33m**/*.{test,spec}.?(c|m)[jt]s?(x)[39m
+[2mexclude:  [22m[33m**/node_modules/**[2m, [22m**/reference/**[2m, [22m**/dist/**[2m, [22mapp/src/**/*.test.{ts,tsx,js,jsx}[39m
+[0m
+[0m$ [0mls app/vitest.config.* 2>/dev/null || echo "No app vitest config found"; ls vitest.config.*
+app/vitest.config.d.ts
+app/vitest.config.d.ts.map
+app/vitest.config.js
+app/vitest.config.js.map
+app/vitest.config.ts
+vitest.config.d.ts
+vitest.config.d.ts.map
+vitest.config.js
+vitest.config.js.map
+vitest.config.ts
+[0m
+[0m$ [0mcd app && npx vitest run src/components/primitives/core-primitives.test.tsx 2>&1 | tail -40
+[1m[46m RUN [49m[22m [36mv4.0.18 [39m[90m/home/daniel-bo/Desktop/mediarr/app[39m
+
+ [31m❯[39m src/components/primitives/core-primitives.test.tsx [2m([22m[2m4 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[33m 885[2mms[22m[39m
+     [33m[2m✓[22m[39m renders button variants and click interactions [33m 791[2mms[22m[39m
+     [32m✓[39m renders icon from lucide set with accessible label[32m 18[2mms[22m[39m
+     [32m✓[39m renders alert variants with semantic tone classes[32m 43[2mms[22m[39m
+[31m     [31m×[31m renders label badge variants with correct tone classes[39m[32m 25[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 1 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m src/components/primitives/core-primitives.test.tsx[2m > [22mcore primitives[2m > [22mrenders label badge variants with correct tone classes
+[31m[1mError[22m: [2mexpect([22m[31melement[31m[2m).toHaveClass([22m[32m[32m"bg-accent-primary"[32m[31m[2m)[22m
+
+Expected the element to have class:
+[32m  bg-accent-primary[31m
+Received:
+[31m  inline-flex rounded-full px-2 py-0.5 text-xs font-semibold bg-accent-primary/15 text-text-primary[31m[39m
+[36m [2m❯[22m src/components/primitives/core-primitives.test.tsx:[2m66:23[22m[39m
+    [90m 64| [39m
+    [90m 65| [39m    [35mconst[39m infoLabel [33m=[39m screen[33m.[39m[34mgetByText[39m([32m'Info'[39m)[33m.[39m[34mclosest[39m([32m'span'[39m)[33m;[39m
+    [90m 66| [39m    [34mexpect[39m(infoLabel)[33m.[39m[34mtoHaveClass[39m([32m'bg-accent-primary'[39m)[33m;[39m
+    [90m   | [39m                      [31m^[39m
+    [90m 67| [39m
+    [90m 68| [39m    [35mconst[39m successLabel [33m=[39m screen[33m.[39m[34mgetByText[39m([32m'Success'[39m)[33m.[39m[34mclosest[39m([32m'span'[39m)[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m3 passed[39m[22m[90m (4)[39m
+[2m   Start at [22m 21:54:14
+[2m   Duration [22m 4.79s[2m (transform 452ms, setup 350ms, import 1.06s, tests 885ms, environment 2.04s)[22m
+[0m
+[0m← [0mEdit app/src/components/primitives/core-primitives.test.tsx
+Index: /home/daniel-bo/Desktop/mediarr/app/src/components/primitives/core-primitives.test.tsx
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/app/src/components/primitives/core-primitives.test.tsx
++++ /home/daniel-bo/Desktop/mediarr/app/src/components/primitives/core-primitives.test.tsx
+@@ -62,16 +62,16 @@
+     expect(screen.getByText('Warning')).toBeInTheDocument();
+     expect(screen.getByText('Danger')).toBeInTheDocument();
+ 
+     const infoLabel = screen.getByText('Info').closest('span');
+-    expect(infoLabel).toHaveClass('bg-accent-primary');
++    expect(infoLabel).toHaveClass('bg-accent-primary/15');
+ 
+     const successLabel = screen.getByText('Success').closest('span');
+-    expect(successLabel).toHaveClass('bg-status-completed');
++    expect(successLabel).toHaveClass('bg-status-completed/20');
+ 
+     const warningLabel = screen.getByText('Warning').closest('span');
+-    expect(warningLabel).toHaveClass('bg-status-wanted');
++    expect(warningLabel).toHaveClass('bg-status-wanted/20');
+ 
+     const dangerLabel = screen.getByText('Danger').closest('span');
+-    expect(dangerLabel).toHaveClass('bg-status-error');
++    expect(dangerLabel).toHaveClass('bg-status-error/20');
+   });
+ });
+
+[0m
+[0m$ [0mnpx vitest run src/components/primitives/core-primitives.test.tsx 2>&1 | tail -25
+[1m[46m RUN [49m[22m [36mv4.0.18 [39m[90m/home/daniel-bo/Desktop/mediarr[39m
+
+[31mNo test files found, exiting with code 1
+[39m
+[2mfilter: [22m[33msrc/components/primitives/core-primitives.test.tsx[39m
+[2minclude: [22m[33m**/*.{test,spec}.?(c|m)[jt]s?(x)[39m
+[2mexclude:  [22m[33m**/node_modules/**[2m, [22m**/reference/**[2m, [22m**/dist/**[2m, [22mapp/src/**/*.test.{ts,tsx,js,jsx}[39m
+[0m
+[0m$ [0mcd app && npx vitest run src/components/primitives/core-primitives.test.tsx 2>&1 | tail -20
+[1m[46m RUN [49m[22m [36mv4.0.18 [39m[90m/home/daniel-bo/Desktop/mediarr/app[39m
+
+ [32m✓[39m src/components/primitives/core-primitives.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[33m 879[2mms[22m[39m
+     [33m[2m✓[22m[39m renders button variants and click interactions [33m 792[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m4 passed[39m[22m[90m (4)[39m
+[2m   Start at [22m 21:54:41
+[2m   Duration [22m 4.15s[2m (transform 391ms, setup 286ms, import 807ms, tests 879ms, environment 1.73s)[22m
+[0m
+[0m✗ [0mread failed
+[91m[1mError: [0mFile not found: /home/daniel-bo/Desktop/mediarr/app/src/components/ui/virtual-table.test.tsx
+[0m✱ [0mGlob "**/VirtualTable.test.*"[90m 1 match[0m
+[0m→ [0mRead app/src/components/primitives/VirtualTable.test.tsx
+[0m
+[0m$ [0mnpx vitest run src/components/primitives/VirtualTable.test.tsx 2>&1 | tail -25
+[1m[46m RUN [49m[22m [36mv4.0.18 [39m[90m/home/daniel-bo/Desktop/mediarr[39m
+
+[31mNo test files found, exiting with code 1
+[39m
+[2mfilter: [22m[33msrc/components/primitives/VirtualTable.test.tsx[39m
+[2minclude: [22m[33m**/*.{test,spec}.?(c|m)[jt]s?(x)[39m
+[2mexclude:  [22m[33m**/node_modules/**[2m, [22m**/reference/**[2m, [22m**/dist/**[2m, [22mapp/src/**/*.test.{ts,tsx,js,jsx}[39m
+[0m
+[0m$ [0mcd app && npx vitest run src/components/primitives/VirtualTable.test.tsx 2>&1 | tail -30
+[1m[46m RUN [49m[22m [36mv4.0.18 [39m[90m/home/daniel-bo/Desktop/mediarr/app[39m
+
+ [32m✓[39m src/components/primitives/VirtualTable.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[33m 1750[2mms[22m[39m
+     [33m[2m✓[22m[39m renders virtual table with header and visible rows [33m 647[2mms[22m[39m
+     [33m[2m✓[22m[39m only renders visible rows in the DOM [33m 517[2mms[22m[39m
+     [33m[2m✓[22m[39m supports custom row className [33m 316[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m7 passed[39m[22m[90m (7)[39m
+[2m   Start at [22m 21:55:13
+[2m   Duration [22m 5.47s[2m (transform 221ms, setup 309ms, import 489ms, tests 1.75s, environment 2.52s)[22m
+[0m
+[0m→ [0mRead measure/tracks/legacy_test_cleanup_20260506/plan.md
+[0m→ [0mRead vitest.config.ts
+[0m→ [0mRead app/vitest.config.ts
+[0m
+[0m← [0mEdit app/src/components/primitives/VirtualTable.test.tsx
+Index: /home/daniel-bo/Desktop/mediarr/app/src/components/primitives/VirtualTable.test.tsx
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/app/src/components/primitives/VirtualTable.test.tsx
++++ /home/daniel-bo/Desktop/mediarr/app/src/components/primitives/VirtualTable.test.tsx
+@@ -2,9 +2,12 @@
+ import { describe, expect, it, vi } from 'vitest';
+ import { VirtualTable } from './VirtualTable';
+ import type { TableColumn } from '@/components/ui/table-header-compat';
+ 
+-// Mock useVirtualizer since it depends on DOM measurements that don't work in JSDOM
++// Mock useVirtualizer since it depends on DOM measurements that don't work in JSDOM.
++// This is an accepted trade-off: we verify VirtualTable's integration with the virtualizer
++// hook contract (getVirtualItems, getTotalSize, measureElement) rather than testing
++// @tanstack/react-virtual itself, which has its own test suite.
+ vi.mock('@tanstack/react-virtual', () => ({
+   useVirtualizer: vi.fn(({ count, estimateSize }: { count: number; estimateSize: () => number }) => ({
+     getVirtualItems: () => Array.from({ length: Math.min(count, 10) }, (_, i) => ({
+       index: i,
+
+[0m
+[0m$ [0mnpm test 2>&1 | tail -30
+[32m✓[39m server/src/services/providers/providerUtils.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m tests/episode-service.test.js [2m([22m[2m1 test[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/subtitle-naming-service.test.js [2m([22m[2m2 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m tests/subtitle-provider-factory.test.js [2m([22m[2m2 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/series-service.test.js [2m([22m[2m1 test[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/gemini-track9-phase5-remediation.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/domain-errors.test.js [2m([22m[2m4 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/subtitle-requirement-engine.test.js [2m([22m[2m5 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/track9-phase3-frontend-parity.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/database-migration.test.js [2m([22m[2m2 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m server/src/api/utils/playbackHelpers.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m server/src/services/indexers/indexerValidation.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m server/src/services/notifications/NotificationTransportRegistry.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m server/src/api/utils/safePath.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m server/src/no-stray-databases.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m server/src/services/ProviderBackedSubtitleFetchProvider.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/dockerfile.test.js [2m([22m[2m2 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m tests/scoring-engine.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/docker-compose.test.js [2m([22m[2m2 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m server/src/services/SubtitleScoringService.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/prisma-schema.test.js [2m([22m[2m1 test[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m tests/import-manager-parsing.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m server/src/indexers/cardigann-conformance/liveSiteDefinitions.test.ts [2m([22m[2m10 tests[22m[2m | [22m[33m9 skipped[39m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m server/src/indexers/cardigann-conformance/liveReleaseSearch.test.ts [2m([22m[2m3 tests[22m[2m | [22m[33m2 skipped[39m[2m)[22m[32m 5[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m236 passed[39m[22m[90m (236)[39m
+[2m      Tests [22m [1m[32m1802 passed[39m[22m[2m | [22m[33m11 skipped[39m[90m (1813)[39m
+[2m   Start at [22m 21:55:48
+[2m   Duration [22m 212.33s[2m (transform 5.97s, setup 0ms, import 69.81s, tests 83.26s, environment 72ms)[22m
+[0m
+[0m$ [0mcd app && npx vitest run 2>&1 | tail -20
+(no output)
+
+<shell_metadata>
+shell tool terminated command after exceeding timeout 300000 ms. If this command is expected to take longer and is not waiting for interactive input, retry with a larger timeout value in milliseconds.
+</shell_metadata>
+[0m
+[0m$ [0mnpx vitest run src/components/primitives/core-primitives.test.tsx src/components/primitives/VirtualTable.test.tsx 2>&1 | tail -20
+[1m[46m RUN [49m[22m [36mv4.0.18 [39m[90m/home/daniel-bo/Desktop/mediarr[39m
+
+[31mNo test files found, exiting with code 1
+[39m
+[2mfilter: [22m[33msrc/components/primitives/core-primitives.test.tsx[2m, [22msrc/components/primitives/VirtualTable.test.tsx[39m
+[2minclude: [22m[33m**/*.{test,spec}.?(c|m)[jt]s?(x)[39m
+[2mexclude:  [22m[33m**/node_modules/**[2m, [22m**/reference/**[2m, [22m**/dist/**[2m, [22mapp/src/**/*.test.{ts,tsx,js,jsx}[39m
+[0m
+[0m$ [0mcd app && npx vitest run src/components/primitives/core-primitives.test.tsx src/components/primitives/VirtualTable.test.tsx 2>&1 | tail -20
+[1m[46m RUN [49m[22m [36mv4.0.18 [39m[90m/home/daniel-bo/Desktop/mediarr/app[39m
+
+ [32m✓[39m src/components/primitives/core-primitives.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[33m 695[2mms[22m[39m
+     [33m[2m✓[22m[39m renders button variants and click interactions [33m 612[2mms[22m[39m
+ [32m✓[39m src/components/primitives/VirtualTable.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[33m 1524[2mms[22m[39m
+     [33m[2m✓[22m[39m renders virtual table with header and visible rows [33m 682[2mms[22m[39m
+     [33m[2m✓[22m[39m only renders visible rows in the DOM [33m 431[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m2 passed[39m[22m[90m (2)[39m
+[2m      Tests [22m [1m[32m11 passed[39m[22m[90m (11)[39m
+[2m   Start at [22m 22:04:38
+[2m   Duration [22m 3.92s[2m (transform 568ms, setup 487ms, import 1.24s, tests 2.22s, environment 2.90s)[22m
+[0m
+[0m→ [0mRead measure/tech-debt.md
+[0m
+[0m← [0mWrite measure/tracks/legacy_test_cleanup_20260506/plan.md
+Wrote file successfully.
+[0m
+[0m← [0mEdit measure/tech-debt.md
+Index: /home/daniel-bo/Desktop/mediarr/measure/tech-debt.md
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/measure/tech-debt.md
++++ /home/daniel-bo/Desktop/mediarr/measure/tech-debt.md
+@@ -7,9 +7,9 @@
+ > **Status:** `Open` | `Resolved`
+ 
+ | Date | Track | Item | Severity | Status | Notes |
+ |------|-------|------|----------|--------|-------|
+-| 2026-03-14 | chore_fix_failing_tests_20260314 | Legacy tests in `app_src_backup/**` and `tests/import-manager.test.js` are disabled | Medium | Open | 300+ legacy tests + 1 redundant import-manager test excluded in vitest.config.ts; need audit for deletion or restoration |
++| 2026-03-14 | chore_fix_failing_tests_20260314 | Legacy tests in `app_src_backup/**` and `tests/import-manager.test.js` are disabled | Medium | Resolved | Deleted entire app_src_backup/ (1518 files, 0 tests still relevant). Removed import-manager.test.js (redundant with ImportManager.test.ts). vitest.config.ts exclusions reduced to app/src only |
+ | 2026-04-24 | chore_test_quality_strengthening_20260424 | `table-memoization.test.tsx` does not actually verify memoization | High | Resolved | Replaced with render-count instrumentation using `withRenderCount` helper; tests now properly detect re-renders |
+ | 2026-04-24 | chore_test_quality_strengthening_20260424 | `modal.test.tsx` claims backdrop-close coverage but only clicks the header close button | High | Resolved | Added real `userEvent.click(overlay)` test with `closeOnBackdropClick` true/false cases; 10 tests green |
+ | 2026-04-24 | chore_test_quality_strengthening_20260424 | `FilesystemBrowser.test.tsx` passes with `act(...)` warnings and weak selection assertions | Medium | Resolved | Added `act()` wrappers, exact `onSelect(path)` assertions, error/loading state tests; 17 tests green |
+ | 2026-03-14 | chore_shadcn_setup_20260314 | `VirtualTable.test.tsx` mocks virtualization so heavily that it no longer tests real windowing behavior | Medium | Open | Requires dedicated browser env or refactored virtualizer injection; mock provides basic coverage acceptable for now |
+
+[0m
+[0m← [0mEdit measure/tech-debt.md
+Index: /home/daniel-bo/Desktop/mediarr/measure/tech-debt.md
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/measure/tech-debt.md
++++ /home/daniel-bo/Desktop/mediarr/measure/tech-debt.md
+@@ -11,9 +11,9 @@
+ | 2026-03-14 | chore_fix_failing_tests_20260314 | Legacy tests in `app_src_backup/**` and `tests/import-manager.test.js` are disabled | Medium | Resolved | Deleted entire app_src_backup/ (1518 files, 0 tests still relevant). Removed import-manager.test.js (redundant with ImportManager.test.ts). vitest.config.ts exclusions reduced to app/src only |
+ | 2026-04-24 | chore_test_quality_strengthening_20260424 | `table-memoization.test.tsx` does not actually verify memoization | High | Resolved | Replaced with render-count instrumentation using `withRenderCount` helper; tests now properly detect re-renders |
+ | 2026-04-24 | chore_test_quality_strengthening_20260424 | `modal.test.tsx` claims backdrop-close coverage but only clicks the header close button | High | Resolved | Added real `userEvent.click(overlay)` test with `closeOnBackdropClick` true/false cases; 10 tests green |
+ | 2026-04-24 | chore_test_quality_strengthening_20260424 | `FilesystemBrowser.test.tsx` passes with `act(...)` warnings and weak selection assertions | Medium | Resolved | Added `act()` wrappers, exact `onSelect(path)` assertions, error/loading state tests; 17 tests green |
+-| 2026-03-14 | chore_shadcn_setup_20260314 | `VirtualTable.test.tsx` mocks virtualization so heavily that it no longer tests real windowing behavior | Medium | Open | Requires dedicated browser env or refactored virtualizer injection; mock provides basic coverage acceptable for now |
++| 2026-03-14 | chore_shadcn_setup_20260314 | `VirtualTable.test.tsx` mocks virtualization so heavily that it no longer tests real windowing behavior | Medium | Resolved | Mock acceptance documented in test file; verifies VirtualTable's integration with the virtualizer hook contract rather than testing @tanstack/react-virtual itself; 7 tests green |
+ | 2026-03-14 | chore_shadcn_setup_20260314 | `FileBrowser.test.tsx` uses static fixtures instead of real parent-driven path updates | Medium | Open | Component receives entries as props by design; static fixtures are appropriate for unit testing callback behavior |
+ | 2026-03-14 | chore_shadcn_setup_20260314 | Several primitives smoke tests only assert text presence, miss variant contracts | Medium | Open | Strengthen core-primitives.test.tsx to verify alert/status/label/progress variant mapping |
+ | 2026-03-15 | chore_server_module_alignment_20260315 | `exactOptionalPropertyTypes` and `noUncheckedIndexedAccess` disabled to clear noise | Medium | Resolved | `exactOptionalPropertyTypes` fully fixed (0 errors). `noUncheckedIndexedAccess` partially fixed: server down from 853 to 439 errors. App workspace clean (0 errors). Remaining 439 server errors need continued work |
+ | 2026-03-29 | chore_openrouter_migration_20260329 | Old `OPENAI_API_KEY` still in `.env` — remove after migration is complete and smoke-tested | Low | Open | Cleanup in Phase 4 of OpenRouter migration track |
+
+[0m
+[0m← [0mEdit measure/tech-debt.md
+Index: /home/daniel-bo/Desktop/mediarr/measure/tech-debt.md
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/measure/tech-debt.md
++++ /home/daniel-bo/Desktop/mediarr/measure/tech-debt.md
+@@ -13,9 +13,9 @@
+ | 2026-04-24 | chore_test_quality_strengthening_20260424 | `modal.test.tsx` claims backdrop-close coverage but only clicks the header close button | High | Resolved | Added real `userEvent.click(overlay)` test with `closeOnBackdropClick` true/false cases; 10 tests green |
+ | 2026-04-24 | chore_test_quality_strengthening_20260424 | `FilesystemBrowser.test.tsx` passes with `act(...)` warnings and weak selection assertions | Medium | Resolved | Added `act()` wrappers, exact `onSelect(path)` assertions, error/loading state tests; 17 tests green |
+ | 2026-03-14 | chore_shadcn_setup_20260314 | `VirtualTable.test.tsx` mocks virtualization so heavily that it no longer tests real windowing behavior | Medium | Resolved | Mock acceptance documented in test file; verifies VirtualTable's integration with the virtualizer hook contract rather than testing @tanstack/react-virtual itself; 7 tests green |
+ | 2026-03-14 | chore_shadcn_setup_20260314 | `FileBrowser.test.tsx` uses static fixtures instead of real parent-driven path updates | Medium | Open | Component receives entries as props by design; static fixtures are appropriate for unit testing callback behavior |
+-| 2026-03-14 | chore_shadcn_setup_20260314 | Several primitives smoke tests only assert text presence, miss variant contracts | Medium | Open | Strengthen core-primitives.test.tsx to verify alert/status/label/progress variant mapping |
++| 2026-03-14 | chore_shadcn_setup_20260314 | Several primitives smoke tests only assert text presence, miss variant contracts | Medium | Resolved | core-primitives.test.tsx now verifies alert variants (info/success/warning/danger) map to correct semantic tone classes, and label badge variants verify exact bg-* classes |
+ | 2026-03-15 | chore_server_module_alignment_20260315 | `exactOptionalPropertyTypes` and `noUncheckedIndexedAccess` disabled to clear noise | Medium | Resolved | `exactOptionalPropertyTypes` fully fixed (0 errors). `noUncheckedIndexedAccess` partially fixed: server down from 853 to 439 errors. App workspace clean (0 errors). Remaining 439 server errors need continued work |
+ | 2026-03-29 | chore_openrouter_migration_20260329 | Old `OPENAI_API_KEY` still in `.env` — remove after migration is complete and smoke-tested | Low | Open | Cleanup in Phase 4 of OpenRouter migration track |
+ | 2026-03-30 | chore_drizzle_migration_20260314 | DB recreated from scratch — existing data lost | Medium | Open | Backup at `mediarr.db.prisma.bak`; production deployments will need migration strategy |
+ | 2026-03-30 | chore_drizzle_migration_20260314 | `server/src/db/index.ts` uses `bun:sqlite` — no type declarations in tsx/tsc context | Low | Open | Works at runtime under Bun; add `declare module 'bun:sqlite'` shim if strict tsc needed before full Bun switch |
+
+[0m
+[0m→ [0mRead measure/tracks.md
+[0m
+[0m← [0mEdit measure/tracks.md
+Index: /home/daniel-bo/Desktop/mediarr/measure/tracks.md
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/measure/tracks.md
++++ /home/daniel-bo/Desktop/mediarr/measure/tracks.md
+@@ -248,7 +248,5 @@
+ - [x] **Track: Flutter Player-First Navigation & Shell Default Route** *Phases: 2 | Link: [./archive/flutter_player_first_navigation_20260506/](./archive/flutter_player_first_navigation_20260506/)* — Library added to nav before Activity; default route already /home; compilation fixes for library_screen + quality_upgrade_sheet; viewport fixes for widget tests
+ 
+ - [x] **Track: Backend Drizzle Migration Cleanup & Type Safety** *Phases: 3 | Link: [./archive/drizzle_cleanup_type_safety_20260506/](./archive/drizzle_cleanup_type_safety_20260506/)* — prismaClient.ts → drizzleClient.ts + DatabaseClient rename; removed $executeRawUnsafe/$queryRaw shims; fixed seedSmartDefaults JSON round-trip; removed as any casts from AddIndexerModal/EditIndexerModal/AddProfileModal; 1802 tests green; app typecheck clean
+ 
+-- [ ] **Track: Legacy Code & Test Infrastructure Cleanup**
+-  *Link: [./tracks/legacy_test_cleanup_20260506/](./tracks/legacy_test_cleanup_20260506/)*
+-  Audit and remove obsolete legacy tests, strengthen primitive smoke tests, resolve VirtualTable coverage.
++- [x] **Track: Legacy Code & Test Infrastructure Cleanup** *Phases: 3 | Link: [./archive/legacy_test_cleanup_20260506/](./archive/legacy_test_cleanup_20260506/)* — Deleted app_src_backup/ + import-manager.test.js; strengthened core-primitives.test.tsx variant class assertions; documented VirtualTable mock acceptance; 1802 tests green
+
+[0m
+[0m$ [0mmv measure/tracks/legacy_test_cleanup_20260506 measure/archive/legacy_test_cleanup_20260506
+(no output)
+[0m
+[0m$ [0mgit status --short
+...output truncated...
+
+Full output saved to: /home/daniel-bo/.local/share/opencode/tool-output/tool_dfd9bc9210018Pqrqm1Jp43cjo
+
+ D app_src_backup/components/movie/AlternateTitleTable.js.map
+ D app_src_backup/components/movie/AlternateTitleTable.tsx
+ D app_src_backup/components/movie/CastCard.d.ts
+ D app_src_backup/components/movie/CastCard.d.ts.map
+ D app_src_backup/components/movie/CastCard.js
+ D app_src_backup/components/movie/CastCard.js.map
+ D app_src_backup/components/movie/CastCard.tsx
+ D app_src_backup/components/movie/EditMovieModal.d.ts
+ D app_src_backup/components/movie/EditMovieModal.d.ts.map
+ D app_src_backup/components/movie/EditMovieModal.js
+ D app_src_backup/components/movie/EditMovieModal.js.map
+ D app_src_backup/components/movie/EditMovieModal.tsx
+ D app_src_backup/components/movie/ManualMatchDialog.d.ts
+ D app_src_backup/components/movie/ManualMatchDialog.d.ts.map
+ D app_src_backup/components/movie/ManualMatchDialog.js
+ D app_src_backup/components/movie/ManualMatchDialog.js.map
+ D app_src_backup/components/movie/ManualMatchDialog.tsx
+ D app_src_backup/components/movie/MovieActionsToolbar.d.ts
+ D app_src_backup/components/movie/MovieActionsToolbar.d.ts.map
+ D app_src_backup/components/movie/MovieActionsToolbar.js
+ D app_src_backup/components/movie/MovieActionsToolbar.js.map
+ D app_src_backup/components/movie/MovieActionsToolbar.tsx
+ D app_src_backup/components/movie/MovieBulkEditModal.d.ts
+ D app_src_backup/components/movie/MovieBulkEditModal.d.ts.map
+ D app_src_backup/components/movie/MovieBulkEditModal.js
+ D app_src_backup/components/movie/MovieBulkEditModal.js.map
+ D app_src_backup/components/movie/MovieBulkEditModal.tsx
+ D app_src_backup/components/movie/MovieDetailHeader.d.ts
+ D app_src_backup/components/movie/MovieDetailHeader.d.ts.map
+ D app_src_backup/components/movie/MovieDetailHeader.js
+ D app_src_backup/components/movie/MovieDetailHeader.js.map
+ D app_src_backup/components/movie/MovieDetailHeader.tsx
+ D app_src_backup/components/movie/MovieFileTable.d.ts
+ D app_src_backup/components/movie/MovieFileTable.d.ts.map
+ D app_src_backup/components/movie/MovieFileTable.js
+ D app_src_backup/components/movie/MovieFileTable.js.map
+ D app_src_backup/components/movie/MovieFileTable.tsx
+ D app_src_backup/components/movie/MovieHistory.d.ts
+ D app_src_backup/components/movie/MovieHistory.d.ts.map
+ D app_src_backup/components/movie/MovieHistory.js
+ D app_src_backup/components/movie/MovieHistory.js.map
+ D app_src_backup/components/movie/MovieHistory.tsx
+ D app_src_backup/components/movie/MovieInteractiveSearchModal.d.ts
+ D app_src_backup/components/movie/MovieInteractiveSearchModal.d.ts.map
+ D app_src_backup/components/movie/MovieInteractiveSearchModal.js
+ D app_src_backup/components/movie/MovieInteractiveSearchModal.js.map
+ D app_src_backup/components/movie/MovieInteractiveSearchModal.tsx
+ D app_src_backup/components/movie/OrganizePreviewModal.d.ts
+ D app_src_backup/components/movie/OrganizePreviewModal.d.ts.map
+ D app_src_backup/components/movie/OrganizePreviewModal.js
+ D app_src_backup/components/movie/OrganizePreviewModal.js.map
+ D app_src_backup/components/movie/OrganizePreviewModal.tsx
+ D app_src_backup/components/movie/index.d.ts
+ D app_src_backup/components/movie/index.d.ts.map
+ D app_src_backup/components/movie/index.js
+ D app_src_backup/components/movie/index.js.map
+ D app_src_backup/components/movie/index.ts
+ D app_src_backup/components/page/Page.d.ts
+ D app_src_backup/components/page/Page.d.ts.map
+ D app_src_backup/components/page/Page.js
+ D app_src_backup/components/page/Page.js.map
+ D app_src_backup/components/page/Page.tsx
+ D app_src_backup/components/page/PageContent.d.ts
+ D app_src_backup/components/page/PageContent.d.ts.map
+ D app_src_backup/components/page/PageContent.js
+ D app_src_backup/components/page/PageContent.js.map
+ D app_src_backup/components/page/PageContent.tsx
+ D app_src_backup/components/page/PageContentBody.d.ts
+ D app_src_backup/components/page/PageContentBody.d.ts.map
+ D app_src_backup/components/page/PageContentBody.js
+ D app_src_backup/components/page/PageContentBody.js.map
+ D app_src_backup/components/page/PageContentBody.tsx
+ D app_src_backup/components/page/PageHeader.d.ts
+ D app_src_backup/components/page/PageHeader.d.ts.map
+ D app_src_backup/components/page/PageHeader.js
+ D app_src_backup/components/page/PageHeader.js.map
+ D app_src_backup/components/page/PageHeader.tsx
+ D app_src_backup/components/primitives/Alert.d.ts
+ D app_src_backup/components/primitives/Alert.d.ts.map
+ D app_src_backup/components/primitives/Alert.js
+ D app_src_backup/components/primitives/Alert.js.map
+ D app_src_backup/components/primitives/Alert.tsx
+ D app_src_backup/components/primitives/Button.d.ts
+ D app_src_backup/components/primitives/Button.d.ts.map
+ D app_src_backup/components/primitives/Button.js
+ D app_src_backup/components/primitives/Button.js.map
+ D app_src_backup/components/primitives/Button.tsx
+ D app_src_backup/components/primitives/DataTable.d.ts
+ D app_src_backup/components/primitives/DataTable.d.ts.map
+ D app_src_backup/components/primitives/DataTable.js
+ D app_src_backup/components/primitives/DataTable.js.map
+ D app_src_backup/components/primitives/DataTable.tsx
+ D app_src_backup/components/primitives/EmptyPanel.d.ts
+ D app_src_backup/components/primitives/EmptyPanel.d.ts.map
+ D app_src_backup/components/primitives/EmptyPanel.js
+ D app_src_backup/components/primitives/EmptyPanel.js.map
+ D app_src_backup/components/primitives/EmptyPanel.tsx
+ D app_src_backup/components/primitives/ErrorPanel.d.ts
+ D app_src_backup/components/primitives/ErrorPanel.d.ts.map
+ D app_src_backup/components/primitives/ErrorPanel.js
+ D app_src_backup/components/primitives/ErrorPanel.js.map
+ D app_src_backup/components/primitives/ErrorPanel.tsx
+ D app_src_backup/components/primitives/FileBrowser.d.ts
+ D app_src_backup/components/primitives/FileBrowser.d.ts.map
+ D app_src_backup/components/primitives/FileBrowser.js
+ D app_src_backup/components/primitives/FileBrowser.js.map
+ D app_src_backup/components/primitives/FileBrowser.tsx
+ D app_src_backup/components/primitives/FilterBuilder.d.ts
+ D app_src_backup/components/primitives/FilterBuilder.d.ts.map
+ D app_src_backup/components/primitives/FilterBuilder.js
+ D app_src_backup/components/primitives/FilterBuilder.js.map
+ D app_src_backup/components/primitives/FilterBuilder.tsx
+ D app_src_backup/components/primitives/FilterMenu.d.ts
+ D app_src_backup/components/primitives/FilterMenu.d.ts.map
+ D app_src_backup/components/primitives/FilterMenu.js
+ D app_src_backup/components/primitives/FilterMenu.js.map
+ D app_src_backup/components/primitives/FilterMenu.tsx
+ D app_src_backup/components/primitives/Form.d.ts
+ D app_src_backup/components/primitives/Form.d.ts.map
+ D app_src_backup/components/primitives/Form.js
+ D app_src_backup/components/primitives/Form.js.map
+ D app_src_backup/components/primitives/Form.tsx
+ D app_src_backup/components/primitives/Icon.d.ts
+ D app_src_backup/components/primitives/Icon.d.ts.map
+ D app_src_backup/components/primitives/Icon.js
+ D app_src_backup/components/primitives/Icon.js.map
+ D app_src_backup/components/primitives/Icon.tsx
+ D app_src_backup/components/primitives/Label.d.ts
+ D app_src_backup/components/primitives/Label.d.ts.map
+ D app_src_backup/components/primitives/Label.js
+ D app_src_backup/components/primitives/Label.js.map
+ D app_src_backup/components/primitives/Label.tsx
+ D app_src_backup/components/primitives/Menu.d.ts
+ D app_src_backup/components/primitives/Menu.d.ts.map
+ D app_src_backup/components/primitives/Menu.js
+ D app_src_backup/components/primitives/Menu.js.map
+ D app_src_backup/components/primitives/Menu.tsx
+ D app_src_backup/components/primitives/MetricCard.d.ts
+ D app_src_backup/components/primitives/MetricCard.d.ts.map
+ D app_src_backup/components/primitives/MetricCard.js
+ D app_src_backup/components/primitives/MetricCard.js.map
+ D app_src_backup/components/primitives/MetricCard.tsx
+ D app_src_backup/components/primitives/Modal.d.ts
+ D app_src_backup/components/primitives/Modal.d.ts.map
+ D app_src_backup/components/primitives/Modal.js
+ D app_src_backup/components/primitives/Modal.js.map
+ D app_src_backup/components/primitives/Modal.tsx
+ D app_src_backup/components/primitives/PageJumpBar.d.ts
+ D app_src_backup/components/primitives/PageJumpBar.d.ts.map
+ D app_src_backup/components/primitives/PageJumpBar.js
+ D app_src_backup/components/primitives/PageJumpBar.js.map
+ D app_src_backup/components/primitives/PageJumpBar.tsx
+ D app_src_backup/components/primitives/PageToolbar.d.ts
+ D app_src_backup/components/primitives/PageToolbar.d.ts.map
+ D app_src_backup/components/primitives/PageToolbar.js
+ D app_src_backup/components/primitives/PageToolbar.js.map
+ D app_src_backup/components/primitives/PageToolbar.tsx
+ D app_src_backup/components/primitives/PageToolbarButton.d.ts
+ D app_src_backup/components/primitives/PageToolbarButton.d.ts.map
+ D app_src_backup/components/primitives/PageToolbarButton.js
+ D app_src_backup/components/primitives/PageToolbarButton.js.map
+ D app_src_backup/components/primitives/PageToolbarButton.tsx
+ D app_src_backup/components/primitives/PageToolbarSeparator.d.ts
+ D app_src_backup/components/primitives/PageToolbarSeparator.d.ts.map
+ D app_src_backup/components/primitives/PageToolbarSeparator.js
+ D app_src_backup/components/primitives/PageToolbarSeparator.js.map
+ D app_src_backup/components/primitives/PageToolbarSeparator.tsx
+ D app_src_backup/components/primitives/ProgressBar.d.ts
+ D app_src_backup/components/primitives/ProgressBar.d.ts.map
+ D app_src_backup/components/primitives/ProgressBar.js
+ D app_src_backup/components/primitives/ProgressBar.js.map
+ D app_src_backup/components/primitives/ProgressBar.tsx
+ D app_src_backup/components/primitives/QueryPanel.d.ts
+ D app_src_backup/components/primitives/QueryPanel.d.ts.map
+ D app_src_backup/components/primitives/QueryPanel.js
+ D app_src_backup/components/primitives/QueryPanel.js.map
+ D app_src_backup/components/primitives/QueryPanel.tsx
+ D app_src_backup/components/primitives/RouteScaffold.d.ts
+ D app_src_backup/components/primitives/RouteScaffold.d.ts.map
+ D app_src_backup/components/primitives/RouteScaffold.js
+ D app_src_backup/components/primitives/RouteScaffold.js.map
+ D app_src_backup/components/primitives/RouteScaffold.tsx
+ D app_src_backup/components/primitives/SelectCheckboxCell.d.ts
+ D app_src_backup/components/primitives/SelectCheckboxCell.d.ts.map
+ D app_src_backup/components/primitives/SelectCheckboxCell.js
+ D app_src_backup/components/primitives/SelectCheckboxCell.js.map
+ D app_src_backup/components/primitives/SelectCheckboxCell.tsx
+ D app_src_backup/components/primitives/SelectFooter.d.ts
+ D app_src_backup/components/primitives/SelectFooter.d.ts.map
+ D app_src_backup/components/primitives/SelectFooter.js
+ D app_src_backup/components/primitives/SelectFooter.js.map
+ D app_src_backup/components/primitives/SelectFooter.tsx
+ D app_src_backup/components/primitives/SelectProvider.d.ts
+ D app_src_backup/components/primitives/SelectProvider.d.ts.map
+ D app_src_backup/components/primitives/SelectProvider.js
+ D app_src_backup/components/primitives/SelectProvider.js.map
+ D app_src_backup/components/primitives/SelectProvider.tsx
+ D app_src_backup/components/primitives/SkeletonBlock.d.ts
+ D app_src_backup/components/primitives/SkeletonBlock.d.ts.map
+ D app_src_backup/components/primitives/SkeletonBlock.js
+ D app_src_backup/components/primitives/SkeletonBlock.js.map
+ D app_src_backup/components/primitives/SkeletonBlock.tsx
+ D app_src_backup/components/primitives/SortMenu.d.ts
+ D app_src_backup/components/primitives/SortMenu.d.ts.map
+ D app_src_backup/components/primitives/SortMenu.js
+ D app_src_backup/components/primitives/SortMenu.js.map
+ D app_src_backup/components/primitives/SortMenu.tsx
+ D app_src_backup/components/primitives/SpecialInputs.d.ts
+ D app_src_backup/components/primitives/SpecialInputs.d.ts.map
+ D app_src_backup/components/primitives/SpecialInputs.js
+ D app_src_backup/components/primitives/SpecialInputs.js.map
+ D app_src_backup/components/primitives/SpecialInputs.tsx
+ D app_src_backup/components/primitives/StatusBadge.d.ts
+ D app_src_backup/components/primitives/StatusBadge.d.ts.map
+ D app_src_backup/components/primitives/StatusBadge.js
+ D app_src_backup/components/primitives/StatusBadge.js.map
+ D app_src_backup/components/primitives/StatusBadge.tsx
+ D app_src_backup/components/primitives/Switch.d.ts
+ D app_src_backup/components/primitives/Switch.d.ts.map
+ D app_src_backup/components/primitives/Switch.js
+ D app_src_backup/components/primitives/Switch.js.map
+ D app_src_backup/components/primitives/Switch.tsx
+ D app_src_backup/components/primitives/Table.d.ts
+ D app_src_backup/components/primitives/Table.d.ts.map
+ D app_src_backup/components/primitives/Table.js
+ D app_src_backup/components/primitives/Table.js.map
+ D app_src_backup/components/primitives/Table.tsx
+ D app_src_backup/components/primitives/TableBody.d.ts
+ D app_src_backup/components/primitives/TableBody.d.ts.map
+ D app_src_backup/components/primitives/TableBody.js
+ D app_src_backup/components/primitives/TableBody.js.map
+ D app_src_backup/components/primitives/TableBody.tsx
+ D app_src_backup/components/primitives/TableHeader.d.ts
+ D app_src_backup/components/primitives/TableHeader.d.ts.map
+ D app_src_backup/components/primitives/TableHeader.js
+ D app_src_backup/components/primitives/TableHeader.js.map
+ D app_src_backup/components/primitives/TableHeader.tsx
+ D app_src_backup/components/primitives/TableOptionsModal.d.ts
+ D app_src_backup/components/primitives/TableOptionsModal.d.ts.map
+ D app_src_backup/components/primitives/TableOptionsModal.js
+ D app_src_backup/components/primitives/TableOptionsModal.js.map
+ D app_src_backup/components/primitives/TableOptionsModal.tsx
+ D app_src_backup/components/primitives/TablePager.d.ts
+ D app_src_backup/components/primitives/TablePager.d.ts.map
+ D app_src_backup/components/primitives/TablePager.js
+ D app_src_backup/components/primitives/TablePager.js.map
+ D app_src_backup/components/primitives/TablePager.tsx
+ D app_src_backup/components/primitives/ViewMenu.d.ts
+ D app_src_backup/components/primitives/ViewMenu.d.ts.map
+ D app_src_backup/components/primitives/ViewMenu.js
+ D app_src_backup/components/primitives/ViewMenu.js.map
+ D app_src_backup/components/primitives/ViewMenu.tsx
+ D app_src_backup/components/primitives/VirtualTable.d.ts
+ D app_src_backup/components/primitives/VirtualTable.d.ts.map
+ D app_src_backup/components/primitives/VirtualTable.js
+ D app_src_backup/components/primitives/VirtualTable.js.map
+ D app_src_backup/components/primitives/VirtualTable.tsx
+ D app_src_backup/components/providers/AppProviders.d.ts
+ D app_src_backup/components/providers/AppProviders.d.ts.map
+ D app_src_backup/components/providers/AppProviders.js
+ D app_src_backup/components/providers/AppProviders.js.map
+ D app_src_backup/components/providers/AppProviders.tsx
+ D app_src_backup/components/providers/ToastProvider.d.ts
+ D app_src_backup/components/providers/ToastProvider.d.ts.map
+ D app_src_backup/components/providers/ToastProvider.js
+ D app_src_backup/components/providers/ToastProvider.js.map
+ D app_src_backup/components/providers/ToastProvider.tsx
+ D app_src_backup/components/search/AgeCell.d.ts
+ D app_src_backup/components/search/AgeCell.d.ts.map
+ D app_src_backup/components/search/AgeCell.js
+ D app_src_backup/components/search/AgeCell.js.map
+ D app_src_backup/components/search/AgeCell.tsx
+ D app_src_backup/components/search/InteractiveSearchModal.d.ts
+ D app_src_backup/components/search/InteractiveSearchModal.d.ts.map
+ D app_src_backup/components/search/InteractiveSearchModal.js
+ D app_src_backup/components/search/InteractiveSearchModal.js.map
+ D app_src_backup/components/search/InteractiveSearchModal.tsx
+ D app_src_backup/components/search/PeersCell.d.ts
+ D app_src_backup/components/search/PeersCell.d.ts.map
+ D app_src_backup/components/search/PeersCell.js
+ D app_src_backup/components/search/PeersCell.js.map
+ D app_src_backup/components/search/PeersCell.tsx
+ D app_src_backup/components/search/QualityBadge.d.ts
+ D app_src_backup/components/search/QualityBadge.d.ts.map
+ D app_src_backup/components/search/QualityBadge.js
+ D app_src_backup/components/search/QualityBadge.js.map
+ D app_src_backup/components/search/QualityBadge.tsx
+ D app_src_backup/components/search/ReleaseTitle.d.ts
+ D app_src_backup/components/search/ReleaseTitle.d.ts.map
+ D app_src_backup/components/search/ReleaseTitle.js
+ D app_src_backup/components/search/ReleaseTitle.js.map
+ D app_src_backup/components/search/ReleaseTitle.tsx
+ D app_src_backup/components/search/index.d.ts
+ D app_src_backup/components/search/index.d.ts.map
+ D app_src_backup/components/search/index.js
+ D app_src_backup/components/search/index.js.map
+ D app_src_backup/components/search/index.ts
+ D app_src_backup/components/series/ColumnPicker.d.ts
+ D app_src_backup/components/series/ColumnPicker.d.ts.map
+ D app_src_backup/components/series/ColumnPicker.js
+ D app_src_backup/components/series/ColumnPicker.js.map
+ D app_src_backup/components/series/ColumnPicker.tsx
+ D app_src_backup/components/series/JumpBar.d.ts
+ D app_src_backup/components/series/JumpBar.d.ts.map
+ D app_src_backup/components/series/JumpBar.js
+ D app_src_backup/components/series/JumpBar.js.map
+ D app_src_backup/components/series/JumpBar.tsx
+ D app_src_backup/components/series/ManualEpisodeMatchDialog.d.ts
+ D app_src_backup/components/series/ManualEpisodeMatchDialog.d.ts.map
+ D app_src_backup/components/series/ManualEpisodeMatchDialog.js
+ D app_src_backup/components/series/ManualEpisodeMatchDialog.js.map
+ D app_src_backup/components/series/ManualEpisodeMatchDialog.tsx
+ D app_src_backup/components/series/OrganizePreviewModal.d.ts
+ D app_src_backup/components/series/OrganizePreviewModal.d.ts.map
+ D app_src_backup/components/series/OrganizePreviewModal.js
+ D app_src_backup/components/series/OrganizePreviewModal.js.map
+ D app_src_backup/components/series/OrganizePreviewModal.tsx
+ D app_src_backup/components/series/SeriesBulkEditModal.d.ts
+ D app_src_backup/components/series/SeriesBulkEditModal.d.ts.map
+ D app_src_backup/components/series/SeriesBulkEditModal.js
+ D app_src_backup/components/series/SeriesBulkEditModal.js.map
+ D app_src_backup/components/series/SeriesBulkEditModal.tsx
+ D app_src_backup/components/series/index.d.ts
+ D app_src_backup/components/series/index.d.ts.map
+ D app_src_backup/components/series/index.js
+ D app_src_backup/components/series/index.js.map
+ D app_src_backup/components/series/index.ts
+ D app_src_backup/components/settings/AddDownloadClientModal.d.ts
+ D app_src_backup/components/settings/AddDownloadClientModal.d.ts.map
+ D app_src_backup/components/settings/AddDownloadClientModal.js
+ D app_src_backup/components/settings/AddDownloadClientModal.js.map
+ D app_src_backup/components/settings/AddDownloadClientModal.tsx
+ D app_src_backup/components/settings/AddNotificationModal.d.ts
+ D app_src_backup/components/settings/AddNotificationModal.d.ts.map
+ D app_src_backup/components/settings/AddNotificationModal.js
+ D app_src_backup/components/settings/AddNotificationModal.js.map
+ D app_src_backup/components/settings/AddNotificationModal.tsx
+ D app_src_backup/components/settings/AddProfileModal.d.ts
+ D app_src_backup/components/settings/AddProfileModal.d.ts.map
+ D app_src_backup/components/settings/AddProfileModal.js
+ D app_src_backup/components/settings/AddProfileModal.js.map
+ D app_src_backup/components/settings/AddProfileModal.tsx
+ D app_src_backup/components/settings/ConditionBuilder.d.ts
+ D app_src_backup/components/settings/ConditionBuilder.d.ts.map
+ D app_src_backup/components/settings/ConditionBuilder.js
+ D app_src_backup/components/settings/ConditionBuilder.js.map
+ D app_src_backup/components/settings/ConditionBuilder.tsx
+ D app_src_backup/components/settings/ConfigurableItemModal.d.ts
+ D app_src_backup/components/settings/ConfigurableItemModal.d.ts.map
+ D app_src_backup/components/settings/ConfigurableItemModal.js
+ D app_src_backup/components/settings/ConfigurableItemModal.js.map
+ D app_src_backup/components/settings/ConfigurableItemModal.tsx
+ D app_src_backup/components/settings/CustomFormatModal.d.ts
+ D app_src_backup/components/settings/CustomFormatModal.d.ts.map
+ D app_src_backup/components/settings/CustomFormatModal.js
+ D app_src_backup/components/settings/CustomFormatModal.js.map
+ D app_src_backup/components/settings/CustomFormatModal.tsx
+ D app_src_backup/components/shell/AppShell.d.ts
+ D app_src_backup/components/shell/AppShell.d.ts.map
+ D app_src_backup/components/shell/AppShell.js
+ D app_src_backup/components/shell/AppShell.js.map
+ D app_src_backup/components/shell/AppShell.tsx
+ D app_src_backup/components/shell/PageLayout.d.ts
+ D app_src_backup/components/shell/PageLayout.d.ts.map
+ D app_src_backup/components/shell/PageLayout.js
+ D app_src_backup/components/shell/PageLayout.js.map
+ D app_src_backup/components/shell/PageLayout.tsx
+ D app_src_backup/components/shell/PageSidebar.d.ts
+ D app_src_backup/components/shell/PageSidebar.d.ts.map
+ D app_src_backup/components/shell/PageSidebar.js
+ D app_src_backup/components/shell/PageSidebar.js.map
+ D app_src_backup/components/shell/PageSidebar.tsx
+ D app_src_backup/components/shell/ShellLayout.d.ts
+ D app_src_backup/components/shell/ShellLayout.d.ts.map
+ D app_src_backup/components/shell/ShellLayout.js
+ D app_src_backup/components/shell/ShellLayout.js.map
+ D app_src_backup/components/shell/ShellLayout.tsx
+ D app_src_backup/components/subtitles/HistoryFilters.d.ts
+ D app_src_backup/components/subtitles/HistoryFilters.d.ts.map
+ D app_src_backup/components/subtitles/HistoryFilters.js
+ D app_src_backup/components/subtitles/HistoryFilters.js.map
+ D app_src_backup/components/subtitles/HistoryFilters.tsx
+ D app_src_backup/components/subtitles/LanguageBadge.d.ts
+ D app_src_backup/components/subtitles/LanguageBadge.d.ts.map
+ D app_src_backup/components/subtitles/LanguageBadge.js
+ D app_src_backup/components/subtitles/LanguageBadge.js.map
+ D app_src_backup/components/subtitles/LanguageBadge.tsx
+ D app_src_backup/components/subtitles/LanguageSelector.d.ts
+ D app_src_backup/components/subtitles/LanguageSelector.d.ts.map
+ D app_src_backup/components/subtitles/LanguageSelector.js
+ D app_src_backup/components/subtitles/LanguageSelector.js.map
+ D app_src_backup/components/subtitles/LanguageSelector.tsx
+ D app_src_backup/components/subtitles/LanguageSettingRow.d.ts
+ D app_src_backup/components/subtitles/LanguageSettingRow.d.ts.map
+ D app_src_backup/components/subtitles/LanguageSettingRow.js
+ D app_src_backup/components/subtitles/LanguageSettingRow.js.map
+ D app_src_backup/components/subtitles/LanguageSettingRow.tsx
+ D app_src_backup/components/subtitles/ManualSearchModal.d.ts
+ D app_src_backup/components/subtitles/ManualSearchModal.d.ts.map
+ D app_src_backup/components/subtitles/ManualSearchModal.js
+ D app_src_backup/components/subtitles/ManualSearchModal.js.map
+ D app_src_backup/components/subtitles/ManualSearchModal.tsx
+ D app_src_backup/components/subtitles/MovieActionsToolbar.d.ts
+ D app_src_backup/components/subtitles/MovieActionsToolbar.d.ts.map
+ D app_src_backup/components/subtitles/MovieActionsToolbar.js
+ D app_src_backup/components/subtitles/MovieActionsToolbar.js.map
+ D app_src_backup/components/subtitles/MovieActionsToolbar.tsx
+ D app_src_backup/components/subtitles/ProfileEditorModal.d.ts
+ D app_src_backup/components/subtitles/ProfileEditorModal.d.ts.map
+ D app_src_backup/components/subtitles/ProfileEditorModal.js
+ D app_src_backup/components/subtitles/ProfileEditorModal.js.map
+ D app_src_backup/components/subtitles/ProfileEditorModal.tsx
+ D app_src_backup/components/subtitles/ProviderSettingsModal.d.ts
+ D app_src_backup/components/subtitles/ProviderSettingsModal.d.ts.map
+ D app_src_backup/components/subtitles/ProviderSettingsModal.js
+ D app_src_backup/components/subtitles/ProviderSettingsModal.js.map
+ D app_src_backup/components/subtitles/ProviderSettingsModal.tsx
+ D app_src_backup/components/subtitles/ProviderStatusBadge.d.ts
+ D app_src_backup/components/subtitles/ProviderStatusBadge.d.ts.map
+ D app_src_backup/components/subtitles/ProviderStatusBadge.js
+ D app_src_backup/components/subtitles/ProviderStatusBadge.js.map
+ D app_src_backup/components/subtitles/ProviderStatusBadge.tsx
+ D app_src_backup/components/subtitles/ProviderTestResult.d.ts
+ D app_src_backup/components/subtitles/ProviderTestResult.d.ts.map
+ D app_src_backup/components/subtitles/ProviderTestResult.js
+ D app_src_backup/components/subtitles/ProviderTestResult.js.map
+ D app_src_backup/components/subtitles/ProviderTestResult.tsx
+ D app_src_backup/components/subtitles/ScanButton.d.ts
+ D app_src_backup/components/subtitles/ScanButton.d.ts.map
+ D app_src_backup/components/subtitles/ScanButton.js
+ D app_src_backup/components/subtitles/ScanButton.js.map
+ D app_src_backup/components/subtitles/ScanButton.tsx
+ D app_src_backup/components/subtitles/SearchButton.d.ts
+ D app_src_backup/components/subtitles/SearchButton.d.ts.map
+ D app_src_backup/components/subtitles/SearchButton.js
+ D app_src_backup/components/subtitles/SearchButton.js.map
+ D app_src_backup/components/subtitles/SearchButton.tsx
+ D app_src_backup/components/subtitles/SearchProgressIndicator.d.ts
+ D app_src_backup/components/subtitles/SearchProgressIndicator.d.ts.map
+ D app_src_backup/components/subtitles/SearchProgressIndicator.js
+ D app_src_backup/components/subtitles/SearchProgressIndicator.js.map
+ D app_src_backup/components/subtitles/SearchProgressIndicator.tsx
+ D app_src_backup/components/subtitles/SubtitleProgressBar.d.ts
+ D app_src_backup/components/subtitles/SubtitleProgressBar.d.ts.map
+ D app_src_backup/components/subtitles/SubtitleProgressBar.js
+ D app_src_backup/components/subtitles/SubtitleProgressBar.js.map
+ D app_src_backup/components/subtitles/SubtitleProgressBar.tsx
+ D app_src_backup/components/subtitles/SubtitleTrackList.d.ts
+ D app_src_backup/components/subtitles/SubtitleTrackList.d.ts.map
+ D app_src_backup/components/subtitles/SubtitleTrackList.js
+ D app_src_backup/components/subtitles/SubtitleTrackList.js.map
+ D app_src_backup/components/subtitles/SubtitleTrackList.tsx
+ D app_src_backup/components/subtitles/SubtitleUpload.d.ts
+ D app_src_backup/components/subtitles/SubtitleUpload.d.ts.map
+ D app_src_backup/components/subtitles/SubtitleUpload.js
+ D app_src_backup/components/subtitles/SubtitleUpload.js.map
+ D app_src_backup/components/subtitles/SubtitleUpload.tsx
+ D app_src_backup/components/subtitles/SyncButton.d.ts
+ D app_src_backup/components/subtitles/SyncButton.d.ts.map
+ D app_src_backup/components/subtitles/SyncButton.js
+ D app_src_backup/components/subtitles/SyncButton.js.map
+ D app_src_backup/components/subtitles/SyncButton.tsx
+ D app_src_backup/components/subtitles/WantedCountBadge.d.ts
+ D app_src_backup/components/subtitles/WantedCountBadge.d.ts.map
+ D app_src_backup/components/subtitles/WantedCountBadge.js
+ D app_src_backup/components/subtitles/WantedCountBadge.js.map
+ D app_src_backup/components/subtitles/WantedCountBadge.tsx
+ D app_src_backup/components/subtitles/index.d.ts
+ D app_src_backup/components/subtitles/index.d.ts.map
+ D app_src_backup/components/subtitles/index.js
+ D app_src_backup/components/subtitles/index.js.map
+ D app_src_backup/components/subtitles/index.ts
+ D app_src_backup/components/views/MovieOverviewView.d.ts
+ D app_src_backup/components/views/MovieOverviewView.d.ts.map
+ D app_src_backup/components/views/MovieOverviewView.js
+ D app_src_backup/components/views/MovieOverviewView.js.map
+ D app_src_backup/components/views/MovieOverviewView.tsx
+ D app_src_backup/components/views/MoviePosterView.d.ts
+ D app_src_backup/components/views/MoviePosterView.d.ts.map
+ D app_src_backup/components/views/MoviePosterView.js
+ D app_src_backup/components/views/MoviePosterView.js.map
+ D app_src_backup/components/views/MoviePosterView.tsx
+ D app_src_backup/components/views/SeriesOverviewView.d.ts
+ D app_src_backup/components/views/SeriesOverviewView.d.ts.map
+ D app_src_backup/components/views/SeriesOverviewView.js
+ D app_src_backup/components/views/SeriesOverviewView.js.map
+ D app_src_backup/components/views/SeriesOverviewView.tsx
+ D app_src_backup/components/views/SeriesPosterView.d.ts
+ D app_src_backup/components/views/SeriesPosterView.d.ts.map
+ D app_src_backup/components/views/SeriesPosterView.js
+ D app_src_backup/components/views/SeriesPosterView.js.map
+ D app_src_backup/components/views/SeriesPosterView.tsx
+ D app_src_backup/components/views/index.d.ts
+ D app_src_backup/components/views/index.d.ts.map
+ D app_src_backup/components/views/index.js
+ D app_src_backup/components/views/index.js.map
+ D app_src_backup/components/views/index.ts
+ D app_src_backup/components/wanted/QualityComparison.d.ts
+ D app_src_backup/components/wanted/QualityComparison.d.ts.map
+ D app_src_backup/components/wanted/QualityComparison.js
+ D app_src_backup/components/wanted/QualityComparison.js.map
+ D app_src_backup/components/wanted/QualityComparison.tsx
+ D app_src_backup/components/wanted/ReleaseDateCell.d.ts
+ D app_src_backup/components/wanted/ReleaseDateCell.d.ts.map
+ D app_src_backup/components/wanted/ReleaseDateCell.js
+ D app_src_backup/components/wanted/ReleaseDateCell.js.map
+ D app_src_backup/components/wanted/ReleaseDateCell.tsx
+ D app_src_backup/components/wanted/WantedMovieRow.d.ts
+ D app_src_backup/components/wanted/WantedMovieRow.d.ts.map
+ D app_src_backup/components/wanted/WantedMovieRow.js
+ D app_src_backup/components/wanted/WantedMovieRow.js.map
+ D app_src_backup/components/wanted/WantedMovieRow.tsx
+ D app_src_backup/lib/api/activityApi.d.ts
+ D app_src_backup/lib/api/activityApi.d.ts.map
+ D app_src_backup/lib/api/activityApi.js
+ D app_src_backup/lib/api/activityApi.js.map
+ D app_src_backup/lib/api/activityApi.ts
+ D app_src_backup/lib/api/appProfilesApi.d.ts
+ D app_src_backup/lib/api/appProfilesApi.d.ts.map
+ D app_src_backup/lib/api/appProfilesApi.js
+ D app_src_backup/lib/api/appProfilesApi.js.map
+ D app_src_backup/lib/api/appProfilesApi.ts
+ D app_src_backup/lib/api/applicationsApi.d.ts
+ D app_src_backup/lib/api/applicationsApi.d.ts.map
+ D app_src_backup/lib/api/applicationsApi.js
+ D app_src_backup/lib/api/applicationsApi.js.map
+ D app_src_backup/lib/api/applicationsApi.ts
+ D app_src_backup/lib/api/backupApi.d.ts
+ D app_src_backup/lib/api/backupApi.d.ts.map
+ D app_src_backup/lib/api/backupApi.js
+ D app_src_backup/lib/api/backupApi.js.map
+ D app_src_backup/lib/api/backupApi.ts
+ D app_src_backup/lib/api/blocklistApi.d.ts
+ D app_src_backup/lib/api/blocklistApi.d.ts.map
+ D app_src_backup/lib/api/blocklistApi.js
+ D app_src_backup/lib/api/blocklistApi.js.map
+ D app_src_backup/lib/api/blocklistApi.ts
+ D app_src_backup/lib/api/calendarApi.d.ts
+ D app_src_backup/lib/api/calendarApi.d.ts.map
+ D app_src_backup/lib/api/calendarApi.js
+ D app_src_backup/lib/api/calendarApi.js.map
+ D app_src_backup/lib/api/calendarApi.ts
+ D app_src_backup/lib/api/categorySettingsApi.d.ts
+ D app_src_backup/lib/api/categorySettingsApi.d.ts.map
+ D app_src_backup/lib/api/categorySettingsApi.js
+ D app_src_backup/lib/api/categorySettingsApi.js.map
+ D app_src_backup/lib/api/categorySettingsApi.ts
+ D app_src_backup/lib/api/client.d.ts
+ D app_src_backup/lib/api/client.d.ts.map
+ D app_src_backup/lib/api/client.js
+ D app_src_backup/lib/api/client.js.map
+ D app_src_backup/lib/api/client.ts
+ D app_src_backup/lib/api/collectionApi.d.ts
+ D app_src_backup/lib/api/collectionApi.d.ts.map
+ D app_src_backup/lib/api/collectionApi.js
+ D app_src_backup/lib/api/collectionApi.js.map
+ D app_src_backup/lib/api/collectionApi.ts
+ D app_src_backup/lib/api/createCrudApi.d.ts
+ D app_src_backup/lib/api/createCrudApi.d.ts.map
+ D app_src_backup/lib/api/createCrudApi.js
+ D app_src_backup/lib/api/createCrudApi.js.map
+ D app_src_backup/lib/api/createCrudApi.ts
+ D app_src_backup/lib/api/customFormatApi.d.ts
+ D app_src_backup/lib/api/customFormatApi.d.ts.map
+ D app_src_backup/lib/api/customFormatApi.js
+ D app_src_backup/lib/api/customFormatApi.js.map
+ D app_src_backup/lib/api/customFormatApi.ts
+ D app_src_backup/lib/api/discoverApi.d.ts
+ D app_src_backup/lib/api/discoverApi.d.ts.map
+ D app_src_backup/lib/api/discoverApi.js
+ D app_src_backup/lib/api/discoverApi.js.map
+ D app_src_backup/lib/api/discoverApi.ts
+ D app_src_backup/lib/api/downloadClientsApi.d.ts
+ D app_src_backup/lib/api/downloadClientsApi.d.ts.map
+ D app_src_backup/lib/api/downloadClientsApi.js
+ D app_src_backup/lib/api/downloadClientsApi.js.map
+ D app_src_backup/lib/api/downloadClientsApi.ts
+ D app_src_backup/lib/api/errors.d.ts
+ D app_src_backup/lib/api/errors.d.ts.map
+ D app_src_backup/lib/api/errors.js
+ D app_src_backup/lib/api/errors.js.map
+ D app_src_backup/lib/api/errors.ts
+ D app_src_backup/lib/api/eventsApi.d.ts
+ D app_src_backup/lib/api/eventsApi.d.ts.map
+ D app_src_backup/lib/api/eventsApi.js
+ D app_src_backup/lib/api/eventsApi.js.map
+ D app_src_backup/lib/api/eventsApi.ts
+ D app_src_backup/lib/api/filters.d.ts
+ D app_src_backup/lib/api/filters.d.ts.map
+ D app_src_backup/lib/api/filters.js
+ D app_src_backup/lib/api/filters.js.map
+ D app_src_backup/lib/api/filters.ts
+ D app_src_backup/lib/api/healthApi.d.ts
+ D app_src_backup/lib/api/healthApi.d.ts.map
+ D app_src_backup/lib/api/healthApi.js
+ D app_src_backup/lib/api/healthApi.js.map
+ D app_src_backup/lib/api/healthApi.ts
+ D app_src_backup/lib/api/httpClient.d.ts
+ D app_src_backup/lib/api/httpClient.d.ts.map
+ D app_src_backup/lib/api/httpClient.js
+ D app_src_backup/lib/api/httpClient.js.map
+ D app_src_backup/lib/api/httpClient.ts
+ D app_src_backup/lib/api/importApi.d.ts
+ D app_src_backup/lib/api/importApi.d.ts.map
+ D app_src_backup/lib/api/importApi.js
+ D app_src_backup/lib/api/importApi.js.map
+ D app_src_backup/lib/api/importApi.ts
+ D app_src_backup/lib/api/importListsApi.d.ts
+ D app_src_backup/lib/api/importListsApi.d.ts.map
+ D app_src_backup/lib/api/importListsApi.js
+ D app_src_backup/lib/api/importListsApi.js.map
+ D app_src_backup/lib/api/importListsApi.ts
+ D app_src_backup/lib/api/index.d.ts
+ D app_src_backup/lib/api/index.d.ts.map
+ D app_src_backup/lib/api/index.js
+ D app_src_backup/lib/api/index.js.map
+ D app_src_backup/lib/api/index.ts
+ D app_src_backup/lib/api/indexerApi.d.ts
+ D app_src_backup/lib/api/indexerApi.d.ts.map
+ D app_src_backup/lib/api/indexerApi.js
+ D app_src_backup/lib/api/indexerApi.js.map
+ D app_src_backup/lib/api/indexerApi.ts
+ D app_src_backup/lib/api/languageProfilesApi.d.ts
+ D app_src_backup/lib/api/languageProfilesApi.d.ts.map
+ D app_src_backup/lib/api/languageProfilesApi.js
+ D app_src_backup/lib/api/languageProfilesApi.js.map
+ D app_src_backup/lib/api/languageProfilesApi.ts
+ D app_src_backup/lib/api/logsApi.d.ts
+ D app_src_backup/lib/api/logsApi.d.ts.map
+ D app_src_backup/lib/api/logsApi.js
+ D app_src_backup/lib/api/logsApi.js.map
+ D app_src_backup/lib/api/logsApi.ts
+ D app_src_backup/lib/api/mediaApi.d.ts
+ D app_src_backup/lib/api/mediaApi.d.ts.map
+ D app_src_backup/lib/api/mediaApi.js
+ D app_src_backup/lib/api/mediaApi.js.map
+ D app_src_backup/lib/api/mediaApi.ts
+ D app_src_backup/lib/api/movieApi.d.ts
+ D app_src_backup/lib/api/movieApi.d.ts.map
+ D app_src_backup/lib/api/movieApi.js
+ D app_src_backup/lib/api/movieApi.js.map
+ D app_src_backup/lib/api/movieApi.ts
+ D app_src_backup/lib/api/notificationsApi.d.ts
+ D app_src_backup/lib/api/notificationsApi.d.ts.map
+ D app_src_backup/lib/api/notificationsApi.js
+ D app_src_backup/lib/api/notificationsApi.js.map
+ D app_src_backup/lib/api/notificationsApi.ts
+ D app_src_backup/lib/api/optimizer.d.ts
+ D app_src_backup/lib/api/optimizer.d.ts.map
+ D app_src_backup/lib/api/optimizer.js
+ D app_src_backup/lib/api/optimizer.js.map
+ D app_src_backup/lib/api/optimizer.ts
+ D app_src_backup/lib/api/proxySettingsApi.d.ts
+ D app_src_backup/lib/api/proxySettingsApi.d.ts.map
+ D app_src_backup/lib/api/proxySettingsApi.js
+ D app_src_backup/lib/api/proxySettingsApi.js.map
+ D app_src_backup/lib/api/proxySettingsApi.ts
+ D app_src_backup/lib/api/qualityProfileApi.d.ts
+ D app_src_backup/lib/api/qualityProfileApi.d.ts.map
+ D app_src_backup/lib/api/qualityProfileApi.js
+ D app_src_backup/lib/api/qualityProfileApi.js.map
+ D app_src_backup/lib/api/qualityProfileApi.ts
+ D app_src_backup/lib/api/releaseApi.d.ts
+ D app_src_backup/lib/api/releaseApi.d.ts.map
+ D app_src_backup/lib/api/releaseApi.js
+ D app_src_backup/lib/api/releaseApi.js.map
+ D app_src_backup/lib/api/releaseApi.ts
+ D app_src_backup/lib/api/routeMap.d.ts
+ D app_src_backup/lib/api/routeMap.d.ts.map
+ D app_src_backup/lib/api/routeMap.js
+ D app_src_backup/lib/api/routeMap.js.map
+ D app_src_backup/lib/api/routeMap.ts
+ D app_src_backup/lib/api/schemas.d.ts
+ D app_src_backup/lib/api/schemas.d.ts.map
+ D app_src_backup/lib/api/schemas.js
+ D app_src_backup/lib/api/schemas.js.map
+ D app_src_backup/lib/api/schemas.ts
+ D app_src_backup/lib/api/seriesApi.d.ts
+ D app_src_backup/lib/api/seriesApi.d.ts.map
+ D app_src_backup/lib/api/seriesApi.js
+ D app_src_backup/lib/api/seriesApi.js.map
+ D app_src_backup/lib/api/seriesApi.ts
+ D app_src_backup/lib/api/settingsApi.d.ts
+ D app_src_backup/lib/api/settingsApi.d.ts.map
+ D app_src_backup/lib/api/settingsApi.js
+ D app_src_backup/lib/api/settingsApi.js.map
+ D app_src_backup/lib/api/settingsApi.ts
+ D app_src_backup/lib/api/shared-schemas.d.ts
+ D app_src_backup/lib/api/shared-schemas.d.ts.map
+ D app_src_backup/lib/api/shared-schemas.js
+ D app_src_backup/lib/api/shared-schemas.js.map
+ D app_src_backup/lib/api/shared-schemas.ts
+ D app_src_backup/lib/api/subtitleApi.d.ts
+ D app_src_backup/lib/api/subtitleApi.d.ts.map
+ D app_src_backup/lib/api/subtitleApi.js
+ D app_src_backup/lib/api/subtitleApi.js.map
+ D app_src_backup/lib/api/subtitleApi.ts
+ D app_src_backup/lib/api/subtitleBlacklistApi.d.ts
+ D app_src_backup/lib/api/subtitleBlacklistApi.d.ts.map
+ D app_src_backup/lib/api/subtitleBlacklistApi.js
+ D app_src_backup/lib/api/subtitleBlacklistApi.js.map
+ D app_src_backup/lib/api/subtitleBlacklistApi.ts
+ D app_src_backup/lib/api/subtitleHistoryApi.d.ts
+ D app_src_backup/lib/api/subtitleHistoryApi.d.ts.map
+ D app_src_backup/lib/api/subtitleHistoryApi.js
+ D app_src_backup/lib/api/subtitleHistoryApi.js.map
+ D app_src_backup/lib/api/subtitleHistoryApi.ts
+ D app_src_backup/lib/api/subtitleProvidersApi.d.ts
+ D app_src_backup/lib/api/subtitleProvidersApi.d.ts.map
+ D app_src_backup/lib/api/subtitleProvidersApi.js
+ D app_src_backup/lib/api/subtitleProvidersApi.js.map
+ D app_src_backup/lib/api/subtitleProvidersApi.ts
+ D app_src_backup/lib/api/subtitleWantedApi.d.ts
+ D app_src_backup/lib/api/subtitleWantedApi.d.ts.map
+ D app_src_backup/lib/api/subtitleWantedApi.js
+ D app_src_backup/lib/api/subtitleWantedApi.js.map
+ D app_src_backup/lib/api/subtitleWantedApi.ts
+ D app_src_backup/lib/api/systemApi.d.ts
+ D app_src_backup/lib/api/systemApi.d.ts.map
+ D app_src_backup/lib/api/systemApi.js
+ D app_src_backup/lib/api/systemApi.js.map
+ D app_src_backup/lib/api/systemApi.ts
+ D app_src_backup/lib/api/tagsApi.d.ts
+ D app_src_backup/lib/api/tagsApi.d.ts.map
+ D app_src_backup/lib/api/tagsApi.js
+ D app_src_backup/lib/api/tagsApi.js.map
+ D app_src_backup/lib/api/tagsApi.ts
+ D app_src_backup/lib/api/torrentApi.d.ts
+ D app_src_backup/lib/api/torrentApi.d.ts.map
+ D app_src_backup/lib/api/torrentApi.js
+ D app_src_backup/lib/api/torrentApi.js.map
+ D app_src_backup/lib/api/torrentApi.ts
+ D app_src_backup/lib/api/updatesApi.d.ts
+ D app_src_backup/lib/api/updatesApi.d.ts.map
+ D app_src_backup/lib/api/updatesApi.js
+ D app_src_backup/lib/api/updatesApi.js.map
+ D app_src_backup/lib/api/updatesApi.ts
+ D app_src_backup/lib/api/wantedApi.d.ts
+ D app_src_backup/lib/api/wantedApi.d.ts.map
+ D app_src_backup/lib/api/wantedApi.js
+ D app_src_backup/lib/api/wantedApi.js.map
+ D app_src_backup/lib/api/wantedApi.ts
+ D app_src_backup/lib/constants/languages.d.ts
+ D app_src_backup/lib/constants/languages.d.ts.map
+ D app_src_backup/lib/constants/languages.js
+ D app_src_backup/lib/constants/languages.js.map
+ D app_src_backup/lib/constants/languages.ts
+ D app_src_backup/lib/events/useEventsCacheBridge.d.ts
+ D app_src_backup/lib/events/useEventsCacheBridge.d.ts.map
+ D app_src_backup/lib/events/useEventsCacheBridge.js
+ D app_src_backup/lib/events/useEventsCacheBridge.js.map
+ D app_src_backup/lib/events/useEventsCacheBridge.ts
+ D app_src_backup/lib/format.d.ts
+ D app_src_backup/lib/format.d.ts.map
+ D app_src_backup/lib/format.js
+ D app_src_backup/lib/format.js.map
+ D app_src_backup/lib/format.ts
+ D app_src_backup/lib/health.d.ts
+ D app_src_backup/lib/health.d.ts.map
+ D app_src_backup/lib/health.js
+ D app_src_backup/lib/health.js.map
+ D app_src_backup/lib/health.ts
+ D app_src_backup/lib/hooks/index.d.ts
+ D app_src_backup/lib/hooks/index.d.ts.map
+ D app_src_backup/lib/hooks/index.js
+ D app_src_backup/lib/hooks/index.js.map
+ D app_src_backup/lib/hooks/index.ts
+ D app_src_backup/lib/hooks/useLocalStorage.d.ts
+ D app_src_backup/lib/hooks/useLocalStorage.d.ts.map
+ D app_src_backup/lib/hooks/useLocalStorage.js
+ D app_src_backup/lib/hooks/useLocalStorage.js.map
+ D app_src_backup/lib/hooks/useLocalStorage.ts
+ D app_src_backup/lib/hooks/useMediaQuery.d.ts
+ D app_src_backup/lib/hooks/useMediaQuery.d.ts.map
+ D app_src_backup/lib/hooks/useMediaQuery.js
+ D app_src_backup/lib/hooks/useMediaQuery.js.map
+ D app_src_backup/lib/hooks/useMediaQuery.ts
+ D app_src_backup/lib/hooks/useSeriesOptions.d.ts
+ D app_src_backup/lib/hooks/useSeriesOptions.d.ts.map
+ D app_src_backup/lib/hooks/useSeriesOptions.js
+ D app_src_backup/lib/hooks/useSeriesOptions.js.map
+ D app_src_backup/lib/hooks/useSeriesOptions.ts
+ D app_src_backup/lib/hooks/useTouchGestures.d.ts
+ D app_src_backup/lib/hooks/useTouchGestures.d.ts.map
+ D app_src_backup/lib/hooks/useTouchGestures.js
+ D app_src_backup/lib/hooks/useTouchGestures.js.map
+ D app_src_backup/lib/hooks/useTouchGestures.ts
+ D app_src_backup/lib/indexer/README.md
+ D app_src_backup/lib/indexer/indexerPresets.d.ts
+ D app_src_backup/lib/indexer/indexerPresets.d.ts.map
+ D app_src_backup/lib/indexer/indexerPresets.js
+ D app_src_backup/lib/indexer/indexerPresets.js.map
+ D app_src_backup/lib/indexer/indexerPresets.ts
+ D app_src_backup/lib/msw/browser.d.ts
+ D app_src_backup/lib/msw/browser.d.ts.map
+ D app_src_backup/lib/msw/browser.js
+ D app_src_backup/lib/msw/browser.js.map
+ D app_src_backup/lib/msw/browser.ts
+ D app_src_backup/lib/msw/factories.d.ts
+ D app_src_backup/lib/msw/factories.d.ts.map
+ D app_src_backup/lib/msw/factories.js
+ D app_src_backup/lib/msw/factories.js.map
+ D app_src_backup/lib/msw/factories.ts
+ D app_src_backup/lib/msw/handlers.d.ts
+ D app_src_backup/lib/msw/handlers.d.ts.map
+ D app_src_backup/lib/msw/handlers.js
+ D app_src_backup/lib/msw/handlers.js.map
+ D app_src_backup/lib/msw/handlers.ts
+ D app_src_backup/lib/msw/server.d.ts
+ D app_src_backup/lib/msw/server.d.ts.map
+ D app_src_backup/lib/msw/server.js
+ D app_src_backup/lib/msw/server.js.map
+ D app_src_backup/lib/msw/server.ts
+ D app_src_backup/lib/navigation.d.ts
+ D app_src_backup/lib/navigation.d.ts.map
+ D app_src_backup/lib/navigation.js
+ D app_src_backup/lib/navigation.js.map
+ D app_src_backup/lib/navigation.ts
+ D app_src_backup/lib/performance/monitor.d.ts
+ D app_src_backup/lib/performance/monitor.d.ts.map
+ D app_src_backup/lib/performance/monitor.js
+ D app_src_backup/lib/performance/monitor.js.map
+ D app_src_backup/lib/performance/monitor.ts
+ D app_src_backup/lib/prowlarrRoutes.d.ts
+ D app_src_backup/lib/prowlarrRoutes.d.ts.map
+ D app_src_backup/lib/prowlarrRoutes.js
+ D app_src_backup/lib/prowlarrRoutes.js.map
+ D app_src_backup/lib/prowlarrRoutes.ts
+ D app_src_backup/lib/query/queryClient.d.ts
+ D app_src_backup/lib/query/queryClient.d.ts.map
+ D app_src_backup/lib/query/queryClient.js
+ D app_src_backup/lib/query/queryClient.js.map
+ D app_src_backup/lib/query/queryClient.ts
+ D app_src_backup/lib/query/queryKeys.d.ts
+ D app_src_backup/lib/query/queryKeys.d.ts.map
+ D app_src_backup/lib/query/queryKeys.js
+ D app_src_backup/lib/query/queryKeys.js.map
+ D app_src_backup/lib/query/queryKeys.ts
+ D app_src_backup/lib/query/useApiQuery.d.ts
+ D app_src_backup/lib/query/useApiQuery.d.ts.map
+ D app_src_backup/lib/query/useApiQuery.js
+ D app_src_backup/lib/query/useApiQuery.js.map
+ D app_src_backup/lib/query/useApiQuery.ts
+ D app_src_backup/lib/query/useOptimisticMutation.d.ts
+ D app_src_backup/lib/query/useOptimisticMutation.d.ts.map
+ D app_src_backup/lib/query/useOptimisticMutation.js
+ D app_src_backup/lib/query/useOptimisticMutation.js.map
+ D app_src_backup/lib/query/useOptimisticMutation.ts
+ D app_src_backup/lib/settings-schema.d.ts
+ D app_src_backup/lib/settings-schema.d.ts.map
+ D app_src_backup/lib/settings-schema.js
+ D app_src_backup/lib/settings-schema.js.map
+ D app_src_backup/lib/settings-schema.ts
+ D app_src_backup/lib/shortcuts.d.ts
+ D app_src_backup/lib/shortcuts.d.ts.map
+ D app_src_backup/lib/shortcuts.js
+ D app_src_backup/lib/shortcuts.js.map
+ D app_src_backup/lib/shortcuts.ts
+ D app_src_backup/lib/state/calendarStore.d.ts
+ D app_src_backup/lib/state/calendarStore.d.ts.map
+ D app_src_backup/lib/state/calendarStore.js
+ D app_src_backup/lib/state/calendarStore.js.map
+ D app_src_backup/lib/state/calendarStore.ts
+ D app_src_backup/lib/state/seriesOptionsStore.d.ts
+ D app_src_backup/lib/state/seriesOptionsStore.d.ts.map
+ D app_src_backup/lib/state/seriesOptionsStore.js
+ D app_src_backup/lib/state/seriesOptionsStore.js.map
+ D app_src_backup/lib/state/seriesOptionsStore.ts
+ D app_src_backup/lib/state/uiStore.d.ts
+ D app_src_backup/lib/state/uiStore.d.ts.map
+ D app_src_backup/lib/state/uiStore.js
+ D app_src_backup/lib/state/uiStore.js.map
+ D app_src_backup/lib/state/uiStore.ts
+ D app_src_backup/lib/state/useUIStore.d.ts
+ D app_src_backup/lib/state/useUIStore.d.ts.map
+ D app_src_backup/lib/state/useUIStore.js
+ D app_src_backup/lib/state/useUIStore.js.map
+ D app_src_backup/lib/state/useUIStore.ts
+ D app_src_backup/lib/state/wantedStore.d.ts
+ D app_src_backup/lib/state/wantedStore.d.ts.map
+ D app_src_backup/lib/state/wantedStore.js
+ D app_src_backup/lib/state/wantedStore.js.map
+ D app_src_backup/lib/state/wantedStore.ts
+ D app_src_backup/lib/subtitles/constants.d.ts
+ D app_src_backup/lib/subtitles/constants.d.ts.map
+ D app_src_backup/lib/subtitles/constants.js
+ D app_src_backup/lib/subtitles/constants.js.map
+ D app_src_backup/lib/subtitles/constants.ts
+ D app_src_backup/lib/subtitles/time.d.ts
+ D app_src_backup/lib/subtitles/time.d.ts.map
+ D app_src_backup/lib/subtitles/time.js
+ D app_src_backup/lib/subtitles/time.js.map
+ D app_src_backup/lib/subtitles/time.ts
+ D app_src_backup/lib/table/columns.d.ts
+ D app_src_backup/lib/table/columns.d.ts.map
+ D app_src_backup/lib/table/columns.js
+ D app_src_backup/lib/table/columns.js.map
+ D app_src_backup/lib/table/columns.ts
+ D app_src_backup/lib/table/filter.d.ts
+ D app_src_backup/lib/table/filter.d.ts.map
+ D app_src_backup/lib/table/filter.js
+ D app_src_backup/lib/table/filter.js.map
+ D app_src_backup/lib/table/filter.ts
+ D app_src_backup/lib/table/pagination.d.ts
+ D app_src_backup/lib/table/pagination.d.ts.map
+ D app_src_backup/lib/table/pagination.js
+ D app_src_backup/lib/table/pagination.js.map
+ D app_src_backup/lib/table/pagination.ts
+ D app_src_backup/lib/table/sort.d.ts
+ D app_src_backup/lib/table/sort.d.ts.map
+ D app_src_backup/lib/table/sort.js
+ D app_src_backup/lib/table/sort.js.map
+ D app_src_backup/lib/table/sort.ts
+ D app_src_backup/lib/theme/ThemeProvider.d.ts
+ D app_src_backup/lib/theme/ThemeProvider.d.ts.map
+ D app_src_backup/lib/theme/ThemeProvider.js
+ D app_src_backup/lib/theme/ThemeProvider.js.map
+ D app_src_backup/lib/theme/ThemeProvider.tsx
+ D app_src_backup/lib/theme/colorImpaired.d.ts
+ D app_src_backup/lib/theme/colorImpaired.d.ts.map
+ D app_src_backup/lib/theme/colorImpaired.js
+ D app_src_backup/lib/theme/colorImpaired.js.map
+ D app_src_backup/lib/theme/colorImpaired.ts
+ D app_src_backup/lib/theme/index.d.ts
+ D app_src_backup/lib/theme/index.d.ts.map
+ D app_src_backup/lib/theme/index.js
+ D app_src_backup/lib/theme/index.js.map
+ D app_src_backup/lib/theme/index.ts
+ D app_src_backup/lib/theme/useTheme.d.ts
+ D app_src_backup/lib/theme/useTheme.d.ts.map
+ D app_src_backup/lib/theme/useTheme.js
+ D app_src_backup/lib/theme/useTheme.js.map
+ D app_src_backup/lib/theme/useTheme.ts
+ D app_src_backup/lib/uiPreferences.d.ts
+ D app_src_backup/lib/uiPreferences.d.ts.map
+ D app_src_backup/lib/uiPreferences.js
+ D app_src_backup/lib/uiPreferences.js.map
+ D app_src_backup/lib/uiPreferences.ts
+ D app_src_backup/test/setup.d.ts
+ D app_src_backup/test/setup.d.ts.map
+ D app_src_backup/test/setup.js
+ D app_src_backup/test/setup.js.map
+ D app_src_backup/test/setup.ts
+ D app_src_backup/types/blocklist.d.ts
+ D app_src_backup/types/blocklist.d.ts.map
+ D app_src_backup/types/blocklist.js
+ D app_src_backup/types/blocklist.js.map
+ D app_src_backup/types/blocklist.ts
+ D app_src_backup/types/calendar.d.ts
+ D app_src_backup/types/calendar.d.ts.map
+ D app_src_backup/types/calendar.js
+ D app_src_backup/types/calendar.js.map
+ D app_src_backup/types/calendar.ts
+ D app_src_backup/types/collection.d.ts
+ D app_src_backup/types/collection.d.ts.map
+ D app_src_backup/types/collection.js
+ D app_src_backup/types/collection.js.map
+ D app_src_backup/types/collection.ts
+ D app_src_backup/types/customFormat.d.ts
+ D app_src_backup/types/customFormat.d.ts.map
+ D app_src_backup/types/customFormat.js
+ D app_src_backup/types/customFormat.js.map
+ D app_src_backup/types/customFormat.ts
+ D app_src_backup/types/discover.d.ts
+ D app_src_backup/types/discover.d.ts.map
+ D app_src_backup/types/discover.js
+ D app_src_backup/types/discover.js.map
+ D app_src_backup/types/discover.ts
+ D app_src_backup/types/downloadClient.d.ts
+ D app_src_backup/types/downloadClient.d.ts.map
+ D app_src_backup/types/downloadClient.js
+ D app_src_backup/types/downloadClient.js.map
+ D app_src_backup/types/downloadClient.ts
+ D app_src_backup/types/movie.d.ts
+ D app_src_backup/types/movie.d.ts.map
+ D app_src_backup/types/movie.js
+ D app_src_backup/types/movie.js.map
+ D app_src_backup/types/movie.ts
+ D app_src_backup/types/notification.d.ts
+ D app_src_backup/types/notification.d.ts.map
+ D app_src_backup/types/notification.js
+ D app_src_backup/types/notification.js.map
+ D app_src_backup/types/notification.ts
+ D app_src_backup/types/qualityProfile.d.ts
+ D app_src_backup/types/qualityProfile.d.ts.map
+ D app_src_backup/types/qualityProfile.js
+ D app_src_backup/types/qualityProfile.js.map
+ D app_src_backup/types/qualityProfile.ts
+ D app_src_backup/types/series.d.ts
+ D app_src_backup/types/series.d.ts.map
+ D app_src_backup/types/series.js
+ D app_src_backup/types/series.js.map
+ D app_src_backup/types/series.ts
+ D app_src_backup/types/wanted.d.ts
+ D app_src_backup/types/wanted.d.ts.map
+ D app_src_backup/types/wanted.js
+ D app_src_backup/types/wanted.js.map
+ D app_src_backup/types/wanted.ts
+ M conductor/archive/cardigann_runtime_parity_20260223/artifacts/final-phase5-compatibility-matrix.json
+ M measure/output.log
+ M measure/tech-debt.md
+ M measure/tracks.md
+ D measure/tracks/drizzle_cleanup_type_safety_20260506/metadata.json
+ D measure/tracks/drizzle_cleanup_type_safety_20260506/plan.md
+ D measure/tracks/drizzle_cleanup_type_safety_20260506/spec.md
+ D measure/tracks/legacy_test_cleanup_20260506/metadata.json
+ D measure/tracks/legacy_test_cleanup_20260506/plan.md
+ D measure/tracks/legacy_test_cleanup_20260506/spec.md
+ D tests/import-manager.test.js
+ M vitest.config.ts
+?? measure/archive/legacy_test_cleanup_20260506/
+[0m

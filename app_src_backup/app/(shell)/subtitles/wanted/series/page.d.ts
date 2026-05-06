@@ -1,2 +1,0 @@
-export default function WantedSeriesPage(): import("react/jsx-runtime").JSX.Element;
-//# sourceMappingURL=page.d.ts.map

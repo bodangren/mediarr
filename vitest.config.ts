@@ -9,9 +9,7 @@ export default defineConfig({
       '**/node_modules/**',
       '**/reference/**',
       '**/dist/**',
-      'app_src_backup/**',
       'app/src/**/*.test.{ts,tsx,js,jsx}',
-      'tests/import-manager.test.js',
     ],
   },
 });

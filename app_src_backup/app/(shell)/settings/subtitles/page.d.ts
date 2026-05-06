@@ -1,2 +1,0 @@
-export default function SubtitlesSettingsPage(): import("react/jsx-runtime").JSX.Element;
-//# sourceMappingURL=page.d.ts.map

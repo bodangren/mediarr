@@ -3,7 +3,10 @@ import { describe, expect, it, vi } from 'vitest';
 import { VirtualTable } from './VirtualTable';
 import type { TableColumn } from '@/components/ui/table-header-compat';
 
-// Mock useVirtualizer since it depends on DOM measurements that don't work in JSDOM
+// Mock useVirtualizer since it depends on DOM measurements that don't work in JSDOM.
+// This is an accepted trade-off: we verify VirtualTable's integration with the virtualizer
+// hook contract (getVirtualItems, getTotalSize, measureElement) rather than testing
+// @tanstack/react-virtual itself, which has its own test suite.
 vi.mock('@tanstack/react-virtual', () => ({
   useVirtualizer: vi.fn(({ count, estimateSize }: { count: number; estimateSize: () => number }) => ({
     getVirtualItems: () => Array.from({ length: Math.min(count, 10) }, (_, i) => ({

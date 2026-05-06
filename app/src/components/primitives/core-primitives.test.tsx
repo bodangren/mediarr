@@ -30,21 +30,25 @@ describe('core primitives', () => {
   });
 
   it('renders alert variants with semantic tone classes', () => {
-    const { rerender } = render(<Alert variant="info">Info message</Alert>);
+    const { rerender, container } = render(<Alert variant="info">Info message</Alert>);
     expect(screen.getByText('Info message')).toBeInTheDocument();
+    expect(container.querySelector('[class*="bg-accent-primary"]')).toBeInTheDocument();
 
     rerender(<Alert variant="success">Success message</Alert>);
     expect(screen.getByText('Success message')).toBeInTheDocument();
+    expect(container.querySelector('[class*="bg-status-completed"]')).toBeInTheDocument();
 
     rerender(<Alert variant="warning">Warning message</Alert>);
     expect(screen.getByText('Warning message')).toBeInTheDocument();
+    expect(container.querySelector('[class*="bg-status-wanted"]')).toBeInTheDocument();
 
     rerender(<Alert variant="danger">Danger message</Alert>);
     expect(screen.getByText('Danger message')).toBeInTheDocument();
+    expect(container.querySelector('[class*="bg-status-error"]')).toBeInTheDocument();
   });
 
-  it('renders label badge variants', () => {
-    render(
+  it('renders label badge variants with correct tone classes', () => {
+    const { container } = render(
       <>
         <Label tone="info">Info</Label>
         <Label tone="success">Success</Label>
@@ -57,5 +61,17 @@ describe('core primitives', () => {
     expect(screen.getByText('Success')).toBeInTheDocument();
     expect(screen.getByText('Warning')).toBeInTheDocument();
     expect(screen.getByText('Danger')).toBeInTheDocument();
+
+    const infoLabel = screen.getByText('Info').closest('span');
+    expect(infoLabel).toHaveClass('bg-accent-primary/15');
+
+    const successLabel = screen.getByText('Success').closest('span');
+    expect(successLabel).toHaveClass('bg-status-completed/20');
+
+    const warningLabel = screen.getByText('Warning').closest('span');
+    expect(warningLabel).toHaveClass('bg-status-wanted/20');
+
+    const dangerLabel = screen.getByText('Danger').closest('span');
+    expect(dangerLabel).toHaveClass('bg-status-error/20');
   });
 });

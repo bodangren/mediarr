@@ -31,18 +31,17 @@ export async function seedSmartDefaults(prisma: DatabaseClient): Promise<void> {
   }
 
   const settingsRecord = await prisma.appSettings.findUnique({ where: { id: 1 } });
-  const current = settingsRecord ? JSON.parse(JSON.stringify(settingsRecord)) as {
-    [key: string]: unknown;
-    mediaManagement?: Record<string, unknown>;
-    schedulerIntervals?: Record<string, unknown>;
-    update?: Record<string, unknown>;
-    torrentLimits?: Record<string, unknown>;
-    pathVisibility?: Record<string, unknown>;
-    apiKeys?: Record<string, unknown>;
-    host?: Record<string, unknown>;
-    security?: Record<string, unknown>;
-    logging?: Record<string, unknown>;
-    streaming?: Record<string, unknown>;
+  const current = settingsRecord ? {
+    mediaManagement: settingsRecord.mediaManagement as Record<string, unknown> | undefined,
+    schedulerIntervals: settingsRecord.schedulerIntervals as Record<string, unknown> | undefined,
+    update: settingsRecord.update as Record<string, unknown> | undefined,
+    torrentLimits: settingsRecord.torrentLimits as Record<string, unknown> | undefined,
+    pathVisibility: settingsRecord.pathVisibility as Record<string, unknown> | undefined,
+    apiKeys: settingsRecord.apiKeys as Record<string, unknown> | undefined,
+    host: settingsRecord.host as Record<string, unknown> | undefined,
+    security: settingsRecord.security as Record<string, unknown> | undefined,
+    logging: settingsRecord.logging as Record<string, unknown> | undefined,
+    streaming: settingsRecord.streaming as Record<string, unknown> | undefined,
   } : null;
 
   let hasAnyChange = false;

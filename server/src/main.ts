@@ -304,42 +304,42 @@ async function repairMalformedJsonColumns(prisma: DatabaseClient): Promise<void>
   try {
     const repairs: Array<{ label: string; changes: number }> = [];
 
-    const qualityProfileRes = await prisma.$executeRawUnsafe(`
+    const qualityProfileRes = executeRaw(prisma.sqlite, `
       UPDATE "QualityProfile"
       SET "items" = '[]'
       WHERE "items" IS NULL OR json_valid("items") = 0
     `);
     repairs.push({ label: 'QualityProfile.items', changes: qualityProfileRes });
 
-    const notificationRes = await prisma.$executeRawUnsafe(`
+    const notificationRes = executeRaw(prisma.sqlite, `
       UPDATE "Notification"
       SET "config" = '{}'
       WHERE "config" IS NULL OR json_valid("config") = 0
     `);
     repairs.push({ label: 'Notification.config', changes: notificationRes });
 
-    const activityEventRes = await prisma.$executeRawUnsafe(`
+    const activityEventRes = executeRaw(prisma.sqlite, `
       UPDATE "ActivityEvent"
       SET "details" = NULL
       WHERE "details" IS NOT NULL AND json_valid("details") = 0
     `);
     repairs.push({ label: 'ActivityEvent.details', changes: activityEventRes });
 
-    const torrentEtaDownscaleRes = await prisma.$executeRawUnsafe(`
+    const torrentEtaDownscaleRes = executeRaw(prisma.sqlite, `
       UPDATE "Torrent"
       SET "eta" = CAST("eta" / 1000 AS INTEGER)
       WHERE "eta" > 2147483647
     `);
     repairs.push({ label: 'Torrent.eta.downscaled', changes: torrentEtaDownscaleRes });
 
-    const torrentEtaClampRes = await prisma.$executeRawUnsafe(`
+    const torrentEtaClampRes = executeRaw(prisma.sqlite, `
       UPDATE "Torrent"
       SET "eta" = 2147483647
       WHERE "eta" > 2147483647
     `);
     repairs.push({ label: 'Torrent.eta.clamped', changes: torrentEtaClampRes });
 
-    const torrentEtaNegativeRes = await prisma.$executeRawUnsafe(`
+    const torrentEtaNegativeRes = executeRaw(prisma.sqlite, `
       UPDATE "Torrent"
       SET "eta" = NULL
       WHERE "eta" < 0
@@ -350,7 +350,7 @@ async function repairMalformedJsonColumns(prisma: DatabaseClient): Promise<void>
       // Column names cannot be bound as parameters in SQL, so we use $executeRawUnsafe
       // for the identifier only. The value is passed as a positional parameter to prevent
       // any risk of injection from the JSON string content.
-      const res = await prisma.$executeRawUnsafe(
+      const res = executeRaw(prisma.sqlite, 
         `UPDATE "AppSettings" SET "${column}" = ? WHERE "${column}" IS NULL OR json_valid("${column}") = 0`,
         defaultJson,
       );
@@ -358,7 +358,7 @@ async function repairMalformedJsonColumns(prisma: DatabaseClient): Promise<void>
     }
 
     for (const column of nullableAppSettingsColumns) {
-      const res = await prisma.$executeRawUnsafe(`
+      const res = executeRaw(prisma.sqlite, `
         UPDATE "AppSettings"
         SET "${column}" = NULL
         WHERE "${column}" IS NOT NULL AND json_valid("${column}") = 0
@@ -768,6 +768,12 @@ async function startApi(): Promise<void> {
     console.log('Discovery broadcast disabled by streaming settings.');
   }
   console.log(`Mediarr API listening on http://${host}:${port}`);
+}
+
+function executeRaw(sqlite: any, query: string, ...params: unknown[]): number {
+  const stmt = sqlite.prepare(query);
+  const result = stmt.run(...params);
+  return Number(result.changes ?? 0);
 }
 
 void startApi().catch(error => {

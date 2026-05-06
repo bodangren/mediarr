@@ -2786,3 +2786,272 @@ Index: /home/daniel-bo/Desktop/mediarr/tests/helpers/test-prisma-client.js
 [2m   Start at [22m 21:12:08
 [2m   Duration [22m 203.16s[2m (transform 5.53s, setup 0ms, import 65.13s, tests 82.78s, environment 68ms)[22m
 [0m
+[0m$ [0mgit add -A && git commit -m "refactor(db): Rename PrismaClient to DatabaseClient, update imports (k2p6)"
+[main 4430936] refactor(db): Rename PrismaClient to DatabaseClient, update imports (k2p6)
+ 12 files changed, 294 insertions(+), 58 deletions(-)
+ delete mode 100644 measure/tracks/flutter_player_first_navigation_20260506/metadata.json
+ delete mode 100644 measure/tracks/flutter_player_first_navigation_20260506/plan.md
+ delete mode 100644 measure/tracks/flutter_player_first_navigation_20260506/spec.md
+ rename server/src/db/{prismaClient.ts => drizzleClient.ts} (99%)
+[0m
+[0m← [0mEdit server/src/db/drizzleClient.ts
+Index: /home/daniel-bo/Desktop/mediarr/server/src/db/drizzleClient.ts
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/server/src/db/drizzleClient.ts
++++ /home/daniel-bo/Desktop/mediarr/server/src/db/drizzleClient.ts
+@@ -412,11 +412,11 @@
+   rowsCache: Map<ModelName, Promise<any[]>>;
+ };
+ 
+ export class DatabaseClient {
+-  private readonly sqlite: any;
++  readonly sqlite: any;
+ 
+-  private readonly db: any;
++  readonly db: any;
+ 
+   readonly media: AnyRecord;
+   readonly series: AnyRecord;
+   readonly season: AnyRecord;
+
+[0m
+[0m← [0mEdit server/src/db/drizzleClient.ts
+Index: /home/daniel-bo/Desktop/mediarr/server/src/db/drizzleClient.ts
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/server/src/db/drizzleClient.ts
++++ /home/daniel-bo/Desktop/mediarr/server/src/db/drizzleClient.ts
+@@ -519,44 +519,8 @@
+ async $disconnect(): Promise<void> {
+   this.sqlite.close();
+ }
+ 
+-async $executeRawUnsafe(query: string, ...params: unknown[]): Promise<number> {
+-  let result: any;
+-  if (typeof this.sqlite.query === 'function') {
+-    result = this.sqlite.query(query).run(...params);
+-  } else {
+-    result = this.sqlite.prepare(query).run(...params);
+-  }
+-  return Number(result.changes ?? 0);
+-}
+-
+-async $queryRaw<T = unknown>(query: TemplateStringsArray | string, ...params: unknown[]): Promise<T> {
+-  let sqlText = '';
+-  let sqlParams: unknown[] = [];
+-
+-  if (Array.isArray(query) && 'raw' in query) {
+-    sqlText = query.reduce((acc, part, idx) => `${acc}${part}${idx < params.length ? '?' : ''}`, '');
+-    sqlParams = params;
+-  } else if (typeof query === 'string') {
+-    sqlText = query;
+-    sqlParams = params;
+-  } else {
+-    throw new Error('Unsupported $queryRaw invocation');
+-  }
+-
+-  if (typeof this.sqlite.query === 'function') {
+-    return this.sqlite.query(sqlText).all(...sqlParams) as T;
+-  }
+-
+-  const statement = this.sqlite.prepare(sqlText);
+-  return statement.all(...sqlParams) as T;
+-}
+-
+-async $queryRawUnsafe<T = unknown>(query: string, ...params: unknown[]): Promise<T> {
+-  return this.$queryRaw(query, ...params);
+-}
+-
+ async $transaction<T>(
+   input: Array<Promise<unknown>> | ((tx: this) => Promise<T> | T),
+ ): Promise<T | unknown[]> {
+   if (Array.isArray(input)) {
+
+[0m
+[0m→ [0mRead server/src/main.ts[90m [limit=40, offset=290][0m
+[0m→ [0mRead server/src/main.ts[90m [limit=50, offset=325][0m
+[0m
+[0m$ [0msed -i 's/prisma\.\$executeRawUnsafe/prisma.sqlite.exec/g' server/src/main.ts
+(no output)
+[0m
+[0m→ [0mRead server/src/main.ts[90m [limit=80, offset=295][0m
+[0m→ [0mRead server/src/main.ts[90m [limit=20][0m
+[0m
+[0m$ [0mcd /home/daniel-bo/Desktop/mediarr && cat > /tmp/fix_main.py << 'PYEOF'
+import re
+
+with open('server/src/main.ts', 'r') as f:
+    content = f.read()
+
+# Add helper function after imports
+helper = '''
+function executeRaw(sqlite: any, query: string, ...params: unknown[]): number {
+  const stmt = sqlite.prepare(query);
+  const result = stmt.run(...params);
+  return Number(result.changes ?? 0);
+}
+'''
+
+# Find a good place to insert the helper (after the last import)
+import_end = content.rfind("import ")
+next_newline = content.find("\n", import_end)
+while next_newline != -1 and content[next_newline+1].strip() == "":
+    next_newline = content.find("\n", next_newline + 1)
+
+# Insert helper
+content = content[:next_newline+1] + helper + content[next_newline+1:]
+
+# Replace all prisma.sqlite.exec(...) with executeRaw(prisma.sqlite, ...)
+# Pattern: await prisma.sqlite.exec(`...`)
+content = re.sub(
+    r'await prisma\.sqlite\.exec\((.*?)\);',
+    r'executeRaw(prisma.sqlite, \1);',
+    content,
+    flags=re.DOTALL
+)
+
+with open('server/src/main.ts', 'w') as f:
+    f.write(content)
+
+print("Done")
+PYEOF
+python3 /tmp/fix_main.py
+Done
+[0m
+[0m→ [0mRead server/src/main.ts[90m [limit=40, offset=295][0m
+[0m→ [0mRead server/src/main.ts[90m [limit=30, offset=20][0m
+[0m
+[0m$ [0mcd /home/daniel-bo/Desktop/mediarr && CI=true npm test -- --run server/src/main.test.ts 2>&1 | tail -30
+> mediarr@1.0.0 test
+> vitest run --run server/src/main.test.ts
+
+
+[1m[46m RUN [49m[22m [36mv4.0.18 [39m[90m/home/daniel-bo/Desktop/mediarr[39m
+
+[31mNo test files found, exiting with code 1
+[39m
+[2mfilter: [22m[33mserver/src/main.test.ts[39m
+[2minclude: [22m[33m**/*.{test,spec}.?(c|m)[jt]s?(x)[39m
+[2mexclude:  [22m[33m**/node_modules/**[2m, [22m**/reference/**[2m, [22m**/dist/**[2m, [22mapp_src_backup/**[2m, [22mapp/src/**/*.test.{ts,tsx,js,jsx}[2m, [22mtests/import-manager.test.js[39m
+[0m
+[0m$ [0mcd /home/daniel-bo/Desktop/mediarr && npx tsc --noEmit -p server/tsconfig.json 2>&1 | head -30
+server/src/main.ts(307,31): error TS2304: Cannot find name 'executeRaw'.
+server/src/main.ts(314,29): error TS2304: Cannot find name 'executeRaw'.
+server/src/main.ts(321,30): error TS2304: Cannot find name 'executeRaw'.
+server/src/main.ts(328,36): error TS2304: Cannot find name 'executeRaw'.
+server/src/main.ts(335,32): error TS2304: Cannot find name 'executeRaw'.
+server/src/main.ts(342,35): error TS2304: Cannot find name 'executeRaw'.
+server/src/main.ts(353,19): error TS2304: Cannot find name 'executeRaw'.
+server/src/main.ts(361,19): error TS2304: Cannot find name 'executeRaw'.
+[0m
+[0m✱ [0mGrep "function executeRaw"[90m 2 matches[0m
+[0m→ [0mRead server/src/main.ts[90m [limit=20, offset=765][0m
+[0m
+[0m← [0mEdit server/src/main.ts
+Index: /home/daniel-bo/Desktop/mediarr/server/src/main.ts
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/server/src/main.ts
++++ /home/daniel-bo/Desktop/mediarr/server/src/main.ts
+@@ -767,15 +767,15 @@
+   } else {
+     console.log('Discovery broadcast disabled by streaming settings.');
+   }
+   console.log(`Mediarr API listening on http://${host}:${port}`);
++}
+ 
+ function executeRaw(sqlite: any, query: string, ...params: unknown[]): number {
+   const stmt = sqlite.prepare(query);
+   const result = stmt.run(...params);
+   return Number(result.changes ?? 0);
+ }
+-}
+ 
+ void startApi().catch(error => {
+   console.error('Failed to start Mediarr API:', error);
+   process.exit(1);
+
+[0m
+[0m$ [0mcd /home/daniel-bo/Desktop/mediarr && npx tsc --noEmit -p server/tsconfig.json 2>&1 | head -30
+(no output)
+[0m
+[0m$ [0mcd /home/daniel-bo/Desktop/mediarr && CI=true npm test 2>&1 | tail -40
+[32m✓[39m tests/track9-phase3-frontend-parity.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m server/src/api/utils/playbackHelpers.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m server/src/services/notifications/NotificationTransportRegistry.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m server/src/api/utils/safePath.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m server/src/services/ProviderBackedSubtitleFetchProvider.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m server/src/services/indexers/indexerValidation.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m tests/scoring-engine.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m tests/dockerfile.test.js [2m([22m[2m2 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m tests/docker-compose.test.js [2m([22m[2m2 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/import-manager-parsing.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m server/src/services/SubtitleScoringService.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m tests/reference-repos.test.js [2m([22m[2m4 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m server/src/no-stray-databases.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m server/src/indexers/cardigann-conformance/liveSiteDefinitions.test.ts [2m([22m[2m10 tests[22m[2m | [22m[33m9 skipped[39m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/subtitle-naming-service.test.js [2m([22m[2m2 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m tests/typescript.test.js [2m([22m[2m3 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/database-migration.test.js [2m([22m[2m2 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m tests/prisma-schema.test.js [2m([22m[2m1 test[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m server/src/indexers/cardigann-conformance/liveReleaseSearch.test.ts [2m([22m[2m3 tests[22m[2m | [22m[33m2 skipped[39m[2m)[22m[32m 5[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 1 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m tests/prisma-init.test.js[2m > [22mPrisma Initialization[2m > [22mshould initialize PrismaClient compatibility runtime on Drizzle
+[31m[1mTypeError[22m: prisma.$queryRawUnsafe is not a function[39m
+[36m [2m❯[22m tests/prisma-init.test.js:[2m10:33[22m[39m
+    [90m  8| [39m
+    [90m  9| [39m    [90m// Verify connection works by making a simple query[39m
+    [90m 10| [39m    [35mconst[39m result [33m=[39m [35mawait[39m prisma[33m.[39m[34m$queryRawUnsafe[39m([32m'SELECT 1 as ok'[39m)[33m;[39m
+    [90m   | [39m                                [31m^[39m
+    [90m 11| [39m    [34mexpect[39m(result)[33m.[39m[34mtoBeDefined[39m()[33m;[39m
+    [90m 12| [39m    [35mawait[39m prisma[33m.[39m[34m$disconnect[39m()[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m235 passed[39m[22m[90m (236)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m1801 passed[39m[22m[2m | [22m[33m11 skipped[39m[90m (1813)[39m
+[2m   Start at [22m 21:21:50
+[2m   Duration [22m 200.89s[2m (transform 5.40s, setup 0ms, import 64.71s, tests 81.33s, environment 67ms)[22m
+[0m
+[0m→ [0mRead tests/prisma-init.test.js
+[0m
+[0m← [0mEdit tests/prisma-init.test.js
+Index: /home/daniel-bo/Desktop/mediarr/tests/prisma-init.test.js
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/tests/prisma-init.test.js
++++ /home/daniel-bo/Desktop/mediarr/tests/prisma-init.test.js
+@@ -6,9 +6,9 @@
+     const prisma = createTestPrismaClient();
+     expect(prisma).toBeDefined();
+ 
+     // Verify connection works by making a simple query
+-    const result = await prisma.$queryRawUnsafe('SELECT 1 as ok');
++    const result = prisma.sqlite.prepare('SELECT 1 as ok').all();
+     expect(result).toBeDefined();
+     await prisma.$disconnect();
+   });
+ });
+
+[0m
+[0m$ [0mcd /home/daniel-bo/Desktop/mediarr && CI=true npm test 2>&1 | tail -20
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 1 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m server/src/services/BackupService.test.ts[2m > [22mBackupService[2m > [22mapplies retention policy and removes old files
+[31m[1mAssertionError[22m: expected 0 to be greater than or equal to 1[39m
+[36m [2m❯[22m server/src/services/BackupService.test.ts:[2m72:21[22m[39m
+    [90m 70| [39m    [90m// Apply 0-day retention to delete everything[39m
+    [90m 71| [39m    [35mconst[39m deleted [33m=[39m [35mawait[39m service[33m.[39m[34mapplyRetention[39m([34m0[39m)[33m;[39m
+    [90m 72| [39m    [34mexpect[39m(deleted)[33m.[39m[34mtoBeGreaterThanOrEqual[39m([34m1[39m)[33m;[39m
+    [90m   | [39m                    [31m^[39m
+    [90m 73| [39m    [35mconst[39m list [33m=[39m [35mawait[39m service[33m.[39m[34mlist[39m()[33m;[39m
+    [90m 74| [39m    [34mexpect[39m(list)[33m.[39m[34mtoHaveLength[39m([34m0[39m)[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m235 passed[39m[22m[90m (236)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m1801 passed[39m[22m[2m | [22m[33m11 skipped[39m[90m (1813)[39m
+[2m   Start at [22m 21:25:58
+[2m   Duration [22m 201.84s[2m (transform 5.44s, setup 0ms, import 65.52s, tests 81.24s, environment 67ms)[22m
+[0m

@@ -413,9 +413,9 @@ type QueryContext = {
 };
 
 export class DatabaseClient {
-  private readonly sqlite: any;
+  readonly sqlite: any;
 
-  private readonly db: any;
+  readonly db: any;
 
   readonly media: AnyRecord;
   readonly series: AnyRecord;
@@ -518,42 +518,6 @@ export class DatabaseClient {
 
   async $disconnect(): Promise<void> {
     this.sqlite.close();
-  }
-
-  async $executeRawUnsafe(query: string, ...params: unknown[]): Promise<number> {
-    let result: any;
-    if (typeof this.sqlite.query === 'function') {
-      result = this.sqlite.query(query).run(...params);
-    } else {
-      result = this.sqlite.prepare(query).run(...params);
-    }
-    return Number(result.changes ?? 0);
-  }
-
-  async $queryRaw<T = unknown>(query: TemplateStringsArray | string, ...params: unknown[]): Promise<T> {
-    let sqlText = '';
-    let sqlParams: unknown[] = [];
-
-    if (Array.isArray(query) && 'raw' in query) {
-      sqlText = query.reduce((acc, part, idx) => `${acc}${part}${idx < params.length ? '?' : ''}`, '');
-      sqlParams = params;
-    } else if (typeof query === 'string') {
-      sqlText = query;
-      sqlParams = params;
-    } else {
-      throw new Error('Unsupported $queryRaw invocation');
-    }
-
-    if (typeof this.sqlite.query === 'function') {
-      return this.sqlite.query(sqlText).all(...sqlParams) as T;
-    }
-
-    const statement = this.sqlite.prepare(sqlText);
-    return statement.all(...sqlParams) as T;
-  }
-
-  async $queryRawUnsafe<T = unknown>(query: string, ...params: unknown[]): Promise<T> {
-    return this.$queryRaw(query, ...params);
   }
 
   async $transaction<T>(

@@ -7,7 +7,7 @@ describe('Prisma Initialization', () => {
     expect(prisma).toBeDefined();
 
     // Verify connection works by making a simple query
-    const result = await prisma.$queryRawUnsafe('SELECT 1 as ok');
+    const result = prisma.sqlite.prepare('SELECT 1 as ok').all();
     expect(result).toBeDefined();
     await prisma.$disconnect();
   });

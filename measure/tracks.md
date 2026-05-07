@@ -7,7 +7,7 @@ This file tracks all major tracks for the project. Each track has its own detail
 ## Pending Tracks
 
 - [x] **Track: Custom Format Editor & Live Tester** *Phases: 5 | Link: [./archive/feature_custom_format_editor_20260507/](./archive/feature_custom_format_editor_20260507/)* — 13 backend route tests, FormatLiveTester component, dedicated settings page with search/clone/test panel
-- [ ] **Track: Release Scoring Breakdown Panel** *Phases: 5 | Link: [./tracks/feature_release_scoring_breakdown_20260507/](./tracks/feature_release_scoring_breakdown_20260507/)* — Expandable per-release score decomposition in interactive search
+- [~] **Track: Release Scoring Breakdown Panel** *Phases: 5 | Link: [./tracks/feature_release_scoring_breakdown_20260507/](./tracks/feature_release_scoring_breakdown_20260507/)* — Expandable per-release score decomposition in interactive search
 - [ ] **Track: SPA Subtitle Management Parity** *Phases: 5 | Link: [./tracks/chore_spa_subtitle_management_20260507/](./tracks/chore_spa_subtitle_management_20260507/)* — Subtitle inventory, search, download, and delete in the React SPA (Flutter parity)
 
 ---

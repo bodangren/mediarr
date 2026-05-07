@@ -8,6 +8,17 @@ import type { NotificationDispatchService } from './NotificationDispatchService'
 import { releaseParser, type ParsedReleaseWithScore, type SearchContext } from './ReleaseParser';
 import type { ApiEventHub } from '../api/eventHub';
 
+export interface ScoringBreakdown {
+  customFormats: Array<{ id: number; name: string; score: number }>;
+  customFormatScore: number;
+  confidenceScore: number;
+  indexerPriority: number;
+  indexerScore: number;
+  seeders: number;
+  seedScore: number;
+  totalScore: number;
+}
+
 export interface SearchCandidate {
   indexer: string;
   indexerId: number;
@@ -26,6 +37,7 @@ export interface SearchCandidate {
   categories?: number[] | undefined;
   protocol?: string | undefined;
   customFormatScore?: number | undefined;
+  scoringBreakdown?: ScoringBreakdown | undefined;
   parsedRelease?: ParsedReleaseWithScore | undefined;
 }
 
@@ -440,6 +452,16 @@ export class MediaSearchService {
       return {
         ...release,
         customFormatScore: scoring.totalScore, // Store unified score here so sorting logic works unchanged
+        scoringBreakdown: {
+          customFormats: scoring.matchedFormats,
+          customFormatScore: scoring.breakdown.customFormatScore,
+          confidenceScore: scoring.breakdown.confidenceScore,
+          indexerPriority,
+          indexerScore: scoring.breakdown.indexerScore,
+          seeders: release.seeders,
+          seedScore: scoring.breakdown.seedScore,
+          totalScore: scoring.totalScore,
+        },
       };
     });
   }

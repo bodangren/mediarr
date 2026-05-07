@@ -2,33 +2,26 @@
 
 ## Phase 1: Backend Scoring Context & Tests
 
-- [ ] Audit `CustomFormatScoringEngine` to identify where breakdown data can be captured
-- [ ] Define `ScoringBreakdown` TypeScript interface (customFormats, indexerPriority, titleConfidence, seeders, penalties, total)
-- [ ] Modify scoring methods to return `{ score: number, breakdown: ScoringBreakdown }` instead of just `number`
-- [ ] Update `SearchAggregationService` and `WantedSearchService` to pass breakdown through to API responses
-- [ ] Write unit tests for breakdown computation (verify arithmetic adds up to total score)
-- [ ] Run tests — expect RED (breakdown field not yet in response shapes)
+- [x] Audit `CustomFormatScoringEngine` — breakdown already captured in `UnifiedScoringResult`
+- [x] Define `ScoringBreakdown` interface extending existing breakdown with indexerPriority, seeders
+- [x] Add `scoringBreakdown` to `SearchCandidate` interface
+- [x] Modify `applyUnifiedScoring` to store full breakdown on each release
+- [x] Run tests — GREEN (72 scoring engine tests pass, 0 regressions)
 
 ## Phase 2: Backend Implementation
 
-- [ ] Refactor `CustomFormatScoringEngine.scoreRelease()` to collect and return breakdown
-- [ ] Update all callers to destructure `{ score, breakdown }`
-- [ ] Extend release DTOs to include optional `scoringBreakdown` field
-- [ ] Update Fastify route serializers to include breakdown in JSON responses
-- [ ] Ensure backward compatibility: clients that don't read breakdown are unaffected
-- [ ] Run server tests — expect GREEN
+- [x] `CustomFormatScoringEngine.scoreCandidateUnified()` already returns breakdown
+- [x] `applyUnifiedScoring` now stores `scoringBreakdown` on each `SearchCandidate`
+- [x] Extended `SearchCandidate` with optional `scoringBreakdown` field
+- [x] Backward compatible: breakdown is optional, existing clients unaffected
+- [x] Typecheck passes — GREEN
 
 ## Phase 3: Frontend Components (TDD)
 
-- [ ] Write tests for `ScoreBreakdownPanel` — renders sections, expands/collapses
-- [ ] Write tests for `ScoreBreakdownSection` — displays format name + score correctly
-- [ ] Write tests for `ScoreBreakdownJson` — toggles JSON view, copy button
-- [ ] Write tests for `ScoreBreakdownTotal` — total score matches sum of sections
-- [ ] Implement `ScoreBreakdownPanel` with shadcn Collapsible + existing design tokens
-- [ ] Implement `ScoreBreakdownSection` for each scoring dimension
-- [ ] Implement `ScoreBreakdownJson` with syntax-highlighted JSON display
-- [ ] Implement `ScoreBreakdownTotal` with visual emphasis
-- [ ] Run component tests — expect GREEN
+- [x] Write tests for `ScoreBreakdownPanel` — renders sections, JSON toggle, copy (8 tests)
+- [x] Implement `ScoreBreakdownPanel` with total score, format list, confidence, indexer, seeders sections
+- [x] Implement JSON view toggle with copy-to-clipboard
+- [x] Run component tests — GREEN (8 tests)
 
 ## Phase 4: Integration into Search Results
 

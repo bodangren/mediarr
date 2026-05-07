@@ -228,6 +228,105 @@ export function registerSeriesRoutes(
     });
   });
 
+  app.get('/api/episodes/missing', {
+    schema: {
+      querystring: {
+        type: 'object',
+        properties: {
+          page: { type: ['number', 'string'] },
+          pageSize: { type: ['number', 'string'] },
+          sortBy: { type: 'string' },
+          sortDir: { type: 'string' },
+          seriesId: { type: ['number', 'string'] },
+          season: { type: ['number', 'string'] },
+          monitored: { type: ['boolean', 'string'] },
+        },
+      },
+    },
+  }, async (request, reply) => {
+    const query = request.query as Record<string, unknown>;
+    const pagination = parsePaginationParams(query);
+    const prismaEpisodes = (deps.prisma as any).episode;
+
+    if (!prismaEpisodes?.findMany) {
+      const setupStatus = await getSetupStatus(deps);
+      if (!setupStatus.isConfigured) {
+        return sendPaginatedSuccess(reply, [], {
+          page: pagination.page,
+          pageSize: pagination.pageSize,
+          totalCount: 0,
+        });
+      }
+
+      throw new ValidationError('Episode data source is not configured');
+    }
+
+    const where: Record<string, unknown> = {
+      path: null,
+    };
+
+    if (query.seriesId !== undefined) {
+      const seriesId = typeof query.seriesId === 'string' ? parseInt(query.seriesId, 10) : query.seriesId;
+      if (!isNaN(seriesId as number)) {
+        where.seriesId = seriesId;
+      }
+    }
+
+    if (query.season !== undefined) {
+      const season = typeof query.season === 'string' ? parseInt(query.season, 10) : query.season;
+      if (!isNaN(season as number)) {
+        where.seasonNumber = season;
+      }
+    }
+
+    if (query.monitored !== undefined) {
+      where.monitored = query.monitored === 'true' || query.monitored === true;
+    }
+
+    const [episodes, totalCount] = await Promise.all([
+      prismaEpisodes.findMany({
+        where,
+        include: {
+          series: true,
+        },
+        skip: (pagination.page - 1) * pagination.pageSize,
+        take: pagination.pageSize,
+      }),
+      prismaEpisodes.count({ where }),
+    ]);
+
+    const now = new Date();
+    const items = episodes.map((episode: any) => {
+      const airDate = episode.airDateUtc ? new Date(episode.airDateUtc) : null;
+      const isUnaired = airDate !== null && airDate > now;
+
+      return {
+        id: episode.id,
+        seriesId: episode.seriesId,
+        seriesTitle: episode.series?.title ?? 'Unknown Series',
+        seasonNumber: episode.seasonNumber,
+        episodeNumber: episode.episodeNumber,
+        episodeTitle: episode.title ?? `Episode ${episode.episodeNumber}`,
+        airDate: airDate?.toISOString() ?? null,
+        status: isUnaired ? 'unaired' as const : 'missing' as const,
+        monitored: episode.monitored,
+      };
+    });
+
+    const sortField = pagination.sortBy && ['airDate', 'seriesTitle', 'episodeNumber'].includes(pagination.sortBy)
+      ? pagination.sortBy
+      : 'airDate';
+    const sortDirection = pagination.sortDir ?? 'desc';
+
+    const sorted = sortByField(items, sortField, sortDirection);
+
+    return sendPaginatedSuccess(reply, sorted, {
+      page: pagination.page,
+      pageSize: pagination.pageSize,
+      totalCount,
+    });
+  });
+
   app.get('/api/series/:id', {
     schema: {
       params: {

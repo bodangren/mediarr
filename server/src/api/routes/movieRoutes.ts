@@ -123,6 +123,89 @@ export function registerMovieRoutes(
     });
   });
 
+  app.get('/api/movies/missing', {
+    schema: {
+      querystring: {
+        type: 'object',
+        properties: {
+          page: { type: ['number', 'string'] },
+          pageSize: { type: ['number', 'string'] },
+          sortBy: { type: 'string' },
+          sortDir: { type: 'string' },
+          monitored: { type: ['boolean', 'string'] },
+        },
+      },
+    },
+  }, async (request, reply) => {
+    const query = request.query as Record<string, unknown>;
+    const pagination = parsePaginationParams(query);
+    const prismaMovies = (deps.prisma as any).movie;
+
+    if (!prismaMovies?.findMany) {
+      const setupStatus = await getSetupStatus(deps);
+      if (!setupStatus.isConfigured) {
+        return sendPaginatedSuccess(reply, [], {
+          page: pagination.page,
+          pageSize: pagination.pageSize,
+          totalCount: 0,
+        });
+      }
+
+      throw new ValidationError('Movie data source is not configured');
+    }
+
+    const where: Record<string, unknown> = {
+      path: null,
+    };
+
+    if (query.monitored !== undefined) {
+      where.monitored = query.monitored === 'true' || query.monitored === true;
+    }
+
+    const [movies, totalCount] = await Promise.all([
+      prismaMovies.findMany({
+        where,
+        include: {
+          qualityProfile: true,
+        },
+        skip: (pagination.page - 1) * pagination.pageSize,
+        take: pagination.pageSize,
+      }),
+      prismaMovies.count({ where }),
+    ]);
+
+    const items = movies.map((movie: any) => ({
+      id: movie.id,
+      movieId: movie.id,
+      title: movie.title,
+      year: movie.year,
+      posterUrl: movie.posterUrl,
+      status: 'missing' as const,
+      monitored: movie.monitored,
+      cinemaDate: movie.inCinemas?.toISOString?.() ?? movie.cinemaDate ?? null,
+      physicalRelease: movie.physicalRelease?.toISOString?.() ?? movie.physicalRelease ?? null,
+      digitalRelease: movie.digitalRelease?.toISOString?.() ?? movie.digitalRelease ?? null,
+      qualityProfileId: movie.qualityProfileId,
+      qualityProfileName: movie.qualityProfile?.name ?? null,
+      runtime: movie.runtime ?? null,
+      certification: movie.certification ?? null,
+      genres: movie.genres ?? [],
+    }));
+
+    const sortField = pagination.sortBy && ['title', 'year', 'added'].includes(pagination.sortBy)
+      ? pagination.sortBy
+      : 'title';
+    const sortDirection = pagination.sortDir ?? 'asc';
+
+    const sorted = sortByField(items, sortField, sortDirection);
+
+    return sendPaginatedSuccess(reply, sorted, {
+      page: pagination.page,
+      pageSize: pagination.pageSize,
+      totalCount,
+    });
+  });
+
   app.get('/api/movies/:id', {
     schema: {
       params: {

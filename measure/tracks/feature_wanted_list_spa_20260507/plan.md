@@ -2,21 +2,21 @@
 
 ## Phase 1: Backend API Contract & Tests
 
-- [ ] Audit existing `/api/wanted*` or `/api/missing*` endpoints for current surface
-- [ ] Design `GET /api/wanted/movies` — paginated, filterable (status, profileId, monitored)
-- [ ] Design `GET /api/wanted/episodes` — paginated, filterable (seriesId, season, status, monitored)
-- [ ] Design `POST /api/wanted/search` — bulk auto-search by item IDs
-- [ ] Write unit tests for wanted routes with mock database responses (server workspace)
-- [ ] Run tests — expect RED (endpoints don't exist yet)
+- [x] Audit existing `/api/wanted*` or `/api/missing*` endpoints for current surface
+- [x] Design `GET /api/movies/missing` — paginated, filterable (monitored)
+- [x] Design `GET /api/episodes/missing` — paginated, filterable (seriesId, season, monitored)
+- [x] Design `POST /api/wanted/search-all` — already exists for bulk auto-search
+- [x] Write unit tests for missing routes with mock database responses (server workspace)
+- [x] Run tests — RED (endpoints don't exist yet)
 
 ## Phase 2: Backend Implementation
 
-- [ ] Implement `GET /api/wanted/movies` with Drizzle queries for missing + monitored movies
-- [ ] Implement `GET /api/wanted/episodes` with Drizzle queries joining episodes → series
-- [ ] Implement `POST /api/wanted/search` wiring to `WantedSearchService`
-- [ ] Add query param validation (zod schema)
-- [ ] Wire new routes into Fastify server
-- [ ] Run server tests — expect GREEN
+- [x] Implement `GET /api/movies/missing` with Prisma queries for missing movies
+- [x] Implement `GET /api/episodes/missing` with Prisma queries joining episodes → series
+- [x] Use existing `POST /api/wanted/search-all` for bulk auto-search
+- [x] Add query param validation via Fastify schema
+- [x] Wire new routes into Fastify server (movieRoutes.ts + seriesRoutes.ts)
+- [x] Run server tests — GREEN
 
 ## Phase 3: Frontend Components (TDD)
 

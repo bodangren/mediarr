@@ -6,7 +6,7 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ## Pending Tracks
 
-- [ ] **Track: Wanted List Dashboard (SPA)** *Phases: 5 | Link: [./tracks/feature_wanted_list_spa_20260507/](./tracks/feature_wanted_list_spa_20260507/)* — Unified missing movies/episodes view with manual search, bulk auto-search, and monitoring controls
+- [~] **Track: Wanted List Dashboard (SPA)** *Phases: 5 | Link: [./tracks/feature_wanted_list_spa_20260507/](./tracks/feature_wanted_list_spa_20260507/)* — Unified missing movies/episodes view with manual search, bulk auto-search, and monitoring controls
 - [ ] **Track: Custom Format Editor & Live Tester** *Phases: 5 | Link: [./tracks/feature_custom_format_editor_20260507/](./tracks/feature_custom_format_editor_20260507/)* — Visual condition builder for scoring rules with live release-title tester
 - [ ] **Track: Release Scoring Breakdown Panel** *Phases: 5 | Link: [./tracks/feature_release_scoring_breakdown_20260507/](./tracks/feature_release_scoring_breakdown_20260507/)* — Expandable per-release score decomposition in interactive search
 - [ ] **Track: SPA Subtitle Management Parity** *Phases: 5 | Link: [./tracks/chore_spa_subtitle_management_20260507/](./tracks/chore_spa_subtitle_management_20260507/)* — Subtitle inventory, search, download, and delete in the React SPA (Flutter parity)

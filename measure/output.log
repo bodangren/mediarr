@@ -1726,3 +1726,43 @@ Index: /home/daniel-bo/Desktop/mediarr/measure/tracks/feature_custom_format_edit
 +- [x] Commit and push
 
 [0m
+[0m$ [0mgit add -A && git commit -m "feat: Custom Format Editor & Live Tester (k2p6)
+
+- Add 13 backend route tests for customFormatRoutes (CRUD + test endpoint)
+- Create FormatLiveTester component with 7 tests
+- Create CustomFormatsSettingsPage with table, search, clone, live test panel
+- Add /settings/custom-formats route and navigation
+- 1828 tests green, app build clean"
+[main c07cfbb] feat: Custom Format Editor & Live Tester (k2p6)
+ 11 files changed, 2626 insertions(+), 42 deletions(-)
+ create mode 100644 app/src/components/settings/FormatLiveTester.test.tsx
+ create mode 100644 app/src/components/settings/FormatLiveTester.tsx
+ create mode 100644 app/src/pages/settings/CustomFormatsSettingsPage.test.tsx
+ create mode 100644 app/src/pages/settings/CustomFormatsSettingsPage.tsx
+ create mode 100644 server/src/api/routes/customFormatRoutes.test.ts
+[0m
+[0m$ [0mgit push
+To https://github.com/bodangren/mediarr.git
+   f607e1e..c07cfbb  main -> main
+[0m
+[0m← [0mEdit measure/tracks.md
+Index: /home/daniel-bo/Desktop/mediarr/measure/tracks.md
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/measure/tracks.md
++++ /home/daniel-bo/Desktop/mediarr/measure/tracks.md
+@@ -5,9 +5,9 @@
+ ---
+ 
+ ## Pending Tracks
+ 
+-- [~] **Track: Custom Format Editor & Live Tester** *Phases: 5 | Link: [./tracks/feature_custom_format_editor_20260507/](./tracks/feature_custom_format_editor_20260507/)* — Visual condition builder for scoring rules with live release-title tester
++- [x] **Track: Custom Format Editor & Live Tester** *Phases: 5 | Link: [./archive/feature_custom_format_editor_20260507/](./archive/feature_custom_format_editor_20260507/)* — 13 backend route tests, FormatLiveTester component, dedicated settings page with search/clone/test panel
+ - [ ] **Track: Release Scoring Breakdown Panel** *Phases: 5 | Link: [./tracks/feature_release_scoring_breakdown_20260507/](./tracks/feature_release_scoring_breakdown_20260507/)* — Expandable per-release score decomposition in interactive search
+ - [ ] **Track: SPA Subtitle Management Parity** *Phases: 5 | Link: [./tracks/chore_spa_subtitle_management_20260507/](./tracks/chore_spa_subtitle_management_20260507/)* — Subtitle inventory, search, download, and delete in the React SPA (Flutter parity)
+ 
+ ---
+
+[0m
+[0m$ [0mmv /home/daniel-bo/Desktop/mediarr/measure/tracks/feature_custom_format_editor_20260507 /home/daniel-bo/Desktop/mediarr/measure/archive/
+(no output)
+[0m

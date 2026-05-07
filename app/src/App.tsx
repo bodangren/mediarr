@@ -16,6 +16,7 @@ import { SettingsMediaPage } from '@/pages/settings/SettingsMediaPage';
 import { SettingsIndexersPage } from '@/pages/settings/SettingsIndexersPage';
 import { SettingsClientsPage } from '@/pages/settings/SettingsDownloadClientsPage';
 import { SettingsProfilesPage } from '@/pages/settings/SettingsProfilesPage';
+import { CustomFormatsSettingsPage } from '@/pages/settings/CustomFormatsSettingsPage';
 import { SettingsSubtitlesPage } from '@/pages/settings/SettingsSubtitlesPage';
 import { SettingsNotificationsPage } from '@/pages/settings/SettingsNotificationsPage';
 import { SettingsStreamingPage } from '@/pages/settings/SettingsStreamingPage';
@@ -114,6 +115,7 @@ export default function App() {
                   <Route path="settings" element={<Navigate to="/settings/media" replace />} />
                   <Route path="settings/media" element={<SettingsMediaPage />} />
                   <Route path="settings/profiles" element={<SettingsProfilesPage />} />
+                  <Route path="settings/custom-formats" element={<CustomFormatsSettingsPage />} />
                   <Route path="settings/indexers" element={<SettingsIndexersPage />} />
                   <Route path="settings/clients" element={<SettingsClientsPage />} />
                   <Route path="settings/subtitles" element={<SettingsSubtitlesPage />} />

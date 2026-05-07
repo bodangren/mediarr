@@ -58,6 +58,7 @@ export const NAV_ITEMS: NavigationSection[] = [
     items: [
       { path: '/settings/media', label: 'Media Management', shortLabel: 'Media', icon: 'FolderOpen' },
       { path: '/settings/profiles', label: 'Profiles & Quality', shortLabel: 'Profiles', icon: 'Sliders' },
+      { path: '/settings/custom-formats', label: 'Custom Formats', shortLabel: 'Formats', icon: 'Filter' },
       { path: '/settings/indexers', label: 'Indexers', shortLabel: 'Indexers', icon: 'Database' },
       { path: '/settings/clients', label: 'Download Client', shortLabel: 'Client', icon: 'Download' },
       { path: '/settings/subtitles', label: 'Subtitles', shortLabel: 'Subtitles', icon: 'Languages' },

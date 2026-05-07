@@ -2899,3 +2899,40 @@ Index: /home/daniel-bo/Desktop/mediarr/measure/tracks/feature_release_scoring_br
 +- [x] Commit and push
 
 [0m
+[0m$ [0mgit add -A && git commit -m "feat: Release Scoring Breakdown Panel — integration complete (k2p6)
+
+- Store full scoring breakdown on SearchCandidate in applyUnifiedScoring
+- Add scoringBreakdown to frontend ReleaseCandidate schema
+- Integrate ScoreBreakdownPanel into SeriesInteractiveSearchModal
+- Score click toggles expandable breakdown row
+- 2 integration tests + 8 component tests + 72 engine tests green
+- 1828 total tests green, app build clean"
+[main 76c19cf] feat: Release Scoring Breakdown Panel — integration complete (k2p6)
+ 6 files changed, 613 insertions(+), 24 deletions(-)
+ create mode 100644 app/src/components/series/SeriesInteractiveSearchModal.breakdown.test.tsx
+[0m
+[0m$ [0mgit push
+To https://github.com/bodangren/mediarr.git
+   ee9bdc3..76c19cf  main -> main
+[0m
+[0m← [0mEdit measure/tracks.md
+Index: /home/daniel-bo/Desktop/mediarr/measure/tracks.md
+===================================================================
+--- /home/daniel-bo/Desktop/mediarr/measure/tracks.md
++++ /home/daniel-bo/Desktop/mediarr/measure/tracks.md
+@@ -6,9 +6,9 @@
+ 
+ ## Pending Tracks
+ 
+ - [x] **Track: Custom Format Editor & Live Tester** *Phases: 5 | Link: [./archive/feature_custom_format_editor_20260507/](./archive/feature_custom_format_editor_20260507/)* — 13 backend route tests, FormatLiveTester component, dedicated settings page with search/clone/test panel
+-- [~] **Track: Release Scoring Breakdown Panel** *Phases: 5 | Link: [./tracks/feature_release_scoring_breakdown_20260507/](./tracks/feature_release_scoring_breakdown_20260507/)* — Expandable per-release score decomposition in interactive search
++- [x] **Track: Release Scoring Breakdown Panel** *Phases: 5 | Link: [./archive/feature_release_scoring_breakdown_20260507/](./archive/feature_release_scoring_breakdown_20260507/)* — Backend breakdown storage, ScoreBreakdownPanel component, SeriesInteractiveSearchModal integration
+ - [ ] **Track: SPA Subtitle Management Parity** *Phases: 5 | Link: [./tracks/chore_spa_subtitle_management_20260507/](./tracks/chore_spa_subtitle_management_20260507/)* — Subtitle inventory, search, download, and delete in the React SPA (Flutter parity)
+ 
+ ---
+ 
+
+[0m
+[0m$ [0mmv /home/daniel-bo/Desktop/mediarr/measure/tracks/feature_release_scoring_breakdown_20260507 /home/daniel-bo/Desktop/mediarr/measure/archive/
+(no output)
+[0m

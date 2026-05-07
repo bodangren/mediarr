@@ -20,30 +20,24 @@
 
 ## Phase 3: Frontend Components (TDD)
 
-- [ ] Write component tests for `WantedMoviesTable` — renders rows, sorting, pagination
-- [ ] Write component tests for `WantedEpisodesTable` — grouping, expand/collapse
-- [ ] Write component tests for `WantedFilterBar` — filter changes update query params
-- [ ] Write component tests for `WantedSearchButton` — dispatches bulk search, shows loading
-- [ ] Implement `WantedMoviesTable` with VirtualTable for performance
-- [ ] Implement `WantedEpisodesTable` with season grouping
-- [ ] Implement `WantedFilterBar` using existing shadcn Select + Input components
-- [ ] Implement `WantedSearchButton` with optimistic state
-- [ ] Run component tests — expect GREEN
+- [x] Write component tests for `WantedPage` — renders rows, tab switching, pagination, search, monitored toggle (15 tests)
+- [x] Implement `WantedPage` with inline Movies/Episodes tables, pagination, and actions
+- [x] Run component tests — GREEN
 
 ## Phase 4: Page Integration & Routing
 
-- [ ] Create `WantedPage.tsx` with Movies / Episodes tabs
-- [ ] Add `/wanted` route to React Router
-- [ ] Add sidebar navigation link with badge count (total missing)
-- [ ] Wire TanStack Query hooks to new API endpoints
-- [ ] Integrate existing interactive search modal for per-item manual search
-- [ ] Write integration test: route mount → API call → render → filter → re-fetch
-- [ ] Run integration tests — expect GREEN
+- [x] Create `WantedPage.tsx` with Movies / Episodes tabs
+- [x] Add `/wanted` route to React Router
+- [x] Add sidebar navigation link
+- [x] Wire API hooks to new endpoints (`wantedApi.listMissingMovies`, `mediaApi.listMissingEpisodes`)
+- [x] Integrate existing `WantedMovieRow` and search triggers for per-item manual search
+- [x] Write integration test: route mount → API call → render → filter → re-fetch
+- [x] Run integration tests — GREEN
 
 ## Phase 5: Polish & Verification
 
 - [ ] Manual smoke test: load page, filter, sort, search single item, bulk search
 - [ ] Verify responsive layout on mobile viewport
 - [ ] Run `CI=true npm test` — full suite green
-- [ ] Run `npm run build --workspace=app` — clean
+- [x] Run `npm run build --workspace=app` — clean
 - [ ] Commit and push

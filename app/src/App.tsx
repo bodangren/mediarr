@@ -27,6 +27,7 @@ import { MoviesLibraryPage } from '@/pages/MoviesLibraryPage';
 import { MovieDetailPage } from '@/pages/MovieDetailPage';
 import { SeriesLibraryPage } from '@/pages/SeriesLibraryPage';
 import { SeriesDetailPage } from '@/pages/SeriesDetailPage';
+import { WantedPage } from '@/pages/WantedPage';
 import { getApiClients } from '@/lib/api/client';
 
 function ShellWrapper({ children }: { children: ReactNode }) {
@@ -102,6 +103,8 @@ export default function App() {
                   <Route path="library/series/:id" element={<SeriesDetailPage />} />
                   <Route path="library/collections" element={<CollectionsPage />} />
                   <Route path="library/collections/:id" element={<CollectionDetailPage />} />
+
+                  <Route path="wanted" element={<WantedPage />} />
 
                   <Route path="calendar" element={<CalendarPage />} />
 

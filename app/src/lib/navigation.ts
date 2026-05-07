@@ -31,6 +31,13 @@ export const NAV_ITEMS: NavigationSection[] = [
     ],
   },
   {
+    id: 'wanted',
+    label: 'Wanted',
+    items: [
+      { path: '/wanted', label: 'Wanted', shortLabel: 'Wanted', icon: 'AlertCircle', showBadge: true },
+    ],
+  },
+  {
     id: 'calendar',
     label: 'Calendar',
     items: [
@@ -80,6 +87,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   movies: 'Movies',
   tv: 'TV Shows',
   collections: 'Collections',
+  wanted: 'Wanted',
   calendar: 'Calendar',
   activity: 'Activity',
   queue: 'Queue',

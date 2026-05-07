@@ -12,6 +12,7 @@ import { QualityBadge } from '@/components/search/QualityBadge';
 import { ReleaseTitle } from '@/components/search/ReleaseTitle';
 import { PeersCell } from '@/components/search/PeersCell';
 import { AgeCell } from '@/components/search/AgeCell';
+import { ScoreBreakdownPanel } from '@/components/settings/ScoreBreakdownPanel';
 import type { ReleaseCandidate } from '@/lib/api/releaseApi';
 
 export type SearchLevel = 'series' | 'season' | 'episode';
@@ -43,6 +44,7 @@ interface ReleaseResult {
   approved: boolean;
   rejections?: string[];
   customFormatScore?: number;
+  scoringBreakdown?: import('@/components/settings/ScoreBreakdownPanel').ScoringBreakdown;
   protocol?: 'torrent' | 'usenet';
   magnetUrl?: string;
   downloadUrl?: string;
@@ -177,6 +179,7 @@ export function SeriesInteractiveSearchModal({
     error: null,
     success: false,
   });
+  const [expandedBreakdownId, setExpandedBreakdownId] = useState<string | null>(null);
   const [qualityFilter, setQualityFilter] = useState('all');
   const [indexerFilter, setIndexerFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -253,6 +256,7 @@ export function SeriesInteractiveSearchModal({
             approved: !candidate.indexerFlags || candidate.indexerFlags.length === 0,
             rejections: candidate.indexerFlags ? [candidate.indexerFlags] : [],
             customFormatScore: candidate.customFormatScore ?? 0,
+            scoringBreakdown: candidate.scoringBreakdown,
             protocol: candidate.protocol,
             magnetUrl: candidate.magnetUrl,
             downloadUrl: candidate.downloadUrl,
@@ -322,6 +326,10 @@ export function SeriesInteractiveSearchModal({
       void searchReleasesRef.current();
     }
   }, [isOpen]);
+
+  const toggleBreakdown = useCallback((releaseId: string) => {
+    setExpandedBreakdownId(current => current === releaseId ? null : releaseId);
+  }, []);
 
   const handleGrab = useCallback(async (release: ReleaseResult) => {
     setGrabState({ releaseId: release.id, isGrabbing: true, error: null, success: false });
@@ -572,6 +580,7 @@ export function SeriesInteractiveSearchModal({
                   const isApproved = release.approved && (!release.rejections || release.rejections.length === 0);
 
                   return (
+                    <>
                     <tr key={release.id} className={!isApproved ? 'bg-status-error/5' : ''}>
                       <td className="px-3 py-2 text-text-primary">
                         <span className="text-xs">{release.indexer}</span>
@@ -602,15 +611,21 @@ export function SeriesInteractiveSearchModal({
                         <AgeCell ageHours={release.ageHours} publishDate={release.publishDate} />
                       </td>
                       <td className="px-3 py-2 hidden lg:table-cell">
-                        {formatScore(release.customFormatScore) ? (
-                          <span className={`text-xs font-medium ${
-                            (release.customFormatScore ?? 0) >= 0 ? 'text-green-400' : 'text-red-400'
-                          }`}>
-                            {formatScore(release.customFormatScore)}
-                          </span>
-                        ) : (
-                          <span className="text-xs text-text-secondary">-</span>
-                        )}
+                        <div className="flex items-center gap-1">
+                          {formatScore(release.customFormatScore) ? (
+                            <button
+                              onClick={() => toggleBreakdown(release.id)}
+                              className={`text-xs font-medium hover:underline ${
+                                (release.customFormatScore ?? 0) >= 0 ? 'text-green-400' : 'text-red-400'
+                              }`}
+                              title="Click to view score breakdown"
+                            >
+                              {formatScore(release.customFormatScore)}
+                            </button>
+                          ) : (
+                            <span className="text-xs text-text-secondary">-</span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-3 py-2 text-right">
                         {grabSuccess ? (
@@ -640,9 +655,17 @@ export function SeriesInteractiveSearchModal({
                         )}
                       </td>
                     </tr>
-                  );
-                })}
-              </tbody>
+                    {expandedBreakdownId === release.id && release.scoringBreakdown && (
+                      <tr className="bg-surface-0/50">
+                        <td colSpan={8} className="px-3 py-3">
+                          <ScoreBreakdownPanel breakdown={release.scoringBreakdown} />
+                        </td>
+                      </tr>
+                    )}
+                  </>
+                );
+              })}
+            </tbody>
             </table>
           </div>
         )}

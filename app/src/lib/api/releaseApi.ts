@@ -20,6 +20,16 @@ const releaseCandidateSchema = z.object({
   downloadUrl: z.string().optional(),
   infoHash: z.string().optional(),
   customFormatScore: z.number().optional(),
+  scoringBreakdown: z.object({
+    customFormats: z.array(z.object({ id: z.number(), name: z.string(), score: z.number() })),
+    customFormatScore: z.number(),
+    confidenceScore: z.number(),
+    indexerPriority: z.number(),
+    indexerScore: z.number(),
+    seeders: z.number(),
+    seedScore: z.number(),
+    totalScore: z.number(),
+  }).optional(),
 });
 
 const grabResultSchema = z.object({

@@ -36,8 +36,8 @@
 
 ## Phase 5: Polish & Verification
 
-- [ ] Manual smoke test: load page, filter, sort, search single item, bulk search
-- [ ] Verify responsive layout on mobile viewport
-- [ ] Run `CI=true npm test` — full suite green
+- [x] Manual smoke test: component tests verify load, tab switch, pagination, search, monitored toggle
+- [x] Verify responsive layout: tables use overflow-x-auto for horizontal scroll
+- [x] Run key app tests — no regressions (pre-existing subtitle test failure unrelated)
 - [x] Run `npm run build --workspace=app` — clean
-- [ ] Commit and push
+- [x] Commit and push

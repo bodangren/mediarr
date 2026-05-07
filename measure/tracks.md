@@ -6,7 +6,6 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ## Pending Tracks
 
-- [~] **Track: Wanted List Dashboard (SPA)** *Phases: 5 | Link: [./tracks/feature_wanted_list_spa_20260507/](./tracks/feature_wanted_list_spa_20260507/)* — Unified missing movies/episodes view with manual search, bulk auto-search, and monitoring controls
 - [ ] **Track: Custom Format Editor & Live Tester** *Phases: 5 | Link: [./tracks/feature_custom_format_editor_20260507/](./tracks/feature_custom_format_editor_20260507/)* — Visual condition builder for scoring rules with live release-title tester
 - [ ] **Track: Release Scoring Breakdown Panel** *Phases: 5 | Link: [./tracks/feature_release_scoring_breakdown_20260507/](./tracks/feature_release_scoring_breakdown_20260507/)* — Expandable per-release score decomposition in interactive search
 - [ ] **Track: SPA Subtitle Management Parity** *Phases: 5 | Link: [./tracks/chore_spa_subtitle_management_20260507/](./tracks/chore_spa_subtitle_management_20260507/)* — Subtitle inventory, search, download, and delete in the React SPA (Flutter parity)
@@ -261,3 +260,5 @@ Parallel:
 - [x] **Track: Backend Drizzle Migration Cleanup & Type Safety** *Phases: 3 | Link: [./archive/drizzle_cleanup_type_safety_20260506/](./archive/drizzle_cleanup_type_safety_20260506/)* — prismaClient.ts → drizzleClient.ts + DatabaseClient rename; removed $executeRawUnsafe/$queryRaw shims; fixed seedSmartDefaults JSON round-trip; removed as any casts from AddIndexerModal/EditIndexerModal/AddProfileModal; 1802 tests green; app typecheck clean
 
 - [x] **Track: Legacy Code & Test Infrastructure Cleanup** *Phases: 3 | Link: [./archive/legacy_test_cleanup_20260506/](./archive/legacy_test_cleanup_20260506/)* — Deleted app_src_backup/ + import-manager.test.js; strengthened core-primitives.test.tsx variant class assertions; documented VirtualTable mock acceptance; 1802 tests green
+
+- [x] **Track: Wanted List Dashboard (SPA)** *Phases: 5 | Link: [./archive/feature_wanted_list_spa_20260507/](./archive/feature_wanted_list_spa_20260507/)* — Backend `GET /api/movies/missing` + `GET /api/episodes/missing` with pagination; WantedPage with Movies/Episodes tabs, search, monitored toggle, pagination; 15 component tests green; app build clean

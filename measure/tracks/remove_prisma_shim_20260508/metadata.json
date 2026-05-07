@@ -1,0 +1,7 @@
+{
+  "id": "remove_prisma_shim_20260508",
+  "title": "Remove Prisma $executeRawUnsafe Shim",
+  "status": "pending",
+  "created": "2026-05-08",
+  "priority": "medium"
+}

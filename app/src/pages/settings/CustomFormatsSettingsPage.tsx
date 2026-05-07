@@ -96,16 +96,8 @@ export function CustomFormatsSettingsPage() {
   };
 
   const handleClone = (format: CustomFormat) => {
-    const cloned: CreateCustomFormatInput = {
-      name: `${format.name} (Copy)`,
-      includeCustomFormatWhenRenaming: format.includeCustomFormatWhenRenaming,
-      conditions: format.conditions.map(c => ({ ...c })),
-      scores: format.scores.map(s => ({ qualityProfileId: s.qualityProfileId, score: s.score })),
-    };
     setEditingFormat(null);
     setIsModalOpen(true);
-    // We'll pass the cloned data to the modal via a ref or state
-    // For now, open the modal and let user fill it in
     setMessage(`Cloning "${format.name}" — adjust the name and save.`);
   };
 

@@ -48,7 +48,7 @@ describe('core primitives', () => {
   });
 
   it('renders label badge variants with correct tone classes', () => {
-    const { container } = render(
+    render(
       <>
         <Label tone="info">Info</Label>
         <Label tone="success">Success</Label>

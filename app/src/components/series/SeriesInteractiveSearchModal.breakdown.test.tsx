@@ -21,7 +21,7 @@ function renderWithToast(ui: React.ReactElement) {
 describe('SeriesInteractiveSearchModal Score Breakdown', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.spyOn(clientModule, 'getApiClients').mockReturnValue(mockApi as any);
+    vi.spyOn(clientModule, 'getApiClients').mockReturnValue(mockApi as unknown as ReturnType<typeof clientModule.getApiClients>);
   });
 
   it('shows score breakdown when score is clicked', async () => {

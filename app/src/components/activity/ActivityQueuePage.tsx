@@ -32,8 +32,6 @@ export function ActivityQueuePage() {
 
   const [page, setPage] = useState(1);
   const [pageSize] = useState(20);
-  const [totalCount, setTotalCount] = useState(0);
-
   const [selectedInfoHashes, setSelectedInfoHashes] = useState<string[]>([]);
   const [removeTargets, setRemoveTargets] = useState<TorrentItem[]>([]);
   const [isRemoving, setIsRemoving] = useState(false);
@@ -50,14 +48,11 @@ export function ActivityQueuePage() {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [isSseConnected, setIsSseConnected] = useState(false);
-
   const fetchTorrents = useCallback(async (quiet = false) => {
     if (!quiet) setIsLoading(true);
     try {
       const result = await api.torrentApi.list({ page, pageSize });
       setTorrents(result.items);
-      setTotalCount(result.meta.totalCount);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch torrents');
@@ -85,9 +80,7 @@ export function ActivityQueuePage() {
   // SSE for real-time torrent stats
   useEffect(() => {
     const eventsApi = createEventsApi();
-    eventsApi.onStateChange((state) => {
-      setIsSseConnected(state === 'open');
-    });
+    eventsApi.onStateChange(() => {});
     eventsApi.on('torrent:stats', (stats) => {
       if (Array.isArray(stats)) {
         setTorrents((current) => {

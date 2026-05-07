@@ -16,7 +16,7 @@ const mockApi = {
 describe('CustomFormatsSettingsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.spyOn(clientModule, 'getApiClients').mockReturnValue(mockApi as any);
+    vi.spyOn(clientModule, 'getApiClients').mockReturnValue(mockApi as unknown as ReturnType<typeof clientModule.getApiClients>);
   });
 
   it('renders loading state initially', () => {

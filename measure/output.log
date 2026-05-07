@@ -2936,3 +2936,19 @@ Index: /home/daniel-bo/Desktop/mediarr/measure/tracks.md
 [0m$ [0mmv /home/daniel-bo/Desktop/mediarr/measure/tracks/feature_release_scoring_breakdown_20260507 /home/daniel-bo/Desktop/mediarr/measure/archive/
 (no output)
 [0m
+[0m$ [0mgit add -A && git commit -m "chore: Archive release scoring breakdown track"
+[main 56439d7] chore: Archive release scoring breakdown track
+ 5 files changed, 38 insertions(+), 1 deletion(-)
+ rename measure/{tracks => archive}/feature_release_scoring_breakdown_20260507/metadata.json (100%)
+ rename measure/{tracks => archive}/feature_release_scoring_breakdown_20260507/plan.md (100%)
+ rename measure/{tracks => archive}/feature_release_scoring_breakdown_20260507/spec.md (100%)
+[0m
+[0m$ [0mgit push
+To https://github.com/bodangren/mediarr.git
+   76c19cf..56439d7  main -> main
+[0m
+[0m→ [0mRead measure/current_directive.md
+[0m
+[0m← [0mWrite measure/current_directive.md
+Wrote file successfully.
+[0m

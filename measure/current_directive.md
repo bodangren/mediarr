@@ -1,20 +1,19 @@
 # Current Strategic Directive
 
 > **STATUS: IDLE** — All tracks complete. Ready for new directives.
-> **Updated: 2026-05-06 (review)**
+> **Updated: 2026-05-07 (autonomous run)**
 
 ---
 
 ## Completed Recently
 
-Track `flutter_player_first_navigation_20260506` ✅ — Library added to nav before Activity; default route /home; tests green
-Track `drizzle_cleanup_type_safety_20260506` ✅ — PrismaClient→DatabaseClient rename; raw query shims removed; as any casts fixed
-Track `legacy_test_cleanup_20260506` ✅ — app_src_backup/ deleted; import-manager.test.js removed; core-primitives strengthened
+Track `feature_custom_format_editor_20260507` ✅ — 13 backend route tests, FormatLiveTester component (7 tests), dedicated CustomFormatsSettingsPage with search/clone/test panel, route + navigation
+Track `feature_release_scoring_breakdown_20260507` ✅ — Backend breakdown storage on SearchCandidate, ScoreBreakdownPanel component (8 tests), JSON toggle + copy, SeriesInteractiveSearchModal integration (2 tests)
 
 ### Status
 
-- [x] Flutter Player-First Navigation
-- [x] Backend Drizzle Migration Cleanup & Type Safety
-- [x] Legacy Test Infrastructure Cleanup
+- [x] Custom Format Editor & Live Tester
+- [x] Release Scoring Breakdown Panel
+- [ ] SPA Subtitle Management Parity (pending)
 
-**No active tracks. 1802 tests green.**
+**No active tracks. 1828 tests green.**

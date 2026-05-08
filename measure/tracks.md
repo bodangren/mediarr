@@ -12,6 +12,7 @@ This file tracks all major tracks for the project. Each track has its own detail
 - [x] **Track: SPA Subtitle Management Parity** *Phases: 5 | Link: [./archive/chore_spa_subtitle_management_20260507/](./archive/chore_spa_subtitle_management_20260507/)* — Subtitle inventory, search, download, and delete in the React SPA (Flutter parity)
 - [ ] **Track: Typed getSeriesWithEpisodes API Response** *Phases: 4 | Link: [./tracks/type_series_api_response_20260508/](./tracks/type_series_api_response_20260508/)* — Zod schema for series detail API, eliminate `as any` casts in SeriesDetailPage and children
 - [ ] **Track: Flutter Media Detail Page** *Phases: 5 | Link: [./tracks/feature_flutter_media_detail_20260508/](./tracks/feature_flutter_media_detail_20260508/)* — Movie and series detail screens with metadata, episodes, actions, and file info in the Flutter client
+- [ ] **Track: Indexer Health Monitoring and Auto-Disable** *Phases: 4 | Link: [./tracks/indexer_health_monitoring_20260509/](./tracks/indexer_health_monitoring_20260509/)* — Track indexer response times and failure rates; auto-disable failing indexers
 
 ---
 

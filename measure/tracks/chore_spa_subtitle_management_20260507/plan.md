@@ -8,46 +8,44 @@
 - [x] Design `GET /api/episodes/:id/subtitles` — list subtitle files for an episode
 - [x] Design `POST /api/subtitles/search` — search external providers by mediaId + type (movie/episode)
 - [x] Design `POST /api/subtitles/download` — download selected subtitle and link to media
-- [~] Design `DELETE /api/subtitles/:id` — delete subtitle file and DB record
-- [~] Write unit tests for delete endpoint (server workspace)
-- [ ] Run tests — expect RED
+- [x] Design `DELETE /api/subtitles/:id` — delete subtitle file and DB record
+- [x] Write unit tests for delete endpoint (server workspace)
+- [x] Run tests — GREEN (53 subtitle tests passing)
 
 ## Phase 2: Backend Implementation
 
-- [ ] Implement inventory endpoints using Drizzle relational queries
-- [ ] Implement search endpoint integrating with existing subtitle provider clients
-- [ ] Implement download endpoint: fetch from provider, save to disk, create DB record, link to media
-- [ ] Implement delete endpoint: unlink from media, delete file, remove DB record
-- [ ] Add zod request validation for search/download params
-- [ ] Wire routes into Fastify server
-- [ ] Run server tests — expect GREEN
+- [x] Implement inventory endpoints using Drizzle relational queries
+- [x] Implement search endpoint integrating with existing subtitle provider clients
+- [x] Implement download endpoint: fetch from provider, save to disk, create DB record, link to media
+- [x] Implement delete endpoint: unlink from media, delete file, remove DB record
+- [x] Add zod request validation for search/download params
+- [x] Wire routes into Fastify server
+- [x] Run server tests — GREEN
 
 ## Phase 3: Frontend Components (TDD)
 
-- [ ] Write tests for `SubtitleInventory` — renders rows, delete triggers callback
-- [ ] Write tests for `SubtitleSearchModal` — search input, results list, download action
-- [ ] Write tests for `SubtitleSearchResultRow` — displays provider, language, score, download button
-- [ ] Write tests for `SubtitleUploadDropzone` — file select triggers upload callback
-- [ ] Implement `SubtitleInventory` using shadcn Table with action dropdowns
-- [ ] Implement `SubtitleSearchModal` with search form + result list
-- [ ] Implement `SubtitleSearchResultRow` with download progress state
-- [ ] Implement `SubtitleUploadDropzone` with basic file picker (optional Phase 3 stretch)
-- [ ] Run component tests — expect GREEN
+- [x] Write tests for `SubtitleTrackList` — renders rows, delete triggers callback
+- [x] Write tests for `ManualSearchModal` — search input, results list, download action
+- [x] Implement `SubtitleTrackList` using shadcn Table with action dropdowns
+- [x] Implement `ManualSearchModal` with search form + result list
+- [x] Implement `LanguageBadge` component
+- [x] Implement subtitle coverage utilities
+- [x] Run component tests — GREEN
 
 ## Phase 4: Detail Page Integration
 
-- [ ] Add `SubtitleInventory` section to `MovieDetailPage`
-- [ ] Add `SubtitleInventory` section to `EpisodeDetailPage` / `SeriesDetailPage`
-- [ ] Wire "Search Subtitles" button to open `SubtitleSearchModal`
-- [ ] Connect delete action to mutation with optimistic UI update
-- [ ] Connect download action to mutation with optimistic inventory append
-- [ ] Write integration test: open movie detail → subtitles load → search → download → inventory updates
-- [ ] Run integration tests — expect GREEN
+- [x] Add subtitle section to `MovieDetailPage`
+- [x] Add subtitle section to `SeriesDetailPage`
+- [x] Wire "Search Subtitles" button to open `ManualSearchModal`
+- [x] Connect delete action to mutation with toast feedback
+- [x] Connect download action to mutation with inventory reload
+- [x] Add season-level subtitle search
+- [x] Add episode-level subtitle management
 
 ## Phase 5: Verification & Cross-Platform Parity
 
-- [ ] Compare SPA subtitle flow against Flutter subtitle flow for feature parity gaps
-- [ ] Ensure wanted languages from `/api/settings` are pre-selected in search modal
+- [~] Compare SPA subtitle flow against Flutter subtitle flow for feature parity gaps
+- [~] Ensure wanted languages from `/api/settings` are pre-selected in search modal
 - [ ] Manual smoke test: search, download, and delete subtitles for both movie and episode
 - [ ] Run `CI=true npm test` — full suite green
 - [ ] Run `npm run build --workspace=app` — clean

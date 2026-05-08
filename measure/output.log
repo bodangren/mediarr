@@ -1,32 +1,104 @@
 [0m
 > build · k2p6
 [0m
-[0m→ [0mSkill "measure"
-[0m✗ [0mread failed
-[91m[1mError: [0mFile not found: /home/daniel-bo/.agents/skills/measure/references/autonomous_prompt.md
-[0m✱ [0mGlob "**/autonomous_prompt.md"[90m in ../../.agents/skills/measure · 0 matches[0m
-[0m✱ [0mGlob "**/autonomous_prompt.md"[90m 1 match[0m
 [0m→ [0mRead measure/autonomous_prompt.md
+[0m→ [0mSkill "measure"
 [0m→ [0mRead measure/tracks.md
 [0m→ [0mRead measure/tech-debt.md
 [0m→ [0mRead measure/lessons-learned.md
 [0m→ [0mRead measure/current_directive.md
 [0m
 [0m$ [0mgit status --short
-M app/src/components/subtitles/SubtitleTrackList.test.tsx
- M app/src/components/subtitles/SubtitleTrackList.tsx
- M app/src/lib/api/routeMap.ts
- M app/src/lib/api/subtitleApi.ts
- M app/src/pages/MovieDetailPage.tsx
- M app/src/pages/SeriesDetailPage.tsx
- M conductor/archive/cardigann_runtime_parity_20260223/artifacts/final-phase5-compatibility-matrix.json
+M conductor/archive/cardigann_runtime_parity_20260223/artifacts/final-phase5-compatibility-matrix.json
  M measure/output.log
+ M measure/review-output.log
  M measure/tracks/chore_spa_subtitle_management_20260507/plan.md
- M server/src/api/routes/subtitleRoutes.phase3.test.ts
- M server/src/api/routes/subtitleRoutes.ts
- M server/src/api/types.ts
- M server/src/repositories/SubtitleVariantRepository.ts
- M server/src/services/SubtitleInventoryApiService.ts
 [0m
 [0m→ [0mRead measure/tracks/chore_spa_subtitle_management_20260507/plan.md
-[0m→ [0mRead measure/tracks/chore_spa_subtitle_management_20260507/spec.md
+[0m
+[0m$ [0mgit diff --stat
+.../final-phase5-compatibility-matrix.json         |    2 +-
+ measure/output.log                                 |   21 +-
+ measure/review-output.log                          | 3905 +++++++-------------
+ .../chore_spa_subtitle_management_20260507/plan.md |   54 +-
+ 4 files changed, 1406 insertions(+), 2576 deletions(-)
+[0m
+[0m$ [0mgit diff measure/tracks/chore_spa_subtitle_management_20260507/plan.md
+diff --git a/measure/tracks/chore_spa_subtitle_management_20260507/plan.md b/measure/tracks/chore_spa_subtitle_management_20260507/plan.md
+index cfa4b5e..878b2a6 100644
+--- a/measure/tracks/chore_spa_subtitle_management_20260507/plan.md
++++ b/measure/tracks/chore_spa_subtitle_management_20260507/plan.md
+@@ -8,46 +8,44 @@
+ - [x] Design `GET /api/episodes/:id/subtitles` — list subtitle files for an episode
+ - [x] Design `POST /api/subtitles/search` — search external providers by mediaId + type (movie/episode)
+ - [x] Design `POST /api/subtitles/download` — download selected subtitle and link to media
+-- [~] Design `DELETE /api/subtitles/:id` — delete subtitle file and DB record
+-- [~] Write unit tests for delete endpoint (server workspace)
+-- [ ] Run tests — expect RED
++- [x] Design `DELETE /api/subtitles/:id` — delete subtitle file and DB record
++- [x] Write unit tests for delete endpoint (server workspace)
++- [x] Run tests — GREEN (53 subtitle tests passing)
+ 
+ ## Phase 2: Backend Implementation
+ 
+-- [ ] Implement inventory endpoints using Drizzle relational queries
+-- [ ] Implement search endpoint integrating with existing subtitle provider clients
+-- [ ] Implement download endpoint: fetch from provider, save to disk, create DB record, link to media
+-- [ ] Implement delete endpoint: unlink from media, delete file, remove DB record
+-- [ ] Add zod request validation for search/download params
+-- [ ] Wire routes into Fastify server
+-- [ ] Run server tests — expect GREEN
++- [x] Implement inventory endpoints using Drizzle relational queries
++- [x] Implement search endpoint integrating with existing subtitle provider clients
++- [x] Implement download endpoint: fetch from provider, save to disk, create DB record, link to media
++- [x] Implement delete endpoint: unlink from media, delete file, remove DB record
++- [x] Add zod request validation for search/download params
++- [x] Wire routes into Fastify server
++- [x] Run server tests — GREEN
+ 
+ ## Phase 3: Frontend Components (TDD)
+ 
+-- [ ] Write tests for `SubtitleInventory` — renders rows, delete triggers callback
+-- [ ] Write tests for `SubtitleSearchModal` — search input, results list, download action
+-- [ ] Write tests for `SubtitleSearchResultRow` — displays provider, language, score, download button
+-- [ ] Write tests for `SubtitleUploadDropzone` — file select triggers upload callback
+-- [ ] Implement `SubtitleInventory` using shadcn Table with action dropdowns
+-- [ ] Implement `SubtitleSearchModal` with search form + result list
+-- [ ] Implement `SubtitleSearchResultRow` with download progress state
+-- [ ] Implement `SubtitleUploadDropzone` with basic file picker (optional Phase 3 stretch)
+-- [ ] Run component tests — expect GREEN
++- [x] Write tests for `SubtitleTrackList` — renders rows, delete triggers callback
++- [x] Write tests for `ManualSearchModal` — search input, results list, download action
++- [x] Implement `SubtitleTrackList` using shadcn Table with action dropdowns
++- [x] Implement `ManualSearchModal` with search form + result list
++- [x] Implement `LanguageBadge` component
++- [x] Implement subtitle coverage utilities
++- [x] Run component tests — GREEN
+ 
+ ## Phase 4: Detail Page Integration
+ 
+-- [ ] Add `SubtitleInventory` section to `MovieDetailPage`
+-- [ ] Add `SubtitleInventory` section to `EpisodeDetailPage` / `SeriesDetailPage`
+-- [ ] Wire "Search Subtitles" button to open `SubtitleSearchModal`
+-- [ ] Connect delete action to mutation with optimistic UI update
+-- [ ] Connect download action to mutation with optimistic inventory append
+-- [ ] Write integration test: open movie detail → subtitles load → search → download → inventory updates
+-- [ ] Run integration tests — expect GREEN
++- [x] Add subtitle section to `MovieDetailPage`
++- [x] Add subtitle section to `SeriesDetailPage`
++- [x] Wire "Search Subtitles" button to open `ManualSearchModal`
++- [x] Connect delete action to mutation with toast feedback
++- [x] Connect download action to mutation with inventory reload
++- [x] Add season-level subtitle search
++- [x] Add episode-level subtitle management
+ 
+ ## Phase 5: Verification & Cross-Platform Parity
+ 
+-- [ ] Compare SPA subtitle flow against Flutter subtitle flow for feature parity gaps
+-- [ ] Ensure wanted languages from `/api/settings` are pre-selected in search modal
++- [~] Compare SPA subtitle flow against Flutter subtitle flow for feature parity gaps
++- [~] Ensure wanted languages from `/api/settings` are pre-selected in search modal
+ - [ ] Manual smoke test: search, download, and delete subtitles for both movie and episode
+ - [ ] Run `CI=true npm test` — full suite green
+ - [ ] Run `npm run build --workspace=app` — clean
+[0m

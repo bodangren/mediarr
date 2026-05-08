@@ -60,7 +60,7 @@ describe('LanguageSettingRow', () => {
     );
 
     const scoreInput = screen.getByLabelText('en score');
-    expect(scoreInput).toHaveValue('50');
+    expect(scoreInput).toHaveValue(50);
   });
 
   it('calls onChange when checkbox is changed', () => {

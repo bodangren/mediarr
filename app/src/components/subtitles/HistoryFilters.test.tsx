@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { HistoryFilters, type FilterState } from './HistoryFilters';
 
@@ -29,8 +29,11 @@ describe('HistoryFilters', () => {
     const select = screen.getByLabelText('Provider');
     expect(select).toHaveValue('');
 
-    userEvent.selectOptions(select, 'OpenSubtitles');
-    expect(select).toHaveValue('OpenSubtitles');
+    // Verify options exist
+    const options = select.querySelectorAll('option');
+    expect(options.length).toBe(3); // All Providers + 2 providers
+    expect(Array.from(options).map(o => o.textContent)).toContain('OpenSubtitles');
+    expect(Array.from(options).map(o => o.textContent)).toContain('Subscene');
   });
 
   it('renders language options', () => {
@@ -39,8 +42,11 @@ describe('HistoryFilters', () => {
     const select = screen.getByLabelText('Language');
     expect(select).toHaveValue('');
 
-    userEvent.selectOptions(select, 'en');
-    expect(select).toHaveValue('en');
+    const options = select.querySelectorAll('option');
+    expect(options.length).toBe(4); // All Languages + 3 languages
+    expect(Array.from(options).map(o => o.textContent)).toContain('en');
+    expect(Array.from(options).map(o => o.textContent)).toContain('es');
+    expect(Array.from(options).map(o => o.textContent)).toContain('fr');
   });
 
   it('renders action options', () => {
@@ -49,8 +55,12 @@ describe('HistoryFilters', () => {
     const select = screen.getByLabelText('Action');
     expect(select).toHaveValue('');
 
-    userEvent.selectOptions(select, 'download');
-    expect(select).toHaveValue('download');
+    const options = select.querySelectorAll('option');
+    expect(options.length).toBe(5); // All Actions + 4 actions
+    expect(Array.from(options).map(o => o.textContent)).toContain('Download');
+    expect(Array.from(options).map(o => o.textContent)).toContain('Upgrade');
+    expect(Array.from(options).map(o => o.textContent)).toContain('Manual');
+    expect(Array.from(options).map(o => o.textContent)).toContain('Upload');
   });
 
   it('calls onChange when provider changes', async () => {

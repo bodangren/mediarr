@@ -238,16 +238,17 @@ describe('App subtitle phase 4 integration', () => {
     mockApi.subtitleApi.listMovieVariants.mockResolvedValue([
       {
         variantId: 1,
-        subtitleTracks: [{ languageCode: 'en' }],
-        missingSubtitles: [{ languageCode: 'th' }],
+        subtitleTracks: [{ id: 1, languageCode: 'en', isForced: false, isHi: false, path: '/subs/movie.en.srt', provider: 'opensubtitles' }],
+        missingSubtitles: ['th'],
       },
     ]);
 
     renderApp('/library/movies/7');
 
     expect(await screen.findByText('Subtitles Partial')).toBeInTheDocument();
-    expect(screen.getByText('en')).toBeInTheDocument();
-    expect(screen.getByText('th')).toBeInTheDocument();
+    // Language badges appear in both summary and track list
+    expect(screen.getAllByText('en').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('th').length).toBeGreaterThanOrEqual(1);
   });
 
   it('opens movie manual subtitle modal from movie detail controls', async () => {
@@ -292,7 +293,7 @@ describe('App subtitle phase 4 integration', () => {
             episodeId: 101,
             seasonNumber: 1,
             episodeNumber: 1,
-            subtitleTracks: [{ languageCode: 'en', isForced: false, isHi: false, path: '/subs/pilot.en.srt', provider: 'opensubtitles' }],
+            subtitleTracks: [{ id: 1, languageCode: 'en', isForced: false, isHi: false, path: '/subs/pilot.en.srt', provider: 'opensubtitles' }],
             missingSubtitles: [],
           },
         ],

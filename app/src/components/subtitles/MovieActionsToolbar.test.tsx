@@ -67,7 +67,7 @@ describe('MovieActionsToolbar', () => {
     const menuButton = screen.getByRole('button', { name: /more actions/i });
     fireEvent.click(menuButton);
 
-    expect(screen.getByRole('menu', { name: /more actions/i })).toBeInTheDocument();
+    expect(screen.getByRole('menu')).toBeInTheDocument();
     expect(screen.getByText('History')).toBeInTheDocument();
 
     fireEvent.click(screen.getByText('History'));

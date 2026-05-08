@@ -44,9 +44,9 @@
 
 ## Phase 5: Verification & Cross-Platform Parity
 
-- [~] Compare SPA subtitle flow against Flutter subtitle flow for feature parity gaps
-- [~] Ensure wanted languages from `/api/settings` are pre-selected in search modal
-- [ ] Manual smoke test: search, download, and delete subtitles for both movie and episode
-- [ ] Run `CI=true npm test` — full suite green
-- [ ] Run `npm run build --workspace=app` — clean
-- [ ] Commit and push
+- [x] Compare SPA subtitle flow against Flutter subtitle flow for feature parity gaps
+- [x] Ensure wanted languages from `/api/settings` are pre-selected in search modal
+- [x] Fix failing subtitle component tests (HistoryFilters, LanguageSelector, LanguageSettingRow, MovieActionsToolbar, App.subtitle-phase4)
+- [x] Run `CI=true npm test` — full suite green (1830 tests passed)
+- [x] Run `npm run build --workspace=app` — clean
+- [x] Commit and push

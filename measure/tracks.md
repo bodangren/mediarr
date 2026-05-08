@@ -9,7 +9,7 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 - [x] **Track: Custom Format Editor & Live Tester** *Phases: 5 | Link: [./archive/feature_custom_format_editor_20260507/](./archive/feature_custom_format_editor_20260507/)* — 13 backend route tests, FormatLiveTester component, dedicated settings page with search/clone/test panel
 - [x] **Track: Release Scoring Breakdown Panel** *Phases: 5 | Link: [./archive/feature_release_scoring_breakdown_20260507/](./archive/feature_release_scoring_breakdown_20260507/)* — Backend breakdown storage, ScoreBreakdownPanel component, SeriesInteractiveSearchModal integration
-- [ ] **Track: SPA Subtitle Management Parity** *Phases: 5 | Link: [./tracks/chore_spa_subtitle_management_20260507/](./tracks/chore_spa_subtitle_management_20260507/)* — Subtitle inventory, search, download, and delete in the React SPA (Flutter parity)
+- [x] **Track: SPA Subtitle Management Parity** *Phases: 5 | Link: [./archive/chore_spa_subtitle_management_20260507/](./archive/chore_spa_subtitle_management_20260507/)* — Subtitle inventory, search, download, and delete in the React SPA (Flutter parity)
 - [ ] **Track: Typed getSeriesWithEpisodes API Response** *Phases: 4 | Link: [./tracks/type_series_api_response_20260508/](./tracks/type_series_api_response_20260508/)* — Zod schema for series detail API, eliminate `as any` casts in SeriesDetailPage and children
 - [ ] **Track: Flutter Media Detail Page** *Phases: 5 | Link: [./tracks/feature_flutter_media_detail_20260508/](./tracks/feature_flutter_media_detail_20260508/)* — Movie and series detail screens with metadata, episodes, actions, and file info in the Flutter client
 

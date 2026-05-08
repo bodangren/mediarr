@@ -336,7 +336,7 @@ export function MovieDetailPage() {
               <SubtitleTrackList
                 tracks={movieSubtitleTracks}
                 missingLanguages={movieSubtitleSummary?.missingLanguages ?? []}
-                onSearch={(languageCode) => {
+                onSearch={() => {
                   setIsManualSubtitleModalOpen(true);
                 }}
                 onDelete={handleDeleteSubtitle}

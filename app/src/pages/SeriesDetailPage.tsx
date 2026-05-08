@@ -101,7 +101,7 @@ export function SeriesDetailPage() {
     episode?: number;
   } | null>(null);
   const [episodeSubtitleSummaries, setEpisodeSubtitleSummaries] = useState<Record<number, SubtitleCoverageSummary>>({});
-  const [episodeSubtitleTracks, setEpisodeSubtitleTracks] = useState<Record<number, import('@/lib/api/subtitleApi').SubtitleTrack[]>>({});
+  const [episodeSubtitleTracks, setEpisodeSubtitleTracks] = useState<Record<number, SubtitleTrack[]>>({});
   const [seasonSubtitleStatuses, setSeasonSubtitleStatuses] = useState<Record<number, SubtitleCoverageStatus>>({});
   const [seriesSubtitleStatus, setSeriesSubtitleStatus] = useState<SubtitleCoverageStatus>('none');
   const [selectedSubtitleEpisodeId, setSelectedSubtitleEpisodeId] = useState<number | null>(null);

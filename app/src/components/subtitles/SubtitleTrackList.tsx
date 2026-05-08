@@ -14,10 +14,6 @@ export interface SubtitleTrackListProps {
   className?: string;
 }
 
-interface TrackDisplay extends SubtitleTrack {
-  id: number;
-}
-
 export function SubtitleTrackList({
   tracks,
   missingLanguages,
@@ -29,10 +25,7 @@ export function SubtitleTrackList({
   const [searchingLang, setSearchingLang] = useState<string | null>(null);
   const [deletingTrack, setDeletingTrack] = useState<number | null>(null);
 
-  const tracksWithIds: TrackDisplay[] = tracks.map((track, index) => ({
-    ...track,
-    id: index,
-  }));
+  // tracks now come with real IDs from the API
 
   const handleSearch = (langCode: string) => {
     setSearchingLang(langCode);
@@ -57,11 +50,11 @@ export function SubtitleTrackList({
   return (
     <div className={`space-y-4 ${className}`}>
       {/* Available Subtitles */}
-      {tracksWithIds.length > 0 && (
+      {tracks.length > 0 && (
         <div className="space-y-2">
           <h3 className="text-sm font-semibold text-text-primary">Available Subtitles</h3>
           <div className="space-y-2">
-            {tracksWithIds.map((track) => (
+            {tracks.map((track) => (
               <div
                 key={track.id}
                 className="flex items-center justify-between gap-3 rounded-md border border-border-subtle px-3 py-2"
@@ -142,7 +135,7 @@ export function SubtitleTrackList({
       )}
 
       {/* Empty State */}
-      {tracksWithIds.length === 0 && missingLanguages.length === 0 && (
+      {tracks.length === 0 && missingLanguages.length === 0 && (
         <div className="rounded-md border border-border-subtle bg-surface-2 px-4 py-8 text-center">
           <p className="text-sm text-text-muted">No subtitle tracks found</p>
         </div>

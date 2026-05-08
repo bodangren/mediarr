@@ -2,11 +2,13 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { RouteScaffold } from '@/components/primitives/RouteScaffold';
 import { ManualSearchModal } from '@/components/subtitles/ManualSearchModal';
+import { SubtitleTrackList } from '@/components/subtitles/SubtitleTrackList';
 import { LanguageBadge } from '@/components/subtitles/LanguageBadge';
 import { SeriesInteractiveSearchModal, type SearchLevel } from '@/components/series/SeriesInteractiveSearchModal';
 import { useToast } from '@/components/providers/ToastProvider';
 import { getApiClients } from '@/lib/api/client';
 import type { QualityProfileItem } from '@/lib/api/qualityProfileApi';
+import type { SubtitleTrack } from '@/lib/api/subtitleApi';
 import { formatBytes } from '@/lib/format';
 import {
   type SubtitleCoverageStatus,
@@ -99,6 +101,7 @@ export function SeriesDetailPage() {
     episode?: number;
   } | null>(null);
   const [episodeSubtitleSummaries, setEpisodeSubtitleSummaries] = useState<Record<number, SubtitleCoverageSummary>>({});
+  const [episodeSubtitleTracks, setEpisodeSubtitleTracks] = useState<Record<number, import('@/lib/api/subtitleApi').SubtitleTrack[]>>({});
   const [seasonSubtitleStatuses, setSeasonSubtitleStatuses] = useState<Record<number, SubtitleCoverageStatus>>({});
   const [seriesSubtitleStatus, setSeriesSubtitleStatus] = useState<SubtitleCoverageStatus>('none');
   const [selectedSubtitleEpisodeId, setSelectedSubtitleEpisodeId] = useState<number | null>(null);
@@ -110,6 +113,7 @@ export function SeriesDetailPage() {
     try {
       const seasons = await api.subtitleApi.listSeriesVariants(targetSeriesId);
       const nextEpisodeSummaries: Record<number, SubtitleCoverageSummary> = {};
+      const nextEpisodeTracks: Record<number, SubtitleTrack[]> = {};
       const nextSeasonStatuses: Record<number, SubtitleCoverageStatus> = {};
       const aggregateSeasonStatuses: SubtitleCoverageStatus[] = [];
 
@@ -117,7 +121,8 @@ export function SeriesDetailPage() {
         const episodeStatuses: SubtitleCoverageStatus[] = [];
 
         for (const episode of season.episodes ?? []) {
-          const available = (episode.subtitleTracks ?? [])
+          const tracks = episode.subtitleTracks ?? [];
+          const available = tracks
             .map(track => String(track.languageCode ?? '').toLowerCase())
             .filter(Boolean);
           const missing = (episode.missingSubtitles ?? [])
@@ -125,6 +130,7 @@ export function SeriesDetailPage() {
             .filter(Boolean);
           const summary = summarizeSubtitleCoverage(available, missing);
           nextEpisodeSummaries[episode.episodeId] = summary;
+          nextEpisodeTracks[episode.episodeId] = tracks;
           episodeStatuses.push(summary.status);
         }
 
@@ -155,10 +161,12 @@ export function SeriesDetailPage() {
       }
 
       setEpisodeSubtitleSummaries(nextEpisodeSummaries);
+      setEpisodeSubtitleTracks(nextEpisodeTracks);
       setSeasonSubtitleStatuses(nextSeasonStatuses);
       setSeriesSubtitleStatus(nextSeriesStatus);
     } catch {
       setEpisodeSubtitleSummaries({});
+      setEpisodeSubtitleTracks({});
       setSeasonSubtitleStatuses({});
       setSeriesSubtitleStatus('none');
     }
@@ -376,6 +384,18 @@ export function SeriesDetailPage() {
       pushToast({ title: 'Error', variant: 'error', message: `Subtitle search for Season ${seasonNumber} failed` });
     } finally {
       setSearchingSubtitlesSeason(null);
+    }
+  };
+
+  const handleDeleteEpisodeSubtitle = async (episodeId: number, trackId: number) => {
+    try {
+      await api.subtitleApi.deleteSubtitleTrack(trackId);
+      pushToast({ title: 'Deleted', variant: 'success', message: 'Subtitle removed' });
+      if (series) {
+        await loadSeriesSubtitleSummaries(series.id);
+      }
+    } catch {
+      pushToast({ title: 'Error', variant: 'error', message: 'Failed to delete subtitle' });
     }
   };
 
@@ -651,6 +671,18 @@ export function SeriesDetailPage() {
                             />
                             Monitored
                           </label>
+                          {/* Episode subtitle inventory */}
+                          {(episodeSubtitleTracks[ep.id]?.length > 0 || episodeSubtitleSummaries[ep.id]?.missingLanguages.length > 0) && (
+                            <div className="col-span-full mt-2">
+                              <SubtitleTrackList
+                                tracks={episodeSubtitleTracks[ep.id] ?? []}
+                                missingLanguages={episodeSubtitleSummaries[ep.id]?.missingLanguages ?? []}
+                                onSearch={() => setSelectedSubtitleEpisodeId(ep.id)}
+                                onDelete={(trackId) => { void handleDeleteEpisodeSubtitle(ep.id, trackId); }}
+                                className="text-xs"
+                              />
+                            </div>
+                          )}
                         </li>
                       );
                     })}

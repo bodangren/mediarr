@@ -454,4 +454,45 @@ describe('subtitleRoutes phase 3 contract', () => {
 
     await app.close();
   });
+
+  it('deletes a subtitle track by id', async () => {
+    const deleteSubtitleTrack = vi.fn().mockResolvedValue(undefined);
+    const { app } = createApp({
+      subtitleInventoryApiService: {
+        deleteSubtitleTrack,
+      },
+    });
+
+    const response = await app.inject({
+      method: 'DELETE',
+      url: '/api/subtitles/123',
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(deleteSubtitleTrack).toHaveBeenCalledWith(123);
+    expect(response.json().data).toEqual(expect.objectContaining({
+      success: true,
+      deletedId: 123,
+    }));
+
+    await app.close();
+  });
+
+  it('returns 404 when subtitle track not found for delete', async () => {
+    const deleteSubtitleTrack = vi.fn().mockRejectedValue(new Error('Subtitle track not found'));
+    const { app } = createApp({
+      subtitleInventoryApiService: {
+        deleteSubtitleTrack,
+      },
+    });
+
+    const response = await app.inject({
+      method: 'DELETE',
+      url: '/api/subtitles/999',
+    });
+
+    expect(response.statusCode).toBe(404);
+
+    await app.close();
+  });
 });

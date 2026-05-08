@@ -50,11 +50,12 @@ export interface VariantInventoryView {
     name: string | null;
   }>;
   subtitleTracks: Array<{
-    source: string;
+    id: number;
+    provider: string;
     languageCode: string | null;
     isForced: boolean;
     isHi: boolean;
-    filePath: string | null;
+    path: string;
   }>;
   missingSubtitles: Array<{
     languageCode: string;
@@ -133,6 +134,10 @@ export class SubtitleInventoryApiService {
   ): Promise<VariantInventoryView[]> {
     const variants = await this.repository.listEpisodeVariants(episodeId);
     return this.mapVariantInventory(variants.map(variant => variant.id));
+  }
+
+  async deleteSubtitleTrack(id: number): Promise<void> {
+    return this.repository.deleteSubtitleTrack(id);
   }
 
   async manualSearch(
@@ -393,11 +398,12 @@ export class SubtitleInventoryApiService {
           name: track.name,
         })),
         subtitleTracks: inventory.subtitleTracks.map(track => ({
-          source: track.source,
+          id: track.id,
+          provider: track.source.toLowerCase(),
           languageCode: track.languageCode,
           isForced: track.isForced,
           isHi: track.isHi,
-          filePath: track.filePath,
+          path: track.filePath ?? '',
         })),
         missingSubtitles: inventory.missingSubtitles.map(item => ({
           languageCode: item.languageCode,

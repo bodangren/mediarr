@@ -2,14 +2,14 @@
 
 ## Phase 1: Backend API Audit & Contract
 
-- [ ] Audit existing subtitle-related tables in Drizzle schema
-- [ ] Audit existing subtitle API endpoints (if any) in server routes
-- [ ] Design `GET /api/movies/:id/subtitles` — list subtitle files for a movie
-- [ ] Design `GET /api/episodes/:id/subtitles` — list subtitle files for an episode
-- [ ] Design `POST /api/subtitles/search` — search external providers by mediaId + type (movie/episode)
-- [ ] Design `POST /api/subtitles/download` — download selected subtitle and link to media
-- [ ] Design `DELETE /api/subtitles/:id` — delete subtitle file and DB record
-- [ ] Write unit tests for all endpoints (server workspace)
+- [x] Audit existing subtitle-related tables in Drizzle schema
+- [x] Audit existing subtitle API endpoints (if any) in server routes
+- [x] Design `GET /api/movies/:id/subtitles` — list subtitle files for a movie
+- [x] Design `GET /api/episodes/:id/subtitles` — list subtitle files for an episode
+- [x] Design `POST /api/subtitles/search` — search external providers by mediaId + type (movie/episode)
+- [x] Design `POST /api/subtitles/download` — download selected subtitle and link to media
+- [~] Design `DELETE /api/subtitles/:id` — delete subtitle file and DB record
+- [~] Write unit tests for delete endpoint (server workspace)
 - [ ] Run tests — expect RED
 
 ## Phase 2: Backend Implementation

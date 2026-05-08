@@ -5,8 +5,10 @@ import { RouteScaffold } from '@/components/primitives/RouteScaffold';
 import { MovieInteractiveSearchModal } from '@/components/movie/MovieInteractiveSearchModal';
 import { MovieCollectionSection } from '@/components/movie/MovieCollectionSection';
 import { ManualSearchModal } from '@/components/subtitles/ManualSearchModal';
+import { SubtitleTrackList } from '@/components/subtitles/SubtitleTrackList';
 import { LanguageBadge } from '@/components/subtitles/LanguageBadge';
 import { useToast } from '@/components/providers/ToastProvider';
+import type { SubtitleTrack } from '@/lib/api/subtitleApi';
 import { getApiClients } from '@/lib/api/client';
 import type { QualityProfileItem } from '@/lib/api/qualityProfileApi';
 import { formatBytes } from '@/lib/format';
@@ -42,6 +44,7 @@ export function MovieDetailPage() {
   } | null>(null);
   const [qualityProfiles, setQualityProfiles] = useState<QualityProfileItem[]>([]);
   const [movieSubtitleSummary, setMovieSubtitleSummary] = useState<SubtitleCoverageSummary | null>(null);
+  const [movieSubtitleTracks, setMovieSubtitleTracks] = useState<SubtitleTrack[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
@@ -51,18 +54,19 @@ export function MovieDetailPage() {
   const loadMovieSubtitleSummary = useCallback(async (targetMovieId: number) => {
     try {
       const variants = await api.subtitleApi.listMovieVariants(targetMovieId);
-      const available = variants.flatMap(variant =>
-        (variant.subtitleTracks ?? [])
-          .map((track) => String(track.languageCode ?? '').toLowerCase())
-          .filter(Boolean),
-      );
+      const tracks = variants.flatMap(variant => variant.subtitleTracks ?? []);
+      const available = tracks
+        .map((track) => String(track.languageCode ?? '').toLowerCase())
+        .filter(Boolean);
       const missing = variants.flatMap(variant =>
         (variant.missingSubtitles ?? [])
           .map((item) => String(item ?? '').toLowerCase())
           .filter(Boolean),
       );
+      setMovieSubtitleTracks(tracks);
       setMovieSubtitleSummary(summarizeSubtitleCoverage(available, missing));
     } catch {
+      setMovieSubtitleTracks([]);
       setMovieSubtitleSummary(null);
     }
   }, [api]);
@@ -160,6 +164,17 @@ export function MovieDetailPage() {
       pushToast({ title: 'Error', variant: 'error', message: 'Subtitle search failed' });
     } finally {
       setIsSearchingSubtitles(false);
+    }
+  };
+
+  const handleDeleteSubtitle = async (trackId: number) => {
+    if (!movie) return;
+    try {
+      await api.subtitleApi.deleteSubtitleTrack(trackId);
+      pushToast({ title: 'Deleted', variant: 'success', message: 'Subtitle removed' });
+      await loadMovieSubtitleSummary(movie.id);
+    } catch {
+      pushToast({ title: 'Error', variant: 'error', message: 'Failed to delete subtitle' });
     }
   };
 
@@ -313,6 +328,21 @@ export function MovieDetailPage() {
               Remove from Library
             </button>
           </section>
+
+          {/* Subtitle Inventory */}
+          {(movieSubtitleTracks.length > 0 || (movieSubtitleSummary?.missingLanguages.length ?? 0) > 0) && (
+            <section className="rounded-md border border-border-subtle bg-surface-1 p-4">
+              <h3 className="text-sm font-semibold text-text-primary mb-3">Subtitles</h3>
+              <SubtitleTrackList
+                tracks={movieSubtitleTracks}
+                missingLanguages={movieSubtitleSummary?.missingLanguages ?? []}
+                onSearch={(languageCode) => {
+                  setIsManualSubtitleModalOpen(true);
+                }}
+                onDelete={handleDeleteSubtitle}
+              />
+            </section>
+          )}
 
           <MovieInteractiveSearchModal
             isOpen={isSearchModalOpen}

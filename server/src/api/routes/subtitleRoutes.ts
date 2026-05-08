@@ -1095,13 +1095,14 @@ export function registerSubtitleRoutes(
       const inventory = await deps.subtitleInventoryApiService.listEpisodeVariantInventory(episode.id);
       const subtitleTracks = inventory.flatMap(variant =>
         variant.subtitleTracks
-          .filter(track => Boolean(track.languageCode) && Boolean(track.filePath))
+          .filter(track => Boolean(track.languageCode) && Boolean(track.path))
           .map(track => ({
+            id: track.id,
             languageCode: track.languageCode ?? 'unknown',
             isForced: track.isForced,
             isHi: track.isHi,
-            path: track.filePath ?? '',
-            provider: track.source.toLowerCase(),
+            path: track.path,
+            provider: track.provider,
           })),
       );
 
@@ -1156,13 +1157,14 @@ export function registerSubtitleRoutes(
     const inventory = await deps.subtitleInventoryApiService.listEpisodeVariantInventory(episodeId);
     const subtitleTracks = inventory.flatMap(variant =>
       variant.subtitleTracks
-        .filter(track => Boolean(track.languageCode) && Boolean(track.filePath))
+        .filter(track => Boolean(track.languageCode) && Boolean(track.path))
         .map(track => ({
+          id: track.id,
           languageCode: track.languageCode ?? 'unknown',
           isForced: track.isForced,
           isHi: track.isHi,
-          path: track.filePath ?? '',
-          provider: track.source.toLowerCase(),
+          path: track.path,
+          provider: track.provider,
         })),
     );
 
@@ -1176,6 +1178,30 @@ export function registerSubtitleRoutes(
       episodeNumber: episode.episodeNumber,
       subtitleTracks,
       missingSubtitles,
+    });
+  });
+
+  app.delete('/api/subtitles/:id', async (request, reply) => {
+    if (!deps.subtitleInventoryApiService?.deleteSubtitleTrack) {
+      throw new ValidationError('Subtitle inventory API service is not configured');
+    }
+
+    const id = parseIdParam((request.params as { id?: string }).id ?? '', 'subtitle');
+    try {
+      await deps.subtitleInventoryApiService.deleteSubtitleTrack(id);
+    } catch (error) {
+      if (error instanceof Error && error.message === 'Subtitle track not found') {
+        return sendSuccess(reply, {
+          success: false,
+          message: 'Subtitle track not found',
+        }, 404);
+      }
+      throw error;
+    }
+
+    return sendSuccess(reply, {
+      success: true,
+      deletedId: id,
     });
   });
 

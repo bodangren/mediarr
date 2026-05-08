@@ -80,6 +80,7 @@ export interface ApiDependencies {
     | 'uploadSubtitle'
     | 'scanMovieDisk'
     | 'scanEpisodeDisk'
+    | 'deleteSubtitleTrack'
   > | undefined;
   subtitleProviderFactory?: Pick<
     SubtitleProviderFactory,

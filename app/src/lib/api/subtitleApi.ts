@@ -3,6 +3,7 @@ import { ApiHttpClient } from './httpClient';
 import { routeMap } from './routeMap';
 
 const subtitleTrackSchema = z.object({
+  id: z.number(),
   languageCode: z.string(),
   isForced: z.boolean(),
   isHi: z.boolean(),
@@ -277,6 +278,19 @@ export function createSubtitleApi(client: ApiHttpClient) {
           onUploadProgress: input.onUploadProgress,
         },
         subtitleUploadRecordSchema,
+      );
+    },
+
+    deleteSubtitleTrack(id: number): Promise<{ success: boolean; deletedId: number }> {
+      return client.request(
+        {
+          path: routeMap.subtitleTrack(id),
+          method: 'DELETE',
+        },
+        z.object({
+          success: z.boolean(),
+          deletedId: z.number(),
+        }),
       );
     },
   };

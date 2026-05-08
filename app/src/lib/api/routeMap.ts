@@ -73,6 +73,7 @@ export const routeMap = {
   subtitleSearch: '/api/subtitles/search',
   subtitleDownload: '/api/subtitles/download',
   subtitleUpload: '/api/subtitles/upload',
+  subtitleTrack: (id: number) => `/api/subtitles/${id}`,
   subtitleHistory: '/api/subtitles/history',
   subtitleHistoryStats: '/api/subtitles/history/stats',
 

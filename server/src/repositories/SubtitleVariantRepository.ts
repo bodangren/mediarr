@@ -1,3 +1,4 @@
+import fs from 'node:fs/promises';
 import type {
   PrismaClient,
   MediaFileVariant,
@@ -473,6 +474,30 @@ export class SubtitleVariantRepository {
 
     await this.prisma.wantedSubtitle.deleteMany({
       where: { id: { in: staleIds } },
+    });
+  }
+
+  async deleteSubtitleTrack(id: number): Promise<void> {
+    const track = await this.prisma.variantSubtitleTrack.findUnique({
+      where: { id },
+      select: { filePath: true },
+    });
+
+    if (!track) {
+      throw new Error('Subtitle track not found');
+    }
+
+    if (track.filePath) {
+      try {
+        await fs.access(track.filePath);
+        await fs.unlink(track.filePath);
+      } catch {
+        // File may not exist on disk; continue with DB deletion
+      }
+    }
+
+    await this.prisma.variantSubtitleTrack.delete({
+      where: { id },
     });
   }
 

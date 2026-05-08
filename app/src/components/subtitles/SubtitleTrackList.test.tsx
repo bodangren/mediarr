@@ -5,6 +5,7 @@ import type { SubtitleTrack } from '@/lib/api/subtitleApi';
 
 const mockTracks: SubtitleTrack[] = [
   {
+    id: 101,
     languageCode: 'en',
     isForced: false,
     isHi: false,
@@ -12,6 +13,7 @@ const mockTracks: SubtitleTrack[] = [
     provider: 'OpenSubtitles',
   },
   {
+    id: 102,
     languageCode: 'es',
     isForced: true,
     isHi: true,
@@ -121,7 +123,7 @@ describe('SubtitleTrackList', () => {
 
     const deleteButtons = screen.getAllByLabelText(/Delete subtitle for/);
     fireEvent.click(deleteButtons[0]);
-    expect(handleDelete).toHaveBeenCalledWith(0);
+    expect(handleDelete).toHaveBeenCalledWith(101);
   });
 
   it('calls onSearch when missing language badge is clicked', () => {

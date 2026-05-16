@@ -1,23 +1,7 @@
 [0m
 > build · k2p6
 [0m
-[0m→ [0mSkill "measure"
-[0m✱ [0mGlob "**/autonomous_prompt.md"[90m 1 match[0m
 [0m→ [0mRead measure/autonomous_prompt.md
-[0m→ [0mRead measure/tracks.md
-[0m→ [0mRead measure/tech-debt.md
-[0m→ [0mRead measure/current_directive.md
-[0m→ [0mRead measure/lessons-learned.md
-[0m→ [0mRead measure/tracks/remove_prisma_shim_20260508/spec.md
-[0m→ [0mRead measure/tracks/remove_prisma_shim_20260508/plan.md
-[0m
-[0m$ [0mgit status --short
-M measure/output.log
-[0m
-[0m$ [0mgit log --oneline -5
-61e1798 measure: add indexer health monitoring track
-5f386f0 SPA Subtitle Management Parity: Complete Phase 5
-80459a7 SPA Subtitle Management: Phase 5 checkpoint - phases 1-4 complete
-3f884d0 chore(review): fix unused variable lint error, inline type import
-e0f461d WIP: SPA subtitle management - Phase 1 progress
-[0m
+Got the autonomous prompt. Ready to run unattended following those rules.
+
+What would you like me to do?

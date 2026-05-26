@@ -1,0 +1,7 @@
+Task: StorageLike deduplication
+- Created app/src/lib/state/types.ts with shared StorageLike interface
+- Updated uiPreferences.ts to import from shared location
+- Updated seriesOptionsStore.ts to import from shared location
+- Updated uiStore.ts to import from shared location
+- Updated wantedStore.ts to import from shared location
+- All TypeScript checks pass

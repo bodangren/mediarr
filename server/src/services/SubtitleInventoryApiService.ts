@@ -5,6 +5,9 @@ import { SubtitleNamingService } from './SubtitleNamingService';
 import { SubtitleProviderFactory } from './SubtitleProviderFactory';
 import { SubtitleScoringService } from './SubtitleScoringService';
 import { ALLOWED_SUBTITLE_EXTENSIONS } from './providers/providerUtils';
+import type { SubtitleUploadInput as SharedSubtitleUploadInput } from '../contracts/subtitle';
+
+export type UploadMediaType = 'movie' | 'episode';
 
 export interface ManualSearchCandidate {
   languageCode: string;
@@ -16,6 +19,15 @@ export interface ManualSearchCandidate {
   providerData?: Record<string, unknown> | undefined;
   content?: Buffer | undefined;
   extension?: string | undefined;
+}
+
+/**
+ * Server-specific subtitle upload input extending the shared contract.
+ * Adds originalFilename and content fields required by the server.
+ */
+export interface SubtitleUploadInput extends SharedSubtitleUploadInput {
+  originalFilename: string;
+  content: Buffer;
 }
 
 export interface ManualSubtitleProvider {
@@ -62,18 +74,6 @@ export interface VariantInventoryView {
     isForced: boolean;
     isHi: boolean;
   }>;
-}
-
-export type UploadMediaType = 'movie' | 'episode';
-
-export interface SubtitleUploadInput {
-  mediaId: number;
-  mediaType: UploadMediaType;
-  language: string;
-  forced: boolean;
-  hearingImpaired: boolean;
-  originalFilename: string;
-  content: Buffer;
 }
 
 export interface UploadedSubtitleRecord {

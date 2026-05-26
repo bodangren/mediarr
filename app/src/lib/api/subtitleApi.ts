@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { ApiHttpClient } from './httpClient';
 import { routeMap } from './routeMap';
+import type { SubtitleUploadInput as SharedSubtitleUploadInput } from '@server/contracts/subtitle';
 
 const subtitleTrackSchema = z.object({
   id: z.number(),
@@ -108,13 +109,12 @@ export interface BulkUpdateMoviesInput {
   languageProfileId: number;
 }
 
-export interface SubtitleUploadInput {
+/**
+ * App-specific subtitle upload input extending the shared contract.
+ * Adds browser-specific file and progress callback fields.
+ */
+export interface SubtitleUploadInput extends SharedSubtitleUploadInput {
   file: File;
-  mediaId: number;
-  mediaType: 'movie' | 'episode';
-  language: string;
-  forced: boolean;
-  hearingImpaired: boolean;
   onUploadProgress?: (progress: number) => void;
 }
 

@@ -1,0 +1,21 @@
+{
+  "id": "chore_type_contract_sharing_20260526",
+  "title": "Shared Type Contracts (Server ↔ App)",
+  "status": "pending",
+  "created": "2026-05-26",
+  "priority": "high",
+  "type": "chore",
+  "sprint": {
+    "goal": "Eliminate duplicate interface definitions across server/app boundary by extracting shared Zod schemas into a single source of truth, preventing runtime type drift",
+    "stories": [
+      "S1: BulkUpdateResult shared contract",
+      "S2: SubtitleUploadInput shared contract",
+      "S3: ScoringBreakdown shared contract",
+      "S4: OrganizeResult shared contract",
+      "S5: Playback types shared contracts",
+      "S6: StorageLike deduplication"
+    ],
+    "demo_notes": "Show a developer changing a field in the shared schema and both server + app types updating automatically",
+    "retro_ref": null
+  }
+}

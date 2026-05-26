@@ -16,6 +16,20 @@ This file tracks all major tracks for the project. Each track has its own detail
 - [ ] **Track: Flutter Media Detail Page** *Phases: 5 | Link: [./tracks/feature_flutter_media_detail_20260508/](./tracks/feature_flutter_media_detail_20260508/)* — Movie and series detail screens with metadata, episodes, actions, and file info in the Flutter client
 - [ ] **Track: Indexer Health Monitoring and Auto-Disable** *Phases: 4 | Link: [./tracks/indexer_health_monitoring_20260509/](./tracks/indexer_health_monitoring_20260509/)* — Track indexer response times and failure rates; auto-disable failing indexers
 
+- [ ] **Track: Shared Type Contracts (Server ↔ App)** *Stories: 6 | Link: [./tracks/chore_type_contract_sharing_20260526/](./tracks/chore_type_contract_sharing_20260526/)* — Extract shared Zod schemas for BulkUpdateResult, SubtitleUploadInput, ScoringBreakdown, OrganizeResult, Playback types, StorageLike; eliminate duplicate interface definitions across server/app boundary
+
+- [ ] **Track: Variant Subtitle Subsystem Test Coverage** *Stories: 5 | Link: [./tracks/bug_variant_subtitle_test_coverage_20260526/](./tracks/bug_variant_subtitle_test_coverage_20260526/)* — Unit tests for VariantBackfillService, VariantInventoryIndexer, VariantMissingSubtitleService, VariantSubtitleFetchService, VariantWantedService (5 services, 0 → full coverage)
+
+- [ ] **Track: Import List UI Test Coverage** *Stories: 5 | Link: [./tracks/chore_import_list_ui_tests_20260526/](./tracks/chore_import_list_ui_tests_20260526/)* — Component tests for ExclusionManager, ImportListList, ImportListModal, AddExclusionModal, ImportListSettings (5 components, 0 → full coverage)
+
+- [ ] **Track: Server Service Test Coverage Gap Remediation** *Stories: 10 | Link: [./tracks/chore_untested_server_services_20260526/](./tracks/chore_untested_server_services_20260526/)* — Unit tests for Scheduler, SettingsService, EpisodeService, SeriesService, TvSearchService, MediaSearchService, SubtitleNamingService, SubtitleRequirementEngine, SubtitleProviderFactory, FilterService
+
+- [ ] **Track: Frontend Component Test Coverage Gaps** *Stories: 5 | Link: [./tracks/chore_frontend_component_test_gaps_20260526/](./tracks/chore_frontend_component_test_gaps_20260526/)* — Component tests for movie modals (EditMovieModal, ManualMatchDialog, MovieBulkEditModal, OrganizePreviewModal), table primitives (DataTable, TablePager, TableOptionsModal), search cells (AgeCell, PeersCell, QualityBadge, ReleaseTitle), providers (ToastProvider, AppProviders), misc (FilterDropdown, MetricCard)
+
+- [ ] **Track: MSW Mock Coverage for Backend Routes** *Stories: 5 | Link: [./tracks/chore_msw_mock_coverage_20260526/](./tracks/chore_msw_mock_coverage_20260526/)* — Add MSW handlers for all unmocked backend routes (~85 routes across 15 domains: backups, blocklist, calendar, collections, custom formats, dashboard, download client, import lists, logs, playback, quality profiles, setup, subtitles, system, updates)
+
+- [ ] **Track: Prisma Naming Residue Cleanup** *Stories: 3 | Link: [./tracks/chore_prisma_naming_cleanup_20260526/](./tracks/chore_prisma_naming_cleanup_20260526/)* — Remove PrismaClient type shim, rename createPrismaMock/makePrisma helpers to Drizzle naming, remove stale OPENAI_API_KEY from .env
+
 ---
 
 - [x] **Track: Fix Catalog `isConfigured` Matching for Renamed Indexers** *Phases: 3 | Link: [./archive/bug_catalog_isconfigured_matching_20260507/](./archive/bug_catalog_isconfigured_matching_20260507/)* — 3 regression tests; Cardigann definitionId + Torznab/Newznab baseUrl matching with name fallback

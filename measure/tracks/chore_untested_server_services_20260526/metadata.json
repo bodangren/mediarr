@@ -1,0 +1,25 @@
+{
+  "id": "chore_untested_server_services_20260526",
+  "title": "Server Service Test Coverage Gap Remediation",
+  "status": "pending",
+  "created": "2026-05-26",
+  "priority": "high",
+  "type": "chore",
+  "sprint": {
+    "goal": "Add unit tests for the 12 highest-risk server services that currently have zero dedicated test files, focusing on services that manage critical data flows (scheduling, media CRUD, settings, search aggregation)",
+    "stories": [
+      "S1: Scheduler service tests",
+      "S2: SettingsService tests",
+      "S3: EpisodeService tests",
+      "S4: SeriesService tests",
+      "S5: TvSearchService tests",
+      "S6: MediaSearchService base tests",
+      "S7: SubtitleNamingService tests",
+      "S8: SubtitleRequirementEngine tests",
+      "S9: SubtitleProviderFactory tests",
+      "S10: FilterService tests"
+    ],
+    "demo_notes": "Show 10 new test suites green; Scheduler cron registration verified; Settings CRUD round-trips verified",
+    "retro_ref": null
+  }
+}

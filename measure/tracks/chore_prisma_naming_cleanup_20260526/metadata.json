@@ -1,0 +1,18 @@
+{
+  "id": "chore_prisma_naming_cleanup_20260526",
+  "title": "Prisma Naming Residue Cleanup",
+  "status": "pending",
+  "created": "2026-05-26",
+  "priority": "medium",
+  "type": "chore",
+  "sprint": {
+    "goal": "Eliminate all Prisma naming residue — the PrismaClient type shim, createPrismaMock test helpers, and stale Prisma references — so that the codebase unambiguously uses Drizzle",
+    "stories": [
+      "S1: Remove PrismaClient type shim",
+      "S2: Rename test mock helpers from Prisma to Drizzle",
+      "S3: Remove stale OPENAI_API_KEY from .env"
+    ],
+    "demo_notes": "Show zero grep hits for 'PrismaClient' and 'createPrismaMock' in non-archived code",
+    "retro_ref": null
+  }
+}

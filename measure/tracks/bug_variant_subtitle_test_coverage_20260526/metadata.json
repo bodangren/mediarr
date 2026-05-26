@@ -1,0 +1,20 @@
+{
+  "id": "bug_variant_subtitle_test_coverage_20260526",
+  "title": "Variant Subtitle Subsystem Test Coverage",
+  "status": "pending",
+  "created": "2026-05-26",
+  "priority": "high",
+  "type": "bug",
+  "sprint": {
+    "goal": "Add comprehensive unit tests for the 5 Variant subtitle services that currently have zero dedicated test files, eliminating the highest-risk untested subsystem",
+    "stories": [
+      "S1: VariantBackfillService tests",
+      "S2: VariantInventoryIndexer tests",
+      "S3: VariantMissingSubtitleService tests",
+      "S4: VariantSubtitleFetchService tests",
+      "S5: VariantWantedService tests"
+    ],
+    "demo_notes": "Show CI running all 5 new test suites green with >80% branch coverage per service",
+    "retro_ref": null
+  }
+}

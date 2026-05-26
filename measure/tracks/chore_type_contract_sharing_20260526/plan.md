@@ -1,9 +1,9 @@
 # Plan: Shared Type Contracts (Server ↔ App)
 
-## Phase S1: BulkUpdateResult shared contract
+## Phase S1: BulkUpdateResult shared contract [checkpoint: 93bdd6a]
 
-- [ ] Create directory `server/src/contracts/` if it doesn't exist
-- [ ] Create `server/src/contracts/bulk.ts` with a Zod schema for `BulkUpdateResult`:
+- [x] Create directory `server/src/contracts/` if it doesn't exist
+- [x] Create `server/src/contracts/bulk.ts` with a Zod schema for `BulkUpdateResult`:
   ```
   Fields to match current definitions in MovieRepository.ts:
   - matched: number
@@ -11,26 +11,26 @@
   - skipped: number
   - errors: string[]
   ```
-- [ ] Export the inferred TypeScript type: `export type BulkUpdateResult = z.infer<typeof bulkUpdateResultSchema>`
-- [ ] In `server/src/repositories/MovieRepository.ts`:
+- [x] Export the inferred TypeScript type: `export type BulkUpdateResult = z.infer<typeof bulkUpdateResultSchema>`
+- [x] In `server/src/repositories/MovieRepository.ts`:
   - Delete the local `BulkUpdateResult` interface
   - Add `import { BulkUpdateResult } from '../contracts/bulk'`
   - Verify all usages of `BulkUpdateResult` still compile
-- [ ] In `server/src/repositories/SeriesRepository.ts`:
+- [x] In `server/src/repositories/SeriesRepository.ts`:
   - Delete the local `BulkUpdateResult` interface
   - Add `import { BulkUpdateResult } from '../contracts/bulk'`
   - Verify all usages still compile
-- [ ] In `app/src/lib/api/movieApi.ts`:
+- [x] In `app/src/lib/api/movieApi.ts`:
   - Delete the local `BulkUpdateResult` interface
-  - Add `import type { BulkUpdateResult } from '../../../../server/src/contracts/bulk'`
+  - Add `import type { BulkUpdateResult } from '@server/contracts/bulk'`
   - NOTE: If path imports across workspaces don't work, create a re-export file at `app/src/lib/api/contracts/bulk.ts` that re-exports from the server path. Check `tsconfig.json` for path aliases first.
   - Verify all usages still compile
-- [ ] In `app/src/lib/api/seriesApi.ts`:
+- [x] In `app/src/lib/api/seriesApi.ts`:
   - Same treatment: delete local, import shared
-- [ ] Write test: `server/src/contracts/bulk.test.ts` — validate that a sample object matches the Zod schema, and that a missing field throws
-- [ ] Run `CI=true npm test` — expect GREEN
-- [ ] Run `npm run typecheck` — zero errors
-- [ ] Commit: `refactor(contracts): extract BulkUpdateResult to shared Zod schema`
+- [x] Write test: `server/src/contracts/bulk.test.ts` — validate that a sample object matches the Zod schema, and that a missing field throws
+- [x] Run `CI=true npm test` — expect GREEN
+- [x] Run `npm run typecheck` — zero errors
+- [x] Commit: `refactor(contracts): extract BulkUpdateResult to shared Zod schema`
 
 ## Phase S2: SubtitleUploadInput shared contract
 

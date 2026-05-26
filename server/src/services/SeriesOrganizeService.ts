@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { PrismaClient } from '@prisma/client';
+import type { OrganizeResult } from '../contracts/organize';
 
 /**
  * Naming token patterns for series folder, season folder and episode file names
@@ -51,12 +52,6 @@ interface EpisodeRenamePreview {
   currentPath: string;
   newPath: string;
   isNewPath: boolean;
-}
-
-interface OrganizeResult {
-  renamed: number;
-  failed: number;
-  errors: Array<{ episodeId: number; error: string }>;
 }
 
 /**

@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { PrismaClient } from '@prisma/client';
+import type { OrganizeResult } from '../contracts/organize';
 
 /**
  * Naming token patterns for movie folder and file names
@@ -40,12 +41,6 @@ interface OrganizePreview {
   currentPath: string;
   newPath: string;
   isNewPath: boolean;
-}
-
-interface OrganizeResult {
-  renamed: number;
-  failed: number;
-  errors: Array<{ movieId: number; error: string }>;
 }
 
 /**

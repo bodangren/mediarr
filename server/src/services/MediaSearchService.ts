@@ -7,17 +7,7 @@ import type { CustomFormatWithScores } from '../repositories/CustomFormatReposit
 import type { NotificationDispatchService } from './NotificationDispatchService';
 import { releaseParser, type ParsedReleaseWithScore, type SearchContext } from './ReleaseParser';
 import type { ApiEventHub } from '../api/eventHub';
-
-export interface ScoringBreakdown {
-  customFormats: Array<{ id: number; name: string; score: number }>;
-  customFormatScore: number;
-  confidenceScore: number;
-  indexerPriority: number;
-  indexerScore: number;
-  seeders: number;
-  seedScore: number;
-  totalScore: number;
-}
+import type { ScoringBreakdown } from '../contracts/scoring';
 
 export interface SearchCandidate {
   indexer: string;

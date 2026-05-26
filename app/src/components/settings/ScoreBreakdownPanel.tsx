@@ -1,16 +1,6 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-
-export interface ScoringBreakdown {
-  customFormats: Array<{ id: number; name: string; score: number }>;
-  customFormatScore: number;
-  confidenceScore: number;
-  indexerPriority: number;
-  indexerScore: number;
-  seeders: number;
-  seedScore: number;
-  totalScore: number;
-}
+import type { ScoringBreakdown } from '@server/contracts/scoring';
 
 interface ScoreBreakdownPanelProps {
   breakdown: ScoringBreakdown;

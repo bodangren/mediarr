@@ -1,0 +1,7 @@
+Task: BulkUpdateResult shared contract
+- Created server/src/contracts/bulk.ts with shared Zod schema
+- Updated MovieRepository.ts and SeriesRepository.ts to import from shared location
+- Updated movieApi.ts and seriesApi.ts to import from shared location via @server alias
+- Added @server path alias to app tsconfig and Vite config
+- Created bulk.test.ts with 5 passing tests
+- All TypeScript checks pass

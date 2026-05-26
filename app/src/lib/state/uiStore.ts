@@ -6,10 +6,7 @@ export type UIAction =
   | { type: 'ui/sidebarCollapsed/set'; payload: boolean }
   | { type: 'ui/sidebarCollapsed/toggle' };
 
-export interface StorageLike {
-  getItem: (key: string) => string | null;
-  setItem: (key: string, value: string) => void;
-}
+import type { StorageLike } from './types';
 
 export interface UIStore {
   getState: () => UIState;

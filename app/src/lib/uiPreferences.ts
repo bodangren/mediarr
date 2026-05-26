@@ -12,18 +12,15 @@ export interface UIPreferences {
 
 export const UI_PREFERENCES_STORAGE_KEY = 'mediarr.ui.preferences';
 
-export const DEFAULT_UI_PREFERENCES: UIPreferences = {
+export import type { StorageLike } from './state/types';
+
+const DEFAULT_UI_PREFERENCES: UIPreferences = {
   theme: 'dark',
   dateFormat: 'relative',
   timeFormat: '24h',
   showRelativeDates: true,
   colorImpairedMode: false,
 };
-
-interface StorageLike {
-  getItem: (key: string) => string | null;
-  setItem: (key: string, value: string) => void;
-}
 
 function resolveStorage(storage?: StorageLike): StorageLike | undefined {
   if (storage) {

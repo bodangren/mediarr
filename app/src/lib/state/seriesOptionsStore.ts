@@ -11,10 +11,7 @@ export type SeriesOptionsAction =
   | { type: 'series/sortBy/set'; payload: string }
   | { type: 'series/sortDir/set'; payload: 'asc' | 'desc' };
 
-export interface StorageLike {
-  getItem: (key: string) => string | null;
-  setItem: (key: string, value: string) => void;
-}
+import type { StorageLike } from './types';
 
 export interface SeriesOptionsStore {
   getState: () => SeriesOptionsState;

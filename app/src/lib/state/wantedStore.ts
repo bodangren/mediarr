@@ -5,10 +5,7 @@ export interface WantedState {
 export type WantedAction =
   | { type: 'wanted/activeTab/set'; payload: 'missing' | 'cutoffUnmet' };
 
-export interface StorageLike {
-  getItem: (key: string) => string | null;
-  setItem: (key: string, value: string) => void;
-}
+import type { StorageLike } from './types';
 
 export interface WantedStore {
   getState: () => WantedState;

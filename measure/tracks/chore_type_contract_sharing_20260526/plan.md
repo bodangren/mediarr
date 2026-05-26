@@ -32,7 +32,7 @@
 - [x] Run `npm run typecheck` — zero errors
 - [x] Commit: `refactor(contracts): extract BulkUpdateResult to shared Zod schema`
 
-## Phase S2: SubtitleUploadInput shared contract [checkpoint: cf8c942]
+## Phase S2: SubtitleUploadInput shared contract [checkpoint: b0b7721]
 
 - [x] Create `server/src/contracts/subtitle.ts` with a Zod schema for `SubtitleUploadInput`:
   ```

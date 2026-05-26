@@ -57,9 +57,9 @@
 - [x] Run `CI=true npm test` — expect GREEN
 - [x] Commit: `refactor(contracts): extract SubtitleUploadInput to shared Zod schema`
 
-## Phase S3: ScoringBreakdown shared contract
+## Phase S3: ScoringBreakdown shared contract [checkpoint: b56439e]
 
-- [ ] Create `server/src/contracts/scoring.ts` with a Zod schema for `ScoringBreakdown`:
+- [x] Create `server/src/contracts/scoring.ts` with a Zod schema for `ScoringBreakdown`:
   ```
   Fields to match current definitions in MediaSearchService.ts:
   - customFormatScore: number
@@ -76,16 +76,16 @@
   - titleConfidence: number
   - totalScore: number
   ```
-- [ ] Export the inferred TypeScript type
-- [ ] In `server/src/services/MediaSearchService.ts`:
+- [x] Export the inferred TypeScript type
+- [x] In `server/src/services/MediaSearchService.ts`:
   - Delete the local `ScoringBreakdown` interface
   - Import from `../contracts/scoring`
-- [ ] In `app/src/components/settings/ScoreBreakdownPanel.tsx`:
+- [x] In `app/src/components/settings/ScoreBreakdownPanel.tsx`:
   - Delete the local `ScoringBreakdown` interface
   - Import shared type (direct path or re-export)
-- [ ] Write test: `server/src/contracts/scoring.test.ts` — valid/invalid cases
-- [ ] Run existing ScoreBreakdownPanel tests — expect GREEN
-- [ ] Commit: `refactor(contracts): extract ScoringBreakdown to shared Zod schema`
+- [x] Write test: `server/src/contracts/scoring.test.ts` — valid/invalid cases
+- [x] Run existing ScoreBreakdownPanel tests — expect GREEN
+- [x] Commit: `refactor(contracts): extract ScoringBreakdown to shared Zod schema`
 
 ## Phase S4: OrganizeResult shared contract
 

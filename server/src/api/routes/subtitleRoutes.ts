@@ -9,6 +9,7 @@ import {
 import { parseIdParam } from '../routeUtils';
 import type { ApiDependencies } from '../types';
 import { ALLOWED_SUBTITLE_EXTENSIONS } from '../../services/providers/providerUtils';
+import { subtitleUploadInputSchema } from '../../contracts/subtitle';
 
 interface SubtitleBlacklistEntry {
   id: number;
@@ -243,31 +244,32 @@ export function registerSubtitleRoutes(
       throw new ValidationError('Only subtitle files are supported (.srt, .ass, .ssa, .sub, .vtt)');
     }
 
-    const language = readFieldValue(filePart.fields as Record<string, unknown>, 'language');
-    if (!language) {
-      throw new ValidationError('language is required');
-    }
-
-    const mediaIdRaw = readFieldValue(filePart.fields as Record<string, unknown>, 'mediaId');
+    const fields = filePart.fields as Record<string, unknown>;
+    const language = readFieldValue(fields, 'language');
+    const mediaIdRaw = readFieldValue(fields, 'mediaId');
     const mediaId = Number.parseInt(mediaIdRaw ?? '', 10);
-    if (!Number.isFinite(mediaId) || mediaId <= 0) {
-      throw new ValidationError('mediaId must be a positive number');
-    }
+    const mediaType = readFieldValue(fields, 'mediaType');
 
-    const mediaType = readFieldValue(filePart.fields as Record<string, unknown>, 'mediaType');
-    if (mediaType !== 'movie' && mediaType !== 'episode') {
-      throw new ValidationError("mediaType must be 'movie' or 'episode'");
+    // Validate core fields using shared Zod schema
+    const validation = subtitleUploadInputSchema.safeParse({
+      mediaId,
+      mediaType,
+      language,
+      forced: parseBooleanFlag(readFieldValue(fields, 'forced')),
+      hearingImpaired: parseBooleanFlag(readFieldValue(fields, 'hearingImpaired')),
+    });
+
+    if (!validation.success) {
+      throw new ValidationError(
+        `Invalid upload input: ${validation.error.errors.map(e => e.message).join(', ')}`,
+      );
     }
 
     const content = await filePart.toBuffer();
     const subtitle = await deps.subtitleInventoryApiService.uploadSubtitle({
       originalFilename: filePart.filename,
       content,
-      language,
-      forced: parseBooleanFlag(readFieldValue(filePart.fields as Record<string, unknown>, 'forced')),
-      hearingImpaired: parseBooleanFlag(readFieldValue(filePart.fields as Record<string, unknown>, 'hearingImpaired')),
-      mediaId,
-      mediaType,
+      ...validation.data,
     });
 
     return sendSuccess(reply, subtitle, 201);

@@ -32,9 +32,9 @@
 - [x] Run `npm run typecheck` — zero errors
 - [x] Commit: `refactor(contracts): extract BulkUpdateResult to shared Zod schema`
 
-## Phase S2: SubtitleUploadInput shared contract
+## Phase S2: SubtitleUploadInput shared contract [checkpoint: cf8c942]
 
-- [ ] Create `server/src/contracts/subtitle.ts` with a Zod schema for `SubtitleUploadInput`:
+- [x] Create `server/src/contracts/subtitle.ts` with a Zod schema for `SubtitleUploadInput`:
   ```
   Fields to match current definitions in SubtitleInventoryApiService.ts:
   - mediaType: 'movie' | 'series'
@@ -43,19 +43,19 @@
   - filePath: string
   - content?: string (base64)
   ```
-- [ ] Export the inferred TypeScript type
-- [ ] In `server/src/services/SubtitleInventoryApiService.ts`:
+- [x] Export the inferred TypeScript type
+- [x] In `server/src/services/SubtitleInventoryApiService.ts`:
   - Delete the local `SubtitleUploadInput` interface
   - Import from `../contracts/subtitle`
-- [ ] In `app/src/lib/api/subtitleApi.ts`:
+- [x] In `app/src/lib/api/subtitleApi.ts`:
   - Delete the local `SubtitleUploadInput` interface
   - Import shared type (direct path or re-export)
-- [ ] In `server/src/api/routes/subtitleRoutes.ts`:
+- [x] In `server/src/api/routes/subtitleRoutes.ts`:
   - Add Zod `.parse()` or `.safeParse()` validation on the upload request body using the shared schema
   - Return 422 with structured error if validation fails
-- [ ] Write test: `server/src/contracts/subtitle.test.ts` — valid/invalid cases
-- [ ] Run `CI=true npm test` — expect GREEN
-- [ ] Commit: `refactor(contracts): extract SubtitleUploadInput to shared Zod schema`
+- [x] Write test: `server/src/contracts/subtitle.test.ts` — valid/invalid cases
+- [x] Run `CI=true npm test` — expect GREEN
+- [x] Commit: `refactor(contracts): extract SubtitleUploadInput to shared Zod schema`
 
 ## Phase S3: ScoringBreakdown shared contract
 

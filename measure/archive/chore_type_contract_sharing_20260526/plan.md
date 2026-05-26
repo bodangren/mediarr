@@ -157,3 +157,21 @@
 - [x] Update `tech-debt.md` — mark "BulkUpdateResult drift risk", "SubtitleUploadInput drift risk", "ScoringBreakdown drift risk" as Resolved
 - [x] Update `lessons-learned.md` with shared contracts pattern
 - [x] Final commit and push
+
+## Phase S8: Post-review remediation
+
+- [x] Fix app workspace typecheck failures introduced by the contract-sharing commits:
+  - Restored non-BulkUpdateResult series API input interfaces deleted during S1
+  - Updated SeriesInteractiveSearchModal to import ScoringBreakdown from the shared contract source
+  - Removed the unused broken app bulk contract bridge file
+  - Replaced invalid `export import type` StorageLike syntax with valid type import/export
+  - Removed an unrelated unused `fireEvent` import so app lint exits successfully
+- [x] Run build-graph checks for edited/new contract files and consumers
+  - Fresh graph scan: `build-graph scan ./ /tmp/mediarr-remediation-graph.db` scanned 6958 nodes and 10256 edges
+  - Verified `server/src/contracts/` inventory and confirmed deleted `app/src/lib/api/contracts/bulk.ts` is absent from the fresh graph
+- [x] Run `npm run typecheck --workspace=app` — pass
+- [x] Run `npm run build --workspace=app` — pass; Vite reports large bundle warning only
+- [x] Run `npm run lint --workspace=app` — pass with 20 warnings, 0 errors
+- [x] Run `CI=true npm test` — 1852 passed, 11 skipped; 4 failures from missing local reference repos (`reference/sonarr`, `reference/radarr`, `reference/bazarr`, `reference/prowlarr`), unrelated to contract-sharing remediation
+- [x] Update track docs and registry with remediation outcome
+- [x] Commit remediation changes with verification note

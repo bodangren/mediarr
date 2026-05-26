@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { ApiHttpClient, type PaginatedResult } from './httpClient';
 import { routeMap } from './routeMap';
 import type { BulkUpdateResult } from '@server/contracts/bulk';
+export type { BulkUpdateResult } from '@server/contracts/bulk';
 
 const episodeStatisticsSchema = z.object({
   totalEpisodes: z.number(),
@@ -108,6 +109,32 @@ export interface BulkSeriesChanges {
   seasonFolder?: boolean;
   addTags?: string[];
   removeTags?: string[];
+}
+
+
+export interface SeriesOrganizePreviewInput {
+  seriesIds: number[];
+}
+
+export interface SeriesOrganizeApplyInput {
+  seriesIds: number[];
+}
+
+export interface EpisodeImportScanInput {
+  path: string;
+}
+
+export interface EpisodeImportApplyFile {
+  path: string;
+  seriesId: number;
+  seasonId: number;
+  episodeId: number;
+  quality?: string;
+  language?: string;
+}
+
+export interface EpisodeImportApplyInput {
+  files: EpisodeImportApplyFile[];
 }
 
 export interface SeriesSearchInput {

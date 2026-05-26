@@ -14,6 +14,7 @@ import { PeersCell } from '@/components/search/PeersCell';
 import { AgeCell } from '@/components/search/AgeCell';
 import { ScoreBreakdownPanel } from '@/components/settings/ScoreBreakdownPanel';
 import type { ReleaseCandidate } from '@/lib/api/releaseApi';
+import type { ScoringBreakdown } from '@server/contracts/scoring';
 
 export type SearchLevel = 'series' | 'season' | 'episode';
 const SEARCH_PAGE_SIZE = 500;
@@ -44,7 +45,7 @@ interface ReleaseResult {
   approved: boolean;
   rejections?: string[];
   customFormatScore?: number;
-  scoringBreakdown?: import('@/components/settings/ScoreBreakdownPanel').ScoringBreakdown;
+  scoringBreakdown?: ScoringBreakdown;
   protocol?: 'torrent' | 'usenet';
   magnetUrl?: string;
   downloadUrl?: string;

@@ -123,29 +123,29 @@
 - [x] Run playback tests — expect GREEN
 - [x] Commit: `refactor(contracts): extract Playback types to shared Zod schemas`
 
-## Phase S6: StorageLike deduplication
+## Phase S6: StorageLike deduplication [checkpoint: d8d6c07]
 
-- [ ] Create `app/src/lib/state/types.ts` with the shared `StorageLike` interface:
+- [x] Create `app/src/lib/state/types.ts` with the shared `StorageLike` interface:
   ```
   Fields (check all 4 copies for the superset):
   - getItem(key: string): string | null
   - setItem(key: string, value: string): void
   - removeItem(key: string): void
   ```
-- [ ] In `app/src/lib/uiPreferences.ts`:
+- [x] In `app/src/lib/uiPreferences.ts`:
   - Delete local `StorageLike` definition
   - Import from `./state/types`
-- [ ] In `app/src/lib/state/seriesOptionsStore.ts`:
+- [x] In `app/src/lib/state/seriesOptionsStore.ts`:
   - Delete local `StorageLike` definition
   - Import from `./types`
-- [ ] In `app/src/lib/state/uiStore.ts`:
+- [x] In `app/src/lib/state/uiStore.ts`:
   - Delete local `StorageLike` definition
   - Import from `./types`
-- [ ] In `app/src/lib/state/wantedStore.ts`:
+- [x] In `app/src/lib/state/wantedStore.ts`:
   - Delete local `StorageLike` definition
   - Import from `./types`
-- [ ] Run `CI=true npm test` — expect GREEN
-- [ ] Commit: `refactor(state): deduplicate StorageLike into shared types.ts`
+- [x] Run `CI=true npm test` — expect GREEN
+- [x] Commit: `refactor(state): deduplicate StorageLike into shared types.ts`
 
 ## Phase S7: Verification & Handoff
 

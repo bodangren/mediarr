@@ -1,4 +1,5 @@
 import type { PrismaClient, Series, Prisma } from '@prisma/client';
+import type { BulkUpdateResult } from '../contracts/bulk';
 
 /**
  * Input type for bulk series updates
@@ -10,15 +11,6 @@ export interface BulkSeriesChanges {
   seasonFolder?: boolean;
   addTags?: string[];
   removeTags?: string[];
-}
-
-/**
- * Result type for bulk update operations
- */
-export interface BulkUpdateResult {
-  updated: number;
-  failed: number;
-  errors?: Array<{ seriesId: number; error: string }>;
 }
 
 /**

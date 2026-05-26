@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { ApiHttpClient, type PaginatedResult } from './httpClient';
 import { routeMap } from './routeMap';
+import type { BulkUpdateResult } from '@server/contracts/bulk';
 
 const movieSchema = z.object({
   id: z.number(),
@@ -125,12 +126,6 @@ export interface BulkMovieChanges {
   path?: string;
   addTags?: string[];
   removeTags?: string[];
-}
-
-export interface BulkUpdateResult {
-  updated: number;
-  failed: number;
-  errors?: Array<{ movieId: number; error: string }>;
 }
 
 export interface MovieSearchInput {

@@ -107,21 +107,21 @@
 - [x] Run existing organize service tests — expect GREEN
 - [x] Commit: `refactor(contracts): extract OrganizeResult to shared Zod schema`
 
-## Phase S5: Playback types shared contracts
+## Phase S5: Playback types shared contracts [checkpoint: 3d57476]
 
-- [ ] Create `server/src/contracts/playback.ts` with Zod schemas for:
+- [x] Create `server/src/contracts/playback.ts` with Zod schemas for:
   - `PlaybackTarget` — `{ mediaType: 'movie'|'series', mediaId: number, fileId?: number }`
   - `PlaybackManifestRequest` — `{ target: PlaybackTarget, quality?: string, audioTrack?: string, subtitleTrack?: string }`
   - `PlaybackProgressKey` — `{ mediaType: 'movie'|'series', mediaId: number }`
-- [ ] Export inferred TypeScript types
-- [ ] In `server/src/services/PlaybackService.ts`:
+- [x] Export inferred TypeScript types
+- [x] In `server/src/services/PlaybackService.ts`:
   - Delete local `PlaybackTarget` and `PlaybackManifestRequest` interfaces
   - Import from `../contracts/playback`
-- [ ] In `server/src/repositories/PlaybackRepository.ts`:
+- [x] In `server/src/repositories/PlaybackRepository.ts`:
   - Delete local `PlaybackProgressKey` interface
   - Import from `../contracts/playback`
-- [ ] Run playback tests — expect GREEN
-- [ ] Commit: `refactor(contracts): extract Playback types to shared Zod schemas`
+- [x] Run playback tests — expect GREEN
+- [x] Commit: `refactor(contracts): extract Playback types to shared Zod schemas`
 
 ## Phase S6: StorageLike deduplication
 

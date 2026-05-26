@@ -42,3 +42,7 @@
 - (2026-05-03, dashboard_statistics) **Audit existing endpoints before creating new ones.** `/api/system/stats` already provided comprehensive library statistics; the Dashboard Statistics track initially planned a duplicate. Extended the existing `statsRoutes.ts` with `/api/stats/downloads` and `/api/stats/system` instead.
 - (2026-05-05, webtorrent_download_management) **Enhance existing pages before creating new ones.** The ActivityQueuePage already had core torrent management; adding sort/filter/search/SSE/priority to it was faster and more maintainable than building separate DownloadList/TorrentRow components. Reuse existing DataTable and API patterns.
 - (2026-05-06, dashboard_statistics) **Integration tests using `createApiServer` verify end-to-end route wiring.** Mocking prisma at the API server level tests the full request/response cycle including Fastify route registration, error handling, and JSON serialization. Two integration tests replaced the need for a full browser smoke test when browser-harness was unavailable.
+
+### Shared Type Contracts
+
+- (2026-05-26, chore_type_contract_sharing) **Zod schemas as shared contracts prevent server/app type drift.** Extract duplicate interfaces to `server/src/contracts/*.ts` with Zod schemas. App imports via `@server/contracts/*` alias (configured in tsconfig.app.json and vite.config.ts). Server-specific fields (Buffer, File) extend the shared base type. Changes to shared schema cause compile errors in both workspaces.

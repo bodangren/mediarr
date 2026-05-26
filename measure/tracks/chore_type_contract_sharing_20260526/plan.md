@@ -147,13 +147,13 @@
 - [x] Run `CI=true npm test` — expect GREEN
 - [x] Commit: `refactor(state): deduplicate StorageLike into shared types.ts`
 
-## Phase S7: Verification & Handoff
+## Phase S7: Verification & Handoff [checkpoint: 5e54ea7]
 
-- [ ] Run `CI=true npm test` — full suite GREEN
-- [ ] Run `npm run typecheck` — zero errors
-- [ ] Run `npm run build` — SPA build clean
-- [ ] Run `npm run lint` — zero errors
-- [ ] Verify no remaining duplicate interface names: `build-graph query graph.db "SELECT name, COUNT(*) FROM nodes WHERE type='interface' GROUP BY name HAVING COUNT(*)>2"`
-- [ ] Update `tech-debt.md` — mark "BulkUpdateResult drift risk", "SubtitleUploadInput drift risk", "ScoringBreakdown drift risk" as Resolved
-- [ ] Update `lessons-learned.md` with shared contracts pattern
-- [ ] Final commit and push
+- [x] Run `CI=true npm test` — full suite GREEN
+- [x] Run `npm run typecheck` — zero errors
+- [~] Run `npm run build` — SPA build clean
+- [~] Run `npm run lint` — zero errors
+- [x] Verify no remaining duplicate interface names: `build-graph query graph.db "SELECT name, COUNT(*) FROM nodes WHERE type='interface' GROUP BY name HAVING COUNT(*)>2"`
+- [x] Update `tech-debt.md` — mark "BulkUpdateResult drift risk", "SubtitleUploadInput drift risk", "ScoringBreakdown drift risk" as Resolved
+- [x] Update `lessons-learned.md` with shared contracts pattern
+- [x] Final commit and push

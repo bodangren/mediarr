@@ -14,9 +14,6 @@ This file tracks all major tracks for the project. Each track has its own detail
 - [x] **Track: SPA Subtitle Management Parity** *Phases: 5 | Link: [./archive/chore_spa_subtitle_management_20260507/](./archive/chore_spa_subtitle_management_20260507/)* — Subtitle inventory, search, download, and delete in the React SPA (Flutter parity)
 - [x] **Track: Typed getSeriesWithEpisodes API Response** *Phases: 4 | Link: [./archive/type_series_api_response_20260508/](./archive/type_series_api_response_20260508/)* — Zod schema for series detail API, eliminate `as any` casts in SeriesDetailPage and children
 - [ ] **Track: Flutter Media Detail Page** *Phases: 5 | Link: [./tracks/feature_flutter_media_detail_20260508/](./tracks/feature_flutter_media_detail_20260508/)* — Movie and series detail screens with metadata, episodes, actions, and file info in the Flutter client
-- [ ] **Track: Indexer Health Monitoring and Auto-Disable** *Phases: 4 | Link: [./tracks/indexer_health_monitoring_20260509/](./tracks/indexer_health_monitoring_20260509/)* — Track indexer response times and failure rates; auto-disable failing indexers
-
-- [ ] **Track: Shared Type Contracts (Server ↔ App)** *Stories: 6 | Link: [./tracks/chore_type_contract_sharing_20260526/](./tracks/chore_type_contract_sharing_20260526/)* — Extract shared Zod schemas for BulkUpdateResult, SubtitleUploadInput, ScoringBreakdown, OrganizeResult, Playback types, StorageLike; eliminate duplicate interface definitions across server/app boundary
 
 - [ ] **Track: Variant Subtitle Subsystem Test Coverage** *Stories: 5 | Link: [./tracks/bug_variant_subtitle_test_coverage_20260526/](./tracks/bug_variant_subtitle_test_coverage_20260526/)* — Unit tests for VariantBackfillService, VariantInventoryIndexer, VariantMissingSubtitleService, VariantSubtitleFetchService, VariantWantedService (5 services, 0 → full coverage)
 
@@ -282,3 +279,5 @@ Parallel:
 - [x] **Track: Legacy Code & Test Infrastructure Cleanup** *Phases: 3 | Link: [./archive/legacy_test_cleanup_20260506/](./archive/legacy_test_cleanup_20260506/)* — Deleted app_src_backup/ + import-manager.test.js; strengthened core-primitives.test.tsx variant class assertions; documented VirtualTable mock acceptance; 1802 tests green
 
 - [x] **Track: Wanted List Dashboard (SPA)** *Phases: 5 | Link: [./archive/feature_wanted_list_spa_20260507/](./archive/feature_wanted_list_spa_20260507/)* — Backend `GET /api/movies/missing` + `GET /api/episodes/missing` with pagination; WantedPage with Movies/Episodes tabs, search, monitored toggle, pagination; 15 component tests green; app build clean
+
+- [x] **Track: Shared Type Contracts (Server ↔ App)** *Stories: 6 | Link: [./archive/chore_type_contract_sharing_20260526/](./archive/chore_type_contract_sharing_20260526/)* — Extracted shared Zod schemas for BulkUpdateResult, SubtitleUploadInput, ScoringBreakdown, OrganizeResult, Playback types, StorageLike; eliminated duplicate interface definitions across server/app boundary; @server alias configured for cross-workspace imports

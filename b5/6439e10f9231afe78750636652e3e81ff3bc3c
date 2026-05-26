@@ -1,0 +1,6 @@
+Task: ScoringBreakdown shared contract
+- Created server/src/contracts/scoring.ts with shared Zod schema
+- Updated MediaSearchService.ts to import from shared location
+- Updated ScoreBreakdownPanel.tsx to import from shared location via @server alias
+- Created scoring.test.ts with 5 passing tests
+- All TypeScript checks pass

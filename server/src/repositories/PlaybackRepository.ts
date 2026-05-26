@@ -3,14 +3,9 @@ import type {
   PlaybackProgress,
   PrismaClient,
 } from '@prisma/client';
+import type { PlaybackProgressKey } from '../contracts/playback';
 
 const DEFAULT_WATCHED_THRESHOLD = 0.9;
-
-export interface PlaybackProgressKey {
-  mediaType: PlaybackMediaType;
-  mediaId: number;
-  userId: string;
-}
 
 export interface UpsertPlaybackProgressInput extends PlaybackProgressKey {
   position: number;

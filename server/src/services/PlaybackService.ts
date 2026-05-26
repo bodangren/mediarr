@@ -4,20 +4,12 @@ import type { PrismaClient, PlaybackMediaType } from '@prisma/client';
 import { NotFoundError, ValidationError } from '../errors/domainErrors';
 import type { ContinueWatchingItem, PlaybackRepository } from '../repositories/PlaybackRepository';
 import type { SettingsService } from './SettingsService';
+import type { PlaybackTarget, PlaybackManifestRequest } from '../contracts/playback';
 
 const DEFAULT_USER_ID = 'lan-default';
 const DEFAULT_WATCHED_THRESHOLD = 0.9;
 const DEFAULT_ALLOWED_ROOTS = ['/data/media'];
 const ALLOWED_SUBTITLE_EXTENSIONS = new Set(['.srt', '.vtt']);
-
-export interface PlaybackTarget {
-  mediaType: PlaybackMediaType;
-  mediaId: number;
-}
-
-export interface PlaybackManifestRequest extends PlaybackTarget {
-  userId?: string | undefined;
-}
 
 export interface PlaybackProgressInput extends PlaybackManifestRequest {
   position: number;

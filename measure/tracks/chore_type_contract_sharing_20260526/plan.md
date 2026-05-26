@@ -87,9 +87,9 @@
 - [x] Run existing ScoreBreakdownPanel tests — expect GREEN
 - [x] Commit: `refactor(contracts): extract ScoringBreakdown to shared Zod schema`
 
-## Phase S4: OrganizeResult shared contract
+## Phase S4: OrganizeResult shared contract [checkpoint: ad71927]
 
-- [ ] Create `server/src/contracts/organize.ts` with a Zod schema for `OrganizeResult`:
+- [x] Create `server/src/contracts/organize.ts` with a Zod schema for `OrganizeResult`:
   ```
   Fields to match current definitions in MovieOrganizeService.ts:
   - moved: number
@@ -97,15 +97,15 @@
   - errors: string[]
   - destination: string
   ```
-- [ ] Export the inferred TypeScript type
-- [ ] In `server/src/services/MovieOrganizeService.ts`:
+- [x] Export the inferred TypeScript type
+- [x] In `server/src/services/MovieOrganizeService.ts`:
   - Delete the local `OrganizeResult` interface
   - Import from `../contracts/organize`
-- [ ] In `server/src/services/SeriesOrganizeService.ts`:
+- [x] In `server/src/services/SeriesOrganizeService.ts`:
   - Delete the local `OrganizeResult` interface
   - Import from `../contracts/organize`
-- [ ] Run existing organize service tests — expect GREEN
-- [ ] Commit: `refactor(contracts): extract OrganizeResult to shared Zod schema`
+- [x] Run existing organize service tests — expect GREEN
+- [x] Commit: `refactor(contracts): extract OrganizeResult to shared Zod schema`
 
 ## Phase S5: Playback types shared contracts
 

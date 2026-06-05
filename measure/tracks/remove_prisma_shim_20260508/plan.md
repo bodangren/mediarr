@@ -1,9 +1,9 @@
 # Plan: Remove Prisma $executeRawUnsafe Shim
 
 ## Phase 1: Audit & Catalog (TDD)
-- [ ] Write audit script/test to find all `$executeRawUnsafe` call sites
-- [ ] Document each usage with suggested Drizzle replacement
-- [ ] Commit audit findings
+- [~] Write audit script/test to find all `$executeRawUnsafe` call sites
+- [~] Document each usage with suggested Drizzle replacement
+- [~] Commit audit findings
 
 ## Phase 2: Backend Replacement (TDD)
 - [ ] Write tests for each replaced query to ensure identical behavior

@@ -1,8 +1,9 @@
 {
   "id": "chore_automation_supervisor_audit_pipeline_20260607",
   "title": "Automation Supervisor Audit Pipeline",
-  "status": "in_progress",
+  "status": "done",
   "created": "2026-06-07",
+  "completed": "2026-06-07",
   "priority": "high",
   "type": "chore"
 }

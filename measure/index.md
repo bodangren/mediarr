@@ -7,6 +7,7 @@
 
 ## Workflow
 - [Workflow](./workflow.md)
+- [Automation Supervisor](./automation-supervisor.md)
 - [Code Style Guides](./code_styleguides/)
 
 ## Management

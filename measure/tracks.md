@@ -5,6 +5,8 @@ This file tracks all major tracks for the project. Each track has its own detail
 ---
 
 ## Pending Tracks
+- [~] **Track: Automation Supervisor Audit Pipeline** *Phases: 2 | Link: [./tracks/chore_automation_supervisor_audit_pipeline_20260607/](./tracks/chore_automation_supervisor_audit_pipeline_20260607/)* — Add independent acceptance, adversarial testing, multimodal UI/UX, and closeout roles
+
 - [ ] **Track: Remove Prisma $executeRawUnsafe Shim** *Link: [./tracks/remove_prisma_shim_20260508/](./tracks/remove_prisma_shim_20260508/)* — Standardize on Drizzle-native queries and remove mixed Bun/Node SQLite branching
 
 - [ ] **Track: Scheduler & Automation Dashboard** *Phases: 5 | Link: [./tracks/feature_scheduler_automation_dashboard_20260524/](./tracks/feature_scheduler_automation_dashboard_20260524/)* — React SPA settings page for configuring and monitoring RSS sync, wanted search, and library scan schedules

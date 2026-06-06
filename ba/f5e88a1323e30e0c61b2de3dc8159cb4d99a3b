@@ -1,0 +1,9 @@
+Measure closeout for Automation Supervisor Audit Pipeline.
+
+Recorded aa44a80 checkpoints, marked metadata done on 2026-06-07, removed the track from active registry, and archived it under measure/archive/.
+
+Post-closeout verification:
+- python3 -m unittest discover -s measure -p 'test_*.py' (5 passed)
+- python3 measure/automation-supervisor.py --dry-run --limit 1
+- git diff --check
+- archive location verified

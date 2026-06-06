@@ -1,5 +1,11 @@
 # Plan: Server Service Test Coverage Gap Remediation
 
+> **Scope (2026-06-07 restructure):** This track now covers only the four runtime-critical
+> services — **Scheduler (S1), EpisodeService (S3), SeriesService (S4), MediaSearchService (S6)**.
+> The lower-risk services (SettingsService, TvSearchService, the three Subtitle services, and
+> FilterService) are marked **DEFERRED — post-v1.0** below; complete them in a follow-up track
+> after `release_v1_cut_20260607`. Do not start deferred phases as part of this track.
+
 ## General pattern for service tests
 
 Each service test file follows this structure:
@@ -51,7 +57,7 @@ describe('ServiceName', () => {
 - [ ] Run: `npx vitest run server/src/services/Scheduler.test.ts`
 - [ ] Commit: `test(scheduler): add Scheduler service unit tests`
 
-## Phase S2: SettingsService tests
+## Phase S2: SettingsService tests *(DEFERRED — post-v1.0)*
 
 - [ ] Read `server/src/services/SettingsService.ts` to understand its interface
 - [ ] Create `server/src/services/SettingsService.test.ts`
@@ -92,7 +98,7 @@ describe('ServiceName', () => {
 - [ ] Run: `npx vitest run server/src/services/SeriesService.test.ts`
 - [ ] Commit: `test(series): add SeriesService unit tests`
 
-## Phase S5: TvSearchService tests
+## Phase S5: TvSearchService tests *(DEFERRED — post-v1.0)*
 
 - [ ] Read `server/src/services/TvSearchService.ts`
 - [ ] Create `server/src/services/TvSearchService.test.ts`
@@ -112,7 +118,7 @@ describe('ServiceName', () => {
 - [ ] Run: `npx vitest run server/src/services/MediaSearchService.base.test.ts`
 - [ ] Commit: `test(search): add MediaSearchService base unit tests`
 
-## Phase S7: SubtitleNamingService tests
+## Phase S7: SubtitleNamingService tests *(DEFERRED — post-v1.0)*
 
 - [ ] Read `server/src/services/SubtitleNamingService.ts`
 - [ ] Create `server/src/services/SubtitleNamingService.test.ts`
@@ -123,7 +129,7 @@ describe('ServiceName', () => {
 - [ ] Run: `npx vitest run server/src/services/SubtitleNamingService.test.ts`
 - [ ] Commit: `test(subtitles): add SubtitleNamingService unit tests`
 
-## Phase S8: SubtitleRequirementEngine tests
+## Phase S8: SubtitleRequirementEngine tests *(DEFERRED — post-v1.0)*
 
 - [ ] Read `server/src/services/SubtitleRequirementEngine.ts`
 - [ ] Create `server/src/services/SubtitleRequirementEngine.test.ts`
@@ -134,7 +140,7 @@ describe('ServiceName', () => {
 - [ ] Run: `npx vitest run server/src/services/SubtitleRequirementEngine.test.ts`
 - [ ] Commit: `test(subtitles): add SubtitleRequirementEngine unit tests`
 
-## Phase S9: SubtitleProviderFactory tests
+## Phase S9: SubtitleProviderFactory tests *(DEFERRED — post-v1.0)*
 
 - [ ] Read `server/src/services/SubtitleProviderFactory.ts`
 - [ ] Create `server/src/services/SubtitleProviderFactory.test.ts`
@@ -145,7 +151,7 @@ describe('ServiceName', () => {
 - [ ] Run: `npx vitest run server/src/services/SubtitleProviderFactory.test.ts`
 - [ ] Commit: `test(subtitles): add SubtitleProviderFactory unit tests`
 
-## Phase S10: FilterService tests
+## Phase S10: FilterService tests *(DEFERRED — post-v1.0)*
 
 - [ ] Read `server/src/services/FilterService.ts`
 - [ ] Create `server/src/services/FilterService.test.ts`
@@ -157,11 +163,11 @@ describe('ServiceName', () => {
 - [ ] Run: `npx vitest run server/src/services/FilterService.test.ts`
 - [ ] Commit: `test(filters): add FilterService unit tests`
 
-## Phase S11: Verification & Handoff
+## Phase S11: Verification & Handoff *(in-scope services only)*
 
 - [ ] Run `CI=true npm test` — full suite GREEN
 - [ ] Run `npm run typecheck` — zero errors
-- [ ] Verify each new test file covers >80% of its source file
-- [ ] Update `tech-debt.md` — mark "Server services untested" items as Resolved
+- [ ] Verify the four in-scope test files (Scheduler, Episode, Series, MediaSearch) cover >80% of their source files
+- [ ] Update `tech-debt.md` — narrow the "30 server services untested" item to the deferred remainder; note the 4 runtime-critical services are now covered
 - [ ] Update `lessons-learned.md` with Scheduler mock pattern
 - [ ] Final commit and push

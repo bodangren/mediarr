@@ -1,0 +1,26 @@
+{
+  "id": "chore_close_drizzle_migration_20260607",
+  "title": "Close Drizzle Migration (Shim Removal + Naming Residue)",
+  "status": "pending",
+  "created": "2026-06-07",
+  "priority": "high",
+  "type": "chore",
+  "supersedes": [
+    "remove_prisma_shim_20260508",
+    "chore_prisma_naming_cleanup_20260526"
+  ],
+  "sprint": {
+    "goal": "Finish the Prisma→Drizzle migration in one decisive pass: remove the $executeRawUnsafe/$queryRawUnsafe shim and Bun/Node SQLite branching, delete the PrismaClient type shim, rename Prisma-named test mock helpers to Drizzle naming, and remove the stale OPENAI_API_KEY — so the codebase unambiguously uses Drizzle with no migration residue left.",
+    "stories": [
+      "S1: Audit & catalog all raw-SQL shim call sites (carried over from remove_prisma_shim Phase 1)",
+      "S2: Replace $executeRawUnsafe/$queryRawUnsafe with Drizzle-native queries; remove Bun/Node branching",
+      "S3: Verify affected routes (stats, system/health, startup repair) against in-memory SQLite",
+      "S4: Remove PrismaClient type shim (types/prisma.ts) in favor of DatabaseClient",
+      "S5: Rename Prisma-named test mock helpers to Drizzle/Db naming",
+      "S6: Remove stale OPENAI_API_KEY from .env",
+      "S7: Verification, debt closeout & handoff"
+    ],
+    "demo_notes": "Zero grep hits for $executeRawUnsafe/$queryRawUnsafe, PrismaClient, and createPrismaMock/makePrisma in non-archived code; full CI green; tech-debt items marked Resolved.",
+    "retro_ref": null
+  }
+}

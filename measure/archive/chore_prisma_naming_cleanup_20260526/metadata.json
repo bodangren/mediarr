@@ -1,7 +1,8 @@
 {
   "id": "chore_prisma_naming_cleanup_20260526",
   "title": "Prisma Naming Residue Cleanup",
-  "status": "pending",
+  "status": "superseded",
+  "superseded_by": "chore_close_drizzle_migration_20260607",
   "created": "2026-05-26",
   "priority": "medium",
   "type": "chore",

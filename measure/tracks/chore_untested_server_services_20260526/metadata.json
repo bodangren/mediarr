@@ -6,20 +6,22 @@
   "priority": "high",
   "type": "chore",
   "sprint": {
-    "goal": "Add unit tests for the 12 highest-risk server services that currently have zero dedicated test files, focusing on services that manage critical data flows (scheduling, media CRUD, settings, search aggregation)",
+    "goal": "Add unit tests for the four runtime-critical server services that currently have zero dedicated test files: Scheduler, EpisodeService, SeriesService, and MediaSearchService. The lower-risk services (Settings, TvSearch, the three Subtitle services, FilterService) are deferred to a post-v1.0 follow-up track.",
     "stories": [
       "S1: Scheduler service tests",
-      "S2: SettingsService tests",
       "S3: EpisodeService tests",
       "S4: SeriesService tests",
+      "S6: MediaSearchService base tests"
+    ],
+    "deferred_stories": [
+      "S2: SettingsService tests",
       "S5: TvSearchService tests",
-      "S6: MediaSearchService base tests",
       "S7: SubtitleNamingService tests",
       "S8: SubtitleRequirementEngine tests",
       "S9: SubtitleProviderFactory tests",
       "S10: FilterService tests"
     ],
-    "demo_notes": "Show 10 new test suites green; Scheduler cron registration verified; Settings CRUD round-trips verified",
+    "demo_notes": "Show 4 new test suites green; Scheduler cron registration verified; Episode/Series CRUD and MediaSearch aggregation covered",
     "retro_ref": null
   }
 }

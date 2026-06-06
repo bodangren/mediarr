@@ -4,28 +4,41 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ---
 
-## Pending Tracks
-- [ ] **Track: Remove Prisma $executeRawUnsafe Shim** *Link: [./tracks/remove_prisma_shim_20260508/](./tracks/remove_prisma_shim_20260508/)* — Standardize on Drizzle-native queries and remove mixed Bun/Node SQLite branching
+## Active Tracks — Execution Order
 
-- [ ] **Track: Scheduler & Automation Dashboard** *Phases: 5 | Link: [./tracks/feature_scheduler_automation_dashboard_20260524/](./tracks/feature_scheduler_automation_dashboard_20260524/)* — React SPA settings page for configuring and monitoring RSS sync, wanted search, and library scan schedules
+> Reordered 2026-06-07 (direction & scope review). Value-first: finish the migration tail,
+> then ship the two user-facing features, then the risk-weighted tests, then cut v1.0.
+> Internal test/coverage work with low runtime risk is parked under **Post-v1.0 / Deferred**.
+
+1. - [ ] **Track: Close Drizzle Migration (Shim Removal + Naming Residue)** *Stories: 7 | Link: [./tracks/chore_close_drizzle_migration_20260607/](./tracks/chore_close_drizzle_migration_20260607/)* — Consolidates `remove_prisma_shim` + `prisma_naming_cleanup`: remove `$executeRawUnsafe`/Bun-Node branching, delete PrismaClient type shim, rename Prisma mock helpers, drop stale `OPENAI_API_KEY`. Ends the migration tail in one pass.
+2. - [ ] **Track: Flutter Media Detail Page** *Phases: 5 | Link: [./tracks/feature_flutter_media_detail_20260508/](./tracks/feature_flutter_media_detail_20260508/)* — Movie and series detail screens (metadata, episodes, actions, file info) in the Flutter client. User-facing; the client is the product differentiator.
+3. - [ ] **Track: Scheduler & Automation Dashboard** *Phases: 5 | Link: [./tracks/feature_scheduler_automation_dashboard_20260524/](./tracks/feature_scheduler_automation_dashboard_20260524/)* — React SPA settings page for configuring/monitoring RSS sync, wanted search, and library scan schedules. User-facing.
+4. - [ ] **Track: Variant Subtitle Subsystem Test Coverage** *Stories: 5 | Link: [./tracks/bug_variant_subtitle_test_coverage_20260526/](./tracks/bug_variant_subtitle_test_coverage_20260526/)* — Unit tests for 5 variant-subtitle services with zero coverage. Real runtime risk.
+5. - [ ] **Track: Server Service Test Coverage — Runtime-Critical** *Stories: 4 (scoped from 10) | Link: [./tracks/chore_untested_server_services_20260526/](./tracks/chore_untested_server_services_20260526/)* — Rescoped 2026-06-07 to Scheduler, EpisodeService, SeriesService, MediaSearchService only; the other 6 services are deferred post-v1.0.
+6. - [ ] **Track: v1.0 Release Cut — Define the Line** *Stories: 4 | Link: [./tracks/release_v1_cut_20260607/](./tracks/release_v1_cut_20260607/)* — Ratify v1.0 scope, confirm gates, tag the release, publish the post-v1.0 backlog. Draws the line that stops open-ended testing/cleanup.
+
+## Post-v1.0 / Deferred
+
+> Parked behind `release_v1_cut_20260607` (2026-06-07 restructure). Low runtime risk or
+> blocked on prerequisites. Revisit after v1.0 ships.
+
+- [ ] **Track: Indexer Health Monitoring & Auto-Disable** *Phases: ~4 | Link: [./tracks/indexer_health_monitoring_20260509/](./tracks/indexer_health_monitoring_20260509/)* — Feature; previously unregistered. Evaluate in `release_v1_cut` S1 for ship-in-v1.0 vs after.
+- [ ] **Track: Import List UI Test Coverage** *(deferred)* *Link: [./tracks/chore_import_list_ui_tests_20260526/](./tracks/chore_import_list_ui_tests_20260526/)* — UI-only coverage; low runtime risk.
+- [ ] **Track: Frontend Component Test Coverage Gaps** *(deferred — merge candidate)* *Link: [./tracks/chore_frontend_component_test_gaps_20260526/](./tracks/chore_frontend_component_test_gaps_20260526/)* — Merge with MSW coverage into one post-v1.0 frontend-testing track.
+- [ ] **Track: MSW Mock Coverage for Backend Routes** *(deferred — merge candidate)* *Link: [./tracks/chore_msw_mock_coverage_20260526/](./tracks/chore_msw_mock_coverage_20260526/)* — Only valuable once consuming integration tests exist; pair with the component-gaps track.
+- [ ] **Server Service Test Coverage — deferred remainder** — SettingsService, TvSearchService, SubtitleNamingService, SubtitleRequirementEngine, SubtitleProviderFactory, FilterService (the 6 phases split out of track #5 above).
+
+## Superseded (2026-06-07)
+
+- [s] **Track: Remove Prisma $executeRawUnsafe Shim** → folded into [chore_close_drizzle_migration_20260607](./archive/remove_prisma_shim_20260508/) *(archived; Phase 1 audit work carried forward)*
+- [s] **Track: Prisma Naming Residue Cleanup** → folded into [chore_close_drizzle_migration_20260607](./archive/chore_prisma_naming_cleanup_20260526/) *(archived)*
+
+## Recently Completed (archived)
 
 - [x] **Track: Custom Format Editor & Live Tester** *Phases: 5 | Link: [./archive/feature_custom_format_editor_20260507/](./archive/feature_custom_format_editor_20260507/)* — 13 backend route tests, FormatLiveTester component, dedicated settings page with search/clone/test panel
 - [x] **Track: Release Scoring Breakdown Panel** *Phases: 5 | Link: [./archive/feature_release_scoring_breakdown_20260507/](./archive/feature_release_scoring_breakdown_20260507/)* — Backend breakdown storage, ScoreBreakdownPanel component, SeriesInteractiveSearchModal integration
 - [x] **Track: SPA Subtitle Management Parity** *Phases: 5 | Link: [./archive/chore_spa_subtitle_management_20260507/](./archive/chore_spa_subtitle_management_20260507/)* — Subtitle inventory, search, download, and delete in the React SPA (Flutter parity)
 - [x] **Track: Typed getSeriesWithEpisodes API Response** *Phases: 4 | Link: [./archive/type_series_api_response_20260508/](./archive/type_series_api_response_20260508/)* — Zod schema for series detail API, eliminate `as any` casts in SeriesDetailPage and children
-- [ ] **Track: Flutter Media Detail Page** *Phases: 5 | Link: [./tracks/feature_flutter_media_detail_20260508/](./tracks/feature_flutter_media_detail_20260508/)* — Movie and series detail screens with metadata, episodes, actions, and file info in the Flutter client
-
-- [ ] **Track: Variant Subtitle Subsystem Test Coverage** *Stories: 5 | Link: [./tracks/bug_variant_subtitle_test_coverage_20260526/](./tracks/bug_variant_subtitle_test_coverage_20260526/)* — Unit tests for VariantBackfillService, VariantInventoryIndexer, VariantMissingSubtitleService, VariantSubtitleFetchService, VariantWantedService (5 services, 0 → full coverage)
-
-- [ ] **Track: Import List UI Test Coverage** *Stories: 5 | Link: [./tracks/chore_import_list_ui_tests_20260526/](./tracks/chore_import_list_ui_tests_20260526/)* — Component tests for ExclusionManager, ImportListList, ImportListModal, AddExclusionModal, ImportListSettings (5 components, 0 → full coverage)
-
-- [ ] **Track: Server Service Test Coverage Gap Remediation** *Stories: 10 | Link: [./tracks/chore_untested_server_services_20260526/](./tracks/chore_untested_server_services_20260526/)* — Unit tests for Scheduler, SettingsService, EpisodeService, SeriesService, TvSearchService, MediaSearchService, SubtitleNamingService, SubtitleRequirementEngine, SubtitleProviderFactory, FilterService
-
-- [ ] **Track: Frontend Component Test Coverage Gaps** *Stories: 5 | Link: [./tracks/chore_frontend_component_test_gaps_20260526/](./tracks/chore_frontend_component_test_gaps_20260526/)* — Component tests for movie modals (EditMovieModal, ManualMatchDialog, MovieBulkEditModal, OrganizePreviewModal), table primitives (DataTable, TablePager, TableOptionsModal), search cells (AgeCell, PeersCell, QualityBadge, ReleaseTitle), providers (ToastProvider, AppProviders), misc (FilterDropdown, MetricCard)
-
-- [ ] **Track: MSW Mock Coverage for Backend Routes** *Stories: 5 | Link: [./tracks/chore_msw_mock_coverage_20260526/](./tracks/chore_msw_mock_coverage_20260526/)* — Add MSW handlers for all unmocked backend routes (~85 routes across 15 domains: backups, blocklist, calendar, collections, custom formats, dashboard, download client, import lists, logs, playback, quality profiles, setup, subtitles, system, updates)
-
-- [ ] **Track: Prisma Naming Residue Cleanup** *Stories: 3 | Link: [./tracks/chore_prisma_naming_cleanup_20260526/](./tracks/chore_prisma_naming_cleanup_20260526/)* — Remove PrismaClient type shim, rename createPrismaMock/makePrisma helpers to Drizzle naming, remove stale OPENAI_API_KEY from .env
 
 ---
 

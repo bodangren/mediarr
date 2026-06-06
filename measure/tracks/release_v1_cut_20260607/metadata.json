@@ -1,0 +1,19 @@
+{
+  "id": "release_v1_cut_20260607",
+  "title": "v1.0 Release Cut — Define the Line",
+  "status": "pending",
+  "created": "2026-06-07",
+  "priority": "high",
+  "type": "chore",
+  "sprint": {
+    "goal": "Stop the open-ended testing/cleanup expansion by drawing an explicit v1.0 line: ratify the must-ship feature set, confirm the quality gates are met, tag a release, and define what is explicitly out-of-scope (deferred to post-v1.0).",
+    "stories": [
+      "S1: Ratify the v1.0 scope checklist (what must ship)",
+      "S2: Confirm quality gates (CI green, typecheck/lint clean, build clean)",
+      "S3: Tag and document the v1.0 release",
+      "S4: Publish the post-v1.0 backlog (deferred tracks)"
+    ],
+    "demo_notes": "A tagged v1.0 commit, a CHANGELOG/release note, and a post-v1.0 section in tracks.md listing every deferred track.",
+    "retro_ref": null
+  }
+}

@@ -1,0 +1,9 @@
+Track: Automation Supervisor Audit Pipeline
+
+Implemented phase acceptance, adversarial testing, conditional Kimi WebBridge UI/UX auditing, final acceptance, and mandatory Measure closeout roles. Added structured audit-result gates, UX applicability controls, closeout archive checks, documentation, and five standard-library unit tests.
+
+Verification:
+- python3 -m py_compile measure/automation-supervisor.py measure/test_automation_supervisor.py
+- python3 -m unittest discover -s measure -p 'test_*.py'
+- python3 measure/automation-supervisor.py --dry-run --track 'chore_automation_supervisor_audit_pipeline_20260607' --limit 1
+- git diff --check

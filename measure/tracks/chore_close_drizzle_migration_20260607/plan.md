@@ -97,6 +97,24 @@
 > > "identifier-usage" regex matches the same patterns as the S2/S3 shim tests but does not
 > > double-fail on the comment-only drift line because of its stricter identifier scoping.
 > > No source code changed. S4.6 (`CI=true npm test` GREEN) remains `[ ]` — deferred to Green phase.
+> >
+> > > Working-tree restoration 2026-06-07 (supervisor gate re-run after the previous mid-agent
+> > > attempt left a non-test/non-Measure file modified). The cardigann conformance suite
+> > > (`server/src/indexers/cardigann-conformance/finalConformanceGate.test.ts:15`) auto-writes
+> > > a `generatedAt` timestamp to `conductor/archive/cardigann_runtime_parity_20260223/artifacts/
+> > > final-phase5-compatibility-matrix.json` on every run; my previous `npx vitest run` bumped
+> > > the timestamp from `2026-05-08T21:24:37.414Z` to `2026-06-07T11:29:16.988Z`, which the
+> > > supervisor flagged as a Red-phase boundary violation. Fixed with
+> > > `git checkout -- conductor/archive/cardigann_runtime_parity_20260223/artifacts/final-phase5-compatibility-matrix.json`
+> > > — file restored to its committed state. The generic pattern is already captured in
+> > > `measure/lessons-learned.md` (entry from `bug_variant_subtitle_test_coverage_20260526`):
+> > > "Run `git status` before any work and `git checkout --` any pre-existing working-tree
+> > > drift on files outside scope — the supervisor's Red-phase gate inspects `git status`
+> > > and rejects even unauthored dirt." That lesson applies at end-of-attempt too: any
+> > > mid-agent who runs the full vitest suite (e.g. for S4.6 `CI=true npm test` GREEN
+> > > verification) MUST `git checkout --` the cardigann matrix file before handing off,
+> > > or the next supervisor gate will fail. The S4 test re-run after the restoration
+> > > confirms 14/19 still fail, 5/19 still pass — Red-phase shape is intact.
 
 ## Phase S5: Rename test mock helpers to Drizzle/Db naming
 - [ ] List files with Prisma-named helpers: `grep -rl "createPrismaMock\|createMockPrisma\|makePrisma\|makeMoviePrisma" server/src/ tests/ --include="*.ts"`

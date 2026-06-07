@@ -4,7 +4,7 @@
 > Read [test-strategy.md](./test-strategy.md) before starting S1–S3.
 > S1 was already started under the old shim track (red-phase audit committed `30ffb37`).
 
-## Phase S1: Audit & catalog raw-SQL shim call sites *(carried over — complete)*
+## Phase S1: Audit & catalog raw-SQL shim call sites *(carried over — in progress)*
 - [x] Write audit test that scans source for `$executeRawUnsafe` / `$queryRawUnsafe` / `$queryRaw` call sites — red phase committed in `b63665d` (`tests/closeDrizzleMigration.audit.test.ts`, 20 tests, 1 failing on missing `audit-results.md`)
 - [x] Document each usage with suggested Drizzle replacement (audit-results.md artifact) — green phase committed in `076e91c` (`audit-results.md`, 8 files catalogued: 2 production, 1 type-decl, 4 test-mock, 1 comment-only)
 - [x] Commit audit findings

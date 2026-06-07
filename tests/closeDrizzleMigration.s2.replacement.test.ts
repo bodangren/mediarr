@@ -95,8 +95,7 @@ describe('chore_close_drizzle_migration_20260607 — Phase S2: Drizzle-native re
       if (!runRawDrizzle) return;
 
       const client = createTestDb();
-      client.sqlite.exec(`INSERT INTO "Notification" (name, type, config) VALUES ('notif-bad', 'webhook', 'not valid json')`);
-      client.sqlite.exec(`INSERT INTO "Notification" (name, type, config) VALUES ('notif-bad-2', 'webhook', 'still bad')`);
+      client.sqlite.exec(`INSERT INTO "Notification" (name, type, config, createdAt, updatedAt) VALUES ('notif-bad', 'webhook', 'not valid json', 1, 1)`);
 
       const oldChanges = Number(
         client.sqlite.prepare(
@@ -104,6 +103,7 @@ describe('chore_close_drizzle_migration_20260607 — Phase S2: Drizzle-native re
         ).run().changes ?? 0,
       );
 
+      client.sqlite.exec(`INSERT INTO "Notification" (name, type, config, createdAt, updatedAt) VALUES ('notif-bad-2', 'webhook', 'still bad', 1, 1)`);
       const { sql } = await import('drizzle-orm');
       const newChanges = await runRawDrizzle(
         client,
@@ -123,7 +123,6 @@ describe('chore_close_drizzle_migration_20260607 — Phase S2: Drizzle-native re
 
       const client = createTestDb();
       client.sqlite.exec(`INSERT INTO "ActivityEvent" (eventType, sourceModule, summary, success, details) VALUES ('TEST', 'tests', 'summary', 1, 'not valid json')`);
-      client.sqlite.exec(`INSERT INTO "ActivityEvent" (eventType, sourceModule, summary, success, details) VALUES ('TEST', 'tests', 'summary', 1, 'still bad')`);
 
       const oldChanges = Number(
         client.sqlite.prepare(
@@ -131,6 +130,7 @@ describe('chore_close_drizzle_migration_20260607 — Phase S2: Drizzle-native re
         ).run().changes ?? 0,
       );
 
+      client.sqlite.exec(`INSERT INTO "ActivityEvent" (eventType, sourceModule, summary, success, details) VALUES ('TEST', 'tests', 'summary', 1, 'still bad')`);
       const { sql } = await import('drizzle-orm');
       const newChanges = await runRawDrizzle(
         client,

@@ -41,6 +41,7 @@ reference/
 conductor/opencode-cron.log
 conductor/output.log
 measure/*.log
+measure/runs
 
 # Compiled TypeScript in app/src (Vite handles this)
 /app/src/**/*.js

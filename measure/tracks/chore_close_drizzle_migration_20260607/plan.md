@@ -76,6 +76,27 @@
 > Red-phase run will fail with the expected `PrismaClient still present in <path>:<line>` and
 > `shim file still present at server/src/types/prisma.ts` messages — these are the precise
 > missing-behavior failures that the Green phase will resolve.
+>
+> > Red phase re-verified 2026-06-07 (mid-agent run): 14/19 fail, 5/19 pass — Red-phase shape is correct.
+> > 14 failures break down as: 1 S4.1 (shim file present at `server/src/types/prisma.ts`), 5 S4.2
+> > (`PrismaClient` references under `server/src/` + `tests/` — repos, services, routes, and
+> > `api/types.ts` still type `prisma:` as `PrismaClient`), 3 S4.3 (repos + services + `api/types.ts`
+> > do not yet import `DatabaseClient` from `db/drizzleClient`), 5 S4.4 (2 test files import
+> > `PrismaClient` from `@prisma/client`, 1 comment-only drift in `FilenameParsingService.test.ts`,
+> > 2 cross-cutting identifier scans). 5 passes are the precondition guards: shim has no
+> > importers, `audit-results.md` references the shim, `DatabaseClient` is exported from
+> > `drizzleClient.ts`, schema owns `PlaybackMediaTypeEnum`, and all 4 shim-provided type aliases
+> > (`PlaybackMediaType`, `WantedSubtitleState`, `VariantMediaType`, `SubtitleTrackSource`) are
+> > still findable in the tree. Graph-Aware `build-graph stats` confirms 6994 nodes / 10281 edges
+> > / 836 files; `PrismaClient` is a single interface node in `server/src/types/prisma.ts` with
+> > no callers wired in the graph, and `DatabaseClient` class lives at `drizzleClient.ts`. The
+> > graph is 1.5h old (stale vs S2 Green) but the S4 work is filesystem-driven (import strings
+> > + file deletion), not call-graph-driven — grep is authoritative for this phase. Test-design
+> > refinement opportunities noted but not actioned: the S4 file is named `shimRemotion.test.ts`
+> > (a typo of `shimRemoval` carried from the prior mid-agent commit `c2c2fce`); the 5 S4.4
+> > "identifier-usage" regex matches the same patterns as the S2/S3 shim tests but does not
+> > double-fail on the comment-only drift line because of its stricter identifier scoping.
+> > No source code changed. S4.6 (`CI=true npm test` GREEN) remains `[ ]` — deferred to Green phase.
 
 ## Phase S5: Rename test mock helpers to Drizzle/Db naming
 - [ ] List files with Prisma-named helpers: `grep -rl "createPrismaMock\|createMockPrisma\|makePrisma\|makeMoviePrisma" server/src/ tests/ --include="*.ts"`

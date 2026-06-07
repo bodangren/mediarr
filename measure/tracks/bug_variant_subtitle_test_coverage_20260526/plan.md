@@ -60,28 +60,28 @@ vi.mock('../repositories/SubtitleVariantRepository', () => ({
 
 ## Phase S2: VariantInventoryIndexer tests
 
-- [ ] Create `server/src/services/VariantInventoryIndexer.test.ts`
-- [ ] Write test: `syncMovieVariants upserts variant with file metadata`
+- [x] Create `server/src/services/VariantInventoryIndexer.test.ts`
+- [x] Write test: `syncMovieVariants upserts variant with file metadata`
   - Mock `repository.upsertVariant` to return `{ id: 1 }`
   - Call `syncMovieVariants(42, [{ path: '/data/movie.mkv', fileSize: 1024n }])`
   - Assert `repository.upsertVariant` was called with `movieId: 42` and correct file data
-- [ ] Write test: `syncMovieVariants upserts external subtitle tracks`
+- [x] Write test: `syncMovieVariants upserts external subtitle tracks`
   - Provide file with `externalSubtitles: [{ languageCode: 'en', filePath: '/subs/en.srt', fileSize: 100n }]`
   - Assert `repository.upsertSubtitleTrack` was called once with correct data
-- [ ] Write test: `syncMovieVariants calls ProbeMetadataParser when probeMetadata is provided`
+- [x] Write test: `syncMovieVariants calls ProbeMetadataParser when probeMetadata is provided`
   - Mock `ProbeMetadataParser.parse()` to return `{ codec: 'h264', resolution: '1080p' }`
   - Assert the parsed data is stored in the upserted variant
-- [ ] Write test: `syncEpisodeVariants upserts variant with episodeId`
+- [x] Write test: `syncEpisodeVariants upserts variant with episodeId`
   - Call `syncEpisodeVariants(99, [{ path: '/data/ep.mkv', fileSize: 500n }])`
   - Assert `repository.upsertVariant` called with `episodeId: 99`
-- [ ] Write test: `syncMovieVariants handles empty files array`
+- [x] Write test: `syncMovieVariants handles empty files array`
   - Call `syncMovieVariants(42, [])`
   - Assert `repository.upsertVariant` not called
-- [ ] Write test: `syncMovieVariants handles file with no external subtitles`
+- [x] Write test: `syncMovieVariants handles file with no external subtitles`
   - Provide file with no `externalSubtitles` field
   - Assert `repository.upsertSubtitleTrack` not called
-- [ ] Run tests: `npx vitest run server/src/services/VariantInventoryIndexer.test.ts`
-- [ ] Commit: `test(variant): add VariantInventoryIndexer unit tests`
+- [x] Run tests: `npx vitest run server/src/services/VariantInventoryIndexer.test.ts` — 6 passed
+- [x] Commit: `test(variant): add VariantInventoryIndexer unit tests` — `e77f6b8`
 
 ## Phase S3: VariantMissingSubtitleService tests
 

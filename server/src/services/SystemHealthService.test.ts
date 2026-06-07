@@ -27,8 +27,8 @@ vi.mock('node:child_process', () => ({
 import { SystemHealthService } from './SystemHealthService';
 
 // ── Mock Prisma helper ───────────────────────────────────────────────────────
-function makePrisma(impl?: () => Promise<unknown>) {
-  return { $queryRaw: impl ?? vi.fn().mockResolvedValue([{ '1': 1 }]) };
+function makeDb(allImpl?: (...args: any[]) => Promise<unknown>) {
+  return { db: { all: allImpl ?? vi.fn().mockResolvedValue([{ '1': 1 }]) } };
 }
 
 describe('SystemHealthService', () => {
@@ -41,7 +41,7 @@ describe('SystemHealthService', () => {
     it('returns real disk usage when statfs succeeds', async () => {
       mockStatfs.mockResolvedValue({ bsize: 4096, blocks: 1000, bfree: 500, bavail: 400 });
 
-      const svc = new SystemHealthService(makePrisma() as any);
+      const svc = new SystemHealthService(makeDb() as any);
       const result = await svc.getDiskSpace([{ path: '/data', label: 'Data Directory' }]);
 
       expect(result).toHaveLength(1);
@@ -56,7 +56,7 @@ describe('SystemHealthService', () => {
     it('falls back to zeros when statfs throws ENOENT', async () => {
       mockStatfs.mockRejectedValue(Object.assign(new Error('ENOENT'), { code: 'ENOENT' }));
 
-      const svc = new SystemHealthService(makePrisma() as any);
+      const svc = new SystemHealthService(makeDb() as any);
       const result = await svc.getDiskSpace([{ path: '/missing', label: 'Missing' }]);
 
       expect(result[0]).toEqual({ path: '/missing', label: 'Missing', free: 0, total: 0 });
@@ -67,7 +67,7 @@ describe('SystemHealthService', () => {
         .mockResolvedValueOnce({ bsize: 512, blocks: 2000, bfree: 1000, bavail: 900 })
         .mockRejectedValueOnce(new Error('EACCES'));
 
-      const svc = new SystemHealthService(makePrisma() as any);
+      const svc = new SystemHealthService(makeDb() as any);
       const result = await svc.getDiskSpace([
         { path: '/data', label: 'Data' },
         { path: '/locked', label: 'Locked' },
@@ -82,7 +82,7 @@ describe('SystemHealthService', () => {
   // ── getProcessInfo ──────────────────────────────────────────────────────────
   describe('getProcessInfo', () => {
     it('returns real process.version and platform', () => {
-      const svc = new SystemHealthService(makePrisma() as any);
+      const svc = new SystemHealthService(makeDb() as any);
       const info = svc.getProcessInfo();
 
       expect(info.version).toBe(process.version);
@@ -93,7 +93,7 @@ describe('SystemHealthService', () => {
 
     it('uses provided startTime and returns non-negative uptime', () => {
       const fixedStart = new Date(Date.now() - 5000);
-      const svc = new SystemHealthService(makePrisma() as any, fixedStart);
+      const svc = new SystemHealthService(makeDb() as any, fixedStart);
       const info = svc.getProcessInfo();
 
       expect(info.startTime).toBe(fixedStart.toISOString());
@@ -104,14 +104,12 @@ describe('SystemHealthService', () => {
   // ── checkDatabase ───────────────────────────────────────────────────────────
   describe('checkDatabase', () => {
     it('returns ok status when all queries succeed', async () => {
-      const prisma = {
-        $queryRaw: vi.fn()
-          .mockResolvedValueOnce([{ '1': 1 }])
-          .mockResolvedValueOnce([{ sqlite_version: '3.45.1' }])
-          .mockResolvedValueOnce([{ migration_name: '20260101_init' }]),
-      };
+      const mockAll = vi.fn()
+        .mockResolvedValueOnce([{ '1': 1 }])
+        .mockResolvedValueOnce([{ sqlite_version: '3.45.1' }])
+        .mockResolvedValueOnce([{ hash: '20260101_init' }]);
 
-      const svc = new SystemHealthService(prisma as any);
+      const svc = new SystemHealthService(makeDb(mockAll) as any);
       const result = await svc.checkDatabase();
 
       expect(result.status).toBe('ok');
@@ -121,14 +119,12 @@ describe('SystemHealthService', () => {
     });
 
     it('returns ok even when migration table query fails', async () => {
-      const prisma = {
-        $queryRaw: vi.fn()
-          .mockResolvedValueOnce([{ '1': 1 }])
-          .mockResolvedValueOnce([{ sqlite_version: '3.44.0' }])
-          .mockRejectedValueOnce(new Error('no such table: _prisma_migrations')),
-      };
+      const mockAll = vi.fn()
+        .mockResolvedValueOnce([{ '1': 1 }])
+        .mockResolvedValueOnce([{ sqlite_version: '3.44.0' }])
+        .mockRejectedValueOnce(new Error('no such table: __drizzle_migrations'));
 
-      const svc = new SystemHealthService(prisma as any);
+      const svc = new SystemHealthService(makeDb(mockAll) as any);
       const result = await svc.checkDatabase();
 
       expect(result.status).toBe('ok');
@@ -136,11 +132,9 @@ describe('SystemHealthService', () => {
     });
 
     it('returns error status when SELECT 1 fails', async () => {
-      const prisma = {
-        $queryRaw: vi.fn().mockRejectedValue(new Error('SQLITE_CANTOPEN')),
-      };
+      const mockAll = vi.fn().mockRejectedValue(new Error('SQLITE_CANTOPEN'));
 
-      const svc = new SystemHealthService(prisma as any);
+      const svc = new SystemHealthService(makeDb(mockAll) as any);
       const result = await svc.checkDatabase();
 
       expect(result.status).toBe('error');
@@ -153,7 +147,7 @@ describe('SystemHealthService', () => {
     it('returns ok for accessible paths', async () => {
       mockAccess.mockResolvedValue(undefined);
 
-      const svc = new SystemHealthService(makePrisma() as any);
+      const svc = new SystemHealthService(makeDb() as any);
       const results = await svc.checkRootFolders([{ path: '/data/media', label: 'Media Root' }]);
 
       expect(results[0]!.status).toBe('ok');
@@ -163,7 +157,7 @@ describe('SystemHealthService', () => {
     it('returns error for inaccessible paths', async () => {
       mockAccess.mockRejectedValue(Object.assign(new Error('EACCES'), { code: 'EACCES' }));
 
-      const svc = new SystemHealthService(makePrisma() as any);
+      const svc = new SystemHealthService(makeDb() as any);
       const results = await svc.checkRootFolders([{ path: '/locked', label: 'Locked Folder' }]);
 
       expect(results[0]!.status).toBe('error');
@@ -171,7 +165,7 @@ describe('SystemHealthService', () => {
     });
 
     it('handles empty paths array', async () => {
-      const svc = new SystemHealthService(makePrisma() as any);
+      const svc = new SystemHealthService(makeDb() as any);
       const results = await svc.checkRootFolders([]);
       expect(results).toHaveLength(0);
     });
@@ -191,7 +185,7 @@ describe('SystemHealthService', () => {
         },
       );
 
-      const svc = new SystemHealthService(makePrisma() as any);
+      const svc = new SystemHealthService(makeDb() as any);
       const result = await svc.detectFFmpeg();
 
       expect(result.status).toBe('ok');
@@ -206,7 +200,7 @@ describe('SystemHealthService', () => {
         },
       );
 
-      const svc = new SystemHealthService(makePrisma() as any);
+      const svc = new SystemHealthService(makeDb() as any);
       const result = await svc.detectFFmpeg();
 
       expect(result.status).toBe('unknown');
@@ -221,7 +215,7 @@ describe('SystemHealthService', () => {
         },
       );
 
-      const svc = new SystemHealthService(makePrisma() as any);
+      const svc = new SystemHealthService(makeDb() as any);
       const result = await svc.detectFFmpeg();
 
       expect(result.status).toBe('ok');

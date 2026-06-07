@@ -1,5 +1,6 @@
-import { createRequire } from 'node:module';
-import { eq } from 'drizzle-orm';
+import { eq, type SQL } from 'drizzle-orm';
+import { drizzle } from 'drizzle-orm/better-sqlite3';
+import BetterSqlite3 from 'better-sqlite3';
 import * as schema from './schema.js';
 
 type AnyRecord = Record<string, any>;
@@ -452,30 +453,11 @@ export class DatabaseClient {
   readonly blocklist: AnyRecord;
 
   constructor(options?: { datasources?: { db?: { url?: string } } }) {
-    const require = createRequire(import.meta.url);
     const dbPath = normalizeDatabasePath(options?.datasources?.db?.url ?? process.env.DATABASE_URL);
-    let bunSqlite: any = null;
-    try {
-      bunSqlite = require('bun:sqlite');
-    } catch {
-      bunSqlite = null;
-    }
-
-    if (bunSqlite) {
-      const { drizzle: drizzleBun } = require('drizzle-orm/bun-sqlite');
-      const BunDatabase = bunSqlite.default ?? bunSqlite.Database ?? bunSqlite;
-      this.sqlite = new BunDatabase(dbPath);
-      this.sqlite.exec('PRAGMA journal_mode = WAL;');
-      this.sqlite.exec('PRAGMA foreign_keys = ON;');
-      this.db = drizzleBun(this.sqlite, { schema });
-    } else {
-      const { drizzle: drizzleBetterSqlite } = require('drizzle-orm/better-sqlite3');
-      const BetterSqlite3 = require('better-sqlite3');
-      this.sqlite = new BetterSqlite3(dbPath);
-      this.sqlite.exec('PRAGMA journal_mode = WAL;');
-      this.sqlite.exec('PRAGMA foreign_keys = ON;');
-      this.db = drizzleBetterSqlite(this.sqlite, { schema });
-    }
+    this.sqlite = new BetterSqlite3(dbPath);
+    this.sqlite.exec('PRAGMA journal_mode = WAL;');
+    this.sqlite.exec('PRAGMA foreign_keys = ON;');
+    this.db = drizzle(this.sqlite, { schema });
 
     this.media = this.createDelegate('media');
     this.series = this.createDelegate('series');
@@ -536,6 +518,16 @@ export class DatabaseClient {
       this.sqlite.exec('ROLLBACK');
       throw error;
     }
+  }
+
+  async runRaw(query: SQL): Promise<number> {
+    const built = (query as any).buildQueryFromSourceParams(
+      (query as any).queryChunks,
+      { escapeSequences: false, escapeParam: () => '?' },
+    );
+    const stmt = this.sqlite.prepare(built.sql);
+    const result = stmt.run(...built.params);
+    return Number(result.changes ?? 0);
   }
 
   private createContext(): QueryContext {

@@ -1,4 +1,5 @@
 import type { FastifyInstance } from 'fastify';
+import { sql } from 'drizzle-orm';
 import { sendSuccess } from '../contracts';
 import type { ApiDependencies } from '../types';
 
@@ -269,9 +270,16 @@ async function getAggregateSum(
   field: string,
 ): Promise<number> {
   try {
-    const result = await prisma.$queryRawUnsafe?.(
-      `SELECT SUM(${field}) as total FROM ${table}`,
-    );
+    let result: any[];
+    if (prisma.db?.all) {
+      result = await prisma.db.all(
+        sql`SELECT SUM(${sql.raw(field)}) as total FROM ${sql.raw(table)}`,
+      );
+    } else {
+      result = await prisma.$queryRawUnsafe?.(
+        `SELECT SUM(${field}) as total FROM ${table}`,
+      );
+    }
     const total = Array.isArray(result) ? result[0]?.total : 0;
     return Number(total) || 0;
   } catch {
@@ -281,9 +289,16 @@ async function getAggregateSum(
 
 async function getAverageDownloadSpeed(prisma: any): Promise<number> {
   try {
-    const result = await prisma.$queryRawUnsafe?.(
-      `SELECT AVG(downloadSpeed) as avg FROM Torrent WHERE status IN ('downloading', 'metaDL')`,
-    );
+    let result: any[];
+    if (prisma.db?.all) {
+      result = await prisma.db.all(
+        sql`SELECT AVG("downloadSpeed") as avg FROM "Torrent" WHERE "status" IN ('downloading', 'metaDL')`,
+      );
+    } else {
+      result = await prisma.$queryRawUnsafe?.(
+        `SELECT AVG(downloadSpeed) as avg FROM Torrent WHERE status IN ('downloading', 'metaDL')`,
+      );
+    }
     const avg = Array.isArray(result) ? result[0]?.avg : 0;
     return Number(avg) || 0;
   } catch {
@@ -293,9 +308,16 @@ async function getAverageDownloadSpeed(prisma: any): Promise<number> {
 
 async function getDatabaseSize(prisma: any): Promise<number> {
   try {
-    const result = await prisma.$queryRawUnsafe?.(
-      `SELECT page_count * page_size as size FROM pragma_page_count(), pragma_page_size()`,
-    );
+    let result: any[];
+    if (prisma.db?.all) {
+      result = await prisma.db.all(
+        sql`SELECT page_count * page_size as size FROM pragma_page_count(), pragma_page_size()`,
+      );
+    } else {
+      result = await prisma.$queryRawUnsafe?.(
+        `SELECT page_count * page_size as size FROM pragma_page_count(), pragma_page_size()`,
+      );
+    }
     const size = Array.isArray(result) ? result[0]?.size : 0;
     return Number(size) || 0;
   } catch {

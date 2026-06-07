@@ -1,7 +1,8 @@
 import fs from 'node:fs/promises';
 import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
-import type { PrismaClient } from '@prisma/client';
+import { sql } from 'drizzle-orm';
+import type { DatabaseClient } from '../db/drizzleClient';
 
 const execAsync = promisify(exec);
 
@@ -55,7 +56,7 @@ export class SystemHealthService {
   private readonly startTime: Date;
 
   constructor(
-    private readonly prisma: Pick<PrismaClient, '$queryRaw'>,
+    private readonly db: Pick<DatabaseClient, 'db'>,
     startTime?: Date,
   ) {
     this.startTime = startTime ?? new Date();
@@ -111,22 +112,22 @@ export class SystemHealthService {
    * Checks that the database is reachable via a lightweight `SELECT 1` query.
    */
   async checkDatabase(): Promise<DatabaseCheckResult> {
-    const now = new Date().toISOString();
     try {
-      await this.prisma.$queryRaw`SELECT 1`;
-      // Extract SQLite version if possible
-      const versionRows = await this.prisma.$queryRaw<Array<{ sqlite_version: string }>>`
-        SELECT sqlite_version() AS sqlite_version
-      `;
+      await this.db.db.all(sql`SELECT 1`);
+      const versionRows = await this.db.db.all<{ sqlite_version: string }>(
+        sql`SELECT sqlite_version() AS sqlite_version`,
+      );
       const sqliteVersion = versionRows?.[0]?.sqlite_version ?? 'unknown';
 
-      const migrationRows = await this.prisma.$queryRaw<Array<{ migration_name: string }>>`
-        SELECT migration_name FROM "_prisma_migrations"
-        ORDER BY finished_at DESC
-        LIMIT 1
-      `.catch(() => [] as Array<{ migration_name: string }>);
-
-      const latestMigration = migrationRows?.[0]?.migration_name ?? 'unknown';
+      let latestMigration = 'unknown';
+      try {
+        const migrationRows = await this.db.db.all<{ hash: string }>(
+          sql`SELECT hash FROM "__drizzle_migrations" ORDER BY "created_at" DESC LIMIT 1`,
+        );
+        latestMigration = migrationRows?.[0]?.hash ?? 'unknown';
+      } catch {
+        // __drizzle_migrations table may not exist
+      }
 
       return {
         status: 'ok',
@@ -183,7 +184,6 @@ export class SystemHealthService {
   async detectFFmpeg(): Promise<FFmpegInfo> {
     try {
       const { stdout } = await execAsync('ffmpeg -version', { timeout: 5000 });
-      // First line typically: "ffmpeg version 6.0 Copyright ..."
       const match = stdout.match(/ffmpeg version\s+([^\s]+)/i);
       const version = match?.[1];
       return { version, status: 'ok' };

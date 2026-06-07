@@ -55,6 +55,10 @@
 > > Extracted `repairMalformedJsonColumns` to `server/src/maintenance/repairJsonColumns.ts`
 > > (ESM source) + `.js` (CJS companion for vitest `createRequire`). `main.ts` now imports
 > > from the new module; local copy and `executeRaw` helper removed.
+> >
+> > > Audit-results.md and S1 audit test expectations updated in `6e8c2c9` to reflect
+> > > post-S2 state (SystemHealthService.ts production \$queryRaw → 0, main.ts comment-only
+> > → removed, test-mock count 4→3). All 50 close-drizzle-migration tests pass.
 
 ## Phase S4: Remove PrismaClient type shim
 - [ ] Read `server/src/types/prisma.ts` and `server/src/db/drizzleClient.ts`

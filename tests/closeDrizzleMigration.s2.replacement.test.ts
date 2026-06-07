@@ -1,0 +1,158 @@
+import { describe, it, expect, beforeEach } from 'vitest';
+import fs from 'node:fs';
+import path from 'node:path';
+import { createRequire } from 'node:module';
+import Fastify from 'fastify';
+import { DatabaseClient } from '../server/src/db/drizzleClient';
+import { SystemHealthService } from '../server/src/services/SystemHealthService';
+import { registerStatsRoutes } from '../server/src/api/routes/statsRoutes';
+import { registerApiErrorHandler } from '../server/src/api/errors';
+import type { ApiDependencies } from '../server/src/api/types';
+
+const REPO_ROOT = path.resolve(__dirname, '..');
+const MIGRATIONS_DIR = path.join(REPO_ROOT, 'drizzle');
+const DRIZZLE_RAW_SQL_PATH = path.join(REPO_ROOT, 'server', 'src', 'db', 'drizzleRawSql.ts');
+const DRIZZLE_CLIENT_PATH = path.join(REPO_ROOT, 'server', 'src', 'db', 'drizzleClient.ts');
+
+function applyMigrations(sqlite: any): void {
+  const files = fs.readdirSync(MIGRATIONS_DIR)
+    .filter((f) => f.endsWith('.sql'))
+    .sort();
+  for (const file of files) {
+    const content = fs.readFileSync(path.join(MIGRATIONS_DIR, file), 'utf8');
+    const statements = content.split('--> statement-breakpoint');
+    for (const stmt of statements) {
+      const trimmed = stmt.trim();
+      if (trimmed) {
+        sqlite.exec(trimmed);
+      }
+    }
+  }
+}
+
+function createTestDb(): DatabaseClient {
+  const client = new DatabaseClient({ datasources: { db: { url: ':memory:' } } });
+  applyMigrations(client.sqlite);
+  return client;
+}
+
+describe('chore_close_drizzle_migration_20260607 — Phase S2: Drizzle-native replacement (Red)', () => {
+  describe('S2.1: executeRaw shim replaced with Drizzle-native runRaw', () => {
+    it('exposes a Drizzle-native runRawDrizzle function (or DatabaseClient.runRaw method)', async () => {
+      let module: any = {};
+      try {
+        const require = createRequire(import.meta.url);
+        const mod = require('../server/src/db/drizzleRawSql');
+        module = mod;
+      } catch {
+        // Module does not exist yet — expected in Red phase
+      }
+      const hasStandaloneFunction = typeof module.runRawDrizzle === 'function';
+      const testClient = createTestDb();
+      const hasClientMethod = typeof (testClient as any).runRaw === 'function';
+      expect(
+        hasStandaloneFunction || hasClientMethod,
+        'Expected either server/src/db/drizzleRawSql.ts (exporting runRawDrizzle) or DatabaseClient.runRaw method to exist for S2.1',
+      ).toBe(true);
+    });
+
+    it('runRawDrizzle returns identical changes count to sqlite.prepare for QualityProfile.items repair', async () => {
+      let runRawDrizzle: ((client: DatabaseClient, query: any, params?: any[]) => Promise<number>) | undefined;
+      try {
+        const require = createRequire(import.meta.url);
+        runRawDrizzle = require('../server/src/db/drizzleRawSql').runRawDrizzle;
+      } catch {
+        // Module does not exist yet — expected in Red phase
+      }
+      expect(runRawDrizzle, 'runRawDrizzle must be importable for S2.1 equivalence test').toBeTypeOf('function');
+      if (!runRawDrizzle) return;
+
+      const client = createTestDb();
+      client.sqlite.exec(`INSERT INTO "QualityProfile" (name, items) VALUES ('test-bad', 'not valid json')`);
+
+      const oldChanges = Number(
+        client.sqlite.prepare(
+          `UPDATE "QualityProfile" SET "items" = '[]' WHERE "items" IS NULL OR json_valid("items") = 0`,
+        ).run().changes ?? 0,
+      );
+
+      client.sqlite.exec(`INSERT INTO "QualityProfile" (name, items) VALUES ('test-bad-2', 'still bad')`);
+      const { sql } = await import('drizzle-orm');
+      const newChanges = await runRawDrizzle(
+        client,
+        sql`UPDATE "QualityProfile" SET "items" = '[]' WHERE "items" IS NULL OR json_valid("items") = 0`,
+      );
+      expect(newChanges).toBe(oldChanges);
+    });
+  });
+
+  describe('S2.2: statsRoutes uses db.all(sql`...`) instead of $queryRawUnsafe', () => {
+    let app: ReturnType<typeof Fastify>;
+    let client: DatabaseClient;
+
+    beforeEach(() => {
+      client = createTestDb();
+      const deps = { prisma: client as any } as unknown as ApiDependencies;
+      app = Fastify();
+      app.setErrorHandler((error, request, reply) => registerApiErrorHandler(request, reply, error));
+      registerStatsRoutes(app, deps);
+    });
+
+    it('/api/stats/downloads returns the actual sum of Torrent.downloaded (not 0)', async () => {
+      client.sqlite.exec(`
+        INSERT INTO "Torrent" (infoHash, name, status, progress, downloadSpeed, uploadSpeed, eta, size, downloaded, uploaded, ratio, path)
+        VALUES ('hash-dl-1', 'test-dl', 'downloading', 0.5, 1024, 512, 100, 1000000, 5000000, 250000, 0.5, '/tmp/test-dl')
+      `);
+      client.sqlite.exec(`
+        INSERT INTO "Torrent" (infoHash, name, status, progress, downloadSpeed, uploadSpeed, eta, size, downloaded, uploaded, ratio, path)
+        VALUES ('hash-dl-2', 'test-dl-2', 'completed', 1, 0, 0, 0, 2000000, 3000000, 100000, 1.0, '/tmp/test-dl-2')
+      `);
+
+      const res = await app.inject({ method: 'GET', url: '/api/stats/downloads' });
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body);
+      expect(body.data.totalDownloadedBytes).toBe(8000000);
+    });
+
+    it('/api/stats/system returns the actual pragma page_count * page_size (not 0)', async () => {
+      const res = await app.inject({ method: 'GET', url: '/api/stats/system' });
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body);
+      expect(body.data.dbSizeBytes).toBeGreaterThan(0);
+    });
+  });
+
+  describe('S2.3: SystemHealthService uses db.all(sql`...`) instead of $queryRaw', () => {
+    it('checkDatabase returns ok with version from a real DatabaseClient', async () => {
+      const client = createTestDb();
+      const svc = new SystemHealthService(client as any);
+      const result = await svc.checkDatabase();
+
+      expect(result.status).toBe('ok');
+      expect(result.message).toBe('Database is healthy');
+      expect(result.version).toMatch(/^\d+\.\d+/);
+    });
+
+    it('checkDatabase tolerates the _drizzle_migrations guard (no _prisma_migrations table)', async () => {
+      const client = createTestDb();
+      const svc = new SystemHealthService(client as any);
+      const result = await svc.checkDatabase();
+      expect(result.status).toBe('ok');
+      expect(typeof result.migration).toBe('string');
+    });
+  });
+
+  describe('S2.4: DatabaseClient has no Bun/Node branching (single SQLite API path)', () => {
+    it('drizzleClient.ts does not use createRequire to detect bun:sqlite vs better-sqlite3', () => {
+      const source = fs.readFileSync(DRIZZLE_CLIENT_PATH, 'utf8');
+      const hasBunRequire = /require\(['"]bun:sqlite['"]\)/.test(source);
+      const hasBetterRequire = /require\(['"]better-sqlite3['"]\)/.test(source);
+      const hasRuntimeBranch = /if\s*\(\s*bunSqlite\s*\)/.test(source);
+
+      expect(
+        !(hasBunRequire || hasBetterRequire || hasRuntimeBranch),
+        'drizzleClient.ts must use a single SQLite path; remove the createRequire/bun:sqlite/better-sqlite3 branching',
+      ).toBe(true);
+    });
+  });
+});

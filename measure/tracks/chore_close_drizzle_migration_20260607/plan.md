@@ -48,6 +48,8 @@
 >   Tests  9 failed | 21 passed (30)
 >   9 S3.2 failures = repairMalformedJsonColumns not importable (expected)
 >   21 S3.1+S3.3 passes = routes + envelopes already conform to contract (route verification complete)
+>
+> > Red-phase re-verification 2026-06-07 (mid-agent run, after the source tree was restored to the Red-phase baseline by reverting an out-of-band Green-phase attempt): commit `79df749` tightened the S3.2 seed-data hygiene (Torrent.eta clamp value 9999999999 → 9999999999999, AppSettings reserved-word `update` quoted) so the repair-loop tests fail cleanly on the intended `repairMalformedJsonColumns` import error rather than on a SQL parser error. 9/30 still fail in the same import-error shape: 9 S3.2 (helper is private to main.ts, not importable from `server/src/maintenance/repairJsonColumns`), 21 S3.1+S3.3 pass (route outputs and contract envelopes still intact after the S2 raw-SQL shim removal). No production code changed.
 
 ## Phase S4: Remove PrismaClient type shim
 - [ ] Read `server/src/types/prisma.ts` and `server/src/db/drizzleClient.ts`

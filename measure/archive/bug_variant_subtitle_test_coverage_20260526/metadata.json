@@ -1,8 +1,9 @@
 {
   "id": "bug_variant_subtitle_test_coverage_20260526",
   "title": "Variant Subtitle Subsystem Test Coverage",
-  "status": "pending",
+  "status": "completed",
   "created": "2026-05-26",
+  "completed": "2026-06-07",
   "priority": "high",
   "type": "bug",
   "sprint": {

@@ -393,7 +393,7 @@ describe('chore_close_drizzle_migration_20260607 — Phase S3: Route verificatio
 
       const client = createTestDb();
       client.sqlite.exec(`
-        INSERT INTO "Torrent" (infoHash, name, status, size, path, eta) VALUES ('h-clamp', 'eta-clamp', 'downloading', 1000, '/tmp/eta-clamp', 9999999999)
+        INSERT INTO "Torrent" (infoHash, name, status, size, path, eta) VALUES ('h-clamp', 'eta-clamp', 'downloading', 1000, '/tmp/eta-clamp', 9999999999999)
       `);
 
       await mod.repairMalformedJsonColumns(client);
@@ -447,14 +447,14 @@ describe('chore_close_drizzle_migration_20260607 — Phase S3: Route verificatio
 
       const client = createTestDb();
       client.sqlite.exec(`
-        INSERT INTO "AppSettings" (id, torrentLimits, schedulerIntervals, pathVisibility, apiKeys, host, security, logging, update, createdAt, updatedAt)
+        INSERT INTO "AppSettings" (id, torrentLimits, schedulerIntervals, pathVisibility, apiKeys, host, security, logging, "update", createdAt, updatedAt)
         VALUES (1, '{}', '{}', '{}', 'malformed', 'malformed', 'malformed', 'malformed', 'malformed', 1, 1)
       `);
 
       await mod.repairMalformedJsonColumns(client);
 
       const row = client.sqlite.prepare(`
-        SELECT apiKeys, host, security, logging, update FROM "AppSettings" WHERE id = 1
+        SELECT apiKeys, host, security, logging, "update" FROM "AppSettings" WHERE id = 1
       `).get() as Record<string, string | null>;
       expect(row.apiKeys).toBeNull();
       expect(row.host).toBeNull();

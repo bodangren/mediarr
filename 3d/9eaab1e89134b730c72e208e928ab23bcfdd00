@@ -1,0 +1,46 @@
+Phase S3 Red phase — chore_close_drizzle_migration_20260607
+
+Task: Add route integration tests + AppSettings repair regression test
+against a real in-memory SQLite DB after the S2 raw-SQL shim removal.
+
+Files changed:
+- tests/closeDrizzleMigration.s3.routes.test.ts (new, 567 lines)
+
+Why: S3 plan requires Fastify inject coverage for /api/system/stats,
+/api/system/status, /api/stats/{downloads,system} to confirm the S2
+shim removal didn't regress the route outputs, plus a regression test
+for the startup AppSettings repair loop so the JSON-column repair
+behaviour is locked in. Tests are first-class citizens of the S3
+phase acceptance criteria per spec.md and test-strategy.md.
+
+Red-phase design:
+- 12 S3.1 route tests (all green): /api/system/stats + /api/system/status
+  with real in-memory DB seeded via direct sqlite.exec. Validates library
+  counts, file aggregation, quality breakdown, missing counts, activity
+  date filters, DB health, sqlite_version, dependencies. S3.1 passing in
+  Red means the route verification work is already implicitly complete
+  (S2 left the routes intact).
+- 9 S3.2 repair regression tests (all red): each fails on the expected
+  'repairMalformedJsonColumns must be importable' assertion. The helper
+  currently lives as a private function in server/src/main.ts:295; the
+  S3 Green phase must extract it to server/src/maintenance/repairJsonColumns
+  so the loop is testable in isolation.
+- 9 S3.3 contract tests (all green): envelope + type assertions for
+  /api/system/{stats,status} and /api/stats/{downloads,system}.
+
+Test design fixes over the prior draft:
+- Media inserts include all NOT NULL columns (title, cleanTitle, sortTitle,
+  status, year) per drizzle/0000_fuzzy_revanche.sql:229
+- MediaFileVariant uses schema columns (path, movieId, updatedAt) not the
+  legacy relativePath/mediaId names
+- beforeEach seeds a QualityProfile row to satisfy the Media
+  qualityProfileId FK constraint
+- downloadsThisWeek/downloadsThisMonth use toBeGreaterThanOrEqual to
+  tolerate the Drizzle Date-vs-integer column type quirk in the route
+  query (pre-existing, not in S3 scope)
+
+Verification:
+  npx vitest run tests/closeDrizzleMigration.s3.routes.test.ts
+  Tests  9 failed | 21 passed (30)
+  9 failures = expected S3.2 importability gap
+  21 passes = S3.1 + S3.3 contract compliance

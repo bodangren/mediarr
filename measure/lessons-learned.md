@@ -46,3 +46,4 @@
 ### Shared Type Contracts
 
 - (2026-05-26, chore_type_contract_sharing) **Zod schemas as shared contracts prevent server/app type drift.** Extract duplicate interfaces to `server/src/contracts/*.ts` with Zod schemas. App imports via `@server/contracts/*` alias (configured in tsconfig.app.json and vite.config.ts). Server-specific fields (Buffer, File) extend the shared base type. Changes to shared schema cause compile errors in both workspaces.
+- (2026-06-07, bug_variant_subtitle_test_coverage) **Skip full-project `tsc --noEmit -p server/tsconfig.json` (~108s) inside supervised Measure attempts.** It blows past the supervisor wall-clock and causes exit 124 even when the targeted `vitest run <file>` (≤4s) is already green. Trust the per-file diagnostics surfaced by `Edit`/`Write` and the targeted vitest run; reserve full `tsc` for phase-end checkpoint verification, not per-task TDD loops.

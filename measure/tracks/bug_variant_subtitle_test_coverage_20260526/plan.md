@@ -85,25 +85,36 @@ vi.mock('../repositories/SubtitleVariantRepository', () => ({
 
 ## Phase S3: VariantMissingSubtitleService tests
 
-- [ ] Create `server/src/services/VariantMissingSubtitleService.test.ts`
-- [ ] Write test: `computeAndPersistForVariant creates wanted for missing languages`
+> **Note (per test-strategy.md §6 + §5):** The plan originally referenced
+> `upsertWantedSubtitle` and `{ missing, satisfied }`, but the actual service
+> calls `repository.replaceMissingSubtitles` and the requirement engine returns
+> `{ desiredSubtitles, missingSubtitles, cutoffMet }`. Tests assert on the real
+> repository method and the real `RequirementResult` shape, and include the
+> strategy-required "variant not found" throw case. `LanguageProfileItem` uses
+> the real `'True' | 'False'` ProfileBoolean strings.
+
+- [~] Create `server/src/services/VariantMissingSubtitleService.test.ts`
+- [~] Write test: `computeAndPersistForVariant creates wanted for missing languages`
   - Mock `repository` to return variant with 1 English track
   - Provide profile requiring `[{ language: 'en' }, { language: 'fr' }]`
-  - Assert `repository.upsertWantedSubtitle` called once for French
-- [ ] Write test: `computeAndPersistForVariant does not create wanted for existing languages`
+  - Assert `repository.replaceMissingSubtitles` called once with **one** entry for French
+- [~] Write test: `computeAndPersistForVariant does not create wanted for existing languages`
   - Variant already has English and French tracks
   - Profile requires English and French
-  - Assert `repository.upsertWantedSubtitle` not called
-- [ ] Write test: `computeAndPersistForVariant respects cutoff quality`
-  - Variant has English track above cutoff
-  - Assert no wanted subtitle created for English
-- [ ] Write test: `computeAndPersistForVariant handles empty profile`
+  - Assert `repository.replaceMissingSubtitles` called with an empty array (clears state)
+- [~] Write test: `computeAndPersistForVariant respects cutoff quality`
+  - Variant has English track; profile cutoff is the English item
+  - Assert `cutoffMet` is true and `replaceMissingSubtitles` called with `[]`
+- [~] Write test: `computeAndPersistForVariant handles empty profile`
   - Provide empty `profileItems: []`
-  - Assert no wanted subtitles created
-- [ ] Write test: `computeAndPersistForVariant returns RequirementResult`
-  - Assert return value has `missing` and `satisfied` arrays
-- [ ] Run tests: `npx vitest run server/src/services/VariantMissingSubtitleService.test.ts`
-- [ ] Commit: `test(variant): add VariantMissingSubtitleService unit tests`
+  - Assert `replaceMissingSubtitles` called with `[]`
+- [~] Write test: `computeAndPersistForVariant returns RequirementResult`
+  - Assert return value has `desiredSubtitles`, `missingSubtitles`, `cutoffMet`
+- [~] Write test: `computeAndPersistForVariant throws when variant is not found` *(test-strategy §5 S3)*
+  - Mock `getVariantInventory` to return `{ variant: null, … }`
+  - Assert `rejects.toThrow('Variant 42 not found')`
+- [~] Run tests: `npx vitest run server/src/services/VariantMissingSubtitleService.test.ts`
+- [~] Commit: `test(variant): add VariantMissingSubtitleService unit tests`
 
 ## Phase S4: VariantSubtitleFetchService tests
 

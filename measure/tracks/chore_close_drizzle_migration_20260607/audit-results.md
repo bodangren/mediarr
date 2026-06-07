@@ -4,10 +4,10 @@ Raw-method reference scan of `server/src/**/*.ts` — consolidates raw-SQL shim 
 
 ## Summary
 
-- **Total files with raw-method references:** 8
+- **Total files with raw-method references:** 6
 - **Type declaration files:** 1
-- **Production code files:** 2
-- **Test mock files:** 4
+- **Production code files:** 1
+- **Test mock files:** 3
 - **Comment-only files:** 1
 
 ### Production call-site counts
@@ -56,7 +56,7 @@ Three `$queryRaw` call sites for database health checks (SELECT 1, sqlite_versio
 
 ## Test Mocks
 
-Four test files contain raw-method mock declarations that will need updating when the production interfaces change in S2/S4/S5.
+Three test files contain raw-method mock declarations that will need updating when the production interfaces change in S4/S5.
 
 ### `server/src/api/routes/manualTestFindings.regression.test.ts`
 
@@ -80,15 +80,6 @@ Four test files contain raw-method mock declarations that will need updating whe
 | 27 | `$queryRawUnsafe` | `$queryRawUnsafe: vi.fn().mockResolvedValue([{ total: 0, avg: 0, size: 0 }]),` |
 | 213 | `$queryRawUnsafe` | `prisma.$queryRawUnsafe` |
 | 243 | `$queryRawUnsafe` | `prisma.$queryRawUnsafe.mockResolvedValue([{ size: 10485760 }]);` |
-
-### `server/src/services/SystemHealthService.test.ts`
-
-| Line | Method | Snippet |
-|------|--------|---------|
-| 31 | `$queryRaw` | `return { $queryRaw: impl ?? vi.fn().mockResolvedValue([{ '1': 1 }]) };` |
-| 108 | `$queryRaw` | `$queryRaw: vi.fn()` |
-| 125 | `$queryRaw` | `$queryRaw: vi.fn()` |
-| 140 | `$queryRaw` | `$queryRaw: vi.fn().mockRejectedValue(new Error('SQLITE_CANTOPEN')),` |
 
 ## Comment-Only
 

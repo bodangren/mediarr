@@ -9,13 +9,15 @@
 - [x] Document each usage with suggested Drizzle replacement (audit-results.md artifact) — green phase committed in `076e91c` (`audit-results.md`, 8 files catalogued: 2 production, 1 type-decl, 4 test-mock, 1 comment-only)
 - [x] Commit audit findings
 
-## Phase S2: Replace raw-SQL shim with Drizzle-native queries (TDD) *(Green phase complete)*
+## Phase S2: Replace raw-SQL shim with Drizzle-native queries (TDD) *(Green phase complete `378df6c`)*
 
 > Red phase expanded in `7cddd1a` to cover all 8+ `executeRaw` call sites in `main.ts` (Notification.config, ActivityEvent.details, Torrent.eta downscale/clamp/negative-null, AppSettings dynamic-column with bound params, AppSettings nullable NULL), the 3rd `$queryRawUnsafe` call site in `statsRoutes.ts` (`getAverageDownloadSpeed`), and the 3rd `$queryRaw` call site in `SystemHealthService.ts` (populated `__drizzle_migrations` table returns latest hash). All 16 tests in `tests/closeDrizzleMigration.s2.replacement.test.ts` fail in Red phase for the expected missing behavior.
 >
 > > Red phase re-verified 2026-06-07: 16/16 tests fail for the expected missing behavior under the green-phase source reverted to its red-phase state (commit `c4b1d25` added a small seed-data fix so the Notification Red test fails on the intended `runRawDrizzle` import error rather than on a NOT NULL constraint error in the green phase).
 > >
 > > > Red phase re-verified 2026-06-07 (mid-agent run): 16/16 tests fail for the expected missing behavior on a clean HEAD with the in-progress green-phase work stashed. Failures break down as 9 S2.1 `runRawDrizzle` import errors (no `drizzleRawSql.ts` module), 3 S2.2 stats-route assertions (routes return 0 instead of real aggregation), 3 S2.3 `checkDatabase` status='error' (not 'ok'), and 1 S2.4 source-presence check (drizzleClient.ts still uses `createRequire` for `bun:sqlite` vs `better-sqlite3` branching). Test-design refinements since `c4b1d25` (commits `65b9c7e` "tighten S2 Torrent.eta equivalence test design" and `e49c0e6` "fix AppSettings nullable NULL test seed") do not change the Red-phase shape — they only fix seed-data hygiene so each equivalence test fails on the intended `runRawDrizzle` import error rather than on a NOT NULL constraint error.
+> > >
+> > > > Red phase re-verified 2026-06-07 (post-green mid-agent run): 16/16 tests fail for the expected missing behavior on `git checkout HEAD~1 --` of the S2 Green source set (committed in `378df6c`). The Red-phase tests are well-designed: they fail cleanly on `runRawDrizzle` import errors, route assertions returning 0, `checkDatabase` status='error', and the lingering `createRequire` branching check. With the S2 Green source restored (`git checkout HEAD --`), 16/16 tests pass, and the surrounding SystemHealthService (14/14) and statsRoutes (17/17) suites are green. Audit counts updated in `audit-results.md` to reflect that 2 raw-method references were removed by the S2 Green commit (production: 2→1, test-mock: 4→3, total files: 8→6).
 
 - [x] For each `executeRaw` call in `main.ts`: test old-vs-new behavior against in-memory SQLite, then replace with Drizzle `sql`` template / ORM method *(Red: 7 equivalence tests covering QualityProfile.items + Notification.config + ActivityEvent.details + Torrent.eta (downscale/clamp/negative-null) + AppSettings dynamic-column with params + AppSettings nullable NULL)*
 - [x] Replace 3 `$queryRawUnsafe` sites in `statsRoutes.ts` with `db.all(sql`` …`` )` *(Red: 3 tests covering SUM(downloaded) + page_count*page_size + AVG(downloadSpeed))*
@@ -23,10 +25,10 @@
 - [x] Remove the `sqlite.query` vs `sqlite.prepare` Bun/Node branching logic
 - [x] Run affected test files green
 
-## Phase S3: Route verification (integration-heavy)
-- [ ] Fastify `inject()` tests for `/api/stats` and `/api/system/health` against seeded in-memory DB
-- [ ] Regression test for the startup AppSettings repair loop in `main.ts`
-- [ ] Verify response shapes match current production contract
+## Phase S3: Route verification (integration-heavy) *(Red phase in progress)*
+- [~] Fastify `inject()` tests for `/api/stats` and `/api/system/health` against seeded in-memory DB
+- [~] Regression test for the startup AppSettings repair loop in `main.ts`
+- [~] Verify response shapes match current production contract
 
 ## Phase S4: Remove PrismaClient type shim
 - [ ] Read `server/src/types/prisma.ts` and `server/src/db/drizzleClient.ts`

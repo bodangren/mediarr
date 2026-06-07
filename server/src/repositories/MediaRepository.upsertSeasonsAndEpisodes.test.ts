@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MediaRepository } from './MediaRepository';
 import type { SeriesDetails } from '../services/MetadataProvider';
 
-function makePrisma() {
+function makeDb() {
   return {
     season: {
       upsert: vi.fn(),
@@ -14,11 +14,11 @@ function makePrisma() {
 }
 
 describe('MediaRepository.upsertSeasonsAndEpisodes', () => {
-  let prisma: ReturnType<typeof makePrisma>;
+  let prisma: ReturnType<typeof makeDb>;
   let repo: MediaRepository;
 
   beforeEach(() => {
-    prisma = makePrisma();
+    prisma = makeDb();
     repo = new MediaRepository(prisma as any);
   });
 

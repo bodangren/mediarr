@@ -7,7 +7,7 @@ vi.mock('node:fs', () => ({
   },
 }));
 
-function makePrisma(overrides: Record<string, any> = {}) {
+function makeDb(overrides: Record<string, any> = {}) {
   return {
     torrent: { findUnique: vi.fn().mockResolvedValue(null) },
     activityEvent: { findUnique: vi.fn().mockResolvedValue(null) },
@@ -31,10 +31,10 @@ vi.mock('node:fs/promises', () => ({
 }));
 
 describe('ImportManager — retry and helper edge cases', () => {
-  let prisma: ReturnType<typeof makePrisma>;
+  let prisma: ReturnType<typeof makeDb>;
 
   beforeEach(() => {
-    prisma = makePrisma();
+    prisma = makeDb();
     vi.clearAllMocks();
   });
 

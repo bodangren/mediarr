@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MediaService } from './MediaService';
 import type { ActivityEventEmitter } from './ActivityEventEmitter';
 
-function makePrisma() {
+function makeDb() {
   return {
     media: { findMany: vi.fn(), delete: vi.fn() },
     movie: {
@@ -28,12 +28,12 @@ function makeEventEmitter() {
 }
 
 describe('MediaService.deleteMedia', () => {
-  let prisma: ReturnType<typeof makePrisma>;
+  let prisma: ReturnType<typeof makeDb>;
   let emitter: ActivityEventEmitter;
   let service: MediaService;
 
   beforeEach(() => {
-    prisma = makePrisma();
+    prisma = makeDb();
     emitter = makeEventEmitter();
     service = new MediaService(prisma as any, null, emitter);
   });
@@ -104,11 +104,11 @@ describe('MediaService.deleteMedia', () => {
 });
 
 describe('MediaService.getMovieCandidatesForSearch', () => {
-  let prisma: ReturnType<typeof makePrisma>;
+  let prisma: ReturnType<typeof makeDb>;
   let service: MediaService;
 
   beforeEach(() => {
-    prisma = makePrisma();
+    prisma = makeDb();
   });
 
   it('returns released movies with metadataProvider', async () => {
@@ -185,11 +185,11 @@ describe('MediaService.getMovieCandidatesForSearch', () => {
 });
 
 describe('MediaService.getAllMedia', () => {
-  let prisma: ReturnType<typeof makePrisma>;
+  let prisma: ReturnType<typeof makeDb>;
   let service: MediaService;
 
   beforeEach(() => {
-    prisma = makePrisma();
+    prisma = makeDb();
     service = new MediaService(prisma as any);
   });
 
@@ -222,12 +222,12 @@ describe('MediaService.getAllMedia', () => {
 });
 
 describe('MediaService.addMovie', () => {
-  let prisma: ReturnType<typeof makePrisma>;
+  let prisma: ReturnType<typeof makeDb>;
   let emitter: ActivityEventEmitter;
   let service: MediaService;
 
   beforeEach(() => {
-    prisma = makePrisma();
+    prisma = makeDb();
     emitter = makeEventEmitter();
     service = new MediaService(prisma as any, null, emitter);
   });
@@ -264,11 +264,11 @@ describe('MediaService.addMovie', () => {
 });
 
 describe('MediaService.setMonitored', () => {
-  let prisma: ReturnType<typeof makePrisma>;
+  let prisma: ReturnType<typeof makeDb>;
   let service: MediaService;
 
   beforeEach(() => {
-    prisma = makePrisma();
+    prisma = makeDb();
     service = new MediaService(prisma as any);
   });
 

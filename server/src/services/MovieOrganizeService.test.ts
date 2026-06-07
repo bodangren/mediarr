@@ -13,7 +13,7 @@ vi.mock('node:fs/promises', () => ({
 
 import fs from 'node:fs/promises';
 
-function makePrisma(overrides: Record<string, any> = {}) {
+function makeDb(overrides: Record<string, any> = {}) {
   return {
     movie: {
       findUnique: vi.fn().mockResolvedValue(overrides.movie ?? null),
@@ -54,7 +54,7 @@ function oneMovie(variantOverrides: Record<string, any> = {}) {
 describe('MovieOrganizeService', () => {
   describe('naming tokens — full data', () => {
     it('replaces all tokens with correct values', async () => {
-      const prisma = makePrisma({
+      const prisma = makeDb({
         movie: oneMovie({ quality: 'BluRay-1080p Remux', path: '/old/movie.mkv' }),
       });
 
@@ -69,7 +69,7 @@ describe('MovieOrganizeService', () => {
     });
 
     it('includes resolution extracted from quality string', async () => {
-      const prisma = makePrisma({
+      const prisma = makeDb({
         movie: oneMovie({ quality: 'HDTV-720p', path: '/old/movie.mkv' }),
       });
 
@@ -82,7 +82,7 @@ describe('MovieOrganizeService', () => {
     });
 
     it('uses audio channels token from variant audio tracks', async () => {
-      const prisma = makePrisma({
+      const prisma = makeDb({
         movie: buildMovie({
           fileVariants: [buildVariant({
             path: '/old/movie.mkv',
@@ -100,7 +100,7 @@ describe('MovieOrganizeService', () => {
     });
 
     it('handles missing audio tracks gracefully', async () => {
-      const prisma = makePrisma({
+      const prisma = makeDb({
         movie: oneMovie({ path: '/old/movie.mkv' }),
       });
 
@@ -113,7 +113,7 @@ describe('MovieOrganizeService', () => {
     });
 
     it('handles null channels value gracefully', async () => {
-      const prisma = makePrisma({
+      const prisma = makeDb({
         movie: buildMovie({
           fileVariants: [buildVariant({
             path: '/old/movie.mkv',
@@ -133,7 +133,7 @@ describe('MovieOrganizeService', () => {
 
   describe('naming tokens — missing optional fields', () => {
     it('handles missing quality gracefully', async () => {
-      const prisma = makePrisma({
+      const prisma = makeDb({
         movie: oneMovie({ quality: null, path: '/old/movie.mkv' }),
       });
 
@@ -147,7 +147,7 @@ describe('MovieOrganizeService', () => {
     });
 
     it('handles missing qualityFull gracefully', async () => {
-      const prisma = makePrisma({
+      const prisma = makeDb({
         movie: oneMovie({ quality: null, path: '/old/movie.mkv' }),
       });
 
@@ -160,7 +160,7 @@ describe('MovieOrganizeService', () => {
     });
 
     it('handles missing mediaInfo gracefully', async () => {
-      const prisma = makePrisma({
+      const prisma = makeDb({
         movie: oneMovie({ path: '/old/movie.mkv' }),
       });
 
@@ -175,7 +175,7 @@ describe('MovieOrganizeService', () => {
 
   describe('sortTitle — The/A/An prefix handling', () => {
     it('sorts "The" prefix titles', async () => {
-      const prisma = makePrisma({
+      const prisma = makeDb({
         movie: buildMovie({
           title: 'The Matrix',
           fileVariants: [buildVariant({ path: '/old/path.mkv' })],
@@ -191,7 +191,7 @@ describe('MovieOrganizeService', () => {
     });
 
     it('sorts "A" prefix titles', async () => {
-      const prisma = makePrisma({
+      const prisma = makeDb({
         movie: buildMovie({
           title: 'A Quiet Place',
           fileVariants: [buildVariant({ path: '/old/path.mkv' })],
@@ -207,7 +207,7 @@ describe('MovieOrganizeService', () => {
     });
 
     it('leaves non-prefix titles unchanged', async () => {
-      const prisma = makePrisma({
+      const prisma = makeDb({
         movie: buildMovie({
           title: 'Inception',
           fileVariants: [buildVariant({ path: '/old/path.mkv' })],
@@ -233,7 +233,7 @@ describe('MovieOrganizeService', () => {
       ['Movie<Subtitle>', 'MovieSubtitle'],
       ['Movie|Subtitle', 'MovieSubtitle'],
     ])('sanitizes %s to %s', async (input, expected) => {
-      const prisma = makePrisma({
+      const prisma = makeDb({
         movie: buildMovie({
           title: input,
           fileVariants: [buildVariant({ path: '/old/path.mkv' })],
@@ -252,7 +252,7 @@ describe('MovieOrganizeService', () => {
 
   describe('extractResolution', () => {
     it('extracts 1080p from quality string', async () => {
-      const prisma = makePrisma({
+      const prisma = makeDb({
         movie: oneMovie({ quality: 'HDTV-1080p', path: '/old/movie.mkv' }),
       });
 
@@ -265,7 +265,7 @@ describe('MovieOrganizeService', () => {
     });
 
     it('returns empty for quality without resolution', async () => {
-      const prisma = makePrisma({
+      const prisma = makeDb({
         movie: oneMovie({ quality: 'DVDRip', path: '/old/movie.mkv' }),
       });
 
@@ -278,7 +278,7 @@ describe('MovieOrganizeService', () => {
     });
 
     it('handles null quality without error', async () => {
-      const prisma = makePrisma({
+      const prisma = makeDb({
         movie: oneMovie({ quality: null, path: '/old/movie.mkv' }),
       });
 
@@ -294,7 +294,7 @@ describe('MovieOrganizeService', () => {
 
   describe('default naming settings', () => {
     it('produces expected default path structure', async () => {
-      const prisma = makePrisma({
+      const prisma = makeDb({
         movie: oneMovie({ quality: 'BluRay-1080p', path: '/old/movie.mkv' }),
       });
 
@@ -309,14 +309,14 @@ describe('MovieOrganizeService', () => {
 
   describe('previewRename — corner cases', () => {
     it('returns empty array for empty movieIds', async () => {
-      const prisma = makePrisma();
+      const prisma = makeDb();
       const svc = new MovieOrganizeService(prisma as any, makeSettings());
       const previews = await svc.previewRename([]);
       expect(previews).toEqual([]);
     });
 
     it('skips movie with no path', async () => {
-      const prisma = makePrisma({
+      const prisma = makeDb({
         movie: buildMovie({ path: null, fileVariants: [buildVariant()] }),
       });
       const svc = new MovieOrganizeService(prisma as any, makeSettings());
@@ -325,7 +325,7 @@ describe('MovieOrganizeService', () => {
     });
 
     it('skips movie with no fileVariants', async () => {
-      const prisma = makePrisma({
+      const prisma = makeDb({
         movie: buildMovie({ fileVariants: [] }),
       });
       const svc = new MovieOrganizeService(prisma as any, makeSettings());
@@ -335,7 +335,7 @@ describe('MovieOrganizeService', () => {
 
     it('isNewPath is false when path already matches', async () => {
       const currentPath = '/media/movies/Test Movie (2024)/Test Movie (2024) BluRay-1080p.mkv';
-      const prisma = makePrisma({
+      const prisma = makeDb({
         movie: oneMovie({ quality: 'BluRay-1080p', path: currentPath }),
       });
       const svc = new MovieOrganizeService(prisma as any, DEFAULT_MEDIA_MANAGEMENT_SETTINGS);
@@ -346,7 +346,7 @@ describe('MovieOrganizeService', () => {
     });
 
     it('isNewPath is true when path differs', async () => {
-      const prisma = makePrisma({
+      const prisma = makeDb({
         movie: oneMovie({ path: '/completely/different/path.mkv' }),
       });
       const svc = new MovieOrganizeService(prisma as any, DEFAULT_MEDIA_MANAGEMENT_SETTINGS);
@@ -357,7 +357,7 @@ describe('MovieOrganizeService', () => {
     });
 
     it('skips movie not found (null from prisma)', async () => {
-      const prisma = makePrisma({ movie: null });
+      const prisma = makeDb({ movie: null });
       const svc = new MovieOrganizeService(prisma as any, makeSettings());
       const previews = await svc.previewRename([999]);
       expect(previews).toEqual([]);
@@ -375,7 +375,7 @@ describe('MovieOrganizeService', () => {
     });
 
     it('renames file and updates DB when path differs', async () => {
-      const prisma = makePrisma({
+      const prisma = makeDb({
         movie: oneMovie({ path: '/old/movie.mkv' }),
       });
       const svc = new MovieOrganizeService(prisma as any, makeSettings());
@@ -394,7 +394,7 @@ describe('MovieOrganizeService', () => {
 
     it('skips files that already have correct path', async () => {
       const currentPath = '/media/movies/Test Movie (2024)/Test Movie (2024) BluRay-1080p.mkv';
-      const prisma = makePrisma({
+      const prisma = makeDb({
         movie: oneMovie({ quality: 'BluRay-1080p', path: currentPath }),
       });
       const svc = new MovieOrganizeService(prisma as any, DEFAULT_MEDIA_MANAGEMENT_SETTINGS);
@@ -416,7 +416,7 @@ describe('MovieOrganizeService', () => {
     });
 
     it('does NOT call fs.rename when DB update fails', async () => {
-      const prisma = makePrisma({
+      const prisma = makeDb({
         movie: oneMovie({ path: '/old/movie.mkv' }),
       });
       prisma.mediaFileVariant.updateMany.mockRejectedValue(new Error('DB connection lost'));
@@ -429,7 +429,7 @@ describe('MovieOrganizeService', () => {
 
     it('rolls back DB path when fs.rename fails after DB update succeeds', async () => {
       const oldPath = '/old/movie.mkv';
-      const prisma = makePrisma({
+      const prisma = makeDb({
         movie: oneMovie({ path: oldPath }),
       });
       fsMocks.rename.mockRejectedValue(new Error('EACCES: permission denied'));
@@ -450,7 +450,7 @@ describe('MovieOrganizeService', () => {
 
     it('succeeds with correct order: DB update then fs.rename', async () => {
       const oldPath = '/old/movie.mkv';
-      const prisma = makePrisma({
+      const prisma = makeDb({
         movie: oneMovie({ path: oldPath }),
       });
       const svc = new MovieOrganizeService(prisma as any, makeSettings());
@@ -473,7 +473,7 @@ describe('MovieOrganizeService', () => {
     });
 
     it('does NOT call fs.rename when DB update fails', async () => {
-      const prisma = makePrisma({
+      const prisma = makeDb({
         movie: oneMovie({ path: '/old/movie.mkv' }),
       });
       prisma.mediaFileVariant.updateMany.mockRejectedValue(new Error('DB connection lost'));
@@ -486,7 +486,7 @@ describe('MovieOrganizeService', () => {
 
     it('rolls back DB path when fs.rename fails after DB update succeeds', async () => {
       const oldPath = '/old/movie.mkv';
-      const prisma = makePrisma({
+      const prisma = makeDb({
         movie: oneMovie({ path: oldPath }),
       });
       fsMocks.rename.mockRejectedValue(new Error('EACCES: permission denied'));
@@ -507,7 +507,7 @@ describe('MovieOrganizeService', () => {
 
     it('succeeds with correct order: DB update then fs.rename', async () => {
       const oldPath = '/old/movie.mkv';
-      const prisma = makePrisma({
+      const prisma = makeDb({
         movie: oneMovie({ path: oldPath }),
       });
       const svc = new MovieOrganizeService(prisma as any, makeSettings());
@@ -531,7 +531,7 @@ describe('MovieOrganizeService', () => {
 
     it('records error when fs.rename fails', async () => {
       fsMocks.rename.mockRejectedValue(new Error('EACCES: permission denied'));
-      const prisma = makePrisma({
+      const prisma = makeDb({
         movie: oneMovie({ path: '/old/movie.mkv' }),
       });
       const svc = new MovieOrganizeService(prisma as any, makeSettings());
@@ -544,7 +544,7 @@ describe('MovieOrganizeService', () => {
     });
 
     it('records error when DB update fails before rename (no partial state)', async () => {
-      const prisma = makePrisma({
+      const prisma = makeDb({
         movie: oneMovie({ path: '/old/movie.mkv' }),
       });
       prisma.mediaFileVariant.updateMany.mockRejectedValue(new Error('DB connection lost'));
@@ -557,7 +557,7 @@ describe('MovieOrganizeService', () => {
     });
 
     it('handles mixed success and failure across multiple variants', async () => {
-      const prisma = makePrisma({
+      const prisma = makeDb({
         movie: buildMovie({
           fileVariants: [
             buildVariant({ id: 10, path: '/old/v1.mkv' }),

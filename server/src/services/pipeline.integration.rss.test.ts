@@ -32,7 +32,7 @@ function makeTorrentManager() {
   };
 }
 
-function makePrisma({
+function makeDb({
   series = null as any,
   episode = null as any,
   movie = null as any,
@@ -90,7 +90,7 @@ describe('RSS → Search → Grab → Import Pipeline', () => {
       path: null,
     };
 
-    const prisma = makePrisma({ series, episode });
+    const prisma = makeDb({ series, episode });
 
     new RssMediaMonitor(rssSyncService, torrentManager, prisma);
 
@@ -122,7 +122,7 @@ describe('RSS → Search → Grab → Import Pipeline', () => {
       monitored: true,
     };
     // episode.findFirst returns null — episode doesn't exist in DB
-    const prisma = makePrisma({ series, episode: null });
+    const prisma = makeDb({ series, episode: null });
 
     new RssMediaMonitor(rssSyncService, torrentManager, prisma);
 
@@ -157,7 +157,7 @@ describe('RSS → Search → Grab → Import Pipeline', () => {
       monitored: true,
       path: null,
     };
-    const prisma = makePrisma({ series, episode });
+    const prisma = makeDb({ series, episode });
 
     new RssMediaMonitor(rssSyncService, torrentManager, prisma);
 
@@ -182,7 +182,7 @@ describe('RSS → Search → Grab → Import Pipeline', () => {
       qualityProfileId: 1,
       monitored: true,
     };
-    const prisma = makePrisma({ series, episode: null });
+    const prisma = makeDb({ series, episode: null });
 
     new RssMediaMonitor(rssSyncService, torrentManager, prisma);
 
@@ -208,7 +208,7 @@ describe('RSS → Search → Grab → Import Pipeline', () => {
       qualityProfileId: 1,
       monitored: false, // not monitored
     };
-    const prisma = makePrisma({ series, episode: null });
+    const prisma = makeDb({ series, episode: null });
 
     new RssMediaMonitor(rssSyncService, torrentManager, prisma);
 

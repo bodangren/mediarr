@@ -11,7 +11,7 @@ vi.mock('node:fs/promises', () => ({
 
 const fs = await import('node:fs/promises');
 
-function createMockPrisma() {
+function createMockDb() {
   return {
     movie: {
       findMany: vi.fn(),
@@ -25,12 +25,12 @@ function createMockPrisma() {
 }
 
 describe('LibraryScanService', () => {
-  let prisma: ReturnType<typeof createMockPrisma>;
+  let prisma: ReturnType<typeof createMockDb>;
   let service: LibraryScanService;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    prisma = createMockPrisma();
+    prisma = createMockDb();
     service = new LibraryScanService(prisma as any);
   });
 

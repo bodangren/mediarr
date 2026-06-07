@@ -4,7 +4,7 @@ import { registerStatsRoutes, categorizeQuality, buildQualityBreakdown } from '.
 import { registerApiErrorHandler } from '../errors';
 import type { ApiDependencies } from '../types';
 
-function createPrismaMock() {
+function createDbMock() {
   return {
     movie: {
       count: vi.fn().mockResolvedValue(0),
@@ -28,7 +28,7 @@ function createPrismaMock() {
   };
 }
 
-function createApp(prisma: ReturnType<typeof createPrismaMock>): FastifyInstance {
+function createApp(prisma: ReturnType<typeof createDbMock>): FastifyInstance {
   const app = Fastify();
   const deps = { prisma } as unknown as ApiDependencies;
   app.setErrorHandler((error, request, reply) => registerApiErrorHandler(request, reply, error));
@@ -38,10 +38,10 @@ function createApp(prisma: ReturnType<typeof createPrismaMock>): FastifyInstance
 
 describe('statsRoutes — GET /api/system/stats', () => {
   let app: FastifyInstance;
-  let prisma: ReturnType<typeof createPrismaMock>;
+  let prisma: ReturnType<typeof createDbMock>;
 
   beforeEach(() => {
-    prisma = createPrismaMock();
+    prisma = createDbMock();
     app = createApp(prisma);
   });
 
@@ -181,10 +181,10 @@ describe('buildQualityBreakdown', () => {
 
 describe('statsRoutes — GET /api/stats/downloads', () => {
   let app: FastifyInstance;
-  let prisma: ReturnType<typeof createPrismaMock>;
+  let prisma: ReturnType<typeof createDbMock>;
 
   beforeEach(() => {
-    prisma = createPrismaMock();
+    prisma = createDbMock();
     app = createApp(prisma);
   });
 
@@ -232,10 +232,10 @@ describe('statsRoutes — GET /api/stats/downloads', () => {
 
 describe('statsRoutes — GET /api/stats/system', () => {
   let app: FastifyInstance;
-  let prisma: ReturnType<typeof createPrismaMock>;
+  let prisma: ReturnType<typeof createDbMock>;
 
   beforeEach(() => {
-    prisma = createPrismaMock();
+    prisma = createDbMock();
     app = createApp(prisma);
   });
 

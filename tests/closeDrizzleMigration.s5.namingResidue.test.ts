@@ -218,7 +218,7 @@ describe('chore_close_drizzle_migration_20260607 — Phase S5: Rename test mock 
   // S5 test is not silently vacuous) and does NOT yet have the new
   // Drizzle names (so Green has real work to do).
   // ─────────────────────────────────────────────────────────────────────────
-  describe('S5.1: inventory precondition (31 files, 4 helper names, new names absent)', () => {
+  describe('S5.1: inventory precondition (30 files, 4 helper names, new names absent)', () => {
     it('the 4 helper names are accounted for in the FILES_BY_HELPER inventory', () => {
       const declaredHelpers = new Set(RENAMES.map((r) => r.oldName));
       const inventoryHelpers = new Set(Object.keys(FILES_BY_HELPER));
@@ -230,12 +230,12 @@ describe('chore_close_drizzle_migration_20260607 — Phase S5: Rename test mock 
       }
     });
 
-    it('the inventory totals to 31 files (matches the pre-Green grep -rl output)', () => {
+    it('the inventory totals to 30 files (word-boundary regex excludes VariantBackfillService makePrismaMock false positive)', () => {
       const all = new Set<string>();
       for (const list of Object.values(FILES_BY_HELPER)) {
         for (const f of list) all.add(f);
       }
-      expect(all.size, `inventory has ${all.size} unique files; expected 31`).toBe(31);
+      expect(all.size, `inventory has ${all.size} unique files; expected 30`).toBe(30);
     });
 
     it('every inventory file exists on disk', () => {

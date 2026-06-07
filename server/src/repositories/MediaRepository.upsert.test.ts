@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MediaRepository, type UpsertMovieInput, type UpsertSeriesInput } from './MediaRepository';
 
-function makePrisma() {
+function makeDb() {
   return {
     media: {
       upsert: vi.fn(),
@@ -43,11 +43,11 @@ const baseSeriesInput: UpsertSeriesInput = {
 };
 
 describe('MediaRepository.upsertMovie', () => {
-  let prisma: ReturnType<typeof makePrisma>;
+  let prisma: ReturnType<typeof makeDb>;
   let repo: MediaRepository;
 
   beforeEach(() => {
-    prisma = makePrisma();
+    prisma = makeDb();
     repo = new MediaRepository(prisma as any);
   });
 
@@ -136,11 +136,11 @@ describe('MediaRepository.upsertMovie', () => {
 });
 
 describe('MediaRepository.upsertSeries', () => {
-  let prisma: ReturnType<typeof makePrisma>;
+  let prisma: ReturnType<typeof makeDb>;
   let repo: MediaRepository;
 
   beforeEach(() => {
-    prisma = makePrisma();
+    prisma = makeDb();
     repo = new MediaRepository(prisma as any);
   });
 

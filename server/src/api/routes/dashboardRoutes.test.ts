@@ -11,7 +11,7 @@ function createSettingsServiceMock() {
   };
 }
 
-function createPrismaMock() {
+function createDbMock() {
   return {
     movie: {
       findMany: vi.fn(),
@@ -27,7 +27,7 @@ function createPrismaMock() {
 
 function createApp(
   settingsService: ReturnType<typeof createSettingsServiceMock>,
-  prisma: ReturnType<typeof createPrismaMock>,
+  prisma: ReturnType<typeof createDbMock>,
 ): FastifyInstance {
   const app = Fastify();
   const deps: ApiDependencies = { prisma, settingsService };
@@ -53,12 +53,12 @@ const defaultAppSettings = {
 
 describe('dashboardRoutes — GET /api/dashboard/disk-space', () => {
   let settingsService: ReturnType<typeof createSettingsServiceMock>;
-  let prisma: ReturnType<typeof createPrismaMock>;
+  let prisma: ReturnType<typeof createDbMock>;
   let app: FastifyInstance;
 
   beforeEach(() => {
     settingsService = createSettingsServiceMock();
-    prisma = createPrismaMock();
+    prisma = createDbMock();
     app = createApp(settingsService, prisma);
   });
 
@@ -146,13 +146,13 @@ describe('getDiskSpaceForPath', () => {
 
 describe('dashboardRoutes — GET /api/dashboard/upcoming', () => {
   let settingsService: ReturnType<typeof createSettingsServiceMock>;
-  let prisma: ReturnType<typeof createPrismaMock>;
+  let prisma: ReturnType<typeof createDbMock>;
   let app: FastifyInstance;
 
   beforeEach(() => {
     vi.useFakeTimers();
     settingsService = createSettingsServiceMock();
-    prisma = createPrismaMock();
+    prisma = createDbMock();
     app = createApp(settingsService, prisma);
   });
 

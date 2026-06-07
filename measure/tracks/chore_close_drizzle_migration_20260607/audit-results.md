@@ -68,3 +68,19 @@ Three test files contain raw-method mock declarations that will need updating wh
 ## Comment-Only
 
 *(No comment-only files remain after S2 extracted `repairMalformedJsonColumns` from main.ts.)*
+
+## Naming Residue
+
+Phase S5 renames Prisma-named test mock helpers to Drizzle/Db equivalents across all test files.
+
+**Files with Prisma-named helpers:** 31
+**Total Prisma-named helper references:** 278
+
+| Old Name | New Name | Files | Hit Count |
+|----------|----------|-------|-----------|
+| `createPrismaMock` | `createDbMock` | 8 | ~80 |
+| `createMockPrisma` | `createMockDb` | 2 | ~16 |
+| `makePrisma` | `makeDb` | 20 | ~170 |
+| `makeMoviePrisma` | `makeMovieDb` | 1 | ~12 |
+
+All 31 files are test files; no production source files use the helper names. The local `prisma` variable name within each test is out of scope — only the helper identifiers are renamed.

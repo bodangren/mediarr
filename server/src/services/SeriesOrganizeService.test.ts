@@ -13,7 +13,7 @@ vi.mock('node:fs/promises', () => ({
 
 import fs from 'node:fs/promises';
 
-function makePrisma(overrides: Record<string, any> = {}) {
+function makeDb(overrides: Record<string, any> = {}) {
   return {
     series: {
       findUnique: vi.fn().mockResolvedValue(overrides.series ?? null),
@@ -71,7 +71,7 @@ function oneEpisode(episodeOverrides: Record<string, any> = {}, variantOverrides
 describe('SeriesOrganizeService', () => {
   describe('naming tokens — full data', () => {
     it('replaces all tokens with correct values', async () => {
-      const prisma = makePrisma({
+      const prisma = makeDb({
         series: oneEpisode(
           { seasonNumber: 2, episodeNumber: 5, title: 'The Red Door', absoluteEpisodeNumber: 25 },
           { quality: 'BluRay-1080p Remux', path: '/old/path.mkv' }
@@ -92,7 +92,7 @@ describe('SeriesOrganizeService', () => {
     });
 
     it('includes resolution extracted from quality string', async () => {
-      const prisma = makePrisma({
+      const prisma = makeDb({
         series: oneEpisode({}, { quality: 'HDTV-720p', path: '/old/path.mkv' }),
       });
 
@@ -105,7 +105,7 @@ describe('SeriesOrganizeService', () => {
     });
 
     it('uses absolute episode number token', async () => {
-      const prisma = makePrisma({
+      const prisma = makeDb({
         series: oneEpisode({ absoluteEpisodeNumber: 100 }, { path: '/old/path.mkv' }),
       });
 
@@ -120,7 +120,7 @@ describe('SeriesOrganizeService', () => {
 
   describe('naming tokens — missing optional fields', () => {
     it('handles missing episodeTitle gracefully', async () => {
-      const prisma = makePrisma({
+      const prisma = makeDb({
         series: oneEpisode({ title: null }, { path: '/old/path.mkv' }),
       });
 
@@ -135,7 +135,7 @@ describe('SeriesOrganizeService', () => {
     });
 
     it('handles missing quality gracefully', async () => {
-      const prisma = makePrisma({
+      const prisma = makeDb({
         series: oneEpisode({}, { quality: null, path: '/old/path.mkv' }),
       });
 
@@ -148,7 +148,7 @@ describe('SeriesOrganizeService', () => {
     });
 
     it('handles missing absoluteEpisodeNumber (defaults to 0)', async () => {
-      const prisma = makePrisma({
+      const prisma = makeDb({
         series: oneEpisode({}, { path: '/old/path.mkv' }),
       });
 
@@ -163,7 +163,7 @@ describe('SeriesOrganizeService', () => {
 
   describe('sortTitle — The/A/An prefix handling', () => {
     it('sorts "The" prefix titles', async () => {
-      const prisma = makePrisma({
+      const prisma = makeDb({
         series: buildSeries({
           title: 'The Office',
           seasons: [{ episodes: [buildEpisode({ fileVariants: [buildVariant({ path: '/old/path.mkv' })] })] }],
@@ -179,7 +179,7 @@ describe('SeriesOrganizeService', () => {
     });
 
     it('sorts "A" prefix titles', async () => {
-      const prisma = makePrisma({
+      const prisma = makeDb({
         series: buildSeries({
           title: 'A Beautiful Mind',
           seasons: [{ episodes: [buildEpisode({ fileVariants: [buildVariant({ path: '/old/path.mkv' })] })] }],
@@ -195,7 +195,7 @@ describe('SeriesOrganizeService', () => {
     });
 
     it('sorts "An" prefix titles', async () => {
-      const prisma = makePrisma({
+      const prisma = makeDb({
         series: buildSeries({
           title: 'An American Tale',
           seasons: [{ episodes: [buildEpisode({ fileVariants: [buildVariant({ path: '/old/path.mkv' })] })] }],
@@ -211,7 +211,7 @@ describe('SeriesOrganizeService', () => {
     });
 
     it('leaves non-prefix titles unchanged', async () => {
-      const prisma = makePrisma({
+      const prisma = makeDb({
         series: buildSeries({
           title: 'Breaking Bad',
           seasons: [{ episodes: [buildEpisode({ fileVariants: [buildVariant({ path: '/old/path.mkv' })] })] }],
@@ -238,7 +238,7 @@ describe('SeriesOrganizeService', () => {
       ['Show|Subtitle', 'ShowSubtitle'],
       ['Show   Subtitle', 'Show Subtitle'],
     ])('sanitizes %s to %s', async (input, expected) => {
-      const prisma = makePrisma({
+      const prisma = makeDb({
         series: buildSeries({
           title: input,
           seasons: [{ episodes: [buildEpisode({ fileVariants: [buildVariant({ path: '/old/path.mkv' })] })] }],
@@ -257,7 +257,7 @@ describe('SeriesOrganizeService', () => {
 
   describe('extractResolution', () => {
     it('extracts 1080p from quality string', async () => {
-      const prisma = makePrisma({
+      const prisma = makeDb({
         series: oneEpisode({}, { quality: 'HDTV-1080p', path: '/old/path.mkv' }),
       });
 
@@ -270,7 +270,7 @@ describe('SeriesOrganizeService', () => {
     });
 
     it('extracts 2160p from quality string', async () => {
-      const prisma = makePrisma({
+      const prisma = makeDb({
         series: oneEpisode({}, { quality: 'UHD-2160p', path: '/old/path.mkv' }),
       });
 
@@ -283,7 +283,7 @@ describe('SeriesOrganizeService', () => {
     });
 
     it('returns empty string for quality without resolution pattern', async () => {
-      const prisma = makePrisma({
+      const prisma = makeDb({
         series: oneEpisode({}, { quality: 'DVDRip', path: '/old/path.mkv' }),
       });
 
@@ -296,7 +296,7 @@ describe('SeriesOrganizeService', () => {
     });
 
     it('handles null quality without error', async () => {
-      const prisma = makePrisma({
+      const prisma = makeDb({
         series: oneEpisode({}, { quality: null, path: '/old/path.mkv' }),
       });
 
@@ -312,7 +312,7 @@ describe('SeriesOrganizeService', () => {
 
   describe('empty/undefined season folder format', () => {
     it('skips season folder layer when seasonFolderFormat is empty', async () => {
-      const prisma = makePrisma({
+      const prisma = makeDb({
         series: oneEpisode({}, { path: '/old/path.mkv' }),
       });
 
@@ -328,7 +328,7 @@ describe('SeriesOrganizeService', () => {
 
   describe('default naming settings', () => {
     it('produces expected default path structure', async () => {
-      const prisma = makePrisma({
+      const prisma = makeDb({
         series: oneEpisode(
           { seasonNumber: 1, episodeNumber: 3, title: 'Episode Three' },
           { quality: 'HDTV-720p', path: '/old/path.mkv' }
@@ -346,14 +346,14 @@ describe('SeriesOrganizeService', () => {
 
   describe('previewRename — corner cases', () => {
     it('returns empty array for empty seriesIds', async () => {
-      const prisma = makePrisma();
+      const prisma = makeDb();
       const svc = new SeriesOrganizeService(prisma as any, makeSettings());
       const previews = await svc.previewRename([]);
       expect(previews).toEqual([]);
     });
 
     it('skips series with no path', async () => {
-      const prisma = makePrisma({
+      const prisma = makeDb({
         series: buildSeries({ path: null, seasons: [{ episodes: [buildEpisode({ fileVariants: [buildVariant()] })] }] }),
       });
       const svc = new SeriesOrganizeService(prisma as any, makeSettings());
@@ -362,7 +362,7 @@ describe('SeriesOrganizeService', () => {
     });
 
     it('skips series with no seasons', async () => {
-      const prisma = makePrisma({
+      const prisma = makeDb({
         series: buildSeries({ seasons: [] }),
       });
       const svc = new SeriesOrganizeService(prisma as any, makeSettings());
@@ -371,7 +371,7 @@ describe('SeriesOrganizeService', () => {
     });
 
     it('skips episodes with no fileVariants', async () => {
-      const prisma = makePrisma({
+      const prisma = makeDb({
         series: buildSeries({ seasons: [{ episodes: [buildEpisode({ fileVariants: [] })] }] }),
       });
       const svc = new SeriesOrganizeService(prisma as any, makeSettings());
@@ -381,7 +381,7 @@ describe('SeriesOrganizeService', () => {
 
     it('isNewPath is false when path already matches', async () => {
       const currentPath = '/media/tv/Test Show/Season 01/Test Show - S01E01 - Pilot [HDTV-720p].mkv';
-      const prisma = makePrisma({
+      const prisma = makeDb({
         series: oneEpisode({}, { path: currentPath }),
       });
       const svc = new SeriesOrganizeService(prisma as any, DEFAULT_SERIES_MANAGEMENT_SETTINGS);
@@ -392,7 +392,7 @@ describe('SeriesOrganizeService', () => {
     });
 
     it('isNewPath is true when path differs', async () => {
-      const prisma = makePrisma({
+      const prisma = makeDb({
         series: oneEpisode({}, { path: '/completely/different/path.mkv' }),
       });
       const svc = new SeriesOrganizeService(prisma as any, DEFAULT_SERIES_MANAGEMENT_SETTINGS);
@@ -403,7 +403,7 @@ describe('SeriesOrganizeService', () => {
     });
 
     it('skips series not found (null from prisma)', async () => {
-      const prisma = makePrisma({ series: null });
+      const prisma = makeDb({ series: null });
       const svc = new SeriesOrganizeService(prisma as any, makeSettings());
       const previews = await svc.previewRename([999]);
       expect(previews).toEqual([]);
@@ -421,7 +421,7 @@ describe('SeriesOrganizeService', () => {
     });
 
     it('renames file and updates DB when path differs', async () => {
-      const prisma = makePrisma({
+      const prisma = makeDb({
         series: oneEpisode({}, { path: '/old/show.mkv' }),
       });
       const svc = new SeriesOrganizeService(prisma as any, makeSettings());
@@ -440,7 +440,7 @@ describe('SeriesOrganizeService', () => {
 
     it('skips files that already have correct path (isNewPath false)', async () => {
       const currentPath = '/media/tv/Test Show/Season 01/Test Show - S01E01 - Pilot [HDTV-720p].mkv';
-      const prisma = makePrisma({
+      const prisma = makeDb({
         series: oneEpisode({}, { path: currentPath }),
       });
       const svc = new SeriesOrganizeService(prisma as any, DEFAULT_SERIES_MANAGEMENT_SETTINGS);
@@ -462,7 +462,7 @@ describe('SeriesOrganizeService', () => {
     });
 
     it('does NOT call fs.rename when DB update fails', async () => {
-      const prisma = makePrisma({
+      const prisma = makeDb({
         series: oneEpisode({}, { path: '/old/show.mkv' }),
       });
       prisma.mediaFileVariant.updateMany.mockRejectedValue(new Error('DB connection lost'));
@@ -475,7 +475,7 @@ describe('SeriesOrganizeService', () => {
 
     it('rolls back DB path when fs.rename fails after DB update succeeds', async () => {
       const oldPath = '/old/show.mkv';
-      const prisma = makePrisma({
+      const prisma = makeDb({
         series: oneEpisode({}, { path: oldPath }),
       });
       fsMocks.rename.mockRejectedValue(new Error('EACCES: permission denied'));
@@ -496,7 +496,7 @@ describe('SeriesOrganizeService', () => {
 
     it('succeeds with correct order: DB update then fs.rename', async () => {
       const oldPath = '/old/show.mkv';
-      const prisma = makePrisma({
+      const prisma = makeDb({
         series: oneEpisode({}, { path: oldPath }),
       });
       const svc = new SeriesOrganizeService(prisma as any, makeSettings());
@@ -519,7 +519,7 @@ describe('SeriesOrganizeService', () => {
     });
 
     it('does NOT call fs.rename when DB update fails', async () => {
-      const prisma = makePrisma({
+      const prisma = makeDb({
         series: oneEpisode({}, { path: '/old/show.mkv' }),
       });
       prisma.mediaFileVariant.updateMany.mockRejectedValue(new Error('DB connection lost'));
@@ -532,7 +532,7 @@ describe('SeriesOrganizeService', () => {
 
     it('rolls back DB path when fs.rename fails after DB update succeeds', async () => {
       const oldPath = '/old/show.mkv';
-      const prisma = makePrisma({
+      const prisma = makeDb({
         series: oneEpisode({}, { path: oldPath }),
       });
       fsMocks.rename.mockRejectedValue(new Error('EACCES: permission denied'));
@@ -553,7 +553,7 @@ describe('SeriesOrganizeService', () => {
 
     it('succeeds with correct order: DB update then fs.rename', async () => {
       const oldPath = '/old/show.mkv';
-      const prisma = makePrisma({
+      const prisma = makeDb({
         series: oneEpisode({}, { path: oldPath }),
       });
       const svc = new SeriesOrganizeService(prisma as any, makeSettings());
@@ -577,7 +577,7 @@ describe('SeriesOrganizeService', () => {
 
     it('records error when fs.rename fails and continues', async () => {
       fsMocks.rename.mockRejectedValue(new Error('EACCES: permission denied'));
-      const prisma = makePrisma({
+      const prisma = makeDb({
         series: oneEpisode({}, { path: '/old/show.mkv' }),
       });
       const svc = new SeriesOrganizeService(prisma as any, makeSettings());
@@ -591,7 +591,7 @@ describe('SeriesOrganizeService', () => {
     });
 
     it('records error when DB update fails before rename (no partial state)', async () => {
-      const prisma = makePrisma({
+      const prisma = makeDb({
         series: oneEpisode({}, { path: '/old/show.mkv' }),
       });
       prisma.mediaFileVariant.updateMany.mockRejectedValue(new Error('DB connection lost'));
@@ -605,7 +605,7 @@ describe('SeriesOrganizeService', () => {
     });
 
     it('handles mixed success and failure across multiple episodes', async () => {
-      const prisma = makePrisma({
+      const prisma = makeDb({
         series: buildSeries({
           seasons: [{
             episodes: [

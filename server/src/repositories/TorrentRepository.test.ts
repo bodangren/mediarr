@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { TorrentRepository } from './TorrentRepository';
 
-function makePrisma() {
+function makeDb() {
   return {
     torrent: {
       upsert: vi.fn(),
@@ -20,7 +20,7 @@ function makePrisma() {
 
 describe('TorrentRepository.normalizeInfoHash', () => {
   it('trims and lowercases infoHash', async () => {
-    const prisma = makePrisma();
+    const prisma = makeDb();
     prisma.torrent.upsert.mockResolvedValue({ infoHash: 'abc123' });
     const repo = new TorrentRepository(prisma as any);
 
@@ -48,11 +48,11 @@ describe('TorrentRepository.normalizeInfoHash', () => {
 });
 
 describe('TorrentRepository.upsert', () => {
-  let prisma: ReturnType<typeof makePrisma>;
+  let prisma: ReturnType<typeof makeDb>;
   let repo: TorrentRepository;
 
   beforeEach(() => {
-    prisma = makePrisma();
+    prisma = makeDb();
     repo = new TorrentRepository(prisma as any);
   });
 
@@ -103,7 +103,7 @@ describe('TorrentRepository.upsert', () => {
 
 describe('TorrentRepository.findByInfoHash', () => {
   it('returns torrent with peers when found', async () => {
-    const prisma = makePrisma();
+    const prisma = makeDb();
     prisma.torrent.findUnique.mockResolvedValue({ infoHash: 'abc123', peers: [{ ip: '1.2.3.4' }] });
     const repo = new TorrentRepository(prisma as any);
 
@@ -115,7 +115,7 @@ describe('TorrentRepository.findByInfoHash', () => {
   });
 
   it('returns null when torrent not found', async () => {
-    const prisma = makePrisma();
+    const prisma = makeDb();
     prisma.torrent.findUnique.mockResolvedValue(null);
     const repo = new TorrentRepository(prisma as any);
 
@@ -127,7 +127,7 @@ describe('TorrentRepository.findByInfoHash', () => {
 
 describe('TorrentRepository.delete', () => {
   it('deletes peers before deleting torrent', async () => {
-    const prisma = makePrisma();
+    const prisma = makeDb();
     prisma.torrent.delete.mockResolvedValue({ infoHash: 'abc123' });
     const repo = new TorrentRepository(prisma as any);
 
@@ -142,7 +142,7 @@ describe('TorrentRepository.delete', () => {
 
 describe('TorrentRepository.syncPeers', () => {
   it('is a no-op when torrent does not exist', async () => {
-    const prisma = makePrisma();
+    const prisma = makeDb();
     prisma.torrent.findUnique.mockResolvedValue(null);
     const repo = new TorrentRepository(prisma as any);
 
@@ -153,7 +153,7 @@ describe('TorrentRepository.syncPeers', () => {
   });
 
   it('deletes old peers and creates new ones', async () => {
-    const prisma = makePrisma();
+    const prisma = makeDb();
     prisma.torrent.findUnique.mockResolvedValue({ id: 1, infoHash: 'abc123' });
     const repo = new TorrentRepository(prisma as any);
 
@@ -174,7 +174,7 @@ describe('TorrentRepository.syncPeers', () => {
   });
 
   it('handles empty peers array (clears all peers)', async () => {
-    const prisma = makePrisma();
+    const prisma = makeDb();
     prisma.torrent.findUnique.mockResolvedValue({ id: 1, infoHash: 'abc123' });
     const repo = new TorrentRepository(prisma as any);
 
@@ -187,7 +187,7 @@ describe('TorrentRepository.syncPeers', () => {
 
 describe('TorrentRepository.findOldestQueued', () => {
   it('returns the oldest queued torrent', async () => {
-    const prisma = makePrisma();
+    const prisma = makeDb();
     prisma.torrent.findMany.mockResolvedValue([{ infoHash: 'old', added: new Date('2020-01-01') }]);
     const repo = new TorrentRepository(prisma as any);
 
@@ -198,7 +198,7 @@ describe('TorrentRepository.findOldestQueued', () => {
   });
 
   it('returns null when no queued torrents exist', async () => {
-    const prisma = makePrisma();
+    const prisma = makeDb();
     prisma.torrent.findMany.mockResolvedValue([]);
     const repo = new TorrentRepository(prisma as any);
 
@@ -208,7 +208,7 @@ describe('TorrentRepository.findOldestQueued', () => {
   });
 
   it('queries with status=queued, ordered by added asc, take 1', async () => {
-    const prisma = makePrisma();
+    const prisma = makeDb();
     prisma.torrent.findMany.mockResolvedValue([]);
     const repo = new TorrentRepository(prisma as any);
 
@@ -224,7 +224,7 @@ describe('TorrentRepository.findOldestQueued', () => {
 
 describe('TorrentRepository.findByStatuses', () => {
   it('queries with status { in: [...] }', async () => {
-    const prisma = makePrisma();
+    const prisma = makeDb();
     prisma.torrent.findMany.mockResolvedValue([]);
     const repo = new TorrentRepository(prisma as any);
 
@@ -239,7 +239,7 @@ describe('TorrentRepository.findByStatuses', () => {
 
 describe('TorrentRepository.updateProgress', () => {
   it('passes all fields to update', async () => {
-    const prisma = makePrisma();
+    const prisma = makeDb();
     prisma.torrent.update.mockResolvedValue({ infoHash: 'abc' });
     const repo = new TorrentRepository(prisma as any);
 
@@ -260,7 +260,7 @@ describe('TorrentRepository.updateProgress', () => {
   });
 
   it('handles null eta', async () => {
-    const prisma = makePrisma();
+    const prisma = makeDb();
     prisma.torrent.update.mockResolvedValue({ infoHash: 'abc' });
     const repo = new TorrentRepository(prisma as any);
 
@@ -276,7 +276,7 @@ describe('TorrentRepository.updateProgress', () => {
 
 describe('TorrentRepository.countByStatus', () => {
   it('delegates to prisma.torrent.count', async () => {
-    const prisma = makePrisma();
+    const prisma = makeDb();
     prisma.torrent.count.mockResolvedValue(5);
     const repo = new TorrentRepository(prisma as any);
 

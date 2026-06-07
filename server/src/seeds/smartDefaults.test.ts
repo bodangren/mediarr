@@ -9,7 +9,7 @@ const BUILTIN_WEBTORRENT_NAME = 'Built-in WebTorrent';
 const INCOMPLETE_DIR = '/data/downloads/incomplete';
 const COMPLETE_DIR = '/data/downloads/complete';
 
-function createPrismaMock() {
+function createDbMock() {
   const db: any = {
     qualityDefinition: [],
     qualityProfile: [],
@@ -197,10 +197,10 @@ async function seedSmartDefaults(prisma: any) {
 }
 
 describe('seedSmartDefaults', () => {
-  let prisma: ReturnType<typeof createPrismaMock>;
+  let prisma: ReturnType<typeof createDbMock>;
 
   beforeEach(() => {
-    prisma = createPrismaMock();
+    prisma = createDbMock();
   });
 
   describe('download client auto-configuration', () => {

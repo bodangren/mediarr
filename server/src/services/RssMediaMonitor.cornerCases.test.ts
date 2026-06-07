@@ -27,7 +27,7 @@ function makeTorrentManager() {
   return { addTorrent: vi.fn().mockResolvedValue(undefined) };
 }
 
-function makePrisma({
+function makeDb({
   series = null as any,
   episode = null as any,
   movie = null as any,
@@ -73,7 +73,7 @@ describe('RssMediaMonitor — TV matching corner cases', () => {
 
     const episode = { id: 42, seasonNumber: 1, episodeNumber: 5, monitored: true, path: null };
     const series = { id: 5, title: 'Breaking Bad', cleanTitle: 'breakingbad', qualityProfileId: 1, monitored: true };
-    const prisma = makePrisma({ series, episode });
+    const prisma = makeDb({ series, episode });
 
     new RssMediaMonitor(rssSyncService, torrentManager, prisma);
     await fireRelease(rssSyncService, {
@@ -104,7 +104,7 @@ describe('RssMediaMonitor — TV matching corner cases', () => {
     });
 
     const series = { id: 5, title: 'Breaking Bad', cleanTitle: 'breakingbad', qualityProfileId: 1, monitored: true };
-    const prisma = makePrisma({ series, episode: null });
+    const prisma = makeDb({ series, episode: null });
 
     new RssMediaMonitor(rssSyncService, torrentManager, prisma);
     await fireRelease(rssSyncService, {
@@ -129,7 +129,7 @@ describe('RssMediaMonitor — TV matching corner cases', () => {
     });
 
     const series = { id: 5, title: 'Breaking Bad', cleanTitle: 'breakingbad', qualityProfileId: 1, monitored: true };
-    const prisma = makePrisma({ series, episode: null });
+    const prisma = makeDb({ series, episode: null });
 
     new RssMediaMonitor(rssSyncService, torrentManager, prisma);
     await fireRelease(rssSyncService, {
@@ -152,7 +152,7 @@ describe('RssMediaMonitor — TV matching corner cases', () => {
 
     const series = { id: 5, title: 'Breaking Bad', cleanTitle: 'breakingbad', qualityProfileId: 1, monitored: true };
     const episode = { id: 42, seasonNumber: 1, episodeNumber: 1, monitored: true, path: null };
-    const prisma = makePrisma({ series, episode });
+    const prisma = makeDb({ series, episode });
 
     new RssMediaMonitor(rssSyncService, torrentManager, prisma);
     await fireRelease(rssSyncService, {
@@ -173,7 +173,7 @@ describe('RssMediaMonitor — TV matching corner cases', () => {
       id: 7, title: 'The Matrix', cleanTitle: 'thematrix', year: 1999,
       path: null, monitored: true, status: 'released', minimumAvailability: 'released', qualityProfileId: 1,
     };
-    const prisma = makePrisma({ movie });
+    const prisma = makeDb({ movie });
 
     new RssMediaMonitor(rssSyncService, torrentManager, prisma);
     await fireRelease(rssSyncService, {
@@ -200,7 +200,7 @@ describe('RssMediaMonitor — TV matching corner cases', () => {
       id: 7, title: 'The Matrix', cleanTitle: 'thematrix', year: 1999,
       path: null, monitored: true, status: 'released', minimumAvailability: 'released', qualityProfileId: 1,
     };
-    const prisma = makePrisma({ movie });
+    const prisma = makeDb({ movie });
 
     new RssMediaMonitor(rssSyncService, torrentManager, prisma);
     await fireRelease(rssSyncService, {
@@ -220,7 +220,7 @@ describe('RssMediaMonitor — TV matching corner cases', () => {
       seasonNumber: 1, episodeNumbers: [1], year: null, quality: null,
     });
 
-    const prisma = makePrisma({ series: null, movie: null });
+    const prisma = makeDb({ series: null, movie: null });
 
     new RssMediaMonitor(rssSyncService, torrentManager, prisma);
     await fireRelease(rssSyncService, {
@@ -258,7 +258,7 @@ describe('RssMediaMonitor — movie matching & availability corner cases', () =>
       id: 7, title: 'Arrival', cleanTitle: 'arrival', year: 2016,
       path: null, monitored: true, status: 'released', minimumAvailability: 'released', qualityProfileId: 1,
     };
-    const prisma = makePrisma({ movie });
+    const prisma = makeDb({ movie });
 
     new RssMediaMonitor(rssSyncService, torrentManager, prisma);
     await fireRelease(rssSyncService, {
@@ -279,7 +279,7 @@ describe('RssMediaMonitor — movie matching & availability corner cases', () =>
       id: 7, title: '2012', cleanTitle: '2012', year: 2009,
       path: null, monitored: true, status: 'released', minimumAvailability: 'released', qualityProfileId: 1,
     };
-    const prisma = makePrisma({ movie });
+    const prisma = makeDb({ movie });
 
     new RssMediaMonitor(rssSyncService, torrentManager, prisma);
     await fireRelease(rssSyncService, {
@@ -306,7 +306,7 @@ describe('RssMediaMonitor — movie matching & availability corner cases', () =>
       id: 7, title: 'Dune Part Three', cleanTitle: 'dunepartthree', year: 2026,
       path: null, monitored: true, status: 'announced', minimumAvailability: 'announced', qualityProfileId: 1,
     };
-    const prisma = makePrisma({ movie });
+    const prisma = makeDb({ movie });
 
     new RssMediaMonitor(rssSyncService, torrentManager, prisma);
     await fireRelease(rssSyncService, {
@@ -328,7 +328,7 @@ describe('RssMediaMonitor — movie matching & availability corner cases', () =>
       id: 7, title: 'Dune Part Three', cleanTitle: 'dunepartthree', year: 2026,
       path: null, monitored: true, status: 'announced', minimumAvailability: 'in_cinemas', qualityProfileId: 1,
     };
-    const prisma = makePrisma({ movie });
+    const prisma = makeDb({ movie });
 
     new RssMediaMonitor(rssSyncService, torrentManager, prisma);
     await fireRelease(rssSyncService, {
@@ -352,7 +352,7 @@ describe('RssMediaMonitor — movie matching & availability corner cases', () =>
       id: 7, title: 'Dune Part Two', cleanTitle: 'duneparttwo', year: 2024,
       path: null, monitored: true, status: 'released', minimumAvailability: 'in_cinemas', qualityProfileId: 1,
     };
-    const prisma = makePrisma({ movie });
+    const prisma = makeDb({ movie });
 
     new RssMediaMonitor(rssSyncService, torrentManager, prisma, metadataProvider);
     await fireRelease(rssSyncService, {
@@ -374,7 +374,7 @@ describe('RssMediaMonitor — movie matching & availability corner cases', () =>
       id: 7, title: 'Oppenheimer', cleanTitle: 'oppenheimer', year: 2023,
       path: null, monitored: true, status: 'announced', minimumAvailability: null, qualityProfileId: 1,
     };
-    const prisma = makePrisma({ movie });
+    const prisma = makeDb({ movie });
 
     new RssMediaMonitor(rssSyncService, torrentManager, prisma);
     await fireRelease(rssSyncService, {
@@ -398,7 +398,7 @@ describe('RssMediaMonitor — movie matching & availability corner cases', () =>
       id: 7, title: 'The Batman', cleanTitle: 'thebatman', year: 2022,
       path: null, monitored: true, status: 'released', minimumAvailability: 'released', qualityProfileId: 1,
     };
-    const prisma = makePrisma({ movie });
+    const prisma = makeDb({ movie });
 
     new RssMediaMonitor(rssSyncService, torrentManager, prisma, metadataProvider);
     await fireRelease(rssSyncService, {
@@ -419,7 +419,7 @@ describe('RssMediaMonitor — movie matching & availability corner cases', () =>
   it('2.8 movie already has path (not wanted) — skips', async () => {
     mockedParse.mockResolvedValue(null);
 
-    const prisma = makePrisma({ movie: null });
+    const prisma = makeDb({ movie: null });
 
     new RssMediaMonitor(rssSyncService, torrentManager, prisma);
     await fireRelease(rssSyncService, {
@@ -444,7 +444,7 @@ describe('RssMediaMonitor — movie matching & availability corner cases', () =>
       id: 7, title: 'The Matrix', cleanTitle: 'thematrix', year: 1999,
       path: null, monitored: true, status: 'released', minimumAvailability: 'released', qualityProfileId: 1,
     };
-    const prisma = makePrisma({ movie });
+    const prisma = makeDb({ movie });
 
     new RssMediaMonitor(rssSyncService, torrentManager, prisma);
     await fireRelease(rssSyncService, {
@@ -483,7 +483,7 @@ describe('RssMediaMonitor — scoring, indexer priority & error handling', () =>
     };
     const series = { id: 5, title: 'Breaking Bad', cleanTitle: 'breakingbad', qualityProfileId: 1, monitored: true };
     const episode = { id: 42, seasonNumber: 1, episodeNumber: 1, monitored: true, path: null };
-    const prisma = makePrisma({ series, episode });
+    const prisma = makeDb({ series, episode });
 
     new RssMediaMonitor(rssSyncService, torrentManager, prisma, null, customFormatRepository);
     await fireRelease(rssSyncService, {
@@ -503,7 +503,7 @@ describe('RssMediaMonitor — scoring, indexer priority & error handling', () =>
       seasonNumber: 1, episodeNumbers: [1], year: null, quality: null,
     });
 
-    const prisma = makePrisma({
+    const prisma = makeDb({
       series: { id: 5, title: 'Breaking Bad', cleanTitle: 'breakingbad', qualityProfileId: 1, monitored: true },
       episode: { id: 42, seasonNumber: 1, episodeNumber: 1, monitored: true, path: null },
       indexer: null,
@@ -528,7 +528,7 @@ describe('RssMediaMonitor — scoring, indexer priority & error handling', () =>
       seasonNumber: 1, episodeNumbers: [1], year: null, quality: null,
     });
 
-    const prisma = makePrisma({});
+    const prisma = makeDb({});
     prisma.series.findFirst.mockRejectedValue(new Error('DB timeout'));
 
     new RssMediaMonitor(rssSyncService, torrentManager, prisma);
@@ -548,7 +548,7 @@ describe('RssMediaMonitor — scoring, indexer priority & error handling', () =>
       seasonNumber: 1, episodeNumbers: [1], year: null, quality: null,
     });
 
-    const prisma = makePrisma({
+    const prisma = makeDb({
       series: { id: 5, title: 'Breaking Bad', cleanTitle: 'breakingbad', qualityProfileId: 1, monitored: true },
     });
     prisma.episode.findFirst.mockRejectedValue(new Error('DB timeout'));
@@ -567,7 +567,7 @@ describe('RssMediaMonitor — scoring, indexer priority & error handling', () =>
   it('3.5 prisma.movie.findFirst throws — no grab', async () => {
     mockedParse.mockResolvedValue(null);
 
-    const prisma = makePrisma({});
+    const prisma = makeDb({});
     prisma.movie.findFirst.mockRejectedValue(new Error('DB timeout'));
 
     new RssMediaMonitor(rssSyncService, torrentManager, prisma);
@@ -589,7 +589,7 @@ describe('RssMediaMonitor — scoring, indexer priority & error handling', () =>
 
     const series = { id: 5, title: 'Breaking Bad', cleanTitle: 'breakingbad', qualityProfileId: 1, monitored: true };
     const episode = { id: 42, seasonNumber: 1, episodeNumber: 1, monitored: true, path: null };
-    const prisma = makePrisma({ series, episode });
+    const prisma = makeDb({ series, episode });
 
     new RssMediaMonitor(rssSyncService, torrentManager, prisma);
     await fireRelease(rssSyncService, {
@@ -613,7 +613,7 @@ describe('RssMediaMonitor — scoring, indexer priority & error handling', () =>
       id: 7, title: 'Breaking Bad', cleanTitle: 'breakingbad', year: 2008,
       path: null, monitored: true, status: 'released', minimumAvailability: 'released', qualityProfileId: 1,
     };
-    const prisma = makePrisma({ series, episode, movie });
+    const prisma = makeDb({ series, episode, movie });
 
     new RssMediaMonitor(rssSyncService, torrentManager, prisma);
     await fireRelease(rssSyncService, {

@@ -37,7 +37,7 @@ function makeActivityEmitter() {
   return { emit: vi.fn().mockResolvedValue(undefined) };
 }
 
-function makePrisma({
+function makeDb({
   series = null as any,
   episode = null as any,
   episodeFindUnique = undefined as any,
@@ -144,7 +144,7 @@ describe('Import → Organizer → DB Update Handoff', () => {
       movieId: null,
     };
 
-    const prisma = makePrisma({
+    const prisma = makeDb({
       series,
       episode,
       episodeFindUnique: episode,
@@ -196,7 +196,7 @@ describe('Import → Organizer → DB Update Handoff', () => {
       movieId: 7,
     };
 
-    const prisma = makePrisma({
+    const prisma = makeDb({
       movie,
       torrent: torrentRow,
       mediaManagement: { movieRootFolder: '/media/movies' },
@@ -248,7 +248,7 @@ describe('Import → Organizer → DB Update Handoff', () => {
       movieId: null,
     };
 
-    const prisma = makePrisma({
+    const prisma = makeDb({
       series,
       episode,
       episodeFindUnique: episode,
@@ -303,7 +303,7 @@ describe('Import → Organizer → DB Update Handoff', () => {
       movieId: null,
     };
 
-    const prisma = makePrisma({
+    const prisma = makeDb({
       series,
       episode,
       episodeFindUnique: episode,
@@ -359,7 +359,7 @@ describe('Import → Organizer → DB Update Handoff', () => {
     };
 
     // No tvRootFolder configured
-    const prisma = makePrisma({
+    const prisma = makeDb({
       series,
       episode,
       episodeFindUnique: episode,

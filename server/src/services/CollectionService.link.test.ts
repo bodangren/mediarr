@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { CollectionService } from './CollectionService';
 import { ConflictError } from '../errors/domainErrors';
 
-function makePrisma(overrides: Record<string, any> = {}) {
+function makeDb(overrides: Record<string, any> = {}) {
   return {
     collection: {
       findUnique: vi.fn().mockResolvedValue(null),
@@ -44,11 +44,11 @@ function makeSettingsService() {
 
 describe('CollectionService.linkMovieToCollection', () => {
   let service: CollectionService;
-  let prisma: ReturnType<typeof makePrisma>;
+  let prisma: ReturnType<typeof makeDb>;
   let settingsService: ReturnType<typeof makeSettingsService>;
 
   beforeEach(() => {
-    prisma = makePrisma();
+    prisma = makeDb();
     settingsService = makeSettingsService();
     const httpClient = makeHttpClient({});
     service = new CollectionService(prisma as any, httpClient as any, settingsService as any);

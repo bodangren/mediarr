@@ -3,7 +3,7 @@ import { createApiServer } from '../server/src/api/createApiServer';
 import type { FastifyInstance } from 'fastify';
 
 // Mock Prisma with episode/series data
-function createMockPrisma(episodes: any[] = [], series: any[] = []) {
+function createMockDb(episodes: any[] = [], series: any[] = []) {
   return {
     episode: {
       findMany: vi.fn().mockResolvedValue(episodes),
@@ -35,7 +35,7 @@ describe('Calendar API', () => {
 
   describe('GET /api/calendar', () => {
     it('returns 200 with empty array when no episodes exist', async () => {
-      const mockPrisma = createMockPrisma();
+      const mockPrisma = createMockDb();
       const app = createTestApp(mockPrisma);
       apps.push(app);
 
@@ -52,7 +52,7 @@ describe('Calendar API', () => {
     });
 
     it('returns 422 when start parameter is missing', async () => {
-      const mockPrisma = createMockPrisma();
+      const mockPrisma = createMockDb();
       const app = createTestApp(mockPrisma);
       apps.push(app);
 
@@ -69,7 +69,7 @@ describe('Calendar API', () => {
     });
 
     it('returns 422 when end parameter is missing', async () => {
-      const mockPrisma = createMockPrisma();
+      const mockPrisma = createMockDb();
       const app = createTestApp(mockPrisma);
       apps.push(app);
 
@@ -86,7 +86,7 @@ describe('Calendar API', () => {
     });
 
     it('returns 422 for invalid date format', async () => {
-      const mockPrisma = createMockPrisma();
+      const mockPrisma = createMockDb();
       const app = createTestApp(mockPrisma);
       apps.push(app);
 
@@ -116,7 +116,7 @@ describe('Calendar API', () => {
           fileVariants: [],
         },
       ];
-      const mockPrisma = createMockPrisma(mockEpisodes);
+      const mockPrisma = createMockDb(mockEpisodes);
       const app = createTestApp(mockPrisma);
       apps.push(app);
 
@@ -225,7 +225,7 @@ describe('Calendar API', () => {
         },
       ];
 
-      const mockPrisma = createMockPrisma(mockEpisodes);
+      const mockPrisma = createMockDb(mockEpisodes);
       const app = createTestApp(mockPrisma);
       apps.push(app);
 
@@ -257,7 +257,7 @@ describe('Calendar API', () => {
         },
       ];
 
-      const mockPrisma = createMockPrisma(mockEpisodes);
+      const mockPrisma = createMockDb(mockEpisodes);
       const app = createTestApp(mockPrisma);
       apps.push(app);
 
@@ -290,7 +290,7 @@ describe('Calendar API', () => {
         },
       ];
 
-      const mockPrisma = createMockPrisma(mockEpisodes);
+      const mockPrisma = createMockDb(mockEpisodes);
       const app = createTestApp(mockPrisma);
       apps.push(app);
 
@@ -335,7 +335,7 @@ describe('Calendar API', () => {
         },
       ];
 
-      const mockPrisma = createMockPrisma(mockEpisodes);
+      const mockPrisma = createMockDb(mockEpisodes);
       const app = createTestApp(mockPrisma);
       apps.push(app);
 
@@ -369,7 +369,7 @@ describe('Calendar API', () => {
         },
       ];
 
-      const mockPrisma = createMockPrisma(mockEpisodes);
+      const mockPrisma = createMockDb(mockEpisodes);
       const app = createTestApp(mockPrisma);
       apps.push(app);
 
@@ -385,7 +385,7 @@ describe('Calendar API', () => {
     });
 
     it('handles seriesId as string or number', async () => {
-      const mockPrisma = createMockPrisma([]);
+      const mockPrisma = createMockDb([]);
       const app = createTestApp(mockPrisma);
       apps.push(app);
 

@@ -31,7 +31,7 @@ function makeTorrentManager() {
 }
 
 /** Build a prisma mock matching what RssMediaMonitor needs. */
-function makePrisma({
+function makeDb({
   series = null as any,
   episode = null as any,
   movie = null as any,
@@ -94,7 +94,7 @@ describe('RssMediaMonitor.handleMovieRelease — movieId passed to addTorrent', 
       qualityProfileId: 1,
     };
 
-    const prisma = makePrisma({ movie });
+    const prisma = makeDb({ movie });
 
     new RssMediaMonitor(rssSyncService, torrentManager, prisma);
 
@@ -131,7 +131,7 @@ describe('RssMediaMonitor — corner cases', () => {
       monitored: true,
     };
     const episode = { id: 42, seasonNumber: 1, episodeNumber: 1, monitored: true, path: null };
-    const prisma = makePrisma({ series, episode });
+    const prisma = makeDb({ series, episode });
 
     new RssMediaMonitor(rssSyncService, torrentManager, prisma);
 
@@ -161,7 +161,7 @@ describe('RssMediaMonitor — corner cases', () => {
       path: '/media/tv/Breaking Bad/Season 01/Breaking Bad - S01E01.mkv',
     };
 
-    const prisma = makePrisma({ series, episode: null }); // episode.findFirst returns null because path!=null filter
+    const prisma = makeDb({ series, episode: null }); // episode.findFirst returns null because path!=null filter
 
     new RssMediaMonitor(rssSyncService, torrentManager, prisma);
 
@@ -187,7 +187,7 @@ describe('RssMediaMonitor — corner cases', () => {
       qualityProfileId: 1,
     };
 
-    const prisma = makePrisma({ movie });
+    const prisma = makeDb({ movie });
 
     // Release title has nothing in common with "Dune Part Two" — confidence will be very low.
     const lowScoreRelease = {
@@ -206,7 +206,7 @@ describe('RssMediaMonitor — corner cases', () => {
 
   it('3.4 skips a TV release when the series is not in the monitored library', async () => {
     // prisma returns null for series.findFirst — series not monitored or not found
-    const prisma = makePrisma({ series: null, episode: null });
+    const prisma = makeDb({ series: null, episode: null });
 
     new RssMediaMonitor(rssSyncService, torrentManager, prisma);
 
@@ -244,7 +244,7 @@ describe('RssMediaMonitor.handleTvRelease — episodeId passed to addTorrent', (
       path: null,
     };
 
-    const prisma = makePrisma({ series, episode });
+    const prisma = makeDb({ series, episode });
 
     new RssMediaMonitor(rssSyncService, torrentManager, prisma);
 

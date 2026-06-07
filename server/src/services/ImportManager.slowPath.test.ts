@@ -34,7 +34,7 @@ function makeActivityEmitter() {
   return { emit: vi.fn().mockResolvedValue(undefined) };
 }
 
-function makePrisma({
+function makeDb({
   series = null as any,
   episode = null as any,
   movie = null as any,
@@ -88,7 +88,7 @@ vi.mock('node:fs/promises', () => ({
 }));
 
 async function fireTorrentCompleted(
-  prisma: ReturnType<typeof makePrisma>,
+  prisma: ReturnType<typeof makeDb>,
   torrent: any,
   organizer?: ReturnType<typeof makeOrganizer>,
   torrentManager?: ReturnType<typeof makeTorrentManager>,
@@ -117,7 +117,7 @@ describe('ImportManager — parser-based slow path', () => {
     const series = { id: 1, title: 'Breaking Bad', cleanTitle: 'breakingbad', path: '/media/tv/Breaking Bad' };
     const episode = { id: 10, seasonNumber: 1, episodeNumber: 1, title: 'Pilot' };
 
-    const prisma = makePrisma({
+    const prisma = makeDb({
       series,
       episode,
       seriesFindFirst: vi.fn().mockResolvedValue(series),
@@ -143,7 +143,7 @@ describe('ImportManager — parser-based slow path', () => {
     const series = { id: 1, title: 'Breaking Bad', cleanTitle: 'breakingbad', path: '/media/tv' };
     const movie = { id: 5, title: 'Breaking Bad Movie', year: 2019, path: '/media/movies' };
 
-    const prisma = makePrisma({
+    const prisma = makeDb({
       series,
       episode: null,
       movie,
@@ -168,7 +168,7 @@ describe('ImportManager — parser-based slow path', () => {
   });
 
   it('emits IMPORT_FAILED when parser cannot match any series or movie', async () => {
-    const prisma = makePrisma({
+    const prisma = makeDb({
       series: null,
       episode: null,
       movie: null,
@@ -194,7 +194,7 @@ describe('ImportManager — parser-based slow path', () => {
   it('findMovieMatch matches by year+title and imports movie via parser fallback', async () => {
     const movie = { id: 5, title: 'The Matrix', year: 1999, path: '/media/movies/The Matrix (1999)' };
 
-    const prisma = makePrisma({
+    const prisma = makeDb({
       series: null,
       episode: null,
       movie,
@@ -224,7 +224,7 @@ describe('ImportManager — parser-based slow path', () => {
   it('emits IMPORT_FAILED when movie found but no root folder configured', async () => {
     const movie = { id: 5, title: 'The Matrix', year: 1999, path: null };
 
-    const prisma = makePrisma({
+    const prisma = makeDb({
       series: null,
       episode: null,
       movie,
@@ -252,7 +252,7 @@ describe('ImportManager — parser-based slow path', () => {
   it('parsed as episode but series NOT found falls through to movie path', async () => {
     const movie = { id: 5, title: 'Unknown Film', year: 2024, path: '/media/movies' };
 
-    const prisma = makePrisma({
+    const prisma = makeDb({
       series: null,
       episode: null,
       movie,
@@ -279,7 +279,7 @@ describe('ImportManager — parser-based slow path', () => {
   it('parsed as episode, series found but episode NOT found, movie also NOT found → IMPORT_FAILED', async () => {
     const series = { id: 1, title: 'Breaking Bad', cleanTitle: 'breakingbad', path: '/media/tv' };
 
-    const prisma = makePrisma({
+    const prisma = makeDb({
       series,
       episode: null,
       movie: null,

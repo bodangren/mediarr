@@ -23,7 +23,7 @@ function makeEpisode(overrides: {
   };
 }
 
-function makePrisma(opts: {
+function makeDb(opts: {
   series?: any;
   episodes?: any[];
   seasons?: any[];
@@ -68,7 +68,7 @@ describe('SeriesMonitoringService — determineMonitoredEpisodes', () => {
   let svc: any;
 
   beforeEach(() => {
-    service = new SeriesMonitoringService(makePrisma() as any);
+    service = new SeriesMonitoringService(makeDb() as any);
     svc = service as any;
   });
 
@@ -292,7 +292,7 @@ describe('SeriesMonitoringService — determineMonitoredEpisodes', () => {
     const strategies: MonitoringType[] = ['all', 'none', 'firstSeason', 'lastSeason', 'latestSeason', 'pilotOnly', 'monitored', 'existing'];
 
     it.each(strategies)('returns empty set for "%s" strategy', (strategy) => {
-      const service = new SeriesMonitoringService(makePrisma() as any);
+      const service = new SeriesMonitoringService(makeDb() as any);
       const result = (service as any).determineMonitoredEpisodes([], strategy);
       expect(result).toEqual(new Set());
     });
@@ -303,7 +303,7 @@ describe('SeriesMonitoringService — determineMonitoredEpisodes', () => {
 
 describe('SeriesMonitoringService — applyMonitoringStrategy', () => {
   it('throws ValidationError for invalid strategy', async () => {
-    const prisma = makePrisma({ series: { id: 1 } });
+    const prisma = makeDb({ series: { id: 1 } });
     const service = new SeriesMonitoringService(prisma as any);
 
     await expect(
@@ -312,7 +312,7 @@ describe('SeriesMonitoringService — applyMonitoringStrategy', () => {
   });
 
   it('throws NotFoundError for non-existent series', async () => {
-    const prisma = makePrisma({ series: null });
+    const prisma = makeDb({ series: null });
     const service = new SeriesMonitoringService(prisma as any);
 
     await expect(
@@ -321,7 +321,7 @@ describe('SeriesMonitoringService — applyMonitoringStrategy', () => {
   });
 
   it('returns zero updates for empty episodes', async () => {
-    const prisma = makePrisma({ series: { id: 1 }, episodes: [] });
+    const prisma = makeDb({ series: { id: 1 }, episodes: [] });
     const service = new SeriesMonitoringService(prisma as any);
 
     const result = await service.applyMonitoringStrategy(1, 'all');
@@ -335,7 +335,7 @@ describe('SeriesMonitoringService — applyMonitoringStrategy', () => {
       makeEpisode({ id: 2, seasonNumber: 1, episodeNumber: 2, monitored: false }),
       makeEpisode({ id: 3, seasonNumber: 2, episodeNumber: 1, monitored: false }),
     ];
-    const prisma = makePrisma({ series: { id: 1 }, episodes });
+    const prisma = makeDb({ series: { id: 1 }, episodes });
     const service = new SeriesMonitoringService(prisma as any);
 
     const result = await service.applyMonitoringStrategy(1, 'firstSeason');
@@ -358,7 +358,7 @@ describe('SeriesMonitoringService — applyMonitoringStrategy', () => {
       makeEpisode({ id: 1, seasonNumber: 1, episodeNumber: 1, monitored: true }),
       makeEpisode({ id: 2, seasonNumber: 1, episodeNumber: 2, monitored: true }),
     ];
-    const prisma = makePrisma({ series: { id: 1 }, episodes });
+    const prisma = makeDb({ series: { id: 1 }, episodes });
     const service = new SeriesMonitoringService(prisma as any);
 
     const result = await service.applyMonitoringStrategy(1, 'none');
@@ -376,7 +376,7 @@ describe('SeriesMonitoringService — applyMonitoringStrategy', () => {
       makeEpisode({ id: 1, seasonNumber: 1, episodeNumber: 1, monitored: true }),
       makeEpisode({ id: 2, seasonNumber: 1, episodeNumber: 2, monitored: true }),
     ];
-    const prisma = makePrisma({ series: { id: 1 }, episodes });
+    const prisma = makeDb({ series: { id: 1 }, episodes });
     const service = new SeriesMonitoringService(prisma as any);
 
     const result = await service.applyMonitoringStrategy(1, 'all');
@@ -391,7 +391,7 @@ describe('SeriesMonitoringService — applyMonitoringStrategy', () => {
       makeEpisode({ id: 2, seasonNumber: 1, episodeNumber: 2, monitored: false }),
       makeEpisode({ id: 3, seasonNumber: 2, episodeNumber: 1, monitored: false }),
     ];
-    const prisma = makePrisma({ series: { id: 1 }, episodes });
+    const prisma = makeDb({ series: { id: 1 }, episodes });
     const service = new SeriesMonitoringService(prisma as any);
 
     const result = await service.applyMonitoringStrategy(1, 'firstSeason');

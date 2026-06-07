@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { PlaybackRepository } from './PlaybackRepository';
 
-function createPrismaMock() {
+function createDbMock() {
   return {
     playbackProgress: {
       findUnique: vi.fn(),
@@ -19,11 +19,11 @@ function createPrismaMock() {
 }
 
 describe('PlaybackRepository', () => {
-  let prismaMock: ReturnType<typeof createPrismaMock>;
+  let prismaMock: ReturnType<typeof createDbMock>;
   let repository: PlaybackRepository;
 
   beforeEach(() => {
-    prismaMock = createPrismaMock();
+    prismaMock = createDbMock();
     repository = new PlaybackRepository(prismaMock as any);
   });
 

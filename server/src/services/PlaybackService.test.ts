@@ -10,7 +10,7 @@ interface PrismaMock {
   variantSubtitleTrack: { findUnique: ReturnType<typeof vi.fn> };
 }
 
-function createPrismaMock(): PrismaMock {
+function createDbMock(): PrismaMock {
   return {
     movie: {
       findUnique: vi.fn(),
@@ -35,7 +35,7 @@ describe('PlaybackService', () => {
   let tempDir: string;
 
   beforeEach(async () => {
-    prisma = createPrismaMock();
+    prisma = createDbMock();
     playbackRepository = {
       getProgress: vi.fn(),
       getLatestProgressForMedia: vi.fn(),

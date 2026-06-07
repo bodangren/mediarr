@@ -24,7 +24,7 @@ vi.mock('../indexers/BaseIndexer', () => ({
 import { RssSyncService } from './RssSyncService';
 import type { IndexerHealthRepository } from '../repositories/IndexerHealthRepository';
 
-function makePrisma(overrides: Record<string, any> = {}) {
+function makeDb(overrides: Record<string, any> = {}) {
   return {
     indexer: {
       findMany: vi.fn().mockResolvedValue(overrides.indexers ?? []),
@@ -80,14 +80,14 @@ const SAMPLE_RELEASE = {
 };
 
 describe('RssSyncService — corner cases', () => {
-  let prisma: ReturnType<typeof makePrisma>;
+  let prisma: ReturnType<typeof makeDb>;
   let httpClient: ReturnType<typeof makeHttpClient>;
   let healthRepo: ReturnType<typeof makeIndexerHealthRepo>;
 
   beforeEach(() => {
     mockParse.mockReturnValue([]);
     mockBuildRssUrl.mockReturnValue('https://indexer.example.com/api');
-    prisma = makePrisma();
+    prisma = makeDb();
     httpClient = makeHttpClient();
     healthRepo = makeIndexerHealthRepo();
   });

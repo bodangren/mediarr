@@ -37,7 +37,7 @@ function makeActivityEmitter() {
 }
 
 /** Build a minimal Prisma mock with the shapes ImportManager needs */
-function makePrisma({
+function makeDb({
   series = null as any,
   episode = null as any,
   // episodeFindUnique: when set, used for the fast-path episode.findUnique call
@@ -117,7 +117,7 @@ describe('ImportManager', () => {
 
   // Helper: fire torrent:completed and wait for async handling to finish
   async function fireTorrentCompleted(
-    prisma: ReturnType<typeof makePrisma>,
+    prisma: ReturnType<typeof makeDb>,
     torrent = TORRENT,
     hooks?: { onMovieImported?: (id: number) => Promise<void> | void; onEpisodeImported?: (id: number) => Promise<void> | void },
     notificationDispatchService?: { notifyDownload: ReturnType<typeof vi.fn> },
@@ -145,7 +145,7 @@ describe('ImportManager', () => {
   it('episode import: organizeFile called and SERIES_IMPORTED logged', async () => {
     const series = { id: 1, title: 'Breaking Bad', cleanTitle: 'breakingbad', path: '/media/tv/Breaking Bad' };
     const episode = { id: 10, seasonNumber: 1, episodeNumber: 1, title: 'Pilot' };
-    const prisma = makePrisma({ series, episode });
+    const prisma = makeDb({ series, episode });
 
     const torrent = {
       infoHash: 'ep123',
@@ -176,7 +176,7 @@ describe('ImportManager', () => {
 
   it('movie import: organizeMovieFile called and MOVIE_IMPORTED logged', async () => {
     const movie = { id: 5, title: 'The Matrix', year: 1999, path: '/media/movies' };
-    const prisma = makePrisma({ series: null, episode: null, movie });
+    const prisma = makeDb({ series: null, episode: null, movie });
 
     await fireTorrentCompleted(prisma);
 
@@ -196,7 +196,7 @@ describe('ImportManager', () => {
 
   it('movie import: parses release filename and matches by title/year', async () => {
     const movie = { id: 5, title: 'The Matrix', cleanTitle: 'thematrix', year: 1999, path: '/media/movies' };
-    const prisma = makePrisma({ series: null, episode: null, movie: null });
+    const prisma = makeDb({ series: null, episode: null, movie: null });
 
     prisma.movie.findFirst.mockImplementation(async ({ where }: any) => {
       const clauses = Array.isArray(where?.OR) ? where.OR : [];
@@ -235,7 +235,7 @@ describe('ImportManager', () => {
   // ───────── No match found ─────────
 
   it('no match found: IMPORT_FAILED logged and does not throw', async () => {
-    const prisma = makePrisma({ series: null, episode: null, movie: null });
+    const prisma = makeDb({ series: null, episode: null, movie: null });
 
     await fireTorrentCompleted(prisma);
 
@@ -255,7 +255,7 @@ describe('ImportManager', () => {
   it('organizer throws: IMPORT_FAILED logged, does not rethrow', async () => {
     const series = { id: 1, title: 'Breaking Bad', cleanTitle: 'breakingbad', path: '/media/tv/Breaking Bad' };
     const episode = { id: 10, seasonNumber: 1, episodeNumber: 1, title: 'Pilot' };
-    const prisma = makePrisma({ series, episode });
+    const prisma = makeDb({ series, episode });
 
     organizer.organizeFile.mockRejectedValue(new Error('disk full'));
 
@@ -280,7 +280,7 @@ describe('ImportManager', () => {
   it('episode import fallback: uses tvRootFolder when series.path is null', async () => {
     const series = { id: 1, title: 'A Knight of the Seven Kingdoms', cleanTitle: 'aknight', year: 2026, path: null };
     const episode = { id: 10, seasonNumber: 1, episodeNumber: 1, title: 'Pilot' };
-    const prisma = makePrisma({
+    const prisma = makeDb({
       series,
       episode,
       mediaManagement: { movieRootFolder: '/media/movies', tvRootFolder: '/media/tv' },
@@ -311,7 +311,7 @@ describe('ImportManager', () => {
 
   it('movie import fallback: uses movieRootFolder when movie.path is null', async () => {
     const movie = { id: 5, title: 'The Matrix', year: 1999, path: null };
-    const prisma = makePrisma({
+    const prisma = makeDb({
       series: null,
       episode: null,
       movie,
@@ -336,7 +336,7 @@ describe('ImportManager', () => {
 
   it('retryImportByInfoHash retries using persisted torrent path', async () => {
     const movie = { id: 5, title: 'The Matrix', year: 1999, path: '/media/movies' };
-    const prisma = makePrisma({
+    const prisma = makeDb({
       series: null,
       episode: null,
       movie,
@@ -373,7 +373,7 @@ describe('ImportManager', () => {
 
   it('retryImportByActivityEventId falls back to sourcePath when torrent row is missing', async () => {
     const movie = { id: 5, title: 'The Matrix', year: 1999, path: '/media/movies' };
-    const prisma = makePrisma({
+    const prisma = makeDb({
       series: null,
       episode: null,
       movie,
@@ -416,7 +416,7 @@ describe('ImportManager', () => {
 
   it('invokes import hooks after successful movie import', async () => {
     const movie = { id: 5, title: 'The Matrix', year: 1999, path: '/media/movies' };
-    const prisma = makePrisma({ series: null, episode: null, movie });
+    const prisma = makeDb({ series: null, episode: null, movie });
     const onMovieImported = vi.fn().mockResolvedValue(undefined);
 
     await fireTorrentCompleted(prisma, TORRENT, { onMovieImported });
@@ -434,7 +434,7 @@ describe('ImportManager', () => {
       path: '/downloads/complete/The.Matrix.1999.mkv',
     };
 
-    const prisma = makePrisma({
+    const prisma = makeDb({
       // torrent row has movieId set
       torrent: { episodeId: null, movieId: 99 },
       // movie.findUnique returns null (movie was deleted after grab)
@@ -472,7 +472,7 @@ describe('ImportManager', () => {
       path: '/downloads/complete/Breaking.Bad.S01E01.Pilot.mkv',
     };
 
-    const prisma = makePrisma({
+    const prisma = makeDb({
       // torrent row has episodeId set
       torrent: { episodeId: 42, movieId: null },
       // episode.findUnique returns null (episode was deleted after grab)
@@ -508,7 +508,7 @@ describe('ImportManager', () => {
     vi.mocked(fs.stat).mockResolvedValueOnce({ isDirectory: () => true } as any);
     vi.mocked(fs.readdir).mockResolvedValueOnce([]);
 
-    const prisma = makePrisma({ series: null, episode: null, movie: null });
+    const prisma = makeDb({ series: null, episode: null, movie: null });
     const emptyDirTorrent = {
       infoHash: 'empty-dir-1',
       name: 'Show.S01',
@@ -542,7 +542,7 @@ describe('ImportManager', () => {
       season: { series },
     };
 
-    const prisma = makePrisma({
+    const prisma = makeDb({
       torrent: { episodeId: 42, movieId: null },
       episodeFindUnique: episode,
       // No mediaManagement — tvRootFolder will be absent
@@ -576,7 +576,7 @@ describe('ImportManager', () => {
   it('fast-path linked movie: no movie root folder configured — emits IMPORT_FAILED', async () => {
     const movie = { id: 7, title: 'Inception', year: 2010, path: null };
 
-    const prisma = makePrisma({
+    const prisma = makeDb({
       torrent: { episodeId: null, movieId: 7 },
       movie,
       // No mediaManagement — movieRootFolder will be absent
@@ -607,7 +607,7 @@ describe('ImportManager', () => {
   // ───────── retryImportByActivityEventId error branches ─────────
 
   it('retryImportByActivityEventId: throws when activity event not found', async () => {
-    const prisma = makePrisma({ activityEvent: null });
+    const prisma = makeDb({ activityEvent: null });
     const manager = new ImportManager(
       torrentManager as any,
       organizer as any,
@@ -619,7 +619,7 @@ describe('ImportManager', () => {
   });
 
   it('retryImportByActivityEventId: throws when event type is not IMPORT_FAILED', async () => {
-    const prisma = makePrisma({
+    const prisma = makeDb({
       activityEvent: {
         id: 10,
         eventType: 'SERIES_IMPORTED',
@@ -641,7 +641,7 @@ describe('ImportManager', () => {
 
   it('slow-path movie: organizeMovieFile throws — emits IMPORT_FAILED and does not rethrow', async () => {
     const movie = { id: 5, title: 'The Matrix', year: 1999, path: '/media/movies' };
-    const prisma = makePrisma({ series: null, episode: null, movie: null });
+    const prisma = makeDb({ series: null, episode: null, movie: null });
 
     prisma.movie.findFirst.mockResolvedValue(movie);
     organizer.organizeMovieFile.mockRejectedValue(new Error('permission denied'));
@@ -667,7 +667,7 @@ describe('ImportManager', () => {
 
   it('fast-path movie: organizeMovieFile throws — emits IMPORT_FAILED', async () => {
     const movie = { id: 5, title: 'Inception', year: 2010, path: '/media/movies' };
-    const prisma = makePrisma({
+    const prisma = makeDb({
       torrent: { episodeId: null, movieId: 5 },
       movie,
       series: null,
@@ -697,7 +697,7 @@ describe('ImportManager', () => {
 
   it('movie import: notificationDispatchService.notifyDownload called with movie title', async () => {
     const movie = { id: 5, title: 'The Matrix', year: 1999, path: '/media/movies' };
-    const prisma = makePrisma({ series: null, episode: null, movie });
+    const prisma = makeDb({ series: null, episode: null, movie });
     const notifyDownload = vi.fn().mockResolvedValue(undefined);
 
     await fireTorrentCompleted(prisma, TORRENT, undefined, { notifyDownload });
@@ -713,7 +713,7 @@ describe('ImportManager', () => {
   it('episode import: notificationDispatchService.notifyDownload called with series title', async () => {
     const series = { id: 1, title: 'Breaking Bad', cleanTitle: 'breakingbad', path: '/media/tv' };
     const episode = { id: 10, seasonNumber: 1, episodeNumber: 1, title: 'Pilot' };
-    const prisma = makePrisma({ series, episode });
+    const prisma = makeDb({ series, episode });
     const notifyDownload = vi.fn().mockResolvedValue(undefined);
 
     const torrent = {
@@ -736,7 +736,7 @@ describe('ImportManager', () => {
   // ───────── Notification dispatch: not called on failure ─────────
 
   it('import failure: notificationDispatchService.notifyDownload NOT called', async () => {
-    const prisma = makePrisma({ series: null, episode: null, movie: null });
+    const prisma = makeDb({ series: null, episode: null, movie: null });
     const notifyDownload = vi.fn().mockResolvedValue(undefined);
 
     await fireTorrentCompleted(prisma, TORRENT, undefined, { notifyDownload });
@@ -761,7 +761,7 @@ describe('ImportManager', () => {
     ] as any);
 
     const movie = { id: 5, title: 'Matrix', year: 1999, path: '/media/movies' };
-    const prisma = makePrisma({
+    const prisma = makeDb({
       series: null, episode: null, movie: null,
     });
     prisma.series.findFirst.mockResolvedValue(null);
@@ -812,7 +812,7 @@ describe('ImportManager', () => {
 
     const badMovie = { id: 1, title: 'Bad Movie', year: 2020, path: '/media/movies' };
     const goodMovie = { id: 2, title: 'Good Movie', year: 2021, path: '/media/movies' };
-    const prisma = makePrisma({ series: null, episode: null, movie: null });
+    const prisma = makeDb({ series: null, episode: null, movie: null });
 
     prisma.series.findFirst.mockResolvedValue(null);
     prisma.movie.findFirst
@@ -859,7 +859,7 @@ describe('ImportManager', () => {
       'readme.txt',
     ] as any);
 
-    const prisma = makePrisma({ series: null, episode: null, movie: null });
+    const prisma = makeDb({ series: null, episode: null, movie: null });
 
     const dirTorrent = {
       infoHash: 'non-video',

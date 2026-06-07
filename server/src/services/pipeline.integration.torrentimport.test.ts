@@ -37,7 +37,7 @@ function makeActivityEmitter() {
   return { emit: vi.fn().mockResolvedValue(undefined) };
 }
 
-function makePrisma({
+function makeDb({
   series = null as any,
   episode = null as any,
   episodeFindUnique = undefined as any,
@@ -144,7 +144,7 @@ describe('Grab → TorrentManager → ImportManager Handoff', () => {
       movieId: null,
     };
 
-    const prisma = makePrisma({
+    const prisma = makeDb({
       series,
       episode,
       episodeFindUnique: episode,
@@ -189,7 +189,7 @@ describe('Grab → TorrentManager → ImportManager Handoff', () => {
       movieId: null,
     };
 
-    const prisma = makePrisma({
+    const prisma = makeDb({
       series,
       episode,
       torrent: torrentRow,
@@ -217,7 +217,7 @@ describe('Grab → TorrentManager → ImportManager Handoff', () => {
       movieId: null,
     };
 
-    const prisma = makePrisma({
+    const prisma = makeDb({
       torrent: torrentRow,
       mediaManagement: { tvRootFolder: '/media/tv', movieRootFolder: '/media/movies' },
     });
@@ -239,7 +239,7 @@ describe('Grab → TorrentManager → ImportManager Handoff', () => {
   });
 
   it('4.4 Torrent removed before completion → no import attempted → no crash', async () => {
-    const prisma = makePrisma({
+    const prisma = makeDb({
       mediaManagement: { tvRootFolder: '/media/tv' },
     });
 
@@ -274,7 +274,7 @@ describe('Grab → TorrentManager → ImportManager Handoff', () => {
       movieId: null,
     };
 
-    const prisma = makePrisma({
+    const prisma = makeDb({
       series,
       episode,
       episodeFindUnique: episode,

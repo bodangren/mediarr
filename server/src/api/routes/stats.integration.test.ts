@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { createApiServer } from '../createApiServer';
 import type { ApiDependencies } from '../types';
 
-function createPrismaMock() {
+function createDbMock() {
   return {
     movie: {
       count: vi.fn().mockResolvedValue(0),
@@ -28,7 +28,7 @@ function createPrismaMock() {
 
 describe('Statistics Full Flow Integration', () => {
   it('returns complete statistics across all endpoints with seeded data', async () => {
-    const prisma = createPrismaMock();
+    const prisma = createDbMock();
 
     prisma.movie.count
       .mockResolvedValueOnce(100)
@@ -130,7 +130,7 @@ describe('Statistics Full Flow Integration', () => {
   });
 
   it('handles empty database gracefully across all endpoints', async () => {
-    const prisma = createPrismaMock();
+    const prisma = createDbMock();
 
     const app = createApiServer({ prisma } as unknown as ApiDependencies);
 

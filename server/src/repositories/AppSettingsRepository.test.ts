@@ -5,7 +5,7 @@ import {
   type TorrentLimitsSettings,
 } from './AppSettingsRepository';
 
-function createPrismaMock() {
+function createDbMock() {
   return {
     appSettings: {
       findUnique: vi.fn(),
@@ -16,11 +16,11 @@ function createPrismaMock() {
 }
 
 describe('AppSettingsRepository — TorrentLimitsSettings new fields', () => {
-  let prismaMock: ReturnType<typeof createPrismaMock>;
+  let prismaMock: ReturnType<typeof createDbMock>;
   let repo: AppSettingsRepository;
 
   beforeEach(() => {
-    prismaMock = createPrismaMock();
+    prismaMock = createDbMock();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     repo = new AppSettingsRepository(prismaMock as any);
   });

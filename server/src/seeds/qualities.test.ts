@@ -22,7 +22,7 @@ function makeUpsertMock() {
   });
 }
 
-function makePrisma() {
+function makeDb() {
   const upsertMock = makeUpsertMock();
   return {
     qualityProfile: {
@@ -53,10 +53,10 @@ const EXPECTED_ALLOWED_IDS: Record<string, number[]> = {
 };
 
 describe('seedQualityProfiles', () => {
-  let prisma: ReturnType<typeof makePrisma>;
+  let prisma: ReturnType<typeof makeDb>;
 
   beforeEach(() => {
-    prisma = makePrisma();
+    prisma = makeDb();
   });
 
   it('upserts exactly six presets', async () => {

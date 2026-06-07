@@ -21,7 +21,7 @@ function makeActivityEventEmitter() {
   return { emit: vi.fn().mockResolvedValue(undefined) };
 }
 
-function makePrisma({ movie = null as any, episode = null as any } = {}) {
+function makeDb({ movie = null as any, episode = null as any } = {}) {
   return {
     movie: { findUnique: vi.fn().mockResolvedValue(movie) },
     episode: {
@@ -61,7 +61,7 @@ describe('Wanted → Search → Grab → Import Pipeline', () => {
       },
     };
 
-    const prisma = makePrisma({ episode });
+    const prisma = makeDb({ episode });
 
     const candidate = {
       title: 'Breaking.Bad.S01E01.1080p.BluRay.x264',
@@ -106,7 +106,7 @@ describe('Wanted → Search → Grab → Import Pipeline', () => {
       },
     };
 
-    const prisma = makePrisma({ episode });
+    const prisma = makeDb({ episode });
 
     const service = new WantedSearchService(mediaSearchService as any, prisma as any, activityEventEmitter);
     const result = await service.autoSearchEpisode(42);
@@ -130,7 +130,7 @@ describe('Wanted → Search → Grab → Import Pipeline', () => {
       path: null,
     };
 
-    const prisma = makePrisma({ movie });
+    const prisma = makeDb({ movie });
 
     const candidate = {
       title: 'The.Matrix.1999.1080p.BluRay.x264',
@@ -167,7 +167,7 @@ describe('Wanted → Search → Grab → Import Pipeline', () => {
       path: null,
     };
 
-    const prisma = makePrisma({ movie });
+    const prisma = makeDb({ movie });
 
     // All indexers fail — returns empty releases
     mediaSearchService.searchAllIndexers.mockResolvedValue({
@@ -198,7 +198,7 @@ describe('Wanted → Search → Grab → Import Pipeline', () => {
       path: null,
     };
 
-    const prisma = makePrisma({ movie });
+    const prisma = makeDb({ movie });
 
     mediaSearchService.searchAllIndexers.mockRejectedValue(new Error('All indexers unreachable'));
 

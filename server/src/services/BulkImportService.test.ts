@@ -6,7 +6,7 @@ import { Organizer } from './Organizer';
 // Helpers
 // ---------------------------------------------------------------------------
 
-function makeMoviePrisma(existingMovie: object | null = null) {
+function makeMovieDb(existingMovie: object | null = null) {
   return {
     movie: {
       findFirst: vi.fn().mockResolvedValue(existingMovie),
@@ -71,7 +71,7 @@ describe('BulkImportService', () => {
   // ── Movie: new record ─────────────────────────────────────────────────────
 
   it('creates a new movie when none exists, storing folderPath when renameFiles is false', async () => {
-    const prisma = makeMoviePrisma(null);
+    const prisma = makeMovieDb(null);
     const metadataProvider = {
       getMediaDetails: vi.fn().mockResolvedValue(baseMovieMeta),
       getSeriesDetails: vi.fn(),
@@ -102,7 +102,7 @@ describe('BulkImportService', () => {
 
   it('reuses existing movie record when imdbId already exists (avoids unique constraint error)', async () => {
     const existing = { id: 42, title: 'The Matrix', year: 1999, tmdbId: 603, imdbId: 'tt0133093' };
-    const prisma = makeMoviePrisma(existing);
+    const prisma = makeMovieDb(existing);
     const metadataProvider = {
       getMediaDetails: vi.fn().mockResolvedValue(baseMovieMeta),
       getSeriesDetails: vi.fn(),
@@ -132,7 +132,7 @@ describe('BulkImportService', () => {
   // ── Movie: duplicate folders same matchId deduped ─────────────────────────
 
   it('deduplicates two folders that resolve to the same matchId before importing', async () => {
-    const prisma = makeMoviePrisma(null);
+    const prisma = makeMovieDb(null);
     const metadataProvider = {
       getMediaDetails: vi.fn().mockResolvedValue(baseMovieMeta),
       getSeriesDetails: vi.fn(),
@@ -171,7 +171,7 @@ describe('BulkImportService', () => {
   // ── Movie: renameFiles uses sanitized path ────────────────────────────────
 
   it('uses organizer and new path when renameFiles is true', async () => {
-    const prisma = makeMoviePrisma(null);
+    const prisma = makeMovieDb(null);
     const metadataProvider = {
       getMediaDetails: vi.fn().mockResolvedValue(baseMovieMeta),
       getSeriesDetails: vi.fn(),

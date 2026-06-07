@@ -93,28 +93,28 @@ vi.mock('../repositories/SubtitleVariantRepository', () => ({
 > strategy-required "variant not found" throw case. `LanguageProfileItem` uses
 > the real `'True' | 'False'` ProfileBoolean strings.
 
-- [~] Create `server/src/services/VariantMissingSubtitleService.test.ts`
-- [~] Write test: `computeAndPersistForVariant creates wanted for missing languages`
+- [x] Create `server/src/services/VariantMissingSubtitleService.test.ts` — `bc4bca8`
+- [x] Write test: `computeAndPersistForVariant creates wanted for missing languages` — `bc4bca8`
   - Mock `repository` to return variant with 1 English track
   - Provide profile requiring `[{ language: 'en' }, { language: 'fr' }]`
   - Assert `repository.replaceMissingSubtitles` called once with **one** entry for French
-- [~] Write test: `computeAndPersistForVariant does not create wanted for existing languages`
+- [x] Write test: `computeAndPersistForVariant does not create wanted for existing languages` — `bc4bca8`
   - Variant already has English and French tracks
   - Profile requires English and French
   - Assert `repository.replaceMissingSubtitles` called with an empty array (clears state)
-- [~] Write test: `computeAndPersistForVariant respects cutoff quality`
+- [x] Write test: `computeAndPersistForVariant respects cutoff quality` — `bc4bca8`
   - Variant has English track; profile cutoff is the English item
   - Assert `cutoffMet` is true and `replaceMissingSubtitles` called with `[]`
-- [~] Write test: `computeAndPersistForVariant handles empty profile`
+- [x] Write test: `computeAndPersistForVariant handles empty profile` — `bc4bca8`
   - Provide empty `profileItems: []`
   - Assert `replaceMissingSubtitles` called with `[]`
-- [~] Write test: `computeAndPersistForVariant returns RequirementResult`
+- [x] Write test: `computeAndPersistForVariant returns RequirementResult` — `bc4bca8`
   - Assert return value has `desiredSubtitles`, `missingSubtitles`, `cutoffMet`
-- [~] Write test: `computeAndPersistForVariant throws when variant is not found` *(test-strategy §5 S3)*
+- [x] Write test: `computeAndPersistForVariant throws when variant is not found` *(test-strategy §5 S3)* — `bc4bca8`
   - Mock `getVariantInventory` to return `{ variant: null, … }`
   - Assert `rejects.toThrow('Variant 42 not found')`
-- [~] Run tests: `npx vitest run server/src/services/VariantMissingSubtitleService.test.ts`
-- [~] Commit: `test(variant): add VariantMissingSubtitleService unit tests`
+- [x] Run tests: `npx vitest run server/src/services/VariantMissingSubtitleService.test.ts` — 6 passed
+- [x] Commit: `test(variant): add VariantMissingSubtitleService unit tests` — `bc4bca8`
 
 ## Phase S4: VariantSubtitleFetchService tests
 

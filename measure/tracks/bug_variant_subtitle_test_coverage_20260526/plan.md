@@ -30,27 +30,33 @@ vi.mock('../repositories/SubtitleVariantRepository', () => ({
 
 ## Phase S1: VariantBackfillService tests
 
-- [ ] Create `server/src/services/VariantBackfillService.test.ts`
-- [ ] Write test: `run() creates variants for movies without existing variants`
-  - Mock `prisma.movie.findMany` to return `[{ id: 1 }, { id: 2 }]`
-  - Mock `repository.findVariantByMovieId` to return `null` for both
+> **Note (per test-strategy.md §6):** The plan snippets reference `findVariantByMovieId` / `findVariantByEpisodeId`, but the actual service source uses `prisma.mediaFileVariant.findFirst` for the existence check, and `repository.upsertVariant` for the create. Tests use the real method names.
+
+- [x] Create `server/src/services/VariantBackfillService.test.ts`
+- [x] Write test: `run() creates variants for movies without existing variants`
+  - Mock `prisma.movie.findMany` to return `[{ id: 1, path: '/m1.mkv' }, { id: 2, path: '/m2.mkv' }]`
+  - Mock `prisma.mediaFileVariant.findFirst` to return `null` for both
   - Mock `repository.upsertVariant` to succeed
   - Assert `result.movieVariantsCreated === 2`
-- [ ] Write test: `run() skips movies that already have variants`
-  - Mock `repository.findVariantByMovieId` to return an existing variant
+  - Assert `repository.upsertVariant` was called with `mediaType: 'MOVIE'`, `movieId`, `path`, `fileSize: 0n`
+- [x] Write test: `run() skips movies that already have variants`
+  - Mock `prisma.mediaFileVariant.findFirst` to return an existing row
   - Assert `result.movieVariantsCreated === 0`
-- [ ] Write test: `run() creates variants for episodes without existing variants`
-  - Mock `prisma.episode.findMany` to return `[{ id: 10 }]`
-  - Mock `repository.findVariantByEpisodeId` to return `null`
+  - Assert `repository.upsertVariant` was not called
+- [x] Write test: `run() creates variants for episodes without existing variants`
+  - Mock `prisma.episode.findMany` to return `[{ id: 10, path: '/e10.mkv' }]`
+  - Mock `prisma.mediaFileVariant.findFirst` to return `null`
   - Assert `result.episodeVariantsCreated === 1`
-- [ ] Write test: `run() returns 0/0 when no movies or episodes exist`
-  - Mock both findMany to return empty arrays
+  - Assert `repository.upsertVariant` was called with `mediaType: 'EPISODE'`, `episodeId: 10`
+- [x] Write test: `run() returns 0/0 when no movies or episodes exist`
+  - Mock both `findMany` to return empty arrays
   - Assert `result.movieVariantsCreated === 0` and `result.episodeVariantsCreated === 0`
-- [ ] Write test: `run() propagates repository errors`
+  - Assert `repository.upsertVariant` was not called
+- [x] Write test: `run() propagates repository errors`
   - Mock `repository.upsertVariant` to throw `new Error('DB connection lost')`
   - Assert `await expect(service.run()).rejects.toThrow('DB connection lost')`
-- [ ] Run tests: `npx vitest run server/src/services/VariantBackfillService.test.ts`
-- [ ] Commit: `test(variant): add VariantBackfillService unit tests`
+- [x] Run tests: `npx vitest run server/src/services/VariantBackfillService.test.ts`
+- [x] Commit: `test(variant): add VariantBackfillService unit tests`
 
 ## Phase S2: VariantInventoryIndexer tests
 

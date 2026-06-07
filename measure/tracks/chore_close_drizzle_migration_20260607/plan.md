@@ -9,10 +9,10 @@
 - [x] Document each usage with suggested Drizzle replacement (audit-results.md artifact) — green phase committed in `076e91c` (`audit-results.md`, 8 files catalogued: 2 production, 1 type-decl, 4 test-mock, 1 comment-only)
 - [x] Commit audit findings
 
-## Phase S2: Replace raw-SQL shim with Drizzle-native queries (TDD) *(in progress — Red phase complete `6f6e341`)*
-- [~] For each `executeRaw` call in `main.ts`: test old-vs-new behavior against in-memory SQLite, then replace with Drizzle `sql`` template / ORM method
-- [~] Replace 3 `$queryRawUnsafe` sites in `statsRoutes.ts` with `db.all(sql`` …`` )`
-- [~] Replace 3 `$queryRaw` sites in `SystemHealthService.ts` (guard `_drizzle_migrations` vs `_prisma_migrations`)
+## Phase S2: Replace raw-SQL shim with Drizzle-native queries (TDD) *(in progress — Red phase complete `6f6e341`; expanded `7cddd1a`)*
+- [~] For each `executeRaw` call in `main.ts`: test old-vs-new behavior against in-memory SQLite, then replace with Drizzle `sql`` template / ORM method *(Red: 7 equivalence tests covering QualityProfile.items + Notification.config + ActivityEvent.details + Torrent.eta (downscale/clamp/negative-null) + AppSettings dynamic-column with params + AppSettings nullable NULL)*
+- [~] Replace 3 `$queryRawUnsafe` sites in `statsRoutes.ts` with `db.all(sql`` …`` )` *(Red: 3 tests covering SUM(downloaded) + page_count*page_size + AVG(downloadSpeed))*
+- [~] Replace 3 `$queryRaw` sites in `SystemHealthService.ts` (guard `_drizzle_migrations` vs `_prisma_migrations`) *(Red: 3 tests — SELECT 1, sqlite_version, plus a populated `__drizzle_migrations` table returns the latest hash)*
 - [~] Remove the `sqlite.query` vs `sqlite.prepare` Bun/Node branching logic
 - [ ] Run affected test files green
 

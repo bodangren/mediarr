@@ -60,13 +60,22 @@
 > > > post-S2 state (SystemHealthService.ts production \$queryRaw → 0, main.ts comment-only
 > > → removed, test-mock count 4→3). All 50 close-drizzle-migration tests pass.
 
-## Phase S4: Remove PrismaClient type shim
-- [ ] Read `server/src/types/prisma.ts` and `server/src/db/drizzleClient.ts`
-- [ ] Replace every non-test import of `PrismaClient` with `DatabaseClient`
-- [ ] Replace every test-file import/annotation of `PrismaClient` with `DatabaseClient`
-- [ ] Delete `server/src/types/prisma.ts`
-- [ ] `grep -r "PrismaClient" server/src/ --include="*.ts" | grep -v node_modules | grep -v archive` → zero hits
-- [ ] `CI=true npm test` → GREEN; commit
+## Phase S4: Remove PrismaClient type shim *(in progress — Red phase)*
+- [~] Read `server/src/types/prisma.ts` and `server/src/db/drizzleClient.ts` *(mid-agent read 2026-06-07: prisma.ts is 69 lines, declares `PrismaClient` interface plus 30+ `any` type aliases + `Prisma` namespace; `DatabaseClient` is the sole integration point exported from drizzleClient.ts:416)*
+- [~] Replace every non-test import of `PrismaClient` with `DatabaseClient` *(mid-agent inventory 2026-06-07: 24 production source files currently import `PrismaClient` from `@prisma/client` — 16 repositories + 1 api/types.ts + 7 services. Repository hit count: NotificationRepository, TorrentRepository, PlaybackRepository, ActivityEventRepository, DownloadClientRepository, QualityProfileRepository, BlocklistRepository, MediaRepository, IndexerHealthRepository, SeriesRepository, AppSettingsRepository, ImportListRepository, CollectionRepository, SubtitleVariantRepository, IndexerRepository, CustomFormatRepository, MovieRepository. Service hit count: BulkImportService, WantedSearchService, SeriesMonitoringService, LibraryScanService, FilenameParsingService, PlaybackService, MovieOrganizeService, VariantBackfillService, ImportListSyncService, RssSyncService, SeriesOrganizeService, CollectionService)*
+- [~] Replace every test-file import/annotation of `PrismaClient` with `DatabaseClient` *(mid-agent inventory 2026-06-07: 2 test files import `PrismaClient` from `@prisma/client` — VariantBackfillService.test.ts:1 + wanted-search-service.test.ts:4. Both fail the S4 Red assertions until migration)*
+- [~] Delete `server/src/types/prisma.ts` *(mid-agent read 2026-06-07: file is currently in the tree, exports `PrismaClient` interface and 30+ `any` type aliases. No file imports from `types/prisma` directly — the shim is currently dead code; deletion requires only that the type aliases it provided (PlaybackMediaType, WantedSubtitleState, VariantMediaType, SubtitleTrackSource) remain resolvable from Drizzle schema or shared types)*
+- [~] `grep -r "PrismaClient" server/src/ tests/ --include="*.ts" | grep -v node_modules | grep -v archive` → zero hits *(S4 Red assertion: currently 24 source files + 2 test files have `PrismaClient` references; must reach 0 after Green phase)*
+- [ ] `CI=true npm test` → GREEN; commit *(deferred to Green phase; Red phase must run the targeted closeDrizzleMigration.s4.shimRemotion.test.ts file and confirm it fails for the expected missing behavior — the existing 50+ close-drizzle-migration tests + full suite must stay green as the S4 source changes are restricted to import-string edits + types/prisma.ts deletion only)*
+
+> Red phase committed (target: `tests/closeDrizzleMigration.s4.shimRemotion.test.ts`).
+> Coverage: 4 S4.x describe blocks (S4.1 shim file deletion, S4.2 zero `PrismaClient` references,
+> S4.3 repository/service/test-file annotation migration, S4.4 type-alias preservation across
+> the Drizzle schema + shared types surface). All tests use the same `REPO_ROOT` + filesystem
+> scanner helpers established in `closeDrizzleMigration.audit.test.ts` and S1 expectations.
+> Red-phase run will fail with the expected `PrismaClient still present in <path>:<line>` and
+> `shim file still present at server/src/types/prisma.ts` messages — these are the precise
+> missing-behavior failures that the Green phase will resolve.
 
 ## Phase S5: Rename test mock helpers to Drizzle/Db naming
 - [ ] List files with Prisma-named helpers: `grep -rl "createPrismaMock\|createMockPrisma\|makePrisma\|makeMoviePrisma" server/src/ tests/ --include="*.ts"`

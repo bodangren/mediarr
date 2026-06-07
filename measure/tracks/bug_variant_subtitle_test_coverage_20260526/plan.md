@@ -118,28 +118,37 @@ vi.mock('../repositories/SubtitleVariantRepository', () => ({
 
 ## Phase S4: VariantSubtitleFetchService tests
 
-- [ ] Create `server/src/services/VariantSubtitleFetchService.test.ts`
-- [ ] Write test: `fetchWantedSubtitle calls provider with correct FetchProviderContext`
+> **Note (per test-strategy.md §5 + §6):** The plan snippets reference
+> `repository.upsertSubtitleTrack` and `SubtitleNamingService.generatePath()`, but
+> the actual service calls `repository.createSubtitleTrack` and
+> `namingService.buildSubtitlePath`. The plan's "fetchWantedSubtitle persists
+> subtitle track via repository" test is rewritten to assert
+> `createSubtitleTrack`, and the "calls naming service for file naming" test
+> asserts `buildSubtitlePath`. `node:fs/promises` and the optional
+> `ActivityEventEmitter` are both mocked per §3 (S4 only) and §5 S4.
+
+- [x] Create `server/src/services/VariantSubtitleFetchService.test.ts` — `fb8d2c0`
+- [x] Write test: `fetchWantedSubtitle calls provider with correct FetchProviderContext` — `fb8d2c0`
   - Mock repository to return wanted subtitle `{ id: 1, languageCode: 'en', isForced: false, isHi: false }`
   - Mock repository to return variant `{ id: 2, path: '/data/movie.mkv' }`
   - Mock repository to return audio tracks `[{ languageCode: 'en', isCommentary: false, isDefault: true }]`
   - Mock provider to return candidate `{ languageCode: 'en', isForced: false, isHi: false, provider: 'openSubtitles', score: 85, content: Buffer.from('...'), extension: '.srt' }`
   - Assert `provider.searchBestSubtitle` called with correct context
-- [ ] Write test: `fetchWantedSubtitle returns FetchWantedResult on success`
+- [x] Write test: `fetchWantedSubtitle returns FetchWantedResult on success` — `fb8d2c0`
   - Assert result has `provider`, `score`, and `storedPath`
-- [ ] Write test: `fetchWantedSubtitle persists subtitle track via repository`
-  - Assert `repository.upsertSubtitleTrack` called with correct track data
-- [ ] Write test: `fetchWantedSubtitle returns null when provider returns null`
+- [x] Write test: `fetchWantedSubtitle persists subtitle track via repository` — `fb8d2c0`
+  - Assert `repository.createSubtitleTrack` called with correct track data
+- [x] Write test: `fetchWantedSubtitle returns null when provider returns null` — `fb8d2c0`
   - Mock provider to return `null`
   - Assert result is `null`
-  - Assert `repository.upsertSubtitleTrack` not called
-- [ ] Write test: `fetchWantedSubtitle throws when wanted subtitle not found`
+  - Assert `repository.createSubtitleTrack` not called
+- [x] Write test: `fetchWantedSubtitle throws when wanted subtitle not found` — `fb8d2c0`
   - Mock repository to return `null` for wanted subtitle
   - Assert `rejects.toThrow()`
-- [ ] Write test: `fetchWantedSubtitle calls naming service for file naming`
-  - Assert `SubtitleNamingService.generatePath()` called with correct parameters
-- [ ] Run tests: `npx vitest run server/src/services/VariantSubtitleFetchService.test.ts`
-- [ ] Commit: `test(variant): add VariantSubtitleFetchService unit tests`
+- [x] Write test: `fetchWantedSubtitle calls naming service for file naming` — `fb8d2c0`
+  - Assert `SubtitleNamingService.buildSubtitlePath()` called with correct parameters
+- [x] Run tests: `npx vitest run server/src/services/VariantSubtitleFetchService.test.ts` — 14 passed — `fb8d2c0`
+- [x] Commit: `test(variant): add VariantSubtitleFetchService unit tests` — `fb8d2c0`
 
 ## Phase S5: VariantWantedService tests
 

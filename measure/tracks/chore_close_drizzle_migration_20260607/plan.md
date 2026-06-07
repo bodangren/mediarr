@@ -5,7 +5,7 @@
 > S1 was already started under the old shim track (red-phase audit committed `30ffb37`).
 
 ## Phase S1: Audit & catalog raw-SQL shim call sites *(carried over — in progress)*
-- [~] Write audit test that scans source for `$executeRawUnsafe` / `$queryRawUnsafe` / `$queryRaw` call sites
+- [~] Write audit test that scans source for `$executeRawUnsafe` / `$queryRawUnsafe` / `$queryRaw` call sites — red phase committed in `b63665d` (`tests/closeDrizzleMigration.audit.test.ts`, 20 tests, 1 failing on missing `audit-results.md`)
 - [~] Document each usage with suggested Drizzle replacement (audit-results.md artifact)
 - [~] Commit audit findings
 

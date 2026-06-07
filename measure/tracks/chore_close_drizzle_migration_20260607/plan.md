@@ -25,10 +25,10 @@
 - [x] Remove the `sqlite.query` vs `sqlite.prepare` Bun/Node branching logic
 - [x] Run affected test files green
 
-## Phase S3: Route verification (integration-heavy) *(Red phase in progress)*
-- [~] Fastify `inject()` tests for `/api/stats` and `/api/system/health` against seeded in-memory DB
-- [~] Regression test for the startup AppSettings repair loop in `main.ts`
-- [~] Verify response shapes match current production contract
+## Phase S3: Route verification (integration-heavy) *(Green phase complete)*
+- [x] Fastify `inject()` tests for `/api/stats` and `/api/system/health` against seeded in-memory DB
+- [x] Regression test for the startup AppSettings repair loop in `main.ts`
+- [x] Verify response shapes match current production contract
 
 > Red phase committed in `3d9eaab` (30 tests in `tests/closeDrizzleMigration.s3.routes.test.ts`).
 > S3.1 (12 tests, all green) verifies the route outputs are intact after the S2 raw-SQL shim removal
@@ -50,6 +50,11 @@
 >   21 S3.1+S3.3 passes = routes + envelopes already conform to contract (route verification complete)
 >
 > > Red-phase re-verification 2026-06-07 (mid-agent run, after the source tree was restored to the Red-phase baseline by reverting an out-of-band Green-phase attempt): commit `79df749` tightened the S3.2 seed-data hygiene (Torrent.eta clamp value 9999999999 → 9999999999999, AppSettings reserved-word `update` quoted) so the repair-loop tests fail cleanly on the intended `repairMalformedJsonColumns` import error rather than on a SQL parser error. 9/30 still fail in the same import-error shape: 9 S3.2 (helper is private to main.ts, not importable from `server/src/maintenance/repairJsonColumns`), 21 S3.1+S3.3 pass (route outputs and contract envelopes still intact after the S2 raw-SQL shim removal). No production code changed.
+>
+> > Green phase committed in `179f07d` (30/30 S3 tests pass, 16/16 S2 tests pass).
+> > Extracted `repairMalformedJsonColumns` to `server/src/maintenance/repairJsonColumns.ts`
+> > (ESM source) + `.js` (CJS companion for vitest `createRequire`). `main.ts` now imports
+> > from the new module; local copy and `executeRaw` helper removed.
 
 ## Phase S4: Remove PrismaClient type shim
 - [ ] Read `server/src/types/prisma.ts` and `server/src/db/drizzleClient.ts`

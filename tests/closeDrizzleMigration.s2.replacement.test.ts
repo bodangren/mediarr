@@ -84,6 +84,195 @@ describe('chore_close_drizzle_migration_20260607 — Phase S2: Drizzle-native re
       );
       expect(newChanges).toBe(oldChanges);
     });
+
+    it('runRawDrizzle returns identical changes count for Notification.config repair', async () => {
+      let runRawDrizzle: ((client: DatabaseClient, query: any, params?: any[]) => Promise<number>) | undefined;
+      try {
+        const require = createRequire(import.meta.url);
+        runRawDrizzle = require('../server/src/db/drizzleRawSql').runRawDrizzle;
+      } catch {}
+      expect(runRawDrizzle, 'runRawDrizzle must be importable for Notification.config equivalence test').toBeTypeOf('function');
+      if (!runRawDrizzle) return;
+
+      const client = createTestDb();
+      client.sqlite.exec(`INSERT INTO "Notification" (name, type, config) VALUES ('notif-bad', 'webhook', 'not valid json')`);
+      client.sqlite.exec(`INSERT INTO "Notification" (name, type, config) VALUES ('notif-bad-2', 'webhook', 'still bad')`);
+
+      const oldChanges = Number(
+        client.sqlite.prepare(
+          `UPDATE "Notification" SET "config" = '{}' WHERE "config" IS NULL OR json_valid("config") = 0`,
+        ).run().changes ?? 0,
+      );
+
+      const { sql } = await import('drizzle-orm');
+      const newChanges = await runRawDrizzle(
+        client,
+        sql`UPDATE "Notification" SET "config" = '{}' WHERE "config" IS NULL OR json_valid("config") = 0`,
+      );
+      expect(newChanges).toBe(oldChanges);
+    });
+
+    it('runRawDrizzle returns identical changes count for ActivityEvent.details repair', async () => {
+      let runRawDrizzle: ((client: DatabaseClient, query: any, params?: any[]) => Promise<number>) | undefined;
+      try {
+        const require = createRequire(import.meta.url);
+        runRawDrizzle = require('../server/src/db/drizzleRawSql').runRawDrizzle;
+      } catch {}
+      expect(runRawDrizzle).toBeTypeOf('function');
+      if (!runRawDrizzle) return;
+
+      const client = createTestDb();
+      client.sqlite.exec(`INSERT INTO "ActivityEvent" (eventType, sourceModule, summary, success, details) VALUES ('TEST', 'tests', 'summary', 1, 'not valid json')`);
+      client.sqlite.exec(`INSERT INTO "ActivityEvent" (eventType, sourceModule, summary, success, details) VALUES ('TEST', 'tests', 'summary', 1, 'still bad')`);
+
+      const oldChanges = Number(
+        client.sqlite.prepare(
+          `UPDATE "ActivityEvent" SET "details" = NULL WHERE "details" IS NOT NULL AND json_valid("details") = 0`,
+        ).run().changes ?? 0,
+      );
+
+      const { sql } = await import('drizzle-orm');
+      const newChanges = await runRawDrizzle(
+        client,
+        sql`UPDATE "ActivityEvent" SET "details" = NULL WHERE "details" IS NOT NULL AND json_valid("details") = 0`,
+      );
+      expect(newChanges).toBe(oldChanges);
+    });
+
+    it('runRawDrizzle returns identical changes count for Torrent.eta downscale (>2147483647)', async () => {
+      let runRawDrizzle: ((client: DatabaseClient, query: any, params?: any[]) => Promise<number>) | undefined;
+      try {
+        const require = createRequire(import.meta.url);
+        runRawDrizzle = require('../server/src/db/drizzleRawSql').runRawDrizzle;
+      } catch {}
+      expect(runRawDrizzle).toBeTypeOf('function');
+      if (!runRawDrizzle) return;
+
+      const client = createTestDb();
+      client.sqlite.exec(`INSERT INTO "Torrent" (infoHash, name, status, size, path, eta) VALUES ('h-downscale', 'eta-downscale', 'downloading', 1000, '/tmp/eta-downscale', 5000000000)`);
+      client.sqlite.exec(`INSERT INTO "Torrent" (infoHash, name, status, size, path, eta) VALUES ('h-normal', 'eta-normal', 'downloading', 1000, '/tmp/eta-normal', 100)`);
+
+      const oldChanges = Number(
+        client.sqlite.prepare(
+          `UPDATE "Torrent" SET "eta" = CAST("eta" / 1000 AS INTEGER) WHERE "eta" > 2147483647`,
+        ).run().changes ?? 0,
+      );
+
+      const { sql } = await import('drizzle-orm');
+      const newChanges = await runRawDrizzle(
+        client,
+        sql`UPDATE "Torrent" SET "eta" = CAST("eta" / 1000 AS INTEGER) WHERE "eta" > 2147483647`,
+      );
+      expect(newChanges).toBe(oldChanges);
+    });
+
+    it('runRawDrizzle returns identical changes count for Torrent.eta clamp (post-downscale > 2147483647)', async () => {
+      let runRawDrizzle: ((client: DatabaseClient, query: any, params?: any[]) => Promise<number>) | undefined;
+      try {
+        const require = createRequire(import.meta.url);
+        runRawDrizzle = require('../server/src/db/drizzleRawSql').runRawDrizzle;
+      } catch {}
+      expect(runRawDrizzle).toBeTypeOf('function');
+      if (!runRawDrizzle) return;
+
+      const client = createTestDb();
+      client.sqlite.exec(`INSERT INTO "Torrent" (infoHash, name, status, size, path, eta) VALUES ('h-clamp', 'eta-clamp', 'downloading', 1000, '/tmp/eta-clamp', 9999999999)`);
+
+      const oldChanges = Number(
+        client.sqlite.prepare(
+          `UPDATE "Torrent" SET "eta" = 2147483647 WHERE "eta" > 2147483647`,
+        ).run().changes ?? 0,
+      );
+
+      const { sql } = await import('drizzle-orm');
+      const newChanges = await runRawDrizzle(
+        client,
+        sql`UPDATE "Torrent" SET "eta" = 2147483647 WHERE "eta" > 2147483647`,
+      );
+      expect(newChanges).toBe(oldChanges);
+    });
+
+    it('runRawDrizzle returns identical changes count for Torrent.eta negative-null', async () => {
+      let runRawDrizzle: ((client: DatabaseClient, query: any, params?: any[]) => Promise<number>) | undefined;
+      try {
+        const require = createRequire(import.meta.url);
+        runRawDrizzle = require('../server/src/db/drizzleRawSql').runRawDrizzle;
+      } catch {}
+      expect(runRawDrizzle).toBeTypeOf('function');
+      if (!runRawDrizzle) return;
+
+      const client = createTestDb();
+      client.sqlite.exec(`INSERT INTO "Torrent" (infoHash, name, status, size, path, eta) VALUES ('h-neg-1', 'eta-neg-1', 'downloading', 1000, '/tmp/eta-neg-1', -50)`);
+      client.sqlite.exec(`INSERT INTO "Torrent" (infoHash, name, status, size, path, eta) VALUES ('h-neg-2', 'eta-neg-2', 'downloading', 1000, '/tmp/eta-neg-2', -99999)`);
+
+      const oldChanges = Number(
+        client.sqlite.prepare(
+          `UPDATE "Torrent" SET "eta" = NULL WHERE "eta" < 0`,
+        ).run().changes ?? 0,
+      );
+
+      const { sql } = await import('drizzle-orm');
+      const newChanges = await runRawDrizzle(
+        client,
+        sql`UPDATE "Torrent" SET "eta" = NULL WHERE "eta" < 0`,
+      );
+      expect(newChanges).toBe(oldChanges);
+    });
+
+    it('runRawDrizzle binds parameter values for AppSettings dynamic-column repair (identifier escaping)', async () => {
+      let runRawDrizzle: ((client: DatabaseClient, query: any, params?: any[]) => Promise<number>) | undefined;
+      try {
+        const require = createRequire(import.meta.url);
+        runRawDrizzle = require('../server/src/db/drizzleRawSql').runRawDrizzle;
+      } catch {}
+      expect(runRawDrizzle).toBeTypeOf('function');
+      if (!runRawDrizzle) return;
+
+      const client = createTestDb();
+      const torrentLimitsDefault = JSON.stringify({ maxActiveDownloads: 5, maxActiveTorrents: 0 });
+      client.sqlite.exec(`INSERT INTO "AppSettings" (id, torrentLimits, schedulerIntervals, pathVisibility) VALUES (1, 'broken', '{}', '{}')`);
+
+      const oldChanges = Number(
+        client.sqlite
+          .prepare(
+            `UPDATE "AppSettings" SET "torrentLimits" = ? WHERE "torrentLimits" IS NULL OR json_valid("torrentLimits") = 0`,
+          )
+          .run(torrentLimitsDefault).changes ?? 0,
+      );
+
+      const { sql } = await import('drizzle-orm');
+      const newChanges = await runRawDrizzle(
+        client,
+        sql`UPDATE "AppSettings" SET "torrentLimits" = ${torrentLimitsDefault} WHERE "torrentLimits" IS NULL OR json_valid("torrentLimits") = 0`,
+      );
+      expect(newChanges).toBe(oldChanges);
+    });
+
+    it('runRawDrizzle returns identical changes count for AppSettings nullable column NULL repair (apiKeys)', async () => {
+      let runRawDrizzle: ((client: DatabaseClient, query: any, params?: any[]) => Promise<number>) | undefined;
+      try {
+        const require = createRequire(import.meta.url);
+        runRawDrizzle = require('../server/src/db/drizzleRawSql').runRawDrizzle;
+      } catch {}
+      expect(runRawDrizzle).toBeTypeOf('function');
+      if (!runRawDrizzle) return;
+
+      const client = createTestDb();
+      client.sqlite.exec(`INSERT INTO "AppSettings" (id, torrentLimits, schedulerIntervals, pathVisibility, apiKeys) VALUES (1, '{}', '{}', '{}', 'malformed')`);
+
+      const oldChanges = Number(
+        client.sqlite.prepare(
+          `UPDATE "AppSettings" SET "apiKeys" = NULL WHERE "apiKeys" IS NOT NULL AND json_valid("apiKeys") = 0`,
+        ).run().changes ?? 0,
+      );
+
+      const { sql } = await import('drizzle-orm');
+      const newChanges = await runRawDrizzle(
+        client,
+        sql`UPDATE "AppSettings" SET "apiKeys" = NULL WHERE "apiKeys" IS NOT NULL AND json_valid("apiKeys") = 0`,
+      );
+      expect(newChanges).toBe(oldChanges);
+    });
   });
 
   describe('S2.2: statsRoutes uses db.all(sql`...`) instead of $queryRawUnsafe', () => {
@@ -120,6 +309,26 @@ describe('chore_close_drizzle_migration_20260607 — Phase S2: Drizzle-native re
       const body = JSON.parse(res.body);
       expect(body.data.dbSizeBytes).toBeGreaterThan(0);
     });
+
+    it('/api/stats/downloads returns the actual AVG(downloadSpeed) for downloading torrents (not 0)', async () => {
+      client.sqlite.exec(`
+        INSERT INTO "Torrent" (infoHash, name, status, progress, downloadSpeed, uploadSpeed, eta, size, downloaded, uploaded, ratio, path)
+        VALUES ('hash-avg-1', 'avg-dl-1', 'downloading', 0.5, 2048, 1024, 100, 1000000, 500000, 100000, 0.5, '/tmp/avg-dl-1')
+      `);
+      client.sqlite.exec(`
+        INSERT INTO "Torrent" (infoHash, name, status, progress, downloadSpeed, uploadSpeed, eta, size, downloaded, uploaded, ratio, path)
+        VALUES ('hash-avg-2', 'avg-dl-2', 'metaDL', 0.0, 512, 256, 9999, 1000000, 0, 0, 0.0, '/tmp/avg-dl-2')
+      `);
+      client.sqlite.exec(`
+        INSERT INTO "Torrent" (infoHash, name, status, progress, downloadSpeed, uploadSpeed, eta, size, downloaded, uploaded, ratio, path)
+        VALUES ('hash-avg-3', 'avg-dl-3', 'completed', 1, 0, 0, 0, 2000000, 2000000, 100000, 1.0, '/tmp/avg-dl-3')
+      `);
+
+      const res = await app.inject({ method: 'GET', url: '/api/stats/downloads' });
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body);
+      expect(body.data.averageDownloadSpeed).toBe((2048 + 512) / 2);
+    });
   });
 
   describe('S2.3: SystemHealthService uses db.all(sql`...`) instead of $queryRaw', () => {
@@ -139,6 +348,28 @@ describe('chore_close_drizzle_migration_20260607 — Phase S2: Drizzle-native re
       const result = await svc.checkDatabase();
       expect(result.status).toBe('ok');
       expect(typeof result.migration).toBe('string');
+    });
+
+    it('checkDatabase returns the latest migration hash when a Drizzle migrations table is populated', async () => {
+      const client = createTestDb();
+      client.sqlite.exec(`
+        CREATE TABLE "__drizzle_migrations" (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          hash TEXT NOT NULL,
+          created_at INTEGER
+        )
+      `);
+      client.sqlite.exec(`
+        INSERT INTO "__drizzle_migrations" (hash, created_at) VALUES ('older-hash', 1000)
+      `);
+      client.sqlite.exec(`
+        INSERT INTO "__drizzle_migrations" (hash, created_at) VALUES ('latest-hash-20260607', 9999)
+      `);
+
+      const svc = new SystemHealthService(client as any);
+      const result = await svc.checkDatabase();
+      expect(result.status).toBe('ok');
+      expect(result.migration).toBe('latest-hash-20260607');
     });
   });
 

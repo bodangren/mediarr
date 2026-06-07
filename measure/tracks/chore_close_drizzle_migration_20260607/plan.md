@@ -12,6 +12,8 @@
 ## Phase S2: Replace raw-SQL shim with Drizzle-native queries (TDD) *(in progress — Red phase complete `6f6e341`)*
 
 > Red phase expanded in `7cddd1a` to cover all 8+ `executeRaw` call sites in `main.ts` (Notification.config, ActivityEvent.details, Torrent.eta downscale/clamp/negative-null, AppSettings dynamic-column with bound params, AppSettings nullable NULL), the 3rd `$queryRawUnsafe` call site in `statsRoutes.ts` (`getAverageDownloadSpeed`), and the 3rd `$queryRaw` call site in `SystemHealthService.ts` (populated `__drizzle_migrations` table returns latest hash). All 16 tests in `tests/closeDrizzleMigration.s2.replacement.test.ts` fail in Red phase for the expected missing behavior.
+>
+> > Red phase re-verified 2026-06-07: 16/16 tests fail for the expected missing behavior under the green-phase source reverted to its red-phase state (commit `c4b1d25` added a small seed-data fix so the Notification Red test fails on the intended `runRawDrizzle` import error rather than on a NOT NULL constraint error in the green phase).
 
 - [~] For each `executeRaw` call in `main.ts`: test old-vs-new behavior against in-memory SQLite, then replace with Drizzle `sql`` template / ORM method *(Red: 7 equivalence tests covering QualityProfile.items + Notification.config + ActivityEvent.details + Torrent.eta (downscale/clamp/negative-null) + AppSettings dynamic-column with params + AppSettings nullable NULL)*
 - [~] Replace 3 `$queryRawUnsafe` sites in `statsRoutes.ts` with `db.all(sql`` …`` )` *(Red: 3 tests covering SUM(downloaded) + page_count*page_size + AVG(downloadSpeed))*

@@ -30,6 +30,25 @@
 - [~] Regression test for the startup AppSettings repair loop in `main.ts`
 - [~] Verify response shapes match current production contract
 
+> Red phase committed in `3d9eaab` (30 tests in `tests/closeDrizzleMigration.s3.routes.test.ts`).
+> S3.1 (12 tests, all green) verifies the route outputs are intact after the S2 raw-SQL shim removal
+> by running Fastify `inject()` against a seeded in-memory SQLite DB: LibraryStats envelope
+> (empty + seeded counts, file aggregation, quality breakdown, missing counts, ActivityEvent date
+> filters) and SystemStatus envelope (database health, sqlite version, dependencies). S3.2 (9
+> tests, all red) is the regression test for the startup AppSettings repair loop. The helper
+> currently lives as a private function in `server/src/main.ts:295` and is not importable, so
+> each S3.2 test fails on the expected `repairMalformedJsonColumns` import error; the S3 Green
+> phase must extract it to `server/src/maintenance/repairJsonColumns` so the loop is regression-
+> testable (QualityProfile.items, Notification.config, ActivityEvent.details, Torrent.eta
+> downscale/clamp/negative-null, AppSettings required + nullable JSON columns). S3.3 (9 tests,
+> all green) asserts the production contract for the /api/system/{stats,status} and
+> /api/stats/{downloads,system} envelopes.
+>
+> Red phase verification (vitest run, 2026-06-07):
+>   Tests  9 failed | 21 passed (30)
+>   9 S3.2 failures = repairMalformedJsonColumns not importable (expected)
+>   21 S3.1+S3.3 passes = routes + envelopes already conform to contract (route verification complete)
+
 ## Phase S4: Remove PrismaClient type shim
 - [ ] Read `server/src/types/prisma.ts` and `server/src/db/drizzleClient.ts`
 - [ ] Replace every non-test import of `PrismaClient` with `DatabaseClient`

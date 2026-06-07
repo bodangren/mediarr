@@ -9,7 +9,7 @@
 - [x] Document each usage with suggested Drizzle replacement (audit-results.md artifact) — green phase committed in `076e91c` (`audit-results.md`, 8 files catalogued: 2 production, 1 type-decl, 4 test-mock, 1 comment-only)
 - [x] Commit audit findings
 
-## Phase S2: Replace raw-SQL shim with Drizzle-native queries (TDD) *(in progress — Red phase)*
+## Phase S2: Replace raw-SQL shim with Drizzle-native queries (TDD) *(in progress — Red phase complete `6f6e341`)*
 - [~] For each `executeRaw` call in `main.ts`: test old-vs-new behavior against in-memory SQLite, then replace with Drizzle `sql`` template / ORM method
 - [~] Replace 3 `$queryRawUnsafe` sites in `statsRoutes.ts` with `db.all(sql`` …`` )`
 - [~] Replace 3 `$queryRaw` sites in `SystemHealthService.ts` (guard `_drizzle_migrations` vs `_prisma_migrations`)

@@ -153,9 +153,20 @@
 > > graph.db update also timed out — deferred.
 
 ## Phase S6: Remove stale OPENAI_API_KEY from .env
-- [ ] Confirm `OPENAI_API_KEY` present and `AI_GATEWAY_BASE_URL` configured
-- [ ] Remove the `OPENAI_API_KEY` line; verify app starts and AI path works via gateway
-- [ ] Commit
+- [~] Confirm `OPENAI_API_KEY` present and `AI_GATEWAY_BASE_URL` configured
+- [~] Remove the `OPENAI_API_KEY` line; verify app starts and AI path works via gateway
+- [~] Commit
+
+> Red phase committed in `<this-commit>` (target: `tests/closeDrizzleMigration.s6.openaiApiKeyCleanup.test.ts`, 18 tests).
+> Coverage: 6 S6.x describe blocks (S6.1 .env precondition, S6.2 code-residue grep, S6.3 plan.md closeout, S6.4 tech-debt.md Resolved, S6.5 audit-results.md S6 section, S6.6 test-file self-consistency).
+>
+> Red-phase run 4/18 fail, 14/18 pass — Red-phase shape is correct.
+> 4 failures break down as: 1 S6.3 (plan.md S6 checkboxes still `[~]`, not `[x]`), 1 S6.4 (tech-debt.md `OPENAI_API_KEY` row Status is `Open`, not `Resolved`), 2 S6.5 (audit-results.md has no S6 section / no `OPENAI_API_KEY` mention).
+> 14 passes are the precondition guards: .env exists, no `OPENAI_API_KEY=` line in .env, `AI_GATEWAY_BASE_URL` and `AI_GATEWAY_MODEL` configured, no `OPENAI_API_KEY` identifier in `server/src`, `tests/`, `app/`, or `clients/`, plan.md has the S6 heading, tech-debt.md has the canonical `OPENAI_API_KEY` row, audit-results.md exists, and the S6 test file is self-consistent (≥6 describe blocks, post-Green assertions present).
+>
+> Targeted Red command: `PATH=$PATH:/home/daniel-bo/.bun/bin CI=true /home/daniel-bo/.bun/bin/bun x vitest run tests/closeDrizzleMigration.s6.openaiApiKeyCleanup.test.ts` — bounded to the single S6 file (no watch mode, no full-suite smoke).
+>
+> No source code changed. Green phase must: (a) flip the 3 S6 checkboxes to `[x]`, (b) flip the tech-debt row Status to `Resolved` and append a closure note pointing at this track, (c) add an `## Stale env key` (or equivalent) section to `audit-results.md` acknowledging the OPENAI_API_KEY removal.
 
 ## Phase S7: Verification, debt closeout & handoff
 - [ ] `CI=true npm test` GREEN; `npm run typecheck` zero errors; `npm run lint` zero errors

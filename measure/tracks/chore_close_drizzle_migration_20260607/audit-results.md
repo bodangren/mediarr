@@ -4,15 +4,15 @@ Raw-method reference scan of `server/src/**/*.ts` — consolidates raw-SQL shim 
 
 ## Summary
 
-- **Total files with raw-method references:** 6
+- **Total files with raw-method references:** 5
 - **Type declaration files:** 1
 - **Production code files:** 1
 - **Test mock files:** 3
-- **Comment-only files:** 1
+- **Comment-only files:** 0
 
 ### Production call-site counts
 
-- **Production `$queryRaw` call sites:** 4
+- **Production `$queryRaw` call sites:** 0
 - **Production `$queryRawUnsafe` call sites:** 3
 - **Production `$executeRawUnsafe` call sites:** 0
 
@@ -37,22 +37,13 @@ Three `$queryRawUnsafe` call sites in the stats aggregation routes.
 
 | Line | Method | Snippet |
 |------|--------|---------|
-| 272 | `$queryRawUnsafe` | `const result = await prisma.$queryRawUnsafe?.(` |
-| 284 | `$queryRawUnsafe` | `const result = await prisma.$queryRawUnsafe?.(` |
-| 296 | `$queryRawUnsafe` | `const result = await prisma.$queryRawUnsafe?.(` |
+| 279 | `$queryRawUnsafe` | `result = await prisma.$queryRawUnsafe?.(` |
+| 298 | `$queryRawUnsafe` | `result = await prisma.$queryRawUnsafe?.(` |
+| 317 | `$queryRawUnsafe` | `result = await prisma.$queryRawUnsafe?.(` |
 
-### `server/src/services/SystemHealthService.ts`
+### `server/src/services/SystemHealthService.ts` *(S2 Green: raw SQL replaced with Drizzle)*
 
-Three `$queryRaw` call sites for database health checks (SELECT 1, sqlite_version, migration list).
-
-**Drizzle replacement:** Replace `this.prisma.$queryRaw\`...\`` with `db.all(sql\`...\`)` using Drizzle's `sql` tagged template from `drizzle-orm`. Must guard `_drizzle_migrations` vs `_prisma_migrations` table name — Drizzle uses `_drizzle_migrations` whereas the legacy Prisma setup used `_prisma_migrations`.
-
-| Line | Method | Snippet |
-|------|--------|---------|
-| 58 | `$queryRaw` | `private readonly prisma: Pick<PrismaClient, '$queryRaw'>,` |
-| 116 | `$queryRaw` | `await this.prisma.$queryRaw\`SELECT 1\`` |
-| 118 | `$queryRaw` | `const versionRows = await this.prisma.$queryRaw<Array<{ sqlite_version: string }>>\`` |
-| 123 | `$queryRaw` | `const migrationRows = await this.prisma.$queryRaw<Array<{ migration_name: string }>>\`` |
+All three `$queryRaw` call sites were replaced with `db.all(sql\`...\`)` in the S2 Green phase (commit `378df6c`). The S2 replacement guards `_drizzle_migrations` vs `_prisma_migrations` table name — Drizzle uses `_drizzle_migrations` whereas the legacy Prisma setup used `_prisma_migrations`. No raw-method references remain.
 
 ## Test Mocks
 
@@ -83,10 +74,4 @@ Three test files contain raw-method mock declarations that will need updating wh
 
 ## Comment-Only
 
-### `server/src/main.ts`
-
-Line 350 contains a documentation comment mentioning `$executeRawUnsafe` — not a live call site.
-
-| Line | Method | Snippet |
-|------|--------|---------|
-| 350 | `$executeRawUnsafe` | `// Column names cannot be bound as parameters in SQL, so we use $executeRawUnsafe` |
+*(No comment-only files remain after S2 extracted `repairMalformedJsonColumns` from main.ts.)*

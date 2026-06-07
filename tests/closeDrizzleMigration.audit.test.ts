@@ -121,13 +121,12 @@ describe('chore_close_drizzle_migration_20260607 — Phase S1: Audit & Catalog',
       expect(dbIndexHits).toHaveLength(0);
     });
 
-    it('identifies SystemHealthService.ts as a production $queryRaw call site', () => {
+    it('confirms SystemHealthService.ts no longer has production $queryRaw (S2 Green replaced them)', () => {
       const sysHealth = path.join('server', 'src', 'services', 'SystemHealthService.ts');
       const prodHits = hits.filter(
         (h) => h.file === sysHealth && h.classification === 'production-code',
       );
-      expect(prodHits.length).toBeGreaterThanOrEqual(3);
-      expect(prodHits.every((h) => h.method === '$queryRaw')).toBe(true);
+      expect(prodHits).toHaveLength(0);
     });
 
     it('identifies statsRoutes.ts as a production $queryRawUnsafe call site', () => {
@@ -143,16 +142,15 @@ describe('chore_close_drizzle_migration_20260607 — Phase S1: Audit & Catalog',
       expect(typeDeclPaths).toContain(path.join('server', 'src', 'types', 'prisma.ts'));
     });
 
-    it('captures the main.ts documentation comment (not a live call site)', () => {
-      expect(commentOnlyPaths).toContain(path.join('server', 'src', 'main.ts'));
+    it('confirms main.ts no longer has comment-only raw-method references (S2 extracted the function)', () => {
+      expect(commentOnlyPaths).not.toContain(path.join('server', 'src', 'main.ts'));
     });
 
-    it('lists the four known test-mock files that will need updating in S2/S4/S5', () => {
+    it('lists the three known test-mock files that will need updating in S4/S5 (SystemHealthService.test.ts cleaned in S2)', () => {
       const expected = [
         path.join('server', 'src', 'api', 'routes', 'manualTestFindings.regression.test.ts'),
         path.join('server', 'src', 'api', 'routes', 'stats.integration.test.ts'),
         path.join('server', 'src', 'api', 'routes', 'statsRoutes.test.ts'),
-        path.join('server', 'src', 'services', 'SystemHealthService.test.ts'),
       ];
       for (const file of expected) {
         expect(testMockPaths).toContain(file);

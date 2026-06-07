@@ -32,7 +32,7 @@
 | 2026-04-13 | review_20260413 | `seedSmartDefaults` deep-clones AppSettings via `JSON.parse(JSON.stringify(...))` | Low | Resolved | Removed JSON round-trip in drizzle_cleanup_type_safety_20260506; now uses typed field access from settings record |
 | 2026-04-13 | review_20260413 | Autonomous checkpoint 4c78a41 bundled 121 files / +6409 lines | Medium | Open | Process guidance: split autonomous checkpoints per subsystem so review granularity is preserved |
 | 2026-05-26 | graph_analysis | Duplicate interfaces across server/app (BulkUpdateResult, SubtitleUploadInput, ScoringBreakdown, OrganizeResult, Playback types) | High | Resolved | Extracted to shared Zod schemas in server/src/contracts/. Track: chore_type_contract_sharing_20260526 |
-| 2026-05-26 | graph_analysis | Variant subtitle subsystem (5 services) has zero unit tests | High | Open | Only tested via route integration. Track: bug_variant_subtitle_test_coverage_20260526 |
+| 2026-05-26 | graph_analysis | Variant subtitle subsystem (5 services) has zero unit tests | High | Resolved | S1–S5 complete: 6+5+6+14+5=36 tests across all 5 services. Track: bug_variant_subtitle_test_coverage_20260526 |
 | 2026-05-26 | graph_analysis | Import List UI (5 components) has zero component tests | High | Open | Track: chore_import_list_ui_tests_20260526 |
 | 2026-05-26 | graph_analysis | 30 server services lack dedicated test files | Medium | Open | Scheduler, Episode, Series, TvSearch among them. Track: chore_untested_server_services_20260526 |
 | 2026-05-26 | graph_analysis | ~85 backend routes have no MSW mock handlers | Medium | Open | Frontend integration tests can't exercise these paths. Track: chore_msw_mock_coverage_20260526 |

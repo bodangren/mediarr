@@ -260,7 +260,7 @@ describe('chore_close_drizzle_migration_20260607 — Phase S2: Drizzle-native re
       if (!runRawDrizzle) return;
 
       const client = createTestDb();
-      client.sqlite.exec(`INSERT INTO "AppSettings" (id, torrentLimits, schedulerIntervals, pathVisibility, apiKeys) VALUES (1, '{}', '{}', '{}', 'malformed')`);
+      client.sqlite.exec(`INSERT INTO "AppSettings" (id, torrentLimits, schedulerIntervals, pathVisibility, apiKeys, createdAt, updatedAt) VALUES (1, '{}', '{}', '{}', 'malformed', 1, 1)`);
 
       const oldChanges = Number(
         client.sqlite.prepare(
@@ -268,6 +268,7 @@ describe('chore_close_drizzle_migration_20260607 — Phase S2: Drizzle-native re
         ).run().changes ?? 0,
       );
 
+      client.sqlite.exec(`INSERT INTO "AppSettings" (id, torrentLimits, schedulerIntervals, pathVisibility, apiKeys, createdAt, updatedAt) VALUES (2, '{}', '{}', '{}', 'also malformed', 1, 1)`);
       const { sql } = await import('drizzle-orm');
       const newChanges = await runRawDrizzle(
         client,

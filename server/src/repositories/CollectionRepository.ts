@@ -1,5 +1,5 @@
-import type { PrismaClient, Collection, Movie, Prisma } from '@prisma/client';
-
+import type { DatabaseClient } from '../db/drizzleClient';
+import type { Collection, Movie } from '../types/modelTypes';
 export interface CollectionWithCounts extends Collection {
   movieCount: number;
   moviesInLibrary: number;
@@ -52,7 +52,7 @@ export interface UpdateCollectionData {
 }
 
 export class CollectionRepository {
-  constructor(private prisma: PrismaClient) {}
+  constructor(private prisma: DatabaseClient) {}
 
   async findAll(): Promise<CollectionWithCounts[]> {
     const collections = await this.prisma.collection.findMany({
@@ -133,7 +133,7 @@ export class CollectionRepository {
   }
 
   async create(data: CreateCollectionData): Promise<Collection> {
-    const createData: Prisma.CollectionCreateInput = {
+    const createData: any = {
       tmdbCollectionId: data.tmdbCollectionId,
       name: data.name,
       overview: data.overview ?? null,
@@ -158,7 +158,7 @@ export class CollectionRepository {
   }
 
   async update(id: number, data: UpdateCollectionData): Promise<Collection> {
-    const updateData: Prisma.CollectionUpdateInput = {};
+    const updateData: any = {};
 
     if (data.name !== undefined) updateData.name = data.name;
     if (data.overview !== undefined) updateData.overview = data.overview;

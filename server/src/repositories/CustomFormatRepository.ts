@@ -1,5 +1,5 @@
-import type { PrismaClient, CustomFormat, CustomFormatScore, Prisma } from '@prisma/client';
-
+import type { DatabaseClient } from '../db/drizzleClient';
+import type { CustomFormat, CustomFormatScore } from '../types/modelTypes';
 // Condition types for custom format evaluation
 export type ConditionType = 'regex' | 'size' | 'language' | 'indexerFlag' | 'releaseGroup' | 'source' | 'resolution' | 'qualityModifier';
 export type ConditionOperator = 'equals' | 'contains' | 'notContains' | 'greaterThan' | 'lessThan' | 'regex' | 'notRegex';
@@ -51,7 +51,7 @@ function parseConditions(conditions: unknown): CustomFormatCondition[] {
 }
 
 export class CustomFormatRepository {
-  constructor(private prisma: PrismaClient) {}
+  constructor(private prisma: DatabaseClient) {}
 
   async findAll(): Promise<CustomFormatWithScores[]> {
     const formats = await this.prisma.customFormat.findMany({
@@ -95,7 +95,7 @@ export class CustomFormatRepository {
       data: {
         name: data.name,
         includeCustomFormatWhenRenaming: data.includeCustomFormatWhenRenaming ?? false,
-        conditions: data.conditions as unknown as Prisma.InputJsonValue,
+        conditions: data.conditions as unknown as any,
       },
     });
 
@@ -121,14 +121,14 @@ export class CustomFormatRepository {
   }
 
   async update(id: number, data: UpdateCustomFormatData): Promise<CustomFormatWithScores> {
-    const updateData: Prisma.CustomFormatUpdateInput = {};
+    const updateData: any = {};
 
     if (data.name !== undefined) updateData.name = data.name;
     if (data.includeCustomFormatWhenRenaming !== undefined) {
       updateData.includeCustomFormatWhenRenaming = data.includeCustomFormatWhenRenaming;
     }
     if (data.conditions !== undefined) {
-      updateData.conditions = data.conditions as unknown as Prisma.InputJsonValue;
+      updateData.conditions = data.conditions as unknown as any;
     }
 
     // Update format first

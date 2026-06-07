@@ -1,4 +1,5 @@
-import type { PrismaClient, Notification } from '@prisma/client';
+import type { DatabaseClient } from '../db/drizzleClient';
+import type { Notification } from '../types/modelTypes';
 import { encrypt, decrypt } from '../utils/encryption';
 
 // Fields that should be encrypted in config
@@ -67,7 +68,7 @@ export interface UpdateNotificationData {
 }
 
 export class NotificationRepository {
-  constructor(private prisma: PrismaClient) {}
+  constructor(private prisma: DatabaseClient) {}
 
   async create(data: CreateNotificationData): Promise<Notification> {
     const encryptedConfig = encryptSensitiveFields(data.type, data.config);
@@ -82,7 +83,7 @@ export class NotificationRepository {
         onRename: data.onRename ?? false,
         onSeriesAdd: data.onSeriesAdd ?? false,
         onEpisodeDelete: data.onEpisodeDelete ?? false,
-        config: encryptedConfig as unknown as import('@prisma/client').Prisma.InputJsonValue,
+        config: encryptedConfig as unknown as any,
       },
     });
   }
@@ -96,7 +97,7 @@ export class NotificationRepository {
 
     return {
       ...notification,
-      config: decryptSensitiveFields(notification.type, notification.config as NotificationConfig) as unknown as import('@prisma/client').Prisma.JsonValue,
+      config: decryptSensitiveFields(notification.type, notification.config as NotificationConfig) as unknown as any,
     };
   }
 
@@ -104,7 +105,7 @@ export class NotificationRepository {
     const notifications = await this.prisma.notification.findMany();
     return notifications.map((notification: { type: string; config: unknown }) => ({
       ...notification,
-      config: decryptSensitiveFields(notification.type, notification.config as NotificationConfig) as unknown as import('@prisma/client').Prisma.JsonValue,
+      config: decryptSensitiveFields(notification.type, notification.config as NotificationConfig) as unknown as any,
     }));
   }
 
@@ -114,7 +115,7 @@ export class NotificationRepository {
     });
     return notifications.map((notification: { type: string; config: unknown }) => ({
       ...notification,
-      config: decryptSensitiveFields(notification.type, notification.config as NotificationConfig) as unknown as import('@prisma/client').Prisma.JsonValue,
+      config: decryptSensitiveFields(notification.type, notification.config as NotificationConfig) as unknown as any,
     }));
   }
 
@@ -138,7 +139,7 @@ export class NotificationRepository {
 
     return {
       ...updated,
-      config: decryptSensitiveFields(updated.type, updated.config as NotificationConfig) as unknown as import('@prisma/client').Prisma.JsonValue,
+      config: decryptSensitiveFields(updated.type, updated.config as NotificationConfig) as unknown as any,
     };
   }
 

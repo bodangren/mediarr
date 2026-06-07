@@ -3,6 +3,7 @@ import { sendPaginatedSuccess, sendSuccess, parsePaginationParams, paginateArray
 import { assertFound, parseIdParam, sortByField, assertNoAssociatedTorrents } from '../routeUtils';
 import { ValidationError } from '../../errors/domainErrors';
 import type { ApiDependencies } from '../types';
+import type { DatabaseClient } from '../../db/drizzleClient';
 import { MovieOrganizeService, DEFAULT_MEDIA_MANAGEMENT_SETTINGS } from '../../services/MovieOrganizeService';
 import { FilenameParsingService } from '../../services/FilenameParsingService';
 import { MovieRepository, type BulkMovieChanges } from '../../repositories/MovieRepository';
@@ -641,7 +642,7 @@ export function registerMovieRoutes(
     const body = request.body as { movieIds: number[] };
 
     const organizeService = new MovieOrganizeService(
-      deps.prisma as import('@prisma/client').PrismaClient,
+      deps.prisma as DatabaseClient,
       DEFAULT_MEDIA_MANAGEMENT_SETTINGS
     );
 
@@ -668,7 +669,7 @@ export function registerMovieRoutes(
     const body = request.body as { movieIds: number[] };
 
     const organizeService = new MovieOrganizeService(
-      deps.prisma as import('@prisma/client').PrismaClient,
+      deps.prisma as DatabaseClient,
       DEFAULT_MEDIA_MANAGEMENT_SETTINGS
     );
 
@@ -706,7 +707,7 @@ export function registerMovieRoutes(
       throw new ValidationError('Path does not exist or is not accessible');
     }
 
-    const parsingService = new FilenameParsingService(deps.prisma as import('@prisma/client').PrismaClient);
+    const parsingService = new FilenameParsingService(deps.prisma as DatabaseClient);
     const files = await parsingService.scanAndMatch(body.path);
 
     return sendSuccess(reply, { files });

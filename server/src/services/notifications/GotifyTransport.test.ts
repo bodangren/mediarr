@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { Notification } from '@prisma/client';
+import type { Notification } from '../../types/modelTypes';
 import { GotifyTransport } from './GotifyTransport';
 
 function makeNotification(config: Record<string, unknown>): Notification {

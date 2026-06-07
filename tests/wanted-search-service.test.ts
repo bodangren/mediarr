@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { WantedSearchService } from '../server/src/services/WantedSearchService';
 import type { MediaSearchService, SearchCandidate } from '../server/src/services/MediaSearchService';
-import type { PrismaClient } from '@prisma/client';
+import type { DatabaseClient } from '../server/src/db/drizzleClient';
 import type { ActivityEventEmitter } from '../server/src/services/ActivityEventEmitter';
 
 describe('WantedSearchService', () => {

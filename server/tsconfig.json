@@ -10,9 +10,7 @@
     "module": "preserve",
     "moduleResolution": "bundler",
     "baseUrl": ".",
-    "paths": {
-      "@prisma/client": ["./src/types/prisma"]
-    },
+    "paths": {},
     "target": "esnext",
     "types": [],
     // For nodejs:

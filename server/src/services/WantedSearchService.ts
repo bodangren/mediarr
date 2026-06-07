@@ -1,4 +1,4 @@
-import type { PrismaClient } from '@prisma/client';
+import type { DatabaseClient } from '../db/drizzleClient';
 import type { MediaSearchService, SearchCandidate } from './MediaSearchService';
 import type { ActivityEventEmitter } from './ActivityEventEmitter';
 import { releaseParser } from './ReleaseParser';
@@ -18,7 +18,7 @@ export class WantedSearchService {
 
   constructor(
     private readonly mediaSearchService: MediaSearchService,
-    private readonly prisma: PrismaClient,
+    private readonly prisma: DatabaseClient,
     private readonly activityEventEmitter: ActivityEventEmitter,
   ) {}
 

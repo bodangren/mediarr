@@ -1,5 +1,5 @@
-import type { Blocklist, Prisma, PrismaClient } from '@prisma/client';
-
+import type { DatabaseClient } from '../db/drizzleClient';
+import type { Blocklist } from '../types/modelTypes';
 export interface CreateBlocklistInput {
   seriesId?: number | null;
   seriesTitle: string;
@@ -35,10 +35,10 @@ type BlocklistFilterInput = Omit<QueryBlocklistInput, 'page' | 'pageSize' | 'sor
  * Persists and queries blocklist records for blocked releases.
  */
 export class BlocklistRepository {
-  constructor(private readonly prisma: PrismaClient) {}
+  constructor(private readonly prisma: DatabaseClient) {}
 
-  private buildWhere(input: BlocklistFilterInput): Prisma.BlocklistWhereInput {
-    const where: Prisma.BlocklistWhereInput = {};
+  private buildWhere(input: BlocklistFilterInput): any {
+    const where: any = {};
     if (input.seriesId !== undefined) {
       where.seriesId = input.seriesId;
     }
@@ -46,7 +46,7 @@ export class BlocklistRepository {
   }
 
   async create(input: CreateBlocklistInput): Promise<Blocklist> {
-    const data: Prisma.BlocklistCreateInput = {
+    const data: any = {
       seriesTitle: input.seriesTitle,
       releaseTitle: input.releaseTitle,
       reason: input.reason,
@@ -88,7 +88,7 @@ export class BlocklistRepository {
     const sortBy = input.sortBy ?? 'dateBlocked';
     const sortDir = input.sortDir ?? 'desc';
 
-    const orderBy: Prisma.BlocklistOrderByWithRelationInput = {
+    const orderBy: any = {
       [sortBy]: sortDir,
     };
 

@@ -1,4 +1,4 @@
-import type { Notification } from '@prisma/client';
+import type { Notification } from '../../types/modelTypes';
 
 export type NotificationConfig = Record<string, unknown>;
 

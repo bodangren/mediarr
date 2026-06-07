@@ -1,4 +1,4 @@
-import type { PrismaClient } from '@prisma/client';
+import type { DatabaseClient } from '../db/drizzleClient';
 import { HttpClient } from '../indexers/HttpClient';
 import { SettingsService } from './SettingsService';
 import { ConflictError, NotFoundError, ValidationError, ProviderUnavailableError } from '../errors/domainErrors';
@@ -62,7 +62,7 @@ export class CollectionService {
   private readonly tmdbBaseUrl = 'https://api.themoviedb.org/3';
 
   constructor(
-    private readonly prisma: PrismaClient,
+    private readonly prisma: DatabaseClient,
     private readonly httpClient: HttpClient,
     private readonly settingsService: SettingsService,
   ) {}

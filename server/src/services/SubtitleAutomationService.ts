@@ -1,4 +1,4 @@
-import type { WantedSubtitleState } from '@prisma/client';
+import type { WantedSubtitleState } from '../db/schema';
 import { SubtitleVariantRepository } from '../repositories/SubtitleVariantRepository';
 import { SettingsService } from './SettingsService';
 import {

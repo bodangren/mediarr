@@ -1,10 +1,10 @@
-import type { IndexerHealthSnapshot, PrismaClient } from '@prisma/client';
-
+import type { DatabaseClient } from '../db/drizzleClient';
+import type { IndexerHealthSnapshot } from '../types/modelTypes';
 /**
  * Stores per-indexer sync health snapshots.
  */
 export class IndexerHealthRepository {
-  constructor(private readonly prisma: PrismaClient) {}
+  constructor(private readonly prisma: DatabaseClient) {}
 
   async getByIndexerId(indexerId: number): Promise<IndexerHealthSnapshot | null> {
     return this.prisma.indexerHealthSnapshot.findUnique({

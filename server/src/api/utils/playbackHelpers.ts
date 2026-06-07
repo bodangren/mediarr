@@ -1,4 +1,4 @@
-import type { PlaybackProgress } from '@prisma/client';
+import type { PlaybackProgress } from '../../types/modelTypes';
 
 /**
  * Build a map from mediaId to the latest (first-encountered) PlaybackProgress record.

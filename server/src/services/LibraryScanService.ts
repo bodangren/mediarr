@@ -1,7 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import type { PrismaClient } from '@prisma/client';
-
+import type { DatabaseClient } from '../db/drizzleClient';
 export interface ScanSummary {
   moviesAdded: number;
   moviesMissing: number;
@@ -34,7 +33,7 @@ async function walkDir(dir: string): Promise<string[]> {
 }
 
 export class LibraryScanService {
-  constructor(private readonly prisma: PrismaClient) {}
+  constructor(private readonly prisma: DatabaseClient) {}
 
   async scanAll(settings: { movieRootFolder: string; tvRootFolder: string }): Promise<ScanSummary> {
     const start = Date.now();

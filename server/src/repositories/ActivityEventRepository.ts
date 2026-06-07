@@ -1,9 +1,5 @@
-import type {
-  ActivityEvent,
-  Prisma,
-  PrismaClient,
-} from '@prisma/client';
-
+import type { DatabaseClient } from '../db/drizzleClient';
+import type { ActivityEvent } from '../types/modelTypes';
 export interface CreateActivityEventInput {
   eventType: string;
   sourceModule: string;
@@ -34,18 +30,18 @@ export interface QueryActivityEventsResult {
 
 type ActivityEventFilterInput = Omit<QueryActivityEventsInput, 'page' | 'pageSize'>;
 
-function toJson(value: unknown): Prisma.InputJsonValue {
-  return value as Prisma.InputJsonValue;
+function toJson(value: unknown): any {
+  return value as any;
 }
 
 /**
  * Persists and queries cross-module activity event records.
  */
 export class ActivityEventRepository {
-  constructor(private readonly prisma: PrismaClient) {}
+  constructor(private readonly prisma: DatabaseClient) {}
 
-  private buildWhere(input: ActivityEventFilterInput): Prisma.ActivityEventWhereInput {
-    const occurredAt: Prisma.DateTimeFilter = {};
+  private buildWhere(input: ActivityEventFilterInput): any {
+    const occurredAt: any = {};
     if (input.from) {
       occurredAt.gte = input.from;
     }

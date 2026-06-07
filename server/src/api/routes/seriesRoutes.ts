@@ -3,6 +3,7 @@ import { sendPaginatedSuccess, sendSuccess, parsePaginationParams, paginateArray
 import { assertFound, parseIdParam, sortByField, assertNoAssociatedTorrents } from '../routeUtils';
 import { ValidationError } from '../../errors/domainErrors';
 import type { ApiDependencies } from '../types';
+import type { DatabaseClient } from '../../db/drizzleClient';
 import { SeriesRepository, type BulkSeriesChanges } from '../../repositories/SeriesRepository';
 import { SeriesMonitoringService, type MonitoringType } from '../../services/SeriesMonitoringService';
 import { SeriesOrganizeService, DEFAULT_SERIES_MANAGEMENT_SETTINGS } from '../../services/SeriesOrganizeService';
@@ -1071,7 +1072,7 @@ export function registerSeriesRoutes(
     const body = request.body as { seriesIds: number[] };
 
     const organizeService = new SeriesOrganizeService(
-      deps.prisma as import('@prisma/client').PrismaClient,
+      deps.prisma as DatabaseClient,
       DEFAULT_SERIES_MANAGEMENT_SETTINGS
     );
 
@@ -1098,7 +1099,7 @@ export function registerSeriesRoutes(
     const body = request.body as { seriesIds: number[] };
 
     const organizeService = new SeriesOrganizeService(
-      deps.prisma as import('@prisma/client').PrismaClient,
+      deps.prisma as DatabaseClient,
       DEFAULT_SERIES_MANAGEMENT_SETTINGS
     );
 
@@ -1136,7 +1137,7 @@ export function registerSeriesRoutes(
       throw new ValidationError('Path does not exist or is not accessible');
     }
 
-    const parsingService = new FilenameParsingService(deps.prisma as import('@prisma/client').PrismaClient);
+    const parsingService = new FilenameParsingService(deps.prisma as DatabaseClient);
     const files = await parsingService.scanAndMatchEpisodes(body.path);
 
     return sendSuccess(reply, { files });

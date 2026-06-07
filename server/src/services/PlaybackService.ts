@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import type { PrismaClient, PlaybackMediaType } from '@prisma/client';
+import type { DatabaseClient } from '../db/drizzleClient';
+import type { PlaybackMediaType } from '../db/schema';
 import { NotFoundError, ValidationError } from '../errors/domainErrors';
 import type { ContinueWatchingItem, PlaybackRepository } from '../repositories/PlaybackRepository';
 import type { SettingsService } from './SettingsService';
@@ -113,7 +114,7 @@ function normalizeRoot(input: string): string {
  */
 export class PlaybackService {
   constructor(
-    private readonly prisma: PrismaClient,
+    private readonly prisma: DatabaseClient,
     private readonly playbackRepository: Pick<
       PlaybackRepository,
       'getProgress' | 'getLatestProgressForMedia' | 'upsertProgress' | 'findContinueWatching'

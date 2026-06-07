@@ -1,4 +1,5 @@
-import type { PrismaClient, Series, Prisma } from '@prisma/client';
+import type { DatabaseClient } from '../db/drizzleClient';
+import type { Series } from '../types/modelTypes';
 import type { BulkUpdateResult } from '../contracts/bulk';
 
 /**
@@ -17,7 +18,7 @@ export interface BulkSeriesChanges {
  * Repository for series-specific database operations
  */
 export class SeriesRepository {
-  constructor(private readonly prisma: PrismaClient) {}
+  constructor(private readonly prisma: DatabaseClient) {}
 
   /**
    * Bulk update multiple series with the same changes
@@ -67,7 +68,7 @@ export class SeriesRepository {
     }
 
     // Execute updates within a transaction
-    await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    await this.prisma.$transaction(async (tx: any) => {
       for (const seriesId of seriesIds) {
         try {
           await (tx as any).series.update({

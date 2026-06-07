@@ -1,4 +1,4 @@
-import type { PrismaClient } from '@prisma/client';
+import type { DatabaseClient } from '../db/drizzleClient';
 import type { HttpClient } from '../indexers/HttpClient';
 import { TorznabIndexer } from '../indexers/BaseIndexer';
 import { TorznabParser } from '../indexers/TorznabParser';
@@ -20,7 +20,7 @@ export class RssSyncService extends EventEmitter {
   private torznabParser = new TorznabParser();
 
   constructor(
-    private prisma: PrismaClient,
+    private prisma: DatabaseClient,
     private httpClient: HttpClient,
     private indexerHealthRepository?: IndexerHealthRepository,
   ) {

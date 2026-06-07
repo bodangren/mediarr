@@ -1,9 +1,9 @@
-import type { PrismaClient, Torrent, TorrentPeer } from '@prisma/client';
-
+import type { DatabaseClient } from '../db/drizzleClient';
+import type { Torrent, TorrentPeer } from '../types/modelTypes';
 export type TorrentWithPeers = Torrent & { peers: TorrentPeer[] };
 
 export class TorrentRepository {
-  constructor(private prisma: PrismaClient) {}
+  constructor(private prisma: DatabaseClient) {}
 
   private normalizeInfoHash(infoHash: string): string {
     return infoHash.trim().toLowerCase();

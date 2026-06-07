@@ -138,8 +138,8 @@ describe('chore_close_drizzle_migration_20260607 — Phase S1: Audit & Catalog',
       expect(prodHits.every((h) => h.method === '$queryRawUnsafe')).toBe(true);
     });
 
-    it('identifies the PrismaClient type shim file', () => {
-      expect(typeDeclPaths).toContain(path.join('server', 'src', 'types', 'prisma.ts'));
+    it('confirms the PrismaClient type shim file was removed in S4 (no longer in scan)', () => {
+      expect(typeDeclPaths).not.toContain(path.join('server', 'src', 'types', 'prisma.ts'));
     });
 
     it('confirms main.ts no longer has comment-only raw-method references (S2 extracted the function)', () => {

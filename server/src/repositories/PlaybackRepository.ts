@@ -1,8 +1,6 @@
-import type {
-  PlaybackMediaType,
-  PlaybackProgress,
-  PrismaClient,
-} from '@prisma/client';
+import type { DatabaseClient } from '../db/drizzleClient';
+import type { PlaybackProgress } from '../types/modelTypes';
+import type { PlaybackMediaType } from '../db/schema';
 import type { PlaybackProgressKey } from '../contracts/playback';
 
 const DEFAULT_WATCHED_THRESHOLD = 0.9;
@@ -47,7 +45,7 @@ function toSafeInteger(value: number): number {
  * Persists and resolves playback position snapshots per media/user pair.
  */
 export class PlaybackRepository {
-  constructor(private readonly prisma: PrismaClient) {}
+  constructor(private readonly prisma: DatabaseClient) {}
 
   async getProgress(key: PlaybackProgressKey): Promise<PlaybackProgress | null> {
     return this.prisma.playbackProgress.findUnique({

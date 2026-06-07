@@ -1,4 +1,4 @@
-import type { PrismaClient } from '@prisma/client';
+import type { DatabaseClient } from '../../db/drizzleClient';
 import type { ImportListRepository, ImportListWithProfile } from '../../repositories/ImportListRepository';
 import type { MediaRepository } from '../../repositories/MediaRepository';
 import type { ImportListProviderFactory, ImportListItem } from './ImportListProvider';
@@ -13,7 +13,7 @@ export interface SyncResult {
 
 export class ImportListSyncService {
   constructor(
-    private readonly prisma: PrismaClient,
+    private readonly prisma: DatabaseClient,
     private readonly importListRepository: ImportListRepository,
     private readonly mediaRepository: MediaRepository,
     private readonly providerFactory: ImportListProviderFactory,

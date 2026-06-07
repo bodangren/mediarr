@@ -2,7 +2,7 @@ import { createReadStream } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { FastifyInstance } from 'fastify';
-import type { PlaybackMediaType } from '@prisma/client';
+import type { PlaybackMediaType } from '../../db/schema';
 import { ValidationError } from '../../errors/domainErrors';
 import { sendSuccess } from '../contracts';
 import { parseIdParam } from '../routeUtils';

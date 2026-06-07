@@ -1,8 +1,9 @@
-import type { PrismaClient, Indexer } from '@prisma/client';
+import type { DatabaseClient } from '../db/drizzleClient';
+import type { Indexer } from '../types/modelTypes';
 import { encrypt, decrypt } from '../utils/encryption';
 
 export class IndexerRepository {
-  constructor(private prisma: PrismaClient) {}
+  constructor(private prisma: DatabaseClient) {}
 
   async create(data: Omit<Indexer, 'id' | 'added'>): Promise<Indexer> {
     const encryptedSettings = encrypt(data.settings);

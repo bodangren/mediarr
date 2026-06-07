@@ -1,4 +1,4 @@
-import type { PrismaClient } from '@prisma/client';
+import type { DatabaseClient } from '../db/drizzleClient';
 import { describe, expect, it, vi } from 'vitest';
 import { VariantBackfillService } from './VariantBackfillService';
 import { SubtitleVariantRepository } from '../repositories/SubtitleVariantRepository';
@@ -25,7 +25,7 @@ const buildService = () => {
   const prismaMock = makePrismaMock();
   const repositoryMock = makeRepositoryMock();
   const service = new VariantBackfillService(
-    prismaMock as unknown as PrismaClient,
+    prismaMock as unknown as DatabaseClient,
     repositoryMock as unknown as SubtitleVariantRepository,
   );
   return { service, prismaMock, repositoryMock };

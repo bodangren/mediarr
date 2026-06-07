@@ -1,4 +1,5 @@
-import type { PrismaClient, DownloadClient } from '@prisma/client';
+import type { DatabaseClient } from '../db/drizzleClient';
+import type { DownloadClient } from '../types/modelTypes';
 import { encrypt, decrypt } from '../utils/encryption';
 
 export type DownloadClientProtocol = 'torrent' | 'usenet';
@@ -65,7 +66,7 @@ export interface DownloadClientWithDecryptedConfig extends Omit<DownloadClient, 
 }
 
 export class DownloadClientRepository {
-  constructor(private prisma: PrismaClient) {}
+  constructor(private prisma: DatabaseClient) {}
 
   private encryptConfig(config: DownloadClientConfig): string {
     return encrypt(JSON.stringify(config));

@@ -1,4 +1,4 @@
-import type { Indexer } from '@prisma/client';
+import type { Indexer } from '../types/modelTypes';
 import type { CardigannDefinition } from './DefinitionLoader';
 import { TorznabIndexer, ScrapingIndexer, type BaseIndexer } from './BaseIndexer';
 import type { HttpClient } from './HttpClient';

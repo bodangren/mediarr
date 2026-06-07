@@ -1,4 +1,4 @@
-import type { PrismaClient } from '@prisma/client';
+import type { DatabaseClient } from '../db/drizzleClient';
 import { normalizeTitle, levenshteinDistance } from '../utils/stringUtils';
 import { releaseParser } from './ReleaseParser';
 
@@ -72,7 +72,7 @@ export interface FileMatch {
  * Service to parse movie information from filenames and match against database.
  */
 export class FilenameParsingService {
-  constructor(private readonly prisma: PrismaClient) {}
+  constructor(private readonly prisma: DatabaseClient) {}
 
   /**
    * Parse movie info from a filename.

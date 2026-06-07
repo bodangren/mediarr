@@ -1,4 +1,4 @@
-import type { PrismaClient } from '@prisma/client';
+import type { DatabaseClient } from '../db/drizzleClient';
 import type { IndexerRepository } from '../repositories/IndexerRepository';
 import type { MediaRepository } from '../repositories/MediaRepository';
 import type { ActivityEventRepository } from '../repositories/ActivityEventRepository';
@@ -38,7 +38,7 @@ import type { CatalogCache } from '../services/indexers/CatalogCache';
 
 
 export interface ApiDependencies {
-  prisma: PrismaClient | Record<string, any>;
+  prisma: DatabaseClient | Record<string, any>;
   mediaService?: Pick<
     MediaService,
     'setMonitored' | 'deleteMedia' | 'getMovieCandidatesForSearch' | 'setEpisodeMonitored'

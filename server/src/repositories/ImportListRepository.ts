@@ -1,5 +1,5 @@
-import type { PrismaClient, ImportList, ImportListExclusion, Prisma } from '@prisma/client';
-
+import type { DatabaseClient } from '../db/drizzleClient';
+import type { ImportList, ImportListExclusion } from '../types/modelTypes';
 export interface ImportListWithProfile extends Omit<ImportList, 'config'> {
   config: Record<string, unknown>;
   qualityProfile: {
@@ -48,7 +48,7 @@ function parseConfig(config: unknown): Record<string, unknown> {
 }
 
 export class ImportListRepository {
-  constructor(private readonly prisma: PrismaClient) {}
+  constructor(private readonly prisma: DatabaseClient) {}
 
   async findAll(): Promise<ImportListWithProfile[]> {
     const lists = await this.prisma.importList.findMany({
@@ -106,7 +106,7 @@ export class ImportListRepository {
       data: {
         name: data.name,
         providerType: data.providerType,
-        config: data.config as unknown as Prisma.InputJsonValue,
+        config: data.config as unknown as any,
         rootFolderPath: data.rootFolderPath,
         qualityProfileId: data.qualityProfileId,
         languageProfileId: data.languageProfileId ?? null,
@@ -128,11 +128,11 @@ export class ImportListRepository {
   }
 
   async update(id: number, data: UpdateImportListData): Promise<ImportListWithProfile> {
-    const updateData: Prisma.ImportListUpdateInput = {};
+    const updateData: any = {};
 
     if (data.name !== undefined) updateData.name = data.name;
     if (data.providerType !== undefined) updateData.providerType = data.providerType;
-    if (data.config !== undefined) updateData.config = data.config as unknown as Prisma.InputJsonValue;
+    if (data.config !== undefined) updateData.config = data.config as unknown as any;
     if (data.rootFolderPath !== undefined) updateData.rootFolderPath = data.rootFolderPath;
     if (data.qualityProfileId !== undefined) {
       updateData.qualityProfile = { connect: { id: data.qualityProfileId } };
@@ -221,7 +221,7 @@ export class ImportListRepository {
   }
 
   async isExcluded(item: { tmdbId?: number; imdbId?: string; tvdbId?: number }): Promise<boolean> {
-    const conditions: Prisma.ImportListExclusionWhereInput[] = [];
+    const conditions: any[] = [];
 
     if (item.tmdbId) {
       conditions.push({ tmdbId: item.tmdbId });

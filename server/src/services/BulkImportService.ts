@@ -1,5 +1,5 @@
 import path from 'node:path';
-import type { PrismaClient } from '@prisma/client';
+import type { DatabaseClient } from '../db/drizzleClient';
 import type { MetadataProvider } from './MetadataProvider';
 import { Organizer } from './Organizer';
 import { SubtitleVariantRepository, type UpsertVariantInput } from '../repositories/SubtitleVariantRepository';
@@ -35,7 +35,7 @@ export class BulkImportService {
   private readonly variantRepo: SubtitleVariantRepository;
 
   constructor(
-    private readonly prisma: PrismaClient,
+    private readonly prisma: DatabaseClient,
     private readonly metadataProvider: MetadataProviderDeps,
   ) {
     this.organizer = new Organizer();

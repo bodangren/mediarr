@@ -1,17 +1,7 @@
 import fs from 'node:fs/promises';
-import type {
-  PrismaClient,
-  MediaFileVariant,
-  VariantAudioTrack,
-  VariantSubtitleTrack,
-  VariantMissingSubtitle,
-  WantedSubtitle,
-  WantedSubtitleState,
-  SubtitleHistory,
-  VariantMediaType,
-  SubtitleTrackSource,
-} from '@prisma/client';
-
+import type { DatabaseClient } from '../db/drizzleClient';
+import type { MediaFileVariant, VariantAudioTrack, VariantSubtitleTrack, VariantMissingSubtitle, WantedSubtitle, SubtitleHistory } from '../types/modelTypes';
+import type { WantedSubtitleState, VariantMediaType, SubtitleTrackSource } from '../db/schema';
 export interface UpsertVariantInput {
   mediaType: VariantMediaType;
   movieId?: number | undefined;
@@ -85,7 +75,7 @@ export interface CreateSubtitleTrackInput {
  * Repository for variant-scoped subtitle/audio inventory and wanted state.
  */
 export class SubtitleVariantRepository {
-  constructor(private readonly prisma: PrismaClient) {}
+  constructor(private readonly prisma: DatabaseClient) {}
 
   async upsertVariant(input: UpsertVariantInput): Promise<MediaFileVariant> {
     if (input.mediaType === 'MOVIE' && !input.movieId) {

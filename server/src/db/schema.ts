@@ -22,6 +22,12 @@ export const WantedSubtitleStateEnum = [
 ] as const;
 export const PlaybackMediaTypeEnum = ["MOVIE", "EPISODE"] as const;
 
+// ─── Enum type aliases (re-exported from const arrays) ─────────────────────
+export type PlaybackMediaType = typeof PlaybackMediaTypeEnum[number];
+export type WantedSubtitleState = typeof WantedSubtitleStateEnum[number];
+export type VariantMediaType = typeof VariantMediaTypeEnum[number];
+export type SubtitleTrackSource = typeof SubtitleTrackSourceEnum[number];
+
 // ─── Tables ──────────────────────────────────────────────────────────────────────
 
 export const qualityProfiles = sqliteTable("QualityProfile", {

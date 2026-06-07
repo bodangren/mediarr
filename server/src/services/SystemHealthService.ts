@@ -114,16 +114,16 @@ export class SystemHealthService {
   async checkDatabase(): Promise<DatabaseCheckResult> {
     try {
       await this.db.db.all(sql`SELECT 1`);
-      const versionRows = await this.db.db.all<{ sqlite_version: string }>(
+      const versionRows = (await this.db.db.all(
         sql`SELECT sqlite_version() AS sqlite_version`,
-      );
+      )) as Array<{ sqlite_version: string }>;
       const sqliteVersion = versionRows?.[0]?.sqlite_version ?? 'unknown';
 
       let latestMigration = 'unknown';
       try {
-        const migrationRows = await this.db.db.all<{ hash: string }>(
+        const migrationRows = (await this.db.db.all(
           sql`SELECT hash FROM "__drizzle_migrations" ORDER BY "created_at" DESC LIMIT 1`,
-        );
+        )) as Array<{ hash: string }>;
         latestMigration = migrationRows?.[0]?.hash ?? 'unknown';
       } catch {
         // __drizzle_migrations table may not exist

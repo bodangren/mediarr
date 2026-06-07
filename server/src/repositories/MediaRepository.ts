@@ -1,4 +1,5 @@
-import type { PrismaClient, Movie, Series } from '@prisma/client';
+import type { DatabaseClient } from '../db/drizzleClient';
+import type { Movie, Series } from '../types/modelTypes';
 import type { SeriesDetails } from '../services/MetadataProvider';
 
 export interface UpsertMovieInput {
@@ -41,7 +42,7 @@ export interface UpsertSeriesInput {
  * Repository that stores shared media metadata and type-specific records.
  */
 export class MediaRepository {
-  constructor(private readonly prisma: PrismaClient) {}
+  constructor(private readonly prisma: DatabaseClient) {}
 
   async upsertMovie(input: UpsertMovieInput): Promise<Movie> {
     const media = await this.prisma.media.upsert({

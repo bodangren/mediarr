@@ -1,4 +1,5 @@
-import type { PrismaClient, Movie, Prisma } from '@prisma/client';
+import type { DatabaseClient } from '../db/drizzleClient';
+import type { Movie } from '../types/modelTypes';
 import type { BulkUpdateResult } from '../contracts/bulk';
 
 /**
@@ -17,7 +18,7 @@ export interface BulkMovieChanges {
  * Repository for movie-specific database operations
  */
 export class MovieRepository {
-  constructor(private readonly prisma: PrismaClient) {}
+  constructor(private readonly prisma: DatabaseClient) {}
 
   /**
    * Bulk update multiple movies with the same changes
@@ -65,7 +66,7 @@ export class MovieRepository {
     }
 
     // Execute updates within a transaction
-    await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    await this.prisma.$transaction(async (tx: any) => {
       for (const movieId of movieIds) {
         try {
           await (tx as any).movie.update({

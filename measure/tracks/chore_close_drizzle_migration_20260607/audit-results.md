@@ -4,8 +4,8 @@ Raw-method reference scan of `server/src/**/*.ts` — consolidates raw-SQL shim 
 
 ## Summary
 
-- **Total files with raw-method references:** 5
-- **Type declaration files:** 1
+- **Total files with raw-method references:** 4
+- **Type declaration files:** 0
 - **Production code files:** 1
 - **Test mock files:** 3
 - **Comment-only files:** 0
@@ -18,14 +18,7 @@ Raw-method reference scan of `server/src/**/*.ts` — consolidates raw-SQL shim 
 
 ## Type Declarations
 
-### `server/src/types/prisma.ts`
-
-The `PrismaClient` type shim declares `$queryRaw` and `$executeRawUnsafe` on the interface. This file will be deleted in Phase S4 when all references are migrated to `DatabaseClient`.
-
-| Line | Method | Snippet |
-|------|--------|---------|
-| 28 | `$queryRaw` | `$queryRaw: <T = unknown>(...args: any[]) => Promise<T>;` |
-| 29 | `$executeRawUnsafe` | `$executeRawUnsafe: (...args: any[]) => Promise<any>;` |
+*(No type-declaration files remain after S4 deleted `server/src/types/prisma.ts`.)*
 
 ## Production Code
 

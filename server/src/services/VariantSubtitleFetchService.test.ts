@@ -38,9 +38,9 @@ const makeRepositoryMock = (): RepositoryMock & {
   createSubtitleTrack: ReturnType<typeof vi.fn>;
   createSubtitleHistory: ReturnType<typeof vi.fn>;
 } => ({
-  getWantedSubtitleById: vi.fn(),
+  getWantedSubtitleById: vi.fn<(id: number) => Promise<any>>(),
   updateWantedSubtitleState: vi.fn().mockResolvedValue({}),
-  getVariantInventory: vi.fn(),
+  getVariantInventory: vi.fn<(variantId: number) => Promise<any>>(),
   listSiblingSubtitlePaths: vi.fn().mockResolvedValue([]),
   createSubtitleTrack: vi.fn().mockResolvedValue({ id: 1 }),
   createSubtitleHistory: vi.fn().mockResolvedValue({ id: 1 }),

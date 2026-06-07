@@ -1,5 +1,5 @@
 import { TorrentRepository } from '../repositories/TorrentRepository';
-import type { Torrent } from '@prisma/client';
+import type { Torrent } from '../types/modelTypes';
 import { promises as fs, constants as fsConstants } from 'fs';
 import path from 'path';
 import { EventEmitter } from 'events';

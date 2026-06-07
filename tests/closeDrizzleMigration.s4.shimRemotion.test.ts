@@ -191,10 +191,14 @@ describe('chore_close_drizzle_migration_20260607 — Phase S4: Remove PrismaClie
   // S4.2 — Zero PrismaClient references in non-archived code
   // ─────────────────────────────────────────────────────────────────────────
   describe('S4.2: zero PrismaClient references in non-archived code', () => {
-    it('grep "PrismaClient" returns zero hits under server/src and tests/ (excl. node_modules + archive)', () => {
+    it('grep "PrismaClient" returns zero hits under server/src and tests/ (excl. node_modules + archive + test files that document the symbol)', () => {
+      const SELF = rel(__filename);
+      const S1_AUDIT = 'tests/closeDrizzleMigration.audit.test.ts';
       const serverHits = grepPrismaClientHits(listSourceFiles(SERVER_SRC));
       const testHits = grepPrismaClientHits(listSourceFiles(TESTS_DIR));
-      const all = [...serverHits, ...testHits];
+      const all = [...serverHits, ...testHits].filter(
+        (h) => h.file !== SELF && h.file !== S1_AUDIT,
+      );
       if (all.length > 0) {
         const summary = all
           .slice(0, 20)

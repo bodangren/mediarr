@@ -1,5 +1,4 @@
-import type { Prisma, PrismaClient } from '@prisma/client';
-
+import type { DatabaseClient } from '../db/drizzleClient';
 export interface TorrentLimitsSettings {
   maxActiveDownloads: number;
   maxActiveSeeds: number;
@@ -289,8 +288,8 @@ function readSeedLimitAction(
   return fallback;
 }
 
-function toJson(value: unknown): Prisma.InputJsonValue {
-  return value as Prisma.InputJsonValue;
+function toJson(value: unknown): any {
+  return value as any;
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -301,7 +300,7 @@ function clamp(value: number, min: number, max: number): number {
  * Persists app-level settings using a single-row record.
  */
 export class AppSettingsRepository {
-  constructor(private readonly prisma: PrismaClient) {}
+  constructor(private readonly prisma: DatabaseClient) {}
 
   async get(): Promise<AppSettingsPayload> {
     const record = await this.prisma.appSettings.findUnique({

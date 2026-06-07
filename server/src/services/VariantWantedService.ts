@@ -1,4 +1,4 @@
-import type { WantedSubtitle } from '@prisma/client';
+import type { WantedSubtitle } from '../types/modelTypes';
 import { SubtitleVariantRepository } from '../repositories/SubtitleVariantRepository';
 
 /**

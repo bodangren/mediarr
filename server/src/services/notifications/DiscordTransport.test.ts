@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { Notification } from '@prisma/client';
+import type { Notification } from '../../types/modelTypes';
 import { DiscordTransport } from './DiscordTransport';
 import type { NotificationEvent } from './transport';
 

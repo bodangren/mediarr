@@ -8,7 +8,7 @@ vi.mock('./ReleaseParser', () => ({
   releaseParser: { parse: mockReleaseParse },
 }));
 
-// FilenameParsingService requires a PrismaClient in constructor
+// FilenameParsingService requires a DatabaseClient in constructor
 const mockPrisma = {} as any;
 
 import { FilenameParsingService } from './FilenameParsingService';

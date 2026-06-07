@@ -112,36 +112,38 @@ describe('remove_prisma_shim_20260508 — Phase 1: Audit & Catalog', () => {
       expect(dbIndexHits).toHaveLength(0);
     });
 
-    it('classifies the remaining production-code hits (SystemHealthService, statsRoutes) for cataloging', () => {
+    it('classifies the remaining production-code hits (statsRoutes) for cataloging (SystemHealthService cleaned in S2)', () => {
       expect(productionPaths).toEqual(
         expect.arrayContaining([
-          path.join('server', 'src', 'services', 'SystemHealthService.ts'),
           path.join('server', 'src', 'api', 'routes', 'statsRoutes.ts'),
         ]),
       );
+      expect(productionPaths).not.toContain(
+        path.join('server', 'src', 'services', 'SystemHealthService.ts'),
+      );
     });
 
-    it('classifies the type-declaration hit in server/src/types/prisma.ts', () => {
-      expect(typeDeclPaths).toEqual([
-        path.join('server', 'src', 'types', 'prisma.ts'),
-      ]);
+    it('no longer classifies a type-declaration hit (prisma.ts shim deleted in S4)', () => {
+      expect(typeDeclPaths).toEqual([]);
     });
 
-    it('classifies the four test-mock files', () => {
+    it('classifies the three test-mock files (SystemHealthService.test.ts cleaned in S2)', () => {
       expect(testMockPaths).toEqual(
         expect.arrayContaining([
           path.join('server', 'src', 'api', 'routes', 'manualTestFindings.regression.test.ts'),
           path.join('server', 'src', 'api', 'routes', 'stats.integration.test.ts'),
           path.join('server', 'src', 'api', 'routes', 'statsRoutes.test.ts'),
-          path.join('server', 'src', 'services', 'SystemHealthService.test.ts'),
         ]),
+      );
+      expect(testMockPaths).not.toContain(
+        path.join('server', 'src', 'services', 'SystemHealthService.test.ts'),
       );
     });
 
-    it('captures the documentation-only comment in server/src/main.ts (not a real call site)', () => {
-      expect(commentOnlyPaths).toEqual([
+    it('confirms main.ts no longer has comment-only raw-method references (S2 extracted the function)', () => {
+      expect(commentOnlyPaths).not.toContain(
         path.join('server', 'src', 'main.ts'),
-      ]);
+      );
     });
   });
 

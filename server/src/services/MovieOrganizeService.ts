@@ -1,6 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import type { PrismaClient } from '@prisma/client';
+import type { DatabaseClient } from '../db/drizzleClient';
 import type { OrganizeResult } from '../contracts/organize';
 
 /**
@@ -48,7 +48,7 @@ interface OrganizePreview {
  */
 export class MovieOrganizeService {
   constructor(
-    private readonly prisma: PrismaClient,
+    private readonly prisma: DatabaseClient,
     private readonly settings: MediaManagementSettings
   ) {}
 

@@ -1,4 +1,4 @@
-import type { PrismaClient } from '@prisma/client';
+import type { DatabaseClient } from '../db/drizzleClient';
 import { NotFoundError, ValidationError } from '../errors/domainErrors';
 
 /**
@@ -43,7 +43,7 @@ interface EpisodeWithFiles {
  * Implements the Season Pass functionality for bulk-configuration of episode monitoring.
  */
 export class SeriesMonitoringService {
-  constructor(private readonly prisma: PrismaClient) {}
+  constructor(private readonly prisma: DatabaseClient) {}
 
   /**
    * Validates that the monitoring type is valid.

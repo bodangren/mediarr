@@ -1,4 +1,4 @@
-import type { Notification } from '@prisma/client';
+import type { Notification } from '../../types/modelTypes';
 import { readNotificationConfig, readNumber, readString } from './config';
 import { fetchWithTimeout, type TransportHttpOptions } from './http';
 import type { NotificationEvent, NotificationTransport } from './transport';

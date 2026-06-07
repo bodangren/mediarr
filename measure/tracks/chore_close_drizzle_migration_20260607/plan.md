@@ -61,12 +61,29 @@
 > > → removed, test-mock count 4→3). All 50 close-drizzle-migration tests pass.
 
 ## Phase S4: Remove PrismaClient type shim
-- [~] Read `server/src/types/prisma.ts` and `server/src/db/drizzleClient.ts` *(mid-agent read 2026-06-07: prisma.ts is 69 lines, declares `PrismaClient` interface plus 30+ `any` type aliases + `Prisma` namespace; `DatabaseClient` is the sole integration point exported from drizzleClient.ts:416)*
-- [~] Replace every non-test import of `PrismaClient` with `DatabaseClient` *(mid-agent inventory 2026-06-07: 24 production source files currently import `PrismaClient` from `@prisma/client` — 16 repositories + 1 api/types.ts + 7 services. Repository hit count: NotificationRepository, TorrentRepository, PlaybackRepository, ActivityEventRepository, DownloadClientRepository, QualityProfileRepository, BlocklistRepository, MediaRepository, IndexerHealthRepository, SeriesRepository, AppSettingsRepository, ImportListRepository, CollectionRepository, SubtitleVariantRepository, IndexerRepository, CustomFormatRepository, MovieRepository. Service hit count: BulkImportService, WantedSearchService, SeriesMonitoringService, LibraryScanService, FilenameParsingService, PlaybackService, MovieOrganizeService, VariantBackfillService, ImportListSyncService, RssSyncService, SeriesOrganizeService, CollectionService)*
-- [~] Replace every test-file import/annotation of `PrismaClient` with `DatabaseClient` *(mid-agent inventory 2026-06-07: 2 test files import `PrismaClient` from `@prisma/client` — VariantBackfillService.test.ts:1 + wanted-search-service.test.ts:4. Both fail the S4 Red assertions until migration)*
-- [~] Delete `server/src/types/prisma.ts` *(mid-agent read 2026-06-07: file is currently in the tree, exports `PrismaClient` interface and 30+ `any` type aliases. No file imports from `types/prisma` directly — the shim is currently dead code; deletion requires only that the type aliases it provided (PlaybackMediaType, WantedSubtitleState, VariantMediaType, SubtitleTrackSource) remain resolvable from Drizzle schema or shared types)*
-- [~] `grep -r "PrismaClient" server/src/ tests/ --include="*.ts" | grep -v node_modules | grep -v archive` → zero hits *(S4 Red assertion: currently 24 source files + 2 test files have `PrismaClient` references; must reach 0 after Green phase)*
-- [ ] `CI=true npm test` → GREEN; commit *(deferred to Green phase; Red phase must run the targeted closeDrizzleMigration.s4.shimRemotion.test.ts file and confirm it fails for the expected missing behavior — the existing 50+ close-drizzle-migration tests + full suite must stay green as the S4 source changes are restricted to import-string edits + types/prisma.ts deletion only)*
+- [x] Read `server/src/types/prisma.ts` and `server/src/db/drizzleClient.ts` *(mid-agent read 2026-06-07: prisma.ts is 69 lines, declares `PrismaClient` interface plus 30+ `any` type aliases + `Prisma` namespace; `DatabaseClient` is the sole integration point exported from drizzleClient.ts:416)*
+- [x] Replace every non-test import of `PrismaClient` with `DatabaseClient` *(mid-agent inventory 2026-06-07: 24 production source files currently import `PrismaClient` from `@prisma/client` — 16 repositories + 1 api/types.ts + 7 services. Repository hit count: NotificationRepository, TorrentRepository, PlaybackRepository, ActivityEventRepository, DownloadClientRepository, QualityProfileRepository, BlocklistRepository, MediaRepository, IndexerHealthRepository, SeriesRepository, AppSettingsRepository, ImportListRepository, CollectionRepository, SubtitleVariantRepository, IndexerRepository, CustomFormatRepository, MovieRepository. Service hit count: BulkImportService, WantedSearchService, SeriesMonitoringService, LibraryScanService, FilenameParsingService, PlaybackService, MovieOrganizeService, VariantBackfillService, ImportListSyncService, RssSyncService, SeriesOrganizeService, CollectionService)*
+- [x] Replace every test-file import/annotation of `PrismaClient` with `DatabaseClient` *(mid-agent inventory 2026-06-07: 2 test files import `PrismaClient` from `@prisma/client` — VariantBackfillService.test.ts:1 + wanted-search-service.test.ts:4. Both fail the S4 Red assertions until migration)*
+- [x] Delete `server/src/types/prisma.ts` *(mid-agent read 2026-06-07: file is currently in the tree, exports `PrismaClient` interface and 30+ `any` type aliases. No file imports from `types/prisma` directly — the shim is currently dead code; deletion requires only that the type aliases it provided (PlaybackMediaType, WantedSubtitleState, VariantMediaType, SubtitleTrackSource) remain resolvable from Drizzle schema or shared types)*
+- [x] `grep -r "PrismaClient" server/src/ tests/ --include="*.ts" | grep -v node_modules | grep -v archive` → zero hits *(S4 Red assertion: currently 24 source files + 2 test files have `PrismaClient` references; must reach 0 after Green phase)*
+- [x] `CI=true npm test` → GREEN; commit *(Green phase complete — see note below)*
+
+> **Green phase complete 2026-06-07 (review-driven completion).** The 24 production files
+> (17 repos + 12 services + 2 routes + `api/types.ts`) and 2 test files were migrated off
+> `PrismaClient` to `DatabaseClient`; the remaining 19 `@prisma/client` *model-type* imports
+> (`Notification`, `Indexer`, `Blocklist`, `Torrent`, `PlaybackProgress`) were redirected to
+> the new `server/src/types/modelTypes.ts` (which re-exports the shim's `any` model aliases —
+> these were already `any` under the old shim; strictly typing them is out of S4 scope) and
+> `PlaybackMediaType` to `db/schema`. `server/src/types/prisma.ts` deleted; the now-unused
+> `@prisma/client` tsconfig path alias removed (`server/tsconfig.json`); `movieRoutes`/
+> `seriesRoutes` given the missing `DatabaseClient` import. S4 test 19/19 green; S1 audit 20/20;
+> the superseded `prismaShimRemoval.audit.test.ts` + `remove_prisma_shim/audit.md` reconciled to
+> type-decl=0 (shim deleted). **Also fixed S2-introduced typecheck regressions** surfaced by the
+> review: `drizzleRawSql.ts` (`query.toSQL()` → `client.db.run(query)`), `SystemHealthService.ts`
+> (type-args on the `any`-typed `db.all` → result cast), and the static `better-sqlite3` import's
+> TS7016 (added `server/src/types/better-sqlite3.d.ts` ambient decl, matching `bun-sqlite.d.ts`).
+> `npx tsc --noEmit` now exits clean (0 errors). S2 16/16 + S3 30/30 green after rebuilding the
+> local `better-sqlite3` native addon (Node ABI 127→137 mismatch, environmental — not a code change).
 
 > Red phase committed (target: `tests/closeDrizzleMigration.s4.shimRemotion.test.ts`).
 > Coverage: 4 S4.x describe blocks (S4.1 shim file deletion, S4.2 zero `PrismaClient` references,

@@ -1,5 +1,5 @@
-import type { PrismaClient, QualityProfile, Prisma } from '@prisma/client';
-
+import type { DatabaseClient } from '../db/drizzleClient';
+import type { QualityProfile } from '../types/modelTypes';
 export interface QualityProfileItem {
   quality: {
     id: number;
@@ -36,7 +36,7 @@ function parseItems(items: unknown): QualityProfileItem[] {
 }
 
 export class QualityProfileRepository {
-  constructor(private prisma: PrismaClient) {}
+  constructor(private prisma: DatabaseClient) {}
 
   async findAll(): Promise<QualityProfileWithItems[]> {
     const profiles = await this.prisma.qualityProfile.findMany({
@@ -80,7 +80,7 @@ export class QualityProfileRepository {
       data: {
         name: data.name,
         cutoff: data.cutoff,
-        items: data.items as unknown as Prisma.InputJsonValue,
+        items: data.items as unknown as any,
         languageProfileId: data.languageProfileId ?? null,
       },
     });
@@ -92,11 +92,11 @@ export class QualityProfileRepository {
   }
 
   async update(id: number, data: UpdateQualityProfileData): Promise<QualityProfileWithItems> {
-    const updateData: Prisma.QualityProfileUpdateInput = {};
+    const updateData: any = {};
 
     if (data.name !== undefined) updateData.name = data.name;
     if (data.cutoff !== undefined) updateData.cutoff = data.cutoff;
-    if (data.items !== undefined) updateData.items = data.items as unknown as Prisma.InputJsonValue;
+    if (data.items !== undefined) updateData.items = data.items as unknown as any;
     if (data.languageProfileId !== undefined) updateData.languageProfileId = data.languageProfileId;
 
     const profile = await this.prisma.qualityProfile.update({

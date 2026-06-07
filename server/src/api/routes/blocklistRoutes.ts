@@ -7,7 +7,7 @@
  * @module routes/blocklist
  */
 import type { FastifyInstance } from 'fastify';
-import type { Blocklist } from '@prisma/client';
+import type { Blocklist } from '../../types/modelTypes';
 import { ValidationError } from '../../errors/domainErrors';
 import {
   parsePaginationParams,

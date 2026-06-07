@@ -1,4 +1,4 @@
-import type { Notification } from '@prisma/client';
+import type { Notification } from '../types/modelTypes';
 import { NotificationTransportRegistry } from './notifications/NotificationTransportRegistry';
 import type { NotificationEvent, NotificationTransport } from './notifications/transport';
 

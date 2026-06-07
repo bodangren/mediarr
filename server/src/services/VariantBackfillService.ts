@@ -1,4 +1,4 @@
-import type { PrismaClient } from '@prisma/client';
+import type { DatabaseClient } from '../db/drizzleClient';
 import { SubtitleVariantRepository } from '../repositories/SubtitleVariantRepository';
 
 export interface BackfillResult {
@@ -11,7 +11,7 @@ export interface BackfillResult {
  */
 export class VariantBackfillService {
   constructor(
-    private readonly prisma: PrismaClient,
+    private readonly prisma: DatabaseClient,
     private readonly repository: SubtitleVariantRepository,
   ) {}
 

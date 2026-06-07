@@ -150,7 +150,6 @@ describe('chore_close_drizzle_migration_20260607 — Phase S2: Drizzle-native re
 
       const client = createTestDb();
       client.sqlite.exec(`INSERT INTO "Torrent" (infoHash, name, status, size, path, eta) VALUES ('h-downscale', 'eta-downscale', 'downloading', 1000, '/tmp/eta-downscale', 5000000000)`);
-      client.sqlite.exec(`INSERT INTO "Torrent" (infoHash, name, status, size, path, eta) VALUES ('h-normal', 'eta-normal', 'downloading', 1000, '/tmp/eta-normal', 100)`);
 
       const oldChanges = Number(
         client.sqlite.prepare(
@@ -158,6 +157,7 @@ describe('chore_close_drizzle_migration_20260607 — Phase S2: Drizzle-native re
         ).run().changes ?? 0,
       );
 
+      client.sqlite.exec(`INSERT INTO "Torrent" (infoHash, name, status, size, path, eta) VALUES ('h-downscale-2', 'eta-downscale-2', 'downloading', 1000, '/tmp/eta-downscale-2', 5000000000)`);
       const { sql } = await import('drizzle-orm');
       const newChanges = await runRawDrizzle(
         client,
@@ -184,6 +184,7 @@ describe('chore_close_drizzle_migration_20260607 — Phase S2: Drizzle-native re
         ).run().changes ?? 0,
       );
 
+      client.sqlite.exec(`INSERT INTO "Torrent" (infoHash, name, status, size, path, eta) VALUES ('h-clamp-2', 'eta-clamp-2', 'downloading', 1000, '/tmp/eta-clamp-2', 9999999999)`);
       const { sql } = await import('drizzle-orm');
       const newChanges = await runRawDrizzle(
         client,
@@ -203,7 +204,6 @@ describe('chore_close_drizzle_migration_20260607 — Phase S2: Drizzle-native re
 
       const client = createTestDb();
       client.sqlite.exec(`INSERT INTO "Torrent" (infoHash, name, status, size, path, eta) VALUES ('h-neg-1', 'eta-neg-1', 'downloading', 1000, '/tmp/eta-neg-1', -50)`);
-      client.sqlite.exec(`INSERT INTO "Torrent" (infoHash, name, status, size, path, eta) VALUES ('h-neg-2', 'eta-neg-2', 'downloading', 1000, '/tmp/eta-neg-2', -99999)`);
 
       const oldChanges = Number(
         client.sqlite.prepare(
@@ -211,6 +211,7 @@ describe('chore_close_drizzle_migration_20260607 — Phase S2: Drizzle-native re
         ).run().changes ?? 0,
       );
 
+      client.sqlite.exec(`INSERT INTO "Torrent" (infoHash, name, status, size, path, eta) VALUES ('h-neg-2', 'eta-neg-2', 'downloading', 1000, '/tmp/eta-neg-2', -99999)`);
       const { sql } = await import('drizzle-orm');
       const newChanges = await runRawDrizzle(
         client,
@@ -230,7 +231,7 @@ describe('chore_close_drizzle_migration_20260607 — Phase S2: Drizzle-native re
 
       const client = createTestDb();
       const torrentLimitsDefault = JSON.stringify({ maxActiveDownloads: 5, maxActiveTorrents: 0 });
-      client.sqlite.exec(`INSERT INTO "AppSettings" (id, torrentLimits, schedulerIntervals, pathVisibility) VALUES (1, 'broken', '{}', '{}')`);
+      client.sqlite.exec(`INSERT INTO "AppSettings" (id, torrentLimits, schedulerIntervals, pathVisibility, createdAt, updatedAt) VALUES (1, 'broken', '{}', '{}', 1, 1)`);
 
       const oldChanges = Number(
         client.sqlite
@@ -240,6 +241,7 @@ describe('chore_close_drizzle_migration_20260607 — Phase S2: Drizzle-native re
           .run(torrentLimitsDefault).changes ?? 0,
       );
 
+      client.sqlite.exec(`INSERT INTO "AppSettings" (id, torrentLimits, schedulerIntervals, pathVisibility, createdAt, updatedAt) VALUES (2, 'also broken', '{}', '{}', 1, 1)`);
       const { sql } = await import('drizzle-orm');
       const newChanges = await runRawDrizzle(
         client,

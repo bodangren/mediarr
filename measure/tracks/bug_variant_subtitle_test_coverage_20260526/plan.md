@@ -56,7 +56,7 @@ vi.mock('../repositories/SubtitleVariantRepository', () => ({
   - Mock `repository.upsertVariant` to throw `new Error('DB connection lost')`
   - Assert `await expect(service.run()).rejects.toThrow('DB connection lost')`
 - [x] Run tests: `npx vitest run server/src/services/VariantBackfillService.test.ts`
-- [x] Commit: `test(variant): add VariantBackfillService unit tests`
+- [x] Commit: `test(variant): add VariantBackfillService unit tests` — `62485bd`
 
 ## Phase S2: VariantInventoryIndexer tests
 
@@ -81,7 +81,7 @@ vi.mock('../repositories/SubtitleVariantRepository', () => ({
   - Provide file with no `externalSubtitles` field
   - Assert `repository.upsertSubtitleTrack` not called
 - [x] Run tests: `npx vitest run server/src/services/VariantInventoryIndexer.test.ts` — 6 passed
-- [x] Commit: `test(variant): add VariantInventoryIndexer unit tests` — `e77f6b8`
+- [x] Commit: `test(variant): add VariantInventoryIndexer unit tests` — `330e99f`
 
 ## Phase S3: VariantMissingSubtitleService tests
 

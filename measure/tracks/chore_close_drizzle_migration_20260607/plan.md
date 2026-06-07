@@ -133,7 +133,7 @@
 > > > or the next supervisor gate will fail. The S4 test re-run after the restoration
 > > > confirms 14/19 still fail, 5/19 still pass — Red-phase shape is intact.
 
-## Phase S5: Rename test mock helpers to Drizzle/Db naming *(in progress)*
+## Phase S5: Rename test mock helpers to Drizzle/Db naming
 - [~] List files with Prisma-named helpers: `grep -rl "createPrismaMock\|createMockPrisma\|makePrisma\|makeMoviePrisma" server/src/ tests/ --include="*.ts"` *(mid-agent inventory 2026-06-07: 31 files — 8 use `createPrismaMock`, 2 use `createMockPrisma`, 1 uses `makeMoviePrisma`, 20 use `makePrisma`. 278 total hit count across 4 helper names. All 31 are test files; no production source files use the helper names.)*
 - [ ] For each file (one commit per file): rename `createPrismaMock→createDbMock`, `createMockPrisma→createMockDb`, `makePrisma→makeDb`, `makeMoviePrisma→makeMovieDb`; update call sites; run file's tests
 - [ ] Verify zero remaining Prisma-named helpers

@@ -96,19 +96,27 @@ As a **developer**, I want search result cell components to have tests so that d
 ```gherkin
 Given AgeCell with ageHours = 2
 When it renders
-Then it shows "2h"
+Then it shows "2 hours" (full word, pluralised: "1 hour" / "2 hours")
+
+Given AgeCell with ageHours < 1
+When it renders
+Then it shows "X minutes" rounded to the nearest minute (e.g. "30 minutes")
 
 Given PeersCell with seeders = 10, leechers = 2
 When it renders
-Then it shows "10 / 2"
+Then it shows two icons — a green up-arrow next to "10" (Seeders) and a red down-arrow next to "2" (Leechers)
+
+Given PeersCell with both seeders and leechers undefined or null
+When it renders
+Then it shows a "-" placeholder
 
 Given QualityBadge with qualityName "1080p"
 When it renders
-Then it shows a badge with "1080p"
+Then it shows a badge with "1080p" in a high-tier (green) colour class for resolution >= 1080
 
 Given ReleaseTitle with a 200-character title
 When it renders
-Then the title is truncated with ellipsis
+Then the title is truncated with a "Show more" button (no native ellipsis; uses line-clamp + show-more)
 ```
 
 **Estimate:** S

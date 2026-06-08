@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
@@ -81,15 +81,11 @@ describe('MovieBulkEditModal', () => {
       { wrapper },
     );
 
-    // Wait for the React Query that populates the quality-profile dropdown to resolve.
-    await waitFor(() => {
-      expect(mockListQualityProfiles).toHaveBeenCalled();
-    });
     await waitFor(() => {
       expect(screen.getByRole('option', { name: 'UltraHD' })).toBeInTheDocument();
     });
 
-    await user.selectOptions(screen.getByLabelText('Quality Profile'), '2');
+    fireEvent.change(screen.getByLabelText('Quality Profile'), { target: { value: '2' } });
     await user.click(screen.getByRole('button', { name: 'Preview Changes' }));
 
     expect(await screen.findByText('Quality Profile: UltraHD')).toBeInTheDocument();

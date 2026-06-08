@@ -7,7 +7,7 @@ const SERVER_SRC = path.join(REPO_ROOT, 'server', 'src');
 const TRACK_DIR = path.join(
   REPO_ROOT,
   'measure',
-  'tracks',
+  'archive',
   'chore_close_drizzle_migration_20260607',
 );
 const AUDIT_RESULTS_PATH = path.join(TRACK_DIR, 'audit-results.md');
@@ -110,8 +110,8 @@ describe('chore_close_drizzle_migration_20260607 — Phase S1: Audit & Catalog',
   const commentOnlyPaths = uniqueByClassification(hits, 'comment-only');
 
   describe('Source scan establishes the consolidated migration-tail scope', () => {
-    it('finds raw-SQL shim references somewhere in server/src/', () => {
-      expect(hits.length).toBeGreaterThan(0);
+    it('finds zero raw-SQL shim references in server/src/ after S7 closeout', () => {
+      expect(hits.length).toBe(0);
     });
 
     it('confirms the db/index.ts shim was already removed (drizzle_cleanup_type_safety_20260506)', () => {
@@ -129,13 +129,12 @@ describe('chore_close_drizzle_migration_20260607 — Phase S1: Audit & Catalog',
       expect(prodHits).toHaveLength(0);
     });
 
-    it('identifies statsRoutes.ts as a production $queryRawUnsafe call site', () => {
+    it('confirms statsRoutes.ts no longer has production $queryRawUnsafe (S7 removed fallback branches)', () => {
       const statsRoutes = path.join('server', 'src', 'api', 'routes', 'statsRoutes.ts');
       const prodHits = hits.filter(
         (h) => h.file === statsRoutes && h.classification === 'production-code',
       );
-      expect(prodHits.length).toBeGreaterThanOrEqual(3);
-      expect(prodHits.every((h) => h.method === '$queryRawUnsafe')).toBe(true);
+      expect(prodHits).toHaveLength(0);
     });
 
     it('confirms the PrismaClient type shim file was removed in S4 (no longer in scan)', () => {
@@ -146,14 +145,14 @@ describe('chore_close_drizzle_migration_20260607 — Phase S1: Audit & Catalog',
       expect(commentOnlyPaths).not.toContain(path.join('server', 'src', 'main.ts'));
     });
 
-    it('lists the three known test-mock files that will need updating in S4/S5 (SystemHealthService.test.ts cleaned in S2)', () => {
+    it('confirms the three test-mock files no longer have raw-method mocks after S7 closeout', () => {
       const expected = [
         path.join('server', 'src', 'api', 'routes', 'manualTestFindings.regression.test.ts'),
         path.join('server', 'src', 'api', 'routes', 'stats.integration.test.ts'),
         path.join('server', 'src', 'api', 'routes', 'statsRoutes.test.ts'),
       ];
       for (const file of expected) {
-        expect(testMockPaths).toContain(file);
+        expect(testMockPaths).not.toContain(file);
       }
     });
 

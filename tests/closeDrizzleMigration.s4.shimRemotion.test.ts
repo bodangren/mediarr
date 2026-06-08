@@ -194,10 +194,11 @@ describe('chore_close_drizzle_migration_20260607 — Phase S4: Remove PrismaClie
     it('grep "PrismaClient" returns zero hits under server/src and tests/ (excl. node_modules + archive + test files that document the symbol)', () => {
       const SELF = rel(__filename);
       const S1_AUDIT = 'tests/closeDrizzleMigration.audit.test.ts';
+      const S7_VERIFY = 'tests/closeDrizzleMigration.s7.verification.test.ts';
       const serverHits = grepPrismaClientHits(listSourceFiles(SERVER_SRC));
       const testHits = grepPrismaClientHits(listSourceFiles(TESTS_DIR));
       const all = [...serverHits, ...testHits].filter(
-        (h) => h.file !== SELF && h.file !== S1_AUDIT,
+        (h) => h.file !== SELF && h.file !== S1_AUDIT && h.file !== S7_VERIFY,
       );
       if (all.length > 0) {
         const summary = all

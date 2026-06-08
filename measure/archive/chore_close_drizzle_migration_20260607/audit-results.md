@@ -4,16 +4,16 @@ Raw-method reference scan of `server/src/**/*.ts` — consolidates raw-SQL shim 
 
 ## Summary
 
-- **Total files with raw-method references:** 4
+- **Total files with raw-method references:** 0
 - **Type declaration files:** 0
-- **Production code files:** 1
-- **Test mock files:** 3
+- **Production code files:** 0
+- **Test mock files:** 0
 - **Comment-only files:** 0
 
 ### Production call-site counts
 
 - **Production `$queryRaw` call sites:** 0
-- **Production `$queryRawUnsafe` call sites:** 3
+- **Production `$queryRawUnsafe` call sites:** 0
 - **Production `$executeRawUnsafe` call sites:** 0
 
 ## Type Declarations

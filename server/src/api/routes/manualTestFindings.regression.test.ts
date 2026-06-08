@@ -171,7 +171,6 @@ describe('Manual Test Findings - Regression Tests', () => {
           findUnique: vi.fn().mockResolvedValue(null),
           create: vi.fn(),
         },
-        $executeRawUnsafe: vi.fn(),
       };
 
       // Act & Assert: The route should check for quality profile existence
@@ -199,7 +198,6 @@ describe('Manual Test Findings - Regression Tests', () => {
         media: {
           create: vi.fn().mockResolvedValue({ id: 1 }),
         },
-        $executeRawUnsafe: vi.fn(),
       };
 
       // The fix should look up an available quality profile instead of assuming ID 1
@@ -244,7 +242,6 @@ describe('MediaRoutes - Quality Profile Validation', () => {
       series: {
         findUnique: vi.fn().mockResolvedValue(null),
       },
-      $executeRawUnsafe: vi.fn(),
     };
 
     // When qualityProfileId 1 doesn't exist, the route should:

@@ -22,7 +22,9 @@ function createDbMock() {
     torrent: {
       count: vi.fn().mockResolvedValue(0),
     },
-    $queryRawUnsafe: vi.fn().mockResolvedValue([{ total: 0, avg: 0, size: 0 }]),
+    db: {
+      all: vi.fn().mockResolvedValue([{ total: 0, avg: 0, size: 0 }]),
+    },
   };
 }
 
@@ -63,7 +65,7 @@ describe('Statistics Full Flow Integration', () => {
       .mockResolvedValueOnce(40)
       .mockResolvedValueOnce(5);
 
-    prisma.$queryRawUnsafe
+    prisma.db.all
       .mockResolvedValueOnce([{ total: 50000000000 }])
       .mockResolvedValueOnce([{ total: 25000000000 }])
       .mockResolvedValueOnce([{ avg: 2048000 }])

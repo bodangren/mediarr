@@ -58,7 +58,7 @@ const TESTS_DIR = path.join(REPO_ROOT, 'tests');
 const AUDIT_PATH = path.join(
   REPO_ROOT,
   'measure',
-  'tracks',
+  'archive',
   'chore_close_drizzle_migration_20260607',
   'audit-results.md',
 );
@@ -205,9 +205,10 @@ function grepHits(files: string[], name: string): { file: string; line: number; 
 
 const SELF = rel(__filename);
 const S1_AUDIT = 'tests/closeDrizzleMigration.audit.test.ts';
+const S7_VERIFY = 'tests/closeDrizzleMigration.s7.verification.test.ts';
 
 function isExempt(file: string): boolean {
-  return file === SELF || file === S1_AUDIT;
+  return file === SELF || file === S1_AUDIT || file === S7_VERIFY;
 }
 
 describe('chore_close_drizzle_migration_20260607 — Phase S5: Rename test mock helpers to Drizzle/Db naming (Red)', () => {

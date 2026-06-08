@@ -24,7 +24,9 @@ function createDbMock() {
     torrent: {
       count: vi.fn().mockResolvedValue(0),
     },
-    $queryRawUnsafe: vi.fn().mockResolvedValue([{ total: 0, avg: 0, size: 0 }]),
+    db: {
+      all: vi.fn().mockResolvedValue([{ total: 0, avg: 0, size: 0 }]),
+    },
   };
 }
 
@@ -210,7 +212,7 @@ describe('statsRoutes — GET /api/stats/downloads', () => {
       .mockResolvedValueOnce(80)
       .mockResolvedValueOnce(5);
 
-    prisma.$queryRawUnsafe
+    prisma.db.all
       .mockResolvedValueOnce([{ total: 5000000000 }])
       .mockResolvedValueOnce([{ total: 2000000000 }])
       .mockResolvedValueOnce([{ avg: 1024000 }]);
@@ -240,7 +242,7 @@ describe('statsRoutes — GET /api/stats/system', () => {
   });
 
   it('returns system stats with DB size', async () => {
-    prisma.$queryRawUnsafe.mockResolvedValue([{ size: 10485760 }]);
+    prisma.db.all.mockResolvedValue([{ size: 10485760 }]);
 
     const res = await app.inject({ method: 'GET', url: '/api/stats/system' });
     expect(res.statusCode).toBe(200);

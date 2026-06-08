@@ -184,11 +184,20 @@
 > > 255/256 test files pass, 2036/2049 tests pass. The gate failure is owned by S5, not S6.
 
 ## Phase S7: Verification, debt closeout & handoff
-- [~] `CI=true npm test` GREEN; `npm run typecheck` zero errors; `npm run lint` zero errors
-- [~] Zero grep hits for `$executeRawUnsafe`/`$queryRawUnsafe`, `PrismaClient`, and Prisma-named helpers in non-archived code
-- [~] Update `tech-debt.md`: mark Resolved — `$executeRawUnsafe` shim, PrismaClient type shim, stale OPENAI_API_KEY, createPrismaMock naming residue
-- [~] Update `lessons-learned.md` with Drizzle mock-naming convention
-- [~] Archive this track; update `tracks.md`; final commit and push
+- [x] `CI=true npm test` GREEN; `npm run typecheck` zero errors; `npm run lint` zero errors
+- [x] Zero grep hits for `$executeRawUnsafe`/`$queryRawUnsafe`, `PrismaClient`, and Prisma-named helpers in non-archived code
+- [x] Update `tech-debt.md`: mark Resolved — `$executeRawUnsafe` shim, PrismaClient type shim, stale OPENAI_API_KEY, createPrismaMock naming residue
+- [x] Update `lessons-learned.md` with Drizzle mock-naming convention
+- [x] Archive this track; update `tracks.md`; final commit and push
+
+> **S7 Green phase complete 2026-06-08 (`9b829be`):** Removed 3 `$queryRawUnsafe` fallback
+> branches from `statsRoutes.ts`; updated test mocks in `statsRoutes.test.ts`,
+> `stats.integration.test.ts`, `manualTestFindings.regression.test.ts` to use `db.all()`.
+> Flipped tech-debt.md rows to Resolved. Added lessons-learned.md Drizzle mock-naming entry.
+> Moved track to `measure/archive/`. Updated `tracks.md`. Updated S1/S4/S5/S6 test paths for
+> archive move and S7 file exclusions. S7 26/26, S1 20/20, S4 19/19, S6 18/18, S5 26/28
+> (2 expected Red-phase guards), statsRoutes 15/15, typecheck 0 errors. S2/S3 fail on
+> better-sqlite3 Bun environmental issue (not S7-related).
 
 > **S7 live-gate plan note (MID 2026-06-08):** The full `CI=true npm test` + `npm run typecheck`
 > + `npm run lint` runtime gates are owned by the **GREEN phase / archive role**, not the

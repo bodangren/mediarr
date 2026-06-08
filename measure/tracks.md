@@ -10,11 +10,10 @@ This file tracks all major tracks for the project. Each track has its own detail
 > then ship the two user-facing features, then the risk-weighted tests, then cut v1.0.
 > Internal test/coverage work with low runtime risk is parked under **Post-v1.0 / Deferred**.
 
-1. - [ ] **Track: Close Drizzle Migration (Shim Removal + Naming Residue)** *Stories: 7 | Link: [./tracks/chore_close_drizzle_migration_20260607/](./tracks/chore_close_drizzle_migration_20260607/)* — Consolidates `remove_prisma_shim` + `prisma_naming_cleanup`: remove `$executeRawUnsafe`/Bun-Node branching, delete PrismaClient type shim, rename Prisma mock helpers, drop stale `OPENAI_API_KEY`. Ends the migration tail in one pass.
-2. - [ ] **Track: Flutter Media Detail Page** *Phases: 5 | Link: [./tracks/feature_flutter_media_detail_20260508/](./tracks/feature_flutter_media_detail_20260508/)* — Movie and series detail screens (metadata, episodes, actions, file info) in the Flutter client. User-facing; the client is the product differentiator.
-3. - [ ] **Track: Scheduler & Automation Dashboard** *Phases: 5 | Link: [./tracks/feature_scheduler_automation_dashboard_20260524/](./tracks/feature_scheduler_automation_dashboard_20260524/)* — React SPA settings page for configuring/monitoring RSS sync, wanted search, and library scan schedules. User-facing.
-4. - [ ] **Track: Server Service Test Coverage — Runtime-Critical** *Stories: 4 (scoped from 10) | Link: [./tracks/chore_untested_server_services_20260526/](./tracks/chore_untested_server_services_20260526/)* — Rescoped 2026-06-07 to Scheduler, EpisodeService, SeriesService, MediaSearchService only; the other 6 services are deferred post-v1.0.
-5. - [ ] **Track: v1.0 Release Cut — Define the Line** *Stories: 4 | Link: [./tracks/release_v1_cut_20260607/](./tracks/release_v1_cut_20260607/)* — Ratify v1.0 scope, confirm gates, tag the release, publish the post-v1.0 backlog. Draws the line that stops open-ended testing/cleanup.
+1. - [ ] **Track: Flutter Media Detail Page** *Phases: 5 | Link: [./tracks/feature_flutter_media_detail_20260508/](./tracks/feature_flutter_media_detail_20260508/)* — Movie and series detail screens (metadata, episodes, actions, file info) in the Flutter client. User-facing; the client is the product differentiator.
+2. - [ ] **Track: Scheduler & Automation Dashboard** *Phases: 5 | Link: [./tracks/feature_scheduler_automation_dashboard_20260524/](./tracks/feature_scheduler_automation_dashboard_20260524/)* — React SPA settings page for configuring/monitoring RSS sync, wanted search, and library scan schedules. User-facing.
+3. - [ ] **Track: Server Service Test Coverage — Runtime-Critical** *Stories: 4 (scoped from 10) | Link: [./tracks/chore_untested_server_services_20260526/](./tracks/chore_untested_server_services_20260526/)* — Rescoped 2026-06-07 to Scheduler, EpisodeService, SeriesService, MediaSearchService only; the other 6 services are deferred post-v1.0.
+4. - [ ] **Track: v1.0 Release Cut — Define the Line** *Stories: 4 | Link: [./tracks/release_v1_cut_20260607/](./tracks/release_v1_cut_20260607/)* — Ratify v1.0 scope, confirm gates, tag the release, publish the post-v1.0 backlog. Draws the line that stops open-ended testing/cleanup.
 
 ## Post-v1.0 / Deferred
 
@@ -34,6 +33,7 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ## Recently Completed (archived)
 
+- [x] **Track: Close Drizzle Migration (Shim Removal + Naming Residue)** *Stories: 7 | Link: [./archive/chore_close_drizzle_migration_20260607/](./archive/chore_close_drizzle_migration_20260607/)* — Consolidated `remove_prisma_shim` + `prisma_naming_cleanup`: removed `$executeRawUnsafe`/Bun-Node branching, deleted PrismaClient type shim, renamed Prisma mock helpers, dropped stale `OPENAI_API_KEY`. Archived 2026-06-08.
 - [x] **Track: Variant Subtitle Subsystem Test Coverage** *Stories: 5 | Link: [./archive/bug_variant_subtitle_test_coverage_20260526/](./archive/bug_variant_subtitle_test_coverage_20260526/)* — 36 unit tests across the 5 variant-subtitle services (Backfill, InventoryIndexer, MissingSubtitle, SubtitleFetch, Wanted); closed the highest-risk untested subsystem. Archived 2026-06-07.
 - [x] **Track: Custom Format Editor & Live Tester** *Phases: 5 | Link: [./archive/feature_custom_format_editor_20260507/](./archive/feature_custom_format_editor_20260507/)* — 13 backend route tests, FormatLiveTester component, dedicated settings page with search/clone/test panel
 - [x] **Track: Release Scoring Breakdown Panel** *Phases: 5 | Link: [./archive/feature_release_scoring_breakdown_20260507/](./archive/feature_release_scoring_breakdown_20260507/)* — Backend breakdown storage, ScoreBreakdownPanel component, SeriesInteractiveSearchModal integration

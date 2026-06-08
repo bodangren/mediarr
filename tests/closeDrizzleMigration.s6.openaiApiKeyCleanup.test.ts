@@ -51,14 +51,14 @@ const MEASURE_DIR = path.join(REPO_ROOT, 'measure');
 const ENV_PATH = path.join(REPO_ROOT, '.env');
 const PLAN_PATH = path.join(
   MEASURE_DIR,
-  'tracks',
+  'archive',
   'chore_close_drizzle_migration_20260607',
   'plan.md',
 );
 const TECH_DEBT_PATH = path.join(MEASURE_DIR, 'tech-debt.md');
 const AUDIT_RESULTS_PATH = path.join(
   MEASURE_DIR,
-  'tracks',
+  'archive',
   'chore_close_drizzle_migration_20260607',
   'audit-results.md',
 );
@@ -221,7 +221,9 @@ describe('chore_close_drizzle_migration_20260607 — Phase S6: Remove stale OPEN
     });
 
     it('no `OPENAI_API_KEY` identifier in tests/**/*.ts', () => {
-      const hits = grepHits([TESTS_DIR]).filter((h) => h.file !== SELF);
+      const hits = grepHits([TESTS_DIR]).filter(
+        (h) => h.file !== SELF && h.file !== 'tests/closeDrizzleMigration.s7.verification.test.ts',
+      );
       expect(
         hits,
         `Top-level tests still reference \`OPENAI_API_KEY\`:\n  ` +
@@ -271,7 +273,7 @@ describe('chore_close_drizzle_migration_20260607 — Phase S6: Remove stale OPEN
 
     it('plan.md contains the S6 phase heading', () => {
       const plan = read(
-        'measure/tracks/chore_close_drizzle_migration_20260607/plan.md',
+        path.relative(REPO_ROOT, PLAN_PATH),
       );
       expect(
         S6_HEADING_REGEX.test(plan),
@@ -281,7 +283,7 @@ describe('chore_close_drizzle_migration_20260607 — Phase S6: Remove stale OPEN
 
     it('every S6 checkbox in plan.md is marked `[x]` (closeout complete)', () => {
       const plan = read(
-        'measure/tracks/chore_close_drizzle_migration_20260607/plan.md',
+        path.relative(REPO_ROOT, PLAN_PATH),
       );
       const section = s6Section(plan);
       expect(section, 'S6 section not found in plan.md').not.toBe('');
@@ -352,16 +354,15 @@ describe('chore_close_drizzle_migration_20260607 — Phase S6: Remove stale OPEN
     it('audit-results.md exists for this track', () => {
       expect(
         fileExists(
-          'measure/tracks/chore_close_drizzle_migration_20260607/audit-results.md',
+          path.relative(REPO_ROOT, AUDIT_RESULTS_PATH),
         ),
-        `audit-results.md must exist for this track (the S1 audit ` +
-          `committed \`measure/tracks/chore_close_drizzle_migration_20260607/audit-results.md\`).`,
+        `audit-results.md must exist for this track at ${AUDIT_RESULTS_PATH}.`,
       ).toBe(true);
     });
 
     it('audit-results.md has a section acknowledging the S6 env-key cleanup', () => {
       const audit = read(
-        'measure/tracks/chore_close_drizzle_migration_20260607/audit-results.md',
+        path.relative(REPO_ROOT, AUDIT_RESULTS_PATH),
       );
       // Section heading patterns that are acceptable for the S6 closeout
       // acknowledgement. We accept any of the three so the Green phase
@@ -383,7 +384,7 @@ describe('chore_close_drizzle_migration_20260607 — Phase S6: Remove stale OPEN
 
     it('the S6 section in audit-results.md confirms no `OPENAI_API_KEY` in .env', () => {
       const audit = read(
-        'measure/tracks/chore_close_drizzle_migration_20260607/audit-results.md',
+        path.relative(REPO_ROOT, AUDIT_RESULTS_PATH),
       );
       // The section should mention the post-state. Accept either an
       // explicit "OPENAI_API_KEY" mention or a "no stale env key" /

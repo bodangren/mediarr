@@ -61,14 +61,12 @@ const TRACK_DIR_TRACKS = path.join(MEASURE_DIR, 'tracks', TRACK_ID);
 const TRACK_DIR_ARCHIVE = path.join(ARCHIVE_DIR, TRACK_ID);
 
 const S7_PLAN_PATH = path.join(
-  MEASURE_DIR,
-  'tracks',
+  ARCHIVE_DIR,
   TRACK_ID,
   'plan.md',
 );
 const S7_AUDIT_PATH = path.join(
-  MEASURE_DIR,
-  'tracks',
+  ARCHIVE_DIR,
   TRACK_ID,
   'audit-results.md',
 );
@@ -208,7 +206,7 @@ describe('chore_close_drizzle_migration_20260607 — Phase S7: Verification, deb
         fileExists(path.relative(REPO_ROOT, S7_PLAN_PATH)),
         `plan.md must exist at ${S7_PLAN_PATH}`,
       ).toBe(true);
-      const plan = read('measure/tracks/chore_close_drizzle_migration_20260607/plan.md');
+      const plan = read(path.relative(REPO_ROOT, S7_PLAN_PATH));
       expect(
         S7_HEADING_REGEX.test(plan),
         `plan.md must contain the S7 phase heading:\n  ## Phase S7: Verification, debt closeout & handoff`,
@@ -216,7 +214,7 @@ describe('chore_close_drizzle_migration_20260607 — Phase S7: Verification, deb
     });
 
     it('every S7 checkbox in plan.md is marked `[x]` (closeout complete)', () => {
-      const plan = read('measure/tracks/chore_close_drizzle_migration_20260607/plan.md');
+      const plan = read(path.relative(REPO_ROOT, S7_PLAN_PATH));
       const section = s7Section(plan);
       expect(section, 'S7 section not found in plan.md').not.toBe('');
       const checkboxLines = section

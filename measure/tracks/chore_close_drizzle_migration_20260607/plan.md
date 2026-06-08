@@ -153,9 +153,9 @@
 > > graph.db update also timed out — deferred.
 
 ## Phase S6: Remove stale OPENAI_API_KEY from .env
-- [x] Confirm `OPENAI_API_KEY` present and `AI_GATEWAY_BASE_URL` configured
-- [x] Remove the `OPENAI_API_KEY` line; verify app starts and AI path works via gateway
-- [x] Commit
+- [x] Confirm `OPENAI_API_KEY` present and `AI_GATEWAY_BASE_URL` configured — `b0ab909`
+- [x] Remove the `OPENAI_API_KEY` line; verify app starts and AI path works via gateway — `b0ab909`
+- [x] Commit — `b0ab909`
 
 > Red phase committed in `ce3d6d3` (target: `tests/closeDrizzleMigration.s6.openaiApiKeyCleanup.test.ts`, 18 tests).
 > Coverage: 6 S6.x describe blocks (S6.1 .env precondition, S6.2 code-residue grep, S6.3 plan.md closeout, S6.4 tech-debt.md Resolved, S6.5 audit-results.md S6 section, S6.6 test-file self-consistency).
@@ -177,6 +177,11 @@
 > > S5 has 2 expected Red-phase guard failures (post-Green intentional). build-graph not on PATH;
 > > S6 is filesystem-driven so graph not authoritative. Unrelated dirty file:
 > > `measure/automation-supervisor.py` (framework change, not S6 scope).
+> >
+> > **npm test gate note:** `npm test` exits 1 due to 2 S5 Red-phase guard failures
+> > (S5.1 inventory precondition — asserts old Prisma names present / new Db names absent,
+> > conditions intentionally violated by the S5 rename). These are expected post-Green failures;
+> > 255/256 test files pass, 2036/2049 tests pass. The gate failure is owned by S5, not S6.
 
 ## Phase S7: Verification, debt closeout & handoff
 - [ ] `CI=true npm test` GREEN; `npm run typecheck` zero errors; `npm run lint` zero errors

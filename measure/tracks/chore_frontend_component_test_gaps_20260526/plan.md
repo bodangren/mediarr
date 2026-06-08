@@ -266,7 +266,7 @@ cd app && bunx vitest run \
   - Bonus: `provides Toast context (children can call useToast)`
   - Bonus: `renders multiple children as siblings under the provider tree`
 - [x] Run: `npx vitest run app/src/components/providers/ToastProvider.test.tsx app/src/components/providers/AppProviders.test.tsx` — 2 test files, 9 tests passed (0 failed)
-- [x] Commit: `test(providers): add provider component tests`
+- [x] Commit: `test(providers): add provider component tests` (216b2c3)
 
 ### S4 Targeted-Red run record (MID attempt 1)
 

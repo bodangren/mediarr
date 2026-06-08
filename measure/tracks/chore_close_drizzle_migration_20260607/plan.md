@@ -170,7 +170,7 @@
 >
 > No source code changed. Green phase must: (a) flip the 3 S6 checkboxes to `[x]`, (b) flip the tech-debt row Status to `Resolved` and append a closure note pointing at this track, (c) add an `## Stale env key` (or equivalent) section to `audit-results.md` acknowledging the OPENAI_API_KEY removal.
 >
-> > Green phase complete 2026-06-08: 18/18 S6 tests pass. plan.md S6 checkboxes flipped to `[x]`;
+> > Green phase complete 2026-06-08 (`b0ab909`): 18/18 S6 tests pass. plan.md S6 checkboxes flipped to `[x]`;
 > > tech-debt.md OPENAI_API_KEY row Status flipped to `Resolved` with closure note;
 > > audit-results.md `## Stale env key` section added with env post-state table. S1 20/20,
 > > S4 19/19 also green. S2/S3 fail on better-sqlite3 native addon (environmental, not S6-related).

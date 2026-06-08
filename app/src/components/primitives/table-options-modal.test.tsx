@@ -29,6 +29,49 @@ describe('TableOptionsModal', () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
+  it('renders a checkbox per column reflecting its visibility state', () => {
+    render(
+      <TableOptionsModal
+        title="Column options"
+        columns={[
+          { key: 'title', label: 'Title', visible: true },
+          { key: 'year', label: 'Year', visible: false },
+          { key: 'status', label: 'Status', visible: true },
+        ]}
+        onChange={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByLabelText('Toggle Title')).toBeChecked();
+    expect(screen.getByLabelText('Toggle Year')).not.toBeChecked();
+    expect(screen.getByLabelText('Toggle Status')).toBeChecked();
+  });
+
+  it('calls onChange with the toggled column flipped when a checkbox is clicked', () => {
+    const onChange = vi.fn();
+
+    render(
+      <TableOptionsModal
+        title="Column options"
+        columns={[
+          { key: 'title', label: 'Title', visible: true },
+          { key: 'year', label: 'Year', visible: true },
+        ]}
+        onChange={onChange}
+        onClose={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByLabelText('Toggle Year'));
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenCalledWith([
+      { key: 'title', label: 'Title', visible: true },
+      { key: 'year', label: 'Year', visible: false },
+    ]);
+  });
+
   it('returns unchanged columns when hover indexes are equal', () => {
     const columns = [
       { key: 'title', label: 'Title', visible: true },

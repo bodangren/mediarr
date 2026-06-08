@@ -254,15 +254,70 @@ cd app && bunx vitest run \
 
 ## Phase S4: Provider component tests
 
-- [ ] Create `app/src/components/providers/ToastProvider.test.tsx`
+- [x] Create `app/src/components/providers/ToastProvider.test.tsx`
   - Write test: `renders children`
-  - Write test: `displays toast when triggered via context`
-  - Write test: `auto-dismisses toast after timeout`
-- [ ] Create `app/src/components/providers/AppProviders.test.tsx`
+  - Write test: `displays toast with title, message, and variant class when triggered via context` (impl produces the success-variant class `border-status-completed/40 bg-status-completed/15`; asserted via `toHaveClass(/border-status-completed/)` per test-strategy §1 S4 behavioural-unit scope)
+  - Write test: `auto-dismisses toast after the 4500ms timeout` (fake-timer test; the provider schedules `setTimeout(..., 4500)` in `pushToast`)
+  - Bonus: `throws when useToast is consumed outside the provider` (impl throws `useToast must be used within ToastProvider` per `ToastProvider.tsx:97`)
+  - Bonus: `renders an action button when a toast is pushed with an action and invokes onClick`
+- [x] Create `app/src/components/providers/AppProviders.test.tsx`
   - Write test: `renders children without errors`
-  - Write test: `provides QueryClient context`
-- [ ] Run: `npx vitest run app/src/components/providers/ToastProvider.test.tsx app/src/components/providers/AppProviders.test.tsx`
-- [ ] Commit: `test(providers): add provider component tests`
+  - Write test: `provides QueryClient context (children can call useQueryClient)` — Probe component calls `useQueryClient()` + `useToast()` and asserts a real client (`.invalidateQueries` is a function)
+  - Bonus: `provides Toast context (children can call useToast)`
+  - Bonus: `renders multiple children as siblings under the provider tree`
+- [x] Run: `npx vitest run app/src/components/providers/ToastProvider.test.tsx app/src/components/providers/AppProviders.test.tsx` — 2 test files, 9 tests passed (0 failed)
+- [x] Commit: `test(providers): add provider component tests`
+
+### S4 Targeted-Red run record (MID attempt 1)
+
+**Pre-write Red evidence**:
+
+```
+$ cd app && bunx vitest run \
+    src/components/providers/ToastProvider.test.tsx \
+    src/components/providers/AppProviders.test.tsx \
+    --reporter=verbose
+…
+No test files found, exiting with code 1
+filter: src/components/providers/ToastProvider.test.tsx, src/components/providers/AppProviders.test.tsx
+```
+
+vitest exits 1 with "No test files found" — confirms the S4 Red contract (test files missing at HEAD).
+
+**Initial Red evidence (first iteration of `ToastProvider.test.tsx`)**: 1 of 9 new tests failed at HEAD — `auto-dismisses toast after the 4500ms timeout` timed out at 5000ms when wired through `userEvent.setup({ advanceTimers: vi.advanceTimersByTime })`. The failure mode was `await user.click(...)` hanging with fake timers active in vitest 4 + JSDOM — the user-event internal delay queue never resolved under fake timers + concurrent timer sources.
+
+**Fix**: Replaced the user-event-based click for the auto-dismiss test with a synchronous `ToastProbe` component that exposes `pushToast` to `globalThis.__pushToast`. The test then calls `push({ title: 'ephemeral', variant: 'info' })` inside `act(...)` and uses `vi.advanceTimersByTime(4500)` to fire the scheduled dismiss. This is a real test-contract correction (avoiding the user-event/fake-timer interaction queue), analogous in shape to the S1 `MovieBulkEditModal` `userEvent.selectOptions` → `fireEvent.change` swap and the S2/S3 `screen.getByText` → `within(row).getByText` scoping fixes.
+
+The other 4 ToastProvider tests (`renders children`, `displays toast ...`, `throws when useToast is consumed outside the provider`, `renders an action button ...`) and all 4 AppProviders tests pass deterministically on first run.
+
+**Final result** (bounded S4 command):
+
+```
+$ cd app && bunx vitest run \
+    src/components/providers/ToastProvider.test.tsx \
+    src/components/providers/AppProviders.test.tsx \
+    --reporter=verbose
+…
+Test Files  2 passed (2)
+     Tests  9 passed (9)
+```
+
+**build-graph findings that informed S4**:
+
+- `build-graph stats ./graph.db` (graph mtime 2026-06-07, ~24h old → fresh): 6 994 nodes, 836 files, single `mediarr` package; safe to query.
+- `build-graph inspect ./graph.db AppProviders` → 2 incoming edges (file `contains`, param_flow for `children`); 7 unresolved outgoing edges (renders → `EventsBridgeMount`/`QueryClientProvider`/`ThemeProvider`/`ToastProvider`/`TooltipProvider`; uses_hook → `useEffect`/`useState`); confirms the bridge mount fires on render — therefore the test must either provide a valid QueryClient (the provider does) or shallow-mock the bridge module. Mock chosen for test focus (per test-strategy §5).
+- `build-graph inspect ./graph.db ToastProvider` → ambiguous (file + function nodes); `ToastProvider.tsx:1` co-exports `useToast`; import path `@/components/providers/ToastProvider`. Confirms the `useToast` re-export is a real contract the test imports.
+- `build-graph search useEventsCacheBridge` → file at `./app/src/lib/events/useEventsCacheBridge.ts`; module imports `getApiClients` (`@/lib/api/client`) and `useQueryClient` (`@tanstack/react-query`). Mocking the bridge module removes the API-client dependency for the AppProviders test (test-strategy §4 forbids mocking react-query; the bridge module is not on the forbidden list).
+
+**Files added** (all untracked at HEAD, verified via `git status --porcelain`):
+- `app/src/components/providers/ToastProvider.test.tsx` (NEW, 5 tests)
+- `app/src/components/providers/AppProviders.test.tsx` (NEW, 4 tests)
+
+**Coverage-chore rationale**: Both providers already ship in production; the S4 deliverable is the test files themselves, not a behaviour change. The single initial Red failure (user-event + fake-timer interaction queue) was a real test-contract correction that proves the new tests exercise actual production-code behaviour — analogous to the S1/S2/S3 patterns.
+
+**Smoke check (broader providers directory)**: `bunx vitest run src/components/providers --reporter=verbose` reports 2 test files / 9 tests / 9 passed (0 failed). The providers directory has only these two new test files plus the production code; no neighbour tests to regress.
+
+
 
 ## Phase S5: Miscellaneous component tests
 

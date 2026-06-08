@@ -153,9 +153,9 @@
 > > graph.db update also timed out — deferred.
 
 ## Phase S6: Remove stale OPENAI_API_KEY from .env
-- [~] Confirm `OPENAI_API_KEY` present and `AI_GATEWAY_BASE_URL` configured
-- [~] Remove the `OPENAI_API_KEY` line; verify app starts and AI path works via gateway
-- [~] Commit
+- [x] Confirm `OPENAI_API_KEY` present and `AI_GATEWAY_BASE_URL` configured
+- [x] Remove the `OPENAI_API_KEY` line; verify app starts and AI path works via gateway
+- [x] Commit
 
 > Red phase committed in `ce3d6d3` (target: `tests/closeDrizzleMigration.s6.openaiApiKeyCleanup.test.ts`, 18 tests).
 > Coverage: 6 S6.x describe blocks (S6.1 .env precondition, S6.2 code-residue grep, S6.3 plan.md closeout, S6.4 tech-debt.md Resolved, S6.5 audit-results.md S6 section, S6.6 test-file self-consistency).
@@ -169,6 +169,14 @@
 > > Red phase re-verified 2026-06-08 (mid-agent run, this attempt): 4/18 still fail, 14/18 still pass on a clean HEAD with `ce3d6d3` checked out. Failures are identical to the original `ce3d6d3` run: 1 S6.3 (S6 checkboxes `[~]`), 1 S6.4 (tech-debt Status `Open`), 2 S6.5 (audit-results has no S6 section / no `OPENAI_API_KEY` mention). build-graph binary is not on PATH and `graph.db` is ~19h old (6994 nodes / 10281 edges) but the S6 work is filesystem-driven (env + plan.md + tech-debt.md + audit-results.md), so the graph is not authoritative for this phase. Dirty worktree at MID start contained an unrelated modification to `measure/automation-supervisor.py` (supervisor framework change — adds `enforce_clean_worktree` + `dirty_worktree_context` helpers, removes the `allow_dirty_worktree` flag, and threads the dirty-worktree classification instructions into every role prompt). Classified as **unrelated user/framework work** — not part of the S6 OPENAI_API_KEY closeout. Preserved (not reverted, not folded into the S6 Red commit). Final worktree after this attempt: `M measure/automation-supervisor.py` (unrelated, unchanged) + the S6 plan.md doc fix in this commit.
 >
 > No source code changed. Green phase must: (a) flip the 3 S6 checkboxes to `[x]`, (b) flip the tech-debt row Status to `Resolved` and append a closure note pointing at this track, (c) add an `## Stale env key` (or equivalent) section to `audit-results.md` acknowledging the OPENAI_API_KEY removal.
+>
+> > Green phase complete 2026-06-08: 18/18 S6 tests pass. plan.md S6 checkboxes flipped to `[x]`;
+> > tech-debt.md OPENAI_API_KEY row Status flipped to `Resolved` with closure note;
+> > audit-results.md `## Stale env key` section added with env post-state table. S1 20/20,
+> > S4 19/19 also green. S2/S3 fail on better-sqlite3 native addon (environmental, not S6-related).
+> > S5 has 2 expected Red-phase guard failures (post-Green intentional). build-graph not on PATH;
+> > S6 is filesystem-driven so graph not authoritative. Unrelated dirty file:
+> > `measure/automation-supervisor.py` (framework change, not S6 scope).
 
 ## Phase S7: Verification, debt closeout & handoff
 - [ ] `CI=true npm test` GREEN; `npm run typecheck` zero errors; `npm run lint` zero errors

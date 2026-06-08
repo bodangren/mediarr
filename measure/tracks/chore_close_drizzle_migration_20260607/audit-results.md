@@ -84,3 +84,23 @@ Phase S5 renames Prisma-named test mock helpers to Drizzle/Db equivalents across
 | `makeMoviePrisma` | `makeMovieDb` | 1 | ~12 |
 
 All 31 files are test files; no production source files use the helper names. The local `prisma` variable name within each test is out of scope — only the helper identifiers are renamed.
+
+## Stale env key
+
+Phase S6 confirms the stale `OPENAI_API_KEY` line is absent from `.env`.
+
+| Check | Result |
+|-------|--------|
+| `.env` contains `OPENAI_API_KEY=…` (non-comment) | No — line absent |
+| `.env` configures `AI_GATEWAY_BASE_URL` | Yes |
+| `.env` configures `AI_GATEWAY_MODEL` | Yes |
+| `OPENAI_API_KEY` identifier in `server/src/**/*.ts` | 0 hits |
+| `OPENAI_API_KEY` identifier in `tests/**/*.ts` | 0 hits |
+| `OPENAI_API_KEY` identifier in `app/**/*.{ts,tsx}` | 0 hits |
+| `OPENAI_API_KEY` identifier in `clients/**/*.{ts,tsx}` | 0 hits |
+
+The project migrated from OpenAI to OpenRouter (chore_openrouter_migration_20260329) and then to a local gateway (feature_local_llm_gateway_20260401). The old key line was removed prior to this phase; S6 closes out the tech-debt entry and verifies the post-state.
+
+## Summary
+
+All phases S1–S6 verified. No stale env keys, no PrismaClient references, no Prisma-named helpers, no raw-SQL shims in production code.

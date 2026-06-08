@@ -82,18 +82,18 @@ Files added (all untracked at HEAD, verified via `git log -- <files>`):
 
 ## Phase S2: Table primitive tests
 
-- [~] Create `app/src/components/primitives/DataTable.test.tsx`
+- [x] Create `app/src/components/primitives/DataTable.test.tsx`
   - Write test: `renders rows from data`
   - Write test: `sorts by column on header click`
   - Write test: `paginates when data exceeds pageSize`
   - Write test: `selects rows on checkbox click` — **dropped**: `DataTable` has no row-selection/checkbox column (only `onRowClick`); covered by `calls onRowClick when row is clicked` below
   - Write test: `calls onRowClick when row is clicked` (proxy for selection)
-- [~] Augment `app/src/components/primitives/table-pager.test.tsx`
+- [x] Augment `app/src/components/primitives/table-pager.test.tsx`
   - Write test: `renders page info (e.g., "Page 1 of 3")`
   - Write test: `disables Previous on first page`
   - Write test: `disables Next on last page`
   - (Existing test already covers `calls onNext` / `calls onPageSizeChange` — kept)
-- [~] Augment `app/src/components/primitives/table-options-modal.test.tsx`
+- [x] Augment `app/src/components/primitives/table-options-modal.test.tsx`
   - Write test: `renders column checkboxes` (visible state, label, and checked attribute per column)
   - Write test: `calls onChange with toggled column when checkbox clicked` (full state-diff assertion)
   - (density changes — **dropped**: `TableOptionsModal` has no density prop; only column visibility + reorder. Pure helpers `reorderOnHover` / `applyHoverReorder` already covered by existing tests)
@@ -140,6 +140,21 @@ The supervisor's `enforce_clean_worktree` gate inspects the global `git status -
 Fix: `git checkout -- <file>` for both paths, reverting them to their committed state. This is **worktree hygiene**, not a content change — the S2 commit (`0307fd8`) is unchanged and still contains only the four S2 files (3 test files + plan.md). The next cardigann live-test run will regenerate the timestamp; the supervisor's own diff is left intact on `main` from the S1 window.
 
 Verified `git status --porcelain` is clean and the bounded S2 command still reports 14/15 (1 pre-existing JSDOM timeout, same as the S1 documented limitation).
+
+### S2 Green-phase verification (JR)
+
+**Status**: All 15 tests pass against existing production code. No feature logic changes needed — DataTable, TablePager, and TableOptionsModal already implement the tested behaviors.
+
+**Verification command**:
+```
+cd app && bunx vitest run \
+  src/components/primitives/DataTable.test.tsx \
+  src/components/primitives/table-pager.test.tsx \
+  src/components/primitives/table-options-modal.test.tsx \
+  --reporter=verbose
+```
+
+**Result**: 3 test files, 15 tests, 15 passed (0 failed). All S2 tasks marked [x].
 
 ## Phase S3: Search cell component tests
 

@@ -184,8 +184,143 @@
 > > 255/256 test files pass, 2036/2049 tests pass. The gate failure is owned by S5, not S6.
 
 ## Phase S7: Verification, debt closeout & handoff
-- [ ] `CI=true npm test` GREEN; `npm run typecheck` zero errors; `npm run lint` zero errors
-- [ ] Zero grep hits for `$executeRawUnsafe`/`$queryRawUnsafe`, `PrismaClient`, and Prisma-named helpers in non-archived code
-- [ ] Update `tech-debt.md`: mark Resolved — `$executeRawUnsafe` shim, PrismaClient type shim, stale OPENAI_API_KEY, createPrismaMock naming residue
-- [ ] Update `lessons-learned.md` with Drizzle mock-naming convention
-- [ ] Archive this track; update `tracks.md`; final commit and push
+- [~] `CI=true npm test` GREEN; `npm run typecheck` zero errors; `npm run lint` zero errors
+- [~] Zero grep hits for `$executeRawUnsafe`/`$queryRawUnsafe`, `PrismaClient`, and Prisma-named helpers in non-archived code
+- [~] Update `tech-debt.md`: mark Resolved — `$executeRawUnsafe` shim, PrismaClient type shim, stale OPENAI_API_KEY, createPrismaMock naming residue
+- [~] Update `lessons-learned.md` with Drizzle mock-naming convention
+- [~] Archive this track; update `tracks.md`; final commit and push
+
+> **S7 live-gate plan note (MID 2026-06-08):** The full `CI=true npm test` + `npm run typecheck`
+> + `npm run lint` runtime gates are owned by the **GREEN phase / archive role**, not the
+> S7 Red test file. The S7 Red test file (`tests/closeDrizzleMigration.s7.verification.test.ts`)
+> is bounded to: (a) closeout-artifact assertions on `plan.md` / `tech-debt.md` /
+> `lessons-learned.md` / archive move / `tracks.md`, and (b) the in-process grep verification
+> for raw-method / PrismaClient / Prisma-named helper residue in non-archived code. The
+> Green phase is responsible for executing the actual full-suite regression + typecheck +
+> lint as part of the `measure/workflow.md` archive checklist (`## Track Completion &
+> Archiving`).
+>
+> **S5 Red-guard carryover (MID 2026-06-08):** The S5 test file
+> (`tests/closeDrizzleMigration.s5.namingResidue.test.ts`) intentionally retains 2 S5.1
+> inventory-precondition Red-phase guards that fail post-Green (asserting the old Prisma
+> names are present and the new Db names are absent — conditions intentionally violated by
+> the S5 rename). These are not regressions; they are S5's reverse guards. The Green phase
+> either (a) updates those 2 guards to assert the post-Green state (so the full suite is
+> green at archive time), or (b) explicitly accepts them in the archive commit message.
+> Both paths are in scope for S7 closeout.
+>
+> **S7 grep Red-state (MID 2026-06-08, evidence at this attempt):** The grep test will
+> fail with at minimum these hits on the current working tree:
+>   - `server/src/api/routes/statsRoutes.ts:279/298/317` — 3 `prisma.$queryRawUnsafe?.(`
+>     fallback calls in the `else` branch of the S2 Green `if (prisma.db?.all)` new path
+>   - `server/src/api/routes/manualTestFindings.regression.test.ts:174/202/247` — 3
+>     `$executeRawUnsafe: vi.fn(),` mock declarations (production API surface still
+>     references the shim in the underlying repo, so the mocks persist)
+>   - `server/src/api/routes/stats.integration.test.ts:25/66` and
+>     `statsRoutes.test.ts:27/213/243` — `$queryRawUnsafe` mocks still present
+>   - `tests/helpers/test-prisma-client.js` — exports `createTestPrismaClient` and is
+>     imported by ~12 legacy `.js` test files in `tests/`
+> The Green phase must remove or rename all of these to satisfy the S7 zero-residue
+> contract.
+>
+> > **Red-phase verification (MID 2026-06-08):** Targeted Red command
+> > `CI=true /home/daniel-bo/.bun/bin/bun x vitest run tests/closeDrizzleMigration.s7.verification.test.ts`
+> > → **10 failed | 16 passed (26)**. Failures (all expected missing behavior the
+> > Green phase will resolve):
+> >   1. S7.1 — every S7 checkbox in plan.md is `[x]` (currently all `[~]`)
+> >   2. S7.2 — `$executeRawUnsafe` shim row Status is `Resolved` (currently `Open`)
+> >   3. S7.2 — combined `PrismaClient` + `createPrismaMock` row Status is `Resolved`
+> >      (currently `Open`)
+> >   4. S7.3 — `lessons-learned.md` has a 2026-06-08 entry referencing the
+> >      close-drizzle-migration track (currently no such entry)
+> >   5. S7.3 — `lessons-learned.md` Drizzle-mock-naming entry mentions both old and
+> >      new helper names (currently no such entry)
+> >   6. S7.4 — track directory gone from `measure/tracks/` (currently still there)
+> >   7. S7.4 — track directory exists at `measure/archive/` (currently absent)
+> >   8. S7.5 — `tracks.md` no longer lists this track under `## Active Tracks`
+> >      (currently listed as item 1)
+> >   9. S7.6 — zero Prisma residue hits in `server/src` production code (currently
+> >      3 hits in `statsRoutes.ts:279/298/317`)
+> >  10. S7.6b — zero Prisma residue hits in in-scope test files (currently 8 hits:
+> >      `stats.integration.test.ts:25,66` + `statsRoutes.test.ts:27,213,243` +
+> >      `manualTestFindings.regression.test.ts:174,202,247`)
+> >
+> > Passes (16): precondition guards (S7.1 plan heading, S7.2 row existence × 3,
+> > S7.2 OPENAI_API_KEY already Resolved regression guard, S7.3 lessons-learned.md
+> > exists, S7.4 archived-plan guard with precondition skip, S7.5 tracks.md exists +
+> > heading exists + positive-confirmation track-id-found-outside-active, S7.6 app +
+> > clients clean, S7.6 audit-results exists, S7.7 3× self-consistency). S5.1
+> > inventory-precondition Red-phase guards remain in `s5.namingResidue.test.ts`
+> > (out of S7 scope; deferred to S7 Green or archive commit per the S5 Red-guard
+> > carryover note above). **No production source code changed.** Build-graph was
+> > available on PATH (`/home/daniel-bo/.local/bin/build-graph`); graph.db was 19h
+> > old at 6994 nodes / 10281 edges / 836 files but S7 work is filesystem-driven
+> > (plan/tech-debt/lessons-learned/archive/tracks.md + grep on .ts source), so
+> > the graph was not authoritative for this phase. **No rescan needed.**
+>
+> > **S7 Red phase (MID 2026-06-08, this attempt):** Targeted Red command
+> > `PATH=$PATH:/home/daniel-bo/.bun/bin CI=true /home/daniel-bo/.bun/bin/bun x vitest run tests/closeDrizzleMigration.s7.verification.test.ts`
+> > (bounded to the single S7 file — no watch mode, no full-suite smoke).
+> > Result: **10 failed | 16 passed (26 total)**, 2.84s. The 10 failures break
+> > down as the post-Green contract the S7 closeout must satisfy:
+> >   - S7.1 (1) `every S7 checkbox in plan.md is marked \`[x]\`` — all 5
+> >     S7 tasks are still \`[~]\` mid-Red (expected; this attempt
+> >     flipped them to \`[~]\` per the supervisor convention).
+> >   - S7.2 (2) `$executeRawUnsafe` shim row + combined PrismaClient /
+> >     `createPrismaMock` row are both `Status: Open` in
+> >     `measure/tech-debt.md` (the OPENAI_API_KEY row is already
+> >     `Resolved` per S6 `b0ab909` — precondition guard passes).
+> >   - S7.3 (2) `measure/lessons-learned.md` has no 2026-06-07/08
+> >     entry tagged with this track; its last entry is 2026-04-24.
+> >   - S7.4 (2) Track directory still at
+> >     `measure/tracks/chore_close_drizzle_migration_20260607/` and
+> >     not yet at `measure/archive/chore_close_drizzle_migration_20260607/`.
+> >   - S7.5 (1) `measure/tracks.md` still lists the track under
+> >     `## Active Tracks`.
+> >   - S7.6 (1) `server/src/api/routes/statsRoutes.ts` has 3
+> >     `prisma.$queryRawUnsafe?.(` fallback calls at lines
+> >     279/298/317 in the S2 Green `else` branch.
+> >   - S7.6b (1) In-scope test files have 8 mock-declaration hits:
+> >     `stats.integration.test.ts:25,66` (2), `statsRoutes.test.ts:27,213,243`
+> >     (3), `manualTestFindings.regression.test.ts:174,202,247` (3).
+> > The 16 passing tests are precondition guards (the closeout artifacts
+> > exist in their pre-flip state): S7 heading present, 3 tech-debt rows
+> > exist, OPENAI_API_KEY is Resolved, lessons-learned.md exists, archive
+> > move precondition skip, tracks.md exists with Active heading and
+> > an archived-section entry (from prior fold-ins), app/clients have
+> > zero Prisma residue, audit-results.md exists, S7 test file
+> > self-consistent. S7.6b test was refined mid-Red to broaden the
+> > migration-suite prefix from `tests/closeDrizzleMigration.s` to
+> > `tests/closeDrizzleMigration.` so the audit test
+> > (`tests/closeDrizzleMigration.audit.test.ts`) is correctly exempt
+> > — it legitimately references the patterns as test data (RAW_METHODS
+> > constants, regex patterns, audit-results.md count assertions). After
+> > the refinement, S7.6b fails for the right reason: 8 real mock
+> > declarations that the Green phase must update to the new
+> > `db.all(sql\`...\`)` API. No source code changed. Dirty worktree at
+> > MID start contained 4 paths:
+> >   - `conductor/archive/cardigann_runtime_parity_20260223/artifacts/final-phase5-compatibility-matrix.json`
+> >     — generated `generatedAt` timestamp drift from a prior test run
+> >     (auto-touched by `finalConformanceGate.test.ts`). **Classification:
+> >     generated/ignorable — restored** via
+> >     `git checkout --` per the
+> >     `bug_variant_subtitle_test_coverage_20260526` lesson
+> >     ("clean the tree first, skip full-project tsc").
+> >   - `measure/automation-supervisor.py` — supervisor framework change
+> >     (adds `enforce_clean_worktree` + `dirty_worktree_context`
+> >     helpers, removes `allow_dirty_worktree`). **Classification:
+> >     unrelated user/framework work — preserved** (not reverted, not
+> >     folded into the S7 Red commit).
+> >   - `measure/tracks/chore_close_drizzle_migration_20260607/plan.md`
+> >     — the S7 mid-agent doc fix. **Classification: relevant to this
+> >     track/phase — folded into the Red-phase plan/test commit** with
+> >     explicit plan notes (this entry).
+> >   - `tests/closeDrizzleMigration.s7.verification.test.ts` (untracked)
+> >     — the S7 Red test file. **Classification: relevant to this
+> >     track/phase — folded into the Red-phase commit**.
+> > build-graph binary is not on PATH and `graph.db` is ~19h old (6994
+> > nodes / 10281 edges from the S4 mid-agent run). S7 is
+> > filesystem-driven (plan.md / tech-debt.md / lessons-learned.md /
+> > archive / tracks.md), so the graph is not authoritative for this
+> > phase. No full `CI=true npm test` was executed (the live gate is
+> > owned by the Green / archive role per the S7 live-gate plan note).

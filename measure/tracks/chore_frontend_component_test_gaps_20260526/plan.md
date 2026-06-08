@@ -25,25 +25,52 @@ Use `userEvent` for all interactions. Mock API calls via `vi.mock('@/lib/api/cli
 
 ## Phase S1: Movie management modal tests
 
-- [ ] Create `app/src/components/movie/EditMovieModal.test.tsx`
+- [~] Create `app/src/components/movie/EditMovieModal.test.tsx`
   - Write test: `renders with pre-filled movie data`
   - Write test: `calls onUpdate with changed fields on Save`
   - Write test: `calls onClose on Cancel`
   - Write test: `validates required fields before save`
-- [ ] Create `app/src/components/movie/ManualMatchDialog.test.tsx`
+- [~] Create `app/src/components/movie/ManualMatchDialog.test.tsx`
   - Write test: `renders search results`
   - Write test: `selects a match on click`
   - Write test: `calls onConfirm with selected match`
-- [ ] Create `app/src/components/movie/MovieBulkEditModal.test.tsx`
+- [~] Create `app/src/components/movie/MovieBulkEditModal.test.tsx`
   - Write test: `renders with selected movie count`
   - Write test: `calls bulkUpdate with changes for all selected`
   - Write test: `validates at least one change is made`
-- [ ] Create `app/src/components/movie/OrganizePreviewModal.test.tsx`
+- [~] Create `app/src/components/movie/OrganizePreviewModal.test.tsx`
   - Write test: `renders file move preview list`
   - Write test: `calls organize endpoint on Confirm`
   - Write test: `calls onClose on Cancel`
-- [ ] Run: `npx vitest run app/src/components/movie/EditMovieModal.test.tsx app/src/components/movie/ManualMatchDialog.test.tsx app/src/components/movie/MovieBulkEditModal.test.tsx app/src/components/movie/OrganizePreviewModal.test.tsx`
+- [~] Run: `npx vitest run app/src/components/movie/EditMovieModal.test.tsx app/src/components/movie/ManualMatchDialog.test.tsx app/src/components/movie/MovieBulkEditModal.test.tsx app/src/components/movie/OrganizePreviewModal.test.tsx`
 - [ ] Commit: `test(movie): add movie management modal component tests`
+
+### S1 Targeted-Red run record (MID attempt 3)
+
+**Command** (run from `app/` workspace with the app `vitest.config.ts`):
+
+```
+cd app && npx vitest run \
+  src/components/movie/EditMovieModal.test.tsx \
+  src/components/movie/ManualMatchDialog.test.tsx \
+  src/components/movie/MovieBulkEditModal.test.tsx \
+  src/components/movie/OrganizePreviewModal.test.tsx \
+  --reporter=verbose
+```
+
+**Result**: 4 test files, 13 tests passed (0 failed). Coverage-chore rationale: the four modals already exist in production and ship without unit tests; the S1 deliverable is the new test files themselves, not a behaviour change. Per task instructions, the "tests pass at HEAD" outcome is marked as already-satisfied with evidence rather than forcing an artificial Red by mutating production code (forbidden by the test-strategy guardrail "No production code edits"). The previously failing run (ManualMatchDialog timeout + MovieBulkEditModal selectOption on unpopulated options) was tightened to await the React-Query resolution and to drop a redundant clear/retype — both are real-component async behaviour, not stale state.
+
+Files added (all untracked at HEAD, verified via `git log -- <files>`):
+- `app/src/components/movie/EditMovieModal.test.tsx` (4 tests)
+- `app/src/components/movie/ManualMatchDialog.test.tsx` (3 tests)
+- `app/src/components/movie/MovieBulkEditModal.test.tsx` (3 tests)
+- `app/src/components/movie/OrganizePreviewModal.test.tsx` (3 tests)
+
+### Worktree classification at S1 start
+
+- `M measure/automation-supervisor.py` — unrelated supervisor scaffolding; preserved unstaged.
+- `?? measure/tracks/chore_frontend_component_test_gaps_20260526/test-strategy.md` — strategy-role artifact for this track; folded into the S1 Red commit.
+
 
 ## Phase S2: Table primitive tests
 

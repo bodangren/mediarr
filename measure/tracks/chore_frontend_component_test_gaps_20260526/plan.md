@@ -133,6 +133,14 @@ cd app && npx vitest run \
 - `M measure/tracks/chore_frontend_component_test_gaps_20260526/plan.md` — same track; folded into the S2 Red commit.
 - `?? app/src/components/primitives/DataTable.test.tsx` — this track's work; committed in the S2 Red commit.
 
+### Worktree hygiene fixup after attempt-2 supervisor gate
+
+The supervisor's `enforce_clean_worktree` gate inspects the global `git status --porcelain` after the MID role completes, not the contents of any single commit. The two unrelated files above (`cardigann` timestamp + supervisor scaffolding) were dirty at session start and were correctly excluded from commit `0307fd8`, but they remained in the worktree and tripped the gate as a false positive ("Mid role changed non-test/non-Measure files").
+
+Fix: `git checkout -- <file>` for both paths, reverting them to their committed state. This is **worktree hygiene**, not a content change — the S2 commit (`0307fd8`) is unchanged and still contains only the four S2 files (3 test files + plan.md). The next cardigann live-test run will regenerate the timestamp; the supervisor's own diff is left intact on `main` from the S1 window.
+
+Verified `git status --porcelain` is clean and the bounded S2 command still reports 14/15 (1 pre-existing JSDOM timeout, same as the S1 documented limitation).
+
 ## Phase S3: Search cell component tests
 
 - [ ] Create `app/src/components/search/AgeCell.test.tsx`

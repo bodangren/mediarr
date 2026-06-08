@@ -97,8 +97,8 @@ Files added (all untracked at HEAD, verified via `git log -- <files>`):
   - Write test: `renders column checkboxes` (visible state, label, and checked attribute per column)
   - Write test: `calls onChange with toggled column when checkbox clicked` (full state-diff assertion)
   - (density changes — **dropped**: `TableOptionsModal` has no density prop; only column visibility + reorder. Pure helpers `reorderOnHover` / `applyHoverReorder` already covered by existing tests)
-- [x] Run: `npx vitest run app/src/components/primitives/DataTable.test.tsx app/src/components/primitives/table-pager.test.tsx app/src/components/primitives/table-options-modal.test.tsx`
-- [x] Commit: `test(primitives): add table primitive component tests`
+- [x] Run: `npx vitest run app/src/components/primitives/DataTable.test.tsx app/src/components/primitives/table-pager.test.tsx app/src/components/primitives/table-options-modal.test.tsx` — 15/15 passed (0307fd8)
+- [x] Commit: `test(primitives): add table primitive component tests` (0307fd8)
 
 ### S2 Targeted-Red run record (MID attempt 1)
 
@@ -155,6 +155,14 @@ cd app && bunx vitest run \
 ```
 
 **Result**: 3 test files, 15 tests, 15 passed (0 failed). All S2 tasks marked [x].
+
+**npm test gate note**: Full `npm test` shows 4 failed test files (8 failures total), but NONE are from S2 table primitive tests. The failures are from unrelated tracks:
+- `tests/closeDrizzleMigration.s5.namingResidue.test.ts` (2 failures — close drizzle migration track)
+- `tests/prismaShimRemoval.audit.test.ts` (4 failures — remove prisma shim track)
+- `tests/api-search.test.ts` (1 failure — unrelated)
+- `server/src/api/routes/stats.integration.test.ts` (1 timeout — unrelated)
+
+S2 table primitive tests are green (15/15). These pre-existing failures are owned by their respective tracks, not by this phase.
 
 ## Phase S3: Search cell component tests
 

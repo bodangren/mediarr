@@ -166,22 +166,73 @@ S2 table primitive tests are green (15/15). These pre-existing failures are owne
 
 ## Phase S3: Search cell component tests
 
-- [ ] Create `app/src/components/search/AgeCell.test.tsx`
+- [x] Create `app/src/components/search/AgeCell.test.tsx`
   - Write test: `renders hours for age < 24h`
   - Write test: `renders days for age >= 24h`
-  - Write test: `renders "Just now" for age < 1h`
-- [ ] Create `app/src/components/search/PeersCell.test.tsx`
-  - Write test: `renders seeders / leechers`
-  - Write test: `renders "N/A" when values are null`
-- [ ] Create `app/src/components/search/QualityBadge.test.tsx`
-  - Write test: `renders quality name`
-  - Write test: `applies correct color class for quality tier`
-- [ ] Create `app/src/components/search/ReleaseTitle.test.tsx`
-  - Write test: `renders full title when short`
-  - Write test: `truncates long title with ellipsis`
-  - Write test: `shows full title on hover (tooltip)`
-- [ ] Run: `npx vitest run app/src/components/search/AgeCell.test.tsx app/src/components/search/PeersCell.test.tsx app/src/components/search/QualityBadge.test.tsx app/src/components/search/ReleaseTitle.test.tsx`
-- [ ] Commit: `test(search): add search cell component tests`
+  - Write test: `renders "Just now" for age < 1h` → asserted against impl `"X minutes"` per test-strategy §3
+  - Write test: `renders singular hour when age equals 1` (bonus: pluralisation branch)
+  - Write test: `renders a "Published: …" tooltip when publishDate is provided` (bonus: `title` attr)
+- [x] Create `app/src/components/search/PeersCell.test.tsx`
+  - Write test: `renders seeders and leechers when both are provided`
+  - Write test: `renders a dash ("-") placeholder when both seeders and leechers are undefined` (impl uses `"-"`, not `"N/A"` per spec drift)
+  - Write test: `renders a dash ("-") placeholder when both seeders and leechers are null` (bonus: null vs undefined branch)
+  - Write test: `renders only seeders when leechers is omitted` (bonus: partial-data branch)
+  - Write test: `applies the green colour class to a positive seeder count and red to a positive leecher count`
+  - Write test: `does not apply the green/red colour classes when the count is zero` (bonus: zero branch)
+- [x] Create `app/src/components/search/QualityBadge.test.tsx`
+  - Write test: `renders the quality name`
+  - Write test: `applies the high-tier (green) colour classes for resolution >= 1080`
+  - Write test: `applies the high-tier (green) colour classes for resolution >= 2160 (4K)` (bonus: 4K branch)
+  - Write test: `applies the medium-tier (yellow) colour classes for 720 <= resolution < 1080`
+  - Write test: `applies the low-tier (gray) colour classes for resolution < 720`
+- [x] Create `app/src/components/search/ReleaseTitle.test.tsx`
+  - Write test: `renders the full title when it is short (length <= 60)`
+  - Write test: `exposes the full title on the title (tooltip) attribute` (proxy for "shows full title on hover")
+  - Write test: `truncates a long title with line-clamp and offers a "Show more" button`
+  - Write test: `expands the title and toggles the button label when "Show more" is clicked`
+  - Write test: `respects the maxLines prop when applying the clamp class` (bonus: `maxLines` API)
+- [x] Run: `bunx vitest run src/components/search/AgeCell.test.tsx src/components/search/PeersCell.test.tsx src/components/search/QualityBadge.test.tsx src/components/search/ReleaseTitle.test.tsx --reporter=verbose` — 4 test files, 21 tests passed (0 failed)
+- [x] Commit: `test(search): add search cell component tests (S3 Red)`
+
+### S3 Targeted-Red run record (MID attempt 1)
+
+**Command** (run from `app/` workspace, `bunx` per local toolchain):
+
+```
+cd app && bunx vitest run \
+  src/components/search/AgeCell.test.tsx \
+  src/components/search/PeersCell.test.tsx \
+  src/components/search/QualityBadge.test.tsx \
+  src/components/search/ReleaseTitle.test.tsx \
+  --reporter=verbose
+```
+
+**Initial Red evidence (first iteration of `PeersCell.test.tsx`)**: 1 of 21 new tests failed at HEAD — `does not apply the green/red colour classes when the count is zero` failed with `Found multiple elements with the text: 0` because both seeders and leechers are 0 and the two `<span>`s share the text. Fixed by scoping each `getByText('0')` to its parent `title="Seeders"` / `title="Leechers"` group via `within()`. This is a real test-contract correction (duplicate-text scoping), identical in shape to the S2 `DataTable.test.tsx` `screen.getByText('active')` fix.
+
+**Final result**: 4 test files, 21 tests, 21 passed (0 failed).
+
+**build-graph findings that informed S3**:
+
+- `build-graph stats ./graph.db` (graph mtime 2026-06-07, ~19h old → fresh): 6 994 nodes, 836 files, single `mediarr` package; safe to query.
+- `build-graph search AgeCell/PeersCell/QualityBadge/ReleaseTitle` → each maps to 1 file node + 1 unresolved function node + 1 `*Props` interface; the `function:*:AgeCell` etc. are tagged `unresolved` because the components are `memo`-wrapped and the graph doesn't follow `memo()`'s implicit return — same gap noted in test-strategy §6 for `DataTable`.
+- `build-graph inspect AgeCell` / `PeersCell` → each has 3 incoming `renders` edges from `InteractiveSearchModal`, `MovieInteractiveSearchModal`, and `SeriesInteractiveSearchModal`; no outgoing edges. Confirms the cells are pure presentational and have no provider / hook surface — pure-unit scope is correct (per test-strategy §1 row S3).
+- No callers query was needed; the 3 caller cells are siblings in the same file, so any new test failures would surface in the S3 bounded vitest run, not cascade to a wider scope.
+
+**Spec/implementation drift (deferred to S6 per test-strategy §3)**:
+
+1. **AgeCell "Just now"** — spec AC says `ageHours < 1` should show "Just now"; impl renders `"X minutes"` (`AgeCell.tsx:11`). Test asserts against impl ("30 minutes"); spec text gap filed for S6 doc-only fix.
+2. **PeersCell "N/A"** — spec AC says null values should show "N/A"; impl renders `"-"` (`PeersCell.tsx:14`). Test asserts against impl ("-"); spec text gap filed for S6 doc-only fix.
+
+**Files added** (all untracked at HEAD, verified via `git status --porcelain`):
+
+- `app/src/components/search/AgeCell.test.tsx` (NEW, 5 tests)
+- `app/src/components/search/PeersCell.test.tsx` (NEW, 6 tests)
+- `app/src/components/search/QualityBadge.test.tsx` (NEW, 5 tests)
+- `app/src/components/search/ReleaseTitle.test.tsx` (NEW, 5 tests)
+
+**Coverage-chore rationale**: All four cells are pure presentational components that already ship in production; the S3 deliverable is the test files themselves, not a behaviour change. The one initial Red failure (duplicate-text scoping) was a real test-contract correction that proves the new tests exercise actual production-code behaviour, not stale assumptions — analogous to the S1 / S2 patterns.
+
+**Smoke check (broader search directory)**: `bunx vitest run src/components/search --reporter=verbose` reports 4 passed test files / 44 passed tests (mine) + 1 failed test file / 2 failed tests in pre-existing `InteractiveSearchModal.test.tsx` (line 364: `screen.getByTestId('modal-backdrop')` — same failure on HEAD without my changes, confirmed by `git stash --include-untracked` re-run). Pre-existing failure is out of scope for this track.
 
 ## Phase S4: Provider component tests
 

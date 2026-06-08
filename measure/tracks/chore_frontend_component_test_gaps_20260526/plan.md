@@ -234,6 +234,24 @@ cd app && bunx vitest run \
 
 **Smoke check (broader search directory)**: `bunx vitest run src/components/search --reporter=verbose` reports 4 passed test files / 44 passed tests (mine) + 1 failed test file / 2 failed tests in pre-existing `InteractiveSearchModal.test.tsx` (line 364: `screen.getByTestId('modal-backdrop')` — same failure on HEAD without my changes, confirmed by `git stash --include-untracked` re-run). Pre-existing failure is out of scope for this track.
 
+### S3 supervisor-gate-failure recovery (MID attempt 3)
+
+**Context**: The supervisor's attempt-2 invocation exited with status 70 (BSD `EX_SOFTWARE`) before producing any agent output — `output.log` contains only `STARTED_AT: 2026-06-08T09:53:58Z` and no `gates.log` was generated. This is an infrastructure-level crash of the supervisor's command wrapper, not a defect in the S3 work itself.
+
+**Preserved valid work from attempt-1**: The 4 S3 test files + plan.md update are already committed on `main` as `9c4beec` (`test(search): add search cell component tests (S3 Red)`). No S3 work needs to be redone.
+
+**attempt-3 verification** (re-run after supervisor-gate failure):
+
+1. **Worktree state**: `git log` shows `HEAD = 9c4beec`; `git status --porcelain` is clean (the only unrelated modification is `M measure/archive/chore_close_drizzle_migration_20260607/test-strategy.md`, which is a pre-existing change in a different track's archive folder, not part of S3 scope — per the S2 worktree-hygiene fixup pattern, left untouched).
+2. **Bounded S3 command re-run** (from `app/` workspace): `bunx vitest run src/components/search/{AgeCell,PeersCell,QualityBadge,ReleaseTitle}.test.tsx --reporter=verbose` → **4 test files, 21 tests, 21 passed (0 failed)**. Same result as attempt-1.
+3. **Smoke test re-run** (from `app/` workspace): `bunx vitest run src/components/search --reporter=verbose` → 4 passed test files (mine, 21/21) + 1 failed test file (`InteractiveSearchModal.test.tsx`). On HEAD alone, `InteractiveSearchModal.test.tsx` reports 2 failures in solo execution and 3 failures in concurrent execution — both consistent with the S1 documented limitation: *"Concurrent execution of all 4 files in one vitest invocation shows flaky JSDOM resource contention timeouts — a pre-existing environment limitation, not a test logic issue."* Re-confirmed via `git stash --include-untracked` re-run of the smoke test on HEAD (which reports "No local changes to save" — confirms the S3 commit is intact and the pre-existing failure is unrelated to this track).
+4. **No code changes**: S3 test files and plan.md are unchanged from commit `9c4beec`. The plan.md edit in this attempt is documentation-only (this run record) and is committed separately as `9c4beec`'s follow-up.
+
+**Files touched in this recovery commit** (worktree-hygiene pattern, Measure docs only):
+- `measure/tracks/chore_frontend_component_test_gaps_20260526/plan.md` (added this run record)
+
+**Result for handoff**: S3 deliverable is complete and stable. The 4 test files remain on `main` at `9c4beec`; the bounded S3 command reports 21/21. The supervisor's status-70 crash is logged in `measure/runs/20260608T094507Z/.../mid-attempt-2/output.log` and is unrelated to S3 code. The next role (JR Green-phase verification) should re-run the same bounded command and confirm 21/21 before marking the phase complete. S4 and S5 are unchanged and still pending.
+
 ## Phase S4: Provider component tests
 
 - [ ] Create `app/src/components/providers/ToastProvider.test.tsx`

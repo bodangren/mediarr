@@ -9,10 +9,10 @@ _Spec ref: spec.md#phase-1-data-layer-foundation_
 
 _Blast radius: `drizzleClient.ts` (44 importers), `MediaRepository` (5 callers: `main.ts`, `MediaRepository.upsert.test.ts`, `MediaRepository.upsertSeasonsAndEpisodes.test.ts`, `api/types.ts`, `services/importLists/ImportListSyncService.ts`), `SubtitleVariantRepository` (5+ service consumers), `AppSettingsRepository` (the most-imported repo per `build-graph stats`)._
 
-- [ ] **Task 1.1: Expose native Drizzle on DatabaseClient**
-  - [ ] Add a public `get drizzle()` getter on `DatabaseClient` that returns the underlying `drizzle(this.sqlite, { schema })` instance (already constructed in the constructor; just expose it).
-  - [ ] Document the migration path in `server/src/db/drizzleClient.ts` JSDoc.
-  - [ ] Do NOT remove the Prisma-style delegates yet.
+- [x] **Task 1.1: Expose native Drizzle on DatabaseClient** `[5575c10]`
+  - [x] Add a public `get drizzle()` getter on `DatabaseClient` that returns the underlying `drizzle(this.sqlite, { schema })` instance (already constructed in the constructor; just expose it).
+  - [x] Document the migration path in `server/src/db/drizzleClient.ts` JSDoc.
+  - [x] Do NOT remove the Prisma-style delegates yet.
 - [ ] **Task 1.2: Add parity-test harness**
   - [ ] Create `server/src/db/__tests__/drizzleParity.test.ts` with a helper `expectShimAndNativeEqual(model: ModelName, args: QueryArgs)` that runs the same query against the shim and `this.db.select().from(table)` and asserts identical row sets.
   - [ ] Cover at least 5 high-traffic methods: `media.findMany({ where: { mediaType: 'MOVIE' }})`, `indexer.findMany({ orderBy: { priority: 'asc' }})`, `mediaFileVariant.findMany({ where: { movieId: 1 }})`, `episode.findMany({ where: { seriesId: 1 }})`, `mediaFileVariant.count()`.

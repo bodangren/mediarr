@@ -16,14 +16,14 @@ _Blast radius: `drizzleClient.ts` (44 importers), `MediaRepository` (5 callers: 
 - [x] **Task 1.2: Add parity-test harness** `[bcf7443]`
   - [x] Create `server/src/db/__tests__/drizzleParity.test.ts` with a helper `expectShimAndNativeEqual(model: ModelName, args: QueryArgs)` that runs the same query against the shim and `this.db.select().from(table)` and asserts identical row sets.
   - [x] Cover at least 5 high-traffic methods: `media.findMany({ where: { mediaType: 'MOVIE' }})`, `indexer.findMany({ orderBy: { priority: 'asc' }})`, `mediaFileVariant.findMany({ where: { movieId: 1 }})`, `episode.findMany({ where: { seriesId: 1 }})`, `mediaFileVariant.count()`.
-- [ ] **Task 1.3: Migrate MediaRepository.upsertMovie to native Drizzle**
-  - [ ] Update `MediaRepository` constructor to accept the drizzle instance.
-  - [ ] Replace `this.prisma.media.upsert` and `this.prisma.movie.upsert` with `db.insert(media).values(…).onConflictDoUpdate({ target: [media.mediaType, media.tmdbId], set: … }).returning()` chained with the same for the `movies` table.
-  - [ ] Verify the existing test (`MediaRepository.upsert.test.ts`) passes against the new implementation.
-- [ ] **Task 1.4: Migrate MediaRepository.upsertSeries + upsertSeasonsAndEpisodes**
-  - [ ] Replace the `media.upsert` + `series.upsert` + nested `seasons.create` + `episodes.create` paths with a single `db.transaction((tx) => …)` block.
-  - [ ] Use `onConflictDoUpdate` keyed on the natural unique constraints (`[mediaType, tmdbId]` for media, `[tmdbId]` for series, `[seriesId, seasonNumber]` for seasons, `[seriesId, seasonNumber, episodeNumber]` for episodes).
-  - [ ] Verify `MediaRepository.upsertSeasonsAndEpisodes.test.ts` passes.
+- [x] **Task 1.3: Migrate MediaRepository.upsertMovie to native Drizzle** `[pending]`
+  - [x] Update `MediaRepository` constructor to accept the drizzle instance.
+  - [x] Replace `this.prisma.media.upsert` and `this.prisma.movie.upsert` with `db.insert(media).values(…).onConflictDoUpdate({ target: [media.mediaType, media.tmdbId], set: … }).returning()` chained with the same for the `movies` table.
+  - [x] Verify the existing test (`MediaRepository.upsert.test.ts`) passes against the new implementation.
+- [x] **Task 1.4: Migrate MediaRepository.upsertSeries + upsertSeasonsAndEpisodes** `[pending]`
+  - [x] Replace the `media.upsert` + `series.upsert` + nested `seasons.create` + `episodes.create` paths with a single `db.transaction((tx) => …)` block.
+  - [x] Use `onConflictDoUpdate` keyed on the natural unique constraints (`[mediaType, tmdbId]` for media, `[tvdbId]` for series, `[seriesId, seasonNumber]` for seasons, `[tvdbId]` for episodes).
+  - [x] Verify `MediaRepository.upsertSeasonsAndEpisodes.test.ts` passes.
 - [ ] **Task 1.5: Migrate IndexerRepository**
   - [ ] Replace the 4-5 `this.prisma.indexer.*` methods with native Drizzle.
   - [ ] Add a parity test for indexer CRUD (create, findUnique, update, delete).

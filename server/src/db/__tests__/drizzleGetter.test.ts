@@ -51,14 +51,15 @@ describe('DatabaseClient.drizzle getter (FR-1.1)', () => {
   });
 
   it('can run a native `insert` + `select` round-trip end-to-end', async () => {
-    const [profile] = await inMemory.drizzle
+    const profileRows = await inMemory.drizzle
       .insert(schema.qualityProfiles)
       .values({ name: 'Test Profile' })
       .returning();
+    const profile = profileRows[0];
     expect(profile).toBeDefined();
-    expect(profile.id).toBeGreaterThan(0);
+    expect(profile!.id).toBeGreaterThan(0);
 
-    const [media] = await inMemory.drizzle
+    const mediaRows = await inMemory.drizzle
       .insert(schema.media)
       .values({
         mediaType: 'MOVIE',
@@ -66,10 +67,11 @@ describe('DatabaseClient.drizzle getter (FR-1.1)', () => {
         cleanTitle: 'drizzletestmovie',
         sortTitle: 'drizzle test movie',
         status: 'RELEASED',
-        qualityProfileId: profile.id,
+        qualityProfileId: profile!.id,
         year: 2026,
       })
       .returning();
+    const media = mediaRows[0];
     expect(media).toBeDefined();
 
     const allMovies = await inMemory.drizzle
@@ -77,6 +79,6 @@ describe('DatabaseClient.drizzle getter (FR-1.1)', () => {
       .from(schema.media)
       .where(eq(schema.media.mediaType, 'MOVIE'));
     expect(allMovies).toHaveLength(1);
-    expect(allMovies[0]?.id).toBe(media.id);
+    expect(allMovies[0]?.id).toBe(media!.id);
   });
 });

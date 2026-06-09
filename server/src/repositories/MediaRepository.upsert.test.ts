@@ -1,22 +1,51 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MediaRepository, type UpsertMovieInput, type UpsertSeriesInput } from './MediaRepository';
+import * as schema from '../db/schema';
 
-function makeDb() {
+type InsertBuilder = {
+  values: ReturnType<typeof vi.fn>;
+  onConflictDoUpdate: ReturnType<typeof vi.fn>;
+  returning: ReturnType<typeof vi.fn>;
+};
+
+function makeInsertBuilder(rows: any[] = []): InsertBuilder {
+  const builder: any = {};
+  builder.values = vi.fn().mockReturnValue(builder);
+  builder.onConflictDoUpdate = vi.fn().mockReturnValue(builder);
+  builder.returning = vi.fn().mockResolvedValue(rows);
+  return builder as InsertBuilder;
+}
+
+interface MockConfig {
+  media?: any[];
+  movies?: any[];
+  series?: any[];
+}
+
+function makeDb(config: MockConfig = {}) {
+  const builders: Record<string, InsertBuilder> = {};
+  if (config.media) builders.media = makeInsertBuilder(config.media);
+  if (config.movies) builders.movies = makeInsertBuilder(config.movies);
+  if (config.series) builders.series = makeInsertBuilder(config.series);
+
   return {
-    media: {
-      upsert: vi.fn(),
-      findMany: vi.fn(),
+    drizzle: {
+      insert: vi.fn().mockImplementation((table: any) => {
+        if (table === schema.media) return builders.media ?? makeInsertBuilder([]);
+        if (table === schema.movies) return builders.movies ?? makeInsertBuilder([]);
+        if (table === schema.series) return builders.series ?? makeInsertBuilder([]);
+        throw new Error(`unexpected table in mock: ${table}`);
+      }),
     },
-    movie: {
-      upsert: vi.fn(),
-      findMany: vi.fn(),
-      findUnique: vi.fn(),
-    },
-    series: {
-      upsert: vi.fn(),
-      findMany: vi.fn(),
-      findUnique: vi.fn(),
-    },
+  };
+}
+
+function findInsertCall(mock: any, table: any) {
+  const idx = mock.mock.calls.findIndex((call: any[]) => call[0] === table);
+  if (idx === -1) return undefined;
+  return {
+    args: mock.mock.calls[idx],
+    result: mock.mock.results[idx]?.value as InsertBuilder | undefined,
   };
 }
 
@@ -42,60 +71,63 @@ const baseSeriesInput: UpsertSeriesInput = {
   year: 2024,
 };
 
-describe('MediaRepository.upsertMovie', () => {
+describe('MediaRepository.upsertMovie (native Drizzle)', () => {
   let prisma: ReturnType<typeof makeDb>;
   let repo: MediaRepository;
 
   beforeEach(() => {
-    prisma = makeDb();
+    prisma = makeDb({
+      media: [{ id: 1, mediaType: 'MOVIE', tmdbId: 100 }],
+      movies: [{ id: 10, mediaId: 1, tmdbId: 100 }],
+    });
     repo = new MediaRepository(prisma as any);
   });
 
   it('creates media record then movie record on first upsert', async () => {
-    prisma.media.upsert.mockResolvedValue({ id: 1, mediaType: 'MOVIE', tmdbId: 100 });
-    prisma.movie.upsert.mockResolvedValue({ id: 10, mediaId: 1, tmdbId: 100 });
-
     const result = await repo.upsertMovie(baseMovieInput);
 
-    expect(prisma.media.upsert).toHaveBeenCalledTimes(1);
-    expect(prisma.media.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { mediaType_tmdbId: { mediaType: 'MOVIE', tmdbId: 100 } },
-      }),
-    );
-    expect(prisma.movie.upsert).toHaveBeenCalledTimes(1);
-    expect(prisma.movie.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { tmdbId: 100 },
-        create: expect.objectContaining({ mediaId: 1, tmdbId: 100 }),
-      }),
-    );
+    expect(prisma.drizzle.insert).toHaveBeenCalledTimes(2);
+
+    const mediaCall = findInsertCall(prisma.drizzle.insert, schema.media);
+    const movieCall = findInsertCall(prisma.drizzle.insert, schema.movies);
+    expect(mediaCall).toBeDefined();
+    expect(movieCall).toBeDefined();
+
+    const mediaValues = mediaCall!.result!.values.mock.calls[0]![0];
+    expect(mediaValues).toMatchObject({
+      mediaType: 'MOVIE',
+      tmdbId: 100,
+    });
+
+    const mediaConflict = mediaCall!.result!.onConflictDoUpdate.mock.calls[0]![0];
+    expect(mediaConflict.target).toEqual([schema.media.mediaType, schema.media.tmdbId]);
+    expect(mediaConflict.set).toMatchObject({ title: 'Test Movie', year: 2024 });
+
+    const movieValues = movieCall!.result!.values.mock.calls[0]![0];
+    expect(movieValues).toMatchObject({
+      tmdbId: 100,
+      mediaId: 1,
+    });
+
+    const movieConflict = movieCall!.result!.onConflictDoUpdate.mock.calls[0]![0];
+    expect(movieConflict.target).toBe(schema.movies.tmdbId);
+
     expect(result).toEqual({ id: 10, mediaId: 1, tmdbId: 100 });
   });
 
   it('updates existing media and movie records on re-upsert', async () => {
-    prisma.media.upsert.mockResolvedValue({ id: 1, mediaType: 'MOVIE', tmdbId: 100 });
-    prisma.movie.upsert.mockResolvedValue({ id: 10, mediaId: 1, tmdbId: 100 });
-
     const updatedInput = { ...baseMovieInput, title: 'Updated Title', year: 2025 };
     await repo.upsertMovie(updatedInput);
 
-    expect(prisma.media.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        update: expect.objectContaining({ title: 'Updated Title', year: 2025 }),
-      }),
-    );
-    expect(prisma.movie.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        update: expect.objectContaining({ title: 'Updated Title', year: 2025 }),
-      }),
-    );
+    const mediaCall = findInsertCall(prisma.drizzle.insert, schema.media);
+    const movieCall = findInsertCall(prisma.drizzle.insert, schema.movies);
+    const mediaSet = mediaCall!.result!.onConflictDoUpdate.mock.calls[0]![0].set;
+    const movieSet = movieCall!.result!.onConflictDoUpdate.mock.calls[0]![0].set;
+    expect(mediaSet).toMatchObject({ title: 'Updated Title', year: 2025 });
+    expect(movieSet).toMatchObject({ title: 'Updated Title', year: 2025 });
   });
 
   it('propagates all optional fields on create', async () => {
-    prisma.media.upsert.mockResolvedValue({ id: 1, mediaType: 'MOVIE', tmdbId: 100 });
-    prisma.movie.upsert.mockResolvedValue({ id: 10, mediaId: 1, tmdbId: 100 });
-
     const fullInput: UpsertMovieInput = {
       ...baseMovieInput,
       imdbId: 'tt1234567',
@@ -110,85 +142,84 @@ describe('MediaRepository.upsertMovie', () => {
 
     await repo.upsertMovie(fullInput);
 
-    const movieCreate = prisma.movie.upsert.mock.calls[0]![0].create;
-    expect(movieCreate.imdbId).toBe('tt1234567');
-    expect(movieCreate.overview).toBe('A great movie');
-    expect(movieCreate.path).toBe('/movies/Test Movie');
-    expect(movieCreate.posterUrl).toBe('https://example.com/poster.jpg');
-    expect(movieCreate.minimumAvailability).toBe('released');
-    expect(movieCreate.inCinemas).toEqual(new Date('2024-01-01'));
-    expect(movieCreate.digitalRelease).toEqual(new Date('2024-03-01'));
-    expect(movieCreate.physicalRelease).toEqual(new Date('2024-06-01'));
+    const movieCall = findInsertCall(prisma.drizzle.insert, schema.movies);
+    const movieValues = movieCall!.result!.values.mock.calls[0]![0];
+    expect(movieValues.imdbId).toBe('tt1234567');
+    expect(movieValues.overview).toBe('A great movie');
+    expect(movieValues.path).toBe('/movies/Test Movie');
+    expect(movieValues.posterUrl).toBe('https://example.com/poster.jpg');
+    expect(movieValues.minimumAvailability).toBe('released');
+    expect(movieValues.inCinemas).toEqual(new Date('2024-01-01'));
+    expect(movieValues.digitalRelease).toEqual(new Date('2024-03-01'));
+    expect(movieValues.physicalRelease).toEqual(new Date('2024-06-01'));
   });
 
-  it('omits optional fields when not provided', async () => {
-    prisma.media.upsert.mockResolvedValue({ id: 1, mediaType: 'MOVIE', tmdbId: 100 });
-    prisma.movie.upsert.mockResolvedValue({ id: 10, mediaId: 1, tmdbId: 100 });
-
+  it('normalizes omitted optional fields to null', async () => {
     await repo.upsertMovie(baseMovieInput);
 
-    const movieCreate = prisma.movie.upsert.mock.calls[0]![0].create;
-    expect(movieCreate.imdbId).toBeUndefined();
-    expect(movieCreate.overview).toBeUndefined();
-    expect(movieCreate.path).toBeUndefined();
-    expect(movieCreate.posterUrl).toBeUndefined();
+    const movieCall = findInsertCall(prisma.drizzle.insert, schema.movies);
+    const movieValues = movieCall!.result!.values.mock.calls[0]![0];
+    expect(movieValues.imdbId).toBeNull();
+    expect(movieValues.overview).toBeNull();
+    expect(movieValues.path).toBeNull();
+    expect(movieValues.posterUrl).toBeNull();
+    expect(movieValues.minimumAvailability).toBeNull();
   });
 });
 
-describe('MediaRepository.upsertSeries', () => {
+describe('MediaRepository.upsertSeries (native Drizzle)', () => {
   let prisma: ReturnType<typeof makeDb>;
   let repo: MediaRepository;
 
   beforeEach(() => {
-    prisma = makeDb();
+    prisma = makeDb({
+      media: [{ id: 2, mediaType: 'TV', tvdbId: 200 }],
+      series: [{ id: 20, mediaId: 2, tvdbId: 200 }],
+    });
     repo = new MediaRepository(prisma as any);
   });
 
   it('creates media record then series record on first upsert', async () => {
-    prisma.media.upsert.mockResolvedValue({ id: 2, mediaType: 'TV', tvdbId: 200 });
-    prisma.series.upsert.mockResolvedValue({ id: 20, mediaId: 2, tvdbId: 200 });
-
     const result = await repo.upsertSeries(baseSeriesInput);
 
-    expect(prisma.media.upsert).toHaveBeenCalledTimes(1);
-    expect(prisma.media.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { mediaType_tvdbId: { mediaType: 'TV', tvdbId: 200 } },
-      }),
-    );
-    expect(prisma.series.upsert).toHaveBeenCalledTimes(1);
-    expect(prisma.series.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { tvdbId: 200 },
-        create: expect.objectContaining({ mediaId: 2, tvdbId: 200 }),
-      }),
-    );
+    expect(prisma.drizzle.insert).toHaveBeenCalledTimes(2);
+
+    const mediaCall = findInsertCall(prisma.drizzle.insert, schema.media);
+    const seriesCall = findInsertCall(prisma.drizzle.insert, schema.series);
+    expect(mediaCall).toBeDefined();
+    expect(seriesCall).toBeDefined();
+
+    const mediaValues = mediaCall!.result!.values.mock.calls[0]![0];
+    expect(mediaValues).toMatchObject({
+      mediaType: 'TV',
+      tvdbId: 200,
+    });
+
+    const mediaConflict = mediaCall!.result!.onConflictDoUpdate.mock.calls[0]![0];
+    expect(mediaConflict.target).toEqual([schema.media.mediaType, schema.media.tvdbId]);
+
+    const seriesValues = seriesCall!.result!.values.mock.calls[0]![0];
+    expect(seriesValues).toMatchObject({
+      tvdbId: 200,
+      mediaId: 2,
+    });
+
     expect(result).toEqual({ id: 20, mediaId: 2, tvdbId: 200 });
   });
 
   it('updates existing media and series records on re-upsert', async () => {
-    prisma.media.upsert.mockResolvedValue({ id: 2, mediaType: 'TV', tvdbId: 200 });
-    prisma.series.upsert.mockResolvedValue({ id: 20, mediaId: 2, tvdbId: 200 });
-
     const updatedInput = { ...baseSeriesInput, title: 'Updated Series', status: 'ended' };
     await repo.upsertSeries(updatedInput);
 
-    expect(prisma.media.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        update: expect.objectContaining({ title: 'Updated Series', status: 'ended' }),
-      }),
-    );
-    expect(prisma.series.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        update: expect.objectContaining({ title: 'Updated Series', status: 'ended' }),
-      }),
-    );
+    const mediaCall = findInsertCall(prisma.drizzle.insert, schema.media);
+    const seriesCall = findInsertCall(prisma.drizzle.insert, schema.series);
+    const mediaSet = mediaCall!.result!.onConflictDoUpdate.mock.calls[0]![0].set;
+    const seriesSet = seriesCall!.result!.onConflictDoUpdate.mock.calls[0]![0].set;
+    expect(mediaSet).toMatchObject({ title: 'Updated Series', status: 'ended' });
+    expect(seriesSet).toMatchObject({ title: 'Updated Series', status: 'ended' });
   });
 
   it('propagates all optional fields on create', async () => {
-    prisma.media.upsert.mockResolvedValue({ id: 2, mediaType: 'TV', tvdbId: 200 });
-    prisma.series.upsert.mockResolvedValue({ id: 20, mediaId: 2, tvdbId: 200 });
-
     const fullInput: UpsertSeriesInput = {
       ...baseSeriesInput,
       tmdbId: 300,
@@ -201,40 +232,26 @@ describe('MediaRepository.upsertSeries', () => {
 
     await repo.upsertSeries(fullInput);
 
-    const seriesCreate = prisma.series.upsert.mock.calls[0]![0].create;
-    expect(seriesCreate.tmdbId).toBe(300);
-    expect(seriesCreate.imdbId).toBe('tt9876543');
-    expect(seriesCreate.overview).toBe('A great series');
-    expect(seriesCreate.path).toBe('/tv/Test Series');
-    expect(seriesCreate.network).toBe('HBO');
-    expect(seriesCreate.posterUrl).toBe('https://example.com/poster.jpg');
-  });
-
-  it('omits optional fields when not provided', async () => {
-    prisma.media.upsert.mockResolvedValue({ id: 2, mediaType: 'TV', tvdbId: 200 });
-    prisma.series.upsert.mockResolvedValue({ id: 20, mediaId: 2, tvdbId: 200 });
-
-    await repo.upsertSeries(baseSeriesInput);
-
-    const seriesCreate = prisma.series.upsert.mock.calls[0]![0].create;
-    expect(seriesCreate.tmdbId).toBeUndefined();
-    expect(seriesCreate.imdbId).toBeUndefined();
-    expect(seriesCreate.overview).toBeUndefined();
-    expect(seriesCreate.path).toBeUndefined();
-    expect(seriesCreate.network).toBeUndefined();
+    const seriesCall = findInsertCall(prisma.drizzle.insert, schema.series);
+    const seriesValues = seriesCall!.result!.values.mock.calls[0]![0];
+    expect(seriesValues.tmdbId).toBe(300);
+    expect(seriesValues.imdbId).toBe('tt9876543');
+    expect(seriesValues.overview).toBe('A great series');
+    expect(seriesValues.path).toBe('/tv/Test Series');
+    expect(seriesValues.network).toBe('HBO');
+    expect(seriesValues.posterUrl).toBe('https://example.com/poster.jpg');
   });
 
   it('propagates posterUrl to series but not media', async () => {
-    prisma.media.upsert.mockResolvedValue({ id: 2, mediaType: 'TV', tvdbId: 200 });
-    prisma.series.upsert.mockResolvedValue({ id: 20, mediaId: 2, tvdbId: 200 });
-
     const inputWithPoster = { ...baseSeriesInput, posterUrl: 'https://example.com/poster.jpg' };
     await repo.upsertSeries(inputWithPoster);
 
-    const mediaCreate = prisma.media.upsert.mock.calls[0]![0].create;
-    expect(mediaCreate.posterUrl).toBeUndefined();
+    const mediaCall = findInsertCall(prisma.drizzle.insert, schema.media);
+    const mediaValues = mediaCall!.result!.values.mock.calls[0]![0];
+    expect(mediaValues.posterUrl).toBeUndefined();
 
-    const seriesCreate = prisma.series.upsert.mock.calls[0]![0].create;
-    expect(seriesCreate.posterUrl).toBe('https://example.com/poster.jpg');
+    const seriesCall = findInsertCall(prisma.drizzle.insert, schema.series);
+    const seriesValues = seriesCall!.result!.values.mock.calls[0]![0];
+    expect(seriesValues.posterUrl).toBe('https://example.com/poster.jpg');
   });
 });

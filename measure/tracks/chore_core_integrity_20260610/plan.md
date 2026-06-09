@@ -13,7 +13,7 @@ _Blast radius: `drizzleClient.ts` (44 importers), `MediaRepository` (5 callers: 
   - [x] Add a public `get drizzle()` getter on `DatabaseClient` that returns the underlying `drizzle(this.sqlite, { schema })` instance (already constructed in the constructor; just expose it).
   - [x] Document the migration path in `server/src/db/drizzleClient.ts` JSDoc.
   - [x] Do NOT remove the Prisma-style delegates yet.
-- [x] **Task 1.2: Add parity-test harness** `[d33dcc8]`
+- [x] **Task 1.2: Add parity-test harness** `[bcf7443]`
   - [x] Create `server/src/db/__tests__/drizzleParity.test.ts` with a helper `expectShimAndNativeEqual(model: ModelName, args: QueryArgs)` that runs the same query against the shim and `this.db.select().from(table)` and asserts identical row sets.
   - [x] Cover at least 5 high-traffic methods: `media.findMany({ where: { mediaType: 'MOVIE' }})`, `indexer.findMany({ orderBy: { priority: 'asc' }})`, `mediaFileVariant.findMany({ where: { movieId: 1 }})`, `episode.findMany({ where: { seriesId: 1 }})`, `mediaFileVariant.count()`.
 - [ ] **Task 1.3: Migrate MediaRepository.upsertMovie to native Drizzle**

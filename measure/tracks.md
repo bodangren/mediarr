@@ -6,18 +6,22 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ## Active Tracks — Execution Order
 
-> Reordered 2026-06-07 (direction & scope review). Value-first: finish the migration tail,
-> then ship the two user-facing features, then the risk-weighted tests, then cut v1.0.
-> Internal test/coverage work with low runtime risk is parked under **Post-v1.0 / Deferred**.
+> Reordered 2026-06-10 (data-layer integrity crisis). The 2026-06-07 ordering is preserved
+> below as **Pre-v1.0 Backlog** for reference, but `chore_core_integrity_20260610` is now
+> the **critical-path** track: every other track builds on top of the data layer it
+> refactors, and a 1,000+ item library will not scale with the in-memory shim. Run Phase 1
+> (strangler-fig migration to native Drizzle) before resuming the user-facing work.
 
-1. - [ ] **Track: Flutter Media Detail Page** *Phases: 5 | Link: [./tracks/feature_flutter_media_detail_20260508/](./tracks/feature_flutter_media_detail_20260508/)* — Movie and series detail screens (metadata, episodes, actions, file info) in the Flutter client. User-facing; the client is the product differentiator.
-2. - [ ] **Track: Scheduler & Automation Dashboard** *Phases: 5 | Link: [./tracks/feature_scheduler_automation_dashboard_20260524/](./tracks/feature_scheduler_automation_dashboard_20260524/)* — React SPA settings page for configuring/monitoring RSS sync, wanted search, and library scan schedules. User-facing.
-3. - [ ] **Track: Server Service Test Coverage — Runtime-Critical** *Stories: 4 (scoped from 10) | Link: [./tracks/chore_untested_server_services_20260526/](./tracks/chore_untested_server_services_20260526/)* — Rescoped 2026-06-07 to Scheduler, EpisodeService, SeriesService, MediaSearchService only; the other 6 services are deferred post-v1.0.
-4. - [ ] **Track: v1.0 Release Cut — Define the Line** *Stories: 4 | Link: [./tracks/release_v1_cut_20260607/](./tracks/release_v1_cut_20260607/)* — Ratify v1.0 scope, confirm gates, tag the release, publish the post-v1.0 backlog. Draws the line that stops open-ended testing/cleanup.
+1. - [ ] **Track: Core Integrity — Data Layer, Type Safety, Repository Unification** *Phases: 5 | Tasks: 28 | Link: [./tracks/chore_core_integrity_20260610/](./tracks/chore_core_integrity_20260610/)* — Replaces in-memory `DatabaseClient` with native Drizzle (strangler-fig); restores type safety across 35 importers; consolidates `SeriesRepository`/`MovieRepository` into `MediaRepository`; fixes Torznab search types, ImportManager season-pack loop, and path-traversal in rescan endpoints. Closes the long-open `modelTypes.ts any` tech-debt entry.
+2. - [ ] **Track: Flutter Media Detail Page** *Phases: 5 | Link: [./tracks/feature_flutter_media_detail_20260508/](./tracks/feature_flutter_media_detail_20260508/)* — Movie and series detail screens (metadata, episodes, actions, file info) in the Flutter client. User-facing; the client is the product differentiator.
+3. - [ ] **Track: Scheduler & Automation Dashboard** *Phases: 5 | Link: [./tracks/feature_scheduler_automation_dashboard_20260524/](./tracks/feature_scheduler_automation_dashboard_20260524/)* — React SPA settings page for configuring/monitoring RSS sync, wanted search, and library scan schedules. User-facing.
+4. - [ ] **Track: Server Service Test Coverage — Runtime-Critical** *Stories: 4 (scoped from 10) | Link: [./tracks/chore_untested_server_services_20260526/](./tracks/chore_untested_server_services_20260526/)* — Rescoped 2026-06-07 to Scheduler, EpisodeService, SeriesService, MediaSearchService only; the other 6 services are deferred post-v1.0.
+5. - [ ] **Track: v1.0 Release Cut — Define the Line** *Stories: 4 | Link: [./tracks/release_v1_cut_20260607/](./tracks/release_v1_cut_20260607/)* — Ratify v1.0 scope, confirm gates, tag the release, publish the post-v1.0 backlog. Draws the line that stops open-ended testing/cleanup.
 
 ## Post-v1.0 / Deferred
 
-> Parked behind `release_v1_cut_20260607` (2026-06-07 restructure). Low runtime risk or
+> Parked behind `release_v1_cut_20260607` (2026-06-07 restructure) **and**
+> `chore_core_integrity_20260610` (data-layer integrity, 2026-06-10). Low runtime risk or
 > blocked on prerequisites. Revisit after v1.0 ships.
 
 - [ ] **Track: Indexer Health Monitoring & Auto-Disable** *Phases: ~4 | Link: [./tracks/indexer_health_monitoring_20260509/](./tracks/indexer_health_monitoring_20260509/)* — Feature; previously unregistered. Evaluate in `release_v1_cut` S1 for ship-in-v1.0 vs after.

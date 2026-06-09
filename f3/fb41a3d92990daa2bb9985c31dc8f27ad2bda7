@@ -1,0 +1,18 @@
+Tasks 1.3 + 1.4 (FR-1.3, FR-1.4): Migrate MediaRepository.upsertMovie/Series/SeasonsAndEpisodes to native Drizzle.
+
+MediaRepository.upsertMovie / upsertSeries:
+- Replaced prisma.media.upsert + prisma.movie.upsert with native Drizzle insert().values().onConflictDoUpdate().returning().
+- Conflict targets use natural unique constraints ([media.mediaType, media.tmdbId], [media.mediaType, media.tvdbId], movies.tmdbId, series.tvdbId).
+- Optional fields (imdbId, overview, posterUrl, ...) normalize to null when omitted.
+
+MediaRepository.upsertSeasonsAndEpisodes:
+- Replaced the for-loop of season.upsert + episode.upsert calls with a single drizzle.transaction() block.
+- Conflict targets use [seasons.seriesId, seasons.seasonNumber] and episodes.tvdbId.
+- Uses tx.insert() so all inserts roll back together on any error.
+
+Test updates:
+- MediaRepository.upsert.test.ts: rewrote mock helpers to use makeInsertBuilder() that returns a chain (.values/.onConflictDoUpdate/.returning). All 8 tests green.
+- MediaRepository.upsertSeasonsAndEpisodes.test.ts: rewrote with a transaction mock that provides a tx.insert() builder. All 12 tests green.
+- drizzleGetter.test.ts: fixed noUncheckedIndexedAccess violations on .returning()[0].
+
+Typecheck: `CI=true npx tsc --noEmit -p server/tsconfig.json` → clean.

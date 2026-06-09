@@ -1,0 +1,9 @@
+Task 1.1 (FR-1.1): Expose native Drizzle getter on DatabaseClient.
+
+- Added public `get drizzle()` getter returning the underlying `drizzle(this.sqlite, { schema })` instance.
+- Added exported type alias `DrizzleDB = BetterSQLite3Database<typeof schema>` for downstream typing.
+- Added class-level JSDoc explaining the strangler-fig migration path and the role of `this.drizzle` vs the model delegates.
+- New test: `server/src/db/__tests__/drizzleGetter.test.ts` — 4 tests asserting the getter is callable, is the same instance as `this.db`, runs native `select` against the schema, and completes an insert+select round-trip.
+- Migration strategy unchanged: shim's `this.media`/`this.series`/etc. delegates remain for un-migrated code.
+
+Tests: `CI=true npx vitest run server/src/db/__tests__/drizzleGetter.test.ts` → 4/4 passing.

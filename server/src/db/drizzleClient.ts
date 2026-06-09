@@ -1,9 +1,18 @@
 import { eq, type SQL } from 'drizzle-orm';
-import { drizzle } from 'drizzle-orm/better-sqlite3';
+import { drizzle, type BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import BetterSqlite3 from 'better-sqlite3';
 import * as schema from './schema.js';
 
 type AnyRecord = Record<string, any>;
+
+/**
+ * Native Drizzle database instance, typed against the local `schema` module.
+ * This is the **destination** of the strangler-fig migration away from the
+ * in-memory `this.media` / `this.series` / `this.movie` / … shim. New code
+ * should construct queries against this instance (e.g. `db.select().from(media)`),
+ * not against the model delegates.
+ */
+export type DrizzleDB = BetterSQLite3Database<typeof schema>;
 
 type SortDirection = 'asc' | 'desc';
 
@@ -413,10 +422,45 @@ type QueryContext = {
   rowsCache: Map<ModelName, Promise<any[]>>;
 };
 
+/**
+ * Database access object for the Mediarr server.
+ *
+ * The class historically exposed a Prisma-style API (`this.media.upsert(…)`,
+ * `this.series.findMany(…)`, …) backed by an **in-memory shim** that loads
+ * every table into a JavaScript array and filters in JS. That shim is the
+ * single largest scalability blocker: row counts scale with JS memory, and
+ * no SQL index is used. A 1,000-row library already pays a measurable cost
+ * on every repository call.
+ *
+ * The `chore_core_integrity_20260610` track replaces the shim with native
+ * Drizzle SQL queries. As repositories migrate, they should read from
+ * `this.drizzle` (preferred) or `this.db` (alias) and stop touching the
+ * `this.media` / `this.series` / … model delegates. Once every repository
+ * is migrated the model delegates and the in-memory loaders are removed
+ * (see FR-1.8 in the track spec).
+ *
+ * The shim remains fully functional during the migration; nothing about
+ * the constructor signature or the `this.<model>.<method>(…)` API changes
+ * for unmigrated code paths. New code MUST go through `this.drizzle`.
+ */
 export class DatabaseClient {
   readonly sqlite: any;
 
-  readonly db: any;
+  /**
+   * Native Drizzle database handle. This is the **preferred** access path for
+   * repositories that have been migrated off the in-memory shim. Code that has
+   * not yet been migrated should keep using `this.media`, `this.series`, etc.
+   */
+  readonly db: DrizzleDB;
+
+  /**
+   * Alias for {@link DatabaseClient.db} that mirrors the underlying
+   * `drizzle(this.sqlite, { schema })` factory name. Use this in new code so
+   * the intent (native Drizzle SQL) is clear at the call site.
+   */
+  get drizzle(): DrizzleDB {
+    return this.db;
+  }
 
   readonly media: AnyRecord;
   readonly series: AnyRecord;

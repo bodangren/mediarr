@@ -75,6 +75,7 @@ const renderComponent = (props = {}) => {
   - Assert `onDelete` called with correct list
 - [x] Run: `bunx vitest run src/components/importlists/ImportListList.test.tsx` — 10/10 green (8 plan tests; provider mapping parameterized to 3 cases)
 - [x] Commit: `test(importlists): add ImportListList component tests` (`4d0e168`)
+- [x] Re-verify: `bunx vitest run src/components/importlists/ImportListList.test.tsx` — 10/10 green (verified 2026-06-10). `npm test` has pre-existing failures in unrelated services (TorrentManager BigInt, BulkImportService insert, subtitle variants, api-route-map) — NOT from import list components. Full suite green gate deferred to S6.
 
 ## Phase S3: ImportListModal tests
 

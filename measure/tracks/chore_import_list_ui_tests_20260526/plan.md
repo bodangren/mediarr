@@ -79,29 +79,33 @@ const renderComponent = (props = {}) => {
 
 ## Phase S3: ImportListModal tests
 
-- [ ] Create `app/src/components/importlists/ImportListModal.test.tsx`
-- [ ] Write test: `renders empty form when editList is null`
+- [x] Create `app/src/components/importlists/ImportListModal.test.tsx`
+- [x] Write test: `does not render dialog content when isOpen is false` (smoke — per test-strategy §5)
+  - Pass `isOpen: false`, assert `dialog` and form fields are absent
+- [x] Write test: `renders empty form when editList is null`
   - Assert name input is empty, "Add Import List" button text
-- [ ] Write test: `pre-fills form when editList is provided`
+- [x] Write test: `pre-fills form when editList is provided`
   - Pass `editList` with all fields populated
-  - Assert inputs have correct values
-- [ ] Write test: `shows TMDB Popular fields when providerType is tmdb-popular`
+  - Assert inputs have correct values (name, root folder, provider, quality profile, monitor, sync interval, enabled, TMDB Popular config: mediaType + limit)
+- [x] Write test: `shows TMDB Popular fields when providerType is tmdb-popular`
   - Assert "Limit" input and "Media Type" select are visible
-- [ ] Write test: `shows TMDB List fields when providerType is tmdb-list`
+- [x] Write test: `shows TMDB List fields when providerType is tmdb-list and hides TMDB Popular fields`
   - Select "tmdb-list" from provider dropdown
-  - Assert "TMDB List ID" input is visible
-- [ ] Write test: `shows validation alert when required fields are empty`
-  - Click Save without filling fields
-  - Assert validation Alert appears
-  - Assert `onSave` not called
-- [ ] Write test: `calls onSave with form data when valid`
+  - Assert "TMDB List ID" input is visible, Popular fields absent (field swap)
+- [x] Write test: `pre-fills TMDB List ID when editList is a tmdb-list`
+  - Assert listId input pre-populated from `config.listId`
+- [x] Write test: `shows validation alert and disables Save when required fields are empty`
+  - Assert both halves: Alert visible AND Save button disabled (so onSave cannot be called)
+- [x] Write test: `calls onSave with form data when valid`
   - Fill all required fields, click Save
-  - Assert `onSave` called with matching input object
-- [ ] Write test: `calls onClose when Cancel clicked`
-  - Click Cancel
-  - Assert `onClose` called
-- [ ] Run: `npx vitest run app/src/components/importlists/ImportListModal.test.tsx`
-- [ ] Commit: `test(importlists): add ImportListModal component tests`
+  - Assert `onSave` called with matching input object (providerType, config, rootFolderPath, qualityProfileId, defaults: enabled, syncInterval, monitorType)
+- [x] Write test: `calls onSave with tmdb-list config when provider is switched before submit`
+  - Switch to tmdb-list, fill listId, submit
+  - Assert `onSave.config === { listId: ... }`
+- [x] Write test: `calls onClose when Cancel clicked`
+  - Click Cancel, assert `onClose` called
+- [x] Run: `bunx vitest run src/components/importlists/ImportListModal.test.tsx` — 10/10 green
+- [x] Commit: `test(importlists): add ImportListModal component tests`
 
 ## Phase S4: AddExclusionModal tests
 

@@ -1,0 +1,9 @@
+Task 1.5 (FR-1.5): Migrate IndexerRepository to native Drizzle.
+
+- Replaced `this.prisma.indexer.{create,findUnique,findMany,update,delete}` with native Drizzle: `db.insert(indexers)`, `db.select().from(indexers).where(...)`, `db.update(indexers).set(...).where(...)`, `db.delete(indexers).where(...)`.
+- Preserved the encryption boundary: `settings` is encrypted on create/update and decrypted on read.
+- Public API unchanged: create/findById/findAll/findAllEnabled/update/delete all keep the same signatures.
+- Added `server/src/repositories/IndexerRepository.test.ts` — 11 tests covering create, findById, findAll, findAllEnabled, update, delete (including row-not-found error paths).
+- All 18 indexerRoutes tests still pass (they mock the repository directly so they were insulated from the migration).
+
+Tests: `CI=true npx vitest run server/src/repositories/IndexerRepository.test.ts` → 11/11 green; `CI=true npx vitest run server/src/api/routes/indexerRoutes` → 18/18 green.

@@ -55,4 +55,12 @@ This document summarizes key rules and best practices from the Google TypeScript
   const prisma = new PrismaClient({ adapter });
   ```
 
+## 7. Model Type Aliases (server/src/types/modelTypes.ts)
+
+- **No `any` aliases:** Every alias in `server/src/types/modelTypes.ts` must be a Drizzle `$inferSelect` type (e.g. `type Media = InferSelectModel<typeof media>`). The legacy Prisma shim is gone; `any` aliases hide real schema/code mismatches (the original `bigint` ↔ `number` drift in `TorrentManager` and `SubtitleVariantRepository` was only catchable once the aliases became strict).
+- **ESLint guard:** `server/eslint.config.mjs` enforces this with `no-restricted-syntax` on `ExportNamedDeclaration > TSTypeAliasDeclaration[typeAnnotation.typeAnnotation.type='TSAnyKeyword']`. The error message references `chore_core_integrity_20260610` (FR-2.4).
+- **Cascade discipline:** When a new column is added to `server/src/db/schema.ts`, the `$inferSelect` aliases update automatically. Touch the cascade only when the *meaning* of a column changes (type, nullability, name).
+- **Avoid the Prisma namespace:** The `Prisma.*` namespace was removed in `chore_close_drizzle_migration_20260607`. If you need a Prisma-style input type, derive it from the schema (`InferInsertModel<typeof table>`), do not re-introduce a global `Prisma` namespace.
+- **JSON columns:** Use `PrismaJsonValue` / `PrismaJsonObject` / `PrismaJsonArray` (kept in `modelTypes.ts`) for text-backed JSON columns. There is no equivalent in the Drizzle `mode: 'json'` inference.
+
 *Source: [Google TypeScript Style Guide](https://google.github.io/styleguide/tsguide.html)*

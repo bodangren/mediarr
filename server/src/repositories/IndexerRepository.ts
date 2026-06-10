@@ -1,4 +1,6 @@
+import { eq } from 'drizzle-orm';
 import type { DatabaseClient } from '../db/drizzleClient';
+import * as schema from '../db/schema';
 import type { Indexer } from '../types/modelTypes';
 import { encrypt, decrypt } from '../utils/encryption';
 
@@ -7,8 +9,9 @@ export class IndexerRepository {
 
   async create(data: Omit<Indexer, 'id' | 'added'>): Promise<Indexer> {
     const encryptedSettings = encrypt(data.settings);
-    return this.prisma.indexer.create({
-      data: {
+    const [row] = await this.prisma.drizzle
+      .insert(schema.indexers)
+      .values({
         name: data.name,
         implementation: data.implementation,
         configContract: data.configContract,
@@ -19,15 +22,21 @@ export class IndexerRepository {
         supportsRss: data.supportsRss ?? false,
         supportsSearch: data.supportsSearch ?? false,
         priority: data.priority ?? 25,
-      },
-    });
+      })
+      .returning();
+    if (!row) {
+      throw new Error('IndexerRepository.create: insert returned no row');
+    }
+    return row as Indexer;
   }
 
   async findById(id: number): Promise<Indexer | null> {
-    const indexer = await this.prisma.indexer.findUnique({
-      where: { id },
-    });
-
+    const rows = await this.prisma.drizzle
+      .select()
+      .from(schema.indexers)
+      .where(eq(schema.indexers.id, id))
+      .limit(1);
+    const indexer = rows[0];
     if (!indexer) return null;
 
     return {
@@ -37,25 +46,26 @@ export class IndexerRepository {
   }
 
   async findAll(): Promise<Indexer[]> {
-    const indexers = await this.prisma.indexer.findMany();
-    return indexers.map((indexer: any) => ({
-      ...indexer,
-      settings: decrypt(indexer.settings),
+    const rows = await this.prisma.drizzle.select().from(schema.indexers);
+    return rows.map((row) => ({
+      ...row,
+      settings: decrypt(row.settings),
     }));
   }
 
   async findAllEnabled(): Promise<Indexer[]> {
-    const indexers = await this.prisma.indexer.findMany({
-      where: { enabled: true },
-    });
-    return indexers.map((indexer: any) => ({
-      ...indexer,
-      settings: decrypt(indexer.settings),
+    const rows = await this.prisma.drizzle
+      .select()
+      .from(schema.indexers)
+      .where(eq(schema.indexers.enabled, true));
+    return rows.map((row) => ({
+      ...row,
+      settings: decrypt(row.settings),
     }));
   }
 
   async update(id: number, data: Partial<Omit<Indexer, 'id' | 'added'>>): Promise<Indexer> {
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
     if (data.name !== undefined) updateData.name = data.name;
     if (data.implementation !== undefined) updateData.implementation = data.implementation;
     if (data.configContract !== undefined) updateData.configContract = data.configContract;
@@ -69,10 +79,15 @@ export class IndexerRepository {
       updateData.settings = encrypt(data.settings);
     }
 
-    const updated = await this.prisma.indexer.update({
-      where: { id },
-      data: updateData,
-    });
+    const rows = await this.prisma.drizzle
+      .update(schema.indexers)
+      .set(updateData)
+      .where(eq(schema.indexers.id, id))
+      .returning();
+    const updated = rows[0];
+    if (!updated) {
+      throw new Error(`IndexerRepository.update: indexer ${id} not found`);
+    }
 
     return {
       ...updated,
@@ -81,8 +96,14 @@ export class IndexerRepository {
   }
 
   async delete(id: number): Promise<Indexer> {
-    return this.prisma.indexer.delete({
-      where: { id },
-    });
+    const rows = await this.prisma.drizzle
+      .delete(schema.indexers)
+      .where(eq(schema.indexers.id, id))
+      .returning();
+    const deleted = rows[0];
+    if (!deleted) {
+      throw new Error(`IndexerRepository.delete: indexer ${id} not found`);
+    }
+    return deleted as Indexer;
   }
 }

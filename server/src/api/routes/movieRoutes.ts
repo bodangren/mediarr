@@ -6,7 +6,7 @@ import type { ApiDependencies } from '../types';
 import type { DatabaseClient } from '../../db/drizzleClient';
 import { MovieOrganizeService, DEFAULT_MEDIA_MANAGEMENT_SETTINGS } from '../../services/MovieOrganizeService';
 import { FilenameParsingService } from '../../services/FilenameParsingService';
-import { MovieRepository, type BulkMovieChanges } from '../../repositories/MovieRepository';
+import { MediaRepository, type BulkMovieChanges } from '../../repositories/MediaRepository';
 import type { SearchParams } from '../../services/MediaSearchService';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -606,16 +606,16 @@ export function registerMovieRoutes(
       changes: BulkMovieChanges;
     };
 
-    const movieRepo = new MovieRepository(deps.prisma as any);
-    const result = await movieRepo.bulkUpdate(body.movieIds, body.changes);
+    const mediaRepo = new MediaRepository(deps.prisma as any);
+    const result = await mediaRepo.bulkUpdateMovies(body.movieIds, body.changes);
 
     return sendSuccess(reply, result);
   });
 
   // Get root folders from existing movies
   app.get('/api/movies/root-folders', async (_request, reply) => {
-    const movieRepo = new MovieRepository(deps.prisma as any);
-    const rootFolders = await movieRepo.getDistinctRootFolders();
+    const mediaRepo = new MediaRepository(deps.prisma as any);
+    const rootFolders = await mediaRepo.getDistinctMovieRootFolders();
 
     return sendSuccess(reply, { rootFolders });
   });

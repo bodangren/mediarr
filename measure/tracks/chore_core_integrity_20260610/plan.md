@@ -46,17 +46,17 @@ _Spec ref: spec.md#phase-2-type-safety-restoration_
 
 _Blast radius: `modelTypes.ts` (35 importers: 17 server repos, 14 services, 4 transport files, plus route files). Per `build-graph stats`, `modelTypes.ts` is the 6th-most-imported file in the codebase (35 imports)._
 
-- [ ] **Task 2.1: Replace `any` aliases with Drizzle $inferSelect**
-  - [ ] For each of the 33 model aliases in `modelTypes.ts`, replace `any` with `typeof schema.<table>.$inferSelect`.
-  - [ ] Add explicit JSDoc to each: `/** Inferred from server/src/db/schema.ts via Drizzle \`$inferSelect\`. */`.
-  - [ ] If the `findMany` return type needs to be `T[]` (vs `T | undefined`), document the optionality and where to add `.then()` calls.
-- [ ] **Task 2.2: Cascade fix to importers**
-  - [ ] For each of the 35 importing files, fix the resulting type errors (likely 1-3 per file).
-  - [ ] Common fixes: handle `findUnique` returning `T | undefined`, replace `as any` with explicit type narrowing, add `?` to optional chain accesses.
-  - [ ] Run `tsc --noEmit -p server/tsconfig.json` until it is green.
-- [ ] **Task 2.3: Remove Prisma namespace**
-  - [ ] Delete the `Prisma` namespace from `modelTypes.ts`.
-  - [ ] If `PrismaJsonValue` is still needed, move it to `server/src/types/json.ts` and add JSDoc explaining why it is a separate type.
+- [x] **Task 2.1: Replace `any` aliases with Drizzle $inferSelect** `[08ce0d3]`
+  - [x] For each of the 33 model aliases in `modelTypes.ts`, replace `any` with `typeof schema.<table>.$inferSelect`.
+  - [x] Add explicit JSDoc to each: `/** Inferred from server/src/db/schema.ts via Drizzle \`$inferSelect\`. */`.
+  - [x] If the `findMany` return type needs to be `T[]` (vs `T | undefined`), document the optionality and where to add `.then()` calls.
+- [x] **Task 2.2: Cascade fix to importers** `[08ce0d3]`
+  - [x] For each of the 35 importing files, fix the resulting type errors (likely 1-3 per file).
+  - [x] Common fixes: handle `findUnique` returning `T | undefined`, replace `as any` with explicit type narrowing, add `?` to optional chain accesses.
+  - [x] Run `tsc --noEmit -p server/tsconfig.json` until it is green.
+- [x] **Task 2.3: Remove Prisma namespace** `[08ce0d3]`
+  - [x] Delete the `Prisma` namespace from `modelTypes.ts`.
+  - [x] If `PrismaJsonValue` is still needed, move it to `server/src/types/json.ts` and add JSDoc explaining why it is a separate type.
 - [ ] **Task 2.4: Add lint guard**
   - [ ] Add an ESLint rule (`no-restricted-syntax` or `no-restricted-imports`) that prevents `modelTypes.ts` from exporting `any` aliases.
   - [ ] Document the rule in `measure/code_styleguides/typescript.md`.

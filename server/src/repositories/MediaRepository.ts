@@ -1,6 +1,8 @@
+import { eq, inArray } from 'drizzle-orm';
 import type { DatabaseClient } from '../db/drizzleClient';
 import * as schema from '../db/schema';
 import type { Movie, Series } from '../types/modelTypes';
+import type { BulkUpdateResult } from '../contracts/bulk';
 import type { SeriesDetails } from '../services/MetadataProvider';
 
 export interface UpsertMovieInput {
@@ -20,6 +22,20 @@ export interface UpsertMovieInput {
   inCinemas?: Date | undefined;
   digitalRelease?: Date | undefined;
   physicalRelease?: Date | undefined;
+}
+
+export interface BulkSeriesChanges {
+  qualityProfileId?: number;
+  monitored?: boolean;
+  rootFolderPath?: string;
+  seasonFolder?: boolean;
+}
+
+export interface BulkMovieChanges {
+  qualityProfileId?: number;
+  monitored?: boolean;
+  minimumAvailability?: string;
+  path?: string;
 }
 
 export interface UpsertSeriesInput {
@@ -283,5 +299,143 @@ export class MediaRepository {
           });
       }
     });
+  }
+
+  // ─── Bulk update helpers (migrated from SeriesRepository / MovieRepository) ──
+
+  /**
+   * Bulk update multiple series with the same changes. Wraps every row in its
+   * own try/catch so a single bad row does not abort the whole batch.
+   */
+  async bulkUpdateSeries(
+    seriesIds: number[],
+    changes: BulkSeriesChanges,
+  ): Promise<BulkUpdateResult> {
+    const result: BulkUpdateResult = { updated: 0, failed: 0, errors: [] };
+    if (seriesIds.length === 0) return result;
+
+    const updateData: Partial<typeof schema.series.$inferInsert> = {};
+    if (changes.qualityProfileId !== undefined) updateData.qualityProfileId = changes.qualityProfileId;
+    if (changes.monitored !== undefined) updateData.monitored = changes.monitored;
+    if (changes.rootFolderPath !== undefined) updateData.path = changes.rootFolderPath;
+    // seasonFolder is not yet on the Series schema; ignored intentionally.
+
+    if (Object.keys(updateData).length === 0) return result;
+
+    return this.prisma.drizzle.transaction(async (tx) => {
+      for (const seriesId of seriesIds) {
+        try {
+          await tx
+            .update(schema.series)
+            .set(updateData)
+            .where(eq(schema.series.id, seriesId));
+          result.updated += 1;
+        } catch (error) {
+          result.failed += 1;
+          result.errors?.push({
+            seriesId,
+            error: error instanceof Error ? error.message : 'Unknown error',
+          });
+        }
+      }
+      return result;
+    });
+  }
+
+  /**
+   * Bulk update multiple movies with the same changes. Same per-row safety as
+   * {@link bulkUpdateSeries}.
+   */
+  async bulkUpdateMovies(
+    movieIds: number[],
+    changes: BulkMovieChanges,
+  ): Promise<BulkUpdateResult> {
+    const result: BulkUpdateResult = { updated: 0, failed: 0, errors: [] };
+    if (movieIds.length === 0) return result;
+
+    const updateData: Partial<typeof schema.movies.$inferInsert> = {};
+    if (changes.qualityProfileId !== undefined) updateData.qualityProfileId = changes.qualityProfileId;
+    if (changes.monitored !== undefined) updateData.monitored = changes.monitored;
+    if (changes.minimumAvailability !== undefined) updateData.minimumAvailability = changes.minimumAvailability;
+    if (changes.path !== undefined) updateData.path = changes.path;
+
+    if (Object.keys(updateData).length === 0) return result;
+
+    return this.prisma.drizzle.transaction(async (tx) => {
+      for (const movieId of movieIds) {
+        try {
+          await tx
+            .update(schema.movies)
+            .set(updateData)
+            .where(eq(schema.movies.id, movieId));
+          result.updated += 1;
+        } catch (error) {
+          result.failed += 1;
+          result.errors?.push({
+            movieId,
+            error: error instanceof Error ? error.message : 'Unknown error',
+          });
+        }
+      }
+      return result;
+    });
+  }
+
+  /**
+   * Resolve a list of series ids to full series rows in one Drizzle round-trip.
+   */
+  async findSeriesByIds(ids: number[]): Promise<Series[]> {
+    if (ids.length === 0) return [];
+    const rows = await this.prisma.drizzle
+      .select()
+      .from(schema.series)
+      .where(inArray(schema.series.id, ids));
+    return rows as Series[];
+  }
+
+  /**
+   * Resolve a list of movie ids to full movie rows in one Drizzle round-trip.
+   */
+  async findMoviesByIds(ids: number[]): Promise<Movie[]> {
+    if (ids.length === 0) return [];
+    const rows = await this.prisma.drizzle
+      .select()
+      .from(schema.movies)
+      .where(inArray(schema.movies.id, ids));
+    return rows as Movie[];
+  }
+
+  /**
+   * Distinct top-level root folders for all series with a non-null `path`.
+   * Extracts the first path segment (e.g. `/tv/Show (2024)` → `/tv`).
+   */
+  async getDistinctSeriesRootFolders(): Promise<string[]> {
+    const rows = await this.prisma.drizzle
+      .select({ path: schema.series.path })
+      .from(schema.series);
+    const set = new Set<string>();
+    for (const r of rows) {
+      if (!r.path) continue;
+      const [first] = r.path.split('/').filter(Boolean);
+      if (first) set.add('/' + first);
+    }
+    return Array.from(set).sort();
+  }
+
+  /**
+   * Distinct top-level root folders for all movies with a non-null `path`.
+   * Extracts the first path segment (e.g. `/movies/Film (2024)` → `/movies`).
+   */
+  async getDistinctMovieRootFolders(): Promise<string[]> {
+    const rows = await this.prisma.drizzle
+      .select({ path: schema.movies.path })
+      .from(schema.movies);
+    const set = new Set<string>();
+    for (const r of rows) {
+      if (!r.path) continue;
+      const [first] = r.path.split('/').filter(Boolean);
+      if (first) set.add('/' + first);
+    }
+    return Array.from(set).sort();
   }
 }

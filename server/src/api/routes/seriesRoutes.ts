@@ -4,7 +4,7 @@ import { assertFound, parseIdParam, sortByField, assertNoAssociatedTorrents } fr
 import { ValidationError } from '../../errors/domainErrors';
 import type { ApiDependencies } from '../types';
 import type { DatabaseClient } from '../../db/drizzleClient';
-import { SeriesRepository, type BulkSeriesChanges } from '../../repositories/SeriesRepository';
+import { MediaRepository, type BulkSeriesChanges } from '../../repositories/MediaRepository';
 import { SeriesMonitoringService, type MonitoringType } from '../../services/SeriesMonitoringService';
 import { SeriesOrganizeService, DEFAULT_SERIES_MANAGEMENT_SETTINGS } from '../../services/SeriesOrganizeService';
 import { FilenameParsingService } from '../../services/FilenameParsingService';
@@ -903,18 +903,10 @@ export function registerSeriesRoutes(
       changes: BulkSeriesChanges;
     };
 
-    const seriesRepo = new SeriesRepository(deps.prisma as any);
-    const result = await seriesRepo.bulkUpdate(body.seriesIds, body.changes);
+    const mediaRepo = new MediaRepository(deps.prisma as any);
+    const result = await mediaRepo.bulkUpdateSeries(body.seriesIds, body.changes);
 
     return sendSuccess(reply, result);
-  });
-
-  // Get root folders from existing series
-  app.get('/api/series/root-folders', async (_request, reply) => {
-    const seriesRepo = new SeriesRepository(deps.prisma as any);
-    const rootFolders = await seriesRepo.getDistinctRootFolders();
-
-    return sendSuccess(reply, { rootFolders });
   });
 
   // =====================

@@ -28,6 +28,12 @@ export interface SearchQuery {
   imdbid?: string;
   tmdbid?: number | string;
   tvdbid?: number;
+  /**
+   * Optional media type discriminator. When present, the Torznab URL
+   * builder uses `t=movie` for movies and `t=tvsearch` for TV series
+   * instead of the generic `t=search` fallback. FR-4.1.
+   */
+  mediaType?: 'movie' | 'tv';
 }
 
 /**
@@ -104,11 +110,13 @@ export class TorznabIndexer extends BaseIndexer {
 
   buildSearchUrl(query: SearchQuery): string {
     const params = new URLSearchParams();
-    params.set('t', 'search');
-    console.log('[DIAG:buildSearchUrl] query=%j (NOTE: always using t=search, ignoring tmdbid=%j)', query, query.tmdbid);
+    const torznabType = this.resolveTorznabType(query);
+    params.set('t', torznabType);
     params.set('apikey', this.apiKey);
 
-    if (query.q) {
+    if (query.q && torznabType === 'search') {
+      // Free-text queries only make sense in the generic t=search path;
+      // Torznab caps/movie/tvsearch endpoints usually require IDs.
       params.set('q', query.q);
     }
     if (query.categories && query.categories.length > 0) {
@@ -123,11 +131,28 @@ export class TorznabIndexer extends BaseIndexer {
     if (query.imdbid) {
       params.set('imdbid', query.imdbid.replace(/^tt/, ''));
     }
+    if (query.tmdbid !== undefined) {
+      params.set('tmdbid', String(query.tmdbid));
+    }
     if (query.tvdbid !== undefined) {
       params.set('tvdbid', String(query.tvdbid));
     }
 
     return `${this.apiUrl}/api?${params.toString()}`;
+  }
+
+  /**
+   * Resolve the Torznab `t=` parameter from the query's mediaType and
+   * identifier fields. Precedence: explicit mediaType wins; otherwise
+   * tmdbId with no tvdbId → movie; tvdbId → tvsearch; otherwise generic
+   * search. (FR-4.1)
+   */
+  private resolveTorznabType(query: SearchQuery): 'movie' | 'tvsearch' | 'search' {
+    if (query.mediaType === 'movie') return 'movie';
+    if (query.mediaType === 'tv') return 'tvsearch';
+    if (query.tmdbid !== undefined && query.tvdbid === undefined) return 'movie';
+    if (query.tvdbid !== undefined) return 'tvsearch';
+    return 'search';
   }
 
   buildRssUrl(): string {

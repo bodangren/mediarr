@@ -26,28 +26,28 @@ const renderComponent = (props = {}) => {
 
 ## Phase S1: ExclusionManager tests
 
-- [~] Create `app/src/components/importlists/ExclusionManager.test.tsx`
-- [~] Write test: `renders table rows for each exclusion`
+- [x] Create `app/src/components/importlists/ExclusionManager.test.tsx`
+- [x] Write test: `renders table rows for each exclusion`
   - Pass `exclusions: [{ id: 1, title: 'Movie A', tmdbId: 100 }, { id: 2, title: 'Movie B', tmdbId: 200 }]`
   - Assert `screen.getByText('Movie A')` and `screen.getByText('Movie B')` exist
   - Assert table has 2 data rows
-- [~] Write test: `renders empty state when exclusions is empty`
+- [x] Write test: `renders empty state when exclusions is empty`
   - Pass `exclusions: []`
   - Assert empty-state Alert is visible
-- [~] Write test: `renders error state when error prop is set`
+- [x] Write test: `renders error state when error prop is set`
   - Pass `error: new Error('Failed to load')`
   - Assert error Alert contains "Failed to load"
-- [~] Write test: `renders loading state when isLoading is true`
+- [x] Write test: `renders loading state when isLoading is true`
   - Pass `isLoading: true`
   - Assert loading indicator is visible
-- [~] Write test: `calls onRemoveExclusion with correct exclusion when Remove is clicked`
+- [x] Write test: `calls onRemoveExclusion with correct exclusion when Remove is clicked`
   - Pass 2 exclusions, click Remove on the second
   - Assert `onRemoveExclusion` called with the second exclusion object
-- [~] Write test: `calls onAddExclusion when Add Exclusion button is clicked`
+- [x] Write test: `calls onAddExclusion when Add Exclusion button is clicked`
   - Click the "Add Exclusion" button
   - Assert `onAddExclusion` called once
-- [ ] Run: `npx vitest run app/src/components/importlists/ExclusionManager.test.tsx`
-- [ ] Commit: `test(importlists): add ExclusionManager component tests`
+- [x] Run: `bunx vitest run src/components/importlists/ExclusionManager.test.tsx` — 7/7 green
+- [x] Commit: `test(importlists): add ExclusionManager component tests` (`845dffe`)
 
 ## Phase S2: ImportListList tests
 

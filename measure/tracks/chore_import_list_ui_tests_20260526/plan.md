@@ -74,7 +74,7 @@ const renderComponent = (props = {}) => {
   - Click Delete
   - Assert `onDelete` called with correct list
 - [x] Run: `bunx vitest run src/components/importlists/ImportListList.test.tsx` — 10/10 green (8 plan tests; provider mapping parameterized to 3 cases)
-- [~] Commit: `test(importlists): add ImportListList component tests`
+- [x] Commit: `test(importlists): add ImportListList component tests` (`4d0e168`)
 
 ## Phase S3: ImportListModal tests
 

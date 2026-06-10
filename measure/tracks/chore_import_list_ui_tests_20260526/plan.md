@@ -79,33 +79,34 @@ const renderComponent = (props = {}) => {
 
 ## Phase S3: ImportListModal tests
 
-- [x] Create `app/src/components/importlists/ImportListModal.test.tsx`
-- [x] Write test: `does not render dialog content when isOpen is false` (smoke — per test-strategy §5)
+- [x] Create `app/src/components/importlists/ImportListModal.test.tsx` (`3268e0e`)
+- [x] Write test: `does not render dialog content when isOpen is false` (smoke — per test-strategy §5) (`3268e0e`)
   - Pass `isOpen: false`, assert `dialog` and form fields are absent
-- [x] Write test: `renders empty form when editList is null`
+- [x] Write test: `renders empty form when editList is null` (`3268e0e`)
   - Assert name input is empty, "Add Import List" button text
-- [x] Write test: `pre-fills form when editList is provided`
+- [x] Write test: `pre-fills form when editList is provided` (`3268e0e`)
   - Pass `editList` with all fields populated
   - Assert inputs have correct values (name, root folder, provider, quality profile, monitor, sync interval, enabled, TMDB Popular config: mediaType + limit)
-- [x] Write test: `shows TMDB Popular fields when providerType is tmdb-popular`
+- [x] Write test: `shows TMDB Popular fields when providerType is tmdb-popular` (`3268e0e`)
   - Assert "Limit" input and "Media Type" select are visible
-- [x] Write test: `shows TMDB List fields when providerType is tmdb-list and hides TMDB Popular fields`
+- [x] Write test: `shows TMDB List fields when providerType is tmdb-list and hides TMDB Popular fields` (`3268e0e`)
   - Select "tmdb-list" from provider dropdown
   - Assert "TMDB List ID" input is visible, Popular fields absent (field swap)
-- [x] Write test: `pre-fills TMDB List ID when editList is a tmdb-list`
+- [x] Write test: `pre-fills TMDB List ID when editList is a tmdb-list` (`3268e0e`)
   - Assert listId input pre-populated from `config.listId`
-- [x] Write test: `shows validation alert and disables Save when required fields are empty`
+- [x] Write test: `shows validation alert and disables Save when required fields are empty` (`3268e0e`)
   - Assert both halves: Alert visible AND Save button disabled (so onSave cannot be called)
-- [x] Write test: `calls onSave with form data when valid`
+- [x] Write test: `calls onSave with form data when valid` (`3268e0e`)
   - Fill all required fields, click Save
   - Assert `onSave` called with matching input object (providerType, config, rootFolderPath, qualityProfileId, defaults: enabled, syncInterval, monitorType)
-- [x] Write test: `calls onSave with tmdb-list config when provider is switched before submit`
+- [x] Write test: `calls onSave with tmdb-list config when provider is switched before submit` (`3268e0e`)
   - Switch to tmdb-list, fill listId, submit
   - Assert `onSave.config === { listId: ... }`
-- [x] Write test: `calls onClose when Cancel clicked`
+- [x] Write test: `calls onClose when Cancel clicked` (`3268e0e`)
   - Click Cancel, assert `onClose` called
-- [x] Run: `bunx vitest run src/components/importlists/ImportListModal.test.tsx` — 10/10 green
-- [x] Commit: `test(importlists): add ImportListModal component tests`
+- [x] Run: `bunx vitest run src/components/importlists/ImportListModal.test.tsx` — 10/10 green (`3268e0e`)
+- [x] Commit: `test(importlists): add ImportListModal component tests` (`3268e0e`)
+- [x] Re-verify: `vitest run src/components/importlists/ImportListModal.test.tsx` — 10/10 green (verified 2026-06-10). `npm test` has pre-existing failures in unrelated services (TorrentManager BigInt, BulkImportService insert, subtitle variants, api-route-map, Drizzle migration shim) — NOT from import list components. Full suite green gate deferred to S6.
 
 ## Phase S4: AddExclusionModal tests
 

@@ -1,5 +1,8 @@
+import { and, asc, desc, eq, or, type SQL } from 'drizzle-orm';
 import type { DatabaseClient } from '../db/drizzleClient';
+import * as schema from '../db/schema';
 import type { ImportList, ImportListExclusion } from '../types/modelTypes';
+
 export interface ImportListWithProfile extends Omit<ImportList, 'config'> {
   config: Record<string, unknown>;
   qualityProfile: {
@@ -50,197 +53,214 @@ function parseConfig(config: unknown): Record<string, unknown> {
 export class ImportListRepository {
   constructor(private readonly prisma: DatabaseClient) {}
 
-  async findAll(): Promise<ImportListWithProfile[]> {
-    const lists = await this.prisma.importList.findMany({
-      include: {
-        qualityProfile: {
-          select: { id: true, name: true },
-        },
-      },
-      orderBy: { name: 'asc' },
-    });
-
-    return lists.map((list: { config: unknown }) => ({
-      ...list,
-      config: parseConfig(list.config),
-    }));
+  private async loadWithProfile(id: number): Promise<ImportListWithProfile | null> {
+    const rows = await this.prisma.drizzle
+      .select()
+      .from(schema.importLists)
+      .where(eq(schema.importLists.id, id))
+      .limit(1);
+    const list = rows[0];
+    if (!list) return null;
+    return this.decorateWithProfile(list as ImportList);
   }
 
-  async findById(id: number): Promise<ImportListWithProfile | null> {
-    const list = await this.prisma.importList.findUnique({
-      where: { id },
-      include: {
-        qualityProfile: {
-          select: { id: true, name: true },
-        },
-      },
-    });
-
-    if (!list) return null;
-
+  private async decorateWithProfile(list: ImportList): Promise<ImportListWithProfile> {
+    let qualityProfile: { id: number; name: string } | null = null;
+    if (list.qualityProfileId != null) {
+      const qpRows = await this.prisma.drizzle
+        .select({ id: schema.qualityProfiles.id, name: schema.qualityProfiles.name })
+        .from(schema.qualityProfiles)
+        .where(eq(schema.qualityProfiles.id, list.qualityProfileId))
+        .limit(1);
+      qualityProfile = qpRows[0] ?? null;
+    }
     return {
       ...list,
-      config: parseConfig(list.config),
+      config: parseConfig((list as { config: unknown }).config),
+      qualityProfile: qualityProfile ?? { id: list.qualityProfileId ?? 0, name: '' },
     };
   }
 
-  async findAllEnabled(): Promise<ImportListWithProfile[]> {
-    const lists = await this.prisma.importList.findMany({
-      where: { enabled: true },
-      include: {
-        qualityProfile: {
-          select: { id: true, name: true },
-        },
-      },
-      orderBy: { name: 'asc' },
-    });
+  async findAll(): Promise<ImportListWithProfile[]> {
+    const lists = await this.prisma.drizzle
+      .select()
+      .from(schema.importLists)
+      .orderBy(asc(schema.importLists.name));
+    return Promise.all(lists.map((list) => this.decorateWithProfile(list as ImportList)));
+  }
 
-    return lists.map((list: { config: unknown }) => ({
-      ...list,
-      config: parseConfig(list.config),
-    }));
+  async findById(id: number): Promise<ImportListWithProfile | null> {
+    return this.loadWithProfile(id);
+  }
+
+  async findAllEnabled(): Promise<ImportListWithProfile[]> {
+    const lists = await this.prisma.drizzle
+      .select()
+      .from(schema.importLists)
+      .where(eq(schema.importLists.enabled, true))
+      .orderBy(asc(schema.importLists.name));
+    return Promise.all(lists.map((list) => this.decorateWithProfile(list as ImportList)));
   }
 
   async create(data: CreateImportListData): Promise<ImportListWithProfile> {
-    const list = await this.prisma.importList.create({
-      data: {
+    const [row] = await this.prisma.drizzle
+      .insert(schema.importLists)
+      .values({
         name: data.name,
         providerType: data.providerType,
-        config: data.config as unknown as any,
+        config: data.config,
         rootFolderPath: data.rootFolderPath,
         qualityProfileId: data.qualityProfileId,
         languageProfileId: data.languageProfileId ?? null,
         monitorType: data.monitorType,
         enabled: data.enabled ?? true,
         syncInterval: data.syncInterval ?? 24,
-      },
-      include: {
-        qualityProfile: {
-          select: { id: true, name: true },
-        },
-      },
-    });
-
-    return {
-      ...list,
-      config: parseConfig(list.config),
-    };
+      })
+      .returning();
+    if (!row) {
+      throw new Error('ImportListRepository.create: returned no row');
+    }
+    return this.decorateWithProfile(row as ImportList);
   }
 
   async update(id: number, data: UpdateImportListData): Promise<ImportListWithProfile> {
-    const updateData: any = {};
-
+    const updateData: Record<string, unknown> = {};
     if (data.name !== undefined) updateData.name = data.name;
     if (data.providerType !== undefined) updateData.providerType = data.providerType;
-    if (data.config !== undefined) updateData.config = data.config as unknown as any;
+    if (data.config !== undefined) updateData.config = data.config;
     if (data.rootFolderPath !== undefined) updateData.rootFolderPath = data.rootFolderPath;
-    if (data.qualityProfileId !== undefined) {
-      updateData.qualityProfile = { connect: { id: data.qualityProfileId } };
-    }
+    if (data.qualityProfileId !== undefined) updateData.qualityProfileId = data.qualityProfileId;
     if (data.languageProfileId !== undefined) updateData.languageProfileId = data.languageProfileId;
     if (data.monitorType !== undefined) updateData.monitorType = data.monitorType;
     if (data.enabled !== undefined) updateData.enabled = data.enabled;
     if (data.syncInterval !== undefined) updateData.syncInterval = data.syncInterval;
 
-    const list = await this.prisma.importList.update({
-      where: { id },
-      data: updateData,
-      include: {
-        qualityProfile: {
-          select: { id: true, name: true },
-        },
-      },
-    });
-
-    return {
-      ...list,
-      config: parseConfig(list.config),
-    };
+    const rows = await this.prisma.drizzle
+      .update(schema.importLists)
+      .set(updateData)
+      .where(eq(schema.importLists.id, id))
+      .returning();
+    const updated = rows[0];
+    if (!updated) {
+      throw new Error(`ImportListRepository.update: list ${id} not found`);
+    }
+    return this.decorateWithProfile(updated as ImportList);
   }
 
   async delete(id: number): Promise<ImportList> {
-    return this.prisma.importList.delete({
-      where: { id },
-    });
+    const rows = await this.prisma.drizzle
+      .delete(schema.importLists)
+      .where(eq(schema.importLists.id, id))
+      .returning();
+    const deleted = rows[0];
+    if (!deleted) {
+      throw new Error(`ImportListRepository.delete: list ${id} not found`);
+    }
+    return deleted as ImportList;
   }
 
   async updateLastSync(id: number): Promise<ImportList> {
-    return this.prisma.importList.update({
-      where: { id },
-      data: { lastSyncAt: new Date() },
-    });
+    const rows = await this.prisma.drizzle
+      .update(schema.importLists)
+      .set({ lastSyncAt: new Date() })
+      .where(eq(schema.importLists.id, id))
+      .returning();
+    const updated = rows[0];
+    if (!updated) {
+      throw new Error(`ImportListRepository.updateLastSync: list ${id} not found`);
+    }
+    return updated as ImportList;
   }
 
   // Exclusion methods
   async findAllExclusions(): Promise<ImportListExclusion[]> {
-    return this.prisma.importListExclusion.findMany({
-      orderBy: { createdAt: 'desc' },
-    });
+    return this.prisma.drizzle
+      .select()
+      .from(schema.importListExclusions)
+      .orderBy(desc(schema.importListExclusions.createdAt)) as unknown as Promise<ImportListExclusion[]>;
   }
 
   async findExclusionById(id: number): Promise<ImportListExclusion | null> {
-    return this.prisma.importListExclusion.findUnique({
-      where: { id },
-    });
+    const rows = await this.prisma.drizzle
+      .select()
+      .from(schema.importListExclusions)
+      .where(eq(schema.importListExclusions.id, id))
+      .limit(1);
+    return (rows[0] as ImportListExclusion | undefined) ?? null;
   }
 
   async findExclusionByTmdbId(tmdbId: number): Promise<ImportListExclusion | null> {
-    return this.prisma.importListExclusion.findFirst({
-      where: { tmdbId },
-    });
+    const rows = await this.prisma.drizzle
+      .select()
+      .from(schema.importListExclusions)
+      .where(eq(schema.importListExclusions.tmdbId, tmdbId))
+      .limit(1);
+    return (rows[0] as ImportListExclusion | undefined) ?? null;
   }
 
   async findExclusionByImdbId(imdbId: string): Promise<ImportListExclusion | null> {
-    return this.prisma.importListExclusion.findFirst({
-      where: { imdbId },
-    });
+    const rows = await this.prisma.drizzle
+      .select()
+      .from(schema.importListExclusions)
+      .where(eq(schema.importListExclusions.imdbId, imdbId))
+      .limit(1);
+    return (rows[0] as ImportListExclusion | undefined) ?? null;
   }
 
   async findExclusionByTvdbId(tvdbId: number): Promise<ImportListExclusion | null> {
-    return this.prisma.importListExclusion.findFirst({
-      where: { tvdbId },
-    });
+    const rows = await this.prisma.drizzle
+      .select()
+      .from(schema.importListExclusions)
+      .where(eq(schema.importListExclusions.tvdbId, tvdbId))
+      .limit(1);
+    return (rows[0] as ImportListExclusion | undefined) ?? null;
   }
 
   async createExclusion(data: CreateExclusionData): Promise<ImportListExclusion> {
-    return this.prisma.importListExclusion.create({
-      data: {
+    const [row] = await this.prisma.drizzle
+      .insert(schema.importListExclusions)
+      .values({
         importListId: data.importListId ?? null,
         tmdbId: data.tmdbId ?? null,
         imdbId: data.imdbId ?? null,
         tvdbId: data.tvdbId ?? null,
         title: data.title,
-      },
-    });
+      })
+      .returning();
+    if (!row) {
+      throw new Error('ImportListRepository.createExclusion: returned no row');
+    }
+    return row as ImportListExclusion;
   }
 
   async deleteExclusion(id: number): Promise<ImportListExclusion> {
-    return this.prisma.importListExclusion.delete({
-      where: { id },
-    });
+    const rows = await this.prisma.drizzle
+      .delete(schema.importListExclusions)
+      .where(eq(schema.importListExclusions.id, id))
+      .returning();
+    const deleted = rows[0];
+    if (!deleted) {
+      throw new Error(`ImportListRepository.deleteExclusion: exclusion ${id} not found`);
+    }
+    return deleted as ImportListExclusion;
   }
 
   async isExcluded(item: { tmdbId?: number; imdbId?: string; tvdbId?: number }): Promise<boolean> {
-    const conditions: any[] = [];
+    const conditions: SQL[] = [];
+    if (item.tmdbId !== undefined) conditions.push(eq(schema.importListExclusions.tmdbId, item.tmdbId));
+    if (item.imdbId !== undefined) conditions.push(eq(schema.importListExclusions.imdbId, item.imdbId));
+    if (item.tvdbId !== undefined) conditions.push(eq(schema.importListExclusions.tvdbId, item.tvdbId));
 
-    if (item.tmdbId) {
-      conditions.push({ tmdbId: item.tmdbId });
-    }
-    if (item.imdbId) {
-      conditions.push({ imdbId: item.imdbId });
-    }
-    if (item.tvdbId) {
-      conditions.push({ tvdbId: item.tvdbId });
-    }
+    if (conditions.length === 0) return false;
 
-    if (conditions.length === 0) {
-      return false;
-    }
-
-    const count = await this.prisma.importListExclusion.count({
-      where: { OR: conditions },
-    });
-
-    return count > 0;
+    const where = conditions.length === 1 ? conditions[0]! : or(...conditions);
+    const rows = await this.prisma.drizzle
+      .select({ id: schema.importListExclusions.id })
+      .from(schema.importListExclusions)
+      .where(where)
+      .limit(1);
+    return rows.length > 0;
   }
 }
+
+void and;

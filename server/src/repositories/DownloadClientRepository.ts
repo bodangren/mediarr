@@ -1,4 +1,6 @@
+import { and, asc, eq, ne } from 'drizzle-orm';
 import type { DatabaseClient } from '../db/drizzleClient';
+import * as schema from '../db/schema';
 import type { DownloadClient } from '../types/modelTypes';
 import { encrypt, decrypt } from '../utils/encryption';
 
@@ -21,23 +23,17 @@ export interface DownloadClientConfig {
   password?: string;
   apiKey?: string;
   category?: string;
-  // qBittorrent specific
   sequentialDownload?: boolean;
   firstLastPiecePriority?: boolean;
-  // Transmission specific
   torrentDirectory?: string;
-  // Deluge specific
   label?: string;
-  // rTorrent specific
   directory?: string;
-  // SABnzbd specific
   tvCategory?: string;
   movieCategory?: string;
   recentTvPriority?: number;
   olderTvPriority?: number;
   recentMoviePriority?: number;
   olderMoviePriority?: number;
-  // NZBGet specific
   nzbCategory?: string;
   priority?: number;
   addPaused?: boolean;
@@ -81,75 +77,75 @@ export class DownloadClientRepository {
     }
   }
 
+  private withDecryptedConfig(client: DownloadClient): DownloadClientWithDecryptedConfig {
+    return {
+      ...client,
+      config: this.decryptConfig((client as { config: string }).config),
+    };
+  }
+
   async create(data: CreateDownloadClientInput): Promise<DownloadClientWithDecryptedConfig> {
-    const created = await this.prisma.downloadClient.create({
-      data: {
+    const [row] = await this.prisma.drizzle
+      .insert(schema.downloadClients)
+      .values({
         name: data.name,
         protocol: data.protocol,
         type: data.type,
         enabled: data.enabled ?? true,
         priority: data.priority ?? 25,
         config: this.encryptConfig(data.config),
-      },
-    });
-
-    return {
-      ...created,
-      config: this.decryptConfig(created.config),
-    };
+      })
+      .returning();
+    if (!row) {
+      throw new Error('DownloadClientRepository.create: returned no row');
+    }
+    return this.withDecryptedConfig(row as DownloadClient);
   }
 
   async findById(id: number): Promise<DownloadClientWithDecryptedConfig | null> {
-    const client = await this.prisma.downloadClient.findUnique({
-      where: { id },
-    });
-
+    const rows = await this.prisma.drizzle
+      .select()
+      .from(schema.downloadClients)
+      .where(eq(schema.downloadClients.id, id))
+      .limit(1);
+    const client = rows[0];
     if (!client) return null;
-
-    return {
-      ...client,
-      config: this.decryptConfig(client.config),
-    };
+    return this.withDecryptedConfig(client as DownloadClient);
   }
 
   async findAll(): Promise<DownloadClientWithDecryptedConfig[]> {
-    const clients = await this.prisma.downloadClient.findMany({
-      orderBy: { priority: 'asc' },
-    });
-
-    return clients.map((client: { config: unknown }) => ({
-      ...client,
-      config: this.decryptConfig(client.config as string),
-    }));
+    const rows = await this.prisma.drizzle
+      .select()
+      .from(schema.downloadClients)
+      .orderBy(asc(schema.downloadClients.priority));
+    return rows.map((row) => this.withDecryptedConfig(row as DownloadClient));
   }
 
   async findByProtocol(protocol: DownloadClientProtocol): Promise<DownloadClientWithDecryptedConfig[]> {
-    const clients = await this.prisma.downloadClient.findMany({
-      where: { protocol, enabled: true },
-      orderBy: { priority: 'asc' },
-    });
-
-    return clients.map((client: { config: unknown }) => ({
-      ...client,
-      config: this.decryptConfig(client.config as string),
-    }));
+    const rows = await this.prisma.drizzle
+      .select()
+      .from(schema.downloadClients)
+      .where(
+        and(
+          eq(schema.downloadClients.protocol, protocol),
+          eq(schema.downloadClients.enabled, true),
+        ),
+      )
+      .orderBy(asc(schema.downloadClients.priority));
+    return rows.map((row) => this.withDecryptedConfig(row as DownloadClient));
   }
 
   async findEnabled(): Promise<DownloadClientWithDecryptedConfig[]> {
-    const clients = await this.prisma.downloadClient.findMany({
-      where: { enabled: true },
-      orderBy: { priority: 'asc' },
-    });
-
-    return clients.map((client: { config: unknown }) => ({
-      ...client,
-      config: this.decryptConfig(client.config as string),
-    }));
+    const rows = await this.prisma.drizzle
+      .select()
+      .from(schema.downloadClients)
+      .where(eq(schema.downloadClients.enabled, true))
+      .orderBy(asc(schema.downloadClients.priority));
+    return rows.map((row) => this.withDecryptedConfig(row as DownloadClient));
   }
 
   async update(id: number, data: UpdateDownloadClientInput): Promise<DownloadClientWithDecryptedConfig> {
     const updateData: Record<string, unknown> = {};
-
     if (data.name !== undefined) updateData.name = data.name;
     if (data.protocol !== undefined) updateData.protocol = data.protocol;
     if (data.type !== undefined) updateData.type = data.type;
@@ -157,42 +153,48 @@ export class DownloadClientRepository {
     if (data.priority !== undefined) updateData.priority = data.priority;
     if (data.config !== undefined) updateData.config = this.encryptConfig(data.config);
 
-    const updated = await this.prisma.downloadClient.update({
-      where: { id },
-      data: updateData,
-    });
-
-    return {
-      ...updated,
-      config: this.decryptConfig(updated.config),
-    };
+    const rows = await this.prisma.drizzle
+      .update(schema.downloadClients)
+      .set(updateData)
+      .where(eq(schema.downloadClients.id, id))
+      .returning();
+    const updated = rows[0];
+    if (!updated) {
+      throw new Error(`DownloadClientRepository.update: client ${id} not found`);
+    }
+    return this.withDecryptedConfig(updated as DownloadClient);
   }
 
   async delete(id: number): Promise<DownloadClientWithDecryptedConfig> {
-    const deleted = await this.prisma.downloadClient.delete({
-      where: { id },
-    });
-
-    return {
-      ...deleted,
-      config: this.decryptConfig(deleted.config),
-    };
+    const rows = await this.prisma.drizzle
+      .delete(schema.downloadClients)
+      .where(eq(schema.downloadClients.id, id))
+      .returning();
+    const deleted = rows[0];
+    if (!deleted) {
+      throw new Error(`DownloadClientRepository.delete: client ${id} not found`);
+    }
+    return this.withDecryptedConfig(deleted as DownloadClient);
   }
 
   async exists(id: number): Promise<boolean> {
-    const count = await this.prisma.downloadClient.count({
-      where: { id },
-    });
-    return count > 0;
+    const rows = await this.prisma.drizzle
+      .select({ id: schema.downloadClients.id })
+      .from(schema.downloadClients)
+      .where(eq(schema.downloadClients.id, id))
+      .limit(1);
+    return rows.length > 0;
   }
 
   async nameExists(name: string, excludeId?: number): Promise<boolean> {
-    const count = await this.prisma.downloadClient.count({
-      where: {
-        name,
-        ...(excludeId !== undefined && { NOT: { id: excludeId } }),
-      },
-    });
-    return count > 0;
+    const where = excludeId !== undefined
+      ? and(eq(schema.downloadClients.name, name), ne(schema.downloadClients.id, excludeId))
+      : eq(schema.downloadClients.name, name);
+    const rows = await this.prisma.drizzle
+      .select({ id: schema.downloadClients.id })
+      .from(schema.downloadClients)
+      .where(where)
+      .limit(1);
+    return rows.length > 0;
   }
 }

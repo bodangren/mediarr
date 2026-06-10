@@ -1,4 +1,8 @@
+import { eq } from 'drizzle-orm';
 import type { DatabaseClient } from '../db/drizzleClient';
+import * as schema from '../db/schema';
+import type { AppSettings } from '../types/modelTypes';
+
 export interface TorrentLimitsSettings {
   maxActiveDownloads: number;
   maxActiveSeeds: number;
@@ -167,91 +171,60 @@ function readObject(value: unknown): Record<string, unknown> {
   if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
     return value as Record<string, unknown>;
   }
-
   return {};
 }
 
 function readNumber(value: unknown, fallback: number): number {
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    return value;
-  }
-
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
   return fallback;
 }
 
 function readNullableNumber(value: unknown, fallback: number | null): number | null {
-  if (value === null) {
-    return null;
-  }
-
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    return value;
-  }
-
+  if (value === null) return null;
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
   return fallback;
 }
 
 function readBoolean(value: unknown, fallback: boolean): boolean {
-  if (typeof value === 'boolean') {
-    return value;
-  }
-
+  if (typeof value === 'boolean') return value;
   return fallback;
 }
 
 function readNullableString(value: unknown, fallback: string | null): string | null {
-  if (typeof value === 'string') {
-    return value;
-  }
+  if (typeof value === 'string') return value;
   return fallback;
 }
 
 function readNullableTrimmedString(value: unknown, fallback: string | null): string | null {
-  if (typeof value !== 'string') {
-    return fallback;
-  }
-
+  if (typeof value !== 'string') return fallback;
   const normalized = value.trim();
   return normalized.length > 0 ? normalized : null;
 }
 
 function readString(value: unknown, fallback: string): string {
-  if (typeof value === 'string') {
-    return value;
-  }
+  if (typeof value === 'string') return value;
   return fallback;
 }
 
 function readTrimmedString(value: unknown, fallback: string): string {
-  if (typeof value !== 'string') {
-    return fallback;
-  }
-
+  if (typeof value !== 'string') return fallback;
   const normalized = value.trim();
   return normalized.length > 0 ? normalized : fallback;
 }
 
 function readStringArray(value: unknown, fallback: string[]): string[] {
-  if (!Array.isArray(value)) {
-    return fallback;
-  }
-
+  if (!Array.isArray(value)) return fallback;
   const next = value
     .filter((item): item is string => typeof item === 'string')
-    .map(item => item.trim().toLowerCase())
-    .filter(item => item.length > 0);
-
+    .map((item) => item.trim().toLowerCase())
+    .filter((item) => item.length > 0);
   return Array.from(new Set(next));
 }
 
 function readLogLevel(value: unknown, fallback: LoggingSettings['logLevel']): LoggingSettings['logLevel'] {
   if (
-    value === 'trace' ||
-    value === 'debug' ||
-    value === 'info' ||
-    value === 'warn' ||
-    value === 'error' ||
-    value === 'fatal'
+    value === 'trace' || value === 'debug' || value === 'info' ||
+    value === 'warn' || value === 'error' || value === 'fatal'
   ) {
     return value;
   }
@@ -262,18 +235,12 @@ function readAuthenticationMethod(
   value: unknown,
   fallback: SecuritySettings['authenticationMethod'],
 ): SecuritySettings['authenticationMethod'] {
-  if (value === 'none' || value === 'basic' || value === 'form') {
-    return value;
-  }
-
+  if (value === 'none' || value === 'basic' || value === 'form') return value;
   return fallback;
 }
 
 function readUpdateBranch(value: unknown, fallback: UpdateSettings['branch']): UpdateSettings['branch'] {
-  if (value === 'master' || value === 'develop' || value === 'phantom') {
-    return value;
-  }
-
+  if (value === 'master' || value === 'develop' || value === 'phantom') return value;
   return fallback;
 }
 
@@ -281,19 +248,31 @@ function readSeedLimitAction(
   value: unknown,
   fallback: TorrentLimitsSettings['seedLimitAction'],
 ): TorrentLimitsSettings['seedLimitAction'] {
-  if (value === 'pause' || value === 'remove') {
-    return value;
-  }
-
+  if (value === 'pause' || value === 'remove') return value;
   return fallback;
-}
-
-function toJson(value: unknown): any {
-  return value as any;
 }
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
+}
+
+function buildUpdateColumn(payload: AppSettingsPayload) {
+  return {
+    torrentLimits: payload.torrentLimits,
+    schedulerIntervals: payload.schedulerIntervals,
+    pathVisibility: payload.pathVisibility,
+    apiKeys: payload.apiKeys,
+    host: payload.host,
+    security: payload.security,
+    logging: payload.logging,
+    update: { ...payload.update, wantedLanguages: payload.wantedLanguages },
+    mediaManagement: payload.mediaManagement,
+    streaming: payload.streaming,
+  };
+}
+
+function buildInsertColumn(payload: AppSettingsPayload) {
+  return buildUpdateColumn(payload);
 }
 
 /**
@@ -303,158 +282,79 @@ export class AppSettingsRepository {
   constructor(private readonly prisma: DatabaseClient) {}
 
   async get(): Promise<AppSettingsPayload> {
-    const record = await this.prisma.appSettings.findUnique({
-      where: { id: 1 },
-    });
+    const rows = await this.prisma.drizzle
+      .select()
+      .from(schema.appSettings)
+      .where(eq(schema.appSettings.id, 1))
+      .limit(1);
+    const record = rows[0];
 
     if (!record) {
-      await this.prisma.appSettings.create({
-        data: {
+      await this.prisma.drizzle
+        .insert(schema.appSettings)
+        .values({
           id: 1,
-          torrentLimits: toJson(DEFAULT_APP_SETTINGS.torrentLimits),
-          schedulerIntervals: toJson(DEFAULT_APP_SETTINGS.schedulerIntervals),
-          pathVisibility: toJson(DEFAULT_APP_SETTINGS.pathVisibility),
-          apiKeys: toJson(DEFAULT_APP_SETTINGS.apiKeys),
-          host: toJson(DEFAULT_APP_SETTINGS.host),
-          security: toJson(DEFAULT_APP_SETTINGS.security),
-          logging: toJson(DEFAULT_APP_SETTINGS.logging),
-          update: toJson({
+          torrentLimits: DEFAULT_APP_SETTINGS.torrentLimits,
+          schedulerIntervals: DEFAULT_APP_SETTINGS.schedulerIntervals,
+          pathVisibility: DEFAULT_APP_SETTINGS.pathVisibility,
+          apiKeys: DEFAULT_APP_SETTINGS.apiKeys,
+          host: DEFAULT_APP_SETTINGS.host,
+          security: DEFAULT_APP_SETTINGS.security,
+          logging: DEFAULT_APP_SETTINGS.logging,
+          update: {
             ...DEFAULT_APP_SETTINGS.update,
             wantedLanguages: DEFAULT_APP_SETTINGS.wantedLanguages,
-          }),
-          mediaManagement: toJson(DEFAULT_APP_SETTINGS.mediaManagement),
-          streaming: toJson(DEFAULT_APP_SETTINGS.streaming),
-        },
-      });
-
+          },
+          mediaManagement: DEFAULT_APP_SETTINGS.mediaManagement,
+          streaming: DEFAULT_APP_SETTINGS.streaming,
+        });
       return DEFAULT_APP_SETTINGS;
     }
 
-    return this.mapRecordToPayload(record);
+    return this.mapRecordToPayload(record as AppSettings);
   }
 
   async update(partial: Partial<AppSettingsPayload>): Promise<AppSettingsPayload> {
     const current = await this.get();
     const merged: AppSettingsPayload = {
-      torrentLimits: {
-        ...current.torrentLimits,
-        ...partial.torrentLimits,
-      },
-      schedulerIntervals: {
-        ...current.schedulerIntervals,
-        ...partial.schedulerIntervals,
-      },
-      pathVisibility: {
-        ...current.pathVisibility,
-        ...partial.pathVisibility,
-      },
-      apiKeys: {
-        ...current.apiKeys,
-        ...partial.apiKeys,
-      },
-      wantedLanguages: readStringArray(
-        partial.wantedLanguages,
-        current.wantedLanguages,
-      ),
-      host: {
-        ...current.host,
-        ...partial.host,
-      },
-      security: {
-        ...current.security,
-        ...partial.security,
-      },
-      logging: {
-        ...current.logging,
-        ...partial.logging,
-      },
-      update: {
-        ...current.update,
-        ...partial.update,
-      },
-      mediaManagement: {
-        ...current.mediaManagement,
-        ...partial.mediaManagement,
-      },
-      streaming: {
-        ...current.streaming,
-        ...partial.streaming,
-      },
+      torrentLimits: { ...current.torrentLimits, ...partial.torrentLimits },
+      schedulerIntervals: { ...current.schedulerIntervals, ...partial.schedulerIntervals },
+      pathVisibility: { ...current.pathVisibility, ...partial.pathVisibility },
+      apiKeys: { ...current.apiKeys, ...partial.apiKeys },
+      wantedLanguages: readStringArray(partial.wantedLanguages, current.wantedLanguages),
+      host: { ...current.host, ...partial.host },
+      security: { ...current.security, ...partial.security },
+      logging: { ...current.logging, ...partial.logging },
+      update: { ...current.update, ...partial.update },
+      mediaManagement: { ...current.mediaManagement, ...partial.mediaManagement },
+      streaming: { ...current.streaming, ...partial.streaming },
     };
 
-    await this.prisma.appSettings.upsert({
-      where: { id: 1 },
-      create: {
-        id: 1,
-        torrentLimits: toJson(merged.torrentLimits),
-        schedulerIntervals: toJson(merged.schedulerIntervals),
-        pathVisibility: toJson(merged.pathVisibility),
-        apiKeys: toJson(merged.apiKeys),
-        host: toJson(merged.host),
-        security: toJson(merged.security),
-        logging: toJson(merged.logging),
-        update: toJson({
-          ...merged.update,
-          wantedLanguages: merged.wantedLanguages,
-        }),
-        mediaManagement: toJson(merged.mediaManagement),
-        streaming: toJson(merged.streaming),
-      },
-      update: {
-        torrentLimits: toJson(merged.torrentLimits),
-        schedulerIntervals: toJson(merged.schedulerIntervals),
-        pathVisibility: toJson(merged.pathVisibility),
-        apiKeys: toJson(merged.apiKeys),
-        host: toJson(merged.host),
-        security: toJson(merged.security),
-        logging: toJson(merged.logging),
-        update: toJson({
-          ...merged.update,
-          wantedLanguages: merged.wantedLanguages,
-        }),
-        mediaManagement: toJson(merged.mediaManagement),
-        streaming: toJson(merged.streaming),
-      },
-    });
+    const updateColumn = buildUpdateColumn(merged);
+    const insertColumn = buildInsertColumn(merged);
+
+    await this.prisma.drizzle
+      .insert(schema.appSettings)
+      .values({ id: 1, ...insertColumn })
+      .onConflictDoUpdate({
+        target: schema.appSettings.id,
+        set: updateColumn,
+      });
 
     return merged;
   }
 
   async replace(payload: AppSettingsPayload): Promise<AppSettingsPayload> {
-    await this.prisma.appSettings.upsert({
-      where: { id: 1 },
-      create: {
-        id: 1,
-        torrentLimits: toJson(payload.torrentLimits),
-        schedulerIntervals: toJson(payload.schedulerIntervals),
-        pathVisibility: toJson(payload.pathVisibility),
-        apiKeys: toJson(payload.apiKeys),
-        host: toJson(payload.host),
-        security: toJson(payload.security),
-        logging: toJson(payload.logging),
-        update: toJson({
-          ...payload.update,
-          wantedLanguages: payload.wantedLanguages,
-        }),
-        mediaManagement: toJson(payload.mediaManagement),
-        streaming: toJson(payload.streaming),
-      },
-      update: {
-        torrentLimits: toJson(payload.torrentLimits),
-        schedulerIntervals: toJson(payload.schedulerIntervals),
-        pathVisibility: toJson(payload.pathVisibility),
-        apiKeys: toJson(payload.apiKeys),
-        host: toJson(payload.host),
-        security: toJson(payload.security),
-        logging: toJson(payload.logging),
-        update: toJson({
-          ...payload.update,
-          wantedLanguages: payload.wantedLanguages,
-        }),
-        mediaManagement: toJson(payload.mediaManagement),
-        streaming: toJson(payload.streaming),
-      },
-    });
+    const updateColumn = buildUpdateColumn(payload);
+    const insertColumn = buildInsertColumn(payload);
+
+    await this.prisma.drizzle
+      .insert(schema.appSettings)
+      .values({ id: 1, ...insertColumn })
+      .onConflictDoUpdate({
+        target: schema.appSettings.id,
+        set: updateColumn,
+      });
 
     return payload;
   }
@@ -484,216 +384,71 @@ export class AppSettingsRepository {
 
     return {
       torrentLimits: {
-        maxActiveDownloads: readNumber(
-          torrentLimits.maxActiveDownloads,
-          DEFAULT_APP_SETTINGS.torrentLimits.maxActiveDownloads,
-        ),
-        maxActiveSeeds: readNumber(
-          torrentLimits.maxActiveSeeds,
-          DEFAULT_APP_SETTINGS.torrentLimits.maxActiveSeeds,
-        ),
-        globalDownloadLimitKbps: readNullableNumber(
-          torrentLimits.globalDownloadLimitKbps,
-          DEFAULT_APP_SETTINGS.torrentLimits.globalDownloadLimitKbps,
-        ),
-        globalUploadLimitKbps: readNullableNumber(
-          torrentLimits.globalUploadLimitKbps,
-          DEFAULT_APP_SETTINGS.torrentLimits.globalUploadLimitKbps,
-        ),
-        incompleteDirectory: readString(
-          torrentLimits.incompleteDirectory,
-          DEFAULT_APP_SETTINGS.torrentLimits.incompleteDirectory,
-        ),
-        completeDirectory: readString(
-          torrentLimits.completeDirectory,
-          DEFAULT_APP_SETTINGS.torrentLimits.completeDirectory,
-        ),
-        seedRatioLimit: readNumber(
-          torrentLimits.seedRatioLimit,
-          DEFAULT_APP_SETTINGS.torrentLimits.seedRatioLimit,
-        ),
-        seedTimeLimitMinutes: readNumber(
-          torrentLimits.seedTimeLimitMinutes,
-          DEFAULT_APP_SETTINGS.torrentLimits.seedTimeLimitMinutes,
-        ),
-        seedLimitAction: readSeedLimitAction(
-          torrentLimits.seedLimitAction,
-          DEFAULT_APP_SETTINGS.torrentLimits.seedLimitAction,
-        ),
+        maxActiveDownloads: readNumber(torrentLimits.maxActiveDownloads, DEFAULT_APP_SETTINGS.torrentLimits.maxActiveDownloads),
+        maxActiveSeeds: readNumber(torrentLimits.maxActiveSeeds, DEFAULT_APP_SETTINGS.torrentLimits.maxActiveSeeds),
+        globalDownloadLimitKbps: readNullableNumber(torrentLimits.globalDownloadLimitKbps, DEFAULT_APP_SETTINGS.torrentLimits.globalDownloadLimitKbps),
+        globalUploadLimitKbps: readNullableNumber(torrentLimits.globalUploadLimitKbps, DEFAULT_APP_SETTINGS.torrentLimits.globalUploadLimitKbps),
+        incompleteDirectory: readString(torrentLimits.incompleteDirectory, DEFAULT_APP_SETTINGS.torrentLimits.incompleteDirectory),
+        completeDirectory: readString(torrentLimits.completeDirectory, DEFAULT_APP_SETTINGS.torrentLimits.completeDirectory),
+        seedRatioLimit: readNumber(torrentLimits.seedRatioLimit, DEFAULT_APP_SETTINGS.torrentLimits.seedRatioLimit),
+        seedTimeLimitMinutes: readNumber(torrentLimits.seedTimeLimitMinutes, DEFAULT_APP_SETTINGS.torrentLimits.seedTimeLimitMinutes),
+        seedLimitAction: readSeedLimitAction(torrentLimits.seedLimitAction, DEFAULT_APP_SETTINGS.torrentLimits.seedLimitAction),
       },
       schedulerIntervals: {
-        rssSyncMinutes: readNumber(
-          schedulerIntervals.rssSyncMinutes,
-          DEFAULT_APP_SETTINGS.schedulerIntervals.rssSyncMinutes,
-        ),
-        availabilityCheckMinutes: readNumber(
-          schedulerIntervals.availabilityCheckMinutes,
-          DEFAULT_APP_SETTINGS.schedulerIntervals.availabilityCheckMinutes,
-        ),
-        torrentMonitoringSeconds: readNumber(
-          schedulerIntervals.torrentMonitoringSeconds,
-          DEFAULT_APP_SETTINGS.schedulerIntervals.torrentMonitoringSeconds,
-        ),
-        wantedSearchMinutes: readNumber(
-          schedulerIntervals.wantedSearchMinutes,
-          DEFAULT_APP_SETTINGS.schedulerIntervals.wantedSearchMinutes,
-        ),
+        rssSyncMinutes: readNumber(schedulerIntervals.rssSyncMinutes, DEFAULT_APP_SETTINGS.schedulerIntervals.rssSyncMinutes),
+        availabilityCheckMinutes: readNumber(schedulerIntervals.availabilityCheckMinutes, DEFAULT_APP_SETTINGS.schedulerIntervals.availabilityCheckMinutes),
+        torrentMonitoringSeconds: readNumber(schedulerIntervals.torrentMonitoringSeconds, DEFAULT_APP_SETTINGS.schedulerIntervals.torrentMonitoringSeconds),
+        wantedSearchMinutes: readNumber(schedulerIntervals.wantedSearchMinutes, DEFAULT_APP_SETTINGS.schedulerIntervals.wantedSearchMinutes),
       },
       pathVisibility: {
-        showDownloadPath: readBoolean(
-          pathVisibility.showDownloadPath,
-          DEFAULT_APP_SETTINGS.pathVisibility.showDownloadPath,
-        ),
-        showMediaPath: readBoolean(
-          pathVisibility.showMediaPath,
-          DEFAULT_APP_SETTINGS.pathVisibility.showMediaPath,
-        ),
+        showDownloadPath: readBoolean(pathVisibility.showDownloadPath, DEFAULT_APP_SETTINGS.pathVisibility.showDownloadPath),
+        showMediaPath: readBoolean(pathVisibility.showMediaPath, DEFAULT_APP_SETTINGS.pathVisibility.showMediaPath),
       },
       apiKeys: {
-        tmdbApiKey: readNullableString(
-          apiKeys.tmdbApiKey,
-          DEFAULT_APP_SETTINGS.apiKeys.tmdbApiKey,
-        ),
-        openSubtitlesApiKey: readNullableString(
-          apiKeys.openSubtitlesApiKey,
-          DEFAULT_APP_SETTINGS.apiKeys.openSubtitlesApiKey,
-        ),
-        assrtApiToken: readNullableString(
-          apiKeys.assrtApiToken,
-          DEFAULT_APP_SETTINGS.apiKeys.assrtApiToken,
-        ),
-        subdlApiKey: readNullableString(
-          apiKeys.subdlApiKey,
-          DEFAULT_APP_SETTINGS.apiKeys.subdlApiKey,
-        ),
+        tmdbApiKey: readNullableString(apiKeys.tmdbApiKey, DEFAULT_APP_SETTINGS.apiKeys.tmdbApiKey),
+        openSubtitlesApiKey: readNullableString(apiKeys.openSubtitlesApiKey, DEFAULT_APP_SETTINGS.apiKeys.openSubtitlesApiKey),
+        assrtApiToken: readNullableString(apiKeys.assrtApiToken, DEFAULT_APP_SETTINGS.apiKeys.assrtApiToken),
+        subdlApiKey: readNullableString(apiKeys.subdlApiKey, DEFAULT_APP_SETTINGS.apiKeys.subdlApiKey),
       },
-      wantedLanguages: readStringArray(
-        update.wantedLanguages,
-        DEFAULT_APP_SETTINGS.wantedLanguages,
-      ),
+      wantedLanguages: readStringArray(update.wantedLanguages, DEFAULT_APP_SETTINGS.wantedLanguages),
       host: {
-        bindAddress: readString(
-          host.bindAddress,
-          DEFAULT_APP_SETTINGS.host.bindAddress,
-        ),
-        port: readNumber(
-          host.port,
-          DEFAULT_APP_SETTINGS.host.port,
-        ),
-        urlBase: readString(
-          host.urlBase,
-          DEFAULT_APP_SETTINGS.host.urlBase,
-        ),
-        sslPort: readNumber(
-          host.sslPort,
-          DEFAULT_APP_SETTINGS.host.sslPort,
-        ),
-        enableSsl: readBoolean(
-          host.enableSsl,
-          DEFAULT_APP_SETTINGS.host.enableSsl,
-        ),
-        sslCertPath: readNullableString(
-          host.sslCertPath,
-          DEFAULT_APP_SETTINGS.host.sslCertPath,
-        ),
-        sslKeyPath: readNullableString(
-          host.sslKeyPath,
-          DEFAULT_APP_SETTINGS.host.sslKeyPath,
-        ),
+        bindAddress: readString(host.bindAddress, DEFAULT_APP_SETTINGS.host.bindAddress),
+        port: readNumber(host.port, DEFAULT_APP_SETTINGS.host.port),
+        urlBase: readString(host.urlBase, DEFAULT_APP_SETTINGS.host.urlBase),
+        sslPort: readNumber(host.sslPort, DEFAULT_APP_SETTINGS.host.sslPort),
+        enableSsl: readBoolean(host.enableSsl, DEFAULT_APP_SETTINGS.host.enableSsl),
+        sslCertPath: readNullableString(host.sslCertPath, DEFAULT_APP_SETTINGS.host.sslCertPath),
+        sslKeyPath: readNullableString(host.sslKeyPath, DEFAULT_APP_SETTINGS.host.sslKeyPath),
       },
       security: {
-        authenticationRequired: readBoolean(
-          security.authenticationRequired,
-          DEFAULT_APP_SETTINGS.security.authenticationRequired,
-        ),
-        authenticationMethod: readAuthenticationMethod(
-          security.authenticationMethod,
-          DEFAULT_APP_SETTINGS.security.authenticationMethod,
-        ),
-        apiKey: readNullableString(
-          security.apiKey,
-          DEFAULT_APP_SETTINGS.security.apiKey,
-        ),
+        authenticationRequired: readBoolean(security.authenticationRequired, DEFAULT_APP_SETTINGS.security.authenticationRequired),
+        authenticationMethod: readAuthenticationMethod(security.authenticationMethod, DEFAULT_APP_SETTINGS.security.authenticationMethod),
+        apiKey: readNullableString(security.apiKey, DEFAULT_APP_SETTINGS.security.apiKey),
       },
       logging: {
-        logLevel: readLogLevel(
-          logging.logLevel,
-          DEFAULT_APP_SETTINGS.logging.logLevel,
-        ),
-        logSizeLimit: readNumber(
-          logging.logSizeLimit,
-          DEFAULT_APP_SETTINGS.logging.logSizeLimit,
-        ),
-        logRetentionDays: readNumber(
-          logging.logRetentionDays,
-          DEFAULT_APP_SETTINGS.logging.logRetentionDays,
-        ),
+        logLevel: readLogLevel(logging.logLevel, DEFAULT_APP_SETTINGS.logging.logLevel),
+        logSizeLimit: readNumber(logging.logSizeLimit, DEFAULT_APP_SETTINGS.logging.logSizeLimit),
+        logRetentionDays: readNumber(logging.logRetentionDays, DEFAULT_APP_SETTINGS.logging.logRetentionDays),
       },
       update: {
-        branch: readUpdateBranch(
-          update.branch,
-          DEFAULT_APP_SETTINGS.update.branch,
-        ),
-        autoUpdateEnabled: readBoolean(
-          update.autoUpdateEnabled,
-          DEFAULT_APP_SETTINGS.update.autoUpdateEnabled,
-        ),
-        mechanicsEnabled: readBoolean(
-          update.mechanicsEnabled,
-          DEFAULT_APP_SETTINGS.update.mechanicsEnabled,
-        ),
-        updateScriptPath: readNullableString(
-          update.updateScriptPath,
-          DEFAULT_APP_SETTINGS.update.updateScriptPath,
-        ),
-        setupCompleted: readBoolean(
-          update.setupCompleted,
-          DEFAULT_APP_SETTINGS.update.setupCompleted,
-        ),
+        branch: readUpdateBranch(update.branch, DEFAULT_APP_SETTINGS.update.branch),
+        autoUpdateEnabled: readBoolean(update.autoUpdateEnabled, DEFAULT_APP_SETTINGS.update.autoUpdateEnabled),
+        mechanicsEnabled: readBoolean(update.mechanicsEnabled, DEFAULT_APP_SETTINGS.update.mechanicsEnabled),
+        updateScriptPath: readNullableString(update.updateScriptPath, DEFAULT_APP_SETTINGS.update.updateScriptPath),
+        setupCompleted: readBoolean(update.setupCompleted, DEFAULT_APP_SETTINGS.update.setupCompleted),
       },
       mediaManagement: {
-        movieRootFolder: readString(
-          mediaManagement.movieRootFolder,
-          DEFAULT_MEDIA_MANAGEMENT_SETTINGS.movieRootFolder,
-        ),
-        tvRootFolder: readString(
-          mediaManagement.tvRootFolder,
-          DEFAULT_MEDIA_MANAGEMENT_SETTINGS.tvRootFolder,
-        ),
-        movieNamingPattern: readString(
-          mediaManagement.movieNamingPattern,
-          DEFAULT_MEDIA_MANAGEMENT_SETTINGS.movieNamingPattern,
-        ),
-        seriesNamingPattern: readString(
-          mediaManagement.seriesNamingPattern,
-          DEFAULT_MEDIA_MANAGEMENT_SETTINGS.seriesNamingPattern,
-        ),
+        movieRootFolder: readString(mediaManagement.movieRootFolder, DEFAULT_MEDIA_MANAGEMENT_SETTINGS.movieRootFolder),
+        tvRootFolder: readString(mediaManagement.tvRootFolder, DEFAULT_MEDIA_MANAGEMENT_SETTINGS.tvRootFolder),
+        movieNamingPattern: readString(mediaManagement.movieNamingPattern, DEFAULT_MEDIA_MANAGEMENT_SETTINGS.movieNamingPattern),
+        seriesNamingPattern: readString(mediaManagement.seriesNamingPattern, DEFAULT_MEDIA_MANAGEMENT_SETTINGS.seriesNamingPattern),
       },
       streaming: {
-        discoveryEnabled: readBoolean(
-          streaming.discoveryEnabled,
-          DEFAULT_APP_SETTINGS.streaming.discoveryEnabled,
-        ),
-        discoveryServiceName: readTrimmedString(
-          streaming.discoveryServiceName,
-          DEFAULT_APP_SETTINGS.streaming.discoveryServiceName,
-        ),
-        defaultUserId: readTrimmedString(
-          streaming.defaultUserId,
-          DEFAULT_APP_SETTINGS.streaming.defaultUserId,
-        ),
-        watchedThreshold: clamp(
-          readNumber(
-            streaming.watchedThreshold,
-            DEFAULT_APP_SETTINGS.streaming.watchedThreshold,
-          ),
-          0,
-          1,
-        ),
-        subtitleDirectory: readNullableTrimmedString(
-          streaming.subtitleDirectory,
-          DEFAULT_APP_SETTINGS.streaming.subtitleDirectory,
-        ),
+        discoveryEnabled: readBoolean(streaming.discoveryEnabled, DEFAULT_APP_SETTINGS.streaming.discoveryEnabled),
+        discoveryServiceName: readTrimmedString(streaming.discoveryServiceName, DEFAULT_APP_SETTINGS.streaming.discoveryServiceName),
+        defaultUserId: readTrimmedString(streaming.defaultUserId, DEFAULT_APP_SETTINGS.streaming.defaultUserId),
+        watchedThreshold: clamp(readNumber(streaming.watchedThreshold, DEFAULT_APP_SETTINGS.streaming.watchedThreshold), 0, 1),
+        subtitleDirectory: readNullableTrimmedString(streaming.subtitleDirectory, DEFAULT_APP_SETTINGS.streaming.subtitleDirectory),
       },
     };
   }

@@ -1,4 +1,6 @@
+import { and, eq, ne } from 'drizzle-orm';
 import type { DatabaseClient } from '../db/drizzleClient';
+import * as schema from '../db/schema';
 import type { Notification } from '../types/modelTypes';
 import { encrypt, decrypt } from '../utils/encryption';
 
@@ -72,8 +74,9 @@ export class NotificationRepository {
 
   async create(data: CreateNotificationData): Promise<Notification> {
     const encryptedConfig = encryptSensitiveFields(data.type, data.config);
-    return this.prisma.notification.create({
-      data: {
+    const [row] = await this.prisma.drizzle
+      .insert(schema.notifications)
+      .values({
         name: data.name,
         type: data.type,
         enabled: data.enabled ?? true,
@@ -83,39 +86,46 @@ export class NotificationRepository {
         onRename: data.onRename ?? false,
         onSeriesAdd: data.onSeriesAdd ?? false,
         onEpisodeDelete: data.onEpisodeDelete ?? false,
-        config: encryptedConfig as unknown as any,
-      },
-    });
+        config: encryptedConfig,
+      })
+      .returning();
+    if (!row) {
+      throw new Error('NotificationRepository.create: returned no row');
+    }
+    return row as Notification;
   }
 
   async findById(id: number): Promise<Notification | null> {
-    const notification = await this.prisma.notification.findUnique({
-      where: { id },
-    });
-
+    const rows = await this.prisma.drizzle
+      .select()
+      .from(schema.notifications)
+      .where(eq(schema.notifications.id, id))
+      .limit(1);
+    const notification = rows[0];
     if (!notification) return null;
 
     return {
       ...notification,
-      config: decryptSensitiveFields(notification.type, notification.config as NotificationConfig) as unknown as any,
+      config: decryptSensitiveFields(notification.type, notification.config as NotificationConfig),
     };
   }
 
   async findAll(): Promise<Notification[]> {
-    const notifications = await this.prisma.notification.findMany();
-    return notifications.map((notification: { type: string; config: unknown }) => ({
+    const rows = await this.prisma.drizzle.select().from(schema.notifications);
+    return rows.map((notification) => ({
       ...notification,
-      config: decryptSensitiveFields(notification.type, notification.config as NotificationConfig) as unknown as any,
+      config: decryptSensitiveFields(notification.type, notification.config as NotificationConfig),
     }));
   }
 
   async findAllEnabled(): Promise<Notification[]> {
-    const notifications = await this.prisma.notification.findMany({
-      where: { enabled: true },
-    });
-    return notifications.map((notification: { type: string; config: unknown }) => ({
+    const rows = await this.prisma.drizzle
+      .select()
+      .from(schema.notifications)
+      .where(eq(schema.notifications.enabled, true));
+    return rows.map((notification) => ({
       ...notification,
-      config: decryptSensitiveFields(notification.type, notification.config as NotificationConfig) as unknown as any,
+      config: decryptSensitiveFields(notification.type, notification.config as NotificationConfig),
     }));
   }
 
@@ -125,44 +135,62 @@ export class NotificationRepository {
     if (data.config && data.type) {
       updateData.config = encryptSensitiveFields(data.type, data.config);
     } else if (data.config) {
-      // Need to fetch existing type to encrypt properly
-      const existing = await this.prisma.notification.findUnique({ where: { id } });
+      const existingRows = await this.prisma.drizzle
+        .select({ type: schema.notifications.type })
+        .from(schema.notifications)
+        .where(eq(schema.notifications.id, id))
+        .limit(1);
+      const existing = existingRows[0];
       if (existing) {
         updateData.config = encryptSensitiveFields(existing.type, data.config);
       }
     }
 
-    const updated = await this.prisma.notification.update({
-      where: { id },
-      data: updateData,
-    });
-
+    const rows = await this.prisma.drizzle
+      .update(schema.notifications)
+      .set(updateData)
+      .where(eq(schema.notifications.id, id))
+      .returning();
+    const updated = rows[0];
+    if (!updated) {
+      throw new Error(`NotificationRepository.update: notification ${id} not found`);
+    }
     return {
       ...updated,
-      config: decryptSensitiveFields(updated.type, updated.config as NotificationConfig) as unknown as any,
+      config: decryptSensitiveFields(updated.type, updated.config as NotificationConfig),
     };
   }
 
   async delete(id: number): Promise<Notification> {
-    return this.prisma.notification.delete({
-      where: { id },
-    });
+    const rows = await this.prisma.drizzle
+      .delete(schema.notifications)
+      .where(eq(schema.notifications.id, id))
+      .returning();
+    const deleted = rows[0];
+    if (!deleted) {
+      throw new Error(`NotificationRepository.delete: notification ${id} not found`);
+    }
+    return deleted as Notification;
   }
 
   async exists(id: number): Promise<boolean> {
-    const count = await this.prisma.notification.count({
-      where: { id },
-    });
-    return count > 0;
+    const rows = await this.prisma.drizzle
+      .select({ id: schema.notifications.id })
+      .from(schema.notifications)
+      .where(eq(schema.notifications.id, id))
+      .limit(1);
+    return rows.length > 0;
   }
 
   async nameExists(name: string, excludeId?: number): Promise<boolean> {
-    const count = await this.prisma.notification.count({
-      where: {
-        name,
-        ...(excludeId ? { NOT: { id: excludeId } } : {}),
-      },
-    });
-    return count > 0;
+    const where = excludeId
+      ? and(eq(schema.notifications.name, name), ne(schema.notifications.id, excludeId))
+      : eq(schema.notifications.name, name);
+    const rows = await this.prisma.drizzle
+      .select({ id: schema.notifications.id })
+      .from(schema.notifications)
+      .where(where)
+      .limit(1);
+    return rows.length > 0;
   }
 }

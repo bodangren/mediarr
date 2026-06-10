@@ -1,5 +1,8 @@
+import { and, asc, desc, eq, inArray, SQL } from 'drizzle-orm';
 import type { DatabaseClient } from '../db/drizzleClient';
+import * as schema from '../db/schema';
 import type { Blocklist } from '../types/modelTypes';
+
 export interface CreateBlocklistInput {
   seriesId?: number | null;
   seriesTitle: string;
@@ -29,7 +32,14 @@ export interface QueryBlocklistResult {
   pageSize: number;
 }
 
-type BlocklistFilterInput = Omit<QueryBlocklistInput, 'page' | 'pageSize' | 'sortBy' | 'sortDir'>;
+const SORTABLE: Record<string, Parameters<typeof asc>[0] | Parameters<typeof desc>[0]> = {
+  id: schema.blocklists.id,
+  seriesId: schema.blocklists.seriesId,
+  seriesTitle: schema.blocklists.seriesTitle,
+  releaseTitle: schema.blocklists.releaseTitle,
+  reason: schema.blocklists.reason,
+  dateBlocked: schema.blocklists.dateBlocked,
+};
 
 /**
  * Persists and queries blocklist records for blocked releases.
@@ -37,93 +47,85 @@ type BlocklistFilterInput = Omit<QueryBlocklistInput, 'page' | 'pageSize' | 'sor
 export class BlocklistRepository {
   constructor(private readonly prisma: DatabaseClient) {}
 
-  private buildWhere(input: BlocklistFilterInput): any {
-    const where: any = {};
-    if (input.seriesId !== undefined) {
-      where.seriesId = input.seriesId;
-    }
-    return where;
-  }
-
   async create(input: CreateBlocklistInput): Promise<Blocklist> {
-    const data: any = {
-      seriesTitle: input.seriesTitle,
-      releaseTitle: input.releaseTitle,
-      reason: input.reason,
-    };
-
-    if (input.seriesId !== undefined && input.seriesId !== null) {
-      data.seriesId = input.seriesId;
+    const [row] = await this.prisma.drizzle
+      .insert(schema.blocklists)
+      .values({
+        seriesId: input.seriesId ?? null,
+        seriesTitle: input.seriesTitle,
+        episodeId: input.episodeId ?? null,
+        seasonNumber: input.seasonNumber ?? null,
+        episodeNumber: input.episodeNumber ?? null,
+        releaseTitle: input.releaseTitle,
+        quality: input.quality ?? null,
+        indexer: input.indexer ?? null,
+        size: input.size != null ? Number(input.size) : null,
+        reason: input.reason,
+        dateBlocked: input.dateBlocked ?? new Date(),
+      })
+      .returning();
+    if (!row) {
+      throw new Error('BlocklistRepository.create: returned no row');
     }
-    if (input.episodeId !== undefined && input.episodeId !== null) {
-      data.episodeId = input.episodeId;
-    }
-    if (input.seasonNumber !== undefined && input.seasonNumber !== null) {
-      data.seasonNumber = input.seasonNumber;
-    }
-    if (input.episodeNumber !== undefined && input.episodeNumber !== null) {
-      data.episodeNumber = input.episodeNumber;
-    }
-    if (input.quality !== undefined && input.quality !== null) {
-      data.quality = input.quality;
-    }
-    if (input.indexer !== undefined && input.indexer !== null) {
-      data.indexer = input.indexer;
-    }
-    if (input.size !== undefined && input.size !== null) {
-      data.size = input.size;
-    }
-    if (input.dateBlocked !== undefined) {
-      data.dateBlocked = input.dateBlocked;
-    }
-
-    return this.prisma.blocklist.create({ data });
+    return row as Blocklist;
   }
 
   async query(input: QueryBlocklistInput): Promise<QueryBlocklistResult> {
     const page = input.page && input.page > 0 ? input.page : 1;
     const pageSize = input.pageSize && input.pageSize > 0 ? input.pageSize : 25;
-    const where = this.buildWhere(input);
+
+    const conditions: SQL[] = [];
+    if (input.seriesId !== undefined) {
+      conditions.push(eq(schema.blocklists.seriesId, input.seriesId));
+    }
+    const where = conditions.length === 0
+      ? undefined
+      : conditions.length === 1
+        ? conditions[0]
+        : and(...conditions);
 
     const sortBy = input.sortBy ?? 'dateBlocked';
     const sortDir = input.sortDir ?? 'desc';
+    const sortColumn = SORTABLE[sortBy] ?? schema.blocklists.dateBlocked;
+    const orderBy = sortDir === 'asc' ? asc(sortColumn) : desc(sortColumn);
 
-    const orderBy: any = {
-      [sortBy]: sortDir,
-    };
-
-    const [items, total] = await Promise.all([
-      this.prisma.blocklist.findMany({
-        where,
-        orderBy,
-        skip: (page - 1) * pageSize,
-        take: pageSize,
-      }),
-      this.prisma.blocklist.count({ where }),
+    const [items, totalRows] = await Promise.all([
+      this.prisma.drizzle
+        .select()
+        .from(schema.blocklists)
+        .where(where)
+        .orderBy(orderBy)
+        .limit(pageSize)
+        .offset((page - 1) * pageSize),
+      this.prisma.drizzle
+        .select({ id: schema.blocklists.id })
+        .from(schema.blocklists)
+        .where(where),
     ]);
 
     return {
-      items,
-      total,
+      items: items as unknown as Blocklist[],
+      total: totalRows.length,
       page,
       pageSize,
     };
   }
 
   async findById(id: number): Promise<Blocklist | null> {
-    return this.prisma.blocklist.findUnique({
-      where: { id },
-    });
+    const rows = await this.prisma.drizzle
+      .select()
+      .from(schema.blocklists)
+      .where(eq(schema.blocklists.id, id))
+      .limit(1);
+    return (rows[0] as Blocklist | undefined) ?? null;
   }
 
   async deleteById(id: number): Promise<Blocklist | null> {
-    try {
-      return await this.prisma.blocklist.delete({
-        where: { id },
-      });
-    } catch {
-      return null;
-    }
+    const rows = await this.prisma.drizzle
+      .delete(schema.blocklists)
+      .where(eq(schema.blocklists.id, id))
+      .returning();
+    return (rows[0] as Blocklist | undefined) ?? null;
   }
 
   async deleteByIds(ids: number[]): Promise<number> {
@@ -131,17 +133,15 @@ export class BlocklistRepository {
       return 0;
     }
 
-    const result = await this.prisma.blocklist.deleteMany({
-      where: {
-        id: { in: ids },
-      },
-    });
-
-    return result.count;
+    const rows = await this.prisma.drizzle
+      .delete(schema.blocklists)
+      .where(inArray(schema.blocklists.id, ids))
+      .returning();
+    return rows.length;
   }
 
   async clear(): Promise<number> {
-    const result = await this.prisma.blocklist.deleteMany();
-    return result.count;
+    const rows = await this.prisma.drizzle.delete(schema.blocklists).returning();
+    return rows.length;
   }
 }

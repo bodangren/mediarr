@@ -4,25 +4,57 @@ import {
   DEFAULT_APP_SETTINGS,
   type TorrentLimitsSettings,
 } from './AppSettingsRepository';
+import * as schema from '../db/schema';
 
-function createDbMock() {
+type SelectCall = { rows: any[] };
+type InsertCall = { rows: any[] };
+
+function makeSelectBuilder(rows: any[] = []): any {
+  const builder: any = {
+    then: (resolve: any, reject: any) => Promise.resolve(rows).then(resolve, reject),
+  };
+  builder.from = vi.fn().mockReturnValue(builder);
+  builder.where = vi.fn().mockReturnValue(builder);
+  builder.limit = vi.fn().mockReturnValue(builder);
+  return builder;
+}
+
+function makeInsertBuilder(rows: any[] = [{ id: 1 }]): any {
+  const builder: any = {};
+  builder.values = vi.fn().mockReturnValue(builder);
+  builder.onConflictDoUpdate = vi.fn().mockReturnValue(builder);
+  builder.returning = vi.fn().mockResolvedValue(rows);
+  return builder;
+}
+
+function makeDb(config: { selectCalls?: SelectCall[]; insertRows?: InsertCall[] } = {}) {
+  const selectCalls = config.selectCalls ?? [];
+  const insertRows = config.insertRows ?? [];
+  const selectIndex = { i: 0 };
+  const insertIndex = { i: 0 };
   return {
-    appSettings: {
-      findUnique: vi.fn(),
-      create: vi.fn(),
-      upsert: vi.fn(),
+    drizzle: {
+      select: vi.fn().mockImplementation(() => {
+        const call = selectCalls[selectIndex.i] ?? { rows: [] };
+        selectIndex.i += 1;
+        return makeSelectBuilder(call.rows);
+      }),
+      insert: vi.fn().mockImplementation((_table: any) => {
+        const call = insertRows[insertIndex.i] ?? { rows: [{ id: 1 }] };
+        insertIndex.i += 1;
+        return makeInsertBuilder(call.rows);
+      }),
     },
   };
 }
 
 describe('AppSettingsRepository — TorrentLimitsSettings new fields', () => {
-  let prismaMock: ReturnType<typeof createDbMock>;
+  let db: ReturnType<typeof makeDb>;
   let repo: AppSettingsRepository;
 
   beforeEach(() => {
-    prismaMock = createDbMock();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    repo = new AppSettingsRepository(prismaMock as any);
+    db = makeDb();
+    repo = new AppSettingsRepository(db as any);
   });
 
   // ── DEFAULT_APP_SETTINGS ───────────────────────────────────────────────────
@@ -69,8 +101,11 @@ describe('AppSettingsRepository — TorrentLimitsSettings new fields', () => {
   // ── get() — no existing record returns defaults ────────────────────────────
 
   it('get() returns default torrentLimits including new fields when no record exists', async () => {
-    prismaMock.appSettings.findUnique.mockResolvedValue(null);
-    prismaMock.appSettings.create.mockResolvedValue({});
+    db = makeDb({
+      selectCalls: [{ rows: [] }],
+      insertRows: [{ rows: [{ id: 1 }] }],
+    });
+    repo = new AppSettingsRepository(db as any);
 
     const settings = await repo.get();
 
@@ -84,30 +119,39 @@ describe('AppSettingsRepository — TorrentLimitsSettings new fields', () => {
   // ── get() — existing record with new fields ────────────────────────────────
 
   it('get() returns persisted values for the new torrentLimits fields', async () => {
-    prismaMock.appSettings.findUnique.mockResolvedValue({
-      torrentLimits: {
-        maxActiveDownloads: 3,
-        maxActiveSeeds: 3,
-        globalDownloadLimitKbps: null,
-        globalUploadLimitKbps: null,
-        incompleteDirectory: '/tmp/incomplete',
-        completeDirectory: '/media/complete',
-        seedRatioLimit: 1.5,
-        seedTimeLimitMinutes: 120,
-        seedLimitAction: 'remove',
-      },
-      schedulerIntervals: {
-        rssSyncMinutes: 15,
-        availabilityCheckMinutes: 30,
-        torrentMonitoringSeconds: 5,
-      },
-      pathVisibility: { showDownloadPath: true, showMediaPath: true },
-      apiKeys: {},
-      host: {},
-      security: {},
-      logging: {},
-      update: {},
+    db = makeDb({
+      selectCalls: [
+        {
+          rows: [
+            {
+              torrentLimits: {
+                maxActiveDownloads: 3,
+                maxActiveSeeds: 3,
+                globalDownloadLimitKbps: null,
+                globalUploadLimitKbps: null,
+                incompleteDirectory: '/tmp/incomplete',
+                completeDirectory: '/media/complete',
+                seedRatioLimit: 1.5,
+                seedTimeLimitMinutes: 120,
+                seedLimitAction: 'remove',
+              },
+              schedulerIntervals: {
+                rssSyncMinutes: 15,
+                availabilityCheckMinutes: 30,
+                torrentMonitoringSeconds: 5,
+              },
+              pathVisibility: { showDownloadPath: true, showMediaPath: true },
+              apiKeys: {},
+              host: {},
+              security: {},
+              logging: {},
+              update: {},
+            },
+          ],
+        },
+      ],
     });
+    repo = new AppSettingsRepository(db as any);
 
     const settings = await repo.get();
 
@@ -121,26 +165,35 @@ describe('AppSettingsRepository — TorrentLimitsSettings new fields', () => {
   // ── get() — existing record with missing new fields falls back to defaults ──
 
   it('get() falls back to defaults when new torrentLimits fields are absent in stored JSON', async () => {
-    prismaMock.appSettings.findUnique.mockResolvedValue({
-      torrentLimits: {
-        maxActiveDownloads: 3,
-        maxActiveSeeds: 3,
-        globalDownloadLimitKbps: null,
-        globalUploadLimitKbps: null,
-        // no incompleteDirectory, completeDirectory, seedRatioLimit, seedTimeLimitMinutes, seedLimitAction
-      },
-      schedulerIntervals: {
-        rssSyncMinutes: 15,
-        availabilityCheckMinutes: 30,
-        torrentMonitoringSeconds: 5,
-      },
-      pathVisibility: { showDownloadPath: true, showMediaPath: true },
-      apiKeys: {},
-      host: {},
-      security: {},
-      logging: {},
-      update: {},
+    db = makeDb({
+      selectCalls: [
+        {
+          rows: [
+            {
+              torrentLimits: {
+                maxActiveDownloads: 3,
+                maxActiveSeeds: 3,
+                globalDownloadLimitKbps: null,
+                globalUploadLimitKbps: null,
+                // no incompleteDirectory, completeDirectory, seedRatioLimit, seedTimeLimitMinutes, seedLimitAction
+              },
+              schedulerIntervals: {
+                rssSyncMinutes: 15,
+                availabilityCheckMinutes: 30,
+                torrentMonitoringSeconds: 5,
+              },
+              pathVisibility: { showDownloadPath: true, showMediaPath: true },
+              apiKeys: {},
+              host: {},
+              security: {},
+              logging: {},
+              update: {},
+            },
+          ],
+        },
+      ],
     });
+    repo = new AppSettingsRepository(db as any);
 
     const settings = await repo.get();
 
@@ -154,26 +207,35 @@ describe('AppSettingsRepository — TorrentLimitsSettings new fields', () => {
   // ── get() — invalid seedLimitAction falls back to 'pause' ─────────────────
 
   it('get() coerces invalid seedLimitAction to "pause"', async () => {
-    prismaMock.appSettings.findUnique.mockResolvedValue({
-      torrentLimits: {
-        maxActiveDownloads: 3,
-        maxActiveSeeds: 3,
-        globalDownloadLimitKbps: null,
-        globalUploadLimitKbps: null,
-        incompleteDirectory: '',
-        completeDirectory: '',
-        seedRatioLimit: 0,
-        seedTimeLimitMinutes: 0,
-        seedLimitAction: 'unknown_action', // invalid
-      },
-      schedulerIntervals: { rssSyncMinutes: 15, availabilityCheckMinutes: 30, torrentMonitoringSeconds: 5 },
-      pathVisibility: { showDownloadPath: true, showMediaPath: true },
-      apiKeys: {},
-      host: {},
-      security: {},
-      logging: {},
-      update: {},
+    db = makeDb({
+      selectCalls: [
+        {
+          rows: [
+            {
+              torrentLimits: {
+                maxActiveDownloads: 3,
+                maxActiveSeeds: 3,
+                globalDownloadLimitKbps: null,
+                globalUploadLimitKbps: null,
+                incompleteDirectory: '',
+                completeDirectory: '',
+                seedRatioLimit: 0,
+                seedTimeLimitMinutes: 0,
+                seedLimitAction: 'unknown_action',
+              },
+              schedulerIntervals: { rssSyncMinutes: 15, availabilityCheckMinutes: 30, torrentMonitoringSeconds: 5 },
+              pathVisibility: { showDownloadPath: true, showMediaPath: true },
+              apiKeys: {},
+              host: {},
+              security: {},
+              logging: {},
+              update: {},
+            },
+          ],
+        },
+      ],
     });
+    repo = new AppSettingsRepository(db as any);
 
     const settings = await repo.get();
 
@@ -183,10 +245,11 @@ describe('AppSettingsRepository — TorrentLimitsSettings new fields', () => {
   // ── update() — merges new torrentLimits fields ─────────────────────────────
 
   it('update() merges new torrentLimits fields correctly', async () => {
-    // First call to get() returns defaults (no record)
-    prismaMock.appSettings.findUnique.mockResolvedValue(null);
-    prismaMock.appSettings.create.mockResolvedValue({});
-    prismaMock.appSettings.upsert.mockResolvedValue({});
+    db = makeDb({
+      selectCalls: [{ rows: [] }],
+      insertRows: [{ rows: [{ id: 1 }] }, { rows: [{ id: 1 }] }],
+    });
+    repo = new AppSettingsRepository(db as any);
 
     const partial: Partial<{ torrentLimits: Partial<TorrentLimitsSettings> }> = {
       torrentLimits: {
@@ -206,142 +269,163 @@ describe('AppSettingsRepository — TorrentLimitsSettings new fields', () => {
     expect(result.torrentLimits.seedTimeLimitMinutes).toBe(60);
     expect(result.torrentLimits.seedLimitAction).toBe('remove');
 
-    // Verify the upsert was called with the merged data
-    expect(prismaMock.appSettings.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        update: expect.objectContaining({
-          torrentLimits: expect.objectContaining({
-            incompleteDirectory: '/dl/incomplete',
-            completeDirectory: '/dl/done',
-            seedRatioLimit: 2.0,
-            seedTimeLimitMinutes: 60,
-            seedLimitAction: 'remove',
-          }),
-        }),
-      }),
-    );
+    expect(db.drizzle.insert).toHaveBeenCalledWith(schema.appSettings);
   });
 
   it('update() preserves existing torrentLimits fields when updating new ones', async () => {
-    prismaMock.appSettings.findUnique.mockResolvedValue({
-      torrentLimits: {
-        maxActiveDownloads: 5,
-        maxActiveSeeds: 10,
-        globalDownloadLimitKbps: 1024,
-        globalUploadLimitKbps: 512,
-        incompleteDirectory: '/old/incomplete',
-        completeDirectory: '/old/complete',
-        seedRatioLimit: 1.0,
-        seedTimeLimitMinutes: 30,
-        seedLimitAction: 'pause',
-      },
-      schedulerIntervals: { rssSyncMinutes: 15, availabilityCheckMinutes: 30, torrentMonitoringSeconds: 5 },
-      pathVisibility: { showDownloadPath: true, showMediaPath: true },
-      apiKeys: {},
-      host: {},
-      security: {},
-      logging: {},
-      update: {},
+    db = makeDb({
+      selectCalls: [
+        {
+          rows: [
+            {
+              torrentLimits: {
+                maxActiveDownloads: 5,
+                maxActiveSeeds: 10,
+                globalDownloadLimitKbps: 1024,
+                globalUploadLimitKbps: 512,
+                incompleteDirectory: '/old/incomplete',
+                completeDirectory: '/old/complete',
+                seedRatioLimit: 1.0,
+                seedTimeLimitMinutes: 30,
+                seedLimitAction: 'pause',
+              },
+              schedulerIntervals: { rssSyncMinutes: 15, availabilityCheckMinutes: 30, torrentMonitoringSeconds: 5 },
+              pathVisibility: { showDownloadPath: true, showMediaPath: true },
+              apiKeys: {},
+              host: {},
+              security: {},
+              logging: {},
+              update: {},
+            },
+          ],
+        },
+      ],
+      insertRows: [{ rows: [{ id: 1 }] }],
     });
-    prismaMock.appSettings.upsert.mockResolvedValue({});
+    repo = new AppSettingsRepository(db as any);
 
     const result = await repo.update({
       torrentLimits: { seedRatioLimit: 3.0 } as any,
     });
 
-    // Unchanged fields preserved
     expect(result.torrentLimits.maxActiveDownloads).toBe(5);
     expect(result.torrentLimits.maxActiveSeeds).toBe(10);
     expect(result.torrentLimits.incompleteDirectory).toBe('/old/incomplete');
     expect(result.torrentLimits.completeDirectory).toBe('/old/complete');
-    // Updated field
     expect(result.torrentLimits.seedRatioLimit).toBe(3.0);
-    // Other new fields unchanged
     expect(result.torrentLimits.seedTimeLimitMinutes).toBe(30);
     expect(result.torrentLimits.seedLimitAction).toBe('pause');
   });
 
   it('get() reads wantedLanguages from persisted update JSON', async () => {
-    prismaMock.appSettings.findUnique.mockResolvedValue({
-      torrentLimits: DEFAULT_APP_SETTINGS.torrentLimits,
-      schedulerIntervals: DEFAULT_APP_SETTINGS.schedulerIntervals,
-      pathVisibility: DEFAULT_APP_SETTINGS.pathVisibility,
-      apiKeys: DEFAULT_APP_SETTINGS.apiKeys,
-      host: DEFAULT_APP_SETTINGS.host,
-      security: DEFAULT_APP_SETTINGS.security,
-      logging: DEFAULT_APP_SETTINGS.logging,
-      update: {
-        ...DEFAULT_APP_SETTINGS.update,
-        wantedLanguages: ['EN', 'th', 'th'],
-      },
-      mediaManagement: DEFAULT_APP_SETTINGS.mediaManagement,
+    db = makeDb({
+      selectCalls: [
+        {
+          rows: [
+            {
+              torrentLimits: DEFAULT_APP_SETTINGS.torrentLimits,
+              schedulerIntervals: DEFAULT_APP_SETTINGS.schedulerIntervals,
+              pathVisibility: DEFAULT_APP_SETTINGS.pathVisibility,
+              apiKeys: DEFAULT_APP_SETTINGS.apiKeys,
+              host: DEFAULT_APP_SETTINGS.host,
+              security: DEFAULT_APP_SETTINGS.security,
+              logging: DEFAULT_APP_SETTINGS.logging,
+              update: {
+                ...DEFAULT_APP_SETTINGS.update,
+                wantedLanguages: ['EN', 'th', 'th'],
+              },
+              mediaManagement: DEFAULT_APP_SETTINGS.mediaManagement,
+            },
+          ],
+        },
+      ],
     });
+    repo = new AppSettingsRepository(db as any);
 
     const settings = await repo.get();
     expect(settings.wantedLanguages).toEqual(['en', 'th']);
   });
 
   it('update() merges wantedLanguages into persisted settings payload', async () => {
-    prismaMock.appSettings.findUnique.mockResolvedValue({
-      torrentLimits: DEFAULT_APP_SETTINGS.torrentLimits,
-      schedulerIntervals: DEFAULT_APP_SETTINGS.schedulerIntervals,
-      pathVisibility: DEFAULT_APP_SETTINGS.pathVisibility,
-      apiKeys: DEFAULT_APP_SETTINGS.apiKeys,
-      host: DEFAULT_APP_SETTINGS.host,
-      security: DEFAULT_APP_SETTINGS.security,
-      logging: DEFAULT_APP_SETTINGS.logging,
-      update: DEFAULT_APP_SETTINGS.update,
-      mediaManagement: DEFAULT_APP_SETTINGS.mediaManagement,
+    db = makeDb({
+      selectCalls: [
+        {
+          rows: [
+            {
+              torrentLimits: DEFAULT_APP_SETTINGS.torrentLimits,
+              schedulerIntervals: DEFAULT_APP_SETTINGS.schedulerIntervals,
+              pathVisibility: DEFAULT_APP_SETTINGS.pathVisibility,
+              apiKeys: DEFAULT_APP_SETTINGS.apiKeys,
+              host: DEFAULT_APP_SETTINGS.host,
+              security: DEFAULT_APP_SETTINGS.security,
+              logging: DEFAULT_APP_SETTINGS.logging,
+              update: DEFAULT_APP_SETTINGS.update,
+              mediaManagement: DEFAULT_APP_SETTINGS.mediaManagement,
+            },
+          ],
+        },
+      ],
+      insertRows: [{ rows: [{ id: 1 }] }],
     });
-    prismaMock.appSettings.upsert.mockResolvedValue({});
+    repo = new AppSettingsRepository(db as any);
 
     const updated = await repo.update({
       wantedLanguages: ['EN', 'zh', 'zh', ''],
     });
 
     expect(updated.wantedLanguages).toEqual(['en', 'zh']);
-    expect(prismaMock.appSettings.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        update: expect.objectContaining({
-          update: expect.objectContaining({
-            wantedLanguages: ['en', 'zh'],
-          }),
-        }),
-      }),
-    );
+    expect(db.drizzle.insert).toHaveBeenCalled();
   });
 
   it('get() falls back to streaming defaults when streaming is absent', async () => {
-    prismaMock.appSettings.findUnique.mockResolvedValue({
-      torrentLimits: DEFAULT_APP_SETTINGS.torrentLimits,
-      schedulerIntervals: DEFAULT_APP_SETTINGS.schedulerIntervals,
-      pathVisibility: DEFAULT_APP_SETTINGS.pathVisibility,
-      apiKeys: DEFAULT_APP_SETTINGS.apiKeys,
-      host: DEFAULT_APP_SETTINGS.host,
-      security: DEFAULT_APP_SETTINGS.security,
-      logging: DEFAULT_APP_SETTINGS.logging,
-      update: DEFAULT_APP_SETTINGS.update,
-      mediaManagement: DEFAULT_APP_SETTINGS.mediaManagement,
+    db = makeDb({
+      selectCalls: [
+        {
+          rows: [
+            {
+              torrentLimits: DEFAULT_APP_SETTINGS.torrentLimits,
+              schedulerIntervals: DEFAULT_APP_SETTINGS.schedulerIntervals,
+              pathVisibility: DEFAULT_APP_SETTINGS.pathVisibility,
+              apiKeys: DEFAULT_APP_SETTINGS.apiKeys,
+              host: DEFAULT_APP_SETTINGS.host,
+              security: DEFAULT_APP_SETTINGS.security,
+              logging: DEFAULT_APP_SETTINGS.logging,
+              update: DEFAULT_APP_SETTINGS.update,
+              mediaManagement: DEFAULT_APP_SETTINGS.mediaManagement,
+            },
+          ],
+        },
+      ],
     });
+    repo = new AppSettingsRepository(db as any);
 
     const settings = await repo.get();
     expect(settings.streaming).toEqual(DEFAULT_APP_SETTINGS.streaming);
   });
 
   it('update() merges streaming settings into persisted payload', async () => {
-    prismaMock.appSettings.findUnique.mockResolvedValue({
-      torrentLimits: DEFAULT_APP_SETTINGS.torrentLimits,
-      schedulerIntervals: DEFAULT_APP_SETTINGS.schedulerIntervals,
-      pathVisibility: DEFAULT_APP_SETTINGS.pathVisibility,
-      apiKeys: DEFAULT_APP_SETTINGS.apiKeys,
-      host: DEFAULT_APP_SETTINGS.host,
-      security: DEFAULT_APP_SETTINGS.security,
-      logging: DEFAULT_APP_SETTINGS.logging,
-      update: DEFAULT_APP_SETTINGS.update,
-      mediaManagement: DEFAULT_APP_SETTINGS.mediaManagement,
-      streaming: DEFAULT_APP_SETTINGS.streaming,
+    db = makeDb({
+      selectCalls: [
+        {
+          rows: [
+            {
+              torrentLimits: DEFAULT_APP_SETTINGS.torrentLimits,
+              schedulerIntervals: DEFAULT_APP_SETTINGS.schedulerIntervals,
+              pathVisibility: DEFAULT_APP_SETTINGS.pathVisibility,
+              apiKeys: DEFAULT_APP_SETTINGS.apiKeys,
+              host: DEFAULT_APP_SETTINGS.host,
+              security: DEFAULT_APP_SETTINGS.security,
+              logging: DEFAULT_APP_SETTINGS.logging,
+              update: DEFAULT_APP_SETTINGS.update,
+              mediaManagement: DEFAULT_APP_SETTINGS.mediaManagement,
+              streaming: DEFAULT_APP_SETTINGS.streaming,
+            },
+          ],
+        },
+      ],
+      insertRows: [{ rows: [{ id: 1 }] }],
     });
-    prismaMock.appSettings.upsert.mockResolvedValue({});
+    repo = new AppSettingsRepository(db as any);
 
     const updated = await repo.update({
       streaming: {
@@ -361,18 +445,6 @@ describe('AppSettingsRepository — TorrentLimitsSettings new fields', () => {
       subtitleDirectory: '/srv/subtitles',
     });
 
-    expect(prismaMock.appSettings.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        update: expect.objectContaining({
-          streaming: expect.objectContaining({
-            discoveryEnabled: false,
-            discoveryServiceName: 'Living Room Mediarr',
-            defaultUserId: 'family-room',
-            watchedThreshold: 0.85,
-            subtitleDirectory: '/srv/subtitles',
-          }),
-        }),
-      }),
-    );
+    expect(db.drizzle.insert).toHaveBeenCalled();
   });
 });

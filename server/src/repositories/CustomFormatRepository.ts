@@ -1,5 +1,8 @@
+import { and, asc, eq, ne } from 'drizzle-orm';
 import type { DatabaseClient } from '../db/drizzleClient';
+import * as schema from '../db/schema';
 import type { CustomFormat, CustomFormatScore } from '../types/modelTypes';
+
 // Condition types for custom format evaluation
 export type ConditionType = 'regex' | 'size' | 'language' | 'indexerFlag' | 'releaseGroup' | 'source' | 'resolution' | 'qualityModifier';
 export type ConditionOperator = 'equals' | 'contains' | 'notContains' | 'greaterThan' | 'lessThan' | 'regex' | 'notRegex';
@@ -44,9 +47,7 @@ export interface UpdateCustomFormatData {
 }
 
 function parseConditions(conditions: unknown): CustomFormatCondition[] {
-  if (!Array.isArray(conditions)) {
-    return [];
-  }
+  if (!Array.isArray(conditions)) return [];
   return conditions as CustomFormatCondition[];
 }
 
@@ -54,184 +55,205 @@ export class CustomFormatRepository {
   constructor(private prisma: DatabaseClient) {}
 
   async findAll(): Promise<CustomFormatWithScores[]> {
-    const formats = await this.prisma.customFormat.findMany({
-      include: {
-        scores: true,
-      },
-      orderBy: { name: 'asc' },
-    });
+    const formats = await this.prisma.drizzle
+      .select()
+      .from(schema.customFormats)
+      .orderBy(asc(schema.customFormats.name));
 
-    return formats.map((format: CustomFormat & { scores: CustomFormatScore[] }) => this.toCustomFormatWithScores(format));
+    const result: CustomFormatWithScores[] = [];
+    for (const format of formats) {
+      const scores = await this.loadScores(format.id);
+      result.push(this.toCustomFormatWithScores(format as CustomFormat, scores));
+    }
+    return result;
   }
 
   async findById(id: number): Promise<CustomFormatWithScores | null> {
-    const format = await this.prisma.customFormat.findUnique({
-      where: { id },
-      include: {
-        scores: true,
-      },
-    });
-
+    const rows = await this.prisma.drizzle
+      .select()
+      .from(schema.customFormats)
+      .where(eq(schema.customFormats.id, id))
+      .limit(1);
+    const format = rows[0];
     if (!format) return null;
-
-    return this.toCustomFormatWithScores(format);
+    const scores = await this.loadScores(id);
+    return this.toCustomFormatWithScores(format as CustomFormat, scores);
   }
 
   async findByName(name: string): Promise<CustomFormatWithScores | null> {
-    const format = await this.prisma.customFormat.findUnique({
-      where: { name },
-      include: {
-        scores: true,
-      },
-    });
-
+    const rows = await this.prisma.drizzle
+      .select()
+      .from(schema.customFormats)
+      .where(eq(schema.customFormats.name, name))
+      .limit(1);
+    const format = rows[0];
     if (!format) return null;
-
-    return this.toCustomFormatWithScores(format);
+    const scores = await this.loadScores(format.id);
+    return this.toCustomFormatWithScores(format as CustomFormat, scores);
   }
 
   async create(data: CreateCustomFormatData): Promise<CustomFormatWithScores> {
-    const format = await this.prisma.customFormat.create({
-      data: {
+    const [row] = await this.prisma.drizzle
+      .insert(schema.customFormats)
+      .values({
         name: data.name,
         includeCustomFormatWhenRenaming: data.includeCustomFormatWhenRenaming ?? false,
-        conditions: data.conditions as unknown as any,
-      },
-    });
+        conditions: data.conditions,
+      })
+      .returning();
+    if (!row) {
+      throw new Error('CustomFormatRepository.create: returned no row');
+    }
 
-    // Create scores if provided
     if (data.scores && data.scores.length > 0) {
-      await this.prisma.customFormatScore.createMany({
-        data: data.scores.map(score => ({
-          customFormatId: format.id,
+      await this.prisma.drizzle.insert(schema.customFormatScores).values(
+        data.scores.map((score) => ({
+          customFormatId: row.id,
           qualityProfileId: score.qualityProfileId,
           score: score.score,
         })),
-        skipDuplicates: true,
-      } as any);
+      );
     }
 
-    // Fetch with scores
-    const created = await this.prisma.customFormat.findUnique({
-      where: { id: format.id },
-      include: { scores: true },
-    });
-
-    return this.toCustomFormatWithScores(created!);
+    const scores = await this.loadScores(row.id);
+    return this.toCustomFormatWithScores(row as CustomFormat, scores);
   }
 
   async update(id: number, data: UpdateCustomFormatData): Promise<CustomFormatWithScores> {
-    const updateData: any = {};
-
+    const updateData: Record<string, unknown> = {};
     if (data.name !== undefined) updateData.name = data.name;
     if (data.includeCustomFormatWhenRenaming !== undefined) {
       updateData.includeCustomFormatWhenRenaming = data.includeCustomFormatWhenRenaming;
     }
-    if (data.conditions !== undefined) {
-      updateData.conditions = data.conditions as unknown as any;
+    if (data.conditions !== undefined) updateData.conditions = data.conditions;
+
+    if (Object.keys(updateData).length > 0) {
+      await this.prisma.drizzle
+        .update(schema.customFormats)
+        .set(updateData)
+        .where(eq(schema.customFormats.id, id));
     }
 
-    // Update format first
-    await this.prisma.customFormat.update({
-      where: { id },
-      data: updateData,
-    });
-
-    // Update scores if provided
     if (data.scores !== undefined) {
-      // Delete existing scores
-      await this.prisma.customFormatScore.deleteMany({
-        where: { customFormatId: id },
-      });
+      await this.prisma.drizzle
+        .delete(schema.customFormatScores)
+        .where(eq(schema.customFormatScores.customFormatId, id));
 
-      // Create new scores
       if (data.scores.length > 0) {
-        await this.prisma.customFormatScore.createMany({
-          data: data.scores.map(score => ({
+        await this.prisma.drizzle.insert(schema.customFormatScores).values(
+          data.scores.map((score) => ({
             customFormatId: id,
             qualityProfileId: score.qualityProfileId,
             score: score.score,
           })),
-          skipDuplicates: true,
-        } as any);
+        );
       }
     }
 
-    // Fetch updated with scores
-    const updated = await this.prisma.customFormat.findUnique({
-      where: { id },
-      include: { scores: true },
-    });
-
-    return this.toCustomFormatWithScores(updated!);
+    const updatedRows = await this.prisma.drizzle
+      .select()
+      .from(schema.customFormats)
+      .where(eq(schema.customFormats.id, id))
+      .limit(1);
+    const updated = updatedRows[0];
+    if (!updated) {
+      throw new Error(`CustomFormatRepository.update: format ${id} not found`);
+    }
+    const scores = await this.loadScores(id);
+    return this.toCustomFormatWithScores(updated as CustomFormat, scores);
   }
 
   async delete(id: number): Promise<CustomFormatWithScores> {
-    // Fetch before delete
-    const format = await this.prisma.customFormat.findUnique({
-      where: { id },
-      include: { scores: true },
-    });
-
+    const rows = await this.prisma.drizzle
+      .select()
+      .from(schema.customFormats)
+      .where(eq(schema.customFormats.id, id))
+      .limit(1);
+    const format = rows[0];
     if (!format) {
       throw new Error(`CustomFormat with id ${id} not found`);
     }
 
-    // Delete (cascade handles scores)
-    await this.prisma.customFormat.delete({
-      where: { id },
-    });
+    // Delete scores first to avoid FK constraint issues
+    await this.prisma.drizzle
+      .delete(schema.customFormatScores)
+      .where(eq(schema.customFormatScores.customFormatId, id));
 
-    return this.toCustomFormatWithScores(format);
+    await this.prisma.drizzle
+      .delete(schema.customFormats)
+      .where(eq(schema.customFormats.id, id));
+
+    const scores = await this.loadScores(id);
+    return this.toCustomFormatWithScores(format as CustomFormat, scores);
   }
 
   async exists(id: number): Promise<boolean> {
-    const count = await this.prisma.customFormat.count({
-      where: { id },
-    });
-    return count > 0;
+    const rows = await this.prisma.drizzle
+      .select({ id: schema.customFormats.id })
+      .from(schema.customFormats)
+      .where(eq(schema.customFormats.id, id))
+      .limit(1);
+    return rows.length > 0;
   }
 
   async nameExists(name: string, excludeId?: number): Promise<boolean> {
-    const count = await this.prisma.customFormat.count({
-      where: {
-        name,
-        ...(excludeId ? { NOT: { id: excludeId } } : {}),
-      },
-    });
-    return count > 0;
+    const where = excludeId
+      ? and(eq(schema.customFormats.name, name), ne(schema.customFormats.id, excludeId))
+      : eq(schema.customFormats.name, name);
+    const rows = await this.prisma.drizzle
+      .select({ id: schema.customFormats.id })
+      .from(schema.customFormats)
+      .where(where)
+      .limit(1);
+    return rows.length > 0;
   }
 
   async findByQualityProfileId(qualityProfileId: number): Promise<Array<{
     customFormat: CustomFormatWithScores;
     score: number;
   }>> {
-    const scores = await this.prisma.customFormatScore.findMany({
-      where: { qualityProfileId },
-      include: {
-        customFormat: {
-          include: { scores: true },
-        },
-      },
-    });
+    const scoreRows = await this.prisma.drizzle
+      .select()
+      .from(schema.customFormatScores)
+      .where(eq(schema.customFormatScores.qualityProfileId, qualityProfileId));
 
-    return scores.map((score: { customFormat: CustomFormat & { scores: CustomFormatScore[] }; score: number }) => ({
-      customFormat: this.toCustomFormatWithScores(score.customFormat),
-      score: score.score,
-    }));
+    const result: Array<{ customFormat: CustomFormatWithScores; score: number }> = [];
+    for (const scoreRow of scoreRows) {
+      const formatRows = await this.prisma.drizzle
+        .select()
+        .from(schema.customFormats)
+        .where(eq(schema.customFormats.id, scoreRow.customFormatId))
+        .limit(1);
+      const format = formatRows[0];
+      if (!format) continue;
+      const scores = await this.loadScores(format.id);
+      result.push({
+        customFormat: this.toCustomFormatWithScores(format as CustomFormat, scores),
+        score: scoreRow.score,
+      });
+    }
+    return result;
+  }
+
+  private async loadScores(customFormatId: number): Promise<CustomFormatScore[]> {
+    return this.prisma.drizzle
+      .select()
+      .from(schema.customFormatScores)
+      .where(eq(schema.customFormatScores.customFormatId, customFormatId)) as unknown as Promise<CustomFormatScore[]>;
   }
 
   private toCustomFormatWithScores(
-    format: CustomFormat & { scores: CustomFormatScore[] },
+    format: CustomFormat,
+    scores: CustomFormatScore[],
   ): CustomFormatWithScores {
     return {
       id: format.id,
       name: format.name,
       includeCustomFormatWhenRenaming: format.includeCustomFormatWhenRenaming,
-      conditions: parseConditions(format.conditions),
+      conditions: parseConditions((format as { conditions?: unknown }).conditions),
       createdAt: format.createdAt,
       updatedAt: format.updatedAt,
-      scores: format.scores.map((score: CustomFormatScore) => ({
+      scores: scores.map((score) => ({
         id: score.id,
         qualityProfileId: score.qualityProfileId,
         score: score.score,

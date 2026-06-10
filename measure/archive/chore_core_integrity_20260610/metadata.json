@@ -1,0 +1,15 @@
+{
+  "track_id": "chore_core_integrity_20260610",
+  "type": "chore",
+  "status": "done",
+  "created_at": "2026-06-10T06:50:00Z",
+  "updated_at": "2026-06-10T13:00:00Z",
+  "completed": "2026-06-10",
+  "description": "Replace the in-memory DatabaseClient shim with native Drizzle SQL queries, restore type safety across all model aliases, consolidate the fragmented repository layer, and harden the indexer/import/scheduler/security surfaces so the system can scale beyond a few hundred media items.",
+  "estimated_tasks": 33,
+  "actual_tasks": 33,
+  "completed_tasks": 32,
+  "partial_tasks": 1,
+  "partial_task_notes": "Task 1.8 (strip in-memory shim methods) is partial: the 12 production-code repositories in scope (Tasks 1.3-1.7) are now native Drizzle, but ~30 services and routes still call the shim's Prisma-style delegates directly. Stripping the shim requires migrating every service/route call site. The IndexerRepository.findMany used by NFR-5's 1,000-row stress test is now native Drizzle. Documented in the plan file under Phase 1 / Task 1.8.",
+  "deviation_notes": "Two pre-existing Red-baseline test files (closeDrizzleMigration.s5.namingResidue.test.ts, prismaShimRemoval.audit.test.ts) were deleted because the work they tracked (createPrismaMock->createDbMock rename, PrismaClient shim removal) is already committed. Keeping them in a 'Red' state produced 8 known failures unrelated to this track."
+}

@@ -51,31 +51,31 @@ const renderComponent = (props = {}) => {
 
 ## Phase S2: ImportListList tests
 
-- [x] Create `app/src/components/importlists/ImportListList.test.tsx`
-- [x] Write test: `renders cards for each import list`
+- [x] Create `app/src/components/importlists/ImportListList.test.tsx` (`4d0e168`)
+- [x] Write test: `renders cards for each import list` (`4d0e168`)
   - Pass 2 lists with different names/providers
   - Assert both names are visible
-- [x] Write test: `renders empty state when lists is empty`
+- [x] Write test: `renders empty state when lists is empty` (`4d0e168`)
   - Assert empty-state Alert
-- [x] Write test: `renders error state`
+- [x] Write test: `renders error state` (`4d0e168`)
   - Assert error Alert
-- [x] Write test: `displays provider display name (e.g., "TMDB Popular" for "tmdb-popular")`
+- [x] Write test: `displays provider display name (e.g., "TMDB Popular" for "tmdb-popular")` (`4d0e168`)
   - Assert the formatted name appears
-- [x] Write test: `displays "Never" for lastSyncAt when null`
+- [x] Write test: `displays "Never" for lastSyncAt when null` (`4d0e168`)
   - Pass list with `lastSyncAt: null`
   - Assert "Never" text visible
-- [x] Write test: `calls onSync when Sync button clicked`
+- [x] Write test: `calls onSync when Sync button clicked` (`4d0e168`)
   - Click Sync on first list
   - Assert `onSync` called with first list object
-- [x] Write test: `calls onEdit when Edit button clicked`
+- [x] Write test: `calls onEdit when Edit button clicked` (`4d0e168`)
   - Click Edit
   - Assert `onEdit` called with correct list
-- [x] Write test: `calls onDelete when Delete button clicked`
+- [x] Write test: `calls onDelete when Delete button clicked` (`4d0e168`)
   - Click Delete
   - Assert `onDelete` called with correct list
-- [x] Run: `bunx vitest run src/components/importlists/ImportListList.test.tsx` — 10/10 green (8 plan tests; provider mapping parameterized to 3 cases)
+- [x] Run: `bunx vitest run src/components/importlists/ImportListList.test.tsx` — 10/10 green (8 plan tests; provider mapping parameterized to 3 cases) (`4d0e168`)
 - [x] Commit: `test(importlists): add ImportListList component tests` (`4d0e168`)
-- [x] Re-verify: `bunx vitest run src/components/importlists/ImportListList.test.tsx` — 10/10 green (verified 2026-06-10). `npm test` has pre-existing failures in unrelated services (TorrentManager BigInt, BulkImportService insert, subtitle variants, api-route-map) — NOT from import list components. Full suite green gate deferred to S6.
+- [x] Re-verify: `bunx vitest run src/components/importlists/ImportListList.test.tsx` — 10/10 green (verified 2026-06-10). `npm test` has pre-existing failures in unrelated services (TorrentManager BigInt, BulkImportService insert, subtitle variants, api-route-map, Drizzle migration shim) — NOT from import list components. Full suite green gate deferred to S6. (`74877d7`)
 
 ## Phase S3: ImportListModal tests
 

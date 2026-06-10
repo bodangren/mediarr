@@ -1,0 +1,11 @@
+Task 1.6 (FR-1.6): Migrate SubtitleVariantRepository to native Drizzle.
+
+- Replaced all 23 methods on SubtitleVariantRepository with native Drizzle queries across 5 entity types (mediaFileVariants, variantAudioTracks, variantSubtitleTracks, variantMissingSubtitles, wantedSubtitles, subtitleHistories).
+- Public API unchanged: upsertVariant, replaceAudioTracks, replaceSubtitleTracks, upsertWantedSubtitle, updateWantedSubtitleState, createSubtitleHistory, createSubtitleTrack, listMovieVariants, listEpisodeVariants, listMonitoredVariants, listRecentlyAddedVariants, listVariantsWithFailedWanted, getVariantInventory, getWantedSubtitleById, listWantedSubtitlesByVariant, listWantedSubtitlesByStates, deleteMovieVariantsNotInPaths, deleteEpisodeVariantsNotInPaths, replaceMissingSubtitles, listMissingSubtitles, deleteWantedSubtitlesNotInTargets, deleteSubtitleTrack, listSiblingSubtitlePaths.
+- fileSize bigint input → number coercion where the SQLite integer column expects number.
+- where: { in: [...] } / { notIn: [...] } translated to inArray() / not(inArray()).
+- where: { createdAt: { gte: cutoff } } translated to gte().
+- distinct: [...] translated to selectDistinct().
+- listSiblingSubtitlePaths preserves the OR-of-owner-filters shape via Drizzle's or(...).
+
+Tests: 4 service suites (VariantSubtitleFetchService, VariantMissingSubtitleService, VariantInventoryIndexer, VariantWantedService) → 31/31 green; full tsc clean.

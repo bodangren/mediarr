@@ -58,7 +58,7 @@ export class VariantBackfillService {
         mediaType: 'MOVIE',
         movieId: movie.id,
         path: movie.path,
-        fileSize: BigInt(0),
+        fileSize: Number(0),
       });
       created += 1;
     }
@@ -99,7 +99,7 @@ export class VariantBackfillService {
         mediaType: 'EPISODE',
         episodeId: episode.id,
         path: episode.path,
-        fileSize: BigInt(0),
+        fileSize: Number(0),
       });
       created += 1;
     }

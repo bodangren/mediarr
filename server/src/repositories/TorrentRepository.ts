@@ -25,6 +25,7 @@ export interface TorrentInsertInput {
   torrentFile?: Uint8Array | null;
   episodeId?: number | null;
   movieId?: number | null;
+  priority?: number;
 }
 
 export interface TorrentPeerInput {

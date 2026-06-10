@@ -838,7 +838,7 @@ export function registerSeriesRoutes(
                 mediaType: 'EPISODE',
                 episodeId: epId,
                 path: file.path,
-                fileSize: BigInt(file.size),
+                fileSize: Number(file.size),
               });
 
               filesLinked++;

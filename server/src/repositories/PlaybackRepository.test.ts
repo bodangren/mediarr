@@ -95,9 +95,9 @@ describe('PlaybackRepository.upsertProgress', () => {
       duration: 6000,
       watchedThreshold: 0.9,
     });
-    const insert = db.drizzle.insert.mock.results[0].value;
-    expect(insert.onConflictDoUpdate).toHaveBeenCalled();
-    const conflictArg = insert.onConflictDoUpdate.mock.calls[0][0];
+    const insert = db.drizzle.insert.mock.results[0]?.value;
+    expect(insert?.onConflictDoUpdate).toHaveBeenCalled();
+    const conflictArg = insert?.onConflictDoUpdate.mock.calls[0]?.[0];
     expect(conflictArg.set.isWatched).toBe(true);
     expect(conflictArg.set.progress).toBeCloseTo(0.9, 5);
   });
@@ -112,8 +112,8 @@ describe('PlaybackRepository.upsertProgress', () => {
       position: 30,
       duration: 1800,
     });
-    const insert = db.drizzle.insert.mock.results[0].value;
-    const conflictArg = insert.onConflictDoUpdate.mock.calls[0][0];
+    const insert = db.drizzle.insert.mock.results[0]?.value;
+    const conflictArg = insert?.onConflictDoUpdate.mock.calls[0]?.[0];
     expect(conflictArg.set.isWatched).toBe(true);
     expect(conflictArg.set.progress).toBeCloseTo(30 / 1800, 8);
   });
@@ -127,8 +127,8 @@ describe('PlaybackRepository.upsertProgress', () => {
       duration: -100,
       watchedThreshold: 5,
     });
-    const insert = db.drizzle.insert.mock.results[0].value;
-    const conflictArg = insert.onConflictDoUpdate.mock.calls[0][0];
+    const insert = db.drizzle.insert.mock.results[0]?.value;
+    const conflictArg = insert?.onConflictDoUpdate.mock.calls[0]?.[0];
     expect(conflictArg.set.position).toBe(0);
     expect(conflictArg.set.duration).toBe(0);
     expect(conflictArg.set.progress).toBe(0);

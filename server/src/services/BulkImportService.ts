@@ -279,7 +279,7 @@ export class BulkImportService {
       mediaType,
       ...owner,
       path: filePath,
-      fileSize: BigInt(file.size),
+      fileSize: Number(file.size),
       ...(file.parsedInfo?.quality ? { quality: file.parsedInfo.quality } : {}),
     };
   }

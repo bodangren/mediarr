@@ -1,58 +1,83 @@
-// Re-exports of model type aliases previously provided by the Prisma shim.
-// These are `any` because the Prisma shim defined them as `any`.
-// Remove individual aliases once no file imports them.
+import type { InferSelectModel } from 'drizzle-orm';
+import type {
+  activityEvents,
+  appSettings,
+  blocklists,
+  categories,
+  collections,
+  customFilters,
+  customFormatScores,
+  customFormats,
+  downloadClients,
+  episodes,
+  importListExclusions,
+  importLists,
+  indexerCategories,
+  indexerHealthSnapshots,
+  indexerReleases,
+  indexers,
+  media,
+  mediaFileVariants,
+  movies,
+  notifications,
+  playbackProgress,
+  proxies,
+  qualityDefinitions,
+  qualityProfiles,
+  seasons,
+  series,
+  subtitleHistories,
+  torrentPeers,
+  torrents,
+  variantAudioTracks,
+  variantMissingSubtitles,
+  variantSubtitleTracks,
+  wantedSubtitles,
+} from '../db/schema.js';
 
-export type Media = any;
-export type Series = any;
-export type Season = any;
-export type Episode = any;
-export type Movie = any;
-export type MediaFileVariant = any;
-export type VariantMissingSubtitle = any;
-export type VariantAudioTrack = any;
-export type VariantSubtitleTrack = any;
-export type WantedSubtitle = any;
-export type SubtitleHistory = any;
-export type QualityProfile = any;
-export type Collection = any;
-export type ImportList = any;
-export type ImportListExclusion = any;
-export type CustomFilter = any;
-export type CustomFormat = any;
-export type CustomFormatScore = any;
-export type QualityDefinition = any;
-export type Indexer = any;
-export type Proxy = any;
-export type IndexerCategory = any;
-export type IndexerRelease = any;
-export type Category = any;
-export type Torrent = any;
-export type TorrentPeer = any;
-export type AppSettings = any;
-export type PlaybackProgress = any;
-export type IndexerHealthSnapshot = any;
-export type ActivityEvent = any;
-export type Notification = any;
-export type DownloadClient = any;
-export type Blocklist = any;
+/**
+ * Inferred from `server/src/db/schema.ts` via Drizzle's `$inferSelect`.
+ * Each alias is the row type produced by a `SELECT * FROM <table>` query.
+ */
+export type Media = InferSelectModel<typeof media>;
+export type Series = InferSelectModel<typeof series>;
+export type Season = InferSelectModel<typeof seasons>;
+export type Episode = InferSelectModel<typeof episodes>;
+export type Movie = InferSelectModel<typeof movies>;
+export type MediaFileVariant = InferSelectModel<typeof mediaFileVariants>;
+export type VariantMissingSubtitle = InferSelectModel<typeof variantMissingSubtitles>;
+export type VariantAudioTrack = InferSelectModel<typeof variantAudioTracks>;
+export type VariantSubtitleTrack = InferSelectModel<typeof variantSubtitleTracks>;
+export type WantedSubtitle = InferSelectModel<typeof wantedSubtitles>;
+export type SubtitleHistory = InferSelectModel<typeof subtitleHistories>;
+export type QualityProfile = InferSelectModel<typeof qualityProfiles>;
+export type Collection = InferSelectModel<typeof collections>;
+export type ImportList = InferSelectModel<typeof importLists>;
+export type ImportListExclusion = InferSelectModel<typeof importListExclusions>;
+export type CustomFilter = InferSelectModel<typeof customFilters>;
+export type CustomFormat = InferSelectModel<typeof customFormats>;
+export type CustomFormatScore = InferSelectModel<typeof customFormatScores>;
+export type QualityDefinition = InferSelectModel<typeof qualityDefinitions>;
+export type Indexer = InferSelectModel<typeof indexers>;
+export type Proxy = InferSelectModel<typeof proxies>;
+export type IndexerCategory = InferSelectModel<typeof indexerCategories>;
+export type IndexerRelease = InferSelectModel<typeof indexerReleases>;
+export type Category = InferSelectModel<typeof categories>;
+export type Torrent = InferSelectModel<typeof torrents>;
+export type TorrentPeer = InferSelectModel<typeof torrentPeers>;
+export type AppSettings = InferSelectModel<typeof appSettings>;
+export type PlaybackProgress = InferSelectModel<typeof playbackProgress>;
+export type IndexerHealthSnapshot = InferSelectModel<typeof indexerHealthSnapshots>;
+export type ActivityEvent = InferSelectModel<typeof activityEvents>;
+export type Notification = InferSelectModel<typeof notifications>;
+export type DownloadClient = InferSelectModel<typeof downloadClients>;
+export type Blocklist = InferSelectModel<typeof blocklists>;
 
+/**
+ * JSON value types for columns stored as text/JSON.
+ * Kept here as a small isolated namespace so callers do not depend on the
+ * deleted `Prisma.JsonValue` namespace (FR-2.3).
+ */
 export type PrismaJsonObject = Record<string, unknown>;
 export type PrismaJsonArray = unknown[];
 export type PrismaJsonValue = string | number | boolean | null | PrismaJsonObject | PrismaJsonArray;
-
-export namespace Prisma {
-  export type JsonValue = PrismaJsonValue;
-  export type InputJsonValue = PrismaJsonValue;
-  export type ActivityEventWhereInput = any;
-  export type BlocklistCreateInput = any;
-  export type BlocklistOrderByWithRelationInput = any;
-  export type BlocklistWhereInput = any;
-  export type CollectionCreateInput = any;
-  export type CollectionUpdateInput = any;
-  export type CustomFormatUpdateInput = any;
-  export type DateTimeFilter = any;
-  export type ImportListExclusionWhereInput = any;
-  export type ImportListUpdateInput = any;
-  export type QualityProfileUpdateInput = any;
-  export type TransactionClient = any;
-}

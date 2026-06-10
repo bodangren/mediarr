@@ -133,7 +133,7 @@ export class VariantSubtitleFetchService {
       isForced: candidate.isForced,
       isHi: candidate.isHi,
       filePath: storedPath,
-      fileSize: BigInt(content.byteLength),
+      fileSize: Number(content.byteLength),
     });
 
     await this.repository.createSubtitleHistory({

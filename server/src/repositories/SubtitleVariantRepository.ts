@@ -17,7 +17,7 @@ export interface UpsertVariantInput {
   movieId?: number | undefined;
   episodeId?: number | undefined;
   path: string;
-  fileSize: bigint;
+  fileSize: number;
   monitored?: boolean | undefined;
   probeFingerprint?: string | undefined;
   releaseName?: string | undefined;
@@ -43,7 +43,7 @@ export interface UpsertSubtitleTrackInput {
   isHi?: boolean | undefined;
   codec?: string | undefined;
   filePath?: string | undefined;
-  fileSize?: bigint | undefined;
+  fileSize?: number | undefined;
 }
 
 export interface UpsertWantedSubtitleInput {
@@ -78,7 +78,7 @@ export interface CreateSubtitleTrackInput {
   isHi?: boolean;
   codec?: string;
   filePath?: string;
-  fileSize?: bigint;
+  fileSize?: number;
 }
 
 /**

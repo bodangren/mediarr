@@ -56,7 +56,7 @@ export class TorrentManager extends EventEmitter {
 
   // Tracks the DB-stored uploaded bytes at the start of each session per torrent,
   // so that lifetime upload totals survive WebTorrent restarting its session counters.
-  private sessionUploadedBaselines = new Map<string, bigint>();
+  private sessionUploadedBaselines = new Map<string, number>();
 
   private prisma?: {
     episode: { findUnique: (args: { where: { id: number }; select: { path: true } }) => Promise<{ path: string | null } | null> };
@@ -285,9 +285,9 @@ export class TorrentManager extends EventEmitter {
         downloadSpeed: 0,
         uploadSpeed: 0,
         eta: null,
-        size: BigInt(options.size ?? 0),
-        downloaded: BigInt(0),
-        uploaded: BigInt(0),
+        size: Number(options.size ?? 0),
+        downloaded: Number(0),
+        uploaded: Number(0),
         ratio: 0,
         path: downloadPath,
         completedAt: null,
@@ -324,9 +324,9 @@ export class TorrentManager extends EventEmitter {
         downloadSpeed: 0,
         uploadSpeed: 0,
         eta: null,
-        size: BigInt(torrent.length || options.size || 0),
-        downloaded: BigInt(0),
-        uploaded: BigInt(0),
+        size: Number(torrent.length || options.size || 0),
+        downloaded: Number(0),
+        uploaded: Number(0),
         ratio: 0,
         path: downloadPath,
         completedAt: null,
@@ -675,16 +675,16 @@ export class TorrentManager extends EventEmitter {
           downloadSpeed: 0,
           uploadSpeed: 0,
           eta: null,
-          size: BigInt(torrent.length || 0),
-          downloaded: BigInt(0),
-          uploaded: BigInt(0),
+          size: Number(torrent.length || 0),
+          downloaded: Number(0),
+          uploaded: Number(0),
           ratio: 0,
           path: queued.path,
           completedAt: null,
           stopAtRatio: queued.stopAtRatio,
           stopAtTime: queued.stopAtTime,
           magnetUrl: queued.magnetUrl,
-          torrentFile: queued.torrentFile,
+          torrentFile: (queued.torrentFile as Uint8Array | null | undefined) ?? null,
           episodeId: queued.episodeId,
           movieId: queued.movieId,
         });
@@ -866,18 +866,18 @@ export class TorrentManager extends EventEmitter {
         }
 
         try {
-          const downloadedBytes = BigInt(Math.floor(Number(torrent.downloaded ?? 0)));
-          const sessionUploadedBytes = BigInt(Math.floor(Number(torrent.uploaded ?? 0)));
+          const downloadedBytes = Math.floor(Number(torrent.downloaded ?? 0));
+          const sessionUploadedBytes = Math.floor(Number(torrent.uploaded ?? 0));
 
           // WebTorrent resets uploaded/downloaded counters on restart. To preserve lifetime
           // upload totals we snapshot the DB value on first encounter and accumulate from there.
           if (!this.sessionUploadedBaselines.has(torrent.infoHash)) {
             const existing = await this.repository.findByInfoHash(torrent.infoHash);
-            this.sessionUploadedBaselines.set(torrent.infoHash, existing?.uploaded ?? BigInt(0));
+            this.sessionUploadedBaselines.set(torrent.infoHash, existing?.uploaded ?? 0);
           }
           const uploadedBaseline = this.sessionUploadedBaselines.get(torrent.infoHash)!;
           const lifetimeUploadedBytes = uploadedBaseline + sessionUploadedBytes;
-          const ratio = downloadedBytes === BigInt(0) ? 0 : Number(lifetimeUploadedBytes) / Number(downloadedBytes);
+          const ratio = downloadedBytes === 0 ? 0 : Number(lifetimeUploadedBytes) / Number(downloadedBytes);
 
           const updatedTorrent = await this.repository.updateProgress(
             torrent.infoHash,

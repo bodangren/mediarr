@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { TorrentRepository } from './TorrentRepository';
 import * as schema from '../db/schema';
 
-type SelectCall = { table: any; rows: any[] };
+type SelectCall = { table?: any; rows: any[] };
 
 function makeSelectBuilder(rows: any[] = []): any {
   const builder: any = {
@@ -80,10 +80,10 @@ describe('TorrentRepository.normalizeInfoHash', () => {
     const db = makeDb({ insertRows: [{ id: 1, infoHash: 'abc123' }] });
     const repo = new TorrentRepository(db as any);
     await repo.upsert(baseTorrentInput as any);
-    const insert = db.drizzle.insert.mock.results[0].value;
-    const valuesArg = insert.values.mock.calls[0][0];
+    const insert = db.drizzle.insert.mock.results[0]?.value;
+    const valuesArg = insert?.values.mock.calls[0]?.[0];
     expect(valuesArg.infoHash).toBe('abc123');
-    const conflictArg = insert.onConflictDoUpdate.mock.calls[0][0];
+    const conflictArg = insert?.onConflictDoUpdate.mock.calls[0]?.[0];
     expect(conflictArg.set.infoHash).toBe('abc123');
   });
 });
@@ -101,8 +101,8 @@ describe('TorrentRepository.upsert', () => {
     const db = makeDb({ insertRows: [{ id: 1 }] });
     const repo = new TorrentRepository(db as any);
     await repo.upsert({ ...baseTorrentInput, infoHash: 'abc123', name: 'Updated' } as any);
-    const insert = db.drizzle.insert.mock.results[0].value;
-    const conflictArg = insert.onConflictDoUpdate.mock.calls[0][0];
+    const insert = db.drizzle.insert.mock.results[0]?.value;
+    const conflictArg = insert?.onConflictDoUpdate.mock.calls[0]?.[0];
     expect(conflictArg.target).toBe(schema.torrents.infoHash);
     expect(conflictArg.set.name).toBe('Updated');
   });
@@ -144,9 +144,9 @@ describe('TorrentRepository.findAll', () => {
     const repo = new TorrentRepository(db as any);
     const result = await repo.findAll();
     expect(result).toHaveLength(2);
-    const select = db.drizzle.select.mock.results[0].value;
-    expect(select.from).toHaveBeenCalledWith(schema.torrents);
-    expect(select.orderBy).toHaveBeenCalled();
+    const select = db.drizzle.select.mock.results[0]?.value;
+    expect(select?.from).toHaveBeenCalledWith(schema.torrents);
+    expect(select?.orderBy).toHaveBeenCalled();
   });
 });
 
@@ -170,8 +170,8 @@ describe('TorrentRepository.findOldestQueued', () => {
     const db = makeDb({ selectCalls: [{ rows: [] }] });
     const repo = new TorrentRepository(db as any);
     await repo.findOldestQueued();
-    const select = db.drizzle.select.mock.results[0].value;
-    expect(select.where).toHaveBeenCalled();
+    const select = db.drizzle.select.mock.results[0]?.value;
+    expect(select?.where).toHaveBeenCalled();
   });
 });
 
@@ -220,8 +220,8 @@ describe('TorrentRepository.updateProgress', () => {
     const db = makeDb({ updateRows: [{ id: 1, infoHash: 'abc' }] });
     const repo = new TorrentRepository(db as any);
     await repo.updateProgress('abc', 0.5, 1000, 500, 5000, 2500, 0.5, 120);
-    const update = db.drizzle.update.mock.results[0].value;
-    expect(update.set).toHaveBeenCalledWith({
+    const update = db.drizzle.update.mock.results[0]?.value;
+    expect(update?.set).toHaveBeenCalledWith({
       progress: 0.5,
       downloadSpeed: 1000,
       uploadSpeed: 500,
@@ -236,8 +236,8 @@ describe('TorrentRepository.updateProgress', () => {
     const db = makeDb({ updateRows: [{ id: 1 }] });
     const repo = new TorrentRepository(db as any);
     await repo.updateProgress('abc', 1.0, 0, 0, 10000, 10000, 1.0, null);
-    const update = db.drizzle.update.mock.results[0].value;
-    expect(update.set).toHaveBeenCalledWith(expect.objectContaining({ eta: null }));
+    const update = db.drizzle.update.mock.results[0]?.value;
+    expect(update?.set).toHaveBeenCalledWith(expect.objectContaining({ eta: null }));
   });
 });
 
@@ -250,8 +250,8 @@ describe('TorrentRepository.delete', () => {
     const repo = new TorrentRepository(db as any);
     await repo.delete('abc');
     const deleteCalls = db.drizzle.delete.mock.calls;
-    expect(deleteCalls[0][0]).toBe(schema.torrentPeers);
-    expect(deleteCalls[1][0]).toBe(schema.torrents);
+    expect(deleteCalls[0]?.[0]).toBe(schema.torrentPeers);
+    expect(deleteCalls[1]?.[0]).toBe(schema.torrents);
   });
 
   it('throws when torrent is not found', async () => {
@@ -280,8 +280,8 @@ describe('TorrentRepository.syncPeers', () => {
       { ip: '5.6.7.8', port: 5678, client: null },
     ];
     await repo.syncPeers('abc', peers);
-    const insert = db.drizzle.insert.mock.results[0].value;
-    expect(insert.values).toHaveBeenCalledWith([
+    const insert = db.drizzle.insert.mock.results[0]?.value;
+    expect(insert?.values).toHaveBeenCalledWith([
       { torrentId: 1, ip: '1.2.3.4', port: 1234, client: 'qBittorrent' },
       { torrentId: 1, ip: '5.6.7.8', port: 5678, client: null },
     ]);

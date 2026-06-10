@@ -50,7 +50,7 @@ export interface ManualSubtitleProvider {
 export interface VariantInventoryView {
   variantId: number;
   path: string;
-  fileSize: bigint;
+  fileSize: number;
   audioTracks: Array<{
     streamIndex: number;
     languageCode: string | null;
@@ -225,7 +225,7 @@ export class SubtitleInventoryApiService {
       isForced: candidate.isForced,
       isHi: candidate.isHi,
       filePath: storedPath,
-      fileSize: BigInt(contentBuffer.byteLength),
+      fileSize: Number(contentBuffer.byteLength),
     });
     await this.repository.createSubtitleHistory({
       variantId,
@@ -285,7 +285,7 @@ export class SubtitleInventoryApiService {
       isForced: input.forced,
       isHi: input.hearingImpaired,
       filePath: storedPath,
-      fileSize: BigInt(input.content.byteLength),
+      fileSize: Number(input.content.byteLength),
     });
 
     return {
@@ -548,7 +548,7 @@ export class SubtitleInventoryApiService {
     isForced: boolean;
     isHi: boolean;
     filePath: string;
-    fileSize: bigint;
+    fileSize: number;
   }>> {
     const directory = path.dirname(videoPath);
     let entries: string[];
@@ -571,7 +571,7 @@ export class SubtitleInventoryApiService {
           isForced: metadata.isForced,
           isHi: metadata.isHi,
           filePath: fullPath,
-          fileSize: BigInt(stats.size),
+          fileSize: Number(stats.size),
         };
       }),
     );

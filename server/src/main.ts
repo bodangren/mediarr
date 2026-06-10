@@ -142,9 +142,9 @@ function mapTorrentRecord(torrent: {
   progress: number;
   downloadSpeed: number;
   uploadSpeed: number;
-  size: bigint;
-  downloaded: bigint;
-  uploaded: bigint;
+  size: number;
+  downloaded: number;
+  uploaded: number;
   eta: number | null;
   path: string;
   completedAt: Date | null;
@@ -194,9 +194,9 @@ function createFallbackTorrentManager(
         downloadSpeed: 0,
         uploadSpeed: 0,
         eta: null,
-        size: BigInt(input.size ?? 0),
-        downloaded: BigInt(0),
-        uploaded: BigInt(0),
+        size: Number(input.size ?? 0),
+        downloaded: Number(0),
+        uploaded: Number(0),
         ratio: 0,
         path: downloadPath,
         completedAt: null,

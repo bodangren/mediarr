@@ -720,7 +720,7 @@ export function registerIndexerRoutes(
         configContract: config.configContract,
         settings: JSON.stringify(config.settings),
         protocol: config.protocol,
-        supportedMediaTypes: config.supportedMediaTypes,
+        supportedMediaTypes: Array.isArray(config.supportedMediaTypes) ? config.supportedMediaTypes.join(',') : config.supportedMediaTypes,
         enabled: true,
         supportsRss: config.supportsRss,
         supportsSearch: config.supportsSearch,

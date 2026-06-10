@@ -6,7 +6,7 @@ import { ProbeMetadataParser } from './ProbeMetadataParser';
 
 export interface VariantFileInput {
   path: string;
-  fileSize: bigint;
+  fileSize: number;
   monitored?: boolean;
   probeFingerprint?: string;
   releaseName?: string;
@@ -17,7 +17,7 @@ export interface VariantFileInput {
     isForced?: boolean;
     isHi?: boolean;
     filePath?: string;
-    fileSize?: bigint;
+    fileSize?: number;
   }>;
 }
 

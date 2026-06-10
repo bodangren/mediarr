@@ -116,7 +116,7 @@ describe('IndexerRepository (native Drizzle) — FR-1.5', () => {
 
   describe('create', () => {
     it('inserts into the indexers table with encrypted settings and defaults', async () => {
-      await repo.create(baseData);
+      await repo.create(baseData as any);
 
       expect(prisma.drizzle.insert).toHaveBeenCalledTimes(1);
       expect(prisma.drizzle.insert).toHaveBeenCalledWith(schema.indexers);
@@ -143,7 +143,7 @@ describe('IndexerRepository (native Drizzle) — FR-1.5', () => {
         supportsSearch: true,
         priority: 1,
         supportedMediaTypes: '["TV"]',
-      });
+      } as any);
 
       const insertArgs = (prisma.drizzle.insert.mock.results[0]!.value as InsertBuilder).values.mock.calls[0]![0];
       expect(insertArgs.enabled).toBe(false);

@@ -24,7 +24,7 @@ _Blast radius: `drizzleClient.ts` (44 importers), `MediaRepository` (5 callers: 
   - [x] Replace the `media.upsert` + `series.upsert` + nested `seasons.create` + `episodes.create` paths with a single `db.transaction((tx) => …)` block.
   - [x] Use `onConflictDoUpdate` keyed on the natural unique constraints (`[mediaType, tmdbId]` for media, `[tvdbId]` for series, `[seriesId, seasonNumber]` for seasons, `[tvdbId]` for episodes).
   - [x] Verify `MediaRepository.upsertSeasonsAndEpisodes.test.ts` passes.
-- [x] **Task 1.5: Migrate IndexerRepository** `[pending]`
+- [x] **Task 1.5: Migrate IndexerRepository** `[988dc2d]`
   - [x] Replace the 4-5 `this.prisma.indexer.*` methods with native Drizzle.
   - [x] Add a parity test for indexer CRUD (create, findUnique, update, delete).
 - [ ] **Task 1.6: Migrate SubtitleVariantRepository**

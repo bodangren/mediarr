@@ -27,7 +27,7 @@ _Blast radius: `drizzleClient.ts` (44 importers), `MediaRepository` (5 callers: 
 - [x] **Task 1.5: Migrate IndexerRepository** `[988dc2d]`
   - [x] Replace the 4-5 `this.prisma.indexer.*` methods with native Drizzle.
   - [x] Add a parity test for indexer CRUD (create, findUnique, update, delete).
-- [x] **Task 1.6: Migrate SubtitleVariantRepository** `[pending]`
+- [x] **Task 1.6: Migrate SubtitleVariantRepository** `[5ccfd6f]`
   - [x] Replace the 5+ `this.prisma.mediaFileVariant.*` and related methods (5 entity types in this repo).
   - [x] Verify existing tests (`bug_variant_subtitle_test_coverage_20260526` follow-ups) still pass.
 - [ ] **Task 1.7: Migrate remaining repositories**

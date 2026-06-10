@@ -19,6 +19,7 @@ import { latestPlaybackMap, serializePlaybackState } from '../utils/playbackHelp
 import { parseLibraryFilters, applyLibraryFilters } from '../utils/queryHelpers';
 import { determineEpisodeStatus, type EpisodeStatus } from '../utils/episodeStatusHelpers';
 import { safePath } from '../utils/safePath';
+import { isPathWithinRoots } from '../utils/pathValidation';
 import { getSetupStatus } from './setupRoutes';
 
 // Response type for calendar endpoint
@@ -757,6 +758,21 @@ export function registerSeriesRoutes(
     // If a new folder path was provided, update it in the DB
     const seriesPath: string = body.folderPath ?? series.path ?? '';
     if (body.folderPath && body.folderPath !== series.path) {
+      // FR-5.2: reject path-traversal payloads before they touch the DB.
+      // The configured root folders come from AppSettings; if no root
+      // folders are configured we accept the path as-is (existing
+      // single-folder deployments still work).
+      const settingsService = deps.settingsService;
+      if (settingsService) {
+        const settings = await settingsService.get();
+        const rootFolders = [
+          settings.mediaManagement?.movieRootFolder,
+          settings.mediaManagement?.tvRootFolder,
+        ].filter((p): p is string => Boolean(p));
+        if (rootFolders.length > 0 && !isPathWithinRoots(body.folderPath, rootFolders)) {
+          throw new ValidationError('folderPath must be inside a configured root folder');
+        }
+      }
       await (deps.prisma as any).series.update({
         where: { id },
         data: { path: body.folderPath },
@@ -1117,6 +1133,20 @@ export function registerSeriesRoutes(
     },
   }, async (request, reply) => {
     const body = request.body as { path: string };
+
+    // FR-5.3: path-traversal guard. Reject ../../etc/passwd and absolute
+    // outside-root paths before we touch the filesystem.
+    const settingsService = deps.settingsService;
+    if (settingsService) {
+      const settings = await settingsService.get();
+      const rootFolders = [
+        settings.mediaManagement?.movieRootFolder,
+        settings.mediaManagement?.tvRootFolder,
+      ].filter((p): p is string => Boolean(p));
+      if (rootFolders.length > 0 && !isPathWithinRoots(body.path, rootFolders)) {
+        throw new ValidationError('path must be inside a configured root folder');
+      }
+    }
 
     // Validate path exists
     try {

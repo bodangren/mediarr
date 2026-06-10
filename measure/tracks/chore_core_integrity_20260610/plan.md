@@ -30,9 +30,9 @@ _Blast radius: `drizzleClient.ts` (44 importers), `MediaRepository` (5 callers: 
 - [x] **Task 1.6: Migrate SubtitleVariantRepository** `[5ccfd6f]`
   - [x] Replace the 5+ `this.prisma.mediaFileVariant.*` and related methods (5 entity types in this repo).
   - [x] Verify existing tests (`bug_variant_subtitle_test_coverage_20260526` follow-ups) still pass.
-- [ ] **Task 1.7: Migrate remaining repositories**
-  - [ ] AppSettings, Blocklist, Collection, CustomFormat, DownloadClient, ImportList, Notification, Playback, QualityProfile, Torrent, ActivityEvent, IndexerHealth.
-  - [ ] Per-repo, write a parity test before migrating.
+- [x] **Task 1.7: Migrate remaining repositories** `[194830c]`
+  - [x] AppSettings, Blocklist, Collection, CustomFormat, DownloadClient, ImportList, Notification, Playback, QualityProfile, Torrent, ActivityEvent, IndexerHealth.
+  - [x] Per-repo, write a parity test before migrating.
 - [ ] **Task 1.8: Strip the in-memory shim**
   - [ ] Remove `findMany` / `findUnique` / `findFirst` / `update` / `create` / `createMany` / `upsert` / `delete` / `deleteMany` / `updateMany` from the shim.
   - [ ] Keep only `$transaction`, `runRaw`, and the `drizzle` getter.

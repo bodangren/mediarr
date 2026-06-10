@@ -51,30 +51,30 @@ const renderComponent = (props = {}) => {
 
 ## Phase S2: ImportListList tests
 
-- [ ] Create `app/src/components/importlists/ImportListList.test.tsx`
-- [ ] Write test: `renders cards for each import list`
+- [x] Create `app/src/components/importlists/ImportListList.test.tsx`
+- [x] Write test: `renders cards for each import list`
   - Pass 2 lists with different names/providers
   - Assert both names are visible
-- [ ] Write test: `renders empty state when lists is empty`
+- [x] Write test: `renders empty state when lists is empty`
   - Assert empty-state Alert
-- [ ] Write test: `renders error state`
+- [x] Write test: `renders error state`
   - Assert error Alert
-- [ ] Write test: `displays provider display name (e.g., "TMDB Popular" for "tmdb-popular")`
+- [x] Write test: `displays provider display name (e.g., "TMDB Popular" for "tmdb-popular")`
   - Assert the formatted name appears
-- [ ] Write test: `displays "Never" for lastSyncAt when null`
+- [x] Write test: `displays "Never" for lastSyncAt when null`
   - Pass list with `lastSyncAt: null`
   - Assert "Never" text visible
-- [ ] Write test: `calls onSync when Sync button clicked`
+- [x] Write test: `calls onSync when Sync button clicked`
   - Click Sync on first list
   - Assert `onSync` called with first list object
-- [ ] Write test: `calls onEdit when Edit button clicked`
+- [x] Write test: `calls onEdit when Edit button clicked`
   - Click Edit
   - Assert `onEdit` called with correct list
-- [ ] Write test: `calls onDelete when Delete button clicked`
+- [x] Write test: `calls onDelete when Delete button clicked`
   - Click Delete
   - Assert `onDelete` called with correct list
-- [ ] Run: `npx vitest run app/src/components/importlists/ImportListList.test.tsx`
-- [ ] Commit: `test(importlists): add ImportListList component tests`
+- [x] Run: `bunx vitest run src/components/importlists/ImportListList.test.tsx` — 10/10 green (8 plan tests; provider mapping parameterized to 3 cases)
+- [~] Commit: `test(importlists): add ImportListList component tests`
 
 ## Phase S3: ImportListModal tests
 

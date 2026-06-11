@@ -106,7 +106,7 @@ const renderComponent = (props = {}) => {
   - Click Cancel, assert `onClose` called
 - [x] Run: `bunx vitest run src/components/importlists/ImportListModal.test.tsx` — 10/10 green (`3268e0e`)
 - [x] Commit: `test(importlists): add ImportListModal component tests` (`3268e0e`)
-- [x] Re-verify: `vitest run src/components/importlists/ImportListModal.test.tsx` — 10/10 green (verified 2026-06-10). `npm test` has pre-existing failures in unrelated services (TorrentManager BigInt, BulkImportService insert, subtitle variants, api-route-map, Drizzle migration shim) — NOT from import list components. Full suite green gate deferred to S6.
+- [x] Re-verify: `vitest run src/components/importlists/ImportListModal.test.tsx` — 10/10 green (verified 2026-06-10). `npm test` has pre-existing failures in unrelated services (TorrentManager BigInt, BulkImportService insert, subtitle variants, api-route-map, Drizzle migration shim) — NOT from import list components. Full suite green gate deferred to S6. (`d58e0a2`)
 
 ## Phase S4: AddExclusionModal tests
 

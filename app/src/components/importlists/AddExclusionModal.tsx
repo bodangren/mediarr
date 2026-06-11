@@ -1,5 +1,5 @@
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Alert } from '@/components/ui/alert-compat';
 import { Modal, ModalBody, ModalFooter, ModalHeader } from '@/components/ui/modal';
@@ -36,6 +36,15 @@ export function AddExclusionModal({
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [selectedResult, setSelectedResult] = useState<SearchResult | null>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setSearchQuery('');
+      setSearchResults([]);
+      setSelectedResult(null);
+      setSearchError(null);
+    }
+  }, [isOpen]);
 
   const handleSearch = useCallback(async () => {
     if (!searchQuery.trim()) return;
@@ -169,7 +178,7 @@ export function AddExclusionModal({
                           </span>
                           {excluded && (
                             <span className="text-xs px-1.5 py-0.5 rounded bg-status-warning/15 text-status-warning">
-                              Excluded
+                              Already excluded
                             </span>
                           )}
                         </div>

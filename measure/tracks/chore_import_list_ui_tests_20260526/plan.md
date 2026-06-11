@@ -110,34 +110,34 @@ const renderComponent = (props = {}) => {
 
 ## Phase S4: AddExclusionModal tests
 
-- [ ] Create `app/src/components/importlists/AddExclusionModal.test.tsx`
-- [ ] Write test: `renders search input and search button`
+- [x] Create `app/src/components/importlists/AddExclusionModal.test.tsx` (`c60ce2b`)
+- [x] Write test: `renders search input and search button` (`c60ce2b`)
   - Assert input and "Search" button are visible
-- [ ] Write test: `displays search results after successful search`
+- [x] Write test: `displays search results after successful search` (`c60ce2b`)
   - Mock `discoverApi.searchMovies` to return `[{ id: 1, title: 'Test Movie', year: 2024 }]`
   - Type query, click Search
   - Assert "Test Movie" appears in results
-- [ ] Write test: `shows error alert when search fails`
+- [x] Write test: `shows error alert when search fails` (`c60ce2b`)
   - Mock API to throw
   - Assert error Alert visible
-- [ ] Write test: `selects a result when clicked`
+- [x] Write test: `selects a result when clicked` (`c60ce2b`)
   - Click a search result row
   - Assert "Add Exclusion" button enables
-- [ ] Write test: `disables result that matches existing exclusion`
+- [x] Write test: `disables result that matches existing exclusion` (`c60ce2b`) — **Red per test-strategy §2**: source renders "Excluded" badge (line 172 of `AddExclusionModal.tsx`); spec/strategy require "Already excluded". Green phase must update the badge text.
   - Pass `existingExclusions: [{ tmdbId: 123 }]`
   - Mock search to return result with tmdbId 123
   - Assert that result shows "Already excluded" and is not clickable
-- [ ] Write test: `calls onAdd with tmdbId and title when Add Exclusion clicked`
+- [x] Write test: `calls onAdd with tmdbId and title when Add Exclusion clicked` (`c60ce2b`)
   - Select a result, click "Add Exclusion"
   - Assert `onAdd` called with `{ tmdbId: <id>, title: <title> }`
-- [ ] Write test: `calls onClose when Cancel clicked`
+- [x] Write test: `calls onClose when Cancel clicked` (`c60ce2b`)
   - Click Cancel
   - Assert `onClose` called
-- [ ] Write test: `resets state when modal closes and reopens`
+- [x] Write test: `resets state when modal closes and reopens` (`c60ce2b`) — **Red per test-strategy §3 (Modal reset on close AC #9)**: component holds `searchQuery`/`searchResults`/`selectedResult` across `isOpen: false → true` because there is no `useEffect` reset. Green phase must add a reset effect (on `isOpen` becoming true) or use a `key` prop to remount the component.
   - Search, select, close, reopen
   - Assert search input is empty and no results shown
-- [ ] Run: `npx vitest run app/src/components/importlists/AddExclusionModal.test.tsx`
-- [ ] Commit: `test(importlists): add AddExclusionModal component tests`
+- [x] Run: `bunx vitest run src/components/importlists/AddExclusionModal.test.tsx` — 6/8 green, 2/8 Red (spec-intentional; see notes above) (`c60ce2b`)
+- [x] Commit: `test(importlists): add AddExclusionModal component tests` (`c60ce2b`)
 
 ## Phase S5: ImportListSettings integration tests
 

@@ -140,6 +140,7 @@ const renderComponent = (props = {}) => {
 - [x] Commit: `test(importlists): add AddExclusionModal component tests` (`c60ce2b`)
 - [x] Green phase: fixed "Excluded" → "Already excluded" badge text; added `useEffect` to reset state on `isOpen` transition — 8/8 green
 - [x] Commit: `fix(importlists): make AddExclusionModal tests green — badge text and state reset` (`97ab860`)
+- [x] Re-verify: `bunx vitest run src/components/importlists/AddExclusionModal.test.tsx` — 8/8 green (verified 2026-06-11). `npm test` has pre-existing failures in unrelated services (TorrentManager BigInt, BulkImportService insert, subtitle variants, api-route-map, Drizzle migration shim) — NOT from import list components. Full suite green gate deferred to S6. (`f7dc54c`)
 
 ## Phase S5: ImportListSettings integration tests
 

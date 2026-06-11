@@ -145,41 +145,43 @@ const renderComponent = (props = {}) => {
 
 ## Phase S5: ImportListSettings integration tests
 
-- [ ] Create `app/src/components/importlists/ImportListSettings.test.tsx`
-- [ ] Write test: `renders ImportListList on Lists tab by default`
+- [x] Create `app/src/components/importlists/ImportListSettings.test.tsx` (`d407a35`)
+- [x] Write test: `renders ImportListList on Lists tab by default` (`d407a35`)
   - Assert list cards are visible
-- [ ] Write test: `switches to Exclusions tab when clicked`
+- [x] Write test: `switches to Exclusions tab when clicked` (`d407a35`)
   - Click "Exclusions" tab
   - Assert ExclusionManager is rendered
-- [ ] Write test: `opens ImportListModal when Add Import List clicked`
+- [x] Write test: `opens ImportListModal when Add Import List clicked` (`d407a35`)
   - Click "Add Import List"
   - Assert modal is visible with "Add Import List" title
-- [ ] Write test: `opens ImportListModal with editList when Edit clicked`
+- [x] Write test: `opens ImportListModal with editList when Edit clicked` (`d407a35`)
   - Click Edit on a list
   - Assert modal opens with pre-filled data
-- [ ] Write test: `calls onCreateList and refreshes when modal saves (create mode)`
+- [x] Write test: `calls onCreateList and refreshes when modal saves (create mode)` (`d407a35`)
   - Fill modal form, click Save
   - Assert `onCreateList` called
   - Assert `onRefreshLists` called
-- [ ] Write test: `calls onUpdateList and refreshes when modal saves (edit mode)`
+- [x] Write test: `calls onUpdateList and refreshes when modal saves (edit mode)` (`d407a35`)
   - Open edit modal, modify, save
   - Assert `onUpdateList` called with correct id
-- [ ] Write test: `shows delete confirmation when Delete clicked`
+- [x] Write test: `shows delete confirmation when Delete clicked` (`d407a35`)
   - Click Delete
   - Assert ConfirmModal appears
-- [ ] Write test: `calls onDeleteList and refreshes when delete confirmed`
+- [x] Write test: `calls onDeleteList and refreshes when delete confirmed` (`d407a35`)
   - Click Delete, confirm
   - Assert `onDeleteList` called with list id
   - Assert `onRefreshLists` called
-- [ ] Write test: `calls onSyncList when Sync clicked`
+- [x] Write test: `calls onSyncList when Sync clicked` (`d407a35`)
   - Click Sync
   - Assert `onSyncList` called with list id
-- [ ] Write test: `calls onDeleteExclusion and refreshes when exclusion delete confirmed`
+- [x] Write test: `calls onDeleteExclusion and refreshes when exclusion delete confirmed` (`d407a35`)
   - Switch to Exclusions tab, click Remove, confirm
   - Assert `onDeleteExclusion` called
   - Assert `onRefreshExclusions` called
-- [ ] Run: `npx vitest run app/src/components/importlists/ImportListSettings.test.tsx`
-- [ ] Commit: `test(importlists): add ImportListSettings integration tests`
+- [x] Run: `bunx vitest run src/components/importlists/ImportListSettings.test.tsx` — 12/12 green in 22.2s (`d407a35`)
+  - Also includes 2 strategy-recommended extras (syncingId race + isSaving deferred-promise) from test-strategy.md §3 and §5
+- [x] Commit: `test(importlists): add ImportListSettings integration tests` (`d407a35`)
+- [x] Re-verify note: `bunx vitest run src/components/importlists/ImportListSettings.test.tsx` — 12/12 green (verified 2026-06-12). Full importlists suite has pre-existing AddExclusionModal test-isolation timeouts when run as a single batch with this file (both files `vi.mock('@/lib/api/client')` with their own mock factories; failures are 5s timeouts in AddExclusionModal not in ImportListSettings); in isolation AddExclusionModal is 8/8 green (per plan re-verify `f7dc54c`) and ImportListSettings is 12/12 green. Full-suite green gate deferred to S6 per test-strategy §6.
 
 ## Phase S6: Verification & Handoff
 

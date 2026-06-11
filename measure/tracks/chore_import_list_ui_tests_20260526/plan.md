@@ -139,7 +139,7 @@ const renderComponent = (props = {}) => {
 - [x] Run: `bunx vitest run src/components/importlists/AddExclusionModal.test.tsx` — 6/8 green, 2/8 Red (spec-intentional; see notes above) (`c60ce2b`)
 - [x] Commit: `test(importlists): add AddExclusionModal component tests` (`c60ce2b`)
 - [x] Green phase: fixed "Excluded" → "Already excluded" badge text; added `useEffect` to reset state on `isOpen` transition — 8/8 green
-- [x] Commit: `fix(importlists): make AddExclusionModal tests green — badge text and state reset`
+- [x] Commit: `fix(importlists): make AddExclusionModal tests green — badge text and state reset` (`97ab860`)
 
 ## Phase S5: ImportListSettings integration tests
 

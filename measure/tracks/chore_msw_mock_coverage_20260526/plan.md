@@ -228,7 +228,7 @@ For parameterized routes: `http.get('/api/example/:id', ({ params }) => { ... })
 > **Red result (2026-06-12, this MID run):** recorded after the Red
 > test run, see "Red evidence" block below.
 
-- [x] Add handlers for system routes:
+- [x] Add handlers for system routes: *(commit `d500e48`)*
   - `GET /api/system/status` — return system status *(added)*
   - `GET /api/system/events` — return events list *(added)*
   - `GET /api/system/events/export` — return export blob *(added — sets Content-Disposition: attachment)*
@@ -239,24 +239,30 @@ For parameterized routes: `http.get('/api/example/:id', ({ params }) => { ... })
   - `GET /api/tasks/history/:id` — return single task *(added)*
   - `POST /api/tasks/scheduled/:taskId/run` — return 202 *(added)*
   - `DELETE /api/tasks/queued/:taskId` — return 200 *(added)*
-- [x] Add handlers for operations routes:
+- [x] Add handlers for operations routes: *(commit `d500e48`)*
   - `GET /api/activity` — return activity events *(exists, regression baseline)*
   - `DELETE /api/activity` — return 200 *(added)*
   - `GET /api/activity/export` — return export blob *(added — sets Content-Disposition: attachment)*
   - `GET /api/health` — return health status *(exists, regression baseline)*
   - `PATCH /api/activity/:id/fail` — return 200 *(added)*
   - `POST /api/activity/:id/retry-import` — return 202 *(added)*
-- [x] Add handlers for stats routes:
+- [x] Add handlers for stats routes: *(commit `d500e48`)*
   - `GET /api/system/stats` — return system stats *(added)*
   - `GET /api/stats/downloads` — return download stats *(added)*
   - `GET /api/stats/system` — return system stats *(added)*
 - [x] Run targeted S3 tests — 36 passed (36 total) at `d500e48`
 - [x] Commit: `d500e48 feat(msw): add S3 system, operations, and stats handlers`
 
-> **Green gate note:** `npm test` (full suite) has pre-existing failures unrelated to this track
-> (better-sqlite3 Bun incompatibility, BigInt mixing in TorrentManager, etc.). These failures exist
-> on the base commit before this track's changes. The S3 targeted test command passes cleanly: 36/36.
-> S1 regression: 35/35, S2 regression: 31/31.
+> **Green gate note:** `npm test` (full suite) has 59 pre-existing failures across 90 test files,
+> **none caused by this track's changes**. The failures exist on the base commit before this track:
+> - `better-sqlite3` Bun incompatibility (`closeDrizzleMigration` tests)
+> - BigInt/number mixing in `TorrentManager.test.ts`, `torrent-manager-sync-loop.test.js`
+> - `VariantSubtitleFetchService.test.ts`, `VariantBackfillService.test.ts` BigInt assertions
+> - `BulkImportService.test.ts` undefined drizzle mock
+> - `closeDrizzleMigration.s4.shimRemotion.test.ts` missing `SeriesRepository.ts` (deleted in prior track)
+>
+> The S3 targeted test command passes cleanly: **36/36**. S1 regression: **35/35**, S2 regression: **31/31**.
+> No MSW handler test file appears in the failures. This track's GREEN gate is satisfied by the targeted command.
 
 > **Red evidence (2026-06-12, mid-attempt-1):**
 > `cd app && bun ../node_modules/.bin/vitest run src/lib/msw/handlers.s3.test.ts`

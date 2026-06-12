@@ -47,16 +47,16 @@
 - [x] Update `measure/tech-debt.md`: keep MSW row as Resolved only after integration tests prove the handlers are consumed. (`4b278d7`) — Row already Resolved; integration tests now provide live proof.
 - [x] Commit: `test(msw): add integration smoke tests per domain and re-enable setup.ts hook` (`4b278d7`)
 
-## Phase P4: Fix service-layer stubs and orphan-alias guard
+## Phase P4: Fix service-layer stubs and orphan-alias guard [checkpoint: 037418f]
 
-- [ ] Read `server/src/services/Scheduler.ts`.
-- [ ] Replace `computeNextRun()` heuristic with a real cron parser or a deterministic lookup table that supports daily, `*/N` minute, and `0 */H` hour crons. Add tests for each supported expression.
-- [ ] Optionally unify `runNow()` to use the same wrapped callback as `schedule()` so error logging is consistent.
-- [ ] Read `server/src/services/TvSearchService.ts` and `tests/tv-search-service.test.js`.
-- [ ] Delete `TvSearchService.ts`; migrate the legacy test to construct `MediaSearchService` directly.
-- [ ] Fix `tests/no-orphan-aliases.test.ts` root resolution: change `path.resolve(__dirname, '..', '..')` to `path.resolve(__dirname, '..')`.
-- [ ] Run `bun x vitest run server/src/services/Scheduler.test.ts tests/no-orphan-aliases.test.ts server/src/services/MediaSearchService.*.test.ts` and confirm green.
-- [ ] Commit: `fix(services): replace Scheduler nextRun stub, delete TvSearchService alias, fix orphan guard`
+- [x] Read `server/src/services/Scheduler.ts`. (`037418f`)
+- [x] Replace `computeNextRun()` heuristic with a real cron parser or a deterministic lookup table that supports daily, `*/N` minute, and `0 */H` hour crons. Add tests for each supported expression. (`037418f`)
+- [x] Optionally unify `runNow()` to use the same wrapped callback as `schedule()` so error logging is consistent. (`037418f`)
+- [x] Read `server/src/services/TvSearchService.ts` and `tests/tv-search-service.test.js`. (`037418f`)
+- [x] Delete `TvSearchService.ts`; migrate the legacy test to construct `MediaSearchService` directly. (`037418f`)
+- [x] Fix `tests/no-orphan-aliases.test.ts` root resolution: change `path.resolve(__dirname, '..', '..')` to `path.resolve(__dirname, '..')`. (`037418f`)
+- [x] Run `bun x vitest run server/src/services/Scheduler.test.ts tests/no-orphan-aliases.test.ts server/src/services/MediaSearchService.*.test.ts` and confirm green. (`037418f`)
+- [x] Commit: `fix(services): replace Scheduler nextRun stub, delete TvSearchService alias, fix orphan guard` (`037418f`)
 
 ## Phase P5: Harden Import List UI tests
 

@@ -1,0 +1,17 @@
+Phase P2: Refactor MSW handlers from stubs to maintainable mocks
+
+- Split app/src/lib/msw/handlers.ts (1625 lines) into domain files under app/src/lib/msw/handlers/:
+  core.ts, settings.ts, system.ts, subtitles.ts, playback.ts, remaining.ts
+- Added app/src/lib/msw/handlers/index.ts aggregating all domains and re-exporting createHandlers(mode) and handlers
+- Added app/src/lib/msw/handlers/helpers.ts with numberQuery, sendSuccess, sendPaginated, sendError, sendBlob
+- Added typed MockX interfaces and deterministic factory builders to app/src/lib/msw/factories.ts:
+  MockBackup, MockBlocklist, MockCollection, MockCustomFormat, MockImportList, MockLogFile, MockUpdate,
+  MockDashboardItem, MockCategory, MockProxy, MockQualityProfile, MockDownloadClientSettings, MockMediaNamingSettings,
+  MockSubtitleProvider, MockSubtitleHistoryItem, MockSubtitleBlacklistItem
+- Removed duplicate literal+parameterized handlers; kept parameterized numeric ID handlers and literal named handlers
+- Converted binary endpoints to array-buffer bodies with Content-Type and Content-Disposition: attachment:
+  GET /api/system/events/export, GET /api/activity/export, POST /api/backups/:id/download,
+  GET /api/logs/files/:filename/download, GET /api/images/proxy, GET /api/stream/:id
+- Updated app/src/lib/msw/handlers.test-helpers.ts, server.ts, browser.ts to import from ./handlers/index
+- Deleted app/src/lib/msw/handlers.ts
+- All 265 handler tests pass; app tsc --noEmit clean; eslint clean

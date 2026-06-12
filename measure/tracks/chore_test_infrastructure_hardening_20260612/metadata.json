@@ -1,0 +1,21 @@
+{
+  "id": "chore_test_infrastructure_hardening_20260612",
+  "title": "Harden Test Infrastructure & Close Review Findings",
+  "status": "in_progress",
+  "created": "2026-06-12",
+  "priority": "high",
+  "type": "chore",
+  "sprint": {
+    "goal": "Restore a fast, reliable app test runner; replace MSW stubs with maintainable domain-based mocks; add real integration smoke tests; fix service-layer test stubs; and harden Import List UI tests to project standards",
+    "stories": [
+      "P1: MSW runner emergency fix",
+      "P2: Refactor MSW handlers from stubs to maintainable mocks",
+      "P3: Add real MSW integration smoke tests and re-enable setup.ts",
+      "P4: Fix service-layer stubs and orphan-alias guard",
+      "P5: Harden Import List UI tests",
+      "P6: Verification & handoff"
+    ],
+    "demo_notes": "Show `cd app && npx vitest run` completing quickly with no hangs; show domain-based MSW handlers consumed by integration smoke tests; show Scheduler nextRunAt working for daily crons; show TvSearchService deleted and orphan-alias guard fixed; show Import List UI tests passing together",
+    "retro_ref": null
+  }
+}

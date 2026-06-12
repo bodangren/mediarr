@@ -1,7 +1,8 @@
 {
   "id": "chore_test_infrastructure_hardening_20260612",
   "title": "Harden Test Infrastructure & Close Review Findings",
-  "status": "in_progress",
+  "status": "done",
+  "completed": "2026-06-12",
   "created": "2026-06-12",
   "priority": "high",
   "type": "chore",

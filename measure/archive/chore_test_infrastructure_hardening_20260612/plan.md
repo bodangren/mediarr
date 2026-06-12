@@ -69,7 +69,7 @@
 - [x] Run `cd app && npx vitest run src/components/importlists/` and confirm all tests pass together. (`eb3fe7f`) — 58/58 passed.
 - [x] Commit: `test(importlists): use userEvent, fix mock isolation, add exclusion flow coverage` (`eb3fe7f`)
 
-## Phase P6: Verification & handoff [checkpoint: pending]
+## Phase P6: Verification & handoff [checkpoint: eb6bfde]
 
 - [x] Run `cd app && npx vitest run` (default pool) and confirm it completes green or with only pre-existing failures unrelated to this track. — 194 test files / 1871 tests; 147 files and 1712 tests passed. 47 failed files / 159 failed tests are pre-existing issues outside this track (settings page import paths, shell router/query-client setup, subtitle/hook timeouts, table memoization assertions, etc.). No import-list, MSW handler, Scheduler, or orphan-alias regressions.
 - [x] Run `bun x vitest run server/src/services/Scheduler.test.ts tests/no-orphan-aliases.test.ts server/src/services/MediaSearchService.*.test.ts`. — 12 files / 110 tests passed.
@@ -80,5 +80,5 @@
   - MSW `setupServer` can hang/leak handles with Vitest's default threads pool; use `pool: 'forks'` and raise `testTimeout` for modal/user-event suites, paired with `userEvent.setup({ delay: null })`.
   - `vi.mock` collisions across files cause flaky batch timeouts; prefer prop injection.
 - [x] Update `measure/tech-debt.md`: MSW row remains Resolved; integration smoke tests now prove handlers are consumed.
-- [~] Archive this track to `measure/archive/` and update `measure/tracks.md`.
-- [~] Final commit: `docs(measure): archive test infrastructure hardening track`
+- [x] Archive this track to `measure/archive/` and update `measure/tracks.md`.
+- [x] Final commit: `docs(measure): archive test infrastructure hardening track`

@@ -1,0 +1,21 @@
+{
+  "id": "scheduler_persistence_missed_task_recovery_20260613",
+  "title": "Scheduler Persistence & Missed-Task Recovery",
+  "type": "feature",
+  "priority": "High",
+  "status": "pending",
+  "created": "2026-06-13",
+  "owner": "daniel",
+  "stakeholders": ["daniel"],
+  "sprint": {
+    "goal": "Make the node-cron task scheduler durable across process restarts by persisting next-run timestamps and sweeping missed tasks on startup, eliminating silent task drops.",
+    "stories": [
+      "Persist scheduled-task next-run state to AppSettings",
+      "Sweep missed tasks on startup and emit/recover them",
+      "Expose scheduler health metrics via API",
+      "Add regression tests covering restart, missed-window, and concurrency scenarios"
+    ],
+    "demo_notes": null,
+    "retro_ref": null
+  }
+}

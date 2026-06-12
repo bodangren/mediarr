@@ -1,0 +1,21 @@
+{
+  "id": "chore_msw_mock_coverage_20260526",
+  "title": "MSW Mock Coverage for Backend Routes",
+  "status": "deferred",
+  "deferred_reason": "Only valuable once the frontend integration tests that consume the handlers exist. Parked behind release_v1_cut_20260607; candidate to merge with chore_frontend_component_test_gaps post-v1.0.",
+  "created": "2026-05-26",
+  "priority": "low",
+  "type": "chore",
+  "sprint": {
+    "goal": "Add MSW (Mock Service Worker) handlers for all unmocked backend routes so that frontend integration tests can exercise every API path without a running server",
+    "stories": [
+      "S1: Core domain MSW handlers (movies, series, indexers)",
+      "S2: Settings & config MSW handlers",
+      "S3: System & operations MSW handlers",
+      "S4: Subtitle & playback MSW handlers",
+      "S5: Remaining domains (backups, blocklist, calendar, collections, updates)"
+    ],
+    "demo_notes": "Show frontend integration tests passing against MSW handlers for every domain; no direct fetch calls to localhost needed",
+    "retro_ref": null
+  }
+}

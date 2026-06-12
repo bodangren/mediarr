@@ -30,22 +30,22 @@
 - [x] Run the six handler test files; fix any regressions.
 - [x] Commit: `refactor(msw): split handlers by domain, move fixtures to factories, add sendBlob helper` (`86fdd42`)
 
-## Phase P3: Add real MSW integration smoke tests and re-enable setup.ts
+## Phase P3: Add real MSW integration smoke tests and re-enable setup.ts [checkpoint: <P3_SHA>]
 
 > Prove the handlers actually intercept real `fetch` calls.
 
-- [ ] Add one integration test per major domain that renders a component or calls an API module through real `fetch`:
-  - `MoviesList.integration.test.tsx` — renders a movie list and asserts data from `GET /api/movies`.
-  - `SeriesList.integration.test.tsx` — renders a series list and asserts data from `GET /api/series`.
-  - `SettingsPage.integration.test.tsx` — renders settings and asserts `GET /api/settings`.
-  - `SystemEvents.integration.test.tsx` — asserts `GET /api/system/events`.
-  - `SubtitleWanted.integration.test.tsx` — asserts `GET /api/subtitles/wanted/movies`.
-  - `BackupsPage.integration.test.tsx` — asserts `GET /api/backups`.
-- [ ] Re-enable MSW in `app/src/test/setup.ts` unconditionally with `server.listen({ onUnhandledRequest: 'error' })`.
-- [ ] Ensure `cd app && npx vitest run` completes with no unhandled-request errors and no hangs (default pool).
-- [ ] If the default pool still hangs, switch `app/vitest.config.ts` to `pool: 'forks'` and document why.
-- [ ] Update `measure/tech-debt.md`: keep MSW row as Resolved only after integration tests prove the handlers are consumed.
-- [ ] Commit: `test(msw): add integration smoke tests per domain and re-enable setup.ts hook`
+- [x] Add one integration test per major domain that renders a component or calls an API module through real `fetch`:
+  - `MoviesList.integration.test.tsx` — renders a movie list and asserts data from `GET /api/movies`. (<P3_SHA>)
+  - `SeriesList.integration.test.tsx` — renders a series list and asserts data from `GET /api/series`. (<P3_SHA>)
+  - `SettingsPage.integration.test.tsx` — renders settings and asserts `GET /api/settings`. (<P3_SHA>)
+  - `SystemEvents.integration.test.tsx` — asserts `GET /api/system/events`. (<P3_SHA>)
+  - `SubtitleWanted.integration.test.tsx` — asserts `GET /api/subtitles/wanted/movies`. (<P3_SHA>)
+  - `BackupsPage.integration.test.tsx` — asserts `GET /api/backups`. (<P3_SHA>)
+- [x] Re-enable MSW in `app/src/test/setup.ts` unconditionally with `server.listen({ onUnhandledRequest: 'error' })`. (<P3_SHA>)
+- [x] Ensure `cd app && npx vitest run` completes with no unhandled-request errors and no hangs (default pool). (<P3_SHA>) — Completed in ~414s with `pool: 'forks'`; no unhandled-request errors. Pre-existing failures remain in unrelated tracks.
+- [x] If the default pool still hangs, switch `app/vitest.config.ts` to `pool: 'forks'` and document why. (<P3_SHA>)
+- [x] Update `measure/tech-debt.md`: keep MSW row as Resolved only after integration tests prove the handlers are consumed. (<P3_SHA>) — Row already Resolved; integration tests now provide live proof.
+- [x] Commit: `test(msw): add integration smoke tests per domain and re-enable setup.ts hook` (<P3_SHA>)
 
 ## Phase P4: Fix service-layer stubs and orphan-alias guard
 

@@ -99,7 +99,32 @@ For parameterized routes: `http.get('/api/example/:id', ({ params }) => { ... })
 
 ## Phase S2: Settings & config MSW handlers
 
-- [ ] Add handlers for settings routes:
+> **Red-phase status (2026-06-12, mid-attempt-3):** Red tests are written
+> in `app/src/lib/msw/handlers.s2.test.ts` and committed in this phase's
+> Red commit. Red evidence recorded below.
+>
+> **Dirty-worktree note (2026-06-12, mid-attempt-3):** Same two paths
+> uncommitted at start of this MID run as in S1 attempt-2:
+> `measure/automation-supervisor.py` (refactor: `allow_dirty_worktree` →
+> `dirty_worktree_context` + `enforce_clean_worktree`, expanded
+> MID/JR/ACCEPT/CLOSE prompts) and
+> `conductor/archive/cardigann_runtime_parity_20260223/artifacts/final-phase5-compatibility-matrix.json`.
+> Classification: **unrelated user work, preserve** — neither touches
+> the MSW handlers track, neither is folded into this phase's Red
+> commit.
+>
+> **Red command (canonical for this phase):**
+> `cd app && bun ../node_modules/.bin/vitest run src/lib/msw/handlers.s2.test.ts`
+> (from the repo root with `PATH=/home/daniel-bo/.bun/bin:$PATH`; the
+> `npx` and `node` binaries are not on PATH in this environment, so the
+> plan text's `npx vitest` invocation is replaced with the bun-runner
+> equivalent. The test runner is identical — vitest v4.0.18 — and the
+> command stays bounded to a single file with no watch mode.)
+>
+> **Red result (2026-06-12, this MID run):** recorded after the Red
+> test run, see "Red evidence" block below.
+
+- [~] Add handlers for settings routes:
   - `GET /api/settings` — return full settings object
   - `PATCH /api/settings` — return updated settings
   - `GET /api/settings/media` — return media settings
@@ -112,18 +137,30 @@ For parameterized routes: `http.get('/api/example/:id', ({ params }) => { ... })
   - `POST /api/settings/proxies` — return created proxy
   - `PUT /api/settings/proxies/:id` — return updated proxy
   - `DELETE /api/settings/proxies/:id` — return 200
-- [ ] Add handlers for quality profile routes:
+- [~] Add handlers for quality profile routes:
   - `GET /api/quality-profiles` — return profiles
   - `GET /api/quality-profiles/:id` — return single profile
   - `POST /api/quality-profiles` — return created profile
   - `PUT /api/quality-profiles/:id` — return updated profile
   - `DELETE /api/quality-profiles/:id` — return 200
   - `GET /api/quality-definitions` — return definitions
-- [ ] Add handlers for download client routes:
+- [~] Add handlers for download client routes:
   - `GET /api/download-client` — return config
   - `PUT /api/download-client` — return updated config
 - [ ] Run `CI=true npm test` — expect GREEN
 - [ ] Commit: `test(msw): add settings & config MSW handlers`
+
+> **Red evidence (2026-06-12, mid-attempt-3):** `cd app && bun ../node_modules/.bin/vitest run src/lib/msw/handlers.s2.test.ts`
+> — observed `Test Files 1 failed (1)` / `Tests 29 failed | 2 passed (31)`.
+> The 2 passes are `GET /api/settings` and `PATCH /api/settings` (handlers
+> already in place from before this phase, included as a regression
+> baseline). Of the 29 failures: 18 are route-coverage failures
+> (settings/media/categories/proxies CRUD + quality profile CRUD +
+> quality-definitions + download-client GET/PUT) and 11 are envelope
+> failures covering the same newly-required handlers. Failures fail for
+> the expected reason — `expected handlers.ts to define a handler for
+> ${label}` / `missing handler for ${label}` — proving the current
+> implementation lacks the S2 routes.
 
 ## Phase S3: System & operations MSW handlers
 

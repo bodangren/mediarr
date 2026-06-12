@@ -648,6 +648,188 @@ export function createHandlers(mode: FactoryMode = 'deterministic') {
       return sendSuccess(dataset.settings);
     }),
 
+    http.get('/api/settings/media', () => {
+      return sendSuccess({
+        movieRootFolder: '/media/movies',
+        tvRootFolder: '/media/series',
+        movieNamingPattern: '{Movie Title} ({Release Year})',
+        seriesNamingPattern: '{Series Title}',
+      });
+    }),
+
+    http.put('/api/settings/media', async ({ request }) => {
+      const body = (await request.json()) as Record<string, unknown>;
+      return sendSuccess({
+        movieRootFolder: body.movieRootFolder ?? '/media/movies',
+        tvRootFolder: body.tvRootFolder ?? '/media/series',
+        movieNamingPattern: body.movieNamingPattern ?? '{Movie Title} ({Release Year})',
+        seriesNamingPattern: body.seriesNamingPattern ?? '{Series Title}',
+      });
+    }),
+
+    http.get('/api/settings/categories', () => {
+      return sendSuccess([
+        { id: 1, name: 'Movies (HD)', description: 'High definition movies', minSize: 10737418240, maxSize: 53687091200 },
+        { id: 2, name: 'Movies (SD)', description: 'Standard definition movies', minSize: 734003200, maxSize: 10737418240 },
+        { id: 3, name: 'TV Episodes (HD)', description: 'High definition TV episodes', minSize: 536870912, maxSize: 4294967296 },
+        { id: 4, name: 'TV Episodes (SD)', description: 'Standard definition TV episodes', minSize: 73400320, maxSize: 536870912 },
+      ]);
+    }),
+
+    http.post('/api/settings/categories', async ({ request }) => {
+      const body = (await request.json()) as { name: string; description?: string; minSize?: number; maxSize?: number };
+      return sendSuccess({
+        id: Date.now(),
+        name: body.name,
+        description: body.description ?? null,
+        minSize: body.minSize ?? null,
+        maxSize: body.maxSize ?? null,
+      }, 201);
+    }),
+
+    http.put('/api/settings/categories/:id', async ({ params, request }) => {
+      const id = Number(params.id);
+      const body = (await request.json()) as Record<string, unknown>;
+      return sendSuccess({
+        id,
+        name: body.name ?? 'Updated Category',
+        description: body.description ?? null,
+        minSize: body.minSize ?? null,
+        maxSize: body.maxSize ?? null,
+      });
+    }),
+
+    http.delete('/api/settings/categories/:id', ({ params }) => {
+      return sendSuccess({ id: Number(params.id) });
+    }),
+
+    http.get('/api/settings/proxies', () => {
+      return sendSuccess([
+        { id: 1, name: 'Default Proxy', type: 'http', hostname: 'proxy.example', port: 8080, username: null, password: null, enabled: true },
+      ]);
+    }),
+
+    http.post('/api/settings/proxies', async ({ request }) => {
+      const body = (await request.json()) as { name: string; type: string; hostname: string; port: number; username?: string; password?: string; enabled?: boolean };
+      return sendSuccess({
+        id: Date.now(),
+        name: body.name,
+        type: body.type,
+        hostname: body.hostname,
+        port: body.port,
+        username: body.username ?? null,
+        password: body.password ?? null,
+        enabled: body.enabled ?? true,
+      }, 201);
+    }),
+
+    http.put('/api/settings/proxies/:id', async ({ params, request }) => {
+      const id = Number(params.id);
+      const body = (await request.json()) as Record<string, unknown>;
+      return sendSuccess({
+        id,
+        name: body.name ?? 'Updated Proxy',
+        type: body.type ?? 'http',
+        hostname: body.hostname ?? 'proxy.example',
+        port: body.port ?? 8080,
+        username: body.username ?? null,
+        password: body.password ?? null,
+        enabled: body.enabled ?? true,
+      });
+    }),
+
+    http.delete('/api/settings/proxies/:id', ({ params }) => {
+      return sendSuccess({ id: Number(params.id) });
+    }),
+
+    http.get('/api/quality-profiles', () => {
+      return sendSuccess([
+        { id: 1, name: 'HD-1080p', cutoff: 7, items: [{ quality: { id: 1, name: 'HDTV-720p', source: 'television', resolution: '720p' }, allowed: true }], languageProfileId: null },
+        { id: 2, name: 'UHD-2160p', cutoff: 9, items: [{ quality: { id: 1, name: 'HDTV-2160p', source: 'television', resolution: '2160p' }, allowed: true }], languageProfileId: null },
+      ]);
+    }),
+
+    http.get('/api/quality-profiles/:id', ({ params }) => {
+      const id = Number(params.id);
+      return sendSuccess({
+        id,
+        name: `Profile ${id}`,
+        cutoff: 7,
+        items: [{ quality: { id: 1, name: 'HDTV-720p', source: 'television', resolution: '720p' }, allowed: true }],
+        languageProfileId: null,
+      });
+    }),
+
+    http.post('/api/quality-profiles', async ({ request }) => {
+      const body = (await request.json()) as { name: string; cutoff: number; items: unknown[]; languageProfileId?: number | null };
+      return sendSuccess({
+        id: Date.now(),
+        name: body.name,
+        cutoff: body.cutoff,
+        items: body.items,
+        languageProfileId: body.languageProfileId ?? null,
+      }, 201);
+    }),
+
+    http.put('/api/quality-profiles/:id', async ({ params, request }) => {
+      const id = Number(params.id);
+      const body = (await request.json()) as Record<string, unknown>;
+      return sendSuccess({
+        id,
+        name: body.name ?? `Profile ${id}`,
+        cutoff: body.cutoff ?? 7,
+        items: body.items ?? [],
+        languageProfileId: body.languageProfileId ?? null,
+      });
+    }),
+
+    http.delete('/api/quality-profiles/:id', ({ params }) => {
+      return sendSuccess({ id: Number(params.id), name: `Profile ${params.id}`, cutoff: 7, items: [], languageProfileId: null });
+    }),
+
+    http.get('/api/quality-definitions', () => {
+      return sendSuccess([
+        { id: 1, name: 'HDTV-720p', source: 'television', resolution: '720p', weight: 1 },
+        { id: 2, name: 'WEBDL-720p', source: 'web', resolution: '720p', weight: 2 },
+        { id: 3, name: 'Bluray-720p', source: 'bluray', resolution: '720p', weight: 3 },
+        { id: 4, name: 'HDTV-1080p', source: 'television', resolution: '1080p', weight: 4 },
+        { id: 5, name: 'WEBDL-1080p', source: 'web', resolution: '1080p', weight: 5 },
+        { id: 6, name: 'Bluray-1080p', source: 'bluray', resolution: '1080p', weight: 6 },
+        { id: 7, name: 'HDTV-2160p', source: 'television', resolution: '2160p', weight: 7 },
+        { id: 8, name: 'WEBDL-2160p', source: 'web', resolution: '2160p', weight: 8 },
+        { id: 9, name: 'Bluray-2160p', source: 'bluray', resolution: '2160p', weight: 9 },
+      ]);
+    }),
+
+    http.get('/api/download-client', () => {
+      return sendSuccess({
+        maxActiveDownloads: 3,
+        maxActiveSeeds: 5,
+        globalDownloadLimitKbps: null,
+        globalUploadLimitKbps: null,
+        incompleteDirectory: '/tmp/incomplete',
+        completeDirectory: '/tmp/complete',
+        seedRatioLimit: 1.5,
+        seedTimeLimitMinutes: 60,
+        seedLimitAction: 'pause',
+      });
+    }),
+
+    http.put('/api/download-client', async ({ request }) => {
+      const body = (await request.json()) as Record<string, unknown>;
+      return sendSuccess({
+        maxActiveDownloads: body.maxActiveDownloads ?? 3,
+        maxActiveSeeds: body.maxActiveSeeds ?? 5,
+        globalDownloadLimitKbps: body.globalDownloadLimitKbps ?? null,
+        globalUploadLimitKbps: body.globalUploadLimitKbps ?? null,
+        incompleteDirectory: body.incompleteDirectory ?? '/tmp/incomplete',
+        completeDirectory: body.completeDirectory ?? '/tmp/complete',
+        seedRatioLimit: body.seedRatioLimit ?? 1.5,
+        seedTimeLimitMinutes: body.seedTimeLimitMinutes ?? 60,
+        seedLimitAction: body.seedLimitAction ?? 'pause',
+      });
+    }),
+
     http.get('/api/events/stream', () => {
       return new HttpResponse('', {
         status: 200,

@@ -407,12 +407,54 @@ For parameterized routes: `http.get('/api/example/:id', ({ params }) => { ... })
 
 ## Phase S4: Subtitle & playback MSW handlers
 
-- [ ] Add handlers for subtitle routes:
+> **Red-phase status (2026-06-12, mid-attempt-1):** Red tests are
+> written in `app/src/lib/msw/handlers.s4.test.ts` and committed in
+> this phase's Red commit. Red evidence recorded below.
+>
+> **Dirty-worktree note (2026-06-12, mid-attempt-1):**
+> `measure/automation-supervisor.py` is uncommitted at start of this
+> MID run (same supervisor refactor seen in S1/S2/S3:
+> `allow_dirty_worktree` → `dirty_worktree_context` +
+> `enforce_clean_worktree`, expanded MID/JR/ACCEPT/CLOSE prompts).
+> `conductor/archive/cardigann_runtime_parity_20260223/artifacts/final-phase5-compatibility-matrix.json`
+> has its `generatedAt` timestamp field flipped by a build/CI
+> side-effect that runs while the supervisor is alive.
+> Classification: **unrelated user work, preserve** — neither
+> touches the MSW handlers track. Per attempt-4 pattern: matrix JSON
+> `git checkout --` restored to committed state after Red run;
+> `measure/automation-supervisor.py` left dirty (Measure doc, allowed
+> to remain dirty through this phase).
+>
+> **Build-graph findings used to shape Red tests:**
+> `build-graph query` confirmed the S4 server routes live at
+> `server/src/api/routes/subtitleRoutes.ts` and
+> `server/src/api/routes/playbackRoutes.ts`. `build-graph query` on
+> the current `handlers.ts` shows only 4 S4 routes currently have MSW
+> handlers (the two pre-existing from S1 work —
+> `GET /api/subtitles/movie/:id/variants`,
+> `GET /api/subtitles/episode/:id/variants` — and the two from the
+> S1/S2 implementation — `POST /api/subtitles/search`,
+> `POST /api/subtitles/download`). The remaining 21 S4 routes have
+> **no** matching MSW handler and need to be added by this phase.
+>
+> **Red command (canonical for this phase):**
+> `cd app && bun ../node_modules/.bin/vitest run src/lib/msw/handlers.s4.test.ts`
+> (from the repo root with `PATH=/home/daniel-bo/.bun/bin:$PATH`; the
+> `npx` and `node` binaries are not on PATH in this environment, so
+> the plan text's `npx vitest` invocation is replaced with the
+> bun-runner equivalent. The test runner is identical — vitest
+> v4.0.18 — and the command stays bounded to a single file with no
+> watch mode.)
+>
+> **Red result (2026-06-12, this MID run):** recorded after the Red
+> test run, see "Red evidence" block below.
+
+- [~] Add handlers for subtitle routes:
   - `GET /api/subtitles/wanted/movies` — return wanted movies
   - `GET /api/subtitles/wanted/series` — return wanted series
   - `GET /api/subtitles/wanted/count` — return count
-  - `POST /api/subtitles/search` — return search results
-  - `POST /api/subtitles/download` — return download result
+  - `POST /api/subtitles/search` — return search results *(exists)*
+  - `POST /api/subtitles/download` — return download result *(exists)*
   - `GET /api/subtitles/history` — return history
   - `GET /api/subtitles/history/stats` — return stats
   - `DELETE /api/subtitles/history` — return 200
@@ -426,14 +468,71 @@ For parameterized routes: `http.get('/api/example/:id', ({ params }) => { ... })
   - `DELETE /api/subtitles/blacklist/:id` — return 200
   - `DELETE /api/subtitles/blacklist/movies` — return 200
   - `DELETE /api/subtitles/blacklist/series` — return 200
-- [ ] Add handlers for playback routes:
+- [~] Add handlers for playback routes:
   - `GET /api/playback/continue-watching` — return continue watching items
   - `GET /api/playback/:id` — return playback manifest
   - `POST /api/playback/progress` — return 200
   - `GET /api/playback/subtitles/:trackId` — return subtitle track
   - `GET /api/stream/:id` — return stream response
-- [ ] Run `CI=true npm test` — expect GREEN
-- [ ] Commit: `test(msw): add subtitle & playback MSW handlers`
+- [~] Run `CI=true npm test` — expect GREEN
+- [~] Commit: `test(msw): add subtitle & playback MSW handlers`
+
+> **Red evidence (2026-06-12, mid-attempt-1):**
+> `cd app && bun ../node_modules/.bin/vitest run src/lib/msw/handlers.s4.test.ts`
+> — observed `Test Files 1 failed (1)` / `Tests 38 failed | 2 passed (40)`.
+> The 2 passes are the regression-baseline route-presence checks for
+> the 2 routes that already have MSW handlers from prior phases
+> (`POST /api/subtitles/search`, `POST /api/subtitles/download`).
+> Of the 38 failures:
+> - **21 route-presence failures** covering every newly-required S4
+>   route: 16 subtitle routes (wanted/movies, wanted/series,
+>   wanted/count, history, history/stats, providers, providers/:id,
+>   providers/:id PUT, providers/:id/test, providers/:id/reset,
+>   blacklist/movies, blacklist/series, blacklist/:id DELETE,
+>   blacklist/movies DELETE, blacklist/series DELETE,
+>   DELETE history) and 5 playback routes (continue-watching,
+>   /:id, progress, subtitles/:trackId, stream/:id) — minus the
+>   2 already-existing handlers (search/download) and the 2
+>   pre-existing variant handlers (movie/:id/variants,
+>   episode/:id/variants) which are not in scope for S4.
+> - **11 envelope-shape failures** for newly-required handlers that
+>   have a `{ok, data}` JSON response contract
+>   (`GET /api/subtitles/wanted/count` returning
+>   `{seriesCount, moviesCount, totalCount}`,
+>   `GET /api/subtitles/history`,
+>   `GET /api/subtitles/history/stats` returning
+>   `{period, downloads, byProvider, byLanguage}`,
+>   `GET /api/subtitles/providers`, providers/:id GET/PUT/test,
+>   blacklist/movies/series GET, playback/continue-watching,
+>   playback/:id returning a manifest object with
+>   `{id, mediaType, mediaId, sources}`).
+> - **6 status-code failures** asserting HTTP 200 OK on the
+>   synchronous subtitle/playback mutations
+>   (`DELETE /api/subtitles/history`,
+>   `POST /api/subtitles/providers/opensubtitles/reset`,
+>   `DELETE /api/subtitles/blacklist/:id`,
+>   `DELETE /api/subtitles/blacklist/movies`,
+>   `DELETE /api/subtitles/blacklist/series`,
+>   `POST /api/playback/progress`).
+>
+> All failures fail for the expected reason — `expected handlers.ts
+> to define a handler for ${label}` / `missing handler for ${label}`
+> — proving the current implementation lacks the S4 routes. No
+> artifact or markdown assertions are used; every assertion
+> exercises live handler behavior via the same
+> `createHandlers('deterministic')` + `handler.run()` path that the
+> GREEN phase will need to satisfy.
+>
+> **Test scope note:** This Red run uses a stricter
+> `isMostSpecificMatch()` matcher (rejects handlers where `:param`
+> subsumes a literal segment) to prevent `/api/playback/:id` from
+> passing the `/api/playback/continue-watching` test. S1/S2/S3 use
+> the lenient `isSpecificMatch` because their collision surface was
+> empty; S4 has a real collision between the new `:id` catch-all
+> and the literal `continue-watching` route, so the stricter check
+> is required for the Red contract to actually gate the new
+> behavior. The Green phase will satisfy the strict check by adding
+> the literal dedicated handler alongside `:id`.
 
 ## Phase S5: Remaining domains
 

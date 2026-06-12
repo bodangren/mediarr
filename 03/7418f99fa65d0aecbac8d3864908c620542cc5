@@ -1,0 +1,9 @@
+P4: Fix service-layer stubs and orphan-alias guard
+
+- Replaced Scheduler.computeNextRun() heuristic with a deterministic cron next-run calculator supporting daily (0 H * * *), every-minute (* * * * *), every-N-minutes (*/N), every-N-hours (0 */N), and every-hour-at-minute (M *) patterns.
+- Added 6 nextRunAt computation tests to server/src/services/Scheduler.test.ts.
+- Unified Scheduler.runNow() to use the same wrapped callback as schedule() so errors are swallowed and logged consistently; added regression test.
+- Deleted orphan-alias service files: server/src/services/TvSearchService.ts, server/src/services/RssTvMonitor.ts, server/src/services/SearchAggregationService.ts.
+- Updated server/src/main.ts and server/src/api/types.ts to use MediaSearchService directly instead of SearchAggregationService alias.
+- Updated tests/tv-search-service.test.js and tests/rss-tv-monitor.test.js to construct parent services (MediaSearchService, RssMediaMonitor) directly.
+- Fixed tests/no-orphan-aliases.test.ts REPO_ROOT resolution from path.resolve(__dirname, '..', '..') to path.resolve(__dirname, '..') so it actually scans the project root.

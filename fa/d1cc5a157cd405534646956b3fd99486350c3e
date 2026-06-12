@@ -1,0 +1,1 @@
+P1: Gate MSW lifecycle hooks behind VITEST_MSW_ENABLED env var; extract shared findHandler/runHandler/isSpecificMatch/isMostSpecificMatch helpers into app/src/lib/msw/handlers.test-helpers.ts; refactor handlers.s1-s5.test.ts to import helpers and delete duplicated code.

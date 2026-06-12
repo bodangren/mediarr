@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { RssTvMonitor } from '../server/src/services/RssTvMonitor';
+import { RssMediaMonitor } from '../server/src/services/RssMediaMonitor';
 import { EventEmitter } from 'events';
 
-describe('RssTvMonitor', () => {
+describe('RssMediaMonitor (legacy RssTvMonitor coverage)', () => {
   let monitor;
   let rssSyncService;
   let torrentManager;
@@ -21,7 +21,7 @@ describe('RssTvMonitor', () => {
         findFirst: vi.fn(),
       },
     };
-    monitor = new RssTvMonitor(rssSyncService, torrentManager, prisma);
+    monitor = new RssMediaMonitor(rssSyncService, torrentManager, prisma);
   });
 
   it('should trigger download when a matching monitored missing episode release is found', async () => {

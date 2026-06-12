@@ -14,6 +14,7 @@ export interface ScheduledJobMeta {
 interface ScheduledJob {
   task: ScheduledTask;
   callback: JobCallback;
+  wrappedCallback: () => Promise<void>;
   cronExpression: string;
   lastRunAt: string | null;
   lastDurationMs: number | null;
@@ -41,14 +42,6 @@ export class Scheduler {
       throw new Error(`Invalid cron expression: ${cronExpression}`);
     }
 
-    const meta: ScheduledJob = {
-      task: null as unknown as ScheduledTask,
-      callback,
-      cronExpression,
-      lastRunAt: null,
-      lastDurationMs: null,
-    };
-
     const wrappedCallback = async () => {
       const start = Date.now();
       try {
@@ -59,6 +52,15 @@ export class Scheduler {
         meta.lastRunAt = new Date().toISOString();
         meta.lastDurationMs = Date.now() - start;
       }
+    };
+
+    const meta: ScheduledJob = {
+      task: null as unknown as ScheduledTask,
+      callback,
+      wrappedCallback,
+      cronExpression,
+      lastRunAt: null,
+      lastDurationMs: null,
     };
 
     const task = cronSchedule(cronExpression, wrappedCallback);
@@ -82,14 +84,27 @@ export class Scheduler {
 
   private computeNextRun(cronExpression: string): string | null {
     try {
-      // Parse the cron expression to determine next execution time
-      // node-cron doesn't expose next-run directly; use a simple heuristic
-      const parts = cronExpression.split(' ');
-      if (parts.length < 5) return null;
-      const minutePart = parts[0];
+      const parts = cronExpression.split(' ') as [string, string, string, string, string];
+      if (parts.length !== 5) return null;
+      const [minutePart, hourPart, dayPart, monthPart, weekdayPart] = parts;
+
+      // This implementation covers the cron patterns used by the scheduler.
+      // Day-of-month, month, and day-of-week are expected to be wildcards.
+      if (dayPart !== '*' || monthPart !== '*' || weekdayPart !== '*') {
+        return null;
+      }
+
       const now = new Date();
-      // For */N patterns, compute the next occurrence
-      if (minutePart && minutePart.startsWith('*/')) {
+
+      // Every minute: * * * * *
+      if (minutePart === '*') {
+        const next = new Date(now.getTime() + 60 * 1000);
+        next.setSeconds(0, 0);
+        return next.toISOString();
+      }
+
+      // Every N minutes: */N * * * *
+      if (minutePart.startsWith('*/')) {
         const interval = parseInt(minutePart.slice(2), 10);
         if (!isNaN(interval) && interval > 0) {
           const currentMinute = now.getMinutes();
@@ -99,19 +114,48 @@ export class Scheduler {
           return next.toISOString();
         }
       }
-      // For 0 */H patterns (hourly-based)
-      const hourPart = parts[1];
-      if (minutePart === '0' && hourPart && hourPart.startsWith('*/')) {
+
+      // Specific minute value
+      const minute = parseInt(minutePart, 10);
+      if (isNaN(minute) || minute < 0 || minute >= 60) {
+        return null;
+      }
+
+      // Every N hours at minute M: M */N * * *
+      if (hourPart.startsWith('*/')) {
         const interval = parseInt(hourPart.slice(2), 10);
         if (!isNaN(interval) && interval > 0) {
           const currentHour = now.getHours();
-          const hoursUntilNext = interval - (currentHour % interval);
+          let hoursUntilNext = interval - (currentHour % interval);
+          if (hoursUntilNext === 0 && now.getMinutes() >= minute) {
+            hoursUntilNext = interval;
+          }
           const next = new Date(now.getTime() + hoursUntilNext * 60 * 60 * 1000);
-          next.setMinutes(0, 0, 0);
+          next.setMinutes(minute, 0, 0);
           return next.toISOString();
         }
       }
-      return null;
+
+      // Every hour at minute M: M * * * *
+      if (hourPart === '*') {
+        const candidate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours(), minute, 0, 0);
+        if (candidate.getTime() <= now.getTime()) {
+          candidate.setHours(candidate.getHours() + 1);
+        }
+        return candidate.toISOString();
+      }
+
+      // Specific hour value: M H * * * (daily at H:M)
+      const hour = parseInt(hourPart, 10);
+      if (isNaN(hour) || hour < 0 || hour >= 24) {
+        return null;
+      }
+
+      const candidate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour, minute, 0, 0);
+      if (candidate.getTime() <= now.getTime()) {
+        candidate.setDate(candidate.getDate() + 1);
+      }
+      return candidate.toISOString();
     } catch {
       return null;
     }
@@ -160,13 +204,7 @@ export class Scheduler {
     if (!job) {
       throw new Error(`Job '${name}' is not scheduled`);
     }
-    const start = Date.now();
-    try {
-      await job.callback();
-    } finally {
-      job.lastRunAt = new Date().toISOString();
-      job.lastDurationMs = Date.now() - start;
-    }
+    await job.wrappedCallback();
   }
 
   /**

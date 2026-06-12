@@ -44,7 +44,7 @@ import {
   TMDBListProvider,
   TMDBPopularProvider,
 } from './services/importLists';
-import { SearchAggregationService } from './services/SearchAggregationService';
+import { MediaSearchService } from './services/MediaSearchService';
 import { MediaService } from './services/MediaService';
 import { MetadataProvider } from './services/MetadataProvider';
 import { PlaybackService } from './services/PlaybackService';
@@ -526,7 +526,7 @@ async function startApi(): Promise<void> {
   );
 
   const mediaService = new MediaService(prisma, metadataProvider, activityEventEmitter);
-  const searchAggregationService = new SearchAggregationService(
+  const searchAggregationService = new MediaSearchService(
     indexerRepository as any,
     indexerFactory as any,
     torrentManager,

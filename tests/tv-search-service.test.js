@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { TvSearchService } from '../server/src/services/TvSearchService';
+import { MediaSearchService } from '../server/src/services/MediaSearchService';
 
-describe('TvSearchService', () => {
+describe('MediaSearchService (legacy TV search alias coverage)', () => {
   let service;
   let indexerFactory;
   let indexerRepository;
@@ -17,7 +17,7 @@ describe('TvSearchService', () => {
     torrentManager = {
       addTorrent: vi.fn().mockResolvedValue({ infoHash: 'abc' }),
     };
-    service = new TvSearchService(indexerRepository, indexerFactory, torrentManager);
+    service = new MediaSearchService(indexerRepository, indexerFactory, torrentManager);
   });
 
   it('should search for an episode and add the best match to torrent manager', async () => {

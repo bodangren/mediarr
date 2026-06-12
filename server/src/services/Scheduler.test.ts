@@ -169,6 +169,19 @@ describe('Scheduler core contract', () => {
       expect(meta?.lastRunAt).not.toBeNull();
       expect(meta?.lastDurationMs).not.toBeNull();
     });
+
+    it('runNow uses the same wrapped callback and swallows/logging errors', async () => {
+      const boom = new Error('runNow blew up');
+      scheduler.schedule('runnow-flaky', '*/5 * * * *', vi.fn().mockRejectedValue(boom));
+      await scheduler.runNow('runnow-flaky');
+      expect(errorSpy).toHaveBeenCalledWith(
+        "Scheduler job 'runnow-flaky' failed:",
+        boom,
+      );
+      const meta = scheduler.listJobsMeta().find((m) => m.name === 'runnow-flaky');
+      expect(meta?.lastRunAt).not.toBeNull();
+      expect(meta?.lastDurationMs).not.toBeNull();
+    });
   });
 
   describe('stop / stopAll / listJobs / isScheduled', () => {
@@ -212,6 +225,62 @@ describe('Scheduler core contract', () => {
       scheduler.stop('a');
       expect(scheduler.isScheduled('a')).toBe(false);
       expect(scheduler.listJobs()).toEqual(['b']);
+    });
+  });
+
+  describe('nextRunAt computation', () => {
+    it('returns a valid ISO timestamp for daily cron "0 3 * * *"', () => {
+      scheduler.schedule('daily-job', '0 3 * * *', () => undefined);
+      const meta = scheduler.listJobsMeta().find((m) => m.name === 'daily-job');
+      expect(meta?.nextRunAt).not.toBeNull();
+      expect(() => new Date(meta!.nextRunAt!)).not.toThrow();
+    });
+
+    it('returns tomorrow for a daily cron when today\'s run has already passed', () => {
+      const now = new Date();
+      const passedHour = now.getHours() === 0 ? 23 : now.getHours() - 1;
+      const expression = `0 ${passedHour} * * *`;
+      scheduler.schedule('passed-daily', expression, () => undefined);
+      const meta = scheduler.listJobsMeta().find((m) => m.name === 'passed-daily');
+      const next = new Date(meta!.nextRunAt!);
+      const tomorrow = new Date(now);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      expect(next.getDate()).toBe(tomorrow.getDate());
+    });
+
+    it('returns today for a daily cron when today\'s run has not yet passed', () => {
+      const now = new Date();
+      const futureHour = now.getHours() === 23 ? 0 : now.getHours() + 1;
+      const expression = `0 ${futureHour} * * *`;
+      scheduler.schedule('future-daily', expression, () => undefined);
+      const meta = scheduler.listJobsMeta().find((m) => m.name === 'future-daily');
+      const next = new Date(meta!.nextRunAt!);
+      expect(next.getDate()).toBe(now.getDate());
+    });
+
+    it('returns the next */N minute boundary', () => {
+      scheduler.schedule('frequent-job', '*/15 * * * *', () => undefined);
+      const meta = scheduler.listJobsMeta().find((m) => m.name === 'frequent-job');
+      const next = new Date(meta!.nextRunAt!);
+      expect(next.getMinutes() % 15).toBe(0);
+      expect(next.getSeconds()).toBe(0);
+    });
+
+    it('returns the next 0 */H hour boundary', () => {
+      scheduler.schedule('hourly-job', '0 */6 * * *', () => undefined);
+      const meta = scheduler.listJobsMeta().find((m) => m.name === 'hourly-job');
+      const next = new Date(meta!.nextRunAt!);
+      expect(next.getMinutes()).toBe(0);
+      expect(next.getSeconds()).toBe(0);
+      expect(next.getHours() % 6).toBe(0);
+    });
+
+    it('returns a future timestamp for every-minute cron', () => {
+      scheduler.schedule('every-minute', '* * * * *', () => undefined);
+      const meta = scheduler.listJobsMeta().find((m) => m.name === 'every-minute');
+      const next = new Date(meta!.nextRunAt!);
+      const now = new Date();
+      expect(next.getTime()).toBeGreaterThanOrEqual(now.getTime());
     });
   });
 });

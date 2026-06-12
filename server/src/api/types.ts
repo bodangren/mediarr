@@ -11,7 +11,6 @@ import type { ImportListRepository } from '../repositories/ImportListRepository'
 import type { CollectionRepository } from '../repositories/CollectionRepository';
 import type { MediaService } from '../services/MediaService';
 import type { MediaSearchService } from '../services/MediaSearchService';
-import type { SearchAggregationService } from '../services/SearchAggregationService';
 import type { WantedService } from '../services/WantedService';
 import type { WantedSearchService } from '../services/WantedSearchService';
 import type { TorrentManager } from '../services/TorrentManager';
@@ -47,7 +46,7 @@ export interface ApiDependencies {
     MediaSearchService,
     'getSearchCandidates' | 'grabRelease' | 'searchMovie' | 'searchAllIndexers' | 'grabReleaseByGuid'
   > | undefined;
-  searchAggregationService?: Pick<SearchAggregationService, 'searchAllIndexers'> | undefined;
+  searchAggregationService?: Pick<MediaSearchService, 'searchAllIndexers'> | undefined;
   wantedService?: Pick<WantedService, 'getMissingEpisodes'> | undefined;
   wantedSearchService?: Pick<WantedSearchService, 'autoSearchMovie' | 'autoSearchEpisode' | 'autoSearchAll' | 'autoSearchSeries'> | undefined;
   torrentManager?: Pick<

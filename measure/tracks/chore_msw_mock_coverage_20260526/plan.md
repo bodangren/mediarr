@@ -56,41 +56,41 @@ For parameterized routes: `http.get('/api/example/:id', ({ params }) => { ... })
 > dedicated handlers.
 
 - [x] Read `app/src/lib/msw/handlers.ts` to understand current structure
-- [~] Add handlers for movie routes:
+- [x] Add handlers for movie routes:
   - `GET /api/movies` — return mock movie list *(exists)*
   - `GET /api/movies/:id` — return single mock movie *(exists)*
-  - `POST /api/movies` — return created movie *(MISSING — Red test in handlers.s1.test.ts)*
-  - `PUT /api/movies/:id` — return updated movie *(MISSING)*
+  - `POST /api/movies` — return created movie *(added)*
+  - `PUT /api/movies/:id` — return updated movie *(added)*
   - `DELETE /api/movies/:id` — return 200 *(exists)*
   - `PATCH /api/movies/:id/monitored` — return updated monitored state *(exists)*
   - `GET /api/movies/missing` — return missing movies list *(exists)*
-  - `GET /api/movies/root-folders` — return root folders *(MISSING)*
-  - `POST /api/movies/import/scan` — return scan results *(MISSING)*
-  - `POST /api/movies/import/apply` — return import results *(MISSING)*
-  - `PUT /api/movies/bulk` — return bulk update result *(MISSING)*
-- [~] Add handlers for series routes:
+  - `GET /api/movies/root-folders` — return root folders *(added — placed before /:id to avoid catch-all)*
+  - `POST /api/movies/import/scan` — return scan results *(added)*
+  - `POST /api/movies/import/apply` — return import results *(added)*
+  - `PUT /api/movies/bulk` — return bulk update result *(added)*
+- [x] Add handlers for series routes:
   - `GET /api/series` — return mock series list *(exists)*
   - `GET /api/series/:id` — return single mock series *(exists)*
   - `DELETE /api/series/:id` — return 200 *(exists)*
   - `PATCH /api/series/:id/monitored` — return updated *(exists)*
-  - `GET /api/series/root-folders` — return root folders *(MISSING)*
-  - `GET /api/episodes/missing` — return missing episodes *(MISSING)*
-  - `POST /api/series/import/scan` — return scan results *(MISSING)*
-  - `POST /api/series/import/apply` — return import results *(MISSING)*
-  - `PUT /api/series/bulk` — return bulk update result *(MISSING)*
-- [~] Add handlers for indexer routes (some already exist, add missing):
-  - `GET /api/indexers/catalog` — return catalog entries *(MISSING)*
-  - `GET /api/indexers/detect` — return detected services *(MISSING)*
-  - `GET /api/indexers/schema/:configContract` — return schema fields *(MISSING)*
+  - `GET /api/series/root-folders` — return root folders *(added — placed before /:id to avoid catch-all)*
+  - `GET /api/episodes/missing` — return missing episodes *(added)*
+  - `POST /api/series/import/scan` — return scan results *(added)*
+  - `POST /api/series/import/apply` — return import results *(added)*
+  - `PUT /api/series/bulk` — return bulk update result *(added)*
+- [x] Add handlers for indexer routes (some already exist, add missing):
+  - `GET /api/indexers/catalog` — return catalog entries *(added — placed before /:id to avoid catch-all)*
+  - `GET /api/indexers/detect` — return detected services *(added)*
+  - `GET /api/indexers/schema/:configContract` — return schema fields *(added)*
   - `POST /api/indexers/test` — return test result *(exists)*
   - `POST /api/indexers/:id/test` — return test result *(exists)*
-  - `POST /api/indexers/:id/clone` — return cloned indexer *(MISSING)*
-  - `POST /api/indexers/catalog/:id/add` — return added indexer *(MISSING)*
-  - `POST /api/indexers/catalog/reload` — return 200 *(MISSING)*
-  - `POST /api/indexers/import-from/:type` — return import result *(MISSING)*
-- [x] Run `cd app && bun ../node_modules/.bin/vitest run src/lib/msw/handlers.s1.test.ts` — RED evidence recorded above; 22 failed | 13 passed (35 total) at commit `afa2aa4`
+  - `POST /api/indexers/:id/clone` — return cloned indexer *(added)*
+  - `POST /api/indexers/catalog/:id/add` — return added indexer *(added)*
+  - `POST /api/indexers/catalog/reload` — return 200 *(added)*
+  - `POST /api/indexers/import-from/:type` — return import result *(added)*
+- [x] Run `cd app && bun ../node_modules/.bin/vitest run src/lib/msw/handlers.s1.test.ts` — 35 passed (35 total) at commit (see below)
 - [x] Commit: `afa2aa4 test(msw): add Red-phase tests for S1 core domain handlers (movies/series/indexers)` — Red tests already committed in a prior MID attempt; this phase's Red contract is satisfied
-- [ ] Commit: implementation closes the 16 missing handlers and 4 envelope-shape mismatches; tracks a follow-up JR commit (out of scope for this MID run)
+- [x] Commit: `feat(msw): add S1 core domain handlers for movies/series/indexers` — implementation closes the 16 missing handlers and 4 envelope-shape mismatches
 
 ## Phase S2: Settings & config MSW handlers
 

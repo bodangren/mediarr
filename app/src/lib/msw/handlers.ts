@@ -54,6 +54,16 @@ export function createHandlers(mode: FactoryMode = 'deterministic') {
       return sendPaginated(filtered, numberQuery(url, 'page', 1), numberQuery(url, 'pageSize', 25));
     }),
 
+    http.get('/api/series/root-folders', () => {
+      const rootFolders = [...new Set(dataset.series.map(series => {
+        const firstEpisode = series.seasons.flatMap(s => s.episodes).find(e => e.path);
+        if (!firstEpisode?.path) return '/media/series';
+        const parts = firstEpisode.path.split('/');
+        return parts.length > 2 ? `/${parts[1]}` : '/media/series';
+      }))];
+      return sendSuccess({ rootFolders });
+    }),
+
     http.get('/api/series/:id', ({ params }) => {
       const id = Number(params.id);
       const found = dataset.series.find(item => item.id === id);
@@ -83,6 +93,45 @@ export function createHandlers(mode: FactoryMode = 'deterministic') {
       return sendSuccess({ deleted: true, id });
     }),
 
+    http.get('/api/episodes/missing', ({ request }) => {
+      const url = new URL(request.url);
+      const missing = dataset.series.flatMap(series =>
+        series.seasons.flatMap(season =>
+          season.episodes
+            .filter(episode => episode.path === null)
+            .map(episode => ({
+              id: episode.id,
+              seriesId: series.id,
+              seriesTitle: series.title,
+              seasonNumber: episode.seasonNumber,
+              episodeNumber: episode.episodeNumber,
+              title: episode.title,
+              monitored: episode.monitored,
+            })),
+        ),
+      );
+      return sendPaginated(missing, numberQuery(url, 'page', 1), numberQuery(url, 'pageSize', 25));
+    }),
+
+    http.post('/api/series/import/scan', async ({ request }) => {
+      const body = (await request.json()) as { path: string };
+      return sendSuccess({
+        files: [
+          { path: `${body.path}/series1.mkv`, seriesTitle: 'Scanned Series', seasonNumber: 1, episodeNumber: 1, quality: '1080p' },
+        ],
+      });
+    }),
+
+    http.post('/api/series/import/apply', async ({ request }) => {
+      const body = (await request.json()) as { files: Array<{ path: string; seriesId: number }> };
+      return sendSuccess({ imported: body.files.length, failed: 0, errors: [] });
+    }),
+
+    http.put('/api/series/bulk', async ({ request }) => {
+      const body = (await request.json()) as { seriesIds: number[]; changes: Record<string, unknown> };
+      return sendSuccess({ updated: body.seriesIds.length, failed: 0 });
+    }),
+
     http.get('/api/movies', ({ request }) => {
       const url = new URL(request.url);
       const search = url.searchParams.get('search')?.toLowerCase();
@@ -93,10 +142,53 @@ export function createHandlers(mode: FactoryMode = 'deterministic') {
       return sendPaginated(filtered, numberQuery(url, 'page', 1), numberQuery(url, 'pageSize', 25));
     }),
 
+    http.get('/api/movies/root-folders', () => {
+      const rootFolders = [...new Set(dataset.movies.map(movie => {
+        const variant = movie.fileVariants[0];
+        if (!variant) return '/media/movies';
+        const parts = variant.path.split('/');
+        return parts.length > 2 ? `/${parts[1]}` : '/media/movies';
+      }))];
+      return sendSuccess({ rootFolders });
+    }),
+
+    http.post('/api/movies', async ({ request }) => {
+      const body = (await request.json()) as {
+        title?: string;
+        year?: number;
+        tmdbId?: number;
+        monitored?: boolean;
+        qualityProfileId?: number;
+      };
+      const created = {
+        id: dataset.movies.length + 100,
+        tmdbId: body.tmdbId ?? Date.now(),
+        title: body.title ?? 'New Movie',
+        year: body.year ?? 2026,
+        status: 'announced',
+        monitored: body.monitored ?? true,
+        fileVariants: [],
+      };
+      dataset.movies.unshift(created);
+      return sendSuccess(created, 201);
+    }),
+
     http.get('/api/movies/:id', ({ params }) => {
       const id = Number(params.id);
       const found = dataset.movies.find(item => item.id === id);
       return found ? sendSuccess(found) : sendError('NOT_FOUND', `Movie ${id} not found`, 404);
+    }),
+
+    http.put('/api/movies/:id', async ({ params, request }) => {
+      const id = Number(params.id);
+      const found = dataset.movies.find(item => item.id === id);
+      if (!found) {
+        return sendError('NOT_FOUND', `Movie ${id} not found`, 404);
+      }
+
+      const patch = (await request.json()) as Record<string, unknown>;
+      Object.assign(found, patch);
+      return sendSuccess(found);
     }),
 
     http.patch('/api/movies/:id/monitored', async ({ params, request }) => {
@@ -133,6 +225,26 @@ export function createHandlers(mode: FactoryMode = 'deterministic') {
       }
 
       return sendPaginated(filtered, numberQuery(url, 'page', 1), numberQuery(url, 'pageSize', 25));
+    }),
+
+    http.post('/api/movies/import/scan', async ({ request }) => {
+      const body = (await request.json()) as { path: string };
+      return sendSuccess({
+        files: [
+          { path: `${body.path}/movie1.mkv`, movieTitle: 'Scanned Movie 1', year: 2024, quality: '1080p' },
+          { path: `${body.path}/movie2.mkv`, movieTitle: 'Scanned Movie 2', year: 2023, quality: '2160p' },
+        ],
+      });
+    }),
+
+    http.post('/api/movies/import/apply', async ({ request }) => {
+      const body = (await request.json()) as { files: Array<{ path: string; movieId: number }> };
+      return sendSuccess({ imported: body.files.length, failed: 0, errors: [] });
+    }),
+
+    http.put('/api/movies/bulk', async ({ request }) => {
+      const body = (await request.json()) as { movieIds: number[]; changes: Record<string, unknown> };
+      return sendSuccess({ updated: body.movieIds.length, failed: 0 });
     }),
 
     http.get('/api/media/wanted', ({ request }) => {
@@ -314,6 +426,34 @@ export function createHandlers(mode: FactoryMode = 'deterministic') {
 
     http.get('/api/indexers', () => sendSuccess(dataset.indexers)),
 
+    http.get('/api/indexers/catalog', () => {
+      return sendSuccess(dataset.indexers.map(indexer => ({
+        id: `cardigann-${indexer.id}`,
+        name: indexer.name,
+        implementation: indexer.implementation,
+        configContract: indexer.configContract,
+        protocol: indexer.protocol,
+        description: `${indexer.name} indexer for ${indexer.protocol}`,
+        known: true,
+      })));
+    }),
+
+    http.get('/api/indexers/detect', () => {
+      return sendSuccess([
+        { name: 'Prowlarr', url: 'http://localhost:9696', apikey: 'detected-key', implementation: 'Torznab' },
+      ]);
+    }),
+
+    http.get('/api/indexers/schema/:configContract', ({ params }) => {
+      return sendSuccess({
+        configContract: params.configContract,
+        fields: [
+          { name: 'url', label: 'URL', type: 'string', required: true },
+          { name: 'apiKey', label: 'API Key', type: 'string', required: true },
+        ],
+      });
+    }),
+
     http.post('/api/indexers', async ({ request }) => {
       const body = (await request.json()) as Partial<MockIndexer>;
       const created: MockIndexer = {
@@ -414,6 +554,53 @@ export function createHandlers(mode: FactoryMode = 'deterministic') {
         },
         healthSnapshot: null,
       });
+    }),
+
+    http.post('/api/indexers/:id/clone', ({ params }) => {
+      const id = Number(params.id);
+      const found = dataset.indexers.find(item => item.id === id);
+      if (!found) {
+        return sendError('NOT_FOUND', `Indexer ${id} not found`, 404);
+      }
+
+      const cloned: MockIndexer = {
+        ...found,
+        id: dataset.indexers.length + 10,
+        name: `${found.name} (Copy)`,
+      };
+      dataset.indexers.unshift(cloned);
+      return sendSuccess(cloned, 201);
+    }),
+
+    http.post('/api/indexers/catalog/:id/add', ({ params }) => {
+      const created: MockIndexer = {
+        id: dataset.indexers.length + 10,
+        name: `Catalog Indexer ${params.id}`,
+        implementation: 'Torznab',
+        configContract: 'TorznabSettings',
+        settings: '{}',
+        protocol: 'torrent',
+        enabled: true,
+        supportsRss: true,
+        supportsSearch: true,
+        priority: 25,
+        health: null,
+      };
+      dataset.indexers.unshift(created);
+      return sendSuccess(created, 201);
+    }),
+
+    http.post('/api/indexers/catalog/reload', () => {
+      return sendSuccess({ reloaded: true });
+    }),
+
+    http.post('/api/indexers/import-from/:type', ({ params }) => {
+      const imported = dataset.indexers.slice(0, 2).map((indexer, i) => ({
+        ...indexer,
+        id: dataset.indexers.length + 20 + i,
+        name: `${indexer.name} (from ${params.type})`,
+      }));
+      return sendSuccess({ imported: imported.length, indexers: imported });
     }),
 
     http.get('/api/subtitles/movie/:id/variants', ({ params }) => {

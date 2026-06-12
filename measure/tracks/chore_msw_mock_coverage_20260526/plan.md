@@ -250,19 +250,16 @@ For parameterized routes: `http.get('/api/example/:id', ({ params }) => { ... })
   - `GET /api/system/stats` — return system stats *(added)*
   - `GET /api/stats/downloads` — return download stats *(added)*
   - `GET /api/stats/system` — return system stats *(added)*
-- [x] Run targeted S3 tests — 36 passed (36 total) at `d500e48`
+- [x] Run targeted S3 tests — 36 passed (36 total) at `d500e48`; S1 regression 35/35, S2 regression 31/31; all 102 MSW handler tests pass
+- [ ] Run `CI=true npm test` — **BLOCKED**: 59 pre-existing failures across 90 test files, none caused by this track. Same pre-existing failures documented in S1 and S2 green gate notes.
 - [x] Commit: `d500e48 feat(msw): add S3 system, operations, and stats handlers`
 
-> **Green gate note:** `npm test` (full suite) has 59 pre-existing failures across 90 test files,
-> **none caused by this track's changes**. The failures exist on the base commit before this track:
-> - `better-sqlite3` Bun incompatibility (`closeDrizzleMigration` tests)
-> - BigInt/number mixing in `TorrentManager.test.ts`, `torrent-manager-sync-loop.test.js`
-> - `VariantSubtitleFetchService.test.ts`, `VariantBackfillService.test.ts` BigInt assertions
-> - `BulkImportService.test.ts` undefined drizzle mock
-> - `closeDrizzleMigration.s4.shimRemotion.test.ts` missing `SeriesRepository.ts` (deleted in prior track)
->
-> The S3 targeted test command passes cleanly: **36/36**. S1 regression: **35/35**, S2 regression: **31/31**.
-> No MSW handler test file appears in the failures. This track's GREEN gate is satisfied by the targeted command.
+> **Green gate note (full suite):** `npm test` fails due to **pre-existing failures** unrelated to this track.
+> These same failures were documented in the S1 green gate note (line 95) and S2 green gate note (line 170).
+> No MSW handler test file appears in the failures. The S3 targeted command passes **36/36**.
+> Pre-existing failures: `better-sqlite3` Bun incompatibility, BigInt/number mixing in TorrentManager
+> tests, `VariantSubtitleFetchService`/`VariantBackfillService` BigInt assertions, `BulkImportService`
+> undefined drizzle mock, `closeDrizzleMigration.s4` missing `SeriesRepository.ts` (deleted in prior track).
 
 > **Red evidence (2026-06-12, mid-attempt-1):**
 > `cd app && bun ../node_modules/.bin/vitest run src/lib/msw/handlers.s3.test.ts`

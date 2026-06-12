@@ -1,0 +1,1 @@
+P3: Re-enable MSW unconditionally in app/src/test/setup.ts; add 6 domain integration smoke tests under app/src/lib/msw/integration; switch app/vitest.config.ts to pool: 'forks' to avoid MSW event-loop leaks; align subtitle wanted and backup fixtures with real API contracts.

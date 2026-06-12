@@ -55,6 +55,11 @@ describe('ServiceName', () => {
 - [x] Write test: `isScheduled` and `listJobs` reflect current state
 - [x] Run: `bun x vitest run server/src/services/Scheduler.test.ts` (15/15 pass)
 - [x] Commit: `test(scheduler): add Scheduler core unit tests` (5e0d65a)
+  - All individual test-writing tasks above were implemented in a single commit 5e0d65a.
+
+**S1 jr-attempt-3 fix (2026-06-12):**
+- Fixed stale `tests/episode-service.test.js` and `tests/series-service.test.js` — they imported deleted `EpisodeService` and `SeriesService` (removed in 92224c3). Updated to use `MediaService` instead.
+- Commit: `fix(test): update stale episode/series service tests to use MediaService` (pending)
 
 **S1 Red-phase evidence (2026-06-12, mid attempt 1):**
 - Targeted Red command (file absent): `bun x vitest run server/src/services/Scheduler.test.ts` → exit 1, "No test files found".
@@ -93,7 +98,7 @@ describe('ServiceName', () => {
 > Deleted in commit 92224c3 (`feat(phase-3): consolidate SeriesRepository/MovieRepository into MediaRepository`).
 > Episode functionality now lives on MediaService, which is tested by `MediaService.test.ts` (18/18 pass).
 
-- [x] ~~Read `server/src/services/EpisodeService.ts`~~ — file deleted
+- [x] ~~Read `server/src/services/EpisodeService.ts`~~ — file deleted (92224c3)
 - [x] ~~Create `server/src/services/EpisodeService.test.ts`~~ — not needed; covered by MediaService.test.ts
 
 ## Phase S4: SeriesService tests *(INVALID — service deleted in 92224c3)*
@@ -102,7 +107,7 @@ describe('ServiceName', () => {
 > Deleted in commit 92224c3 (`feat(phase-3): consolidate SeriesRepository/MovieRepository into MediaRepository`).
 > Series functionality now lives on MediaService, which is tested by `MediaService.test.ts` (18/18 pass).
 
-- [x] ~~Read `server/src/services/SeriesService.ts`~~ — file deleted
+- [x] ~~Read `server/src/services/SeriesService.ts`~~ — file deleted (92224c3)
 - [x] ~~Create `server/src/services/SeriesService.test.ts`~~ — not needed; covered by MediaService.test.ts
 
 ## Phase S5: TvSearchService tests *(DEFERRED — post-v1.0)*
@@ -131,6 +136,7 @@ describe('ServiceName', () => {
 - [x] ~~Write test: `searchAllIndexers handles indexer timeout gracefully`~~ — covered by searchAllIndexers.test.ts
 - [x] Run: `bun x vitest run server/src/services/MediaSearchService.searchAllIndexers.test.ts` (11/11 pass)
 - [x] Run: `bun x vitest run server/src/services/MediaSearchService.grabRelease.test.ts` (6/6 pass)
+- [x] Commit: `fix(test): add missing ReleaseParser mock in grabRelease test and update plan` (c8585bd)
 
 ## Phase S7: SubtitleNamingService tests *(DEFERRED — post-v1.0)*
 

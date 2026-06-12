@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { SeriesService } from '../server/src/services/SeriesService';
+import { MediaService } from '../server/src/services/MediaService';
 
-describe('SeriesService', () => {
+describe('SeriesService (via MediaService.setMonitored)', () => {
   let service;
   let prisma;
 
@@ -15,7 +15,7 @@ describe('SeriesService', () => {
         delete: vi.fn(),
       },
     };
-    service = new SeriesService(prisma);
+    service = new MediaService(prisma);
   });
 
   it('should toggle monitoring for a series', async () => {

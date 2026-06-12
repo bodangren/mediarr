@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { EpisodeService } from '../server/src/services/EpisodeService';
+import { MediaService } from '../server/src/services/MediaService';
 
-describe('EpisodeService', () => {
+describe('EpisodeService (via MediaService.setEpisodeMonitored)', () => {
   let service;
   let prisma;
 
@@ -12,13 +12,13 @@ describe('EpisodeService', () => {
         update: vi.fn(),
       },
     };
-    service = new EpisodeService(prisma);
+    service = new MediaService(prisma);
   });
 
   it('should toggle monitoring for an episode', async () => {
     prisma.episode.update.mockResolvedValue({ id: 101, monitored: true });
 
-    const result = await service.setMonitored(101, true);
+    const result = await service.setEpisodeMonitored(101, true);
     
     expect(prisma.episode.update).toHaveBeenCalledWith({
       where: { id: 101 },

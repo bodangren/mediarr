@@ -23,40 +23,48 @@ For parameterized routes: `http.get('/api/example/:id', ({ params }) => { ... })
 
 ## Phase S1: Core domain MSW handlers
 
-- [ ] Read `app/src/lib/msw/handlers.ts` to understand current structure
-- [ ] Add handlers for movie routes:
-  - `GET /api/movies` — return mock movie list
-  - `GET /api/movies/:id` — return single mock movie
-  - `POST /api/movies` — return created movie
-  - `PUT /api/movies/:id` — return updated movie
-  - `DELETE /api/movies/:id` — return 200
-  - `PATCH /api/movies/:id/monitored` — return updated monitored state
-  - `GET /api/movies/missing` — return missing movies list
-  - `GET /api/movies/root-folders` — return root folders
-  - `POST /api/movies/import/scan` — return scan results
-  - `POST /api/movies/import/apply` — return import results
-  - `PUT /api/movies/bulk` — return bulk update result
-- [ ] Add handlers for series routes:
-  - `GET /api/series` — return mock series list
-  - `GET /api/series/:id` — return single mock series
-  - `DELETE /api/series/:id` — return 200
-  - `PATCH /api/series/:id/monitored` — return updated
-  - `GET /api/series/root-folders` — return root folders
-  - `GET /api/episodes/missing` — return missing episodes
-  - `POST /api/series/import/scan` — return scan results
-  - `POST /api/series/import/apply` — return import results
-  - `PUT /api/series/bulk` — return bulk update result
-- [ ] Add handlers for indexer routes (some already exist, add missing):
-  - `GET /api/indexers/catalog` — return catalog entries
-  - `GET /api/indexers/detect` — return detected services
-  - `GET /api/indexers/schema/:configContract` — return schema fields
-  - `POST /api/indexers/test` — return test result
-  - `POST /api/indexers/:id/test` — return test result
-  - `POST /api/indexers/:id/clone` — return cloned indexer
-  - `POST /api/indexers/catalog/:id/add` — return added indexer
-  - `POST /api/indexers/catalog/reload` — return 200
-  - `POST /api/indexers/import-from/:type` — return import result
-- [ ] Run `CI=true npm test` — expect GREEN (no regressions from new handlers)
+> **Red-phase status (2026-06-12, mid-attempt-2):** 18 missing endpoints identified via
+> `build-graph search /api/... --type=route`. Failing tests for the gaps live in
+> `app/src/lib/msw/handlers.s1.test.ts`. Run only the new test file with:
+> `npx vitest run --config app/vitest.config.ts app/src/lib/msw/handlers.s1.test.ts`
+> The full `CI=true npm test --workspace=app` suite times out at 900s (12+ min)
+> due to pre-existing failures in unrelated suites — do NOT run the full suite
+> in the Red phase.
+
+- [x] Read `app/src/lib/msw/handlers.ts` to understand current structure
+- [~] Add handlers for movie routes:
+  - `GET /api/movies` — return mock movie list *(exists)*
+  - `GET /api/movies/:id` — return single mock movie *(exists)*
+  - `POST /api/movies` — return created movie *(MISSING — Red test in handlers.s1.test.ts)*
+  - `PUT /api/movies/:id` — return updated movie *(MISSING)*
+  - `DELETE /api/movies/:id` — return 200 *(exists)*
+  - `PATCH /api/movies/:id/monitored` — return updated monitored state *(exists)*
+  - `GET /api/movies/missing` — return missing movies list *(exists)*
+  - `GET /api/movies/root-folders` — return root folders *(MISSING)*
+  - `POST /api/movies/import/scan` — return scan results *(MISSING)*
+  - `POST /api/movies/import/apply` — return import results *(MISSING)*
+  - `PUT /api/movies/bulk` — return bulk update result *(MISSING)*
+- [~] Add handlers for series routes:
+  - `GET /api/series` — return mock series list *(exists)*
+  - `GET /api/series/:id` — return single mock series *(exists)*
+  - `DELETE /api/series/:id` — return 200 *(exists)*
+  - `PATCH /api/series/:id/monitored` — return updated *(exists)*
+  - `GET /api/series/root-folders` — return root folders *(MISSING)*
+  - `GET /api/episodes/missing` — return missing episodes *(MISSING)*
+  - `POST /api/series/import/scan` — return scan results *(MISSING)*
+  - `POST /api/series/import/apply` — return import results *(MISSING)*
+  - `PUT /api/series/bulk` — return bulk update result *(MISSING)*
+- [~] Add handlers for indexer routes (some already exist, add missing):
+  - `GET /api/indexers/catalog` — return catalog entries *(MISSING)*
+  - `GET /api/indexers/detect` — return detected services *(MISSING)*
+  - `GET /api/indexers/schema/:configContract` — return schema fields *(MISSING)*
+  - `POST /api/indexers/test` — return test result *(exists)*
+  - `POST /api/indexers/:id/test` — return test result *(exists)*
+  - `POST /api/indexers/:id/clone` — return cloned indexer *(MISSING)*
+  - `POST /api/indexers/catalog/:id/add` — return added indexer *(MISSING)*
+  - `POST /api/indexers/catalog/reload` — return 200 *(MISSING)*
+  - `POST /api/indexers/import-from/:type` — return import result *(MISSING)*
+- [ ] Run `npx vitest run --config app/vitest.config.ts app/src/lib/msw/handlers.s1.test.ts` — expect RED for 18 missing handlers, GREEN for the 9 that exist
 - [ ] Commit: `test(msw): add core domain MSW handlers (movies, series, indexers)`
 
 ## Phase S2: Settings & config MSW handlers

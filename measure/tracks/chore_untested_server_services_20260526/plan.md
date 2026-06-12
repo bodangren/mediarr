@@ -75,18 +75,50 @@ describe('ServiceName', () => {
 
 ## Phase S2: SettingsService tests *(DEFERRED — post-v1.0)*
 
-- [ ] Read `server/src/services/SettingsService.ts` to understand its interface
-- [ ] Create `server/src/services/SettingsService.test.ts`
-- [ ] Write test: `getSettings returns settings from repository`
+> **S2 block (2026-06-12, mid attempt):** This phase is entirely deferred per the track scope
+> note at the top of `plan.md` ("Do not start deferred phases as part of this track") and per
+> `test-strategy.md` §0 ("S2/S5/S7–S10 are DEFERRED — out of strategy"). MID owns the Red phase
+> for every currently incomplete **non-deferred** task in this phase; all six S2 tasks above
+> are deferred, so there are zero non-deferred tasks to action. **No test file created, no
+> commit, no Red command run for S2 in this attempt.**
+>
+> Build-graph context captured so the unblock attempt (post-v1.0) starts from a known baseline:
+> - `build-graph stats ./graph.db` (graph.db mtime 2026-06-12 17:29, 7,310 nodes, 10,725 edges,
+>   852 files — matches the snapshot in `test-strategy.md` §0).
+> - `build-graph search ./graph.db "SettingsService"` resolves the class
+>   `class:server/src/services/SettingsService.ts:SettingsService` (1 row). The class is not
+>   imported by name elsewhere in the graph; it is reached by callers through DI (constructor
+>   injection of an instance), which is why no `imports` edges land on the class symbol.
+> - Eight test-suite call sites wire a `createSettingsServiceMock` / `makeSettingsService` factory
+>   (calendar, dashboard, downloadClient, mediaSettings, operations.settings, system,
+>   CollectionService.link, mediaRoutes.rootFolder) — all under `*.test.ts` and route-tier, not
+>   service-tier. **This is consistent with the post-92224c3 service tier test gap and is the
+>   gap S2 is meant to close once unblocked.**
+> - S2 will require its own `vi.hoisted` + `vi.mock` factory for `AppSettingsRepository` (mock
+>   only the methods S2 actually invokes: `getSettings`, `update`) per the §2 mock pattern in
+>   `test-strategy.md`. Do not reuse the route-tier `createSettingsServiceMock` factories — they
+>   return a partial-mock shape designed for HTTP wiring, not service-tier DI.
+>
+> Worktree at MID start had two unrelated dirty paths (pre-existing):
+> - `M conductor/archive/cardigann_runtime_parity_20260223/artifacts/final-phase5-compatibility-matrix.json`
+>   — `generatedAt` timestamp bump in an archived-track artifact (matches the S1 cleanup note
+>   2026-06-12).
+> - `M measure/automation-supervisor.py` — out of MID's Red-phase scope per gate policy
+>   (lives under `measure/`, exempt).
+> Both preserved untouched in this attempt.
+
+- [~] Read `server/src/services/SettingsService.ts` to understand its interface
+- [~] Create `server/src/services/SettingsService.test.ts`
+- [~] Write test: `getSettings returns settings from repository`
   - Mock `AppSettingsRepository.getSettings` to return a settings object
   - Assert returned value matches
-- [ ] Write test: `updateSettings merges partial payload with existing`
+- [~] Write test: `updateSettings merges partial payload with existing`
   - Mock `getSettings` to return existing, call `updateSettings({ host: 'new-host' })`
   - Assert `repository.update` called with merged object
-- [ ] Write test: `updateSettings with empty object does not modify existing`
+- [~] Write test: `updateSettings with empty object does not modify existing`
   - Call `updateSettings({})`
   - Assert repository called with original settings
-- [ ] Write test: `propagates repository errors`
+- [~] Write test: `propagates repository errors`
   - Mock to throw
   - Assert `rejects.toThrow()`
 - [ ] Run: `npx vitest run server/src/services/SettingsService.test.ts`

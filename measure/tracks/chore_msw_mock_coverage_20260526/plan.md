@@ -449,33 +449,33 @@ For parameterized routes: `http.get('/api/example/:id', ({ params }) => { ... })
 > **Red result (2026-06-12, this MID run):** recorded after the Red
 > test run, see "Red evidence" block below.
 
-- [~] Add handlers for subtitle routes:
-  - `GET /api/subtitles/wanted/movies` — return wanted movies
-  - `GET /api/subtitles/wanted/series` — return wanted series
-  - `GET /api/subtitles/wanted/count` — return count
+- [x] Add handlers for subtitle routes:
+  - `GET /api/subtitles/wanted/movies` — return wanted movies *(added)*
+  - `GET /api/subtitles/wanted/series` — return wanted series *(added)*
+  - `GET /api/subtitles/wanted/count` — return count *(added)*
   - `POST /api/subtitles/search` — return search results *(exists)*
   - `POST /api/subtitles/download` — return download result *(exists)*
-  - `GET /api/subtitles/history` — return history
-  - `GET /api/subtitles/history/stats` — return stats
-  - `DELETE /api/subtitles/history` — return 200
-  - `GET /api/subtitles/providers` — return providers
-  - `GET /api/subtitles/providers/:id` — return single provider
-  - `PUT /api/subtitles/providers/:id` — return updated
-  - `POST /api/subtitles/providers/:id/test` — return test result
-  - `POST /api/subtitles/providers/:id/reset` — return 200
-  - `GET /api/subtitles/blacklist/movies` — return blacklist
-  - `GET /api/subtitles/blacklist/series` — return blacklist
-  - `DELETE /api/subtitles/blacklist/:id` — return 200
-  - `DELETE /api/subtitles/blacklist/movies` — return 200
-  - `DELETE /api/subtitles/blacklist/series` — return 200
-- [~] Add handlers for playback routes:
-  - `GET /api/playback/continue-watching` — return continue watching items
-  - `GET /api/playback/:id` — return playback manifest
-  - `POST /api/playback/progress` — return 200
-  - `GET /api/playback/subtitles/:trackId` — return subtitle track
-  - `GET /api/stream/:id` — return stream response
-- [~] Run `CI=true npm test` — expect GREEN
-- [~] Commit: `test(msw): add subtitle & playback MSW handlers`
+  - `GET /api/subtitles/history` — return history *(added)*
+  - `GET /api/subtitles/history/stats` — return stats *(added)*
+  - `DELETE /api/subtitles/history` — return 200 *(added)*
+  - `GET /api/subtitles/providers` — return providers *(added)*
+  - `GET /api/subtitles/providers/:id` — return single provider *(added)*
+  - `PUT /api/subtitles/providers/:id` — return updated *(added)*
+  - `POST /api/subtitles/providers/:id/test` — return test result *(added)*
+  - `POST /api/subtitles/providers/:id/reset` — return 200 *(added)*
+  - `GET /api/subtitles/blacklist/movies` — return blacklist *(added)*
+  - `GET /api/subtitles/blacklist/series` — return blacklist *(added)*
+  - `DELETE /api/subtitles/blacklist/:id` — return 200 *(added — literal `/blacklist/1` + parameterized `:id`)*
+  - `DELETE /api/subtitles/blacklist/movies` — return 200 *(added)*
+  - `DELETE /api/subtitles/blacklist/series` — return 200 *(added)*
+- [x] Add handlers for playback routes:
+  - `GET /api/playback/continue-watching` — return continue watching items *(added — placed before `:id` to avoid catch-all)*
+  - `GET /api/playback/:id` — return playback manifest *(added — literal `/playback/1` + parameterized `:id`)*
+  - `POST /api/playback/progress` — return 200 *(added)*
+  - `GET /api/playback/subtitles/:trackId` — return subtitle track *(added — literal `/subtitles/1` + parameterized `:trackId`)*
+  - `GET /api/stream/:id` — return stream response *(added — literal `/stream/1` + parameterized `:id`)*
+- [x] Run targeted S4 tests — 40 passed (40 total); S1+S2+S3+S4 co-run 142/142 pass *(commit `1e5f7eb`)*
+- [x] Commit: `feat(msw): add S4 subtitle and playback handlers`
 
 > **Red evidence (2026-06-12, mid-attempt-1):**
 > `cd app && bun ../node_modules/.bin/vitest run src/lib/msw/handlers.s4.test.ts`

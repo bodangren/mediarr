@@ -29,7 +29,7 @@ visual review; it does not replace automated browser tests.
 | Green implementation | `JR_MODEL` | `xiaomi/mimo-v2.5-pro` |
 | Phase acceptance | `PHASE_ACCEPTANCE_MODEL` | `opencode-go/qwen3.7-plus` |
 | Adversarial testing | `ADVERSARIAL_MODEL` | `vocengine-coding/ark-code-latest` |
-| UI/UX | `UX_MODEL` | `kimi-for-coding/k2p6` |
+| UI/UX | `UX_MODEL` | `kimi-for-coding/k2p7` |
 | Final acceptance | `ACCEPTANCE_MODEL` | `vocengine-coding/glm-5.1` |
 | Closeout | `CLOSEOUT_MODEL` | `minimax-cn-coding-plan/MiniMax-M3` |
 

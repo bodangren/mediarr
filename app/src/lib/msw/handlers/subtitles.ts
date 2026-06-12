@@ -7,7 +7,7 @@ import {
   createMockSubtitleProvider,
   type FactoryMode,
 } from '../factories';
-import { sendSuccess } from './helpers';
+import { numberQuery, sendPaginated, sendSuccess } from './helpers';
 
 export function createSubtitleHandlers(mode: FactoryMode = 'deterministic') {
   const dataset = createMockDataset(mode);
@@ -29,26 +29,40 @@ export function createSubtitleHandlers(mode: FactoryMode = 'deterministic') {
       return sendSuccess({ storedPath: '/tmp/subtitle.srt' });
     }),
 
-    http.get('/api/subtitles/wanted/movies', () => {
-      return sendSuccess(dataset.movies.filter(m => m.fileVariants.length === 0).map(m => ({
-        id: m.id,
-        tmdbId: m.tmdbId,
-        title: m.title,
+    http.get('/api/subtitles/wanted/movies', ({ request }) => {
+      const url = new URL(request.url);
+      const items = dataset.movies.filter(m => m.fileVariants.length === 0).map((m, index) => ({
+        movieId: m.id,
+        movieTitle: m.title,
         year: m.year,
-        monitored: m.monitored,
-      })));
+        missingLanguages: ['en'],
+        lastSearch: index % 2 === 0 ? '2026-06-12T00:00:00.000Z' : undefined,
+      }));
+      return sendPaginated(items, numberQuery(url, 'page', 1), numberQuery(url, 'pageSize', 25));
     }),
 
-    http.get('/api/subtitles/wanted/series', () => {
-      return sendSuccess(dataset.series.filter(s =>
+    http.get('/api/subtitles/wanted/series', ({ request }) => {
+      const url = new URL(request.url);
+      const seriesWithMissing = dataset.series.filter(s =>
         s.seasons.some(season => season.episodes.some(e => e.path === null)),
-      ).map(s => ({
-        id: s.id,
-        tvdbId: s.tvdbId,
-        title: s.title,
-        year: s.year,
-        monitored: s.monitored,
-      })));
+      );
+      const items = seriesWithMissing.flatMap((s, sIndex) =>
+        s.seasons.flatMap(season =>
+          season.episodes
+            .filter(e => e.path === null)
+            .map((e, eIndex) => ({
+              seriesId: s.id,
+              seriesTitle: s.title,
+              seasonNumber: e.seasonNumber,
+              episodeNumber: e.episodeNumber,
+              episodeId: e.id,
+              episodeTitle: e.title,
+              missingLanguages: ['en'],
+              lastSearch: (sIndex + eIndex) % 2 === 0 ? '2026-06-12T00:00:00.000Z' : undefined,
+            })),
+        ),
+      );
+      return sendPaginated(items, numberQuery(url, 'page', 1), numberQuery(url, 'pageSize', 25));
     }),
 
     http.get('/api/subtitles/wanted/count', () => {

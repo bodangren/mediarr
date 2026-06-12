@@ -15,5 +15,10 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+    // MSW's setupServer can hang or leak event-loop handles with the default
+    // 'threads' pool when many test files load it. 'forks' isolates MSW's
+    // interceptor per worker and keeps the suite reliable now that MSW is
+    // unconditionally wired in setup.ts.
+    pool: 'forks',
   },
 });

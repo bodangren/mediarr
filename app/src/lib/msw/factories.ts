@@ -149,6 +149,8 @@ function buildSeries(rng: () => number, index: number): MockSeries {
     year: 2018 + (index % 7),
     status: rng() > 0.5 ? 'continuing' : 'ended',
     monitored: rng() > 0.2,
+    qualityProfileId: (index % 2) + 1,
+    added: new Date(REFERENCE_DATE.getTime() - index * 86_400_000).toISOString(),
     seasons,
   };
 }
@@ -296,24 +298,29 @@ const REFERENCE_DATE = new Date('2026-06-12T00:00:00.000Z');
 export interface MockBackup {
   id: number;
   name: string;
+  path: string;
   size: number;
-  createdAt: string;
+  created: string;
+  type: 'manual' | 'scheduled';
 }
 
 export interface MockBackupSchedule {
   enabled: boolean;
   interval: string;
   retentionDays: number;
-  lastRun: string | null;
-  nextRun: string;
+  lastBackup: string | null;
+  nextBackup: string;
 }
 
 export function createMockBackup(id: number, overrides?: Partial<MockBackup>): MockBackup {
+  const name = `backup-${REFERENCE_DATE.toISOString().slice(0, 10)}-${id}.db`;
   return {
     id,
-    name: `backup-${REFERENCE_DATE.toISOString().slice(0, 10)}-${id}.db`,
+    name,
+    path: `/data/backups/${name}`,
     size: 1_048_576,
-    createdAt: new Date(REFERENCE_DATE.getTime() - (id - 1) * 86_400_000).toISOString(),
+    created: new Date(REFERENCE_DATE.getTime() - (id - 1) * 86_400_000).toISOString(),
+    type: id === 1 ? 'scheduled' : 'manual',
     ...overrides,
   };
 }
@@ -323,8 +330,8 @@ export function createMockBackupSchedule(overrides?: Partial<MockBackupSchedule>
     enabled: true,
     interval: 'daily',
     retentionDays: 30,
-    lastRun: null,
-    nextRun: new Date(REFERENCE_DATE.getTime() + 86_400_000).toISOString(),
+    lastBackup: null,
+    nextBackup: new Date(REFERENCE_DATE.getTime() + 86_400_000).toISOString(),
     ...overrides,
   };
 }

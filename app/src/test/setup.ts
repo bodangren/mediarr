@@ -3,14 +3,12 @@ import '@testing-library/jest-dom/vitest';
 import { afterAll, afterEach, beforeAll } from 'vitest';
 import { server } from '@/lib/msw/server';
 
-// MSW is only wired when explicitly requested. The default Vitest pool can hang
-// when setupServer is loaded for every test file; gating the lifecycle hooks keeps
-// `npx vitest run` fast until integration tests opt-in (see P3).
-if (process.env.VITEST_MSW_ENABLED === 'true') {
-  beforeAll(() => { server.listen({ onUnhandledRequest: 'error' }); });
-  afterEach(() => { server.resetHandlers(); });
-  afterAll(() => { server.close(); });
-}
+// MSW intercepts all real fetch calls in tests. The setup hook is unconditional now
+// that real integration tests consume the handlers. If the default pool hangs, the
+// project switches to pool: 'forks' in app/vitest.config.ts (documented in P3).
+beforeAll(() => { server.listen({ onUnhandledRequest: 'error' }); });
+afterEach(() => { server.resetHandlers(); });
+afterAll(() => { server.close(); });
 
 // Polyfill for PointerEvent and pointer capture methods which are missing in JSDOM
 // but required by Radix UI (shadcn) components.

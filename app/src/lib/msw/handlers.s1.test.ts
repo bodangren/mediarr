@@ -1,82 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { createHandlers } from './handlers';
-
-type Method = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
-
-interface RouteExpectation {
-  method: Method;
-  url: string;
-  /** When true, also assert the handler produces a non-error response body. */
-  expectEnvelope?: boolean;
-}
-
-async function findHandler(
-  method: Method,
-  url: string,
-): Promise<{ handler: { test: (args: { request: Request }) => Promise<boolean> }; path: string } | undefined> {
-  const handlers = createHandlers('deterministic');
-  const request = new Request(url, { method });
-  // MSW stores handler paths as relative strings (e.g. "/api/movies"). To match them
-  // against a full Request URL we must pass a baseUrl in the resolutionContext; without
-  // it, matchRequestUrl treats the relative path as a full URL and never matches.
-  const resolutionContext = { baseUrl: new URL(url).origin };
-  for (const handler of handlers) {
-    const info = handler.info as { method: string; path: string };
-    if (info.method !== method) continue;
-    const matches = await handler.test({ request, resolutionContext });
-    if (!matches) continue;
-    if (!isSpecificMatch(info.path, new URL(url).pathname)) continue;
-    return {
-      handler: handler as unknown as { test: (args: { request: Request }) => Promise<boolean> },
-      path: info.path,
-    };
-  }
-  return undefined;
-}
-
-async function runHandler(method: Method, url: string, body?: unknown): Promise<Response> {
-  const handlers = createHandlers('deterministic');
-  const request = new Request(url, {
-    method,
-    headers: body ? { 'content-type': 'application/json' } : undefined,
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  const resolutionContext = { baseUrl: new URL(url).origin };
-  for (const handler of handlers) {
-    const info = handler.info as { method: string; path: string };
-    if (info.method !== method) continue;
-    const matches = await handler.test({ request, resolutionContext });
-    if (!matches) continue;
-    if (!isSpecificMatch(info.path, new URL(url).pathname)) continue;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const result = await (handler as any).run({ request, requestId: `red-${method}-${url}`, resolutionContext });
-    if (result?.response) {
-      return result.response as Response;
-    }
-  }
-  throw new Error(`No matching handler for ${method} ${url}`);
-}
-
-/**
- * Returns true when `handlerPath` is the most specific pattern that subsumes `requestPath`.
- * Rejects looser matches like `/api/movies/:id` for `/api/movies/root-folders` (the
- * requested literal `root-folders` would be subsumed by `:id`, but the spec for Phase S1
- * requires a *dedicated* handler for `root-folders`).
- */
-function isSpecificMatch(handlerPath: string, requestPath: string): boolean {
-  if (handlerPath === requestPath) return true;
-  const handlerSegments = handlerPath.split('/');
-  const requestSegments = requestPath.split('/');
-  if (handlerSegments.length !== requestSegments.length) return false;
-  for (let i = 0; i < handlerSegments.length; i++) {
-    const h = handlerSegments[i];
-    const r = requestSegments[i];
-    if (h === r) continue;
-    if (h?.startsWith(':')) continue;
-    return false;
-  }
-  return true;
-}
+import {
+  findHandler,
+  isSpecificMatch,
+  runHandler,
+  type Method,
+  type RouteExpectation,
+} from './handlers.test-helpers';
 
 const MOVIE_ROUTES: RouteExpectation[] = [
   { method: 'GET', url: 'http://localhost/api/movies' },

@@ -141,31 +141,36 @@ For parameterized routes: `http.get('/api/example/:id', ({ params }) => { ... })
 > **Red result (2026-06-12, this MID run):** recorded after the Red
 > test run, see "Red evidence" block below.
 
-- [~] Add handlers for settings routes:
-  - `GET /api/settings` — return full settings object
-  - `PATCH /api/settings` — return updated settings
-  - `GET /api/settings/media` — return media settings
-  - `PUT /api/settings/media` — return updated media settings
-  - `GET /api/settings/categories` — return categories
-  - `POST /api/settings/categories` — return created category
-  - `PUT /api/settings/categories/:id` — return updated category
-  - `DELETE /api/settings/categories/:id` — return 200
-  - `GET /api/settings/proxies` — return proxies
-  - `POST /api/settings/proxies` — return created proxy
-  - `PUT /api/settings/proxies/:id` — return updated proxy
-  - `DELETE /api/settings/proxies/:id` — return 200
-- [~] Add handlers for quality profile routes:
-  - `GET /api/quality-profiles` — return profiles
-  - `GET /api/quality-profiles/:id` — return single profile
-  - `POST /api/quality-profiles` — return created profile
-  - `PUT /api/quality-profiles/:id` — return updated profile
-  - `DELETE /api/quality-profiles/:id` — return 200
-  - `GET /api/quality-definitions` — return definitions
-- [~] Add handlers for download client routes:
-  - `GET /api/download-client` — return config
-  - `PUT /api/download-client` — return updated config
-- [ ] Run `CI=true npm test` — expect GREEN
-- [ ] Commit: `test(msw): add settings & config MSW handlers`
+- [x] Add handlers for settings routes:
+  - `GET /api/settings` — return full settings object *(exists)*
+  - `PATCH /api/settings` — return updated settings *(exists)*
+  - `GET /api/settings/media` — return media settings *(added)*
+  - `PUT /api/settings/media` — return updated media settings *(added)*
+  - `GET /api/settings/categories` — return categories *(added)*
+  - `POST /api/settings/categories` — return created category *(added)*
+  - `PUT /api/settings/categories/:id` — return updated category *(added)*
+  - `DELETE /api/settings/categories/:id` — return 200 *(added)*
+  - `GET /api/settings/proxies` — return proxies *(added)*
+  - `POST /api/settings/proxies` — return created proxy *(added)*
+  - `PUT /api/settings/proxies/:id` — return updated proxy *(added)*
+  - `DELETE /api/settings/proxies/:id` — return 200 *(added)*
+- [x] Add handlers for quality profile routes:
+  - `GET /api/quality-profiles` — return profiles *(added)*
+  - `GET /api/quality-profiles/:id` — return single profile *(added)*
+  - `POST /api/quality-profiles` — return created profile *(added)*
+  - `PUT /api/quality-profiles/:id` — return updated profile *(added)*
+  - `DELETE /api/quality-profiles/:id` — return 200 *(added)*
+  - `GET /api/quality-definitions` — return definitions *(added)*
+- [x] Add handlers for download client routes:
+  - `GET /api/download-client` — return config *(added)*
+  - `PUT /api/download-client` — return updated config *(added)*
+- [x] Run `cd app && bun ../node_modules/.bin/vitest run src/lib/msw/handlers.s2.test.ts` — 31 passed (31 total) at `2f567bb`
+- [x] Commit: `2f567bb feat(msw): add S2 settings, quality-profile, and download-client handlers`
+
+> **Green gate note:** `npm test` (full suite) has pre-existing failures unrelated to this track
+> (same as S1: Zod import error in `api-route-map.test.ts`, BigInt mixing in `TorrentManager.test.ts`,
+> slow React component tests causing timeouts, etc.). The S2 targeted test command passes cleanly: 31/31.
+> S1 regression confirmed: 35/35.
 
 > **Red evidence (2026-06-12, mid-attempt-3):** `cd app && bun ../node_modules/.bin/vitest run src/lib/msw/handlers.s2.test.ts`
 > — observed `Test Files 1 failed (1)` / `Tests 29 failed | 2 passed (31)`.

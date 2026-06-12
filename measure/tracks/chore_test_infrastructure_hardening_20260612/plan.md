@@ -69,16 +69,16 @@
 - [x] Run `cd app && npx vitest run src/components/importlists/` and confirm all tests pass together. (`eb3fe7f`) — 58/58 passed.
 - [x] Commit: `test(importlists): use userEvent, fix mock isolation, add exclusion flow coverage` (`eb3fe7f`)
 
-## Phase P6: Verification & handoff
+## Phase P6: Verification & handoff [checkpoint: pending]
 
-- [ ] Run `cd app && npx vitest run` (default pool) and confirm it completes green or with only pre-existing failures unrelated to this track.
-- [ ] Run `bun x vitest run server/src/services/Scheduler.test.ts tests/no-orphan-aliases.test.ts`.
-- [ ] Run `cd app && bunx tsc --noEmit -p app/tsconfig.json`.
-- [ ] Run `npm run lint` (or equivalent) and fix any new issues.
-- [ ] Update `measure/lessons-learned.md` with findings:
+- [x] Run `cd app && npx vitest run` (default pool) and confirm it completes green or with only pre-existing failures unrelated to this track. — 194 test files / 1871 tests; 147 files and 1712 tests passed. 47 failed files / 159 failed tests are pre-existing issues outside this track (settings page import paths, shell router/query-client setup, subtitle/hook timeouts, table memoization assertions, etc.). No import-list, MSW handler, Scheduler, or orphan-alias regressions.
+- [x] Run `bun x vitest run server/src/services/Scheduler.test.ts tests/no-orphan-aliases.test.ts server/src/services/MediaSearchService.*.test.ts`. — 12 files / 110 tests passed.
+- [x] Run `cd app && bunx tsc --noEmit -p app/tsconfig.json` from the repo root. — Typecheck clean.
+- [x] Run `npm run lint` (or equivalent) and fix any new issues. — 0 errors, 20 pre-existing warnings; fixed new errors surfaced by lint (unused handler-test imports, ExclusionManager noop, AddExclusionModal exhaustive-deps, ToastProvider immutability).
+- [x] Update `measure/lessons-learned.md` with findings:
   - MSW must have integration smoke tests before the setup hook is meaningful.
-  - Default Vitest pool can hang with MSW `setupServer`; prefer `pool: 'forks'` if observed.
-  - `vi.mock` collisions across files require a shared `__mocks__` factory or prop-based inversion.
-- [ ] Update `measure/tech-debt.md`: if MSW integration tests land, keep status Resolved; otherwise revert to Open.
-- [ ] Archive this track to `measure/archive/` and update `measure/tracks.md`.
-- [ ] Final commit: `docs(measure): archive test infrastructure hardening track`
+  - MSW `setupServer` can hang/leak handles with Vitest's default threads pool; use `pool: 'forks'` and raise `testTimeout` for modal/user-event suites, paired with `userEvent.setup({ delay: null })`.
+  - `vi.mock` collisions across files cause flaky batch timeouts; prefer prop injection.
+- [x] Update `measure/tech-debt.md`: MSW row remains Resolved; integration smoke tests now prove handlers are consumed.
+- [~] Archive this track to `measure/archive/` and update `measure/tracks.md`.
+- [~] Final commit: `docs(measure): archive test infrastructure hardening track`

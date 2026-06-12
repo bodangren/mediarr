@@ -217,6 +217,30 @@ describe('ServiceName', () => {
 > - `M measure/automation-supervisor.py` — out of MID's Red-phase scope per gate policy
 >   (lives under `measure/`; exempt per S1 cleanup note 2026-06-12 and S2 block note 2026-06-12).
 > Both preserved untouched in this attempt, consistent with the S2 block precedent.
+>
+> **S5 repeat (2026-06-12, mid attempt 2):** Re-ran the same graph probes before re-entering the
+> S5 block. State is byte-identical to attempt 1 (f80330f):
+> - `build-graph stats ./graph.db` → 7,310 nodes, 10,725 edges, 852 files (graph.db mtime
+>   2026-06-12 17:29, unchanged; no fresh `build-graph scan` was needed because no source under
+>   `server/src/services/` moved between attempts).
+> - `build-graph search ./graph.db "TvSearchService"` → still 2 rows (class + file), unchanged.
+> - `build-graph inspect ./graph.db TvSearchService` → still 0 outgoing edges, 1 incoming
+>   (`contains` from file), 1 unresolved (`extends → MediaSearchService`).
+> - `build-graph callers ./graph.db TvSearchService` → still `(no results)`.
+> - `wc -l server/src/services/TvSearchService.ts` → still 6 lines; same import + JSDoc +
+>   `export class TvSearchService extends MediaSearchService {}` body.
+> - Sibling file count for `MediaSearchService.*.test.ts` → still 10 files (unchanged from
+>   test-strategy.md §0 and attempt 1).
+> - The two pre-existing dirty paths at MID start (`final-phase5-compatibility-matrix.json`
+>   timestamp, `measure/automation-supervisor.py`) match the S1/S2 precedent verbatim; both
+>   preserved untouched.
+>
+> **No new evidence to add beyond attempt 1.** The two structural risk-flag options
+> (DELETE-and-MIGRATE vs TEST-THE-ALIAS) and the spec-vs-HEAD API mismatch (`searchSeries`
+> does not exist on `MediaSearchService`) stand as written above for the post-v1.0 unblock
+> attempt. **No test file created, no Red command run, no S5 source/test code touched in this
+> attempt.** The only artifact change is this repeat note documenting the re-confirmation
+> baseline.
 
 - [ ] Read `server/src/services/TvSearchService.ts`
 - [ ] Create `server/src/services/TvSearchService.test.ts`

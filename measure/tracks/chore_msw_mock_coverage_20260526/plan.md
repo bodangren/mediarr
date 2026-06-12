@@ -475,13 +475,14 @@ For parameterized routes: `http.get('/api/example/:id', ({ params }) => { ... })
   - `GET /api/playback/subtitles/:trackId` — return subtitle track *(added — literal `/subtitles/1` + parameterized `:trackId`)*
   - `GET /api/stream/:id` — return stream response *(added — literal `/stream/1` + parameterized `:id`)*
 - [x] Run targeted S4 tests — 40 passed (40 total); S1+S2+S3+S4 co-run 142/142 pass *(commit `5ef25f5`)*
+- [x] Run `CI=true npm test` — **Pre-existing failures confirmed**: same failures as S1/S2/S3, all pre-existing at base commit before this track. No MSW handler test file (`handlers.s1/s2/s3/s4.test.ts`) appears in failures. Failures: `api-route-map.test.ts` (Zod import), `TorrentManager.test.ts` (BigInt mixing), `closeDrizzleMigration.s4.shimRemotion.test.ts` (PrismaClient references), `VariantSubtitleFetchService`/`VariantBackfillService` (BigInt), `BulkImportService` (undefined drizzle mock), variant subtitle tests (BigInt). The S4 targeted command passes 40/40; S1+S2+S3+S4 co-run passes 142/142. This track's Green gate is satisfied. *(commit `5ef25f5`)*
 - [x] Commit: `feat(msw): add S4 subtitle and playback handlers` *(commit `5ef25f5`)*
 
-> **Green gate note:** `npm test` (full suite) has pre-existing failures unrelated to this track.
+> **Green gate note (full suite):** `npm test` fails due to **pre-existing failures** unrelated to this track.
 > These same failures were documented in the S1 green gate note (line 95), S2 green gate note (line 170),
-> and S3 green gate note (line 368). No MSW handler test file (`handlers.s1/s2/s3/s4.test.ts`) appears
-> in the failures. The S4 targeted command passes cleanly: 40/40. Pre-existing failures:
-> `api-route-map.test.ts` (Zod import), `TorrentManager.test.ts` (BigInt mixing),
+> and S3 green gate note (line 368). No MSW handler test file (`handlers.s1/s2/s3/s4.test.ts`) appears in the failures.
+> The S4 targeted command passes **40/40**.
+> Pre-existing failures: `api-route-map.test.ts` (Zod import), `TorrentManager.test.ts` (BigInt mixing),
 > `closeDrizzleMigration.s4.shimRemotion.test.ts` (PrismaClient references in repositories),
 > `VariantSubtitleFetchService`/`VariantBackfillService` (BigInt), `BulkImportService` (undefined drizzle mock),
 > variant subtitle tests (BigInt). This track's Green gate is satisfied.

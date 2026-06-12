@@ -241,6 +241,38 @@ describe('ServiceName', () => {
 > attempt. **No test file created, no Red command run, no S5 source/test code touched in this
 > attempt.** The only artifact change is this repeat note documenting the re-confirmation
 > baseline.
+>
+> **S5 new evidence (2026-06-13, mid attempt 3):** The DELETE-and-MIGRATE option (option 1
+> from the attempt 2 risk-flag) was executed externally between attempt 2 and this attempt.
+> Commit `037418f` (2026-06-12 22:32, "fix(services): replace Scheduler nextRun stub, delete
+> orphan aliases, fix orphan guard") deleted `server/src/services/TvSearchService.ts`
+> along with two sibling orphan aliases (`RssTvMonitor.ts`, `SearchAggregationService.ts`),
+> fixed `tests/no-orphan-aliases.test.ts` REPO_ROOT resolution (FR-3.8 guard now actually
+> scans the project root), and migrated `tests/tv-search-service.test.js` to construct
+> `MediaSearchService` directly. Fresh build-graph baseline (graph.db was stale by ~5h
+> relative to the 037418f deletion; rescan 2026-06-13):
+> - `build-graph scan ./ ./graph.db` → 7,489 nodes, 11,007 edges, 877 files.
+> - `build-graph search ./graph.db "TvSearchService"` → `(no results)` (was 2 rows).
+> - `build-graph search ./graph.db "RssTvMonitor"` → `(no results)`.
+> - `build-graph search ./graph.db "SearchAggregationService"` → `(no results)`.
+> - `ls server/src/services/TvSearchService.ts` → `No such file or directory`.
+>
+> **Phase heading and task states unchanged from attempt 2** — the `*(DEFERRED — post-v1.0)*
+> suffix is preserved (supervisor gate looks up the phase by exact heading; renaming to
+> `INVALID` breaks the lookup) and the seven tasks below remain `[ ]` pending. The
+> coverage gap S5 was originally created to close is now closed externally by the
+> 10 sibling `server/src/services/MediaSearchService.*.test.ts` files plus the migrated
+> `tests/tv-search-service.test.js`, but the post-v1.0 unblock attempt should weigh
+> whether to: (a) close S5 as INVALID with a heading rename only after the gate accepts
+> the rename in a separate change, (b) keep the heading `*(DEFERRED — post-v1.0)*` and
+> close the tasks via a `[x] ~~...~~` strikethrough pattern matching S2's completion
+> note style, or (c) leave S5 deferred and let a future track own the formal close.
+>
+> **No test file created, no Red command run, no S5 source/test code touched in this
+> attempt.** The only artifact change is this attempt-3 evidence note appended to the
+> existing S5 block. The previous attempt 3 (commit `c9fdcd7`) renamed the heading to
+> `INVALID` and was rejected by the supervisor gate for breaking the phase lookup; that
+> commit was reset and is not in HEAD.
 
 - [ ] Read `server/src/services/TvSearchService.ts`
 - [ ] Create `server/src/services/TvSearchService.test.ts`

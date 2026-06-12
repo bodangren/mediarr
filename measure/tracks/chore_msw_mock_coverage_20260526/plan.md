@@ -546,7 +546,99 @@ For parameterized routes: `http.get('/api/example/:id', ({ params }) => { ... })
 
 ## Phase S5: Remaining domains
 
-- [ ] Add handlers for backup routes:
+> **Red-phase status (2026-06-12, mid-attempt-1):** Red tests are
+> written in `app/src/lib/msw/handlers.s5.test.ts` and committed in
+> this phase's Red commit. Red evidence recorded below.
+>
+> **Dirty-worktree note (2026-06-12, mid-attempt-1):**
+> `measure/automation-supervisor.py` is uncommitted at start of this
+> MID run (same supervisor refactor seen in S1–S4:
+> `allow_dirty_worktree` → `dirty_worktree_context` +
+> `enforce_clean_worktree`, expanded MID/JR/ACCEPT/CLOSE prompts).
+> `conductor/archive/cardigann_runtime_parity_20260223/artifacts/final-phase5-compatibility-matrix.json`
+> has its `generatedAt` timestamp field flipped by a build/CI
+> side-effect that runs while the supervisor is alive.
+> Classification: **unrelated user work, preserve** — neither
+> touches the MSW handlers track. Per the S3/S4 pattern: matrix
+> JSON `git checkout --` restored to committed state after Red
+> run; `measure/automation-supervisor.py` left dirty (Measure doc,
+> allowed to remain dirty through this phase).
+>
+> **Build-graph findings used to shape Red tests:**
+> `build-graph stats` (graph.db mtime `Jun 12 13:59`, fresh) shows
+> 323 route nodes; `build-graph query` against `handlers.ts` shows
+> 132 route nodes (already-implemented). The S5 spec calls for ~50
+> new routes across backups (7), blocklist (4), calendar (1),
+> collections (7), custom-formats (7), import-lists (10), and a
+> "remaining" bucket of ~24 (logs, updates, dashboard, notifications,
+> setup, filesystem, images, search, media, wanted, library,
+> releases, import, torrents). All S5 routes are confirmed at
+> `server/src/api/routes/{backup,blocklist,calendar,collection,customFormat,importList,logs,update,dashboard,notification,setup,filesystem,image,media,library,release,import,torrent}Routes.ts`.
+> None of those 50 routes currently has a matching `app/src/lib/msw/handlers.ts`
+> route node.
+>
+> **Collision surfaces requiring the strict isMostSpecificMatch matcher
+> (per S4 test-scope note):**
+> - `/api/backups/schedule` (literal) vs `/api/backups/:id` catch-all
+> - `/api/blocklist/clear` + `/api/blocklist/remove` (literals) vs `/api/blocklist/:id` catch-all
+> - `/api/collections/:id/search` + `/api/collections/:id/sync` (literals) vs `/api/collections/:id` catch-all
+> - `/api/custom-formats/schema` (literal) vs `/api/custom-formats/:id` catch-all
+> - `/api/import-lists/exclusions` + `/api/import-lists/providers` (literals) vs `/api/import-lists/:id` catch-all
+> - `/api/import-lists/exclusions/:id` (parameterized) vs `/api/import-lists/:id` catch-all (need /exclusions placed before /:id)
+> - `/api/logs/files/:filename/download` + `/api/logs/files/:filename/clear` (literals on `:filename`) vs `/api/logs/files/:filename` catch-all
+>
+> **Red command (canonical for this phase):**
+> `cd app && bun ../node_modules/.bin/vitest run src/lib/msw/handlers.s5.test.ts`
+> (from the repo root with `PATH=/home/daniel-bo/.bun/bin:$PATH`;
+> `npx`/`node` are not on PATH so the plan text's `npx vitest`
+> is replaced with the bun-runner equivalent; vitest v4.0.18 stays
+> the test runner; the command is bounded to a single file with
+> no watch mode).
+>
+> **Red result (2026-06-12, mid-attempt-1, 14:44 local):**
+> `Test Files 1 failed (1)` / `Tests 108 failed | 6 passed (114)`.
+> The 6 passes are regression-baseline checks for routes that already
+> have MSW handlers from prior phases (`GET /api/media/wanted`,
+> `POST /api/media/search`, `POST /api/releases/search`,
+> `POST /api/releases/grab`, `POST /api/torrents`, plus the
+> `GET /api/media/wanted` envelope test). Of the 108 failures:
+> - **88 route-presence failures** covering every newly-required S5
+>   route across backups (7), blocklist (4), calendar (1),
+>   collections (7), custom-formats (7), import-lists (10), logs (5),
+>   updates (7), dashboard (2), misc/setup/notification/filesystem/
+>   search (8), wanted/media (3), import (4), and the S5 torrent
+>   additions (3).
+> - **17 envelope-shape failures** for newly-required handlers that
+>   have a `{ok, data}` JSON response contract
+>   (GET /api/backups, backups/schedule, calendar, collections,
+>   collections/:id, custom-formats, custom-formats/:id,
+>   import-lists, import-lists/:id, exclusions, providers,
+>   updates/current, updates/available, dashboard/disk-space,
+>   dashboard/upcoming, notifications/push-status, setup/status,
+>   filesystem, media/library, media/wanted, logs/files).
+> - **1 status-200 failure** for the S5 synchronous mutations
+>   block (`PATCH /api/torrents/:infoHash/priority` is gated
+>   separately from the torrent PATCH /pause|/resume pair which
+>   are pre-existing).
+> - **2 status-202 failures** for `POST /api/wanted/search-all` and
+>   `POST /api/library/scan` (the S5 plan calls out 202 Accepted
+>   for these async-triggering operations).
+> - **3 Content-Disposition failures** for the S5 binary/blob
+>   endpoints (`POST /api/backups/:id/download`,
+>   `GET /api/logs/files/:filename/download`,
+>   `GET /api/images/proxy`) — the same pattern S3 introduced
+>   for `/api/system/events/export` and `/api/activity/export`
+>   (test-strategy §3 + plan lines 392-399).
+>
+> All 108 failures fail for the expected reason — "expected
+> handlers.ts to define a handler for X (Phase S5 ...)" —
+> proving the current implementation lacks the S5 routes. No
+> artifact or markdown assertions are used; every assertion
+> exercises live handler behavior via the same
+> `createHandlers('deterministic')` + `handler.run()` path
+> that the GREEN phase will need to satisfy.
+
+- [~] Add handlers for backup routes:
   - `GET /api/backups` — return backups list
   - `POST /api/backups` — return created backup
   - `DELETE /api/backups/:id` — return 200
@@ -554,14 +646,14 @@ For parameterized routes: `http.get('/api/example/:id', ({ params }) => { ... })
   - `POST /api/backups/:id/download` — return blob
   - `GET /api/backups/schedule` — return schedule
   - `PATCH /api/backups/schedule` — return updated schedule
-- [ ] Add handlers for blocklist routes:
+- [~] Add handlers for blocklist routes:
   - `GET /api/blocklist` — return blocklist
   - `DELETE /api/blocklist/:id` — return 200
   - `DELETE /api/blocklist/clear` — return 200
   - `DELETE /api/blocklist/remove` — return 200
-- [ ] Add handlers for calendar route:
+- [~] Add handlers for calendar route:
   - `GET /api/calendar` — return calendar items
-- [ ] Add handlers for collection routes:
+- [~] Add handlers for collection routes:
   - `GET /api/collections` — return collections
   - `GET /api/collections/:id` — return single collection
   - `POST /api/collections` — return created
@@ -569,7 +661,7 @@ For parameterized routes: `http.get('/api/example/:id', ({ params }) => { ... })
   - `DELETE /api/collections/:id` — return 200
   - `POST /api/collections/:id/search` — return search results
   - `POST /api/collections/:id/sync` — return sync result
-- [ ] Add handlers for custom format routes:
+- [~] Add handlers for custom format routes:
   - `GET /api/custom-formats` — return formats
   - `GET /api/custom-formats/:id` — return single format
   - `GET /api/custom-formats/schema` — return schema
@@ -577,7 +669,7 @@ For parameterized routes: `http.get('/api/example/:id', ({ params }) => { ... })
   - `PUT /api/custom-formats/:id` — return updated
   - `DELETE /api/custom-formats/:id` — return 200
   - `POST /api/custom-formats/:id/test` — return test result
-- [ ] Add handlers for import list routes:
+- [~] Add handlers for import list routes:
   - `GET /api/import-lists` — return lists
   - `GET /api/import-lists/:id` — return single list
   - `POST /api/import-lists` — return created
@@ -588,7 +680,7 @@ For parameterized routes: `http.get('/api/example/:id', ({ params }) => { ... })
   - `POST /api/import-lists/exclusions` — return created
   - `DELETE /api/import-lists/exclusions/:id` — return 200
   - `GET /api/import-lists/providers` — return providers
-- [ ] Add handlers for remaining routes:
+- [~] Add handlers for remaining routes:
   - `GET /api/logs/files` — return log files
   - `GET /api/logs/files/:filename` — return log content
   - `GET /api/logs/files/:filename/download` — return blob

@@ -227,6 +227,55 @@ For parameterized routes: `http.get('/api/example/:id', ({ params }) => { ... })
 >
 > **Red result (2026-06-12, this MID run):** recorded after the Red
 > test run, see "Red evidence" block below.
+>
+> **MID verification (attempt-2, 2026-06-12):** This MID run started
+> from a state where the S3 Red phase was already satisfied in
+> mid-attempt-1 (Red commit `61c1116` writes 36 Red tests against 19
+> S3 routes; Green commit `d500e48` adds the matching handlers and
+> all 36 tests pass). Per the user-instruction clause "If the new
+> tests pass at HEAD, tighten the contract until at least one new
+> test fails or mark the task as already satisfied with evidence
+> instead of creating a false Red phase", this run chose the
+> "already satisfied" path: the existing 36 Red tests in
+> `app/src/lib/msw/handlers.s3.test.ts` exercise the exact contract
+> the spec requires (route presence + envelope shape + status code
+> + Content-Disposition) using live `createHandlers('deterministic')`
+> + `handler.run()` calls, and **36/36 pass at HEAD** (`d500e48`).
+> Re-run: `cd app && bun ../node_modules/.bin/vitest run
+> src/lib/msw/handlers.s3.test.ts` → `Test Files 1 passed (1)` /
+> `Tests 36 passed (36)` (re-run at 12:29:22 local, duration 11.36s).
+> S1 + S2 regression co-run: `cd app && bun
+> ../node_modules/.bin/vitest run src/lib/msw/handlers.s1.test.ts
+> src/lib/msw/handlers.s2.test.ts src/lib/msw/handlers.s3.test.ts` →
+> `Test Files 3 passed (3)` / `Tests 102 passed (102)` (102/102
+> across the three MSW handler suites; no regressions).
+> `build-graph query` re-confirmed every S3 server route has a
+> matching `app/src/lib/msw/handlers.ts` route node
+> (`/api/system/status`, `/api/system/events`,
+> `/api/system/events/export`, `DELETE /api/system/events/clear`,
+> `/api/tasks/queued`, `/api/tasks/scheduled`, `/api/tasks/history`,
+> `/api/tasks/history/:id`, `POST /api/tasks/scheduled/:taskId/run`,
+> `DELETE /api/tasks/queued/:taskId`, `GET /api/activity`,
+> `DELETE /api/activity`, `GET /api/activity/export`,
+> `GET /api/health`, `PATCH /api/activity/:id/fail`,
+> `POST /api/activity/:id/retry-import`, `/api/system/stats`,
+> `/api/stats/downloads`, `/api/stats/system`). The contract is
+> already met; writing more tests would be feature creep.
+>
+> **Dirty-worktree note (2026-06-12, mid-attempt-2):** Same two paths
+> uncommitted at start of this MID run as in prior attempts:
+> `measure/automation-supervisor.py` (refactor: `allow_dirty_worktree`
+> → `dirty_worktree_context` + `enforce_clean_worktree`, expanded
+> MID/JR/ACCEPT/CLOSE prompts) and
+> `conductor/archive/cardigann_runtime_parity_20260223/artifacts/final-phase5-compatibility-matrix.json`
+> (its `generatedAt` timestamp field flipped from
+> `2026-06-11T13:44:23.371Z` to `2026-06-12T04:23:31.425Z` by a
+> build/CI side-effect that runs while the supervisor is alive).
+> Classification: **unrelated user work, preserve** — neither
+> touches the MSW handlers track. The supervisor's
+> `dirty_worktree_context()` (in this very uncommitted file) is
+> what reports the state to MID; both paths are expected to remain
+> dirty through this phase.
 
 - [x] Add handlers for system routes: *(commit `d500e48`)*
   - `GET /api/system/status` — return system status *(added)*
@@ -251,6 +300,7 @@ For parameterized routes: `http.get('/api/example/:id', ({ params }) => { ... })
   - `GET /api/stats/downloads` — return download stats *(added)*
   - `GET /api/stats/system` — return system stats *(added)*
 - [x] Run targeted S3 tests — 36 passed (36 total) at `d500e48`; S1 regression 35/35, S2 regression 31/31; all 102 MSW handler tests pass
+- [x] MID attempt-2 verification: re-ran targeted S3 command at HEAD → 36/36 pass; re-ran S1+S2+S3 co-run → 102/102 pass; build-graph query re-confirmed all 19 S3 server routes have matching handlers.ts route nodes; Red phase already satisfied, no new Red-phase work needed
 - [ ] Run `CI=true npm test` — **BLOCKED**: 59 pre-existing failures across 90 test files, none caused by this track. Same pre-existing failures documented in S1 and S2 green gate notes.
 - [x] Commit: `d500e48 feat(msw): add S3 system, operations, and stats handlers`
 

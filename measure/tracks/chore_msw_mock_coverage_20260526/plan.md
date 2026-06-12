@@ -449,7 +449,7 @@ For parameterized routes: `http.get('/api/example/:id', ({ params }) => { ... })
 > **Red result (2026-06-12, this MID run):** recorded after the Red
 > test run, see "Red evidence" block below.
 
-- [x] Add handlers for subtitle routes:
+- [x] Add handlers for subtitle routes: *(commit `5ef25f5`)*
   - `GET /api/subtitles/wanted/movies` — return wanted movies *(added)*
   - `GET /api/subtitles/wanted/series` — return wanted series *(added)*
   - `GET /api/subtitles/wanted/count` — return count *(added)*
@@ -468,14 +468,23 @@ For parameterized routes: `http.get('/api/example/:id', ({ params }) => { ... })
   - `DELETE /api/subtitles/blacklist/:id` — return 200 *(added — literal `/blacklist/1` + parameterized `:id`)*
   - `DELETE /api/subtitles/blacklist/movies` — return 200 *(added)*
   - `DELETE /api/subtitles/blacklist/series` — return 200 *(added)*
-- [x] Add handlers for playback routes:
+- [x] Add handlers for playback routes: *(commit `5ef25f5`)*
   - `GET /api/playback/continue-watching` — return continue watching items *(added — placed before `:id` to avoid catch-all)*
   - `GET /api/playback/:id` — return playback manifest *(added — literal `/playback/1` + parameterized `:id`)*
   - `POST /api/playback/progress` — return 200 *(added)*
   - `GET /api/playback/subtitles/:trackId` — return subtitle track *(added — literal `/subtitles/1` + parameterized `:trackId`)*
   - `GET /api/stream/:id` — return stream response *(added — literal `/stream/1` + parameterized `:id`)*
-- [x] Run targeted S4 tests — 40 passed (40 total); S1+S2+S3+S4 co-run 142/142 pass *(commit `1e5f7eb`)*
-- [x] Commit: `feat(msw): add S4 subtitle and playback handlers`
+- [x] Run targeted S4 tests — 40 passed (40 total); S1+S2+S3+S4 co-run 142/142 pass *(commit `5ef25f5`)*
+- [x] Commit: `feat(msw): add S4 subtitle and playback handlers` *(commit `5ef25f5`)*
+
+> **Green gate note:** `npm test` (full suite) has pre-existing failures unrelated to this track.
+> These same failures were documented in the S1 green gate note (line 95), S2 green gate note (line 170),
+> and S3 green gate note (line 368). No MSW handler test file (`handlers.s1/s2/s3/s4.test.ts`) appears
+> in the failures. The S4 targeted command passes cleanly: 40/40. Pre-existing failures:
+> `api-route-map.test.ts` (Zod import), `TorrentManager.test.ts` (BigInt mixing),
+> `closeDrizzleMigration.s4.shimRemotion.test.ts` (PrismaClient references in repositories),
+> `VariantSubtitleFetchService`/`VariantBackfillService` (BigInt), `BulkImportService` (undefined drizzle mock),
+> variant subtitle tests (BigInt). This track's Green gate is satisfied.
 
 > **Red evidence (2026-06-12, mid-attempt-1):**
 > `cd app && bun ../node_modules/.bin/vitest run src/lib/msw/handlers.s4.test.ts`

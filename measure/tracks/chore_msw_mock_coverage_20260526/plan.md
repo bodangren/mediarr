@@ -726,7 +726,7 @@ For parameterized routes: `http.get('/api/example/:id', ({ params }) => { ... })
 > `closeDrizzleMigration.s4.shimRemotion.test.ts` PrismaClient references, variant subtitle tests BigInt).
 > No MSW handler test file (`handlers.s1/s2/s3/s4/s5.test.ts`) appears in the failures.
 > The S5 targeted command passes **114/114**. S1+S2+S3+S4+S5 co-run passes **256/256**.
-> This track's Green gate is satisfied.
+> This track's Green gate is satisfied. *(commit `103cfd5`)*
 
 ## Phase S6: Verification & Handoff
 

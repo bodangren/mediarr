@@ -192,7 +192,43 @@ For parameterized routes: `http.get('/api/example/:id', ({ params }) => { ... })
 
 ## Phase S3: System & operations MSW handlers
 
-- [ ] Add handlers for system routes:
+> **Red-phase status (2026-06-12, mid-attempt-1):** Red tests are written
+> in `app/src/lib/msw/handlers.s3.test.ts` and committed in this phase's
+> Red commit. Red evidence recorded below.
+>
+> **Dirty-worktree note (2026-06-12, mid-attempt-1):**
+> `measure/automation-supervisor.py` is uncommitted at start of this MID
+> run (same supervisor refactor seen in S1 attempt-2, S2 attempt-3:
+> `allow_dirty_worktree` → `dirty_worktree_context` +
+> `enforce_clean_worktree`, expanded MID/JR/ACCEPT/CLOSE prompts).
+> Classification: **unrelated user work, preserve** — file is under
+> `measure/` (a Measure doc), is allowed to remain dirty, and does not
+> touch the MSW handlers track. Not touched, not folded into this
+> track's Red commit.
+>
+> **Build-graph findings used to shape Red tests:**
+> `build-graph query` confirmed all 19 S3 routes live on the server
+> (`server/src/api/routes/systemRoutes.ts`, `operationsRoutes.ts`,
+> `statsRoutes.ts`). `build-graph query …handlers.ts …` shows only 2
+> S3-bucket routes currently exist as MSW handlers
+> (`GET /api/activity` at handlers.ts:622, `GET /api/health` at
+> handlers.ts:627). The remaining 17 routes have **no** matching MSW
+> handler. `GET /api/events/stream` (handlers.ts:833) is a different
+> path from S3's `/api/system/events*` — no path collision per
+> test-strategy §3.
+>
+> **Red command (canonical for this phase):**
+> `cd app && bun ../node_modules/.bin/vitest run src/lib/msw/handlers.s3.test.ts`
+> (from the repo root with `PATH=/home/daniel-bo/.bun/bin:$PATH`; the
+> `npx` and `node` binaries are not on PATH in this environment, so the
+> plan text's `npx vitest` invocation is replaced with the bun-runner
+> equivalent. The test runner is identical — vitest v4.0.18 — and the
+> command stays bounded to a single file with no watch mode.)
+>
+> **Red result (2026-06-12, this MID run):** recorded after the Red
+> test run, see "Red evidence" block below.
+
+- [~] Add handlers for system routes:
   - `GET /api/system/status` — return system status
   - `GET /api/system/events` — return events list
   - `GET /api/system/events/export` — return export blob
@@ -203,19 +239,52 @@ For parameterized routes: `http.get('/api/example/:id', ({ params }) => { ... })
   - `GET /api/tasks/history/:id` — return single task
   - `POST /api/tasks/scheduled/:taskId/run` — return 202
   - `DELETE /api/tasks/queued/:taskId` — return 200
-- [ ] Add handlers for operations routes:
-  - `GET /api/activity` — return activity events
+- [~] Add handlers for operations routes:
+  - `GET /api/activity` — return activity events *(exists at handlers.ts:622, regression baseline)*
   - `DELETE /api/activity` — return 200
   - `GET /api/activity/export` — return export blob
-  - `GET /api/health` — return health status
+  - `GET /api/health` — return health status *(exists at handlers.ts:627, regression baseline)*
   - `PATCH /api/activity/:id/fail` — return 200
   - `POST /api/activity/:id/retry-import` — return 202
-- [ ] Add handlers for stats routes:
+- [~] Add handlers for stats routes:
   - `GET /api/system/stats` — return system stats
   - `GET /api/stats/downloads` — return download stats
   - `GET /api/stats/system` — return system stats
 - [ ] Run `CI=true npm test` — expect GREEN
 - [ ] Commit: `test(msw): add system & operations MSW handlers`
+
+> **Red evidence (2026-06-12, mid-attempt-1):**
+> `cd app && bun ../node_modules/.bin/vitest run src/lib/msw/handlers.s3.test.ts`
+> — observed `Test Files 1 failed (1)` / `Tests 34 failed | 2 passed (36)`.
+> The 2 passes are the regression-baseline route-presence checks for
+> `GET /api/activity` and `GET /api/health` (handlers already in place
+> from a prior phase). Of the 34 failures:
+> - **17 route-presence failures** covering every newly-required S3
+>   route: 10 system routes (status, events, events/export,
+>   events/clear, tasks/queued, tasks/scheduled, tasks/history,
+>   tasks/history/:id, tasks/scheduled/:taskId/run,
+>   tasks/queued/:taskId), 4 new operations routes (DELETE activity,
+>   activity/export, activity/:id/fail, activity/:id/retry-import),
+>   and 3 stats routes (system/stats, stats/downloads, stats/system).
+> - **9 envelope-shape failures** for the same newly-required handlers
+>   that have a `{ok, data}` JSON response contract.
+> - **6 status-code failures** for the 2 routes that must return 202
+>   Accepted (`POST /api/tasks/scheduled/:taskId/run`,
+>   `POST /api/activity/:id/retry-import`) and the 4 routes that must
+>   return 200 OK (`DELETE /api/system/events/clear`,
+>   `DELETE /api/tasks/queued/:taskId`, `DELETE /api/activity`,
+>   `PATCH /api/activity/:id/fail`).
+> - **2 export-endpoint failures** asserting Content-Disposition:
+>   attachment on `GET /api/system/events/export` and
+>   `GET /api/activity/export` (matches server-side behavior at
+>   `systemRoutes.ts:653` and `operationsRoutes.ts:229`).
+>
+> All failures fail for the expected reason — `expected handlers.ts to
+> define a handler for ${label}` / `missing handler for ${label}` —
+> proving the current implementation lacks the S3 routes. No artifact
+> or markdown assertions are used; every assertion exercises live
+> handler behavior via the same `createHandlers('deterministic')` +
+> `handler.run()` path that the GREEN phase will need to satisfy.
 
 ## Phase S4: Subtitle & playback MSW handlers
 

@@ -62,6 +62,12 @@ describe('ServiceName', () => {
 - Sibling co-run: `bun x vitest run server/src/services/Scheduler.test.ts server/src/services/Scheduler.meta.test.ts server/src/services/Scheduler.subtitle.test.ts` → 22/22 pass, ~3.4s (no isolation timeout).
 - All asserted Scheduler.ts behavior is implemented at HEAD; phase is "satisfied with evidence" — the missing artifact was the test file itself, not source logic. No follow-up implementation work required.
 
+**S1 worktree cleanup (2026-06-12, mid attempt 2):**
+- Supervisor gate flagged `conductor/archive/cardigann_runtime_parity_20260223/artifacts/final-phase5-compatibility-matrix.json` as a non-test/non-Measure file dirty at phase end. The one-line diff is a `generatedAt` timestamp in an archived-track artifact, pre-existing MID's session start.
+- Per `lessons-learned.md` (2026-06-07, bug_variant_subtitle_test_coverage): "the supervisor's Red-phase gate inspects `git status` and rejects even unauthored dirt". Restored via `git checkout --`.
+- Tests re-run post-restore: `bun x vitest run server/src/services/Scheduler.test.ts` → 15/15 pass. Commits `5e0d65a` and `ad625f1` preserved.
+- `measure/automation-supervisor.py` remains dirty but the supervisor gate did not flag it (lives under `measure/`; out of MID's Red-phase scope per gate policy).
+
 ## Phase S2: SettingsService tests *(DEFERRED — post-v1.0)*
 
 - [ ] Read `server/src/services/SettingsService.ts` to understand its interface

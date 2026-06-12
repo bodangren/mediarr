@@ -729,7 +729,106 @@ For parameterized routes: `http.get('/api/example/:id', ({ params }) => { ... })
 
 ## Phase S6: Verification & Handoff
 
-- [ ] Run `CI=true npm test` — full suite GREEN (blocked by pre-existing failures outside this track)
-- [ ] Verify no unhandled MSW warnings in test output
-- [ ] Update `tech-debt.md` — mark "MSW mock coverage incomplete" as Resolved
-- [ ] Final commit and push
+> **Red-phase status (2026-06-12, mid-attempt-1):** Tasks 1 (`CI=true npm
+> test`) and 4 (final commit and push) are workflow actions, not Red
+> candidates — they are not testable in a Red phase. Tasks 2 ("Verify no
+> unhandled MSW warnings in test output") and 3 ("Update `tech-debt.md` —
+> mark 'MSW mock coverage incomplete' as Resolved") are testable as Red
+> tests.
+>
+> **Task 2 is tested via a source assertion on `app/src/test/setup.ts`:**
+> the test-strategy's "no unhandled MSW warnings" gate is *enforceable*
+> only when the MSW lifecycle hook is wired in `app/src/test/setup.ts`
+> with `server.listen({ onUnhandledRequest: 'error' })` (test-strategy
+> §1, §4, §5 Phase S0). The current `setup.ts` has no MSW wiring
+> (verified via `readFileSync` and grep) and `build-graph inspect
+> setup.ts` confirms zero incoming/outgoing edges to/from any MSW
+> module. The Red test reads the file as text and asserts the
+> MSW-lifecycle contract is present; this fails at HEAD because the
+> contract is missing. This is the **live-behavior proof** paired with
+> the markdown assertion below.
+>
+> **Task 3 is tested via a markdown assertion on `measure/tech-debt.md`:**
+> the test finds the row referencing `chore_msw_mock_coverage_20260526`
+> and asserts the Status column is `Resolved`. The current row is
+> `Open` (line 38, Track=`graph_analysis`); the Green phase will mark
+> it `Resolved`. Per the user-instruction, this markdown assertion is
+> paired with the live-behavior proof above (the source assertion on
+> `setup.ts`).
+>
+> **Dirty-worktree note (2026-06-12, mid-attempt-1):** Two paths are
+> uncommitted at start of this MID run, same as S1–S5 attempts:
+> `measure/automation-supervisor.py` (refactor:
+> `allow_dirty_worktree` → `dirty_worktree_context` +
+> `enforce_clean_worktree`, expanded MID/JR/ACCEPT/CLOSE prompts) and
+> `conductor/archive/cardigann_runtime_parity_20260223/artifacts/final-phase5-compatibility-matrix.json`
+> (its `generatedAt` timestamp field flipped by a build/CI
+> side-effect that runs while the supervisor is alive).
+> Classification: **unrelated user work, preserve** — neither touches
+> the MSW handlers track. `measure/automation-supervisor.py` is a
+> Measure doc and is allowed to remain dirty through this phase;
+> matrix JSON will be `git checkout --` restored to its committed
+> state after the Red run.
+>
+> **Build-graph findings used to shape Red tests:**
+> - `build-graph inspect setup.ts` — 0 incoming/outgoing edges;
+>   `setup.ts` is a dead-end node, confirming no MSW wiring exists.
+> - `build-graph query` against `handlers.ts` — 205 route nodes; the
+>   server has 209 route nodes; the 4-server-routes-without-MSW
+>   difference is in scope for the prior phases (S1–S5) and is not
+>   S6's concern.
+> - `build-graph stats` — graph.db mtime `Jun 12 15:10` (fresh at 24h
+>   threshold); 7310 nodes / 10724 edges / 852 files; `httpClient.ts`
+>   is the top-imported API consumer (55 importers), confirming that
+>   `onUnhandledRequest: 'error'` at the MSW server level would gate
+>   the entire API surface.
+>
+> **Red command (canonical for this phase):**
+> `cd app && bun ../node_modules/.bin/vitest run src/lib/msw/handlers.s6.test.ts`
+> (from the repo root with `PATH=/home/daniel-bo/.bun/bin:$PATH`;
+> `npx`/`node` are not on PATH so the plan text's `npx vitest`
+> is replaced with the bun-runner equivalent; vitest v4.0.18 stays
+> the test runner; the command is bounded to a single file with
+> no watch mode).
+>
+> **Red result (2026-06-12, this MID run):** `Test Files 1 failed (1)` /
+> `Tests 6 failed | 3 passed (9)`. The 3 passes are the
+> file-existence sanity checks (`setup.ts` is readable,
+> `tech-debt.md` is readable, the row referencing the track id
+> exists). The 6 failures are the contract assertions:
+>
+> 1. **`imports the MSW server from the msw/server module`** —
+>    `setup.ts` does not import `server` from `@/lib/msw/server`
+>    (or any relative path to `msw/server`); current imports are
+>    only `@testing-library/jest-dom/vitest` and the JSDOM
+>    polyfills.
+> 2. **`calls server.listen with onUnhandledRequest: "error"`** —
+>    `setup.ts` does not call `server.listen(...)` at all;
+>    the `onUnhandledRequest: 'error'` gate is absent.
+> 3. **`registers a beforeAll lifecycle hook`** — no `beforeAll(`
+>    call in `setup.ts`; the MSW server is never started.
+> 4. **`registers an afterEach hook that calls
+>    server.resetHandlers`** — no `afterEach(` in `setup.ts`;
+>    per-test handler overrides would never be cleared.
+> 5. **`registers an afterAll hook that calls server.close`** —
+>    no `afterAll(` in `setup.ts`; the MSW server is never
+>    torn down.
+> 6. **`marks the track's row with Status = Resolved`** — the
+>    row in `tech-debt.md:38` is currently `Open`
+>    (`| 2026-05-26 | graph_analysis | ~85 backend routes have no
+>    MSW mock handlers | Medium | Open | ... |`).
+>
+> All 6 failures fail for the expected reason — the contract is
+> missing at HEAD. The 3 passes are positive-control sanity
+> checks (the files exist; the row exists with the right track
+> id) so the test infrastructure is verified. The Red contract is
+> stable and ready for the Green phase.
+>
+> **Red evidence command (canonical):**
+> `cd app && bun ../node_modules/.bin/vitest run src/lib/msw/handlers.s6.test.ts`
+> (run at 2026-06-12 15:49:59 local, duration 6.03s, vitest v4.0.18).
+
+- [~] Run `CI=true npm test` — full suite GREEN (blocked by pre-existing failures outside this track) *(workflow action, not a Red candidate — see status note above)*
+- [~] Verify no unhandled MSW warnings in test output *(Red test: source assertion on `app/src/test/setup.ts` for the MSW lifecycle hook with `onUnhandledRequest: 'error'` — fails at HEAD because the wiring is missing)*
+- [~] Update `tech-debt.md` — mark "MSW mock coverage incomplete" as Resolved *(Red test: markdown assertion on `measure/tech-debt.md` for the `chore_msw_mock_coverage_20260526` row's Status column — fails at HEAD because the row is `Open`)*
+- [ ] Final commit and push *(workflow action, owned by ACCEPT role, not a Red candidate)*

@@ -1,4 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+vi.mock('./ReleaseParser', () => ({
+  releaseParser: { parse: vi.fn(), parseBatch: vi.fn() },
+}));
+
 import { MediaSearchService } from './MediaSearchService';
 import { TorrentRejectedError } from '../errors/domainErrors';
 

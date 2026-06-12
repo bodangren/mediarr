@@ -50,7 +50,7 @@ class AutomationSupervisorTest(unittest.TestCase):
 
         self.assertEqual(config.phase_acceptance_model, "opencode-go/qwen3.7-plus")
         self.assertEqual(config.adversarial_model, "vocengine-coding/ark-code-latest")
-        self.assertEqual(config.ux_model, "kimi-for-coding/k2p6")
+        self.assertEqual(config.ux_model, "kimi-for-coding/k2p7")
         self.assertEqual(config.acceptance_model, "vocengine-coding/glm-5.1")
         self.assertEqual(config.closeout_model, "minimax-cn-coding-plan/MiniMax-M3")
 

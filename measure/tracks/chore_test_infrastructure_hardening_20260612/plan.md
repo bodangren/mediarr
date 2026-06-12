@@ -15,20 +15,20 @@
 
 > Make the handlers honest, domain-split, and blob-aware.
 
-- [ ] Read `server/src/api/routes/*Routes.ts` for the response shapes that handlers must mirror.
-- [ ] Split `app/src/lib/msw/handlers.ts` into domain files under `app/src/lib/msw/handlers/`:
+- [~] Read `server/src/api/routes/*Routes.ts` for the response shapes that handlers must mirror.
+- [~] Split `app/src/lib/msw/handlers.ts` into domain files under `app/src/lib/msw/handlers/`:
   - `core.ts` (movies, series, indexers)
   - `settings.ts`
   - `system.ts`
   - `subtitles.ts`
   - `playback.ts`
   - `remaining.ts` (backups, blocklist, calendar, collections, custom-formats, import-lists, logs, updates, dashboard, misc)
-- [ ] Re-export aggregated handlers from `app/src/lib/msw/handlers/index.ts`.
-- [ ] Move domain fixtures from inline literals into `app/src/lib/msw/factories.ts` with typed `MockX` interfaces.
-- [ ] Remove duplicate literal + parameterized handlers (e.g., `/api/backups/1` + `/api/backups/:id`). Order routes so literals precede parameters in the aggregated array.
-- [ ] Add `sendBlob()` helper and convert binary endpoints (`/api/system/events/export`, `/api/backups/:id/download`, `/api/logs/files/:filename/download`, `/api/images/proxy`, `/api/stream/:id`) to return real `Blob`/`ReadableStream` bodies with correct `Content-Type`.
-- [ ] Run the six handler test files; fix any regressions.
-- [ ] Commit: `refactor(msw): split handlers by domain, move fixtures to factories, add sendBlob helper`
+- [~] Re-export aggregated handlers from `app/src/lib/msw/handlers/index.ts`.
+- [~] Move domain fixtures from inline literals into `app/src/lib/msw/factories.ts` with typed `MockX` interfaces.
+- [~] Remove duplicate literal + parameterized handlers (e.g., `/api/backups/1` + `/api/backups/:id`). Order routes so literals precede parameters in the aggregated array.
+- [x] Add `sendBlob()` helper and convert binary endpoints (`/api/system/events/export`, `/api/backups/:id/download`, `/api/logs/files/:filename/download`, `/api/images/proxy`, `/api/stream/:id`) to return real `Blob`/`ReadableStream` bodies with correct `Content-Type`.
+- [x] Run the six handler test files; fix any regressions.
+- [x] Commit: `refactor(msw): split handlers by domain, move fixtures to factories, add sendBlob helper`
 
 ## Phase P3: Add real MSW integration smoke tests and re-enable setup.ts
 

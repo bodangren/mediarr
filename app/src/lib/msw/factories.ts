@@ -251,7 +251,7 @@ export function createMockDataset(mode: FactoryMode = 'deterministic'): MockData
       sourceModule: index % 2 === 0 ? 'library' : 'search',
       summary: index % 2 === 0 ? 'Media added to library' : 'Release grabbed and sent to queue',
       success: true,
-      occurredAt: new Date(Date.now() - index * 1000 * 60 * 3).toISOString(),
+      occurredAt: new Date(REFERENCE_DATE.getTime() - index * 1000 * 60 * 3).toISOString(),
     })),
     settings: {
       torrentLimits: {
@@ -287,4 +287,456 @@ export function paginate<T>(items: T[], page: number, pageSize: number) {
       totalPages,
     },
   };
+}
+
+// Deterministic reference date for all mock fixtures so MSW responses are
+// stable across test runs regardless of when the suite executes.
+const REFERENCE_DATE = new Date('2026-06-12T00:00:00.000Z');
+
+export interface MockBackup {
+  id: number;
+  name: string;
+  size: number;
+  createdAt: string;
+}
+
+export interface MockBackupSchedule {
+  enabled: boolean;
+  interval: string;
+  retentionDays: number;
+  lastRun: string | null;
+  nextRun: string;
+}
+
+export function createMockBackup(id: number, overrides?: Partial<MockBackup>): MockBackup {
+  return {
+    id,
+    name: `backup-${REFERENCE_DATE.toISOString().slice(0, 10)}-${id}.db`,
+    size: 1_048_576,
+    createdAt: new Date(REFERENCE_DATE.getTime() - (id - 1) * 86_400_000).toISOString(),
+    ...overrides,
+  };
+}
+
+export function createMockBackupSchedule(overrides?: Partial<MockBackupSchedule>): MockBackupSchedule {
+  return {
+    enabled: true,
+    interval: 'daily',
+    retentionDays: 30,
+    lastRun: null,
+    nextRun: new Date(REFERENCE_DATE.getTime() + 86_400_000).toISOString(),
+    ...overrides,
+  };
+}
+
+export interface MockBlocklist {
+  id: number;
+  title: string;
+  indexer: string;
+  reason: string;
+  createdAt: string;
+}
+
+export function createMockBlocklist(id: number, overrides?: Partial<MockBlocklist>): MockBlocklist {
+  return {
+    id,
+    title: 'Bad Release',
+    indexer: 'Indexer 1',
+    reason: 'Poor quality',
+    createdAt: REFERENCE_DATE.toISOString(),
+    ...overrides,
+  };
+}
+
+export interface MockCollection {
+  id: number;
+  name: string;
+  type: string;
+  monitored: boolean;
+  movieCount?: number;
+  seriesCount?: number;
+}
+
+export function createMockCollection(id: number, overrides?: Partial<MockCollection>): MockCollection {
+  const defaults: MockCollection =
+    id === 1
+      ? { id, name: 'Marvel Cinematic Universe', type: 'movie', monitored: true, movieCount: 30 }
+      : id === 2
+        ? { id, name: 'Breaking Bad Collection', type: 'series', monitored: true, seriesCount: 1 }
+        : { id, name: `Collection ${id}`, type: 'movie', monitored: true, movieCount: 10 };
+  return { ...defaults, ...overrides };
+}
+
+export interface MockCustomFormat {
+  id: number;
+  name: string;
+  type: string;
+  specifications: unknown[];
+}
+
+export function createMockCustomFormat(id: number, overrides?: Partial<MockCustomFormat>): MockCustomFormat {
+  const defaults: MockCustomFormat =
+    id === 1
+      ? { id, name: 'HDR', type: 'quality', specifications: [] }
+      : id === 2
+        ? { id, name: 'Atmos Audio', type: 'audio', specifications: [] }
+        : { id, name: `Custom Format ${id}`, type: 'quality', specifications: [] };
+  return { ...defaults, ...overrides };
+}
+
+export interface MockImportList {
+  id: number;
+  name: string;
+  enabled: boolean;
+  implementation: string;
+}
+
+export function createMockImportList(id: number, overrides?: Partial<MockImportList>): MockImportList {
+  const defaults: MockImportList =
+    id === 1
+      ? { id, name: 'TMDB Popular Movies', enabled: true, implementation: 'TMDbImportList' }
+      : id === 2
+        ? { id, name: 'Trakt Watchlist', enabled: false, implementation: 'TraktImportList' }
+        : { id, name: `Import List ${id}`, enabled: true, implementation: 'TMDbImportList' };
+  return { ...defaults, ...overrides };
+}
+
+export interface MockImportListExclusion {
+  id: number;
+  tmdbId: number;
+  title: string;
+  movieYear: number | null;
+}
+
+export function createMockImportListExclusion(
+  id: number,
+  overrides?: Partial<MockImportListExclusion>,
+): MockImportListExclusion {
+  return {
+    id,
+    tmdbId: 99999,
+    title: 'Excluded Movie',
+    movieYear: 2020,
+    ...overrides,
+  };
+}
+
+export interface MockImportListProvider {
+  id: string;
+  name: string;
+  enabled: boolean;
+  implementation: string;
+}
+
+export function createMockImportListProvider(
+  id: string,
+  overrides?: Partial<MockImportListProvider>,
+): MockImportListProvider {
+  const defaults: MockImportListProvider =
+    id === 'tmdb'
+      ? { id: 'tmdb', name: 'TMDb', enabled: true, implementation: 'TMDbImportList' }
+      : id === 'trakt'
+        ? { id: 'trakt', name: 'Trakt', enabled: false, implementation: 'TraktImportList' }
+        : { id, name: `Provider ${id}`, enabled: true, implementation: 'TMDbImportList' };
+  return { ...defaults, ...overrides };
+}
+
+export interface MockLogFile {
+  filename: string;
+  size: number;
+  lastModified: string;
+  content: string;
+}
+
+export function createMockLogFile(filename: string, overrides?: Partial<MockLogFile>): MockLogFile {
+  return {
+    filename,
+    size: filename === 'mediarr.log' ? 102_400 : 51_200,
+    lastModified: REFERENCE_DATE.toISOString(),
+    content: '[2026-06-12 10:00:00] INFO: System started\n[2026-06-12 10:00:01] INFO: Indexers loaded',
+    ...overrides,
+  };
+}
+
+export interface MockUpdate {
+  version: string;
+  releaseDate: string;
+  installedAt?: string;
+  status?: string;
+  changelog?: string;
+}
+
+export function createMockUpdate(version: string, overrides?: Partial<MockUpdate>): MockUpdate {
+  const defaults: Record<string, MockUpdate> = {
+    '1.0.0': {
+      version: '1.0.0',
+      releaseDate: '2026-06-01',
+      installedAt: '2026-06-01T00:00:00Z',
+      status: 'success',
+    },
+    '1.1.0': {
+      version: '1.1.0',
+      releaseDate: '2026-06-10',
+      changelog: 'Bug fixes and improvements',
+    },
+  };
+  return { ...(defaults[version] ?? { version, releaseDate: REFERENCE_DATE.toISOString() }), ...overrides };
+}
+
+export interface MockDashboardCalendarItem {
+  id: number;
+  seriesId: number;
+  seriesTitle: string;
+  seasonNumber: number;
+  episodeNumber: number;
+  title: string;
+  airDate: string;
+  monitored: boolean;
+}
+
+export function createMockDashboardCalendarItem(
+  id: number,
+  overrides?: Partial<MockDashboardCalendarItem>,
+): MockDashboardCalendarItem {
+  return {
+    id,
+    seriesId: 1,
+    seriesTitle: 'Example Series',
+    seasonNumber: 2,
+    episodeNumber: id,
+    title: `Episode ${id}`,
+    airDate: new Date(REFERENCE_DATE.getTime() + 7 * 86_400_000).toISOString(),
+    monitored: true,
+    ...overrides,
+  };
+}
+
+export interface MockDashboardDiskSpace {
+  path: string;
+  freeBytes: number;
+  totalBytes: number;
+  usedPercent: number;
+}
+
+export function createMockDashboardDiskSpace(path: string): MockDashboardDiskSpace {
+  return path === '/media'
+    ? { path: '/media', freeBytes: 500_000_000_000, totalBytes: 1_000_000_000_000, usedPercent: 50 }
+    : { path, freeBytes: 100_000_000_000, totalBytes: 200_000_000_000, usedPercent: 50 };
+}
+
+export interface MockCategory {
+  id: number;
+  name: string;
+  description: string | null;
+  minSize: number | null;
+  maxSize: number | null;
+}
+
+export function createMockCategory(id: number, overrides?: Partial<MockCategory>): MockCategory {
+  const defaults: MockCategory[] = [
+    { id: 1, name: 'Movies (HD)', description: 'High definition movies', minSize: 10_737_418_240, maxSize: 53_687_091_200 },
+    { id: 2, name: 'Movies (SD)', description: 'Standard definition movies', minSize: 734_003_200, maxSize: 10_737_418_240 },
+    { id: 3, name: 'TV Episodes (HD)', description: 'High definition TV episodes', minSize: 536_870_912, maxSize: 4_294_967_296 },
+    { id: 4, name: 'TV Episodes (SD)', description: 'Standard definition TV episodes', minSize: 73_400_320, maxSize: 536_870_912 },
+  ];
+  return { ...(defaults[id - 1] ?? { id, name: `Category ${id}`, description: null, minSize: null, maxSize: null }), ...overrides };
+}
+
+export interface MockProxy {
+  id: number;
+  name: string;
+  type: string;
+  hostname: string;
+  port: number;
+  username: string | null;
+  password: string | null;
+  enabled: boolean;
+}
+
+export function createMockProxy(id: number, overrides?: Partial<MockProxy>): MockProxy {
+  return {
+    id,
+    name: 'Default Proxy',
+    type: 'http',
+    hostname: 'proxy.example',
+    port: 8080,
+    username: null,
+    password: null,
+    enabled: true,
+    ...overrides,
+  };
+}
+
+export interface MockQualityProfile {
+  id: number;
+  name: string;
+  cutoff: number;
+  items: unknown[];
+  languageProfileId: number | null;
+}
+
+export function createMockQualityProfile(id: number, overrides?: Partial<MockQualityProfile>): MockQualityProfile {
+  const defaults: MockQualityProfile[] = [
+    {
+      id: 1,
+      name: 'HD-1080p',
+      cutoff: 7,
+      items: [{ quality: { id: 1, name: 'HDTV-720p', source: 'television', resolution: '720p' }, allowed: true }],
+      languageProfileId: null,
+    },
+    {
+      id: 2,
+      name: 'UHD-2160p',
+      cutoff: 9,
+      items: [{ quality: { id: 1, name: 'HDTV-2160p', source: 'television', resolution: '2160p' }, allowed: true }],
+      languageProfileId: null,
+    },
+  ];
+  return {
+    ...(defaults[id - 1] ?? { id, name: `Profile ${id}`, cutoff: 7, items: [], languageProfileId: null }),
+    ...overrides,
+  };
+}
+
+export interface MockQualityDefinition {
+  id: number;
+  name: string;
+  source: string;
+  resolution: string;
+  weight: number;
+}
+
+export function createMockQualityDefinitions(): MockQualityDefinition[] {
+  return [
+    { id: 1, name: 'HDTV-720p', source: 'television', resolution: '720p', weight: 1 },
+    { id: 2, name: 'WEBDL-720p', source: 'web', resolution: '720p', weight: 2 },
+    { id: 3, name: 'Bluray-720p', source: 'bluray', resolution: '720p', weight: 3 },
+    { id: 4, name: 'HDTV-1080p', source: 'television', resolution: '1080p', weight: 4 },
+    { id: 5, name: 'WEBDL-1080p', source: 'web', resolution: '1080p', weight: 5 },
+    { id: 6, name: 'Bluray-1080p', source: 'bluray', resolution: '1080p', weight: 6 },
+    { id: 7, name: 'HDTV-2160p', source: 'television', resolution: '2160p', weight: 7 },
+    { id: 8, name: 'WEBDL-2160p', source: 'web', resolution: '2160p', weight: 8 },
+    { id: 9, name: 'Bluray-2160p', source: 'bluray', resolution: '2160p', weight: 9 },
+  ];
+}
+
+export interface MockDownloadClientSettings {
+  maxActiveDownloads: number;
+  maxActiveSeeds: number;
+  globalDownloadLimitKbps: number | null;
+  globalUploadLimitKbps: number | null;
+  incompleteDirectory: string;
+  completeDirectory: string;
+  seedRatioLimit: number;
+  seedTimeLimitMinutes: number;
+  seedLimitAction: string;
+}
+
+export function createMockDownloadClientSettings(
+  overrides?: Partial<MockDownloadClientSettings>,
+): MockDownloadClientSettings {
+  return {
+    maxActiveDownloads: 3,
+    maxActiveSeeds: 5,
+    globalDownloadLimitKbps: null,
+    globalUploadLimitKbps: null,
+    incompleteDirectory: '/tmp/incomplete',
+    completeDirectory: '/tmp/complete',
+    seedRatioLimit: 1.5,
+    seedTimeLimitMinutes: 60,
+    seedLimitAction: 'pause',
+    ...overrides,
+  };
+}
+
+export interface MockMediaNamingSettings {
+  movieRootFolder: string;
+  tvRootFolder: string;
+  movieNamingPattern: string;
+  seriesNamingPattern: string;
+}
+
+export function createMockMediaNamingSettings(overrides?: Partial<MockMediaNamingSettings>): MockMediaNamingSettings {
+  return {
+    movieRootFolder: '/media/movies',
+    tvRootFolder: '/media/series',
+    movieNamingPattern: '{Movie Title} ({Release Year})',
+    seriesNamingPattern: '{Series Title}',
+    ...overrides,
+  };
+}
+
+export interface MockSubtitleProvider {
+  id: string;
+  name: string;
+  enabled: boolean;
+  languages: string[];
+  implementation: string;
+  apiKey?: string;
+}
+
+export function createMockSubtitleProvider(id: string, overrides?: Partial<MockSubtitleProvider>): MockSubtitleProvider {
+  const defaults: MockSubtitleProvider =
+    id === 'opensubtitles'
+      ? { id: 'opensubtitles', name: 'OpenSubtitles', enabled: true, languages: ['en', 'fr'], implementation: 'OpenSubtitles' }
+      : id === 'addic7ed'
+        ? { id: 'addic7ed', name: 'Addic7ed', enabled: false, languages: ['en'], implementation: 'Addic7ed' }
+        : { id, name: `Provider ${id}`, enabled: true, languages: ['en'], implementation: id };
+  return { ...defaults, ...overrides };
+}
+
+export interface MockSubtitleHistoryItem {
+  id: number;
+  subtitleId: string;
+  languageCode: string;
+  provider: string;
+  movieId: number | null;
+  seriesId: number | null;
+  seasonNumber: number;
+  episodeNumber: number;
+  downloadedAt: string;
+  status: string;
+}
+
+export function createMockSubtitleHistoryItem(
+  id: number,
+  overrides?: Partial<MockSubtitleHistoryItem>,
+): MockSubtitleHistoryItem {
+  return {
+    id,
+    subtitleId: `sub-${id}`,
+    languageCode: 'en',
+    provider: 'opensubtitles',
+    movieId: null,
+    seriesId: 1,
+    seasonNumber: 1,
+    episodeNumber: 1,
+    downloadedAt: REFERENCE_DATE.toISOString(),
+    status: 'downloaded',
+    ...overrides,
+  };
+}
+
+export interface MockSubtitleBlacklistItem {
+  id: number;
+  movieId?: number;
+  seriesId?: number;
+  seasonNumber?: number;
+  episodeNumber?: number;
+  languageCode: string;
+  reason: string;
+}
+
+export function createMockSubtitleBlacklistMovie(
+  id: number,
+  overrides?: Partial<MockSubtitleBlacklistItem>,
+): MockSubtitleBlacklistItem {
+  return { id, movieId: 1, languageCode: 'en', reason: 'Poor quality', ...overrides };
+}
+
+export function createMockSubtitleBlacklistSeries(
+  id: number,
+  overrides?: Partial<MockSubtitleBlacklistItem>,
+): MockSubtitleBlacklistItem {
+  return { id, seriesId: 1, seasonNumber: 1, episodeNumber: 1, languageCode: 'fr', reason: 'Wrong language', ...overrides };
 }

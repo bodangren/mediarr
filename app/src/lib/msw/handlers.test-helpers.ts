@@ -1,4 +1,4 @@
-import { createHandlers } from './handlers';
+import { createHandlers } from './handlers/index';
 
 // Caching the deterministic handlers avoids rebuilding the 100+ handler array and
 // mock dataset on every helper call. The dataset is deterministic and the tests do

@@ -11,41 +11,41 @@
 - [x] Run `cd app && npx vitest run src/lib/msw/handlers.s*.test.ts` and confirm it completes in <30s with the default runner. (`fad1cc5`) — 265/265 passed; 54s (environment/setup overhead dominates; tests ran in 17s).
 - [x] Commit: `chore(msw): gate setup.ts wiring and deduplicate handler test helpers` (`fad1cc5`)
 
-## Phase P2: Refactor MSW handlers from stubs to maintainable mocks
+## Phase P2: Refactor MSW handlers from stubs to maintainable mocks [checkpoint: 86fdd42]
 
 > Make the handlers honest, domain-split, and blob-aware.
 
-- [~] Read `server/src/api/routes/*Routes.ts` for the response shapes that handlers must mirror.
-- [~] Split `app/src/lib/msw/handlers.ts` into domain files under `app/src/lib/msw/handlers/`:
+- [x] Read `server/src/api/routes/*Routes.ts` for the response shapes that handlers must mirror. (`86fdd42`)
+- [x] Split `app/src/lib/msw/handlers.ts` into domain files under `app/src/lib/msw/handlers/`: (`86fdd42`)
   - `core.ts` (movies, series, indexers)
   - `settings.ts`
   - `system.ts`
   - `subtitles.ts`
   - `playback.ts`
   - `remaining.ts` (backups, blocklist, calendar, collections, custom-formats, import-lists, logs, updates, dashboard, misc)
-- [~] Re-export aggregated handlers from `app/src/lib/msw/handlers/index.ts`.
-- [~] Move domain fixtures from inline literals into `app/src/lib/msw/factories.ts` with typed `MockX` interfaces.
-- [~] Remove duplicate literal + parameterized handlers (e.g., `/api/backups/1` + `/api/backups/:id`). Order routes so literals precede parameters in the aggregated array.
-- [x] Add `sendBlob()` helper and convert binary endpoints (`/api/system/events/export`, `/api/backups/:id/download`, `/api/logs/files/:filename/download`, `/api/images/proxy`, `/api/stream/:id`) to return real `Blob`/`ReadableStream` bodies with correct `Content-Type`.
-- [x] Run the six handler test files; fix any regressions.
+- [x] Re-export aggregated handlers from `app/src/lib/msw/handlers/index.ts`. (`86fdd42`)
+- [x] Move domain fixtures from inline literals into `app/src/lib/msw/factories.ts` with typed `MockX` interfaces. (`86fdd42`)
+- [x] Remove duplicate literal + parameterized handlers (e.g., `/api/backups/1` + `/api/backups/:id`). Order routes so literals precede parameters in the aggregated array. (`86fdd42`)
+- [x] Add `sendBlob()` helper and convert binary endpoints (`/api/system/events/export`, `/api/backups/:id/download`, `/api/logs/files/:filename/download`, `/api/images/proxy`, `/api/stream/:id`) to return real `Blob`/`ReadableStream` bodies with correct `Content-Type`. (`86fdd42`)
+- [x] Run the six handler test files; fix any regressions. (`86fdd42`)
 - [x] Commit: `refactor(msw): split handlers by domain, move fixtures to factories, add sendBlob helper` (`86fdd42`)
 
-## Phase P3: Add real MSW integration smoke tests and re-enable setup.ts [checkpoint: <P3_SHA>]
+## Phase P3: Add real MSW integration smoke tests and re-enable setup.ts [checkpoint: 4b278d7]
 
 > Prove the handlers actually intercept real `fetch` calls.
 
 - [x] Add one integration test per major domain that renders a component or calls an API module through real `fetch`:
-  - `MoviesList.integration.test.tsx` — renders a movie list and asserts data from `GET /api/movies`. (<P3_SHA>)
-  - `SeriesList.integration.test.tsx` — renders a series list and asserts data from `GET /api/series`. (<P3_SHA>)
-  - `SettingsPage.integration.test.tsx` — renders settings and asserts `GET /api/settings`. (<P3_SHA>)
-  - `SystemEvents.integration.test.tsx` — asserts `GET /api/system/events`. (<P3_SHA>)
-  - `SubtitleWanted.integration.test.tsx` — asserts `GET /api/subtitles/wanted/movies`. (<P3_SHA>)
-  - `BackupsPage.integration.test.tsx` — asserts `GET /api/backups`. (<P3_SHA>)
-- [x] Re-enable MSW in `app/src/test/setup.ts` unconditionally with `server.listen({ onUnhandledRequest: 'error' })`. (<P3_SHA>)
-- [x] Ensure `cd app && npx vitest run` completes with no unhandled-request errors and no hangs (default pool). (<P3_SHA>) — Completed in ~414s with `pool: 'forks'`; no unhandled-request errors. Pre-existing failures remain in unrelated tracks.
-- [x] If the default pool still hangs, switch `app/vitest.config.ts` to `pool: 'forks'` and document why. (<P3_SHA>)
-- [x] Update `measure/tech-debt.md`: keep MSW row as Resolved only after integration tests prove the handlers are consumed. (<P3_SHA>) — Row already Resolved; integration tests now provide live proof.
-- [x] Commit: `test(msw): add integration smoke tests per domain and re-enable setup.ts hook` (<P3_SHA>)
+  - `MoviesList.integration.test.tsx` — renders a movie list and asserts data from `GET /api/movies`. (`4b278d7`)
+  - `SeriesList.integration.test.tsx` — renders a series list and asserts data from `GET /api/series`. (`4b278d7`)
+  - `SettingsPage.integration.test.tsx` — renders settings and asserts `GET /api/settings`. (`4b278d7`)
+  - `SystemEvents.integration.test.tsx` — asserts `GET /api/system/events`. (`4b278d7`)
+  - `SubtitleWanted.integration.test.tsx` — asserts `GET /api/subtitles/wanted/movies`. (`4b278d7`)
+  - `BackupsPage.integration.test.tsx` — asserts `GET /api/backups`. (`4b278d7`)
+- [x] Re-enable MSW in `app/src/test/setup.ts` unconditionally with `server.listen({ onUnhandledRequest: 'error' })`. (`4b278d7`)
+- [x] Ensure `cd app && npx vitest run` completes with no unhandled-request errors and no hangs (default pool). (`4b278d7`) — Completed in ~414s with `pool: 'forks'`; no unhandled-request errors. Pre-existing failures remain in unrelated tracks.
+- [x] If the default pool still hangs, switch `app/vitest.config.ts` to `pool: 'forks'` and document why. (`4b278d7`)
+- [x] Update `measure/tech-debt.md`: keep MSW row as Resolved only after integration tests prove the handlers are consumed. (`4b278d7`) — Row already Resolved; integration tests now provide live proof.
+- [x] Commit: `test(msw): add integration smoke tests per domain and re-enable setup.ts hook` (`4b278d7`)
 
 ## Phase P4: Fix service-layer stubs and orphan-alias guard
 

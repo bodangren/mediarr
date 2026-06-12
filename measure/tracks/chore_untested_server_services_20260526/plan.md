@@ -36,26 +36,25 @@ describe('ServiceName', () => {
 
 ## Phase S1: Scheduler service tests
 
-- [ ] Read `server/src/services/Scheduler.ts` to understand constructor params and job registration
-- [ ] Create `server/src/services/Scheduler.test.ts`
-- [ ] Write test: `start() registers all expected cron jobs`
-  - Mock `node-cron.schedule` to capture calls
-  - Assert 5 jobs registered (rssSync, wantedSearchMovies, wantedSearchSeries, libraryScan, subtitleSync)
-- [ ] Write test: `start() passes correct cron expressions from settings`
-  - Provide mock settings with custom intervals
-  - Assert `schedule` called with matching cron expressions
-- [ ] Write test: `job handler executes without throwing on success path`
-  - Trigger a registered job callback manually
-  - Assert no unhandled rejection
-- [ ] Write test: `job handler catches and logs errors`
-  - Mock a service to throw
-  - Trigger job callback
-  - Assert error is logged (not thrown)
-- [ ] Write test: `stop() clears all scheduled jobs`
-  - Call `stop()`
-  - Assert `cron.getTasks().size === 0` or equivalent
-- [ ] Run: `npx vitest run server/src/services/Scheduler.test.ts`
-- [ ] Commit: `test(scheduler): add Scheduler service unit tests`
+- [x] Read `server/src/services/Scheduler.ts` to understand constructor params and job registration
+- [~] Create `server/src/services/Scheduler.test.ts`
+- [~] Write test: per-helper `scheduleX(...)` produces a named job with the default cron string
+  - (re-framed from spec's `start() registers 5 jobs` — actual API has no `start()`; one helper per job)
+  - Cover all five helpers: `scheduleActivityCleanup`, `scheduleWantedSearch`,
+    `scheduleSubtitleWantedSearch`, `scheduleLibraryScan`, `scheduleTargetedSubtitleSearch`
+- [~] Write test: helpers accept custom cron + custom name overrides
+  - Assert `node-cron.schedule` spy receives the overridden expression
+- [~] Write test: `schedule()` rejects duplicate names and invalid cron expressions
+  - Two distinct error paths, both throw synchronously
+- [~] Write test: cron-wrapped callback captures `lastRunAt` and `lastDurationMs` after a successful run
+- [~] Write test: cron-wrapped callback swallows + logs errors without crashing
+  - Mock a callback that rejects; assert `console.error` was called and meta was still recorded
+- [~] Write test: `stop(name)` stops the underlying task and removes the job
+- [~] Write test: `stop(unknownName)` is a no-op (does not throw)
+- [~] Write test: `stopAll()` stops every task and clears the registry
+- [~] Write test: `isScheduled` and `listJobs` reflect current state
+- [~] Run: `npx vitest run server/src/services/Scheduler.test.ts`
+- [~] Commit: `test(scheduler): add Scheduler core unit tests`
 
 ## Phase S2: SettingsService tests *(DEFERRED — post-v1.0)*
 

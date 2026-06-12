@@ -58,17 +58,16 @@
 - [x] Run `bun x vitest run server/src/services/Scheduler.test.ts tests/no-orphan-aliases.test.ts server/src/services/MediaSearchService.*.test.ts` and confirm green. (`037418f`)
 - [x] Commit: `fix(services): replace Scheduler nextRun stub, delete TvSearchService alias, fix orphan guard` (`037418f`)
 
-## Phase P5: Harden Import List UI tests
+## Phase P5: Harden Import List UI tests [checkpoint: eb3fe7f]
 
-- [ ] Read `app/src/components/importlists/ImportListSettings.test.tsx` and `AddExclusionModal.test.tsx`.
-- [ ] Replace all `fireEvent.change` calls with `userEvent.type`/`userEvent.clear`.
-- [ ] Fix the cross-file `vi.mock('@/lib/api/client')` collision:
-  - Option A: move the shared `discoverApi` mock into a single `__mocks__/@/lib/api/client.ts` file so both tests use the same factory.
-  - Option B: pass `searchMovies` as a prop to `AddExclusionModal` so it needs no internal mock.
-- [ ] Add an integration test in `ImportListSettings.test.tsx` that opens the Add Exclusion modal, searches, selects a result, confirms, and asserts `onCreateExclusion` + `onRefreshExclusions`.
-- [ ] Raise branch coverage for `ImportListList.tsx` and `AddExclusionModal.tsx` to ≥80% by testing `formatLastSync` branches and search-empty/error states.
-- [ ] Run `cd app && npx vitest run src/components/importlists/` and confirm all tests pass together.
-- [ ] Commit: `test(importlists): use userEvent, fix mock isolation, add exclusion flow coverage`
+- [x] Read `app/src/components/importlists/ImportListSettings.test.tsx` and `AddExclusionModal.test.tsx`. (`eb3fe7f`)
+- [x] Replace all `fireEvent.change` calls with `userEvent.type`/`userEvent.clear`. (`eb3fe7f`)
+- [x] Fix the cross-file `vi.mock('@/lib/api/client')` collision:
+  - Option B chosen: pass `searchMovies` as a prop to `AddExclusionModal` so it needs no internal mock. (`eb3fe7f`)
+- [x] Add an integration test in `ImportListSettings.test.tsx` that opens the Add Exclusion modal, searches, selects a result, confirms, and asserts `onCreateExclusion` + `onRefreshExclusions`. (`eb3fe7f`)
+- [x] Raise branch coverage for `ImportListList.tsx` and `AddExclusionModal.tsx` to ≥80% by testing `formatLastSync` branches and search-empty/error states. (`eb3fe7f`) — AddExclusionModal 92.68% branch, ImportListList 96.55% branch.
+- [x] Run `cd app && npx vitest run src/components/importlists/` and confirm all tests pass together. (`eb3fe7f`) — 58/58 passed.
+- [x] Commit: `test(importlists): use userEvent, fix mock isolation, add exclusion flow coverage` (`eb3fe7f`)
 
 ## Phase P6: Verification & handoff
 

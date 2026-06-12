@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ImportListSettings } from './ImportListSettings.js';
 import type {
@@ -11,15 +11,10 @@ import type {
 } from '@/lib/api/importListsApi';
 import type { QualityProfile } from '@/types/qualityProfile';
 
-const mockSearchMovies = vi.fn();
+// Integration tests that open multiple Radix modals need a longer budget in jsdom.
+vi.setConfig({ testTimeout: 15_000 });
 
-vi.mock('@/lib/api/client', () => ({
-  getApiClients: vi.fn(() => ({
-    discoverApi: {
-      searchMovies: mockSearchMovies,
-    },
-  })),
-}));
+const mockSearchMovies = vi.fn();
 
 const mockQualityProfiles: QualityProfile[] = [
   { id: 1, name: 'HD-1080p', cutoffId: 1, qualities: [] },
@@ -93,6 +88,7 @@ type RenderOverrides = Partial<{
   title: string;
   description: string;
   defaultTab: 'lists' | 'exclusions';
+  searchMovies: (params: { query: string }) => Promise<{ results: unknown[] }>;
 }>;
 
 const renderImportListSettings = (overrides: RenderOverrides = {}) => {
@@ -126,6 +122,7 @@ const renderImportListSettings = (overrides: RenderOverrides = {}) => {
       title={overrides.title}
       description={overrides.description}
       defaultTab={overrides.defaultTab}
+      searchMovies={overrides.searchMovies ?? mockSearchMovies}
     />,
   );
 
@@ -176,7 +173,7 @@ describe('ImportListSettings (integration)', () => {
   });
 
   it('switches to Exclusions tab when clicked', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     renderImportListSettings();
 
     const exclusionsTab = screen.getByRole('button', { name: 'Exclusions' });
@@ -196,7 +193,7 @@ describe('ImportListSettings (integration)', () => {
   });
 
   it('opens ImportListModal when Add Import List clicked', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     renderImportListSettings();
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
@@ -214,7 +211,7 @@ describe('ImportListSettings (integration)', () => {
   });
 
   it('opens ImportListModal with editList when Edit clicked', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     renderImportListSettings();
 
     const cardA = findListCard('Popular Movies');
@@ -236,7 +233,7 @@ describe('ImportListSettings (integration)', () => {
   });
 
   it('calls onCreateList and refreshes when modal saves (create mode)', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     const onCreateList = vi.fn().mockResolvedValue(undefined);
     const onRefreshLists = vi.fn();
     renderImportListSettings({ onCreateList, onRefreshLists });
@@ -245,12 +242,13 @@ describe('ImportListSettings (integration)', () => {
 
     const dialog = await screen.findByRole('dialog', { name: /add import list/i });
 
-    fireEvent.change(within(dialog).getByLabelText(/^name/i), {
-      target: { value: 'My New List' },
-    });
-    fireEvent.change(within(dialog).getByLabelText(/root folder/i), {
-      target: { value: '/data/movies' },
-    });
+    const nameInput = within(dialog).getByLabelText(/^name/i);
+    await user.clear(nameInput);
+    await user.type(nameInput, 'My New List');
+
+    const rootFolderInput = within(dialog).getByLabelText(/root folder/i);
+    await user.clear(rootFolderInput);
+    await user.type(rootFolderInput, '/data/movies');
 
     const submitButton = within(dialog).getByRole('button', { name: 'Add Import List' });
     await waitFor(() => {
@@ -271,7 +269,7 @@ describe('ImportListSettings (integration)', () => {
   });
 
   it('calls onUpdateList and refreshes when modal saves (edit mode)', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     const onUpdateList = vi.fn().mockResolvedValue(undefined);
     const onRefreshLists = vi.fn();
     renderImportListSettings({ onUpdateList, onRefreshLists });
@@ -281,9 +279,9 @@ describe('ImportListSettings (integration)', () => {
 
     const dialog = await screen.findByRole('dialog', { name: /edit import list/i });
 
-    fireEvent.change(within(dialog).getByLabelText(/^name/i), {
-      target: { value: 'Popular Movies Renamed' },
-    });
+    const nameInput = within(dialog).getByLabelText(/^name/i);
+    await user.clear(nameInput);
+    await user.type(nameInput, 'Popular Movies Renamed');
 
     const submitButton = within(dialog).getByRole('button', { name: 'Save Changes' });
     await waitFor(() => {
@@ -303,7 +301,7 @@ describe('ImportListSettings (integration)', () => {
   });
 
   it('shows delete confirmation when Delete clicked', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     renderImportListSettings();
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
@@ -325,7 +323,7 @@ describe('ImportListSettings (integration)', () => {
   });
 
   it('calls onDeleteList and refreshes when delete confirmed', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     const onDeleteList = vi.fn().mockResolvedValue(undefined);
     const onRefreshLists = vi.fn();
     renderImportListSettings({ onDeleteList, onRefreshLists });
@@ -344,7 +342,7 @@ describe('ImportListSettings (integration)', () => {
   });
 
   it('calls onSyncList when Sync clicked', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     const onSyncList = vi.fn().mockResolvedValue(undefined);
     renderImportListSettings({ onSyncList });
 
@@ -358,7 +356,7 @@ describe('ImportListSettings (integration)', () => {
   });
 
   it('calls onDeleteExclusion and refreshes when exclusion delete confirmed', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     const onDeleteExclusion = vi.fn().mockResolvedValue(undefined);
     const onRefreshExclusions = vi.fn();
     renderImportListSettings({ onDeleteExclusion, onRefreshExclusions });
@@ -399,7 +397,7 @@ describe('ImportListSettings (integration)', () => {
     const cardA = findListCard('Popular Movies');
     const syncButton = within(cardA).getByRole('button', { name: /^sync$/i });
 
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     await user.click(syncButton);
 
     await waitFor(() => {
@@ -425,16 +423,17 @@ describe('ImportListSettings (integration)', () => {
     );
     renderImportListSettings({ onCreateList });
 
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     await user.click(screen.getByRole('button', { name: 'Add Import List' }));
 
     const dialog = await screen.findByRole('dialog', { name: /add import list/i });
-    fireEvent.change(within(dialog).getByLabelText(/^name/i), {
-      target: { value: 'Pending List' },
-    });
-    fireEvent.change(within(dialog).getByLabelText(/root folder/i), {
-      target: { value: '/data/pending' },
-    });
+    const nameInput = within(dialog).getByLabelText(/^name/i);
+    await user.clear(nameInput);
+    await user.type(nameInput, 'Pending List');
+
+    const rootFolderInput = within(dialog).getByLabelText(/root folder/i);
+    await user.clear(rootFolderInput);
+    await user.type(rootFolderInput, '/data/pending');
 
     const submitButton = within(dialog).getByRole('button', { name: 'Add Import List' });
     await waitFor(() => {
@@ -454,5 +453,60 @@ describe('ImportListSettings (integration)', () => {
     expect(savingButton).toBeDisabled();
 
     resolveCreate();
+  });
+
+  it('adds an exclusion through the full search-and-confirm flow', async () => {
+    const user = userEvent.setup({ delay: null });
+    const onCreateExclusion = vi.fn().mockResolvedValue(undefined);
+    const onRefreshExclusions = vi.fn();
+    const searchMovies = vi.fn().mockResolvedValue({
+      results: [
+        {
+          tmdbId: 550,
+          title: 'Fight Club',
+          year: 1999,
+          overview: 'An insomniac office worker forms an underground fight club.',
+          posterUrl: 'https://example.com/fight-club.jpg',
+        },
+      ],
+    });
+
+    renderImportListSettings({
+      onCreateExclusion,
+      onRefreshExclusions,
+      searchMovies,
+    });
+
+    await user.click(screen.getByRole('button', { name: 'Exclusions' }));
+    await user.click(screen.getByRole('button', { name: /add exclusion/i }));
+
+    const dialog = await screen.findByRole('dialog', { name: /add exclusion/i });
+
+    const searchInput = within(dialog).getByPlaceholderText(/search for a movie or tv series/i);
+    await user.type(searchInput, 'Fight Club');
+    await user.click(within(dialog).getByRole('button', { name: /^search$/i }));
+
+    await waitFor(() => {
+      expect(searchMovies).toHaveBeenCalledWith({ query: 'Fight Club' });
+    });
+
+    const resultButton = within(dialog).getByText('Fight Club').closest('button');
+    expect(resultButton).toBeTruthy();
+    await user.click(resultButton!);
+
+    const addButton = within(dialog).getByRole('button', { name: /^add exclusion$/i });
+    await waitFor(() => {
+      expect(addButton).not.toBeDisabled();
+    });
+    await user.click(addButton);
+
+    await waitFor(() => {
+      expect(onCreateExclusion).toHaveBeenCalledTimes(1);
+    });
+
+    const submitted = onCreateExclusion.mock.calls[0]![0] as CreateExclusionInput;
+    expect(submitted.tmdbId).toBe(550);
+    expect(submitted.title).toBe('Fight Club (1999)');
+    expect(onRefreshExclusions).toHaveBeenCalledTimes(1);
   });
 });

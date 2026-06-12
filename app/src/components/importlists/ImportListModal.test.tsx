@@ -1,9 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ImportListModal } from './ImportListModal.js';
 import type { CreateImportListInput, ImportList } from '@/lib/api/importListsApi';
 import type { QualityProfile } from '@/types/qualityProfile';
+
+// Integration-style tests with Radix Dialog and user-event need more time in jsdom.
+vi.setConfig({ testTimeout: 15_000 });
 
 const mockQualityProfiles: QualityProfile[] = [
   { id: 1, name: 'HD-1080p', cutoffId: 1, qualities: [] },
@@ -138,7 +141,7 @@ describe('ImportListModal', () => {
   });
 
   it('shows TMDB List fields when providerType is tmdb-list and hides TMDB Popular fields', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     renderImportListModal({ editList: null });
 
     const providerSelect = screen.getByLabelText(/provider type/i) as HTMLSelectElement;
@@ -179,18 +182,24 @@ describe('ImportListModal', () => {
   });
 
   it('calls onSave with form data when form is valid', async () => {
+    const user = userEvent.setup({ delay: null });
     const onSave = vi.fn().mockResolvedValue(undefined);
     renderImportListModal({ onSave, editList: null });
 
-    fireEvent.change(screen.getByLabelText(/^name/i), { target: { value: 'My New List' } });
-    fireEvent.change(screen.getByLabelText(/root folder/i), { target: { value: '/data/movies' } });
+    const nameInput = screen.getByLabelText(/^name/i);
+    await user.clear(nameInput);
+    await user.type(nameInput, 'My New List');
+
+    const rootFolderInput = screen.getByLabelText(/root folder/i);
+    await user.clear(rootFolderInput);
+    await user.type(rootFolderInput, '/data/movies');
 
     const submitButton = screen.getByRole('button', { name: 'Add Import List' });
     await waitFor(() => {
       expect(submitButton).not.toBeDisabled();
     });
 
-    await userEvent.click(submitButton);
+    await user.click(submitButton);
 
     await waitFor(() => {
       expect(onSave).toHaveBeenCalledTimes(1);
@@ -208,18 +217,23 @@ describe('ImportListModal', () => {
   });
 
   it('calls onSave with tmdb-list config when provider is switched before submit', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     const onSave = vi.fn().mockResolvedValue(undefined);
     renderImportListModal({ onSave, editList: null });
 
-    fireEvent.change(screen.getByLabelText(/^name/i), { target: { value: 'Sci-Fi Watchlist' } });
-    fireEvent.change(screen.getByLabelText(/root folder/i), { target: { value: '/data/scifi' } });
+    const nameInput = screen.getByLabelText(/^name/i);
+    await user.clear(nameInput);
+    await user.type(nameInput, 'Sci-Fi Watchlist');
+
+    const rootFolderInput = screen.getByLabelText(/root folder/i);
+    await user.clear(rootFolderInput);
+    await user.type(rootFolderInput, '/data/scifi');
 
     const providerSelect = screen.getByLabelText(/provider type/i) as HTMLSelectElement;
     await user.selectOptions(providerSelect, 'tmdb-list');
 
     const listIdInput = await screen.findByLabelText(/list id/i) as HTMLInputElement;
-    fireEvent.change(listIdInput, { target: { value: '706' } });
+    await user.type(listIdInput, '706');
 
     const submitButton = screen.getByRole('button', { name: 'Add Import List' });
     await waitFor(() => {

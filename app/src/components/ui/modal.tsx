@@ -129,7 +129,7 @@ export function ConfirmModal({
     <Modal isOpen={isOpen} ariaLabel={title} onClose={onCancel}>
       <ModalHeader title={title} onClose={onCancel} />
       <ModalBody>
-        <p className="text-sm text-text-secondary">{description ?? 'Please confirm this action.'}</p>
+        <div className="text-sm text-text-secondary">{description ?? 'Please confirm this action.'}</div>
       </ModalBody>
       <ModalFooter>
         <Button variant="secondary" onClick={onCancel} disabled={isConfirming}>

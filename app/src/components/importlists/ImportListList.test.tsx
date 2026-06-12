@@ -4,6 +4,9 @@ import userEvent from '@testing-library/user-event';
 import { ImportListList } from './ImportListList.js';
 import type { ImportList } from '@/lib/api/importListsApi';
 
+// These component tests exercise Tailwind classes and Radix-backed buttons; give them room.
+vi.setConfig({ testTimeout: 15_000 });
+
 const mockListA: ImportList = {
   id: 1,
   name: 'Popular Movies',
@@ -151,7 +154,7 @@ describe('ImportListList', () => {
   });
 
   it('calls onSync with the list object when Sync button is clicked', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     const onSync = vi.fn();
     renderImportListList({
       lists: [mockListA, mockListB],
@@ -167,7 +170,7 @@ describe('ImportListList', () => {
   });
 
   it('calls onEdit with the list object when Edit button is clicked', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     const onEdit = vi.fn();
     renderImportListList({
       lists: [mockListA, mockListB],
@@ -182,7 +185,7 @@ describe('ImportListList', () => {
   });
 
   it('calls onDelete with the list object when Delete button is clicked', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     const onDelete = vi.fn();
     renderImportListList({
       lists: [mockListA, mockListB],
@@ -194,5 +197,71 @@ describe('ImportListList', () => {
 
     expect(onDelete).toHaveBeenCalledTimes(1);
     expect(onDelete).toHaveBeenCalledWith(mockListA);
+  });
+
+  it('displays "Disabled" badge when list is not enabled', () => {
+    const list: ImportList = { ...mockListA, enabled: false };
+    renderImportListList({ lists: [list] });
+
+    const card = findListCard('Popular Movies');
+    expect(within(card).getByText('Disabled')).toBeInTheDocument();
+    expect(within(card).queryByText('Enabled')).not.toBeInTheDocument();
+  });
+
+  it('displays "Unknown" when quality profile is missing', () => {
+    const list: ImportList = { ...mockListA, qualityProfile: undefined };
+    renderImportListList({ lists: [list] });
+
+    const card = findListCard('Popular Movies');
+    expect(within(card).getByText('Unknown')).toBeInTheDocument();
+  });
+
+  describe('formatLastSync branches', () => {
+    const makeList = (lastSyncAt: string | null): ImportList => ({
+      ...mockListA,
+      lastSyncAt,
+    });
+
+    it('shows "Just now" for a sync less than a minute ago', () => {
+      const lastSyncAt = new Date(Date.now() - 30_000).toISOString();
+      renderImportListList({ lists: [makeList(lastSyncAt)] });
+
+      const card = findListCard('Popular Movies');
+      expect(within(card).getByText('Just now')).toBeInTheDocument();
+    });
+
+    it('shows minutes ago for a sync within the last hour', () => {
+      const lastSyncAt = new Date(Date.now() - 5 * 60_000).toISOString();
+      renderImportListList({ lists: [makeList(lastSyncAt)] });
+
+      const card = findListCard('Popular Movies');
+      expect(within(card).getByText(/5 min ago/)).toBeInTheDocument();
+    });
+
+    it('shows hours ago for a sync within the last day', () => {
+      const lastSyncAt = new Date(Date.now() - 3 * 60 * 60_000).toISOString();
+      renderImportListList({ lists: [makeList(lastSyncAt)] });
+
+      const card = findListCard('Popular Movies');
+      expect(within(card).getByText(/3h ago/)).toBeInTheDocument();
+    });
+
+    it('shows days ago for a sync within the last week', () => {
+      const lastSyncAt = new Date(Date.now() - 2 * 24 * 60 * 60_000).toISOString();
+      renderImportListList({ lists: [makeList(lastSyncAt)] });
+
+      const card = findListCard('Popular Movies');
+      expect(within(card).getByText(/2d ago/)).toBeInTheDocument();
+    });
+
+    it('falls back to locale date string for older syncs', () => {
+      const lastSyncAt = '2025-01-15T00:00:00.000Z';
+      renderImportListList({ lists: [makeList(lastSyncAt)] });
+
+      const card = findListCard('Popular Movies');
+      const label = within(card).getByText(/Last Sync:/);
+      expect(label.parentElement).toHaveTextContent('2025');
+      expect(label.parentElement).not.toHaveTextContent(/Just now|min ago|h ago|d ago/);
+    });
   });
 });

@@ -43,6 +43,14 @@ interface ImportListSettingsProps {
   title?: string;
   description?: string;
   defaultTab?: TabType;
+  /** Optional movie search override for tests. */
+  searchMovies?: (params: { query: string }) => Promise<{ results: Array<{
+    tmdbId: number;
+    title: string;
+    year: number;
+    overview?: string;
+    posterUrl?: string;
+  }> }>;
 }
 
 export function ImportListSettings({
@@ -64,6 +72,7 @@ export function ImportListSettings({
   title = 'Import Lists',
   description = 'Configure import lists to automatically add media from external sources.',
   defaultTab = 'lists',
+  searchMovies,
 }: ImportListSettingsProps) {
   const [activeTab, setActiveTab] = useState<TabType>(defaultTab);
 
@@ -242,6 +251,7 @@ export function ImportListSettings({
         onAdd={handleAddExclusion}
         existingExclusions={exclusions}
         isLoading={isSaving}
+        searchMovies={searchMovies}
       />
 
       {/* Delete List Confirmation Modal */}

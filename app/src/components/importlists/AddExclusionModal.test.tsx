@@ -4,15 +4,8 @@ import userEvent from '@testing-library/user-event';
 import { AddExclusionModal } from './AddExclusionModal.js';
 import type { CreateExclusionInput, ImportListExclusion } from '@/lib/api/importListsApi';
 
-const mockSearchMovies = vi.fn();
-
-vi.mock('@/lib/api/client', () => ({
-  getApiClients: vi.fn(() => ({
-    discoverApi: {
-      searchMovies: mockSearchMovies,
-    },
-  })),
-}));
+// Modal interactions with user-event are slow in jsdom; raise the per-test budget.
+vi.setConfig({ testTimeout: 15_000 });
 
 const mockExclusion: ImportListExclusion = {
   id: 1,
@@ -51,12 +44,15 @@ const mockSearchResults = [
   },
 ];
 
+const mockSearchMovies = vi.fn();
+
 type RenderOverrides = Partial<{
   isOpen: boolean;
   onClose: () => void;
   onAdd: (input: CreateExclusionInput) => Promise<void> | void;
   existingExclusions: ImportListExclusion[];
   isLoading: boolean;
+  searchMovies: typeof mockSearchMovies;
 }>;
 
 const renderAddExclusionModal = (overrides: RenderOverrides = {}) => {
@@ -69,6 +65,7 @@ const renderAddExclusionModal = (overrides: RenderOverrides = {}) => {
       onAdd={onAdd}
       existingExclusions={overrides.existingExclusions ?? []}
       isLoading={overrides.isLoading ?? false}
+      searchMovies={overrides.searchMovies ?? mockSearchMovies}
     />,
   );
   return { ...utils, onClose, onAdd };
@@ -109,7 +106,7 @@ describe('AddExclusionModal', () => {
   });
 
   it('displays search results after successful search', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     renderAddExclusionModal();
 
     const searchInput = screen.getByPlaceholderText(/search for a movie or tv series/i);
@@ -132,7 +129,7 @@ describe('AddExclusionModal', () => {
   });
 
   it('shows error alert when search fails', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     mockSearchMovies.mockRejectedValueOnce(new Error('boom'));
 
     renderAddExclusionModal();
@@ -152,7 +149,7 @@ describe('AddExclusionModal', () => {
   });
 
   it('selects a result when clicked and enables Add Exclusion button', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     renderAddExclusionModal();
 
     const searchInput = screen.getByPlaceholderText(/search for a movie or tv series/i);
@@ -175,7 +172,7 @@ describe('AddExclusionModal', () => {
   });
 
   it('disables result that matches existing exclusion and shows Already excluded label', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     mockSearchMovies.mockResolvedValueOnce({
       results: [
         {
@@ -225,7 +222,7 @@ describe('AddExclusionModal', () => {
   });
 
   it('calls onAdd with tmdbId and formatted title when Add Exclusion is clicked', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     const onAdd = vi.fn().mockResolvedValue(undefined);
     renderAddExclusionModal({ onAdd });
 
@@ -254,7 +251,7 @@ describe('AddExclusionModal', () => {
   });
 
   it('calls onClose when Cancel is clicked', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     const onClose = vi.fn();
     renderAddExclusionModal({ onClose });
 
@@ -265,7 +262,7 @@ describe('AddExclusionModal', () => {
   });
 
   it('resets state when modal closes and reopens', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     const onClose = vi.fn();
     const onAdd = vi.fn().mockResolvedValue(undefined);
     const { rerender } = render(
@@ -274,6 +271,7 @@ describe('AddExclusionModal', () => {
         onClose={onClose}
         onAdd={onAdd}
         existingExclusions={[]}
+        searchMovies={mockSearchMovies}
       />,
     );
 
@@ -296,6 +294,7 @@ describe('AddExclusionModal', () => {
         onClose={onClose}
         onAdd={onAdd}
         existingExclusions={[]}
+        searchMovies={mockSearchMovies}
       />,
     );
 
@@ -307,6 +306,7 @@ describe('AddExclusionModal', () => {
         onClose={onClose}
         onAdd={onAdd}
         existingExclusions={[]}
+        searchMovies={mockSearchMovies}
       />,
     );
 
@@ -318,5 +318,54 @@ describe('AddExclusionModal', () => {
 
     const reopenedAddButton = screen.getByRole('button', { name: /^add exclusion$/i });
     expect(reopenedAddButton).toBeDisabled();
+  });
+
+  it('does not search when query is only whitespace', async () => {
+    const user = userEvent.setup({ delay: null });
+    renderAddExclusionModal();
+
+    const searchInput = screen.getByPlaceholderText(/search for a movie or tv series/i);
+    await user.type(searchInput, '   ');
+
+    const searchButton = screen.getByRole('button', { name: /^search$/i });
+    expect(searchButton).toBeDisabled();
+
+    await user.click(searchButton);
+    expect(mockSearchMovies).not.toHaveBeenCalled();
+  });
+
+  it('shows no results message when search returns an empty list', async () => {
+    const user = userEvent.setup({ delay: null });
+    mockSearchMovies.mockResolvedValueOnce({ results: [] });
+    renderAddExclusionModal();
+
+    const searchInput = screen.getByPlaceholderText(/search for a movie or tv series/i);
+    await user.type(searchInput, 'NothingHere');
+
+    await user.click(screen.getByRole('button', { name: /^search$/i }));
+
+    await waitFor(() => {
+      expect(mockSearchMovies).toHaveBeenCalledWith({ query: 'NothingHere' });
+    });
+
+    expect(screen.getByText(/no results found for/i)).toHaveTextContent('NothingHere');
+    expect(screen.queryByRole('heading', { name: /search results/i })).not.toBeInTheDocument();
+  });
+
+  it('renders "No Image" placeholder for results without a poster', async () => {
+    const user = userEvent.setup({ delay: null });
+    renderAddExclusionModal();
+
+    const searchInput = screen.getByPlaceholderText(/search for a movie or tv series/i);
+    await user.type(searchInput, 'Fight Club');
+
+    await user.click(screen.getByRole('button', { name: /^search$/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Pulp Fiction')).toBeInTheDocument();
+    });
+
+    const resultButton = getResultButton('Pulp Fiction');
+    expect(within(resultButton).getByText('No Image')).toBeInTheDocument();
   });
 });

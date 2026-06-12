@@ -4,6 +4,8 @@ import userEvent from '@testing-library/user-event';
 import { ExclusionManager } from './ExclusionManager.js';
 import type { ImportListExclusion } from '@/lib/api/importListsApi';
 
+vi.setConfig({ testTimeout: 15_000 });
+
 const mockExclusionA: ImportListExclusion = {
   id: 1,
   importListId: 1,
@@ -111,7 +113,7 @@ describe('ExclusionManager', () => {
   });
 
   it('calls onRemoveExclusion with correct exclusion when Remove is clicked', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     const onRemoveExclusion = vi.fn();
     renderExclusionManager({
       exclusions: [mockExclusionA, mockExclusionB, mockExclusionC],
@@ -131,7 +133,7 @@ describe('ExclusionManager', () => {
   });
 
   it('calls onAddExclusion when Add Exclusion button is clicked', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     const onAddExclusion = vi.fn();
     renderExclusionManager({
       exclusions: [mockExclusionA],

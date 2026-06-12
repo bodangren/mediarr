@@ -13,6 +13,8 @@ interface AddExclusionModalProps {
   onAdd: (input: CreateExclusionInput) => Promise<void> | void;
   existingExclusions: ImportListExclusion[];
   isLoading?: boolean;
+  /** Optional search override; defaults to discoverApi.searchMovies. */
+  searchMovies?: (params: { query: string }) => Promise<{ results: DiscoverMovie[] }>;
 }
 
 interface SearchResult {
@@ -30,6 +32,7 @@ export function AddExclusionModal({
   onAdd,
   existingExclusions,
   isLoading = false,
+  searchMovies = getApiClients().discoverApi.searchMovies,
 }: AddExclusionModalProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
@@ -55,7 +58,7 @@ export function AddExclusionModal({
 
     try {
       // Search movies using discover API
-      const movieResults = await getApiClients().discoverApi.searchMovies({ query: searchQuery.trim() });
+      const movieResults = await searchMovies({ query: searchQuery.trim() });
       
       // Transform to our format
       const results: SearchResult[] = movieResults.results.map((movie: DiscoverMovie) => ({

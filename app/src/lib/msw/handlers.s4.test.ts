@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
   findHandler,
-  isMostSpecificMatch,
   runHandler,
   type Method,
   type RouteExpectation,

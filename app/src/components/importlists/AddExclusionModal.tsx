@@ -77,7 +77,7 @@ export function AddExclusionModal({
     } finally {
       setIsSearching(false);
     }
-  }, [searchQuery]);
+  }, [searchQuery, searchMovies]);
 
   const handleAddExclusion = async () => {
     if (!selectedResult) return;

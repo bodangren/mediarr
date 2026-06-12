@@ -22,6 +22,7 @@ function ToastProbe() {
   const { pushToast } = useToast();
   // Expose pushToast so the auto-dismiss test can drive it under fake timers
   // without depending on user-event's interaction queue.
+  // eslint-disable-next-line react-hooks/immutability
   (globalThis as { __pushToast?: typeof pushToast }).__pushToast = pushToast;
   return null;
 }

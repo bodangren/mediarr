@@ -36,8 +36,6 @@ const mockExclusionC: ImportListExclusion = {
   createdAt: '2026-05-26T00:00:00.000Z',
 };
 
-const noop = () => Promise.resolve();
-
 const renderExclusionManager = (overrides: Partial<{
   exclusions: ImportListExclusion[];
   isLoading: boolean;

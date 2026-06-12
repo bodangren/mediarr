@@ -28,7 +28,7 @@
 - [~] Remove duplicate literal + parameterized handlers (e.g., `/api/backups/1` + `/api/backups/:id`). Order routes so literals precede parameters in the aggregated array.
 - [x] Add `sendBlob()` helper and convert binary endpoints (`/api/system/events/export`, `/api/backups/:id/download`, `/api/logs/files/:filename/download`, `/api/images/proxy`, `/api/stream/:id`) to return real `Blob`/`ReadableStream` bodies with correct `Content-Type`.
 - [x] Run the six handler test files; fix any regressions.
-- [x] Commit: `refactor(msw): split handlers by domain, move fixtures to factories, add sendBlob helper`
+- [x] Commit: `refactor(msw): split handlers by domain, move fixtures to factories, add sendBlob helper` (`86fdd42`)
 
 ## Phase P3: Add real MSW integration smoke tests and re-enable setup.ts
 

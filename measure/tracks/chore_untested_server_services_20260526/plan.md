@@ -73,7 +73,7 @@ describe('ServiceName', () => {
 - Tests re-run post-restore: `bun x vitest run server/src/services/Scheduler.test.ts` → 15/15 pass. Commits `5e0d65a` and `ad625f1` preserved.
 - `measure/automation-supervisor.py` remains dirty but the supervisor gate did not flag it (lives under `measure/`; out of MID's Red-phase scope per gate policy).
 
-## Phase S2: SettingsService tests *(COMPLETED — 2026-06-12)*
+## Phase S2: SettingsService tests *(DEFERRED — post-v1.0)*
 
 > **S2 block (2026-06-12, mid attempt):** This phase is entirely deferred per the track scope
 > note at the top of `plan.md` ("Do not start deferred phases as part of this track") and per

@@ -88,9 +88,14 @@ For parameterized routes: `http.get('/api/example/:id', ({ params }) => { ... })
   - `POST /api/indexers/catalog/:id/add` — return added indexer *(added)*
   - `POST /api/indexers/catalog/reload` — return 200 *(added)*
   - `POST /api/indexers/import-from/:type` — return import result *(added)*
-- [x] Run `cd app && bun ../node_modules/.bin/vitest run src/lib/msw/handlers.s1.test.ts` — 35 passed (35 total) at commit (see below)
+- [x] Run `cd app && bun ../node_modules/.bin/vitest run src/lib/msw/handlers.s1.test.ts` — 35 passed (35 total) at `9877e54`
 - [x] Commit: `afa2aa4 test(msw): add Red-phase tests for S1 core domain handlers (movies/series/indexers)` — Red tests already committed in a prior MID attempt; this phase's Red contract is satisfied
-- [x] Commit: `feat(msw): add S1 core domain handlers for movies/series/indexers` — implementation closes the 16 missing handlers and 4 envelope-shape mismatches
+- [x] Commit: `9877e54 feat(msw): add S1 core domain handlers for movies/series/indexers` — implementation closes the 16 missing handlers and 4 envelope-shape mismatches
+
+> **Green gate note:** `npm test` (full suite) has pre-existing failures unrelated to this track
+> (Zod import error in `api-route-map.test.ts`, BigInt mixing in `TorrentManager.test.ts`,
+> subtitle variant tests, etc.). These failures exist on the base commit before this track's
+> changes. The S1 targeted test command passes cleanly: 35/35.
 
 ## Phase S2: Settings & config MSW handlers
 

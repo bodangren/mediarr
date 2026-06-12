@@ -53,8 +53,14 @@ describe('ServiceName', () => {
 - [~] Write test: `stop(unknownName)` is a no-op (does not throw)
 - [~] Write test: `stopAll()` stops every task and clears the registry
 - [~] Write test: `isScheduled` and `listJobs` reflect current state
-- [~] Run: `npx vitest run server/src/services/Scheduler.test.ts`
-- [~] Commit: `test(scheduler): add Scheduler core unit tests`
+- [x] Run: `bun x vitest run server/src/services/Scheduler.test.ts` (15/15 pass)
+- [x] Commit: `test(scheduler): add Scheduler core unit tests` (5e0d65a)
+
+**S1 Red-phase evidence (2026-06-12, mid attempt 1):**
+- Targeted Red command (file absent): `bun x vitest run server/src/services/Scheduler.test.ts` → exit 1, "No test files found".
+- Targeted Green command (file present): same command → exit 0, 15/15 pass at HEAD.
+- Sibling co-run: `bun x vitest run server/src/services/Scheduler.test.ts server/src/services/Scheduler.meta.test.ts server/src/services/Scheduler.subtitle.test.ts` → 22/22 pass, ~3.4s (no isolation timeout).
+- All asserted Scheduler.ts behavior is implemented at HEAD; phase is "satisfied with evidence" — the missing artifact was the test file itself, not source logic. No follow-up implementation work required.
 
 ## Phase S2: SettingsService tests *(DEFERRED — post-v1.0)*
 

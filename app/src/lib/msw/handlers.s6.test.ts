@@ -84,7 +84,7 @@ describe('Phase S6 — Verification & Handoff', () => {
       expect(
         content,
         'setup.ts must register an afterEach(...) hook that calls server.resetHandlers() to drop per-test handler overrides (test-strategy §1 + §5 Phase S0)',
-      ).toMatch(/afterEach\s*\([^)]*\{[^}]*server\.resetHandlers/s);
+      ).toMatch(/afterEach\s*\([^)]*\)[^{]*\{[^}]*server\.resetHandlers/s);
     });
 
     it('registers an afterAll hook that calls server.close', () => {
@@ -92,7 +92,7 @@ describe('Phase S6 — Verification & Handoff', () => {
       expect(
         content,
         'setup.ts must register an afterAll(...) hook that calls server.close() to tear down MSW interception (test-strategy §1 + §5 Phase S0)',
-      ).toMatch(/afterAll\s*\([^)]*\{[^}]*server\.close/s);
+      ).toMatch(/afterAll\s*\([^)]*\)[^{]*\{[^}]*server\.close/s);
     });
   });
 

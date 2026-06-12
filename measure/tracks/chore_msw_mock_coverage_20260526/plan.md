@@ -228,30 +228,35 @@ For parameterized routes: `http.get('/api/example/:id', ({ params }) => { ... })
 > **Red result (2026-06-12, this MID run):** recorded after the Red
 > test run, see "Red evidence" block below.
 
-- [~] Add handlers for system routes:
-  - `GET /api/system/status` — return system status
-  - `GET /api/system/events` — return events list
-  - `GET /api/system/events/export` — return export blob
-  - `DELETE /api/system/events/clear` — return 200
-  - `GET /api/tasks/queued` — return queued tasks
-  - `GET /api/tasks/scheduled` — return scheduled tasks
-  - `GET /api/tasks/history` — return task history
-  - `GET /api/tasks/history/:id` — return single task
-  - `POST /api/tasks/scheduled/:taskId/run` — return 202
-  - `DELETE /api/tasks/queued/:taskId` — return 200
-- [~] Add handlers for operations routes:
-  - `GET /api/activity` — return activity events *(exists at handlers.ts:622, regression baseline)*
-  - `DELETE /api/activity` — return 200
-  - `GET /api/activity/export` — return export blob
-  - `GET /api/health` — return health status *(exists at handlers.ts:627, regression baseline)*
-  - `PATCH /api/activity/:id/fail` — return 200
-  - `POST /api/activity/:id/retry-import` — return 202
-- [~] Add handlers for stats routes:
-  - `GET /api/system/stats` — return system stats
-  - `GET /api/stats/downloads` — return download stats
-  - `GET /api/stats/system` — return system stats
-- [ ] Run `CI=true npm test` — expect GREEN
-- [ ] Commit: `test(msw): add system & operations MSW handlers`
+- [x] Add handlers for system routes:
+  - `GET /api/system/status` — return system status *(added)*
+  - `GET /api/system/events` — return events list *(added)*
+  - `GET /api/system/events/export` — return export blob *(added — sets Content-Disposition: attachment)*
+  - `DELETE /api/system/events/clear` — return 200 *(added)*
+  - `GET /api/tasks/queued` — return queued tasks *(added)*
+  - `GET /api/tasks/scheduled` — return scheduled tasks *(added)*
+  - `GET /api/tasks/history` — return task history *(added)*
+  - `GET /api/tasks/history/:id` — return single task *(added)*
+  - `POST /api/tasks/scheduled/:taskId/run` — return 202 *(added)*
+  - `DELETE /api/tasks/queued/:taskId` — return 200 *(added)*
+- [x] Add handlers for operations routes:
+  - `GET /api/activity` — return activity events *(exists, regression baseline)*
+  - `DELETE /api/activity` — return 200 *(added)*
+  - `GET /api/activity/export` — return export blob *(added — sets Content-Disposition: attachment)*
+  - `GET /api/health` — return health status *(exists, regression baseline)*
+  - `PATCH /api/activity/:id/fail` — return 200 *(added)*
+  - `POST /api/activity/:id/retry-import` — return 202 *(added)*
+- [x] Add handlers for stats routes:
+  - `GET /api/system/stats` — return system stats *(added)*
+  - `GET /api/stats/downloads` — return download stats *(added)*
+  - `GET /api/stats/system` — return system stats *(added)*
+- [x] Run targeted S3 tests — 36 passed (36 total) at `d500e48`
+- [x] Commit: `d500e48 feat(msw): add S3 system, operations, and stats handlers`
+
+> **Green gate note:** `npm test` (full suite) has pre-existing failures unrelated to this track
+> (better-sqlite3 Bun incompatibility, BigInt mixing in TorrentManager, etc.). These failures exist
+> on the base commit before this track's changes. The S3 targeted test command passes cleanly: 36/36.
+> S1 regression: 35/35, S2 regression: 31/31.
 
 > **Red evidence (2026-06-12, mid-attempt-1):**
 > `cd app && bun ../node_modules/.bin/vitest run src/lib/msw/handlers.s3.test.ts`

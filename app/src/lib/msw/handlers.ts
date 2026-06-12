@@ -762,6 +762,519 @@ export function createHandlers(mode: FactoryMode = 'deterministic') {
       });
     }),
 
+    // ─── Phase S5: Remaining domain handlers ─────────────────────────────
+
+    // Backup routes — schedule literals BEFORE /:id catch-all
+    http.get('/api/backups', () => {
+      return sendSuccess([
+        { id: 1, name: 'backup-2026-06-12.db', size: 1_048_576, createdAt: new Date().toISOString() },
+        { id: 2, name: 'backup-2026-06-11.db', size: 1_040_000, createdAt: new Date(Date.now() - 86400000).toISOString() },
+      ]);
+    }),
+
+    http.post('/api/backups', async ({ request }) => {
+      const body = (await request.json()) as { name?: string };
+      return sendSuccess({ id: Date.now(), name: body.name ?? `backup-${new Date().toISOString().slice(0, 10)}.db`, size: 0, createdAt: new Date().toISOString() }, 201);
+    }),
+
+    http.get('/api/backups/schedule', () => {
+      return sendSuccess({ enabled: true, interval: 'daily', retentionDays: 30, lastRun: null, nextRun: new Date(Date.now() + 86400000).toISOString() });
+    }),
+
+    http.patch('/api/backups/schedule', async ({ request }) => {
+      const body = (await request.json()) as { enabled?: boolean; interval?: string; retentionDays?: number };
+      return sendSuccess({ enabled: body.enabled ?? true, interval: body.interval ?? 'daily', retentionDays: body.retentionDays ?? 30, lastRun: null, nextRun: new Date(Date.now() + 86400000).toISOString() });
+    }),
+
+    http.delete('/api/backups/1', () => {
+      return sendSuccess({ id: 1, deleted: true });
+    }),
+
+    http.delete('/api/backups/:id', ({ params }) => {
+      return sendSuccess({ id: Number(params.id), deleted: true });
+    }),
+
+    http.post('/api/backups/1/restore', () => {
+      return sendSuccess({ id: 1, restored: true });
+    }),
+
+    http.post('/api/backups/:id/restore', ({ params }) => {
+      return sendSuccess({ id: Number(params.id), restored: true });
+    }),
+
+    http.post('/api/backups/1/download', () => {
+      return HttpResponse.json(
+        { ok: true, data: { id: 1, filename: 'backup-1.db' } },
+        {
+          status: 200,
+          headers: { 'Content-Disposition': 'attachment; filename="backup-1.db"' },
+        },
+      );
+    }),
+
+    http.post('/api/backups/:id/download', ({ params }) => {
+      return HttpResponse.json(
+        { ok: true, data: { id: Number(params.id), filename: `backup-${params.id}.db` } },
+        {
+          status: 200,
+          headers: { 'Content-Disposition': `attachment; filename="backup-${params.id}.db"` },
+        },
+      );
+    }),
+
+    // Blocklist routes — clear/remove literals BEFORE /:id catch-all
+    http.get('/api/blocklist', () => {
+      return sendSuccess([
+        { id: 1, title: 'Bad Release', indexer: 'Indexer 1', reason: 'Poor quality', createdAt: new Date().toISOString() },
+      ]);
+    }),
+
+    http.delete('/api/blocklist/clear', () => {
+      return sendSuccess({ deletedCount: 0 });
+    }),
+
+    http.delete('/api/blocklist/remove', async ({ request }) => {
+      try {
+        const body = (await request.json()) as { ids?: number[] };
+        return sendSuccess({ deletedCount: body.ids?.length ?? 0 });
+      } catch {
+        return sendSuccess({ deletedCount: 0 });
+      }
+    }),
+
+    http.delete('/api/blocklist/1', () => {
+      return sendSuccess({ id: 1, deleted: true });
+    }),
+
+    http.delete('/api/blocklist/:id', ({ params }) => {
+      return sendSuccess({ id: Number(params.id), deleted: true });
+    }),
+
+    // Calendar route
+    http.get('/api/calendar', ({ request }) => {
+      const url = new URL(request.url);
+      const start = url.searchParams.get('start');
+      const end = url.searchParams.get('end');
+      return sendSuccess([
+        { id: 1, seriesId: 1, seriesTitle: 'Example Series', seasonNumber: 2, episodeNumber: 1, title: 'Episode 1', airDate: start ?? new Date().toISOString(), monitored: true },
+      ]);
+    }),
+
+    // Collection routes — /:id/search and /:id/sync are POST so no GET /:id collision
+    http.get('/api/collections', () => {
+      return sendSuccess([
+        { id: 1, name: 'Marvel Cinematic Universe', type: 'movie', monitored: true, movieCount: 30 },
+        { id: 2, name: 'Breaking Bad Collection', type: 'series', monitored: true, seriesCount: 1 },
+      ]);
+    }),
+
+    http.get('/api/collections/1', () => {
+      return sendSuccess({ id: 1, name: 'Marvel Cinematic Universe', type: 'movie', monitored: true, movieCount: 30 });
+    }),
+
+    http.get('/api/collections/:id', ({ params }) => {
+      const id = Number(params.id);
+      return sendSuccess({ id, name: `Collection ${id}`, type: 'movie', monitored: true, movieCount: 10 });
+    }),
+
+    http.post('/api/collections', async ({ request }) => {
+      const body = (await request.json()) as { name?: string; type?: string };
+      return sendSuccess({ id: Date.now(), name: body.name ?? 'New Collection', type: body.type ?? 'movie', monitored: true, movieCount: 0 }, 201);
+    }),
+
+    http.put('/api/collections/1', async ({ request }) => {
+      const body = (await request.json()) as Record<string, unknown>;
+      return sendSuccess({ id: 1, name: body.name ?? 'Marvel Cinematic Universe', type: body.type ?? 'movie', monitored: body.monitored ?? true, movieCount: 30 });
+    }),
+
+    http.put('/api/collections/:id', async ({ params, request }) => {
+      const id = Number(params.id);
+      const body = (await request.json()) as Record<string, unknown>;
+      return sendSuccess({ id, name: body.name ?? `Collection ${id}`, type: body.type ?? 'movie', monitored: body.monitored ?? true, movieCount: 10 });
+    }),
+
+    http.delete('/api/collections/1', () => {
+      return sendSuccess({ id: 1, deleted: true });
+    }),
+
+    http.delete('/api/collections/:id', ({ params }) => {
+      return sendSuccess({ id: Number(params.id), deleted: true });
+    }),
+
+    http.post('/api/collections/1/search', () => {
+      return sendSuccess({ collectionId: 1, results: [{ tmdbId: 12345, title: 'Search Result', year: 2024 }] });
+    }),
+
+    http.post('/api/collections/:id/search', ({ params }) => {
+      return sendSuccess({ collectionId: Number(params.id), results: [{ tmdbId: 12345, title: 'Search Result', year: 2024 }] });
+    }),
+
+    http.post('/api/collections/1/sync', () => {
+      return sendSuccess({ collectionId: 1, synced: true, added: 0, removed: 0 });
+    }),
+
+    http.post('/api/collections/:id/sync', ({ params }) => {
+      return sendSuccess({ collectionId: Number(params.id), synced: true, added: 0, removed: 0 });
+    }),
+
+    // Custom format routes — schema literal BEFORE /:id catch-all
+    http.get('/api/custom-formats', () => {
+      return sendSuccess([
+        { id: 1, name: 'HDR', type: 'quality', specifications: [] },
+        { id: 2, name: 'Atmos Audio', type: 'audio', specifications: [] },
+      ]);
+    }),
+
+    http.get('/api/custom-formats/schema', () => {
+      return sendSuccess({
+        fields: [
+          { name: 'name', label: 'Name', type: 'string', required: true },
+          { name: 'type', label: 'Type', type: 'select', options: ['quality', 'audio', 'language'], required: true },
+        ],
+      });
+    }),
+
+    http.get('/api/custom-formats/1', () => {
+      return sendSuccess({ id: 1, name: 'HDR', type: 'quality', specifications: [] });
+    }),
+
+    http.get('/api/custom-formats/:id', ({ params }) => {
+      const id = Number(params.id);
+      return sendSuccess({ id, name: `Custom Format ${id}`, type: 'quality', specifications: [] });
+    }),
+
+    http.post('/api/custom-formats', async ({ request }) => {
+      const body = (await request.json()) as { name?: string; type?: string };
+      return sendSuccess({ id: Date.now(), name: body.name ?? 'New Format', type: body.type ?? 'quality', specifications: [] }, 201);
+    }),
+
+    http.put('/api/custom-formats/1', async ({ request }) => {
+      const body = (await request.json()) as Record<string, unknown>;
+      return sendSuccess({ id: 1, name: body.name ?? 'HDR', type: body.type ?? 'quality', specifications: body.specifications ?? [] });
+    }),
+
+    http.put('/api/custom-formats/:id', async ({ params, request }) => {
+      const id = Number(params.id);
+      const body = (await request.json()) as Record<string, unknown>;
+      return sendSuccess({ id, name: body.name ?? `Format ${id}`, type: body.type ?? 'quality', specifications: body.specifications ?? [] });
+    }),
+
+    http.delete('/api/custom-formats/1', () => {
+      return sendSuccess({ id: 1, deleted: true });
+    }),
+
+    http.delete('/api/custom-formats/:id', ({ params }) => {
+      return sendSuccess({ id: Number(params.id), deleted: true });
+    }),
+
+    http.post('/api/custom-formats/1/test', async ({ request }) => {
+      const body = (await request.json()) as { sample?: string };
+      return sendSuccess({ formatId: 1, matched: true, sample: body.sample ?? '', score: 100 });
+    }),
+
+    http.post('/api/custom-formats/:id/test', async ({ params, request }) => {
+      const id = Number(params.id);
+      const body = (await request.json()) as { sample?: string };
+      return sendSuccess({ formatId: id, matched: true, sample: body.sample ?? '', score: 100 });
+    }),
+
+    // Import list routes — exclusions/providers literals BEFORE /:id catch-all
+    http.get('/api/import-lists', () => {
+      return sendSuccess([
+        { id: 1, name: 'TMDB Popular Movies', enabled: true, implementation: 'TMDbImportList' },
+        { id: 2, name: 'Trakt Watchlist', enabled: false, implementation: 'TraktImportList' },
+      ]);
+    }),
+
+    http.get('/api/import-lists/exclusions', () => {
+      return sendSuccess([
+        { id: 1, tmdbId: 99999, title: 'Excluded Movie', movieYear: 2020 },
+      ]);
+    }),
+
+    http.get('/api/import-lists/providers', () => {
+      return sendSuccess([
+        { id: 'tmdb', name: 'TMDb', enabled: true, implementation: 'TMDbImportList' },
+        { id: 'trakt', name: 'Trakt', enabled: false, implementation: 'TraktImportList' },
+      ]);
+    }),
+
+    http.get('/api/import-lists/1', () => {
+      return sendSuccess({ id: 1, name: 'TMDB Popular Movies', enabled: true, implementation: 'TMDbImportList' });
+    }),
+
+    http.get('/api/import-lists/:id', ({ params }) => {
+      const id = Number(params.id);
+      return sendSuccess({ id, name: `Import List ${id}`, enabled: true, implementation: 'TMDbImportList' });
+    }),
+
+    http.post('/api/import-lists', async ({ request }) => {
+      const body = (await request.json()) as { name?: string; implementation?: string };
+      return sendSuccess({ id: Date.now(), name: body.name ?? 'New Import List', enabled: true, implementation: body.implementation ?? 'TMDbImportList' }, 201);
+    }),
+
+    http.put('/api/import-lists/1', async ({ request }) => {
+      const body = (await request.json()) as Record<string, unknown>;
+      return sendSuccess({ id: 1, name: body.name ?? 'TMDB Popular Movies', enabled: body.enabled ?? true, implementation: body.implementation ?? 'TMDbImportList' });
+    }),
+
+    http.put('/api/import-lists/:id', async ({ params, request }) => {
+      const id = Number(params.id);
+      const body = (await request.json()) as Record<string, unknown>;
+      return sendSuccess({ id, name: body.name ?? `Import List ${id}`, enabled: body.enabled ?? true, implementation: body.implementation ?? 'TMDbImportList' });
+    }),
+
+    http.delete('/api/import-lists/1', () => {
+      return sendSuccess({ id: 1, deleted: true });
+    }),
+
+    http.delete('/api/import-lists/:id', ({ params }) => {
+      return sendSuccess({ id: Number(params.id), deleted: true });
+    }),
+
+    http.post('/api/import-lists/1/sync', () => {
+      return sendSuccess({ listId: 1, synced: true, added: 0, removed: 0 });
+    }),
+
+    http.post('/api/import-lists/:id/sync', ({ params }) => {
+      return sendSuccess({ listId: Number(params.id), synced: true, added: 0, removed: 0 });
+    }),
+
+    http.post('/api/import-lists/exclusions', async ({ request }) => {
+      const body = (await request.json()) as { tmdbId?: number; title?: string };
+      return sendSuccess({ id: Date.now(), tmdbId: body.tmdbId ?? 0, title: body.title ?? 'Excluded', movieYear: null }, 201);
+    }),
+
+    http.delete('/api/import-lists/exclusions/1', () => {
+      return sendSuccess({ id: 1, deleted: true });
+    }),
+
+    http.delete('/api/import-lists/exclusions/:id', ({ params }) => {
+      return sendSuccess({ id: Number(params.id), deleted: true });
+    }),
+
+    // Log routes — download/clear literals on :filename BEFORE /:filename catch-all
+    http.get('/api/logs/files', () => {
+      return sendSuccess([
+        { filename: 'mediarr.log', size: 102_400, lastModified: new Date().toISOString() },
+        { filename: 'mediarr.error.log', size: 51_200, lastModified: new Date().toISOString() },
+      ]);
+    }),
+
+    http.get('/api/logs/files/mediarr.log/download', () => {
+      return HttpResponse.json(
+        { ok: true, data: { filename: 'mediarr.log', content: 'log file content' } },
+        {
+          status: 200,
+          headers: { 'Content-Disposition': 'attachment; filename="mediarr.log"' },
+        },
+      );
+    }),
+
+    http.get('/api/logs/files/:filename/download', ({ params }) => {
+      return HttpResponse.json(
+        { ok: true, data: { filename: params.filename, content: 'log file content' } },
+        {
+          status: 200,
+          headers: { 'Content-Disposition': `attachment; filename="${params.filename}"` },
+        },
+      );
+    }),
+
+    http.delete('/api/logs/files/mediarr.log', () => {
+      return sendSuccess({ filename: 'mediarr.log', deleted: true });
+    }),
+
+    http.delete('/api/logs/files/:filename', ({ params }) => {
+      return sendSuccess({ filename: params.filename, deleted: true });
+    }),
+
+    http.post('/api/logs/files/mediarr.log/clear', () => {
+      return sendSuccess({ filename: 'mediarr.log', cleared: true });
+    }),
+
+    http.post('/api/logs/files/:filename/clear', ({ params }) => {
+      return sendSuccess({ filename: params.filename, cleared: true });
+    }),
+
+    http.get('/api/logs/files/mediarr.log', () => {
+      return sendSuccess({ filename: 'mediarr.log', content: '[2026-06-12 10:00:00] INFO: System started\n[2026-06-12 10:00:01] INFO: Indexers loaded' });
+    }),
+
+    http.get('/api/logs/files/:filename', ({ params }) => {
+      return sendSuccess({ filename: params.filename, content: '[2026-06-12 10:00:00] INFO: System started\n[2026-06-12 10:00:01] INFO: Indexers loaded' });
+    }),
+
+    // Update routes
+    http.get('/api/updates/current', () => {
+      return sendSuccess({ version: '1.0.0', branch: 'main', commit: 'abc123', releaseDate: '2026-06-01' });
+    }),
+
+    http.get('/api/updates/available', () => {
+      return sendSuccess({ available: true, version: '1.1.0', releaseDate: '2026-06-10', changelog: 'Bug fixes and improvements' });
+    }),
+
+    http.get('/api/updates/check', () => {
+      return sendSuccess({ checked: true, updateAvailable: false });
+    }),
+
+    http.get('/api/updates/history', () => {
+      return sendSuccess([
+        { version: '1.0.0', installedAt: '2026-06-01T00:00:00Z', status: 'success' },
+      ]);
+    }),
+
+    http.post('/api/updates/check', () => {
+      return sendSuccess({ checked: true, updateAvailable: true, version: '1.1.0' });
+    }),
+
+    http.post('/api/updates/download', () => {
+      return sendSuccess({ downloading: true, progress: 0 });
+    }),
+
+    http.post('/api/updates/install', () => {
+      return sendSuccess({ installing: true, restartRequired: true });
+    }),
+
+    // Dashboard routes
+    http.get('/api/dashboard/disk-space', () => {
+      return sendSuccess([
+        { path: '/media', freeBytes: 500_000_000_000, totalBytes: 1_000_000_000_000, usedPercent: 50 },
+        { path: '/data', freeBytes: 100_000_000_000, totalBytes: 200_000_000_000, usedPercent: 50 },
+      ]);
+    }),
+
+    http.get('/api/dashboard/upcoming', () => {
+      return sendSuccess([
+        { id: 1, seriesId: 1, seriesTitle: 'Example Series', seasonNumber: 2, episodeNumber: 2, title: 'Episode 2', airDate: new Date(Date.now() + 7 * 86400000).toISOString(), monitored: true },
+      ]);
+    }),
+
+    // Misc routes
+    http.get('/api/notifications/push-status', () => {
+      return sendSuccess({ enabled: false, configured: false, token: null });
+    }),
+
+    http.get('/api/setup/status', () => {
+      return sendSuccess({ completed: true, step: 'done', rootFoldersConfigured: true, indexersConfigured: true, downloadClientConfigured: true });
+    }),
+
+    http.post('/api/setup/complete', async ({ request }) => {
+      try {
+        const body = (await request.json()) as Record<string, unknown>;
+        return sendSuccess({ completed: true, ...body });
+      } catch {
+        return sendSuccess({ completed: true });
+      }
+    }),
+
+    http.get('/api/filesystem', ({ request }) => {
+      const url = new URL(request.url);
+      const path = url.searchParams.get('path') ?? '/';
+      return sendSuccess([
+        { name: 'media', path: `${path}/media`, type: 'directory', writable: true },
+        { name: 'data', path: `${path}/data`, type: 'directory', writable: true },
+        { name: 'config.json', path: `${path}/config.json`, type: 'file', size: 1024 },
+      ]);
+    }),
+
+    http.get('/api/images/proxy', ({ request }) => {
+      const url = new URL(request.url);
+      const imageUrl = url.searchParams.get('url') ?? '';
+      return HttpResponse.json(
+        { ok: true, data: { url: imageUrl, contentType: 'image/jpeg' } },
+        {
+          status: 200,
+          headers: { 'Content-Disposition': 'attachment; filename="image.jpg"' },
+        },
+      );
+    }),
+
+    http.get('/api/search', ({ request }) => {
+      const url = new URL(request.url);
+      const query = url.searchParams.get('q') ?? '';
+      return sendSuccess([
+        { mediaType: 'MOVIE', tmdbId: 12345, title: `Search Result for "${query}"`, year: 2024, status: 'released' },
+      ]);
+    }),
+
+    http.get('/api/media/library', ({ request }) => {
+      const url = new URL(request.url);
+      const typeFilter = url.searchParams.get('type');
+      const items = [
+        ...dataset.movies.map(m => ({ type: 'movie', id: m.id, title: m.title, year: m.year, monitored: m.monitored })),
+        ...dataset.series.map(s => ({ type: 'series', id: s.id, title: s.title, year: s.year, monitored: s.monitored })),
+      ];
+      const filtered = typeFilter ? items.filter(item => item.type === typeFilter) : items;
+      return sendPaginated(filtered, numberQuery(url, 'page', 1), numberQuery(url, 'pageSize', 25));
+    }),
+
+    http.post('/api/wanted', async ({ request }) => {
+      const body = (await request.json()) as { mediaType?: string; tmdbId?: number; tvdbId?: number };
+      return sendSuccess({ queued: true, mediaType: body.mediaType, tmdbId: body.tmdbId, tvdbId: body.tvdbId });
+    }),
+
+    http.post('/api/wanted/search-all', () => {
+      return sendSuccess({ queued: true, message: 'Wanted search queued' }, 202);
+    }),
+
+    http.post('/api/library/scan', () => {
+      return sendSuccess({ queued: true, message: 'Library scan queued' }, 202);
+    }),
+
+    // Import routes
+    http.post('/api/import/scan', async ({ request }) => {
+      const body = (await request.json()) as { path?: string };
+      return sendSuccess({
+        path: body.path ?? '/media',
+        files: [
+          { path: '/media/movie1.mkv', movieTitle: 'Imported Movie', year: 2024, quality: '1080p' },
+        ],
+      });
+    }),
+
+    http.post('/api/import/execute', async ({ request }) => {
+      const body = (await request.json()) as { files?: Array<{ path: string; movieId?: number; seriesId?: number }> };
+      return sendSuccess({ imported: body.files?.length ?? 0, failed: 0, errors: [] });
+    }),
+
+    http.post('/api/import/search', async ({ request }) => {
+      const body = (await request.json()) as { term?: string };
+      return sendSuccess([
+        { tmdbId: 12345, title: body.term ?? 'Search Result', year: 2024, status: 'released' },
+      ]);
+    }),
+
+    http.post('/api/import/backfill-posters', () => {
+      return sendSuccess({ updated: 0, failed: 0 });
+    }),
+
+    // Torrent S5 additions — bulk, retry-import, priority
+    http.post('/api/torrents/bulk', async ({ request }) => {
+      const body = (await request.json()) as { infoHashes?: string[]; action?: string };
+      return sendSuccess({ processed: body.infoHashes?.length ?? 0, action: body.action ?? 'pause' });
+    }),
+
+    http.post('/api/torrents/abc123/retry-import', () => {
+      return sendSuccess({ infoHash: 'abc123', retried: true });
+    }),
+
+    http.post('/api/torrents/:infoHash/retry-import', ({ params }) => {
+      return sendSuccess({ infoHash: params.infoHash, retried: true });
+    }),
+
+    http.patch('/api/torrents/abc123/priority', async ({ request }) => {
+      const body = (await request.json()) as { priority?: string };
+      return sendSuccess({ infoHash: 'abc123', priority: body.priority ?? 'normal' });
+    }),
+
+    http.patch('/api/torrents/:infoHash/priority', async ({ params, request }) => {
+      const body = (await request.json()) as { priority?: string };
+      return sendSuccess({ infoHash: params.infoHash, priority: body.priority ?? 'normal' });
+    }),
+
+    // ─── End Phase S5 ────────────────────────────────────────────────────
+
     http.get('/api/activity', ({ request }) => {
       const url = new URL(request.url);
       return sendPaginated(dataset.activity, numberQuery(url, 'page', 1), numberQuery(url, 'pageSize', 25));

@@ -23,13 +23,37 @@ For parameterized routes: `http.get('/api/example/:id', ({ params }) => { ... })
 
 ## Phase S1: Core domain MSW handlers
 
-> **Red-phase status (2026-06-12, mid-attempt-2):** 18 missing endpoints identified via
-> `build-graph search /api/... --type=route`. Failing tests for the gaps live in
-> `app/src/lib/msw/handlers.s1.test.ts`. Run only the new test file with:
-> `npx vitest run --config app/vitest.config.ts app/src/lib/msw/handlers.s1.test.ts`
-> The full `CI=true npm test --workspace=app` suite times out at 900s (12+ min)
-> due to pre-existing failures in unrelated suites — do NOT run the full suite
-> in the Red phase.
+> **Red-phase status (2026-06-12, mid-attempt-2, post-Red-evidence):** Red
+> tests are committed in `afa2aa4 test(msw): add Red-phase tests for S1 core
+> domain handlers (movies/series/indexers)`. Red evidence recorded below.
+>
+> **Dirty-worktree note (2026-06-12, mid-attempt-2):** `measure/automation-supervisor.py`
+> is uncommitted in the worktree at start of this MID run. Diff content
+> (refactor of `allow_dirty_worktree` → `dirty_worktree_context`,
+> `enforce_clean_worktree`, expanded prompts for MID/JR/ACCEPT/CLOSE) is
+> unrelated to the MSW handlers track. Classification: **unrelated user
+> work, preserve** — not touched, not folded into this track's commit.
+> (The supervisor files will surface as a dirty worktree at the next
+> phase, which is the intended workflow.)
+>
+> **Red command (canonical for this phase):**
+> `cd app && bun ../node_modules/.bin/vitest run src/lib/msw/handlers.s1.test.ts`
+> (from the repo root with `PATH=/home/daniel-bo/.bun/bin:$PATH`; the
+> `npx` and `node` binaries are not on PATH in this environment, so the
+> plan text's `npx vitest` invocation is replaced with the bun-runner
+> equivalent. The test runner is identical — vitest v4.0.18 — and the
+> command stays bounded to a single file with no watch mode.)
+>
+> **Red result (2026-06-12, 10:03 local):**
+> `Test Files 1 failed (1)` / `Tests 22 failed | 13 passed (35)`.
+> Of the 16 route-match failures, 5 are movie gaps, 4 are series gaps,
+> 7 are indexer gaps. Of the 6 envelope failures, 2 are no-handler
+> errors (POST /api/movies, PUT /api/movies/:id) and 4 are shape
+> mismatches where `/api/movies/:id` and `/api/series/:id` catch
+> `root-folders` requests and return 404 error envelopes without
+> the required `{ok, data: {rootFolders: [...]}}` shape. The 13 passes
+> cover 5 movies + 4 series + 2 indexer routes that already have
+> dedicated handlers.
 
 - [x] Read `app/src/lib/msw/handlers.ts` to understand current structure
 - [~] Add handlers for movie routes:
@@ -64,8 +88,9 @@ For parameterized routes: `http.get('/api/example/:id', ({ params }) => { ... })
   - `POST /api/indexers/catalog/:id/add` — return added indexer *(MISSING)*
   - `POST /api/indexers/catalog/reload` — return 200 *(MISSING)*
   - `POST /api/indexers/import-from/:type` — return import result *(MISSING)*
-- [ ] Run `npx vitest run --config app/vitest.config.ts app/src/lib/msw/handlers.s1.test.ts` — expect RED for 18 missing handlers, GREEN for the 9 that exist
-- [ ] Commit: `test(msw): add core domain MSW handlers (movies, series, indexers)`
+- [x] Run `cd app && bun ../node_modules/.bin/vitest run src/lib/msw/handlers.s1.test.ts` — RED evidence recorded above; 22 failed | 13 passed (35 total) at commit `afa2aa4`
+- [x] Commit: `afa2aa4 test(msw): add Red-phase tests for S1 core domain handlers (movies/series/indexers)` — Red tests already committed in a prior MID attempt; this phase's Red contract is satisfied
+- [ ] Commit: implementation closes the 16 missing handlers and 4 envelope-shape mismatches; tracks a follow-up JR commit (out of scope for this MID run)
 
 ## Phase S2: Settings & config MSW handlers
 

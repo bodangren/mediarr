@@ -1199,3 +1199,106 @@ committed):**
 **Task status:** the 5 Phase 4 widget-test tasks remain `[~]` (Red
 ownership). The 3 remaining `[ ]` tasks (implement, wire, run GREEN)
 belong to the implement role.
+
+## Phase 4 Red verification (2026-06-13)
+
+**Purpose.** Mid re-invoked after commits `6c9d666` (test file + fake
+extension) and `cfe2027` (Red Evidence docs). Re-verify the Red state at
+HEAD with the bounded command from §"Phase 4 Red Evidence (2026-06-13)"
+above; the contract is already locked by the test file written in
+`6c9d666`, so this attempt is **verification + classification + handoff
+reaffirmation** — no new test files are authored.
+
+**Bounded Red command re-verified** (identical to the original Phase 4
+commit, no watch mode, single-file scope):
+
+```
+cd clients/mediarr-client && flutter test test/features/library/series_detail_screen_test.dart
+```
+
+**Result:** `+1 -7: Some tests failed.` Exit code 1. Identical to the
+result recorded in `cfe2027`'s Phase 4 Red Evidence table. All 7
+failures are real contract gaps (bespoke `SeriesDetailScreen` does not
+compose the shared `MediaHero` / `MetadataSection` / `FileInfoCard` /
+`ActionBar` / `EpisodeList` widgets; has no `S1`/`S2` chip selector; has
+no series-level "Search All Missing" / "Delete Series" actions; surfaces
+subtitle/quality modal sheets instead of in-`EpisodeList` per-episode
+search via `searchReleases`; renders "Season 1" / "Season 2" full-text
+labels rather than chip abbreviations). The 1 passing test (loading
+indicator) is regression coverage that holds across the Green refactor.
+
+**Regression check** (no Phase 1 / Phase 2 / Phase 3 regressions):
+
+| Command | Result |
+|---|---|
+| `flutter test test/features/library/library_screen_navigation_test.dart test/support/contracts/ test/support/fakes/` | 11/11 PASS (Phase 1 nav + response-shape contracts + fake extensions still green) |
+| `flutter test test/shared/widgets/media_detail/` | 31/31 PASS (Phase 2 widget tests still green) |
+| `flutter test test/features/library/movie_detail_screen_test.dart` | 7/7 PASS (Phase 3 widget tests still green) |
+| **Combined regression run** | **49/49 PASS** |
+
+**Build-graph parity probe** (`graph.db` mtime today, 7494 nodes,
+Flutter excluded from graph):
+
+- `build-graph search SeriesDetail` → 7 results: SPA-side parity
+  references only (`SeriesDetailPage.tsx`, `routeMap.seriesDetail`,
+  `queryKeys.seriesDetail`, `interface SeriesDetails` at
+  `server/src/services/MetadataProvider.ts`). The Flutter
+  `SeriesDetailScreen` has no direct graph counterpart — by design (per
+  test-strategy.md §4 guardrail #1, navigation uses the existing
+  `Navigator.push` with the loaded `Series` model, not go_router `:id`
+  paths).
+- `build-graph search deleteSeries` → 0 results. Confirms
+  `MediarrApiClient.deleteSeries` is Dart-only (Flutter client excluded
+  from graph); the API-client method that the Phase 4 implement step
+  adds does not touch any TS symbol.
+- `build-graph search searchReleases` → 0 results. Same conclusion for
+  the existing-but-ungraphed `MediarrApiClient.searchReleases` extension
+  the Phase 3 + Phase 4 Red work already exercises.
+- **Blast radius conclusion:** zero TS-side blast radius for the Phase 4
+  refactor. The contract is locked client-side; the server endpoints
+  (`DELETE /api/series/:id`, `GET /api/series/:id`, etc.) are unchanged
+  from Phase 1.
+
+**Dirty worktree at attempt-start:**
+
+| Path | Status | Classification | Action |
+|---|---|---|---|
+| `clients/mediarr-client/pubspec.lock` | untracked | Flutter lockfile from `flutter pub get` | Preserved (project policy: not committed, per `46f9c0af`) |
+| `git diff --name-only` (unstaged) | empty | — | — |
+| `git diff --name-only --cached` (staged) | empty | — | — |
+
+Worktree is at minimum-dirt state for the supervisor gate:
+`non_test_source_changes_since` (`measure/automation-supervisor.py:343-358`)
+returns **empty** because `pubspec.lock` is untracked → not surfaced by
+any `git diff --name-only` range. No `git checkout HEAD --` cleanup is
+needed; the Phase 3 attempt-5 gate-resolution protocol (revert
+Flutter-generated platform-registration files after `flutter test` side
+effects) does not apply here because no `flutter pub get` / `flutter test`
+re-ran during this verification (the verification command itself runs
+without writing those files).
+
+**Files in this verification commit:**
+`measure/tracks/feature_flutter_media_detail_20260508/plan.md` only
+(this section). Filtered out by the supervisor's
+`path.startswith("measure/")` exemption
+(`measure/automation-supervisor.py:351`).
+
+**Task status unchanged.** The 5 widget-test tasks remain `[~]`
+(Red-phase ownership retained until Phase 4 implement flips them to
+`[x]`). The 3 remaining `[ ]` tasks (implement, wire, run GREEN) belong
+to the implement role.
+
+**Handoff (reaffirmed):** implement role refactors
+`lib/features/library/series_detail_screen.dart` to compose the shared
+`MediaHero` / `MetadataSection` / `FileInfoCard` / `ActionBar` /
+`EpisodeList` widgets (per test-strategy.md §4 guardrail #3), adds the
+`MediarrApiClient.deleteSeries(int seriesId)` method that the fake
+already records, wires the in-`EpisodeList` per-episode Play
+(`getStreamUrl(episodeId, 'episode')`) + Search
+(`searchReleases(..., type: 'episode')`) actions, surfaces a
+distinguishable error UI for `getSeriesDetail` failures, and renders the
+chip-based `S1`/`S2` selector from the shared `EpisodeList`. The same
+bounded
+`flutter test test/features/library/series_detail_screen_test.dart`
+command must then return 0 failures with 0 skipped tests, flipping the
+5 `[~]` tasks to `[x]` and unlocking the 3 remaining `[ ]` tasks.

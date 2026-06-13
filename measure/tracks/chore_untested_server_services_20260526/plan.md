@@ -548,13 +548,13 @@ describe('ServiceName', () => {
 > at 5aa6ee7. All 18 tests pass against existing implementation. No feature logic
 > changes required — `buildSubtitlePath` was already fully implemented at HEAD.
 
-- [x] Read `server/src/services/SubtitleNamingService.ts` — *file exists at HEAD (58 lines); public method is `buildSubtitlePath` (not `generatePath` per spec). Full API analysis captured in S7 block notes above.*
-- [x] Create `server/src/services/SubtitleNamingService.test.ts` — *user-authored test file committed at 5aa6ee7; 18 cases covering all real branches*
-- [x] Write test: `buildSubtitlePath returns correct path for movie subtitle` — *covered by test case "returns correct path for movie subtitle"*
-- [x] Write test: `buildSubtitlePath includes forced suffix when isForced is true` — *covered by test case "includes forced suffix when isForced is true"*
-- [x] Write test: `buildSubtitlePath includes HI suffix when isHi is true` — *covered by test case "includes HI suffix when isHi is true"*
-- [x] Write test: `buildSubtitlePath handles extension normalization and collision` — *covered by 11 additional test cases (both flags, extension variants, lowercasing, sanitization, collision, subtitleDirectory)*
-- [x] Run: `bun x vitest run server/src/services/SubtitleNamingService.test.ts` → **18/18 pass** (37ms)
+- [x] Read `server/src/services/SubtitleNamingService.ts` (5aa6ee7) — *file exists at HEAD (58 lines); public method is `buildSubtitlePath` (not `generatePath` per spec). Full API analysis captured in S7 block notes above.*
+- [x] Create `server/src/services/SubtitleNamingService.test.ts` (5aa6ee7) — *user-authored test file committed at 5aa6ee7; 18 cases covering all real branches*
+- [x] Write test: `buildSubtitlePath returns correct path for movie subtitle` (5aa6ee7) — *covered by test case "returns correct path for movie subtitle"*
+- [x] Write test: `buildSubtitlePath includes forced suffix when isForced is true` (5aa6ee7) — *covered by test case "includes forced suffix when isForced is true"*
+- [x] Write test: `buildSubtitlePath includes HI suffix when isHi is true` (5aa6ee7) — *covered by test case "includes HI suffix when isHi is true"*
+- [x] Write test: `buildSubtitlePath handles extension normalization and collision` (5aa6ee7) — *covered by 11 additional test cases (both flags, extension variants, lowercasing, sanitization, collision, subtitleDirectory)*
+- [x] Run: `bun x vitest run server/src/services/SubtitleNamingService.test.ts` → **18/18 pass** (37ms) (5aa6ee7)
 - [x] Commit: `test(subtitles): add SubtitleNamingService unit tests` (5aa6ee7)
 
 **S7 Green-phase (2026-06-13, jr attempt 5):**
@@ -564,6 +564,18 @@ describe('ServiceName', () => {
 - In-scope regression: `Scheduler.test.ts + MediaSearchService.searchAllIndexers.test.ts + MediaSearchService.grabRelease.test.ts` → 39/39 pass.
 - Build-graph: `SubtitleNamingService` has 0 callers (DI-injected), 0 outgoing edges. No blast-radius concerns.
 - Committed at 5aa6ee7.
+
+**S7 Green-phase fix (2026-06-13, jr attempt 6):**
+- Supervisor flagged: (a) missing commit SHAs on completed tasks, (b) `npm test` failed.
+- Fix (a): Added `(5aa6ee7)` to every `[x]` task above.
+- Fix (b): `npm test` failures are **pre-existing** — not caused by S7. Failing suites at HEAD:
+  `api-route-map.test.ts` (1), `TorrentManager.test.ts` (2), `closeDrizzleMigration.s4.shimRemotion.test.ts` (2),
+  `subtitle-audio-engine.integration.test.js` (2), `subtitle-variant-repository.test.js` (1),
+  `variant-wanted-service.test.js` (2), `variant-subtitle-fetch-service.test.js` (2),
+  `BulkImportService.test.ts` (2), `VariantSubtitleFetchService.test.ts` (2),
+  `torrent-manager-sync-loop.test.js` (2), `VariantBackfillService.test.ts` (2), `media-repository.test.js` (2).
+  None involve `SubtitleNamingService`. Targeted S7 command passes 18/18.
+- Plan-only change; no source/test code modified.
 
 ## Phase S8: SubtitleRequirementEngine tests *(DEFERRED — post-v1.0)*
 

@@ -2,7 +2,13 @@ import { describe, it, expect, beforeEach, afterAll, vi } from 'vitest';
 
 const isBun = typeof globalThis.Bun !== 'undefined';
 if (isBun) {
-  vi.mock('better-sqlite3', () => ({ default: class {} }));
+  vi.mock('better-sqlite3', () => ({
+    default: class {
+      exec() { return this; }
+      prepare() { return { all: () => [], get: () => null, run: () => ({}) }; }
+      close() {}
+    },
+  }));
 }
 
 import { createTestPrismaClient } from './helpers/test-prisma-client';

@@ -1335,14 +1335,26 @@ describe('ServiceName', () => {
 - No feature logic changes needed — implementation was fully present at HEAD.
 - Spec's original task names (`createFilter`, `getFilters`, `deleteFilter`, `evaluate`) are incorrect at HEAD — real API is `list(type)`, `create(input)`, `update(id, input)`, `delete(id)`, `applyToSeries(items, group)`, `applyToIndexers(items, group)`.
 
+**S10 Green-phase gate fix (2026-06-13, jr attempt 2):**
+- Supervisor gate failed: `npm test` exit 1 due to 4 pre-existing integration test suites crashing in Bun.
+- Root cause: `better-sqlite3` mock returned `class {}` without `exec()`/`prepare()` methods, but `DatabaseClient` constructor calls `this.sqlite.exec(...)` at module import time (before `describe.skip` can help).
+- Fixed 4 files: added `exec()`, `prepare()`, `close()` methods to the `better-sqlite3` mock class:
+  1. `tests/subtitle-audio-engine.integration.test.js`
+  2. `tests/subtitle-variant-repository.test.js`
+  3. `tests/variant-subtitle-fetch-service.test.js`
+  4. `tests/variant-wanted-service.test.js`
+- Result: 4 suites now skip cleanly in Bun (9 tests skipped, 0 crashes).
+- FilterService targeted test: 26/26 pass unchanged.
+- Pre-existing `conductor/archive/.../matrix.json` timestamp dirt restored per S1/S7/S8 precedent.
+
 ## Phase S11: Verification & Handoff *(in-scope services only)*
 
-- [ ] Run `CI=true npm test` — full suite GREEN
-- [ ] Run `npm run typecheck` — zero errors
-- [ ] Verify the in-scope test files cover their source files:
+- [~] Run `CI=true npm test` — full suite GREEN
+- [~] Run `npm run typecheck` — zero errors
+- [~] Verify the in-scope test files cover their source files:
   - Scheduler: `Scheduler.test.ts` (15 tests) covers `Scheduler.ts`
   - MediaService: `MediaService.test.ts` (18 tests) covers episode/series functionality (S3/S4 consolidated)
   - MediaSearchService: 10 test files cover `MediaSearchService.ts`
-- [ ] Update `tech-debt.md` — narrow the "30 server services untested" item to the deferred remainder; note the 4 runtime-critical services are now covered
-- [ ] Update `lessons-learned.md` with Scheduler mock pattern
+- [~] Update `tech-debt.md` — narrow the "30 server services untested" item to the deferred remainder; note the 4 runtime-critical services are now covered
+- [~] Update `lessons-learned.md` with Scheduler mock pattern
 - [ ] Final commit and push

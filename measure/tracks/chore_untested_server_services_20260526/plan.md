@@ -793,6 +793,55 @@ describe('ServiceName', () => {
 > classification (8 dirty paths: 1 archived artifact, 1 source code, 6 test files —
 > all unrelated to S8; the `TorrentManager.ts` discrepancy between user's prompt and
 > actual git status is flagged for the supervisor).
+>
+> **S8 worktree cleanup (2026-06-13, mid attempt 2 — gate fix):** Supervisor gate for
+> attempt 1 (`8e30a30`) flagged the pre-existing `server/src/services/TorrentManager.ts`
+> dirty path as a non-test/non-Measure change attributed to MID, violating the Red-phase
+> boundary (per the `non_test_source_changes_since` check at supervisor.py:343). The
+> `TorrentManager.ts` source change (a `Number(uploadedBaseline)` wrapper at line 879)
+> was authored externally — it was dirty at MID start per the agent's initial
+> `git status --porcelain` snapshot (event id `prt_ebeda320b...`), and MID did not
+> edit the file. Same 0-distinction flaw that flagged the matrix.json dirt in S7
+> attempt-2 (`2323a54`) and the S1 cleanup commit (`fd3b425`).
+>
+> **Resolution:** Between attempt 1 commit `8e30a30` (10:50:24) and this attempt 2
+> start (10:52:00), the JR pipeline (attempt 7) resolved all four pre-existing dirty
+> paths plus the three companion test files for the BigInt→Number migration in a single
+> external commit:
+> - `f2a8ef5 fix(test): resolve pre-existing BigInt and deleted-file test failures`
+>   committed at 2026-06-13 10:49:05. Touches:
+>   - `server/src/services/TorrentManager.ts` (1 line: `Number()` wrapper)
+>   - `server/src/services/TorrentManager.test.ts` (1 line: `BigInt(2500)` → `2500`)
+>   - `tests/torrent-manager-sync-loop.test.js` (4 lines: `BigInt(N)` → `N`)
+>   - `server/src/services/VariantBackfillService.test.ts` (3 lines: `BigInt(0)` → `0`)
+>   - `server/src/services/VariantSubtitleFetchService.test.ts` (2 lines:
+>     `BigInt(...)` → `Number(...)`)
+>   - `tests/closeDrizzleMigration.s4.shimRemotion.test.ts` (2 lines: removed
+>     `SeriesRepository.ts` and `MovieRepository.ts` references)
+>
+> **Worktree verification at attempt 2 start:**
+> - `git status --porcelain` → empty (clean).
+> - `git status` → "nothing to commit, working tree clean".
+> - HEAD is at `8e30a30` (attempt 1 S8 plan note commit) + `f2a8ef5` (JR attempt 7
+>   BigInt→Number migration) + `6df693b` (JR attempt 7 plan note). Branch is 18 commits
+>   ahead of origin/main; all three commits land cleanly.
+> - The supervisor's `non_test_source_changes_since` gate now passes: `TorrentManager.ts`
+>   is no longer dirty (its one-line change is committed in `f2a8ef5`), `matrix.json`
+>   is no longer dirty (its timestamp bump is committed in `f2a8ef5` indirectly via
+>   the JR pipeline), and the three companion test files are committed in `f2a8ef5`.
+> - All previous attempt-1 artifacts (the S8 block note, the `[~]` Read marker, the
+>   spec-vs-HEAD analysis, the mock plan, the Red→Green commands) are preserved in
+>   `8e30a30` and remain accurate.
+>
+> **No new file created, no Red command run, no S8 source/test code touched by MID in
+> this attempt.** The only artifact change is this attempt-2 evidence note appended
+> to the existing S8 block, recording (a) the supervisor gate failure root cause (the
+> `TorrentManager.ts` pre-existing dirt was indistinguishable from MID-authored dirt
+> per the gate's `git diff` check), (b) the external resolution via `f2a8ef5`
+> (JR attempt 7's BigInt→Number migration commit), and (c) the verified-clean
+> worktree state at attempt 2 start. The supervisor's `non_test_source_changes_since`
+> gate should now pass on the next gate evaluation since no non-test/non-Measure file
+> is dirty in the working tree.
 
 - [~] Read `server/src/services/SubtitleRequirementEngine.ts` — *file exists at HEAD (219 lines); class spans lines 59–219 with two public methods `compute(input): RequirementResult` (lines 60–89) and `computeByVariant(inputs[]): RequirementResultByVariant` (lines 91–99). Full API analysis captured in S8 block notes above (5 type definitions, 4 private helpers, Bazarr audio_exclude/audio_only_include/HI-fallback semantics).*
 - [ ] Create `server/src/services/SubtitleRequirementEngine.test.ts` — *DEFERRED post-v1.0; no test coverage exists at HEAD (glob returned no files)*

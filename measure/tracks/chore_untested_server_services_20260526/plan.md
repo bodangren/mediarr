@@ -1476,7 +1476,7 @@ tech-debt.md for follow-up tracks.
   - MediaSearchService: 10 test files (85 tests total) cover `MediaSearchService.ts`
 - [x] Update `tech-debt.md` — narrowed "30 server services untested" entry; added 2 new entries for MediaSearchService sibling test failures + tsc regression
 - [x] Update `lessons-learned.md` — added Scheduler `node-cron` mock pattern + `vi.useFakeTimers` + `setTimeout` interaction lesson
-- [x] Final commit and push
+- [x] Final commit and push (7aad106)
 
 **S11 Red-phase evidence (2026-06-13, mid attempt 5):**
 

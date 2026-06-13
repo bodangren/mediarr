@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:mediarr_client/shared/models/episode.dart';
 import 'package:mediarr_client/shared/models/library_item.dart';
 import 'package:mediarr_client/shared/models/movie.dart';
@@ -20,11 +22,17 @@ import 'package:mediarr_client/shared/services/api_client.dart';
 /// 2026-04-17). Extending keeps the surface stable: only the methods we
 /// explicitly throw surface as test failures.
 ///
-/// Coverage scope for Phase 1 (per test-strategy.md §3 — `fakes/fake_api_client.dart`):
-///   - [getMovie]            — tapped movie → MovieDetailScreen nav
-///   - [getSeriesById]       — tapped series → SeriesDetailScreen nav
+/// Coverage scope (per test-strategy.md §3 — `fakes/fake_api_client.dart`):
+///   - [getMovie]            — Phase 1 nav tap → MovieDetailScreen
+///   - [getSeriesById]       — Phase 1 nav tap → SeriesDetailScreen
 ///   - [getSeriesDetail]     — SeriesDetailScreen.initState() refetch
-///   - [getMovieSubtitles]   — MovieDetailScreen.initState() refetch
+///   - [getMovieSubtitles]   — Phase 3 subtitle fetch (Completer-driven
+///                             loading/error/success test)
+///   - [getStreamUrl]        — Phase 3 Play action (records (movieId, type)
+///                             so the play test can assert the right id was
+///                             fetched without needing to mount
+///                             PlaybackScreen — which would crash a Flutter
+///                             widget test environment via media_kit)
 class FakeMediarrApiClient extends MediarrApiClient {
   FakeMediarrApiClient() : super();
 
@@ -42,12 +50,19 @@ class FakeMediarrApiClient extends MediarrApiClient {
   List<VariantInventory> getMovieSubtitlesReturn = const [];
   Object? getMovieSubtitlesError;
 
+  /// When non-null, [getMovieSubtitles] returns this completer's future
+  /// instead of the synchronous [getMovieSubtitlesReturn]. Used by Phase 3
+  /// loading-state tests to hold the screen in its loading state until the
+  /// test is ready to assert.
+  Completer<List<VariantInventory>>? getMovieSubtitlesCompleter;
+
   // --- Recorded calls (for behavior assertions) ---
 
   final List<int> getMovieCalls = [];
   final List<int> getSeriesByIdCalls = [];
   final List<int> getSeriesDetailCalls = [];
   final List<int> getMovieSubtitlesCalls = [];
+  final List<({int movieId, String type})> getStreamUrlCalls = [];
 
   // --- Overrides ---
 
@@ -75,12 +90,15 @@ class FakeMediarrApiClient extends MediarrApiClient {
   @override
   Future<List<VariantInventory>> getMovieSubtitles(int movieId) async {
     getMovieSubtitlesCalls.add(movieId);
+    if (getMovieSubtitlesCompleter != null) {
+      return getMovieSubtitlesCompleter!.future;
+    }
     if (getMovieSubtitlesError != null) throw getMovieSubtitlesError!;
     return getMovieSubtitlesReturn;
   }
 
-  // --- Default no-op stubs for methods not exercised in Phase 1 tests ---
-  // LibraryScreen calls getLibrary via libraryProvider; Phase 1 tests
+  // --- Default no-op stubs for methods not exercised by tests ---
+  // LibraryScreen calls getLibrary via libraryProvider; tests
   // override libraryProvider directly so getLibrary is not invoked here.
 
   @override
@@ -105,5 +123,8 @@ class FakeMediarrApiClient extends MediarrApiClient {
   }
 
   @override
-  String getStreamUrl(int mediaId, String type) => 'http://fake/$type/$mediaId';
+  String getStreamUrl(int mediaId, String type) {
+    getStreamUrlCalls.add((movieId: mediaId, type: type));
+    return 'http://fake/$type/$mediaId';
+  }
 }

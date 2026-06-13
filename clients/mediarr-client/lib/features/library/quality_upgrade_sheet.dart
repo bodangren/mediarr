@@ -275,61 +275,56 @@ class _QualityUpgradeSheetState extends ConsumerState<QualityUpgradeSheet> {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 4),
-                      Row(
+                      Wrap(
+                        spacing: 8,
                         children: [
                           if (release.quality != null)
                             _MetadataChip(
                               label: release.quality!,
                               color: MediarrColors.accentPrimary,
                             ),
-                          const SizedBox(width: 8),
                           _MetadataChip(
                             label: release.indexerName ?? 'Unknown',
                           ),
-                          const SizedBox(width: 8),
-                          if (release.size != null)
-                            _MetadataChip(
-                              label: _formatSize(release.size!),
-                            ),
+                          _MetadataChip(
+                            label: _formatSize(release.size),
+                          ),
                         ],
                       ),
-                      if (release.seeders != null) ...[
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.arrow_upward,
-                              size: 12,
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.arrow_upward,
+                            size: 12,
+                            color: MediarrColors.statusSuccess,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${release.seeders}',
+                            style: const TextStyle(
                               color: MediarrColors.statusSuccess,
+                              fontSize: 12,
+                            ),
+                          ),
+                          if (release.leechers != null) ...[
+                            const SizedBox(width: 12),
+                            Icon(
+                              Icons.arrow_downward,
+                              size: 12,
+                              color: MediarrColors.statusInfo,
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              '${release.seeders}',
+                              '${release.leechers}',
                               style: const TextStyle(
-                                color: MediarrColors.statusSuccess,
+                                color: MediarrColors.statusInfo,
                                 fontSize: 12,
                               ),
                             ),
-                            if (release.leechers != null) ...[
-                              const SizedBox(width: 12),
-                              Icon(
-                                Icons.arrow_downward,
-                                size: 12,
-                                color: MediarrColors.statusInfo,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                '${release.leechers}',
-                                style: const TextStyle(
-                                  color: MediarrColors.statusInfo,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
                           ],
-                        ),
-                      ],
+                        ],
+                      ),
                     ],
                   ),
                 ),

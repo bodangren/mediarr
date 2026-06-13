@@ -3940,3 +3940,63 @@ fixes are committed (`416190c`), the supervisor's classifier
 mitigations are documented for the project owner, and mid's
 docs-only protocol is well-established. The actionable next steps
 all belong to the human operator.
+
+## Phase 5 Green Re-verification (jr role, 2026-06-14)
+
+**Why this section exists.** The jr role was invoked to fix gate
+regressions that appeared after the Phase 5 Green Evidence commit
+`416190c`. Two test files had regressed to failure, and 3 flutter
+analyze warnings had resurfaced in track-owned production files.
+
+### Regressions identified
+
+| # | File | Issue | Root cause |
+|---|---|---|---|
+| 1 | `test/features/library/quality_upgrade_sheet_test.dart` | `Error: Method not found: 'Release'` — compile error | Test uses `Release(` without importing `search_result.dart`. The `Release` class is not re-exported transitively through `api_client.dart` or `quality_upgrade_sheet.dart`. |
+| 2 | `test/features/library/quality_upgrade_sheet_test.dart` | `Required named parameter 'seeders' must be provided` | Test constructs `Release(guid:..., title:..., size:...)` without the required `seeders` parameter at line 120. |
+| 3 | `test/features/library/quality_upgrade_sheet_test.dart` | `Found 2 widgets with text containing Search failed` | `find.textContaining('Search failed')` matches both the title `"Search failed"` and the error body `"Exception: Search failed"`. |
+| 4 | `test/features/library/subtitle_search_sheet_test.dart` | Same `textContaining` duplicate match | Same pattern as #3. |
+| 5 | `lib/features/library/quality_upgrade_sheet.dart` | `RenderFlex overflowed by 9.7 pixels` | `Row` of `_MetadataChip` widgets overflows on narrow screens. Needs `Wrap` instead. |
+| 6 | `lib/features/library/quality_upgrade_sheet.dart` | `unnecessary_non_null_assertion` on `release.size!` | `Release.size` is non-nullable `int`; `!` is unnecessary. |
+| 7 | `lib/features/library/quality_upgrade_sheet.dart` | `unnecessary_null_comparison` on `release.seeders != null` | `Release.seeders` is non-nullable `int`; null check always true. |
+| 8 | `lib/features/library/subtitle_search_sheet.dart` | `unused_element_parameter` on `_MetadataChip.color` | `color` parameter declared but never passed by any caller in this file. |
+
+### Fixes applied
+
+| # | Fix |
+|---|---|
+| 1 | Added `import 'package:mediarr_client/shared/models/search_result.dart';` to `quality_upgrade_sheet_test.dart` |
+| 2 | Added `seeders: 50` to the `Release(` constructor at line 120 |
+| 3-4 | Changed `find.textContaining('Search failed')` to `find.text('Search failed')` in both test files |
+| 5 | Changed `Row(` to `Wrap(spacing: 8,` for `_MetadataChip` children in `quality_upgrade_sheet.dart`; removed `SizedBox(width: 8)` spacers |
+| 6 | Removed `!` from `release.size` (non-nullable) |
+| 7 | Removed `if (release.seeders != null)` guard (always true) |
+| 8 | Removed `color` parameter from `_MetadataChip` constructor and build method in `subtitle_search_sheet.dart` |
+
+### Gate re-verification
+
+| Gate | Command | Result |
+|---|---|---|
+| Gate 1 (track-scope) | `flutter test test/features/library/library_screen_navigation_test.dart test/support/contracts/ test/shared/widgets/media_detail/ test/features/library/movie_detail_screen_test.dart test/features/library/series_detail_screen_test.dart` | `+57: All tests passed!` exit 0 |
+| Gate 1 (full) | `flutter test` | `+289: All tests passed!` exit 0 |
+| Gate 2 (track-owned) | `flutter analyze lib/shared/widgets/media_detail/ lib/features/library/movie_detail_screen.dart lib/features/library/series_detail_screen.dart lib/features/library/quality_upgrade_sheet.dart lib/features/library/subtitle_search_sheet.dart` | `No issues found!` exit 0 |
+| Gate 3 (npm test) | `CI=true npm test` | Not runnable (npm not available in environment); pre-existing failures documented in Phase 5 Red Evidence |
+
+### Files changed
+
+| File | Change type |
+|---|---|
+| `test/features/library/quality_upgrade_sheet_test.dart` | Test fix — added `search_result.dart` import, added `seeders` param, changed `textContaining` to `text` |
+| `test/features/library/subtitle_search_sheet_test.dart` | Test fix — changed `textContaining` to `text` |
+| `lib/features/library/quality_upgrade_sheet.dart` | Production fix — `Row`→`Wrap` overflow, removed unnecessary `!` and null check |
+| `lib/features/library/subtitle_search_sheet.dart` | Production fix — removed unused `color` parameter from `_MetadataChip` |
+
+### Task status
+
+All 6 Phase 5 tasks remain in their current state:
+- `[~]` Manual smoke test A — pending human verification
+- `[~]` Manual smoke test B — pending human verification
+- `[x]` Run `flutter test` — GREEN (289/289, re-verified)
+- `[x]` Run `flutter analyze` — 0 issues in track-owned files (re-verified)
+- `[x]` Run root `CI=true npm test` — pre-existing failures, 0 in track scope
+- `[~]` Commit and push — pending human operator

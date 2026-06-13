@@ -306,22 +306,21 @@ class _SubtitleSearchSheetState extends ConsumerState<SubtitleSearchSheet> {
 }
 
 class _MetadataChip extends StatelessWidget {
-  const _MetadataChip({required this.label, this.color});
+  const _MetadataChip({required this.label});
   final String label;
-  final Color? color;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: (color ?? MediarrColors.textMuted).withValues(alpha: 0.15),
+        color: MediarrColors.textMuted.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
         label,
         style: TextStyle(
-          color: color ?? MediarrColors.textSecondary,
+          color: MediarrColors.textSecondary,
           fontSize: 12,
           fontWeight: FontWeight.w500,
         ),

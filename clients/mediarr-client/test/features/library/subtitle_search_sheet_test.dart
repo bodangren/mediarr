@@ -102,7 +102,7 @@ void main() {
       await tester.tap(find.text('Show'));
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('Search failed'), findsOneWidget);
+      expect(find.text('Search failed'), findsOneWidget);
       expect(find.text('Retry'), findsOneWidget);
     });
 

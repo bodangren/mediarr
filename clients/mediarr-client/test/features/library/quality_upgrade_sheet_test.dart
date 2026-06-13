@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mediarr_client/features/library/quality_upgrade_sheet.dart';
+import 'package:mediarr_client/shared/models/search_result.dart';
 import 'package:mediarr_client/shared/services/api_client.dart';
 
 import '../../support/fakes/fake_api_client.dart';
@@ -110,7 +111,7 @@ void main() {
       await tester.tap(find.text('Show'));
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('Search failed'), findsOneWidget);
+      expect(find.text('Search failed'), findsOneWidget);
       expect(find.text('Retry'), findsOneWidget);
     });
 
@@ -123,6 +124,7 @@ void main() {
           indexerName: 'TestIndexer',
           indexerId: 1,
           size: 2147483648,
+          seeders: 50,
         ),
       ];
 

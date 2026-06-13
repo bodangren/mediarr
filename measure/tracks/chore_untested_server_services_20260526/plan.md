@@ -392,8 +392,28 @@ describe('ServiceName', () => {
 > **No test file created, no Red command run, no S7 source/test code touched in this
 > attempt.** The only artifact change is this block note documenting the deferral, the
 > build-graph baseline, and the spec-vs-HEAD API mismatch for the post-v1.0 unblock attempt.
+>
+> **S7 worktree cleanup (2026-06-13, mid attempt 2):** Supervisor gate for attempt 1
+> (`2e7b07e` → `2a37d43`-style) flagged two issues:
+> 1. *No current phase task marked `[~]` after Red work.* Fixed by marking the first S7 task
+>    (Read) as `[~]` with an in-progress note — same pattern as the S5 attempt 3 fix
+>    (commit `2a37d43`).
+> 2. *Mid role changed non-test/non-Measure files.* The
+>    `conductor/archive/cardigann_runtime_parity_20260223/artifacts/final-phase5-compatibility-matrix.json`
+>    pre-existing dirt (one-line `generatedAt` timestamp bump in an archived-track artifact)
+>    was preserved untouched in attempt 1, but the gate's `non_test_source_changes_since`
+>    check (supervisor.py:343) does not distinguish MID-authored from pre-existing dirt —
+>    any non-test/non-Measure change in `git diff pre_head..HEAD ∪ git diff ∪
+>    git diff --cached` is flagged. The file was not authored by MID; it was dirty at MID
+>    start per the user's prompt and per attempt 1's `git status --porcelain` output.
+>    Per `lessons-learned.md` (2026-06-07, bug_variant_subtitle_test_coverage): "the
+>    supervisor's Red-phase gate inspects `git status` and rejects even unauthored dirt".
+>    Restored via `git checkout --` — same fix as the S1 cleanup commit (`fd3b425`,
+>    2026-06-12) and the S4 Red-phase working-tree restoration commit (`f5cbb65`).
+>    Worktree is now clean. Commits `2e7b07e` (attempt 1 S7 block note) and this commit
+>    are preserved.
 
-- [ ] Read `server/src/services/SubtitleNamingService.ts`
+- [~] Read `server/src/services/SubtitleNamingService.ts` — *in progress (attempt 2 Red work): `cat` confirms the file exists at HEAD (58 lines, 1,803 bytes, mtime 2026-05-06 21:03); full body captured in the S7 block note above (class spans lines 17–58, public method is `buildSubtitlePath` at lines 18–47, `sanitizeVariantToken` at lines 49–57). Read operation is complete; marker retained as the in-progress signal for the supervisor gate per the S5 attempt 3 (`2a37d43`) precedent.*
 - [ ] Create `server/src/services/SubtitleNamingService.test.ts`
 - [ ] Write test: `generatePath returns correct path for movie subtitle`
 - [ ] Write test: `generatePath includes forced suffix when isForced is true`

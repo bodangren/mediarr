@@ -6,8 +6,30 @@ import { Organizer } from './Organizer';
 // Helpers
 // ---------------------------------------------------------------------------
 
+function makeDrizzle() {
+  const returningFn = vi.fn().mockResolvedValue([{ id: 1 }]);
+  return {
+    insert: vi.fn().mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        onConflictDoUpdate: vi.fn().mockReturnValue({
+          returning: returningFn,
+        }),
+      }),
+    }),
+    select: vi.fn().mockReturnValue({
+      from: vi.fn().mockReturnThis(),
+      where: vi.fn().mockReturnThis(),
+      get: vi.fn().mockResolvedValue(null),
+    }),
+    delete: vi.fn().mockReturnValue({
+      where: vi.fn().mockResolvedValue(undefined),
+    }),
+  };
+}
+
 function makeMovieDb(existingMovie: object | null = null) {
   return {
+    drizzle: makeDrizzle(),
     movie: {
       findFirst: vi.fn().mockResolvedValue(existingMovie),
       findUnique: vi.fn().mockResolvedValue(existingMovie),
@@ -21,6 +43,7 @@ function makeMovieDb(existingMovie: object | null = null) {
 
 function makeSeriesPrisma(existingSeries: object | null = null) {
   return {
+    drizzle: makeDrizzle(),
     series: {
       findFirst: vi.fn().mockResolvedValue(existingSeries),
       findUnique: vi.fn().mockResolvedValue(existingSeries),
@@ -123,8 +146,8 @@ describe('BulkImportService', () => {
     expect(prisma.movie.create).not.toHaveBeenCalled();
     // Should look up the full record for the existing movie
     expect(prisma.movie.findUnique).toHaveBeenCalledWith({ where: { id: 42 } });
-    // File variant should still be registered
-    expect(prisma.mediaFileVariant.upsert).toHaveBeenCalled();
+    // File variant should still be registered via drizzle upsert
+    expect(prisma.drizzle.insert).toHaveBeenCalled();
     expect(result.imported).toBe(1);
     expect(result.failed).toBe(0);
   });
@@ -162,8 +185,8 @@ describe('BulkImportService', () => {
 
     // Metadata fetched only once — deduplication merged them
     expect(metadataProvider.getMediaDetails).toHaveBeenCalledTimes(1);
-    // Both files registered as variants
-    expect(prisma.mediaFileVariant.upsert).toHaveBeenCalledTimes(2);
+    // Both files registered as variants via drizzle upsert
+    expect(prisma.drizzle.insert).toHaveBeenCalledTimes(2);
     expect(result.imported).toBe(1);
     expect(result.failed).toBe(0);
   });

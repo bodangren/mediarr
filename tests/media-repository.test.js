@@ -3,7 +3,18 @@ import { MediaRepository } from '../server/src/repositories/MediaRepository';
 
 describe('MediaRepository', () => {
   function createMocks() {
+    const drizzleReturning = vi.fn();
+    const drizzle = {
+      insert: vi.fn().mockReturnValue({
+        values: vi.fn().mockReturnValue({
+          onConflictDoUpdate: vi.fn().mockReturnValue({
+            returning: drizzleReturning,
+          }),
+        }),
+      }),
+    };
     const prisma = {
+      drizzle,
       media: {
         upsert: vi.fn(),
       },
@@ -17,14 +28,15 @@ describe('MediaRepository', () => {
       },
     };
     const repository = new MediaRepository(prisma);
-    return { prisma, repository };
+    return { prisma, repository, drizzleReturning };
   }
 
   it('should upsert a movie and keep media record in sync', async () => {
-    const { prisma, repository } = createMocks();
-    
-    prisma.media.upsert.mockResolvedValue({ id: 1 });
-    prisma.movie.upsert.mockResolvedValue({ id: 10, tmdbId: 13, title: 'Forrest Gump' });
+    const { prisma, repository, drizzleReturning } = createMocks();
+
+    drizzleReturning
+      .mockResolvedValueOnce([{ id: 1 }]) // media upsert
+      .mockResolvedValueOnce([{ id: 10, tmdbId: 13, title: 'Forrest Gump' }]); // movie upsert
 
     const movie = await repository.upsertMovie({
       tmdbId: 13,
@@ -38,10 +50,7 @@ describe('MediaRepository', () => {
     });
 
     expect(movie.tmdbId).toBe(13);
-    expect(prisma.media.upsert).toHaveBeenCalled();
-    expect(prisma.movie.upsert).toHaveBeenCalledWith(expect.objectContaining({
-      where: { tmdbId: 13 }
-    }));
+    expect(prisma.drizzle.insert).toHaveBeenCalledTimes(2);
   });
 
   it('should find a movie by tmdbId', async () => {
@@ -58,11 +67,12 @@ describe('MediaRepository', () => {
   });
 
   it('should upsert a series and find it by tvdbId', async () => {
-    const { prisma, repository } = createMocks();
-    
-    prisma.media.upsert.mockResolvedValue({ id: 2 });
-    prisma.series.upsert.mockResolvedValue({ id: 20, tvdbId: 355567, title: 'The Boys' });
-    
+    const { prisma, repository, drizzleReturning } = createMocks();
+
+    drizzleReturning
+      .mockResolvedValueOnce([{ id: 2 }]) // media upsert
+      .mockResolvedValueOnce([{ id: 20, tvdbId: 355567, title: 'The Boys' }]); // series upsert
+
     const mockSeries = { id: 20, tvdbId: 355567, title: 'The Boys', media: { mediaType: 'TV', tvdbId: 355567 } };
     prisma.series.findUnique.mockResolvedValue(mockSeries);
 
@@ -78,9 +88,8 @@ describe('MediaRepository', () => {
     });
 
     const loaded = await repository.findSeriesByTvdbId(355567);
-    
-    expect(prisma.media.upsert).toHaveBeenCalled();
-    expect(prisma.series.upsert).toHaveBeenCalled();
+
+    expect(prisma.drizzle.insert).toHaveBeenCalledTimes(2);
     expect(loaded).toEqual(mockSeries);
     expect(prisma.series.findUnique).toHaveBeenCalledWith({
       where: { tvdbId: 355567 },

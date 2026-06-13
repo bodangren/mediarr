@@ -11,5 +11,13 @@ export default defineConfig({
       '**/dist/**',
       'app/src/**/*.test.{ts,tsx,js,jsx}',
     ],
+    deps: {
+      inline: ['zod'],
+    },
+    server: {
+      deps: {
+        inline: ['zod'],
+      },
+    },
   },
 });

@@ -13,7 +13,7 @@ export const API_ROUTE_MAP: ApiRouteDefinition[] = [
   { method: 'PUT', path: '/api/series/:id/monitoring' },
   { method: 'PUT', path: '/api/series/bulk' },
   { method: 'PUT', path: '/api/series/bulk/monitoring' },
-  { method: 'GET', path: '/api/series/root-folders' },
+  { method: 'GET', path: '/api/movies/root-folders' },
   { method: 'PATCH', path: '/api/series/:seriesId/seasons/:seasonNumber/monitoring' },
   { method: 'PATCH', path: '/api/episodes/:id' },
   { method: 'DELETE', path: '/api/series/:id' },

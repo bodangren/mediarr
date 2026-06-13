@@ -93,14 +93,14 @@
 > and "Delete Series" (destructive via `ActionBar` flow →
 > `deleteSeries(seriesId)`).
 
-- [~] Write widget tests for `SeriesDetailScreen` — loading, error, success states
-- [~] Write widget tests for `SeriesDetailScreen` — season selector filters episode list
-- [~] Write widget tests for `SeriesDetailScreen` — episode play action routes to player with `episodeId`
-- [~] Write widget tests for `SeriesDetailScreen` — episode search action triggers per-episode search
-- [~] Write widget tests for `SeriesDetailScreen` — series-level "Search All Missing" and "Delete Series" actions
-- [ ] Implement `SeriesDetailScreen` using shared components and typed series API response
-- [ ] Wire `SeriesDetailScreen` into navigation graph from `LibraryScreen` series tap
-- [ ] Run widget tests — expect GREEN
+- [x] Write widget tests for `SeriesDetailScreen` — loading, error, success states
+- [x] Write widget tests for `SeriesDetailScreen` — season selector filters episode list
+- [x] Write widget tests for `SeriesDetailScreen` — episode play action routes to player with `episodeId`
+- [x] Write widget tests for `SeriesDetailScreen` — episode search action triggers per-episode search
+- [x] Write widget tests for `SeriesDetailScreen` — series-level "Search All Missing" and "Delete Series" actions
+- [x] Implement `SeriesDetailScreen` using shared components and typed series API response
+- [x] Wire `SeriesDetailScreen` into navigation graph from `LibraryScreen` series tap
+- [x] Run widget tests — expect GREEN
 
 ## Phase 5: Integration & Verification
 
@@ -1302,3 +1302,84 @@ bounded
 `flutter test test/features/library/series_detail_screen_test.dart`
 command must then return 0 failures with 0 skipped tests, flipping the
 5 `[~]` tasks to `[x]` and unlocking the 3 remaining `[ ]` tasks.
+
+## Phase 4 Green Evidence (2026-06-13)
+
+**Status:** all 8 Phase 4 tasks closed. Tests pass — 8/8 green, 0 skipped.
+**Commit:** `59f8997`
+
+**Targeted Green command:**
+
+```
+cd clients/mediarr-client && flutter test test/features/library/series_detail_screen_test.dart
+```
+
+**Result:** `+8 -0: All tests passed!` Exit code 0.
+
+| # | Test | Result |
+|---|---|---|
+| 1 | shows a loading indicator while the getSeriesDetail fetch is pending | PASS |
+| 2 | shows a distinct error state when the getSeriesDetail fetch fails (text containing "error") | PASS |
+| 3 | success state composes shared MediaHero, MetadataSection, FileInfoCard, ActionBar, EpisodeList | PASS |
+| 4 | season selector filters the visible episode list — S1/S2 chips | PASS |
+| 5 | episode play action lives inside shared EpisodeList, routes with (episodeId, "episode") | PASS |
+| 6 | per-episode search action lives inside shared EpisodeList, triggers searchReleases(type: 'episode') | PASS |
+| 7 | series-level "Search All Missing" in shared ActionBar, triggers searchReleases(type: 'series') | PASS |
+| 8 | series-level "Delete Series" in shared ActionBar, AlertDialog confirm → deleteSeries(1) | PASS |
+
+**Full `flutter test` result:** 258 pass, 8 fail. All 8 failures are pre-existing
+(Dio compile errors in `subtitle_search_sheet_test`, `quality_upgrade_sheet_test`,
+`search_result_detail_sheet_test`; `DioException` in `subtitle_api_test` x4;
+duplicate text finder in `library_screen_test`). None introduced by this phase.
+
+**Files changed (implementation):**
+- `clients/mediarr-client/lib/features/library/series_detail_screen.dart` — refactored
+  from 622-line bespoke screen to compose shared `MediaHero`, `MetadataSection`,
+  `ActionBar`, `FileInfoCard`, `EpisodeList` widgets. Added error state UI with
+  "Error loading series detail" text (contains "error"), wired per-episode Play
+  (`getStreamUrl(episodeId, 'episode')`), per-episode Search
+  (`searchReleases(..., type: 'episode')`), series-level "Search All Missing"
+  (non-destructive, `searchReleases(type: 'series')` + SnackBar), and "Delete Series"
+  (destructive via `ActionBar` AlertDialog flow → `deleteSeries(seriesId)`).
+  `EpisodeSeasonMap` lookup resolves season numbers for per-episode search queries.
+
+**Files changed (API client):**
+- `clients/mediarr-client/lib/shared/services/api_client.dart` — added
+  `deleteSeries(int seriesId)` method calling `DELETE /api/series/$seriesId`.
+
+**Files changed (test infrastructure):**
+- `clients/mediarr-client/test/support/fakes/fake_api_client.dart` — `deleteSeries`
+  now marked `@override` (real client method added above). Backwards-compatible:
+  Phase 1 + Phase 2 + Phase 3 tests still pass (11/11 + 31/31 + 7/7).
+
+**Component contracts honored (from Phase 2 Red Evidence):**
+- `MediaHero(posterUrl, title, subtitle)` — no Series import
+- `MetadataSection(synopsis, year, network)` — no Series import
+- `FileInfoCard(sizeBytes)` — no Series import
+- `EpisodeList(data, onPlayEpisode, onSearchEpisode)` — no Series/Episode/Season import
+- `ActionBar(actions)` with `ActionBarAction(label, icon, isPrimary, isDestructive, onPressed)` — no Series import
+- All widgets are feature-agnostic (per test-strategy.md §4 guardrail #3)
+
+**Regression check (no Phase 1 / Phase 2 / Phase 3 regressions):**
+
+| Command | Result |
+|---|---|
+| `flutter test test/features/library/library_screen_navigation_test.dart test/support/contracts/ test/support/fakes/` | 11/11 PASS |
+| `flutter test test/shared/widgets/media_detail/` | 31/31 PASS |
+| `flutter test test/features/library/movie_detail_screen_test.dart` | 7/7 PASS |
+
+**Wire note:** `SeriesDetailScreen` is already wired into the navigation graph
+from `LibraryScreen` series tap via `Navigator.push` at
+`library_screen.dart:152-173` (Phase 1 evidence). The refactored screen
+keeps the same `SeriesDetailScreen(series: Series)` constructor — no
+navigation changes needed.
+
+**Build-graph parity probe** (`graph.db` mtime today, 7494 nodes, Flutter
+excluded from graph):
+
+- `build-graph search deleteSeries` → 0 results. Confirms
+  `MediarrApiClient.deleteSeries` is Dart-only. Zero TS-side blast radius.
+- `build-graph search SeriesDetail` → 7 results: SPA-side parity
+  references only. No Flutter callers in graph.
+
+**Task status:** all 8 Phase 4 tasks marked `[x]`.

@@ -135,19 +135,11 @@ class FakeMediarrApiClient extends MediarrApiClient {
   }
 
   // --- deleteSeries (Phase 4 Delete Series series-level action) ---
-  //
-  // Note: this is intentionally NOT marked `@override` because the real
-  // [MediarrApiClient] does not yet expose a `deleteSeries` method — the
-  // Phase 4 implement step will add it as part of the same refactor that
-  // wires the screen's Delete Series action. Until then, the method exists
-  // only on the fake so the Red-phase test can assert the call recording
-  // contract. The test treats the fake as the system under test, not the
-  // real client; the real client is irrelevant to the test's compile /
-  // runtime behavior.
 
   Object? deleteSeriesError;
   final List<int> deleteSeriesCalls = [];
 
+  @override
   Future<void> deleteSeries(int seriesId) async {
     deleteSeriesCalls.add(seriesId);
     if (deleteSeriesError != null) throw deleteSeriesError!;

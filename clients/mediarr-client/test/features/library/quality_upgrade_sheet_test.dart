@@ -4,19 +4,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mediarr_client/features/library/quality_upgrade_sheet.dart';
 import 'package:mediarr_client/shared/services/api_client.dart';
 
-import '../../shared/services/api_client_test.dart';
+import '../../support/fakes/fake_api_client.dart';
 
 void main() {
   group('QualityUpgradeSheet', () {
-    late MockHttpAdapter adapter;
-    late MediarrApiClient client;
+    late FakeMediarrApiClient fakeClient;
 
     setUp(() {
-      adapter = MockHttpAdapter();
-      final dio = Dio();
-      dio.httpClientAdapter = adapter;
-      client = MediarrApiClient(dio: dio);
-      client.connect('http://localhost:5174');
+      fakeClient = FakeMediarrApiClient();
     });
 
     Widget buildSheet({
@@ -26,7 +21,7 @@ void main() {
     }) {
       return ProviderScope(
         overrides: [
-          apiClientProvider.overrideWith((ref) => client),
+          apiClientProvider.overrideWith((ref) => fakeClient),
         ],
         child: MaterialApp(
           home: Scaffold(
@@ -51,10 +46,7 @@ void main() {
     }
 
     testWidgets('shows loading state initially', (tester) async {
-      adapter.onGet('/api/releases/search', data: {
-        'ok': true,
-        'data': [],
-      });
+      fakeClient.searchReleasesReturn = [];
 
       await tester.pumpWidget(buildSheet(query: 'Test Movie'));
       await tester.tap(find.text('Show'));
@@ -64,33 +56,28 @@ void main() {
     });
 
     testWidgets('shows search results with quality badges', (tester) async {
-      adapter.onGet('/api/releases/search', data: {
-        'ok': true,
-        'data': {
-          'items': [
-            {
-              'guid': 'release-1',
-              'title': 'Test.Movie.2024.1080p.BluRay',
-              'quality': 'Bluray-1080p',
-              'indexer': 'TestIndexer',
-              'indexerId': 1,
-              'size': 2147483648,
-              'seeders': 50,
-              'leechers': 10,
-            },
-            {
-              'guid': 'release-2',
-              'title': 'Test.Movie.2024.2160p.UHD',
-              'quality': 'UHD-2160p',
-              'indexer': 'TestIndexer',
-              'indexerId': 1,
-              'size': 5368709120,
-              'seeders': 25,
-              'leechers': 5,
-            }
-          ]
-        },
-      });
+      fakeClient.searchReleasesReturn = [
+        Release(
+          guid: 'release-1',
+          title: 'Test.Movie.2024.1080p.BluRay',
+          quality: 'Bluray-1080p',
+          indexerName: 'TestIndexer',
+          indexerId: 1,
+          size: 2147483648,
+          seeders: 50,
+          leechers: 10,
+        ),
+        Release(
+          guid: 'release-2',
+          title: 'Test.Movie.2024.2160p.UHD',
+          quality: 'UHD-2160p',
+          indexerName: 'TestIndexer',
+          indexerId: 1,
+          size: 5368709120,
+          seeders: 25,
+          leechers: 5,
+        ),
+      ];
 
       await tester.pumpWidget(buildSheet(
         query: 'Test Movie',
@@ -107,10 +94,7 @@ void main() {
     });
 
     testWidgets('shows empty state when no results', (tester) async {
-      adapter.onGet('/api/releases/search', data: {
-        'ok': true,
-        'data': [],
-      });
+      fakeClient.searchReleasesReturn = [];
 
       await tester.pumpWidget(buildSheet(query: 'Test Movie'));
       await tester.tap(find.text('Show'));
@@ -120,42 +104,27 @@ void main() {
     });
 
     testWidgets('shows error state on failure', (tester) async {
-      adapter.onGet('/api/releases/search', data: {
-        'error': 'Search failed',
-      }, statusCode: 500);
+      fakeClient.searchReleasesError = Exception('Search failed');
 
       await tester.pumpWidget(buildSheet(query: 'Test Movie'));
       await tester.tap(find.text('Show'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Search failed'), findsOneWidget);
+      expect(find.textContaining('Search failed'), findsOneWidget);
       expect(find.text('Retry'), findsOneWidget);
     });
 
     testWidgets('grab button triggers grabRelease', (tester) async {
-      adapter.onGet('/api/releases/search', data: {
-        'ok': true,
-        'data': {
-          'items': [
-            {
-              'guid': 'release-1',
-              'title': 'Test.Movie.2024.1080p.BluRay',
-              'quality': 'Bluray-1080p',
-              'indexer': 'TestIndexer',
-              'indexerId': 1,
-              'size': 2147483648,
-            }
-          ]
-        },
-      });
-
-      adapter.onGet('/api/releases/grab', data: {
-        'ok': true,
-        'data': {
-          'infoHash': 'abc123',
-          'name': 'Test.Movie.2024.1080p.BluRay',
-        },
-      });
+      fakeClient.searchReleasesReturn = [
+        Release(
+          guid: 'release-1',
+          title: 'Test.Movie.2024.1080p.BluRay',
+          quality: 'Bluray-1080p',
+          indexerName: 'TestIndexer',
+          indexerId: 1,
+          size: 2147483648,
+        ),
+      ];
 
       var grabbed = false;
       await tester.pumpWidget(buildSheet(

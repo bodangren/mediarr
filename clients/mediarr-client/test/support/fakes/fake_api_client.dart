@@ -145,6 +145,55 @@ class FakeMediarrApiClient extends MediarrApiClient {
     if (deleteSeriesError != null) throw deleteSeriesError!;
   }
 
+
+  // --- searchSubtitles (SubtitleSearchSheet) ---
+
+  List<SubtitleSearchResult> searchSubtitlesReturn = const [];
+  Object? searchSubtitlesError;
+  final List<({int? movieId, int? episodeId, int? variantId})> searchSubtitlesCalls = [];
+
+  @override
+  Future<List<SubtitleSearchResult>> searchSubtitles({
+    int? movieId,
+    int? episodeId,
+    int? variantId,
+  }) async {
+    searchSubtitlesCalls.add((movieId: movieId, episodeId: episodeId, variantId: variantId));
+    if (searchSubtitlesError != null) throw searchSubtitlesError!;
+    return searchSubtitlesReturn;
+  }
+
+  // --- downloadSubtitle (SubtitleSearchSheet) ---
+
+  String? downloadSubtitleReturn;
+  Object? downloadSubtitleError;
+
+  @override
+  Future<String?> downloadSubtitle({
+    required SubtitleSearchResult candidate,
+    int? movieId,
+    int? episodeId,
+    int? variantId,
+  }) async {
+    if (downloadSubtitleError != null) throw downloadSubtitleError!;
+    return downloadSubtitleReturn;
+  }
+
+  // --- grabRelease (QualityUpgradeSheet) ---
+
+  Object? grabReleaseError;
+  final List<({String guid, int indexerId})> grabReleaseCalls = [];
+
+  @override
+  Future<void> grabRelease({
+    required String guid,
+    required int indexerId,
+    int? downloadClientId,
+  }) async {
+    grabReleaseCalls.add((guid: guid, indexerId: indexerId));
+    if (grabReleaseError != null) throw grabReleaseError!;
+  }
+
   // --- Default no-op stubs for methods not exercised by tests ---
   // LibraryScreen calls getLibrary via libraryProvider; tests
   // override libraryProvider directly so getLibrary is not invoked here.

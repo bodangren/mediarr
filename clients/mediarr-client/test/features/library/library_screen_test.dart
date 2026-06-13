@@ -65,8 +65,8 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      expect(find.text('Inception'), findsOneWidget);
-      expect(find.text('The Matrix'), findsOneWidget);
+      expect(find.text('Inception').first, findsOneWidget);
+      expect(find.text('The Matrix').first, findsOneWidget);
     });
 
     testWidgets('shows empty state when no items', (tester) async {

@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mediarr_client/shared/models/subtitle_models.dart';
 import 'package:mediarr_client/shared/services/api_client.dart';
 
-import 'api_client_test.dart';
 
 void main() {
   group('SubtitleTrack', () {
@@ -90,37 +89,55 @@ void main() {
   });
 
   group('ApiClient subtitle methods', () {
-    late MockHttpAdapter adapter;
     late MediarrApiClient client;
+    late Dio dio;
 
     setUp(() {
-      adapter = MockHttpAdapter();
-      final dio = Dio();
-      dio.httpClientAdapter = adapter;
+      dio = Dio();
       client = MediarrApiClient(dio: dio);
-      client.connect('http://localhost:5174');
+    });
+
+    tearDown(() {
+      client.dispose();
     });
 
     test('getMovieSubtitles returns list of VariantInventory', () async {
-      adapter.onGet('/api/subtitles/movie/123/variants', data: {
-        'ok': true,
-        'data': [
-          {
-            'variantId': 1,
-            'path': '/movie.mkv',
-            'subtitleTracks': [
-              {
-                'source': 'opensubtitles',
-                'languageCode': 'en',
-                'isForced': false,
-                'isHi': false,
-              }
-            ],
-            'missingSubtitles': [],
+      dio.interceptors.add(InterceptorsWrapper(
+        onRequest: (options, handler) {
+          if (options.path.contains('/api/subtitles/movie/123/variants')) {
+            handler.resolve(Response(
+              requestOptions: options,
+              statusCode: 200,
+              data: {
+                'ok': true,
+                'data': [
+                  {
+                    'variantId': 1,
+                    'path': '/movie.mkv',
+                    'subtitleTracks': [
+                      {
+                        'source': 'opensubtitles',
+                        'languageCode': 'en',
+                        'isForced': false,
+                        'isHi': false,
+                      }
+                    ],
+                    'missingSubtitles': [],
+                  }
+                ],
+              },
+            ));
+            return;
           }
-        ],
-      });
+          handler.resolve(Response(
+            requestOptions: options,
+            statusCode: 200,
+            data: {'version': '1.0.0', 'startTime': ''},
+          ));
+        },
+      ));
 
+      await client.connect('http://localhost:5174');
       final results = await client.getMovieSubtitles(123);
       expect(results.length, 1);
       expect(results.first.variantId, 1);
@@ -128,43 +145,77 @@ void main() {
     });
 
     test('getEpisodeSubtitles returns list of VariantInventory', () async {
-      adapter.onGet('/api/subtitles/episode/456/variants', data: {
-        'ok': true,
-        'data': [
-          {
-            'variantId': 2,
-            'path': '/episode.mkv',
-            'subtitleTracks': [],
-            'missingSubtitles': [
-              {
-                'languageCode': 'es',
-                'isForced': false,
-                'isHi': false,
-              }
-            ],
+      dio.interceptors.add(InterceptorsWrapper(
+        onRequest: (options, handler) {
+          if (options.path.contains('/api/subtitles/episode/456/variants')) {
+            handler.resolve(Response(
+              requestOptions: options,
+              statusCode: 200,
+              data: {
+                'ok': true,
+                'data': [
+                  {
+                    'variantId': 2,
+                    'path': '/episode.mkv',
+                    'subtitleTracks': [],
+                    'missingSubtitles': [
+                      {
+                        'languageCode': 'es',
+                        'isForced': false,
+                        'isHi': false,
+                      }
+                    ],
+                  }
+                ],
+              },
+            ));
+            return;
           }
-        ],
-      });
+          handler.resolve(Response(
+            requestOptions: options,
+            statusCode: 200,
+            data: {'version': '1.0.0', 'startTime': ''},
+          ));
+        },
+      ));
 
+      await client.connect('http://localhost:5174');
       final results = await client.getEpisodeSubtitles(456);
       expect(results.length, 1);
       expect(results.first.missingSubtitles.first.languageCode, 'es');
     });
 
     test('searchSubtitles returns list of SubtitleSearchResult', () async {
-      adapter.onGet('/api/subtitles/search', data: {
-        'ok': true,
-        'data': [
-          {
-            'languageCode': 'en',
-            'isForced': false,
-            'isHi': false,
-            'provider': 'opensubtitles',
-            'score': 100,
+      dio.interceptors.add(InterceptorsWrapper(
+        onRequest: (options, handler) {
+          if (options.path.contains('/api/subtitles/search')) {
+            handler.resolve(Response(
+              requestOptions: options,
+              statusCode: 200,
+              data: {
+                'ok': true,
+                'data': [
+                  {
+                    'languageCode': 'en',
+                    'isForced': false,
+                    'isHi': false,
+                    'provider': 'opensubtitles',
+                    'score': 100,
+                  }
+                ],
+              },
+            ));
+            return;
           }
-        ],
-      });
+          handler.resolve(Response(
+            requestOptions: options,
+            statusCode: 200,
+            data: {'version': '1.0.0', 'startTime': ''},
+          ));
+        },
+      ));
 
+      await client.connect('http://localhost:5174');
       final results = await client.searchSubtitles(movieId: 123);
       expect(results.length, 1);
       expect(results.first.languageCode, 'en');
@@ -172,13 +223,30 @@ void main() {
     });
 
     test('downloadSubtitle returns storedPath', () async {
-      adapter.onGet('/api/subtitles/download', data: {
-        'ok': true,
-        'data': {
-          'storedPath': '/subtitles/movie_en.srt',
+      dio.interceptors.add(InterceptorsWrapper(
+        onRequest: (options, handler) {
+          if (options.path.contains('/api/subtitles/download')) {
+            handler.resolve(Response(
+              requestOptions: options,
+              statusCode: 200,
+              data: {
+                'ok': true,
+                'data': {
+                  'storedPath': '/subtitles/movie_en.srt',
+                },
+              },
+            ));
+            return;
+          }
+          handler.resolve(Response(
+            requestOptions: options,
+            statusCode: 200,
+            data: {'version': '1.0.0', 'startTime': ''},
+          ));
         },
-      });
+      ));
 
+      await client.connect('http://localhost:5174');
       const candidate = SubtitleSearchResult(
         languageCode: 'en',
         isForced: false,

@@ -3,21 +3,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mediarr_client/features/library/subtitle_search_sheet.dart';
 import 'package:mediarr_client/shared/models/subtitle_models.dart';
+
 import 'package:mediarr_client/shared/services/api_client.dart';
 
-import '../../shared/services/api_client_test.dart';
+import '../../support/fakes/fake_api_client.dart';
 
 void main() {
   group('SubtitleSearchSheet', () {
-    late MockHttpAdapter adapter;
-    late MediarrApiClient client;
+    late FakeMediarrApiClient fakeClient;
 
     setUp(() {
-      adapter = MockHttpAdapter();
-      final dio = Dio();
-      dio.httpClientAdapter = adapter;
-      client = MediarrApiClient(dio: dio);
-      client.connect('http://localhost:5174');
+      fakeClient = FakeMediarrApiClient();
     });
 
     Widget buildSheet({
@@ -27,7 +23,7 @@ void main() {
     }) {
       return ProviderScope(
         overrides: [
-          apiClientProvider.overrideWith((ref) => client),
+          apiClientProvider.overrideWith((ref) => fakeClient),
         ],
         child: MaterialApp(
           home: Scaffold(
@@ -52,10 +48,7 @@ void main() {
     }
 
     testWidgets('shows loading state initially', (tester) async {
-      adapter.onGet('/api/subtitles/search', data: {
-        'ok': true,
-        'data': [],
-      });
+      fakeClient.searchSubtitlesReturn = [];
 
       await tester.pumpWidget(buildSheet(movieId: 1));
       await tester.tap(find.text('Show'));
@@ -65,26 +58,23 @@ void main() {
     });
 
     testWidgets('shows search results', (tester) async {
-      adapter.onGet('/api/subtitles/search', data: {
-        'ok': true,
-        'data': [
-          {
-            'languageCode': 'en',
-            'isForced': false,
-            'isHi': false,
-            'provider': 'opensubtitles',
-            'score': 95,
-            'releaseName': 'Movie.2024.1080p.BluRay',
-          },
-          {
-            'languageCode': 'es',
-            'isForced': false,
-            'isHi': false,
-            'provider': 'opensubtitles',
-            'score': 88,
-          }
-        ],
-      });
+      fakeClient.searchSubtitlesReturn = [
+        const SubtitleSearchResult(
+          languageCode: 'en',
+          isForced: false,
+          isHi: false,
+          provider: 'opensubtitles',
+          score: 95,
+          releaseName: 'Movie.2024.1080p.BluRay',
+        ),
+        const SubtitleSearchResult(
+          languageCode: 'es',
+          isForced: false,
+          isHi: false,
+          provider: 'opensubtitles',
+          score: 88,
+        ),
+      ];
 
       await tester.pumpWidget(buildSheet(movieId: 1));
       await tester.tap(find.text('Show'));
@@ -96,10 +86,7 @@ void main() {
     });
 
     testWidgets('shows empty state when no results', (tester) async {
-      adapter.onGet('/api/subtitles/search', data: {
-        'ok': true,
-        'data': [],
-      });
+      fakeClient.searchSubtitlesReturn = [];
 
       await tester.pumpWidget(buildSheet(movieId: 1));
       await tester.tap(find.text('Show'));
@@ -109,38 +96,27 @@ void main() {
     });
 
     testWidgets('shows error state on failure', (tester) async {
-      adapter.onGet('/api/subtitles/search', data: {
-        'error': 'Search failed',
-      }, statusCode: 500);
+      fakeClient.searchSubtitlesError = Exception('Search failed');
 
       await tester.pumpWidget(buildSheet(movieId: 1));
       await tester.tap(find.text('Show'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Search failed'), findsOneWidget);
+      expect(find.textContaining('Search failed'), findsOneWidget);
       expect(find.text('Retry'), findsOneWidget);
     });
 
     testWidgets('download button triggers download', (tester) async {
-      adapter.onGet('/api/subtitles/search', data: {
-        'ok': true,
-        'data': [
-          {
-            'languageCode': 'en',
-            'isForced': false,
-            'isHi': false,
-            'provider': 'opensubtitles',
-            'score': 95,
-          }
-        ],
-      });
-
-      adapter.onGet('/api/subtitles/download', data: {
-        'ok': true,
-        'data': {
-          'storedPath': '/subtitles/movie_en.srt',
-        },
-      });
+      fakeClient.searchSubtitlesReturn = [
+        const SubtitleSearchResult(
+          languageCode: 'en',
+          isForced: false,
+          isHi: false,
+          provider: 'opensubtitles',
+          score: 95,
+        ),
+      ];
+      fakeClient.downloadSubtitleReturn = '/subtitles/movie_en.srt';
 
       var downloaded = false;
       await tester.pumpWidget(buildSheet(

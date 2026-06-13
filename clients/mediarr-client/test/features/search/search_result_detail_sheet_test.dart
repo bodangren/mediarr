@@ -9,6 +9,8 @@ import 'package:mediarr_client/shared/models/episode.dart';
 import 'package:mediarr_client/shared/models/movie.dart';
 import 'package:mediarr_client/shared/models/search_result.dart';
 import 'package:mediarr_client/shared/models/series.dart';
+import 'package:mediarr_client/shared/models/library_item.dart';
+import 'package:mediarr_client/shared/models/subtitle_models.dart';
 import 'package:mediarr_client/shared/services/api_client.dart';
 
 void main() {
@@ -473,6 +475,7 @@ class _MockMediarrApiClient extends StateNotifier<ApiClientState>
     String? eventType,
     String? sourceModule,
     bool? success,
+    String? types,
   }) async =>
       [];
 
@@ -490,6 +493,42 @@ class _MockMediarrApiClient extends StateNotifier<ApiClientState>
 
   @override
   Future<void> removeTorrent(String infoHash) async {}
+
+  @override
+  Future<void> deleteSeries(int seriesId) async {}
+
+  @override
+  Future<Series?> getSeriesById(int id) async => null;
+
+  @override
+  Future<({List<LibraryItem> items, int page, int pageSize, int totalCount, int totalPages})> getLibrary({
+    String? type,
+    String? sortBy,
+    String? sortDir,
+    int page = 1,
+    int pageSize = 25,
+  }) async => (items: <LibraryItem>[], page: 1, pageSize: 25, totalCount: 0, totalPages: 0);
+
+  @override
+  Future<List<VariantInventory>> getMovieSubtitles(int movieId) async => [];
+
+  @override
+  Future<List<VariantInventory>> getEpisodeSubtitles(int episodeId) async => [];
+
+  @override
+  Future<List<SubtitleSearchResult>> searchSubtitles({
+    int? movieId,
+    int? episodeId,
+    int? variantId,
+  }) async => [];
+
+  @override
+  Future<String?> downloadSubtitle({
+    required SubtitleSearchResult candidate,
+    int? movieId,
+    int? episodeId,
+    int? variantId,
+  }) async => null;
 
   @override
   Stream<SseEvent> streamEvents() => const Stream.empty();

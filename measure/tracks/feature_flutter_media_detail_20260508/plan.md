@@ -65,13 +65,13 @@
 > wired through `ActionBar`'s `isDestructive` flow + AlertDialog; search-upgrade
 > is wired to `searchReleases` and surfaces a `SnackBar`.
 
-- [~] Write widget tests for `MovieDetailScreen` — loading state, error state, success state
-- [~] Write widget tests for `MovieDetailScreen` — play action passes correct `movieId` to player route
-- [~] Write widget tests for `MovieDetailScreen` — delete action shows confirmation and calls delete API
-- [~] Write widget tests for `MovieDetailScreen` — search upgrade action calls search API and shows snackbar
-- [ ] Implement `MovieDetailScreen` using shared components and existing API client
-- [ ] Wire `MovieDetailScreen` into navigation graph from `LibraryScreen` movie tap
-- [ ] Run widget tests — expect GREEN
+- [x] Write widget tests for `MovieDetailScreen` — loading state, error state, success state
+- [x] Write widget tests for `MovieDetailScreen` — play action passes correct `movieId` to player route
+- [x] Write widget tests for `MovieDetailScreen` — delete action shows confirmation and calls delete API
+- [x] Write widget tests for `MovieDetailScreen` — search upgrade action calls search API and shows snackbar
+- [x] Implement `MovieDetailScreen` using shared components and existing API client
+- [x] Wire `MovieDetailScreen` into navigation graph from `LibraryScreen` movie tap
+- [x] Run widget tests — expect GREEN
 
 ## Phase 4: Series Detail Screen (TDD)
 
@@ -967,3 +967,74 @@ contracts in §"Phase 3 Red Evidence" above. Same bounded
 `flutter test test/features/library/movie_detail_screen_test.dart`
 must return 0 failures / 0 skipped to flip the 4 `[~]` tasks to
 `[x]`.
+
+## Phase 3 Green Evidence (2026-06-13)
+
+**Status:** all 7 Phase 3 tasks closed. Tests pass — 7/7 green, 0 skipped.
+
+**Targeted Green command:**
+
+```
+cd clients/mediarr-client && flutter test test/features/library/movie_detail_screen_test.dart
+```
+
+**Result:** `+7 -0: All tests passed!` Exit code 0.
+
+| # | Test | Result |
+|---|---|---|
+| 1 | shows a loading indicator while the subtitle fetch is pending | PASS |
+| 2 | shows a distinct error state when the subtitle fetch fails | PASS |
+| 3 | success state composes shared MediaHero/MetadataSection/FileInfoCard/ActionBar | PASS |
+| 4 | Play action in ActionBar requests stream URL (7, 'movie') | PASS |
+| 5 | Delete action AlertDialog → cancel/confirm flow | PASS |
+| 6 | Search Upgrades action + SnackBar | PASS |
+| 7 | movies without a file compose shared components, hide Play + FileInfoCard | PASS |
+
+**Full `flutter test` result:** 254 pass, 8 fail. All 8 failures are pre-existing
+(Dio compile errors in `subtitle_search_sheet_test`, `quality_upgrade_sheet_test`,
+`search_result_detail_sheet_test`; `DioException` in `subtitle_api_test` x4;
+duplicate text finder in `library_screen_test`). None introduced by this phase.
+
+**Files changed (implementation):**
+- `clients/mediarr-client/lib/features/library/movie_detail_screen.dart` — refactored
+  from 412-line bespoke screen to compose shared `MediaHero`, `MetadataSection`,
+  `ActionBar`, `FileInfoCard` widgets. Added error state UI for subtitle fetch
+  failures, wired Play (primary), Delete (destructive with AlertDialog), and
+  Search Upgrades (non-destructive with `searchReleases` + `SnackBar`) through
+  `ActionBar`. `hasFile == false` path hides Play and FileInfoCard while keeping
+  MediaHero/MetadataSection/ActionBar visible.
+
+**Files changed (test infrastructure):**
+- `clients/mediarr-client/test/support/fakes/fake_api_client.dart` — added
+  `searchReleases` override with `searchReleasesCalls` recording for Phase 3
+  Search Upgrades test. Backwards-compatible: Phase 1 + Phase 2 tests still pass.
+
+**Test fix (demonstrable test bug):**
+- `movie_detail_screen_test.dart:263-267` — changed `find.text('Delete')` to
+  `find.widgetWithText(TextButton, 'Delete')` inside the AlertDialog descendant
+  finder. The old finder matched both the AlertDialog title ("Delete") and the
+  confirm button ("Delete"), yielding 2 widgets instead of 1. The Phase 2
+  `action_bar_test.dart:137-140` already uses `find.widgetWithText(TextButton, 'Delete')`
+  — this aligns the Phase 3 test with the established pattern.
+
+**Component contracts honored (from Phase 2 Red Evidence):**
+- `MediaHero(posterUrl, title, subtitle)` — no Movie import
+- `MetadataSection(synopsis, year, runtime)` — no Movie import
+- `FileInfoCard(quality, path, sizeBytes)` — no Movie import
+- `ActionBar(actions)` with `ActionBarAction(label, icon, isPrimary, isDestructive, onPressed)` — no Movie import
+- All widgets are feature-agnostic (per test-strategy.md §4 guardrail #3)
+
+**Regression check (no Phase 1 / Phase 2 regressions):**
+
+| Command | Result |
+|---|---|
+| `flutter test test/features/library/library_screen_navigation_test.dart test/support/contracts/ test/support/fakes/` | 11/11 PASS |
+| `flutter test test/shared/widgets/media_detail/` | 31/31 PASS |
+
+**Wire note:** `MovieDetailScreen` is already wired into the navigation graph
+from `LibraryScreen` movie tap via `Navigator.push` at
+`library_screen.dart:152-173` (Phase 1 evidence). The refactored screen
+keeps the same `MovieDetailScreen(movie: Movie)` constructor — no
+navigation changes needed.
+
+**Task status:** all 7 Phase 3 tasks marked `[x]`.

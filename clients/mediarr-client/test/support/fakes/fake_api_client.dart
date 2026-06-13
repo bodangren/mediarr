@@ -97,6 +97,26 @@ class FakeMediarrApiClient extends MediarrApiClient {
     return getMovieSubtitlesReturn;
   }
 
+  // --- searchReleases (Phase 3 Search Upgrades action) ---
+
+  List<Release> searchReleasesReturn = const [];
+  Object? searchReleasesError;
+  final List<({String? query, String? type})> searchReleasesCalls = [];
+
+  @override
+  Future<List<Release>> searchReleases({
+    String? query,
+    String? type,
+    int? tmdbId,
+    int? tvdbId,
+    int? year,
+    int? qualityProfileId,
+  }) async {
+    searchReleasesCalls.add((query: query, type: type));
+    if (searchReleasesError != null) throw searchReleasesError!;
+    return searchReleasesReturn;
+  }
+
   // --- Default no-op stubs for methods not exercised by tests ---
   // LibraryScreen calls getLibrary via libraryProvider; tests
   // override libraryProvider directly so getLibrary is not invoked here.

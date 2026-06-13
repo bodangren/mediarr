@@ -262,7 +262,7 @@ void main() {
         expect(find.byType(AlertDialog), findsOneWidget);
         final confirmButton = find.descendant(
           of: find.byType(AlertDialog),
-          matching: find.text('Delete'),
+          matching: find.widgetWithText(TextButton, 'Delete'),
         );
         expect(confirmButton, findsOneWidget);
         await tester.tap(confirmButton);

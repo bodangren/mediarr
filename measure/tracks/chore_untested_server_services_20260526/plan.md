@@ -316,6 +316,83 @@ describe('ServiceName', () => {
 
 ## Phase S7: SubtitleNamingService tests *(DEFERRED — post-v1.0)*
 
+> **S7 block (2026-06-13, mid attempt):** This phase is entirely deferred per the track scope
+> note at the top of `plan.md` ("Do not start deferred phases as part of this track") and per
+> `test-strategy.md` §0 ("S2/S5/S7–S10 are DEFERRED — out of strategy"). MID owns the Red phase
+> for every currently incomplete **non-deferred** task in this phase; all seven S7 tasks below
+> are deferred, so there are zero non-deferred tasks to action. **No test file created, no
+> commit, no Red command run for S7 in this attempt.**
+>
+> Build-graph context captured so the unblock attempt (post-v1.0) starts from a known baseline:
+> - `build-graph stats ./graph.db` (graph.db mtime 2026-06-13 07:43, 7,489 nodes, 11,007 edges,
+>   877 files — matches the S5 attempt 3 snapshot within 1 node/1 file).
+> - `build-graph search ./graph.db "SubtitleNamingService"` resolves two rows:
+>   - `class:server/src/services/SubtitleNamingService.ts:SubtitleNamingService`
+>   - `file:server/src/services/SubtitleNamingService.ts`
+> - `build-graph inspect ./graph.db SubtitleNamingService` shows: tag `exported`, outgoing
+>   edges `(none)`, incoming edges `contains ← file:SubtitleNamingService.ts` only.
+>   **Zero `imports` edges target the class.** Same 0-caller signal that flagged the
+>   `SettingsService` and `TvSearchService` cases (test-strategy.md §0; S2 attempt 1 notes;
+>   S5 attempt 1 notes) — class is reached through DI, not by name.
+> - `build-graph callers ./graph.db SubtitleNamingService` returns `(no results)`.
+> - `ls server/src/services/SubtitleNamingService.ts` → file present (1,803 bytes, 58 lines,
+>   mtime 2026-05-06 21:03). Unlike the S5 case where the source file was deleted in
+>   `037418f`, S7's source file still exists at HEAD.
+>
+> **Spec-vs-HEAD API mismatch flag for the unblock attempt:** the spec's four test tasks
+> (`generatePath returns correct path for movie subtitle`, `generatePath includes forced
+> suffix when isForced is true`, `generatePath includes HI suffix when isHi is true`,
+> `generatePath handles unknown extension gracefully`) are **incorrect at HEAD**. Reading
+> `server/src/services/SubtitleNamingService.ts` lines 17–47:
+> - The public method is `buildSubtitlePath(input: SubtitleNamingInput): string` — there is
+>   **no `generatePath` method**.
+> - The `SubtitleNamingInput` interface (lines 3–12) exposes `isForced`, `isHi`, `languageCode`,
+>   `videoPath`, `extension`, `variantToken`, `existingPaths`, `subtitleDirectory`.
+> - The flag-suffix logic is at lines 29–35: `${languageCode.toLowerCase()}` for the plain
+>   case, `${languageCode.toLowerCase()}.${flags.join('.')}` when one or both flags are
+>   true, where `flags` is `[isForced ? 'forced' : null, isHi ? 'hi' : null]`.
+> - The extension-normalization logic is at lines 19–21: extension passed without leading
+>   dot is prefixed; missing extension defaults to `.srt`; leading-dot extensions pass
+>   through unchanged.
+> - The collision-handling logic is at lines 39–46: if the standard path is already in
+>   `existingPaths`, a `<videoBaseName>.<sanitizedToken>.<languageSuffix><extension>` variant
+>   is returned. `sanitizeVariantToken` (lines 49–57) trims, lowercases, replaces
+>   `[^a-z0-9_-]+` with `-`, strips leading/trailing dashes, and falls back to `'variant'`
+>   on empty result.
+> - `subtitleDirectory` resolution: lines 22–24 — uses `path.resolve(input.subtitleDirectory)`
+>   when provided, else `path.dirname(input.videoPath)`.
+>
+> The unblock attempt must rewrite the four spec test tasks against the real API
+> (`buildSubtitlePath`) and the real flag/extension/collision branches above **before** any
+> Red command. Same precedent as S5's `searchSeries` mismatch (plan S5 attempt 1 evidence).
+>
+> **S7 mock-plan note for the unblock attempt:** per test-strategy.md §2 the
+> `vi.hoisted()` + `vi.mock` pattern should mock only what the service actually invokes.
+> `SubtitleNamingService` has zero external dependencies — it is a pure deterministic
+> function of `SubtitleNamingInput` (only imports `node:path`). No DI mocks required; tests
+> can construct `new SubtitleNamingService()` directly and assert on the returned string.
+> `node:path` should be unmocked (real implementation is deterministic on Linux). Target
+> ≥5 cases covering: standard movie path, forced-only flag, HI-only flag, forced+HI flags,
+> extension normalization (with/without leading dot, missing → `.srt` default), collision
+> with `existingPaths` (variant token sanitization: upper→lower, special-char stripping,
+> empty-token fallback to `'variant'`), `subtitleDirectory` override vs default
+> `path.dirname(videoPath)`.
+>
+> Worktree at MID start had one unrelated dirty path (pre-existing, matches the S1 cleanup
+> 2026-06-12 and S2/S5 block 2026-06-12 precedent verbatim):
+> - `M conductor/archive/cardigann_runtime_parity_20260223/artifacts/final-phase5-compatibility-matrix.json`
+>   — one-line `generatedAt` timestamp bump (`2026-06-11T13:44:23.371Z` →
+>   `2026-06-13T00:31:53.128Z`) in an archived-track artifact. Regenerated by an external
+>   process between MID sessions; same diff shape flagged in S1 cleanup, S2 block, and S5
+>   attempts 1–3. Preserved untouched per the S1 cleanup precedent and the S2/S5
+>   "preserve both pre-existing dirty paths" precedent. No `measure/automation-supervisor.py`
+>   dirty entry in this attempt's `git status --porcelain` output (the user's MID-start
+>   status only listed the one matrix.json path).
+>
+> **No test file created, no Red command run, no S7 source/test code touched in this
+> attempt.** The only artifact change is this block note documenting the deferral, the
+> build-graph baseline, and the spec-vs-HEAD API mismatch for the post-v1.0 unblock attempt.
+
 - [ ] Read `server/src/services/SubtitleNamingService.ts`
 - [ ] Create `server/src/services/SubtitleNamingService.test.ts`
 - [ ] Write test: `generatePath returns correct path for movie subtitle`

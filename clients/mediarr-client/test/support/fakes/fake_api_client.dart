@@ -28,11 +28,18 @@ import 'package:mediarr_client/shared/services/api_client.dart';
 ///   - [getSeriesDetail]     — SeriesDetailScreen.initState() refetch
 ///   - [getMovieSubtitles]   — Phase 3 subtitle fetch (Completer-driven
 ///                             loading/error/success test)
-///   - [getStreamUrl]        — Phase 3 Play action (records (movieId, type)
-///                             so the play test can assert the right id was
+///   - [getStreamUrl]        — Phase 3 + Phase 4 Play action (records
+///                             (movieId, type) / (episodeId, type) so the
+///                             play test can assert the right id was
 ///                             fetched without needing to mount
 ///                             PlaybackScreen — which would crash a Flutter
 ///                             widget test environment via media_kit)
+///   - [searchReleases]      — Phase 3 Search Upgrades + Phase 4 per-episode
+///                             Search and series-level Search All Missing
+///                             (records (query, type))
+///   - [deleteSeries]        — Phase 4 Delete Series series-level action
+///                             (records seriesId; the AlertDialog flow is
+///                             tested via ActionBar's destructive path)
 class FakeMediarrApiClient extends MediarrApiClient {
   FakeMediarrApiClient() : super();
 
@@ -46,6 +53,12 @@ class FakeMediarrApiClient extends MediarrApiClient {
 
   Series? getSeriesDetailReturn;
   Object? getSeriesDetailError;
+
+  /// When non-null, [getSeriesDetail] returns this completer's future
+  /// instead of the synchronous [getSeriesDetailReturn]. Used by Phase 4
+  /// loading-state tests to hold the screen in its loading state until the
+  /// test is ready to assert.
+  Completer<Series?>? getSeriesDetailCompleter;
 
   List<VariantInventory> getMovieSubtitlesReturn = const [];
   Object? getMovieSubtitlesError;
@@ -83,6 +96,9 @@ class FakeMediarrApiClient extends MediarrApiClient {
   @override
   Future<Series?> getSeriesDetail(int id) async {
     getSeriesDetailCalls.add(id);
+    if (getSeriesDetailCompleter != null) {
+      return getSeriesDetailCompleter!.future;
+    }
     if (getSeriesDetailError != null) throw getSeriesDetailError!;
     return getSeriesDetailReturn;
   }
@@ -97,7 +113,8 @@ class FakeMediarrApiClient extends MediarrApiClient {
     return getMovieSubtitlesReturn;
   }
 
-  // --- searchReleases (Phase 3 Search Upgrades action) ---
+  // --- searchReleases (Phase 3 Search Upgrades + Phase 4 Search All Missing
+  //     and per-episode Search) ---
 
   List<Release> searchReleasesReturn = const [];
   Object? searchReleasesError;
@@ -115,6 +132,25 @@ class FakeMediarrApiClient extends MediarrApiClient {
     searchReleasesCalls.add((query: query, type: type));
     if (searchReleasesError != null) throw searchReleasesError!;
     return searchReleasesReturn;
+  }
+
+  // --- deleteSeries (Phase 4 Delete Series series-level action) ---
+  //
+  // Note: this is intentionally NOT marked `@override` because the real
+  // [MediarrApiClient] does not yet expose a `deleteSeries` method — the
+  // Phase 4 implement step will add it as part of the same refactor that
+  // wires the screen's Delete Series action. Until then, the method exists
+  // only on the fake so the Red-phase test can assert the call recording
+  // contract. The test treats the fake as the system under test, not the
+  // real client; the real client is irrelevant to the test's compile /
+  // runtime behavior.
+
+  Object? deleteSeriesError;
+  final List<int> deleteSeriesCalls = [];
+
+  Future<void> deleteSeries(int seriesId) async {
+    deleteSeriesCalls.add(seriesId);
+    if (deleteSeriesError != null) throw deleteSeriesError!;
   }
 
   // --- Default no-op stubs for methods not exercised by tests ---

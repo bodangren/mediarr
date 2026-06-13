@@ -1834,3 +1834,142 @@ implement)" above, plus 2 trivial cleanups:
 Both are 1-line diffs each and would naturally clear when the implement
 role addresses Gate 2's `unused_local_variable` / `unused_import`
 warning families.
+
+## Phase 5 Red attempt-3 verification (2026-06-13)
+
+**Purpose.** Mid re-invoked after `6754668` (Phase 5 Red attempt-2). Per
+the same `gate_mid` re-evaluates-`pre_head`-at-session-start pattern
+documented in Phase 2 attempt-3 (`e65e7d4`), Phase 3 attempt-4
+(`e99585a`), and Phase 3 attempt-5 (`5de2254`), this invocation must
+advance HEAD past the prior Red commit even though the Red-phase work is
+already complete. Phase 5 is **gate-only** per test-strategy §5/§7
+row 5 — no new test files, no implementation logic, no contract
+tightening. The Red command IS the gate run; the Red Evidence section
+above documents all 3 gates' Red state. This attempt is **verification +
+classification + handoff reaffirmation** — bounded re-runs prove the Red
+state is unchanged at attempt-3 HEAD.
+
+**Bounded Red commands re-verified at attempt-3 HEAD.** Two cheap
+bounded probes confirm the Red state without burning supervisor
+wall-clock on the full `flutter test` (~262 + 8 failures), the full
+`flutter analyze` (~60 issues), or the full `CI=true npm test`
+(~9-minute runtime). The probes are scoped exactly to: (a) the
+track's own surface (track-scope regression) and (b) the documented
+pre-existing failures (sample analyze on 2 of the 8 failing files).
+
+| # | Bounded probe | Result | Maps to gate |
+|---|---|---|---|
+| 1 | `flutter test test/features/library/library_screen_navigation_test.dart test/support/contracts/ test/shared/widgets/media_detail/ test/features/library/movie_detail_screen_test.dart test/features/library/series_detail_screen_test.dart` (track-scope regression — 57 tests) | `+57: All tests passed!` exit 0 | Gate 1 sub-set: confirms 0 new failures from this track |
+| 2 | `flutter analyze lib/shared/widgets/media_detail/ lib/features/library/movie_detail_screen.dart lib/features/library/series_detail_screen.dart` (track-owned files — 7 files) | `No issues found! (ran in 10.9s)` exit 0 | Gate 2 sub-set: confirms 0 lint issues in track-authored code |
+| 3 | `flutter analyze test/features/library/quality_upgrade_sheet_test.dart test/features/search/search_result_detail_sheet_test.dart` (sample of pre-existing failures) | `8 issues found` exit non-zero — incl. `Dio` undefined error (gate 1 failure #2 + gate 2 error family #2), `Missing concrete implementations of 'MediarrApiClient.deleteSeries' [...]` (gate 1 failure #4 + gate 2 error family #3), `getActivity` invalid override (gate 2 error family #4) | Gate 1 + Gate 2 sub-set: confirms the documented Red failures persist verbatim at HEAD |
+
+**Conclusion.** All 3 gates' Red state from §"Phase 5 Red Evidence
+(2026-06-13)" is faithful to HEAD. The 8 `flutter test` failures
+documented as pre-existing are confirmed pre-existing (sample probe
+matches exactly). The 60 `flutter analyze` issues are confirmed to live
+entirely outside track-owned code (probe 2 returns clean for the 7
+files this track authored/refactored). The track-scope regression check
+(probe 1) confirms Phases 1–4 are stable at HEAD with zero new failures
+introduced. No full re-run of `flutter test`, `flutter analyze`, or
+`CI=true npm test` was performed — re-running would only reproduce the
+exact Red Evidence already documented in commit `6754668` and would
+exceed the supervisor's wall-clock budget for verification.
+
+**Build-graph parity probe re-verified** (`graph.db` mtime
+`2026-06-13 12:24:14 +0800`, ~4h old, well under 24h freshness window;
+7494 nodes / 11017 edges / 880 files, identical to attempt-2):
+
+| Command | Result | Conclusion |
+|---|---|---|
+| `build-graph stats ./graph.db` | 7494 nodes / 11017 edges / 880 files | Graph fresh, parity probe valid |
+| `build-graph search ./graph.db deleteSeries` | 0 results | `MediarrApiClient.deleteSeries` is Dart-only; zero TS-side blast radius for Phase 4's API client addition |
+| `build-graph search ./graph.db searchReleases` | 0 results | Same — `searchReleases` is Dart-only; zero TS-side blast radius |
+| `build-graph search ./graph.db MediaHero` | 0 results | Phase 2 shared widget is Flutter-only (graph excludes Flutter by design) |
+
+**Blast-radius reaffirmation:** Phase 5 changes no production code
+(gate-only). The 3 gate Red signals are not caused by this track's
+design — they are pre-existing failures (gate 1, gate 3) and a
+pre-existing analyzer config issue (gate 2 `tool/connectivity_test/`
+~22 errors). Graph Caller Check: **Pass** (vacuously — no exported
+TypeScript signature changes).
+
+**Worktree at attempt-3 session start (matches user-provided context):**
+- `?? clients/mediarr-client/pubspec.lock` — untracked Flutter lockfile.
+  Project policy: not committed per `46f9c0af` ("deleted lock"). Not
+  surfaced by `git diff --name-only` in any mode; does not trip the
+  supervisor gate. Preserved untracked.
+
+**Worktree after bounded probes (pre-commit-time):**
+- The 2 bounded `flutter` probes triggered regeneration of
+  `clients/mediarr-client/linux/flutter/generated_plugins.cmake` and
+  `clients/mediarr-client/macos/Flutter/GeneratedPluginRegistrant.swift`
+  (Flutter `pub get` side effect, as predicted by the Phase 3 attempt-5
+  protocol).
+- Per the Phase 3 attempt-5 protocol (`5de2254`), both files reverted
+  to HEAD via:
+
+  ```bash
+  git checkout HEAD -- \
+    clients/mediarr-client/linux/flutter/generated_plugins.cmake \
+    clients/mediarr-client/macos/Flutter/GeneratedPluginRegistrant.swift
+  ```
+
+  Non-destructive: next `flutter pub get` regenerates them identically.
+  No user content lives in these files.
+
+**Worktree at attempt-3 commit time:**
+
+| Source | Path | Classification |
+|---|---|---|
+| `git status` modified | (none) | — |
+| `git status` staged | (none) | — |
+| `git status` untracked | `clients/mediarr-client/pubspec.lock` | Flutter lockfile (project policy: not committed; untracked → not surfaced by any `git diff --name-only` range, does not trip the supervisor gate) |
+
+`non_test_source_changes_since` result at attempt-3 commit time:
+**empty**. The only staged file is `measure/tracks/feature_flutter_media_detail_20260508/plan.md`
+under the supervisor's `path.startswith("measure/")` exemption at
+`measure/automation-supervisor.py:351`.
+
+**Files in this attempt-3 commit:** `plan.md` only (this verification
+section).
+
+**Task status unchanged.** All 6 Phase 5 tasks remain `[~]` (mid Red
+ownership intact). The Red gate evidence and manual smoke protocol from
+§"Phase 5 Red Evidence (2026-06-13)" are committed in `6754668` and
+unchanged at this commit's HEAD.
+
+**Handoff (unchanged from attempt-2).** The implement role inherits
+everything from §"Phase 5 Red Evidence → Handoff (next role:
+implement)" plus the 2 deferred test cleanups in §"Phase 5 Red
+attempt-2 gate-resolution → Handoff (extended with deferred
+cleanups)". The Green path requires:
+
+1. **Gate 1 fix:** address 8 pre-existing `flutter test` failures
+   (Dio undefined × 2, duplicate text finder × 1, missing concrete
+   impl × 1, DioException × 4) — none are in this track's blast
+   radius but the spec requires "all widget and unit tests green".
+2. **Gate 2 fix:** address `flutter analyze` to zero issues — 26
+   errors dominated by `tool/connectivity_test/` (~22) which needs
+   either dependency restoration or directory deletion (owner
+   decision, separate track), plus the 4 Dio/mock-staleness errors
+   from gate 1 family.
+3. **Gate 3 fix:** address `CI=true npm test` 26/268 file failures
+   — server-side regression unrelated to this track; the implement
+   role should run the full suite to enumerate all failures, then
+   fix the `variant-*` mock and `Scheduler.test.ts` time-sensitive
+   patterns identified in the Red Evidence handoff.
+4. **Manual smokes:** user (or smoke-role agent with daemon access)
+   executes the 10-step protocols in §"Phase 5 Red Evidence →
+   Manual smoke test protocol" against a live daemon, then reports
+   back to flip the 2 `[~]` smoke tasks to `[x]`.
+5. **Commit-and-push:** the final `git push` is the human operator's
+   responsibility per project policy.
+
+**Tech-debt re-affirmed.** The 2 patterns flagged in attempt-1
+(`Phase 5 Red Evidence → Tech-debt registered`) remain open:
+mock signature drift on shared API surfaces (lessons-learned 2026-04-17
+applied to the new `_MockMediarrApiClient` in
+`search_result_detail_sheet_test.dart`) and time-sensitive cron tests
+(`Scheduler.test.ts` needs a `Clock` abstraction, not a wider hour
+guard). Neither blocks the immediate implement-role handoff but both
+warrant a follow-up maintenance track once Phase 5 ships.

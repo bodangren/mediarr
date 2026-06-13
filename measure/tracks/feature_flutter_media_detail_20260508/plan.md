@@ -278,3 +278,66 @@ under `clients/mediarr-client/lib/shared/widgets/media_detail/` with the
 contracts pinned by the 5 test files (see Phase 2 Red Evidence §"Component
 contracts"). The same `flutter test test/shared/widgets/media_detail/`
 command must then report 0 failures with 0 skipped tests.
+
+## Phase 2 Red attempt-3 verification (2026-06-13)
+
+**Purpose.** Mid re-invoked after `ca23d37`. The supervisor's `gate_mid`
+(`measure/automation-supervisor.py:875-899`) re-evaluates `pre_head` at
+session start, so this invocation must advance HEAD past `ca23d37` even
+though the Red-phase test-writing work is complete. This commit is a
+verification-only docs delta; no new test files are added because the
+contract is locked by the 5 test files committed in `e559147` and the
+component contracts pinned in §"Phase 2 Red Evidence (2026-06-13) →
+Component contracts" above. Tightening tests further would invent failures
+the implement role has not yet had a chance to address.
+
+**Bounded Red command re-verified** (identical to attempts 1 and 2, no
+watch mode, scoped to the new directory):
+
+```
+cd clients/mediarr-client && flutter test test/shared/widgets/media_detail/
+```
+
+**Result:** `+0 -5: Some tests failed.` Five file-level compile failures.
+First error of each file is `Error when reading 'lib/shared/widgets/media_detail/<file>.dart': No such file or directory`, followed by `Couldn't find constructor` errors for every referenced symbol (`MediaHero`, `MediaHeroAction`, `MetadataSection`, `ActionBar`, `ActionBarAction`, `FileInfoCard`, `EpisodeList`, `EpisodeListSeason`, `EpisodeListSeasonData`, `EpisodeListItem`). This is the truthful Red state: tests fail because the implementation is missing, not because a durable record is stale.
+
+**Build-graph parity probe** (`graph.db` mtime today, 7494 nodes, fresh):
+- `build-graph search MediaHero` → 0 results (Flutter excluded from graph; widgets don't exist yet — both expected).
+- `build-graph search EpisodeList` → 0 results (same).
+- `build-graph search MovieDetail` → SPA-side parity references only (`MovieDetailPage.tsx`, `MovieDetailHeader.tsx`, `routeMap.movieDetail`, `queryKeys.movieDetail`, `interface MovieDetail` at `app/src/types/movie.ts:90`).
+- `build-graph search seriesDetail` → SPA-side parity references only (`SeriesDetailPage.tsx`, `routeMap.seriesDetail`, `queryKeys.seriesDetail`).
+- `build-graph inspect interface:MovieDetail` → 0 outgoing edges, 1 incoming (`contains ← file:movie.ts`). Confirms `MovieDetail` is a shape-only TS interface; no Flutter callers, no risk of mid changing TS symbols this phase touches.
+
+The Phase 2 components are **feature-agnostic primitives** (per
+test-strategy §4 guardrail #3) and take no Movie/Series/Episode/Season
+imports. The graph confirms there is no TS-side blast radius for this
+phase — only Flutter-side widget rendering.
+
+**Task status unchanged.** The 5 widget-test tasks remain `[~]` (Red
+ownership). The 2 remaining `[ ]` tasks (implement components + run
+GREEN) belong to the implement role.
+
+**Dirty worktree at attempt-3 start — re-classified, unchanged from prior
+attempts, BLOCKED from mid fix.** Same 4 paths as attempts 1 and 2:
+
+| Path | Classification | Diff size | Action |
+|---|---|---|---|
+| `clients/mediarr-client/linux/flutter/generated_plugins.cmake` | Flutter-generated (pre-existing) | +1 line | Preserved, not committed |
+| `clients/mediarr-client/macos/Flutter/GeneratedPluginRegistrant.swift` | Flutter-generated (pre-existing) | −2 lines | Preserved, not committed |
+| `conductor/archive/cardigann_runtime_parity_20260223/artifacts/final-phase5-compatibility-matrix.json` | Unrelated archived-track artifact (pre-existing) | ±1 line | Preserved, not committed |
+| `clients/mediarr-client/pubspec.lock` (untracked) | Flutter lockfile from `flutter pub get` (pre-existing) | n/a | Preserved, not committed |
+
+Per mid role instructions ("do not overwrite, revert, or hide unrelated
+user work"), none of the four dirty paths are added to this commit. The
+supervisor's `non_test_source_changes_since` filter mis-classification of
+these as "mid changed" is a supervisor-level concern documented in commits
+`29da5a3` and `ca23d37`; mid cannot fix the classifier from inside the
+Red-phase boundary.
+
+**Files in this attempt-3 commit:** `measure/tracks/feature_flutter_media_detail_20260508/plan.md` only (this section). Filtered out by the supervisor's `path.startswith("measure/")` exemption at `measure/automation-supervisor.py:351`.
+
+**Handoff (unchanged):** implement role adds the 5 widget libraries under
+`clients/mediarr-client/lib/shared/widgets/media_detail/` per the locked
+component contracts; the same bounded `flutter test test/shared/widgets/media_detail/`
+command must then return 0 failures with 0 skipped tests, flipping the 5
+`[~]` tasks to `[x]` and unlocking the remaining 2 `[ ]` tasks.

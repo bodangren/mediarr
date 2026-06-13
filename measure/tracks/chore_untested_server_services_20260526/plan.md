@@ -294,7 +294,7 @@ describe('ServiceName', () => {
 - [x] ~~Write test: `searchSeries sanitizes query input`~~ — `searchSeries` does not exist; query construction tested by `searchAllIndexers.test.ts` (11 tests)
 - [x] ~~Write test: `searchSeries returns empty array for empty query`~~ — `searchSeries` does not exist; empty-query handling tested by `searchAllIndexers.test.ts`
 - [x] Run: `bun x vitest run tests/tv-search-service.test.js` → 1/1 pass
-- [x] Commit: `test(search): fix ReleaseParser mock in migrated tv-search-service test` (pending)
+- [x] Commit: `test(search): fix ReleaseParser mock in migrated tv-search-service test` (a707b57)
 
 ## Phase S6: MediaSearchService base tests *(covered by existing test files)*
 

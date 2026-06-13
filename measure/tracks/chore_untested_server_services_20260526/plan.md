@@ -885,12 +885,151 @@ describe('ServiceName', () => {
 
 ## Phase S9: SubtitleProviderFactory tests *(DEFERRED — post-v1.0)*
 
-- [ ] Read `server/src/services/SubtitleProviderFactory.ts`
+> **S9 block (2026-06-13, mid attempt):** This phase is entirely deferred per the track scope
+> note at the top of `plan.md` ("Do not start deferred phases as part of this track") and per
+> `test-strategy.md` §0 ("S2/S5/S7–S10 are DEFERRED — out of strategy"). MID owns the Red phase
+> for every currently incomplete **non-deferred** task in this phase; all eight S9 tasks below
+> are deferred, so there are zero non-deferred tasks to action. **No test file created, no
+> commit, no Red command run for S9 source/test code in this attempt.** The only artifact
+> change is this block note recording the baseline for the post-v1.0 unblock attempt.
+>
+> Build-graph context captured so the unblock attempt (post-v1.0) starts from a known baseline:
+> - `build-graph stats ./graph.db` (graph.db mtime `2026-06-13 10:22`, 7,490 nodes, 11,009 edges,
+>   878 files — matches the S8 attempt 2 snapshot exactly; no fresh `build-graph scan` was
+>   needed because no source under `server/src/services/` moved since the last scan).
+> - `build-graph search ./graph.db "SubtitleProviderFactory"` resolves two rows:
+>   - `class:server/src/services/SubtitleProviderFactory.ts:SubtitleProviderFactory`
+>   - `file:server/src/services/SubtitleProviderFactory.ts`
+> - `build-graph inspect ./graph.db SubtitleProviderFactory` shows: tag `exported`, outgoing
+>   edges `(none)`, incoming edges `contains ← file:SubtitleProviderFactory.ts` only.
+>   **Zero `imports` edges target the class.** Same 0-caller DI signal that flagged
+>   `SettingsService`, `TvSearchService`, `SubtitleNamingService`, and
+>   `SubtitleRequirementEngine` in previous attempts — class is reached through DI, not by
+>   name.
+> - `build-graph callers ./graph.db SubtitleProviderFactory` returns `(no results)`.
+> - `ls -la server/src/services/SubtitleProviderFactory.ts` → file present (1,170 bytes,
+>   39 lines, mtime `2026-05-06 21:03`). Unlike the S5 case where the source file was
+>   deleted in `037418f`, S9's source file still exists at HEAD and is fully implemented.
+> - `ls server/src/services/ | grep -iE "subtitleprovider|provider"` → confirms source file
+>   is present alongside `MetadataProvider.ts`, `ProviderBackedSubtitleFetchProvider.ts`,
+>   `ReleaseParserProvider.ts`, and the three concrete provider implementations
+>   (`AssrtProvider.ts`, `OpenSubtitlesProvider.ts`, `SubdlProvider.ts`) in the sibling
+>   `providers/` directory.
+> - `grep -rn "SubtitleProviderFactory" server/src --include="*.ts"` shows six production
+>   consumers (the four direct importers plus two type-only imports via `api/types.ts`):
+>   - `main.ts:63,472` — instantiates the factory at line 472 with the concrete provider
+>     registry (the wiring point for the runtime DI).
+>   - `SubtitleInventoryApiService.ts:5,123` — accepts the factory as **optional** DI
+>     (`providerFactory?: SubtitleProviderFactory`); resolved at request time inside the
+>     manual-search code path.
+>   - `ProviderBackedSubtitleFetchProvider.ts:2,11` — accepts the factory as **required** DI
+>     (`providerFactory: SubtitleProviderFactory`); the subtitle-fetch fast path.
+>   - `api/types.ts:19,85` — type-only import; the class is exposed in the route-map type
+>     registry, not used at runtime.
+> - Three direct provider test files exist in `server/src/services/providers/`:
+>   `AssrtProvider.test.ts`, `OpenSubtitlesProvider.test.ts`, `SubdlProvider.test.ts`, plus
+>   `providerUtils.test.ts`. The factory is exercised indirectly by
+>   `SubtitleInventoryApiService.manual.test.ts` (constructs the factory at lines 50 and 95
+>   with fake providers) and `ProviderBackedSubtitleFetchProvider.test.ts:33` (also
+>   constructs the factory with fake providers).
+>
+> **Spec-vs-HEAD API mismatch flag for the unblock attempt:** the spec's four `createProvider`
+> test tasks are **incorrect at HEAD**. Reading
+> `server/src/services/SubtitleProviderFactory.ts` lines 1–39:
+> - The class is `SubtitleProviderFactory` (line 12) with **three** public methods (not one):
+>   - `getProviderNames(): string[]` (lines 18–20) — returns `Object.keys(this.providers)`.
+>   - `resolveAllManualProviders(): Array<{ name: string; provider: ManualSubtitleProvider }>`
+>     (lines 22–24) — returns the full name/provider pair list.
+>   - `resolveManualProvider(providerName?: string): ManualSubtitleProvider` (lines 26–38) —
+>     the lookup method. Takes an optional explicit name; falls back to
+>     `this.readConfig().manualProvider` when not provided. Throws
+>     `'No manual subtitle provider is configured'` if neither resolves a name; throws
+>     `'Subtitle provider '<name>' is not registered'` if the name (lowercased) is not in
+>     `this.providers`. **Returns the registered `ManualSubtitleProvider` instance, not a
+>     freshly-constructed concrete class.**
+> - There is **no `createProvider` method**. The factory is class-agnostic — it does not
+>   know about `OpenSubtitlesProvider`, `SubdlProvider`, or `AssrtProvider` by name. The
+>   `providers` parameter is a `Record<string, ManualSubtitleProvider>` injected at
+>   construction time (line 14), and the `readConfig` parameter is a `ConfigReader` function
+>   returning `{ manualProvider?: string }` (line 7). The factory resolves the **name** to
+>   whichever provider the caller registered, not to a class.
+> - The `readConfig` indirection is critical: callers wire the factory with their own config
+>   source (e.g., `main.ts:472` reads from app settings or a similar runtime config). The
+>   factory never reads config itself; it delegates to the injected function.
+> - The `ManualSubtitleProvider` interface (imported from `SubtitleInventoryApiService.ts`
+>   line 1) requires `search(context)` and `download(candidate)` methods. The factory's
+>   job is to return the right instance given a name string; it never instantiates
+>   anything.
+> - The `providerName` lookup in `resolveManualProvider` (line 32) lowercases the name
+>   before lookup, so `'OpenSubtitles'`, `'opensubtitles'`, and `'OPENSUBTITLES'` all
+>   resolve to the same registered provider (assuming the registered key is lowercase,
+>   which is the convention used by `main.ts:472`).
+>
+> The unblock attempt must rewrite the four spec test tasks against the real API
+> (`getProviderNames`, `resolveAllManualProviders`, `resolveManualProvider(name?)`) and
+> the real `readConfig` indirection above **before** any Red command. Same precedent as
+> S5's `searchSeries` mismatch (plan S5 attempt 1 evidence), S7's `generatePath` mismatch
+> (plan S7 attempts 1–3 evidence), and S8's `satisfied` mismatch (plan S8 attempt 1
+> evidence). The `createProvider` method name in the spec is wrong; the test name
+> `createProvider throws for unknown provider` should map onto
+> `resolveManualProvider('unknown')` throwing `'Subtitle provider 'unknown' is not
+> registered'`.
+>
+> **S9 mock-plan note for the unblock attempt:** per test-strategy.md §2 the
+> `vi.hoisted()` + `vi.mock` pattern should mock only what the service actually invokes.
+> `SubtitleProviderFactory` has **zero external runtime dependencies** — it is a pure
+> function of its constructor parameters (`providers: Record<string,
+> ManualSubtitleProvider>` and `readConfig: ConfigReader`). The file imports only one
+> symbol (a type-only import of `ManualSubtitleProvider` from
+> `SubtitleInventoryApiService.ts`); no `node:path`, no Drizzle, no Prisma, no HTTP, no
+> node-cron. No DI mocks required; tests can construct
+> `new SubtitleProviderFactory(providers, readConfig)` directly and assert on the
+> returned values / thrown errors. The unblock attempt should target ≥6 cases covering:
+> `getProviderNames` returns the registered names, `resolveAllManualProviders` returns the
+> full name/provider list, `resolveManualProvider` with explicit name returns the
+> registered provider, `resolveManualProvider` with no explicit name falls back to
+> `readConfig().manualProvider`, `resolveManualProvider` with no explicit name and no
+> config throws `'No manual subtitle provider is configured'`, `resolveManualProvider`
+> with an unregistered name (or empty providers record) throws
+> `'Subtitle provider '<name>' is not registered'`, lowercase normalization
+> (`'OPENSUBTITLES'` resolves to the same key as `'opensubtitles'`).
+>
+> **S9 Red→Green plan for the unblock attempt:** Targeted Red command is
+> `bun x vitest run server/src/services/SubtitleProviderFactory.test.ts` (file absent →
+> "No test files found", non-zero exit, ~1s). Green command is the same invocation with
+> the test file present, expecting ≥6/6 pass against the real API. The class is fully
+> implemented at HEAD; no feature logic changes should be needed. If a test fails, the
+> contract is wrong — the implementation is the spec.
+>
+> **Worktree at MID start had one unrelated dirty path (pre-existing, matches the S1
+> cleanup 2026-06-12 and S2/S5/S7/S8 block precedent verbatim):**
+> - `M conductor/archive/cardigann_runtime_parity_20260223/artifacts/final-phase5-compatibility-matrix.json`
+>   — one-line `generatedAt` timestamp bump in an archived-track artifact. Regenerated
+>   by an external process between sessions (was clean at S8 attempt 2 start per
+>   `b411d06`; has been re-dirtied since). Same diff shape flagged in S1 cleanup
+>   (`fd3b425`), S2 block, S5 attempts 1–3, S7 attempts 1–4, and S8 attempt 1.
+>   Preserved untouched per the user's "Preserve unrelated user work" instruction and
+>   the S8 attempt 1 (`8e30a30`) precedent. This attempt commits only
+>   `measure/tracks/.../plan.md` (a Measure doc, explicitly exempt from the
+>   `non_test_source_changes_since` gate check at supervisor.py:343), so the gate's
+>   source-change check passes for the MID-owned commit; the pre-existing
+>   `matrix.json` dirt remains in the working tree as a handoff item.
+>
+> **No test file created, no Red command run, no S9 source/test code touched by MID in
+> this attempt.** The only artifact change is this block note appended to the existing
+> S9 phase, recording the deferral, the build-graph baseline, the spec-vs-HEAD API
+> mismatch (4 spec tasks incorrect — `createProvider` does not exist; the real API has
+> `getProviderNames` / `resolveAllManualProviders` / `resolveManualProvider(name?)`), the
+> mock plan (no external deps — pure DI), the targeted Red→Green commands, and the
+> worktree classification (1 unrelated dirty path: archived artifact; preserved
+> untouched).
+
+- [~] Read `server/src/services/SubtitleProviderFactory.ts` — *file exists at HEAD (39 lines); class spans lines 12–39 with three public methods `getProviderNames()`, `resolveAllManualProviders()`, `resolveManualProvider(name?)`. Full API analysis captured in S9 block notes above (1 type-only import; DI-injected `Record<string, ManualSubtitleProvider>` + `ConfigReader`; no `createProvider` method).*
 - [ ] Create `server/src/services/SubtitleProviderFactory.test.ts`
-- [ ] Write test: `createProvider returns OpenSubtitlesProvider for 'openSubtitles'`
-- [ ] Write test: `createProvider returns SubdlProvider for 'subdl'`
-- [ ] Write test: `createProvider returns AssrtProvider for 'assrt'`
-- [ ] Write test: `createProvider throws for unknown provider`
+- [ ] Write test: `createProvider returns OpenSubtitlesProvider for 'openSubtitles'` — *spec incorrect at HEAD; `createProvider` does not exist; rewrite against `resolveManualProvider`/`getProviderNames`/`resolveAllManualProviders` API per block note*
+- [ ] Write test: `createProvider returns SubdlProvider for 'subdl'` — *spec incorrect at HEAD; same as above*
+- [ ] Write test: `createProvider returns AssrtProvider for 'assrt'` — *spec incorrect at HEAD; same as above*
+- [ ] Write test: `createProvider throws for unknown provider` — *spec incorrect at HEAD; maps onto `resolveManualProvider('unknown')` throwing `'Subtitle provider 'unknown' is not registered'`*
 - [ ] Run: `npx vitest run server/src/services/SubtitleProviderFactory.test.ts`
 - [ ] Commit: `test(subtitles): add SubtitleProviderFactory unit tests`
 

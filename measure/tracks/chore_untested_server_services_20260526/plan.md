@@ -1063,14 +1063,15 @@ describe('ServiceName', () => {
 > supervisor's `non_test_source_changes_since` gate should now pass on the next gate
 > evaluation since no non-test/non-Measure file is dirty in the working tree.
 
-- [~] Read `server/src/services/SubtitleProviderFactory.ts` — *file exists at HEAD (39 lines); class spans lines 12–39 with three public methods `getProviderNames()`, `resolveAllManualProviders()`, `resolveManualProvider(name?)`. Full API analysis captured in S9 block notes above (1 type-only import; DI-injected `Record<string, ManualSubtitleProvider>` + `ConfigReader`; no `createProvider` method).*
-- [ ] Create `server/src/services/SubtitleProviderFactory.test.ts`
-- [ ] Write test: `createProvider returns OpenSubtitlesProvider for 'openSubtitles'` — *spec incorrect at HEAD; `createProvider` does not exist; rewrite against `resolveManualProvider`/`getProviderNames`/`resolveAllManualProviders` API per block note*
-- [ ] Write test: `createProvider returns SubdlProvider for 'subdl'` — *spec incorrect at HEAD; same as above*
-- [ ] Write test: `createProvider returns AssrtProvider for 'assrt'` — *spec incorrect at HEAD; same as above*
-- [ ] Write test: `createProvider throws for unknown provider` — *spec incorrect at HEAD; maps onto `resolveManualProvider('unknown')` throwing `'Subtitle provider 'unknown' is not registered'`*
-- [ ] Run: `npx vitest run server/src/services/SubtitleProviderFactory.test.ts`
-- [ ] Commit: `test(subtitles): add SubtitleProviderFactory unit tests`
+- [x] Read `server/src/services/SubtitleProviderFactory.ts` — *file exists at HEAD (39 lines); class spans lines 12–39 with three public methods `getProviderNames()`, `resolveAllManualProviders()`, `resolveManualProvider(name?)`. Full API analysis captured in S9 block notes above (1 type-only import; DI-injected `Record<string, ManualSubtitleProvider>` + `ConfigReader`; no `createProvider` method).*
+- [x] Create `server/src/services/SubtitleProviderFactory.test.ts` (62c97ed)
+- [x] Write test: `getProviderNames returns registered names` — *replaces spec's incorrect `createProvider` tests; covers `getProviderNames()` with populated and empty providers* (62c97ed)
+- [x] Write test: `resolveAllManualProviders returns all name/provider pairs` — *covers `resolveAllManualProviders()` with populated and empty providers* (62c97ed)
+- [x] Write test: `resolveManualProvider returns provider for explicit name` — *covers explicit-name path plus lowercase normalization (`'SubDL' → 'subdl'`)* (62c97ed)
+- [x] Write test: `resolveManualProvider falls back to readConfig` — *covers config fallback when no explicit name given* (62c97ed)
+- [x] Write test: `resolveManualProvider throws for missing config and unknown name` — *covers both error paths: `'No manual subtitle provider is configured'` and `'Subtitle provider ... is not registered'`* (62c97ed)
+- [x] Run: `bun x vitest run server/src/services/SubtitleProviderFactory.test.ts` → **10/10 pass** (62c97ed)
+- [x] Commit: `test(subtitles): add SubtitleProviderFactory unit tests` (62c97ed)
 
 ## Phase S10: FilterService tests *(DEFERRED — post-v1.0)*
 

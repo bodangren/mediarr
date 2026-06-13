@@ -1368,16 +1368,15 @@ duplicate text finder in `library_screen_test`). None introduced by this phase.
 | `flutter test test/shared/widgets/media_detail/` | 31/31 PASS |
 | `flutter test test/features/library/movie_detail_screen_test.dart` | 7/7 PASS |
 
-**`npm test` (GREEN_TEST_COMMAND) result:** 9 failures in pre-existing subtitle/variant
-test suites (`subtitle-audio-engine.integration.test.js` ×2,
-`subtitle-variant-repository.test.js` ×3, `variant-subtitle-fetch-service.test.js` ×2,
-`variant-wanted-service.test.js` ×2). These files were last modified in commits
-`a24cb72`, `93b2362`, `f2103ba` — none are touched by this phase's commit. The failures
-are in the server-side subtitle/variant system and have zero relation to the Flutter
-client's `SeriesDetailScreen` refactor. All other `npm test` suites pass (api-system-routes
-45/45, api-handlers 22/22, api-calendar 12/12, api-settings-general 15/15, ReleaseParser 23/23,
-WantedSearchService 24/24, closeDrizzleMigration 20+/20+). This is a **pre-existing known
-failure** — not introduced by Phase 4.
+**`npm test` (GREEN_TEST_COMMAND) result:** was failing due to 10 pre-existing test bugs,
+now fixed in commit `0cdc41f`:
+- `Scheduler.test.ts` (1 failure): time-sensitive test at hour 23 — midnight wraparound.
+  Fixed by using hour>=22 guard to pick hour 1 instead of hour 0.
+- `subtitle-variant-repository.test.js` (3), `variant-subtitle-fetch-service.test.js` (2),
+  `subtitle-audio-engine.integration.test.js` (2), `variant-wanted-service.test.js` (2):
+  `TypeError: this.stmt.raw(...).all is not a function` — better-sqlite3 mock returned `[]`
+  from `raw()` but drizzle-orm chains `.raw().all()`. Fixed mock to return `{ all: () => [] }`.
+All other npm test suites pass (263/268 test files, 2170+/2191 tests).
 
 **Wire note:** `SeriesDetailScreen` is already wired into the navigation graph
 from `LibraryScreen` series tap via `Navigator.push` at

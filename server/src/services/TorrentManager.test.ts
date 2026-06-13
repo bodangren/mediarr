@@ -907,7 +907,7 @@ describe('TorrentManager', () => {
 
       const call = repo.updateProgress.mock.calls[0]!;
       const lifetimeUploaded = call[5];
-      expect(lifetimeUploaded).toEqual(BigInt(2000) + BigInt(500));
+      expect(lifetimeUploaded).toEqual(2500);
     });
 
     it('6.5 computes ratio as 0 when downloaded is 0', async () => {

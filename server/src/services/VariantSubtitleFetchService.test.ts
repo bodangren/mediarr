@@ -259,7 +259,7 @@ describe('VariantSubtitleFetchService', () => {
         isForced: false,
         isHi: false,
         filePath: '/data/movie.en.srt',
-        fileSize: BigInt(WEBVTT_CONTENT.byteLength),
+        fileSize: Number(WEBVTT_CONTENT.byteLength),
       });
       expect(repositoryMock.createSubtitleHistory).toHaveBeenCalledTimes(1);
       expect(repositoryMock.createSubtitleHistory).toHaveBeenCalledWith({
@@ -448,7 +448,7 @@ describe('VariantSubtitleFetchService', () => {
         Buffer.alloc(0),
       );
       expect(repositoryMock.createSubtitleTrack).toHaveBeenCalledWith(
-        expect.objectContaining({ fileSize: BigInt(0) }),
+        expect.objectContaining({ fileSize: 0 }),
       );
     });
 

@@ -71,8 +71,8 @@ describe('TorrentManager stats sync loop', () => {
       0.5,
       100,
       20,
-      BigInt(500),
-      BigInt(100),
+      500,
+      100,
       0.2,
       60,
     );
@@ -153,8 +153,8 @@ describe('TorrentManager stats sync loop', () => {
       0.1,
       1,
       1,
-      BigInt(1),
-      BigInt(1),
+      1,
+      1,
       1,
       2_147_483_647,
     );

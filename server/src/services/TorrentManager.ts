@@ -876,7 +876,7 @@ export class TorrentManager extends EventEmitter {
             this.sessionUploadedBaselines.set(torrent.infoHash, existing?.uploaded ?? 0);
           }
           const uploadedBaseline = this.sessionUploadedBaselines.get(torrent.infoHash)!;
-          const lifetimeUploadedBytes = uploadedBaseline + sessionUploadedBytes;
+          const lifetimeUploadedBytes = Number(uploadedBaseline) + sessionUploadedBytes;
           const ratio = downloadedBytes === 0 ? 0 : Number(lifetimeUploadedBytes) / Number(downloadedBytes);
 
           const updatedTorrent = await this.repository.updateProgress(

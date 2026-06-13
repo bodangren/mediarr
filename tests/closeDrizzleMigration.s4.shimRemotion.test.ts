@@ -102,14 +102,12 @@ const REPOSITORY_FILES = [
   'server/src/repositories/BlocklistRepository.ts',
   'server/src/repositories/MediaRepository.ts',
   'server/src/repositories/IndexerHealthRepository.ts',
-  'server/src/repositories/SeriesRepository.ts',
   'server/src/repositories/AppSettingsRepository.ts',
   'server/src/repositories/ImportListRepository.ts',
   'server/src/repositories/CollectionRepository.ts',
   'server/src/repositories/SubtitleVariantRepository.ts',
   'server/src/repositories/IndexerRepository.ts',
   'server/src/repositories/CustomFormatRepository.ts',
-  'server/src/repositories/MovieRepository.ts',
 ];
 
 const SERVICE_FILES = [

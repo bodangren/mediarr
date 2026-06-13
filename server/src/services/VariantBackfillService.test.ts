@@ -60,13 +60,13 @@ describe('VariantBackfillService', () => {
       mediaType: 'MOVIE',
       movieId: 1,
       path: '/data/movies/m1.mkv',
-      fileSize: BigInt(0),
+      fileSize: 0,
     });
     expect(repositoryMock.upsertVariant).toHaveBeenNthCalledWith(2, {
       mediaType: 'MOVIE',
       movieId: 2,
       path: '/data/movies/m2.mkv',
-      fileSize: BigInt(0),
+      fileSize: 0,
     });
   });
 
@@ -114,7 +114,7 @@ describe('VariantBackfillService', () => {
       mediaType: 'EPISODE',
       episodeId: 10,
       path: '/data/tv/s01/e10.mkv',
-      fileSize: BigInt(0),
+      fileSize: 0,
     });
   });
 

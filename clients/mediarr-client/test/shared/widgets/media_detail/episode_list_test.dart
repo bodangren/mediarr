@@ -93,7 +93,7 @@ void main() {
       // selectedSeasonNumber: 1 — only season 1's episodes should be in the
       // tree initially.
       await tester.pumpWidget(buildTestApp(
-        child: const EpisodeList(
+        child: EpisodeList(
           data: twoSeasons(),
           selectedSeasonNumber: 1,
         ),
@@ -109,7 +109,7 @@ void main() {
     testWidgets('tapping a season chip switches the visible episode list',
         (tester) async {
       await tester.pumpWidget(buildTestApp(
-        child: const EpisodeList(
+        child: EpisodeList(
           data: twoSeasons(),
           selectedSeasonNumber: 1,
         ),

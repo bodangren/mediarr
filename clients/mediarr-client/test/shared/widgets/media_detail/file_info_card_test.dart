@@ -91,11 +91,13 @@ void main() {
 
     testWidgets('renders all fields together with a section header',
         (tester) async {
+      const fifteenGb = 15 * 1024 * 1024 * 1024;
+
       await tester.pumpWidget(buildTestApp(
         child: const FileInfoCard(
           quality: 'Bluray-1080p',
           path: '/media/Inception.mkv',
-          sizeBytes: 15000000000,
+          sizeBytes: fifteenGb,
           audioTrackCount: 2,
           subtitleTrackCount: 3,
         ),

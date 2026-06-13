@@ -41,13 +41,13 @@
 > a mid role task. Commit `e559147` contains only the 5 test files + plan.md and
 > is the correct Red-phase deliverable.
 
-- [~] Write widget tests for `MediaHero` — renders backdrop, poster, title, action buttons
-- [~] Write widget tests for `MetadataSection` — renders synopsis, genres, rating, cast chips
-- [~] Write widget tests for `ActionBar` — primary/secondary buttons fire callbacks, destructive action shows confirmation
-- [~] Write widget tests for `FileInfoCard` — displays quality, size, path, audio/subtitle summary
-- [~] Write widget tests for `EpisodeList` — renders episodes grouped by season, season selector works
-- [ ] Implement `MediaHero`, `MetadataSection`, `ActionBar`, `FileInfoCard`, `EpisodeList`
-- [ ] Run widget tests — expect GREEN
+- [x] Write widget tests for `MediaHero` — renders backdrop, poster, title, action buttons
+- [x] Write widget tests for `MetadataSection` — renders synopsis, genres, rating, cast chips
+- [x] Write widget tests for `ActionBar` — primary/secondary buttons fire callbacks, destructive action shows confirmation
+- [x] Write widget tests for `FileInfoCard` — displays quality, size, path, audio/subtitle summary
+- [x] Write widget tests for `EpisodeList` — renders episodes grouped by season, season selector works
+- [x] Implement `MediaHero`, `MetadataSection`, `ActionBar`, `FileInfoCard`, `EpisodeList`
+- [x] Run widget tests — expect GREEN
 
 ## Phase 3: Movie Detail Screen (TDD)
 
@@ -448,3 +448,50 @@ the user (or implement role) may want to `git stash pop stash@{0}` to
 restore the 3 pre-existing dirty paths — though for the Flutter-generated
 files, running `flutter pub get` again will regenerate them with the
 correct current state anyway.
+
+## Phase 2 Green Evidence (2026-06-13)
+
+**Status:** all 7 Phase 2 tasks closed. Tests pass — 31/31 green, 0 skipped.
+**Commit:** `ccff804`
+
+**Targeted Green command:**
+
+```
+cd clients/mediarr-client && flutter test test/shared/widgets/media_detail/
+```
+
+**Result:** `+31 -0: All tests passed!` Exit code 0.
+
+| File | Tests | Result |
+|---|---|---|
+| `media_hero_test.dart` | 5 | All pass |
+| `metadata_section_test.dart` | 8 | All pass |
+| `action_bar_test.dart` | 6 | All pass |
+| `file_info_card_test.dart` | 6 | All pass |
+| `episode_list_test.dart` | 6 | All pass |
+
+**Full `flutter test` result:** 247 pass, 8 fail. All 8 failures are pre-existing
+(Dio compile errors in `subtitle_search_sheet_test`, `quality_upgrade_sheet_test`,
+`search_result_detail_sheet_test`; `DioException` in `subtitle_api_test` x4;
+duplicate text finder in `library_screen_test`). None introduced by this phase.
+
+**Files added (implementation):**
+- `clients/mediarr-client/lib/shared/widgets/media_detail/media_hero.dart`
+- `clients/mediarr-client/lib/shared/widgets/media_detail/metadata_section.dart`
+- `clients/mediarr-client/lib/shared/widgets/media_detail/action_bar.dart`
+- `clients/mediarr-client/lib/shared/widgets/media_detail/file_info_card.dart`
+- `clients/mediarr-client/lib/shared/widgets/media_detail/episode_list.dart`
+
+**Test fixes (demonstrable test bugs):**
+- `episode_list_test.dart:97,113` — removed invalid `const` from `EpisodeList(data: twoSeasons())`.
+  `twoSeasons()` is a function call, not a compile-time constant; Dart rejects `const` with
+  non-const arguments.
+- `file_info_card_test.dart:96` — changed `sizeBytes: 15000000000` to `sizeBytes: fifteenGb`
+  where `fifteenGb = 15 * 1024 * 1024 * 1024`. The old value (15000000000 bytes ≈ 13.97 GiB)
+  does not contain "15" when formatted; test 3 already defines 15 GB as `15 * 1024³`.
+
+**Component implementations match locked contracts from Phase 2 Red Evidence:**
+- All widgets are feature-agnostic (no Movie/Series/Episode/Season imports).
+- `EpisodeList` is a `StatefulWidget` managing selected season state internally.
+- `_SeasonChip` renders season label ("S1") and count ("7/7") as separate `Text` widgets
+  to satisfy `find.text('S1')` exact-match and `find.textContaining('7/7')` substring-match.

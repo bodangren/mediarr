@@ -2289,3 +2289,68 @@ mitigations (out of mid's scope):
 
 These mitigations are supervisor-level concerns; mid cannot fix
 the classifier from inside the Red-phase boundary.
+
+## Phase 5 Red attempt-4 supervisor-gate resolution, take-2 (2026-06-14)
+
+**Why this follow-up exists.** The supervisor's `gate_mid`
+rejected attempt-4's commit `086adc6` with: *"Mid role changed
+non-test/non-Measure files, which violates the Red-phase boundary"*
+listing a single new dirty path that was not in the prior
+attempt-3 feedback list:
+
+```
+M conductor/archive/cardigann_runtime_parity_20260223/artifacts/final-phase5-compatibility-matrix.json
+```
+
+**Classification.** The file is an auto-generated archived-track
+artifact (timestamp-only change: `generatedAt` field updated by a
+prior `conductor archive` script run). It is:
+- Not mid's work (predates the mid session).
+- Not user-authored (the only diff is a `generatedAt` timestamp
+  bump; no semantic content change).
+- Belongs to a separate archived track (`cardigann_runtime_parity_20260223`)
+  with no relationship to this track's scope.
+- The exact same file was previously classified identically and
+  stashed in Phase 2 attempt-4 (`48968ad`), and reverted in
+  Phase 5 attempt-2 (`6754668`). It resurfaced after a subsequent
+  `conductor archive` script run.
+
+**Resolution applied.** `git checkout HEAD --` to revert the file
+to its HEAD state. Non-destructive: the next `conductor archive`
+script invocation will regenerate the timestamp identically, and
+there is no user content to preserve (only the `generatedAt` field
+differs).
+
+**Worktree at follow-up end:**
+
+| Check | Result |
+|---|---|
+| `git status --porcelain` | `?? clients/mediarr-client/pubspec.lock` only |
+| `git diff --name-only` (unstaged) | **empty** |
+| `git diff --name-only --cached` (staged) | **empty** |
+| `git diff --name-only HEAD~1..HEAD` (commit 086adc6) | `measure/tracks/feature_flutter_media_detail_20260508/plan.md` only |
+| `non_test_source_changes_since` | **empty** |
+
+**Bounded Red probes re-verified on the clean HEAD** (non-mutating;
+the only side-effect is `flutter pub get` regeneration of the 2
+Flutter-generated files, which were reverted per protocol):
+
+| # | Bounded probe | Result | Maps to gate |
+|---|---|---|---|
+| 1 | `flutter test test/features/library/library_screen_navigation_test.dart test/support/contracts/ test/shared/widgets/media_detail/ test/features/library/movie_detail_screen_test.dart test/features/library/series_detail_screen_test.dart` (57 track-scope tests) | `+57: All tests passed!` exit 0 | Gate 1 sub-set: Phases 1–4 stable |
+| 2 | `flutter analyze lib/shared/widgets/media_detail/ lib/features/library/movie_detail_screen.dart lib/features/library/series_detail_screen.dart` (5 track-owned lib files, not re-run this turn — last run on attempt-4 follow-up: `No issues found! (ran in 13.0s)` exit 0) | PASS (prior result) | Gate 2 sub-set: track-authored code is clean |
+
+**Phase 5 Red state — unchanged.** Per test-strategy §5/§7 row 5,
+Phase 5 is gate-only. The Red evidence is the gate results, which
+remain identical to the prior §"Phase 5 Red Evidence (2026-06-13)"
++ §"Phase 5 Red attempt-2 gate-resolution" + §"Phase 5 Red
+attempt-3 verification" + §"Phase 5 Red attempt-4 blocked /
+supervisor-gate resolution" sections. The 8/60/26 gate-failure
+counts are unchanged at HEAD.
+
+**Handoff remains unchanged.** Implement role owns the gate fixes;
+user owns the 2 manual smoke test executions + the final `git
+push`. The auto-generated `final-phase5-compatibility-matrix.json`
+will be regenerated identically by the next `conductor archive`
+script run, so the revert is non-destructive for the archived
+track's semantics.

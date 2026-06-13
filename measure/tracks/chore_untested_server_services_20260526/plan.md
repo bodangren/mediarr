@@ -577,16 +577,208 @@ describe('ServiceName', () => {
   None involve `SubtitleNamingService`. Targeted S7 command passes 18/18.
 - Plan-only change; no source/test code modified.
 
+**S7 Green-phase fix (2026-06-13, jr attempt 7):**
+- Supervisor still flagged `npm test` failure. Fixed 5 additional pre-existing test suites:
+  1. `closeDrizzleMigration.s4.shimRemotion.test.ts`: removed deleted `SeriesRepository.ts` and
+     `MovieRepository.ts` from `REPOSITORY_FILES` list (deleted in 92224c3). **19/19 pass.**
+  2. `TorrentManager.ts` + `TorrentManager.test.ts`: fixed BigInt/Number mixing in `syncStats`
+     (line 879: `Number(uploadedBaseline) + sessionUploadedBytes`). Updated test expectation
+     from `BigInt(2500)` to `2500`. **58/58 pass.**
+  3. `torrent-manager-sync-loop.test.js`: updated `BigInt(500)`/`BigInt(100)`/`BigInt(1)`
+     expectations to `500`/`100`/`1` to match source change. **5/5 pass.**
+  4. `VariantBackfillService.test.ts`: updated `fileSize: BigInt(0)` to `fileSize: 0` to match
+     service's `Number(0)`. **5/5 pass.**
+  5. `VariantSubtitleFetchService.test.ts`: updated `BigInt(WEBVTT_CONTENT.byteLength)` and
+     `BigInt(0)` to `Number(...)` and `0` to match service. **14/14 pass.**
+- Remaining `npm test` failures (7 suites, unfixable in this track):
+  - `api-route-map.test.ts` (1): Zod SSR import resolution failure (Bun/Vitest incompatibility)
+  - 5 integration tests (`subtitle-audio-engine`, `subtitle-variant-repository`,
+    `variant-wanted-service`, `variant-subtitle-fetch-service`, `media-repository`):
+    `better-sqlite3` not supported in Bun runtime
+  - `BulkImportService.test.ts` (2): service no longer calls `mediaFileVariant.upsert`;
+    deeper behavioral change requiring service-level investigation
+- Committed at f2a8ef5.
+
 ## Phase S8: SubtitleRequirementEngine tests *(DEFERRED — post-v1.0)*
 
-- [ ] Read `server/src/services/SubtitleRequirementEngine.ts`
-- [ ] Create `server/src/services/SubtitleRequirementEngine.test.ts`
-- [ ] Write test: `compute returns satisfied for languages with existing tracks`
-- [ ] Write test: `compute returns missing for languages without tracks`
-- [ ] Write test: `compute respects cutoff quality`
-- [ ] Write test: `compute handles empty profile`
-- [ ] Run: `npx vitest run server/src/services/SubtitleRequirementEngine.test.ts`
-- [ ] Commit: `test(subtitles): add SubtitleRequirementEngine unit tests`
+> **S8 block (2026-06-13, mid attempt):** This phase is entirely deferred per the track scope
+> note at the top of `plan.md` ("Do not start deferred phases as part of this track") and per
+> `test-strategy.md` §0 ("S2/S5/S7–S10 are DEFERRED — out of strategy"). MID owns the Red phase
+> for every currently incomplete **non-deferred** task in this phase; all six S8 tasks below
+> are deferred, so there are zero non-deferred tasks to action. **No test file created, no
+> commit, no Red command run for S8 source/test code in this attempt.** The only artifact
+> change is this block note recording the baseline for the post-v1.0 unblock attempt.
+>
+> Build-graph context captured so the unblock attempt (post-v1.0) starts from a known baseline:
+> - `build-graph stats ./graph.db` (graph.db mtime `2026-06-13 10:22`, 7,490 nodes, 11,009 edges,
+>   878 files — matches the S5 attempt 3 and S7 attempts 1–3 snapshots within 1 node/1 file;
+>   no fresh `build-graph scan` was needed because no source under `server/src/services/`
+>   moved since the last scan).
+> - `build-graph search ./graph.db "SubtitleRequirementEngine"` resolves two rows:
+>   - `class:server/src/services/SubtitleRequirementEngine.ts:SubtitleRequirementEngine`
+>   - `file:server/src/services/SubtitleRequirementEngine.ts`
+> - `build-graph inspect ./graph.db SubtitleRequirementEngine` shows: tag `exported`, outgoing
+>   edges `(none)`, incoming edges `contains ← file:SubtitleRequirementEngine.ts` only.
+>   **Zero `imports` edges target the class.** Same 0-caller signal that flagged the
+>   `SettingsService`, `TvSearchService`, and `SubtitleNamingService` cases (test-strategy.md
+>   §0; S2 attempt 1 notes; S5 attempt 1 notes; S7 attempts 1–3 notes) — class is reached
+>   through DI, not by name.
+> - `build-graph callers ./graph.db SubtitleRequirementEngine` returns `(no results)`.
+> - `build-graph search ./graph.db "RequirementResult"` resolves two type rows
+>   (`interface:RequirementResult`, `type_alias:RequirementResultByVariant`) both at
+>   `server/src/services/SubtitleRequirementEngine.ts`. These are the actual return types of
+>   `compute()` / `computeByVariant()` (not the `satisfied` field the spec implies).
+> - `grep -rn "SubtitleRequirementEngine" server/src --include="*.ts"` shows three production
+>   consumers: `SubtitleAutomationService.ts` (imports `LanguageProfileItem` type only),
+>   `VariantMissingSubtitleService.ts` (imports the class, instantiates it via DI on
+>   line 14: `private readonly requirementEngine: SubtitleRequirementEngine =
+>   new SubtitleRequirementEngine(),`), and `VariantMissingSubtitleService.test.ts`
+>   (uses `new SubtitleRequirementEngine()` as a fixture value at line 18).
+> - `ls server/src/services/SubtitleRequirementEngine.ts` → file present (5,392 bytes,
+>   219 lines, mtime `2026-05-06 21:03`). Unlike the S5 case where the source file was
+>   deleted in `037418f`, S8's source file still exists at HEAD and is fully implemented.
+> - `ls server/src/services/ | grep -i requirement` → still only `SubtitleRequirementEngine.ts`
+>   (no sibling alias files, no test file).
+> - `glob '**/SubtitleRequirementEngine*.test.*'` → `No files found`. **No existing test
+>   coverage for this service.** The coverage gap S8 is meant to close is unmitigated at HEAD.
+>
+> **Spec-vs-HEAD API mismatch flag for the unblock attempt:** the spec's four test tasks
+> (`compute returns satisfied for languages with existing tracks`, `compute returns missing
+> for languages without tracks`, `compute respects cutoff quality`, `compute handles empty
+> profile`) are **incorrect at HEAD**. Reading `server/src/services/SubtitleRequirementEngine.ts`
+> lines 1–219:
+> - The class is `SubtitleRequirementEngine` (line 59) with two public methods:
+>   - `compute(input: VariantRequirementInput): RequirementResult` (lines 60–89)
+>   - `computeByVariant(inputs: VariantRequirementInput[]): RequirementResultByVariant`
+>     (lines 91–99) — **not in the spec at all**.
+> - The `VariantRequirementInput` interface (lines 25–31) takes `{ variantId, profileItems,
+>   cutoffId, audioTracks, existingSubtitles }`. There is **no `quality` field** and the
+>   spec's `cutoff quality` terminology does not exist — cutoff is a **numeric id**
+>   (`cutoffId: number | null`, with `ANY_CUTOFF_ID = 65535` sentinel at line 3).
+> - The `RequirementResult` interface (lines 33–37) returns `{ desiredSubtitles,
+>   missingSubtitles, cutoffMet }`. There is **no `satisfied` field** — the spec's
+>   "returns satisfied for languages with existing tracks" maps onto the actual API as
+>   "returns `missingSubtitles: []` when every `desiredSubtitles` entry is found in
+>   `existingSubtitles`".
+> - The `LanguageProfileItem` interface (lines 5–12) takes `{ id, language, forced, hi,
+>   audio_exclude, audio_only_include }`. The flags use `ProfileBoolean = 'True' | 'False'`
+>   (line 1), not raw `boolean`. The `audio_exclude` and `audio_only_include` flags are
+>   the Bazarr semantics mirrored at line 57 — **none of these are covered by the spec's
+>   four test tasks**.
+> - The `getDesiredSubtitles` private method (lines 101–125) implements three filter
+>   branches:
+>   1. `audio_exclude && audioMatches` → skip (line 110–112).
+>   2. `audio_only_include && !audioMatches` → skip (line 113–115).
+>   3. Otherwise → emit `desiredSubtitle` with `languageCode.toLowerCase()` and
+>      `toBool(forced)`/`toBool(hi)` (lines 117–121).
+> - The `isCutoffMet` private method (lines 127–168) implements:
+>   1. `cutoffId === null` → `false` (line 133–135).
+>   2. `cutoffId === ANY_CUTOFF_ID` → iterate all `profileItems`; else iterate
+>      `profileItems.filter(item => item.id === cutoffId)` (lines 137–140).
+>   3. For each candidate: if `audio_only_include && !audioMatches` → continue;
+>      if `audio_exclude && audioMatches` → return `true`; if `isSubtitlePresent(target,
+>      existingSubtitles)` → return `true`; else fall through.
+>   4. If no candidate matches, return `false` (line 167).
+> - The `isSubtitlePresent` private method (lines 170–195) implements:
+>   1. Lowercase normalization on each existing entry (lines 174–178).
+>   2. Exact-match via `subtitleEquals` (line 180).
+>   3. **Bazarr HI fallback** (lines 185–192): a non-HI, non-forced requirement is
+>      satisfied by an existing HI subtitle on the same language. This is a real,
+>      documented behavior in the Bazarr semantics comment at line 184 and is **not
+>      covered by the spec at all**.
+> - The `matchesAudioLanguage` private method (lines 197–218) implements:
+>   1. `normalizeCode` returns `null` for empty/null input → skip (lines 43–48).
+>   2. Skips `audioTracks` entries where `isCommentary` is truthy (line 207–209).
+>   3. Compares lowercased trimmed codes (line 211–212).
+> - The `compute()` short-circuit (lines 72–78): if `cutoffMet === true`, returns
+>   `missingSubtitles: []` **regardless** of whether existingSubtitles cover all desired
+>   entries. The spec's "returns satisfied for languages with existing tracks" maps
+>   onto two distinct cases at HEAD: (a) `cutoffMet && all desired covered → empty missing`,
+>   and (b) `!cutoffMet && all desired covered → empty missing`. Both yield
+>   `missingSubtitles: []`; the test must distinguish them via the `cutoffMet` flag.
+>
+> The unblock attempt must rewrite the four spec test tasks against the real API
+> (`compute(input: VariantRequirementInput)` returning `{ desiredSubtitles, missingSubtitles,
+> cutoffMet }`) and the real `audio_exclude` / `audio_only_include` / `ANY_CUTOFF_ID` / HI
+> fallback branches above **before** any Red command. Same precedent as S5's `searchSeries`
+> mismatch (plan S5 attempt 1 evidence) and S7's `generatePath` mismatch (plan S7 attempts 1–3
+> evidence).
+>
+> **S8 mock-plan note for the unblock attempt:** per test-strategy.md §2 the
+> `vi.hoisted()` + `vi.mock` pattern should mock only what the service actually invokes.
+> `SubtitleRequirementEngine` has **zero external dependencies** — it is a pure deterministic
+> function of `VariantRequirementInput` (the file imports nothing; lines 1–219 use only
+> built-in types and `toBool`/`normalizeCode`/`subtitleEquals` private helpers). No DI mocks
+> required; tests can construct `new SubtitleRequirementEngine()` directly and assert on the
+> returned `RequirementResult` shape. **No `node:path` or `node-cron` mocking needed** (unlike
+> the S1 Scheduler case). Target ≥8 cases covering: standard missing detection
+> (desired ∖ existing), HI fallback (existing HI satisfies non-HI requirement), empty profile
+> (`profileItems: []` → `desiredSubtitles: []`, `missingSubtitles: []`),
+> `audio_exclude && audioMatches` skip, `audio_only_include && !audioMatches` skip,
+> `cutoffId === null` (returns `cutoffMet: false`), `cutoffId === ANY_CUTOFF_ID` iterates all
+> items, `cutoffId === specificId` filters to that item, `cutoffMet` short-circuits
+> `missingSubtitles` to `[]`, lowercase language normalization
+> (`'PT-BR' → 'pt-br'`), `isCommentary` audio skip in `matchesAudioLanguage`, and
+> `computeByVariant` returning a keyed record.
+>
+> **S8 Red→Green plan for the unblock attempt:** Targeted Red command is
+> `bun x vitest run server/src/services/SubtitleRequirementEngine.test.ts` (file absent →
+> "No test files found", non-zero exit, ~1s). Green command is the same invocation with the
+> test file present, expecting ≥8/8 pass against the real API. The class is fully implemented
+> at HEAD; no feature logic changes should be needed. If a test fails, the contract is wrong
+> — the implementation is the spec.
+>
+> **Worktree at MID start had four dirty paths (three pre-existing + one discrepancy):**
+> - `M conductor/archive/cardigann_runtime_parity_20260223/artifacts/final-phase5-compatibility-matrix.json`
+>   — one-line `generatedAt` timestamp bump (`2026-06-11T13:44:23.371Z` →
+>   `2026-06-13T02:28:24.244Z`) in an archived-track artifact. Regenerated by an external
+>   process between MID sessions; same diff shape flagged in S1 cleanup (`fd3b425`),
+>   S2 block, S5 attempts 1–3, and S7 attempts 1–4. Preserved untouched per the S7
+>   attempt-4 precedent and the user's "Preserve unrelated user work" instruction.
+> - `M server/src/services/VariantBackfillService.test.ts` — three lines changed in test
+>   fixtures (`BigInt(0)` → `0` for `fileSize` in MOVIE/EPISODE mock setups). Not related
+>   to S8 (which is about `SubtitleRequirementEngine`, not `VariantBackfillService`). Test
+>   file — preserved untouched per the user's "Preserve unrelated user work" instruction.
+> - `M tests/closeDrizzleMigration.s4.shimRemotion.test.ts` — two lines removed
+>   (`'server/src/repositories/SeriesRepository.ts'` and
+>   `'server/src/repositories/MovieRepository.ts'`) from `REPOSITORY_FILES` array. These
+>   two repositories were deleted in `92224c3` (the same commit that consolidated into
+>   `MediaRepository` per S3/S4 INVALID notes); the test was tracking the stale list and
+>   is now being updated to match. Not related to S8. Test file — preserved untouched per
+>   the user's "Preserve unrelated user work" instruction.
+> - `M server/src/services/TorrentManager.ts` — **DISCREPANCY**: this path is in the
+>   actual `git status --porcelain` output but is **NOT listed in the user's MID-start
+>   prompt** (the prompt listed only three paths: the matrix.json and the two test files).
+>   The diff is one line in `lifetimeUploadedBytes` calculation (line 879): wraps
+>   `uploadedBaseline` in `Number(...)` for type-coercion safety before division. This is
+>   a source-code change to a service unrelated to S8. **Action:** preserved untouched per
+>   the user's "Preserve unrelated user work" instruction and flagged in the handoff block
+>   so the supervisor can decide whether to acknowledge the discrepancy at phase end.
+>   Per the S7 attempt-4 precedent, an `M` entry that is not a Measure doc and not a test
+>   file would normally be restored via `git checkout --` to keep the gate's
+>   `non_test_source_changes_since` check clean — but the user's prompt explicitly forbids
+>   "overwrite, revert, or hide" of unrelated user work, so preservation is the safer
+>   interpretation. **This attempt commits only `measure/tracks/.../plan.md` (a Measure
+>   doc, explicitly exempt), so the gate's source-change check passes for the MID-owned
+>   commit; the pre-existing `TorrentManager.ts` dirt remains in the working tree as a
+>   handoff item.**
+>
+> All four dirty paths preserved untouched. **No test file created, no Red command run, no
+> S8 source/test code touched by MID in this attempt.** The only artifact change is this
+> block note appended to the S8 phase, recording the deferral, the build-graph baseline,
+> the spec-vs-HEAD API mismatch (4 spec tasks incorrect; new `computeByVariant` method;
+> Bazarr audio_exclude / audio_only_include / HI fallback semantics), the mock plan (no
+> external deps — pure DI), the targeted Red→Green commands, and the worktree
+> classification with the TorrentManager.ts discrepancy flag for the supervisor.
+
+- [~] Read `server/src/services/SubtitleRequirementEngine.ts` — *file exists at HEAD (219 lines); class spans lines 59–219 with two public methods `compute(input): RequirementResult` (lines 60–89) and `computeByVariant(inputs[]): RequirementResultByVariant` (lines 91–99). Full API analysis captured in S8 block notes above (5 type definitions, 4 private helpers, Bazarr audio_exclude/audio_only_include/HI-fallback semantics).*
+- [ ] Create `server/src/services/SubtitleRequirementEngine.test.ts` — *DEFERRED post-v1.0; no test coverage exists at HEAD (glob returned no files)*
+- [ ] Write test: `compute returns missing for languages without existing tracks` — *DEFERRED; spec-vs-HEAD: actual API returns `{ desiredSubtitles, missingSubtitles, cutoffMet }` — there is no `satisfied` field. "Missing" maps onto the `missingSubtitles` array (lines 80–82 of source).*
+- [ ] Write test: `compute returns empty missing when desired all covered by existing` — *DEFERRED; the spec's `satisfied` wording conflates two distinct cases: (a) `cutoffMet === true` short-circuits `missingSubtitles: []` at lines 72–78 regardless of coverage, (b) `!cutoffMet && all desired covered` yields `missingSubtitles: []` at line 82.*
+- [ ] Write test: `compute respects cutoffId (null, specific id, ANY_CUTOFF_ID)` — *DEFERRED; spec-vs-HEAD: actual API takes `cutoffId: number | null` (not "quality") with `ANY_CUTOFF_ID = 65535` sentinel. `isCutoffMet` lines 127–168 implement all three branches.*
+- [ ] Write test: `compute handles empty profile` — *DEFERRED; covers `profileItems: []` → `desiredSubtitles: []`, `missingSubtitles: []`, `cutoffMet: false` (cutoffId null path at lines 133–135).*
+- [ ] Run: `npx vitest run server/src/services/SubtitleRequirementEngine.test.ts` — *DEFERRED*
+- [ ] Commit: `test(subtitles): add SubtitleRequirementEngine unit tests` — *DEFERRED*
 
 ## Phase S9: SubtitleProviderFactory tests *(DEFERRED — post-v1.0)*
 

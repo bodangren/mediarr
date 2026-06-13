@@ -843,14 +843,28 @@ describe('ServiceName', () => {
 > gate should now pass on the next gate evaluation since no non-test/non-Measure file
 > is dirty in the working tree.
 
-- [~] Read `server/src/services/SubtitleRequirementEngine.ts` — *file exists at HEAD (219 lines); class spans lines 59–219 with two public methods `compute(input): RequirementResult` (lines 60–89) and `computeByVariant(inputs[]): RequirementResultByVariant` (lines 91–99). Full API analysis captured in S8 block notes above (5 type definitions, 4 private helpers, Bazarr audio_exclude/audio_only_include/HI-fallback semantics).*
-- [ ] Create `server/src/services/SubtitleRequirementEngine.test.ts` — *DEFERRED post-v1.0; no test coverage exists at HEAD (glob returned no files)*
-- [ ] Write test: `compute returns missing for languages without existing tracks` — *DEFERRED; spec-vs-HEAD: actual API returns `{ desiredSubtitles, missingSubtitles, cutoffMet }` — there is no `satisfied` field. "Missing" maps onto the `missingSubtitles` array (lines 80–82 of source).*
-- [ ] Write test: `compute returns empty missing when desired all covered by existing` — *DEFERRED; the spec's `satisfied` wording conflates two distinct cases: (a) `cutoffMet === true` short-circuits `missingSubtitles: []` at lines 72–78 regardless of coverage, (b) `!cutoffMet && all desired covered` yields `missingSubtitles: []` at line 82.*
-- [ ] Write test: `compute respects cutoffId (null, specific id, ANY_CUTOFF_ID)` — *DEFERRED; spec-vs-HEAD: actual API takes `cutoffId: number | null` (not "quality") with `ANY_CUTOFF_ID = 65535` sentinel. `isCutoffMet` lines 127–168 implement all three branches.*
-- [ ] Write test: `compute handles empty profile` — *DEFERRED; covers `profileItems: []` → `desiredSubtitles: []`, `missingSubtitles: []`, `cutoffMet: false` (cutoffId null path at lines 133–135).*
-- [ ] Run: `npx vitest run server/src/services/SubtitleRequirementEngine.test.ts` — *DEFERRED*
-- [ ] Commit: `test(subtitles): add SubtitleRequirementEngine unit tests` — *DEFERRED*
+- [x] Read `server/src/services/SubtitleRequirementEngine.ts` (2c37b37) — *file exists at HEAD (219 lines); class spans lines 59–219 with two public methods `compute(input): RequirementResult` (lines 60–89) and `computeByVariant(inputs[]): RequirementResultByVariant` (lines 91–99). Full API analysis captured in S8 block notes above (5 type definitions, 4 private helpers, Bazarr audio_exclude/audio_only_include/HI-fallback semantics).*
+- [x] Create `server/src/services/SubtitleRequirementEngine.test.ts` (2c37b37) — *21 tests covering all real API branches*
+- [x] Write test: `compute returns missing for languages without existing tracks` (2c37b37) — *covered by test "returns missing for languages without existing tracks"*
+- [x] Write test: `compute returns empty missing when desired all covered by existing` (2c37b37) — *covered by test "returns empty missing when all desired are covered by existing" + HI fallback + cutoffMet short-circuit tests*
+- [x] Write test: `compute respects cutoffId (null, specific id, ANY_CUTOFF_ID)` (2c37b37) — *covered by 3 tests: null cutoffId, specific cutoffId match/mismatch, ANY_CUTOFF_ID*
+- [x] Write test: `compute handles empty profile` (2c37b37) — *covered by test "handles empty profile (no desired subtitles)"*
+- [x] Run: `~/.bun/bin/bun x vitest run server/src/services/SubtitleRequirementEngine.test.ts` → **21/21 pass** (157ms) (2c37b37)
+- [x] Commit: `test(subtitles): add SubtitleRequirementEngine unit tests` (2c37b37)
+
+**S8 Green-phase (2026-06-13, jr attempt):**
+- Test file created with 21 cases covering all real API branches:
+  - `compute()`: missing detection, empty missing when covered, desiredSubtitles, empty profile,
+    audio_exclude match/skip, audio_only_include match/skip, cutoffId null/specific/ANY_CUTOFF_ID,
+    cutoffMet short-circuit, HI Bazarr fallback, forced+HI flags, lowercase normalization,
+    commentary audio skip, null audio languageCode
+  - `computeByVariant()`: keyed record, empty inputs
+- Targeted Green: `~/.bun/bin/bun x vitest run server/src/services/SubtitleRequirementEngine.test.ts` → **21/21 pass** (157ms).
+- Sibling regression: `SubtitleRequirementEngine.test.ts + SubtitleNamingService.test.ts + SubtitleAutomationService.test.ts + SubtitleScoringService.test.ts` → 43/43 pass.
+- In-scope regression: `Scheduler.test.ts + MediaSearchService.searchAllIndexers.test.ts + MediaSearchService.grabRelease.test.ts + SubtitleRequirementEngine.test.ts` → 60/60 pass.
+- Build-graph: `SubtitleRequirementEngine` has 0 callers (DI-injected), 0 outgoing edges. No blast-radius concerns.
+- No feature logic changes needed — implementation was fully present at HEAD.
+- Committed at 2c37b37.
 
 ## Phase S9: SubtitleProviderFactory tests *(DEFERRED — post-v1.0)*
 

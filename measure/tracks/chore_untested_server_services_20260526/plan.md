@@ -1075,7 +1075,7 @@ describe('ServiceName', () => {
 
 ## Phase S10: FilterService tests *(DEFERRED — post-v1.0)*
 
-- [ ] Read `server/src/services/FilterService.ts`
+- [~] Read `server/src/services/FilterService.ts`
 - [ ] Create `server/src/services/FilterService.test.ts`
 - [ ] Write test: `createFilter delegates to repository`
 - [ ] Write test: `getFilters returns all filters`
@@ -1084,6 +1084,241 @@ describe('ServiceName', () => {
 - [ ] Write test: `evaluate returns false when conditions don't match`
 - [ ] Run: `npx vitest run server/src/services/FilterService.test.ts`
 - [ ] Commit: `test(filters): add FilterService unit tests`
+
+> **S10 block (2026-06-13, mid attempt):** This phase is entirely deferred per the track scope
+> note at the top of `plan.md` ("Do not start deferred phases as part of this track") and per
+> `test-strategy.md` §0 ("S2/S5/S7–S10 are DEFERRED — out of strategy"). MID owns the Red phase
+> for every currently incomplete **non-deferred** task in this phase; all eight S10 tasks below
+> are deferred, so there are zero non-deferred tasks to action. **No test file created, no
+> commit, no Red command run for S10 source/test code in this attempt.** The only artifact
+> change is this block note recording the baseline for the post-v1.0 unblock attempt.
+>
+> Build-graph context captured so the unblock attempt (post-v1.0) starts from a known baseline:
+> - `build-graph stats ./graph.db` (graph.db mtime `2026-06-13 12:10`, 7,492 nodes, 11,013 edges,
+>   879 files — matches the S8 attempt 2 and S9 attempt 1 snapshots within ~2 nodes/~1 file;
+>   no fresh `build-graph scan` was needed because no source under `server/src/services/`
+>   moved since the last scan).
+> - `build-graph search ./graph.db "FilterService"` resolves three rows:
+>   - `class:server/src/services/FilterService.ts:FilterService`
+>   - `file:server/src/services/FilterService.ts`
+>   - `param:server/src/api/routes/seriesRoutes.ts:filterService` (the route-handler
+>     parameter shape exposed to `seriesRoutes`)
+> - `build-graph inspect ./graph.db FilterService` is **ambiguous** (matches the class + the
+>   route param); class-level inspect via direct SQL on the class id shows: tag `exported`,
+>   outgoing edges `(none)` to other classes/interfaces, incoming edges `contains ←
+>   file:FilterService.ts` only. **Zero `imports` edges target the class.** Same 0-caller DI
+>   signal that flagged `SettingsService`, `TvSearchService`, `SubtitleNamingService`,
+>   `SubtitleRequirementEngine`, and `SubtitleProviderFactory` in previous attempts — class
+>   is reached through direct construction in route handlers, not by name import.
+> - `build-graph callers ./graph.db FilterService` is **also ambiguous** (same class + param
+>   match); direct SQL `SELECT ... FROM edges WHERE target = '<class id>'` returns 0
+>   `imports`/`calls` rows. Confirmed via `grep -rn "FilterService" server/src --include="*.ts"`:
+>   - `server/src/api/routes/filterRoutes.ts:6,34,58,89,106` — constructs `new FilterService(deps.prisma as any)`
+>     at four route handler sites (GET list, POST create, PATCH update, DELETE).
+>   - `server/src/api/routes/seriesRoutes.ts:11,57,197` — imports the class + the
+>     `FilterConditionsGroup` type; constructs one instance at line 197 inside the
+>     series-list-with-filter route.
+>   - `server/src/services/FilterService.ts:294` — the class definition itself.
+>   - No production code under `server/src/` or `app/src/` outside those two route files
+>     imports the class. **Direct route construction, not DI registration**, which is
+>     why the build-graph `imports` edges are empty (route handlers do not import the
+>     class symbol through a stable module name; they just call `new FilterService(deps.prisma)`).
+> - `ls -la server/src/services/FilterService.ts` → file present (13,094 bytes, **450 lines**,
+>   mtime `2026-05-06 21:03`). Unlike the S5 case where the source file was deleted in
+>   `037418f`, S10's source file still exists at HEAD and is fully implemented. The git
+>   history shows the most recent commit touching this file is `af6240c feat(parity): land
+>   cross-domain parity updates and Cardigann track` (pre-track; the file has not moved
+>   during this track's lifetime).
+> - `glob '**/FilterService*.test.*'` → `No files found`. **No existing test coverage for this
+>   service.** The coverage gap S10 is meant to close is unmitigated at HEAD. The
+>   `FilterService.ts` entity count is 35 (1 class, 5 interfaces, 5 type aliases, 8 functions,
+>   1 file, 10 params) per direct build-graph query — the second-largest service file in
+>   scope of this track (after `MediaSearchService.ts`), so a 1:1 test file is justified.
+> - `grep -rln "FilterService" tests/` → `(no output)`. No legacy `tests/filter-service.test.js`
+>   exists at HEAD (unlike the S5 case where `tests/tv-search-service.test.js` was the
+>   pre-existing migration target). The unblock attempt starts from a clean slate on the
+>   test side.
+> - Sibling test files for in-scope services (S1, S3/S4 consolidated, S6) all sit under
+>   `server/src/services/*.test.ts` and follow the `vi.hoisted()` + `vi.mock()` pattern
+>   from `test-strategy.md` §2. The S10 test file should follow the same convention.
+> - Build-graph `query` against `FilterService.ts` entity list confirms the surface area:
+>   - **5 interfaces:** `FilterCondition`, `FilterConditionsGroup`, `CustomFilterRecord`,
+>     `CreateCustomFilterInput`, `UpdateCustomFilterInput`
+>   - **5 type aliases:** `FilterTargetType`, `FilterOperator`, `FilterField`,
+>     `SeriesFilterField`, `IndexerFilterField`
+>   - **8 functions (all private helpers in the same module — no method on the class
+>     is graphed as a function node):** `arrayMatches`, `evaluateIndexerCondition`,
+>     `evaluateSeriesCondition`, `getIndexerCapabilities`, `getIndexerTags`,
+>     `getSeriesValue`, `normalizeBooleanValue`, `stringMatches`
+>   - **Class `FilterService`** with **5 public methods** (visible only by reading source —
+>     the graph does not record method-level nodes for class methods unless they are
+>     arrow function properties):
+>     - `list(type: FilterTargetType): Promise<CustomFilterRecord[]>` (line 351)
+>     - `create(input: CreateCustomFilterInput): Promise<CustomFilterRecord>` (line 364)
+>     - `update(id: number, input: UpdateCustomFilterInput): Promise<CustomFilterRecord>` (line 386)
+>     - `delete(id: number): Promise<{ id: number; deleted: true }>` (line 418)
+>     - `applyToSeries<T>(items: T[], group: FilterConditionsGroup): T[]` (line 429)
+>     - `applyToIndexers<T>(items: T[], group: FilterConditionsGroup): T[]` (line 440)
+>     - Plus `private validateConditionsGroup(input, targetType): FilterConditionsGroup`
+>       (line 297) — internal validation, not part of the public API but critical to
+>       cover since both `list`/`create`/`update` route through it.
+>   - **1 file:** `FilterService.ts` (450 lines, the whole module)
+>
+> **Spec-vs-HEAD API mismatch flag for the unblock attempt:** the spec's five test tasks
+> (`createFilter delegates to repository`, `getFilters returns all filters`,
+> `deleteFilter delegates to repository`, `evaluate returns true when conditions match`,
+> `evaluate returns false when conditions don't match`) are **incorrect at HEAD** in two
+> significant ways. Reading `server/src/services/FilterService.ts` lines 1–450:
+>
+> - **The method names are wrong.** The public API is:
+>   - `list(type: FilterTargetType)` — **not** `getFilters` (the spec's `getFilters returns
+>     all filters` task) and **not** `getFilters()` (the spec's `getFilters returns all
+>     filters` is missing the `type` parameter; the actual method requires a `type` to
+>     filter by).
+>   - `create(input: CreateCustomFilterInput)` — **not** `createFilter`. The spec conflates
+>     the service name with the method name.
+>   - `delete(id: number)` — **not** `deleteFilter`. Returns `{ id, deleted: true }` (a
+>     confirmation object), not the deleted record.
+>   - `update(id: number, input: UpdateCustomFilterInput)` — **not in the spec at all**.
+>     The spec omits the update path entirely, even though the route
+>     `filterRoutes.ts:89` wires a PATCH handler to it. This is a real coverage gap that
+>     the spec fails to address.
+>   - `applyToSeries(items, group)` and `applyToIndexers(items, group)` — **not** `evaluate`.
+>     The spec's `evaluate` terminology maps onto the actual API as the two `applyTo*`
+>     methods (separate per-target-type, taking an array of items to filter, not a
+>     single media item to evaluate). Each returns the filtered subset, not a boolean.
+>     The "true/false based on condition matching" framing in the spec is a per-item
+>     check that happens **inside** `applyTo*` via the private
+>     `evaluateSeriesCondition` / `evaluateIndexerCondition` helpers.
+>
+> - **The repository indirection is not what the spec says.** The spec implies
+>   "FilterRepository" as a separate collaborator (the spec's tasks read "delegates to
+>   repository"). At HEAD there is **no `FilterRepository.ts` class** — `grep -rn
+>   "FilterRepository" server/src --include="*.ts"` returns 0 rows. The service uses
+>   `this.prisma.customFilter.findMany` / `create` / `findUnique` / `update` / `delete`
+>   directly (lines 352, 372, 387, 407, 419, 424). The constructor signature is
+>   `constructor(private readonly prisma: Record<string, any>)` (line 295) — a **bare
+>   prisma client** is injected, not a repository. The route handlers pass
+>   `deps.prisma as any` (e.g., `filterRoutes.ts:34,58,89,106`). The unblock attempt's
+>   mock must follow the same shape: `new FilterService({ customFilter: { findMany,
+>   create, findUnique, update, delete } })` — a bare prisma-shaped mock, not a
+>   repository-class mock.
+>
+> - **The "true/false when conditions match" framing is wrong.** `applyToSeries` /
+>   `applyToIndexers` return `T[]` (the filtered array), not a boolean. The boolean
+>   result lives inside the per-item check via `evaluateSeriesCondition(item, condition)`
+>   (line 178) and `evaluateIndexerCondition(item, condition)` (line 235), which are
+>   **module-private** functions (not class methods). They are reachable only by calling
+>   `applyToSeries` / `applyToIndexers` with a one-item array and checking whether the
+>   result is empty/non-empty, OR by exporting them for test-only access. The unblock
+>   attempt should test the per-item boolean via `applyTo*` boundary (test "filter
+>   includes item when condition matches" → `result.length === 1`; "filter excludes
+>   item when condition does not match" → `result.length === 0`), not by re-implementing
+>   a boolean evaluator.
+>
+> - **No `repository.delete` for `getFilters`/`createFilter` — the spec assumes a clean
+>   CRUD repository abstraction, but the real API mixes prisma calls with
+>   `validateConditionsGroup` validation** (lines 297–349). The validation is called
+>   on every `list` (re-validates stored conditions, line 360), every `create` (lines
+>   370), every `update` (line 404), and runs through six distinct `ValidationError`
+>   branches:
+>   1. `conditions must be an object` (line 299)
+>   2. `conditions.operator must be 'and' or 'or'` (line 307)
+>   3. `conditions.conditions must be a non-empty array` (line 311)
+>   4. `condition N must be an object` (line 318)
+>   5. `condition N has invalid field` (line 327) — checked against the per-target
+>      `VALID_FIELDS_BY_TARGET` map (lines 48–51).
+>   6. `condition N has invalid operator` (line 331) — checked against `VALID_OPERATORS`
+>      (lines 53–60).
+>   7. `condition N is missing a value` (line 335)
+>   Plus two name-validation branches in `create`/`update` (lines 366, 397).
+>   Plus two `NotFoundError` branches in `update`/`delete` (lines 389, 421).
+>   The spec's five tasks cover **none** of these validation paths.
+>
+> The unblock attempt must rewrite the five spec test tasks against the real API
+> (`list(type)`, `create(input)`, `update(id, input)`, `delete(id)`, `applyToSeries(items,
+> group)`, `applyToIndexers(items, group)`) and the real prisma-not-repository indirection
+> above **before** any Red command. Same precedent as S5's `searchSeries` mismatch
+> (plan S5 attempt 1 evidence), S7's `generatePath` mismatch (plan S7 attempts 1–3
+> evidence), S8's `satisfied` mismatch (plan S8 attempt 1 evidence), and S9's
+> `createProvider` mismatch (plan S9 attempt 1 evidence).
+>
+> **S10 mock-plan note for the unblock attempt:** per test-strategy.md §2 the
+> `vi.hoisted()` + `vi.mock` pattern should mock only what the service actually invokes.
+> `FilterService` has **one external dependency**: the prisma client (line 295). No
+> `node:path`, no Drizzle schema, no HTTP, no node-cron, no external providers. The
+> mock shape is a prisma-shaped bare object: `{ customFilter: { findMany, create,
+> findUnique, update, delete } }` — each method a `vi.fn()`. The constructor takes
+> `prisma: Record<string, any>`, so the test can pass a literal object directly
+> without any `vi.mock()` wrapper (no module-level import to mock; the service is a
+> plain class). The unblock attempt should target ≥12 cases covering:
+>
+> - **CRUD round-trip** (5 cases): `list(type)` returns mapped records, `list(type)`
+>   re-validates stored conditions (mock returns `conditions: { operator: 'bad',
+>   conditions: [] }` → throws `ValidationError`); `create(input)` trims name, calls
+>   `prisma.customFilter.create` with the trimmed name + validated conditions, returns
+>   the record; `create({ name: '   ' })` throws `ValidationError('name is required')`;
+>   `update(id, { name: '' })` throws `ValidationError('name cannot be empty')`;
+>   `update(id, ...)` on missing id throws `NotFoundError`; `update(id, { conditions:
+>   bad })` throws `ValidationError`; `delete(id)` returns `{ id, deleted: true }`;
+>   `delete(missingId)` throws `NotFoundError`.
+>
+> - **Condition evaluation truth table** (4 cases, exercising the per-item boolean
+>   via the `applyTo*` boundary):
+>   - `applyToSeries([item], { operator: 'and', conditions: [{ field: 'monitored',
+>     operator: 'equals', value: true }] })` with `item.monitored === true` → length 1
+>     (matches), with `item.monitored === false` → length 0 (does not match).
+>   - `applyToSeries([itemA, itemB], { operator: 'or', conditions: [...] })` →
+>     subset of items where any condition matches.
+>   - `applyToIndexers([indexer], { operator: 'and', conditions: [{ field: 'enabled',
+>     operator: 'equals', value: true }] })` → length 1 / 0 based on `indexer.enabled`.
+>   - `applyToIndexers` with `{ field: 'capability', operator: 'equals', value: 'rss' }`
+>     → respects derived capability from `supportsRss: true` when no explicit
+>     `capabilities` array.
+>
+> - **Helper branches worth one assertion each** (4 cases):
+>   - `normalizeBooleanValue`: `true` → true, `0` → false, `'yes'` → true, `'no'` →
+>     false, `42` → true (non-zero), `null` → false.
+>   - `stringMatches` (via `applyToSeries` with `genre` field) — `'contains'`
+>     substring match, `'notContains'` inverse.
+>   - `getIndexerTags` with `settings` JSON string containing `tags: ['a', 'b']` →
+>     `['a', 'b']`; with `tag: 'single'` → `['single']`; with malformed JSON → `[]`.
+>   - `evaluateSeriesCondition` with `field: 'rating'` and `item.rating` as nested
+>     `{ value: 8.5 }` → uses `ratings.value` (line 121); with `item.rating` as a raw
+>     number → uses the number directly (line 117).
+>
+> - **Empty-conditions short-circuit** (1 case): `applyToSeries([item], { operator:
+>   'and', conditions: [] })` returns the input array unchanged (line 430–432 early
+>   return). Same for `applyToIndexers` (line 441–443).
+>
+> That gives a 14-case target. The unblock attempt may compress some helper branches
+> into a single `describe('normalizeBooleanValue')` block to keep the file readable,
+> but each branch of the **public** `list`/`create`/`update`/`delete`/`applyTo*` API
+> should be exercised at least once.
+>
+> **S10 Red→Green plan for the unblock attempt:** Targeted Red command is
+> `bun x vitest run server/src/services/FilterService.test.ts` (file absent → "No test
+> files found", non-zero exit, ~1s). Green command is the same invocation with the
+> test file present, expecting ≥12/12 pass against the real API. The class is fully
+> implemented at HEAD; no feature logic changes should be needed. If a test fails,
+> the contract is wrong — the implementation is the spec.
+>
+> **Worktree at MID start was clean** (per the user's prompt and `git status --porcelain`
+> output: empty). No pre-existing dirty paths in this attempt, so no preservation/
+> restoration decisions are required (none of the S1/S2/S5/S7/S8/S9 archive-matrix
+> dirt or BigInt→Number migration dirt is present).
+>
+> **No test file created, no Red command run, no S10 source/test code touched by MID
+> in this attempt.** The only artifact change is this block note appended to the
+> existing S10 phase, recording the deferral, the build-graph baseline, the
+> spec-vs-HEAD API mismatch (5 spec tasks incorrect — `getFilters` should be
+> `list(type)`, `createFilter` should be `create(input)`, `deleteFilter` should be
+> `delete(id)`, `evaluate` is split into two per-target methods that return arrays
+> not booleans, the spec omits `update` entirely), the no-FilterRepository fact
+> (service uses bare prisma client), the seven `ValidationError` + two `NotFoundError`
+> branches the spec misses, the mock plan (one prisma-shaped mock object; no module
+> mocking needed), the targeted Red→Green commands, and the worktree classification
+> (clean at MID start; no preservation required).
 
 ## Phase S11: Verification & Handoff *(in-scope services only)*
 

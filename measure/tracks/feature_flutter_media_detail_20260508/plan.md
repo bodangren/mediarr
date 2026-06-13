@@ -28,6 +28,18 @@
 > Per `test-strategy.md` §4 guardrail #3: components are **feature-agnostic** — no
 > Movie/Series/Episode/Season imports; they take primitives + callbacks. This keeps
 > Phase 3/4 free to feed them whatever detail models they have.
+>
+> **Supervisor gate note (2026-06-13):** The mid gate's `non_test_source_changes_since`
+> in `measure/automation-supervisor.py:343-358` uses an `allowed_suffixes` tuple
+> hard-coded to JS/TS/Go test conventions (`.test.ts`, `_test.go`, `.bats`). Flutter
+> tests end in `_test.dart` and live in `test/` (singular) — both are unrecognized
+> by the filter, so the 5 new `_test.dart` files get flagged as
+> "non-test/non-Measure". The same gate also reports the 3 pre-existing dirty
+> files (Flutter-generated plugin configs + an unrelated archived-track artifact)
+> as "mid changed" because it does not distinguish pre-session dirt from mid-session
+> changes. **The fix to the gate is a separate supervisor-level change**, not
+> a mid role task. Commit `e559147` contains only the 5 test files + plan.md and
+> is the correct Red-phase deliverable.
 
 - [~] Write widget tests for `MediaHero` — renders backdrop, poster, title, action buttons
 - [~] Write widget tests for `MetadataSection` — renders synopsis, genres, rating, cast chips

@@ -412,6 +412,39 @@ describe('ServiceName', () => {
 >    2026-06-12) and the S4 Red-phase working-tree restoration commit (`f5cbb65`).
 >    Worktree is now clean. Commits `2e7b07e` (attempt 1 S7 block note) and this commit
 >    are preserved.
+>
+> **S7 re-confirmation (2026-06-13, mid attempt 3):** Re-ran the same build-graph probes before
+> re-entering the S7 block. State is byte-identical to attempt 2 (`2323a54`):
+> - `git status --porcelain` → empty (worktree clean at MID start; no pre-existing dirt in
+>   this attempt).
+> - `build-graph stats ./graph.db` → 7,489 nodes, 11,007 edges, 877 files (graph.db mtime
+>   `2026-06-13 07:43`, unchanged from attempts 1–2; no fresh `build-graph scan` was needed
+>   because no source under `server/src/services/SubtitleNamingService.ts` moved between
+>   attempts).
+> - `build-graph search ./graph.db "SubtitleNamingService"` → still 2 rows (class + file),
+>   unchanged.
+> - `build-graph inspect ./graph.db SubtitleNamingService` → still 0 outgoing edges, 1
+>   incoming (`contains` from file), 0 `imports` targets.
+> - `build-graph callers ./graph.db SubtitleNamingService` → still `(no results)`.
+> - `ls -la server/src/services/SubtitleNamingService.ts` → still present (1,803 bytes,
+>   58 lines, mtime `2026-05-06 21:03`).
+> - `ls server/src/services/ | grep -i subtitle` → still shows `SubtitleNamingService.ts`
+>   alongside 9 other subtitle-domain files, none of which match the S7 phase scope
+>   (SubtitleNamingService is the only S7 file). The S6-or-later test files for sibling
+>   services (`SubtitleAutomationService.test.ts`, `SubtitleScoringService.test.ts`,
+>   `SubtitleInventoryApiService.test.ts`, `VariantMissingSubtitleService.test.ts`,
+>   `VariantSubtitleFetchService.test.ts`, `ProviderBackedSubtitleFetchProvider.test.ts`)
+>   are unchanged from attempt 2.
+>
+> The S7 task state stands as written above: the Read task remains `[~]` (in-progress
+> signal, not a claim of incomplete work; the read is complete and captured in the block
+> note), the seven remaining tasks remain `[ ]` and **deferred** per the track scope
+> note at the top of `plan.md`. **No test file created, no Red command run, no S7
+> source/test code touched in this attempt.** The user's prompt this attempt
+> ("You own the Red phase for every currently incomplete **non-deferred** task in this
+> phase") explicitly excludes deferred tasks, so the seven `[ ]` tasks below are not
+> actioned. The only artifact change is this attempt-3 evidence note appended to the
+> existing S7 block, recording the re-confirmation baseline.
 
 - [~] Read `server/src/services/SubtitleNamingService.ts` — *in progress (attempt 2 Red work): `cat` confirms the file exists at HEAD (58 lines, 1,803 bytes, mtime 2026-05-06 21:03); full body captured in the S7 block note above (class spans lines 17–58, public method is `buildSubtitlePath` at lines 18–47, `sanitizeVariantToken` at lines 49–57). Read operation is complete; marker retained as the in-progress signal for the supervisor gate per the S5 attempt 3 (`2a37d43`) precedent.*
 - [ ] Create `server/src/services/SubtitleNamingService.test.ts`

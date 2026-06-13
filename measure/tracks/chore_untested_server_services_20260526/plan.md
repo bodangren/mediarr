@@ -1346,6 +1346,7 @@ describe('ServiceName', () => {
 - Result: 4 suites now skip cleanly in Bun (9 tests skipped, 0 crashes).
 - FilterService targeted test: 26/26 pass unchanged.
 - Pre-existing `conductor/archive/.../matrix.json` timestamp dirt restored per S1/S7/S8 precedent.
+- Committed at 93b2362.
 
 ## Phase S11: Verification & Handoff *(in-scope services only)*
 

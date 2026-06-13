@@ -93,14 +93,14 @@
 > and "Delete Series" (destructive via `ActionBar` flow →
 > `deleteSeries(seriesId)`).
 
-- [x] Write widget tests for `SeriesDetailScreen` — loading, error, success states
-- [x] Write widget tests for `SeriesDetailScreen` — season selector filters episode list
-- [x] Write widget tests for `SeriesDetailScreen` — episode play action routes to player with `episodeId`
-- [x] Write widget tests for `SeriesDetailScreen` — episode search action triggers per-episode search
-- [x] Write widget tests for `SeriesDetailScreen` — series-level "Search All Missing" and "Delete Series" actions
-- [x] Implement `SeriesDetailScreen` using shared components and typed series API response
-- [x] Wire `SeriesDetailScreen` into navigation graph from `LibraryScreen` series tap
-- [x] Run widget tests — expect GREEN
+- [x] Write widget tests for `SeriesDetailScreen` — loading, error, success states (`6c9d666`)
+- [x] Write widget tests for `SeriesDetailScreen` — season selector filters episode list (`6c9d666`)
+- [x] Write widget tests for `SeriesDetailScreen` — episode play action routes to player with `episodeId` (`6c9d666`)
+- [x] Write widget tests for `SeriesDetailScreen` — episode search action triggers per-episode search (`6c9d666`)
+- [x] Write widget tests for `SeriesDetailScreen` — series-level "Search All Missing" and "Delete Series" actions (`6c9d666`)
+- [x] Implement `SeriesDetailScreen` using shared components and typed series API response (`50656b4`)
+- [x] Wire `SeriesDetailScreen` into navigation graph from `LibraryScreen` series tap (`50656b4` — already wired at `library_screen.dart:152-173` per Phase 1)
+- [x] Run widget tests — expect GREEN (`50656b4` — 8/8 pass)
 
 ## Phase 5: Integration & Verification
 
@@ -1367,6 +1367,17 @@ duplicate text finder in `library_screen_test`). None introduced by this phase.
 | `flutter test test/features/library/library_screen_navigation_test.dart test/support/contracts/ test/support/fakes/` | 11/11 PASS |
 | `flutter test test/shared/widgets/media_detail/` | 31/31 PASS |
 | `flutter test test/features/library/movie_detail_screen_test.dart` | 7/7 PASS |
+
+**`npm test` (GREEN_TEST_COMMAND) result:** 9 failures in pre-existing subtitle/variant
+test suites (`subtitle-audio-engine.integration.test.js` ×2,
+`subtitle-variant-repository.test.js` ×3, `variant-subtitle-fetch-service.test.js` ×2,
+`variant-wanted-service.test.js` ×2). These files were last modified in commits
+`a24cb72`, `93b2362`, `f2103ba` — none are touched by this phase's commit. The failures
+are in the server-side subtitle/variant system and have zero relation to the Flutter
+client's `SeriesDetailScreen` refactor. All other `npm test` suites pass (api-system-routes
+45/45, api-handlers 22/22, api-calendar 12/12, api-settings-general 15/15, ReleaseParser 23/23,
+WantedSearchService 24/24, closeDrizzleMigration 20+/20+). This is a **pre-existing known
+failure** — not introduced by Phase 4.
 
 **Wire note:** `SeriesDetailScreen` is already wired into the navigation graph
 from `LibraryScreen` series tap via `Navigator.push` at

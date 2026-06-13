@@ -5,7 +5,7 @@ if (isBun) {
   vi.mock('better-sqlite3', () => ({
     default: class {
       exec() { return this; }
-      prepare() { return { all: () => [], get: () => null, run: () => ({}), raw: () => [] }; }
+      prepare() { return { all: () => [], get: () => null, run: () => ({}), raw: () => ({ all: () => [] }), bind: function() { return this; } }; }
       close() {}
     },
   }));

@@ -250,7 +250,9 @@ describe('Scheduler core contract', () => {
 
     it('returns today for a daily cron when today\'s run has not yet passed', () => {
       const now = new Date();
-      const futureHour = now.getHours() === 23 ? 0 : now.getHours() + 1;
+      // Use hour 1 to avoid the midnight wraparound edge case:
+      // when current hour is 23, hour 0 means midnight (tomorrow).
+      const futureHour = now.getHours() >= 22 ? 1 : now.getHours() + 1;
       const expression = `0 ${futureHour} * * *`;
       scheduler.schedule('future-daily', expression, () => undefined);
       const meta = scheduler.listJobsMeta().find((m) => m.name === 'future-daily');

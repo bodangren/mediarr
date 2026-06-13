@@ -1075,16 +1075,16 @@ describe('ServiceName', () => {
 
 ## Phase S10: FilterService tests *(DEFERRED — post-v1.0)*
 
-- [x] Read `server/src/services/FilterService.ts` (f3a1e2d)
-- [x] Create `server/src/services/FilterService.test.ts` (f3a1e2d) — *26 tests covering all public API methods*
-- [x] Write test: `list returns mapped records from prisma` (f3a1e2d) — *replaces spec's `getFilters`; covers `list(type)` with valid and invalid stored conditions*
-- [x] Write test: `create trims name and delegates to prisma` (f3a1e2d) — *replaces spec's `createFilter`; covers `create(input)` with name trimming, whitespace-only rejection, invalid conditions*
-- [x] Write test: `delete returns confirmation` (f3a1e2d) — *replaces spec's `deleteFilter`; covers `delete(id)` success and NotFoundError*
-- [x] Write test: `update delegates to prisma` (f3a1e2d) — *not in spec; covers `update(id, input)` success, NotFoundError, empty-name ValidationError, invalid conditions*
-- [x] Write test: `applyToSeries filters items by conditions` (f3a1e2d) — *replaces spec's `evaluate returns true/false`; tests and/or operators, monitored/status/genre/network/rating fields*
-- [x] Write test: `applyToIndexers filters items by conditions` (f3a1e2d) — *tests enabled/protocol/capability/priority/tag fields, derived capabilities, malformed settings JSON*
-- [x] Run: `bun x vitest run server/src/services/FilterService.test.ts` → **26/26 pass** (132ms) (f3a1e2d)
-- [x] Commit: `test(filters): add FilterService unit tests` (f3a1e2d)
+- [x] Read `server/src/services/FilterService.ts` (fe22860)
+- [x] Create `server/src/services/FilterService.test.ts` (fe22860) — *26 tests covering all public API methods*
+- [x] Write test: `list returns mapped records from prisma` (fe22860) — *replaces spec's `getFilters`; covers `list(type)` with valid and invalid stored conditions*
+- [x] Write test: `create trims name and delegates to prisma` (fe22860) — *replaces spec's `createFilter`; covers `create(input)` with name trimming, whitespace-only rejection, invalid conditions*
+- [x] Write test: `delete returns confirmation` (fe22860) — *replaces spec's `deleteFilter`; covers `delete(id)` success and NotFoundError*
+- [x] Write test: `update delegates to prisma` (fe22860) — *not in spec; covers `update(id, input)` success, NotFoundError, empty-name ValidationError, invalid conditions*
+- [x] Write test: `applyToSeries filters items by conditions` (fe22860) — *replaces spec's `evaluate returns true/false`; tests and/or operators, monitored/status/genre/network/rating fields*
+- [x] Write test: `applyToIndexers filters items by conditions` (fe22860) — *tests enabled/protocol/capability/priority/tag fields, derived capabilities, malformed settings JSON*
+- [x] Run: `bun x vitest run server/src/services/FilterService.test.ts` → **26/26 pass** (132ms) (fe22860)
+- [x] Commit: `test(filters): add FilterService unit tests` (fe22860)
 
 > **S10 block (2026-06-13, mid attempt):** This phase is entirely deferred per the track scope
 > note at the top of `plan.md` ("Do not start deferred phases as part of this track") and per

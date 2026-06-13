@@ -75,11 +75,29 @@
 
 ## Phase 4: Series Detail Screen (TDD)
 
-- [ ] Write widget tests for `SeriesDetailScreen` — loading, error, success states
-- [ ] Write widget tests for `SeriesDetailScreen` — season selector filters episode list
-- [ ] Write widget tests for `SeriesDetailScreen` — episode play action routes to player with `episodeId`
-- [ ] Write widget tests for `SeriesDetailScreen` — episode search action triggers per-episode search
-- [ ] Write widget tests for `SeriesDetailScreen` — series-level "Search All Missing" and "Delete Series" actions
+> **Phase 4 — Red phase owned by mid.** See plan §`## Phase 4 Red Evidence` at
+> the bottom of this file for the targeted command, fail count, and task-by-task
+> notes recorded 2026-06-13.
+>
+> Per `test-strategy.md` §4 guardrail #1: navigation remains the existing
+> **Navigator.push with loaded model** pattern; `SeriesDetailScreen` continues
+> to take a `Series` (already wired in Phase 1 at `library_screen.dart:152-173`
+> — no separate "wire" step needed). Per §4 guardrail #3: the screen is
+> refactored to compose the **shared** `MediaHero` / `MetadataSection` /
+> `ActionBar` / `FileInfoCard` / `EpisodeList` (Phase 2 Green) instead of its
+> bespoke 622-line header / season-tile / episode-row. Per §5 Phase 4: season
+> selector drives the visible episode list (pump with [1,2], tap S2 chip,
+> assert S2 episodes visible); per-episode actions (Play, Search) tested with
+> one episode then trusted by structure; series-level action bar exposes
+> "Search All Missing" (non-destructive → `searchReleases(type: 'series')`)
+> and "Delete Series" (destructive via `ActionBar` flow →
+> `deleteSeries(seriesId)`).
+
+- [~] Write widget tests for `SeriesDetailScreen` — loading, error, success states
+- [~] Write widget tests for `SeriesDetailScreen` — season selector filters episode list
+- [~] Write widget tests for `SeriesDetailScreen` — episode play action routes to player with `episodeId`
+- [~] Write widget tests for `SeriesDetailScreen` — episode search action triggers per-episode search
+- [~] Write widget tests for `SeriesDetailScreen` — series-level "Search All Missing" and "Delete Series" actions
 - [ ] Implement `SeriesDetailScreen` using shared components and typed series API response
 - [ ] Wire `SeriesDetailScreen` into navigation graph from `LibraryScreen` series tap
 - [ ] Run widget tests — expect GREEN
@@ -1038,3 +1056,146 @@ keeps the same `MovieDetailScreen(movie: Movie)` constructor — no
 navigation changes needed.
 
 **Task status:** all 7 Phase 3 tasks marked `[x]`.
+
+## Phase 4 Red Evidence (2026-06-13)
+
+**Status:** 5 Phase 4 widget-test tasks marked `[~]` (Red-phase ownership).
+Test file written and committed. **7 of 8 tests fail at HEAD** — the
+truthful Red state proves the Phase 4 implement step has clear, concrete
+work to do. The 1 passing test (loading indicator) is regression coverage
+for the post-implement behavior; its continued pass is part of the Green
+gate (the bespoke `SeriesDetailScreen` already renders
+`CircularProgressIndicator` during the `getSeriesDetail` fetch — that
+contract is met; the Phase 4 refactor will preserve it via the
+`Completer`-driven loading state).
+
+**Targeted Red command run** (bounded to one new test file, no watch mode):
+
+```
+cd clients/mediarr-client && flutter test test/features/library/series_detail_screen_test.dart
+```
+
+**Result:** `+1 -7: Some tests failed.` Exit code 1. **7 RED at HEAD, 1
+regression coverage pass.** All 7 failures are real contract gaps — no test
+is "failing because of a stale durable record" or because of a transient
+setup issue. The Completer-driven loading test hangs in `pumpAndSettle`
+(as expected for a test that deliberately holds the fetch open) and then
+completes cleanly.
+
+| # | Test | Result at HEAD | Reason |
+|---|---|---|---|
+| 1 | loading indicator while getSeriesDetail fetch is pending | **PASS** (regression coverage) | Bespoke `_SeriesDetailScreenState` already sets `_loading = true` in `initState` and renders `CircularProgressIndicator` while `getSeriesDetail` is pending. Phase 4 refactor preserves this in the shared-widget-based screen. |
+| 2 | distinct error state when getSeriesDetail fetch fails (Text containing "error") | **FAIL (Red)** | Current bespoke screen surfaces a "Failed to load series detail" title (no "error" word) and `e.toString()` dump. No Text widget with "error" exists — the spec requires a distinguishable error UI element, mirroring the Phase 3 MovieDetailScreen contract. |
+| 3 | success state composes shared `MediaHero` / `MetadataSection` / `FileInfoCard` / `ActionBar` / `EpisodeList` | **FAIL (Red)** | None of the 5 shared widgets are present — current `SeriesDetailScreen` (622 lines) builds bespoke poster sidebar / metadata chips / season-tile / episode-row. `find.byType(MediaHero)` etc. all return `findsNothing`. |
+| 4 | season selector filters the visible episode list (S1/S2 chips) | **FAIL (Red)** | `find.text('S1')` and `find.text('S2')` return `findsNothing` — current screen uses "Season 1" / "Season 2" full-text labels with expand/collapse `InkWell` rows, not `ChoiceChip` selectors. The shared `EpisodeList` uses abbreviated "S1" / "S2" chip labels. |
+| 5 | episode play action lives inside the shared `EpisodeList` and requests stream URL `(501, 'episode')` | **FAIL (Red)** | `find.byType(EpisodeList)` returns `findsNothing` — bespoke screen renders its own `_EpisodeRow` with `Icons.play_arrow`. The refactor must move play affordance into the shared `EpisodeList`. |
+| 6 | per-episode search action lives inside the shared `EpisodeList` and triggers `searchReleases(type: 'episode')` | **FAIL (Red)** | `find.descendant(of: find.byType(EpisodeList), matching: find.byIcon(Icons.search))` returns `findsNothing` — current screen uses `Icons.subtitles` (subtitle search modal) and `Icons.upgrade` (quality upgrade modal), not per-episode `searchReleases` via `Icons.search`. |
+| 7 | series-level "Search All Missing" action in shared `ActionBar`, triggers `searchReleases(type: 'series')` | **FAIL (Red)** | `find.descendant(of: find.byType(ActionBar), matching: find.text('Search All Missing'))` returns `findsNothing` — no series-level action bar exists on the current screen. |
+| 8 | series-level "Delete Series" action in shared `ActionBar`, `AlertDialog` confirmation, only fires `deleteSeries(seriesId)` on confirm | **FAIL (Red)** | `find.descendant(of: find.byType(ActionBar), matching: find.text('Delete Series'))` returns `findsNothing` — no series-level action bar exists on the current screen. The destructive `AlertDialog` confirmation flow and the `deleteSeries(1)` API call are unreachable. |
+
+**Files added / modified (committed in this Red phase):**
+
+- `clients/mediarr-client/test/features/library/series_detail_screen_test.dart`
+  (new, 515 lines) — 8 widget tests covering the Phase 4 contract. Each
+  test's `reason:` string documents the specific Phase 4 contract being
+  asserted (so a future implementer or reviewer can read the test
+  failure's `reason:` to see exactly what contract is missing). Test
+  fixtures: `twoSeasonSeries()` (Breaking Bad with 2 seasons / 4 episodes)
+  and `oneEpisodeSeries()` (Severance with 1 season / 1 episode) for
+  targeted single-episode play + search tests.
+- `clients/mediarr-client/test/support/fakes/fake_api_client.dart` —
+  extended with `getSeriesDetailCompleter` (Completer trick, mirrors
+  `getMovieSubtitlesCompleter` from Phase 3) and `deleteSeries(int
+  seriesId)` (records `seriesId` in `deleteSeriesCalls` for the Delete
+  Series AlertDialog test). The `deleteSeries` method is intentionally
+  **not** marked `@override` — the real `MediarrApiClient` does not yet
+  expose `deleteSeries`; the Phase 4 implement step will add it as part
+  of the same refactor that wires the screen's Delete Series action. The
+  fake is backwards-compatible: Phase 1 + Phase 2 + Phase 3 tests still
+  pass (11/11 + 31/31 + 7/7).
+
+**Per-task closure notes (RED — all 5 widget-test tasks):**
+
+| Task | RED evidence |
+|---|---|
+| Loading/error/success widget tests | `series_detail_screen_test.dart` groups 1–3. Loading test passes (Completer-driven, holds the fetch open). Error test fails: `Text` with "error" not found. Success test fails: `find.byType(MediaHero)`, `MetadataSection`, `FileInfoCard`, `ActionBar`, `EpisodeList` all return `findsNothing`. |
+| Season selector widget test | `series_detail_screen_test.dart` group 4. `find.text('S1')` returns `findsNothing`. Tightened to chip-based "S1" / "S2" labels per Phase 2 `EpisodeList` contract. |
+| Episode play action widget test | `series_detail_screen_test.dart` group 5. `find.descendant(of: find.byType(EpisodeList), matching: find.byIcon(Icons.play_arrow))` returns `findsNothing`. |
+| Per-episode search action widget test | `series_detail_screen_test.dart` group 6. Same descendant-finder pattern with `Icons.search` returns `findsNothing`. |
+| Series-level Search All Missing / Delete Series widget test | `series_detail_screen_test.dart` groups 7–8. Both `find.text('Search All Missing')` and `find.text('Delete Series')` inside `ActionBar` return `findsNothing`. The Delete Series test cascades through: tap Delete → no AlertDialog appears (fails). Cancel + Confirm flows are unreachable. |
+
+**Locked contracts for Phase 4 implement (Green):**
+
+- `SeriesDetailScreen(series: Series)` keeps the existing `Navigator.push`
+  with loaded-model constructor (test-strategy.md §4 guardrail #1).
+- The screen composes the shared `MediaHero`, `MetadataSection`,
+  `FileInfoCard`, `ActionBar`, `EpisodeList` widgets (test-strategy.md §4
+  guardrail #3). The bespoke 622-line `series_detail_screen.dart` is
+  refactored to compose the shared widgets.
+- `getSeriesDetail` fetch failure surfaces a distinguishable error UI
+  element (`Text` containing the word "error") — not just an
+  `e.toString()` dump.
+- Per-episode play lives inside the shared `EpisodeList` widget and
+  routes to the player with `(episodeId, 'episode')` via
+  `apiClient.getStreamUrl(...)`.
+- Per-episode search lives inside the shared `EpisodeList` widget and
+  triggers `apiClient.searchReleases(..., type: 'episode')`.
+- Series-level `ActionBar` exposes two actions:
+  - "Search All Missing" (non-destructive) → `apiClient.searchReleases(..., type: 'series')`
+  - "Delete Series" (destructive via `ActionBar`'s `isDestructive: true` flow) → `apiClient.deleteSeries(seriesId)`. The fake records this call in `deleteSeriesCalls`; the real `MediarrApiClient.deleteSeries(int id)` is added as part of the same refactor (the spec already lists `DELETE /api/series/:id` as a reused endpoint at spec.md line 40, and the server route already exists in `seriesRoutes.ts` — adding the client method is a one-line change, not a new endpoint).
+- Cancel on the Delete Series dialog leaves the API untouched.
+- Confirm on the Delete Series dialog dismisses the dialog AND fires
+  `deleteSeries(seriesId)` exactly once.
+
+**Aggregate suite note:** The new file is in
+`test/features/library/series_detail_screen_test.dart`, picked up by
+`flutter test` discovery. The 7 failing tests in this file are exactly
+the Phase 4 contract gaps the implement step must close. The single
+passing test (loading state) provides regression coverage for the
+post-implement behavior — its continued pass is part of the Green gate.
+
+**No `@Skip` annotation used.** Per test-strategy.md §6 guardrail #6,
+`@Skip` is for files that reference existing-but-incomplete code. Here,
+the screen and the shared components all exist (Phase 2 landed MediaHero,
+MetadataSection, ActionBar, FileInfoCard, EpisodeList; the bespoke
+`SeriesDetailScreen` exists at 622 lines); what's missing is the
+`SeriesDetailScreen` refactor that composes them with the new behavior.
+Compile errors are not the issue — runtime contract assertions are. The
+7 `TestFailure` results above are the truthful Red state.
+
+**Aggregate test command sanity check (no Phase 1 / Phase 2 / Phase 3
+regressions):**
+
+| Command | Result |
+|---|---|
+| `flutter test test/features/library/movie_detail_screen_test.dart` | 7/7 PASS (Phase 3 widget tests still green) |
+| `flutter test test/features/library/library_screen_navigation_test.dart test/support/contracts/ test/support/fakes/` | 11/11 PASS (Phase 1 nav + response-shape contracts + fake extensions still green after Phase 4 fake extension) |
+| `flutter test test/shared/widgets/media_detail/` | 31/31 PASS (Phase 2 widget tests still green — no regression from Phase 4 Red) |
+
+**Build-graph parity probe** (`graph.db` mtime today, 7494 nodes, Flutter
+excluded from graph):
+
+- `build-graph search SeriesDetail` → 7 results: SPA-side parity
+  references only (`SeriesDetailPage.tsx`, `routeMap.seriesDetail`,
+  `queryKeys.seriesDetail`, `interface SeriesDetails` at
+  `server/src/services/MetadataProvider.ts`). The Flutter
+  `SeriesDetailScreen` has no direct graph counterpart — by design (per
+  test-strategy.md §4 guardrail #1, navigation uses the existing
+  `Navigator.push` with the loaded `Series` model, not go_router `:id`
+  paths).
+- `build-graph search deleteSeries` / `searchReleases` → 0 results.
+  Confirms the API-surface symbols the Phase 4 widget tests assert on
+  are Dart-only. The graph cannot trace call paths into the Flutter
+  codebase, but it does prove **zero TS-side blast radius** for the
+  Phase 4 refactor: the contract is locked client-side and the server
+  endpoints are unchanged from Phase 1.
+
+**Dirty worktree context preserved (unrelated / generated, not
+committed):**
+
+- `conductor/archive/cardigann_runtime_parity_20260223/artifacts/final-phase5-compatibility-matrix.json` — unrelated archived-track artifact (pre-existing timestamp change, mtime predates this session; not modified by this Red phase).
+- `clients/mediarr-client/pubspec.lock` (untracked) — Flutter lockfile from `flutter pub get`; project policy is to not commit it (per commit `46f9c0af` "deleted lock"). Not surfaced by `git diff --name-only` in any mode, does not trip the supervisor gate.
+
+**Task status:** the 5 Phase 4 widget-test tasks remain `[~]` (Red
+ownership). The 3 remaining `[ ]` tasks (implement, wire, run GREEN)
+belong to the implement role.

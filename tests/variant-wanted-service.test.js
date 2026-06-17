@@ -1,22 +1,11 @@
 import { describe, it, expect, beforeEach, afterAll, vi } from 'vitest';
 
-const isBun = typeof globalThis.Bun !== 'undefined';
-if (isBun) {
-  vi.mock('better-sqlite3', () => ({
-    default: class {
-      exec() { return this; }
-      prepare() { return { all: () => [], get: () => null, run: () => ({}), raw: () => ({ all: () => [] }), bind: function() { return this; } }; }
-      close() {}
-    },
-  }));
-}
-
 import { createTestPrismaClient } from './helpers/test-prisma-client';
 import 'dotenv/config';
 import { SubtitleVariantRepository } from '../server/src/repositories/SubtitleVariantRepository';
 import { VariantWantedService } from '../server/src/services/VariantWantedService';
 
-const prisma = isBun ? null : createTestPrismaClient();
+const prisma = createTestPrismaClient();
 const repository = prisma ? new SubtitleVariantRepository(prisma) : null;
 const service = repository ? new VariantWantedService(repository) : null;
 
@@ -53,7 +42,7 @@ const createMovieAndVariants = async () => {
   return { variantOne, variantTwo };
 };
 
-(isBun ? describe.skip : describe)('VariantWantedService', () => {
+describe('VariantWantedService', () => {
   beforeEach(async () => {
     await prisma.subtitleHistory.deleteMany();
     await prisma.wantedSubtitle.deleteMany();

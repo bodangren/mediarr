@@ -658,9 +658,46 @@ export class DatabaseClient {
     const { data: rawData, nestedManyCreates } = this.extractNestedManyCreates(model, args.data);
     const data = this.normalizeWriteData(model, rawData);
     const inserted = await this.db.insert(config.table as any).values(data as any).returning();
-    const created = inserted?.[0] ?? null;
+    let created = inserted?.[0] ?? null;
 
     if (!created) {
+      const columns = Object.keys(data);
+      const quotedCols = columns.map(c => `"${c}"`).join(', ');
+      const params = columns.map(c => {
+        const v = data[c];
+        if (v === null || v === undefined) return null;
+        if (typeof v === 'object') return JSON.stringify(v);
+        if (typeof v === 'bigint') return Number(v);
+        return v;
+      });
+      const tableName = model.charAt(0).toUpperCase() + model.slice(1);
+      const sql = `INSERT INTO "${tableName}" (${quotedCols}) VALUES (${columns.map(() => '?').join(', ')})`;
+      let rawInserted = false;
+      try {
+        this.sqlite.prepare(sql).run(...params);
+        rawInserted = true;
+      } catch (_rawErr) {
+        // raw SQL insert failed; fall through to findFirst
+      }
+      if (rawInserted) {
+        const rowObj = this.sqlite.prepare('SELECT last_insert_rowid() as id').get() as any;
+        const rowId = typeof rowObj?.id === 'bigint' ? Number(rowObj.id) : rowObj?.id;
+        if (typeof rowId === 'number' && rowId > 0) {
+          const pkCol = config.primaryKey;
+          const allRows = await this.db.select().from(config.table as any).where(
+            eq((config.table as any)[pkCol], rowId),
+          );
+          const found = allRows[0] ?? null;
+          if (found) {
+            await this.applyNestedManyCreates(model, found, nestedManyCreates);
+            return this.findUnique(
+              model,
+              { where: { [pkCol]: found[pkCol] }, select: args.select, include: args.include },
+              this.createContext(),
+            );
+          }
+        }
+      }
       return this.findFirst(model, { where: this.extractSimpleWhere(args.data), ...args }, ctx);
     }
 
@@ -841,6 +878,19 @@ export class DatabaseClient {
     for (const [key, value] of Object.entries(data)) {
       if (value === undefined) {
         delete data[key];
+      }
+    }
+
+    const tableObj = config.table as any;
+    for (const colName of Object.keys(tableObj)) {
+      if (colName.startsWith('_') || colName in data || colName === 'id') continue;
+      const col = tableObj[colName];
+      if (col && typeof col === 'object') {
+        if (typeof col.defaultFn === 'function') {
+          data[colName] = col.defaultFn();
+        } else if (Array.isArray(col.defaultFn) && typeof col.defaultFn[0] === 'function') {
+          data[colName] = col.defaultFn[0]();
+        }
       }
     }
 

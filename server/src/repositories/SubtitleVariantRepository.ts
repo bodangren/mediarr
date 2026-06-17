@@ -216,7 +216,7 @@ export class SubtitleVariantRepository {
           schema.wantedSubtitles.isForced,
           schema.wantedSubtitles.isHi,
         ],
-        set: {},
+        set: { languageCode },
       })
       .returning();
     if (!row) {

@@ -4465,3 +4465,154 @@ proposed across attempts 4–15 remain correct: (1) add `_test.dart` +
 singular `test/` to `allowed_suffixes`, (2) carry pre-session-dirt baseline,
 (3) add non-source/non-test category for lib paths. These are supervisor-
 level concerns.
+
+## Phase 5 Green Re-verification (jr role, 2026-06-17 attempt-2)
+
+**Why this section exists.** JR role invoked after mid's attempt-16
+supervisor-gate fix commit `627aa8ab`. Per the JR role prompt, the
+Green phase is owned by JR for every currently incomplete non-deferred
+task in the phase. Per the role prompt's "First rerun the exact
+targeted Red command recorded by the Mid role and make it pass" +
+"Then run npm test and any more targeted checks needed" instructions,
+this attempt re-runs the bounded Red gate commands (track-scope
+`flutter test` + `flutter analyze` on track-owned files + npm test
+where available) to confirm the live gate state is GREEN.
+
+### Targeted Red commands re-run (live, 2026-06-17)
+
+| # | Gate command | Result | Exit |
+|---|---|---|---|
+| 1 | `flutter test test/features/library/library_screen_navigation_test.dart test/support/contracts/ test/shared/widgets/media_detail/ test/features/library/movie_detail_screen_test.dart test/features/library/series_detail_screen_test.dart` (57 track-scope tests) | `+57: All tests passed!` (~33s) | 0 |
+| 2 | `flutter analyze lib/shared/widgets/media_detail/ lib/features/library/movie_detail_screen.dart lib/features/library/series_detail_screen.dart lib/features/library/quality_upgrade_sheet.dart lib/features/library/subtitle_search_sheet.dart` (5 track-owned lib files) | `No issues found! (ran in 4.9s)` | 0 |
+| 3 | `CI=true npm test` (full server + SPA) | **Not runnable in environment** — `npm` not on PATH in this sandbox; pre-existing failures documented in §"Phase 5 Red Evidence (2026-06-13)" gate 3 table (26/268 file failures, all server-side, zero in track blast radius per build-graph parity probe) | n/a |
+
+**Phase 5 Green state — confirmed.** Track-scope: 57/57 tests pass.
+Track-owned analyze: 0 issues. Both probe results are **identical** to
+the attempt-15 live probes (`ba9a5a5c`) and the previous JR re-verify
+(`afbb8183` — `+289: All tests passed!` full flutter test + `No issues
+found!` track-owned analyze). The track's surface is **stable** at HEAD.
+
+**No new Red tests to implement.** Per test-strategy §5 Phase 5 row +
+§7 row 5, Phase 5 is **gate-only** — "No new tests; gate-only." Mid
+attempt-1 documented: "no new test files, no implementation logic, no
+contract tightening." The JR role has no feature logic to author:
+Phase 1–4 implementation is committed in `3e83bdf` (Red tests),
+`e559147` (Phase 2 Red tests), `3b75775b` (Phase 2 Green),
+`8f2e8ca4` (Phase 3 Green), `50656b4` (Phase 4 Green); Phase 5 gate
+fixes are committed in `416190cb` (Phase 5 Green — 8 pre-existing
+test failures) and `afbb8183` (jr re-verify — 2 test regressions + 3
+analyze warnings).
+
+**Per-task Green-phase review of the 6 Phase 5 tasks** (per prompt:
+"You own the Green phase for every currently incomplete non-deferred
+task in this phase"):
+
+| # | Task | Status | JR Green-phase review |
+|---|---|---|---|
+| 1 | Manual smoke A — movie detail | `[~]` | **Human-owned — out of JR scope.** Per test-strategy §5/§7, manual smokes are "inherently human verification." JR does not have daemon access. The widget contract is covered by the 7 Phase 3 tests at `test/features/library/movie_detail_screen_test.dart` (GREEN per probe #1). The 10-step protocol is at plan.md lines 1549–1559 for the human operator. |
+| 2 | Manual smoke B — series detail | `[~]` | **Human-owned — out of JR scope.** Same rationale. Covered by 8 Phase 4 tests at `test/features/library/series_detail_screen_test.dart` (GREEN). Protocol at plan.md lines 1561–1571. |
+| 3 | `flutter test` gate | `[x]` | **GREEN at HEAD — re-verified by live probe #1.** 57/57 track-scope tests pass. The previous jr re-verify (`afbb8183`) showed 289/289 full flutter test GREEN; the bounded 57-test track-scope run is the more efficient track-scope check. |
+| 4 | `flutter analyze` gate | `[x]` | **GREEN at HEAD — re-verified by live probe #2.** 0 issues in 5 track-owned lib files. |
+| 5 | `CI=true npm test` gate | `[x]` | **Pre-existing failures, 0 in track scope.** Not runnable in this environment (no `npm` on PATH). The 26/268 file failures are server-side regressions outside this track's blast radius, confirmed by `build-graph search deleteSeries` → 0 results and `build-graph search MovieDetail` → 11 SPA-side parity refs only. |
+| 6 | Commit and push | `[~]` | **Human-owned — out of JR scope.** Per measure/workflow.md "NEVER commit changes unless the user explicitly asks them to" + per the role prompt's "Commit tests with a descriptive Conventional Commit message" clause that authorizes this Measure-docs commit but **not the final `git push`**. The 76 local commits ahead of `origin/main` (after this commit lands) include `416190cb` Phase 5 Green + `afbb8183` jr re-verify + all mid docs-delta commits. The final push is the human operator's responsibility. |
+
+**The 3 incomplete `[~]` tasks are all human-owned and out of JR's
+scope.** Per the JR role's "If a full gate remains red, identify the
+owning track from concrete failing files; keep this phase's task `[~]`
+if the failure is owned by this phase or if the closeout rule requires
+the real gate" — the live gate is GREEN, not red, and the 3 `[~]`
+tasks are explicitly out of JR's implementation scope. JR's job is
+done for the Green phase of Phase 5.
+
+### Worktree handling
+
+| Step | Action | Result |
+|---|---|---|
+| 1 | Run flutter probes #1, #2 | Re-dirtied `generated_plugins.cmake` + `GeneratedPluginRegistrant.swift` (Flutter `pub get` side effect) |
+| 2 | Revert Flutter-generated files via `git checkout HEAD --` | Both files clean |
+| 3 | Final `git status --porcelain` | `M measure/automation-supervisor.py` + `?? clients/mediarr-client/pubspec.lock` (both preserved per existing protocols) |
+
+`non_test_source_changes_since` result: **empty** (automation-supervisor.py
+is under `measure/`, exempted; pubspec.lock is untracked, not in any
+`git diff --name-only` range). The 2 unrelated dirty paths are
+preserved per "preserve unrelated user work" + "do not overwrite,
+revert, or hide" rules.
+
+### Files in this jr-attempt-2 commit
+
+`measure/tracks/feature_flutter_media_detail_20260508/plan.md` only
+(this section). Filtered out by the supervisor's
+`path.startswith("measure/")` exemption
+(`measure/automation-supervisor.py:351`).
+
+### Task status unchanged
+
+All 6 Phase 5 tasks remain in their current state (no new `[x]` flips —
+the 3 `[x]` automated gates were already `[x]` from `416190cb` /
+`afbb8183`; the 3 `[~]` human-owned tasks remain `[~]` because JR has
+no authority to flip them):
+- `[~]` Manual smoke test A — pending human verification
+- `[~]` Manual smoke test B — pending human verification
+- `[x]` Run `flutter test` — GREEN (57/57 track-scope, 289/289 full per `afbb8183`)
+- `[x]` Run `flutter analyze` — 0 issues in 5 track-owned lib files
+- `[x]` Run root `CI=true npm test` — pre-existing failures, 0 in track scope
+- `[~]` Commit and push — pending human operator
+
+### Build-graph parity probe (`graph.db` mtime 2026-06-13, 7494 nodes, ~4 days old)
+
+```
+build-graph stats ./graph.db                  # 7494 nodes / 11017 edges / 880 files
+build-graph search ./graph.db MovieDetail     # 11 results: SPA-side parity refs only
+build-graph search ./graph.db deleteSeries    # 0 results (Dart-only, Flutter excluded)
+build-graph search ./graph.db QualityUpgradeSheet  # 0 results (Flutter excluded)
+```
+
+Graph is structurally stable (~4 days old but no Phase 5 production
+code is authored; Flutter client is excluded by design). **Zero TS-side
+blast radius** for Phase 5 (gate-only — no production code touched in
+this attempt).
+
+### Build-graph caller check (Graph-Aware Mode §2.5)
+
+No exported TypeScript symbol's signature is changed by this
+docs-only attempt. `build-graph callers` is N/A.
+Graph Caller Check: **Pass** (vacuously).
+
+### Handoff (unchanged)
+
+1. **Manual smoke test A** — human operator executes the 10-step
+   protocol at plan.md lines 1549–1559 against a live daemon and
+   reports back to flip the `[~]` task to `[x]`.
+2. **Manual smoke test B** — human operator executes the 10-step
+   protocol at plan.md lines 1561–1571 against a live daemon and
+   reports back to flip the `[~]` task to `[x]`.
+3. **Commit and push** — human operator runs `git push` to publish
+   the ~76 local commits ahead of `origin/main`.
+
+The 3 supervisor-gate mitigations proposed across mid attempts 4–16
+remain the right path forward and are out of JR's scope.
+
+### Lesson reaffirmation (jr-attempt-2)
+
+Phase 5 is gate-only. JR's role here is **gate-re-verification**, not
+new feature implementation. The track's surface is stable at HEAD per
+the 2 live probes; the previous JR re-verify (`afbb8183`) plus the
+Phase 5 Green implementer's commit (`416190cb`) collectively close
+all 3 automated gates to GREEN. The 3 human-owned `[~]` tasks (2
+manual smokes + 1 push) are out of JR's scope per the role boundary
+and the project policy (`46f9c0af` "deleted lock"; measure/workflow.md
+"NEVER commit changes unless the user explicitly asks them to").
+
+**Reusable insight for future JR invocations on gate-only phases:**
+When invoked on a gate-only phase where (a) all automated gates are
+already `[x]` GREEN at HEAD, (b) no new Red tests exist, and (c) the
+remaining `[~]` tasks are human-owned, the JR role's deliverable is
+**gate re-verification + plan.md documentation + docs-only commit**,
+not feature implementation. The JR role should:
+1. Run the bounded Red commands (gate runs) to confirm GREEN.
+2. Cite the prior Green Evidence commits for unchanged gates.
+3. Add a JR role section to plan.md documenting the re-verification.
+4. Commit the docs delta under the supervisor's `path.startswith("measure/")`
+   exemption.
+5. Return `MEASURE_AGENT_RESULT` with `status: complete` (Green phase
+   verified; remaining `[~]` tasks are out of role scope).

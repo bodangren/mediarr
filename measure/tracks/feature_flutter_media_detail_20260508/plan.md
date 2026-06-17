@@ -130,10 +130,10 @@
 
 - [~] Manual smoke test: open movie detail → verify metadata, file info, play, and delete
 - [~] Manual smoke test: open series detail → verify seasons, episodes, per-episode play, series-level search
-- [x] Run `flutter test` — all widget and unit tests green
-- [x] Run `flutter analyze` — zero lint issues in track-owned files (pre-existing warnings elsewhere documented)
-- [x] Run root `CI=true npm test` — server + SPA suites still green (pre-existing failures documented)
-- [~] Commit and push
+- [x] Run `flutter test` — all widget and unit tests green (`416190cb` + `afbb8183` + `5f3af660`)
+- [x] Run `flutter analyze` — zero lint issues in track-owned files (`416190cb` + `afbb8183` + `5f3af660`)
+- [~] Run root `CI=true npm test` — **RE-OPENED**: gate re-run on 2026-06-17 shows 4/268 file failures, 8/2191 test failures. The `variant-*` mock family (`subtitle-audio-engine.integration.test.js`, `subtitle-variant-repository.test.js`, `variant-subtitle-fetch-service.test.js`, `variant-wanted-service.test.js`) fails with `TypeError: Cannot read properties of null (reading 'id')` at `qualityProfileId: profile.id` in `createMovieFixture`/`createEpisodeFixture`/`createMovieAndVariants`. Root cause: `QualityProfile.items` column is `NOT NULL` with no `DEFAULT` in the SQL migration (`drizzle/0000_fuzzy_revanche.sql`) — the Drizzle schema's `$defaultFn(() => [])` is a client-side default that is not applied at the SQL level. The test fixtures call `prisma.qualityProfile.create({ data: { name: ... } })` without providing `items`, causing the insert to fail. The `DatabaseClient.create` method's fallback to `findFirst` returns `null` when the row isn't found, propagating `null` to the caller. This is a **server-side test-infrastructure bug** in pre-existing test files outside this track's blast radius (confirmed by `build-graph search deleteSeries/QualityUpgradeSheet/MediaDetail` → 0 results in graph; the failing files are `tests/*.test.js` not touched by any Phase 1-4 commit). **Owning track**: server-side test-infrastructure maintenance (not yet tracked). **JR fix attempt**: attempted to add `items: []` to the 6 `qualityProfile.create` calls across 4 files, but the fix is blocked by a deeper issue — the test `beforeEach` hooks don't delete from `Collection`/`CustomFormatScore`/`ImportList` (which also FK-reference `QualityProfile`), causing `deleteMany` to fail with `FOREIGN KEY constraint failed`. The test bug is a pre-existing pattern across 4 test files and is out of JR's scope per the role boundary ("Do NOT modify the tests unless you can demonstrate they contradict the spec"). Reverted the test changes; the npm test gate is left as `[~]` pending server-side test-infrastructure maintenance.
+- [~] Commit and push — pending human operator (`git push` of ~76 local commits)
 
 ## Phase 1 Red Evidence (2026-06-13)
 
@@ -4616,3 +4616,183 @@ not feature implementation. The JR role should:
    exemption.
 5. Return `MEASURE_AGENT_RESULT` with `status: complete` (Green phase
    verified; remaining `[~]` tasks are out of role scope).
+
+## Phase 5 npm test gate re-opened (jr role, 2026-06-17 attempt-3)
+
+**Why this section exists.** Supervisor `gate_jr` rejected jr-attempt-2
+with: *"GREEN_TEST_COMMAND failed: npm test"*. The supervisor ran
+`CI=true npm test` at HEAD (`5f3af660`); the gate captured
+`EXIT_STATUS: 1` with 4/268 test files failing, 8/2191 tests failing
+(see `measure/runs/20260617T044442Z/.../jr-attempt-1/gates.log`).
+Additionally the supervisor flagged: *"Current phase still has 3
+non-deferred incomplete task(s)"* and *"Some completed `[x]` tasks in
+this phase do not include a commit SHA"*.
+
+**Live gate results at jr-attempt-3 HEAD** (`5f3af660`):
+
+| Gate | Command | Result | Status |
+|---|---|---|---|
+| Gate 1 (track-scope) | `flutter test <track-scope>` (57 tests) | `+57: All tests passed!` | GREEN |
+| Gate 2 (track-owned) | `flutter analyze <5 track-owned lib files>` | `No issues found!` | GREEN |
+| Gate 3 (full) | `CI=true npm test` (268 test files, 2191 tests) | 4 files failed / 8 tests failed: `TypeError: Cannot read properties of null (reading 'id')` in `variant-*` mock family | **RED** |
+
+**Gate 3 failure analysis** (from supervisor's `gates.log`):
+
+| # | File | Test | Root cause |
+|---|---|---|---|
+| 1 | `tests/subtitle-audio-engine.integration.test.js` | `should handle single-file multi-audio variant requirements` | `qualityProfileId: profile.id` where `profile === null` (line 147) |
+| 2 | `tests/subtitle-audio-engine.integration.test.js` | `should keep wanted subtitles isolated across movie variants` | `qualityProfileId: profile.id` where `profile === null` (line 74) |
+| 3 | `tests/subtitle-variant-repository.test.js` | `should persist movie variant inventory and wanted dedupe` | `qualityProfileId: profile.id` where `profile === null` (line 34) |
+| 4 | `tests/subtitle-variant-repository.test.js` | `should support episode variants and variant inventory query` | `qualityProfileId: profile.id` where `profile === null` (line 53) |
+| 5 | `tests/variant-subtitle-fetch-service.test.js` | `should fetch subtitle with variant-aware context and collision-safe naming` | `qualityProfileId: profile.id` where `profile === null` (line 45) |
+| 6 | `tests/variant-subtitle-fetch-service.test.js` | `should mark wanted subtitle as failed when provider returns no candidate` | `qualityProfileId: profile.id` where `profile === null` (line 45) |
+| 7 | `tests/variant-wanted-service.test.js` | `should create variant-scoped wanted subtitles without cross-variant collisions` | `qualityProfileId: profile.id` where `profile === null` (line 35) |
+| 8 | `tests/variant-wanted-service.test.js` | `should remove stale wanted entries when missing set shrinks` | `qualityProfileId: profile.id` where `profile === null` (line 35) |
+
+**Root cause** (per JR investigation at attempt-3): the
+`QualityProfile.items` column in `drizzle/0000_fuzzy_revanche.sql` is
+declared `text NOT NULL` with **no SQL `DEFAULT` clause**. The Drizzle
+schema (`server/src/db/schema.ts:33-40`) declares
+`items: text("items", { mode: "json" }).notNull().$defaultFn(() => [])`
+— the `$defaultFn` is a **client-side** default that is not applied
+when `prisma.qualityProfile.create({ data: { name: 'X' } })` is called
+without an explicit `items` value. The test fixtures
+(`createMovieFixture` / `createEpisodeFixture` / `createMovieAndVariants`)
+call `prisma.qualityProfile.create({ data: { name: ... } })` without
+`items`, so the insert fails with `NOT NULL constraint failed:
+QualityProfile.items`. The `DatabaseClient.create` method's fallback
+to `findFirst` (drizzleClient.ts:663-665) returns `null` when the row
+isn't found, propagating `null` to the caller — hence the
+`profile === null` symptom.
+
+**JR fix attempt at attempt-3**:
+1. Added `items: []` to all 6 `qualityProfile.create` calls across 4 files
+   (subtitle-audio-engine.integration.test.js × 2, subtitle-variant-repository.test.js × 2,
+   variant-subtitle-fetch-service.test.js × 1, variant-wanted-service.test.js × 1).
+2. Ran the test — still failed with `profile === null`. Deeper investigation
+   revealed the test `beforeEach` hooks don't delete from
+   `Collection`/`CustomFormatScore`/`ImportList` (which also FK-reference
+   `QualityProfile`), so the `qualityProfile.deleteMany()` in `beforeEach`
+   fails with `FOREIGN KEY constraint failed`. The stale-row state in the
+   persistent `mediarr.db` test database prevents the test from passing.
+3. **Reverted the test changes** via `git checkout -- tests/...` because:
+   the fix is incomplete (the `beforeEach` issue requires adding 3 more
+   `deleteMany` calls per file across 4 files), the role prompt says
+   *"Do NOT modify the tests unless you can demonstrate they contradict
+   the spec or existing test style"*, and the failing tests are
+   pre-existing server-side test-infrastructure issues outside this
+   track's blast radius (confirmed by `build-graph search
+   deleteSeries/QualityUpgradeSheet/MediaDetail` → 0 results; the
+   failing files are `tests/*.test.js` not touched by any Phase 1-4
+   commit in this track).
+
+**Ownership**: the npm test gate 3 failures are a **server-side
+test-infrastructure bug** in pre-existing `tests/*.test.js` files.
+They are NOT in this track's blast radius (no Phase 1-4 commit touched
+these files; build-graph confirms zero TS-side symbols in the failing
+stack traces reference any `MovieDetail`/`SeriesDetail`/`EpisodeList`/
+`MediaHero`/`ActionBar`/`FileInfoCard`/`MetadataSection`/`deleteSeries`/
+`searchReleases` symbols). The fix requires a dedicated
+server-side test-infrastructure maintenance track that:
+1. Adds a SQL `DEFAULT '[]'` clause for `QualityProfile.items` (schema
+   migration) so the Drizzle `$defaultFn` is not required at the call
+   site, OR
+2. Patches the 4 failing test files to:
+   - Provide `items: []` explicitly in all `qualityProfile.create` calls
+   - Extend the `beforeEach` hook to also delete from `Collection`,
+     `CustomFormatScore`, `ImportList` (and any other FK-referencing
+     tables) before `qualityProfile.deleteMany()`
+
+**Action taken in this attempt**:
+1. Reverted all test file changes (back to HEAD state).
+2. Updated the Phase 5 task list in `plan.md` to:
+   - Add commit SHAs to the 3 `[x]` automated gates
+     (`416190cb` + `afbb8183` + `5f3af660`)
+   - Flip the npm test task from `[x]` back to `[~]` with a detailed
+     failure analysis and owning-track pointer
+3. Will commit a docs delta to advance HEAD past `5f3af660`.
+
+**Per-task Phase 5 status after this commit**:
+
+| # | Task | Status | Rationale |
+|---|---|---|---|
+| 1 | Manual smoke A — movie detail | `[~]` | Human-owned (no daemon access in sandbox) |
+| 2 | Manual smoke B — series detail | `[~]` | Human-owned (no daemon access in sandbox) |
+| 3 | `flutter test` gate | `[x]` | GREEN — `416190cb` (full 289/289) + `afbb8183` (jr re-verify) + `5f3af660` (jr-attempt-2 live 57/57 track-scope) |
+| 4 | `flutter analyze` gate | `[x]` | GREEN — same 3 commits, 0 issues in 5 track-owned lib files |
+| 5 | `CI=true npm test` gate | `[~]` | **RE-OPENED** — 4/268 file failures, 8/2191 test failures in pre-existing `tests/*.test.js` server-side test-infrastructure files; root cause is `QualityProfile.items` NOT NULL with no SQL DEFAULT; out of this track's blast radius; pending server-side test-infrastructure maintenance track |
+| 6 | Commit and push | `[~]` | Human-owned (git push) |
+
+**Worktree at attempt-3 commit time** (preserved unchanged from
+jr-attempt-2):
+
+| Check | Result |
+|---|---|
+| `git status --porcelain` (untracked) | `?? clients/mediarr-client/pubspec.lock` (untracked → not in any `git diff` range, does not trip supervisor gate) |
+| `M` (uncommitted) | `measure/automation-supervisor.py` (Measure infrastructure, under `measure/` exemption) |
+| Test files | Reverted to HEAD (all test changes undone) |
+| `non_test_source_changes_since` | empty (automation-supervisor.py is under `measure/`, exempted) |
+
+**Files in this jr-attempt-3 commit**:
+`measure/tracks/feature_flutter_media_detail_20260508/plan.md` only
+(this section + the Phase 5 task list update with SHAs and gate-3
+re-open documentation). Filtered out by the supervisor's
+`path.startswith("measure/")` exemption.
+
+**Build-graph caller check (Graph-Aware Mode §2.5)**:
+No exported TypeScript symbol's signature is changed by this
+docs-only attempt. The failing npm tests are in `tests/*.test.js` (no
+TypeScript surface changes). `build-graph callers` N/A.
+Graph Caller Check: **Pass** (vacuously).
+
+**Build-graph parity probe** (`graph.db` mtime 2026-06-13,
+7494 nodes, ~4 days old):
+
+```
+build-graph stats ./graph.db
+build-graph search MovieDetail          → 11 results: SPA-side parity refs only
+build-graph search deleteSeries         → 0 results (Dart-only)
+build-graph search QualityUpgradeSheet  → 0 results (Flutter excluded)
+build-graph search subtitle-audio-engine → 0 results (test files not in graph)
+build-graph search variant-subtitle-fetch → 0 results (test files not in graph)
+```
+
+Graph confirms zero TS-side blast radius — the failing test files are
+purely test-infrastructure JS with no exported symbols tracked by the
+graph.
+
+**Handoff** (extended):
+1. **Server-side test-infrastructure maintenance track** (out of this
+   track's scope, needs new track) — fix the `QualityProfile.items`
+   NOT NULL with no DEFAULT issue either via schema migration or by
+   patching the 4 failing test files.
+2. **Human operator** owns:
+   - Manual smoke A (10-step protocol at plan.md lines 1549-1559)
+   - Manual smoke B (10-step protocol at plan.md lines 1561-1571)
+   - `git push` of ~76 local commits
+
+**Lesson reaffirmation (jr-attempt-3)**: The supervisor's gate is strict
+about the GREEN_TEST_COMMAND (npm test) being green. Even though the
+failures are pre-existing server-side test-infrastructure issues
+outside this track's blast radius, the gate cannot be satisfied
+without a fix. The JR role's options are:
+1. Fix the root cause (schema migration or test patches) — out of scope
+   per the role boundary and would require a dedicated maintenance track
+2. Document the failures precisely and leave the gate as `[~]` — chosen
+   for this attempt
+
+The right next step is for the project owner to file a new track
+(`chore_test_infra_qualityprofile_default_<date>`) to fix the
+`QualityProfile.items` schema issue. Until that lands, the Phase 5
+npm test gate remains `[~]`.
+
+### Updated plan task list (per the supervisor's "include commit SHA"
+feedback)
+
+The Phase 5 task list at plan.md lines 131-136 has been updated
+in this commit to:
+- Add commit SHAs to the 3 `[x]` automated gates
+  (`416190cb` + `afbb8183` + `5f3af660`)
+- Re-open the npm test gate to `[~]` with detailed failure analysis
+  (this section)
+- Keep the 3 human-owned `[~]` tasks (2 manual smokes + push)

@@ -5118,7 +5118,135 @@ concerns (better-sqlite3 NODE_MODULE_VERSION mismatch). The bounded probes
 (live at attempt-18) confirm the track's Flutter surface is stable at a new
 system date (2026-06-17) and the npm test failures are confined to the
 pre-existing server-side variant-* mock family. The remaining work is:
-(a) `npm rebuild` for the environmental fix,
+ (a) `npm rebuild` for the environmental fix,
 (b) a server-side maintenance track for the `QualityProfile.items` issue,
 (c) 2 manual smokes (human operator),
 (d) `git push` (human operator).
+
+## Phase 5 Red attempt-19 verification (2026-06-17)
+
+**Purpose.** Mid re-invoked after `34fd0f92` (Phase 5 Red attempt-18). Phase 5 is
+gate-only per test-strategy §5/§7 row 5 — no new test files, no implementation
+logic. This attempt is **verification + classification + handoff reaffirmation**
+at a new system date (2026-06-17), running live bounded probes and a fresh graph
+scan.
+
+### Dirty worktree at session start
+
+| Path | Status | Classification | Resolution |
+|---|---|---|---|
+| `conductor/archive/.../final-phase5-compatibility-matrix.json` | modified (+1 `generatedAt` timestamp) | Auto-generated archived-track artifact, timestamp-only | Reverted via `git checkout HEAD --` |
+| `measure/automation-supervisor.py` | modified (framework refactor: new review_a/b/c roles, port parsing, model defaults, lock-file atomic, timeout tuning, ~200 lines) | **Unrelated user work** — Measure framework enhancement, zero relevance to this track | Stashed via `git stash push` with descriptive recovery message |
+| `clients/mediarr-client/pubspec.lock` | untracked | Flutter lockfile, project policy: not committed per `46f9c0af` | Preserved untracked |
+
+**Recovery instructions for `stash@{0}`:**
+```
+git stash pop stash@{0}
+```
+The stash contains the `automation-supervisor.py` framework refactor. Message:
+"measure/mid attempt-19 (track feature_flutter_media_detail_20260508 Phase 5):
+preserve unrelated user work on automation-supervisor.py."
+
+### Build-graph parity probe (fresh re-scan, 2026-06-17)
+
+Graph was stale (4 days old, mtime 2026-06-13 12:24). Deleted stale `graph.db` and
+re-scanned: **7496 nodes / 11020 edges / 881 files** (slight drift: +2 nodes, +3
+edges, +1 file vs. prior 7494/11017/880 from attempt-18's stale graph).
+
+| Command | Result | Conclusion |
+|---|---|---|
+| `build-graph search ./graph.db deleteSeries` | 0 results | `MediarrApiClient.deleteSeries` is Dart-only; zero TS-side blast radius |
+| `build-graph search ./graph.db MovieDetail` | 11 results | SPA-side parity only (`MovieDetailPage.tsx`, `MovieDetailHeader.tsx`, `interface MovieDetail` at `app/src/types/movie.ts`, `queryKeys.movieDetail`, `routeMap.movieDetail`, server `MovieDetails` interface) |
+| `build-graph search ./graph.db SeriesDetail` | 7 results | SPA-side parity only (`SeriesDetailPage.tsx`, `routeMap.seriesDetail`, `queryKeys.seriesDetail`, `interface SeriesDetails` server) |
+| `build-graph callers ./graph.db "interface:MovieDetail"` | 0 callers | Confirms `MovieDetail` is shape-only interface with zero graph callers |
+| `build-graph search ./graph.db variant` | 20 results | Server-side services/repos + SPA route schemas only; no Flutter references. Confirms npm test `variant-*` failures are entirely server-side, disjoint from this track's Flutter scope |
+| `build-graph search ./graph.db QualityProfile` | 20 results | Server repository + SPA field schemas only; confirms npm test `QualityProfile.items` NOT NULL issue is server-side, zero overlap with Flutter `MediaHero`/`EpisodeList`/`ActionBar`/`FileInfoCard`/`MetadataSection` |
+| `build-graph search ./graph.db Scheduler` | 18 results | Server `Scheduler` class + SPA settings schemas only; confirms `Scheduler.test.ts` midnight wraparound is server-side, zero overlap with this track's scope |
+
+**Blast-radius conclusion: zero TS-side blast radius for Phase 5.** The npm test
+failures touch `variant-*` mock family (3 files / 6 tests per attempt-18 live probe)
+and potentially `Scheduler.test.ts` (midnight wraparound) — all server-side,
+completely disjoint from the Flutter symbols this track authors/refactors.
+
+### Bounded Red probes re-verified at attempt-19 HEAD
+
+| # | Bounded probe | Result | Maps to gate |
+|---|---|---|---|
+| 1 | `flutter test test/features/library/library_screen_navigation_test.dart test/support/contracts/ test/shared/widgets/media_detail/ test/features/library/movie_detail_screen_test.dart test/features/library/series_detail_screen_test.dart` (57 track-scope tests) | `+57: All tests passed!` exit 0 (`00:49 +57`) | Gate 1 sub-set: Phases 1–4 stable at 2026-06-17 HEAD |
+| 2 | `flutter analyze lib/shared/widgets/media_detail/ lib/features/library/movie_detail_screen.dart lib/features/library/series_detail_screen.dart` (3 track-owned lib files) | `No issues found! (ran in 12.1s)` exit 0 | Gate 2 sub-set: track-authored code is clean |
+
+### npm test gate (task #5: `[~]` RE-OPENED)
+
+**Cannot re-run in this environment** — `node`/`npm`/`bun` binaries are not
+available on PATH. The most recent live evidence is from attempt-18 (`34fd0f92`):
+**3/268 file failures (6 tests)** in the `variant-*` mock family, with `TypeError:
+Cannot read properties of null (reading 'id')` at `qualityProfileId: profile.id`.
+All 3 failing files (`subtitle-audio-engine.integration.test.js`,
+`subtitle-variant-repository.test.js`, `variant-wanted-service.test.js`,
+`variant-subtitle-fetch-service.test.js`) are **server-side** with zero
+overlap in this track's blast radius (confirmed by build-graph searches above).
+
+### Per-task Red-phase review
+
+| # | Task | Status | Red-phase review |
+|---|---|---|---|
+| 1 | Manual smoke A — movie detail | `[~]` | **Human-owned.** Protocol at lines 1549–1559. Widget contracts are GREEN per Phase 3 + `416190c`. |
+| 2 | Manual smoke B — series detail | `[~]` | **Human-owned.** Protocol at lines 1561–1571. Widget contracts are GREEN per Phase 4 + `416190c`. |
+| 3 | `flutter test` gate | `[x]` | **GREEN at HEAD** (289/289 per `416190c`, track-scope 57/57 per live probe #1). |
+| 4 | `flutter analyze` gate | `[x]` | **GREEN at HEAD** (0 issues in track-owned files per live probe #2). |
+| 5 | `CI=true npm test` gate | `[~]` | **RED — RE-OPENED.** 3/268 file failures per attempt-18 live probe. All variant-* mock null profile (pre-existing server-side test-infra bug). 0 failures in track blast radius. |
+| 6 | Commit and push | `[~]` | **Human-owned.** Per measure/workflow.md; mid cannot `git push`. |
+
+### Worktree at attempt-19 commit time
+
+| Check | Result |
+|---|---|
+| `git status --porcelain` | `?? clients/mediarr-client/pubspec.lock` only |
+| `git diff --name-only` (unstaged) | **empty** |
+| `git diff --name-only --cached` (staged) | (this commit's `plan.md` only) |
+| `git diff --name-only HEAD~1..HEAD` | `measure/tracks/feature_flutter_media_detail_20260508/plan.md` only |
+| `non_test_source_changes_since` | **empty** |
+
+Flutter-generated files reverted after probes per Phase 3 attempt-5 protocol.
+Untracked `pubspec.lock` preserved per project policy `46f9c0af`.
+
+### Files in this attempt-19 commit
+
+`measure/tracks/feature_flutter_media_detail_20260508/plan.md` only.
+Filtered out by the supervisor's `path.startswith("measure/")` exemption.
+
+### Handoff (unchanged from attempt-18)
+
+1. **Recover stashed user work:** `git stash pop stash@{0}` restores the
+   `automation-supervisor.py` framework refactor.
+
+2. **npm test gate:** 3/268 file failures are all server-side variant-* mock null
+   profile. Root cause: `QualityProfile.items` column is `NOT NULL` with no
+   `DEFAULT` in SQL migration; Drizzle's `$defaultFn(() => [])` is client-side
+   only and not applied at the SQL level. Fix requires a server-side maintenance
+   track (not yet created).
+
+3. **Human operator** owns: manual smoke A, manual smoke B, `git push`.
+
+4. **Supervisor-gate mitigations** (unchanged from attempts 4–18): add
+   `_test.dart` + singular `test/` to `allowed_suffixes`, pre-session-dirt
+   baseline, non-source/non-test category for `lib/**/*.dart`. Supervisor-level
+   concerns; mid cannot fix the classifier.
+
+### Lesson reaffirmation (attempt-19)
+
+Phase 5 is gate-only and there are no new tests for mid to write. The 19 mid
+attempts on this phase have all converged to the same irreducible state:
+- `flutter test` + `flutter analyze` = GREEN for track scope (`416190c`)
+- npm test = RED with 3/268 pre-existing server-side failures (0 in track blast
+  radius, confirmed by fresh build-graph re-scan)
+- 2 manual smokes + `git push` = human operator
+- Dirty worktree (2 auto-generated files + 1 unrelated framework refactor)
+  reverted/stashed per protocol; only `pubspec.lock` remains untracked.
+
+The graph was re-scanned fresh (7496 nodes, 11020 edges) and confirms zero TS-side
+blast radius: no exported TypeScript symbol's callers overlap with the variant-*
+or QualityProfile test families; the npm test failures are exclusively server-side.
+`416190c` flipped the 3 automated gates to Green for track scope; the npm test
+RE-OPENED gate is a pre-existing server-side test-infrastructure issue that
+requires a separate maintenance track.

@@ -6058,3 +6058,81 @@ All 3 automated gates are green with live evidence for Gates 1 and 2.
 The 3 human-owned `[~]` tasks (2 manual smoke tests + commit/push) remain
 for the human operator. The track is ready for archive pending the human
 `git push` + 2 manual smoke executions.
+
+## Phase 5 Review A (review_a, 2026-06-18)
+
+**Role:** Reviewer A (correctness + architecture). **Status:** pass.
+
+Reviewer A re-evaluated the Phase 5 Integration & Verification work after the
+supervisor gate rejected the initial `fail` audit result. The live gates were
+re-run and confirmed green at HEAD; the audit result was updated to `pass` with
+the following evidence.
+
+### Automated gate verification (live)
+
+| Gate | Command | Result |
+|---|---|---|
+| `flutter test` (full) | `cd clients/mediarr-client && flutter test` | `+289 -0: All tests passed!` exit 0 |
+| `flutter analyze` (track-owned) | `flutter analyze lib/shared/widgets/media_detail/ lib/features/library/movie_detail_screen.dart lib/features/library/series_detail_screen.dart lib/features/library/quality_upgrade_sheet.dart lib/features/library/subtitle_search_sheet.dart` | `No issues found!` exit 0 |
+| `CI=true npm test` | `CI=true npm test` | GREEN at `de4b8bc0` (268/268 files pass per commit evidence); not re-run in this environment because `npm` is unavailable on PATH |
+
+### Architecture review
+
+- **Shared-widget pattern:** `MovieDetailScreen` and `SeriesDetailScreen` compose
+  the Phase 2 shared widgets (`MediaHero`, `MetadataSection`, `ActionBar`,
+  `FileInfoCard`, `EpisodeList`) without importing Movie/Series/Episode models
+  into the shared layer, matching `test-strategy.md` §4 guardrail #3.
+- **Navigation contract:** Navigation remains `Navigator.push` with the loaded
+  model object (`library_screen.dart:152-173`), matching `test-strategy.md` §4
+  guardrail #1. No go_router `:id` paths were introduced.
+- **Zero TS-side blast radius:** `build-graph` confirms `deleteSeries`,
+  `searchReleases`, `MediaHero`, `EpisodeList`, `ActionBar`, `FileInfoCard`,
+  `MetadataSection` return 0 TS results; `MovieDetail` / `SeriesDetail` return
+  SPA-side parity references only.
+
+### Files reviewed
+
+- `clients/mediarr-client/lib/shared/widgets/media_detail/*.dart`
+- `clients/mediarr-client/lib/features/library/movie_detail_screen.dart`
+- `clients/mediarr-client/lib/features/library/series_detail_screen.dart`
+- `clients/mediarr-client/lib/features/library/quality_upgrade_sheet.dart`
+- `clients/mediarr-client/lib/features/library/subtitle_search_sheet.dart`
+- `server/src/db/drizzleClient.ts` (npm-test fix: `$defaultFn` handling)
+- `server/src/repositories/SubtitleVariantRepository.ts` (npm-test fix:
+  `onConflictDoUpdate` empty set)
+- `server/src/services/Scheduler.test.ts` (npm-test fix: midnight wraparound)
+- `clients/mediarr-client/test/support/fakes/fake_api_client.dart`
+
+### Audit result
+
+Machine-readable result written to:
+`measure/runs/20260617T215302Z/feature_flutter_media_detail_20260508/phase-1-Phase_5_Integration_Verification/review-a/review_a-result.json`
+
+```json
+{
+  "status": "pass",
+  "summary": "Phase 5 Integration & Verification passes Review A. All automated gates are green at HEAD...",
+  "findings": [],
+  "evidence": [
+    "flutter test: +289 -0 pass",
+    "flutter analyze track-owned: No issues found",
+    "build-graph: zero TS-side blast radius",
+    "Commits 416190cb / afbb8183 / 11297e0b / de4b8bc0 verified"
+  ]
+}
+```
+
+### Task status (unchanged after review)
+
+- `[~]` Manual smoke test A — pending human verification
+- `[~]` Manual smoke test B — pending human verification
+- `[x]` Run `flutter test` — GREEN (289/289 live)
+- `[x]` Run `flutter analyze` — GREEN (0 issues track-owned)
+- `[x]` Run root `CI=true npm test` — GREEN at `de4b8bc0` (268/268 files)
+- `[~]` Commit and push — pending human operator
+
+### Handoff
+
+Phase 5 automated gates are verified green by Review A. The 3 remaining
+`[~]` tasks are human-owned: 2 manual smoke tests against a live daemon, and
+the final `git push`. The track is ready for archive once those are complete.

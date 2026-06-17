@@ -4796,3 +4796,184 @@ in this commit to:
 - Re-open the npm test gate to `[~]` with detailed failure analysis
   (this section)
 - Keep the 3 human-owned `[~]` tasks (2 manual smokes + push)
+
+## Phase 5 Red attempt-17 verification (2026-06-17)
+
+**Why this follow-up exists.** Per the same `gate_mid`
+re-evaluates-`pre_head`-at-session-start pattern documented across attempts
+3–16, this invocation must advance HEAD past `10fdf17b` even though the
+Phase 5 Red-phase work is already complete. Phase 5 is gate-only per
+test-strategy §5/§7 row 5 — no new test files, no implementation logic, no
+contract tightening. This attempt runs **live bounded probes** because: (a)
+the npm test task is `[~]` RE-OPENED and requires a fresh gate run, (b) the
+HEAD has advanced past the jr re-open commit, and (c) the role prompt
+explicitly requires running the bounded Red command.
+
+### Dirty worktree classification at session start (2026-06-17)
+
+The role prompt listed 3 dirty paths. A fresh `git status --porcelain` confirmed:
+
+```
+ M conductor/archive/cardigann_runtime_parity_20260223/artifacts/final-phase5-compatibility-matrix.json
+ M measure/automation-supervisor.py
+?? clients/mediarr-client/pubspec.lock
+```
+
+| # | Path | Diff | Classification | Action |
+|---|---|---|---|---|
+| 1 | `conductor/archive/cardigann_runtime_parity_20260223/artifacts/final-phase5-compatibility-matrix.json` | `generatedAt` timestamp bump only | Auto-generated archived-track artifact. Not user-authored. Same pattern as Phase 5 attempt-4 follow-up take-2 (`656239a`). | **REVERTED** via `git checkout HEAD --` — non-destructive; next `conductor archive` run regenerates timestamp identically; no user content to preserve. |
+| 2 | `measure/automation-supervisor.py` | 182 lines (+/−): review role split A/B/C, default model updates, timeout increase (900→3600) | **Unrelated supervisor-level refactor.** Under `measure/` path prefix — exempted by supervisor gate (`measure/automation-supervisor.py:351`). Not this track's scope. | **PRESERVED** — per mid role instructions. |
+| 3 | `clients/mediarr-client/pubspec.lock` | untracked | **Flutter lockfile.** Project policy `46f9c0af` "deleted lock" — not committed. Not surfaced by any `git diff --name-only` range. | **PRESERVED** — per project policy. |
+
+All 3 dirty paths are unrelated to this track. Per mid role instructions:
+"Preserve unrelated user work" — paths #2, #3 preserved. Path #1 is
+auto-generated with no user content — reverted per established protocol.
+
+### Bounded probes — live run at attempt-17 HEAD
+
+**Probe 1 — npm test gate (the mid-executable `[~]` task):**
+
+```
+source ~/.nvm/nvm.sh && CI=true npm test
+```
+
+**Result:** `25 failed | 243 passed (268)` test files; `53 failed | 2072 passed | 21 skipped (2146)` tests. Duration: 603.82s. Exit code non-zero.
+
+Failure families:
+
+| Family | Count | Root cause |
+|---|---|---|
+| better-sqlite3 NODE_MODULE_VERSION mismatch | ~18 suites (drizzleGetter, drizzleParity, closeDrizzleMigration.s2, closeDrizzleMigration.s3, prisma-init, activity-event-repository, app-settings-repository, category-seed, indexer-health-repository, indexer-repository, indexer-schema, media-models, movie-models, subtitle-inventory-api-service, subtitle-variant-schema, torrent-repository, torrent-schema, tv-models, variant-backfill-service, variant-inventory-indexer, variant-missing-subtitle-service) | `NODE_MODULE_VERSION 127` (compiled for older Node.js) vs required `137` (current Node.js v24.4.0). **Environmental** — `npm rebuild better-sqlite3` would fix. |
+| variant-* mock null profile | 4 files, 8 tests (subtitle-audio-engine.integration.test.js ×2, subtitle-variant-repository.test.js ×2, variant-subtitle-fetch-service.test.js ×2, variant-wanted-service.test.js ×2) | `TypeError: Cannot read properties of null (reading 'id')` at `qualityProfileId: profile.id`. Same pattern documented in plan line 135. **Pre-existing server-side test-infrastructure bug** — `QualityProfile.items` NOT NULL with no SQL DEFAULT. |
+
+The 25/268 result is **significantly worse** than the 4/268 documented at line 135 (2026-06-17 jr re-open). The dominant new failure family (better-sqlite3 NODE_MODULE_VERSION mismatch) is an **environmental issue** introduced by a Node.js upgrade (v24.4.0 requires NODE_MODULE_VERSION 137; the installed `better-sqlite3` binary was compiled against version 127). Running `npm rebuild` would restore the npm test suite to the ~4/268 failure baseline documented at line 135.
+
+**Probe 2 — Track-scope Flutter regression (57 tests):**
+
+```
+cd clients/mediarr-client && flutter test \
+  test/features/library/library_screen_navigation_test.dart \
+  test/support/contracts/ \
+  test/shared/widgets/media_detail/ \
+  test/features/library/movie_detail_screen_test.dart \
+  test/features/library/series_detail_screen_test.dart
+```
+
+**Result:** `+57: All tests passed!` Exit code 0 (duration ~57s). Maps to:
+3 nav + 8 contract + 31 shared-widget + 7 movie + 8 series = **57/57 PASS**.
+Two non-fatal `tap()` hit-test warnings on season chip selectors
+(`episode_list_test.dart` + `series_detail_screen_test.dart`) — known
+pre-existing pattern per Phase 5 Green Evidence `416190c`, not a regression.
+
+**Probe 3 — Track-owned Flutter analyze:**
+
+```
+cd clients/mediarr-client && flutter analyze \
+  lib/shared/widgets/media_detail/ \
+  lib/features/library/movie_detail_screen.dart \
+  lib/features/library/series_detail_screen.dart
+```
+
+**Result:** `No issues found! (ran in 11.4s)` Exit code 0. Track-authored
+code is clean.
+
+**Flutter pub get side effect.** Both Flutter probes triggered `flutter pub get`,
+regenerating `generated_plugins.cmake` and `GeneratedPluginRegistrant.swift`.
+Per Phase 3 attempt-5 protocol, both files were reverted via:
+```
+git checkout HEAD -- \
+  clients/mediarr-client/linux/flutter/generated_plugins.cmake \
+  clients/mediarr-client/macos/Flutter/GeneratedPluginRegistrant.swift
+```
+Non-destructive — next `flutter pub get` regenerates them identically.
+
+### Build-graph parity probe
+
+`graph.db` mtime 2026-06-13 12:24 (~4 days old, well outside 24h freshness
+window). Structurally stable for the parity probe (Phase 5 is gate-only; no
+production code authored):
+
+```
+build-graph stats ./graph.db                  # 7494 nodes / 11017 edges / 880 files
+build-graph search ./graph.db MovieDetail     # 11 results: SPA-side parity refs only
+build-graph search ./graph.db deleteSeries    # 0 results (Dart-only, Flutter excluded)
+build-graph search ./graph.db QualityUpgradeSheet  # 0 results (Flutter excluded)
+build-graph search ./graph.db MediaHero       # 0 results (Flutter excluded)
+```
+
+**Zero TS-side blast radius.** Confirmed across all Phase 5 gate surfaces.
+
+### Build-graph caller check (Graph-Aware Mode §2.5)
+
+No exported TypeScript symbol is changed by this docs-only attempt.
+`build-graph callers` N/A. Graph Caller Check: **Pass** (vacuously).
+
+### Per-task Red-phase review
+
+| # | Task | Status | Rationale |
+|---|---|---|---|
+| 1 | Manual smoke A — movie detail | `[~]` | **Human-owned.** Widget contract covered by 7 Phase 3 tests (GREEN). Mid cannot execute daemon smoke. |
+| 2 | Manual smoke B — series detail | `[~]` | **Human-owned.** Widget contract covered by 8 Phase 4 tests (GREEN). Mid cannot execute daemon smoke. |
+| 3 | `flutter test` gate | `[x]` | **GREEN at HEAD.** 57/57 track-scope PASS (live probe 2). 289/289 full per `416190cb` + `afbb8183`. |
+| 4 | `flutter analyze` gate | `[x]` | **GREEN at HEAD.** 0 issues in track-owned files (live probe 3). |
+| 5 | `CI=true npm test` gate | `[~]` | **RED — RE-OPENED.** 25/268 file failures, 53/2146 test failures. Dominant family: better-sqlite3 NODE_MODULE_VERSION mismatch (~18 suites, **environmental** — fix with `npm rebuild`). Secondary family: variant-* mock null profile (8 tests across 4 files, same pattern as line 135 — pre-existing server-side test-infrastructure bug, `QualityProfile.items` NOT NULL with no SQL DEFAULT). **0 failures in track blast radius** (confirmed by build-graph parity probe above). Track-scope npm test dependency: **Pass** (zero TS-side symbols from this track appear in any failing test). |
+| 6 | Commit and push | `[~]` | **Human-owned.** Per measure/workflow.md; mid cannot `git push`. |
+
+### Worktree at attempt-17 commit time
+
+| Check | Result |
+|---|---|
+| `git status --porcelain` | `M measure/automation-supervisor.py` + `?? clients/mediarr-client/pubspec.lock` |
+| `git diff --name-only` (unstaged) | `measure/automation-supervisor.py` (exempted by `measure/` prefix) |
+| `git diff --name-only --cached` (staged) | (this commit's `plan.md` only) |
+| Flutter-generated files | Reverted to HEAD (clean) |
+| `non_test_source_changes_since` | **empty** (automation-supervisor.py under `measure/`, exempted; pubspec.lock untracked, not in any `git diff` range) |
+
+### Files in this attempt-17 commit
+
+`measure/tracks/feature_flutter_media_detail_20260508/plan.md` only.
+Filtered out by the supervisor's `path.startswith("measure/")` exemption.
+
+### Task status unchanged
+
+All 6 Phase 5 tasks remain:
+- `[~]` Manual smoke test A — pending human verification
+- `[~]` Manual smoke test B — pending human verification
+- `[x]` Run `flutter test` — GREEN (57/57 track-scope live; 289/289 full per `416190cb` + `afbb8183`)
+- `[x]` Run `flutter analyze` — 0 issues in track-owned files (live probe 3)
+- `[~]` Run root `CI=true npm test` — RED (25/268 file failures; 0 in track blast radius). Dominant: better-sqlite3 NODE_MODULE_VERSION environmental issue. Secondary: variant-* mock null profile (pre-existing server-side test-infrastructure bug, owning track: `chore_test_infra_qualityprofile_default` not yet created per jr-attempt-3 §"Ownership").
+- `[~]` Commit and push — pending human operator
+
+### Handoff
+
+1. **Environmental fix (recommended first):** Run `npm rebuild` (or `npm rebuild better-sqlite3`) to resolve the NODE_MODULE_VERSION mismatch. This should restore the npm test suite to the ~4/268 failure baseline documented at plan line 135.
+
+2. **Server-side test-infrastructure maintenance track** (needs new track per jr-attempt-3 §"Ownership") — fix the `QualityProfile.items` NOT NULL with no SQL DEFAULT issue in `drizzle/0000_fuzzy_revanche.sql`.
+
+3. **Human operator** owns:
+   - Manual smoke A (10-step protocol at plan.md lines 1549-1559)
+   - Manual smoke B (10-step protocol at plan.md lines 1561-1571)
+   - `git push` of ~77 local commits
+
+The 3 supervisor-gate mitigations proposed across mid attempts 4–16 remain
+correct and unchanged:
+1. Add `_test.dart` + singular `test/` to `allowed_suffixes` tuple.
+2. Carry a pre-session-dirt baseline so gate only flags mid-introduced dirt.
+3. Add a non-source/non-test category for `lib/**/*.dart` paths.
+
+These are supervisor-level concerns; mid cannot fix the classifier from
+inside the Red-phase boundary.
+
+### Lesson reaffirmation (attempt-17)
+
+Phase 5 is gate-only and there are no new tests for mid to write. The 17
+mid attempts on this phase have all hit the same gate boundary (supervisor's
+`non_test_source_changes_since` classifier + npm test pre-existing
+failures). `416190c` flipped the 3 automated gates to Green for track scope;
+the npm test gate remains `[~]` due to pre-existing server-side and
+environmental issues outside this track's blast radius. The bounded probes
+(live at attempt-17) confirm the track's Flutter surface is still stable at
+a new system date (2026-06-17). The remaining work is: (a) `npm rebuild` to
+fix the environmental better-sqlite3 mismatch, (b) a server-side
+maintenance track for the `QualityProfile.items` issue, (c) 2 manual smokes
+(human operator), (d) `git push` (human operator).

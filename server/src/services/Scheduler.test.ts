@@ -238,7 +238,7 @@ describe('Scheduler core contract', () => {
 
     it('returns tomorrow for a daily cron when today\'s run has already passed', () => {
       const now = new Date();
-      const passedHour = now.getHours() === 0 ? 23 : now.getHours() - 1;
+      const passedHour = now.getHours() === 0 ? 0 : now.getHours() - 1;
       const expression = `0 ${passedHour} * * *`;
       scheduler.schedule('passed-daily', expression, () => undefined);
       const meta = scheduler.listJobsMeta().find((m) => m.name === 'passed-daily');
@@ -250,14 +250,13 @@ describe('Scheduler core contract', () => {
 
     it('returns today for a daily cron when today\'s run has not yet passed', () => {
       const now = new Date();
-      // Use hour 1 to avoid the midnight wraparound edge case:
-      // when current hour is 23, hour 0 means midnight (tomorrow).
-      const futureHour = now.getHours() >= 22 ? 1 : now.getHours() + 1;
+      const futureHour = now.getHours() >= 23 ? 0 : now.getHours() + 1;
       const expression = `0 ${futureHour} * * *`;
       scheduler.schedule('future-daily', expression, () => undefined);
       const meta = scheduler.listJobsMeta().find((m) => m.name === 'future-daily');
       const next = new Date(meta!.nextRunAt!);
-      expect(next.getDate()).toBe(now.getDate());
+      const expectedDate = futureHour > now.getHours() ? now.getDate() : now.getDate() + 1;
+      expect(next.getDate()).toBe(expectedDate);
     });
 
     it('returns the next */N minute boundary', () => {

@@ -128,12 +128,12 @@
 > `pubspec.lock` is preserved per project policy
 > (commit `46f9c0af`).
 
-- [~] Manual smoke test: open movie detail → verify metadata, file info, play, and delete
-- [~] Manual smoke test: open series detail → verify seasons, episodes, per-episode play, series-level search
+- [~] Manual smoke test: open movie detail → verify metadata, file info, play, and delete (deferred to human operator — requires running daemon + built Flutter client)
+- [~] Manual smoke test: open series detail → verify seasons, episodes, per-episode play, series-level search (deferred to human operator — requires running daemon + built Flutter client)
 - [x] Run `flutter test` — all widget and unit tests green (`416190cb` + `afbb8183` + `5f3af660`)
 - [x] Run `flutter analyze` — zero lint issues in track-owned files (`416190cb` + `afbb8183` + `5f3af660`)
 - [x] Run root `CI=true npm test` — GREEN (`11297e0b`): 268/268 pass. Fixed 3 root causes: (1) removed vitest-hoisted Bun better-sqlite3 mock from 4 variant test files, (2) added raw-SQL fallback + $defaultFn handling in DatabaseClient.create, (3) fixed onConflictDoUpdate empty set in SubtitleVariantRepository. Scheduler time-sensitive test also fixed.
-- [~] Commit and push — pending human operator (`git push` of ~76 local commits)
+- [~] Commit and push — pending human operator (`git push` of ~76 local commits) (deferred to human operator per project policy)
 
 ## Phase 1 Red Evidence (2026-06-13)
 

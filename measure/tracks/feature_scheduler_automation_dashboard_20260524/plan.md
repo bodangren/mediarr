@@ -24,6 +24,27 @@
 > - `M measure/automation-supervisor.py` — unrelated framework-internal change (model name + prompt prefixes for other roles); preserved, not included in this track's commit.
 > - `?? clients/mediarr-client/pubspec.lock` — Flutter client (out of scope per test-strategy.md §4); generated/ignorable.
 > - `?? measure/tracks/feature_scheduler_automation_dashboard_20260524/test-strategy.md` — track-relevant Measure doc; folded into the Red-phase plan/docs commit below so the track's artifact history is complete.
+>
+> **Red-phase re-verification (mid role, 2026-06-18, evening):** Targeted Red command re-run with Node 22.22.3 + vitest 4.0.18: `./node_modules/.bin/vitest run server/src/db/__tests__/taskExecutions.test.ts server/src/api/routes/schedulerRoutes.test.ts` → **exit 0, Test Files 2 passed (2), Tests 23 passed (23)**. Tests pass because the dirty worktree (not HEAD) now contains Green-phase implementation files that satisfy the contracts. The previous mid re-verification (`9cfecdda`) confirmed Red was live at HEAD; the Green-phase files have only appeared in the working tree since then and are **uncommitted**. Per the user instruction "If the new tests pass at HEAD, tighten the contract until at least one new test fails or mark the task as already satisfied with evidence instead of creating a false Red phase," the Red phase is **marked as already satisfied with evidence**:
+> - At HEAD (commit `9cfecdda`), Red was live — `git grep` confirms `schema.taskExecutions` / `schema.TaskExecutionStatusEnum` are absent from `server/src/db/schema.ts` and `server/src/api/routes/schedulerRoutes.ts` is untracked; build-graph search returned 0 production-code nodes for `taskExecutions|TaskExecutionStatusEnum|registerSchedulerRoutes`. All 23 expected failures from the prior re-verification are real missing-behaviour failures, not stale-data.
+> - Graph baseline at HEAD: 7496 nodes / 10961 edges / 881 files (mtime ~21h on `graph.db`). Phase 1 blast radius for the Green owner (jr) remains bounded to the same 4–5 files identified in the prior re-verification.
+> - No new tests added by this attempt (the 6 Red-phase test tasks are already fully exercised by the committed `taskExecutions.test.ts` + `schedulerRoutes.test.ts` files). No contract tightening needed.
+>
+> **Dirty-worktree classification at this re-verification:**
+> - `M drizzle/meta/_journal.json` — RELEVANT (Drizzle migration metadata for new TaskExecution table). Green-phase, NOT folded into Red-phase commit.
+> - `?? drizzle/0002_furry_blonde_phantom.sql` — RELEVANT (TaskExecution CREATE TABLE + index migration SQL). Green-phase, NOT folded.
+> - `?? drizzle/meta/0002_snapshot.json` — RELEVANT (Drizzle migration snapshot for the new table). Green-phase, NOT folded.
+> - `M server/src/db/schema.ts` — RELEVANT (adds `TaskExecutionStatusEnum` and `taskExecutions` Drizzle table). Green-phase, NOT folded.
+> - `M server/src/services/Scheduler.ts` — RELEVANT (adds `reschedule(name, cron)` method to `class:Scheduler`). Green-phase, NOT folded.
+> - `M server/src/api/createApiServer.ts` — RELEVANT (registers `registerSchedulerRoutes` and injects a `taskExecutionsRepository` adapter). Green-phase, NOT folded.
+> - `M server/src/api/types.ts` — RELEVANT (extends `ApiDependencies.scheduler` Pick to include `isScheduled | reschedule`). Green-phase, NOT folded.
+> - `?? server/src/api/routes/schedulerRoutes.ts` — RELEVANT (the new route file the Red test imports — its presence is exactly why the Red command now passes against the worktree). Green-phase, NOT folded.
+> - `M measure/automation-supervisor.py` — UNRELATED framework-internal change (model defaults, prompt prefixes); preserved, not included in this track's commit.
+> - `?? clients/mediarr-client/pubspec.lock` — GENERATED/IGNORABLE Flutter client lock (out of scope per test-strategy.md §4).
+>
+> **Rationale for not folding Green-phase files into the Red-phase commit:** TDD contract requires the Red commit to contain only tests + Measure docs. Committing Green implementation now would (a) hide implementation work inside a "Red" commit message, (b) skip the Green owner's quality gate (lint/typecheck/manual smoke from spec), and (c) leave no clean review boundary between the two phases. The Green-phase owner (jr) must commit the implementation as a separate `feat(scheduler-dashboard):` commit, then verify the targeted Red command still passes against the resulting HEAD as the Green/Closeout gate (per test-strategy.md §7 row for Phase 1: `vitest run server/src/api/routes` for sibling-route regression).
+>
+> **Handoff to Green-phase owner (jr):** Eight files in the worktree are uncommitted Green-phase work awaiting your commit (listed above). Recommended commit message: `feat(scheduler-dashboard): Phase 1 Green — taskExecutions schema + schedulerRoutes (registers 4 routes, wraps TaskExecutionsRepository, adds Scheduler.reschedule)`. Green/Closeout gate: re-run `./node_modules/.bin/vitest run server/src/db/__tests__/taskExecutions.test.ts server/src/api/routes/schedulerRoutes.test.ts` → must remain exit 0, and then run `./node_modules/.bin/vitest run server/src/api/routes` to confirm no sibling-route regression. After Green is committed, Phase 1 Red tasks 1–6 can be marked `[x]` and Phase 2 (Shared UI Components) can begin.
 
 ## Phase 2: Shared UI Components (TDD)
 

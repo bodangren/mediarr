@@ -102,13 +102,15 @@
 
 ## Phase 3: Automation Settings Page (TDD)
 
-- [ ] Write integration tests for AutomationSettingsPage — loads tasks on mount, displays scheduler table
-- [ ] Write integration tests for interval update flow — user selects preset, saves, sees optimistic update
-- [ ] Write integration tests for manual trigger flow — click run-now, see loading state, then success toast
-- [ ] Write integration tests for task history — expand history panel, verify pagination controls
+- [~] Write integration tests for AutomationSettingsPage — loads tasks on mount, displays scheduler table
+- [~] Write integration tests for interval update flow — user selects preset, saves, sees optimistic update
+- [~] Write integration tests for manual trigger flow — click run-now, see loading state, then success toast
+- [~] Write integration tests for task history — expand history panel, verify pagination controls
 - [ ] Implement AutomationSettingsPage with TanStack Query for server-state
 - [ ] Wire page into Settings sidebar and React Router
 - [ ] Run integration tests — expect GREEN
+
+> **Red phase (mid role, 2026-06-19):** Phase 3 Red in progress. Two test files to add: `app/src/pages/settings/AutomationSettingsPage.test.tsx` (component-level tests with mocked `schedulerApi`) and `app/src/lib/msw/integration/AutomationSettingsPage.integration.test.tsx` (MSW-backed full-page tests with sidebar wiring assertion). See commit history once Red lands.
 
 ## Phase 4: Scheduler Service Integration & Manual Trigger
 

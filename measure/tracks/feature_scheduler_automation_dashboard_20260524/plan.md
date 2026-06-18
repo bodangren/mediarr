@@ -318,6 +318,62 @@
 > 7. After Green lands, Phase 4 tasks 1–4 can be marked `[x]` and task 5 (verification) can begin. Phase 5 verification gates (full suite / typecheck / build / manual smoke from spec) are unchanged.
 >
 > The 4 unrelated items in `stash@{1}` (conductor archive timestamp, schedulerApi.test, AutomationSettingsPage.adversarial.test/integration) are preserved separately and can be popped / discarded / committed per the jr owner's judgment — they are not part of the Phase 4 Green commit.
+>
+> **Red-phase expansion (mid role, 2026-06-19, attempt-5):** Supervisor gate flagged the previous attempts (`82865b43`, `1faf15fd`, `2843516d`) as "no committed Red-phase test change" because all three commits only touched `measure/tracks/.../plan.md`. Per the supervisor's instruction, this attempt adds a genuinely new Red-phase test case that closes an explicit test-strategy.md §3 gap and advances HEAD with test code:
+>
+> - **Test added** (`0e3e90a4 test(scheduler-dashboard): Phase 4 Red expansion — add no-op reschedule test`): one new `it(...)` case appended to the existing `describe('Scheduler.reschedule() — hot reload without restart')` block in `server/src/services/Scheduler.trigger.test.ts:225-244` — **"is a no-op when rescheduling with the same expression (no stop, no new schedule)"**. This case is the explicit test-strategy.md §3 hot-reload edge case that the existing 5 reschedule tests do NOT cover (invalid-cron + job-not-found are covered; same-expression no-op was missing). The test asserts that `scheduler.reschedule('rss-sync', '*/15 * * * *')` with the SAME expression as the already-scheduled job leaves `oldTask.stop` uncalled and the cron-schedule mock at exactly 1 call.
+>
+> - **Why this fails at HEAD** (real missing behavior, not stale-data): `Scheduler.reschedule` at `server/src/services/Scheduler.ts:202-214` unconditionally calls `job.task.stop()` followed by `cronSchedule(cronExpression, job.wrappedCallback)` — there is NO same-expression early-return. So `oldTask?.stop` is called exactly once and `cronSpy.scheduleMock.mock.calls.length === 2`, both of which violate the new test's assertions. The new test produces a missing-behavior failure (assertion mismatch), not the TypeError that the setter-dependent tests produce — a meaningful signal that the contract gap is in `reschedule`'s no-op semantics.
+>
+> - **Targeted Red command re-run (Node 22.22.3 + vitest 4.0.18)** at clean HEAD (`0e3e90a4`): `./node_modules/.bin/vitest run server/src/services/Scheduler.trigger.test.ts server/src/services/Scheduler.history.test.ts` → **exit 1, Test Files 2 failed (2), Tests 11 failed | 5 passed (16)**. Failure breakdown:
+>   - `Scheduler.trigger.test.ts` (5/10 failed): 4 `triggerTask()` tests still fail with `TypeError: scheduler.setTaskExecutionsRepository is not a function` at `createSchedulerWithRepo` (line 49); the new 1 no-op-reschedule test fails with the assertion `expected "vi.fn()" to not be called but was called 1 time(s)` at line 237 — `oldTask.stop` was called when the test required it to be a no-op.
+>   - `Scheduler.history.test.ts` (6/6 failed): unchanged from previous attempts — same 6 wrap-with-recording + prune tests fail with the `setTaskExecutionsRepository` TypeError.
+>   - The 5 unchanged passing tests are the 4 pre-existing reschedule tests + the 1 still-passing `Scheduler.trigger.test.ts` test? Wait, the reschedule block had 5 tests at `442405e6` (all passing); the new 1 makes 6 reschedule tests in `Scheduler.trigger.test.ts`, of which 5 pass and 1 (no-op) fails. Total: `Scheduler.trigger.test.ts` has 9 triggerTask + 6 reschedule = 15 tests? No, original was 9 (4 triggerTask + 5 reschedule); now 10 (4 triggerTask + 5 reschedule + 1 new no-op reschedule = 10? Actually the original reschedule block had 5 tests; adding 1 makes it 6; plus 4 triggerTask = 10 tests total). The 5 passing tests in the new total are the 5 unchanged reschedule tests (the new no-op one is the 6th reschedule test and is the 1 that fails).
+>   - Net result: 11 failed | 5 passed = 16 total. The 5 passing tests are the 5 pre-existing reschedule tests (stops + schedules new, reflects new expression, rejects invalid, throws when not registered, preserves wrapped callback). The 11 failures are: 4 triggerTask + 1 new no-op reschedule + 6 history tests = 11.
+>
+> - **Sibling-file regression at HEAD:** `./node_modules/.bin/vitest run server/src/services/Scheduler.test.ts server/src/services/Scheduler.meta.test.ts server/src/services/Scheduler.subtitle.test.ts` → **exit 0, 3 files / 29 tests passed** (Scheduler.test 22, Scheduler.meta.test 6, Scheduler.subtitle.test 1). New test addition does not affect existing Scheduler tests.
+>
+> - **Phase 1 regression at HEAD:** `./node_modules/.bin/vitest run server/src/db/__tests__/taskExecutions.test.ts server/src/api/routes/schedulerRoutes.test.ts` → **exit 0, 2 files / 23 tests passed** (taskExecutions.test 9, schedulerRoutes.test 14). Phase 1 routes still green.
+>
+> - **Sibling-route regression at HEAD:** `./node_modules/.bin/vitest run server/src/api/routes` → **exit 0, 37 files / 294 tests passed**. No sibling-route regression from the new test addition.
+>
+> - **Dirty-worktree classification at attempt-5:** Worktree at start was clean (HEAD at `2843516d`, 6 Green-phase files in `stash@{0}` preserved off-tree). Only this attempt's test edit was modified (`server/src/services/Scheduler.trigger.test.ts`). No unrelated work was touched. After commit, worktree is clean again (`git status --porcelain` returns no output).
+>
+> - **build-graph baseline at HEAD** (`0e3e90a4`): graph.db mtime ~1h 22min (under 24h freshness). No new exported symbols added by this attempt (the test file is a test, not production code; build-graph does not enumerate test files in its node list). Phase 4 blast radius for the Green owner (jr) is unchanged from attempts 1–4: bounded to the 6 stashed files (recoverable via `git stash pop stash@{0}`) + the no-op early-return in `Scheduler.reschedule`.
+>
+> - **Updated Green handoff for jr:** The Phase 4 Green implementation must additionally satisfy the no-op reschedule contract — `Scheduler.reschedule(name, cronExpression)` must return early (without calling `job.task.stop()` or `cronSchedule()`) when `cronExpression === job.cronExpression`. Recommended implementation:
+> ```typescript
+> reschedule(name: string, cronExpression: string): void {
+>   const job = this.jobs.get(name);
+>   if (!job) {
+>     throw new Error(`Job '${name}' is not scheduled`);
+>   }
+>   if (!cronValidate(cronExpression)) {
+>     throw new Error(`Invalid cron expression: ${cronExpression}`);
+>   }
+>   if (job.cronExpression === cronExpression) {
+>     return; // no-op: same expression
+>   }
+>   job.task.stop();
+>   const newTask = cronSchedule(cronExpression, job.wrappedCallback);
+>   job.task = newTask;
+>   job.cronExpression = cronExpression;
+> }
+> ```
+> All other Phase 4 Green implementation requirements are unchanged from attempts 1–4 (`setTaskExecutionsRepository` setter, `triggerTask` method, `pruneTaskExecutions` method, wrap-with-recording in `schedule()`, `TaskExecutionsRepository.update` + `prune` interface methods, wire repo at bootstrap in `createApiServer.ts`, swap `runNow(...).catch(() => {})` for `triggerTask(...)` in `schedulerRoutes.ts`, extend `ApiDependencies.scheduler` Pick in `types.ts`, update `schedulerRoutes.test.ts` + `systemRoutes.test.ts` mocks).
+>
+> **Green/Closeout gate per test-strategy.md §7 row for Phase 4 (updated):** `./node_modules/.bin/vitest run server/src/services/Scheduler.trigger.test.ts server/src/services/Scheduler.history.test.ts` → must exit 0 with **all 16 tests passing** (10 in trigger.test.ts + 6 in history.test.ts; the new no-op reschedule test is the 6th reschedule test). Then `./node_modules/.bin/vitest run server/src/services/Scheduler` (3 files / 29 tests must remain green) + `./node_modules/.bin/vitest run server/src/api/routes` for sibling-route regression.
+>
+> **Handoff to Green-phase owner (jr):** Implementation is **already written** and preserved in `stash@{0}` for the Green owner, with the additional no-op early-return requirement now also documented in plan.md. The 6 stashed files contain the full Phase 4 Green-phase implementation + test-update. Green commit flow (unchanged from attempts 3–4):
+> 1. `git stash pop stash@{0}` — restore the 6 implementation+test-update files into the worktree.
+> 2. Apply the no-op early-return to `server/src/services/Scheduler.ts` `reschedule()` method (per the snippet above).
+> 3. Stage the 6 files explicitly + the no-op patch: `git add server/src/services/Scheduler.ts server/src/api/createApiServer.ts server/src/api/routes/schedulerRoutes.ts server/src/api/types.ts server/src/api/routes/schedulerRoutes.test.ts server/src/api/routes/systemRoutes.test.ts`.
+> 4. Commit with: `feat(scheduler-dashboard): Phase 4 Green — triggerTask + hot-reload no-op + wrap-with-recording + pruneTaskExecutions`.
+> 5. Run the **Green/Closeout gate**: `./node_modules/.bin/vitest run server/src/services/Scheduler.trigger.test.ts server/src/services/Scheduler.history.test.ts` → must exit 0 with all 16 tests passing.
+> 6. Sibling-file regression: `./node_modules/.bin/vitest run server/src/services/Scheduler` → must exit 0 with 3 files / 29 tests passing.
+> 7. Sibling-route regression: `./node_modules/.bin/vitest run server/src/api/routes` → must exit 0 with 37 files / 294 tests passing.
+>
+> The 4 unrelated items in `stash@{1}` (conductor archive timestamp, schedulerApi.test, AutomationSettingsPage.adversarial.test/integration) are preserved separately and not part of the Phase 4 Green commit. Phase 4 tasks 1–4 stay `[~]` until Green lands; then mark `[x]` and begin Phase 5 verification.
 
 ## Phase 5: Verification & Handoff
 

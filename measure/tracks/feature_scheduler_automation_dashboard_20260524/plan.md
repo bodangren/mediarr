@@ -2,14 +2,14 @@
 
 ## Phase 1: Backend Schema & API Contracts (TDD)
 
-- [x] Write Drizzle schema tests for `taskExecutions` table (columns: id, taskName, startedAt, completedAt, status, durationMs, errorMessage)
-- [x] Write migration test verifying table creation with drizzle-kit
-- [x] Write tests for `GET /api/scheduler/tasks` — returns task metadata array
-- [x] Write tests for `PUT /api/scheduler/:taskId/interval` — validates cron, rejects invalid expressions, persists to AppSettings
-- [x] Write tests for `POST /api/scheduler/:taskId/trigger` — queues task, returns 202, writes execution record
-- [x] Write tests for `GET /api/scheduler/history` — pagination, filtering by status, default sort descending
-- [x] Implement schema, routes, and scheduler service extensions
-- [x] Run tests — expect GREEN
+- [x] Write Drizzle schema tests for `taskExecutions` table (columns: id, taskName, startedAt, completedAt, status, durationMs, errorMessage) (`cd95855`)
+- [x] Write migration test verifying table creation with drizzle-kit (`cd95855`)
+- [x] Write tests for `GET /api/scheduler/tasks` — returns task metadata array (`cd95855`)
+- [x] Write tests for `PUT /api/scheduler/:taskId/interval` — validates cron, rejects invalid expressions, persists to AppSettings (`cd95855`)
+- [x] Write tests for `POST /api/scheduler/:taskId/trigger` — queues task, returns 202, writes execution record (`cd95855`)
+- [x] Write tests for `GET /api/scheduler/history` — pagination, filtering by status, default sort descending (`cd95855`)
+- [x] Implement schema, routes, and scheduler service extensions (`ab3e10e`)
+- [x] Run tests — expect GREEN (`ab3e10e`)
 
 > Red phase (mid role, 2026-06-18): Two test files added — `server/src/db/__tests__/taskExecutions.test.ts` (schema + migration behaviour) and `server/src/api/routes/schedulerRoutes.test.ts` (4 routes × N paths). Both fail at HEAD because the symbols under test (`schema.taskExecutions`, `TaskExecutionStatusEnum`, `registerSchedulerRoutes`) are not yet exported / defined. Targeted Red command: `vitest run server/src/db/__tests__/taskExecutions.test.ts server/src/api/routes/schedulerRoutes.test.ts`. See commit history for the Red-phase commit. Green phase is owned by the Implementer (JR role).
 >

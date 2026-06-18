@@ -152,6 +152,10 @@ function createSchedulerMock(jobNames: string[] = ['rss-sync', 'health-check']) 
     ),
     listJobs: vi.fn().mockReturnValue(jobNames),
     runNow: vi.fn().mockResolvedValue(undefined),
+    isScheduled: vi.fn().mockReturnValue(true),
+    reschedule: vi.fn(),
+    setTaskExecutionsRepository: vi.fn(),
+    triggerTask: vi.fn().mockResolvedValue(undefined),
   };
 }
 

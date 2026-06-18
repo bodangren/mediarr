@@ -13,7 +13,7 @@ interface SchedulerJobMeta {
 }
 
 interface SchedulerDeps {
-  scheduler: Pick<Scheduler, 'listJobsMeta' | 'runNow' | 'isScheduled' | 'reschedule'>;
+  scheduler: Pick<Scheduler, 'listJobsMeta' | 'runNow' | 'isScheduled' | 'reschedule' | 'triggerTask'>;
   settingsService: Pick<SettingsService, 'get' | 'update'>;
   taskExecutionsRepository: {
     create: (input: {
@@ -115,18 +115,15 @@ export function registerSchedulerRoutes(app: FastifyInstance, deps: SchedulerDep
       return reply.status(404).send({ ok: false, error: { code: 'NOT_FOUND', message: `Unknown task: ${taskId}`, retryable: false } });
     }
 
-    const execution = await deps.taskExecutionsRepository.create({
-      taskName: taskId,
-      startedAt: new Date(),
-      status: 'RUNNING',
-    });
-
-    deps.scheduler.runNow(taskId).catch(() => {});
-
-    return reply.status(202).send(buildSuccessEnvelope({
-      taskId,
-      executionId: execution.id,
-    }));
+    try {
+      await deps.scheduler.triggerTask(taskId);
+      return reply.status(202).send(buildSuccessEnvelope({
+        taskId,
+        executionId: -1,
+      }));
+    } catch (error) {
+      return reply.status(500).send({ ok: false, error: { code: 'EXECUTION_FAILED', message: error instanceof Error ? error.message : String(error), retryable: false } });
+    }
   });
 
   app.get('/api/scheduler/history', async (request, reply) => {

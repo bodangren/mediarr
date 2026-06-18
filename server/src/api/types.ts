@@ -138,7 +138,7 @@ export interface ApiDependencies {
     CollectionService,
     'fetchFromTMDB' | 'createCollection' | 'syncCollectionMovies' | 'searchMissingMovies' | 'linkMovieToCollection' | 'detectMovieCollection'
   > | undefined;
-  scheduler?: Pick<Scheduler, 'listJobsMeta' | 'runNow' | 'listJobs' | 'isScheduled' | 'reschedule'> | undefined;
+  scheduler?: Pick<Scheduler, 'listJobsMeta' | 'runNow' | 'listJobs' | 'isScheduled' | 'reschedule' | 'setTaskExecutionsRepository' | 'triggerTask'> | undefined;
   logReaderService?: Pick<LogReaderService, 'getEntries'> | undefined;
   backupService?: Pick<BackupService, 'create' | 'list' | 'delete' | 'getFilePath'> | undefined;
   libraryScanService?: Pick<LibraryScanService, 'scanAll'> | undefined;

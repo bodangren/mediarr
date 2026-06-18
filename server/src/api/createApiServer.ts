@@ -188,71 +188,113 @@ export function createApiServer(
 
   if (dependencies.scheduler && dependencies.settingsService) {
     const prisma = dependencies.prisma as DatabaseClient;
+    const taskExecutionsRepo = {
+      create: async (input: {
+        taskName: string;
+        startedAt: Date;
+        status: string;
+      }) => {
+        const rows = await prisma.drizzle
+          .insert(schema.taskExecutions)
+          .values({
+            taskName: input.taskName,
+            startedAt: input.startedAt,
+            completedAt: undefined,
+            status: input.status as typeof schema.TaskExecutionStatusEnum[number],
+            durationMs: undefined,
+            errorMessage: undefined,
+          })
+          .returning();
+        const row = rows[0]!;
+        return {
+          id: row.id,
+          taskName: row.taskName,
+          startedAt: row.startedAt,
+          completedAt: row.completedAt,
+          status: row.status,
+          durationMs: row.durationMs,
+          errorMessage: row.errorMessage,
+        };
+      },
+      update: async (id: number, input: {
+        status: string;
+        completedAt: Date;
+        durationMs: number;
+        errorMessage: string | null;
+      }) => {
+        await prisma.drizzle
+          .update(schema.taskExecutions)
+          .set({
+            status: input.status as typeof schema.TaskExecutionStatusEnum[number],
+            completedAt: input.completedAt,
+            durationMs: input.durationMs,
+            errorMessage: input.errorMessage ?? undefined,
+          })
+          .where(eq(schema.taskExecutions.id, id));
+      },
+      prune: async (taskName: string, retainCount: number) => {
+        const cutoffRows = await prisma.drizzle
+          .select({ id: schema.taskExecutions.id })
+          .from(schema.taskExecutions)
+          .where(eq(schema.taskExecutions.taskName, taskName))
+          .orderBy(desc(schema.taskExecutions.id))
+          .limit(1)
+          .offset(retainCount - 1);
+        const cutoffId = cutoffRows[0]?.id;
+        if (cutoffId == null) {
+          return 0;
+        }
+        const result = await prisma.drizzle
+          .delete(schema.taskExecutions)
+          .where(sql`${schema.taskExecutions.taskName} = ${taskName} AND ${schema.taskExecutions.id} < ${cutoffId}`);
+        return result.rowsAffected;
+      },
+      query: async (input: { page: number; pageSize: number; status?: string }) => {
+        const { page, pageSize, status: statusFilter } = input;
+        const offset = (page - 1) * pageSize;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let baseQuery = prisma.drizzle.select().from(schema.taskExecutions) as any;
+        if (statusFilter) {
+          baseQuery = baseQuery.where(
+            eq(schema.taskExecutions.status, statusFilter.toUpperCase() as typeof schema.TaskExecutionStatusEnum[number]),
+          );
+        }
+        const countResult = await prisma.drizzle
+          .select({ count: sql<number>`count(*)` })
+          .from(schema.taskExecutions)
+          .where(
+            statusFilter
+              ? eq(schema.taskExecutions.status, statusFilter.toUpperCase() as typeof schema.TaskExecutionStatusEnum[number])
+              : undefined,
+          );
+        const total = countResult[0]?.count ?? 0;
+        const items = await baseQuery
+          .orderBy(desc(schema.taskExecutions.startedAt))
+          .limit(pageSize)
+          .offset(offset);
+        return {
+          items: items.map((row: typeof schema.taskExecutions.$inferSelect) => ({
+            id: row.id,
+            taskName: row.taskName,
+            status: row.status,
+            startedAt: row.startedAt,
+            completedAt: row.completedAt,
+            durationMs: row.durationMs,
+            errorMessage: row.errorMessage,
+          })),
+          total,
+          page,
+          pageSize,
+        };
+      },
+    };
+
+    dependencies.scheduler.setTaskExecutionsRepository(taskExecutionsRepo);
+
     registerSchedulerRoutes(app, {
       scheduler: dependencies.scheduler,
       settingsService: dependencies.settingsService,
-      taskExecutionsRepository: {
-        create: async (input) => {
-          const rows = await prisma.drizzle
-            .insert(schema.taskExecutions)
-            .values({
-              taskName: input.taskName,
-              startedAt: input.startedAt,
-              completedAt: input.completedAt ?? undefined,
-              status: input.status as typeof schema.TaskExecutionStatusEnum[number],
-              durationMs: input.durationMs ?? undefined,
-              errorMessage: input.errorMessage ?? undefined,
-            })
-            .returning();
-          const row = rows[0]!;
-          return {
-            id: row.id,
-            taskName: row.taskName,
-            startedAt: row.startedAt,
-            completedAt: row.completedAt,
-            status: row.status,
-            durationMs: row.durationMs,
-            errorMessage: row.errorMessage,
-          };
-        },
-        query: async (input) => {
-          const { page, pageSize, status: statusFilter } = input;
-          const offset = (page - 1) * pageSize;
-          let baseQuery = prisma.drizzle.select().from(schema.taskExecutions);
-          if (statusFilter) {
-            baseQuery = baseQuery.where(
-              eq(schema.taskExecutions.status, statusFilter.toUpperCase() as typeof schema.TaskExecutionStatusEnum[number]),
-            );
-          }
-          const countResult = await prisma.drizzle
-            .select({ count: sql<number>`count(*)` })
-            .from(schema.taskExecutions)
-            .where(
-              statusFilter
-                ? eq(schema.taskExecutions.status, statusFilter.toUpperCase() as typeof schema.TaskExecutionStatusEnum[number])
-                : undefined,
-            );
-          const total = countResult[0]?.count ?? 0;
-          const items = await baseQuery
-            .orderBy(desc(schema.taskExecutions.startedAt))
-            .limit(pageSize)
-            .offset(offset);
-          return {
-            items: items.map((row) => ({
-              id: row.id,
-              taskName: row.taskName,
-              status: row.status,
-              startedAt: row.startedAt,
-              completedAt: row.completedAt,
-              durationMs: row.durationMs,
-              errorMessage: row.errorMessage,
-            })),
-            total,
-            page,
-            pageSize,
-          };
-        },
-      },
+      taskExecutionsRepository: taskExecutionsRepo,
     });
   }
 

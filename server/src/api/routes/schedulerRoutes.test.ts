@@ -7,6 +7,7 @@ function createSchedulerMock() {
   return {
     listJobsMeta: vi.fn(),
     runNow: vi.fn(),
+    triggerTask: vi.fn(),
     isScheduled: vi.fn(),
     reschedule: vi.fn(),
   };
@@ -23,6 +24,8 @@ function createTaskExecutionsRepositoryMock() {
   return {
     create: vi.fn(),
     query: vi.fn(),
+    update: vi.fn(),
+    prune: vi.fn(),
   };
 }
 
@@ -195,16 +198,7 @@ describe('POST /api/scheduler/:taskId/trigger', () => {
     settingsService = createSettingsServiceMock();
     taskExecutionsRepository = createTaskExecutionsRepositoryMock();
     scheduler.isScheduled.mockReturnValue(true);
-    scheduler.runNow.mockResolvedValue(undefined);
-    taskExecutionsRepository.create.mockResolvedValue({
-      id: 42,
-      taskName: 'rss-sync',
-      startedAt: new Date('2026-05-24T12:00:00Z'),
-      completedAt: null,
-      status: 'RUNNING',
-      durationMs: null,
-      errorMessage: null,
-    });
+    scheduler.triggerTask.mockResolvedValue(undefined);
     app = createApp(scheduler, settingsService, taskExecutionsRepository);
   });
 
@@ -212,7 +206,7 @@ describe('POST /api/scheduler/:taskId/trigger', () => {
     await app.close();
   });
 
-  it('returns 202 with the new executionId and writes a RUNNING execution record', async () => {
+  it('returns 202 and delegates to scheduler.triggerTask', async () => {
     const response = await app.inject({
       method: 'POST',
       url: '/api/scheduler/rss-sync/trigger',
@@ -223,21 +217,15 @@ describe('POST /api/scheduler/:taskId/trigger', () => {
       data: { taskId: string; executionId: number };
     };
     expect(body.data.taskId).toBe('rss-sync');
-    expect(body.data.executionId).toBe(42);
-    expect(taskExecutionsRepository.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        taskName: 'rss-sync',
-        status: 'RUNNING',
-      }),
-    );
+    expect(scheduler.triggerTask).toHaveBeenCalledWith('rss-sync');
   });
 
-  it('invokes scheduler.runNow with the task name', async () => {
+  it('invokes scheduler.triggerTask with the task name', async () => {
     await app.inject({ method: 'POST', url: '/api/scheduler/rss-sync/trigger' });
-    expect(scheduler.runNow).toHaveBeenCalledWith('rss-sync');
+    expect(scheduler.triggerTask).toHaveBeenCalledWith('rss-sync');
   });
 
-  it('returns 404 for an unknown taskId and does not write an execution record', async () => {
+  it('returns 404 for an unknown taskId and does not invoke the job', async () => {
     scheduler.isScheduled.mockReturnValue(false);
 
     const response = await app.inject({
@@ -246,8 +234,7 @@ describe('POST /api/scheduler/:taskId/trigger', () => {
     });
 
     expect(response.statusCode).toBe(404);
-    expect(scheduler.runNow).not.toHaveBeenCalled();
-    expect(taskExecutionsRepository.create).not.toHaveBeenCalled();
+    expect(scheduler.triggerTask).not.toHaveBeenCalled();
   });
 });
 

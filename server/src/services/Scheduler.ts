@@ -24,11 +24,31 @@ interface ActivityRetentionRepository {
   cleanupOldEvents(retentionDays: number): Promise<number>;
 }
 
+export interface TaskExecutionsRepository {
+  create: (input: {
+    taskName: string;
+    startedAt: Date;
+    status: string;
+  }) => Promise<{ id: number }>;
+  update: (id: number, input: {
+    status: string;
+    completedAt: Date;
+    durationMs: number;
+    errorMessage: string | null;
+  }) => Promise<void>;
+  prune: (taskName: string, retainCount: number) => Promise<number>;
+}
+
 /**
  * Manages cron-scheduled background jobs with named registration.
  */
 export class Scheduler {
   private jobs: Map<string, ScheduledJob> = new Map();
+  private taskExecutionsRepository: TaskExecutionsRepository | null = null;
+
+  setTaskExecutionsRepository(repo: TaskExecutionsRepository): void {
+    this.taskExecutionsRepository = repo;
+  }
 
   /**
    * Schedule a named job with a cron expression.
@@ -44,10 +64,34 @@ export class Scheduler {
 
     const wrappedCallback = async () => {
       const start = Date.now();
+      let record: { id: number } | undefined;
       try {
+        if (this.taskExecutionsRepository) {
+          record = await this.taskExecutionsRepository.create({
+            taskName: name,
+            startedAt: new Date(),
+            status: 'RUNNING',
+          });
+        }
         await callback();
+        if (this.taskExecutionsRepository && record) {
+          await this.taskExecutionsRepository.update(record.id, {
+            status: 'SUCCESS',
+            completedAt: new Date(),
+            durationMs: Date.now() - start,
+            errorMessage: null,
+          });
+        }
       } catch (error) {
         console.error(`Scheduler job '${name}' failed:`, error);
+        if (this.taskExecutionsRepository && record) {
+          await this.taskExecutionsRepository.update(record.id, {
+            status: 'FAILED',
+            completedAt: new Date(),
+            durationMs: Date.now() - start,
+            errorMessage: error instanceof Error ? error.message : String(error),
+          });
+        }
       } finally {
         meta.lastRunAt = new Date().toISOString();
         meta.lastDurationMs = Date.now() - start;
@@ -207,6 +251,9 @@ export class Scheduler {
     if (!cronValidate(cronExpression)) {
       throw new Error(`Invalid cron expression: ${cronExpression}`);
     }
+    if (job.cronExpression === cronExpression) {
+      return;
+    }
     job.task.stop();
     const newTask = cronSchedule(cronExpression, job.wrappedCallback);
     job.task = newTask;
@@ -222,6 +269,59 @@ export class Scheduler {
       throw new Error(`Job '${name}' is not scheduled`);
     }
     await job.wrappedCallback();
+  }
+
+  /**
+   * Manually trigger a scheduled job, recording the execution in the
+   * taskExecutionsRepository.  Creates a RUNNING record before invoking
+   * the callback, then updates the record to SUCCESS or FAILED.
+   */
+  async triggerTask(name: string): Promise<void> {
+    const job = this.jobs.get(name);
+    if (!job) {
+      throw new Error(`Job '${name}' is not scheduled`);
+    }
+
+    const start = Date.now();
+    let record: { id: number } | undefined;
+    try {
+      if (this.taskExecutionsRepository) {
+        record = await this.taskExecutionsRepository.create({
+          taskName: name,
+          startedAt: new Date(),
+          status: 'RUNNING',
+        });
+      }
+      await job.callback();
+      if (this.taskExecutionsRepository && record) {
+        await this.taskExecutionsRepository.update(record.id, {
+          status: 'SUCCESS',
+          completedAt: new Date(),
+          durationMs: Date.now() - start,
+          errorMessage: null,
+        });
+      }
+    } catch (error) {
+      if (this.taskExecutionsRepository && record) {
+        await this.taskExecutionsRepository.update(record.id, {
+          status: 'FAILED',
+          completedAt: new Date(),
+          durationMs: Date.now() - start,
+          errorMessage: error instanceof Error ? error.message : String(error),
+        });
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Prune old task execution records, keeping only the last `retainCount` per task.
+   */
+  async pruneTaskExecutions(taskName: string, retainCount = 100): Promise<number> {
+    if (!this.taskExecutionsRepository) {
+      return 0;
+    }
+    return this.taskExecutionsRepository.prune(taskName, retainCount);
   }
 
   /**

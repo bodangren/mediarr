@@ -1,7 +1,10 @@
 import Fastify, { type FastifyInstance } from 'fastify';
 import multipart from '@fastify/multipart';
+import { eq, desc, sql } from 'drizzle-orm';
 import { registerApiErrorHandler } from './errors';
 import { ApiEventHub } from './eventHub';
+import * as schema from '../db/schema';
+import type { DatabaseClient } from '../db/drizzleClient';
 import { registerBackupRoutes } from './routes/backupRoutes';
 import { registerBlocklistRoutes } from './routes/blocklistRoutes';
 import { registerCollectionRoutes } from './routes/collectionRoutes';
@@ -37,6 +40,7 @@ import { registerTorrentRoutes } from './routes/torrentRoutes';
 import { registerUpdatesRoutes } from './routes/updatesRoutes';
 import { registerSetupRoutes } from './routes/setupRoutes';
 import { registerImageRoutes } from './routes/imageRoutes';
+import { registerSchedulerRoutes } from './routes/schedulerRoutes';
 import type { ApiDependencies, ApiServerOptions } from './types';
 
 interface PollState {
@@ -181,6 +185,76 @@ export function createApiServer(
   registerDownloadClientRoutes(app, dependencies);
   registerMediaSettingsRoutes(app, dependencies);
   registerImageRoutes(app, dependencies);
+
+  if (dependencies.scheduler && dependencies.settingsService) {
+    const prisma = dependencies.prisma as DatabaseClient;
+    registerSchedulerRoutes(app, {
+      scheduler: dependencies.scheduler,
+      settingsService: dependencies.settingsService,
+      taskExecutionsRepository: {
+        create: async (input) => {
+          const rows = await prisma.drizzle
+            .insert(schema.taskExecutions)
+            .values({
+              taskName: input.taskName,
+              startedAt: input.startedAt,
+              completedAt: input.completedAt ?? undefined,
+              status: input.status as typeof schema.TaskExecutionStatusEnum[number],
+              durationMs: input.durationMs ?? undefined,
+              errorMessage: input.errorMessage ?? undefined,
+            })
+            .returning();
+          const row = rows[0]!;
+          return {
+            id: row.id,
+            taskName: row.taskName,
+            startedAt: row.startedAt,
+            completedAt: row.completedAt,
+            status: row.status,
+            durationMs: row.durationMs,
+            errorMessage: row.errorMessage,
+          };
+        },
+        query: async (input) => {
+          const { page, pageSize, status: statusFilter } = input;
+          const offset = (page - 1) * pageSize;
+          let baseQuery = prisma.drizzle.select().from(schema.taskExecutions);
+          if (statusFilter) {
+            baseQuery = baseQuery.where(
+              eq(schema.taskExecutions.status, statusFilter.toUpperCase() as typeof schema.TaskExecutionStatusEnum[number]),
+            );
+          }
+          const countResult = await prisma.drizzle
+            .select({ count: sql<number>`count(*)` })
+            .from(schema.taskExecutions)
+            .where(
+              statusFilter
+                ? eq(schema.taskExecutions.status, statusFilter.toUpperCase() as typeof schema.TaskExecutionStatusEnum[number])
+                : undefined,
+            );
+          const total = countResult[0]?.count ?? 0;
+          const items = await baseQuery
+            .orderBy(desc(schema.taskExecutions.startedAt))
+            .limit(pageSize)
+            .offset(offset);
+          return {
+            items: items.map((row) => ({
+              id: row.id,
+              taskName: row.taskName,
+              status: row.status,
+              startedAt: row.startedAt,
+              completedAt: row.completedAt,
+              durationMs: row.durationMs,
+              errorMessage: row.errorMessage,
+            })),
+            total,
+            page,
+            pageSize,
+          };
+        },
+      },
+    });
+  }
 
   registerCustomFormatRoutes(app, dependencies);
   registerFilterRoutes(app, dependencies);

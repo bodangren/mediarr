@@ -15,6 +15,13 @@
       "when": 1777660513236,
       "tag": "0001_panoramic_mindworm",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1781785496673,
+      "tag": "0002_furry_blonde_phantom",
+      "breakpoints": true
     }
   ]
 }

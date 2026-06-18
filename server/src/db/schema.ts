@@ -21,6 +21,7 @@ export const WantedSubtitleStateEnum = [
   "FAILED",
 ] as const;
 export const PlaybackMediaTypeEnum = ["MOVIE", "EPISODE"] as const;
+export const TaskExecutionStatusEnum = ["SUCCESS", "FAILED", "RUNNING"] as const;
 
 // ─── Enum type aliases (re-exported from const arrays) ─────────────────────
 export type PlaybackMediaType = typeof PlaybackMediaTypeEnum[number];
@@ -708,6 +709,18 @@ export const importLists = sqliteTable("ImportList", {
     .$onUpdate(() => new Date()),
 }, (table) => [
   index("ImportList_enabled_idx").on(table.enabled),
+]);
+
+export const taskExecutions = sqliteTable("TaskExecution", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  taskName: text("taskName").notNull(),
+  startedAt: integer("startedAt", { mode: "timestamp" }).notNull(),
+  completedAt: integer("completedAt", { mode: "timestamp" }),
+  status: text("status", { enum: TaskExecutionStatusEnum }).notNull(),
+  durationMs: integer("durationMs"),
+  errorMessage: text("errorMessage"),
+}, (table) => [
+  index("TaskExecution_taskName_startedAt_idx").on(table.taskName, table.startedAt),
 ]);
 
 export const importListExclusions = sqliteTable("ImportListExclusion", {

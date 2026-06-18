@@ -197,6 +197,23 @@ export class Scheduler {
   }
 
   /**
+   * Reschedule a job with a new cron expression.
+   */
+  reschedule(name: string, cronExpression: string): void {
+    const job = this.jobs.get(name);
+    if (!job) {
+      throw new Error(`Job '${name}' is not scheduled`);
+    }
+    if (!cronValidate(cronExpression)) {
+      throw new Error(`Invalid cron expression: ${cronExpression}`);
+    }
+    job.task.stop();
+    const newTask = cronSchedule(cronExpression, job.wrappedCallback);
+    job.task = newTask;
+    job.cronExpression = cronExpression;
+  }
+
+  /**
    * Run a job immediately (useful for testing and manual triggers).
    */
   async runNow(name: string): Promise<void> {

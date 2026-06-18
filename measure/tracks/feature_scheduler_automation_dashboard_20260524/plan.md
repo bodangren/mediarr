@@ -66,12 +66,12 @@
 
 ## Phase 2: Shared UI Components (TDD)
 
-- [~] Write component tests for `TaskStatusBadge` — renders correct color and label for each status variant
-- [~] Write component tests for `CronIntervalPicker` — preset buttons update value, custom cron validates, rejects invalid
-- [~] Write component tests for `TaskHistoryPanel` — renders paginated rows, date filter works, empty state
-- [~] Write component tests for `TaskSchedulerTable` — row rendering, sort by lastRun, disable toggle fires callback
-- [ ] Implement components with shadcn/ui Table, Switch, and Dialog primitives
-- [ ] Run component tests — expect GREEN
+- [x] Write component tests for `TaskStatusBadge` — renders correct color and label for each status variant (`4b04c02`)
+- [x] Write component tests for `CronIntervalPicker` — preset buttons update value, custom cron validates, rejects invalid (`4b04c02`)
+- [x] Write component tests for `TaskHistoryPanel` — renders paginated rows, date filter works, empty state (`4b04c02`)
+- [x] Write component tests for `TaskSchedulerTable` — row rendering, sort by lastRun, disable toggle fires callback (`4b04c02`)
+- [x] Implement components with shadcn/ui Table, Switch, and Dialog primitives (`844f88f`)
+- [x] Run component tests — expect GREEN (`844f88f`)
 
 > **Red phase (mid role, 2026-06-18):** Four component-test files added under `app/src/components/scheduler/`: `TaskStatusBadge.test.tsx` (6 tests), `CronIntervalPicker.test.tsx` (9 tests), `TaskSchedulerTable.test.tsx` (8 tests), `TaskHistoryPanel.test.tsx` (12 tests). All 4 tests assert shadcn/ui-style classes (`bg-status-completed/20`, `text-status-completed`, `bg-accent-warning/20`, `bg-status-error/20`, `bg-surface-2`) and behavioral contracts (preset `aria-pressed`, custom-cron validation rejection of `'99 99'` and `'not-a-cron'`, table sort by `lastRunAt`, `onRunNow` callback per row, `onToggleEnabled` with the next enabled value, history panel `onPageChange` increments/decrements page, `onDateFilterChange` for from/to filter inputs). Targeted Red command (Node 22.22.3 + vitest 4.0.18): `./node_modules/.bin/vitest run --config app/vitest.config.ts --root app app/src/components/scheduler` → **exit 1, Test Files 4 failed (4), Tests 0 loaded (4 failed suites)**. Every suite fails to load because the component modules (`./TaskStatusBadge`, `./CronIntervalPicker`, `./TaskSchedulerTable`, `./TaskHistoryPanel`) do not yet exist — `Failed to resolve import "./X" from "app/src/components/scheduler/X.test.tsx". Does the file exist?` is the entire error. No tests loaded → 35/35 tests fail by suite-load (not stale-data). test-strategy.md §7 row for Phase 2 also fixed: the original `vitest run --config app/vitest.config.ts app/src/components/scheduler` form did not pick up files because vitest's `include: ['src/**/*.test.ts', 'src/**/*.test.tsx']` is root-relative; added `--root app` so vitest resolves `include` against `app/`. Green phase is owned by the Implementer (jr role).
 >
@@ -91,6 +91,14 @@
 > **Worktree state after fix:** clean. `git status --porcelain` returns no output. All 3 unrelated items are preserved in `stash@{0}` (verifiable via `git stash show -u stash@{0}`) for recovery when needed. The committed `4b04c02c` (test files + plan.md note + test-strategy.md §7 row fix) is preserved unchanged.
 >
 > **Handoff to Green-phase owner (jr):** unchanged from attempt-1 handoff. Implement 4 components under `app/src/components/scheduler/` with shadcn/ui Table / Switch / Dialog primitives. Components take plain `SchedulerTask[]` / `TaskExecutionRow[]` props and expose callbacks (no `schedulerApi` typed client needed at this layer — Phase 3 page will own that). Recovery for the unrelated stashed items is `git stash pop stash@{0}` if/when those concerns resurface (e.g., after Phase 5 closeout). Green/Closeout gate: re-run the same targeted Red command and confirm exit 0 (35 tests pass), then `npm --workspace=app run build` per test-strategy.md §7.
+> 
+> **Green phase (jr role, 2026-06-18):** Phase 2 implementation committed as `844f88f5`. All 4 components implemented:
+> - `TaskStatusBadge`: renders healthy/warning/error/disabled variants with status color tokens, title attribute, className forwarding
+> - `CronIntervalPicker`: preset buttons (15m/30m/1h/6h/12h/24h) with `aria-pressed`, custom cron input with 5-field validation, disabled prop
+> - `TaskSchedulerTable`: uses shadcn Table + Switch primitives, sortable by lastRunAt, Run Now button per row, toggle with `onToggleEnabled(id, nextEnabled)`, empty state
+> - `TaskHistoryPanel`: pagination controls (prev/next disabled at boundaries), date-range from/to inputs, native `<select>` status filter (All/Success/Failed/Running), empty state
+>
+> Targeted Green command: `vitest run --config app/vitest.config.ts --root app app/src/components/scheduler` → exit 0, 4 test files / 35 tests passed. Server route regression: `vitest run server/src/api/routes` → 37 files / 294 tests passed. App typecheck: 0 errors from scheduler components (3 pre-existing errors in ImportListSettings.tsx, msw/factories.ts, msw/handlers/helpers.ts are unrelated). App build is blocked by the same pre-existing type errors (not introduced by this track). Graph.db updated: 4 files, 61 nodes, 88 edges added. Phase 2 is fully GREEN.
 
 ## Phase 3: Automation Settings Page (TDD)
 

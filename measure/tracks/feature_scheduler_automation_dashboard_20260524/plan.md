@@ -17,6 +17,13 @@
 > - `taskExecutions.test.ts` (9/9 fail): `schema.taskExecutions is undefined` (2), `PRAGMA table_info("TaskExecution")` returns `[]` because the table is not created by the migration (5), `Cannot read properties of undefined (reading 'Symbol(drizzle:Columns)')` on insert because the table symbol is missing (2). All caused by missing schema/table — no test-infrastructure noise.
 > - `schedulerRoutes.test.ts` (1 failed suite, 0 tests loaded): `Cannot find module './schedulerRoutes' from server/src/api/routes/schedulerRoutes.test.ts` — the route module under test does not exist yet.
 > Failure summary proves new behavior is missing, not stale-data. Green phase will be reached when both files exist with the contracts asserted above.
+>
+> **Red-phase re-verification (mid role, 2026-06-18, mid-day, after build-graph probe):** Re-ran the same targeted Red command against the same working tree. **Still RED**: exit 1, `Test Files 2 failed (2)`, `Tests 9 failed (9)`; `schedulerRoutes.test.ts` again fails the suite load with `Cannot find module './schedulerRoutes'` (0 tests loaded). No symbols under test have been added since the prior Red-phase commit (`build-graph search graph.db taskExecutions|TaskExecutionStatusEnum|schedulerRoutes` all returned 0 results; `git grep` confirms `taskExecutions`/`TaskExecutionStatusEnum` are not exported from `server/src/db/schema.ts`, and `server/src/api/routes/schedulerRoutes.ts` does not exist). Red phase is live; no contract tightening needed. Graph baseline: 7496 nodes / 10961 edges / 881 files (mtime ~17h). build-graph search for the three Phase-1 contract symbols returned no production-code nodes; blast radius for adding them is bounded to `server/src/db/schema.ts`, `server/src/db/drizzleClient.ts`, `server/src/services/Scheduler.ts`, `server/src/api/routes/index.ts`, and `server/src/api/createApiServer.ts` (per graph inspection — see test-strategy.md §6). Green phase still owned by Implementer (jr).
+>
+> **Dirty-worktree classification at this re-verification:**
+> - `M measure/automation-supervisor.py` — unrelated framework-internal change (model name + prompt prefixes for other roles); preserved, not included in this track's commit.
+> - `?? clients/mediarr-client/pubspec.lock` — Flutter client (out of scope per test-strategy.md §4); generated/ignorable.
+> - `?? measure/tracks/feature_scheduler_automation_dashboard_20260524/test-strategy.md` — track-relevant Measure doc; folded into the Red-phase plan/docs commit below so the track's artifact history is complete.
 
 ## Phase 2: Shared UI Components (TDD)
 

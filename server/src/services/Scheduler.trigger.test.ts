@@ -220,4 +220,23 @@ describe('Scheduler.reschedule() — hot reload without restart', () => {
     const meta = scheduler.listJobsMeta().find((m) => m.name === 'rss-sync');
     expect(meta?.lastRunAt).not.toBeNull();
   });
+
+  it('is a no-op when rescheduling with the same expression (no stop, no new schedule)', () => {
+    // Hot-reload edge case from test-strategy.md §3: same expression must
+    // not churn the underlying cron task. At HEAD the implementation always
+    // calls job.task.stop() and cronSchedule() unconditionally, so this
+    // assertion fails — Phase 4 Green must add an early return when the new
+    // expression equals the existing one.
+    scheduler.schedule('rss-sync', '*/15 * * * *', () => undefined);
+    const oldTask = cronSpy.tasks[0];
+    expect(oldTask).toBeDefined();
+    expect(cronSpy.scheduleMock).toHaveBeenCalledTimes(1);
+
+    scheduler.reschedule('rss-sync', '*/15 * * * *');
+
+    expect(oldTask?.stop).not.toHaveBeenCalled();
+    expect(cronSpy.scheduleMock).toHaveBeenCalledTimes(1);
+    const meta = scheduler.listJobsMeta().find((m) => m.name === 'rss-sync');
+    expect(meta?.cronExpression).toBe('*/15 * * * *');
+  });
 });

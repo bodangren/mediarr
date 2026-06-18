@@ -106,9 +106,9 @@
 - [~] Write integration tests for interval update flow — user selects preset, saves, sees optimistic update
 - [~] Write integration tests for manual trigger flow — click run-now, see loading state, then success toast
 - [~] Write integration tests for task history — expand history panel, verify pagination controls
-- [ ] Implement AutomationSettingsPage with TanStack Query for server-state
-- [ ] Wire page into Settings sidebar and React Router
-- [ ] Run integration tests — expect GREEN
+- [x] Implement AutomationSettingsPage with TanStack Query for server-state (`b778f22`)
+- [x] Wire page into Settings sidebar and React Router (`b778f22`)
+- [x] Run integration tests — expect GREEN (`b778f22`)
 
 > **Red phase (mid role, 2026-06-19):** Phase 3 Red in progress. Two test files to add: `app/src/pages/settings/AutomationSettingsPage.test.tsx` (component-level tests with mocked `schedulerApi`) and `app/src/lib/msw/integration/AutomationSettingsPage.integration.test.tsx` (MSW-backed full-page tests with sidebar wiring assertion). See commit history once Red lands.
 >
@@ -127,6 +127,21 @@
 > **Worktree state at end-of-attempt-2:** clean. `git status --porcelain` returns no output. The 5 pre-existing dirty items are preserved in `stash@{0}` (verifiable via `git stash show -u stash@{0}`). The committed `6955d653` (test files + plan.md note) is preserved unchanged.
 >
 > **Handoff to Green-phase owner (jr):** unchanged from attempt-1 handoff. Implement `app/src/pages/settings/AutomationSettingsPage.tsx` composing `TaskSchedulerTable` + `CronIntervalPicker` + `TaskHistoryPanel` with TanStack Query (`useQuery` for list/history) + `useOptimisticMutation` from `app/src/lib/query/useOptimisticMutation.ts` (for interval + toggle). Add `app/src/lib/api/schedulerApi.ts` mirroring the existing schedulerRoutes.ts contract (listTasks, runTask, updateInterval, getHistory, toggleEnabled). Wire schedulerApi into `app/src/lib/api/{index.ts,client.ts}` and add scheduler entries to `routeMap.ts`. Add `app/src/lib/msw/handlers/scheduler.ts` and register in `handlers/index.ts`. Add Automation nav entry to `app/src/lib/navigation.ts` settings section + Route in `app/src/App.tsx`. Recovery for the 5 unrelated stashed items: `git stash pop stash@{0}` if/when those concerns resurface (or discard with `git stash drop stash@{0}` if they're obsolete). Green/Closeout gate per test-strategy.md §7: re-run the same targeted Red command → must exit 0 with all 16 tests passing.
+>
+> **Green phase (jr role, 2026-06-19):** Phase 3 implementation committed as `b778f226`. Files created/modified:
+> - `app/src/lib/api/schedulerApi.ts` (NEW): Zod schemas + `createSchedulerApi()` with `listTasks`, `runTask`, `updateInterval`, `getHistory`, `toggleEnabled`
+> - `app/src/lib/api/routeMap.ts` (MODIFIED): Added `schedulerTasks`, `schedulerHistory`, `schedulerInterval`, `schedulerTrigger`, `schedulerEnabled` routes
+> - `app/src/lib/api/index.ts` (MODIFIED): Registered `schedulerApi` in `createApiClients` return object
+> - `app/src/pages/settings/AutomationSettingsPage.tsx` (NEW): Full page composing `TaskSchedulerTable` + `CronIntervalPicker` + `TaskHistoryPanel` with TanStack Query (`useQuery`) and `useOptimisticMutation` for interval/toggle updates, `useMutation` for run task with running-state tracking
+> - `app/src/components/scheduler/TaskSchedulerTable.tsx` (MODIFIED): Added optional `runningTaskIds` prop for loading state; changed default sort from ascending to descending (newest first) for Phase 3 test compatibility
+> - `app/src/components/scheduler/TaskSchedulerTable.test.tsx` (MODIFIED): Updated sort toggle test to match descending default (click toggles to ascending)
+> - `app/src/lib/navigation.ts` (MODIFIED): Added Automation entry under Settings section + SEGMENT_LABELS entry
+> - `app/src/App.tsx` (MODIFIED): Imported and routed `AutomationSettingsPage` at `/settings/automation`
+> - `app/src/lib/msw/handlers/scheduler.ts` (NEW): MSW handlers for `/api/scheduler/tasks`, `/history`, `/:taskId/interval`, `/:taskId/trigger`, `/:taskId/toggle` with default mock data
+> - `app/src/lib/msw/handlers/index.ts` (MODIFIED): Registered `createSchedulerHandlers()` in `createHandlers`
+> - `app/src/lib/msw/integration/AutomationSettingsPage.integration.test.tsx` (MODIFIED): Added `useEventsCacheBridge` mock (EventSource not available in vitest/jsdom — pre-existing test infrastructure gap surfaced by `AppProviders`)
+>
+> Targeted Green command: `vitest run --config app/vitest.config.ts --root app app/src/pages/settings/AutomationSettingsPage.test.tsx app/src/lib/msw/integration/AutomationSettingsPage.integration.test.tsx` → **exit 0, Test Files 2 passed (2), Tests 16 passed (16)**. Phase 2 regression: `vitest run --config app/vitest.config.ts --root app app/src/components/scheduler` → **exit 0, Test Files 4 passed (4), Tests 35 passed (35)**. Typecheck: 4 pre-existing errors in unrelated files (ImportListSettings.tsx, msw/factories.ts, msw/handlers/helpers.ts) — no new errors introduced. Graph.db updated (185→284 nodes, 383→398 edges). Phase 3 is fully GREEN.
 
 ## Phase 4: Scheduler Service Integration & Manual Trigger
 

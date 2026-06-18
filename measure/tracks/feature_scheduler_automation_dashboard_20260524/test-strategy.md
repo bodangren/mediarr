@@ -55,7 +55,7 @@
 | Phase | Targeted Red command (proves new behavior fails) | Green/Closeout gate (proves it passes live) |
 |---|---|---|
 | 1 | `vitest run server/src/db/__tests__/taskExecutions.test.ts server/src/api/routes/schedulerRoutes.test.ts` | same command exits 0; then `vitest run server/src/api/routes` for sibling-route regression |
-| 2 | `vitest run --config app/vitest.config.ts app/src/components/scheduler` | same exits 0; visual sanity via `npm --workspace=app run build` |
+| 2 | `./node_modules/.bin/vitest run --config app/vitest.config.ts --root app app/src/components/scheduler` | same exits 0; visual sanity via `npm --workspace=app run build` |
 | 3 | `vitest run --config app/vitest.config.ts app/src/pages/settings/AutomationSettingsPage.test.tsx app/src/lib/msw/integration/AutomationSettingsPage.integration.test.tsx` | same exits 0 |
 | 4 | `vitest run server/src/services/Scheduler.trigger.test.ts server/src/services/Scheduler.history.test.ts` | same exits 0; plus `vitest run server/src/services/Scheduler` to confirm no existing-file regression |
 | 5 | n/a (verification phase) | `CI=true npm test` exits 0, `npm run build` exits 0, `npm --workspace=app run typecheck` exits 0, both manual smoke flows pass |

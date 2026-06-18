@@ -66,12 +66,23 @@
 
 ## Phase 2: Shared UI Components (TDD)
 
-- [ ] Write component tests for `TaskStatusBadge` — renders correct color and label for each status variant
-- [ ] Write component tests for `CronIntervalPicker` — preset buttons update value, custom cron validates, rejects invalid
-- [ ] Write component tests for `TaskHistoryPanel` — renders paginated rows, date filter works, empty state
-- [ ] Write component tests for `TaskSchedulerTable` — row rendering, sort by lastRun, disable toggle fires callback
+- [~] Write component tests for `TaskStatusBadge` — renders correct color and label for each status variant
+- [~] Write component tests for `CronIntervalPicker` — preset buttons update value, custom cron validates, rejects invalid
+- [~] Write component tests for `TaskHistoryPanel` — renders paginated rows, date filter works, empty state
+- [~] Write component tests for `TaskSchedulerTable` — row rendering, sort by lastRun, disable toggle fires callback
 - [ ] Implement components with shadcn/ui Table, Switch, and Dialog primitives
 - [ ] Run component tests — expect GREEN
+
+> **Red phase (mid role, 2026-06-18):** Four component-test files added under `app/src/components/scheduler/`: `TaskStatusBadge.test.tsx` (6 tests), `CronIntervalPicker.test.tsx` (9 tests), `TaskSchedulerTable.test.tsx` (8 tests), `TaskHistoryPanel.test.tsx` (12 tests). All 4 tests assert shadcn/ui-style classes (`bg-status-completed/20`, `text-status-completed`, `bg-accent-warning/20`, `bg-status-error/20`, `bg-surface-2`) and behavioral contracts (preset `aria-pressed`, custom-cron validation rejection of `'99 99'` and `'not-a-cron'`, table sort by `lastRunAt`, `onRunNow` callback per row, `onToggleEnabled` with the next enabled value, history panel `onPageChange` increments/decrements page, `onDateFilterChange` for from/to filter inputs). Targeted Red command (Node 22.22.3 + vitest 4.0.18): `./node_modules/.bin/vitest run --config app/vitest.config.ts --root app app/src/components/scheduler` → **exit 1, Test Files 4 failed (4), Tests 0 loaded (4 failed suites)**. Every suite fails to load because the component modules (`./TaskStatusBadge`, `./CronIntervalPicker`, `./TaskSchedulerTable`, `./TaskHistoryPanel`) do not yet exist — `Failed to resolve import "./X" from "app/src/components/scheduler/X.test.tsx". Does the file exist?` is the entire error. No tests loaded → 35/35 tests fail by suite-load (not stale-data). test-strategy.md §7 row for Phase 2 also fixed: the original `vitest run --config app/vitest.config.ts app/src/components/scheduler` form did not pick up files because vitest's `include: ['src/**/*.test.ts', 'src/**/*.test.tsx']` is root-relative; added `--root app` so vitest resolves `include` against `app/`. Green phase is owned by the Implementer (jr role).
+>
+> **Red command (Node 22.22.3 + vitest 4.0.18):** `./node_modules/.bin/vitest run --config app/vitest.config.ts --root app app/src/components/scheduler` — exit code 1, **35 expected failures (4 failed suites, 0 tests loaded)**:
+> - `TaskStatusBadge.test.tsx` — 1 failed suite, 0/6 tests loaded. Cause: `Failed to resolve import "./TaskStatusBadge" from "app/src/components/scheduler/TaskStatusBadge.test.tsx"`. The component module does not exist; all 6 contract assertions (healthy/warning/error/disabled color tokens + label + title attribute + className forwarding) are blocked.
+> - `CronIntervalPicker.test.tsx` — 1 failed suite, 0/9 tests loaded. Cause: `Failed to resolve import "./CronIntervalPicker"`. All 9 contract assertions (preset buttons render, active preset `aria-pressed`, click emits cron string, custom-input pre-fill, valid-accept, `'99 99'` reject, `'not-a-cron'` reject, error-cleared-on-valid, `disabled` prop) are blocked.
+> - `TaskSchedulerTable.test.tsx` — 1 failed suite, 0/8 tests loaded. Cause: `Failed to resolve import "./TaskSchedulerTable"`. All 8 contract assertions (row-per-task, cron-expression cell, column headers, `onRunNow` per row with task id, `onToggleEnabled` with `(id, nextEnabled)`, disabled-state aria-checked, sort by lastRunAt descending, empty state) are blocked.
+> - `TaskHistoryPanel.test.tsx` — 1 failed suite, 0/12 tests loaded. Cause: `Failed to resolve import "./TaskHistoryPanel"`. All 12 contract assertions (row rendering, column headers, from/to date inputs, status filter with All/Success/Failed/Running options, empty state, pagination controls when totalCount > pageSize, prev/next disabled states, `onPageChange` increment/decrement, `onDateFilterChange` for from/to) are blocked.
+> Failure summary proves new behavior is missing, not stale-data. Green phase will be reached when all 4 component files exist with the contracts asserted above.
+>
+> **build-graph baseline at HEAD:** 7534 nodes / 10893 edges / 887 files (graph.db mtime <24h). build-graph search for `TaskStatusBadge|TaskSchedulerTable|TaskHistoryPanel|CronIntervalPicker` returned **0 production-code nodes** — confirms no pre-existing or partial implementation. Blast radius for Green-phase implementation: bounded to `app/src/components/scheduler/` (4 new files) + at most `app/src/lib/api/routeMap.ts` and `app/src/lib/api/index.ts` if the page (Phase 3) needs to register a typed `schedulerApi`. Phase 2 itself does not require a typed client — components take plain `SchedulerTask[]` / `TaskExecutionRow[]` props and expose callbacks, so Green-phase implementation stays scoped to the 4 component files.
 
 ## Phase 3: Automation Settings Page (TDD)
 

@@ -164,11 +164,46 @@
 
 ## Phase 4: Scheduler Service Integration & Manual Trigger
 
-- [ ] Write unit tests for scheduler service `triggerTask()` — executes job, records execution, handles errors
-- [ ] Write unit tests for interval hot-reload — updating cron expression reschedules without restart
-- [ ] Integrate trigger endpoint with existing node-cron jobs; wrap each job with execution recording
-- [ ] Add execution cleanup (retain last 100 records per task) to prevent unbounded growth
+- [~] Write unit tests for scheduler service `triggerTask()` — executes job, records execution, handles errors
+- [~] Write unit tests for interval hot-reload — updating cron expression reschedules without restart
+- [~] Integrate trigger endpoint with existing node-cron jobs; wrap each job with execution recording
+- [~] Add execution cleanup (retain last 100 records per task) to prevent unbounded growth
 - [ ] Run unit + integration tests — expect GREEN
+
+> **Red phase (mid role, 2026-06-19, attempt-1):** Two new test files added under `server/src/services/`:
+> - `Scheduler.trigger.test.ts` (9 tests) — covers `Scheduler.triggerTask()` (creates RUNNING taskExecution record, updates to SUCCESS with duration, updates to FAILED with errorMessage, throws when not scheduled) and `Scheduler.reschedule()` (stops old task + schedules new with updated expression, listJobsMeta reflects new expression, rejects invalid cron without stopping the old task, throws when not registered, preserves the wrapped callback after reschedule so the new tick still fires the original job).
+> - `Scheduler.history.test.ts` (6 tests) — covers the wrap-with-recording contract (cron tick writes a RUNNING taskExecution record, updates to SUCCESS with completedAt + durationMs on resolve, updates to FAILED with errorMessage on throw) and `Scheduler.pruneTaskExecutions()` (calls repo.prune with the task name + default retain count of 100, forwards a custom retain count, returns the deletion count from the repo).
+>
+> **Targeted Red command (Node 22.22.3 + vitest 4.0.18):** `./node_modules/.bin/vitest run server/src/services/Scheduler.trigger.test.ts server/src/services/Scheduler.history.test.ts` → **exit 1, Test Files 2 failed (2), Tests 10 failed | 5 passed (15)**. Failure breakdown:
+> - `Scheduler.trigger.test.ts` (4/9 failed): all 4 `triggerTask()` tests fail with `TypeError: scheduler.setTaskExecutionsRepository is not a function` at `createSchedulerWithRepo` (line 49). The 5 reschedule tests **pass** — `Scheduler.reschedule()` is already implemented (Phase 1 added it) and the new tests serve as regression coverage.
+> - `Scheduler.history.test.ts` (6/6 failed): all 6 tests fail with the same `TypeError: scheduler.setTaskExecutionsRepository is not a function` at `createSchedulerWithRepo` (line 49). The 3 wrap-with-recording tests assert the wrapped callback in `schedule()` writes to the repo, which it does not at HEAD. The 3 prune tests assert `pruneTaskExecutions` exists, which it does not at HEAD.
+>
+> All 10 failures are real missing-behavior failures (not stale-data): `Scheduler.setTaskExecutionsRepository`, `Scheduler.triggerTask`, `Scheduler.pruneTaskExecutions`, and the repo-writing branch in the wrapped callback are not defined at HEAD.
+>
+> **build-graph baseline at HEAD:** 7622 nodes / 10996 edges / 894 files (graph.db mtime <24h). `build-graph search` for `setTaskExecutionsRepository|triggerTask|pruneTaskExecutions` returned **0 production-code nodes**, confirming the Phase 4 symbols are not yet defined in the scanned AST. `Scheduler` class is at `server/src/services/Scheduler.ts:30` with `runNow` + `reschedule` already in place. Phase 4 blast radius for the Green owner (jr) is bounded to `server/src/services/Scheduler.ts` (add 3 methods + update wrappedCallback) and `server/src/api/createApiServer.ts` (wire `taskExecutionsRepository` into the scheduler instance at bootstrap).
+>
+> **Phase 1 regression at HEAD:** `./node_modules/.bin/vitest run server/src/db/__tests__/taskExecutions.test.ts server/src/api/routes/schedulerRoutes.test.ts` → **exit 0, 2 files / 23 tests passed**. No new files touched beyond the committed `Scheduler.trigger.test.ts` + `Scheduler.history.test.ts` + plan.md note.
+>
+> **Existing Scheduler tests regression at HEAD:** `./node_modules/.bin/vitest run server/src/services/Scheduler.test.ts server/src/services/Scheduler.meta.test.ts server/src/services/Scheduler.subtitle.test.ts` → **exit 0, 3 files / 29 tests passed**. New test files do not affect existing ones.
+>
+> **Dirty-worktree classification at attempt-1:**
+> - `M conductor/archive/cardigann_runtime_parity_20260223/artifacts/final-phase5-compatibility-matrix.json` — UNRELATED (1-line `generatedAt` timestamp bump on archived track artifact, framework regenerates periodically). Preserved, not included in this track's commit.
+> - `?? app/src/lib/api/schedulerApi.test.ts` — UNRELATED (adversarial client-side API contract test for the `createSchedulerApi` client, not Phase 4 server-side scheduler service). Preserved, not included in this track's commit.
+> - `?? app/src/lib/msw/integration/AutomationSettingsPage.adversarial.integration.test.tsx` — UNRELATED (Phase 3 adversarial integration test, not Phase 4). Preserved, not included in this track's commit.
+> - `?? app/src/pages/settings/AutomationSettingsPage.adversarial.test.tsx` — UNRELATED (Phase 3 adversarial component test, not Phase 4). Preserved, not included in this track's commit.
+> All 4 pre-existing dirty items stashed off-tree as `stash@{0}` (label: "scheduler-dashboard Phase 4 Red attempt-1 — 4 pre-existing dirty items stashed off-tree to clear Red-phase boundary. Recover via: git stash pop stash@{0}"). Stash contents verified via `git stash show -u stash@{0}`. Worktree after stash: clean (`git status --porcelain` returns no output).
+>
+> **Task 2 (interval hot-reload) is already satisfied with evidence.** Phase 1 Green commit `ab3e10e0` added `Scheduler.reschedule(name, cronExpression)` per the spec; the 5 new reschedule tests in `Scheduler.trigger.test.ts` (stops old task + schedules new with updated expression, listJobsMeta reflects new expression, rejects invalid cron without stopping the old task, throws when not registered, preserves the wrapped callback after reschedule) all pass at HEAD, proving the existing `reschedule` implementation satisfies the "hot-reload without restart" contract. The new tests now lock that behavior in as regression coverage. Task 2 `[~]` checkbox remains as written (the new tests are the deliverable, even though the implementation is already in place).
+>
+> **Handoff to Green-phase owner (jr):** Implementation must add to `server/src/services/Scheduler.ts`:
+> 1. A `setTaskExecutionsRepository(repo)` setter that stores the repo (the wrap-with-recording + triggerTask + prune paths all depend on it being wired at bootstrap time).
+> 2. A `triggerTask(name)` async method that creates a RUNNING taskExecution record via `repo.create`, invokes the wrapped callback, then updates the record via `repo.update` (status SUCCESS on resolve with completedAt + durationMs + errorMessage=null; status FAILED on throw with completedAt + durationMs + errorMessage). Throws when the job is not scheduled and does not write a record in that case.
+> 3. A `pruneTaskExecutions(taskName, retainCount = 100)` async method that calls `repo.prune(taskName, retainCount)` and returns the deletion count.
+> 4. An update to the wrappedCallback in `schedule()` so it also calls `repo.create` (RUNNING) before invoking the user's callback and `repo.update` (SUCCESS/FAILED) after.
+>
+> Also: extend the `TaskExecutionsRepository` interface in `server/src/api/createApiServer.ts` to add `update(id, input)` and `prune(taskName, retainCount)` methods, and wire the repo into the scheduler instance at bootstrap (either before `registerSchedulerRoutes` or via a new `main.ts` hook). The `POST /api/scheduler/:taskId/trigger` route in `schedulerRoutes.ts` should be updated to call `scheduler.triggerTask(taskId)` instead of the current fire-and-forget `scheduler.runNow(taskId).catch(() => {})` pattern, so the route's response carries the actual execution status rather than a placeholder.
+>
+> **Green/Closeout gate per test-strategy.md §7 row for Phase 4:** `./node_modules/.bin/vitest run server/src/services/Scheduler.trigger.test.ts server/src/services/Scheduler.history.test.ts` → must exit 0 with all 15 tests passing. Then `./node_modules/.bin/vitest run server/src/services/Scheduler` to confirm no existing-file regression (3 files / 29 tests must remain green), then `./node_modules/.bin/vitest run server/src/api/routes` for sibling-route regression. Recovery for the 4 unrelated stashed items: `git stash pop stash@{0}` after the Green commit lands.
 
 ## Phase 5: Verification & Handoff
 

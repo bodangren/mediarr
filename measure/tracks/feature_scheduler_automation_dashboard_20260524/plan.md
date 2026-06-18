@@ -2,14 +2,14 @@
 
 ## Phase 1: Backend Schema & API Contracts (TDD)
 
-- [~] Write Drizzle schema tests for `taskExecutions` table (columns: id, taskName, startedAt, completedAt, status, durationMs, errorMessage)
-- [~] Write migration test verifying table creation with drizzle-kit
-- [~] Write tests for `GET /api/scheduler/tasks` — returns task metadata array
-- [~] Write tests for `PUT /api/scheduler/:taskId/interval` — validates cron, rejects invalid expressions, persists to AppSettings
-- [~] Write tests for `POST /api/scheduler/:taskId/trigger` — queues task, returns 202, writes execution record
-- [~] Write tests for `GET /api/scheduler/history` — pagination, filtering by status, default sort descending
-- [ ] Implement schema, routes, and scheduler service extensions
-- [ ] Run tests — expect GREEN
+- [x] Write Drizzle schema tests for `taskExecutions` table (columns: id, taskName, startedAt, completedAt, status, durationMs, errorMessage)
+- [x] Write migration test verifying table creation with drizzle-kit
+- [x] Write tests for `GET /api/scheduler/tasks` — returns task metadata array
+- [x] Write tests for `PUT /api/scheduler/:taskId/interval` — validates cron, rejects invalid expressions, persists to AppSettings
+- [x] Write tests for `POST /api/scheduler/:taskId/trigger` — queues task, returns 202, writes execution record
+- [x] Write tests for `GET /api/scheduler/history` — pagination, filtering by status, default sort descending
+- [x] Implement schema, routes, and scheduler service extensions
+- [x] Run tests — expect GREEN
 
 > Red phase (mid role, 2026-06-18): Two test files added — `server/src/db/__tests__/taskExecutions.test.ts` (schema + migration behaviour) and `server/src/api/routes/schedulerRoutes.test.ts` (4 routes × N paths). Both fail at HEAD because the symbols under test (`schema.taskExecutions`, `TaskExecutionStatusEnum`, `registerSchedulerRoutes`) are not yet exported / defined. Targeted Red command: `vitest run server/src/db/__tests__/taskExecutions.test.ts server/src/api/routes/schedulerRoutes.test.ts`. See commit history for the Red-phase commit. Green phase is owned by the Implementer (JR role).
 >
@@ -61,6 +61,8 @@
 > - `taskExecutions.test.ts` (9/9 fail): `schema.taskExecutions` undefined, `PRAGMA table_info("TaskExecution")` returns `[]` (column lookup fails, NOT NULL assertion fails, index missing), `Cannot read properties of undefined (reading 'Symbol(drizzle:Columns)')` on the two insert paths because `schema.taskExecutions` is undefined.
 > - `schedulerRoutes.test.ts` (1 failed suite, 0 tests loaded): `Cannot find module './schedulerRoutes' from server/src/api/routes/schedulerRoutes.test.ts`.
 > All 9 failures are real missing-behavior failures (not stale-data). build-graph probe at HEAD: search for `taskExecutions|TaskExecutionStatusEnum|registerSchedulerRoutes|schedulerRoutes` returned **0 production-code nodes** (graph.db: 7496 nodes / 10961 edges / 881 files, mtime ~17 min — well under 24h freshness threshold). Phase 1 Red phase is live at HEAD; no contract tightening needed. The 6 Red-phase test tasks (Phase 1 tasks 1–6) remain `[~]` and are fully exercised by the committed `taskExecutions.test.ts` (9 tests covering schema export + TaskExecutionStatusEnum + migration-applied layout + NOT NULL/nullable + index + insert round-trip + NOT NULL constraint) and `schedulerRoutes.test.ts` (14 tests covering GET /tasks, PUT /:taskId/interval, POST /:taskId/trigger, GET /history). Green-phase owner (jr) is unblocked: recover via `git stash pop stash@{0}`, commit as `feat(scheduler-dashboard): Phase 1 Green — taskExecutions schema + schedulerRoutes`, then re-run the targeted Red command as the Green/Closeout gate (must remain exit 0), then `./node_modules/.bin/vitest run server/src/api/routes` for sibling-route regression per test-strategy.md §7 row for Phase 1.
+>
+> **Green phase (jr role, 2026-06-18):** Phase 1 implementation committed as `ab3e10e0`. All 8 Green-phase files from `stash@{0}` recovered, reviewed, and committed. Targeted Red command → exit 0, 2 test files / 23 tests passed. Sibling route regression: `vitest run server/src/api/routes` → 37 files / 294 tests passed. Typecheck: clean. Graph.db updated (5 files, 32 → 46 nodes, 224 → 130 edges). Phase 1 is fully GREEN.
 
 ## Phase 2: Shared UI Components (TDD)
 

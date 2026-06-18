@@ -102,10 +102,10 @@
 
 ## Phase 3: Automation Settings Page (TDD)
 
-- [~] Write integration tests for AutomationSettingsPage — loads tasks on mount, displays scheduler table
-- [~] Write integration tests for interval update flow — user selects preset, saves, sees optimistic update
-- [~] Write integration tests for manual trigger flow — click run-now, see loading state, then success toast
-- [~] Write integration tests for task history — expand history panel, verify pagination controls
+- [x] Write integration tests for AutomationSettingsPage — loads tasks on mount, displays scheduler table (`6955d65`)
+- [x] Write integration tests for interval update flow — user selects preset, saves, sees optimistic update (`6955d65`)
+- [x] Write integration tests for manual trigger flow — click run-now, see loading state, then success toast (`6955d65`)
+- [x] Write integration tests for task history — expand history panel, verify pagination controls (`6955d65`)
 - [x] Implement AutomationSettingsPage with TanStack Query for server-state (`b778f22`)
 - [x] Wire page into Settings sidebar and React Router (`b778f22`)
 - [x] Run integration tests — expect GREEN (`b778f22`)
@@ -142,6 +142,16 @@
 > - `app/src/lib/msw/integration/AutomationSettingsPage.integration.test.tsx` (MODIFIED): Added `useEventsCacheBridge` mock (EventSource not available in vitest/jsdom — pre-existing test infrastructure gap surfaced by `AppProviders`)
 >
 > Targeted Green command: `vitest run --config app/vitest.config.ts --root app app/src/pages/settings/AutomationSettingsPage.test.tsx app/src/lib/msw/integration/AutomationSettingsPage.integration.test.tsx` → **exit 0, Test Files 2 passed (2), Tests 16 passed (16)**. Phase 2 regression: `vitest run --config app/vitest.config.ts --root app app/src/components/scheduler` → **exit 0, Test Files 4 passed (4), Tests 35 passed (35)**. Typecheck: 4 pre-existing errors in unrelated files (ImportListSettings.tsx, msw/factories.ts, msw/handlers/helpers.ts) — no new errors introduced. Graph.db updated (185→284 nodes, 383→398 edges). Phase 3 is fully GREEN.
+>
+> **Red-phase re-verification + check-box sync (mid role, 2026-06-19, current attempt):** Mid role entered a clean worktree with the 4 Red task checkboxes (1–4) still marked `[~]` even though the Red tests were committed at `6955d653` and the Green implementation at `b778f226` already makes them pass. Per the user instruction "If the new tests pass at HEAD, tighten the contract until at least one new test fails or mark the task as already satisfied with evidence instead of creating a false Red phase," the Red phase is **marked as already satisfied with evidence**:
+> - At HEAD (commit `1437c235`), the targeted Red command (Node v22.22.3 + vitest 4.0.18) `./node_modules/.bin/vitest run --config app/vitest.config.ts --root app app/src/pages/settings/AutomationSettingsPage.test.tsx app/src/lib/msw/integration/AutomationSettingsPage.integration.test.tsx` → **exit 0, Test Files 2 passed (2), Tests 16 passed (16)**. All 16 contract assertions pass: page title + schedulerApi.listTasks() on mount, per-task row rendering, Run Now / runTask / loading state, interval preset click / updateInterval, optimistic update + rollback on rejection, history panel + pagination + from/to date filters, MSW-backed scheduled-tasks render, latency-on-PUT optimistic-update + rollback, NAV_ITEMS Automation link, sidebar Automation link.
+> - build-graph baseline at HEAD: 7622 nodes / 10996 edges / 894 files (graph.db mtime ~6 min — well under 24h freshness). `build-graph search` for `AutomationSettingsPage` returns `function:AutomationSettingsPage` (exported) and `file:AutomationSettingsPage.tsx`; `build-graph inspect createSchedulerApi` shows 2 incoming edges (`contains` from file, `param_flow` from `client` param) confirming the typed client is wired into the page.
+> - Phase 2 regression at HEAD: `./node_modules/.bin/vitest run --config app/vitest.config.ts --root app app/src/components/scheduler` → **exit 0, Test Files 4 passed (4), Tests 35 passed (35)**.
+> - Phase 1 regression at HEAD: `git log --oneline` confirms `ab3e10e0` Phase 1 Green; Phase 1 test files unchanged since `cd95855`.
+> - Worktree at start of attempt: `git status --porcelain` returns no output. No dirty-worktree protocol needed.
+> - The 4 Red task checkboxes are now `[x]` with the `6955d65` (short SHA) reference. No new tests added — the Red contracts are fully exercised by the committed `AutomationSettingsPage.test.tsx` (12 tests) + `AutomationSettingsPage.integration.test.tsx` (4 tests). No contract tightening needed.
+>
+> **Handoff to Phase 4 owner:** Phase 3 is fully GREEN. Phase 4 (Scheduler Service Integration & Manual Trigger) is the next phase. The mid role's responsibility for Phase 3 ends here. Phase 4 Red owner should follow the same TDD discipline: write `server/src/services/Scheduler.trigger.test.ts` + `Scheduler.history.test.ts` first (or a new test pair), reuse the cron-validation parity test from test-strategy.md §3, and gate with `./node_modules/.bin/vitest run server/src/services/Scheduler.trigger.test.ts server/src/services/Scheduler.history.test.ts` per test-strategy.md §7 row for Phase 4.
 
 ## Phase 4: Scheduler Service Integration & Manual Trigger
 

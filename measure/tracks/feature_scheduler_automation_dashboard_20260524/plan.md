@@ -2,14 +2,21 @@
 
 ## Phase 1: Backend Schema & API Contracts (TDD)
 
-- [ ] Write Drizzle schema tests for `taskExecutions` table (columns: id, taskName, startedAt, completedAt, status, durationMs, errorMessage)
-- [ ] Write migration test verifying table creation with drizzle-kit
-- [ ] Write tests for `GET /api/scheduler/tasks` — returns task metadata array
-- [ ] Write tests for `PUT /api/scheduler/:taskId/interval` — validates cron, rejects invalid expressions, persists to AppSettings
-- [ ] Write tests for `POST /api/scheduler/:taskId/trigger` — queues task, returns 202, writes execution record
-- [ ] Write tests for `GET /api/scheduler/history` — pagination, filtering by status, default sort descending
+- [~] Write Drizzle schema tests for `taskExecutions` table (columns: id, taskName, startedAt, completedAt, status, durationMs, errorMessage)
+- [~] Write migration test verifying table creation with drizzle-kit
+- [~] Write tests for `GET /api/scheduler/tasks` — returns task metadata array
+- [~] Write tests for `PUT /api/scheduler/:taskId/interval` — validates cron, rejects invalid expressions, persists to AppSettings
+- [~] Write tests for `POST /api/scheduler/:taskId/trigger` — queues task, returns 202, writes execution record
+- [~] Write tests for `GET /api/scheduler/history` — pagination, filtering by status, default sort descending
 - [ ] Implement schema, routes, and scheduler service extensions
 - [ ] Run tests — expect GREEN
+
+> Red phase (mid role, 2026-06-18): Two test files added — `server/src/db/__tests__/taskExecutions.test.ts` (schema + migration behaviour) and `server/src/api/routes/schedulerRoutes.test.ts` (4 routes × N paths). Both fail at HEAD because the symbols under test (`schema.taskExecutions`, `TaskExecutionStatusEnum`, `registerSchedulerRoutes`) are not yet exported / defined. Targeted Red command: `vitest run server/src/db/__tests__/taskExecutions.test.ts server/src/api/routes/schedulerRoutes.test.ts`. See commit history for the Red-phase commit. Green phase is owned by the Implementer (JR role).
+>
+> **Red command (Node 22.22.3 + vitest 4.0.18):** `./node_modules/.bin/vitest run server/src/db/__tests__/taskExecutions.test.ts server/src/api/routes/schedulerRoutes.test.ts` — exit code 1, **10 failures / 9 tests + 1 failed suite**:
+> - `taskExecutions.test.ts` (9/9 fail): `schema.taskExecutions is undefined` (2), `PRAGMA table_info("TaskExecution")` returns `[]` because the table is not created by the migration (5), `Cannot read properties of undefined (reading 'Symbol(drizzle:Columns)')` on insert because the table symbol is missing (2). All caused by missing schema/table — no test-infrastructure noise.
+> - `schedulerRoutes.test.ts` (1 failed suite, 0 tests loaded): `Cannot find module './schedulerRoutes' from server/src/api/routes/schedulerRoutes.test.ts` — the route module under test does not exist yet.
+> Failure summary proves new behavior is missing, not stale-data. Green phase will be reached when both files exist with the contracts asserted above.
 
 ## Phase 2: Shared UI Components (TDD)
 

@@ -62,41 +62,7 @@ export class Scheduler {
       throw new Error(`Invalid cron expression: ${cronExpression}`);
     }
 
-    const wrappedCallback = async () => {
-      const start = Date.now();
-      let record: { id: number } | undefined;
-      try {
-        if (this.taskExecutionsRepository) {
-          record = await this.taskExecutionsRepository.create({
-            taskName: name,
-            startedAt: new Date(),
-            status: 'RUNNING',
-          });
-        }
-        await callback();
-        if (this.taskExecutionsRepository && record) {
-          await this.taskExecutionsRepository.update(record.id, {
-            status: 'SUCCESS',
-            completedAt: new Date(),
-            durationMs: Date.now() - start,
-            errorMessage: null,
-          });
-        }
-      } catch (error) {
-        console.error(`Scheduler job '${name}' failed:`, error);
-        if (this.taskExecutionsRepository && record) {
-          await this.taskExecutionsRepository.update(record.id, {
-            status: 'FAILED',
-            completedAt: new Date(),
-            durationMs: Date.now() - start,
-            errorMessage: error instanceof Error ? error.message : String(error),
-          });
-        }
-      } finally {
-        meta.lastRunAt = new Date().toISOString();
-        meta.lastDurationMs = Date.now() - start;
-      }
-    };
+    const wrappedCallback = () => this.executeRecorded(name, callback);
 
     const meta: ScheduledJob = {
       task: null as unknown as ScheduledTask,
@@ -281,37 +247,7 @@ export class Scheduler {
     if (!job) {
       throw new Error(`Job '${name}' is not scheduled`);
     }
-
-    const start = Date.now();
-    let record: { id: number } | undefined;
-    try {
-      if (this.taskExecutionsRepository) {
-        record = await this.taskExecutionsRepository.create({
-          taskName: name,
-          startedAt: new Date(),
-          status: 'RUNNING',
-        });
-      }
-      await job.callback();
-      if (this.taskExecutionsRepository && record) {
-        await this.taskExecutionsRepository.update(record.id, {
-          status: 'SUCCESS',
-          completedAt: new Date(),
-          durationMs: Date.now() - start,
-          errorMessage: null,
-        });
-      }
-    } catch (error) {
-      if (this.taskExecutionsRepository && record) {
-        await this.taskExecutionsRepository.update(record.id, {
-          status: 'FAILED',
-          completedAt: new Date(),
-          durationMs: Date.now() - start,
-          errorMessage: error instanceof Error ? error.message : String(error),
-        });
-      }
-      throw error;
-    }
+    await this.executeRecorded(name, job.callback, { rethrow: true });
   }
 
   /**
@@ -322,6 +258,65 @@ export class Scheduler {
       return 0;
     }
     return this.taskExecutionsRepository.prune(taskName, retainCount);
+  }
+
+  /**
+   * Shared execution harness used by both cron-fired callbacks and manual
+   * triggers. Records a RUNNING taskExecution, runs the callback, updates the
+   * record to SUCCESS/FAILED, refreshes the job's last-run metadata, and
+   * prunes old executions to keep history bounded.
+   */
+  private async executeRecorded(
+    name: string,
+    callback: JobCallback,
+    options: { rethrow?: boolean } = {},
+  ): Promise<void> {
+    const start = Date.now();
+    let record: { id: number } | undefined;
+    try {
+      if (this.taskExecutionsRepository) {
+        record = await this.taskExecutionsRepository.create({
+          taskName: name,
+          startedAt: new Date(),
+          status: 'RUNNING',
+        });
+      }
+      await callback();
+      if (this.taskExecutionsRepository && record) {
+        await this.taskExecutionsRepository.update(record.id, {
+          status: 'SUCCESS',
+          completedAt: new Date(),
+          durationMs: Date.now() - start,
+          errorMessage: null,
+        });
+      }
+    } catch (error) {
+      console.error(`Scheduler job '${name}' failed:`, error);
+      if (this.taskExecutionsRepository && record) {
+        await this.taskExecutionsRepository.update(record.id, {
+          status: 'FAILED',
+          completedAt: new Date(),
+          durationMs: Date.now() - start,
+          errorMessage: error instanceof Error ? error.message : String(error),
+        });
+      }
+      if (options.rethrow) {
+        throw error;
+      }
+    } finally {
+      const job = this.jobs.get(name);
+      if (job) {
+        job.lastRunAt = new Date().toISOString();
+        job.lastDurationMs = Date.now() - start;
+      }
+      if (this.taskExecutionsRepository) {
+        try {
+          await this.pruneTaskExecutions(name, 100);
+        } catch (pruneError) {
+          console.error(`Scheduler failed to prune executions for '${name}':`, pruneError);
+        }
+      }
+    }
   }
 
   /**

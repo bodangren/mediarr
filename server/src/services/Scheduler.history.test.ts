@@ -1,5 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { Scheduler } from './Scheduler';
+import { afterEach, beforeEach, describe, expect, it, vi, type MockedFunction } from 'vitest';
+import { Scheduler, type TaskExecutionsRepository } from './Scheduler';
 
 // Spy on node-cron so scheduled tasks don't actually fire during tests.
 // The captured callbacks let the wrap-with-recording tests invoke the
@@ -27,9 +27,9 @@ vi.mock('node-cron', () => ({
 }));
 
 interface TaskExecutionsRepositoryMock {
-  create: ReturnType<typeof vi.fn>;
-  update: ReturnType<typeof vi.fn>;
-  prune: ReturnType<typeof vi.fn>;
+  create: MockedFunction<TaskExecutionsRepository['create']>;
+  update: MockedFunction<TaskExecutionsRepository['update']>;
+  prune: MockedFunction<TaskExecutionsRepository['prune']>;
 }
 
 function createRepoMock(): TaskExecutionsRepositoryMock {
@@ -78,7 +78,7 @@ describe('Scheduler wrap-with-recording (cron fire path)', () => {
     repo.update.mockResolvedValue(undefined);
     scheduler.schedule('rss-sync', '*/15 * * * *', async () => undefined);
 
-    const wrapped = cronSpy.callbacks[0];
+    const wrapped = cronSpy.callbacks[0]!;
     expect(wrapped).toBeTypeOf('function');
     await wrapped();
 
@@ -138,6 +138,21 @@ describe('Scheduler wrap-with-recording (cron fire path)', () => {
     expect(updateArgs[1].status).toBe('FAILED');
     expect(updateArgs[1].errorMessage).toContain('rss parse failed');
     expect(updateArgs[1].completedAt).toBeInstanceOf(Date);
+  });
+
+  it('prunes old executions after a cron tick resolves', async () => {
+    repo.create.mockResolvedValue({ id: 4 });
+    repo.update.mockResolvedValue(undefined);
+    repo.prune.mockResolvedValue(2);
+    scheduler.schedule('rss-sync', '*/15 * * * *', async () => undefined);
+
+    const wrapped = cronSpy.callbacks[0]!;
+    await wrapped();
+
+    expect(repo.prune).toHaveBeenCalledTimes(1);
+    const pruneArgs = repo.prune.mock.calls[0] as [string, number];
+    expect(pruneArgs[0]).toBe('rss-sync');
+    expect(pruneArgs[1]).toBe(100);
   });
 });
 

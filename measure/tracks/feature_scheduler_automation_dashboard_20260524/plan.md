@@ -164,12 +164,24 @@
 
 ## Phase 4: Scheduler Service Integration & Manual Trigger
 
-- [~] Write unit tests for scheduler service `triggerTask()` — executes job, records execution, handles errors
-- [~] Write unit tests for interval hot-reload — updating cron expression reschedules without restart
-- [~] Integrate trigger endpoint with existing node-cron jobs; wrap each job with execution recording
-- [~] Add execution cleanup (retain last 100 records per task) to prevent unbounded growth
-- [ ] Run unit + integration tests — expect GREEN
+- [x] Write unit tests for scheduler service `triggerTask()` — executes job, records execution, handles errors (`442405e6`, Red-phase tests; `03d49621`, Green implementation)
+- [x] Write unit tests for interval hot-reload — updating cron expression reschedules without restart (`442405e6`, Red-phase tests + no-op early-return in `03d49621`)
+- [x] Integrate trigger endpoint with existing node-cron jobs; wrap each job with execution recording (`03d49621`)
+- [x] Add execution cleanup (retain last 100 records per task) to prevent unbounded growth (`03d49621`)
+- [x] Run unit + integration tests — expect GREEN (`03d49621`)
 
+> **Green phase (jr role, 2026-06-19):** Phase 4 implementation committed as `03d49621`. Files changed:
+> - `server/src/services/Scheduler.ts`: Added `TaskExecutionsRepository` interface export, `setTaskExecutionsRepository` setter, `triggerTask(name)` async method (creates RUNNING record → invokes callback → updates SUCCESS/FAILED), `pruneTaskExecutions(taskName, retainCount = 100)` async method (delegates to repo.prune, returns deletion count), no-op early-return in `reschedule()` when same expression, and updated `schedule()` wrappedCallback to write RUNNING/SUCCESS/FAILED taskExecution records via the repo when wired.
+> - `server/src/api/createApiServer.ts`: Extended `TaskExecutionsRepository` with `update(id, input)` and `prune(taskName, retainCount)` methods on the query adapter; calls `dependencies.scheduler.setTaskExecutionsRepository(taskExecutionsRepo)` before `registerSchedulerRoutes`.
+> - `server/src/api/routes/schedulerRoutes.ts`: Swapped `POST /:taskId/trigger` from fire-and-forget `runNow(...).catch(() => {})` to `await scheduler.triggerTask(taskId)` with try/catch returning 500 EXECUTION_FAILED on throw.
+> - `server/src/api/types.ts`: Extended `ApiDependencies.scheduler` Pick from `listJobsMeta | runNow | listJobs | isScheduled | reschedule` to include `setTaskExecutionsRepository | triggerTask`.
+> - `server/src/api/routes/schedulerRoutes.test.ts`: Updated Phase 1 route tests to mock `triggerTask`/`update`/`prune` on the scheduler + repo fakes, replacing `runNow`-based assertions with `triggerTask` delegation.
+> - `server/src/api/routes/systemRoutes.test.ts`: Added `isScheduled`, `reschedule`, `setTaskExecutionsRepository`, `triggerTask` to the `createSchedulerMock` helper.
+>
+> **Targeted Green/Closeout gate:** `vitest run server/src/services/Scheduler.trigger.test.ts server/src/services/Scheduler.history.test.ts` → exit 0, 2 files / 16 tests passed. **Sibling-file regression:** `vitest run server/src/services/Scheduler` → exit 0, 5 files / 45 tests passed. **Sibling-route regression:** `vitest run server/src/api/routes/schedulerRoutes.test.ts server/src/api/routes/systemRoutes.test.ts` → exit 0, 2 files / 54 tests passed. Phase 4 is fully GREEN.
+>
+> **Reviewer A fix pass (2026-06-19):** Review identified two blocking correctness gaps in the committed `03d49621` implementation: (1) `triggerTask()` did not update the job's `lastRunAt`/`lastDurationMs` metadata, so manual runs would not be reflected in `GET /api/scheduler/tasks`; (2) `pruneTaskExecutions()` was implemented and tested but never invoked, so execution history could grow unbounded. Fixed by extracting a private `Scheduler.executeRecorded(name, callback, options)` harness shared by the cron-fired `wrappedCallback` and `triggerTask()`, which records RUNNING/SUCCESS/FAILED, refreshes metadata, and calls `pruneTaskExecutions(name, 100)` after every execution. Added 3 focused tests: `triggerTask` updates metadata, manual trigger prunes, cron tick prunes. Also fixed strict TypeScript errors in the two new test files and a possibly-undefined array access in `schedulerRoutes.ts#extractMinutes`. Post-fix gates: `vitest run server/src/services/Scheduler.trigger.test.ts server/src/services/Scheduler.history.test.ts` → 2 files / 19 tests passed; `vitest run server/src/services/Scheduler` → 5 files / 48 tests passed; `vitest run server/src/api/routes/schedulerRoutes.test.ts server/src/api/routes/systemRoutes.test.ts` → 2 files / 54 tests passed. No new server type errors introduced by Phase 4 files (pre-existing errors remain in unrelated files).
+>
 > **Red phase (mid role, 2026-06-19, attempt-1):** Two new test files added under `server/src/services/`:
 > - `Scheduler.trigger.test.ts` (9 tests) — covers `Scheduler.triggerTask()` (creates RUNNING taskExecution record, updates to SUCCESS with duration, updates to FAILED with errorMessage, throws when not scheduled) and `Scheduler.reschedule()` (stops old task + schedules new with updated expression, listJobsMeta reflects new expression, rejects invalid cron without stopping the old task, throws when not registered, preserves the wrapped callback after reschedule so the new tick still fires the original job).
 > - `Scheduler.history.test.ts` (6 tests) — covers the wrap-with-recording contract (cron tick writes a RUNNING taskExecution record, updates to SUCCESS with completedAt + durationMs on resolve, updates to FAILED with errorMessage on throw) and `Scheduler.pruneTaskExecutions()` (calls repo.prune with the task name + default retain count of 100, forwards a custom retain count, returns the deletion count from the repo).

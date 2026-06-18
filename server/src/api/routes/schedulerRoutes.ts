@@ -42,7 +42,7 @@ const TASK_INTERVAL_KEY: Record<string, keyof { rssSyncMinutes: number; availabi
 function extractMinutes(cronExpression: string): number | null {
   const parts = cronExpression.split(' ');
   if (parts.length !== 5) return null;
-  const minutePart = parts[0];
+  const minutePart = parts[0]!;
   if (minutePart.startsWith('*/')) {
     const n = parseInt(minutePart.slice(2), 10);
     if (!isNaN(n) && n > 0) return n;

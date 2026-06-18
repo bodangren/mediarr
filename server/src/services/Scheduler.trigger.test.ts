@@ -1,5 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { Scheduler } from './Scheduler';
+import { afterEach, beforeEach, describe, expect, it, vi, type MockedFunction } from 'vitest';
+import { Scheduler, type TaskExecutionsRepository } from './Scheduler';
 
 // Spy on node-cron so scheduled tasks don't actually fire during tests.
 // Captures the callback registered for every schedule() call so trigger /
@@ -27,9 +27,9 @@ vi.mock('node-cron', () => ({
 }));
 
 interface TaskExecutionsRepositoryMock {
-  create: ReturnType<typeof vi.fn>;
-  update: ReturnType<typeof vi.fn>;
-  prune: ReturnType<typeof vi.fn>;
+  create: MockedFunction<TaskExecutionsRepository['create']>;
+  update: MockedFunction<TaskExecutionsRepository['update']>;
+  prune: MockedFunction<TaskExecutionsRepository['prune']>;
 }
 
 function createRepoMock(): TaskExecutionsRepositoryMock {
@@ -135,6 +135,35 @@ describe('Scheduler.triggerTask()', () => {
     expect(updateArgs[1].completedAt).toBeInstanceOf(Date);
   });
 
+  it('updates job metadata so listJobsMeta reflects the manual run', async () => {
+    repo.create.mockResolvedValue({ id: 102 });
+    repo.update.mockResolvedValue(undefined);
+    const callback = vi.fn().mockResolvedValue(undefined);
+    scheduler.schedule('rss-sync', '*/15 * * * *', callback);
+
+    await scheduler.triggerTask('rss-sync');
+
+    const meta = scheduler.listJobsMeta().find((m) => m.name === 'rss-sync');
+    expect(meta?.lastRunAt).not.toBeNull();
+    expect(typeof meta?.lastDurationMs).toBe('number');
+    expect(meta?.lastDurationMs).toBeGreaterThanOrEqual(0);
+  });
+
+  it('prunes old executions after a successful manual trigger', async () => {
+    repo.create.mockResolvedValue({ id: 103 });
+    repo.update.mockResolvedValue(undefined);
+    repo.prune.mockResolvedValue(5);
+    const callback = vi.fn().mockResolvedValue(undefined);
+    scheduler.schedule('rss-sync', '*/15 * * * *', callback);
+
+    await scheduler.triggerTask('rss-sync');
+
+    expect(repo.prune).toHaveBeenCalledTimes(1);
+    const pruneArgs = repo.prune.mock.calls[0] as [string, number];
+    expect(pruneArgs[0]).toBe('rss-sync');
+    expect(pruneArgs[1]).toBe(100);
+  });
+
   it('throws when the job is not scheduled and does not write a taskExecution record', async () => {
     await expect(scheduler.triggerTask('never-registered')).rejects.toThrow(
       /not scheduled/i,
@@ -213,7 +242,7 @@ describe('Scheduler.reschedule() — hot reload without restart', () => {
     // The most recent cronSchedule call captured the wrapped callback that
     // closes over the original job. Invoking it proves the reschedule kept
     // the job alive without a process restart.
-    const newWrapped = cronSpy.callbacks[1];
+    const newWrapped = cronSpy.callbacks[1]!;
     expect(newWrapped).toBeTypeOf('function');
     await newWrapped();
     expect(callback).toHaveBeenCalledTimes(1);

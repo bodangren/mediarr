@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { validate as cronValidate } from 'node-cron';
-import { sendSuccess, sendPaginatedSuccess, buildSuccessEnvelope, buildPaginatedEnvelope, type PaginationInput } from '../contracts';
+import { sendSuccess, sendPaginatedSuccess, buildSuccessEnvelope } from '../contracts';
 import type { Scheduler } from '../../services/Scheduler';
 import type { SettingsService } from '../../services/SettingsService';
 

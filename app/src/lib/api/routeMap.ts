@@ -195,4 +195,10 @@ export const routeMap = {
   customFormatSchema: '/api/custom-formats/schema',
 
   filesystem: '/api/filesystem',
+
+  schedulerTasks: '/api/scheduler/tasks',
+  schedulerHistory: '/api/scheduler/history',
+  schedulerInterval: (taskId: string) => `/api/scheduler/${taskId}/interval`,
+  schedulerTrigger: (taskId: string) => `/api/scheduler/${taskId}/trigger`,
+  schedulerEnabled: (taskId: string) => `/api/scheduler/${taskId}/toggle`,
 };

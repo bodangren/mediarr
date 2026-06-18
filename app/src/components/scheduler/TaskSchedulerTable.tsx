@@ -26,6 +26,7 @@ interface TaskSchedulerTableProps {
   tasks: SchedulerTask[];
   onRunNow: (taskId: string) => void;
   onToggleEnabled: (taskId: string, nextEnabled: boolean) => void;
+  runningTaskIds?: Set<string>;
 }
 
 function formatDateTime(iso: string): string {
@@ -38,8 +39,8 @@ function formatDateTime(iso: string): string {
   });
 }
 
-export function TaskSchedulerTable({ tasks, onRunNow, onToggleEnabled }: TaskSchedulerTableProps) {
-  const [sortAsc, setSortAsc] = useState(true);
+export function TaskSchedulerTable({ tasks, onRunNow, onToggleEnabled, runningTaskIds }: TaskSchedulerTableProps) {
+  const [sortAsc, setSortAsc] = useState(false);
 
   const sortedTasks = [...tasks].sort((a, b) => {
     const da = new Date(a.lastRunAt).getTime();
@@ -92,8 +93,13 @@ export function TaskSchedulerTable({ tasks, onRunNow, onToggleEnabled }: TaskSch
               />
             </TableCell>
             <TableCell>
-              <Button variant="outline" size="sm" onClick={() => onRunNow(task.id)}>
-                Run Now
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={runningTaskIds?.has(task.id)}
+                onClick={() => onRunNow(task.id)}
+              >
+                {runningTaskIds?.has(task.id) ? 'Running...' : 'Run Now'}
               </Button>
             </TableCell>
           </TableRow>

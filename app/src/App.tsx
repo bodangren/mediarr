@@ -22,6 +22,7 @@ import { SettingsNotificationsPage } from '@/pages/settings/SettingsNotification
 import { SettingsStreamingPage } from '@/pages/settings/SettingsStreamingPage';
 import { SettingsGeneralPage } from '@/pages/settings/SettingsGeneralPage';
 import { SettingsUpdatesPage } from '@/pages/settings/SettingsUpdatesPage';
+import { AutomationSettingsPage } from '@/pages/settings/AutomationSettingsPage';
 import { SetupWizardPage } from '@/pages/SetupWizardPage';
 import { SearchPage } from '@/pages/SearchPage';
 import { MoviesLibraryPage } from '@/pages/MoviesLibraryPage';
@@ -123,6 +124,7 @@ export default function App() {
                   <Route path="settings/notifications" element={<SettingsNotificationsPage />} />
                   <Route path="settings/updates" element={<SettingsUpdatesPage />} />
                   <Route path="settings/general" element={<SettingsGeneralPage />} />
+                  <Route path="settings/automation" element={<AutomationSettingsPage />} />
 
                   <Route path="system/tasks" element={<SystemTasksPage />} />
                   <Route path="system/logs" element={<SystemLogsPage />} />

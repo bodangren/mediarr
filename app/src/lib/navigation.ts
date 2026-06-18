@@ -66,6 +66,7 @@ export const NAV_ITEMS: NavigationSection[] = [
       { path: '/settings/notifications', label: 'Notifications', shortLabel: 'Notify', icon: 'Bell' },
       { path: '/settings/updates', label: 'Updates', shortLabel: 'Updates', icon: 'ArrowUpCircle' },
       { path: '/settings/general', label: 'General', shortLabel: 'General', icon: 'Settings' },
+      { path: '/settings/automation', label: 'Automation', shortLabel: 'Automation', icon: 'Timer' },
     ],
   },
   {
@@ -103,6 +104,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   notifications: 'Notifications',
   updates: 'Updates',
   general: 'General',
+  automation: 'Automation',
   system: 'System',
   tasks: 'Tasks',
   logs: 'Logs',

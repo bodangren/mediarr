@@ -104,11 +104,13 @@ describe('TaskSchedulerTable', () => {
     expect(toggle).not.toBeChecked();
   });
 
-  it('sorts the table by lastRunAt descending when the Last Run header is clicked', async () => {
+  it('toggles sort direction when the Last Run header is clicked', async () => {
     const user = userEvent.setup();
     render(<TaskSchedulerTable tasks={baseTasks} onRunNow={() => {}} onToggleEnabled={() => {}} />);
 
+    // Default is descending (newest first)
     await user.click(screen.getByRole('columnheader', { name: /last run/i }));
+    // After one click, toggles to ascending (oldest first)
 
     const rowTaskNames = screen
       .getAllByRole('row')
@@ -116,7 +118,7 @@ describe('TaskSchedulerTable', () => {
       .filter((cell): cell is HTMLElement => cell !== null)
       .map((cell) => cell.textContent);
 
-    expect(rowTaskNames).toEqual(['RSS Sync', 'Wanted Search', 'Library Scan']);
+    expect(rowTaskNames).toEqual(['Library Scan', 'Wanted Search', 'RSS Sync']);
   });
 
   it('shows an empty state when there are no tasks', () => {

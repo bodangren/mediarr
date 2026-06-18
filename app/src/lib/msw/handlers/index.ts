@@ -6,6 +6,7 @@ import { createRemainingHandlers } from './remaining';
 import { createSettingsHandlers } from './settings';
 import { createSubtitleHandlers } from './subtitles';
 import { createSystemHandlers } from './system';
+import { createSchedulerHandlers } from './scheduler';
 
 export function createHandlers(mode: FactoryMode = 'deterministic'): RequestHandler[] {
   // Domain order matters only in that literal paths must precede parameterized
@@ -16,6 +17,7 @@ export function createHandlers(mode: FactoryMode = 'deterministic'): RequestHand
     ...createCoreHandlers(mode),
     ...createSettingsHandlers(mode),
     ...createSystemHandlers(mode),
+    ...createSchedulerHandlers(),
     ...createSubtitleHandlers(mode),
     ...createPlaybackHandlers(),
     ...createRemainingHandlers(mode),

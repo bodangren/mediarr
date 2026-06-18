@@ -13,6 +13,10 @@ vi.mock('@/components/providers/ToastProvider', () => ({
   useToast: () => ({ pushToast: vi.fn() }),
 }));
 
+vi.mock('@/lib/events/useEventsCacheBridge', () => ({
+  useEventsCacheBridge: () => {},
+}));
+
 import type { ReactNode } from 'react';
 
 function renderAutomationRoute() {

@@ -75,7 +75,7 @@ export function SettingsIndexersPage() {
 
   const handleReenable = useCallback(async (indexerId: number) => {
     try {
-      await api.indexerHealthApi.reenable(indexerId);
+      await api.indexerApi.update(indexerId, { enabled: true });
       pushToast({
         title: 'Indexer re-enabled',
         message: `Indexer ${indexerId} has been re-enabled.`,

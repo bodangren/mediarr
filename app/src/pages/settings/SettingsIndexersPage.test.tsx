@@ -24,7 +24,6 @@ const mockApi = vi.hoisted(() => ({
   },
   indexerHealthApi: {
     getHealth: vi.fn(),
-    reenable: vi.fn(),
   },
 }));
 
@@ -40,11 +39,6 @@ describe('SettingsIndexersPage', () => {
     mockApi.indexerHealthApi.getHealth.mockResolvedValue({
       indexerId: 0,
       snapshot: null,
-    });
-    mockApi.indexerHealthApi.reenable.mockResolvedValue({
-      id: 0,
-      enabled: true,
-      failureCount: 0,
     });
   });
 
@@ -266,7 +260,7 @@ describe('SettingsIndexersPage', () => {
     expect(mockApi.indexerHealthApi.getHealth).toHaveBeenCalledWith(2);
   });
 
-  it('calls indexerHealthApi.reenable and refetches the indexer list when re-enable is clicked', async () => {
+  it('calls indexerApi.update and refetches the indexer list when re-enable is clicked', async () => {
     mockApi.indexerApi.list
       .mockResolvedValueOnce([
         {
@@ -298,6 +292,19 @@ describe('SettingsIndexersPage', () => {
           priority: 25,
         },
       ]);
+    mockApi.indexerApi.update.mockResolvedValue({
+      id: 5,
+      name: 'Disabled Indexer',
+      implementation: 'Cardigann',
+      configContract: 'CardigannSettings',
+      settings: '{}',
+      protocol: 'torrent',
+      supportedMediaTypes: '[]',
+      enabled: true,
+      supportsRss: true,
+      supportsSearch: true,
+      priority: 25,
+    });
     mockApi.indexerHealthApi.getHealth.mockResolvedValue({
       indexerId: 5,
       snapshot: {
@@ -308,11 +315,6 @@ describe('SettingsIndexersPage', () => {
         lastFailureAt: '2026-06-19T03:00:00.000Z',
       },
     });
-    mockApi.indexerHealthApi.reenable.mockResolvedValue({
-      id: 5,
-      enabled: true,
-      failureCount: 0,
-    });
 
     render(<SettingsIndexersPage />);
 
@@ -322,7 +324,7 @@ describe('SettingsIndexersPage', () => {
     reenableButton.click();
 
     await waitFor(() => {
-      expect(mockApi.indexerHealthApi.reenable).toHaveBeenCalledWith(5);
+      expect(mockApi.indexerApi.update).toHaveBeenCalledWith(5, { enabled: true });
     });
 
     await waitFor(() => {

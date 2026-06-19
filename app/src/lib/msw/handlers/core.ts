@@ -420,26 +420,6 @@ export function createCoreHandlers(mode: FactoryMode = 'deterministic') {
       return sendSuccess({ indexerId: found.id, snapshot });
     }),
 
-    http.put('/api/indexers/:id/reenable', ({ params }) => {
-      const id = Number(params.id);
-      const found = dataset.indexers.find(item => item.id === id);
-      if (!found) {
-        return sendError('NOT_FOUND', `Indexer ${id} not found`, 404);
-      }
-
-      found.enabled = true;
-      if (found.health) {
-        found.health.failureCount = 0;
-        found.health.lastErrorMessage = null;
-      }
-
-      return sendSuccess({
-        id: found.id,
-        enabled: true,
-        failureCount: found.health?.failureCount ?? 0,
-      });
-    }),
-
     http.post('/api/indexers/test', async ({ request }) => {
       const body = (await request.json()) as { name?: string; settings?: string };
       let parsedSettings: Record<string, unknown> = {};

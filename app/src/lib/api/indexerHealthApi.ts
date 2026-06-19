@@ -20,14 +20,6 @@ const indexerHealthResponseSchema = z.object({
 export type IndexerHealthSnapshot = z.infer<typeof healthSnapshotSchema>;
 export type IndexerHealthResponse = z.infer<typeof indexerHealthResponseSchema>;
 
-const reenableResponseSchema = z.object({
-  id: z.number(),
-  enabled: z.boolean(),
-  failureCount: z.number().int().nonnegative(),
-});
-
-export type IndexerReenableResponse = z.infer<typeof reenableResponseSchema>;
-
 export function createIndexerHealthApi(client: ApiHttpClient) {
   return {
     getHealth(indexerId: number): Promise<IndexerHealthResponse> {
@@ -37,15 +29,6 @@ export function createIndexerHealthApi(client: ApiHttpClient) {
           method: 'GET',
         },
         indexerHealthResponseSchema,
-      );
-    },
-    reenable(indexerId: number): Promise<IndexerReenableResponse> {
-      return client.request(
-        {
-          path: routeMap.indexerReenable(indexerId),
-          method: 'PUT',
-        },
-        reenableResponseSchema,
       );
     },
   };

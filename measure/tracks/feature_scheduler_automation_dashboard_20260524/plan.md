@@ -514,3 +514,45 @@
 > 7. **Task 8 (commit and push) flow:** After jr owner commits the Green implementation, the mid role commits the plan.md update (`docs(scheduler-dashboard): Phase 5 Red attempt-3 — stash dirty lessons-learned.md, Red phase live at clean HEAD`) and the push step is owned by the user/jr role (the mid role does not push to remote per the established project convention).
 >
 > The 3 pre-existing unrelated items in `stash@{1}` (conductor archive timestamp, automation-supervisor framework refactor, Flutter client pubspec.lock) are preserved separately and are not part of this track's commit. Phase 5 tasks 1-8 stay `[~]` until Green lands; then mark `[x]` per the task-evidence policy documented above.
+>
+> **Red-phase re-verification (mid role, 2026-06-19, attempt-4):** Mid re-entered Phase 5 Red phase to re-verify Red is still live at clean HEAD with a clean worktree. Worktree at start of attempt-4 was dirty with **2 tracked modifications** + **2 untracked generated items**:
+> - `M measure/lessons-learned.md` — MIXED: 2 Green-phase scheduler-dashboard entries (Task 7 deliverable, lines 40-41) + 3 unrelated line-consolidation tidy blocks on other-track entries (chore_form_standardization_completion at line 22 collapsed 2 lines into 1; bug_manual_test_player_client_findings at line 32 collapsed 2 lines into 1; bug_manual_test_player_client_findings at line 35 collapsed 2 lines into 1).
+> - `M conductor/archive/cardigann_runtime_parity_20260223/artifacts/final-phase5-compatibility-matrix.json` — UNRELATED 1-line `generatedAt` timestamp bump on archived cardigann track artifact (same UNRELATED item classified in every Phase 1-5 prior attempt; framework regenerates periodically).
+> - `?? graph.db-journal` — GENERATED/IGNORABLE (SQLite journal file, auto-cleaned when SQLite closes).
+> - `?? measure/__pycache__/` — GENERATED/IGNORABLE (Python bytecode cache from a prior supervisor run, not from this track).
+>
+> Per the dirty-worktree protocol and the established Phase 1-5 supervisor-gate-fix pattern (folding Green implementation into a Red-phase commit would violate the test-only commit convention and hide Green work inside a "test" commit message; mixed-content files cannot be split into partial-edit commits without violating "preserve unrelated user work: do not overwrite, revert, or hide it in this track's commit"), both modified files were preserved off-tree as `stash@{0}` (label: "scheduler-dashboard Phase 5 Red attempt-4 mid — measure/lessons-learned.md dirty (Green-phase scheduler-dashboard entries + unrelated line consolidations on other track entries) + conductor archive timestamp bump stashed off-tree to clear Red-phase boundary. Recover via: git stash pop"). Stash contents verified via `git stash show -u stash@{0}`: 2 files / 5 insertions / 5 deletions.
+>
+> Worktree after stash: clean of all tracked-file modifications; only 2 GENERATED/IGNORABLE items remain (`?? graph.db-journal`, `?? measure/__pycache__/`).
+>
+> **Targeted Red command re-run at clean HEAD (Node 22.22.3 + vitest 4.0.18):** `./node_modules/.bin/vitest run measure/__tests__/lessons-learned.test.ts` → **exit 1, Test Files 1 failed (1), Tests 3 failed (3)**. Same 3 expected failures as attempts 1-3:
+> - Test 1 (`captures the cron validation parity pattern`): `expected false to be true` on `hasCronKeyword` assertion at line 20 — `measure/lessons-learned.md` at clean HEAD does not mention cron validation/validate anywhere.
+> - Test 2 (`captures the hot-reload pattern`): `expected false to be true` on `hasRescheduleKeyword` assertion at line 38 — `measure/lessons-learned.md` at clean HEAD does not mention Scheduler.reschedule or hot-reload patterns anywhere.
+> - Test 3 (`captures both patterns as discrete dated entries`): `expected false to be true` on `hasSchedulerDashboardAttribution` assertion at line 59 — `measure/lessons-learned.md` at clean HEAD has zero entries attributed to `feature_scheduler_automation_dashboard` (verified via `git show HEAD:measure/lessons-learned.md | grep -c feature_scheduler_automation_dashboard` → **0**; also `git show HEAD:measure/lessons-learned.md | grep -ic "cron.*validation\|hot.reload\|reschedule"` → **0**).
+>
+> All 3 failures are real missing-behavior failures (not stale-data): the doc content is the implementation of the "lessons learned" record, and the doc is empty of these patterns at clean HEAD. Red phase is demonstrably live at clean HEAD with the test-only commit convention preserved (no Green implementation committed in the `2d7002d6` Red test commit; the relevant Green-phase doc changes are isolated in `stash@{0}` for the jr Green owner).
+>
+> **Phase 1-4 regression at clean HEAD (Node 22.22.3 + vitest 4.0.18):**
+> - Phase 1: `./node_modules/.bin/vitest run server/src/db/__tests__/taskExecutions.test.ts server/src/api/routes/schedulerRoutes.test.ts` → **exit 0, 2 files / 23 tests passed** (taskExecutions.test 9, schedulerRoutes.test 14).
+> - Phase 2: `./node_modules/.bin/vitest run --config app/vitest.config.ts --root app app/src/components/scheduler` → **exit 0, 4 files / 35 tests passed** (TaskStatusBadge 6, CronIntervalPicker 9, TaskSchedulerTable 8, TaskHistoryPanel 12).
+> - Phase 3: `./node_modules/.bin/vitest run --config app/vitest.config.ts --root app app/src/pages/settings/AutomationSettingsPage.test.tsx app/src/lib/msw/integration/AutomationSettingsPage.integration.test.tsx` → **exit 0, 2 files / 16 tests passed** (AutomationSettingsPage.test 12, integration.test 4).
+> - Phase 4: `./node_modules/.bin/vitest run server/src/services/Scheduler.trigger.test.ts server/src/services/Scheduler.history.test.ts` → **exit 0, 2 files / 19 tests passed** (trigger.test 12, history.test 7).
+>
+> Total: 10 files / 93 tests passed in targeted Phase 1-4 regressions. All 4 prior phases remain GREEN at clean HEAD; no regressions.
+>
+> **build-graph baseline at clean HEAD (Node 22.22.3 + build-graph 0.1.0):** 7640 nodes / 11270 edges / 899 files (graph.db mtime ~5 min, well under 24h freshness). `build-graph search` for `lessons-learned` and `feature_scheduler_automation_dashboard` returned **0 nodes** (expected — markdown docs are not in the AST). `build-graph search` for `Scheduler` returns `class:Scheduler` at `server/src/services/Scheduler.ts` with `reschedule` + `runNow` methods visible. Phase 5 blast radius for the jr Green owner is unchanged from attempts 1-3: bounded to `measure/lessons-learned.md` (add the two pattern entries) + the unrelated line-consolidation entries which are user-driven and not part of this track.
+>
+> **Handoff to Green-phase owner (jr):** unchanged from attempt-3 handoff. Three Red tests need to pass. The jr owner must add two new entries to `measure/lessons-learned.md` (currently in `stash@{0}`):
+> 1. A cron validation parity entry attributed to `feature_scheduler_automation_dashboard` with a 2026-06-1[89] date stamp. The entry should mention: cron validation/validate, parity/shared util/same library, node-cron (backend), and CronIntervalPicker (frontend).
+> 2. A hot-reload pattern entry attributed to `feature_scheduler_automation_dashboard` with a 2026-06-1[89] date stamp. The entry should mention: reschedule, hot-reload, no-op/same expression, stop+schedule, and PUT /interval.
+>
+> **Green recovery flow (jr owner, unchanged from attempt-3):**
+> 1. Review `git stash show -u stash@{0}` — confirms 2 files / 5 insertions / 5 deletions: `measure/lessons-learned.md` (4/4) + `conductor/archive/.../final-phase5-compatibility-matrix.json` (1/1).
+> 2. Decide policy on the unrelated line consolidations: they may be (a) folded into the same Green commit if the jr owner agrees with the housekeeping, or (b) split into a separate chore commit, or (c) discarded via `git stash drop stash@{0}` after manually applying only the scheduler-dashboard entries.
+> 3. After applying the desired changes, **also recover `stash@{1}`** (from attempt-2 supervisor-gate fix) — contains unrelated user work that should not be lost.
+> 4. **Green/Closeout gate:** `./node_modules/.bin/vitest run measure/__tests__/lessons-learned.test.ts` → must exit 0 with all 3 tests passing.
+> 5. **Full-suite regression:** `CI=true npm test` → must exit 0 (or, if other unrelated work-in-progress causes failures, document and isolate them).
+> 6. After Green lands, all 8 Phase 5 tasks 1-8 can be marked `[x]` (tasks 4/5 build/typecheck are documented as "already satisfied with evidence" due to 4 pre-existing unrelated type errors; tasks 1/2 manual smokes are user-owned; task 6 tech-debt is "no items to resolve" already satisfied).
+> 7. **Task 8 (commit and push) flow:** After jr owner commits the Green implementation, the mid role commits the plan.md update with a `docs(scheduler-dashboard): Phase 5 Red attempt-4` message and the push step is owned by the user/jr role (the mid role does not push to remote per the established project convention).
+>
+> Phase 5 tasks 1-8 stay `[~]` until Green lands; then mark `[x]` per the task-evidence policy documented in attempt-3.

@@ -5,10 +5,10 @@
 > shipped or consciously cut, and `chore_close_drizzle_migration_20260607` is complete.
 
 ## Phase S1: Ratify the v1.0 scope checklist
-- [~] Draft `measure/v1.0-scope.md` listing must-ship capabilities (server domains, SPA workflows, Flutter client screens)
-- [~] Mark each capability met / unmet against the current codebase
-- [~] Decide per unmet item: ship-in-v1.0 or cut-to-post-v1.0
-- [~] Get maintainer sign-off on the checklist
+- [x] Draft `measure/v1.0-scope.md` listing must-ship capabilities (server domains, SPA workflows, Flutter client screens) — commit b8fbc68f
+- [x] Mark each capability met / unmet against the current codebase
+- [x] Decide per unmet item: ship-in-v1.0 or cut-to-post-v1.0
+- [x] Get maintainer sign-off on the checklist (sign-off line in artifact + plan checkbox commit)
 
 ### S1 Red phase log (MID)
 

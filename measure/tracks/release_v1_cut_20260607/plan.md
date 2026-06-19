@@ -6,9 +6,9 @@
 
 ## Phase S1: Ratify the v1.0 scope checklist
 - [x] Draft `measure/v1.0-scope.md` listing must-ship capabilities (server domains, SPA workflows, Flutter client screens) — commit b8fbc68f
-- [x] Mark each capability met / unmet against the current codebase
-- [x] Decide per unmet item: ship-in-v1.0 or cut-to-post-v1.0
-- [x] Get maintainer sign-off on the checklist (sign-off line in artifact + plan checkbox commit)
+- [x] Mark each capability met / unmet against the current codebase — commit b8fbc68f
+- [x] Decide per unmet item: ship-in-v1.0 or cut-to-post-v1.0 — commit b8fbc68f
+- [x] Get maintainer sign-off on the checklist (sign-off line in artifact + plan checkbox commit) — commit b8fbc68f (artifact), 93ffa685 (plan checkbox)
 
 ### S1 Red phase log (MID)
 

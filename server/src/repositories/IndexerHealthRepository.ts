@@ -4,6 +4,18 @@ import type { DatabaseClient } from '../db/drizzleClient';
 import * as schema from '../db/schema';
 import type { IndexerHealthSnapshot } from '../types/modelTypes';
 
+export interface ThresholdContext {
+  threshold: number;
+  failureCount: number;
+  isCritical: boolean;
+  shouldAutoDisable: boolean;
+}
+
+export interface SnapshotWithThreshold {
+  snapshot: IndexerHealthSnapshot | null;
+  thresholdContext: ThresholdContext;
+}
+
 /**
  * Stores per-indexer sync health snapshots.
  */
@@ -17,6 +29,39 @@ export class IndexerHealthRepository {
       .where(eq(schema.indexerHealthSnapshots.indexerId, indexerId))
       .limit(1);
     return (rows[0] as IndexerHealthSnapshot | undefined) ?? null;
+  }
+
+  async getByIndexerIdWithThresholdContext(
+    indexerId: number,
+    options: { autoDisableThreshold: number },
+  ): Promise<SnapshotWithThreshold> {
+    const snapshot = await this.getByIndexerId(indexerId);
+    const failureCount = snapshot?.failureCount ?? 0;
+    const isCritical = failureCount >= options.autoDisableThreshold;
+
+    return {
+      snapshot,
+      thresholdContext: {
+        threshold: options.autoDisableThreshold,
+        failureCount,
+        isCritical,
+        shouldAutoDisable: isCritical,
+      },
+    };
+  }
+
+  async list(): Promise<IndexerHealthSnapshot[]> {
+    const rows = await this.prisma.drizzle
+      .select()
+      .from(schema.indexerHealthSnapshots);
+    return rows as IndexerHealthSnapshot[];
+  }
+
+  async disable(indexerId: number): Promise<void> {
+    await this.prisma.drizzle
+      .update(schema.indexers)
+      .set({ enabled: false })
+      .where(eq(schema.indexers.id, indexerId));
   }
 
   async recordSuccess(

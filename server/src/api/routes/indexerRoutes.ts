@@ -474,6 +474,36 @@ export function registerIndexerRoutes(
     return sendSuccess(reply, cloned, 201);
   });
 
+  app.get('/api/indexers/:id/health', {
+    schema: {
+      params: {
+        type: 'object',
+        required: ['id'],
+        properties: {
+          id: { type: 'string' },
+        },
+      },
+    },
+  }, async (request, reply) => {
+    const id = parseIdParam((request.params as { id: string }).id, 'indexer');
+
+    if (!deps.indexerRepository?.findById) {
+      throw new ValidationError('Indexer repository is not configured');
+    }
+
+    const indexer = await deps.indexerRepository.findById(id);
+    if (!indexer) {
+      throw new NotFoundError(`Indexer ${id} not found`);
+    }
+
+    const snapshot = await loadHealthSnapshot(deps, id);
+
+    return sendSuccess(reply, {
+      indexerId: id,
+      snapshot,
+    });
+  });
+
   app.get('/api/indexers/catalog', async (_request, reply) => {
     if (!deps.indexerRepository?.findAll) {
       throw new ValidationError('Indexer repository is not configured');

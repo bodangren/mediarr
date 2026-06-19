@@ -18,10 +18,17 @@
 - [x] Tests pass (commit `2c116173`)
 
 ## Phase 2: Auto-Disable Logic (TDD)
-- [ ] Write tests for consecutive failure threshold detection
+- [~] Write tests for consecutive failure threshold detection
 - [ ] Implement auto-disable when threshold exceeded
-- [ ] Skip disabled indexers in search queries
+- [~] Skip disabled indexers in search queries
 - [ ] Tests pass
+  - **2026-06-19 MID Red (current session):** Phase 2 test surface committed. Targeted Red command `./node_modules/.bin/vitest run server/src/services/IndexerAutoDisable.test.ts -t "disables indexer at threshold"` fails with `Cannot find module '/server/src/services/IndexerAutoDisable'` — 1 failed | 12 skipped (filter narrows to the targeted test). Live proof test `server/src/indexers/IndexerTester.autoDisable.test.ts` also fails with the same root cause — 1 failed (suite) | 4 skipped. Both will go Green in the next phase once `services/IndexerAutoDisable.ts` lands and `IndexerTester` is wired to call `handleFailure()` after each failure.
+  - **Test surface (Phase 2 Red):**
+    - `server/src/services/IndexerAutoDisable.test.ts` (new, 13 tests) — pure `shouldAutoDisable(snapshot, threshold)` + orchestrator `handleFailure(indexerId, message)`. Targeted test = "disables indexer at threshold". Includes threshold boundary (N-1 vs N), settings provider injection, SSE `indexer:healthChanged` emission, idempotent disable, null-snapshot guard, and threshold=0 sentinel.
+    - `server/src/indexers/IndexerTester.autoDisable.test.ts` (new, 4 tests) — live behavior proof: real in-memory Drizzle (Phase 1 pattern reused from `IndexerHealthRepository.test.ts`), seeded Torznab indexer, real `IndexerHealthRepository`, real `IndexerAutoDisable`, `HttpClient` mock that returns 500. Asserts `indexers.enabled=false` after N consecutive failures, NOT flipped below threshold, `failureCount === N` recorded, and N=10 concurrent `recordFailure` calls preserve every increment (atomic SQL `failureCount + 1` regression).
+    - `server/src/services/MediaSearchService.searchAllIndexers.test.ts` (existing file, +1 describe block) — Phase 2 regression test: queries `findAllEnabled` and never `findAll`, so an auto-disabled indexer stays out of the search path. **Already passes at HEAD** because the existing `searchAllIndexers` (line 463) already uses `findAllEnabled`. Marked as "already satisfied with evidence" per MID Red rules (test-strategy.md §5 explicitly mandates this regression lock-in). Task 3 flipped to `[~]` because the regression test is in place; the spec task itself (`Skip disabled indexers in search queries`) is satisfied by existing code, not by new implementation.
+  - **Command-construction note:** same as Phase 1 — `./node_modules/.bin/vitest` (project-local) is used because `better-sqlite3` is not Bun-compatible; `bunx vitest` would crash with "better-sqlite3 is not yet supported in Bun" before reaching the new tests. Verified at Node v22.22.3.
+  - **Dirty worktree context (preserved untouched):** `M conductor/archive/cardigann_runtime_parity_20260223/artifacts/final-phase5-compatibility-matrix.json` (1-line `generatedAt` timestamp bump on archived track artifact; framework regenerates periodically) and `?? measure/__pycache__/` (Python cache dir) are both unrelated to this track. They are documented but NOT touched by this Red commit per MID supervisor-gate rules (preserved for the framework to regenerate).
 
 ## Phase 3: UI Integration
 - [ ] Add health status badge to indexer list in settings

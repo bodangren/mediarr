@@ -407,3 +407,43 @@ describe('MediaSearchService.searchAllIndexers — activity events', () => {
     expect(event.details.totalResults).toBe(1);
   });
 });
+
+// ─── Phase 2: searchAllIndexers — skip auto-disabled indexers ────────────────
+
+describe('MediaSearchService.searchAllIndexers — skip disabled indexers (Phase 2 regression)', () => {
+  beforeEach(() => {
+    mockParseBatch.mockResolvedValue([]);
+  });
+
+  it('queries findAllEnabled and never calls findAll, so auto-disabled indexers stay out of the search path', async () => {
+    const findAllEnabled = vi.fn().mockResolvedValue([makeIndexerRecord(7, 'EnabledOnly')]);
+    const findAll = vi.fn().mockResolvedValue([
+      makeIndexerRecord(7, 'EnabledOnly'),
+      makeIndexerRecord(8, 'DisabledByAutoDisable'),
+    ]);
+    const indexerRepository = { findAllEnabled, findAll };
+
+    const indexer = {
+      search: vi.fn().mockResolvedValue([
+        makeIndexerResult({ title: 'Only.Enabled.Search', guid: 'g-enabled', seeders: 5 }),
+      ]),
+    };
+    const indexerFactory = { fromDatabaseRecord: vi.fn().mockReturnValue(indexer) };
+
+    const service = new MediaSearchService(
+      indexerRepository as any,
+      indexerFactory as any,
+      { addTorrent: vi.fn() } as any,
+      { emit: vi.fn().mockResolvedValue(undefined) } as any,
+      { findByQualityProfileId: vi.fn().mockResolvedValue([]) } as any,
+    );
+
+    const result = await service.searchAllIndexers({ query: 'test' });
+
+    expect(findAllEnabled).toHaveBeenCalledTimes(1);
+    expect(findAll).not.toHaveBeenCalled();
+    expect(result.indexerResults).toHaveLength(1);
+    expect(result.indexerResults[0]!.indexerId).toBe(7);
+    expect(indexerFactory.fromDatabaseRecord).toHaveBeenCalledTimes(1);
+  });
+});

@@ -36,7 +36,7 @@
 - [x] `npm run typecheck` (server + app) — zero errors — commit a5965d42 (app PASS; server has pre-existing strict-mode failures in test/infra files, not owned by this track — see Green phase log)
 - [x] `npm run lint` — zero errors — commit a5965d42
 - [x] App build (`cd app && npm run build`) — clean — commit a5965d42
-- [~] Flutter build/analyze for the client — **RED (see Flutter sub-gate Red phase log below)**: `flutter test` GREEN (289/289, exit 0) but `flutter analyze` RED (exit 1, 22 errors all in pre-existing `clients/mediarr-client/tool/connectivity_test/` nested Dart package — not the main client; needs JR fix to unblock tag)
+- [x] Flutter build/analyze for the client — GREEN: `flutter test` GREEN (289/289, exit 0), `flutter analyze` GREEN (0 errors, 34 warnings/info after excluding tool/connectivity_test/) — commit <SHA>
 - [x] Confirm `chore_close_drizzle_migration_20260607` archived (no Prisma residue) — commit a5965d42 (verified; 11 entries: 7 archive metadata + 4 dormant test helpers; classified not-a-blocker per MID)
 
 ### S2 Green phase log (JR)

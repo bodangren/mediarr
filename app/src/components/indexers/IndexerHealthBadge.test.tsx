@@ -54,10 +54,12 @@ describe('computeHealthState', () => {
 describe('IndexerHealthBadge', () => {
   it('renders critical badge at threshold', () => {
     render(
-      <IndexerHealthBadge
-        snapshot={makeSnapshot({ failureCount: 3, lastErrorMessage: 'HTTP timeout' })}
-        autoDisableThreshold={3}
-      />,
+      <TooltipProvider>
+        <IndexerHealthBadge
+          snapshot={makeSnapshot({ failureCount: 3, lastErrorMessage: 'HTTP timeout' })}
+          autoDisableThreshold={3}
+        />
+      </TooltipProvider>,
     );
     const badge = screen.getByTestId('indexer-health-badge');
     expect(badge.dataset.variant).toBe('critical');
@@ -66,10 +68,12 @@ describe('IndexerHealthBadge', () => {
 
   it('renders warning badge below threshold', () => {
     render(
-      <IndexerHealthBadge
-        snapshot={makeSnapshot({ failureCount: 1 })}
-        autoDisableThreshold={3}
-      />,
+      <TooltipProvider>
+        <IndexerHealthBadge
+          snapshot={makeSnapshot({ failureCount: 1 })}
+          autoDisableThreshold={3}
+        />
+      </TooltipProvider>,
     );
     const badge = screen.getByTestId('indexer-health-badge');
     expect(badge.dataset.variant).toBe('warning');
@@ -77,30 +81,38 @@ describe('IndexerHealthBadge', () => {
 
   it('renders healthy badge at zero failures', () => {
     render(
-      <IndexerHealthBadge
-        snapshot={makeSnapshot({ failureCount: 0 })}
-        autoDisableThreshold={3}
-      />,
+      <TooltipProvider>
+        <IndexerHealthBadge
+          snapshot={makeSnapshot({ failureCount: 0 })}
+          autoDisableThreshold={3}
+        />
+      </TooltipProvider>,
     );
     const badge = screen.getByTestId('indexer-health-badge');
     expect(badge.dataset.variant).toBe('healthy');
   });
 
   it('renders unknown when snapshot is null', () => {
-    render(<IndexerHealthBadge snapshot={null} autoDisableThreshold={3} />);
+    render(
+      <TooltipProvider>
+        <IndexerHealthBadge snapshot={null} autoDisableThreshold={3} />
+      </TooltipProvider>,
+    );
     const badge = screen.getByTestId('indexer-health-badge');
     expect(badge.dataset.variant).toBe('unknown');
   });
 
   it('exposes last error message via aria-label for tooltip', () => {
     render(
-      <IndexerHealthBadge
-        snapshot={makeSnapshot({
-          failureCount: 2,
-          lastErrorMessage: 'Connection refused',
-        })}
-        autoDisableThreshold={3}
-      />,
+      <TooltipProvider>
+        <IndexerHealthBadge
+          snapshot={makeSnapshot({
+            failureCount: 2,
+            lastErrorMessage: 'Connection refused',
+          })}
+          autoDisableThreshold={3}
+        />
+      </TooltipProvider>,
     );
     const badge = screen.getByTestId('indexer-health-badge');
     expect(badge.getAttribute('aria-label')).toContain('Connection refused');
@@ -108,10 +120,12 @@ describe('IndexerHealthBadge', () => {
 
   it('exposes threshold and failure count in aria-label when no error message', () => {
     render(
-      <IndexerHealthBadge
-        snapshot={makeSnapshot({ failureCount: 1 })}
-        autoDisableThreshold={3}
-      />,
+      <TooltipProvider>
+        <IndexerHealthBadge
+          snapshot={makeSnapshot({ failureCount: 1 })}
+          autoDisableThreshold={3}
+        />
+      </TooltipProvider>,
     );
     const badge = screen.getByTestId('indexer-health-badge');
     expect(badge.getAttribute('aria-label')).toContain('1');

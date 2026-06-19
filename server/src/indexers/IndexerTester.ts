@@ -2,6 +2,7 @@ import type { BaseIndexer } from './BaseIndexer';
 import { TorznabIndexer, ScrapingIndexer } from './BaseIndexer';
 import type { HttpClient } from './HttpClient';
 import { ActivityEventEmitter } from '../services/ActivityEventEmitter';
+import type { IndexerAutoDisable } from '../services/IndexerAutoDisable';
 import { IndexerHealthRepository } from '../repositories/IndexerHealthRepository';
 
 export interface TestResult {
@@ -19,6 +20,7 @@ export class IndexerTester {
     private client: HttpClient,
     private readonly indexerHealthRepository?: IndexerHealthRepository,
     private readonly activityEventEmitter?: ActivityEventEmitter,
+    private readonly autoDisable?: IndexerAutoDisable,
   ) {}
 
   /**
@@ -41,6 +43,8 @@ export class IndexerTester {
     if (this.indexerHealthRepository && typeof indexer.id === 'number' && indexer.id > 0) {
       if (result.success) {
         await this.indexerHealthRepository.recordSuccess(indexer.id, new Date());
+      } else if (this.autoDisable) {
+        await this.autoDisable.handleFailure(indexer.id, result.message);
       } else {
         await this.indexerHealthRepository.recordFailure(
           indexer.id,

@@ -107,6 +107,14 @@ export class IndexerHealthRepository {
           failureCount: 1,
           lastErrorMessage: errorMessage,
         })
+        .onConflictDoUpdate({
+          target: schema.indexerHealthSnapshots.indexerId,
+          set: {
+            lastFailureAt: at,
+            failureCount: sql`${schema.indexerHealthSnapshots.failureCount} + 1`,
+            lastErrorMessage: errorMessage,
+          },
+        })
         .returning();
       if (!row) {
         throw new Error('IndexerHealthRepository.recordFailure: insert returned no row');

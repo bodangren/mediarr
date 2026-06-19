@@ -44,8 +44,6 @@ export const routeMap = {
   torrentPriority: (infoHash: string) => `/api/torrents/${infoHash}/priority`,
 
   indexers: '/api/indexers',
-  indexerHealth: (id: number) => `/api/indexers/${id}/health`,
-  indexerReenable: (id: number) => `/api/indexers/${id}/reenable`,
   indexerSchema: (configContract: string, definitionId?: string) => {
     const encodedContract = encodeURIComponent(configContract);
     if (!definitionId) {

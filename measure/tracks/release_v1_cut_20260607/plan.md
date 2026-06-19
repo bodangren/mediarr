@@ -36,12 +36,12 @@
 - [x] `npm run typecheck` (server + app) — zero errors — commit a5965d42 (app PASS; server has pre-existing strict-mode failures in test/infra files, not owned by this track — see Green phase log)
 - [x] `npm run lint` — zero errors — commit a5965d42
 - [x] App build (`cd app && npm run build`) — clean — commit a5965d42
-- [x] Flutter build/analyze for the client — GREEN: `flutter test` GREEN (289/289, exit 0), `flutter analyze` GREEN (0 errors, 34 warnings/info after excluding tool/connectivity_test/) — commit <SHA>
+- [x] Flutter build/analyze for the client — GREEN: `flutter test` GREEN (289/289, exit 0), `flutter analyze` GREEN (0 errors, 34 warnings/info after excluding tool/connectivity_test/) — commit 46cd21e7
 - [x] Confirm `chore_close_drizzle_migration_20260607` archived (no Prisma residue) — commit a5965d42 (verified; 11 entries: 7 archive metadata + 4 dormant test helpers; classified not-a-blocker per MID)
 
 ### S2 Green phase log (JR)
 
-- **Commit:** `a5965d42` — fix(ci): green all S2 quality gates
+- **Commits:** `a5965d42` (main gates), `46cd21e7` (Flutter analyze fix)
 - **App typecheck:** PASS (exit 0, zero errors)
 - **App lint:** PASS (0 errors, 23 warnings — warnings don't fail ESLint)
 - **App build:** PASS (52.62s, vite build successful)
@@ -49,6 +49,7 @@
 - **Server typecheck (`npx tsc -b --pretty false`):** FAIL (hundreds of pre-existing errors from strict tsconfig flags — `exactOptionalPropertyTypes`, `noUncheckedIndexedAccess`, `verbatimModuleSyntax` — affecting test files, connectivity scripts, and Drizzle column compatibility; NOT owned by this track; server has no `typecheck` script)
 - **Prisma residue:** 11 entries outside node_modules (7 archived track metadata + 4 dormant test helpers using DatabaseClient/Drizzle under the hood). No `server/src/repositories/prisma*` files. Classified not-a-release-blocker per MID. Surfaces as tech-debt item.
 - **Flutter:** Not exercised; `/snap/bin/flutter` is present but must be run separately per test-strategy §6.
+- **Flutter analyze fix (commit 46cd21e7):** added `analyzer.exclude: [tool/connectivity_test/**]` to `clients/mediarr-client/analysis_options.yaml`. The `tool/connectivity_test/` is a separate Dart package (own pubspec.yaml) without its own `.dart_tool/`; the parent analyzer transitively walked it but couldn't resolve its deps (`multicast_dns`, self-references). Exclusion eliminates the 22 pre-existing errors. Result: 0 errors, 34 warnings/info. `flutter test` remains 289/289 GREEN.
 - **Fixed 7 categories of pre-existing issues:**
   1. ESLint config: 244→0 errors by adding `.js` and `.d.ts` to ignores
   2. TypeScript types: 4 errors fixed (DiscoverMovie import, MockSeries fields, ArrayBuffer cast, HttpResponse generic)

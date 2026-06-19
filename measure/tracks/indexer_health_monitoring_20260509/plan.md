@@ -34,10 +34,26 @@
   - **Command-construction note:** same as Phase 1 — `./node_modules/.bin/vitest` (project-local) used because `better-sqlite3` is not Bun-compatible. Node v22.22.3 via nvm.
 
 ## Phase 3: UI Integration
-- [ ] Add health status badge to indexer list in settings
-- [ ] Add manual re-enable button for auto-disabled indexers
-- [ ] Add health history tooltip
-- [ ] Component tests pass
+- [~] Add health status badge to indexer list in settings
+- [~] Add manual re-enable button for auto-disabled indexers
+- [~] Add health history tooltip
+- [~] Component tests pass
+  - **2026-06-19 MID Red attempt-2 supervisor-gate fix:** attempt-1 (commit `310d26a1`) was reverted because it included 5 non-test/non-Measure source files (`app/src/components/indexers/IndexerHealthBadge.tsx`, `app/src/lib/api/index.ts`, `app/src/lib/api/indexerHealthApi.ts`, `app/src/lib/api/routeMap.ts`, `app/src/lib/msw/handlers/core.ts`) in the Red commit, violating the Red-phase boundary ("Do NOT modify existing source code except test files and Measure docs"). The supervisor (run `20260619T073959Z/.../mid-attempt-1/gates.log`) flagged these as out-of-boundary even though they were pre-existing dirty items from a prior session.
+  - **attempt-2 fix:** soft-reset commit `310d26a1` (`git reset --soft HEAD~1`), un-staged the 5 source files (`git restore --staged` on the 5 paths), and re-committed with ONLY test files + the Measure doc. The source files remain in the worktree as pre-existing dirty items (modified or untracked), preserved for the Green phase but excluded from this Red commit. The CONDUCTOR archive JSON stash is preserved at `stash@{0}` (recovered from the prior attempt; this attempt does not re-stash because the file is still on disk and was already captured in `stash@{0}`).
+  - **2026-06-19 MID Red attempt-1 (historical, reverted):** stashed the dirty CONDUCTOR archive timestamp (`conductor/archive/cardigann_runtime_parity_20260223/artifacts/final-phase5-compatibility-matrix.json`) off-tree to clear the Red-phase boundary (preserved for recovery via `git stash pop`). Classified remaining dirty paths:
+    - **Relevant source files (NOT in this Red commit, preserved in worktree for Green):** `app/src/lib/api/index.ts` (wires indexerHealthApi), `app/src/lib/api/routeMap.ts` (adds `indexerHealth` + `indexerReenable` routes), `app/src/lib/msw/handlers/core.ts` (adds `GET /api/indexers/:id/health` + `PUT /api/indexers/:id/reenable` MSW handlers), `app/src/components/indexers/IndexerHealthBadge.tsx` (the badge component — present in worktree from prior session, source code), `app/src/lib/api/indexerHealthApi.ts` (the API client — present in worktree, source code).
+  - **Pre-existing Red test surface (from worktree, runs Green at HEAD):** `IndexerHealthBadge.test.tsx` — 13 tests cover the state machine (`computeHealthState` + `IndexerHealthBadge` with critical/warning/healthy/unknown variants + aria-label). State-machine portion is **already satisfied** at HEAD; the test file stays as a regression guard.
+  - **New Red tests added by this Red phase** (will fail at HEAD until the full Phase 3 implementation lands):
+    - `IndexerHealthBadge.test.tsx` extended with 7 new test cases: 5 for the re-enable button action and 2 for the tooltip wrapping.
+    - `SettingsIndexersPage.test.tsx` extended with 2 new test cases for badge integration + re-enable click flow.
+  - **Targeted Red command:** `cd app && /home/daniel-bo/Desktop/mediarr/node_modules/.bin/vitest run src/components/indexers/IndexerHealthBadge.test.tsx -t "re-enable button is shown when health is critical"`
+  - **Fail count:** 1 failed / 19 skipped (20 tests total in the file). The failing test asserts the badge renders a "Re-enable" button (data-testid="indexer-health-reenable") when the snapshot is at/above threshold — the button is not yet implemented in `IndexerHealthBadge.tsx`.
+  - **Full Phase 3 Red surface (both files, 31 tests):** 6 failed / 25 passed / 31 total.
+    - `IndexerHealthBadge.test.tsx` — 4 failed / 16 passed / 20 total. Failing: re-enable button visible at critical, onReenable callback fires, tooltip trigger wraps the badge, tooltip trigger exposes indexer id.
+    - `SettingsIndexersPage.test.tsx` — 2 failed / 9 passed / 11 total. Failing: `IndexerHealthBadge` rendered per indexer, re-enable click calls `indexerHealthApi.reenable` and refetches the list.
+  - **Command-construction note:** the strategy doc recommends `-t "renders critical badge at threshold"` (Phase 3 row, §7), but that test name already exists in the worktree and passes (the badge state machine is implemented). The targeted Red command is tightened to a NEW test name that targets the missing feature (re-enable button) so that at least one new test fails for the expected missing behavior. This is the "tighten the contract" path the MID role takes when the strategy's canonical test already passes.
+  - **Worktree boundary (post attempt-2 fix):** the 5 source files are preserved in the worktree as dirty/untracked items, NOT in this Red commit. The Red commit contains only the 2 test files + the plan.md update. The test file `IndexerHealthBadge.test.tsx` imports from the untracked `IndexerHealthBadge.tsx` in the worktree (so the test can run, and fails for the right reason — missing features in the source — not for a missing-module error). The Green phase will revise the source files as needed to make the tests pass.
+  - **Graph update:** `graph.db` updated with the 6 dirty files (213 → 245 nodes) in attempt-1; attempt-2 keeps the graph current (the source files are still in the worktree, so the graph state is unchanged). The post-attempt-2 Red commit does not include `graph.db` (it's gitignored).
 
 ## Phase 4: Verification
 - [ ] Full test suite green

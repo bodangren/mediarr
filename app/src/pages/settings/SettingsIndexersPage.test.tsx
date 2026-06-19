@@ -22,6 +22,10 @@ const mockApi = vi.hoisted(() => ({
     detect: vi.fn(),
     importFrom: vi.fn(),
   },
+  indexerHealthApi: {
+    getHealth: vi.fn(),
+    reenable: vi.fn(),
+  },
 }));
 
 vi.mock('@/lib/api/client', () => ({
@@ -33,6 +37,15 @@ describe('SettingsIndexersPage', () => {
     vi.clearAllMocks();
     mockApi.indexerApi.list.mockResolvedValue([]);
     mockApi.indexerApi.detect.mockResolvedValue([]);
+    mockApi.indexerHealthApi.getHealth.mockResolvedValue({
+      indexerId: 0,
+      snapshot: null,
+    });
+    mockApi.indexerHealthApi.reenable.mockResolvedValue({
+      id: 0,
+      enabled: true,
+      failureCount: 0,
+    });
   });
 
   it('renders loading state while detecting LAN services', () => {
@@ -182,6 +195,138 @@ describe('SettingsIndexersPage', () => {
     await waitFor(() => {
       expect(screen.getByText('Test Indexer')).toBeInTheDocument();
       expect(screen.getByText(/torrent/i)).toBeInTheDocument();
+    });
+  });
+
+  it('renders an IndexerHealthBadge for each configured indexer', async () => {
+    mockApi.indexerApi.list.mockResolvedValue([
+      {
+        id: 1,
+        name: 'Healthy Indexer',
+        implementation: 'Torznab',
+        configContract: 'TorznabSettings',
+        settings: '{}',
+        protocol: 'torrent',
+        supportedMediaTypes: '[]',
+        enabled: true,
+        supportsRss: true,
+        supportsSearch: true,
+        priority: 25,
+      },
+      {
+        id: 2,
+        name: 'Critical Indexer',
+        implementation: 'Cardigann',
+        configContract: 'CardigannSettings',
+        settings: '{}',
+        protocol: 'torrent',
+        supportedMediaTypes: '[]',
+        enabled: true,
+        supportsRss: true,
+        supportsSearch: true,
+        priority: 30,
+      },
+    ]);
+    mockApi.indexerHealthApi.getHealth.mockImplementation(async (id: number) => ({
+      indexerId: id,
+      snapshot:
+        id === 1
+          ? {
+              indexerId: 1,
+              failureCount: 0,
+              lastErrorMessage: null,
+              lastSuccessAt: '2026-06-19T00:00:00.000Z',
+              lastFailureAt: null,
+            }
+          : {
+              indexerId: 2,
+              failureCount: 3,
+              lastErrorMessage: 'HTTP timeout',
+              lastSuccessAt: null,
+              lastFailureAt: '2026-06-19T03:00:00.000Z',
+            },
+    }));
+
+    render(<SettingsIndexersPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Healthy Indexer')).toBeInTheDocument();
+      expect(screen.getByText('Critical Indexer')).toBeInTheDocument();
+    });
+
+    await waitFor(() => {
+      const badges = screen.getAllByTestId('indexer-health-badge');
+      expect(badges).toHaveLength(2);
+      const variants = badges.map(b => b.getAttribute('data-variant'));
+      expect(variants).toContain('healthy');
+      expect(variants).toContain('critical');
+    });
+
+    expect(mockApi.indexerHealthApi.getHealth).toHaveBeenCalledWith(1);
+    expect(mockApi.indexerHealthApi.getHealth).toHaveBeenCalledWith(2);
+  });
+
+  it('calls indexerHealthApi.reenable and refetches the indexer list when re-enable is clicked', async () => {
+    mockApi.indexerApi.list
+      .mockResolvedValueOnce([
+        {
+          id: 5,
+          name: 'Disabled Indexer',
+          implementation: 'Cardigann',
+          configContract: 'CardigannSettings',
+          settings: '{}',
+          protocol: 'torrent',
+          supportedMediaTypes: '[]',
+          enabled: true,
+          supportsRss: true,
+          supportsSearch: true,
+          priority: 25,
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          id: 5,
+          name: 'Disabled Indexer',
+          implementation: 'Cardigann',
+          configContract: 'CardigannSettings',
+          settings: '{}',
+          protocol: 'torrent',
+          supportedMediaTypes: '[]',
+          enabled: true,
+          supportsRss: true,
+          supportsSearch: true,
+          priority: 25,
+        },
+      ]);
+    mockApi.indexerHealthApi.getHealth.mockResolvedValue({
+      indexerId: 5,
+      snapshot: {
+        indexerId: 5,
+        failureCount: 4,
+        lastErrorMessage: 'connection refused',
+        lastSuccessAt: null,
+        lastFailureAt: '2026-06-19T03:00:00.000Z',
+      },
+    });
+    mockApi.indexerHealthApi.reenable.mockResolvedValue({
+      id: 5,
+      enabled: true,
+      failureCount: 0,
+    });
+
+    render(<SettingsIndexersPage />);
+
+    const reenableButton = await screen.findByTestId('indexer-health-reenable');
+    expect(reenableButton).toBeInTheDocument();
+
+    reenableButton.click();
+
+    await waitFor(() => {
+      expect(mockApi.indexerHealthApi.reenable).toHaveBeenCalledWith(5);
+    });
+
+    await waitFor(() => {
+      expect(mockApi.indexerApi.list.mock.calls.length).toBeGreaterThanOrEqual(2);
     });
   });
 });

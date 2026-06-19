@@ -17,6 +17,7 @@ This file tracks all major tracks for the project. Each track has its own detail
 5. - [ ] **Track: Server Service Test Coverage — Runtime-Critical** *Stories: 4 (scoped from 10) | Link: [./tracks/chore_untested_server_services_20260526/](./tracks/chore_untested_server_services_20260526/)* — Rescoped 2026-06-07 to Scheduler, EpisodeService, SeriesService, MediaSearchService only; the other 6 services are deferred post-v1.0.
 6. - [ ] **Track: v1.0 Release Cut — Define the Line** *Stories: 4 | Link: [./tracks/release_v1_cut_20260607/](./tracks/release_v1_cut_20260607/)* — Ratify v1.0 scope, confirm gates, tag the release, publish the post-v1.0 backlog. Draws the line that stops open-ended testing/cleanup.
 7. - [ ] **Track: Scheduler Persistence & Missed-Task Recovery** *Phases: 5 | Link: [./tracks/scheduler_persistence_missed_task_recovery_20260613/](./tracks/scheduler_persistence_missed_task_recovery_20260613/)* — Persist node-cron next-run timestamps to AppSettings and recover missed tasks on startup. Addresses High open tech-debt (Scheduler silently drops tasks on restart).
+8. - [~] **Track: Automation Supervisor Workflow Hardening** *Phases: 1 | Link: [./tracks/chore_automation_supervisor_workflow_hardening_20260619/](./tracks/chore_automation_supervisor_workflow_hardening_20260619/)* — Tighten audit JSON schema, UX auto routing, retry/escalation policy, closeout preflight, and post-archive artifact cleanup.
 
 ## Post-v1.0 / Deferred
 

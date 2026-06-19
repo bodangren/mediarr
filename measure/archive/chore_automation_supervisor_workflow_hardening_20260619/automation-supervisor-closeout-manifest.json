@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "track_id": "chore_automation_supervisor_workflow_hardening_20260619",
+  "closed_at": "2026-06-19",
+  "implementation_commit": "6fc489e",
+  "plan_completion_commit": "185214f",
+  "verification": [
+    {
+      "command": "python3 -m py_compile measure/automation-supervisor.py",
+      "status": "pass"
+    },
+    {
+      "command": "python3 -m unittest measure/test_automation_supervisor.py",
+      "status": "pass"
+    },
+    {
+      "command": "python3 measure/automation-supervisor.py --dry-run --track chore_automation_supervisor_workflow_hardening_20260619 --limit 1",
+      "status": "pass"
+    },
+    {
+      "command": "git diff --check",
+      "status": "pass"
+    }
+  ],
+  "audit_contract": "Versioned audit JSON schema enforced in measure/automation-supervisor.py.",
+  "artifact_cleanup": {
+    "policy": "Bulky run artifacts under measure/runs/<run_id>/<track_id>/ are deleted after archive; this manifest is retained as the durable closeout summary.",
+    "deleted_artifacts": []
+  },
+  "retained_evidence": [
+    "measure/automation-supervisor.md",
+    "measure/test_automation_supervisor.py",
+    "measure/automation-supervisor.py"
+  ]
+}

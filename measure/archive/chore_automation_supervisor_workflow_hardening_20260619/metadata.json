@@ -1,8 +1,9 @@
 {
   "id": "chore_automation_supervisor_workflow_hardening_20260619",
   "title": "Automation Supervisor Workflow Hardening",
-  "status": "in_progress",
+  "status": "done",
   "created": "2026-06-19",
   "priority": "high",
-  "type": "chore"
+  "type": "chore",
+  "completed": "2026-06-19"
 }

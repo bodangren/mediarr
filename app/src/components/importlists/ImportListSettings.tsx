@@ -14,6 +14,7 @@ import type {
   CreateExclusionInput,
 } from '@/lib/api/importListsApi';
 import type { QualityProfile } from '@/types/qualityProfile';
+import type { DiscoverMovie } from '@/lib/api/discoverApi';
 
 type TabType = 'lists' | 'exclusions';
 
@@ -44,13 +45,7 @@ interface ImportListSettingsProps {
   description?: string;
   defaultTab?: TabType;
   /** Optional movie search override for tests. */
-  searchMovies?: (params: { query: string }) => Promise<{ results: Array<{
-    tmdbId: number;
-    title: string;
-    year: number;
-    overview?: string;
-    posterUrl?: string;
-  }> }>;
+  searchMovies?: (params: { query: string }) => Promise<{ results: DiscoverMovie[] }>;
 }
 
 export function ImportListSettings({

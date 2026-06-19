@@ -16,6 +16,8 @@ export interface MockSeries {
   year: number;
   status: string;
   monitored: boolean;
+  qualityProfileId: number;
+  added?: string;
   seasons: Array<{
     seasonNumber: number;
     monitored: boolean;

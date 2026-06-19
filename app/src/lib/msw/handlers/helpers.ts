@@ -54,7 +54,7 @@ function toArrayBuffer(body: BlobPart): ArrayBuffer {
     return body;
   }
   if (body instanceof Uint8Array) {
-    return body.buffer.slice(body.byteOffset, body.byteOffset + body.byteLength);
+    return (body.buffer as ArrayBuffer).slice(body.byteOffset, body.byteOffset + body.byteLength);
   }
   if (ArrayBuffer.isView(body)) {
     return body.buffer.slice(body.byteOffset, body.byteOffset + body.byteLength);
@@ -62,7 +62,7 @@ function toArrayBuffer(body: BlobPart): ArrayBuffer {
   return new TextEncoder().encode(String(body)).buffer;
 }
 
-export function sendBlob(body: BlobPart, filename: string, contentType: string): HttpResponse {
+export function sendBlob(body: BlobPart, filename: string, contentType: string): ReturnType<typeof HttpResponse.arrayBuffer> {
   return HttpResponse.arrayBuffer(toArrayBuffer(body), {
     status: 200,
     headers: {

@@ -488,6 +488,7 @@ export function createRemainingHandlers(mode: FactoryMode = 'deterministic') {
         year: body.year ?? 2026,
         status: 'continuing',
         monitored: true,
+        qualityProfileId: 1,
         seasons: [],
       };
       dataset.series.unshift(created);

@@ -30,6 +30,7 @@ export function AutomationSettingsPage() {
 
   useEffect(() => {
     if (tasks.length > 0 && !selectedTaskId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedTaskId(tasks[0]!.id);
     }
   }, [tasks, selectedTaskId]);

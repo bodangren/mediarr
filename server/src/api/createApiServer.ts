@@ -90,7 +90,9 @@ async function pollActivity(
 
   const newest = queried.items[0];
   if (state.lastActivityId === undefined) {
-    state.lastActivityId = newest?.id ?? state.lastActivityId;
+    if (newest?.id !== undefined) {
+      state.lastActivityId = newest.id;
+    }
     return;
   }
 

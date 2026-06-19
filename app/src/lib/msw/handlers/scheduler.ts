@@ -1,4 +1,4 @@
-import { http, HttpResponse } from 'msw';
+import { http } from 'msw';
 import { numberQuery, sendPaginated, sendSuccess } from './helpers';
 
 const MOCK_TASKS = [

@@ -32,12 +32,33 @@
 - **User recovery required at track closeout:** `git stash pop` to restore the conductor timestamp regen to the worktree (or it can be discarded if the user no longer needs it). This is OUTSIDE this track's commit boundary.
 
 ## Phase S2: Confirm quality gates
-- [ ] `CI=true npm test` — full suite GREEN
-- [ ] `npm run typecheck` (server + app) — zero errors
-- [ ] `npm run lint` — zero errors
-- [ ] App build (`cd app && npm run build`) — clean
-- [ ] Flutter build/analyze for the client — clean
-- [ ] Confirm `chore_close_drizzle_migration_20260607` archived (no Prisma residue)
+- [~] `CI=true npm test` — full suite GREEN
+- [~] `npm run typecheck` (server + app) — zero errors
+- [~] `npm run lint` — zero errors
+- [~] App build (`cd app && npm run build`) — clean
+- [~] Flutter build/analyze for the client — clean
+- [~] Confirm `chore_close_drizzle_migration_20260607` archived (no Prisma residue)
+
+### S2 Red phase log (MID)
+
+- **Test strategy authority:** per `test-strategy.md` §1 and §7, S2 is an **existing-suite-pinning** exercise. The strategy explicitly says "**No new unit tests are written for this track.**" The S2 deliverable IS the live gates themselves; the Red column in §7 prescribes `CI=true npm test 2>&1 | tail -5` "run *before* fixing any flake — currently passes per latest archive (1802 tests); the Red step here is to record the **baseline output** so any drift during S1/S3/S4 is visible." So the Red phase is **baseline-output recording**, not new test authoring — consistent with the per-prompt rule that an artifact/markdown assertion is allowed when the phase deliverable IS that artifact, and the deliverable here is the live gate evidence.
+- **Single most targeted Red command:** `CI=true npm test 2>&1 | tail -5` (per `test-strategy.md` §7 S2 row). Root `vitest run` is the unified suite covering both `app` and `server` workspaces (per `package.json` `"test": "vitest run"`); this is the suite whose baseline must be frozen before S3's tag so any drift during S3/S4 is attributable to a later commit. Server workspace has no `test` script of its own (`server/package.json` `"test": "echo \"Error: no test specified\" && exit 1"`), so root is the only correct invocation.
+- **build-graph context probe:** `build-graph stats ./graph.db` → 7685 nodes / 11278 edges / 905 files (graph.db mtime 2026-06-20 01:09, fresh). No `release`/`tag`/`version-bumping` orchestration symbols exist — confirms S3 is git/docs only and S2's "deliverable" is purely the running gates. Top-importer `file:drizzleClient.ts` (46 imports) confirms the runtime is Drizzle; Prisma is residual only.
+- **Worktree remediation at MID start:** the dirty worktree contained two unrelated items — (a) `M conductor/archive/cardigann_runtime_parity_20260223/artifacts/final-phase5-compatibility-matrix.json` (1-line `generatedAt` timestamp regen by the *conductor* framework, NOT Measure, on an *archived* track artifact; documented remediation pattern from indexer-health Phase 1–4 and scheduler-dashboard Phase 1–5 attempts in `git stash list`); (b) `?? measure/__pycache__/` (untracked Python bytecache from `measure/automation-supervisor.py` runs; NOT in `.gitignore`). Both are framework-generated and unrelated to this track. Resolution: `git stash push --include-untracked` preserving both items in `stash@{0}` for user recovery (does NOT overwrite, revert, or hide either file in this track's commit). Post-stash worktree verified clean via `git status --porcelain` returning empty.
+- **Prisma residue finding (task 6 — Drizzle archive verification):** per `test-strategy.md` §3.1 the contract is "`git ls-files | grep -i prisma` should return only `node_modules` entries". At HEAD:
+  - `git ls-files | grep -i prisma | grep -v node_modules` returns **8 entries**:
+    - 4 active residue: `tests/helpers/prisma-cleanup.js`, `tests/helpers/test-prisma-client.js`, `tests/prisma-init.test.js`, `tests/prisma-schema.test.js` — all define/export prisma-named symbols but actually use `DatabaseClient` (Drizzle). Naming residue, not runtime residue.
+    - 4 archive metadata: `measure/archive/chore_prisma_naming_cleanup_20260526/{metadata.json,plan.md,spec.md}` and `measure/archive/remove_prisma_shim_20260508/{metadata.json,plan.md,spec.md,test-strategy.md}` — these intentionally mention "prisma" because the archived tracks were about removing prisma. Expected.
+  - `build-graph search "prisma"` confirms runtime is Drizzle (`drizzleClient.ts` = 46 imports, top importer); prisma-named functions (`createConfiguredPrismaMock`, `createFreshPrismaMock`, `makeDb`, `makePrismaMock`, `makePrismaForState`, `makeSeriesPrisma`, `grepPrismaClientHits`) are **mock-builder helpers in tests**, all instantiating `DatabaseClient` (Drizzle) under the hood.
+  - `ls server/src/repositories/prisma*` returns nothing (server/src naming residue check passes per §3.1).
+  - **Classification: NOT a release blocker, but should be raised as a follow-up tech-debt item.** The four `tests/*.js` files are not picked up by `vitest run` from the workspaces (root `vitest.config.ts` does not include `tests/` — verified by inspection); they are dormant. Will surface as a Tech-Debt entry rather than blocking S2; user can decide whether to delete or fold into a future cleanup track.
+- **Targeted Red command result (recorded below).** See `tests_run` in the agent footer for raw exit codes.
+
+#### Supervisor-retry record (attempt-1 worktree remediation)
+
+- **Worktree state at MID start:** 1 modified tracked file (`M conductor/.../final-phase5-compatibility-matrix.json`) + 1 untracked directory (`?? measure/__pycache__/`). Both unrelated to this track (see "Worktree remediation" above).
+- **Remediation applied:** stashed both items via `git stash push --include-untracked -m "..."` preserving them in `stash@{0}` for user recovery. Established pattern in this repo (see `git stash list` — indexer-health, scheduler-dashboard, flutter-media-detail phases all used the same fix for the same conductor timestamp regen).
+- **User recovery required at track closeout:** `git stash pop` to restore the conductor timestamp regen and `measure/__pycache__/` to the worktree (or discard if user no longer needs them). Both are OUTSIDE this track's commit boundary.
 
 ## Phase S3: Tag and document the v1.0 release
 - [ ] Write release notes / CHANGELOG summarizing the v1.0 feature set

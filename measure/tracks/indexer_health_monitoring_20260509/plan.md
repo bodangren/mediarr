@@ -1,7 +1,7 @@
 # Plan: Indexer Health Monitoring and Auto-Disable
 
 ## Phase 1: Health Check Service (TDD)
-- [~] Write tests for IndexerHealthService — Red committed; awaiting Green
+- [x] Write tests for IndexerHealthService — Red committed; awaiting Green
   - **Targeted Red command:** `./node_modules/.bin/vitest run server/src/repositories/IndexerHealthRepository.test.ts -t "extends snapshot with threshold context"`
   - **Fail count:** 4 failed / 6 skipped (10 tests total). All four failures are `TypeError: repo.getByIndexerIdWithThresholdContext is not a function` — the production method does not yet exist.
   - **Full Red summary (Phase 1 test surface):**
@@ -12,9 +12,10 @@
   - **Command-construction note:** the Phase 1 Red command uses the project-local vitest binary because `better-sqlite3` is not Bun-compatible; `bunx vitest` would crash with "better-sqlite3 is not yet supported in Bun" before reaching the new tests.
   - **2026-06-19 MID Red re-verification (current session):** stashed the dirty worktree (`server/src/api/routes/indexerRoutes.ts`, `server/src/repositories/IndexerHealthRepository.ts`, untracked `server/src/services/IndexerHealthService.ts`) into `stash@{0}` ("WIP-green-phase-stash"), ran the targeted Red command plus the other two Phase 1 test files at clean HEAD, then popped the stash to restore the dirty WIP. Verified fail profile matches exactly: 4 failed / 6 skipped on `extends snapshot with threshold context` (all `TypeError: repo.getByIndexerIdWithThresholdContext is not a function`), 8 failed / 1 passed across the full service + route test surface. Red is alive at commit `12acd8bb` and ready for Green.
   - **2026-06-19 MID Red attempt-2 supervisor-gate fix:** supervisor flagged the pre-existing dirty worktree (Green-phase WIP + unrelated scheduler-dashboard cron parity) as a Red-phase boundary violation because the worktree was dirty at session-end. Restashed the same 4 items into a NEW labeled stash `stash@{0}` ("indexer-health Phase 1 Red attempt-2 supervisor-gate fix: 3 pre-existing dirty items stashed off-tree... DO NOT POP — preserved for recovery. Recover via: git stash pop stash@{0}"). The dirty worktree contained NO changes authored by the MID agent — these were already dirty when the session started (proven by the git status output captured at MID start). They are now stashed off-tree so the Red-phase boundary is satisfied. Worktree is now clean of all non-test/non-Measure modifications. The original "WIP-green-phase-stash" from attempt-1 is no longer in the stash list (it was popped in attempt-1 and the files were restashed with a clearer label in attempt-2).
-- [ ] Implement health check ping for Torznab/Newznab/Cardigann indexers
-- [ ] Store health status in SQLite (indexer_health table)
-- [ ] Tests pass
+  - **2026-06-19 JR Green:** Commit `2c116173`. Implemented `getByIndexerIdWithThresholdContext`, `list()`, `disable()` on `IndexerHealthRepository` with Drizzle-native SQL; created `IndexerHealthService` with `ping()` dispatching by implementation string (Torznab/Newznab → `buildTestUrl`, Cardigann → `baseUrl`); added `GET /api/indexers/:id/health` route using existing `loadHealthSnapshot` helper. All 19 Phase 1 tests pass: 10 repo + 6 service + 3 route. Typecheck clean on all three changed files. `graph.db` updated with all three changed files. **npm test:** 276 files passed, 2244 tests passed, 11 skipped — green (attempt-1 flaky timeout in unrelated WantedSearchService resolved on retry).
+- [x] Implement health check ping for Torznab/Newznab/Cardigann indexers (commit `2c116173`)
+- [x] Store health status in SQLite (indexer_health table) (commit `2c116173`)
+- [x] Tests pass (commit `2c116173`)
 
 ## Phase 2: Auto-Disable Logic (TDD)
 - [ ] Write tests for consecutive failure threshold detection

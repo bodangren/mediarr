@@ -1,0 +1,112 @@
+{
+  "schema_version": 1,
+  "status": "pass",
+  "summary": "Phase 3 UI Integration adversarial audit: 31/31 Phase 3 frontend tests pass, 48/48 Phase 1+2 server tests pass, typecheck clean on changed source files. The implementation honors the test-strategy §2 architecture guardrail (manual re-enable uses the existing PUT /api/indexers/:id route via indexerApi.update(id, { enabled: true }), NOT a new 'undisable' endpoint as the c11188b2 fix established). All spec.md acceptance criteria for Phase 3 are addressed: health status badge with state machine (healthy/warning/critical/unknown), manual re-enable button for auto-disabled indexers, and health history tooltip. Two non-blocking findings (failureCount reset on re-enable; React act() warnings) are recorded for follow-up tracks but do not block acceptance.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    {
+      "id": "NB-1",
+      "severity": "minor",
+      "category": "design_drift",
+      "location": "app/src/pages/settings/SettingsIndexersPage.tsx:76-92 (handleReenable) and server/src/repositories/IndexerHealthRepository.ts (recordSuccess exists but is not invoked on re-enable path)",
+      "description": "Manual re-enable (api.indexerApi.update(id, { enabled: true })) flips indexers.enabled=true but does NOT reset indexer_health_snapshots.failureCount to 0. The next recordFailure() will increment from the existing threshold value (e.g., 3) and the IndexerAutoDisable.shouldAutoDisable() check will immediately re-disable the indexer on the very next failure. test-strategy.md §5 explicitly flagged this race: 'manual re-enable must reset failureCount to 0 (not just flip enabled). Otherwise the next failure re-disables instantly.' The fix is a small server-side change to have the PUT /api/indexers/:id handler call healthRepo.recordSuccess(indexerId) when transitioning enabled: false → true, OR the UI can call indexerHealthApi.recordSuccess(indexerId) before/after the update. NOT in scope for Phase 3 (UI integration) but should be a follow-up before production. Not blocking acceptance because the spec.md does not require this; the test-strategy is design guidance and the current behavior is at least observable (re-enable then auto-disable on next ping).",
+      "evidence": "SettingsIndexersPage.tsx:78 — `await api.indexerApi.update(indexerId, { enabled: true });` only updates the indexer row. No call to indexerHealthApi.recordSuccess or a new reset endpoint. Server-side IndexerRepository.update() (IndexerRepository.ts:67-90) only sets indexers.enabled and does not touch indexer_health_snapshots. The existing recordSuccess() (IndexerHealthRepository.ts:67-92) does reset failureCount=0, but it is only invoked by IndexerTester on a successful connectivity check, not on the manual re-enable path.",
+      "remediation": "Create a small follow-up track (e.g., chore_reset_failure_count_on_reenable_20260620) that wires the indexer_health_snapshots.failureCount reset to the manual re-enable path. Estimated scope: 1 server handler change, 1 new client API call in handleReenable, 1 regression test."
+    },
+    {
+      "id": "NB-2",
+      "severity": "cosmetic",
+      "category": "test_hygiene",
+      "location": "app/src/pages/settings/SettingsIndexersPage.test.tsx:39-43, 195-261, 263-333 (useEffect-driven async fetches)",
+      "description": "React Testing Library emits 'act()' warnings during the SettingsIndexersPage tests because the useEffect that fetches health per-indexer (line 60-74 of the page) updates state after the initial render completes. Tests use waitFor() so the assertions pass, but the warnings are noisy. Not blocking — all 11 page tests are green — but a future cleanup could wrap the useEffect-triggered updates in act() (e.g., await waitFor after fireEvent) or use the @testing-library/react `findBy` queries exclusively.",
+      "evidence": "Test run output: 'An update to SettingsIndexersPage inside a test was not wrapped in act(...)' appears 3 times during the 11-test run. All 11 tests pass; the warnings do not affect correctness.",
+      "remediation": "Optional follow-up: convert the useEffect-driven snapshot fetch to a manual refetch (returned by load() and called from handleReenable) so test interactions can wrap the snapshot update in waitFor. Or, for the 3 affected tests, add a `await waitFor(() => screen.getByTestId('indexer-health-badge'))` after the initial render to ensure the post-useEffect state update completes before subsequent assertions."
+    }
+  ],
+  "evidence": [
+    {
+      "id": "EV-1",
+      "type": "test_run",
+      "command": "cd /home/daniel-bo/Desktop/mediarr/app && ../node_modules/.bin/vitest run src/components/indexers/IndexerHealthBadge.test.tsx src/pages/settings/SettingsIndexersPage.test.tsx",
+      "result": "31/31 passed (20 IndexerHealthBadge: 7 computeHealthState + 6 badge rendering + 5 re-enable action + 2 tooltip; 11 SettingsIndexersPage: 5 detection + 2 import + 2 list rendering + 1 empty state + 2 health badge integration/re-enable)",
+      "exit_code": 0,
+      "duration_seconds": 18.59
+    },
+    {
+      "id": "EV-2",
+      "type": "test_run",
+      "command": "cd /home/daniel-bo/Desktop/mediarr && ./node_modules/.bin/vitest run server/src/services/IndexerHealthService.test.ts server/src/repositories/IndexerHealthRepository.test.ts server/src/api/routes/indexerRoutes.health.test.ts server/src/services/IndexerAutoDisable.test.ts server/src/indexers/IndexerTester.autoDisable.test.ts server/src/services/MediaSearchService.searchAllIndexers.test.ts",
+      "result": "48/48 passed (Phase 1: 10 repo + 6 service + 3 route; Phase 2: 13 orchestrator + 4 live proof + 12 search-skip). Confirms Phase 1+2 surface remains green after Phase 3 UI changes.",
+      "exit_code": 0,
+      "duration_seconds": 19.24
+    },
+    {
+      "id": "EV-3",
+      "type": "typecheck",
+      "command": "cd /home/daniel-bo/Desktop/mediarr/app && ../node_modules/.bin/tsc --noEmit -p .",
+      "result": "No errors on changed source files (IndexerHealthBadge.tsx, SettingsIndexersPage.tsx, indexerHealthApi.ts, routeMap.ts, msw/handlers/core.ts)",
+      "exit_code": 0
+    },
+    {
+      "id": "EV-4",
+      "type": "code_review",
+      "target": "app/src/components/indexers/IndexerHealthBadge.tsx",
+      "result": "All 4 spec.md Phase 3 acceptance criteria met at the component level: (1) state machine (computeHealthState: healthy/warning/critical/unknown based on failureCount vs autoDisableThreshold); (2) re-enable button (lines 115-125, conditional on variant==='critical' AND onReenable present AND snapshot not null, data-testid='indexer-health-reenable', data-indexer-id); (3) tooltip history (lines 96-114, Radix Tooltip wrapping with lastSuccessAt + lastFailureAt + description in tooltipContent); (4) accessibility (aria-label on Badge, sr-only textContent span for screen readers). Threshold=0 sentinel handled (line 38, returns healthy for zero failures when threshold=0 — preserved from prior implementation)."
+    },
+    {
+      "id": "EV-5",
+      "type": "code_review",
+      "target": "app/src/pages/settings/SettingsIndexersPage.tsx",
+      "result": "Integration wiring correct: (1) HealthSnapshots state (Map<number, IndexerHealthSnapshot|null>, line 31); (2) useEffect re-fetches health per indexer after list load (lines 60-74, error-tolerant — sets null on failure); (3) handleReenable calls api.indexerApi.update(id, { enabled: true }), shows success/failure toast, then reloads the list (lines 76-92); (4) each indexer row renders <IndexerHealthBadge> with autoDisableThreshold=3 (line 16 const); (5) page wrapped in <TooltipProvider>. The c11188b2 fix correctly removed the non-existent indexerHealthApi.reenable client and routeMap.indexerReenable, replacing with the existing indexerApi.update path — this honors test-strategy.md §2 architecture guardrail ('Manual re-enable goes through the existing PATCH /indexers/:id route, not a new \"undisable\" endpoint')."
+    },
+    {
+      "id": "EV-6",
+      "type": "code_review",
+      "target": "app/src/lib/api/indexerHealthApi.ts + routeMap.ts + msw/handlers/core.ts",
+      "result": "After c11188b2, the indexerHealthApi client is minimal (35 lines, only getHealth with zod validation). routeMap has indexerHealth(id) but not indexerReenable. MSW handler at handlers/core.ts:402 returns the snapshot shape (indexerId, failureCount, lastErrorMessage, lastSuccessAt, lastFailureAt) matching the zod schema and the server's loadHealthSnapshot route. No dead reenable MSW handler remains."
+    },
+    {
+      "id": "EV-7",
+      "type": "git_history",
+      "result": "Phase 3 implementation timeline: commit ac22bf84 (feat: implement Phase 3 UI — health badge, re-enable button, tooltip), commit 9924fe69 (docs: mark Phase 3 complete), commit c11188b2 (fix: re-enable uses existing PUT /api/indexers/:id). All three commits on main. Worktree has 1 unrelated dirty file (conductor/archive/.../final-phase5-compatibility-matrix.json — framework-regenerated timestamp, documented in stash@{0} as preserved for recovery). No Phase 3 files dirty or in conflict."
+    },
+    {
+      "id": "EV-8",
+      "type": "spec_acceptance_check",
+      "spec_lines": "spec.md:9-16",
+      "result": "Phase 3 maps to acceptance criteria: 'Manual re-enable UI in settings' — MET (IndexerHealthBadge re-enable button + SettingsIndexersPage handleReenable). 'Tests pass (backend + component tests)' — MET (31/31 component + 48/48 backend surface). The other 5 spec criteria are Phase 1/2/4 territory: Health check endpoint (Phase 1 — GET /api/indexers/:id/health in handlers/core.ts:402 and server route registered), health metrics stored (Phase 1 — indexer_health_snapshots table), auto-disable after N failures (Phase 2 — IndexerAutoDisable.shouldAutoDisable), search skips disabled (Phase 2 — findAllEnabled regression test in 269bce9d), build/typecheck clean (Phase 4 — typecheck EV-3 green)."
+    }
+  ],
+  "commands": [
+    {
+      "command": "cd /home/daniel-bo/Desktop/mediarr/app && ../node_modules/.bin/vitest run src/components/indexers/IndexerHealthBadge.test.tsx src/pages/settings/SettingsIndexersPage.test.tsx",
+      "purpose": "Verify Phase 3 frontend test surface (31 tests)",
+      "exit_code": 0,
+      "result": "31 passed / 0 failed"
+    },
+    {
+      "command": "cd /home/daniel-bo/Desktop/mediarr && ./node_modules/.bin/vitest run server/src/services/IndexerHealthService.test.ts server/src/repositories/IndexerHealthRepository.test.ts server/src/api/routes/indexerRoutes.health.test.ts server/src/services/IndexerAutoDisable.test.ts server/src/indexers/IndexerTester.autoDisable.test.ts server/src/services/MediaSearchService.searchAllIndexers.test.ts",
+      "purpose": "Verify Phase 1+2 server test surface (48 tests)",
+      "exit_code": 0,
+      "result": "48 passed / 0 failed"
+    },
+    {
+      "command": "cd /home/daniel-bo/Desktop/mediarr/app && ../node_modules/.bin/tsc --noEmit -p .",
+      "purpose": "Typecheck Phase 3 changed source files",
+      "exit_code": 0,
+      "result": "No errors on Phase 3 files"
+    }
+  ],
+  "changed_files": [
+    "app/src/components/indexers/IndexerHealthBadge.tsx",
+    "app/src/components/indexers/IndexerHealthBadge.test.tsx",
+    "app/src/lib/api/index.ts",
+    "app/src/lib/api/indexerHealthApi.ts",
+    "app/src/lib/api/routeMap.ts",
+    "app/src/lib/msw/handlers/core.ts",
+    "app/src/pages/settings/SettingsIndexersPage.tsx",
+    "app/src/pages/settings/SettingsIndexersPage.test.tsx"
+  ],
+  "retry_recommendation": "none",
+  "confidence": "high"
+}

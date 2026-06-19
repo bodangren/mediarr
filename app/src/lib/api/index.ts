@@ -15,6 +15,7 @@ import { ApiHttpClient, type ApiHttpClientConfig } from './httpClient';
 import { createImportApi } from './importApi';
 import { createImportListsApi } from './importListsApi';
 import { createIndexerApi } from './indexerApi';
+import { createIndexerHealthApi } from './indexerHealthApi';
 import { createLanguageProfilesApi } from './languageProfilesApi';
 import { createLogsApi } from './logsApi';
 import { createMediaApi } from './mediaApi';
@@ -51,6 +52,7 @@ export function createApiClients(config: ApiHttpClientConfig = {}) {
     torrentApi: createTorrentApi(httpClient),
     importApi: createImportApi(httpClient),
     indexerApi: createIndexerApi(httpClient),
+    indexerHealthApi: createIndexerHealthApi(httpClient),
 
 
     downloadClientApi: createDownloadClientApi(httpClient),

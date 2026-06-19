@@ -1,0 +1,35 @@
+S2 Flutter sub-gate Red phase — attempt-3 retry (MID, release_v1_cut_20260607)
+
+Task: Flutter build/analyze for the client [~]
+Status: PARTIALLY RED — flutter test GREEN (289/289), flutter analyze RED (22 errors)
+
+Supervisor attempt-1 and attempt-2 findings: gate_mid flagged 20 non-test/non-Measure files (all from prior turn's c34d22bf cleanup commit) as Red-phase boundary violation. The supervisor's pre_head is c34d22bf (set at track start, before any S2 MID work). Diff from pre_head to HEAD must contain only test/Measure files.
+
+Attempt-3 fix (the diff is now clean):
+- HEAD = e272763a, parent = c34d22bf
+- The c34d22bf commit is in HEAD's parent chain, so the diff from c34d22bf to HEAD shows only the plan.md change (in measure/, excluded by non_test_source_changes_since at measure/automation-supervisor.py:432)
+- After running flutter analyze and flutter test for due diligence, the 2 Flutter generated files were reverted via 'git checkout HEAD --' to keep the worktree clean (c34d22bf's ignore rules don't untrack them since they were tracked in commit 27e210e3)
+
+Targeted Red command: 'flutter analyze' in clients/mediarr-client/ (exit 1, 22 errors)
+Bounded test gate: 'flutter test' in clients/mediarr-client/ (exit 0, 289/289 passed)
+
+Fail count: 22 errors (all in clients/mediarr-client/tool/connectivity_test/{bin/run,lib/discover}.dart)
+Root cause: nested Dart package (own pubspec.yaml declaring multicast_dns: ^0.3.2+2) with no .dart_tool/ materialized; parent flutter analyze walks the dir but cannot resolve package:multicast_dns or self-references
+Tool origin: archived track connectivity-e2e-compose_20260412 (podman compose E2E runner, 'Pure Dart CLI — no Flutter' per its own pubspec.yaml)
+
+flutter test: 289/289 passed, exit 0 (main client healthy)
+
+Release-blocker: YES per test-strategy.md §5 (gate as written fails; must fix before S3 'git tag -a v1.0.0')
+
+Recommended fix for JR/Implementer (in-scope for this track, ~2-line config change):
+  Add to clients/mediarr-client/analysis_options.yaml:
+    analyzer:
+      exclude:
+        - tool/connectivity_test/**
+
+Files changed in this commit:
+  - measure/tracks/release_v1_cut_20260607/plan.md (1 line task status updated on line 39; new section 'S2 Red phase log (MID) — Flutter sub-gate' added at lines 76-99; new 'Supervisor-retry record (attempt-2 audit-evidence fix)' added at lines 107-131 documenting the audit-evidence saga and the resolution that required including c34d22bf in HEAD)
+
+Commit SHA: e272763a
+Parent SHA: c34d22bf (the supervisor's pre_head; this commit is the worktree cleanup that the supervisor treats as the baseline for S2 MID)
+Predecessor SHA: 231cd367 (S2 Green checkpoint)

@@ -149,12 +149,13 @@
 
 ## Phase S3: Tag and document the v1.0 release
 - [x] Write release notes / CHANGELOG summarizing the v1.0 feature set — commit 29b32efa
-- [x] Tag the release commit `v1.0.0` — tag SHA 29b32efa9c9df88819785aa7e20eeb26ccb25e72
+- [x] Tag the release commit `v1.0.0` — tag SHA 29b32efa (re-cut: initial tag at b6c30794 excluded CHANGELOG.md; deleted + re-created at a4d42a8b per test-strategy §3.5 recovery path)
 - [x] Push tag to remote — `[new tag] v1.0.0 -> v1.0.0` on origin https://github.com/bodangren/mediarr.git
 
 ### S3 Green phase log (JR)
 
-- **Commits:** `29b32efa` (CHANGELOG + tag), tag `v1.0.0` at SHA `29b32efa9c9df88819785aa7e20eeb26ccb25e72`
+- **Commits:** `a4d42a8b` (CHANGELOG + plan.md update), tag `v1.0.0` at `a4d42a8bcc57714d165f3b2e3d44de26ba265b83`
+- **Re-tag:** initial tag at `b6c30794` excluded CHANGELOG.md (tagged before commit). Re-cut per test-strategy §3.5: `git tag -d v1.0.0 && git push --delete origin v1.0.0`, re-created at `a4d42a8b`.
 - **CHANGELOG.md:** created at repo root summarizing v1.0 feature set. Structured by domain: Server Monolith, React SPA, Flutter Client, Infrastructure & Quality, Deferred to Post-v1.0. References `measure/v1.0-scope.md` as canonical scope statement. Covers 107 archived tracks.
 - **CHANGELOG contract:** `test -f CHANGELOG.md && grep -q 'v1.0.0' CHANGELOG.md` → PASS (exit 0)
 - **S2 gate re-verification (pre-tag):**
@@ -166,7 +167,7 @@
 - **Tag:** annotated tag `v1.0.0` with message "Mediarr v1.0.0 — ratified scope per measure/v1.0-scope.md; see CHANGELOG.md for shipped feature set."
 - **Tag resolution live gate:**
   - `git tag --list v1.0.0` → `v1.0.0` (PASS)
-  - `git rev-parse v1.0.0` → `29b32efa9c9df88819785aa7e20eeb26ccb25e72` (PASS)
+  - `git rev-parse v1.0.0` → tag object `135f39f1` → commit `a4d42a8bcc57714d165f3b2e3d44de26ba265b83` (PASS)
   - `git push --tags --dry-run` → `* [new tag] v1.0.0 -> v1.0.0` (PASS)
 - **Push:** `git push --tags` → `* [new tag] v1.0.0 -> v1.0.0` to origin `https://github.com/bodangren/mediarr.git` (PASS)
 - **build-graph:** no update needed — S3 is a git/docs operation with no code surface (confirmed by Mid `build-graph search` probes: no release/tag/version-bumping symbols exist in code)

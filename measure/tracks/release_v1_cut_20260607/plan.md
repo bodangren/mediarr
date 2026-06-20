@@ -148,9 +148,9 @@
 - **Targeted Red command results (recorded in `tests_run` footer below).**
 
 ## Phase S3: Tag and document the v1.0 release
-- [x] Write release notes / CHANGELOG summarizing the v1.0 feature set — commit 29b32efa
-- [x] Tag the release commit `v1.0.0` — tag SHA 29b32efa (re-cut: initial tag at b6c30794 excluded CHANGELOG.md; deleted + re-created at a4d42a8b per test-strategy §3.5 recovery path)
-- [x] Push tag to remote — `[new tag] v1.0.0 -> v1.0.0` on origin https://github.com/bodangren/mediarr.git
+- [x] Write release notes / CHANGELOG summarizing the v1.0 feature set — commit a4d42a8b
+- [x] Tag the release commit `v1.0.0` — commit a4d42a8b (tag object 135f39f1; re-cut: initial tag at b6c30794 excluded CHANGELOG.md; deleted + re-created at a4d42a8b per test-strategy §3.5 recovery path)
+- [x] Push tag to remote — commit a4d42a8b (tag `v1.0.0` live on origin https://github.com/bodangren/mediarr.git)
 
 ### S3 Green phase log (JR)
 

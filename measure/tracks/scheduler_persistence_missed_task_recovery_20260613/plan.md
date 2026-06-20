@@ -10,15 +10,15 @@ Phase 1 — so the aggregate test suite never carries persistently-failing
 recovery/health tests between phases.
 
 - [x] Read current `server/src/services/Scheduler.ts` and `server/src/db/schema.ts` to understand task registration and AppSettings schema.
-- [x] Create `server/src/services/Scheduler.persistence.test.ts` with 5 Red tests (persistence scope per `test-strategy.md` §5):
-  - [x] `schedule() persists the nextRun timestamp via SchedulerStateRepository`
-  - [x] `schedule() persists valid crons and skips persistence when computeNextRun returns null`
-  - [x] `executeRecorded advances the persisted nextRun after a successful cron tick`
-  - [x] `executeRecorded advances the persisted nextRun after a failed cron tick`
-  - [x] `stop() clears the persisted nextRun for the stopped task`
+- [x] Create `server/src/services/Scheduler.persistence.test.ts` with 5 Red tests (persistence scope per `test-strategy.md` §5).
+- [~] `schedule() persists the nextRun timestamp via SchedulerStateRepository`  ← Phase 1 Red work committed; will be flipped to [x] when Phase 2 Green turns this test green.
+- [~] `schedule() persists valid crons and skips persistence when computeNextRun returns null`  ← Phase 1 Red work committed; will be flipped to [x] when Phase 2 Green turns this test green.
+- [~] `executeRecorded advances the persisted nextRun after a successful cron tick`  ← Phase 1 Red work committed; will be flipped to [x] when Phase 2 Green turns this test green.
+- [~] `executeRecorded advances the persisted nextRun after a failed cron tick`  ← Phase 1 Red work committed; will be flipped to [x] when Phase 2 Green turns this test green.
+- [~] `stop() clears the persisted nextRun for the stopped task`  ← Phase 1 Red work committed; will be flipped to [x] when Phase 2 Green turns this test green.
 - [x] Run the new suite and confirm it fails for the expected reasons.
 
-**Phase 1 Red results (committed by this Red-phase commit):**
+**Phase 1 Red results (committed by `ba1cd27f` — Red-phase commit):**
 - Command: `CI=true npx vitest run server/src/services/Scheduler.persistence.test.ts`
 - Outcome: **5 failed / 0 passed / 5 total**
 - Failures are for the expected missing behavior — `Scheduler` does not call
@@ -34,7 +34,7 @@ later phases. They are intentionally NOT written in this Red-phase commit.
 - [ ] `runTask() is idempotent when called twice within the same minute` → Phase 3 Red
 - [ ] `getHealth() returns scheduledTaskCount and missedTaskCount` → Phase 4 Red
 
-- [x] Commit: `test(scheduler): add Red-phase persistence contract tests`
+- [x] Commit: `test(scheduler): add Red-phase persistence contract tests` (`ba1cd27f`)
 
 ## Phase 2 — Persist next-run on schedule and execution
 

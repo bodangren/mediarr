@@ -11,11 +11,11 @@ recovery/health tests between phases.
 
 - [x] Read current `server/src/services/Scheduler.ts` and `server/src/db/schema.ts` to understand task registration and AppSettings schema.
 - [x] Create `server/src/services/Scheduler.persistence.test.ts` with 5 Red tests (persistence scope per `test-strategy.md` §5).
-- [~] `schedule() persists the nextRun timestamp via SchedulerStateRepository`  ← Phase 1 Red work committed; will be flipped to [x] when Phase 2 Green turns this test green.
-- [~] `schedule() persists valid crons and skips persistence when computeNextRun returns null`  ← Phase 1 Red work committed; will be flipped to [x] when Phase 2 Green turns this test green.
-- [~] `executeRecorded advances the persisted nextRun after a successful cron tick`  ← Phase 1 Red work committed; will be flipped to [x] when Phase 2 Green turns this test green.
-- [~] `executeRecorded advances the persisted nextRun after a failed cron tick`  ← Phase 1 Red work committed; will be flipped to [x] when Phase 2 Green turns this test green.
-- [~] `stop() clears the persisted nextRun for the stopped task`  ← Phase 1 Red work committed; will be flipped to [x] when Phase 2 Green turns this test green.
+- [x] `schedule() persists the nextRun timestamp via SchedulerStateRepository`  ← Phase 2 Green complete (ef8ec174).
+- [x] `schedule() persists valid crons and skips persistence when computeNextRun returns null`  ← Phase 2 Green complete (ef8ec174).
+- [x] `executeRecorded advances the persisted nextRun after a successful cron tick`  ← Phase 2 Green complete (ef8ec174).
+- [x] `executeRecorded advances the persisted nextRun after a failed cron tick`  ← Phase 2 Green complete (ef8ec174).
+- [x] `stop() clears the persisted nextRun for the stopped task`  ← Phase 2 Green complete (ef8ec174).
 - [x] Run the new suite and confirm it fails for the expected reasons.
 
 **Phase 1 Red results (committed by `ba1cd27f` — Red-phase commit):**
@@ -38,11 +38,11 @@ later phases. They are intentionally NOT written in this Red-phase commit.
 
 ## Phase 2 — Persist next-run on schedule and execution
 
-- [ ] Add `getNextRun(cronExpression: string, after?: Date): Date` helper using `cron-parser` or existing cron utility.
-- [ ] Modify `Scheduler.schedule()` to write `scheduler:<taskId>:nextRun` to `AppSettings` after registering the cron job.
-- [ ] Modify `Scheduler.runTask()` to update the stored nextRun after successful execution.
-- [ ] Run the Phase 1 Red suite; the persistence tests should now pass.
-- [ ] Commit: `feat(scheduler): persist next-run timestamps to AppSettings`
+- [x] Add `getNextRun(cronExpression: string, after?: Date): Date` helper using `cron-parser` or existing cron utility.  → Existing `computeNextRun()` fulfills this role; no new helper required.
+- [x] Modify `Scheduler.schedule()` to write `scheduler:<taskId>:nextRun` to `AppSettings` after registering the cron job.  → Calls `schedulerStateRepository.setTaskState(name, nextRun)`.
+- [x] Modify `Scheduler.runTask()` to update the stored nextRun after successful execution.  → `executeRecorded()` updates nextRun in the `finally` block (both success and failure).
+- [x] Run the Phase 1 Red suite; the persistence tests should now pass.  → 5/5 passed.
+- [x] Commit: `feat(scheduler): persist next-run timestamps to AppSettings`  → `ef8ec174`
 
 ## Phase 3 — Startup missed-task recovery
 

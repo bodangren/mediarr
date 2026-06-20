@@ -205,13 +205,13 @@
 - **User recovery required at track closeout:** `git stash pop` on the new `stash@{0}` to restore the 451 items to the worktree (or discard if user no longer needs them). All items are OUTSIDE this track's commit boundary.
 
 ## Phase S4: Publish the post-v1.0 backlog
-- [x] Add a "Post-v1.0 / Deferred" section to `tracks.md` enumerating every deferred track with a one-line rationale — commit 9f4cc5e2 (parent-track ID `chore_untested_server_services_20260526` linked in deferred-remainder entry on line 31; active-section release_v1_cut entry removed; archived-section entry added; Post-v1.0 preamble updated to reflect archive status)
-- [x] Update `lessons-learned.md` with the release-cut retrospective (what the open-ended testing tail cost; the value-first reordering) — commit 9f4cc5e2 (added `(2026-06-20, release_v1_cut_20260607) **Release-Cut Retrospective:**` entry; compressed two prior entries to stay within the 50-line budget per AGENTS.md §4)
-- [x] Archive this track; final commit and push — commit 9f4cc5e2 (`git mv measure/tracks/release_v1_cut_20260607 measure/archive/release_v1_cut_20260607`; metadata.json status updated to `done` with `completed: 2026-06-20`)
+- [x] Add a "Post-v1.0 / Deferred" section to `tracks.md` enumerating every deferred track with a one-line rationale — commit 1020043a (parent-track ID `chore_untested_server_services_20260526` linked in deferred-remainder entry on line 31; active-section release_v1_cut entry removed; archived-section entry added; Post-v1.0 preamble updated to reflect archive status)
+- [x] Update `lessons-learned.md` with the release-cut retrospective (what the open-ended testing tail cost; the value-first reordering) — commit 1020043a (added `(2026-06-20, release_v1_cut_20260607) **Release-Cut Retrospective:**` entry; compressed two prior entries to stay within the 50-line budget per AGENTS.md §4)
+- [x] Archive this track; final commit and push — commit 1020043a (`git mv measure/tracks/release_v1_cut_20260607 measure/archive/release_v1_cut_20260607`; metadata.json status updated to `done` with `completed: 2026-06-20`)
 
 ### S4 Green phase log (JR)
 
-- **Commit:** `9f4cc5e2` (`chore(release_v1_cut): S4 green-phase closeout — archive track, publish backlog, retrospective`)
+- **Commit:** `1020043a` (`chore(release_v1_cut): S4 green-phase closeout — archive track, publish backlog, retrospective`)
 - **Task 1 (tracks.md Post-v1.0 / Deferred):**
   - Removed the active-section entry for `release_v1_cut_20260607` (line 18, now renumbered to 6).
   - Added a `[x]` entry to the "Recently Completed (archived)" section summarising the v1.0 cut.

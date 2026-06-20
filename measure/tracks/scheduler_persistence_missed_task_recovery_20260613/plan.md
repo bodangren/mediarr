@@ -4,16 +4,37 @@
 
 Write failing tests before modifying `Scheduler.ts`.
 
-- [ ] Read current `server/src/services/Scheduler.ts` and `server/src/db/schema.ts` to understand task registration and AppSettings schema.
-- [ ] Create `server/src/services/Scheduler.persistence.test.ts` with Red tests:
-  - [ ] `schedule() persists nextRun timestamp in AppSettings`
-  - [ ] `start() executes a task whose stored nextRun is in the past`
-  - [ ] `start() does not execute a task whose stored nextRun is in the future`
-  - [ ] `start() updates nextRun after recovering a missed task`
-  - [ ] `runTask() is idempotent when called twice within the same minute`
-  - [ ] `getHealth() returns scheduledTaskCount and missedTaskCount`
-- [ ] Run the new suite and confirm it fails for the expected reasons.
-- [ ] Commit: `test(scheduler): add Red-phase persistence/recovery contract tests`
+**Phase 1 scope (per `test-strategy.md` §5 + §7):** persistence only. Recovery
+and health Red tests are added in Phase 3 and Phase 4 respectively — not in
+Phase 1 — so the aggregate test suite never carries persistently-failing
+recovery/health tests between phases.
+
+- [x] Read current `server/src/services/Scheduler.ts` and `server/src/db/schema.ts` to understand task registration and AppSettings schema.
+- [x] Create `server/src/services/Scheduler.persistence.test.ts` with 5 Red tests (persistence scope per `test-strategy.md` §5):
+  - [x] `schedule() persists the nextRun timestamp via SchedulerStateRepository`
+  - [x] `schedule() persists valid crons and skips persistence when computeNextRun returns null`
+  - [x] `executeRecorded advances the persisted nextRun after a successful cron tick`
+  - [x] `executeRecorded advances the persisted nextRun after a failed cron tick`
+  - [x] `stop() clears the persisted nextRun for the stopped task`
+- [x] Run the new suite and confirm it fails for the expected reasons.
+
+**Phase 1 Red results (committed by this Red-phase commit):**
+- Command: `CI=true npx vitest run server/src/services/Scheduler.persistence.test.ts`
+- Outcome: **5 failed / 0 passed / 5 total**
+- Failures are for the expected missing behavior — `Scheduler` does not call
+  `SchedulerStateRepository.setTaskState` during `schedule()`, `executeRecorded`,
+  or `stop()` because the dependency is not wired yet. No vacuous-green tests.
+
+**Phase 1 items re-scoped to later phases (per `test-strategy.md` §7):**
+The following plan items were originally drafted under Phase 1 but belong to
+later phases. They are intentionally NOT written in this Red-phase commit.
+- [ ] `start() executes a task whose stored nextRun is in the past` → Phase 3 Red
+- [ ] `start() does not execute a task whose stored nextRun is in the future` → Phase 3 Red
+- [ ] `start() updates nextRun after recovering a missed task` → Phase 3 Red
+- [ ] `runTask() is idempotent when called twice within the same minute` → Phase 3 Red
+- [ ] `getHealth() returns scheduledTaskCount and missedTaskCount` → Phase 4 Red
+
+- [x] Commit: `test(scheduler): add Red-phase persistence contract tests`
 
 ## Phase 2 — Persist next-run on schedule and execution
 

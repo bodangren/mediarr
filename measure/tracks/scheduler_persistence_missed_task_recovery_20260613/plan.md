@@ -36,6 +36,12 @@ later phases. They are intentionally NOT written in this Red-phase commit.
 
 - [x] Commit: `test(scheduler): add Red-phase persistence contract tests` (`ba1cd27f`)
 
+**Phase 1 verification at MID handoff (this session):**
+- Targeted command: `CI=true npx vitest run server/src/services/Scheduler.persistence.test.ts`
+- Result: **5 passed / 0 failed / 5 total** in 1.38s.
+- Phase 1 Red work is already satisfied by `ba1cd27f` (Red commit) and the subsequent Phase 2 Green commit `ef8ec174`. No new Red tests are required — writing additional tests now would create a false Red phase since the contract is already enforced by the existing 5 passing tests.
+- Dirty worktree context at this MID start: `conductor/archive/cardigann_runtime_parity_20260223/artifacts/final-phase5-compatibility-matrix.json` (generatedAt timestamp only). Classified as **unrelated user work** (different archived track) and preserved as-is, not folded into this commit.
+
 ## Phase 2 — Persist next-run on schedule and execution
 
 - [x] Add `getNextRun(cronExpression: string, after?: Date): Date` helper using `cron-parser` or existing cron utility.  → Existing `computeNextRun()` fulfills this role; no new helper required.

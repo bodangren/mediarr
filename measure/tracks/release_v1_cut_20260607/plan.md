@@ -148,9 +148,28 @@
 - **Targeted Red command results (recorded in `tests_run` footer below).**
 
 ## Phase S3: Tag and document the v1.0 release
-- [~] Write release notes / CHANGELOG summarizing the v1.0 feature set
-- [~] Tag the release commit `v1.0.0`
-- [~] Push tag to remote
+- [x] Write release notes / CHANGELOG summarizing the v1.0 feature set — commit 29b32efa
+- [x] Tag the release commit `v1.0.0` — tag SHA 29b32efa9c9df88819785aa7e20eeb26ccb25e72
+- [x] Push tag to remote — `[new tag] v1.0.0 -> v1.0.0` on origin https://github.com/bodangren/mediarr.git
+
+### S3 Green phase log (JR)
+
+- **Commits:** `29b32efa` (CHANGELOG + tag), tag `v1.0.0` at SHA `29b32efa9c9df88819785aa7e20eeb26ccb25e72`
+- **CHANGELOG.md:** created at repo root summarizing v1.0 feature set. Structured by domain: Server Monolith, React SPA, Flutter Client, Infrastructure & Quality, Deferred to Post-v1.0. References `measure/v1.0-scope.md` as canonical scope statement. Covers 107 archived tracks.
+- **CHANGELOG contract:** `test -f CHANGELOG.md && grep -q 'v1.0.0' CHANGELOG.md` → PASS (exit 0)
+- **S2 gate re-verification (pre-tag):**
+  - `npm --workspace=app run typecheck` → PASS (exit 0)
+  - `npm --workspace=app run lint` → PASS (exit 0, 0 errors, 23 warnings)
+  - `npm --workspace=app run build` → PASS (exit 0, built in 1m 6s)
+  - `CI=true npm test` → PASS (273 test files, 2154 tests passed, 11 skipped, exit 0, duration 829.22s)
+  - `flutter analyze` → PASS (exit 0, 0 errors, 34 warnings/info)
+- **Tag:** annotated tag `v1.0.0` with message "Mediarr v1.0.0 — ratified scope per measure/v1.0-scope.md; see CHANGELOG.md for shipped feature set."
+- **Tag resolution live gate:**
+  - `git tag --list v1.0.0` → `v1.0.0` (PASS)
+  - `git rev-parse v1.0.0` → `29b32efa9c9df88819785aa7e20eeb26ccb25e72` (PASS)
+  - `git push --tags --dry-run` → `* [new tag] v1.0.0 -> v1.0.0` (PASS)
+- **Push:** `git push --tags` → `* [new tag] v1.0.0 -> v1.0.0` to origin `https://github.com/bodangren/mediarr.git` (PASS)
+- **build-graph:** no update needed — S3 is a git/docs operation with no code surface (confirmed by Mid `build-graph search` probes: no release/tag/version-bumping symbols exist in code)
 
 ### S3 Red phase log (MID)
 

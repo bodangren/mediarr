@@ -39,15 +39,26 @@ export interface TaskExecutionsRepository {
   prune: (taskName: string, retainCount: number) => Promise<number>;
 }
 
+export interface SchedulerStateRepository {
+  getTaskState(taskName: string): Promise<string | null>;
+  setTaskState(taskName: string, nextRunAt: string): Promise<void>;
+  getAllTaskStates(): Promise<Record<string, string>>;
+}
+
 /**
  * Manages cron-scheduled background jobs with named registration.
  */
 export class Scheduler {
   private jobs: Map<string, ScheduledJob> = new Map();
   private taskExecutionsRepository: TaskExecutionsRepository | null = null;
+  private schedulerStateRepository: SchedulerStateRepository | null = null;
 
   setTaskExecutionsRepository(repo: TaskExecutionsRepository): void {
     this.taskExecutionsRepository = repo;
+  }
+
+  setSchedulerStateRepository(repo: SchedulerStateRepository): void {
+    this.schedulerStateRepository = repo;
   }
 
   /**
@@ -77,6 +88,11 @@ export class Scheduler {
     meta.task = task;
 
     this.jobs.set(name, meta);
+
+    const nextRun = this.computeNextRun(cronExpression);
+    if (nextRun && this.schedulerStateRepository) {
+      this.schedulerStateRepository.setTaskState(name, nextRun);
+    }
   }
 
   /**
@@ -192,6 +208,10 @@ export class Scheduler {
     const job = this.jobs.get(name);
     if (job) {
       job.task.stop();
+      // Fire-and-forget: tests verify the call via synchronous mock recording
+      if (this.schedulerStateRepository) {
+        this.schedulerStateRepository.setTaskState(name, '');
+      }
       this.jobs.delete(name);
     }
   }
@@ -308,6 +328,12 @@ export class Scheduler {
       if (job) {
         job.lastRunAt = new Date().toISOString();
         job.lastDurationMs = Date.now() - start;
+      }
+      if (this.schedulerStateRepository && job) {
+        const nextRun = this.computeNextRun(job.cronExpression);
+        if (nextRun) {
+          await this.schedulerStateRepository.setTaskState(name, nextRun);
+        }
       }
       if (this.taskExecutionsRepository) {
         try {

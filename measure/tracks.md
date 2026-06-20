@@ -15,20 +15,18 @@ This file tracks all major tracks for the project. Each track has its own detail
 3. - [ ] **Track: Flutter Media Detail Page** *Phases: 5 | Link: [./tracks/feature_flutter_media_detail_20260508/](./tracks/feature_flutter_media_detail_20260508/)* — Movie and series detail screens (metadata, episodes, actions, file info) in the Flutter client. User-facing; the client is the product differentiator.
 4. - [ ] **Track: Scheduler & Automation Dashboard** *Phases: 5 | Link: [./tracks/feature_scheduler_automation_dashboard_20260524/](./tracks/feature_scheduler_automation_dashboard_20260524/)* — React SPA settings page for configuring/monitoring RSS sync, wanted search, and library scan schedules. User-facing.
 5. - [ ] **Track: Server Service Test Coverage — Runtime-Critical** *Stories: 4 (scoped from 10) | Link: [./tracks/chore_untested_server_services_20260526/](./tracks/chore_untested_server_services_20260526/)* — Rescoped 2026-06-07 to Scheduler, EpisodeService, SeriesService, MediaSearchService only; the other 6 services are deferred post-v1.0.
-6. - [ ] **Track: v1.0 Release Cut — Define the Line** *Stories: 4 | Link: [./tracks/release_v1_cut_20260607/](./tracks/release_v1_cut_20260607/)* — Ratify v1.0 scope, confirm gates, tag the release, publish the post-v1.0 backlog. Draws the line that stops open-ended testing/cleanup.
-7. - [ ] **Track: Scheduler Persistence & Missed-Task Recovery** *Phases: 5 | Link: [./tracks/scheduler_persistence_missed_task_recovery_20260613/](./tracks/scheduler_persistence_missed_task_recovery_20260613/)* — Persist node-cron next-run timestamps to AppSettings and recover missed tasks on startup. Addresses High open tech-debt (Scheduler silently drops tasks on restart).
+6. - [ ] **Track: Scheduler Persistence & Missed-Task Recovery** *Phases: 5 | Link: [./tracks/scheduler_persistence_missed_task_recovery_20260613/](./tracks/scheduler_persistence_missed_task_recovery_20260613/)* — Persist node-cron next-run timestamps to AppSettings and recover missed tasks on startup. Addresses High open tech-debt (Scheduler silently drops tasks on restart).
 
 ## Post-v1.0 / Deferred
 
-> Parked behind `release_v1_cut_20260607` (2026-06-07 restructure) **and**
-> `chore_core_integrity_20260610` (data-layer integrity, 2026-06-10). Low runtime risk or
-> blocked on prerequisites. Revisit after v1.0 ships.
+> Deferred as part of the v1.0 release cut (2026-06-07); `release_v1_cut_20260607` is now
+> archived. Low runtime risk or blocked on prerequisites. Revisit after v1.0 ships.
 
 - [ ] **Track: Indexer Health Monitoring & Auto-Disable** *Phases: ~4 | Link: [./tracks/indexer_health_monitoring_20260509/](./tracks/indexer_health_monitoring_20260509/)* — Feature; previously unregistered. Evaluate in `release_v1_cut` S1 for ship-in-v1.0 vs after.
 - [ ] **Track: Import List UI Test Coverage** *(deferred)* *Link: [./tracks/chore_import_list_ui_tests_20260526/](./tracks/chore_import_list_ui_tests_20260526/)* — UI-only coverage; low runtime risk.
 - [ ] **Track: Frontend Component Test Coverage Gaps** *(deferred — merge candidate)* *Link: [./tracks/chore_frontend_component_test_gaps_20260526/](./tracks/chore_frontend_component_test_gaps_20260526/)* — Merge with MSW coverage into one post-v1.0 frontend-testing track.
 - [x] **Track: MSW Mock Coverage for Backend Routes** *(deferred — merge candidate)* *Link: [./archive/chore_msw_mock_coverage_20260526/](./archive/chore_msw_mock_coverage_20260526/)* — Archived 2026-06-13. S1–S6 complete and GREEN: 265/265 MSW handler tests pass across 6 suites; setup.ts MSW lifecycle hook wired with `onUnhandledRequest: 'error'`; tech-debt.md row marked Resolved. Full suite has pre-existing failures only (no MSW handler failures).
-- [ ] **Server Service Test Coverage — deferred remainder** — SettingsService, TvSearchService, SubtitleNamingService, SubtitleRequirementEngine, SubtitleProviderFactory, FilterService (the 6 phases split out of track #5 above).
+- [ ] **Server Service Test Coverage — deferred remainder** — SettingsService, TvSearchService, SubtitleNamingService, SubtitleRequirementEngine, SubtitleProviderFactory, FilterService (the 6 phases split out of [chore_untested_server_services_20260526](./tracks/chore_untested_server_services_20260526/)).
 
 ## Superseded (2026-06-07)
 
@@ -37,6 +35,7 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ## Recently Completed (archived)
 
+- [x] **Track: v1.0 Release Cut — Define the Line** *Stories: 4 | Link: [./archive/release_v1_cut_20260607/](./archive/release_v1_cut_20260607/)* — Ratified v1.0 scope checklist, confirmed quality gates (full CI green, Flutter analyze green, app build clean), tagged and pushed v1.0.0, published post-v1.0 backlog. Archived 2026-06-20.
 - [x] **Track: Harden Test Infrastructure & Close Review Findings** *Phases: 6 | Link: [./archive/chore_test_infrastructure_hardening_20260612/](./archive/chore_test_infrastructure_hardening_20260612/)* — MSW runner hang fixed with `pool: 'forks'` and integration smoke tests; handlers refactored into domain files with real Blob responses; Scheduler `nextRunAt` implemented for daily/`*/N`/`0 */H` crons; TvSearchService orphan alias deleted; orphan-alias guard fixed; Import List UI tests hardened with prop-injected search, branch-coverage tests, and 58 passing tests. Archived 2026-06-12.
 - [x] **Track: Close Drizzle Migration (Shim Removal + Naming Residue)** *Stories: 7 | Link: [./archive/chore_close_drizzle_migration_20260607/](./archive/chore_close_drizzle_migration_20260607/)* — Consolidated `remove_prisma_shim` + `prisma_naming_cleanup`: removed `$executeRawUnsafe`/Bun-Node branching, deleted PrismaClient type shim, renamed Prisma mock helpers, dropped stale `OPENAI_API_KEY`. Archived 2026-06-08.
 - [x] **Track: Variant Subtitle Subsystem Test Coverage** *Stories: 5 | Link: [./archive/bug_variant_subtitle_test_coverage_20260526/](./archive/bug_variant_subtitle_test_coverage_20260526/)* — 36 unit tests across the 5 variant-subtitle services (Backfill, InventoryIndexer, MissingSubtitle, SubtitleFetch, Wanted); closed the highest-risk untested subsystem. Archived 2026-06-07.

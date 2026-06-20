@@ -1,8 +1,9 @@
 {
   "id": "release_v1_cut_20260607",
   "title": "v1.0 Release Cut — Define the Line",
-  "status": "pending",
+  "status": "done",
   "created": "2026-06-07",
+  "completed": "2026-06-20",
   "priority": "high",
   "type": "chore",
   "sprint": {

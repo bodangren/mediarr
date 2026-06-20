@@ -42,6 +42,16 @@ later phases. They are intentionally NOT written in this Red-phase commit.
 - Phase 1 Red work is already satisfied by `ba1cd27f` (Red commit) and the subsequent Phase 2 Green commit `ef8ec174`. No new Red tests are required — writing additional tests now would create a false Red phase since the contract is already enforced by the existing 5 passing tests.
 - Dirty worktree context at this MID start: `conductor/archive/cardigann_runtime_parity_20260223/artifacts/final-phase5-compatibility-matrix.json` (generatedAt timestamp only). Classified as **unrelated user work** (different archived track) and preserved as-is, not folded into this commit.
 
+**Phase 1 re-verification at MID handoff (2026-06-21):**
+- Build-graph: `build-graph stats ./graph.db` → 7685 nodes / 11278 edges / 905 files, mtime <24h (fresh).
+- Build-graph cross-check: `Scheduler.ts` exposes `setSchedulerStateRepository` (line 60) and calls `schedulerStateRepository.setTaskState` in `schedule` (line 93), `stop` (line 213), and `executeRecorded` finally-block (line 335). `start()` and `getHealth()` are **absent** as expected — those belong to Phases 3 and 4.
+- Targeted Red command: `CI=true npx vitest run server/src/services/Scheduler.persistence.test.ts` → **5 passed / 0 failed / 5 total** in 1.25s.
+- Outcome: Phase 1 Red work remains already-satisfied by `ba1cd27f` (Red) + `ef8ec174` (Green). No new Red tests written; creating additional tests would produce a false Red phase.
+- Dirty worktree classification for this session:
+  - `M conductor/archive/cardigann_runtime_parity_20260223/artifacts/final-phase5-compatibility-matrix.json` (`generatedAt` timestamp only) — **unrelated user work** (different archived track); preserved as-is.
+  - `?? measure/archive/release_v1_cut_20260607/review-2026-06-21.md` — **unrelated user work** (different archived track daily review); preserved untracked.
+  - `?? measure/tracks/scheduler_persistence_missed_task_recovery_20260613/review-2026-06-21.md` — **related** (current-track daily review from automation supervisor); preserved untracked, not folded in (no Red commit required this session).
+
 ## Phase 2 — Persist next-run on schedule and execution
 
 - [x] Add `getNextRun(cronExpression: string, after?: Date): Date` helper using `cron-parser` or existing cron utility.  → Existing `computeNextRun()` fulfills this role; no new helper required.

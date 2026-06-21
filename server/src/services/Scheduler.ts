@@ -25,6 +25,7 @@ interface ScheduledJob {
   lastRunAt: string | null;
   lastDurationMs: number | null;
   enabled: boolean;
+  running: boolean;
 }
 
 interface ActivityRetentionRepository {
@@ -90,6 +91,7 @@ export class Scheduler {
       lastRunAt: null,
       lastDurationMs: null,
       enabled: true,
+      running: false,
     };
 
     const task = cronSchedule(cronExpression, wrappedCallback);
@@ -297,6 +299,77 @@ export class Scheduler {
   }
 
   /**
+   * Recover missed tasks on startup. Loads all persisted nextRun timestamps
+   * from the state repository and runs each task whose stored nextRun is in
+   * the past. Tasks whose stored nextRun is in the future, or for which no
+   * persisted nextRun exists, are skipped. Per-task running guards prevent
+   * a normal cron tick from double-executing while recovery is in flight.
+   */
+  async start(): Promise<void> {
+    if (!this.schedulerStateRepository) {
+      return;
+    }
+
+    const pendingRecovery = new Set<string>();
+    for (const [name, job] of this.jobs) {
+      if (job.enabled) {
+        job.running = true;
+        pendingRecovery.add(name);
+      }
+    }
+
+    let states: Record<string, string>;
+    try {
+      states = await this.schedulerStateRepository.getAllTaskStates();
+    } catch (error) {
+      console.error('Scheduler failed to load persisted task states:', error);
+      for (const name of pendingRecovery) {
+        const job = this.jobs.get(name);
+        if (job) {
+          job.running = false;
+        }
+      }
+      throw error;
+    }
+
+    const now = Date.now();
+    const recoveryPromises: Promise<void>[] = [];
+
+    for (const [name, nextRunAt] of Object.entries(states)) {
+      const job = this.jobs.get(name);
+      pendingRecovery.delete(name);
+      if (!job || !job.enabled) {
+        if (job) {
+          job.running = false;
+        }
+        continue;
+      }
+
+      const nextRunDate = new Date(nextRunAt);
+      if (Number.isNaN(nextRunDate.getTime())) {
+        job.running = false;
+        continue;
+      }
+
+      if (nextRunDate.getTime() < now) {
+        job.running = false;
+        recoveryPromises.push(this.executeRecorded(name, job.callback));
+      } else {
+        job.running = false;
+      }
+    }
+
+    for (const name of pendingRecovery) {
+      const job = this.jobs.get(name);
+      if (job) {
+        job.running = false;
+      }
+    }
+
+    await Promise.all(recoveryPromises);
+  }
+
+  /**
    * Prune old task execution records, keeping only the last `retainCount` per task.
    */
   async pruneTaskExecutions(taskName: string, retainCount = 100): Promise<number> {
@@ -317,6 +390,11 @@ export class Scheduler {
     callback: JobCallback,
     options: { rethrow?: boolean } = {},
   ): Promise<void> {
+    const job = this.jobs.get(name);
+    if (!job || !job.enabled || job.running) {
+      return;
+    }
+    job.running = true;
     const start = Date.now();
     let record: { id: number } | undefined;
     try {
@@ -354,6 +432,7 @@ export class Scheduler {
       if (job) {
         job.lastRunAt = new Date().toISOString();
         job.lastDurationMs = Date.now() - start;
+        job.running = false;
       }
       if (this.schedulerStateRepository && job) {
         const nextRun = this.computeNextRun(job.cronExpression);

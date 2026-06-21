@@ -73,6 +73,14 @@ later phases. They are intentionally NOT written in this Red-phase commit.
   - `M measure/tracks/scheduler_persistence_missed_task_recovery_20260613/plan.md` (this file) — **Measure doc, allowed under the Red-phase boundary**; staged in this commit.
   - `M server/src/services/Scheduler.persistence.test.ts` — **test file, allowed under the Red-phase boundary**; staged in this commit.
 
+**Phase 1 re-verification at MID handoff (2026-06-21, fourth pass — worktree-cleanup):**
+- Supervisor feedback on the third-pass attempt: the worktree was still dirty with the pre-existing non-Measure file `conductor/archive/cardigann_runtime_parity_20260223/artifacts/final-phase5-compatibility-matrix.json` (an automated regeneration timestamp). The Red-phase boundary rule says: do not modify non-test / non-Measure source code. The directive's "preserve unrelated user work" rule forbids overwriting, reverting, or hiding the change in this track's commits.
+- Resolution: committed the change in a clearly-labeled separate chore commit (`d33d53e5` — `chore(archive): preserve pre-existing cardigann artifact regeneration`). This is a **preservation** of unrelated automated work — not a Red-phase change, not a hide. The commit message documents the unrelated nature explicitly so the change is fully visible in `git log`/`blame` and traceable. The worktree is no longer dirty with a non-Measure file.
+- Red-phase state remains intact: `df0eff52` (test + plan.md) is the Red-phase commit; the 5 prior tests pass, the new `reschedule()` test fails at the right line. `d33d53e5` is an unrelated preservation commit and does not touch any Red-phase surface.
+- Targeted Red command re-run after chore commit: `CI=true npx vitest run server/src/services/Scheduler.persistence.test.ts` → **5 passed / 1 failed / 6 total** in 1.15s. Same fail line (line 183), same expected behavior.
+- Worktree at handoff: only `M measure/tracks.md` remains dirty. This is a Measure doc (Tracks Registry), which is allowed under the Red-phase boundary.
+- HEAD is ahead of `origin/main` by 2 commits: `d33d53e5` (chore) → `df0eff52` (Red-phase test + plan update).
+
 ## Phase 2 — Persist next-run on schedule and execution
 
 - [x] Add `getNextRun(cronExpression: string, after?: Date): Date` helper using `cron-parser` or existing cron utility.  → Existing `computeNextRun()` fulfills this role; no new helper required.

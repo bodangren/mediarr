@@ -244,6 +244,11 @@ export class Scheduler {
     const newTask = cronSchedule(cronExpression, job.wrappedCallback);
     job.task = newTask;
     job.cronExpression = cronExpression;
+
+    const nextRun = this.computeNextRun(cronExpression);
+    if (nextRun && this.schedulerStateRepository) {
+      this.schedulerStateRepository.setTaskState(name, nextRun);
+    }
   }
 
   /**

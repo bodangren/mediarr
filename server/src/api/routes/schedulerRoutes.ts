@@ -10,10 +10,12 @@ interface SchedulerJobMeta {
   lastRunAt: string | null;
   lastDurationMs: number | null;
   nextRunAt: string | null;
+  enabled: boolean;
+  status: string;
 }
 
 interface SchedulerDeps {
-  scheduler: Pick<Scheduler, 'listJobsMeta' | 'runNow' | 'isScheduled' | 'reschedule' | 'triggerTask'>;
+  scheduler: Pick<Scheduler, 'listJobsMeta' | 'runNow' | 'isScheduled' | 'reschedule' | 'triggerTask' | 'toggleEnabled'>;
   settingsService: Pick<SettingsService, 'get' | 'update'>;
   taskExecutionsRepository: {
     create: (input: {
@@ -53,6 +55,23 @@ function extractMinutes(cronExpression: string): number | null {
 const VALID_STATUSES = new Set(['success', 'failed', 'running']);
 
 export function registerSchedulerRoutes(app: FastifyInstance, deps: SchedulerDeps): void {
+  app.put('/api/scheduler/:taskId/toggle', async (request, reply) => {
+    const { taskId } = request.params as { taskId: string };
+    const body = request.body as Record<string, unknown>;
+
+    if (typeof body.enabled !== 'boolean') {
+      return reply.status(422).send({ ok: false, error: { code: 'VALIDATION_ERROR', message: 'enabled must be a boolean', retryable: false } });
+    }
+
+    if (!deps.scheduler.isScheduled(taskId)) {
+      return reply.status(404).send({ ok: false, error: { code: 'NOT_FOUND', message: `Unknown task: ${taskId}`, retryable: false } });
+    }
+
+    deps.scheduler.toggleEnabled(taskId, body.enabled as boolean);
+
+    return sendSuccess(reply, { taskId, enabled: body.enabled as boolean, status: body.enabled ? 'healthy' : 'disabled' });
+  });
+
   app.get('/api/scheduler/tasks', async (_request, reply) => {
     const jobs = deps.scheduler.listJobsMeta();
     const data = jobs.map((job: SchedulerJobMeta) => ({
@@ -62,6 +81,8 @@ export function registerSchedulerRoutes(app: FastifyInstance, deps: SchedulerDep
       lastRunAt: job.lastRunAt,
       lastDurationMs: job.lastDurationMs,
       nextRunAt: job.nextRunAt,
+      enabled: job.enabled,
+      status: job.status,
     }));
     return sendSuccess(reply, data);
   });

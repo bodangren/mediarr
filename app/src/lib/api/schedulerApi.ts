@@ -1,16 +1,17 @@
 import { z } from 'zod';
 import { ApiHttpClient } from './httpClient';
 import { routeMap } from './routeMap';
+import { SCHEDULER_TASK_STATUS_VALUES, type SchedulerTaskStatus } from '../../../../server/src/services/Scheduler';
 
 const schedulerTaskSchema = z.object({
   id: z.string(),
   taskName: z.string(),
   cronExpression: z.string(),
-  lastRunAt: z.string(),
-  lastDurationMs: z.number(),
-  nextRunAt: z.string(),
-  enabled: z.boolean().default(true),
-  status: z.enum(['healthy', 'warning', 'error', 'disabled']).default('healthy'),
+  lastRunAt: z.string().nullable(),
+  lastDurationMs: z.number().nullable(),
+  nextRunAt: z.string().nullable(),
+  enabled: z.boolean().optional(),
+  status: z.enum(SCHEDULER_TASK_STATUS_VALUES).optional(),
 });
 
 const taskExecutionSchema = z.object({

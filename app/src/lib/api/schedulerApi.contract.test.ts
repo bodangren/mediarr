@@ -52,13 +52,22 @@ describe('Phase 6 Task 3 — client schedulerTaskSchema has no fabricated defaul
       expect(SCHEMA_SOURCE).not.toMatch(/status\s*:\s*z\.enum\(\[.*?\]\)\.default\(/s);
     });
 
-    it('the status enum is closed over the four real scheduler statuses (healthy | warning | error | disabled)', () => {
-      // The status field must be a closed enum over the four real values the server emits,
-      // not an open string that would silently accept any garbage. The default must NOT be
-      // present (already asserted above); here we assert the closed set.
-      expect(SCHEMA_SOURCE).toMatch(
-        /status\s*:\s*z\.enum\(\s*\[\s*['"]healthy['"]\s*,\s*['"]warning['"]\s*,\s*['"]error['"]\s*,\s*['"]disabled['"]\s*\]\s*\)/,
-      );
+    it('the status field uses a closed zod enum (not z.string), with values derived from the server-side SchedulerTaskStatus union (test-strategy.md §3)', () => {
+      // The status field must be a closed zod enum, not an open string that would silently
+      // accept any garbage. The default must NOT be present (asserted above); here we
+      // assert the closed-enum shape and that the client derives from the server-side
+      // SchedulerTaskStatus union — the four real status values live in
+      // `server/src/services/Scheduler.ts` (per the Status enum drift contract in
+      // test-strategy.md §3) and the client must reference them by import, not duplicate
+      // the literal list. Acceptable forms:
+      //   - z.enum(['healthy', 'warning', 'error', 'disabled'])        (literal)
+      //   - z.enum(SCHEDULER_TASK_STATUS_VALUES)                       (spec-aligned reference)
+      //   - z.enum(getStatusValues())                                  (helper)
+      // The companion test `schedulerApi.statusEnum.test.ts` enforces the
+      // import-from-server contract (no duplicated literal + import of
+      // SchedulerTaskStatus).
+      expect(SCHEMA_SOURCE).toMatch(/status\s*:\s*z\.enum\(/);
+      expect(SCHEMA_SOURCE).not.toMatch(/status\s*:\s*z\.string\(\)/);
     });
   });
 

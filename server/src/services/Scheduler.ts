@@ -3,12 +3,18 @@ import type { ScheduledTask } from 'node-cron';
 
 type JobCallback = () => Promise<void> | void;
 
+export type SchedulerTaskStatus = 'healthy' | 'warning' | 'error' | 'disabled';
+
+export const SCHEDULER_TASK_STATUS_VALUES: readonly SchedulerTaskStatus[] = ['healthy', 'warning', 'error', 'disabled'] as const;
+
 export interface ScheduledJobMeta {
   name: string;
   cronExpression: string;
   lastRunAt: string | null;
   lastDurationMs: number | null;
   nextRunAt: string | null;
+  enabled: boolean;
+  status: SchedulerTaskStatus;
 }
 
 interface ScheduledJob {
@@ -18,6 +24,7 @@ interface ScheduledJob {
   cronExpression: string;
   lastRunAt: string | null;
   lastDurationMs: number | null;
+  enabled: boolean;
 }
 
 interface ActivityRetentionRepository {
@@ -82,6 +89,7 @@ export class Scheduler {
       cronExpression,
       lastRunAt: null,
       lastDurationMs: null,
+      enabled: true,
     };
 
     const task = cronSchedule(cronExpression, wrappedCallback);
@@ -105,6 +113,8 @@ export class Scheduler {
       lastRunAt: job.lastRunAt,
       lastDurationMs: job.lastDurationMs,
       nextRunAt: this.computeNextRun(job.cronExpression),
+      enabled: job.enabled,
+      status: job.enabled ? 'healthy' : 'disabled',
     }));
   }
 
@@ -192,6 +202,17 @@ export class Scheduler {
    */
   isScheduled(name: string): boolean {
     return this.jobs.has(name);
+  }
+
+  /**
+   * Toggle a job's enabled state.
+   */
+  toggleEnabled(name: string, enabled: boolean): void {
+    const job = this.jobs.get(name);
+    if (!job) {
+      throw new Error(`Job '${name}' is not scheduled`);
+    }
+    job.enabled = enabled;
   }
 
   /**

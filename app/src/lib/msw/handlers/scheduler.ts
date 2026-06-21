@@ -1,7 +1,7 @@
-import { http } from 'msw';
+import { http, HttpResponse } from 'msw';
 import { numberQuery, sendPaginated, sendSuccess } from './helpers';
 
-const MOCK_TASKS = [
+const MOCK_TASKS: Array<{ id: string; taskName: string; cronExpression: string; lastRunAt: string; lastDurationMs: number; nextRunAt: string; enabled: boolean; status: string }> = [
   {
     id: 'rss-sync',
     taskName: 'RSS Sync',
@@ -22,7 +22,7 @@ const MOCK_TASKS = [
     enabled: true,
     status: 'warning',
   },
-] as const;
+];
 
 const MOCK_HISTORY = [
   {
@@ -72,9 +72,26 @@ export function createSchedulerHandlers() {
 
     http.put('/api/scheduler/:taskId/toggle', async ({ params, request }) => {
       const body = (await request.json()) as { enabled?: boolean };
+      if (typeof body.enabled !== 'boolean') {
+        return new HttpResponse(
+          JSON.stringify({ ok: false, error: { code: 'VALIDATION_ERROR', message: 'enabled must be a boolean', retryable: false } }),
+          { status: 422, headers: { 'content-type': 'application/json' } },
+        );
+      }
+      const taskId = params.taskId as string;
+      const task = MOCK_TASKS.find((t) => t.id === taskId);
+      if (!task) {
+        return new HttpResponse(
+          JSON.stringify({ ok: false, error: { code: 'NOT_FOUND', message: `Unknown task: ${taskId}`, retryable: false } }),
+          { status: 404, headers: { 'content-type': 'application/json' } },
+        );
+      }
+      task.enabled = body.enabled;
+      task.status = body.enabled ? 'healthy' : 'disabled';
       return sendSuccess({
-        taskId: params.taskId as string,
-        enabled: body.enabled ?? false,
+        taskId,
+        enabled: body.enabled,
+        status: task.status,
       });
     }),
   ];

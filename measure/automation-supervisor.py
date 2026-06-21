@@ -443,6 +443,46 @@ def non_test_source_changes_since(config: Config, base_sha: str) -> list[str]:
     return result
 
 
+def committed_changes_since(config: Config, base_sha: str) -> list[str]:
+    """Files actually committed between base_sha and HEAD.
+
+    Differs from changed_files_since by ignoring the working tree and the
+    index; only `git diff base_sha..HEAD --name-only` is consulted. This
+    isolates what the agent committed from pre-existing dirty work.
+    """
+    if not base_sha:
+        return []
+    result = git(config, "diff", "--name-only", f"{base_sha}..HEAD")
+    if result.returncode != 0:
+        return []
+    return sorted(line.strip() for line in result.stdout.splitlines() if line.strip())
+
+
+def non_test_committed_changes_since(config: Config, base_sha: str) -> list[str]:
+    """Non-test, non-Measure files the agent committed since base_sha.
+
+    Used by gate_mid to enforce the Red-phase boundary: it inspects the
+    agent's actual commits, not the working tree. This avoids false
+    positives when the worktree was already dirty at role entry (e.g.,
+    pre-existing Green work that the Red role is forbidden to modify).
+    """
+    allowed_suffixes = (
+        ".test.ts", ".test.tsx", ".spec.ts", ".spec.tsx",
+        ".test.js", ".test.jsx", ".spec.js", ".spec.jsx",
+        "_test.go", ".bats",
+    )
+    result = []
+    for path in committed_changes_since(config, base_sha):
+        if path.startswith("measure/"):
+            continue
+        if path.endswith(allowed_suffixes):
+            continue
+        if "/__tests__/" in path or "/tests/" in path or path.startswith("tests/"):
+            continue
+        result.append(path)
+    return result
+
+
 def normalize_repo_path(path: str) -> str:
     return path.replace("\\", "/").lstrip("./")
 
@@ -1191,7 +1231,7 @@ def gate_mid(config: Config, ctx: RoleContext) -> GateResult:
     elif in_progress == 0 and incomplete > 0:
         feedback.append("Expected at least one current phase task to be marked [~] after Red work.")
 
-    non_test_changes = non_test_source_changes_since(config, ctx.pre_head)
+    non_test_changes = non_test_committed_changes_since(config, ctx.pre_head)
     if non_test_changes:
         feedback.append("Mid role changed non-test/non-Measure files, which violates the Red-phase boundary:")
         feedback.extend(f"- {path}" for path in non_test_changes)

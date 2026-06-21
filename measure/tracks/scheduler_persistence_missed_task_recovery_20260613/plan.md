@@ -141,10 +141,10 @@ later phases. They are intentionally NOT written in this Red-phase commit.
 ## Phase 3 — Startup missed-task recovery
 
 - [x] Modify `Scheduler.start()` to:  ← Phase 3 Green complete (`ce999fb8`).
-  - [x] Load all `scheduler:*:nextRun` entries from `AppSettings`.  ← Calls `schedulerStateRepository.getAllTaskStates()` in `start()`.
-  - [x] For each task with a stored nextRun in the past, run it once and update the stored nextRun.  ← `start()` calls `executeRecorded(name, job.callback)` for past-due tasks; `executeRecorded`'s finally-block writes the new nextRun via `setTaskState`.
-  - [x] Skip recovery if the task is already running or was executed very recently (within the same interval window).  ← Per-task `running` flag set synchronously before the `await getAllTaskStates()` call; `executeRecorded` returns early if `job.running` is true.
-- [x] Add tests for concurrent recovery + normal cron firing (no double execution).  ← `start() does not double-execute when recovery and cron fire near-same-time` in `Scheduler.persistence.test.ts:241-255`.
+  - [x] Load all `scheduler:*:nextRun` entries from `AppSettings`.  ← `ce999fb8`. Calls `schedulerStateRepository.getAllTaskStates()` in `start()` (`Scheduler.ts:323`).
+  - [x] For each task with a stored nextRun in the past, run it once and update the stored nextRun.  ← `ce999fb8`. `start()` calls `executeRecorded(name, job.callback)` for past-due tasks (`Scheduler.ts:356`); `executeRecorded`'s finally-block writes the new nextRun via `setTaskState` (`Scheduler.ts:432-435`).
+  - [x] Skip recovery if the task is already running or was executed very recently (within the same interval window).  ← `ce999fb8`. Per-task `running` flag set synchronously before the `await getAllTaskStates()` call (`Scheduler.ts:316`); `executeRecorded` returns early if `job.running` is true (`Scheduler.ts:323-326`).
+- [x] Add tests for concurrent recovery + normal cron firing (no double execution).  ← `c652cc51` (Phase 3 Red commit, added 5 recovery tests including `start() does not double-execute when recovery and cron fire near-same-time` at `Scheduler.persistence.test.ts:241-255`); Green evidence: `ce999fb8` (test now passes).
 - [x] Commit: `feat(scheduler): recover missed tasks on startup`  → `ce999fb8`
 
 **Phase 3 Red state (MID in progress):**

@@ -165,4 +165,28 @@ describe('Scheduler persistence contract (Phase 1 Red)', () => {
     expect(clearingCall[0]).toBe('rss-sync');
     expect(clearingCall[1]).toBe('');
   });
+
+  it('reschedule() updates the persisted nextRun when the cron expression changes', () => {
+    // Initial schedule at */15 — sets the first persisted nextRun.
+    scheduler.schedule('rss-sync', '*/15 * * * *', () => undefined);
+    const callsAfterSchedule = stateRepo.setTaskState.mock.calls.length;
+    expect(callsAfterSchedule).toBeGreaterThan(0);
+
+    // Reschedule to a different cadence. The persisted nextRun is now stale
+    // (it reflects the old cron); Scheduler MUST refresh it so a restart
+    // after reschedule fires at the NEW time, not the old. At HEAD,
+    // Scheduler.reschedule() does not call setTaskState at all, so the
+    // call count stays the same and this test fails.
+    scheduler.reschedule('rss-sync', '*/30 * * * *');
+
+    const callsAfterReschedule = stateRepo.setTaskState.mock.calls.length;
+    expect(callsAfterReschedule).toBeGreaterThan(callsAfterSchedule);
+
+    const latestCall = stateRepo.setTaskState.mock.calls.at(-1) as [string, string];
+    expect(latestCall[0]).toBe('rss-sync');
+    expect(typeof latestCall[1]).toBe('string');
+    expect(latestCall[1].length).toBeGreaterThan(0);
+    expect(() => new Date(latestCall[1])).not.toThrow();
+    expect(new Date(latestCall[1]).getTime()).toBeGreaterThan(Date.now());
+  });
 });

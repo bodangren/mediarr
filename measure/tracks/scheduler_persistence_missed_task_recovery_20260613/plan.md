@@ -16,6 +16,7 @@ recovery/health tests between phases.
 - [x] `executeRecorded advances the persisted nextRun after a successful cron tick`  ← Phase 2 Green complete (ef8ec174).
 - [x] `executeRecorded advances the persisted nextRun after a failed cron tick`  ← Phase 2 Green complete (ef8ec174).
 - [x] `stop() clears the persisted nextRun for the stopped task`  ← Phase 2 Green complete (ef8ec174).
+- [~] `reschedule() updates the persisted nextRun when the cron expression changes`  ← Phase 1 Red tightened this session (Red, awaiting Green). Tightens the persistence contract to cover the reschedule path: at HEAD, `Scheduler.reschedule()` does not call `setTaskState`, so the persisted nextRun stays stale after a cron-expression change.
 - [x] Run the new suite and confirm it fails for the expected reasons.
 
 **Phase 1 Red results (committed by `ba1cd27f` — Red-phase commit):**
@@ -51,6 +52,26 @@ later phases. They are intentionally NOT written in this Red-phase commit.
   - `M conductor/archive/cardigann_runtime_parity_20260223/artifacts/final-phase5-compatibility-matrix.json` (`generatedAt` timestamp only) — **unrelated user work** (different archived track); preserved as-is.
   - `?? measure/archive/release_v1_cut_20260607/review-2026-06-21.md` — **unrelated user work** (different archived track daily review); preserved untracked.
   - `?? measure/tracks/scheduler_persistence_missed_task_recovery_20260613/review-2026-06-21.md` — **related** (current-track daily review from automation supervisor); preserved untracked, not folded in (no Red commit required this session).
+
+**Phase 1 re-verification at MID handoff (2026-06-21, second pass):**
+- Build-graph fresh scan after `build-graph update ./graph.db server/src/services/Scheduler.ts server/src/services/Scheduler.persistence.test.ts` → `SchedulerStateRepository` (interface in `Scheduler.ts:42-46`) + `SchedulerStateRepositoryMock` (interface in `Scheduler.persistence.test.ts:29-41`) both indexed.
+- Build-graph cross-check: `Scheduler.ts` is unchanged from previous re-verification — `setSchedulerStateRepository` (line 60) wired; `schedule` persists (line 93-95); `stop` clears (line 212-214); `executeRecorded` finally-block advances (line 332-337). `start()` and `getHealth()` remain absent (Phase 3 / 4).
+- Targeted Red command: `CI=true npx vitest run server/src/services/Scheduler.persistence.test.ts` → **5 passed / 0 failed / 5 total** in 1.05s. (Same suite, same result, no drift.)
+- Outcome: Phase 1 Red work remains already-satisfied. Per the MID directive, creating additional tests now would produce a false Red phase since the contract is already enforced. **No Red-phase commit this session.**
+- Dirty worktree classification for this session:
+  - `M conductor/archive/cardigann_runtime_parity_20260223/artifacts/final-phase5-compatibility-matrix.json` (`generatedAt` timestamp only) — **unrelated user work** (different archived track); preserved as-is, not folded in.
+  - `M measure/tracks.md` (post-v1.0.0 reordering of Active Tracks — done by the automation supervisor's daily review) — **unrelated to Red phase**; supervisor-driven doc reorg that landed via `3c458b74`/`4d972e04` and was not part of this MID's Red work. Preserved as-is, not folded in.
+
+**Phase 1 re-verification at MID handoff (2026-06-21, third pass — supervisor-redirected):**
+- Supervisor feedback on the second-pass attempt required (a) a committed Red-phase test change with HEAD advanced, (b) a current-phase plan task marked `[~]`, and (c) no non-test/non-Measure file modifications.
+- Action: tightened the persistence contract with one new Red test for `Scheduler.reschedule()` updating the persisted `nextRun` when the cron expression changes. The new test fails for the right reason — `Scheduler.reschedule()` (lines 232-247) does not call `setTaskState` at all, so the call count after reschedule equals the count after schedule.
+- Targeted Red command: `CI=true npx vitest run server/src/services/Scheduler.persistence.test.ts` → **5 passed / 1 failed / 6 total** in 1.07s. Failure: `AssertionError: expected 1 to be greater than 1` at `Scheduler.persistence.test.ts:183` (the `callsAfterReschedule > callsAfterSchedule` assertion). The 5 prior tests still pass — no regression.
+- Plan task `reschedule() updates the persisted nextRun when the cron expression changes` is marked `[~]` (Red, awaiting Green).
+- Dirty worktree classification for this session:
+  - `M conductor/archive/cardigann_runtime_parity_20260223/artifacts/final-phase5-compatibility-matrix.json` (`generatedAt` timestamp only) — **unrelated user work** (different archived track); preserved as-is, **not staged in this commit** so the worktree is no dirtier at handoff than at start.
+  - `M measure/tracks.md` (post-v1.0.0 reordering of Active Tracks — done by the automation supervisor's daily review) — **unrelated to Red phase**; supervisor-driven doc reorg that landed via `3c458b74`/`4d972e04` and was not part of this MID's Red work. Preserved as-is, **not staged in this commit**.
+  - `M measure/tracks/scheduler_persistence_missed_task_recovery_20260613/plan.md` (this file) — **Measure doc, allowed under the Red-phase boundary**; staged in this commit.
+  - `M server/src/services/Scheduler.persistence.test.ts` — **test file, allowed under the Red-phase boundary**; staged in this commit.
 
 ## Phase 2 — Persist next-run on schedule and execution
 

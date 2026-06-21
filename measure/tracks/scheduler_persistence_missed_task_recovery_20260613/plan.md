@@ -16,7 +16,7 @@ recovery/health tests between phases.
 - [x] `executeRecorded advances the persisted nextRun after a successful cron tick`  ← Phase 2 Green complete (ef8ec174).
 - [x] `executeRecorded advances the persisted nextRun after a failed cron tick`  ← Phase 2 Green complete (ef8ec174).
 - [x] `stop() clears the persisted nextRun for the stopped task`  ← Phase 2 Green complete (ef8ec174).
-- [~] `reschedule() updates the persisted nextRun when the cron expression changes`  ← Phase 1 Red tightened this session (Red, awaiting Green). Tightens the persistence contract to cover the reschedule path: at HEAD, `Scheduler.reschedule()` does not call `setTaskState`, so the persisted nextRun stays stale after a cron-expression change.
+- [x] `reschedule() updates the persisted nextRun when the cron expression changes`  ← Phase 2 Green complete (98c72611). Adds `setTaskState` call in `reschedule()` after updating the cron expression to keep persisted nextRun in sync.
 - [x] Run the new suite and confirm it fails for the expected reasons.
 
 **Phase 1 Red results (committed by `ba1cd27f` — Red-phase commit):**

@@ -1,7 +1,8 @@
 {
   "id": "feature_scheduler_automation_dashboard_20260524",
   "title": "Scheduler & Automation Dashboard",
-  "status": "pending",
+  "status": "reopened",
   "created": "2026-05-24",
-  "priority": "high"
+  "priority": "high",
+  "deviation_notes": "Reopened after the 2026-06-21 fleet completion audit rejected the closeout: the frontend calls PUT /api/scheduler/:taskId/toggle, but Fastify does not register that route; enabled/status badges are client defaults rather than real scheduler data. Keep active until server route, persistence, real status fields, and route-parity proof pass."
 }

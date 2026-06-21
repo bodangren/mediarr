@@ -81,6 +81,26 @@ later phases. They are intentionally NOT written in this Red-phase commit.
 - Worktree at handoff: only `M measure/tracks.md` remains dirty. This is a Measure doc (Tracks Registry), which is allowed under the Red-phase boundary.
 - HEAD is ahead of `origin/main` by 2 commits: `d33d53e5` (chore) → `df0eff52` (Red-phase test + plan update).
 
+**Phase 1 re-verification at MID handoff (2026-06-21, fifth pass — source-stable):**
+- Build-graph fresh: `build-graph stats ./graph.db` → **7692 nodes / 11283 edges / 906 files** (mtime 2026-06-21 10:36; <24h). Delta from 4th pass (7685/11278/905) is incremental updates for the new nodes/edges between re-verifications — no full re-scan required.
+- Build-graph cross-check: `Scheduler.ts` interface nodes (`SchedulerStateRepository`, `ScheduledJob`, `TaskExecutionsRepository`, `ScheduledJobMeta`, `JobCallback`, `ActivityRetentionRepository`) and class node (`Scheduler`) are indexed at `./server/src/services/Scheduler.ts:51`. Methods are class-internal (graph indexes class-level only); behavioral evidence comes from source inspection.
+- Source inspection (`grep -n "setTaskState\|schedulerStateRepository" server/src/services/Scheduler.ts`):
+  - L54: `private schedulerStateRepository` field declared
+  - L60–61: `setSchedulerStateRepository` setter wires the field
+  - L93–94: `schedule()` calls `setTaskState(name, nextRun)` after computing nextRun (only when `nextRun` is non-null and repo is wired)
+  - L212–213: `stop()` calls `setTaskState(name, '')` to clear
+  - L332–335: `executeRecorded()` finally-block calls `setTaskState(name, nextRun)` after both success and failure
+  - **`Scheduler.reschedule()` (L232–247) does NOT call `setTaskState`** — confirmed: the only `setTaskState` references in the file are at L94, L213, L335.
+- Targeted Red command: `CI=true npx vitest run server/src/services/Scheduler.persistence.test.ts` → **5 passed / 1 failed / 6 total** in 1.72s. Same fail line as 3rd/4th pass: `AssertionError: expected 1 to be greater than 1` at `Scheduler.persistence.test.ts:183:34` (the `callsAfterReschedule > callsAfterSchedule` assertion in the `reschedule()` test). No regression on the 5 prior tests.
+- Phase 1 task inventory at this MID start:
+  - 5 tests `[x]` (Phase 2 Green already flipped them — `ba1cd27f` Red → `ef8ec174` Green)
+  - 1 test `[~]` (`reschedule()` — Red in place, awaiting Green)
+  - 5 items `[ ]` — all explicitly re-scoped to Phase 3 / Phase 4 Red per `test-strategy.md` §7 and not in Phase 1's contracted scope
+- Decision: **no new Red test this session.** The single incomplete non-deferred Phase 1 task (`reschedule()`) already has a Red test in `[~]` state that fails for the right reason. Adding more tests now would create a false Red phase per the MID directive — the contract is already enforced by the existing 5+1 test shape.
+- Dirty worktree classification for this session (worktree is the same one from the 4th pass handoff):
+  - `M measure/tracks.md` (post-v1.0.0 reordering of Active Tracks, done by the automation supervisor's daily review process) — **Measure doc, allowed under the Red-phase boundary, but unrelated to this track's Red work.** Per the directive's "preserve unrelated user work" rule: NOT folded into this track's Red commit; left untouched in the working tree.
+- HEAD at handoff: `d756148c` (3 commits ahead of `origin/main`). The 5+1 Red tests, the Phase 2 Green commit, and the unrelated preservation commit remain the only deltas from `origin/main`. This session's commit is a docs-only plan.md update.
+
 ## Phase 2 — Persist next-run on schedule and execution
 
 - [x] Add `getNextRun(cronExpression: string, after?: Date): Date` helper using `cron-parser` or existing cron utility.  → Existing `computeNextRun()` fulfills this role; no new helper required.

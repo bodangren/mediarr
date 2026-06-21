@@ -140,18 +140,29 @@ later phases. They are intentionally NOT written in this Red-phase commit.
 
 ## Phase 3 — Startup missed-task recovery
 
-- [~] Modify `Scheduler.start()` to:
-  - [~] Load all `scheduler:*:nextRun` entries from `AppSettings`.
-  - [~] For each task with a stored nextRun in the past, run it once and update the stored nextRun.
-  - [~] Skip recovery if the task is already running or was executed very recently (within the same interval window).
-- [~] Add tests for concurrent recovery + normal cron firing (no double execution).
-- [ ] Commit: `feat(scheduler): recover missed tasks on startup`
+- [x] Modify `Scheduler.start()` to:  ← Phase 3 Green complete (`ce999fb8`).
+  - [x] Load all `scheduler:*:nextRun` entries from `AppSettings`.  ← Calls `schedulerStateRepository.getAllTaskStates()` in `start()`.
+  - [x] For each task with a stored nextRun in the past, run it once and update the stored nextRun.  ← `start()` calls `executeRecorded(name, job.callback)` for past-due tasks; `executeRecorded`'s finally-block writes the new nextRun via `setTaskState`.
+  - [x] Skip recovery if the task is already running or was executed very recently (within the same interval window).  ← Per-task `running` flag set synchronously before the `await getAllTaskStates()` call; `executeRecorded` returns early if `job.running` is true.
+- [x] Add tests for concurrent recovery + normal cron firing (no double execution).  ← `start() does not double-execute when recovery and cron fire near-same-time` in `Scheduler.persistence.test.ts:241-255`.
+- [x] Commit: `feat(scheduler): recover missed tasks on startup`  → `ce999fb8`
 
 **Phase 3 Red state (MID in progress):**
 - Build-graph cross-check: `Scheduler.start()` is **absent** from `server/src/services/Scheduler.ts` (no method node indexed); `SchedulerStateRepository.getAllTaskStates()` exists but is never called by production code.
 - Dirty worktree classification at MID start: all dirty paths are **unrelated user work** from the scheduler toggle-enabled feature (see Phase 1 re-verification notes for preservation policy). Phase 3 Red work touches only `server/src/services/Scheduler.persistence.test.ts` and this `plan.md`.
 - Targeted Red command: `CI=true npx vitest run server/src/services/Scheduler.persistence.test.ts`
 - Red result: **6 passed / 5 failed / 11 total** in ~2.5s. All 5 Phase 3 recovery tests fail with `TypeError: scheduler.start is not a function` because `Scheduler.start()` has not been implemented yet. The 6 pre-existing Phase 1/2 persistence tests continue to pass — no regression.
+
+**Phase 3 Green state (JR complete):**
+- Build-graph fresh: `build-graph stats ./graph.db` → **7692 nodes / 11283 edges / 906 files** (mtime <24h, fresh).
+- Build-graph cross-check: `Scheduler.start()` now exists in `server/src/services/Scheduler.ts:308`; `SchedulerStateRepository.getAllTaskStates()` is now called by production code (line 323).
+- Implementation (`ce999fb8`): added `running: boolean` to `ScheduledJob`, initialized `running: false` in `schedule()`, gated `executeRecorded()` on the running flag (set on entry, cleared in finally), implemented `Scheduler.start()` with synchronous running-flag pre-emption before the `getAllTaskStates()` await, past-due recovery via `executeRecorded()`, future/unknown skip, and post-loop flag release for jobs not in the persisted states map.
+- Targeted Red command at GREEN: `CI=true npx vitest run server/src/services/Scheduler.persistence.test.ts` → **11 passed / 0 failed / 11 total** in 0.91s. All 5 Phase 3 recovery tests now pass; the 6 pre-existing Phase 1/2 persistence tests remain green.
+- Broader Scheduler suite: `CI=true npx vitest run server/src/services/Scheduler` → **62 passed / 0 failed / 62 total** across 6 files (`Scheduler.persistence.test.ts`, `Scheduler.test.ts`, `Scheduler.subtitle.test.ts`, `Scheduler.trigger.test.ts`, `Scheduler.history.test.ts`, `Scheduler.meta.test.ts`).
+- Full-gate caveat: `CI=true npm test` reports **3 failed / 2178 passed / 11 skipped (2192 total)** tests. The 3 failures are all in `tests/app-settings-repository.test.js` (`SqliteError: no such column: "schedulerEnabled"`) and are **owned by `feature_scheduler_automation_dashboard_20260524` (Phase 6 toggle-enabled work)**, NOT by this phase. The failures are caused by the unrelated dirty worktree changes (`server/src/db/schema.ts` adds `schedulerEnabled` JSON column + `drizzle/0003_workable_sage.sql` migration not yet applied to the in-memory test database used by the test). Verification: at clean HEAD (without my changes and without the unrelated dirty work), the same 3 tests pass. Per the closeout rule, the failing files are NOT in the `scheduler_persistence_missed_task_recovery_20260613` track's blast radius, so this phase's [x] is earned.
+- Phase 3 task inventory at JR closeout:
+  - 5 Phase 3 tests `[x]` (1 schedule/persistence item + 4 new recovery items)
+  - 1 commit `[x]` (`ce999fb8` — Phase 3 Green)
 
 ## Phase 4 — Health metrics and API surface
 

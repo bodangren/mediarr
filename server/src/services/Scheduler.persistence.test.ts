@@ -176,4 +176,82 @@ describe('Scheduler persistence contract (Phase 1 Red)', () => {
     expect(() => new Date(latestCall[1])).not.toThrow();
     expect(new Date(latestCall[1]).getTime()).toBeGreaterThan(Date.now());
   });
+
+  // ─── Phase 3 Red tests ─────────────────────────────────────────────────────
+  // These tests intentionally fail at HEAD. They will go green once Phase 3
+  // wires Scheduler.start() to recover missed tasks from SchedulerStateRepository:
+  //   1. start() loads all stored nextRun timestamps via getAllTaskStates().
+  //   2. For tasks with stored nextRun in the past, executeRecorded() is invoked
+  //      exactly once and the stored nextRun is advanced.
+  //   3. Tasks with future or missing nextRun are skipped.
+  //   4. A per-task running guard prevents double-execution when recovery and a
+  //      cron tick fire close together.
+  describe('Scheduler startup missed-task recovery (Phase 3 Red)', () => {
+  it('start() executes a task whose stored nextRun is in the past', async () => {
+    const callback = vi.fn();
+    scheduler.schedule('rss-sync', '*/15 * * * *', callback);
+    stateRepo.getAllTaskStates.mockResolvedValue({
+      'rss-sync': '2026-06-21T11:00:00.000Z',
+    });
+
+    await (scheduler as unknown as { start(): Promise<void> }).start();
+
+    expect(callback).toHaveBeenCalledTimes(1);
+  });
+
+  it('start() does not execute a task whose stored nextRun is in the future', async () => {
+    const callback = vi.fn();
+    scheduler.schedule('rss-sync', '*/15 * * * *', callback);
+    stateRepo.getAllTaskStates.mockResolvedValue({
+      'rss-sync': '2026-06-21T13:00:00.000Z',
+    });
+
+    await (scheduler as unknown as { start(): Promise<void> }).start();
+
+    expect(callback).not.toHaveBeenCalled();
+  });
+
+  it('start() updates nextRun after recovering a missed task', async () => {
+    const callback = vi.fn();
+    scheduler.schedule('rss-sync', '*/15 * * * *', callback);
+    stateRepo.getAllTaskStates.mockResolvedValue({
+      'rss-sync': '2026-06-21T11:00:00.000Z',
+    });
+
+    await (scheduler as unknown as { start(): Promise<void> }).start();
+
+    const rssCalls = stateRepo.setTaskState.mock.calls.filter(
+      (call) => call[0] === 'rss-sync',
+    );
+    expect(rssCalls.length).toBeGreaterThan(0);
+    const latestCall = rssCalls.at(-1) as [string, string];
+    expect(new Date(latestCall[1]).getTime()).toBeGreaterThan(Date.now());
+  });
+
+  it('start() skips recovery for tasks with no stored nextRun', async () => {
+    const callback = vi.fn();
+    scheduler.schedule('rss-sync', '*/15 * * * *', callback);
+    stateRepo.getAllTaskStates.mockResolvedValue({});
+
+    await (scheduler as unknown as { start(): Promise<void> }).start();
+
+    expect(callback).not.toHaveBeenCalled();
+  });
+
+  it('start() does not double-execute when recovery and cron fire near-same-time', async () => {
+    const callback = vi.fn();
+    scheduler.schedule('rss-sync', '*/15 * * * *', callback);
+    stateRepo.getAllTaskStates.mockResolvedValue({
+      'rss-sync': '2026-06-21T11:00:00.000Z',
+    });
+
+    const startable = scheduler as unknown as { start(): Promise<void> };
+    const startPromise = startable.start();
+    const cronCallback = cronSpy.callbacks[0];
+    const concurrentPromise = cronCallback ? cronCallback() : Promise.resolve();
+    await Promise.all([startPromise, concurrentPromise]);
+
+    expect(callback).toHaveBeenCalledTimes(1);
+  });
+});
 });

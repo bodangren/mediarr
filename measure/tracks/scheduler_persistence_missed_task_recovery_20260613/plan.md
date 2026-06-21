@@ -140,12 +140,18 @@ later phases. They are intentionally NOT written in this Red-phase commit.
 
 ## Phase 3 — Startup missed-task recovery
 
-- [ ] Modify `Scheduler.start()` to:
-  - [ ] Load all `scheduler:*:nextRun` entries from `AppSettings`.
-  - [ ] For each task with a stored nextRun in the past, run it once and update the stored nextRun.
-  - [ ] Skip recovery if the task is already running or was executed very recently (within the same interval window).
-- [ ] Add tests for concurrent recovery + normal cron firing (no double execution).
+- [~] Modify `Scheduler.start()` to:
+  - [~] Load all `scheduler:*:nextRun` entries from `AppSettings`.
+  - [~] For each task with a stored nextRun in the past, run it once and update the stored nextRun.
+  - [~] Skip recovery if the task is already running or was executed very recently (within the same interval window).
+- [~] Add tests for concurrent recovery + normal cron firing (no double execution).
 - [ ] Commit: `feat(scheduler): recover missed tasks on startup`
+
+**Phase 3 Red state (MID in progress):**
+- Build-graph cross-check: `Scheduler.start()` is **absent** from `server/src/services/Scheduler.ts` (no method node indexed); `SchedulerStateRepository.getAllTaskStates()` exists but is never called by production code.
+- Dirty worktree classification at MID start: all dirty paths are **unrelated user work** from the scheduler toggle-enabled feature (see Phase 1 re-verification notes for preservation policy). Phase 3 Red work touches only `server/src/services/Scheduler.persistence.test.ts` and this `plan.md`.
+- Targeted Red command: `CI=true npx vitest run server/src/services/Scheduler.persistence.test.ts`
+- Red result: **6 passed / 5 failed / 11 total** in ~2.5s. All 5 Phase 3 recovery tests fail with `TypeError: scheduler.start is not a function` because `Scheduler.start()` has not been implemented yet. The 6 pre-existing Phase 1/2 persistence tests continue to pass — no regression.
 
 ## Phase 4 — Health metrics and API surface
 

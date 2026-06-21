@@ -101,6 +101,35 @@ later phases. They are intentionally NOT written in this Red-phase commit.
   - `M measure/tracks.md` (post-v1.0.0 reordering of Active Tracks, done by the automation supervisor's daily review process) — **Measure doc, allowed under the Red-phase boundary, but unrelated to this track's Red work.** Per the directive's "preserve unrelated user work" rule: NOT folded into this track's Red commit; left untouched in the working tree.
 - HEAD at handoff: `d756148c` (3 commits ahead of `origin/main`). The 5+1 Red tests, the Phase 2 Green commit, and the unrelated preservation commit remain the only deltas from `origin/main`. This session's commit is a docs-only plan.md update.
 
+**Phase 1 re-verification at MID handoff (2026-06-21, sixth pass — pre-staged-Green-detection):**
+- Build-graph fresh: `build-graph stats ./graph.db` → **7692 nodes / 11283 edges / 906 files** (mtime 2026-06-21 10:36; <24h). Delta from fifth pass (7692/11283/906) is zero net nodes/edges — graph stable across the day's incremental updates.
+- Build-graph cross-check:
+  - `SchedulerStateRepository` interface node indexed at `server/src/services/Scheduler.ts`; `SchedulerStateRepositoryMock` interface node indexed at `server/src/services/Scheduler.persistence.test.ts`.
+  - Scheduler class node indexed at `./server/src/services/Scheduler.ts:51` with 14 public methods (graph-indexed class-level). Behavioral evidence confirmed via source inspection.
+- Source inspection of the dirty `Scheduler.ts` working-tree change (`git diff`):
+  - `Scheduler.reschedule()` (L232–252) — **NEW lines 248–251 add the Phase 2 Green implementation**:
+    ```ts
+    const nextRun = this.computeNextRun(cronExpression);
+    if (nextRun && this.schedulerStateRepository) {
+      this.schedulerStateRepository.setTaskState(name, nextRun);
+    }
+    ```
+  - This is **Phase 2 Green work** for the `[~]` Phase 1 Red task — pre-staged in the working tree, uncommitted.
+- Targeted Red command (with dirty working tree applied):
+  - `CI=true npx vitest run server/src/services/Scheduler.persistence.test.ts` → **6 passed / 0 failed / 6 total** in 1.42s. The reschedule test passes because the dirty Green implementation satisfies the contract at working-tree HEAD.
+- Verification of Red state at HEAD (using `git stash push -m "MID-verify-stash" -- server/src/services/Scheduler.ts` to set aside the dirty change, then `git stash pop` to restore):
+  - With the dirty change set aside: `CI=true npx vitest run server/src/services/Scheduler.persistence.test.ts` → **5 passed / 1 failed / 6 total** in 1.36s. Failure at `Scheduler.persistence.test.ts:183:34` — `AssertionError: expected 1 to be greater than 1` (the `callsAfterReschedule > callsAfterSchedule` assertion). Same fail line as previous passes — no regression.
+  - Stash restored cleanly: working tree returned to its pre-stash state.
+- **Red state confirmed at HEAD:** the `[~]` task's Red test fails for the expected missing behavior (`Scheduler.reschedule()` does not call `setTaskState` in committed code). No vacuous-green tests.
+- **Pre-staged Green discovery:** the working tree contains the **exact** Phase 2 Green implementation needed to flip `reschedule()` from Red to Green. This is pre-staged work, not a Red-phase deliverable. Per the directive's "do not implement feature logic" + "preserve unrelated user work" rules, this MUST NOT be folded into the Red-phase commit — folding it would make the Red test pass and defeat the Red-phase gate.
+- **Decision: no new Red test this session.** The single incomplete non-deferred Phase 1 task (`reschedule()`) already has a Red test in `[~]` state that fails at HEAD for the right reason. Creating additional tests would produce a false Red phase.
+- Dirty worktree classification for this session:
+  - `M server/src/services/Scheduler.ts` (adds `schedulerStateRepository.setTaskState` call in `reschedule()`) — **Phase 2 Green work for the `[~]` Phase 1 Red task.** Relevant to the track but NOT to Phase 1's contracted Red-phase deliverable. Per the directive's "preserve unrelated user work" + "do not implement feature logic" rules: NOT folded into this Red commit; preserved uncommitted in the working tree so the next role (Green) can commit it as a Phase 2 Green commit.
+  - `M measure/automation-supervisor.py` (adds `committed_changes_since` + `non_test_committed_changes_since` helpers; rewires `gate_mid` to use the committed-only check) — **unrelated automation infrastructure** (changes the gate's source-of-truth from working-tree to committed-tree). Not part of this track's Red-phase work. Per the directive: NOT folded into this Red commit; preserved uncommitted.
+  - `M measure/tracks.md` (post-v1.0.0 reordering of Active Tracks, supervisor-driven) — **unrelated Measure doc** (tracks registry reorg). Allowed under the Red-phase boundary but unrelated to this track's Red work. Per the directive's "preserve unrelated user work" rule: NOT folded into this track's Red commit; left untouched in the working tree.
+- **Stage policy for this commit:** only `measure/tracks/scheduler_persistence_missed_task_recovery_20260613/plan.md` (this file, Measure doc, allowed under Red-phase boundary). The three unrelated dirty files are NOT staged in this commit. The worktree is intentionally not "phase-end clean" because the unrelated work cannot be folded into a Red commit and must not be reverted/hidden — preserving them in the working tree is the directive-mandated outcome.
+- HEAD at handoff: `cde63558` (4 commits ahead of `origin/main`: Red commit `df0eff52`, unrelated preservation `d33d53e5`, the 4th/5th-pass docs `d756148c` + `cde63558`). This session's commit is a docs-only plan.md update recording the pre-staged-Green detection.
+
 ## Phase 2 — Persist next-run on schedule and execution
 
 - [x] Add `getNextRun(cronExpression: string, after?: Date): Date` helper using `cron-parser` or existing cron utility.  → Existing `computeNextRun()` fulfills this role; no new helper required.

@@ -824,3 +824,50 @@
 > > > **Handoff to Green-phase owner (jr):** unchanged from attempt-5 handoff. The 5 Red test files at HEAD (`c9ba1d98` + `1f1a6ea0` + `4f0ff0a3` docs) define the Phase 6 contract. The Green owner must complete Tasks 2 (server toggle route implementation), 3 (real enabled/status fields), 4 (nullable lastRunAt), 5 (MSW /toggle handler rewrite), and the status-enum expansion (export `SchedulerTaskStatus` + `SCHEDULER_TASK_STATUS_VALUES` from server, import in client, replace hardcoded zod enum literal). Recovery: review `git stash show -u stash@{1}` for the 4 implementation files (71 insertions / 11 deletions). Green/Closeout gate: all 5 Phase 6 Red test files must exit 0 + sibling regressions (Phase 1-5) remain green + `CI=true npm test` exits 0.
 > > >
 > > > Phase 6 tasks 1, 3, 4, 5 stay `[~]` until Green lands; then mark `[x]` per the task-evidence policy. Task 2 stays `[ ]` (Green owner marks `[~]` when beginning implementation). Task 6 stays `[ ]` (supervisor verification gate). The mid role's responsibility for the Red phase is fully satisfied with evidence at HEAD (`4f0ff0a3` + this attempt-6 evidence block): all 5 Red tests fail at clean HEAD for real missing-behavior reasons, and all Phase 1-5 sibling regressions remain green.
+> > >
+> > > **Red-phase re-verification (mid role, 2026-06-21, attempt-7):** Mid re-entered Phase 6 Red phase after loading the `measure` and `build-graph` skills per the current session protocol. HEAD is `82b3e54d` (attempt-6 docs commit). Worktree at start contained only untracked generated/unrelated items; no tracked modifications and no Green-phase implementation files in the worktree.
+> > >
+> > > **Dirty-worktree classification at attempt-7 MID start:**
+> > > - `?? measure/__pycache__/` — GENERATED/IGNORABLE (Python bytecode cache from prior supervisor runs).
+> > > - `?? measure/tracks/chore_supervisor_acceptance_hardening_20260621/` — UNRELATED track folder for a different/later track; not authored by this track.
+> > > - `?? server/src/**/*.d.ts`, `?? server/src/**/*.d.ts.map`, `?? server/src/**/*.js`, `?? server/src/**/*.js.map` (449+ files) — GENERATED/IGNORABLE tsc-emit artifacts from prior typecheck runs.
+> > > - `?? server/smoke-*.{d.ts,js,js.map,d.ts.map}` (8 files) — GENERATED/IGNORABLE smoke-test compile artifacts.
+> > > No stashing action required; no tracked-file dirt. The 4 Green-phase implementation files remain preserved in the stash from prior attempts for the jr Green owner.
+> > >
+> > > **build-graph baseline at clean HEAD (`82b3e54d`, Node 22.22.2 + build-graph 0.1.0):** 7690 nodes / 11281 edges / 906 files (graph.db mtime < 24h freshness). Confirmed via direct queries:
+> > > - `build-graph stats ./graph.db` → 7690 nodes / 11281 edges / 906 files.
+> > > - `build-graph search "toggleEnabled"` → **1 result** (`param:onToggleEnabled` on `app/src/components/scheduler/TaskSchedulerTable.tsx`). NO `function:toggleEnabled` or method on the `Scheduler` class.
+> > > - `build-graph search "SchedulerTaskStatus"` → **0 results**.
+> > > - `build-graph query "SELECT * FROM nodes WHERE type = 'route' AND name LIKE '%scheduler%'"` → `PUT /api/scheduler/:taskId/toggle` appears ONLY in `app/src/lib/msw/handlers/scheduler.ts`, NOT in `server/src/api/routes/schedulerRoutes.ts`.
+> > > Phase 6 Green blast radius for jr unchanged from attempts 4-6: bounded to `server/src/api/routes/schedulerRoutes.ts` + `server/src/services/Scheduler.ts` + `app/src/lib/api/schedulerApi.ts` + `app/src/lib/msw/handlers/scheduler.ts`.
+> > >
+> > > **Targeted Red commands re-run at clean HEAD (`82b3e54d`, Node 22.22.2 + vitest 4.0.18):**
+> > > | Task | Command | Exit | Tests |
+> > > |---|---|---|---|
+> > > | 1 (server toggle route) | `./node_modules/.bin/vitest run server/src/api/routes/schedulerRoutes.toggle.test.ts` | 1 | **6 failed (6)** |
+> > > | 3 (real enabled/status fields) | `./node_modules/.bin/vitest run --config app/vitest.config.ts --root app app/src/lib/api/schedulerApi.contract.test.ts` | 1 | **4 failed \| 1 passed (5)** |
+> > > | 4 (nullable lastRunAt) | `./node_modules/.bin/vitest run --config app/vitest.config.ts --root app app/src/lib/api/schedulerApi.lastRunAt.test.ts` | 1 | **4 failed \| 1 passed (5)** |
+> > > | 5 (MSW /toggle parity) | `./node_modules/.bin/vitest run --config app/vitest.config.ts --root app app/src/lib/msw/handlers/scheduler.parity.test.ts` | 1 | **5 failed (5)** |
+> > > | 6 new (status enum drift) | `./node_modules/.bin/vitest run --config app/vitest.config.ts --root app app/src/lib/api/schedulerApi.statusEnum.test.ts` | 1 | **4 failed (4)** |
+> > > | **TOTAL** | | | **23 expected failures / 25 tests** |
+> > >
+> > > Failure breakdown (all real missing-behavior, not stale-data) — identical to attempts 4-6:
+> > > - **Task 1 (6/6):** Fastify returns framework-default 404 (route not registered in `server/src/api/routes/schedulerRoutes.ts`). Critical assertion `expect(scheduler.isScheduled).toHaveBeenCalledWith('never-registered')` fails with 0 calls — proves the route handler never ran.
+> > > - **Task 3 (4/5):** Source has `.default(true)` on enabled + `.default('healthy')` on status; live-behavior assertion `parsed[0]!.enabled === undefined` fails with `Received: true`; explicit-values test fails with `ContractViolationError` from the success-envelope schema parsing.
+> > > - **Task 4 (4/5):** Source has `z.string()` (not nullable) for `lastRunAt`/`lastDurationMs`/`nextRunAt`; live-behavior assertion fails with `ContractViolationError` because `z.string()` rejects `null`.
+> > > - **Task 5 (5/5):** MSW handler echoes request body — no validation, no 404 path, no `status` field in response.
+> > > - **Task 6 new (4/4):** No `SchedulerTaskStatus` type alias on server; client zod enum is hardcoded literal; client does not import `SchedulerTaskStatus`.
+> > >
+> > > All 23 failures are real missing-behavior failures (route not registered, fabricated defaults, non-nullable schema, fabricated MSW success, no shared status union), not stale-data. Red phase is demonstrably live at clean HEAD with the test-only commit convention preserved.
+> > >
+> > > **Phase 1-5 sibling regressions at clean HEAD (`82b3e54d`, Node 22.22.2 + vitest 4.0.18):**
+> > > - Phase 1 server: `./node_modules/.bin/vitest run server/src/db/__tests__/taskExecutions.test.ts server/src/api/routes/schedulerRoutes.test.ts` → exit 0, 2 files / 23 tests passed.
+> > > - Phase 2 components: `./node_modules/.bin/vitest run --config app/vitest.config.ts --root app app/src/components/scheduler` → exit 0, 4 files / 35 tests passed.
+> > > - Phase 3 page: `./node_modules/.bin/vitest run --config app/vitest.config.ts --root app app/src/pages/settings/AutomationSettingsPage.test.tsx app/src/lib/msw/integration/AutomationSettingsPage.integration.test.tsx` → exit 0, 2 files / 16 tests passed.
+> > > - Phase 4 service: `./node_modules/.bin/vitest run server/src/services/Scheduler.trigger.test.ts server/src/services/Scheduler.history.test.ts` → exit 0, 2 files / 19 tests passed.
+> > > - Phase 5 lessons-learned: `./node_modules/.bin/vitest run measure/__tests__/lessons-learned.test.ts` → exit 0, 1 file / 3 tests passed.
+> > > Total Phase 1-5 regression: 11 files / 96 tests passed. No regressions from the Phase 6 Red tests at clean HEAD.
+> > >
+> > > **Handoff to Green-phase owner (jr):** unchanged from attempt-6 handoff. The 5 Red test files at HEAD (`c9ba1d98` + `1f1a6ea0` + `4f0ff0a3` + `82b3e54d` docs) define the Phase 6 contract. The Green owner must complete Tasks 2 (server toggle route implementation), 3 (real enabled/status fields), 4 (nullable lastRunAt), 5 (MSW /toggle handler rewrite), and the status-enum expansion (export `SchedulerTaskStatus` + `SCHEDULER_TASK_STATUS_VALUES` from server, import in client, replace hardcoded zod enum literal). Green/Closeout gate: all 5 Phase 6 Red test files must exit 0 + sibling regressions (Phase 1-5) remain green + `CI=true npm test` exits 0.
+> > >
+> > > Phase 6 tasks 1, 3, 4, 5 stay `[~]` until Green lands; then mark `[x]` per the task-evidence policy. Task 2 stays `[ ]` (Green owner marks `[~]` when beginning implementation). Task 6 stays `[ ]` (supervisor verification gate). The mid role's responsibility for the Red phase is fully satisfied with evidence at HEAD (`82b3e54d` + this attempt-7 evidence block): all 5 Red tests fail at clean HEAD for real missing-behavior reasons, and all Phase 1-5 sibling regressions remain green.

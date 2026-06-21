@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { Scheduler } from './Scheduler';
+import { Scheduler, type SchedulerStateRepository } from './Scheduler';
 
 // ─── node-cron mock ──────────────────────────────────────────────────────────
 // Mirrors the pattern from Scheduler.test.ts: capture every registered
@@ -26,7 +26,7 @@ vi.mock('node-cron', () => ({
 // Mirror of the contract described in test-strategy.md §2 — used to prove that
 // Scheduler writes/updates its nextRunAt timestamps through dependency
 // injection rather than direct AppSettings access (architecture guardrail #2).
-interface SchedulerStateRepositoryMock {
+interface SchedulerStateRepositoryMock extends SchedulerStateRepository {
   getTaskState: ReturnType<typeof vi.fn>;
   setTaskState: ReturnType<typeof vi.fn>;
   getAllTaskStates: ReturnType<typeof vi.fn>;
@@ -38,19 +38,6 @@ function createStateRepoMock(): SchedulerStateRepositoryMock {
     setTaskState: vi.fn().mockResolvedValue(undefined),
     getAllTaskStates: vi.fn().mockResolvedValue({}),
   };
-}
-
-// Attach the mock via a property cast. At HEAD, Scheduler exposes no
-// `setSchedulerStateRepository` setter and never references a
-// `schedulerStateRepository` field; the property assignment compiles
-// silently and the underlying field is never read, so every assertion
-// below fails because Scheduler does not persist anything yet.
-function attachStateRepo(
-  scheduler: Scheduler,
-  repo: SchedulerStateRepositoryMock,
-): void {
-  (scheduler as unknown as { schedulerStateRepository: SchedulerStateRepositoryMock }).schedulerStateRepository =
-    repo;
 }
 
 // ─── Phase 1 Red tests ───────────────────────────────────────────────────────
@@ -72,7 +59,7 @@ describe('Scheduler persistence contract (Phase 1 Red)', () => {
     vi.setSystemTime(new Date('2026-06-21T12:00:00.000Z'));
     scheduler = new Scheduler();
     stateRepo = createStateRepoMock();
-    attachStateRepo(scheduler, stateRepo);
+    scheduler.setSchedulerStateRepository(stateRepo as unknown as SchedulerStateRepository);
     errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
   });
 

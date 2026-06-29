@@ -156,6 +156,10 @@ function createSchedulerMock(jobNames: string[] = ['rss-sync', 'health-check']) 
     reschedule: vi.fn(),
     setTaskExecutionsRepository: vi.fn(),
     triggerTask: vi.fn().mockResolvedValue(undefined),
+    getHealth: vi.fn().mockReturnValue({
+      scheduledTaskCount: jobNames.length,
+      missedTaskCount: 0,
+    }),
   };
 }
 

@@ -322,7 +322,7 @@ export function registerSystemRoutes(
         ? 'warning'
         : 'ok';
 
-    const status = {
+    const status: Record<string, unknown> = {
       health: {
         overall: overallHealth,
         checks: healthChecks,
@@ -365,6 +365,13 @@ export function registerSystemRoutes(
         ],
       },
     };
+
+    // Additive scheduler health — only included when the runtime wires a
+    // Scheduler instance into the API deps. Pre-existing health consumers
+    // that ignore this field keep working unchanged.
+    if (deps.scheduler) {
+      status.scheduler = deps.scheduler.getHealth();
+    }
 
     return sendSuccess(reply, status);
   });

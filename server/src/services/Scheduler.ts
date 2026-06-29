@@ -54,12 +54,33 @@ export interface SchedulerStateRepository {
 }
 
 /**
+ * Snapshot of scheduler runtime health for observability surfaces.
+ *
+ * - `scheduledTaskCount` is the number of jobs currently registered, which
+ *   reflects the live `Map<name, ScheduledJob>` and updates whenever a job
+ *   is added (`schedule`) or removed (`stop`/`stopAll`).
+ * - `missedTaskCount` is the number of tasks recovered during the most
+ *   recent call to `start()`. It is reset on each call so subsequent calls
+ *   always report the delta of the latest recovery rather than the cumulative
+ *   total.
+ * - `lastRecoveryAt` is an ISO timestamp of when the most recent `start()`
+ *   recovery run completed. It is only present after the first `start()` call.
+ */
+export interface SchedulerHealth {
+  scheduledTaskCount: number;
+  missedTaskCount: number;
+  lastRecoveryAt?: string;
+}
+
+/**
  * Manages cron-scheduled background jobs with named registration.
  */
 export class Scheduler {
   private jobs: Map<string, ScheduledJob> = new Map();
   private taskExecutionsRepository: TaskExecutionsRepository | null = null;
   private schedulerStateRepository: SchedulerStateRepository | null = null;
+  private lastMissedTaskCount: number = 0;
+  private lastRecoveryAt: string | null = null;
 
   setTaskExecutionsRepository(repo: TaskExecutionsRepository): void {
     this.taskExecutionsRepository = repo;
@@ -334,6 +355,7 @@ export class Scheduler {
 
     const now = Date.now();
     const recoveryPromises: Promise<void>[] = [];
+    let missedTaskCount = 0;
 
     for (const [name, nextRunAt] of Object.entries(states)) {
       const job = this.jobs.get(name);
@@ -353,6 +375,7 @@ export class Scheduler {
 
       if (nextRunDate.getTime() < now) {
         job.running = false;
+        missedTaskCount += 1;
         recoveryPromises.push(this.executeRecorded(name, job.callback));
       } else {
         job.running = false;
@@ -367,6 +390,12 @@ export class Scheduler {
     }
 
     await Promise.all(recoveryPromises);
+
+    // Record recovery metrics for the health endpoint. These reflect the
+    // most-recent recovery run only — a subsequent start() that recovers a
+    // different set of tasks will overwrite them rather than accumulate.
+    this.lastMissedTaskCount = missedTaskCount;
+    this.lastRecoveryAt = new Date().toISOString();
   }
 
   /**
@@ -377,6 +406,22 @@ export class Scheduler {
       return 0;
     }
     return this.taskExecutionsRepository.prune(taskName, retainCount);
+  }
+
+  /**
+   * Return an additive health snapshot for `/api/health` and
+   * `/api/system/status`. The shape is stable and read-only — health
+   * consumers may safely destructure the optional `lastRecoveryAt` field.
+   */
+  getHealth(): SchedulerHealth {
+    const health: SchedulerHealth = {
+      scheduledTaskCount: this.jobs.size,
+      missedTaskCount: this.lastMissedTaskCount,
+    };
+    if (this.lastRecoveryAt !== null) {
+      health.lastRecoveryAt = this.lastRecoveryAt;
+    }
+    return health;
   }
 
   /**

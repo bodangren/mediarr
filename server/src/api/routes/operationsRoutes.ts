@@ -283,10 +283,22 @@ export function registerOperationsRoutes(
 
     const overall = snapshots[0]?.severity ?? 'ok';
 
-    return sendSuccess(reply, {
+    // Additive scheduler health — only included when the runtime wires a
+    // Scheduler instance into the API deps. Pre-existing health consumers
+    // that ignore this field keep working unchanged.
+    const responseBody: {
+      status: typeof overall;
+      indexers: typeof snapshots;
+      scheduler?: ReturnType<NonNullable<typeof deps.scheduler>['getHealth']>;
+    } = {
       status: overall,
       indexers: snapshots,
-    });
+    };
+    if (deps.scheduler) {
+      responseBody.scheduler = deps.scheduler.getHealth();
+    }
+
+    return sendSuccess(reply, responseBody);
   });
 
   app.get('/api/settings', async (_request, reply) => {

@@ -1,5 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import Fastify, { type FastifyInstance } from 'fastify';
 import { Scheduler, type SchedulerStateRepository } from './Scheduler';
+import { registerOperationsRoutes } from '../api/routes/operationsRoutes';
+import { registerApiErrorHandler } from '../api/errors';
+import type { ApiDependencies } from '../api/types';
 
 // ─── node-cron mock ──────────────────────────────────────────────────────────
 // Mirrors the pattern from Scheduler.test.ts: capture every registered
@@ -253,5 +257,121 @@ describe('Scheduler persistence contract (Phase 1 Red)', () => {
 
     expect(callback).toHaveBeenCalledTimes(1);
   });
+
+  it('start() recovers missed tasks from a shared state store across Scheduler instances', async () => {
+    const callback = vi.fn();
+    scheduler.schedule('rss-sync', '*/15 * * * *', callback);
+    stateRepo.getAllTaskStates.mockResolvedValue({
+      'rss-sync': '2026-06-21T11:00:00.000Z',
+    });
+
+    const restarted = new Scheduler();
+    restarted.setSchedulerStateRepository(
+      stateRepo as unknown as SchedulerStateRepository,
+    );
+    restarted.schedule('rss-sync', '*/15 * * * *', callback);
+
+    await (
+      restarted as unknown as { start(): Promise<void> }
+    ).start();
+
+    expect(callback).toHaveBeenCalledTimes(1);
+  });
 });
+
+  // ─── Phase 4 Red tests ─────────────────────────────────────────────────────
+  // These tests intentionally fail at HEAD. They will go green once Phase 4
+  // adds Scheduler.getHealth() and wires it into /api/health:
+  //   1. getHealth() returns scheduledTaskCount equal to registered jobs.
+  //   2. getHealth() returns missedTaskCount from the last recovery run.
+  //   3. getHealth() returns lastRecoveryAt after start() recovers tasks.
+  //   4. /api/health response includes a scheduler health object.
+  describe('Scheduler health metrics (Phase 4 Red)', () => {
+    it('getHealth() returns scheduledTaskCount matching registered jobs', () => {
+      scheduler.schedule('rss-sync', '*/15 * * * *', () => undefined);
+      scheduler.schedule('health-check', '*/15 * * * *', () => undefined);
+
+      const health = (
+        scheduler as unknown as {
+          getHealth(): { scheduledTaskCount: number };
+        }
+      ).getHealth();
+
+      expect(health.scheduledTaskCount).toBe(2);
+    });
+
+    it('getHealth() returns missedTaskCount from last recovery', async () => {
+      const callback = vi.fn();
+      scheduler.schedule('rss-sync', '*/15 * * * *', callback);
+      stateRepo.getAllTaskStates.mockResolvedValue({
+        'rss-sync': '2026-06-21T11:00:00.000Z',
+      });
+
+      await (
+        scheduler as unknown as { start(): Promise<void> }
+      ).start();
+
+      const health = (
+        scheduler as unknown as {
+          getHealth(): { missedTaskCount: number };
+        }
+      ).getHealth();
+
+      expect(health.missedTaskCount).toBe(1);
+    });
+
+    it('getHealth() returns lastRecoveryAt timestamp after start()', async () => {
+      const callback = vi.fn();
+      scheduler.schedule('rss-sync', '*/15 * * * *', callback);
+      stateRepo.getAllTaskStates.mockResolvedValue({
+        'rss-sync': '2026-06-21T11:00:00.000Z',
+      });
+
+      await (
+        scheduler as unknown as { start(): Promise<void> }
+      ).start();
+
+      const health = (
+        scheduler as unknown as {
+          getHealth(): { lastRecoveryAt?: string };
+        }
+      ).getHealth();
+
+      expect(health.lastRecoveryAt).toBeDefined();
+      expect(new Date(health.lastRecoveryAt!).getTime()).toBeGreaterThan(0);
+    });
+
+    it('/api/health response includes scheduler health object', async () => {
+      const app: FastifyInstance = Fastify();
+      const deps: ApiDependencies = {
+        prisma: {},
+        indexerRepository: {
+          findAll: vi.fn().mockResolvedValue([]),
+        } as unknown as ApiDependencies['indexerRepository'],
+        scheduler: scheduler as unknown as ApiDependencies['scheduler'],
+      };
+      app.setErrorHandler((error, request, reply) =>
+        registerApiErrorHandler(request, reply, error),
+      );
+      registerOperationsRoutes(app, deps);
+
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/health',
+      });
+
+      expect(response.statusCode).toBe(200);
+      const body = JSON.parse(response.body) as {
+        data: {
+          scheduler?: {
+            scheduledTaskCount: number;
+            missedTaskCount: number;
+          };
+        };
+      };
+      expect(body.data.scheduler).toBeDefined();
+      expect(body.data.scheduler!.scheduledTaskCount).toBe(0);
+      expect(body.data.scheduler!.missedTaskCount).toBe(0);
+    });
+  });
 });

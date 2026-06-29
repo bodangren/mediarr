@@ -166,10 +166,20 @@ later phases. They are intentionally NOT written in this Red-phase commit.
 
 ## Phase 4 — Health metrics and API surface
 
-- [ ] Add `Scheduler.getHealth(): { scheduledTaskCount: number; missedTaskCount: number; lastRecoveryAt?: string }`.
-- [ ] Wire health data into existing `/api/health` and `/api/system/status` responses (additive fields only).
-- [ ] Add tests for health metric shape.
+- [~] Add `Scheduler.getHealth(): { scheduledTaskCount: number; missedTaskCount: number; lastRecoveryAt?: string }`.
+- [~] Wire health data into existing `/api/health` and `/api/system/status` responses (additive fields only).
+- [~] Add tests for health metric shape.
 - [ ] Commit: `feat(scheduler): expose scheduler health metrics`
+
+**Phase 4 Red state (MID in progress):**
+- Targeted Red command: `CI=true npx vitest run server/src/services/Scheduler.persistence.test.ts`
+- Red result: **12 passed / 4 failed / 16 total** in ~2.9s. The 4 new Phase 4 health tests fail for the expected missing behavior:
+  - `getHealth() returns scheduledTaskCount matching registered jobs` → `TypeError: scheduler.getHealth is not a function`
+  - `getHealth() returns missedTaskCount from last recovery` → `TypeError: scheduler.getHealth is not a function`
+  - `getHealth() returns lastRecoveryAt timestamp after start()` → `TypeError: scheduler.getHealth is not a function`
+  - `/api/health response includes scheduler health object` → `AssertionError: expected undefined to be defined` (the route does not yet include a `scheduler` field)
+- The 12 pre-existing Phase 1–3 persistence/recovery tests continue to pass — no regression.
+- `/api/system/status` is listed in the plan/spec as an additional integration surface for scheduler health, but the contracted Phase 4 Red tests from `test-strategy.md` §5/§7 are intentionally focused on the four assertions above to keep the Red gate non-vacuous; the status endpoint will be wired in the same Green commit as `/api/health`.
 
 ## Phase 5 — Verification and closeout
 

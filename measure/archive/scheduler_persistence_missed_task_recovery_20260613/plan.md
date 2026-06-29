@@ -211,9 +211,9 @@ later phases. They are intentionally NOT written in this Red-phase commit.
 - [x] Update `measure/lessons-learned.md` with the persistence pattern (≤2 lines).  ← Confirmed at c3a8c2bc (final acceptance doc update).
 - [x] Run `bash measure/doctor.sh` for closeout readiness.  ← Final acceptance at c3a8c2bc: command attempted and classified unavailable (`No such file or directory`; this repo currently has no `measure/doctor.sh`).
 - [x] Run configured PROJECT_TESTS (`CI=true npm test`).  ← Final acceptance at c3a8c2bc: attempted twice; targeted/in-scope suites pass, but full suite timed out at 300s and 600s with no observed failures before timeout. Classified infrastructure timeout/unresolved full-suite duration, not an in-scope scheduler failure.
-- [x] Update `measure/tracks.md`: mark this track `[x]` and move link to archive. — Completed by measure-closeout (d2d245c3, 2026-06-30).
-- [x] Move this track directory to `measure/archive/scheduler_persistence_missed_task_recovery_20260613/`. — Completed by measure-closeout (d2d245c3, 2026-06-30).
-- [x] Closeout commit: `docs(measure): archive scheduler persistence track` (d2d245c3).
+- [x] Update `measure/tracks.md`: mark this track `[x]` and move link to archive. — Completed by measure-closeout (b46be06e, 2026-06-30).
+- [x] Move this track directory to `measure/archive/scheduler_persistence_missed_task_recovery_20260613/`. — Completed by measure-closeout (b46be06e, 2026-06-30).
+- [x] Closeout commit: `docs(measure): archive scheduler persistence track` (b46be06e).
 - [b] Push to remote. — deferred:human
 
 **Phase 5 final acceptance evidence (2026-06-29):**

@@ -317,6 +317,28 @@ describe('GET /api/system/status', () => {
     const names = body.data.dependencies.optional.map(d => d.name);
     expect(names).toContain('FFmpeg');
   });
+
+  it('includes scheduler health when scheduler is provided', async () => {
+    const scheduler = createSchedulerMock(['rss-sync', 'health-check', 'library-scan']);
+    const app = createApp({ scheduler });
+
+    const response = await app.inject({ method: 'GET', url: '/api/system/status' });
+
+    expect(response.statusCode).toBe(200);
+    expect(scheduler.getHealth).toHaveBeenCalledTimes(1);
+    const body = JSON.parse(response.body) as {
+      data: {
+        scheduler?: {
+          scheduledTaskCount: number;
+          missedTaskCount: number;
+        };
+      };
+    };
+    expect(body.data.scheduler).toEqual({
+      scheduledTaskCount: 3,
+      missedTaskCount: 0,
+    });
+  });
 });
 
 // ── GET /api/tasks/scheduled ───────────────────────────────────────────────────

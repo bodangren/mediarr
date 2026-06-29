@@ -167,7 +167,7 @@ later phases. They are intentionally NOT written in this Red-phase commit.
 ## Phase 4 — Health metrics and API surface
 
 - [x] Add `Scheduler.getHealth(): { scheduledTaskCount: number; missedTaskCount: number; lastRecoveryAt?: string }`.  ← Phase 4 Green `0f5281a1`.
-- [x] Wire health data into existing `/api/health` and `/api/system/status` responses (additive fields only).  ← Phase 4 Green `0f5281a1`.
+- [x] Wire health data into existing `/api/health` and `/api/system/status` responses (additive fields only).  ← Phase 4 Green `0f5281a1`; phase-acceptance fix added direct `/api/system/status` route assertion.
 - [x] Add tests for health metric shape.  ← Phase 4 Red `8a989cc1`; all 4 new tests pass (Green `0f5281a1`).
 - [x] Commit: `feat(scheduler): expose scheduler health metrics` → `0f5281a1`
 
@@ -179,7 +179,7 @@ later phases. They are intentionally NOT written in this Red-phase commit.
   - `getHealth() returns lastRecoveryAt timestamp after start()` → `TypeError: scheduler.getHealth is not a function`
   - `/api/health response includes scheduler health object` → `AssertionError: expected undefined to be defined` (the route does not yet include a `scheduler` field)
 - The 12 pre-existing Phase 1–3 persistence/recovery tests continue to pass — no regression.
-- `/api/system/status` is listed in the plan/spec as an additional integration surface for scheduler health, but the contracted Phase 4 Red tests from `test-strategy.md` §5/§7 are intentionally focused on the four assertions above to keep the Red gate non-vacuous; the status endpoint is wired in the same Green commit as `/api/health`.
+- `/api/system/status` is listed in the plan/spec as an additional integration surface for scheduler health. The original Phase 4 Red commit (`8a989cc1`) focused on `/api/health`; phase acceptance added a direct `/api/system/status` assertion so both endpoints now have live route proof.
 
 **Phase 4 Green state (JR complete):**
 - Targeted Green command: `CI=true npx vitest run server/src/services/Scheduler.persistence.test.ts`
@@ -200,7 +200,8 @@ later phases. They are intentionally NOT written in this Red-phase commit.
     - `/api/health` handler now attaches `responseBody.scheduler = deps.scheduler.getHealth()` if `deps.scheduler` is provided; the field is added defensively (no change for callers that don't wire a Scheduler).
   - `server/src/api/routes/systemRoutes.test.ts`:
     - Test-only adjustment: `createSchedulerMock` now includes `getHealth` to satisfy the widened Pick type — no assertion logic changed.
-- `/api/system/status` is not yet verified with a live Red assertion (the contracted Phase 4 tests focus on `/api/health`), but the spec/spec/plan §4 commit message commits to wire both. The wiring is in `operationsRoutes.ts` only; the system status handler in `systemRoutes.ts` can adopt the same `getHealth()` call without changing the contract, but is intentionally NOT modified in this commit to keep the Green change scoped to what the Phase 4 Red tests assert. This is documented as a known limitation in the Plan §4 item.
+- `/api/system/status` is covered by a direct live route assertion added during phase acceptance after Review A noted the gap. The test verifies `deps.scheduler.getHealth()` is called and the additive `data.scheduler` object is returned from `/api/system/status`.
+- Phase acceptance anti-pattern fix: supervisor A1 hardening from the dirty working tree was committed alongside this acceptance fix. `measure/automation-supervisor.py` now parses task markers with `[~xb]` and uses `is_task_structurally_blocked(task, status)` for `[b]` and trailing `deferred:<owner>` instead of legacy `[ ~x]` plus free-text `"deferred" in task.lower()`.
 
 ## Phase 5 — Verification and closeout
 

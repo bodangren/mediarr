@@ -3,7 +3,7 @@
   "title": "Scheduler Persistence & Missed-Task Recovery",
   "closeout_date": "2026-06-30",
   "baseline_sha": "c3a8c2bcf5e795b79265e865059be1408c393509",
-  "closeout_sha": "d2d245c3958cf2dd1cda2f0b7f46605f08e727f8",
+  "closeout_sha": "b46be06e7eb5068941e7e532fe3e2a87e6a97bb1",
   "status": "done",
   "final_acceptance": {
     "path": "/tmp/opencode/measure-final-acceptance-scheduler-third.json",

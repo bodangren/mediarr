@@ -1,0 +1,20 @@
+{
+  "id": "bug_mediasearch_timeout_tests_20260630",
+  "title": "Fix MediaSearchService Pre-existing Timeout Test Failures",
+  "status": "pending",
+  "created": "2026-06-30",
+  "priority": "high",
+  "type": "bug",
+  "sprint": {
+    "goal": "Eliminate the 7 pre-existing timeout failures in MediaSearchService sibling tests (enrichment, cornerCases, customFormat) that are caused by vi.useFakeTimers() blocking the setTimeout-wrapped searchWithTimeout implementation.",
+    "stories": [
+      "S1: Diagnose fake-timer interaction and write a Red reproduction test",
+      "S2: Refactor searchWithTimeout to accept an injectable clock/timeout or replace fake timers with system-time fakes",
+      "S3: Update enrichment, cornerCases, and customFormat test files to use the new pattern",
+      "S4: Verify all MediaSearchService tests pass in isolation and together",
+      "S5: Update tech-debt.md and lessons-learned.md"
+    ],
+    "demo_notes": "Run the three failing test files together and observe 0 failures; root CI green gate passes without pre-existing MediaSearchService timeouts.",
+    "retro_ref": null
+  }
+}

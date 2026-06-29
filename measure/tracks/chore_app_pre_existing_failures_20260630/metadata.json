@@ -1,0 +1,21 @@
+{
+  "id": "chore_app_pre_existing_failures_20260630",
+  "title": "App Workspace Pre-existing Test & Typecheck Cleanup",
+  "status": "pending",
+  "created": "2026-06-30",
+  "priority": "high",
+  "type": "chore",
+  "sprint": {
+    "goal": "Clear the pre-existing app workspace failures (4 typecheck errors and ~133 test failures across 34+ files) so the app suite can pass green gates and unblocks future frontend tracks.",
+    "stories": [
+      "S1: Catalog and reproduce all app typecheck errors",
+      "S2: Catalog and reproduce all app test failures",
+      "S3: Fix typecheck errors with minimal source changes",
+      "S4: Fix test failures grouped by root cause (MSW, timers, mocks, rendering)",
+      "S5: Verify app test and typecheck gates",
+      "S6: Update tech-debt.md and lessons-learned.md"
+    ],
+    "demo_notes": "Run `cd app && bun run typecheck` and `cd app && bun run test` and observe both pass with zero failures.",
+    "retro_ref": null
+  }
+}

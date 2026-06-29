@@ -220,7 +220,7 @@ later phases. They are intentionally NOT written in this Red-phase commit.
 - `CI=true npx vitest run server/src/services/Scheduler.persistence.test.ts server/src/services/Scheduler.adversarial.test.ts server/src/api/routes/systemRoutes.test.ts tests/app-settings-repository.test.js server/src/repositories/AppSettingsRepository.test.ts` → PASS, 5 files / 110 tests.
 - `CI=true npx vitest run server/src/services/Scheduler.persistence.test.ts` → PASS, 16 tests.
 - `bun x vitest run server/src/services/Scheduler.persistence.test.ts` → PASS, 16 tests.
-- `CI=true npx vitest run server/src/services/Scheduler && CI=true npx vitest run server/src/api/routes/` → PASS; Scheduler/API route A5 claims verified live (64 scheduler tests and 304 route tests at current HEAD).
+- `CI=true npx vitest run server/src/services/Scheduler && CI=true npx vitest run server/src/api/routes/` → PASS; Scheduler/API route A5 claims verified live (96 scheduler tests and 304 route tests at current HEAD after adversarial coverage).
 - `npx tsc --noEmit --project server/tsconfig.json` still reports 21 pre-existing unrelated strict-mode errors in TorrentRepository/FilterService/SubtitleRequirementEngine/VariantInventoryIndexer tests; earlier scheduler/test mock type errors were fixed during final acceptance.
 - `node scripts/check-monorepo-boundaries.mjs` → unavailable/missing script (`MODULE_NOT_FOUND`).
 - `bash measure/doctor.sh` → unavailable/missing script (`No such file or directory`).

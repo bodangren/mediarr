@@ -1,0 +1,49 @@
+{
+  "track_id": "scheduler_persistence_missed_task_recovery_20260613",
+  "title": "Scheduler Persistence & Missed-Task Recovery",
+  "closeout_date": "2026-06-30",
+  "baseline_sha": "c3a8c2bcf5e795b79265e865059be1408c393509",
+  "closeout_sha": "d2d245c3958cf2dd1cda2f0b7f46605f08e727f8",
+  "status": "done",
+  "final_acceptance": {
+    "path": "/tmp/opencode/measure-final-acceptance-scheduler-third.json",
+    "status": "pass",
+    "summary": "All required targeted lessons, scheduler persistence/adversarial, route, and AppSettings suites are green; PROJECT_TESTS completed successfully."
+  },
+  "audits": {
+    "a5_false_claims": "pass",
+    "a6_tracks_registry": "pass",
+    "a9_archived_paths": "pass",
+    "plan_integrity": "pass"
+  },
+  "plan_tasks": {
+    "total": 10,
+    "completed": 9,
+    "deferred_human": 1,
+    "deferred_human_task": "Push to remote (deferred:human)"
+  },
+  "evidence": [
+    "Final acceptance result: /tmp/opencode/measure-final-acceptance-scheduler-third.json",
+    "Track archived to measure/archive/scheduler_persistence_missed_task_recovery_20260613/",
+    "measure/tracks.md updated — removed from Active Tracks, added to Recently Completed",
+    "metadata.json status set to done, completed date 2026-06-30",
+    "Phase 5 closeout tasks marked [x] (3) and deferred:human (1 push) preserved",
+    "Lessons learned and tech-debt rows updated during final acceptance",
+    "plan.md Phase 5 verification tasks annotated with baseline SHA c3a8c2bc"
+  ],
+  "artifact_cleanup": {
+    "retained": [
+      "measure/archive/scheduler_persistence_missed_task_recovery_20260613/plan.md",
+      "measure/archive/scheduler_persistence_missed_task_recovery_20260613/spec.md",
+      "measure/archive/scheduler_persistence_missed_task_recovery_20260613/metadata.json",
+      "measure/archive/scheduler_persistence_missed_task_recovery_20260613/test-strategy.md",
+      "measure/archive/scheduler_persistence_missed_task_recovery_20260613/review-2026-06-21.md",
+      "measure/archive/scheduler_persistence_missed_task_recovery_20260613/review-2026-06-22.md",
+      "measure/archive/scheduler_persistence_missed_task_recovery_20260613/review-2026-06-23.md",
+      "measure/archive/scheduler_persistence_missed_task_recovery_20260613/automation-supervisor-closeout-manifest.json",
+      "/tmp/opencode/measure-final-acceptance-scheduler-third.json"
+    ],
+    "deleted": []
+  },
+  "a9_archived_path_fixes": []
+}

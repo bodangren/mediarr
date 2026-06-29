@@ -15,7 +15,7 @@ This file tracks all major tracks for the project. Each track has its own detail
 3. - [ ] **Track: Flutter Media Detail Page** *Phases: 5 | Link: [./tracks/feature_flutter_media_detail_20260508/](./tracks/feature_flutter_media_detail_20260508/)* — Movie and series detail screens (metadata, episodes, actions, file info) in the Flutter client. User-facing; the client is the product differentiator.
 4. - [ ] **Track: Scheduler & Automation Dashboard** *Phases: 5 | Link: [./tracks/feature_scheduler_automation_dashboard_20260524/](./tracks/feature_scheduler_automation_dashboard_20260524/)* — React SPA settings page for configuring/monitoring RSS sync, wanted search, and library scan schedules. User-facing.
 5. - [ ] **Track: Server Service Test Coverage — Runtime-Critical** *Stories: 4 (scoped from 10) | Link: [./tracks/chore_untested_server_services_20260526/](./tracks/chore_untested_server_services_20260526/)* — Rescoped 2026-06-07 to Scheduler, EpisodeService, SeriesService, MediaSearchService only; the other 6 services are deferred post-v1.0.
-6. - [ ] **Track: Scheduler Persistence & Missed-Task Recovery** *Phases: 5 | Link: [./tracks/scheduler_persistence_missed_task_recovery_20260613/](./tracks/scheduler_persistence_missed_task_recovery_20260613/)* — Persist node-cron next-run timestamps to AppSettings and recover missed tasks on startup. Resolves High Scheduler restart tech-debt; targeted persistence and adversarial suites are green at final acceptance.
+
 
 ## Post-v1.0 / Deferred
 
@@ -35,6 +35,7 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ## Recently Completed (archived)
 
+- [x] **Track: Scheduler Persistence & Missed-Task Recovery** *Phases: 5 | Link: [./archive/scheduler_persistence_missed_task_recovery_20260613/](./archive/scheduler_persistence_missed_task_recovery_20260613/)* — Persists node-cron next-run timestamps via injected SchedulerStateRepository; recovers past-due missed tasks on startup with running-flag idempotency; exposes scheduler health metrics via /api/health and /api/system/status; 113 targeted persistence/adversarial/route tests green; resolves High scheduler restart tech-debt. Archived 2026-06-30.
 - [x] **Track: Supervisor Acceptance Hardening** *Phases: 1 | Link: [./archive/chore_supervisor_acceptance_hardening_20260621/](./archive/chore_supervisor_acceptance_hardening_20260621/)* — Hardened Measure automation-supervisor closeout path: discovers active all-complete tracks, enforces UX audit per phase with blocking violations, adds Mediarr-specific scheduler route-parity and indexer-health wiring gates, retains final acceptance/closeout artifacts. Archived 2026-06-23.
 - [x] **Track: v1.0 Release Cut — Define the Line** *Stories: 4 | Link: [./archive/release_v1_cut_20260607/](./archive/release_v1_cut_20260607/)* — Ratified v1.0 scope checklist, confirmed quality gates (full CI green, Flutter analyze green, app build clean), tagged and pushed v1.0.0, published post-v1.0 backlog. Archived 2026-06-20.
 - [x] **Track: Harden Test Infrastructure & Close Review Findings** *Phases: 6 | Link: [./archive/chore_test_infrastructure_hardening_20260612/](./archive/chore_test_infrastructure_hardening_20260612/)* — MSW runner hang fixed with `pool: 'forks'` and integration smoke tests; handlers refactored into domain files with real Blob responses; Scheduler `nextRunAt` implemented for daily/`*/N`/`0 */H` crons; TvSearchService orphan alias deleted; orphan-alias guard fixed; Import List UI tests hardened with prop-injected search, branch-coverage tests, and 58 passing tests. Archived 2026-06-12.
@@ -172,6 +173,8 @@ Parallel:
 ## Archived Tracks
 
 - [x] **Track: Automation Supervisor Workflow Hardening** *Phases: 1 | Link: [./archive/chore_automation_supervisor_workflow_hardening_20260619/](./archive/chore_automation_supervisor_workflow_hardening_20260619/)* — Versioned audit JSON schema, deterministic UX auto routing, retry/escalation guidance, strict closeout preflight, and post-archive artifact cleanup. Archived 2026-06-19.
+
+- [x] **Track: Scheduler Persistence & Missed-Task Recovery** *Phases: 5 | Link: [./archive/scheduler_persistence_missed_task_recovery_20260613/](./archive/scheduler_persistence_missed_task_recovery_20260613/)* — Persists node-cron next-run timestamps to AppSettings; recovers missed tasks on startup; exposes health metrics; 113 targeted tests green. Archived 2026-06-30.
 
 - [x] **Track: Automation Supervisor Audit Pipeline** *Phases: 2 | Link: [./archive/chore_automation_supervisor_audit_pipeline_20260607/](./archive/chore_automation_supervisor_audit_pipeline_20260607/)* — Added independent acceptance, adversarial testing, multimodal UI/UX, and mandatory closeout roles
 

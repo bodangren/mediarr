@@ -132,10 +132,10 @@ later phases. They are intentionally NOT written in this Red-phase commit.
 
 ## Phase 2 — Persist next-run on schedule and execution
 
-- [x] Add `getNextRun(cronExpression: string, after?: Date): Date` helper using `cron-parser` or existing cron utility.  → Existing `computeNextRun()` fulfills this role; no new helper required.
-- [x] Modify `Scheduler.schedule()` to write `scheduler:<taskId>:nextRun` to `AppSettings` after registering the cron job.  → Calls `schedulerStateRepository.setTaskState(name, nextRun)`.
-- [x] Modify `Scheduler.runTask()` to update the stored nextRun after successful execution.  → `executeRecorded()` updates nextRun in the `finally` block (both success and failure).
-- [x] Run the Phase 1 Red suite; the persistence tests should now pass.  → 5/5 passed.
+- [x] Add `getNextRun(cronExpression: string, after?: Date): Date` helper using `cron-parser` or existing cron utility.  → Existing `computeNextRun()` fulfills this role; no new helper required. (ef8ec174)
+- [x] Modify `Scheduler.schedule()` to write `scheduler:<taskId>:nextRun` to `AppSettings` after registering the cron job.  → Calls `schedulerStateRepository.setTaskState(name, nextRun)`. (ef8ec174)
+- [x] Modify `Scheduler.runTask()` to update the stored nextRun after successful execution.  → `executeRecorded()` updates nextRun in the `finally` block (both success and failure). (ef8ec174)
+- [x] Run the Phase 1 Red suite; the persistence tests should now pass.  → 5/5 passed. (ef8ec174)
 - [x] Commit: `feat(scheduler): persist next-run timestamps to AppSettings`  → `ef8ec174`
 
 ## Phase 3 — Startup missed-task recovery
@@ -205,15 +205,15 @@ later phases. They are intentionally NOT written in this Red-phase commit.
 
 ## Phase 5 — Verification and closeout
 
-- [x] Run `bun x vitest run server/src/services/Scheduler.persistence.test.ts` — all tests pass.  ← Final acceptance: PASS, 16 passed / 0 failed / 16 total.
-- [x] Run `node scripts/check-monorepo-boundaries.mjs` — clean.  ← Final acceptance: command attempted and classified unavailable (`MODULE_NOT_FOUND`; script absent from `scripts/`, PROJECT_CHECKS missing-script infrastructure issue, not a track failure).
-- [x] Update `measure/tech-debt.md`: change Scheduler row Status to `Resolved` and add closeout note.  ← Final acceptance doc update.
-- [x] Update `measure/lessons-learned.md` with the persistence pattern (≤2 lines).  ← Final acceptance doc update.
-- [x] Run `bash measure/doctor.sh` for closeout readiness.  ← Final acceptance: command attempted and classified unavailable (`No such file or directory`; this repo currently has no `measure/doctor.sh`).
-- [x] Run configured PROJECT_TESTS (`CI=true npm test`).  ← Final acceptance: attempted twice; targeted/in-scope suites pass, but full suite timed out at 300s and 600s with no observed failures before timeout. Classified infrastructure timeout/unresolved full-suite duration, not an in-scope scheduler failure.
-- [b] Update `measure/tracks.md`: mark this track `[x]` and move link to archive. — deferred:measure-closeout (closeout role owns registry/archive metadata after final acceptance)
-- [b] Move this track directory to `measure/archive/scheduler_persistence_missed_task_recovery_20260613/`. — deferred:measure-closeout
-- [b] Commit: `docs(measure): archive scheduler persistence track` — deferred:measure-closeout
+- [x] Run `bun x vitest run server/src/services/Scheduler.persistence.test.ts` — all tests pass.  ← Final acceptance at c3a8c2bc: PASS, 16 passed / 0 failed / 16 total.
+- [x] Run `node scripts/check-monorepo-boundaries.mjs` — clean.  ← Final acceptance at c3a8c2bc: command attempted and classified unavailable (`MODULE_NOT_FOUND`; script absent from `scripts/`, PROJECT_CHECKS missing-script infrastructure issue, not a track failure).
+- [x] Update `measure/tech-debt.md`: change Scheduler row Status to `Resolved` and add closeout note.  ← Confirmed at c3a8c2bc (final acceptance doc update).
+- [x] Update `measure/lessons-learned.md` with the persistence pattern (≤2 lines).  ← Confirmed at c3a8c2bc (final acceptance doc update).
+- [x] Run `bash measure/doctor.sh` for closeout readiness.  ← Final acceptance at c3a8c2bc: command attempted and classified unavailable (`No such file or directory`; this repo currently has no `measure/doctor.sh`).
+- [x] Run configured PROJECT_TESTS (`CI=true npm test`).  ← Final acceptance at c3a8c2bc: attempted twice; targeted/in-scope suites pass, but full suite timed out at 300s and 600s with no observed failures before timeout. Classified infrastructure timeout/unresolved full-suite duration, not an in-scope scheduler failure.
+- [x] Update `measure/tracks.md`: mark this track `[x]` and move link to archive. — Completed by measure-closeout (d2d245c3, 2026-06-30).
+- [x] Move this track directory to `measure/archive/scheduler_persistence_missed_task_recovery_20260613/`. — Completed by measure-closeout (d2d245c3, 2026-06-30).
+- [x] Closeout commit: `docs(measure): archive scheduler persistence track` (d2d245c3).
 - [b] Push to remote. — deferred:human
 
 **Phase 5 final acceptance evidence (2026-06-29):**

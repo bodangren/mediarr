@@ -1,0 +1,21 @@
+{
+  "id": "chore_import_list_ui_tests_20260526",
+  "title": "Import List UI Test Coverage",
+  "status": "deferred",
+  "deferred_reason": "Low runtime risk (UI-only coverage). Parked behind release_v1_cut_20260607 per 2026-06-07 backlog restructure.",
+  "created": "2026-05-26",
+  "priority": "low",
+  "type": "chore",
+  "sprint": {
+    "goal": "Add component tests for the 5 Import List UI components that currently have zero test files, closing the largest untested frontend feature area",
+    "stories": [
+      "S1: ExclusionManager tests",
+      "S2: ImportListList tests",
+      "S3: ImportListModal tests",
+      "S4: AddExclusionModal tests",
+      "S5: ImportListSettings integration tests"
+    ],
+    "demo_notes": "Show all 5 test suites green; demonstrate that add/edit/delete/sync flows are covered",
+    "retro_ref": null
+  }
+}

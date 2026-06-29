@@ -1,0 +1,21 @@
+{
+  "id": "chore_frontend_component_test_gaps_20260526",
+  "title": "Frontend Component Test Coverage Gaps",
+  "status": "deferred",
+  "deferred_reason": "Low runtime risk (UI-only coverage). Parked behind release_v1_cut_20260607; candidate to merge with chore_msw_mock_coverage into one post-v1.0 frontend-coverage track.",
+  "created": "2026-05-26",
+  "priority": "low",
+  "type": "chore",
+  "sprint": {
+    "goal": "Add component tests for 15 untested frontend components across movie modals, table primitives, search cells, and provider components",
+    "stories": [
+      "S1: Movie management modal tests",
+      "S2: Table primitive tests",
+      "S3: Search cell component tests",
+      "S4: Provider component tests",
+      "S5: Miscellaneous component tests"
+    ],
+    "demo_notes": "Show all new test suites green; movie edit/bulk/organize modals verified; table primitives render correctly",
+    "retro_ref": null
+  }
+}

@@ -14,7 +14,6 @@ This file tracks all major tracks for the project. Each track has its own detail
 1. - [x] **Track: Core Integrity — Data Layer, Type Safety, Repository Unification** *Phases: 5 | Tasks: 33 | Link: [./archive/chore_core_integrity_20260610/](./archive/chore_core_integrity_20260610/)* — Archived 2026-06-10. Native Drizzle across 15 repositories (incl. 12 in Phase 1.7); modelTypes.ts `any` aliases replaced with `$inferSelect`; SeriesRepository/MovieRepository/SeriesService/EpisodeService/ShellLayout deleted; MediaRepository now owns bulk-update + root-folder helpers; Torznab t=movie/tvsearch fix; path-traversal guard; orphan-file regression test; 25 new tests. Task 1.8 (shim removal) is partial — 12 production repos are native but ~30 services/routes still call the shim; documented in plan.md.
 3. - [ ] **Track: Flutter Media Detail Page** *Phases: 5 | Link: [./tracks/feature_flutter_media_detail_20260508/](./tracks/feature_flutter_media_detail_20260508/)* — Movie and series detail screens (metadata, episodes, actions, file info) in the Flutter client. User-facing; the client is the product differentiator.
 4. - [ ] **Track: Scheduler & Automation Dashboard** *Phases: 5 | Link: [./tracks/feature_scheduler_automation_dashboard_20260524/](./tracks/feature_scheduler_automation_dashboard_20260524/)* — React SPA settings page for configuring/monitoring RSS sync, wanted search, and library scan schedules. User-facing.
-5. - [ ] **Track: Server Service Test Coverage — Runtime-Critical** *Stories: 4 (scoped from 10) | Link: [./tracks/chore_untested_server_services_20260526/](./tracks/chore_untested_server_services_20260526/)* — Rescoped 2026-06-07 to Scheduler, EpisodeService, SeriesService, MediaSearchService only; the other 6 services are deferred post-v1.0.
 
 
 ## Post-v1.0 / Deferred
@@ -22,11 +21,8 @@ This file tracks all major tracks for the project. Each track has its own detail
 > Deferred as part of the v1.0 release cut (2026-06-07); `release_v1_cut_20260607` is now
 > archived. Low runtime risk or blocked on prerequisites. Revisit after v1.0 ships.
 
-- [ ] **Track: Indexer Health Monitoring & Auto-Disable** *Phases: ~4 | Link: [./tracks/indexer_health_monitoring_20260509/](./tracks/indexer_health_monitoring_20260509/)* — Feature; previously unregistered. Evaluate in `release_v1_cut` S1 for ship-in-v1.0 vs after.
-- [ ] **Track: Import List UI Test Coverage** *(deferred)* *Link: [./tracks/chore_import_list_ui_tests_20260526/](./tracks/chore_import_list_ui_tests_20260526/)* — UI-only coverage; low runtime risk.
-- [ ] **Track: Frontend Component Test Coverage Gaps** *(deferred — merge candidate)* *Link: [./tracks/chore_frontend_component_test_gaps_20260526/](./tracks/chore_frontend_component_test_gaps_20260526/)* — Merge with MSW coverage into one post-v1.0 frontend-testing track.
 - [x] **Track: MSW Mock Coverage for Backend Routes** *(deferred — merge candidate)* *Link: [./archive/chore_msw_mock_coverage_20260526/](./archive/chore_msw_mock_coverage_20260526/)* — Archived 2026-06-13. S1–S6 complete and GREEN: 265/265 MSW handler tests pass across 6 suites; setup.ts MSW lifecycle hook wired with `onUnhandledRequest: 'error'`; tech-debt.md row marked Resolved. Full suite has pre-existing failures only (no MSW handler failures).
-- [ ] **Server Service Test Coverage — deferred remainder** — SettingsService, TvSearchService, SubtitleNamingService, SubtitleRequirementEngine, SubtitleProviderFactory, FilterService (the 6 phases split out of [chore_untested_server_services_20260526](./tracks/chore_untested_server_services_20260526/)).
+- [ ] **Server Service Test Coverage — deferred remainder** — SettingsService, TvSearchService, SubtitleNamingService, SubtitleRequirementEngine, SubtitleProviderFactory, FilterService (the 6 phases split out of [chore_untested_server_services_20260526](./archive/chore_untested_server_services_20260526/)).
 
 ## Superseded (2026-06-07)
 
@@ -35,6 +31,10 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ## Recently Completed (archived)
 
+- [x] **Track: Server Service Test Coverage — Runtime-Critical** *Stories: 4 (scoped from 10) | Link: [./archive/chore_untested_server_services_20260526/](./archive/chore_untested_server_services_20260526/)* — Covered Scheduler, SettingsService, consolidated Episode/Series via MediaService, and MediaSearchService; 136/143 targeted tests green, remaining 7 failures are pre-existing `vi.useFakeTimers` + `setTimeout` timeout issues in MediaSearchService sibling tests, documented in tech-debt.md. Archived 2026-06-30.
+- [x] **Track: Frontend Component Test Coverage Gaps** *Phases: 5 | Link: [./archive/chore_frontend_component_test_gaps_20260526/](./archive/chore_frontend_component_test_gaps_20260526/)* — Added 71 component tests across 15 targets (movie modals, table primitives, search cells, providers, FilterDropdown, MetricCard); SPA build clean; tech-debt.md row marked Resolved. Archived 2026-06-30.
+- [x] **Track: Import List UI Test Coverage** *Phases: 5 | Link: [./archive/chore_import_list_ui_tests_20260526/](./archive/chore_import_list_ui_tests_20260526/)* — Added 47 component/integration tests across ExclusionManager, ImportListList, ImportListModal, AddExclusionModal, and ImportListSettings; branch coverage >80% for 3/5 components; tech-debt.md row marked Resolved. Archived 2026-06-30.
+- [x] **Track: Indexer Health Monitoring & Auto-Disable** *Phases: ~4 | Link: [./archive/indexer_health_monitoring_20260509/](./archive/indexer_health_monitoring_20260509/)* — Health check ping for Torznab/Newznab/Cardigann, SQLite health-status storage, consecutive-failure auto-disable with SSE event, re-enable button and history tooltip in settings; 79/79 track-surface tests green. Archived 2026-06-30.
 - [x] **Track: Scheduler Persistence & Missed-Task Recovery** *Phases: 5 | Link: [./archive/scheduler_persistence_missed_task_recovery_20260613/](./archive/scheduler_persistence_missed_task_recovery_20260613/)* — Persists node-cron next-run timestamps via injected SchedulerStateRepository; recovers past-due missed tasks on startup with running-flag idempotency; exposes scheduler health metrics via /api/health and /api/system/status; 113 targeted persistence/adversarial/route tests green; resolves High scheduler restart tech-debt. Archived 2026-06-30.
 - [x] **Track: Supervisor Acceptance Hardening** *Phases: 1 | Link: [./archive/chore_supervisor_acceptance_hardening_20260621/](./archive/chore_supervisor_acceptance_hardening_20260621/)* — Hardened Measure automation-supervisor closeout path: discovers active all-complete tracks, enforces UX audit per phase with blocking violations, adds Mediarr-specific scheduler route-parity and indexer-health wiring gates, retains final acceptance/closeout artifacts. Archived 2026-06-23.
 - [x] **Track: v1.0 Release Cut — Define the Line** *Stories: 4 | Link: [./archive/release_v1_cut_20260607/](./archive/release_v1_cut_20260607/)* — Ratified v1.0 scope checklist, confirmed quality gates (full CI green, Flutter analyze green, app build clean), tagged and pushed v1.0.0, published post-v1.0 backlog. Archived 2026-06-20.
@@ -171,6 +171,14 @@ Parallel:
 ---
 
 ## Archived Tracks
+
+- [x] **Track: Server Service Test Coverage — Runtime-Critical** *Stories: 4 (scoped from 10) | Link: [./archive/chore_untested_server_services_20260526/](./archive/chore_untested_server_services_20260526/)* — Covered Scheduler, SettingsService, consolidated Episode/Series via MediaService, and MediaSearchService. Archived 2026-06-30.
+
+- [x] **Track: Frontend Component Test Coverage Gaps** *Phases: 5 | Link: [./archive/chore_frontend_component_test_gaps_20260526/](./archive/chore_frontend_component_test_gaps_20260526/)* — 71 component tests across 15 targets; SPA build clean. Archived 2026-06-30.
+
+- [x] **Track: Import List UI Test Coverage** *Phases: 5 | Link: [./archive/chore_import_list_ui_tests_20260526/](./archive/chore_import_list_ui_tests_20260526/)* — 47 component/integration tests across import-list UI. Archived 2026-06-30.
+
+- [x] **Track: Indexer Health Monitoring & Auto-Disable** *Phases: ~4 | Link: [./archive/indexer_health_monitoring_20260509/](./archive/indexer_health_monitoring_20260509/)* — Health ping, auto-disable, SSE event, settings UI badge/re-enable. Archived 2026-06-30.
 
 - [x] **Track: Automation Supervisor Workflow Hardening** *Phases: 1 | Link: [./archive/chore_automation_supervisor_workflow_hardening_20260619/](./archive/chore_automation_supervisor_workflow_hardening_20260619/)* — Versioned audit JSON schema, deterministic UX auto routing, retry/escalation guidance, strict closeout preflight, and post-archive artifact cleanup. Archived 2026-06-19.
 

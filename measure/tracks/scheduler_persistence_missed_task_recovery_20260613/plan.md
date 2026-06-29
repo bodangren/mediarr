@@ -166,10 +166,10 @@ later phases. They are intentionally NOT written in this Red-phase commit.
 
 ## Phase 4 — Health metrics and API surface
 
-- [x] Add `Scheduler.getHealth(): { scheduledTaskCount: number; missedTaskCount: number; lastRecoveryAt?: string }`.  ← Phase 4 Green evidence (see commit).
-- [x] Wire health data into existing `/api/health` and `/api/system/status` responses (additive fields only).  ← Phase 4 Green evidence (see commit).
-- [x] Add tests for health metric shape.  ← Phase 4 Red evidence (`8a989cc1`); all 4 new tests pass.
-- [ ] Commit: `feat(scheduler): expose scheduler health metrics`
+- [x] Add `Scheduler.getHealth(): { scheduledTaskCount: number; missedTaskCount: number; lastRecoveryAt?: string }`.  ← Phase 4 Green `0f5281a1`.
+- [x] Wire health data into existing `/api/health` and `/api/system/status` responses (additive fields only).  ← Phase 4 Green `0f5281a1`.
+- [x] Add tests for health metric shape.  ← Phase 4 Red `8a989cc1`; all 4 new tests pass (Green `0f5281a1`).
+- [x] Commit: `feat(scheduler): expose scheduler health metrics` → `0f5281a1`
 
 **Phase 4 Red state (committed by `8a989cc1`):**
 - Targeted Red command: `CI=true npx vitest run server/src/services/Scheduler.persistence.test.ts`

@@ -388,6 +388,7 @@ async function startApi(): Promise<void> {
   );
 
   const scheduler = new Scheduler();
+  scheduler.setSchedulerStateRepository(appSettingsRepository);
   const libraryScanService = new LibraryScanService(prisma);
   const discoveryService = new DiscoveryService();
   const rssSyncService = new RssSyncService(prisma, httpClient, indexerHealthRepository);
@@ -595,6 +596,8 @@ async function startApi(): Promise<void> {
   const catalogCache = new CatalogCache();
   await catalogCache.load();
   catalogCache.watch();
+
+  await scheduler.start();
 
   const app = createApiServer({
     prisma,

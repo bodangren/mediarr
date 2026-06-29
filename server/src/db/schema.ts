@@ -533,6 +533,9 @@ export const appSettings = sqliteTable("AppSettings", {
   update: text("update", { mode: "json" }),
   mediaManagement: text("mediaManagement", { mode: "json" }),
   streaming: text("streaming", { mode: "json" }),
+  schedulerState: text("schedulerState", { mode: "json" })
+    .notNull()
+    .default(sql`'{}'`),
   createdAt: integer("createdAt", { mode: "timestamp" })
     .notNull()
     .default(sql`(strftime('%s','now'))`),

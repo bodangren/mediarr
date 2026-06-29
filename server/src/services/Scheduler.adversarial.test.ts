@@ -28,9 +28,9 @@ vi.mock('node-cron', () => ({
 
 // ─── SchedulerStateRepository mock ──────────────────────────────────────────
 interface SchedulerStateRepositoryMock extends SchedulerStateRepository {
-  getTaskState: ReturnType<typeof vi.fn>;
-  setTaskState: ReturnType<typeof vi.fn>;
-  getAllTaskStates: ReturnType<typeof vi.fn>;
+  getTaskState: ReturnType<typeof vi.fn<(taskName: string) => Promise<string | null>>>;
+  setTaskState: ReturnType<typeof vi.fn<(taskName: string, nextRunAt: string) => Promise<void>>>;
+  getAllTaskStates: ReturnType<typeof vi.fn<() => Promise<Record<string, string>>>>;
 }
 
 function createStateRepoMock(): SchedulerStateRepositoryMock {

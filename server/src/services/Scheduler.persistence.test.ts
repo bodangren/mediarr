@@ -31,9 +31,9 @@ vi.mock('node-cron', () => ({
 // Scheduler writes/updates its nextRunAt timestamps through dependency
 // injection rather than direct AppSettings access (architecture guardrail #2).
 interface SchedulerStateRepositoryMock extends SchedulerStateRepository {
-  getTaskState: ReturnType<typeof vi.fn>;
-  setTaskState: ReturnType<typeof vi.fn>;
-  getAllTaskStates: ReturnType<typeof vi.fn>;
+  getTaskState: ReturnType<typeof vi.fn<(taskName: string) => Promise<string | null>>>;
+  setTaskState: ReturnType<typeof vi.fn<(taskName: string, nextRunAt: string) => Promise<void>>>;
+  getAllTaskStates: ReturnType<typeof vi.fn<() => Promise<Record<string, string>>>>;
 }
 
 function createStateRepoMock(): SchedulerStateRepositoryMock {

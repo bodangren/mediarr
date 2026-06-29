@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import type { DatabaseClient } from '../db/drizzleClient';
 import * as schema from '../db/schema';
 import type { AppSettings } from '../types/modelTypes';
@@ -93,6 +93,8 @@ export interface AppSettingsPayload {
   streaming: StreamingSettings;
 }
 
+export type SchedulerStateMap = Record<string, string>;
+
 export const DEFAULT_MEDIA_MANAGEMENT_SETTINGS: MediaManagementSettings = {
   movieRootFolder: '',
   tvRootFolder: '',
@@ -166,6 +168,25 @@ export const DEFAULT_APP_SETTINGS: AppSettingsPayload = {
   mediaManagement: DEFAULT_MEDIA_MANAGEMENT_SETTINGS,
   streaming: DEFAULT_STREAMING_SETTINGS,
 };
+
+function readSchedulerState(value: unknown): SchedulerStateMap {
+  let parsed = value;
+  if (typeof value === 'string') {
+    try {
+      parsed = JSON.parse(value) as unknown;
+    } catch {
+      parsed = {};
+    }
+  }
+  const source = readObject(parsed);
+  const state: SchedulerStateMap = {};
+  for (const [taskName, nextRunAt] of Object.entries(source)) {
+    if (typeof taskName === 'string' && typeof nextRunAt === 'string') {
+      state[taskName] = nextRunAt;
+    }
+  }
+  return state;
+}
 
 function readObject(value: unknown): Record<string, unknown> {
   if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
@@ -279,11 +300,24 @@ function buildInsertColumn(payload: AppSettingsPayload) {
  * Persists app-level settings using a single-row record.
  */
 export class AppSettingsRepository {
+  private hasSchedulerStateColumn: boolean | null = null;
+
   constructor(private readonly prisma: DatabaseClient) {}
 
   async get(): Promise<AppSettingsPayload> {
     const rows = await this.prisma.drizzle
-      .select()
+      .select({
+        torrentLimits: schema.appSettings.torrentLimits,
+        schedulerIntervals: schema.appSettings.schedulerIntervals,
+        pathVisibility: schema.appSettings.pathVisibility,
+        apiKeys: schema.appSettings.apiKeys,
+        host: schema.appSettings.host,
+        security: schema.appSettings.security,
+        logging: schema.appSettings.logging,
+        update: schema.appSettings.update,
+        mediaManagement: schema.appSettings.mediaManagement,
+        streaming: schema.appSettings.streaming,
+      })
       .from(schema.appSettings)
       .where(eq(schema.appSettings.id, 1))
       .limit(1);
@@ -357,6 +391,66 @@ export class AppSettingsRepository {
       });
 
     return payload;
+  }
+
+  async getTaskState(taskName: string): Promise<string | null> {
+    this.ensureSchedulerStateColumn();
+    const state = await this.getSchedulerState();
+    return state[taskName] ?? null;
+  }
+
+  async setTaskState(taskName: string, nextRunAt: string): Promise<void> {
+    this.ensureSchedulerStateColumn();
+    const state = await this.getSchedulerState();
+    if (nextRunAt.length === 0) {
+      delete state[taskName];
+    } else {
+      state[taskName] = nextRunAt;
+    }
+    await this.writeSchedulerState(state);
+  }
+
+  async getAllTaskStates(): Promise<SchedulerStateMap> {
+    this.ensureSchedulerStateColumn();
+    return this.getSchedulerState();
+  }
+
+  private async getSchedulerState(): Promise<SchedulerStateMap> {
+    const rows = await this.prisma.drizzle
+      .select({ schedulerState: sql<unknown>`schedulerState` })
+      .from(schema.appSettings)
+      .where(eq(schema.appSettings.id, 1))
+      .limit(1);
+    const row = rows[0];
+    return readSchedulerState(row?.schedulerState ?? {});
+  }
+
+  private async writeSchedulerState(schedulerState: SchedulerStateMap): Promise<void> {
+    const current = await this.get();
+    const insertColumn = buildInsertColumn(current);
+    await this.prisma.drizzle
+      .insert(schema.appSettings)
+      .values({ id: 1, ...insertColumn, schedulerState })
+      .onConflictDoUpdate({
+        target: schema.appSettings.id,
+        set: { schedulerState: schedulerState as unknown },
+      });
+  }
+
+  private ensureSchedulerStateColumn(): void {
+    if (this.hasSchedulerStateColumn === true) {
+      return;
+    }
+    if (typeof this.prisma.sqlite?.prepare !== 'function') {
+      throw new Error('Scheduler state persistence requires sqlite access');
+    }
+    const columns = this.prisma.sqlite
+      .prepare('PRAGMA table_info("AppSettings")')
+      .all() as Array<{ name: string }>;
+    if (!columns.some((column) => column.name === 'schedulerState')) {
+      this.prisma.sqlite.exec("ALTER TABLE `AppSettings` ADD `schedulerState` text NOT NULL DEFAULT '{}'");
+    }
+    this.hasSchedulerStateColumn = true;
   }
 
   private mapRecordToPayload(record: {

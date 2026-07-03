@@ -1,7 +1,7 @@
 {
   "id": "bug_mediasearch_timeout_tests_20260630",
   "title": "Fix MediaSearchService Pre-existing Timeout Test Failures",
-  "status": "pending",
+  "status": "completed",
   "created": "2026-06-30",
   "priority": "high",
   "type": "bug",

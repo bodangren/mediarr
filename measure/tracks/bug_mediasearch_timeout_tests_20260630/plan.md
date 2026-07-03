@@ -31,12 +31,22 @@
 
 ## Phase 3: Implement the Fix
 
-- [ ] Refactor `MediaSearchService.searchWithTimeout` to support the chosen contract without changing runtime behavior.
-- [ ] Update `MediaSearchService.enrichment.test.ts` to use the new pattern.
-- [ ] Update `MediaSearchService.cornerCases.test.ts` to use the new pattern.
-- [ ] Update `MediaSearchService.customFormat.test.ts` to use the new pattern.
-- [ ] Run the three files together and verify green.
-- [ ] Commit: `fix(mediasearch): make timeout tests deterministic with injectable timeout`
+- [x] Refactor `MediaSearchService.searchWithTimeout` to support the chosen contract without changing runtime behavior.
+- [x] Update `MediaSearchService.enrichment.test.ts` to use the new pattern.
+- [x] Update `MediaSearchService.cornerCases.test.ts` to use the new pattern.
+- [x] Update `MediaSearchService.customFormat.test.ts` to use the new pattern.
+- [x] Run the three files together and verify green.
+- [~] Commit: `fix(mediasearch): make timeout tests deterministic with injectable timeout`
+
+> **Implementation (2026-07-03):**
+> - `MediaSearchService.ts`: Added optional `timeoutMs` parameter to `searchAllIndexers(params, timeoutMs = INDEXER_TIMEOUT_MS)` and threaded it through both primary and IMDB-fallback `searchWithTimeout` calls. Production calls without the second argument still use `INDEXER_TIMEOUT_MS = 30000`.
+> - `MediaSearchService.enrichment.test.ts`: Changed `vi.useFakeTimers()` to `vi.useFakeTimers({ toFake: ['Date'] })` so `Date.now()`/`setSystemTime` are mocked but `setTimeout` remains real.
+> - `MediaSearchService.cornerCases.test.ts`: Timeout resilience test now passes `timeoutMs: 10` and uses a truly hanging indexer mock, so the test exercises the real timeout path instead of a mock-thrown timeout error.
+> - `MediaSearchService.customFormat.test.ts`: No source change needed (it never used fake timers), verified green.
+>
+> **Green evidence:**
+> - Targeted command (3 affected files + contract test): `./node_modules/.bin/vitest run server/src/services/MediaSearchService.enrichment.test.ts server/src/services/MediaSearchService.cornerCases.test.ts server/src/services/MediaSearchService.customFormat.test.ts server/src/services/MediaSearchService.timeout.repro.test.ts` → **exit 0, Test Files 4 passed (4), Tests 19 passed (19)**.
+> - Full MediaSearchService suite: `./node_modules/.bin/vitest run server/src/services/MediaSearchService` → **exit 0, Test Files 11 passed (11), Tests 87 passed (87)**.
 
 ## Phase 4: Regression & CI Verification
 

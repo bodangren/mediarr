@@ -3,7 +3,7 @@ import { MediaSearchService } from './MediaSearchService';
 
 describe('MediaSearchService candidate enrichment', () => {
   beforeEach(() => {
-    vi.useFakeTimers();
+    vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2026-02-28T12:00:00.000Z'));
   });
 

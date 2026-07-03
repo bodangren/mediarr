@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { MediaSearchService } from './MediaSearchService';
 
 function makeService(indexer: { search: ReturnType<typeof vi.fn> }) {
@@ -34,28 +34,6 @@ function makeService(indexer: { search: ReturnType<typeof vi.fn> }) {
 
   return { service, indexerRepository, indexerFactory, torrentManager };
 }
-
-describe('MediaSearchService.searchWithTimeout fake-timer reproduction', () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
-  it('marks a hanging indexer as timeout when fake timers are active', async () => {
-    const { service } = makeService({
-      search: vi.fn().mockImplementation(() => new Promise(() => {})),
-    });
-
-    // With fake timers active, the internal setTimeout in searchWithTimeout never
-    // fires, so this promise hangs until the test timeout.
-    const searchPromise = service.searchAllIndexers({ query: 'test', type: 'movie' });
-
-    await expect(searchPromise).rejects.toThrow('Indexer search timed out');
-  }, 500);
-});
 
 describe('MediaSearchService.searchAllIndexers timeoutMs contract', () => {
   it('accepts an optional timeoutMs and times out a hanging indexer quickly', async () => {

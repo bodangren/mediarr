@@ -459,7 +459,10 @@ export class MediaSearchService {
   /**
    * Search all enabled indexers in parallel and aggregate results.
    */
-  async searchAllIndexers(params: SearchParams): Promise<AggregatedSearchResult> {
+  async searchAllIndexers(
+    params: SearchParams,
+    timeoutMs: number = INDEXER_TIMEOUT_MS,
+  ): Promise<AggregatedSearchResult> {
     const indexerRecords = await this.indexerRepository.findAllEnabled();
 
     if (indexerRecords.length === 0) {
@@ -484,14 +487,14 @@ export class MediaSearchService {
 
       try {
         const indexer = this.indexerFactory.fromDatabaseRecord(record);
-        let results = await this.searchWithTimeout(indexer, query, INDEXER_TIMEOUT_MS);
+        let results = await this.searchWithTimeout(indexer, query, timeoutMs);
 
         if (shouldRetryMovieSearchWithoutImdbId(params, query, results)) {
           const fallbackQuery: SearchQuery = { ...query };
           delete fallbackQuery.imdbid;
 
           try {
-            const fallbackResults = await this.searchWithTimeout(indexer, fallbackQuery, INDEXER_TIMEOUT_MS);
+            const fallbackResults = await this.searchWithTimeout(indexer, fallbackQuery, timeoutMs);
             if (fallbackResults.length > 0) {
               results = fallbackResults;
             }

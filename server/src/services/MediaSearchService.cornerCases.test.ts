@@ -248,11 +248,7 @@ describe('MediaSearchService.searchAllIndexers — indexer resilience', () => {
     });
 
     const slowIndexer = {
-      search: vi.fn().mockImplementation(
-        () => new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Indexer search timed out after 30000ms')), 0),
-        ),
-      ),
+      search: vi.fn().mockImplementation(() => new Promise(() => {})),
     };
     const fastIndexer = {
       search: vi.fn().mockResolvedValue([
@@ -272,7 +268,7 @@ describe('MediaSearchService.searchAllIndexers — indexer resilience', () => {
       .mockReturnValueOnce(slowIndexer)
       .mockReturnValueOnce(fastIndexer);
 
-    const result = await service.searchAllIndexers({ query: 'Good Show', type: 'tvsearch' });
+    const result = await service.searchAllIndexers({ query: 'Good Show', type: 'tvsearch' }, 10);
 
     const slowResult = result.indexerResults.find(r => r.indexerName === 'SlowIndexer');
     const fastResult = result.indexerResults.find(r => r.indexerName === 'FastIndexer');

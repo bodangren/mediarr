@@ -13,6 +13,10 @@ import { QueueRemoveModal } from './QueueRemoveModal';
 import { Pause, Play, Trash2, Settings2, RotateCcw, ArrowUpDown, Search, ArrowUp, ArrowDown, ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
 import { createEventsApi } from '@/lib/api/eventsApi';
 
+function isEventSourceSupported(): boolean {
+  return typeof EventSource !== 'undefined';
+}
+
 function normalizeQueueStatus(status: string | undefined): 'downloading' | 'seeding' | 'paused' | 'error' | 'queued' {
   const normalized = (status ?? '').toLowerCase();
   if (normalized === 'downloading') return 'downloading';
@@ -79,6 +83,9 @@ export function ActivityQueuePage() {
 
   // SSE for real-time torrent stats
   useEffect(() => {
+    if (!isEventSourceSupported()) {
+      return;
+    }
     const eventsApi = createEventsApi();
     eventsApi.onStateChange(() => {});
     eventsApi.on('torrent:stats', (stats) => {

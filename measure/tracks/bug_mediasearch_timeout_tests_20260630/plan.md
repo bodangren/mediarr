@@ -2,11 +2,19 @@
 
 ## Phase 1: Diagnose and Reproduce (TDD — Red)
 
-- [ ] Read `server/src/services/MediaSearchService.ts` and locate `searchWithTimeout`.
-- [ ] Read the three failing test files and identify every `vi.useFakeTimers()` call.
-- [ ] Write a minimal Red reproduction test that demonstrates the timeout failure when fake timers are active.
-- [ ] Run the reproduction test and capture failure output.
-- [ ] Commit: `test(mediasearch): add Red reproduction for fake-timer timeout failure`
+- [x] Read `server/src/services/MediaSearchService.ts` and locate `searchWithTimeout`.
+- [x] Read the three failing test files and identify every `vi.useFakeTimers()` call.
+- [x] Write a minimal Red reproduction test that demonstrates the timeout failure when fake timers are active.
+- [x] Run the reproduction test and capture failure output.
+- [~] Commit: `test(mediasearch): add Red reproduction for fake-timer timeout failure`
+
+> **Red evidence (2026-07-03):** Added `server/src/services/MediaSearchService.timeout.repro.test.ts` with one test that uses `vi.useFakeTimers()` and a hanging indexer mock. The test fails with a 500ms Vitest timeout because the real `setTimeout` inside `searchWithTimeout` is frozen by Vitest's fake timers.
+>
+> Targeted Red command: `./node_modules/.bin/vitest run server/src/services/MediaSearchService.timeout.repro.test.ts` → **exit 1, Test Files 1 failed (1), Tests 1 failed (1)**. Failure: `Error: Test timed out in 500ms.`
+>
+> Identified `vi.useFakeTimers()` usage:
+> - `server/src/services/MediaSearchService.enrichment.test.ts:6` — uses fake timers to pin `Date.now()` for age-hour computation.
+> - The other two affected files (`cornerCases.test.ts`, `customFormat.test.ts`) do not themselves call `vi.useFakeTimers()`, but they fail when run together with files that leave fake timers active (see `measure/tech-debt.md` 2026-06-13 note).
 
 ## Phase 2: Design the Fix
 

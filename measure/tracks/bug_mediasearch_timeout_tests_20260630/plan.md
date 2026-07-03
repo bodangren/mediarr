@@ -18,10 +18,16 @@
 
 ## Phase 2: Design the Fix
 
-- [ ] Choose between Option A (injectable timeout), Option B (system-time only), or Option C (clock abstraction) based on actual test needs.
-- [ ] Update the spec.md with the chosen approach.
-- [ ] Write failing tests for the new contract (e.g., `searchWithTimeout` accepts `timeoutMs`).
-- [ ] Commit: `test(mediasearch): add Red tests for injectable timeout contract`
+- [x] Choose between Option A (injectable timeout), Option B (system-time only), or Option C (clock abstraction) based on actual test needs.
+- [x] Update the spec.md with the chosen approach.
+- [x] Write failing tests for the new contract (e.g., `searchAllIndexers` accepts `timeoutMs`).
+- [~] Commit: `test(mediasearch): add Red tests for injectable timeout contract`
+
+> **Design decision (2026-07-03):** Option A — expose an optional `timeoutMs` parameter on `searchAllIndexers` (default `INDEXER_TIMEOUT_MS`) and pass it to the existing `searchWithTimeout`. Tests inject short timeouts and run with real timers. Enrichment tests keep date mocking via `vi.useFakeTimers({ toFake: ['Date'] })` so `setTimeout` remains real.
+>
+> **Red contract test added to `MediaSearchService.timeout.repro.test.ts`:** `accepts an optional timeoutMs and times out a hanging indexer quickly`. It calls `service.searchAllIndexers({ query: 'test', type: 'movie' }, 10)` and expects a timeout within 1s. At HEAD the parameter is ignored and the test times out after 1s.
+>
+> Targeted Red command: `./node_modules/.bin/vitest run server/src/services/MediaSearchService.timeout.repro.test.ts` → **exit 1, Test Files 1 failed (1), Tests 2 failed (2)**.
 
 ## Phase 3: Implement the Fix
 

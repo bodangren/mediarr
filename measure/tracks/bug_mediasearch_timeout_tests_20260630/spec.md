@@ -21,13 +21,15 @@ This is tracked in `measure/tech-debt.md` (2026-06-13, chore_untested_server_ser
 
 ## Proposed Approach
 
-Option A (preferred): Refactor `searchWithTimeout` to accept an optional `timeoutMs` parameter and/or an abort signal, then update the tests to pass short deterministic timeouts instead of using fake timers.
+Option A (chosen): Expose an optional `timeoutMs` parameter on `searchAllIndexers` (defaulting to the existing `INDEXER_TIMEOUT_MS` constant) and pass it through to the existing `searchWithTimeout` method. Tests that need deterministic timeout behavior can inject a short timeout and run with real timers, eliminating the need for `vi.useFakeTimers()` to control the timeout path.
 
-Option B: Replace `vi.useFakeTimers()` with `vi.setSystemTime()` in tests that only need date control, leaving the timeout path to use real timers.
+For the enrichment tests that still need to pin `Date.now()` for age-hour assertions, switch from `vi.useFakeTimers()` to `vi.useFakeTimers({ toFake: ['Date'] })`. This keeps `Date` mocked while leaving `setTimeout`/`setInterval` real, so `searchWithTimeout` can resolve normally.
 
-Option C: Inject a clock abstraction into `MediaSearchService` so tests can provide a fake timer that also drives the internal `setTimeout`.
+The public API remains backward-compatible: `searchAllIndexers(params)` behaves exactly as before; `searchAllIndexers(params, timeoutMs)` is an additive optional parameter.
 
-The chosen approach must keep the public API surface backward-compatible.
+Options B and C were considered but rejected:
+- Option B (`vi.setSystemTime()` only) still requires fake timers for date control and does not make the timeout deterministic.
+- Option C (clock abstraction) adds unnecessary complexity for a single timeout boundary when an injectable timeout value already solves the problem.
 
 ## Out of Scope
 

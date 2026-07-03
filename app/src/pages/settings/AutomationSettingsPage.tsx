@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { RouteScaffold } from '@/components/primitives/RouteScaffold';
 import { TaskSchedulerTable } from '@/components/scheduler/TaskSchedulerTable';
-import type { SchedulerTask } from '@/components/scheduler/TaskSchedulerTable';
+import type { SchedulerTask } from '@/lib/api/schedulerApi';
 import { CronIntervalPicker } from '@/components/scheduler/CronIntervalPicker';
 import { TaskHistoryPanel } from '@/components/scheduler/TaskHistoryPanel';
 import type { TaskExecutionRow } from '@/components/scheduler/TaskHistoryPanel';

@@ -15,11 +15,11 @@ export interface SchedulerTask {
   id: string;
   taskName: string;
   cronExpression: string;
-  lastRunAt: string;
-  lastDurationMs: number;
-  nextRunAt: string;
-  enabled: boolean;
-  status: 'healthy' | 'warning' | 'error' | 'disabled';
+  lastRunAt: string | null;
+  lastDurationMs: number | null;
+  nextRunAt: string | null;
+  enabled?: boolean;
+  status?: 'healthy' | 'warning' | 'error' | 'disabled';
 }
 
 interface TaskSchedulerTableProps {
@@ -29,7 +29,8 @@ interface TaskSchedulerTableProps {
   runningTaskIds?: Set<string>;
 }
 
-function formatDateTime(iso: string): string {
+function formatDateTime(iso: string | null | undefined): string {
+  if (!iso) return '—';
   const date = new Date(iso);
   return date.toLocaleString(undefined, {
     month: 'short',
@@ -43,8 +44,8 @@ export function TaskSchedulerTable({ tasks, onRunNow, onToggleEnabled, runningTa
   const [sortAsc, setSortAsc] = useState(false);
 
   const sortedTasks = [...tasks].sort((a, b) => {
-    const da = new Date(a.lastRunAt).getTime();
-    const db = new Date(b.lastRunAt).getTime();
+    const da = a.lastRunAt ? new Date(a.lastRunAt).getTime() : 0;
+    const db = b.lastRunAt ? new Date(b.lastRunAt).getTime() : 0;
     return sortAsc ? da - db : db - da;
   });
 
@@ -83,7 +84,7 @@ export function TaskSchedulerTable({ tasks, onRunNow, onToggleEnabled, runningTa
             <TableCell>{formatDateTime(task.lastRunAt)}</TableCell>
             <TableCell>{formatDateTime(task.nextRunAt)}</TableCell>
             <TableCell>
-              <TaskStatusBadge status={task.enabled ? task.status : 'disabled'} />
+              <TaskStatusBadge status={task.enabled ? (task.status ?? 'healthy') : 'disabled'} />
             </TableCell>
             <TableCell>
               <Switch

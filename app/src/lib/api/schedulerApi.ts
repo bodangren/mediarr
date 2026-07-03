@@ -1,7 +1,10 @@
 import { z } from 'zod';
 import { ApiHttpClient } from './httpClient';
 import { routeMap } from './routeMap';
-import { SCHEDULER_TASK_STATUS_VALUES, type SchedulerTaskStatus } from '../../../../server/src/services/Scheduler';
+import {
+  SCHEDULER_TASK_STATUS_VALUES,
+  type SchedulerTaskStatus,
+} from '../../../../server/src/services/Scheduler';
 
 const schedulerTaskSchema = z.object({
   id: z.string(),
@@ -11,7 +14,7 @@ const schedulerTaskSchema = z.object({
   lastDurationMs: z.number().nullable(),
   nextRunAt: z.string().nullable(),
   enabled: z.boolean().optional(),
-  status: z.enum(SCHEDULER_TASK_STATUS_VALUES).optional(),
+  status: z.enum(SCHEDULER_TASK_STATUS_VALUES as [SchedulerTaskStatus, ...SchedulerTaskStatus[]]).optional(),
 });
 
 const taskExecutionSchema = z.object({

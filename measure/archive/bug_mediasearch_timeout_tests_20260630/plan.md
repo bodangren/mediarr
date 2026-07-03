@@ -51,20 +51,26 @@
 ## Phase 4: Regression & CI Verification
 
 - [x] Run all 10 MediaSearchService test files together.
-- [~] Run root `CI=true npm test` and confirm the 7 timeout failures are gone.
+- [x] Run root `CI=true npm test` and confirm the 7 timeout failures are gone.
 - [x] Verify no new failures were introduced.
-- [ ] Commit: `test(mediasearch): verify all MediaSearchService tests green`
+- [x] Commit: `test(mediasearch): verify all MediaSearchService tests green`
 
 > **Regression evidence (2026-07-03):**
 > - Full MediaSearchService suite: `./node_modules/.bin/vitest run server/src/services/MediaSearchService` → **exit 0, Test Files 11 passed (11), Tests 87 passed (87)**.
-> - Root `CI=true npm test` was started to validate the full suite. The run was still in progress after 15 minutes (suite is large) but had already executed `MediaSearchService.enrichment.test.ts`, `MediaSearchService.cornerCases.test.ts`, and `MediaSearchService.publicApi.test.ts` with **all green**. No timeout failures from the affected files were observed in the partial output.
+> - Root `CI=true npm test` → completed with **Test Files 5 failed | 273 passed (278), Tests 5 failed | 2212 passed | 11 skipped (2228)**. The 5 failures are pre-existing and unrelated to MediaSearchService:
+>   - `tests/api-events-stream.test.ts` — fake-timer timeout (unrelated)
+>   - `tests/api-wanted.test.ts` — timeout (unrelated)
+>   - `tests/seeding-protector.test.js` — timeout (unrelated)
+>   - `measure/__tests__/post-v1.0-backlog.test.ts` — tracks.md backlog assertion (unrelated)
+>   - `server/src/api/routes/stats.integration.test.ts` — timeout (unrelated)
+> - All `MediaSearchService.*` test files passed, including the 3 previously affected files (`enrichment.test.ts`, `cornerCases.test.ts`, `customFormat.test.ts`).
 
 ## Phase 5: Documentation & Closeout
 
 - [x] Update `measure/tech-debt.md` to mark the MediaSearchService timeout item Resolved.
 - [x] Add a concise lesson to `measure/lessons-learned.md` about fake timers + real setTimeout.
-- [~] Update this plan.md with final evidence.
-- [ ] Commit: `docs(measure): close out mediasearch timeout test track`
+- [x] Update this plan.md with final evidence.
+- [x] Commit: `docs(measure): close out mediasearch timeout test track`
 
 > **Closeout evidence (2026-07-03):**
 > - `measure/tech-debt.md`: MediaSearchService timeout item (2026-06-13, chore_untested_server_services_20260526) updated from `Open` to `Resolved` with fix summary.

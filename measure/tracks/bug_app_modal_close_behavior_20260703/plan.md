@@ -26,11 +26,21 @@
 - [x] Commit: `docs(measure): diagnose app modal close test failures`
 
 ## Phase 2: Fix Shared Dialog / Modal Components
-- [~] Update the shared dialog primitive or modal wrappers to emit `onOpenChange` correctly.
-- [~] Ensure overlay/backdrop is clickable and identifiable in tests.
-- [~] Ensure Escape key closes modals.
-- [ ] Run affected tests and verify green.
-- [ ] Commit: `fix(app): restore modal Escape and backdrop close behavior`
+- [x] Update the shared dialog primitive or modal wrappers to emit `onOpenChange` correctly.
+  - Evidence: `app/src/components/ui/dialog.tsx` — `DialogOverlay` now exposes a pluggable backdrop onClick that calls a context-provided handler, and `DialogContent` accepts an `onBackdropClick` prop threaded through the new `DialogBackdropClickContext`.
+  - Evidence: `app/src/components/ui/modal.tsx` — `Modal` passes `onBackdropClick={closeOnBackdropClick ? onClose : undefined}` to `DialogContent` and dedupes close calls through a ref so pointerdown + click sequences call `onClose` exactly once.
+  - SHA: `8713f739`
+- [x] Ensure overlay/backdrop is clickable and identifiable in tests.
+  - Evidence: `app/src/components/ui/dialog.tsx` — `DialogOverlay` now defaults `data-testid="modal-backdrop"` (overridable), so `screen.getByTestId('modal-backdrop')` finds it. A click on the overlay routes through `onBackdropClick` to honor `closeOnBackdropClick` while still letting `fireEvent.click(backdrop)` close the modal.
+  - SHA: `8713f739`
+- [x] Ensure Escape key closes modals.
+  - Evidence: `app/src/components/ui/modal.tsx` — `Modal` adds a bubble-phase `window` `keydown` listener for `Escape` (Radix's `useEscapeKeydown` listens on `document` with capture, so `fireEvent.keyDown(window, …)` never reaches it). The listener bails out when `event.defaultPrevented` is set so we do not double-fire alongside Radix for real user keypresses.
+  - SHA: `8713f739`
+- [x] Run affected tests and verify green.
+  - Evidence: `cd app && bun run test -- src/components/search/InteractiveSearchModal.test.tsx src/components/movie/MovieInteractiveSearchModal.test.tsx src/components/series/SeriesInteractiveSearchModal.test.tsx` → **63 passed | 2 failed (out of scope)**. All 6 close-related tests (`closes on Escape key press` × 3, `closes on backdrop click` × 3) are green. The 2 remaining failures are the pre-existing pagination tests (`fetches additional pages so results include non-first-page indexers`, pageSize 500 vs 100) that Phase 1 explicitly documented as out of scope. Regression: `app/src/components/ui/modal.test.tsx` still passes 10/10 (the `closeOnBackdropClick={false}` path is preserved through the context).
+  - SHA: `8713f739`
+- [x] Commit: `fix(app): restore modal Escape and backdrop close behavior`
+  - Evidence: `git log -1` → `8713f739 fix(app): restore modal Escape and backdrop close behavior` (3 files changed, 96 insertions, 32 deletions).
 
 ## Phase 3: Update Per-Modal Tests
 - [ ] Adjust selectors in `InteractiveSearchModal`, `MovieInteractiveSearchModal`, `SeriesInteractiveSearchModal`, `EditCollectionModal`, and `PageLayout` tests if markup changed.

@@ -4,7 +4,7 @@
   "title": "Fix App Modal Close Behavior Test Failures",
   "closeout_date": "2026-07-04",
   "baseline_sha": "3b23ec22e8794d6c76b4c3f86d004c302f9884ce",
-  "closeout_sha": "8e813c7d",
+  "closeout_sha": "a2bc2fb0",
   "status": "done",
   "final_acceptance": {
     "path": "/tmp/measure_final_acceptance_modal_close.json",
@@ -54,7 +54,7 @@
     "phase4_regression": "d17da788",
     "phase4_baseline_correction": "34243567",
     "phase5_closeout_prep": "835b4b30",
-    "phase5_closeout_commit": "8e813c7d"
+    "phase5_closeout_commit": "a2bc2fb0"
   },
   "changed_files": [
     "app/src/components/ui/dialog.tsx",

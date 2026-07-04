@@ -66,6 +66,6 @@
   - Evidence: Updated row for `chore_app_pre_existing_failures_20260630` to note modal close behavior (12 failures) resolved by this track; removed from remaining-failures list.
 - [x] Add lesson to `measure/lessons-learned.md` if a recurring pattern surfaced. (`835b4b30`)
   - Evidence: Added Radix Dialog test ergonomics lesson (window-level Escape listener, backdrop `data-testid`/`onClick` fallback); trimmed 2 older Flutter calendar entries and 1 dashboard-statistics entry to keep file at 49 lines (under 50-line budget).
-- [x] Archive this track. (`8e813c7d`)
+- [x] Archive this track. (`a2bc2fb0`)
   - Evidence: Track folder moved to `measure/archive/bug_app_modal_close_behavior_20260703/`; `measure/tracks.md` active section updated; `metadata.json` status set to `done` with completion date; `automation-supervisor-closeout-manifest.json` created.
-- [x] Commit: `docs(measure): close out modal close behavior track` (`8e813c7d`)
+- [x] Commit: `docs(measure): close out modal close behavior track` (`a2bc2fb0`)

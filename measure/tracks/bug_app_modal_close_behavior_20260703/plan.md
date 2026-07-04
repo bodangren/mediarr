@@ -38,10 +38,15 @@
 - [x] Commit: `fix(app): restore modal Escape and backdrop close behavior` (`8713f739`)
 
 ## Phase 3: Update Per-Modal Tests
-- [ ] Adjust selectors in `InteractiveSearchModal`, `MovieInteractiveSearchModal`, `SeriesInteractiveSearchModal`, `EditCollectionModal`, and `PageLayout` tests if markup changed.
-- [ ] Add regression test for `PageLayout` More menu if missing.
-- [ ] Run affected test files and verify green.
-- [ ] Commit: `test(app): update modal close tests for current dialog markup`
+- [x] Adjust selectors in `InteractiveSearchModal`, `MovieInteractiveSearchModal`, `SeriesInteractiveSearchModal`, `EditCollectionModal`, and `PageLayout` tests if markup changed.
+  - Evidence: Shared modal close tests (`closes on Escape key press`, `closes on backdrop click`) in `InteractiveSearchModal`, `MovieInteractiveSearchModal`, and `SeriesInteractiveSearchModal` were already green after Phase 2; no selector changes required for close behavior.
+  - Evidence: `EditCollectionModal.test.tsx` — changed header-close test to use `screen.getByRole('button', { name: 'Close modal' })` and `fireEvent.click` because Radix Dialog's body `pointer-events: none` scroll-lock blocks `userEvent.click`.
+  - Evidence: `PageLayout.test.tsx` — wrapped all renders in `MemoryRouter` to provide `react-router-dom` Router context for `Link`; updated primary nav assertions to current `NAV_ITEMS` order (`Home`, `Search`, `Movies`, `TV`); updated More modal dialog selectors from `{ name: 'More navigation' }` to `{ name: 'More' }` because `DialogTitle` (`aria-labelledby`) takes precedence over `aria-label`; updated overflow item assertions to current navigation (`Collections`, `Wanted`, `Calendar`, `Queue`, `History`, `Indexers`, `Statistics`); replaced raw `.click()` with `fireEvent.click(...)` to eliminate `act(...)` warnings; removed brittle `aria-modal="true"` assertion because Radix `DialogContent` no longer emits it.
+- [x] Add regression test for `PageLayout` More menu if missing.
+  - Evidence: Existing 7 mobile navigation tests already cover More menu open/close (button, header Close, backdrop, Escape, accessibility, link navigation). The regression was the missing Router context; wrapping renders in `MemoryRouter` makes the suite exercise the real component paths.
+- [x] Run affected test files and verify green.
+  - Evidence: `cd app && bun run test -- src/components/collections/EditCollectionModal.test.tsx src/components/shell/PageLayout.test.tsx` → **21 passed | 0 failed**.
+- [x] Commit: `test(app): update modal close tests for current dialog markup` (`fc0bd970`)
 
 ## Phase 4: Regression Verification
 - [ ] Run `cd app && bun run test -- src/components/search/InteractiveSearchModal.test.tsx src/components/movie/MovieInteractiveSearchModal.test.tsx src/components/series/SeriesInteractiveSearchModal.test.tsx src/components/collections/EditCollectionModal.test.tsx src/components/shell/PageLayout.test.tsx`

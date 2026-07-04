@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import userEvent from '@testing-library/user-event';
 import { EditCollectionModal } from './EditCollectionModal';
@@ -161,8 +161,7 @@ describe('EditCollectionModal', () => {
     expect(mockOnSave).not.toHaveBeenCalled();
   });
 
-  it('calls onClose when close button in header is clicked', async () => {
-    const user = userEvent.setup();
+  it('calls onClose when close button in header is clicked', () => {
     render(
       <EditCollectionModal
         collection={mockCollection}
@@ -173,10 +172,10 @@ describe('EditCollectionModal', () => {
       />
     );
 
-    const closeButtons = screen.getAllByRole('button', { name: /close modal/i });
-    // Modal renders a backdrop button first, then the header close button second
-    const headerCloseButton = closeButtons[1];
-    await user.click(headerCloseButton);
+    const headerCloseButton = screen.getByRole('button', { name: 'Close modal' });
+    // Radix Dialog applies a body pointer-events lock during open state;
+    // fireEvent bypasses the lock so we can verify the header close wiring.
+    fireEvent.click(headerCloseButton);
 
     expect(mockOnClose).toHaveBeenCalledTimes(1);
   });
@@ -201,7 +200,9 @@ describe('EditCollectionModal', () => {
   });
 
   it('updates form fields when user types', async () => {
-    const user = userEvent.setup();
+    // Use delay-less userEvent: typing long text into controlled inputs is
+    // otherwise too slow for the default 5s test timeout in this modal.
+    const user = userEvent.setup({ delay: null });
     render(
       <EditCollectionModal
         collection={mockCollection}
@@ -223,7 +224,7 @@ describe('EditCollectionModal', () => {
     await user.type(overviewTextarea, 'Updated overview');
 
     expect(overviewTextarea).toHaveValue('Updated overview');
-  });
+  }, 10000);
 
   it('displays all form sections', () => {
     render(

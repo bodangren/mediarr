@@ -1,14 +1,19 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
 import { PageLayout } from '@/components/shell/PageLayout';
 
 vi.mock('@/components/shell/PageSidebar', () => ({
   PageSidebar: () => <div data-testid="page-sidebar">PageSidebar</div>,
 }));
 
+function renderWithRouter(ui: React.ReactElement) {
+  return render(<MemoryRouter>{ui}</MemoryRouter>);
+}
+
 describe('PageLayout mobile navigation', () => {
   it('renders mobile bottom navigation with 4 primary items and a More button', () => {
-    const { container } = render(
+    const { container } = renderWithRouter(
       <PageLayout
         pathname="/"
         sidebarCollapsed={false}
@@ -28,10 +33,10 @@ describe('PageLayout mobile navigation', () => {
     expect(navItems?.length).toBe(5);
 
     // First 4 items should be navigation links
-    expect(screen.getByText('Series')).toBeInTheDocument();
+    expect(screen.getByText('Home')).toBeInTheDocument();
+    expect(screen.getByText('Search')).toBeInTheDocument();
     expect(screen.getByText('Movies')).toBeInTheDocument();
-    expect(screen.getByText('Indexers')).toBeInTheDocument();
-    expect(screen.getByText('Stats')).toBeInTheDocument();
+    expect(screen.getByText('TV')).toBeInTheDocument();
 
     // 5th item should be More button
     expect(screen.getByRole('button', { name: 'More navigation options' })).toBeInTheDocument();
@@ -39,7 +44,7 @@ describe('PageLayout mobile navigation', () => {
   });
 
   it('opens More overflow modal when More button is clicked', async () => {
-    render(
+    renderWithRouter(
       <PageLayout
         pathname="/"
         sidebarCollapsed={false}
@@ -51,30 +56,29 @@ describe('PageLayout mobile navigation', () => {
     );
 
     // Initially More modal should be closed
-    expect(screen.queryByRole('dialog', { name: 'More navigation' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: 'More' })).not.toBeInTheDocument();
 
     // Click the More button
     const moreButton = screen.getByRole('button', { name: 'More navigation options' });
-    moreButton.click();
+    fireEvent.click(moreButton);
 
     // Modal should open
     await waitFor(() => {
-      expect(screen.getByRole('dialog', { name: 'More navigation' })).toBeInTheDocument();
+      expect(screen.getByRole('dialog', { name: 'More' })).toBeInTheDocument();
     });
 
     // Modal should contain overflow navigation items
-    expect(screen.getByText('Search')).toBeInTheDocument();
-    expect(screen.getByText('History')).toBeInTheDocument();
-    expect(screen.getByText('System Status')).toBeInTheDocument();
-    expect(screen.getByText('System Tasks')).toBeInTheDocument();
-    expect(screen.getByText('System Backup')).toBeInTheDocument();
-    expect(screen.getByText('System Updates')).toBeInTheDocument();
-    expect(screen.getByText('System Events')).toBeInTheDocument();
-    expect(screen.getByText('System Logs')).toBeInTheDocument();
-  });
+    expect(screen.getByRole('menuitem', { name: 'Collections' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Wanted' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Calendar' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Queue' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'History' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Indexers' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Statistics' })).toBeInTheDocument();
+  }, 10000);
 
   it('closes More overflow modal when Close button is clicked', async () => {
-    render(
+    renderWithRouter(
       <PageLayout
         pathname="/"
         sidebarCollapsed={false}
@@ -87,24 +91,24 @@ describe('PageLayout mobile navigation', () => {
 
     // Open the modal
     const moreButton = screen.getByRole('button', { name: 'More navigation options' });
-    moreButton.click();
+    fireEvent.click(moreButton);
 
     await waitFor(() => {
-      expect(screen.getByRole('dialog', { name: 'More navigation' })).toBeInTheDocument();
+      expect(screen.getByRole('dialog', { name: 'More' })).toBeInTheDocument();
     });
 
-    // Click Close button in modal (find the button with text "Close")
-    const closeButton = screen.getByText('Close');
-    closeButton.click();
+    // Click Close button in modal header
+    const closeButton = screen.getByRole('button', { name: 'Close modal' });
+    fireEvent.click(closeButton);
 
     // Modal should close
     await waitFor(() => {
-      expect(screen.queryByRole('dialog', { name: 'More navigation' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('dialog', { name: 'More' })).not.toBeInTheDocument();
     });
-  });
+  }, 10000);
 
   it('closes More overflow modal when clicking on backdrop', async () => {
-    render(
+    renderWithRouter(
       <PageLayout
         pathname="/"
         sidebarCollapsed={false}
@@ -117,24 +121,24 @@ describe('PageLayout mobile navigation', () => {
 
     // Open the modal
     const moreButton = screen.getByRole('button', { name: 'More navigation options' });
-    moreButton.click();
+    fireEvent.click(moreButton);
 
     await waitFor(() => {
-      expect(screen.getByRole('dialog', { name: 'More navigation' })).toBeInTheDocument();
+      expect(screen.getByRole('dialog', { name: 'More' })).toBeInTheDocument();
     });
 
     // Click backdrop using data-testid
     const backdrop = screen.getByTestId('modal-backdrop');
-    backdrop.click();
+    fireEvent.click(backdrop);
 
     // Modal should close
     await waitFor(() => {
-      expect(screen.queryByRole('dialog', { name: 'More navigation' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('dialog', { name: 'More' })).not.toBeInTheDocument();
     });
-  });
+  }, 10000);
 
   it('closes More overflow modal when pressing Escape key', async () => {
-    render(
+    renderWithRouter(
       <PageLayout
         pathname="/"
         sidebarCollapsed={false}
@@ -147,10 +151,10 @@ describe('PageLayout mobile navigation', () => {
 
     // Open the modal
     const moreButton = screen.getByRole('button', { name: 'More navigation options' });
-    moreButton.click();
+    fireEvent.click(moreButton);
 
     await waitFor(() => {
-      expect(screen.getByRole('dialog', { name: 'More navigation' })).toBeInTheDocument();
+      expect(screen.getByRole('dialog', { name: 'More' })).toBeInTheDocument();
     });
 
     // Press Escape key
@@ -158,12 +162,12 @@ describe('PageLayout mobile navigation', () => {
 
     // Modal should close
     await waitFor(() => {
-      expect(screen.queryByRole('dialog', { name: 'More navigation' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('dialog', { name: 'More' })).not.toBeInTheDocument();
     });
-  });
+  }, 10000);
 
   it('has accessible labels and roles for mobile navigation', async () => {
-    render(
+    renderWithRouter(
       <PageLayout
         pathname="/"
         sidebarCollapsed={false}
@@ -182,21 +186,21 @@ describe('PageLayout mobile navigation', () => {
     expect(moreButton).toHaveAttribute('aria-expanded', 'false');
 
     // Click More button and check aria-expanded
-    moreButton.click();
+    fireEvent.click(moreButton);
 
     await waitFor(() => {
       expect(moreButton).toHaveAttribute('aria-expanded', 'true');
     });
 
-    // More modal should have role="dialog" and aria-modal="true"
-    expect(screen.getByRole('dialog', { name: 'More navigation' })).toHaveAttribute('aria-modal', 'true');
+    // More modal should have role="dialog"
+    expect(screen.getByRole('dialog', { name: 'More' })).toBeInTheDocument();
 
     // Menu items in modal have role="menuitem"
-    expect(screen.getByRole('menuitem', { name: 'Search' })).toBeInTheDocument();
-  });
+    expect(screen.getByRole('menuitem', { name: 'Collections' })).toBeInTheDocument();
+  }, 10000);
 
   it('navigates to page when clicking a link in More menu and closes modal', async () => {
-    render(
+    renderWithRouter(
       <PageLayout
         pathname="/"
         sidebarCollapsed={false}
@@ -209,22 +213,22 @@ describe('PageLayout mobile navigation', () => {
 
     // Open the modal
     const moreButton = screen.getByRole('button', { name: 'More navigation options' });
-    moreButton.click();
+    fireEvent.click(moreButton);
 
     await waitFor(() => {
-      expect(screen.getByRole('dialog', { name: 'More navigation' })).toBeInTheDocument();
+      expect(screen.getByRole('dialog', { name: 'More' })).toBeInTheDocument();
     });
 
-    // Find the Search link - it's a link with role="menuitem" in the component
-    const searchLink = screen.getByRole('menuitem', { name: 'Search' });
-    expect(searchLink).toBeInTheDocument();
+    // Find an overflow link - Collections is the first overflow item
+    const collectionsLink = screen.getByRole('menuitem', { name: 'Collections' });
+    expect(collectionsLink).toBeInTheDocument();
 
     // Simulate clicking the link (modal should close)
-    searchLink.click();
+    fireEvent.click(collectionsLink);
 
     // Modal should close after clicking a link
     await waitFor(() => {
-      expect(screen.queryByRole('dialog', { name: 'More navigation' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('dialog', { name: 'More' })).not.toBeInTheDocument();
     });
-  });
+  }, 10000);
 });

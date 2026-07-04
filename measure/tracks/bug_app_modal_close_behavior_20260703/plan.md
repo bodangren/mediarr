@@ -26,9 +26,9 @@
 - [x] Commit: `docs(measure): diagnose app modal close test failures`
 
 ## Phase 2: Fix Shared Dialog / Modal Components
-- [ ] Update the shared dialog primitive or modal wrappers to emit `onOpenChange` correctly.
-- [ ] Ensure overlay/backdrop is clickable and identifiable in tests.
-- [ ] Ensure Escape key closes modals.
+- [~] Update the shared dialog primitive or modal wrappers to emit `onOpenChange` correctly.
+- [~] Ensure overlay/backdrop is clickable and identifiable in tests.
+- [~] Ensure Escape key closes modals.
 - [ ] Run affected tests and verify green.
 - [ ] Commit: `fix(app): restore modal Escape and backdrop close behavior`
 

@@ -3,7 +3,7 @@
  * Callsites continue to use isOpen/onClose/ariaLabel/ModalHeader/ModalFooter etc.
  * @see components/ui/dialog.tsx for the underlying Radix Dialog primitives.
  */
-import { type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, type ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -66,16 +66,49 @@ export function Modal({
   maxWidthClassName = 'sm:max-w-xl lg:max-w-2xl',
   className = '',
 }: ModalProps) {
+  // De-duplicate close calls within a single event tick. A real (or
+  // userEvent-simulated) click on the backdrop fires both `pointerdown` (which
+  // Radix's `DismissableLayer` catches to dismiss) and `click` (which our
+  // backdrop `onClick` fallback also reacts to). Without the ref, the
+  // consumer's `onClose` would be called twice. The flag is reset on the next
+  // macrotask so subsequent close attempts still propagate.
+  const closeHandledRef = useRef(false);
+  const handleClose = useCallback(() => {
+    if (closeHandledRef.current) return;
+    closeHandledRef.current = true;
+    setTimeout(() => {
+      closeHandledRef.current = false;
+    }, 0);
+    onClose?.();
+  }, [onClose]);
+
+  // Radix's `useEscapeKeydown` hook listens for `keydown` on `document` in the
+  // capture phase, so a `fireEvent.keyDown(window, …)` (used by some tests)
+  // never reaches it. Add a bubble-phase listener on `window` that closes the
+  // modal on Escape. We bail out when `event.defaultPrevented` is set so we do
+  // not double-fire alongside Radix's document-level capture listener for real
+  // user keypresses (whose target sits inside `document`).
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || event.defaultPrevented) return;
+      handleClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, handleClose]);
+
   return (
     <Dialog
       open={isOpen}
       onOpenChange={(open) => {
-        if (!open && onClose) onClose();
+        if (!open) handleClose();
       }}
     >
       <DialogContent
         aria-label={ariaLabel}
         className={`flex max-h-[85vh] flex-col gap-0 p-0 ${maxWidthClassName} ${className}`}
+        onBackdropClick={closeOnBackdropClick ? handleClose : undefined}
         onInteractOutside={(e) => {
           if (!closeOnBackdropClick) e.preventDefault();
         }}

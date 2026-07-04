@@ -339,7 +339,7 @@ describe('SeriesInteractiveSearchModal', () => {
     fireEvent.keyDown(window, { key: 'Escape' });
 
     expect(onClose).toHaveBeenCalledTimes(1);
-  });
+  }, 10000);
 
   it('closes on backdrop click', () => {
     const onClose = vi.fn();

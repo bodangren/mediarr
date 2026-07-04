@@ -1,0 +1,8 @@
+{
+  "id": "bug_app_view_card_props_20260703",
+  "title": "Fix App View/Card Component Prop Drift Test Failures",
+  "status": "pending",
+  "created": "2026-07-03",
+  "priority": "medium",
+  "phases": 6
+}

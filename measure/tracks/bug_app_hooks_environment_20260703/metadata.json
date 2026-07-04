@@ -1,0 +1,8 @@
+{
+  "id": "bug_app_hooks_environment_20260703",
+  "title": "Fix App Hooks/Test-Environment Test Failures",
+  "status": "pending",
+  "created": "2026-07-03",
+  "priority": "medium",
+  "phases": 5
+}

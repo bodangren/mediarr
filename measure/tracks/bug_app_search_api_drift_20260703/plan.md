@@ -1,10 +1,10 @@
 # Plan: Fix App Search API Drift Test Failures
 
 ## Phase 1: Reproduce
-- [x] Run each affected search test file and record exact assertion failures.
-- [x] Inspect `seriesApi.searchReleases`, `movieApi.searchReleases`, and related API signatures.
-- [x] Update plan with contract mismatch details.
-- [x] Commit: `docs(measure): diagnose app search API drift failures`
+- [x] Run each affected search test file and record exact assertion failures. (`899b7e9f`)
+- [x] Inspect `seriesApi.searchReleases`, `movieApi.searchReleases`, and related API signatures. (`899b7e9f`)
+- [x] Update plan with contract mismatch details. (`899b7e9f`)
+- [x] Commit: `docs(measure): diagnose app search API drift failures` (`899b7e9f`)
 
 ### Phase 1 Findings
 
@@ -113,9 +113,10 @@ interface MovieSearchInput {
 - [ ] Commit: `fix(app): pass season/episode numbers in series interactive search`
 
 ## Phase 4: Fix Calendar/Poster/Overview Drift
-- [ ] Update `CalendarPage`, `MoviePosterView`, and `SeriesOverviewView` tests for current markup/data.
-- [ ] Verify affected files green.
-- [ ] Commit: `test(app): update search-related view tests for current contracts`
+- [x] Verify whether `CalendarPage`, `MoviePosterView`, and `SeriesOverviewView` test files exist. (`899b7e9f`)
+  - Evidence: `src/pages/CalendarPage.test.tsx`, `src/components/movie/MoviePosterView.test.tsx`, and `src/components/series/SeriesOverviewView.test.tsx` do not exist in the repo. The spec acceptance criteria referencing them are therefore out of scope for this track.
+- [x] Update the track spec to remove acceptance criteria for non-existent test files. (`TBD`)
+- [x] Commit: `docs(measure): update search API drift scope for missing view test files` (`TBD`)
 
 ## Phase 5: Regression Verification
 - [ ] Run affected test files together.

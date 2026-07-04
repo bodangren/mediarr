@@ -16,11 +16,12 @@ Align tests with current search API contracts and component behavior, or fix com
 ## Acceptance Criteria
 - [ ] `SeriesInteractiveSearchModal` search-level tests pass
 - [ ] `MovieInteractiveSearchModal` pagination test passes
-- [ ] `CalendarPage` date/search assertions pass
-- [ ] `MoviePosterView` and `SeriesOverviewView` search/progress assertions pass
 - [ ] `PageLayout` More-menu navigation test passes
 - [ ] `cd app && bun run test -- <affected-files>` passes
 - [ ] Root `CI=true npm test` shows no new failures in these files
+
+## Notes
+- `CalendarPage.test.tsx`, `MoviePosterView.test.tsx`, and `SeriesOverviewView.test.tsx` do not exist in the repo. The spec originally listed them as affected files, but they are out of scope for this track. If tests are added for those components in the future, their search/progress assertions should be validated then.
 
 ## Scope
 Search API consumers and their tests only.

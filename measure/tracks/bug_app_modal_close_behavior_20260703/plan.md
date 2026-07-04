@@ -1,11 +1,29 @@
 # Plan: Fix App Modal Close Behavior Test Failures
 
 ## Phase 1: Reproduce & Diagnose
-- [ ] Run each affected test file and capture the exact failure mode.
-- [ ] Inspect the shared Dialog wrapper and Radix Dialog API surface.
-- [ ] Identify whether `onOpenChange`, overlay element, or focus-guard changed.
-- [ ] Update this plan with root cause.
-- [ ] Commit: `docs(measure): diagnose app modal close test failures`
+- [x] Run each affected test file and capture the exact failure mode.
+  - Evidence: `cd app && bun run test -- src/components/search/InteractiveSearchModal.test.tsx src/components/movie/MovieInteractiveSearchModal.test.tsx src/components/series/SeriesInteractiveSearchModal.test.tsx src/components/collections/EditCollectionModal.test.tsx src/components/shell/PageLayout.test.tsx`
+  - Result: 18 failed, 68 passed (86 total). Modal-close failures:
+    - `InteractiveSearchModal.test.tsx`: 2 failed — `closes on Escape key press` (onClose not called), `closes on backdrop click` (Unable to find element by `[data-testid="modal-backdrop"]`).
+    - `MovieInteractiveSearchModal.test.tsx`: 3 failed — `closes on Escape key press`, `closes on backdrop click`, plus `fetches additional pages so results include non-first-page indexers` (pageSize mismatch: expected 100, received 500; out of scope for this track).
+    - `SeriesInteractiveSearchModal.test.tsx`: 5 failed — `closes on Escape key press`, `closes on backdrop click`, plus 3 search-param/pagination failures (`passes seasonNumber when searching at Season level` timeout, `passes seasonNumber and episodeNumber when searching at Episode level` timeout, `fetches additional pages so results include non-first-page indexers` pageSize 500 vs expected 100; search failures out of scope for this track).
+    - `EditCollectionModal.test.tsx`: 1 failed — `calls onClose when close button in header is clicked` fails because userEvent cannot click while `<body>` has `pointer-events: none` from Radix Dialog scroll-lock, and there are two `[aria-label="Close modal"]` buttons (header ESC + built-in X).
+    - `PageLayout.test.tsx`: 7 failed — all fail at render with `TypeError: Cannot destructure property 'basename' of 'React10.useContext(...)')`; `Link` from react-router-dom is rendered outside any Router context. This prevents the mobile More menu open/close tests from running at all.
+- [x] Inspect the shared Dialog wrapper and Radix Dialog API surface.
+  - `app/src/components/ui/modal.tsx` wraps `app/src/components/ui/dialog.tsx` (shadcn/ui over `@radix-ui/react-dialog`).
+  - `Modal` passes `open={isOpen}` and `onOpenChange={(open) => { if (!open && onClose) onClose(); }}`.
+  - `DialogContent` internally renders `DialogPrimitive.Overlay` as the backdrop and a hard-coded `DialogPrimitive.Close` button with `<span className="sr-only">Close</span>`.
+  - `ModalHeader` renders its own close button with text `"ESC"` and `aria-label="Close modal"`.
+- [x] Identify whether `onOpenChange`, overlay element, or focus-guard changed.
+  - Root cause is a markup/selector mismatch from the migration to the shadcn/Radix Dialog-based Modal wrapper:
+    1. Tests look for visible `"Close"` text (`screen.getByText('Close')`) but the header close button now shows `"ESC"`; the only `"Close"` text is `sr-only` inside the built-in X button.
+    2. Tests look for `data-testid="modal-backdrop"`, but the backdrop is now the Radix `DialogOverlay` with `data-state="open"` and no `data-testid`.
+    3. Tests fire `fireEvent.keyDown(window, { key: 'Escape' })`; Radix Dialog traps Escape on the document/dialog content, not on `window`, so the event does not trigger `onOpenChange`.
+    4. `EditCollectionModal` test selects `closeButtons[1]` from `getAllByRole('button', { name: /close modal/i })` and uses `userEvent`, but Radix scroll-lock sets `<body style="pointer-events: none">`, blocking pointer interactions in the test environment.
+    5. `PageLayout` tests need a `MemoryRouter` (or similar) wrapper because the component renders `react-router-dom` `Link` elements.
+  - `onOpenChange` wiring itself is correct: clicking the header ESC button or the built-in X button calls `onClose` (verified by passing `calls onClose when the Close button is clicked` tests). The failures are in how tests simulate/interact with the Radix-controlled overlay and Escape handling, plus missing test infrastructure for Router context.
+- [x] Update this plan with root cause.
+- [x] Commit: `docs(measure): diagnose app modal close test failures`
 
 ## Phase 2: Fix Shared Dialog / Modal Components
 - [ ] Update the shared dialog primitive or modal wrappers to emit `onOpenChange` correctly.

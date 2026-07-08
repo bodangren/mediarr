@@ -28,7 +28,9 @@ This file tracks all major tracks for the project. Each track has its own detail
 > archived. Low runtime risk or blocked on prerequisites. Revisit after v1.0 ships.
 
 - [x] **Track: MSW Mock Coverage for Backend Routes** *(deferred — merge candidate)* *Link: [./archive/chore_msw_mock_coverage_20260526/](./archive/chore_msw_mock_coverage_20260526/)* — Archived 2026-06-13. S1–S6 complete and GREEN: 265/265 MSW handler tests pass across 6 suites; setup.ts MSW lifecycle hook wired with `onUnhandledRequest: 'error'`; tech-debt.md row marked Resolved. Full suite has pre-existing failures only (no MSW handler failures).
-- [ ] **Server Service Test Coverage — deferred remainder** — SettingsService, TvSearchService, SubtitleNamingService, SubtitleRequirementEngine, SubtitleProviderFactory, FilterService (the 6 phases split out of [chore_untested_server_services_20260526](./archive/chore_untested_server_services_20260526/)).
+- [ ] **Track: Subtitle Services Test Coverage** *Phases: 5 | Link: [./tracks/subtitle_services_test_coverage_20260707/](./tracks/subtitle_services_test_coverage_20260707/)* — Add unit tests for `SubtitleNamingService`, `SubtitleRequirementEngine`, and `SubtitleProviderFactory`; target ≥80% branch coverage. Split from deferred server-service coverage remainder.
+- [ ] **Track: Filter Service Test Coverage** *Phases: 5 | Link: [./tracks/filter_service_test_coverage_20260707/](./tracks/filter_service_test_coverage_20260707/)* — Add unit tests for `FilterService` covering quality, language, size, indexer, and custom-format filter paths; target ≥80% branch coverage. Split from deferred server-service coverage remainder.
+- [ ] **Track: Settings and TV Search Service Test Coverage** *Phases: 5 | Link: [./tracks/settings_and_tvsearch_test_coverage_20260707/](./tracks/settings_and_tvsearch_test_coverage_20260707/)* — Add unit tests for `SettingsService` (CRUD, defaults, validation) and `TvSearchService` (season/episode dispatch, aggregation, indexer errors); target ≥80% branch coverage. Split from deferred server-service coverage remainder.
 
 ## Superseded (2026-06-07)
 

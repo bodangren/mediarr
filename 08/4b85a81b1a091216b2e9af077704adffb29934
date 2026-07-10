@@ -1,0 +1,11 @@
+Task: OpenCode Coder Orchestrator Model Update
+
+Updated the external user-level OpenCode agent at ~/.config/opencode/agent/coder-orchestrator.md to use openai/gpt-5.6-terra with reasoningEffort: xhigh. Refreshed the description with official GPT-5.6 Terra positioning/pricing and independent Artificial Analysis effort scores. Archived the one-phase Measure track under measure/archive/.
+
+Verification:
+- PyYAML front-matter validation passed: model=openai/gpt-5.6-terra, reasoningEffort=xhigh, mode=primary, coder-* task permission=allow.
+- opencode agent list --pure loaded coder-orchestrator (primary).
+- opencode models listed openai/gpt-5.6-terra.
+- git diff --cached --check passed before commit.
+
+The external OpenCode config is intentionally not part of this repository commit.

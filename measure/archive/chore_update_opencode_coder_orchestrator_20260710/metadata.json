@@ -1,0 +1,10 @@
+{
+  "id": "chore_update_opencode_coder_orchestrator_20260710",
+  "title": "OpenCode Coder Orchestrator Model Update",
+  "type": "chore",
+  "status": "completed",
+  "created": "2026-07-10",
+  "archived": "2026-07-10",
+  "description": "Update ~/.config/opencode/agent/coder-orchestrator.md to use openai/gpt-5.6-terra at xhigh reasoning and replace stale model claims with sourced preview and benchmark information.",
+  "phases": 1
+}

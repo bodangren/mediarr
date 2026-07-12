@@ -1,0 +1,9 @@
+{
+  "id": "database_migration_strategy_20260713",
+  "title": "Database Migration and Data Preservation Strategy",
+  "status": "pending",
+  "created": "2026-07-13",
+  "priority": "high",
+  "deviation_notes": "Addresses tech-debt item: DB recreated from scratch — existing data lost. Production deployments need a migration strategy that preserves user data across schema changes.",
+  "updated": "2026-07-13"
+}

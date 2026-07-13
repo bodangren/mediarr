@@ -59,11 +59,11 @@ describe('ActivityEventBadge', () => {
     expect(badge).toHaveClass('bg-accent-info/20', 'text-accent-info');
   });
 
-  it('renders SEEDING_COMPLETE with neutral color', () => {
+  it('renders SEEDING_COMPLETE with completion color', () => {
     render(<ActivityEventBadge eventType="SEEDING_COMPLETE" />);
-    const badge = screen.getByText('Seeding Done');
+    const badge = screen.getByText('Seeding Complete');
     expect(badge).toBeInTheDocument();
-    expect(badge).toHaveClass('bg-surface-2', 'text-text-secondary');
+    expect(badge).toHaveClass('bg-status-completed/20', 'text-status-completed');
   });
 
   it('renders unknown event type as raw string with neutral color', () => {

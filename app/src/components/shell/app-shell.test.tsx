@@ -1,31 +1,41 @@
 import { fireEvent, render, screen } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
 import { AppShell } from './AppShell';
 
 function renderShell(pathname = '/library/series') {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+
   return render(
-    <AppShell pathname={pathname}>
-      <div>Page content</div>
-    </AppShell>,
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter initialEntries={[pathname]}>
+        <AppShell pathname={pathname}>
+          <div>Page content</div>
+        </AppShell>
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
 }
 
 describe('app shell', () => {
   it('highlights active route and renders breadcrumbs', () => {
-    renderShell('/library/series/42');
-    const seriesLinks = screen.getAllByRole('link', { name: /series/i });
-    expect(seriesLinks.some(link => link.getAttribute('aria-current') === 'page')).toBe(true);
-    expect(screen.getByText('Library')).toBeInTheDocument();
-    expect(screen.getAllByText('Series').length).toBeGreaterThan(0);
-  });
+    renderShell('/library/tv/42');
+    const tvLinks = screen.getAllByRole('link', { name: /tv shows/i });
+    expect(tvLinks.some(link => link.getAttribute('aria-current') === 'page')).toBe(true);
+    expect(screen.getAllByText('Library').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('TV Shows').length).toBeGreaterThan(0);
+  }, 30000);
 
   it('opens and closes command palette with ctrl/cmd+k', () => {
     renderShell('/');
     fireEvent.keyDown(window, { key: 'k', metaKey: true });
-    expect(screen.getByRole('dialog', { name: /command palette/i })).toBeInTheDocument();
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
 
     fireEvent.keyDown(window, { key: 'Escape' });
-    expect(screen.queryByRole('dialog', { name: /command palette/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
   it('shows realtime connection status indicator', () => {

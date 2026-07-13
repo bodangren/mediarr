@@ -1,5 +1,7 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render as renderReact, screen, fireEvent } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
+import type { ReactElement } from 'react';
 import { SeriesOverviewView } from './SeriesOverviewView';
 import type { SeriesListItem } from '@/types/series';
 
@@ -35,6 +37,10 @@ const mockSeries: SeriesListItem[] = [
     posterUrl: '/test-poster2.jpg',
   },
 ];
+
+function render(ui: ReactElement) {
+  return renderReact(<MemoryRouter>{ui}</MemoryRouter>);
+}
 
 describe('SeriesOverviewView', () => {
   it('renders series overview cards', () => {
@@ -134,7 +140,7 @@ describe('SeriesOverviewView', () => {
     render(<SeriesOverviewView items={mockSeries} onToggleMonitored={onToggleMonitored} />);
 
     const link = screen.getByText('Test Series 1');
-    expect(link).toHaveAttribute('href', '/library/series/1');
+    expect(link).toHaveAttribute('href', '/library/tv/1');
   });
 
   it('navigates to series detail when poster thumbnail is clicked', () => {
@@ -143,6 +149,6 @@ describe('SeriesOverviewView', () => {
 
     const posterLinks = screen.getAllByRole('link');
     const firstPosterLink = posterLinks.find(link => link.querySelector('img'));
-    expect(firstPosterLink).toHaveAttribute('href', '/library/series/1');
+    expect(firstPosterLink).toHaveAttribute('href', '/library/tv/1');
   });
 });

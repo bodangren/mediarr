@@ -1,10 +1,8 @@
 import 'dart:async';
 
-import 'package:mediarr_client/shared/models/episode.dart';
 import 'package:mediarr_client/shared/models/library_item.dart';
 import 'package:mediarr_client/shared/models/movie.dart';
 import 'package:mediarr_client/shared/models/search_result.dart';
-import 'package:mediarr_client/shared/models/season.dart';
 import 'package:mediarr_client/shared/models/series.dart';
 import 'package:mediarr_client/shared/models/subtitle_models.dart';
 import 'package:mediarr_client/shared/services/api_client.dart';

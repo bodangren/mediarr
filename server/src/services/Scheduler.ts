@@ -51,6 +51,10 @@ export interface SchedulerStateRepository {
   getTaskState(taskName: string): Promise<string | null>;
   setTaskState(taskName: string, nextRunAt: string): Promise<void>;
   getAllTaskStates(): Promise<Record<string, string>>;
+  /** Persist per-task enabled flag (AppSettings.schedulerEnabled). */
+  setEnabledState(taskName: string, enabled: boolean): Promise<void>;
+  /** Load all persisted enabled flags (missing keys mean default enabled). */
+  getAllEnabledStates(): Promise<Record<string, boolean>>;
 }
 
 /**
@@ -228,12 +232,16 @@ export class Scheduler {
   }
 
   /**
-   * Toggle a job's enabled state.
+   * Toggle a job's enabled state and persist it through the state repository
+   * so the flag survives process restart (AppSettings.schedulerEnabled).
    */
-  toggleEnabled(name: string, enabled: boolean): void {
+  async toggleEnabled(name: string, enabled: boolean): Promise<void> {
     const job = this.jobs.get(name);
     if (!job) {
       throw new Error(`Job '${name}' is not scheduled`);
+    }
+    if (this.schedulerStateRepository) {
+      await this.schedulerStateRepository.setEnabledState(name, enabled);
     }
     job.enabled = enabled;
   }
@@ -331,12 +339,42 @@ export class Scheduler {
       return;
     }
 
+    // Synchronously mark currently-enabled jobs as running so concurrent
+    // cron ticks / triggerTask / runNow cannot double-execute while we
+    // load persisted state (adversarial concurrency contract).
     const pendingRecovery = new Set<string>();
     for (const [name, job] of this.jobs) {
       if (job.enabled) {
         job.running = true;
         pendingRecovery.add(name);
       }
+    }
+
+    // Reload persisted enable/disable flags before recovery so disabled tasks
+    // are not treated as missed and re-run after a process restart.
+    try {
+      const enabledStates = await this.schedulerStateRepository.getAllEnabledStates();
+      for (const [name, enabled] of Object.entries(enabledStates)) {
+        const job = this.jobs.get(name);
+        if (!job) continue;
+        job.enabled = enabled;
+        if (!enabled) {
+          job.running = false;
+          pendingRecovery.delete(name);
+        } else if (!pendingRecovery.has(name)) {
+          job.running = true;
+          pendingRecovery.add(name);
+        }
+      }
+    } catch (error) {
+      console.error('Scheduler failed to load persisted enabled states:', error);
+      for (const name of pendingRecovery) {
+        const job = this.jobs.get(name);
+        if (job) {
+          job.running = false;
+        }
+      }
+      throw error;
     }
 
     let states: Record<string, string>;

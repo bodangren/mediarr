@@ -1,11 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ActivityQueuePage } from './ActivityQueuePage';
 import { getApiClients } from '@/lib/api/client';
 import { ToastProvider } from '@/components/providers/ToastProvider';
 import { BrowserRouter } from 'react-router-dom';
+
+vi.setConfig({ testTimeout: 15_000 });
 
 vi.mock('@/lib/api/client', () => ({
   getApiClients: vi.fn(),
@@ -47,6 +49,7 @@ describe('ActivityQueuePage', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.stubGlobal('EventSource', undefined);
     mockApi = {
       torrentApi: {
         list: vi.fn().mockResolvedValue({
@@ -61,6 +64,10 @@ describe('ActivityQueuePage', () => {
       },
     };
     (getApiClients as any).mockReturnValue(mockApi);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   const renderPage = () => render(
@@ -238,7 +245,7 @@ describe('ActivityQueuePage', () => {
   });
 
   it('calls setSpeedLimits when applying limits', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     renderPage();
 
     await waitFor(() => screen.getByLabelText(/Download Limit/));

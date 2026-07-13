@@ -1,7 +1,7 @@
 # Plan: Fix App Dynamic Form Drift Test Failures
 
 ## Phase 1: Reproduce
-- [ ] Run each file and record exact failures.
+- [~] Run each file and record exact failures.
 - [ ] Inspect form components for markup/control changes.
 - [ ] Update plan with mismatch list.
 - [ ] Commit: `docs(measure): diagnose app dynamic form drift`

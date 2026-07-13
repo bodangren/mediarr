@@ -116,6 +116,7 @@ export function SettingsMediaPage() {
                         type="button"
                         variant="outline"
                         size="xs"
+                        aria-label="Validate movie root folder"
                         onClick={() => { void validateDirectory(field.value, setMovieFolderStatus); }}
                       >
                         Validate
@@ -157,6 +158,7 @@ export function SettingsMediaPage() {
                         type="button"
                         variant="outline"
                         size="xs"
+                        aria-label="Validate TV root folder"
                         onClick={() => { void validateDirectory(field.value, setTvFolderStatus); }}
                       >
                         Validate

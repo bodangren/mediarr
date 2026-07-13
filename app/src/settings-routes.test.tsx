@@ -73,6 +73,47 @@ vi.mock('@/components/views', () => ({
   SeriesOverviewView: ({ items }: { items: unknown[] }) => <div>Series View {items.length}</div>,
 }));
 
+vi.mock('@/components/indexers/AddIndexerModal', () => ({
+  AddIndexerModal: ({
+    isOpen,
+    onCreate,
+  }: {
+    isOpen: boolean;
+    onCreate: (draft: {
+      presetId: string;
+      name: string;
+      implementation: string;
+      configContract: string;
+      protocol: string;
+      enabled: boolean;
+      supportsRss: boolean;
+      supportsSearch: boolean;
+      priority: number;
+      supportedMediaTypes: string;
+      settings: Record<string, unknown>;
+    }) => void | Promise<void>;
+  }) => isOpen ? (
+    <button
+      type="button"
+      onClick={() => void onCreate({
+        presetId: 'torznab-generic',
+        name: 'MyIndexer',
+        implementation: 'Torznab',
+        configContract: 'TorznabSettings',
+        protocol: 'torrent',
+        enabled: true,
+        supportsRss: true,
+        supportsSearch: true,
+        priority: 25,
+        supportedMediaTypes: '["TV", "MOVIE"]',
+        settings: { url: 'https://example.com', apiKey: 'secret-key' },
+      })}
+    >
+      Submit manual indexer
+    </button>
+  ) : null,
+}));
+
 const mockPushToast = vi.hoisted(() => vi.fn());
 
 vi.mock('@/components/providers/ToastProvider', () => ({
@@ -251,17 +292,18 @@ describe('Settings: Indexers page', () => {
 
     await screen.findByText('NZBGeek'); // wait for initial load
 
-    fireEvent.change(screen.getByPlaceholderText('Name'), { target: { value: 'MyIndexer' } });
-    fireEvent.change(screen.getByPlaceholderText('https://indexer/api'), { target: { value: 'https://example.com' } });
-    fireEvent.change(screen.getByPlaceholderText('API Key'), { target: { value: 'secret-key' } });
-    fireEvent.submit(screen.getByRole('button', { name: 'Add Indexer' }).closest('form')!);
+    fireEvent.click(screen.getByRole('button', { name: 'Add Indexer' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Manual' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Submit manual indexer' }));
 
     await waitFor(() => {
       expect(mockApi.indexerApi.create).toHaveBeenCalledWith(expect.objectContaining({
         name: 'MyIndexer',
         implementation: 'Torznab',
+        configContract: 'TorznabSettings',
         protocol: 'torrent',
         enabled: true,
+        settings: JSON.stringify({ url: 'https://example.com', apiKey: 'secret-key' }),
       }));
     });
   });
@@ -272,10 +314,9 @@ describe('Settings: Indexers page', () => {
     await screen.findByText('NZBGeek');
     mockApi.indexerApi.list.mockClear();
 
-    fireEvent.change(screen.getByPlaceholderText('Name'), { target: { value: 'NewIdx' } });
-    fireEvent.change(screen.getByPlaceholderText('https://indexer/api'), { target: { value: 'https://idx.test' } });
-    fireEvent.change(screen.getByPlaceholderText('API Key'), { target: { value: 'k' } });
-    fireEvent.submit(screen.getByRole('button', { name: 'Add Indexer' }).closest('form')!);
+    fireEvent.click(screen.getByRole('button', { name: 'Add Indexer' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Manual' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Submit manual indexer' }));
 
     await waitFor(() => {
       expect(mockApi.indexerApi.list).toHaveBeenCalledTimes(1);
@@ -299,6 +340,7 @@ describe('Settings: Indexers page', () => {
 
     await screen.findByText('NZBGeek');
     const [deleteButton] = screen.getAllByRole('button', { name: 'Delete' });
+    window.confirm = vi.fn(() => true);
     fireEvent.click(deleteButton!);
 
     await waitFor(() => {
@@ -475,7 +517,7 @@ describe('Settings: Subtitles page', () => {
     mockApi.settingsApi.get.mockResolvedValue(baseSettings);
     mockApi.settingsApi.update.mockResolvedValue(baseSettings);
     mockApi.subtitleProvidersApi.listProviders.mockResolvedValue([
-      { id: 1, name: 'OpenSubtitles', status: 'ok' },
+      { id: 'opensubtitles', name: 'OpenSubtitles', enabled: true, type: 'api', settings: {}, status: 'active' },
     ]);
     mockApi.indexerApi.list.mockResolvedValue([]);
     mockApi.downloadClientApi.get.mockResolvedValue(defaultTorrentLimits);
@@ -492,7 +534,7 @@ describe('Settings: Subtitles page', () => {
     renderApp('/settings/subtitles');
 
     expect(await screen.findByText(/OpenSubtitles/)).toBeInTheDocument();
-    expect(screen.getByText(/ok/)).toBeInTheDocument();
+    expect(screen.getByText('OpenSubtitles - active')).toBeInTheDocument();
   });
 
   it('calls settingsApi.get on mount to pre-fill form values', async () => {
@@ -512,9 +554,15 @@ describe('Settings: Subtitles page', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Save Subtitle Settings' }));
 
     await waitFor(() => {
-      expect(mockApi.settingsApi.update).toHaveBeenCalledWith(expect.objectContaining({
-        apiKeys: { openSubtitlesApiKey: 'my-key' },
-      }));
+      expect(mockApi.settingsApi.update).toHaveBeenCalledWith({
+        apiKeys: {
+          openSubtitlesApiKey: 'my-key',
+          assrtApiToken: null,
+          subdlApiKey: null,
+        },
+        wantedLanguages: [],
+        pathVisibility: { showDownloadPath: false, showMediaPath: false },
+      });
     });
   });
 

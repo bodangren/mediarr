@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mediarr_client/core/theme/mediarr_theme.dart';
-import 'package:mediarr_client/shared/services/api_client.dart';
 import 'package:mediarr_client/shared/widgets/connection_status_indicator.dart';
 
 void main() {

@@ -10,7 +10,7 @@ Built for home lab enthusiasts, Mediarr eliminates the complexity of wiring toge
 
 - **Frontend:** Vite + React 19 + TypeScript + Tailwind CSS
 - **Backend:** Node.js + Fastify (API) + tsx (runtime)
-- **Database:** SQLite + Prisma ORM
+- **Database:** SQLite + Drizzle ORM
 - **Testing:** Vitest
 - **State Management:** TanStack React Query
 - **Routing:** React Router v7
@@ -231,6 +231,179 @@ SQLite database backup management:
 - `list()` / `delete(id)` — Enumerate and remove backups; returns entries newest-first.
 - `applyRetention(days)` — Removes backups older than the given number of days.
 - `getFilePath(name)` — Path-traversal-safe lookup within the backup directory.
+
+## Docker Engine deployment (trusted Ubuntu LAN)
+
+This Compose file targets **Docker Engine 24+ with Docker Compose v2** on a trusted
+household LAN. It is not an Internet-facing or multi-user deployment: Mediarr has no
+authentication, and `network_mode: host` exposes its HTTP listener, mDNS, and torrent
+network traffic directly on the host network. Restrict access with your router/firewall
+and do not publish this host to the Internet.
+
+### Docker Engine versus Podman
+
+`docker-compose.yml` intentionally uses Docker Engine syntax only. It runs the process
+as `PUID:PGID` and uses ordinary bind mounts; it does **not** use Podman
+`userns_mode: keep-id` or SELinux `:Z` labels. Podman users must maintain a separate,
+locally reviewed override for their user namespace and SELinux policy. That runtime is
+not covered by these instructions or the deployment checks.
+
+For a **local Podman diagnostic only**, rootless Podman maps container IDs unless it is
+given `--userns=keep-id`. Supplying Docker's numeric `--user "$PUID:$PGID"` without that
+mapping can make an otherwise user-owned temporary bind mount appear unwritable and the
+intentional `/config` preflight will stop before migrations. Do not copy these Podman
+flags into `docker-compose.yml`; use a separate local invocation or override instead.
+
+### Initial setup
+
+1. Install Docker Engine and the Compose v2 plugin, then copy the environment template:
+   ```bash
+   cp .env.example .env
+   ```
+2. Edit `.env` with absolute, persistent host paths and your numeric account IDs:
+   ```dotenv
+   CONFIG_DIR=/home/youruser/mediarr/config
+   MEDIA_DIR=/home/youruser/mediarr/data
+   PUID=1000                         # id -u
+   PGID=1000                         # id -g
+   MEDIARR_API_PORT=5174
+   ENCRYPTION_KEY=paste-the-output-of-openssl-rand-hex-32-here
+   ```
+   Generate and retain the encryption key before first start:
+   ```bash
+   openssl rand -hex 32
+   ```
+   A missing, blank, or example encryption key stops startup. Do not rotate an existing
+   key without first proving that encrypted settings can be recovered.
+3. Create both bind-mount roots with the same ownership as `PUID:PGID` (replace the
+   values with the numbers from `.env`):
+   ```bash
+   sudo install -d -o 1000 -g 1000 -m 0750 /home/youruser/mediarr/config
+   sudo install -d -o 1000 -g 1000 -m 0750 /home/youruser/mediarr/data
+   ```
+4. Render the Docker Engine configuration, then build and start:
+   ```bash
+   docker compose config
+   docker compose up --build -d
+   ```
+   The container runs a write preflight for `/config`, reconciles only verified legacy
+   migration history, applies tracked `drizzle-kit migrate` migrations, and only then
+   starts the API. Migration or preflight failure leaves the container stopped; it
+   never substitutes an ephemeral database.
+
+`/config` contains `mediarr.db` and is the SQLite persistence boundary. `/data` is the
+single bind-mounted tree for downloads and library media, preserving same-filesystem
+hard-link/atomic-move behavior:
+
+```text
+/config/mediarr.db
+/data/downloads/incomplete
+/data/downloads/complete
+/data/media/movies
+/data/media/tv
+```
+
+### Smoke checks
+
+From the repository root, load the same values Compose uses before running host commands:
+
+```bash
+set -a; . ./.env; set +a
+docker compose ps
+docker compose logs --tail=50 mediarr
+curl -fsS "http://127.0.0.1:${MEDIARR_API_PORT:-5174}/api/health"
+curl -fsS -o /dev/null -w '%{http_code}\n' "http://127.0.0.1:${MEDIARR_API_PORT:-5174}/"
+test -f "$CONFIG_DIR/mediarr.db"
+```
+
+The healthcheck is meaningful only after preflight, migrations, and API startup: it
+requires HTTP 200 plus `body.ok === true` and a string at `body.data.status`. The exact
+API envelope is `{"ok":true,"data":{"status":"ok","indexers":[...],"scheduler":{...}}}`;
+the indexer list and scheduler counts are runtime-dependent. The root URL should return
+HTTP `200`. With host networking, browse to `http://<host-LAN-IP>:5174`; no `ports:`
+mapping is used.
+
+### SQLite backup and restore rehearsal
+
+Back up `/config` from the host. Install `sqlite3` on the host, keep backups outside
+`CONFIG_DIR`, and periodically rehearse the following during a maintenance window:
+
+```bash
+set -a; . ./.env; set +a
+export BACKUP_DIR=/srv/mediarr-backups
+mkdir -p "$BACKUP_DIR"
+stamp=$(date +%Y%m%d-%H%M%S)
+sqlite3 "$CONFIG_DIR/mediarr.db" ".backup '$BACKUP_DIR/mediarr-$stamp.db'"
+sqlite3 "$BACKUP_DIR/mediarr-$stamp.db" 'PRAGMA integrity_check;'
+sha256sum "$BACKUP_DIR/mediarr-$stamp.db" > "$BACKUP_DIR/mediarr-$stamp.db.sha256"
+```
+
+To rehearse restore, stop Mediarr, retain the current database as a rollback point,
+restore one verified backup, remove stale WAL sidecars, fix ownership, and start it:
+
+```bash
+docker compose down
+cp -a "$CONFIG_DIR/mediarr.db" "$CONFIG_DIR/mediarr.db.before-restore"
+cp -a "$BACKUP_DIR/mediarr-$stamp.db" "$CONFIG_DIR/mediarr.db"
+rm -f "$CONFIG_DIR/mediarr.db-wal" "$CONFIG_DIR/mediarr.db-shm"
+sudo chown "$PUID:$PGID" "$CONFIG_DIR/mediarr.db"
+docker compose up -d
+curl -fsS "http://127.0.0.1:${MEDIARR_API_PORT:-5174}/api/health"
+```
+
+Confirm expected settings and library records before deleting `mediarr.db.before-restore`.
+Media files under `/data` need their own host-managed backup policy.
+
+### Upgrade and rollback
+
+Before an upgrade, make and verify a SQLite backup as above and record the current git
+tag or commit. Then fetch the intended release and rebuild:
+
+```bash
+git fetch --tags
+git checkout <release-tag-or-commit>
+docker compose up --build -d
+docker compose ps
+curl -fsS "http://127.0.0.1:${MEDIARR_API_PORT:-5174}/api/health"
+```
+
+Migrations are additive and run automatically at startup. If the new release fails its
+smoke check, stop it, return to the recorded release, restore the pre-upgrade SQLite
+backup (using the rehearsal procedure), and rebuild:
+
+```bash
+docker compose down
+git checkout <previous-release-tag-or-commit>
+# Restore the verified pre-upgrade backup into $CONFIG_DIR/mediarr.db, remove -wal/-shm,
+# and restore PUID:PGID ownership as shown above.
+docker compose up --build -d
+```
+
+#### Legacy migration-history compatibility
+
+Early local installs could be created with `drizzle-kit push` or have their scheduler
+columns repaired at runtime before those changes had Drizzle journal rows. The image
+handles that one known upgrade path before `drizzle-kit migrate`: it verifies SQLite
+integrity, foreign keys, and the normalized table/index definitions of every expected
+schema object against the baseline derived from checked-in migrations. Only then does it
+record the matching checked-in SQL hashes in
+`__drizzle_migrations`; unknown, partial, or mismatched schemas fail closed without
+suppressing a migration error or rewriting application data.
+
+For a host-managed migration rehearsal, use the same wrapper as the image rather than
+running bare `drizzle-kit migrate` against a legacy database:
+
+```bash
+set -a; . ./.env; set +a
+DATABASE_URL="file:$CONFIG_DIR/mediarr.db" npm run migrate
+sqlite3 "$CONFIG_DIR/mediarr.db" \
+  'SELECT hash, created_at FROM __drizzle_migrations ORDER BY created_at;'
+```
+
+The Drizzle journal is the durable migration audit record. Retain the pre-upgrade backup
+and the container logs, which name every verified legacy migration adopted during that
+run. The reconciliation script performs no application schema DDL; all new schema changes
+continue to come from the versioned files in `drizzle/`.
 
 ## Roadmap
 

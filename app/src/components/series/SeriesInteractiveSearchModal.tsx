@@ -1,5 +1,5 @@
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Search, Download, AlertCircle, CheckCircle, Loader2, Filter, ArrowUpDown, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Modal, ModalBody, ModalHeader } from '@/components/ui/modal';
@@ -17,7 +17,7 @@ import type { ReleaseCandidate } from '@/lib/api/releaseApi';
 import type { ScoringBreakdown } from '@server/contracts/scoring';
 
 export type SearchLevel = 'series' | 'season' | 'episode';
-const SEARCH_PAGE_SIZE = 500;
+const SEARCH_PAGE_SIZE = 100;
 
 interface QualityInfo {
   quality: {
@@ -581,8 +581,8 @@ export function SeriesInteractiveSearchModal({
                   const isApproved = release.approved && (!release.rejections || release.rejections.length === 0);
 
                   return (
-                    <>
-                    <tr key={release.id} className={!isApproved ? 'bg-status-error/5' : ''}>
+                    <Fragment key={release.id}>
+                    <tr className={!isApproved ? 'bg-status-error/5' : ''}>
                       <td className="px-3 py-2 text-text-primary">
                         <span className="text-xs">{release.indexer}</span>
                       </td>
@@ -663,7 +663,7 @@ export function SeriesInteractiveSearchModal({
                         </td>
                       </tr>
                     )}
-                  </>
+                    </Fragment>
                 );
               })}
             </tbody>

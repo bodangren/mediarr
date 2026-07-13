@@ -1,5 +1,5 @@
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { createUIStore, type UIAction, type UIState, type UIStore } from './uiStore';
 
 function resolveBrowserStorage() {
@@ -12,17 +12,14 @@ function resolveBrowserStorage() {
 
 export function useUIStore() {
   const storeRef = useRef<UIStore | null>(null);
+  const store = storeRef.current ?? createUIStore({
+      storage: resolveBrowserStorage(),
+    });
+  if (!storeRef.current) {
+    storeRef.current = store;
+  }
 
-  const [state, setState] = useState<UIState | null>(null);
-
-  useEffect(() => {
-    if (!storeRef.current) {
-      storeRef.current = createUIStore({
-        storage: resolveBrowserStorage(),
-      });
-    }
-    setState(storeRef.current.getState());
-  }, []);
+  const [state, setState] = useState<UIState>(() => store.getState());
 
   const dispatch = useCallback((action: UIAction) => {
     const next = storeRef.current!.dispatch(action);

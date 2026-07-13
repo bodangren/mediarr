@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -34,19 +32,9 @@ class _FakeRef implements Ref {
   @override
   ProviderSubscription<T> listen<T>(
     ProviderListenable<T> provider,
-    void Function(T previous, T next)? onChange, {
-    bool fireImmediately = false,
+    void Function(T? previous, T next) listener, {
     void Function(Object error, StackTrace stackTrace)? onError,
-  }) {
-    throw UnimplementedError();
-  }
-
-  @override
-  void listenManual<T>(
-    ProviderListenable<T> provider,
-    void Function(T previous, T next)? onChange, {
     bool fireImmediately = false,
-    void Function(Object error, StackTrace stackTrace)? onError,
   }) {
     throw UnimplementedError();
   }
@@ -65,33 +53,6 @@ class _FakeRef implements Ref {
   }
 
   @override
-  T addListener<T>(
-    ProviderListenable<T> provider,
-    void Function(T state) listener, {
-    bool fireImmediately = false,
-  }) {
-    throw UnimplementedError();
-  }
-
-  @override
-  void removeListener<T>(
-    ProviderListenable<T> provider,
-    void Function(T state) listener,
-  ) {
-    throw UnimplementedError();
-  }
-
-  @override
-  ProviderSubscription<T> on<T>(
-    ProviderListenable<T> provider, {
-    bool fireImmediately = false,
-    void Function(T previous, T next)? onChange,
-    void Function(Object error, StackTrace stackTrace)? onError,
-  }) {
-    throw UnimplementedError();
-  }
-
-  @override
   bool exists(ProviderBase<Object?> provider) {
     throw UnimplementedError();
   }
@@ -103,8 +64,7 @@ class _FakeRef implements Ref {
 
   @override
   void listenSelf(
-    void Function(Object? previous, Object? next)? onChange, {
-    bool fireImmediately = false,
+    void Function(Object? previous, Object? next) listener, {
     void Function(Object error, StackTrace stackTrace)? onError,
   }) {
     throw UnimplementedError();

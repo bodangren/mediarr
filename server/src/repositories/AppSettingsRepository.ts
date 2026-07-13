@@ -95,6 +95,9 @@ export interface AppSettingsPayload {
 
 export type SchedulerStateMap = Record<string, string>;
 
+/** Per-task enable map stored in AppSettings.schedulerEnabled (JSON text). */
+export type SchedulerEnabledMap = Record<string, boolean>;
+
 export const DEFAULT_MEDIA_MANAGEMENT_SETTINGS: MediaManagementSettings = {
   movieRootFolder: '',
   tvRootFolder: '',
@@ -183,6 +186,25 @@ function readSchedulerState(value: unknown): SchedulerStateMap {
   for (const [taskName, nextRunAt] of Object.entries(source)) {
     if (typeof taskName === 'string' && typeof nextRunAt === 'string') {
       state[taskName] = nextRunAt;
+    }
+  }
+  return state;
+}
+
+function readSchedulerEnabled(value: unknown): SchedulerEnabledMap {
+  let parsed = value;
+  if (typeof value === 'string') {
+    try {
+      parsed = JSON.parse(value) as unknown;
+    } catch {
+      parsed = {};
+    }
+  }
+  const source = readObject(parsed);
+  const state: SchedulerEnabledMap = {};
+  for (const [taskName, enabled] of Object.entries(source)) {
+    if (typeof taskName === 'string' && typeof enabled === 'boolean') {
+      state[taskName] = enabled;
     }
   }
   return state;
@@ -300,8 +322,6 @@ function buildInsertColumn(payload: AppSettingsPayload) {
  * Persists app-level settings using a single-row record.
  */
 export class AppSettingsRepository {
-  private hasSchedulerStateColumn: boolean | null = null;
-
   constructor(private readonly prisma: DatabaseClient) {}
 
   async get(): Promise<AppSettingsPayload> {
@@ -394,13 +414,11 @@ export class AppSettingsRepository {
   }
 
   async getTaskState(taskName: string): Promise<string | null> {
-    this.ensureSchedulerStateColumn();
     const state = await this.getSchedulerState();
     return state[taskName] ?? null;
   }
 
   async setTaskState(taskName: string, nextRunAt: string): Promise<void> {
-    this.ensureSchedulerStateColumn();
     const state = await this.getSchedulerState();
     if (nextRunAt.length === 0) {
       delete state[taskName];
@@ -411,8 +429,17 @@ export class AppSettingsRepository {
   }
 
   async getAllTaskStates(): Promise<SchedulerStateMap> {
-    this.ensureSchedulerStateColumn();
     return this.getSchedulerState();
+  }
+
+  async setEnabledState(taskName: string, enabled: boolean): Promise<void> {
+    const state = await this.getSchedulerEnabled();
+    state[taskName] = enabled;
+    await this.writeSchedulerEnabled(state);
+  }
+
+  async getAllEnabledStates(): Promise<SchedulerEnabledMap> {
+    return this.getSchedulerEnabled();
   }
 
   private async getSchedulerState(): Promise<SchedulerStateMap> {
@@ -437,20 +464,26 @@ export class AppSettingsRepository {
       });
   }
 
-  private ensureSchedulerStateColumn(): void {
-    if (this.hasSchedulerStateColumn === true) {
-      return;
-    }
-    if (typeof this.prisma.sqlite?.prepare !== 'function') {
-      throw new Error('Scheduler state persistence requires sqlite access');
-    }
-    const columns = this.prisma.sqlite
-      .prepare('PRAGMA table_info("AppSettings")')
-      .all() as Array<{ name: string }>;
-    if (!columns.some((column) => column.name === 'schedulerState')) {
-      this.prisma.sqlite.exec("ALTER TABLE `AppSettings` ADD `schedulerState` text NOT NULL DEFAULT '{}'");
-    }
-    this.hasSchedulerStateColumn = true;
+  private async getSchedulerEnabled(): Promise<SchedulerEnabledMap> {
+    const rows = await this.prisma.drizzle
+      .select({ schedulerEnabled: sql<unknown>`schedulerEnabled` })
+      .from(schema.appSettings)
+      .where(eq(schema.appSettings.id, 1))
+      .limit(1);
+    const row = rows[0];
+    return readSchedulerEnabled(row?.schedulerEnabled ?? {});
+  }
+
+  private async writeSchedulerEnabled(schedulerEnabled: SchedulerEnabledMap): Promise<void> {
+    const current = await this.get();
+    const insertColumn = buildInsertColumn(current);
+    await this.prisma.drizzle
+      .insert(schema.appSettings)
+      .values({ id: 1, ...insertColumn, schedulerEnabled })
+      .onConflictDoUpdate({
+        target: schema.appSettings.id,
+        set: { schedulerEnabled: schedulerEnabled as unknown },
+      });
   }
 
   private mapRecordToPayload(record: {

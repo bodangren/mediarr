@@ -101,7 +101,7 @@ interface MovieSearchInput {
 - **CalendarPage / MoviePosterView / SeriesOverviewView**: These test files do not exist, so the spec’s “view test drift” items are currently moot. They should be removed from this track’s scope or handled as a separate discovery task.
 
 ## Phase 2: Fix Series/Movie Search Pagination
-- [ ] Decide correct `pageSize` for interactive search (100 or 500).
+- [~] Decide correct `pageSize` for interactive search (100 or 500).
 - [ ] Update component or test to match.
 - [ ] Verify `fetches additional pages so results include non-first-page indexers` passes.
 - [ ] Commit: `fix(app): align interactive search pagination pageSize with tests`

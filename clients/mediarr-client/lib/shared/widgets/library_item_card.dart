@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../core/theme/mediarr_theme.dart';
 import '../../shared/models/library_item.dart';
 import 'poster_card.dart';
 

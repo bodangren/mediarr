@@ -1,0 +1,172 @@
+{
+  "version": 1,
+  "goals": [
+    {
+      "goalId": "240185db-dc35-45b0-b336-d0ad846fd56d",
+      "condition": "this project needs to be complete, fit-for-purpose, and deployable to my home network.",
+      "successCriteria": "",
+      "constraints": "",
+      "mode": "normal",
+      "sessionID": "ses_0aa7e27b2ffeTkuVy29X3TQCHj",
+      "turnCount": 0,
+      "startedAt": 1783900366227,
+      "totalTokens": 179890,
+      "options": {
+        "maxTurns": 10,
+        "maxDurationMs": 900000,
+        "maxTokens": 200000,
+        "minDelayMs": 1500,
+        "maxRecentMessages": 50,
+        "noProgressTokenThreshold": 50,
+        "noProgressTurnsBeforePause": 2,
+        "noToolCallTurnsBeforePause": 2,
+        "budgetWrapupRatio": 0.8,
+        "warnTurnsRemaining": 3,
+        "warnDurationMsRemaining": 60000,
+        "warnTokensRemaining": 25000,
+        "maxPromptFailures": 3,
+        "resultRetentionMs": 604800000,
+        "maxStoredResults": 200
+      },
+      "lastStatus": "Recovered persisted goal state. Review the goal status and resume it when ready.",
+      "lastAssistantText": "",
+      "lastAssistantMessageID": "",
+      "lastContinueAt": 0,
+      "lastProgressAt": 1783905868309,
+      "noProgressTurns": 0,
+      "noToolCallTurns": 0,
+      "blockedReason": "",
+      "budgetWrapupSent": false,
+      "stopped": true,
+      "stopReason": "recovered after restart",
+      "promptFailures": 0,
+      "formatFailures": 0,
+      "messageIDs": [
+        "msg_f58bf65d10017yll4lJ7L3I5EN",
+        "msg_f58bf84c4001p1nqkkXboIG4QG",
+        "msg_f58bf9804001BCDdhAbFPDtuoG",
+        "msg_f58c194fa001S9n9j4NSXJ9tzQ",
+        "msg_f58d7a47d001qxd6TsuxhRRbXA",
+        "msg_f58d8cc530013xPflXurp9mpKp",
+        "msg_f58d92a3d001men6eRlI9RCnvc",
+        "msg_f58e9864a001KeUBx1gj91DS3i",
+        "msg_f58f2f02d001fBBcgr57r34wes",
+        "msg_f5900c9190010hfleFBIekfWAY",
+        "msg_f59010409001g3p6jFkkkEgJbq",
+        "msg_f590c87ff001VPnxNHi4tDUALd",
+        "msg_f591234c5001nE1XiZ3bthTO5L",
+        "msg_f591276f8001noKbblo4cmZOIJ",
+        "msg_f5912e7d40014WVlh5t4fo6pHu",
+        "msg_f591310c9001ag3Ka1WWTH4eOQ",
+        "msg_f59132e31001jSYGjryOoo75Ke"
+      ],
+      "history": [
+        {
+          "type": "set",
+          "detail": "Goal created with limits: 10 auto-continues, 900s, 200,000 context tokens.",
+          "timestamp": 1783900366229
+        },
+        {
+          "type": "recovered",
+          "detail": "Recovered persisted goal state after plugin restart; auto-continue remains paused until you resume.",
+          "timestamp": 1783934953321
+        }
+      ],
+      "checkpoints": [],
+      "lastCheckpoint": null,
+      "focused": true
+    },
+    {
+      "goalId": "d86db3aa-eec5-47a9-bec7-720ad18e87a1",
+      "condition": "The server and client both need to be 100% working as intended and interoperable.",
+      "successCriteria": "",
+      "constraints": "",
+      "mode": "normal",
+      "sessionID": "ses_0a4da40eeffe3Khv7eH5c8q8eU",
+      "turnCount": 1,
+      "startedAt": 1783941511565,
+      "totalTokens": 108623,
+      "options": {
+        "maxTurns": 10,
+        "maxDurationMs": 900000,
+        "maxTokens": 200000,
+        "minDelayMs": 1500,
+        "maxRecentMessages": 50,
+        "noProgressTokenThreshold": 50,
+        "noProgressTurnsBeforePause": 2,
+        "noToolCallTurnsBeforePause": 2,
+        "budgetWrapupRatio": 0.8,
+        "warnTurnsRemaining": 3,
+        "warnDurationMsRemaining": 60000,
+        "warnTokensRemaining": 25000,
+        "maxPromptFailures": 3,
+        "resultRetentionMs": 604800000,
+        "maxStoredResults": 200
+      },
+      "lastStatus": "Assistant reported blocked.",
+      "lastAssistantText": "Automated server/client release gates are green:\n\n- SPA: `204` suites, `1,952` tests passed; production Vite build passed.\n- Server/integration: `283` suites, `2,257` tests passed, `11` intentional live-provider skips; strict TypeScript check passed.\n- Flutter: `290` tests passed; `flutter analyze` clean.\n- Final container image built from a fresh install and passed disposable persistent-mount startup, health, migration, scheduler, mDNS, and restart checks.\n- Fixed deterministic container build context handling for nested workspace `node_modules`.\n\nResidual runtime warnings remain in tests, but do not fail the gates: React `act()` warnings, Radix dialog-description warnings, and a Vite `node-cron` browser externalization warning.\n\nBlocker: I need access to the target Docker Engine host and a physical Flutter device on the actual home LAN to complete fresh-install/upgrade/rollback, mDNS discovery, SSE, and real media-playback acceptance. This host’s `docker` command is Podman 4.9.3, not Docker Engine.\n[goal:blocked]",
+      "lastAssistantMessageID": "msg_f5b8b1875001xbCLeCoZx0klES",
+      "lastContinueAt": 1783942184790,
+      "lastProgressAt": 1783949964761,
+      "noProgressTurns": 0,
+      "noToolCallTurns": 0,
+      "blockedReason": "Blocker: I need access to the target Docker Engine host and a physical Flutter device on the actual home LAN to complete fresh-install/upgrade/rollback, mDNS discovery, SSE, and real media-playback acceptance. This host’s `docker` command is Podman 4.9.3, not Docker Engine.",
+      "budgetWrapupSent": false,
+      "stopped": true,
+      "stopReason": "blocked",
+      "promptFailures": 0,
+      "formatFailures": 0,
+      "messageIDs": [
+        "msg_f5bab2503001d4UD52AMPfL99h",
+        "msg_f5bab875c001VibYgA4ZByOPpy",
+        "msg_f5bac663a00106MaRmjwMHtup5",
+        "msg_f5baca289001540B7TCfFUbUuK",
+        "msg_f5bacd62a0019UV0JVB1IhJ25A",
+        "msg_f5bad0a02001Q5XyjIbhcnJhB2",
+        "msg_f5bad3f0e0016IiJk8a7kcBrzR",
+        "msg_f5bad9357001svH7N3InsQe45B",
+        "msg_f5badd60e0019aESQvp5kZdMuD",
+        "msg_f5bae8fc2001mMHETtSFB2zQUK",
+        "msg_f5bb39391001CIKD2WHQyBckXG",
+        "msg_f5bb3e6ee001bDJHIbB8pwL9vR",
+        "msg_f5bb420b4001GGhCc57ip1wZAT"
+      ],
+      "history": [
+        {
+          "type": "set",
+          "detail": "Goal created with limits: 10 auto-continues, 900s, 200,000 context tokens.",
+          "timestamp": 1783941511574
+        },
+        {
+          "type": "auto-continue",
+          "detail": "Sent auto-continue prompt 1/10.",
+          "timestamp": 1783942184848
+        },
+        {
+          "type": "blocked",
+          "detail": "Blocker: I need access to the target Docker Engine host and a physical Flutter device on the actual home LAN to complete fresh-install/upgrade/rollback, mDNS discovery, SSE, and real media-playback acceptance. This host’s `docker` command is Podman 4.9.3, not Docker Engine.",
+          "timestamp": 1783947285380
+        }
+      ],
+      "checkpoints": [
+        {
+          "summary": "I’m enforcing that as the release criterion. Progress this pass: - Confirmed interactive search, series-level selection, and mobile navigation: **47/47 tests pass**. - Fixed a React row-identity defect in `SeriesInteractiveSearchModal.tsx`; its focused suite is **23/23 green**. …",
+          "timestamp": 1783942184789
+        },
+        {
+          "summary": "Automated server/client release gates are green: - SPA: `204` suites, `1,952` tests passed; production Vite build passed. - Server/integration: `283` suites, `2,257` tests passed, `11` intentional live-provider skips; strict TypeScript check passed. - Flutter: `290` tests passed…",
+          "timestamp": 1783947285362
+        }
+      ],
+      "lastCheckpoint": {
+        "summary": "Automated server/client release gates are green: - SPA: `204` suites, `1,952` tests passed; production Vite build passed. - Server/integration: `283` suites, `2,257` tests passed, `11` intentional live-provider skips; strict TypeScript check passed. - Flutter: `290` tests passed…",
+        "timestamp": 1783947285362
+      },
+      "priorMessageIDs": {},
+      "focused": true
+    }
+  ],
+  "results": [],
+  "archives": [],
+  "orderedSessions": []
+}

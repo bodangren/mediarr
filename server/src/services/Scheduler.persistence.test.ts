@@ -34,6 +34,8 @@ interface SchedulerStateRepositoryMock extends SchedulerStateRepository {
   getTaskState: ReturnType<typeof vi.fn<(taskName: string) => Promise<string | null>>>;
   setTaskState: ReturnType<typeof vi.fn<(taskName: string, nextRunAt: string) => Promise<void>>>;
   getAllTaskStates: ReturnType<typeof vi.fn<() => Promise<Record<string, string>>>>;
+  setEnabledState: ReturnType<typeof vi.fn<(taskName: string, enabled: boolean) => Promise<void>>>;
+  getAllEnabledStates: ReturnType<typeof vi.fn<() => Promise<Record<string, boolean>>>>;
 }
 
 function createStateRepoMock(): SchedulerStateRepositoryMock {
@@ -41,6 +43,8 @@ function createStateRepoMock(): SchedulerStateRepositoryMock {
     getTaskState: vi.fn().mockResolvedValue(null),
     setTaskState: vi.fn().mockResolvedValue(undefined),
     getAllTaskStates: vi.fn().mockResolvedValue({}),
+    setEnabledState: vi.fn().mockResolvedValue(undefined),
+    getAllEnabledStates: vi.fn().mockResolvedValue({}),
   };
 }
 

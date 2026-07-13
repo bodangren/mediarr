@@ -69,7 +69,7 @@ describe('SettingsMediaPage', () => {
 
   it('values persist after successful save', async () => {
     const savedSettings = { movieRootFolder: '/movies', tvRootFolder: '/tv' };
-    const mockApi = createMockApi();
+    const mockApi = createMockApi('/existing/movies', '/existing/tv');
     mockApi.mediaManagementApi.save = vi.fn().mockResolvedValue(savedSettings);
     (getApiClients as ReturnType<typeof vi.fn>).mockReturnValue(mockApi);
 
@@ -104,7 +104,7 @@ describe('SettingsMediaPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Validate movie root folder' }));
 
     await waitFor(() => {
-      expect(screen.getByText('✓ Writable')).toBeInTheDocument();
+      expect(screen.getByText('Writable')).toBeInTheDocument();
     });
   });
 
@@ -120,8 +120,7 @@ describe('SettingsMediaPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Validate TV root folder' }));
 
     await waitFor(() => {
-      // Could be multiple Writable statuses if both validated — check at least one
-      expect(screen.getAllByText('✓ Writable').length).toBeGreaterThan(0);
+      expect(screen.getByText('Writable')).toBeInTheDocument();
     });
   });
 });

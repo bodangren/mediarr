@@ -8,10 +8,10 @@ import 'package:mediarr_client/features/discovery/discovery_service.dart';
 /// A fake BonsoirService that records whether resolve() was called.
 class FakeBonsoirService extends BonsoirService {
   FakeBonsoirService({
-    required String name,
-    required String type,
-    required int port,
-  }) : super.ignoreNorms(name: name, type: type, port: port);
+    required super.name,
+    required super.type,
+    required super.port,
+  }) : super.ignoreNorms();
 
   bool resolveCalled = false;
   ServiceResolver? capturedResolver;
@@ -26,11 +26,11 @@ class FakeBonsoirService extends BonsoirService {
 /// A fake ResolvedBonsoirService for simulating resolved events.
 class FakeResolvedService extends ResolvedBonsoirService {
   FakeResolvedService({
-    required String name,
-    required String type,
-    required int port,
+    required super.name,
+    required super.type,
+    required super.port,
     required String host,
-  }) : super.ignoreNorms(name: name, type: type, port: port, host: host);
+  }) : super.ignoreNorms(host: host);
 }
 
 /// A fake ServiceResolver that records calls.
@@ -133,19 +133,15 @@ void main() {
         host: '192.168.1.50',
       );
 
-      // This is the same check the adapter does:
-      // if (service is ResolvedBonsoirService) { emit }
-      if (resolved is ResolvedBonsoirService) {
-        final host = resolved.host;
-        if (host != null && host.isNotEmpty) {
-          controller.add(
-            DiscoveredServer(
-              name: resolved.name,
-              host: host,
-              port: resolved.port,
-            ),
-          );
-        }
+      final host = resolved.host;
+      if (host != null && host.isNotEmpty) {
+        controller.add(
+          DiscoveredServer(
+            name: resolved.name,
+            host: host,
+            port: resolved.port,
+          ),
+        );
       }
 
       await Future.delayed(Duration.zero);
@@ -172,17 +168,15 @@ void main() {
         host: '',
       );
 
-      if (resolved is ResolvedBonsoirService) {
-        final host = resolved.host;
-        if (host != null && host.isNotEmpty) {
-          controller.add(
-            DiscoveredServer(
-              name: resolved.name,
-              host: host,
-              port: resolved.port,
-            ),
-          );
-        }
+      final host = resolved.host;
+      if (host != null && host.isNotEmpty) {
+        controller.add(
+          DiscoveredServer(
+            name: resolved.name,
+            host: host,
+            port: resolved.port,
+          ),
+        );
       }
 
       await Future.delayed(Duration.zero);

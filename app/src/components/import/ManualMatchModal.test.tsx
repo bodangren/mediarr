@@ -138,7 +138,7 @@ describe('ManualMatchModal', () => {
     fireEvent.click(screen.getByRole('button', { name: /confirm match/i }));
 
     expect(mockOnMatch).toHaveBeenCalledWith(1, expect.objectContaining({
-      id: 101,
+      id: 3,
       title: 'The Office',
     }));
   });

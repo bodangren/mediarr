@@ -1,10 +1,25 @@
 # Plan: Fix App Path Validation UI Test Failures
 
 ## Phase 1: Reproduce
-- [ ] Run each failing file and capture exact missing elements/assertions.
-- [ ] Inspect the current Validate button implementation and status labels.
-- [ ] Update plan with findings.
+- [x] Run each failing file and capture exact missing elements/assertions.
+- [x] Inspect the current Validate button implementation and status labels.
+- [x] Update plan with findings.
 - [ ] Commit: `docs(measure): diagnose app path validation UI failures`
+
+### Findings (2026-07-13)
+
+- `src/download-client-settings.test.tsx`: the seed-ratio assertion is already
+  green (the loaded `1.5` value is rendered); the previous broad spinbutton
+  selector is unnecessarily coupled to unrelated numeric controls. All three
+  validation tests correctly fail because the visually identical `Validate`
+  buttons have no field-specific accessible name. The runtime already renders
+  the expected `Writable`, `Read-only`, and `Not found` status text.
+- `src/components/primitives/FilesystemBrowser.test.tsx`: all 17 assertions
+  pass when isolated. In the required combined run, its initial modal test
+  timed out under fork-pool contention while its asynchronous directory load
+  emitted React `act` warnings. This is test-environment flakiness, not a
+  filesystem-browser UX regression; retain the component behavior and make
+  the test wait for the load transition.
 
 ## Phase 2: Unify Validate Button Accessibility
 - [ ] Add aria-label or text pattern so tests can target the correct Validate button per field.

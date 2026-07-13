@@ -1,7 +1,7 @@
 # Plan: Fix App View/Card Component Prop Drift Test Failures
 
 ## Phase 1: Reproduce
-- [ ] Run failing files and capture the exact missing elements/behaviors.
+- [~] Run failing files and capture the exact missing elements/behaviors.
 - [ ] Compare component props with test expectations.
 - [ ] Update plan with mismatch list.
 - [ ] Commit: `docs(measure): diagnose app view card prop drift`

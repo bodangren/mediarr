@@ -8,7 +8,6 @@ import '../../core/theme/mediarr_theme.dart';
 import '../../core/widgets/focusable_card.dart';
 import '../../shared/models/search_result.dart';
 import '../../shared/services/api_client.dart';
-import '../../shared/widgets/poster_card.dart';
 import 'search_result_detail_sheet.dart';
 
 final searchQueryProvider = StateProvider<String>((ref) => '');

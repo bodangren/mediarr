@@ -99,8 +99,9 @@ describe('SettingsClientsPage', () => {
       expect(screen.getByText('When Seed Limit Reached')).toBeInTheDocument();
     });
 
-    const select = screen.getByDisplayValue('Remove torrent');
+    const select = screen.getByRole('combobox', { name: 'When Seed Limit Reached' });
     expect(select).toBeInTheDocument();
+    fireEvent.click(select);
     expect(screen.getByRole('option', { name: 'Pause torrent' })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: 'Remove torrent' })).toBeInTheDocument();
   });
@@ -157,7 +158,7 @@ describe('SettingsClientsPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Validate complete directory' }));
 
     await waitFor(() => {
-      expect(screen.getByText('✓ Writable')).toBeInTheDocument();
+      expect(screen.getByText('Writable')).toBeInTheDocument();
     });
   });
 
@@ -175,7 +176,7 @@ describe('SettingsClientsPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Validate complete directory' }));
 
     await waitFor(() => {
-      expect(screen.getByText('✗ Not found')).toBeInTheDocument();
+      expect(screen.getByText('Not found')).toBeInTheDocument();
     });
   });
 

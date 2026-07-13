@@ -7,6 +7,7 @@ describe('unified monolith navigation', () => {
     expect(sectionIds).toEqual([
       'dashboard',
       'library',
+      'wanted',
       'calendar',
       'activity',
       'settings',

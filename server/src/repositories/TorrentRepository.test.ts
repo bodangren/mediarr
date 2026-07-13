@@ -127,7 +127,7 @@ describe('TorrentRepository.findByInfoHash', () => {
     expect(result).not.toBeNull();
     expect(result!.infoHash).toBe('abc123');
     expect(result!.peers).toHaveLength(1);
-    expect(result!.peers[0].ip).toBe('1.2.3.4');
+    expect(result!.peers[0]!.ip).toBe('1.2.3.4');
   });
 
   it('returns null when torrent is not found', async () => {

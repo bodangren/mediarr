@@ -7,7 +7,6 @@ import '../../core/theme/mediarr_theme.dart';
 import '../../shared/models/library_item.dart';
 import '../../shared/services/api_client.dart';
 import '../../shared/widgets/library_item_card.dart';
-import '../../shared/widgets/media_grid.dart';
 import '../library/movie_detail_screen.dart';
 import '../library/series_detail_screen.dart';
 
@@ -109,7 +108,6 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
   LibraryQuery _query = const LibraryQuery();
-  int _selectedTab = 0;
 
   @override
   void initState() {
@@ -128,7 +126,6 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
   void _onTabChanged() {
     if (!_tabController.indexIsChanging) {
       setState(() {
-        _selectedTab = _tabController.index;
         _query = _query.copyWith(
           type: _tabController.index == 0 ? 'movie' : 'series',
           page: 1,

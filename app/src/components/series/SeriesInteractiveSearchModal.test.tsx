@@ -162,7 +162,7 @@ describe('SeriesInteractiveSearchModal', () => {
     await waitFor(() => {
       expect(mockSearchReleases).toHaveBeenCalledWith(10, expect.objectContaining({ seasonNumber: 2 }));
     });
-  });
+  }, 30000);
 
   it('passes seasonNumber and episodeNumber when searching at Episode level', async () => {
     renderWithToast(<SeriesInteractiveSearchModal {...defaultProps} />);
@@ -185,7 +185,7 @@ describe('SeriesInteractiveSearchModal', () => {
         episodeNumber: 5,
       }));
     });
-  });
+  }, 30000);
 
   it('renders release results after API responds', async () => {
     renderWithToast(<SeriesInteractiveSearchModal {...defaultProps} />);

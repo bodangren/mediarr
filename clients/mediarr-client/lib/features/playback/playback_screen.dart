@@ -163,7 +163,7 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
         type: widget.mediaType,
       );
       if (manifest != null) {
-        final baseUrl = apiClient.state.baseUrl ?? '';
+        final baseUrl = ref.read(apiClientProvider).baseUrl ?? '';
         _resolvedStreamUrl = manifest.streamUrl.startsWith('http')
             ? manifest.streamUrl
             : '$baseUrl${manifest.streamUrl}';

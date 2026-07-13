@@ -1,5 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
 import { SeriesPosterView } from './SeriesPosterView';
 import type { SeriesListItem } from '@/types/series';
 
@@ -32,10 +33,18 @@ const mockSeries: SeriesListItem[] = [
   },
 ];
 
+function renderSeriesPosterView(props: React.ComponentProps<typeof SeriesPosterView>) {
+  return render(
+    <MemoryRouter>
+      <SeriesPosterView {...props} />
+    </MemoryRouter>,
+  );
+}
+
 describe('SeriesPosterView', () => {
   it('renders series poster cards', () => {
     const onToggleMonitored = vi.fn();
-    render(<SeriesPosterView items={mockSeries} onToggleMonitored={onToggleMonitored} />);
+    renderSeriesPosterView({ items: mockSeries, onToggleMonitored });
 
     expect(screen.getByText('Test Series 1')).toBeInTheDocument();
     expect(screen.getByText('Test Series 2')).toBeInTheDocument();
@@ -45,70 +54,48 @@ describe('SeriesPosterView', () => {
 
   it('calls onToggleMonitored when monitoring button is clicked', () => {
     const onToggleMonitored = vi.fn();
-    render(<SeriesPosterView items={mockSeries} onToggleMonitored={onToggleMonitored} />);
+    renderSeriesPosterView({ items: mockSeries, onToggleMonitored });
 
-    const firstSeriesCard = screen.getByText('Test Series 1').closest('a');
-    const toggleButton = firstSeriesCard?.querySelector('button[aria-label*="Disable"]');
-    expect(toggleButton).toBeInTheDocument();
+    const toggleButton = screen.getByRole('button', { name: 'Disable monitoring' });
 
-    if (toggleButton) {
-      fireEvent.click(toggleButton);
-      expect(onToggleMonitored).toHaveBeenCalledWith(1, false);
-    }
+    fireEvent.click(toggleButton);
+    expect(onToggleMonitored).toHaveBeenCalledWith(1, false);
   });
 
   it('calls onDelete when delete button is clicked', () => {
     const onToggleMonitored = vi.fn();
     const onDelete = vi.fn();
-    // Mock window.confirm
-    window.confirm = vi.fn(() => true);
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
 
-    render(
-      <SeriesPosterView
-        items={mockSeries}
-        onToggleMonitored={onToggleMonitored}
-        onDelete={onDelete}
-      />,
-    );
+    renderSeriesPosterView({ items: mockSeries, onToggleMonitored, onDelete });
 
-    // First hover over the card to show action buttons
-    const firstSeriesCard = screen.getByText('Test Series 1').closest('a');
-    if (firstSeriesCard) {
-      fireEvent.mouseEnter(firstSeriesCard);
+    fireEvent.click(screen.getByRole('button', { name: 'Delete Test Series 1' }));
 
-      // Then find and click delete button
-      const deleteButton = firstSeriesCard.querySelector('button[aria-label*="Delete"]');
-      expect(deleteButton).toBeInTheDocument();
-
-      if (deleteButton) {
-        fireEvent.click(deleteButton);
-        expect(window.confirm).toHaveBeenCalledWith('Delete Test Series 1?');
-        expect(onDelete).toHaveBeenCalledWith(1);
-      }
-    }
+    expect(confirmSpy).toHaveBeenCalledWith('Delete Test Series 1?');
+    expect(onDelete).toHaveBeenCalledWith(1);
   });
 
   it('displays empty state when no items', () => {
     const onToggleMonitored = vi.fn();
-    render(<SeriesPosterView items={[]} onToggleMonitored={onToggleMonitored} />);
+    renderSeriesPosterView({ items: [], onToggleMonitored });
 
     expect(screen.getByText('No series found')).toBeInTheDocument();
   });
 
   it('shows progress bar with correct percentage', () => {
     const onToggleMonitored = vi.fn();
-    render(<SeriesPosterView items={mockSeries} onToggleMonitored={onToggleMonitored} />);
+    renderSeriesPosterView({ items: mockSeries, onToggleMonitored });
 
     // First series has 2 of 3 episodes complete = ~67%
-    const progressBar = screen.getAllByRole('progressbar')[0];
+    const progressBar = screen.getByRole('progressbar', { name: 'Episode progress: 67%' });
     expect(progressBar).toHaveAttribute('aria-valuenow', '66.66666666666666');
   });
 
   it('navigates to series detail when card is clicked', () => {
     const onToggleMonitored = vi.fn();
-    render(<SeriesPosterView items={mockSeries} onToggleMonitored={onToggleMonitored} />);
+    renderSeriesPosterView({ items: mockSeries, onToggleMonitored });
 
-    const link = screen.getByText('Test Series 1').closest('a');
-    expect(link).toHaveAttribute('href', '/library/series/1');
+    const link = screen.getByRole('link', { name: /test series 1/i });
+    expect(link).toHaveAttribute('href', '/library/tv/1');
   });
 });

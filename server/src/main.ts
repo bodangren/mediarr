@@ -1,8 +1,7 @@
 import 'dotenv/config';
-import crypto from 'node:crypto';
-import fs from 'node:fs/promises';
-import os from 'node:os';
 import path from 'node:path';
+import os from 'node:os';
+import { assertValidEncryptionKey, preparePersistentStorage } from './config/startup';
 import { DatabaseClient } from './db/drizzleClient';
 import { repairMalformedJsonColumns } from './maintenance/repairJsonColumns';
 import { createApiServer } from './api/createApiServer';
@@ -37,7 +36,11 @@ import { ImportManager } from './services/ImportManager';
 import { Organizer } from './services/Organizer';
 
 import { CollectionService } from './services/CollectionService';
-import { DataDirectoryInitializer } from './services/DataDirectoryInitializer';
+import {
+  DataDirectoryInitializer,
+  resolveRequiredDataDirectories,
+} from './services/DataDirectoryInitializer';
+import { createRuntimeTorrentManager } from './services/createRuntimeTorrentManager';
 import {
   ImportListProviderRegistry,
   ImportListSyncService,
@@ -114,213 +117,27 @@ async function ensureBaselineData(prisma: DatabaseClient): Promise<void> {
   await seedSmartDefaults(prisma);
 }
 
-interface RuntimeTorrentManager {
-  initialize?: () => Promise<void>;
-  destroy?: () => Promise<void>;
-  setDownloadPaths?: (paths: { incomplete?: string; complete?: string }) => void;
-  setPrisma?: (prisma: any) => void;
-  addTorrent: (input: {
-    magnetUrl?: string;
-    path?: string;
-    torrentFileBase64?: string;
-    name?: string;
-    size?: number;
-  }) => Promise<{ infoHash: string; name: string }>;
-  pauseTorrent: (infoHash: string) => Promise<void>;
-  resumeTorrent: (infoHash: string) => Promise<void>;
-  removeTorrent: (infoHash: string) => Promise<void>;
-  setSpeedLimits: (limits: { download?: number; upload?: number }) => void;
-  getTorrentsStatus: () => Promise<unknown[]>;
-  getTorrentStatus: (infoHash: string) => Promise<unknown>;
-  getActiveTorrents: () => Promise<unknown[]>;
-}
-
-function mapTorrentRecord(torrent: {
-  infoHash: string;
-  name: string;
-  status: string;
-  progress: number;
-  downloadSpeed: number;
-  uploadSpeed: number;
-  size: number;
-  downloaded: number;
-  uploaded: number;
-  eta: number | null;
-  path: string;
-  completedAt: Date | null;
-}) {
-  return {
-    infoHash: torrent.infoHash,
-    name: torrent.name,
-    status: torrent.status,
-    progress: torrent.progress,
-    downloadSpeed: torrent.downloadSpeed,
-    uploadSpeed: torrent.uploadSpeed,
-    size: torrent.size.toString(),
-    downloaded: torrent.downloaded.toString(),
-    uploaded: torrent.uploaded.toString(),
-    eta: torrent.eta,
-    path: torrent.path,
-    completedAt: torrent.completedAt,
-  };
-}
-
-function createFallbackTorrentManager(
-  repository: TorrentRepository,
-): RuntimeTorrentManager {
-  let incompleteDownloadPath = '/data/downloads/incomplete';
-
-  return {
-    setDownloadPaths(paths) {
-      if (paths.incomplete !== undefined) {
-        incompleteDownloadPath = paths.incomplete;
-      }
-    },
-    async addTorrent(input) {
-      const infoHash = crypto
-        .createHash('sha1')
-        .update(`${input.magnetUrl ?? ''}:${Date.now()}:${Math.random()}`)
-        .digest('hex');
-      const downloadPath = (input.path ?? incompleteDownloadPath).trim();
-      if (!downloadPath) {
-        throw new Error('Incomplete download directory is not configured. Configure it in Settings > Clients.');
-      }
-
-      const row = await repository.upsert({
-        infoHash,
-        name: input.name ?? input.magnetUrl ?? 'Manual Torrent',
-        status: 'downloading',
-        progress: 0,
-        downloadSpeed: 0,
-        uploadSpeed: 0,
-        eta: null,
-        size: Number(input.size ?? 0),
-        downloaded: Number(0),
-        uploaded: Number(0),
-        ratio: 0,
-        path: downloadPath,
-        completedAt: null,
-        stopAtRatio: null,
-        stopAtTime: null,
-        magnetUrl: input.magnetUrl ?? null,
-        torrentFile: null,
-        episodeId: null,
-        movieId: null,
-      });
-
-      return {
-        infoHash: row.infoHash,
-        name: row.name,
-      };
-    },
-    async pauseTorrent(infoHash) {
-      await repository.updateStatus(infoHash, 'paused');
-    },
-    async resumeTorrent(infoHash) {
-      await repository.updateStatus(infoHash, 'downloading');
-    },
-    async removeTorrent(infoHash) {
-      await repository.delete(infoHash);
-    },
-    setSpeedLimits() {},
-    async getTorrentsStatus() {
-      const rows = await repository.findAll();
-      return rows.map(mapTorrentRecord);
-    },
-    async getTorrentStatus(infoHash) {
-      const row = await repository.findByInfoHash(infoHash);
-      if (!row) {
-        throw new Error(`Torrent with infoHash '${infoHash}' not found in database`);
-      }
-
-      return mapTorrentRecord(row);
-    },
-    async getActiveTorrents() {
-      const rows = await repository.findByStatuses(['downloading', 'queued']);
-      return rows.map(mapTorrentRecord);
-    },
-  };
-}
-
-async function createRuntimeTorrentManager(
-  repository: TorrentRepository,
-  paths?: {
-    incomplete?: string;
-    complete?: string;
-    seedRatioLimit?: number;
-    seedTimeLimitMinutes?: number;
-    seedLimitAction?: 'pause' | 'remove';
-    maxActiveDownloads?: number;
-  }
-): Promise<RuntimeTorrentManager> {
-  try {
-    const module = await import('./services/TorrentManager');
-    const manager = module.TorrentManager.getInstance(repository);
-    if (paths) {
-      manager.setDownloadPaths(paths);
-    }
-    await manager.initialize();
-    return manager;
-  } catch (error) {
-    console.warn('Falling back to database-backed torrent manager:', error);
-    return createFallbackTorrentManager(repository);
-  }
-}
-
 async function resolveDatabaseUrl(configuredUrl: string | undefined): Promise<string> {
-  const fallbackUrl = `file:${path.resolve(process.cwd(), 'mediarr.db')}`;
   const databaseUrl = configuredUrl ?? 'file:/config/mediarr.db';
-
-  if (!databaseUrl.startsWith('file:')) {
-    return databaseUrl;
-  }
-
-  const sqlitePath = databaseUrl.slice('file:'.length);
-  if (!sqlitePath) {
-    return fallbackUrl;
-  }
-
-  const directory = path.dirname(sqlitePath);
-  try {
-    await fs.mkdir(directory, { recursive: true });
-    return databaseUrl;
-  } catch (error) {
-    console.warn(
-      `Falling back to local database path because '${directory}' is unavailable:`,
-      error,
-    );
-    return fallbackUrl;
-  }
+  return preparePersistentStorage({
+    databaseUrl,
+    configDir: process.env.NODE_ENV === 'production' ? process.env.CONFIG_DIR : undefined,
+  });
 }
 
 async function startApi(): Promise<void> {
   // Install global log buffer before any other output
   globalLogBuffer.install();
 
+  assertValidEncryptionKey(process.env.ENCRYPTION_KEY);
   const databaseUrl = await resolveDatabaseUrl(process.env.DATABASE_URL);
   const port = parsePort(process.env.API_PORT, 3001);
   const host = process.env.API_HOST ?? '0.0.0.0';
 
-  // Determine the LAN IP to advertise over mDNS. When the server binds to
-  // 0.0.0.0 and the system hostname resolves to 127.x.x.x (common on Linux),
-  // bonjour-service would advertise the loopback address. We prefer the
-  // interface named in MDNS_IFACE (default: wlp3s0), then fall back to the
-  // first non-loopback IPv4 address. Override entirely with MDNS_HOST.
-  const mdnsHost = process.env.MDNS_HOST ?? (() => {
-    const ifaces = os.networkInterfaces();
-    const preferredIface = process.env.MDNS_IFACE ?? 'wlp3s0';
-    const preferred = ifaces[preferredIface];
-    if (preferred) {
-      const addr = preferred.find(a => a.family === 'IPv4' && !a.internal);
-      if (addr) return addr.address;
-    }
-    for (const iface of Object.values(ifaces)) {
-      for (const addr of iface ?? []) {
-        if (addr.family === 'IPv4' && !addr.internal) return addr.address;
-      }
-    }
-    return undefined;
-  })();
+  // Bonjour publishes A records for active LAN interfaces automatically. Its
+  // SRV target must be a fully qualified mDNS hostname; an unqualified host
+  // can resolve through the local hosts file to a loopback address instead.
+  const mdnsHost = process.env.MDNS_HOST ?? `${os.hostname()}.local`;
 
   const prisma: any = new DatabaseClient({
     datasources: {
@@ -394,14 +211,13 @@ async function startApi(): Promise<void> {
   const rssSyncService = new RssSyncService(prisma, httpClient, indexerHealthRepository);
 
   const settings = await settingsService.get();
-  try {
-    await new DataDirectoryInitializer([
-      settings.torrentLimits.incompleteDirectory,
-      settings.torrentLimits.completeDirectory,
-    ]).initialize();
-  } catch (error) {
-    console.warn('Data directory initialization skipped:', error);
-  }
+  await new DataDirectoryInitializer(resolveRequiredDataDirectories({
+    mediaDir: process.env.MEDIA_DIR ?? '/data',
+    incompleteDirectory: settings.torrentLimits.incompleteDirectory,
+    completeDirectory: settings.torrentLimits.completeDirectory,
+    movieRootFolder: settings.mediaManagement.movieRootFolder,
+    tvRootFolder: settings.mediaManagement.tvRootFolder,
+  })).initialize();
   const rssInterval = settings.schedulerIntervals.rssSyncMinutes;
   const rssCron = `*/${rssInterval} * * * *`;
 

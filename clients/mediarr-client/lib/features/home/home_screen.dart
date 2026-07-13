@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/mediarr_theme.dart';
-import '../../core/router/app_router.dart';
 import '../../shared/services/api_client.dart';
 import '../library/continue_watching_section.dart';
 import '../playback/playback_screen.dart';

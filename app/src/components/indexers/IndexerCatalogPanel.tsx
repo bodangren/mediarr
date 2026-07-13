@@ -18,8 +18,8 @@ interface GroupedCatalog {
 
 function classifyPrivacy(entry: CatalogEntry): 'public' | 'semiPrivate' | 'private' {
   if (!entry.requiresApiKey) return 'public';
-  const name = entry.name.toLowerCase();
-  if (name.includes('drunken') || name.includes('tabula') || name.includes('nzbgear') || name.includes('slug')) {
+  const identifier = `${entry.id} ${entry.name}`.toLowerCase();
+  if (identifier.includes('drunken') || identifier.includes('tabula') || identifier.includes('nzbgear') || identifier.includes('slug')) {
     return 'semiPrivate';
   }
   return 'private';
@@ -131,8 +131,9 @@ export function IndexerCatalogPanel({ onIndexerAdded }: IndexerCatalogPanelProps
         <h3 className="text-sm font-medium text-text-secondary uppercase tracking-wide">{title}</h3>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {entries.map(entry => (
-            <div
+            <article
               key={entry.id}
+              aria-label={entry.name}
               className="flex flex-col gap-2 rounded-sm border border-border-subtle bg-surface-1 p-3"
             >
               <div className="flex items-start justify-between gap-2">
@@ -198,7 +199,7 @@ export function IndexerCatalogPanel({ onIndexerAdded }: IndexerCatalogPanelProps
                   {entry.isConfigured ? 'Already Added' : isAdding(entry.id) ? 'Adding...' : 'Add'}
                 </Button>
               )}
-            </div>
+            </article>
           ))}
         </div>
       </section>

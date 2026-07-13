@@ -1,7 +1,7 @@
 # Plan: Fix App Settings Routes API Drift Test Failures
 
 ## Phase 1: Reproduce
-- [ ] Run `src/settings-routes.test.tsx` and capture all 5 failure details.
+- [~] Run `src/settings-routes.test.tsx` and capture all 5 failure details.
 - [ ] Inspect current `indexerApi.create`, `indexerApi.remove`, `settingsApi.update`, and subtitle provider list contracts.
 - [ ] Update plan with mismatch list.
 - [ ] Commit: `docs(measure): diagnose app settings routes drift`

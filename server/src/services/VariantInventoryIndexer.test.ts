@@ -31,14 +31,14 @@ describe('VariantInventoryIndexer', () => {
       const { service, repositoryMock } = buildService();
 
       await service.syncMovieVariants(42, [
-        { path: '/data/movie.mkv', fileSize: 1024n },
+        { path: '/data/movie.mkv', fileSize: 1024 },
       ]);
 
       expect(repositoryMock.upsertVariant).toHaveBeenCalledWith({
         mediaType: 'MOVIE',
         movieId: 42,
         path: '/data/movie.mkv',
-        fileSize: 1024n,
+        fileSize: 1024,
         monitored: undefined,
         probeFingerprint: undefined,
         releaseName: undefined,
@@ -52,9 +52,9 @@ describe('VariantInventoryIndexer', () => {
       await service.syncMovieVariants(42, [
         {
           path: '/data/movie.mkv',
-          fileSize: 1024n,
+          fileSize: 1024,
           externalSubtitles: [
-            { languageCode: 'en', filePath: '/subs/en.srt', fileSize: 100n },
+            { languageCode: 'en', filePath: '/subs/en.srt', fileSize: 100 },
           ],
         },
       ]);
@@ -67,7 +67,7 @@ describe('VariantInventoryIndexer', () => {
           isForced: false,
           isHi: false,
           filePath: '/subs/en.srt',
-          fileSize: 100n,
+          fileSize: 100,
         },
       ]);
     });
@@ -82,7 +82,7 @@ describe('VariantInventoryIndexer', () => {
       });
 
       await service.syncMovieVariants(42, [
-        { path: '/data/movie.mkv', fileSize: 1024n, probeMetadata },
+        { path: '/data/movie.mkv', fileSize: 1024, probeMetadata },
       ]);
 
       expect(parserMock.parse).toHaveBeenCalledWith(probeMetadata);
@@ -104,7 +104,7 @@ describe('VariantInventoryIndexer', () => {
       const { service, repositoryMock } = buildService();
 
       await service.syncMovieVariants(42, [
-        { path: '/data/movie.mkv', fileSize: 1024n },
+        { path: '/data/movie.mkv', fileSize: 1024 },
       ]);
 
       expect(repositoryMock.replaceSubtitleTracks).toHaveBeenCalledWith(1, []);
@@ -116,14 +116,14 @@ describe('VariantInventoryIndexer', () => {
       const { service, repositoryMock } = buildService();
 
       await service.syncEpisodeVariants(99, [
-        { path: '/data/ep.mkv', fileSize: 500n },
+        { path: '/data/ep.mkv', fileSize: 500 },
       ]);
 
       expect(repositoryMock.upsertVariant).toHaveBeenCalledWith({
         mediaType: 'EPISODE',
         episodeId: 99,
         path: '/data/ep.mkv',
-        fileSize: 500n,
+        fileSize: 500,
         monitored: undefined,
         probeFingerprint: undefined,
         releaseName: undefined,

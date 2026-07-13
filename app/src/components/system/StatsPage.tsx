@@ -79,7 +79,7 @@ function QualityPieChart({ breakdown, total }: { breakdown: QualityBreakdown; to
           ))}
         </Pie>
         <Tooltip
-          formatter={(value: number | undefined) => [`${value ?? 0} files`, 'Count']}
+          formatter={(value) => [`${value ?? 0} files`, 'Count']}
           contentStyle={{
             backgroundColor: 'var(--surface-1)',
             border: '1px solid var(--border-subtle)',

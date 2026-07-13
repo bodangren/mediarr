@@ -299,8 +299,8 @@ class _CalendarDayCellState extends State<_CalendarDayCell> {
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
                             color: item.status == 'downloaded'
-                                ? MediarrColors.statusSuccess.withOpacity(0.2)
-                                : MediarrColors.statusWarning.withOpacity(0.2),
+                                ? MediarrColors.statusSuccess.withValues(alpha: 0.2)
+                                : MediarrColors.statusWarning.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(

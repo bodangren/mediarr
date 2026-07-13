@@ -536,6 +536,8 @@ export const appSettings = sqliteTable("AppSettings", {
   schedulerState: text("schedulerState", { mode: "json" })
     .notNull()
     .default(sql`'{}'`),
+  /** Per-task enable map: Record<taskName, boolean> persisted as JSON text. */
+  schedulerEnabled: text("schedulerEnabled", { mode: "json" }),
   createdAt: integer("createdAt", { mode: "timestamp" })
     .notNull()
     .default(sql`(strftime('%s','now'))`),

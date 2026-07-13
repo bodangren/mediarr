@@ -1,5 +1,7 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render as renderReact, screen, fireEvent } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
+import type { ReactElement } from 'react';
 import { MoviePosterView } from './MoviePosterView';
 import type { MovieListItem } from '@/types/movie';
 
@@ -41,6 +43,10 @@ const mockMovies: MovieListItem[] = [
     fileVariants: [{ id: 1, path: '/path/to/dark-knight.mkv' }],
   },
 ];
+
+function render(ui: ReactElement) {
+  return renderReact(<MemoryRouter>{ui}</MemoryRouter>);
+}
 
 describe('MoviePosterView', () => {
   it('renders movie poster cards', () => {

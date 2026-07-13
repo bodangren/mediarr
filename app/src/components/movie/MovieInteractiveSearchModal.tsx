@@ -71,7 +71,7 @@ export interface MovieInteractiveSearchModalProps {
 }
 
 type SortField = 'seeders' | 'size' | 'age' | 'quality';
-const SEARCH_PAGE_SIZE = 500;
+const SEARCH_PAGE_SIZE = 100;
 
 function formatSize(bytes: number): string {
   const units = ['B', 'KB', 'MB', 'GB', 'TB'];

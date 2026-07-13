@@ -15,7 +15,7 @@ export const UI_PREFERENCES_STORAGE_KEY = 'mediarr.ui.preferences';
 import type { StorageLike } from './state/types';
 export type { StorageLike } from './state/types';
 
-const DEFAULT_UI_PREFERENCES: UIPreferences = {
+export const DEFAULT_UI_PREFERENCES: UIPreferences = {
   theme: 'dark',
   dateFormat: 'relative',
   timeFormat: '24h',

@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mediarr_client/core/theme/mediarr_theme.dart';
 import 'package:mediarr_client/features/search/search_result_detail_sheet.dart';
-import 'package:mediarr_client/shared/models/episode.dart';
 import 'package:mediarr_client/shared/models/movie.dart';
 import 'package:mediarr_client/shared/models/search_result.dart';
 import 'package:mediarr_client/shared/models/series.dart';
@@ -353,15 +352,16 @@ void main() {
   });
 }
 
-class _MockMediarrApiClient extends StateNotifier<ApiClientState>
-    implements MediarrApiClient {
+class _MockMediarrApiClient extends MediarrApiClient {
   _MockMediarrApiClient({
-    required Future<void> Function() this.onAddMovie,
-    required Future<void> Function() this.onAddSeries,
-  }) : super(const ApiClientState(
-          status: ConnectionStatus.connected,
-          baseUrl: 'http://localhost:5174',
-        ));
+    required this.onAddMovie,
+    required this.onAddSeries,
+  }) : super() {
+    state = const ApiClientState(
+      status: ConnectionStatus.connected,
+      baseUrl: 'http://localhost:5174',
+    );
+  }
 
   final Future<void> Function() onAddMovie;
   final Future<void> Function() onAddSeries;
@@ -433,13 +433,7 @@ class _MockMediarrApiClient extends StateNotifier<ApiClientState>
   }) async => [];
 
   @override
-  Future<List<Episode>> getEpisodes(int seriesId) async => [];
-
-  @override
   Future<Movie?> getMovie(int id) async => null;
-
-  @override
-  Future<Series?> getSeriesWithEpisodes(int id) async => null;
 
   @override
   Future<Series?> getSeriesDetail(int id) async => null;
@@ -533,6 +527,4 @@ class _MockMediarrApiClient extends StateNotifier<ApiClientState>
   @override
   Stream<SseEvent> streamEvents() => const Stream.empty();
 
-  @override
-  void dispose() {}
 }

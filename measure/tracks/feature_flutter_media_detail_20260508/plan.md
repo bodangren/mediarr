@@ -6136,3 +6136,31 @@ Machine-readable result written to:
 Phase 5 automated gates are verified green by Review A. The 3 remaining
 `[~]` tasks are human-owned: 2 manual smoke tests against a live daemon, and
 the final `git push`. The track is ready for archive once those are complete.
+
+### Home-network readiness recheck (2026-07-12)
+
+- Reproduced and fixed a discovery lifecycle defect: a second `startScan()`
+  replaced the stored subscription and timer without cancelling the first,
+  allowing a late mDNS event after `stopScan()` and a timer callback after
+  disposal. `DiscoveryService.startScan()` now awaits `stopScan()` before
+  beginning a retry. The new regression test verifies a restarted, stopped
+  scan ignores a late discovery event.
+- Targeted discovery/media-detail suite: **45/45 passed**. The season-selector
+  tests now tap the `ChoiceChip`, eliminating their prior missed-hit warnings.
+  Targeted analyzer: **No issues found**.
+- Full `flutter analyze`: **28 unrelated issues**, none in the changed
+  discovery or media-detail paths. Full `flutter test` was attempted but the
+  execution environment terminated it at 240 seconds after 246 passing test
+  events; it produced no test assertion failure before termination. This is
+  not evidence of a full-suite green result.
+- Physical Android TV/LAN mDNS discovery and the two existing detail-screen
+  smoke protocols remain human-gated; no device or live-daemon result is
+  claimed here.
+
+### Flutter analyzer readiness recheck (2026-07-13)
+
+- Resolved all 28 diagnostics reported by the client analyzer: deprecated
+  transform/color calls, unused imports/locals/fields, invalid `StateNotifier`
+  state access, and stale test fake override signatures.
+- `flutter analyze`: **No issues found**.
+- `flutter test`: **290 tests passed**.

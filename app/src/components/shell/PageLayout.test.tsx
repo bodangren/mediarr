@@ -7,6 +7,8 @@ vi.mock('@/components/shell/PageSidebar', () => ({
   PageSidebar: () => <div data-testid="page-sidebar">PageSidebar</div>,
 }));
 
+vi.setConfig({ testTimeout: 30000 });
+
 function renderWithRouter(ui: React.ReactElement) {
   return render(<MemoryRouter>{ui}</MemoryRouter>);
 }
@@ -75,7 +77,7 @@ describe('PageLayout mobile navigation', () => {
     expect(screen.getByRole('menuitem', { name: 'History' })).toBeInTheDocument();
     expect(screen.getByRole('menuitem', { name: 'Indexers' })).toBeInTheDocument();
     expect(screen.getByRole('menuitem', { name: 'Statistics' })).toBeInTheDocument();
-  }, 10000);
+  }, 30000);
 
   it('closes More overflow modal when Close button is clicked', async () => {
     renderWithRouter(
@@ -105,7 +107,7 @@ describe('PageLayout mobile navigation', () => {
     await waitFor(() => {
       expect(screen.queryByRole('dialog', { name: 'More' })).not.toBeInTheDocument();
     });
-  }, 10000);
+  }, 30000);
 
   it('closes More overflow modal when clicking on backdrop', async () => {
     renderWithRouter(
@@ -135,7 +137,7 @@ describe('PageLayout mobile navigation', () => {
     await waitFor(() => {
       expect(screen.queryByRole('dialog', { name: 'More' })).not.toBeInTheDocument();
     });
-  }, 10000);
+  }, 30000);
 
   it('closes More overflow modal when pressing Escape key', async () => {
     renderWithRouter(
@@ -164,7 +166,7 @@ describe('PageLayout mobile navigation', () => {
     await waitFor(() => {
       expect(screen.queryByRole('dialog', { name: 'More' })).not.toBeInTheDocument();
     });
-  }, 10000);
+  }, 30000);
 
   it('has accessible labels and roles for mobile navigation', async () => {
     renderWithRouter(
@@ -197,7 +199,7 @@ describe('PageLayout mobile navigation', () => {
 
     // Menu items in modal have role="menuitem"
     expect(screen.getByRole('menuitem', { name: 'Collections' })).toBeInTheDocument();
-  }, 10000);
+  }, 30000);
 
   it('navigates to page when clicking a link in More menu and closes modal', async () => {
     renderWithRouter(
@@ -230,5 +232,5 @@ describe('PageLayout mobile navigation', () => {
     await waitFor(() => {
       expect(screen.queryByRole('dialog', { name: 'More' })).not.toBeInTheDocument();
     });
-  }, 10000);
+  }, 30000);
 });

@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { CalendarPage } from './CalendarPage';
@@ -49,12 +49,18 @@ describe('CalendarPage', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2026, 2, 15, 12));
     mockApi = {
       calendarApi: {
         list: vi.fn().mockResolvedValue(mockItems),
       },
     };
     (getApiClients as any).mockReturnValue(mockApi);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   const renderPage = () =>
@@ -220,8 +226,7 @@ describe('CalendarPage', () => {
   });
 
   it('does not show search button for items with future release dates', async () => {
-    const futureDate = new Date();
-    futureDate.setDate(futureDate.getDate() + 30);
+    const futureDate = new Date(2026, 2, 20, 12);
     
     mockApi.calendarApi.list.mockResolvedValue([
       {

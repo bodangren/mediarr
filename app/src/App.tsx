@@ -32,6 +32,8 @@ import { SeriesDetailPage } from '@/pages/SeriesDetailPage';
 import { WantedPage } from '@/pages/WantedPage';
 import { getApiClients } from '@/lib/api/client';
 
+export { SettingsClientsPage, SettingsMediaPage, SettingsProfilesPage };
+
 function ShellWrapper({ children }: { children: ReactNode }) {
   const location = useLocation();
   return <AppShell pathname={location.pathname}>{children}</AppShell>;

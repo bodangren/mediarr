@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { IndexerCatalogPanel } from './IndexerCatalogPanel.js';
 import type { CatalogEntry } from '@/lib/api/indexerApi.js';
 
@@ -103,6 +103,10 @@ async function importAndConfigureMocks() {
   vi.mocked(getApiClients).mockImplementation(getMockApi as any);
 }
 
+function getCatalogEntry(name: string) {
+  return within(screen.getByRole('article', { name }));
+}
+
 describe('IndexerCatalogPanel', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -127,9 +131,9 @@ describe('IndexerCatalogPanel', () => {
     mockGetCatalog.mockResolvedValue(mockCatalog);
     render(<IndexerCatalogPanel />);
     await waitFor(() => {
-      expect(screen.getByText(/public indexers/i)).toBeInTheDocument();
-      expect(screen.getByText(/semi-private indexers/i)).toBeInTheDocument();
-      expect(screen.getByText(/private indexers/i)).toBeInTheDocument();
+      expect(screen.getByText(/^public indexers$/i)).toBeInTheDocument();
+      expect(screen.getByText(/^semi-private indexers$/i)).toBeInTheDocument();
+      expect(screen.getByText(/^private indexers$/i)).toBeInTheDocument();
     });
   });
 
@@ -140,7 +144,7 @@ describe('IndexerCatalogPanel', () => {
       expect(screen.getByText('1337x')).toBeInTheDocument();
       expect(screen.getByText('YTS')).toBeInTheDocument();
     });
-    expect(screen.getByRole('button', { name: /add/i }).textContent).toBe('Add');
+    expect(getCatalogEntry('1337x').getByRole('button', { name: 'Add' })).toBeInTheDocument();
   });
 
   it('renders configured indexers as already added', async () => {
@@ -156,7 +160,7 @@ describe('IndexerCatalogPanel', () => {
     mockGetCatalog.mockResolvedValue(mockCatalog);
     render(<IndexerCatalogPanel />);
     await waitFor(() => {
-      expect(screen.getByPlaceholderText(/enter api key/i)).toBeInTheDocument();
+      expect(getCatalogEntry('NZBGeek').getByPlaceholderText(/enter api key/i)).toBeInTheDocument();
     });
   });
 
@@ -164,8 +168,8 @@ describe('IndexerCatalogPanel', () => {
     mockGetCatalog.mockResolvedValue(mockCatalog);
     render(<IndexerCatalogPanel />);
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /sign up/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /^add$/i })).toBeInTheDocument();
+      expect(getCatalogEntry('NZBGeek').getByRole('button', { name: /sign up/i })).toBeInTheDocument();
+      expect(getCatalogEntry('NZBGeek').getByRole('button', { name: 'Add' })).toBeInTheDocument();
     });
   });
 
@@ -176,7 +180,7 @@ describe('IndexerCatalogPanel', () => {
     await waitFor(() => {
       expect(screen.getByText('1337x')).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByRole('button', { name: /add/i }));
+    fireEvent.click(getCatalogEntry('1337x').getByRole('button', { name: 'Add' }));
     await waitFor(() => {
       expect(mockAddFromCatalog).toHaveBeenCalledWith('1337x', undefined);
     });
@@ -186,9 +190,9 @@ describe('IndexerCatalogPanel', () => {
     mockGetCatalog.mockResolvedValue(mockCatalog);
     render(<IndexerCatalogPanel />);
     await waitFor(() => {
-      expect(screen.getByPlaceholderText(/enter api key/i)).toBeInTheDocument();
+      expect(getCatalogEntry('NZBGeek').getByPlaceholderText(/enter api key/i)).toBeInTheDocument();
     });
-    fireEvent.click(screen.getAllByRole('button', { name: /^add$/i })[0]);
+    fireEvent.click(getCatalogEntry('NZBGeek').getByRole('button', { name: 'Add' }));
     await waitFor(() => {
       expect(mockAddFromCatalog).not.toHaveBeenCalled();
     });
@@ -199,12 +203,12 @@ describe('IndexerCatalogPanel', () => {
     mockAddFromCatalog.mockResolvedValue({ id: 1 } as any);
     render(<IndexerCatalogPanel />);
     await waitFor(() => {
-      expect(screen.getByPlaceholderText(/enter api key/i)).toBeInTheDocument();
+      expect(getCatalogEntry('NZBGeek').getByPlaceholderText(/enter api key/i)).toBeInTheDocument();
     });
-    const apiKeyInput = screen.getByPlaceholderText(/enter api key/i);
+    const entry = getCatalogEntry('NZBGeek');
+    const apiKeyInput = entry.getByPlaceholderText(/enter api key/i);
     fireEvent.change(apiKeyInput, { target: { value: 'test-api-key' } });
-    const addButtons = screen.getAllByRole('button', { name: /^add$/i });
-    fireEvent.click(addButtons[0]);
+    fireEvent.click(entry.getByRole('button', { name: 'Add' }));
     await waitFor(() => {
       expect(mockAddFromCatalog).toHaveBeenCalledWith('nzbgear', 'test-api-key');
     });

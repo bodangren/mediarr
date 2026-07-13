@@ -27,19 +27,18 @@ describe('prowlarr route configuration', () => {
     expect(new Set(PROWLARR_ROUTE_PATHS).size).toBe(PROWLARR_ROUTE_PATHS.length);
   });
 
-  it('exposes major settings and system routes in navigation', () => {
+  it('exposes the native settings and system routes in navigation', () => {
     // Flatten navigation sections to get all item paths
     const navPaths = NAV_ITEMS.flatMap(section => section.items.map(item => item.path));
 
     expect(navPaths).toEqual(
       expect.arrayContaining([
         '/settings/general',
-        '/settings/ui',
+        '/settings/updates',
         '/system/tasks',
         '/system/backup',
-        '/system/updates',
         '/system/events',
-        '/system/logs/files',
+        '/system/logs',
       ]),
     );
   });

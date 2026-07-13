@@ -63,6 +63,19 @@ describe('DiscoveryService', () => {
     expect(bonjour.publish).toHaveBeenCalledTimes(2);
   });
 
+  it('does not use an IP address as the mDNS SRV target', () => {
+    const bonjour = {
+      publish: vi.fn().mockReturnValue({ start: vi.fn(), stop: vi.fn() }),
+      unpublishAll: vi.fn(),
+      destroy: vi.fn(),
+    };
+    const service = new DiscoveryService(() => bonjour as any);
+
+    service.start({ port: 5174, host: '192.168.1.149' });
+
+    expect(bonjour.publish).toHaveBeenNthCalledWith(1, expect.not.objectContaining({ host: '192.168.1.149' }));
+  });
+
   it('stops publication and destroys bonjour instance', async () => {
     const publication = {
       start: vi.fn(),

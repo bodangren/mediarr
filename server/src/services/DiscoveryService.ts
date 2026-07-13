@@ -23,7 +23,7 @@ export interface DiscoveryServiceOptions {
   type?: string | undefined;
   aliases?: string[] | undefined;
   port: number;
-  host?: string | undefined; // explicit LAN IP to advertise; avoids hostname→loopback resolution
+  host?: string | undefined; // explicit hostname to advertise
   txt?: Record<string, string> | undefined;
 }
 
@@ -40,6 +40,7 @@ export type BonjourFactory = () => BonjourInstance;
 
 const DEFAULT_SERVICE_NAME = 'Mediarr';
 const DEFAULT_SERVICE_TYPE = 'mediarr';
+const IPV4_ADDRESS_PATTERN = /^(?:\d{1,3}\.){3}\d{1,3}$/;
 
 /**
  * Broadcasts Mediarr presence over mDNS so local clients can discover the API.
@@ -70,6 +71,11 @@ export class DiscoveryService {
 
     const serviceName = options.name?.trim() || DEFAULT_SERVICE_NAME;
     const serviceType = options.type?.trim() || DEFAULT_SERVICE_TYPE;
+    // bonjour-service uses host as the SRV target, which must be a hostname.
+    // It already publishes A records for each active non-loopback interface.
+    const advertisedHost = options.host && !IPV4_ADDRESS_PATTERN.test(options.host)
+      ? options.host
+      : undefined;
     const aliasTypes = Array.from(
       new Set(
         (options.aliases ?? ['http'])
@@ -79,7 +85,7 @@ export class DiscoveryService {
     );
 
     console.log('[DIAG:DiscoveryService] starting mDNS broadcast: name=%j type=%j port=%d host=%j aliases=%j txt=%j',
-      serviceName, serviceType, options.port, options.host ?? '(auto)', aliasTypes, options.txt);
+       serviceName, serviceType, options.port, advertisedHost ?? '(auto)', aliasTypes, options.txt);
 
     const bonjour = this.bonjourFactory();
     const publications: BonjourPublication[] = [];
@@ -89,7 +95,7 @@ export class DiscoveryService {
       type: serviceType,
       protocol: 'tcp',
       port: options.port,
-      ...(options.host ? { host: options.host } : {}),
+       ...(advertisedHost ? { host: advertisedHost } : {}),
       ...(options.txt ? { txt: options.txt } : {}),
     });
     publications.push(primaryPublication);
@@ -100,7 +106,7 @@ export class DiscoveryService {
         type: aliasType,
         protocol: 'tcp',
         port: options.port,
-        ...(options.host ? { host: options.host } : {}),
+         ...(advertisedHost ? { host: advertisedHost } : {}),
         ...(options.txt ? { txt: options.txt } : {}),
       });
       publications.push(aliasPublication);
@@ -117,7 +123,7 @@ export class DiscoveryService {
       type: serviceType,
       ...(aliasTypes.length > 0 ? { aliases: aliasTypes } : {}),
       port: options.port,
-      ...(options.host ? { host: options.host } : {}),
+       ...(advertisedHost ? { host: advertisedHost } : {}),
       ...(options.txt ? { txt: options.txt } : {}),
     };
 

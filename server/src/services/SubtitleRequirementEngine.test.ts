@@ -384,10 +384,10 @@ describe('SubtitleRequirementEngine', () => {
       const result = engine.computeByVariant(inputs);
 
       expect(Object.keys(result)).toEqual(['100', '200']);
-      expect(result[100].missingSubtitles).toEqual([
+      expect(result[100]!.missingSubtitles).toEqual([
         { languageCode: 'en', isForced: false, isHi: false },
       ]);
-      expect(result[200].missingSubtitles).toEqual([]);
+      expect(result[200]!.missingSubtitles).toEqual([]);
     });
 
     it('returns empty record for empty inputs', () => {

@@ -1,14 +1,20 @@
-import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { describe, expect, it, vi } from 'vitest';
-import { BrowserRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router-dom';
 import { PageSidebar } from './PageSidebar';
 
 function renderSidebar(pathname = '/settings/indexers', collapsed = false) {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+
   return render(
-    <BrowserRouter>
-      <PageSidebar pathname={pathname} collapsed={collapsed} onToggle={vi.fn()} />
-    </BrowserRouter>,
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter initialEntries={[pathname]}>
+        <PageSidebar pathname={pathname} collapsed={collapsed} onToggle={vi.fn()} />
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
 }
 
@@ -31,24 +37,24 @@ describe('PageSidebar unified navigation', () => {
     expect(activeLink).toHaveAttribute('aria-current', 'page');
   });
 
-  it('allows section collapse and expand', async () => {
-    const user = userEvent.setup();
+  it('allows section collapse and expand', () => {
     renderSidebar('/library/movies');
 
-    const libraryHeader = screen.getByRole('button', { name: /^Library/i });
-    expect(screen.getByRole('link', { name: /Movies/i })).toBeInTheDocument();
+    const libraryHeader = screen.getByText('Library');
+    expect(screen.getByText('Movies')).toBeInTheDocument();
 
-    await user.click(libraryHeader);
-    expect(screen.queryByRole('link', { name: /Movies/i })).not.toBeInTheDocument();
+    fireEvent.click(libraryHeader);
+    expect(screen.queryByText('Movies')).not.toBeInTheDocument();
 
-    await user.click(libraryHeader);
-    expect(screen.getByRole('link', { name: /Movies/i })).toBeInTheDocument();
+    fireEvent.click(libraryHeader);
+    expect(screen.getByText('Movies')).toBeInTheDocument();
   });
 
-  it('shows short labels when collapsed', () => {
+  it('renders icon-only navigation when collapsed', () => {
     renderSidebar('/library/movies', true);
 
-    expect(screen.getByText('Home')).toBeInTheDocument();
-    expect(screen.getByText('Movies')).toBeInTheDocument();
+    expect(screen.getByText('M')).toBeInTheDocument();
+    expect(screen.getByRole('link', { current: 'page' })).toHaveAttribute('href', '/library/movies');
+    expect(screen.queryByText('Movies')).not.toBeInTheDocument();
   });
 });

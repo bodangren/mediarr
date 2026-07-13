@@ -100,7 +100,7 @@ describe('PUT /api/scheduler/:taskId/toggle', () => {
 
   it('returns 200 and delegates to scheduler.toggleEnabled for a known task with enabled=true', async () => {
     scheduler.isScheduled.mockReturnValue(true);
-    scheduler.toggleEnabled.mockReturnValue(undefined);
+    scheduler.toggleEnabled.mockResolvedValue(undefined);
 
     const response = await app.inject({
       method: 'PUT',
@@ -118,7 +118,7 @@ describe('PUT /api/scheduler/:taskId/toggle', () => {
 
   it('returns 200 and emits the disabled status when enabled=false is persisted', async () => {
     scheduler.isScheduled.mockReturnValue(true);
-    scheduler.toggleEnabled.mockReturnValue(undefined);
+    scheduler.toggleEnabled.mockResolvedValue(undefined);
 
     const response = await app.inject({
       method: 'PUT',
@@ -132,6 +132,22 @@ describe('PUT /api/scheduler/:taskId/toggle', () => {
     expect(body.ok).toBe(true);
     expect(body.data?.enabled).toBe(false);
     expect(body.data?.status).toBe('disabled');
+  });
+
+  it('does not return success when enabled-state persistence fails', async () => {
+    scheduler.isScheduled.mockReturnValue(true);
+    scheduler.toggleEnabled.mockRejectedValue(new Error('database is read-only'));
+
+    const response = await app.inject({
+      method: 'PUT',
+      url: '/api/scheduler/rss-sync/toggle',
+      payload: { enabled: false },
+    });
+
+    expect(response.statusCode).toBe(500);
+    const body = JSON.parse(response.body) as ToggleResponseBody;
+    expect(body.ok).toBe(false);
+    expect(body.error?.message).toContain('database is read-only');
   });
 
   it('returns 422 for an empty body (missing enabled field) and does not invoke the scheduler', async () => {

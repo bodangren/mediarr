@@ -1,39 +1,24 @@
 services:
-  api:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        API_INTERNAL_URL: http://api:5174
-    command: >
-      sh -lc "npx prisma migrate deploy && npm run start:api"
-    ports:
-      - "5174:5174"
-    volumes:
-      - mediarr_config:/config
-      - mediarr_data:/data
-    environment:
-      - DATABASE_URL=file:/config/mediarr.db
-      - ENCRYPTION_KEY=dev-local-encryption-key
-      - API_PORT=5174
-      - NODE_ENV=production
-
   mediarr:
     build:
       context: .
       dockerfile: Dockerfile
-      args:
-        API_INTERNAL_URL: http://api:5174
-    depends_on:
-      - api
-    command: npm run start --workspace=app
-    ports:
-      - "3000:3000"
+    user: "${PUID:?Set PUID}:${PGID:?Set PGID}"
+    network_mode: host
+    restart: unless-stopped
     environment:
-      - API_INTERNAL_URL=http://api:5174
-      - NEXT_PUBLIC_API_BASE_URL=
-      - NODE_ENV=production
-
-volumes:
-  mediarr_config:
-  mediarr_data:
+      DATABASE_URL: file:/config/mediarr.db
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      API_PORT: ${MEDIARR_API_PORT:-5174}
+      NODE_ENV: production
+      CONFIG_DIR: /config
+      MEDIA_DIR: /data
+    volumes:
+      - "${CONFIG_DIR:?Set CONFIG_DIR}:/config"
+      - "${MEDIA_DIR:?Set MEDIA_DIR}:/data"
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:' + process.env.API_PORT + '/api/health').then(async response => { const body = await response.json(); process.exit(response.ok && body.ok === true && typeof body.data?.status === 'string' ? 0 : 1); }).catch(() => process.exit(1));\""]
+      interval: 30s
+      timeout: 5s
+      start_period: 45s
+      retries: 3

@@ -153,7 +153,7 @@ export function SettingsClientsPage() {
                       <Button type="button" variant="outline" size="icon-sm" aria-label="Browse incomplete directory" onClick={() => setActiveBrowser('incomplete')}>
                         <Folder size={16} />
                       </Button>
-                      <Button type="button" variant="outline" size="xs" onClick={() => { void validateDirectory(field.value, setIncompleteStatus); }}>
+                      <Button type="button" variant="outline" size="xs" aria-label="Validate incomplete directory" onClick={() => { void validateDirectory(field.value, setIncompleteStatus); }}>
                         Validate
                       </Button>
                     </div>
@@ -182,7 +182,7 @@ export function SettingsClientsPage() {
                       <Button type="button" variant="outline" size="icon-sm" aria-label="Browse complete directory" onClick={() => setActiveBrowser('complete')}>
                         <Folder size={16} />
                       </Button>
-                      <Button type="button" variant="outline" size="xs" onClick={() => { void validateDirectory(field.value, setCompleteStatus); }}>
+                      <Button type="button" variant="outline" size="xs" aria-label="Validate complete directory" onClick={() => { void validateDirectory(field.value, setCompleteStatus); }}>
                         Validate
                       </Button>
                     </div>

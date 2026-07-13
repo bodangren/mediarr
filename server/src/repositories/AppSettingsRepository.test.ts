@@ -57,6 +57,19 @@ describe('AppSettingsRepository — TorrentLimitsSettings new fields', () => {
     repo = new AppSettingsRepository(db as any);
   });
 
+  it('constructs with a Drizzle-only adapter that has no sqlite.prepare', () => {
+    expect(() => new AppSettingsRepository(makeDb() as any)).not.toThrow();
+  });
+
+  it('reads only boolean scheduler enabled flags from persisted JSON', async () => {
+    db = makeDb({
+      selectCalls: [{ rows: [{ schedulerEnabled: '{"rss-sync":false,"invalid":"false"}' }] }],
+    });
+    repo = new AppSettingsRepository(db as any);
+
+    await expect(repo.getAllEnabledStates()).resolves.toEqual({ 'rss-sync': false });
+  });
+
   // ── DEFAULT_APP_SETTINGS ───────────────────────────────────────────────────
 
   it('DEFAULT_APP_SETTINGS.torrentLimits has incompleteDirectory defaulting to ""', () => {

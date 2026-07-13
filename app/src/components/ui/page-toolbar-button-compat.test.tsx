@@ -59,7 +59,7 @@ describe('PageToolbarButton', () => {
 
     const button = screen.getByRole('button');
     expect(button).toBeDisabled();
-    expect(button).toHaveClass('disabled:opacity-50');
+    expect(button).toHaveClass('disabled:opacity-20');
   });
 
   it('does not call onClick when disabled', () => {
@@ -117,7 +117,7 @@ describe('PageToolbarButton', () => {
     expect(label).toHaveClass('hidden', 'sm:inline');
   });
 
-  it('has focus ring on focus', () => {
+  it('uses the shared button focus treatment', () => {
     renderWithTooltip(
       <PageToolbarButton
         icon={<Icons.Search className="h-4 w-4" />}
@@ -126,10 +126,10 @@ describe('PageToolbarButton', () => {
     );
 
     const button = screen.getByRole('button');
-    expect(button).toHaveClass('focus-visible:ring-2');
+    expect(button).toHaveClass('focus-visible:outline-none');
   });
 
-  it('has transition effects', () => {
+  it('has shared button transition effects', () => {
     renderWithTooltip(
       <PageToolbarButton
         icon={<Icons.Search className="h-4 w-4" />}
@@ -138,7 +138,7 @@ describe('PageToolbarButton', () => {
     );
 
     const button = screen.getByRole('button');
-    expect(button).toHaveClass('transition-colors');
+    expect(button).toHaveClass('transition-all');
   });
 
   it('shows tooltip content with label text', () => {

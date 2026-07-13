@@ -68,7 +68,6 @@ void main() {
         ),
       );
 
-      final scaffold = tester.widget<Scaffold>(find.byType(Scaffold));
       // Scaffold should inherit the dark background
       expect(
         Theme.of(tester.element(find.text('Test'))).brightness,

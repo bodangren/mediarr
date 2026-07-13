@@ -31,6 +31,8 @@ interface SchedulerStateRepositoryMock extends SchedulerStateRepository {
   getTaskState: ReturnType<typeof vi.fn<(taskName: string) => Promise<string | null>>>;
   setTaskState: ReturnType<typeof vi.fn<(taskName: string, nextRunAt: string) => Promise<void>>>;
   getAllTaskStates: ReturnType<typeof vi.fn<() => Promise<Record<string, string>>>>;
+  setEnabledState: ReturnType<typeof vi.fn<(taskName: string, enabled: boolean) => Promise<void>>>;
+  getAllEnabledStates: ReturnType<typeof vi.fn<() => Promise<Record<string, boolean>>>>;
 }
 
 function createStateRepoMock(): SchedulerStateRepositoryMock {
@@ -38,6 +40,8 @@ function createStateRepoMock(): SchedulerStateRepositoryMock {
     getTaskState: vi.fn().mockResolvedValue(null),
     setTaskState: vi.fn().mockResolvedValue(undefined),
     getAllTaskStates: vi.fn().mockResolvedValue({}),
+    setEnabledState: vi.fn().mockResolvedValue(undefined),
+    getAllEnabledStates: vi.fn().mockResolvedValue({}),
   };
 }
 
@@ -456,7 +460,7 @@ describe('Scheduler adversarial — recovery edge cases', () => {
 
   it('start() skips disabled jobs even when nextRun is in the past', async () => {
     scheduler.schedule('rss-sync', '*/15 * * * *', () => undefined);
-    scheduler.toggleEnabled('rss-sync', false);
+    await scheduler.toggleEnabled('rss-sync', false);
 
     stateRepo.getAllTaskStates.mockResolvedValue({
       'rss-sync': '2026-06-29T11:00:00.000Z',

@@ -58,7 +58,7 @@ describe('FilterService', () => {
         orderBy: { name: 'asc' },
       });
       expect(result).toHaveLength(1);
-      expect(result[0].name).toBe('Active Series');
+      expect(result[0]!.name).toBe('Active Series');
     });
 
     it('throws ValidationError when stored conditions are invalid', async () => {
@@ -212,7 +212,7 @@ describe('FilterService', () => {
       };
       const result = service.applyToSeries(items, group);
       expect(result).toHaveLength(1);
-      expect(result[0].id).toBe(1);
+      expect(result[0]!.id).toBe(1);
     });
 
     it('excludes items not matching conditions', () => {
@@ -222,7 +222,7 @@ describe('FilterService', () => {
       };
       const result = service.applyToSeries(items, group);
       expect(result).toHaveLength(1);
-      expect(result[0].id).toBe(2);
+      expect(result[0]!.id).toBe(2);
     });
 
     it('applies "or" operator across conditions', () => {
@@ -250,7 +250,7 @@ describe('FilterService', () => {
       };
       const result = service.applyToSeries(items, group);
       expect(result).toHaveLength(1);
-      expect(result[0].id).toBe(1);
+      expect(result[0]!.id).toBe(1);
     });
 
     it('filters by genre (array field) with contains operator', () => {
@@ -260,7 +260,7 @@ describe('FilterService', () => {
       };
       const result = service.applyToSeries(items, group);
       expect(result).toHaveLength(1);
-      expect(result[0].id).toBe(1);
+      expect(result[0]!.id).toBe(1);
     });
 
     it('filters by network (string field) with equals operator', () => {
@@ -274,7 +274,7 @@ describe('FilterService', () => {
       };
       const result = service.applyToSeries(networkItems, group);
       expect(result).toHaveLength(1);
-      expect(result[0].id).toBe(1);
+      expect(result[0]!.id).toBe(1);
     });
 
     it('uses ratings.value when rating is an object', () => {
@@ -284,7 +284,7 @@ describe('FilterService', () => {
       };
       const result = service.applyToSeries(items, group);
       expect(result).toHaveLength(1);
-      expect(result[0].id).toBe(2);
+      expect(result[0]!.id).toBe(2);
     });
   });
 
@@ -301,7 +301,7 @@ describe('FilterService', () => {
       };
       const result = service.applyToIndexers(indexers, group);
       expect(result).toHaveLength(1);
-      expect(result[0].id).toBe(1);
+      expect(result[0]!.id).toBe(1);
     });
 
     it('filters by protocol', () => {
@@ -311,7 +311,7 @@ describe('FilterService', () => {
       };
       const result = service.applyToIndexers(indexers, group);
       expect(result).toHaveLength(1);
-      expect(result[0].id).toBe(1);
+      expect(result[0]!.id).toBe(1);
     });
 
     it('filters by derived capability from supportsRss', () => {
@@ -321,7 +321,7 @@ describe('FilterService', () => {
       };
       const result = service.applyToIndexers(indexers, group);
       expect(result).toHaveLength(1);
-      expect(result[0].id).toBe(1);
+      expect(result[0]!.id).toBe(1);
     });
 
     it('filters by priority with greaterThan', () => {
@@ -331,7 +331,7 @@ describe('FilterService', () => {
       };
       const result = service.applyToIndexers(indexers, group);
       expect(result).toHaveLength(1);
-      expect(result[0].id).toBe(2);
+      expect(result[0]!.id).toBe(2);
     });
 
     it('filters by tag from settings JSON', () => {
@@ -345,7 +345,7 @@ describe('FilterService', () => {
       };
       const result = service.applyToIndexers(tagIndexers, group);
       expect(result).toHaveLength(1);
-      expect(result[0].id).toBe(1);
+      expect(result[0]!.id).toBe(1);
     });
 
     it('returns all indexers when conditions array is empty', () => {

@@ -1,50 +1,46 @@
+# Syntax=docker/dockerfile:1
 # Base image
 FROM node:20-slim AS base
-RUN apt-get update -y && apt-get install -y openssl
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable
+RUN apt-get update -y && apt-get install -y --no-install-recommends openssl && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 
-# Dependencies stage
-FROM base AS deps
-RUN apt-get update -y && apt-get install -y build-essential python3 cmake
-COPY package.json package-lock.json ./
-COPY app/package.json ./app/
-COPY server/package.json ./server/
-RUN npm install
-
-# Build stage
+# Build stage — build the Vite SPA (app/dist)
 FROM base AS builder
-ARG API_INTERNAL_URL=http://api:5174
-ENV API_INTERNAL_URL=${API_INTERNAL_URL}
-COPY --from=deps /app/node_modules ./node_modules
+RUN apt-get update -y && apt-get install -y build-essential python3 cmake && rm -rf /var/lib/apt/lists/*
 COPY . .
-RUN npx prisma generate
-RUN cd app && npm run build
+# Install after copying source. In this host's Podman implementation, COPY can
+# partially overwrite an inherited node_modules tree despite .dockerignore.
+RUN npm ci --workspaces --include-workspace-root && npm run build --workspace=app
 
 # Runner stage
 FROM base AS runner
 ENV NODE_ENV=production
 ENV DATABASE_URL=file:/config/mediarr.db
+ENV API_PORT=5174
+ENV CONFIG_DIR=/config
+ENV MEDIA_DIR=/data
 
-# Create persistent volume directories
-RUN mkdir -p /config \
-    /data/downloads/incomplete \
-    /data/downloads/complete \
-    /data/media/tv \
-    /data/media/movies
+# Bind mounts replace these directories at runtime. Docker Compose runs the
+# process as the caller-selected PUID:PGID; host directory ownership must match.
+RUN mkdir -p \
+        /config \
+        /data/downloads/incomplete \
+        /data/downloads/complete \
+        /data/media/tv \
+        /data/media/movies && \
+    chown -R 1000:1000 /config /data
 
+# Copy production code
 COPY --from=builder /app/package.json ./
-COPY --from=builder /app/app/package.json ./app/
-COPY --from=builder /app/app/.next ./app/.next
-COPY --from=builder /app/app/public ./app/public
 COPY --from=builder /app/server ./server
+COPY --from=builder /app/app/dist ./app/dist
 COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
+COPY --from=builder /app/drizzle ./drizzle
+COPY --from=builder /app/drizzle.config.ts ./drizzle.config.ts
+COPY --from=builder /app/scripts ./scripts
+COPY --from=builder /app/server/definitions ./server/definitions
 
 VOLUME ["/config", "/data"]
 
-EXPOSE 3000
-CMD ["npm", "run", "start", "--workspace=app"]
+EXPOSE 5174
+CMD ["sh", "-ec", "./node_modules/.bin/tsx server/src/config/preflight.ts && ./node_modules/.bin/tsx scripts/reconcile-migration-compatibility.ts && ./node_modules/.bin/drizzle-kit migrate && exec ./node_modules/.bin/tsx server/src/main.ts"]

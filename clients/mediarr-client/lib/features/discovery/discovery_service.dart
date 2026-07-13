@@ -77,6 +77,11 @@ class DiscoveryService extends StateNotifier<DiscoveryState> {
 
   /// Start scanning for servers via mDNS.
   Future<void> startScan() async {
+    // A retry can arrive before the previous timeout fires. Tear down the
+    // old subscription and timer first so late events cannot leak into the
+    // new scan (or fire after this service is disposed).
+    await stopScan();
+
     state = state.copyWith(
       phase: DiscoveryPhase.scanning,
       servers: [],

@@ -920,3 +920,18 @@
 > > **Dirty-worktree classification at jr start:** Worktree was dirty with the 4 Green-phase implementation files (5 modified, 0 untracked new) preserved in `stash@{1}` from the prior mid attempts, plus 1 untracked debug test (`server/src/api/routes/__toggle_debug.test.ts`, 35 lines, asserting the toggle route returns 200 — NOT a formal Red test, just a debug exploration file from the previous jr debug session) preserved in `stash@{0}`. Per the established Phase 1-5 protocol, the 4 implementation files were popped from `stash@{1}` to apply the Green. The debug test was removed (not committed, not part of any track contract). Recurring pre-existing dirty items (conductor archive timestamp, `measure/__pycache__/`, `measure/tracks/chore_supervisor_acceptance_hardening_20260621/`) were classified as UNRELATED and preserved in their own stashes; not included in this track's commit.
 > >
 > > **Track status after Phase 6:** All 6 phases GREEN. All 38 track tasks `[x]`. Track `feature_scheduler_automation_dashboard_20260524` is now eligible for re-closeout. The track's `metadata.json` still has `status: "reopened"` (per the audit's deviation_notes); the physical archive move, `tracks.md` `[x] archived` update, `metadata.json` status change to `"archived"`, and closeout manifest are owned by the dedicated Measure Closeout Steward (per the user-instruction "Do NOT execute those archive actions yourself"). This jr run stops at the Green gate; the Closeout Steward performs the actual closeout after the gpt-5.5 final acceptance audit passes.
+
+## Phase 7: Toggle Persistence to AppSettings
+
+> Residual from 2026-06-22/23 reviews: Phase 6 delivered the toggle route and
+> real enabled/status fields, but `toggleEnabled()` only mutated in-memory
+> state. Spec requires persistent storage in AppSettings (`schedulerEnabled`).
+
+- [x] Write failing tests for toggle persistence + reload on start
+- [x] Extend `SchedulerStateRepository` with enabled get/set; wire AppSettingsRepository to `schedulerEnabled` column
+- [x] Persist on `toggleEnabled()`; reload enabled flags in `start()` before recovery
+- [x] Fix client `SchedulerTaskStatus` import drift (`schedulerApi.statusEnum.test.ts`)
+- [x] Run Phase 6–7 + scheduler suite gates green
+- [x] Update metadata to completed; archive track; update tracks.md
+
+> **Regression repair (2026-07-12, uncommitted evidence):** Captured the full-suite regression with `CI=true npm test -- tests/app-settings-repository.test.js`: all 3 tests failed with SQLite `no such column: schedulerEnabled`. Split the historical 0003 state migration from the additive, journaled `0004_scheduler_enabled_state` migration; regenerated the 0003/0004 Drizzle snapshot chain; and made the AppSettings repository repair legacy SQLite files before Prisma-style callers access the table. Focused regression is GREEN (3/3). `drizzle-kit check` passed; `drizzle-kit migrate` on a fresh rehearsal database applied 5 migrations and produced both `schedulerState` and `schedulerEnabled`. Phase 6–7 focused gate: 5 files / 60 tests GREEN; scheduler client API gate: 3 files / 14 tests GREEN. `CI=true npm test` was also attempted but exceeded the 120s runner limit after an unrelated `measure/__tests__/post-v1.0-backlog.test.ts` failure; no scheduler/AppSettings regression was reported before timeout. No archive action was taken.

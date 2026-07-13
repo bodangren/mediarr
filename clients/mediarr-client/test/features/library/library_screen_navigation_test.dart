@@ -52,11 +52,7 @@ void main() {
           overrides: [
             apiClientProvider.overrideWith((ref) => fakeClient),
             libraryProvider.overrideWith((ref, query) async {
-              return (
-                items: items,
-                totalCount: items.length,
-                totalPages: 1,
-              );
+              return (items: items, totalCount: items.length, totalPages: 1);
             }),
           ],
           child: MaterialApp(
@@ -79,19 +75,15 @@ void main() {
           monitored: true,
           hasFile: true,
         );
-        final matrix = const Movie(
-          id: 8,
-          title: 'The Matrix',
-          year: 1999,
-          monitored: true,
-          hasFile: true,
-        );
         fakeClient.getMovieReturn = inception;
 
-        await pumpLibrary(tester, items: const [
-          LibraryItem(id: 7, title: 'Inception', type: 'movie', year: 2010),
-          LibraryItem(id: 8, title: 'The Matrix', type: 'movie', year: 1999),
-        ]);
+        await pumpLibrary(
+          tester,
+          items: const [
+            LibraryItem(id: 7, title: 'Inception', type: 'movie', year: 2010),
+            LibraryItem(id: 8, title: 'The Matrix', type: 'movie', year: 1999),
+          ],
+        );
 
         // LibraryScreen rendered both cards
         expect(find.byType(LibraryItemCard), findsNWidgets(2));
@@ -123,32 +115,30 @@ void main() {
           year: 2008,
           monitored: true,
           seasons: const [
-            Season(id: 1, seasonNumber: 1, episodeCount: 7, episodeFileCount: 7),
+            Season(
+              id: 1,
+              seasonNumber: 1,
+              episodeCount: 7,
+              episodeFileCount: 7,
+            ),
           ],
-          statistics: const {
-            'totalEpisodes': 62,
-            'episodesOnDisk': 62,
-          },
-        );
-        final severance = Series(
-          id: 5,
-          title: 'Severance',
-          year: 2022,
-          monitored: true,
-          seasons: const [
-            Season(id: 1, seasonNumber: 1, episodeCount: 9),
-          ],
-          statistics: const {
-            'totalEpisodes': 19,
-          },
+          statistics: const {'totalEpisodes': 62, 'episodesOnDisk': 62},
         );
         fakeClient.getSeriesByIdReturn = breakingBad;
         fakeClient.getSeriesDetailReturn = breakingBad;
 
-        await pumpLibrary(tester, items: const [
-          LibraryItem(id: 1, title: 'Breaking Bad', type: 'series', year: 2008),
-          LibraryItem(id: 5, title: 'Severance', type: 'series', year: 2022),
-        ]);
+        await pumpLibrary(
+          tester,
+          items: const [
+            LibraryItem(
+              id: 1,
+              title: 'Breaking Bad',
+              type: 'series',
+              year: 2008,
+            ),
+            LibraryItem(id: 5, title: 'Severance', type: 'series', year: 2022),
+          ],
+        );
 
         expect(find.byType(LibraryItemCard), findsNWidgets(2));
         expect(find.byType(SeriesDetailScreen), findsNothing);
@@ -179,9 +169,12 @@ void main() {
           hasFile: true,
         );
 
-        await pumpLibrary(tester, items: const [
-          LibraryItem(id: 7, title: 'Inception', type: 'movie', year: 2010),
-        ]);
+        await pumpLibrary(
+          tester,
+          items: const [
+            LibraryItem(id: 7, title: 'Inception', type: 'movie', year: 2010),
+          ],
+        );
 
         await tester.tap(find.text('Inception').first);
         await tester.pumpAndSettle();

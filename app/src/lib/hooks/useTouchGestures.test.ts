@@ -50,7 +50,7 @@ describe('useTouchGestures', () => {
     const onSwipeRight = vi.fn();
     renderHook(() =>
       useTouchGestures(mockElement, {
-        onSwipeLeft,
+        onSwipeRight,
         threshold: 50,
       })
     );

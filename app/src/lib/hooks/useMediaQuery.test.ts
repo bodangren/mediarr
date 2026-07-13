@@ -174,9 +174,9 @@ describe('useMediaQuery', () => {
       dispatchEvent: vi.fn(),
     } as unknown as MediaQueryList;
 
-    vi.mocked(window.matchMedia)
-      .mockReturnValueOnce(mockMatchMedia1)
-      .mockReturnValueOnce(mockMatchMedia2);
+    vi.mocked(window.matchMedia).mockImplementation((query) => (
+      query === '(max-width: 768px)' ? mockMatchMedia1 : mockMatchMedia2
+    ));
 
     const { result: result1 } = renderHook(() => useMediaQuery('(max-width: 768px)'));
     const { result: result2 } = renderHook(() => useMediaQuery('(min-width: 1024px)'));

@@ -67,7 +67,7 @@ export function registerSchedulerRoutes(app: FastifyInstance, deps: SchedulerDep
       return reply.status(404).send({ ok: false, error: { code: 'NOT_FOUND', message: `Unknown task: ${taskId}`, retryable: false } });
     }
 
-    deps.scheduler.toggleEnabled(taskId, body.enabled as boolean);
+    await deps.scheduler.toggleEnabled(taskId, body.enabled as boolean);
 
     return sendSuccess(reply, { taskId, enabled: body.enabled as boolean, status: body.enabled ? 'healthy' : 'disabled' });
   });

@@ -160,7 +160,7 @@ String _episodeLabel(ContinueWatchingItem item) {
   if (season != null && episode != null) {
     final seasonText = season.toString().padLeft(2, '0');
     final episodeText = episode.toString().padLeft(2, '0');
-    return 'S${seasonText}E${episodeText} · ${item.episodeTitle}';
+    return 'S${seasonText}E$episodeText · ${item.episodeTitle}';
   }
 
   return item.episodeTitle!;

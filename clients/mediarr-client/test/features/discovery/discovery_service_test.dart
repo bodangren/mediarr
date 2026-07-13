@@ -193,5 +193,16 @@ void main() {
 
       expect(mockAdapter.stopped, true);
     });
+
+    test('restarting then stopping a scan ignores late mDNS events', () async {
+      await service.startScan();
+      await service.startScan();
+      await service.stopScan();
+
+      mockAdapter.emitServer(testServer);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(service.state.servers, isEmpty);
+    });
   });
 }

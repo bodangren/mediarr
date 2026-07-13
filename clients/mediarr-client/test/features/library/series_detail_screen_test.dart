@@ -53,98 +53,98 @@ void main() {
     // --- Test fixtures ---
 
     Series twoSeasonSeries() => const Series(
-          id: 1,
-          title: 'Breaking Bad',
-          year: 2008,
-          overview: 'A chemistry teacher turned meth maker.',
-          monitored: true,
-          posterUrl: 'https://example.com/bb.jpg',
-          network: 'AMC',
-          status: 'ended',
-          sizeOnDisk: 90 * 1024 * 1024 * 1024,
-          seasons: [
-            Season(
-              id: 11,
+      id: 1,
+      title: 'Breaking Bad',
+      year: 2008,
+      overview: 'A chemistry teacher turned meth maker.',
+      monitored: true,
+      posterUrl: 'https://example.com/bb.jpg',
+      network: 'AMC',
+      status: 'ended',
+      sizeOnDisk: 90 * 1024 * 1024 * 1024,
+      seasons: [
+        Season(
+          id: 11,
+          seasonNumber: 1,
+          episodeCount: 7,
+          episodeFileCount: 7,
+          episodes: [
+            Episode(
+              id: 101,
               seasonNumber: 1,
-              episodeCount: 7,
-              episodeFileCount: 7,
-              episodes: [
-                Episode(
-                  id: 101,
-                  seasonNumber: 1,
-                  episodeNumber: 1,
-                  title: 'Pilot',
-                  airDateUtc: '2008-01-20T00:00:00Z',
-                  hasFile: true,
-                  monitored: true,
-                  quality: 'Bluray-1080p',
-                ),
-                Episode(
-                  id: 102,
-                  seasonNumber: 1,
-                  episodeNumber: 2,
-                  title: "Cat's in the Bag...",
-                  airDateUtc: '2008-01-27T00:00:00Z',
-                  hasFile: true,
-                  monitored: true,
-                  quality: 'Bluray-1080p',
-                ),
-              ],
+              episodeNumber: 1,
+              title: 'Pilot',
+              airDateUtc: '2008-01-20T00:00:00Z',
+              hasFile: true,
+              monitored: true,
+              quality: 'Bluray-1080p',
             ),
-            Season(
-              id: 12,
-              seasonNumber: 2,
-              episodeCount: 13,
-              episodeFileCount: 10,
-              episodes: [
-                Episode(
-                  id: 201,
-                  seasonNumber: 2,
-                  episodeNumber: 1,
-                  title: 'Seven Thirty-Seven',
-                  hasFile: true,
-                  monitored: true,
-                  quality: 'Bluray-1080p',
-                ),
-                Episode(
-                  id: 202,
-                  seasonNumber: 2,
-                  episodeNumber: 2,
-                  title: 'Grilled',
-                  hasFile: false,
-                  monitored: true,
-                ),
-              ],
+            Episode(
+              id: 102,
+              seasonNumber: 1,
+              episodeNumber: 2,
+              title: "Cat's in the Bag...",
+              airDateUtc: '2008-01-27T00:00:00Z',
+              hasFile: true,
+              monitored: true,
+              quality: 'Bluray-1080p',
             ),
           ],
-        );
+        ),
+        Season(
+          id: 12,
+          seasonNumber: 2,
+          episodeCount: 13,
+          episodeFileCount: 10,
+          episodes: [
+            Episode(
+              id: 201,
+              seasonNumber: 2,
+              episodeNumber: 1,
+              title: 'Seven Thirty-Seven',
+              hasFile: true,
+              monitored: true,
+              quality: 'Bluray-1080p',
+            ),
+            Episode(
+              id: 202,
+              seasonNumber: 2,
+              episodeNumber: 2,
+              title: 'Grilled',
+              hasFile: false,
+              monitored: true,
+            ),
+          ],
+        ),
+      ],
+    );
 
     Series oneEpisodeSeries() => const Series(
-          id: 5,
-          title: 'Severance',
-          year: 2022,
-          overview: 'A workplace thriller.',
-          monitored: true,
-          seasons: [
-            Season(
-              id: 51,
+      id: 5,
+      title: 'Severance',
+      year: 2022,
+      overview: 'A workplace thriller.',
+      monitored: true,
+      seasons: [
+        Season(
+          id: 51,
+          seasonNumber: 1,
+          episodeCount: 1,
+          episodeFileCount: 1,
+          episodes: [
+            Episode(
+              id: 501,
               seasonNumber: 1,
-              episodeCount: 1,
-              episodeFileCount: 1,
-              episodes: [
-                Episode(
-                  id: 501,
-                  seasonNumber: 1,
-                  episodeNumber: 1,
-                  title: 'Good News About Hell',
-                  hasFile: true,
-                  monitored: true,
-                  quality: 'WEB-DL-1080p',
-                ),
-              ],
+              episodeNumber: 1,
+              title: 'Good News About Hell',
+              hasFile: true,
+              monitored: true,
+              quality: 'WEB-DL-1080p',
             ),
           ],
-        );
+        ),
+      ],
+    );
 
     setUp(() {
       fakeClient = FakeMediarrApiClient();
@@ -170,9 +170,7 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
-            apiClientProvider.overrideWith((ref) => fakeClient),
-          ],
+          overrides: [apiClientProvider.overrideWith((ref) => fakeClient)],
           child: MaterialApp(
             theme: mediarrDarkTheme,
             home: Scaffold(
@@ -199,10 +197,13 @@ void main() {
         // settle:false — pumpDetail uses a single pump so the screen sits
         // in its loading state with the detail fetch still pending.
         await pumpDetail(tester, settle: false);
-        expect(find.byType(CircularProgressIndicator), findsWidgets,
-            reason:
-                'SeriesDetailScreen must show a loading indicator while a '
-                'getSeriesDetail fetch is in flight (Completer pending).');
+        expect(
+          find.byType(CircularProgressIndicator),
+          findsWidgets,
+          reason:
+              'SeriesDetailScreen must show a loading indicator while a '
+              'getSeriesDetail fetch is in flight (Completer pending).',
+        );
 
         completer.complete(twoSeasonSeries());
         await tester.pumpAndSettle();
@@ -213,8 +214,9 @@ void main() {
       'shows a distinct error state when the getSeriesDetail fetch fails '
       '(text containing "error")',
       (tester) async {
-        fakeClient.getSeriesDetailError =
-            Exception('Series service unavailable');
+        fakeClient.getSeriesDetailError = Exception(
+          'Series service unavailable',
+        );
 
         await pumpDetail(tester);
 
@@ -226,8 +228,7 @@ void main() {
         expect(
           find.byWidgetPredicate(
             (w) =>
-                w is Text &&
-                (w.data?.toLowerCase().contains('error') ?? false),
+                w is Text && (w.data?.toLowerCase().contains('error') ?? false),
           ),
           findsOneWidget,
           reason:
@@ -238,34 +239,46 @@ void main() {
       },
     );
 
-    testWidgets(
-      'success state composes the shared MediaHero, MetadataSection, '
-      'FileInfoCard, ActionBar, and EpisodeList widgets',
-      (tester) async {
-        await pumpDetail(tester);
+    testWidgets('success state composes the shared MediaHero, MetadataSection, '
+        'FileInfoCard, ActionBar, and EpisodeList widgets', (tester) async {
+      await pumpDetail(tester);
 
-        expect(find.byType(MediaHero), findsOneWidget,
-            reason:
-                'SeriesDetailScreen must render its header through the shared '
-                'MediaHero widget (Phase 2).');
-        expect(find.byType(MetadataSection), findsOneWidget,
-            reason:
-                'SeriesDetailScreen must render its overview / metadata '
-                'through the shared MetadataSection widget.');
-        expect(find.byType(FileInfoCard), findsOneWidget,
-            reason:
-                'SeriesDetailScreen must render its file-info block through '
-                'the shared FileInfoCard widget.');
-        expect(find.byType(ActionBar), findsOneWidget,
-            reason:
-                'SeriesDetailScreen must expose its series-level actions '
- '(Search All Missing, Delete Series) through the shared ActionBar widget.');
-        expect(find.byType(EpisodeList), findsOneWidget,
-            reason:
-                'SeriesDetailScreen must render its seasons + episodes through '
-                'the shared EpisodeList widget (Phase 2).');
-      },
-    );
+      expect(
+        find.byType(MediaHero),
+        findsOneWidget,
+        reason:
+            'SeriesDetailScreen must render its header through the shared '
+            'MediaHero widget (Phase 2).',
+      );
+      expect(
+        find.byType(MetadataSection),
+        findsOneWidget,
+        reason:
+            'SeriesDetailScreen must render its overview / metadata '
+            'through the shared MetadataSection widget.',
+      );
+      expect(
+        find.byType(FileInfoCard),
+        findsOneWidget,
+        reason:
+            'SeriesDetailScreen must render its file-info block through '
+            'the shared FileInfoCard widget.',
+      );
+      expect(
+        find.byType(ActionBar),
+        findsOneWidget,
+        reason:
+            'SeriesDetailScreen must expose its series-level actions '
+            '(Search All Missing, Delete Series) through the shared ActionBar widget.',
+      );
+      expect(
+        find.byType(EpisodeList),
+        findsOneWidget,
+        reason:
+            'SeriesDetailScreen must render its seasons + episodes through '
+            'the shared EpisodeList widget (Phase 2).',
+      );
+    });
 
     testWidgets(
       'season selector filters the visible episode list — S1 visible by '
@@ -277,53 +290,83 @@ void main() {
         // contract). The current bespoke screen uses "Season 1" / "Season 2"
         // full-text labels with expand/collapse, so this assertion fails at
         // HEAD — exactly the contract gap Phase 4 implement must close.
-        expect(find.text('S1'), findsOneWidget,
-            reason:
-                'SeriesDetailScreen must render a chip-based season selector '
-                'via the shared EpisodeList widget ("S1" label).');
-        expect(find.text('S2'), findsOneWidget,
-            reason:
-                'SeriesDetailScreen must render a chip-based season selector '
-                'via the shared EpisodeList widget ("S2" label).');
+        expect(
+          find.text('S1'),
+          findsOneWidget,
+          reason:
+              'SeriesDetailScreen must render a chip-based season selector '
+              'via the shared EpisodeList widget ("S1" label).',
+        );
+        expect(
+          find.text('S2'),
+          findsOneWidget,
+          reason:
+              'SeriesDetailScreen must render a chip-based season selector '
+              'via the shared EpisodeList widget ("S2" label).',
+        );
 
         // Default selected season is S1 — its episodes are visible.
-        expect(find.text('Pilot'), findsOneWidget,
-            reason: 'Season 1 episode "Pilot" must be visible by default.');
-        expect(find.text("Cat's in the Bag..."), findsOneWidget,
-            reason:
-                'Season 1 episode "Cat\'s in the Bag..." must be visible by '
-                'default.');
+        expect(
+          find.text('Pilot'),
+          findsOneWidget,
+          reason: 'Season 1 episode "Pilot" must be visible by default.',
+        );
+        expect(
+          find.text("Cat's in the Bag..."),
+          findsOneWidget,
+          reason:
+              'Season 1 episode "Cat\'s in the Bag..." must be visible by '
+              'default.',
+        );
         // Season 2 episodes must NOT be visible.
-        expect(find.text('Seven Thirty-Seven'), findsNothing,
-            reason:
-                'Season 2 episode "Seven Thirty-Seven" must not be visible '
-                'until the S2 chip is tapped.');
-        expect(find.text('Grilled'), findsNothing,
-            reason:
-                'Season 2 episode "Grilled" must not be visible until the S2 '
-                'chip is tapped.');
+        expect(
+          find.text('Seven Thirty-Seven'),
+          findsNothing,
+          reason:
+              'Season 2 episode "Seven Thirty-Seven" must not be visible '
+              'until the S2 chip is tapped.',
+        );
+        expect(
+          find.text('Grilled'),
+          findsNothing,
+          reason:
+              'Season 2 episode "Grilled" must not be visible until the S2 '
+              'chip is tapped.',
+        );
 
         // Tap the S2 chip — season 2 episodes should now be visible.
-        await tester.tap(find.text('S2'));
+        await tester.tap(find.widgetWithText(ChoiceChip, 'S2'));
         await tester.pumpAndSettle();
 
-        expect(find.text('Seven Thirty-Seven'), findsOneWidget,
-            reason:
-                'Season 2 episode "Seven Thirty-Seven" must be visible after '
-                'tapping the S2 chip.');
-        expect(find.text('Grilled'), findsOneWidget,
-            reason:
-                'Season 2 episode "Grilled" must be visible after tapping '
-                'the S2 chip.');
+        expect(
+          find.text('Seven Thirty-Seven'),
+          findsOneWidget,
+          reason:
+              'Season 2 episode "Seven Thirty-Seven" must be visible after '
+              'tapping the S2 chip.',
+        );
+        expect(
+          find.text('Grilled'),
+          findsOneWidget,
+          reason:
+              'Season 2 episode "Grilled" must be visible after tapping '
+              'the S2 chip.',
+        );
         // Season 1 episodes must now be hidden.
-        expect(find.text('Pilot'), findsNothing,
-            reason:
-                'Season 1 episode "Pilot" must be hidden after switching to '
-                'S2 (the season selector is a filter, not an expand).');
-        expect(find.text("Cat's in the Bag..."), findsNothing,
-            reason:
-                'Season 1 episode "Cat\'s in the Bag..." must be hidden after '
-                'switching to S2.');
+        expect(
+          find.text('Pilot'),
+          findsNothing,
+          reason:
+              'Season 1 episode "Pilot" must be hidden after switching to '
+              'S2 (the season selector is a filter, not an expand).',
+        );
+        expect(
+          find.text("Cat's in the Bag..."),
+          findsNothing,
+          reason:
+              'Season 1 episode "Cat\'s in the Bag..." must be hidden after '
+              'switching to S2.',
+        );
       },
     );
 
@@ -344,11 +387,14 @@ void main() {
           of: find.byType(EpisodeList),
           matching: find.byIcon(Icons.play_arrow),
         );
-        expect(playIcon, findsWidgets,
-            reason:
-                'Episode play action must live inside the shared EpisodeList '
-                'widget (Phase 2 contract — the bespoke _EpisodeRow must be '
-                'replaced).');
+        expect(
+          playIcon,
+          findsWidgets,
+          reason:
+              'Episode play action must live inside the shared EpisodeList '
+              'widget (Phase 2 contract — the bespoke _EpisodeRow must be '
+              'replaced).',
+        );
 
         // Tap the play icon. Assert synchronously, BEFORE any further pump.
         // The tap handler runs synchronously, calls getStreamUrl, and pushes
@@ -386,27 +432,36 @@ void main() {
           of: find.byType(EpisodeList),
           matching: find.byIcon(Icons.search),
         );
-        expect(searchIcon, findsWidgets,
-            reason:
-                'Per-episode search action must live inside the shared '
-                'EpisodeList widget and use Icons.search (NOT the in-sheet '
-                'Icons.subtitles / Icons.upgrade modal pattern).');
+        expect(
+          searchIcon,
+          findsWidgets,
+          reason:
+              'Per-episode search action must live inside the shared '
+              'EpisodeList widget and use Icons.search (NOT the in-sheet '
+              'Icons.subtitles / Icons.upgrade modal pattern).',
+        );
 
         // Tap the per-episode search icon — searchReleases is called.
         await tester.tap(searchIcon.first);
         await tester.pumpAndSettle();
 
-        expect(fakeClient.searchReleasesCalls, isNotEmpty,
-            reason:
-                'Tapping the per-episode search action must trigger a '
-                'searchReleases call on the API client.');
+        expect(
+          fakeClient.searchReleasesCalls,
+          isNotEmpty,
+          reason:
+              'Tapping the per-episode search action must trigger a '
+              'searchReleases call on the API client.',
+        );
         // The first searchReleases call's type should be 'episode' (NOT
         // 'series' — that is the series-level Search All Missing contract).
-        expect(fakeClient.searchReleasesCalls.first.type, 'episode',
-            reason:
-                'Per-episode search must call searchReleases with '
-                'type=episode to distinguish it from the series-level '
-                'Search All Missing (type=series).');
+        expect(
+          fakeClient.searchReleasesCalls.first.type,
+          'episode',
+          reason:
+              'Per-episode search must call searchReleases with '
+              'type=episode to distinguish it from the series-level '
+              'Search All Missing (type=series).',
+        );
       },
     );
 
@@ -424,24 +479,33 @@ void main() {
           of: find.byType(ActionBar),
           matching: find.text('Search All Missing'),
         );
-        expect(searchAllMissing, findsOneWidget,
-            reason:
-                'SeriesDetailScreen must expose "Search All Missing" as a '
-                'series-level action via the shared ActionBar widget.');
+        expect(
+          searchAllMissing,
+          findsOneWidget,
+          reason:
+              'SeriesDetailScreen must expose "Search All Missing" as a '
+              'series-level action via the shared ActionBar widget.',
+        );
 
         // Tap it — searchReleases is called with type=series.
         await tester.tap(searchAllMissing);
         await tester.pumpAndSettle();
 
-        expect(fakeClient.searchReleasesCalls, isNotEmpty,
-            reason:
-                'Tapping "Search All Missing" must trigger a searchReleases '
-                'call on the API client.');
-        expect(fakeClient.searchReleasesCalls.last.type, 'series',
-            reason:
-                'Search All Missing must call searchReleases with '
-                'type=series to distinguish it from per-episode search '
-                '(type=episode).');
+        expect(
+          fakeClient.searchReleasesCalls,
+          isNotEmpty,
+          reason:
+              'Tapping "Search All Missing" must trigger a searchReleases '
+              'call on the API client.',
+        );
+        expect(
+          fakeClient.searchReleasesCalls.last.type,
+          'series',
+          reason:
+              'Search All Missing must call searchReleases with '
+              'type=series to distinguish it from per-episode search '
+              '(type=episode).',
+        );
       },
     );
 
@@ -457,23 +521,32 @@ void main() {
           of: find.byType(ActionBar),
           matching: find.text('Delete Series'),
         );
-        expect(deleteSeriesButton, findsOneWidget,
-            reason:
-                'SeriesDetailScreen must expose "Delete Series" as a '
-                'series-level action via the shared ActionBar widget.');
+        expect(
+          deleteSeriesButton,
+          findsOneWidget,
+          reason:
+              'SeriesDetailScreen must expose "Delete Series" as a '
+              'series-level action via the shared ActionBar widget.',
+        );
 
         // Tap Delete Series → AlertDialog appears (ActionBar's destructive
         // flow), and no API call has fired yet.
         await tester.tap(deleteSeriesButton);
         await tester.pumpAndSettle();
-        expect(find.byType(AlertDialog), findsOneWidget,
-            reason:
-                'Tapping Delete Series must show a confirmation dialog '
-                'before any destructive API call fires.');
-        expect(fakeClient.deleteSeriesCalls, isEmpty,
-            reason:
-                'The destructive API call must NOT fire before the user '
-                'confirms the AlertDialog.');
+        expect(
+          find.byType(AlertDialog),
+          findsOneWidget,
+          reason:
+              'Tapping Delete Series must show a confirmation dialog '
+              'before any destructive API call fires.',
+        );
+        expect(
+          fakeClient.deleteSeriesCalls,
+          isEmpty,
+          reason:
+              'The destructive API call must NOT fire before the user '
+              'confirms the AlertDialog.',
+        );
 
         // Tap Cancel → dialog dismissed, no API call.
         final cancelButton = find.descendant(
@@ -483,12 +556,18 @@ void main() {
         expect(cancelButton, findsOneWidget);
         await tester.tap(cancelButton);
         await tester.pumpAndSettle();
-        expect(find.byType(AlertDialog), findsNothing,
-            reason: 'Cancel must dismiss the dialog without firing the API.');
-        expect(fakeClient.deleteSeriesCalls, isEmpty,
-            reason:
-                'Cancelling the Delete Series dialog must leave the API '
-                'untouched.');
+        expect(
+          find.byType(AlertDialog),
+          findsNothing,
+          reason: 'Cancel must dismiss the dialog without firing the API.',
+        );
+        expect(
+          fakeClient.deleteSeriesCalls,
+          isEmpty,
+          reason:
+              'Cancelling the Delete Series dialog must leave the API '
+              'untouched.',
+        );
 
         // Tap Delete Series again → confirm → API call recorded.
         await tester.tap(deleteSeriesButton);
@@ -501,14 +580,20 @@ void main() {
         expect(confirmButton, findsOneWidget);
         await tester.tap(confirmButton);
         await tester.pumpAndSettle();
-        expect(find.byType(AlertDialog), findsNothing,
-            reason:
-                'Confirm must dismiss the dialog AND fire the underlying '
-                'API call exactly once.');
-        expect(fakeClient.deleteSeriesCalls, [1],
-            reason:
-                'Confirming Delete Series must call deleteSeries(1) on the '
-                'API client — the loaded series.id from the fixture.');
+        expect(
+          find.byType(AlertDialog),
+          findsNothing,
+          reason:
+              'Confirm must dismiss the dialog AND fire the underlying '
+              'API call exactly once.',
+        );
+        expect(
+          fakeClient.deleteSeriesCalls,
+          [1],
+          reason:
+              'Confirming Delete Series must call deleteSeries(1) on the '
+              'API client — the loaded series.id from the fixture.',
+        );
       },
     );
   });

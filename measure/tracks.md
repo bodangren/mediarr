@@ -228,7 +228,7 @@ Parallel:
 - [x] **Track: RssMediaMonitor + RssSyncService Corner-Case Testing** *Phases: 4 | Link: [./archive/bug_rss_pipeline_corner_cases_20260403/](./archive/bug_rss_pipeline_corner_cases_20260403/)* — 32 tests; no bugs found; RSS pipeline solid
 - [x] **Track: Daily Cleanup — Stage Deletions, Verify Green Suite** *Phases: 3 | Link: [./archive/chore_daily_cleanup_20260402/](./archive/chore_daily_cleanup_20260402/)* — excluded redundant legacy test; 195 passed, 0 failures
 - [x] **Track: Local LLM Gateway Routing** *Phases: 3 | Link: [./archive/feature_local_llm_gateway_20260401/](./archive/feature_local_llm_gateway_20260401/)* — ReleaseParser now prefers `AI_GATEWAY_BASE_URL` + model envs, falls back to OpenRouter, then regex-only parsing
-- [x] **Track: Measure Housekeeping Cleanup** *Phases: 3 | Link: [./archive/chore_measure_housekeeping_20260401/](./archive/chore_measure_housekeeping_20260401/)* — cleaned recent archive-plan residue and trimmed `lessons-learned.md` to 40 lines
+- [x] **Track: Measure Housekeeping Cleanup** *Phases: 3 | Link: [./archive/chore_conductor_housekeeping_20260401/](./archive/chore_conductor_housekeeping_20260401/)* — cleaned recent archive-plan residue and trimmed `lessons-learned.md` to 40 lines
 - [x] **Track: Fix ImportManager Episode-to-Movie Fallback Bug** *Phases: 3 | Link: [./archive/chore_fix_import_manager_fallback_20260401/](./archive/chore_fix_import_manager_fallback_20260401/)* — fixed `if (!parsed)` → `if (!episodeImported)`; 7 slow-path tests
 - [x] **Track: Cleanup Uncommitted Work** *Phases: 3 | Link: [./archive/chore_cleanup_uncommitted_work_20260401/](./archive/chore_cleanup_uncommitted_work_20260401/)* — 3 commits; reverted .env secrets, removed junk, committed form migration + Flutter fixes
 

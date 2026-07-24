@@ -155,11 +155,12 @@ export function registerQualityProfileRoutes(
     if (typeof name !== 'string' || name.trim().length === 0) {
       throw new ValidationError('name is required and must be a non-empty string');
     }
+    const normalizedName = name.trim();
 
     // Check for duplicate name
-    const existing = await deps.qualityProfileRepository.findByName(name);
+    const existing = await deps.qualityProfileRepository.findByName(normalizedName);
     if (existing) {
-      throw new ConflictError(`Quality profile with name "${name}" already exists`);
+      throw new ConflictError(`Quality profile with name "${normalizedName}" already exists`);
     }
 
     // Validate and enrich items
@@ -171,7 +172,7 @@ export function registerQualityProfileRoutes(
     const cutoff = validateCutoff(payload.cutoff, enrichedItems);
 
     const created = await deps.qualityProfileRepository.create({
-      name: name.trim(),
+      name: normalizedName,
       cutoff,
       items: enrichedItems,
       languageProfileId: payload.languageProfileId as number | null | undefined,

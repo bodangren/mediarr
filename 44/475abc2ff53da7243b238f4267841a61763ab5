@@ -1,0 +1,15 @@
+Task: Add direct SubtitleVariantRepository remediation tests
+
+Summary:
+- added installed-SQLite coverage proving unsupported media types are rejected before any variant row is persisted
+- added installed-SQLite coverage proving deleteSubtitleHistory removes only the requested history row and preserves its sibling
+
+File:
+- server/src/repositories/SubtitleVariantRepository.test.ts
+
+Why: the full coverage audit found that SubtitleVariantRepository remediation behavior was only exercised through mocked consumers, leaving the repository boundary without direct failure-path evidence.
+
+Verification:
+- CI=true npx vitest run server/src/repositories/SubtitleVariantRepository.test.ts: 1 file, 2 tests passed
+- npm run typecheck --workspace=server: passed
+- production code unchanged

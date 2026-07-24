@@ -25,7 +25,7 @@ _Blast radius: UpdateService (routes, scheduler, SPA update client), ImportManag
 - [~] Task: Repair backup contracts and WAL-safe operations
   - [ ] Align API and SPA schemas and add real list/create/download/restore tests.
   - [ ] Implement SQLite-safe backup creation and explicit schedule behavior.
-- [ ] Task: Replace fake logs with the real log source
+- [~] Task: Replace fake logs with the real log source
   - [ ] Add end-to-end log list/detail/delete/clear/download contract tests.
   - [ ] Remove production fixture arrays and contract drift.
 - [ ] Task: Unify task history, queue, scheduler, and system events

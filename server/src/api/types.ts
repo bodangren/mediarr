@@ -35,6 +35,7 @@ import type { LibraryScanService } from '../services/LibraryScanService';
 import type { SystemHealthService } from '../services/SystemHealthService';
 import type { UpdateService } from '../services/updates/UpdateService';
 import type { CatalogCache } from '../services/indexers/CatalogCache';
+import type { VariantInventoryIndexer } from '../services/VariantInventoryIndexer';
 
 
 export interface ApiDependencies {
@@ -92,6 +93,10 @@ export interface ApiDependencies {
   subtitleAutomationService?: Pick<
     SubtitleAutomationService,
     'runAutomationCycle' | 'runTargetedAutomationCycle' | 'onMovieImported' | 'onEpisodeImported'
+  > | undefined;
+  variantInventoryIndexer?: Pick<
+    VariantInventoryIndexer,
+    'indexMovieVariant' | 'indexEpisodeVariant'
   > | undefined;
   playbackService?: Pick<
     PlaybackService,

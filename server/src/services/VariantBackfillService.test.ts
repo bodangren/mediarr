@@ -143,4 +143,24 @@ describe('VariantBackfillService', () => {
     await expect(service.run()).rejects.toThrow('DB connection lost');
     expect(repositoryMock.upsertVariant).toHaveBeenCalledTimes(1);
   });
+
+  it('is idempotent across repeated startup runs', async () => {
+    const { service, prismaMock, repositoryMock } = buildService();
+    prismaMock.movie.findMany.mockResolvedValue([
+      { id: 1, path: '/data/movies/m1.mkv' },
+    ]);
+    prismaMock.mediaFileVariant.findFirst
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ id: 1 });
+
+    await expect(service.run()).resolves.toEqual({
+      movieVariantsCreated: 1,
+      episodeVariantsCreated: 0,
+    });
+    await expect(service.run()).resolves.toEqual({
+      movieVariantsCreated: 0,
+      episodeVariantsCreated: 0,
+    });
+    expect(repositoryMock.upsertVariant).toHaveBeenCalledTimes(1);
+  });
 });

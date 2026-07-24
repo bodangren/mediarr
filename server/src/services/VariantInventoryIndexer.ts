@@ -3,6 +3,7 @@ import {
   type UpsertSubtitleTrackInput,
 } from '../repositories/SubtitleVariantRepository';
 import { ProbeMetadataParser } from './ProbeMetadataParser';
+import type { VariantMetadataProbe } from './FfprobeMetadataProbe';
 
 export interface VariantFileInput {
   path: string;
@@ -28,7 +29,16 @@ export class VariantInventoryIndexer {
   constructor(
     private readonly repository: SubtitleVariantRepository,
     private readonly parser: ProbeMetadataParser = new ProbeMetadataParser(),
+    private readonly metadataProbe?: VariantMetadataProbe,
   ) {}
+
+  async indexMovieVariant(movieId: number, file: VariantFileInput): Promise<void> {
+    await this.indexVariant('MOVIE', movieId, file);
+  }
+
+  async indexEpisodeVariant(episodeId: number, file: VariantFileInput): Promise<void> {
+    await this.indexVariant('EPISODE', episodeId, file);
+  }
 
   async syncMovieVariants(
     movieId: number,
@@ -38,18 +48,7 @@ export class VariantInventoryIndexer {
     await this.repository.deleteMovieVariantsNotInPaths(movieId, paths);
 
     for (const file of files) {
-      const variant = await this.repository.upsertVariant({
-        mediaType: 'MOVIE',
-        movieId,
-        path: file.path,
-        fileSize: file.fileSize,
-        monitored: file.monitored,
-        probeFingerprint: file.probeFingerprint,
-        releaseName: file.releaseName,
-        quality: file.quality,
-      });
-
-      await this.updateTracks(variant.id, file);
+      await this.indexVariant('MOVIE', movieId, file, true);
     }
   }
 
@@ -61,22 +60,44 @@ export class VariantInventoryIndexer {
     await this.repository.deleteEpisodeVariantsNotInPaths(episodeId, paths);
 
     for (const file of files) {
-      const variant = await this.repository.upsertVariant({
-        mediaType: 'EPISODE',
-        episodeId,
-        path: file.path,
-        fileSize: file.fileSize,
-        monitored: file.monitored,
-        probeFingerprint: file.probeFingerprint,
-        releaseName: file.releaseName,
-        quality: file.quality,
-      });
-
-      await this.updateTracks(variant.id, file);
+      await this.indexVariant('EPISODE', episodeId, file, true);
     }
   }
 
-  private async updateTracks(variantId: number, file: VariantFileInput): Promise<void> {
+  private async indexVariant(
+    mediaType: 'MOVIE' | 'EPISODE',
+    ownerId: number,
+    file: VariantFileInput,
+    authoritative = false,
+  ): Promise<void> {
+    let probeMetadata = file.probeMetadata;
+    if (probeMetadata === undefined && this.metadataProbe) {
+      probeMetadata = await this.metadataProbe.probe(file.path);
+    }
+
+    const variant = await this.repository.upsertVariant({
+      mediaType,
+      ...(mediaType === 'MOVIE' ? { movieId: ownerId } : { episodeId: ownerId }),
+      path: file.path,
+      fileSize: file.fileSize,
+      monitored: file.monitored,
+      probeFingerprint: file.probeFingerprint,
+      releaseName: file.releaseName,
+      quality: file.quality,
+    });
+
+    if (!authoritative && probeMetadata === undefined && file.externalSubtitles === undefined) {
+      return;
+    }
+
+    await this.updateTracks(variant.id, { ...file, probeMetadata }, authoritative);
+  }
+
+  private async updateTracks(
+    variantId: number,
+    file: VariantFileInput,
+    authoritative: boolean,
+  ): Promise<void> {
     const parsed = this.parser.parse(file.probeMetadata);
     const external: UpsertSubtitleTrackInput[] = (file.externalSubtitles ?? []).map(
       subtitle => ({
@@ -90,10 +111,14 @@ export class VariantInventoryIndexer {
       }),
     );
 
-    await this.repository.replaceAudioTracks(variantId, parsed.audioTracks);
-    await this.repository.replaceSubtitleTracks(variantId, [
-      ...parsed.embeddedSubtitleTracks,
-      ...external,
-    ]);
+    if (authoritative || file.probeMetadata !== undefined) {
+      await this.repository.replaceAudioTracks(variantId, parsed.audioTracks);
+    }
+    if (authoritative || file.probeMetadata !== undefined || file.externalSubtitles !== undefined) {
+      await this.repository.replaceSubtitleTracks(variantId, [
+        ...parsed.embeddedSubtitleTracks,
+        ...external,
+      ]);
+    }
   }
 }

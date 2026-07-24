@@ -5,6 +5,7 @@ import { Organizer } from './Organizer';
 import { SubtitleVariantRepository, type UpsertVariantInput } from '../repositories/SubtitleVariantRepository';
 import type { ScannedFile } from './ExistingLibraryScanner';
 import { sanitizeTitle, toSortTitle } from '../utils/stringUtils';
+import type { VariantInventoryIndexer } from './VariantInventoryIndexer';
 
 function isInsideRoot(filePath: string, rootPath: string): boolean {
   const normalizedFile = path.resolve(filePath);
@@ -37,6 +38,10 @@ export class BulkImportService {
   constructor(
     private readonly prisma: DatabaseClient,
     private readonly metadataProvider: MetadataProviderDeps,
+    private readonly variantInventoryIndexer?: Pick<
+      VariantInventoryIndexer,
+      'indexMovieVariant' | 'indexEpisodeVariant'
+    >,
   ) {
     this.organizer = new Organizer();
     this.variantRepo = new SubtitleVariantRepository(prisma);
@@ -161,7 +166,9 @@ export class BulkImportService {
         }, { move: true });
       }
 
-      await this.variantRepo.upsertVariant(this.buildVariantInput('MOVIE', { movieId: movie.id }, file, filePath));
+      const variantInput = this.buildVariantInput('MOVIE', { movieId: movie.id }, file, filePath);
+      await this.variantRepo.upsertVariant(variantInput);
+      await this.variantInventoryIndexer?.indexMovieVariant(movie.id, this.buildIndexerInput(file, filePath));
     }
   }
 
@@ -264,7 +271,17 @@ export class BulkImportService {
           data: { path: filePath },
         });
 
-        await this.variantRepo.upsertVariant(this.buildVariantInput('EPISODE', { episodeId: episode.id }, matchingFile, filePath));
+        const variantInput = this.buildVariantInput(
+          'EPISODE',
+          { episodeId: episode.id },
+          matchingFile,
+          filePath,
+        );
+        await this.variantRepo.upsertVariant(variantInput);
+        await this.variantInventoryIndexer?.indexEpisodeVariant(
+          episode.id,
+          this.buildIndexerInput(matchingFile, filePath),
+        );
       }
     }
   }
@@ -278,6 +295,14 @@ export class BulkImportService {
     return {
       mediaType,
       ...owner,
+      path: filePath,
+      fileSize: Number(file.size),
+      ...(file.parsedInfo?.quality ? { quality: file.parsedInfo.quality } : {}),
+    };
+  }
+
+  private buildIndexerInput(file: ScannedFile, filePath: string) {
+    return {
       path: filePath,
       fileSize: Number(file.size),
       ...(file.parsedInfo?.quality ? { quality: file.parsedInfo.quality } : {}),

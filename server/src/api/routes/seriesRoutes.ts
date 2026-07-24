@@ -37,6 +37,18 @@ interface CalendarEpisode {
   monitored: boolean;
 }
 
+async function moveFileAcrossDevices(sourcePath: string, destinationPath: string): Promise<void> {
+  try {
+    await fs.rename(sourcePath, destinationPath);
+  } catch (error) {
+    if (!(error instanceof Error && 'code' in error && error.code === 'EXDEV')) {
+      throw error;
+    }
+    await fs.copyFile(sourcePath, destinationPath);
+    await fs.unlink(sourcePath);
+  }
+}
+
 // Format date to ISO date string (YYYY-MM-DD)
 function formatAirDate(date: Date | null): string {
   if (!date) return '';
@@ -845,7 +857,7 @@ export function registerSeriesRoutes(
               const epId = epIndex.get(`${parsed.seasonNumber}x${epNum}`);
               if (!epId) continue;
 
-              await (deps.prisma as any).episode.update({
+              await deps.prisma.episode.update({
                 where: { id: epId },
                 data: { path: file.path },
               });
@@ -1234,21 +1246,29 @@ export function registerSeriesRoutes(
         // Ensure destination directory exists
         await fs.mkdir(destDir, { recursive: true });
 
-        // Move the file
-        await fs.rename(file.path, destPath);
+        await moveFileAcrossDevices(file.path, destPath);
 
         // Get file size
         const stat = await fs.stat(destPath);
 
-        // Create file variant in database
-        await (deps.prisma as any).mediaFileVariant.create({
-          data: {
-            mediaType: 'TV',
-            episodeId: episode.id,
-            path: destPath,
-            fileSize: stat.size,
-            quality: file.quality || null,
-          },
+        await (deps.prisma as any).episode.update({
+          where: { id: episode.id },
+          data: { path: destPath },
+        });
+
+        const variantInput = {
+          mediaType: 'EPISODE' as const,
+          episodeId: episode.id,
+          path: destPath,
+          fileSize: Number(stat.size),
+          ...(file.quality ? { quality: file.quality } : {}),
+        };
+        const variantRepo = new SubtitleVariantRepository(deps.prisma as DatabaseClient);
+        await variantRepo.upsertVariant(variantInput);
+        await deps.variantInventoryIndexer?.indexEpisodeVariant(episode.id, {
+          path: destPath,
+          fileSize: Number(stat.size),
+          ...(file.quality ? { quality: file.quality } : {}),
         });
 
         imported++;

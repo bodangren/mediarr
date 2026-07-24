@@ -47,7 +47,11 @@ export function registerImportRoutes(
     ? new ImportMatchService(deps.metadataProvider)
     : null;
   const importService = deps.metadataProvider
-    ? new BulkImportService(deps.prisma as any, deps.metadataProvider)
+    ? new BulkImportService(
+        deps.prisma as any,
+        deps.metadataProvider,
+        deps.variantInventoryIndexer,
+      )
     : null;
 
   app.post<{

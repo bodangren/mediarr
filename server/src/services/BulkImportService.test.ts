@@ -311,6 +311,47 @@ describe('BulkImportService', () => {
     });
   });
 
+  it('incrementally indexes a manually imported series episode with the exact file payload', async () => {
+    const prisma = makeSeriesPrisma(null);
+    const metadataProvider = {
+      getMediaDetails: vi.fn(),
+      getSeriesDetails: vi.fn().mockResolvedValue({
+        ...baseSeriesMeta,
+        episodes: [
+          { tvdbId: 1001, seasonNumber: 1, episodeNumber: 1, title: 'Pilot', airDateUtc: null },
+        ],
+      }),
+    } as any;
+    const indexMovieVariant = vi.fn().mockResolvedValue(undefined);
+    const indexEpisodeVariant = vi.fn().mockResolvedValue(undefined);
+    const service = new BulkImportService(
+      prisma,
+      metadataProvider,
+      { indexMovieVariant, indexEpisodeVariant },
+    );
+
+    await service.executeImport([{
+      folderPath: '/tv/Breaking Bad',
+      mediaType: 'series',
+      matchId: 81189,
+      files: [{
+        path: '/tv/Breaking Bad/Season 1/Breaking.Bad.S01E01.1080p.mkv',
+        size: 4096,
+        extension: '.mkv',
+        parsedInfo: { seasonNumber: 1, episodeNumbers: [1], quality: '1080p' },
+      }],
+      renameFiles: false,
+      rootFolderPath: '/media/tv',
+      qualityProfileId: 1,
+    }]);
+
+    expect(indexEpisodeVariant).toHaveBeenCalledWith(100, {
+      path: '/tv/Breaking Bad/Season 1/Breaking.Bad.S01E01.1080p.mkv',
+      fileSize: 4096,
+      quality: '1080p',
+    });
+  });
+
   // ── Series: seasons and episodes upserted ────────────────────────────────
 
   it('upserts seasons and episodes so re-importing does not fail', async () => {

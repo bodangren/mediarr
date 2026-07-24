@@ -130,5 +130,52 @@ describe('VariantInventoryIndexer', () => {
         quality: undefined,
       });
     });
+
+    it('incrementally indexes one imported episode without deleting unrelated variants', async () => {
+      const { service, repositoryMock, parserMock } = buildService();
+      parserMock.parse.mockReturnValue({
+        audioTracks: [{ streamIndex: 1, languageCode: 'en' }],
+        embeddedSubtitleTracks: [{ source: 'EMBEDDED', streamIndex: 2, languageCode: 'th' }],
+      });
+
+      await service.indexEpisodeVariant(99, {
+        path: '/data/ep.mkv',
+        fileSize: 500,
+        probeMetadata: { streams: [] },
+      });
+
+      expect(repositoryMock.deleteEpisodeVariantsNotInPaths).not.toHaveBeenCalled();
+      expect(repositoryMock.upsertVariant).toHaveBeenCalledWith(
+        expect.objectContaining({ mediaType: 'EPISODE', episodeId: 99 }),
+      );
+      expect(repositoryMock.replaceAudioTracks).toHaveBeenCalledWith(1, [
+        { streamIndex: 1, languageCode: 'en' },
+      ]);
+      expect(repositoryMock.replaceSubtitleTracks).toHaveBeenCalledWith(1, [
+        { source: 'EMBEDDED', streamIndex: 2, languageCode: 'th' },
+      ]);
+    });
+
+    it('does not mutate inventory when metadata probing fails', async () => {
+      const repositoryMock = makeRepositoryMock();
+      const parserMock = makeParserMock();
+      const failure = new Error('ffprobe unavailable');
+      const metadataProbe = { probe: vi.fn().mockRejectedValue(failure) };
+      const service = new VariantInventoryIndexer(
+        repositoryMock as unknown as SubtitleVariantRepository,
+        parserMock as unknown as ProbeMetadataParser,
+        metadataProbe,
+      );
+
+      await expect(service.indexEpisodeVariant(99, {
+        path: '/data/ep.mkv',
+        fileSize: 500,
+      })).rejects.toBe(failure);
+
+      expect(repositoryMock.upsertVariant).not.toHaveBeenCalled();
+      expect(repositoryMock.replaceAudioTracks).not.toHaveBeenCalled();
+      expect(repositoryMock.replaceSubtitleTracks).not.toHaveBeenCalled();
+      expect(repositoryMock.deleteEpisodeVariantsNotInPaths).not.toHaveBeenCalled();
+    });
   });
 });

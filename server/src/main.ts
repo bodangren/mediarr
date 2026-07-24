@@ -68,6 +68,11 @@ import { DiscoveryService } from './services/DiscoveryService';
 import { VariantMissingSubtitleService } from './services/VariantMissingSubtitleService';
 import { VariantSubtitleFetchService } from './services/VariantSubtitleFetchService';
 import { VariantWantedService } from './services/VariantWantedService';
+import { VariantBackfillService } from './services/VariantBackfillService';
+import { VariantInventoryIndexer } from './services/VariantInventoryIndexer';
+import { ProbeMetadataParser } from './services/ProbeMetadataParser';
+import { FfprobeMetadataProbe } from './services/FfprobeMetadataProbe';
+import { createVariantLifecycle } from './services/VariantLifecycle';
 import { WantedService } from './services/WantedService';
 import { WantedSearchService } from './services/WantedSearchService';
 import { RssMediaMonitor } from './services/RssMediaMonitor';
@@ -167,6 +172,17 @@ async function startApi(): Promise<void> {
   const appSettingsRepository = new AppSettingsRepository(prisma);
   const torrentRepository = new TorrentRepository(prisma);
   const collectionRepository = new CollectionRepository(prisma);
+
+  const variantBackfillService = new VariantBackfillService(
+    prisma,
+    subtitleVariantRepository,
+  );
+  const variantInventoryIndexer = new VariantInventoryIndexer(
+    subtitleVariantRepository,
+    new ProbeMetadataParser(),
+    new FfprobeMetadataProbe(),
+  );
+  const catalogCache = new CatalogCache();
 
   // Create the event hub early so NotificationDispatchService can publish to it
   const eventHub = new ApiEventHub();
@@ -328,20 +344,21 @@ async function startApi(): Promise<void> {
     subtitleFetchService,
     subtitleFetchProvider,
   );
+  const variantLifecycle = createVariantLifecycle(
+    variantBackfillService,
+    subtitleVariantRepository,
+    variantInventoryIndexer,
+    subtitleAutomationService,
+    catalogCache,
+  );
+  await variantLifecycle.start();
 
   const importManager = new ImportManager(
     torrentManager,
     organizer,
     prisma,
     activityEventEmitter,
-    {
-      onMovieImported: async (movieId: number) => {
-        await subtitleAutomationService.onMovieImported(movieId);
-      },
-      onEpisodeImported: async (episodeId: number) => {
-        await subtitleAutomationService.onEpisodeImported(episodeId);
-      },
-    },
+    variantLifecycle.importHooks,
     notificationDispatchService,
   );
 
@@ -412,7 +429,6 @@ async function startApi(): Promise<void> {
   const backupService = new BackupService(dbFilePath, backupDir);
   const systemHealthService = new SystemHealthService(prisma);
 
-  const catalogCache = new CatalogCache();
   await catalogCache.load();
   catalogCache.watch();
 
@@ -435,6 +451,7 @@ async function startApi(): Promise<void> {
     subtitleInventoryApiService,
     subtitleProviderFactory,
     subtitleAutomationService,
+    ...variantLifecycle.apiDependencies,
     playbackService,
     settingsService,
     activityEventRepository,
@@ -464,6 +481,7 @@ async function startApi(): Promise<void> {
 
   const close = async (): Promise<void> => {
     seedingProtector.stop();
+    variantLifecycle.close();
     await discoveryService.stop().catch(error => {
       console.warn('Failed to stop discovery service cleanly:', error);
     });

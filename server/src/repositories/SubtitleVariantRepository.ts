@@ -88,6 +88,9 @@ export class SubtitleVariantRepository {
   constructor(private readonly prisma: DatabaseClient) {}
 
   async upsertVariant(input: UpsertVariantInput): Promise<MediaFileVariant> {
+    if (input.mediaType !== 'MOVIE' && input.mediaType !== 'EPISODE') {
+      throw new Error(`Unsupported variant media type '${String(input.mediaType)}'`);
+    }
     if (input.mediaType === 'MOVIE' && !input.movieId) {
       throw new Error('movieId is required for MOVIE variants');
     }

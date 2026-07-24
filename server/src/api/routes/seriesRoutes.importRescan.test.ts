@@ -11,12 +11,22 @@ import { registerSeriesRoutes } from './seriesRoutes';
 const mockStat = vi.hoisted(() => vi.fn());
 const mockMkdir = vi.hoisted(() => vi.fn());
 const mockRename = vi.hoisted(() => vi.fn());
+const mockCopyFile = vi.hoisted(() => vi.fn());
+const mockUnlink = vi.hoisted(() => vi.fn());
 
 vi.mock('node:fs/promises', () => ({
-  default: { stat: mockStat, mkdir: mockMkdir, rename: mockRename },
+  default: {
+    stat: mockStat,
+    mkdir: mockMkdir,
+    rename: mockRename,
+    copyFile: mockCopyFile,
+    unlink: mockUnlink,
+  },
   stat: mockStat,
   mkdir: mockMkdir,
   rename: mockRename,
+  copyFile: mockCopyFile,
+  unlink: mockUnlink,
 }));
 
 const mockScanFn = vi.hoisted(() => vi.fn());
@@ -196,6 +206,7 @@ function makeImportApplyDeps(): ApiDependencies {
           seasonNumber: 1,
           episodeNumber: 1,
         }),
+        update: vi.fn().mockResolvedValue({ id: 100 }),
       },
       mediaFileVariant: {
         create: vi.fn().mockResolvedValue({}),
@@ -212,6 +223,8 @@ describe('seriesRoutes — POST /api/series/import/apply', () => {
     vi.resetAllMocks();
     mockMkdir.mockResolvedValue(undefined);
     mockRename.mockResolvedValue(undefined);
+    mockCopyFile.mockResolvedValue(undefined);
+    mockUnlink.mockResolvedValue(undefined);
     mockStat.mockResolvedValue({ size: 1024 * 1024 });
   });
 
@@ -311,7 +324,7 @@ describe('seriesRoutes — POST /api/series/import/apply', () => {
     expect(body.data.errors[0].error).toMatch(/traversal|escape/i);
   });
 
-  it('2.6 fs.rename failure is caught and added to errors', async () => {
+  it('2.6 handles EXDEV with copy then unlink and completes the import', async () => {
     mockRename.mockRejectedValue(Object.assign(new Error('cross-device link not permitted'), { code: 'EXDEV' }));
 
     const app = createApp(makeImportApplyDeps());
@@ -325,8 +338,12 @@ describe('seriesRoutes — POST /api/series/import/apply', () => {
 
     expect(res.statusCode).toBe(200);
     const body = res.json();
-    expect(body.data.failed).toBe(1);
-    expect(body.data.errors[0].error).toContain('cross-device');
+    expect(body.data).toEqual({ imported: 1, failed: 0, errors: [] });
+    expect(mockCopyFile).toHaveBeenCalledWith(
+      '/tmp/ep.mkv',
+      '/media/My Show/Season 01/My Show - S01E01.mkv',
+    );
+    expect(mockUnlink).toHaveBeenCalledWith('/tmp/ep.mkv');
   });
 
   it('2.7 mixed batch: partial success returns correct imported/failed counts', async () => {
@@ -355,6 +372,46 @@ describe('seriesRoutes — POST /api/series/import/apply', () => {
     expect(body.data.failed).toBe(1);
     expect(body.data.errors).toHaveLength(1);
     expect(body.data.errors[0].path).toBe('/tmp/ep2.mkv');
+  });
+
+  it('2.8 persists the exact EPISODE variant payload and incrementally indexes it', async () => {
+    const indexMovieVariant = vi.fn().mockResolvedValue(undefined);
+    const indexEpisodeVariant = vi.fn().mockResolvedValue(undefined);
+    const deps = makeImportApplyDeps();
+    deps.variantInventoryIndexer = {
+      indexMovieVariant,
+      indexEpisodeVariant,
+    };
+    const app = createApp(deps);
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/series/import/apply',
+      payload: {
+        files: [{
+          path: '/tmp/ep.mkv',
+          seriesId: 1,
+          seasonId: 10,
+          episodeId: 100,
+          quality: '1080p',
+        }],
+      },
+    });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.json().data).toEqual({ imported: 1, failed: 0, errors: [] });
+    expect(mockUpsertVariant).toHaveBeenCalledWith({
+      mediaType: 'EPISODE',
+      episodeId: 100,
+      path: '/media/My Show/Season 01/My Show - S01E01.mkv',
+      fileSize: 1024 * 1024,
+      quality: '1080p',
+    });
+    expect(indexEpisodeVariant).toHaveBeenCalledWith(100, {
+      path: '/media/My Show/Season 01/My Show - S01E01.mkv',
+      fileSize: 1024 * 1024,
+      quality: '1080p',
+    });
   });
 });
 

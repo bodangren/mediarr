@@ -1,0 +1,21 @@
+Task: Record server-integrity remediation lessons and debt closure
+
+Summary:
+- Corrected quality-profile guidance to reject unknown requested IDs, require the configured named default, and prohibit first-row/literal fallback.
+- Condensed SQLite migration guidance around ineffective in-transaction PRAGMA foreign_keys changes, child-table preservation, additive validation/triggers, and foreign-key verification.
+- Recorded the Podman overlay rule that frozen workspace install and Vite build must share one layer.
+- Marked both historical strict-server-typecheck debt rows Resolved now that strict server typecheck passes.
+- Left the separate historical app-suite umbrella debt unchanged because this documentation subtask did not establish a new full-suite result.
+
+Files:
+- measure/lessons-learned.md
+- measure/tech-debt.md
+
+Why:
+The completed server-integrity remediation invalidated old fallback and typecheck guidance and exposed reusable SQLite and Podman failure modes. Persisting the corrected contracts prevents future fixes from reintroducing silent policy fallback, destructive SQLite rebuilds, or nondeterministic container builds.
+
+Validation:
+- lessons-learned.md: 50 lines
+- tech-debt.md: 50 lines
+- git diff --check: passed
+- Commit scope: exactly two files

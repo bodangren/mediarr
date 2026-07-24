@@ -1,0 +1,21 @@
+Task: Repair clean-image workspace dependency loss after the frozen install
+
+Summary:
+- Moved source COPY before the builder's npm operation.
+- Combined the single frozen workspace install and SPA production build in one Docker RUN so Vite consumes the exact node_modules filesystem created by npm ci without a committed overlay-layer reload.
+- Preserved exactly one npm ci --workspaces --include-workspace-root; added no second install, aliases, or externalization hacks.
+- Strengthened the clean-workspace invariant to require manifests, postinstall, and source before the combined instruction and exactly one frozen install/build occurrence.
+
+Files:
+- Dockerfile
+- tests/clean-workspace-invariant.test.js
+
+Verification:
+- Red: CI=true npx vitest run tests/clean-workspace-invariant.test.js => 1/3 passed, 2/3 failed because install/build were separate layers and no combined post-source instruction existed.
+- Green: same focused invariant => 3/3 passed, exit 0 (final rerun 393ms).
+- npm ci --workspaces --include-workspace-root --dry-run => exit 0; postinstall entrypoint ran and lockfile graph resolved (115 dry-run additions reported).
+- npm run build --workspace=app => exit 0; 3,028 modules transformed; Vite production build completed in 26.55s.
+- git diff --check => exit 0.
+- Per parent instruction, no live no-cache Docker/Podman build was started while the root release gate continued.
+
+Graph: Not applicable; Dockerfile and invariant-only change, with no TypeScript symbol/import/schema hierarchy change.

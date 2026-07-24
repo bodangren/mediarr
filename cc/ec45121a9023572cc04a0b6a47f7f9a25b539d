@@ -1,0 +1,8 @@
+Task: Start integrated verification and closeout
+
+Summary:
+- Marked the final Measure closeout task in progress after authoritative root and SPA suites passed.
+- Runtime code is unchanged.
+
+Why:
+This preserves the plan-first workflow before writing final verification, metadata, checkpoint, and archive artifacts.

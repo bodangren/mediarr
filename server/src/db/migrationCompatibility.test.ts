@@ -46,6 +46,23 @@ function createLegacyAppSettings(db: SqliteDatabase, schedulerColumns: 'none' | 
     CREATE TABLE "Torrent" (
       "id" integer PRIMARY KEY AUTOINCREMENT NOT NULL
     );
+    CREATE TABLE "Episode" (
+      "id" integer PRIMARY KEY AUTOINCREMENT NOT NULL
+    );
+    CREATE TABLE "MediaFileVariant" (
+      "id" integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+      "mediaType" text NOT NULL,
+      "movieId" integer,
+      "episodeId" integer,
+      "path" text NOT NULL,
+      "fileSize" integer NOT NULL,
+      "monitored" integer DEFAULT true NOT NULL,
+      "probeFingerprint" text,
+      "releaseName" text,
+      "quality" text,
+      "createdAt" integer DEFAULT (strftime('%s','now')) NOT NULL,
+      "updatedAt" integer NOT NULL
+    );
   `);
   if (schedulerColumns === 'both') {
     db.prepare(`
@@ -114,7 +131,7 @@ describe('tracked SQLite migration compatibility', () => {
     const upgraded = new Database(databasePath, { readonly: true });
     const columns = upgraded.prepare('PRAGMA table_info("AppSettings")').all() as Array<{ name: string }>;
     expect(columns.map((column) => column.name)).toEqual(expect.arrayContaining(['schedulerState', 'schedulerEnabled']));
-    expect(upgraded.prepare('SELECT count(*) AS count FROM "__drizzle_migrations"').get()).toEqual({ count: 6 });
+    expect(upgraded.prepare('SELECT count(*) AS count FROM "__drizzle_migrations"').get()).toEqual({ count: 7 });
     upgraded.close();
   }, 30_000);
 
@@ -138,10 +155,11 @@ describe('tracked SQLite migration compatibility', () => {
       '0003_workable_sage',
       '0004_scheduler_enabled_state',
       '0005_truthful_rss_episode_links',
+      '0006_variant_media_type_check',
     ]);
     expect(pushed.prepare('SELECT schedulerState, schedulerEnabled FROM "AppSettings" WHERE id = 1').get())
       .toEqual({ schedulerState: '{"rss-sync":"2026-07-12T00:00:00.000Z"}', schedulerEnabled: '{"rss-sync":false}' });
-    expect(pushed.prepare('SELECT count(*) AS count FROM "__drizzle_migrations"').get()).toEqual({ count: 6 });
+    expect(pushed.prepare('SELECT count(*) AS count FROM "__drizzle_migrations"').get()).toEqual({ count: 7 });
     pushed.close();
   }, 30_000);
 

@@ -6,6 +6,7 @@ import {
   blob,
   uniqueIndex,
   index,
+  check,
 } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
 
@@ -227,6 +228,10 @@ export const mediaFileVariants = sqliteTable("MediaFileVariant", {
     .notNull()
     .$onUpdate(() => new Date()),
 }, (table) => [
+  check(
+    "MediaFileVariant_mediaType_check",
+    sql`${table.mediaType} IN ('MOVIE', 'EPISODE')`,
+  ),
   uniqueIndex("MediaFileVariant_mediaType_path_key").on(
     table.mediaType,
     table.path,

@@ -143,7 +143,7 @@ function assertDatabaseIntegrity(db: SqliteDatabase): void {
 }
 
 interface SchemaObject {
-  type: 'table' | 'index';
+  type: 'table' | 'index' | 'trigger';
   name: string;
   sql: string;
 }
@@ -161,7 +161,7 @@ function readSchemaObjects(db: SqliteDatabase): Map<string, string> {
   const objects = db.prepare(`
     SELECT type, name, sql
     FROM sqlite_master
-    WHERE type IN ('table', 'index')
+    WHERE type IN ('table', 'index', 'trigger')
       AND sql IS NOT NULL
       AND name NOT LIKE 'sqlite_%'
       AND name <> '__drizzle_migrations'
@@ -256,6 +256,12 @@ export function reconcileLegacyMigrationState(
     if (!rssEpisodeLinksMigration) {
       throw new Error('Migration compatibility requires checked-in 0005_truthful_rss_episode_links.sql metadata.');
     }
+    const variantMediaTypeMigration = migrations.find(
+      (migration) => migration.tag === '0006_variant_media_type_check',
+    );
+    if (!variantMediaTypeMigration) {
+      throw new Error('Migration compatibility requires checked-in 0006_variant_media_type_check.sql metadata.');
+    }
     const columns = readColumns(db);
     assertLegacyAppSettingsBase(columns);
 
@@ -283,7 +289,10 @@ export function reconcileLegacyMigrationState(
       // Continue below so an already-pushed scheduler column gets a precise ledger entry too.
       const reconciled = reconcileKnownSchedulerMigrations(db, schedulerMigrations, columns);
       const rssReconciled = reconcileTorrentEpisodeLinksMigration(db, rssEpisodeLinksMigration);
-      return [...adopted, ...reconciled, ...rssReconciled];
+      const variantReconciled = reconcileVariantMediaTypeMigration(
+        db, variantMediaTypeMigration, projectRoot,
+      );
+      return [...adopted, ...reconciled, ...rssReconciled, ...variantReconciled];
     }
 
     if (!journalExists) {
@@ -292,10 +301,43 @@ export function reconcileLegacyMigrationState(
     return [
       ...reconcileKnownSchedulerMigrations(db, schedulerMigrations, columns),
       ...reconcileTorrentEpisodeLinksMigration(db, rssEpisodeLinksMigration),
+      ...reconcileVariantMediaTypeMigration(db, variantMediaTypeMigration, projectRoot),
     ];
   } finally {
     db.close();
   }
+}
+
+const VARIANT_MEDIA_TYPE_TRIGGER_NAMES = [
+  'MediaFileVariant_mediaType_insert_check',
+  'MediaFileVariant_mediaType_update_check',
+] as const;
+
+function reconcileVariantMediaTypeMigration(
+  db: SqliteDatabase,
+  migration: MigrationMetadata,
+  projectRoot: string,
+): MigrationMetadata[] {
+  const applied = db.prepare(
+    'SELECT 1 FROM "__drizzle_migrations" WHERE hash = ? LIMIT 1',
+  ).get(migration.hash) !== undefined;
+  const expected = readExpectedPushBaseline(projectRoot);
+  const actual = readSchemaObjects(db);
+  const triggersMatch = VARIANT_MEDIA_TYPE_TRIGGER_NAMES.every((name) => (
+    actual.get(`trigger:${name}`) === expected.get(`trigger:${name}`)
+  ));
+
+  if (applied && !triggersMatch) {
+    throw new Error(
+      'Refusing migration-history adoption: 0006 is recorded but MediaFileVariant media-type enforcement triggers are absent or drifted.',
+    );
+  }
+  if (!triggersMatch || applied) {
+    return [];
+  }
+
+  insertJournalEntry(db, migration);
+  return [migration];
 }
 
 function reconcileTorrentEpisodeLinksMigration(

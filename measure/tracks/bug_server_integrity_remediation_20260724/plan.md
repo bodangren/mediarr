@@ -6,16 +6,16 @@ _Blast radius: UpdateService (routes, scheduler, SPA update client), ImportManag
 (TorrentManager, organizer pipeline, tests), MediaRepository and DatabaseClient
 (media and monitoring services)._
 
-- [ ] Task: Make update installation fail closed and application-owned
+- [~] Task: Make update installation fail closed and application-owned
   - [ ] Write red tests for the production default path, asset mismatch,
         checksum absence, atomic replacement, and rollback.
   - [ ] Prevent writes to the Bun/Node runtime and require an explicit supported
         install layout.
-- [ ] Task: Correct import strategy and cross-volume behavior
+- [~] Task: Correct import strategy and cross-volume behavior
   - [ ] Write red filesystem tests for same-volume seeding preservation,
         absent destinations, and EXDEV behavior.
   - [ ] Replace the reversed move boolean with explicit safe semantics.
-- [ ] Task: Restore real SQLite transaction atomicity
+- [~] Task: Restore real SQLite transaction atomicity
   - [ ] Add installed-runtime rollback tests for repository operations.
   - [ ] Remove async callbacks and `Promise.all` transaction impersonation.
 - [ ] Task: Measure - User Manual Verification 'Critical Runtime and Data Integrity'
@@ -74,4 +74,3 @@ _Blast radius: UpdateService (routes, scheduler, SPA update client), ImportManag
 - [ ] Task: Update verification evidence, metadata, lessons/debt where needed,
       checkpoint the phase, and archive the completed track
 - [ ] Task: Measure - User Manual Verification 'Integrated Verification and Closeout'
-

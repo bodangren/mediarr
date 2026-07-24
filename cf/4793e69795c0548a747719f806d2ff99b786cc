@@ -1,0 +1,16 @@
+Task: Integrated verification and closeout evidence
+
+Summary:
+- Recorded a complete C1-C3, H1-H13, and M1-M5 findings-to-fix matrix with implementation commits and behavioral proof.
+- Captured authoritative repo-graph, server coverage, root, SPA, typecheck, lint, smoke, install, route-map, and live Docker results.
+- Documented the bounded 14-module whole-file coverage exception while confirming focused success/failure coverage for every remediated path.
+- Closed the historical app failure inventory after the isolated 204-file / 1,960-test suite passed.
+- Completed track metadata with actual task count and deviations.
+
+Files:
+- measure/tracks/bug_server_integrity_remediation_20260724/verification.md
+- measure/tracks/bug_server_integrity_remediation_20260724/metadata.json
+- measure/tech-debt.md
+
+Why:
+The Measure closeout must preserve auditable evidence that implementation reality, graph reachability, tests, and production build gates all match the source audit before the track is archived.

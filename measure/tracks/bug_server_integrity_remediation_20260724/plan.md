@@ -72,8 +72,8 @@ _Blast radius: UpdateService (routes, scheduler, SPA update client), ImportManag
 ## Phase 5: Integrated Verification and Closeout
 
 - [x] Task: Refresh repo-graph and verify changed-symbol callers
-- [~] Task: Run targeted coverage, strict typecheck, lint, server/root suites,
-      production build, and Docker invariant
+- [x] Task: Run targeted coverage, strict typecheck, lint, server/root suites,
+      production build, and Docker invariant (cf4793e6)
   - [x] Repair root fixtures exposed by hardened API, subtitle, torrent, and
         repository contracts. (21669c5a, 3ca5a848)
   - [x] Repair SPA gate concurrency and false interaction assertions exposed by
@@ -89,6 +89,7 @@ _Blast radius: UpdateService (routes, scheduler, SPA update client), ImportManag
   - [x] Persist every episode linked to multi-episode imports. (bc861059)
   - [x] Stop normal test suites from mutating tracked artifacts. (1a03848e)
   - [x] Enforce variant media types at the installed SQLite boundary. (053582f8)
-- [~] Task: Update verification evidence, metadata, lessons/debt where needed,
-      checkpoint the phase, and archive the completed track
-- [ ] Task: Measure - User Manual Verification 'Integrated Verification and Closeout'
+- [x] Task: Update verification evidence, metadata, lessons/debt where needed,
+      checkpoint the phase, and archive the completed track (cf4793e6)
+- [x] Task: Measure - User Manual Verification 'Integrated Verification and Closeout'
+  - Automated Fastify/SQLite/filesystem/graph/root/SPA/container verification covered the server-only closeout; no interactive UI verification applied.

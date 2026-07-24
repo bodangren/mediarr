@@ -22,6 +22,21 @@ interface ImportHooks {
   onEpisodeImported?: (episodeId: number) => Promise<void> | void;
 }
 
+interface LinkedEpisodeImportRecord {
+  id: number;
+  seasonNumber: number;
+  episodeNumber: number;
+  title: string;
+  season: {
+    series: {
+      id: number;
+      title: string;
+      path?: string | null;
+      year?: number | null;
+    };
+  };
+}
+
 /**
  * Service to bridge TorrentManager and Organizer for completed torrent imports.
  * Listens for completed torrents and attempts to import them if they match a known
@@ -161,6 +176,11 @@ export class ImportManager {
       where: { infoHash: torrent.infoHash },
       select: { episodeId: true, episodeIds: true, movieId: true },
     });
+    const linkedEpisodeIds = Array.isArray(torrentRow?.episodeIds)
+      ? [...new Set(torrentRow.episodeIds.filter(
+        (id: unknown): id is number => typeof id === 'number' && Number.isInteger(id),
+      ))]
+      : [];
 
     if (files.length === 0) {
       await this.activityEventEmitter?.emit({
@@ -179,15 +199,21 @@ export class ImportManager {
       return;
     }
 
+    if (files.length === 1 && linkedEpisodeIds.length > 1) {
+      await this.importLinkedMultiEpisodeFile(
+        torrent,
+        files[0]!,
+        linkedEpisodeIds,
+      );
+      return;
+    }
+
     for (const filePath of files) {
       const filename = path.basename(filePath);
 
       try {
 
       // ── Fast path: torrent was grabbed for a known episode ───────────────
-      const linkedEpisodeIds = Array.isArray(torrentRow?.episodeIds)
-        ? torrentRow.episodeIds.filter((id: unknown): id is number => typeof id === 'number')
-        : [];
       const linkedEpisodeId = linkedEpisodeIds.length <= 1
         ? (linkedEpisodeIds[0] ?? torrentRow?.episodeId ?? null)
         : null;
@@ -555,6 +581,166 @@ export class ImportManager {
     }
   }
 
+  private async importLinkedMultiEpisodeFile(
+    torrent: CompletedTorrentPayload,
+    filePath: string,
+    linkedEpisodeIds: number[],
+  ): Promise<void> {
+    const filename = path.basename(filePath);
+    const linkedEpisodeResults = await Promise.all(linkedEpisodeIds.map(async linkedEpisodeId => {
+      const episode: unknown = await this.prisma.episode.findUnique({
+        where: { id: linkedEpisodeId },
+        include: { season: { include: { series: true } } },
+      });
+      return { linkedEpisodeId, episode };
+    }));
+    const missingEpisode = linkedEpisodeResults.find(
+      ({ episode }) => !this.isLinkedEpisodeImportRecord(episode),
+    );
+    if (missingEpisode) {
+      await this.activityEventEmitter?.emit({
+        eventType: 'IMPORT_FAILED',
+        sourceModule: 'import-manager',
+        entityRef: `torrent:${torrent.infoHash}`,
+        summary: `Linked episode (id=${missingEpisode.linkedEpisodeId}) not found for ${filename}`,
+        success: false,
+        details: {
+          sourcePath: filePath,
+          torrentName: torrent.name,
+          reason: `linked episode id=${missingEpisode.linkedEpisodeId} not found in library`,
+        },
+        occurredAt: new Date(),
+      });
+      return;
+    }
+    const linkedEpisodes = linkedEpisodeResults.flatMap(({ episode }) => (
+      this.isLinkedEpisodeImportRecord(episode) ? [episode] : []
+    ));
+
+    const parsed = await releaseParser.parse(filename);
+    const parsedEpisodeNumbers = parsed
+      ? [...new Set(parsed.episodeNumbers)]
+      : [];
+    const firstEpisode = linkedEpisodes[0];
+    const series = firstEpisode?.season?.series;
+    const linkedEpisodeNumbers = linkedEpisodes.map(episode => episode.episodeNumber);
+    const linkedEpisodeNumberSet = new Set(linkedEpisodeNumbers);
+    const episodeByNumber = new Map(
+      linkedEpisodes.map(episode => [episode.episodeNumber, episode]),
+    );
+    const orderedEpisodes = parsedEpisodeNumbers.flatMap(number => {
+      const episode = episodeByNumber.get(number);
+      return episode ? [episode] : [];
+    });
+    const allSameSeries = linkedEpisodes.every(episode => (
+      episode.season.series.id === series?.id
+    ));
+    const allSameSeason = linkedEpisodes.every(episode => (
+      episode.seasonNumber === parsed?.seasonNumber
+    ));
+    const parsedSetMatches = parsedEpisodeNumbers.length === linkedEpisodeNumberSet.size
+      && parsedEpisodeNumbers.every(number => linkedEpisodeNumberSet.has(number))
+      && orderedEpisodes.length === parsedEpisodeNumbers.length;
+
+    if (
+      !parsed
+      || parsed.seasonNumber === null
+      || parsedEpisodeNumbers.length <= 1
+      || !allSameSeries
+      || !allSameSeason
+      || !parsedSetMatches
+    ) {
+      await this.activityEventEmitter?.emit({
+        eventType: 'IMPORT_FAILED',
+        sourceModule: 'import-manager',
+        entityRef: `torrent:${torrent.infoHash}`,
+        summary: `Linked episodes do not match ${filename}`,
+        success: false,
+        details: {
+          sourcePath: filePath,
+          torrentName: torrent.name,
+          reason: 'linked episodes do not match parsed multi-episode file',
+        },
+        occurredAt: new Date(),
+      });
+      return;
+    }
+
+    const canonicalEpisode = orderedEpisodes[0];
+    if (!canonicalEpisode || !series) {
+      return;
+    }
+
+    const seriesPath = await this.resolveSeriesPath(series);
+    if (!seriesPath) {
+      await this.activityEventEmitter?.emit({
+        eventType: 'IMPORT_FAILED',
+        sourceModule: 'import-manager',
+        entityRef: `torrent:${torrent.infoHash}`,
+        summary: `No TV root folder configured for ${series.title}`,
+        success: false,
+        details: {
+          sourcePath: filePath,
+          torrentName: torrent.name,
+          reason: 'series.path is null and no TV root folder is configured',
+        },
+        occurredAt: new Date(),
+      });
+      return;
+    }
+
+    const strategy = await isSameVolume(filePath, seriesPath) ? 'hardlink' : 'copy';
+    const newPath = await this.organizer.organizeFile(
+      filePath,
+      { ...series, path: seriesPath },
+      canonicalEpisode,
+      { strategy },
+    );
+    const updateResult = await this.prisma.episode.updateMany({
+      where: { id: { in: linkedEpisodeIds } },
+      data: { path: newPath },
+    });
+    if (updateResult?.count !== linkedEpisodeIds.length) {
+      throw new Error(
+        `Expected to update ${linkedEpisodeIds.length} linked episodes, updated ${updateResult?.count ?? 0}`,
+      );
+    }
+
+    await this.prisma.mediaFileVariant.upsert({
+      where: { mediaType_path: { mediaType: 'EPISODE', path: newPath } },
+      create: {
+        mediaType: 'EPISODE',
+        episodeId: canonicalEpisode.id,
+        path: newPath,
+        fileSize: BigInt(0),
+      },
+      update: { episodeId: canonicalEpisode.id },
+    });
+
+    await this.activityEventEmitter?.emit({
+      eventType: 'SERIES_IMPORTED',
+      sourceModule: 'import-manager',
+      entityRef: `torrent:${torrent.infoHash}`,
+      summary: `Imported episodes ${filename}`,
+      success: true,
+      details: {
+        sourcePath: filePath,
+        torrentName: torrent.name,
+        episodeIds: linkedEpisodeIds,
+      },
+      occurredAt: new Date(),
+    });
+
+    void this.notificationDispatchService?.notifyDownload({
+      title: `${series.title} - ${filename}`,
+      mediaType: 'episode',
+    });
+
+    for (const episode of orderedEpisodes) {
+      await this.runImportHook('onEpisodeImported', episode.id);
+    }
+  }
+
   private async getFiles(dir: string): Promise<string[]> {
     const stat = await fs.stat(dir);
     if (!stat.isDirectory()) {
@@ -596,6 +782,31 @@ export class ImportManager {
     } catch (error) {
       console.warn(`[ImportManager] ${hookName} hook failed for media id ${mediaId}:`, error);
     }
+  }
+
+  private isLinkedEpisodeImportRecord(value: unknown): value is LinkedEpisodeImportRecord {
+    if (!value || typeof value !== 'object') {
+      return false;
+    }
+
+    const episode = value as Record<string, unknown>;
+    const season = episode.season;
+    if (!season || typeof season !== 'object') {
+      return false;
+    }
+
+    const series = (season as Record<string, unknown>).series;
+    if (!series || typeof series !== 'object') {
+      return false;
+    }
+
+    const seriesRecord = series as Record<string, unknown>;
+    return Number.isInteger(episode.id)
+      && Number.isInteger(episode.seasonNumber)
+      && Number.isInteger(episode.episodeNumber)
+      && typeof episode.title === 'string'
+      && Number.isInteger(seriesRecord.id)
+      && typeof seriesRecord.title === 'string';
   }
 
   private async resolveRetryImportPath(basePath: unknown, torrentName: unknown): Promise<string> {

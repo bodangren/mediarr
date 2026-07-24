@@ -1,0 +1,5 @@
+Task start: Repair server test/build/lint gates
+
+Scope: server workspace test script; migration-test exclusions; Docker workspace invariant; smoke compilation output; practical lint gate.
+
+Why: record the Measure in-progress checkpoint before implementation while parallel agents own separate route, validation, lifecycle, and test-integrity files.

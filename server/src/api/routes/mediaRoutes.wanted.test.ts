@@ -7,7 +7,12 @@ import { registerMediaRoutes } from './mediaRoutes';
 function buildApp(deps: ApiDependencies): FastifyInstance {
   const app = Fastify({ logger: false });
   app.setErrorHandler((error, request, reply) => registerApiErrorHandler(request, reply, error));
-  registerMediaRoutes(app, deps);
+  registerMediaRoutes(app, {
+    qualityProfileRepository: {
+      findByName: vi.fn().mockResolvedValue({ id: 5, name: 'Any' }),
+    } as never,
+    ...deps,
+  });
   return app;
 }
 

@@ -7,14 +7,16 @@
  * 3. SSE event name contract (torrent:progress vs torrent:stats)
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { afterEach, describe, it, expect, vi, beforeEach } from 'vitest';
+import Fastify, { type FastifyInstance } from 'fastify';
 import { MetadataProvider } from '../../services/MetadataProvider';
 import { SettingsService } from '../../services/SettingsService';
 import { HttpClient } from '../../indexers/HttpClient';
-import { AppSettingsRepository } from '../../repositories/AppSettingsRepository';
-import { DatabaseClient } from '../../db/drizzleClient';
 import { registerMediaRoutes } from './mediaRoutes';
 import { ApiEventHub } from '../../api/eventHub';
+import { registerApiErrorHandler } from '../errors';
+import type { ApiDependencies } from '../types';
+import { createApiServer } from '../createApiServer';
 
 // Mocks
 const mockFetch = vi.fn();
@@ -27,14 +29,23 @@ const mockHttpClient = {
   get: vi.fn(),
 } as unknown as HttpClient;
 
-const mockAppSettingsRepo = {
-  get: vi.fn(),
-  update: vi.fn(),
-} as unknown as AppSettingsRepository;
+const apps: FastifyInstance[] = [];
+
+function buildMediaApp(deps: ApiDependencies): FastifyInstance {
+  const app = Fastify({ logger: false });
+  app.setErrorHandler((error, request, reply) => registerApiErrorHandler(request, reply, error));
+  registerMediaRoutes(app, deps);
+  apps.push(app);
+  return app;
+}
 
 describe('Manual Test Findings - Regression Tests', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  afterEach(async () => {
+    await Promise.all(apps.splice(0).map(app => app.close()));
   });
 
   describe('Movie Search Empty Results Bug', () => {
@@ -153,100 +164,172 @@ describe('Manual Test Findings - Regression Tests', () => {
     });
   });
 
-  describe('TV Add Foreign Key Constraint Bug', () => {
-    it('should validate qualityProfileId exists before creating TV series', async () => {
-      // This test verifies the diagnostic logging is in place
-      // The actual fix requires the server to either:
-      // 1. Look up the quality profile by name instead of assuming ID 1
-      // 2. Create a default quality profile if none exists
-      // 3. Return a clear validation error instead of raw FK error
+  describe('Media quality-profile production contract', () => {
+    function createRouteHarness(options?: {
+      findById?: ReturnType<typeof vi.fn>;
+      findByName?: ReturnType<typeof vi.fn>;
+    }) {
+      const findById = options?.findById ?? vi.fn().mockResolvedValue({ id: 7, name: 'HD-1080p' });
+      const findByName = options?.findByName ?? vi.fn().mockResolvedValue({ id: 5, name: 'Any' });
+      const findMovieByTmdbId = vi.fn().mockResolvedValue(null);
+      const findSeriesByTvdbId = vi.fn().mockResolvedValue(null);
+      const upsertMovie = vi.fn().mockResolvedValue({ id: 101, title: 'Arrival' });
+      const upsertSeries = vi.fn().mockResolvedValue({ id: 202, title: 'Dark' });
+      const app = buildMediaApp({
+        prisma: {} as never,
+        qualityProfileRepository: { findById, findByName } as never,
+        mediaRepository: {
+          findMovieByTmdbId,
+          findSeriesByTvdbId,
+          upsertMovie,
+          upsertSeries,
+        } as never,
+      });
+      return { app, findById, findByName, upsertMovie, upsertSeries };
+    }
 
-      // Arrange
-      const mockPrisma = {
-        qualityProfile: {
-          findUnique: vi.fn().mockResolvedValue(null), // No quality profile with ID 1
-          findMany: vi.fn().mockResolvedValue([]), // No quality profiles at all
-        },
-        series: {
-          findUnique: vi.fn().mockResolvedValue(null),
-          create: vi.fn(),
-        },
-      };
+    it('uses an explicitly requested real profile for movie creation', async () => {
+      const { app, findById, findByName, upsertMovie } = createRouteHarness();
 
-      // Act & Assert: The route should check for quality profile existence
-      // and provide a clear error message
-      expect(mockPrisma.qualityProfile.findUnique).not.toHaveBeenCalled();
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/media',
+        payload: {
+          mediaType: 'MOVIE',
+          tmdbId: 329865,
+          title: 'Arrival',
+          year: 2016,
+          qualityProfileId: 7,
+        },
+      });
+
+      expect(response.statusCode).toBe(201);
+      expect(findById).toHaveBeenCalledWith(7);
+      expect(findByName).not.toHaveBeenCalled();
+      expect(upsertMovie).toHaveBeenCalledWith(expect.objectContaining({ qualityProfileId: 7 }));
     });
 
-    it('should use first available quality profile when qualityProfileId is not specified', async () => {
-      // Arrange: Database has quality profiles but not with predictable IDs
-      const availableProfiles = [
-        { id: 5, name: 'Any' },
-        { id: 6, name: 'HD-1080p' },
-      ];
+    it('uses only the configured Any profile when series creation omits an ID', async () => {
+      const { app, findById, findByName, upsertSeries } = createRouteHarness();
 
-      const mockPrisma = {
-        qualityProfile: {
-          findUnique: vi.fn().mockResolvedValue(null),
-          findFirst: vi.fn().mockResolvedValue(availableProfiles[0]),
-          findMany: vi.fn().mockResolvedValue(availableProfiles),
-        },
-        series: {
-          findUnique: vi.fn().mockResolvedValue(null),
-          create: vi.fn().mockResolvedValue({ id: 1 }),
-        },
-        media: {
-          create: vi.fn().mockResolvedValue({ id: 1 }),
-        },
-      };
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/media',
+        payload: { mediaType: 'TV', tvdbId: 334824, title: 'Dark', year: 2017 },
+      });
 
-      // The fix should look up an available quality profile instead of assuming ID 1
-      expect(availableProfiles[0]!.id).toBe(5); // Not 1
+      expect(response.statusCode).toBe(201);
+      expect(findById).not.toHaveBeenCalled();
+      expect(findByName).toHaveBeenCalledWith('Any');
+      expect(upsertSeries).toHaveBeenCalledWith(expect.objectContaining({ qualityProfileId: 5 }));
+    });
+
+    it('returns an exact 422 for an unknown requested profile without substituting a default', async () => {
+      const findById = vi.fn().mockResolvedValue(null);
+      const findByName = vi.fn().mockResolvedValue({ id: 5, name: 'Any' });
+      const { app, upsertMovie } = createRouteHarness({ findById, findByName });
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/media',
+        payload: {
+          mediaType: 'MOVIE',
+          tmdbId: 329865,
+          title: 'Arrival',
+          year: 2016,
+          qualityProfileId: 999,
+        },
+      });
+
+      expect(response.statusCode).toBe(422);
+      expect(response.json()).toEqual({
+        ok: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Quality profile 999 does not exist',
+          retryable: false,
+          path: '/api/media',
+        },
+      });
+      expect(findByName).not.toHaveBeenCalled();
+      expect(upsertMovie).not.toHaveBeenCalled();
+    });
+
+    it('returns an exact 422 when no configured default profile exists', async () => {
+      const { app, upsertSeries } = createRouteHarness({
+        findByName: vi.fn().mockResolvedValue(null),
+      });
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/media',
+        payload: { mediaType: 'TV', tvdbId: 334824, title: 'Dark', year: 2017 },
+      });
+
+      expect(response.statusCode).toBe(422);
+      expect(response.json()).toEqual({
+        ok: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Default quality profile "Any" is not configured',
+          retryable: false,
+          path: '/api/media',
+        },
+      });
+      expect(upsertSeries).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ['requested', { findById: vi.fn().mockRejectedValue(new Error('profile lookup failed')) }, 7],
+      ['default', { findByName: vi.fn().mockRejectedValue(new Error('profile lookup failed')) }, undefined],
+    ] as const)('surfaces %s profile repository errors without creating media', async (_kind, mocks, qualityProfileId) => {
+      const { app, upsertMovie } = createRouteHarness(mocks);
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/media',
+        payload: {
+          mediaType: 'MOVIE',
+          tmdbId: 329865,
+          title: 'Arrival',
+          year: 2016,
+          ...(qualityProfileId === undefined ? {} : { qualityProfileId }),
+        },
+      });
+
+      expect(response.statusCode).toBe(500);
+      expect(response.json()).toEqual({
+        ok: false,
+        error: {
+          code: 'INTERNAL_ERROR',
+          message: 'profile lookup failed',
+          retryable: false,
+          path: '/api/media',
+        },
+      });
+      expect(upsertMovie).not.toHaveBeenCalled();
     });
   });
 
-  describe('SSE Event Name Contract', () => {
-    it('should use consistent event names for torrent updates', () => {
-      // The server should emit 'torrent:stats' (not 'torrent:progress')
-      // This test documents the expected event name
-      const expectedEventName = 'torrent:stats';
-      
-      // Verify the event name matches what's documented in the spec
-      expect(expectedEventName).toBe('torrent:stats');
+  it('publishes torrent:stats through the production API polling boundary', async () => {
+    const eventHub = new ApiEventHub(60_000);
+    const publish = vi.spyOn(eventHub, 'publish');
+    const stats = [{ infoHash: 'abc123', progress: 50 }];
+    const app = createApiServer({
+      prisma: {} as never,
+      eventHub,
+      torrentManager: { getTorrentsStatus: vi.fn().mockResolvedValue(stats) } as never,
+    }, {
+      torrentStatsIntervalMs: 5,
+      activityPollIntervalMs: 60_000,
+      healthPollIntervalMs: 60_000,
     });
+    apps.push(app);
 
-    it('should verify event hub publishes correct event names', () => {
-      const eventHub = new ApiEventHub();
-      const publishSpy = vi.spyOn(eventHub, 'publish');
-
-      // Simulate publishing a torrent stats update
-      eventHub.publish('torrent:stats', { infoHash: 'abc123', progress: 50 });
-
-      // Verify the correct event name is used
-      expect(publishSpy).toHaveBeenCalledWith(
-        'torrent:stats',
-        expect.objectContaining({ infoHash: 'abc123', progress: 50 })
-      );
-    });
-  });
-});
-
-describe('MediaRoutes - Quality Profile Validation', () => {
-  it('should validate qualityProfileId before TV series creation', async () => {
-    // Integration test to verify the route validates quality profile
-    const mockPrisma = {
-      qualityProfile: {
-        findUnique: vi.fn().mockResolvedValue(null),
-        findMany: vi.fn().mockResolvedValue([]),
-      },
-      series: {
-        findUnique: vi.fn().mockResolvedValue(null),
-      },
-    };
-
-    // When qualityProfileId 1 doesn't exist, the route should:
-    // 1. Log diagnostic info
-    // 2. Either create a default profile or return a clear error
-    expect(mockPrisma.qualityProfile.findUnique).not.toHaveBeenCalled();
+    await app.ready();
+    await vi.waitFor(() => {
+      expect(publish).toHaveBeenCalledWith('torrent:stats', stats);
+    }, { timeout: 500 });
+    expect(publish).not.toHaveBeenCalledWith('torrent:progress', expect.anything());
   });
 });

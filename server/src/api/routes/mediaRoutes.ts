@@ -279,25 +279,24 @@ export function registerMediaRoutes(
   }
 
   async function resolveQualityProfileId(requestedId?: number): Promise<number> {
-    // If a specific ID was requested, validate it exists
-    if (requestedId !== undefined && (deps.prisma as any).qualityProfile?.findUnique) {
-      const exists = await (deps.prisma as any).qualityProfile.findUnique({
-        where: { id: requestedId },
-        select: { id: true },
-      });
-      if (exists) return requestedId;
+    const repository = deps.qualityProfileRepository;
+    if (!repository) {
+      throw new InternalError('Quality profile repository is not configured');
     }
 
-    // Look up the first available quality profile
-    if ((deps.prisma as any).qualityProfile?.findFirst) {
-      const firstProfile = await (deps.prisma as any).qualityProfile.findFirst({
-        select: { id: true },
-      });
-      if (firstProfile) return firstProfile.id;
+    if (requestedId !== undefined) {
+      const requestedProfile = await repository.findById(requestedId);
+      if (!requestedProfile) {
+        throw new ValidationError(`Quality profile ${requestedId} does not exist`);
+      }
+      return requestedProfile.id;
     }
 
-    // Fall back to default of 1 (will likely fail FK constraint if no profiles exist)
-    return 1;
+    const defaultProfile = await repository.findByName('Any');
+    if (!defaultProfile) {
+      throw new ValidationError('Default quality profile "Any" is not configured');
+    }
+    return defaultProfile.id;
   }
 
   function buildMediaPath(rootFolder: string, title: string, year: number): string | null {

@@ -213,6 +213,10 @@ function createDependencies() {
         lastFailureAt: new Date('2026-02-11T11:00:00.000Z'),
       }),
     },
+    qualityProfileRepository: {
+      findByName: vi.fn().mockResolvedValue({ id: 1, name: 'Any' }),
+      findById: vi.fn().mockResolvedValue({ id: 1, name: 'Any' }),
+    },
     subtitleInventoryApiService: {
       listMovieVariantInventory: vi.fn().mockResolvedValue([{ variantId: 7, path: '/tmp/a.mkv' }]),
       listEpisodeVariantInventory: vi.fn().mockResolvedValue([{ variantId: 8, path: '/tmp/b.mkv' }]),

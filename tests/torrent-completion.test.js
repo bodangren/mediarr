@@ -7,7 +7,13 @@ vi.mock('fs', () => {
   return {
     promises: {
       mkdir: vi.fn().mockResolvedValue(undefined),
-      stat: vi.fn().mockResolvedValue({ isDirectory: () => true }),
+      realpath: vi.fn().mockImplementation(async candidate => candidate),
+      lstat: vi.fn().mockRejectedValue(Object.assign(new Error('ENOENT'), { code: 'ENOENT' })),
+      stat: vi.fn().mockImplementation(async candidate => ({
+        isDirectory: () => !candidate.endsWith('.mkv'),
+        isFile: () => candidate.endsWith('.mkv'),
+        size: candidate.endsWith('.mkv') ? 1000000 : 0,
+      })),
       rename: vi.fn().mockResolvedValue(undefined),
       readdir: vi.fn().mockResolvedValue([]),
     },
@@ -143,11 +149,10 @@ describe('TorrentManager - Completion Logic & File Move', () => {
       expect.objectContaining({ recursive: true })
     );
 
-    // In my mock, path is /data/downloads/incomplete, torrent.name is Test Download
-    // handleTorrentCompletion tries to rename path.join(path, name)
+    // Completion moves the exact WebTorrent payload, not a title-derived directory.
     expect(fs.rename).toHaveBeenCalledWith(
-      path.join('/data/downloads/incomplete', 'Test Download'),
-      path.join('/data/downloads/complete', 'Test Download')
+      path.join('/data/downloads/incomplete', 'test-file.mkv'),
+      path.join('/data/downloads/complete', 'test-file.mkv')
     );
 
     expect(mockRepo.update).toHaveBeenCalledWith(

@@ -9,6 +9,9 @@ describe('Wanted API', () => {
         findMovieByTmdbId: vi.fn().mockResolvedValue(null),
         upsertMovie: vi.fn().mockResolvedValue(mockMovie),
       },
+      qualityProfileRepository: {
+        findByName: vi.fn().mockResolvedValue({ id: 1, name: 'Any' }),
+      },
       prisma: {},
     } as any;
 
@@ -39,6 +42,9 @@ describe('Wanted API', () => {
         findSeriesByTvdbId: vi.fn().mockResolvedValue(null),
         upsertSeries: vi.fn().mockResolvedValue(mockSeries),
       },
+      qualityProfileRepository: {
+        findByName: vi.fn().mockResolvedValue({ id: 1, name: 'Any' }),
+      },
       prisma: {},
     } as any;
 
@@ -66,6 +72,9 @@ describe('Wanted API', () => {
     const deps = {
       mediaRepository: {
         findMovieByTmdbId: vi.fn().mockResolvedValue({ id: 10 }),
+      },
+      qualityProfileRepository: {
+        findByName: vi.fn().mockResolvedValue({ id: 1, name: 'Any' }),
       },
       prisma: {},
     } as any;

@@ -40,7 +40,7 @@ describe('Organizer', () => {
     expect(destinationPath).toBe(expectedPath);
   });
 
-  it('should fall back to fs.rename when hard linking fails and log a warning', async () => {
+  it('should copy without deleting the source when the explicit hardlink strategy is unavailable', async () => {
     const series = { title: 'The Boys', path: '/data/media/tv/The Boys' };
     const episode = { seasonNumber: 1, episodeNumber: 1, title: 'Pilot' };
     const sourcePath = '/data/downloads/complete/The.Boys.S01E01.mkv';
@@ -50,18 +50,24 @@ describe('Organizer', () => {
     const crossDeviceError = new Error('EXDEV: cross-device link not permitted');
     crossDeviceError.code = 'EXDEV';
     fs.link.mockRejectedValue(crossDeviceError);
-    fs.rename.mockResolvedValue(undefined);
+    fs.copyFile.mockResolvedValue(undefined);
 
     const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-    const destinationPath = await organizer.organizeFile(sourcePath, series, episode);
+    const destinationPath = await organizer.organizeFile(
+      sourcePath,
+      series,
+      episode,
+      { strategy: 'hardlink' },
+    );
 
     const expectedDir = path.join('/data/media/tv/The Boys', 'Season 01');
     const expectedFile = 'The Boys - S01E01 - Pilot.mkv';
     const expectedPath = path.join(expectedDir, expectedFile);
 
     expect(fs.link).toHaveBeenCalledWith(sourcePath, expectedPath);
-    expect(fs.rename).toHaveBeenCalledWith(sourcePath, expectedPath);
+    expect(fs.copyFile).toHaveBeenCalledWith(sourcePath, expectedPath);
+    expect(fs.rename).not.toHaveBeenCalled();
     expect(consoleSpy).toHaveBeenCalledWith(
       expect.stringContaining('Hard link failed')
     );

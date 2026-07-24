@@ -18,7 +18,7 @@ describe('RssMediaMonitor (legacy RssTvMonitor coverage)', () => {
         findFirst: vi.fn(),
       },
       episode: {
-        findFirst: vi.fn(),
+        findMany: vi.fn(),
       },
     };
     monitor = new RssMediaMonitor(rssSyncService, torrentManager, prisma);
@@ -38,15 +38,16 @@ describe('RssMediaMonitor (legacy RssTvMonitor coverage)', () => {
       monitored: true
     });
 
-    // Mock episode lookup
-    prisma.episode.findFirst.mockResolvedValue({
+    // The monitor resolves the full matching episode set so multi-episode
+    // releases and season packs retain every linked episode ID.
+    prisma.episode.findMany.mockResolvedValue([{
       id: 101,
       seriesId: 1,
       seasonNumber: 1,
       episodeNumber: 1,
       monitored: true,
       path: null // Missing
-    });
+    }]);
 
     // Trigger the event
     await rssSyncService.emit('release:stored', release);
@@ -58,6 +59,7 @@ describe('RssMediaMonitor (legacy RssTvMonitor coverage)', () => {
     expect(torrentManager.addTorrent).toHaveBeenCalledWith({
       magnetUrl: 'magnet:?xt=urn:btih:abc',
       episodeId: 101,
+      episodeIds: [101],
     });
   });
 });

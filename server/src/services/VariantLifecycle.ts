@@ -9,16 +9,6 @@ type ImportVariant = Pick<
   'path' | 'fileSize' | 'releaseName' | 'quality'
 > & { id: number };
 
-interface VariantRepository {
-  listMovieVariants(movieId: number): Promise<ImportVariant[]>;
-  listEpisodeVariants(episodeId: number): Promise<ImportVariant[]>;
-}
-
-interface VariantAutomation {
-  onMovieImported(movieId: number): Promise<void>;
-  onEpisodeImported(episodeId: number): Promise<void>;
-}
-
 interface VariantIndexer {
   indexMovieVariant(movieId: number, file: VariantFileInput): Promise<void>;
   indexEpisodeVariant(episodeId: number, file: VariantFileInput): Promise<void>;
@@ -65,23 +55,23 @@ export function createVariantLifecycle(
   },
 ): VariantLifecycle {
   const indexMovie = async (movieId: number): Promise<void> => {
-    const variants = await (repository as VariantRepository).listMovieVariants(movieId);
+    const variants = await repository.listMovieVariants(movieId);
     for (const variant of variants) {
       await indexer.indexMovieVariant(movieId, toIndexerInput(variant)).catch(error => {
         warn(`[VariantInventoryIndexer] Movie variant ${variant.id} indexing failed:`, error);
       });
     }
-    await (automation as VariantAutomation).onMovieImported(movieId);
+    await automation.onMovieImported(movieId);
   };
 
   const indexEpisode = async (episodeId: number): Promise<void> => {
-    const variants = await (repository as VariantRepository).listEpisodeVariants(episodeId);
+    const variants = await repository.listEpisodeVariants(episodeId);
     for (const variant of variants) {
       await indexer.indexEpisodeVariant(episodeId, toIndexerInput(variant)).catch(error => {
         warn(`[VariantInventoryIndexer] Episode variant ${variant.id} indexing failed:`, error);
       });
     }
-    await (automation as VariantAutomation).onEpisodeImported(episodeId);
+    await automation.onEpisodeImported(episodeId);
   };
 
   return {

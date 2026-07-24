@@ -37,6 +37,7 @@ describe('SubtitleProviderFactory', () => {
           isHi: false,
           provider: 'opensubtitles',
           score: 77,
+          content: Buffer.from('1\n00:00:00,000 --> 00:00:01,000\nHello\n'),
         },
       ]),
       download: vi.fn().mockImplementation(async candidate => candidate),
@@ -62,8 +63,10 @@ describe('SubtitleProviderFactory', () => {
         missingSubtitles: [],
       }),
       listSiblingSubtitlePaths: vi.fn().mockResolvedValue([]),
-      createSubtitleTrack: vi.fn().mockResolvedValue(undefined),
-      createSubtitleHistory: vi.fn().mockResolvedValue(undefined),
+      upsertWantedSubtitle: vi.fn().mockResolvedValue({ id: 23 }),
+      updateWantedSubtitleState: vi.fn().mockResolvedValue(undefined),
+      createSubtitleTrack: vi.fn().mockResolvedValue({ id: 31 }),
+      createSubtitleHistory: vi.fn().mockResolvedValue({ id: 37 }),
     };
 
     const service = new SubtitleInventoryApiService(repository, undefined, factory);
@@ -80,6 +83,7 @@ describe('SubtitleProviderFactory', () => {
         isHi: false,
         provider: 'opensubtitles',
         score: 80,
+        content: Buffer.from('1\n00:00:00,000 --> 00:00:01,000\nHello\n'),
       },
     });
 

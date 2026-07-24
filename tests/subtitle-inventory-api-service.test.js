@@ -148,6 +148,7 @@ describe('SubtitleInventoryApiService', () => {
           isHi: false,
           provider: 'manual-provider',
           score: 88.5,
+          content: Buffer.from('1\n00:00:00,000 --> 00:00:01,000\nHello\n'),
         },
       },
       provider,

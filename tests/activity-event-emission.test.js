@@ -14,6 +14,7 @@ vi.mock('node:fs/promises', () => ({
     readdir: vi.fn().mockResolvedValue([]),
     mkdir: vi.fn().mockResolvedValue(undefined),
     writeFile: vi.fn().mockResolvedValue(undefined),
+    unlink: vi.fn().mockResolvedValue(undefined),
   },
   stat: vi.fn().mockResolvedValue({ isDirectory: () => false }),
   readdir: vi.fn().mockResolvedValue([]),
@@ -144,8 +145,8 @@ describe('activity event emission adapters', () => {
         subtitleTracks: [],
       }),
       listSiblingSubtitlePaths: vi.fn().mockResolvedValue([]),
-      createSubtitleTrack: vi.fn().mockResolvedValue(undefined),
-      createSubtitleHistory: vi.fn().mockResolvedValue(undefined),
+      createSubtitleTrack: vi.fn().mockResolvedValue({ id: 31 }),
+      createSubtitleHistory: vi.fn().mockResolvedValue({ id: 37 }),
     };
     const provider = {
       searchBestSubtitle: vi.fn().mockResolvedValue({
@@ -154,6 +155,7 @@ describe('activity event emission adapters', () => {
         isHi: false,
         provider: 'opensubtitles',
         score: 99,
+        content: Buffer.from('1\n00:00:00,000 --> 00:00:01,000\nHello\n'),
       }),
     };
     const emitter = { emit: vi.fn().mockResolvedValue(undefined) };

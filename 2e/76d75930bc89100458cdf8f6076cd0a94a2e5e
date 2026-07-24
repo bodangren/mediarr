@@ -1,0 +1,1 @@
+Strict contract cleanup after integration. Removed redundant adapter interfaces and four casts hiding the actual SubtitleVariantRepository/SubtitleAutomationService Pick contracts. Green: VariantLifecycle + VariantSubtitleFetchService 22/22; full strict server typecheck; changed-file ESLint; diff check.

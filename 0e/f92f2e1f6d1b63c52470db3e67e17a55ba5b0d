@@ -1,0 +1,1 @@
+Task: Track conformance artifact side effect. Added an in-progress findings-to-fix item requiring normal test suites to stop mutating tracked artifacts before implementation begins. File: measure/tracks/bug_server_integrity_remediation_20260724/plan.md.

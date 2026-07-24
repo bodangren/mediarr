@@ -1,0 +1,24 @@
+Task: Repair strict server typecheck and Docker postinstall closeout gates
+
+Summary:
+- copied scripts/apply-patches.js into the Docker dependency layer before npm ci and asserted the required ordering
+- narrowed linked multi-episode IDs to number[] explicitly
+- adapted nullable persisted variant fields without unsafe casts
+- made lifecycle and subtitle-fetch test doubles satisfy the complete production contracts
+
+Files:
+- Dockerfile
+- tests/clean-workspace-invariant.test.js
+- server/src/services/ImportManager.ts
+- server/src/services/VariantLifecycle.ts
+- server/src/services/VariantLifecycle.test.ts
+- server/src/services/VariantSubtitleFetchService.test.ts
+
+Why: the hardened runtime contracts exposed strict TypeScript fixture drift, while npm ci invoked the root postinstall hook before its script existed in the clean Docker build context.
+
+Verification:
+- CI=true npx vitest run tests/clean-workspace-invariant.test.js server/src/services/ImportManager.test.ts server/src/services/ImportManager.seasonPack.test.ts server/src/services/VariantLifecycle.test.ts server/src/services/VariantSubtitleFetchService.test.ts: 5 files, 55 tests passed
+- npm run typecheck --workspace=server: passed
+- git diff --check: passed
+
+Graph blast radius: no exported signatures changed; repo-graph update not required.

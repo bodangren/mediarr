@@ -36,6 +36,9 @@ describe('clean Docker workspace installation', () => {
     const serverManifest = instructionIndex(
       /^COPY server\/package\.json \.\/server\/package\.json$/m,
     );
+    const postinstallScript = instructionIndex(
+      /^COPY scripts\/apply-patches\.js \.\/scripts\/apply-patches\.js$/m,
+    );
     const install = instructionIndex(
       /^RUN npm ci --workspaces --include-workspace-root$/m,
     );
@@ -45,7 +48,8 @@ describe('clean Docker workspace installation', () => {
     expect(rootManifest).toBeGreaterThan(-1);
     expect(appManifest).toBeGreaterThan(rootManifest);
     expect(serverManifest).toBeGreaterThan(appManifest);
-    expect(install).toBeGreaterThan(serverManifest);
+    expect(postinstallScript).toBeGreaterThan(serverManifest);
+    expect(install).toBeGreaterThan(postinstallScript);
     expect(source).toBeGreaterThan(install);
     expect(build).toBeGreaterThan(source);
   });

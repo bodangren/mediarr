@@ -40,9 +40,21 @@ function buildLifecycle() {
   const automation = {
     onMovieImported: vi.fn(async () => {
       calls.push('automate-movie');
+      return {
+        variantsScanned: 1,
+        wantedQueued: 0,
+        downloaded: 0,
+        failed: 0,
+      };
     }),
     onEpisodeImported: vi.fn(async () => {
       calls.push('automate-episode');
+      return {
+        variantsScanned: 1,
+        wantedQueued: 0,
+        downloaded: 0,
+        failed: 0,
+      };
     }),
   };
   const catalogCache = { unwatch: vi.fn() };

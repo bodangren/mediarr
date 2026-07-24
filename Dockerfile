@@ -14,6 +14,7 @@ RUN apt-get update -y && apt-get install -y build-essential python3 cmake && rm 
 COPY package.json package-lock.json ./
 COPY app/package.json ./app/package.json
 COPY server/package.json ./server/package.json
+COPY scripts/apply-patches.js ./scripts/apply-patches.js
 RUN npm ci --workspaces --include-workspace-root
 COPY . .
 RUN npm run build --workspace=app

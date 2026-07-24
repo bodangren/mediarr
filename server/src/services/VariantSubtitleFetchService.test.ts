@@ -8,6 +8,12 @@ import {
 import { SubtitleVariantRepository } from '../repositories/SubtitleVariantRepository';
 import { SubtitleNamingService } from './SubtitleNamingService';
 import type { ActivityEventEmitter } from './ActivityEventEmitter';
+import type {
+  MediaFileVariant,
+  VariantAudioTrack,
+  VariantSubtitleTrack,
+  WantedSubtitle,
+} from '../types/modelTypes';
 
 const fsMocks = vi.hoisted(() => ({
   mkdir: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
@@ -64,48 +70,66 @@ const makeActivityMock = () => ({
 });
 
 const makeWanted = (
-  overrides: Partial<{
-    id: number;
-    variantId: number;
-    languageCode: string;
-    isForced: boolean;
-    isHi: boolean;
-    state: string;
-  }> = {},
-) => ({
+  overrides: Partial<WantedSubtitle> = {},
+): WantedSubtitle => ({
   id: 1,
   variantId: 2,
   languageCode: 'en',
   isForced: false,
   isHi: false,
   state: 'PENDING',
+  createdAt: new Date(0),
+  updatedAt: new Date(0),
   ...overrides,
 });
 
 const makeVariant = (
-  overrides: Partial<{ id: number; path: string; releaseName: string | null }> = {},
-) => ({
+  overrides: Partial<MediaFileVariant> = {},
+): MediaFileVariant => ({
   id: 2,
+  mediaType: 'MOVIE',
+  movieId: 1,
+  episodeId: null,
   path: '/data/movie.mkv',
+  fileSize: 1024,
+  monitored: true,
+  probeFingerprint: null,
   releaseName: null,
+  quality: null,
+  createdAt: new Date(0),
+  updatedAt: new Date(0),
   ...overrides,
 });
 
 const makeAudioTrack = (
-  overrides: Partial<{
-    languageCode: string | null;
-    isCommentary: boolean;
-    isDefault: boolean;
-  }> = {},
-) => ({
+  overrides: Partial<VariantAudioTrack> = {},
+): VariantAudioTrack => ({
+  id: 1,
+  variantId: 2,
+  streamIndex: 0,
   languageCode: 'en',
-  isCommentary: false,
+  codec: 'aac',
+  channels: '2.0',
   isDefault: true,
+  isForced: false,
+  isCommentary: false,
+  name: null,
   ...overrides,
 });
 
-const makeSubtitleTrack = (overrides: Partial<{ filePath: string | null }> = {}) => ({
+const makeSubtitleTrack = (
+  overrides: Partial<VariantSubtitleTrack> = {},
+): VariantSubtitleTrack => ({
+  id: 1,
+  variantId: 2,
+  source: 'EXTERNAL',
+  streamIndex: null,
+  languageCode: 'en',
+  isForced: false,
+  isHi: false,
+  codec: 'srt',
   filePath: null,
+  fileSize: null,
   ...overrides,
 });
 

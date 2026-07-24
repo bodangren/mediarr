@@ -4,10 +4,13 @@ import type { VariantInventoryIndexer, VariantFileInput } from './VariantInvento
 import type { SubtitleAutomationService } from './SubtitleAutomationService';
 import type { CatalogCache } from './indexers/CatalogCache';
 
-type ImportVariant = Pick<
-  VariantFileInput,
-  'path' | 'fileSize' | 'releaseName' | 'quality'
-> & { id: number };
+type ImportVariant = {
+  id: number;
+  path: string;
+  fileSize: number;
+  releaseName: string | null;
+  quality: string | null;
+};
 
 interface VariantIndexer {
   indexMovieVariant(movieId: number, file: VariantFileInput): Promise<void>;

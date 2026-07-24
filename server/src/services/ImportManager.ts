@@ -177,7 +177,7 @@ export class ImportManager {
       select: { episodeId: true, episodeIds: true, movieId: true },
     });
     const linkedEpisodeIds = Array.isArray(torrentRow?.episodeIds)
-      ? [...new Set(torrentRow.episodeIds.filter(
+      ? [...new Set<number>(torrentRow.episodeIds.filter(
         (id: unknown): id is number => typeof id === 'number' && Number.isInteger(id),
       ))]
       : [];

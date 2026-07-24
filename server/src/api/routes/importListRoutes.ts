@@ -119,7 +119,7 @@ export function registerImportListRoutes(
           config: { type: 'object' },
           rootFolderPath: { type: 'string' },
           qualityProfileId: { type: 'number' },
-          languageProfileId: { type: 'number' },
+          languageProfileId: { type: ['number', 'null'] },
           monitorType: { type: 'string' },
           enabled: { type: 'boolean' },
           syncInterval: { type: 'number' },
@@ -197,14 +197,18 @@ export function registerImportListRoutes(
       },
     },
   }, async (request, reply) => {
-    if (!deps.importListRepository?.delete) {
+    if (!deps.importListRepository?.findById || !deps.importListRepository.delete) {
       throw new ValidationError('Import list repository is not configured');
     }
 
     const id = parseIdParam((request.params as { id: string }).id, 'import list');
-    const deleted = await deps.importListRepository.delete(id);
+    const existing = await deps.importListRepository.findById(id);
+    if (!existing) {
+      throw new NotFoundError(`Import list ${id} not found`);
+    }
 
-    return sendSuccess(reply, deleted);
+    await deps.importListRepository.delete(id);
+    return sendSuccess(reply, { success: true });
   });
 
   // POST /api/import-lists/:id/sync - Manually sync an import list
@@ -226,7 +230,13 @@ export function registerImportListRoutes(
     const id = parseIdParam((request.params as { id: string }).id, 'import list');
     const result = await deps.importListSyncService.syncList(id);
 
-    return sendSuccess(reply, result);
+    return sendSuccess(reply, {
+      success: result.errors.length === 0,
+      addedCount: result.added,
+      skippedCount: result.skipped,
+      errorCount: result.errors.length,
+      errors: result.errors.map(error => `${error.title}: ${error.error}`),
+    });
   });
 
   // GET /api/import-lists/providers - Get available provider types
@@ -308,13 +318,17 @@ export function registerImportListRoutes(
       },
     },
   }, async (request, reply) => {
-    if (!deps.importListRepository?.deleteExclusion) {
+    if (!deps.importListRepository?.findExclusionById || !deps.importListRepository.deleteExclusion) {
       throw new ValidationError('Import list repository is not configured');
     }
 
     const id = parseIdParam((request.params as { id: string }).id, 'exclusion');
-    const deleted = await deps.importListRepository.deleteExclusion(id);
+    const existing = await deps.importListRepository.findExclusionById(id);
+    if (!existing) {
+      throw new NotFoundError(`Import list exclusion ${id} not found`);
+    }
 
-    return sendSuccess(reply, deleted);
+    await deps.importListRepository.deleteExclusion(id);
+    return sendSuccess(reply, { success: true });
   });
 }

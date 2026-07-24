@@ -8,7 +8,7 @@
  */
 import type { FastifyInstance } from 'fastify';
 import type { Blocklist } from '../../types/modelTypes';
-import { ValidationError } from '../../errors/domainErrors';
+import { NotFoundError, ValidationError } from '../../errors/domainErrors';
 import {
   parsePaginationParams,
   sendPaginatedSuccess,
@@ -19,33 +19,33 @@ import type { ApiDependencies } from '../types';
 /** Blocklist item as returned by the API */
 interface BlocklistListItem {
   id: number;
-  seriesId: number | null;
+  seriesId?: number;
   seriesTitle: string;
-  episodeId: number | null;
-  seasonNumber: number | null;
-  episodeNumber: number | null;
+  episodeId?: number;
+  seasonNumber?: number;
+  episodeNumber?: number;
   releaseTitle: string;
-  quality: string | null;
+  quality?: string;
   dateBlocked: string;
   reason: string;
-  indexer: string | null;
-  size: number | null;
+  indexer?: string;
+  size?: number;
 }
 
 function toBlocklistListItem(item: Blocklist): BlocklistListItem {
   return {
     id: item.id,
-    seriesId: item.seriesId,
     seriesTitle: item.seriesTitle,
-    episodeId: item.episodeId,
-    seasonNumber: item.seasonNumber,
-    episodeNumber: item.episodeNumber,
     releaseTitle: item.releaseTitle,
-    quality: item.quality,
     dateBlocked: item.dateBlocked.toISOString(),
     reason: item.reason,
-    indexer: item.indexer,
-    size: item.size !== null ? Number(item.size) : null,
+    ...(item.seriesId !== null ? { seriesId: item.seriesId } : {}),
+    ...(item.episodeId !== null ? { episodeId: item.episodeId } : {}),
+    ...(item.seasonNumber !== null ? { seasonNumber: item.seasonNumber } : {}),
+    ...(item.episodeNumber !== null ? { episodeNumber: item.episodeNumber } : {}),
+    ...(item.quality !== null ? { quality: item.quality } : {}),
+    ...(item.indexer !== null ? { indexer: item.indexer } : {}),
+    ...(item.size !== null ? { size: Number(item.size) } : {}),
   };
 }
 
@@ -186,6 +186,10 @@ export function registerBlocklistRoutes(
       where: { id },
     });
 
-    return sendSuccess(reply, { deleted: result.count > 0, id });
+    if (result.count === 0) {
+      throw new NotFoundError(`Blocklist item ${id} not found`);
+    }
+
+    return sendSuccess(reply, { deleted: true, id });
   });
 }

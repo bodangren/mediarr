@@ -36,7 +36,7 @@ _Blast radius: UpdateService (routes, scheduler, SPA update client), ImportManag
 - [x] Task: Measure - User Manual Verification 'Operational API Truthfulness'
   - Installed SQLite, filesystem, Fastify, and SPA automation covered the operational flows; no additional interactive verification was required.
 
-## Phase 3: Automation and Media Lifecycle Completeness
+## Phase 3: Automation and Media Lifecycle Completeness [checkpoint: 8bd29f66]
 
 - [x] Task: Implement truthful Cardigann RSS and pack matching (25ab9848)
   - [x] Execute Cardigann RSS through the shared runtime or return a hard failure.
@@ -48,17 +48,18 @@ _Blast radius: UpdateService (routes, scheduler, SPA update client), ImportManag
   - [x] Reject empty content and persist retryable failure state.
   - [x] Wire real embedded discovery/download or mark it unavailable.
 - [x] Task: Repair torrent completion path safety and cross-device movement (ba288fe5)
-- [~] Task: Correct and wire the variant lifecycle
-  - [ ] Persist `EPISODE` variants for series imports.
-  - [ ] Compose backfill/inventory services and graceful watcher shutdown.
-- [ ] Task: Measure - User Manual Verification 'Automation and Media Lifecycle Completeness'
+- [x] Task: Correct and wire the variant lifecycle (8bd29f66)
+  - [x] Persist `EPISODE` variants for series imports.
+  - [x] Compose backfill/inventory services and graceful watcher shutdown.
+- [x] Task: Measure - User Manual Verification 'Automation and Media Lifecycle Completeness'
+  - Automated lifecycle, import, ffprobe metadata, and graceful shutdown verification covered this server-only phase.
 
 ## Phase 4: Contracts, False Tests, and Quality Gates
 
-- [~] Task: Enforce quality-profile validation and exact error contracts
-- [~] Task: Make the production route map bidirectionally complete
+- [x] Task: Enforce quality-profile validation and exact error contracts (26a1ca70)
+- [x] Task: Make the production route map bidirectionally complete (d6c17340)
 - [~] Task: Replace false and misleading regression tests
-  - [~] Remove self-assertions, permissive statuses, and mock-only integration
+  - [x] Remove self-assertions, permissive statuses, and mock-only integration
         claims identified by the audit.
   - [~] Add handler-level tests for the 27 uncovered endpoints.
 - [~] Task: Repair server test/build/lint gates

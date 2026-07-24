@@ -1,0 +1,11 @@
+{
+  "track_id": "chore_server_structure_integrity_audit_20260724",
+  "type": "chore",
+  "status": "in_progress",
+  "created_at": "2026-07-24T02:02:58Z",
+  "updated_at": "2026-07-24T02:02:58Z",
+  "description": "Review the entire server structure for errors, bugs, unimplemented functions, false tests, and coverage gaps using repo-graph and executable verification.",
+  "estimated_tasks": 12,
+  "actual_tasks": null,
+  "deviation_notes": ""
+}

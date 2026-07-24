@@ -4,7 +4,20 @@ import type { ImportListProvider, ImportListItem } from './ImportListProvider';
 import { resolveTMDBSeriesIdentifiers } from './TMDBSeriesIdentifiers';
 
 export interface TMDBListConfig {
-  listId: number;
+  listId: string | number;
+}
+
+function normalizeTMDBListId(value: unknown): string | undefined {
+  if (typeof value === 'number') {
+    return Number.isSafeInteger(value) && value > 0 ? String(value) : undefined;
+  }
+
+  if (typeof value !== 'string' || !/^\d+$/.test(value)) {
+    return undefined;
+  }
+
+  const normalized = value.replace(/^0+/, '');
+  return normalized === '' ? undefined : normalized;
 }
 
 export class TMDBListProvider implements ImportListProvider {
@@ -19,27 +32,20 @@ export class TMDBListProvider implements ImportListProvider {
   ) {}
 
   validateConfig(config: Record<string, unknown>): boolean {
-    const listId = config.listId;
-    if (listId === undefined || listId === null) {
-      return false;
-    }
-    if (typeof listId !== 'number' || !Number.isFinite(listId) || listId <= 0) {
-      return false;
-    }
-    return true;
+    return normalizeTMDBListId(config.listId) !== undefined;
   }
 
   async fetch(config: Record<string, unknown>): Promise<ImportListItem[]> {
+    const listId = normalizeTMDBListId(config.listId);
+    if (listId === undefined) {
+      throw new Error('List ID must be a positive decimal integer for TMDB List provider');
+    }
+
     const settings = await this.settingsService.get();
     const apiKey = settings.apiKeys.tmdbApiKey;
 
     if (!apiKey) {
       throw new Error('TMDB API Key is missing. Please configure it in settings.');
-    }
-
-    const listId = config.listId as number;
-    if (!listId) {
-      throw new Error('List ID is required for TMDB List provider');
     }
 
     const items: ImportListItem[] = [];

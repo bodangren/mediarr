@@ -1,5 +1,9 @@
 import Fastify, { type FastifyInstance } from 'fastify';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { HttpClient } from '../../indexers/HttpClient';
+import type { SettingsService } from '../../services/SettingsService';
+import { ImportListProviderRegistry } from '../../services/importLists/ImportListProviderRegistry';
+import { TMDBListProvider } from '../../services/importLists/TMDBListProvider';
 import type { ApiDependencies } from '../types';
 import { registerApiErrorHandler } from '../errors';
 import { registerImportListRoutes } from './importListRoutes';
@@ -41,7 +45,7 @@ type SyncServiceMock = ReturnType<typeof createSyncServiceMock>;
 
 function createApp(input: {
   repository?: RepositoryMock;
-  providerRegistry?: ProviderRegistryMock;
+  providerRegistry?: NonNullable<ApiDependencies['importListProviderRegistry']>;
   syncService?: SyncServiceMock;
 } = {}): FastifyInstance {
   const app = Fastify();
@@ -91,6 +95,17 @@ const exclusion = {
   title: 'Fight Club',
   createdAt: new Date('2026-07-21T09:00:00.000Z'),
 };
+
+function createRegisteredTMDBProvider(): ImportListProviderRegistry {
+  const registry = new ImportListProviderRegistry();
+  registry.registerProvider(new TMDBListProvider(
+    { get: vi.fn() } as unknown as HttpClient,
+    {
+      get: vi.fn().mockResolvedValue({ apiKeys: { tmdbApiKey: 'tmdb-key' } }),
+    } as unknown as SettingsService,
+  ));
+  return registry;
+}
 
 describe('importListRoutes', () => {
   let repository: RepositoryMock;
@@ -212,6 +227,40 @@ describe('importListRoutes', () => {
       expect(repository.create).toHaveBeenCalledWith(payload);
     });
 
+    it('accepts the SPA string ID through the registered TMDB provider', async () => {
+      await app.close();
+      app = createApp({ repository, providerRegistry: createRegisteredTMDBProvider() });
+      repository.create.mockResolvedValue(importList);
+
+      const response = await app.inject({ method: 'POST', url: '/api/import-lists', payload });
+
+      expect(response.statusCode).toBe(201);
+      expect(repository.create).toHaveBeenCalledWith(payload);
+    });
+
+    it.each(['', '0', '-1', '1.5', '1e3'])(
+      'rejects the invalid TMDB list ID %j through the registered provider',
+      async (listId) => {
+        await app.close();
+        app = createApp({ repository, providerRegistry: createRegisteredTMDBProvider() });
+
+        const response = await app.inject({
+          method: 'POST',
+          url: '/api/import-lists',
+          payload: { ...payload, config: { listId } },
+        });
+
+        expect(response.statusCode).toBe(422);
+        expect(response.json()).toMatchObject({
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Invalid configuration for provider tmdb-list',
+          },
+        });
+        expect(repository.create).not.toHaveBeenCalled();
+      },
+    );
+
     it('preserves repository defaults by forwarding omitted optional fields as undefined', async () => {
       const minimalPayload = {
         name: 'Popular movies',
@@ -301,6 +350,42 @@ describe('importListRoutes', () => {
         enabled: false,
         config: { listId: '99' },
       });
+    });
+
+    it('accepts an updated SPA string ID through the registered TMDB provider', async () => {
+      await app.close();
+      app = createApp({ repository, providerRegistry: createRegisteredTMDBProvider() });
+      repository.findById.mockResolvedValue(importList);
+      repository.update.mockResolvedValue({
+        ...importList,
+        config: { listId: '9007199254740993' },
+      });
+
+      const response = await app.inject({
+        method: 'PUT',
+        url: '/api/import-lists/4',
+        payload: { config: { listId: '9007199254740993' } },
+      });
+
+      expect(response.statusCode).toBe(200);
+      expect(repository.update).toHaveBeenCalledWith(4, {
+        config: { listId: '9007199254740993' },
+      });
+    });
+
+    it('rejects an invalid updated ID through the registered TMDB provider', async () => {
+      await app.close();
+      app = createApp({ repository, providerRegistry: createRegisteredTMDBProvider() });
+      repository.findById.mockResolvedValue(importList);
+
+      const response = await app.inject({
+        method: 'PUT',
+        url: '/api/import-lists/4',
+        payload: { config: { listId: '4.2' } },
+      });
+
+      expect(response.statusCode).toBe(422);
+      expect(repository.update).not.toHaveBeenCalled();
     });
 
     it('returns not found without updating an absent list', async () => {

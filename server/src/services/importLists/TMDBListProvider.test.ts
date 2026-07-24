@@ -17,12 +17,83 @@ describe('TMDBListProvider', () => {
     settingsGet.mockResolvedValue({ apiKeys: { tmdbApiKey: 'tmdb-key' } });
   });
 
-  it('accepts only positive finite numeric list IDs', () => {
+  it('accepts SPA decimal strings and legacy positive safe integers', () => {
     expect(provider.validateConfig({ listId: 7 })).toBe(true);
+    expect(provider.validateConfig({ listId: '7' })).toBe(true);
+    expect(provider.validateConfig({ listId: '0007' })).toBe(true);
+    expect(provider.validateConfig({ listId: '9007199254740993' })).toBe(true);
+  });
+
+  it.each([
+    ['missing', {}],
+    ['empty', { listId: '' }],
+    ['whitespace', { listId: ' 7' }],
+    ['zero string', { listId: '0' }],
+    ['negative string', { listId: '-7' }],
+    ['fractional string', { listId: '7.5' }],
+    ['exponent string', { listId: '7e2' }],
+    ['zero number', { listId: 0 }],
+    ['negative number', { listId: -7 }],
+    ['fractional number', { listId: 7.5 }],
+    ['unsafe integer', { listId: Number.MAX_SAFE_INTEGER + 1 }],
+    ['NaN', { listId: Number.NaN }],
+  ])('rejects %s list IDs', (_description, config) => {
+    expect(provider.validateConfig(config)).toBe(false);
+  });
+
+  it('rejects invalid list IDs before issuing an HTTP request', async () => {
+    await expect(provider.fetch({ listId: '7.5' })).rejects.toThrow(
+      'List ID must be a positive decimal integer for TMDB List provider',
+    );
+    expect(get).not.toHaveBeenCalled();
+  });
+
+  it('builds the TMDB URL from a decimal string without numeric coercion', async () => {
+    get.mockResolvedValue({
+      ok: true,
+      status: 200,
+      body: JSON.stringify({ items: [], page: 1, total_pages: 1 }),
+    });
+
+    await expect(provider.fetch({ listId: '9007199254740993' })).resolves.toEqual([]);
+
+    expect(get).toHaveBeenCalledWith(
+      'https://api.themoviedb.org/3/list/9007199254740993?api_key=tmdb-key&page=1',
+    );
+  });
+
+  it('keeps positive integer configuration backward compatible', async () => {
+    get.mockResolvedValue({
+      ok: true,
+      status: 200,
+      body: JSON.stringify({ items: [], page: 1, total_pages: 1 }),
+    });
+
+    await expect(provider.fetch({ listId: 7 })).resolves.toEqual([]);
+
+    expect(get).toHaveBeenCalledWith(
+      'https://api.themoviedb.org/3/list/7?api_key=tmdb-key&page=1',
+    );
+  });
+
+  it('normalizes leading zeroes without converting the ID to a number', async () => {
+    get.mockResolvedValue({
+      ok: true,
+      status: 200,
+      body: JSON.stringify({ items: [], page: 1, total_pages: 1 }),
+    });
+
+    await expect(provider.fetch({ listId: '0007' })).resolves.toEqual([]);
+
+    expect(get).toHaveBeenCalledWith(
+      'https://api.themoviedb.org/3/list/7?api_key=tmdb-key&page=1',
+    );
+  });
+
+  it('does not accept coercible non-contract values', () => {
     expect(provider.validateConfig({})).toBe(false);
-    expect(provider.validateConfig({ listId: '7' })).toBe(false);
-    expect(provider.validateConfig({ listId: 0 })).toBe(false);
-    expect(provider.validateConfig({ listId: Number.NaN })).toBe(false);
+    expect(provider.validateConfig({ listId: true })).toBe(false);
+    expect(provider.validateConfig({ listId: ['7'] })).toBe(false);
   });
 
   it('requires a configured TMDB API key', async () => {

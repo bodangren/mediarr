@@ -1,0 +1,12 @@
+Task: Start closeout residual repairs
+
+Summary:
+- Marked the findings-to-fix audit review in progress.
+- Added an in-progress SPA/provider TMDB list-ID normalization repair.
+- Added an in-progress multi-episode import persistence repair.
+
+Files:
+- measure/tracks/bug_server_integrity_remediation_20260724/plan.md
+
+Why:
+The closeout review exposed two residual contract/data-integrity defects that must be explicitly tracked before final verification and archiving.

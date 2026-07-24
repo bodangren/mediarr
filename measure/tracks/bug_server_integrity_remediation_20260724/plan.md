@@ -61,7 +61,7 @@ _Blast radius: UpdateService (routes, scheduler, SPA update client), ImportManag
   - [~] Remove self-assertions, permissive statuses, and mock-only integration
         claims identified by the audit.
   - [ ] Add handler-level tests for the 27 uncovered endpoints.
-- [ ] Task: Repair server test/build/lint gates
+- [~] Task: Repair server test/build/lint gates
   - [ ] Replace the server placeholder test script.
   - [ ] Reconcile the Docker deterministic-workspace invariant.
   - [ ] Isolate generated smoke output and lint all changed files.

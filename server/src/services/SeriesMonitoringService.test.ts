@@ -30,18 +30,29 @@ function makeDb(opts: {
 } = {}) {
   const seriesResult = 'series' in opts ? opts.series : { id: 1, monitored: true };
   const episodesResult = 'episodes' in opts ? (opts.episodes ?? []) : [];
+  const transactionSets: any[] = [];
   return {
     series: {
       findUnique: vi.fn().mockResolvedValue(seriesResult),
     },
     episode: {
       findMany: vi.fn().mockResolvedValue(episodesResult),
-      update: vi.fn().mockImplementation(({ where, data }: any) => {
-        const ep = episodesResult.find((e: any) => e.id === where.id);
-        return Promise.resolve({ ...ep, ...data });
-      }),
     },
-    $transaction: vi.fn().mockImplementation((ops: any[]) => Promise.all(ops)),
+    drizzle: {
+      transaction: vi.fn().mockImplementation((callback: (tx: any) => unknown) => callback({
+        update: vi.fn().mockImplementation(() => {
+          const builder: any = {};
+          builder.set = vi.fn().mockImplementation((data: any) => {
+            transactionSets.push(data);
+            return builder;
+          });
+          builder.where = vi.fn().mockReturnValue(builder);
+          builder.run = vi.fn().mockImplementation(() => ({ changes: 1 }));
+          return builder;
+        }),
+      })),
+    },
+    _transactionSets: transactionSets,
   };
 }
 
@@ -326,7 +337,7 @@ describe('SeriesMonitoringService — applyMonitoringStrategy', () => {
 
     const result = await service.applyMonitoringStrategy(1, 'all');
     expect(result).toEqual({ updatedEpisodes: 0, totalEpisodes: 0, seriesId: 1 });
-    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(prisma.drizzle.transaction).not.toHaveBeenCalled();
   });
 
   it('updates episodes from unmonitored to monitored (firstSeason)', async () => {
@@ -341,16 +352,11 @@ describe('SeriesMonitoringService — applyMonitoringStrategy', () => {
     const result = await service.applyMonitoringStrategy(1, 'firstSeason');
     expect(result.updatedEpisodes).toBe(2);
     expect(result.totalEpisodes).toBe(3);
-    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
-    expect(prisma.episode.update).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id: 1 }, data: { monitored: true } }),
-    );
-    expect(prisma.episode.update).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id: 2 }, data: { monitored: true } }),
-    );
-    expect(prisma.episode.update).not.toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id: 3 } }),
-    );
+    expect(prisma.drizzle.transaction).toHaveBeenCalledTimes(1);
+    expect(prisma._transactionSets).toEqual([
+      { monitored: true },
+      { monitored: true },
+    ]);
   });
 
   it('updates episodes from monitored to unmonitored (none)', async () => {
@@ -363,12 +369,11 @@ describe('SeriesMonitoringService — applyMonitoringStrategy', () => {
 
     const result = await service.applyMonitoringStrategy(1, 'none');
     expect(result.updatedEpisodes).toBe(2);
-    expect(prisma.episode.update).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id: 1 }, data: { monitored: false } }),
-    );
-    expect(prisma.episode.update).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id: 2 }, data: { monitored: false } }),
-    );
+    expect(prisma.drizzle.transaction).toHaveBeenCalledTimes(1);
+    expect(prisma._transactionSets).toEqual([
+      { monitored: false },
+      { monitored: false },
+    ]);
   });
 
   it('returns zero updates when all episodes already match strategy (no-op)', async () => {
@@ -382,7 +387,7 @@ describe('SeriesMonitoringService — applyMonitoringStrategy', () => {
     const result = await service.applyMonitoringStrategy(1, 'all');
     expect(result.updatedEpisodes).toBe(0);
     expect(result.totalEpisodes).toBe(2);
-    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(prisma.drizzle.transaction).not.toHaveBeenCalled();
   });
 
   it('only sends changed episodes in transaction (partial match)', async () => {
@@ -396,16 +401,8 @@ describe('SeriesMonitoringService — applyMonitoringStrategy', () => {
 
     const result = await service.applyMonitoringStrategy(1, 'firstSeason');
     expect(result.updatedEpisodes).toBe(1);
-    expect(prisma.episode.update).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id: 2 }, data: { monitored: true } }),
-    );
-    expect(prisma.episode.update).not.toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id: 1 } }),
-    );
-    expect(prisma.episode.update).not.toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id: 3 } }),
-    );
-    expect(prisma.episode.update).toHaveBeenCalledTimes(1);
+    expect(prisma.drizzle.transaction).toHaveBeenCalledTimes(1);
+    expect(prisma._transactionSets).toEqual([{ monitored: true }]);
   });
 });
 

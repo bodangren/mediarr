@@ -1,4 +1,6 @@
 import type { DatabaseClient } from '../db/drizzleClient';
+import { eq } from 'drizzle-orm';
+import * as schema from '../db/schema';
 import { NotFoundError, ValidationError } from '../errors/domainErrors';
 
 /**
@@ -236,14 +238,14 @@ export class SeriesMonitoringService {
 
     // Apply updates in a transaction
     if (updates.length > 0) {
-      await this.prisma.$transaction(
-        updates.map(update =>
-          this.prisma.episode.update({
-            where: { id: update.id },
-            data: { monitored: update.shouldMonitor },
-          }),
-        ),
-      );
+      this.prisma.drizzle.transaction((tx) => {
+        for (const update of updates) {
+          tx.update(schema.episodes)
+            .set({ monitored: update.shouldMonitor })
+            .where(eq(schema.episodes.id, update.id))
+            .run();
+        }
+      });
     }
 
     return {

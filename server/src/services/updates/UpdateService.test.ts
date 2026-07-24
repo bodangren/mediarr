@@ -64,7 +64,7 @@ describe('UpdateService', () => {
   it('checks GitHub releases and caches latest when newer version exists', async () => {
     const fetchFn = vi.fn(async () => jsonResponse(releasePayload()));
     const service = new UpdateService({
-      fetchFn: fetchFn as any,
+      fetchFn: fetchFn as unknown as typeof fetch,
       currentVersion: '1.0.0',
       githubRepo: 'test/mediarr',
       stagingDir: tempRoot,
@@ -85,7 +85,7 @@ describe('UpdateService', () => {
   it('returns updateAvailable=false and clears cache when already up-to-date', async () => {
     const fetchFn = vi.fn(async () => jsonResponse(releasePayload({ tag_name: 'v1.0.0' })));
     const service = new UpdateService({
-      fetchFn: fetchFn as any,
+      fetchFn: fetchFn as unknown as typeof fetch,
       currentVersion: '1.0.0',
       githubRepo: 'test/mediarr',
       stagingDir: tempRoot,
@@ -102,7 +102,7 @@ describe('UpdateService', () => {
   it('throws ProviderUnavailableError on GitHub rate-limit responses', async () => {
     const fetchFn = vi.fn(async () => jsonResponse({ message: 'rate limited' }, 403));
     const service = new UpdateService({
-      fetchFn: fetchFn as any,
+      fetchFn: fetchFn as unknown as typeof fetch,
       currentVersion: '1.0.0',
       githubRepo: 'test/mediarr',
       stagingDir: tempRoot,
@@ -115,7 +115,7 @@ describe('UpdateService', () => {
   it('detects docker mode via injected detector', async () => {
     const fetchFn = vi.fn(async () => jsonResponse(releasePayload()));
     const service = new UpdateService({
-      fetchFn: fetchFn as any,
+      fetchFn: fetchFn as unknown as typeof fetch,
       currentVersion: '1.0.0',
       githubRepo: 'test/mediarr',
       stagingDir: tempRoot,
@@ -136,7 +136,7 @@ describe('UpdateService', () => {
       .mockImplementationOnce(async () => streamResponse(bytes));
 
     const service = new UpdateService({
-      fetchFn: fetchFn as any,
+      fetchFn: fetchFn as unknown as typeof fetch,
       currentVersion: '1.0.0',
       githubRepo: 'test/mediarr',
       stagingDir: tempRoot,
@@ -168,7 +168,7 @@ describe('UpdateService', () => {
       .mockImplementationOnce(async () => streamResponse(bytes));
 
     const service = new UpdateService({
-      fetchFn: fetchFn as any,
+      fetchFn: fetchFn as unknown as typeof fetch,
       currentVersion: '1.0.0',
       githubRepo: 'test/mediarr',
       stagingDir: tempRoot,
@@ -187,7 +187,7 @@ describe('UpdateService', () => {
       .mockImplementationOnce(async () => new Response('boom', { status: 500 }));
 
     const service = new UpdateService({
-      fetchFn: fetchFn as any,
+      fetchFn: fetchFn as unknown as typeof fetch,
       currentVersion: '1.0.0',
       githubRepo: 'test/mediarr',
       stagingDir: tempRoot,
@@ -214,7 +214,75 @@ describe('UpdateService', () => {
     expect(result.command).toContain('docker pull');
   });
 
-  it('replaces current executable in binary mode', async () => {
+  it('fails closed when no application-owned install target is configured', async () => {
+    const bytes = Buffer.from('binary-v1.1.0');
+    const checksum = createHash('sha256').update(bytes).digest('hex');
+    const fetchFn = vi
+      .fn<typeof fetch>()
+      .mockImplementationOnce(async () => jsonResponse(releasePayload({ body: `sha256: ${checksum}` })))
+      .mockImplementationOnce(async () => streamResponse(bytes));
+    const runtimeWrite = vi.spyOn(fs, 'copyFile');
+
+    const service = new UpdateService({
+      fetchFn: fetchFn as unknown as typeof fetch,
+      currentVersion: '1.0.0',
+      githubRepo: 'test/mediarr',
+      stagingDir: tempRoot,
+      isDockerFn: () => false,
+    });
+
+    await service.checkForUpdate();
+    const download = await service.downloadUpdate({ version: '1.1.0' });
+
+    await expect(service.installUpdate({ updateId: download.updateId }))
+      .rejects.toThrow('explicit application-owned install target');
+    expect(runtimeWrite).not.toHaveBeenCalledWith(expect.anything(), process.execPath);
+  });
+
+  it('rejects a release without an exact platform and architecture asset', async () => {
+    const fetchFn = vi.fn(async () => jsonResponse(releasePayload({
+      assets: [
+        {
+          name: 'mediarr-linux-arm64',
+          browser_download_url: 'https://example.com/mediarr-linux-arm64',
+          size: 1024,
+          content_type: 'application/octet-stream',
+        },
+      ],
+    })));
+    const service = new UpdateService({
+      fetchFn: fetchFn as unknown as typeof fetch,
+      currentVersion: '1.0.0',
+      githubRepo: 'test/mediarr',
+      stagingDir: tempRoot,
+      isDockerFn: () => false,
+      platform: 'linux',
+      arch: 'x64',
+    });
+
+    await expect(service.checkForUpdate()).rejects.toThrow(
+      'exact supported asset',
+    );
+  });
+
+  it('rejects a release without a SHA-256 checksum', async () => {
+    const fetchFn = vi.fn(async () => jsonResponse(releasePayload({
+      body: 'Release notes without a checksum.',
+    })));
+    const service = new UpdateService({
+      fetchFn: fetchFn as unknown as typeof fetch,
+      currentVersion: '1.0.0',
+      githubRepo: 'test/mediarr',
+      stagingDir: tempRoot,
+      isDockerFn: () => false,
+    });
+
+    await expect(service.checkForUpdate()).rejects.toThrow(
+      'SHA-256 checksum',
+    );
+  });
+
+  it('atomically replaces an explicit application-owned binary and retains a rollback copy', async () => {
     const bytes = Buffer.from('binary-v1.1.0');
     const checksum = createHash('sha256').update(bytes).digest('hex');
 
@@ -227,7 +295,7 @@ describe('UpdateService', () => {
       .mockImplementationOnce(async () => streamResponse(bytes));
 
     const service = new UpdateService({
-      fetchFn: fetchFn as any,
+      fetchFn: fetchFn as unknown as typeof fetch,
       currentVersion: '1.0.0',
       githubRepo: 'test/mediarr',
       stagingDir: tempRoot,
@@ -244,6 +312,76 @@ describe('UpdateService', () => {
 
     const replaced = await fs.readFile(currentExecutablePath);
     expect(Buffer.compare(replaced, bytes)).toBe(0);
+    await expect(fs.readFile(`${currentExecutablePath}.previous`, 'utf8'))
+      .resolves.toBe('old-binary');
+  });
+
+  it('restores the previous binary when atomic replacement does not complete', async () => {
+    const bytes = Buffer.from('binary-v1.1.0');
+    const checksum = createHash('sha256').update(bytes).digest('hex');
+    const currentExecutablePath = path.join(tempRoot, 'mediarr-current');
+    await fs.writeFile(currentExecutablePath, 'old-binary');
+
+    const fetchFn = vi
+      .fn<typeof fetch>()
+      .mockImplementationOnce(async () => jsonResponse(releasePayload({ body: `sha256: ${checksum}` })))
+      .mockImplementationOnce(async () => streamResponse(bytes));
+    const realRename = fs.rename.bind(fs);
+    vi.spyOn(fs, 'rename').mockImplementation(async (source, destination) => {
+      await realRename(source, destination);
+      if (
+        String(destination) === currentExecutablePath
+        && String(source).includes('.update-')
+      ) {
+        throw new Error('simulated replacement durability failure');
+      }
+    });
+
+    const service = new UpdateService({
+      fetchFn: fetchFn as unknown as typeof fetch,
+      currentVersion: '1.0.0',
+      githubRepo: 'test/mediarr',
+      stagingDir: tempRoot,
+      currentExecutablePath,
+      isDockerFn: () => false,
+    });
+
+    await service.checkForUpdate();
+    const download = await service.downloadUpdate({ version: '1.1.0' });
+
+    await expect(service.installUpdate({ updateId: download.updateId }))
+      .rejects.toThrow('simulated replacement durability failure');
+    await expect(fs.readFile(currentExecutablePath, 'utf8'))
+      .resolves.toBe('old-binary');
+  });
+
+  it('re-verifies the staged checksum before replacing the current binary', async () => {
+    const bytes = Buffer.from('binary-v1.1.0');
+    const checksum = createHash('sha256').update(bytes).digest('hex');
+    const currentExecutablePath = path.join(tempRoot, 'mediarr-current');
+    await fs.writeFile(currentExecutablePath, 'old-binary');
+
+    const fetchFn = vi
+      .fn<typeof fetch>()
+      .mockImplementationOnce(async () => jsonResponse(releasePayload({ body: `sha256: ${checksum}` })))
+      .mockImplementationOnce(async () => streamResponse(bytes));
+    const service = new UpdateService({
+      fetchFn: fetchFn as unknown as typeof fetch,
+      currentVersion: '1.0.0',
+      githubRepo: 'test/mediarr',
+      stagingDir: tempRoot,
+      currentExecutablePath,
+      isDockerFn: () => false,
+    });
+
+    await service.checkForUpdate();
+    const download = await service.downloadUpdate({ version: '1.1.0' });
+    await fs.writeFile(download.stagedPath!, 'tampered-binary');
+
+    await expect(service.installUpdate({ updateId: download.updateId }))
+      .rejects.toThrow('Staged update checksum verification failed');
+    await expect(fs.readFile(currentExecutablePath, 'utf8'))
+      .resolves.toBe('old-binary');
   });
 
   it('throws NotFoundError when install is requested without a staged artifact', async () => {

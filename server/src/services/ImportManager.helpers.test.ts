@@ -191,7 +191,7 @@ describe('ImportManager — retry and helper edge cases', () => {
     expect(organizer.organizeMovieFile).toHaveBeenCalledWith(
       '/downloads/complete/The.Matrix.1999.mkv',
       expect.anything(),
-      { move: true },
+      { strategy: 'hardlink' },
     );
   });
 

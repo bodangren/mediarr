@@ -105,4 +105,24 @@ describe('isSameVolume', () => {
     const result = await isSameVolume('/downloads/[Team] Movie (2024).mkv', '/media/movies/Movie (2024)/Movie (2024).mkv');
     expect(result).toBe(true);
   });
+
+  it('uses the nearest existing destination ancestor when the destination is absent', async () => {
+    const { isSameVolume } = await import('./mediaUtils');
+    const missing = Object.assign(new Error('ENOENT'), { code: 'ENOENT' });
+    (mockFs.statSync as ReturnType<typeof vi.fn>)
+      .mockReturnValueOnce({ dev: 2049 } as any)
+      .mockImplementationOnce(() => { throw missing; })
+      .mockImplementationOnce(() => { throw missing; })
+      .mockReturnValueOnce({ dev: 2049 } as any);
+
+    const result = await isSameVolume(
+      '/downloads/file.mkv',
+      '/media/movies/New Movie/New Movie.mkv',
+    );
+
+    expect(result).toBe(true);
+    expect(mockFs.statSync).toHaveBeenNthCalledWith(2, '/media/movies/New Movie/New Movie.mkv');
+    expect(mockFs.statSync).toHaveBeenNthCalledWith(3, '/media/movies/New Movie');
+    expect(mockFs.statSync).toHaveBeenNthCalledWith(4, '/media/movies');
+  });
 });

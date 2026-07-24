@@ -16,6 +16,8 @@ export type DrizzleDB = BetterSQLite3Database<typeof schema>;
 
 type SortDirection = 'asc' | 'desc';
 
+type SynchronousTransactionResult<T> = T extends PromiseLike<unknown> ? never : T;
+
 type QueryArgs = {
   where?: AnyRecord | undefined;
   select?: AnyRecord | undefined;
@@ -547,17 +549,21 @@ export class DatabaseClient {
   }
 
   async $transaction<T>(
-    input: Array<Promise<unknown>> | ((tx: this) => Promise<T> | T),
-  ): Promise<T | unknown[]> {
-    if (Array.isArray(input)) {
-      return Promise.all(input);
-    }
-
+    input: (tx: this) => SynchronousTransactionResult<T>,
+  ): Promise<T> {
     this.sqlite.exec('BEGIN');
     try {
-      const result = await input(this);
+      const result = input(this);
+      if (
+        result !== null
+        && typeof result === 'object'
+        && 'then' in result
+        && typeof result.then === 'function'
+      ) {
+        throw new Error('DatabaseClient.$transaction callback must be synchronous');
+      }
       this.sqlite.exec('COMMIT');
-      return result;
+      return result as T;
     } catch (error) {
       this.sqlite.exec('ROLLBACK');
       throw error;

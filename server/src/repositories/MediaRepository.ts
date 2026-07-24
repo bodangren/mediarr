@@ -238,21 +238,22 @@ export class MediaRepository {
 
     const seasonIdMap = new Map<number, number>();
 
-    await this.prisma.drizzle.transaction(async (tx) => {
+    this.prisma.drizzle.transaction((tx) => {
       for (const s of seriesSeasons) {
         const seasonNumber = Number(s.seasonNumber);
         if (!Number.isFinite(seasonNumber)) {
           continue;
         }
 
-        const [season] = await tx
+        const season = tx
           .insert(schema.seasons)
           .values({ seriesId, seasonNumber, monitored: true })
           .onConflictDoUpdate({
             target: [schema.seasons.seriesId, schema.seasons.seasonNumber],
             set: { monitored: true },
           })
-          .returning();
+          .returning()
+          .get();
         if (season?.id != null) {
           seasonIdMap.set(seasonNumber, Number(season.id));
         }
@@ -285,7 +286,7 @@ export class MediaRepository {
           overview,
         } as const;
 
-        await tx
+        tx
           .insert(schema.episodes)
           .values({
             tvdbId,
@@ -296,7 +297,8 @@ export class MediaRepository {
           .onConflictDoUpdate({
             target: schema.episodes.tvdbId,
             set: episodeSet,
-          });
+          })
+          .run();
       }
     });
   }
@@ -322,13 +324,14 @@ export class MediaRepository {
 
     if (Object.keys(updateData).length === 0) return result;
 
-    return this.prisma.drizzle.transaction(async (tx) => {
+    return this.prisma.drizzle.transaction((tx) => {
       for (const seriesId of seriesIds) {
         try {
-          await tx
+          tx
             .update(schema.series)
             .set(updateData)
-            .where(eq(schema.series.id, seriesId));
+            .where(eq(schema.series.id, seriesId))
+            .run();
           result.updated += 1;
         } catch (error) {
           result.failed += 1;
@@ -361,13 +364,14 @@ export class MediaRepository {
 
     if (Object.keys(updateData).length === 0) return result;
 
-    return this.prisma.drizzle.transaction(async (tx) => {
+    return this.prisma.drizzle.transaction((tx) => {
       for (const movieId of movieIds) {
         try {
-          await tx
+          tx
             .update(schema.movies)
             .set(updateData)
-            .where(eq(schema.movies.id, movieId));
+            .where(eq(schema.movies.id, movieId))
+            .run();
           result.updated += 1;
         } catch (error) {
           result.failed += 1;

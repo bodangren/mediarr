@@ -1,6 +1,14 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
+export type ImportStrategy = 'hardlink' | 'copy' | 'move';
+
+export interface OrganizeOptions {
+  strategy?: ImportStrategy;
+  /** @deprecated Use an explicit strategy. Retained for existing non-torrent callers. */
+  move?: boolean;
+}
+
 /**
  * Service to organize, rename, and move media files to their final destination.
  */
@@ -24,17 +32,15 @@ export class Organizer {
   /**
    * Organizes a file to the series/season folder.
    *
-   * Default (move: false): hard link preserving source for torrent seeding,
-   * with fs.rename fallback on cross-device.
-   *
-   * move: true: rename (move) first — used when files are already in the media
-   * tree so no copy is left behind. Falls back to copy+unlink on cross-device.
+   * The default hard-link strategy preserves the source for torrent seeding.
+   * If linking is unavailable, it safely copies instead. Callers must opt in to
+   * destructive move semantics explicitly.
    */
   async organizeFile(
     sourcePath: string,
     series: { title: string; path: string },
     episode: { seasonNumber: number; episodeNumber: number; title: string },
-    options?: { move?: boolean }
+    options: OrganizeOptions = {},
   ): Promise<string> {
     const extension = path.extname(sourcePath);
     const filename = this.buildFilename(series, episode, extension);
@@ -51,19 +57,7 @@ export class Organizer {
       return destinationPath;
     }
 
-    if (options?.move) {
-      await this.moveFile(sourcePath, destinationPath);
-    } else {
-      try {
-        await fs.link(sourcePath, destinationPath);
-      } catch {
-        console.warn(
-          `Hard link failed for "${sourcePath}", falling back to move. ` +
-          'Ensure downloads and media are on the same volume for hard link support.'
-        );
-        await fs.rename(sourcePath, destinationPath);
-      }
-    }
+    await this.transferFile(sourcePath, destinationPath, this.resolveStrategy(options));
 
     return destinationPath;
   }
@@ -80,7 +74,7 @@ export class Organizer {
   async organizeMovieFile(
     sourcePath: string,
     movie: { title: string; year: number; path: string },
-    options?: { move?: boolean }
+    options: OrganizeOptions = {},
   ): Promise<string> {
     const extension = path.extname(sourcePath);
     const movieDir = this.resolveMovieDirectory(movie);
@@ -94,19 +88,7 @@ export class Organizer {
       return destinationPath;
     }
 
-    if (options?.move) {
-      await this.moveFile(sourcePath, destinationPath);
-    } else {
-      try {
-        await fs.link(sourcePath, destinationPath);
-      } catch {
-        console.warn(
-          `Hard link failed for "${sourcePath}", falling back to move. ` +
-          'Ensure downloads and media are on the same volume for hard link support.'
-        );
-        await fs.rename(sourcePath, destinationPath);
-      }
-    }
+    await this.transferFile(sourcePath, destinationPath, this.resolveStrategy(options));
 
     return destinationPath;
   }
@@ -138,20 +120,56 @@ export class Organizer {
     return path.join(basePath, movieFolderName);
   }
 
+  private async transferFile(
+    sourcePath: string,
+    destinationPath: string,
+    strategy: ImportStrategy,
+  ): Promise<void> {
+    if (strategy === 'move') {
+      await this.moveFile(sourcePath, destinationPath);
+      return;
+    }
+
+    if (strategy === 'copy') {
+      await fs.copyFile(sourcePath, destinationPath);
+      return;
+    }
+
+    try {
+      await fs.link(sourcePath, destinationPath);
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : 'unknown filesystem error';
+      console.warn(
+        `Hard link failed for "${sourcePath}" (${reason}); copying instead to preserve the source.`,
+      );
+      await fs.copyFile(sourcePath, destinationPath);
+    }
+  }
+
+  private resolveStrategy(options: OrganizeOptions): ImportStrategy {
+    return options.strategy ?? (options.move ? 'move' : 'hardlink');
+  }
+
   /** Move a file: try fs.rename (atomic, same-fs), fall back to copy+unlink cross-device. */
   private async moveFile(sourcePath: string, destinationPath: string): Promise<void> {
     try {
       await fs.rename(sourcePath, destinationPath);
-    } catch (err: any) {
-      if (err?.code !== 'EXDEV') throw err;
+    } catch (error: unknown) {
+      if (!this.isFileSystemError(error, 'EXDEV')) {
+        throw error;
+      }
       // Cross-device: copy then remove source
       await fs.copyFile(sourcePath, destinationPath);
       await fs.unlink(sourcePath);
     }
   }
 
+  private isFileSystemError(error: unknown, code: string): boolean {
+    return error instanceof Error && 'code' in error && error.code === code;
+  }
+
   private sanitize(name: string): string {
     // Basic sanitization for filenames
-    return name.replace(/[\/:*?"<>|]/g, '').trim();
+    return name.replace(/[/:*?"<>|]/g, '').trim();
   }
 }

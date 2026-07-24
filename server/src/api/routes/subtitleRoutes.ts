@@ -1,5 +1,8 @@
 import type { FastifyInstance } from 'fastify';
+import { inArray } from 'drizzle-orm';
 import { ValidationError } from '../../errors/domainErrors';
+import type { DatabaseClient } from '../../db/drizzleClient';
+import * as schema from '../../db/schema';
 import {
   paginateArray,
   parsePaginationParams,
@@ -291,8 +294,8 @@ export function registerSubtitleRoutes(
       },
     },
   }, async (request, reply) => {
-    const prismaMovie = (deps.prisma as Record<string, unknown>).movie as { updateMany?: unknown } | undefined;
-    if (!prismaMovie?.updateMany) {
+    const database = deps.prisma as DatabaseClient;
+    if (!database.drizzle || typeof database.drizzle.transaction !== 'function') {
       throw new ValidationError('Movie data source is not configured');
     }
 
@@ -309,22 +312,18 @@ export function registerSubtitleRoutes(
       throw new ValidationError('languageProfileId must be a positive number');
     }
 
-    const prisma = deps.prisma as any;
-    const result = await prisma.$transaction(async (tx: any) => {
-      return tx.movie.updateMany({
-        where: {
-          id: { in: body.movieIds },
-        },
-        data: {
-          languageProfileId: body.languageProfileId,
-        },
-      });
+    const result = database.drizzle.transaction((tx) => {
+      return tx
+        .update(schema.movies)
+        .set({ languageProfileId: body.languageProfileId })
+        .where(inArray(schema.movies.id, body.movieIds))
+        .run();
     });
 
     return sendSuccess(reply, {
       success: true,
       message: 'Bulk subtitle profile update completed',
-      updatedCount: result.count,
+      updatedCount: result.changes,
       failedCount: 0,
     });
   });

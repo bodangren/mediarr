@@ -214,7 +214,7 @@ describe('ImportManager — parser-based slow path', () => {
     expect(org.organizeMovieFile).toHaveBeenCalledWith(
       torrent.path,
       expect.objectContaining({ id: 5, title: 'The Matrix', year: 1999 }),
-      { move: true },
+      { strategy: 'hardlink' },
     );
     expect(ae.emit).toHaveBeenCalledWith(
       expect.objectContaining({ eventType: 'MOVIE_IMPORTED', success: true }),

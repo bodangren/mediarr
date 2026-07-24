@@ -76,20 +76,44 @@ describe('Organizer', () => {
       expect(result).toBe('/media/tv/Breaking Bad/Season 01/Breaking Bad - S01E01 - Pilot.mkv');
     });
 
-    it('link fails → falls back to rename (same-device)', async () => {
-      fsMocks.link.mockRejectedValueOnce(new Error('EPERM: operation not permitted'));
+    it('hard-link failure copies the file without removing the seeding source', async () => {
+      const exdev = Object.assign(new Error('EXDEV: cross-device link not permitted'), {
+        code: 'EXDEV',
+      });
+      fsMocks.link.mockRejectedValueOnce(exdev);
 
       const result = await organizer.organizeFile(
         '/downloads/breaking.bad.s01e01.mkv',
         SERIES,
         EPISODE,
+        { strategy: 'hardlink' },
       );
 
       expect(fsMocks.link).toHaveBeenCalledOnce();
-      expect(fsMocks.rename).toHaveBeenCalledWith(
+      expect(fsMocks.copyFile).toHaveBeenCalledWith(
         '/downloads/breaking.bad.s01e01.mkv',
         '/media/tv/Breaking Bad/Season 01/Breaking Bad - S01E01 - Pilot.mkv',
       );
+      expect(fsMocks.rename).not.toHaveBeenCalled();
+      expect(fsMocks.unlink).not.toHaveBeenCalled();
+      expect(result).toBe('/media/tv/Breaking Bad/Season 01/Breaking Bad - S01E01 - Pilot.mkv');
+    });
+
+    it('copy strategy preserves the source and does not attempt a hard link', async () => {
+      const result = await organizer.organizeFile(
+        '/downloads/breaking.bad.s01e01.mkv',
+        SERIES,
+        EPISODE,
+        { strategy: 'copy' },
+      );
+
+      expect(fsMocks.copyFile).toHaveBeenCalledWith(
+        '/downloads/breaking.bad.s01e01.mkv',
+        '/media/tv/Breaking Bad/Season 01/Breaking Bad - S01E01 - Pilot.mkv',
+      );
+      expect(fsMocks.link).not.toHaveBeenCalled();
+      expect(fsMocks.rename).not.toHaveBeenCalled();
+      expect(fsMocks.unlink).not.toHaveBeenCalled();
       expect(result).toBe('/media/tv/Breaking Bad/Season 01/Breaking Bad - S01E01 - Pilot.mkv');
     });
 
@@ -108,12 +132,12 @@ describe('Organizer', () => {
       expect(result).toBe(alreadyOrganized);
     });
 
-    it('move: true → calls rename, does NOT call link', async () => {
+    it('move strategy calls rename and does not call link', async () => {
       const result = await organizer.organizeFile(
         '/downloads/breaking.bad.s01e01.mkv',
         SERIES,
         EPISODE,
-        { move: true },
+        { strategy: 'move' },
       );
 
       expect(fsMocks.link).not.toHaveBeenCalled();
@@ -124,7 +148,7 @@ describe('Organizer', () => {
       expect(result).toBe('/media/tv/Breaking Bad/Season 01/Breaking Bad - S01E01 - Pilot.mkv');
     });
 
-    it('move: true + rename throws EXDEV → falls back to copyFile + unlink', async () => {
+    it('move strategy handles EXDEV with copyFile and unlink', async () => {
       const exdev = Object.assign(new Error('EXDEV'), { code: 'EXDEV' });
       fsMocks.rename.mockRejectedValueOnce(exdev);
 
@@ -132,7 +156,7 @@ describe('Organizer', () => {
         '/downloads/breaking.bad.s01e01.mkv',
         SERIES,
         EPISODE,
-        { move: true },
+        { strategy: 'move' },
       );
 
       expect(fsMocks.copyFile).toHaveBeenCalledWith(
@@ -143,12 +167,17 @@ describe('Organizer', () => {
       expect(result).toBe('/media/tv/Breaking Bad/Season 01/Breaking Bad - S01E01 - Pilot.mkv');
     });
 
-    it('move: true + rename throws non-EXDEV error → propagates the error', async () => {
+    it('move strategy propagates non-EXDEV rename errors', async () => {
       const ioError = Object.assign(new Error('EIO: i/o error'), { code: 'EIO' });
       fsMocks.rename.mockRejectedValueOnce(ioError);
 
       await expect(
-        organizer.organizeFile('/downloads/breaking.bad.s01e01.mkv', SERIES, EPISODE, { move: true }),
+        organizer.organizeFile(
+          '/downloads/breaking.bad.s01e01.mkv',
+          SERIES,
+          EPISODE,
+          { strategy: 'move' },
+        ),
       ).rejects.toThrow('EIO');
 
       expect(fsMocks.copyFile).not.toHaveBeenCalled();
@@ -192,11 +221,11 @@ describe('Organizer', () => {
       );
     });
 
-    it('move: true → calls rename, does NOT call link', async () => {
+    it('move strategy calls rename and does not call link', async () => {
       const result = await organizer.organizeMovieFile(
         '/downloads/The.Matrix.1999.mkv',
         MOVIE,
-        { move: true },
+        { strategy: 'move' },
       );
 
       expect(fsMocks.link).not.toHaveBeenCalled();

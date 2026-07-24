@@ -98,6 +98,11 @@ interface UpdateServiceOptions {
   arch?: string | undefined;
 }
 
+interface StagedUpdateArtifact {
+  path: string;
+  checksum: string;
+}
+
 const UPDATE_ID_PREFIX = 'update-';
 const DEFAULT_GITHUB_REPO = 'mediarr/mediarr';
 const DEFAULT_STAGING_DIR = '/config/updates';
@@ -180,7 +185,7 @@ export class UpdateService {
   private readonly githubRepo: string;
   private readonly githubToken: string | undefined;
   private readonly stagingDir: string;
-  private readonly currentExecutablePath: string;
+  private readonly currentExecutablePath: string | null;
   private readonly nowFn: () => Date;
   private readonly isDockerFn: (() => boolean | Promise<boolean>) | undefined;
   private readonly platform: NodeJS.Platform;
@@ -191,7 +196,7 @@ export class UpdateService {
   private lastCheckedAt: string | null = null;
   private lastCheckedBranch: UpdateBranch = 'master';
   private readonly progress = new Map<string, UpdateProgressEntry>();
-  private readonly stagedByVersion = new Map<string, string>();
+  private readonly stagedByVersion = new Map<string, StagedUpdateArtifact>();
   private history: UpdateHistoryEntry[] = [];
   private nextHistoryId = 1;
   private nextUpdateId = 1;
@@ -207,7 +212,9 @@ export class UpdateService {
     this.githubToken = options.githubToken ?? process.env.GITHUB_TOKEN;
     this.stagingDir = options.stagingDir ?? process.env.UPDATE_STAGING_DIR ?? DEFAULT_STAGING_DIR;
     this.currentVersion = options.currentVersion ?? process.env.npm_package_version ?? '0.0.0';
-    this.currentExecutablePath = options.currentExecutablePath ?? process.execPath;
+    const configuredInstallTarget = options.currentExecutablePath
+      ?? process.env.UPDATE_INSTALL_TARGET;
+    this.currentExecutablePath = configuredInstallTarget?.trim() || null;
     this.nowFn = options.nowFn ?? (() => new Date());
     this.isDockerFn = options.isDockerFn;
     this.platform = options.platform ?? process.platform;
@@ -276,6 +283,9 @@ export class UpdateService {
 
   async downloadUpdate(input: { version?: string | undefined } = {}): Promise<UpdateProgressEntry> {
     const release = this.resolveReleaseForDownload(input.version);
+    if (!release.expectedChecksum) {
+      throw new ProviderUnavailableError('Release is missing a required SHA-256 checksum');
+    }
 
     const updateId = `${UPDATE_ID_PREFIX}${this.nextUpdateId++}`;
     const startedAt = this.nowFn().toISOString();
@@ -305,7 +315,10 @@ export class UpdateService {
 
       await this.writeDownloadToDisk(updateId, response, stagedPath, totalBytes, release.expectedChecksum);
 
-      this.stagedByVersion.set(release.version, stagedPath);
+      this.stagedByVersion.set(release.version, {
+        path: stagedPath,
+        checksum: release.expectedChecksum,
+      });
       this.patchProgress(updateId, {
         status: 'completed',
         progress: 100,
@@ -351,7 +364,8 @@ export class UpdateService {
       };
     }
 
-    const stagedPath = this.resolveStagedPath(input.updateId, version);
+    const stagedArtifact = this.resolveStagedArtifact(input.updateId, version);
+    const installTarget = await this.resolveInstallTarget();
 
     try {
       if (input.updateId) {
@@ -361,8 +375,13 @@ export class UpdateService {
         });
       }
 
-      await fs.copyFile(stagedPath, this.currentExecutablePath);
-      await fs.chmod(this.currentExecutablePath, 0o755).catch(() => {});
+      await this.verifyStagedArtifact(stagedArtifact);
+      await this.replaceExecutableAtomically(
+        stagedArtifact.path,
+        installTarget.path,
+        installTarget.mode,
+        version,
+      );
 
       if (input.updateId) {
         this.patchProgress(input.updateId, {
@@ -468,7 +487,9 @@ export class UpdateService {
     const mapped = this.mapRelease(latest);
 
     if (!mapped) {
-      throw new ProviderUnavailableError('GitHub latest release payload is missing required fields');
+      throw new ProviderUnavailableError(
+        'GitHub latest release is missing an exact supported asset or required SHA-256 checksum',
+      );
     }
 
     return mapped;
@@ -514,12 +535,15 @@ export class UpdateService {
 
     const platformToken = this.platform.toLowerCase();
     const archToken = this.arch.toLowerCase();
-    const exact = selectable.find(asset => {
-      const name = asset.name.toLowerCase();
-      return name.includes(platformToken) && name.includes(archToken);
-    });
-    const platformOnly = selectable.find(asset => asset.name.toLowerCase().includes(platformToken));
-    const selected = exact ?? platformOnly ?? selectable[0]!;
+    const expectedAssetName = `mediarr-${platformToken}-${archToken}${this.platform === 'win32' ? '.exe' : ''}`;
+    const selected = selectable.find(
+      asset => asset.name.toLowerCase() === expectedAssetName,
+    );
+    const expectedChecksum = extractChecksum(changelog);
+
+    if (!selected || !expectedChecksum) {
+      return null;
+    }
 
     return {
       version,
@@ -529,7 +553,7 @@ export class UpdateService {
       downloadUrl: selected.downloadUrl,
       assetName: selected.name,
       assetContentType: selected.contentType,
-      expectedChecksum: extractChecksum(changelog),
+      expectedChecksum,
     };
   }
 
@@ -689,21 +713,164 @@ export class UpdateService {
     return progress?.version ?? null;
   }
 
-  private resolveStagedPath(updateId: string | undefined, version: string): string {
-    if (updateId) {
-      const progress = this.progress.get(updateId);
-      if (progress?.stagedPath) {
-        return progress.stagedPath;
-      }
-    }
+  private resolveStagedArtifact(
+    updateId: string | undefined,
+    version: string,
+  ): StagedUpdateArtifact {
+    const normalizedVersion = normalizeVersion(version);
+    const staged = this.stagedByVersion.get(normalizedVersion);
+    const progress = updateId ? this.progress.get(updateId) : null;
 
-    const staged = this.stagedByVersion.get(version);
-    if (staged) {
+    if (
+      staged
+      && (!progress || normalizeVersion(progress.version) === normalizedVersion)
+    ) {
       return staged;
     }
 
-    const fallback = path.join(this.stagingDir, `mediarr-${normalizeVersion(version)}`);
-    throw new NotFoundError(`No staged update artifact found at ${fallback}`);
+    const fallback = path.join(this.stagingDir, `mediarr-${normalizedVersion}`);
+    throw new NotFoundError(`No verified staged update artifact found at ${fallback}`);
+  }
+
+  private async resolveInstallTarget(): Promise<{ path: string; mode: number }> {
+    if (!this.currentExecutablePath) {
+      throw new ValidationError(
+        'Non-container updates require an explicit application-owned install target via UPDATE_INSTALL_TARGET',
+      );
+    }
+
+    if (this.platform === 'win32') {
+      throw new ValidationError(
+        'In-place non-container updates are not supported on Windows; use a container update',
+      );
+    }
+
+    const targetPath = path.resolve(this.currentExecutablePath);
+    const runtimePath = await fs.realpath(process.execPath).catch(
+      () => path.resolve(process.execPath),
+    );
+
+    let targetStats;
+    try {
+      targetStats = await fs.lstat(targetPath);
+    } catch {
+      throw new ValidationError(
+        `Configured update install target does not exist: ${targetPath}`,
+      );
+    }
+
+    if (targetStats.isSymbolicLink() || !targetStats.isFile()) {
+      throw new ValidationError(
+        'Configured update install target must be an existing regular file and not a symbolic link',
+      );
+    }
+
+    const realTargetPath = await fs.realpath(targetPath);
+    if (realTargetPath === runtimePath || targetPath === path.resolve(process.execPath)) {
+      throw new ValidationError('The Bun/Node runtime executable cannot be an update install target');
+    }
+
+    return {
+      path: realTargetPath,
+      mode: targetStats.mode & 0o777,
+    };
+  }
+
+  private async verifyStagedArtifact(artifact: StagedUpdateArtifact): Promise<void> {
+    const stagedStats = await fs.lstat(artifact.path).catch(() => null);
+    if (!stagedStats || stagedStats.isSymbolicLink() || !stagedStats.isFile()) {
+      throw new ProviderUnavailableError('Verified staged update artifact is missing or invalid');
+    }
+
+    const actualChecksum = createHash('sha256')
+      .update(await fs.readFile(artifact.path))
+      .digest('hex')
+      .toLowerCase();
+
+    if (actualChecksum !== artifact.checksum.toLowerCase()) {
+      throw new ProviderUnavailableError('Staged update checksum verification failed');
+    }
+  }
+
+  private async replaceExecutableAtomically(
+    stagedPath: string,
+    targetPath: string,
+    targetMode: number,
+    version: string,
+  ): Promise<void> {
+    const parentDirectory = path.dirname(targetPath);
+    const safeVersion = normalizeVersion(version).replace(/[^a-zA-Z0-9._-]/g, '_');
+    const nextPath = path.join(
+      parentDirectory,
+      `.${path.basename(targetPath)}.update-${safeVersion}.next`,
+    );
+    const backupPath = `${targetPath}.previous`;
+    const nextBackupPath = `${backupPath}.next`;
+    let targetReplacementStarted = false;
+
+    await fs.rm(nextPath, { force: true });
+    await fs.rm(nextBackupPath, { force: true });
+
+    try {
+      await fs.copyFile(stagedPath, nextPath, fsConstants.COPYFILE_EXCL);
+      await fs.chmod(nextPath, targetMode | 0o100);
+      await this.syncFile(nextPath);
+
+      await fs.copyFile(targetPath, nextBackupPath, fsConstants.COPYFILE_EXCL);
+      await fs.chmod(nextBackupPath, targetMode);
+      await this.syncFile(nextBackupPath);
+      await fs.rm(backupPath, { force: true });
+      await fs.rename(nextBackupPath, backupPath);
+      await this.syncDirectory(parentDirectory);
+
+      targetReplacementStarted = true;
+      await fs.rename(nextPath, targetPath);
+      await this.syncDirectory(parentDirectory);
+    } catch (error) {
+      let rollbackError: unknown = null;
+
+      if (targetReplacementStarted) {
+        try {
+          await fs.rename(backupPath, targetPath);
+          await this.syncDirectory(parentDirectory);
+        } catch (caughtRollbackError) {
+          rollbackError = caughtRollbackError;
+        }
+      }
+
+      await fs.rm(nextPath, { force: true }).catch(() => {});
+      await fs.rm(nextBackupPath, { force: true }).catch(() => {});
+
+      if (rollbackError) {
+        const installMessage = error instanceof Error ? error.message : 'replacement failed';
+        const rollbackMessage = rollbackError instanceof Error
+          ? rollbackError.message
+          : 'rollback failed';
+        throw new Error(
+          `${installMessage}; rollback failed: ${rollbackMessage}. Recovery copy: ${backupPath}`,
+        );
+      }
+
+      throw error;
+    }
+  }
+
+  private async syncFile(filePath: string): Promise<void> {
+    const handle = await fs.open(filePath, 'r');
+    try {
+      await handle.sync();
+    } finally {
+      await handle.close();
+    }
+  }
+
+  private async syncDirectory(directoryPath: string): Promise<void> {
+    const handle = await fs.open(directoryPath, 'r');
+    try {
+      await handle.sync();
+    } finally {
+      await handle.close();
+    }
   }
 
   private appendHistory(entry: {

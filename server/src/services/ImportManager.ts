@@ -231,8 +231,13 @@ export class ImportManager {
             continue;
           }
 
-          const shouldMove = await isSameVolume(filePath, seriesPath);
-          const newPath = await this.organizer.organizeFile(filePath, { ...series, path: seriesPath }, episode, { move: shouldMove });
+          const strategy = await isSameVolume(filePath, seriesPath) ? 'hardlink' : 'copy';
+          const newPath = await this.organizer.organizeFile(
+            filePath,
+            { ...series, path: seriesPath },
+            episode,
+            { strategy },
+          );
           await this.prisma.episode.update({ where: { id: episode.id }, data: { path: newPath } });
           await this.prisma.mediaFileVariant.upsert({
             where: { mediaType_path: { mediaType: 'EPISODE', path: newPath } },
@@ -303,8 +308,12 @@ export class ImportManager {
             continue;
           }
 
-          const shouldMove = await isSameVolume(filePath, moviePath);
-          const newPath = await this.organizer.organizeMovieFile(filePath, { ...movie, path: moviePath }, { move: shouldMove });
+          const strategy = await isSameVolume(filePath, moviePath) ? 'hardlink' : 'copy';
+          const newPath = await this.organizer.organizeMovieFile(
+            filePath,
+            { ...movie, path: moviePath },
+            { strategy },
+          );
           await this.prisma.mediaFileVariant.upsert({
             where: { mediaType_path: { mediaType: 'MOVIE', path: newPath } },
             create: { mediaType: 'MOVIE', movieId: movie.id, path: newPath, fileSize: BigInt(0) },
@@ -400,7 +409,7 @@ export class ImportManager {
               continue;
             }
 
-            const shouldMove = await isSameVolume(filePath, seriesPath);
+            const strategy = await isSameVolume(filePath, seriesPath) ? 'hardlink' : 'copy';
             const newPath = await this.organizer.organizeFile(
               filePath,
               {
@@ -408,7 +417,7 @@ export class ImportManager {
                 path: seriesPath,
               },
               episode,
-              { move: shouldMove },
+              { strategy },
             );
             await this.prisma.episode.update({
               where: { id: episode.id },
@@ -468,14 +477,14 @@ export class ImportManager {
             continue;
           }
 
-          const shouldMove = await isSameVolume(filePath, moviePath);
+          const strategy = await isSameVolume(filePath, moviePath) ? 'hardlink' : 'copy';
           const newPath = await this.organizer.organizeMovieFile(
             filePath,
             {
               ...movie,
               path: moviePath,
             },
-            { move: shouldMove },
+            { strategy },
           );
           await this.prisma.mediaFileVariant.upsert({
             where: { mediaType_path: { mediaType: 'MOVIE', path: newPath } },

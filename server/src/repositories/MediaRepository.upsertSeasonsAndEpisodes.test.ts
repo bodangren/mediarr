@@ -7,13 +7,17 @@ type InsertBuilder = {
   values: ReturnType<typeof vi.fn>;
   onConflictDoUpdate: ReturnType<typeof vi.fn>;
   returning: ReturnType<typeof vi.fn>;
+  get: ReturnType<typeof vi.fn>;
+  run: ReturnType<typeof vi.fn>;
 };
 
 function makeInsertBuilder(rows: any[] = []): InsertBuilder {
   const builder: any = {};
   builder.values = vi.fn().mockReturnValue(builder);
   builder.onConflictDoUpdate = vi.fn().mockReturnValue(builder);
-  builder.returning = vi.fn().mockResolvedValue(rows);
+  builder.returning = vi.fn().mockReturnValue(builder);
+  builder.get = vi.fn().mockReturnValue(rows[0]);
+  builder.run = vi.fn().mockReturnValue({ changes: 1 });
   return builder as InsertBuilder;
 }
 
@@ -60,7 +64,7 @@ function makeDb(config: MockConfig = {}) {
 
   return {
     drizzle: {
-      transaction: vi.fn().mockImplementation(async (cb: (tx: any) => Promise<unknown>) => cb(tx)),
+      transaction: vi.fn().mockImplementation((cb: (tx: any) => unknown) => cb(tx)),
     },
     _tx: tx,
     _seasonBuilders: seasonBuilders,

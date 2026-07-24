@@ -2,9 +2,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ImportManager } from './ImportManager';
 import fs from 'node:fs/promises';
 
+const volumeMocks = vi.hoisted(() => ({
+  statSync: vi.fn().mockReturnValue({ dev: 2049 }),
+}));
+
 vi.mock('node:fs', () => ({
   default: {
-    statSync: vi.fn().mockReturnValue({ dev: 2049 }),
+    statSync: volumeMocks.statSync,
   },
 }));
 
@@ -113,6 +117,7 @@ describe('ImportManager', () => {
     organizer = makeOrganizer();
     activityEmitter = makeActivityEmitter();
     vi.clearAllMocks();
+    volumeMocks.statSync.mockReturnValue({ dev: 2049 });
   });
 
   // Helper: fire torrent:completed and wait for async handling to finish
@@ -159,7 +164,7 @@ describe('ImportManager', () => {
       torrent.path,
       series,
       episode,
-      { move: true },
+      { strategy: 'hardlink' },
     );
     expect(prisma.episode.update).toHaveBeenCalledWith(
       expect.objectContaining({ where: { id: episode.id } }),
@@ -183,7 +188,7 @@ describe('ImportManager', () => {
     expect(organizer.organizeMovieFile).toHaveBeenCalledWith(
       TORRENT.path,
       movie,
-      { move: true },
+      { strategy: 'hardlink' },
     );
     expect(prisma.mediaFileVariant.upsert).toHaveBeenCalled();
     expect(activityEmitter.emit).toHaveBeenCalledWith(
@@ -191,6 +196,22 @@ describe('ImportManager', () => {
         eventType: 'MOVIE_IMPORTED',
         success: true,
       }),
+    );
+  });
+
+  it('cross-volume movie import copies while preserving the torrent source', async () => {
+    const movie = { id: 5, title: 'The Matrix', year: 1999, path: '/media/movies' };
+    const prisma = makeDb({ series: null, episode: null, movie });
+    volumeMocks.statSync
+      .mockReturnValueOnce({ dev: 2049 })
+      .mockReturnValueOnce({ dev: 2050 });
+
+    await fireTorrentCompleted(prisma);
+
+    expect(organizer.organizeMovieFile).toHaveBeenCalledWith(
+      TORRENT.path,
+      movie,
+      { strategy: 'copy' },
     );
   });
 
@@ -222,7 +243,7 @@ describe('ImportManager', () => {
     expect(organizer.organizeMovieFile).toHaveBeenCalledWith(
       torrent.path,
       movie,
-      { move: true },
+      { strategy: 'hardlink' },
     );
     expect(activityEmitter.emit).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -305,7 +326,7 @@ describe('ImportManager', () => {
         path: '/media/tv/A Knight of the Seven Kingdoms (2026)',
       }),
       episode,
-      { move: true },
+      { strategy: 'hardlink' },
     );
   });
 
@@ -330,7 +351,7 @@ describe('ImportManager', () => {
         id: movie.id,
         path: '/media/movies/The Matrix (1999)',
       }),
-      { move: true },
+      { strategy: 'hardlink' },
     );
   });
 
@@ -367,7 +388,7 @@ describe('ImportManager', () => {
     expect(organizer.organizeMovieFile).toHaveBeenCalledWith(
       '/downloads/complete/The.Matrix.1999.mkv',
       movie,
-      { move: true },
+      { strategy: 'hardlink' },
     );
   });
 
@@ -410,7 +431,7 @@ describe('ImportManager', () => {
     expect(organizer.organizeMovieFile).toHaveBeenCalledWith(
       '/downloads/complete/The.Matrix.1999.mkv',
       movie,
-      { move: true },
+      { strategy: 'hardlink' },
     );
   });
 

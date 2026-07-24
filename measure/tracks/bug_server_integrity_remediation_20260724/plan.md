@@ -69,7 +69,7 @@ _Blast radius: UpdateService (routes, scheduler, SPA update client), ImportManag
 - [x] Task: Measure - User Manual Verification 'Contracts, False Tests, and Quality Gates'
   - Fastify, SQLite, filesystem, and configuration automation covered the server-only contracts.
 
-## Phase 5: Integrated Verification and Closeout
+## Phase 5: Integrated Verification and Closeout [checkpoint: e56c8f32]
 
 - [x] Task: Refresh repo-graph and verify changed-symbol callers
 - [x] Task: Run targeted coverage, strict typecheck, lint, server/root suites,

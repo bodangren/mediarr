@@ -3,11 +3,56 @@ import { ApiHttpClient } from './httpClient';
 import { createBackupApi } from './backupApi';
 
 describe('BackupApi', () => {
+  it('accepts the server filename ID contract through the real HTTP parser', async () => {
+    const fetchFn = vi.fn(async () => new Response(JSON.stringify({
+      ok: true,
+      data: [{
+        id: 'manual_backup_2026-07-24.db',
+        name: 'manual_backup_2026-07-24.db',
+        path: '/backups/manual_backup_2026-07-24.db',
+        size: 4096,
+        created: '2026-07-24T03:00:00.000Z',
+        type: 'manual',
+      }],
+    }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    }));
+    const api = createBackupApi(new ApiHttpClient({ fetchFn }));
+
+    const result = await api.getBackups();
+
+    expect(result[0]?.id).toBe('manual_backup_2026-07-24.db');
+  });
+
+  it('parses the truthful unsupported schedule contract', async () => {
+    const fetchFn = vi.fn(async () => new Response(JSON.stringify({
+      ok: true,
+      data: {
+        supported: false,
+        enabled: false,
+        interval: 'daily',
+        retentionDays: 30,
+        nextBackup: null,
+        lastBackup: null,
+      },
+    }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    }));
+    const api = createBackupApi(new ApiHttpClient({ fetchFn }));
+
+    await expect(api.getBackupSchedule()).resolves.toMatchObject({
+      supported: false,
+      nextBackup: null,
+    });
+  });
+
   describe('getBackups', () => {
     it('should fetch all backups', async () => {
       const mockRequest = vi.fn().mockResolvedValue([
         {
-          id: 1,
+          id: 'manual-backup-20260215.db',
           name: 'manual-backup-20260215',
           path: '/backups/manual-backup-20260215.zip',
           size: 10485760,
@@ -15,7 +60,7 @@ describe('BackupApi', () => {
           type: 'manual',
         },
         {
-          id: 2,
+          id: 'scheduled-backup-20260214.db',
           name: 'scheduled-backup-20260214',
           path: '/backups/scheduled-backup-20260214.zip',
           size: 10484736,
@@ -45,7 +90,7 @@ describe('BackupApi', () => {
   describe('createBackup', () => {
     it('should create a new manual backup', async () => {
       const mockRequest = vi.fn().mockResolvedValue({
-        id: 3,
+        id: 'manual-backup-20260215-2.db',
         name: 'manual-backup-20260215-2',
         path: '/backups/manual-backup-20260215-2.zip',
         size: 10486840,
@@ -139,7 +184,7 @@ describe('BackupApi', () => {
   describe('restoreBackup', () => {
     it('should restore from a backup', async () => {
       const mockRequest = vi.fn().mockResolvedValue({
-        id: 1,
+        id: 'manual-backup-20260215.db',
         name: 'manual-backup-20260215',
         restoredAt: '2026-02-15T11:30:00.000Z',
       });
@@ -148,11 +193,11 @@ describe('BackupApi', () => {
       client.request = mockRequest;
       const api = createBackupApi(client);
 
-      const result = await api.restoreBackup(1);
+      const result = await api.restoreBackup('manual-backup-20260215.db');
 
       expect(mockRequest).toHaveBeenCalledWith(
         {
-          path: '/api/backups/1/restore',
+          path: '/api/backups/manual-backup-20260215.db/restore',
           method: 'POST',
         },
         expect.any(Object),
@@ -172,11 +217,11 @@ describe('BackupApi', () => {
       client.request = mockRequest;
       const api = createBackupApi(client);
 
-      const result = await api.downloadBackup(1);
+      const result = await api.downloadBackup('manual-backup-20260215.db');
 
       expect(mockRequest).toHaveBeenCalledWith(
         {
-          path: '/api/backups/1/download',
+          path: '/api/backups/manual-backup-20260215.db/download',
           method: 'POST',
         },
         expect.any(Object),
@@ -188,7 +233,7 @@ describe('BackupApi', () => {
   describe('deleteBackup', () => {
     it('should delete a backup', async () => {
       const mockRequest = vi.fn().mockResolvedValue({
-        id: 1,
+        id: 'manual-backup-20260215.db',
         deleted: true,
       });
 
@@ -196,11 +241,11 @@ describe('BackupApi', () => {
       client.request = mockRequest;
       const api = createBackupApi(client);
 
-      const result = await api.deleteBackup(1);
+      const result = await api.deleteBackup('manual-backup-20260215.db');
 
       expect(mockRequest).toHaveBeenCalledWith(
         {
-          path: '/api/backups/1',
+          path: '/api/backups/manual-backup-20260215.db',
           method: 'DELETE',
         },
         expect.any(Object),

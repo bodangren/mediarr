@@ -29,9 +29,8 @@ export function createRemainingHandlers(mode: FactoryMode = 'deterministic') {
       ]);
     }),
 
-    http.post('/api/backups', async ({ request }) => {
-      const body = (await request.json()) as { name?: string };
-      return sendSuccess(createMockBackup(Date.now(), { name: body.name, size: 0 }), 201);
+    http.post('/api/backups', () => {
+      return sendSuccess(createMockBackup('created', { size: 0, type: 'manual' }), 201);
     }),
 
     http.get('/api/backups/schedule', () => {
@@ -41,23 +40,41 @@ export function createRemainingHandlers(mode: FactoryMode = 'deterministic') {
     http.patch('/api/backups/schedule', async ({ request }) => {
       const body = (await request.json()) as { enabled?: boolean; interval?: string; retentionDays?: number };
       return sendSuccess(createMockBackupSchedule({
-        enabled: body.enabled ?? true,
-        interval: body.interval ?? 'daily',
+        supported: false,
+        enabled: false,
+        interval: body.interval === 'hourly'
+          || body.interval === 'daily'
+          || body.interval === 'weekly'
+          || body.interval === 'monthly'
+          ? body.interval
+          : 'daily',
         retentionDays: body.retentionDays ?? 30,
       }));
     }),
 
     http.delete('/api/backups/:id', ({ params }) => {
-      return sendSuccess({ id: Number(params.id), deleted: true });
+      return sendSuccess({ id: String(params.id), deleted: true });
     }),
 
     http.post('/api/backups/:id/restore', ({ params }) => {
-      return sendSuccess({ id: Number(params.id), restored: true });
+      const id = String(params.id);
+      return sendSuccess({
+        id,
+        name: id,
+        restoredAt: '2026-06-12T00:00:00.000Z',
+        restartRequired: true,
+        safetyBackupId: 'manual_backup_safety.db',
+      });
     }),
 
     http.post('/api/backups/:id/download', ({ params }) => {
-      const id = Number(params.id);
-      return sendBlob(`backup-db-${id}`, `backup-${id}.db`, 'application/octet-stream');
+      const id = String(params.id);
+      return sendSuccess({ downloadUrl: `/api/backups/${encodeURIComponent(id)}/file` });
+    }),
+
+    http.get('/api/backups/:id/file', ({ params }) => {
+      const id = String(params.id);
+      return sendBlob(`backup-db-${id}`, id, 'application/vnd.sqlite3');
     }),
 
     // Blocklist routes — clear/remove literals BEFORE /:id catch-all

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { LogReaderService } from './LogReaderService';
 
 describe('LogReaderService', () => {
@@ -62,5 +62,58 @@ describe('LogReaderService', () => {
     const result = service.getEntries();
     const ids = result.items.map(e => e.id);
     expect(ids[0]).toBeGreaterThan(ids[1]!); // newest-first means higher id first
+  });
+
+  it('captures console output once when installed', () => {
+    const originalLog = console.log;
+    const originalWarn = console.warn;
+    const originalError = console.error;
+
+    try {
+      service.install();
+      service.install();
+      console.log('started', 1);
+      console.warn('slow indexer');
+      console.error('database failed');
+    } finally {
+      console.log = originalLog;
+      console.warn = originalWarn;
+      console.error = originalError;
+    }
+
+    const result = service.getEntries();
+    expect(result.items.map(entry => [entry.level, entry.message])).toEqual([
+      ['error', 'database failed'],
+      ['warn', 'slow indexer'],
+      ['info', 'started 1'],
+    ]);
+  });
+
+  it('evicts the oldest entry when the ring buffer reaches capacity', () => {
+    for (let index = 0; index <= 2000; index += 1) {
+      service.push('debug', `message ${index}`);
+    }
+
+    const result = service.getEntries({}, 1, 2001);
+    expect(result.totalCount).toBe(2000);
+    expect(result.items.at(-1)?.message).toBe('message 1');
+    expect(result.items[0]?.message).toBe('message 2000');
+  });
+
+  it('filters entries by start and end timestamps', () => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date('2026-07-24T01:00:00.000Z'));
+      service.push('info', 'early');
+      vi.setSystemTime(new Date('2026-07-24T03:00:00.000Z'));
+      service.push('info', 'late');
+
+      expect(service.getEntries({ startDate: '2026-07-24T02:00:00.000Z' }).items)
+        .toHaveLength(1);
+      expect(service.getEntries({ endDate: '2026-07-24T02:00:00.000Z' }).items)
+        .toHaveLength(1);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

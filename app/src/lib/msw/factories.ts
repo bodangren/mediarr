@@ -298,7 +298,7 @@ export function paginate<T>(items: T[], page: number, pageSize: number) {
 const REFERENCE_DATE = new Date('2026-06-12T00:00:00.000Z');
 
 export interface MockBackup {
-  id: number;
+  id: string;
   name: string;
   path: string;
   size: number;
@@ -307,33 +307,37 @@ export interface MockBackup {
 }
 
 export interface MockBackupSchedule {
+  supported: boolean;
   enabled: boolean;
-  interval: string;
+  interval: 'hourly' | 'daily' | 'weekly' | 'monthly';
   retentionDays: number;
   lastBackup: string | null;
-  nextBackup: string;
+  nextBackup: string | null;
 }
 
-export function createMockBackup(id: number, overrides?: Partial<MockBackup>): MockBackup {
-  const name = `backup-${REFERENCE_DATE.toISOString().slice(0, 10)}-${id}.db`;
+export function createMockBackup(id: string | number, overrides?: Partial<MockBackup>): MockBackup {
+  const token = String(id);
+  const name = `backup-${REFERENCE_DATE.toISOString().slice(0, 10)}-${token}.db`;
+  const numericId = typeof id === 'number' ? id : 1;
   return {
-    id,
+    id: name,
     name,
     path: `/data/backups/${name}`,
     size: 1_048_576,
-    created: new Date(REFERENCE_DATE.getTime() - (id - 1) * 86_400_000).toISOString(),
-    type: id === 1 ? 'scheduled' : 'manual',
+    created: new Date(REFERENCE_DATE.getTime() - (numericId - 1) * 86_400_000).toISOString(),
+    type: numericId === 1 ? 'scheduled' : 'manual',
     ...overrides,
   };
 }
 
 export function createMockBackupSchedule(overrides?: Partial<MockBackupSchedule>): MockBackupSchedule {
   return {
-    enabled: true,
+    supported: false,
+    enabled: false,
     interval: 'daily',
     retentionDays: 30,
     lastBackup: null,
-    nextBackup: new Date(REFERENCE_DATE.getTime() + 86_400_000).toISOString(),
+    nextBackup: null,
     ...overrides,
   };
 }

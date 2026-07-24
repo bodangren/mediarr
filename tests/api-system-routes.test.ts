@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createApiServer } from '../server/src/api/createApiServer';
 import { systemState, registerSystemRoutes } from '../server/src/api/routes/systemRoutes';
-import { backupState } from '../server/src/api/routes/backupRoutes';
-import { logsState } from '../server/src/api/routes/logsRoutes';
 import { updatesState } from '../server/src/api/routes/updatesRoutes';
+import { LogReaderService } from '../server/src/services/LogReaderService';
 import type { FastifyInstance } from 'fastify';
 import Fastify from 'fastify';
+import { NotFoundError } from '../server/src/errors/domainErrors';
 
 function createMockUpdateService() {
   const progressMap = new Map<string, any>();
@@ -102,6 +102,12 @@ function createMockUpdateService() {
 // Minimal deps for system routes (they use in-memory state)
 const createMinimalDeps = () => ({
   prisma: {},
+  logReaderService: (() => {
+    const service = new LogReaderService();
+    service.push('info', 'test server started');
+    service.push('warn', 'test warning');
+    return service;
+  })(),
   settingsService: (() => {
     const state = {
       mediaManagement: {
@@ -135,6 +141,76 @@ const createMinimalDeps = () => ({
     findAll: async () => [],
   },
   updateService: createMockUpdateService(),
+  backupService: {
+    async list() {
+      return [{
+        id: 'manual_backup_test.db',
+        name: 'manual_backup_test.db',
+        path: '/tmp/manual_backup_test.db',
+        size: 4096,
+        created: '2026-07-24T03:00:00.000Z',
+        type: 'manual' as const,
+      }];
+    },
+    async create() {
+      return {
+        id: 'manual_backup_created.db',
+        name: 'manual_backup_created.db',
+        path: '/tmp/manual_backup_created.db',
+        size: 4096,
+        created: '2026-07-24T03:00:00.000Z',
+        type: 'manual' as const,
+      };
+    },
+    async get(id: string) {
+      if (id !== 'manual_backup_test.db') throw new NotFoundError('not found');
+      return {
+        id,
+        name: id,
+        path: '/tmp/manual_backup_test.db',
+        size: 4096,
+        created: '2026-07-24T03:00:00.000Z',
+        type: 'manual' as const,
+      };
+    },
+    async restore(id: string) {
+      if (id !== 'manual_backup_test.db') throw new NotFoundError('not found');
+      return {
+        id,
+        name: id,
+        restoredAt: '2026-07-24T03:00:00.000Z',
+        restartRequired: true as const,
+        safetyBackupId: 'manual_backup_safety.db',
+      };
+    },
+    async delete(id: string) {
+      if (id !== 'manual_backup_test.db') throw new NotFoundError('not found');
+    },
+    async getSchedule() {
+      return {
+        supported: false,
+        enabled: false,
+        interval: 'daily' as const,
+        retentionDays: 30,
+        nextBackup: null,
+        lastBackup: null,
+      };
+    },
+    async updateSchedule(input: {
+      enabled: boolean;
+      interval: 'hourly' | 'daily' | 'weekly' | 'monthly';
+      retentionDays: number;
+    }) {
+      return {
+        supported: false,
+        enabled: false,
+        interval: input.interval,
+        retentionDays: input.retentionDays,
+        nextBackup: null,
+        lastBackup: null,
+      };
+    },
+  },
 });
 
 function createTestApp() {
@@ -482,6 +558,7 @@ describe('Backup routes', () => {
         url: '/api/backups/schedule',
         payload: {
           enabled: false,
+          interval: 'daily',
           retentionDays: 60,
         },
       });
@@ -499,7 +576,7 @@ describe('Backup routes', () => {
       const app = createTestApp();
       apps.push(app);
 
-      const response = await app.inject({ method: 'POST', url: '/api/backups/1/restore' });
+      const response = await app.inject({ method: 'POST', url: '/api/backups/manual_backup_test.db/restore' });
       const payload = response.json();
 
       expect(response.statusCode).toBe(200);
@@ -513,7 +590,7 @@ describe('Backup routes', () => {
       const app = createTestApp();
       apps.push(app);
 
-      const response = await app.inject({ method: 'POST', url: '/api/backups/99999/restore' });
+      const response = await app.inject({ method: 'POST', url: '/api/backups/missing.db/restore' });
       const payload = response.json();
 
       expect(response.statusCode).toBe(404);
@@ -526,13 +603,12 @@ describe('Backup routes', () => {
       const app = createTestApp();
       apps.push(app);
 
-      const response = await app.inject({ method: 'POST', url: '/api/backups/1/download' });
+      const response = await app.inject({ method: 'POST', url: '/api/backups/manual_backup_test.db/download' });
       const payload = response.json();
 
       expect(response.statusCode).toBe(200);
       expect(payload.ok).toBe(true);
-      expect(payload.data).toHaveProperty('downloadUrl');
-      expect(payload.data).toHaveProperty('expiresAt');
+      expect(payload.data.downloadUrl).toBe('/api/backups/manual_backup_test.db/file');
     });
   });
 
@@ -541,12 +617,12 @@ describe('Backup routes', () => {
       const app = createTestApp();
       apps.push(app);
 
-      const response = await app.inject({ method: 'DELETE', url: '/api/backups/1' });
+      const response = await app.inject({ method: 'DELETE', url: '/api/backups/manual_backup_test.db' });
       const payload = response.json();
 
       expect(response.statusCode).toBe(200);
       expect(payload.ok).toBe(true);
-      expect(payload.data.id).toBe(1);
+      expect(payload.data.id).toBe('manual_backup_test.db');
       expect(payload.data.deleted).toBe(true);
     });
 
@@ -554,7 +630,7 @@ describe('Backup routes', () => {
       const app = createTestApp();
       apps.push(app);
 
-      const response = await app.inject({ method: 'DELETE', url: '/api/backups/99999' });
+      const response = await app.inject({ method: 'DELETE', url: '/api/backups/missing.db' });
       const payload = response.json();
 
       expect(response.statusCode).toBe(404);
@@ -636,13 +712,13 @@ describe('Logs routes', () => {
       const app = createTestApp();
       apps.push(app);
 
-      const response = await app.inject({ method: 'DELETE', url: '/api/logs/files/update.log' });
+      const response = await app.inject({ method: 'DELETE', url: '/api/logs/files/mediarr.log' });
       const payload = response.json();
 
       expect(response.statusCode).toBe(200);
       expect(payload.ok).toBe(true);
       expect(payload.data.success).toBe(true);
-      expect(payload.data.filename).toBe('update.log');
+      expect(payload.data.filename).toBe('mediarr.log');
     });
 
     it('returns 404 for non-existent file', async () => {

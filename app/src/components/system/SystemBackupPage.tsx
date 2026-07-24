@@ -21,7 +21,7 @@ function BackupList({ onCreated }: { onCreated: () => void }) {
   const [backups, setBackups] = useState<Backup[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
-  const [actionIds, setActionIds] = useState<Set<number>>(new Set());
+  const [actionIds, setActionIds] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
 
   const fetchBackups = useCallback(async () => {
@@ -52,7 +52,7 @@ function BackupList({ onCreated }: { onCreated: () => void }) {
     }
   }
 
-  async function handleRestore(id: number, name: string) {
+  async function handleRestore(id: string, name: string) {
     if (!window.confirm(`Restore from backup "${name}"? The application will restart.`)) return;
     setActionIds(prev => new Set(prev).add(id));
     try {
@@ -62,7 +62,7 @@ function BackupList({ onCreated }: { onCreated: () => void }) {
     }
   }
 
-  async function handleDownload(id: number) {
+  async function handleDownload(id: string) {
     setActionIds(prev => new Set(prev).add(id));
     try {
       const result = await getApiClients().backupApi.downloadBackup(id);
@@ -72,7 +72,7 @@ function BackupList({ onCreated }: { onCreated: () => void }) {
     }
   }
 
-  async function handleDelete(id: number, name: string) {
+  async function handleDelete(id: string, name: string) {
     if (!window.confirm(`Delete backup "${name}"? This cannot be undone.`)) return;
     setActionIds(prev => new Set(prev).add(id));
     try {
@@ -204,6 +204,7 @@ function BackupSchedulePanel() {
             type="checkbox"
             checked={enabled}
             onChange={e => setEnabled(e.target.checked)}
+            disabled={schedule?.supported === false}
             className="rounded border border-border-subtle"
           />
           Enable automatic backups
@@ -216,7 +217,7 @@ function BackupSchedulePanel() {
           <select
             value={interval}
             onChange={e => setInterval(e.target.value as BackupSchedule['interval'])}
-            disabled={!enabled}
+            disabled={!enabled || schedule?.supported === false}
             className="block w-full rounded-sm border border-border-subtle bg-surface-1 px-2 py-1.5 text-sm disabled:opacity-50"
           >
             <option value="hourly">Hourly</option>
@@ -233,7 +234,7 @@ function BackupSchedulePanel() {
             min={1}
             value={retentionDays}
             onChange={e => setRetentionDays(Math.max(1, Number(e.target.value)))}
-            disabled={!enabled}
+            disabled={!enabled || schedule?.supported === false}
             className="block w-full rounded-sm border border-border-subtle bg-surface-1 px-2 py-1.5 text-sm disabled:opacity-50"
           />
         </label>
@@ -241,12 +242,15 @@ function BackupSchedulePanel() {
 
       {schedule && (
         <div className="text-xs text-text-secondary space-y-0.5">
+          {!schedule.supported && (
+            <p>Automatic backup scheduling is not available in this deployment.</p>
+          )}
           {schedule.lastBackup && <p>Last backup: {formatDateTime(schedule.lastBackup)}</p>}
-          {schedule.enabled && <p>Next backup: {formatDateTime(schedule.nextBackup)}</p>}
+          {schedule.enabled && schedule.nextBackup && <p>Next backup: {formatDateTime(schedule.nextBackup)}</p>}
         </div>
       )}
 
-      <Button variant="default" disabled={saving} onClick={() => { void handleSave(); }}>
+      <Button variant="default" disabled={saving || schedule?.supported === false} onClick={() => { void handleSave(); }}>
         {saving ? 'Saving…' : 'Save Schedule'}
       </Button>
     </div>

@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createApiServer } from '../server/src/api/createApiServer';
 import type { FastifyInstance } from 'fastify';
 import { DEFAULT_APP_SETTINGS } from '../server/src/repositories/AppSettingsRepository';
+import { LogReaderService } from '../server/src/services/LogReaderService';
 
 // Minimal deps for settings routes (they use mocked service)
 const createMinimalDeps = (settingsService: any) => ({
@@ -317,8 +318,11 @@ describe('Logs download URL', () => {
   });
 
   function createTestApp() {
+    const logReaderService = new LogReaderService();
+    logReaderService.push('info', 'settings test log entry');
     const app = createApiServer({
       prisma: {},
+      logReaderService,
     } as any, {
       torrentStatsIntervalMs: 60_000,
       activityPollIntervalMs: 60_000,
@@ -386,7 +390,7 @@ describe('Logs download URL', () => {
       expect(response.statusCode).toBe(200);
       expect(response.headers['content-type']).toBe('text/plain; charset=utf-8');
       expect(response.headers['content-disposition']).toBe('attachment; filename="mediarr.log"');
-      expect(response.body).toContain('[2024-02-15');
+      expect(response.body).toContain('settings test log entry');
     });
 
     it('handles URL-encoded filenames correctly', async () => {
@@ -395,7 +399,7 @@ describe('Logs download URL', () => {
       // First get the download URL
       const downloadResponse = await app.inject({
         method: 'GET',
-        url: '/api/logs/files/mediarr.trace.log/download',
+        url: '/api/logs/files/mediarr.log/download',
       });
 
       expect(downloadResponse.statusCode).toBe(200);

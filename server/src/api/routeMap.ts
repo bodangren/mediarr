@@ -138,6 +138,7 @@ export const API_ROUTE_MAP: ApiRouteDefinition[] = [
   { method: 'PATCH', path: '/api/backups/schedule' },
   { method: 'POST', path: '/api/backups/:id/restore' },
   { method: 'POST', path: '/api/backups/:id/download' },
+  { method: 'GET', path: '/api/backups/:id/file' },
   { method: 'DELETE', path: '/api/backups/:id' },
 
   // Logs routes

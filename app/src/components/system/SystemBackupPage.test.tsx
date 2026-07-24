@@ -5,7 +5,7 @@ import { SystemBackupPage } from './SystemBackupPage';
 
 const mockBackups = [
   {
-    id: 1,
+    id: 'mediarr_backup_2024-02-14.db',
     name: 'mediarr_backup_2024-02-14.zip',
     path: '/data/backups/mediarr_backup_2024-02-14.zip',
     size: 15728640,
@@ -15,6 +15,7 @@ const mockBackups = [
 ];
 
 const mockSchedule = {
+  supported: true,
   enabled: true,
   interval: 'daily' as const,
   retentionDays: 30,
@@ -88,7 +89,7 @@ describe('SystemBackupPage', () => {
 
   it('calls createBackup when "Back Up Now" is clicked', async () => {
     const newBackup = {
-      id: 99,
+      id: 'manual_2024.db',
       name: 'manual_2024.zip',
       path: '/data/backups/manual_2024.zip',
       size: 1000000,
@@ -115,12 +116,26 @@ describe('SystemBackupPage', () => {
   });
 
   it('calls deleteBackup when Delete is clicked and confirmed', async () => {
-    mockDeleteBackup.mockResolvedValue({ id: 1, deleted: true });
+    mockDeleteBackup.mockResolvedValue({ id: 'mediarr_backup_2024-02-14.db', deleted: true });
     vi.spyOn(window, 'confirm').mockReturnValue(true);
     renderPage();
     await waitFor(() => expect(screen.getAllByText('Delete').length).toBeGreaterThan(0));
     fireEvent.click(screen.getAllByText('Delete')[0]);
-    await waitFor(() => expect(mockDeleteBackup).toHaveBeenCalledWith(1));
+    await waitFor(() => expect(mockDeleteBackup).toHaveBeenCalledWith('mediarr_backup_2024-02-14.db'));
+  });
+
+  it('disables fabricated schedule controls when scheduling is unsupported', async () => {
+    mockGetBackupSchedule.mockResolvedValue({
+      ...mockSchedule,
+      supported: false,
+      enabled: false,
+      nextBackup: null,
+    });
+    renderPage();
+
+    expect(await screen.findByText('Automatic backup scheduling is not available in this deployment.'))
+      .toBeInTheDocument();
+    expect(screen.getByText('Save Schedule')).toBeDisabled();
   });
 
   it('shows "No backups yet" when list is empty', async () => {

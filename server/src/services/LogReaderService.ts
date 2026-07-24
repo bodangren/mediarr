@@ -29,12 +29,27 @@ export interface LogEntriesPage {
   totalCount: number;
 }
 
+export interface LogFileDescriptor {
+  filename: string;
+  size: number;
+  lastModified: string;
+}
+
+export interface LogFileContents {
+  filename: string;
+  contents: string;
+  totalLines: number;
+}
+
 const MAX_BUFFER_SIZE = 2000;
+const LOG_FILENAME = 'mediarr.log';
 
 export class LogReaderService {
   private buffer: LogEntry[] = [];
   private counter = 0;
   private installed = false;
+  private visible = true;
+  private lastModified = new Date().toISOString();
 
   /** Install console interceptors so log output is captured. */
   install(): void {
@@ -66,12 +81,73 @@ export class LogReaderService {
     if (this.buffer.length >= MAX_BUFFER_SIZE) {
       this.buffer.shift();
     }
+    const timestamp = new Date().toISOString();
     this.buffer.push({
       id: ++this.counter,
-      timestamp: new Date().toISOString(),
+      timestamp,
       level,
       message,
     });
+    this.visible = true;
+    this.lastModified = timestamp;
+  }
+
+  /** List the virtual file backed by the in-process log buffer. */
+  listFiles(): LogFileDescriptor[] {
+    if (!this.visible) {
+      return [];
+    }
+
+    return [{
+      filename: LOG_FILENAME,
+      size: Buffer.byteLength(this.renderContents()),
+      lastModified: this.lastModified,
+    }];
+  }
+
+  /** Read formatted log contents while retaining the full line count. */
+  getFileContents(filename: string, limit?: number): LogFileContents | null {
+    if (!this.hasFile(filename)) {
+      return null;
+    }
+
+    const totalLines = this.buffer.length;
+    const entries = limit !== undefined && limit > 0
+      ? this.buffer.slice(-limit)
+      : this.buffer;
+    return {
+      filename: LOG_FILENAME,
+      contents: this.renderContents(entries),
+      totalLines,
+    };
+  }
+
+  /** Clear entries while keeping the virtual log file available. */
+  clearFile(filename: string): boolean {
+    if (!this.hasFile(filename)) {
+      return false;
+    }
+
+    this.buffer = [];
+    this.lastModified = new Date().toISOString();
+    return true;
+  }
+
+  /** Delete the virtual file until the next real log entry is captured. */
+  deleteFile(filename: string): boolean {
+    if (!this.hasFile(filename)) {
+      return false;
+    }
+
+    this.buffer = [];
+    this.visible = false;
+    this.lastModified = new Date().toISOString();
+    return true;
+  }
+
+  /** Return the full raw text representation for download. */
+  getRawFile(filename: string): string | null {
+    return this.hasFile(filename) ? this.renderContents() : null;
   }
 
   /**
@@ -104,6 +180,16 @@ export class LogReaderService {
     const totalCount = items.length;
     const start = (page - 1) * pageSize;
     return { items: items.slice(start, start + pageSize), totalCount };
+  }
+
+  private hasFile(filename: string): boolean {
+    return this.visible && filename === LOG_FILENAME;
+  }
+
+  private renderContents(entries: LogEntry[] = this.buffer): string {
+    return entries
+      .map(entry => `[${entry.timestamp}] ${entry.level.toUpperCase()} ${entry.message}`)
+      .join('\n');
   }
 }
 

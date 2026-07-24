@@ -12,6 +12,7 @@ const BACKUP_ROUTES: RouteExpectation[] = [
   { method: 'DELETE', url: 'http://localhost/api/backups/1' },
   { method: 'POST', url: 'http://localhost/api/backups/1/restore', expectEnvelope: true },
   { method: 'POST', url: 'http://localhost/api/backups/1/download', expectEnvelope: true },
+  { method: 'GET', url: 'http://localhost/api/backups/1/file' },
   { method: 'GET', url: 'http://localhost/api/backups/schedule', expectEnvelope: true },
   { method: 'PATCH', url: 'http://localhost/api/backups/schedule', expectEnvelope: true },
 ];
@@ -505,7 +506,7 @@ describe('Phase S5 — binary/blob endpoints expose Content-Disposition', () => 
   // /api/system/events/export and /api/activity/export; S5 extends the same
   // pattern to backups download, logs file download, and images proxy.
   const BLOB_CASES: Array<{ method: Method; url: string; body?: unknown }> = [
-    { method: 'POST', url: 'http://localhost/api/backups/1/download' },
+    { method: 'GET', url: 'http://localhost/api/backups/1/file' },
     { method: 'GET', url: 'http://localhost/api/logs/files/mediarr.log/download' },
     { method: 'GET', url: 'http://localhost/api/images/proxy?url=https%3A%2F%2Fimage.tmdb.org%2Ft%2Fp%2Foriginal%2Fabc.jpg' },
   ];

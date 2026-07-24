@@ -157,9 +157,10 @@ export const routeMap = {
   backups: '/api/backups',
   backupCreate: '/api/backups',
   backupSchedule: '/api/backups/schedule',
-  backupRestore: (id: number) => `/api/backups/${id}/restore`,
-  backupDownload: (id: number) => `/api/backups/${id}/download`,
-  backupDelete: (id: number) => `/api/backups/${id}`,
+  backupRestore: (id: string) => `/api/backups/${encodeURIComponent(id)}/restore`,
+  backupDownload: (id: string) => `/api/backups/${encodeURIComponent(id)}/download`,
+  backupFile: (id: string) => `/api/backups/${encodeURIComponent(id)}/file`,
+  backupDelete: (id: string) => `/api/backups/${encodeURIComponent(id)}`,
 
   logsFiles: '/api/logs/files',
   logsFile: (filename: string) => `/api/logs/files/${encodeURIComponent(filename)}`,

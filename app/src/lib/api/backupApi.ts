@@ -1,72 +1,28 @@
 import { z } from 'zod';
 import { ApiHttpClient } from './httpClient';
+import {
+  backupSchema,
+  backupScheduleSchema,
+  deleteBackupResultSchema,
+  downloadBackupResultSchema,
+  restoreBackupResultSchema,
+  type Backup,
+  type BackupSchedule,
+  type DeleteBackupResult,
+  type DownloadBackupResult,
+  type RestoreBackupResult,
+  type UpdateBackupScheduleInput,
+} from '@server/contracts/backup';
 
-// Backup type enum
-const backupTypeSchema = z.enum(['manual', 'scheduled']);
-
-// Backup schema
-const backupSchema = z.object({
-  id: z.number(),
-  name: z.string(),
-  path: z.string(),
-  size: z.number(),
-  created: z.string(),
-  type: backupTypeSchema,
-});
-
-// Backup schedule schema
-const backupScheduleSchema = z.object({
-  enabled: z.boolean(),
-  interval: z.enum(['hourly', 'daily', 'weekly', 'monthly']),
-  retentionDays: z.number(),
-  nextBackup: z.string(),
-  lastBackup: z.string().nullable(),
-});
-
-// Create backup response schema
-const createBackupResultSchema = z.object({
-  id: z.number(),
-  name: z.string(),
-  path: z.string(),
-  size: z.number(),
-  created: z.string(),
-  type: backupTypeSchema,
-});
-
-// Restore backup result schema
-const restoreBackupResultSchema = z.object({
-  id: z.number(),
-  name: z.string(),
-  restoredAt: z.string(),
-});
-
-// Download backup result schema
-const downloadBackupResultSchema = z.object({
-  downloadUrl: z.string(),
-  expiresAt: z.string(),
-});
-
-// Delete backup result schema
-const deleteBackupResultSchema = z.object({
-  id: z.number(),
-  deleted: z.boolean(),
-});
-
-// Update backup schedule input schema
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const updateBackupScheduleInputSchema = z.object({
-  enabled: z.boolean(),
-  interval: z.enum(['hourly', 'daily', 'weekly', 'monthly']),
-  retentionDays: z.number(),
-});
-
-export type Backup = z.infer<typeof backupSchema>;
-export type BackupType = z.infer<typeof backupTypeSchema>;
-export type BackupSchedule = z.infer<typeof backupScheduleSchema>;
-export type UpdateBackupScheduleInput = z.infer<typeof updateBackupScheduleInputSchema>;
-export type RestoreBackupResult = z.infer<typeof restoreBackupResultSchema>;
-export type DownloadBackupResult = z.infer<typeof downloadBackupResultSchema>;
-export type DeleteBackupResult = z.infer<typeof deleteBackupResultSchema>;
+export type {
+  Backup,
+  BackupSchedule,
+  BackupType,
+  DeleteBackupResult,
+  DownloadBackupResult,
+  RestoreBackupResult,
+  UpdateBackupScheduleInput,
+} from '@server/contracts/backup';
 
 export function createBackupApi(client: ApiHttpClient) {
   return {
@@ -81,13 +37,13 @@ export function createBackupApi(client: ApiHttpClient) {
     },
 
     // Create a new manual backup
-    createBackup(): Promise<z.infer<typeof createBackupResultSchema>> {
+    createBackup(): Promise<Backup> {
       return client.request(
         {
           path: '/api/backups',
           method: 'POST',
         },
-        createBackupResultSchema,
+        backupSchema,
       );
     },
 
@@ -114,7 +70,7 @@ export function createBackupApi(client: ApiHttpClient) {
     },
 
     // Restore from a backup
-    restoreBackup(id: number): Promise<RestoreBackupResult> {
+    restoreBackup(id: string): Promise<RestoreBackupResult> {
       return client.request(
         {
           path: `/api/backups/${id}/restore`,
@@ -125,7 +81,7 @@ export function createBackupApi(client: ApiHttpClient) {
     },
 
     // Get download URL for a backup
-    downloadBackup(id: number): Promise<DownloadBackupResult> {
+    downloadBackup(id: string): Promise<DownloadBackupResult> {
       return client.request(
         {
           path: `/api/backups/${id}/download`,
@@ -136,7 +92,7 @@ export function createBackupApi(client: ApiHttpClient) {
     },
 
     // Delete a backup
-    deleteBackup(id: number): Promise<DeleteBackupResult> {
+    deleteBackup(id: string): Promise<DeleteBackupResult> {
       return client.request(
         {
           path: `/api/backups/${id}`,

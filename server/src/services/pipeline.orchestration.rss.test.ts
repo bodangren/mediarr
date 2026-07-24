@@ -1,7 +1,10 @@
 /**
- * Phase 1: RSS → Search → Grab → Import Pipeline Integration Tests
+ * Phase 1: RSS → Search → Grab → Import Pipeline Orchestration Unit Tests
  *
- * Tests the full handoff chain from RSS feed ingestion through torrent
+ * These tests install one production service and mock its collaborator ports; they
+ * prove orchestration contracts, not end-to-end infrastructure behavior.
+ *
+ * Tests the service orchestration handoff from RSS feed ingestion through torrent
  * completion and import. Verifies that data flows correctly between
  * RssSyncService → RssMediaMonitor → TorrentManager → ImportManager.
  */
@@ -63,7 +66,7 @@ async function fireRelease(
 
 // ─── Phase 1 Tests ────────────────────────────────────────────────────────────
 
-describe('RSS → Search → Grab → Import Pipeline', () => {
+describe('RSS → Search → Grab → Import Pipeline orchestration unit', () => {
   let rssSyncService: ReturnType<typeof makeRssSyncService>;
   let torrentManager: ReturnType<typeof makeTorrentManager>;
 

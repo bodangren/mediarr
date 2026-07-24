@@ -50,7 +50,7 @@ describe('torrentRoutes — POST /api/torrents/:infoHash/retry-import', () => {
       url: '/api/torrents/hash123/retry-import',
     });
 
-    expect(response.statusCode).toBeGreaterThanOrEqual(400);
+    expect(response.statusCode).toBe(422);
   });
 
   it('maps missing torrent to not found', async () => {

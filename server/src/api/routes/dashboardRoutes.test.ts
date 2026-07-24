@@ -85,14 +85,14 @@ describe('dashboardRoutes — GET /api/dashboard/disk-space', () => {
     expect(body.data).toEqual([]);
   });
 
-  it('returns 500 if settingsService is not configured', async () => {
+  it('returns 422 when settingsService is not configured', async () => {
     const app2 = Fastify();
     const deps: ApiDependencies = { prisma };
     app2.setErrorHandler((error, request, reply) => registerApiErrorHandler(request, reply, error));
     registerDashboardRoutes(app2, deps);
 
     const response = await app2.inject({ method: 'GET', url: '/api/dashboard/disk-space' });
-    expect(response.statusCode).toBeGreaterThanOrEqual(400);
+    expect(response.statusCode).toBe(422);
   });
 });
 

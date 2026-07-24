@@ -106,7 +106,7 @@ describe('downloadClientRoutes — GET /api/download-client', () => {
     expect(body.data.seedLimitAction).toBe('remove');
   });
 
-  it('returns 500 if settingsService is not configured', async () => {
+  it('returns 422 when settingsService is not configured', async () => {
     const appNoSettings = Fastify();
     const deps: ApiDependencies = { prisma: {} };
     appNoSettings.setErrorHandler((error, request, reply) =>
@@ -116,7 +116,7 @@ describe('downloadClientRoutes — GET /api/download-client', () => {
 
     const response = await appNoSettings.inject({ method: 'GET', url: '/api/download-client' });
 
-    expect(response.statusCode).toBeGreaterThanOrEqual(400);
+    expect(response.statusCode).toBe(422);
   });
 });
 
@@ -199,7 +199,7 @@ describe('downloadClientRoutes — PUT /api/download-client', () => {
     expect(response.statusCode).toBe(200);
   });
 
-  it('returns 400 for invalid seedLimitAction', async () => {
+  it('returns 422 for invalid seedLimitAction', async () => {
     const payload = {
       ...defaultTorrentLimits,
       seedLimitAction: 'delete', // invalid
@@ -214,7 +214,7 @@ describe('downloadClientRoutes — PUT /api/download-client', () => {
     expect(response.statusCode).toBe(422);
   });
 
-  it('returns 400 for empty download directories', async () => {
+  it('returns 422 for empty download directories', async () => {
     const response = await app.inject({
       method: 'PUT',
       url: '/api/download-client',

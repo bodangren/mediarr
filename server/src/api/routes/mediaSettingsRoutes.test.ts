@@ -86,14 +86,14 @@ describe('mediaSettingsRoutes — GET /api/settings/media', () => {
     expect(body.data.tvRootFolder).toBe('');
   });
 
-  it('returns 500 if settingsService is not configured', async () => {
+  it('returns 422 when settingsService is not configured', async () => {
     const app2 = Fastify();
     const deps: ApiDependencies = { prisma: {} };
     app2.setErrorHandler((error, request, reply) => registerApiErrorHandler(request, reply, error));
     registerMediaSettingsRoutes(app2, deps);
 
     const response = await app2.inject({ method: 'GET', url: '/api/settings/media' });
-    expect(response.statusCode).toBeGreaterThanOrEqual(400);
+    expect(response.statusCode).toBe(422);
   });
 });
 
@@ -146,23 +146,23 @@ describe('mediaSettingsRoutes — PUT /api/settings/media', () => {
     expect(body.data.tvRootFolder).toBe('/tv');
   });
 
-  it('returns 400 for non-string movieRootFolder', async () => {
+  it('returns 422 for non-string movieRootFolder', async () => {
     const response = await app.inject({
       method: 'PUT',
       url: '/api/settings/media',
       payload: { movieRootFolder: 123, tvRootFolder: '/tv' },
     });
 
-    expect(response.statusCode).toBeGreaterThanOrEqual(400);
+    expect(response.statusCode).toBe(422);
   });
 
-  it('returns 400 for non-string tvRootFolder', async () => {
+  it('returns 422 for non-string tvRootFolder', async () => {
     const response = await app.inject({
       method: 'PUT',
       url: '/api/settings/media',
       payload: { movieRootFolder: '/movies', tvRootFolder: 456 },
     });
 
-    expect(response.statusCode).toBeGreaterThanOrEqual(400);
+    expect(response.statusCode).toBe(422);
   });
 });

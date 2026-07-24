@@ -68,7 +68,7 @@ describe('operationsRoutes settings wantedLanguages', () => {
       },
     });
 
-    expect(response.statusCode).toBeGreaterThanOrEqual(400);
+    expect(response.statusCode).toBe(422);
   });
 
   it('accepts streaming patch and forwards to settingsService.update', async () => {
@@ -113,6 +113,6 @@ describe('operationsRoutes settings wantedLanguages', () => {
       },
     });
 
-    expect(response.statusCode).toBeGreaterThanOrEqual(400);
+    expect(response.statusCode).toBe(422);
   });
 });

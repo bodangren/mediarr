@@ -1,7 +1,10 @@
 /**
- * Phase 3: Search → Scoring → Dedup → Grab Handoff Integration Tests
+ * Phase 3: Search → Scoring → Dedup → Grab Handoff Orchestration Unit Tests
  *
- * Tests the handoff between search result aggregation, custom format scoring,
+ * These tests install one production service and mock its collaborator ports; they
+ * prove orchestration contracts, not end-to-end infrastructure behavior.
+ *
+ * Tests the service orchestration handoff between search result aggregation, custom format scoring,
  * deduplication, and the grab service. Verifies that dedup picks the correct
  * release, scoring works end-to-end, and grab handles edge cases gracefully.
  */
@@ -59,7 +62,7 @@ function makeCandidate(overrides: Partial<{
 
 // ─── Phase 3 Tests ────────────────────────────────────────────────────────────
 
-describe('Search → Scoring → Dedup → Grab Handoff', () => {
+describe('Search → Scoring → Dedup → Grab Handoff orchestration unit', () => {
   let service: MediaSearchService;
   let torrentManager: { addTorrent: ReturnType<typeof vi.fn> };
   let activityEventEmitter: { emit: ReturnType<typeof vi.fn> };

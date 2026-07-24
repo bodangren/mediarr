@@ -1,7 +1,10 @@
 /**
- * Phase 4: Grab → TorrentManager → ImportManager Handoff Integration Tests
+ * Phase 4: Grab → TorrentManager → ImportManager Handoff Orchestration Unit Tests
  *
- * Tests the handoff from torrent grab through completion to import.
+ * These tests install one production service and mock its collaborator ports; they
+ * prove orchestration contracts, not end-to-end infrastructure behavior.
+ *
+ * Tests the service orchestration handoff from torrent grab through completion to import.
  * Verifies that episodeId/movieId flow correctly from addTorrent through
  * to the ImportManager's fast-path and slow-path import logic.
  */
@@ -103,7 +106,7 @@ async function fireTorrentComplete(
 
 // ─── Phase 4 Tests ────────────────────────────────────────────────────────────
 
-describe('Grab → TorrentManager → ImportManager Handoff', () => {
+describe('Grab → TorrentManager → ImportManager Handoff orchestration unit', () => {
   let torrentManager: ReturnType<typeof makeTorrentManager>;
   let organizer: ReturnType<typeof makeOrganizer>;
   let activityEmitter: ReturnType<typeof makeActivityEmitter>;

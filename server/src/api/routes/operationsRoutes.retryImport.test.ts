@@ -50,6 +50,6 @@ describe('operationsRoutes — POST /api/activity/:id/retry-import', () => {
       url: '/api/activity/175/retry-import',
     });
 
-    expect(response.statusCode).toBeGreaterThanOrEqual(400);
+    expect(response.statusCode).toBe(422);
   });
 });

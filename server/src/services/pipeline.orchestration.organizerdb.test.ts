@@ -1,7 +1,10 @@
 /**
- * Phase 5: Import → Organizer → DB Update Handoff Integration Tests
+ * Phase 5: Import → Organizer → DB Update Handoff Orchestration Unit Tests
  *
- * Tests the handoff between file organization and database updates.
+ * These tests install one production service and mock its collaborator ports; they
+ * prove orchestration contracts, not end-to-end infrastructure behavior.
+ *
+ * Tests the service orchestration handoff between file organization and database updates.
  * Verifies transaction safety: DB path updated before fs rename,
  * with rollback on organizer failure.
  */
@@ -103,7 +106,7 @@ async function fireTorrentComplete(
 
 // ─── Phase 5 Tests ────────────────────────────────────────────────────────────
 
-describe('Import → Organizer → DB Update Handoff', () => {
+describe('Import → Organizer → DB Update Handoff orchestration unit', () => {
   let torrentManager: ReturnType<typeof makeTorrentManager>;
   let organizer: ReturnType<typeof makeOrganizer>;
   let activityEmitter: ReturnType<typeof makeActivityEmitter>;

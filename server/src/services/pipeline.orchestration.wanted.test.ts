@@ -1,7 +1,10 @@
 /**
- * Phase 2: Wanted → Search → Grab → Import Pipeline Integration Tests
+ * Phase 2: Wanted → Search → Grab → Import Pipeline Orchestration Unit Tests
  *
- * Tests the full handoff chain from WantedSearchService through
+ * These tests install one production service and mock its collaborator ports; they
+ * prove orchestration contracts, not end-to-end infrastructure behavior.
+ *
+ * Tests the service orchestration handoff from WantedSearchService through
  * MediaSearchService grab to torrent download. Verifies air-date guards,
  * release-date guards, and error handling across the wanted pipeline.
  */
@@ -33,7 +36,7 @@ function makeDb({ movie = null as any, episode = null as any } = {}) {
 
 // ─── Phase 2 Tests ────────────────────────────────────────────────────────────
 
-describe('Wanted → Search → Grab → Import Pipeline', () => {
+describe('Wanted → Search → Grab → Import Pipeline orchestration unit', () => {
   let mediaSearchService: ReturnType<typeof makeMediaSearchService>;
   let activityEventEmitter: ReturnType<typeof makeActivityEventEmitter>;
 

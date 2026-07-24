@@ -141,7 +141,7 @@ describe('filesystemRoutes', () => {
     expect(response.statusCode).toBe(404);
   });
 
-  it('rejects path traversal attempts that escape the safe root', async () => {
+  it('canonicalizes traversal segments before reading the resolved path', async () => {
     // realpath resolves to something outside root (traversal)
     mockRealpath.mockResolvedValue('/etc/passwd');
 
@@ -151,11 +151,11 @@ describe('filesystemRoutes', () => {
       url: '/api/filesystem?path=%2Fhome%2F..%2F..%2Fetc%2Fpasswd',
     });
 
-    // The route should reject paths that resolve to restricted locations
-    // On Linux with default safe root of '/', all paths are technically inside it.
-    // This test verifies that the realpath check itself works — ENOENT or symlink outside root.
-    // Since we mock realpath to resolve (no error), the route should process it normally.
-    // Path traversal protection: if realpath resolves without error, we trust it.
-    expect([200, 403, 404]).toContain(response.statusCode);
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toMatchObject({
+      ok: true,
+      data: { path: '/etc/passwd', entries: [] },
+    });
+    expect(mockReaddir).toHaveBeenCalledWith('/etc/passwd', { withFileTypes: true });
   });
 });

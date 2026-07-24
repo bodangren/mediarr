@@ -70,7 +70,7 @@ describe('torrentRoutes', () => {
         url: '/api/torrents',
       });
 
-      expect(response.statusCode).toBeGreaterThanOrEqual(400);
+      expect(response.statusCode).toBe(422);
     });
   });
 
@@ -212,7 +212,7 @@ describe('torrentRoutes', () => {
         payload: { priority: 100 },
       });
 
-      expect(response.statusCode).toBeGreaterThanOrEqual(400);
+      expect(response.statusCode).toBe(422);
     });
 
     it('maps missing torrent to not found', async () => {
@@ -309,7 +309,7 @@ describe('torrentRoutes', () => {
         payload: { action: 'pause', infoHashes: ['abc'] },
       });
 
-      expect(response.statusCode).toBeGreaterThanOrEqual(400);
+      expect(response.statusCode).toBe(422);
     });
   });
 
@@ -336,7 +336,7 @@ describe('torrentRoutes', () => {
         payload: { download: 1024000 },
       });
 
-      expect(response.statusCode).toBeGreaterThanOrEqual(400);
+      expect(response.statusCode).toBe(422);
     });
   });
 });

@@ -5,6 +5,7 @@ import { TorznabParser } from '../indexers/TorznabParser';
 import type { IndexerResult } from '../indexers/IndexerResult';
 import { EventEmitter } from 'events';
 import { IndexerHealthRepository } from '../repositories/IndexerHealthRepository';
+import type { IndexerFactory } from '../indexers/IndexerFactory';
 
 export interface SyncSummary {
   indexersProcessed: number;
@@ -23,6 +24,7 @@ export class RssSyncService extends EventEmitter {
     private prisma: DatabaseClient,
     private httpClient: HttpClient,
     private indexerHealthRepository?: IndexerHealthRepository,
+    private indexerFactory?: IndexerFactory,
   ) {
     super();
   }
@@ -66,14 +68,23 @@ export class RssSyncService extends EventEmitter {
   }
 
   private async syncIndexer(dbIndexer: any): Promise<number> {
+    if (dbIndexer.implementation === 'Cardigann') {
+      if (!this.indexerFactory) {
+        throw new Error('Cardigann RSS runtime is unavailable: IndexerFactory was not configured');
+      }
+
+      const indexer = this.indexerFactory.fromDatabaseRecord(dbIndexer);
+      const results = await indexer.search({});
+      return this.storeReleases(results, dbIndexer.id);
+    }
+
+    if (dbIndexer.implementation !== 'Torznab') {
+      throw new Error(`Unsupported RSS indexer implementation: ${dbIndexer.implementation}`);
+    }
+
     const settings = typeof dbIndexer.settings === 'string'
       ? JSON.parse(dbIndexer.settings)
       : dbIndexer.settings;
-
-    // Currently supports Torznab; scraping RSS would follow a similar pattern
-    if (dbIndexer.implementation !== 'Torznab') {
-      return 0;
-    }
 
     const indexer = new TorznabIndexer({
       id: dbIndexer.id,
@@ -96,14 +107,14 @@ export class RssSyncService extends EventEmitter {
     }
 
     const results = this.torznabParser.parse(response.body);
-    let stored = 0;
+    return this.storeReleases(results, dbIndexer.id);
+  }
 
+  private async storeReleases(results: IndexerResult[], indexerId: number): Promise<number> {
     for (const result of results) {
-      await this.storeRelease(result, dbIndexer.id);
-      stored++;
+      await this.storeRelease(result, indexerId);
     }
-
-    return stored;
+    return results.length;
   }
 
   private async storeRelease(result: IndexerResult, indexerId: number): Promise<void> {

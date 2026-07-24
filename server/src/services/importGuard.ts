@@ -9,22 +9,26 @@ interface ImportGuardPrisma {
 
 export async function isImportIncomplete(
   prisma: ImportGuardPrisma | undefined,
-  torrent: { episodeId: number | null; movieId: number | null },
+  torrent: { episodeId: number | null; episodeIds?: number[] | null; movieId: number | null },
 ): Promise<{ incomplete: boolean; reason?: string }> {
   if (!prisma) {
     return { incomplete: false };
   }
 
-  if (torrent.episodeId !== null) {
+  const linkedEpisodeIds = torrent.episodeIds?.length
+    ? [...new Set(torrent.episodeIds)]
+    : torrent.episodeId === null ? [] : [torrent.episodeId];
+
+  for (const episodeId of linkedEpisodeIds) {
     const episode = await prisma.episode.findUnique({
-      where: { id: torrent.episodeId },
+      where: { id: episodeId },
       select: { path: true },
     });
     if (!episode) {
-      return { incomplete: true, reason: `episode id=${torrent.episodeId} not found` };
+      return { incomplete: true, reason: `episode id=${episodeId} not found` };
     }
     if (!episode.path) {
-      return { incomplete: true, reason: `episode id=${torrent.episodeId} has no path (import pending)` };
+      return { incomplete: true, reason: `episode id=${episodeId} has no path (import pending)` };
     }
   }
 

@@ -2,6 +2,7 @@ import type { DatabaseClient } from '../db/drizzleClient';
 import type { IndexerRepository } from '../repositories/IndexerRepository';
 import type { MediaRepository } from '../repositories/MediaRepository';
 import type { ActivityEventRepository } from '../repositories/ActivityEventRepository';
+import type { TaskExecutionsRepository } from '../repositories/TaskExecutionsRepository';
 import type { IndexerHealthRepository } from '../repositories/IndexerHealthRepository';
 import type { NotificationRepository } from '../repositories/NotificationRepository';
 import type { QualityProfileRepository } from '../repositories/QualityProfileRepository';
@@ -94,7 +95,8 @@ export interface ApiDependencies {
     'resolveStreamSource' | 'buildManifest' | 'recordHeartbeat' | 'resolveSubtitleTrack' | 'getContinueWatching'
   > | undefined;
   settingsService?: Pick<SettingsService, 'get' | 'update'> | undefined;
-  activityEventRepository?: Pick<ActivityEventRepository, 'query' | 'clear' | 'markAsFailed' | 'export'> | undefined;
+  activityEventRepository?: Pick<ActivityEventRepository, 'create' | 'query' | 'clear' | 'markAsFailed' | 'export'> | undefined;
+  taskExecutionsRepository?: Pick<TaskExecutionsRepository, 'create' | 'update' | 'prune' | 'query' | 'findById'> | undefined;
   indexerHealthRepository?: Pick<IndexerHealthRepository, 'getByIndexerId'> | undefined;
   notificationRepository?: Pick<
     NotificationRepository,

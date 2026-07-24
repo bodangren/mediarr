@@ -30,12 +30,16 @@ function makeTorrentManager() {
 function makeDb({
   series = null as any,
   episode = null as any,
+  episodes = undefined as any[] | undefined,
   movie = null as any,
   indexer = null as any,
 } = {}) {
   return {
     series: { findFirst: vi.fn().mockResolvedValue(series) },
-    episode: { findFirst: vi.fn().mockResolvedValue(episode) },
+    episode: {
+      findFirst: vi.fn().mockResolvedValue(episode),
+      findMany: vi.fn().mockResolvedValue(episodes ?? (episode ? [episode] : [])),
+    },
     movie: { findFirst: vi.fn().mockResolvedValue(movie) },
     indexer: { findUnique: vi.fn().mockResolvedValue(indexer) },
   };
@@ -65,15 +69,18 @@ describe('RssMediaMonitor — TV matching corner cases', () => {
     torrentManager = makeTorrentManager();
   });
 
-  it('1.1 season pack (empty episodeNumbers) queries with episodeNumber:undefined — may match wrong episode', async () => {
+  it('1.1 season pack links every monitored missing episode in the season', async () => {
     mockedParse.mockResolvedValue({
       title: 'Breaking Bad', type: 'series', matchType: 'season_pack',
       seasonNumber: 1, episodeNumbers: [], year: null, quality: null,
     });
 
-    const episode = { id: 42, seasonNumber: 1, episodeNumber: 5, monitored: true, path: null };
+    const episodes = [
+      { id: 41, seasonNumber: 1, episodeNumber: 1, monitored: true, path: null },
+      { id: 42, seasonNumber: 1, episodeNumber: 5, monitored: true, path: null },
+    ];
     const series = { id: 5, title: 'Breaking Bad', cleanTitle: 'breakingbad', qualityProfileId: 1, monitored: true };
-    const prisma = makeDb({ series, episode });
+    const prisma = makeDb({ series, episodes });
 
     new RssMediaMonitor(rssSyncService, torrentManager, prisma);
     await fireRelease(rssSyncService, {
@@ -83,28 +90,28 @@ describe('RssMediaMonitor — TV matching corner cases', () => {
       indexerId: 1,
     });
 
-    expect(prisma.episode.findFirst).toHaveBeenCalledWith(
+    expect(prisma.episode.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({ seasonNumber: 1 }),
       }),
     );
-
-    const callArgs = prisma.episode.findFirst.mock.calls[0]![0] as any;
-    expect(callArgs.where.episodeNumber).toBeUndefined();
+    const callArgs = prisma.episode.findMany.mock.calls[0]![0] as any;
+    expect(callArgs.where).not.toHaveProperty('episodeNumber');
     expect(torrentManager.addTorrent).toHaveBeenCalledOnce();
     expect(torrentManager.addTorrent).toHaveBeenCalledWith(
-      expect.objectContaining({ episodeId: 42 }),
+      expect.objectContaining({ episodeId: 41, episodeIds: [41, 42] }),
     );
   });
 
-  it('1.2 multi-episode release (S01E01E02) only matches first episode — misses E02 if E01 is already downloaded', async () => {
+  it('1.2 multi-episode release grabs when any covered episode is missing and links all missing matches', async () => {
     mockedParse.mockResolvedValue({
       title: 'Breaking Bad', type: 'series', matchType: 'episode',
       seasonNumber: 1, episodeNumbers: [1, 2], year: null, quality: null,
     });
 
     const series = { id: 5, title: 'Breaking Bad', cleanTitle: 'breakingbad', qualityProfileId: 1, monitored: true };
-    const prisma = makeDb({ series, episode: null });
+    const episode2 = { id: 42, seasonNumber: 1, episodeNumber: 2, monitored: true, path: null };
+    const prisma = makeDb({ series, episodes: [episode2] });
 
     new RssMediaMonitor(rssSyncService, torrentManager, prisma);
     await fireRelease(rssSyncService, {
@@ -114,12 +121,17 @@ describe('RssMediaMonitor — TV matching corner cases', () => {
       indexerId: 1,
     });
 
-    expect(prisma.episode.findFirst).toHaveBeenCalledWith(
+    expect(prisma.episode.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: expect.objectContaining({ seasonNumber: 1, episodeNumber: 1 }),
+        where: expect.objectContaining({
+          seasonNumber: 1,
+          episodeNumber: { in: [1, 2] },
+        }),
       }),
     );
-    expect(torrentManager.addTorrent).not.toHaveBeenCalled();
+    expect(torrentManager.addTorrent).toHaveBeenCalledWith(
+      expect.objectContaining({ episodeId: 42, episodeIds: [42] }),
+    );
   });
 
   it('1.3 series matched but episode not found — no grab', async () => {
@@ -140,7 +152,7 @@ describe('RssMediaMonitor — TV matching corner cases', () => {
     });
 
     expect(prisma.series.findFirst).toHaveBeenCalledOnce();
-    expect(prisma.episode.findFirst).toHaveBeenCalledOnce();
+    expect(prisma.episode.findMany).toHaveBeenCalledOnce();
     expect(torrentManager.addTorrent).not.toHaveBeenCalled();
   });
 
@@ -542,7 +554,7 @@ describe('RssMediaMonitor — scoring, indexer priority & error handling', () =>
     expect(torrentManager.addTorrent).not.toHaveBeenCalled();
   });
 
-  it('3.4 prisma.episode.findFirst throws — no grab', async () => {
+  it('3.4 prisma.episode.findMany throws — no grab', async () => {
     mockedParse.mockResolvedValue({
       title: 'Breaking Bad', type: 'series', matchType: 'episode',
       seasonNumber: 1, episodeNumbers: [1], year: null, quality: null,
@@ -551,7 +563,7 @@ describe('RssMediaMonitor — scoring, indexer priority & error handling', () =>
     const prisma = makeDb({
       series: { id: 5, title: 'Breaking Bad', cleanTitle: 'breakingbad', qualityProfileId: 1, monitored: true },
     });
-    prisma.episode.findFirst.mockRejectedValue(new Error('DB timeout'));
+    prisma.episode.findMany.mockRejectedValue(new Error('DB timeout'));
 
     new RssMediaMonitor(rssSyncService, torrentManager, prisma);
     await fireRelease(rssSyncService, {

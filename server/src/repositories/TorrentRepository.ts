@@ -24,6 +24,7 @@ export interface TorrentInsertInput {
   magnetUrl?: string | null;
   torrentFile?: Uint8Array | null;
   episodeId?: number | null;
+  episodeIds?: number[] | null;
   movieId?: number | null;
   priority?: number;
 }
@@ -65,6 +66,7 @@ export class TorrentRepository {
       magnetUrl: data.magnetUrl ?? null,
       torrentFile: data.torrentFile ?? null,
       episodeId: data.episodeId ?? null,
+      episodeIds: data.episodeIds ?? null,
       movieId: data.movieId ?? null,
     } as const;
     const [row] = await this.prisma.drizzle

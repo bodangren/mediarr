@@ -72,19 +72,29 @@ export class RssMediaMonitor {
       return false;
     }
 
-    const episode = await this.prisma.episode.findFirst({
+    const episodeNumbers = Array.isArray(parsed.episodeNumbers)
+      ? [...new Set(parsed.episodeNumbers.filter((value: unknown) => Number.isInteger(value)))]
+      : [];
+    const isSeasonPack = parsed.matchType === 'season_pack';
+    if (!isSeasonPack && episodeNumbers.length === 0) {
+      return false;
+    }
+
+    const episodes = await this.prisma.episode.findMany({
       where: {
         seriesId: series.id,
         seasonNumber: parsed.seasonNumber,
-        episodeNumber: parsed.episodeNumbers[0],
+        ...(isSeasonPack ? {} : { episodeNumber: { in: episodeNumbers } }),
         monitored: true,
         path: null,
       },
     });
 
-    if (!episode) {
+    if (episodes.length === 0) {
       return false;
     }
+
+    const episode = episodes[0];
 
     // Score the release
     const engine = new CustomFormatScoringEngine();
@@ -104,7 +114,11 @@ export class RssMediaMonitor {
     }
 
     console.log(`RssMediaMonitor: Grabbing ${release.title} for ${series.title} (score ${scoringResult.totalScore})`);
-    await this.torrentManager.addTorrent({ magnetUrl: release.magnetUrl, episodeId: episode.id });
+    await this.torrentManager.addTorrent({
+      magnetUrl: release.magnetUrl,
+      episodeId: episode.id,
+      episodeIds: episodes.map((matchedEpisode: { id: number }) => matchedEpisode.id),
+    });
     return true;
   }
 

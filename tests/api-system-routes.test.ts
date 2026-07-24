@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createApiServer } from '../server/src/api/createApiServer';
-import { systemState, registerSystemRoutes } from '../server/src/api/routes/systemRoutes';
 import { updatesState } from '../server/src/api/routes/updatesRoutes';
 import { LogReaderService } from '../server/src/services/LogReaderService';
 import type { FastifyInstance } from 'fastify';
@@ -99,8 +98,140 @@ function createMockUpdateService() {
   };
 }
 
-// Minimal deps for system routes (they use in-memory state)
+function createSystemPersistenceDeps() {
+  const taskExecutions = [
+    {
+      id: 1,
+      taskName: 'RSS Sync',
+      startedAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
+      completedAt: new Date(Date.now() - 24 * 60 * 60 * 1000 + 3456),
+      durationMs: 3456,
+      status: 'SUCCESS',
+      errorMessage: null,
+    },
+    {
+      id: 2,
+      taskName: 'Health Check',
+      startedAt: new Date(Date.now() - 25 * 60 * 60 * 1000),
+      completedAt: new Date(Date.now() - 25 * 60 * 60 * 1000 + 1234),
+      durationMs: 1234,
+      status: 'SUCCESS',
+      errorMessage: null,
+    },
+    {
+      id: 3,
+      taskName: 'RSS Sync',
+      startedAt: new Date(Date.now() - 48 * 60 * 60 * 1000),
+      completedAt: new Date(Date.now() - 48 * 60 * 60 * 1000 + 4567),
+      durationMs: 4567,
+      status: 'FAILED',
+      errorMessage: 'Connection timeout',
+    },
+  ];
+  let activityEvents = [
+    {
+      id: 1,
+      eventType: 'INDEXER_ADDED',
+      sourceModule: 'IndexerService',
+      entityRef: 'indexer:1',
+      summary: 'Indexer added successfully',
+      success: true,
+      details: null,
+      occurredAt: new Date(Date.now() - 60 * 60 * 1000),
+    },
+    {
+      id: 2,
+      eventType: 'DOWNLOAD_FAILED',
+      sourceModule: 'TorrentManager',
+      entityRef: 'torrent:1',
+      summary: 'Download failed',
+      success: false,
+      details: { error: 'tracker unavailable' },
+      occurredAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
+    },
+  ];
+
+  const taskExecutionsRepository = {
+    create: async () => taskExecutions[0]!,
+    update: async () => {},
+    prune: async () => 0,
+    async query(input: { page: number; pageSize: number; status?: string; taskName?: string }) {
+      let filtered = taskExecutions.filter(item => item.status !== 'RUNNING');
+      if (input.status) filtered = filtered.filter(item => item.status === input.status!.toUpperCase());
+      if (input.taskName) filtered = filtered.filter(item => item.taskName.includes(input.taskName!));
+      const offset = (input.page - 1) * input.pageSize;
+      return {
+        items: filtered.slice(offset, offset + input.pageSize),
+        total: filtered.length,
+        page: input.page,
+        pageSize: input.pageSize,
+      };
+    },
+    async findById(id: number) {
+      return taskExecutions.find(item => item.id === id) ?? null;
+    },
+  };
+  const activityEventRepository = {
+    async create(input: Record<string, unknown>) {
+      const event = {
+        id: activityEvents.length + 1,
+        eventType: String(input.eventType),
+        sourceModule: String(input.sourceModule),
+        entityRef: typeof input.entityRef === 'string' ? input.entityRef : null,
+        summary: String(input.summary),
+        success: input.success === true,
+        details: input.details ?? null,
+        occurredAt: new Date(),
+      };
+      activityEvents.unshift(event);
+      return event;
+    },
+    async query() {
+      return { items: activityEvents, total: activityEvents.length, page: 1, pageSize: 25 };
+    },
+    async clear(input: { success?: boolean; to?: Date } = {}) {
+      const before = activityEvents.length;
+      activityEvents = activityEvents.filter(event => {
+        const matchesSuccess = input.success === undefined || event.success === input.success;
+        const matchesDate = input.to === undefined || event.occurredAt <= input.to;
+        return !(matchesSuccess && matchesDate);
+      });
+      return before - activityEvents.length;
+    },
+    async markAsFailed() { return null; },
+    async export(input: { success?: boolean; from?: Date; to?: Date } = {}) {
+      return activityEvents.filter(event =>
+        (input.success === undefined || event.success === input.success)
+        && (input.from === undefined || event.occurredAt >= input.from)
+        && (input.to === undefined || event.occurredAt <= input.to));
+    },
+  };
+  const scheduler = {
+    listJobsMeta: () => [{
+      name: 'rss-sync',
+      cronExpression: '*/15 * * * *',
+      lastRunAt: null,
+      lastDurationMs: null,
+      nextRunAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+      enabled: true,
+      status: 'healthy',
+    }],
+    listJobs: () => ['rss-sync'],
+    runNow: async () => {},
+    triggerTask: async () => true,
+    isScheduled: () => true,
+    reschedule: () => {},
+    setTaskExecutionsRepository: () => {},
+    toggleEnabled: async () => {},
+    getHealth: () => ({ scheduledTaskCount: 1, missedTaskCount: 0 }),
+  };
+
+  return { activityEventRepository, scheduler, taskExecutionsRepository };
+}
+
+// Minimal runtime dependencies with explicit repository-backed system state.
 const createMinimalDeps = () => ({
+  ...createSystemPersistenceDeps(),
   prisma: {},
   logReaderService: (() => {
     const service = new LogReaderService();

@@ -113,6 +113,35 @@ describe('Scheduler.triggerTask()', () => {
     expect(updateArgs[1].errorMessage).toBeNull();
   });
 
+  it('returns false without recording when the job is disabled', async () => {
+    const callback = vi.fn().mockResolvedValue(undefined);
+    scheduler.schedule('rss-sync', '*/15 * * * *', callback);
+    await scheduler.toggleEnabled('rss-sync', false);
+
+    await expect(scheduler.triggerTask('rss-sync')).resolves.toBe(false);
+
+    expect(callback).not.toHaveBeenCalled();
+    expect(repo.create).not.toHaveBeenCalled();
+  });
+
+  it('returns false without double-recording when the job is already running', async () => {
+    repo.create.mockResolvedValue({ id: 104 });
+    repo.update.mockResolvedValue(undefined);
+    let release: (() => void) | undefined;
+    const callback = vi.fn().mockImplementation(() => new Promise<void>(resolve => {
+      release = resolve;
+    }));
+    scheduler.schedule('rss-sync', '*/15 * * * *', callback);
+
+    const first = scheduler.triggerTask('rss-sync');
+    await vi.waitFor(() => expect(callback).toHaveBeenCalledOnce());
+    await expect(scheduler.triggerTask('rss-sync')).resolves.toBe(false);
+    release?.();
+    await expect(first).resolves.toBe(true);
+
+    expect(repo.create).toHaveBeenCalledOnce();
+  });
+
   it('updates the taskExecution record to FAILED with the error message when the callback throws', async () => {
     repo.create.mockResolvedValue({ id: 101 });
     repo.update.mockResolvedValue(undefined);

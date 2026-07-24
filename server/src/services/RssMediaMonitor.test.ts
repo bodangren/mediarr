@@ -39,7 +39,10 @@ function makeDb({
 } = {}) {
   return {
     series: { findFirst: vi.fn().mockResolvedValue(series) },
-    episode: { findFirst: vi.fn().mockResolvedValue(episode) },
+    episode: {
+      findFirst: vi.fn().mockResolvedValue(episode),
+      findMany: vi.fn().mockResolvedValue(episode ? [episode] : []),
+    },
     movie: { findFirst: vi.fn().mockResolvedValue(movie) },
     indexer: { findUnique: vi.fn().mockResolvedValue(indexer) },
   };

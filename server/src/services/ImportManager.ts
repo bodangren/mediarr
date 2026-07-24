@@ -159,7 +159,7 @@ export class ImportManager {
     // Fetch the torrent row once so we can use its linked episode/movie IDs.
     const torrentRow = await this.prisma.torrent?.findUnique?.({
       where: { infoHash: torrent.infoHash },
-      select: { episodeId: true, movieId: true },
+      select: { episodeId: true, episodeIds: true, movieId: true },
     });
 
     if (files.length === 0) {
@@ -185,7 +185,12 @@ export class ImportManager {
       try {
 
       // ── Fast path: torrent was grabbed for a known episode ───────────────
-      const linkedEpisodeId = torrentRow?.episodeId ?? null;
+      const linkedEpisodeIds = Array.isArray(torrentRow?.episodeIds)
+        ? torrentRow.episodeIds.filter((id: unknown): id is number => typeof id === 'number')
+        : [];
+      const linkedEpisodeId = linkedEpisodeIds.length <= 1
+        ? (linkedEpisodeIds[0] ?? torrentRow?.episodeId ?? null)
+        : null;
       if (linkedEpisodeId) {
         const episode = await this.prisma.episode.findUnique({
           where: { id: linkedEpisodeId },

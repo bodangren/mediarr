@@ -106,7 +106,9 @@ export class Scheduler {
       throw new Error(`Invalid cron expression: ${cronExpression}`);
     }
 
-    const wrappedCallback = () => this.executeRecorded(name, callback);
+    const wrappedCallback = async () => {
+      await this.executeRecorded(name, callback);
+    };
 
     const meta: ScheduledJob = {
       task: null as unknown as ScheduledTask,
@@ -319,12 +321,12 @@ export class Scheduler {
    * taskExecutionsRepository.  Creates a RUNNING record before invoking
    * the callback, then updates the record to SUCCESS or FAILED.
    */
-  async triggerTask(name: string): Promise<void> {
+  async triggerTask(name: string): Promise<boolean> {
     const job = this.jobs.get(name);
     if (!job) {
       throw new Error(`Job '${name}' is not scheduled`);
     }
-    await this.executeRecorded(name, job.callback, { rethrow: true });
+    return this.executeRecorded(name, job.callback, { rethrow: true });
   }
 
   /**
@@ -392,7 +394,7 @@ export class Scheduler {
     }
 
     const now = Date.now();
-    const recoveryPromises: Promise<void>[] = [];
+    const recoveryPromises: Array<Promise<unknown>> = [];
     let missedTaskCount = 0;
 
     for (const [name, nextRunAt] of Object.entries(states)) {
@@ -472,10 +474,10 @@ export class Scheduler {
     name: string,
     callback: JobCallback,
     options: { rethrow?: boolean } = {},
-  ): Promise<void> {
+  ): Promise<boolean> {
     const job = this.jobs.get(name);
     if (!job || !job.enabled || job.running) {
-      return;
+      return false;
     }
     job.running = true;
     const start = Date.now();
@@ -531,6 +533,7 @@ export class Scheduler {
         }
       }
     }
+    return true;
   }
 
   /**

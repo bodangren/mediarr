@@ -107,6 +107,17 @@ describe('TorrentRepository.upsert', () => {
     expect(conflictArg.set.name).toBe('Updated');
   });
 
+  it('persists every linked episode id for multi-episode releases', async () => {
+    const db = makeDb({ insertRows: [{ id: 1 }] });
+    const repo = new TorrentRepository(db as any);
+    await repo.upsert({ ...baseTorrentInput, episodeId: 41, episodeIds: [41, 42] } as any);
+
+    const insert = db.drizzle.insert.mock.results[0]?.value;
+    const valuesArg = insert?.values.mock.calls[0]?.[0];
+    expect(valuesArg.episodeId).toBe(41);
+    expect(valuesArg.episodeIds).toEqual([41, 42]);
+  });
+
   it('throws when the insert returns no row', async () => {
     const db = makeDb({ insertRows: [] });
     const repo = new TorrentRepository(db as any);

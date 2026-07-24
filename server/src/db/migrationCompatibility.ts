@@ -250,6 +250,12 @@ export function reconcileLegacyMigrationState(
       }
       return migration;
     });
+    const rssEpisodeLinksMigration = migrations.find(
+      (migration) => migration.tag === '0005_truthful_rss_episode_links',
+    );
+    if (!rssEpisodeLinksMigration) {
+      throw new Error('Migration compatibility requires checked-in 0005_truthful_rss_episode_links.sql metadata.');
+    }
     const columns = readColumns(db);
     assertLegacyAppSettingsBase(columns);
 
@@ -276,16 +282,51 @@ export function reconcileLegacyMigrationState(
       journalExists = true;
       // Continue below so an already-pushed scheduler column gets a precise ledger entry too.
       const reconciled = reconcileKnownSchedulerMigrations(db, schedulerMigrations, columns);
-      return [...adopted, ...reconciled];
+      const rssReconciled = reconcileTorrentEpisodeLinksMigration(db, rssEpisodeLinksMigration);
+      return [...adopted, ...reconciled, ...rssReconciled];
     }
 
     if (!journalExists) {
       throw new Error('Unable to initialize the Drizzle migration journal.');
     }
-    return reconcileKnownSchedulerMigrations(db, schedulerMigrations, columns);
+    return [
+      ...reconcileKnownSchedulerMigrations(db, schedulerMigrations, columns),
+      ...reconcileTorrentEpisodeLinksMigration(db, rssEpisodeLinksMigration),
+    ];
   } finally {
     db.close();
   }
+}
+
+function reconcileTorrentEpisodeLinksMigration(
+  db: SqliteDatabase,
+  migration: MigrationMetadata,
+): MigrationMetadata[] {
+  const applied = (db.prepare(
+    'SELECT 1 FROM "__drizzle_migrations" WHERE hash = ? LIMIT 1',
+  ).get(migration.hash)) !== undefined;
+  const column = (db.prepare('PRAGMA table_info("Torrent")').all() as ColumnInfo[])
+    .find((candidate) => candidate.name === 'episodeIds');
+
+  if (applied && !column) {
+    throw new Error(
+      'Refusing migration-history adoption: 0005 is recorded but Torrent.episodeIds is absent.',
+    );
+  }
+  if (!column) {
+    return [];
+  }
+  if (column.type.toLowerCase() !== 'text' || column.notnull !== 0) {
+    throw new Error(
+      'Refusing migration-history adoption: Torrent.episodeIds does not match tracked migration 0005_truthful_rss_episode_links.',
+    );
+  }
+  if (applied) {
+    return [];
+  }
+
+  insertJournalEntry(db, migration);
+  return [migration];
 }
 
 function reconcileKnownSchedulerMigrations(

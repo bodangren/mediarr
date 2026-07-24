@@ -43,6 +43,9 @@ function createLegacyAppSettings(db: SqliteDatabase, schedulerColumns: 'none' | 
       hash text NOT NULL,
       created_at numeric
     );
+    CREATE TABLE "Torrent" (
+      "id" integer PRIMARY KEY AUTOINCREMENT NOT NULL
+    );
   `);
   if (schedulerColumns === 'both') {
     db.prepare(`
@@ -111,7 +114,7 @@ describe('tracked SQLite migration compatibility', () => {
     const upgraded = new Database(databasePath, { readonly: true });
     const columns = upgraded.prepare('PRAGMA table_info("AppSettings")').all() as Array<{ name: string }>;
     expect(columns.map((column) => column.name)).toEqual(expect.arrayContaining(['schedulerState', 'schedulerEnabled']));
-    expect(upgraded.prepare('SELECT count(*) AS count FROM "__drizzle_migrations"').get()).toEqual({ count: 5 });
+    expect(upgraded.prepare('SELECT count(*) AS count FROM "__drizzle_migrations"').get()).toEqual({ count: 6 });
     upgraded.close();
   }, 30_000);
 
@@ -134,10 +137,11 @@ describe('tracked SQLite migration compatibility', () => {
       '0002_furry_blonde_phantom',
       '0003_workable_sage',
       '0004_scheduler_enabled_state',
+      '0005_truthful_rss_episode_links',
     ]);
     expect(pushed.prepare('SELECT schedulerState, schedulerEnabled FROM "AppSettings" WHERE id = 1').get())
       .toEqual({ schedulerState: '{"rss-sync":"2026-07-12T00:00:00.000Z"}', schedulerEnabled: '{"rss-sync":false}' });
-    expect(pushed.prepare('SELECT count(*) AS count FROM "__drizzle_migrations"').get()).toEqual({ count: 5 });
+    expect(pushed.prepare('SELECT count(*) AS count FROM "__drizzle_migrations"').get()).toEqual({ count: 6 });
     pushed.close();
   }, 30_000);
 

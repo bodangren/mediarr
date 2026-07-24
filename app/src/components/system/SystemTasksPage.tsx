@@ -22,6 +22,7 @@ function StatusBadge({ status }: { status: string }) {
     success: 'bg-green-500/20 text-green-400',
     queued: 'bg-slate-500/20 text-slate-400',
     paused: 'bg-slate-500/20 text-slate-400',
+    disabled: 'bg-slate-500/20 text-slate-400',
   };
   return (
     <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium ${colors[status] ?? 'bg-slate-500/20 text-slate-400'}`}>
@@ -104,7 +105,7 @@ function ScheduledTasksSection() {
                 {formatDurationMs(task.lastDuration)}
               </td>
               <td className="py-2 pr-4 text-text-secondary">
-                {formatRelativeDate(task.nextExecution)}
+                {task.nextExecution ? formatRelativeDate(task.nextExecution) : '—'}
               </td>
               <td className="py-2 pr-4">
                 <StatusBadge status={task.status} />
@@ -113,7 +114,7 @@ function ScheduledTasksSection() {
                 <Button
                   variant="secondary"
                   className="text-xs"
-                  disabled={runningIds.has(task.id)}
+                  disabled={task.status === 'disabled' || runningIds.has(task.id)}
                   onClick={() => { void handleRunNow(task.id); }}
                 >
                   {runningIds.has(task.id) ? 'Running…' : 'Run Now'}
@@ -136,7 +137,6 @@ function ScheduledTasksSection() {
 
 function QueuedTasksSection() {
   const [tasks, setTasks] = useState<QueuedTask[]>([]);
-  const [cancellingIds, setCancellingIds] = useState<Set<number>>(new Set());
 
   const fetchQueued = useCallback(async () => {
     try {
@@ -153,20 +153,6 @@ function QueuedTasksSection() {
     return () => clearInterval(interval);
   }, [fetchQueued]);
 
-  async function handleCancel(taskId: number) {
-    setCancellingIds(prev => new Set(prev).add(taskId));
-    try {
-      await getApiClients().systemApi.cancelTask(taskId);
-      await fetchQueued();
-    } finally {
-      setCancellingIds(prev => {
-        const next = new Set(prev);
-        next.delete(taskId);
-        return next;
-      });
-    }
-  }
-
   if (tasks.length === 0) {
     return <p className="text-sm text-text-secondary">No tasks currently running.</p>;
   }
@@ -177,23 +163,9 @@ function QueuedTasksSection() {
         <div key={task.id} className="flex items-center gap-4 rounded-md border border-border-subtle bg-surface-1 px-4 py-2">
           <div className="flex-1">
             <p className="font-medium">{task.taskName}</p>
-            <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-surface-2">
-              <div
-                className="h-full rounded-full bg-accent-primary transition-all"
-                style={{ width: `${task.progress}%` }}
-              />
-            </div>
+            <p className="mt-1 text-xs text-text-secondary">Started {formatRelativeDate(task.started)}</p>
           </div>
           <StatusBadge status={task.status} />
-          <span className="text-xs text-text-secondary tabular-nums">{task.progress}%</span>
-          <Button
-            variant="destructive"
-            className="text-xs"
-            disabled={cancellingIds.has(task.id as number)}
-            onClick={() => { void handleCancel(task.id as number); }}
-          >
-            Cancel
-          </Button>
         </div>
       ))}
     </div>

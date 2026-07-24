@@ -73,9 +73,14 @@ describe('SystemTasksPage', () => {
     vi.clearAllMocks();
   });
 
-  it('renders the page title', () => {
+  it('renders the page title', async () => {
     renderPage();
     expect(screen.getByText('Tasks')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(mockGetScheduledTasks).toHaveBeenCalledOnce();
+      expect(mockGetQueuedTasks).toHaveBeenCalledOnce();
+      expect(mockGetTaskHistory).toHaveBeenCalledOnce();
+    });
   });
 
   it('shows scheduled tasks after loading', async () => {
@@ -103,6 +108,23 @@ describe('SystemTasksPage', () => {
     await waitFor(() => expect(screen.getByText('Run Now')).toBeInTheDocument());
     fireEvent.click(screen.getByText('Run Now'));
     await waitFor(() => expect(mockRunTask).toHaveBeenCalledWith('rss-sync'));
+  });
+
+  it('does not offer fake cancellation for running scheduler tasks', async () => {
+    mockGetScheduledTasks.mockResolvedValue([]);
+    mockGetQueuedTasks.mockResolvedValue([{
+      id: 42,
+      taskName: 'RSS Sync',
+      started: new Date().toISOString(),
+      duration: null,
+      progress: null,
+      status: 'running',
+    }]);
+    renderPage();
+
+    expect(await screen.findByText('running')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Cancel' })).not.toBeInTheDocument();
+    expect(mockCancelTask).not.toHaveBeenCalled();
   });
 
   it('shows error state when scheduled tasks fail to load', async () => {

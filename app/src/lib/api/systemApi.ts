@@ -94,8 +94,8 @@ const scheduledTaskSchema = z.object({
   interval: z.string(),
   lastExecution: z.string().nullable(),
   lastDuration: z.number().nullable(),
-  nextExecution: z.string(),
-  status: z.union([z.literal('pending'), z.literal('running'), z.literal('completed'), z.literal('failed')]),
+  nextExecution: z.string().nullable(),
+  status: z.union([z.literal('pending'), z.literal('running'), z.literal('completed'), z.literal('failed'), z.literal('disabled')]),
 });
 
 // Queued task schema
@@ -104,7 +104,7 @@ const queuedTaskSchema = z.object({
   taskName: z.string(),
   started: z.string(),
   duration: z.number().nullable(),
-  progress: z.number().min(0).max(100),
+  progress: z.number().min(0).max(100).nullable(),
   status: z.union([z.literal('running'), z.literal('queued'), z.literal('paused')]),
 });
 

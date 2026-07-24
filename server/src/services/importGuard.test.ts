@@ -45,6 +45,26 @@ describe('isImportIncomplete', () => {
     expect(result).toEqual({ incomplete: false });
   });
 
+  it('keeps a pack protected until every linked episode is imported', async () => {
+    const prisma = {
+      episode: {
+        findUnique: vi.fn()
+          .mockResolvedValueOnce({ id: 10, path: '/tv/Show/S01E01.mkv' })
+          .mockResolvedValueOnce({ id: 11, path: null }),
+      },
+      movie: { findUnique: vi.fn() },
+    };
+
+    const result = await isImportIncomplete(prisma, {
+      episodeId: 10,
+      episodeIds: [10, 11],
+      movieId: null,
+    });
+
+    expect(result).toEqual({ incomplete: true, reason: 'episode id=11 has no path (import pending)' });
+    expect(prisma.episode.findUnique).toHaveBeenCalledTimes(2);
+  });
+
   it('returns { incomplete: true } when movie exists but path is null', async () => {
     const prisma = {
       episode: { findUnique: vi.fn() },

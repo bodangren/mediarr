@@ -508,6 +508,7 @@ export const torrents = sqliteTable("Torrent", {
   magnetUrl: text("magnetUrl"),
   torrentFile: blob("torrentFile"),
   episodeId: integer("episodeId"),
+  episodeIds: text("episodeIds", { mode: "json" }).$type<number[]>(),
   movieId: integer("movieId"),
 });
 

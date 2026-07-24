@@ -41,7 +41,10 @@ function makeDb({
 } = {}) {
   return {
     series: { findFirst: vi.fn().mockResolvedValue(series) },
-    episode: { findFirst: vi.fn().mockResolvedValue(episode) },
+    episode: {
+      findFirst: vi.fn().mockResolvedValue(episode),
+      findMany: vi.fn().mockResolvedValue(episode ? [episode] : []),
+    },
     movie: { findFirst: vi.fn().mockResolvedValue(movie) },
     indexer: { findUnique: vi.fn().mockResolvedValue(indexer) },
     indexerRelease: { findMany: vi.fn().mockResolvedValue(indexerRelease) },
@@ -121,7 +124,7 @@ describe('RSS → Search → Grab → Import Pipeline', () => {
       qualityProfileId: 1,
       monitored: true,
     };
-    // episode.findFirst returns null — episode doesn't exist in DB
+    // episode.findMany returns no rows — episode doesn't exist in DB
     const prisma = makeDb({ series, episode: null });
 
     new RssMediaMonitor(rssSyncService, torrentManager, prisma);
@@ -139,8 +142,7 @@ describe('RSS → Search → Grab → Import Pipeline', () => {
     expect(torrentManager.addTorrent).not.toHaveBeenCalled();
   });
 
-  it('1.3 RSS feed returns season pack → episodeNumbers[0] is undefined → handled gracefully', async () => {
-    // Season pack release title — parser produces empty episodeNumbers
+  it('1.3 RSS season pack links every applicable missing episode', async () => {
     const series = {
       id: 5,
       title: 'Breaking Bad',
@@ -148,8 +150,6 @@ describe('RSS → Search → Grab → Import Pipeline', () => {
       qualityProfileId: 1,
       monitored: true,
     };
-    // episode.findFirst with undefined episodeNumber returns null (Prisma ignores undefined)
-    // This is a known design limitation — packs match ANY monitored episode
     const episode = {
       id: 42,
       seasonNumber: 1,
@@ -161,7 +161,6 @@ describe('RSS → Search → Grab → Import Pipeline', () => {
 
     new RssMediaMonitor(rssSyncService, torrentManager, prisma);
 
-    // Season pack title — no specific episode number
     const packRelease = {
       title: 'Breaking.Bad.S01.COMPLETE.1080p.BluRay',
       magnetUrl: 'magnet:?xt=urn:btih:seasonpack001',
@@ -169,8 +168,13 @@ describe('RSS → Search → Grab → Import Pipeline', () => {
       indexerId: 1,
     };
 
-    // Should not crash — known limitation: may match wrong episode
-    await expect(fireRelease(rssSyncService, packRelease)).resolves.not.toThrow();
+    await fireRelease(rssSyncService, packRelease);
+
+    expect(torrentManager.addTorrent).toHaveBeenCalledWith(expect.objectContaining({
+      magnetUrl: packRelease.magnetUrl,
+      episodeId: 42,
+      episodeIds: [42],
+    }));
   });
 
   it('1.4 RSS feed returns release with wrong series title → no match → no grab → no false positive', async () => {

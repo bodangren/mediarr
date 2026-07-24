@@ -150,7 +150,7 @@ describe('SystemApi', () => {
             lastExecution: '2026-02-15T10:00:00.000Z',
             lastDuration: 2.5,
             nextExecution: '2026-02-15T10:15:00.000Z',
-            status: 'pending' as const,
+            status: 'disabled' as const,
           },
           {
             id: 'check-availability',
@@ -158,7 +158,7 @@ describe('SystemApi', () => {
             interval: '1h',
             lastExecution: '2026-02-15T09:00:00.000Z',
             lastDuration: 15.2,
-            nextExecution: '2026-02-15T10:00:00.000Z',
+            nextExecution: null,
             status: 'pending' as const,
           },
         ]);
@@ -177,6 +177,7 @@ describe('SystemApi', () => {
         );
         expect(result).toHaveLength(2);
         expect(result[0].taskName).toBe('RSS Sync');
+        expect(result[1].nextExecution).toBeNull();
       });
     });
 
@@ -196,7 +197,7 @@ describe('SystemApi', () => {
             taskName: 'Subtitle Search',
             started: '2026-02-15T10:10:00.000Z',
             duration: null,
-            progress: 0,
+            progress: null,
             status: 'queued' as const,
           },
         ]);
@@ -215,6 +216,7 @@ describe('SystemApi', () => {
         );
         expect(result).toHaveLength(2);
         expect(result[0].progress).toBe(45);
+        expect(result[1].progress).toBeNull();
       });
     });
 

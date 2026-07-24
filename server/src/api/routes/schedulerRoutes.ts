@@ -137,7 +137,10 @@ export function registerSchedulerRoutes(app: FastifyInstance, deps: SchedulerDep
     }
 
     try {
-      await deps.scheduler.triggerTask(taskId);
+      const executed = await deps.scheduler.triggerTask(taskId);
+      if (!executed) {
+        return reply.status(409).send({ ok: false, error: { code: 'CONFLICT', message: `Task is disabled or already running: ${taskId}`, retryable: false } });
+      }
       return reply.status(202).send(buildSuccessEnvelope({
         taskId,
         executionId: -1,

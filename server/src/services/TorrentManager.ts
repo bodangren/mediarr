@@ -12,6 +12,7 @@ export interface AddTorrentOptions {
   name?: string | undefined;
   size?: number | undefined;
   episodeId?: number | undefined;
+  episodeIds?: number[] | undefined;
   movieId?: number | undefined;
 }
 
@@ -296,6 +297,7 @@ export class TorrentManager extends EventEmitter {
         magnetUrl: preparedMagnetUrl ?? null,
         torrentFile: options.torrentFile ?? null,
         episodeId: options.episodeId ?? null,
+        episodeIds: options.episodeIds ?? (options.episodeId === undefined ? null : [options.episodeId]),
         movieId: options.movieId ?? null,
       });
       return { infoHash: queuedInfoHash, name: options.name ?? 'Unknown', path: downloadPath };
@@ -335,6 +337,7 @@ export class TorrentManager extends EventEmitter {
         magnetUrl: preparedMagnetUrl || null,
         torrentFile: options.torrentFile || null,
         episodeId: options.episodeId ?? null,
+        episodeIds: options.episodeIds ?? (options.episodeId === undefined ? null : [options.episodeId]),
         movieId: options.movieId ?? null,
       });
     } catch (error) {

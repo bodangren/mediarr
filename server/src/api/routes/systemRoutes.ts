@@ -1,5 +1,5 @@
-import type { FastifyInstance, FastifyReply } from 'fastify';
-import { NotFoundError, ValidationError } from '../../errors/domainErrors';
+import type { FastifyInstance } from 'fastify';
+import { ConflictError, NotFoundError, ValidationError } from '../../errors/domainErrors';
 import {
   buildSuccessEnvelope,
   paginateArray,
@@ -10,14 +10,17 @@ import {
 import { parseDate, parseIdParam } from '../routeUtils';
 import type { ApiDependencies } from '../types';
 import type { ApiEventHub } from '../eventHub';
+import type { TaskExecutionRecord } from '../../repositories/TaskExecutionsRepository';
+import type { ActivityEvent } from '../../types/modelTypes';
 
 // Types
 type HealthStatus = 'ok' | 'warning' | 'error' | 'unknown';
-type TaskStatus = 'pending' | 'running' | 'completed' | 'failed';
+type TaskStatus = 'pending' | 'running' | 'completed' | 'failed' | 'disabled';
 type QueuedStatus = 'running' | 'queued' | 'paused';
 type HistoryStatus = 'success' | 'failed';
 type EventLevel = 'info' | 'warning' | 'error' | 'fatal';
 type EventType = 'system' | 'indexer' | 'network' | 'download' | 'import' | 'health' | 'update' | 'backup' | 'other';
+type PersistedTaskStatus = 'RUNNING' | 'SUCCESS' | 'FAILED';
 
 const EVENT_LEVELS: ReadonlySet<EventLevel> = new Set(['info', 'warning', 'error', 'fatal']);
 const EVENT_TYPES: ReadonlySet<EventType> = new Set(['system', 'indexer', 'network', 'download', 'import', 'health', 'update', 'backup', 'other']);
@@ -37,12 +40,27 @@ function parseEventFilters(query: Record<string, unknown>): {
   endDate?: Date;
 } {
   const filters: { level?: EventLevel; type?: EventType; startDate?: Date; endDate?: Date } = {};
+  if (query.level !== undefined && !isEventLevel(query.level)) {
+    throw new ValidationError('Invalid system event level');
+  }
+  if (query.type !== undefined && !isEventType(query.type)) {
+    throw new ValidationError('Invalid system event type');
+  }
   if (isEventLevel(query.level)) filters.level = query.level;
   if (isEventType(query.type)) filters.type = query.type;
   const startDate = parseDate(query.startDate);
+  if (query.startDate !== undefined && !startDate) {
+    throw new ValidationError('Invalid system event startDate');
+  }
   if (startDate) filters.startDate = startDate;
   const endDate = parseDate(query.endDate);
+  if (query.endDate !== undefined && !endDate) {
+    throw new ValidationError('Invalid system event endDate');
+  }
   if (endDate) filters.endDate = endDate;
+  if (startDate && endDate && startDate > endDate) {
+    throw new ValidationError('system event startDate must not be after endDate');
+  }
   return filters;
 }
 
@@ -53,7 +71,7 @@ interface ScheduledTask {
   interval: string;
   lastExecution: string | null;
   lastDuration: number | null;
-  nextExecution: string;
+  nextExecution: string | null;
   status: TaskStatus;
 }
 
@@ -62,7 +80,7 @@ interface QueuedTask {
   taskName: string;
   started: string;
   duration: number | null;
-  progress: number;
+  progress: number | null;
   status: QueuedStatus;
 }
 
@@ -85,150 +103,112 @@ interface SystemEvent {
   details?: Record<string, unknown>;
 }
 
-// Initial fixtures
-const scheduledTasks: ScheduledTask[] = [
-  {
-    id: 'rss-sync',
-    taskName: 'RSS Sync',
-    interval: '15 minutes',
-    lastExecution: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
-    lastDuration: 2345,
-    nextExecution: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
-    status: 'pending',
-  },
-  {
-    id: 'health-check',
-    taskName: 'Health Check',
-    interval: '1 hour',
-    lastExecution: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-    lastDuration: 1234,
-    nextExecution: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
-    status: 'pending',
-  },
-  {
-    id: 'backup-cleanup',
-    taskName: 'Backup Cleanup',
-    interval: '24 hours',
-    lastExecution: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
-    lastDuration: 567,
-    nextExecution: new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString(),
-    status: 'pending',
-  },
-  {
-    id: 'update-check',
-    taskName: 'Update Check',
-    interval: '6 hours',
-    lastExecution: null,
-    lastDuration: null,
-    nextExecution: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
-    status: 'pending',
-  },
-];
+type TaskExecutionRepository = NonNullable<ApiDependencies['taskExecutionsRepository']>;
+type ActivityEventRepository = NonNullable<ApiDependencies['activityEventRepository']>;
 
-const queuedTasks: Map<number, QueuedTask> = new Map();
-let queuedTaskIdCounter = 1;
+function requireScheduler(deps: ApiDependencies): NonNullable<ApiDependencies['scheduler']> {
+  if (!deps.scheduler) {
+    throw new Error('Scheduler is not configured');
+  }
+  return deps.scheduler;
+}
 
-let taskHistory: TaskHistoryEntry[] = [
-  {
-    id: 1,
-    taskName: 'RSS Sync',
-    started: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-    duration: 3456,
-    status: 'success',
-    output: 'Processed 42 releases from 5 indexers',
-  },
-  {
-    id: 2,
-    taskName: 'Health Check',
-    started: new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString(),
-    duration: 1234,
-    status: 'success',
-    output: 'All indexers healthy',
-  },
-  {
-    id: 3,
-    taskName: 'RSS Sync',
-    started: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(),
-    duration: 4567,
-    status: 'failed',
-    output: 'Connection timeout to indexer "example.com"',
-  },
-];
-let taskHistoryIdCounter = 4;
+function requireTaskExecutionsRepository(deps: ApiDependencies): TaskExecutionRepository {
+  const repository = deps.taskExecutionsRepository;
+  if (!repository) {
+    throw new Error('Task execution repository is not configured');
+  }
+  return repository;
+}
 
-let systemEvents: SystemEvent[] = [
-  {
-    id: 1,
-    timestamp: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-    level: 'info',
-    type: 'indexer',
-    message: 'Indexer "Test Indexer" added successfully',
-    source: 'IndexerService',
-  },
-  {
-    id: 2,
-    timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    level: 'warning',
-    type: 'network',
-    message: 'Slow response from indexer "Slow Indexer"',
-    source: 'HttpClient',
-    details: { responseTime: 5000 },
-  },
-  {
-    id: 3,
-    timestamp: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-    level: 'error',
-    type: 'download',
-    message: 'Download failed for release "movie.2024.bluray.mkv"',
-    source: 'TorrentManager',
-    details: { error: 'Tracker connection failed' },
-  },
-  {
-    id: 4,
-    timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-    level: 'info',
-    type: 'backup',
-    message: 'Automatic backup completed',
-    source: 'BackupService',
-  },
-];
-let systemEventIdCounter = 5;
+function requireActivityEventRepository(deps: ApiDependencies): ActivityEventRepository {
+  const repository = deps.activityEventRepository;
+  if (!repository) {
+    throw new Error('Activity event repository is not configured');
+  }
+  return repository;
+}
 
-// Helper to filter events
+function normalizeTaskStatus(status: string): PersistedTaskStatus {
+  const normalized = status.toUpperCase();
+  if (normalized === 'RUNNING' || normalized === 'SUCCESS' || normalized === 'FAILED') {
+    return normalized;
+  }
+  throw new Error(`Unsupported persisted task status "${status}"`);
+}
+
+function toHistoryEntry(record: TaskExecutionRecord): TaskHistoryEntry {
+  const status = normalizeTaskStatus(record.status);
+  if (status === 'RUNNING') {
+    throw new Error(`Running task execution ${record.id} cannot be represented as history`);
+  }
+  return {
+    id: record.id,
+    taskName: record.taskName,
+    started: record.startedAt.toISOString(),
+    duration: record.durationMs
+      ?? (record.completedAt ? record.completedAt.getTime() - record.startedAt.getTime() : 0),
+    status: status === 'SUCCESS' ? 'success' : 'failed',
+    output: record.errorMessage,
+  };
+}
+
+function toQueuedTask(record: TaskExecutionRecord): QueuedTask {
+  if (normalizeTaskStatus(record.status) !== 'RUNNING') {
+    throw new Error(`Task execution ${record.id} is not running`);
+  }
+  return {
+    id: record.id,
+    taskName: record.taskName,
+    started: record.startedAt.toISOString(),
+    duration: record.durationMs,
+    progress: null,
+    status: 'running',
+  };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function classifyEventType(event: ActivityEvent): EventType {
+  const discriminator = `${event.eventType} ${event.sourceModule}`.toLowerCase();
+  if (discriminator.includes('indexer') || discriminator.includes('rss')) return 'indexer';
+  if (discriminator.includes('network') || discriminator.includes('http')) return 'network';
+  if (discriminator.includes('download') || discriminator.includes('torrent')) return 'download';
+  if (discriminator.includes('import')) return 'import';
+  if (discriminator.includes('health')) return 'health';
+  if (discriminator.includes('update')) return 'update';
+  if (discriminator.includes('backup')) return 'backup';
+  if (discriminator.includes('system') || discriminator.includes('scheduler') || discriminator.includes('task')) return 'system';
+  return 'other';
+}
+
+function toSystemEvent(event: ActivityEvent): SystemEvent {
+  return {
+    id: event.id,
+    timestamp: event.occurredAt.toISOString(),
+    level: event.success ? 'info' : 'error',
+    type: classifyEventType(event),
+    message: event.summary,
+    source: event.sourceModule,
+    ...(isRecord(event.details) ? { details: event.details } : {}),
+  };
+}
+
 function filterEvents(
   events: SystemEvent[],
-  filters: {
-    level?: EventLevel;
-    type?: EventType;
-    startDate?: Date;
-    endDate?: Date;
-  },
+  filters: ReturnType<typeof parseEventFilters>,
 ): SystemEvent[] {
   return events.filter(event => {
     if (filters.level && event.level !== filters.level) return false;
     if (filters.type && event.type !== filters.type) return false;
-    if (filters.startDate) {
-      const eventDate = new Date(event.timestamp);
-      if (eventDate < filters.startDate) return false;
-    }
-    if (filters.endDate) {
-      const eventDate = new Date(event.timestamp);
-      if (eventDate > filters.endDate) return false;
-    }
+    const occurredAt = new Date(event.timestamp);
+    if (filters.startDate && occurredAt < filters.startDate) return false;
+    if (filters.endDate && occurredAt > filters.endDate) return false;
     return true;
   });
 }
-
-// Export state for testing
-export const systemState = {
-  get queuedTaskIdCounter() { return queuedTaskIdCounter; },
-  set queuedTaskIdCounter(v) { queuedTaskIdCounter = v; },
-  get taskHistory() { return taskHistory; },
-  set taskHistory(v) { taskHistory = v; },
-  get systemEvents() { return systemEvents; },
-  set systemEvents(v) { systemEvents = v; },
-  get queuedTasks() { return queuedTasks; },
-};
 
 /** Convert a kebab-case job name like 'rss-sync' to 'RSS Sync'. */
 function formatJobName(name: string): string {
@@ -248,7 +228,7 @@ export function registerSystemRoutes(
     const svc = deps.systemHealthService;
 
     // Resolve disk-space and folder paths dynamically from AppSettings when available
-    let diskPaths: Array<{ path: string; label: string }> = [];
+    const diskPaths: Array<{ path: string; label: string }> = [];
     let folderPaths: Array<{ path: string; label: string }> = [];
 
     if (deps.settingsService) {
@@ -378,25 +358,34 @@ export function registerSystemRoutes(
 
   // GET /api/tasks/scheduled
   app.get('/api/tasks/scheduled', async (_request, reply) => {
-    if (deps.scheduler) {
-      const liveJobs = deps.scheduler.listJobsMeta().map(job => ({
-        id: job.name,
-        taskName: formatJobName(job.name),
-        interval: job.cronExpression,
-        lastExecution: job.lastRunAt,
-        lastDuration: job.lastDurationMs,
-        nextExecution: job.nextRunAt,
-        status: 'pending' as TaskStatus,
-      }));
-      return sendSuccess(reply, liveJobs);
-    }
-    return sendSuccess(reply, scheduledTasks);
+    const running = await requireTaskExecutionsRepository(deps).query({
+      page: 1,
+      pageSize: 100,
+      status: 'running',
+    });
+    const runningNames = new Set(running.items.map(item => item.taskName));
+    const liveJobs: ScheduledTask[] = requireScheduler(deps).listJobsMeta().map(job => ({
+      id: job.name,
+      taskName: formatJobName(job.name),
+      interval: job.cronExpression,
+      lastExecution: job.lastRunAt,
+      lastDuration: job.lastDurationMs,
+      nextExecution: job.nextRunAt,
+      status: !job.enabled
+        ? 'disabled'
+        : runningNames.has(job.name) ? 'running' : 'pending',
+    }));
+    return sendSuccess(reply, liveJobs);
   });
 
   // GET /api/tasks/queued
   app.get('/api/tasks/queued', async (_request, reply) => {
-    const tasks = Array.from(queuedTasks.values());
-    return sendSuccess(reply, tasks);
+    const result = await requireTaskExecutionsRepository(deps).query({
+      page: 1,
+      pageSize: 100,
+      status: 'running',
+    });
+    return sendSuccess(reply, result.items.map(toQueuedTask));
   });
 
   // GET /api/tasks/history
@@ -416,24 +405,26 @@ export function registerSystemRoutes(
     const query = request.query as Record<string, unknown>;
     const pagination = parsePaginationParams(query);
 
-    let filtered = [...taskHistory];
-
-    if (query.status === 'success' || query.status === 'failed') {
-      filtered = filtered.filter(t => t.status === query.status);
+    if (query.status !== undefined && query.status !== 'success' && query.status !== 'failed') {
+      throw new ValidationError('Task history status must be success or failed');
     }
-    if (typeof query.taskName === 'string' && query.taskName.trim()) {
-      filtered = filtered.filter(t => t.taskName.includes(query.taskName as string));
-    }
-
-    // Sort by most recent first
-    filtered.sort((a, b) => new Date(b.started).getTime() - new Date(a.started).getTime());
-
-    const { items, totalCount } = paginateArray(filtered, pagination.page, pagination.pageSize);
-
-    return sendPaginatedSuccess(reply, items, {
+    const status = query.status === 'success' || query.status === 'failed'
+      ? query.status
+      : undefined;
+    const taskName = typeof query.taskName === 'string' && query.taskName.trim()
+      ? query.taskName.trim()
+      : undefined;
+    const result = await requireTaskExecutionsRepository(deps).query({
       page: pagination.page,
       pageSize: pagination.pageSize,
-      totalCount,
+      ...(status ? { status } : {}),
+      ...(taskName ? { taskName } : {}),
+    });
+
+    return sendPaginatedSuccess(reply, result.items.map(toHistoryEntry), {
+      page: result.page,
+      pageSize: result.pageSize,
+      totalCount: result.total,
     });
   });
 
@@ -442,12 +433,12 @@ export function registerSystemRoutes(
     const params = request.params as { id?: string };
     const id = parseIdParam(params.id ?? '', 'task history');
 
-    const entry = taskHistory.find(t => t.id === id);
+    const entry = await requireTaskExecutionsRepository(deps).findById(id);
     if (!entry) {
       throw new NotFoundError(`Task history entry with id ${id} not found`);
     }
 
-    return sendSuccess(reply, entry);
+    return sendSuccess(reply, toHistoryEntry(entry));
   });
 
   // POST /api/tasks/scheduled/:taskId/run
@@ -459,102 +450,58 @@ export function registerSystemRoutes(
       throw new ValidationError('Task ID is required');
     }
 
-    // Use the real scheduler when available
-    if (deps.scheduler) {
-      const knownJobs = deps.scheduler.listJobs();
-      if (!knownJobs.includes(taskId)) {
-        throw new NotFoundError(`Scheduled task with id "${taskId}" not found`);
-      }
-      const taskName = formatJobName(taskId);
-      const startedAt = new Date().toISOString();
-      // Fire-and-forget (non-blocking response) — run in background
-      void (async () => {
-        try {
-          await deps.scheduler!.runNow(taskId);
-        } catch (err) {
-          console.error(`Manual run of task '${taskId}' failed:`, err);
-        }
-      })();
-      return sendSuccess(reply, { taskId, taskName, queuedAt: startedAt }, 202);
-    }
-
-    const task = scheduledTasks.find(t => t.id === taskId);
-    if (!task) {
+    const scheduler = requireScheduler(deps);
+    const activityEvents = requireActivityEventRepository(deps);
+    if (!scheduler.listJobs().includes(taskId)) {
       throw new NotFoundError(`Scheduled task with id "${taskId}" not found`);
     }
+    const taskName = formatJobName(taskId);
+    const queuedAt = new Date().toISOString();
+    eventHub?.publish('command:started', { taskId, taskName, queuedAt });
 
-    // Create a queued task
-    const queuedId = queuedTaskIdCounter++;
-    const queuedTask: QueuedTask = {
-      id: queuedId,
-      taskName: task.taskName,
-      started: new Date().toISOString(),
-      duration: null,
-      progress: 0,
-      status: 'running',
-    };
-    queuedTasks.set(queuedId, queuedTask);
-
-    // Publish command:started event
-    if (eventHub) {
-      eventHub.publish('command:started', {
-        taskId: queuedId,
-        taskName: task.taskName,
-        queuedAt: queuedTask.started,
+    try {
+      const executed = await scheduler.triggerTask(taskId);
+      if (!executed) {
+        throw new ConflictError(`Scheduled task "${taskId}" is disabled or already running`);
+      }
+      await activityEvents.create({
+        eventType: 'TASK_EXECUTED',
+        sourceModule: 'Scheduler',
+        entityRef: `task:${taskId}`,
+        summary: `Manual task "${taskName}" completed`,
+        success: true,
       });
+      eventHub?.publish('command:completed', { taskId, taskName, status: 'success' });
+    } catch (error) {
+      if (error instanceof ConflictError) {
+        throw error;
+      }
+      const message = error instanceof Error ? error.message : String(error);
+      await activityEvents.create({
+        eventType: 'TASK_FAILED',
+        sourceModule: 'Scheduler',
+        entityRef: `task:${taskId}`,
+        summary: `Manual task "${taskName}" failed`,
+        success: false,
+        details: { error: message },
+      });
+      eventHub?.publish('command:completed', { taskId, taskName, status: 'failed' });
+      throw error;
     }
 
-    // Simulate async completion (in real impl, this would be handled by a task runner)
-    setTimeout(() => {
-      queuedTasks.delete(queuedId);
-
-      // Add to history
-      const historyEntry: TaskHistoryEntry = {
-        id: taskHistoryIdCounter++,
-        taskName: task.taskName,
-        started: queuedTask.started,
-        duration: Math.floor(Math.random() * 5000) + 1000,
-        status: Math.random() > 0.1 ? 'success' : 'failed',
-        output: 'Task completed successfully',
-      };
-      taskHistory.unshift(historyEntry);
-
-      // Publish command:completed event
-      if (eventHub) {
-        eventHub.publish('command:completed', {
-          taskId: queuedId,
-          taskName: task.taskName,
-          historyId: historyEntry.id,
-          status: historyEntry.status,
-          duration: historyEntry.duration,
-        });
-      }
-    }, 2000);
-
-    return sendSuccess(reply, {
-      taskId: queuedId,
-      taskName: task.taskName,
-      queuedAt: queuedTask.started,
-    }, 202);
+    return sendSuccess(reply, { taskId, taskName, queuedAt }, 202);
   });
 
   // DELETE /api/tasks/queued/:taskId
-  app.delete('/api/tasks/queued/:taskId', async (request, reply) => {
+  app.delete('/api/tasks/queued/:taskId', async (request) => {
     const params = request.params as { taskId?: string };
     const taskId = parseIdParam(params.taskId ?? '', 'queued task');
 
-    const task = queuedTasks.get(taskId);
-    if (!task) {
+    const task = await requireTaskExecutionsRepository(deps).findById(taskId);
+    if (!task || normalizeTaskStatus(task.status) !== 'RUNNING') {
       throw new NotFoundError(`Queued task with id ${taskId} not found`);
     }
-
-    queuedTasks.delete(taskId);
-
-    return sendSuccess(reply, {
-      id: taskId,
-      taskName: task.taskName,
-      cancelled: true,
-    });
+    throw new ConflictError('Running scheduler tasks cannot be cancelled');
   });
 
   // GET /api/system/events
@@ -578,10 +525,13 @@ export function registerSystemRoutes(
 
     const filters = parseEventFilters(query);
 
-    const filtered = filterEvents(systemEvents, filters);
-    // Sort by most recent first
-    filtered.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-
+    const persisted = await requireActivityEventRepository(deps).export({
+      ...(filters.level === 'info' ? { success: true } : {}),
+      ...(filters.level === 'error' ? { success: false } : {}),
+      ...(filters.startDate ? { from: filters.startDate } : {}),
+      ...(filters.endDate ? { to: filters.endDate } : {}),
+    });
+    const filtered = filterEvents(persisted.map(toSystemEvent), filters);
     const { items, totalCount } = paginateArray(filtered, pagination.page, pagination.pageSize);
 
     return sendPaginatedSuccess(reply, items, {
@@ -606,18 +556,21 @@ export function registerSystemRoutes(
     const query = request.query as Record<string, unknown>;
 
     const before = parseDate(query.before);
+    if (query.before !== undefined && !before) {
+      throw new ValidationError('Invalid system event before date');
+    }
+    if (query.level !== undefined && !isEventLevel(query.level)) {
+      throw new ValidationError('Invalid system event level');
+    }
     const level = isEventLevel(query.level) ? query.level : undefined;
 
-    const initialCount = systemEvents.length;
-
-    systemEvents = systemEvents.filter(event => {
-      // Keep the event unless it matches ALL active filter criteria (i.e. should be cleared)
-      const matchesLevel = !level || event.level === level;
-      const matchesBefore = !before || new Date(event.timestamp) < before;
-      return !(matchesLevel && matchesBefore);
-    });
-
-    const cleared = initialCount - systemEvents.length;
+    const cleared = level === 'warning' || level === 'fatal'
+      ? 0
+      : await requireActivityEventRepository(deps).clear({
+        ...(level === 'info' ? { success: true } : {}),
+        ...(level === 'error' ? { success: false } : {}),
+        ...(before ? { to: new Date(before.getTime() - 1) } : {}),
+      });
 
     return sendSuccess(reply, {
       cleared,
@@ -644,11 +597,19 @@ export function registerSystemRoutes(
     const query = request.query as Record<string, unknown>;
 
     const filters = parseEventFilters(query);
+    if (query.format !== undefined && query.format !== 'csv' && query.format !== 'json') {
+      throw new ValidationError('System event export format must be csv or json');
+    }
 
-    const filtered = filterEvents(systemEvents, filters);
-    filtered.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    const persisted = await requireActivityEventRepository(deps).export({
+      ...(filters.level === 'info' ? { success: true } : {}),
+      ...(filters.level === 'error' ? { success: false } : {}),
+      ...(filters.startDate ? { from: filters.startDate } : {}),
+      ...(filters.endDate ? { to: filters.endDate } : {}),
+    });
+    const filtered = filterEvents(persisted.map(toSystemEvent), filters);
 
-    const format = (query.format as 'csv' | 'json') || 'json';
+    const format = query.format ?? 'json';
 
     if (format === 'csv') {
       const header = 'id,timestamp,level,type,message,source\n';

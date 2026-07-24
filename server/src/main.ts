@@ -12,6 +12,7 @@ import { IndexerFactory } from './indexers/IndexerFactory';
 import { HttpClient } from './indexers/HttpClient';
 import { IndexerTester } from './indexers/IndexerTester';
 import { ActivityEventRepository } from './repositories/ActivityEventRepository';
+import { TaskExecutionsRepository } from './repositories/TaskExecutionsRepository';
 import {
   AppSettingsRepository,
   DEFAULT_APP_SETTINGS,
@@ -153,6 +154,7 @@ async function startApi(): Promise<void> {
   await ensureBaselineData(prisma);
 
   const activityEventRepository = new ActivityEventRepository(prisma);
+  const taskExecutionsRepository = new TaskExecutionsRepository(prisma);
   const activityEventEmitter = new ActivityEventEmitter(activityEventRepository);
 
   const downloadClientRepository = new DownloadClientRepository(prisma);
@@ -208,7 +210,22 @@ async function startApi(): Promise<void> {
   scheduler.setSchedulerStateRepository(appSettingsRepository);
   const libraryScanService = new LibraryScanService(prisma);
   const discoveryService = new DiscoveryService();
-  const rssSyncService = new RssSyncService(prisma, httpClient, indexerHealthRepository);
+  const definitionLoader = new DefinitionLoader();
+  const definitionsPath = process.env.DEFINITIONS_PATH ?? path.resolve(process.cwd(), 'server/definitions');
+  let definitions: Awaited<ReturnType<DefinitionLoader['loadFromDirectory']>> = [];
+  try {
+    definitions = await definitionLoader.loadFromDirectory(definitionsPath);
+    console.log(`Loaded ${definitions.length} indexer definitions from ${definitionsPath}`);
+  } catch (error) {
+    console.warn(`Failed to load indexer definitions from ${definitionsPath}:`, error);
+  }
+  const indexerFactory = new IndexerFactory(definitions, httpClient);
+  const rssSyncService = new RssSyncService(
+    prisma,
+    httpClient,
+    indexerHealthRepository,
+    indexerFactory,
+  );
 
   const settings = await settingsService.get();
   await new DataDirectoryInitializer(resolveRequiredDataDirectories({
@@ -248,17 +265,6 @@ async function startApi(): Promise<void> {
     console.error('Failed to schedule import list sync:', error);
   }
 
-  const definitionLoader = new DefinitionLoader();
-  const definitionsPath = process.env.DEFINITIONS_PATH ?? path.resolve(process.cwd(), 'server/definitions');
-  let definitions: any[] = [];
-  try {
-    definitions = await definitionLoader.loadFromDirectory(definitionsPath);
-    console.log(`Loaded ${definitions.length} indexer definitions from ${definitionsPath}`);
-  } catch (error) {
-    console.warn(`Failed to load indexer definitions from ${definitionsPath}:`, error);
-  }
-
-  const indexerFactory = new IndexerFactory(definitions, httpClient);
   const indexerTester = new IndexerTester(
     httpClient,
     indexerHealthRepository,
@@ -435,6 +441,7 @@ async function startApi(): Promise<void> {
     playbackService,
     settingsService,
     activityEventRepository,
+    taskExecutionsRepository,
     indexerHealthRepository,
     notificationRepository,
     qualityProfileRepository,

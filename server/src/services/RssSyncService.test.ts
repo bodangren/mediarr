@@ -50,6 +50,14 @@ function makeIndexerHealthRepo(): IndexerHealthRepository {
   } as unknown as IndexerHealthRepository;
 }
 
+function makeIndexerFactory(results = [SAMPLE_RELEASE]) {
+  const search = vi.fn().mockResolvedValue(results);
+  return {
+    search,
+    factory: { fromDatabaseRecord: vi.fn().mockReturnValue({ search }) },
+  };
+}
+
 function makeDbIndexer(overrides: Record<string, any> = {}) {
   return {
     id: 1,
@@ -128,18 +136,35 @@ describe('RssSyncService — corner cases', () => {
     expect(healthRepo.recordFailure).toHaveBeenCalledWith(2, expect.any(String), expect.any(Date));
   });
 
-  it('4.3 non-Torznab indexer — silently returns 0 stored', async () => {
+  it('4.3 Cardigann indexer executes through IndexerFactory and stores releases', async () => {
     const indexer = makeDbIndexer({ id: 1, name: 'ScrapingIndexer', implementation: 'Cardigann' });
+    prisma.indexer.findMany.mockResolvedValue([indexer]);
+    const runtime = makeIndexerFactory();
+
+    const service = new RssSyncService(prisma as any, httpClient as any, healthRepo, runtime.factory as any);
+    const result = await service.sync();
+
+    expect(result.indexersProcessed).toBe(1);
+    expect(result.releasesStored).toBe(1);
+    expect(result.errors).toHaveLength(0);
+    expect(runtime.factory.fromDatabaseRecord).toHaveBeenCalledWith(indexer);
+    expect(runtime.search).toHaveBeenCalledWith({});
+    expect(prisma.indexerRelease.upsert).toHaveBeenCalledOnce();
+    expect(healthRepo.recordSuccess).toHaveBeenCalledWith(1, expect.any(Date));
+  });
+
+  it('4.3b Cardigann runtime unavailability is a hard unhealthy failure', async () => {
+    const indexer = makeDbIndexer({ id: 1, name: 'MissingDefinition', implementation: 'Cardigann' });
     prisma.indexer.findMany.mockResolvedValue([indexer]);
 
     const service = new RssSyncService(prisma as any, httpClient as any, healthRepo);
     const result = await service.sync();
 
-    expect(result.indexersProcessed).toBe(1);
+    expect(result.indexersProcessed).toBe(0);
     expect(result.releasesStored).toBe(0);
-    expect(result.errors).toHaveLength(0);
-    expect(httpClient.get).not.toHaveBeenCalled();
-    expect(healthRepo.recordSuccess).toHaveBeenCalledWith(1, expect.any(Date));
+    expect(result.errors[0]).toContain('Cardigann RSS runtime is unavailable');
+    expect(healthRepo.recordSuccess).not.toHaveBeenCalled();
+    expect(healthRepo.recordFailure).toHaveBeenCalledWith(1, expect.any(String), expect.any(Date));
   });
 
   it('4.4 settings as string vs object — both parsed correctly', async () => {

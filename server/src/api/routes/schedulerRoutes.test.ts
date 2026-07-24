@@ -198,7 +198,7 @@ describe('POST /api/scheduler/:taskId/trigger', () => {
     settingsService = createSettingsServiceMock();
     taskExecutionsRepository = createTaskExecutionsRepositoryMock();
     scheduler.isScheduled.mockReturnValue(true);
-    scheduler.triggerTask.mockResolvedValue(undefined);
+    scheduler.triggerTask.mockResolvedValue(true);
     app = createApp(scheduler, settingsService, taskExecutionsRepository);
   });
 
@@ -223,6 +223,21 @@ describe('POST /api/scheduler/:taskId/trigger', () => {
   it('invokes scheduler.triggerTask with the task name', async () => {
     await app.inject({ method: 'POST', url: '/api/scheduler/rss-sync/trigger' });
     expect(scheduler.triggerTask).toHaveBeenCalledWith('rss-sync');
+  });
+
+  it('returns 409 when the scheduled job is disabled or already running', async () => {
+    scheduler.triggerTask.mockResolvedValue(false);
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/scheduler/rss-sync/trigger',
+    });
+
+    expect(response.statusCode).toBe(409);
+    expect(response.json()).toMatchObject({
+      ok: false,
+      error: { code: 'CONFLICT' },
+    });
   });
 
   it('returns 404 for an unknown taskId and does not invoke the job', async () => {

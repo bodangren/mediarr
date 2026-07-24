@@ -1,0 +1,1 @@
+Phase 1 checklist completed against implementation a5ede3c2. Automated manual-equivalent verification used installed SQLite transactions, temporary real filesystems, and Fastify route injection; no interactive UI surface applies.

@@ -75,9 +75,9 @@ _Blast radius: UpdateService (routes, scheduler, SPA update client), ImportManag
 - [~] Task: Run targeted coverage, strict typecheck, lint, server/root suites,
       production build, and Docker invariant
 - [~] Task: Perform findings-to-fix review against the source audit
-  - [~] Normalize TMDB list IDs across SPA/provider contracts.
-  - [~] Persist every episode linked to multi-episode imports.
-  - [~] Stop normal test suites from mutating tracked artifacts.
+  - [x] Normalize TMDB list IDs across SPA/provider contracts. (474bbe4e)
+  - [x] Persist every episode linked to multi-episode imports. (bc861059)
+  - [x] Stop normal test suites from mutating tracked artifacts. (1a03848e)
 - [ ] Task: Update verification evidence, metadata, lessons/debt where needed,
       checkpoint the phase, and archive the completed track
 - [ ] Task: Measure - User Manual Verification 'Integrated Verification and Closeout'

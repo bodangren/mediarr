@@ -81,6 +81,7 @@ _Blast radius: UpdateService (routes, scheduler, SPA update client), ImportManag
   - [x] Repair strict server typecheck defects in changed lifecycle/import code. (f3e1ef79)
   - [x] Repair the live clean-workspace container build by making the
         postinstall patch script available before the frozen install. (f3e1ef79)
+  - [x] Repair clean-image workspace dependency loss after the frozen install. (53e27adf)
   - [x] Run full touched-module coverage and record the explicit legacy-module
         exception in verification evidence.
 - [x] Task: Perform findings-to-fix review against the source audit

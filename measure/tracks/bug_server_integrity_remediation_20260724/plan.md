@@ -37,7 +37,7 @@ _Blast radius: UpdateService (routes, scheduler, SPA update client), ImportManag
 
 ## Phase 3: Automation and Media Lifecycle Completeness
 
-- [ ] Task: Implement truthful Cardigann RSS and pack matching
+- [~] Task: Implement truthful Cardigann RSS and pack matching
   - [ ] Execute Cardigann RSS through the shared runtime or return a hard failure.
   - [ ] Match season packs and all episodes in multi-episode releases.
 - [ ] Task: Repair TMDB series import-list synchronization

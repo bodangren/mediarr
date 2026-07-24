@@ -1,0 +1,23 @@
+Task: Enforce MediaFileVariant media types at the installed SQLite boundary (audit H9)
+
+Summary:
+- added the named Drizzle schema CHECK restricting MediaFileVariant.mediaType to MOVIE or EPISODE
+- generated tracked 0006 snapshot and journal metadata
+- made installed migration non-destructive: structurally valid legacy TV episode rows normalize to EPISODE; a temporary CHECK aborts on every other invalid legacy value; BEFORE INSERT/UPDATE triggers enforce the boundary without rebuilding the referenced parent table
+- extended migration compatibility to compare/adopt exact 0006 triggers and reject recorded-but-drifted enforcement
+- added actual in-process DatabaseClient/Drizzle migrator tests proving direct insert/update rejection, legacy normalization, transactional invalid-value failure, preservation of VariantMissingSubtitle, VariantAudioTrack, VariantSubtitleTrack, WantedSubtitle, and SubtitleHistory, and a clean foreign_key_check
+
+Files:
+- server/src/db/schema.ts
+- drizzle/0006_variant_media_type_check.sql
+- drizzle/meta/0006_snapshot.json
+- drizzle/meta/_journal.json
+- server/src/db/mediaFileVariantMigration.test.ts
+- server/src/db/migrationCompatibility.ts
+- server/src/db/migrationCompatibility.test.ts
+
+Verification:
+- CI=true npx vitest run server/src/db/mediaFileVariantMigration.test.ts server/src/db/migrationCompatibility.test.ts => 2 files passed, 10 tests passed
+- npm run typecheck --workspace=server => passed
+
+Implementation note: apply_patch repeatedly failed with the known bwrap RTM_NEWADDR sandbox error; reviewed diffs were applied using the authorized git apply fallback. The unsafe task-generated rebuild draft was moved recoverably to /tmp/mediarr-0006-unsafe-rebuild.sql and was not committed.

@@ -71,10 +71,19 @@ _Blast radius: UpdateService (routes, scheduler, SPA update client), ImportManag
 
 ## Phase 5: Integrated Verification and Closeout
 
-- [~] Task: Refresh repo-graph and verify changed-symbol callers
+- [x] Task: Refresh repo-graph and verify changed-symbol callers
 - [~] Task: Run targeted coverage, strict typecheck, lint, server/root suites,
       production build, and Docker invariant
-- [~] Task: Perform findings-to-fix review against the source audit
+  - [x] Repair root fixtures exposed by hardened API, subtitle, torrent, and
+        repository contracts. (21669c5a, 3ca5a848)
+  - [x] Repair SPA gate concurrency and false interaction assertions exposed by
+        the final app gate. (ff932e8a)
+  - [x] Repair strict server typecheck defects in changed lifecycle/import code. (f3e1ef79)
+  - [x] Repair the live clean-workspace container build by making the
+        postinstall patch script available before the frozen install. (f3e1ef79)
+  - [x] Run full touched-module coverage and record the explicit legacy-module
+        exception in verification evidence.
+- [x] Task: Perform findings-to-fix review against the source audit
   - [x] Normalize TMDB list IDs across SPA/provider contracts. (474bbe4e)
   - [x] Persist every episode linked to multi-episode imports. (bc861059)
   - [x] Stop normal test suites from mutating tracked artifacts. (1a03848e)

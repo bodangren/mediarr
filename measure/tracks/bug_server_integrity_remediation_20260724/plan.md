@@ -57,8 +57,8 @@ _Blast radius: UpdateService (routes, scheduler, SPA update client), ImportManag
 
 - [~] Task: Enforce quality-profile validation and exact error contracts
 - [~] Task: Make the production route map bidirectionally complete
-- [ ] Task: Replace false and misleading regression tests
-  - [ ] Remove self-assertions, permissive statuses, and mock-only integration
+- [~] Task: Replace false and misleading regression tests
+  - [~] Remove self-assertions, permissive statuses, and mock-only integration
         claims identified by the audit.
   - [ ] Add handler-level tests for the 27 uncovered endpoints.
 - [ ] Task: Repair server test/build/lint gates

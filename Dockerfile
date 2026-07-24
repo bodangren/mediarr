@@ -7,10 +7,16 @@ WORKDIR /app
 # Build stage — build the Vite SPA (app/dist)
 FROM base AS builder
 RUN apt-get update -y && apt-get install -y build-essential python3 cmake && rm -rf /var/lib/apt/lists/*
+# Install the exact lockfile graph before copying application source. Both
+# workspace manifests are part of the dependency layer, so npm validates and
+# materializes the complete monorepo graph deterministically without a second,
+# cosmetic workspace install.
+COPY package.json package-lock.json ./
+COPY app/package.json ./app/package.json
+COPY server/package.json ./server/package.json
+RUN npm ci --workspaces --include-workspace-root
 COPY . .
-# Install after copying source. In this host's Podman implementation, COPY can
-# partially overwrite an inherited node_modules tree despite .dockerignore.
-RUN npm ci --workspaces --include-workspace-root && npm run build --workspace=app
+RUN npm run build --workspace=app
 
 # Runner stage
 FROM base AS runner

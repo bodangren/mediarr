@@ -2,8 +2,9 @@
   // Visit https://aka.ms/tsconfig to read more about this file
   "compilerOptions": {
     // File Layout
-    // "rootDir": "./src",
-    // "outDir": "./dist",
+    // Runtime TypeScript is executed directly by Bun/tsx. The default gate
+    // must never emit compiled artifacts beside source files.
+    "noEmit": true,
 
     // Environment Settings
     // See also https://aka.ms/tsconfig/module
@@ -19,10 +20,6 @@
     // and npm install -D @types/node
 
     // Other Outputs
-    "sourceMap": true,
-    "declaration": true,
-    "declarationMap": true,
-
     // Stricter Typechecking Options
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,

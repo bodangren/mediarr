@@ -1,0 +1,497 @@
+{
+  "version": 1,
+  "totalErrors": 1528,
+  "byFile": {
+    "src/api/errors.ts": {
+      "@typescript-eslint/no-explicit-any": 1
+    },
+    "src/api/playbackStreaming.integration.test.ts": {
+      "@typescript-eslint/no-explicit-any": 1
+    },
+    "src/api/routes/calendarRoutes.ts": {
+      "@typescript-eslint/no-explicit-any": 2
+    },
+    "src/api/routes/collectionRoutes.create.test.ts": {
+      "@typescript-eslint/no-explicit-any": 11
+    },
+    "src/api/routes/collectionRoutes.ts": {
+      "@typescript-eslint/no-explicit-any": 14,
+      "@typescript-eslint/no-unused-vars": 4
+    },
+    "src/api/routes/customFormatRoutes.test.ts": {
+      "@typescript-eslint/no-unused-vars": 1
+    },
+    "src/api/routes/dashboardRoutes.test.ts": {
+      "@typescript-eslint/no-explicit-any": 8
+    },
+    "src/api/routes/dashboardRoutes.ts": {
+      "@typescript-eslint/no-explicit-any": 1
+    },
+    "src/api/routes/downloadClientRoutes.test.ts": {
+      "@typescript-eslint/no-explicit-any": 3
+    },
+    "src/api/routes/filesystemRoutes.test.ts": {
+      "@typescript-eslint/no-explicit-any": 11
+    },
+    "src/api/routes/filesystemRoutes.ts": {
+      "@typescript-eslint/no-unused-vars": 1
+    },
+    "src/api/routes/filterRoutes.ts": {
+      "@typescript-eslint/no-explicit-any": 5
+    },
+    "src/api/routes/imageRoutes.ts": {
+      "@typescript-eslint/no-unused-vars": 1
+    },
+    "src/api/routes/importRoutes.ts": {
+      "@typescript-eslint/no-explicit-any": 4
+    },
+    "src/api/routes/indexerRoutes.catalog.test.ts": {
+      "@typescript-eslint/no-explicit-any": 8
+    },
+    "src/api/routes/indexerRoutes.ts": {
+      "@typescript-eslint/no-explicit-any": 8,
+      "@typescript-eslint/no-unused-vars": 1,
+      "no-extra-boolean-cast": 1
+    },
+    "src/api/routes/libraryRoutes.ts": {
+      "@typescript-eslint/no-explicit-any": 2
+    },
+    "src/api/routes/mediaRoutes.library.test.ts": {
+      "@typescript-eslint/no-explicit-any": 1
+    },
+    "src/api/routes/mediaRoutes.rootFolder.test.ts": {
+      "@typescript-eslint/no-explicit-any": 12
+    },
+    "src/api/routes/mediaRoutes.ts": {
+      "@typescript-eslint/no-explicit-any": 16
+    },
+    "src/api/routes/mediaRoutes.wanted.test.ts": {
+      "@typescript-eslint/no-explicit-any": 10
+    },
+    "src/api/routes/mediaSettingsRoutes.test.ts": {
+      "@typescript-eslint/no-explicit-any": 8
+    },
+    "src/api/routes/movieRoutes.collection.test.ts": {
+      "@typescript-eslint/no-explicit-any": 1
+    },
+    "src/api/routes/movieRoutes.missing.test.ts": {
+      "@typescript-eslint/no-explicit-any": 2
+    },
+    "src/api/routes/movieRoutes.ts": {
+      "@typescript-eslint/no-explicit-any": 26
+    },
+    "src/api/routes/notificationRoutes.test.ts": {
+      "@typescript-eslint/no-unused-vars": 1
+    },
+    "src/api/routes/operationsRoutes.ts": {
+      "@typescript-eslint/no-explicit-any": 3
+    },
+    "src/api/routes/playbackRoutes.test.ts": {
+      "@typescript-eslint/no-explicit-any": 5
+    },
+    "src/api/routes/releaseRoutes.customFormat.test.ts": {
+      "@typescript-eslint/no-explicit-any": 3
+    },
+    "src/api/routes/releaseRoutes.ts": {
+      "@typescript-eslint/no-explicit-any": 1,
+      "@typescript-eslint/no-unused-vars": 1
+    },
+    "src/api/routes/seriesRoutes.importRescan.test.ts": {
+      "@typescript-eslint/no-explicit-any": 11
+    },
+    "src/api/routes/seriesRoutes.missing.test.ts": {
+      "@typescript-eslint/no-explicit-any": 2
+    },
+    "src/api/routes/seriesRoutes.search.test.ts": {
+      "@typescript-eslint/no-explicit-any": 3
+    },
+    "src/api/routes/seriesRoutes.ts": {
+      "@typescript-eslint/no-explicit-any": 51,
+      "@typescript-eslint/no-unused-vars": 5
+    },
+    "src/api/routes/setupRoutes.test.ts": {
+      "@typescript-eslint/no-explicit-any": 3
+    },
+    "src/api/routes/statsRoutes.ts": {
+      "@typescript-eslint/no-explicit-any": 6
+    },
+    "src/api/routes/subtitleRoutes.phase3.test.ts": {
+      "@typescript-eslint/no-explicit-any": 3
+    },
+    "src/api/routes/subtitleRoutes.scan.test.ts": {
+      "@typescript-eslint/no-explicit-any": 1
+    },
+    "src/api/routes/subtitleRoutes.ts": {
+      "@typescript-eslint/no-explicit-any": 19,
+      "@typescript-eslint/no-unused-vars": 1
+    },
+    "src/api/routeUtils.ts": {
+      "@typescript-eslint/no-explicit-any": 1
+    },
+    "src/api/types.ts": {
+      "@typescript-eslint/no-explicit-any": 1
+    },
+    "src/api/utils/pathValidation.test.ts": {
+      "@typescript-eslint/no-explicit-any": 6
+    },
+    "src/api/utils/playbackHelpers.test.ts": {
+      "@typescript-eslint/no-explicit-any": 1
+    },
+    "src/db/__tests__/drizzleGetter.test.ts": {
+      "@typescript-eslint/no-explicit-any": 1
+    },
+    "src/db/__tests__/drizzleParity.test.ts": {
+      "@typescript-eslint/no-explicit-any": 1
+    },
+    "src/db/drizzleClient.ts": {
+      "@typescript-eslint/no-explicit-any": 45,
+      "@typescript-eslint/no-unused-vars": 1,
+      "prefer-const": 1
+    },
+    "src/db/index.ts": {
+      "@typescript-eslint/no-explicit-any": 2
+    },
+    "src/indexers/BaseIndexer.searchUrl.test.ts": {
+      "@typescript-eslint/no-explicit-any": 1
+    },
+    "src/indexers/BaseIndexer.ts": {
+      "@typescript-eslint/no-explicit-any": 2,
+      "@typescript-eslint/no-unused-vars": 1
+    },
+    "src/indexers/cardigann-conformance/indexerRuntimeParity.test.ts": {
+      "@typescript-eslint/no-explicit-any": 1
+    },
+    "src/indexers/CategoryFilter.ts": {
+      "@typescript-eslint/no-explicit-any": 1
+    },
+    "src/indexers/DefinitionLoader.ts": {
+      "@typescript-eslint/no-explicit-any": 8
+    },
+    "src/indexers/IndexerFactory.ts": {
+      "@typescript-eslint/no-explicit-any": 1
+    },
+    "src/indexers/IndexerTester.autoDisable.test.ts": {
+      "@typescript-eslint/no-unused-vars": 1
+    },
+    "src/indexers/IndexerTester.ts": {
+      "@typescript-eslint/no-explicit-any": 2
+    },
+    "src/indexers/ScrapingParser.ts": {
+      "@typescript-eslint/no-explicit-any": 12
+    },
+    "src/indexers/TorznabParser.ts": {
+      "@typescript-eslint/no-explicit-any": 3
+    },
+    "src/main.ts": {
+      "@typescript-eslint/no-explicit-any": 13,
+      "@typescript-eslint/no-unused-vars": 1
+    },
+    "src/maintenance/repairJsonColumns.ts": {
+      "@typescript-eslint/no-explicit-any": 1
+    },
+    "src/repositories/ActivityEventRepository.ts": {
+      "@typescript-eslint/no-explicit-any": 1
+    },
+    "src/repositories/AppSettingsRepository.test.ts": {
+      "@typescript-eslint/no-explicit-any": 26,
+      "@typescript-eslint/no-unused-vars": 1
+    },
+    "src/repositories/CollectionRepository.ts": {
+      "@typescript-eslint/no-unused-vars": 1
+    },
+    "src/repositories/IndexerRepository.test.ts": {
+      "@typescript-eslint/no-explicit-any": 29
+    },
+    "src/repositories/MediaRepository.ts": {
+      "@typescript-eslint/no-explicit-any": 6
+    },
+    "src/repositories/MediaRepository.upsert.test.ts": {
+      "@typescript-eslint/no-explicit-any": 11
+    },
+    "src/repositories/MediaRepository.upsertSeasonsAndEpisodes.test.ts": {
+      "@typescript-eslint/no-explicit-any": 21
+    },
+    "src/repositories/PlaybackRepository.test.ts": {
+      "@typescript-eslint/no-explicit-any": 23,
+      "@typescript-eslint/no-unused-vars": 1
+    },
+    "src/repositories/TorrentRepository.test.ts": {
+      "@typescript-eslint/no-explicit-any": 52,
+      "@typescript-eslint/no-unused-vars": 4
+    },
+    "src/seeds/qualities.test.ts": {
+      "@typescript-eslint/no-explicit-any": 2
+    },
+    "src/seeds/smartDefaults.e2e.test.ts": {
+      "@typescript-eslint/no-explicit-any": 48,
+      "@typescript-eslint/no-unused-vars": 1
+    },
+    "src/seeds/smartDefaults.test.ts": {
+      "@typescript-eslint/no-explicit-any": 10,
+      "@typescript-eslint/no-unused-vars": 1
+    },
+    "src/services/BulkImportService.test.ts": {
+      "@typescript-eslint/no-explicit-any": 11
+    },
+    "src/services/BulkImportService.ts": {
+      "@typescript-eslint/no-explicit-any": 11
+    },
+    "src/services/CollectionService.link.test.ts": {
+      "@typescript-eslint/no-explicit-any": 4
+    },
+    "src/services/CollectionService.ts": {
+      "@typescript-eslint/no-explicit-any": 17
+    },
+    "src/services/CustomFormatScoringEngine.test.ts": {
+      "@typescript-eslint/no-explicit-any": 2
+    },
+    "src/services/discovery/IndexerServiceDiscovery.test.ts": {
+      "@typescript-eslint/no-unused-vars": 1
+    },
+    "src/services/DiscoveryService.test.ts": {
+      "@typescript-eslint/no-explicit-any": 6
+    },
+    "src/services/FilenameParsingService.test.ts": {
+      "@typescript-eslint/no-explicit-any": 1,
+      "@typescript-eslint/no-unused-vars": 2
+    },
+    "src/services/FilenameParsingService.ts": {
+      "@typescript-eslint/no-explicit-any": 1,
+      "no-useless-escape": 10
+    },
+    "src/services/FilterService.test.ts": {
+      "@typescript-eslint/no-explicit-any": 1,
+      "@typescript-eslint/no-unused-vars": 1
+    },
+    "src/services/FilterService.ts": {
+      "@typescript-eslint/no-explicit-any": 1
+    },
+    "src/services/ImportManager.helpers.test.ts": {
+      "@typescript-eslint/no-explicit-any": 36
+    },
+    "src/services/ImportManager.seasonPack.test.ts": {
+      "no-regex-spaces": 1
+    },
+    "src/services/ImportManager.slowPath.test.ts": {
+      "@typescript-eslint/no-explicit-any": 19,
+      "@typescript-eslint/no-unused-vars": 1
+    },
+    "src/services/ImportManager.test.ts": {
+      "@typescript-eslint/no-explicit-any": 53
+    },
+    "src/services/ImportManager.ts": {
+      "@typescript-eslint/no-explicit-any": 7
+    },
+    "src/services/ImportMatchService.test.ts": {
+      "@typescript-eslint/no-unused-vars": 1
+    },
+    "src/services/IndexerHealthService.test.ts": {
+      "@typescript-eslint/no-explicit-any": 1
+    },
+    "src/services/indexers/CatalogCache.test.ts": {
+      "@typescript-eslint/no-require-imports": 1
+    },
+    "src/services/indexers/indexerValidation.ts": {
+      "@typescript-eslint/no-unused-vars": 1
+    },
+    "src/services/LibraryScanner.ts": {
+      "@typescript-eslint/no-explicit-any": 1,
+      "@typescript-eslint/no-unused-vars": 1
+    },
+    "src/services/LibraryScanService.test.ts": {
+      "@typescript-eslint/no-explicit-any": 64
+    },
+    "src/services/LibraryScanService.ts": {
+      "@typescript-eslint/no-explicit-any": 6
+    },
+    "src/services/MediaSearchService.cornerCases.test.ts": {
+      "@typescript-eslint/no-explicit-any": 3
+    },
+    "src/services/MediaSearchService.grabRelease.test.ts": {
+      "@typescript-eslint/no-explicit-any": 3
+    },
+    "src/services/MediaSearchService.phase1.test.ts": {
+      "@typescript-eslint/no-explicit-any": 9,
+      "@typescript-eslint/no-unused-vars": 11
+    },
+    "src/services/MediaSearchService.phase2.test.ts": {
+      "@typescript-eslint/no-explicit-any": 5,
+      "@typescript-eslint/no-unused-vars": 13
+    },
+    "src/services/MediaSearchService.phase3.test.ts": {
+      "@typescript-eslint/no-explicit-any": 10,
+      "@typescript-eslint/no-unused-vars": 13
+    },
+    "src/services/MediaSearchService.phase4.test.ts": {
+      "@typescript-eslint/no-explicit-any": 8,
+      "@typescript-eslint/no-unused-vars": 6
+    },
+    "src/services/MediaSearchService.publicApi.test.ts": {
+      "@typescript-eslint/no-explicit-any": 5
+    },
+    "src/services/MediaSearchService.searchAllIndexers.test.ts": {
+      "@typescript-eslint/no-explicit-any": 14
+    },
+    "src/services/MediaSearchService.ts": {
+      "@typescript-eslint/no-unused-vars": 1
+    },
+    "src/services/MediaService.test.ts": {
+      "@typescript-eslint/no-explicit-any": 17
+    },
+    "src/services/MediaService.ts": {
+      "@typescript-eslint/no-explicit-any": 12
+    },
+    "src/services/MetadataGenerator.ts": {
+      "@typescript-eslint/no-explicit-any": 4
+    },
+    "src/services/MetadataProvider.ts": {
+      "@typescript-eslint/no-explicit-any": 15
+    },
+    "src/services/MovieOrganizeService.test.ts": {
+      "@typescript-eslint/no-explicit-any": 39,
+      "@typescript-eslint/no-unused-vars": 1
+    },
+    "src/services/MovieOrganizeService.ts": {
+      "@typescript-eslint/no-unused-vars": 1,
+      "no-useless-escape": 1
+    },
+    "src/services/notifications/TelegramTransport.ts": {
+      "no-useless-escape": 1
+    },
+    "src/services/pipeline.orchestration.organizerdb.test.ts": {
+      "@typescript-eslint/no-explicit-any": 33
+    },
+    "src/services/pipeline.orchestration.rss.test.ts": {
+      "@typescript-eslint/no-explicit-any": 9
+    },
+    "src/services/pipeline.orchestration.searchgrab.test.ts": {
+      "@typescript-eslint/no-explicit-any": 6
+    },
+    "src/services/pipeline.orchestration.torrentimport.test.ts": {
+      "@typescript-eslint/no-explicit-any": 34
+    },
+    "src/services/pipeline.orchestration.wanted.test.ts": {
+      "@typescript-eslint/no-explicit-any": 12
+    },
+    "src/services/PlaybackService.test.ts": {
+      "@typescript-eslint/no-explicit-any": 3
+    },
+    "src/services/PlaybackService.ts": {
+      "@typescript-eslint/no-explicit-any": 3
+    },
+    "src/services/ProbeMetadataParser.ts": {
+      "@typescript-eslint/no-explicit-any": 4
+    },
+    "src/services/providers/AssrtProvider.test.ts": {
+      "@typescript-eslint/no-explicit-any": 4
+    },
+    "src/services/providers/OpenSubtitlesProvider.test.ts": {
+      "@typescript-eslint/no-explicit-any": 4
+    },
+    "src/services/providers/SubdlProvider.test.ts": {
+      "@typescript-eslint/no-explicit-any": 4
+    },
+    "src/services/RssMediaMonitor.cornerCases.test.ts": {
+      "@typescript-eslint/no-explicit-any": 10
+    },
+    "src/services/RssMediaMonitor.test.ts": {
+      "@typescript-eslint/no-explicit-any": 8,
+      "@typescript-eslint/no-unused-vars": 1
+    },
+    "src/services/RssMediaMonitor.ts": {
+      "@typescript-eslint/no-explicit-any": 7
+    },
+    "src/services/RssSyncService.test.ts": {
+      "@typescript-eslint/no-explicit-any": 27
+    },
+    "src/services/RssSyncService.ts": {
+      "@typescript-eslint/no-explicit-any": 4
+    },
+    "src/services/Scheduler.meta.test.ts": {
+      "@typescript-eslint/no-unused-vars": 3
+    },
+    "src/services/Scheduler.test.ts": {
+      "@typescript-eslint/no-unused-vars": 2
+    },
+    "src/services/SeedingProtector.test.ts": {
+      "@typescript-eslint/no-explicit-any": 4
+    },
+    "src/services/SeriesMonitoringService.test.ts": {
+      "@typescript-eslint/no-explicit-any": 25
+    },
+    "src/services/SeriesOrganizeService.test.ts": {
+      "@typescript-eslint/no-explicit-any": 44,
+      "@typescript-eslint/no-unused-vars": 1
+    },
+    "src/services/SeriesOrganizeService.ts": {
+      "@typescript-eslint/no-explicit-any": 3,
+      "@typescript-eslint/no-unused-vars": 1,
+      "no-useless-escape": 1
+    },
+    "src/services/SubtitleAutomationService.test.ts": {
+      "@typescript-eslint/no-explicit-any": 12
+    },
+    "src/services/SubtitleInventoryApiService.test.ts": {
+      "@typescript-eslint/no-explicit-any": 2
+    },
+    "src/services/SubtitleRequirementEngine.test.ts": {
+      "@typescript-eslint/no-unused-vars": 2
+    },
+    "src/services/SystemHealthService.test.ts": {
+      "@typescript-eslint/no-explicit-any": 15
+    },
+    "src/services/SystemHealthService.ts": {
+      "@typescript-eslint/no-explicit-any": 1,
+      "@typescript-eslint/no-require-imports": 1
+    },
+    "src/services/TorrentManager.test.ts": {
+      "@typescript-eslint/no-explicit-any": 80,
+      "@typescript-eslint/no-unused-vars": 1
+    },
+    "src/services/TorrentManager.ts": {
+      "@typescript-eslint/ban-ts-comment": 1,
+      "@typescript-eslint/no-explicit-any": 27
+    },
+    "src/services/transactionAtomicity.integration.test.ts": {
+      "@typescript-eslint/no-explicit-any": 1
+    },
+    "src/services/WantedSearchService.autoSearchAll.test.ts": {
+      "@typescript-eslint/no-explicit-any": 1
+    },
+    "src/services/WantedSearchService.autoSearchSeries.test.ts": {
+      "@typescript-eslint/no-explicit-any": 5,
+      "@typescript-eslint/no-unused-vars": 1
+    },
+    "src/services/WantedSearchService.episodeValidation.test.ts": {
+      "@typescript-eslint/no-explicit-any": 3,
+      "@typescript-eslint/no-unused-vars": 2
+    },
+    "src/services/WantedSearchService.releaseDate.test.ts": {
+      "@typescript-eslint/no-explicit-any": 2
+    },
+    "src/services/WantedSearchService.titlesMatch.test.ts": {
+      "@typescript-eslint/no-explicit-any": 6
+    },
+    "src/services/WantedService.ts": {
+      "@typescript-eslint/no-explicit-any": 3
+    },
+    "src/types/better-sqlite3.d.ts": {
+      "@typescript-eslint/no-explicit-any": 1
+    },
+    "src/types/bun-sqlite.d.ts": {
+      "@typescript-eslint/no-explicit-any": 1
+    },
+    "src/utils/encryption.ts": {
+      "@typescript-eslint/no-explicit-any": 1
+    },
+    "src/utils/mediaUtils.test.ts": {
+      "@typescript-eslint/no-explicit-any": 8
+    },
+    "src/utils/Parser.test.ts": {
+      "@typescript-eslint/no-unused-vars": 3
+    },
+    "src/utils/Parser.ts": {
+      "no-useless-escape": 8
+    }
+  }
+}

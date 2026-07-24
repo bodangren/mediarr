@@ -5,7 +5,12 @@
   "main": "index.js",
   "scripts": {
     "dev": "DATABASE_URL=\"file:$(pwd)/../mediarr.db\" bun --no-addons --watch src/main.ts || DATABASE_URL=\"file:$(pwd)/../mediarr.db\" tsx watch src/main.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "cd .. && vitest run server/src",
+    "test:migration-contracts": "cd .. && vitest run tests/closeDrizzleMigration.s2.replacement.test.ts tests/closeDrizzleMigration.s3.routes.test.ts",
+    "typecheck": "tsc -p tsconfig.json",
+    "build:smoke": "tsc -p tsconfig.smoke.json",
+    "lint": "node scripts/lint-baseline.mjs",
+    "lint:changed": "eslint"
   },
   "keywords": [],
   "author": "",
@@ -17,5 +22,12 @@
     "@ai-sdk/openai": "^3.0.41",
     "ai": "^6.0.116",
     "openai": "^6.29.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.2",
+    "eslint": "^9.39.2",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.55.0",
+    "vitest": "^4.0.18"
   }
 }

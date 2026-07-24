@@ -10,7 +10,6 @@ export default defineConfig({
       '**/reference/**',
       '**/dist/**',
       'app/src/**/*.test.{ts,tsx,js,jsx}',
-      'tests/closeDrizzleMigration*',
     ],
     deps: {
       inline: ['zod'],

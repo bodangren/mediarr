@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
-import { createRequire } from 'node:module';
 import Fastify from 'fastify';
 import { DatabaseClient } from '../server/src/db/drizzleClient';
+import { runRawDrizzle } from '../server/src/db/drizzleRawSql';
 import { SystemHealthService } from '../server/src/services/SystemHealthService';
 import { registerStatsRoutes } from '../server/src/api/routes/statsRoutes';
 import { registerApiErrorHandler } from '../server/src/api/errors';
@@ -36,37 +36,16 @@ function createTestDb(): DatabaseClient {
   return client;
 }
 
-describe('chore_close_drizzle_migration_20260607 — Phase S2: Drizzle-native replacement (Red)', () => {
+describe('Drizzle-native replacement behavior', () => {
   describe('S2.1: executeRaw shim replaced with Drizzle-native runRaw', () => {
-    it('exposes a Drizzle-native runRawDrizzle function (or DatabaseClient.runRaw method)', async () => {
-      let module: any = {};
-      try {
-        const require = createRequire(import.meta.url);
-        const mod = require('../server/src/db/drizzleRawSql');
-        module = mod;
-      } catch {
-        // Module does not exist yet — expected in Red phase
-      }
-      const hasStandaloneFunction = typeof module.runRawDrizzle === 'function';
+    it('exports both supported raw execution entry points', () => {
       const testClient = createTestDb();
-      const hasClientMethod = typeof (testClient as any).runRaw === 'function';
-      expect(
-        hasStandaloneFunction || hasClientMethod,
-        'Expected either server/src/db/drizzleRawSql.ts (exporting runRawDrizzle) or DatabaseClient.runRaw method to exist for S2.1',
-      ).toBe(true);
+
+      expect(runRawDrizzle).toBeTypeOf('function');
+      expect(testClient.runRaw).toBeTypeOf('function');
     });
 
     it('runRawDrizzle returns identical changes count to sqlite.prepare for QualityProfile.items repair', async () => {
-      let runRawDrizzle: ((client: DatabaseClient, query: any, params?: any[]) => Promise<number>) | undefined;
-      try {
-        const require = createRequire(import.meta.url);
-        runRawDrizzle = require('../server/src/db/drizzleRawSql').runRawDrizzle;
-      } catch {
-        // Module does not exist yet — expected in Red phase
-      }
-      expect(runRawDrizzle, 'runRawDrizzle must be importable for S2.1 equivalence test').toBeTypeOf('function');
-      if (!runRawDrizzle) return;
-
       const client = createTestDb();
       client.sqlite.exec(`INSERT INTO "QualityProfile" (name, items) VALUES ('test-bad', 'not valid json')`);
 
@@ -86,14 +65,6 @@ describe('chore_close_drizzle_migration_20260607 — Phase S2: Drizzle-native re
     });
 
     it('runRawDrizzle returns identical changes count for Notification.config repair', async () => {
-      let runRawDrizzle: ((client: DatabaseClient, query: any, params?: any[]) => Promise<number>) | undefined;
-      try {
-        const require = createRequire(import.meta.url);
-        runRawDrizzle = require('../server/src/db/drizzleRawSql').runRawDrizzle;
-      } catch {}
-      expect(runRawDrizzle, 'runRawDrizzle must be importable for Notification.config equivalence test').toBeTypeOf('function');
-      if (!runRawDrizzle) return;
-
       const client = createTestDb();
       client.sqlite.exec(`INSERT INTO "Notification" (name, type, config, createdAt, updatedAt) VALUES ('notif-bad', 'webhook', 'not valid json', 1, 1)`);
 
@@ -113,14 +84,6 @@ describe('chore_close_drizzle_migration_20260607 — Phase S2: Drizzle-native re
     });
 
     it('runRawDrizzle returns identical changes count for ActivityEvent.details repair', async () => {
-      let runRawDrizzle: ((client: DatabaseClient, query: any, params?: any[]) => Promise<number>) | undefined;
-      try {
-        const require = createRequire(import.meta.url);
-        runRawDrizzle = require('../server/src/db/drizzleRawSql').runRawDrizzle;
-      } catch {}
-      expect(runRawDrizzle).toBeTypeOf('function');
-      if (!runRawDrizzle) return;
-
       const client = createTestDb();
       client.sqlite.exec(`INSERT INTO "ActivityEvent" (eventType, sourceModule, summary, success, details) VALUES ('TEST', 'tests', 'summary', 1, 'not valid json')`);
 
@@ -140,14 +103,6 @@ describe('chore_close_drizzle_migration_20260607 — Phase S2: Drizzle-native re
     });
 
     it('runRawDrizzle returns identical changes count for Torrent.eta downscale (>2147483647)', async () => {
-      let runRawDrizzle: ((client: DatabaseClient, query: any, params?: any[]) => Promise<number>) | undefined;
-      try {
-        const require = createRequire(import.meta.url);
-        runRawDrizzle = require('../server/src/db/drizzleRawSql').runRawDrizzle;
-      } catch {}
-      expect(runRawDrizzle).toBeTypeOf('function');
-      if (!runRawDrizzle) return;
-
       const client = createTestDb();
       client.sqlite.exec(`INSERT INTO "Torrent" (infoHash, name, status, size, path, eta) VALUES ('h-downscale', 'eta-downscale', 'downloading', 1000, '/tmp/eta-downscale', 5000000000)`);
 
@@ -167,14 +122,6 @@ describe('chore_close_drizzle_migration_20260607 — Phase S2: Drizzle-native re
     });
 
     it('runRawDrizzle returns identical changes count for Torrent.eta clamp (post-downscale > 2147483647)', async () => {
-      let runRawDrizzle: ((client: DatabaseClient, query: any, params?: any[]) => Promise<number>) | undefined;
-      try {
-        const require = createRequire(import.meta.url);
-        runRawDrizzle = require('../server/src/db/drizzleRawSql').runRawDrizzle;
-      } catch {}
-      expect(runRawDrizzle).toBeTypeOf('function');
-      if (!runRawDrizzle) return;
-
       const client = createTestDb();
       client.sqlite.exec(`INSERT INTO "Torrent" (infoHash, name, status, size, path, eta) VALUES ('h-clamp', 'eta-clamp', 'downloading', 1000, '/tmp/eta-clamp', 9999999999)`);
 
@@ -194,14 +141,6 @@ describe('chore_close_drizzle_migration_20260607 — Phase S2: Drizzle-native re
     });
 
     it('runRawDrizzle returns identical changes count for Torrent.eta negative-null', async () => {
-      let runRawDrizzle: ((client: DatabaseClient, query: any, params?: any[]) => Promise<number>) | undefined;
-      try {
-        const require = createRequire(import.meta.url);
-        runRawDrizzle = require('../server/src/db/drizzleRawSql').runRawDrizzle;
-      } catch {}
-      expect(runRawDrizzle).toBeTypeOf('function');
-      if (!runRawDrizzle) return;
-
       const client = createTestDb();
       client.sqlite.exec(`INSERT INTO "Torrent" (infoHash, name, status, size, path, eta) VALUES ('h-neg-1', 'eta-neg-1', 'downloading', 1000, '/tmp/eta-neg-1', -50)`);
 
@@ -221,14 +160,6 @@ describe('chore_close_drizzle_migration_20260607 — Phase S2: Drizzle-native re
     });
 
     it('runRawDrizzle binds parameter values for AppSettings dynamic-column repair (identifier escaping)', async () => {
-      let runRawDrizzle: ((client: DatabaseClient, query: any, params?: any[]) => Promise<number>) | undefined;
-      try {
-        const require = createRequire(import.meta.url);
-        runRawDrizzle = require('../server/src/db/drizzleRawSql').runRawDrizzle;
-      } catch {}
-      expect(runRawDrizzle).toBeTypeOf('function');
-      if (!runRawDrizzle) return;
-
       const client = createTestDb();
       const torrentLimitsDefault = JSON.stringify({ maxActiveDownloads: 5, maxActiveTorrents: 0 });
       client.sqlite.exec(`INSERT INTO "AppSettings" (id, torrentLimits, schedulerIntervals, pathVisibility, createdAt, updatedAt) VALUES (1, 'broken', '{}', '{}', 1, 1)`);
@@ -251,14 +182,6 @@ describe('chore_close_drizzle_migration_20260607 — Phase S2: Drizzle-native re
     });
 
     it('runRawDrizzle returns identical changes count for AppSettings nullable column NULL repair (apiKeys)', async () => {
-      let runRawDrizzle: ((client: DatabaseClient, query: any, params?: any[]) => Promise<number>) | undefined;
-      try {
-        const require = createRequire(import.meta.url);
-        runRawDrizzle = require('../server/src/db/drizzleRawSql').runRawDrizzle;
-      } catch {}
-      expect(runRawDrizzle).toBeTypeOf('function');
-      if (!runRawDrizzle) return;
-
       const client = createTestDb();
       client.sqlite.exec(`INSERT INTO "AppSettings" (id, torrentLimits, schedulerIntervals, pathVisibility, apiKeys, createdAt, updatedAt) VALUES (1, '{}', '{}', '{}', 'malformed', 1, 1)`);
 

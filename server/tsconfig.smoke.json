@@ -1,0 +1,19 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "rootDir": ".",
+    "outDir": "./dist/smoke",
+    "sourceMap": true,
+    "declaration": true,
+    "declarationMap": true,
+    "tsBuildInfoFile": "./dist/smoke/tsconfig.tsbuildinfo",
+    "types": [
+      "node"
+    ]
+  },
+  "include": [
+    "smoke-debug.ts",
+    "smoke-releaseparser.ts"
+  ]
+}

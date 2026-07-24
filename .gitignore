@@ -72,6 +72,7 @@ measure/runs
 # Compiled server TypeScript (tsx/bun runs .ts directly)
 /server/src/**/*.js
 /server/src/**/*.js.map
+/server/dist/
 
 # Flutter generated artifacts
 /clients/mediarr-client/linux/flutter/generated_plugins.cmake

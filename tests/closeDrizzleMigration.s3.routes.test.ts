@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { createRequire } from 'node:module';
 import fs from 'node:fs';
 import path from 'node:path';
 import Fastify from 'fastify';
 import { DatabaseClient } from '../server/src/db/drizzleClient';
+import { repairMalformedJsonColumns } from '../server/src/maintenance/repairJsonColumns';
 import { SystemHealthService } from '../server/src/services/SystemHealthService';
 import { registerStatsRoutes } from '../server/src/api/routes/statsRoutes';
 import { registerSystemRoutes } from '../server/src/api/routes/systemRoutes';
@@ -35,25 +35,8 @@ function createTestDb(): DatabaseClient {
   return client;
 }
 
-function tryImportRepairFunction(): any {
-  const require = createRequire(import.meta.url);
-  try {
-    return require('../server/src/maintenance/repairJsonColumns');
-  } catch {
-    return null;
-  }
-}
 
-function tryImportFromMain(): any {
-  const require = createRequire(import.meta.url);
-  try {
-    return require('../server/src/main');
-  } catch {
-    return null;
-  }
-}
-
-describe('chore_close_drizzle_migration_20260607 — Phase S3: Route verification (Red)', () => {
+describe('system and stats route behavior', () => {
   // ─────────────────────────────────────────────────────────────────────────
   // S3.1: Fastify inject tests for /api/system/stats and /api/system/status
   // ─────────────────────────────────────────────────────────────────────────
@@ -313,73 +296,51 @@ describe('chore_close_drizzle_migration_20260607 — Phase S3: Route verificatio
   // S3.2: Regression test for the startup AppSettings repair loop in main.ts
   // ─────────────────────────────────────────────────────────────────────────
   describe('S3.2: AppSettings repair loop regression test', () => {
-    it('exposes repairMalformedJsonColumns as an importable function (not a private main.ts helper)', () => {
-      const mod = tryImportRepairFunction() ?? tryImportFromMain();
-      expect(
-        mod,
-        'repairMalformedJsonColumns must be importable from server/src/maintenance/repairJsonColumns (or exported from server/src/main) so the startup repair loop is regression-testable',
-      ).toBeTruthy();
-      const fn = mod?.repairMalformedJsonColumns;
-      expect(typeof fn, 'repairMalformedJsonColumns must be a function').toBe('function');
+    it('exports the startup JSON repair function', () => {
+      expect(repairMalformedJsonColumns).toBeTypeOf('function');
     });
 
     it('repairs QualityProfile.items malformed JSON by setting to "[]"', async () => {
-      const mod = tryImportRepairFunction() ?? tryImportFromMain();
-      expect(mod?.repairMalformedJsonColumns, 'repairMalformedJsonColumns must be importable for S3.2 regression test').toBeTypeOf('function');
-      if (typeof mod?.repairMalformedJsonColumns !== 'function') return;
-
       const client = createTestDb();
       client.sqlite.exec(`INSERT INTO "QualityProfile" (name, items) VALUES ('qp-bad', 'not valid json')`);
 
-      await mod.repairMalformedJsonColumns(client);
+      await repairMalformedJsonColumns(client);
 
       const row = client.sqlite.prepare(`SELECT items FROM "QualityProfile" WHERE name = 'qp-bad'`).get() as { items: string };
       expect(row.items).toBe('[]');
     });
 
     it('repairs Notification.config malformed JSON by setting to "{}"', async () => {
-      const mod = tryImportRepairFunction() ?? tryImportFromMain();
-      expect(mod?.repairMalformedJsonColumns).toBeTypeOf('function');
-      if (typeof mod?.repairMalformedJsonColumns !== 'function') return;
-
       const client = createTestDb();
       client.sqlite.exec(`
         INSERT INTO "Notification" (name, type, config, createdAt, updatedAt) VALUES ('notif-bad', 'webhook', 'not valid json', 1, 1)
       `);
 
-      await mod.repairMalformedJsonColumns(client);
+      await repairMalformedJsonColumns(client);
 
       const row = client.sqlite.prepare(`SELECT config FROM "Notification" WHERE name = 'notif-bad'`).get() as { config: string };
       expect(row.config).toBe('{}');
     });
 
     it('repairs ActivityEvent.details malformed JSON by setting to NULL', async () => {
-      const mod = tryImportRepairFunction() ?? tryImportFromMain();
-      expect(mod?.repairMalformedJsonColumns).toBeTypeOf('function');
-      if (typeof mod?.repairMalformedJsonColumns !== 'function') return;
-
       const client = createTestDb();
       client.sqlite.exec(`
         INSERT INTO "ActivityEvent" (eventType, sourceModule, summary, success, details) VALUES ('TEST', 'tests', 'summary', 1, 'not valid json')
       `);
 
-      await mod.repairMalformedJsonColumns(client);
+      await repairMalformedJsonColumns(client);
 
       const row = client.sqlite.prepare(`SELECT details FROM "ActivityEvent" WHERE eventType = 'TEST'`).get() as { details: string | null };
       expect(row.details).toBeNull();
     });
 
     it('repairs Torrent.eta overflow by downscaling values > 2147483647', async () => {
-      const mod = tryImportRepairFunction() ?? tryImportFromMain();
-      expect(mod?.repairMalformedJsonColumns).toBeTypeOf('function');
-      if (typeof mod?.repairMalformedJsonColumns !== 'function') return;
-
       const client = createTestDb();
       client.sqlite.exec(`
         INSERT INTO "Torrent" (infoHash, name, status, size, path, eta) VALUES ('h-overflow', 'eta-overflow', 'downloading', 1000, '/tmp/eta-overflow', 5000000000)
       `);
 
-      await mod.repairMalformedJsonColumns(client);
+      await repairMalformedJsonColumns(client);
 
       const row = client.sqlite.prepare(`SELECT eta FROM "Torrent" WHERE infoHash = 'h-overflow'`).get() as { eta: number };
       expect(row.eta).toBeLessThanOrEqual(2147483647);
@@ -387,48 +348,36 @@ describe('chore_close_drizzle_migration_20260607 — Phase S3: Route verificatio
     });
 
     it('clamps Torrent.eta to 2147483647 for values that remain > 2147483647 after downscaling', async () => {
-      const mod = tryImportRepairFunction() ?? tryImportFromMain();
-      expect(mod?.repairMalformedJsonColumns).toBeTypeOf('function');
-      if (typeof mod?.repairMalformedJsonColumns !== 'function') return;
-
       const client = createTestDb();
       client.sqlite.exec(`
         INSERT INTO "Torrent" (infoHash, name, status, size, path, eta) VALUES ('h-clamp', 'eta-clamp', 'downloading', 1000, '/tmp/eta-clamp', 9999999999999)
       `);
 
-      await mod.repairMalformedJsonColumns(client);
+      await repairMalformedJsonColumns(client);
 
       const row = client.sqlite.prepare(`SELECT eta FROM "Torrent" WHERE infoHash = 'h-clamp'`).get() as { eta: number };
       expect(row.eta).toBe(2147483647);
     });
 
     it('sets Torrent.eta to NULL for negative values', async () => {
-      const mod = tryImportRepairFunction() ?? tryImportFromMain();
-      expect(mod?.repairMalformedJsonColumns).toBeTypeOf('function');
-      if (typeof mod?.repairMalformedJsonColumns !== 'function') return;
-
       const client = createTestDb();
       client.sqlite.exec(`
         INSERT INTO "Torrent" (infoHash, name, status, size, path, eta) VALUES ('h-neg', 'eta-neg', 'downloading', 1000, '/tmp/eta-neg', -50)
       `);
 
-      await mod.repairMalformedJsonColumns(client);
+      await repairMalformedJsonColumns(client);
 
       const row = client.sqlite.prepare(`SELECT eta FROM "Torrent" WHERE infoHash = 'h-neg'`).get() as { eta: number | null };
       expect(row.eta).toBeNull();
     });
 
     it('repairs AppSettings required columns (torrentLimits / schedulerIntervals / pathVisibility) with the default JSON', async () => {
-      const mod = tryImportRepairFunction() ?? tryImportFromMain();
-      expect(mod?.repairMalformedJsonColumns).toBeTypeOf('function');
-      if (typeof mod?.repairMalformedJsonColumns !== 'function') return;
-
       const client = createTestDb();
       client.sqlite.exec(`
         INSERT INTO "AppSettings" (id, torrentLimits, schedulerIntervals, pathVisibility, createdAt, updatedAt) VALUES (1, 'broken', 'broken', 'broken', 1, 1)
       `);
 
-      await mod.repairMalformedJsonColumns(client);
+      await repairMalformedJsonColumns(client);
 
       const row = client.sqlite.prepare(`SELECT torrentLimits, schedulerIntervals, pathVisibility FROM "AppSettings" WHERE id = 1`).get() as {
         torrentLimits: string;
@@ -441,17 +390,13 @@ describe('chore_close_drizzle_migration_20260607 — Phase S3: Route verificatio
     });
 
     it('repairs AppSettings nullable columns (apiKeys / host / security / logging / update) by setting to NULL', async () => {
-      const mod = tryImportRepairFunction() ?? tryImportFromMain();
-      expect(mod?.repairMalformedJsonColumns).toBeTypeOf('function');
-      if (typeof mod?.repairMalformedJsonColumns !== 'function') return;
-
       const client = createTestDb();
       client.sqlite.exec(`
         INSERT INTO "AppSettings" (id, torrentLimits, schedulerIntervals, pathVisibility, apiKeys, host, security, logging, "update", createdAt, updatedAt)
         VALUES (1, '{}', '{}', '{}', 'malformed', 'malformed', 'malformed', 'malformed', 'malformed', 1, 1)
       `);
 
-      await mod.repairMalformedJsonColumns(client);
+      await repairMalformedJsonColumns(client);
 
       const row = client.sqlite.prepare(`
         SELECT apiKeys, host, security, logging, "update" FROM "AppSettings" WHERE id = 1

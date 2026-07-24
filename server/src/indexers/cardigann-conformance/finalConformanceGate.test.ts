@@ -38,7 +38,9 @@ function toRequestFeatures(item: ReturnType<typeof buildDefinitionFeatureInvento
 }
 
 describe('Cardigann final conformance gate', () => {
-  it('captures final compatibility matrix and harness summary for preset definitions', async () => {
+  it('builds the compatibility matrix in memory without changing archived evidence', async () => {
+    const archivedArtifactBefore = await fs.readFile(finalArtifactPath);
+    const archivedArtifactStatBefore = await fs.stat(finalArtifactPath);
     const loader = new DefinitionLoader();
     const definitions = await loader.loadFromDirectory(definitionsDirectory);
     const inventory = buildDefinitionFeatureInventory(definitions);
@@ -114,11 +116,13 @@ describe('Cardigann final conformance gate', () => {
       harnessSummary,
     };
 
-    await fs.mkdir(path.dirname(finalArtifactPath), { recursive: true });
-    await fs.writeFile(finalArtifactPath, `${JSON.stringify(artifact, null, 2)}\n`, 'utf8');
+    const archivedArtifactAfter = await fs.readFile(finalArtifactPath);
+    const archivedArtifactStatAfter = await fs.stat(finalArtifactPath);
 
     expect(compatibility).toHaveLength(presetDefinitionIds.length);
     expect(artifact.harnessReport.total).toBeGreaterThan(0);
+    expect(archivedArtifactAfter).toEqual(archivedArtifactBefore);
+    expect(archivedArtifactStatAfter.mtimeMs).toBe(archivedArtifactStatBefore.mtimeMs);
 
     for (const entry of compatibility) {
       if (entry.status === 'incompatible') {

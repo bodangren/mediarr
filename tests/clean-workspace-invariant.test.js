@@ -26,7 +26,7 @@ describe('clean Docker workspace installation', () => {
     expect(lockfile.packages.server).toBeDefined();
   });
 
-  it('copies every dependency manifest before the single frozen install', () => {
+  it('copies manifests, postinstall, and source before the combined install and build', () => {
     const rootManifest = instructionIndex(
       /^COPY package\.json package-lock\.json \.\/$/m,
     );
@@ -39,26 +39,30 @@ describe('clean Docker workspace installation', () => {
     const postinstallScript = instructionIndex(
       /^COPY scripts\/apply-patches\.js \.\/scripts\/apply-patches\.js$/m,
     );
-    const install = instructionIndex(
-      /^RUN npm ci --workspaces --include-workspace-root$/m,
-    );
     const source = instructionIndex(/^COPY \. \.$/m);
-    const build = instructionIndex(/^RUN npm run build --workspace=app$/m);
+    const installAndBuild = instructionIndex(
+      /^RUN npm ci --workspaces --include-workspace-root && npm run build --workspace=app$/m,
+    );
 
     expect(rootManifest).toBeGreaterThan(-1);
     expect(appManifest).toBeGreaterThan(rootManifest);
     expect(serverManifest).toBeGreaterThan(appManifest);
     expect(postinstallScript).toBeGreaterThan(serverManifest);
-    expect(install).toBeGreaterThan(postinstallScript);
-    expect(source).toBeGreaterThan(install);
-    expect(build).toBeGreaterThan(source);
+    expect(source).toBeGreaterThan(postinstallScript);
+    expect(installAndBuild).toBeGreaterThan(source);
   });
 
-  it('uses exactly one frozen install and never mutates the lockfile in-image', () => {
-    const installs = dockerfile.match(/RUN npm (?:ci|install)[^\n]*/g) ?? [];
+  it('uses exactly one frozen install and one build in the same layer', () => {
+    const frozenInstalls = dockerfile.match(
+      /npm ci --workspaces --include-workspace-root/g,
+    ) ?? [];
+    const appBuilds = dockerfile.match(/npm run build --workspace=app/g) ?? [];
+    const npmRuns = dockerfile.match(/^RUN npm [^\n]*/gm) ?? [];
 
-    expect(installs).toEqual([
-      'RUN npm ci --workspaces --include-workspace-root',
+    expect(frozenInstalls).toHaveLength(1);
+    expect(appBuilds).toHaveLength(1);
+    expect(npmRuns).toEqual([
+      'RUN npm ci --workspaces --include-workspace-root && npm run build --workspace=app',
     ]);
     expect(dockerfile).not.toMatch(/npm install|--package-lock-only/);
   });

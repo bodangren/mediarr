@@ -7,17 +7,17 @@ WORKDIR /app
 # Build stage — build the Vite SPA (app/dist)
 FROM base AS builder
 RUN apt-get update -y && apt-get install -y build-essential python3 cmake && rm -rf /var/lib/apt/lists/*
-# Install the exact lockfile graph before copying application source. Both
-# workspace manifests are part of the dependency layer, so npm validates and
-# materializes the complete monorepo graph deterministically without a second,
-# cosmetic workspace install.
+# Keep the complete workspace graph, postinstall entrypoint, and source in the
+# same filesystem snapshot consumed by npm and Vite. Podman overlay layers can
+# otherwise make varying hoisted packages unavailable to downstream Vite
+# resolution when node_modules is committed by one layer and reloaded by the
+# next.
 COPY package.json package-lock.json ./
 COPY app/package.json ./app/package.json
 COPY server/package.json ./server/package.json
 COPY scripts/apply-patches.js ./scripts/apply-patches.js
-RUN npm ci --workspaces --include-workspace-root
 COPY . .
-RUN npm run build --workspace=app
+RUN npm ci --workspaces --include-workspace-root && npm run build --workspace=app
 
 # Runner stage
 FROM base AS runner

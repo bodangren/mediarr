@@ -22,7 +22,7 @@ _Blast radius: UpdateService (routes, scheduler, SPA update client), ImportManag
 
 ## Phase 2: Operational API Truthfulness
 
-- [ ] Task: Repair backup contracts and WAL-safe operations
+- [~] Task: Repair backup contracts and WAL-safe operations
   - [ ] Align API and SPA schemas and add real list/create/download/restore tests.
   - [ ] Implement SQLite-safe backup creation and explicit schedule behavior.
 - [ ] Task: Replace fake logs with the real log source

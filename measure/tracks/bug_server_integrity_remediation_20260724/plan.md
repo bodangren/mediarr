@@ -29,7 +29,7 @@ _Blast radius: UpdateService (routes, scheduler, SPA update client), ImportManag
 - [~] Task: Replace fake logs with the real log source
   - [ ] Add end-to-end log list/detail/delete/clear/download contract tests.
   - [ ] Remove production fixture arrays and contract drift.
-- [ ] Task: Unify task history, queue, scheduler, and system events
+- [~] Task: Unify task history, queue, scheduler, and system events
   - [ ] Add behavioral tests proving run-now history/event persistence.
   - [ ] Remove fixture/random fallback execution from production routes.
 - [~] Task: Make media deletion failure-safe and retryable

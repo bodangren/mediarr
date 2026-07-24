@@ -48,7 +48,7 @@ _Blast radius: UpdateService (routes, scheduler, SPA update client), ImportManag
   - [ ] Reject empty content and persist retryable failure state.
   - [ ] Wire real embedded discovery/download or mark it unavailable.
 - [~] Task: Repair torrent completion path safety and cross-device movement
-- [ ] Task: Correct and wire the variant lifecycle
+- [~] Task: Correct and wire the variant lifecycle
   - [ ] Persist `EPISODE` variants for series imports.
   - [ ] Compose backfill/inventory services and graceful watcher shutdown.
 - [ ] Task: Measure - User Manual Verification 'Automation and Media Lifecycle Completeness'

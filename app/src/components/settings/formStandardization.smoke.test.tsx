@@ -54,6 +54,10 @@ describe('Form Standardization Smoke', () => {
     });
 
     fireEvent.change(screen.getByLabelText(/name/i), { target: { value: 'Smoke Indexer' } });
+    fireEvent.change(screen.getByLabelText('Indexer URL'), {
+      target: { value: 'https://indexer.example.test' },
+    });
+    fireEvent.change(screen.getByLabelText('API Key'), { target: { value: 'secret-key' } });
     fireEvent.click(screen.getByRole('button', { name: /add indexer/i }));
 
     await waitFor(() => {
@@ -74,9 +78,14 @@ describe('Form Standardization Smoke', () => {
     });
 
     const saveButton = screen.getByRole('button', { name: /save changes/i });
-    expect(saveButton).toBeDisabled();
+    await waitFor(() => {
+      expect(saveButton).toBeDisabled();
+    });
 
     fireEvent.change(nameInput, { target: { value: 'Smoke Profile' } });
+    await waitFor(() => {
+      expect(saveButton).toBeEnabled();
+    });
     fireEvent.click(saveButton);
 
     await waitFor(() => {

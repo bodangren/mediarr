@@ -130,6 +130,10 @@ describe('AddIndexerModal', () => {
     );
 
     fireEvent.change(screen.getByLabelText(/name/i), { target: { value: 'My Indexer' } });
+    fireEvent.change(screen.getByLabelText('Indexer URL'), {
+      target: { value: 'https://indexer.example.test' },
+    });
+    fireEvent.change(screen.getByLabelText('API Key'), { target: { value: 'secret-key' } });
     fireEvent.click(screen.getByRole('button', { name: /add indexer/i }));
 
     await waitFor(() => {
@@ -144,6 +148,33 @@ describe('AddIndexerModal', () => {
     expect(draft.supportsSearch).toBe(true);
     expect(draft.priority).toBe(25);
     expect(draft.protocol).toBe('torrent');
+    expect(draft.settings).toMatchObject({
+      url: 'https://indexer.example.test',
+      apiKey: 'secret-key',
+    });
+  });
+
+  it('rejects blank required fields from the selected preset', async () => {
+    const onCreate = vi.fn().mockResolvedValue(undefined);
+    render(
+      <AddIndexerModal
+        isOpen
+        presets={mockPresets}
+        onClose={noop}
+        onCreate={onCreate}
+        onTestConnection={noop}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText(/name/i), { target: { value: 'My Indexer' } });
+    fireEvent.change(screen.getByLabelText('Indexer URL'), { target: { value: '   ' } });
+    fireEvent.click(screen.getByRole('button', { name: /add indexer/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Indexer URL is required')).toBeInTheDocument();
+      expect(screen.getByText('API Key is required')).toBeInTheDocument();
+    });
+    expect(onCreate).not.toHaveBeenCalled();
   });
 
   it('updates preset selection when a preset button is clicked', () => {
@@ -290,6 +321,10 @@ describe('AddIndexerModal', () => {
     );
 
     fireEvent.change(screen.getByLabelText(/name/i), { target: { value: 'TestIndexer' } });
+    fireEvent.change(screen.getByLabelText('Indexer URL'), {
+      target: { value: 'https://indexer.example.test' },
+    });
+    fireEvent.change(screen.getByLabelText('API Key'), { target: { value: 'secret-key' } });
     fireEvent.click(screen.getByRole('button', { name: /test connection/i }));
 
     await waitFor(() => {
@@ -309,6 +344,7 @@ describe('AddIndexerModal', () => {
       />,
     );
 
+    fireEvent.change(screen.getByLabelText(/name/i), { target: { value: 'TestIndexer' } });
     fireEvent.click(screen.getByRole('button', { name: /test connection/i }));
     await waitFor(() => {
       expect(onTestConnection).not.toHaveBeenCalled();

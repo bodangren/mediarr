@@ -136,6 +136,7 @@ export function LanguageSelector({
           className="fixed inset-0 z-40"
           onClick={() => setIsOpen(false)}
           aria-hidden="true"
+          data-testid="language-selector-backdrop"
         />
       )}
     </div>

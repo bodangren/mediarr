@@ -153,8 +153,14 @@ describe('ProfileEditorModal', () => {
     const cutoffSelect = screen.getByLabelText('Cutoff Language');
     expect(cutoffSelect).toHaveValue('');
 
-    // Simulate adding a language (would use LanguageSelector in reality)
-    // After adding first language, cutoff should be auto-set
+    fireEvent.click(screen.getByLabelText('Add Language'));
+    fireEvent.click(screen.getByRole('option', { name: /French/ }));
+    const addButtons = screen.getAllByRole('button', { name: 'Add Language' });
+    fireEvent.click(addButtons[1]);
+
+    await waitFor(() => {
+      expect(cutoffSelect).toHaveValue('fr');
+    });
   });
 
   it('calls onSave with correct data when form is submitted', async () => {

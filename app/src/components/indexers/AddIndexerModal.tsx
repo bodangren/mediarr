@@ -71,7 +71,7 @@ interface AddIndexerModalProps {
   appProfiles?: Array<{ id: number; name: string }>;
 }
 
-const indexerFormSchema = z.object({
+const indexerFormBaseSchema = z.object({
   presetId: z.string().min(1, 'Preset is required'),
   name: z.string().min(1, 'Name is required'),
   enabled: z.boolean().default(true),
@@ -86,7 +86,32 @@ const indexerFormSchema = z.object({
   })),
 });
 
-type IndexerFormValues = z.infer<typeof indexerFormSchema>;
+type IndexerFormValues = z.infer<typeof indexerFormBaseSchema>;
+
+function createIndexerFormSchema(presets: IndexerPreset[]) {
+  return indexerFormBaseSchema.superRefine((data, context) => {
+    const preset = presets.find(item => item.id === data.presetId);
+    if (!preset) return;
+
+    const visibleFields = preset.fields.filter(field => field.type !== 'hidden');
+    for (const [fieldIndex, field] of visibleFields.entries()) {
+      if (!field.required) continue;
+
+      const value = data.dynamicFields.find(item => item.name === field.name)?.value;
+      const isBlank = value === null
+        || value === undefined
+        || (typeof value === 'string' && value.trim() === '');
+
+      if (isBlank) {
+        context.addIssue({
+          code: 'custom',
+          path: ['dynamicFields', fieldIndex, 'value'],
+          message: `${field.label} is required`,
+        });
+      }
+    }
+  });
+}
 
 export function AddIndexerModal({
   isOpen,
@@ -100,8 +125,13 @@ export function AddIndexerModal({
   const [testResult, setTestResult] = useState<TestConnectionResult | null>(null);
   const [isTesting, setIsTesting] = useState(false);
 
+  const resolver = useMemo(
+    () => zodResolver(createIndexerFormSchema(presets)) as Resolver<IndexerFormValues>,
+    [presets],
+  );
+
   const form = useForm<IndexerFormValues>({
-    resolver: zodResolver(indexerFormSchema) as Resolver<IndexerFormValues>,
+    resolver,
     defaultValues: {
       presetId: presets[0]?.id ?? '',
       name: '',
@@ -117,7 +147,6 @@ export function AddIndexerModal({
 
   const control = form.control;
   const selectedPresetId = form.watch('presetId');
-  const dynamicFields = form.watch('dynamicFields');
 
   const selectedPreset = useMemo(() => {
     if (presets.length === 0) return null;
@@ -165,8 +194,8 @@ export function AddIndexerModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPreset]);
 
-  const getDynamicFieldValue = (fieldName: string): unknown => {
-    const item = dynamicFields.find(f => f.name === fieldName);
+  const getDynamicFieldValue = (data: IndexerFormValues, fieldName: string): unknown => {
+    const item = data.dynamicFields.find(f => f.name === fieldName);
     return item?.value;
   };
 
@@ -176,7 +205,7 @@ export function AddIndexerModal({
     const settings: Record<string, unknown> = {};
     for (const field of selectedPreset.fields) {
       if (field.type === 'hidden') continue;
-      settings[field.name] = getDynamicFieldValue(field.name);
+      settings[field.name] = getDynamicFieldValue(data, field.name);
     }
 
     return {
@@ -406,7 +435,7 @@ export function AddIndexerModal({
                         name={`dynamicFields.${index}.value`}
                         render={({ field: formField }) => (
                           <FormItem>
-                            <FormLabel>{field.label}</FormLabel>
+                            <FormLabel htmlFor={`add-indexer-${field.name}`}>{field.label}</FormLabel>
                             <FormControl>
                               <NumberInput
                                 id={`add-indexer-${field.name}`}
@@ -428,7 +457,7 @@ export function AddIndexerModal({
                       name={`dynamicFields.${index}.value`}
                       render={({ field: formField }) => (
                         <FormItem>
-                          <FormLabel>{field.label}</FormLabel>
+                          <FormLabel htmlFor={`add-indexer-${field.name}`}>{field.label}</FormLabel>
                           <FormControl>
                             <Input
                               id={`add-indexer-${field.name}`}
@@ -468,7 +497,6 @@ export function AddIndexerModal({
         <Button variant="secondary" onClick={handleTestConnection} disabled={isSubmitting || isTesting}>
           {isTesting ? 'Testing...' : 'Test Connection'}
         </Button>
-        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
         <Button variant="default" onClick={() => form.handleSubmit(handleSubmit)()} disabled={isSubmitting || isTesting}>
           Add Indexer
         </Button>

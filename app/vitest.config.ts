@@ -21,5 +21,10 @@ export default defineConfig({
     // interceptor per worker and keeps the suite reliable now that MSW is
     // unconditionally wired in setup.ts.
     pool: 'forks',
+    // jsdom + React + MSW workers are memory-intensive in this suite. Run one
+    // isolated fork at a time so interaction tests do not exceed their timeout
+    // merely because sibling files are competing for CPU and memory.
+    maxWorkers: 1,
+    fileParallelism: false,
   },
 });

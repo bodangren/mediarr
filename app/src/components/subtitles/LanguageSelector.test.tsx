@@ -91,11 +91,7 @@ describe('LanguageSelector', () => {
 
     expect(screen.getByRole('listbox')).toBeInTheDocument();
 
-    // Click backdrop
-    const backdrop = screen.getByText('English (en)').parentElement?.parentElement?.querySelector('[aria-hidden="true"]');
-    if (backdrop) {
-      fireEvent.click(backdrop);
-    }
+    fireEvent.click(screen.getByTestId('language-selector-backdrop'));
 
     expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
   });

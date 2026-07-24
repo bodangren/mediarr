@@ -31,7 +31,7 @@ _Blast radius: UpdateService (routes, scheduler, SPA update client), ImportManag
 - [ ] Task: Unify task history, queue, scheduler, and system events
   - [ ] Add behavioral tests proving run-now history/event persistence.
   - [ ] Remove fixture/random fallback execution from production routes.
-- [ ] Task: Make media deletion failure-safe and retryable
+- [~] Task: Make media deletion failure-safe and retryable
 - [ ] Task: Measure - User Manual Verification 'Operational API Truthfulness'
 
 ## Phase 3: Automation and Media Lifecycle Completeness

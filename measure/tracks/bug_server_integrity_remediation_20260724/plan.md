@@ -41,13 +41,13 @@ _Blast radius: UpdateService (routes, scheduler, SPA update client), ImportManag
 - [x] Task: Implement truthful Cardigann RSS and pack matching (25ab9848)
   - [x] Execute Cardigann RSS through the shared runtime or return a hard failure.
   - [x] Match season packs and all episodes in multi-episode releases.
-- [~] Task: Repair TMDB series import-list synchronization
-  - [ ] Normalize identifiers, verify persistence before counters, and derive
+- [x] Task: Repair TMDB series import-list synchronization (ba288fe5)
+  - [x] Normalize identifiers, verify persistence before counters, and derive
         unique title paths.
-- [~] Task: Repair subtitle download state and embedded-provider behavior
-  - [ ] Reject empty content and persist retryable failure state.
-  - [ ] Wire real embedded discovery/download or mark it unavailable.
-- [~] Task: Repair torrent completion path safety and cross-device movement
+- [x] Task: Repair subtitle download state and embedded-provider behavior (ba288fe5)
+  - [x] Reject empty content and persist retryable failure state.
+  - [x] Wire real embedded discovery/download or mark it unavailable.
+- [x] Task: Repair torrent completion path safety and cross-device movement (ba288fe5)
 - [~] Task: Correct and wire the variant lifecycle
   - [ ] Persist `EPISODE` variants for series imports.
   - [ ] Compose backfill/inventory services and graceful watcher shutdown.
@@ -55,8 +55,8 @@ _Blast radius: UpdateService (routes, scheduler, SPA update client), ImportManag
 
 ## Phase 4: Contracts, False Tests, and Quality Gates
 
-- [ ] Task: Enforce quality-profile validation and exact error contracts
-- [ ] Task: Make the production route map bidirectionally complete
+- [~] Task: Enforce quality-profile validation and exact error contracts
+- [~] Task: Make the production route map bidirectionally complete
 - [ ] Task: Replace false and misleading regression tests
   - [ ] Remove self-assertions, permissive statuses, and mock-only integration
         claims identified by the audit.

@@ -1,8 +1,9 @@
+import path from 'node:path';
 import type { DatabaseClient } from '../../db/drizzleClient';
 import type { ImportListRepository, ImportListWithProfile } from '../../repositories/ImportListRepository';
 import type { MediaRepository } from '../../repositories/MediaRepository';
 import type { ImportListProviderFactory, ImportListItem } from './ImportListProvider';
-import { toSortTitle } from '../../utils/stringUtils';
+import { sanitizeTitle, toSortTitle } from '../../utils/stringUtils';
 
 export interface SyncResult {
   added: number;
@@ -10,6 +11,10 @@ export interface SyncResult {
   exclusions: number;
   errors: Array<{ title: string; error: string }>;
 }
+
+type NormalizedImportListItem =
+  | (ImportListItem & { mediaType: 'movie'; tmdbId: number })
+  | (ImportListItem & { mediaType: 'series'; tvdbId: number });
 
 export class ImportListSyncService {
   constructor(
@@ -67,14 +72,18 @@ export class ImportListSyncService {
           continue;
         }
 
-        const alreadyExists = await this.checkIfExists(item);
+        const normalizedItem = this.normalizeIdentifiers(item);
+
+        const alreadyExists = await this.checkIfExists(normalizedItem);
         if (alreadyExists) {
           result.skipped++;
           continue;
         }
 
-        await this.addToList(importList, item);
-        result.added++;
+        const persisted = await this.addToList(importList, normalizedItem);
+        if (persisted) {
+          result.added++;
+        }
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Unknown error';
         result.errors.push({ title: item.title, error: message });
@@ -108,7 +117,7 @@ export class ImportListSyncService {
     return results;
   }
 
-  private async checkIfExists(item: ImportListItem): Promise<boolean> {
+  private async checkIfExists(item: NormalizedImportListItem): Promise<boolean> {
     if (item.mediaType === 'movie' && item.tmdbId) {
       const existing = await this.prisma.movie.findUnique({
         where: { tmdbId: item.tmdbId },
@@ -126,12 +135,13 @@ export class ImportListSyncService {
     return false;
   }
 
-  private async addToList(importList: ImportListWithProfile, item: ImportListItem): Promise<void> {
+  private async addToList(importList: ImportListWithProfile, item: NormalizedImportListItem): Promise<boolean> {
     const cleanTitle = this.cleanTitle(item.title);
     const sortTitle = toSortTitle(item.title);
     const year = item.year ?? 0;
 
-    if (item.mediaType === 'movie' && item.tmdbId) {
+    if (item.mediaType === 'movie') {
+      const tmdbId = item.tmdbId;
       const movieInput: {
         tmdbId: number;
         title: string;
@@ -144,54 +154,105 @@ export class ImportListSyncService {
         year: number;
         imdbId?: string;
       } = {
-        tmdbId: item.tmdbId,
+        tmdbId,
         title: item.title,
         cleanTitle,
         sortTitle,
         status: 'announced',
         monitored: importList.monitorType === 'movie',
         qualityProfileId: importList.qualityProfileId,
-        path: importList.rootFolderPath,
+        path: this.buildMediaPath(importList.rootFolderPath, item.title, year, `tmdb-${tmdbId}`),
         year,
       };
       if (item.imdbId !== undefined) {
         movieInput.imdbId = item.imdbId;
       }
-      await this.mediaRepository.upsertMovie(movieInput);
+      const persisted = await this.mediaRepository.upsertMovie(movieInput);
+      if (!persisted || !Number.isInteger(persisted.id) || persisted.id <= 0) {
+        throw new Error(`Movie "${item.title}" was not persisted`);
+      }
+      return true;
     }
 
-    if (item.mediaType === 'series' && item.tvdbId) {
-      const seriesInput: {
-        tvdbId: number;
-        title: string;
-        cleanTitle: string;
-        sortTitle: string;
-        status: string;
-        monitored: boolean;
-        qualityProfileId: number;
-        path: string;
-        year: number;
-        tmdbId?: number;
-        imdbId?: string;
-      } = {
-        tvdbId: item.tvdbId,
-        title: item.title,
-        cleanTitle,
-        sortTitle,
-        status: 'continuing',
-        monitored: importList.monitorType === 'series',
-        qualityProfileId: importList.qualityProfileId,
-        path: importList.rootFolderPath,
-        year,
-      };
-      if (item.tmdbId !== undefined) {
-        seriesInput.tmdbId = item.tmdbId;
-      }
-      if (item.imdbId !== undefined) {
-        seriesInput.imdbId = item.imdbId;
-      }
-      await this.mediaRepository.upsertSeries(seriesInput);
+    const tvdbId = item.tvdbId;
+    const seriesInput: {
+      tvdbId: number;
+      title: string;
+      cleanTitle: string;
+      sortTitle: string;
+      status: string;
+      monitored: boolean;
+      qualityProfileId: number;
+      path: string;
+      year: number;
+      tmdbId?: number;
+      imdbId?: string;
+    } = {
+      tvdbId,
+      title: item.title,
+      cleanTitle,
+      sortTitle,
+      status: 'continuing',
+      monitored: importList.monitorType === 'series',
+      qualityProfileId: importList.qualityProfileId,
+      path: this.buildMediaPath(importList.rootFolderPath, item.title, year, `tvdb-${tvdbId}`),
+      year,
+    };
+    if (item.tmdbId !== undefined) {
+      seriesInput.tmdbId = item.tmdbId;
     }
+    if (item.imdbId !== undefined) {
+      seriesInput.imdbId = item.imdbId;
+    }
+    const persisted = await this.mediaRepository.upsertSeries(seriesInput);
+    if (!persisted || !Number.isInteger(persisted.id) || persisted.id <= 0) {
+      throw new Error(`Series "${item.title}" was not persisted`);
+    }
+    return true;
+  }
+
+  private normalizeIdentifiers(item: ImportListItem): NormalizedImportListItem {
+    if (item.mediaType === 'movie') {
+      if (!this.isPositiveInteger(item.tmdbId)) {
+        throw new Error(`Movie "${item.title}" is missing a valid TMDB ID`);
+      }
+      return { ...item, mediaType: 'movie', tmdbId: item.tmdbId };
+    }
+
+    if (!this.isPositiveInteger(item.tvdbId)) {
+      throw new Error(`Series "${item.title}" is missing a valid TVDB ID`);
+    }
+    return { ...item, mediaType: 'series', tvdbId: item.tvdbId };
+  }
+
+  private isPositiveInteger(value: number | undefined): value is number {
+    return typeof value === 'number' && Number.isInteger(value) && value > 0;
+  }
+
+  private buildMediaPath(rootFolderPath: string, title: string, year: number, uniqueId: string): string {
+    if (!rootFolderPath.trim()) {
+      throw new Error(`Cannot derive a media path for "${title}": root folder is empty`);
+    }
+
+    const safeTitle = [...sanitizeTitle(title)]
+      .filter((character) => {
+        const codePoint = character.codePointAt(0) ?? 0;
+        return codePoint > 31 && codePoint !== 127;
+      })
+      .join('')
+      .replace(/^\.+|\.+$/g, '')
+      .trim();
+    if (!safeTitle) {
+      throw new Error(`Cannot derive a media path for "${title}": title is not filesystem-safe`);
+    }
+
+    const normalizedRoot = path.resolve(rootFolderPath);
+    const yearSuffix = year > 0 ? ` (${year})` : '';
+    const target = path.resolve(normalizedRoot, `${safeTitle}${yearSuffix} [${uniqueId}]`);
+    if (target === normalizedRoot || !target.startsWith(`${normalizedRoot}${path.sep}`)) {
+      throw new Error(`Cannot derive a media path for "${title}" outside the configured root`);
+    }
+    return target;
   }
 
   private cleanTitle(title: string): string {

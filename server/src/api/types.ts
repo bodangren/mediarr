@@ -84,7 +84,10 @@ export interface ApiDependencies {
   > | undefined;
   subtitleProviderFactory?: Pick<
     SubtitleProviderFactory,
-    'getProviderNames' | 'resolveManualProvider'
+    | 'getProviderNames'
+    | 'resolveManualProvider'
+    | 'isProviderAvailable'
+    | 'getProviderUnavailableReason'
   > | undefined;
   subtitleAutomationService?: Pick<
     SubtitleAutomationService,

@@ -75,6 +75,30 @@ describe('Subtitle Providers API', () => {
       expect(result).toEqual([]);
     });
 
+    it('preserves an explicitly unavailable provider instead of normalizing it to disabled', async () => {
+      mockHttpClient.request.mockRejectedValue(
+        new ContractViolationError('Response did not match success envelope contract', {
+          payload: [{
+            id: 'embedded',
+            name: 'Embedded',
+            enabled: false,
+            type: 'embedded',
+            settings: {},
+            status: 'unavailable',
+            unavailableReason: 'Embedded subtitle extraction is not available',
+          }],
+        }),
+      );
+
+      const result = await subtitleProvidersApi.listProviders();
+
+      expect(result[0]).toEqual(expect.objectContaining({
+        id: 'embedded',
+        enabled: false,
+        status: 'unavailable',
+      }));
+    });
+
     it('should accept legacy raw array payload when success envelope validation fails', async () => {
       const legacyProviders = [
         {

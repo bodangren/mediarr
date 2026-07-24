@@ -22,6 +22,28 @@ export interface TorrentInfo {
   path: string;
 }
 
+interface CompletionTorrentFile {
+  path: string;
+  length: number;
+}
+
+interface CompletionTorrent {
+  infoHash: string;
+  name: string;
+  path: string;
+  files?: unknown;
+}
+
+interface CompletionPayload {
+  kind: 'file' | 'directory';
+  sourcePath: string;
+  targetPath: string;
+  files: Array<{
+    relativePath: string;
+    size: number;
+  }>;
+}
+
 const DEFAULT_DOWNLOAD_PATH = '/data/downloads/incomplete';
 const COMPLETE_DOWNLOAD_PATH = '/data/downloads/complete';
 const DEFAULT_MAGNET_TRACKERS = [
@@ -725,11 +747,10 @@ export class TorrentManager extends EventEmitter {
   }
 
   /**
-   * Handles torrent completion by moving files and updating the database.
+   * Handles torrent completion by moving only the payload described by WebTorrent.
    */
-  private async handleTorrentCompletion(torrent: any): Promise<void> {
+  private async handleTorrentCompletion(torrent: CompletionTorrent): Promise<void> {
     const infoHash = torrent.infoHash;
-    const currentPath = torrent.path;
     const completeDownloadPath = this.completeDownloadPath.trim();
 
     if (!completeDownloadPath) {
@@ -740,65 +761,262 @@ export class TorrentManager extends EventEmitter {
       return;
     }
 
-    // Skip file move if already in complete directory (or a subdirectory of it)
-    if (currentPath.startsWith(completeDownloadPath)) {
-      await this.repository.update(infoHash, {
-        status: 'seeding',
-        completedAt: new Date(),
-      });
-      void this.promoteNextQueued();
-      return;
-    }
-
     try {
-      // Ensure complete directory exists
       await fs.mkdir(completeDownloadPath, { recursive: true });
 
-      // Move files from incomplete to complete
-      // If the torrent is a single file, currentPath might be the file's directory.
-      // If it's a folder, currentPath is the parent of that folder.
-      // WebTorrent usually downloads to 'path/torrent-name'.
-      const sourceDir = path.join(currentPath, torrent.name);
-      const targetDir = path.join(completeDownloadPath, torrent.name);
+      const canonicalCompleteRoot = await this.realpathOrThrow(
+        completeDownloadPath,
+        'complete download directory',
+      );
+      const canonicalCurrentPath = await this.realpathOrThrow(
+        torrent.path,
+        'torrent download path',
+      );
+      const payload = await this.resolveCompletionPayload(
+        torrent,
+        canonicalCurrentPath,
+        canonicalCompleteRoot,
+      );
 
-      // Check if source exists (it might not if it was a single file download directly into currentPath)
-      // but usually WebTorrent creates a subfolder if there are multiple files or if it's configured so.
-      // For simplicity and matching current tests/logic:
-      try {
-        await fs.rename(sourceDir, targetDir);
-      } catch (e) {
-        // Fallback: maybe the source is just currentPath itself? 
-        // (This happens if 'path' was set to the exact folder containing the files)
-        await fs.rename(currentPath, targetDir);
+      if (this.isContainedPath(canonicalCompleteRoot, canonicalCurrentPath)) {
+        if (!this.isContainedPath(canonicalCompleteRoot, payload.sourcePath)) {
+          throw new Error('Torrent payload resolves outside the complete download directory');
+        }
+        await this.verifyPayload(payload, payload.sourcePath);
+        await this.repository.update(infoHash, {
+          status: 'seeding',
+          path: canonicalCompleteRoot,
+          completedAt: new Date(),
+        });
+        torrent.path = canonicalCompleteRoot;
+        void this.promoteNextQueued();
+        return;
       }
 
-      // Update the torrent's path in WebTorrent to the parent directory so that
-      // on restart, client.add(source, { path }) correctly resolves files at
-      // completeDownloadPath/torrent.name rather than double-nesting the name.
-      torrent.path = completeDownloadPath;
+      const configuredIncompletePath = this.incompleteDownloadPath.trim();
+      if (!configuredIncompletePath) {
+        throw new Error('Incomplete download directory is not configured');
+      }
+      const canonicalIncompleteRoot = await this.realpathOrThrow(
+        configuredIncompletePath,
+        'incomplete download directory',
+      );
+      if (!this.isContainedPath(canonicalIncompleteRoot, canonicalCurrentPath)) {
+        throw new Error('Torrent download path resolves outside the configured incomplete directory');
+      }
+      if (!this.isContainedPath(canonicalCurrentPath, payload.sourcePath)
+        || payload.sourcePath === canonicalCurrentPath) {
+        throw new Error('Torrent payload must be a distinct path contained by its download directory');
+      }
+      if (!this.isContainedPath(canonicalCompleteRoot, payload.targetPath)) {
+        throw new Error('Torrent destination resolves outside the complete download directory');
+      }
+      if (await this.pathExists(payload.targetPath)) {
+        throw new Error(`Refusing to overwrite existing torrent destination: ${payload.targetPath}`);
+      }
 
-      // Update database — store the parent (completeDownloadPath) not the subfolder,
-      // so loadExistingTorrents can re-add with the correct parent path on restart.
+      await this.verifyPayload(payload, payload.sourcePath);
+      await this.transferPayload(payload);
+      await this.verifyPayload(payload, payload.targetPath);
+
       await this.repository.update(infoHash, {
         status: 'seeding',
-        path: completeDownloadPath,
+        path: canonicalCompleteRoot,
         completedAt: new Date(),
       });
+      torrent.path = canonicalCompleteRoot;
 
-      // Emit the actual torrent subfolder path so ImportManager knows where the files are.
       this.emit('torrent:completed', {
         infoHash,
         name: torrent.name,
-        path: targetDir,
+        path: payload.targetPath,
       });
 
       void this.promoteNextQueued();
     } catch (error) {
-      // Update status to error on failure
       await this.repository.updateStatus(infoHash, 'error');
       console.error(`Failed to move files for torrent ${infoHash}:`, error);
       void this.promoteNextQueued();
     }
+  }
+
+  private async resolveCompletionPayload(
+    torrent: CompletionTorrent,
+    currentPath: string,
+    completeRoot: string,
+  ): Promise<CompletionPayload> {
+    if (!Array.isArray(torrent.files) || torrent.files.length === 0) {
+      throw new Error('Torrent completion payload metadata is missing');
+    }
+
+    const files = torrent.files.map((candidate, index) => {
+      if (!this.isCompletionTorrentFile(candidate)) {
+        throw new Error(`Torrent completion payload entry ${index} is invalid`);
+      }
+      const relativePath = path.normalize(candidate.path);
+      if (!this.isSafeRelativePath(relativePath)) {
+        throw new Error(`Torrent payload path is unsafe: ${candidate.path}`);
+      }
+      return { relativePath, size: candidate.length };
+    });
+
+    if (files.length === 1) {
+      const [file] = files;
+      if (!file) {
+        throw new Error('Torrent completion payload metadata is missing');
+      }
+      const sourcePath = await this.realpathOrThrow(
+        path.resolve(currentPath, file.relativePath),
+        'single-file torrent payload',
+      );
+      return {
+        kind: 'file',
+        sourcePath,
+        targetPath: path.join(completeRoot, path.basename(file.relativePath)),
+        files: [{ relativePath: '', size: file.size }],
+      };
+    }
+
+    const topLevelNames = new Set<string>();
+    for (const file of files) {
+      const [topLevel, ...rest] = file.relativePath.split(path.sep);
+      if (!topLevel || rest.length === 0) {
+        throw new Error('Ambiguous multi-file torrent payload: files do not share a directory root');
+      }
+      topLevelNames.add(topLevel);
+    }
+    if (topLevelNames.size !== 1) {
+      throw new Error('Ambiguous multi-file torrent payload: files do not share one directory root');
+    }
+
+    const [payloadRoot] = [...topLevelNames];
+    if (!payloadRoot) {
+      throw new Error('Torrent completion payload root is missing');
+    }
+    const sourcePath = await this.realpathOrThrow(
+      path.resolve(currentPath, payloadRoot),
+      'multi-file torrent payload',
+    );
+    return {
+      kind: 'directory',
+      sourcePath,
+      targetPath: path.join(completeRoot, payloadRoot),
+      files: files.map(file => ({
+        relativePath: path.relative(payloadRoot, file.relativePath),
+        size: file.size,
+      })),
+    };
+  }
+
+  private async transferPayload(payload: CompletionPayload): Promise<void> {
+    try {
+      await fs.rename(payload.sourcePath, payload.targetPath);
+      return;
+    } catch (error) {
+      if (!this.hasFsErrorCode(error, 'EXDEV')) {
+        throw error;
+      }
+    }
+
+    try {
+      if (payload.kind === 'file') {
+        await fs.copyFile(payload.sourcePath, payload.targetPath, fsConstants.COPYFILE_EXCL);
+      } else {
+        await fs.cp(payload.sourcePath, payload.targetPath, {
+          recursive: true,
+          force: false,
+          errorOnExist: true,
+        });
+      }
+      await this.verifyPayload(payload, payload.targetPath);
+    } catch (error) {
+      await fs.rm(payload.targetPath, { recursive: true, force: true }).catch(() => undefined);
+      throw error;
+    }
+
+    await fs.rm(payload.sourcePath, {
+      recursive: payload.kind === 'directory',
+      force: false,
+    });
+  }
+
+  private async verifyPayload(payload: CompletionPayload, rootPath: string): Promise<void> {
+    const canonicalRoot = await this.realpathOrThrow(rootPath, 'torrent payload');
+    const rootStats = await fs.stat(canonicalRoot);
+    if (payload.kind === 'file') {
+      if (!rootStats.isFile()) {
+        throw new Error(`Expected single-file torrent payload at ${rootPath}`);
+      }
+    } else if (!rootStats.isDirectory()) {
+      throw new Error(`Expected multi-file torrent payload directory at ${rootPath}`);
+    }
+
+    for (const file of payload.files) {
+      const filePath = payload.kind === 'file'
+        ? canonicalRoot
+        : path.resolve(canonicalRoot, file.relativePath);
+      const canonicalFile = await this.realpathOrThrow(filePath, 'torrent payload file');
+      if (!this.isContainedPath(canonicalRoot, canonicalFile)) {
+        throw new Error(`Torrent payload file resolves outside its payload root: ${file.relativePath}`);
+      }
+      const stats = await fs.stat(canonicalFile);
+      if (!stats.isFile() || stats.size !== file.size) {
+        throw new Error(`Torrent payload verification failed for ${file.relativePath || path.basename(rootPath)}`);
+      }
+    }
+  }
+
+  private isCompletionTorrentFile(candidate: unknown): candidate is CompletionTorrentFile {
+    if (!candidate || typeof candidate !== 'object') {
+      return false;
+    }
+    const file = candidate as Partial<CompletionTorrentFile>;
+    return typeof file.path === 'string'
+      && file.path.trim().length > 0
+      && typeof file.length === 'number'
+      && Number.isSafeInteger(file.length)
+      && file.length >= 0;
+  }
+
+  private isSafeRelativePath(candidate: string): boolean {
+    return candidate !== '.'
+      && !path.isAbsolute(candidate)
+      && candidate !== '..'
+      && !candidate.startsWith(`..${path.sep}`);
+  }
+
+  private isContainedPath(parentPath: string, candidatePath: string): boolean {
+    const relative = path.relative(parentPath, candidatePath);
+    return relative === ''
+      || (relative !== '..'
+        && !relative.startsWith(`..${path.sep}`)
+        && !path.isAbsolute(relative));
+  }
+
+  private async realpathOrThrow(candidate: string, label: string): Promise<string> {
+    try {
+      return await fs.realpath(candidate);
+    } catch (error) {
+      throw new Error(`Unable to resolve ${label}: ${candidate}`, { cause: error });
+    }
+  }
+
+  private async pathExists(candidate: string): Promise<boolean> {
+    try {
+      await fs.lstat(candidate);
+      return true;
+    } catch (error) {
+      if (this.hasFsErrorCode(error, 'ENOENT')) {
+        return false;
+      }
+      throw error;
+    }
+  }
+
+  private hasFsErrorCode(error: unknown, code: string): boolean {
+    return error instanceof Error
+      && 'code' in error
+      && (error as NodeJS.ErrnoException).code === code;
   }
 
   /**

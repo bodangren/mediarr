@@ -13,10 +13,22 @@ export class SubtitleProviderFactory {
   constructor(
     private readonly providers: Record<string, ManualSubtitleProvider>,
     private readonly readConfig: ConfigReader,
+    private readonly unavailableProviders: Record<string, string> = {},
   ) {}
 
   getProviderNames(): string[] {
-    return Object.keys(this.providers);
+    return [...new Set([
+      ...Object.keys(this.providers),
+      ...Object.keys(this.unavailableProviders),
+    ])];
+  }
+
+  isProviderAvailable(providerName: string): boolean {
+    return Boolean(this.providers[providerName.toLowerCase()]);
+  }
+
+  getProviderUnavailableReason(providerName: string): string | null {
+    return this.unavailableProviders[providerName.toLowerCase()] ?? null;
   }
 
   resolveAllManualProviders(): Array<{ name: string; provider: ManualSubtitleProvider }> {
@@ -29,7 +41,15 @@ export class SubtitleProviderFactory {
       throw new Error('No manual subtitle provider is configured');
     }
 
-    const provider = this.providers[configuredName.toLowerCase()];
+    const normalizedName = configuredName.toLowerCase();
+    const unavailableReason = this.unavailableProviders[normalizedName];
+    if (unavailableReason) {
+      throw new Error(
+        `Subtitle provider '${configuredName}' is unavailable: ${unavailableReason}`,
+      );
+    }
+
+    const provider = this.providers[normalizedName];
     if (!provider) {
       throw new Error(`Subtitle provider '${configuredName}' is not registered`);
     }

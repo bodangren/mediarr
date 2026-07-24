@@ -6,6 +6,7 @@ import { SubtitleProviderFactory } from './SubtitleProviderFactory';
 import { SubtitleScoringService } from './SubtitleScoringService';
 import { ALLOWED_SUBTITLE_EXTENSIONS } from './providers/providerUtils';
 import type { SubtitleUploadInput as SharedSubtitleUploadInput } from '../contracts/subtitle';
+import { ActivityEventEmitter } from './ActivityEventEmitter';
 
 export type UploadMediaType = 'movie' | 'episode';
 
@@ -122,6 +123,7 @@ export class SubtitleInventoryApiService {
     private readonly namingService: SubtitleNamingService = new SubtitleNamingService(),
     private readonly providerFactory?: SubtitleProviderFactory,
     private readonly scoringService: SubtitleScoringService = new SubtitleScoringService(),
+    private readonly activityEventEmitter?: ActivityEventEmitter,
   ) {}
 
   async listMovieVariantInventory(movieId: number): Promise<VariantInventoryView[]> {
@@ -183,60 +185,99 @@ export class SubtitleInventoryApiService {
     },
     provider?: ManualSubtitleProvider,
   ): Promise<{ storedPath: string }> {
-    const resolvedProvider = this.resolveProviderForCandidate(
-      provider,
-      input.candidate.provider,
-    );
     const variantId = await this.resolveVariantId(input);
     const inventory = await this.repository.getVariantInventory(variantId);
     if (!inventory.variant) {
       throw new Error(`Variant ${variantId} not found`);
     }
 
-    const candidate = resolvedProvider.download
-      ? await resolvedProvider.download(input.candidate)
-      : input.candidate;
+    let candidate = input.candidate;
+    let wantedId: number | undefined;
+    let storedPath: string | undefined;
+    let createdTrackId: number | undefined;
+    let createdHistoryId: number | undefined;
 
-    const siblingPaths = await this.repository.listSiblingSubtitlePaths(variantId);
-    const ownPaths = inventory.subtitleTracks
-      .map(track => track.filePath)
-      .filter((value): value is string => Boolean(value));
-    const variantToken =
-      inventory.variant.releaseName ?? `variant-${inventory.variant.id}`;
+    try {
+      const wanted = await this.repository.upsertWantedSubtitle({
+        variantId,
+        languageCode: candidate.languageCode,
+        isForced: candidate.isForced,
+        isHi: candidate.isHi,
+      });
+      wantedId = wanted.id;
+      await this.repository.updateWantedSubtitleState(wantedId, 'SEARCHING');
 
-    const storedPath = this.namingService.buildSubtitlePath({
-      videoPath: inventory.variant.path,
-      languageCode: candidate.languageCode,
-      isForced: candidate.isForced,
-      isHi: candidate.isHi,
-      extension: candidate.extension ?? '.srt',
-      variantToken,
-      existingPaths: [...siblingPaths, ...ownPaths],
-    });
+      const resolvedProvider = this.resolveProviderForCandidate(
+        provider,
+        candidate.provider,
+      );
+      candidate = resolvedProvider.download
+        ? await resolvedProvider.download(candidate)
+        : candidate;
+      const contentBuffer = this.toContentBuffer(candidate.content);
 
-    const contentBuffer = this.toContentBuffer(candidate.content);
-    await fs.mkdir(path.dirname(storedPath), { recursive: true });
-    await fs.writeFile(storedPath, contentBuffer);
+      const siblingPaths = await this.repository.listSiblingSubtitlePaths(variantId);
+      const ownPaths = inventory.subtitleTracks
+        .map(track => track.filePath)
+        .filter((value): value is string => Boolean(value));
+      const variantToken =
+        inventory.variant.releaseName ?? `variant-${inventory.variant.id}`;
 
-    await this.repository.createSubtitleTrack({
-      variantId,
-      source: 'EXTERNAL',
-      languageCode: candidate.languageCode,
-      isForced: candidate.isForced,
-      isHi: candidate.isHi,
-      filePath: storedPath,
-      fileSize: Number(contentBuffer.byteLength),
-    });
-    await this.repository.createSubtitleHistory({
-      variantId,
-      languageCode: candidate.languageCode,
-      provider: candidate.provider,
-      score: candidate.score,
-      storedPath,
-      message: 'Manual subtitle download',
-    });
+      storedPath = this.namingService.buildSubtitlePath({
+        videoPath: inventory.variant.path,
+        languageCode: candidate.languageCode,
+        isForced: candidate.isForced,
+        isHi: candidate.isHi,
+        extension: candidate.extension ?? '.srt',
+        variantToken,
+        existingPaths: [...siblingPaths, ...ownPaths],
+      });
 
-    return { storedPath };
+      await fs.mkdir(path.dirname(storedPath), { recursive: true });
+      await fs.writeFile(storedPath, contentBuffer);
+
+      const track = await this.repository.createSubtitleTrack({
+        variantId,
+        source: 'EXTERNAL',
+        languageCode: candidate.languageCode,
+        isForced: candidate.isForced,
+        isHi: candidate.isHi,
+        filePath: storedPath,
+        fileSize: Number(contentBuffer.byteLength),
+      });
+      createdTrackId = track.id;
+      const history = await this.repository.createSubtitleHistory({
+        variantId,
+        wantedSubtitleId: wantedId,
+        languageCode: candidate.languageCode,
+        provider: candidate.provider,
+        score: candidate.score,
+        storedPath,
+        message: 'Manual subtitle download',
+      });
+      createdHistoryId = history.id;
+
+      await this.repository.updateWantedSubtitleState(wantedId, 'DOWNLOADED');
+      await this.activityEventEmitter?.emit({
+        eventType: 'SUBTITLE_DOWNLOADED',
+        sourceModule: 'subtitle-inventory-api',
+        entityRef: `wanted:${wantedId}`,
+        summary: `Manual subtitle downloaded (${candidate.languageCode})`,
+        success: true,
+        occurredAt: new Date(),
+      });
+
+      return { storedPath };
+    } catch (error) {
+      await this.cleanupPartialDownload(storedPath, createdTrackId, createdHistoryId);
+      await this.recordManualDownloadFailure(
+        variantId,
+        wantedId,
+        candidate,
+        error,
+      );
+      throw error;
+    }
   }
 
   async uploadSubtitle(input: SubtitleUploadInput): Promise<UploadedSubtitleRecord> {
@@ -368,11 +409,69 @@ export class SubtitleInventoryApiService {
   }
 
   private toContentBuffer(content: Buffer | undefined): Buffer {
-    if (!content) {
-      return Buffer.alloc(0);
+    if (!content || content.byteLength === 0) {
+      throw new Error('Subtitle provider returned missing or empty content');
     }
 
     return Buffer.isBuffer(content) ? content : Buffer.from(content);
+  }
+
+  private async cleanupPartialDownload(
+    storedPath?: string,
+    trackId?: number,
+    historyId?: number,
+  ): Promise<void> {
+    if (historyId != null) {
+      await this.repository.deleteSubtitleHistory(historyId).catch(() => undefined);
+    }
+    if (trackId != null) {
+      await this.repository.deleteSubtitleTrack(trackId).catch(() => undefined);
+    }
+    if (storedPath) {
+      await fs.unlink(storedPath).catch(() => undefined);
+    }
+  }
+
+  private async recordManualDownloadFailure(
+    variantId: number,
+    wantedId: number | undefined,
+    candidate: ManualSearchCandidate,
+    error: unknown,
+  ): Promise<void> {
+    const message = error instanceof Error ? error.message : String(error);
+    let failureWantedId = wantedId;
+
+    if (failureWantedId == null) {
+      const wanted = await this.repository.upsertWantedSubtitle({
+        variantId,
+        languageCode: candidate.languageCode,
+        isForced: candidate.isForced,
+        isHi: candidate.isHi,
+      }).catch(() => null);
+      failureWantedId = wanted?.id;
+    }
+    if (failureWantedId != null) {
+      await this.repository.updateWantedSubtitleState(failureWantedId, 'FAILED')
+        .catch(() => undefined);
+    }
+
+    await this.repository.createSubtitleHistory({
+      variantId,
+      wantedSubtitleId: failureWantedId,
+      languageCode: candidate.languageCode,
+      provider: candidate.provider,
+      score: candidate.score,
+      message: `Manual subtitle download failed: ${message}`,
+    }).catch(() => undefined);
+
+    await this.activityEventEmitter?.emit({
+      eventType: 'SUBTITLE_DOWNLOADED',
+      sourceModule: 'subtitle-inventory-api',
+      entityRef: failureWantedId != null ? `wanted:${failureWantedId}` : `variant:${variantId}`,
+      summary: `Manual subtitle download failed (${candidate.languageCode}): ${message}`,
+      success: false,
+      occurredAt: new Date(),
+    }).catch(() => undefined);
   }
 
   private async mapVariantInventory(

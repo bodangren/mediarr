@@ -21,7 +21,8 @@ const subtitleProviderSchema = z.object({
   type: z.string(),
   settings: providerSettingsSchema,
   lastError: z.string().optional(),
-  status: z.enum(['active', 'error', 'disabled']),
+  unavailableReason: z.string().nullable().optional(),
+  status: z.enum(['active', 'error', 'disabled', 'unavailable']),
 }).passthrough();
 
 // Test result schema
@@ -56,7 +57,7 @@ function toSlug(value: string): string {
 function normalizeStatus(
   value: unknown,
   enabledFallback: boolean,
-): 'active' | 'error' | 'disabled' {
+): 'active' | 'error' | 'disabled' | 'unavailable' {
   const normalized = String(value ?? '').trim().toLowerCase();
 
   if (normalized === 'error' || normalized === 'failed' || normalized === 'failure') {
@@ -64,6 +65,9 @@ function normalizeStatus(
   }
   if (normalized === 'disabled' || normalized === 'inactive' || normalized === 'off') {
     return 'disabled';
+  }
+  if (normalized === 'unavailable' || normalized === 'unsupported') {
+    return 'unavailable';
   }
   if (
     normalized === 'active'

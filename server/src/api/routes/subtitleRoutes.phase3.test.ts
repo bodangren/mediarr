@@ -34,6 +34,9 @@ function createApp(overrides: Partial<Record<string, any>> = {}): SubtitleRouteT
     },
     subtitleProviderFactory: {
       getProviderNames: vi.fn().mockReturnValue(['embedded', 'opensubtitles', 'assrt', 'subdl']),
+      isProviderAvailable: vi.fn((name: string) => name !== 'embedded'),
+      getProviderUnavailableReason: vi.fn((name: string) =>
+        name === 'embedded' ? 'Embedded subtitle extraction is not available' : null),
       resolveManualProvider: vi.fn().mockReturnValue({
         search: vi.fn().mockResolvedValue([]),
       }),
@@ -70,28 +73,34 @@ function createApp(overrides: Partial<Record<string, any>> = {}): SubtitleRouteT
     },
   };
 
+  const defaultPrisma = deps.prisma;
+  const defaultSettingsService = deps.settingsService;
+  const defaultSubtitleProviderFactory = deps.subtitleProviderFactory;
+  const defaultSubtitleAutomationService = deps.subtitleAutomationService;
+  const defaultSubtitleInventoryApiService = deps.subtitleInventoryApiService;
+
   Object.assign(deps, overrides);
   if (overrides.prisma) {
-    deps.prisma = { ...deps.prisma, ...overrides.prisma };
+    deps.prisma = { ...defaultPrisma, ...overrides.prisma };
   }
   if (overrides.settingsService) {
-    deps.settingsService = { ...deps.settingsService, ...overrides.settingsService };
+    deps.settingsService = { ...defaultSettingsService, ...overrides.settingsService };
   }
   if (overrides.subtitleProviderFactory) {
     deps.subtitleProviderFactory = {
-      ...deps.subtitleProviderFactory,
+      ...defaultSubtitleProviderFactory,
       ...overrides.subtitleProviderFactory,
     };
   }
   if (overrides.subtitleAutomationService) {
     deps.subtitleAutomationService = {
-      ...deps.subtitleAutomationService,
+      ...defaultSubtitleAutomationService,
       ...overrides.subtitleAutomationService,
     };
   }
   if (overrides.subtitleInventoryApiService) {
     deps.subtitleInventoryApiService = {
-      ...deps.subtitleInventoryApiService,
+      ...defaultSubtitleInventoryApiService,
       ...overrides.subtitleInventoryApiService,
     };
   }
@@ -126,6 +135,12 @@ describe('subtitleRoutes phase 3 contract', () => {
           id: 'assrt',
           enabled: false,
           status: 'disabled',
+        }),
+        expect.objectContaining({
+          id: 'embedded',
+          enabled: false,
+          status: 'unavailable',
+          unavailableReason: 'Embedded subtitle extraction is not available',
         }),
       ]),
     );
@@ -186,6 +201,27 @@ describe('subtitleRoutes phase 3 contract', () => {
       message: 'Provider test succeeded (2 candidates)',
     });
     expect(search).toHaveBeenCalledTimes(1);
+
+    await app.close();
+  });
+
+  it('rejects embedded provider testing without invoking its no-op search path', async () => {
+    const resolveManualProvider = vi.fn();
+    const { app } = createApp({
+      subtitleProviderFactory: { resolveManualProvider },
+    });
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/subtitles/providers/embedded/test',
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().data).toEqual({
+      success: false,
+      message: 'Embedded subtitle extraction is not available',
+    });
+    expect(resolveManualProvider).not.toHaveBeenCalled();
 
     await app.close();
   });

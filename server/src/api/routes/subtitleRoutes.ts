@@ -341,7 +341,11 @@ export function registerSubtitleRoutes(
       const configuredValue = keyName && typeof apiKeys[keyName] === 'string'
         ? (apiKeys[keyName] as string)
         : null;
-      const enabled = name === 'embedded' ? true : Boolean(configuredValue && configuredValue.trim().length > 0);
+      const available = deps.subtitleProviderFactory!.isProviderAvailable(name);
+      const unavailableReason = deps.subtitleProviderFactory!.getProviderUnavailableReason(name);
+      const enabled = available && Boolean(
+        name === 'embedded' || (configuredValue && configuredValue.trim().length > 0),
+      );
 
       return {
         id: name,
@@ -351,7 +355,8 @@ export function registerSubtitleRoutes(
         settings: {
           apiKey: configuredValue,
         },
-        status: enabled ? 'active' : 'disabled',
+        status: available ? (enabled ? 'active' : 'disabled') : 'unavailable',
+        unavailableReason,
       };
     });
 
@@ -375,15 +380,23 @@ export function registerSubtitleRoutes(
       ? (apiKeys[keyName] as string)
       : null;
 
+    const available = deps.subtitleProviderFactory.isProviderAvailable(id);
+    const unavailableReason = deps.subtitleProviderFactory.getProviderUnavailableReason(id);
+
     return sendSuccess(reply, {
       id,
       name: formatProviderName(id),
-      enabled: id === 'embedded' ? true : Boolean(configuredValue && configuredValue.trim().length > 0),
+      enabled: available && Boolean(
+        id === 'embedded' || (configuredValue && configuredValue.trim().length > 0),
+      ),
       type: id === 'embedded' ? 'embedded' : 'api',
       settings: {
         apiKey: configuredValue,
       },
-      status: id === 'embedded' || configuredValue ? 'active' : 'disabled',
+      status: available
+        ? (id === 'embedded' || configuredValue ? 'active' : 'disabled')
+        : 'unavailable',
+      unavailableReason,
     });
   });
 
@@ -401,10 +414,11 @@ export function registerSubtitleRoutes(
       return sendSuccess(reply, {
         id,
         name: formatProviderName(id),
-        enabled: true,
+        enabled: false,
         type: 'embedded',
         settings: {},
-        status: 'active',
+        status: 'unavailable',
+        unavailableReason: deps.subtitleProviderFactory.getProviderUnavailableReason(id),
       });
     }
 
@@ -439,6 +453,14 @@ export function registerSubtitleRoutes(
     }
 
     const id = normalizeProviderId((request.params as { id?: string }).id ?? '');
+
+    if (!deps.subtitleProviderFactory.isProviderAvailable(id)) {
+      return sendSuccess(reply, {
+        success: false,
+        message: deps.subtitleProviderFactory.getProviderUnavailableReason(id)
+          ?? `Subtitle provider '${id}' is unavailable`,
+      });
+    }
 
     try {
       const provider = deps.subtitleProviderFactory.resolveManualProvider(id);
@@ -475,13 +497,15 @@ export function registerSubtitleRoutes(
 
     const keyName = providerCredentialKey(id);
     if (!keyName) {
+      const available = deps.subtitleProviderFactory.isProviderAvailable(id);
       return sendSuccess(reply, {
         id,
         name: formatProviderName(id),
-        enabled: id === 'embedded',
+        enabled: available && id === 'embedded',
         type: id === 'embedded' ? 'embedded' : 'api',
         settings: {},
-        status: id === 'embedded' ? 'active' : 'disabled',
+        status: available && id === 'embedded' ? 'active' : 'unavailable',
+        unavailableReason: deps.subtitleProviderFactory.getProviderUnavailableReason(id),
       });
     }
 

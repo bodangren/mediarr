@@ -49,6 +49,18 @@ describe('ProviderStatusBadge', () => {
     expect(screen.getByText('error')).toBeInTheDocument();
   });
 
+  it('renders unavailable without misrepresenting the provider as disabled or active', () => {
+    render(
+      <ProviderStatusBadge
+        provider={{ ...mockProvider, enabled: false, status: 'unavailable' }}
+        status="unavailable"
+      />,
+    );
+
+    expect(screen.getByText('unavailable')).toBeInTheDocument();
+    expect(screen.queryByText('completed')).not.toBeInTheDocument();
+  });
+
   it('displays last error message when status is error', () => {
     const errorMessage = 'Authentication failed';
     render(

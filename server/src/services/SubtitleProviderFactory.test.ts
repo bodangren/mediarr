@@ -32,6 +32,20 @@ describe('SubtitleProviderFactory', () => {
       const factory = new SubtitleProviderFactory({}, readConfig);
       expect(factory.getProviderNames()).toEqual([]);
     });
+
+    it('includes explicitly unavailable providers for truthful status listing', () => {
+      const factory = new SubtitleProviderFactory(
+        providers,
+        readConfig,
+        { embedded: 'Embedded subtitle extraction is not available' },
+      );
+
+      expect(factory.getProviderNames()).toContain('embedded');
+      expect(factory.isProviderAvailable('embedded')).toBe(false);
+      expect(factory.getProviderUnavailableReason('embedded')).toBe(
+        'Embedded subtitle extraction is not available',
+      );
+    });
   });
 
   describe('resolveAllManualProviders', () => {
@@ -86,6 +100,19 @@ describe('SubtitleProviderFactory', () => {
       expect(() => factory.resolveManualProvider()).toThrow(
         "Subtitle provider 'opensubtitles' is not registered",
       );
+    });
+
+    it('rejects explicit resolution of an unavailable provider', () => {
+      const factory = new SubtitleProviderFactory(
+        providers,
+        readConfig,
+        { embedded: 'Embedded subtitle extraction is not available' },
+      );
+
+      expect(() => factory.resolveManualProvider('embedded')).toThrow(
+        "Subtitle provider 'embedded' is unavailable: Embedded subtitle extraction is not available",
+      );
+      expect(factory.resolveAllManualProviders().map(entry => entry.name)).not.toContain('embedded');
     });
   });
 });

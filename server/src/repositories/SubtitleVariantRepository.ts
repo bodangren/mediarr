@@ -285,6 +285,12 @@ export class SubtitleVariantRepository {
     return row as VariantSubtitleTrack;
   }
 
+  async deleteSubtitleHistory(id: number): Promise<void> {
+    await this.prisma.drizzle
+      .delete(schema.subtitleHistories)
+      .where(eq(schema.subtitleHistories.id, id));
+  }
+
   async listMovieVariants(movieId: number): Promise<MediaFileVariant[]> {
     return this.prisma.drizzle
       .select()

@@ -1,6 +1,7 @@
 import type { HttpClient } from '../../indexers/HttpClient';
 import type { SettingsService } from '../SettingsService';
 import type { ImportListProvider, ImportListItem } from './ImportListProvider';
+import { resolveTMDBSeriesIdentifiers } from './TMDBSeriesIdentifiers';
 
 export interface TMDBPopularConfig {
   mediaType?: 'movie' | 'series' | 'both';
@@ -108,12 +109,23 @@ export class TMDBPopularProvider implements ImportListProvider {
 
       for (const series of results) {
         if (items.length >= limit) break;
-        items.push({
+        const identifiers = await resolveTMDBSeriesIdentifiers(
+          this.httpClient,
+          this.baseUrl,
+          apiKey,
+          series.id,
+        );
+        const item: ImportListItem = {
           tmdbId: series.id,
+          tvdbId: identifiers.tvdbId,
           title: series.name,
           year: this.parseYear(series.first_air_date),
           mediaType: 'series',
-        });
+        };
+        if (identifiers.imdbId !== undefined) {
+          item.imdbId = identifiers.imdbId;
+        }
+        items.push(item);
       }
 
       page++;

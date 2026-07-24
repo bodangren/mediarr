@@ -2,13 +2,17 @@ import type { SubtitleProvider } from '@/lib/api';
 import { StatusBadge } from '@/components/ui/status-badge-compat';
 
 export interface ProviderStatusBadgeProps {
-  status: 'active' | 'error' | 'disabled';
+  status: 'active' | 'error' | 'disabled' | 'unavailable';
   lastError?: string;
   provider?: SubtitleProvider;
 }
 
-export function ProviderStatusBadge({ lastError, provider }: ProviderStatusBadgeProps) {
-  const displayStatus = provider?.enabled ? (provider.status === 'error' ? 'error' : 'active') : 'disabled';
+export function ProviderStatusBadge({ status, lastError, provider }: ProviderStatusBadgeProps) {
+  const displayStatus = provider?.status === 'unavailable' || status === 'unavailable'
+    ? 'unavailable'
+    : provider?.enabled
+      ? (provider.status === 'error' ? 'error' : 'active')
+      : 'disabled';
   const errorMessage = lastError ?? provider?.lastError;
 
   return (
@@ -16,9 +20,10 @@ export function ProviderStatusBadge({ lastError, provider }: ProviderStatusBadge
       <div
         className={`
           h-2 w-2 rounded-full
-          ${displayStatus === 'active' ? 'bg-status-error' : ''}
+          ${displayStatus === 'active' ? 'bg-status-completed' : ''}
           ${displayStatus === 'error' ? 'bg-status-error' : ''}
           ${displayStatus === 'disabled' ? 'bg-text-muted' : ''}
+          ${displayStatus === 'unavailable' ? 'bg-text-muted' : ''}
         `}
       />
       <StatusBadge status={displayStatus === 'active' ? 'completed' : displayStatus} />

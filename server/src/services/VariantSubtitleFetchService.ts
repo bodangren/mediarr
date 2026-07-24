@@ -62,105 +62,161 @@ export class VariantSubtitleFetchService {
       throw new Error(`Wanted subtitle ${wantedSubtitleId} not found`);
     }
 
-    await this.repository.updateWantedSubtitleState(wanted.id, 'SEARCHING');
-    const inventory = await this.repository.getVariantInventory(wanted.variantId);
-    if (!inventory.variant) {
-      await this.repository.updateWantedSubtitleState(wanted.id, 'FAILED');
-      throw new Error(`Variant ${wanted.variantId} not found`);
-    }
+    let inventory: Awaited<ReturnType<SubtitleVariantRepository['getVariantInventory']>> | undefined;
+    let candidate: SubtitleFetchCandidate | undefined;
+    let storedPath: string | undefined;
+    let createdTrackId: number | undefined;
+    let createdHistoryId: number | undefined;
 
-    const candidate = await provider.searchBestSubtitle({
-      wantedSubtitle: {
-        id: wanted.id,
-        languageCode: wanted.languageCode,
-        isForced: wanted.isForced,
-        isHi: wanted.isHi,
-      },
-      variant: {
-        id: inventory.variant.id,
-        path: inventory.variant.path,
-        releaseName: inventory.variant.releaseName,
-      },
-      audioTracks: inventory.audioTracks.map(track => ({
-        languageCode: track.languageCode,
-        isCommentary: track.isCommentary,
-        isDefault: track.isDefault,
-      })),
-    });
+    try {
+      await this.repository.updateWantedSubtitleState(wanted.id, 'SEARCHING');
+      inventory = await this.repository.getVariantInventory(wanted.variantId);
+      if (!inventory.variant) {
+        throw new Error(`Variant ${wanted.variantId} not found`);
+      }
 
-    if (!candidate) {
-      await this.repository.updateWantedSubtitleState(wanted.id, 'FAILED');
+      const providerResult = await provider.searchBestSubtitle({
+        wantedSubtitle: {
+          id: wanted.id,
+          languageCode: wanted.languageCode,
+          isForced: wanted.isForced,
+          isHi: wanted.isHi,
+        },
+        variant: {
+          id: inventory.variant.id,
+          path: inventory.variant.path,
+          releaseName: inventory.variant.releaseName,
+        },
+        audioTracks: inventory.audioTracks.map(track => ({
+          languageCode: track.languageCode,
+          isCommentary: track.isCommentary,
+          isDefault: track.isDefault,
+        })),
+      });
+
+      if (!providerResult) {
+        await this.recordFailure(
+          wanted,
+          inventory,
+          undefined,
+          new Error(`No subtitle found for ${wanted.languageCode}`),
+        );
+        return null;
+      }
+      candidate = providerResult;
+
+      if (!candidate.content || candidate.content.byteLength === 0) {
+        throw new Error('Subtitle provider returned missing or empty content');
+      }
+
+      const siblingPaths = await this.repository.listSiblingSubtitlePaths(
+        inventory.variant.id,
+      );
+      const ownPaths = inventory.subtitleTracks
+        .map(track => track.filePath)
+        .filter((value): value is string => Boolean(value));
+      const variantToken =
+        inventory.variant.releaseName ?? `variant-${inventory.variant.id}`;
+      storedPath = this.namingService.buildSubtitlePath({
+        videoPath: inventory.variant.path,
+        languageCode: candidate.languageCode,
+        isForced: candidate.isForced,
+        isHi: candidate.isHi,
+        extension: candidate.extension ?? '.srt',
+        variantToken,
+        existingPaths: [...siblingPaths, ...ownPaths],
+      });
+
+      await fs.mkdir(path.dirname(storedPath), { recursive: true });
+      await fs.writeFile(storedPath, candidate.content);
+
+      const track = await this.repository.createSubtitleTrack({
+        variantId: inventory.variant.id,
+        source: 'EXTERNAL',
+        languageCode: candidate.languageCode,
+        isForced: candidate.isForced,
+        isHi: candidate.isHi,
+        filePath: storedPath,
+        fileSize: Number(candidate.content.byteLength),
+      });
+      createdTrackId = track.id;
+
+      const history = await this.repository.createSubtitleHistory({
+        variantId: inventory.variant.id,
+        wantedSubtitleId: wanted.id,
+        languageCode: candidate.languageCode,
+        provider: candidate.provider,
+        score: candidate.score,
+        storedPath,
+        message: 'Subtitle downloaded for variant',
+      });
+      createdHistoryId = history.id;
+
+      await this.repository.updateWantedSubtitleState(wanted.id, 'DOWNLOADED');
       await this.activityEventEmitter?.emit({
         eventType: 'SUBTITLE_DOWNLOADED',
         sourceModule: 'subtitle-fetch-service',
         entityRef: `wanted:${wanted.id}`,
-        summary: `No subtitle found for ${wanted.languageCode}`,
-        success: false,
+        summary: `Subtitle downloaded (${candidate.languageCode})`,
+        success: true,
         occurredAt: new Date(),
       });
-      return null;
+
+      return {
+        storedPath,
+        provider: candidate.provider,
+        score: candidate.score,
+      };
+    } catch (error) {
+      await this.cleanupPartialDownload(storedPath, createdTrackId, createdHistoryId);
+      await this.recordFailure(wanted, inventory, candidate, error);
+      throw error;
     }
+  }
 
-    const siblingPaths = await this.repository.listSiblingSubtitlePaths(
-      inventory.variant.id,
-    );
-    const ownPaths = inventory.subtitleTracks
-      .map(track => track.filePath)
-      .filter((value): value is string => Boolean(value));
+  private async cleanupPartialDownload(
+    storedPath?: string,
+    trackId?: number,
+    historyId?: number,
+  ): Promise<void> {
+    if (historyId != null) {
+      await this.repository.deleteSubtitleHistory(historyId).catch(() => undefined);
+    }
+    if (trackId != null) {
+      await this.repository.deleteSubtitleTrack(trackId).catch(() => undefined);
+    }
+    if (storedPath) {
+      await fs.unlink(storedPath).catch(() => undefined);
+    }
+  }
 
-    const variantToken =
-      inventory.variant.releaseName ?? `variant-${inventory.variant.id}`;
-    const storedPath = this.namingService.buildSubtitlePath({
-      videoPath: inventory.variant.path,
-      languageCode: candidate.languageCode,
-      isForced: candidate.isForced,
-      isHi: candidate.isHi,
-      extension: candidate.extension ?? '.srt',
-      variantToken,
-      existingPaths: [...siblingPaths, ...ownPaths],
-    });
+  private async recordFailure(
+    wanted: Awaited<ReturnType<SubtitleVariantRepository['getWantedSubtitleById']>> & {},
+    inventory: Awaited<ReturnType<SubtitleVariantRepository['getVariantInventory']>> | undefined,
+    candidate: SubtitleFetchCandidate | undefined,
+    error: unknown,
+  ): Promise<void> {
+    const message = error instanceof Error ? error.message : String(error);
+    await this.repository.updateWantedSubtitleState(wanted.id, 'FAILED').catch(() => undefined);
 
-    const content = candidate.content && candidate.content.byteLength > 0
-      ? candidate.content
-      : Buffer.alloc(0);
-    await fs.mkdir(path.dirname(storedPath), { recursive: true });
-    await fs.writeFile(storedPath, content);
-
-    await this.repository.createSubtitleTrack({
-      variantId: inventory.variant.id,
-      source: 'EXTERNAL',
-      languageCode: candidate.languageCode,
-      isForced: candidate.isForced,
-      isHi: candidate.isHi,
-      filePath: storedPath,
-      fileSize: Number(content.byteLength),
-    });
-
-    await this.repository.createSubtitleHistory({
-      variantId: inventory.variant.id,
-      wantedSubtitleId: wanted.id,
-      languageCode: candidate.languageCode,
-      provider: candidate.provider,
-      score: candidate.score,
-      storedPath,
-      message: 'Subtitle downloaded for variant',
-    });
-
-    await this.repository.updateWantedSubtitleState(wanted.id, 'DOWNLOADED');
+    if (inventory?.variant) {
+      await this.repository.createSubtitleHistory({
+        variantId: inventory.variant.id,
+        wantedSubtitleId: wanted.id,
+        languageCode: candidate?.languageCode ?? wanted.languageCode,
+        provider: candidate?.provider,
+        score: candidate?.score,
+        message: `Subtitle download failed: ${message}`,
+      }).catch(() => undefined);
+    }
 
     await this.activityEventEmitter?.emit({
       eventType: 'SUBTITLE_DOWNLOADED',
       sourceModule: 'subtitle-fetch-service',
       entityRef: `wanted:${wanted.id}`,
-      summary: `Subtitle downloaded (${candidate.languageCode})`,
-      success: true,
+      summary: `Subtitle download failed (${wanted.languageCode}): ${message}`,
+      success: false,
       occurredAt: new Date(),
-    });
-
-    return {
-      storedPath,
-      provider: candidate.provider,
-      score: candidate.score,
-    };
+    }).catch(() => undefined);
   }
 }

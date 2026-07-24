@@ -59,10 +59,7 @@ import { RssSyncService } from './services/RssSyncService';
 import { Scheduler } from './services/Scheduler';
 import { SettingsService } from './services/SettingsService';
 import { SubtitleAutomationService } from './services/SubtitleAutomationService';
-import {
-  SubtitleInventoryApiService,
-  type ManualSearchCandidate,
-} from './services/SubtitleInventoryApiService';
+import { SubtitleInventoryApiService } from './services/SubtitleInventoryApiService';
 import { SubtitleNamingService } from './services/SubtitleNamingService';
 import { SubtitleProviderFactory } from './services/SubtitleProviderFactory';
 import { SubtitleScoringService } from './services/SubtitleScoringService';
@@ -294,15 +291,14 @@ async function startApi(): Promise<void> {
 
   const subtitleProviderFactory = new SubtitleProviderFactory(
     {
-      embedded: {
-        async search() { return []; },
-        async download(c: ManualSearchCandidate) { return c; }
-      },
       opensubtitles: openSubtitlesProvider,
       assrt: assrtProvider,
       subdl: subdlProvider,
     },
     () => ({ manualProvider: manualSubtitleProvider }),
+    {
+      embedded: 'Embedded subtitle extraction is not available',
+    },
   );
 
   const subtitleInventoryApiService = new SubtitleInventoryApiService(
@@ -310,6 +306,7 @@ async function startApi(): Promise<void> {
     new SubtitleNamingService(),
     subtitleProviderFactory,
     new SubtitleScoringService(),
+    activityEventEmitter,
   );
 
   const subtitleMissingService = new VariantMissingSubtitleService(subtitleVariantRepository);

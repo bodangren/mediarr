@@ -7,6 +7,11 @@ import { TorrentManager } from './TorrentManager';
 const fsMocks = vi.hoisted(() => ({
   mkdir: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
   rename: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
+  realpath: vi.fn<(value: string) => Promise<string>>(async value => value),
+  lstat: vi.fn(),
+  stat: vi.fn(),
+  copyFile: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
+  cp: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
   rm: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
   access: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
 }));
@@ -95,6 +100,7 @@ function makeClientTorrent(overrides: Record<string, unknown> = {}): any {
     downloadSpeed: 0,
     uploadSpeed: 0,
     timeRemaining: null,
+    files: [{ path: 'Test.Torrent.S01E01.mkv', length: 100 }],
     pause: vi.fn(),
     resume: vi.fn(),
     on: vi.fn((event: string, cb: (...args: unknown[]) => void) => {
@@ -135,6 +141,15 @@ describe('TorrentManager', () => {
     wtMocks.clientInstance.remove.mockReturnValue(undefined);
     fsMocks.mkdir.mockResolvedValue(undefined);
     fsMocks.rename.mockResolvedValue(undefined);
+    fsMocks.realpath.mockImplementation(async (value: string) => value);
+    fsMocks.lstat.mockRejectedValue(Object.assign(new Error('ENOENT'), { code: 'ENOENT' }));
+    fsMocks.stat.mockImplementation(async (value: string) => ({
+      isFile: () => value.endsWith('.mkv'),
+      isDirectory: () => !value.endsWith('.mkv'),
+      size: value.endsWith('.mkv') ? 100 : 0,
+    }));
+    fsMocks.copyFile.mockResolvedValue(undefined);
+    fsMocks.cp.mockResolvedValue(undefined);
     fsMocks.rm.mockResolvedValue(undefined);
     fsMocks.access.mockResolvedValue(undefined);
   });
@@ -288,6 +303,8 @@ describe('TorrentManager', () => {
       );
       // ImportManager must NOT receive a duplicate trigger
       expect(completedEvents).toHaveLength(0);
+      expect(fsMocks.rename).not.toHaveBeenCalled();
+      expect(fsMocks.mkdir).toHaveBeenCalledWith(completePath, { recursive: true });
     });
 
     it('2.3 emits torrent:completed with the target path when file move succeeds', async () => {
@@ -302,10 +319,16 @@ describe('TorrentManager', () => {
         infoHash: HASH_A,
         path: '/data/downloads/incomplete',
         name: 'MyShow.S01E01',
+        files: [{ path: 'MyShow.S01E01.mkv', length: 100 }],
       });
       await (manager as any).handleTorrentCompletion(torrent);
 
-      const expectedTarget = '/data/downloads/complete/MyShow.S01E01';
+      const expectedTarget = '/data/downloads/complete/MyShow.S01E01.mkv';
+      expect(fsMocks.rename).toHaveBeenCalledOnce();
+      expect(fsMocks.rename).toHaveBeenCalledWith(
+        '/data/downloads/incomplete/MyShow.S01E01.mkv',
+        expectedTarget,
+      );
       expect(repo.update).toHaveBeenCalledWith(
         HASH_A,
         expect.objectContaining({
@@ -335,11 +358,19 @@ describe('TorrentManager', () => {
         infoHash: HASH_A,
         path: '/data/downloads/incomplete',
         name: 'MyShow.S01E01',
+        files: [{ path: 'MyShow.S01E01.mkv', length: 100 }],
       });
       await (manager as any).handleTorrentCompletion(torrent);
 
       expect(repo.updateStatus).toHaveBeenCalledWith(HASH_A, 'error');
+      expect(repo.update).not.toHaveBeenCalled();
       expect(completedEvents).toHaveLength(0);
+      expect(fsMocks.rename).toHaveBeenCalledOnce();
+      expect(fsMocks.rename).toHaveBeenCalledWith(
+        '/data/downloads/incomplete/MyShow.S01E01.mkv',
+        '/data/downloads/complete/MyShow.S01E01.mkv',
+      );
+      expect(fsMocks.copyFile).not.toHaveBeenCalled();
     });
   });
 

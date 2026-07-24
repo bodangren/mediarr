@@ -12,13 +12,12 @@ import type { ActivityEventEmitter } from './ActivityEventEmitter';
 const fsMocks = vi.hoisted(() => ({
   mkdir: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
   writeFile: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
+  unlink: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
 }));
 
 vi.mock('node:fs/promises', () => ({
   default: fsMocks,
 }));
-
-import fs from 'node:fs/promises';
 
 type RepositoryMock = Pick<
   SubtitleVariantRepository,
@@ -28,6 +27,8 @@ type RepositoryMock = Pick<
   | 'listSiblingSubtitlePaths'
   | 'createSubtitleTrack'
   | 'createSubtitleHistory'
+  | 'deleteSubtitleTrack'
+  | 'deleteSubtitleHistory'
 >;
 
 const makeRepositoryMock = (): RepositoryMock & {
@@ -37,13 +38,21 @@ const makeRepositoryMock = (): RepositoryMock & {
   listSiblingSubtitlePaths: ReturnType<typeof vi.fn>;
   createSubtitleTrack: ReturnType<typeof vi.fn>;
   createSubtitleHistory: ReturnType<typeof vi.fn>;
+  deleteSubtitleTrack: ReturnType<typeof vi.fn>;
+  deleteSubtitleHistory: ReturnType<typeof vi.fn>;
 } => ({
-  getWantedSubtitleById: vi.fn<(id: number) => Promise<any>>(),
+  getWantedSubtitleById: vi.fn<
+    (id: number) => Promise<ReturnType<typeof makeWanted> | null>
+  >(),
   updateWantedSubtitleState: vi.fn().mockResolvedValue({}),
-  getVariantInventory: vi.fn<(variantId: number) => Promise<any>>(),
+  getVariantInventory: vi.fn<
+    (variantId: number) => Promise<ReturnType<typeof makeInventory>>
+  >(),
   listSiblingSubtitlePaths: vi.fn().mockResolvedValue([]),
   createSubtitleTrack: vi.fn().mockResolvedValue({ id: 1 }),
   createSubtitleHistory: vi.fn().mockResolvedValue({ id: 1 }),
+  deleteSubtitleTrack: vi.fn().mockResolvedValue(undefined),
+  deleteSubtitleHistory: vi.fn().mockResolvedValue(undefined),
 });
 
 const makeNamingMock = () => ({
@@ -157,6 +166,7 @@ describe('VariantSubtitleFetchService', () => {
   beforeEach(() => {
     fsMocks.mkdir.mockClear();
     fsMocks.writeFile.mockClear();
+    fsMocks.unlink.mockClear();
   });
 
   describe('fetchWantedSubtitle', () => {
@@ -313,7 +323,12 @@ describe('VariantSubtitleFetchService', () => {
       );
       expect(fsMocks.writeFile).not.toHaveBeenCalled();
       expect(repositoryMock.createSubtitleTrack).not.toHaveBeenCalled();
-      expect(repositoryMock.createSubtitleHistory).not.toHaveBeenCalled();
+      expect(repositoryMock.createSubtitleHistory).toHaveBeenCalledWith(
+        expect.objectContaining({
+          wantedSubtitleId: 1,
+          message: 'Subtitle download failed: No subtitle found for en',
+        }),
+      );
       expect(namingMock.buildSubtitlePath).not.toHaveBeenCalled();
     });
 
@@ -427,10 +442,14 @@ describe('VariantSubtitleFetchService', () => {
       );
     });
 
-    it('falls back to Buffer.alloc(0) and fileSize 0n when the candidate content is missing or empty', async () => {
-      const { service, repositoryMock, namingMock } = buildService();
+    it.each([
+      ['missing', undefined],
+      ['zero-byte', Buffer.alloc(0)],
+    ])('rejects %s provider content before filesystem or subtitle-record mutation', async (_label, content) => {
+      const activityMock = makeActivityMock();
+      const { service, repositoryMock, namingMock } = buildService({ activityMock });
       const provider = makeProvider({
-        candidate: makeCandidate({ content: undefined }),
+        candidate: makeCandidate({ content }),
       });
       namingMock.buildSubtitlePath.mockReturnValue('/data/movie.en.srt');
 
@@ -441,21 +460,30 @@ describe('VariantSubtitleFetchService', () => {
         }),
       );
 
-      await service.fetchWantedSubtitle(1, provider);
-
-      expect(fsMocks.writeFile).toHaveBeenCalledWith(
-        '/data/movie.en.srt',
-        Buffer.alloc(0),
+      await expect(service.fetchWantedSubtitle(1, provider)).rejects.toThrow(
+        'Subtitle provider returned missing or empty content',
       );
-      expect(repositoryMock.createSubtitleTrack).toHaveBeenCalledWith(
-        expect.objectContaining({ fileSize: 0 }),
+
+      expect(fsMocks.mkdir).not.toHaveBeenCalled();
+      expect(fsMocks.writeFile).not.toHaveBeenCalled();
+      expect(repositoryMock.createSubtitleTrack).not.toHaveBeenCalled();
+      expect(repositoryMock.updateWantedSubtitleState).toHaveBeenLastCalledWith(1, 'FAILED');
+      expect(repositoryMock.createSubtitleHistory).toHaveBeenCalledWith(
+        expect.objectContaining({
+          wantedSubtitleId: 1,
+          message: expect.stringContaining('failed'),
+        }),
+      );
+      expect(activityMock.emit).toHaveBeenCalledWith(
+        expect.objectContaining({ success: false }),
       );
     });
 
-    it('propagates fs.writeFile errors and leaves the wanted state as SEARCHING', async () => {
+    it('propagates fs.writeFile errors, cleans partial output, and leaves FAILED metadata', async () => {
       fsMocks.writeFile.mockRejectedValueOnce(new Error('disk full'));
 
-      const { service, repositoryMock, namingMock } = buildService();
+      const activityMock = makeActivityMock();
+      const { service, repositoryMock, namingMock } = buildService({ activityMock });
       const provider = makeProvider();
       namingMock.buildSubtitlePath.mockReturnValue('/data/movie.en.srt');
 
@@ -470,13 +498,57 @@ describe('VariantSubtitleFetchService', () => {
         'disk full',
       );
 
-      expect(repositoryMock.updateWantedSubtitleState).toHaveBeenCalledTimes(1);
-      expect(repositoryMock.updateWantedSubtitleState).toHaveBeenCalledWith(
-        1,
-        'SEARCHING',
-      );
+      expect(repositoryMock.updateWantedSubtitleState).toHaveBeenLastCalledWith(1, 'FAILED');
+      expect(fsMocks.unlink).toHaveBeenCalledWith('/data/movie.en.srt');
       expect(repositoryMock.createSubtitleTrack).not.toHaveBeenCalled();
-      expect(repositoryMock.createSubtitleHistory).not.toHaveBeenCalled();
+      expect(repositoryMock.createSubtitleHistory).toHaveBeenCalledWith(
+        expect.objectContaining({ message: expect.stringContaining('disk full') }),
+      );
+      expect(activityMock.emit).toHaveBeenCalledWith(
+        expect.objectContaining({ success: false }),
+      );
+    });
+
+    it('records provider exceptions as retryable FAILED state and failure metadata', async () => {
+      const activityMock = makeActivityMock();
+      const { service, repositoryMock } = buildService({ activityMock });
+      const provider = makeProvider();
+      vi.mocked(provider.searchBestSubtitle).mockRejectedValueOnce(new Error('provider offline'));
+      repositoryMock.getWantedSubtitleById.mockResolvedValue(makeWanted());
+      repositoryMock.getVariantInventory.mockResolvedValue(makeInventory());
+
+      await expect(service.fetchWantedSubtitle(1, provider)).rejects.toThrow('provider offline');
+
+      expect(repositoryMock.updateWantedSubtitleState).toHaveBeenLastCalledWith(1, 'FAILED');
+      expect(repositoryMock.createSubtitleHistory).toHaveBeenCalledWith(
+        expect.objectContaining({ message: expect.stringContaining('provider offline') }),
+      );
+      expect(activityMock.emit).toHaveBeenCalledWith(
+        expect.objectContaining({ success: false }),
+      );
+    });
+
+    it('compensates a persisted track when history persistence fails', async () => {
+      const activityMock = makeActivityMock();
+      const { service, repositoryMock, namingMock } = buildService({ activityMock });
+      namingMock.buildSubtitlePath.mockReturnValue('/data/movie.en.srt');
+      repositoryMock.getWantedSubtitleById.mockResolvedValue(makeWanted());
+      repositoryMock.getVariantInventory.mockResolvedValue(makeInventory());
+      repositoryMock.createSubtitleTrack.mockResolvedValue({ id: 91 });
+      repositoryMock.createSubtitleHistory
+        .mockRejectedValueOnce(new Error('history database unavailable'))
+        .mockResolvedValueOnce({ id: 92 });
+
+      await expect(service.fetchWantedSubtitle(1, makeProvider())).rejects.toThrow(
+        'history database unavailable',
+      );
+
+      expect(repositoryMock.deleteSubtitleTrack).toHaveBeenCalledWith(91);
+      expect(fsMocks.unlink).toHaveBeenCalledWith('/data/movie.en.srt');
+      expect(repositoryMock.updateWantedSubtitleState).toHaveBeenLastCalledWith(1, 'FAILED');
+      expect(repositoryMock.createSubtitleHistory).toHaveBeenLastCalledWith(
+        expect.objectContaining({ message: expect.stringContaining('history database unavailable') }),
+      );
     });
 
     it('emits a success activity event when ActivityEventEmitter is provided', async () => {
@@ -526,7 +598,7 @@ describe('VariantSubtitleFetchService', () => {
           eventType: 'SUBTITLE_DOWNLOADED',
           sourceModule: 'subtitle-fetch-service',
           entityRef: 'wanted:8',
-          summary: 'No subtitle found for fr',
+          summary: 'Subtitle download failed (fr): No subtitle found for fr',
           success: false,
         }),
       );

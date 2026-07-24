@@ -54,24 +54,25 @@ _Blast radius: UpdateService (routes, scheduler, SPA update client), ImportManag
 - [x] Task: Measure - User Manual Verification 'Automation and Media Lifecycle Completeness'
   - Automated lifecycle, import, ffprobe metadata, and graceful shutdown verification covered this server-only phase.
 
-## Phase 4: Contracts, False Tests, and Quality Gates
+## Phase 4: Contracts, False Tests, and Quality Gates [checkpoint: 2e76d759]
 
 - [x] Task: Enforce quality-profile validation and exact error contracts (26a1ca70)
 - [x] Task: Make the production route map bidirectionally complete (d6c17340)
-- [~] Task: Replace false and misleading regression tests
+- [x] Task: Replace false and misleading regression tests (83524208, b84defc9, 962f1f77)
   - [x] Remove self-assertions, permissive statuses, and mock-only integration
         claims identified by the audit.
-  - [~] Add handler-level tests for the 27 uncovered endpoints.
-- [~] Task: Repair server test/build/lint gates
-  - [ ] Replace the server placeholder test script.
-  - [ ] Reconcile the Docker deterministic-workspace invariant.
-  - [ ] Isolate generated smoke output and lint all changed files.
-- [ ] Task: Measure - User Manual Verification 'Contracts, False Tests, and Quality Gates'
+  - [x] Add handler-level tests for the 27 uncovered endpoints.
+- [x] Task: Repair server test/build/lint gates (12f40df5)
+  - [x] Replace the server placeholder test script.
+  - [x] Reconcile the Docker deterministic-workspace invariant.
+  - [x] Isolate generated smoke output and lint all changed files.
+- [x] Task: Measure - User Manual Verification 'Contracts, False Tests, and Quality Gates'
+  - Fastify, SQLite, filesystem, and configuration automation covered the server-only contracts.
 
 ## Phase 5: Integrated Verification and Closeout
 
-- [ ] Task: Refresh repo-graph and verify changed-symbol callers
-- [ ] Task: Run targeted coverage, strict typecheck, lint, server/root suites,
+- [~] Task: Refresh repo-graph and verify changed-symbol callers
+- [~] Task: Run targeted coverage, strict typecheck, lint, server/root suites,
       production build, and Docker invariant
 - [ ] Task: Perform findings-to-fix review against the source audit
 - [ ] Task: Update verification evidence, metadata, lessons/debt where needed,

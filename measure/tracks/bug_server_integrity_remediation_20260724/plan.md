@@ -1,6 +1,6 @@
 # Implementation Plan: Server Integrity Remediation
 
-## Phase 1: Critical Runtime and Data Integrity
+## Phase 1: Critical Runtime and Data Integrity [checkpoint: a5ede3c2]
 
 _Blast radius: UpdateService (routes, scheduler, SPA update client), ImportManager
 (TorrentManager, organizer pipeline, tests), MediaRepository and DatabaseClient
@@ -21,32 +21,33 @@ _Blast radius: UpdateService (routes, scheduler, SPA update client), ImportManag
 - [x] Task: Measure - User Manual Verification 'Critical Runtime and Data Integrity'
   - Installed SQLite, filesystem, and route verification was automated; no interactive UI applies.
 
-## Phase 2: Operational API Truthfulness
+## Phase 2: Operational API Truthfulness [checkpoint: 25ab9848]
 
-- [~] Task: Repair backup contracts and WAL-safe operations
-  - [ ] Align API and SPA schemas and add real list/create/download/restore tests.
-  - [ ] Implement SQLite-safe backup creation and explicit schedule behavior.
-- [~] Task: Replace fake logs with the real log source
-  - [ ] Add end-to-end log list/detail/delete/clear/download contract tests.
-  - [ ] Remove production fixture arrays and contract drift.
-- [~] Task: Unify task history, queue, scheduler, and system events
-  - [ ] Add behavioral tests proving run-now history/event persistence.
-  - [ ] Remove fixture/random fallback execution from production routes.
-- [~] Task: Make media deletion failure-safe and retryable
-- [ ] Task: Measure - User Manual Verification 'Operational API Truthfulness'
+- [x] Task: Repair backup contracts and WAL-safe operations (073610ac)
+  - [x] Align API and SPA schemas and add real list/create/download/restore tests.
+  - [x] Implement SQLite-safe backup creation and explicit schedule behavior.
+- [x] Task: Replace fake logs with the real log source (073610ac)
+  - [x] Add end-to-end log list/detail/delete/clear/download contract tests.
+  - [x] Remove production fixture arrays and contract drift.
+- [x] Task: Unify task history, queue, scheduler, and system events (25ab9848)
+  - [x] Add behavioral tests proving run-now history/event persistence.
+  - [x] Remove fixture/random fallback execution from production routes.
+- [x] Task: Make media deletion failure-safe and retryable (414b6813)
+- [x] Task: Measure - User Manual Verification 'Operational API Truthfulness'
+  - Installed SQLite, filesystem, Fastify, and SPA automation covered the operational flows; no additional interactive verification was required.
 
 ## Phase 3: Automation and Media Lifecycle Completeness
 
-- [~] Task: Implement truthful Cardigann RSS and pack matching
-  - [ ] Execute Cardigann RSS through the shared runtime or return a hard failure.
-  - [ ] Match season packs and all episodes in multi-episode releases.
-- [ ] Task: Repair TMDB series import-list synchronization
+- [x] Task: Implement truthful Cardigann RSS and pack matching (25ab9848)
+  - [x] Execute Cardigann RSS through the shared runtime or return a hard failure.
+  - [x] Match season packs and all episodes in multi-episode releases.
+- [~] Task: Repair TMDB series import-list synchronization
   - [ ] Normalize identifiers, verify persistence before counters, and derive
         unique title paths.
-- [ ] Task: Repair subtitle download state and embedded-provider behavior
+- [~] Task: Repair subtitle download state and embedded-provider behavior
   - [ ] Reject empty content and persist retryable failure state.
   - [ ] Wire real embedded discovery/download or mark it unavailable.
-- [ ] Task: Repair torrent completion path safety and cross-device movement
+- [~] Task: Repair torrent completion path safety and cross-device movement
 - [ ] Task: Correct and wire the variant lifecycle
   - [ ] Persist `EPISODE` variants for series imports.
   - [ ] Compose backfill/inventory services and graceful watcher shutdown.

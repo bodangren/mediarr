@@ -6,19 +6,20 @@ _Blast radius: UpdateService (routes, scheduler, SPA update client), ImportManag
 (TorrentManager, organizer pipeline, tests), MediaRepository and DatabaseClient
 (media and monitoring services)._
 
-- [~] Task: Make update installation fail closed and application-owned
-  - [ ] Write red tests for the production default path, asset mismatch,
+- [x] Task: Make update installation fail closed and application-owned (a5ede3c2)
+  - [x] Write red tests for the production default path, asset mismatch,
         checksum absence, atomic replacement, and rollback.
-  - [ ] Prevent writes to the Bun/Node runtime and require an explicit supported
+  - [x] Prevent writes to the Bun/Node runtime and require an explicit supported
         install layout.
-- [~] Task: Correct import strategy and cross-volume behavior
-  - [ ] Write red filesystem tests for same-volume seeding preservation,
+- [x] Task: Correct import strategy and cross-volume behavior (a5ede3c2)
+  - [x] Write red filesystem tests for same-volume seeding preservation,
         absent destinations, and EXDEV behavior.
-  - [ ] Replace the reversed move boolean with explicit safe semantics.
-- [~] Task: Restore real SQLite transaction atomicity
-  - [ ] Add installed-runtime rollback tests for repository operations.
-  - [ ] Remove async callbacks and `Promise.all` transaction impersonation.
-- [ ] Task: Measure - User Manual Verification 'Critical Runtime and Data Integrity'
+  - [x] Replace the reversed move boolean with explicit safe semantics.
+- [x] Task: Restore real SQLite transaction atomicity (a5ede3c2)
+  - [x] Add installed-runtime rollback tests for repository operations.
+  - [x] Remove async callbacks and `Promise.all` transaction impersonation.
+- [x] Task: Measure - User Manual Verification 'Critical Runtime and Data Integrity'
+  - Installed SQLite, filesystem, and route verification was automated; no interactive UI applies.
 
 ## Phase 2: Operational API Truthfulness
 

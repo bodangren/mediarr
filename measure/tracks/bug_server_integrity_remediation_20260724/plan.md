@@ -78,6 +78,7 @@ _Blast radius: UpdateService (routes, scheduler, SPA update client), ImportManag
   - [x] Normalize TMDB list IDs across SPA/provider contracts. (474bbe4e)
   - [x] Persist every episode linked to multi-episode imports. (bc861059)
   - [x] Stop normal test suites from mutating tracked artifacts. (1a03848e)
+  - [x] Enforce variant media types at the installed SQLite boundary. (053582f8)
 - [ ] Task: Update verification evidence, metadata, lessons/debt where needed,
       checkpoint the phase, and archive the completed track
 - [ ] Task: Measure - User Manual Verification 'Integrated Verification and Closeout'

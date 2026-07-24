@@ -1,0 +1,22 @@
+Task: Phase 5 root-suite fixture and alias repair
+
+Summary:
+- Updated successful subtitle provider fixtures to return non-empty subtitle bytes and contract-accurate persistence records.
+- Made the shared root database helper reconcile known pushed schema state and apply the checked-in Drizzle journal, including 0005_truthful_rss_episode_links, before returning a client.
+- Added root Vitest aliases matching app/vite.config.ts so typed SDK contract suites resolve @server imports.
+
+Files:
+- tests/activity-event-emission.test.js
+- tests/helpers/test-prisma-client.js
+- tests/subtitle-inventory-api-service.test.js
+- tests/subtitle-provider-factory.test.js
+- tests/variant-subtitle-fetch-service.test.js
+- vitest.config.ts
+
+Verification:
+- CI=true npx vitest run [8 requested files]: 8 files passed, 25 tests passed.
+- CI=true npx vitest run [all 21 shared-helper consumers]: 21 files passed, 55 tests passed.
+- git diff --cached --check: passed.
+
+Implementation note:
+- apply_patch failed with bwrap loopback RTM_NEWADDR; the bounded patch was applied using the requested git apply patch-only fallback.

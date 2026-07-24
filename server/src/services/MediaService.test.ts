@@ -1,8 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MediaService } from './MediaService';
 import type { ActivityEventEmitter } from './ActivityEventEmitter';
+import * as schema from '../db/schema';
 
 function makeDb() {
+  const deleteBuilder = {
+    where: vi.fn(),
+    run: vi.fn().mockReturnValue({ changes: 1 }),
+  };
+  deleteBuilder.where.mockReturnValue(deleteBuilder);
+  const deleteFrom = vi.fn().mockReturnValue(deleteBuilder);
   return {
     media: { findMany: vi.fn(), delete: vi.fn() },
     movie: {
@@ -20,6 +27,12 @@ function makeDb() {
     },
     episode: { deleteMany: vi.fn() },
     season: { deleteMany: vi.fn() },
+    drizzle: {
+      transaction: vi.fn().mockImplementation((callback: (tx: { delete: typeof deleteFrom }) => unknown) => callback({
+        delete: deleteFrom,
+      })),
+    },
+    _deleteFrom: deleteFrom,
   };
 }
 
@@ -31,22 +44,32 @@ describe('MediaService.deleteMedia', () => {
   let prisma: ReturnType<typeof makeDb>;
   let emitter: ActivityEventEmitter;
   let service: MediaService;
+  let filesystem: {
+    rm: ReturnType<typeof vi.fn<(path: string, options: { recursive: true; force: true }) => Promise<void>>>;
+  };
 
   beforeEach(() => {
     prisma = makeDb();
     emitter = makeEventEmitter();
-    service = new MediaService(prisma as any, null, emitter);
+    filesystem = {
+      rm: vi.fn<(path: string, options: { recursive: true; force: true }) => Promise<void>>()
+        .mockResolvedValue(undefined),
+    };
+    service = new MediaService(prisma as any, null, emitter, filesystem);
   });
 
   it('deletes movie and its media record, deletes files when deleteFiles=true', async () => {
     prisma.movie.findUnique.mockResolvedValue({ mediaId: 50, path: '/movies/Test' });
     prisma.movie.delete.mockResolvedValue({ id: 1 });
-    (prisma as any).media.delete.mockResolvedValue({ id: 50 });
+    prisma.media.delete.mockResolvedValue({ id: 50 });
 
     await service.deleteMedia(1, 'MOVIE', true);
 
-    expect(prisma.movie.delete).toHaveBeenCalledWith({ where: { id: 1 } });
-    expect((prisma as any).media.delete).toHaveBeenCalledWith({ where: { id: 50 } });
+    expect(filesystem.rm).toHaveBeenCalledWith('/movies/Test', { recursive: true, force: true });
+    expect(prisma._deleteFrom.mock.calls.map(([table]) => table)).toEqual([
+      schema.movies,
+      schema.media,
+    ]);
   });
 
   it('skips media record deletion when movie has no mediaId', async () => {
@@ -55,8 +78,8 @@ describe('MediaService.deleteMedia', () => {
 
     await service.deleteMedia(1, 'MOVIE', false);
 
-    expect(prisma.movie.delete).toHaveBeenCalledWith({ where: { id: 1 } });
-    expect((prisma as any).media.delete).not.toHaveBeenCalled();
+    expect(prisma._deleteFrom).toHaveBeenCalledTimes(1);
+    expect(prisma._deleteFrom).toHaveBeenCalledWith(schema.movies);
   });
 
   it('does not call fs.rm when deleteFiles=false', async () => {
@@ -65,22 +88,27 @@ describe('MediaService.deleteMedia', () => {
 
     await service.deleteMedia(1, 'MOVIE', false);
 
-    expect(prisma.movie.delete).toHaveBeenCalledWith({ where: { id: 1 } });
+    expect(filesystem.rm).not.toHaveBeenCalled();
+
+    expect(prisma._deleteFrom).toHaveBeenCalledWith(schema.movies);
   });
 
-  it('cascades TV deletion: episodes → seasons → series → media', async () => {
+  it('deletes TV and shared media in one transaction, relying on verified SQLite cascades', async () => {
     prisma.series.findUnique.mockResolvedValue({ mediaId: 60, path: null });
-    (prisma as any).episode.deleteMany.mockResolvedValue({ count: 10 });
-    (prisma as any).season.deleteMany.mockResolvedValue({ count: 3 });
+    prisma.episode.deleteMany.mockResolvedValue({ count: 10 });
+    prisma.season.deleteMany.mockResolvedValue({ count: 3 });
     prisma.series.delete.mockResolvedValue({ id: 2 });
-    (prisma as any).media.delete.mockResolvedValue({ id: 60 });
+    prisma.media.delete.mockResolvedValue({ id: 60 });
 
     await service.deleteMedia(2, 'TV', false);
 
-    expect((prisma as any).episode.deleteMany).toHaveBeenCalledWith({ where: { seriesId: 2 } });
-    expect((prisma as any).season.deleteMany).toHaveBeenCalledWith({ where: { seriesId: 2 } });
-    expect(prisma.series.delete).toHaveBeenCalledWith({ where: { id: 2 } });
-    expect((prisma as any).media.delete).toHaveBeenCalledWith({ where: { id: 60 } });
+    expect(prisma.drizzle.transaction).toHaveBeenCalledTimes(1);
+    expect(prisma._deleteFrom.mock.calls.map(([table]) => table)).toEqual([
+      schema.series,
+      schema.media,
+    ]);
+    expect(prisma.episode.deleteMany).not.toHaveBeenCalled();
+    expect(prisma.season.deleteMany).not.toHaveBeenCalled();
   });
 
   it('skips media deletion for TV when series has no mediaId', async () => {
@@ -91,15 +119,25 @@ describe('MediaService.deleteMedia', () => {
 
     await service.deleteMedia(2, 'TV', false);
 
-    expect((prisma as any).media.delete).not.toHaveBeenCalled();
+    expect(prisma._deleteFrom).toHaveBeenCalledTimes(1);
+    expect(prisma._deleteFrom).toHaveBeenCalledWith(schema.series);
   });
 
-  it('handles media.delete failure gracefully (catches error)', async () => {
+  it('propagates database transaction failures', async () => {
     prisma.movie.findUnique.mockResolvedValue({ mediaId: 50, path: null });
-    prisma.movie.delete.mockResolvedValue({ id: 1 });
-    (prisma as any).media.delete.mockRejectedValue(new Error('Record not found'));
+    prisma.drizzle.transaction.mockImplementation(() => {
+      throw new Error('forced database failure');
+    });
 
-    await expect(service.deleteMedia(1, 'MOVIE', false)).resolves.not.toThrow();
+    await expect(service.deleteMedia(1, 'MOVIE', false)).rejects.toThrow('forced database failure');
+  });
+
+  it('treats an already deleted target as a successful retry', async () => {
+    prisma.movie.findUnique.mockResolvedValue(null);
+
+    await expect(service.deleteMedia(1, 'MOVIE', true)).resolves.toBeUndefined();
+    expect(filesystem.rm).not.toHaveBeenCalled();
+    expect(prisma.drizzle.transaction).not.toHaveBeenCalled();
   });
 });
 

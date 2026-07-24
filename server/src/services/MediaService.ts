@@ -2,6 +2,13 @@ import { MetadataProvider } from './MetadataProvider';
 import type { MediaType } from '../types/BaseMedia';
 import { ActivityEventEmitter } from './ActivityEventEmitter';
 import fs from 'node:fs/promises';
+import { eq } from 'drizzle-orm';
+import * as schema from '../db/schema';
+import type { DatabaseClient } from '../db/drizzleClient';
+
+interface MediaDeletionFilesystem {
+  rm(path: string, options: { recursive: true; force: true }): Promise<void>;
+}
 
 /**
  * Service for managing movie and TV metadata and monitoring settings.
@@ -11,6 +18,7 @@ export class MediaService {
     private readonly prisma: any,
     private readonly metadataProvider: Pick<MetadataProvider, 'getMovieAvailability'> | null = null,
     private readonly activityEventEmitter?: ActivityEventEmitter,
+    private readonly filesystem: MediaDeletionFilesystem = fs,
   ) {}
 
   async addMovie(input: Record<string, unknown>): Promise<any> {
@@ -111,35 +119,40 @@ export class MediaService {
         });
       }
     
-      async deleteMedia(id: number, mediaType: MediaType = 'TV', deleteFiles = false): Promise<void> {
-    if (mediaType === 'MOVIE') {
-      const movie = await this.prisma.movie.findUnique({ where: { id }, select: { mediaId: true, path: true } });
-      await this.prisma.movie.delete({ where: { id } });
-      if (movie?.mediaId) {
-        await (this.prisma as any).media.delete({ where: { id: movie.mediaId } }).catch(() => {});
-      }
-      if (deleteFiles && movie?.path) {
-        await fs.rm(movie.path, { recursive: true, force: true }).catch((err) => {
-          console.warn(`[deleteMedia] Could not delete folder "${movie.path}":`, err);
-        });
-      }
+  async deleteMedia(id: number, mediaType: MediaType = 'TV', deleteFiles = false): Promise<void> {
+    const target = mediaType === 'MOVIE'
+      ? await this.prisma.movie.findUnique({ where: { id }, select: { mediaId: true, path: true } })
+      : await this.prisma.series.findUnique({ where: { id }, select: { mediaId: true, path: true } });
+
+    // Treat an already-deleted row as a successful idempotent retry.
+    if (!target) {
       return;
     }
 
-    // Prisma's libquery engine for SQLite doesn't always fire DB-level
-    // cascades when foreign_keys=ON; explicitly delete children first.
-    const series = await this.prisma.series.findUnique({ where: { id }, select: { mediaId: true, path: true } });
-    await (this.prisma as any).episode.deleteMany({ where: { seriesId: id } });
-    await (this.prisma as any).season.deleteMany({ where: { seriesId: id } });
-    await this.prisma.series.delete({ where: { id } });
-    if (series?.mediaId) {
-      await (this.prisma as any).media.delete({ where: { id: series.mediaId } }).catch(() => {});
+    // External cleanup must happen first. If it fails—even after removing only
+    // part of the tree—the database row remains a durable retry target. `force`
+    // makes a later attempt safe when part or all of the path is already gone.
+    if (deleteFiles && target.path) {
+      await this.filesystem.rm(target.path, { recursive: true, force: true });
     }
-    if (deleteFiles && series?.path) {
-      await fs.rm(series.path, { recursive: true, force: true }).catch((err) => {
-        console.warn(`[deleteMedia] Could not delete folder "${series.path}":`, err);
-      });
-    }
+
+    // DatabaseClient enables foreign keys on connection. Deleting Series or
+    // Movie therefore cascades to seasons/episodes/file variants and their
+    // dependants. The shared Media row is deleted in the same synchronous
+    // better-sqlite3 transaction, so any failure restores the complete graph.
+    const database = this.prisma as DatabaseClient;
+    database.drizzle.transaction((tx) => {
+      const entityTable = mediaType === 'MOVIE' ? schema.movies : schema.series;
+      tx.delete(entityTable)
+        .where(eq(entityTable.id, id))
+        .run();
+
+      if (target.mediaId != null) {
+        tx.delete(schema.media)
+          .where(eq(schema.media.id, target.mediaId))
+          .run();
+      }
+    });
   }
 
   async getMovieCandidatesForSearch(): Promise<any[]> {

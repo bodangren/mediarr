@@ -1,0 +1,28 @@
+Task: Repair SPA gate concurrency and false interaction assertions
+
+Summary:
+- Kept Vitest's isolated forks while bounding execution to maxWorkers=1 and fileParallelism=false.
+- Enforced selected-preset required dynamic fields in AddIndexerModal; blank or whitespace-only URL/API key values now block create and connection-test flows with field-level errors.
+- Associated dynamic field labels with their controls and built drafts from validated submitted values.
+- Replaced vacuous LanguageSelector backdrop and ProfileEditorModal cutoff tests with mandatory real interactions.
+- Updated the form smoke valid path to populate required fields and wait for AddProfile disabled/enabled transitions.
+
+Files:
+- app/vitest.config.ts
+- app/src/components/indexers/AddIndexerModal.tsx
+- app/src/components/indexers/AddIndexerModal.test.tsx
+- app/src/components/settings/formStandardization.smoke.test.tsx
+- app/src/components/subtitles/LanguageSelector.tsx
+- app/src/components/subtitles/LanguageSelector.test.tsx
+- app/src/components/subtitles/ProfileEditorModal.test.tsx
+
+Verification:
+- Red: new required-field and mandatory-backdrop assertions failed before implementation; the repaired cutoff interaction already passed the existing production behavior.
+- CI=true ../node_modules/.bin/vitest run --config vitest.config.ts --reporter=dot --silent=true [6 focused files]: 6/6 files, 51/51 tests passed, exit 0, 89.91s.
+- npm run typecheck (app): exit 0.
+- npx eslint [7 changed files]: exit 0, zero warnings/errors after removing one obsolete directive.
+- git diff --check: exit 0.
+
+Graph:
+- Fresh baseline: 21,092 nodes, 27,227 edges, 953 files.
+- Exported component signatures and imports were unchanged. A targeted repo-graph update was stopped after 90s with no output so the parent-owned phase-wide graph refresh can complete once for the aggregate change set.

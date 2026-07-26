@@ -33,6 +33,16 @@ describe('SubtitleProviderFactory', () => {
       expect(factory.getProviderNames()).toEqual([]);
     });
 
+    it('reports a registered provider as available', () => {
+      const factory = new SubtitleProviderFactory(providers, readConfig);
+      expect(factory.isProviderAvailable('opensubtitles')).toBe(true);
+    });
+
+    it('returns null unavailable reason for a registered provider with no unavailable entry', () => {
+      const factory = new SubtitleProviderFactory(providers, readConfig);
+      expect(factory.getProviderUnavailableReason('opensubtitles')).toBeNull();
+    });
+
     it('includes explicitly unavailable providers for truthful status listing', () => {
       const factory = new SubtitleProviderFactory(
         providers,

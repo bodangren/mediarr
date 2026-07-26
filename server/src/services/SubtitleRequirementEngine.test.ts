@@ -344,6 +344,69 @@ describe('SubtitleRequirementEngine', () => {
       ]);
     });
 
+    it('cutoff candidate is skipped when audio_only_include set and audio does not match', () => {
+      const result = engine.compute(
+        makeInput({
+          profileItems: [
+            makeProfileItem({
+              id: 1,
+              language: 'en',
+              audio_only_include: 'True',
+            }),
+            makeProfileItem({ id: 2, language: 'fr' }),
+          ],
+          cutoffId: ANY_CUTOFF_ID,
+          audioTracks: [{ languageCode: 'fr' }],
+          existingSubtitles: [],
+        }),
+      );
+
+      // id:1 is skipped by audio_only_include mismatch (continue),
+      // id:2 has no existing subtitle, so cutoff should not be met.
+      expect(result.cutoffMet).toBe(false);
+    });
+
+    it('cutoff is met when audio_exclude matches audio language, even without existing subtitle', () => {
+      const result = engine.compute(
+        makeInput({
+          profileItems: [
+            makeProfileItem({
+              id: 1,
+              language: 'en',
+              audio_exclude: 'True',
+            }),
+          ],
+          cutoffId: ANY_CUTOFF_ID,
+          audioTracks: [{ languageCode: 'en' }],
+          existingSubtitles: [],
+        }),
+      );
+
+      expect(result.cutoffMet).toBe(true);
+      expect(result.missingSubtitles).toEqual([]);
+    });
+
+    it('treats an empty candidate language as never matching audio tracks', () => {
+      const result = engine.compute(
+        makeInput({
+          profileItems: [
+            makeProfileItem({
+              id: 1,
+              language: '',
+              audio_exclude: 'True',
+            }),
+          ],
+          audioTracks: [{ languageCode: '' }],
+        }),
+      );
+
+      // audio_exclude with an empty language code never matches (normalizeCode('') -> null),
+      // so the item is not excluded and remains desired.
+      expect(result.desiredSubtitles).toEqual([
+        { languageCode: '', isForced: false, isHi: false },
+      ]);
+    });
+
     it('handles forced and HI flags in profile items', () => {
       const result = engine.compute(
         makeInput({

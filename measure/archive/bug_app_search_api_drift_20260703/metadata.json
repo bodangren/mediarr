@@ -1,8 +1,11 @@
 {
   "id": "bug_app_search_api_drift_20260703",
   "title": "Fix App Search API Drift Test Failures",
-  "status": "pending",
+  "status": "completed",
   "created": "2026-07-03",
   "priority": "medium",
-  "phases": 6
+  "phases": 6,
+  "completed": "2026-07-26",
+  "updated_at": "2026-07-26T00:00:00Z",
+  "type": "bug"
 }

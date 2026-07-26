@@ -6,24 +6,21 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ## Active Tracks — Execution Order
 
-> Reordered 2026-06-12 (test-runner regression). `chore_test_infrastructure_hardening_20260612`
-> is now the **critical-path** track: the MSW setup hook added in the past 24h breaks the
-> default Vitest runner, so no other app-track work can be validated until this is fixed.
-> The 2026-06-10 ordering is preserved below for reference.
+> Reconciled 2026-07-26. The previous ordering note (2026-06-12 test-runner regression) named
+> `chore_test_infrastructure_hardening_20260612` as critical path; that track was archived the
+> same day it was written, so the note had been stale for six weeks and is removed.
+>
+> **Verified gate state at reconciliation:** root suite `CI=true npx vitest run server/src tests`
+> → 309 files / 2547 passed / 11 skipped / 0 failures. SPA `CI=true npm test --workspace=app`
+> → 204 files / 1960 passed / 0 failures. `npm run build --workspace=app` → exit 0.
+> `npx tsc -p server/tsconfig.json --noEmit` → 0 diagnostics.
+>
+> Eleven tracks were closed on 2026-07-26 (see Recently Completed). Seven of them held ~106
+> tasks that upstream work had already satisfied — the registry, not the code, was the blocker.
 
-0. - [~] **Track: Home Network Deployment Hardening** *Phases: 6 | Link: [./tracks/chore_home_network_deployment_hardening_20260712/](./tracks/chore_home_network_deployment_hardening_20260712/)* — Make the Docker Engine Ubuntu LAN deployment fail closed for secrets, persistent SQLite storage, migrations, data mounts, and torrent-engine readiness; document recovery and verify runtime operations.
-0. - [~] **Track: Complete App Regression Suite** *Phases: 5 | Link: [./tracks/bug_app_regression_suite_completion_20260713/](./tracks/bug_app_regression_suite_completion_20260713/)* — Resolve the remaining SPA release-gate failures not owned by the focused regression tracks, preserving production contracts and test coverage.
-0. - [~] **Track: Clear Server Strict Typecheck Debt** *Phases: 3 | Link: [./tracks/chore_server_strict_typecheck_20260713/](./tracks/chore_server_strict_typecheck_20260713/)* — Remove the remaining test-fixture type diagnostics so the server strict typecheck is a release gate rather than a known exception.
-0. - [ ] **Track: Flutter Media Detail Page** *Phases: 5 | Link: [./tracks/feature_flutter_media_detail_20260508/](./tracks/feature_flutter_media_detail_20260508/)* — Movie and series detail screens (metadata, episodes, actions, file info) in the Flutter client. User-facing; the client is the product differentiator.
-1. - [x] **Track: Scheduler & Automation Dashboard** *Phases: 7 | Link: [./archive/feature_scheduler_automation_dashboard_20260524/](./archive/feature_scheduler_automation_dashboard_20260524/)* — React SPA settings page for configuring/monitoring RSS sync, wanted search, and library scan schedules. User-facing. All 7 phases complete; archived 2026-07-14.
-2. - [x] **Track: App Pre-existing Failures — Typecheck & Triage** *Phases: 6 | Link: [./archive/chore_app_pre_existing_failures_20260630/](./archive/chore_app_pre_existing_failures_20260630/)* — Fixed app typecheck errors, EventSource jsdom crash, and removed brittle memoization test. Remaining failures split into focused tracks below. Archived 2026-07-03.
-3. - [ ] **Track: Fix App Search API Drift Test Failures** *Phases: 6 | Link: [./tracks/bug_app_search_api_drift_20260703/](./tracks/bug_app_search_api_drift_20260703/)* — Season/episode params and pagination pageSize mismatches in series/movie interactive search; calendar/poster/overview drift.
-4. - [~] **Track: Fix App Path Validation UI Test Failures** *Phases: 5 | Link: [./tracks/bug_app_path_validation_ui_20260703/](./tracks/bug_app_path_validation_ui_20260703/)* — Validate button/status assertions fail in download-client, clients, and media settings pages.
-5. - [ ] **Track: Fix App View/Card Component Prop Drift Test Failures** *Phases: 6 | Link: [./tracks/bug_app_view_card_props_20260703/](./tracks/bug_app_view_card_props_20260703/)* — `MoviePosterView`, `SeriesOverviewView`, and `IndexerCatalogPanel` tests fail on changed props/markup.
-6. - [ ] **Track: Fix App Settings Routes API Drift Test Failures** *Phases: 5 | Link: [./tracks/bug_app_settings_routes_drift_20260703/](./tracks/bug_app_settings_routes_drift_20260703/)* — `settings-routes.test.tsx` failures for indexer create/remove, subtitle providers, and settings save payload.
-7. - [ ] **Track: Fix App Dynamic Form Drift Test Failures** *Phases: 5 | Link: [./tracks/bug_app_dynamic_form_drift_20260703/](./tracks/bug_app_dynamic_form_drift_20260703/)* — Subtitle settings, profile editor language selector, collection typing, indexer protocol switch, and language `exclude` prop.
-8. - [ ] **Track: Fix App Hooks/Test-Environment Test Failures** *Phases: 5 | Link: [./tracks/bug_app_hooks_environment_20260703/](./tracks/bug_app_hooks_environment_20260703/)* — `useTouchGestures`, `useMediaQuery`, `ActivityQueuePage.setSpeedLimits`, and `CalendarPage` environment-sensitive tests.
-
+1. - [~] **Track: Home Network Deployment Hardening** *Phases: 6 | Link: [./tracks/chore_home_network_deployment_hardening_20260712/](./tracks/chore_home_network_deployment_hardening_20260712/)* — 18/20 tasks done. **Two blockers, both real:** (a) the Phase 6 architectural fix for clean-image workspace dependency resolution is *unowned* — pick one of the four documented patterns (`npm ci --workspace=app`, per-workspace install, explicit Vite `resolve.alias`, or `COPY --from=builder /app/app/node_modules`); (b) Docker Engine + physical Android/LAN playback verification is human-gated because this host's `docker` is Podman 4.9.3. The Red gate `tests/clean-workspace-invariant.test.js` is in place and failing by design.
+2. - [ ] **Track: Database Migration and Data Preservation Strategy** *Phases: 5 | Link: [./tracks/database_migration_strategy_20260713/](./tracks/database_migration_strategy_20260713/)* — 0/25 tasks. The only substantial *unstarted* engineering work in the backlog. Establishes a versioned additive migration runner for Drizzle SQLite with transactional rollback, destructive-change safeguards, and an operator runbook. Closes the open Medium tech-debt row "DB recreated from scratch — existing data lost". **Recommended next track.**
+3. - [~] **Track: Flutter Media Detail Page** *Phases: 5 | Link: [./tracks/feature_flutter_media_detail_20260508/](./tracks/feature_flutter_media_detail_20260508/)* — 32/35 tasks done. All three remaining tasks are human-gated: two manual smoke tests (need a running daemon + built Flutter client) and a `git push` of ~76 local commits. No agent-executable work remains. Marker corrected from `[ ]` to `[~]` — it was mismarked pending despite being 91% complete.
 
 ## Post-v1.0 / Deferred
 
@@ -35,10 +32,10 @@ This file tracks all major tracks for the project. Each track has its own detail
 - [x] **Track: Frontend Component Test Coverage Gaps** *Link: [./archive/chore_frontend_component_test_gaps_20260526/](./archive/chore_frontend_component_test_gaps_20260526/)* — Originally deferred for post-v1.0; completed and archived after the release cut with targeted coverage for the high-impact SPA components.
 - [x] **Track: Indexer Health Monitoring & Auto-Disable** *Link: [./archive/indexer_health_monitoring_20260509/](./archive/indexer_health_monitoring_20260509/)* — Originally cut to post-v1.0; completed and archived with health persistence, automatic disablement, SSE notification, and settings controls.
 - [x] **Track: Server Service Test Coverage — Runtime-Critical** *Link: [./archive/chore_untested_server_services_20260526/](./archive/chore_untested_server_services_20260526/)* — The runtime-critical half was completed; the deferred remainder is represented by the lower-risk service-coverage tracks below.
-- [ ] **Track: Subtitle Services Test Coverage** *Phases: 5 | Link: [./tracks/subtitle_services_test_coverage_20260707/](./tracks/subtitle_services_test_coverage_20260707/)* — Add unit tests for `SubtitleNamingService`, `SubtitleRequirementEngine`, and `SubtitleProviderFactory`; target ≥80% branch coverage. Split from deferred server-service coverage remainder.
-- [ ] **Track: Filter Service Test Coverage** *Phases: 5 | Link: [./tracks/filter_service_test_coverage_20260707/](./tracks/filter_service_test_coverage_20260707/)* — Add unit tests for `FilterService` covering quality, language, size, indexer, and custom-format filter paths; target ≥80% branch coverage. Split from deferred server-service coverage remainder.
-- [ ] **Track: Settings and TV Search Service Test Coverage** *Phases: 5 | Link: [./tracks/settings_and_tvsearch_test_coverage_20260707/](./tracks/settings_and_tvsearch_test_coverage_20260707/)* — Add unit tests for `SettingsService` (CRUD, defaults, validation) and `TvSearchService` (season/episode dispatch, aggregation, indexer errors); target ≥80% branch coverage. Split from deferred server-service coverage remainder.
-- [ ] **Track: Database Migration and Data Preservation Strategy** *Phases: 5 | Link: [./tracks/database_migration_strategy_20260713/](./tracks/database_migration_strategy_20260713/)* — Establish a versioned, additive migration runner for Drizzle SQLite that preserves user data across schema changes; add transactional rollback, destructive-change safeguards, and an operator runbook. Addresses tech-debt: DB recreated from scratch — existing data lost.
+- [x] **Track: Subtitle Services Test Coverage** *Phases: 6 | Link: [./archive/subtitle_services_test_coverage_20260707/](./archive/subtitle_services_test_coverage_20260707/)* — Completed and archived 2026-07-26. All three services at **100% branch coverage** (51 → 56 tests). Note: the test files already existed when the track was written; the real work was gap-closing (`SubtitleRequirementEngine` 89.13% → 100%, `SubtitleProviderFactory` 90.9% → 100%, `SubtitleNamingService` already 100%). No production bugs found; no source files changed.
+- [x] **Track: Filter Service Test Coverage** *Phases: 6 | Link: [./archive/filter_service_test_coverage_20260707/](./archive/filter_service_test_coverage_20260707/)* — Completed and archived 2026-07-26. `FilterService.ts` raised **68.48% → 100% branch coverage** (26 → 64 tests); the largest genuine coverage gap in this batch. **Spec drift recorded:** the spec demanded quality/language/size/custom-format filter paths, but `FilterService` evaluates *series and indexer conditions* (protocol/enabled/capability/priority/tag; monitored/network/genre/tag/rating/status) plus `validateConditionsGroup`. The spec described a service that does not exist. No production bugs found.
+- [x] **Track: Settings and TV Search Service Test Coverage** *Phases: 6 | Link: [./archive/settings_and_tvsearch_test_coverage_20260707/](./archive/settings_and_tvsearch_test_coverage_20260707/)* — Completed and archived 2026-07-26. `SettingsService.test.ts` 7 → 20 tests. **Two spec defects recorded rather than papered over:** (a) `TvSearchService` does not exist — deleted as an orphan alias in `chore_test_infrastructure_hardening_20260612` (commit `037418f`); its responsibilities live in `MediaSearchService` (`searchEpisode`, `searchAllIndexers`, `searchWithTimeout`), already covered. Spec amended with a dated note. (b) `SettingsService.ts` is a zero-branch pass-through to `AppSettingsRepository`, so its "≥80% branch coverage" criterion was unfalsifiable; the real branch surface (`AppSettingsRepository.ts`, 582 LOC, ~34 branch points) is now logged in tech-debt.
+- [ ] **Track: Database Migration and Data Preservation Strategy** — **promoted to Active (position 2) on 2026-07-26**; see the Active Tracks section above. It is now the highest-value unstarted engineering work in the backlog.
 
 ## Superseded (2026-06-07)
 
@@ -46,6 +43,38 @@ This file tracks all major tracks for the project. Each track has its own detail
 - [s] **Track: Prisma Naming Residue Cleanup** → folded into [chore_close_drizzle_migration_20260607](./archive/chore_prisma_naming_cleanup_20260526/) *(archived)*
 
 ## Recently Completed (archived)
+
+### 2026-07-26 — Registry Reconciliation Batch (11 tracks)
+
+> Root suite 309 files / 2547 passed / 11 skipped / 0 failures. SPA 204 files / 1960 passed.
+> App build exit 0. Server strict typecheck 0 diagnostics. +56 tests added, 0 production bugs
+> found, 0 source files changed. Seven of these eleven tracks required no code work at all —
+> their failures had already been fixed upstream and only the registry was stale.
+
+- [x] **Track: Clear Server Strict Typecheck Debt** *Phases: 3 | Link: [./archive/chore_server_strict_typecheck_20260713/](./archive/chore_server_strict_typecheck_20260713/)* — Phase 3 release verification closed: root suite green and `tsc --noEmit` at zero diagnostics, re-verified *after* the same day's 56 new tests. Strict server typecheck is now a real release gate, not a known exception.
+- [x] **Track: Filter Service Test Coverage** — `FilterService.ts` 68.48% → **100%** branch (26 → 64 tests). Spec drift recorded: spec described filter categories the service does not implement.
+- [x] **Track: Subtitle Services Test Coverage** — all three services at **100%** branch (51 → 56 tests). No source changes.
+- [x] **Track: Settings and TV Search Service Test Coverage** — `SettingsService` 7 → 20 tests; `TvSearchService` confirmed deleted (commit `037418f`) and the requirement formally retired; vacuous coverage target documented.
+- [x] **Track: Complete App Regression Suite** *Link: [./archive/bug_app_regression_suite_completion_20260713/](./archive/bug_app_regression_suite_completion_20260713/)* — Release gate green: 204/204 files, 1960/1960 tests, `npm run build --workspace=app` exit 0.
+- [x] **Track: Fix App Search API Drift Test Failures** *Link: [./archive/bug_app_search_api_drift_20260703/](./archive/bug_app_search_api_drift_20260703/)* — Resolved upstream; verified green. The open `pageSize` decision is settled: production uses **100**, matching test expectations (`SeriesInteractiveSearchModal.tsx:20`, `MovieInteractiveSearchModal.tsx:74`); it was 500 at the 2026-07-13 check. Spec correction: `CalendarPage`/`MoviePosterView`/`SeriesOverviewView` tests were claimed non-existent but do exist (moved directories) and pass.
+- [x] **Track: Fix App Path Validation UI Test Failures** *Link: [./archive/bug_app_path_validation_ui_20260703/](./archive/bug_app_path_validation_ui_20260703/)* — Resolved upstream; verified green (15/15, 8/8, 5/5, plus FilesystemBrowser 17/17).
+- [x] **Track: Fix App View/Card Component Prop Drift Test Failures** *Link: [./archive/bug_app_view_card_props_20260703/](./archive/bug_app_view_card_props_20260703/)* — Resolved upstream; verified green (10/10, 9/9, 12/12).
+- [x] **Track: Fix App Settings Routes API Drift Test Failures** *Link: [./archive/bug_app_settings_routes_drift_20260703/](./archive/bug_app_settings_routes_drift_20260703/)* — Resolved upstream; verified green (32/32, with the 5 originally-named tests confirmed by name via verbose reporter).
+- [x] **Track: Fix App Dynamic Form Drift Test Failures** *Link: [./archive/bug_app_dynamic_form_drift_20260703/](./archive/bug_app_dynamic_form_drift_20260703/)* — Resolved upstream; verified green across all six named files.
+- [x] **Track: Fix App Hooks/Test-Environment Test Failures** *Link: [./archive/bug_app_hooks_environment_20260703/](./archive/bug_app_hooks_environment_20260703/)* — Resolved upstream; verified green (8/8, 6/6, 14/14, 14/14).
+
+### Candidate Tracks — Sister-Project Idea Scan (2026-07-26, not yet specced)
+
+> Mined from the Python media daemon at `/media/daniel-bo/320GB/`. Claims were re-verified
+> against Mediarr's source before listing; ideas that turned out to already exist (TMDB metadata
+> resolution, ffprobe audio-language detection) and ideas incompatible with Mediarr's
+> torrent/indexer architecture (HLS/DASH acquisition, iframe-chain traversal, JS deobfuscation)
+> were rejected rather than recorded.
+
+- [ ] **Candidate: Trailer Acquisition via TMDB** — **Verified missing**: zero occurrences of `trailer` in `server/src`. Query TMDB `/tv/{id}/videos` and `/movie/{id}/videos`, pick the best official trailer, download alongside the media. Low cost — the TMDB integration already exists (`main.ts`, `releaseRoutes.ts`, `importRoutes.ts`). Enriches SPA and Flutter detail pages.
+- [ ] **Candidate: Jellyfin-Compatible Server Surface** — **Verified effectively missing**: one incidental mention in `ExistingLibraryScanner.ts`, no API surface. Implementing enough of the Jellyfin API (discovery, auth, library browse, playback info, Range-seek streaming) would let stock Jellyfin clients play from Mediarr directly on LAN, removing the need for a separate media server. Largest-effort, highest-differentiation idea of the batch.
+- [ ] **Candidate: Incremental Library Self-Healing** — **Partial gap, needs validation**: Mediarr has `ExistingLibraryScanner`, `LibraryScanService`, and `Organizer`, but these are import-time. The sister project re-probes *existing* on-disk files each scan and corrects naming, metadata sidecars, and audio-language flags in place. Valuable for users migrating messy libraries from Sonarr/Radarr. Validate the true gap before speccing.
+
 
 - [x] **Track: Server Integrity Remediation** *Phases: 5 | Link: [./archive/bug_server_integrity_remediation_20260724/](./archive/bug_server_integrity_remediation_20260724/)* — Repaired or fail-closed all C1-C3, H1-H13, and M1-M5 findings; refreshed repo-graph; verified root 2,491 passed + 11 skipped, SPA 1,960 passed, and live Docker build green. Archived 2026-07-24.
 - [x] **Track: Comprehensive Server Structure Integrity Audit** *Phases: 4 | Link: [./archive/chore_server_structure_integrity_audit_20260724/](./archive/chore_server_structure_integrity_audit_20260724/)* — Audited all 367 server files and 288 server-relevant tests with a fresh repo-graph, static gates, full/root test execution, and coverage. Confirmed 3 critical defects, 13 high findings, false tests, unimplemented behavior, and coverage gaps; remediation routing is documented in the archived report. Archived 2026-07-24.

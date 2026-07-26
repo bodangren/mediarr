@@ -101,29 +101,50 @@ interface MovieSearchInput {
 - **CalendarPage / MoviePosterView / SeriesOverviewView**: These test files do not exist, so the spec’s “view test drift” items are currently moot. They should be removed from this track’s scope or handled as a separate discovery task.
 
 ## Phase 2: Fix Series/Movie Search Pagination
-- [~] Decide correct `pageSize` for interactive search (100 or 500).
-- [ ] Update component or test to match.
-- [ ] Verify `fetches additional pages so results include non-first-page indexers` passes.
-- [ ] Commit: `fix(app): align interactive search pagination pageSize with tests`
+- [x] Decide correct `pageSize` for interactive search (100 or 500). — resolved upstream before reconciliation; verified green 2026-07-26: production now hard-codes `pageSize=100` in both consumers — `app/src/components/series/SeriesInteractiveSearchModal.tsx:20` (`const SEARCH_PAGE_SIZE = 100;`) and `app/src/components/movie/MovieInteractiveSearchModal.tsx:74` (`const SEARCH_PAGE_SIZE = 100;`). This is a change from the `500` observed during Phase 1 (2026-07-13); some other work since then aligned the constant to the tests' expectation of `100`.
+- [x] Update component or test to match. — resolved upstream before reconciliation; verified green 2026-07-26: no further change needed, `SEARCH_PAGE_SIZE` already equals `100` in both files (see citations above).
+- [x] Verify `fetches additional pages so results include non-first-page indexers` passes. — resolved upstream before reconciliation; verified green 2026-07-26: `SeriesInteractiveSearchModal.test.tsx` 23/23 passing and `MovieInteractiveSearchModal.test.tsx` 17/17 passing, both including this test by name.
+- [x] Commit: `fix(app): align interactive search pagination pageSize with tests` — not committed by this reconciliation pass (documentation-only, no git writes); the underlying fix already exists in current source per the file:line citations above.
 
 ## Phase 3: Fix Series Search Level Params
-- [ ] Verify `seasonNumber`/`episodeNumber` are passed correctly at Season/Episode level.
-- [ ] Fix component or test wiring.
-- [ ] Verify season/episode search tests pass.
-- [ ] Commit: `fix(app): pass season/episode numbers in series interactive search`
+- [x] Verify `seasonNumber`/`episodeNumber` are passed correctly at Season/Episode level. — resolved upstream before reconciliation; verified green 2026-07-26: `SeriesInteractiveSearchModal.test.tsx` 23/23 passing, including `passes seasonNumber when searching at Season level` and `passes seasonNumber and episodeNumber when searching at Episode level`.
+- [x] Fix component or test wiring. — resolved upstream before reconciliation; verified green 2026-07-26: no wiring defect found. Phase 1 findings already established the wiring was correct and the original failures were pure test-timeout flakiness (default 5s timeout too short), not a contract mismatch.
+- [x] Verify season/episode search tests pass. — resolved upstream before reconciliation; verified green 2026-07-26: same evidence as above.
+- [x] Commit: `fix(app): pass season/episode numbers in series interactive search` — not committed by this reconciliation pass (documentation-only, no git writes); no wiring change was needed.
 
 ## Phase 4: Fix Calendar/Poster/Overview Drift
 - [x] Verify whether `CalendarPage`, `MoviePosterView`, and `SeriesOverviewView` test files exist. (`899b7e9f`)
   - Evidence: `src/pages/CalendarPage.test.tsx`, `src/components/movie/MoviePosterView.test.tsx`, and `src/components/series/SeriesOverviewView.test.tsx` do not exist in the repo. The spec acceptance criteria referencing them are therefore out of scope for this track.
+  - **Correction (2026-07-26):** these files exist now, just at different paths than originally referenced: `app/src/components/calendar/CalendarPage.test.tsx` (14/14 passing), `app/src/components/views/MoviePosterView.test.tsx` (10/10 passing), `app/src/components/views/SeriesOverviewView.test.tsx` (9/9 passing). This is a genuine discrepancy versus the 2026-07-13 finding — the files were apparently created/moved by other work between 2026-07-13 and 2026-07-26. All three are fully green today.
 - [x] Update the track spec to remove acceptance criteria for non-existent test files. (`TBD`)
 - [x] Commit: `docs(measure): update search API drift scope for missing view test files` (`TBD`)
 
 ## Phase 5: Regression Verification
-- [ ] Run affected test files together.
-- [ ] Run root `CI=true npm test` and confirm no regressions.
-- [ ] Commit: `test(app): verify search API drift fixes`
+- [x] Run affected test files together. — resolved upstream before reconciliation; verified green 2026-07-26: `SeriesInteractiveSearchModal.test.tsx` (23/23), `SeriesInteractiveSearchModal.breakdown.test.tsx` (2/2), `MovieInteractiveSearchModal.test.tsx` (17/17), `PageLayout.test.tsx` (7/7) run together — 0 failures.
+- [x] Run root `CI=true npm test` and confirm no regressions. — resolved upstream before reconciliation; verified green 2026-07-26: `CI=true npm test --workspace=app` → 204 test files, 1960 tests, ALL PASSING, 0 failures (orchestrator-verified evidence, 2026-07-26).
+- [x] Commit: `test(app): verify search API drift fixes` — not committed by this reconciliation pass (documentation-only, no git writes).
 
 ## Phase 6: Closeout
-- [ ] Update `measure/tech-debt.md`.
-- [ ] Archive track.
-- [ ] Commit: `docs(measure): close out search API drift track`
+- [x] Update `measure/tech-debt.md`. — out of scope for this reconciliation pass; `measure/tech-debt.md` is owned by the orchestrator, not edited here. **[orchestrator 2026-07-26]** done: tech-debt.md rewritten (stale rows corrected, 30 settled rows pruned); tracks.md reconciled; track folder moved to `measure/archive/`; committed.
+- [x] Archive track. — out of scope for this reconciliation pass; archiving/`measure/tracks.md` updates are owned by the orchestrator. Track is evidence-ready to archive (see Reconciliation section below). **[orchestrator 2026-07-26]** done: tech-debt.md rewritten (stale rows corrected, 30 settled rows pruned); tracks.md reconciled; track folder moved to `measure/archive/`; committed.
+- [x] Commit: `docs(measure): close out search API drift track` — out of scope for this reconciliation pass (documentation-only, no git writes). **[orchestrator 2026-07-26]** done: tech-debt.md rewritten (stale rows corrected, 30 settled rows pruned); tracks.md reconciled; track folder moved to `measure/archive/`; committed.
+
+## Reconciliation (2026-07-26)
+
+This track's failures are resolved. All test files named in the spec, plus the previously-considered-missing view/calendar files, are green:
+
+| File | Result |
+|---|---|
+| `app/src/components/series/SeriesInteractiveSearchModal.test.tsx` | 23/23 passing |
+| `app/src/components/series/SeriesInteractiveSearchModal.breakdown.test.tsx` | 2/2 passing |
+| `app/src/components/movie/MovieInteractiveSearchModal.test.tsx` | 17/17 passing |
+| `app/src/components/shell/PageLayout.test.tsx` | 7/7 passing |
+| `app/src/components/calendar/CalendarPage.test.tsx` | 14/14 passing (file now exists — see Phase 4 correction) |
+| `app/src/components/views/MoviePosterView.test.tsx` | 10/10 passing (file now exists — see Phase 4 correction) |
+| `app/src/components/views/SeriesOverviewView.test.tsx` | 9/9 passing (file now exists — see Phase 4 correction) |
+
+**pageSize decision:** production uses `SEARCH_PAGE_SIZE = 100` in both `app/src/components/series/SeriesInteractiveSearchModal.tsx:20` and `app/src/components/movie/MovieInteractiveSearchModal.tsx:74`, matching the tests' expectation. This is a change from the `500` seen at Phase 1 (2026-07-13), made by other work prior to this reconciliation.
+
+Broader evidence: `CI=true npm test --workspace=app` → 204 test files, 1960 tests, ALL PASSING (orchestrator-verified 2026-07-26); `npm run build --workspace=app` → exit 0.
+
+No test/source edits were made by this reconciliation pass — the underlying fixes were already in place. This track is ready to archive.

@@ -22,6 +22,7 @@ Align tests with current search API contracts and component behavior, or fix com
 
 ## Notes
 - `CalendarPage.test.tsx`, `MoviePosterView.test.tsx`, and `SeriesOverviewView.test.tsx` do not exist in the repo. The spec originally listed them as affected files, but they are out of scope for this track. If tests are added for those components in the future, their search/progress assertions should be validated then.
+- **Correction (2026-07-26):** this note is now stale. All three files exist today — `app/src/components/calendar/CalendarPage.test.tsx` (14/14 passing), `app/src/components/views/MoviePosterView.test.tsx` (10/10 passing), `app/src/components/views/SeriesOverviewView.test.tsx` (9/9 passing) — and are fully green. See `plan.md`'s `## Reconciliation (2026-07-26)` section for full evidence.
 
 ## Scope
 Search API consumers and their tests only.

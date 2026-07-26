@@ -24,5 +24,16 @@
 
 ## Phase 5: Closeout
 
-- [ ] Reconcile this plan with the focused active regression tracks.
-- [ ] Archive after the app release gate is green.
+- [x] Reconcile this plan with the focused active regression tracks. — done as part of the 2026-07-26 documentation reconciliation pass: the six sibling tracks (`bug_app_search_api_drift_20260703`, `bug_app_path_validation_ui_20260703`, `bug_app_view_card_props_20260703`, `bug_app_settings_routes_drift_20260703`, `bug_app_dynamic_form_drift_20260703`, `bug_app_hooks_environment_20260703`) were each independently re-verified against their spec's named test files; all are green and their plan.md files carry matching `## Reconciliation (2026-07-26)` sections.
+- [x] Archive after the app release gate is green. — release gate confirmed green (see evidence below); actual archiving (moving the track folder, updating `measure/tracks.md`) is out of scope for this documentation-only reconciliation pass and is owned by the orchestrator. Track is evidence-ready to archive. **[orchestrator 2026-07-26]** done: tech-debt.md rewritten (stale rows corrected, 30 settled rows pruned); tracks.md reconciled; track folder moved to `measure/archive/`; committed.
+
+## Reconciliation (2026-07-26)
+
+This track's stated goal — a green SPA regression suite — is confirmed still true, and now independently re-verified rather than taken on the Phase 4 record alone:
+
+- `CI=true npm test --workspace=app` → 204 test files, 1960 tests, ALL PASSING, 0 failures (orchestrator-verified 2026-07-26). Note this is a slightly higher test count than the 1952 recorded at Phase 4 (2026-07-13) — consistent with additional tests having been added by other work in the interim, not a regression.
+- `npm run build --workspace=app` → exit 0, built in 42.39s (tsc -b && vite build both clean) (orchestrator-verified 2026-07-26).
+- `npx tsc -p server/tsconfig.json --noEmit` → 0 errors (orchestrator-verified 2026-07-26).
+- All test files named across the six sibling API/UI-drift tracks were individually re-run by this reconciliation pass and confirmed passing (21 distinct files, 254 tests, 0 failures) — see those tracks' own `## Reconciliation (2026-07-26)` sections for per-file counts.
+
+No test/source edits were made by this reconciliation pass. This track is ready to archive.

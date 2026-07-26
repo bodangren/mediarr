@@ -1,8 +1,11 @@
 {
   "id": "bug_app_path_validation_ui_20260703",
   "title": "Fix App Path Validation UI Test Failures",
-  "status": "pending",
+  "status": "completed",
   "created": "2026-07-03",
   "priority": "medium",
-  "phases": 5
+  "phases": 5,
+  "completed": "2026-07-26",
+  "updated_at": "2026-07-26T00:00:00Z",
+  "type": "bug"
 }

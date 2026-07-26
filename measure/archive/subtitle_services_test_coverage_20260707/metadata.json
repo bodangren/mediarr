@@ -1,8 +1,11 @@
 {
   "id": "subtitle_services_test_coverage_20260707",
   "title": "Subtitle Services Test Coverage",
-  "status": "pending",
+  "status": "completed",
   "created": "2026-07-07",
   "priority": "medium",
-  "phases": 5
+  "phases": 5,
+  "completed": "2026-07-26",
+  "updated_at": "2026-07-26T00:00:00Z",
+  "type": "chore"
 }

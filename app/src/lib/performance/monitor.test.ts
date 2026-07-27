@@ -40,7 +40,12 @@ describe('Performance Monitor', () => {
 
     expect(metric).toBeDefined();
     expect(metric?.name).toBe(metricName);
-    expect(metric?.duration).toBeGreaterThanOrEqual(10);
+    // setTimeout(10) and performance.now() are different clocks, so the measured
+    // duration lands marginally under 10ms (observed: 9.913997). Asserting >= 10
+    // made this test flaky under load. The tolerance keeps the real intent — the
+    // measurement must reflect the awaited work — while ignoring sub-millisecond
+    // clock skew; a broken measurement would still report ~0.
+    expect(metric?.duration).toBeGreaterThanOrEqual(9);
   });
 
   it('logs metrics in development mode', () => {
@@ -104,7 +109,8 @@ describe('Performance Monitor', () => {
     expect(result).toEqual({ data: 'test' });
     expect(metric).toBeDefined();
     expect(metric?.name).toBe(`api:${apiEndpoint}`);
-    expect(metric?.duration).toBeGreaterThanOrEqual(10);
+    // Same clock-skew tolerance as 'measures async operations' above.
+    expect(metric?.duration).toBeGreaterThanOrEqual(9);
   });
 
   it('stores and retrieves all metrics', () => {

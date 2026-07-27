@@ -31,7 +31,6 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(here, '..', '..', '..');
 const repoRoot = path.resolve(projectRoot, '..');
 const setupTsPath = path.resolve(repoRoot, 'app', 'src', 'test', 'setup.ts');
-const techDebtPath = path.resolve(repoRoot, 'measure', 'tech-debt.md');
 
 function readFileOrNull(p: string): string | null {
   try {
@@ -96,36 +95,14 @@ describe('Phase S6 — Verification & Handoff', () => {
     });
   });
 
-  describe('measure/tech-debt.md marks the MSW mock coverage track Resolved', () => {
-    it('the file exists and is readable', () => {
-      const content = readFileOrNull(techDebtPath);
-      expect(
-        content,
-        `tech-debt.md must exist at ${techDebtPath} so the resolved status is auditable`,
-      ).not.toBeNull();
-    });
-
-    it('contains a row referencing the chore_msw_mock_coverage_20260526 track', () => {
-      const content = readFileOrNull(techDebtPath) ?? '';
-      expect(
-        content,
-        'tech-debt.md must contain a row referencing the chore_msw_mock_coverage_20260526 track so the resolved status is auditable',
-      ).toContain('chore_msw_mock_coverage_20260526');
-    });
-
-    it("marks the track's row with Status = Resolved", () => {
-      const content = readFileOrNull(techDebtPath) ?? '';
-      const trackLine = content
-        .split('\n')
-        .find((line) => line.includes('chore_msw_mock_coverage_20260526'));
-      expect(
-        trackLine,
-        'tech-debt.md must contain a row referencing chore_msw_mock_coverage_20260526 (Phase S6 deliverable)',
-      ).toBeDefined();
-      expect(
-        trackLine ?? '',
-        `tech-debt.md row for chore_msw_mock_coverage_20260526 must be marked Resolved (Phase S6 deliverable) — current row: ${trackLine}`,
-      ).toMatch(/\| Resolved \|/);
-    });
-  });
+  // The former "measure/tech-debt.md marks the MSW mock coverage track Resolved"
+  // block was removed on 2026-07-27. It asserted that tech-debt.md still
+  // contained a row for chore_msw_mock_coverage_20260526 marked Resolved — a
+  // one-time Phase S6 closure check that outlived its track (archived
+  // 2026-06-13). tech-debt.md is explicitly curated working memory whose own
+  // header instructs "Remove or summarize resolved items when they no longer
+  // need to influence near-term planning", so the assertion contradicted the
+  // file's policy. The 2026-07-26 pruning legitimately removed that row and
+  // broke these tests. A product test suite must not gate on the contents of
+  // prunable project documentation.
 });

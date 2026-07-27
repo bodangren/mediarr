@@ -3,6 +3,7 @@ import path from 'node:path';
 import os from 'node:os';
 import { assertValidEncryptionKey, preparePersistentStorage } from './config/startup';
 import { DatabaseClient } from './db/drizzleClient';
+import { describeMigrationState, runMigrations } from './db/migrationRunner';
 import { repairMalformedJsonColumns } from './maintenance/repairJsonColumns';
 import { createApiServer } from './api/createApiServer';
 import { registerStaticServing } from './api/staticServing';
@@ -134,6 +135,22 @@ async function startApi(): Promise<void> {
 
   assertValidEncryptionKey(process.env.ENCRYPTION_KEY);
   const databaseUrl = await resolveDatabaseUrl(process.env.DATABASE_URL);
+
+  // Migrations must complete before anything opens the schema, and before the
+  // server can bind and serve requests against a half-migrated database. The
+  // container entrypoint also runs this, but a bare-metal `npm run start:api`
+  // has no other migration step, so startup owns it.
+  const migrationState = describeMigrationState(databaseUrl, process.cwd());
+  if (migrationState.pending.length > 0) {
+    console.log(
+      `Applying ${migrationState.pending.length} pending migration(s): ${migrationState.pending.join(', ')}`,
+    );
+    runMigrations(databaseUrl, { projectRoot: process.cwd() });
+  }
+  console.log(
+    `Database schema at ${describeMigrationState(databaseUrl, process.cwd()).current ?? 'baseline'} (0 pending).`,
+  );
+
   const port = parsePort(process.env.API_PORT, 3001);
   const host = process.env.API_HOST ?? '0.0.0.0';
 

@@ -57,6 +57,25 @@ class _MovieDetailScreenState extends ConsumerState<MovieDetailScreen> {
     }
   }
 
+  Future<void> _delete() async {
+    final client = ref.read(apiClientProvider.notifier);
+    try {
+      await client.deleteMovie(widget.movie.id);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to delete ${widget.movie.title}: $e')),
+        );
+      }
+      return;
+    }
+    // The movie this screen renders no longer exists, so leaving the detail
+    // route open would show stale data and offer actions that now 404.
+    if (mounted) {
+      Navigator.of(context).pop();
+    }
+  }
+
   void _play() {
     final movie = widget.movie;
     final apiClient = ref.read(apiClientProvider.notifier);
@@ -119,11 +138,7 @@ class _MovieDetailScreenState extends ConsumerState<MovieDetailScreen> {
         label: 'Delete',
         icon: Icons.delete,
         isDestructive: true,
-        onPressed: () {
-          // Delete placeholder — the destructive AlertDialog flow is handled
-          // by ActionBar; the actual delete API call goes here once the
-          // server exposes a DELETE endpoint.
-        },
+        onPressed: _delete,
       ),
     ];
 

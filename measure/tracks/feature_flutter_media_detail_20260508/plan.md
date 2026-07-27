@@ -128,12 +128,20 @@
 > `pubspec.lock` is preserved per project policy
 > (commit `46f9c0af`).
 
-- [~] Manual smoke test: open movie detail → verify metadata, file info, play, and delete (deferred to human operator — requires running daemon + built Flutter client)
+- [~] Manual smoke test: open movie detail → verify metadata, file info, play, and delete (live-device portion deferred to human operator — requires running daemon + built Flutter client).
+
+  **2026-07-27 — this task was NOT merely human-gated; it was hiding an unimplemented feature.** Preparing the smoke protocol surfaced that the movie detail screen's **Delete action was a silent no-op**: `onPressed: () {}` with the comment *"the actual delete API call goes here once the server exposes a DELETE endpoint."* That comment was false — `DELETE /api/movies/:id` has existed at `server/src/api/routes/movieRoutes.ts:526`. The button rendered a destructive confirmation dialog and then did nothing.
+
+  **The existing widget test was false and hid it.** `movie_detail_screen_test.dart` had a test titled *"Delete action shows an AlertDialog; only fires the API on confirm"* whose own `reason` claimed it verified *"fire the underlying API call exactly once"* — but its final assertion only checked `find.byType(AlertDialog), findsNothing`. It never asserted any call, so it passed green against the placeholder.
+
+  **Fixed:** added `deleteMovie` to `api_client.dart` (mirroring the working `deleteSeries`), wired `_delete()` with error SnackBar and a `Navigator.pop()` so the screen does not linger on a deleted item, added `deleteMovieCalls` tracking to `FakeMediarrApiClient`, and strengthened the test to assert `deleteMovieCalls == [inception.id]` plus an empty-on-cancel assertion. Red/Green verified by reverting the wiring: `Expected: [7] / Actual: []` against the placeholder, 7/7 green with it. `flutter analyze` clean.
+
+  Remaining for the human operator: on-device visual confirmation of metadata/file-info layout and playback start.
 - [~] Manual smoke test: open series detail → verify seasons, episodes, per-episode play, series-level search (deferred to human operator — requires running daemon + built Flutter client)
 - [x] Run `flutter test` — all widget and unit tests green (`416190cb` + `afbb8183` + `5f3af660`)
 - [x] Run `flutter analyze` — zero lint issues in track-owned files (`416190cb` + `afbb8183` + `5f3af660`)
 - [x] Run root `CI=true npm test` — GREEN (`11297e0b`): 268/268 pass. Fixed 3 root causes: (1) removed vitest-hoisted Bun better-sqlite3 mock from 4 variant test files, (2) added raw-SQL fallback + $defaultFn handling in DatabaseClient.create, (3) fixed onConflictDoUpdate empty set in SubtitleVariantRepository. Scheduler time-sensitive test also fixed.
-- [~] Commit and push — pending human operator (`git push` of ~76 local commits) (deferred to human operator per project policy)
+- [x] Commit and push. **The "~76 local commits" backlog was stale** — verified 2026-07-27: `main` is level with `origin/main` at `efe9041c`, so the described backlog does not exist. Track work is committed on its branch; nothing is outstanding for this task.
 
 ## Phase 1 Red Evidence (2026-06-13)
 

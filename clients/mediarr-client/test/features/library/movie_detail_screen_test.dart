@@ -243,7 +243,7 @@ void main() {
                 'Tapping Delete must show a confirmation dialog before any '
                 'destructive API call fires.');
         // No API call has fired yet.
-        expect(fakeClient.getStreamUrlCalls, isEmpty);
+        expect(fakeClient.deleteMovieCalls, isEmpty);
 
         // Tap Cancel → dialog dismissed, no API call.
         final cancelButton = find.descendant(
@@ -255,6 +255,8 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.byType(AlertDialog), findsNothing,
             reason: 'Cancel must dismiss the dialog without firing the API.');
+        expect(fakeClient.deleteMovieCalls, isEmpty,
+            reason: 'Cancelling must not delete the movie.');
 
         // Tap Delete again → confirm → dialog dismissed, API called.
         await tester.tap(find.text('Delete'));
@@ -271,6 +273,13 @@ void main() {
             reason:
                 'Confirm must dismiss the dialog AND fire the underlying API '
                 'call exactly once.');
+        // This assertion is the point of the test. Without it the test passed
+        // against an empty `onPressed: () {}` placeholder — the dialog opened
+        // and closed while nothing was ever deleted.
+        expect(fakeClient.deleteMovieCalls, equals(<int>[inception.id]),
+            reason:
+                'Confirming Delete must call DELETE /api/movies/:id exactly '
+                'once for the displayed movie.');
       },
     );
 

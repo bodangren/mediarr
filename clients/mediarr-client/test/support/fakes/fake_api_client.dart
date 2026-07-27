@@ -143,6 +143,17 @@ class FakeMediarrApiClient extends MediarrApiClient {
     if (deleteSeriesError != null) throw deleteSeriesError!;
   }
 
+  // --- deleteMovie (movie-level Delete action) ---
+
+  Object? deleteMovieError;
+  final List<int> deleteMovieCalls = [];
+
+  @override
+  Future<void> deleteMovie(int movieId) async {
+    deleteMovieCalls.add(movieId);
+    if (deleteMovieError != null) throw deleteMovieError!;
+  }
+
 
   // --- searchSubtitles (SubtitleSearchSheet) ---
 

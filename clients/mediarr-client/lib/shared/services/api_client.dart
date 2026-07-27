@@ -653,6 +653,11 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
     await _dio.delete('/api/series/$seriesId');
   }
 
+  /// Delete a movie by ID.
+  Future<void> deleteMovie(int movieId) async {
+    await _dio.delete('/api/movies/$movieId');
+  }
+
   /// Grab a specific release by GUID and indexer ID.
   Future<void> grabRelease({
     required String guid,

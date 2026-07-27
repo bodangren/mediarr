@@ -8,16 +8,26 @@ WORKDIR /app
 FROM base AS builder
 RUN apt-get update -y && apt-get install -y build-essential python3 cmake && rm -rf /var/lib/apt/lists/*
 # Keep the complete workspace graph, postinstall entrypoint, and source in the
-# same filesystem snapshot consumed by npm and Vite. Podman overlay layers can
-# otherwise make varying hoisted packages unavailable to downstream Vite
-# resolution when node_modules is committed by one layer and reloaded by the
-# next.
+# same filesystem snapshot consumed by npm.
 COPY package.json package-lock.json ./
 COPY app/package.json ./app/package.json
 COPY server/package.json ./server/package.json
 COPY scripts/apply-patches.js ./scripts/apply-patches.js
 COPY . .
-RUN npm ci --workspaces --include-workspace-root && npm run build --workspace=app
+# The install and the SPA build MUST stay in separate RUN layers.
+#
+# Running them in one layer intermittently fails with the Vite/Rollup family
+# `Rollup failed to resolve import "<dep>" from "/app/app/..."` even though the
+# dependency is installed correctly at /app/node_modules. Verified 2026-07-27:
+# with a combined layer the build aborted after 158 modules on
+# `@radix-ui/react-select`; running the identical build from the committed
+# install layer transformed 3028 modules and produced dist/. The install is not
+# at fault — an in-layer probe confirmed node_modules/@radix-ui/react-select was
+# complete and app/node_modules held only @types and globals. Committing the
+# install layer forces the overlay filesystem to publish every written entry
+# before Vite's resolver walks node_modules.
+RUN npm ci --workspaces --include-workspace-root
+RUN npm run build --workspace=app
 
 # Runner stage
 FROM base AS runner
@@ -50,4 +60,4 @@ COPY --from=builder /app/server/definitions ./server/definitions
 VOLUME ["/config", "/data"]
 
 EXPOSE 5174
-CMD ["sh", "-ec", "./node_modules/.bin/tsx server/src/config/preflight.ts && ./node_modules/.bin/tsx scripts/reconcile-migration-compatibility.ts && ./node_modules/.bin/drizzle-kit migrate && exec ./node_modules/.bin/tsx server/src/main.ts"]
+CMD ["sh", "-ec", "./node_modules/.bin/tsx server/src/config/preflight.ts && ./node_modules/.bin/tsx scripts/reconcile-migration-compatibility.ts && ./node_modules/.bin/tsx scripts/run-migrations.ts && exec ./node_modules/.bin/tsx server/src/main.ts"]

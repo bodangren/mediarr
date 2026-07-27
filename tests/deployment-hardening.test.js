@@ -21,10 +21,15 @@ describe('Docker Engine deployment contract', () => {
 
     expect(dockerfile).toContain('server/src/config/preflight.ts');
     expect(dockerfile).toContain('scripts/reconcile-migration-compatibility.ts');
-    expect(dockerfile).toContain('drizzle-kit migrate');
-    expect(dockerfile).not.toMatch(/drizzle-kit\s+push|\|\|\s*(echo|true)/);
+    // Migrations run through the project's own runner, not `drizzle-kit migrate`.
+    // drizzle-orm applies every pending migration in a single transaction, where
+    // SQLite ignores `PRAGMA foreign_keys=OFF` and table rebuilds cascade-delete
+    // user rows while still committing successfully. See
+    // server/src/db/migrationRunner.ts and migrationDataPreservation.test.ts.
+    expect(dockerfile).toContain('scripts/run-migrations.ts');
+    expect(dockerfile).not.toMatch(/drizzle-kit\s+(migrate|push)|\|\|\s*(echo|true)/);
     expect(dockerfile.indexOf('server/src/config/preflight.ts')).toBeLessThan(
-      dockerfile.indexOf('drizzle-kit migrate'),
+      dockerfile.indexOf('scripts/run-migrations.ts'),
     );
     expect(dockerfile).toContain('COPY --from=builder /app/scripts ./scripts');
   });

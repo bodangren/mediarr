@@ -40,8 +40,8 @@ describe('clean Docker workspace installation', () => {
       /^COPY scripts\/apply-patches\.js \.\/scripts\/apply-patches\.js$/m,
     );
     const source = instructionIndex(/^COPY \. \.$/m);
-    const installAndBuild = instructionIndex(
-      /^RUN npm ci --workspaces --include-workspace-root && npm run build --workspace=app$/m,
+    const install = instructionIndex(
+      /^RUN npm ci --workspaces --include-workspace-root$/m,
     );
 
     expect(rootManifest).toBeGreaterThan(-1);
@@ -49,10 +49,18 @@ describe('clean Docker workspace installation', () => {
     expect(serverManifest).toBeGreaterThan(appManifest);
     expect(postinstallScript).toBeGreaterThan(serverManifest);
     expect(source).toBeGreaterThan(postinstallScript);
-    expect(installAndBuild).toBeGreaterThan(source);
+    expect(install).toBeGreaterThan(source);
   });
 
-  it('uses exactly one frozen install and one build in the same layer', () => {
+  // Regression guard for the Phase 6 clean-image defect. Combining the frozen
+  // install and the SPA build into one RUN layer reproducibly fails with
+  // `Rollup failed to resolve import "<dep>" from "/app/app/..."` even though
+  // the dependency is present at /app/node_modules. Committing the install as
+  // its own layer is what makes Vite's resolution independent of the overlay
+  // filesystem's write visibility. Asserted structurally so the guard costs
+  // milliseconds instead of a multi-minute image build; the live no-cache build
+  // in clean-workspace-build.test.js is the end-to-end acceptance gate.
+  it('runs the frozen install and the SPA build in separate layers', () => {
     const frozenInstalls = dockerfile.match(
       /npm ci --workspaces --include-workspace-root/g,
     ) ?? [];
@@ -62,8 +70,18 @@ describe('clean Docker workspace installation', () => {
     expect(frozenInstalls).toHaveLength(1);
     expect(appBuilds).toHaveLength(1);
     expect(npmRuns).toEqual([
-      'RUN npm ci --workspaces --include-workspace-root && npm run build --workspace=app',
+      'RUN npm ci --workspaces --include-workspace-root',
+      'RUN npm run build --workspace=app',
     ]);
+
+    const install = instructionIndex(
+      /^RUN npm ci --workspaces --include-workspace-root$/m,
+    );
+    const build = instructionIndex(/^RUN npm run build --workspace=app$/m);
+    expect(
+      build,
+      'the SPA build must be its own RUN layer, after the install layer',
+    ).toBeGreaterThan(install);
     expect(dockerfile).not.toMatch(/npm install|--package-lock-only/);
   });
 });

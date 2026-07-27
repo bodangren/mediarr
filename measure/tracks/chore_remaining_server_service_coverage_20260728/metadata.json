@@ -1,0 +1,10 @@
+{
+  "track_id": "chore_remaining_server_service_coverage_20260728",
+  "type": "chore",
+  "status": "pending",
+  "created_at": "2026-07-28T05:10:00Z",
+  "updated_at": "2026-07-28T05:10:00Z",
+  "description": "Add sibling unit tests for the 8 server services that still lack them (verified list in tech-debt.md), closing the last verified server-service coverage gap using TDD.",
+  "estimated_tasks": 20,
+  "deviation_notes": "Addresses tech-debt item (2026-07-26): 8 of 55 server services still lack a sibling .test.ts. Gap re-verified against source on 2026-07-28: all 8 services exist in server/src/services/ with no sibling test file."
+}

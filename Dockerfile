@@ -14,18 +14,27 @@ COPY app/package.json ./app/package.json
 COPY server/package.json ./server/package.json
 COPY scripts/apply-patches.js ./scripts/apply-patches.js
 COPY . .
-# The install and the SPA build MUST stay in separate RUN layers.
+# Keep the install and the SPA build in separate RUN layers.
 #
-# Running them in one layer intermittently fails with the Vite/Rollup family
-# `Rollup failed to resolve import "<dep>" from "/app/app/..."` even though the
-# dependency is installed correctly at /app/node_modules. Verified 2026-07-27:
-# with a combined layer the build aborted after 158 modules on
-# `@radix-ui/react-select`; running the identical build from the committed
-# install layer transformed 3028 modules and produced dist/. The install is not
-# at fault — an in-layer probe confirmed node_modules/@radix-ui/react-select was
-# complete and app/node_modules held only @types and globals. Committing the
-# install layer forces the overlay filesystem to publish every written entry
-# before Vite's resolver walks node_modules.
+# This repo has an open, intermittent clean-image defect in the Vite/Rollup family
+# `Rollup failed to resolve import "<dep>" from "/app/app/..."`, naming a different
+# module each occurrence. The split below is good practice and is asserted by
+# tests/clean-workspace-invariant.test.js, but do NOT read it as the fix.
+#
+# What is proven (2026-07-27): the dependency is NOT missing. A probe run inside
+# the failing build layer resolved all 47 app deps from /app/app immediately
+# before rollup failed and again afterwards, with all 37 @radix-ui packages
+# complete; `tsc -b` also resolves the same specifier seconds earlier in this very
+# command. An earlier comment here claimed the cause was overlay write-visibility
+# between RUN layers — that explanation is disproven, as are missing/unhoisted
+# deps, the npm ci flags, Node version, npm version, fd limits, disk, and memory.
+# The mechanism is still unknown and the defect has not reproduced in 13
+# consecutive clean builds since.
+#
+# See measure/tracks/chore_home_network_deployment_hardening_20260712/plan.md
+# (Phase 6, "Instrumented investigation") before changing anything here. In
+# particular: do not adopt one of the four test-strategy.md §3 remediation
+# patterns — all four assume an install-layout defect that is disproven.
 RUN npm ci --workspaces --include-workspace-root
 RUN npm run build --workspace=app
 

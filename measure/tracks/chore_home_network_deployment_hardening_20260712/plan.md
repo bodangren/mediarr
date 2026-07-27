@@ -42,7 +42,9 @@
 
   **The defect was misdiagnosed for two weeks.** Every one of the four documented remediation patterns (a)–(d) targets npm's *install layout*, on the assumption that a dependency was missing or unhoisted. Source verification disproved that. An in-layer probe (`Dockerfile.probe`, discarded after use) showed the install was already correct on a clean `--no-cache` build: `node_modules/@radix-ui/react-select` was present and complete (`dist/`, `package.json`), `app/node_modules` held only `@types` and `globals`, and 25 `@radix-ui` packages were hoisted to the root. `npm ci --workspaces --include-workspace-root` was also exonerated directly — reproduced under the container's exact `npm 10.8.2` on `node:20-slim` with only the manifests mounted, and it installed `@radix-ui/react-select` correctly.
 
-  **Actual root cause: the install and the SPA build shared one `RUN` layer.** Running `npm run build --workspace=app` from the *committed* install layer transformed 3028 modules and produced `dist/`; running the identical build in the same layer as `npm ci` aborted after 158 modules with `Rollup failed to resolve import "@radix-ui/react-select" from "/app/app/src/components/ui/select.tsx"`. Committing the install layer forces the overlay filesystem to publish every written entry before Vite's resolver walks `node_modules`. This is a fifth pattern that the strategy's option list did not contain.
+  > **Second retraction (2026-07-27, later session).** The paragraph below claimed the root cause was the shared `RUN` layer / overlay write-visibility. **That is disproven.** See "Instrumented investigation" further down: a probe placed *inside the failing build layer* shows every dependency present and resolvable immediately before and after rollup fails, and `tsc -b` resolves the same specifier seconds earlier in the same command. The layer-split change is retained (harmless, and the separation is good practice) but it is **not** the mechanism, and no claim in the paragraph below should be relied on.
+
+  **~~Actual root cause: the install and the SPA build shared one `RUN` layer.~~** *(Superseded — see the retraction above.)* Running `npm run build --workspace=app` from the *committed* install layer transformed 3028 modules and produced `dist/`; running the identical build in the same layer as `npm ci` aborted after 158 modules with `Rollup failed to resolve import "@radix-ui/react-select" from "/app/app/src/components/ui/select.tsx"`. The inference drawn from this — that committing the install layer forces the overlay filesystem to publish written entries before Vite's resolver walks `node_modules` — was an untested explanation for a two-sample difference, and later probing contradicts it.
 
   **The prior Red gate was locking in the bug.** Commit `53e27adf` ("fix(docker): build SPA in frozen install layer") *moved the build into the install layer* and rewrote `tests/clean-workspace-invariant.test.js` to assert exactly that shape — `expect(npmRuns).toEqual(['RUN npm ci --workspaces --include-workspace-root && npm run build --workspace=app'])`. The registry's claim that this gate was "in place and failing by design" was false: it was **passing** at HEAD and pinning the broken Dockerfile. The test now asserts the real invariant — install and build in separate `RUN` layers, install first.
 
@@ -62,9 +64,76 @@
   - *Host disk pressure.* `df -h /` → `233G 171G 51G 78% /` at run time; the strategy §6 escape hatch does not apply.
   - *A Vite/source defect.* `npm run build --workspace=app` run from the **committed** install layer (`podman run` on the probe image) transformed 3028 modules and produced `dist/` successfully.
 
-  **Where that leaves the diagnosis.** The install is correct and the build is correct; only the build *executed inside the image build, against the layer the install just wrote* fails. Splitting into separate `RUN` layers was not sufficient — buildah does not remount the overlay between `RUN` steps the way `podman run` on a committed image does. This points at overlay write-visibility under rootless podman/fuse-overlayfs, and **none of the four remediation patterns in test-strategy.md §3 addresses it**, because all four assume an install-layout problem that the probes disprove.
+  ### Instrumented investigation (2026-07-27, later session) — mechanism still UNKNOWN, but the search space is now much smaller
 
-  **Recommended next experiment** (not yet run): build with `--layers=false` and, separately, under a different storage driver (`podman build --storage-driver=vfs`) to confirm or eliminate the overlay hypothesis before changing the Dockerfile again. If confirmed, the fix belongs in the build invocation/driver, not in npm flags or Vite aliases. Note the earlier Phase 4/5 evidence used `podman build --layers=false`, which may be why those runs looked green.
+  The overlay hypothesis above was tested and **failed**. The storage driver on this host is
+  **kernel-native `overlay`** (`podman info` → `graphDriverName: overlay`, `Native Overlay Diff: true`),
+  not `fuse-overlayfs`, which already weakened it. Rather than run the recommended
+  `--layers=false` / `--storage-driver=vfs` builds, a cheaper and more direct probe was used:
+  resolve every `app` dependency **from inside the failing build layer**, immediately before
+  rollup runs and again after it fails.
+
+  **Probe result on two consecutive reproduced failures:**
+
+  ```
+  [PROBE-PRE]  deps=47 unresolved=[]   radix_pkgs=37 radix_missing_pkgjson=[]
+  ✓ 132 (resp. 143) modules transformed.
+  [vite]: Rollup failed to resolve import "@radix-ui/react-dialog" (resp. react-checkbox)
+  [PROBE-POST] deps=47 unresolved=[]   radix_pkgs=37 radix_missing_pkgjson=[]
+  ```
+
+  All 47 declared `app` dependencies resolve from `/app/app/` **before and after** the failure,
+  and all 37 `@radix-ui` packages are complete. Independently, `app`'s build script is
+  `tsc -b && vite build`, and `tsc -b` **passes** — it cannot, since `app/src` is in
+  `tsconfig.app.json`'s `include` and an unresolvable module would raise TS2307 before vite starts.
+  **The files are present, complete, and resolvable by both Node and TypeScript at the moment
+  rollup says they are not.**
+
+  **Now positively excluded** (each by direct measurement):
+
+  | Hypothesis | How it died |
+  |---|---|
+  | Missing / unhoisted dependency | `[PROBE-PRE/POST]` — 47/47 resolvable, 37/37 radix complete |
+  | Overlay write-visibility / layer commit | Same probe; also driver is native `overlay`, not fuse |
+  | `npm ci` flags | Previously exonerated; re-confirmed |
+  | Vite / source defect | Host builds 3/3 green, 3028 modules |
+  | Node runtime version | `node:20-slim` (20.20.2) over a bind mount: **5/5 green** |
+  | npm version (10.8.2 vs 10.9.8) | Control arm, stock 10.8.2 + added layer: **3/3 green** |
+  | File-descriptor exhaustion | `ulimit -n` = 1048576 soft *and* hard, host and container |
+  | Disk pressure | 43 GB free at the moment of failure |
+  | Memory pressure | Load arm (concurrent host builds, 1.55–1.77 GB available): **3/3 green** |
+
+  **Reproduced twice, then stopped reproducing.** Two clean `--no-cache` builds failed early in
+  the session (17:19 and 17:27, at 132 and 143 modules, a different module each time). **Every
+  subsequent build passed: 13 consecutive green clean-image builds** (Node 22 ×2, npm 10.9.8 ×2,
+  npm 10.8.2 control ×3, true baseline ×3, load arm ×3), plus 5 bind-mount builds and 3 host
+  builds. The true baseline — byte-identical layer structure to the production `Dockerfile` — is
+  **3/3 green**, so the defect is **not currently reproducible on demand**, and no arm measured
+  after the two failures can be read as a fix.
+
+  **Methodological warning for the next role.** The Node 22 and npm 10.9.8 arms both looked like
+  fixes. They were not: every passing arm had gained an extra `RUN` layer in the base stage that
+  the two failing arms lacked. A control holding Node 20 + stock npm 10.8.2 and changing only that
+  layer went 3/3 green, which killed both version hypotheses at once. **Do not accept any arm here
+  without a control that changes nothing else** — and note that with a base rate of ~2 failures in
+  16 builds, an arm needs far more than 3 green runs to mean anything.
+
+  **What the next role should do — in this order:**
+  1. **Do not change the `Dockerfile` chasing this.** Nothing measured supports any of the four
+     `test-strategy.md` §3 remediation patterns; all four assume an install-layout defect that is
+     disproven. The current split-layer shape is fine on its merits, but it is not a fix.
+  2. **Instrument, don't guess.** The one decisive artefact never captured is vite's own resolver
+     trace on a failing run. Wrap the SPA build so a failure re-runs it under `DEBUG=vite:resolve`
+     and prints the trace for the failing specifier. That converts the next spontaneous occurrence
+     into a mechanism instead of another inference. (Note: buildah 1.33 / podman 4.9.3 does **not**
+     support Dockerfile heredocs — use single-line `RUN … || ( … )`, escaping `\$` for shell vars.)
+  3. **Get the heavy build out of the unit suite.** `tests/clean-workspace-build.test.js` shells out
+     to `docker build --no-cache` — 7–13 minutes, and potentially twice — from inside
+     `CI=true npx vitest run`. That is why suite runs are slow and why the 06:27 failure got
+     entangled with a suite run. Move it to an explicit acceptance script.
+  4. **Fix `tests/clean-workspace-invariant.test.js`.** It still pins the exact Dockerfile shape
+     (`expect(npmRuns).toEqual([...])`) — the same anti-pattern this track already recorded a lesson
+     about, just pinning a different shape. It will reject any future remediation.
 
   Structural gates remain green: `tests/clean-workspace-invariant.test.js` + `tests/deployment-hardening.test.js` → 10/10.
 

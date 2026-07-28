@@ -1,26 +1,22 @@
 # Release Parser Live Accuracy Benchmark
 
-- Model: `google/gemini-2.5-flash-lite`
-- Provider source: `openrouter` — OpenRouter using google/gemini-2.5-flash-lite
+- Model: `openrouter/pareto-code`
+- Provider source: `openrouter` — OpenRouter using openrouter/pareto-code (min_coding_score=0)
 - Golden entries: 48
-- Batch size: 8
+- Batch size: 25
 - Runs: 1
-- Batches executed: 6
+- Batches executed: 2
 
 ## Alignment (truncation metric)
 
 - Overall: 48/48 slots aligned (100.0%)
-- Batches that returned nothing at all (all-null slots): 0/6
+- Batches that returned nothing at all (all-null slots): 0/2
 - Skipped/unattributed slots (excluded from field accuracy below): 0/48
 
 | run | batch | nonNull/total | duration (ms) |
 |-----|-------|---------------|----------------|
-| 1 | 1 | 8/8 | 3781 |
-| 1 | 2 | 8/8 | 2331 |
-| 1 | 3 | 8/8 | 3663 |
-| 1 | 4 | 8/8 | 1878 |
-| 1 | 5 | 8/8 | 2353 |
-| 1 | 6 | 8/8 | 2194 |
+| 1 | 1 | 25/25 | 28612 |
+| 1 | 2 | 23/23 | 14226 |
 
 ## Per-field accuracy
 
@@ -30,21 +26,21 @@ a match for nullable fields (year, seasonNumber, quality.resolution).
 
 | field | accuracy |
 |-------|----------|
-| title (exact) | 97.9% (47/48) |
-| title (normalised: case-insensitive, trimmed, collapsed whitespace) | 97.9% (47/48) |
-| year | 85.4% (41/48) |
+| title (exact) | 87.5% (42/48) |
+| title (normalised: case-insensitive, trimmed, collapsed whitespace) | 87.5% (42/48) |
+| year | 100.0% (48/48) |
 | seasonNumber | 100.0% (48/48) |
 | episodeNumbers (array equality by value + order) | 100.0% (48/48) |
 | matchType | 100.0% (48/48) |
 | type | 100.0% (48/48) |
-| quality.resolution | 95.8% (46/48) |
+| quality.resolution | 100.0% (48/48) |
 
 ## Latency
 
-- min: 1878ms
-- median: 2342ms
-- max: 3781ms
-- total wall clock: 16200ms across 6 batch call(s)
+- min: 14226ms
+- median: 21419ms
+- max: 28612ms
+- total wall clock: 42838ms across 2 batch call(s)
 
 ## Cost / token usage
 

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { releaseParser, ParsedReleaseSchema, ParsedReleaseWithScoreSchema } from './ReleaseParser';
-import type { ParsedRelease, ParsedReleaseWithScore, SearchContext } from './ReleaseParser';
+import { releaseParser, ParsedReleaseSchema, ParsedReleaseWithScoreSchema, onReleaseParserDegraded } from './ReleaseParser';
+import type { ParsedRelease, ParsedReleaseWithScore, SearchContext, ParserDegradation } from './ReleaseParser';
 import {
   DEFAULT_PARSE_TIMEOUT_MS,
   DEFAULT_BATCH_TIMEOUT_MS,
@@ -641,6 +641,156 @@ describe('ReleaseParser — abort deadlines', () => {
     await releaseParser.parseFiles(['Some/Show/S01E01.mkv']);
 
     expect(timeoutSpy).toHaveBeenCalledWith(DEFAULT_FILES_TIMEOUT_MS);
+  });
+});
+
+// ── Degradation reporting & escalation ───────────────────────────────────────
+//
+// onReleaseParserDegraded() is how the server surfaces a degraded AI layer instead
+// of it silently returning regex/empty results while looking alive. These tests
+// assert on the observer, not on console output — console noise is suppressed so
+// failures stay readable.
+describe('ReleaseParser — degradation reporting', () => {
+  let events: ParserDegradation[];
+  let errorSpy: ReturnType<typeof vi.spyOn>;
+  let warnSpy: ReturnType<typeof vi.spyOn>;
+
+  /** A scored result tagged with the 1-based index it claims to belong to. */
+  function indexed(index: number | null, overrides: Partial<ParsedReleaseWithScore> = {}) {
+    return { ...makeScored(overrides), index };
+  }
+
+  beforeEach(() => {
+    vi.unstubAllEnvs();
+    vi.stubEnv('OPENROUTER_API_KEY', 'test-key');
+    mockGenerateText.mockReset();
+    mockCreateOpenAI.mockClear();
+    mockCreateOpenRouter.mockClear();
+    events = [];
+    onReleaseParserDegraded(event => {
+      events.push(event);
+    });
+    errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    // Must always unregister — a leftover observer leaks events into unrelated tests.
+    onReleaseParserDegraded(null);
+    errorSpy.mockRestore();
+    warnSpy.mockRestore();
+    vi.unstubAllEnvs();
+  });
+
+  describe('parse()', () => {
+    it('reports provider_error on each failed attempt and fell_back_to_regex at the end', async () => {
+      mockGenerateText
+        .mockRejectedValueOnce(new Error('network'))
+        .mockRejectedValueOnce(new Error('network'))
+        .mockRejectedValueOnce(new Error('network'));
+
+      await releaseParser.parse('unparseable-garbage');
+
+      const kinds = events.map(e => e.kind);
+      expect(kinds).toContain('provider_error');
+      expect(kinds[kinds.length - 1]).toBe('fell_back_to_regex');
+    });
+
+    it('reports timeout instead of provider_error for an abort-shaped error', async () => {
+      const abortError = new Error('The operation was aborted due to timeout');
+      abortError.name = 'AbortError';
+      mockGenerateText
+        .mockRejectedValueOnce(abortError)
+        .mockRejectedValueOnce(abortError)
+        .mockRejectedValueOnce(abortError);
+
+      await releaseParser.parse('unparseable-garbage');
+
+      const kinds = events.map(e => e.kind);
+      expect(kinds).toContain('timeout');
+      expect(kinds).not.toContain('provider_error');
+      expect(kinds[kinds.length - 1]).toBe('fell_back_to_regex');
+    });
+
+    it('emits an escalated event whose toScore is greater than fromScore on a retry', async () => {
+      // Default model (openrouter/pareto-code) is a pareto router, so minCodingScore
+      // is defined and the retry escalates it.
+      mockGenerateText
+        .mockRejectedValueOnce(new Error('fail once'))
+        .mockResolvedValueOnce(makeTextResult(makeParsed()) as never);
+
+      await releaseParser.parse('Some.Show.S01E01.mkv');
+
+      const escalated = events.find(e => e.kind === 'escalated');
+      expect(escalated).toBeDefined();
+      if (escalated?.kind === 'escalated') {
+        expect(escalated.toScore).toBeGreaterThan(escalated.fromScore);
+      }
+    });
+
+    it('an observer that throws does not break parsing', async () => {
+      onReleaseParserDegraded(() => {
+        throw new Error('observer exploded');
+      });
+      mockGenerateText
+        .mockRejectedValueOnce(new Error('fail'))
+        .mockRejectedValueOnce(new Error('fail'))
+        .mockRejectedValueOnce(new Error('fail'));
+
+      const result = await releaseParser.parse('Breaking.Bad.S03E05.1080p.BluRay.mkv');
+
+      // Regex fallback still runs — the throwing observer must not propagate.
+      expect(result?.matchType).toBe('episode');
+      expect(result?.seasonNumber).toBe(3);
+    });
+  });
+
+  describe('parseBatch()', () => {
+    it('a first attempt with an all-null-attributable response triggers one retry and emits unusable_response; a successful retry returns the good slots', async () => {
+      mockGenerateText
+        .mockResolvedValueOnce(makeTextResult({ results: [] }) as never)
+        .mockResolvedValueOnce(makeTextResult({ results: [indexed(1, { title: 'Recovered' })] }) as never);
+
+      const output = await releaseParser.parseBatch(['Some.Show.S01E01.mkv']);
+
+      expect(mockGenerateText).toHaveBeenCalledTimes(2);
+      expect(events.map(e => e.kind)).toContain('unusable_response');
+      expect(events.map(e => e.kind)).toContain('escalated');
+      expect(output[0]?.title).toBe('Recovered');
+    });
+
+    it('total failure emits fell_back_to_regex and returns all-null slots', async () => {
+      mockGenerateText.mockRejectedValue(new Error('boom'));
+
+      const output = await releaseParser.parseBatch(['Some.Show.S01E01.mkv']);
+
+      expect(output).toEqual([null]);
+      expect(events.map(e => e.kind)).toContain('fell_back_to_regex');
+    });
+
+    it('an observer that throws does not break parsing', async () => {
+      onReleaseParserDegraded(() => {
+        throw new Error('observer exploded');
+      });
+      mockGenerateText.mockRejectedValue(new Error('boom'));
+
+      const output = await releaseParser.parseBatch(['Some.Show.S01E01.mkv']);
+
+      expect(output).toEqual([null]);
+    });
+
+    it('emits slow_call when a successful call consumes at least 60% of its deadline', async () => {
+      vi.stubEnv('RELEASE_PARSER_BATCH_TIMEOUT_MS', '100');
+      mockGenerateText.mockImplementationOnce(async () => {
+        await new Promise(resolve => setTimeout(resolve, 80));
+        return makeTextResult({ results: [indexed(1)] }) as never;
+      });
+
+      await releaseParser.parseBatch(['Some.Show.S01E01.mkv']);
+
+      const slow = events.find(e => e.kind === 'slow_call');
+      expect(slow).toBeDefined();
+    });
   });
 });
 

@@ -1,10 +1,19 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
-// Mirrors the mocking style used in ReleaseParser.test.ts.
+// Mirrors the mocking style used in ReleaseParser.test.ts, but the inner "model
+// factory" returned by createOpenRouter(...) is hoisted out to a single stable spy
+// (mockOpenRouterModelFactory) so tests can inspect the arguments OpenRouter's model
+// factory was called with — in particular the `extraBody.plugins` passthrough used
+// for the pareto router's quality dial. `vi.hoisted` is required because vi.mock
+// factories are hoisted above imports/declarations, and Vitest only allows
+// referencing variables prefixed with `mock` from inside them.
+const { mockOpenRouterModelFactory } = vi.hoisted(() => {
+  return { mockOpenRouterModelFactory: vi.fn(() => 'mock-openrouter-model') };
+});
 
 vi.mock('@openrouter/ai-sdk-provider', () => ({
-  createOpenRouter: vi.fn(() => vi.fn(() => 'mock-openrouter-model')),
+  createOpenRouter: vi.fn(() => mockOpenRouterModelFactory),
 }));
 
 vi.mock('@ai-sdk/openai', () => ({
@@ -21,6 +30,9 @@ import {
   DEFAULT_BATCH_TIMEOUT_MS,
   DEFAULT_FILES_TIMEOUT_MS,
   DEFAULT_MAX_CONCURRENCY,
+  DEFAULT_MIN_CODING_SCORE,
+  clampCodingScore,
+  isParetoRouter,
   __resetModelWarningsForTests,
 } from './ReleaseParserProvider';
 
@@ -54,6 +66,7 @@ beforeEach(() => {
   clearAllRelevantEnv();
   mockCreateOpenAI.mockClear();
   mockCreateOpenRouter.mockClear();
+  mockOpenRouterModelFactory.mockClear();
 });
 
 // ── resolveReleaseParserAiConfig ─────────────────────────────────────────────
@@ -222,16 +235,17 @@ describe('resolveReleaseParserAiConfig — description', () => {
   });
 });
 
-// ── THE RED TEST ─────────────────────────────────────────────────────────────
+// ── Default model ────────────────────────────────────────────────────────────
 
-describe('resolveReleaseParserAiConfig — default model pin (FR-4)', () => {
-  // RED until Phase 3 pins the default model (FR-4).
-  it('defaults to google/gemini-2.5-flash-lite when only OPENROUTER_API_KEY is set', () => {
+describe('resolveReleaseParserAiConfig — default model (FR-4)', () => {
+  // A router, not a pinned model — chosen 2026-07-28 so the parser survives model
+  // retirement (see the doc comment on DEFAULT_OPENROUTER_MODEL).
+  it('defaults to openrouter/pareto-code when only OPENROUTER_API_KEY is set', () => {
     vi.stubEnv('OPENROUTER_API_KEY', 'or-key');
 
     const config = resolveReleaseParserAiConfig();
 
-    expect(config.modelId).toBe('google/gemini-2.5-flash-lite');
+    expect(config.modelId).toBe('openrouter/pareto-code');
   });
 });
 
@@ -394,5 +408,123 @@ describe('resolveReleaseParserAiConfig — slow-model warning (FR-3)', () => {
     resolveReleaseParserAiConfig();
 
     expect(warnSpy).not.toHaveBeenCalled();
+  });
+});
+
+// ── clampCodingScore ─────────────────────────────────────────────────────────
+
+describe('clampCodingScore', () => {
+  it('clamps a value below 0 up to 0', () => {
+    expect(clampCodingScore(-0.5)).toBe(0);
+  });
+
+  it('clamps a value above 1 down to 1', () => {
+    expect(clampCodingScore(1.5)).toBe(1);
+  });
+
+  it('passes a mid-range value through unchanged', () => {
+    expect(clampCodingScore(0.42)).toBe(0.42);
+  });
+
+  it('passes the boundaries 0 and 1 through unchanged', () => {
+    expect(clampCodingScore(0)).toBe(0);
+    expect(clampCodingScore(1)).toBe(1);
+  });
+
+  it('returns the default for NaN', () => {
+    expect(clampCodingScore(NaN)).toBe(DEFAULT_MIN_CODING_SCORE);
+  });
+
+  it('returns the default for Infinity', () => {
+    expect(clampCodingScore(Infinity)).toBe(DEFAULT_MIN_CODING_SCORE);
+    expect(clampCodingScore(-Infinity)).toBe(DEFAULT_MIN_CODING_SCORE);
+  });
+});
+
+// ── isParetoRouter ───────────────────────────────────────────────────────────
+
+describe('isParetoRouter', () => {
+  it('is true for the pareto router model id', () => {
+    expect(isParetoRouter('openrouter/pareto-code')).toBe(true);
+  });
+
+  it('is false for a fixed (non-router) model id', () => {
+    expect(isParetoRouter('google/gemini-2.5-flash-lite')).toBe(false);
+  });
+});
+
+// ── minCodingScore resolution ────────────────────────────────────────────────
+
+describe('resolveReleaseParserAiConfig — minCodingScore (pareto router)', () => {
+  it('defaults to DEFAULT_MIN_CODING_SCORE when nothing is set', () => {
+    vi.stubEnv('OPENROUTER_API_KEY', 'or-key');
+
+    const config = resolveReleaseParserAiConfig();
+
+    expect(config.minCodingScore).toBe(DEFAULT_MIN_CODING_SCORE);
+  });
+
+  it('honours an in-range RELEASE_PARSER_MIN_CODING_SCORE override', () => {
+    vi.stubEnv('OPENROUTER_API_KEY', 'or-key');
+    vi.stubEnv('RELEASE_PARSER_MIN_CODING_SCORE', '0.5');
+
+    const config = resolveReleaseParserAiConfig();
+
+    expect(config.minCodingScore).toBe(0.5);
+  });
+
+  it.each([
+    ['below the range', '-0.1'],
+    ['above the range', '1.5'],
+    ['not a number', 'abc'],
+    ['empty string', ''],
+  ])('falls back to the default when the env value is %s (%s)', (_label, value) => {
+    vi.stubEnv('OPENROUTER_API_KEY', 'or-key');
+    vi.stubEnv('RELEASE_PARSER_MIN_CODING_SCORE', value);
+
+    const config = resolveReleaseParserAiConfig();
+
+    expect(config.minCodingScore).toBe(DEFAULT_MIN_CODING_SCORE);
+  });
+
+  it('prefers an explicit minCodingScore argument over the env var', () => {
+    vi.stubEnv('OPENROUTER_API_KEY', 'or-key');
+    vi.stubEnv('RELEASE_PARSER_MIN_CODING_SCORE', '0.5');
+
+    const config = resolveReleaseParserAiConfig(0.9);
+
+    expect(config.minCodingScore).toBe(0.9);
+  });
+
+  it('attaches the pareto-router plugin to the model factory call with the resolved score', () => {
+    vi.stubEnv('OPENROUTER_API_KEY', 'or-key');
+
+    resolveReleaseParserAiConfig(0.7);
+
+    expect(mockOpenRouterModelFactory).toHaveBeenCalledTimes(1);
+    const [, secondArg] = mockOpenRouterModelFactory.mock.calls[0]!;
+    expect((secondArg as { extraBody: { plugins: unknown[] } }).extraBody.plugins[0]).toEqual({
+      id: 'pareto-router',
+      min_coding_score: 0.7,
+    });
+  });
+
+  it('gives a non-pareto model no plugins and no minCodingScore on the config', () => {
+    vi.stubEnv('OPENROUTER_API_KEY', 'or-key');
+    vi.stubEnv('OPENROUTER_MODEL', 'google/gemini-2.5-flash-lite');
+
+    const config = resolveReleaseParserAiConfig();
+
+    expect(config.minCodingScore).toBeUndefined();
+    expect(mockOpenRouterModelFactory).toHaveBeenCalledTimes(1);
+    expect(mockOpenRouterModelFactory.mock.calls[0]?.[1]).toBeUndefined();
+  });
+
+  it('mentions the score in the description for a pareto router', () => {
+    vi.stubEnv('OPENROUTER_API_KEY', 'or-key');
+
+    const config = resolveReleaseParserAiConfig(0.3);
+
+    expect(config.description).toContain('0.3');
   });
 });

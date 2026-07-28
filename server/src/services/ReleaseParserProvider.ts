@@ -2,7 +2,16 @@ import type { LanguageModel } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 
-const DEFAULT_OPENROUTER_MODEL = 'minimax/minimax-m2.7';
+/**
+ * Pinned 2026-07-28. Measured 2.4–3.1s per 8-title call at $0.047/1000 titles, and
+ * byte-identical across three runs at `temperature=0` — determinism matters here
+ * because this output feeds auto-grab decisions.
+ *
+ * The previous default, `minimax/minimax-m2.7`, measured 77–88s against a 15s abort
+ * deadline: 4–6× slower than its own timeout, so every call aborted and the AI layer
+ * silently degraded to regex. See {@link KNOWN_FAST_MODELS} for the full comparison.
+ */
+const DEFAULT_OPENROUTER_MODEL = 'google/gemini-2.5-flash-lite';
 const DEFAULT_GATEWAY_API_KEY = 'local-dev-key';
 
 /**

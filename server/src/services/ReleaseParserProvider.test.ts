@@ -9,7 +9,14 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 // factories are hoisted above imports/declarations, and Vitest only allows
 // referencing variables prefixed with `mock` from inside them.
 const { mockOpenRouterModelFactory } = vi.hoisted(() => {
-  return { mockOpenRouterModelFactory: vi.fn(() => 'mock-openrouter-model') };
+  // Typed with the real (modelId, settings?) signature: a bare `vi.fn(() => ...)`
+  // infers a zero-arg call tuple, so `mock.calls[0][1]` fails to typecheck even
+  // though it exists at runtime.
+  return {
+    mockOpenRouterModelFactory: vi.fn(
+      (_modelId: string, _settings?: Record<string, unknown>) => 'mock-openrouter-model',
+    ),
+  };
 });
 
 vi.mock('@openrouter/ai-sdk-provider', () => ({
@@ -502,7 +509,7 @@ describe('resolveReleaseParserAiConfig — minCodingScore (pareto router)', () =
     resolveReleaseParserAiConfig(0.7);
 
     expect(mockOpenRouterModelFactory).toHaveBeenCalledTimes(1);
-    const [, secondArg] = mockOpenRouterModelFactory.mock.calls[0]!;
+    const secondArg = mockOpenRouterModelFactory.mock.calls[0]?.[1];
     expect((secondArg as { extraBody: { plugins: unknown[] } }).extraBody.plugins[0]).toEqual({
       id: 'pareto-router',
       min_coding_score: 0.7,

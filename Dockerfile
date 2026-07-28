@@ -27,9 +27,19 @@ COPY . .
 # complete; `tsc -b` also resolves the same specifier seconds earlier in this very
 # command. An earlier comment here claimed the cause was overlay write-visibility
 # between RUN layers — that explanation is disproven, as are missing/unhoisted
-# deps, the npm ci flags, Node version, npm version, fd limits, disk, and memory.
-# The mechanism is still unknown and the defect has not reproduced in 13
-# consecutive clean builds since.
+# deps, the npm ci flags, Node version, npm version, disk, and memory.
+#
+# MECHANISM (2026-07-28): file-descriptor exhaustion, which this comment
+# previously listed as excluded. That exclusion was measured under `podman run`
+# (limit 1048576) — not the namespace the build runs in. A buildah `RUN` layer
+# gets a soft limit of **1024**, while rollup defaults `maxParallelFileOps` to
+# **1000**. The build therefore queues file operations 24 descriptors under the
+# ceiling and loses the race whenever node's own fds push it over; the file
+# exists but cannot be opened, and rollup reports that as a resolve failure.
+# Fixed by capping the queue in app/vite.config.ts (guarded by
+# tests/spa-build-file-parallelism.test.js). Measure a limit in the namespace
+# that actually runs the code: `podman run`, `docker exec`, and a host shell are
+# three different namespaces, none of them this one.
 #
 # See measure/tracks/chore_home_network_deployment_hardening_20260712/plan.md
 # (Phase 6, "Instrumented investigation") before changing anything here. In

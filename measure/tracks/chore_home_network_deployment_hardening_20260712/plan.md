@@ -36,7 +36,35 @@
 - [x] Strengthen no-journal legacy-schema verification and correct the host migration instructions to use the deployment database. Evidence: no-journal adoption compares normalized table/index SQL for every schema object with a baseline built from checked-in migrations; the adversarial same-table-name/drifted-`Category` fixture is rejected without creating a journal. README uses `DATABASE_URL="file:$CONFIG_DIR/mediarr.db" npm run migrate`, and `.env.example` no longer supplies a conflicting standalone database default.
 - [~] Run focused tests, full server/app/Flutter validation, image build, and disposable runtime smoke; record Docker Engine and physical-device checks as human-gated if unavailable. Evidence: full SPA is 204 files / 1952 tests green; root server/integration suite is 283 files / 2257 tests green (11 intentional live-provider skips); Flutter is 290 tests green and `flutter analyze` is clean; `npx tsc -p server/tsconfig.json --noEmit` is clean. Fresh `podman build --layers=false --tag localhost/mediarr:release-acceptance .` passed, and a disposable UID:GID 1000:1000 `--userns=keep-id` runtime applied migrations, reported `/api/health` `ok:true`, and remained healthy after restart. Physical Docker Engine and Android/LAN playback checks remain human-gated because this host's `docker` command is Podman 4.9.3.
 - [x] Remediate release-review findings: prove fresh deployments reject an unwritable `/data` mount even before settings are configured, and make scheduler toggles await durable persistence before returning success. Evidence: the TDD red run (`CI=true npx vitest run tests/data-directory-initializer.test.js server/src/services/Scheduler.toggle-persistence.test.ts server/src/api/routes/schedulerRoutes.toggle.test.ts`) failed 5/24 assertions because blank settings had no default-path resolver and toggle persistence failures were swallowed. `resolveRequiredDataDirectories` now fills the four required `MEDIA_DIR` defaults while preserving custom roots, and `DataDirectoryInitializer` accepts an injected filesystem for the fresh/unwritable regression. `Scheduler.toggleEnabled` now awaits persistence before changing live state, and the route awaits it so write failures return an error rather than success. The focused 8-file startup/scheduler/route run is 117/117 green. Server strict typecheck is now clean after correcting the remaining test-fixture diagnostics.
-- [~] **Phase 6 architectural fix — STILL OPEN. Root cause narrowed substantially; the attempted fix did NOT resolve it.**
+- [~] **Phase 6 architectural fix — mechanism identified 2026-07-28: rollup's default `maxParallelFileOps` (1000) against the buildah `RUN` layer's fd soft limit (1024).**
+
+  > **RESOLUTION (2026-07-28, later session) — mechanism proven by controlled experiment, not inferred from build outcomes.**
+  >
+  > **The cause is file-descriptor exhaustion**, which every prior session had recorded as *excluded*. The exclusion was wrong because it was measured in the wrong namespace (see the instrumentation finding below), and because measuring the *limit* was never enough — the missing number was the build's *demand*.
+  >
+  > **The two numbers.** Rollup defaults `maxParallelFileOps` to **1000** (`getMaxParallelFileOps`, `rollup/dist/shared/rollup.js:23403`, rollup 4.57.1). A buildah `RUN` layer has an fd soft limit of **1024**. Measured peak demand of the SPA build, with the limit raised to 65536 so nothing is clipped:
+  >
+  > | Config | True peak fds | vs. 1024 |
+  > |---|---|---|
+  > | uncapped (default 1000) | **1029** | **5 over** |
+  > | `maxParallelFileOps: 128` | **156** | 6.6x headroom |
+  >
+  > 1029 ≈ 1000 queue slots + ~29 baseline descriptors; 156 ≈ 128 + ~28. **The build exceeded the limit by five descriptors.** That margin is the entire mystery: a 5-fd overshoot is decided by timing, so the defect could go 13 builds green and then fail 3 of 4, and name a different module each time (whichever `open` lands on the overshoot).
+  >
+  > **Controlled reproduction on the host — no container, no intermittency argument.** Under `ulimit -n 1024` with the cap removed, the build failed with the smoking gun the container never produced:
+  >
+  > ```
+  > [commonjs--resolver] Could not load .../lucide-react/dist/esm/icons/line-dot-right-horizontal.js:
+  > EMFILE: too many open files
+  > ```
+  >
+  > `EMFILE` had never been observed before, which is why fd exhaustion kept getting dismissed. Note the *message* differs from the container's `Rollup failed to resolve import` — same exhaustion, different reporting path depending on which `open` loses. Do not treat the message text as the identity of this defect.
+  >
+  > **Honesty note on the sequence.** The very first control run at `ulimit -n 1024` **passed** (3028 modules). A single green run is not evidence of absence any more than it was evidence of a fix in the 2026-07-27 retraction above — it is the same 5-fd coin flip. The peak-demand measurement, not the pass/fail outcome, is what settles this.
+  >
+  > **Fix.** `app/vite.config.ts` sets `build.rollupOptions.maxParallelFileOps: 128`. Guarded by `tests/spa-build-file-parallelism.test.js`, which asserts a *bound with headroom* (≤ 1024/4) rather than pinning 128, so future tuning stays free — deliberately not repeating the anti-pattern that let `53e27adf` pin the broken Dockerfile shape as a passing gate. Treated arm: 3/3 green at `ulimit -n 1024`.
+  >
+  > **Why this is portable and preferred over `--ulimit nofile=`.** The cap travels with the repo and applies under Docker Engine, Podman, and CI alike. Raising the limit at the build invocation would work too, but a rootless container cannot raise its own limit (no `CAP_SYS_RESOURCE`), so it would have to be supplied by whoever runs the build — an operator obligation the repo cannot enforce.
 
   > **Retraction (2026-07-27, same session).** An earlier version of this entry claimed the defect was resolved on the strength of one green no-cache build. That was wrong. A second no-cache build, run as part of the full root suite **with the split-layer change already in place** (build log confirms `STEP 8/9: RUN npm ci --workspaces --include-workspace-root` then `STEP 9/9: RUN npm run build --workspace=app`), failed again — this time on `@radix-ui/react-dialog` from `command.tsx` rather than `@radix-ui/react-select` from `select.tsx`. **One green run of an intermittent failure is not evidence of a fix.** The split-layer change has been kept (it is harmless and narrows the repro), but it is not the remedy.
 

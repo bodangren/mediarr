@@ -117,7 +117,22 @@ function parseDiskAvailGb() {
   return null;
 }
 
-describe('Phase 6 — clean-image workspace dependency resolution (no-cache build)', () => {
+// This file shells out to `docker build --no-cache`, which takes 7-13 minutes
+// per run on the reference host and can run twice within the file. That does
+// not belong in the default unit suite: it made every `vitest run` slow, and it
+// entangled an unrelated suite run with a spontaneous occurrence of the very
+// defect under investigation, making both harder to read.
+//
+// It is now opt-in, following the same pattern as the live Cardigann suites:
+//
+//   npm run test:clean-image
+//
+// or set CLEAN_IMAGE_BUILD_TESTS=true for any other invocation. The gate is an
+// env check rather than a config exclusion so the file stays inert no matter
+// how vitest is invoked (`vitest run`, `vitest run tests`, a path glob, CI).
+const CLEAN_IMAGE_BUILD_TESTS = process.env.CLEAN_IMAGE_BUILD_TESTS === 'true';
+
+describe.skipIf(!CLEAN_IMAGE_BUILD_TESTS)('Phase 6 — clean-image workspace dependency resolution (no-cache build) [opt-in: CLEAN_IMAGE_BUILD_TESTS=true]', () => {
   // Heavy bounded test: runs `docker build --no-cache` to reproduce the
   // Dockerfile's exact behaviour on a fresh container. This is the truthful
   // Red; the no-cache flag is required because cached builds can pass

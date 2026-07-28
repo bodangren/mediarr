@@ -35,8 +35,15 @@ COPY . .
 # (Phase 6, "Instrumented investigation") before changing anything here. In
 # particular: do not adopt one of the four test-strategy.md §3 remediation
 # patterns — all four assume an install-layout defect that is disproven.
+#
+# The SPA build runs through scripts/docker-build-spa.sh rather than npm
+# directly: because the defect is not reproducible on demand, the wrapper makes
+# the *next* spontaneous occurrence self-diagnosing by re-running the build
+# under DEBUG=vite:resolve and printing the resolver trace. On success it is
+# equivalent to `npm run build --workspace=app`; on failure it still exits with
+# the original status.
 RUN npm ci --workspaces --include-workspace-root
-RUN npm run build --workspace=app
+RUN sh scripts/docker-build-spa.sh
 
 # Runner stage
 FROM base AS runner

@@ -122,19 +122,58 @@
   1. **Do not change the `Dockerfile` chasing this.** Nothing measured supports any of the four
      `test-strategy.md` §3 remediation patterns; all four assume an install-layout defect that is
      disproven. The current split-layer shape is fine on its merits, but it is not a fix.
-  2. **Instrument, don't guess.** The one decisive artefact never captured is vite's own resolver
-     trace on a failing run. Wrap the SPA build so a failure re-runs it under `DEBUG=vite:resolve`
-     and prints the trace for the failing specifier. That converts the next spontaneous occurrence
-     into a mechanism instead of another inference. (Note: buildah 1.33 / podman 4.9.3 does **not**
-     support Dockerfile heredocs — use single-line `RUN … || ( … )`, escaping `\$` for shell vars.)
-  3. **Get the heavy build out of the unit suite.** `tests/clean-workspace-build.test.js` shells out
-     to `docker build --no-cache` — 7–13 minutes, and potentially twice — from inside
-     `CI=true npx vitest run`. That is why suite runs are slow and why the 06:27 failure got
-     entangled with a suite run. Move it to an explicit acceptance script.
-  4. **Fix `tests/clean-workspace-invariant.test.js`.** It still pins the exact Dockerfile shape
-     (`expect(npmRuns).toEqual([...])`) — the same anti-pattern this track already recorded a lesson
-     about, just pinning a different shape. It will reject any future remediation.
+     *(Still standing. No remediation pattern has been adopted.)*
+  2. ~~**Instrument, don't guess.**~~ **Done 2026-07-28** — see "Instrumentation landed" below.
+  3. ~~**Get the heavy build out of the unit suite.**~~ **Done 2026-07-28** — see below.
+  4. ~~**Fix `tests/clean-workspace-invariant.test.js`.**~~ **Done 2026-07-28** — see below.
 
   Structural gates remain green: `tests/clean-workspace-invariant.test.js` + `tests/deployment-hardening.test.js` → 10/10.
+
+  ### Instrumentation landed (2026-07-28) — the blocker is still open, but the next occurrence is now self-diagnosing
+
+  The mechanism is **still unknown** and nothing below is a fix. What changed is that the defect
+  can no longer occur without leaving evidence, and the two test-harness problems that made the
+  investigation harder are gone.
+
+  **(1) The SPA build is instrumented.** `scripts/docker-build-spa.sh` replaces the bare
+  `RUN npm run build --workspace=app`. On success it is equivalent to the npm command. On failure
+  it extracts the unresolved specifier from the build log, probes `require.resolve` for it from
+  `/app/app` at failure+1 (the same probe that disproved the missing-dependency hypothesis),
+  re-runs the build under `DEBUG=vite:resolve`, prints the trace lines mentioning that specifier
+  plus the trace tail, and then **exits with the original failure status** so the image build still
+  fails. POSIX `sh`, no heredocs — buildah 1.33 does not support them.
+
+  Verified by harness (fake `npm` on `PATH`, three arms) plus one real build:
+
+  | Arm | Expected | Observed |
+  |---|---|---|
+  | build succeeds | exit 0, no diagnostics | exit 0, clean passthrough |
+  | build fails, retry fails | original status, trace printed | `EXIT=7` (not the retry's 1), specifier + trace captured |
+  | build fails, retry succeeds | original status, trace printed, intermittency noted | `EXIT=1`, "the instrumented re-run SUCCEEDED" banner emitted |
+  | real host build through the wrapper | exit 0 | `✓ 3028 modules transformed`, `built in 41.91s`, exit 0 |
+
+  The retry-succeeds arm matters: because this defect is intermittent, a naive retry wrapper would
+  have silently converted failures into passes and destroyed the signal. It does not.
+
+  **(2) The heavy no-cache build is out of the unit suite.** `tests/clean-workspace-build.test.js`
+  is now gated on `CLEAN_IMAGE_BUILD_TESTS=true` (`describe.skipIf`), following the existing
+  `CARDIGANN_LIVE_TESTS` precedent, with a new root script `npm run test:clean-image`. The gate is
+  an env check rather than a vitest `exclude` so the file stays inert regardless of how vitest is
+  invoked. `CI=true npx vitest run tests` no longer spends 7–13 minutes (potentially twice) inside
+  `docker build --no-cache`, and a suite run can no longer become entangled with a spontaneous
+  occurrence of the defect the way the 06:27 run did.
+
+  **(3) The invariant gate no longer pins the Dockerfile's shape.**
+  `tests/clean-workspace-invariant.test.js` dropped `expect(npmRuns).toEqual([...])`. It now parses
+  the Dockerfile into logical instructions (joining backslash continuations) and asserts only the
+  real invariant: exactly one frozen install, exactly one SPA build step, in **different** `RUN`
+  instructions, install first — matching the build step by substring so a wrapper or any future
+  remediation is free to change the command text. The `COPY`-ordering test was loosened the same
+  way. Two added guards keep the wrapper honest (it must run the real build; it must exit with the
+  original status). Mutation-tested rather than assumed: combining the two layers fails 2 tests,
+  and reversing their order fails 1. 5/5 green on the true Dockerfile.
+
+  Gates after these changes: `clean-workspace-invariant` + `deployment-hardening` → 12/12 green,
+  with the 3 heavy build tests correctly reported as skipped.
 
 - [x] Phase 6 Red contract: capture the reproducible clean-image workspace dependency-resolution failure as a durable, falsifiable Red. Evidence: the original `tests/clean-workspace-build.test.js` (commit `13ea7272`) used the heavy `docker build --no-cache` invocation as its Red contract; that proved non-deterministic (exit 0 on the host's podman alias), violating TDD. Remediation: added `tests/clean-workspace-invariant.test.js` as the **deterministic** Red gate. The new test enforces the structural-semantic invariant from test-strategy.md §3 paragraph 5: the Dockerfile (or `app/vite.config.ts`) must include at least one of four documented remediation patterns that make Vite/Node resolution INDEPENDENT of npm's hoisting choices — (a) `RUN npm install --workspace=app` / `RUN npm ci --workspace=app`, (b) per-workspace `RUN npm ci --workspace=app` / `RUN cd app && npm ci`, (c) explicit `resolve.alias` block in `app/vite.config.ts` mapping `app` direct deps (bare or subpath) to specific paths, or (d) `COPY --from=builder /app/app/node_modules`. The test matches each pattern as a FAMILY of regexes (no stale single-phrase assertion), filters option (c) so a placeholder alias block without any `app` dep reference does not satisfy the invariant, and explains in the failure message why each pattern prevents the `Rollup failed to resolve import "<dep>" from "/app/..."` family. The test is bounded (~17 ms; no subprocess, no docker), deterministic (reads `Dockerfile` and `app/vite.config.ts` directly), and family-level (anti-pattern A5 — no specific module name asserted). The heavy `tests/clean-workspace-build.test.js` is preserved as a **Green/acceptance gate** because the live no-cache build is required to verify the actual reproducibility end-to-end; the new Red gate does not need to repeat it. Aggregate Red run on this HEAD with the corrected deterministic contract: `Test Files 1 failed | 7 passed (8); Tests 1 failed | 47 passed (48)`; existing 7 files / 47 tests baseline preserved (47/47 PASS); the 1 new failure is `tests/clean-workspace-invariant.test.js` with the documented invariant-violation message. Verification of all four Green patterns (a)/(b)/(c)/(d) against the new test: each pattern as a family is accepted (option (c) with a placeholder alias block without any `app` dep reference is correctly rejected). Disk pressure snapshot: `df -h /` → `233G 208G 14G 95% /` (labelled integer, anti-pattern A3). Phase 6 remains incomplete: the architectural fix (one of strategy §3 options (a)/(b)/(c)/(d)) is unowned and is the next role's work.

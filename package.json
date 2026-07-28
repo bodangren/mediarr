@@ -14,7 +14,8 @@
     "test:cardigann:live": "CARDIGANN_LIVE_TESTS=true vitest run server/src/indexers/cardigann-conformance/liveSiteDefinitions.test.ts server/src/indexers/cardigann-conformance/liveReleaseSearch.test.ts",
     "test:cardigann:live:search": "CARDIGANN_LIVE_TESTS=true vitest run server/src/indexers/cardigann-conformance/liveReleaseSearch.test.ts",
     "postinstall": "node scripts/apply-patches.js",
-    "test:connectivity": "cd tests/connectivity && podman compose up --build --abort-on-container-exit --exit-code-from client-test; podman compose down"
+    "test:connectivity": "cd tests/connectivity && podman compose up --build --abort-on-container-exit --exit-code-from client-test; podman compose down",
+    "test:clean-image": "CLEAN_IMAGE_BUILD_TESTS=true vitest run tests/clean-workspace-build.test.js"
   },
   "keywords": [],
   "author": "",

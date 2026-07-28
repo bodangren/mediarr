@@ -65,6 +65,18 @@ npm run test:watch    # watch mode
 npm run test:coverage # with coverage
 ```
 
+The clean-image acceptance build is opt-in because it shells out to
+`docker build --no-cache` and takes 7–13 minutes:
+
+```bash
+npm run test:clean-image   # sets CLEAN_IMAGE_BUILD_TESTS=true
+```
+
+Run it before publishing an image. If the SPA build fails inside the container,
+`scripts/docker-build-spa.sh` automatically re-runs it under `DEBUG=vite:resolve`
+and prints the resolver trace — capture that output, it is the evidence needed
+for the open intermittent `Rollup failed to resolve import` defect.
+
 ## Development Workflow
 
 This project follows the **Measure Workflow**. All major features and fixes are organized into **Tracks**.

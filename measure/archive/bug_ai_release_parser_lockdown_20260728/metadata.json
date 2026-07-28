@@ -1,0 +1,12 @@
+{
+  "track_id": "bug_ai_release_parser_lockdown_20260728",
+  "type": "bug",
+  "status": "done",
+  "created_at": "2026-07-28T00:00:00Z",
+  "updated_at": "2026-07-28T16:45:00Z",
+  "completed": "2026-07-28T16:45:00Z",
+  "description": "The AI release parser never returns in its shipped configuration: the default model (minimax/minimax-m2.7) is 4-6x slower than its own abort deadline, so parse() silently falls to regex and parseBatch() returns []. Additionally, parseBatch results are zipped onto releases by array position, so a truncated model response attaches one release's parse to another and feeds the auto-grab score. Pin a fast model, make timeouts configurable, make batch alignment index-based, and establish a golden set plus a live accuracy benchmark.",
+  "estimated_tasks": 18,
+  "actual_tasks": 22,
+  "deviation_notes": "Two deviations. (1) FR-4 was amended mid-implementation: Phase 3 shipped the pinned google/gemini-2.5-flash-lite default (acc62f5), the user rejected pinning on longevity grounds, and Phase 5b replaced it with the openrouter/pareto-code router plus min_coding_score escalation on retry and loud degradation reporting (FR-8, FR-9) — 4 tasks not in the original estimate. (2) Phase 6 substituted the real gates (CI=true npx vitest run server/src tests, npx tsc -p server/tsconfig.json --noEmit) because measure/generate.sh and measure/doctor.sh do not exist in this repo. Closed at exit 0 with 312 files / 2710 passed / 0 failures, 0 tsc diagnostics, ReleaseParserProvider.ts at 100% branch and ReleaseParser.ts at 80.95%. Four findings were recorded rather than fixed and remain open in tech-debt.md: the unrotated OPENROUTER_API_KEY (High, operator action), router cost/latency variance, the regexFallback S01-S09 season-pack misclassification (pinned by a characterisation test), and title accuracy at 91.7%. The benchmark's exit-1 'no provider configured' branch is verified by inspection only."
+}

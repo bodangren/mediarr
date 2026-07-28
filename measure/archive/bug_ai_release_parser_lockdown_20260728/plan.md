@@ -113,6 +113,11 @@
     - [x] Report per-field accuracy, latency, token cost, JSON validity, alignment
     - [x] Support `--model` so arms can be compared
     - [x] Add an `npm run benchmark:parser` script
+    - Caveat: the env gate (no `RELEASE_PARSER_BENCHMARK` → print instructions, exit 0, zero API
+      calls) is empirically confirmed. The **`exit 1` "no provider configured" branch is verified
+      by code inspection only** — `import 'dotenv/config'` reloads `OPENROUTER_API_KEY` from `.env`,
+      so `env -u` cannot force it, and the attempt to do so cost one live API call. See the
+      2026-07-28 dotenv entry in `lessons-learned.md`.
 - [x] Task: Run the benchmark and record results
     - [x] Run against the default model over the full golden set
     - [x] Write `benchmark-results.md` into this track directory
@@ -120,14 +125,30 @@
 
 ## Phase 6: Verify, Document & Close
 
-- [ ] Task: Run the release gates
-    - [ ] `CI=true npx vitest run server/src tests` → 0 failures
-    - [ ] `npx tsc -p server/tsconfig.json --noEmit` → 0 diagnostics
-    - [ ] Coverage check on `ReleaseParser.ts` and `ReleaseParserProvider.ts` (>80% branch)
-- [ ] Task: Update project memory
-    - [ ] `tech-debt.md`: mark `ReleaseParserProvider` covered in the 8-service row (8 → 7); add rows for the `openrouter/auto` fallback option and the unrotated key
-    - [ ] `lessons-learned.md`: record the timeout-vs-latency lesson and the positional-zip hazard
-    - [ ] `chore_remaining_server_service_coverage_20260728`: note that `ReleaseParserProvider` is claimed by this track
-- [ ] Task: Archive the track
-    - [ ] Set `metadata.json` `status: done` + `completed`
-    - [ ] Move to `measure/archive/`, update `tracks.md`
+- [x] Task: Run the release gates
+    - [x] `CI=true npx vitest run server/src tests` → **exit 0**, 312 files passed / 1 skipped,
+      2710 passed / 14 skipped, 0 failures
+    - [x] `npx tsc -p server/tsconfig.json --noEmit` → exit 0, 0 diagnostics
+    - [x] Coverage: `ReleaseParserProvider.ts` **100%** stmt/branch/func/line;
+      `ReleaseParser.ts` 92.92% stmt / **80.95% branch** / 90.32% func / 95.83% line
+    - Gate hazard worth keeping: an earlier "green" reading of this same suite was wrong twice.
+      Once because the run was filtered through a pipeline whose trailing `head` supplied the
+      exit code instead of vitest, and the filter regex hid the summary line; once because
+      `pkill -f "vitest run server/src tests"` matched the `bash -c` wrapper but **not** the
+      workers (`node …/vitest.mjs run …`), so a supposedly-dead suite kept running and a second
+      full suite started on top of it — 13 failures, all in real-SQLite integration tests, all
+      passing in isolation. **Capture vitest's own `$?`, and verify the process tree is empty
+      before trusting a re-run.**
+- [x] Task: Update project memory
+    - [x] `tech-debt.md`: `ReleaseParserProvider` marked covered in the service row (8 → 7),
+      closure evidence corrected to 73 tests / 100% branch; rows added for the unrotated key,
+      the router cost/latency variance, the `regexFallback` season-range defect, and measured
+      accuracy. (The `openrouter/auto` fallback row was **not** added — Phase 5b replaced the
+      pin with `openrouter/pareto-code`, so the router row carries that guidance instead.)
+    - [x] `lessons-learned.md`: timeout-vs-latency and positional-zip hazards recorded; plus the
+      `env -u` vs `dotenv/config` lesson from the benchmark subagent's live API call
+    - [x] `chore_remaining_server_service_coverage_20260728`: scope note added to its `plan.md`
+      and its `tracks.md` entry so it does not re-plan a service this track closed
+- [x] Task: Archive the track
+    - [x] Set `metadata.json` `status: done` + `completed`
+    - [x] Move to `measure/archive/`, update `tracks.md`

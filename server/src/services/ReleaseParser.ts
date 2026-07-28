@@ -70,12 +70,42 @@ export const ParsedReleaseWithScoreSchema = ParsedReleaseSchema.extend({
     .catch(50),
 });
 
+/**
+ * A batch result carrying the 1-based index of the input title it was produced for.
+ *
+ * Results used to be matched to titles by array position. Cheap models truncate — a
+ * live probe on 2026-07-28 saw `mistral-nemo` return 7 results for 8 titles twice and
+ * `openrouter/free` return 6 for 8 — and a positional zip silently shifts every
+ * subsequent parse onto the wrong release. Since `relevanceScore` feeds
+ * `CustomFormatScoringEngine` and auto-grab fires at a total score of 50, that
+ * mis-attribution can trigger an automatic download of the wrong release.
+ *
+ * `index` is `.nullable().catch(null)` so a model that ignores the instruction
+ * degrades to the strict-length positional path rather than failing the whole batch.
+ */
+export const IndexedParsedReleaseSchema = ParsedReleaseWithScoreSchema.extend({
+  index: z
+    .number()
+    .int()
+    .describe('The 1-based number of the input title this result was produced for.')
+    .nullable()
+    .catch(null),
+});
+
 const BatchResponseSchema = z.object({
-  results: z.array(ParsedReleaseWithScoreSchema),
+  results: z.array(IndexedParsedReleaseSchema),
 });
 
 export type ParsedRelease = z.infer<typeof ParsedReleaseSchema>;
 export type ParsedReleaseWithScore = z.infer<typeof ParsedReleaseWithScoreSchema>;
+export type IndexedParsedRelease = z.infer<typeof IndexedParsedReleaseSchema>;
+
+/**
+ * One slot of a `parseBatch` response. The returned array always has exactly
+ * `titles.length` slots; a slot is `null` when no result could be attributed to that
+ * title with confidence. Never assume a slot is populated.
+ */
+export type BatchParseSlot = ParsedReleaseWithScore | null;
 
 export interface SearchContext {
   seriesTitle?: string | undefined;
@@ -194,8 +224,14 @@ const BATCH_PROMPT = (titles: string[], contextBlock: string) => [
   '- resolution "unknown" for 4K / UHD / 2160p. "1080p" only if title explicitly says 1080p.',
   '- source: "REMUX" is a source (not a codec). BluRay.REMUX → source="REMUX".',
   '',
-  'Return exactly this JSON shape (one entry per title, same order):',
-  '{"results":[{"title":"…","type":"series"|"movie","matchType":"episode"|"season_pack"|"complete_series","seasonNumber":N|null,"episodeNumbers":[N,…],"year":N|null,"quality":{"resolution":"SD"|"480p"|"720p"|"1080p"|"unknown","source":"BluRay"|"WEB-DL"|"WEBRip"|"HDTV"|"PDTV"|"DVDRip"|"DVD"|"REMUX"|"AMZN"|"NF"|"HULU"|"DSNP"|"ATVP"|"other","codec":"x264"|"x265"|"HEVC"|"AVC"|"XviD"|"DivX"|"AV1"|"VP9"|"other"},"relevanceScore":N}]}',
+  'CRITICAL: return one entry per title, in the same order, and set "index" on every',
+  'entry to the number shown beside its title below. Never omit an entry — if a title',
+  'cannot be parsed, still return an entry for it with its "index" and your best guess.',
+  'The "index" is how each result is matched back to its title; an entry without a',
+  'correct "index" is discarded.',
+  '',
+  'Return exactly this JSON shape:',
+  '{"results":[{"index":N,"title":"…","type":"series"|"movie","matchType":"episode"|"season_pack"|"complete_series","seasonNumber":N|null,"episodeNumbers":[N,…],"year":N|null,"quality":{"resolution":"SD"|"480p"|"720p"|"1080p"|"unknown","source":"BluRay"|"WEB-DL"|"WEBRip"|"HDTV"|"PDTV"|"DVDRip"|"DVD"|"REMUX"|"AMZN"|"NF"|"HULU"|"DSNP"|"ATVP"|"other","codec":"x264"|"x265"|"HEVC"|"AVC"|"XviD"|"DivX"|"AV1"|"VP9"|"other"},"relevanceScore":N}]}',
   '',
   'Titles:',
   ...titles.map((t, i) => `${i + 1}. ${t}`),

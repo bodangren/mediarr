@@ -1,15 +1,20 @@
 # Plan: Remaining Server Service Test Coverage
 
 ## Phase 1: Discovery & Contract Mapping
-- [ ] Read all 8 service source files (`server/src/services/`) and document public method signatures, constructor dependencies, and external I/O (DB, filesystem, network, other services) in this plan.
+- [ ] Read all 7 remaining service source files (`server/src/services/`) and document public method signatures, constructor dependencies, and external I/O (DB, filesystem, network, other services) in this plan.
 - [ ] Identify existing test helpers and mock factories to reuse from sibling suites (e.g. `MediaSearchService`, subtitle services).
 - [ ] Flag any service whose real branch surface lives in a collaborator (cf. the `SettingsService`/`AppSettingsRepository` lesson) and re-target the coverage goal before writing tests.
 - [ ] Commit: `docs(measure): map remaining server service contracts for test coverage`
 
-## Phase 2: Red Tests — Small Services (ActivityEventEmitter, DataDirectoryInitializer, ReleaseParserProvider, WantedService)
+> **Scope note (2026-07-28):** `ReleaseParserProvider` is **claimed and closed** by
+> `bug_ai_release_parser_lockdown_20260728`, which rewrote the file and shipped
+> `ReleaseParserProvider.test.ts` (73 tests, 100% branch/stmt/func/line). Do not
+> re-plan or re-test it here — 7 services remain, not 8.
+
+## Phase 2: Red Tests — Small Services (ActivityEventEmitter, DataDirectoryInitializer, ~~ReleaseParserProvider~~, WantedService)
 - [ ] Add failing sibling tests for `ActivityEventEmitter` (emit/subscribe/unsubscribe behaviour).
 - [ ] Add failing sibling tests for `DataDirectoryInitializer` (directory creation, idempotency, permission-error path) using temp dirs.
-- [ ] Add failing sibling tests for `ReleaseParserProvider` (parser preference order, fallback chain, regex-only last resort).
+- [x] ~~Add failing sibling tests for `ReleaseParserProvider`~~ — done by `bug_ai_release_parser_lockdown_20260728`.
 - [ ] Add failing sibling tests for `WantedService` (wanted-list queries, monitored filtering, empty results).
 - [ ] Run the four new suites and confirm they fail for the intended reasons (Red).
 - [ ] Commit: `test(server): add red tests for small uncovered services`

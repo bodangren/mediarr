@@ -531,6 +531,10 @@ describe('ReleaseParser — parseBatch() alignment', () => {
     ['zero (indices are 1-based)', 0],
     ['negative', -1],
     ['past the end of the input', 9],
+    // `.catch(null)` on the schema turns a fractional index into an index-less
+    // result, which the attribution pass then drops; the Number.isInteger guard
+    // in placeResults() is the second line of defence for the same input.
+    ['not an integer', 2.5],
   ])('discards a result whose index is %s', async (_label, badIndex) => {
     const results = [
       indexed(1, 'Show One'),

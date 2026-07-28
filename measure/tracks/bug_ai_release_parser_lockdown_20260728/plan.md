@@ -15,23 +15,23 @@
 
 ## Phase 1: Contract & Schema Definition
 
-- [ ] Task: Build the golden release-title set
-    - [ ] Create `server/src/services/__fixtures__/releaseParserGolden.ts` with ≥40 real titles
-    - [ ] Cover: single episode, multi-episode `S01E01E02`, `NNxNN`, season pack, complete series, movie, anime absolute numbering, `Archer.2009` vs `Oppenheimer.2023`, 2160p/UHD → `resolution: "unknown"`, `BluRay.REMUX` → `source: "REMUX"`
-    - [ ] Each entry: `{ title, expected: ParsedRelease, regexFallbackExpected: ParsedRelease | null, notes }`
-    - [ ] Export a typed accessor; assert shape against `ParsedReleaseSchema` at module load
-- [ ] Task: Define the indexed batch-response contract
-    - [ ] Extend the batch item schema with a nullable 1-based `index` field
-    - [ ] Update `BATCH_PROMPT` to require the echoed index on every result
-    - [ ] Define the new `parseBatch()` return type: `(ParsedReleaseWithScore | null)[]`, length === `titles.length`
-- [ ] Task: Define the parser runtime-configuration contract
-    - [ ] Add a `ReleaseParserRuntimeConfig` type: `parseTimeoutMs`, `batchTimeoutMs`, `filesTimeoutMs`, `maxConcurrency`
-    - [ ] Document defaults and the env vars that override them
-    - [ ] Define the known-fast model allowlist used by the FR-3 startup warning
+- [x] Task: Build the golden release-title set [fe96f03]
+    - [x] Create `server/src/services/__fixtures__/releaseParserGolden.ts` with ≥40 real titles
+    - [x] Cover: single episode, multi-episode `S01E01E02`, `NNxNN`, season pack, complete series, movie, anime absolute numbering, `Archer.2009` vs `Oppenheimer.2023`, 2160p/UHD → `resolution: "unknown"`, `BluRay.REMUX` → `source: "REMUX"`
+    - [x] Each entry: `{ title, expected: ParsedRelease, regexFallbackExpected: ParsedRelease | null, notes }`
+    - [x] Export a typed accessor; assert shape against `ParsedReleaseSchema` at module load
+- [x] Task: Define the indexed batch-response contract [c7c97be]
+    - [x] Extend the batch item schema with a nullable 1-based `index` field
+    - [x] Update `BATCH_PROMPT` to require the echoed index on every result
+    - [x] Define the new `parseBatch()` return type: `(ParsedReleaseWithScore | null)[]`, length === `titles.length`
+- [x] Task: Define the parser runtime-configuration contract [4543f29]
+    - [x] Add a `ReleaseParserRuntimeConfig` type: `parseTimeoutMs`, `batchTimeoutMs`, `filesTimeoutMs`, `maxConcurrency`
+    - [x] Document defaults and the env vars that override them
+    - [x] Define the known-fast model allowlist used by the FR-3 startup warning
 
 ## Phase 2: Test (Red)
 
-- [ ] Task: Red tests for batch alignment (FR-2)
+- [~] Task: Red tests for batch alignment (FR-2) [607b390] — MediaSearchService integration test still outstanding
     - [ ] Test: model returns 7 indexed results for 8 titles → each parse lands on its own title, slot 3 is `null`
     - [ ] Test: model returns 8 indexed results out of order → all 8 land correctly
     - [ ] Test: duplicate index → both discarded, no mis-attribution
@@ -40,48 +40,48 @@
     - [ ] Test: no index on any result + exact length match → positional zip still honoured
     - [ ] Test in `MediaSearchService.test.ts`: truncated batch never sets `parsedRelease` on the wrong release
     - [ ] Confirm all fail against current code
-- [ ] Task: Red tests for configurable timeouts and model default (FR-3, FR-4)
-    - [ ] Test: default resolved model is `google/gemini-2.5-flash-lite` with no `OPENROUTER_MODEL`
-    - [ ] Test: `OPENROUTER_MODEL` override still wins
-    - [ ] Test: each of the three deadlines is read from config, asserted via the `abortSignal` passed to `generateText`
-    - [ ] Test: a model outside the known-fast allowlist emits the startup warning exactly once
-    - [ ] Confirm all fail against current code
-- [ ] Task: Golden-set regression tests for the regex fallback (FR-1)
-    - [ ] Table-driven test asserting `regexFallback` against every `regexFallbackExpected` in the golden set
-    - [ ] Runs with AI disabled — no mocks, no network
-- [ ] Task: `ReleaseParserProvider` sibling test file (FR-6)
-    - [ ] Create `server/src/services/ReleaseParserProvider.test.ts`
-    - [ ] Cover gateway path, OpenRouter path, disabled path, and every env fallback (`AI_GATEWAY_MODEL` → `OPENROUTER_MODEL`; `AI_GATEWAY_API_KEY` → `API_SECRET_KEY` → `local-dev-key`)
-    - [ ] Target ≥80% branch coverage
+- [x] Task: Red tests for configurable timeouts and model default (FR-3, FR-4) [607b390]
+    - [x] Test: default resolved model is `google/gemini-2.5-flash-lite` with no `OPENROUTER_MODEL`
+    - [x] Test: `OPENROUTER_MODEL` override still wins
+    - [x] Test: each of the three deadlines is read from config, asserted via the `abortSignal` passed to `generateText`
+    - [x] Test: a model outside the known-fast allowlist emits the startup warning exactly once
+    - [x] Confirm all fail against current code
+- [x] Task: Golden-set regression tests for the regex fallback (FR-1) [fe96f03]
+    - [x] Table-driven test asserting `regexFallback` against every `regexFallbackExpected` in the golden set
+    - [x] Runs with AI disabled — no mocks, no network
+- [x] Task: `ReleaseParserProvider` sibling test file (FR-6) [b641b62]
+    - [x] Create `server/src/services/ReleaseParserProvider.test.ts`
+    - [x] Cover gateway path, OpenRouter path, disabled path, and every env fallback (`AI_GATEWAY_MODEL` → `OPENROUTER_MODEL`; `AI_GATEWAY_API_KEY` → `API_SECRET_KEY` → `local-dev-key`)
+    - [x] Target ≥80% branch coverage
 
-## Phase 3: Implement
+## Phase 3: Implement [checkpoint: acc62f5]
 
-- [ ] Task: Implement indexed batch alignment in `parseBatch()`
-    - [ ] Build a `titles.length`-sized result array pre-filled with `null`
-    - [ ] Place each result by its echoed index; discard missing/duplicate/out-of-range
-    - [ ] Preserve the strict-length positional path for index-less responses
-    - [ ] Turn Phase 2 alignment tests green
-- [ ] Task: Update `MediaSearchService` for the nullable-slot contract
-    - [ ] Replace the positional zip at `MediaSearchService.ts:580` with slot-wise assignment that skips `null`
-    - [ ] Verify `applyUnifiedScoring` still falls back to Levenshtein when `parsedRelease` is absent
-- [ ] Task: Implement configurable timeouts and the model warning
-    - [ ] Replace the three `AbortSignal.timeout(...)` literals with config reads
-    - [ ] Emit the known-fast-model warning from `resolveReleaseParserAiConfig()`
-- [ ] Task: Pin the default model and update environment docs
-    - [ ] `DEFAULT_OPENROUTER_MODEL` → `google/gemini-2.5-flash-lite`
-    - [ ] Update `.env.example`: drop `openrouter/free` as a documented default, document `OPENROUTER_MODEL` and the timeout overrides
-    - [ ] Note the measured latency/cost basis in a comment so the pin is traceable to evidence
+- [x] Task: Implement indexed batch alignment in `parseBatch()` [c926139]
+    - [x] Build a `titles.length`-sized result array pre-filled with `null`
+    - [x] Place each result by its echoed index; discard missing/duplicate/out-of-range
+    - [x] Preserve the strict-length positional path for index-less responses
+    - [x] Turn Phase 2 alignment tests green
+- [x] Task: Update `MediaSearchService` for the nullable-slot contract [c926139]
+    - [x] Replace the positional zip at `MediaSearchService.ts:580` with slot-wise assignment that skips `null`
+    - [x] Verify `applyUnifiedScoring` still falls back to Levenshtein when `parsedRelease` is absent
+- [x] Task: Implement configurable timeouts and the model warning [c926139, 593c169]
+    - [x] Replace the three `AbortSignal.timeout(...)` literals with config reads
+    - [x] Emit the known-fast-model warning from `resolveReleaseParserAiConfig()`
+- [x] Task: Pin the default model and update environment docs [acc62f5]
+    - [x] `DEFAULT_OPENROUTER_MODEL` → `google/gemini-2.5-flash-lite`
+    - [x] Update `.env.example`: drop `openrouter/free` as a documented default, document `OPENROUTER_MODEL` and the timeout overrides
+    - [x] Note the measured latency/cost basis in a comment so the pin is traceable to evidence
 
-## Phase 4: Bounded Concurrency (FR-7)
+## Phase 4: Bounded Concurrency (FR-7) [checkpoint: a63ea54]
 
-- [ ] Task: Red test for bounded concurrency
-    - [ ] Test: 10 concurrent `parse()` calls issue at most 4 in-flight `generateText` calls
-    - [ ] Test: each caller receives its own result, not another caller's
-    - [ ] Test: one failing call still falls back to regex and does not poison siblings
-- [ ] Task: Replace the serial queue with a bounded limiter
-    - [ ] Swap the `this.queue` promise chain for a semaphore with configurable `maxConcurrency` (default 4)
-    - [ ] Turn Phase 4 tests green
-    - [ ] Re-run the full `ReleaseParser.test.ts` suite — the existing serial-ordering tests must be reconciled deliberately, not deleted
+- [x] Task: Red test for bounded concurrency [a63ea54]
+    - [x] Test: 10 concurrent `parse()` calls issue at most 4 in-flight `generateText` calls
+    - [x] Test: each caller receives its own result, not another caller's
+    - [x] Test: one failing call still falls back to regex and does not poison siblings
+- [x] Task: Replace the serial queue with a bounded limiter [a63ea54]
+    - [x] Swap the `this.queue` promise chain for a semaphore with configurable `maxConcurrency` (default 4)
+    - [x] Turn Phase 4 tests green
+    - [x] Re-run the full `ReleaseParser.test.ts` suite — the existing serial-ordering tests must be reconciled deliberately, not deleted
 
 ## Phase 5: Live Accuracy Benchmark (FR-5)
 

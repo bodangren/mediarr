@@ -1,7 +1,10 @@
 import { generateText, Output } from 'ai';
 import { z } from 'zod';
 import path from 'node:path';
-import { resolveReleaseParserAiConfig } from './ReleaseParserProvider';
+import {
+  resolveReleaseParserAiConfig,
+  resolveReleaseParserRuntimeConfig,
+} from './ReleaseParserProvider';
 
 // ── Schemas ─────────────────────────────────────────────────────────────────
 
@@ -239,6 +242,64 @@ const BATCH_PROMPT = (titles: string[], contextBlock: string) => [
   .filter(s => s !== undefined)
   .join('\n');
 
+// ── Batch attribution ────────────────────────────────────────────────────────
+
+/** Drops the transport-only `index` field, leaving a clean parse result. */
+function stripIndex(result: IndexedParsedRelease): ParsedReleaseWithScore {
+  const { index: _index, ...rest } = result;
+  return rest;
+}
+
+/**
+ * Places batch results into `titleCount` slots, matching on the model's echoed
+ * 1-based index rather than on array position.
+ *
+ * Every uncertain case leaves the slot `null`. That is deliberate: an empty slot costs
+ * a Levenshtein-scored release, whereas a wrong slot costs an automatic download of
+ * the wrong release, because `relevanceScore` is consumed directly as `confidenceScore`
+ * by `CustomFormatScoringEngine` and auto-grab fires at a total score of 50.
+ *
+ * Exported for direct unit testing of the attribution rules.
+ */
+export function assignBatchSlots(
+  titleCount: number,
+  results: IndexedParsedRelease[],
+): BatchParseSlot[] {
+  const slots: BatchParseSlot[] = new Array<BatchParseSlot>(titleCount).fill(null);
+  if (titleCount === 0) return slots;
+
+  const indexed = results.filter(result => result.index !== null);
+
+  // No index anywhere: the model ignored the instruction. Position is only
+  // trustworthy when the counts match exactly, since nothing can have shifted.
+  // This mirrors the guard parseFiles() has always had.
+  if (indexed.length === 0) {
+    if (results.length !== titleCount) return slots;
+    for (let i = 0; i < titleCount; i++) {
+      slots[i] = stripIndex(results[i]!);
+    }
+    return slots;
+  }
+
+  // Group by claimed index so a duplicate can be discarded rather than guessed at.
+  const claims = new Map<number, IndexedParsedRelease[]>();
+  for (const result of indexed) {
+    const index = result.index!;
+    if (!Number.isInteger(index) || index < 1 || index > titleCount) continue;
+    const existing = claims.get(index);
+    if (existing) existing.push(result);
+    else claims.set(index, [result]);
+  }
+
+  for (const [index, claimants] of claims) {
+    // Two results claiming one title makes attribution ambiguous — leave it empty.
+    if (claimants.length !== 1) continue;
+    slots[index - 1] = stripIndex(claimants[0]!);
+  }
+
+  return slots;
+}
+
 // ── Service ──────────────────────────────────────────────────────────────────
 
 class ReleaseParserService {
@@ -272,6 +333,7 @@ class ReleaseParserService {
     }
 
     const delays = [1000, 2000];
+    const { parseTimeoutMs } = resolveReleaseParserRuntimeConfig();
 
     for (let attempt = 0; attempt <= delays.length; attempt++) {
       try {
@@ -282,7 +344,7 @@ class ReleaseParserService {
           output: Output.json(),
           prompt: PARSE_PROMPT(title),
           ...(aiConfig.providerOptions ? { providerOptions: aiConfig.providerOptions } : {}),
-          abortSignal: AbortSignal.timeout(15000),
+          abortSignal: AbortSignal.timeout(parseTimeoutMs),
         });
 
         const parsed = ParsedReleaseSchema.safeParse(output);
@@ -297,13 +359,23 @@ class ReleaseParserService {
     return regexFallback(title);
   }
 
-  // parseBatch() — one AI call for all titles, no queue
-  async parseBatch(titles: string[], context?: SearchContext): Promise<ParsedReleaseWithScore[]> {
+  /**
+   * One AI call for all titles, no queue.
+   *
+   * Always resolves to exactly `titles.length` slots. A slot is `null` when no result
+   * could be attributed to that title with confidence — callers must never assume a
+   * slot is populated. See {@link assignBatchSlots} for the attribution rules.
+   */
+  async parseBatch(titles: string[], context?: SearchContext): Promise<BatchParseSlot[]> {
+    const emptySlots = (): BatchParseSlot[] =>
+      new Array<BatchParseSlot>(titles.length).fill(null);
+
     const aiConfig = resolveReleaseParserAiConfig();
     if (!aiConfig.enabled || titles.length === 0) {
-      return [];
+      return emptySlots();
     }
 
+    const { batchTimeoutMs } = resolveReleaseParserRuntimeConfig();
     const contextBlock = this._buildContextBlock(context);
 
     try {
@@ -312,13 +384,15 @@ class ReleaseParserService {
         output: Output.json(),
         prompt: BATCH_PROMPT(titles, contextBlock),
         ...(aiConfig.providerOptions ? { providerOptions: aiConfig.providerOptions } : {}),
-        abortSignal: AbortSignal.timeout(20000),
+        abortSignal: AbortSignal.timeout(batchTimeoutMs),
       });
 
       const parsed = BatchResponseSchema.safeParse(output);
-      return parsed.success ? parsed.data.results : [];
+      if (!parsed.success) return emptySlots();
+
+      return assignBatchSlots(titles.length, parsed.data.results);
     } catch {
-      return [];
+      return emptySlots();
     }
   }
 
@@ -343,6 +417,7 @@ class ReleaseParserService {
     }
 
     const BATCH_SIZE = 50;
+    const { filesTimeoutMs } = resolveReleaseParserRuntimeConfig();
     const results: ParsedRelease[] = [];
 
     for (let offset = 0; offset < filePaths.length; offset += BATCH_SIZE) {
@@ -356,7 +431,7 @@ class ReleaseParserService {
           output: Output.json(),
           prompt: FILES_PROMPT(batch),
           ...(aiConfig.providerOptions ? { providerOptions: aiConfig.providerOptions } : {}),
-          abortSignal: AbortSignal.timeout(20000),
+          abortSignal: AbortSignal.timeout(filesTimeoutMs),
         });
 
         const parsed = z.object({ results: z.array(ParsedReleaseSchema) }).safeParse(output);

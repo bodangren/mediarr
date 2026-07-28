@@ -577,13 +577,16 @@ export class MediaSearchService {
           batchContext,
         );
 
-        for (let i = 0; i < parsedBatch.length; i++) {
-          const release = seededReleases[i];
+        // parseBatch returns exactly one slot per input title, already attributed by
+        // the model's echoed index. A null slot means "not attributable" — leave that
+        // release unparsed so applyUnifiedScoring falls back to Levenshtein rather
+        // than inheriting a neighbour's parse. Do NOT reintroduce a positional zip
+        // over a filtered result list: a truncated response would then shift every
+        // subsequent parse onto the wrong release, and relevanceScore drives auto-grab.
+        seededReleases.forEach((release, i) => {
           const parsed = parsedBatch[i];
-          if (release && parsed) {
-            release.parsedRelease = parsed;
-          }
-        }
+          if (parsed) release.parsedRelease = parsed;
+        });
       } catch {
         // AI parsing failure — proceed with Levenshtein-only scoring
       }

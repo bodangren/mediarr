@@ -1,10 +1,97 @@
 # Plan: Remaining Server Service Test Coverage
 
 ## Phase 1: Discovery & Contract Mapping
-- [ ] Read all 7 remaining service source files (`server/src/services/`) and document public method signatures, constructor dependencies, and external I/O (DB, filesystem, network, other services) in this plan.
-- [ ] Identify existing test helpers and mock factories to reuse from sibling suites (e.g. `MediaSearchService`, subtitle services).
-- [ ] Flag any service whose real branch surface lives in a collaborator (cf. the `SettingsService`/`AppSettingsRepository` lesson) and re-target the coverage goal before writing tests.
+- [x] Read all 7 remaining service source files (`server/src/services/`) and document public method signatures, constructor dependencies, and external I/O (DB, filesystem, network, other services) in this plan.
+- [x] Identify existing test helpers and mock factories to reuse from sibling suites (e.g. `MediaSearchService`, subtitle services).
+- [x] Flag any service whose real branch surface lives in a collaborator (cf. the `SettingsService`/`AppSettingsRepository` lesson) and re-target the coverage goal before writing tests.
 - [ ] Commit: `docs(measure): map remaining server service contracts for test coverage`
+
+### Measured baseline (2026-07-28) — "no sibling test" is NOT "untested"
+
+Measured with `CI=true npx vitest run server/src tests --coverage` scoped to the 7 target
+files, so these are real numbers from the whole suite, not estimates. Suite state at baseline:
+**313 files passed / 1 skipped, 2711 passed / 14 skipped, 0 failures.**
+
+| Service | LOC | % Branch | % Stmt | Meets ≥80% branch? | Real gap |
+|---|---|---|---|---|---|
+| `ActivityEventEmitter` | 19 | **0** | 0 | no | Zero coverage, but only 1 branch exists |
+| `MetadataGenerator` | 85 | **38.88** | 40.9 | no | **Largest true gap** (`downloadPoster`, `escapeXml`) |
+| `MetadataProvider` | 360 | 60.22 | 76.92 | no | Largest surface; error paths uncovered |
+| `LibraryScanner` | 109 | 71.42 | 84 | no | Inaccessible-path branches (22-23, 64-65) |
+| `ProbeMetadataParser` | 196 | 75.51 | 88.33 | no | Close; normalisation edge cases |
+| `DataDirectoryInitializer` | 65 | **90** | 100 | **already yes** | Only line 22 (`mediaDir` default) |
+| `WantedService` | 35 | **100** | 66.66 | **vacuous** | Has zero branches; line 33 uncovered |
+
+**Two re-targets, recorded rather than papered over (the `SettingsService` lesson):**
+
+- **`DataDirectoryInitializer` already satisfies the acceptance criterion at 90% branch**, covered
+  indirectly by `tests/data-directory-initializer.test.js` from the deployment-hardening track. A
+  sibling test is still worth adding for locality and for the uncovered `mediaDir.trim() || '/data'`
+  fresh-install default, but this service must not be counted as "closed a coverage gap".
+- **`WantedService` reports 100% branch because it contains no branches at all** — the same
+  unfalsifiable target as `SettingsService`. Its real risk lives in the `DatabaseClient` shim.
+  `getCutoffUnmetEpisodes` (line 33) is uncovered and is a documented stub that returns
+  `getMissingEpisodes()` while its name and API promise cutoff-unmet semantics.
+
+**Work is therefore ordered by measured gap, not by LOC as Phases 2/4 assume:**
+`MetadataGenerator` → `MetadataProvider` → `LibraryScanner` → `ProbeMetadataParser` →
+`ActivityEventEmitter` → `DataDirectoryInitializer` → `WantedService`.
+
+### Contract map
+
+| Service | Deps (injected) | External I/O | Mock strategy |
+|---|---|---|---|
+| `ActivityEventEmitter` | `ActivityEventRepository?` | none directly | Plain object stub; assert delegation + the no-repo early return |
+| `WantedService` | `prisma: any` (Drizzle `DatabaseClient`) | DB | Stub `episode.findMany`; assert the query shape |
+| `DataDirectoryInitializer` | `directories: string[]`, `filesystem` | fs | **Injected fs adapter already exists** — use it, do not mock `node:fs` |
+| `MetadataGenerator` | `HttpClient` | fs + HTTP | Stub `HttpClient.get`; temp dirs for fs |
+| `LibraryScanner` | `prisma: any` | fs + DB + `releaseParser` | Temp dirs; `vi.mock('./ReleaseParser')` |
+| `ProbeMetadataParser` | none | none | **Pure** — no mocks needed |
+| `MetadataProvider` | `HttpClient`, `SettingsService` | HTTP (SkyHook + TMDB) | Stub both; `fetchFn` param is already a seam |
+
+**Reusable seams found:** `DataDirectoryInitializer` and `MetadataProvider` already accept
+injection points (`filesystem`, `fetchFn`), so neither needs module mocking. `ProbeMetadataParser`
+is a pure function object. Only `LibraryScanner` requires `vi.mock` (for `releaseParser`).
+
+### Findings
+
+**BLOCKER FOR THIS TRACK — `MetadataGenerator` is dead production code.** Repo-wide grep
+(`*.ts`/`*.tsx`/`*.js`, excluding `node_modules`) finds exactly two references outside its own
+definition, both in `tests/metadata-generator.test.js`. It is not imported by `main.ts`, any
+route, or any other service. It is never constructed in production. This changes what the ≥80%
+branch target on it would *mean*: it would certify unreachable code. **Needs an owner decision
+before Phase 4/5 work on it proceeds** — delete, wire up, or cover as-is. Recorded rather than
+silently absorbed; deleting is outside this track's stated scope ("no production changes unless a
+defect is found").
+
+Note it also already has a non-sibling test file, so its "no sibling `.test.ts`" status
+overstated the gap — as with `DataDirectoryInitializer`. That existing file uses
+`vi.mock('node:fs/promises')`, which this track's own spec forbids ("do not mock `node:fs`
+globally"); a sibling rewrite should use temp dirs instead.
+
+**Confirmed defects — both in `MetadataGenerator`, therefore NOT live bugs while it stays unwired:**
+
+1. `generateSeriesMetadata` guards `overview`/`network` with `|| ''` but passes `series.title` and
+   `series.status` to `escapeXml` **unguarded** — `undefined.replace(...)` throws. Inconsistent
+   within a single template. The existing test passes only because its fixture supplies every field.
+2. `downloadPoster` does `Buffer.from(response.body, 'binary')` where `body` came from
+   `HttpClient.toHttpResponse` → `await response.text()`, i.e. **already UTF-8-decoded**
+   (`HttpClient.ts:98`). JPEG bytes that are not valid UTF-8 were replaced with U+FFFD during
+   decoding, and latin1 re-encoding cannot recover them. **Every poster this method writes is
+   corrupt.** The source comment admits the author was unsure; the answer is that it does not work.
+   Fixing it needs an `arrayBuffer()` path on `HttpClient`, which is a production change beyond
+   this track's scope — route it out if the service is kept.
+
+**Open candidate (not yet confirmed):**
+
+3. `LibraryScanner.getAllFiles` recurses with no error handling — one unreadable subdirectory
+   aborts a whole library scan, and a symlink loop recurses without bound. The `fs.access` guard
+   covers only the root. This service **is** wired in production, so a confirmed defect here is live.
+
+**Cleared while reading:** `WantedService` takes `prisma` and uses Prisma nested-relation syntax
+(`series: { monitored: true }`), which looked like unmigrated residue that would fail against
+Drizzle. It does not — the shim implements nested relation filters (`drizzleClient.ts:1190`) and
+the service is wired to a live route (`mediaRoutes.ts:142`). Naming residue only, not a defect.
 
 > **Scope note (2026-07-28):** `ReleaseParserProvider` is **claimed and closed** by
 > `bug_ai_release_parser_lockdown_20260728`, which rewrote the file and shipped

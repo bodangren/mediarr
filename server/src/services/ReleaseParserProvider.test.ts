@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
 // Mirrors the mocking style used in ReleaseParser.test.ts.
@@ -21,6 +21,7 @@ import {
   DEFAULT_BATCH_TIMEOUT_MS,
   DEFAULT_FILES_TIMEOUT_MS,
   DEFAULT_MAX_CONCURRENCY,
+  __resetModelWarningsForTests,
 } from './ReleaseParserProvider';
 
 const mockCreateOpenAI = vi.mocked(createOpenAI);
@@ -310,5 +311,88 @@ describe('resolveReleaseParserRuntimeConfig — invalid values fall back to defa
     vi.stubEnv('RELEASE_PARSER_MAX_CONCURRENCY', value);
 
     expect(resolveReleaseParserRuntimeConfig().maxConcurrency).toBe(DEFAULT_MAX_CONCURRENCY);
+  });
+});
+
+// ── FR-3: slow-model warning ─────────────────────────────────────────────────
+//
+// The original defect was silent: a model slower than its abort deadline aborts
+// every call, parse() returns the regex result and parseBatch() returns empty slots,
+// so the parser looks alive while doing nothing. These tests pin the loudness.
+describe('resolveReleaseParserAiConfig — slow-model warning (FR-3)', () => {
+  const ENV_VARS = [
+    'AI_GATEWAY_BASE_URL', 'AI_GATEWAY_MODEL', 'AI_GATEWAY_API_KEY',
+    'API_SECRET_KEY', 'OPENROUTER_API_KEY', 'OPENROUTER_MODEL',
+  ];
+
+  let warnSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    vi.unstubAllEnvs();
+    for (const name of ENV_VARS) vi.stubEnv(name, undefined as unknown as string);
+    __resetModelWarningsForTests();
+    warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    warnSpy.mockRestore();
+    vi.unstubAllEnvs();
+  });
+
+  it('does not warn for the pinned default model', () => {
+    vi.stubEnv('OPENROUTER_API_KEY', 'test-key');
+
+    resolveReleaseParserAiConfig();
+
+    expect(warnSpy).not.toHaveBeenCalled();
+  });
+
+  it('warns when OPENROUTER_MODEL names an unmeasured model', () => {
+    vi.stubEnv('OPENROUTER_API_KEY', 'test-key');
+    vi.stubEnv('OPENROUTER_MODEL', 'minimax/minimax-m2.7');
+
+    resolveReleaseParserAiConfig();
+
+    expect(warnSpy).toHaveBeenCalledTimes(1);
+    expect(String(warnSpy.mock.calls[0]?.[0])).toContain('minimax/minimax-m2.7');
+    expect(String(warnSpy.mock.calls[0]?.[0])).toContain('silently fall back to regex');
+  });
+
+  it('warns only once per model per process', () => {
+    vi.stubEnv('OPENROUTER_API_KEY', 'test-key');
+    vi.stubEnv('OPENROUTER_MODEL', 'some/unmeasured-model');
+
+    resolveReleaseParserAiConfig();
+    resolveReleaseParserAiConfig();
+    resolveReleaseParserAiConfig();
+
+    expect(warnSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('warns separately for a different unmeasured model', () => {
+    vi.stubEnv('OPENROUTER_API_KEY', 'test-key');
+    vi.stubEnv('OPENROUTER_MODEL', 'model/one');
+    resolveReleaseParserAiConfig();
+
+    vi.stubEnv('OPENROUTER_MODEL', 'model/two');
+    resolveReleaseParserAiConfig();
+
+    expect(warnSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it('warns on the gateway path too', () => {
+    vi.stubEnv('AI_GATEWAY_BASE_URL', 'http://localhost:3030/api/v1');
+    vi.stubEnv('AI_GATEWAY_MODEL', 'openrouter/free');
+
+    resolveReleaseParserAiConfig();
+
+    expect(warnSpy).toHaveBeenCalledTimes(1);
+    expect(String(warnSpy.mock.calls[0]?.[0])).toContain('openrouter/free');
+  });
+
+  it('does not warn when no provider is configured at all', () => {
+    resolveReleaseParserAiConfig();
+
+    expect(warnSpy).not.toHaveBeenCalled();
   });
 });

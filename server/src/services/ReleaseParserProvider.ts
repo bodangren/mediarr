@@ -99,11 +99,40 @@ export interface ReleaseParserAiConfig {
   description: string;
 }
 
+/** Model ids already warned about, so the warning fires once per model per process. */
+const warnedModels = new Set<string>();
+
+/**
+ * Warns when the resolved model is not one measured to fit inside its abort deadline.
+ *
+ * This is a warning, not a rejection — operators keep the `OPENROUTER_MODEL` override
+ * for models we have not measured. The point is that the original defect was
+ * *silent*: a too-slow model aborts every call, `parse()` returns the regex result and
+ * `parseBatch()` returns empty slots, so the parser looks alive while doing nothing.
+ * A slow model is now at least loud.
+ */
+function warnIfModelNotKnownFast(modelId: string, source: string): void {
+  if (KNOWN_FAST_MODELS.includes(modelId) || warnedModels.has(modelId)) return;
+  warnedModels.add(modelId);
+  console.warn(
+    `[ReleaseParser] Model "${modelId}" (${source}) has not been measured against the ` +
+      `parser's abort deadlines. If it takes longer than RELEASE_PARSER_PARSE_TIMEOUT_MS ` +
+      `to respond, every call will abort and the parser will silently fall back to regex. ` +
+      `Known-fast models: ${KNOWN_FAST_MODELS.join(', ')}.`,
+  );
+}
+
+/** Test-only: clears the once-per-process warning memo. */
+export function __resetModelWarningsForTests(): void {
+  warnedModels.clear();
+}
+
 export function resolveReleaseParserAiConfig(): ReleaseParserAiConfig {
   const gatewayBaseURL = readEnv('AI_GATEWAY_BASE_URL');
   const gatewayModel = readEnv('AI_GATEWAY_MODEL') ?? readEnv('OPENROUTER_MODEL');
 
   if (gatewayBaseURL && gatewayModel) {
+    warnIfModelNotKnownFast(gatewayModel, 'gateway');
     const openai = createOpenAI({
       baseURL: gatewayBaseURL,
       apiKey: readEnv('AI_GATEWAY_API_KEY') ?? readEnv('API_SECRET_KEY') ?? DEFAULT_GATEWAY_API_KEY,
@@ -121,6 +150,7 @@ export function resolveReleaseParserAiConfig(): ReleaseParserAiConfig {
   const openrouterApiKey = readEnv('OPENROUTER_API_KEY');
   if (openrouterApiKey) {
     const modelId = readEnv('OPENROUTER_MODEL') ?? DEFAULT_OPENROUTER_MODEL;
+    warnIfModelNotKnownFast(modelId, 'openrouter');
     const openrouter = createOpenRouter({
       apiKey: openrouterApiKey,
     });

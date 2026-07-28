@@ -55,21 +55,38 @@ is a pure function object. Only `LibraryScanner` requires `vi.mock` (for `releas
 
 ### Findings
 
-**BLOCKER FOR THIS TRACK — `MetadataGenerator` is dead production code.** Repo-wide grep
-(`*.ts`/`*.tsx`/`*.js`, excluding `node_modules`) finds exactly two references outside its own
-definition, both in `tests/metadata-generator.test.js`. It is not imported by `main.ts`, any
-route, or any other service. It is never constructed in production. This changes what the ≥80%
-branch target on it would *mean*: it would certify unreachable code. **Needs an owner decision
-before Phase 4/5 work on it proceeds** — delete, wire up, or cover as-is. Recorded rather than
-silently absorbed; deleting is outside this track's stated scope ("no production changes unless a
-defect is found").
+**RESOLVED BY DELETION (owner decision, 2026-07-28) — `MetadataGenerator` was dead production
+code.** Repo-wide grep (`*.ts`/`*.tsx`/`*.js`, excluding `node_modules`) found exactly two
+references outside its own definition, both in `tests/metadata-generator.test.js`. It was never
+imported by `main.ts`, any route, or any other service, and never constructed in production. An
+≥80% branch target on it would have certified unreachable code.
 
-Note it also already has a non-sibling test file, so its "no sibling `.test.ts`" status
-overstated the gap — as with `DataDirectoryInitializer`. That existing file uses
-`vi.mock('node:fs/promises')`, which this track's own spec forbids ("do not mock `node:fs`
-globally"); a sibling rewrite should use temp dirs instead.
+`server/src/services/MetadataGenerator.ts` and `tests/metadata-generator.test.js` are deleted.
+**6 services remain in scope, not 7.**
 
-**Confirmed defects — both in `MetadataGenerator`, therefore NOT live bugs while it stays unwired:**
+The owner's stated concern was losing artwork. Verified false on three independent grounds
+before deleting:
+
+1. **Artwork is never stored locally.** Posters are remote URLs — `movieRoutes.ts:381` writes
+   `https://image.tmdb.org/t/p/w500${...}` into `posterUrl` — and are rendered straight from the
+   CDN by `<img src={movie.posterUrl}>` (`MovieDetailPage.tsx:206`, `SeriesDetailPage.tsx:419`).
+   Nothing reads a local image file.
+2. **`downloadPoster` had no callers**, so it never fetched anything; its `poster.jpg` output was
+   read by nothing regardless.
+3. **Its `.nfo` generation was duplicated** by `Organizer.colocateMovieMetadata`, a generic and
+   already-tested equivalent.
+
+What the deletion gives up is not artwork but an unfinished, never-wired feature: local sidecar
+files for external scrapers (Kodi/Jellyfin/Plex). That capability was already absent at runtime.
+
+**Related finding, left in place:** `Organizer.colocateMovieMetadata` is *also* never called in
+production (`grep` finds it only in `Organizer.ts` and its test). Local metadata-sidecar
+generation is therefore entirely unimplemented, not merely duplicated. Not deleted — it is the
+better foundation if the feature is ever wanted, and removing it is outside this track's scope.
+Logged in `tech-debt.md`.
+
+**Two defects confirmed in the deleted file** — recorded because they were real and because they
+must not be reintroduced if sidecar generation is ever built on `Organizer`:
 
 1. `generateSeriesMetadata` guards `overview`/`network` with `|| ''` but passes `series.title` and
    `series.status` to `escapeXml` **unguarded** — `undefined.replace(...)` throws. Inconsistent

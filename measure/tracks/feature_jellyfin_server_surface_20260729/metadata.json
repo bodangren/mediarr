@@ -1,0 +1,11 @@
+{
+  "track_id": "feature_jellyfin_server_surface_20260729",
+  "type": "feature",
+  "status": "pending",
+  "created_at": "2026-07-29T00:00:00Z",
+  "updated_at": "2026-07-29T00:00:00Z",
+  "description": "Serve a Jellyfin-compatible API surface plus UDP auto-discovery so stock Jellyfin clients (smart TV apps) find Mediarr on the LAN and play from it directly, including resume and watched state.",
+  "estimated_tasks": 30,
+  "spec_format": "classic",
+  "deviation_notes": "Spec format is a classic FR list rather than story-shaped: this is protocol-compatibility work where the acceptance criterion is 'a third-party client behaves correctly', so numbered wire-level requirements are more falsifiable than user stories. Scope confirmed with the owner 2026-07-29: full browse + play + resume/watched state (not discovery-only, not full 45-endpoint parity). Prior art read before speccing: the sister project at /media/daniel-bo/320GB (serve.py, 1643 LOC) implements ~45 endpoints and is currently the working server on this LAN."
+}

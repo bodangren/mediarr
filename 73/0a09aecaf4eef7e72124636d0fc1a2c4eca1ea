@@ -1,0 +1,72 @@
+Task: Phase 6 architectural fix — chore_home_network_deployment_hardening_20260712
+
+WHY
+The clean-image SPA build failed intermittently with the Vite/Rollup family
+'Rollup failed to resolve import "<dep>" from "/app/app/..."', naming a
+different module each run. Two prior root-cause claims (overlay write-visibility
+between RUN layers; install layout / npm ci flags) were both retracted. The
+defect blocked a trustworthy home-network deployment image.
+
+MECHANISM (proven, not inferred)
+rollup maxParallelFileOps default = 1000 (getMaxParallelFileOps,
+rollup/dist/shared/rollup.js:23403, rollup 4.57.1)
+buildah RUN layer fd soft limit  = 1024
+
+Peak fd demand measured with ulimit raised to 65536 (so the reading is not
+clipped by the limit under test):
+  uncapped  -> 1029  (1000 queue slots + ~29 baseline)   5 over the limit
+  cap 128   ->  156  (128 + ~28)                          6.6x headroom
+
+The five-descriptor overshoot is the intermittency. It explains every prior
+symptom simultaneously: different module per run, failures in the 118-143
+module band, 13 consecutive greens, and clean runs under podman run / on host
+where the limit is 1048576.
+
+WHY THE EXCLUSION HELD SO LONG
+(1) Namespace error: the fd limit had been measured under 'podman run' and on
+    the host, neither of which is where a build layer executes. Verified in
+    this session: buildah RUN 1024 / podman run 1048576 / host 1048576.
+(2) Incomplete measurement: only the LIMIT was ever measured. The build's
+    DEMAND was the missing number.
+
+CONTROLLED REPRODUCTION (host, 40s, no container)
+  ulimit -n 1024 + cap removed ->
+  [commonjs--resolver] Could not load .../lucide-react/dist/esm/icons/
+  line-dot-right-horizontal.js: EMFILE: too many open files
+First observation of EMFILE for this defect. rollup surfaces the same
+exhaustion as 'failed to resolve' depending on which open() loses, so the
+error text was never the defect's identity.
+
+DISCIPLINE NOTE
+The first control run at ulimit 1024 PASSED (3028 modules). Recorded rather
+than discarded: it is the same 5-fd coin flip, and treating it as signal is
+precisely the error the 2026-07-27 retraction documents. Conclusions rest on
+the demand measurement; build outcomes are confirmatory.
+
+FILES
+  app/vite.config.ts                        build.rollupOptions.maxParallelFileOps = 128
+  tests/spa-build-file-parallelism.test.js  NEW - asserts a bound with headroom
+                                            (<= 1024/4), not the literal 128
+  Dockerfile                                corrected the comment that recorded
+                                            fd limits as excluded
+  measure/tracks/.../plan.md                RESOLUTION block with the evidence
+  measure/tech-debt.md                      forward-looking constraint row +
+                                            OPENROUTER_API_KEY closed as
+                                            accepted risk per operator decision
+  measure/lessons-learned.md                'a limit is only half a measurement'
+
+TDD
+Red:   guard failed with 'expected undefined to be type of number'
+Green: cap added; guard + clean-workspace-invariant + dockerfile = 8/8
+
+GATES (all after the final edit)
+  npm run test:clean-image        3/3, no-cache image build exit 0, 3028
+                                  modules, 0 Rollup-family occurrences, 742s
+  CI=true npx vitest run tests/   106 files / 544 passed, 1 skipped (opt-in)
+  npx tsc -p server/tsconfig.json 0 diagnostics
+  npm run build --workspace=app   exit 0, artifact hash unchanged vs uncapped
+  capped host build @ ulimit 1024 3/3 green
+
+STILL OPEN ON THIS TRACK
+Docker Engine + physical Android/LAN playback verification remains human-gated:
+this host's 'docker' is Podman 4.9.3.

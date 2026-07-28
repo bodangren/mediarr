@@ -176,4 +176,74 @@
   Gates after these changes: `clean-workspace-invariant` + `deployment-hardening` → 12/12 green,
   with the 3 heavy build tests correctly reported as skipped.
 
+  ### The instrumentation fired on its first live run — a documented exclusion is overturned (2026-07-28)
+
+  **The defect is reproducing again.** After 13 consecutive greens on 2026-07-27, **3 of 4 first
+  attempts failed on 2026-07-28**, at 118, 119 and 130 modules transformed. Combined with the
+  earlier 132 and 143, every observed failure sits in a **118–143 module band**, on a different
+  specifier each time.
+
+  | Attempt | Failing specifier | Importer | Modules |
+  |---|---|---|---|
+  | 11:20 first | `@radix-ui/primitive` | `/app/node_modules/@radix-ui/react-tooltip/dist/index.mjs` | 118 |
+  | 11:20 retry | `@radix-ui/react-tooltip` | `/app/app/src/components/ui/tooltip.tsx` | 130 |
+  | 11:32 first | `@radix-ui/primitive` | `/app/node_modules/@radix-ui/react-tooltip/dist/index.mjs` | 119 |
+  | 11:32 retry | — | — | **3028, exit 0** |
+
+  The 11:32 pair is the sharpest single observation in this whole investigation: **a failing build
+  and a completely successful 3028-module build, in the same `RUN` layer, seconds apart, from the
+  same filesystem.** No install-layout or filesystem explanation survives that.
+
+  **The finding — `Max open files` is 1024 inside the build layer, not 1048576.** The environment
+  block the wrapper prints on failure reported, from inside the failing `RUN`:
+
+  ```
+    node: v20.20.2  npm: 10.8.2  nproc: 4
+    ulimit -n soft: 1024  hard: 1024
+    Max open files            1024                 1024                 files
+    Mem: total 7488  used 5001  available 2487   Swap: total 7840  used 4971
+  ```
+
+  Confirmed independently in ~20 seconds with a two-line Dockerfile, and the discrepancy is real:
+
+  | Context | `ulimit -Sn` / `-Hn` |
+  |---|---|
+  | **buildah `RUN` layer (where the build actually runs)** | **1024 / 1024** |
+  | `podman run` container | 1048576 / 1048576 |
+  | host shell | 1048576 / 1048576 |
+
+  The 2026-07-27 session crossed fd exhaustion off the list on a measurement of 1048576 "host and
+  container". That measurement was correct — and taken in a namespace the failing build never
+  enters. **Fd exhaustion is back on the table, and it is the only excluded hypothesis the
+  measurement error touched.** (Node, npm, disk, and memory were each excluded by arms run in the
+  build path itself; those exclusions stand. Note the memory line above is not comfortable either —
+  2.4 GB available with 4.9 GB of swap in use — so memory pressure must be a controlled variable in
+  any arm, not an assumption.)
+
+  **Not yet a root cause.** The plausible mechanism is that rollup's parallel file operations hit
+  `EMFILE` against the 1024 ceiling and Vite's resolver swallows the error into
+  "failed to resolve import". Consistent with: the tight 118–143 band (concurrency ramping), a
+  different specifier each time (whichever loses), the specifier resolving fine from a
+  single-threaded probe one second later, and the heavily-serialising `DEBUG='vite:*'` retry
+  passing. **But no `EMFILE` has been observed in any output, and this track has already produced
+  two confounded false fixes — treat the above as a hypothesis with a good motive, not a diagnosis.**
+
+  **Two candidate remedies, both testable, neither yet tested:**
+  - **(a) `build.rollupOptions.maxParallelFileOps`** in `app/vite.config.ts` (rollup default is 20;
+    the option exists precisely because of `EMFILE`). **Preferred** — it is in-repo and portable, so
+    it protects every builder rather than relying on flag discipline.
+  - **(b) `--ulimit nofile=65536:65536` on the build command.** Verified to work
+    (`BUILD-LAYER soft=65536 hard=65536`), but it must be passed by whoever builds the image, so it
+    cannot be the primary fix. Useful mainly as a **diagnostic arm**: if it makes the failure
+    disappear it implicates the ceiling directly.
+  - Note the layer **cannot** raise its own limit: it runs as `root` but rootless podman drops
+    `CAP_SYS_RESOURCE`, so `ulimit -n 65536` inside the `RUN` fails. A `RUN ulimit` fix is not
+    available.
+
+  **How to run the next arm without repeating this track's mistakes.** Today's base rate is high
+  (3 of 4 first attempts), which is the first workable window this investigation has had — but base
+  rate has already swung from 2/16 to 3/4, so it must be re-measured alongside any arm, not assumed.
+  Change exactly one variable, keep a concurrent control that changes nothing, and hold host memory
+  pressure roughly constant between arms.
+
 - [x] Phase 6 Red contract: capture the reproducible clean-image workspace dependency-resolution failure as a durable, falsifiable Red. Evidence: the original `tests/clean-workspace-build.test.js` (commit `13ea7272`) used the heavy `docker build --no-cache` invocation as its Red contract; that proved non-deterministic (exit 0 on the host's podman alias), violating TDD. Remediation: added `tests/clean-workspace-invariant.test.js` as the **deterministic** Red gate. The new test enforces the structural-semantic invariant from test-strategy.md §3 paragraph 5: the Dockerfile (or `app/vite.config.ts`) must include at least one of four documented remediation patterns that make Vite/Node resolution INDEPENDENT of npm's hoisting choices — (a) `RUN npm install --workspace=app` / `RUN npm ci --workspace=app`, (b) per-workspace `RUN npm ci --workspace=app` / `RUN cd app && npm ci`, (c) explicit `resolve.alias` block in `app/vite.config.ts` mapping `app` direct deps (bare or subpath) to specific paths, or (d) `COPY --from=builder /app/app/node_modules`. The test matches each pattern as a FAMILY of regexes (no stale single-phrase assertion), filters option (c) so a placeholder alias block without any `app` dep reference does not satisfy the invariant, and explains in the failure message why each pattern prevents the `Rollup failed to resolve import "<dep>" from "/app/..."` family. The test is bounded (~17 ms; no subprocess, no docker), deterministic (reads `Dockerfile` and `app/vite.config.ts` directly), and family-level (anti-pattern A5 — no specific module name asserted). The heavy `tests/clean-workspace-build.test.js` is preserved as a **Green/acceptance gate** because the live no-cache build is required to verify the actual reproducibility end-to-end; the new Red gate does not need to repeat it. Aggregate Red run on this HEAD with the corrected deterministic contract: `Test Files 1 failed | 7 passed (8); Tests 1 failed | 47 passed (48)`; existing 7 files / 47 tests baseline preserved (47/47 PASS); the 1 new failure is `tests/clean-workspace-invariant.test.js` with the documented invariant-violation message. Verification of all four Green patterns (a)/(b)/(c)/(d) against the new test: each pattern as a family is accepted (option (c) with a placeholder alias block without any `app` dep reference is correctly rejected). Disk pressure snapshot: `df -h /` → `233G 208G 14G 95% /` (labelled integer, anti-pattern A3). Phase 6 remains incomplete: the architectural fix (one of strategy §3 options (a)/(b)/(c)/(d)) is unowned and is the next role's work.

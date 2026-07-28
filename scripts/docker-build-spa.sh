@@ -7,15 +7,19 @@
 #
 #   [vite]: Rollup failed to resolve import "<dep>" from "/app/app/..."
 #
-# naming a different module each occurrence. It is NOT reproducible on demand —
-# it reproduced twice and then went 13 consecutive green clean builds — so the
-# only realistic way to obtain the one artefact that would give a mechanism
-# (Vite's resolver trace at the moment of failure) is to have the build capture
-# it itself the next time it happens. See Phase 6 of
+# naming a different module each occurrence, and its reproduction rate swings
+# wildly (13 consecutive greens on 2026-07-27; 3 of 4 first attempts failed on
+# 2026-07-28). Rather than keep guessing between occurrences, the build captures
+# its own evidence when it fails. See Phase 6 of
 # measure/tracks/chore_home_network_deployment_hardening_20260712/plan.md.
 #
+# This wrapper has already earned its place: on its first live failure the
+# environment block below showed `Max open files 1024` *inside the RUN layer*,
+# overturning a documented exclusion that had been measured under `podman run`
+# (1048576) — a different namespace from the one the build actually runs in.
+#
 # On success this behaves exactly like `npm run build --workspace=app`. On
-# failure it re-runs the build under DEBUG=vite:resolve, prints the trace lines
+# failure it re-runs the build under DEBUG='vite:*', prints the trace lines
 # for the specifier that failed plus the tail of the trace, and then exits with
 # the ORIGINAL failure status so the image build still fails.
 #
@@ -38,10 +42,24 @@ fi
 
 echo ""
 echo "=============================================================="
-echo "SPA build failed (exit $status). Re-running under DEBUG=vite:resolve"
+echo "SPA build failed (exit $status). Re-running under DEBUG=vite:*"
 echo "to capture the resolver trace. This is diagnostic only — the image"
 echo "build will still fail with the original status."
 echo "=============================================================="
+
+# The build dies in a narrow band (118, 130, 132, 143 modules transformed) on a
+# different specifier each time, while the specifier itself resolves fine from a
+# single-threaded probe one second later. Record the resource limits *as seen
+# from inside this RUN layer* — an earlier check measured them under
+# `podman run`, which is not the same namespace.
+echo ""
+echo "--- build environment as seen from inside this RUN layer:"
+echo "  node: $(node -v 2>&1)  npm: $(npm -v 2>&1)  nproc: $(nproc 2>&1)"
+echo "  ulimit -n soft: $(ulimit -Sn 2>&1)  hard: $(ulimit -Hn 2>&1)"
+echo "  open fds now: $(ls /proc/self/fd 2>/dev/null | wc -l)"
+grep -E 'Max open files|Max locked memory|Max address space|Max processes' \
+  /proc/self/limits 2>/dev/null | sed 's/^/  /'
+free -m 2>/dev/null | sed 's/^/  /'
 
 specifier=$(
   sed -n 's/.*Rollup failed to resolve import "\([^"]*\)".*/\1/p' "$BUILD_LOG" |
@@ -62,7 +80,11 @@ else
   echo "--- this failure may be a different family (tsc -b, npm, OOM)."
 fi
 
-DEBUG=vite:resolve npm run build --workspace=app >"$TRACE_LOG" 2>&1
+# `DEBUG=vite:resolve` alone emitted a single line across 130 transformed
+# modules on the 2026-07-28 capture — absence of trace lines there is not
+# evidence of anything. Trace the whole vite namespace instead; the output is
+# large but everything below is tail- or grep-bounded.
+DEBUG='vite:*' npm run build --workspace=app >"$TRACE_LOG" 2>&1
 trace_status=$?
 
 echo ""
@@ -76,7 +98,7 @@ fi
 
 if [ -n "$specifier" ]; then
   echo ""
-  echo "--- vite:resolve trace lines mentioning $specifier (last $TRACE_TAIL_LINES):"
+  echo "--- vite trace lines mentioning $specifier (last $TRACE_TAIL_LINES):"
   # `grep | tail` always exits 0, so test the captured text rather than status.
   matched=$(grep -F "$specifier" "$TRACE_LOG" | tail -n "$TRACE_TAIL_LINES")
   if [ -n "$matched" ]; then
@@ -87,7 +109,7 @@ if [ -n "$specifier" ]; then
 fi
 
 echo ""
-echo "--- tail of vite:resolve trace (last $TRACE_TAIL_LINES lines):"
+echo "--- tail of vite trace (last $TRACE_TAIL_LINES lines):"
 tail -n "$TRACE_TAIL_LINES" "$TRACE_LOG"
 
 echo ""

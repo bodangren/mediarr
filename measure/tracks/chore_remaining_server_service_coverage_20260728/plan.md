@@ -4,7 +4,7 @@
 - [x] Read all 7 remaining service source files (`server/src/services/`) and document public method signatures, constructor dependencies, and external I/O (DB, filesystem, network, other services) in this plan.
 - [x] Identify existing test helpers and mock factories to reuse from sibling suites (e.g. `MediaSearchService`, subtitle services).
 - [x] Flag any service whose real branch surface lives in a collaborator (cf. the `SettingsService`/`AppSettingsRepository` lesson) and re-target the coverage goal before writing tests.
-- [ ] Commit: `docs(measure): map remaining server service contracts for test coverage`
+- [x] Commit: `docs(measure): map remaining server service contracts for test coverage` (`55b03417`)
 
 ### Measured baseline (2026-07-28) — "no sibling test" is NOT "untested"
 
@@ -99,11 +99,18 @@ must not be reintroduced if sidecar generation is ever built on `Organizer`:
    Fixing it needs an `arrayBuffer()` path on `HttpClient`, which is a production change beyond
    this track's scope — route it out if the service is kept.
 
-**Open candidate (not yet confirmed):**
+**CONFIRMED BY TEST, and live:**
 
 3. `LibraryScanner.getAllFiles` recurses with no error handling — one unreadable subdirectory
-   aborts a whole library scan, and a symlink loop recurses without bound. The `fs.access` guard
-   covers only the root. This service **is** wired in production, so a confirmed defect here is live.
+   rejects the whole `scanSeries`/`scanMovie` call, and the `fs.access` guard covers only the scan
+   root. Worse than first described: the walk collects every path *before* parsing any, so an abort
+   mid-walk links **nothing**, not even files already enumerated from readable directories. This
+   service **is** wired in production, so the defect is live — a user migrating a messy library hits
+   it on one bad permission bit and sees a silent no-op. Pinned by characterisation tests in
+   `LibraryScanner.test.ts` (skipped when running as root, since root ignores the permission bits)
+   and logged Medium in `tech-debt.md`. Not fixed: the fix is a production change, and the tests make
+   any future fix a deliberate, failing-test change. Unbounded recursion on symlink loops is a
+   second hazard in the same function, left unpinned.
 
 **Cleared while reading:** `WantedService` takes `prisma` and uses Prisma nested-relation syntax
 (`series: { monitored: true }`), which looked like unmigrated residue that would fail against
@@ -115,36 +122,84 @@ the service is wired to a live route (`mediaRoutes.ts:142`). Naming residue only
 > `ReleaseParserProvider.test.ts` (73 tests, 100% branch/stmt/func/line). Do not
 > re-plan or re-test it here — 7 services remain, not 8.
 
-## Phase 2: Red Tests — Small Services (ActivityEventEmitter, DataDirectoryInitializer, ~~ReleaseParserProvider~~, WantedService)
-- [ ] Add failing sibling tests for `ActivityEventEmitter` (emit/subscribe/unsubscribe behaviour).
-- [ ] Add failing sibling tests for `DataDirectoryInitializer` (directory creation, idempotency, permission-error path) using temp dirs.
-- [x] ~~Add failing sibling tests for `ReleaseParserProvider`~~ — done by `bug_ai_release_parser_lockdown_20260728`.
-- [ ] Add failing sibling tests for `WantedService` (wanted-list queries, monitored filtering, empty results).
-- [ ] Run the four new suites and confirm they fail for the intended reasons (Red).
-- [ ] Commit: `test(server): add red tests for small uncovered services`
+## Phases 2-5: Sibling Suites (executed by measured gap, not by LOC)
 
-## Phase 3: Green Tests — Small Services
-- [ ] Make the Phase 2 tests pass — fix genuine defects only; do not reshape services to fit test assumptions.
-- [ ] Verify ≥80% branch coverage on each of the four services (or document why the target is unfalsifiable).
-- [ ] Commit: `test(server): green small-service coverage suites`
+> **Deviation from the written plan, recorded rather than glossed.** Phases 2-5 specified a
+> Red-then-Green split per size bucket. That structure did not survive contact with the work, for
+> two reasons. (a) The buckets were sized by LOC; the measured baseline showed the real gaps sit
+> elsewhere, so services were taken in gap order. (b) **A Red phase is not meaningful for coverage
+> tests over already-working code** — these suites characterise existing correct behaviour, so they
+> pass on first run by construction. Writing them to fail first would have meant asserting things
+> the code does not do, then "fixing" the test. Genuine Red moments did occur and are noted below.
 
-## Phase 4: Red Tests — Large Services (LibraryScanner, MetadataGenerator, MetadataProvider, ProbeMetadataParser)
-- [ ] Add failing sibling tests for `LibraryScanner` (path walking, file filtering, error handling) with temp-dir fixtures.
-- [ ] Add failing sibling tests for `MetadataGenerator` (sidecar generation, naming, overwrite behaviour).
-- [ ] Add failing sibling tests for `MetadataProvider` (provider resolution, response mapping, failure/timeout paths) with injected HTTP mocks.
-- [ ] Add failing sibling tests for `ProbeMetadataParser` (well-formed probe output, missing fields, malformed JSON).
-- [ ] Run the four new suites and confirm they fail for the intended reasons (Red).
-- [ ] Commit: `test(server): add red tests for large uncovered services`
+- [x] `ProbeMetadataParser` — **75.51% -> 100% branch**, 62 tests. Pure function object; no mocks.
+- [x] `LibraryScanner` — **71.42% -> 100% branch**, 24 tests. Real temp dirs; only `ReleaseParser`
+      mocked (the real one calls a paid LLM provider).
+- [x] `MetadataProvider` — **60.22% -> 94.31% branch**, 58 tests, 100% stmt/func/line. Residual
+      branches are unreachable, not untested (see the file header): `?? 0` fallbacks on a
+      `popularity` field both producers always set, and an `apiKey ? :` ternary below a throw guard.
+- [x] `ActivityEventEmitter` — **0% -> 100% branch**, 5 tests. Honest scope: a 1-branch delegation
+      shim; the conditional surface is in `ActivityEventRepository`.
+- [x] `DataDirectoryInitializer` — **90% -> 100% branch**, 19 tests. Was already above target; this
+      adds locality and the fresh-install `mediaDir` default. **Not a closed coverage gap.**
+- [x] `WantedService` — 100% branch **at zero tests**, because it has zero branches. 9 tests pin the
+      query contract instead, plus a characterisation test showing `getCutoffUnmetEpisodes` returns
+      the missing list despite its name promising a cutoff comparison.
+- [x] `MetadataGenerator` — **deleted** (dead code, owner decision). See Findings above.
 
-## Phase 5: Green Tests — Large Services
-- [ ] Make the Phase 4 tests pass — fix genuine defects only, each with its own regression test.
-- [ ] Verify ≥80% branch coverage on each of the four services (or document why the target is unfalsifiable).
-- [ ] Commit: `test(server): green large-service coverage suites`
+### Genuine Red moments
+
+1. **`LibraryScanner` permission tests failed as predicted** — confirming the Phase 1 defect is real
+   and live: one unreadable subdirectory rejects the whole scan, and because the walk collects every
+   path before parsing any, *nothing* is linked. Logged Medium in `tech-debt.md`; not fixed, because
+   the fix is a production change and the characterisation tests make any future fix deliberate.
+2. **`MetadataProvider` collection-id test failed against my assumption** — I asserted
+   `tmdbCollectionId` reached search results; it does not. `searchMovies` computes it and every
+   `searchMedia` mapping drops it. Converted to a characterisation test and logged.
+3. **`tsc` caught a type/runtime mismatch** the tests could not: `SeriesSearchResult` omits
+   `popularity` although `searchSeries` always sets it, which is why production reads it back via
+   `(result as any)`. Logged.
+4. **One failure was mine, not the code's** — a `build(undefined)` helper hit a default parameter,
+   so three "missing API key" tests silently supplied a key and asserted nothing. Fixed with an
+   options object that distinguishes "unspecified" from "explicitly absent"; the trap is written
+   into the helper's comment.
 
 ## Phase 6: Regression & Closeout
-- [ ] Run `CI=true npx vitest run server/src tests` and confirm no regressions; re-run gates after the last edit, not before.
-- [ ] Run `npx tsc -p server/tsconfig.json --noEmit` and confirm zero diagnostics.
-- [ ] Record final coverage numbers in this plan (tests start/end, branch % start/end per service).
-- [ ] Update `measure/tech-debt.md`: mark the "8 of 55 server services still lack a sibling .test.ts" row Resolved (or amend with verified residuals).
-- [ ] Update `measure/tracks.md` to archive this track.
-- [ ] Commit: `docs(measure): close out remaining server service coverage track`
+- [x] Run `CI=true npx vitest run server/src tests` and confirm no regressions; re-run gates after the last edit, not before. **318 files passed / 1 skipped, 2886 passed / 14 skipped, 0 failures** (baseline 313 / 2711). Net +5 files and +175 tests: 6 suites added, `tests/metadata-generator.test.js` deleted with its service.
+- [x] Run `npx tsc -p server/tsconfig.json --noEmit` and confirm zero diagnostics. **Exit 0.** It caught one defect the tests could not — `SeriesSearchResult` omits `popularity` although `searchSeries` always sets it.
+- [x] Record final coverage numbers in this plan.
+- [x] Update `measure/tech-debt.md` — amended, not marked Resolved. See below.
+- [x] Update `measure/tracks.md` and archive this track.
+- [x] Commit closeout.
+
+### Final coverage (measured at HEAD, after the last edit)
+
+| Service | Branch: start → end | Stmt/Func/Line | Tests |
+|---|---|---|---|
+| `ProbeMetadataParser` | 75.51% → **100%** | 100% | 62 |
+| `LibraryScanner` | 71.42% → **100%** | 100% | 24 |
+| `MetadataProvider` | 60.22% → **94.31%** | 100% | 58 |
+| `DataDirectoryInitializer` | 90% → **100%** | 100% | 19 |
+| `ActivityEventEmitter` | 0% → **100%** | 100% | 5 |
+| `WantedService` | 100% → 100% *(vacuous — zero branches)* | 100% | 9 |
+| `MetadataGenerator` | 38.88% → **deleted** | — | — |
+
+Aggregate across the six surviving services: **100% stmt/func/line, 97.71% branch.**
+
+### Why the tech-debt row was amended rather than marked Resolved
+
+The originating row reads *"7 of 55 server services still lack a sibling `.test.ts`"*. Marking it
+Resolved would assert something false in three ways, so it is amended instead:
+
+1. One of the seven was **deleted**, not covered. The count went down because dead code left the
+   codebase.
+2. Two of the remaining six **never had a real gap** — `DataDirectoryInitializer` was already at 90%
+   branch and `WantedService` reports 100% only because it has no branches. Counting them as closed
+   gaps would inflate the result.
+3. The row measured the wrong thing. "Has a sibling `.test.ts`" is a filename check, not a coverage
+   claim; `DataDirectoryInitializer` and `MetadataGenerator` were both well exercised by non-sibling
+   files. **A future row should state a coverage threshold, not a file-naming convention.**
+
+Three new rows were opened rather than absorbed: the live `LibraryScanner` scan-abort defect, the
+`MetadataProvider` dropped-collection-id/`popularity`-type pair, and the unimplemented
+metadata-sidecar feature left behind by the deletion.

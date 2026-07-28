@@ -4,6 +4,8 @@ import path from 'node:path';
 import {
   resolveReleaseParserAiConfig,
   resolveReleaseParserRuntimeConfig,
+  clampCodingScore,
+  RETRY_SCORE_STEP,
 } from './ReleaseParserProvider';
 
 // ── Schemas ─────────────────────────────────────────────────────────────────
@@ -222,6 +224,12 @@ const BATCH_PROMPT = (titles: string[], contextBlock: string) => [
   'IMPORTANT: when a season is specified in the context, the season_pack for that exact season MUST score higher than complete_series.',
   '',
   'Field rules:',
+  // title and year rules mirror PARSE_PROMPT. They were absent here until 2026-07-28,
+  // and a live benchmark over the golden set scored title 0/46 as a result: the model
+  // echoed the whole raw release string back. Every other field was already correct,
+  // so the gap was the instruction, not the model.
+  '- title: ONLY the show/movie name. Strip season/episode markers, year, resolution, source, codec, release group, and file extension. "Breaking.Bad.S03E05.Mas.720p.BluRay.x264-DEMAND" → "Breaking Bad". Never echo the input string back.',
+  '- year: the 4-digit disambiguation year only if it is part of the show title (e.g. "Archer.2009" → 2009). A movie\'s release year (e.g. "Oppenheimer.2023") is NOT a disambiguation year → null.',
   '- matchType: "episode" (SxxExx), "season_pack" (full season, no episode), "complete_series" (all seasons OR any movie file)',
   '- type "movie" for films. ALL movies use matchType "complete_series".',
   '- resolution "unknown" for 4K / UHD / 2160p. "1080p" only if title explicitly says 1080p.',
@@ -300,6 +308,106 @@ export function assignBatchSlots(
   return slots;
 }
 
+// ── Degradation reporting ────────────────────────────────────────────────────
+
+/**
+ * A moment where the AI layer did not do its job. Every one of these used to be
+ * silent: the parser swallowed the error and returned regex output or empty slots, so
+ * a model that was retired, rate-limited, or simply too slow looked identical to a
+ * model that was working. That is how the original defect survived for as long as it
+ * did, and it is the failure mode this reporting exists to make impossible.
+ */
+export type ParserDegradation =
+  | { kind: 'provider_error'; operation: string; modelId?: string | undefined; message: string }
+  | { kind: 'timeout'; operation: string; modelId?: string | undefined; deadlineMs: number }
+  | { kind: 'slow_call'; operation: string; modelId?: string | undefined; durationMs: number; deadlineMs: number }
+  | { kind: 'unusable_response'; operation: string; modelId?: string | undefined }
+  | { kind: 'escalated'; operation: string; modelId?: string | undefined; fromScore: number; toScore: number }
+  | { kind: 'fell_back_to_regex'; operation: string; modelId?: string | undefined };
+
+type DegradationObserver = (event: ParserDegradation) => void;
+
+let degradationObserver: DegradationObserver | null = null;
+
+/**
+ * Registers a listener for parser degradation, so the server can surface it (SSE,
+ * notifications) instead of leaving it in the logs. Wired in `main.ts`.
+ */
+export function onReleaseParserDegraded(observer: DegradationObserver | null): void {
+  degradationObserver = observer;
+}
+
+/** Warn once a call consumes this fraction of its deadline — the early-warning line. */
+const SLOW_CALL_FRACTION = 0.6;
+
+function reportDegradation(event: ParserDegradation): void {
+  const model = event.modelId ?? 'unknown model';
+  switch (event.kind) {
+    case 'provider_error':
+      console.error(
+        `[ReleaseParser] ${event.operation}: provider rejected the request for "${model}" — ` +
+          `${event.message}. If this model was retired or renamed, set OPENROUTER_MODEL to a ` +
+          `current one. Parsing is degraded to the regex fallback until this is fixed.`,
+      );
+      break;
+    case 'timeout':
+      console.error(
+        `[ReleaseParser] ${event.operation}: "${model}" exceeded its ${event.deadlineMs}ms ` +
+          `deadline. Parsing is degraded. Raise the deadline or choose a faster model.`,
+      );
+      break;
+    case 'slow_call':
+      console.warn(
+        `[ReleaseParser] ${event.operation}: "${model}" took ${event.durationMs}ms of a ` +
+          `${event.deadlineMs}ms deadline. It is close to timing out; if it crosses the line ` +
+          `every call will silently fall back to regex.`,
+      );
+      break;
+    case 'unusable_response':
+      console.error(
+        `[ReleaseParser] ${event.operation}: "${model}" returned a response no result could be ` +
+          `attributed from. Parsing is degraded for this request.`,
+      );
+      break;
+    case 'escalated':
+      console.warn(
+        `[ReleaseParser] ${event.operation}: retrying with min_coding_score ` +
+          `${event.fromScore} → ${event.toScore} after a failed attempt on "${model}".`,
+      );
+      break;
+    case 'fell_back_to_regex':
+      console.error(
+        `[ReleaseParser] ${event.operation}: all attempts failed for "${model}"; returning ` +
+          `regex-only output. Release matching quality is reduced.`,
+      );
+      break;
+  }
+  // An observer must never be able to break parsing.
+  try {
+    degradationObserver?.(event);
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Classifies a thrown provider error so timeouts read differently from rejections. */
+function reportThrown(error: unknown, operation: string, modelId: string | undefined, deadlineMs: number): void {
+  const name = (error as { name?: string } | null)?.name;
+  const message = error instanceof Error ? error.message : String(error);
+  if (name === 'TimeoutError' || name === 'AbortError' || /abort|timeout/i.test(message)) {
+    reportDegradation({ kind: 'timeout', operation, modelId, deadlineMs });
+  } else {
+    reportDegradation({ kind: 'provider_error', operation, modelId, message });
+  }
+}
+
+/** Emits a slow-call warning when a successful call ate most of its deadline. */
+function reportIfSlow(durationMs: number, deadlineMs: number, operation: string, modelId?: string): void {
+  if (durationMs >= deadlineMs * SLOW_CALL_FRACTION) {
+    reportDegradation({ kind: 'slow_call', operation, modelId, durationMs, deadlineMs });
+  }
+}
+
 // ── Service ──────────────────────────────────────────────────────────────────
 
 class ReleaseParserService {
@@ -356,28 +464,64 @@ class ReleaseParserService {
 
     const delays = [1000, 2000];
     const { parseTimeoutMs } = resolveReleaseParserRuntimeConfig();
+    const baseScore = aiConfig.minCodingScore;
 
     for (let attempt = 0; attempt <= delays.length; attempt++) {
+      // Escalate the router's quality dial on each retry. A retry means the cheap tier
+      // errored, timed out, or returned something unusable — repeating the identical
+      // request just buys the same failure, so each attempt buys a stronger model.
+      // Steady-state cost stays at the floor because attempt 0 never escalates.
+      let attemptConfig = aiConfig;
+      if (attempt > 0 && baseScore !== undefined) {
+        const toScore = clampCodingScore(baseScore + attempt * RETRY_SCORE_STEP);
+        reportDegradation({
+          kind: 'escalated',
+          operation: 'parse',
+          modelId: aiConfig.modelId,
+          fromScore: baseScore,
+          toScore,
+        });
+        attemptConfig = resolveReleaseParserAiConfig(toScore);
+      }
+
+      const startedAt = Date.now();
       try {
         // Use Output.json() to avoid provider-side schema enforcement on nullable fields.
         // Validate the returned JSON ourselves with Zod's .catch() fallbacks.
         const { output } = await generateText({
-          model: aiConfig.model!,
+          model: attemptConfig.model!,
           output: Output.json(),
+          // Pinned to 0: this output drives auto-grab decisions, so run-to-run
+          // variance is a correctness risk, not just noise. Measured 2026-07-28 —
+          // without it, per-field accuracy moved between identical runs.
+          temperature: 0,
           prompt: PARSE_PROMPT(title),
           ...(aiConfig.providerOptions ? { providerOptions: aiConfig.providerOptions } : {}),
           abortSignal: AbortSignal.timeout(parseTimeoutMs),
         });
 
+        reportIfSlow(Date.now() - startedAt, parseTimeoutMs, 'parse', attemptConfig.modelId);
+
         const parsed = ParsedReleaseSchema.safeParse(output);
         if (parsed.success) return parsed.data;
-      } catch {
-        if (attempt < delays.length) {
-          await new Promise(resolve => setTimeout(resolve, delays[attempt]!));
-        }
+        reportDegradation({
+          kind: 'unusable_response',
+          operation: 'parse',
+          modelId: attemptConfig.modelId,
+        });
+      } catch (error) {
+        reportThrown(error, 'parse', attemptConfig.modelId, parseTimeoutMs);
+      }
+      if (attempt < delays.length) {
+        await new Promise(resolve => setTimeout(resolve, delays[attempt]!));
       }
     }
 
+    reportDegradation({
+      kind: 'fell_back_to_regex',
+      operation: 'parse',
+      modelId: aiConfig.modelId,
+    });
     return regexFallback(title);
   }
 
@@ -399,23 +543,63 @@ class ReleaseParserService {
 
     const { batchTimeoutMs } = resolveReleaseParserRuntimeConfig();
     const contextBlock = this._buildContextBlock(context);
+    const baseScore = aiConfig.minCodingScore;
+    // One escalated retry, but only when there is a quality dial to escalate. Against
+    // a fixed model a retry would just repeat the same request at the same cost.
+    const maxAttempts = baseScore === undefined ? 1 : 2;
 
-    try {
-      const { output } = await generateText({
-        model: aiConfig.model!,
-        output: Output.json(),
-        prompt: BATCH_PROMPT(titles, contextBlock),
-        ...(aiConfig.providerOptions ? { providerOptions: aiConfig.providerOptions } : {}),
-        abortSignal: AbortSignal.timeout(batchTimeoutMs),
-      });
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      let attemptConfig = aiConfig;
+      if (attempt > 0 && baseScore !== undefined) {
+        const toScore = clampCodingScore(baseScore + attempt * RETRY_SCORE_STEP);
+        reportDegradation({
+          kind: 'escalated',
+          operation: 'parseBatch',
+          modelId: aiConfig.modelId,
+          fromScore: baseScore,
+          toScore,
+        });
+        attemptConfig = resolveReleaseParserAiConfig(toScore);
+      }
 
-      const parsed = BatchResponseSchema.safeParse(output);
-      if (!parsed.success) return emptySlots();
+      const startedAt = Date.now();
+      try {
+        const { output } = await generateText({
+          model: attemptConfig.model!,
+          output: Output.json(),
+          // Pinned to 0 — see the note in _parseSingle.
+          temperature: 0,
+          prompt: BATCH_PROMPT(titles, contextBlock),
+          ...(attemptConfig.providerOptions
+            ? { providerOptions: attemptConfig.providerOptions }
+            : {}),
+          abortSignal: AbortSignal.timeout(batchTimeoutMs),
+        });
+        reportIfSlow(Date.now() - startedAt, batchTimeoutMs, 'parseBatch', attemptConfig.modelId);
 
-      return assignBatchSlots(titles.length, parsed.data.results);
-    } catch {
-      return emptySlots();
+        const parsed = BatchResponseSchema.safeParse(output);
+        if (parsed.success) {
+          const slots = assignBatchSlots(titles.length, parsed.data.results);
+          // A response that attributed nothing is unusable; escalate rather than
+          // hand every release back to Levenshtein scoring.
+          if (slots.some(slot => slot !== null)) return slots;
+        }
+        reportDegradation({
+          kind: 'unusable_response',
+          operation: 'parseBatch',
+          modelId: attemptConfig.modelId,
+        });
+      } catch (error) {
+        reportThrown(error, 'parseBatch', attemptConfig.modelId, batchTimeoutMs);
+      }
     }
+
+    reportDegradation({
+      kind: 'fell_back_to_regex',
+      operation: 'parseBatch',
+      modelId: aiConfig.modelId,
+    });
+    return emptySlots();
   }
 
   // parseFiles() — batch parse file paths (relative to scan root), no relevance scoring
@@ -451,6 +635,10 @@ class ReleaseParserService {
         const { output } = await generateText({
           model: aiConfig.model!,
           output: Output.json(),
+          // Pinned to 0: this output drives auto-grab decisions, so run-to-run
+          // variance is a correctness risk, not just noise. Measured 2026-07-28 —
+          // without it, per-field accuracy moved between identical runs.
+          temperature: 0,
           prompt: FILES_PROMPT(batch),
           ...(aiConfig.providerOptions ? { providerOptions: aiConfig.providerOptions } : {}),
           abortSignal: AbortSignal.timeout(filesTimeoutMs),

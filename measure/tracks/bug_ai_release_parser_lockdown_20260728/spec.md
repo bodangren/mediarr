@@ -107,13 +107,53 @@ A committed fixture of real release titles with hand-verified expected parses.
   future `OPENROUTER_MODEL` override that reintroduces this defect is visible rather
   than silent.
 
-### FR-4 — Pin a model that fits inside its deadline
+### FR-4 — Default to a model that fits inside its deadline
 
-- `DEFAULT_OPENROUTER_MODEL` becomes `google/gemini-2.5-flash-lite`.
+> **AMENDED 2026-07-28 (during implementation).** This FR originally read "Pin
+> `google/gemini-2.5-flash-lite`", and was implemented that way in commit `acc62f5`.
+> The user rejected pinning on longevity grounds: a pinned model is eventually
+> retired, and at that point OpenRouter errors, `parseBatch` returns all-null slots,
+> and the app degrades **silently** — the exact failure this track exists to kill.
+> That objection was correct and the original FR under-weighted it. The default is now
+> a router. `openrouter/auto` was re-rejected (measured $4.41/1000 titles); the
+> alternative of a pinned model plus an explicit fallback chain was offered and the
+> user chose the router. See FR-8 for the failure-signal work this made necessary.
+
+- `DEFAULT_OPENROUTER_MODEL` becomes `openrouter/pareto-code`, a router, so the parser
+  survives retirement of any individual model.
+- The router's `min_coding_score` (0–1 quality/cost dial) is sent explicitly on every
+  request rather than left to the router's default, and defaults to the measured floor.
+- Abort deadlines are raised to fit the router's measured latency with real headroom,
+  since a router's backing model can change beneath a stable id.
 - `.env.example` is updated: the `openrouter/free` gateway default is removed as a
   documented default, since it measured 31–35s against a 20s deadline **and** the
   localhost gateway it points at is not running.
-- `OPENROUTER_MODEL` remains an override; pinning changes the default only.
+- `OPENROUTER_MODEL` remains an override; this changes the default only.
+
+### FR-8 — Cost-aware quality escalation *(added 2026-07-28)*
+
+- Every request states its cost/quality preference explicitly via `min_coding_score`.
+- The default is the **measured cheapest rung that parses correctly**, not a guess.
+- On retry — meaning the cheap tier errored, timed out, or returned an unusable
+  response — the dial rises by a fixed step so each attempt buys a stronger model
+  instead of repeating the same failing request. Steady-state cost stays at the floor.
+- Rationale: a sweep over the dial found every rung parsed the probe set correctly
+  while cost varied 12.9×, so paying for quality up front buys nothing; paying for it
+  only on failure buys recovery.
+
+### FR-9 — Degradation must be loud *(added 2026-07-28)*
+
+Provider errors, timeouts, unusable responses, escalations, and regex fallback were
+all silent. A retired, rate-limited, or too-slow model was indistinguishable from a
+healthy one — which is precisely why the original defect survived unnoticed.
+
+- Each of those events logs an explicit, actionable error or warning.
+- A call that consumes ≥60% of its deadline emits an early warning, so drift toward
+  the timeout is visible *before* it starts failing. This is the durable guard for a
+  router, whose backing model can change without the model id changing.
+- Events are published to `ApiEventHub` as `parser:degraded` so the SSE/notification
+  surface can show them.
+- An observer that throws must never break parsing.
 
 ### FR-5 — Live accuracy benchmark
 

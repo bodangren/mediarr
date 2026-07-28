@@ -83,9 +83,31 @@
     - [x] Turn Phase 4 tests green
     - [x] Re-run the full `ReleaseParser.test.ts` suite — the existing serial-ordering tests must be reconciled deliberately, not deleted
 
+## Phase 5b: Router Migration, Escalation & Loud Failure (FR-4 amended, FR-8, FR-9)
+
+> Added 2026-07-28 mid-implementation. The user rejected model pinning on longevity
+> grounds after Phase 3 had already shipped the pin (`acc62f5`). See the amendment note
+> on FR-4 in spec.md.
+
+- [x] Task: Switch the default from a pinned model to the pareto router
+    - [x] `DEFAULT_OPENROUTER_MODEL` → `openrouter/pareto-code`
+    - [x] Attach the `pareto-router` plugin with an explicit `min_coding_score` via `extraBody`
+    - [x] Raise deadlines for router latency (parse 30s, batch 60s, files 90s)
+- [x] Task: Measure the quality/cost dial and default to the cheapest correct rung
+    - [x] Sweep `min_coding_score` 0/0.25/0.5/0.75/1 against real titles, recording routed model, latency, cost, exactness
+    - [x] Default to the measured floor (0) and pin the table in source
+- [x] Task: Escalate quality on retry (FR-8)
+    - [x] `_parseSingle` raises the dial by `RETRY_SCORE_STEP` per attempt
+    - [x] `parseBatch` performs one escalated retry on error or unusable response
+- [x] Task: Make degradation loud (FR-9)
+    - [x] `ParserDegradation` union + `onReleaseParserDegraded` observer
+    - [x] Classify timeouts vs provider errors; warn at ≥60% of deadline
+    - [x] Publish `parser:degraded` from `main.ts` via `ApiEventHub`
+- [ ] Task: Tests for the router, escalation, and degradation reporting
+
 ## Phase 5: Live Accuracy Benchmark (FR-5)
 
-- [ ] Task: Build the env-gated benchmark script
+- [x] Task: Build the env-gated benchmark script
     - [ ] Create `scripts/benchmark-release-parser.ts`, gated on `RELEASE_PARSER_BENCHMARK=true`
     - [ ] Use dynamic `import()` for anything under `server/` (tech-debt row 2026-07-27: static `scripts/` → `server/` imports break at runtime)
     - [ ] Report per-field accuracy, latency, token cost, JSON validity, alignment

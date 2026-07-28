@@ -85,6 +85,7 @@ import { SeedingProtector } from './services/SeedingProtector';
 import { SystemHealthService } from './services/SystemHealthService';
 import { UpdateService } from './services/updates/UpdateService';
 import { ApiEventHub } from './api/eventHub';
+import { onReleaseParserDegraded } from './services/ReleaseParser';
 
 function parsePort(rawPort: string | undefined, fallback: number): number {
   if (!rawPort) {
@@ -203,6 +204,15 @@ async function startApi(): Promise<void> {
 
   // Create the event hub early so NotificationDispatchService can publish to it
   const eventHub = new ApiEventHub();
+
+  // Surface AI release-parser degradation instead of letting it hide. Every one of
+  // these events used to be swallowed: the parser returned regex output or empty
+  // slots, so a retired, rate-limited, or too-slow model was indistinguishable from a
+  // healthy one. That is how the shipped default went 4-6x over its own abort deadline
+  // without anyone noticing.
+  onReleaseParserDegraded(event => {
+    eventHub.publish('parser:degraded', event);
+  });
 
   const notificationDispatchService = new NotificationDispatchService(
     eventHub,

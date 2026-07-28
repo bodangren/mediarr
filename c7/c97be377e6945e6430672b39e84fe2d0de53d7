@@ -1,0 +1,38 @@
+Task: Define the indexed batch-response contract (Phase 1, FR-2)
+
+Files modified:
+- server/src/services/ReleaseParser.ts
+
+Summary:
+Added IndexedParsedReleaseSchema (ParsedReleaseWithScoreSchema plus a
+nullable 1-based 'index'), rewired BatchResponseSchema to use it, exported
+the IndexedParsedRelease and BatchParseSlot types, and rewrote the tail of
+BATCH_PROMPT to require the index echo on every entry.
+
+Why:
+MediaSearchService.ts:580 zips parseBatch output onto releases by array
+position. If the model drops title #3 of 8, results 4-8 shift up one slot
+and five releases receive another release's parse. That parse's
+relevanceScore is used directly as confidenceScore in
+CustomFormatScoringEngine.scoreCandidateUnified(), and both RssMediaMonitor
+and WantedSearchService auto-grab at totalScore >= 50 - so the failure mode
+is an automatic download of the wrong release, not a cosmetic display bug.
+Truncation was reproduced live on two separate models, so this is an
+observed defect rather than a theoretical one.
+
+Design notes:
+- index is .nullable().catch(null), not required. A model that ignores the
+  instruction must degrade to the existing strict-length positional path,
+  not fail the whole batch. Fail-soft on the instruction, fail-closed on
+  the attribution.
+- BatchParseSlot documents the contract change explicitly: the returned
+  array is always titles.length long and slots may be null. Callers must
+  stop assuming a populated slot.
+- parseFiles() already carries the length guard parseBatch lacks
+  (ReleaseParser.ts:337). The Phase 3 implementation follows that
+  in-file precedent rather than inventing a new shape.
+- Prompt wording tells the model to emit an entry even for titles it cannot
+  parse, so truncation becomes rarer as well as harmless.
+
+Verification: npx tsc -p server/tsconfig.json --noEmit -> 0 diagnostics.
+Contract only; parseBatch still zips positionally until Phase 3.

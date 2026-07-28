@@ -1,0 +1,9 @@
+{
+  "id": "feature_trailer_acquisition_tmdb_20260729",
+  "title": "Trailer Acquisition via TMDB",
+  "status": "pending",
+  "created": "2026-07-29",
+  "priority": "medium",
+  "deviation_notes": "Specced from the Candidate Tracks entry (2026-07-26 sister-project idea scan). Claims re-verified against source on 2026-07-29: zero occurrences of `trailer` in server/src; TMDB integration already exists in server/src/services/MetadataProvider.ts (API key from settings.apiKeys.tmdbApiKey, movieBaseUrl-based calls).",
+  "updated": "2026-07-29"
+}

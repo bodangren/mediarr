@@ -1,6 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { releaseParser, ParsedReleaseSchema, ParsedReleaseWithScoreSchema } from './ReleaseParser';
 import type { ParsedRelease, ParsedReleaseWithScore, SearchContext } from './ReleaseParser';
+import {
+  DEFAULT_PARSE_TIMEOUT_MS,
+  DEFAULT_BATCH_TIMEOUT_MS,
+  DEFAULT_FILES_TIMEOUT_MS,
+} from './ReleaseParserProvider';
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
 
@@ -267,12 +272,14 @@ describe('ReleaseParser — parseBatch()', () => {
     expect(output[0]!.relevanceScore).toBeGreaterThan(output[1]!.relevanceScore);
   });
 
-  it('returns [] when OPENROUTER_API_KEY is absent', async () => {
+  // Contract change (FR-2): parseBatch always returns exactly titles.length slots.
+  // A total failure is "every slot unattributed", i.e. [null], not [].
+  it('returns an all-null slot array when OPENROUTER_API_KEY is absent', async () => {
     vi.unstubAllEnvs();
     vi.stubEnv('OPENROUTER_API_KEY', '');
 
     const output = await releaseParser.parseBatch(['Some.Show.S01.mkv']);
-    expect(output).toEqual([]);
+    expect(output).toEqual([null]);
     expect(mockGenerateText).not.toHaveBeenCalled();
   });
 
@@ -297,11 +304,11 @@ describe('ReleaseParser — parseBatch()', () => {
     expect(mockGenerateText).not.toHaveBeenCalled();
   });
 
-  it('returns [] when generateText throws', async () => {
+  it('returns an all-null slot array when generateText throws', async () => {
     mockGenerateText.mockRejectedValueOnce(new Error('timeout'));
 
     const output = await releaseParser.parseBatch(['Some.Show.S01E01.mkv']);
-    expect(output).toEqual([]);
+    expect(output).toEqual([null]);
   });
 
   it('includes context block in prompt when context is provided', async () => {
@@ -316,6 +323,229 @@ describe('ReleaseParser — parseBatch()', () => {
     expect(callArgs.prompt).toContain('Breaking Bad');
     expect(callArgs.prompt).toContain('Season: 3');
     expect(callArgs.prompt).toContain('1080p');
+  });
+});
+
+// ── FR-2: batch alignment ────────────────────────────────────────────────────
+//
+// parseBatch results were matched to input titles by array position. A live probe on
+// 2026-07-28 saw mistral-nemo return 7 results for 8 titles (twice) and
+// openrouter/free return 6 for 8. With a positional zip, dropping title #3 shifts
+// results 4-8 up one slot, so five releases receive another release's parse — and
+// relevanceScore feeds CustomFormatScoringEngine, which auto-grabs at a total of 50.
+// The failure mode is downloading the wrong release, so these tests assert
+// attribution, not merely array length.
+describe('ReleaseParser — parseBatch() alignment', () => {
+  /** Eight distinguishable titles; the Nth title parses to title "Show N". */
+  const EIGHT_TITLES = [
+    'Show.One.S01E01.1080p.WEB-DL.x264-GRP',
+    'Show.Two.S02.1080p.BluRay.x265-GRP',
+    'Show.Three.S03E07.720p.HDTV.x264-GRP',
+    'Show.Four.Complete.Series.1080p.BluRay-GRP',
+    'Show.Five.S05E01E02.1080p.AMZN.WEB-DL-GRP',
+    'Show.Six.S06.2160p.NF.WEB-DL.HEVC-GRP',
+    'Show.Seven.S07E12.1080p.WEBRip-GRP',
+    'Show.Eight.S08E03.480p.DVDRip.XviD-GRP',
+  ];
+
+  /** A scored result tagged with the 1-based index it claims to belong to. */
+  function indexed(index: number | null, name: string, overrides: Partial<ParsedReleaseWithScore> = {}) {
+    return { ...makeScored({ title: name, ...overrides }), index };
+  }
+
+  beforeEach(() => {
+    vi.unstubAllEnvs();
+    vi.stubEnv('OPENROUTER_API_KEY', 'test-key');
+    mockGenerateText.mockReset();
+    mockCreateOpenAI.mockClear();
+    mockCreateOpenRouter.mockClear();
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it('attributes each parse to its own title when the model truncates (7 of 8)', async () => {
+    // The model drops title 3 but correctly indexes everything it did return.
+    const results = [
+      indexed(1, 'Show One'),
+      indexed(2, 'Show Two'),
+      indexed(4, 'Show Four'),
+      indexed(5, 'Show Five'),
+      indexed(6, 'Show Six'),
+      indexed(7, 'Show Seven'),
+      indexed(8, 'Show Eight'),
+    ];
+    mockGenerateText.mockResolvedValueOnce(makeTextResult({ results }) as never);
+
+    const output = await releaseParser.parseBatch(EIGHT_TITLES);
+
+    expect(output).toHaveLength(8);
+    expect(output[0]?.title).toBe('Show One');
+    expect(output[1]?.title).toBe('Show Two');
+    // The dropped title must be an empty slot, NOT the next result shifted up.
+    expect(output[2]).toBeNull();
+    expect(output[3]?.title).toBe('Show Four');
+    expect(output[4]?.title).toBe('Show Five');
+    expect(output[5]?.title).toBe('Show Six');
+    expect(output[6]?.title).toBe('Show Seven');
+    expect(output[7]?.title).toBe('Show Eight');
+  });
+
+  it('attributes correctly when the model returns results out of order', async () => {
+    const results = [
+      indexed(3, 'Show Three'),
+      indexed(1, 'Show One'),
+      indexed(8, 'Show Eight'),
+      indexed(2, 'Show Two'),
+      indexed(5, 'Show Five'),
+      indexed(4, 'Show Four'),
+      indexed(7, 'Show Seven'),
+      indexed(6, 'Show Six'),
+    ];
+    mockGenerateText.mockResolvedValueOnce(makeTextResult({ results }) as never);
+
+    const output = await releaseParser.parseBatch(EIGHT_TITLES);
+
+    expect(output.map(slot => slot?.title)).toEqual([
+      'Show One', 'Show Two', 'Show Three', 'Show Four',
+      'Show Five', 'Show Six', 'Show Seven', 'Show Eight',
+    ]);
+  });
+
+  it('discards both results when an index is duplicated', async () => {
+    // A duplicate index makes attribution ambiguous. Guessing risks assigning the
+    // wrong parse, so both claimants are dropped and the slot stays empty.
+    const results = [
+      indexed(1, 'Show One'),
+      indexed(2, 'Ambiguous A'),
+      indexed(2, 'Ambiguous B'),
+      indexed(3, 'Show Three'),
+    ];
+    mockGenerateText.mockResolvedValueOnce(makeTextResult({ results }) as never);
+
+    const output = await releaseParser.parseBatch(EIGHT_TITLES.slice(0, 3));
+
+    expect(output).toHaveLength(3);
+    expect(output[0]?.title).toBe('Show One');
+    expect(output[1]).toBeNull();
+    expect(output[2]?.title).toBe('Show Three');
+  });
+
+  it.each([
+    ['zero (indices are 1-based)', 0],
+    ['negative', -1],
+    ['past the end of the input', 9],
+  ])('discards a result whose index is %s', async (_label, badIndex) => {
+    const results = [
+      indexed(1, 'Show One'),
+      indexed(badIndex, 'Bogus'),
+      indexed(3, 'Show Three'),
+    ];
+    mockGenerateText.mockResolvedValueOnce(makeTextResult({ results }) as never);
+
+    const output = await releaseParser.parseBatch(EIGHT_TITLES.slice(0, 3));
+
+    expect(output).toHaveLength(3);
+    expect(output[0]?.title).toBe('Show One');
+    expect(output[1]).toBeNull();
+    expect(output[2]?.title).toBe('Show Three');
+    // The bogus result must not land anywhere at all.
+    expect(output.some(slot => slot?.title === 'Bogus')).toBe(false);
+  });
+
+  it('rejects the whole batch when results carry no index and the count is short', async () => {
+    // No index to match on and a length mismatch means every position is suspect.
+    // Fail closed: this mirrors the guard parseFiles() has always had.
+    const results = [
+      indexed(null, 'Show One'),
+      indexed(null, 'Show Two'),
+      indexed(null, 'Show Three'),
+    ];
+    mockGenerateText.mockResolvedValueOnce(makeTextResult({ results }) as never);
+
+    const output = await releaseParser.parseBatch(EIGHT_TITLES);
+
+    expect(output).toHaveLength(8);
+    expect(output.every(slot => slot === null)).toBe(true);
+  });
+
+  it('honours positional order when results carry no index but the count matches exactly', async () => {
+    // Backwards compatibility: a model that ignores the index instruction but returns
+    // one entry per title is still trustworthy, because nothing can have shifted.
+    const results = EIGHT_TITLES.map((_, i) => indexed(null, `Show ${i + 1}`));
+    mockGenerateText.mockResolvedValueOnce(makeTextResult({ results }) as never);
+
+    const output = await releaseParser.parseBatch(EIGHT_TITLES);
+
+    expect(output.map(slot => slot?.title)).toEqual([
+      'Show 1', 'Show 2', 'Show 3', 'Show 4', 'Show 5', 'Show 6', 'Show 7', 'Show 8',
+    ]);
+  });
+
+  it('rejects extra results the model invented beyond the input length', async () => {
+    const results = [
+      indexed(1, 'Show One'),
+      indexed(2, 'Show Two'),
+      indexed(3, 'Hallucinated'),
+    ];
+    mockGenerateText.mockResolvedValueOnce(makeTextResult({ results }) as never);
+
+    const output = await releaseParser.parseBatch(EIGHT_TITLES.slice(0, 2));
+
+    expect(output).toHaveLength(2);
+    expect(output[0]?.title).toBe('Show One');
+    expect(output[1]?.title).toBe('Show Two');
+  });
+});
+
+// ── FR-3: configurable abort deadlines ───────────────────────────────────────
+describe('ReleaseParser — abort deadlines', () => {
+  let timeoutSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    vi.unstubAllEnvs();
+    vi.stubEnv('OPENROUTER_API_KEY', 'test-key');
+    mockGenerateText.mockReset();
+    timeoutSpy = vi.spyOn(AbortSignal, 'timeout');
+  });
+
+  afterEach(() => {
+    timeoutSpy.mockRestore();
+    vi.unstubAllEnvs();
+  });
+
+  it('uses the configured batch deadline, not a hardcoded 20s', async () => {
+    mockGenerateText.mockResolvedValueOnce(makeTextResult({ results: [] }) as never);
+
+    await releaseParser.parseBatch(['Some.Show.S01E01.mkv']);
+
+    expect(timeoutSpy).toHaveBeenCalledWith(DEFAULT_BATCH_TIMEOUT_MS);
+  });
+
+  it('honours RELEASE_PARSER_BATCH_TIMEOUT_MS', async () => {
+    vi.stubEnv('RELEASE_PARSER_BATCH_TIMEOUT_MS', '55000');
+    mockGenerateText.mockResolvedValueOnce(makeTextResult({ results: [] }) as never);
+
+    await releaseParser.parseBatch(['Some.Show.S01E01.mkv']);
+
+    expect(timeoutSpy).toHaveBeenCalledWith(55000);
+  });
+
+  it('uses the configured single-parse deadline', async () => {
+    mockGenerateText.mockResolvedValueOnce(makeTextResult(makeParsed()) as never);
+
+    await releaseParser.parse('Some.Show.S01E01.mkv');
+
+    expect(timeoutSpy).toHaveBeenCalledWith(DEFAULT_PARSE_TIMEOUT_MS);
+  });
+
+  it('uses the configured files deadline', async () => {
+    mockGenerateText.mockResolvedValueOnce(makeTextResult({ results: [] }) as never);
+
+    await releaseParser.parseFiles(['Some/Show/S01E01.mkv']);
+
+    expect(timeoutSpy).toHaveBeenCalledWith(DEFAULT_FILES_TIMEOUT_MS);
   });
 });
 

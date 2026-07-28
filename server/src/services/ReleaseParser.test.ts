@@ -5,6 +5,7 @@ import {
   DEFAULT_PARSE_TIMEOUT_MS,
   DEFAULT_BATCH_TIMEOUT_MS,
   DEFAULT_FILES_TIMEOUT_MS,
+  DEFAULT_MAX_CONCURRENCY,
 } from './ReleaseParserProvider';
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
@@ -184,7 +185,14 @@ describe('ReleaseParser — parse()', () => {
     expect(result?.episodeNumbers).toEqual([1, 2, 3]);
   });
 
-  it('serial queue — second call waits for first', async () => {
+  // Reconciled from 'serial queue — second call waits for first' (FR-7). Strict
+  // serialisation was never a requirement — it was rate-limit caution, and it cost
+  // ~48s per title against the old timed-out model, so a 25-release
+  // WantedSearchService filter stalled for ~20 minutes. The ordering guarantee is
+  // still real and still tested, but now only where it is actually promised: at
+  // maxConcurrency=1.
+  it('processes calls in order when maxConcurrency is 1', async () => {
+    vi.stubEnv('RELEASE_PARSER_MAX_CONCURRENCY', '1');
     const order: number[] = [];
     mockGenerateText
       .mockImplementationOnce(async () => {
@@ -324,6 +332,93 @@ describe('ReleaseParser — parseBatch()', () => {
     expect(callArgs.prompt).toContain('Season: 3');
     expect(callArgs.prompt).toContain('1080p');
   });
+});
+
+// ── FR-7: bounded concurrency ────────────────────────────────────────────────
+describe('ReleaseParser — parse() concurrency', () => {
+  beforeEach(() => {
+    vi.unstubAllEnvs();
+    vi.stubEnv('OPENROUTER_API_KEY', 'test-key');
+    mockGenerateText.mockReset();
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it('never exceeds the configured concurrency bound', async () => {
+    let inFlight = 0;
+    let peak = 0;
+    mockGenerateText.mockImplementation(async () => {
+      inFlight++;
+      peak = Math.max(peak, inFlight);
+      await new Promise(r => setTimeout(r, 10));
+      inFlight--;
+      return makeTextResult(makeParsed()) as never;
+    });
+
+    await Promise.all(
+      Array.from({ length: 10 }, (_, i) => releaseParser.parse(`Show.S01E${i + 1}.mkv`)),
+    );
+
+    expect(peak).toBeLessThanOrEqual(DEFAULT_MAX_CONCURRENCY);
+    expect(mockGenerateText).toHaveBeenCalledTimes(10);
+  });
+
+  it('actually overlaps calls rather than serialising them', async () => {
+    // Guards against a regression to the old serial queue: with a bound of 4, ten
+    // 10ms calls must not take ten sequential slots.
+    let peak = 0;
+    let inFlight = 0;
+    mockGenerateText.mockImplementation(async () => {
+      inFlight++;
+      peak = Math.max(peak, inFlight);
+      await new Promise(r => setTimeout(r, 10));
+      inFlight--;
+      return makeTextResult(makeParsed()) as never;
+    });
+
+    await Promise.all(
+      Array.from({ length: 10 }, (_, i) => releaseParser.parse(`Show.S01E${i + 1}.mkv`)),
+    );
+
+    expect(peak).toBeGreaterThan(1);
+  });
+
+  it('gives every concurrent caller its own result', async () => {
+    mockGenerateText.mockImplementation(async (args: unknown) => {
+      const { prompt } = args as { prompt: string };
+      const match = prompt.match(/Show(\w+)\.S01E01/);
+      await new Promise(r => setTimeout(r, Math.random() * 10));
+      return makeTextResult(makeParsed({ title: `Show${match?.[1] ?? '?'}` })) as never;
+    });
+
+    const names = ['Alpha', 'Bravo', 'Charlie', 'Delta', 'Echo', 'Foxtrot'];
+    const results = await Promise.all(
+      names.map(n => releaseParser.parse(`Show${n}.S01E01.1080p.mkv`)),
+    );
+
+    expect(results.map(r => r?.title)).toEqual(names.map(n => `Show${n}`));
+  });
+
+  it('one failing call falls back to regex without poisoning its siblings', async () => {
+    mockGenerateText.mockImplementation(async (args: unknown) => {
+      const { prompt } = args as { prompt: string };
+      if (prompt.includes('Poison.Pill')) throw new Error('provider exploded');
+      return makeTextResult(makeParsed({ title: 'Healthy' })) as never;
+    });
+
+    const [bad, good] = await Promise.all([
+      releaseParser.parse('Poison.Pill.S09E09.mkv'),
+      releaseParser.parse('Healthy.Show.S01E01.mkv'),
+    ]);
+
+    // The failing call exhausts its retries and lands on the regex fallback.
+    expect(bad?.title).toBe('Poison Pill');
+    expect(bad?.seasonNumber).toBe(9);
+    // The sibling is unaffected.
+    expect(good?.title).toBe('Healthy');
+  }, 15000);
 });
 
 // ── FR-2: batch alignment ────────────────────────────────────────────────────

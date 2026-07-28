@@ -303,28 +303,50 @@ export function assignBatchSlots(
 // ── Service ──────────────────────────────────────────────────────────────────
 
 class ReleaseParserService {
-  private queue: Promise<void> = Promise.resolve();
+  private active = 0;
+  private waiting: Array<() => void> = [];
 
-  // parse() — single title, serial queue, regex fallback on failure
+  /** Waits until fewer than `limit` calls are in flight, then claims a slot. */
+  private async acquire(limit: number): Promise<void> {
+    // `while`, not `if`: a released slot can be raced for by several waiters, so
+    // each must re-check the bound after waking rather than assume it won.
+    while (this.active >= limit) {
+      await new Promise<void>(resolve => this.waiting.push(resolve));
+    }
+    this.active++;
+  }
+
+  private release(): void {
+    this.active--;
+    this.waiting.shift()?.();
+  }
+
+  /**
+   * Parses a single title, with a regex fallback on failure.
+   *
+   * Calls are bounded by `RELEASE_PARSER_MAX_CONCURRENCY` (default 4) rather than
+   * fully serialised. The previous implementation chained every call onto one
+   * promise queue; with a model that times out, each title cost ~48s (3 attempts plus
+   * backoff) and could not overlap, so `WantedSearchService` filtering 25 candidate
+   * releases stalled for roughly 20 minutes on a single search. A bound keeps the
+   * original rate-limit protection without the serialisation cost. Set the bound to 1
+   * to restore strict ordering.
+   */
   async parse(title: string): Promise<ParsedRelease | null> {
     const aiConfig = resolveReleaseParserAiConfig();
     if (!aiConfig.enabled) {
       return regexFallback(title);
     }
 
-    let resultResolve!: (value: ParsedRelease | null) => void;
-    const resultPromise = new Promise<ParsedRelease | null>(resolve => {
-      resultResolve = resolve;
-    });
-
-    // Serial queue: each call waits for the previous to finish.
-    // The .catch at the tail keeps the chain alive across failures.
-    this.queue = this.queue
-      .then(() => this._parseSingle(title, aiConfig))
-      .then(result => resultResolve(result))
-      .catch(() => resultResolve(regexFallback(title)));
-
-    return resultPromise;
+    const { maxConcurrency } = resolveReleaseParserRuntimeConfig();
+    await this.acquire(maxConcurrency);
+    try {
+      return await this._parseSingle(title, aiConfig);
+    } catch {
+      return regexFallback(title);
+    } finally {
+      this.release();
+    }
   }
 
   private async _parseSingle(title: string, aiConfig = resolveReleaseParserAiConfig()): Promise<ParsedRelease | null> {

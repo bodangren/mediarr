@@ -11,6 +11,10 @@ const rootPackage = JSON.parse(
 const lockfile = JSON.parse(
   fs.readFileSync(path.join(REPO_ROOT, 'package-lock.json'), 'utf8'),
 );
+const appPackage = JSON.parse(
+  fs.readFileSync(path.join(REPO_ROOT, 'app/package.json'), 'utf8'),
+);
+const dockerignore = fs.readFileSync(path.join(REPO_ROOT, '.dockerignore'), 'utf8');
 
 function instructionIndex(pattern) {
   const match = pattern.exec(dockerfile);
@@ -127,6 +131,11 @@ describe('clean Docker workspace installation', () => {
       SPA_BUILD.test(install.text),
       'the install layer must not also run the SPA build',
     ).toBe(false);
+  });
+  it('uses the TypeScript Vite config and excludes stale generated config artifacts', () => {
+    expect(appPackage.scripts.build).toContain('vite build --config vite.config.ts');
+    expect(dockerignore).toMatch(/^app\/vite\.config\.js$/m);
+    expect(dockerignore).toMatch(/^app\/vite\.config\.d\.ts$/m);
   });
 
   it('never falls back to an unlocked install', () => {

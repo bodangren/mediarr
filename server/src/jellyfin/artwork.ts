@@ -27,6 +27,12 @@ export interface JellyfinArtworkSource {
   url: string;
   /** True when a season or episode inherits the series poster. */
   inherited: boolean;
+  /**
+   * Present when a requested Backdrop deliberately reuses persisted Primary
+   * artwork. Mediarr does not persist movie or series backdrop URLs, so this
+   * keeps the Jellyfin image surface useful without inventing a remote URL.
+   */
+  fallback?: 'primary';
 }
 
 export type JellyfinArtworkProxyResult =
@@ -99,24 +105,34 @@ export async function proxyJellyfinArtwork(
 function posterSource(
   record: { posterUrl?: string | null | undefined } | null,
   inherited: boolean,
+  fallback?: JellyfinArtworkSource['fallback'],
 ): JellyfinArtworkSource | null {
   const url = record?.posterUrl?.trim();
-  return url ? { url, inherited } : null;
+  return url ? { url, inherited, ...(fallback === undefined ? {} : { fallback }) } : null;
 }
 
 /**
- * Resolves a Primary poster for a Jellyfin item. Mediarr has no backdrop
- * column, so unsupported image types deliberately produce no fabricated art.
+ * Resolves artwork for a Jellyfin item using persisted poster URLs. Primary
+ * returns the poster directly. Mediarr has no movie or series backdrop URL,
+ * so Backdrop deliberately falls back to the same persisted Primary artwork;
+ * the returned source marks that choice for callers and tests. Other image
+ * types are unsupported rather than fabricated.
+ *
+ * Image resize query parameters belong to the HTTP route and are safely
+ * ignored there: this resolver only selects the source URL, and proxy URL
+ * allowlisting remains unchanged.
  */
 export async function resolveJellyfinArtworkSource(
   catalog: JellyfinCatalogRepository,
   rawItemId: string,
   imageType: string,
 ): Promise<JellyfinArtworkSource | null> {
-  if (imageType.trim().toLowerCase() !== 'primary') {
+  const normalizedImageType = imageType.trim().toLowerCase();
+  if (normalizedImageType !== 'primary' && normalizedImageType !== 'backdrop') {
     return null;
   }
 
+  const fallback = normalizedImageType === 'backdrop' ? 'primary' : undefined;
   const itemId = decodeJellyfinId(rawItemId);
   if (!itemId) {
     return null;
@@ -124,22 +140,22 @@ export async function resolveJellyfinArtworkSource(
 
   switch (itemId.kind) {
     case 'movie':
-      return posterSource(await catalog.findMovieById(itemId.id), false);
+      return posterSource(await catalog.findMovieById(itemId.id), false, fallback);
     case 'series':
-      return posterSource(await catalog.findSeriesById(itemId.id), false);
+      return posterSource(await catalog.findSeriesById(itemId.id), false, fallback);
     case 'season': {
       const season = await catalog.findSeasonById(itemId.id);
       if (!season) {
         return null;
       }
-      return posterSource(await catalog.findSeriesById(season.seriesId), true);
+      return posterSource(await catalog.findSeriesById(season.seriesId), true, fallback);
     }
     case 'episode': {
       const episode = await catalog.findEpisodeById(itemId.id);
       if (!episode) {
         return null;
       }
-      return posterSource(await catalog.findSeriesById(episode.seriesId), true);
+      return posterSource(await catalog.findSeriesById(episode.seriesId), true, fallback);
     }
     case 'movie-view':
     case 'tv-view':

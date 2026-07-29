@@ -100,7 +100,7 @@ export interface ApiDependencies {
   > | undefined;
   playbackService?: Pick<
     PlaybackService,
-    'resolveStreamSource' | 'buildManifest' | 'recordHeartbeat' | 'markWatched' | 'resolveSubtitleTrack' | 'getContinueWatching'
+    'resolveStreamSource' | 'buildManifest' | 'getProgress' | 'recordHeartbeat' | 'markWatched' | 'markUnwatched' | 'resolveSubtitleTrack' | 'getContinueWatching'
   > | undefined;
   settingsService?: Pick<SettingsService, 'get' | 'update'> | undefined;
   activityEventRepository?: Pick<ActivityEventRepository, 'create' | 'query' | 'clear' | 'markAsFailed' | 'export'> | undefined;

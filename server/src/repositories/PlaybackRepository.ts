@@ -18,6 +18,10 @@ export interface MarkWatchedInput extends PlaybackProgressKey {
   playedAt?: Date;
 }
 
+export interface MarkUnwatchedInput extends PlaybackProgressKey {
+  playedAt?: Date;
+}
+
 export interface ContinueWatchingItem {
   mediaType: PlaybackMediaType;
   mediaId: number;
@@ -177,6 +181,49 @@ export class PlaybackRepository {
       .returning();
     if (!row) {
       throw new Error('PlaybackRepository.markWatched: returned no row');
+    }
+    return row as PlaybackProgress;
+  }
+
+
+  /**
+   * Clears watched state in the shared row while retaining a known duration.
+   * An existing resume position is deliberately reset so the item no longer
+   * appears as a partially watched resume entry.
+   */
+  async markUnwatched(input: MarkUnwatchedInput): Promise<PlaybackProgress> {
+    const existing = await this.getProgress(input);
+    const playedAt = input.playedAt ?? new Date();
+
+    const [row] = await this.prisma.drizzle
+      .insert(schema.playbackProgress)
+      .values({
+        mediaType: input.mediaType,
+        mediaId: input.mediaId,
+        userId: input.userId,
+        position: 0,
+        duration: existing?.duration ?? 0,
+        progress: 0,
+        isWatched: false,
+        lastWatched: playedAt,
+      })
+      .onConflictDoUpdate({
+        target: [
+          schema.playbackProgress.mediaType,
+          schema.playbackProgress.mediaId,
+          schema.playbackProgress.userId,
+        ],
+        // Keep duration intact if a heartbeat arrived after the read above.
+        set: {
+          position: 0,
+          progress: 0,
+          isWatched: false,
+          lastWatched: playedAt,
+        },
+      })
+      .returning();
+    if (!row) {
+      throw new Error('PlaybackRepository.markUnwatched: returned no row');
     }
     return row as PlaybackProgress;
   }

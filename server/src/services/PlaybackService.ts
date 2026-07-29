@@ -17,6 +17,21 @@ export interface PlaybackProgressInput extends PlaybackManifestRequest {
   duration: number;
 }
 
+export interface PlaybackWatchedStateRequest extends PlaybackManifestRequest {
+  playedAt?: Date;
+}
+
+export interface SerializedPlaybackProgress {
+  mediaType: PlaybackMediaType;
+  mediaId: number;
+  userId: string;
+  position: number;
+  duration: number;
+  progress: number;
+  isWatched: boolean;
+  lastWatched: string;
+}
+
 export interface PlaybackStreamSource {
   mediaType: PlaybackMediaType;
   mediaId: number;
@@ -117,7 +132,7 @@ export class PlaybackService {
     private readonly prisma: DatabaseClient,
     private readonly playbackRepository: Pick<
       PlaybackRepository,
-      'getProgress' | 'getLatestProgressForMedia' | 'upsertProgress' | 'markWatched' | 'findContinueWatching'
+      'getProgress' | 'getLatestProgressForMedia' | 'upsertProgress' | 'markWatched' | 'markUnwatched' | 'findContinueWatching'
     >,
     private readonly settingsService?: Pick<SettingsService, 'get'>,
   ) {}
@@ -221,6 +236,32 @@ export class PlaybackService {
   }
 
 
+  /** Reads one target's state from the same configured shared playback user. */
+  async getProgress(input: PlaybackManifestRequest): Promise<SerializedPlaybackProgress | null> {
+    const streamingSettings = await this.getRuntimeStreamingSettings();
+    const userId = normalizeUserId(input.userId, streamingSettings.defaultUserId);
+    const saved = await this.playbackRepository.getProgress({
+      mediaType: input.mediaType,
+      mediaId: input.mediaId,
+      userId,
+    });
+    if (!saved) {
+      return null;
+    }
+
+    return {
+      mediaType: saved.mediaType,
+      mediaId: saved.mediaId,
+      userId: saved.userId,
+      position: saved.position,
+      duration: saved.duration,
+      progress: saved.progress,
+      isWatched: saved.isWatched,
+      lastWatched: saved.lastWatched.toISOString(),
+    };
+  }
+
+
   /** Marks a media item watched in the existing shared playback store. */
   async markWatched(input: PlaybackManifestRequest): Promise<{
     mediaType: PlaybackMediaType;
@@ -238,6 +279,39 @@ export class PlaybackService {
       mediaType: input.mediaType,
       mediaId: input.mediaId,
       userId,
+    });
+
+    return {
+      mediaType: saved.mediaType,
+      mediaId: saved.mediaId,
+      userId: saved.userId,
+      position: saved.position,
+      duration: saved.duration,
+      progress: saved.progress,
+      isWatched: saved.isWatched,
+      lastWatched: saved.lastWatched.toISOString(),
+    };
+  }
+
+
+  /** Clears watched state through the existing shared playback user row. */
+  async markUnwatched(input: PlaybackWatchedStateRequest): Promise<{
+    mediaType: PlaybackMediaType;
+    mediaId: number;
+    userId: string;
+    position: number;
+    duration: number;
+    progress: number;
+    isWatched: boolean;
+    lastWatched: string;
+  }> {
+    const streamingSettings = await this.getRuntimeStreamingSettings();
+    const userId = normalizeUserId(input.userId, streamingSettings.defaultUserId);
+    const saved = await this.playbackRepository.markUnwatched({
+      mediaType: input.mediaType,
+      mediaId: input.mediaId,
+      userId,
+      ...(input.playedAt === undefined ? {} : { playedAt: input.playedAt }),
     });
 
     return {

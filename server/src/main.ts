@@ -9,7 +9,7 @@ import { describeMigrationState, runMigrations } from './db/migrationRunner';
 import { repairMalformedJsonColumns } from './maintenance/repairJsonColumns';
 import { createApiServer } from './api/createApiServer';
 import { createJellyfinServer } from './api/createJellyfinServer';
-import { JellyfinDiscoveryService } from './services/JellyfinDiscoveryService';
+import { JellyfinDiscoveryService, resolveLanAddress } from './services/JellyfinDiscoveryService';
 import { registerStaticServing } from './api/staticServing';
 import { CatalogCache } from './services/indexers/CatalogCache';
 import { DefinitionLoader } from './indexers/DefinitionLoader';
@@ -162,6 +162,10 @@ async function startApi(): Promise<void> {
     ...(process.env.JELLYFIN_ENABLED === undefined ? {} : { JELLYFIN_ENABLED: process.env.JELLYFIN_ENABLED }),
     ...(process.env.JELLYFIN_PORT === undefined ? {} : { JELLYFIN_PORT: process.env.JELLYFIN_PORT }),
   });
+  const jellyfinLanAddress = jellyfinConfig.enabled ? resolveLanAddress() : null;
+  if (jellyfinConfig.enabled && !jellyfinLanAddress) {
+    throw new Error('JELLYFIN_ENABLED requires a non-loopback LAN address for discovery.');
+  }
   const jellyfinServerId = jellyfinConfig.enabled
     ? await loadOrCreateJellyfinServerId({ configDir: process.env.CONFIG_DIR ?? path.dirname(databaseUrl.replace(/^file:/, '')) })
     : null;
@@ -521,6 +525,8 @@ async function startApi(): Promise<void> {
     ? createJellyfinServer({ prisma, playbackService }, {
         serverId: jellyfinServerId,
         serverName: process.env.JELLYFIN_SERVER_NAME?.trim() || 'Mediarr',
+        lanAddress: jellyfinLanAddress!,
+        port: jellyfinConfig.port,
       })
     : undefined;
   const jellyfinDiscoveryService = new JellyfinDiscoveryService();

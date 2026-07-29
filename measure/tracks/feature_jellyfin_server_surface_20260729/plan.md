@@ -31,7 +31,7 @@
 - [x] Red then green: `/System/Info/Public`, `/System/Info`, `/System/Ping`, `/Branding/Configuration`.
 - [ ] Curl probe: `curl -s localhost:8096/System/Info/Public | jq .Id` returns the same GUID as the
       UDP reply.
-- [ ] **TV check (human-gated):** the TV's "add server" screen finds Mediarr with no typed address.
+- [~] **TV check (human-gated):** the TV's "add server" screen finds Mediarr with no typed address.
 - [x] Commit: `feat(jellyfin): answer UDP discovery and the server handshake`
 
 ## Phase 2: Auth Stub + Library Views
@@ -41,7 +41,7 @@
       stored and no existing route becomes authenticated.
 - [x] Red: `/UserViews`, `/Users/{uid}/Views`, `/Library/MediaFolders` map Mediarr's movie and TV
       libraries to Jellyfin collections with correct `CollectionType`.
-- [ ] **TV check (human-gated):** the TV logs in and shows two libraries.
+- [~] **TV check (human-gated):** the TV logs in and shows two libraries.
 - [x] Commit: `feat(jellyfin): serve the login flow and library views`
 
 ## Phase 3: Browse
@@ -55,7 +55,7 @@
       behaviour** — Mediarr stores artwork as remote TMDB URLs, not local files (FR-6). Record which
       was chosen and why.
       **Implemented: allowlisted in-process proxy; it avoids relying on third-party redirect handling. Physical-TV confirmation remains human-gated.**
-- [x] **TV check (human-gated):** browse into a series, see seasons and episodes with artwork.
+- [~] **TV check (human-gated):** browse into a series, see seasons and episodes with artwork.
 - [ ] Commit: `feat(jellyfin): enumerate libraries, series, seasons and episodes`
 
 ## Phase 4: Playback
@@ -67,7 +67,7 @@
 - [x] Red then green: `/Sessions/Capabilities`, `/Sessions/Capabilities/Full`, `/Sessions/Playing`,
       `/Sessions/Playing/Stopped`, `GET /Sessions`. Not optional — clients error-loop without them.
 - [ ] Curl probe: `curl -r 100-200 -o /dev/null -w '%{http_code}' …/Videos/<id>/stream` → `206`.
-- [x] **TV check (human-gated):** play a file and seek forward/backward.
+- [~] **TV check (human-gated):** play a file and seek forward/backward.
 - [ ] Commit: `feat(jellyfin): direct-play streaming with range seeking and sessions`
 
 ## Phase 5: Resume and Watched State
@@ -81,7 +81,7 @@
 - [x] **Cross-surface test (the acceptance criterion that matters):** a position written through the
       Jellyfin path is returned by `GET /api/playback/continue-watching`, and vice versa. One store,
       not two. This is the test most likely to catch a duplicated-state mistake.
-- [ ] **TV check (human-gated):** stop mid-episode, reopen, resume; confirm the same position in the
+- [~] **TV check (human-gated):** stop mid-episode, reopen, resume; confirm the same position in the
       SPA.
 - [x] Commit: `feat(jellyfin): resume position and watched state over the shared playback store`
 
@@ -99,6 +99,13 @@
       `npx tsc -p server/tsconfig.json --noEmit`.
 - [ ] Record findings in `lessons-learned.md` / `tech-debt.md`; archive the track.
 - [ ] Commit: `docs(measure): close out the Jellyfin compatibility surface track`
+
+## Completion Audit Remediation (reopened 2026-07-29)
+
+- [x] Add contract tests and close known-good system/user DTO, safe PlaybackInfo, and session no-op gaps.
+- [x] Add contract tests and close browse/user-state gaps: UserData, Latest, Backdrop policy, NextUp, and episode query semantics.
+- [x] Preserve the one-store resume/watched invariant while deciding any unplayed-state compatibility behavior.
+- [~] Re-ran `CI=true npx vitest run server/src tests` (333 passed, 1 skipped; 2993 passed, 14 skipped), strict TypeScript, and `npm run test:clean-image` (no-cache image exit 0) after remediation; physical-TV/ThaiDub acceptance remains human-gated.
 
 ## Open Questions (resolve during Phase 0, not by assumption)
 

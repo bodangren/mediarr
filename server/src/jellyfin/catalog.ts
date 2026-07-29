@@ -101,6 +101,19 @@ export interface CatalogQuery {
   includeItemTypes?: string | readonly string[] | null | undefined;
 }
 
+/**
+ * Navigation parameters accepted by Jellyfin's series-episodes surface.
+ * They are intentionally separate from CatalogQuery so generic item browsing
+ * retains its existing sorting behavior.
+ */
+export interface EpisodeQueryOptions {
+  season?: number | string | null | undefined;
+  startItemId?: string | null | undefined;
+  adjacentTo?: string | null | undefined;
+  startIndex?: number | string | null | undefined;
+  limit?: number | string | null | undefined;
+}
+
 export interface JellyfinCatalogQueryResult {
   Items: JellyfinCatalogItem[];
   TotalRecordCount: number;
@@ -450,6 +463,72 @@ export async function queryEpisodes(
     return applyQuery(episodes.map(mapEpisodeToItem), query);
   }
   return emptyResult(query);
+}
+
+function parseOptionalInteger(value: number | string | null | undefined): number | undefined {
+  if (value === null || value === undefined || value === '') {
+    return undefined;
+  }
+  const parsed = typeof value === 'number' ? value : Number(value);
+  return Number.isSafeInteger(parsed) && parsed >= 0 ? parsed : undefined;
+}
+
+function compareEpisodeNavigationOrder(
+  left: CatalogEpisodeRecord,
+  right: CatalogEpisodeRecord,
+): number {
+  return left.seasonNumber - right.seasonNumber
+    || left.episodeNumber - right.episodeNumber
+    || left.id - right.id;
+}
+
+/**
+ * Queries a series' episodes with Jellyfin's episode-navigation semantics.
+ * Filtering and navigation are evaluated before paging, so TotalRecordCount
+ * remains useful to clients requesting an adjacent episode window.
+ */
+export async function queryEpisodesWithNavigation(
+  repository: JellyfinCatalogRepository,
+  seriesId: string,
+  options: EpisodeQueryOptions = {},
+): Promise<JellyfinCatalogQueryResult> {
+  const decoded = decodeJellyfinId(seriesId);
+  if (decoded?.kind !== 'series') {
+    return emptyResult({ startIndex: options.startIndex });
+  }
+
+  const season = parseOptionalInteger(options.season);
+  let episodes = [...await repository.listEpisodesBySeriesId(decoded.id)]
+    .sort(compareEpisodeNavigationOrder);
+  if (season !== undefined) {
+    episodes = episodes.filter(episode => episode.seasonNumber === season);
+  }
+
+  const startItem = options.startItemId ? decodeJellyfinId(options.startItemId) : null;
+  if (startItem?.kind === 'episode') {
+    const startAt = episodes.findIndex(episode => episode.id === startItem.id);
+    if (startAt >= 0) {
+      episodes = episodes.slice(startAt);
+    }
+  }
+
+  const adjacentItem = options.adjacentTo ? decodeJellyfinId(options.adjacentTo) : null;
+  if (adjacentItem?.kind === 'episode') {
+    const adjacentAt = episodes.findIndex(episode => episode.id === adjacentItem.id);
+    if (adjacentAt >= 0) {
+      episodes = episodes.slice(Math.max(0, adjacentAt - 1), adjacentAt + 2);
+    }
+  }
+
+  const total = episodes.length;
+  const startIndex = parseNonNegativeInteger(options.startIndex, 0);
+  const parsedLimit = parseNonNegativeInteger(options.limit, total);
+  const limit = parsedLimit === 0 ? total : parsedLimit;
+  return {
+    Items: episodes.slice(startIndex, startIndex + limit).map(mapEpisodeToItem),
+    TotalRecordCount: total,
+    StartIndex: startIndex,
+  };
 }
 
 /** Resolves a single Jellyfin item id without probing unrelated tables. */

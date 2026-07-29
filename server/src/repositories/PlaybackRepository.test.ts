@@ -187,6 +187,35 @@ describe("PlaybackRepository.markWatched", () => {
   });
 });
 
+describe('PlaybackRepository.markUnwatched', () => {
+  it('clears resume state while preserving an existing duration in the same row', async () => {
+    const playedAt = new Date('2026-07-29T01:00:00.000Z');
+    const db = makeDb({
+      playbackSelectRows: [[{
+        id: 3,
+        position: 540,
+        duration: 1800,
+        progress: 0.3,
+        isWatched: true,
+      }]],
+      insertRows: [{ id: 3, isWatched: false }],
+    });
+    const repo = new PlaybackRepository(db as any);
+
+    await repo.markUnwatched({
+      mediaType: 'EPISODE', mediaId: 41, userId: 'lan-default', playedAt,
+    });
+
+    const insert = db.drizzle.insert.mock.results[0]?.value;
+    expect(insert?.values).toHaveBeenCalledWith(expect.objectContaining({
+      position: 0, duration: 1800, progress: 0, isWatched: false, lastWatched: playedAt,
+    }));
+    expect(insert?.onConflictDoUpdate).toHaveBeenCalledWith(expect.objectContaining({
+      set: { position: 0, progress: 0, isWatched: false, lastWatched: playedAt },
+    }));
+  });
+});
+
 describe('PlaybackRepository.findContinueWatching', () => {
   it('returns empty list when no playback rows match', async () => {
     const db = makeDb({ playbackSelectRows: [[]] });

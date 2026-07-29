@@ -7,6 +7,7 @@ import {
   mapSeriesToItem,
   queryCatalog,
   queryEpisodes,
+  queryEpisodesWithNavigation,
   querySeasons,
   type JellyfinCatalogRepository,
 } from './catalog';
@@ -334,6 +335,56 @@ describe('specialized catalog queries', () => {
     expect(result.TotalRecordCount).toBe(2);
     await expect(querySeasons(repository, encodeJellyfinId('season', 1)))
       .resolves.toMatchObject({ Items: [], TotalRecordCount: 0 });
+  });
+
+  it('navigates sorted series episodes after Season and StartItemId filtering, then pages', async () => {
+    const repository = createRepository({
+      listEpisodesBySeriesId: vi.fn().mockResolvedValue([
+        { id: 104, seriesId: 8, seasonId: 10, tvdbId: 104, seasonNumber: 2, episodeNumber: 1, title: 'S2E1' },
+        { id: 103, seriesId: 8, seasonId: 9, tvdbId: 103, seasonNumber: 1, episodeNumber: 3, title: 'S1E3' },
+        { id: 101, seriesId: 8, seasonId: 9, tvdbId: 101, seasonNumber: 1, episodeNumber: 1, title: 'S1E1' },
+        { id: 102, seriesId: 8, seasonId: 9, tvdbId: 102, seasonNumber: 1, episodeNumber: 2, title: 'S1E2' },
+      ]),
+    });
+
+    const result = await queryEpisodesWithNavigation(
+      repository,
+      encodeJellyfinId('series', 8),
+      {
+        season: '1',
+        startItemId: encodeJellyfinId('episode', 102).replace(/-/g, ''),
+        adjacentTo: encodeJellyfinId('episode', 103),
+        startIndex: 1,
+        limit: 1,
+      },
+    );
+
+    expect(result).toMatchObject({
+      TotalRecordCount: 2,
+      StartIndex: 1,
+      Items: [{ Id: encodeJellyfinId('episode', 103), Name: 'S1E3' }],
+    });
+  });
+
+  it('keeps a complete sorted episode list when navigation ids do not resolve', async () => {
+    const repository = createRepository({
+      listEpisodesBySeriesId: vi.fn().mockResolvedValue([
+        { id: 12, seriesId: 8, seasonId: 9, tvdbId: 12, seasonNumber: 1, episodeNumber: 2, title: 'Second' },
+        { id: 11, seriesId: 8, seasonId: 9, tvdbId: 11, seasonNumber: 1, episodeNumber: 1, title: 'First' },
+      ]),
+    });
+
+    const result = await queryEpisodesWithNavigation(
+      repository,
+      encodeJellyfinId('series', 8),
+      {
+        startItemId: encodeJellyfinId('episode', 999),
+        adjacentTo: encodeJellyfinId('movie', 1),
+      },
+    );
+
+    expect(result.Items.map(item => item.Name)).toEqual(['First', 'Second']);
+    expect(result.TotalRecordCount).toBe(2);
   });
 
   it('resolves a single stable item id through only its matching repository function', async () => {

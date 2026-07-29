@@ -31,6 +31,7 @@ describe('PlaybackService', () => {
     getLatestProgressForMedia: ReturnType<typeof vi.fn>;
     upsertProgress: ReturnType<typeof vi.fn>;
     markWatched: ReturnType<typeof vi.fn>;
+    markUnwatched: ReturnType<typeof vi.fn>;
     findContinueWatching: ReturnType<typeof vi.fn>;
   };
   let tempDir: string;
@@ -42,6 +43,7 @@ describe('PlaybackService', () => {
       getLatestProgressForMedia: vi.fn(),
       upsertProgress: vi.fn(),
       markWatched: vi.fn(),
+      markUnwatched: vi.fn(),
       findContinueWatching: vi.fn(),
     };
     tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'mediarr-playback-service-'));
@@ -230,6 +232,52 @@ describe('PlaybackService', () => {
       duration: 1200,
       progress: 0.35,
       isWatched: true,
+    });
+  });
+
+  it('reads nullable progress through the configured shared playback user', async () => {
+    const lastWatched = new Date('2026-07-29T02:00:00.000Z');
+    playbackRepository.getProgress.mockResolvedValue({
+      mediaType: 'MOVIE', mediaId: 9, userId: 'family-room', position: 120,
+      duration: 1200, progress: 0.1, isWatched: false, lastWatched,
+    });
+    const service = createService({
+      streaming: { defaultUserId: 'family-room', watchedThreshold: 0.9 },
+    });
+
+    await expect(service.getProgress({ mediaType: 'MOVIE', mediaId: 9 })).resolves.toEqual({
+      mediaType: 'MOVIE', mediaId: 9, userId: 'family-room', position: 120,
+      duration: 1200, progress: 0.1, isWatched: false,
+      lastWatched: lastWatched.toISOString(),
+    });
+    expect(playbackRepository.getProgress).toHaveBeenCalledWith({
+      mediaType: 'MOVIE', mediaId: 9, userId: 'family-room',
+    });
+
+    playbackRepository.getProgress.mockResolvedValue(null);
+    await expect(service.getProgress({ mediaType: 'MOVIE', mediaId: 9 })).resolves.toBeNull();
+  });
+
+  it('marks unwatched through the same configured user and returns the shared state DTO', async () => {
+    const playedAt = new Date('2026-07-29T01:00:00.000Z');
+    playbackRepository.markUnwatched.mockResolvedValue({
+      mediaType: 'EPISODE', mediaId: 9, userId: 'family-room', position: 0,
+      duration: 1200, progress: 0, isWatched: false, lastWatched: playedAt,
+    });
+    const service = createService({
+      streaming: { defaultUserId: 'family-room', watchedThreshold: 0.9 },
+    });
+
+    const result = await service.markUnwatched({
+      mediaType: 'EPISODE', mediaId: 9, playedAt,
+    });
+
+    expect(playbackRepository.markUnwatched).toHaveBeenCalledWith({
+      mediaType: 'EPISODE', mediaId: 9, userId: 'family-room', playedAt,
+    });
+    expect(result).toMatchObject({
+      position: 0, duration: 1200, progress: 0, isWatched: false,
+      lastWatched: playedAt.toISOString(),
     });
   });
 

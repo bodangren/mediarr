@@ -126,7 +126,7 @@ describe('resolveJellyfinArtworkSource', () => {
       .resolves.toEqual({ url: 'https://artworks.thetvdb.com/banners/series.jpg', inherited: true });
   });
 
-  it('does not invent unsupported Backdrop artwork or resolve unknown/non-poster items', async () => {
+  it('deliberately falls Backdrop back to persisted Primary artwork', async () => {
     const repository = createRepository({
       findMovieById: vi.fn().mockResolvedValue({
         id: 1,
@@ -137,6 +137,55 @@ describe('resolveJellyfinArtworkSource', () => {
     });
 
     await expect(resolveJellyfinArtworkSource(repository, encodeJellyfinId('movie', 1), 'Backdrop'))
+      .resolves.toEqual({
+        url: 'https://image.tmdb.org/t/p/w500/movie.jpg',
+        inherited: false,
+        fallback: 'primary',
+      });
+    await expect(resolveJellyfinArtworkSource(repository, encodeJellyfinId('movie', 1), '  backdrop  '))
+      .resolves.toEqual({
+        url: 'https://image.tmdb.org/t/p/w500/movie.jpg',
+        inherited: false,
+        fallback: 'primary',
+      });
+
+    const episodeRepository = createRepository({
+      findEpisodeById: vi.fn().mockResolvedValue({
+        id: 4,
+        seriesId: 2,
+        seasonId: 3,
+        tvdbId: 40,
+        seasonNumber: 1,
+        episodeNumber: 1,
+        title: 'Pilot',
+      }),
+      findSeriesById: vi.fn().mockResolvedValue({
+        id: 2,
+        tvdbId: 20,
+        title: 'Series',
+        posterUrl: 'https://artworks.thetvdb.com/banners/series.jpg',
+      }),
+    });
+
+    await expect(resolveJellyfinArtworkSource(episodeRepository, encodeJellyfinId('episode', 4), 'Backdrop'))
+      .resolves.toEqual({
+        url: 'https://artworks.thetvdb.com/banners/series.jpg',
+        inherited: true,
+        fallback: 'primary',
+      });
+  });
+
+  it('does not invent unsupported image types or resolve unknown/non-poster items', async () => {
+    const repository = createRepository({
+      findMovieById: vi.fn().mockResolvedValue({
+        id: 1,
+        tmdbId: 10,
+        title: 'Movie',
+        posterUrl: 'https://image.tmdb.org/t/p/w500/movie.jpg',
+      }),
+    });
+
+    await expect(resolveJellyfinArtworkSource(repository, encodeJellyfinId('movie', 1), 'Logo'))
       .resolves.toBeNull();
     await expect(resolveJellyfinArtworkSource(repository, '00000000-0000-0000-0000-000000000000', 'Primary'))
       .resolves.toBeNull();

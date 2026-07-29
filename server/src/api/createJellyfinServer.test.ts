@@ -2,8 +2,11 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createJellyfinServer } from './createJellyfinServer';
+import { createJellyfinServer, type JellyfinServerOptions } from './createJellyfinServer';
 import { encodeJellyfinId, JELLYFIN_MOVIE_VIEW_ID } from '../jellyfin/ids';
+import {
+  buildJellyfinPublicSystemInfo, buildJellyfinSystemInfo, buildTrustedLanUserDto,
+} from '../jellyfin/compatibilityDtos';
 
 function createPrismaFixture(overrides: Record<string, any> = {}) {
   return {
@@ -42,11 +45,15 @@ function createPlaybackService(overrides: Record<string, any> = {}) {
 function createApp(options: {
   prisma?: ReturnType<typeof createPrismaFixture>;
   playbackService?: ReturnType<typeof createPlaybackService>;
+  server?: Partial<JellyfinServerOptions>;
 } = {}) {
   return createJellyfinServer({
     prisma: options.prisma ?? createPrismaFixture(),
     playbackService: options.playbackService ?? createPlaybackService(),
-  } as any, { serverId: 'abc', serverName: 'Mediarr' });
+  } as any, {
+    serverId: 'abc', serverName: 'Mediarr',
+    ...options.server,
+  });
 }
 
 describe('createJellyfinServer handshake', () => {
@@ -58,6 +65,32 @@ describe('createJellyfinServer handshake', () => {
     expect(info.json().Id).toBe('abc');
     expect(auth.json()).toMatchObject({ ServerId: 'abc', User: { HasPassword: false } });
     expect(library.json()).toMatchObject({ TotalRecordCount: 2, Items: [{ CollectionType: 'movies' }, { CollectionType: 'tvshows' }] });
+    await app.close();
+  });
+
+  it('serves full system information and the full trusted-LAN user DTO', async () => {
+    const server = {
+      serverName: 'Living Room',
+      lanAddress: '192.168.50.12',
+      port: 18096,
+      version: '10.10.7',
+    };
+    const app = createApp({ server });
+    const identity = {
+      serverId: 'abc',
+      ...server,
+      operatingSystem: process.platform,
+    };
+    const expectedUser = buildTrustedLanUserDto({
+      serverId: 'abc', userId: '4d656469-6172-7200-0000-000000000001', userName: 'Mediarr',
+    });
+
+    expect((await app.inject('/System/Info/Public')).json()).toEqual(buildJellyfinPublicSystemInfo(identity));
+    expect((await app.inject('/System/Info')).json()).toEqual(buildJellyfinSystemInfo(identity));
+    expect((await app.inject('/Users')).json()).toEqual([expectedUser]);
+    expect((await app.inject('/Users/user-1')).json()).toEqual(expectedUser);
+    expect(expectedUser).not.toHaveProperty('Password');
+    expect(expectedUser).not.toHaveProperty('AccessToken');
     await app.close();
   });
 
@@ -151,6 +184,35 @@ describe('createJellyfinServer browse routes', () => {
     expect(prisma.episode.findMany).toHaveBeenCalledWith({ where: { seriesId: 7 } });
     await app.close();
   });
+  it('applies Jellyfin episode navigation parameters before paging', async () => {
+    const seriesId = encodeJellyfinId('series', 7);
+    const secondEpisodeId = encodeJellyfinId('episode', 102);
+    const thirdEpisodeId = encodeJellyfinId('episode', 103);
+    const prisma = createPrismaFixture({
+      episode: {
+        findMany: vi.fn().mockResolvedValue([
+          { id: 201, seriesId: 7, seasonId: 20, tvdbId: 201, seasonNumber: 2, episodeNumber: 1, title: 'S2E1' },
+          { id: 103, seriesId: 7, seasonId: 10, tvdbId: 103, seasonNumber: 1, episodeNumber: 3, title: 'S1E3' },
+          { id: 101, seriesId: 7, seasonId: 10, tvdbId: 101, seasonNumber: 1, episodeNumber: 1, title: 'S1E1' },
+          { id: 102, seriesId: 7, seasonId: 10, tvdbId: 102, seasonNumber: 1, episodeNumber: 2, title: 'S1E2' },
+        ]),
+      },
+    });
+    const app = createApp({ prisma });
+
+    const response = await app.inject(
+      `/Shows/${seriesId}/Episodes?Season=1&StartItemId=${secondEpisodeId}&AdjacentTo=${thirdEpisodeId}&StartIndex=1&Limit=1`,
+    );
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toMatchObject({
+      Items: [{ Id: thirdEpisodeId, Name: 'S1E3' }],
+      TotalRecordCount: 2,
+      StartIndex: 1,
+    });
+    expect(prisma.episode.findMany).toHaveBeenCalledWith({ where: { seriesId: 7 } });
+    await app.close();
+  });
 });
 
 describe('createJellyfinServer playback routes', () => {
@@ -198,6 +260,27 @@ describe('createJellyfinServer playback routes', () => {
     await app.close();
   });
 
+  it('returns empty successful PlaybackInfo for unknown and non-playable ids', async () => {
+    const resolveStreamSource = vi.fn();
+    const app = createApp({
+      playbackService: createPlaybackService({ resolveStreamSource }),
+    });
+    const unknownId = '00000000-0000-0000-0000-000000000000';
+
+    const getResponse = await app.inject(`/Items/${unknownId}/PlaybackInfo`);
+    const postResponse = await app.inject({
+      method: 'POST', url: `/Items/${JELLYFIN_MOVIE_VIEW_ID}/PlaybackInfo`, payload: {},
+    });
+
+    expect(getResponse.statusCode).toBe(200);
+    expect(getResponse.json()).toEqual({ MediaSources: [], PlaySessionId: unknownId });
+    expect(postResponse.statusCode).toBe(200);
+    expect(postResponse.json()).toEqual({
+      MediaSources: [], PlaySessionId: JELLYFIN_MOVIE_VIEW_ID,
+    });
+    expect(resolveStreamSource).not.toHaveBeenCalled();
+    await app.close();
+  });
   it('returns an exact Range 206 response from /Videos', async () => {
     const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'mediarr-jellyfin-stream-'));
     temporaryDirectories.push(directory);
@@ -298,6 +381,114 @@ describe('createJellyfinServer known-good HTTP compatibility routes', () => {
     vi.unstubAllGlobals();
   });
 
+
+  it('shares UserData and watched state across item, played, and Latest routes', async () => {
+    const movieId = encodeJellyfinId('movie', 31);
+    const newestEpisodeId = encodeJellyfinId('episode', 42);
+    const olderEpisodeId = encodeJellyfinId('episode', 41);
+    const latestEpisodes = [
+      {
+        id: 42, seriesId: 7, seasonId: 8, tvdbId: 420,
+        seasonNumber: 1, episodeNumber: 2, title: 'Newest',
+        airDateUtc: '2026-07-28T00:00:00.000Z',
+      },
+      {
+        id: 41, seriesId: 7, seasonId: 8, tvdbId: 410,
+        seasonNumber: 1, episodeNumber: 1, title: 'Older',
+        airDateUtc: '2026-07-27T00:00:00.000Z',
+      },
+    ];
+    const prisma = createPrismaFixture({
+      movie: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 31, tmdbId: 310, title: 'Shared Movie', sortTitle: 'Shared Movie',
+        }),
+      },
+      episode: { findMany: vi.fn().mockResolvedValue(latestEpisodes) },
+    });
+    const progressById = new Map([
+      [31, {
+        position: 12, duration: 100, isWatched: false,
+        lastWatched: '2026-07-25T12:00:00.000Z',
+      }],
+      [42, {
+        position: 100, duration: 100, isWatched: true,
+        lastWatched: '2026-07-28T12:00:00.000Z',
+      }],
+    ]);
+    const getProgress = vi.fn().mockImplementation(
+      ({ mediaId }: { mediaId: number }) => Promise.resolve(progressById.get(mediaId) ?? null),
+    );
+    const markWatched = vi.fn().mockResolvedValue({
+      position: 100, duration: 100, isWatched: true,
+      lastWatched: '2026-07-29T01:00:00.000Z',
+    });
+    const markUnwatched = vi.fn().mockResolvedValue({
+      position: 0, duration: 100, isWatched: false,
+      lastWatched: '2026-07-29T02:00:00.000Z',
+    });
+    const app = createApp({
+      prisma,
+      playbackService: createPlaybackService({
+        getProgress, markWatched, markUnwatched,
+      }),
+    });
+
+    const item = await app.inject('/Items/' + movieId);
+    const watched = await app.inject({
+      method: 'POST', url: '/UserPlayedItems/' + movieId,
+    });
+    const unplayed = await app.inject({
+      method: 'DELETE', url: '/UserPlayedItems/' + movieId,
+    });
+    const userLatest = await app.inject('/Users/user-1/Items/Latest');
+    const itemLatest = await app.inject('/Items/Latest');
+
+    expect(item.json().UserData).toEqual({
+      Played: false, PlayCount: 0, PlaybackPositionTicks: 120_000_000,
+      LastPlayedDate: '2026-07-25T12:00:00.000Z', ItemId: movieId,
+    });
+    expect(getProgress).toHaveBeenCalledWith({
+      mediaType: 'MOVIE', mediaId: 31, userId: 'lan-default',
+    });
+    expect(watched.statusCode).toBe(200);
+    expect(watched.json()).toEqual({
+      Played: true, PlayCount: 1, PlaybackPositionTicks: 1_000_000_000,
+      LastPlayedDate: '2026-07-29T01:00:00.000Z', ItemId: movieId,
+    });
+    expect(markWatched).toHaveBeenCalledWith({
+      mediaType: 'MOVIE', mediaId: 31, userId: 'lan-default',
+    });
+    expect(unplayed.statusCode).toBe(200);
+    expect(unplayed.json()).toEqual({
+      Played: false, PlayCount: 0, PlaybackPositionTicks: 0,
+      LastPlayedDate: '2026-07-29T02:00:00.000Z', ItemId: movieId,
+    });
+    expect(markUnwatched).toHaveBeenCalledWith({
+      mediaType: 'MOVIE', mediaId: 31, userId: 'lan-default',
+    });
+    expect(userLatest.json()).toEqual(itemLatest.json());
+    expect(itemLatest.json()).toMatchObject([
+      { Id: newestEpisodeId, Name: 'Newest', UserData: {
+        Played: true, PlaybackPositionTicks: 1_000_000_000,
+      } },
+      { Id: olderEpisodeId, Name: 'Older', UserData: {
+        Played: false, PlaybackPositionTicks: 0,
+      } },
+    ]);
+    expect(prisma.episode.findMany).toHaveBeenCalledTimes(2);
+    expect(prisma.episode.findMany).toHaveBeenCalledWith({
+      orderBy: { airDateUtc: 'desc' }, take: 16,
+    });
+    expect(getProgress).toHaveBeenCalledWith({
+      mediaType: 'EPISODE', mediaId: 42, userId: 'lan-default',
+    });
+    expect(getProgress).toHaveBeenCalledWith({
+      mediaType: 'EPISODE', mediaId: 41, userId: 'lan-default',
+    });
+    await app.close();
+  });
+
   it('serves the low-risk system, user, library, item, and preference compatibility shapes', async () => {
     const movieId = encodeJellyfinId('movie', 23);
     const prisma = createPrismaFixture({
@@ -378,6 +569,7 @@ describe('createJellyfinServer known-good HTTP compatibility routes', () => {
 
     try {
       const image = await app.inject(`/Items/${movieId}/Images/Primary/0`);
+      const backdrop = await app.inject(`/Items/${movieId}/Images/Backdrop/0`);
       const stream = await app.inject({
         method: 'GET',
         url: `/Videos/${movieId}/stream.mp4`,
@@ -387,6 +579,9 @@ describe('createJellyfinServer known-good HTTP compatibility routes', () => {
       expect(image.statusCode).toBe(200);
       expect(image.headers['content-type']).toBe('image/jpeg');
       expect(image.rawPayload).toEqual(Buffer.from([1, 2, 3]));
+      expect(backdrop.statusCode).toBe(200);
+      expect(backdrop.headers['content-type']).toBe('image/jpeg');
+      expect(backdrop.rawPayload).toEqual(Buffer.from([1, 2, 3]));
       expect(stream.statusCode).toBe(206);
       expect(stream.headers['content-range']).toBe('bytes 2-5/10');
       expect(stream.body).toBe('2345');

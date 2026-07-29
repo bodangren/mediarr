@@ -129,6 +129,18 @@ function getHeaders(notification?: Notification): string {
   return '';
 }
 
+function getAppToken(notification?: Notification): string {
+  return notification?.type === 'Pushover' ? notification.appToken ?? '' : '';
+}
+
+function getUserKey(notification?: Notification): string {
+  return notification?.type === 'Pushover' ? notification.userKey ?? '' : '';
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : 'Notification request failed.';
+}
+
 export function AddNotificationModal({ isOpen, onClose, notificationToEdit }: AddNotificationModalProps) {
   const queryClient = useQueryClient();
   const notificationsApi = getApiClients().notificationsApi;
@@ -155,8 +167,11 @@ export function AddNotificationModal({ isOpen, onClose, notificationToEdit }: Ad
   const [toAddress, setToAddress] = useState(getToAddress(notificationToEdit));
   const [method, setMethod] = useState<'GET' | 'POST' | 'PUT'>(getMethod(notificationToEdit));
   const [headers, setHeaders] = useState<string>(getHeaders(notificationToEdit));
+  const [appToken, setAppToken] = useState(getAppToken(notificationToEdit));
+  const [userKey, setUserKey] = useState(getUserKey(notificationToEdit));
 
   const [testResult, setTestResult] = useState<NotificationTestResult | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const createMutation = useMutation({
     mutationFn: (data: NotificationFormData) => notificationsApi.create(data),
@@ -164,6 +179,7 @@ export function AddNotificationModal({ isOpen, onClose, notificationToEdit }: Ad
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
       handleClose();
     },
+    onError: error => setFormError(errorMessage(error)),
   });
 
   const updateMutation = useMutation({
@@ -173,18 +189,25 @@ export function AddNotificationModal({ isOpen, onClose, notificationToEdit }: Ad
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
       handleClose();
     },
+    onError: error => setFormError(errorMessage(error)),
   });
 
   const testMutation = useMutation({
-    mutationFn: (data: NotificationFormData) => notificationsApi.testDraft(data),
+    mutationFn: (data: NotificationFormData) => notificationToEdit
+      ? notificationsApi.test(notificationToEdit.id)
+      : notificationsApi.testDraft(data),
     onSuccess: result => {
       setTestResult(result);
+    },
+    onError: error => {
+      setTestResult({ success: false, message: errorMessage(error) });
     },
   });
 
   const handleClose = () => {
     resetForm();
     setTestResult(null);
+    setFormError(null);
     onClose();
   };
 
@@ -204,6 +227,8 @@ export function AddNotificationModal({ isOpen, onClose, notificationToEdit }: Ad
     setToAddress('');
     setMethod('POST');
     setHeaders('');
+    setAppToken('');
+    setUserKey('');
   };
 
   const handleTypeChange = (newType: NotificationType) => {
@@ -220,6 +245,10 @@ export function AddNotificationModal({ isOpen, onClose, notificationToEdit }: Ad
     setToAddress('');
     setMethod('POST');
     setHeaders('');
+    setAppToken('');
+    setUserKey('');
+    setFormError(null);
+    setTestResult(null);
   };
 
   const handleTriggerToggle = (trigger: NotificationTrigger) => {
@@ -228,8 +257,21 @@ export function AddNotificationModal({ isOpen, onClose, notificationToEdit }: Ad
     );
   };
 
-  const handleTest = () => {
-    const data: NotificationFormData = {
+  const buildFormData = (): NotificationFormData => {
+    let parsedHeaders: Record<string, string> | undefined;
+    if (type === 'Webhook' && headers.trim()) {
+      const parsed: unknown = JSON.parse(headers);
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        throw new Error('Webhook headers must be a JSON object.');
+      }
+      const entries = Object.entries(parsed);
+      if (entries.some(([, value]) => typeof value !== 'string')) {
+        throw new Error('Every webhook header value must be a string.');
+      }
+      parsedHeaders = Object.fromEntries(entries) as Record<string, string>;
+    }
+
+    return {
       name,
       type,
       enabled,
@@ -237,29 +279,32 @@ export function AddNotificationModal({ isOpen, onClose, notificationToEdit }: Ad
       ...(type === 'Discord' || type === 'Slack' || type === 'Webhook' ? { webhookUrl } : {}),
       ...(type === 'Telegram' ? { botToken, chatId } : {}),
       ...(type === 'Email' ? { smtpServer, smtpPort: Number.parseInt(smtpPort, 10) || 587, smtpUser, smtpPassword, fromAddress, toAddress } : {}),
-      ...(type === 'Webhook' ? { method, headers: headers ? JSON.parse(headers) : undefined } : {}),
+      ...(type === 'Pushover' ? { appToken, userKey } : {}),
+      ...(type === 'Webhook' ? { method, headers: parsedHeaders } : {}),
     };
+  };
 
-    setTestResult(null);
-    testMutation.mutate(data);
+  const handleTest = () => {
+    try {
+      setFormError(null);
+      setTestResult(null);
+      testMutation.mutate(buildFormData());
+    } catch (error) {
+      setTestResult({ success: false, message: errorMessage(error) });
+    }
   };
 
   const handleSubmit = () => {
-    const data: NotificationFormData = {
-      name,
-      type,
-      enabled,
-      triggers,
-      ...(type === 'Discord' || type === 'Slack' || type === 'Webhook' ? { webhookUrl } : {}),
-      ...(type === 'Telegram' ? { botToken, chatId } : {}),
-      ...(type === 'Email' ? { smtpServer, smtpPort: Number.parseInt(smtpPort, 10) || 587, smtpUser, smtpPassword, fromAddress, toAddress } : {}),
-      ...(type === 'Webhook' ? { method, headers: headers ? JSON.parse(headers) : undefined } : {}),
-    };
-
-    if (isEditing && notificationToEdit) {
-      updateMutation.mutate({ id: notificationToEdit.id, data });
-    } else {
-      createMutation.mutate(data);
+    try {
+      setFormError(null);
+      const data = buildFormData();
+      if (isEditing && notificationToEdit) {
+        updateMutation.mutate({ id: notificationToEdit.id, data });
+      } else {
+        createMutation.mutate(data);
+      }
+    } catch (error) {
+      setFormError(errorMessage(error));
     }
   };
 
@@ -277,6 +322,10 @@ export function AddNotificationModal({ isOpen, onClose, notificationToEdit }: Ad
 
     if (type === 'Email') {
       if (!smtpServer.trim() || !smtpUser.trim() || !fromAddress.trim() || !toAddress.trim()) return false;
+    }
+
+    if (type === 'Pushover') {
+      if (!appToken.trim() || !userKey.trim()) return false;
     }
 
     return true;
@@ -437,7 +486,26 @@ export function AddNotificationModal({ isOpen, onClose, notificationToEdit }: Ad
             <Alert variant="info">
               <p>Pushover configuration requires your application API key and user key.</p>
             </Alert>
-            <p className="text-sm text-text-muted">Implementation pending backend support.</p>
+            <label className="grid gap-1 text-sm">
+              <span>Application API Token</span>
+              <input
+                type="password"
+                className="rounded-sm border border-border-subtle bg-surface-0 px-3 py-2 text-sm font-mono"
+                value={appToken}
+                onChange={event => setAppToken(event.target.value)}
+                autoComplete="off"
+              />
+            </label>
+            <label className="grid gap-1 text-sm">
+              <span>User Key</span>
+              <input
+                type="password"
+                className="rounded-sm border border-border-subtle bg-surface-0 px-3 py-2 text-sm font-mono"
+                value={userKey}
+                onChange={event => setUserKey(event.target.value)}
+                autoComplete="off"
+              />
+            </label>
           </div>
         );
 
@@ -469,6 +537,12 @@ export function AddNotificationModal({ isOpen, onClose, notificationToEdit }: Ad
               <p>{testResult.message}</p>
             </Alert>
           )}
+
+          {formError ? (
+            <Alert variant="danger">
+              <p>{formError}</p>
+            </Alert>
+          ) : null}
 
           {/* Name */}
           <label className="grid gap-1 text-sm">

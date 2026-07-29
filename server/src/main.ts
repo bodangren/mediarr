@@ -85,6 +85,7 @@ import { BackupService } from './services/BackupService';
 import { LibraryScanService } from './services/LibraryScanService';
 import { globalLogBuffer } from './services/LogReaderService';
 import { NotificationDispatchService } from './services/NotificationDispatchService';
+import { NotificationTransportRegistry } from './services/notifications/NotificationTransportRegistry';
 import { SeedingProtector } from './services/SeedingProtector';
 import { SystemHealthService } from './services/SystemHealthService';
 import { UpdateService } from './services/updates/UpdateService';
@@ -229,9 +230,11 @@ async function startApi(): Promise<void> {
     eventHub.publish('parser:degraded', event);
   });
 
+  const notificationTransportRegistry = new NotificationTransportRegistry();
   const notificationDispatchService = new NotificationDispatchService(
     eventHub,
     notificationRepository,
+    notificationTransportRegistry,
   );
 
   const httpClient = new HttpClient();
@@ -500,6 +503,7 @@ async function startApi(): Promise<void> {
     taskExecutionsRepository,
     indexerHealthRepository,
     notificationRepository,
+    notificationTransportRegistry,
     qualityProfileRepository,
     downloadClientRepository,
     customFormatRepository,

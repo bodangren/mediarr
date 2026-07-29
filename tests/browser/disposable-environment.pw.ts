@@ -37,6 +37,33 @@ test('boots the built SPA through the real seeded daemon and removes its roots',
     expect(seriesResponse.ok()).toBe(true);
     expect(await seriesResponse.text()).toContain('Browser Acceptance Series');
 
+    const notificationsResponse = await page.request.get(
+      `${server.origin}/api/notifications`,
+    );
+    expect(notificationsResponse.ok()).toBe(true);
+    expect(await notificationsResponse.text()).toContain(
+      'Browser Acceptance Webhook',
+    );
+
+    const notificationPageResponse = await page.goto(
+      `${server.origin}/settings/notifications`,
+      { waitUntil: 'domcontentloaded' },
+    );
+    expect(notificationPageResponse?.status()).toBe(200);
+    await expect(
+      page.getByRole('heading', { name: 'Notifications' }),
+    ).toBeVisible();
+    await expect(page.getByText('Browser Acceptance Webhook')).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: 'Add Notification' }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: 'Edit Browser Acceptance Webhook' }),
+    ).toBeVisible();
+
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await expect(page.getByText('Browser Acceptance Webhook')).toBeVisible();
+
     expect(failures.snapshot()).toEqual({
       consoleErrors: [],
       pageErrors: [],

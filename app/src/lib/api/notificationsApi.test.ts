@@ -59,4 +59,43 @@ describe('notificationsApi', () => {
       expect.anything(),
     );
   });
+
+  it('maps Pushover credentials without repurposing SMTP fields', async () => {
+    mockClient.request.mockResolvedValue({
+      id: 2,
+      name: 'Household Pushover',
+      type: 'pushover',
+      enabled: true,
+      onGrab: true,
+      onDownload: false,
+      onUpgrade: false,
+      onRename: false,
+      onSeriesAdd: false,
+      onEpisodeDelete: false,
+      config: { appToken: '********', userKey: '********' },
+    });
+
+    const result = await api.create({
+      name: 'Household Pushover',
+      type: 'Pushover',
+      triggers: ['OnGrab'],
+      enabled: true,
+      appToken: 'app-token',
+      userKey: 'user-key',
+    });
+
+    expect(mockClient.request).toHaveBeenCalledWith(
+      expect.objectContaining({
+        body: expect.objectContaining({
+          type: 'pushover',
+          config: { appToken: 'app-token', userKey: 'user-key' },
+        }),
+      }),
+      expect.anything(),
+    );
+    expect(result).toEqual(expect.objectContaining({
+      appToken: '********',
+      userKey: '********',
+    }));
+  });
 });

@@ -10,6 +10,8 @@ describe('NotificationTransportRegistry', () => {
     expect(registry.getTransport('telegram')).not.toBeNull();
     expect(registry.getTransport('gotify')).not.toBeNull();
     expect(registry.getTransport('email')).not.toBeNull();
+    expect(registry.getTransport('slack')).not.toBeNull();
+    expect(registry.getTransport('pushover')).not.toBeNull();
   });
 
   it('matches types case-insensitively', () => {
@@ -28,6 +30,6 @@ describe('NotificationTransportRegistry', () => {
 
   it('returns null for unknown type', () => {
     const registry = new NotificationTransportRegistry();
-    expect(registry.getTransport('slack')).toBeNull();
+    expect(registry.getTransport('matrix')).toBeNull();
   });
 });

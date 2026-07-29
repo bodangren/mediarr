@@ -22,9 +22,19 @@ deployment blocker.
 - [~] Visit every `App.tsx` route at desktop and mobile widths; assert a meaningful route landmark,
   deep-link reload, no overflow, and no client/internal-request failure.
 - [ ] Add route-specific fixtures for all empty/non-empty states needed by the matrix.
-- [~] Restore the notifications API and UI CRUD/test path required for the settings route to satisfy
-  the clean-network and durable-workflow gates; this is a prerequisite exposed by the matrix, not
-  an optional enhancement.
+- [x] Restore validated notification list/create/update/delete/test Fastify routes over the existing
+  encrypted Notification repository and real production transport registry.
+- [x] Wire the Notifications settings page to durable add/edit/enable/test/delete controls, including
+  explicit provider/test failures and truthful Slack/Pushover support.
+- [x] Prove the notification contract with server route tests, API/UI tests, and a seeded real-daemon
+  browser visit that rejects console and internal-request failures.
+
+Notification prerequisite evidence: 17 focused Fastify/transport tests and 6 focused app API/UI
+tests pass. Strict app and server TypeScript, the production app build, and `git diff --check` pass.
+The focused Chromium acceptance test boots the built SPA through the real disposable daemon and
+SQLite database, loads a seeded notification through `/api/notifications`, renders and reloads
+`/settings/notifications`, and reports no page, console, request, or response failures.
+
 - [ ] Commit: `test(browser): cover production SPA route matrix`
 
 ## Phase 3: Durable Core Workflows

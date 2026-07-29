@@ -569,6 +569,31 @@ async function seedDatabase(paths: DisposableMediarrPaths): Promise<void> {
 
       database
         .prepare(
+          `INSERT INTO Notification (
+            name, type, enabled, onGrab, onDownload, onUpgrade, onRename,
+            onSeriesAdd, onEpisodeDelete, config, createdAt, updatedAt
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        )
+        .run(
+          'Browser Acceptance Webhook',
+          'webhook',
+          1,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          JSON.stringify({
+            url: 'http://127.0.0.1:1/browser-acceptance',
+            method: 'POST',
+          }),
+          now,
+          now,
+        );
+
+      database
+        .prepare(
           `INSERT INTO AppSettings (
             id, torrentLimits, schedulerIntervals, pathVisibility, apiKeys,
             host, security, logging, "update", mediaManagement, streaming,

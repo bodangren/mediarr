@@ -58,6 +58,8 @@ export interface NotificationItem {
   smtpPassword?: string;
   fromAddress?: string;
   toAddress?: string;
+  appToken?: string;
+  userKey?: string;
   method?: 'GET' | 'POST' | 'PUT';
   headers?: Record<string, string>;
 }
@@ -78,6 +80,8 @@ export interface CreateNotificationInput {
   smtpPassword?: string;
   fromAddress?: string;
   toAddress?: string;
+  appToken?: string;
+  userKey?: string;
   method?: 'GET' | 'POST' | 'PUT';
   headers?: Record<string, string>;
 }
@@ -154,8 +158,8 @@ function mapConfigToBackend(input: CreateNotificationInput | UpdateNotificationI
   }
   if (type === 'Pushover') {
     return {
-      appToken: input.smtpUser,
-      userKey: input.smtpPassword,
+      appToken: input.appToken,
+      userKey: input.userKey,
     };
   }
 
@@ -195,13 +199,42 @@ function mapConfigFromBackend(
   }
 
   if (type === 'Webhook') {
+    let parsedHeaders: Record<string, string> | undefined;
+    if (typeof config.headers === 'string' && config.headers.trim()) {
+      try {
+        const value: unknown = JSON.parse(config.headers);
+        if (value && typeof value === 'object' && !Array.isArray(value)) {
+          parsedHeaders = Object.fromEntries(
+            Object.entries(value).filter((entry): entry is [string, string] => typeof entry[1] === 'string'),
+          );
+        }
+      } catch {
+        parsedHeaders = undefined;
+      }
+    } else if (config.headers && typeof config.headers === 'object' && !Array.isArray(config.headers)) {
+      parsedHeaders = Object.fromEntries(
+        Object.entries(config.headers).filter((entry): entry is [string, string] => typeof entry[1] === 'string'),
+      );
+    }
+
     return {
-      webhookUrl: typeof config.url === 'string' ? config.url : '',
+      webhookUrl: typeof config.url === 'string'
+        ? config.url
+        : typeof config.webhookUrl === 'string'
+          ? config.webhookUrl
+          : '',
       method:
         config.method === 'GET' || config.method === 'PUT'
           ? config.method
           : 'POST',
-      headers: undefined,
+      headers: parsedHeaders,
+    };
+  }
+
+  if (type === 'Pushover') {
+    return {
+      appToken: typeof config.appToken === 'string' ? config.appToken : '',
+      userKey: typeof config.userKey === 'string' ? config.userKey : '',
     };
   }
 

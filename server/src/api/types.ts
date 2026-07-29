@@ -5,6 +5,7 @@ import type { ActivityEventRepository } from '../repositories/ActivityEventRepos
 import type { TaskExecutionsRepository } from '../repositories/TaskExecutionsRepository';
 import type { IndexerHealthRepository } from '../repositories/IndexerHealthRepository';
 import type { NotificationRepository } from '../repositories/NotificationRepository';
+import type { NotificationTransportRegistry } from '../services/notifications/NotificationTransportRegistry';
 import type { QualityProfileRepository } from '../repositories/QualityProfileRepository';
 import type { DownloadClientRepository } from '../repositories/DownloadClientRepository';
 import type { CustomFormatRepository } from '../repositories/CustomFormatRepository';
@@ -110,6 +111,7 @@ export interface ApiDependencies {
     NotificationRepository,
     'findAll' | 'findById' | 'create' | 'update' | 'delete' | 'exists' | 'nameExists'
   > | undefined;
+  notificationTransportRegistry?: Pick<NotificationTransportRegistry, 'getTransport'> | undefined;
   qualityProfileRepository?: Pick<
     QualityProfileRepository,
     'findAll' | 'findById' | 'findByName' | 'create' | 'update' | 'delete' | 'isInUse'

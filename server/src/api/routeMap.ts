@@ -163,7 +163,13 @@ export const API_ROUTE_MAP: ApiRouteDefinition[] = [
   { method: 'GET', path: '/api/setup/status' },
   { method: 'POST', path: '/api/setup/complete' },
 
-  // Notification routes (push-status only; full CRUD deferred to notification-management feature)
+  // Notification routes
+  { method: 'GET', path: '/api/notifications' },
+  { method: 'POST', path: '/api/notifications' },
+  { method: 'POST', path: '/api/notifications/test' },
+  { method: 'PUT', path: '/api/notifications/:id' },
+  { method: 'DELETE', path: '/api/notifications/:id' },
+  { method: 'POST', path: '/api/notifications/:id/test' },
   { method: 'GET', path: '/api/notifications/push-status' },
 
   // Download Client routes (speed-limits settings only; full CRUD deferred)

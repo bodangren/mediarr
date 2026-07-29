@@ -1,0 +1,52 @@
+import { existsSync } from 'node:fs';
+import { expect, test } from '@playwright/test';
+import {
+  startDisposableMediarr,
+  type DisposableMediarr,
+} from './harness/disposableMediarr.js';
+import { captureBrowserFailures } from './harness/browserFailures.js';
+
+test('boots the built SPA through the real seeded daemon and removes its roots', async ({
+  page,
+}) => {
+  let server: DisposableMediarr | undefined;
+  let disposableRoot = '';
+
+  try {
+    server = await startDisposableMediarr();
+    disposableRoot = server.paths.root;
+    expect(existsSync(disposableRoot)).toBe(true);
+
+    const failures = captureBrowserFailures(page, server.origin);
+    const response = await page.goto(server.origin, {
+      waitUntil: 'domcontentloaded',
+    });
+
+    expect(response?.status()).toBe(200);
+    await expect(page).toHaveURL(/\/dashboard$/);
+    await expect(
+      page.getByRole('navigation', { name: 'Sidebar Navigation' }),
+    ).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
+
+    const movieResponse = await page.request.get(`${server.origin}/api/movies`);
+    expect(movieResponse.ok()).toBe(true);
+    expect(await movieResponse.text()).toContain('Browser Acceptance Movie');
+
+    const seriesResponse = await page.request.get(`${server.origin}/api/series`);
+    expect(seriesResponse.ok()).toBe(true);
+    expect(await seriesResponse.text()).toContain('Browser Acceptance Series');
+
+    expect(failures.snapshot()).toEqual({
+      consoleErrors: [],
+      pageErrors: [],
+      requestFailures: [],
+      responseFailures: [],
+    });
+  } finally {
+    await server?.close();
+  }
+
+  expect(disposableRoot).not.toBe('');
+  expect(existsSync(disposableRoot)).toBe(false);
+});

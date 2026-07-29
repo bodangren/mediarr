@@ -10,6 +10,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
+    "test:browser": "npm run build --workspace=app && playwright test --config tests/browser/playwright.config.ts",
     "migrate": "tsx scripts/reconcile-migration-compatibility.ts && tsx scripts/run-migrations.ts",
     "benchmark:parser": "tsx scripts/benchmark-release-parser.ts",
     "test:cardigann:live": "CARDIGANN_LIVE_TESTS=true vitest run server/src/indexers/cardigann-conformance/liveSiteDefinitions.test.ts server/src/indexers/cardigann-conformance/liveReleaseSearch.test.ts",

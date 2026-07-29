@@ -1,11 +1,13 @@
 import { schedule as cronSchedule, validate as cronValidate } from 'node-cron';
 import type { ScheduledTask } from 'node-cron';
+import type { SchedulerTaskStatus } from '../contracts/scheduler';
+
+export {
+  SCHEDULER_TASK_STATUS_VALUES,
+  type SchedulerTaskStatus,
+} from '../contracts/scheduler';
 
 type JobCallback = () => Promise<void> | void;
-
-export type SchedulerTaskStatus = 'healthy' | 'warning' | 'error' | 'disabled';
-
-export const SCHEDULER_TASK_STATUS_VALUES: readonly SchedulerTaskStatus[] = ['healthy', 'warning', 'error', 'disabled'] as const;
 
 export interface ScheduledJobMeta {
   name: string;

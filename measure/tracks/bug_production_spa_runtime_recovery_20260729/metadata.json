@@ -1,0 +1,11 @@
+{
+  "track_id": "bug_production_spa_runtime_recovery_20260729",
+  "type": "bug",
+  "status": "in_progress",
+  "created_at": "2026-07-29T06:10:00Z",
+  "updated_at": "2026-07-29T06:10:00Z",
+  "description": "Recover the production Mediarr SPA from a module-evaluation crash and permanently verify that a built page renders in a browser.",
+  "estimated_tasks": 8,
+  "actual_tasks": null,
+  "deviation_notes": "Created from a live production reproduction: HTTP 200 and asset 200 responses still produced an empty React root because the client bundle imported server-only node-cron transitively."
+}

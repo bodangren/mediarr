@@ -1,12 +1,10 @@
 import { z } from 'zod';
 import { ApiHttpClient } from './httpClient';
 import { routeMap } from './routeMap';
-// Shared status union lives on the server — import type so the client enum
-// cannot drift (test-strategy.md §3 / schedulerApi.statusEnum.test.ts).
 import {
   SCHEDULER_TASK_STATUS_VALUES,
   type SchedulerTaskStatus,
-} from '../../../../server/src/services/Scheduler';
+} from '@server/contracts/scheduler';
 
 export type { SchedulerTaskStatus };
 export { SCHEDULER_TASK_STATUS_VALUES };
@@ -19,7 +17,7 @@ const schedulerTaskSchema = z.object({
   lastDurationMs: z.number().nullable(),
   nextRunAt: z.string().nullable(),
   enabled: z.boolean().optional(),
-  status: z.enum(SCHEDULER_TASK_STATUS_VALUES as [SchedulerTaskStatus, ...SchedulerTaskStatus[]]).optional(),
+  status: z.enum(SCHEDULER_TASK_STATUS_VALUES).optional(),
 });
 
 const taskExecutionSchema = z.object({

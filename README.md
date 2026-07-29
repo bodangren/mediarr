@@ -33,6 +33,19 @@ npm run dev
 
 This starts both the Vite dev server (frontend on `:5173`) and the Fastify API server (backend on `:5174`).
 
+### Production browser gate
+
+Before treating a web change as verified, run:
+
+```bash
+CI=true npx vitest run tests/production-spa-render.test.js
+```
+
+This command builds `app/dist`, serves it through Mediarr's real static-serving registration, and
+opens the configured Dashboard in Chrome. It fails on an empty React root, browser page or console
+errors, failed requests, or failed non-API assets. A successful HTTP response or Vite build alone is
+not UI acceptance.
+
 ### AI Provider Routing
 
 `server/src/services/ReleaseParser.ts` supports two environment-driven AI routes:

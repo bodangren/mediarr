@@ -49,6 +49,26 @@ function looksLikeStaticAsset(requestPath: string): boolean {
   return path.extname(lastSegment) !== '';
 }
 
+function applyCachePolicy(reply: { header(name: string, value: string): unknown }, requestPath: string, mimeType: string): void {
+  // HTML is the deployment manifest for the SPA. It must revalidate so a
+  // browser can discover a newly content-hashed bundle after an update.
+  if (mimeType.startsWith('text/html')) {
+    reply.header('Cache-Control', 'no-cache, max-age=0, must-revalidate');
+    return;
+  }
+
+  // Vite content-hashes files under /assets/. They can be cached aggressively
+  // because each changed asset receives a new URL from a fresh index.html.
+  if (requestPath.startsWith('/assets/')) {
+    reply.header('Cache-Control', 'public, max-age=31536000, immutable');
+    return;
+  }
+
+  // Public assets retain stable paths, so do not let an old poster/icon stay
+  // resident across a deployment.
+  reply.header('Cache-Control', 'no-cache, max-age=0, must-revalidate');
+}
+
 export function registerStaticServing(
   app: FastifyInstance,
   staticDir: string,
@@ -83,12 +103,14 @@ export function registerStaticServing(
       const content = await fs.readFile(normalizedFilePath);
       const mimeType = getMimeType(normalizedFilePath);
       reply.header('Content-Type', mimeType);
+      applyCachePolicy(reply, requestPath, mimeType);
       return content;
     }
 
     if (!looksLikeStaticAsset(requestPath) && (await fileExists(indexPath))) {
       const content = await fs.readFile(indexPath);
       reply.header('Content-Type', 'text/html; charset=utf-8');
+      applyCachePolicy(reply, requestPath, 'text/html; charset=utf-8');
       return content;
     }
 

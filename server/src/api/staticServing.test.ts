@@ -57,6 +57,7 @@ describe('Static File Serving for SPA', () => {
 
       expect(response.statusCode).toBe(200);
       expect(response.headers['content-type']).toContain('text/html');
+      expect(response.headers['cache-control']).toBe('no-cache, max-age=0, must-revalidate');
       expect(response.body).toContain('<title>Mediarr</title>');
     });
 
@@ -70,6 +71,7 @@ describe('Static File Serving for SPA', () => {
 
       expect(response.statusCode).toBe(200);
       expect(response.headers['content-type']).toContain('application/javascript');
+      expect(response.headers['cache-control']).toBe('public, max-age=31536000, immutable');
       expect(response.body).toContain('console.log');
     });
 
@@ -83,6 +85,7 @@ describe('Static File Serving for SPA', () => {
 
       expect(response.statusCode).toBe(200);
       expect(response.headers['content-type']).toContain('text/css');
+      expect(response.headers['cache-control']).toBe('public, max-age=31536000, immutable');
       expect(response.body).toContain('margin: 0');
     });
 
@@ -109,6 +112,7 @@ describe('Static File Serving for SPA', () => {
 
       expect(response.statusCode).toBe(200);
       expect(response.headers['content-type']).toContain('text/html');
+      expect(response.headers['cache-control']).toBe('no-cache, max-age=0, must-revalidate');
       expect(response.body).toContain('<title>Mediarr</title>');
     });
 

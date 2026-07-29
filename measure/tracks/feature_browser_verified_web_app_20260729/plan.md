@@ -55,6 +55,8 @@ that requires a Kimi WebBridge walkthrough.
 
 ## Phase 4: Acquisition, Recovery, and Performance
 
+- [x] Serve SPA HTML with mandatory revalidation and content-hashed Vite assets with immutable
+  caching; Kimi normal navigation must load the current bundle after an isolated daemon refresh.
 - [ ] Use deterministic local fakes to prove search → add → grab → queue/SSE → import → library
   lifecycle and failure/recovery paths.
 - [ ] Add measured browser performance, accessibility, mobile, keyboard/focus, and reconnect gates.

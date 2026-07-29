@@ -1,26 +1,25 @@
 # Plan: Browser-Verified Web Application
 
-## Phase 1: Disposable Acceptance Harness
+## Phase 1: Real-Browser Acceptance Boundary
 
 - [x] Create a daemon launcher with isolated database/config/media roots and deterministic seed
   fixtures for movie, series, episode, playable variant, subtitle, activity, queue, collection,
   scheduler, and settings state.
-- [x] Add a browser-runner foundation that starts the real daemon/static server, captures browser
-  page/console/network failures, screenshots/traces on failure, and cleans every disposable root.
-- [x] Commit: `test(browser): boot seeded disposable Mediarr acceptance environment`
+- [ ] Replace Browser Harness as an acceptance authority with Kimi WebBridge sessions against the
+  connected real browser; record live URLs, rendered state, network failures, and screenshots.
+- [ ] Retire or reclassify Browser Harness assertions so they cannot be cited as browser or
+  performance acceptance evidence.
 
-Phase 1 evidence: `npm run test:browser` built 2,989 modules and passed the disposable real-daemon
-Chromium acceptance test in 48.5 seconds on 2026-07-29. The direct rerun passed in 44.3 seconds;
-the focused strict type check and `git diff --check` also passed. The harness intentionally uses
-the daemon's working `tsx server/src/main.ts` start path. `bun --no-addons server/src/main.ts`
-cannot load better-sqlite3 before the daemon binds; the root command safely falls back to `tsx` and
-the container already uses `tsx`, so this is a Bun runtime-contract defect rather than a total
-deployment blocker.
+Historical note: prior Playwright/Browser Harness runs are explicitly not browser or performance
+acceptance evidence. They must be replaced by Kimi WebBridge verification in the connected browser.
+The daemon's working `tsx server/src/main.ts` start path remains relevant to the isolated interface;
+`bun --no-addons server/src/main.ts` cannot load better-sqlite3 before binding, while the root
+command falls back to `tsx` and the container already uses `tsx`.
 
 ## Phase 2: Production Route Matrix
 
-- [~] Visit every `App.tsx` route at desktop and mobile widths; assert a meaningful route landmark,
-  deep-link reload, no overflow, and no client/internal-request failure.
+- [~] Visit every `App.tsx` route in Kimi WebBridge at desktop and mobile widths; assert a
+  meaningful route landmark, deep-link reload, no overflow, and no client/internal-request failure.
 - [ ] Add route-specific fixtures for all empty/non-empty states needed by the matrix.
 - [x] Restore validated notification list/create/update/delete/test Fastify routes over the existing
   encrypted Notification repository and real production transport registry.
@@ -31,9 +30,8 @@ deployment blocker.
 
 Notification prerequisite evidence: 17 focused Fastify/transport tests and 6 focused app API/UI
 tests pass. Strict app and server TypeScript, the production app build, and `git diff --check` pass.
-The focused Chromium acceptance test boots the built SPA through the real disposable daemon and
-SQLite database, loads a seeded notification through `/api/notifications`, renders and reloads
-`/settings/notifications`, and reports no page, console, request, or response failures.
+No Browser Harness result may be used as evidence that the connected browser can use Notifications;
+that requires a Kimi WebBridge walkthrough.
 
 - [ ] Commit: `test(browser): cover production SPA route matrix`
 

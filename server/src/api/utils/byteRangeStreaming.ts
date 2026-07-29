@@ -4,7 +4,15 @@ import path from 'node:path';
 import type { FastifyReply } from 'fastify';
 
 export interface ByteRange { start: number; end: number; }
-const MIME_TYPES: Record<string, string> = { '.mkv': 'video/x-matroska', '.mp4': 'video/mp4', '.webm': 'video/webm', '.mov': 'video/quicktime', '.avi': 'video/x-msvideo' };
+const MIME_TYPES: Record<string, string> = {
+  '.mkv': 'video/x-matroska',
+  '.mp4': 'video/mp4',
+  '.m4v': 'video/mp4',
+  '.webm': 'video/webm',
+  '.mov': 'video/quicktime',
+  '.avi': 'video/x-msvideo',
+  '.ts': 'video/mp2t',
+};
 
 export function parseRangeHeader(value: string, size: number): ByteRange | null {
   const match = /^bytes=(\d*)-(\d*)$/i.exec(value.trim()); if (!match) return null;

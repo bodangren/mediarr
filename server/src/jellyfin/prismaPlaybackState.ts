@@ -5,6 +5,7 @@ import {
 } from './catalog';
 import {
   deriveNextUp,
+  deriveAllNextUp,
   type NextUpDependencies,
   type NextUpOptions,
   type OrderedJellyfinEpisode,
@@ -115,4 +116,55 @@ export async function derivePrismaNextUpCatalogItems(
     const catalogEpisode = episodeById.get(episode.id);
     return catalogEpisode ? [mapEpisodeToItem(catalogEpisode)] : [];
   });
+}
+
+export interface NextUpCatalogPageOptions extends Omit<NextUpOptions, 'limit'> {
+  startIndex?: number | string | null | undefined;
+  limit?: number | string | null | undefined;
+}
+
+export interface NextUpCatalogPage {
+  Items: JellyfinCatalogItem[];
+  TotalRecordCount: number;
+  StartIndex: number;
+}
+
+function nextUpPageInteger(
+  value: number | string | null | undefined,
+  fallback: number,
+): number {
+  if (value === null || value === undefined || value === '') return fallback;
+  const parsed = typeof value === 'number' ? value : Number(value);
+  return Number.isSafeInteger(parsed) && parsed >= 0 ? parsed : fallback;
+}
+
+/**
+ * Returns NextUp candidates with the total calculated before Jellyfin paging.
+ * The shared playback-state lookup remains the sole source of watched state.
+ */
+export async function derivePrismaNextUpCatalogPage(
+  playbackState: PrismaJellyfinPlaybackState,
+  options: NextUpCatalogPageOptions = {},
+): Promise<NextUpCatalogPage> {
+  const episodes = await playbackState.getOrderedCatalogEpisodes(options.seriesId);
+  const episodeById = new Map(episodes.map(episode => [episode.id, episode]));
+  const candidates = await deriveAllNextUp({
+    getOrderedEpisodes: async () => episodes.map(episode => ({
+      id: episode.id,
+      seriesId: episode.seriesId,
+    })),
+    getProgress: playbackState.getProgress,
+  }, options);
+  const mapped = candidates.flatMap(episode => {
+    const catalogEpisode = episodeById.get(episode.id);
+    return catalogEpisode ? [mapEpisodeToItem(catalogEpisode)] : [];
+  });
+  const startIndex = nextUpPageInteger(options.startIndex, 0);
+  const parsedLimit = nextUpPageInteger(options.limit, mapped.length);
+  const limit = parsedLimit === 0 ? mapped.length : parsedLimit;
+  return {
+    Items: mapped.slice(startIndex, startIndex + limit),
+    TotalRecordCount: mapped.length,
+    StartIndex: startIndex,
+  };
 }

@@ -1,16 +1,21 @@
 import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest } from 'fastify';
+import websocket from '@fastify/websocket';
 import type { ApiDependencies } from './types';
 import { decodeJellyfinId, encodeJellyfinId, JELLYFIN_MOVIE_VIEW_ID, JELLYFIN_TV_VIEW_ID } from '../jellyfin/ids';
-import { getCatalogItem, mapEpisodeToItem, queryCatalog, queryEpisodesWithNavigation, querySeasons, type CatalogQuery, type EpisodeQueryOptions, type JellyfinCatalogItem, type JellyfinCatalogQueryResult } from '../jellyfin/catalog';
+import { getCatalogItem, queryCatalog, queryEpisodesWithNavigation, queryLatestCatalog, querySeasons, type CatalogQuery, type EpisodeQueryOptions, type JellyfinCatalogItem, type JellyfinCatalogQueryResult } from '../jellyfin/catalog';
 import { createPrismaJellyfinCatalog } from '../jellyfin/prismaCatalog';
 import { buildDirectPlayMediaSource, decodePlaybackTarget } from '../jellyfin/playback';
-import { sendByteRangeStream } from './utils/byteRangeStreaming';
-import { JellyfinSessionRegistry } from '../jellyfin/sessions';
-import { continueWatchingToJellyfinResume, jellyfinProgressToHeartbeat, type NextUpOptions } from '../jellyfin/playbackState';
+import {
+  extractJellyfinSessionIdentity,
+  jellyfinSessionToDto,
+  JellyfinSessionRegistry,
+} from '../jellyfin/sessions';
+import { continueWatchingToJellyfinResume, jellyfinProgressToHeartbeat } from '../jellyfin/playbackState';
 import { proxyJellyfinArtwork, resolveJellyfinArtworkSource } from '../jellyfin/artwork';
-import { createPrismaJellyfinPlaybackState, derivePrismaNextUpCatalogItems } from '../jellyfin/prismaPlaybackState';
+import { createPrismaJellyfinPlaybackState, derivePrismaNextUpCatalogPage, type NextUpCatalogPageOptions } from '../jellyfin/prismaPlaybackState';
 import { buildJellyfinPublicSystemInfo, buildJellyfinSystemInfo, buildTrustedLanUserDto } from '../jellyfin/compatibilityDtos';
 import { sharedPlaybackStateToJellyfinUserData } from '../jellyfin/userData';
+import { createJellyfinReferenceStreamHandler, jellyfinBrowserEntryHandler, jellyfinSocketKeepAliveResponse } from '../jellyfin/referenceSurface';
 
 export interface JellyfinServerOptions {
   serverId: string;
@@ -34,39 +39,80 @@ function views() {
 }
 
 function catalogQuery(query: Record<string, unknown>): CatalogQuery {
+  const pick = (upper: string, lower: string): unknown => query[upper] ?? query[lower];
+  const scalar = (value: unknown): string | number | boolean | undefined => {
+    const entry = Array.isArray(value) ? value[0] : value;
+    return typeof entry === 'string' || typeof entry === 'number' || typeof entry === 'boolean'
+      ? entry
+      : undefined;
+  };
+  const list = (value: unknown): string | readonly string[] | undefined => {
+    if (typeof value === 'string') return value;
+    return Array.isArray(value) && value.every(entry => typeof entry === 'string')
+      ? value
+      : undefined;
+  };
   const normalized: CatalogQuery = {};
-  const parentId = query.ParentId ?? query.parentId;
-  const startIndex = query.StartIndex ?? query.startIndex;
-  const limit = query.Limit ?? query.limit;
-  const sortBy = query.SortBy ?? query.sortBy;
-  const sortOrder = query.SortOrder ?? query.sortOrder;
-  const includeItemTypes = query.IncludeItemTypes ?? query.includeItemTypes;
+  const parentId = scalar(pick('ParentId', 'parentId'));
+  const startIndex = scalar(pick('StartIndex', 'startIndex'));
+  const limit = scalar(pick('Limit', 'limit'));
+  const sortBy = list(pick('SortBy', 'sortBy'));
+  const sortOrder = scalar(pick('SortOrder', 'sortOrder'));
+  const includeItemTypes = list(pick('IncludeItemTypes', 'includeItemTypes'));
+  const excludeItemTypes = list(pick('ExcludeItemTypes', 'excludeItemTypes'));
+  const searchTerm = scalar(pick('SearchTerm', 'searchTerm'));
+  const recursive = scalar(pick('Recursive', 'recursive'));
 
-  if (typeof parentId === "string") normalized.parentId = parentId;
-  if (typeof startIndex === "string" || typeof startIndex === "number") normalized.startIndex = startIndex;
-  if (typeof limit === "string" || typeof limit === "number") normalized.limit = limit;
-  if (typeof sortBy === "string") normalized.sortBy = sortBy;
-  if (typeof sortOrder === "string") normalized.sortOrder = sortOrder;
-  if (typeof includeItemTypes === "string") normalized.includeItemTypes = includeItemTypes;
+  if (typeof parentId === 'string') normalized.parentId = parentId;
+  if (typeof startIndex === 'string' || typeof startIndex === 'number') normalized.startIndex = startIndex;
+  if (typeof limit === 'string' || typeof limit === 'number') normalized.limit = limit;
+  if (sortBy) normalized.sortBy = sortBy;
+  if (typeof sortOrder === 'string') normalized.sortOrder = sortOrder;
+  if (includeItemTypes) normalized.includeItemTypes = includeItemTypes;
+  if (excludeItemTypes) normalized.excludeItemTypes = excludeItemTypes;
+  if (typeof searchTerm === 'string') normalized.searchTerm = searchTerm;
+  if (recursive !== undefined) normalized.recursive = recursive;
 
   return normalized;
 }
 
-function sessionIdentity(deviceId: string | undefined) {
+function requestRecord(value: unknown): Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {};
+}
+
+function jellyfinSessionRequest(request: FastifyRequest) {
+  const body = requestRecord(request.body);
+  const query = requestRecord(request.query);
   return {
-    id: deviceId ?? 'unknown',
-    userId: 'lan-default',
-    ...(deviceId === undefined ? {} : { deviceId }),
+    body,
+    query,
+    capabilities: { ...query, ...body },
+    identity: extractJellyfinSessionIdentity({
+      headers: request.headers,
+      body,
+      query,
+      userId: 'lan-default',
+    }),
   };
 }
 
-function nextUpOptions(query: { SeriesId?: string; Limit?: string }): NextUpOptions | null {
-  const decoded = query.SeriesId ? decodeJellyfinId(query.SeriesId) : null;
-  if (query.SeriesId && decoded?.kind !== 'series') return null;
+function nextUpOptions(query: Record<string, unknown>): NextUpCatalogPageOptions | null {
+  const pick = (upper: string, lower: string) => query[upper] ?? query[lower];
+  const seriesId = pick('SeriesId', 'seriesId');
+  if (seriesId !== undefined && typeof seriesId !== 'string') return null;
+  const decoded = typeof seriesId === 'string' && seriesId.trim()
+    ? decodeJellyfinId(seriesId)
+    : null;
+  if (typeof seriesId === 'string' && seriesId.trim() && decoded?.kind !== 'series') return null;
+  const startIndex = pick('StartIndex', 'startIndex');
+  const limit = pick('Limit', 'limit');
   return {
     userId: 'lan-default',
     ...(decoded?.kind === 'series' ? { seriesId: decoded.id } : {}),
-    ...(query.Limit ? { limit: Number(query.Limit) } : {}),
+    ...(typeof startIndex === 'string' || typeof startIndex === 'number' ? { startIndex } : {}),
+    ...(typeof limit === 'string' || typeof limit === 'number' ? { limit } : {}),
   };
 }
 
@@ -90,11 +136,11 @@ function emptyPlaybackInfo(itemId: string) {
   return { MediaSources: [], PlaySessionId: itemId };
 }
 
-/** Creates a deliberately separate Jellyfin-shaped HTTP surface sharing Mediarr dependencies. */
 export function createJellyfinServer(dependencies: Pick<ApiDependencies, 'prisma' | 'playbackService'>, options: JellyfinServerOptions): FastifyInstance {
   const app = Fastify({ logger: false });
   const catalog = createPrismaJellyfinCatalog(dependencies.prisma);
   const sessions = new JellyfinSessionRegistry();
+  app.register(websocket);
   const playbackState = createPrismaJellyfinPlaybackState({ episode: (dependencies.prisma as any).episode, playbackProgress: (dependencies.prisma as any).playbackProgress });
   const version = options.version ?? '10.10.0';
   const identity = {
@@ -108,7 +154,6 @@ export function createJellyfinServer(dependencies: Pick<ApiDependencies, 'prisma
   const publicInfo = buildJellyfinPublicSystemInfo(identity);
   const systemInfo = buildJellyfinSystemInfo(identity);
   const serveArtwork = async (request: FastifyRequest, reply: FastifyReply) => { const params = request.params as { id: string; type: string }; const source = await resolveJellyfinArtworkSource(catalog, params.id, params.type); if (!source) return reply.code(404).send(); const proxied = await proxyJellyfinArtwork(source.url); if (!proxied.ok) return reply.code(proxied.status).send(); reply.header('Content-Type', proxied.contentType).header('Cache-Control', proxied.cacheControl); return reply.send(Buffer.from(proxied.body)); };
-  const serveVideo = async (request: FastifyRequest, reply: FastifyReply) => { if (!dependencies.playbackService?.resolveStreamSource) return reply.code(503).send(); const target = decodePlaybackTarget((request.params as { id: string }).id); if (!target) return reply.code(404).send(); const source = await dependencies.playbackService.resolveStreamSource(target); return sendByteRangeStream(reply, source.filePath, request.headers.range); };
   const playbackInfo = async (request: FastifyRequest, reply: FastifyReply) => {
     if (!dependencies.playbackService?.resolveStreamSource) return reply.code(503).send();
     const itemId = (request.params as { id: string }).id;
@@ -130,6 +175,10 @@ export function createJellyfinServer(dependencies: Pick<ApiDependencies, 'prisma
     ...result,
     Items: await Promise.all(result.Items.map(withUserData)),
   });
+  const latestItems = async (request: FastifyRequest) => {
+    const items = await queryLatestCatalog(catalog, catalogQuery(request.query as Record<string, unknown>));
+    return Promise.all(items.map(withUserData));
+  };
   app.get('/System/Info/Public', async () => publicInfo);
   app.get('/System/Info', async () => systemInfo);
   app.get('/System/Configuration', async () => ({ EnableRemoteAccess: true, CastReceiverApplications: [] }));
@@ -146,13 +195,12 @@ export function createJellyfinServer(dependencies: Pick<ApiDependencies, 'prisma
   app.get('/Library/MediaFolders', async () => ({ Items: views(), TotalRecordCount: 2, StartIndex: 0 }));
   app.get('/Library/VirtualFolders', async () => []);
   app.post('/Library/Refresh', async () => ({ ok: true }));
-  const latestItems = async () => {
-    const episodes = await (dependencies.prisma as any).episode.findMany({
-      orderBy: { airDateUtc: 'desc' },
-      take: 16,
-    });
-    return Promise.all(episodes.map(mapEpisodeToItem).map(withUserData));
-  };
+  const directStream = createJellyfinReferenceStreamHandler(dependencies.playbackService);
+  app.get('/Videos/:id/stream', directStream);
+  app.get('/Videos/:id/stream.:container', directStream);
+  app.get('/Audio/:id/stream', directStream);
+  app.get('/Audio/:id/stream.:container', directStream);
+  app.get('/Items/:id/Download', directStream);
   app.get('/Items', async (request) => withUserDataResult(await queryCatalog(catalog, catalogQuery(request.query as Record<string, unknown>))));
   app.get('/Users/:id/Items', async (request) => withUserDataResult(await queryCatalog(catalog, catalogQuery(request.query as Record<string, unknown>))));
   app.get('/Users/:id/Items/Latest', latestItems);
@@ -166,14 +214,65 @@ export function createJellyfinServer(dependencies: Pick<ApiDependencies, 'prisma
   app.get('/Items/:id/Images/:type/:index', serveArtwork);
   app.get('/Items/:id/PlaybackInfo', playbackInfo);
   app.post('/Items/:id/PlaybackInfo', playbackInfo);
-  app.get('/Videos/:id/stream', serveVideo);
-  app.get('/Videos/:id/stream.:container', serveVideo);
-  app.get('/Sessions', async () => sessions.list());
-  app.post('/Sessions/Capabilities', async (request, reply) => { const body = request.body as Record<string, unknown>; const id = String(body.Id ?? request.headers['x-emby-device-id'] ?? 'unknown'); sessions.setCapabilities({ id, userId: 'lan-default' }, body); return reply.code(204).send(); });
-  app.post('/Sessions/Capabilities/Full', async (request, reply) => { const body = request.body as Record<string, unknown>; const id = String(body.Id ?? request.headers['x-emby-device-id'] ?? 'unknown'); sessions.setCapabilities({ id, userId: 'lan-default' }, body); return reply.code(204).send(); });
-  app.post('/Sessions/Playing', async (request, reply) => { const body = request.body as { ItemId?: string; PlaySessionId?: string; PositionTicks?: number; DeviceId?: string }; if (!body.ItemId) return reply.code(204).send(); sessions.startPlayback(sessionIdentity(body.DeviceId), { itemId: body.ItemId, ...(body.PlaySessionId === undefined ? {} : { playSessionId: body.PlaySessionId }), ...(body.PositionTicks === undefined ? {} : { positionTicks: body.PositionTicks }) }); return reply.code(204).send(); });
-  app.post('/Sessions/Playing/Stopped', async (request, reply) => { const body = request.body as { PositionTicks?: number; DeviceId?: string }; sessions.stopPlayback(sessionIdentity(body.DeviceId), { ...(body.PositionTicks === undefined ? {} : { positionTicks: body.PositionTicks }) }); return reply.code(204).send(); });
-  app.post('/Sessions/Playing/Progress', async (request, reply) => { if (!dependencies.playbackService?.recordHeartbeat) return reply.code(503).send(); const body = request.body as any; const heartbeat = jellyfinProgressToHeartbeat(body); if (!heartbeat) return reply.code(400).send(); sessions.updatePlayback(sessionIdentity(body.DeviceId), { itemId: body.ItemId, playSessionId: body.PlaySessionId, positionTicks: body.PositionTicks }); await dependencies.playbackService.recordHeartbeat(heartbeat); return reply.code(204).send(); });
+  app.get('/', jellyfinBrowserEntryHandler);
+  app.get('/web', jellyfinBrowserEntryHandler);
+  app.get('/web/', jellyfinBrowserEntryHandler);
+  app.register(async socketRoutes => {
+    socketRoutes.get('/socket', { websocket: true }, (socket) => {
+      socket.on('message', (raw: { toString(): string }) => {
+        const response = jellyfinSocketKeepAliveResponse(raw.toString());
+        if (response) socket.send(response);
+      });
+    });
+  });
+  app.get('/Sessions', async () => sessions.list().map(session => jellyfinSessionToDto(session, { userId: COMPAT_USER_ID, userName: 'Mediarr' })));
+  const setSessionCapabilities = async (request: FastifyRequest, reply: FastifyReply) => {
+    const details = jellyfinSessionRequest(request);
+    sessions.setCapabilities(details.identity, details.capabilities);
+    return reply.code(204).send();
+  };
+  app.post('/Sessions/Capabilities', setSessionCapabilities);
+  app.post('/Sessions/Capabilities/Full', setSessionCapabilities);
+  app.post('/Sessions/Playing', async (request, reply) => {
+    const details = jellyfinSessionRequest(request);
+    const body = details.body as { ItemId?: unknown; PlaySessionId?: unknown; PositionTicks?: unknown };
+    if (typeof body.ItemId !== 'string' || body.ItemId.trim().length === 0) {
+      return reply.code(204).send();
+    }
+    sessions.startPlayback(details.identity, {
+      itemId: body.ItemId,
+      ...(typeof body.PlaySessionId === 'string' ? { playSessionId: body.PlaySessionId } : {}),
+      ...(typeof body.PositionTicks === 'number' ? { positionTicks: body.PositionTicks } : {}),
+    });
+    return reply.code(204).send();
+  });
+  app.post('/Sessions/Playing/Stopped', async (request, reply) => {
+    const details = jellyfinSessionRequest(request);
+    const body = details.body as { PositionTicks?: unknown };
+    const heartbeat = jellyfinProgressToHeartbeat(details.body);
+    if (heartbeat) {
+      if (!dependencies.playbackService?.recordHeartbeat) return reply.code(503).send();
+      await dependencies.playbackService.recordHeartbeat(heartbeat);
+    }
+    sessions.stopPlayback(details.identity, {
+      ...(typeof body.PositionTicks === 'number' ? { positionTicks: body.PositionTicks } : {}),
+    });
+    return reply.code(204).send();
+  });
+  app.post('/Sessions/Playing/Progress', async (request, reply) => {
+    if (!dependencies.playbackService?.recordHeartbeat) return reply.code(503).send();
+    const details = jellyfinSessionRequest(request);
+    const body = details.body as { ItemId?: unknown; PlaySessionId?: unknown; PositionTicks?: unknown };
+    const heartbeat = jellyfinProgressToHeartbeat(details.body);
+    if (!heartbeat) return reply.code(400).send();
+    sessions.updatePlayback(details.identity, {
+      ...(typeof body.ItemId === 'string' ? { itemId: body.ItemId } : {}),
+      ...(typeof body.PlaySessionId === 'string' ? { playSessionId: body.PlaySessionId } : {}),
+      ...(typeof body.PositionTicks === 'number' ? { positionTicks: body.PositionTicks } : {}),
+    });
+    await dependencies.playbackService.recordHeartbeat(heartbeat);
+    return reply.code(204).send();
+  });
   app.get('/Users/:id/Items/Resume', async () => continueWatchingToJellyfinResume(await dependencies.playbackService?.getContinueWatching?.(20) ?? []));
   app.get('/UserItems/Resume', async () => continueWatchingToJellyfinResume(await dependencies.playbackService?.getContinueWatching?.(20) ?? []));
   app.post('/UserPlayedItems/:id', async (request, reply) => {
@@ -195,11 +294,10 @@ export function createJellyfinServer(dependencies: Pick<ApiDependencies, 'prisma
     return sharedPlaybackStateToJellyfinUserData(itemId, state);
   });
   app.get('/Shows/NextUp', async (request) => {
-    const query = request.query as { SeriesId?: string; Limit?: string };
-    const options = nextUpOptions(query);
+    const options = nextUpOptions(request.query as Record<string, unknown>);
     if (!options) return { Items: [], TotalRecordCount: 0, StartIndex: 0 };
-    const items = await derivePrismaNextUpCatalogItems(playbackState, options);
-    return { Items: await Promise.all(items.map(withUserData)), TotalRecordCount: items.length, StartIndex: 0 };
+    const page = await derivePrismaNextUpCatalogPage(playbackState, options);
+    return { ...page, Items: await Promise.all(page.Items.map(withUserData)) };
   });
   app.get('/DisplayPreferences/:id', async (request) => ({
     Id: (request.params as { id: string }).id,

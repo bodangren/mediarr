@@ -15,6 +15,7 @@ const IMAGE_REQUEST_HEADERS = {
 };
 
 const ARTWORK_CACHE_CONTROL = 'public, max-age=31536000';
+export const JELLYFIN_ARTWORK_PROXY_TIMEOUT_MS = 10_000;
 
 export class ArtworkUrlValidationError extends Error {
   constructor(message: string) {
@@ -51,7 +52,7 @@ export type JellyfinArtworkProxyResult =
 
 export type JellyfinArtworkFetcher = (
   url: string,
-  init: { headers: typeof IMAGE_REQUEST_HEADERS },
+  init: { headers: typeof IMAGE_REQUEST_HEADERS; signal: AbortSignal },
 ) => Promise<Pick<Response, 'ok' | 'status' | 'statusText' | 'headers' | 'arrayBuffer'>>;
 
 /** Validates a remote artwork URL before Mediarr makes any outbound request. */
@@ -73,33 +74,48 @@ export function validateJellyfinArtworkUrl(value: string): URL {
 }
 
 /**
- * Fetches artwork from an allowlisted metadata host, retaining upstream error
- * statuses so the route layer can send a Jellyfin-compatible response.
+ * Fetches artwork from an allowlisted metadata host with a bounded request.
+ * Transport and validation failures become safe upstream-style errors so the
+ * HTTP surface never turns an artwork outage into an unhandled server error.
  */
 export async function proxyJellyfinArtwork(
   url: string,
   fetcher: JellyfinArtworkFetcher = globalThis.fetch,
 ): Promise<JellyfinArtworkProxyResult> {
-  const parsed = validateJellyfinArtworkUrl(url);
-  const response = await fetcher(parsed.toString(), {
-    headers: IMAGE_REQUEST_HEADERS,
-  });
-
-  if (!response.ok) {
-    return {
-      ok: false,
-      status: response.status,
-      statusText: response.statusText,
-    };
+  let parsed: URL;
+  try {
+    parsed = validateJellyfinArtworkUrl(url);
+  } catch {
+    return { ok: false, status: 502, statusText: 'Artwork URL is not allowed' };
   }
 
-  return {
-    ok: true,
-    status: response.status,
-    contentType: response.headers.get('content-type') || 'image/jpeg',
-    cacheControl: ARTWORK_CACHE_CONTROL,
-    body: new Uint8Array(await response.arrayBuffer()),
-  };
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), JELLYFIN_ARTWORK_PROXY_TIMEOUT_MS);
+  timeout.unref?.();
+  try {
+    const response = await fetcher(parsed.toString(), {
+      headers: IMAGE_REQUEST_HEADERS,
+      signal: controller.signal,
+    });
+    if (!response.ok) {
+      return { ok: false, status: response.status, statusText: response.statusText };
+    }
+    return {
+      ok: true,
+      status: response.status,
+      contentType: response.headers.get('content-type') || 'image/jpeg',
+      cacheControl: ARTWORK_CACHE_CONTROL,
+      body: new Uint8Array(await response.arrayBuffer()),
+    };
+  } catch {
+    return {
+      ok: false,
+      status: controller.signal.aborted ? 504 : 502,
+      statusText: controller.signal.aborted ? 'Artwork proxy request timed out' : 'Artwork proxy request failed',
+    };
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 function posterSource(

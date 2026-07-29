@@ -14,11 +14,11 @@
       `systemctl --user start thaidub-serve.service` (stop with `systemctl --user stop …`).
       **Stop only — never `disable`.** Confirm `systemctl --user is-enabled thaidub-serve.service`
       still reports `enabled` after our stop. **Verified before work:** `enabled` (2026-07-29).
+- [x] Capture a baseline of the TV's actual requests from the existing ThaiDub journal (2026-07-24,
+      `192.168.1.121`, Jellyfin Android TV): socket, bodyless query-form capabilities, lower-camel
+      Latest/NextUp browse, PlaybackInfo, Range streams, progress heartbeats, and stop were recorded.
 - [x] Add a `JELLYFIN_PORT` (default `8096`) and `JELLYFIN_ENABLED` (default off) config seam so the
       surface cannot collide with ThaiDub by accident on someone else's machine.
-- [ ] Capture a baseline of the TV's actual requests: stop ThaiDub, run it under request logging, and
-      record the exact call sequence the TV makes on connect. **This is the real contract** — the
-      endpoint list in the spec is prior art, not proof of what this TV needs.
 - [x] Commit: `feat(jellyfin): add configuration seam for the compatibility surface`
 
 ## Phase 1: Discovery + Handshake
@@ -107,6 +107,12 @@
 - [x] Preserve the one-store resume/watched invariant while deciding any unplayed-state compatibility behavior.
 - [~] Re-ran `CI=true npx vitest run server/src tests` (333 passed, 1 skipped; 2993 passed, 14 skipped), strict TypeScript, and `npm run test:clean-image` (no-cache image exit 0) after remediation; physical-TV/ThaiDub acceptance remains human-gated.
 
+## Full Reference-Surface Expansion (explicit owner direction 2026-07-29)
+
+- [x] Close session wire-contract gaps: normalize X-Emby/body identity, accept bodyless query-form capabilities, return Jellyfin session DTOs, and persist a final valid stopped-playback position through the shared store.
+- [x] Close browse contract gaps: real-TV lower-camel query variants, recursive/type/search filters, accurate Latest and NextUp paging/counts, reachable artwork tags, and availability consistency between catalog and stream resolution.
+- [x] Add and test the remaining reference routes: Audio stream aliases, Download, socket keepalive, and `/`, `/web`, `/web/` browser entry aliases.
+- [~] Route-declaration and protocol-contract parity now covers all 52 known-good `serve.py` declarations; rerun the full automated/container gates after the final integrated edit.
 ## Open Questions (resolve during Phase 0, not by assumption)
 
 1. **Which endpoints does *this* TV actually call?** The spec's list is prior art from

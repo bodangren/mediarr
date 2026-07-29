@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { encodeJellyfinId } from './ids';
 import {
   createPrismaJellyfinPlaybackState,
+  derivePrismaNextUpCatalogPage,
   derivePrismaNextUpCatalogItems,
   type PrismaJellyfinPlaybackStateDelegates,
 } from './prismaPlaybackState';
@@ -123,5 +124,21 @@ describe('derivePrismaNextUpCatalogItems', () => {
 
     await expect(derivePrismaNextUpCatalogItems(adapter, { seriesId: 2, limit: 1 }))
       .resolves.toMatchObject([{ Id: encodeJellyfinId('episode', 2) }]);
+  });
+});
+
+describe('derivePrismaNextUpCatalogPage', () => {
+  it('counts every series candidate before applying StartIndex and Limit', async () => {
+    const adapter = createPrismaJellyfinPlaybackState(createDelegates([
+      episode(1, 1, 1, 1), episode(2, 2, 1, 1), episode(3, 3, 1, 1),
+    ]));
+
+    await expect(derivePrismaNextUpCatalogPage(adapter, {
+      userId: 'lan-default', startIndex: 1, limit: 1,
+    })).resolves.toMatchObject({
+      TotalRecordCount: 3,
+      StartIndex: 1,
+      Items: [{ Id: encodeJellyfinId('episode', 2) }],
+    });
   });
 });

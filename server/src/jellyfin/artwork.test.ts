@@ -35,15 +35,20 @@ describe('Jellyfin artwork URL validation and proxying', () => {
     expect(validateJellyfinArtworkUrl(url).hostname).toBe(new URL(url).hostname);
   });
 
-  it('rejects malformed and untrusted hosts before fetching', async () => {
+  it('maps malformed, untrusted, and transport failures to bounded proxy errors', async () => {
     const fetcher = vi.fn();
 
     expect(() => validateJellyfinArtworkUrl('not-a-url')).toThrow(ArtworkUrlValidationError);
     expect(() => validateJellyfinArtworkUrl('https://image.tmdb.org.evil.example/poster.jpg'))
       .toThrow(ArtworkUrlValidationError);
     await expect(proxyJellyfinArtwork('https://example.com/poster.jpg', fetcher))
-      .rejects.toThrow(ArtworkUrlValidationError);
+      .resolves.toEqual({ ok: false, status: 502, statusText: 'Artwork URL is not allowed' });
     expect(fetcher).not.toHaveBeenCalled();
+
+    await expect(proxyJellyfinArtwork(
+      'https://image.tmdb.org/t/p/w500/poster.jpg',
+      vi.fn().mockRejectedValue(new Error('network unavailable')),
+    )).resolves.toEqual({ ok: false, status: 502, statusText: 'Artwork proxy request failed' });
   });
 
   it('proxies upstream image bytes with the existing image cache policy', async () => {
@@ -71,6 +76,7 @@ describe('Jellyfin artwork URL validation and proxying', () => {
           'User-Agent': expect.stringContaining('Mozilla/5.0'),
           Accept: 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
         },
+        signal: expect.any(AbortSignal),
       },
     );
   });

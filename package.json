@@ -39,6 +39,7 @@
   },
   "dependencies": {
     "@fastify/multipart": "^9.4.0",
+    "@fastify/websocket": "^11.3.0",
     "@openrouter/ai-sdk-provider": "^2.3.3",
     "@playwright/test": "^1.59.1",
     "@tanstack/react-virtual": "^3.13.18",

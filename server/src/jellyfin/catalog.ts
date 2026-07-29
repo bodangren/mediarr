@@ -62,6 +62,8 @@ export interface JellyfinCatalogRepository {
   listSeasonsBySeriesId(seriesId: number): MaybePromise<readonly CatalogSeasonRecord[]>;
   listEpisodesBySeriesId(seriesId: number): MaybePromise<readonly CatalogEpisodeRecord[]>;
   listEpisodesBySeasonId(seasonId: number): MaybePromise<readonly CatalogEpisodeRecord[]>;
+  /** Flat episode delegate avoids relying on a separately loaded series list. */
+  listEpisodes?(): MaybePromise<readonly CatalogEpisodeRecord[]>;
   findMovieById(id: number): MaybePromise<CatalogMovieRecord | null>;
   findSeriesById(id: number): MaybePromise<CatalogSeriesRecord | null>;
   findSeasonById(id: number): MaybePromise<CatalogSeasonRecord | null>;
@@ -99,7 +101,19 @@ export interface CatalogQuery {
   sortBy?: string | readonly string[] | null | undefined;
   sortOrder?: string | null | undefined;
   includeItemTypes?: string | readonly string[] | null | undefined;
+  excludeItemTypes?: string | readonly string[] | null | undefined;
+  searchTerm?: string | null | undefined;
+  recursive?: boolean | number | string | null | undefined;
 }
+
+/** Query options for Jellyfin's unwrapped Latest endpoint. */
+export interface LatestCatalogQuery {
+  parentId?: string | null | undefined;
+  includeItemTypes?: string | readonly string[] | null | undefined;
+  limit?: number | string | null | undefined;
+}
+
+
 
 /**
  * Navigation parameters accepted by Jellyfin's series-episodes surface.
@@ -167,6 +181,7 @@ function baseItem(input: {
   providerIds?: Record<string, string> | undefined;
   posterUrl?: string | null | undefined;
 }): JellyfinCatalogItem {
+  const tags = imageTags(input.posterUrl);
   return {
     Id: input.id,
     Name: input.name,
@@ -175,8 +190,8 @@ function baseItem(input: {
     IsFolder: input.isFolder,
     ParentId: input.parentId,
     ProviderIds: input.providerIds ?? {},
-    ImageTags: imageTags(input.posterUrl),
-    BackdropImageTags: [],
+    ImageTags: tags,
+    BackdropImageTags: tags.Primary ? [tags.Primary] : [],
     LocationType: 'FileSystem',
   };
 }
@@ -351,9 +366,17 @@ function applyQuery(
   const includedTypes = new Set(
     splitList(query.includeItemTypes).map(type => type.toLocaleLowerCase()),
   );
-  const filtered = includedTypes.size === 0
+  const excludedTypes = new Set(
+    splitList(query.excludeItemTypes).map(type => type.toLocaleLowerCase()),
+  );
+  const searchTerm = query.searchTerm?.trim().toLocaleLowerCase();
+  const filtered = (includedTypes.size === 0
     ? [...items]
-    : items.filter(item => includedTypes.has(item.Type.toLocaleLowerCase()));
+    : items.filter(item => includedTypes.has(item.Type.toLocaleLowerCase())))
+    .filter(item => !excludedTypes.has(item.Type.toLocaleLowerCase()))
+    .filter(item => !searchTerm || [item.Name, item.SortName, item.Overview]
+      .filter((value): value is string => typeof value === 'string')
+      .some(value => value.toLocaleLowerCase().includes(searchTerm)));
   const sortFields = splitList(query.sortBy);
   if (sortFields.length === 0) {
     sortFields.push('SortName');
@@ -384,6 +407,23 @@ function applyQuery(
   };
 }
 
+function requestsRecursive(query: CatalogQuery): boolean {
+  if (query.recursive === true || query.recursive === 1) return true;
+  return typeof query.recursive === 'string'
+    && query.recursive.trim().toLocaleLowerCase() === 'true';
+}
+
+async function listSeriesDescendants(
+  repository: JellyfinCatalogRepository,
+  seriesId: number,
+): Promise<JellyfinCatalogItem[]> {
+  const [seasons, episodes] = await Promise.all([
+    repository.listSeasonsBySeriesId(seriesId),
+    repository.listEpisodesBySeriesId(seriesId),
+  ]);
+  return [...seasons.map(mapSeasonToItem), ...episodes.map(mapEpisodeToItem)];
+}
+
 function emptyResult(query: CatalogQuery = {}): JellyfinCatalogQueryResult {
   return {
     Items: [],
@@ -405,10 +445,14 @@ export async function queryCatalog(
       repository.listMovies(),
       repository.listSeries(),
     ]);
-    return applyQuery(
-      [...movies.map(mapMovieToItem), ...series.map(mapSeriesToItem)],
-      query,
-    );
+    const items = [...movies.map(mapMovieToItem), ...series.map(mapSeriesToItem)];
+    if (requestsRecursive(query)) {
+      const descendants = await Promise.all(
+        series.map(entry => listSeriesDescendants(repository, entry.id)),
+      );
+      items.push(...descendants.flat());
+    }
+    return applyQuery(items, query);
   }
 
   if (query.parentId === JELLYFIN_MOVIE_VIEW_ID) {
@@ -417,13 +461,25 @@ export async function queryCatalog(
   }
   if (query.parentId === JELLYFIN_TV_VIEW_ID) {
     const series = await repository.listSeries();
-    return applyQuery(series.map(mapSeriesToItem), query);
+    const items = series.map(mapSeriesToItem);
+    if (requestsRecursive(query)) {
+      const descendants = await Promise.all(
+        series.map(entry => listSeriesDescendants(repository, entry.id)),
+      );
+      items.push(...descendants.flat());
+    }
+    return applyQuery(items, query);
   }
 
   const parent = decodeJellyfinId(query.parentId);
   if (parent?.kind === 'series') {
     const seasons = await repository.listSeasonsBySeriesId(parent.id);
-    return applyQuery(seasons.map(mapSeasonToItem), query);
+    const items = seasons.map(mapSeasonToItem);
+    if (requestsRecursive(query)) {
+      const episodes = await repository.listEpisodesBySeriesId(parent.id);
+      items.push(...episodes.map(mapEpisodeToItem));
+    }
+    return applyQuery(items, query);
   }
   if (parent?.kind === 'season') {
     const episodes = await repository.listEpisodesBySeasonId(parent.id);
@@ -431,6 +487,72 @@ export async function queryCatalog(
   }
 
   return emptyResult(query);
+}
+/** Loads every episode through the flat repository port when available. */
+async function listAllCatalogEpisodes(
+  repository: JellyfinCatalogRepository,
+): Promise<readonly CatalogEpisodeRecord[]> {
+  if (repository.listEpisodes) {
+    return repository.listEpisodes();
+  }
+  const series = await repository.listSeries();
+  const episodes = await Promise.all(
+    series.map(entry => repository.listEpisodesBySeriesId(entry.id)),
+  );
+  return episodes.flat();
+}
+
+function latestTimestamp(item: JellyfinCatalogItem): number {
+  const source = item.DateCreated ?? item.PremiereDate;
+  if (!source) return 0;
+  const timestamp = Date.parse(source);
+  return Number.isNaN(timestamp) ? 0 : timestamp;
+}
+
+function latestItemTypes(query: LatestCatalogQuery): Set<string> {
+  return new Set(splitList(query.includeItemTypes).map(type => type.toLocaleLowerCase()));
+}
+
+/**
+ * Lists the newest catalog entries for Jellyfin's array-shaped Latest endpoint.
+ * It uses the same source catalog and stable DTOs as browse, then filters and
+ * limits after selecting the requested library hierarchy.
+ */
+export async function queryLatestCatalog(
+  repository: JellyfinCatalogRepository,
+  query: LatestCatalogQuery = {},
+): Promise<JellyfinCatalogItem[]> {
+  const parent = query.parentId ? decodeJellyfinId(query.parentId) : null;
+  let items: JellyfinCatalogItem[];
+
+  if (query.parentId === JELLYFIN_MOVIE_VIEW_ID) {
+    items = (await repository.listMovies()).map(mapMovieToItem);
+  } else if (query.parentId === JELLYFIN_TV_VIEW_ID) {
+    items = (await listAllCatalogEpisodes(repository)).map(mapEpisodeToItem);
+  } else if (parent?.kind === 'series') {
+    items = (await repository.listEpisodesBySeriesId(parent.id)).map(mapEpisodeToItem);
+  } else if (parent?.kind === 'season') {
+    items = (await repository.listEpisodesBySeasonId(parent.id)).map(mapEpisodeToItem);
+  } else if (query.parentId) {
+    items = [];
+  } else {
+    const [movies, episodes] = await Promise.all([
+      repository.listMovies(),
+      listAllCatalogEpisodes(repository),
+    ]);
+    items = [...movies.map(mapMovieToItem), ...episodes.map(mapEpisodeToItem)];
+  }
+
+  const includedTypes = latestItemTypes(query);
+  const filtered = includedTypes.size === 0
+    ? items
+    : items.filter(item => includedTypes.has(item.Type.toLocaleLowerCase()));
+  filtered.sort((left, right) => latestTimestamp(right) - latestTimestamp(left)
+    || left.SortName.localeCompare(right.SortName)
+    || left.Id.localeCompare(right.Id));
+  const parsedLimit = parseNonNegativeInteger(query.limit, 16);
+  const limit = parsedLimit === 0 ? filtered.length : parsedLimit;
+  return filtered.slice(0, limit);
 }
 
 /** Queries seasons for a stable Jellyfin series id. */

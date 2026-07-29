@@ -107,14 +107,25 @@ configurable, since it collides with `thaidub-serve.service`.
 - [ ] `thaidub-serve.service` is **stopped, not disabled**, and the exact restore command is
       documented so the owner's working server can be brought back in one line.
 
+### FR-11 — Complete reference-surface compatibility
+
+The explicit owner directive to implement the Jellyfin server surface 100% supersedes the earlier
+route-scope shortcut. Mediarr must expose every route declared by the working `serve.py` reference:
+audio and download direct-play aliases, socket keepalive compatibility, and browser entry aliases,
+as well as the established API routes. It must also preserve stopped playback position, emit
+Jellyfin-shaped session DTOs from one header/body identity, advertise reachable artwork metadata,
+and honour the browse/paging semantics the reference client uses. This does not add transcoding,
+real authentication, multi-user storage, or subtitle delivery.
+
 ## Scope
 
-**In:** the endpoint surface, UDP discovery, container wiring, tests, and on-device verification.
+**In:** the full declared reference endpoint surface, UDP discovery, container wiring, tests, and
+on-device verification.
 
 **Out:** transcoding (direct-play only — if the TV cannot decode a file, that is out of scope for
-this track), Jellyfin's WebSocket push channel, multi-user accounts, subtitle *delivery* through
-the Jellyfin subtitle API (Mediarr's own subtitle system is unaffected), and any change to
-Mediarr's existing REST API shape.
+this track), multi-user accounts, subtitle *delivery* through the Jellyfin subtitle API (Mediarr's
+own subtitle system is unaffected), and any change to Mediarr's existing REST API shape. The
+socket route is now in scope only for compatible connection/keepalive handling, not WebSocket push.
 
 **Explicitly out:** real authentication. See FR-3.
 

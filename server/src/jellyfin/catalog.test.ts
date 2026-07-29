@@ -8,6 +8,7 @@ import {
   queryCatalog,
   queryEpisodes,
   queryEpisodesWithNavigation,
+  queryLatestCatalog,
   querySeasons,
   type JellyfinCatalogRepository,
 } from './catalog';
@@ -88,6 +89,7 @@ describe('Jellyfin catalog DTO mapping', () => {
       DateCreated: '2026-07-01T12:00:00.000Z',
     });
     expect(movie.ImageTags.Primary).toMatch(/^[0-9a-f]{40}$/);
+    expect(movie.BackdropImageTags).toEqual([movie.ImageTags.Primary]);
     expect(series).toMatchObject({
       Id: encodeJellyfinId('series', 21),
       ParentId: JELLYFIN_TV_VIEW_ID,
@@ -184,6 +186,36 @@ describe('queryCatalog', () => {
     expect(result.TotalRecordCount).toBe(2);
     expect(repository.listMovies).not.toHaveBeenCalled();
   });
+  it('recursively traverses TV descendants before applying type, exclusion, and search filters', async () => {
+    const repository = createRepository({
+      listSeries: vi.fn().mockResolvedValue([
+        { id: 7, tvdbId: 70, title: 'Series', sortTitle: 'Series', year: 2024 },
+      ]),
+      listSeasonsBySeriesId: vi.fn().mockResolvedValue([
+        { id: 9, seriesId: 7, seasonNumber: 1 },
+      ]),
+      listEpisodesBySeriesId: vi.fn().mockResolvedValue([
+        { id: 101, seriesId: 7, seasonId: 9, tvdbId: 101, seasonNumber: 1, episodeNumber: 1, title: 'Pilot Arrival' },
+        { id: 102, seriesId: 7, seasonId: 9, tvdbId: 102, seasonNumber: 1, episodeNumber: 2, title: 'Second Act' },
+      ]),
+    });
+
+    const result = await queryCatalog(repository, {
+      parentId: JELLYFIN_TV_VIEW_ID,
+      recursive: 'true',
+      includeItemTypes: ['Season', 'Episode'],
+      excludeItemTypes: 'Season',
+      searchTerm: 'pilot',
+    });
+
+    expect(result).toMatchObject({
+      TotalRecordCount: 1,
+      Items: [{ Name: 'Pilot Arrival', Type: 'Episode' }],
+    });
+    expect(repository.listSeasonsBySeriesId).toHaveBeenCalledWith(7);
+    expect(repository.listEpisodesBySeriesId).toHaveBeenCalledWith(7);
+  });
+
 
   it('treats a series ParentId as a season query', async () => {
     const repository = createRepository({
@@ -411,5 +443,51 @@ describe('specialized catalog queries', () => {
       repository,
       '00000000-0000-0000-0000-000000000000',
     )).resolves.toBeNull();
+  });
+});
+
+describe('queryLatestCatalog', () => {
+  it('uses catalog records, ParentId and IncludeItemTypes before applying the latest limit', async () => {
+    const repository = createRepository({
+      listMovies: vi.fn().mockResolvedValue([
+        { id: 1, tmdbId: 1, title: 'Old movie', sortTitle: 'Old movie', year: 2020, added: '2026-07-01T00:00:00.000Z' },
+        { id: 2, tmdbId: 2, title: 'New movie', sortTitle: 'New movie', year: 2021, added: '2026-07-03T00:00:00.000Z' },
+      ]),
+      listSeries: vi.fn().mockResolvedValue([
+        { id: 7, tvdbId: 70, title: 'Series', sortTitle: 'Series', year: 2024 },
+      ]),
+      listEpisodesBySeriesId: vi.fn().mockResolvedValue([
+        { id: 70, seriesId: 7, seasonId: 71, tvdbId: 700, seasonNumber: 1, episodeNumber: 1, title: 'Newest episode', airDateUtc: '2026-07-04T00:00:00.000Z' },
+      ]),
+    });
+
+    await expect(queryLatestCatalog(repository, {
+      parentId: JELLYFIN_MOVIE_VIEW_ID,
+      includeItemTypes: 'Movie',
+      limit: 1,
+    })).resolves.toMatchObject([{ Name: 'New movie', Type: 'Movie' }]);
+    await expect(queryLatestCatalog(repository, {
+      parentId: JELLYFIN_TV_VIEW_ID,
+      includeItemTypes: 'Episode',
+      limit: 1,
+    })).resolves.toMatchObject([{ Name: 'Newest episode', Type: 'Episode' }]);
+    await expect(queryLatestCatalog(repository, {
+      includeItemTypes: 'Episode',
+      limit: 1,
+    })).resolves.toMatchObject([{ Name: 'Newest episode', Type: 'Episode' }]);
+  });
+});
+
+describe('flat latest episode source', () => {
+  it('uses the optional flat episode delegate when a series fixture is not populated', async () => {
+    const listEpisodes = vi.fn().mockResolvedValue([
+      { id: 8, seriesId: 7, seasonId: 6, tvdbId: 80, seasonNumber: 1, episodeNumber: 1, title: 'Flat latest', airDateUtc: '2026-07-29T00:00:00.000Z' },
+    ]);
+    const repository = createRepository({ listEpisodes });
+
+    await expect(queryLatestCatalog(repository, { includeItemTypes: 'Episode' }))
+      .resolves.toMatchObject([{ Name: 'Flat latest', Type: 'Episode' }]);
+    expect(repository.listSeries).not.toHaveBeenCalled();
+    expect(listEpisodes).toHaveBeenCalledOnce();
   });
 });

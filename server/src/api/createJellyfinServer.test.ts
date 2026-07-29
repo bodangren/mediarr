@@ -131,6 +131,27 @@ describe('createJellyfinServer browse routes', () => {
     await app.close();
   });
 
+  it('normalizes lower-camel filters and repeated item-type query values', async () => {
+    const prisma = createPrismaFixture({
+      movie: { findMany: vi.fn().mockResolvedValue([
+        { id: 1, tmdbId: 101, title: 'Pilot Movie', sortTitle: 'Pilot Movie', year: 2020 },
+        { id: 2, tmdbId: 102, title: 'Unrelated Movie', sortTitle: 'Unrelated Movie', year: 2022 },
+      ]) },
+    });
+    const app = createApp({ prisma });
+
+    const response = await app.inject(
+      `/Items?parentId=${JELLYFIN_MOVIE_VIEW_ID}&includeItemTypes=Movie&includeItemTypes=Episode&excludeItemTypes=Episode&searchTerm=pilot`,
+    );
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toMatchObject({
+      TotalRecordCount: 1,
+      Items: [{ Name: 'Pilot Movie', Type: 'Movie' }],
+    });
+    await app.close();
+  });
+
   it('serves item details plus series seasons and episodes from database delegates', async () => {
     const seriesId = encodeJellyfinId('series', 7);
     const seasonId = encodeJellyfinId('season', 8);
@@ -310,7 +331,7 @@ describe('createJellyfinServer playback routes', () => {
 });
 
 describe('createJellyfinServer session and progress routes', () => {
-  it('tracks capabilities, playing, progress, stopped, and shared-store heartbeat state', async () => {
+  it('tracks normalized client identity, bodyless capabilities, Jellyfin DTOs, and final shared-store state', async () => {
     const episodeId = encodeJellyfinId('episode', 15);
     const recordHeartbeat = vi.fn().mockResolvedValue({});
     const app = createApp({
@@ -318,39 +339,68 @@ describe('createJellyfinServer session and progress routes', () => {
     });
 
     const responses = [
-      await app.inject({ method: 'POST', url: '/Sessions/Capabilities', payload: { Id: 'tv-1', SupportsMediaControl: true } }),
-      await app.inject({ method: 'POST', url: '/Sessions/Capabilities/Full', payload: { Id: 'tv-1', PlayableMediaTypes: ['Video'] } }),
+      await app.inject({
+        method: 'POST',
+        url: '/Sessions/Capabilities?DeviceId=tv-1&DeviceName=Living%20Room%20TV&Client=Jellyfin%20Android%20TV&Version=0.18.4&SupportsMediaControl=true',
+      }),
+      await app.inject({
+        method: 'POST',
+        url: '/Sessions/Capabilities/Full?DeviceId=tv-1&PlayableMediaTypes=Video&SupportedCommands=Play,Pause',
+      }),
       await app.inject({ method: 'POST', url: '/Sessions/Playing', payload: {
         DeviceId: 'tv-1', ItemId: episodeId, PlaySessionId: 'play-1', PositionTicks: 50_000_000,
       } }),
       await app.inject({ method: 'POST', url: '/Sessions/Playing/Progress', payload: {
-        DeviceId: 'tv-1', ItemId: episodeId, PlaySessionId: 'play-1', PositionTicks: 120_000_000, RunTimeTicks: 600_000_000,
-      } }),
+        ItemId: episodeId, PlaySessionId: 'play-1', PositionTicks: 120_000_000, RunTimeTicks: 600_000_000,
+      }, headers: { 'x-emby-device-id': 'tv-1' } }),
     ];
     const duringPlayback = await app.inject('/Sessions');
     responses.push(await app.inject({ method: 'POST', url: '/Sessions/Playing/Stopped', payload: {
-      DeviceId: 'tv-1', PositionTicks: 120_000_000,
+      ItemId: episodeId, PositionTicks: 180_000_000, RunTimeTicks: 600_000_000,
+    }, headers: {
+      'x-emby-authorization': 'MediaBrowser Client="Jellyfin Android TV", Device="Living Room TV", DeviceId="tv-1", Version="0.18.4"',
     } }));
     const afterStop = await app.inject('/Sessions');
 
     expect(responses.map(response => response.statusCode)).toEqual([204, 204, 204, 204, 204]);
-    expect(recordHeartbeat).toHaveBeenCalledOnce();
-    expect(recordHeartbeat).toHaveBeenCalledWith({
+    expect(recordHeartbeat).toHaveBeenCalledTimes(2);
+    expect(recordHeartbeat).toHaveBeenNthCalledWith(1, {
       mediaType: 'EPISODE',
       mediaId: 15,
       userId: 'lan-default',
       position: 12,
       duration: 60,
     });
-    expect(duringPlayback.json()[0]).toMatchObject({
-      id: 'tv-1',
-      nowPlayingItemId: episodeId,
-      playSessionId: 'play-1',
-      positionTicks: 120_000_000,
-      isPlaying: true,
+    expect(recordHeartbeat).toHaveBeenNthCalledWith(2, {
+      mediaType: 'EPISODE',
+      mediaId: 15,
+      userId: 'lan-default',
+      position: 18,
+      duration: 60,
     });
+    expect(duringPlayback.json()[0]).toMatchObject({
+      Id: 'tv-1',
+      UserId: '4d656469-6172-7200-0000-000000000001',
+      UserName: 'Mediarr',
+      Client: 'Jellyfin Android TV',
+      DeviceName: 'Living Room TV',
+      DeviceId: 'tv-1',
+      ApplicationVersion: '0.18.4',
+      IsActive: true,
+      SupportsMediaControl: true,
+      PlayableMediaTypes: ['Video'],
+      PlayState: {
+        PositionTicks: 120_000_000,
+        CanSeek: true,
+        IsPaused: false,
+      },
+    });
+    expect(duringPlayback.json()[0]).not.toHaveProperty('id');
+    expect(duringPlayback.json()[0]).not.toHaveProperty('isPlaying');
     expect(afterStop.json()[0]).toMatchObject({
-      id: 'tv-1', positionTicks: 120_000_000, isPlaying: false,
+      Id: 'tv-1',
+      DeviceId: 'tv-1',
+      PlayState: { PositionTicks: 180_000_000, IsPaused: true },
     });
     await app.close();
   });
@@ -477,9 +527,7 @@ describe('createJellyfinServer known-good HTTP compatibility routes', () => {
       } },
     ]);
     expect(prisma.episode.findMany).toHaveBeenCalledTimes(2);
-    expect(prisma.episode.findMany).toHaveBeenCalledWith({
-      orderBy: { airDateUtc: 'desc' }, take: 16,
-    });
+    expect(prisma.episode.findMany).toHaveBeenCalledWith();
     expect(getProgress).toHaveBeenCalledWith({
       mediaType: 'EPISODE', mediaId: 42, userId: 'lan-default',
     });

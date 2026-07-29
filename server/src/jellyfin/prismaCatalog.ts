@@ -7,6 +7,7 @@ export function createPrismaJellyfinCatalog(prisma: any): JellyfinCatalogReposit
     listSeasonsBySeriesId: (seriesId) => prisma.season.findMany({ where: { seriesId } }),
     listEpisodesBySeriesId: (seriesId) => prisma.episode.findMany({ where: { seriesId } }),
     listEpisodesBySeasonId: (seasonId) => prisma.episode.findMany({ where: { seasonId } }),
+    listEpisodes: () => prisma.episode.findMany(),
     findMovieById: (id) => prisma.movie.findUnique({ where: { id } }), findSeriesById: (id) => prisma.series.findUnique({ where: { id } }),
     findSeasonById: (id) => prisma.season.findUnique({ where: { id } }), findEpisodeById: (id) => prisma.episode.findUnique({ where: { id } }),
   };

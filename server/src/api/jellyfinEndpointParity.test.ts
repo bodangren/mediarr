@@ -131,7 +131,7 @@ describe('Jellyfin endpoint parity contracts', () => {
     });
 
     try {
-      const response = await app.inject('/Shows/NextUp?SeriesId=' + seriesId + '&Limit=1');
+      const response = await app.inject('/Shows/NextUp?seriesId=' + seriesId + '&limit=1');
 
       expect(response.statusCode).toBe(200);
       expect(response.json()).toEqual({
@@ -149,6 +149,30 @@ describe('Jellyfin endpoint parity contracts', () => {
       }));
       expect(playbackProgressFindFirst).toHaveBeenCalledWith({
         where: { mediaType: 'EPISODE', mediaId: 101, userId: 'lan-default' },
+      });
+    } finally {
+      await app.close();
+    }
+  });
+
+  it('pages lower-camel NextUp queries after reporting the full candidate count', async () => {
+    const app = createApp({
+      prisma: createPrismaFixture({
+        episode: { findMany: vi.fn().mockResolvedValue([
+          { id: 1, seriesId: 1, seasonId: 11, tvdbId: 10, seasonNumber: 1, episodeNumber: 1, title: 'First' },
+          { id: 2, seriesId: 2, seasonId: 21, tvdbId: 20, seasonNumber: 1, episodeNumber: 1, title: 'Second' },
+          { id: 3, seriesId: 3, seasonId: 31, tvdbId: 30, seasonNumber: 1, episodeNumber: 1, title: 'Third' },
+        ]) },
+      }),
+    });
+
+    try {
+      const response = await app.inject('/Shows/NextUp?startIndex=1&limit=1');
+      expect(response.statusCode).toBe(200);
+      expect(response.json()).toMatchObject({
+        TotalRecordCount: 3,
+        StartIndex: 1,
+        Items: [{ Id: encodeJellyfinId('episode', 2), Name: 'Second' }],
       });
     } finally {
       await app.close();

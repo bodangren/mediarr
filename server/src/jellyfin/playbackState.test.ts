@@ -3,6 +3,7 @@ import type { ContinueWatchingItem } from '../repositories/PlaybackRepository';
 import { encodeJellyfinId } from './ids';
 import {
   continueWatchingToJellyfinResume,
+  deriveAllNextUp,
   deriveNextUp,
   jellyfinMarkWatchedIntent,
   jellyfinProgressToHeartbeat,
@@ -135,5 +136,16 @@ describe('Jellyfin shared playback state adapter', () => {
       { id: 201, seriesId: 2 },
     ]);
     expect(getOrderedEpisodes).toHaveBeenCalledWith(2);
+  });
+
+  it('derives every eligible series for a route layer that must count before paging', async () => {
+    const getOrderedEpisodes = vi.fn().mockResolvedValue([
+      { id: 1, seriesId: 1 }, { id: 2, seriesId: 2 }, { id: 3, seriesId: 3 },
+    ]);
+    const getProgress = vi.fn().mockResolvedValue(null);
+
+    await expect(deriveAllNextUp({ getOrderedEpisodes, getProgress })).resolves.toEqual([
+      { id: 1, seriesId: 1 }, { id: 2, seriesId: 2 }, { id: 3, seriesId: 3 },
+    ]);
   });
 });

@@ -163,16 +163,15 @@ export function continueWatchingToJellyfinResume(
 }
 
 /**
- * Selects the next unplayed episode for each series from an already ordered
- * source. It uses the same default user key as the SPA, so NextUp cannot drift
- * into a Jellyfin-only state namespace.
+ * Finds the first unplayed episode in every represented series without
+ * pagination. Route adapters use this to compute Jellyfin totals before they
+ * apply StartIndex and Limit.
  */
-export async function deriveNextUp(
+export async function deriveAllNextUp(
   dependencies: NextUpDependencies,
-  options: NextUpOptions = {},
+  options: Omit<NextUpOptions, 'limit'> = {},
 ): Promise<OrderedJellyfinEpisode[]> {
   const userId = normalizeUserId(options.userId);
-  const limit = Math.min(50, Math.max(1, Math.trunc(options.limit ?? 20)));
   const episodes = await dependencies.getOrderedEpisodes(options.seriesId);
   const representedSeries = new Set<number>();
   const nextUp: OrderedJellyfinEpisode[] = [];
@@ -180,14 +179,24 @@ export async function deriveNextUp(
   for (const episode of episodes) {
     if (options.seriesId !== undefined && episode.seriesId !== options.seriesId) continue;
     if (representedSeries.has(episode.seriesId)) continue;
-
     const progress = await dependencies.getProgress(episode.id, userId);
     if (progress?.isWatched) continue;
-
     representedSeries.add(episode.seriesId);
     nextUp.push(episode);
-    if (nextUp.length >= limit) break;
   }
 
   return nextUp;
+}
+
+/**
+ * Selects the next unplayed episode for each series with the existing bounded
+ * helper behavior for non-paged callers.
+ */
+export async function deriveNextUp(
+  dependencies: NextUpDependencies,
+  options: NextUpOptions = {},
+): Promise<OrderedJellyfinEpisode[]> {
+  const limit = Math.min(50, Math.max(1, Math.trunc(options.limit ?? 20)));
+  const nextUp = await deriveAllNextUp(dependencies, options);
+  return nextUp.slice(0, limit);
 }

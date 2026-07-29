@@ -5,7 +5,7 @@
 - [x] Create a daemon launcher with isolated database/config/media roots and deterministic seed
   fixtures for movie, series, episode, playable variant, subtitle, activity, queue, collection,
   scheduler, and settings state.
-- [ ] Replace Browser Harness as an acceptance authority with Kimi WebBridge sessions against the
+- [~] Replace Browser Harness as an acceptance authority with Kimi WebBridge sessions against the
   connected real browser; record live URLs, rendered state, network failures, and screenshots.
 - [ ] Retire or reclassify Browser Harness assertions so they cannot be cited as browser or
   performance acceptance evidence.
@@ -15,6 +15,13 @@ acceptance evidence. They must be replaced by Kimi WebBridge verification in the
 The daemon's working `tsx server/src/main.ts` start path remains relevant to the isolated interface;
 `bun --no-addons server/src/main.ts` cannot load better-sqlite3 before binding, while the root
 command falls back to `tsx` and the container already uses `tsx`.
+
+Kimi evidence on 2026-07-29 (isolated interface only, not a completion claim): after correcting the
+disposable database's invalid `/data` settings to writable temporary paths, Kimi loaded the rebuilt
+daemon at `http://127.0.0.1:5174`. It rendered Dashboard, Movies (the existing Matrix record),
+Wanted (the Matrix missing-item row), and Collections (a clean empty state). On
+`/settings/notifications`, Kimi opened the real provider modal, saved a local-only configuration,
+and confirmed it remained visible after browser reload. ThaiDub remained active on 8096 throughout.
 
 ## Phase 2: Production Route Matrix
 

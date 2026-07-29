@@ -2,10 +2,14 @@ import 'dotenv/config';
 import path from 'node:path';
 import os from 'node:os';
 import { assertValidEncryptionKey, preparePersistentStorage } from './config/startup';
+import { resolveJellyfinConfig } from './config/jellyfin';
+import { loadOrCreateJellyfinServerId } from './jellyfin/serverIdentity';
 import { DatabaseClient } from './db/drizzleClient';
 import { describeMigrationState, runMigrations } from './db/migrationRunner';
 import { repairMalformedJsonColumns } from './maintenance/repairJsonColumns';
 import { createApiServer } from './api/createApiServer';
+import { createJellyfinServer } from './api/createJellyfinServer';
+import { JellyfinDiscoveryService } from './services/JellyfinDiscoveryService';
 import { registerStaticServing } from './api/staticServing';
 import { CatalogCache } from './services/indexers/CatalogCache';
 import { DefinitionLoader } from './indexers/DefinitionLoader';
@@ -154,6 +158,13 @@ async function startApi(): Promise<void> {
 
   const port = parsePort(process.env.API_PORT, 3001);
   const host = process.env.API_HOST ?? '0.0.0.0';
+  const jellyfinConfig = resolveJellyfinConfig({
+    ...(process.env.JELLYFIN_ENABLED === undefined ? {} : { JELLYFIN_ENABLED: process.env.JELLYFIN_ENABLED }),
+    ...(process.env.JELLYFIN_PORT === undefined ? {} : { JELLYFIN_PORT: process.env.JELLYFIN_PORT }),
+  });
+  const jellyfinServerId = jellyfinConfig.enabled
+    ? await loadOrCreateJellyfinServerId({ configDir: process.env.CONFIG_DIR ?? path.dirname(databaseUrl.replace(/^file:/, '')) })
+    : null;
 
   // Bonjour publishes A records for active LAN interfaces automatically. Its
   // SRV target must be a fully qualified mDNS hostname; an unqualified host
@@ -506,8 +517,23 @@ async function startApi(): Promise<void> {
   const staticDir = process.env.STATIC_DIR ?? path.resolve(process.cwd(), 'app/dist');
   registerStaticServing(app, staticDir);
 
+  const jellyfinApp = jellyfinConfig.enabled && jellyfinServerId !== null
+    ? createJellyfinServer({ prisma, playbackService }, {
+        serverId: jellyfinServerId,
+        serverName: process.env.JELLYFIN_SERVER_NAME?.trim() || 'Mediarr',
+      })
+    : undefined;
+  const jellyfinDiscoveryService = new JellyfinDiscoveryService();
+  if (jellyfinApp && jellyfinServerId !== null) {
+    await jellyfinApp.listen({ host, port: jellyfinConfig.port });
+    await jellyfinDiscoveryService.start(jellyfinConfig.port, jellyfinServerId, process.env.JELLYFIN_SERVER_NAME?.trim() || 'Mediarr');
+    console.log(`Jellyfin compatibility surface listening on http://${host}:${jellyfinConfig.port}`);
+  }
+
   const close = async (): Promise<void> => {
     seedingProtector.stop();
+    await jellyfinDiscoveryService.stop().catch(error => console.warn('Failed to stop Jellyfin discovery cleanly:', error));
+    await jellyfinApp?.close();
     variantLifecycle.close();
     await discoveryService.stop().catch(error => {
       console.warn('Failed to stop discovery service cleanly:', error);

@@ -30,6 +30,7 @@ describe('PlaybackService', () => {
     getProgress: ReturnType<typeof vi.fn>;
     getLatestProgressForMedia: ReturnType<typeof vi.fn>;
     upsertProgress: ReturnType<typeof vi.fn>;
+    markWatched: ReturnType<typeof vi.fn>;
     findContinueWatching: ReturnType<typeof vi.fn>;
   };
   let tempDir: string;
@@ -40,6 +41,7 @@ describe('PlaybackService', () => {
       getProgress: vi.fn(),
       getLatestProgressForMedia: vi.fn(),
       upsertProgress: vi.fn(),
+      markWatched: vi.fn(),
       findContinueWatching: vi.fn(),
     };
     tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'mediarr-playback-service-'));
@@ -197,6 +199,37 @@ describe('PlaybackService', () => {
       position: 120,
       duration: 300,
       watchedThreshold: 0.8,
+    });
+  });
+
+
+  it("marks watched through the configured shared playback user without changing resume fields", async () => {
+    playbackRepository.markWatched.mockResolvedValue({
+      mediaType: "MOVIE",
+      mediaId: 9,
+      userId: "family-room",
+      position: 420,
+      duration: 1200,
+      progress: 0.35,
+      isWatched: true,
+      lastWatched: new Date("2026-07-29T00:00:00.000Z"),
+    });
+    const service = createService({
+      streaming: { defaultUserId: "family-room", watchedThreshold: 0.9 },
+    });
+
+    const result = await service.markWatched({ mediaType: "MOVIE", mediaId: 9 });
+
+    expect(playbackRepository.markWatched).toHaveBeenCalledWith({
+      mediaType: "MOVIE",
+      mediaId: 9,
+      userId: "family-room",
+    });
+    expect(result).toMatchObject({
+      position: 420,
+      duration: 1200,
+      progress: 0.35,
+      isWatched: true,
     });
   });
 

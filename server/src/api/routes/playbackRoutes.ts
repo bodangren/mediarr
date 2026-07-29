@@ -1,25 +1,12 @@
 import { createReadStream } from 'node:fs';
-import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { FastifyInstance } from 'fastify';
 import type { PlaybackMediaType } from '../../db/schema';
 import { ValidationError } from '../../errors/domainErrors';
 import { sendSuccess } from '../contracts';
 import { parseIdParam } from '../routeUtils';
+import { sendByteRangeStream } from '../utils/byteRangeStreaming';
 import type { ApiDependencies } from '../types';
-
-interface ByteRange {
-  start: number;
-  end: number;
-}
-
-const STREAM_MIME_TYPES: Record<string, string> = {
-  '.mkv': 'video/x-matroska',
-  '.mp4': 'video/mp4',
-  '.webm': 'video/webm',
-  '.mov': 'video/quicktime',
-  '.avi': 'video/x-msvideo',
-};
 
 function parsePlaybackType(rawType: unknown): PlaybackMediaType {
   if (typeof rawType !== 'string') {
@@ -52,60 +39,6 @@ function parseContinueWatchingLimit(rawLimit: unknown): number {
   }
 
   return Math.trunc(parsed);
-}
-
-function parseRangeHeader(rangeHeader: string, fileSize: number): ByteRange | null {
-  const match = /^bytes=(\d*)-(\d*)$/i.exec(rangeHeader.trim());
-  if (!match) {
-    return null;
-  }
-
-  const rawStart = match[1] ?? '';
-  const rawEnd = match[2] ?? '';
-
-  if (rawStart.length === 0 && rawEnd.length === 0) {
-    return null;
-  }
-
-  if (rawStart.length === 0) {
-    const suffixLength = Number.parseInt(rawEnd, 10);
-    if (!Number.isInteger(suffixLength) || suffixLength <= 0) {
-      return null;
-    }
-
-    const start = Math.max(fileSize - suffixLength, 0);
-    return {
-      start,
-      end: fileSize - 1,
-    };
-  }
-
-  const start = Number.parseInt(rawStart, 10);
-  if (!Number.isInteger(start) || start < 0 || start >= fileSize) {
-    return null;
-  }
-
-  if (rawEnd.length === 0) {
-    return {
-      start,
-      end: fileSize - 1,
-    };
-  }
-
-  const parsedEnd = Number.parseInt(rawEnd, 10);
-  if (!Number.isInteger(parsedEnd) || parsedEnd < start) {
-    return null;
-  }
-
-  return {
-    start,
-    end: Math.min(parsedEnd, fileSize - 1),
-  };
-}
-
-function getStreamMimeType(filePath: string): string {
-  const extension = path.extname(filePath).toLowerCase();
-  return STREAM_MIME_TYPES[extension] ?? 'application/octet-stream';
 }
 
 function getSubtitleMimeType(filePath: string): string {
@@ -151,33 +84,7 @@ export function registerPlaybackRoutes(
       mediaType,
       mediaId,
     });
-
-    const stats = await fs.stat(source.filePath);
-    const fileSize = stats.size;
-    const rangeHeader = request.headers.range;
-
-    reply.header('Content-Type', getStreamMimeType(source.filePath));
-    reply.header('Accept-Ranges', 'bytes');
-
-    if (typeof rangeHeader !== 'string' || rangeHeader.trim().length === 0) {
-      reply.header('Content-Length', fileSize);
-      return reply.code(200).send(createReadStream(source.filePath));
-    }
-
-    const range = parseRangeHeader(rangeHeader, fileSize);
-    if (!range) {
-      reply.header('Content-Range', `bytes */${fileSize}`);
-      return reply.code(416).send();
-    }
-
-    const chunkSize = range.end - range.start + 1;
-    reply.header('Content-Range', `bytes ${range.start}-${range.end}/${fileSize}`);
-    reply.header('Content-Length', chunkSize);
-
-    return reply.code(206).send(createReadStream(source.filePath, {
-      start: range.start,
-      end: range.end,
-    }));
+    return sendByteRangeStream(reply, source.filePath, request.headers.range);
   });
 
   app.get('/api/playback/:id', {

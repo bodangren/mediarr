@@ -14,6 +14,10 @@ export interface UpsertPlaybackProgressInput extends PlaybackProgressKey {
   playedAt?: Date;
 }
 
+export interface MarkWatchedInput extends PlaybackProgressKey {
+  playedAt?: Date;
+}
+
 export interface ContinueWatchingItem {
   mediaType: PlaybackMediaType;
   mediaId: number;
@@ -130,6 +134,49 @@ export class PlaybackRepository {
       .returning();
     if (!row) {
       throw new Error('PlaybackRepository.upsertProgress: returned no row');
+    }
+    return row as PlaybackProgress;
+  }
+
+
+  /**
+   * Marks an item watched without fabricating a playback duration. Existing
+   * resume details remain intact; a never-started item receives an explicit
+   * zero-position watched state.
+   */
+  async markWatched(input: MarkWatchedInput): Promise<PlaybackProgress> {
+    const existing = await this.getProgress(input);
+    const playedAt = input.playedAt ?? new Date();
+
+    const [row] = await this.prisma.drizzle
+      .insert(schema.playbackProgress)
+      .values({
+        mediaType: input.mediaType,
+        mediaId: input.mediaId,
+        userId: input.userId,
+        position: existing?.position ?? 0,
+        duration: existing?.duration ?? 0,
+        progress: existing?.progress ?? 0,
+        isWatched: true,
+        lastWatched: playedAt,
+      })
+      .onConflictDoUpdate({
+        target: [
+          schema.playbackProgress.mediaType,
+          schema.playbackProgress.mediaId,
+          schema.playbackProgress.userId,
+        ],
+        // Do not overwrite position/duration here. Another heartbeat may have
+        // arrived between getProgress and this upsert, and its real values are
+        // more truthful than a synthetic mark-watched request.
+        set: {
+          isWatched: true,
+          lastWatched: playedAt,
+        },
+      })
+      .returning();
+    if (!row) {
+      throw new Error('PlaybackRepository.markWatched: returned no row');
     }
     return row as PlaybackProgress;
   }

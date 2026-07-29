@@ -10,6 +10,8 @@ services:
       DATABASE_URL: file:/config/mediarr.db
       ENCRYPTION_KEY: ${ENCRYPTION_KEY}
       API_PORT: ${MEDIARR_API_PORT:-5174}
+      JELLYFIN_ENABLED: ${JELLYFIN_ENABLED:-false}
+      JELLYFIN_PORT: ${JELLYFIN_PORT:-8096}
       NODE_ENV: production
       CONFIG_DIR: /config
       MEDIA_DIR: /data

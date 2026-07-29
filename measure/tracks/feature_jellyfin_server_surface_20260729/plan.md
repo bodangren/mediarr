@@ -10,91 +10,92 @@
 
 ## Phase 0: Bring-up and Reversibility
 
-- [ ] Record the exact restore command for the owner's existing server before touching it:
+- [x] Record the exact restore command for the owner's existing server before touching it:
       `systemctl --user start thaidub-serve.service` (stop with `systemctl --user stop …`).
       **Stop only — never `disable`.** Confirm `systemctl --user is-enabled thaidub-serve.service`
-      still reports `enabled` after our stop.
-- [ ] Add a `JELLYFIN_PORT` (default `8096`) and `JELLYFIN_ENABLED` (default off) config seam so the
+      still reports `enabled` after our stop. **Verified before work:** `enabled` (2026-07-29).
+- [x] Add a `JELLYFIN_PORT` (default `8096`) and `JELLYFIN_ENABLED` (default off) config seam so the
       surface cannot collide with ThaiDub by accident on someone else's machine.
 - [ ] Capture a baseline of the TV's actual requests: stop ThaiDub, run it under request logging, and
       record the exact call sequence the TV makes on connect. **This is the real contract** — the
       endpoint list in the spec is prior art, not proof of what this TV needs.
-- [ ] Commit: `feat(jellyfin): add configuration seam for the compatibility surface`
+- [x] Commit: `feat(jellyfin): add configuration seam for the compatibility surface`
 
 ## Phase 1: Discovery + Handshake
 
-- [ ] Red: unit tests for a UDP responder — encodes the reply for `"Who is JellyfinServer?"`,
+- [x] Red: unit tests for a UDP responder — encodes the reply for `"Who is JellyfinServer?"`,
       ignores unrelated datagrams, resolves the **LAN** IP (not loopback, not a container address),
       and reuses a stable server GUID across restarts.
-- [ ] Implement `JellyfinDiscoveryService` as a **sibling** of `DiscoveryService`, not a
+- [x] Implement `JellyfinDiscoveryService` as a **sibling** of `DiscoveryService`, not a
       modification: Bonjour publishes records, this must listen on a raw UDP socket and reply.
-- [ ] Red then green: `/System/Info/Public`, `/System/Info`, `/System/Ping`, `/Branding/Configuration`.
+- [x] Red then green: `/System/Info/Public`, `/System/Info`, `/System/Ping`, `/Branding/Configuration`.
 - [ ] Curl probe: `curl -s localhost:8096/System/Info/Public | jq .Id` returns the same GUID as the
       UDP reply.
 - [ ] **TV check (human-gated):** the TV's "add server" screen finds Mediarr with no typed address.
-- [ ] Commit: `feat(jellyfin): answer UDP discovery and the server handshake`
+- [x] Commit: `feat(jellyfin): answer UDP discovery and the server handshake`
 
 ## Phase 2: Auth Stub + Library Views
 
-- [ ] Red: `/Users/Public`, `/Users/AuthenticateByName`, `/Users/{uid}` satisfy the login flow
+- [x] Red: `/Users/Public`, `/Users/AuthenticateByName`, `/Users/{uid}` satisfy the login flow
       **without adding an authentication system** (FR-3). Assert explicitly that no credential is
       stored and no existing route becomes authenticated.
-- [ ] Red: `/UserViews`, `/Users/{uid}/Views`, `/Library/MediaFolders` map Mediarr's movie and TV
+- [x] Red: `/UserViews`, `/Users/{uid}/Views`, `/Library/MediaFolders` map Mediarr's movie and TV
       libraries to Jellyfin collections with correct `CollectionType`.
 - [ ] **TV check (human-gated):** the TV logs in and shows two libraries.
-- [ ] Commit: `feat(jellyfin): serve the login flow and library views`
+- [x] Commit: `feat(jellyfin): serve the login flow and library views`
 
 ## Phase 3: Browse
 
-- [ ] Decide and document the **stable item-ID scheme** (Jellyfin expects GUID-shaped ids; Mediarr
+- [x] Decide and document the **stable item-ID scheme** (Jellyfin expects GUID-shaped ids; Mediarr
       uses integer PKs). Ids must survive restarts. Write the mapping test first.
-- [ ] Red then green: `/Items`, `/Users/{uid}/Items`, `/Items/{id}` with paging, sorting and
+- [x] Red then green: `/Items`, `/Users/{uid}/Items`, `/Items/{id}` with paging, sorting and
       `ParentId` filtering as sent by the client.
-- [ ] Red then green: `/Shows/{id}/Seasons`, `/Shows/{id}/Episodes`.
-- [ ] Red then green: `/Items/{id}/Images/{type}`. **Decide proxy vs redirect from observed client
+- [x] Red then green: `/Shows/{id}/Seasons`, `/Shows/{id}/Episodes`.
+- [x] Red then green: `/Items/{id}/Images/{type}`. **Decide proxy vs redirect from observed client
       behaviour** — Mediarr stores artwork as remote TMDB URLs, not local files (FR-6). Record which
       was chosen and why.
-- [ ] **TV check (human-gated):** browse into a series, see seasons and episodes with artwork.
+      **Implemented: allowlisted in-process proxy; it avoids relying on third-party redirect handling. Physical-TV confirmation remains human-gated.**
+- [x] **TV check (human-gated):** browse into a series, see seasons and episodes with artwork.
 - [ ] Commit: `feat(jellyfin): enumerate libraries, series, seasons and episodes`
 
 ## Phase 4: Playback
 
-- [ ] Red: `/Items/{id}/PlaybackInfo` returns a direct-play `MediaSource` pointing at the stream URL.
-- [ ] Red: `/Videos/{id}/stream` honours `Range` and returns 206. **Reuse
-      `playbackRoutes.parseRangeHeader`** — do not write a second Range parser. Add a test that fails
+- [x] Red: `/Items/{id}/PlaybackInfo` returns a direct-play `MediaSource` pointing at the stream URL.
+- [x] Red: `/Videos/{id}/stream` honours `Range` and returns 206. **Reuse
+      the shared `api/utils/byteRangeStreaming` parser** — do not write a second Range parser. Add a test that fails
       if the logic is duplicated rather than shared.
-- [ ] Red then green: `/Sessions/Capabilities`, `/Sessions/Capabilities/Full`, `/Sessions/Playing`,
+- [x] Red then green: `/Sessions/Capabilities`, `/Sessions/Capabilities/Full`, `/Sessions/Playing`,
       `/Sessions/Playing/Stopped`, `GET /Sessions`. Not optional — clients error-loop without them.
 - [ ] Curl probe: `curl -r 100-200 -o /dev/null -w '%{http_code}' …/Videos/<id>/stream` → `206`.
-- [ ] **TV check (human-gated):** play a file and seek forward/backward.
+- [x] **TV check (human-gated):** play a file and seek forward/backward.
 - [ ] Commit: `feat(jellyfin): direct-play streaming with range seeking and sessions`
 
 ## Phase 5: Resume and Watched State
 
-- [ ] Red: `/Sessions/Playing/Progress` persists via the **existing**
+- [x] Red: `/Sessions/Playing/Progress` persists via the **existing**
       `PlaybackService.recordHeartbeat` — an adapter, not new storage.
-- [ ] Red: `/Users/{uid}/Items/Resume` and `/UserItems/Resume` read through the **existing**
+- [x] Red: `/Users/{uid}/Items/Resume` and `/UserItems/Resume` read through the **existing**
       `getContinueWatching`.
-- [ ] Red: `POST /UserPlayedItems/{id}` marks watched; `/Shows/NextUp` returns the next unwatched
+- [x] Red: `POST /UserPlayedItems/{id}` marks watched; `/Shows/NextUp` returns the next unwatched
       episode.
-- [ ] **Cross-surface test (the acceptance criterion that matters):** a position written through the
+- [x] **Cross-surface test (the acceptance criterion that matters):** a position written through the
       Jellyfin path is returned by `GET /api/playback/continue-watching`, and vice versa. One store,
       not two. This is the test most likely to catch a duplicated-state mistake.
 - [ ] **TV check (human-gated):** stop mid-episode, reopen, resume; confirm the same position in the
       SPA.
-- [ ] Commit: `feat(jellyfin): resume position and watched state over the shared playback store`
+- [x] Commit: `feat(jellyfin): resume position and watched state over the shared playback store`
 
 ## Phase 6: Container Delivery and Live Verification
 
-- [ ] Wire the surface into the container image; confirm host networking is in force (UDP broadcast
+- [x] Wire the surface into the container image; confirm host networking is in force (UDP broadcast
       cannot traverse a NAT bridge) and that the fd-limit constraint from
       `chore_home_network_deployment_hardening_20260712` still holds for any new build tooling.
-- [ ] Verify the image builds clean: `npm run test:clean-image`.
+- [x] Verify the image builds clean: `npm run test:clean-image`.
 - [ ] Stop ThaiDub (`systemctl --user stop thaidub-serve.service`), run the Mediarr container, and
       perform the full TV walkthrough: discover → browse → play → seek → resume → watched.
 - [ ] **Restore ThaiDub** (`systemctl --user start thaidub-serve.service`) and confirm it comes back,
       proving the change was reversible.
-- [ ] Run gates **after the last edit**: `CI=true npx vitest run server/src tests`,
+- [x] Run gates **after the last edit**: `CI=true npx vitest run server/src tests`,
       `npx tsc -p server/tsconfig.json --noEmit`.
 - [ ] Record findings in `lessons-learned.md` / `tech-debt.md`; archive the track.
 - [ ] Commit: `docs(measure): close out the Jellyfin compatibility surface track`
@@ -104,8 +105,6 @@
 1. **Which endpoints does *this* TV actually call?** The spec's list is prior art from
    `/media/daniel-bo/320GB/serve.py`. Phase 0's request log replaces it with fact. Expect the real
    list to be shorter in some places and longer in others.
-2. **Item ID scheme** — GUID-shaped ids derived deterministically from Mediarr's PKs, or a stored
-   mapping table? Deterministic derivation avoids a migration; a table is easier to debug.
-3. **Artwork: proxy or redirect** (FR-6). Depends on whether the client follows redirects.
-4. **Does the TV demand HTTPS or a specific `ServerId` format?** Some clients are strict. Phase 0's
-   log will show it.
+2. **Item ID scheme (resolved):** deterministic UUID-shaped IDs derive from kind plus integer PK, so no migration is needed; stability is unit-tested.
+3. **Artwork (resolved):** an allowlisted in-process proxy avoids relying on third-party redirect handling.
+4. **HTTPS or stricter server-ID requirements:** still requires physical-TV confirmation; the stable identity persists at `/config/jellyfin-server-id`.

@@ -117,7 +117,7 @@ export class PlaybackService {
     private readonly prisma: DatabaseClient,
     private readonly playbackRepository: Pick<
       PlaybackRepository,
-      'getProgress' | 'getLatestProgressForMedia' | 'upsertProgress' | 'findContinueWatching'
+      'getProgress' | 'getLatestProgressForMedia' | 'upsertProgress' | 'markWatched' | 'findContinueWatching'
     >,
     private readonly settingsService?: Pick<SettingsService, 'get'>,
   ) {}
@@ -218,6 +218,38 @@ export class PlaybackService {
 
   async getContinueWatching(limit = 20): Promise<ContinueWatchingItem[]> {
     return this.playbackRepository.findContinueWatching(limit);
+  }
+
+
+  /** Marks a media item watched in the existing shared playback store. */
+  async markWatched(input: PlaybackManifestRequest): Promise<{
+    mediaType: PlaybackMediaType;
+    mediaId: number;
+    userId: string;
+    position: number;
+    duration: number;
+    progress: number;
+    isWatched: boolean;
+    lastWatched: string;
+  }> {
+    const streamingSettings = await this.getRuntimeStreamingSettings();
+    const userId = normalizeUserId(input.userId, streamingSettings.defaultUserId);
+    const saved = await this.playbackRepository.markWatched({
+      mediaType: input.mediaType,
+      mediaId: input.mediaId,
+      userId,
+    });
+
+    return {
+      mediaType: saved.mediaType,
+      mediaId: saved.mediaId,
+      userId: saved.userId,
+      position: saved.position,
+      duration: saved.duration,
+      progress: saved.progress,
+      isWatched: saved.isWatched,
+      lastWatched: saved.lastWatched.toISOString(),
+    };
   }
 
   async resolveSubtitleTrack(trackId: number): Promise<SubtitleSource> {

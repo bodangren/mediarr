@@ -60,6 +60,8 @@ FROM base AS runner
 ENV NODE_ENV=production
 ENV DATABASE_URL=file:/config/mediarr.db
 ENV API_PORT=5174
+ENV JELLYFIN_ENABLED=false
+ENV JELLYFIN_PORT=8096
 ENV CONFIG_DIR=/config
 ENV MEDIA_DIR=/data
 

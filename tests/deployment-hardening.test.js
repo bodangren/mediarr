@@ -82,4 +82,25 @@ describe('Docker Engine deployment contract', () => {
     expect(exampleEnvironment).toContain('DATABASE_URL="file:$CONFIG_DIR/mediarr.db"');
     expect(readme).toMatch(/DATABASE_URL="file:\$CONFIG_DIR\/mediarr\.db"\s+npm run migrate/);
   });
+
+  it("keeps Jellyfin compatibility opt-in and documents its LAN-only operating contract", () => {
+    const environment = read(".env.example");
+    const compose = read("docker-compose.yml");
+    const runbook = read("docs/jellyfin-compatibility-runbook.md");
+
+    expect(environment).toContain("JELLYFIN_ENABLED=false");
+    expect(environment).toContain("JELLYFIN_PORT=8096");
+    expect(compose).toContain("network_mode: host");
+    expect(compose).toContain("JELLYFIN_ENABLED:");
+    expect(compose).toContain("JELLYFIN_PORT:");
+
+    for (const required of [
+      "Who is JellyfinServer?",
+      "systemctl --user start thaidub-serve.service",
+      "Human-gated TV acceptance",
+      "/Videos/{id}/stream",
+    ]) {
+      expect(runbook).toContain(required);
+    }
+  });
 });

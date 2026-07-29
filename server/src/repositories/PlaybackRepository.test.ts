@@ -136,6 +136,57 @@ describe('PlaybackRepository.upsertProgress', () => {
   });
 });
 
+describe("PlaybackRepository.markWatched", () => {
+  it("preserves an existing resume position and duration while marking it watched", async () => {
+    const playedAt = new Date("2026-07-29T00:00:00.000Z");
+    const db = makeDb({
+      playbackSelectRows: [[{
+        id: 3,
+        position: 540,
+        duration: 1800,
+        progress: 0.3,
+        isWatched: false,
+      }]],
+      insertRows: [{ id: 3, isWatched: true }],
+    });
+    const repo = new PlaybackRepository(db as any);
+
+    await repo.markWatched({
+      mediaType: "EPISODE",
+      mediaId: 41,
+      userId: "lan-default",
+      playedAt,
+    });
+
+    const insert = db.drizzle.insert.mock.results[0]?.value;
+    expect(insert?.values).toHaveBeenCalledWith(expect.objectContaining({
+      position: 540,
+      duration: 1800,
+      progress: 0.3,
+      isWatched: true,
+      lastWatched: playedAt,
+    }));
+    expect(insert?.onConflictDoUpdate).toHaveBeenCalledWith(expect.objectContaining({
+      set: { isWatched: true, lastWatched: playedAt },
+    }));
+  });
+
+  it("creates an explicit zero-position watched state when no progress exists", async () => {
+    const db = makeDb({ playbackSelectRows: [[]], insertRows: [{ id: 4, isWatched: true }] });
+    const repo = new PlaybackRepository(db as any);
+
+    await repo.markWatched({ mediaType: "MOVIE", mediaId: 12, userId: "lan-default" });
+
+    const insert = db.drizzle.insert.mock.results[0]?.value;
+    expect(insert?.values).toHaveBeenCalledWith(expect.objectContaining({
+      position: 0,
+      duration: 0,
+      progress: 0,
+      isWatched: true,
+    }));
+  });
+});
+
 describe('PlaybackRepository.findContinueWatching', () => {
   it('returns empty list when no playback rows match', async () => {
     const db = makeDb({ playbackSelectRows: [[]] });

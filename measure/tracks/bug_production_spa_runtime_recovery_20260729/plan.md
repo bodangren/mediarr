@@ -8,7 +8,7 @@
   the server runtime and that a built SPA must render the configured Dashboard with no page,
   console, request, or non-API asset errors.
 - [x] Move scheduler status values/types to a dependency-neutral contract and update both sides.
-- [~] Commit: `fix(app): keep scheduler runtime out of browser bundle`
+- [x] Commit: `fix(app): keep scheduler runtime out of browser bundle` (`8a619bc`)
 
 ## Phase 2: Production Render Gate
 

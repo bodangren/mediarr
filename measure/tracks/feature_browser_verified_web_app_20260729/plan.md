@@ -2,12 +2,18 @@
 
 ## Phase 1: Disposable Acceptance Harness
 
-- [~] Create a daemon launcher with isolated database/config/media roots and deterministic seed
+- [x] Create a daemon launcher with isolated database/config/media roots and deterministic seed
   fixtures for movie, series, episode, playable variant, subtitle, activity, queue, collection,
   scheduler, and settings state.
-- [ ] Add a browser-runner foundation that starts the real daemon/static server, captures browser
+- [x] Add a browser-runner foundation that starts the real daemon/static server, captures browser
   page/console/network failures, screenshots/traces on failure, and cleans every disposable root.
-- [ ] Commit: `test(browser): boot seeded disposable Mediarr acceptance environment`
+- [x] Commit: `test(browser): boot seeded disposable Mediarr acceptance environment`
+
+Phase 1 evidence: `npm run test:browser` built 2,989 modules and passed the disposable real-daemon
+Chromium acceptance test in 48.5 seconds on 2026-07-29. The direct rerun passed in 44.3 seconds;
+the focused strict type check and `git diff --check` also passed. The harness intentionally uses
+the daemon's working `tsx server/src/main.ts` start path. `bun --no-addons server/src/main.ts` is
+an independently exposed release blocker because it disables better-sqlite3 before the daemon can bind.
 
 ## Phase 2: Production Route Matrix
 

@@ -95,8 +95,7 @@
       perform the full TV walkthrough: discover → browse → play → seek → resume → watched.
 - [ ] **Restore ThaiDub** (`systemctl --user start thaidub-serve.service`) and confirm it comes back,
       proving the change was reversible.
-- [x] Run gates **after the last edit**: `CI=true npx vitest run server/src tests`,
-      `npx tsc -p server/tsconfig.json --noEmit`.
+- [x] Run gates **after the last edit**: `CI=true npx vitest run server/src tests` (338 files passed, 1 skipped; 3019 tests passed, 14 skipped), `npx tsc -p server/tsconfig.json --noEmit`, and `git diff --check`.
 - [ ] Record findings in `lessons-learned.md` / `tech-debt.md`; archive the track.
 - [ ] Commit: `docs(measure): close out the Jellyfin compatibility surface track`
 
@@ -112,7 +111,7 @@
 - [x] Close session wire-contract gaps: normalize X-Emby/body identity, accept bodyless query-form capabilities, return Jellyfin session DTOs, and persist a final valid stopped-playback position through the shared store.
 - [x] Close browse contract gaps: real-TV lower-camel query variants, recursive/type/search filters, accurate Latest and NextUp paging/counts, reachable artwork tags, and availability consistency between catalog and stream resolution.
 - [x] Add and test the remaining reference routes: Audio stream aliases, Download, socket keepalive, and `/`, `/web`, `/web/` browser entry aliases.
-- [~] Route-declaration and protocol-contract parity now covers all 52 known-good `serve.py` declarations; rerun the full automated/container gates after the final integrated edit.
+- [x] Route-declaration and protocol-contract parity covers all 52 known-good `serve.py` declarations; final aggregate suite (338 files, 3019 tests), strict TypeScript, diff check, and no-cache clean image (exit 0) all passed.
 ## Open Questions (resolve during Phase 0, not by assumption)
 
 1. **Which endpoints does *this* TV actually call?** The spec's list is prior art from

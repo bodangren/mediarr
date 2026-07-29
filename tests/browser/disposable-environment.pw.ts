@@ -50,3 +50,37 @@ test('boots the built SPA through the real seeded daemon and removes its roots',
   expect(disposableRoot).not.toBe('');
   expect(existsSync(disposableRoot)).toBe(false);
 });
+
+test('serves the shared placeholder poster from the built production SPA', async ({
+  page,
+}) => {
+  let server: DisposableMediarr | undefined;
+
+  try {
+    server = await startDisposableMediarr();
+    const response = await page.goto(
+      `${server.origin}/images/placeholder-poster.png`,
+      { waitUntil: 'load' },
+    );
+
+    expect(response?.status()).toBe(200);
+    expect(response?.headers()['content-type']).toContain('image/png');
+
+    const body = await response?.body();
+    expect(body?.subarray(0, 8)).toEqual(
+      Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
+    );
+    expect(body?.byteLength).toBeGreaterThan(100);
+
+    const renderedPoster = page.locator('img');
+    await expect(renderedPoster).toBeVisible();
+    const naturalSize = await renderedPoster.evaluate((image) => ({
+      height: (image as HTMLImageElement).naturalHeight,
+      width: (image as HTMLImageElement).naturalWidth,
+    }));
+    expect(naturalSize.width).toBeGreaterThan(0);
+    expect(naturalSize.height).toBeGreaterThan(0);
+  } finally {
+    await server?.close();
+  }
+});

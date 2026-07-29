@@ -119,6 +119,7 @@ describe('DatabaseClient parity harness (FR-1.2)', () => {
         mediaType: 'MOVIE',
         path: 'Fight.Club.1999.mkv',
         fileSize: 8000000000,
+        monitored: false,
         quality: 'Bluray-1080p',
       },
       {
@@ -224,5 +225,23 @@ describe('DatabaseClient parity harness (FR-1.2)', () => {
       .from(schema.episodes)
       .where(and(eq(schema.episodes.seriesId, 1), eq(schema.episodes.seasonNumber, 1)));
     await expectShimAndNativeEqual(shim, native);
+  });
+
+  it('supports the nested relation predicate used by playable Jellyfin lookups', async () => {
+    const movie = await client.movie.findFirst({
+      where: {
+        id: 1,
+        fileVariants: { some: { path: { not: '' } } },
+      },
+    });
+    const series = await client.series.findFirst({
+      where: {
+        id: 1,
+        episodes: { some: { fileVariants: { some: { path: { not: '' } } } } },
+      },
+    });
+
+    expect(movie).toEqual(expect.objectContaining({ id: 1, title: 'Fight Club' }));
+    expect(series).toBeNull();
   });
 });

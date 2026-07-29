@@ -109,7 +109,7 @@
 ## Full Reference-Surface Expansion (explicit owner direction 2026-07-29)
 
 - [x] Close session wire-contract gaps: normalize X-Emby/body identity, accept bodyless query-form capabilities, return Jellyfin session DTOs, and persist a final valid stopped-playback position through the shared store.
-- [x] Close browse contract gaps: real-TV lower-camel query variants, recursive/type/search filters, accurate Latest and NextUp paging/counts, reachable artwork tags, and availability consistency between catalog and stream resolution.
+- [x] Close browse contract gaps: real-TV lower-camel query variants, recursive/type/search filters, accurate Latest and NextUp paging/counts, reachable artwork tags, and availability consistency between catalog and stream resolution. Production catalog now filters leaves through the same non-empty file-variant relation used by PlaybackService; the custom DatabaseClient predicate is regression-tested.
 - [x] Add and test the remaining reference routes: Audio stream aliases, Download, socket keepalive, and `/`, `/web`, `/web/` browser entry aliases.
 - [x] Route-declaration and protocol-contract parity covers all 52 known-good `serve.py` declarations; final aggregate suite (338 files, 3019 tests), strict TypeScript, diff check, and no-cache clean image (exit 0) all passed.
 ## Open Questions (resolve during Phase 0, not by assumption)

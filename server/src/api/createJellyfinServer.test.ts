@@ -7,6 +7,9 @@ import { encodeJellyfinId, JELLYFIN_MOVIE_VIEW_ID } from '../jellyfin/ids';
 import {
   buildJellyfinPublicSystemInfo, buildJellyfinSystemInfo, buildTrustedLanUserDto,
 } from '../jellyfin/compatibilityDtos';
+const PLAYABLE_VARIANT_WHERE = {
+  fileVariants: { some: { path: { not: '' } } },
+};
 
 function createPrismaFixture(overrides: Record<string, any> = {}) {
   return {
@@ -201,8 +204,12 @@ describe('createJellyfinServer browse routes', () => {
       TotalRecordCount: 1,
     });
     expect(episode.json()).toMatchObject({ Id: episodeId, Type: 'Episode' });
-    expect(prisma.season.findMany).toHaveBeenCalledWith({ where: { seriesId: 7 } });
-    expect(prisma.episode.findMany).toHaveBeenCalledWith({ where: { seriesId: 7 } });
+    expect(prisma.season.findMany).toHaveBeenCalledWith({
+      where: { seriesId: 7, episodes: { some: PLAYABLE_VARIANT_WHERE } },
+    });
+    expect(prisma.episode.findMany).toHaveBeenCalledWith({
+      where: { seriesId: 7, ...PLAYABLE_VARIANT_WHERE },
+    });
     await app.close();
   });
   it('applies Jellyfin episode navigation parameters before paging', async () => {
@@ -231,7 +238,9 @@ describe('createJellyfinServer browse routes', () => {
       TotalRecordCount: 2,
       StartIndex: 1,
     });
-    expect(prisma.episode.findMany).toHaveBeenCalledWith({ where: { seriesId: 7 } });
+    expect(prisma.episode.findMany).toHaveBeenCalledWith({
+      where: { seriesId: 7, ...PLAYABLE_VARIANT_WHERE },
+    });
     await app.close();
   });
 });
@@ -527,7 +536,7 @@ describe('createJellyfinServer known-good HTTP compatibility routes', () => {
       } },
     ]);
     expect(prisma.episode.findMany).toHaveBeenCalledTimes(2);
-    expect(prisma.episode.findMany).toHaveBeenCalledWith();
+    expect(prisma.episode.findMany).toHaveBeenCalledWith({ where: PLAYABLE_VARIANT_WHERE });
     expect(getProgress).toHaveBeenCalledWith({
       mediaType: 'EPISODE', mediaId: 42, userId: 'lan-default',
     });
@@ -637,6 +646,75 @@ describe('createJellyfinServer known-good HTTP compatibility routes', () => {
     } finally {
       await app.close();
       await fs.rm(directory, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('createJellyfinServer playable catalog eligibility', () => {
+  it('does not advertise records that the shared playback resolver would reject', async () => {
+    const playableMovie = {
+      id: 71, tmdbId: 710, title: 'Playable Movie', sortTitle: 'Playable Movie', year: 2026,
+    };
+    const unplayableMovie = {
+      id: 72, tmdbId: 720, title: 'No Variant Movie', sortTitle: 'No Variant Movie', year: 2026,
+    };
+    const playableEpisode = {
+      id: 81, seriesId: 8, seasonId: 18, tvdbId: 810, seasonNumber: 1, episodeNumber: 1,
+      title: 'Playable Episode', airDateUtc: '2026-07-29T00:00:00.000Z',
+    };
+    const unplayableEpisode = {
+      id: 82, seriesId: 8, seasonId: 18, tvdbId: 820, seasonNumber: 1, episodeNumber: 2,
+      title: 'No Variant Episode', airDateUtc: '2026-07-30T00:00:00.000Z',
+    };
+    const hasPlayableVariantFilter = (where: any) => (
+      where?.fileVariants?.some?.path?.not === ''
+    );
+    const movieFindMany = vi.fn(async ({ where }: any = {}) => (
+      hasPlayableVariantFilter(where) ? [playableMovie] : [playableMovie, unplayableMovie]
+    ));
+    const movieFindUnique = vi.fn(async ({ where }: any) => (
+      hasPlayableVariantFilter(where) && where.id === playableMovie.id ? playableMovie : null
+    ));
+    const episodeFindMany = vi.fn(async ({ where }: any = {}) => (
+      hasPlayableVariantFilter(where) ? [playableEpisode] : [playableEpisode, unplayableEpisode]
+    ));
+    const prisma = createPrismaFixture({
+      movie: { findMany: movieFindMany, findUnique: movieFindUnique },
+      episode: { findMany: episodeFindMany },
+    });
+    const app = createApp({ prisma });
+    const movieId = encodeJellyfinId('movie', playableMovie.id);
+    const missingMovieId = encodeJellyfinId('movie', unplayableMovie.id);
+    const seriesId = encodeJellyfinId('series', 8);
+
+    try {
+      const [browse, latest, episodes, detail, missingDetail] = await Promise.all([
+        app.inject(`/Items?ParentId=${JELLYFIN_MOVIE_VIEW_ID}`),
+        app.inject(`/Items/Latest?ParentId=${JELLYFIN_MOVIE_VIEW_ID}`),
+        app.inject(`/Shows/${seriesId}/Episodes`),
+        app.inject(`/Items/${movieId}`),
+        app.inject(`/Items/${missingMovieId}`),
+      ]);
+
+      expect(browse.json()).toMatchObject({
+        TotalRecordCount: 1,
+        Items: [{ Id: movieId, Name: 'Playable Movie' }],
+      });
+      expect(latest.json()).toEqual([expect.objectContaining({ Id: movieId, Name: 'Playable Movie' })]);
+      expect(episodes.json()).toMatchObject({
+        TotalRecordCount: 1,
+        Items: [{ Id: encodeJellyfinId('episode', playableEpisode.id), Name: 'Playable Episode' }],
+      });
+      expect(detail.statusCode).toBe(200);
+      expect(missingDetail.statusCode).toBe(404);
+      expect(movieFindMany).toHaveBeenCalledWith({
+        where: { fileVariants: { some: { path: { not: '' } } } },
+      });
+      expect(episodeFindMany).toHaveBeenCalledWith({
+        where: { seriesId: 8, fileVariants: { some: { path: { not: '' } } } },
+      });
+    } finally {
+      await app.close();
     }
   });
 });

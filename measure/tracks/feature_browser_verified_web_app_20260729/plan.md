@@ -12,8 +12,10 @@
 Phase 1 evidence: `npm run test:browser` built 2,989 modules and passed the disposable real-daemon
 Chromium acceptance test in 48.5 seconds on 2026-07-29. The direct rerun passed in 44.3 seconds;
 the focused strict type check and `git diff --check` also passed. The harness intentionally uses
-the daemon's working `tsx server/src/main.ts` start path. `bun --no-addons server/src/main.ts` is
-an independently exposed release blocker because it disables better-sqlite3 before the daemon can bind.
+the daemon's working `tsx server/src/main.ts` start path. `bun --no-addons server/src/main.ts`
+cannot load better-sqlite3 before the daemon binds; the root command safely falls back to `tsx` and
+the container already uses `tsx`, so this is a Bun runtime-contract defect rather than a total
+deployment blocker.
 
 ## Phase 2: Production Route Matrix
 

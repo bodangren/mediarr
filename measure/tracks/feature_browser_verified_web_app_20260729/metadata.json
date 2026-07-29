@@ -1,0 +1,11 @@
+{
+  "track_id": "feature_browser_verified_web_app_20260729",
+  "type": "feature",
+  "status": "in_progress",
+  "created_at": "2026-07-29T06:35:00Z",
+  "updated_at": "2026-07-29T06:35:00Z",
+  "description": "Prove Mediarr's real web workflows in a browser against a disposable seeded daemon environment, with durable mutation, failure-recovery, accessibility, and performance evidence.",
+  "estimated_tasks": 24,
+  "actual_tasks": null,
+  "deviation_notes": "Created after live browser evidence showed that 3,022 green unit tests did not exercise the shipped SPA. The archived ui_e2e_hardening_20260211 plan was not reused because it was archived with every item unchecked."
+}

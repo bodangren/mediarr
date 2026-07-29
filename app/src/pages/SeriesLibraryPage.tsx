@@ -162,7 +162,7 @@ export function SeriesLibraryPage() {
       title="TV Shows"
       description="Unified TV library view with monitoring controls and details access."
       actions={
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={() => void handleRescan()}

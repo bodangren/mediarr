@@ -28,6 +28,10 @@ and confirmed it remained visible after browser reload. ThaiDub remained active 
 - [~] Visit every `App.tsx` route in Kimi WebBridge at desktop and mobile widths; assert a
   meaningful route landmark, deep-link reload, no overflow, and no client/internal-request failure.
 - [ ] Add route-specific fixtures for all empty/non-empty states needed by the matrix.
+- [x] Repair the Collections Drizzle relation-count contract and Wanted optional-field serialization;
+  Kimi then showed Collections' clean empty state and Wanted's real Matrix row without a client crash.
+- [~] Harden shared list/detail layouts against narrow-view overflow. Desktop Kimi evidence is clean;
+  mobile remains unverified until a Kimi-controlled narrow viewport is available.
 - [x] Restore validated notification list/create/update/delete/test Fastify routes over the existing
   encrypted Notification repository and real production transport registry.
 - [x] Wire the Notifications settings page to durable add/edit/enable/test/delete controls, including

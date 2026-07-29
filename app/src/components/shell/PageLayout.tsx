@@ -52,7 +52,9 @@ export function PageLayout({
     <div className="min-h-screen bg-black text-white selection:bg-white selection:text-black">
       <div
         className={`grid min-h-screen grid-cols-1 ${
-          sidebarCollapsed ? 'lg:grid-cols-[64px_1fr]' : 'lg:grid-cols-[300px_1fr]'
+          sidebarCollapsed
+            ? 'lg:grid-cols-[64px_minmax(0,1fr)]'
+            : 'lg:grid-cols-[300px_minmax(0,1fr)]'
         }`}
       >
         <PageSidebar
@@ -64,7 +66,7 @@ export function PageLayout({
           onClose={() => setIsMobileSidebarOpen(false)}
         />
 
-        <div className="flex min-h-screen flex-col">
+        <div className="flex min-h-screen min-w-0 flex-col">
           <header className="sticky top-0 z-20 flex items-center gap-6 px-8 py-10 lg:px-12">
             {/* Mobile menu button */}
             <button
@@ -79,7 +81,7 @@ export function PageLayout({
             <div className="flex-1">{header}</div>
           </header>
 
-          <main className="flex-1 px-8 pb-32 pt-0 lg:px-12">{children}</main>
+          <main className="min-w-0 flex-1 px-8 pb-32 pt-0 lg:px-12">{children}</main>
         </div>
       </div>
 

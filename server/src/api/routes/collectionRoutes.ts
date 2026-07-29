@@ -30,9 +30,6 @@ export function registerCollectionRoutes(
 
     const collections = await prismaCollections.findMany({
       include: {
-        _count: {
-          select: { movies: true },
-        },
         movies: {
           select: {
             id: true,
@@ -57,7 +54,7 @@ export function registerCollectionRoutes(
         ? `https://image.tmdb.org/t/p/w1280${collection.backdropPath}`
         : null,
       monitored: collection.monitored,
-      movieCount: collection._count.movies,
+      movieCount: collection.movies.length,
       moviesInLibrary: collection.movies.filter((m: any) => m.fileVariants.length > 0).length,
       qualityProfileId: collection.qualityProfileId,
       rootFolderPath: collection.rootFolderPath,

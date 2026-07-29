@@ -19,6 +19,43 @@ function createMovieApp(deps: ApiDependencies): FastifyInstance {
   return app;
 }
 
+describe('GET /api/collections — Drizzle relation counts', () => {
+  it('derives movie counts from the loaded movies relation without Prisma _count', async () => {
+    const findMany = vi.fn().mockResolvedValue([
+      {
+        id: 1,
+        tmdbCollectionId: 990000001,
+        name: 'Browser Acceptance Collection',
+        overview: null,
+        posterPath: null,
+        backdropPath: null,
+        monitored: true,
+        qualityProfileId: 1,
+        rootFolderPath: '/data/media/movies',
+        minimumAvailability: 'released',
+        movies: [
+          { id: 1, fileVariants: [{ id: 1 }] },
+          { id: 2, fileVariants: [] },
+        ],
+      },
+    ]);
+    const app = createCollectionApp({
+      prisma: { collection: { findMany } },
+    } as unknown as ApiDependencies);
+
+    const response = await app.inject({ method: 'GET', url: '/api/collections' });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().data).toEqual([
+      expect.objectContaining({
+        name: 'Browser Acceptance Collection',
+        movieCount: 2,
+        moviesInLibrary: 1,
+      }),
+    ]);
+  });
+});
+
 describe('POST /api/collections — idempotent create', () => {
   let deps: ApiDependencies;
   let app: FastifyInstance;

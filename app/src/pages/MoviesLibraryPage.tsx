@@ -153,7 +153,7 @@ export function MoviesLibraryPage() {
       title="Movies"
       description="Unified movie library view with interactive search and grab actions."
       actions={
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={() => void handleRescan()}

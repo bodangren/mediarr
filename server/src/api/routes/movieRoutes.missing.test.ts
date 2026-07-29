@@ -63,6 +63,45 @@ describe('GET /api/movies/missing', () => {
     expect(body.meta.totalCount).toBe(1);
   });
 
+  it('omits absent optional values from the browser API contract', async () => {
+    prismaMovie.findMany.mockResolvedValue([
+      {
+        id: 1,
+        title: 'Missing Movie',
+        year: 2024,
+        posterUrl: null,
+        status: 'released',
+        monitored: true,
+        inCinemas: null,
+        cinemaDate: null,
+        physicalRelease: null,
+        digitalRelease: null,
+        qualityProfileId: 1,
+        qualityProfile: null,
+        runtime: null,
+        certification: null,
+        genres: null,
+        added: new Date('2024-01-01'),
+        path: null,
+        hasFile: false,
+      },
+    ]);
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/api/movies/missing',
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().data[0]).not.toHaveProperty('posterUrl');
+    expect(response.json().data[0]).not.toHaveProperty('cinemaDate');
+    expect(response.json().data[0]).not.toHaveProperty('physicalRelease');
+    expect(response.json().data[0]).not.toHaveProperty('digitalRelease');
+    expect(response.json().data[0]).not.toHaveProperty('qualityProfileName');
+    expect(response.json().data[0]).not.toHaveProperty('runtime');
+    expect(response.json().data[0]).not.toHaveProperty('certification');
+  });
+
   it('respects pagination params', async () => {
     const response = await app.inject({
       method: 'GET',

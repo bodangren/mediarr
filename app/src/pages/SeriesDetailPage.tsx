@@ -413,7 +413,7 @@ export function SeriesDetailPage() {
       {series ? (
         <>
           {/* Header: poster + metadata */}
-          <section className="flex gap-6 rounded-md border border-border-subtle bg-surface-1 p-4">
+          <section className="flex flex-col gap-6 rounded-md border border-border-subtle bg-surface-1 p-4 sm:flex-row">
             <div className="flex-shrink-0 w-32">
               {series.posterUrl ? (
                 <img src={series.posterUrl} alt={series.title} className="w-full rounded-md object-cover" />
@@ -421,7 +421,7 @@ export function SeriesDetailPage() {
                 <div className="flex h-48 w-32 items-center justify-center rounded-md bg-surface-2 text-xs text-text-secondary">No Poster</div>
               )}
             </div>
-            <div className="flex-1 space-y-2">
+            <div className="min-w-0 flex-1 space-y-2">
               <h2 className="text-xl font-semibold">{series.title}</h2>
               <div className="flex flex-wrap items-center gap-3 text-sm text-text-secondary">
                 {series.year ? <span>{series.year}</span> : null}
@@ -550,16 +550,16 @@ export function SeriesDetailPage() {
             {series.seasons.map(season => (
               <div key={season.seasonNumber} className="border-b border-border-subtle last:border-b-0">
                 {/* Season row */}
-                <div className="flex items-center gap-3 px-4 py-3">
+                <div className="flex flex-wrap items-center gap-3 px-4 py-3">
                   <button
                     type="button"
                     aria-label={`Expand Season ${season.seasonNumber}`}
-                    className="flex items-center gap-2 flex-1 text-left text-sm font-medium"
+                    className="flex min-w-0 basis-full items-center gap-2 text-left text-sm font-medium sm:basis-auto sm:flex-1"
                     onClick={() => toggleSeasonExpanded(season.seasonNumber)}
                   >
                     <span>{expandedSeasons.has(season.seasonNumber) ? '▼' : '▶'}</span>
                     Season {season.seasonNumber}
-                    <span className="text-xs text-text-secondary ml-2 flex items-center gap-3">
+                    <span className="ml-2 flex min-w-0 flex-wrap items-center gap-3 text-xs text-text-secondary">
                       ({season.episodes.length} episodes)
                       {seasonSubtitleStatuses[season.seasonNumber] && seasonSubtitleStatuses[season.seasonNumber] !== 'none' ? (
                         <span className={`rounded-sm px-1.5 py-0.5 text-[10px] ${subtitleStatusBadgeClass(seasonSubtitleStatuses[season.seasonNumber]!)}`}>
@@ -610,11 +610,11 @@ export function SeriesDetailPage() {
                       const episodeSummary = episodeSubtitleSummaries[ep.id];
 
                       return (
-                        <li key={ep.id} className="flex items-center gap-3 px-6 py-2 text-sm">
+                        <li key={ep.id} className="flex flex-wrap items-center gap-3 px-6 py-2 text-sm">
                           <span className="w-16 flex-shrink-0 text-xs text-text-secondary font-mono">
                             S{String(ep.seasonNumber).padStart(2, '0')}E{String(ep.episodeNumber).padStart(2, '0')}
                           </span>
-                          <span className="flex-1 truncate flex items-center gap-2">
+                          <span className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
                             {ep.title}
                             {ep.isDownloading ? (
                               <span className="rounded-sm bg-accent-primary/20 px-1.5 py-0.5 text-[10px] text-accent-primary font-medium tracking-wide">Downloading</span>

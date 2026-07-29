@@ -200,7 +200,7 @@ export function MovieDetailPage() {
       {movie ? (
         <>
           {/* Header: poster + metadata */}
-          <section className="flex gap-6 rounded-md border border-border-subtle bg-surface-1 p-4">
+          <section className="flex flex-col gap-6 rounded-md border border-border-subtle bg-surface-1 p-4 sm:flex-row">
             <div className="flex-shrink-0 w-32">
               {movie.posterUrl ? (
                 <img src={movie.posterUrl} alt={movie.title} className="w-full rounded-md object-cover" />
@@ -208,7 +208,7 @@ export function MovieDetailPage() {
                 <div className="flex h-48 w-32 items-center justify-center rounded-md bg-surface-2 text-xs text-text-secondary">No Poster</div>
               )}
             </div>
-            <div className="flex-1 space-y-2">
+            <div className="min-w-0 flex-1 space-y-2">
               <h2 className="text-xl font-semibold">{movie.title}</h2>
               <div className="flex flex-wrap items-center gap-3 text-sm text-text-secondary">
                 {movie.year ? <span>{movie.year}</span> : null}

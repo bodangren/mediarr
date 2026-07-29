@@ -5,6 +5,7 @@ import { RouteScaffold } from '@/components/primitives/RouteScaffold';
 import { useToast } from '@/components/providers/ToastProvider';
 import { Alert } from '@/components/ui/alert-compat';
 import { Button } from '@/components/ui/button';
+import { ConfirmModal } from '@/components/ui/modal';
 import { getApiClients } from '@/lib/api/client';
 import type { NotificationItem } from '@/lib/api/notificationsApi';
 
@@ -18,6 +19,7 @@ export function SettingsNotificationsPage() {
   const { pushToast } = useToast();
   const [modalOpen, setModalOpen] = useState(false);
   const [notificationToEdit, setNotificationToEdit] = useState<NotificationItem | undefined>();
+  const [notificationPendingDeletion, setNotificationPendingDeletion] = useState<NotificationItem | undefined>();
 
   const notificationsQuery = useQuery({
     queryKey: ['notifications'],
@@ -60,6 +62,7 @@ export function SettingsNotificationsPage() {
   const deleteMutation = useMutation({
     mutationFn: (id: number) => api.notificationsApi.remove(id),
     onSuccess: async () => {
+      setNotificationPendingDeletion(undefined);
       pushToast({ title: 'Notification deleted', variant: 'success' });
       await refresh();
     },
@@ -84,8 +87,12 @@ export function SettingsNotificationsPage() {
   };
 
   const removeNotification = (notification: NotificationItem) => {
-    if (window.confirm(`Delete notification “${notification.name}”?`)) {
-      deleteMutation.mutate(notification.id);
+    setNotificationPendingDeletion(notification);
+  };
+
+  const confirmRemoval = () => {
+    if (notificationPendingDeletion) {
+      deleteMutation.mutate(notificationPendingDeletion.id);
     }
   };
 
@@ -178,6 +185,29 @@ export function SettingsNotificationsPage() {
           isOpen
           notificationToEdit={notificationToEdit}
           onClose={closeModal}
+        />
+      ) : null}
+
+      {notificationPendingDeletion ? (
+        <ConfirmModal
+          isOpen
+          title="Delete Notification"
+          description={
+            <div className="space-y-2">
+              <p>
+                Delete notification <strong>{notificationPendingDeletion.name}</strong>?
+              </p>
+              <p className="text-xs text-text-muted">
+                This permanently removes the integration configuration. It cannot be undone.
+              </p>
+            </div>
+          }
+          onCancel={() => setNotificationPendingDeletion(undefined)}
+          onConfirm={confirmRemoval}
+          cancelLabel="Cancel"
+          confirmLabel="Delete Notification"
+          confirmVariant="destructive"
+          isConfirming={deleteMutation.isPending}
         />
       ) : null}
     </>

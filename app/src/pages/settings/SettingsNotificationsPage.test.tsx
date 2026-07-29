@@ -54,7 +54,6 @@ describe('SettingsNotificationsPage', () => {
     api.update.mockResolvedValue(notification);
     api.remove.mockResolvedValue({ id: notification.id });
     api.test.mockResolvedValue({ success: true, message: 'Test notification sent successfully.' });
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
   });
 
   it('renders persisted notifications and all durable controls', async () => {
@@ -76,7 +75,7 @@ describe('SettingsNotificationsPage', () => {
     expect(screen.queryByText('No notification integrations configured.')).not.toBeInTheDocument();
   });
 
-  it('persists enable changes, sends real tests, and deletes through the API', async () => {
+  it('persists enable changes, sends real tests, and deletes through an explicit confirmation', async () => {
     renderPage();
     await screen.findByText('Household Webhook');
 
@@ -90,6 +89,11 @@ describe('SettingsNotificationsPage', () => {
     }));
 
     fireEvent.click(screen.getByRole('button', { name: 'Delete Household Webhook' }));
+
+    expect(await screen.findByRole('dialog', { name: 'Delete Notification' })).toBeInTheDocument();
+    expect(api.remove).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Delete Notification' }));
     await waitFor(() => expect(api.remove).toHaveBeenCalledWith(7));
   });
 });

@@ -44,6 +44,9 @@ that requires a Kimi WebBridge walkthrough.
 
 ## Phase 3: Durable Core Workflows
 
+- [x] Prove the Notifications create → reload → in-app confirm delete → reload workflow through
+  Kimi WebBridge against the isolated real daemon; this uses an accessible app modal rather than a
+  native browser prompt.
 - [ ] Cover setup, movies/TV/collections, wanted/calendar, activity queue/history, and all settings
   CRUD/toggle flows with visible confirmation, API/DB evidence, and hard-reload persistence.
 - [ ] Cover subtitles, scheduler controls, backup/system operations, and safe destructive flows in

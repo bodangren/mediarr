@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader as DialogHeaderPrimitive,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -162,7 +163,9 @@ export function ConfirmModal({
     <Modal isOpen={isOpen} ariaLabel={title} onClose={onCancel}>
       <ModalHeader title={title} onClose={onCancel} />
       <ModalBody>
-        <div className="text-sm text-text-secondary">{description ?? 'Please confirm this action.'}</div>
+        <DialogDescription asChild>
+          <div className="text-sm text-text-secondary">{description ?? 'Please confirm this action.'}</div>
+        </DialogDescription>
       </ModalBody>
       <ModalFooter>
         <Button variant="secondary" onClick={onCancel} disabled={isConfirming}>

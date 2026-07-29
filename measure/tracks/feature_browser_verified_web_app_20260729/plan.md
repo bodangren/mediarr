@@ -17,9 +17,12 @@ an independently exposed release blocker because it disables better-sqlite3 befo
 
 ## Phase 2: Production Route Matrix
 
-- [ ] Visit every `App.tsx` route at desktop and mobile widths; assert a meaningful route landmark,
+- [~] Visit every `App.tsx` route at desktop and mobile widths; assert a meaningful route landmark,
   deep-link reload, no overflow, and no client/internal-request failure.
 - [ ] Add route-specific fixtures for all empty/non-empty states needed by the matrix.
+- [~] Restore the notifications API and UI CRUD/test path required for the settings route to satisfy
+  the clean-network and durable-workflow gates; this is a prerequisite exposed by the matrix, not
+  an optional enhancement.
 - [ ] Commit: `test(browser): cover production SPA route matrix`
 
 ## Phase 3: Durable Core Workflows

@@ -1,0 +1,9 @@
+{
+  "id": "library_scan_resilience_20260801",
+  "title": "Library Scan Resilience",
+  "status": "pending",
+  "created": "2026-08-01",
+  "priority": "high",
+  "deviation_notes": "Derived from the validated LibraryScanner defect recorded in measure/tech-debt.md: one unreadable subdirectory aborts the complete scan, and collection-before-parsing prevents usable partial results. Scope is bounded to failure isolation and traversal safety; metadata sidecars and broad incremental self-healing remain separate concerns.",
+  "updated": "2026-08-01"
+}

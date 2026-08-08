@@ -14,6 +14,7 @@ export function WantedPage() {
   const [episodes, setEpisodes] = useState<MissingEpisodeItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [searchFeedback, setSearchFeedback] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const pageSize = 25;
@@ -54,8 +55,20 @@ export function WantedPage() {
     }
   }, [activeTab, page]);
 
-  const handleSearch = (movie: MissingMovie) => {
-    void api.mediaApi.triggerAutoSearch(movie.movieId, 'movie');
+  const handleSearch = async (movie: MissingMovie) => {
+    setSearchFeedback(null);
+    try {
+      const result = await api.mediaApi.triggerAutoSearch(movie.movieId, 'movie');
+      setSearchFeedback(
+        result.success
+          ? `Search started for ${movie.title}`
+          : `Search failed for ${movie.title}: ${result.error ?? 'No matching release found'}`,
+      );
+    } catch (searchError) {
+      setSearchFeedback(
+        `Search failed for ${movie.title}: ${searchError instanceof Error ? searchError.message : 'Unknown error'}`,
+      );
+    }
   };
 
   const handleToggleMonitored = async (movieId: number, monitored: boolean) => {
@@ -106,6 +119,7 @@ export function WantedPage() {
             {error}
           </div>
         )}
+        {searchFeedback ? <p role="status" className="text-sm text-text-secondary">{searchFeedback}</p> : null}
 
         {/* Loading */}
         {isLoading && (
@@ -142,7 +156,7 @@ export function WantedPage() {
                     <WantedMovieRow
                       key={movie.id}
                       movie={movie}
-                      onSearch={handleSearch}
+                      onSearch={movie => { void handleSearch(movie); }}
                       onEdit={() => {}}
                       onDelete={() => {}}
                       onToggleMonitored={handleToggleMonitored}

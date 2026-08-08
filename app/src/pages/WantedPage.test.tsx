@@ -200,6 +200,7 @@ describe('WantedPage', () => {
     await waitFor(() => {
       expect(mockApi.mediaApi.triggerAutoSearch).toHaveBeenCalledWith(101, 'movie');
     });
+    expect(await screen.findByRole('status')).toHaveTextContent('Search started for Dune: Part Two');
   });
 
   it('calls triggerAutoSearch when episode Search button is clicked', async () => {

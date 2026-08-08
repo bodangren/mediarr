@@ -11,6 +11,8 @@ const DEFAULT_MOVIE_ROOT = '/data/media/movies';
 const DEFAULT_TV_ROOT = '/data/media/tv';
 const DEFAULT_COMPLETE_DOWNLOAD_PATH = '/data/downloads/complete';
 const DEFAULT_INCOMPLETE_DOWNLOAD_PATH = '/data/downloads/incomplete';
+const MOVIE_MEDIA_SUFFIX = '/media/movies';
+const TV_MEDIA_SUFFIX = '/media/tv';
 
 type WizardStep = 1 | 2 | 3 | 4 | 5;
 
@@ -28,6 +30,29 @@ const STEP_LABELS: Record<WizardStep, string> = {
   5: 'Done',
 };
 const STEP_SEQUENCE: WizardStep[] = [1, 2, 3, 4, 5];
+
+function deriveDownloadDirectories(movieRootFolder: string, tvRootFolder: string) {
+  const movieRoot = movieRootFolder.trim().replace(/\/+$/, '');
+  const tvRoot = tvRootFolder.trim().replace(/\/+$/, '');
+  const movieBase = movieRoot.endsWith(MOVIE_MEDIA_SUFFIX)
+    ? movieRoot.slice(0, -MOVIE_MEDIA_SUFFIX.length)
+    : null;
+  const tvBase = tvRoot.endsWith(TV_MEDIA_SUFFIX)
+    ? tvRoot.slice(0, -TV_MEDIA_SUFFIX.length)
+    : null;
+
+  if (movieBase && movieBase === tvBase) {
+    return {
+      completeDirectory: `${movieBase}/downloads/complete`,
+      incompleteDirectory: `${movieBase}/downloads/incomplete`,
+    };
+  }
+
+  return {
+    completeDirectory: DEFAULT_COMPLETE_DOWNLOAD_PATH,
+    incompleteDirectory: DEFAULT_INCOMPLETE_DOWNLOAD_PATH,
+  };
+}
 
 const CURATED_INDEXERS: CuratedIndexer[] = indexerPresets
   .filter(preset => preset.implementation === 'Cardigann' && preset.privacy === 'Public')
@@ -102,6 +127,7 @@ export function SetupWizardPage({ onCompleted }: SetupWizardPageProps) {
   }, [api]);
 
   const selectedIndexerCount = Object.values(selectedIndexers).filter(Boolean).length;
+  const downloadDirectories = deriveDownloadDirectories(movieRootFolder, tvRootFolder);
 
   const canContinueFromStep2 = movieRootFolder.trim().length > 0 && tvRootFolder.trim().length > 0;
   const canContinueFromStep4 = qualityProfiles.length === 0 || selectedQualityProfileId !== null;
@@ -162,8 +188,7 @@ export function SetupWizardPage({ onCompleted }: SetupWizardPageProps) {
     await api.settingsApi.update({
       torrentLimits: {
         ...currentSettings.torrentLimits,
-        completeDirectory: DEFAULT_COMPLETE_DOWNLOAD_PATH,
-        incompleteDirectory: DEFAULT_INCOMPLETE_DOWNLOAD_PATH,
+        ...downloadDirectories,
       },
     });
   };
@@ -432,7 +457,7 @@ export function SetupWizardPage({ onCompleted }: SetupWizardPageProps) {
                   ?? 'Default'
                 }
               </li>
-              <li>Download path: {DEFAULT_COMPLETE_DOWNLOAD_PATH}</li>
+              <li>Download path: {downloadDirectories.completeDirectory}</li>
             </ul>
 
             <Button type="button" onClick={() => { void finalizeSetup(true); }} disabled={isSubmitting}>

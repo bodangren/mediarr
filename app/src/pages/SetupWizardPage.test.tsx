@@ -199,4 +199,39 @@ describe('SetupWizardPage', () => {
       expect(mockNavigate).toHaveBeenCalledWith('/dashboard', { replace: true });
     });
   });
+
+  it('derives download directories from matching custom media roots', async () => {
+    const mockApi = createMockApi();
+    (getApiClients as ReturnType<typeof vi.fn>).mockReturnValue(mockApi);
+
+    render(
+      <MemoryRouter>
+        <SetupWizardPage />
+      </MemoryRouter>,
+    );
+    await waitFor(() => {
+      expect(mockApi.qualityProfileApi.list).toHaveBeenCalled();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Continue Guided Setup' }));
+    fireEvent.change(screen.getByRole('textbox', { name: /Movie Root Folder/ }), {
+      target: { value: '/srv/mediarr/media/movies' },
+    });
+    fireEvent.change(screen.getByRole('textbox', { name: /TV Root Folder/ }), {
+      target: { value: '/srv/mediarr/media/tv' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Go to Dashboard' }));
+
+    await waitFor(() => {
+      expect(mockApi.settingsApi.update).toHaveBeenCalledWith(expect.objectContaining({
+        torrentLimits: expect.objectContaining({
+          completeDirectory: '/srv/mediarr/downloads/complete',
+          incompleteDirectory: '/srv/mediarr/downloads/incomplete',
+        }),
+      }));
+    });
+  });
 });

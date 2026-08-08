@@ -8,7 +8,8 @@ import { ManualSearchModal } from '@/components/subtitles/ManualSearchModal';
 import { SubtitleTrackList } from '@/components/subtitles/SubtitleTrackList';
 import { LanguageBadge } from '@/components/subtitles/LanguageBadge';
 import { useToast } from '@/components/providers/ToastProvider';
-import type { SubtitleTrack } from '@/lib/api/subtitleApi';
+import { ConfirmModal } from '@/components/ui/modal';
+import type { SubtitleTrack, SubtitleVariantInventory } from '@/lib/api/subtitleApi';
 import { getApiClients } from '@/lib/api/client';
 import type { QualityProfileItem } from '@/lib/api/qualityProfileApi';
 import { formatBytes } from '@/lib/format';
@@ -45,22 +46,30 @@ export function MovieDetailPage() {
   const [qualityProfiles, setQualityProfiles] = useState<QualityProfileItem[]>([]);
   const [movieSubtitleSummary, setMovieSubtitleSummary] = useState<SubtitleCoverageSummary | null>(null);
   const [movieSubtitleTracks, setMovieSubtitleTracks] = useState<SubtitleTrack[]>([]);
+  const [movieSubtitleVariantId, setMovieSubtitleVariantId] = useState<number | undefined>();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [isManualSubtitleModalOpen, setIsManualSubtitleModalOpen] = useState(false);
   const [isSearchingSubtitles, setIsSearchingSubtitles] = useState(false);
+  const [subtitleTrackPendingDeletion, setSubtitleTrackPendingDeletion] =
+    useState<SubtitleTrack | null>(null);
+  const [isDeletingSubtitle, setIsDeletingSubtitle] = useState(false);
 
   const loadMovieSubtitleSummary = useCallback(async (targetMovieId: number) => {
     try {
+      setMovieSubtitleVariantId(undefined);
       const variants = await api.subtitleApi.listMovieVariants(targetMovieId);
+      const selectedVariant = variants.find((variant: SubtitleVariantInventory) => (variant.fileSize ?? 0) > 0)
+        ?? variants[0];
+      setMovieSubtitleVariantId(selectedVariant?.variantId);
       const tracks = variants.flatMap(variant => variant.subtitleTracks ?? []);
       const available = tracks
         .map((track) => String(track.languageCode ?? '').toLowerCase())
         .filter(Boolean);
       const missing = variants.flatMap(variant =>
         (variant.missingSubtitles ?? [])
-          .map((item) => String(item ?? '').toLowerCase())
+          .map((item) => (typeof item === 'string' ? item : item.languageCode).toLowerCase())
           .filter(Boolean),
       );
       setMovieSubtitleTracks(tracks);
@@ -167,14 +176,25 @@ export function MovieDetailPage() {
     }
   };
 
-  const handleDeleteSubtitle = async (trackId: number) => {
-    if (!movie) return;
+  const requestDeleteSubtitle = (trackId: number) => {
+    const track = movieSubtitleTracks.find(item => item.id === trackId);
+    if (track) {
+      setSubtitleTrackPendingDeletion(track);
+    }
+  };
+
+  const handleDeleteSubtitle = async () => {
+    if (!movie || !subtitleTrackPendingDeletion) return;
+    setIsDeletingSubtitle(true);
     try {
-      await api.subtitleApi.deleteSubtitleTrack(trackId);
+      await api.subtitleApi.deleteSubtitleTrack(subtitleTrackPendingDeletion.id);
+      setSubtitleTrackPendingDeletion(null);
       pushToast({ title: 'Deleted', variant: 'success', message: 'Subtitle removed' });
       await loadMovieSubtitleSummary(movie.id);
     } catch {
       pushToast({ title: 'Error', variant: 'error', message: 'Failed to delete subtitle' });
+    } finally {
+      setIsDeletingSubtitle(false);
     }
   };
 
@@ -305,6 +325,7 @@ export function MovieDetailPage() {
             <button
               type="button"
               className="rounded-sm border border-border-subtle bg-surface-2 px-3 py-2 text-sm text-text-primary hover:bg-surface-3"
+              disabled={movieSubtitleVariantId === undefined}
               onClick={() => setIsManualSubtitleModalOpen(true)}
             >
               Manual Subtitles
@@ -339,7 +360,7 @@ export function MovieDetailPage() {
                 onSearch={() => {
                   setIsManualSubtitleModalOpen(true);
                 }}
-                onDelete={handleDeleteSubtitle}
+                onDelete={requestDeleteSubtitle}
               />
             </section>
           )}
@@ -356,12 +377,36 @@ export function MovieDetailPage() {
           <ManualSearchModal
             isOpen={isManualSubtitleModalOpen}
             movieId={movie.id}
+            variantId={movieSubtitleVariantId}
             onClose={() => {
               setIsManualSubtitleModalOpen(false);
               void loadMovieSubtitleSummary(movie.id);
             }}
           />
         </>
+      ) : null}
+
+      {subtitleTrackPendingDeletion ? (
+        <ConfirmModal
+          isOpen
+          title="Delete Subtitle"
+          description={
+            <div className="space-y-2">
+              <p>
+                Delete the <strong>{subtitleTrackPendingDeletion.languageCode}</strong> subtitle?
+              </p>
+              <p className="text-xs text-text-muted">
+                This permanently removes the subtitle record and its sidecar file from disk. This action cannot be undone.
+              </p>
+            </div>
+          }
+          onCancel={() => setSubtitleTrackPendingDeletion(null)}
+          onConfirm={() => { void handleDeleteSubtitle(); }}
+          cancelLabel="Cancel"
+          confirmLabel="Delete Subtitle"
+          confirmVariant="destructive"
+          isConfirming={isDeletingSubtitle}
+        />
       ) : null}
     </RouteScaffold>
   );

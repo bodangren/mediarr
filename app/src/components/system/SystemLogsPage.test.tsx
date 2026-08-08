@@ -107,4 +107,12 @@ describe('SystemLogsPage', () => {
     renderPage();
     await waitFor(() => expect(screen.getByText('No log files found.')).toBeInTheDocument());
   });
+
+  it('shows an explicit error instead of the empty state when the log list request fails', async () => {
+    mockListFiles.mockRejectedValue(new Error('network unavailable'));
+    renderPage();
+
+    await expect(screen.findByRole('alert')).resolves.toHaveTextContent('Failed to load log files.');
+    expect(screen.queryByText('No log files found.')).not.toBeInTheDocument();
+  });
 });

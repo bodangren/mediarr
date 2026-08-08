@@ -79,6 +79,9 @@ export function ManualEpisodeMatchDialog({
       // The search returns basic metadata, we need to get full details for each
       const results = await Promise.all(
         response.slice(0, 10).map(async (item) => {
+          if (item.id === undefined) {
+            return null;
+          }
           try {
             const details = await seriesApi.getSeriesWithEpisodes(item.id);
             return details;

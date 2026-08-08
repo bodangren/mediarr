@@ -11,7 +11,7 @@ export function ActiveDownloadsWidget({ torrents, isLoading }: ActiveDownloadsWi
   if (isLoading) {
     return (
       <div className="rounded-md border border-border-subtle bg-surface-1 p-4">
-        <h3 className="text-sm font-semibold mb-3">Active Downloads</h3>
+        <h2 className="text-sm font-semibold mb-3">Active Downloads</h2>
         <p className="text-xs text-text-secondary">Loading...</p>
       </div>
     );
@@ -25,7 +25,7 @@ export function ActiveDownloadsWidget({ torrents, isLoading }: ActiveDownloadsWi
     return (
       <div className="rounded-md border border-border-subtle bg-surface-1 p-4">
         <div className="flex justify-between items-center mb-3">
-          <h3 className="text-sm font-semibold">Active Downloads</h3>
+          <h2 className="text-sm font-semibold">Active Downloads</h2>
           <Link to="/activity/queue" className="text-xs text-accent hover:underline">
             Queue
           </Link>
@@ -38,7 +38,7 @@ export function ActiveDownloadsWidget({ torrents, isLoading }: ActiveDownloadsWi
   return (
     <div className="rounded-md border border-border-subtle bg-surface-1 p-4">
       <div className="flex justify-between items-center mb-3">
-        <h3 className="text-sm font-semibold">Active Downloads</h3>
+        <h2 className="text-sm font-semibold">Active Downloads</h2>
         <Link to="/activity/queue" className="text-xs text-accent hover:underline">
           Queue
         </Link>

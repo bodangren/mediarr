@@ -13,28 +13,29 @@ interface ManualSearchModalProps {
   isOpen: boolean;
   episodeId?: number;
   movieId?: number;
+  variantId?: number;
   onClose: () => void;
 }
 
-export function ManualSearchModal({ isOpen, episodeId, movieId, onClose }: ManualSearchModalProps) {
+export function ManualSearchModal({ isOpen, episodeId, movieId, variantId, onClose }: ManualSearchModalProps) {
   if (!isOpen) return null;
-  return <ManualSearchModalInner isOpen={isOpen} episodeId={episodeId} movieId={movieId} onClose={onClose} />;
+  return <ManualSearchModalInner isOpen={isOpen} episodeId={episodeId} movieId={movieId} variantId={variantId} onClose={onClose} />;
 }
 
-function ManualSearchModalInner({ isOpen, episodeId, movieId, onClose }: ManualSearchModalProps) {
+function ManualSearchModalInner({ isOpen, episodeId, movieId, variantId, onClose }: ManualSearchModalProps) {
   const api = useMemo(() => getApiClients(), []);
   const queryClient = useQueryClient();
   const { pushToast } = useToast();
 
   const searchQuery = useQuery({
-    queryKey: ['subtitle-manual-search', movieId ?? episodeId],
-    queryFn: () => api.subtitleApi.manualSearch({ movieId, episodeId }),
-    enabled: isOpen && (movieId ?? episodeId) !== undefined,
+    queryKey: ['subtitle-manual-search', variantId ?? movieId ?? episodeId],
+    queryFn: () => api.subtitleApi.manualSearch({ movieId, episodeId, variantId }),
+    enabled: isOpen && (variantId ?? movieId ?? episodeId) !== undefined,
   });
 
   const downloadMutation = useMutation({
     mutationFn: (candidate: ManualSearchCandidate) =>
-      api.subtitleApi.manualDownload({ movieId, episodeId, candidate }),
+      api.subtitleApi.manualDownload({ movieId, episodeId, variantId, candidate }),
     onSuccess: () => {
       pushToast({
         title: 'Download Successful',

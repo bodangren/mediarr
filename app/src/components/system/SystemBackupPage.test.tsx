@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { SystemBackupPage } from './SystemBackupPage';
 
@@ -69,9 +69,11 @@ describe('SystemBackupPage', () => {
     vi.clearAllMocks();
   });
 
-  it('renders the page title', () => {
+  it('renders the page title', async () => {
     renderPage();
     expect(screen.getByText('Backup')).toBeInTheDocument();
+    await screen.findByText('mediarr_backup_2024-02-14.zip');
+    await screen.findByText('Save Schedule');
   });
 
   it('shows backup list after loading', async () => {
@@ -115,13 +117,68 @@ describe('SystemBackupPage', () => {
     );
   });
 
-  it('calls deleteBackup when Delete is clicked and confirmed', async () => {
+  it('requires accessible confirmation before deleting a backup', async () => {
     mockDeleteBackup.mockResolvedValue({ id: 'mediarr_backup_2024-02-14.db', deleted: true });
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    mockGetBackups
+      .mockResolvedValueOnce(mockBackups)
+      .mockResolvedValue([]);
     renderPage();
-    await waitFor(() => expect(screen.getAllByText('Delete').length).toBeGreaterThan(0));
-    fireEvent.click(screen.getAllByText('Delete')[0]);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Delete' }));
+
+    const dialog = await screen.findByRole('dialog', { name: 'Delete Backup' });
+    expect(dialog).toHaveTextContent('mediarr_backup_2024-02-14.zip');
+    expect(dialog).toHaveTextContent(/permanently delete/i);
+    expect(mockDeleteBackup).not.toHaveBeenCalled();
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: 'Delete Backup' })).not.toBeInTheDocument(),
+    );
+    expect(mockDeleteBackup).not.toHaveBeenCalled();
+    expect(screen.getByText('mediarr_backup_2024-02-14.zip')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+    const reopenedDialog = await screen.findByRole('dialog', { name: 'Delete Backup' });
+    fireEvent.click(within(reopenedDialog).getByRole('button', { name: 'Delete Backup' }));
+
     await waitFor(() => expect(mockDeleteBackup).toHaveBeenCalledWith('mediarr_backup_2024-02-14.db'));
+    expect(await screen.findByText('No backups yet')).toBeInTheDocument();
+  });
+
+  it('requires accessible confirmation and announces restart after restore', async () => {
+    mockRestoreBackup.mockResolvedValue({
+      id: 'mediarr_backup_2024-02-14.db',
+      name: 'mediarr_backup_2024-02-14.zip',
+      restoredAt: new Date().toISOString(),
+      restartRequired: true,
+      safetyBackupId: 'manual_backup_safety.db',
+    });
+    renderPage();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Restore' }));
+
+    const dialog = await screen.findByRole('dialog', { name: 'Restore Backup' });
+    expect(dialog).toHaveTextContent('mediarr_backup_2024-02-14.zip');
+    expect(dialog).toHaveTextContent(/restart/i);
+    expect(mockRestoreBackup).not.toHaveBeenCalled();
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: 'Restore Backup' })).not.toBeInTheDocument(),
+    );
+    expect(mockRestoreBackup).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Restore' }));
+    const reopenedDialog = await screen.findByRole('dialog', { name: 'Restore Backup' });
+    fireEvent.click(within(reopenedDialog).getByRole('button', { name: 'Restore Backup' }));
+
+    await waitFor(() =>
+      expect(mockRestoreBackup).toHaveBeenCalledWith('mediarr_backup_2024-02-14.db'),
+    );
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'Backup restored. Restart Mediarr to finish applying it.',
+    );
   });
 
   it('disables fabricated schedule controls when scheduling is unsupported', async () => {

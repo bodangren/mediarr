@@ -36,7 +36,7 @@ export function ContinueWatchingWidget({ items, isLoading }: ContinueWatchingWid
   if (isLoading) {
     return (
       <div className="rounded-md border border-border-subtle bg-surface-1 p-4">
-        <h3 className="mb-3 text-sm font-semibold">Continue Watching</h3>
+        <h2 className="mb-3 text-sm font-semibold">Continue Watching</h2>
         <p className="text-xs text-text-secondary">Loading...</p>
       </div>
     );
@@ -45,7 +45,7 @@ export function ContinueWatchingWidget({ items, isLoading }: ContinueWatchingWid
   if (items.length === 0) {
     return (
       <div className="rounded-md border border-border-subtle bg-surface-1 p-4">
-        <h3 className="mb-3 text-sm font-semibold">Continue Watching</h3>
+        <h2 className="mb-3 text-sm font-semibold">Continue Watching</h2>
         <p className="text-xs text-text-secondary">Nothing in progress.</p>
       </div>
     );
@@ -53,7 +53,7 @@ export function ContinueWatchingWidget({ items, isLoading }: ContinueWatchingWid
 
   return (
     <div className="rounded-md border border-border-subtle bg-surface-1 p-4">
-      <h3 className="mb-3 text-sm font-semibold">Continue Watching</h3>
+      <h2 className="mb-3 text-sm font-semibold">Continue Watching</h2>
       <div className="space-y-3">
         {items.slice(0, 6).map((item) => {
           const progress = Math.max(0, Math.min(100, Math.round(item.progress * 100)));

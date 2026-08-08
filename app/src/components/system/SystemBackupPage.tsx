@@ -3,6 +3,7 @@ import { getApiClients } from '@/lib/api/client';
 import type { Backup, BackupSchedule, UpdateBackupScheduleInput } from '@/lib/api/backupApi';
 import { RouteScaffold } from '@/components/primitives/RouteScaffold';
 import { Button } from '@/components/ui/button';
+import { ConfirmModal } from '@/components/ui/modal';
 import { formatBytes, formatDateTime, formatRelativeDate } from '@/lib/format';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -23,6 +24,9 @@ function BackupList({ onCreated }: { onCreated: () => void }) {
   const [creating, setCreating] = useState(false);
   const [actionIds, setActionIds] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
+  const [backupPendingDeletion, setBackupPendingDeletion] = useState<Backup | null>(null);
+  const [backupPendingRestore, setBackupPendingRestore] = useState<Backup | null>(null);
+  const [restoreStatus, setRestoreStatus] = useState<string | null>(null);
 
   const fetchBackups = useCallback(async () => {
     setLoading(true);
@@ -52,11 +56,18 @@ function BackupList({ onCreated }: { onCreated: () => void }) {
     }
   }
 
-  async function handleRestore(id: string, name: string) {
-    if (!window.confirm(`Restore from backup "${name}"? The application will restart.`)) return;
+  async function handleRestore() {
+    if (!backupPendingRestore) return;
+    const { id } = backupPendingRestore;
     setActionIds(prev => new Set(prev).add(id));
+    setRestoreStatus(null);
     try {
-      await getApiClients().backupApi.restoreBackup(id);
+      const result = await getApiClients().backupApi.restoreBackup(id);
+      setBackupPendingRestore(null);
+      if (result.restartRequired) {
+        setRestoreStatus('Backup restored. Restart Mediarr to finish applying it.');
+      }
+      await fetchBackups();
     } finally {
       setActionIds(prev => { const next = new Set(prev); next.delete(id); return next; });
     }
@@ -72,11 +83,13 @@ function BackupList({ onCreated }: { onCreated: () => void }) {
     }
   }
 
-  async function handleDelete(id: string, name: string) {
-    if (!window.confirm(`Delete backup "${name}"? This cannot be undone.`)) return;
+  async function handleDelete() {
+    if (!backupPendingDeletion) return;
+    const { id } = backupPendingDeletion;
     setActionIds(prev => new Set(prev).add(id));
     try {
       await getApiClients().backupApi.deleteBackup(id);
+      setBackupPendingDeletion(null);
       await fetchBackups();
     } finally {
       setActionIds(prev => { const next = new Set(prev); next.delete(id); return next; });
@@ -84,7 +97,8 @@ function BackupList({ onCreated }: { onCreated: () => void }) {
   }
 
   return (
-    <div className="space-y-3">
+    <>
+      <div className="space-y-3">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold">Backups</h2>
         <Button variant="default" disabled={creating} onClick={() => { void handleCreateNow(); }}>
@@ -93,6 +107,9 @@ function BackupList({ onCreated }: { onCreated: () => void }) {
       </div>
 
       {error && <p className="text-sm text-status-error">{error}</p>}
+      {restoreStatus && (
+        <p role="status" className="text-sm text-status-success">{restoreStatus}</p>
+      )}
 
       {loading ? (
         <p className="text-sm text-text-secondary">Loading backups…</p>
@@ -123,7 +140,7 @@ function BackupList({ onCreated }: { onCreated: () => void }) {
                         variant="secondary"
                         className="text-xs"
                         disabled={actionIds.has(backup.id)}
-                        onClick={() => { void handleRestore(backup.id, backup.name); }}
+                        onClick={() => setBackupPendingRestore(backup)}
                       >
                         Restore
                       </Button>
@@ -139,7 +156,7 @@ function BackupList({ onCreated }: { onCreated: () => void }) {
                         variant="destructive"
                         className="text-xs"
                         disabled={actionIds.has(backup.id)}
-                        onClick={() => { void handleDelete(backup.id, backup.name); }}
+                        onClick={() => setBackupPendingDeletion(backup)}
                       >
                         Delete
                       </Button>
@@ -156,7 +173,55 @@ function BackupList({ onCreated }: { onCreated: () => void }) {
           </table>
         </div>
       )}
-    </div>
+      </div>
+
+      {backupPendingDeletion ? (
+        <ConfirmModal
+          isOpen
+          title="Delete Backup"
+          description={
+            <div className="space-y-2">
+              <p>
+                Permanently delete backup <strong>{backupPendingDeletion.name}</strong>?
+              </p>
+              <p className="text-xs text-text-muted">
+                This removes the backup file from disk. This action cannot be undone.
+              </p>
+            </div>
+          }
+          onCancel={() => setBackupPendingDeletion(null)}
+          onConfirm={() => { void handleDelete(); }}
+          cancelLabel="Cancel"
+          confirmLabel="Delete Backup"
+          confirmVariant="destructive"
+          isConfirming={actionIds.has(backupPendingDeletion.id)}
+        />
+      ) : null}
+
+      {backupPendingRestore ? (
+        <ConfirmModal
+          isOpen
+          title="Restore Backup"
+          description={
+            <div className="space-y-2">
+              <p>
+                Restore Mediarr from <strong>{backupPendingRestore.name}</strong>?
+              </p>
+              <p className="text-xs text-text-muted">
+                Mediarr will create a safety backup, replace the live database, and require a
+                restart before the restored state is fully applied.
+              </p>
+            </div>
+          }
+          onCancel={() => setBackupPendingRestore(null)}
+          onConfirm={() => { void handleRestore(); }}
+          cancelLabel="Cancel"
+          confirmLabel="Restore Backup"
+          confirmVariant="destructive"
+          isConfirming={actionIds.has(backupPendingRestore.id)}
+        />
+      ) : null}
+    </>
   );
 }
 

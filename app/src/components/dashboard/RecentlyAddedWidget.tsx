@@ -26,7 +26,7 @@ export function RecentlyAddedWidget({ items, isLoading }: RecentlyAddedWidgetPro
   if (isLoading) {
     return (
       <div className="rounded-md border border-border-subtle bg-surface-1 p-4">
-        <h3 className="text-sm font-semibold mb-3">Recently Added</h3>
+        <h2 className="text-sm font-semibold mb-3">Recently Added</h2>
         <p className="text-xs text-text-secondary">Loading...</p>
       </div>
     );
@@ -46,7 +46,7 @@ export function RecentlyAddedWidget({ items, isLoading }: RecentlyAddedWidgetPro
     return (
       <div className="rounded-md border border-border-subtle bg-surface-1 p-4">
         <div className="flex justify-between items-center mb-3">
-          <h3 className="text-sm font-semibold">Recently Added</h3>
+          <h2 className="text-sm font-semibold">Recently Added</h2>
           <Link to="/activity/history" className="text-xs text-accent hover:underline">
             View All
           </Link>
@@ -59,7 +59,7 @@ export function RecentlyAddedWidget({ items, isLoading }: RecentlyAddedWidgetPro
   return (
     <div className="rounded-md border border-border-subtle bg-surface-1 p-4">
       <div className="flex justify-between items-center mb-3">
-        <h3 className="text-sm font-semibold">Recently Added</h3>
+        <h2 className="text-sm font-semibold">Recently Added</h2>
         <Link to="/activity/history" className="text-xs text-accent hover:underline">
           View All
         </Link>

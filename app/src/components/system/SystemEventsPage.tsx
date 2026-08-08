@@ -3,6 +3,7 @@ import { getApiClients } from '@/lib/api/client';
 import type { SystemEvent, EventLevel, EventType } from '@/lib/api/systemApi';
 import { RouteScaffold } from '@/components/primitives/RouteScaffold';
 import { Button } from '@/components/ui/button';
+import { ConfirmModal } from '@/components/ui/modal';
 import { formatDateTime } from '@/lib/format';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -50,6 +51,15 @@ function triggerDownload(blob: Blob, filename: string) {
 
 const PAGE_SIZE = 25;
 
+type ClearFeedback = {
+  kind: 'success' | 'error';
+  message: string;
+};
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error && error.message ? error.message : 'Unknown error';
+}
+
 export function SystemEventsPage() {
   const [events, setEvents] = useState<SystemEvent[]>([]);
   const [total, setTotal] = useState(0);
@@ -59,6 +69,8 @@ export function SystemEventsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [clearing, setClearing] = useState(false);
+  const [clearConfirmationOpen, setClearConfirmationOpen] = useState(false);
+  const [clearFeedback, setClearFeedback] = useState<ClearFeedback | null>(null);
   const [exporting, setExporting] = useState(false);
 
   const fetchEvents = useCallback(async () => {
@@ -86,10 +98,24 @@ export function SystemEventsPage() {
 
   async function handleClearAll() {
     setClearing(true);
+    setClearFeedback(null);
     try {
-      await getApiClients().systemApi.clearEvents();
+      const result = await getApiClients().systemApi.clearEvents();
+      setClearConfirmationOpen(false);
+      setClearFeedback({
+        kind: 'success',
+        message: `Cleared ${result.cleared} system ${result.cleared === 1 ? 'event' : 'events'}.`,
+      });
       setPage(1);
-      await fetchEvents();
+      if (page === 1) {
+        await fetchEvents();
+      }
+    } catch (clearError) {
+      setClearConfirmationOpen(false);
+      setClearFeedback({
+        kind: 'error',
+        message: `Failed to clear system events: ${getErrorMessage(clearError)}`,
+      });
     } finally {
       setClearing(false);
     }
@@ -127,7 +153,10 @@ export function SystemEventsPage() {
         variant="destructive"
         className="text-xs"
         disabled={clearing}
-        onClick={() => { void handleClearAll(); }}
+        onClick={() => {
+          setClearFeedback(null);
+          setClearConfirmationOpen(true);
+        }}
       >
         {clearing ? 'Clearing…' : 'Clear All'}
       </Button>
@@ -135,11 +164,12 @@ export function SystemEventsPage() {
   );
 
   return (
-    <RouteScaffold
-      title="Events"
-      description="System event log — indexer activity, download events, health alerts, and more."
-      actions={actions}
-    >
+    <>
+      <RouteScaffold
+        title="Events"
+        description="System event log — indexer activity, download events, health alerts, and more."
+        actions={actions}
+      >
       {/* Filters */}
       <div className="flex flex-wrap gap-2">
         <select
@@ -173,8 +203,21 @@ export function SystemEventsPage() {
         </select>
       </div>
 
-      {/* Content */}
-      <section className="rounded-md border border-border-subtle bg-surface-1">
+        {clearFeedback ? (
+          <div
+            role={clearFeedback.kind === 'error' ? 'alert' : 'status'}
+            className={
+              clearFeedback.kind === 'error'
+                ? 'rounded-sm border border-status-error/30 bg-status-error/10 px-3 py-2 text-sm text-text-primary'
+                : 'rounded-sm border border-status-completed/30 bg-status-completed/10 px-3 py-2 text-sm text-text-primary'
+            }
+          >
+            {clearFeedback.message}
+          </div>
+        ) : null}
+
+        {/* Content */}
+        <section className="rounded-md border border-border-subtle bg-surface-1">
         {loading ? (
           <div className="p-6 text-center text-sm text-text-secondary">Loading events…</div>
         ) : error ? (
@@ -211,28 +254,50 @@ export function SystemEventsPage() {
             </table>
           </div>
         )}
-      </section>
+        </section>
 
-      {/* Pagination */}
-      {!loading && !error && totalPages > 1 && (
-        <div className="flex items-center gap-2 text-sm">
-          <Button
-            variant="secondary"
-            disabled={page <= 1}
-            onClick={() => setPage(p => p - 1)}
-          >
-            Previous
-          </Button>
-          <span className="text-text-secondary">Page {page} of {totalPages}</span>
-          <Button
-            variant="secondary"
-            disabled={page >= totalPages}
-            onClick={() => setPage(p => p + 1)}
-          >
-            Next
-          </Button>
-        </div>
-      )}
-    </RouteScaffold>
+        {/* Pagination */}
+        {!loading && !error && totalPages > 1 && (
+          <div className="flex items-center gap-2 text-sm">
+            <Button
+              variant="secondary"
+              disabled={page <= 1}
+              onClick={() => setPage(p => p - 1)}
+            >
+              Previous
+            </Button>
+            <span className="text-text-secondary">Page {page} of {totalPages}</span>
+            <Button
+              variant="secondary"
+              disabled={page >= totalPages}
+              onClick={() => setPage(p => p + 1)}
+            >
+              Next
+            </Button>
+          </div>
+        )}
+      </RouteScaffold>
+
+      {clearConfirmationOpen ? (
+        <ConfirmModal
+          isOpen
+          title="Clear System Events"
+          description={
+            <div className="space-y-2">
+              <p>Clear all system events?</p>
+              <p className="text-xs text-text-muted">
+                This will permanently delete all recorded system events. This action cannot be undone.
+              </p>
+            </div>
+          }
+          onCancel={() => setClearConfirmationOpen(false)}
+          onConfirm={() => { void handleClearAll(); }}
+          cancelLabel="Cancel"
+          confirmLabel="Clear All Events"
+          confirmVariant="destructive"
+          isConfirming={clearing}
+        />
+      ) : null}
+    </>
   );
 }

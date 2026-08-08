@@ -10,7 +10,7 @@ export function DiskSpaceWidget({ data, isLoading }: DiskSpaceWidgetProps) {
   if (isLoading) {
     return (
       <div className="rounded-md border border-border-subtle bg-surface-1 p-4">
-        <h3 className="text-sm font-semibold mb-3">Disk Space</h3>
+        <h2 className="text-sm font-semibold mb-3">Disk Space</h2>
         <p className="text-xs text-text-secondary">Loading...</p>
       </div>
     );
@@ -19,7 +19,7 @@ export function DiskSpaceWidget({ data, isLoading }: DiskSpaceWidgetProps) {
   if (data.length === 0) {
     return (
       <div className="rounded-md border border-border-subtle bg-surface-1 p-4">
-        <h3 className="text-sm font-semibold mb-3">Disk Space</h3>
+        <h2 className="text-sm font-semibold mb-3">Disk Space</h2>
         <p className="text-xs text-text-secondary">No root folders configured.</p>
       </div>
     );
@@ -31,7 +31,7 @@ export function DiskSpaceWidget({ data, isLoading }: DiskSpaceWidgetProps) {
 
   return (
     <div className="rounded-md border border-border-subtle bg-surface-1 p-4">
-      <h3 className="text-sm font-semibold mb-3">Disk Space</h3>
+      <h2 className="text-sm font-semibold mb-3">Disk Space</h2>
       
       <div className="flex items-center justify-center mb-4">
         <div className="relative w-24 h-24">

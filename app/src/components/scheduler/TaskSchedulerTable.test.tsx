@@ -104,6 +104,15 @@ describe('TaskSchedulerTable', () => {
     expect(toggle).not.toBeChecked();
   });
 
+  it('does not offer Run Now for a disabled task', () => {
+    render(<TaskSchedulerTable tasks={baseTasks} onRunNow={() => {}} onToggleEnabled={() => {}} />);
+
+    const libraryRow = screen.getByText('Library Scan').closest('tr');
+    if (!libraryRow) throw new Error('Expected Library Scan row');
+
+    expect(within(libraryRow).getByRole('button', { name: 'Run Now' })).toBeDisabled();
+  });
+
   it('toggles sort direction when the Last Run header is clicked', async () => {
     const user = userEvent.setup();
     render(<TaskSchedulerTable tasks={baseTasks} onRunNow={() => {}} onToggleEnabled={() => {}} />);

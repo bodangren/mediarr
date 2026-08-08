@@ -30,7 +30,7 @@ export function UpcomingWidget({ items, isLoading }: UpcomingWidgetProps) {
   if (isLoading) {
     return (
       <div className="rounded-md border border-border-subtle bg-surface-1 p-4">
-        <h3 className="text-sm font-semibold mb-3">Upcoming</h3>
+        <h2 className="text-sm font-semibold mb-3">Upcoming</h2>
         <p className="text-xs text-text-secondary">Loading...</p>
       </div>
     );
@@ -40,7 +40,7 @@ export function UpcomingWidget({ items, isLoading }: UpcomingWidgetProps) {
     return (
       <div className="rounded-md border border-border-subtle bg-surface-1 p-4">
         <div className="flex justify-between items-center mb-3">
-          <h3 className="text-sm font-semibold">Upcoming</h3>
+          <h2 className="text-sm font-semibold">Upcoming</h2>
           <Link to="/calendar" className="text-xs text-accent hover:underline">
             Calendar
           </Link>
@@ -53,7 +53,7 @@ export function UpcomingWidget({ items, isLoading }: UpcomingWidgetProps) {
   return (
     <div className="rounded-md border border-border-subtle bg-surface-1 p-4">
       <div className="flex justify-between items-center mb-3">
-        <h3 className="text-sm font-semibold">Upcoming</h3>
+        <h2 className="text-sm font-semibold">Upcoming</h2>
         <Link to="/calendar" className="text-xs text-accent hover:underline">
           Calendar
         </Link>

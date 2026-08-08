@@ -1,4 +1,5 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
@@ -43,11 +44,60 @@ describe('app shell', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Realtime: Idle');
   });
 
-  it('opens keyboard shortcuts help with question mark', () => {
+  it('opens keyboard shortcuts help as a focus-contained modal and restores focus on Escape', async () => {
+    const user = userEvent.setup();
     renderShell('/');
+    const invoker = screen.getByRole('button', { name: 'Cmd/Ctrl + K' });
+    invoker.focus();
+
+    await user.keyboard('?');
+    const dialog = screen.getByRole('dialog', { name: /keyboard shortcuts/i });
+    const closeButton = screen.getByRole('button', { name: /close keyboard shortcuts/i });
+
+    expect(dialog).toHaveAttribute('aria-modal', 'true');
+    expect(dialog).toHaveAttribute('aria-describedby', 'keyboard-shortcuts-description');
+    expect(closeButton).toHaveFocus();
+
+    await user.tab();
+    expect(closeButton).toHaveFocus();
+    await user.tab({ shift: true });
+    expect(closeButton).toHaveFocus();
+
+    await user.keyboard('{Escape}');
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog', { name: /keyboard shortcuts/i })).not.toBeInTheDocument();
+      expect(invoker).toHaveFocus();
+    });
+  });
+
+  it('closes keyboard shortcuts help from the backdrop and restores focus', async () => {
+    renderShell('/');
+    const invoker = screen.getByRole('button', { name: 'Cmd/Ctrl + K' });
+    invoker.focus();
 
     fireEvent.keyDown(window, { key: '?' });
     expect(screen.getByRole('dialog', { name: /keyboard shortcuts/i })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('keyboard-shortcuts-backdrop'));
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog', { name: /keyboard shortcuts/i })).not.toBeInTheDocument();
+      expect(invoker).toHaveFocus();
+    });
+  });
+
+  it('closes keyboard shortcuts help from its close button and restores focus', async () => {
+    const user = userEvent.setup();
+    renderShell('/');
+    const invoker = screen.getByRole('button', { name: 'Cmd/Ctrl + K' });
+    invoker.focus();
+
+    await user.keyboard('?');
+    await user.click(screen.getByRole('button', { name: /close keyboard shortcuts/i }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog', { name: /keyboard shortcuts/i })).not.toBeInTheDocument();
+      expect(invoker).toHaveFocus();
+    });
   });
 
   it('renders mobile bottom nav with active state', () => {

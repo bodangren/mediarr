@@ -194,18 +194,23 @@ export function SystemLogsPage() {
   const [files, setFiles] = useState<LogFile[]>([]);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchFiles = useCallback(async () => {
+    setLoading(true);
+    setError(null);
     try {
       const data = await getApiClients().logsApi.listFiles();
       setFiles(data);
-      if (!selectedFile && data.length > 0) {
-        setSelectedFile(data[0].filename);
-      }
+      setSelectedFile(current => current ?? data[0]?.filename ?? null);
+    } catch {
+      setFiles([]);
+      setSelectedFile(null);
+      setError('Failed to load log files.');
     } finally {
       setLoading(false);
     }
-  }, [selectedFile]);
+  }, []);
 
   useEffect(() => {
     void fetchFiles();
@@ -221,12 +226,19 @@ export function SystemLogsPage() {
 
   return (
     <RouteScaffold title="Logs" description="Unified system and application log access.">
-      <div className="flex gap-4">
+      <div className="flex flex-col gap-4 lg:flex-row">
         {/* Sidebar */}
-        <aside className="w-56 shrink-0 rounded-md border border-border-subtle bg-surface-1 p-3">
+        <aside className="w-full rounded-md border border-border-subtle bg-surface-1 p-3 lg:w-56 lg:shrink-0">
           <p className="mb-2 text-xs font-semibold text-text-secondary uppercase tracking-wide">Log Files</p>
           {loading ? (
             <p className="text-sm text-text-secondary">Loading…</p>
+          ) : error ? (
+            <div role="alert" className="space-y-2 text-sm text-status-error">
+              <p>{error}</p>
+              <Button variant="secondary" className="text-xs" onClick={() => { void fetchFiles(); }}>
+                Retry
+              </Button>
+            </div>
           ) : files.length === 0 ? (
             <p className="text-sm text-text-secondary">No log files found.</p>
           ) : (
@@ -240,13 +252,13 @@ export function SystemLogsPage() {
         </aside>
 
         {/* Viewer */}
-        <main className="flex-1 rounded-md border border-border-subtle bg-surface-1 p-4">
+        <section className="min-w-0 flex-1 rounded-md border border-border-subtle bg-surface-1 p-4">
           {selectedFile ? (
             <LogContentViewer key={selectedFile} filename={selectedFile} />
           ) : (
             <p className="text-sm text-text-secondary">Select a log file to view.</p>
           )}
-        </main>
+        </section>
       </div>
     </RouteScaffold>
   );

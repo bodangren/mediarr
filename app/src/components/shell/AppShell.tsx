@@ -1,5 +1,13 @@
 import { useNavigate, Link } from 'react-router-dom';
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type ReactNode,
+} from 'react';
 import type { ConnectionState } from '@/lib/api/eventsApi';
 import { getApiClients } from '@/lib/api/client';
 import { NAV_ITEMS, buildBreadcrumbs } from '@/lib/navigation';
@@ -26,14 +34,41 @@ interface AppShellProps {
   children: ReactNode;
 }
 
+const SHORTCUT_DIALOG_FOCUSABLE_SELECTOR = [
+  'a[href]',
+  'button:not([disabled])',
+  'input:not([disabled])',
+  'select:not([disabled])',
+  'textarea:not([disabled])',
+  '[tabindex]:not([tabindex="-1"])',
+].join(',');
+
 export function AppShell({ pathname, children }: AppShellProps) {
   const navigate = useNavigate();
   const { state: uiState, toggleSidebarCollapsed } = useUIStore();
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [shortcutHelpOpen, setShortcutHelpOpen] = useState(false);
+  const shortcutDialogRef = useRef<HTMLDivElement>(null);
+  const shortcutCloseButtonRef = useRef<HTMLButtonElement>(null);
+  const shortcutInvokerRef = useRef<HTMLElement | null>(null);
+  const shortcutWasOpenRef = useRef(false);
+  const restoreShortcutFocusRef = useRef(true);
   const [connectionState, setConnectionState] = useState<ConnectionState>(() => {
     return getApiClients().eventsApi.connectionState;
   });
+
+  const openShortcutHelp = useCallback(() => {
+    shortcutInvokerRef.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    restoreShortcutFocusRef.current = true;
+    setPaletteOpen(false);
+    setShortcutHelpOpen(true);
+  }, []);
+
+  const closeShortcutHelp = useCallback((restoreFocus = true) => {
+    restoreShortcutFocusRef.current = restoreFocus;
+    setShortcutHelpOpen(false);
+  }, []);
 
   useEffect(() => {
     applyUIPreferences(loadUIPreferences());
@@ -47,11 +82,30 @@ export function AppShell({ pathname, children }: AppShellProps) {
   }, []);
 
   useEffect(() => {
+    if (shortcutHelpOpen) {
+      shortcutWasOpenRef.current = true;
+      shortcutCloseButtonRef.current?.focus();
+      return;
+    }
+
+    if (!shortcutWasOpenRef.current) {
+      return;
+    }
+
+    shortcutWasOpenRef.current = false;
+    const invoker = shortcutInvokerRef.current;
+    shortcutInvokerRef.current = null;
+    if (restoreShortcutFocusRef.current && invoker?.isConnected) {
+      invoker.focus();
+    }
+  }, [shortcutHelpOpen]);
+
+  useEffect(() => {
     const onKeydown = (event: KeyboardEvent) => {
       const isOpenShortcut = (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k';
       if (isOpenShortcut) {
         event.preventDefault();
-        setShortcutHelpOpen(false);
+        closeShortcutHelp(false);
         setPaletteOpen(current => !current);
         return;
       }
@@ -65,14 +119,13 @@ export function AppShell({ pathname, children }: AppShellProps) {
 
       if (event.key === 'Escape') {
         setPaletteOpen(false);
-        setShortcutHelpOpen(false);
+        closeShortcutHelp();
         return;
       }
 
       if (!event.metaKey && !event.ctrlKey && !isEditableTarget(event.target) && isQuestionMarkShortcut(event)) {
         event.preventDefault();
-        setPaletteOpen(false);
-        setShortcutHelpOpen(true);
+        openShortcutHelp();
       }
     };
 
@@ -80,7 +133,55 @@ export function AppShell({ pathname, children }: AppShellProps) {
     return () => {
       window.removeEventListener('keydown', onKeydown);
     };
-  }, []);
+  }, [closeShortcutHelp, openShortcutHelp]);
+
+  const handleShortcutDialogKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      event.stopPropagation();
+      closeShortcutHelp();
+      return;
+    }
+
+    if (event.key !== 'Tab') {
+      return;
+    }
+
+    const dialog = shortcutDialogRef.current;
+    if (!dialog) {
+      return;
+    }
+
+    const focusableElements = Array.from(
+      dialog.querySelectorAll<HTMLElement>(SHORTCUT_DIALOG_FOCUSABLE_SELECTOR),
+    );
+    const firstFocusable = focusableElements[0];
+    const lastFocusable = focusableElements.at(-1);
+    const activeElement = document.activeElement;
+
+    if (!firstFocusable || !lastFocusable) {
+      event.preventDefault();
+      dialog.focus();
+      return;
+    }
+
+    if (
+      event.shiftKey &&
+      (activeElement === firstFocusable || !dialog.contains(activeElement))
+    ) {
+      event.preventDefault();
+      lastFocusable.focus();
+      return;
+    }
+
+    if (
+      !event.shiftKey &&
+      (activeElement === lastFocusable || !dialog.contains(activeElement))
+    ) {
+      event.preventDefault();
+      firstFocusable.focus();
+    }
+  };
 
   const breadcrumbs = useMemo(() => buildBreadcrumbs(pathname), [pathname]);
 
@@ -168,17 +269,33 @@ export function AppShell({ pathname, children }: AppShellProps) {
 
       {shortcutHelpOpen ? (
         <div
+          data-testid="keyboard-shortcuts-backdrop"
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-8 backdrop-blur-2xl"
-          onClick={() => setShortcutHelpOpen(false)}
+          onClick={event => {
+            if (event.currentTarget === event.target) {
+              closeShortcutHelp();
+            }
+          }}
         >
           <div
+            ref={shortcutDialogRef}
             role="dialog"
-            aria-label="Keyboard Shortcuts"
+            aria-modal="true"
+            aria-labelledby="keyboard-shortcuts-title"
+            aria-describedby="keyboard-shortcuts-description"
+            tabIndex={-1}
             className="w-full max-w-4xl p-0"
-            onClick={event => event.stopPropagation()}
+            onKeyDown={handleShortcutDialogKeyDown}
           >
-            <h2 className="text-5xl font-bold tracking-tight text-white mb-2">Shortcuts</h2>
-            <p className="text-lg text-text-secondary mb-12 opacity-60">System-wide command interface</p>
+            <h2 id="keyboard-shortcuts-title" className="text-5xl font-bold tracking-tight text-white mb-2">
+              Keyboard Shortcuts
+            </h2>
+            <p
+              id="keyboard-shortcuts-description"
+              className="text-lg text-text-secondary mb-12 opacity-60"
+            >
+              System-wide command interface
+            </p>
             <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-20 gap-y-8">
               {KEYBOARD_SHORTCUTS.map(shortcut => (
                 <li key={shortcut.id} className="flex items-center justify-between py-4 border-b border-white/10">
@@ -189,9 +306,12 @@ export function AppShell({ pathname, children }: AppShellProps) {
                 </li>
               ))}
             </ul>
-            <button 
+            <button
+              ref={shortcutCloseButtonRef}
+              type="button"
+              aria-label="Close keyboard shortcuts"
               className="mt-16 text-xs font-bold tracking-widest text-text-muted hover:text-white transition-colors"
-              onClick={() => setShortcutHelpOpen(false)}
+              onClick={() => closeShortcutHelp()}
             >
               CLOSE (ESC)
             </button>

@@ -86,9 +86,10 @@ describe('SystemEventsPage', () => {
     vi.clearAllMocks();
   });
 
-  it('renders the page title', () => {
+  it('renders the page title', async () => {
     renderPage();
-    expect(screen.getByText('Events')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Events', exact: true })).toBeInTheDocument();
+    await screen.findByText('Indexer "Test Indexer" added successfully');
   });
 
   it('shows event rows after loading', async () => {
@@ -148,14 +149,60 @@ describe('SystemEventsPage', () => {
     );
   });
 
-  it('calls clearEvents and refreshes when Clear All is clicked', async () => {
+  it('requires an explicit in-app confirmation before clearing events', async () => {
     renderPage();
-    await waitFor(() => expect(screen.getByText('Clear All')).toBeInTheDocument());
+    await screen.findByText('Indexer "Test Indexer" added successfully');
 
-    fireEvent.click(screen.getByText('Clear All'));
+    fireEvent.click(screen.getByRole('button', { name: 'Clear All' }));
+
+    expect(
+      await screen.findByRole('dialog', { name: 'Clear System Events' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/permanently delete all recorded system events/i),
+    ).toBeInTheDocument();
+    expect(mockClearEvents).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: 'Clear System Events' })).not.toBeInTheDocument(),
+    );
+    expect(mockClearEvents).not.toHaveBeenCalled();
+  });
+
+  it('clears events only after confirmation and announces the durable result', async () => {
+    mockGetEvents
+      .mockResolvedValueOnce(mockEventsResult)
+      .mockResolvedValue(mockEmptyResult);
+    renderPage();
+    await screen.findByText('Indexer "Test Indexer" added successfully');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Clear All' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Clear All Events' }));
 
     await waitFor(() => expect(mockClearEvents).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(mockGetEvents).toHaveBeenCalledTimes(2));
+    expect(await screen.findByRole('status')).toHaveTextContent('Cleared 3 system events.');
+    expect(screen.getByText('No events found.')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('dialog', { name: 'Clear System Events' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('announces a clear failure and preserves the visible events', async () => {
+    mockClearEvents.mockRejectedValueOnce(new Error('Event database is locked'));
+    renderPage();
+    await screen.findByText('Indexer "Test Indexer" added successfully');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Clear All' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Clear All Events' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Failed to clear system events: Event database is locked',
+    );
+    expect(screen.getByText('Indexer "Test Indexer" added successfully')).toBeInTheDocument();
+    expect(mockGetEvents).toHaveBeenCalledTimes(1);
   });
 
   it('calls exportEvents with format=csv when Export CSV is clicked', async () => {
@@ -164,6 +211,9 @@ describe('SystemEventsPage', () => {
     const origRevokeObjectURL = globalThis.URL?.revokeObjectURL;
     const createObjectURL = vi.fn().mockReturnValue('blob:test');
     const revokeObjectURL = vi.fn();
+    const anchorClick = vi
+      .spyOn(HTMLAnchorElement.prototype, 'click')
+      .mockImplementation(() => undefined);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (globalThis.URL as any).createObjectURL = createObjectURL;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -179,12 +229,14 @@ describe('SystemEventsPage', () => {
         expect.objectContaining({ format: 'csv' }),
       ),
     );
+    expect(anchorClick).toHaveBeenCalledTimes(1);
 
     // Restore
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (globalThis.URL as any).createObjectURL = origCreateObjectURL;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (globalThis.URL as any).revokeObjectURL = origRevokeObjectURL;
+    anchorClick.mockRestore();
   });
 
   it('shows empty state when no events match', async () => {

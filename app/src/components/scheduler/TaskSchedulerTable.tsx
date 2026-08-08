@@ -97,7 +97,7 @@ export function TaskSchedulerTable({ tasks, onRunNow, onToggleEnabled, runningTa
               <Button
                 variant="outline"
                 size="sm"
-                disabled={runningTaskIds?.has(task.id)}
+                disabled={!task.enabled || runningTaskIds?.has(task.id)}
                 onClick={() => onRunNow(task.id)}
               >
                 {runningTaskIds?.has(task.id) ? 'Running...' : 'Run Now'}

@@ -38,6 +38,7 @@ const mockApi = vi.hoisted(() => ({
   subtitleApi: {
     listMovieVariants: vi.fn(),
     listSeriesVariants: vi.fn(),
+    deleteSubtitleTrack: vi.fn(),
   },
   subtitleWantedApi: {
     getWantedCount: vi.fn().mockResolvedValue({ seriesCount: 0, moviesCount: 0, totalCount: 0 }),
@@ -249,6 +250,67 @@ describe('App subtitle phase 4 integration', () => {
     // Language badges appear in both summary and track list
     expect(screen.getAllByText('en').length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText('th').length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('requires confirmation before deleting a movie subtitle track', async () => {
+    mockApi.movieApi.getById.mockResolvedValue({
+      id: 7,
+      title: 'Movie X',
+      year: 2024,
+      monitored: true,
+      qualityProfileId: 1,
+    });
+    mockApi.subtitleApi.listMovieVariants
+      .mockResolvedValueOnce([
+        {
+          variantId: 1,
+          subtitleTracks: [{
+            id: 91,
+            languageCode: 'en',
+            isForced: false,
+            isHi: false,
+            path: '/subs/movie.en.srt',
+            provider: 'external',
+          }],
+          missingSubtitles: ['th'],
+        },
+      ])
+      .mockResolvedValue([
+        {
+          variantId: 1,
+          subtitleTracks: [],
+          missingSubtitles: ['th'],
+        },
+      ]);
+    mockApi.subtitleApi.deleteSubtitleTrack.mockResolvedValue({
+      success: true,
+      deletedId: 91,
+    });
+
+    renderApp('/library/movies/7');
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Delete subtitle for en' }));
+
+    expect(
+      await screen.findByRole('dialog', { name: 'Delete Subtitle' }),
+    ).toBeInTheDocument();
+    expect(mockApi.subtitleApi.deleteSubtitleTrack).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: 'Delete Subtitle' })).not.toBeInTheDocument(),
+    );
+    expect(mockApi.subtitleApi.deleteSubtitleTrack).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Delete subtitle for en' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Delete Subtitle' }));
+
+    await waitFor(() =>
+      expect(mockApi.subtitleApi.deleteSubtitleTrack).toHaveBeenCalledWith(91),
+    );
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: 'Delete subtitle for en' })).not.toBeInTheDocument(),
+    );
   });
 
   it('opens movie manual subtitle modal from movie detail controls', async () => {

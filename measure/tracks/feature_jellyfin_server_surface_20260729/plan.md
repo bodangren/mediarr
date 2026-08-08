@@ -91,8 +91,13 @@
       cannot traverse a NAT bridge) and that the fd-limit constraint from
       `chore_home_network_deployment_hardening_20260712` still holds for any new build tooling.
 - [x] Verify the image builds clean: `npm run test:clean-image`.
-- [ ] Stop ThaiDub (`systemctl --user stop thaidub-serve.service`), run the Mediarr container, and
+- [~] Stop ThaiDub (`systemctl --user stop thaidub-serve.service`), run the Mediarr container, and
       perform the full TV walkthrough: discover → browse → play → seek → resume → watched.
+      **Physical check 2026-07-29:** discovery and passwordless `Mediarr` login succeeded on the
+      owner TV. Browse/play/resume/watched could not be exercised because the temporary Mediarr
+      catalog had zero available media variants. The TV warned that advertised Jellyfin version
+      `10.10.0` should be updated to `10.11.0` before a future client upgrade; assess and cover
+      that compatibility-version change in follow-up work rather than changing it during cleanup.
 - [ ] **Restore ThaiDub** (`systemctl --user start thaidub-serve.service`) and confirm it comes back,
       proving the change was reversible.
 - [x] Run gates **after the last edit**: `CI=true npx vitest run server/src tests` (339 files passed, 1 skipped; 3022 tests passed, 14 skipped), `npx tsc -p server/tsconfig.json --noEmit`, and `git diff --check`.

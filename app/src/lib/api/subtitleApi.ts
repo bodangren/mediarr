@@ -15,8 +15,16 @@ const subtitleTrackSchema = z.object({
 const subtitleVariantSchema = z.object({
   variantId: z.number(),
   path: z.string(),
+  fileSize: z.number().optional(),
   subtitleTracks: z.array(subtitleTrackSchema).optional(),
-  missingSubtitles: z.array(z.string()).optional(),
+  missingSubtitles: z.array(z.union([
+    z.string(),
+    z.object({
+      languageCode: z.string(),
+      isForced: z.boolean(),
+      isHi: z.boolean(),
+    }),
+  ])).optional(),
 }).passthrough();
 
 const manualSearchCandidateSchema = z.object({

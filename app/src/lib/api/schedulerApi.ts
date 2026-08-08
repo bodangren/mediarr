@@ -72,9 +72,9 @@ export function createSchedulerApi(client: ApiHttpClient) {
       fromDate?: string;
       toDate?: string;
     }): Promise<{ items: z.infer<typeof taskExecutionSchema>[]; meta: z.infer<typeof historyMetaSchema> }> {
-      return client.request(
+      return client.requestPaginated(
         { path: routeMap.schedulerHistory, query },
-        z.object({ items: z.array(taskExecutionSchema), meta: historyMetaSchema }),
+        taskExecutionSchema,
       );
     },
 

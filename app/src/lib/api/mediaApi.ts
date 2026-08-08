@@ -57,7 +57,9 @@ const cutoffUnmetEpisodeSchema = z.object({
 }).passthrough();
 
 const metadataResultSchema = z.object({
-  id: z.number(),
+  // Metadata search results come from providers before a library record exists.
+  // Those records have an external ID (TMDB/TVDB) but no local database ID yet.
+  id: z.number().optional(),
   mediaType: z.union([z.literal('TV'), z.literal('MOVIE')]),
   title: z.string(),
   tmdbId: z.number().optional(),

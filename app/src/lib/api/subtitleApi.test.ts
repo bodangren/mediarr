@@ -32,6 +32,19 @@ describe('subtitleApi', () => {
         expect.anything(),
       );
     });
+
+    it('accepts the server structured missing-subtitle requirement shape', async () => {
+      const payload = [{
+        variantId: 1,
+        path: '/movies/movie1/movie1.mp4',
+        missingSubtitles: [{ languageCode: 'th', isForced: false, isHi: false }],
+      }];
+      mockClient.request.mockImplementationOnce(async (_request: unknown, schema: {
+        parse: (input: unknown) => unknown;
+      }) => schema.parse(payload));
+
+      await expect(api.listMovieVariants(1)).resolves.toEqual(payload);
+    });
   });
 
   describe('listEpisodeVariants', () => {

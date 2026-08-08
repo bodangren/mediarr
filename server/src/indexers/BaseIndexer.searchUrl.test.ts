@@ -90,4 +90,23 @@ describe('TorznabIndexer.buildSearchUrl (FR-4.1)', () => {
     expect(params.get('season')).toBe('2');
     expect(params.get('ep')).toBe('5');
   });
+
+  it('reports a configuration error instead of dereferencing a missing Torznab URL', () => {
+    const unconfigured = new TorznabIndexer({
+      id: 8,
+      name: 'Unconfigured Torznab',
+      implementation: 'torznab',
+      protocol: 'torrent',
+      enabled: true,
+      priority: 25,
+      supportsRss: false,
+      supportsSearch: true,
+      settings: {},
+      httpClient: {} as any,
+    });
+
+    expect(() => unconfigured.buildTestUrl()).toThrow(
+      'Torznab indexer "Unconfigured Torznab" requires a URL.',
+    );
+  });
 });

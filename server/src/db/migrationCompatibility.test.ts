@@ -92,6 +92,42 @@ function runDrizzleMigrate(databasePath: string): void {
   });
 }
 
+function applyMigrationPrefix(db: SqliteDatabase, count: number): void {
+  for (const migration of readMigrationMetadata(root).slice(0, count)) {
+    db.exec(readFileSync(path.join(root, 'drizzle', `${migration.tag}.sql`), 'utf8'));
+  }
+}
+
+function moveSchedulerStateBeforeTimestamps(db: SqliteDatabase): void {
+  db.exec(`
+    ALTER TABLE "AppSettings" RENAME TO "AppSettings_old";
+    CREATE TABLE "AppSettings" (
+      "id" integer PRIMARY KEY DEFAULT 1 NOT NULL,
+      "torrentLimits" text NOT NULL,
+      "schedulerIntervals" text NOT NULL,
+      "pathVisibility" text NOT NULL,
+      "apiKeys" text,
+      "host" text,
+      "security" text,
+      "logging" text,
+      "update" text,
+      "mediaManagement" text,
+      "streaming" text,
+      "schedulerState" text DEFAULT '{}' NOT NULL,
+      "createdAt" integer DEFAULT (strftime('%s','now')) NOT NULL,
+      "updatedAt" integer NOT NULL
+    );
+    INSERT INTO "AppSettings" (
+      id, torrentLimits, schedulerIntervals, pathVisibility, apiKeys, host, security,
+      logging, "update", mediaManagement, streaming, schedulerState, createdAt, updatedAt
+    ) SELECT
+      id, torrentLimits, schedulerIntervals, pathVisibility, apiKeys, host, security,
+      logging, "update", mediaManagement, streaming, schedulerState, createdAt, updatedAt
+    FROM "AppSettings_old";
+    DROP TABLE "AppSettings_old";
+  `);
+}
+
 afterEach(() => {
   for (const directory of temporaryDirectories.splice(0)) {
     rmSync(directory, { recursive: true, force: true });
@@ -99,6 +135,34 @@ afterEach(() => {
 });
 
 describe('tracked SQLite migration compatibility', () => {
+  it('repairs a partial journal only after verifying the recorded migration prefix', () => {
+    const { db, databasePath } = createTemporaryDatabase();
+    const migrations = readMigrationMetadata(root);
+    applyMigrationPrefix(db, 4);
+    moveSchedulerStateBeforeTimestamps(db);
+    db.exec(`
+      CREATE TABLE "__drizzle_migrations" (
+        id SERIAL PRIMARY KEY,
+        hash text NOT NULL,
+        created_at numeric
+      )
+    `);
+    db.prepare('INSERT INTO "__drizzle_migrations" (hash, created_at) VALUES (?, ?)')
+      .run(migrations[3]!.hash, migrations[3]!.when);
+
+    const adopted = reconcileLegacyMigrationState(`file:${databasePath}`, root);
+
+    expect(adopted.map((migration) => migration.tag)).toEqual([
+      '0000_fuzzy_revanche',
+      '0001_panoramic_mindworm',
+      '0002_furry_blonde_phantom',
+    ]);
+    expect(db.prepare('SELECT count(*) AS count FROM "__drizzle_migrations"').get()).toEqual({ count: 4 });
+    db.close();
+
+    expect(() => runDrizzleMigrate(databasePath)).not.toThrow();
+  }, 30_000);
+
   it('adopts only verified scheduler migrations for a legacy database with columns but missing journal entries', () => {
     const { db, databasePath } = createTemporaryDatabase();
     createLegacyAppSettings(db, 'both');

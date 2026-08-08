@@ -37,6 +37,7 @@ import type { SystemHealthService } from '../services/SystemHealthService';
 import type { UpdateService } from '../services/updates/UpdateService';
 import type { CatalogCache } from '../services/indexers/CatalogCache';
 import type { VariantInventoryIndexer } from '../services/VariantInventoryIndexer';
+import type { IndexerServiceDiscovery } from '../services/discovery/IndexerServiceDiscovery';
 
 
 export interface ApiDependencies {
@@ -73,6 +74,7 @@ export interface ApiDependencies {
   mediaRepository?: Pick<MediaRepository, 'findMovieByTmdbId' | 'upsertMovie' | 'upsertSeries' | 'findSeriesByTvdbId' | 'upsertSeasonsAndEpisodes'> | undefined;
   indexerTester?: Pick<IndexerTester, 'test'> | undefined;
   indexerFactory?: Pick<IndexerFactory, 'fromDatabaseRecord' | 'getDefinition' | 'getCompatibilityReport'> | undefined;
+  indexerServiceDiscovery?: Pick<IndexerServiceDiscovery, 'detect'> | undefined;
   subtitleInventoryApiService?: Pick<
     SubtitleInventoryApiService,
     | 'listMovieVariantInventory'

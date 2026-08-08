@@ -130,7 +130,7 @@ describe('POST /api/media — default path from root folder', () => {
   });
 });
 
-describe('POST /api/wanted — default path from root folder', () => {
+describe('POST /api/wanted — missing-media path contract', () => {
   let upsertMovie: ReturnType<typeof vi.fn>;
   let upsertSeries: ReturnType<typeof vi.fn>;
   let findMovieByTmdbId: ReturnType<typeof vi.fn>;
@@ -143,7 +143,7 @@ describe('POST /api/wanted — default path from root folder', () => {
     findSeriesByTvdbId = vi.fn().mockResolvedValue(null);
   });
 
-  it('sets movie.path to movieRootFolder/Title (Year) via /api/wanted', async () => {
+  it('keeps movie.path null via /api/wanted even when a root folder is configured', async () => {
     const app = buildApp({
       prisma: {} as any,
       settingsService: makeSettingsService('/movies'),
@@ -157,7 +157,7 @@ describe('POST /api/wanted — default path from root folder', () => {
     });
 
     expect(upsertMovie).toHaveBeenCalledWith(
-      expect.objectContaining({ path: '/movies/Iron Man (2008)' }),
+      expect.objectContaining({ path: null }),
     );
   });
 });

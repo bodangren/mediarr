@@ -16,6 +16,7 @@ import { DefinitionLoader } from './indexers/DefinitionLoader';
 import { IndexerFactory } from './indexers/IndexerFactory';
 import { HttpClient } from './indexers/HttpClient';
 import { IndexerTester } from './indexers/IndexerTester';
+import { IndexerServiceDiscovery } from './services/discovery/IndexerServiceDiscovery';
 import { ActivityEventRepository } from './repositories/ActivityEventRepository';
 import { TaskExecutionsRepository } from './repositories/TaskExecutionsRepository';
 import {
@@ -47,6 +48,7 @@ import {
   resolveRequiredDataDirectories,
 } from './services/DataDirectoryInitializer';
 import { createRuntimeTorrentManager } from './services/createRuntimeTorrentManager';
+import { BrowserAcceptanceIndexer, BrowserAcceptanceTorrentManager } from './services/BrowserAcceptanceAcquisitionFixture';
 import {
   ImportListProviderRegistry,
   ImportListSyncService,
@@ -56,6 +58,8 @@ import {
 import { MediaSearchService } from './services/MediaSearchService';
 import { MediaService } from './services/MediaService';
 import { MetadataProvider } from './services/MetadataProvider';
+import { BrowserAcceptanceMetadataProvider } from './services/BrowserAcceptanceMetadataProvider';
+import { BrowserAcceptanceSubtitleProvider } from './services/BrowserAcceptanceSubtitleProvider';
 import { PlaybackService } from './services/PlaybackService';
 import { OpenSubtitlesProvider } from './services/providers/OpenSubtitlesProvider';
 import { AssrtProvider } from './services/providers/AssrtProvider';
@@ -244,7 +248,9 @@ async function startApi(): Promise<void> {
     githubRepo: process.env.UPDATE_GITHUB_REPO,
     stagingDir: process.env.UPDATE_STAGING_DIR,
   });
-  const metadataProvider = new MetadataProvider(httpClient, settingsService);
+  const metadataProvider = process.env.BROWSER_ACCEPTANCE_METADATA_FIXTURE === 'true'
+    ? new BrowserAcceptanceMetadataProvider(httpClient, settingsService)
+    : new MetadataProvider(httpClient, settingsService);
   const collectionService = new CollectionService(prisma, httpClient, settingsService);
   const playbackService = new PlaybackService(
     prisma,
@@ -329,7 +335,18 @@ async function startApi(): Promise<void> {
     activityEventEmitter,
   );
 
-  const torrentManager = await createRuntimeTorrentManager(torrentRepository, {
+  const browserAcceptanceAcquisitionFixture = process.env.BROWSER_ACCEPTANCE_ACQUISITION_FIXTURE === 'true';
+  const torrentManager: any = browserAcceptanceAcquisitionFixture
+    ? new BrowserAcceptanceTorrentManager(torrentRepository, {
+      incompleteDirectory: settings.torrentLimits.incompleteDirectory,
+      completeDirectory: settings.torrentLimits.completeDirectory,
+      sourceFile: process.env.BROWSER_ACCEPTANCE_ACQUISITION_SOURCE_FILE,
+      completionDelayMs: Number.parseInt(
+        process.env.BROWSER_ACCEPTANCE_COMPLETION_DELAY_MS ?? '',
+        10,
+      ) || undefined,
+    })
+    : await createRuntimeTorrentManager(torrentRepository, {
     incomplete: settings.torrentLimits.incompleteDirectory,
     complete: settings.torrentLimits.completeDirectory,
     seedRatioLimit: settings.torrentLimits.seedRatioLimit,
@@ -337,6 +354,9 @@ async function startApi(): Promise<void> {
     seedLimitAction: settings.torrentLimits.seedLimitAction,
     maxActiveDownloads: settings.torrentLimits.maxActiveDownloads,
   });
+  if (browserAcceptanceAcquisitionFixture) {
+    await torrentManager.initialize();
+  }
 
   const organizer = new Organizer();
 
@@ -347,6 +367,7 @@ async function startApi(): Promise<void> {
   const openSubtitlesProvider = new OpenSubtitlesProvider(httpClient, settingsService);
   const assrtProvider = new AssrtProvider(httpClient, settingsService);
   const subdlProvider = new SubdlProvider(httpClient, settingsService);
+  const browserAcceptanceSubtitleFixture = process.env.BROWSER_ACCEPTANCE_SUBTITLE_FIXTURE === 'true';
 
   const manualSubtitleProvider = process.env.MANUAL_SUBTITLE_PROVIDER?.toLowerCase() ?? 'opensubtitles';
 
@@ -355,6 +376,9 @@ async function startApi(): Promise<void> {
       opensubtitles: openSubtitlesProvider,
       assrt: assrtProvider,
       subdl: subdlProvider,
+      ...(browserAcceptanceSubtitleFixture
+        ? { 'browser-acceptance': new BrowserAcceptanceSubtitleProvider() }
+        : {}),
     },
     () => ({ manualProvider: manualSubtitleProvider }),
     {
@@ -408,9 +432,10 @@ async function startApi(): Promise<void> {
   );
 
   const mediaService = new MediaService(prisma, metadataProvider, activityEventEmitter);
+  const fixtureIndexer = browserAcceptanceAcquisitionFixture ? new BrowserAcceptanceIndexer(httpClient) : null;
   const searchAggregationService = new MediaSearchService(
-    indexerRepository as any,
-    indexerFactory as any,
+    (fixtureIndexer ? { findAllEnabled: async () => [{ id: fixtureIndexer.id, name: fixtureIndexer.name, implementation: fixtureIndexer.implementation, protocol: fixtureIndexer.protocol, enabled: true, priority: fixtureIndexer.priority, supportsRss: false, supportsSearch: true, settings: {} }] } : indexerRepository) as any,
+    (fixtureIndexer ? { fromDatabaseRecord: () => fixtureIndexer } : indexerFactory) as any,
     torrentManager,
     activityEventEmitter,
     customFormatRepository,
@@ -473,6 +498,9 @@ async function startApi(): Promise<void> {
   const backupDir = process.env.BACKUP_DIR ?? path.resolve(path.dirname(dbFilePath), 'backups');
   const backupService = new BackupService(dbFilePath, backupDir);
   const systemHealthService = new SystemHealthService(prisma);
+  const indexerServiceDiscovery = browserAcceptanceAcquisitionFixture
+    ? { detect: async () => [] }
+    : new IndexerServiceDiscovery({ probeTimeoutMs: 2_000 });
 
   await catalogCache.load();
   catalogCache.watch();
@@ -493,6 +521,7 @@ async function startApi(): Promise<void> {
     mediaRepository,
     indexerTester,
     indexerFactory,
+    indexerServiceDiscovery,
     subtitleInventoryApiService,
     subtitleProviderFactory,
     subtitleAutomationService,

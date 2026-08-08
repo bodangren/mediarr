@@ -18,6 +18,7 @@ interface ColumnInfo {
   type: string;
   notnull: number;
   dflt_value: string | null;
+  pk: number;
 }
 
 interface SqliteStatement {
@@ -101,6 +102,32 @@ function readColumns(db: SqliteDatabase): Map<string, ColumnInfo> {
   );
 }
 
+function appSettingsColumnsMatchMigrationPrefix(
+  db: SqliteDatabase,
+  projectRoot: string,
+  migrations: MigrationMetadata[],
+): boolean {
+  const expected = new Database(':memory:');
+  try {
+    for (const migration of migrations) {
+      expected.exec(fs.readFileSync(path.join(projectRoot, 'drizzle', `${migration.tag}.sql`), 'utf8'));
+    }
+    const actualColumns = readColumns(db);
+    const expectedColumns = readColumns(expected);
+    if (actualColumns.size !== expectedColumns.size) return false;
+    return [...expectedColumns.entries()].every(([name, expectedColumn]) => {
+      const actualColumn = actualColumns.get(name);
+      return actualColumn !== undefined
+        && actualColumn.type.toLowerCase() === expectedColumn.type.toLowerCase()
+        && actualColumn.notnull === expectedColumn.notnull
+        && actualColumn.dflt_value === expectedColumn.dflt_value
+        && actualColumn.pk === expectedColumn.pk;
+    });
+  } finally {
+    expected.close();
+  }
+}
+
 function assertLegacyAppSettingsBase(columns: Map<string, ColumnInfo>): void {
   const missing = LEGACY_APP_SETTINGS_COLUMNS.filter((name) => !columns.has(name));
   if (missing.length > 0) {
@@ -173,15 +200,47 @@ function readSchemaObjects(db: SqliteDatabase): Map<string, string> {
   ]));
 }
 
-function readExpectedPushBaseline(projectRoot: string): Map<string, string> {
+function readExpectedSchema(
+  projectRoot: string,
+  migrations: MigrationMetadata[] = readMigrationMetadata(projectRoot),
+): Map<string, string> {
   const expected = new Database(':memory:');
   try {
-    for (const migration of readMigrationMetadata(projectRoot)) {
+    for (const migration of migrations) {
       expected.exec(fs.readFileSync(path.join(projectRoot, 'drizzle', `${migration.tag}.sql`), 'utf8'));
     }
     return readSchemaObjects(expected);
   } finally {
     expected.close();
+  }
+}
+
+function readExpectedPushBaseline(projectRoot: string): Map<string, string> {
+  return readExpectedSchema(projectRoot);
+}
+
+function assertSchemaMatchesMigrations(
+  db: SqliteDatabase,
+  projectRoot: string,
+  migrations: MigrationMetadata[],
+): void {
+  assertDatabaseIntegrity(db);
+  const expected = readExpectedSchema(projectRoot, migrations);
+  const actual = readSchemaObjects(db);
+  const objectNames = new Set([...expected.keys(), ...actual.keys()]);
+  for (const objectName of objectNames) {
+    if (expected.get(objectName) !== actual.get(objectName)) {
+      if (
+        objectName === 'table:AppSettings'
+        && appSettingsColumnsMatchMigrationPrefix(db, projectRoot, migrations)
+      ) {
+        continue;
+      }
+      const [, name = objectName] = objectName.split(':', 2);
+      throw new Error(
+        `Refusing migration-history adoption: database schema object ${name} differs from the tracked migration prefix.`,
+      );
+    }
   }
 }
 
@@ -225,6 +284,53 @@ function createJournal(db: SqliteDatabase): void {
 function insertJournalEntry(db: SqliteDatabase, migration: MigrationMetadata): void {
   db.prepare('INSERT INTO "__drizzle_migrations" (hash, created_at) VALUES (?, ?)')
     .run(migration.hash, migration.when);
+}
+
+/**
+ * Repairs a legacy database whose schema was pushed through migration 0003 but whose
+ * journal only records that latest migration. We require an exact schema match for
+ * the recorded prefix before adding the missing baseline ledger entries.
+ */
+function reconcileMissingBaselineJournalEntries(
+  db: SqliteDatabase,
+  migrations: MigrationMetadata[],
+  projectRoot: string,
+): MigrationMetadata[] {
+  const baseline = migrations.slice(0, 3);
+  if (baseline.length !== 3) {
+    throw new Error('Migration compatibility requires the 0000–0002 baseline migrations.');
+  }
+
+  const appliedHashes = new Set(
+    (db.prepare('SELECT hash FROM "__drizzle_migrations"').all() as Array<{ hash: string }>)
+      .map((row) => row.hash),
+  );
+  const missingBaseline = baseline.filter((migration) => !appliedHashes.has(migration.hash));
+  if (missingBaseline.length === 0) {
+    return [];
+  }
+  if (missingBaseline.length !== baseline.length) {
+    throw new Error('Refusing migration-history adoption: Drizzle journal records only part of the 0000–0002 baseline.');
+  }
+
+  const highestAppliedIndex = migrations.reduce(
+    (highest, migration, index) => (appliedHashes.has(migration.hash) ? index : highest),
+    -1,
+  );
+  if (highestAppliedIndex < baseline.length) {
+    return [];
+  }
+  for (let index = baseline.length; index <= highestAppliedIndex; index += 1) {
+    if (!appliedHashes.has(migrations[index]!.hash)) {
+      throw new Error('Refusing migration-history adoption: Drizzle journal has a gap after the missing baseline.');
+    }
+  }
+
+  assertSchemaMatchesMigrations(db, projectRoot, migrations.slice(0, highestAppliedIndex + 1));
+  db.transaction(() => {
+    for (const migration of baseline) insertJournalEntry(db, migration);
+  })();
+  return baseline;
 }
 
 /**
@@ -298,7 +404,9 @@ export function reconcileLegacyMigrationState(
     if (!journalExists) {
       throw new Error('Unable to initialize the Drizzle migration journal.');
     }
+    const baselineReconciled = reconcileMissingBaselineJournalEntries(db, migrations, projectRoot);
     return [
+      ...baselineReconciled,
       ...reconcileKnownSchedulerMigrations(db, schedulerMigrations, columns),
       ...reconcileTorrentEpisodeLinksMigration(db, rssEpisodeLinksMigration),
       ...reconcileVariantMediaTypeMigration(db, variantMediaTypeMigration, projectRoot),

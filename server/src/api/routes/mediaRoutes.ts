@@ -1,5 +1,10 @@
 import type { FastifyInstance } from 'fastify';
-import { ConflictError, InternalError, ValidationError } from '../../errors/domainErrors';
+import {
+  ConflictError,
+  InternalError,
+  ProviderUnavailableError,
+  ValidationError,
+} from '../../errors/domainErrors';
 import { paginateArray, parsePaginationParams, sendPaginatedSuccess, sendSuccess } from '../contracts';
 import { sortByField } from '../routeUtils';
 import type { ApiDependencies } from '../types';
@@ -260,7 +265,7 @@ export function registerMediaRoutes(
       );
       return sendSuccess(reply, results);
     } catch (error) {
-      if (error instanceof ValidationError) {
+      if (error instanceof ValidationError || error instanceof ProviderUnavailableError) {
         throw error;
       }
       throw new InternalError(`Search failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -304,7 +309,11 @@ export function registerMediaRoutes(
     return `${rootFolder}/${title} (${year})`;
   }
 
-  async function handleCreateMedia(request: any, reply: any) {
+  async function handleCreateMedia(
+    request: any,
+    reply: any,
+    options: { assignLibraryPath?: boolean } = {},
+  ) {
     const body = request.body as CreateMediaBody;
     const mediaType = normalizeMediaType(body.mediaType);
     const monitored = body.monitored ?? true;
@@ -334,7 +343,13 @@ export function registerMediaRoutes(
         });
       }
 
-      const moviePath = buildMediaPath(movieRootFolder, body.title, body.year);
+      // A Wanted record is not imported media yet. Its eventual destination is
+      // derived by ImportManager from media-management settings when a grab is
+      // imported; assigning it here would make every root-folder user lose the
+      // movie from Wanted and skip future auto-searches.
+      const moviePath = options.assignLibraryPath === false
+        ? null
+        : buildMediaPath(movieRootFolder, body.title, body.year);
 
       const created = deps.mediaRepository?.upsertMovie
         ? await deps.mediaRepository.upsertMovie({
@@ -400,7 +415,9 @@ export function registerMediaRoutes(
       });
     }
 
-    const seriesPath = buildMediaPath(tvRootFolder, body.title, body.year);
+    const seriesPath = options.assignLibraryPath === false
+      ? null
+      : buildMediaPath(tvRootFolder, body.title, body.year);
 
     const created = deps.mediaRepository?.upsertSeries
       ? await deps.mediaRepository.upsertSeries({
@@ -563,7 +580,7 @@ export function registerMediaRoutes(
     const mediaType = normalizeMediaType(body.mediaType);
 
     // Delegate to the shared handler to create the record and send the response.
-    await handleCreateMedia(request, reply);
+    await handleCreateMedia(request, reply, { assignLibraryPath: false });
 
     // After the response is sent (or queued), fire background episode population
     // for TV series only.

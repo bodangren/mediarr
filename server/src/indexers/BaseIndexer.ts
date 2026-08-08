@@ -100,8 +100,14 @@ export class TorznabIndexer extends BaseIndexer {
   }
 
   private get apiUrl(): string {
-    const url = this.settings.url as string;
-    return url.endsWith('/') ? url.slice(0, -1) : url;
+    const url = this.settings.url;
+    if (typeof url !== 'string' || url.trim().length === 0) {
+      throw new Error(
+        `Torznab indexer "${this.name}" requires a URL. Remediation: set the Torznab base URL in the indexer settings.`,
+      );
+    }
+    const normalizedUrl = url.trim();
+    return normalizedUrl.endsWith('/') ? normalizedUrl.slice(0, -1) : normalizedUrl;
   }
 
   private get apiKey(): string {

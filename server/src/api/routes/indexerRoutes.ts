@@ -638,7 +638,7 @@ export function registerIndexerRoutes(
   });
 
   app.get('/api/indexers/detect', async (_request, reply) => {
-    const discovery = new IndexerServiceDiscovery({
+    const discovery = deps.indexerServiceDiscovery ?? new IndexerServiceDiscovery({
       probeTimeoutMs: 2000,
     });
 

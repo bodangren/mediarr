@@ -24,7 +24,9 @@ export default defineConfig({
   reporter: [['line']],
   use: {
     headless: true,
-    launchOptions: systemChrome ? { executablePath: systemChrome } : undefined,
+    ...(systemChrome
+      ? { launchOptions: { executablePath: systemChrome } }
+      : {}),
     viewport: { width: 1440, height: 900 },
     screenshot: 'only-on-failure',
     trace: 'retain-on-failure',

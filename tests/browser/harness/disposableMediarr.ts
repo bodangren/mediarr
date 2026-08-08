@@ -1,5 +1,12 @@
 import { spawn, execFile } from 'node:child_process';
-import { copyFile, mkdir, mkdtemp, rm, stat, writeFile } from 'node:fs/promises';
+import {
+  copyFile,
+  mkdir,
+  mkdtemp,
+  rm,
+  stat,
+  writeFile,
+} from 'node:fs/promises';
 import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
@@ -51,7 +58,21 @@ export interface DisposableMediarrPaths {
 export interface DisposableMediarr {
   origin: string;
   paths: DisposableMediarrPaths;
+  restart(): Promise<void>;
   close(): Promise<void>;
+}
+
+export interface DisposableMediarrOptions {
+  /**
+   * Starts from an unconfigured but otherwise representative installation so
+   * the real setup wizard can be exercised against isolated storage.
+   */
+  setupCompleted?: boolean;
+  /**
+   * Controls only the deterministic acquisition fixture so a browser test can
+   * observe the queued progress before its real completion hand-off.
+   */
+  completionDelayMs?: number;
 }
 
 async function findAvailablePort(): Promise<number> {
@@ -130,7 +151,9 @@ async function createRoots(): Promise<DisposableMediarrPaths> {
   };
 }
 
-async function createMediaFixtures(paths: DisposableMediarrPaths): Promise<void> {
+async function createMediaFixtures(
+  paths: DisposableMediarrPaths,
+): Promise<void> {
   await execFileAsync(
     'ffmpeg',
     [
@@ -164,7 +187,10 @@ async function createMediaFixtures(paths: DisposableMediarrPaths): Promise<void>
   );
 }
 
-async function seedDatabase(paths: DisposableMediarrPaths): Promise<void> {
+async function seedDatabase(
+  paths: DisposableMediarrPaths,
+  { setupCompleted = true }: DisposableMediarrOptions = {},
+): Promise<void> {
   const databaseUrl = `file:${paths.database}`;
   await execFileAsync(
     path.join(REPO_ROOT, 'node_modules', '.bin', 'tsx'),
@@ -268,6 +294,30 @@ async function seedDatabase(paths: DisposableMediarrPaths): Promise<void> {
         );
       const movieId = Number(movie.lastInsertRowid);
 
+      database
+        .prepare(
+          `INSERT INTO Movie (
+            tmdbId, title, cleanTitle, sortTitle, status, overview, monitored,
+            qualityProfileId, path, year, added, minimumAvailability,
+            digitalRelease
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        )
+        .run(
+          990_000_005,
+          'Browser Wanted Movie',
+          'browser wanted movie',
+          'Browser Wanted Movie',
+          'released',
+          'A monitored movie without a library path for the wanted route.',
+          1,
+          qualityProfileId,
+          null,
+          2026,
+          now,
+          'released',
+          now + 172_800,
+        );
+
       const seriesMedia = database
         .prepare(
           `INSERT INTO Media (
@@ -343,6 +393,26 @@ async function seedDatabase(paths: DisposableMediarrPaths): Promise<void> {
           paths.episodeFile,
         );
       const episodeId = Number(episode.lastInsertRowid);
+
+      database
+        .prepare(
+          `INSERT INTO Episode (
+            seriesId, seasonId, tvdbId, seasonNumber, episodeNumber, title,
+            airDateUtc, overview, monitored, path
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        )
+        .run(
+          seriesId,
+          seasonId,
+          990_000_006,
+          1,
+          2,
+          'Browser Calendar Episode',
+          now + 172_800,
+          'A monitored future episode for the production calendar route.',
+          1,
+          null,
+        );
 
       const movieVariant = database
         .prepare(
@@ -437,7 +507,7 @@ async function seedDatabase(paths: DisposableMediarrPaths): Promise<void> {
         .run(
           '0123456789abcdef0123456789abcdef01234567',
           'Browser Acceptance Queue Item',
-          'DOWNLOADING',
+          'queued',
           0.42,
           1_048_576,
           0,
@@ -459,7 +529,7 @@ async function seedDatabase(paths: DisposableMediarrPaths): Promise<void> {
           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         )
         .run(
-          'import.completed',
+          'MOVIE_IMPORTED',
           'BrowserAcceptanceHarness',
           `movie:${movieId}`,
           'Imported Browser Acceptance Movie',
@@ -550,7 +620,7 @@ async function seedDatabase(paths: DisposableMediarrPaths): Promise<void> {
           autoUpdateEnabled: false,
           mechanicsEnabled: false,
           updateScriptPath: null,
-          setupCompleted: true,
+          setupCompleted,
         },
         mediaManagement: {
           movieRootFolder: path.join(paths.data, 'media', 'movies'),
@@ -650,6 +720,43 @@ async function waitForExit(
   });
 }
 
+function signalDaemonProcessGroup(
+  child: ReturnType<typeof spawn>,
+  signal: NodeJS.Signals,
+): void {
+  if (child.exitCode !== null || child.signalCode !== null || !child.pid) {
+    return;
+  }
+
+  if (process.platform === 'win32') {
+    child.kill(signal);
+    return;
+  }
+
+  try {
+    // `tsx` forks the actual daemon. A detached process group lets restart
+    // terminate that daemon too, rather than leaving it to keep the old port
+    // and EventSource connections alive after the wrapper exits.
+    process.kill(-child.pid, signal);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ESRCH') {
+      throw error;
+    }
+  }
+}
+
+async function stopDaemon(child: ReturnType<typeof spawn> | undefined): Promise<void> {
+  if (!child || child.exitCode !== null || child.signalCode !== null) {
+    return;
+  }
+
+  signalDaemonProcessGroup(child, 'SIGTERM');
+  if (!(await waitForExit(child, STOP_TIMEOUT_MS))) {
+    signalDaemonProcessGroup(child, 'SIGKILL');
+    await waitForExit(child, STOP_TIMEOUT_MS);
+  }
+}
+
 async function waitForReady(
   origin: string,
   child: ReturnType<typeof spawn>,
@@ -664,10 +771,19 @@ async function waitForReady(
     }
 
     try {
-      const response = await fetch(`${origin}/api/system/status`, {
-        signal: AbortSignal.timeout(2_000),
-      });
-      if (response.ok) {
+      const [statusResponse, spaResponse] = await Promise.all([
+        fetch(`${origin}/api/system/status`, {
+          signal: AbortSignal.timeout(2_000),
+        }),
+        fetch(`${origin}/wanted`, {
+          signal: AbortSignal.timeout(2_000),
+        }),
+      ]);
+      if (
+        statusResponse.ok &&
+        spaResponse.ok &&
+        spaResponse.headers.get('content-type')?.includes('text/html')
+      ) {
         return;
       }
     } catch {
@@ -685,7 +801,9 @@ async function waitForReady(
  * Starts the production Bun daemon and built SPA against disposable, seeded
  * storage. The returned close method always removes the complete temp root.
  */
-export async function startDisposableMediarr(): Promise<DisposableMediarr> {
+export async function startDisposableMediarr(
+  options: DisposableMediarrOptions = {},
+): Promise<DisposableMediarr> {
   const staticDir = path.join(REPO_ROOT, 'app', 'dist');
   const distIndex = path.join(staticDir, 'index.html');
   try {
@@ -702,64 +820,86 @@ export async function startDisposableMediarr(): Promise<DisposableMediarr> {
 
   try {
     await createMediaFixtures(paths);
-    await seedDatabase(paths);
+    await seedDatabase(paths, options);
 
     const port = await findAvailablePort();
     const origin = `http://127.0.0.1:${port}`;
     const logs: string[] = [];
-    child = spawn(
-      path.join(REPO_ROOT, 'node_modules', '.bin', 'tsx'),
-      ['server/src/main.ts'],
-      {
-        cwd: REPO_ROOT,
-        env: {
-          ...process.env,
-          NODE_ENV: 'production',
-          API_HOST: '127.0.0.1',
-          API_PORT: String(port),
-          DATABASE_URL: `file:${paths.database}`,
-          CONFIG_DIR: paths.config,
-          MEDIA_DIR: paths.data,
-          BACKUP_DIR: paths.backups,
-          STATIC_DIR: staticDir,
-          DEFINITIONS_PATH: path.join(REPO_ROOT, 'server', 'definitions'),
-          ENCRYPTION_KEY: 'browser-acceptance-local-key',
-          JELLYFIN_ENABLED: 'false',
-          OPENROUTER_API_KEY: '',
-          TMDB_API_KEY: '',
-          OPENSUBTITLES_API_KEY: '',
-          ASSRT_API_TOKEN: '',
-          SUBDL_API_KEY: '',
+    const launchDaemon = () => {
+      const daemon = spawn(
+        path.join(REPO_ROOT, 'node_modules', '.bin', 'tsx'),
+        ['server/src/main.ts'],
+        {
+          cwd: REPO_ROOT,
+          env: {
+            ...process.env,
+            NODE_ENV: 'production',
+            API_HOST: '127.0.0.1',
+            API_PORT: String(port),
+            DATABASE_URL: `file:${paths.database}`,
+            CONFIG_DIR: paths.config,
+            MEDIA_DIR: paths.data,
+            BACKUP_DIR: paths.backups,
+            STATIC_DIR: staticDir,
+            // The acceptance daemon must not load a developer's repository .env.
+            // Its metadata and filesystem state are supplied entirely by this harness.
+            DOTENV_CONFIG_PATH: '/dev/null',
+            DEFINITIONS_PATH: path.join(REPO_ROOT, 'server', 'definitions'),
+            ENCRYPTION_KEY: 'browser-acceptance-local-key',
+            JELLYFIN_ENABLED: 'false',
+            OPENROUTER_API_KEY: '',
+            BROWSER_ACCEPTANCE_METADATA_FIXTURE: 'true',
+            BROWSER_ACCEPTANCE_ACQUISITION_FIXTURE: 'true',
+            BROWSER_ACCEPTANCE_SUBTITLE_FIXTURE: 'true',
+            // Generated by this harness with ffmpeg; the acceptance-only torrent
+            // manager copies it through its isolated download roots before the
+            // real ImportManager and Organizer consume the completion event.
+            BROWSER_ACCEPTANCE_ACQUISITION_SOURCE_FILE: paths.movieFile,
+            BROWSER_ACCEPTANCE_COMPLETION_DELAY_MS:
+              options.completionDelayMs?.toString() ?? '',
+            TMDB_API_KEY: '',
+            OPENSUBTITLES_API_KEY: '',
+            ASSRT_API_TOKEN: '',
+            SUBDL_API_KEY: '',
+          },
+          stdio: ['ignore', 'pipe', 'pipe'],
+          detached: process.platform !== 'win32',
         },
-        stdio: ['ignore', 'pipe', 'pipe'],
-      },
-    );
-    child.stdout?.on('data', (chunk: Buffer) => logs.push(chunk.toString()));
-    child.stderr?.on('data', (chunk: Buffer) => logs.push(chunk.toString()));
+      );
+      daemon.stdout?.on('data', (chunk: Buffer) => logs.push(chunk.toString()));
+      daemon.stderr?.on('data', (chunk: Buffer) => logs.push(chunk.toString()));
+      return daemon;
+    };
 
+    child = launchDaemon();
     await waitForReady(origin, child, () => logs.join(''));
 
     return {
       origin,
       paths,
+      async restart(): Promise<void> {
+        if (closed) {
+          throw new Error('Cannot restart a closed disposable Mediarr daemon.');
+        }
+
+        await stopDaemon(child);
+
+        logs.length = 0;
+        child = launchDaemon();
+        await waitForReady(origin, child, () => logs.join(''));
+      },
       async close(): Promise<void> {
         if (closed) {
           return;
         }
         closed = true;
-        if (child && child.exitCode === null && child.signalCode === null) {
-          child.kill('SIGTERM');
-          if (!(await waitForExit(child, STOP_TIMEOUT_MS))) {
-            child.kill('SIGKILL');
-            await waitForExit(child, STOP_TIMEOUT_MS);
-          }
-        }
+        await stopDaemon(child);
         await rm(paths.root, { recursive: true, force: true });
       },
     };
   } catch (error) {
-    if (child && child.exitCode === null && child.signalCode === null) {
-      child.kill('SIGKILL');
+    if (child) {
+      signalDaemonProcessGroup(child, 'SIGKILL');
       await waitForExit(child, STOP_TIMEOUT_MS);
     }
     await rm(paths.root, { recursive: true, force: true });

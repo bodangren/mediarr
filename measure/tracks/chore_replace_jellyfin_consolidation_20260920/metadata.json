@@ -1,0 +1,11 @@
+{
+  "track_id": "chore_replace_jellyfin_consolidation_20260920",
+  "type": "chore",
+  "status": "in_progress",
+  "created_at": "2026-09-20T00:00:00Z",
+  "updated_at": "2026-09-20T00:00:00Z",
+  "description": "Replace Jellyfin for the single-user LAN playback stack. Slim Mediarr server (disable -arr domains, single trusted-LAN user), drop the deprecated Kotlin Android TV client, make the Flutter Netflix-styled client the only TV client. Hermes owns the -arr work; the Flutter client keeps speaking the existing Jellyfin-compatible surface so no client rewrite is needed.",
+  "estimated_tasks": 28,
+  "spec_format": "classic",
+  "deviation_notes": "Spec format is classic FR list: this is a consolidation/pivot against an existing in-progress track, and the acceptance criteria are wire-level (config flag, route surface, APK install). Owner decision recorded 2026-09-20: extend the existing TS surface behind a config seam rather than extract a slim service or rewrite in Go (jellyfin-go). Reuses the in-progress feature_jellyfin_server_surface_20260729 surface; narrows its scope from 'stock Jellyfin TV app parity' to 'what the Flutter client exercises'."
+}

@@ -6,6 +6,7 @@ import 'package:media_kit_video/media_kit_video.dart';
 import '../../core/theme/mediarr_theme.dart';
 import '../../shared/services/api_client.dart';
 import 'playback_service.dart';
+import 'track_selection.dart';
 
 /// Full-screen media player with transport overlay.
 class PlaybackScreen extends ConsumerStatefulWidget {
@@ -16,6 +17,7 @@ class PlaybackScreen extends ConsumerStatefulWidget {
     required this.mediaId,
     required this.mediaType,
     this.nextEpisode,
+    this.videoController,
   });
 
   final String streamUrl;
@@ -26,12 +28,19 @@ class PlaybackScreen extends ConsumerStatefulWidget {
   /// Callback to play next episode (null if not applicable or last episode).
   final VoidCallback? nextEpisode;
 
+  /// Optional [VideoController]. Production callers pass `null` and the
+  /// screen builds one from the playback service's underlying player.
+  /// Tests inject a controller or `null` to skip `media_kit`'s native
+  /// surface entirely while exercising the transport overlay and the
+  /// FR-6 / FR-7 widgets.
+  final VideoController? videoController;
+
   @override
   ConsumerState<PlaybackScreen> createState() => _PlaybackScreenState();
 }
 
 class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
-  late final VideoController _videoController;
+  VideoController? _videoController;
   final FocusNode _focusNode = FocusNode();
   late String _resolvedStreamUrl;
   late String _resolvedTitle;
@@ -42,7 +51,19 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
     _resolvedStreamUrl = widget.streamUrl;
     _resolvedTitle = widget.title;
     final service = ref.read(playbackServiceProvider.notifier);
-    _videoController = VideoController(service.player);
+    _videoController = widget.videoController;
+    if (_videoController == null) {
+      try {
+        _videoController = VideoController(service.player);
+      } catch (_) {
+        // `service.player` throws StateError when the service was
+        // constructed with a non-`MediaKitMediaPlayer` (e.g. widget tests
+        // with a `FakeMediaPlayer`). Leave the controller null and render
+        // a placeholder video surface — the rest of the playback UI
+        // (transport overlay, subtitle nudge, picker) still exercises.
+        _videoController = null;
+      }
+    }
     Future.microtask(_startPlayback);
   }
 
@@ -69,10 +90,12 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
             children: [
               // Video surface
               Center(
-                child: Video(
-                  controller: _videoController,
-                  controls: NoVideoControls,
-                ),
+                child: _videoController != null
+                    ? Video(
+                        controller: _videoController!,
+                        controls: NoVideoControls,
+                      )
+                    : const ColoredBox(color: Colors.black),
               ),
 
               // Loading indicator
@@ -127,6 +150,30 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
                     if (context.mounted) Navigator.of(context).pop();
                   },
                   onNext: widget.nextEpisode,
+                ),
+
+              // Subtitle timing nudge + toast (FR-7).
+              if (playbackState.overlayVisible &&
+                  playbackState.status != PlaybackStatus.error)
+                Positioned(
+                  top: 80,
+                  left: 0,
+                  right: 0,
+                  child: _SubtitleNudgeBar(
+                    service: service,
+                    state: playbackState,
+                  ),
+                ),
+
+              // "Subs +1.5s" ephemeral toast.
+              if (playbackState.subtitleDelayToast != null)
+                Positioned(
+                  top: 16,
+                  left: 0,
+                  right: 0,
+                  child: Center(
+                    child: _SubtitleDelayToast(label: playbackState.subtitleDelayToast!),
+                  ),
                 ),
 
               // Completed overlay
@@ -349,6 +396,12 @@ class _TransportOverlay extends StatelessWidget {
                           onPressed: onNext,
                         ),
                       ],
+                      const SizedBox(width: 24),
+                      IconButton(
+                        tooltip: 'Subtitles',
+                        icon: const Icon(Icons.closed_caption, color: Colors.white, size: 32),
+                        onPressed: () => _showSubtitlePicker(context, state, service),
+                      ),
                     ],
                   ),
                 ],
@@ -356,6 +409,23 @@ class _TransportOverlay extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showSubtitlePicker(
+    BuildContext context,
+    PlaybackState state,
+    PlaybackService service,
+  ) {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => _SubtitlePickerDialog(
+        state: state,
+        onSelect: (index) {
+          service.selectSubtitle(index);
+          Navigator.of(dialogContext).pop();
+        },
       ),
     );
   }
@@ -455,4 +525,163 @@ String _formatDuration(Duration d) {
   final seconds = d.inSeconds.remainder(60).toString().padLeft(2, '0');
   if (hours > 0) return '$hours:$minutes:$seconds';
   return '$minutes:$seconds';
+}
+
+/// Kodi-style subtitle timing nudge bar (FR-7). Always visible while the
+/// transport overlay is up.
+class _SubtitleNudgeBar extends StatelessWidget {
+  const _SubtitleNudgeBar({required this.service, required this.state});
+
+  final PlaybackService service;
+  final PlaybackState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final labels = const [
+      ('-5s', Duration(seconds: -5)),
+      ('-1s', Duration(seconds: -1)),
+      ('-0.5s', Duration(milliseconds: -500)),
+      ('+0.5s', Duration(milliseconds: 500)),
+      ('+1s', Duration(seconds: 1)),
+      ('+5s', Duration(seconds: 5)),
+    ];
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          for (final (label, step) in labels) ...[
+            _NudgeButton(
+              label: label,
+              onPressed: () => service.nudgeSubtitleDelay(step),
+            ),
+            const SizedBox(width: 8),
+          ],
+          _NudgeButton(
+            label: 'Reset',
+            onPressed: () => service.resetSubtitleDelay(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _NudgeButton extends StatelessWidget {
+  const _NudgeButton({required this.label, required this.onPressed});
+
+  final String label;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return ElevatedButton(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.black.withValues(alpha: 0.6),
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        minimumSize: const Size(56, 36),
+      ),
+      onPressed: onPressed,
+      child: Text(label, style: const TextStyle(fontSize: 13)),
+    );
+  }
+}
+
+/// Ephemeral toast that displays the current subtitle timing offset.
+class _SubtitleDelayToast extends StatelessWidget {
+  const _SubtitleDelayToast({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.7),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(color: Colors.white, fontSize: 14),
+      ),
+    );
+  }
+}
+
+/// Manual subtitle picker. Triggered from the closed-caption button on the
+/// transport overlay. The default selection happens silently — this dialog
+/// is the override path called out by FR-6.
+class _SubtitlePickerDialog extends StatelessWidget {
+  const _SubtitlePickerDialog({
+    required this.state,
+    required this.onSelect,
+  });
+
+  final PlaybackState state;
+  final ValueChanged<int?> onSelect;
+
+  String _trackLabel(SubtitleTrackInfo track, int index) {
+    final parts = <String>[
+      if (track.title != null && track.title!.isNotEmpty) track.title!,
+      if (track.language != null && track.language!.isNotEmpty)
+        track.language!,
+    ];
+    final tag = parts.isEmpty ? 'Track ${index + 1}' : parts.join(' · ');
+    return tag;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tracks = state.subtitleTracks;
+    return AlertDialog(
+      backgroundColor: const Color(0xFF111111),
+      title: const Text(
+        'Subtitles',
+        style: TextStyle(color: Colors.white),
+      ),
+      content: SizedBox(
+        width: 320,
+        child: tracks.isEmpty
+            ? const Text(
+                'No subtitle tracks available',
+                style: TextStyle(color: Colors.white70),
+              )
+            : Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  ListTile(
+                    title: const Text(
+                      'Off',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                    trailing: state.selectedSubtitleIndex == null
+                        ? const Icon(Icons.check, color: MediarrColors.accentPrimary)
+                        : null,
+                    onTap: () => onSelect(null),
+                  ),
+                  for (var i = 0; i < tracks.length; i++)
+                    ListTile(
+                      title: Text(
+                        _trackLabel(tracks[i], i),
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                      trailing: state.selectedSubtitleIndex == i
+                          ? const Icon(Icons.check, color: MediarrColors.accentPrimary)
+                          : null,
+                      onTap: () => onSelect(i),
+                    ),
+                ],
+              ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Close'),
+        ),
+      ],
+    );
+  }
 }

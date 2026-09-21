@@ -4,12 +4,27 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_kit/media_kit.dart';
 
 import '../../shared/services/api_client.dart';
+import 'media_player.dart';
+import 'subtitle_renderer.dart';
+import 'track_selection.dart';
 
 /// Playback state.
 enum PlaybackStatus { idle, loading, playing, paused, buffering, error, completed }
 
 Duration normalizeResumeOffset(Duration resumeFrom) =>
     resumeFrom < Duration.zero ? Duration.zero : resumeFrom;
+
+/// Nudge steps supported by the playback UI (FR-7).
+///
+/// Subtitle timing nudge is Kodi-style: ±5s, ±1s, ±0.5s, plus a reset.
+const List<Duration> subtitleNudgeSteps = <Duration>[
+  Duration(milliseconds: -5000),
+  Duration(milliseconds: -1000),
+  Duration(milliseconds: -500),
+  Duration(milliseconds: 500),
+  Duration(milliseconds: 1000),
+  Duration(milliseconds: 5000),
+];
 
 /// Immutable playback state.
 class PlaybackState {
@@ -22,8 +37,12 @@ class PlaybackState {
     this.duration = Duration.zero,
     this.buffered = Duration.zero,
     this.error,
+    this.audioTracks = const [],
     this.subtitleTracks = const [],
+    this.selectedAudioIndex,
     this.selectedSubtitleIndex,
+    this.subtitleDelay = Duration.zero,
+    this.subtitleDelayToast,
     this.overlayVisible = true,
   });
 
@@ -35,8 +54,12 @@ class PlaybackState {
   final Duration duration;
   final Duration buffered;
   final String? error;
-  final List<String> subtitleTracks;
+  final List<AudioTrackInfo> audioTracks;
+  final List<SubtitleTrackInfo> subtitleTracks;
+  final int? selectedAudioIndex;
   final int? selectedSubtitleIndex;
+  final Duration subtitleDelay;
+  final String? subtitleDelayToast;
   final bool overlayVisible;
 
   double get progress =>
@@ -53,8 +76,15 @@ class PlaybackState {
     Duration? duration,
     Duration? buffered,
     String? error,
-    List<String>? subtitleTracks,
+    List<AudioTrackInfo>? audioTracks,
+    List<SubtitleTrackInfo>? subtitleTracks,
+    int? selectedAudioIndex,
     int? selectedSubtitleIndex,
+    bool clearSelectedAudioIndex = false,
+    bool clearSelectedSubtitleIndex = false,
+    Duration? subtitleDelay,
+    String? subtitleDelayToast,
+    bool clearSubtitleDelayToast = false,
     bool? overlayVisible,
   }) {
     return PlaybackState(
@@ -65,27 +95,69 @@ class PlaybackState {
       position: position ?? this.position,
       duration: duration ?? this.duration,
       buffered: buffered ?? this.buffered,
-      error: error ?? this.error,
+      error: error,
+      audioTracks: audioTracks ?? this.audioTracks,
       subtitleTracks: subtitleTracks ?? this.subtitleTracks,
-      selectedSubtitleIndex: selectedSubtitleIndex ?? this.selectedSubtitleIndex,
+      selectedAudioIndex: clearSelectedAudioIndex
+          ? null
+          : (selectedAudioIndex ?? this.selectedAudioIndex),
+      selectedSubtitleIndex: clearSelectedSubtitleIndex
+          ? null
+          : (selectedSubtitleIndex ?? this.selectedSubtitleIndex),
+      subtitleDelay: subtitleDelay ?? this.subtitleDelay,
+      subtitleDelayToast:
+          clearSubtitleDelayToast ? null : (subtitleDelayToast ?? this.subtitleDelayToast),
       overlayVisible: overlayVisible ?? this.overlayVisible,
     );
   }
 }
 
-/// Manages media playback via media_kit.
+/// Manages media playback.
+///
+/// FR-6: on every `play()`, when the player discovers tracks, the service
+/// silently selects English audio + Chinese Simplified subs. Manual picker
+/// is reachable through `selectAudio` / `selectSubtitle`.
+///
+/// FR-7: subtitle timing nudge is exposed via `nudgeSubtitleDelay` /
+/// `resetSubtitleDelay`. Offset is per-session (per `play()` call) and is
+/// cleared whenever a different media item starts.
 class PlaybackService extends StateNotifier<PlaybackState> {
-  PlaybackService(this._apiClient) : super(const PlaybackState()) {
-    _player = Player();
+  PlaybackService(
+    this._apiClient, {
+    MediaPlayer? player,
+    SubtitleRenderer? subtitleRenderer,
+  }) : super(const PlaybackState()) {
+    final defaultPlayer = player ?? MediaKitMediaPlayer();
+    _player = defaultPlayer;
+    _subtitleRenderer = subtitleRenderer ??
+        (defaultPlayer is MediaKitMediaPlayer
+            ? MediaKitSubtitleRenderer(defaultPlayer.player)
+            : NoOpSubtitleRenderer());
     _listenToPlayer();
   }
 
   final MediarrApiClient _apiClient;
-  late final Player _player;
+  late final MediaPlayer _player;
+  late final SubtitleRenderer _subtitleRenderer;
   Timer? _progressReportTimer;
   Timer? _overlayHideTimer;
+  Timer? _subtitleToastTimer;
 
-  Player get player => _player;
+  /// Returns the underlying `media_kit` `Player` if this service was
+  /// constructed with a `MediaKitMediaPlayer`. The playback screen uses
+  /// this to attach a `VideoController` to the same instance.
+  ///
+  /// Throws when the service was constructed with a custom [MediaPlayer]
+  /// (e.g. tests injecting a `FakeMediaPlayer`). Callers that need to
+  /// attach a `VideoController` must do so on the production path.
+  Player get player {
+    final mp = _player;
+    if (mp is MediaKitMediaPlayer) return mp.player;
+    throw StateError(
+      'PlaybackService was not constructed with MediaKitMediaPlayer; '
+      'cannot expose a media_kit Player.',
+    );
+  }
 
   /// Start playing a media item.
   Future<void> play({
@@ -96,6 +168,11 @@ class PlaybackService extends StateNotifier<PlaybackState> {
     Duration resumeFrom = Duration.zero,
   }) async {
     final startPosition = normalizeResumeOffset(resumeFrom);
+
+    // Per-media reset of subtitle timing nudge (FR-7).
+    await _subtitleRenderer.setDelay(Duration.zero);
+    _subtitleToastTimer?.cancel();
+
     state = state.copyWith(
       status: PlaybackStatus.loading,
       mediaTitle: title,
@@ -104,10 +181,16 @@ class PlaybackService extends StateNotifier<PlaybackState> {
       position: startPosition,
       duration: Duration.zero,
       error: null,
+      audioTracks: const [],
+      subtitleTracks: const [],
+      clearSelectedAudioIndex: true,
+      clearSelectedSubtitleIndex: true,
+      subtitleDelay: Duration.zero,
+      clearSubtitleDelayToast: true,
     );
 
     try {
-      await _player.open(Media(streamUrl));
+      await _player.open(streamUrl);
       if (startPosition > Duration.zero) {
         await _player.seek(startPosition);
       }
@@ -122,8 +205,8 @@ class PlaybackService extends StateNotifier<PlaybackState> {
   }
 
   /// Toggle play/pause.
-  void togglePlayPause() {
-    _player.playOrPause();
+  Future<void> togglePlayPause() async {
+    await _player.playOrPause();
   }
 
   /// Seek to a specific position.
@@ -145,6 +228,7 @@ class PlaybackService extends StateNotifier<PlaybackState> {
   Future<void> stop() async {
     _progressReportTimer?.cancel();
     _overlayHideTimer?.cancel();
+    _subtitleToastTimer?.cancel();
 
     // Report final position
     await _reportProgress();
@@ -169,61 +253,127 @@ class PlaybackService extends StateNotifier<PlaybackState> {
     }
   }
 
-  /// Select a subtitle track by index (null to disable).
+  /// Select a subtitle track by index (`null` to disable).
+  ///
+  /// Manual picker hook. The default selection happens silently in
+  /// [_onTracks] when tracks arrive.
   void selectSubtitle(int? index) {
-    state = state.copyWith(selectedSubtitleIndex: index);
-    if (index != null && index < _player.state.tracks.subtitle.length) {
-      _player.setSubtitleTrack(_player.state.tracks.subtitle[index]);
+    final tracks = state.subtitleTracks;
+    if (index != null && index < tracks.length) {
+      state = state.copyWith(selectedSubtitleIndex: index);
+      _player.setSubtitleTrack(tracks[index].id);
     } else {
-      _player.setSubtitleTrack(SubtitleTrack.no());
+      state = state.copyWith(clearSelectedSubtitleIndex: true);
+      _player.setSubtitleTrack(null);
     }
   }
 
+  /// Select an audio track by index. `null` falls back to the player's
+  /// default selection.
+  void selectAudio(int? index) {
+    final tracks = state.audioTracks;
+    if (index != null && index < tracks.length) {
+      state = state.copyWith(selectedAudioIndex: index);
+      _player.setAudioTrack(tracks[index].id);
+    } else {
+      state = state.copyWith(clearSelectedAudioIndex: true);
+      _player.setAudioTrack(null);
+    }
+  }
+
+  /// Shift the subtitle timing by [step] (FR-7).
+  ///
+  /// Steps are clamped to a sane Kodi-style range (±60s) to prevent runaway
+  /// accumulation from accidental double-taps. The toast label is set and
+  /// cleared automatically after a short interval.
+  Future<void> nudgeSubtitleDelay(Duration step) async {
+    final next = state.subtitleDelay + step;
+    final clamped = next < const Duration(seconds: -60)
+        ? const Duration(seconds: -60)
+        : (next > const Duration(seconds: 60)
+            ? const Duration(seconds: 60)
+            : next);
+    state = state.copyWith(
+      subtitleDelay: clamped,
+      subtitleDelayToast: SubtitleDelay.format(clamped),
+    );
+    await _subtitleRenderer.setDelay(clamped);
+    _startSubtitleToastTimer();
+  }
+
+  /// Reset the subtitle timing offset back to 0 (FR-7).
+  Future<void> resetSubtitleDelay() async {
+    state = state.copyWith(
+      subtitleDelay: Duration.zero,
+      clearSubtitleDelayToast: true,
+    );
+    await _subtitleRenderer.setDelay(Duration.zero);
+  }
+
   void _listenToPlayer() {
-    _player.stream.playing.listen((playing) {
-      if (playing) {
-        state = state.copyWith(status: PlaybackStatus.playing);
-      } else if (state.status == PlaybackStatus.playing) {
-        state = state.copyWith(status: PlaybackStatus.paused);
+    _player.status.listen((status) {
+      switch (status) {
+        case MediaPlayerStatus.playing:
+          state = state.copyWith(status: PlaybackStatus.playing);
+          break;
+        case MediaPlayerStatus.paused:
+          if (state.status == PlaybackStatus.playing) {
+            state = state.copyWith(status: PlaybackStatus.paused);
+          }
+          break;
+        case MediaPlayerStatus.buffering:
+          state = state.copyWith(status: PlaybackStatus.buffering);
+          break;
+        case MediaPlayerStatus.completed:
+          state = state.copyWith(status: PlaybackStatus.completed);
+          _progressReportTimer?.cancel();
+          break;
+        case MediaPlayerStatus.opening:
+        case MediaPlayerStatus.idle:
+          // No-op for the state.
+          break;
       }
     });
 
-    _player.stream.position.listen((position) {
+    _player.position.listen((position) {
       state = state.copyWith(position: position);
     });
 
-    _player.stream.duration.listen((duration) {
+    _player.duration.listen((duration) {
       state = state.copyWith(duration: duration);
     });
 
-    _player.stream.buffering.listen((buffering) {
-      if (buffering) {
-        state = state.copyWith(status: PlaybackStatus.buffering);
-      } else if (state.status == PlaybackStatus.buffering) {
-        state = state.copyWith(status: PlaybackStatus.playing);
-      }
-    });
-
-    _player.stream.completed.listen((completed) {
-      if (completed) {
-        state = state.copyWith(status: PlaybackStatus.completed);
-        _progressReportTimer?.cancel();
-      }
-    });
-
-    _player.stream.error.listen((error) {
+    _player.errors.listen((error) {
       state = state.copyWith(
         status: PlaybackStatus.error,
         error: error,
       );
     });
 
-    _player.stream.tracks.listen((tracks) {
-      final subs = tracks.subtitle
-          .map((t) => t.title ?? t.language ?? t.id)
-          .toList();
-      state = state.copyWith(subtitleTracks: subs);
-    });
+    _player.tracks.listen(_onTracks);
+  }
+
+  void _onTracks(MediaTrackLists lists) {
+    final audioIndex = selectDefaultAudioTrackIndex(lists.audio);
+    final subtitleIndex = selectDefaultSubtitleTrackIndex(lists.subtitle);
+
+    state = state.copyWith(
+      audioTracks: lists.audio,
+      subtitleTracks: lists.subtitle,
+      selectedAudioIndex: audioIndex,
+      selectedSubtitleIndex: subtitleIndex,
+    );
+
+    if (audioIndex != null) {
+      _player.setAudioTrack(lists.audio[audioIndex].id);
+    }
+    if (subtitleIndex != null) {
+      _player.setSubtitleTrack(lists.subtitle[subtitleIndex].id);
+    } else {
+      // No Chinese Simplified subtitle → explicitly disable subtitles so the
+      // player doesn't fall back to a non-zho track silently.
+      _player.setSubtitleTrack(null);
+    }
   }
 
   void _startProgressReporting() {
@@ -263,10 +413,18 @@ class PlaybackService extends StateNotifier<PlaybackState> {
     });
   }
 
+  void _startSubtitleToastTimer() {
+    _subtitleToastTimer?.cancel();
+    _subtitleToastTimer = Timer(const Duration(seconds: 2), () {
+      state = state.copyWith(clearSubtitleDelayToast: true);
+    });
+  }
+
   @override
   void dispose() {
     _progressReportTimer?.cancel();
     _overlayHideTimer?.cancel();
+    _subtitleToastTimer?.cancel();
     _player.dispose();
     super.dispose();
   }

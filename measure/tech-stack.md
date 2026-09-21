@@ -49,7 +49,7 @@
 
 **Clients:**
 - **Cross-Platform Client (Flutter):** Located at `clients/mediarr-client/`. A single Flutter codebase targeting Android TV, Linux desktop, and macOS. Uses Riverpod for state management, go_router for navigation, media_kit (ExoPlayer on Android, mpv/libmpv on Linux/macOS) for hardware-accelerated 4K/HDR playback, and bonsoir for mDNS server discovery. 10-foot leanback UI with D-pad/keyboard-first navigation and Mediarr "Modern Dark" theming.
-- **~~Android TV App (Kotlin)~~:** `clients/android-tv/` — **DEPRECATED.** Legacy native Kotlin app. No further development. Superseded by the Flutter cross-platform client.
+- **~~Android TV App (Kotlin)~~:** `clients/android-tv/` — **DELETED 2026-09-20.** Legacy native Kotlin app. Superseded by the Flutter cross-platform client, the only TV client now.
 
 **Deployment:**
 - **Single Process:** The frontend is built into static files (`dist/`) and served directly by the Fastify backend. The user only needs to execute the single Bun backend script.

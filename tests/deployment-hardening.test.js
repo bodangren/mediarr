@@ -61,7 +61,12 @@ describe('Docker Engine deployment contract', () => {
   });
 
   it('fails closed on all configured data roots and has no fictional torrent fallback', () => {
-    const main = read('server/src/main.ts');
+    // The service container factory owns startup wiring; main.ts is the thin
+    // entrypoint that resolves config and opens the database.
+    const startupSources = [
+      read('server/src/main.ts'),
+      read('server/src/serviceContainer.ts'),
+    ].join('\n');
 
     for (const setting of [
       'incompleteDirectory',

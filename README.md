@@ -174,7 +174,7 @@ Events are published to `ApiEventHub` which broadcasts them via SSE to all conne
 
 - SSE push notifications are available via `GET /api/events/stream` for any connected client.
 - Status endpoint: `GET /api/notifications/push-status` — returns `enabled: true`, `transport: "sse"`, and the count of currently connected SSE clients.
-- The legacy Android TV Kotlin client (`clients/android-tv/`) implemented SSE notifications via OkHttp. The Flutter cross-platform client (`clients/mediarr-client/`) will add SSE notification support in a follow-up track.
+- The legacy Android TV Kotlin client (deleted 2026-09-20) implemented SSE notifications via OkHttp. The Flutter cross-platform client (`clients/mediarr-client/`) will add SSE notification support in a follow-up track.
 
 ---
 

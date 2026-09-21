@@ -46,6 +46,12 @@ export interface TrustedLanUserIdentity {
   userName: string;
 }
 
+/**
+ * The single trusted-LAN user id advertised in slim mode. Auth-stub endpoints
+ * return exactly this user; no credential storage exists.
+ */
+export const COMPAT_USER_ID = '4d656469-6172-7200-0000-000000000001';
+
 export interface JellyfinUserConfiguration {
   AudioLanguagePreference: string;
   PlayDefaultAudioTrack: boolean;

@@ -188,4 +188,11 @@ export interface ApiServerOptions {
   torrentStatsIntervalMs?: number | undefined;
   activityPollIntervalMs?: number | undefined;
   healthPollIntervalMs?: number | undefined;
+  /**
+   * Slim mode: -arr domain routes (torrents, indexers, subtitles, import
+   * lists, notifications, quality, download clients, custom formats, releases,
+   * blocklist, categories) are not registered, so they return 404 instead of
+   * running partially initialised handlers. Defaults to full-stack behaviour.
+   */
+  slimMode?: boolean | undefined;
 }

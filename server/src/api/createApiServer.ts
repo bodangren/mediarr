@@ -165,23 +165,38 @@ export function createApiServer(
   registerStatsRoutes(app, dependencies);
   registerMovieRoutes(app, dependencies);
   registerMediaRoutes(app, dependencies);
-  registerReleaseRoutes(app, dependencies);
-  registerTorrentRoutes(app, dependencies);
-  registerIndexerRoutes(app, dependencies);
-  registerSubtitleRoutes(app, dependencies);
+
+  // -arr domain routes stay dark in slim mode: they are not registered at all,
+  // so unmatched requests return 404 instead of hitting a partially
+  // initialised handler. Full mode (default) registers everything, unchanged.
+  if (!options.slimMode) {
+    registerReleaseRoutes(app, dependencies);
+    registerTorrentRoutes(app, dependencies);
+    registerIndexerRoutes(app, dependencies);
+    registerSubtitleRoutes(app, dependencies);
+  }
+
   registerOperationsRoutes(app, dependencies);
   registerProxySettingsRoutes(app, dependencies);
-  registerCategorySettingsRoutes(app, dependencies);
+
+  if (!options.slimMode) {
+    registerCategorySettingsRoutes(app, dependencies);
+  }
+
   registerEventsRoutes(app, eventHub);
   registerSystemRoutes(app, dependencies, eventHub);
   registerBackupRoutes(app, dependencies);
   registerLogsRoutes(app, dependencies);
   registerUpdatesRoutes(app, dependencies);
   registerSetupRoutes(app, dependencies);
-  registerNotificationRoutes(app, dependencies);
-  registerBlocklistRoutes(app, dependencies);
-  registerQualityProfileRoutes(app, dependencies);
-  registerDownloadClientRoutes(app, dependencies);
+
+  if (!options.slimMode) {
+    registerNotificationRoutes(app, dependencies);
+    registerBlocklistRoutes(app, dependencies);
+    registerQualityProfileRoutes(app, dependencies);
+    registerDownloadClientRoutes(app, dependencies);
+  }
+
   registerMediaSettingsRoutes(app, dependencies);
   registerImageRoutes(app, dependencies);
 
@@ -197,9 +212,12 @@ export function createApiServer(
     throw new Error('Scheduler API requires settings and task execution repositories');
   }
 
-  registerCustomFormatRoutes(app, dependencies);
+  if (!options.slimMode) {
+    registerCustomFormatRoutes(app, dependencies);
+    registerImportListRoutes(app, dependencies);
+  }
+
   registerFilterRoutes(app, dependencies);
-  registerImportListRoutes(app, dependencies);
   registerCollectionRoutes(app, dependencies);
   registerFilesystemRoutes(app, dependencies);
   registerImportRoutes(app, dependencies);

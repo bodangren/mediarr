@@ -13,7 +13,7 @@ import {
 import { continueWatchingToJellyfinResume, jellyfinProgressToHeartbeat } from '../jellyfin/playbackState';
 import { proxyJellyfinArtwork, resolveJellyfinArtworkSource } from '../jellyfin/artwork';
 import { createPrismaJellyfinPlaybackState, derivePrismaNextUpCatalogPage, type NextUpCatalogPageOptions } from '../jellyfin/prismaPlaybackState';
-import { buildJellyfinPublicSystemInfo, buildJellyfinSystemInfo, buildTrustedLanUserDto } from '../jellyfin/compatibilityDtos';
+import { buildJellyfinPublicSystemInfo, buildJellyfinSystemInfo, buildTrustedLanUserDto, COMPAT_USER_ID } from '../jellyfin/compatibilityDtos';
 import { sharedPlaybackStateToJellyfinUserData } from '../jellyfin/userData';
 import { createJellyfinReferenceStreamHandler, jellyfinBrowserEntryHandler, jellyfinSocketKeepAliveResponse } from '../jellyfin/referenceSurface';
 
@@ -24,8 +24,6 @@ export interface JellyfinServerOptions {
   lanAddress?: string;
   port?: number;
 }
-
-const COMPAT_USER_ID = '4d656469-6172-7200-0000-000000000001';
 
 function user(serverId: string) {
   return buildTrustedLanUserDto({ serverId, userId: COMPAT_USER_ID, userName: 'Mediarr' });

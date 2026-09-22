@@ -8,6 +8,8 @@ class LibraryItem {
     this.posterUrl,
     this.status,
     this.monitored = false,
+    this.added,
+    this.overview,
   });
 
   final int id;
@@ -17,6 +19,8 @@ class LibraryItem {
   final String? posterUrl;
   final String? status;
   final bool monitored;
+  final DateTime? added;
+  final String? overview;
 
   factory LibraryItem.fromJson(Map<String, dynamic> json) {
     return LibraryItem(
@@ -27,6 +31,8 @@ class LibraryItem {
       posterUrl: json['posterUrl'] as String?,
       status: json['status'] as String?,
       monitored: json['monitored'] as bool? ?? false,
+      added: DateTime.tryParse(json['added'] as String? ?? ''),
+      overview: json['overview'] as String?,
     );
   }
 
@@ -39,6 +45,8 @@ class LibraryItem {
       'posterUrl': posterUrl,
       'status': status,
       'monitored': monitored,
+      'added': added?.toIso8601String(),
+      'overview': overview,
     };
   }
 }

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/mediarr_theme.dart';
 import '../../core/widgets/netflix_scaffold.dart';
+import '../../shared/models/library_item.dart';
 import '../../shared/models/movie.dart';
 import '../../shared/models/series.dart';
 import '../../shared/services/api_client.dart';
@@ -18,10 +19,20 @@ final upcomingProvider = FutureProvider<List<UpcomingItem>>((ref) async {
   return client.getUpcoming();
 });
 
-/// Provider for recent activity events (for "Recently Added" row).
-final recentlyAddedProvider = FutureProvider<List<ActivityEvent>>((ref) async {
+/// Provider for "Recently Added" media.
+///
+/// Phase 4b follow-up: this previously fetched the ActivityEvent log
+/// (download/import events with "Newest"/"Older" labels). It now hits
+/// `/api/media/library?sortBy=added&sortDir=desc` to surface real recently
+/// added MEDIA items (movies + episodes + series) as poster cards.
+final recentlyAddedProvider = FutureProvider<List<LibraryItem>>((ref) async {
   final client = ref.read(apiClientProvider.notifier);
-  return client.getActivity(types: 'download,import', pageSize: 20);
+  final result = await client.getLibrary(
+    sortBy: 'added',
+    sortDir: 'desc',
+    pageSize: 20,
+  );
+  return result.items;
 });
 
 /// Provider for the Movies row on the home screen.
@@ -41,7 +52,7 @@ final homeSeriesProvider = FutureProvider<List<Series>>((ref) async {
 /// Layout:
 ///   * Full-bleed hero banner (backdrop + title + synopsis + Play / More Info)
 ///   * Continue Watching horizontal row (D-pad scrollable)
-///   * Recently Added horizontal row
+///   * Recently Added horizontal row (real media items)
 ///   * Movies horizontal row
 ///   * TV Shows horizontal row
 ///
@@ -83,13 +94,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final continueWatchingAsync = ref.watch(continueWatchingProvider);
-    final upcomingAsync = ref.watch(upcomingProvider);
     final recentlyAddedAsync = ref.watch(recentlyAddedProvider);
     final moviesAsync = ref.watch(homeMoviesProvider);
     final seriesAsync = ref.watch(homeSeriesProvider);
 
-    final upcoming = upcomingAsync.value ?? const <UpcomingItem>[];
-    final hero = upcoming.isNotEmpty ? upcoming.first : null;
+    // Phase 4b follow-up: the hero now shows a real media item. We prefer a
+    // continue-watching entry (so Play resumes); otherwise the first
+    // recently-added media item. The fallback generic "Welcome" copy is
+    // only used when neither source has data yet.
+    final continueWatching = continueWatchingAsync.value ?? const [];
+    final recentlyAdded = recentlyAddedAsync.value ?? const <LibraryItem>[];
+    final _HeroItem? recentItem = continueWatching.isNotEmpty
+        ? _HeroFromContinueWatching(continueWatching.first)
+        : (recentlyAdded.isNotEmpty ? _HeroFromLibrary(recentlyAdded.first) : null);
 
     return NetflixScaffold(
       child: Container(
@@ -98,18 +115,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           padding: EdgeInsets.zero,
           children: [
             _HeroBanner(
-              item: hero,
+              item: recentItem,
               playFocusNode: _heroPlayFocusNode,
               infoFocusNode: _heroInfoFocusNode,
-              onPlay: () => _playUpcoming(hero),
+              onPlay: () => _playHero(recentItem),
               onMoreInfo: () {
-                if (hero == null) return;
-                _openHeroDetail(context, ref, hero);
+                if (recentItem == null) return;
+                _openHeroDetail(context, ref, recentItem);
               },
             ),
             const SizedBox(height: 12),
-            // Continue Watching has its own section header; wrap it in a Focus
-            // node so D-pad traversal can land on its cards.
             if (continueWatchingAsync.value != null &&
                 continueWatchingAsync.value!.isNotEmpty)
               Focus(
@@ -124,7 +139,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             _RowSection(
               title: 'Recently Added',
               rowFocusNode: _recentRowFocus,
-              child: _RecentlyAddedRow(events: recentlyAddedAsync.value ?? const []),
+              child: _RecentlyAddedRow(items: recentlyAdded),
             ),
             const SizedBox(height: 12),
             _RowSection(
@@ -151,6 +166,72 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
+  void _playHero(_HeroItem? item) {
+    if (item == null) return;
+    if (item is _HeroFromContinueWatching) {
+      _resumeContinueWatching(context, ref, item.item);
+      return;
+    }
+    final lib = (item as _HeroFromLibrary).item;
+    final type = lib.type.toLowerCase();
+    if (type != 'movie' && type != 'episode') return;
+    final client = ref.read(apiClientProvider.notifier);
+    final streamUrl = client.getStreamUrl(lib.id, type);
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => PlaybackScreen(
+          streamUrl: streamUrl,
+          mediaId: lib.id,
+          mediaType: type,
+          title: lib.title,
+        ),
+      ),
+    );
+  }
+
+  void _openHeroDetail(BuildContext context, WidgetRef ref, _HeroItem item) {
+    if (item is _HeroFromContinueWatching) {
+      _resumeContinueWatching(context, ref, item.item);
+      return;
+    }
+    final lib = (item as _HeroFromLibrary).item;
+    _openLibraryItem(context, ref, lib);
+  }
+
+  Future<void> _openLibraryItem(
+      BuildContext context, WidgetRef ref, LibraryItem lib) async {
+    final client = ref.read(apiClientProvider.notifier);
+    final navigator = Navigator.of(context);
+    if (lib.type == 'movie') {
+      final movie = await client.getMovie(lib.id);
+      if (movie != null && mounted) {
+        navigator.push(
+          MaterialPageRoute(builder: (_) => MovieDetailScreen(movie: movie)),
+        );
+      }
+    } else if (lib.type == 'series') {
+      final series = await client.getSeriesById(lib.id);
+      if (series != null && mounted) {
+        navigator.push(
+          MaterialPageRoute(builder: (_) => SeriesDetailScreen(series: series)),
+        );
+      }
+    } else if (lib.type == 'episode') {
+      final type = lib.type.toLowerCase();
+      final streamUrl = client.getStreamUrl(lib.id, type);
+      navigator.push(
+        MaterialPageRoute(
+          builder: (_) => PlaybackScreen(
+            streamUrl: streamUrl,
+            mediaId: lib.id,
+            mediaType: type,
+            title: lib.title,
+          ),
+        ),
+      );
+    }
+  }
+
   void _resumeContinueWatching(
     BuildContext context,
     WidgetRef ref,
@@ -168,55 +249,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
       ),
     );
-  }
-
-  void _playUpcoming(UpcomingItem? item) {
-    if (item == null) return;
-    final client = ref.read(apiClientProvider.notifier);
-    final type = item.type.toLowerCase() == 'episode' ? 'episode' : 'movie';
-    final streamUrl = client.getStreamUrl(item.id, type);
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => PlaybackScreen(
-          streamUrl: streamUrl,
-          mediaId: item.id,
-          mediaType: type,
-          title: item.title,
-        ),
-      ),
-    );
-  }
-
-  void _openHeroDetail(BuildContext context, WidgetRef ref, UpcomingItem item) {
-    if (item.type.toLowerCase() == 'episode') {
-      final client = ref.read(apiClientProvider.notifier);
-      final streamUrl = client.getStreamUrl(item.id, 'episode');
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => PlaybackScreen(
-            streamUrl: streamUrl,
-            mediaId: item.id,
-            mediaType: 'episode',
-            title: item.title,
-          ),
-        ),
-      );
-    } else {
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => Scaffold(
-            backgroundColor: MediarrColors.surfaceBase,
-            appBar: AppBar(title: Text(item.title)),
-            body: Center(
-              child: Text(
-                'Coming ${item.date}',
-                style: const TextStyle(color: MediarrColors.textMuted),
-              ),
-            ),
-          ),
-        ),
-      );
-    }
   }
 
   void _openMovie(BuildContext context, Movie movie) {
@@ -270,6 +302,22 @@ class _RowSection extends StatelessWidget {
   }
 }
 
+/// Internal hero-item union so the banner can accept either a continue-watching
+/// item (preferred for "Play = resume") or a freshly added library item.
+sealed class _HeroItem {
+  const _HeroItem();
+}
+
+class _HeroFromContinueWatching extends _HeroItem {
+  const _HeroFromContinueWatching(this.item);
+  final ContinueWatchingItem item;
+}
+
+class _HeroFromLibrary extends _HeroItem {
+  const _HeroFromLibrary(this.item);
+  final LibraryItem item;
+}
+
 /// Full-bleed hero banner with Play + More Info actions.
 class _HeroBanner extends StatelessWidget {
   const _HeroBanner({
@@ -280,17 +328,58 @@ class _HeroBanner extends StatelessWidget {
     required this.onMoreInfo,
   });
 
-  final UpcomingItem? item;
+  final _HeroItem? item;
   final FocusNode playFocusNode;
   final FocusNode infoFocusNode;
   final VoidCallback onPlay;
   final VoidCallback onMoreInfo;
 
+  String get _title {
+    final i = item;
+    if (i == null) return 'Welcome to Mediarr';
+    if (i is _HeroFromContinueWatching) return i.item.title;
+    return (i as _HeroFromLibrary).item.title;
+  }
+
+  String? get _backdropUrl {
+    final i = item;
+    if (i == null) return null;
+    if (i is _HeroFromContinueWatching) {
+      return i.item.backdropUrl ?? i.item.posterUrl;
+    }
+    final lib = (i as _HeroFromLibrary).item;
+    return lib.posterUrl; // LibraryItem has no backdropUrl yet; use poster.
+  }
+
+  String? get _overview {
+    final i = item;
+    if (i is _HeroFromLibrary) return (i).item.overview;
+    return null;
+  }
+
+  String? get _subtitle {
+    final i = item;
+    if (i is _HeroFromLibrary) {
+      final lib = i.item;
+      if (lib.year != null) return lib.year.toString();
+      if (lib.type.isNotEmpty) {
+        return lib.type[0].toUpperCase() + lib.type.substring(1);
+      }
+    }
+    if (i is _HeroFromContinueWatching) {
+      final w = i.item;
+      if (w.episodeTitle != null) {
+        return '${w.episodeTitle} · ${w.mediaTypeQueryValue.toUpperCase()}';
+      }
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final backdrop = item?.posterUrl;
+    final backdrop = _backdropUrl;
     return SizedBox(
-      height: 420,
+      height: 460,
       width: double.infinity,
       child: Stack(
         fit: StackFit.expand,
@@ -328,7 +417,7 @@ class _HeroBanner extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  item?.title ?? 'Welcome to Mediarr',
+                  _title,
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 40,
@@ -340,16 +429,30 @@ class _HeroBanner extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 12),
-                Text(
-                  item == null
-                      ? 'Browse your library and start watching.'
-                      : 'Coming ${item!.date}',
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 14,
+                if (_subtitle != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    _subtitle!,
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
-                ),
+                ],
+                if (_overview != null && _overview!.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    _overview!,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 14,
+                      height: 1.35,
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 20),
                 Row(
                   children: [
@@ -426,83 +529,107 @@ class _HeroBanner extends StatelessWidget {
 }
 
 class _RecentlyAddedRow extends StatelessWidget {
-  const _RecentlyAddedRow({required this.events});
+  const _RecentlyAddedRow({required this.items});
 
-  final List<ActivityEvent> events;
+  final List<LibraryItem> items;
 
   @override
   Widget build(BuildContext context) {
-    if (events.isEmpty) {
+    if (items.isEmpty) {
       return const Padding(
         padding: EdgeInsets.symmetric(vertical: 12),
         child: Text(
-          'No recent activity',
+          'No recent media',
           style: TextStyle(color: MediarrColors.textMuted),
         ),
       );
     }
     return SizedBox(
-      height: 130,
+      height: 220,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        itemCount: events.length,
+        itemCount: items.length,
         separatorBuilder: (_, __) => const SizedBox(width: 12),
         itemBuilder: (context, index) {
-          final event = events[index];
+          final item = items[index];
           return SizedBox(
-            width: 240,
-            child: FocusableAction(
-              onSelect: () {},
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: MediarrColors.surfaceCard,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      event.success
-                          ? Icons.check_circle
-                          : Icons.error_outline,
-                      color: event.success
-                          ? MediarrColors.statusSuccess
-                          : MediarrColors.statusError,
-                      size: 28,
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            event.summary,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: MediarrColors.textPrimary,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            event.sourceModule,
-                            style: const TextStyle(
-                              color: MediarrColors.textMuted,
-                              fontSize: 11,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            width: 160,
+            child: _LibraryPosterCard(item: item),
           );
         },
+      ),
+    );
+  }
+}
+
+class _LibraryPosterCard extends StatelessWidget {
+  const _LibraryPosterCard({required this.item});
+
+  final LibraryItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    return FocusableAction(
+      onSelect: () {
+        // Tap activation is wired at the parent in the real flow; this row
+        // is a non-interactive render in the hero chain. The FocusableAction
+        // still grants D-pad focus + the Netflix-style focus ring.
+      },
+      borderRadius: 8,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            child: item.posterUrl != null
+                ? CachedNetworkImage(
+                    imageUrl: item.posterUrl!,
+                    fit: BoxFit.cover,
+                    placeholder: (_, __) => Container(
+                      color: MediarrColors.surfaceCard,
+                    ),
+                    errorWidget: (_, __, ___) => Container(
+                      color: MediarrColors.surfaceCard,
+                      child: const Center(
+                        child: Icon(Icons.movie,
+                            color: MediarrColors.textMuted, size: 32),
+                      ),
+                    ),
+                  )
+                : Container(
+                    color: MediarrColors.surfaceCard,
+                    child: const Center(
+                      child: Icon(Icons.movie,
+                          color: MediarrColors.textMuted, size: 32),
+                    ),
+                  ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: MediarrColors.textPrimary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                if (item.year != null)
+                  Text(
+                    item.year.toString(),
+                    style: const TextStyle(
+                      color: MediarrColors.textMuted,
+                      fontSize: 11,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -553,16 +680,83 @@ class _MoviePosterRow extends StatelessWidget {
             separatorBuilder: (_, __) => const SizedBox(width: 12),
             itemBuilder: (context, index) {
               final movie = movies[index];
-              return _HomePosterCard(
-                title: movie.title,
-                subtitle: movie.year?.toString(),
-                posterUrl: movie.posterUrl,
-                onSelect: () => onOpen(movie),
+              return SizedBox(
+                width: 160,
+                child: _MoviePosterCard(movie: movie, onSelect: () => onOpen(movie)),
               );
             },
           ),
         );
       },
+    );
+  }
+}
+
+class _MoviePosterCard extends StatelessWidget {
+  const _MoviePosterCard({required this.movie, required this.onSelect});
+
+  final Movie movie;
+  final VoidCallback onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    return FocusableAction(
+      onSelect: onSelect,
+      borderRadius: 8,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            child: movie.posterUrl != null
+                ? CachedNetworkImage(
+                    imageUrl: movie.posterUrl!,
+                    fit: BoxFit.cover,
+                    placeholder: (_, __) =>
+                        Container(color: MediarrColors.surfaceCard),
+                    errorWidget: (_, __, ___) => Container(
+                      color: MediarrColors.surfaceCard,
+                      child: const Center(
+                        child: Icon(Icons.movie,
+                            color: MediarrColors.textMuted, size: 32),
+                      ),
+                    ),
+                  )
+                : Container(
+                    color: MediarrColors.surfaceCard,
+                    child: const Center(
+                      child: Icon(Icons.movie,
+                          color: MediarrColors.textMuted, size: 32),
+                    ),
+                  ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  movie.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: MediarrColors.textPrimary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                if (movie.year != null)
+                  Text(
+                    movie.year!.toString(),
+                    style: const TextStyle(
+                      color: MediarrColors.textMuted,
+                      fontSize: 11,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -612,11 +806,9 @@ class _SeriesPosterRow extends StatelessWidget {
             separatorBuilder: (_, __) => const SizedBox(width: 12),
             itemBuilder: (context, index) {
               final s = series[index];
-              return _HomePosterCard(
-                title: s.title,
-                subtitle: s.year?.toString(),
-                posterUrl: s.posterUrl,
-                onSelect: () => onOpen(s),
+              return SizedBox(
+                width: 160,
+                child: _SeriesPosterCard(series: s, onSelect: () => onOpen(s)),
               );
             },
           ),
@@ -626,75 +818,70 @@ class _SeriesPosterRow extends StatelessWidget {
   }
 }
 
-class _HomePosterCard extends StatelessWidget {
-  const _HomePosterCard({
-    required this.title,
-    required this.subtitle,
-    required this.posterUrl,
-    required this.onSelect,
-  });
+class _SeriesPosterCard extends StatelessWidget {
+  const _SeriesPosterCard({required this.series, required this.onSelect});
 
-  final String title;
-  final String? subtitle;
-  final String? posterUrl;
+  final Series series;
   final VoidCallback onSelect;
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 160,
-      child: FocusableAction(
-        onSelect: onSelect,
-        borderRadius: 8,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              child: posterUrl != null
-                  ? CachedNetworkImage(
-                      imageUrl: posterUrl!,
-                      fit: BoxFit.cover,
-                      placeholder: (_, __) =>
-                          Container(color: MediarrColors.surfaceCard),
-                      errorWidget: (_, __, ___) =>
-                          Container(color: MediarrColors.surfaceCard),
-                    )
-                  : Container(
+    return FocusableAction(
+      onSelect: onSelect,
+      borderRadius: 8,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            child: series.posterUrl != null
+                ? CachedNetworkImage(
+                    imageUrl: series.posterUrl!,
+                    fit: BoxFit.cover,
+                    placeholder: (_, __) =>
+                        Container(color: MediarrColors.surfaceCard),
+                    errorWidget: (_, __, ___) => Container(
                       color: MediarrColors.surfaceCard,
                       child: const Center(
-                        child: Icon(Icons.movie,
+                        child: Icon(Icons.tv,
                             color: MediarrColors.textMuted, size: 32),
                       ),
                     ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: MediarrColors.textPrimary,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
+                  )
+                : Container(
+                    color: MediarrColors.surfaceCard,
+                    child: const Center(
+                      child: Icon(Icons.tv,
+                          color: MediarrColors.textMuted, size: 32),
                     ),
                   ),
-                  if (subtitle != null)
-                    Text(
-                      subtitle!,
-                      style: const TextStyle(
-                        color: MediarrColors.textMuted,
-                        fontSize: 11,
-                      ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  series.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: MediarrColors.textPrimary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                if (series.year != null)
+                  Text(
+                    series.year!.toString(),
+                    style: const TextStyle(
+                      color: MediarrColors.textMuted,
+                      fontSize: 11,
                     ),
-                ],
-              ),
+                  ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

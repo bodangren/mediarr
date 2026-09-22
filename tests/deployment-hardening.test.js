@@ -74,10 +74,10 @@ describe('Docker Engine deployment contract', () => {
       'movieRootFolder',
       'tvRootFolder',
     ]) {
-      expect(main).toContain(setting);
+      expect(startupSources).toContain(setting);
     }
-    expect(main).not.toContain('Data directory initialization skipped');
-    expect(main).not.toMatch(/createFallbackTorrentManager|database-backed torrent manager/);
+    expect(startupSources).not.toContain('Data directory initialization skipped');
+    expect(startupSources).not.toMatch(/createFallbackTorrentManager|database-backed torrent manager/);
   });
 
   it('pins host migration rehearsal to the compose database path', () => {

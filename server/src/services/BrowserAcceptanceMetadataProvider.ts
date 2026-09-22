@@ -62,7 +62,19 @@ export class BrowserAcceptanceMetadataProvider extends MetadataProvider {
       throw new Error('Browser acceptance series fixture was not found');
     }
     return {
-      series: { ...BROWSER_SEARCH_SERIES, tvdbId, seasons: [] },
+      series: {
+        tvdbId,
+        title: BROWSER_SEARCH_SERIES.title,
+        // BaseMedia fields are optional; SeriesSearchResult uses
+        // exactOptionalPropertyTypes, so omit absent fields instead of
+        // passing undefined.
+        status: BROWSER_SEARCH_SERIES.status ?? 'continuing',
+        ...(BROWSER_SEARCH_SERIES.overview !== undefined ? { overview: BROWSER_SEARCH_SERIES.overview } : {}),
+        ...(BROWSER_SEARCH_SERIES.year !== undefined ? { year: BROWSER_SEARCH_SERIES.year } : {}),
+        ...(BROWSER_SEARCH_SERIES.network !== undefined ? { network: BROWSER_SEARCH_SERIES.network } : {}),
+        images: BROWSER_SEARCH_SERIES.images ?? [],
+        seasons: [],
+      },
       episodes: [],
     };
   }

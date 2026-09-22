@@ -1,3 +1,5 @@
+import 'media_file_variant.dart';
+
 /// Movie data model matching the Mediarr server API response.
 class Movie {
   const Movie({
@@ -13,6 +15,7 @@ class Movie {
     this.sizeOnDisk,
     this.runtime,
     this.path,
+    this.fileVariants,
   });
 
   final int id;
@@ -27,8 +30,20 @@ class Movie {
   final int? sizeOnDisk;
   final int? runtime;
   final String? path;
+  final List<MediaFileVariant>? fileVariants;
+
+  /// Effective playability flag.
+  ///
+  /// The server may omit `hasFile` or set it to `false` while still including
+  /// a playable [path] or [fileVariants]. A movie is playable when any of the
+  /// three signals is present.
+  bool get effectiveHasFile =>
+      hasFile ||
+      (path?.isNotEmpty ?? false) ||
+      (fileVariants?.isNotEmpty ?? false);
 
   factory Movie.fromJson(Map<String, dynamic> json) {
+    final rawVariants = json['fileVariants'] as List<dynamic>?;
     return Movie(
       id: json['id'] as int,
       title: json['title'] as String,
@@ -42,6 +57,9 @@ class Movie {
       sizeOnDisk: json['sizeOnDisk'] as int?,
       runtime: json['runtime'] as int?,
       path: json['path'] as String?,
+      fileVariants: rawVariants
+          ?.map((v) => MediaFileVariant.fromJson(v as Map<String, dynamic>))
+          .toList(),
     );
   }
 }

@@ -21,6 +21,9 @@ function createMockDb() {
       findMany: vi.fn(),
       update: vi.fn(),
     },
+    mediaFileVariant: {
+      upsert: vi.fn(),
+    },
   };
 }
 

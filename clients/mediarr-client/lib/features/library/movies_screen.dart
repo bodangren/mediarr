@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/theme/mediarr_theme.dart';
+import '../../core/widgets/netflix_scaffold.dart';
 import '../../shared/models/movie.dart';
 import '../../shared/services/api_client.dart';
-import '../../shared/widgets/media_grid.dart';
 import '../../shared/widgets/poster_card.dart';
 import '../playback/playback_screen.dart';
 import 'continue_watching_section.dart';
@@ -15,7 +16,7 @@ final moviesProvider = FutureProvider<List<Movie>>((ref) async {
   return client.getMovies();
 });
 
-/// Movies library browsing screen.
+/// Movies library browsing screen — dense poster grid, D-pad navigable.
 class MoviesScreen extends ConsumerStatefulWidget {
   const MoviesScreen({super.key});
 
@@ -25,11 +26,14 @@ class MoviesScreen extends ConsumerStatefulWidget {
 
 class _MoviesScreenState extends ConsumerState<MoviesScreen> {
   final _searchController = TextEditingController();
+  final FocusNode _searchFocusNode =
+      FocusNode(debugLabel: 'MoviesScreen.search');
   String _searchQuery = '';
 
   @override
   void dispose() {
     _searchController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
@@ -46,63 +50,126 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
     final moviesAsync = ref.watch(moviesProvider);
     final continueWatchingAsync = ref.watch(continueWatchingProvider);
 
-    return moviesAsync.when(
-      loading: () => const MediaGrid(
-        title: 'Movies',
-        itemCount: 0,
-        itemBuilder: _emptyBuilder,
-        isLoading: true,
+    return NetflixScaffold(
+      child: Scaffold(
+        backgroundColor: MediarrColors.surfaceBase,
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+              child: Row(
+                children: [
+                  Text(
+                    'Movies',
+                    style: Theme.of(context).textTheme.headlineMedium,
+                  ),
+                  const Spacer(),
+                  SizedBox(
+                    width: 280,
+                    child: Focus(
+                      focusNode: _searchFocusNode,
+                      child: TextField(
+                        controller: _searchController,
+                        onChanged: (value) =>
+                            setState(() => _searchQuery = value),
+                        decoration: InputDecoration(
+                          hintText: 'Search...',
+                          prefixIcon: const Icon(Icons.search, size: 20),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          filled: true,
+                          fillColor: MediarrColors.surfaceCard,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          isDense: true,
+                        ),
+                        style: const TextStyle(
+                          color: MediarrColors.textPrimary,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            ContinueWatchingSection(
+              items: continueWatchingAsync.value ?? const [],
+              isLoading: continueWatchingAsync.isLoading,
+              onResume: (item) => _resumeContinueWatching(context, item),
+            ),
+            Expanded(
+              child: moviesAsync.when(
+                loading: () => const Center(
+                  child: CircularProgressIndicator(
+                      color: MediarrColors.accentPrimary),
+                ),
+                error: (error, _) => Center(
+                  child: Text(
+                    'Failed to load movies: $error',
+                    style: const TextStyle(color: MediarrColors.textMuted),
+                  ),
+                ),
+                data: (movies) {
+                  final filtered = _filterMovies(movies);
+                  if (filtered.isEmpty) {
+                    return Center(
+                      child: Text(
+                        _searchQuery.isEmpty
+                            ? 'No movies in library'
+                            : 'No movies match "$_searchQuery"',
+                        style: const TextStyle(
+                          color: MediarrColors.textMuted,
+                          fontSize: 16,
+                        ),
+                      ),
+                    );
+                  }
+                  return GridView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    gridDelegate:
+                        const SliverGridDelegateWithMaxCrossAxisExtent(
+                      maxCrossAxisExtent: 180,
+                      childAspectRatio: 0.6,
+                      crossAxisSpacing: 16,
+                      mainAxisSpacing: 16,
+                    ),
+                    itemCount: filtered.length,
+                    itemBuilder: (context, index) {
+                      final movie = filtered[index];
+                      return PosterCard(
+                        title: movie.title,
+                        posterUrl: movie.posterUrl,
+                        year: movie.year,
+                        quality: movie.quality,
+                        monitored: movie.monitored,
+                        hasFile: movie.hasFile,
+                        autofocus: index == 0,
+                        onPressed: () => _openMovieDetail(context, movie),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
-      error: (error, _) => MediaGrid(
-        title: 'Movies',
-        itemCount: 0,
-        itemBuilder: _emptyBuilder,
-        isEmpty: true,
-        emptyMessage: 'Failed to load movies: $error',
-      ),
-      data: (movies) {
-        final filtered = _filterMovies(movies);
-        return MediaGrid(
-          title: 'Movies',
-          searchController: _searchController,
-          onSearchChanged: (value) => setState(() => _searchQuery = value),
-          topSection: ContinueWatchingSection(
-            items: continueWatchingAsync.value ?? const [],
-            isLoading: continueWatchingAsync.isLoading,
-            onResume: _resumeContinueWatching,
-          ),
-          itemCount: filtered.length,
-          isEmpty: filtered.isEmpty,
-          emptyMessage: _searchQuery.isEmpty
-              ? 'No movies in library'
-              : 'No movies match "$_searchQuery"',
-          itemBuilder: (context, index) {
-            final movie = filtered[index];
-            return PosterCard(
-              title: movie.title,
-              posterUrl: movie.posterUrl,
-              year: movie.year,
-              quality: movie.quality,
-              monitored: movie.monitored,
-              hasFile: movie.hasFile,
-              autofocus: index == 0,
-              onPressed: () => _openMovieDetail(movie),
-            );
-          },
-        );
-      },
     );
   }
 
-  void _openMovieDetail(Movie movie) {
+  void _openMovieDetail(BuildContext context, Movie movie) {
     Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => MovieDetailScreen(movie: movie),
-      ),
+      MaterialPageRoute(builder: (_) => MovieDetailScreen(movie: movie)),
     );
   }
 
-  void _resumeContinueWatching(ContinueWatchingItem item) {
+  void _resumeContinueWatching(
+      BuildContext context, ContinueWatchingItem item) {
     final apiClient = ref.read(apiClientProvider.notifier);
     final type = item.mediaTypeQueryValue;
     final streamUrl = apiClient.getStreamUrl(item.mediaId, type);
@@ -121,7 +188,4 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
       ),
     );
   }
-
-  static Widget _emptyBuilder(BuildContext context, int index) =>
-      const SizedBox();
 }

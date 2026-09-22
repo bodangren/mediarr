@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/mediarr_theme.dart';
+import '../../core/widgets/netflix_scaffold.dart';
 import '../../shared/models/series.dart';
 import '../../shared/services/api_client.dart';
 import '../../shared/widgets/media_detail/action_bar.dart';
@@ -75,7 +76,8 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
     final seasonNumber = _episodeSeasonMap[episode.id] ?? 1;
     final client = ref.read(apiClientProvider.notifier);
     client.searchReleases(
-      query: '${widget.series.title} S${_pad(seasonNumber)}E${_pad(episode.episodeNumber)}',
+      query:
+          '${widget.series.title} S${_pad(seasonNumber)}E${_pad(episode.episodeNumber)}',
       type: 'episode',
     );
   }
@@ -86,36 +88,43 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
   Widget build(BuildContext context) {
     final series = _detail ?? widget.series;
 
-    return Scaffold(
-      body: _loading
-          ? const Center(
-              child: CircularProgressIndicator(
-                color: MediarrColors.accentPrimary,
-              ),
-            )
-          : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.error,
-                          color: MediarrColors.statusError, size: 48),
-                      const SizedBox(height: 12),
-                      Text('Error loading series detail',
-                          style: Theme.of(context).textTheme.titleMedium),
-                      const SizedBox(height: 8),
-                      Text(_error!,
+    return NetflixScaffold(
+      child: Scaffold(
+        backgroundColor: MediarrColors.surfaceBase,
+        body: _loading
+            ? const Center(
+                child: CircularProgressIndicator(
+                  color: MediarrColors.accentPrimary,
+                ),
+              )
+            : _error != null
+                ? Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.error,
+                            color: MediarrColors.statusError, size: 48),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Error loading series detail',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          _error!,
                           style: const TextStyle(
-                              color: MediarrColors.textMuted)),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: _loadDetail,
-                        child: const Text('Retry'),
-                      ),
-                    ],
-                  ),
-                )
-              : _buildContent(context, series),
+                              color: MediarrColors.textMuted),
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: _loadDetail,
+                          child: const Text('Retry'),
+                        ),
+                      ],
+                    ),
+                  )
+                : _buildContent(context, series),
+      ),
     );
   }
 
@@ -211,7 +220,7 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
               episodeNumber: ep.episodeNumber,
               title: ep.title,
               airDateUtc: ep.airDateUtc,
-              hasFile: ep.hasFile,
+              hasFile: ep.effectiveHasFile,
               quality: ep.quality,
             );
           }).toList(),

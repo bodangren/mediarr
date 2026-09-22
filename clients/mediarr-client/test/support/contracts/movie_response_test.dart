@@ -93,11 +93,20 @@ void main() {
       expect(movie.runtime, 148);
       // quality/sizeOnDisk/hasFile are flat fields the UI uses, but the server
       // returns quality via fileVariants[].quality and sizeOnDisk at top level.
-      // The current Movie model does NOT derive hasFile from fileVariants — that
-      // is a known gap tracked in tech-debt for Phase 3 to handle.
+      // The Movie model now also derives effectiveHasFile from hasFile, path,
+      // or fileVariants so the detail screen can still show Play.
       expect(movie.sizeOnDisk, 15000000000);
       expect(movie.quality, isNull);
       expect(movie.hasFile, isFalse);
+      expect(movie.fileVariants, hasLength(1));
+      expect(
+        movie.fileVariants?.first.path,
+        '/media/movies/Inception (2010)/Inception.mkv',
+      );
+      expect(movie.effectiveHasFile, isTrue,
+          reason:
+              'Movie.effectiveHasFile must be true when fileVariants are present, '
+              'even if the server omits or falsifies the flat hasFile field.');
     });
 
     test('survives extra/unknown fields without throwing', () {

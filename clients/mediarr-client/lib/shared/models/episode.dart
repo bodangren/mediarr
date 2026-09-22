@@ -1,3 +1,5 @@
+import 'media_file_variant.dart';
+
 /// Episode data model matching the server API response.
 class Episode {
   const Episode({
@@ -12,6 +14,7 @@ class Episode {
     this.isDownloading = false,
     this.quality,
     this.path,
+    this.fileVariants,
     this.playbackState,
   });
 
@@ -26,9 +29,21 @@ class Episode {
   final bool isDownloading;
   final String? quality;
   final String? path;
+  final List<MediaFileVariant>? fileVariants;
   final EpisodePlaybackState? playbackState;
 
+  /// Effective playability flag.
+  ///
+  /// The server may omit `hasFile` or set it to `false` while still including
+  /// a playable [path] or [fileVariants]. An episode is playable when any of
+  /// the three signals is present.
+  bool get effectiveHasFile =>
+      hasFile ||
+      (path?.isNotEmpty ?? false) ||
+      (fileVariants?.isNotEmpty ?? false);
+
   factory Episode.fromJson(Map<String, dynamic> json) {
+    final rawVariants = json['fileVariants'] as List<dynamic>?;
     return Episode(
       id: json['id'] as int,
       seasonNumber: json['seasonNumber'] as int,
@@ -41,6 +56,9 @@ class Episode {
       isDownloading: json['isDownloading'] as bool? ?? false,
       quality: json['quality'] as String?,
       path: json['path'] as String?,
+      fileVariants: rawVariants
+          ?.map((v) => MediaFileVariant.fromJson(v as Map<String, dynamic>))
+          .toList(),
       playbackState: json['playbackState'] != null
           ? EpisodePlaybackState.fromJson(
               json['playbackState'] as Map<String, dynamic>)

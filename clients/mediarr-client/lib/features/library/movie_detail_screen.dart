@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/mediarr_theme.dart';
+import '../../core/widgets/netflix_scaffold.dart';
 import '../../shared/models/movie.dart';
 import '../../shared/models/subtitle_models.dart';
 import '../../shared/services/api_client.dart';
@@ -33,7 +34,7 @@ class _MovieDetailScreenState extends ConsumerState<MovieDetailScreen> {
   }
 
   Future<void> _loadSubtitles() async {
-    if (!widget.movie.hasFile) return;
+    if (!widget.movie.effectiveHasFile) return;
     setState(() {
       _loadingSubtitles = true;
       _subtitleError = false;
@@ -69,8 +70,6 @@ class _MovieDetailScreenState extends ConsumerState<MovieDetailScreen> {
       }
       return;
     }
-    // The movie this screen renders no longer exists, so leaving the detail
-    // route open would show stale data and offer actions that now 404.
     if (mounted) {
       Navigator.of(context).pop();
     }
@@ -122,7 +121,7 @@ class _MovieDetailScreenState extends ConsumerState<MovieDetailScreen> {
     final movie = widget.movie;
 
     final actions = <ActionBarAction>[
-      if (movie.hasFile)
+      if (movie.effectiveHasFile)
         ActionBarAction(
           label: 'Play',
           icon: Icons.play_arrow,
@@ -142,69 +141,68 @@ class _MovieDetailScreenState extends ConsumerState<MovieDetailScreen> {
       ),
     ];
 
-    return Scaffold(
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Back button
-            Padding(
-              padding: const EdgeInsets.fromLTRB(8, 8, 0, 0),
-              child: IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed: () => Navigator.of(context).pop(),
-                autofocus: true,
-              ),
-            ),
-            // Shared hero
-            MediaHero(
-              posterUrl: movie.posterUrl,
-              title: movie.title,
-              subtitle: movie.year?.toString(),
-            ),
-            // Shared metadata
-            MetadataSection(
-              synopsis: movie.overview,
-              year: movie.year,
-              runtime: movie.runtime,
-            ),
-            // Shared file info (only when there is a file)
-            if (movie.hasFile)
+    return NetflixScaffold(
+      child: Scaffold(
+        backgroundColor: MediarrColors.surfaceBase,
+        body: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: FileInfoCard(
-                  quality: movie.quality,
-                  path: movie.path,
-                  sizeBytes: movie.sizeOnDisk,
+                padding: const EdgeInsets.fromLTRB(8, 8, 0, 0),
+                child: IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed: () => Navigator.of(context).pop(),
+                  autofocus: true,
                 ),
               ),
-            // Subtitles section (only when there is a file)
-            if (movie.hasFile) ...[
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Row(
-                  children: [
-                    Text(
-                      'Subtitles',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const Spacer(),
-                    TextButton.icon(
-                      onPressed: _showSubtitleSearch,
-                      icon: const Icon(Icons.search, size: 18),
-                      label: const Text('Search'),
-                    ),
-                  ],
+              MediaHero(
+                posterUrl: movie.posterUrl,
+                title: movie.title,
+                subtitle: movie.year?.toString(),
+              ),
+              MetadataSection(
+                synopsis: movie.overview,
+                year: movie.year,
+                runtime: movie.runtime,
+              ),
+              if (movie.effectiveHasFile)
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 8),
+                  child: FileInfoCard(
+                    quality: movie.quality,
+                    path: movie.path,
+                    sizeBytes: movie.sizeOnDisk,
+                  ),
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: _buildSubtitleArea(),
-              ),
+              if (movie.effectiveHasFile) ...[
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 8),
+                  child: Row(
+                    children: [
+                      Text(
+                        'Subtitles',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const Spacer(),
+                      TextButton.icon(
+                        onPressed: _showSubtitleSearch,
+                        icon: const Icon(Icons.search, size: 18),
+                        label: const Text('Search'),
+                      ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: _buildSubtitleArea(),
+                ),
+              ],
+              ActionBar(actions: actions),
             ],
-            // Shared action bar
-            ActionBar(actions: actions),
-          ],
+          ),
         ),
       ),
     );

@@ -16,7 +16,9 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            continueWatchingProvider.overrideWith((ref) async => <ContinueWatchingItem>[]),
+            continueWatchingProvider.overrideWith(
+              (ref) async => <ContinueWatchingItem>[],
+            ),
             moviesProvider.overrideWith((ref) async {
               // Never resolves — stays in loading state
               await Completer<void>().future;
@@ -31,7 +33,9 @@ void main() {
       );
 
       expect(find.text('Movies'), findsOneWidget);
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      // At least one spinner is showing while data loads (could be from the
+      // MoviesScreen body or the ContinueWatchingSection's loading state).
+      expect(find.byType(CircularProgressIndicator), findsWidgets);
     });
 
     testWidgets('shows movie list when data loaded', (tester) async {

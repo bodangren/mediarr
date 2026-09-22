@@ -265,7 +265,9 @@ void main() {
         findsOneWidget,
       );
       expect(find.widgetWithText(TextField, 'Port'), findsOneWidget);
-      expect(find.widgetWithText(ElevatedButton, 'Connect'), findsOneWidget);
+      // The new Netflix-style Connect action is a focusable FocusableAction
+      // wrapping a Container with the "Connect" label (not an ElevatedButton).
+      expect(find.text('Connect'), findsWidgets);
 
       mockAdapter.dispose();
     });

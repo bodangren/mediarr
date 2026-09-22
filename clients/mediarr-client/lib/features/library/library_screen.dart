@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
-import '../../core/router/app_router.dart';
 import '../../core/theme/mediarr_theme.dart';
+import '../../core/widgets/netflix_scaffold.dart';
 import '../../shared/models/library_item.dart';
 import '../../shared/services/api_client.dart';
 import '../../shared/widgets/library_item_card.dart';
-import '../library/movie_detail_screen.dart';
-import '../library/series_detail_screen.dart';
+import 'movie_detail_screen.dart';
+import 'series_detail_screen.dart';
 
 /// Sort options for the library grid.
 enum LibrarySort {
@@ -96,7 +95,7 @@ final libraryProvider = FutureProvider.family<
 });
 
 /// A unified library browsing screen with Movies / TV Shows tabs,
-/// sort controls, and pull-to-refresh.
+/// sort controls, and pull-to-refresh. D-pad navigable.
 class LibraryScreen extends ConsumerStatefulWidget {
   const LibraryScreen({super.key});
 
@@ -108,6 +107,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
   LibraryQuery _query = const LibraryQuery();
+  final FocusNode _sortFocusNode = FocusNode(debugLabel: 'LibraryScreen.sort');
 
   @override
   void initState() {
@@ -120,6 +120,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
   void dispose() {
     _tabController.removeListener(_onTabChanged);
     _tabController.dispose();
+    _sortFocusNode.dispose();
     super.dispose();
   }
 
@@ -174,87 +175,90 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
   Widget build(BuildContext context) {
     final libraryAsync = ref.watch(libraryProvider(_query));
 
-    return Scaffold(
-      backgroundColor: MediarrColors.surfaceBase,
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header with tabs and sort
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TabBar(
-                    controller: _tabController,
-                    isScrollable: true,
-                    labelColor: MediarrColors.accentPrimary,
-                    unselectedLabelColor: MediarrColors.textMuted,
-                    indicatorColor: MediarrColors.accentPrimary,
-                    tabs: const [
-                      Tab(text: 'Movies'),
-                      Tab(text: 'TV Shows'),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 16),
-                _SortDropdown(
-                  value: _query.sort,
-                  onChanged: _onSortChanged,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          // Content
-          Expanded(
-            child: libraryAsync.when(
-              loading: () => const Center(
-                child: CircularProgressIndicator(
-                  color: MediarrColors.accentPrimary,
-                ),
-              ),
-              error: (error, _) => Center(
-                child: Text(
-                  'Failed to load library: $error',
-                  style: const TextStyle(color: MediarrColors.textMuted),
-                ),
-              ),
-              data: (result) {
-                if (result.items.isEmpty) {
-                  return _EmptyLibrary(
-                    onAddMedia: () => context.go(AppRoutes.search),
-                  );
-                }
-
-                return RefreshIndicator(
-                  onRefresh: _refresh,
-                  color: MediarrColors.accentPrimary,
-                  backgroundColor: MediarrColors.surfaceCard,
-                  child: GridView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    gridDelegate:
-                        const SliverGridDelegateWithMaxCrossAxisExtent(
-                      maxCrossAxisExtent: 200,
-                      childAspectRatio: 0.6,
-                      crossAxisSpacing: 16,
-                      mainAxisSpacing: 16,
+    return NetflixScaffold(
+      child: Scaffold(
+        backgroundColor: MediarrColors.surfaceBase,
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TabBar(
+                      controller: _tabController,
+                      isScrollable: true,
+                      labelColor: MediarrColors.accentPrimary,
+                      unselectedLabelColor: MediarrColors.textMuted,
+                      indicatorColor: MediarrColors.accentPrimary,
+                      tabs: const [
+                        Tab(text: 'Movies'),
+                        Tab(text: 'TV Shows'),
+                      ],
                     ),
-                    itemCount: result.items.length,
-                    itemBuilder: (context, index) {
-                      final item = result.items[index];
-                      return LibraryItemCard(
-                        item: item,
-                        autofocus: index == 0,
-                        onTap: () => _openDetail(item),
-                      );
-                    },
                   ),
-                );
-              },
+                  const SizedBox(width: 16),
+                  Focus(
+                    focusNode: _sortFocusNode,
+                    child: _SortDropdown(
+                      value: _query.sort,
+                      onChanged: _onSortChanged,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: 16),
+            Expanded(
+              child: libraryAsync.when(
+                loading: () => const Center(
+                  child: CircularProgressIndicator(
+                    color: MediarrColors.accentPrimary,
+                  ),
+                ),
+                error: (error, _) => Center(
+                  child: Text(
+                    'Failed to load library: $error',
+                    style: const TextStyle(color: MediarrColors.textMuted),
+                  ),
+                ),
+                data: (result) {
+                  if (result.items.isEmpty) {
+                    return _EmptyLibrary(
+                      onAddMedia: () {},
+                    );
+                  }
+
+                  return RefreshIndicator(
+                    onRefresh: _refresh,
+                    color: MediarrColors.accentPrimary,
+                    backgroundColor: MediarrColors.surfaceCard,
+                    child: GridView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      gridDelegate:
+                          const SliverGridDelegateWithMaxCrossAxisExtent(
+                        maxCrossAxisExtent: 180,
+                        childAspectRatio: 0.6,
+                        crossAxisSpacing: 16,
+                        mainAxisSpacing: 16,
+                      ),
+                      itemCount: result.items.length,
+                      itemBuilder: (context, index) {
+                        final item = result.items[index];
+                        return LibraryItemCard(
+                          item: item,
+                          autofocus: index == 0,
+                          onTap: () => _openDetail(item),
+                        );
+                      },
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -322,14 +326,24 @@ class _EmptyLibrary extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 24),
-          ElevatedButton.icon(
-            onPressed: onAddMedia,
-            icon: const Icon(Icons.search),
-            label: const Text('Add Media'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: MediarrColors.accentPrimary,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          FocusableAction(
+            onSelect: onAddMedia,
+            borderRadius: 8,
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 24, vertical: 12),
+              decoration: BoxDecoration(
+                color: MediarrColors.accentPrimary,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Text(
+                'Add Media',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
           ),
         ],

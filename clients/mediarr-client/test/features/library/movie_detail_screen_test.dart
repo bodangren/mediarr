@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mediarr_client/core/theme/mediarr_theme.dart';
 import 'package:mediarr_client/features/library/movie_detail_screen.dart';
+import 'package:mediarr_client/shared/models/media_file_variant.dart';
 import 'package:mediarr_client/shared/models/movie.dart';
 import 'package:mediarr_client/shared/models/subtitle_models.dart';
 import 'package:mediarr_client/shared/services/api_client.dart';
@@ -305,6 +306,75 @@ void main() {
             reason:
                 'Tapping Search Upgrades must surface feedback via a SnackBar '
                 '(not just the bottom-sheet QualityUpgradeSheet).');
+      },
+    );
+
+    testWidgets(
+      'Play, FileInfoCard, and subtitles appear when hasFile is false but a '
+      'non-empty path is present',
+      (tester) async {
+        const movieWithPath = Movie(
+          id: 11,
+          title: 'Imported Via Path',
+          year: 2024,
+          overview: 'No hasFile but has path.',
+          monitored: true,
+          hasFile: false,
+          path: '/media/movies/imported-via-path.mkv',
+        );
+
+        await pumpDetail(tester, movie: movieWithPath);
+
+        expect(find.text('Play'), findsOneWidget,
+            reason:
+                'A movie with a non-empty path must expose Play even when '
+                'hasFile is false.');
+        expect(find.byType(FileInfoCard), findsOneWidget,
+            reason:
+                'A movie with a non-empty path must show the FileInfoCard.');
+        expect(find.text('Subtitles'), findsOneWidget,
+            reason:
+                'A movie with a non-empty path must show the subtitles section.');
+        expect(fakeClient.getMovieSubtitlesCalls, contains(11),
+            reason:
+                'A movie with a non-empty path must fetch subtitles.');
+      },
+    );
+
+    testWidgets(
+      'Play, FileInfoCard, and subtitles appear when hasFile is false but '
+      'fileVariants are present',
+      (tester) async {
+        const movieWithVariants = Movie(
+          id: 12,
+          title: 'Imported Via Variants',
+          year: 2024,
+          overview: 'No hasFile but has fileVariants.',
+          monitored: true,
+          hasFile: false,
+          fileVariants: [
+            MediaFileVariant(
+              path: '/media/movies/imported-via-variants.mkv',
+              quality: 'Bluray-1080p',
+            ),
+          ],
+        );
+
+        await pumpDetail(tester, movie: movieWithVariants);
+
+        expect(find.text('Play'), findsOneWidget,
+            reason:
+                'A movie with non-empty fileVariants must expose Play even '
+                'when hasFile is false.');
+        expect(find.byType(FileInfoCard), findsOneWidget,
+            reason:
+                'A movie with non-empty fileVariants must show the FileInfoCard.');
+        expect(find.text('Subtitles'), findsOneWidget,
+            reason:
+                'A movie with non-empty fileVariants must show the subtitles section.');
+        expect(fakeClient.getMovieSubtitlesCalls, contains(12),
+            reason:
+                'A movie with non-empty fileVariants must fetch subtitles.');
       },
     );
 

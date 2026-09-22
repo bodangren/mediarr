@@ -12,9 +12,9 @@ export const BROWSER_ACCEPTANCE_COMPLETION_DELAY_MS = 1_500;
 
 export interface BrowserAcceptanceTorrentManagerOptions {
   incompleteDirectory: string;
-  completeDirectory?: string;
-  sourceFile?: string;
-  completionDelayMs?: number;
+  completeDirectory?: string | undefined;
+  sourceFile?: string | undefined;
+  completionDelayMs?: number | undefined;
 }
 
 export class BrowserAcceptanceIndexer extends BaseIndexer {
@@ -30,8 +30,8 @@ export class BrowserAcceptanceIndexer extends BaseIndexer {
 
 export class BrowserAcceptanceTorrentManager extends EventEmitter {
   private readonly incompleteDirectory: string;
-  private readonly completeDirectory?: string;
-  private readonly sourceFile?: string;
+  private readonly completeDirectory?: string | undefined;
+  private readonly sourceFile?: string | undefined;
   private readonly completionDelayMs: number;
   private readonly completionTimers = new Map<string, NodeJS.Timeout>();
   private readonly completionContexts = new Map<string, { name: string }>();

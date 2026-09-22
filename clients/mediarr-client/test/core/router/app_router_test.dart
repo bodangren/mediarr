@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mediarr_client/core/router/app_router.dart';
 import 'package:mediarr_client/features/discovery/discovery_service.dart';
 import 'package:mediarr_client/features/calendar/calendar_screen.dart';
+import 'package:mediarr_client/features/home/home_screen.dart';
 import 'package:mediarr_client/features/library/continue_watching_section.dart';
 import 'package:mediarr_client/features/library/movies_screen.dart';
 import 'package:mediarr_client/features/library/series_screen.dart';
@@ -74,6 +75,12 @@ void main() {
           ),
           continueWatchingProvider.overrideWith((ref) async => const []),
           calendarProvider.overrideWith((ref, params) async => {}),
+          upcomingProvider.overrideWith((ref) async => const []),
+          recentlyAddedProvider.overrideWith((ref) async => const []),
+          homeMoviesProvider.overrideWith((ref) async => const <Movie>[]),
+          homeSeriesProvider.overrideWith((ref) async => const <Series>[]),
+          moviesProvider.overrideWith((ref) async => const <Movie>[]),
+          seriesListProvider.overrideWith((ref) async => const <Series>[]),
           ...overrides,
         ],
       );
@@ -94,8 +101,10 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Home'), findsWidgets);
-      expect(find.text('Upcoming'), findsOneWidget);
+      // Netflix layout: row headers instead of an "Upcoming" standalone row.
+      expect(find.text('Recently Added'), findsOneWidget);
+      expect(find.text('Movies'), findsWidgets);
+      expect(find.text('TV Shows'), findsOneWidget);
     });
 
     testWidgets('navigates to calendar screen via shell route', (tester) async {

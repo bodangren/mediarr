@@ -14,6 +14,7 @@ import { latestPlaybackMap, serializePlaybackState } from '../utils/playbackHelp
 import { parseLibraryFilters, applyLibraryFilters } from '../utils/queryHelpers';
 import { safePath } from '../utils/safePath';
 import { getSetupStatus } from './setupRoutes';
+import { deriveHasFile } from '../utils/hasFileHelpers';
 
 function filterMovies(items: any[], query: Record<string, unknown>): any[] {
   const filters = parseLibraryFilters(query);
@@ -81,13 +82,17 @@ export function registerMovieRoutes(
       },
     });
 
-    const itemsWithSize = allItems.map((movie: any) => ({
+    const itemsWithSize = await Promise.all(allItems.map(async (movie: any) => ({
       ...movie,
+      hasFile: await deriveHasFile({
+        fileVariants: movie.fileVariants,
+        path: movie.path,
+      }),
       sizeOnDisk: (movie.fileVariants ?? []).reduce(
         (sum: number, v: any) => sum + Number(v.fileSize ?? 0),
         0,
       ),
-    }));
+    })));
     const movieIds = itemsWithSize.map((movie: any) => movie.id);
     const playbackRows = movieIds.length > 0 && (deps.prisma as any).playbackProgress?.findMany
       ? await (deps.prisma as any).playbackProgress.findMany({
@@ -270,8 +275,15 @@ export function registerMovieRoutes(
         }
       : null;
 
+    const { fileVariants: _omitVariants, ...movieWithoutVariants } = found;
+    const hasFile = await deriveHasFile({
+      fileVariants: found.fileVariants,
+      path: found.path,
+    });
+
     return sendSuccess(reply, {
-      ...found,
+      ...movieWithoutVariants,
+      hasFile,
       sizeOnDisk,
       collection,
       playbackState: serializePlaybackState(playbackState),
@@ -790,11 +802,9 @@ export function registerMovieRoutes(
           },
         });
 
-        // Update movie hasFile status
-        await (deps.prisma as any).movie.update({
-          where: { id: movie.id },
-          data: { hasFile: true },
-        });
+        // The Movie table has no hasFile column; hasFile is derived at
+        // response time from fileVariants + a playable path. The upsert above
+        // is the single source of truth — no separate write needed here.
 
         imported++;
       } catch (error) {

@@ -82,6 +82,11 @@ export class LibraryScanService {
         // Mark movie path as null (missing) only if it was previously set
         await (this.prisma as any).movie.update({ where: { id: movie.id }, data: { path: null } });
         missing++;
+      } else {
+        // The file is linked but may lack a MediaFileVariant row (scan or
+        // manual import linked the path without one); playback resolves
+        // through variants, so heal the row here.
+        await this.ensureVariant('MOVIE', movie.id, movie.path);
       }
     }
 
@@ -97,6 +102,7 @@ export class LibraryScanService {
         const cleanFilename = filename.replace(/[^a-z0-9]/g, '');
         if (cleanFilename.includes(cleanTitle) && cleanFilename.includes(String(movie.year))) {
           await (this.prisma as any).movie.update({ where: { id: movie.id }, data: { path: videoFile } });
+          await this.ensureVariant('MOVIE', movie.id, videoFile);
           added++;
           break;
         }
@@ -125,6 +131,8 @@ export class LibraryScanService {
       if (!exists) {
         await (this.prisma as any).episode.update({ where: { id: ep.id }, data: { path: null } });
         missing++;
+      } else {
+        await this.ensureVariant('EPISODE', ep.id, ep.path);
       }
     }
 
@@ -138,6 +146,22 @@ export class LibraryScanService {
     }
 
     return { added, missing, subtitles };
+  }
+
+  /**
+   * Creates or repoints the MediaFileVariant row for a linked file. Playback
+   * resolves stream sources through variant rows, not the Movie/Episode.path
+   * column, so every scan link must have one. Keyed on (mediaType, path) like
+   * ImportManager's import-time upsert; re-running against a healthy library
+   * is a no-op.
+   */
+  private async ensureVariant(mediaType: 'MOVIE' | 'EPISODE', ownerId: number, filePath: string): Promise<void> {
+    const ownerField = mediaType === 'MOVIE' ? 'movieId' : 'episodeId';
+    await (this.prisma as any).mediaFileVariant.upsert({
+      where: { mediaType_path: { mediaType, path: filePath } },
+      create: { mediaType, [ownerField]: ownerId, path: filePath, fileSize: BigInt(0) },
+      update: { [ownerField]: ownerId },
+    });
   }
 
   private async pathExists(filePath: string): Promise<boolean> {

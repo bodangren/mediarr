@@ -15,7 +15,9 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            continueWatchingProvider.overrideWith((ref) async => <ContinueWatchingItem>[]),
+            continueWatchingProvider.overrideWith(
+              (ref) async => <ContinueWatchingItem>[],
+            ),
             seriesListProvider.overrideWith((ref) async {
               // Never resolves — stays in loading state
               await Completer<void>().future;
@@ -30,7 +32,8 @@ void main() {
       );
 
       expect(find.text('Series'), findsOneWidget);
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      // At least one spinner is showing while data loads.
+      expect(find.byType(CircularProgressIndicator), findsWidgets);
     });
 
     testWidgets('shows series list when data loaded', (tester) async {

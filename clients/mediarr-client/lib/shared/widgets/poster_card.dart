@@ -2,9 +2,11 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/theme/mediarr_theme.dart';
-import '../../core/widgets/focusable_card.dart';
+import '../../core/widgets/netflix_scaffold.dart';
 
 /// A poster card showing a media item's cover art with metadata overlay.
+///
+/// Wrapped in [FocusableAction] for Netflix-style D-pad focus zoom + ring.
 class PosterCard extends StatelessWidget {
   const PosterCard({
     super.key,
@@ -29,15 +31,13 @@ class PosterCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FocusableCard(
-      onPressed: onPressed,
+    return FocusableAction(
+      onSelect: onPressed,
       autofocus: autofocus,
-      width: 180,
-      height: 300,
+      borderRadius: 8,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Poster image
           Expanded(
             child: posterUrl != null
                 ? CachedNetworkImage(
@@ -49,7 +49,6 @@ class PosterCard extends StatelessWidget {
                   )
                 : _PosterPlaceholder(title: title),
           ),
-          // Metadata bar
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
             color: MediarrColors.surfaceElevated,

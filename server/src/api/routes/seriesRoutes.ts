@@ -21,6 +21,7 @@ import { determineEpisodeStatus, type EpisodeStatus } from '../utils/episodeStat
 import { safePath } from '../utils/safePath';
 import { isPathWithinRoots } from '../utils/pathValidation';
 import { getSetupStatus } from './setupRoutes';
+import { deriveHasFile } from '../utils/hasFileHelpers';
 
 // Response type for calendar endpoint
 interface CalendarEpisode {
@@ -425,6 +426,20 @@ export function registerSeriesRoutes(
       : [];
     const playbackMap = latestPlaybackMap(playbackRows);
 
+    // deriveHasFile probes the filesystem, so resolve every episode flag
+    // before the synchronous season aggregation below.
+    const allEpisodes = (record.seasons || []).flatMap((season: any) => season.episodes || []);
+    const hasFileByEpisodeId = new Map<number, boolean>();
+    await Promise.all(allEpisodes.map(async (episode: any) => {
+      hasFileByEpisodeId.set(
+        episode.id,
+        await deriveHasFile({
+          fileVariants: episode.fileVariants,
+          path: episode.path,
+        }),
+      );
+    }));
+
     const augmentedSeasons = (record.seasons || []).map((season: any) => {
       let seasonTotal = 0;
       let seasonOnDisk = 0;
@@ -435,7 +450,7 @@ export function registerSeriesRoutes(
 
       const augmentedEpisodes = (season.episodes || []).map((episode: any) => {
         const { fileVariants: _fv, ...episodeData } = episode;
-        const hasFile = !!episode.path;
+        const hasFile = hasFileByEpisodeId.get(episode.id) ?? false;
         const isDownloading = downloadingEpisodes.has(`${episode.seasonNumber}-${episode.episodeNumber}`);
         const playback = playbackMap.get(episode.id);
 

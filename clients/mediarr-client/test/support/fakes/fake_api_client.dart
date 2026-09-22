@@ -172,6 +172,45 @@ class FakeMediarrApiClient extends MediarrApiClient {
     return searchSubtitlesReturn;
   }
 
+  // --- getPlaybackManifest (PlaybackScreen._startPlayback) ---
+
+  PlaybackManifest? getPlaybackManifestReturn;
+  Object? getPlaybackManifestError;
+  final List<({int mediaId, String type})> getPlaybackManifestCalls = [];
+
+  @override
+  Future<PlaybackManifest?> getPlaybackManifest({
+    required int mediaId,
+    required String type,
+    String? userId,
+  }) async {
+    getPlaybackManifestCalls.add((mediaId: mediaId, type: type));
+    if (getPlaybackManifestError != null) throw getPlaybackManifestError!;
+    return getPlaybackManifestReturn;
+  }
+
+  // --- reportPlaybackProgress (PlaybackService progress timer) ---
+
+  final List<({int mediaId, String type, int positionSeconds, int durationSeconds})>
+      reportPlaybackProgressCalls = [];
+  Object? reportPlaybackProgressError;
+
+  @override
+  Future<void> reportPlaybackProgress({
+    required int mediaId,
+    required String type,
+    required int positionSeconds,
+    required int durationSeconds,
+  }) async {
+    reportPlaybackProgressCalls.add((
+      mediaId: mediaId,
+      type: type,
+      positionSeconds: positionSeconds,
+      durationSeconds: durationSeconds,
+    ));
+    if (reportPlaybackProgressError != null) throw reportPlaybackProgressError!;
+  }
+
   // --- downloadSubtitle (SubtitleSearchSheet) ---
 
   String? downloadSubtitleReturn;

@@ -579,7 +579,9 @@ export class Scheduler {
   }
 
   /**
-   * Schedule daily library scan to reconcile DB with filesystem.
+   * Schedule daily library scan to reconcile DB with filesystem. The optional
+   * afterScan hook (metadata artwork backfill) runs only when the scan itself
+   * succeeded; a failed scan must not pile provider traffic on a broken state.
    */
   scheduleLibraryScan(
     libraryScanService: {
@@ -588,12 +590,16 @@ export class Scheduler {
     settingsProvider: { get: () => Promise<{ mediaManagement?: { movieRootFolder?: string; tvRootFolder?: string } }> },
     name = 'library-scan',
     cronExpression = '0 2 * * *',
+    afterScan?: () => Promise<unknown>,
   ): void {
     this.schedule(name, cronExpression, async () => {
       const settings = await settingsProvider.get();
       const movieRootFolder = settings.mediaManagement?.movieRootFolder ?? '';
       const tvRootFolder = settings.mediaManagement?.tvRootFolder ?? '';
       await libraryScanService.scanAll({ movieRootFolder, tvRootFolder });
+      if (afterScan) {
+        await afterScan();
+      }
     });
   }
 

@@ -41,6 +41,12 @@ export interface MovieDetails extends BaseMedia {
   physicalRelease?: string;
 }
 
+export interface MovieArtwork {
+  posterUrl?: string | undefined;
+  backdropUrl?: string | undefined;
+  overview?: string | undefined;
+}
+
 /**
  * Service to fetch metadata for TV series from SkyHook (Sonarr's metadata proxy).
  */
@@ -270,6 +276,40 @@ export class MetadataProvider {
       overview: match.overview,
       year: this.parseYear(match.release_date),
       images: match.poster_path ? [{ coverType: 'poster', url: `https://image.tmdb.org/t/p/w500${match.poster_path}` }] : [],
+    };
+  }
+
+  /**
+   * Fetch artwork-sized images and overview for a movie. Poster resolves at
+   * w500, backdrop at w1280, as full image.tmdb.org URLs. Empty or absent
+   * fields come back undefined so callers can treat them as "still missing".
+   */
+  async getMovieArtwork(tmdbId: number, fetchFn?: any): Promise<MovieArtwork> {
+    const settings = await this.settingsService.get();
+    const apiKey = settings.apiKeys.tmdbApiKey;
+
+    if (!apiKey) {
+      throw new Error('TMDB API Key is missing. Please configure it in settings.');
+    }
+
+    const url = `${this.movieBaseUrl}/movie/${tmdbId}?api_key=${encodeURIComponent(apiKey)}`;
+    const response = await this.httpClient.get(url, {}, fetchFn);
+
+    if (!response.ok) {
+      throw new Error(`Failed to get movie artwork: ${response.status} ${response.body}`);
+    }
+
+    const movie = JSON.parse(response.body);
+    return {
+      posterUrl: movie.poster_path
+        ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
+        : undefined,
+      backdropUrl: movie.backdrop_path
+        ? `https://image.tmdb.org/t/p/w1280${movie.backdrop_path}`
+        : undefined,
+      overview: typeof movie.overview === 'string' && movie.overview.length > 0
+        ? movie.overview
+        : undefined,
     };
   }
 

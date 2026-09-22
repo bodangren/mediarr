@@ -29,6 +29,15 @@ import { readMigrationMetadata, type MigrationMetadata } from './migrationCompat
 // It deliberately does NOT introduce a second migration ledger. `__drizzle_migrations`
 // remains the single source of truth so `reconcileLegacyMigrationState` and any
 // future `drizzle-kit` invocation continue to agree with it.
+//
+// Journal `when` timestamps are NOT required to be monotonic. Migration
+// 0007_metadata_backdrop_urls carries a baseline-era `when` on purpose:
+// drizzle-orm's migrator (and `drizzle-kit migrate`) applies every migration
+// whose `when` exceeds the maximum recorded `created_at`, so a `when` newer
+// than the legacy migrations makes it replay 0007's `ALTER TABLE Movie/Series`
+// against partially-ledgered legacy databases that predate those tables. This
+// runner matches ledger entries by exact `when` membership instead, so it
+// still applies 0007 exactly once to databases that lack the new columns.
 
 const MIGRATIONS_TABLE = '__drizzle_migrations';
 const STATEMENT_SEPARATOR = '--> statement-breakpoint';

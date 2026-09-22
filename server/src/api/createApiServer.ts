@@ -37,6 +37,7 @@ import { registerTorrentRoutes } from './routes/torrentRoutes';
 import { registerUpdatesRoutes } from './routes/updatesRoutes';
 import { registerSetupRoutes } from './routes/setupRoutes';
 import { registerImageRoutes } from './routes/imageRoutes';
+import { registerMetadataRoutes } from './routes/metadataRoutes';
 import { registerSchedulerRoutes } from './routes/schedulerRoutes';
 import type { ApiDependencies, ApiServerOptions } from './types';
 
@@ -199,6 +200,7 @@ export function createApiServer(
 
   registerMediaSettingsRoutes(app, dependencies);
   registerImageRoutes(app, dependencies);
+  registerMetadataRoutes(app, dependencies);
 
   if (dependencies.scheduler && dependencies.settingsService && dependencies.taskExecutionsRepository) {
     dependencies.scheduler.setTaskExecutionsRepository(dependencies.taskExecutionsRepository);

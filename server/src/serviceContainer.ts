@@ -48,6 +48,7 @@ import {
 import { MediaSearchService } from './services/MediaSearchService';
 import { MediaService } from './services/MediaService';
 import { MetadataProvider } from './services/MetadataProvider';
+import { MetadataRefreshService } from './services/MetadataRefreshService';
 import { BrowserAcceptanceMetadataProvider } from './services/BrowserAcceptanceMetadataProvider';
 import { BrowserAcceptanceSubtitleProvider } from './services/BrowserAcceptanceSubtitleProvider';
 import { PlaybackService } from './services/PlaybackService';
@@ -154,6 +155,7 @@ export interface ServiceContainer {
   readonly importManager: ImportManager;
   readonly libraryScanService: LibraryScanService;
   readonly metadataProvider: MetadataProvider | BrowserAcceptanceMetadataProvider;
+  readonly metadataRefreshService: MetadataRefreshService;
   readonly playbackService: PlaybackService;
   readonly playbackRepository: PlaybackRepository;
   readonly discoveryService: DiscoveryService;
@@ -316,6 +318,10 @@ export async function createServiceContainer(
   const backupService = new BackupService(dbFilePath, backupDir);
   const systemHealthService = new SystemHealthService(prisma);
   const mediaService = new MediaService(prisma, metadataProvider, activityEventEmitter);
+
+  // Artwork/overview backfill is a kept service: it repairs metadata that a
+  // filesystem scan cannot know, and it runs in slim mode too.
+  const metadataRefreshService = new MetadataRefreshService(prisma, metadataProvider as MetadataProvider);
 
   // ImportManager is a kept service (deterministic library backstop). It only
   // subscribes to torrent events, so slim mode passes null: there is no
@@ -512,6 +518,7 @@ export async function createServiceContainer(
         logReaderService: globalLogBuffer,
         backupService,
         libraryScanService,
+        metadataRefreshService,
         systemHealthService,
         updateService,
         importManager,
@@ -557,6 +564,7 @@ export async function createServiceContainer(
         logReaderService: globalLogBuffer,
         backupService,
         libraryScanService,
+        metadataRefreshService,
         systemHealthService,
         updateService,
         catalogCache: arr!.catalogCache,
@@ -608,7 +616,18 @@ export async function createServiceContainer(
     }
 
     try {
-      scheduler.scheduleLibraryScan(libraryScanService, settingsService);
+      scheduler.scheduleLibraryScan(
+        libraryScanService,
+        settingsService,
+        'library-scan',
+        undefined,
+        async () => {
+          const summary = await metadataRefreshService.refreshAll();
+          console.log(
+            `Metadata refresh completed: ${summary.moviesRefreshed} movie(s), ${summary.seriesRefreshed} series refreshed, ${summary.failures} failure(s).`,
+          );
+        },
+      );
       console.log('Library scan scheduled daily at 2 AM.');
     } catch (error) {
       console.error('Failed to schedule library scan:', error);
@@ -672,6 +691,7 @@ export async function createServiceContainer(
     importManager,
     libraryScanService,
     metadataProvider,
+    metadataRefreshService,
     playbackService,
     playbackRepository,
     discoveryService,

@@ -58,6 +58,10 @@ describe('LibraryScanService creates playable MediaFileVariant rows', () => {
     fs.writeFileSync(scanTargetFile, 'scan-target-bytes');
     fs.writeFileSync(prelinkedMovieFile, 'prelinked-bytes');
     fs.writeFileSync(episodeFile, 'episode-bytes');
+    // Sidecar subtitles next to the linked videos.
+    fs.writeFileSync(path.join(movieRoot, 'Scan Target (2020).zho.srt'), '1\n00:00:01,000 --> 00:00:02,000\nzh line\n');
+    fs.writeFileSync(path.join(movieRoot, 'Prelinked Movie (2019).eng.forced.srt'), '1\n00:00:01,000 --> 00:00:02,000\neng line\n');
+    fs.writeFileSync(path.join(tvRoot, 'Show', 'Season 01', 'Show - S01E01 - Pilot.chs.ass'), '[Script Info]\n');
 
     const settingsService = {
       get: async () => ({
@@ -69,7 +73,8 @@ describe('LibraryScanService creates playable MediaFileVariant rows', () => {
 
   beforeEach(() => {
     client.sqlite.exec(
-      'DELETE FROM "MediaFileVariant";'
+      'DELETE FROM "VariantSubtitleTrack";'
+      + ' DELETE FROM "MediaFileVariant";'
       + ' DELETE FROM "Episode";'
       + ' DELETE FROM "Season";'
       + ' DELETE FROM "Series";'
@@ -177,5 +182,44 @@ describe('LibraryScanService creates playable MediaFileVariant rows', () => {
 
     const allVariants = await (client as any).mediaFileVariant.findMany({});
     expect(allVariants).toHaveLength(3);
+  });
+
+  it('registers sidecar subtitle tracks with ISO 639-2 language codes on the manifest', async () => {
+    await scanService.scanAll({ movieRootFolder: movieRoot, tvRootFolder: tvRoot });
+
+    const movieManifest = await playbackService.buildManifest({ mediaType: 'MOVIE', mediaId: MOVIE_ID });
+    expect(movieManifest.subtitles).toHaveLength(1);
+    expect(movieManifest.subtitles[0]).toEqual(expect.objectContaining({
+      languageCode: 'zho',
+      format: 'srt',
+      isForced: false,
+      isHi: false,
+    }));
+
+    const episodeManifest = await playbackService.buildManifest({ mediaType: 'EPISODE', mediaId: EPISODE_ID });
+    expect(episodeManifest.subtitles).toHaveLength(1);
+    expect(episodeManifest.subtitles[0]).toEqual(expect.objectContaining({
+      languageCode: 'zho',
+      format: 'ass',
+    }));
+  });
+
+  it('parses forced / hi flags and plain language suffixes from sidecar names', async () => {
+    await scanService.scanAll({ movieRootFolder: movieRoot, tvRootFolder: tvRoot });
+
+    const manifest = await playbackService.buildManifest({ mediaType: 'MOVIE', mediaId: PRELINKED_MOVIE_ID });
+    expect(manifest.subtitles).toHaveLength(1);
+    expect(manifest.subtitles[0]).toEqual(expect.objectContaining({
+      languageCode: 'eng',
+      isForced: true,
+    }));
+  });
+
+  it('does not duplicate subtitle tracks on a second scan', async () => {
+    await scanService.scanAll({ movieRootFolder: movieRoot, tvRootFolder: tvRoot });
+    await scanService.scanAll({ movieRootFolder: movieRoot, tvRootFolder: tvRoot });
+
+    const tracks = await (client as any).variantSubtitleTrack.findMany({});
+    expect(tracks).toHaveLength(3);
   });
 });

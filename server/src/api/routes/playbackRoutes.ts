@@ -46,6 +46,9 @@ function getSubtitleMimeType(filePath: string): string {
   if (extension === '.vtt') {
     return 'text/vtt; charset=utf-8';
   }
+  if (extension === '.ass') {
+    return 'text/x-ssa; charset=utf-8';
+  }
 
   return 'application/x-subrip; charset=utf-8';
 }

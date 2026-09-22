@@ -12,6 +12,33 @@ export interface ScanSummary {
 
 const VIDEO_EXTENSIONS = new Set(['.mkv', '.mp4', '.avi', '.ts', '.m4v']);
 const SUBTITLE_EXTENSIONS = new Set(['.srt', '.ass', '.sub', '.vtt']);
+const SIDECAR_SUBTITLE_EXTENSIONS = new Set(['.srt', '.ass', '.vtt']);
+
+/**
+ * Sidecar filename token → ISO 639-2 language code. The Flutter client picks
+ * Chinese Simplified subtitles by matching `zho`, `chi`, or `zh-Hans`
+ * prefixes, and English audio by `eng`, so scan-created track rows must use
+ * these codes (not the 2-letter codes the manual subtitle UI stores).
+ */
+const SIDECAR_LANGUAGE_TOKEN_MAP = new Map<string, string>([
+  ['en', 'eng'],
+  ['eng', 'eng'],
+  ['english', 'eng'],
+  ['zh', 'zho'],
+  ['zho', 'zho'],
+  ['chs', 'zho'],
+  ['sc', 'zho'],
+  ['cn', 'zho'],
+  ['chi', 'chi'],
+  ['cht', 'chi'],
+  ['tc', 'chi'],
+  ['ja', 'jpn'],
+  ['jpn', 'jpn'],
+  ['japanese', 'jpn'],
+  ['th', 'tha'],
+  ['tha', 'tha'],
+  ['thai', 'tha'],
+]);
 
 async function walkDir(dir: string): Promise<string[]> {
   const results: string[] = [];
@@ -157,11 +184,112 @@ export class LibraryScanService {
    */
   private async ensureVariant(mediaType: 'MOVIE' | 'EPISODE', ownerId: number, filePath: string): Promise<void> {
     const ownerField = mediaType === 'MOVIE' ? 'movieId' : 'episodeId';
-    await (this.prisma as any).mediaFileVariant.upsert({
+    const variant = await (this.prisma as any).mediaFileVariant.upsert({
       where: { mediaType_path: { mediaType, path: filePath } },
       create: { mediaType, [ownerField]: ownerId, path: filePath, fileSize: BigInt(0) },
       update: { [ownerField]: ownerId },
     });
+    await this.ensureSidecarSubtitleTracks(Number(variant.id), filePath);
+  }
+
+  /**
+   * Registers EXTERNAL subtitle track rows for sidecar files next to the
+   * linked video (`<base>.srt`, `<base>.zho.srt`, `<base>.eng.forced.srt`,
+   * `<base>.chs.ass`, ...). The playback manifest reads these rows, so a
+   * scanned library exposes its sidecars without any import. Existing rows
+   * are kept: re-running a scan against a healthy library is a no-op.
+   */
+  private async ensureSidecarSubtitleTracks(variantId: number, videoPath: string): Promise<void> {
+    const directory = path.dirname(videoPath);
+    const videoBaseName = path.basename(videoPath, path.extname(videoPath));
+
+    let entries: string[];
+    try {
+      const rawEntries = await fs.readdir(directory);
+      // Tolerate Dirent-shaped entries (test mocks) as well as plain names.
+      entries = (rawEntries as Array<string | { name: string }>).map(entry =>
+        typeof entry === 'string' ? entry : entry.name);
+    } catch {
+      return;
+    }
+
+    const escapedBase = videoBaseName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const sidecarNamePattern = new RegExp(`^${escapedBase}(?:[._\\- ].+)?$`, 'i');
+    const sidecars = entries.filter((entry) => {
+      const extension = path.extname(entry).toLowerCase();
+      if (!SIDECAR_SUBTITLE_EXTENSIONS.has(extension)) {
+        return false;
+      }
+      return sidecarNamePattern.test(path.basename(entry, extension));
+    });
+    if (sidecars.length === 0) {
+      return;
+    }
+
+    const fullPaths = sidecars.map(entry => path.join(directory, entry));
+    const existing = await (this.prisma as any).variantSubtitleTrack.findMany({
+      where: { variantId, filePath: { in: fullPaths } },
+      select: { filePath: true },
+    });
+    const existingPaths = new Set(((existing ?? []) as Array<{ filePath: string }>).map(track => track.filePath));
+
+    for (const entry of sidecars) {
+      const fullPath = path.join(directory, entry);
+      if (existingPaths.has(fullPath)) {
+        continue;
+      }
+      const stats = await fs.stat(fullPath);
+      const { languageCode, isForced, isHi } = this.parseSidecarSubtitleName(videoBaseName, entry);
+      await (this.prisma as any).variantSubtitleTrack.create({
+        data: {
+          variantId,
+          source: 'EXTERNAL',
+          streamIndex: null,
+          languageCode,
+          isForced,
+          isHi,
+          codec: path.extname(entry).slice(1).toLowerCase(),
+          filePath: fullPath,
+          fileSize: Number(stats.size),
+        },
+      });
+    }
+  }
+
+  private parseSidecarSubtitleName(
+    videoBaseName: string,
+    entryName: string,
+  ): { languageCode: string | null; isForced: boolean; isHi: boolean } {
+    const extension = path.extname(entryName);
+    const subtitleBaseName = path.basename(entryName, extension);
+    const suffix = subtitleBaseName.slice(videoBaseName.length).replace(/^[._\-\s]+/, '');
+    const tokens = suffix
+      .split(/[._\-\s]+/)
+      .map(token => token.trim().toLowerCase())
+      .filter(Boolean);
+
+    let languageCode: string | null = null;
+    let isForced = false;
+    let isHi = false;
+
+    for (const token of tokens) {
+      if (token === 'forced' || token === 'forc') {
+        isForced = true;
+        continue;
+      }
+      if (token === 'hi' || token === 'sdh' || token === 'cc') {
+        isHi = true;
+        continue;
+      }
+      if (!languageCode) {
+        const mapped = SIDECAR_LANGUAGE_TOKEN_MAP.get(token);
+        if (mapped) {
+          languageCode = mapped;
+        }
+      }
+    }
+
+    return { languageCode, isForced, isHi };
   }
 
   private async pathExists(filePath: string): Promise<boolean> {

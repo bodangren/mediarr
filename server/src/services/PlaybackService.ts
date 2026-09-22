@@ -10,7 +10,7 @@ import type { PlaybackTarget, PlaybackManifestRequest } from '../contracts/playb
 const DEFAULT_USER_ID = 'lan-default';
 const DEFAULT_WATCHED_THRESHOLD = 0.9;
 const DEFAULT_ALLOWED_ROOTS = ['/data/media'];
-const ALLOWED_SUBTITLE_EXTENSIONS = new Set(['.srt', '.vtt']);
+const ALLOWED_SUBTITLE_EXTENSIONS = new Set(['.srt', '.vtt', '.ass']);
 
 export interface PlaybackProgressInput extends PlaybackManifestRequest {
   position: number;
@@ -44,7 +44,7 @@ export interface PlaybackSubtitleTrack {
   languageCode: string | null;
   isForced: boolean;
   isHi: boolean;
-  format: 'srt' | 'vtt';
+  format: 'srt' | 'vtt' | 'ass';
   url: string;
 }
 
@@ -72,7 +72,7 @@ export interface PlaybackManifest {
 export interface SubtitleSource {
   id: number;
   filePath: string;
-  format: 'srt' | 'vtt';
+  format: 'srt' | 'vtt' | 'ass';
   languageCode: string | null;
   isForced: boolean;
   isHi: boolean;
@@ -111,13 +111,19 @@ function normalizeUserId(userId: string | undefined, fallbackUserId: string): st
   return normalized && normalized.length > 0 ? normalized : fallbackUserId;
 }
 
-function parseSubtitleFormat(filePath: string): 'srt' | 'vtt' | null {
+function parseSubtitleFormat(filePath: string): 'srt' | 'vtt' | 'ass' | null {
   const extension = path.extname(filePath).toLowerCase();
   if (!ALLOWED_SUBTITLE_EXTENSIONS.has(extension)) {
     return null;
   }
 
-  return extension === '.vtt' ? 'vtt' : 'srt';
+  if (extension === '.vtt') {
+    return 'vtt';
+  }
+  if (extension === '.ass') {
+    return 'ass';
+  }
+  return 'srt';
 }
 
 function normalizeRoot(input: string): string {
@@ -349,7 +355,7 @@ export class PlaybackService {
 
     const format = parseSubtitleFormat(subtitle.filePath);
     if (!format) {
-      throw new ValidationError('Subtitle track must be a .srt or .vtt sidecar file');
+      throw new ValidationError('Subtitle track must be a .srt, .vtt, or .ass sidecar file');
     }
 
     const extraRoots = subtitle.variant?.path

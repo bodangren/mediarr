@@ -33,6 +33,7 @@ import type { Scheduler } from '../services/Scheduler';
 import type { LogReaderService } from '../services/LogReaderService';
 import type { BackupService } from '../services/BackupService';
 import type { LibraryScanService } from '../services/LibraryScanService';
+import type { MetadataRefreshService } from '../services/MetadataRefreshService';
 import type { SystemHealthService } from '../services/SystemHealthService';
 import type { UpdateService } from '../services/updates/UpdateService';
 import type { CatalogCache } from '../services/indexers/CatalogCache';
@@ -162,6 +163,7 @@ export interface ApiDependencies {
     'create' | 'list' | 'get' | 'delete' | 'restore' | 'getSchedule' | 'updateSchedule'
   > | undefined;
   libraryScanService?: Pick<LibraryScanService, 'scanAll'> | undefined;
+  metadataRefreshService?: Pick<MetadataRefreshService, 'refreshAll'> | undefined;
   systemHealthService?: Pick<
     SystemHealthService,
     'getDiskSpace' | 'getProcessInfo' | 'checkDatabase' | 'checkRootFolders' | 'detectFFmpeg'

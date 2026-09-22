@@ -98,6 +98,7 @@ export const series = sqliteTable("Series", {
   year: integer("year").notNull(),
   network: text("network"),
   posterUrl: text("posterUrl"),
+  backdropUrl: text("backdropUrl"),
   added: integer("added", { mode: "timestamp" })
     .notNull()
     .default(sql`(strftime('%s','now'))`),
@@ -161,6 +162,7 @@ export const movies = sqliteTable("Movie", {
   path: text("path"),
   year: integer("year").notNull(),
   posterUrl: text("posterUrl"),
+  backdropUrl: text("backdropUrl"),
   added: integer("added", { mode: "timestamp" })
     .notNull()
     .default(sql`(strftime('%s','now'))`),

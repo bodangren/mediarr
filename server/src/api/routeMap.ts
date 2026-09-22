@@ -246,6 +246,7 @@ export const API_ROUTE_MAP: ApiRouteDefinition[] = [
   { method: 'POST', path: '/api/indexers/import-from/:type' },
   { method: 'POST', path: '/api/library/scan' },
   { method: 'POST', path: '/api/media/:id/auto-search' },
+  { method: 'POST', path: '/api/metadata/refresh' },
   { method: 'POST', path: '/api/movies/import/apply' },
   { method: 'POST', path: '/api/movies/import/scan' },
   { method: 'POST', path: '/api/movies/organize/preview' },

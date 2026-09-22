@@ -4,7 +4,10 @@ import 'package:go_router/go_router.dart';
 import '../router/app_router.dart';
 import '../theme/mediarr_theme.dart';
 
-/// Navigation destinations for the leanback sidebar.
+/// TV navigation destinations (Phase 4b: stripped to Home/Movies/Series).
+///
+/// Slim mode disables Activity/Calendar/Search/Settings server routes, so
+/// those items must not appear in the TV UI. Only the browse surfaces stay.
 class _NavDestination {
   const _NavDestination({
     required this.path,
@@ -27,30 +30,6 @@ const _destinations = [
     label: 'Home',
   ),
   _NavDestination(
-    path: AppRoutes.library,
-    icon: Icons.video_library_outlined,
-    selectedIcon: Icons.video_library,
-    label: 'Library',
-  ),
-  _NavDestination(
-    path: AppRoutes.activity,
-    icon: Icons.downloading_outlined,
-    selectedIcon: Icons.downloading,
-    label: 'Activity',
-  ),
-  _NavDestination(
-    path: AppRoutes.search,
-    icon: Icons.search,
-    selectedIcon: Icons.search,
-    label: 'Search',
-  ),
-  _NavDestination(
-    path: AppRoutes.calendar,
-    icon: Icons.calendar_month_outlined,
-    selectedIcon: Icons.calendar_month,
-    label: 'Calendar',
-  ),
-  _NavDestination(
     path: AppRoutes.movies,
     icon: Icons.movie_outlined,
     selectedIcon: Icons.movie,
@@ -62,18 +41,13 @@ const _destinations = [
     selectedIcon: Icons.tv,
     label: 'Series',
   ),
-  _NavDestination(
-    path: AppRoutes.settings,
-    icon: Icons.settings_outlined,
-    selectedIcon: Icons.settings,
-    label: 'Settings',
-  ),
 ];
 
 /// The main app shell with a sidebar navigation rail for the 10-foot UI.
 ///
-/// Uses [NavigationRail] for a vertical sidebar that works well with
-/// D-pad navigation on Android TV and keyboard navigation on desktop.
+/// Phase 4b: only Home / Movies / Series. The leanback_scaffold is wrapped
+/// in a FocusTraversalGroup so the rail + content area form one
+/// keyboard-navigable surface.
 class LeanbackScaffold extends StatelessWidget {
   const LeanbackScaffold({
     super.key,
@@ -92,48 +66,48 @@ class LeanbackScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Row(
-        children: [
-          // Sidebar navigation
-          NavigationRail(
-            selectedIndex: _selectedIndex,
-            onDestinationSelected: (index) {
-              context.go(_destinations[index].path);
-            },
-            labelType: NavigationRailLabelType.all,
-            leading: Padding(
-              padding: const EdgeInsets.only(bottom: 16, top: 16),
-              child: Column(
-                children: [
-                  Icon(
-                    Icons.play_circle_fill,
-                    color: MediarrColors.accentPrimary,
-                    size: 36,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Mediarr',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: MediarrColors.accentPrimary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                  ),
-                ],
+      body: FocusTraversalGroup(
+        policy: OrderedTraversalPolicy(),
+        child: Row(
+          children: [
+            NavigationRail(
+              selectedIndex: _selectedIndex,
+              onDestinationSelected: (index) {
+                context.go(_destinations[index].path);
+              },
+              labelType: NavigationRailLabelType.all,
+              leading: Padding(
+                padding: const EdgeInsets.only(bottom: 16, top: 16),
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.play_circle_fill,
+                      color: MediarrColors.accentPrimary,
+                      size: 36,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Mediarr',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: MediarrColors.accentPrimary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                  ],
+                ),
               ),
+              destinations: _destinations.map((d) {
+                return NavigationRailDestination(
+                  icon: Icon(d.icon),
+                  selectedIcon: Icon(d.selectedIcon),
+                  label: Text(d.label),
+                );
+              }).toList(),
             ),
-            destinations: _destinations.map((d) {
-              return NavigationRailDestination(
-                icon: Icon(d.icon),
-                selectedIcon: Icon(d.selectedIcon),
-                label: Text(d.label),
-              );
-            }).toList(),
-          ),
-          // Divider
-          const VerticalDivider(thickness: 1, width: 1),
-          // Content area
-          Expanded(child: child),
-        ],
+            const VerticalDivider(thickness: 1, width: 1),
+            Expanded(child: child),
+          ],
+        ),
       ),
     );
   }

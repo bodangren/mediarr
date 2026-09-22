@@ -17,6 +17,11 @@ class ConnectionManager {
   final MediarrApiClient apiClient;
   final DiscoveryService discoveryService;
 
+  /// Public read-only snapshot of the API client's state (avoids the
+  /// StateNotifier `state` protected-member warning at call sites).
+  // ignore: invalid_use_of_protected_member, invalid_use_of_visible_for_testing_member
+  ApiClientState get clientState => apiClient.state;
+
   /// Try connecting to a discovered or manually entered server.
   Future<bool> connectToServer(DiscoveredServer server) async {
     final success = await apiClient.connect(server.url);

@@ -1,22 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/router/app_router.dart';
 import '../../core/theme/mediarr_theme.dart';
 import '../../core/widgets/netflix_scaffold.dart';
-import '../../shared/services/api_client.dart';
+import '../../shared/providers/connection_provider.dart';
 import 'discovery_service.dart';
 
 /// Server discovery screen shown on first launch.
 ///
-/// D-pad contract:
-///   * Host field autofocuses on screen entry (so the on-screen TV keyboard
-///     opens immediately, mirroring Netflix).
-///   * Down moves focus to Port field, then to Connect.
-///   * Right from the host field moves to the next field.
-///   * Select on Connect triggers the connect flow.
-///   * Left arrow from Port moves back to Host; from Connect moves to Port.
+/// Phase 4b: host TextField autofocuses so the on-screen TV keyboard opens
+/// immediately. Connect button is FocusableAction-reachable via Down.
 class DiscoveryScreen extends ConsumerStatefulWidget {
   const DiscoveryScreen({super.key});
 
@@ -29,16 +25,14 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
   final _portController = TextEditingController(text: '5174');
   final FocusNode _hostFocusNode = FocusNode(debugLabel: 'DiscoveryScreen.host');
   final FocusNode _portFocusNode = FocusNode(debugLabel: 'DiscoveryScreen.port');
-  final FocusNode _connectFocusNode =
-      FocusNode(debugLabel: 'DiscoveryScreen.connect');
   bool _isConnecting = false;
+  bool _attemptedAutoconnect = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(discoveryServiceProvider.notifier).startScan();
-      // Autofocus the host field so the on-screen keyboard opens.
       _hostFocusNode.requestFocus();
     });
   }
@@ -49,18 +43,16 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
     _portController.dispose();
     _hostFocusNode.dispose();
     _portFocusNode.dispose();
-    _connectFocusNode.dispose();
     super.dispose();
   }
 
   Future<void> _connectToServer(String host, int port) async {
     setState(() => _isConnecting = true);
-
-    final apiClient = ref.read(apiClientProvider.notifier);
-    final success = await apiClient.connect('http://$host:$port');
-
+    final manager = ref.read(connectionManagerProvider);
+    final success = await manager.connectToServer(
+      DiscoveredServer(name: 'Manual', host: host, port: port),
+    );
     if (!mounted) return;
-
     if (success) {
       context.go(AppRoutes.home);
     } else {
@@ -79,7 +71,7 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
   }
 
   void _onPortSubmitted(String _) {
-    _connectFocusNode.requestFocus();
+    _onConnectPressed();
   }
 
   void _onConnectPressed() {
@@ -92,8 +84,29 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
     }
   }
 
+  Future<void> _tryAutoconnect() async {
+    final manager = ref.read(connectionManagerProvider);
+    final prefs = await SharedPreferences.getInstance();
+    final host = prefs.getString('last_server_host');
+    final port = prefs.getInt('last_server_port');
+    if (host != null && port != null && mounted) {
+      final ok = await manager.tryReconnectLastServer();
+      if (ok && mounted) {
+        context.go(AppRoutes.home);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Phase 4b: on entry, try to reconnect to the last-used server once.
+    if (!_attemptedAutoconnect) {
+      _attemptedAutoconnect = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _tryAutoconnect();
+      });
+    }
+
     final discoveryState = ref.watch(discoveryServiceProvider);
     return NetflixScaffold(
       autofocus: true,
@@ -207,48 +220,43 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   const SizedBox(height: 16),
-                  Focus(
+                  TextField(
+                    key: const ValueKey('discovery.hostField'),
+                    controller: _hostController,
                     focusNode: _hostFocusNode,
-                    child: TextField(
-                      key: const ValueKey('discovery.hostField'),
-                      controller: _hostController,
-                      textInputAction: TextInputAction.next,
-                      onSubmitted: (value) => _onHostSubmitted(value),
-                      decoration: InputDecoration(
-                        labelText: 'Server IP / Hostname',
-                        hintText: '192.168.1.100',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        filled: true,
-                        fillColor: MediarrColors.surfaceCard,
+                    textInputAction: TextInputAction.next,
+                    onSubmitted: _onHostSubmitted,
+                    decoration: InputDecoration(
+                      labelText: 'Server IP / Hostname',
+                      hintText: '192.168.1.100',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      style: const TextStyle(color: MediarrColors.textPrimary),
+                      filled: true,
+                      fillColor: MediarrColors.surfaceCard,
                     ),
+                    style: const TextStyle(color: MediarrColors.textPrimary),
                   ),
                   const SizedBox(height: 12),
-                  Focus(
+                  TextField(
+                    key: const ValueKey('discovery.portField'),
+                    controller: _portController,
                     focusNode: _portFocusNode,
-                    child: TextField(
-                      key: const ValueKey('discovery.portField'),
-                      controller: _portController,
-                      textInputAction: TextInputAction.done,
-                      keyboardType: TextInputType.number,
-                      onSubmitted: (value) => _onPortSubmitted(value),
-                      decoration: InputDecoration(
-                        labelText: 'Port',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        filled: true,
-                        fillColor: MediarrColors.surfaceCard,
+                    textInputAction: TextInputAction.done,
+                    keyboardType: TextInputType.number,
+                    onSubmitted: _onPortSubmitted,
+                    decoration: InputDecoration(
+                      labelText: 'Port',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      style: const TextStyle(color: MediarrColors.textPrimary),
+                      filled: true,
+                      fillColor: MediarrColors.surfaceCard,
                     ),
+                    style: const TextStyle(color: MediarrColors.textPrimary),
                   ),
                   const SizedBox(height: 20),
                   FocusableAction(
-                    focusNode: _connectFocusNode,
                     onSelect: _onConnectPressed,
                     borderRadius: 8,
                     scale: 1.03,

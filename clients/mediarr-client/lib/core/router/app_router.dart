@@ -1,17 +1,14 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/widgets/leanback_scaffold.dart';
-import '../../features/activity/activity_screen.dart';
-import '../../features/calendar/calendar_screen.dart';
 import '../../features/discovery/discovery_screen.dart';
 import '../../features/home/home_screen.dart';
 import '../../features/library/movies_screen.dart';
-import '../../features/library/library_screen.dart';
 import '../../features/library/series_screen.dart';
-import '../../features/search/search_screen.dart';
-import '../../features/settings/settings_screen.dart';
+import '../../shared/providers/connection_provider.dart';
+import '../../shared/services/api_client.dart';
 
 /// Route paths used throughout the app.
 class AppRoutes {
@@ -19,13 +16,8 @@ class AppRoutes {
 
   static const String discovery = '/discovery';
   static const String home = '/home';
-  static const String activity = '/activity';
-  static const String search = '/search';
   static const String movies = '/movies';
   static const String series = '/series';
-  static const String library = '/library';
-  static const String calendar = '/calendar';
-  static const String settings = '/settings';
 }
 
 /// Shell route key for the leanback scaffold.
@@ -34,7 +26,21 @@ final _shellNavigatorKey = GlobalKey<NavigatorState>();
 /// The app-wide router configuration.
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
-    initialLocation: AppRoutes.home,
+    initialLocation: AppRoutes.discovery,
+    redirect: (context, state) {
+      // Phase 4b: redirect to home if the API client is already connected
+      // (e.g. autoconnect on cold boot succeeded before this redirect runs).
+      if (state.matchedLocation == AppRoutes.discovery) {
+        final manager = ref.read(connectionManagerProvider);
+        final clientState = manager.clientState;
+        if (clientState.baseUrl != null &&
+            clientState.status == ConnectionStatus.connected) {
+          return AppRoutes.home;
+        }
+      }
+      return null;
+    },
+    refreshListenable: _ConnectionListenable(ref),
     routes: [
       // Discovery screen (no shell — full screen)
       GoRoute(
@@ -56,14 +62,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const HomeScreen(),
           ),
           GoRoute(
-            path: AppRoutes.activity,
-            builder: (context, state) => const ActivityScreen(),
-          ),
-          GoRoute(
-            path: AppRoutes.search,
-            builder: (context, state) => const SearchScreen(),
-          ),
-          GoRoute(
             path: AppRoutes.movies,
             builder: (context, state) => const MoviesScreen(),
           ),
@@ -71,20 +69,27 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: AppRoutes.series,
             builder: (context, state) => const SeriesScreen(),
           ),
-          GoRoute(
-            path: AppRoutes.library,
-            builder: (context, state) => const LibraryScreen(),
-          ),
-          GoRoute(
-            path: AppRoutes.calendar,
-            builder: (context, state) => const CalendarScreen(),
-          ),
-          GoRoute(
-            path: AppRoutes.settings,
-            builder: (context, state) => const SettingsScreen(),
-          ),
         ],
       ),
     ],
   );
 });
+
+/// Bridges Riverpod's connection state to GoRouter's refreshListenable so the
+/// router redirects when the connection is established mid-session.
+class _ConnectionListenable extends ChangeNotifier {
+  _ConnectionListenable(this._ref) {
+    _sub = _ref.listen<ApiClientState>(apiClientProvider, (_, __) {
+      notifyListeners();
+    });
+  }
+
+  final Ref _ref;
+  late final ProviderSubscription<ApiClientState> _sub;
+
+  @override
+  void dispose() {
+    _sub.close();
+    super.dispose();
+  }
+}

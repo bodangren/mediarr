@@ -4,6 +4,9 @@ import 'package:mediarr_client/core/theme/mediarr_theme.dart';
 import 'package:mediarr_client/core/widgets/leanback_scaffold.dart';
 import 'package:mediarr_client/core/router/app_router.dart';
 
+/// Phase 4b: LeanbackScaffold sidebar carries ONLY Home / Movies / Series.
+/// Activity / Calendar / Search / Settings routes 404 in slim mode and are
+/// removed from the TV UI.
 void main() {
   Widget buildTestApp({
     required String currentPath,
@@ -25,20 +28,33 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
   }
 
-  group('LeanbackScaffold', () {
-    testWidgets('renders NavigationRail with destinations', (tester) async {
+  group('LeanbackScaffold (Phase 4b: Home/Movies/Series only)', () {
+    testWidgets('renders NavigationRail with exactly 3 destinations',
+        (tester) async {
       setLargeViewport(tester);
       await tester.pumpWidget(buildTestApp(currentPath: AppRoutes.movies));
 
       expect(find.byType(NavigationRail), findsOneWidget);
       expect(find.text('Home'), findsOneWidget);
-      expect(find.text('Library'), findsOneWidget);
-      expect(find.text('Activity'), findsOneWidget);
-      expect(find.text('Search'), findsOneWidget);
-      expect(find.text('Calendar'), findsOneWidget);
       expect(find.text('Movies'), findsOneWidget);
       expect(find.text('Series'), findsOneWidget);
-      expect(find.text('Settings'), findsOneWidget);
+    });
+
+    testWidgets('does NOT render the slim-disabled destinations',
+        (tester) async {
+      setLargeViewport(tester);
+      await tester.pumpWidget(buildTestApp(currentPath: AppRoutes.movies));
+
+      expect(find.text('Library'), findsNothing,
+          reason: 'Library route is gone (Phase 4b slim UI).');
+      expect(find.text('Activity'), findsNothing,
+          reason: 'Activity route is gone (Phase 4b slim UI).');
+      expect(find.text('Search'), findsNothing,
+          reason: 'Search route is gone (Phase 4b slim UI).');
+      expect(find.text('Calendar'), findsNothing,
+          reason: 'Calendar route is gone (Phase 4b slim UI).');
+      expect(find.text('Settings'), findsNothing,
+          reason: 'Settings route is gone (Phase 4b slim UI).');
     });
 
     testWidgets('renders Mediarr branding in leading', (tester) async {
@@ -69,28 +85,12 @@ void main() {
       expect(rail.selectedIndex, 0);
     });
 
-    testWidgets('highlights Library when on /library path', (tester) async {
-      setLargeViewport(tester);
-      await tester.pumpWidget(buildTestApp(currentPath: AppRoutes.library));
-
-      final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
-      expect(rail.selectedIndex, 1);
-    });
-
-    testWidgets('highlights Activity when on /activity path', (tester) async {
-      setLargeViewport(tester);
-      await tester.pumpWidget(buildTestApp(currentPath: AppRoutes.activity));
-
-      final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
-      expect(rail.selectedIndex, 2);
-    });
-
     testWidgets('highlights Movies when on /movies path', (tester) async {
       setLargeViewport(tester);
       await tester.pumpWidget(buildTestApp(currentPath: AppRoutes.movies));
 
       final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
-      expect(rail.selectedIndex, 5);
+      expect(rail.selectedIndex, 1);
     });
 
     testWidgets('highlights Series when on /series path', (tester) async {
@@ -98,15 +98,7 @@ void main() {
       await tester.pumpWidget(buildTestApp(currentPath: AppRoutes.series));
 
       final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
-      expect(rail.selectedIndex, 6);
-    });
-
-    testWidgets('highlights Settings when on /settings path', (tester) async {
-      setLargeViewport(tester);
-      await tester.pumpWidget(buildTestApp(currentPath: AppRoutes.settings));
-
-      final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
-      expect(rail.selectedIndex, 7);
+      expect(rail.selectedIndex, 2);
     });
 
     testWidgets('defaults to index 0 for unknown path', (tester) async {

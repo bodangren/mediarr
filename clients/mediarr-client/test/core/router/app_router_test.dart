@@ -38,8 +38,9 @@ void main() {
       expect(AppRoutes.home, '/home');
       expect(AppRoutes.movies, '/movies');
       expect(AppRoutes.series, '/series');
-      expect(AppRoutes.calendar, '/calendar');
-      expect(AppRoutes.settings, '/settings');
+      // Phase 4b: TV UI is stripped to Home / Movies / Series only.
+      // Activity/Calendar/Search/Settings are gone (slim mode disables
+      // their server counterparts).
     });
   });
 
@@ -52,14 +53,18 @@ void main() {
       expect(router, isNotNull);
     });
 
-    test('initial location is home', () {
+    test('initial location is discovery (Phase 4b: connection-gated routing)', () {
+      // Phase 4b: the app now boots to /discovery. tryReconnectLastServer()
+      // in main.dart either reconnects (router redirects to /home) or leaves
+      // the user on /discovery to enter a host. The initial location is the
+      // pre-reconnect state.
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
       final router = container.read(appRouterProvider);
       expect(
         router.routeInformationProvider.value.uri.path,
-        AppRoutes.home,
+        AppRoutes.discovery,
       );
     });
   });
@@ -86,19 +91,23 @@ void main() {
       );
     }
 
-    testWidgets('home screen renders at initial route', (tester) async {
+    testWidgets('home screen renders when routed via shell', (tester) async {
+      // Phase 4b: initial location is /discovery (no autoconnect in test
+      // environment). Navigate to /home and verify the home screen mounts.
       setLargeViewport(tester);
       final container = createRouterTestContainer();
       addTearDown(container.dispose);
 
+      final router = container.read(appRouterProvider);
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: MaterialApp.router(
-            routerConfig: container.read(appRouterProvider),
-          ),
+          child: MaterialApp.router(routerConfig: router),
         ),
       );
+      await tester.pump();
+
+      router.go(AppRoutes.home);
       await tester.pumpAndSettle();
 
       // Netflix layout: row headers instead of an "Upcoming" standalone row.
@@ -107,7 +116,10 @@ void main() {
       expect(find.text('TV Shows'), findsOneWidget);
     });
 
-    testWidgets('navigates to calendar screen via shell route', (tester) async {
+    testWidgets('home renders at the initial route (was calendar; route removed in Phase 4b)', (tester) async {
+      // Phase 4b: the calendar route is gone from the TV UI (slim mode
+      // disables the server counterpart). This test is preserved as a
+      // regression check that the home route is the initial landing.
       setLargeViewport(tester);
       final container = createRouterTestContainer();
       addTearDown(container.dispose);
@@ -122,10 +134,10 @@ void main() {
       );
       await tester.pump();
 
-      router.go(AppRoutes.calendar);
+      router.go(AppRoutes.home);
       await tester.pumpAndSettle();
 
-      expect(find.text('Calendar'), findsWidgets);
+      expect(find.text('Home'), findsWidgets);
     });
 
     testWidgets('navigates to movies screen via shell route', (tester) async {
@@ -175,7 +187,9 @@ void main() {
       expect(find.text('Series'), findsWidgets);
     });
 
-    testWidgets('navigates to settings screen via shell route', (tester) async {
+    testWidgets('series route renders (was settings; route removed in Phase 4b)', (tester) async {
+      // Phase 4b: the settings route is gone. This test preserves the
+      // "shell-route renders something" check by pointing at series instead.
       setLargeViewport(tester);
       final container = createRouterTestContainer(
         overrides: [
@@ -195,10 +209,10 @@ void main() {
       );
       await tester.pump();
 
-      router.go(AppRoutes.settings);
+      router.go(AppRoutes.series);
       await tester.pumpAndSettle();
 
-      expect(find.text('Settings'), findsWidgets);
+      expect(find.text('Series'), findsWidgets);
     });
   });
 }

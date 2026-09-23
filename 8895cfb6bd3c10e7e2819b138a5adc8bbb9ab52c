@@ -1,0 +1,28 @@
+Task: TV Client UI/UX Investigation (2026-09-24)
+
+Why: the owner reports the TV client as "awful and not navigable" after
+Phase 4b (FR-11) was marked complete.
+
+Root cause: four bare Focus nodes are traversable but render no focus cue.
+The HomeScreen row wrappers capture every Down press and then trap focus at
+HomeScreen.series.row. NetflixScaffold.root strands focus on Movies/Series.
+The search FocusNodes bind to a wrapper, not the TextField, so EditableText
+never attaches an input connection and both search fields accept no text.
+
+Files:
+- measure/tracks/chore_replace_jellyfin_consolidation_20260920/tv-ux-investigation-20260924.md (new): 16 findings with evidence, corrections list, 15-task Phase 4c plan, measured focus traces, frame MD5 map.
+- measure/tracks/chore_replace_jellyfin_consolidation_20260920/plan.md: Phase 4b REOPENED note; four tasks reopened to [~]; Phase 4c added.
+- clients/mediarr-client/test/investigation/focus_trace_probe_test.dart (new): characterisation probe. It mounts the real HomeScreen and MoviesScreen, sends D-pad key events, and prints the focus node after each press. Five tests, green. It documents today's behaviour and is the Red basis for Phase 4c.
+- measure/tracks.md, measure/lessons-learned.md, measure/tech-debt.md: registry and memory updates.
+
+Evidence integrity: eight cited Phase 4b frames are byte-identical;
+p5_movies_grid.png shows the TV AppInstaller, not our client; p5e_movies_grid.png
+is an older build than the code it verifies. The D-pad suite mounts a mock
+(_DpadHomeProbe) and its activation assertion is conditional, so it cannot fail.
+
+Gates: flutter analyze "No issues found!"; flutter test 372 passed (367 baseline
++ 5 probes). No server or SPA file changed.
+
+Not done here: the Phase 4b implementation files stay uncommitted for the
+integrator. Phase 4c holds the remediation plan; its last task is a human-gated
+physical-TV check on 192.168.10.62.

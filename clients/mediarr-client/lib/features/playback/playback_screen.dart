@@ -144,28 +144,33 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
       }
       return;
     }
-    // Any other key (D-pad, arrows, select) wakes the overlay.
+    // FR-7: any other key wakes the overlay and restarts the 4 s hide
+    // window, whatever the play state.
+    service.showOverlay();
     if (!playbackState.overlayVisible) {
-      service.showOverlay();
+      // Hidden overlay: the video surface owns the arrows (FR-8), so Left
+      // and Right seek. The other keys only wake the overlay.
+      if (key == LogicalKeyboardKey.arrowLeft) {
+        service.seekRelative(const Duration(seconds: -10));
+      } else if (key == LogicalKeyboardKey.arrowRight) {
+        service.seekRelative(const Duration(seconds: 10));
+      }
       return;
     }
-    switch (key) {
-      case LogicalKeyboardKey.select:
-      case LogicalKeyboardKey.enter:
-      case LogicalKeyboardKey.space:
+    // Visible overlay (FR-8): the arrows walk its controls and Select
+    // activates the focused control (`FocusableAction` claims Select before
+    // the key bubbles here). Nothing is consumed here so traversal keeps
+    // working. The only fallback is Select with no control focused.
+    if (key == LogicalKeyboardKey.select ||
+        key == LogicalKeyboardKey.enter ||
+        key == LogicalKeyboardKey.space) {
+      final focus = FocusManager.instance.primaryFocus;
+      final controlHasFocus = focus != null &&
+          !identical(focus, _rootFocusNode) &&
+          focus.context != null;
+      if (!controlHasFocus) {
         service.togglePlayPause();
-        break;
-      case LogicalKeyboardKey.arrowLeft:
-        service.seekRelative(const Duration(seconds: -10));
-        break;
-      case LogicalKeyboardKey.arrowRight:
-        service.seekRelative(const Duration(seconds: 10));
-        break;
-      case LogicalKeyboardKey.arrowUp:
-      case LogicalKeyboardKey.arrowDown:
-        // Wake the overlay; no other action needed.
-        service.showOverlay();
-        break;
+      }
     }
   }
 
@@ -174,13 +179,28 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
     final playbackState = ref.watch(playbackServiceProvider);
     final service = ref.read(playbackServiceProvider.notifier);
 
+    // FR-8: when the overlay hides, its controls unmount and focus must
+    // return to the key handler — otherwise the next press is lost.
+    ref.listen<PlaybackState>(playbackServiceProvider, (previous, next) {
+      if (previous?.overlayVisible == true && !next.overlayVisible) {
+        _rootFocusNode.requestFocus();
+      }
+    });
+
     return Scaffold(
       backgroundColor: Colors.black,
-      body: KeyboardListener(
+      body: Focus(
         focusNode: _rootFocusNode,
-        autofocus: true,
-        onKeyEvent: (event) =>
-            _handleKeyEvent(event, service, playbackState),
+        // The root is a key-event anchor only. `skipTraversal` keeps it out
+        // of the D-pad candidates: traversable, it covers the whole screen
+        // and directional focus lands here instead of on the controls (the
+        // F3 class of defect, see tv-ux-investigation-20260924.md). Focus
+        // returns here when the overlay hides (see ref.listen below).
+        skipTraversal: true,
+        onKeyEvent: (node, event) {
+          _handleKeyEvent(event, service, playbackState);
+          return KeyEventResult.ignored;
+        },
         child: Stack(
           children: [
             // Video surface — always present, fullscreen.
@@ -303,9 +323,12 @@ class _TransportOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedOpacity(
-      duration: const Duration(milliseconds: 180),
-      opacity: 1.0,
+    // FR-8: one traversal group over the controls so Left and Right walk
+    // them. Visibility itself is driven by `overlayVisible` in the parent.
+    // OrderedTraversalPolicy matches NetflixScaffold, whose groups walk with
+    // the D-pad on every browse screen.
+    return FocusTraversalGroup(
+      policy: OrderedTraversalPolicy(),
       child: Stack(
         children: [
           const Positioned.fill(
@@ -338,6 +361,7 @@ class _TransportOverlay extends StatelessWidget {
                     icon: Icons.arrow_back,
                     tooltip: 'Back',
                     onPressed: onBack,
+                    autofocus: true,
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -512,6 +536,7 @@ class _IconActionButton extends StatelessWidget {
     this.tooltip,
     this.size = 36,
     this.color = Colors.white,
+    this.autofocus = false,
   });
 
   final IconData icon;
@@ -519,20 +544,27 @@ class _IconActionButton extends StatelessWidget {
   final String? tooltip;
   final double size;
   final Color color;
+  final bool autofocus;
 
   @override
   Widget build(BuildContext context) {
     return FocusableAction(
       onSelect: onPressed,
+      autofocus: autofocus,
       variant: FocusableActionVariant.button,
       borderRadius: 8,
       scale: 1.04,
       child: Container(
         padding: const EdgeInsets.all(6),
-        child: IconButton(
-          tooltip: tooltip,
-          icon: Icon(icon, color: color, size: size),
-          onPressed: onPressed,
+        // The Material IconButton is pointer affordance only (F14: one focus
+        // cue). Without ExcludeFocus it is a second traversal stop inside the
+        // FocusableAction and D-pad presses land in the wrong layer.
+        child: ExcludeFocus(
+          child: IconButton(
+            tooltip: tooltip,
+            icon: Icon(icon, color: color, size: size),
+            onPressed: onPressed,
+          ),
         ),
       ),
     );
@@ -554,14 +586,19 @@ class _SeekBar extends StatelessWidget {
         inactiveTrackColor: Colors.white24,
         thumbColor: MediarrColors.accentPrimary,
       ),
-      child: Slider(
-        value: state.progress.clamp(0.0, 1.0),
-        onChanged: (value) {
-          final target = Duration(
-            milliseconds: (value * state.duration.inMilliseconds).round(),
-          );
-          service.seekTo(target);
-        },
+      // FR-8: the bar is pointer-only. Flutter's Slider consumes all four
+      // arrows for value adjustment, which traps D-pad focus here; seeking
+      // with the remote is the hidden-overlay Left/Right path.
+      child: ExcludeFocus(
+        child: Slider(
+          value: state.progress.clamp(0.0, 1.0),
+          onChanged: (value) {
+            final target = Duration(
+              milliseconds: (value * state.duration.inMilliseconds).round(),
+            );
+            service.seekTo(target);
+          },
+        ),
       ),
     );
   }

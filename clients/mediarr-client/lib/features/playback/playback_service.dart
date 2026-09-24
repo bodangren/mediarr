@@ -43,7 +43,11 @@ class PlaybackState {
     this.selectedSubtitleIndex,
     this.subtitleDelay = Duration.zero,
     this.subtitleDelayToast,
-    this.overlayVisible = true,
+    // Hidden by default: the transport overlay appears via `showOverlay()`
+    // (startup and every input) and hides on its 4 s window (FR-7). A `true`
+    // default created a spurious hide transition during playback start, which
+    // parked focus on the key handler instead of the overlay's controls.
+    this.overlayVisible = false,
   });
 
   final PlaybackStatus status;
@@ -206,11 +210,13 @@ class PlaybackService extends StateNotifier<PlaybackState> {
 
   /// Toggle play/pause.
   Future<void> togglePlayPause() async {
+    _touchOverlay();
     await _player.playOrPause();
   }
 
   /// Seek to a specific position.
   Future<void> seekTo(Duration position) async {
+    _touchOverlay();
     await _player.seek(position);
     state = state.copyWith(position: position);
   }
@@ -316,6 +322,7 @@ class PlaybackService extends StateNotifier<PlaybackState> {
   /// accumulation from accidental double-taps. The toast label is set and
   /// cleared automatically after a short interval.
   Future<void> nudgeSubtitleDelay(Duration step) async {
+    _touchOverlay();
     final next = state.subtitleDelay + step;
     final clamped = next < const Duration(seconds: -60)
         ? const Duration(seconds: -60)
@@ -332,6 +339,7 @@ class PlaybackService extends StateNotifier<PlaybackState> {
 
   /// Reset the subtitle timing offset back to 0 (FR-7).
   Future<void> resetSubtitleDelay() async {
+    _touchOverlay();
     state = state.copyWith(
       subtitleDelay: Duration.zero,
       clearSubtitleDelayToast: true,
@@ -436,11 +444,17 @@ class PlaybackService extends StateNotifier<PlaybackState> {
   void _startOverlayTimer() {
     _overlayHideTimer?.cancel();
     _overlayHideTimer = Timer(const Duration(seconds: 4), () {
-      if (state.status == PlaybackStatus.playing) {
+      // FR-7: hide 4 s after the last input whatever the play state. The old
+      // `status == playing` guard made this a one-shot that missed its window
+      // on any buffering blip and never re-armed, so the overlay stayed up.
+      if (state.overlayVisible) {
         state = state.copyWith(overlayVisible: false);
       }
     });
   }
+
+  /// FR-7: every transport input restarts the auto-hide window.
+  void _touchOverlay() => _startOverlayTimer();
 
   void _startSubtitleToastTimer() {
     _subtitleToastTimer?.cancel();

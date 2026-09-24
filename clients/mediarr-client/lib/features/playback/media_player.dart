@@ -119,7 +119,18 @@ class MediaKitMediaPlayer implements MediaPlayer {
       );
     });
     _player.stream.buffering.listen((buffering) {
-      if (buffering) _statusController.add(MediaPlayerStatus.buffering);
+      // FR-7: `buffering: false` must not be dropped. The old code reported
+      // `buffering` only, so one blip left the status stuck there and blocked
+      // the transport overlay auto-hide forever.
+      if (buffering) {
+        _statusController.add(MediaPlayerStatus.buffering);
+      } else {
+        _statusController.add(
+          _player.state.playing
+              ? MediaPlayerStatus.playing
+              : MediaPlayerStatus.paused,
+        );
+      }
     });
     _player.stream.completed.listen((completed) {
       if (completed) _statusController.add(MediaPlayerStatus.completed);

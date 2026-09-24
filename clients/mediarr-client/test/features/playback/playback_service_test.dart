@@ -34,7 +34,9 @@ void main() {
       expect(state.mediaId, isNull);
       expect(state.mediaType, isNull);
       expect(state.error, isNull);
-      expect(state.overlayVisible, true);
+      // FR-7: hidden by default. `showOverlay()` brings it up (startup and
+      // every input) and the 4 s window hides it again.
+      expect(state.overlayVisible, false);
       expect(state.subtitleTracks, isEmpty);
       expect(state.selectedSubtitleIndex, isNull);
     });

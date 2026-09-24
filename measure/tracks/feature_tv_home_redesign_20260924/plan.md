@@ -70,20 +70,37 @@
 
 ## Phase 2: Player repair (FR-7 to FR-9)
 
-- [ ] Red: overlay tests. Hide runs 4 s after input while playing, buffering, or paused. Every input
-      restarts the window. Any input reveals a hidden overlay.
-- [ ] Red: overlay D-pad tests. Left and Right move focus across transport buttons when the overlay
-      is visible; Select activates; every button is reachable.
+> **FR-7 + FR-8 SHIPPED 2026-09-24.** Gates: `flutter analyze` — "No issues found!"; `flutter test`
+> — 330 passed, 0 failed (baseline 324). **FR-9 (subtitles) remains open.**
+
+- [x] Red: overlay tests. _Done: `test/features/playback/playback_overlay_test.dart` (3 tests) —
+      hide runs 4 s after input with no `playing` status ever reported, every input restarts the
+      window, any input reveals a hidden overlay._
+- [x] Red: overlay D-pad tests. _Done: same file (3 tests) — the walk reaches 6+ distinct controls
+      across the top bar, transport row, and nudge row; Select activates the focused control (Back
+      exits playback); Left/Right seek (+10 s recorded on the player) while the overlay is hidden._
 - [ ] Red: subtitle tests. External subtitle tracks arrive in `PlaybackManifest`, reach the player as
       `SubtitleTrack.uri(...)`, appear in the picker, and FR-6 auto-select picks Chinese Simplified.
-- [ ] Green: status mapping. `buffering: false` restores the previous play state
-      (`media_player.dart`). The hide timer restarts on every input (`playback_service.dart`).
-- [ ] Green: overlay visibility drives rendering and hit-testing (`playback_screen.dart`).
-- [ ] Green: `FocusTraversalGroup` on the transport overlay; arrows walk its controls.
+- [x] Green: status mapping and hide window. _Done: `media_player.dart` reports the real play state
+      when `buffering: false` arrives (the old code dropped it and the status stuck); the hide timer
+      (`playback_service.dart`) is unconditional and every transport action restarts it via
+      `_touchOverlay()`. `PlaybackState.overlayVisible` now defaults to `false` — the old `true`
+      default made playback start flap visible→hidden→visible and parked focus on the key handler._
+- [x] Green: overlay visibility drives rendering and hit-testing. _Done: the conditional render
+      stands; the hard-coded `AnimatedOpacity(opacity: 1.0)` is gone._
+- [x] Green: `FocusTraversalGroup` on the transport overlay; arrows walk its controls. _Done — plus
+      two focus defects found and fixed on the way: (a) `PlaybackScreen.root` was a full-screen
+      traversable focus stop, so directional focus landed on it instead of the controls (the F3
+      class of defect from `tv-ux-investigation-20260924.md`); it is now a key anchor with
+      `skipTraversal: true` and takes focus back only when the overlay hides. (b) Flutter's `Slider`
+      consumes all four arrows for value adjustment and trapped D-pad focus; the seek bar is now
+      pointer-only (`ExcludeFocus`), and `IconButton` (a second focus stop inside `FocusableAction`)
+      is excluded too. Seeking with the remote is the hidden-overlay Left/Right path (±10 s)._
 - [ ] Green: subtitle plumbing. Server tracks in the manifest DTO, client model, and
       `MediaKitMediaPlayer` external track attach; FR-6 selection covers them.
-- [ ] Gate: `flutter analyze` zero issues; `flutter test` green.
-- [ ] Commit: `fix(player): overlay auto-hide, d-pad controls, and external subtitles`.
+- [x] Gate (FR-7 + FR-8): `flutter analyze` zero issues; `flutter test` green — 330 passed.
+- [ ] Commit: `fix(player): overlay auto-hide and d-pad control walk`. _Done: see git log._
+- [ ] Commit: `fix(player): external subtitle delivery and Chinese default selection` (FR-9).
 
 ## Phase 3: Device check
 

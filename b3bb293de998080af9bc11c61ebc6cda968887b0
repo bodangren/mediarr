@@ -1,0 +1,5 @@
+Task: Measure bookkeeping for Phase 4c (2026-09-24).
+
+Records commit 28fc786 as Phase 4c steps 1-14 and documents finding F17 plus
+the step-13 decision. No code changed. Step 15, the human-gated remote-only
+check on 192.168.10.62, remains open.

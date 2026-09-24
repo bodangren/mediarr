@@ -4,15 +4,14 @@ import 'package:mediarr_client/core/theme/mediarr_theme.dart';
 import 'package:mediarr_client/core/widgets/leanback_scaffold.dart';
 import 'package:mediarr_client/core/router/app_router.dart';
 
-/// Phase 4b: LeanbackScaffold sidebar carries ONLY Home / Movies / Series.
-/// Activity / Calendar / Search / Settings routes 404 in slim mode and are
-/// removed from the TV UI.
+/// Rail contract (owner mockup 2026-09-24, FR-1): exactly five destinations
+/// in mockup order — Home, Movies, Series, Search, Settings. The `Mediarr`
+/// branding block and the `Server` affordance left the rail: "Change server"
+/// lives on Settings.
 ///
-/// Phase 4b+ follow-up: the sidebar is now a custom stack of focusable
-/// destinations, NOT a Material NavigationRail. We assert the destinations
-/// render + each labels' icon/text + the highlight state via label
-/// color/boldness (a selected rail item is rendered with the accent
-/// color and bold weight; an unselected item is muted gray).
+/// The rail is a custom stack of focusable destinations. We assert the labels
+/// render, the highlight state via label weight (a selected rail item renders
+/// bold; an unselected item does not), and the destination set.
 void main() {
   Widget buildTestApp({
     required String currentPath,
@@ -34,34 +33,45 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
   }
 
-  group('LeanbackScaffold (Phase 4b: Home/Movies/Series only)', () {
-    testWidgets('renders exactly 3 rail destinations', (tester) async {
+  group('LeanbackScaffold (mockup rail: Home/Movies/Series/Search/Settings)',
+      () {
+    testWidgets('renders exactly 5 rail destinations in mockup order',
+        (tester) async {
       setLargeViewport(tester);
       await tester.pumpWidget(buildTestApp(currentPath: AppRoutes.movies));
 
       expect(find.text('Home'), findsOneWidget);
       expect(find.text('Movies'), findsOneWidget);
       expect(find.text('Series'), findsOneWidget);
+      expect(find.text('Search'), findsOneWidget);
+      expect(find.text('Settings'), findsOneWidget);
+
+      // Exactly five rail tiles, in mockup order.
+      final labels = tester
+          .widgetList<Text>(find.byType(Text))
+          .map((t) => t.data)
+          .where((d) =>
+              d == 'Home' ||
+              d == 'Movies' ||
+              d == 'Series' ||
+              d == 'Search' ||
+              d == 'Settings')
+          .toList();
+      expect(labels, ['Home', 'Movies', 'Series', 'Search', 'Settings']);
     });
 
-    testWidgets('does NOT render the slim-disabled destinations',
+    testWidgets('does NOT render the removed destinations or affordances',
         (tester) async {
       setLargeViewport(tester);
       await tester.pumpWidget(buildTestApp(currentPath: AppRoutes.movies));
 
       expect(find.text('Library'), findsNothing);
       expect(find.text('Activity'), findsNothing);
-      expect(find.text('Search'), findsNothing);
       expect(find.text('Calendar'), findsNothing);
-      expect(find.text('Settings'), findsNothing);
-    });
-
-    testWidgets('renders Mediarr branding in leading', (tester) async {
-      setLargeViewport(tester);
-      await tester.pumpWidget(buildTestApp(currentPath: AppRoutes.movies));
-
-      expect(find.text('Mediarr'), findsOneWidget);
-      expect(find.byIcon(Icons.play_circle_fill), findsOneWidget);
+      // FR-1: branding and the `Server` affordance left the rail.
+      expect(find.text('Mediarr'), findsNothing);
+      expect(find.text('Server'), findsNothing);
+      expect(find.byIcon(Icons.play_circle_fill), findsNothing);
     });
 
     testWidgets('renders child content', (tester) async {
@@ -76,8 +86,7 @@ void main() {
       expect(find.text('Movie Grid'), findsOneWidget);
     });
 
-    testWidgets('marks Home as the active destination on /home',
-        (tester) async {
+    testWidgets('marks Home as the active destination on /home', (tester) async {
       setLargeViewport(tester);
       await tester.pumpWidget(buildTestApp(currentPath: AppRoutes.home));
 
@@ -113,8 +122,7 @@ void main() {
           reason: 'Non-active rail items must not be bold.');
     });
 
-    testWidgets('vertical divider separates rail from content',
-        (tester) async {
+    testWidgets('vertical divider separates rail from content', (tester) async {
       setLargeViewport(tester);
       await tester.pumpWidget(buildTestApp(currentPath: AppRoutes.movies));
 

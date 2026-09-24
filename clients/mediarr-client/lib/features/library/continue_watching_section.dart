@@ -71,7 +71,7 @@ class ContinueWatchingSection extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           SizedBox(
-            height: 300,
+            height: 400,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: items.length,
@@ -79,7 +79,7 @@ class ContinueWatchingSection extends StatelessWidget {
               itemBuilder: (context, index) {
                 final item = items[index];
                 return SizedBox(
-                  width: 460,
+                  width: 420,
                   child: _ContinueWatchingCard(
                     item: item,
                     onSelect: () => onResume(item),
@@ -94,7 +94,9 @@ class ContinueWatchingSection extends StatelessWidget {
   }
 }
 
-/// One continue-watching card: artwork with a resume bar, then the labels.
+/// One continue-watching card (owner mockup 2026-09-24): 16:9 artwork, then a
+/// progress bar with the percent at its right edge, then the title, then the
+/// `Resume at mm:ss` line. Select resumes playback.
 class _ContinueWatchingCard extends StatelessWidget {
   const _ContinueWatchingCard({required this.item, required this.onSelect});
 
@@ -117,46 +119,57 @@ class _ContinueWatchingCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  if (image != null)
-                    CachedNetworkImage(
-                      imageUrl: image,
-                      fit: BoxFit.cover,
-                      placeholder: (_, __) =>
-                          Container(color: MediarrColors.surfaceElevated),
-                      errorWidget: (_, __, ___) =>
-                          Container(color: MediarrColors.surfaceElevated),
-                    )
-                  else
-                    Container(color: MediarrColors.surfaceElevated),
-                  // Resume bar over the artwork.
-                  Positioned(
-                    left: 12,
-                    right: 12,
-                    bottom: 12,
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: LinearProgressIndicator(
-                        value: progress,
-                        minHeight: 8,
-                        backgroundColor: Colors.black.withValues(alpha: 0.5),
-                        valueColor: const AlwaysStoppedAnimation(
-                          MediarrColors.accentPrimary,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+            AspectRatio(
+              aspectRatio: 16 / 9,
+              child: ClipRRect(
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(12),
+                ),
+                child: image != null
+                    ? CachedNetworkImage(
+                        imageUrl: image,
+                        fit: BoxFit.cover,
+                        placeholder: (_, __) =>
+                            Container(color: MediarrColors.surfaceElevated),
+                        errorWidget: (_, __, ___) =>
+                            Container(color: MediarrColors.surfaceElevated),
+                      )
+                    : Container(color: MediarrColors.surfaceElevated),
               ),
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(3),
+                          child: LinearProgressIndicator(
+                            value: progress,
+                            minHeight: 6,
+                            backgroundColor:
+                                Colors.white.withValues(alpha: 0.14),
+                            valueColor: const AlwaysStoppedAnimation(
+                              MediarrColors.accentPrimary,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        '${(progress * 100).round()}%',
+                        style: const TextStyle(
+                          color: MediarrColors.textSecondary,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
                   Text(
                     item.title,
                     maxLines: 1,
@@ -181,7 +194,7 @@ class _ContinueWatchingCard extends StatelessWidget {
                   ],
                   const SizedBox(height: 4),
                   Text(
-                    '${(progress * 100).round()}% · Resume at ${_formatDuration(Duration(seconds: item.position))}',
+                    'Resume at ${_formatDuration(Duration(seconds: item.position))}',
                     style: const TextStyle(
                       color: MediarrColors.textMuted,
                       fontSize: 16,

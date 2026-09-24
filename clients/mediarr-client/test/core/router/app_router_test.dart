@@ -37,9 +37,10 @@ void main() {
       expect(AppRoutes.home, '/home');
       expect(AppRoutes.movies, '/movies');
       expect(AppRoutes.series, '/series');
-      // Phase 4b: TV UI is stripped to Home / Movies / Series only.
-      // Activity/Calendar/Search/Settings are gone (slim mode disables
-      // their server counterparts).
+      // Owner mockup 2026-09-24 (FR-1): Search and Settings are rail
+      // destinations again. Activity and Calendar stay out.
+      expect(AppRoutes.search, '/search');
+      expect(AppRoutes.settings, '/settings');
     });
   });
 
@@ -211,6 +212,34 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Series'), findsWidgets);
+    });
+
+    testWidgets('renders search and settings screens via shell routes',
+        (tester) async {
+      // Owner mockup 2026-09-24: Search (FR-5) and Settings (FR-6) are
+      // reachable rail destinations again.
+      setLargeViewport(tester);
+      final container = createRouterTestContainer();
+      addTearDown(container.dispose);
+
+      final router = container.read(appRouterProvider);
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp.router(routerConfig: router),
+        ),
+      );
+      await tester.pump();
+
+      router.go(AppRoutes.search);
+      await tester.pumpAndSettle();
+      expect(find.text('Search'), findsWidgets);
+      expect(find.text('Search movies and series'), findsOneWidget);
+
+      router.go(AppRoutes.settings);
+      await tester.pumpAndSettle();
+      expect(find.text('Settings'), findsWidgets);
+      expect(find.text('Change server'), findsOneWidget);
     });
   });
 }

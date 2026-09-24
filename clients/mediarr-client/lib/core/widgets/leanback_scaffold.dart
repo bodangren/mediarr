@@ -6,7 +6,30 @@ import '../router/app_router.dart';
 import '../theme/mediarr_theme.dart';
 import 'netflix_scaffold.dart';
 
-/// TV navigation destinations (Phase 4b: stripped to Home/Movies/Series).
+/// Direction the D-pad requested.
+///
+/// Mirrors [LogicalKeyboardKey] so tests can drive traversal with
+/// `LogicalKeyboardKey.arrowDown/Up/Left/Right` and we map them here.
+enum DpadDirection { right, left, down, up, select, back }
+
+DpadDirection? mapLogicalKeyToDpad(LogicalKeyboardKey key) {
+  if (key == LogicalKeyboardKey.arrowRight) return DpadDirection.right;
+  if (key == LogicalKeyboardKey.arrowLeft) return DpadDirection.left;
+  if (key == LogicalKeyboardKey.arrowDown) return DpadDirection.down;
+  if (key == LogicalKeyboardKey.arrowUp) return DpadDirection.up;
+  if (key == LogicalKeyboardKey.select ||
+      key == LogicalKeyboardKey.enter ||
+      key == LogicalKeyboardKey.space) {
+    return DpadDirection.select;
+  }
+  if (key == LogicalKeyboardKey.escape || key == LogicalKeyboardKey.goBack) {
+    return DpadDirection.back;
+  }
+  return null;
+}
+
+/// TV navigation destinations (owner mockup 2026-09-24): Home, Movies,
+/// Series, Search, Settings. "Change server" lives on Settings, not here.
 class _NavDestination {
   const _NavDestination({
     required this.path,
@@ -40,11 +63,23 @@ const _destinations = [
     selectedIcon: Icons.tv,
     label: 'Series',
   ),
+  _NavDestination(
+    path: AppRoutes.search,
+    icon: Icons.search_outlined,
+    selectedIcon: Icons.search,
+    label: 'Search',
+  ),
+  _NavDestination(
+    path: AppRoutes.settings,
+    icon: Icons.settings_outlined,
+    selectedIcon: Icons.settings,
+    label: 'Settings',
+  ),
 ];
 
 /// Visual for one rail destination. The focus cue comes from
-/// [FocusableAction]; this widget only draws the icon, the label, and the
-/// selected pill.
+/// [FocusableAction]; this widget draws the icon, the label, and the selected
+/// pill (the mockup's filled accent pill marks the current destination).
 class _RailTile extends StatelessWidget {
   const _RailTile({required this.destination, required this.selected});
 
@@ -113,7 +148,6 @@ class LeanbackScaffold extends StatefulWidget {
 
 class _LeanbackScaffoldState extends State<LeanbackScaffold> {
   late final List<FocusNode> _railNodes;
-  late final FocusNode _serverNode;
   final GlobalKey _contentKey = GlobalKey(debugLabel: 'LeanbackScaffold.content');
   FocusNode? _lastContentFocus;
 
@@ -124,7 +158,6 @@ class _LeanbackScaffoldState extends State<LeanbackScaffold> {
       for (final destination in _destinations)
         FocusNode(debugLabel: 'rail.${destination.label}'),
     ];
-    _serverNode = FocusNode(debugLabel: 'rail.Server');
   }
 
   @override
@@ -132,7 +165,6 @@ class _LeanbackScaffoldState extends State<LeanbackScaffold> {
     for (final node in _railNodes) {
       node.dispose();
     }
-    _serverNode.dispose();
     super.dispose();
   }
 
@@ -142,8 +174,7 @@ class _LeanbackScaffoldState extends State<LeanbackScaffold> {
     return index >= 0 ? index : 0;
   }
 
-  bool _isInRail(FocusNode node) =>
-      _railNodes.contains(node) || identical(node, _serverNode);
+  bool _isInRail(FocusNode node) => _railNodes.contains(node);
 
   /// True when [node] has a traversal candidate in [direction] that lies
   /// entirely on that side and overlaps the node's band (the framework's
@@ -234,82 +265,22 @@ class _LeanbackScaffoldState extends State<LeanbackScaffold> {
             children: [
               Container(
                 color: MediarrColors.surfaceCard,
-                width: 140,
-                child: Column(
+                width: 160,
+                child: ListView(
+                  padding: const EdgeInsets.symmetric(vertical: 24),
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 16, top: 16),
-                      child: Column(
-                        children: [
-                          Icon(
-                            Icons.play_circle_fill,
-                            color: MediarrColors.accentPrimary,
-                            size: 40,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Mediarr',
-                            style: TextStyle(
-                              color: MediarrColors.accentPrimary,
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    // "Change server" affordance. Settings/Search are omitted
-                    // from the TV client (player-first decision, recorded in
-                    // plan.md Phase 4c step 13); server selection lives on
-                    // Discovery, reachable from here.
-                    FocusableAction(
-                      focusNode: _serverNode,
-                      variant: FocusableActionVariant.button,
-                      borderRadius: 12,
-                      focusPadding: 4,
-                      onSelect: () =>
-                          context.go('${AppRoutes.discovery}?switch=1'),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 10),
-                        child: const Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.dns_outlined,
-                                size: 32, color: MediarrColors.textSecondary),
-                            SizedBox(height: 6),
-                            Text(
-                              'Server',
-                              style: TextStyle(
-                                color: MediarrColors.textSecondary,
-                                fontSize: 18,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
+                    for (var i = 0; i < _destinations.length; i++)
+                      FocusableAction(
+                        focusNode: _railNodes[i],
+                        onSelect: () => context.go(_destinations[i].path),
+                        variant: FocusableActionVariant.button,
+                        borderRadius: 12,
+                        focusPadding: 4,
+                        child: _RailTile(
+                          destination: _destinations[i],
+                          selected: i == _selectedIndex,
                         ),
                       ),
-                    ),
-                    Expanded(
-                      child: ListView(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        children: [
-                          for (var i = 0; i < _destinations.length; i++)
-                            FocusableAction(
-                              focusNode: _railNodes[i],
-                              onSelect: () =>
-                                  context.go(_destinations[i].path),
-                              variant: FocusableActionVariant.button,
-                              borderRadius: 12,
-                              focusPadding: 4,
-                              child: _RailTile(
-                                destination: _destinations[i],
-                                selected: i == _selectedIndex,
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
                   ],
                 ),
               ),

@@ -114,12 +114,14 @@ Future<GoRouter> _pumpShell(
 }
 
 void main() {
-  testWidgets('hero Play autofocused on entry, on a visible control',
+  testWidgets('hero primary autofocused on entry, on a visible control',
       (tester) async {
     await _pumpShell(tester, FakeMediarrApiClient());
 
     expectVisibleFocus('entry');
-    expect(focusedText(), contains('Play'));
+    // FR-2: the hero primary action is state-aware. This fixture has a
+    // continue-watching entry, so the label is `Resume`, not `Play`.
+    expect(focusedText(), contains('Resume'));
   });
 
   testWidgets(

@@ -8,6 +8,8 @@ import '../../features/home/home_screen.dart';
 import '../../features/library/movies_screen.dart';
 import '../../features/library/series_screen.dart';
 import '../../features/playback/playback_screen.dart';
+import '../../features/search/search_screen.dart';
+import '../../features/settings/settings_screen.dart';
 import '../../shared/providers/connection_provider.dart';
 import '../../shared/services/api_client.dart';
 
@@ -19,6 +21,8 @@ class AppRoutes {
   static const String home = '/home';
   static const String movies = '/movies';
   static const String series = '/series';
+  static const String search = '/search';
+  static const String settings = '/settings';
   static const String playback = '/playback';
 }
 
@@ -80,6 +84,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: AppRoutes.series,
             builder: (context, state) => const SeriesScreen(),
+          ),
+          GoRoute(
+            path: AppRoutes.search,
+            builder: (context, state) => const SearchScreen(),
+          ),
+          GoRoute(
+            path: AppRoutes.settings,
+            builder: (context, state) => const SettingsScreen(),
           ),
         ],
       ),

@@ -1,15 +1,19 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../core/router/app_router.dart';
 import '../../core/theme/mediarr_theme.dart';
 import '../../core/widgets/netflix_scaffold.dart';
 import '../../shared/models/library_item.dart';
 import '../../shared/models/movie.dart';
 import '../../shared/models/series.dart';
 import '../../shared/services/api_client.dart';
+import '../../shared/utils/async_value_ext.dart';
 import '../library/continue_watching_section.dart';
 import '../library/movie_detail_screen.dart';
+import '../library/see_all_screen.dart';
 import '../library/series_detail_screen.dart';
 import '../playback/playback_navigation.dart';
 import '../playback/playback_screen.dart';
@@ -46,6 +50,15 @@ final homeMoviesProvider = FutureProvider<List<Movie>>((ref) async {
 final homeSeriesProvider = FutureProvider<List<Series>>((ref) async {
   final client = ref.read(apiClientProvider.notifier);
   return client.getSeries();
+});
+
+/// Provider for the featured movie behind the hero (FR-2).
+///
+/// Supplies year, runtime, and quality for the meta line and the quality
+/// chips. Returns null for series and episode heroes.
+final heroMovieProvider = FutureProvider.family<Movie?, int>((ref, mediaId) async {
+  final client = ref.read(apiClientProvider.notifier);
+  return client.getMovie(mediaId);
 });
 
 /// Netflix-style home screen.
@@ -91,11 +104,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     // continue-watching entry (so Play resumes); otherwise the first
     // recently-added media item. The fallback generic "Welcome" copy is
     // only used when neither source has data yet.
-    final continueWatching = continueWatchingAsync.value ?? const [];
-    final recentlyAdded = recentlyAddedAsync.value ?? const <LibraryItem>[];
+    final continueWatching =
+        continueWatchingAsync.dataOrNull ?? const <ContinueWatchingItem>[];
+    final recentlyAdded =
+        recentlyAddedAsync.dataOrNull ?? const <LibraryItem>[];
     final _HeroItem? recentItem = continueWatching.isNotEmpty
         ? _HeroFromContinueWatching(continueWatching.first)
         : (recentlyAdded.isNotEmpty ? _HeroFromLibrary(recentlyAdded.first) : null);
+
+    // Hero metadata (FR-2): the featured movie supplies year, runtime, and
+    // quality. Fields the API does not provide stay hidden.
+    final heroMovieId = switch (recentItem) {
+      _HeroFromContinueWatching(:final item) =>
+        item.mediaTypeQueryValue == 'movie' ? item.mediaId : null,
+      _HeroFromLibrary(:final item) => item.type == 'movie' ? item.id : null,
+      null => null,
+    };
+    final heroMovie = heroMovieId == null
+        ? null
+        : ref.watch(heroMovieProvider(heroMovieId)).dataOrNull;
 
     return NetflixScaffold(
       child: Container(
@@ -105,6 +132,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           children: [
             _HeroBanner(
               item: recentItem,
+              movie: heroMovie,
               playFocusNode: _heroPlayFocusNode,
               infoFocusNode: _heroInfoFocusNode,
               onPlay: () => _playHero(recentItem),
@@ -114,16 +142,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               },
             ),
             const SizedBox(height: 12),
-            if (continueWatchingAsync.value != null &&
-                continueWatchingAsync.value!.isNotEmpty)
+            if (continueWatching.isNotEmpty)
               ContinueWatchingSection(
-                items: continueWatchingAsync.value ?? const [],
+                items: continueWatching,
                 isLoading: continueWatchingAsync.isLoading,
                 onResume: (item) => _resumeContinueWatching(context, ref, item),
               ),
             const SizedBox(height: 12),
             _RowSection(
               title: 'Recently Added',
+              onSeeAll: () => Navigator.of(context, rootNavigator: true).push(
+                MaterialPageRoute(
+                  builder: (_) => const SeeAllScreen(title: 'Recently Added'),
+                ),
+              ),
               child: _RecentlyAddedRow(
                 items: recentlyAdded,
                 onOpen: (item) => _openLibraryItem(context, ref, item),
@@ -132,6 +164,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             const SizedBox(height: 12),
             _RowSection(
               title: 'Movies',
+              onSeeAll: () => context.go(AppRoutes.movies),
               child: _MoviePosterRow(
                 moviesAsync: moviesAsync,
                 onOpen: (m) => _openMovie(context, m),
@@ -140,6 +173,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             const SizedBox(height: 12),
             _RowSection(
               title: 'TV Shows',
+              onSeeAll: () => context.go(AppRoutes.series),
               child: _SeriesPosterRow(
                 seriesAsync: seriesAsync,
                 onOpen: (s) => _openSeries(context, s),
@@ -252,10 +286,14 @@ class _RowSection extends StatelessWidget {
   const _RowSection({
     required this.title,
     required this.child,
+    this.onSeeAll,
   });
 
   final String title;
   final Widget child;
+
+  /// `See All >` action (FR-4). Omitted where no grid screen matches.
+  final VoidCallback? onSeeAll;
 
   @override
   Widget build(BuildContext context) {
@@ -264,13 +302,44 @@ class _RowSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: const TextStyle(
-              color: MediarrColors.textPrimary,
-              fontSize: 28,
-              fontWeight: FontWeight.w700,
-            ),
+          Row(
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  color: MediarrColors.textPrimary,
+                  fontSize: 28,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const Spacer(),
+              if (onSeeAll != null)
+                FocusableAction(
+                  onSelect: onSeeAll,
+                  variant: FocusableActionVariant.button,
+                  borderRadius: 8,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 6),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'See All',
+                          style: TextStyle(
+                            color: MediarrColors.textSecondary,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        SizedBox(width: 2),
+                        Icon(Icons.chevron_right,
+                            color: MediarrColors.textSecondary, size: 22),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
           ),
           const SizedBox(height: 12),
           child,
@@ -300,6 +369,7 @@ class _HeroFromLibrary extends _HeroItem {
 class _HeroBanner extends StatelessWidget {
   const _HeroBanner({
     required this.item,
+    required this.movie,
     required this.playFocusNode,
     required this.infoFocusNode,
     required this.onPlay,
@@ -307,6 +377,7 @@ class _HeroBanner extends StatelessWidget {
   });
 
   final _HeroItem? item;
+  final Movie? movie;
   final FocusNode playFocusNode;
   final FocusNode infoFocusNode;
   final VoidCallback onPlay;
@@ -325,7 +396,7 @@ class _HeroBanner extends StatelessWidget {
     final i = item;
     if (i == null) return null;
     if (i is _HeroFromContinueWatching) return i.item.backdropUrl;
-    return null;
+    return movie?.fanartUrl;
   }
 
   String? get _posterUrl {
@@ -337,26 +408,63 @@ class _HeroBanner extends StatelessWidget {
 
   String? get _overview {
     final i = item;
-    if (i is _HeroFromLibrary) return (i).item.overview;
-    return null;
+    if (i is _HeroFromLibrary) return (i).item.overview ?? movie?.overview;
+    return movie?.overview;
   }
 
-  String? get _subtitle {
+  /// Metadata line (FR-2): `2024 | Sci-Fi | 2h 4m`, built only from fields
+  /// the API provides.
+  String? get _metaLine {
+    final parts = <String>[];
     final i = item;
     if (i is _HeroFromLibrary) {
       final lib = i.item;
-      if (lib.year != null) return lib.year.toString();
-      if (lib.type.isNotEmpty) {
-        return lib.type[0].toUpperCase() + lib.type.substring(1);
-      }
-    }
-    if (i is _HeroFromContinueWatching) {
+      if (lib.year != null) parts.add(lib.year.toString());
+      parts.add(_typeLabel(lib.type));
+    } else if (i is _HeroFromContinueWatching) {
       final w = i.item;
-      if (w.episodeTitle != null) {
-        return '${w.episodeTitle} · ${w.mediaTypeQueryValue.toUpperCase()}';
+      final season = w.seasonNumber;
+      final episode = w.episodeNumber;
+      if (season != null && episode != null) {
+        parts.add('S${season.toString().padLeft(2, '0')}'
+            'E${episode.toString().padLeft(2, '0')}');
       }
     }
-    return null;
+    final runtime = movie?.runtime;
+    if (runtime != null && runtime > 0) parts.add(_runtimeLabel(runtime));
+    return parts.isEmpty ? null : parts.join(' | ');
+  }
+
+  /// Quality chips (FR-2). The API exposes no rating field today, so the
+  /// `PG-13` chip stays hidden until one exists.
+  List<String> get _chips {
+    final quality = movie?.quality?.toLowerCase();
+    if (quality == null || quality.isEmpty) return const [];
+    final chips = <String>[];
+    if (quality.contains('2160') || quality.contains('4k')) {
+      chips.add('4K');
+    }
+    if (quality.contains('1080') ||
+        quality.contains('720') ||
+        quality.contains('hd')) {
+      chips.add('HD');
+    }
+    if (chips.isEmpty) chips.add('SD');
+    return chips;
+  }
+
+  bool get _hasProgress => item is _HeroFromContinueWatching;
+
+  /// FR-2: `Resume` when the title has playback progress, else `Play`.
+  String get _primaryLabel => _hasProgress ? 'Resume' : 'Play';
+
+  String _typeLabel(String type) =>
+      type.isEmpty ? type : type[0].toUpperCase() + type.substring(1);
+
+  String _runtimeLabel(int minutes) {
+    final hours = minutes ~/ 60;
+    final rest = minutes % 60;
+    return hours > 0 ? '${hours}h ${rest}m' : '${rest}m';
   }
 
   @override
@@ -430,11 +538,22 @@ class _HeroBanner extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
+                const Text(
+                  'FEATURED',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 3,
+                  ),
+                ),
+                const SizedBox(height: 10),
                 Text(
                   _title,
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 40,
+                    fontSize: 48,
+                    height: 1.05,
                     fontWeight: FontWeight.w800,
                     shadows: [
                       Shadow(blurRadius: 12, color: Colors.black),
@@ -443,15 +562,44 @@ class _HeroBanner extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                if (_subtitle != null) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    _subtitle!,
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                    ),
+                if (_metaLine != null || _chips.isNotEmpty) ...[
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      if (_metaLine != null)
+                        Flexible(
+                          child: Text(
+                            _metaLine!,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      for (final chip in _chips) ...[
+                        const SizedBox(width: 10),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(color: Colors.white54),
+                          ),
+                          child: Text(
+                            chip,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ],
                 if (_overview != null && _overview!.isNotEmpty) ...[
@@ -467,31 +615,36 @@ class _HeroBanner extends StatelessWidget {
                     ),
                   ),
                 ],
-                const SizedBox(height: 20),
+                const SizedBox(height: 24),
                 Row(
                   children: [
                     FocusableAction(
                       focusNode: playFocusNode,
                       autofocus: true,
                       onSelect: onPlay,
-                      borderRadius: 6,
+                      borderRadius: 8,
                       scale: 1.04,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 28, vertical: 14),
-                        color: Colors.white,
-                        child: const Row(
+                            horizontal: 28, vertical: 16),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF7FB2FF), Color(0xFF4E8DF5)],
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.play_arrow,
-                                color: Colors.black, size: 28),
-                            SizedBox(width: 8),
+                            const Icon(Icons.play_arrow,
+                                color: Color(0xFF0A1424), size: 28),
+                            const SizedBox(width: 8),
                             Text(
-                              'Play',
-                              style: TextStyle(
-                                color: Colors.black,
+                              _primaryLabel,
+                              style: const TextStyle(
+                                color: Color(0xFF0A1424),
                                 fontSize: 18,
-                                fontWeight: FontWeight.w700,
+                                fontWeight: FontWeight.w800,
                               ),
                             ),
                           ],
@@ -502,16 +655,15 @@ class _HeroBanner extends StatelessWidget {
                     FocusableAction(
                       focusNode: infoFocusNode,
                       onSelect: onMoreInfo,
-                      borderRadius: 6,
+                      borderRadius: 8,
                       scale: 1.04,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 24, vertical: 14),
+                            horizontal: 24, vertical: 16),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.18),
-                          border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.5)),
-                          borderRadius: BorderRadius.circular(6),
+                          color: const Color(0xFF1B2430),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.white24),
                         ),
                         child: const Row(
                           mainAxisSize: MainAxisSize.min,
@@ -520,7 +672,7 @@ class _HeroBanner extends StatelessWidget {
                                 color: Colors.white, size: 24),
                             SizedBox(width: 8),
                             Text(
-                              'More Info',
+                              'Details',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 16,
@@ -559,8 +711,9 @@ class _RecentlyAddedRow extends StatelessWidget {
         ),
       );
     }
+    // FR-4: landscape cards with a bottom title bar (the mockup's row).
     return SizedBox(
-      height: 380,
+      height: 240,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: items.length,
@@ -568,7 +721,7 @@ class _RecentlyAddedRow extends StatelessWidget {
         itemBuilder: (context, index) {
           final item = items[index];
           return SizedBox(
-            width: 240,
+            width: 380,
             child: _LibraryPosterCard(
               item: item,
               onSelect: () => onOpen(item),
@@ -580,6 +733,8 @@ class _RecentlyAddedRow extends StatelessWidget {
   }
 }
 
+/// Landscape "Recently Added" card (owner mockup 2026-09-24, FR-4): 16:9
+/// artwork with a bottom title bar over a dark scrim.
 class _LibraryPosterCard extends StatelessWidget {
   const _LibraryPosterCard({required this.item, required this.onSelect});
 
@@ -590,61 +745,51 @@ class _LibraryPosterCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return FocusableAction(
       onSelect: onSelect,
-      borderRadius: 8,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(
-            child: item.posterUrl != null
-                ? CachedNetworkImage(
-                    imageUrl: item.posterUrl!,
-                    fit: BoxFit.cover,
-                    placeholder: (_, __) => Container(
-                      color: MediarrColors.surfaceCard,
-                    ),
-                    errorWidget: (_, __, ___) => Container(
-                      color: MediarrColors.surfaceCard,
-                      child: const Center(
-                        child: Icon(Icons.movie,
-                            color: MediarrColors.textMuted, size: 32),
-                      ),
-                    ),
-                  )
-                : Container(
-                    color: MediarrColors.surfaceCard,
-                    child: const Center(
-                      child: Icon(Icons.movie,
-                          color: MediarrColors.textMuted, size: 32),
-                    ),
-                  ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: MediarrColors.textPrimary,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w600,
-                  ),
+      borderRadius: 12,
+      child: AspectRatio(
+        aspectRatio: 16 / 9,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (item.posterUrl != null)
+              CachedNetworkImage(
+                imageUrl: item.posterUrl!,
+                fit: BoxFit.cover,
+                placeholder: (_, __) =>
+                    Container(color: MediarrColors.surfaceCard),
+                errorWidget: (_, __, ___) =>
+                    Container(color: MediarrColors.surfaceCard),
+              )
+            else
+              Container(color: MediarrColors.surfaceCard),
+            const DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0x00000000), Color(0xCC000000)],
+                  stops: [0.5, 1.0],
                 ),
-                if (item.year != null)
-                  Text(
-                    item.year.toString(),
-                    style: const TextStyle(
-                      color: MediarrColors.textMuted,
-                      fontSize: 18,
-                    ),
-                  ),
-              ],
+              ),
             ),
-          ),
-        ],
+            Positioned(
+              left: 14,
+              right: 14,
+              bottom: 12,
+              child: Text(
+                item.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  shadows: [Shadow(blurRadius: 8, color: Colors.black)],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

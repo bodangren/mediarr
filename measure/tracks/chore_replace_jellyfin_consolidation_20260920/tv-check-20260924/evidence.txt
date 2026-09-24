@@ -1,0 +1,22 @@
+=== TV check walk 2026-09-24T12:47:41Z on com.mediarr.mediarr_client (v6, settled captures) ===
+step-01-home-cold-start be0af2920dd2209b84d2de1904e46d4c focus[[284,534][484,627]] Play
+step-02-down-continue-watching ecb466703ed66ee21919a882da4bdee1 focus[[248,630][938,1080]] The Matrix | 6% · Resume at 08:14 ; 6
+step-03-down-recently-added 91d0713ae59c75a3e4e4495179eab404 focus[[248,510][608,1080]] Rick and Morty | 2025
+step-04-down-movies-row 3f64be930289fa2d5123ff023e1ec884 focus[[248,510][608,1080]] The Matrix | 1999
+step-05-down-series-row 62ccd839eae9c675f61dba886f0d58eb focus[[248,510][608,1080]] Rick and Morty | 2025
+step-06-left-to-rail e38617c9f8c3ce608cd7f2d5f143d95b focus[[0,0][1920,1080]] Movies ; The Matrix | 1999 ; TV Shows ; Rick and Morty | 2025
+step-07-rail-movies 7c201ef6c0275dc307844ee2c87eaf92 focus[[0,0][1920,1080]] Movies ; The Matrix | 1999 ; TV Shows ; Rick and Morty | 2025
+step-08-movies-screen eddeb76287e203334da3c9703658d99b focus[[248,663][630,1080]] The Matrix | 1999
+step-09-up-continue-watching d9a327a5815ea069057e57413276f909 focus[[248,663][630,1080]] The Matrix | 1999
+step-10-search-focus a81b173a28e1b5169db690c5e8f105a3 focus[[248,663][630,1080]] The Matrix | 1999
+step-11-search-typed-matrix 37f981e3890ef835e2a7cdd82c16ad22 focus[[212,0][1920,582]] matrix ; The Matrix | 6% · Resume at 08:14 ; 6 ; Rick and Morty | S09E09 · Salute Your Morts | 47% · Resume at 10:15 ; 47
+step-12-grid-after-filter 690770dfca961932b0381ddfa161924b focus[[212,0][1920,582]] matrix ; The Matrix | 6% · Resume at 08:14 ; 6 ; Rick and Morty | S09E09 · Salute Your Morts | 47% · Resume at 10:15 ; 47
+step-13-movie-detail 8bbee7e44b1936162fcf3f2fdaf09a21 focus[[212,0][1920,582]] matrix. ; The Matrix | 6% · Resume at 08:14 ; 6 ; Rick and Morty | S09E09 · Salute Your Morts | 47% · Resume at 10:15 ; 47
+step-14-back-to-grid 825aefc6bc9e73ac8bff41ff08969269 focus[[212,0][1920,582]] matrix. ; The Matrix | 6% · Resume at 08:14 ; 6 ; Rick and Morty | S09E09 · Salute Your Morts | 47% · Resume at 10:15 ; 47
+step-15-left-to-rail 1bd7f629aa34c0b7b04566f39f65bbf4 focus[[212,0][1920,582]] matrix. ; The Matrix | 6% · Resume at 08:14 ; 6 ; Rick and Morty | S09E09 · Salute Your Morts | 47% · Resume at 10:15 ; 47
+step-16-rail-home b571faa9fd5cf20d74a777de12f5c18f focus[[0,0][1920,1080]] matrix. ; The Matrix | 6% · Resume at 08:14 ; 6 ; Rick and Morty | S09E09 · Salute Your Morts | 47% · Resume at 10:15 ; 47
+step-17-home-screen fb026d3e6de72708ee02caa48181f873 focus[[0,0][1920,1080]] matrix. ; The Matrix | 6% · Resume at 08:14 ; 6 ; Rick and Morty | S09E09 · Salute Your Morts | 47% · Resume at 10:15 ; 47
+step-18-home-cw-card 8238b6e8cb1abaaf425191559b7f953f focus[[248,630][938,1080]] The Matrix | 6% · Resume at 08:14 ; 6
+step-19-playback-select 817c8d5a565058069147ac223317b234 focus[[248,630][938,1080]] The Matrix | 6% · Resume at 08:14 ; 6
+step-20-playback-resume c7a68db08366fe798d49c8c185f7b53f focus[[248,630][938,1080]] The Matrix | 6% · Resume at 08:14 ; 6
+=== walk done ===

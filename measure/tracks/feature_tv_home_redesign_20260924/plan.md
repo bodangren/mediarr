@@ -57,10 +57,15 @@
       Applied to the hero, the rows, Search, and See All.
 - [x] Gate: `flutter analyze` zero issues; `flutter test` green — 324 passed. The Phase 4c strict
       D-pad suites still pass unchanged (reachability assertions intact).
-- [ ] Device evidence (F10): one home-screen frame of the new build with its MD5 in this plan.
-      Build the fat APK: `JAVA_HOME=/home/daniel-bo/.local/jdk17 flutter build apk --release
-      --android-skip-build-dependency-validation`. Install: `adb -s 192.168.10.60:5555 install -r
-      build/app/outputs/flutter-apk/app-release.apk`.
+- [x] Device evidence (F10): one home-screen frame of the new build with its MD5. _Done:
+      `device-20260924/home-mockup-build.png`, MD5 `d0dca803c6cdb51b630d522040b71af3`, captured
+      2026-09-24 on `192.168.10.60:5555` after `am start` (foreground confirmed as
+      `com.mediarr.mediarr_client/.MainActivity`). The frame shows the claim: five rail items (Home
+      with the selected pill, Movies, Series, Search, Settings), the `FEATURED` eyebrow, the title,
+      the `S09E09` metadata line, `Resume` + `Details`, and the 16:9 Continue Watching cards. Chips
+      are hidden because the episode hero exposes no quality field (the FR-2 rule). Build recipe:
+      `JAVA_HOME=/home/daniel-bo/.local/jdk17 flutter build apk --release
+      --android-skip-build-dependency-validation` (97.7 MB fat APK)._
 - [x] Commit: `feat(client): mockup home screen with rail, hero, and continue-watching cards`.
 
 ## Phase 2: Player repair (FR-7 to FR-9)

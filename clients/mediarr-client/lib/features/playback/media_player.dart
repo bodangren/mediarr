@@ -38,6 +38,42 @@ class MediaTrackLists {
   }
 }
 
+/// External subtitle file supplied by a playback manifest.
+class ExternalSubtitleSource {
+  const ExternalSubtitleSource({
+    required this.id,
+    required this.url,
+    this.languageCode,
+    this.isForced = false,
+    this.isHi = false,
+    this.format = 'srt',
+  });
+
+  final int id;
+  final String url;
+  final String? languageCode;
+  final bool isForced;
+  final bool isHi;
+  final String format;
+
+  String get trackId => externalSubtitleTrackId(id);
+
+  String get title {
+    final label = isChineseSimplified(languageCode)
+        ? 'Chinese (Simplified)'
+        : isEnglishAudio(languageCode)
+            ? 'English'
+            : (languageCode?.trim().isNotEmpty ?? false)
+                ? languageCode!.trim()
+                : 'External subtitle';
+    final flags = [
+      if (isForced) 'Forced',
+      if (isHi) 'SDH',
+    ];
+    return flags.isEmpty ? label : '$label · ${flags.join(' · ')}';
+  }
+}
+
 /// Status transitions reported by the underlying player.
 enum MediaPlayerStatus { idle, opening, buffering, playing, paused, completed }
 
@@ -69,6 +105,9 @@ abstract class MediaPlayer {
   /// Select the subtitle track with the given [trackId], or `null` to disable
   /// subtitles.
   Future<void> setSubtitleTrack(String? trackId);
+
+  /// Register external subtitle files for picker and default-track selection.
+  Future<void> attachExternalSubtitles(List<ExternalSubtitleSource> sources);
 
   /// Stream of track lists emitted when the player discovers tracks.
   Stream<MediaTrackLists> get tracks;
@@ -111,6 +150,9 @@ class MediaKitMediaPlayer implements MediaPlayer {
       StreamController<Duration>.broadcast();
   final StreamController<String> _errorController =
       StreamController<String>.broadcast();
+  final Map<String, ExternalSubtitleSource> _externalSubtitles = {};
+  MediaTrackLists _nativeTracks = const MediaTrackLists();
+  String? _selectedExternalTrackId;
 
   void _attachListeners() {
     _player.stream.playing.listen((playing) {
@@ -141,7 +183,7 @@ class MediaKitMediaPlayer implements MediaPlayer {
     _player.stream.position.listen(_positionController.add);
     _player.stream.duration.listen(_durationController.add);
     _player.stream.tracks.listen((tracks) {
-      _tracksController.add(MediaTrackLists(
+      _nativeTracks = MediaTrackLists(
         audio: tracks.audio
             .map((t) => AudioTrackInfo(
                   id: t.id,
@@ -156,12 +198,30 @@ class MediaKitMediaPlayer implements MediaPlayer {
                   title: t.title,
                 ))
             .toList(),
-      ));
+      );
+      _emitTracks();
     });
+  }
+
+  void _emitTracks() {
+    final external = _externalSubtitles.values
+        .map((source) => SubtitleTrackInfo(
+              id: source.trackId,
+              language: source.languageCode,
+              title: source.title,
+            ))
+        .toList();
+    _tracksController.add(MediaTrackLists(
+      audio: _nativeTracks.audio,
+      subtitle: mergeSubtitleTracks(_nativeTracks.subtitle, external),
+    ));
   }
 
   @override
   Future<void> open(String streamUrl) async {
+    _externalSubtitles.clear();
+    _nativeTracks = const MediaTrackLists();
+    _selectedExternalTrackId = null;
     await _player.open(Media(streamUrl));
     if (!_statusController.isClosed) {
       _statusController.add(MediaPlayerStatus.opening);
@@ -199,14 +259,37 @@ class MediaKitMediaPlayer implements MediaPlayer {
   @override
   Future<void> setSubtitleTrack(String? trackId) async {
     if (trackId == null) {
+      _selectedExternalTrackId = null;
       await _player.setSubtitleTrack(SubtitleTrack.no());
       return;
     }
+    final external = _externalSubtitles[trackId];
+    if (external != null) {
+      if (_selectedExternalTrackId == trackId) return;
+      await _player.setSubtitleTrack(SubtitleTrack.uri(
+        external.url,
+        title: external.title,
+        language: external.languageCode,
+      ));
+      _selectedExternalTrackId = trackId;
+      return;
+    }
+    _selectedExternalTrackId = null;
     final match = _player.state.tracks.subtitle.firstWhere(
       (t) => t.id == trackId,
       orElse: () => SubtitleTrack.no(),
     );
     await _player.setSubtitleTrack(match);
+  }
+
+  @override
+  Future<void> attachExternalSubtitles(
+    List<ExternalSubtitleSource> sources,
+  ) async {
+    _externalSubtitles
+      ..clear()
+      ..addEntries(sources.map((source) => MapEntry(source.trackId, source)));
+    _emitTracks();
   }
 
   @override

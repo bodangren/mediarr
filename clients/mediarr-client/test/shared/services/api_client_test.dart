@@ -68,6 +68,44 @@ class _MockResponse {
 }
 
 void main() {
+  group('PlaybackManifest', () {
+    test('parses external subtitle tracks and defaults missing fields', () {
+      final manifest = PlaybackManifest.fromJson({
+        'streamUrl': '/api/stream/42?type=movie',
+        'metadata': {
+          'mediaType': 'MOVIE',
+          'mediaId': 42,
+          'title': 'Inception',
+        },
+        'subtitles': [
+          {
+            'id': 101,
+            'languageCode': 'zho',
+            'isForced': false,
+            'isHi': true,
+            'format': 'ass',
+            'url': '/api/playback/subtitles/101',
+          },
+        ],
+      });
+
+      expect(manifest.subtitles, hasLength(1));
+      expect(manifest.subtitles.single.id, 101);
+      expect(manifest.subtitles.single.languageCode, 'zho');
+      expect(manifest.subtitles.single.isForced, false);
+      expect(manifest.subtitles.single.isHi, true);
+      expect(manifest.subtitles.single.format, 'ass');
+      expect(manifest.subtitles.single.url, '/api/playback/subtitles/101');
+      expect(
+        PlaybackManifest.fromJson({
+          'streamUrl': '',
+          'metadata': <String, dynamic>{},
+        }).subtitles,
+        isEmpty,
+      );
+    });
+  });
+
   group('SystemStatus', () {
     test('fromJson parses correctly', () {
       final status = SystemStatus.fromJson({

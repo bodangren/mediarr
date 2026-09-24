@@ -262,6 +262,45 @@ void main() {
     );
 
     testWidgets(
+      'attaches an external Chinese track and selects its stable ID',
+      (tester) async {
+        const external = ExternalSubtitleSource(
+          id: 101,
+          url: 'http://mediarr.local/api/playback/subtitles/101',
+          languageCode: 'zho',
+          format: 'srt',
+        );
+
+        await tester.runAsync(() async {
+          await service.play(
+            streamUrl: 'http://mediarr.local/api/stream/42?type=movie',
+            title: 'Inception',
+            mediaId: 42,
+            mediaType: 'movie',
+            externalSubtitles: const [external],
+          );
+          await Future<void>.delayed(Duration.zero);
+          player.emitTracks(MediaTrackLists(
+            subtitle: [
+              SubtitleTrackInfo(
+                id: external.trackId,
+                language: external.languageCode,
+                title: external.title,
+              ),
+            ],
+          ));
+          await Future<void>.delayed(Duration.zero);
+        });
+
+        expect(player.attachExternalSubtitlesCalls, hasLength(1));
+        expect(player.attachExternalSubtitlesCalls.single, const [external]);
+        expect(service.state.subtitleTracks.single.id, 'external:101');
+        expect(service.state.selectedSubtitleIndex, 0);
+        expect(player.setSubtitleTrackCalls, contains('external:101'));
+      },
+    );
+
+    testWidgets(
       'empty subtitle list leaves selection null and disables subs',
       (tester) async {
         await tester.runAsync(() async {

@@ -165,6 +165,59 @@ void main() {
     );
 
     testWidgets(
+      'resolves manifest subtitle URL and passes it to the player',
+      (tester) async {
+        apiClient.state = const ApiClientState(
+          status: ConnectionStatus.connected,
+          baseUrl: 'http://mediarr.local:5174',
+        );
+        apiClient.getPlaybackManifestReturn = const PlaybackManifest(
+          streamUrl: '/api/stream/7?type=movie',
+          metadata: PlaybackManifestMetadata(
+            mediaType: 'MOVIE',
+            mediaId: 7,
+            title: 'Some Movie',
+          ),
+          subtitles: [
+            PlaybackManifestSubtitle(
+              id: 101,
+              languageCode: 'zho',
+              format: 'srt',
+              url: '/api/playback/subtitles/101',
+            ),
+          ],
+        );
+
+        await pumpScreen(tester);
+
+        expect(player.openCalls, [
+          'http://mediarr.local:5174/api/stream/7?type=movie',
+        ]);
+        expect(player.attachExternalSubtitlesCalls, hasLength(1));
+        expect(player.attachExternalSubtitlesCalls.single.single.url,
+            'http://mediarr.local:5174/api/playback/subtitles/101');
+
+        await tester.runAsync(() async {
+          await Future<void>.delayed(Duration.zero);
+          player.emitTracks(const MediaTrackLists(
+            subtitle: [
+              SubtitleTrackInfo(
+                id: 'external:101',
+                language: 'zho',
+                title: 'Chinese (Simplified)',
+              ),
+            ],
+          ));
+          await Future<void>.delayed(Duration.zero);
+        });
+        await tester.pump();
+        await tester.tap(find.byIcon(Icons.closed_caption));
+        await pumpUntilSettled(tester);
+        expect(find.text('Chinese (Simplified) · zho'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
       'manual picker is reachable via the closed-caption button on the '
       'transport overlay (FR-6 manual override path)',
       (tester) async {

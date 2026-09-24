@@ -24,6 +24,7 @@ class FakeMediaPlayer implements MediaPlayer {
   final List<String> openCalls = [];
   final List<String> setAudioTrackCalls = [];
   final List<String?> setSubtitleTrackCalls = [];
+  final List<List<ExternalSubtitleSource>> attachExternalSubtitlesCalls = [];
   final List<Duration> seekCalls = [];
   final List<bool> playOrPauseCalls = [];
   final List<bool> stopCalls = [];
@@ -59,6 +60,13 @@ class FakeMediaPlayer implements MediaPlayer {
   @override
   Future<void> setSubtitleTrack(String? trackId) async {
     setSubtitleTrackCalls.add(trackId);
+  }
+
+  @override
+  Future<void> attachExternalSubtitles(
+    List<ExternalSubtitleSource> sources,
+  ) async {
+    attachExternalSubtitlesCalls.add(List.unmodifiable(sources));
   }
 
   @override

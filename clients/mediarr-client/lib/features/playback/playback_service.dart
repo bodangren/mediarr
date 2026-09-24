@@ -170,6 +170,7 @@ class PlaybackService extends StateNotifier<PlaybackState> {
     required int mediaId,
     required String mediaType,
     Duration resumeFrom = Duration.zero,
+    List<ExternalSubtitleSource> externalSubtitles = const [],
   }) async {
     final startPosition = normalizeResumeOffset(resumeFrom);
 
@@ -195,6 +196,7 @@ class PlaybackService extends StateNotifier<PlaybackState> {
 
     try {
       await _player.open(streamUrl);
+      await _player.attachExternalSubtitles(externalSubtitles);
       if (startPosition > Duration.zero) {
         await _player.seek(startPosition);
       }

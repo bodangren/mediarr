@@ -97,15 +97,47 @@ class PlaybackManifestResume {
   }
 }
 
+/// External subtitle track returned by the playback manifest.
+class PlaybackManifestSubtitle {
+  const PlaybackManifestSubtitle({
+    required this.id,
+    required this.url,
+    this.languageCode,
+    this.isForced = false,
+    this.isHi = false,
+    this.format = 'srt',
+  });
+
+  final int id;
+  final String url;
+  final String? languageCode;
+  final bool isForced;
+  final bool isHi;
+  final String format;
+
+  factory PlaybackManifestSubtitle.fromJson(Map<String, dynamic> json) {
+    return PlaybackManifestSubtitle(
+      id: (json['id'] as num?)?.toInt() ?? 0,
+      url: json['url'] as String? ?? '',
+      languageCode: json['languageCode'] as String?,
+      isForced: json['isForced'] as bool? ?? false,
+      isHi: json['isHi'] as bool? ?? false,
+      format: json['format'] as String? ?? 'srt',
+    );
+  }
+}
+
 class PlaybackManifest {
   const PlaybackManifest({
     required this.streamUrl,
     required this.metadata,
+    this.subtitles = const [],
     this.resume,
   });
 
   final String streamUrl;
   final PlaybackManifestMetadata metadata;
+  final List<PlaybackManifestSubtitle> subtitles;
   final PlaybackManifestResume? resume;
 
   factory PlaybackManifest.fromJson(Map<String, dynamic> json) {
@@ -114,6 +146,11 @@ class PlaybackManifest {
       metadata: PlaybackManifestMetadata.fromJson(
         json['metadata'] as Map<String, dynamic>? ?? <String, dynamic>{},
       ),
+      subtitles: (json['subtitles'] as List<dynamic>? ?? const [])
+          .map((item) => PlaybackManifestSubtitle.fromJson(
+                item as Map<String, dynamic>,
+              ))
+          .toList(),
       resume: json['resume'] != null
           ? PlaybackManifestResume.fromJson(
               json['resume'] as Map<String, dynamic>,
@@ -266,13 +303,17 @@ class TorrentItem {
   String get formattedSize {
     if (size < 1024) return '$size B';
     if (size < 1024 * 1024) return '${(size / 1024).toStringAsFixed(1)} KB';
-    if (size < 1024 * 1024 * 1024) return '${(size / (1024 * 1024)).toStringAsFixed(1)} MB';
+    if (size < 1024 * 1024 * 1024) {
+      return '${(size / (1024 * 1024)).toStringAsFixed(1)} MB';
+    }
     return '${(size / (1024 * 1024 * 1024)).toStringAsFixed(2)} GB';
   }
 
   String get formattedSpeed {
     if (downloadSpeed < 1024) return '$downloadSpeed B/s';
-    if (downloadSpeed < 1024 * 1024) return '${(downloadSpeed / 1024).toStringAsFixed(1)} KB/s';
+    if (downloadSpeed < 1024 * 1024) {
+      return '${(downloadSpeed / 1024).toStringAsFixed(1)} KB/s';
+    }
     return '${(downloadSpeed / (1024 * 1024)).toStringAsFixed(1)} MB/s';
   }
 

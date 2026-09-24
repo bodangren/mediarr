@@ -176,4 +176,28 @@ void main() {
       expect(selectDefaultSubtitleTrackIndex(subs), 0);
     });
   });
+
+  group('external subtitle tracks', () {
+    test('uses stable manifest IDs and removes loaded duplicates', () {
+      const containerTracks = [
+        SubtitleTrackInfo(id: '1', language: 'eng', title: 'English'),
+        SubtitleTrackInfo(
+          id: '7',
+          language: 'zho',
+          title: 'Chinese (Simplified)',
+        ),
+      ];
+      const externalTrack = SubtitleTrackInfo(
+        id: 'external:101',
+        language: 'zho',
+        title: 'Chinese (Simplified)',
+      );
+
+      expect(externalSubtitleTrackId(101), 'external:101');
+      expect(
+        mergeSubtitleTracks(containerTracks, const [externalTrack]),
+        [containerTracks.first, externalTrack],
+      );
+    });
+  });
 }

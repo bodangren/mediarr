@@ -6,6 +6,7 @@ import 'package:media_kit_video/media_kit_video.dart';
 import '../../core/theme/mediarr_theme.dart';
 import '../../core/widgets/netflix_scaffold.dart';
 import '../../shared/services/api_client.dart';
+import 'media_player.dart';
 import 'playback_service.dart';
 import 'track_selection.dart';
 
@@ -83,6 +84,7 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
     final apiClient = ref.read(apiClientProvider.notifier);
 
     Duration resumeFrom = Duration.zero;
+    var externalSubtitles = <ExternalSubtitleSource>[];
     try {
       final manifest = await apiClient.getPlaybackManifest(
         mediaId: widget.mediaId,
@@ -95,6 +97,16 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
             : '$baseUrl${manifest.streamUrl}';
         _resolvedTitle = manifest.metadata.title;
         resumeFrom = Duration(seconds: manifest.resume?.position ?? 0);
+        externalSubtitles = manifest.subtitles
+            .map((track) => ExternalSubtitleSource(
+                  id: track.id,
+                  url: _resolveManifestUrl(track.url, baseUrl),
+                  languageCode: track.languageCode,
+                  isForced: track.isForced,
+                  isHi: track.isHi,
+                  format: track.format,
+                ))
+            .toList();
       }
     } catch (_) {
       // Best-effort; fallback to route-provided stream URL.
@@ -111,11 +123,18 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
       mediaId: widget.mediaId,
       mediaType: widget.mediaType,
       resumeFrom: resumeFrom,
+      externalSubtitles: externalSubtitles,
     );
     if (mounted) {
       // Show the overlay briefly at start so the user knows where Back lands.
       service.showOverlay();
     }
+  }
+
+  String _resolveManifestUrl(String url, String baseUrl) {
+    final uri = Uri.parse(url);
+    if (uri.hasScheme) return url;
+    return Uri.parse(baseUrl).resolveUri(uri).toString();
   }
 
   void _exitPlayback() async {

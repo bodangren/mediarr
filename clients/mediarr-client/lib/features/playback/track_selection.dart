@@ -60,6 +60,30 @@ class SubtitleTrackInfo {
       'SubtitleTrackInfo(id: $id, language: $language, title: $title)';
 }
 
+/// Builds a stable client track ID for an external subtitle manifest entry.
+String externalSubtitleTrackId(int manifestId) => 'external:$manifestId';
+
+/// Combines container tracks with manifest subtitle tracks.
+///
+/// External tracks take precedence when the media backend also reports the
+/// same loaded track. The manifest ID remains stable for picker selection.
+List<SubtitleTrackInfo> mergeSubtitleTracks(
+  List<SubtitleTrackInfo> containerTracks,
+  List<SubtitleTrackInfo> externalTracks,
+) {
+  final externalKeys = externalTracks.map(_subtitleTrackKey).toSet();
+  return [
+    ...containerTracks.where(
+      (track) => !externalKeys.contains(_subtitleTrackKey(track)),
+    ),
+    ...externalTracks,
+  ];
+}
+
+String _subtitleTrackKey(SubtitleTrackInfo track) =>
+    '${track.language?.trim().toLowerCase() ?? ''}\u0000'
+    '${track.title?.trim().toLowerCase() ?? ''}';
+
 /// Returns `true` when [language] matches the English ISO 639-2 code `eng`.
 ///
 /// Accepts exact match (`eng`) and any prefix that starts with `eng` (e.g.

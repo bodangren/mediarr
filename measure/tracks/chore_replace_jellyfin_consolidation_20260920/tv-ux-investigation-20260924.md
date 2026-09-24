@@ -329,3 +329,42 @@ search controller text after typing "matrix": ""
 
 Conclusion: input produced no visible change across most captured pairs. Treat every Phase 4b
 "verified on device" citation as unverified until a new frame shows the claimed state.
+
+---
+
+## Addendum 2026-09-24 — result of the Phase 4c implementation
+
+Steps 1 to 14 are implemented. The implementation produced one new critical finding and one
+correction to this report.
+
+**F17 (Critical, new): the rail is unreachable from the content in the production router shell.**
+The strict tests mount the real `GoRouter` shape, and Left from the Home hero did not reach the
+rail there, unlike in the simplified probe tree of section 1. Cause: every routed page is wrapped
+in a `ModalRoute` `FocusScope` (`_ModalScopeState`), and
+`DirectionalFocusTraversalPolicyMixin` only searches the focused node `enclosingScope`. The
+measured scope held exactly the 12 page nodes and none of the 3 rail nodes.
+Fix: `LeanbackScaffold` now owns the shell boundary. Left at a row's left edge opens the rail and
+focuses the current destination. Right on the rail returns to the item the user came from. Left
+and Right at the other row edges do nothing.
+
+**Correction to section 4 ("What works"):** the claim "Left from the Home hero reaches the rail"
+is withdrawn. It was true only outside the router. F17 replaces it.
+
+**Harness lesson:** the first probe mounted `LeanbackScaffold` directly and reported a behaviour
+that production does not have. A finding from a simplified tree is a hypothesis until the
+production composition reproduces it.
+
+### Result
+
+- `test/features/home/home_screen_dpad_test.dart` now mounts the real `HomeScreen` (7 tests). The
+  `_DpadHomeProbe` mock is deleted.
+- `test/features/library/library_dpad_test.dart` is new (7 tests) for `MoviesScreen` and
+  `SeriesScreen`.
+- Both suites assert `expectVisibleFocus` after every key press: focus must sit on a control that
+  renders a focus cue.
+- Gates: `flutter analyze` clean, `flutter test` 320 passed.
+- Step 13 decision: the rail stays at Home / Movies / Series (owner-approved strip). Admin
+  surfaces stay out (player-first). The five unreachable screens and three dead widgets are
+  deleted. A "Server" affordance in the rail opens Discovery (`?switch=1`) so the user can change
+  server.
+- Remaining: step 15, the human-gated remote-only check on `192.168.10.62`.

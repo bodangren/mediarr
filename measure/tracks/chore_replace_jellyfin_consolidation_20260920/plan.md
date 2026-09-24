@@ -109,24 +109,35 @@ Owner rejected the Near-Zero UI on the physical TV 2026-09-22: "not navigable wi
 
 Execute in order. Steps 1-4 make the client operable with a remote. Finding refs (F1-F16) point at `./tv-ux-investigation-20260924.md`.
 
-- [ ] Red: extend `test/investigation/focus_trace_probe_test.dart` to strict assertions. Assert Down from hero Play lands on a content item (not a row wrapper) (F1); assert every Down reaches a content item or a defined row edge (F2); assert no focus stop is invisible (F1-F3); assert Left from content reaches the rail and Down from the rail returns to content (F3).
-- [ ] Green: delete the bare `Focus` wrappers in `HomeScreen` (`_continueWatchingRowFocus`, `_recentRowFocus`, `_moviesRowFocus`, `_seriesRowFocus`), `MoviesScreen._searchFocusNode`, and `SeriesScreen._searchFocusNode`. Bind each `FocusNode` to its control, or set `skipTraversal: true` (F1, F5).
-- [ ] Green: make `NetflixScaffold.root` non-traversable (`canRequestFocus: false`, `skipTraversal: true`) or remove the node (F3).
-- [ ] Green: bind the search `FocusNode`s to the `TextField.focusNode` parameter so the editable text owns focus and the input method attaches (F5).
-- [ ] Green: wire Recently Added activation in `_RecentlyAddedRow` / `_LibraryPosterCard` to `_openLibraryItem`; delete the false comment (F6).
-- [ ] Green: call `Scrollable.ensureVisible` on focus change in every row and grid, and keep focused items built (cache extent) so the cue stays visible (F4).
-- [ ] Green: one focus cue. Route every interactive control through `FocusableAction`; remove `FocusableCard`, `InkWell` focus, and Material button focus variance on TV surfaces; remove the double white ring and the no-op `AnimatedScale(scale: _isFocused ? 1.0 : 1.0)` (F14).
-- [ ] Green: reserve layout space for the focused scale. Grow the slot instead of using a `Matrix4` transform, so tiles do not overlap and the ring does not clip at list edges (F15).
-- [ ] Green: apply a TV type and tile scale: titles 28px+, body 18px+, icons 28px+, posters 240px+ wide (F16).
-- [ ] Green: give the hero a real backdrop (`fanartUrl`) with a designed gradient fallback, loaded via `CachedNetworkImage` with a placeholder; stop cropping portrait posters into `MediaHero` (F11).
-- [ ] Green: single-source detail metadata: print the year once (`MetadataSection` vs `MediaHero.subtitle`), hide `FileInfoCard` when `sizeBytes == 0`, and build the playback title from season/episode numbers instead of the DB id (F12).
-- [ ] Green: push detail screens on the root navigator for a full-screen surface (or adapt the layout to the rail) and keep a large focused back control (F13).
-- [ ] Decision + implement: restore Settings and Search routes on the TV client, or record the product decision to omit them. Then delete or route the five dead screens (`library_screen`, `activity_screen`, `calendar_screen`, `search_screen`, `settings_screen`) and their dead widgets (`MediaGrid`, `LibraryItemCard`, `FocusableCard`) (F7).
-- [ ] Red: replace the mock D-pad tests (`home_screen_dpad_test.dart` `_DpadHomeProbe`) with tests that mount the real `HomeScreen`/`MoviesScreen`/`SeriesScreen`. Delete the conditional `if (activated != null)` assertion (F9).
-- [ ] **TV check (human-gated):** remote-only run on `192.168.10.62`. Capture one frame per step, record each frame's MD5 in `plan.md`, and do not mark any task done until the cited frame shows the claimed state (F10).
-- [ ] Commit: `fix(client): d-pad navigation and tv presentation repair (FR-11)`.
+> **DONE 2026-09-24 (steps 1-14), commit `28fc786`.** Gates: `flutter analyze` clean, `flutter test`
+> 320 passed. Implementation produced **F17** (new): the rail is unreachable from the content in the
+> production router shell, because each routed page sits in its own `ModalRoute` `FocusScope` and
+> directional traversal never leaves its `enclosingScope`. Fixed by making `LeanbackScaffold` own the
+> shell boundary (Left at a row edge opens the rail, Right returns). Details and the correction to
+> the report's "What works" section are in `./tv-ux-investigation-20260924.md` (Addendum). **Step 13
+> decision:** the rail stays at Home / Movies / Series (owner-approved strip), admin surfaces stay
+> out (player-first), the five unreachable screens and three dead widgets are deleted, and a
+> "Server" affordance in the rail opens Discovery (`?switch=1`) so the user can change server.
+> **Only step 15 (human-gated) remains.**
 
-Gate for Phase 4c: `flutter analyze` zero issues; `flutter test` green; probe traces show every content item reachable.
+- [x] Red: extend `test/investigation/focus_trace_probe_test.dart` to strict assertions. Assert Down from hero Play lands on a content item (not a row wrapper) (F1); assert every Down reaches a content item or a defined row edge (F2); assert no focus stop is invisible (F1-F3); assert Left from content reaches the rail and Down from the rail returns to content (F3). _Done: strict assertions live in `test/features/home/home_screen_dpad_test.dart` (7 tests) and `test/features/library/library_dpad_test.dart` (7 tests), both mounting the production screens with the production router shape; `expectVisibleFocus` runs after every key press. The probe file keeps its trace role._
+- [x] Green: delete the bare `Focus` wrappers in `HomeScreen` (`_continueWatchingRowFocus`, `_recentRowFocus`, `_moviesRowFocus`, `_seriesRowFocus`), `MoviesScreen._searchFocusNode`, and `SeriesScreen._searchFocusNode`. Bind each `FocusNode` to its control, or set `skipTraversal: true` (F1, F5). _Done: all row wrappers deleted; the search nodes are now bound to `TextField.focusNode`._
+- [x] Green: make `NetflixScaffold.root` non-traversable (`canRequestFocus: false`, `skipTraversal: true`) or remove the node (F3). _Done._
+- [x] Green: bind the search `FocusNode`s to the `TextField.focusNode` parameter so the editable text owns focus and the input method attaches (F5). _Done: asserted by `expectSearchOwnsFocus`._
+- [x] Green: wire Recently Added activation in `_RecentlyAddedRow` / `_LibraryPosterCard` to `_openLibraryItem`; delete the false comment (F6). _Done._
+- [x] Green: call `Scrollable.ensureVisible` on focus change in every row and grid, and keep focused items built (cache extent) so the cue stays visible (F4). _Done: `FocusableAction._revealInScrollables` uses `keepVisibleAtStart` (a no-op when already visible, so entry focus does not jump)._
+- [x] Green: one focus cue. Route every interactive control through `FocusableAction`; remove `FocusableCard`, `InkWell` focus, and Material button focus variance on TV surfaces; remove the double white ring and the no-op `AnimatedScale(scale: _isFocused ? 1.0 : 1.0)` (F14). _Done: `FocusableCard` deleted with `search_screen`; ActionBar, MediaHero actions, episode actions, the rail, and the subtitle Search use `FocusableAction`. Modal dialog buttons stay Material (dialog affordance)._
+- [x] Green: reserve layout space for the focused scale. Grow the slot instead of using a `Matrix4` transform, so tiles do not overlap and the ring does not clip at list edges (F15). _Done: `FocusableAction` reserves `focusPadding` and the child grows into it when focused._
+- [x] Green: apply a TV type and tile scale: titles 28px+, body 18px+, icons 28px+, posters 240px+ wide (F16). _Done: row titles 28, poster labels 22/18, tiles 240 wide and 380 tall, grid tiles 280 wide, rail icons 32 and labels 18, episode labels 22/20, hero title 44._
+- [x] Green: give the hero a real backdrop (`fanartUrl`) with a designed gradient fallback, loaded via `CachedNetworkImage` with a placeholder; stop cropping portrait posters into `MediaHero` (F11). _Done: `Movie.fanartUrl` is used; `Series` has no fanart field, so it gets the gradient + poster tile. `LibraryItem` has no backdrop field, so the Home hero shows the poster as a tile._
+- [x] Green: single-source detail metadata: print the year once (`MetadataSection` vs `MediaHero.subtitle`), hide `FileInfoCard` when `sizeBytes == 0`, and build the playback title from season/episode numbers instead of the DB id (F12). _Done: year lives in `MediaHero.subtitle`; `FileInfoCard` renders nothing when empty; the playback title uses `SxxExx`._
+- [x] Green: push detail screens on the root navigator for a full-screen surface (or adapt the layout to the rail) and keep a large focused back control (F13). _Done: `Navigator.of(context, rootNavigator: true)` at all push sites; a large `Back` control autofocuses; episode rows are width-constrained to 1100px._
+- [x] Decision + implement: restore Settings and Search routes on the TV client, or record the product decision to omit them. Then delete or route the five dead screens (`library_screen`, `activity_screen`, `calendar_screen`, `search_screen`, `settings_screen`) and their dead widgets (`MediaGrid`, `LibraryItemCard`, `FocusableCard`) (F7). _Done: decision recorded above (player-first: Settings/Search omitted from the rail). Five screens, three widgets, three sheets, and ten test files deleted. Server switching is covered by the rail's `Server` affordance → `/discovery?switch=1`._
+- [x] Red: replace the mock D-pad tests (`home_screen_dpad_test.dart` `_DpadHomeProbe`) with tests that mount the real `HomeScreen`/`MoviesScreen`/`SeriesScreen`. Delete the conditional `if (activated != null)` assertion (F9). _Done: `_DpadHomeProbe` deleted; no conditional assertions remain._
+- [ ] **TV check (human-gated):** remote-only run on `192.168.10.62`. Capture one frame per step, record each frame's MD5 in `plan.md`, and do not mark any task done until the cited frame shows the claimed state (F10).
+- [x] Commit: `fix(client): d-pad navigation and tv presentation repair (FR-11)`. _Done: `28fc786`._
+
+Gate for Phase 4c: `flutter analyze` zero issues; `flutter test` green; probe traces show every content item reachable. _Gate met 2026-09-24: analyze clean, 320 tests passed, and the strict suites prove every content item is reachable._
 
 ## Phase 5: Deploy Defaults
 

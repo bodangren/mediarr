@@ -68,10 +68,10 @@
       --android-skip-build-dependency-validation` (97.7 MB fat APK)._
 - [x] Commit: `feat(client): mockup home screen with rail, hero, and continue-watching cards`.
 
-## Phase 2: Player repair (FR-7 to FR-9)
+## Phase 2: Player repair (FR-7 to FR-9) [checkpoint: 4ef2dad]
 
-> **FR-7 + FR-8 SHIPPED 2026-09-24.** Gates: `flutter analyze` — "No issues found!"; `flutter test`
-> — 330 passed, 0 failed (baseline 324). **FR-9 (subtitles) remains open.**
+> **SHIPPED 2026-09-25.** FR-7, FR-8, and FR-9 are complete. Gates: `flutter analyze` — no issues;
+> `flutter test` — 334 passed, 0 failed.
 
 - [x] Red: overlay tests. _Done: `test/features/playback/playback_overlay_test.dart` (3 tests) —
       hide runs 4 s after input with no `playing` status ever reported, every input restarts the
@@ -79,8 +79,9 @@
 - [x] Red: overlay D-pad tests. _Done: same file (3 tests) — the walk reaches 6+ distinct controls
       across the top bar, transport row, and nudge row; Select activates the focused control (Back
       exits playback); Left/Right seek (+10 s recorded on the player) while the overlay is hidden._
-- [ ] Red: subtitle tests. External subtitle tracks arrive in `PlaybackManifest`, reach the player as
-      `SubtitleTrack.uri(...)`, appear in the picker, and FR-6 auto-select picks Chinese Simplified.
+- [x] Red: subtitle tests. `api_client_test.dart` verifies manifest parsing and backward-compatible
+      empty lists. `playback_screen_fr_widgets_test.dart` verifies absolute URL resolution and picker
+      display. `playback_service_test.dart` verifies external track delivery and Chinese selection.
 - [x] Green: status mapping and hide window. _Done: `media_player.dart` reports the real play state
       when `buffering: false` arrives (the old code dropped it and the status stuck); the hide timer
       (`playback_service.dart`) is unconditional and every transport action restarts it via
@@ -96,11 +97,12 @@
       consumes all four arrows for value adjustment and trapped D-pad focus; the seek bar is now
       pointer-only (`ExcludeFocus`), and `IconButton` (a second focus stop inside `FocusableAction`)
       is excluded too. Seeking with the remote is the hidden-overlay Left/Right path (±10 s)._
-- [ ] Green: subtitle plumbing. Server tracks in the manifest DTO, client model, and
-      `MediaKitMediaPlayer` external track attach; FR-6 selection covers them.
-- [x] Gate (FR-7 + FR-8): `flutter analyze` zero issues; `flutter test` green — 330 passed.
-- [ ] Commit: `fix(player): overlay auto-hide and d-pad control walk`. _Done: see git log._
-- [ ] Commit: `fix(player): external subtitle delivery and Chinese default selection` (FR-9).
+- [x] Green: subtitle plumbing. The Flutter DTO reads server subtitle fields. The screen resolves
+      subtitle URLs. `MediaKitMediaPlayer` registers stable external IDs and loads files with
+      `SubtitleTrack.uri(...)`. The picker lists them, and FR-6 selects Chinese Simplified.
+- [x] Gate (FR-7 to FR-9): `flutter analyze` clean; `flutter test` green — 334 passed.
+- [x] Commit: `fix(player): overlay auto-hide and d-pad control walk` — `ced27394`.
+- [x] Commit: `fix(player): external subtitle delivery and Chinese default selection` — `23189c5c`.
 
 ## Phase 3: Device check
 

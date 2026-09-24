@@ -30,16 +30,17 @@ void main() {
       expect(find.text('2010 · 148 min'), findsOneWidget);
     });
 
-    testWidgets('shows a placeholder icon when posterUrl is null', (tester) async {
+    testWidgets('shows a designed fallback instead of a gray placeholder',
+        (tester) async {
       await tester.pumpWidget(buildTestApp(
         child: const MediaHero(title: 'No Poster'),
       ));
 
-      // CachedNetworkImage is not used; a placeholder Icon is shown instead.
-      // The exact icon choice is implementation-defined; assert one icon is
-      // present rather than hard-coding which one.
-      expect(find.byType(Icon), findsWidgets);
+      // F11: with no landscape backdrop the hero renders a designed gradient
+      // and the title. The gray placeholder icon is gone, and a portrait
+      // poster is never cropped into the banner.
       expect(find.text('No Poster'), findsOneWidget);
+      expect(find.byType(Icon), findsNothing);
     });
 
     testWidgets('renders action buttons with icons and labels', (tester) async {

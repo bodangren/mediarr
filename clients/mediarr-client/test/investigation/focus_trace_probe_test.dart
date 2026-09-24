@@ -13,6 +13,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mediarr_client/core/router/app_router.dart';
 import 'package:mediarr_client/core/theme/mediarr_theme.dart';
 import 'package:mediarr_client/core/widgets/leanback_scaffold.dart';
@@ -59,6 +60,20 @@ List<Override> _dataOverrides() => [
             Movie(id: 33, title: 'Heat', year: 1995),
           ]),
     ];
+
+/// Describes the focused node together with its focus-scope isolation facts.
+String _describeScope() {
+  final node = FocusManager.instance.primaryFocus;
+  if (node == null) return '(no focus)';
+  final scope = node.enclosingScope;
+  final inScope = scope?.traversalDescendants.toList() ?? const <FocusNode>[];
+  final nodesToLeft =
+      inScope.where((n) => n.rect.left < node.rect.left && n != node).length;
+  return '${_describeFocus()} '
+      'scope=${scope?.debugLabel ?? scope.runtimeType.toString()} '
+      'scopeDescendants=${inScope.length} '
+      'nodesToLeftInScope=$nodesToLeft';
+}
 
 String _describeFocus() {
   final node = FocusManager.instance.primaryFocus;
@@ -229,5 +244,57 @@ void main() {
       await _press(tester, LogicalKeyboardKey.arrowDown, 'down $i', trace);
     }
     debugPrint('=== MOVIES TRACE ===\n${trace.join('\n')}');
+  });
+
+  testWidgets('TRACE router shell: scope boundary between rail and content',
+      (tester) async {
+    tester.view.physicalSize = const Size(1280, 720);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final container = ProviderContainer(overrides: _dataOverrides());
+    addTearDown(container.dispose);
+
+    final router = GoRouter(
+      initialLocation: '/home',
+      routes: [
+        ShellRoute(
+          builder: (context, state, child) => LeanbackScaffold(
+            currentPath: state.uri.path,
+            child: child,
+          ),
+          routes: [
+            GoRoute(path: '/home', builder: (_, __) => const HomeScreen()),
+            GoRoute(path: '/movies', builder: (_, __) => const MoviesScreen()),
+          ],
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp.router(
+          theme: mediarrDarkTheme,
+          routerConfig: router,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final trace = <String>['start -> ${_describeScope()}'];
+    for (var i = 1; i <= 3; i++) {
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+      await tester.pumpAndSettle();
+      trace.add('left $i -> ${_describeScope()}');
+    }
+    for (var i = 1; i <= 3; i++) {
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+      await tester.pumpAndSettle();
+      trace.add('down $i -> ${_describeScope()}');
+    }
+    debugPrint('=== ROUTER SHELL SCOPE TRACE ===\n${trace.join('\n')}');
   });
 }

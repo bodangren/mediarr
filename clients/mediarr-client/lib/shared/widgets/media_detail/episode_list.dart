@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/mediarr_theme.dart';
+import '../../../core/widgets/netflix_scaffold.dart';
 
 class EpisodeListSeason {
   const EpisodeListSeason({this.seasons = const []});
@@ -192,45 +193,67 @@ class _EpisodeRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      child: Row(
-        children: [
-          // Episode number
-          SizedBox(
-            width: 36,
-            child: Text(
-              '${episode.episodeNumber}',
-              style: Theme.of(context).textTheme.bodySmall,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      // Constrain the row: on a TV the screen is ~1600 px wide, and an
+      // unconstrained row put the action icons a full screen away from the
+      // episode title (F13).
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 1100),
+        child: Row(
+          children: [
+            // Episode number
+            SizedBox(
+              width: 48,
+              child: Text(
+                '${episode.episodeNumber}',
+                style: const TextStyle(
+                  color: MediarrColors.textSecondary,
+                  fontSize: 20,
+                ),
+              ),
             ),
-          ),
-          // Title
-          Expanded(
-            child: Text(
-              episode.title ?? 'Episode ${episode.episodeNumber}',
-              style: Theme.of(context).textTheme.bodyMedium,
-              overflow: TextOverflow.ellipsis,
+            // Title
+            Expanded(
+              child: Text(
+                episode.title ?? 'Episode ${episode.episodeNumber}',
+                style: const TextStyle(
+                  color: MediarrColors.textPrimary,
+                  fontSize: 22,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-          ),
-          // Quality badge
-          if (episode.quality != null)
-            Padding(
-              padding: const EdgeInsets.only(left: 8),
-              child: _MiniQualityBadge(quality: episode.quality!),
-            ),
-          // Action icons
-          if (onPlay != null)
-            IconButton(
-              icon: const Icon(Icons.play_arrow, size: 20),
-              onPressed: onPlay,
-              visualDensity: VisualDensity.compact,
-            ),
-          if (onSearch != null)
-            IconButton(
-              icon: const Icon(Icons.search, size: 20),
-              onPressed: onSearch,
-              visualDensity: VisualDensity.compact,
-            ),
-        ],
+            // Quality badge
+            if (episode.quality != null)
+              Padding(
+                padding: const EdgeInsets.only(left: 8),
+                child: _MiniQualityBadge(quality: episode.quality!),
+              ),
+            // Action icons
+            if (onPlay != null)
+              FocusableAction(
+                variant: FocusableActionVariant.button,
+                onSelect: onPlay,
+                borderRadius: 8,
+                child: const Padding(
+                  padding: EdgeInsets.all(8),
+                  child: Icon(Icons.play_arrow,
+                      size: 32, color: MediarrColors.textPrimary),
+                ),
+              ),
+            if (onSearch != null)
+              FocusableAction(
+                variant: FocusableActionVariant.button,
+                onSelect: onSearch,
+                borderRadius: 8,
+                child: const Padding(
+                  padding: EdgeInsets.all(8),
+                  child: Icon(Icons.search,
+                      size: 28, color: MediarrColors.textPrimary),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

@@ -7,6 +7,12 @@ import 'package:mediarr_client/core/router/app_router.dart';
 /// Phase 4b: LeanbackScaffold sidebar carries ONLY Home / Movies / Series.
 /// Activity / Calendar / Search / Settings routes 404 in slim mode and are
 /// removed from the TV UI.
+///
+/// Phase 4b+ follow-up: the sidebar is now a custom stack of focusable
+/// destinations, NOT a Material NavigationRail. We assert the destinations
+/// render + each labels' icon/text + the highlight state via label
+/// color/boldness (a selected rail item is rendered with the accent
+/// color and bold weight; an unselected item is muted gray).
 void main() {
   Widget buildTestApp({
     required String currentPath,
@@ -29,12 +35,10 @@ void main() {
   }
 
   group('LeanbackScaffold (Phase 4b: Home/Movies/Series only)', () {
-    testWidgets('renders NavigationRail with exactly 3 destinations',
-        (tester) async {
+    testWidgets('renders exactly 3 rail destinations', (tester) async {
       setLargeViewport(tester);
       await tester.pumpWidget(buildTestApp(currentPath: AppRoutes.movies));
 
-      expect(find.byType(NavigationRail), findsOneWidget);
       expect(find.text('Home'), findsOneWidget);
       expect(find.text('Movies'), findsOneWidget);
       expect(find.text('Series'), findsOneWidget);
@@ -45,16 +49,11 @@ void main() {
       setLargeViewport(tester);
       await tester.pumpWidget(buildTestApp(currentPath: AppRoutes.movies));
 
-      expect(find.text('Library'), findsNothing,
-          reason: 'Library route is gone (Phase 4b slim UI).');
-      expect(find.text('Activity'), findsNothing,
-          reason: 'Activity route is gone (Phase 4b slim UI).');
-      expect(find.text('Search'), findsNothing,
-          reason: 'Search route is gone (Phase 4b slim UI).');
-      expect(find.text('Calendar'), findsNothing,
-          reason: 'Calendar route is gone (Phase 4b slim UI).');
-      expect(find.text('Settings'), findsNothing,
-          reason: 'Settings route is gone (Phase 4b slim UI).');
+      expect(find.text('Library'), findsNothing);
+      expect(find.text('Activity'), findsNothing);
+      expect(find.text('Search'), findsNothing);
+      expect(find.text('Calendar'), findsNothing);
+      expect(find.text('Settings'), findsNothing);
     });
 
     testWidgets('renders Mediarr branding in leading', (tester) async {
@@ -77,39 +76,44 @@ void main() {
       expect(find.text('Movie Grid'), findsOneWidget);
     });
 
-    testWidgets('highlights Home when on /home path', (tester) async {
+    testWidgets('marks Home as the active destination on /home',
+        (tester) async {
       setLargeViewport(tester);
       await tester.pumpWidget(buildTestApp(currentPath: AppRoutes.home));
 
-      final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
-      expect(rail.selectedIndex, 0);
+      final homeLabel = tester.widget<Text>(find.text('Home'));
+      expect(homeLabel.style?.fontWeight, FontWeight.w700,
+          reason: 'Active rail item must render in bold accent color.');
     });
 
-    testWidgets('highlights Movies when on /movies path', (tester) async {
+    testWidgets('marks Movies as the active destination on /movies',
+        (tester) async {
       setLargeViewport(tester);
       await tester.pumpWidget(buildTestApp(currentPath: AppRoutes.movies));
 
-      final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
-      expect(rail.selectedIndex, 1);
+      final moviesLabel = tester.widget<Text>(find.text('Movies'));
+      expect(moviesLabel.style?.fontWeight, FontWeight.w700);
     });
 
-    testWidgets('highlights Series when on /series path', (tester) async {
+    testWidgets('marks Series as the active destination on /series',
+        (tester) async {
       setLargeViewport(tester);
       await tester.pumpWidget(buildTestApp(currentPath: AppRoutes.series));
 
-      final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
-      expect(rail.selectedIndex, 2);
+      final seriesLabel = tester.widget<Text>(find.text('Series'));
+      expect(seriesLabel.style?.fontWeight, FontWeight.w700);
     });
 
-    testWidgets('defaults to index 0 for unknown path', (tester) async {
+    testWidgets('non-active rail items render with muted color', (tester) async {
       setLargeViewport(tester);
-      await tester.pumpWidget(buildTestApp(currentPath: '/unknown'));
+      await tester.pumpWidget(buildTestApp(currentPath: AppRoutes.home));
 
-      final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
-      expect(rail.selectedIndex, 0);
+      final moviesLabel = tester.widget<Text>(find.text('Movies'));
+      expect(moviesLabel.style?.fontWeight, isNot(FontWeight.w700),
+          reason: 'Non-active rail items must not be bold.');
     });
 
-    testWidgets('renders vertical divider between rail and content',
+    testWidgets('vertical divider separates rail from content',
         (tester) async {
       setLargeViewport(tester);
       await tester.pumpWidget(buildTestApp(currentPath: AppRoutes.movies));

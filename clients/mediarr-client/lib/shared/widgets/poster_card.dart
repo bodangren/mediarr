@@ -59,7 +59,7 @@ class PosterCard extends StatelessWidget {
                   title,
                   style: const TextStyle(
                     color: MediarrColors.textPrimary,
-                    fontSize: 13,
+                    fontSize: 22,
                     fontWeight: FontWeight.w600,
                   ),
                   maxLines: 1,
@@ -73,7 +73,7 @@ class PosterCard extends StatelessWidget {
                         '$year',
                         style: const TextStyle(
                           color: MediarrColors.textMuted,
-                          fontSize: 11,
+                          fontSize: 18,
                         ),
                       ),
                     const Spacer(),
@@ -147,7 +147,7 @@ class _QualityBadge extends StatelessWidget {
         quality,
         style: const TextStyle(
           color: MediarrColors.accentPrimary,
-          fontSize: 9,
+          fontSize: 14,
           fontWeight: FontWeight.bold,
         ),
       ),

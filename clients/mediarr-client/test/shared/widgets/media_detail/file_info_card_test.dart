@@ -73,20 +73,16 @@ void main() {
       expect(find.textContaining('3'), findsWidgets);
     });
 
-    testWidgets('renders a "no file" placeholder when all fields are null',
-        (tester) async {
-      // Per test-strategy §6: Movie with `hasFile: false` must hide
-      // FileInfoCard. The implementation contract is: when the card IS
-      // rendered with no data, it shows a "No file" placeholder. The screen
-      // itself is responsible for not rendering the card at all when
-      // `hasFile == false`; this test exercises the placeholder path used by
-      // that screen's parent logic.
+    testWidgets('renders nothing when all fields are absent', (tester) async {
+      // Contract (F12, Phase 4c step 11): an empty card must not appear on a
+      // detail screen. When there is no information — including a zero size,
+      // which used to render as "0 B" — the card renders nothing at all.
       await tester.pumpWidget(buildTestApp(
         child: const FileInfoCard(),
       ));
 
-      // Some "no file" / "missing" indicator text must be present.
-      expect(find.textContaining('No'), findsWidgets);
+      expect(find.byType(Card), findsNothing);
+      expect(find.textContaining('No'), findsNothing);
     });
 
     testWidgets('renders all fields together with a section header',

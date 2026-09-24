@@ -27,12 +27,6 @@ DpadDirection? mapLogicalKeyToDpad(LogicalKeyboardKey key) {
 
 /// Netflix-style focusable surface. Wraps [child] in a
 /// [FocusTraversalGroup] so descendants can be reached with D-pad keys.
-///
-/// The scaffold:
-///   * Autofocuses the first [FocusableAction] in the tree on mount.
-///   * Handles arrow keys / select / back at the top of the tree when the
-///     focused element is itself the scaffold (no inner [FocusableAction] has
-///     focus), so an empty D-pad scroll request still bubbles up.
 class NetflixScaffold extends StatefulWidget {
   const NetflixScaffold({
     super.key,
@@ -92,6 +86,11 @@ class _NetflixScaffoldState extends State<NetflixScaffold> {
   Widget build(BuildContext context) {
     return Focus(
       focusNode: _rootFocusNode,
+      // The root is a key-event anchor and nothing else. It must never be a
+      // traversal stop: it renders no focus cue, so it used to swallow the
+      // Left press and then block Down (F3 in tv-ux-investigation-20260924).
+      canRequestFocus: false,
+      skipTraversal: true,
       onKeyEvent: _handleKeyEvent,
       child: FocusTraversalGroup(
         policy: OrderedTraversalPolicy(),
@@ -104,11 +103,21 @@ class _NetflixScaffoldState extends State<NetflixScaffold> {
   }
 }
 
-/// A focusable, D-pad-activatable widget.
+/// Variant for the focus cue. Default is the poster-style (bright accent
+/// ring + scale-up + glow); [button] is for compact focusable controls
+/// (text turns white, a bright accent underline appears).
+enum FocusableActionVariant { poster, button }
+
+/// A focusable, D-pad-activatable widget with a single, unmistakable focus cue.
 ///
 /// On focus:
-///   * Border turns into the accent ring (Netflix-style focus zoom).
-///   * Scale animation lifts the card visibly.
+///   * The child grows into the focus padding (Netflix-style "pop"), so the
+///     slot keeps its layout size: neighbours never move and the ring is never
+///     clipped at a list edge.
+///   * A 3 px white ring plus an accent glow surround the element.
+///   * The widget reveals itself in every enclosing [Scrollable], so the cue
+///     cannot move out of sight (F4).
+///
 /// On select / Enter / Space:
 ///   * Invokes [onSelect].
 class FocusableAction extends StatefulWidget {
@@ -119,8 +128,11 @@ class FocusableAction extends StatefulWidget {
     this.focusNode,
     this.onSelect,
     this.onFocusChange,
-    this.scale = 1.06,
+    this.scale = 1.0,
     this.borderRadius = 8,
+    this.variant = FocusableActionVariant.poster,
+    this.focusPadding,
+    this.debugLabel,
   });
 
   final Widget child;
@@ -128,8 +140,19 @@ class FocusableAction extends StatefulWidget {
   final FocusNode? focusNode;
   final VoidCallback? onSelect;
   final ValueChanged<bool>? onFocusChange;
+
+  /// Kept for call-site compatibility. The focus "pop" now comes from the
+  /// child growing into [focusPadding], not from a transform.
   final double scale;
   final double borderRadius;
+  final FocusableActionVariant variant;
+
+  /// Layout space reserved around the child at all times. The child grows into
+  /// it when focused. Defaults to 10 (poster) or 4 (button).
+  final double? focusPadding;
+
+  /// Label for the focus node, used by the D-pad navigation tests.
+  final String? debugLabel;
 
   @override
   State<FocusableAction> createState() => _FocusableActionState();
@@ -139,10 +162,15 @@ class _FocusableActionState extends State<FocusableAction> {
   late final FocusNode _focusNode;
   bool _isFocused = false;
 
+  double get _focusPadding =>
+      widget.focusPadding ??
+      (widget.variant == FocusableActionVariant.poster ? 10 : 4);
+
   @override
   void initState() {
     super.initState();
-    _focusNode = widget.focusNode ?? FocusNode(debugLabel: 'FocusableAction');
+    _focusNode = widget.focusNode ??
+        FocusNode(debugLabel: widget.debugLabel ?? 'FocusableAction');
     _focusNode.addListener(_onFocusChange);
   }
 
@@ -160,7 +188,28 @@ class _FocusableActionState extends State<FocusableAction> {
     if (has != _isFocused) {
       setState(() => _isFocused = has);
       widget.onFocusChange?.call(has);
+      if (has) {
+        _revealInScrollables();
+      }
     }
+  }
+
+  /// Scrolls every enclosing scrollable just enough to show this widget.
+  ///
+  /// [ScrollPositionAlignmentPolicy.keepVisibleAtStart] is a no-op when the
+  /// widget is already fully visible, so entry focus never causes a jump.
+  void _revealInScrollables() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_isFocused) return;
+      final target = context.findRenderObject();
+      if (target is! RenderBox || !target.attached) return;
+      Scrollable.ensureVisible(
+        context,
+        alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtStart,
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOut,
+      );
+    });
   }
 
   KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
@@ -175,6 +224,7 @@ class _FocusableActionState extends State<FocusableAction> {
 
   @override
   Widget build(BuildContext context) {
+    final isPoster = widget.variant == FocusableActionVariant.poster;
     return Focus(
       focusNode: _focusNode,
       autofocus: widget.autofocus,
@@ -185,36 +235,27 @@ class _FocusableActionState extends State<FocusableAction> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
           curve: Curves.easeOut,
-          transform: _isFocused
-              ? (Matrix4.identity()..scaleByDouble(
-                  widget.scale,
-                  widget.scale,
-                  1.0,
-                  1.0,
-                ))
-              : Matrix4.identity(),
-          transformAlignment: Alignment.center,
+          // The child grows into reserved padding when focused. Layout size is
+          // constant, so the ring is never clipped and neighbours never move.
+          padding: EdgeInsets.all(_isFocused ? 0 : _focusPadding),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(widget.borderRadius),
+            borderRadius: BorderRadius.circular(widget.borderRadius + 2),
             border: Border.all(
-              color: _isFocused
-                  ? MediarrColors.focusRing
-                  : Colors.transparent,
-              width: _isFocused ? 3 : 0,
+              color: _isFocused ? Colors.white : Colors.transparent,
+              width: _isFocused ? (isPoster ? 3 : 2) : 0,
             ),
             boxShadow: _isFocused
                 ? [
                     BoxShadow(
-                      color:
-                          MediarrColors.focusRing.withValues(alpha: 0.45),
-                      blurRadius: 18,
-                      spreadRadius: 2,
+                      color: MediarrColors.focusRing.withValues(alpha: 0.7),
+                      blurRadius: isPoster ? 18 : 12,
+                      spreadRadius: isPoster ? 3 : 1,
                     ),
                   ]
                 : const [],
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(widget.borderRadius - 2),
+            borderRadius: BorderRadius.circular(widget.borderRadius),
             child: widget.child,
           ),
         ),

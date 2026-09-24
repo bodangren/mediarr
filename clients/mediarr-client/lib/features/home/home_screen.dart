@@ -11,6 +11,7 @@ import '../../shared/services/api_client.dart';
 import '../library/continue_watching_section.dart';
 import '../library/movie_detail_screen.dart';
 import '../library/series_detail_screen.dart';
+import '../playback/playback_navigation.dart';
 import '../playback/playback_screen.dart';
 
 /// Provider for upcoming releases (used in hero banner selection).
@@ -71,23 +72,11 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   final _heroPlayFocusNode = FocusNode(debugLabel: 'HomeScreen.hero.play');
   final _heroInfoFocusNode = FocusNode(debugLabel: 'HomeScreen.hero.info');
-  final FocusNode _continueWatchingRowFocus =
-      FocusNode(debugLabel: 'HomeScreen.continueWatching.row');
-  final FocusNode _recentRowFocus =
-      FocusNode(debugLabel: 'HomeScreen.recent.row');
-  final FocusNode _moviesRowFocus =
-      FocusNode(debugLabel: 'HomeScreen.movies.row');
-  final FocusNode _seriesRowFocus =
-      FocusNode(debugLabel: 'HomeScreen.series.row');
 
   @override
   void dispose() {
     _heroPlayFocusNode.dispose();
     _heroInfoFocusNode.dispose();
-    _continueWatchingRowFocus.dispose();
-    _recentRowFocus.dispose();
-    _moviesRowFocus.dispose();
-    _seriesRowFocus.dispose();
     super.dispose();
   }
 
@@ -127,24 +116,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             const SizedBox(height: 12),
             if (continueWatchingAsync.value != null &&
                 continueWatchingAsync.value!.isNotEmpty)
-              Focus(
-                focusNode: _continueWatchingRowFocus,
-                child: ContinueWatchingSection(
-                  items: continueWatchingAsync.value ?? const [],
-                  isLoading: continueWatchingAsync.isLoading,
-                  onResume: (item) => _resumeContinueWatching(context, ref, item),
-                ),
+              ContinueWatchingSection(
+                items: continueWatchingAsync.value ?? const [],
+                isLoading: continueWatchingAsync.isLoading,
+                onResume: (item) => _resumeContinueWatching(context, ref, item),
               ),
             const SizedBox(height: 12),
             _RowSection(
               title: 'Recently Added',
-              rowFocusNode: _recentRowFocus,
-              child: _RecentlyAddedRow(items: recentlyAdded),
+              child: _RecentlyAddedRow(
+                items: recentlyAdded,
+                onOpen: (item) => _openLibraryItem(context, ref, item),
+              ),
             ),
             const SizedBox(height: 12),
             _RowSection(
               title: 'Movies',
-              rowFocusNode: _moviesRowFocus,
               child: _MoviePosterRow(
                 moviesAsync: moviesAsync,
                 onOpen: (m) => _openMovie(context, m),
@@ -153,7 +140,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             const SizedBox(height: 12),
             _RowSection(
               title: 'TV Shows',
-              rowFocusNode: _seriesRowFocus,
               child: _SeriesPosterRow(
                 seriesAsync: seriesAsync,
                 onOpen: (s) => _openSeries(context, s),
@@ -177,15 +163,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     if (type != 'movie' && type != 'episode') return;
     final client = ref.read(apiClientProvider.notifier);
     final streamUrl = client.getStreamUrl(lib.id, type);
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => PlaybackScreen(
-          streamUrl: streamUrl,
-          mediaId: lib.id,
-          mediaType: type,
-          title: lib.title,
-        ),
-      ),
+    openFullscreenPlayback(
+      context,
+      streamUrl: streamUrl,
+      title: lib.title,
+      mediaId: lib.id,
+      mediaType: type,
     );
   }
 
@@ -201,7 +184,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Future<void> _openLibraryItem(
       BuildContext context, WidgetRef ref, LibraryItem lib) async {
     final client = ref.read(apiClientProvider.notifier);
-    final navigator = Navigator.of(context);
+    final navigator = Navigator.of(context, rootNavigator: true);
     if (lib.type == 'movie') {
       final movie = await client.getMovie(lib.id);
       if (movie != null && mounted) {
@@ -239,42 +222,40 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   ) {
     final client = ref.read(apiClientProvider.notifier);
     final streamUrl = client.getStreamUrl(item.mediaId, item.mediaTypeQueryValue);
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => PlaybackScreen(
-          streamUrl: streamUrl,
-          mediaId: item.mediaId,
-          mediaType: item.mediaTypeQueryValue,
-          title: item.title,
-        ),
-      ),
+    openFullscreenPlayback(
+      context,
+      streamUrl: streamUrl,
+      title: item.title,
+      mediaId: item.mediaId,
+      mediaType: item.mediaTypeQueryValue,
     );
   }
 
   void _openMovie(BuildContext context, Movie movie) {
-    Navigator.of(context).push(
+    Navigator.of(context, rootNavigator: true).push(
       MaterialPageRoute(builder: (_) => MovieDetailScreen(movie: movie)),
     );
   }
 
   void _openSeries(BuildContext context, Series series) {
-    Navigator.of(context).push(
+    Navigator.of(context, rootNavigator: true).push(
       MaterialPageRoute(builder: (_) => SeriesDetailScreen(series: series)),
     );
   }
 }
 
 /// Section header + horizontally scrollable row.
+///
+/// No `Focus` wrapper here: a bare `Focus` node is a traversal stop with no
+/// focus cue, and used to swallow every Down press (F1).
 class _RowSection extends StatelessWidget {
   const _RowSection({
     required this.title,
     required this.child,
-    required this.rowFocusNode,
   });
 
   final String title;
   final Widget child;
-  final FocusNode rowFocusNode;
 
   @override
   Widget build(BuildContext context) {
@@ -287,15 +268,12 @@ class _RowSection extends StatelessWidget {
             title,
             style: const TextStyle(
               color: MediarrColors.textPrimary,
-              fontSize: 20,
+              fontSize: 28,
               fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 12),
-          Focus(
-            focusNode: rowFocusNode,
-            child: child,
-          ),
+          child,
         ],
       ),
     );
@@ -341,14 +319,20 @@ class _HeroBanner extends StatelessWidget {
     return (i as _HeroFromLibrary).item.title;
   }
 
+  /// Only a real landscape backdrop. A portrait poster must never be cropped
+  /// into the banner (F11): it is shown as a poster tile instead.
   String? get _backdropUrl {
     final i = item;
     if (i == null) return null;
-    if (i is _HeroFromContinueWatching) {
-      return i.item.backdropUrl ?? i.item.posterUrl;
-    }
-    final lib = (i as _HeroFromLibrary).item;
-    return lib.posterUrl; // LibraryItem has no backdropUrl yet; use poster.
+    if (i is _HeroFromContinueWatching) return i.item.backdropUrl;
+    return null;
+  }
+
+  String? get _posterUrl {
+    final i = item;
+    if (i == null) return null;
+    if (i is _HeroFromContinueWatching) return i.item.posterUrl;
+    return (i as _HeroFromLibrary).item.posterUrl;
   }
 
   String? get _overview {
@@ -378,6 +362,7 @@ class _HeroBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final backdrop = _backdropUrl;
+    final poster = _posterUrl;
     return SizedBox(
       height: 460,
       width: double.infinity,
@@ -393,7 +378,36 @@ class _HeroBanner extends StatelessWidget {
                   Container(color: MediarrColors.surfaceCard),
             )
           else
-            Container(color: MediarrColors.surfaceCard),
+            const DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [MediarrColors.surfaceElevated, MediarrColors.surfaceBase],
+                ),
+              ),
+            ),
+          // Portrait posters render as a tile, never cropped into the banner.
+          if (backdrop == null && poster != null)
+            Positioned(
+              right: 64,
+              top: 40,
+              bottom: 120,
+              child: AspectRatio(
+                aspectRatio: 2 / 3,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: CachedNetworkImage(
+                    imageUrl: poster,
+                    fit: BoxFit.cover,
+                    placeholder: (_, __) =>
+                        Container(color: MediarrColors.surfaceCard),
+                    errorWidget: (_, __, ___) =>
+                        Container(color: MediarrColors.surfaceCard),
+                  ),
+                ),
+              ),
+            ),
           const DecoratedBox(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -448,7 +462,7 @@ class _HeroBanner extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       color: Colors.white70,
-                      fontSize: 14,
+                      fontSize: 20,
                       height: 1.35,
                     ),
                   ),
@@ -529,9 +543,10 @@ class _HeroBanner extends StatelessWidget {
 }
 
 class _RecentlyAddedRow extends StatelessWidget {
-  const _RecentlyAddedRow({required this.items});
+  const _RecentlyAddedRow({required this.items, required this.onOpen});
 
   final List<LibraryItem> items;
+  final void Function(LibraryItem item) onOpen;
 
   @override
   Widget build(BuildContext context) {
@@ -545,7 +560,7 @@ class _RecentlyAddedRow extends StatelessWidget {
       );
     }
     return SizedBox(
-      height: 220,
+      height: 380,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: items.length,
@@ -553,8 +568,11 @@ class _RecentlyAddedRow extends StatelessWidget {
         itemBuilder: (context, index) {
           final item = items[index];
           return SizedBox(
-            width: 160,
-            child: _LibraryPosterCard(item: item),
+            width: 240,
+            child: _LibraryPosterCard(
+              item: item,
+              onSelect: () => onOpen(item),
+            ),
           );
         },
       ),
@@ -563,18 +581,15 @@ class _RecentlyAddedRow extends StatelessWidget {
 }
 
 class _LibraryPosterCard extends StatelessWidget {
-  const _LibraryPosterCard({required this.item});
+  const _LibraryPosterCard({required this.item, required this.onSelect});
 
   final LibraryItem item;
+  final VoidCallback onSelect;
 
   @override
   Widget build(BuildContext context) {
     return FocusableAction(
-      onSelect: () {
-        // Tap activation is wired at the parent in the real flow; this row
-        // is a non-interactive render in the hero chain. The FocusableAction
-        // still grants D-pad focus + the Netflix-style focus ring.
-      },
+      onSelect: onSelect,
       borderRadius: 8,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -614,7 +629,7 @@ class _LibraryPosterCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: MediarrColors.textPrimary,
-                    fontSize: 13,
+                    fontSize: 22,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -623,7 +638,7 @@ class _LibraryPosterCard extends StatelessWidget {
                     item.year.toString(),
                     style: const TextStyle(
                       color: MediarrColors.textMuted,
-                      fontSize: 11,
+                      fontSize: 18,
                     ),
                   ),
               ],
@@ -648,7 +663,7 @@ class _MoviePosterRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return moviesAsync.when(
       loading: () => const SizedBox(
-        height: 220,
+        height: 380,
         child: Center(
           child: CircularProgressIndicator(color: MediarrColors.accentPrimary),
         ),
@@ -673,7 +688,7 @@ class _MoviePosterRow extends StatelessWidget {
           );
         }
         return SizedBox(
-          height: 220,
+          height: 380,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: movies.length,
@@ -681,7 +696,7 @@ class _MoviePosterRow extends StatelessWidget {
             itemBuilder: (context, index) {
               final movie = movies[index];
               return SizedBox(
-                width: 160,
+                width: 240,
                 child: _MoviePosterCard(movie: movie, onSelect: () => onOpen(movie)),
               );
             },
@@ -740,7 +755,7 @@ class _MoviePosterCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: MediarrColors.textPrimary,
-                    fontSize: 13,
+                    fontSize: 22,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -749,7 +764,7 @@ class _MoviePosterCard extends StatelessWidget {
                     movie.year!.toString(),
                     style: const TextStyle(
                       color: MediarrColors.textMuted,
-                      fontSize: 11,
+                      fontSize: 18,
                     ),
                   ),
               ],
@@ -774,7 +789,7 @@ class _SeriesPosterRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return seriesAsync.when(
       loading: () => const SizedBox(
-        height: 220,
+        height: 380,
         child: Center(
           child: CircularProgressIndicator(color: MediarrColors.accentPrimary),
         ),
@@ -799,7 +814,7 @@ class _SeriesPosterRow extends StatelessWidget {
           );
         }
         return SizedBox(
-          height: 220,
+          height: 380,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: series.length,
@@ -807,7 +822,7 @@ class _SeriesPosterRow extends StatelessWidget {
             itemBuilder: (context, index) {
               final s = series[index];
               return SizedBox(
-                width: 160,
+                width: 240,
                 child: _SeriesPosterCard(series: s, onSelect: () => onOpen(s)),
               );
             },
@@ -866,7 +881,7 @@ class _SeriesPosterCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: MediarrColors.textPrimary,
-                    fontSize: 13,
+                    fontSize: 22,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -875,7 +890,7 @@ class _SeriesPosterCard extends StatelessWidget {
                     series.year!.toString(),
                     style: const TextStyle(
                       color: MediarrColors.textMuted,
-                      fontSize: 11,
+                      fontSize: 18,
                     ),
                   ),
               ],

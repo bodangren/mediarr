@@ -108,7 +108,7 @@ class MetadataSection extends StatelessWidget {
                       backgroundColor: MediarrColors.surfaceElevated,
                       labelStyle: const TextStyle(
                         color: MediarrColors.textSecondary,
-                        fontSize: 12,
+                        fontSize: 18,
                       ),
                       side: const BorderSide(color: MediarrColors.borderSubtle),
                       padding: EdgeInsets.zero,
@@ -130,7 +130,7 @@ class MetadataSection extends StatelessWidget {
                     backgroundColor: MediarrColors.surfaceElevated,
                     labelStyle: const TextStyle(
                       color: MediarrColors.textSecondary,
-                      fontSize: 12,
+                      fontSize: 18,
                     ),
                     side: const BorderSide(color: MediarrColors.borderSubtle),
                     padding: EdgeInsets.zero,

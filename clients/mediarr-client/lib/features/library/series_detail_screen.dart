@@ -10,7 +10,7 @@ import '../../shared/widgets/media_detail/episode_list.dart';
 import '../../shared/widgets/media_detail/file_info_card.dart';
 import '../../shared/widgets/media_detail/media_hero.dart';
 import '../../shared/widgets/media_detail/metadata_section.dart';
-import '../playback/playback_screen.dart';
+import '../playback/playback_navigation.dart';
 
 class SeriesDetailScreen extends ConsumerStatefulWidget {
   const SeriesDetailScreen({super.key, required this.series});
@@ -57,18 +57,20 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
     }
   }
 
-  void _playEpisode(int episodeId) {
+  void _playEpisode(EpisodeListItem episode) {
     final apiClient = ref.read(apiClientProvider.notifier);
-    final streamUrl = apiClient.getStreamUrl(episodeId, 'episode');
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => PlaybackScreen(
-          streamUrl: streamUrl,
-          title: '${widget.series.title} — Episode $episodeId',
-          mediaId: episodeId,
-          mediaType: 'episode',
-        ),
-      ),
+    final streamUrl = apiClient.getStreamUrl(episode.id, 'episode');
+    // Build the label from season/episode numbers, not the database id.
+    final seasonNumber = _episodeSeasonMap[episode.id];
+    final label = seasonNumber == null
+        ? 'Episode ${episode.episodeNumber}'
+        : 'S${_pad(seasonNumber)}E${_pad(episode.episodeNumber)}';
+    openFullscreenPlayback(
+      context,
+      streamUrl: streamUrl,
+      title: '${widget.series.title} — $label',
+      mediaId: episode.id,
+      mediaType: 'episode',
     );
   }
 
@@ -161,11 +163,33 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(8, 8, 0, 0),
-            child: IconButton(
-              icon: const Icon(Icons.arrow_back),
-              onPressed: () => Navigator.of(context).pop(),
+            padding: const EdgeInsets.fromLTRB(16, 16, 0, 0),
+            child: FocusableAction(
               autofocus: true,
+              variant: FocusableActionVariant.button,
+              onSelect: () => Navigator.of(context).pop(),
+              borderRadius: 8,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                color: MediarrColors.surfaceCard,
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.arrow_back,
+                        size: 28, color: MediarrColors.textPrimary),
+                    SizedBox(width: 8),
+                    Text(
+                      'Back',
+                      style: TextStyle(
+                        color: MediarrColors.textPrimary,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
           MediaHero(
@@ -175,7 +199,6 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
           ),
           MetadataSection(
             synopsis: series.overview,
-            year: series.year,
             network: series.network,
           ),
           if (series.seasons.isNotEmpty)
@@ -191,7 +214,7 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
               data: _buildEpisodeData(series),
               onPlayEpisode: (episode) {
                 if (episode.hasFile) {
-                  _playEpisode(episode.id);
+                  _playEpisode(episode);
                 }
               },
               onSearchEpisode: _searchEpisode,

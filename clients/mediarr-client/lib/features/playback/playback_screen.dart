@@ -4,11 +4,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 
 import '../../core/theme/mediarr_theme.dart';
+import '../../core/widgets/netflix_scaffold.dart';
 import '../../shared/services/api_client.dart';
 import 'playback_service.dart';
 import 'track_selection.dart';
 
-/// Full-screen media player with transport overlay.
+/// Fullscreen playback surface. Phase 4b+ follow-up:
+///   * No sidebar; rendered as a top-level /playback route outside the rail.
+///   * Auto-hides the overlay after 4s of no input.
+///   * Back while overlay visible: hides overlay (does NOT exit).
+///   * Back while overlay hidden: shows overlay.
+///   * "Stop" affordance on the overlay exits playback deliberately.
 class PlaybackScreen extends ConsumerStatefulWidget {
   const PlaybackScreen({
     super.key,
@@ -41,9 +47,13 @@ class PlaybackScreen extends ConsumerStatefulWidget {
 
 class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
   VideoController? _videoController;
-  final FocusNode _focusNode = FocusNode();
+  final FocusNode _rootFocusNode = FocusNode(debugLabel: 'PlaybackScreen.root');
   late String _resolvedStreamUrl;
   late String _resolvedTitle;
+
+  /// Suppresses Back-driven overlay toggles for one frame after a
+  /// deliberate Stop so a Navigator.pop doesn't double-fire.
+  bool _exitInProgress = false;
 
   @override
   void initState() {
@@ -56,11 +66,6 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
       try {
         _videoController = VideoController(service.player);
       } catch (_) {
-        // `service.player` throws StateError when the service was
-        // constructed with a non-`MediaKitMediaPlayer` (e.g. widget tests
-        // with a `FakeMediaPlayer`). Leave the controller null and render
-        // a placeholder video surface — the rest of the playback UI
-        // (transport overlay, subtitle nudge, picker) still exercises.
         _videoController = null;
       }
     }
@@ -69,134 +74,8 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
 
   @override
   void dispose() {
-    _focusNode.dispose();
+    _rootFocusNode.dispose();
     super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final playbackState = ref.watch(playbackServiceProvider);
-    final service = ref.read(playbackServiceProvider.notifier);
-
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: KeyboardListener(
-        focusNode: _focusNode,
-        autofocus: true,
-        onKeyEvent: (event) => _handleKeyEvent(event, service, playbackState),
-        child: GestureDetector(
-          onTap: () => service.toggleOverlay(),
-          child: Stack(
-            children: [
-              // Video surface
-              Center(
-                child: _videoController != null
-                    ? Video(
-                        controller: _videoController!,
-                        controls: NoVideoControls,
-                      )
-                    : const ColoredBox(color: Colors.black),
-              ),
-
-              // Loading indicator
-              if (playbackState.status == PlaybackStatus.loading ||
-                  playbackState.status == PlaybackStatus.buffering)
-                const Center(
-                  child: CircularProgressIndicator(
-                    color: MediarrColors.accentPrimary,
-                  ),
-                ),
-
-              // Error state
-              if (playbackState.status == PlaybackStatus.error)
-                Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.error, color: MediarrColors.statusError, size: 48),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Playback error',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              color: MediarrColors.textPrimary,
-                            ),
-                      ),
-                      if (playbackState.error != null)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8),
-                          child: Text(
-                            playbackState.error!,
-                            style: const TextStyle(color: MediarrColors.textMuted),
-                          ),
-                        ),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        child: const Text('Back'),
-                      ),
-                    ],
-                  ),
-                ),
-
-              // Transport overlay
-              if (playbackState.overlayVisible &&
-                  playbackState.status != PlaybackStatus.error)
-                _TransportOverlay(
-                  state: playbackState,
-                  service: service,
-                  title: playbackState.mediaTitle ?? _resolvedTitle,
-                  onBack: () async {
-                    await service.stop();
-                    if (context.mounted) Navigator.of(context).pop();
-                  },
-                  onNext: widget.nextEpisode,
-                ),
-
-              // Subtitle timing nudge + toast (FR-7).
-              if (playbackState.overlayVisible &&
-                  playbackState.status != PlaybackStatus.error)
-                Positioned(
-                  top: 80,
-                  left: 0,
-                  right: 0,
-                  child: _SubtitleNudgeBar(
-                    service: service,
-                    state: playbackState,
-                  ),
-                ),
-
-              // "Subs +1.5s" ephemeral toast.
-              if (playbackState.subtitleDelayToast != null)
-                Positioned(
-                  top: 16,
-                  left: 0,
-                  right: 0,
-                  child: Center(
-                    child: _SubtitleDelayToast(label: playbackState.subtitleDelayToast!),
-                  ),
-                ),
-
-              // Completed overlay
-              if (playbackState.status == PlaybackStatus.completed)
-                _CompletedOverlay(
-                  onReplay: () => service.play(
-                    streamUrl: _resolvedStreamUrl,
-                    title: _resolvedTitle,
-                    mediaId: widget.mediaId,
-                    mediaType: widget.mediaType,
-                    resumeFrom: Duration.zero,
-                  ),
-                  onNext: widget.nextEpisode,
-                  onBack: () async {
-                    await service.stop();
-                    if (context.mounted) Navigator.of(context).pop();
-                  },
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 
   Future<void> _startPlayback() async {
@@ -218,13 +97,14 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
         resumeFrom = Duration(seconds: manifest.resume?.position ?? 0);
       }
     } catch (_) {
-      // Manifest fetch is best-effort; fallback to route-provided stream URL.
+      // Best-effort; fallback to route-provided stream URL.
     }
 
-    if (!mounted) {
-      return;
-    }
+    if (!mounted || _exitInProgress) return;
 
+    // Always reset state before opening; a previous stop() in this provider
+    // instance can leave status=completed, which would suppress the seek().
+    service.resetForNewPlayback();
     await service.play(
       streamUrl: _resolvedStreamUrl,
       title: _resolvedTitle,
@@ -232,179 +112,167 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
       mediaType: widget.mediaType,
       resumeFrom: resumeFrom,
     );
+    if (mounted) {
+      // Show the overlay briefly at start so the user knows where Back lands.
+      service.showOverlay();
+    }
   }
 
-  void _handleKeyEvent(
-    KeyEvent event,
-    PlaybackService service,
-    PlaybackState playbackState,
-  ) {
-    if (event is! KeyDownEvent) return;
+  void _exitPlayback() async {
+    if (_exitInProgress) return;
+    _exitInProgress = true;
+    final navigator = Navigator.of(context);
+    final service = ref.read(playbackServiceProvider.notifier);
+    await service.stop();
+    if (mounted) {
+      navigator.pop();
+    }
+  }
 
-    switch (event.logicalKey) {
+  void _handleKeyEvent(KeyEvent event, PlaybackService service,
+      PlaybackState playbackState) {
+    if (event is! KeyDownEvent) return;
+    final key = event.logicalKey;
+    if (key == LogicalKeyboardKey.goBack || key == LogicalKeyboardKey.escape) {
+      if (_exitInProgress) return;
+      // Kodi style: Back toggles overlay. Back with overlay hidden shows
+      // overlay (does NOT exit). A separate Stop affordance exits.
+      if (playbackState.overlayVisible) {
+        service.hideOverlay();
+      } else {
+        service.showOverlay();
+      }
+      return;
+    }
+    // Any other key (D-pad, arrows, select) wakes the overlay.
+    if (!playbackState.overlayVisible) {
+      service.showOverlay();
+      return;
+    }
+    switch (key) {
       case LogicalKeyboardKey.select:
       case LogicalKeyboardKey.enter:
       case LogicalKeyboardKey.space:
-        if (playbackState.overlayVisible) {
-          service.togglePlayPause();
-        } else {
-          service.showOverlay();
-        }
+        service.togglePlayPause();
+        break;
       case LogicalKeyboardKey.arrowLeft:
-        service.showOverlay();
         service.seekRelative(const Duration(seconds: -10));
+        break;
       case LogicalKeyboardKey.arrowRight:
-        service.showOverlay();
         service.seekRelative(const Duration(seconds: 10));
+        break;
       case LogicalKeyboardKey.arrowUp:
       case LogicalKeyboardKey.arrowDown:
+        // Wake the overlay; no other action needed.
         service.showOverlay();
-      case LogicalKeyboardKey.escape:
-      case LogicalKeyboardKey.goBack:
-        service.stop().then((_) {
-          if (mounted) Navigator.of(context).pop();
-        });
+        break;
     }
   }
-}
-
-/// Transport controls overlay.
-class _TransportOverlay extends StatelessWidget {
-  const _TransportOverlay({
-    required this.state,
-    required this.service,
-    required this.title,
-    required this.onBack,
-    this.onNext,
-  });
-
-  final PlaybackState state;
-  final PlaybackService service;
-  final String title;
-  final VoidCallback onBack;
-  final VoidCallback? onNext;
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedOpacity(
-      opacity: 1.0,
-      duration: const Duration(milliseconds: 200),
-      child: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xCC000000),
-              Colors.transparent,
-              Colors.transparent,
-              Color(0xCC000000),
-            ],
-            stops: [0.0, 0.2, 0.7, 1.0],
-          ),
-        ),
-        child: Column(
+    final playbackState = ref.watch(playbackServiceProvider);
+    final service = ref.read(playbackServiceProvider.notifier);
+
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: KeyboardListener(
+        focusNode: _rootFocusNode,
+        autofocus: true,
+        onKeyEvent: (event) =>
+            _handleKeyEvent(event, service, playbackState),
+        child: Stack(
           children: [
-            // Top bar: title + back
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Colors.white),
-                    onPressed: onBack,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
+            // Video surface — always present, fullscreen.
+            Positioned.fill(
+              child: _videoController != null
+                  ? Video(
+                      controller: _videoController!,
+                      controls: NoVideoControls,
+                    )
+                  : const ColoredBox(color: Colors.black),
             ),
-            const Spacer(),
-            // Bottom bar: seek + controls
+
+            if (playbackState.status == PlaybackStatus.loading ||
+                playbackState.status == PlaybackStatus.buffering)
+              const Center(
+                child: CircularProgressIndicator(
+                  color: MediarrColors.accentPrimary,
+                ),
+              ),
+
+            if (playbackState.status == PlaybackStatus.error)
+              _ErrorOverlay(error: playbackState.error ?? 'Playback error'),
+
+            // Transport overlay: hidden by default after 4s; Back/Select wake.
+            if (playbackState.overlayVisible &&
+                playbackState.status != PlaybackStatus.error)
+              _TransportOverlay(
+                state: playbackState,
+                service: service,
+                title: playbackState.mediaTitle ?? _resolvedTitle,
+                onStop: _exitPlayback,
+                onBack: _exitPlayback,
+                nextEpisode: widget.nextEpisode,
+              ),
+
+            // Subtitle nudge toast.
+            if (playbackState.subtitleDelayToast != null)
+              Positioned(
+                top: 16,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child:
+                      _SubtitleDelayToast(label: playbackState.subtitleDelayToast!),
+                ),
+              ),
+
+            // Completed overlay.
+            if (playbackState.status == PlaybackStatus.completed)
+              _CompletedOverlay(
+                onReplay: () => service.play(
+                  streamUrl: _resolvedStreamUrl,
+                  title: _resolvedTitle,
+                  mediaId: widget.mediaId,
+                  mediaType: widget.mediaType,
+                  resumeFrom: Duration.zero,
+                ),
+                onNext: widget.nextEpisode,
+                onBack: _exitPlayback,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ErrorOverlay extends StatelessWidget {
+  const _ErrorOverlay({required this.error});
+  final String error;
+
+  @override
+  Widget build(BuildContext context) {
+    return ColoredBox(
+      color: Colors.black,
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.error, color: MediarrColors.statusError, size: 48),
+            const SizedBox(height: 12),
+            Text(
+              'Playback error',
+              style: const TextStyle(color: Colors.white, fontSize: 18),
+            ),
+            const SizedBox(height: 8),
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Seek bar
-                  _SeekBar(state: state, service: service),
-                  const SizedBox(height: 8),
-                  // Time display
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        _formatDuration(state.position),
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 13,
-                        ),
-                      ),
-                      Text(
-                        _formatDuration(state.duration),
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  // Transport buttons
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // Rewind 10s
-                      IconButton(
-                        icon: const Icon(Icons.replay_10, color: Colors.white, size: 36),
-                        onPressed: () =>
-                            service.seekRelative(const Duration(seconds: -10)),
-                      ),
-                      const SizedBox(width: 24),
-                      // Play/Pause
-                      IconButton(
-                        icon: Icon(
-                          state.status == PlaybackStatus.playing
-                              ? Icons.pause_circle_filled
-                              : Icons.play_circle_filled,
-                          color: MediarrColors.accentPrimary,
-                          size: 56,
-                        ),
-                        onPressed: () => service.togglePlayPause(),
-                      ),
-                      const SizedBox(width: 24),
-                      // Forward 10s
-                      IconButton(
-                        icon: const Icon(Icons.forward_10, color: Colors.white, size: 36),
-                        onPressed: () =>
-                            service.seekRelative(const Duration(seconds: 10)),
-                      ),
-                      if (onNext != null) ...[
-                        const SizedBox(width: 24),
-                        IconButton(
-                          icon: const Icon(Icons.skip_next, color: Colors.white, size: 36),
-                          onPressed: onNext,
-                        ),
-                      ],
-                      const SizedBox(width: 24),
-                      IconButton(
-                        tooltip: 'Subtitles',
-                        icon: const Icon(Icons.closed_caption, color: Colors.white, size: 32),
-                        onPressed: () => _showSubtitlePicker(context, state, service),
-                      ),
-                    ],
-                  ),
-                ],
+              padding: const EdgeInsets.symmetric(horizontal: 48),
+              child: Text(
+                error,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white70, fontSize: 13),
               ),
             ),
           ],
@@ -412,29 +280,267 @@ class _TransportOverlay extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Transport overlay: title, seek bar, transport buttons, subtitle nudge,
+/// and Stop. Auto-hides 4s after the last input (handled by PlaybackService).
+class _TransportOverlay extends StatelessWidget {
+  const _TransportOverlay({
+    required this.state,
+    required this.service,
+    required this.title,
+    required this.onStop,
+    required this.onBack,
+    this.nextEpisode,
+  });
+
+  final PlaybackState state;
+  final PlaybackService service;
+  final String title;
+  final VoidCallback onStop;
+  final VoidCallback onBack;
+  final VoidCallback? nextEpisode;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedOpacity(
+      duration: const Duration(milliseconds: 180),
+      opacity: 1.0,
+      child: Stack(
+        children: [
+          const Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Color(0xE6000000),
+                    Color(0x00000000),
+                    Color(0x00000000),
+                    Color(0xE6000000),
+                  ],
+                  stops: [0.0, 0.18, 0.6, 1.0],
+                ),
+              ),
+            ),
+          ),
+          // Top bar.
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  _IconActionButton(
+                    icon: Icons.arrow_back,
+                    tooltip: 'Back',
+                    onPressed: onBack,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  _IconActionButton(
+                    icon: Icons.stop_circle_outlined,
+                    tooltip: 'Stop playback',
+                    onPressed: onStop,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          // Bottom: seek + transport + subtitle nudge.
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _SeekBar(state: state, service: service),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        _formatDuration(state.position),
+                        style: const TextStyle(color: Colors.white70, fontSize: 13),
+                      ),
+                      Text(
+                        _formatDuration(state.duration),
+                        style: const TextStyle(color: Colors.white70, fontSize: 13),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _IconActionButton(
+                        icon: Icons.replay_10,
+                        onPressed: () => service.seekRelative(
+                            const Duration(seconds: -10)),
+                      ),
+                      const SizedBox(width: 24),
+                      _IconActionButton(
+                        icon: state.status == PlaybackStatus.playing
+                            ? Icons.pause_circle_filled
+                            : Icons.play_circle_filled,
+                        size: 72,
+                        color: MediarrColors.accentPrimary,
+                        onPressed: service.togglePlayPause,
+                      ),
+                      const SizedBox(width: 24),
+                      _IconActionButton(
+                        icon: Icons.forward_10,
+                        onPressed: () => service.seekRelative(
+                            const Duration(seconds: 10)),
+                      ),
+                      if (nextEpisode != null) ...[
+                        const SizedBox(width: 24),
+                        _IconActionButton(
+                          icon: Icons.skip_next,
+                          onPressed: nextEpisode!,
+                        ),
+                      ],
+                      const SizedBox(width: 24),
+                      _IconActionButton(
+                        icon: Icons.closed_caption,
+                        onPressed: () =>
+                            _showSubtitlePicker(context, state, service),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  _SubtitleNudgeBar(service: service),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   void _showSubtitlePicker(
-    BuildContext context,
-    PlaybackState state,
-    PlaybackService service,
-  ) {
+      BuildContext context, PlaybackState state, PlaybackService service) {
+    final tracks = state.subtitleTracks;
     showDialog<void>(
       context: context,
-      builder: (dialogContext) => _SubtitlePickerDialog(
-        state: state,
-        onSelect: (index) {
-          service.selectSubtitle(index);
-          Navigator.of(dialogContext).pop();
-        },
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: const Color(0xFF111111),
+        title: const Text('Subtitles', style: TextStyle(color: Colors.white)),
+        content: SizedBox(
+          width: 320,
+          child: tracks.isEmpty
+              ? const Text(
+                  'No subtitle tracks available',
+                  style: TextStyle(color: Colors.white70),
+                )
+              : Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    ListTile(
+                      title: const Text('Off',
+                          style: TextStyle(color: Colors.white)),
+                      trailing: state.selectedSubtitleIndex == null
+                          ? const Icon(Icons.check,
+                              color: MediarrColors.accentPrimary)
+                          : null,
+                      onTap: () {
+                        service.selectSubtitle(null);
+                        Navigator.of(dialogContext).pop();
+                      },
+                    ),
+                    for (var i = 0; i < tracks.length; i++)
+                      ListTile(
+                        title: Text(
+                          _trackLabel(tracks[i], i),
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                        trailing: state.selectedSubtitleIndex == i
+                            ? const Icon(Icons.check,
+                                color: MediarrColors.accentPrimary)
+                            : null,
+                        onTap: () {
+                          service.selectSubtitle(i);
+                          Navigator.of(dialogContext).pop();
+                        },
+                      ),
+                  ],
+                ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _trackLabel(SubtitleTrackInfo track, int index) {
+    final parts = <String>[
+      if (track.title != null && track.title!.isNotEmpty) track.title!,
+      if (track.language != null && track.language!.isNotEmpty)
+        track.language!,
+    ];
+    final tag = parts.isEmpty ? 'Track ${index + 1}' : parts.join(' · ');
+    return tag;
+  }
+}
+
+class _IconActionButton extends StatelessWidget {
+  const _IconActionButton({
+    required this.icon,
+    required this.onPressed,
+    this.tooltip,
+    this.size = 36,
+    this.color = Colors.white,
+  });
+
+  final IconData icon;
+  final VoidCallback onPressed;
+  final String? tooltip;
+  final double size;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return FocusableAction(
+      onSelect: onPressed,
+      variant: FocusableActionVariant.button,
+      borderRadius: 8,
+      scale: 1.04,
+      child: Container(
+        padding: const EdgeInsets.all(6),
+        child: IconButton(
+          tooltip: tooltip,
+          icon: Icon(icon, color: color, size: size),
+          onPressed: onPressed,
+        ),
       ),
     );
   }
 }
 
-/// Seek bar slider.
 class _SeekBar extends StatelessWidget {
   const _SeekBar({required this.state, required this.service});
-
   final PlaybackState state;
   final PlaybackService service;
 
@@ -447,7 +553,6 @@ class _SeekBar extends StatelessWidget {
         activeTrackColor: MediarrColors.accentPrimary,
         inactiveTrackColor: Colors.white24,
         thumbColor: MediarrColors.accentPrimary,
-        overlayColor: MediarrColors.accentPrimary.withValues(alpha: 0.2),
       ),
       child: Slider(
         value: state.progress.clamp(0.0, 1.0),
@@ -462,82 +567,14 @@ class _SeekBar extends StatelessWidget {
   }
 }
 
-/// Completed overlay with replay/next options.
-class _CompletedOverlay extends StatelessWidget {
-  const _CompletedOverlay({
-    required this.onReplay,
-    this.onNext,
-    required this.onBack,
-  });
-
-  final VoidCallback onReplay;
-  final VoidCallback? onNext;
-  final VoidCallback onBack;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: const Color(0xCC000000),
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.check_circle, color: MediarrColors.statusSuccess, size: 64),
-            const SizedBox(height: 16),
-            const Text(
-              'Playback Complete',
-              style: TextStyle(color: Colors.white, fontSize: 20),
-            ),
-            const SizedBox(height: 24),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.replay),
-                  label: const Text('Replay'),
-                  onPressed: onReplay,
-                ),
-                const SizedBox(width: 16),
-                if (onNext != null) ...[
-                  ElevatedButton.icon(
-                    icon: const Icon(Icons.skip_next),
-                    label: const Text('Next Episode'),
-                    onPressed: onNext,
-                  ),
-                  const SizedBox(width: 16),
-                ],
-                OutlinedButton(
-                  onPressed: onBack,
-                  child: const Text('Back to Library'),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-String _formatDuration(Duration d) {
-  final hours = d.inHours;
-  final minutes = d.inMinutes.remainder(60).toString().padLeft(2, '0');
-  final seconds = d.inSeconds.remainder(60).toString().padLeft(2, '0');
-  if (hours > 0) return '$hours:$minutes:$seconds';
-  return '$minutes:$seconds';
-}
-
-/// Kodi-style subtitle timing nudge bar (FR-7). Always visible while the
-/// transport overlay is up.
+/// Kodi-style subtitle nudge bar (FR-7).
 class _SubtitleNudgeBar extends StatelessWidget {
-  const _SubtitleNudgeBar({required this.service, required this.state});
-
+  const _SubtitleNudgeBar({required this.service});
   final PlaybackService service;
-  final PlaybackState state;
 
   @override
   Widget build(BuildContext context) {
-    final labels = const [
+    const labels = [
       ('-5s', Duration(seconds: -5)),
       ('-1s', Duration(seconds: -1)),
       ('-0.5s', Duration(milliseconds: -500)),
@@ -551,15 +588,41 @@ class _SubtitleNudgeBar extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           for (final (label, step) in labels) ...[
-            _NudgeButton(
-              label: label,
-              onPressed: () => service.nudgeSubtitleDelay(step),
+            FocusableAction(
+              onSelect: () => service.nudgeSubtitleDelay(step),
+              variant: FocusableActionVariant.button,
+              borderRadius: 6,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.6),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  label,
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                ),
+              ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 6),
           ],
-          _NudgeButton(
-            label: 'Reset',
-            onPressed: () => service.resetSubtitleDelay(),
+          FocusableAction(
+            onSelect: () => service.resetSubtitleDelay(),
+            variant: FocusableActionVariant.button,
+            borderRadius: 6,
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.6),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: const Text(
+                'Reset',
+                style: TextStyle(color: Colors.white, fontSize: 13),
+              ),
+            ),
           ),
         ],
       ),
@@ -567,31 +630,8 @@ class _SubtitleNudgeBar extends StatelessWidget {
   }
 }
 
-class _NudgeButton extends StatelessWidget {
-  const _NudgeButton({required this.label, required this.onPressed});
-
-  final String label;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return ElevatedButton(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.black.withValues(alpha: 0.6),
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        minimumSize: const Size(56, 36),
-      ),
-      onPressed: onPressed,
-      child: Text(label, style: const TextStyle(fontSize: 13)),
-    );
-  }
-}
-
-/// Ephemeral toast that displays the current subtitle timing offset.
 class _SubtitleDelayToast extends StatelessWidget {
   const _SubtitleDelayToast({required this.label});
-
   final String label;
 
   @override
@@ -610,78 +650,99 @@ class _SubtitleDelayToast extends StatelessWidget {
   }
 }
 
-/// Manual subtitle picker. Triggered from the closed-caption button on the
-/// transport overlay. The default selection happens silently — this dialog
-/// is the override path called out by FR-6.
-class _SubtitlePickerDialog extends StatelessWidget {
-  const _SubtitlePickerDialog({
-    required this.state,
-    required this.onSelect,
+class _CompletedOverlay extends StatelessWidget {
+  const _CompletedOverlay({
+    required this.onReplay,
+    required this.onBack,
+    this.onNext,
   });
 
-  final PlaybackState state;
-  final ValueChanged<int?> onSelect;
-
-  String _trackLabel(SubtitleTrackInfo track, int index) {
-    final parts = <String>[
-      if (track.title != null && track.title!.isNotEmpty) track.title!,
-      if (track.language != null && track.language!.isNotEmpty)
-        track.language!,
-    ];
-    final tag = parts.isEmpty ? 'Track ${index + 1}' : parts.join(' · ');
-    return tag;
-  }
+  final VoidCallback onReplay;
+  final VoidCallback onBack;
+  final VoidCallback? onNext;
 
   @override
   Widget build(BuildContext context) {
-    final tracks = state.subtitleTracks;
-    return AlertDialog(
-      backgroundColor: const Color(0xFF111111),
-      title: const Text(
-        'Subtitles',
-        style: TextStyle(color: Colors.white),
-      ),
-      content: SizedBox(
-        width: 320,
-        child: tracks.isEmpty
-            ? const Text(
-                'No subtitle tracks available',
-                style: TextStyle(color: Colors.white70),
-              )
-            : Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  ListTile(
-                    title: const Text(
-                      'Off',
-                      style: TextStyle(color: Colors.white),
+    return ColoredBox(
+      color: const Color(0xE6000000),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.check_circle,
+                color: MediarrColors.statusSuccess, size: 64),
+            const SizedBox(height: 16),
+            const Text(
+              'Playback Complete',
+              style: TextStyle(color: Colors.white, fontSize: 20),
+            ),
+            const SizedBox(height: 24),
+            Wrap(
+              spacing: 12,
+              children: [
+                FocusableAction(
+                  onSelect: onReplay,
+                  variant: FocusableActionVariant.button,
+                  borderRadius: 6,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(6),
                     ),
-                    trailing: state.selectedSubtitleIndex == null
-                        ? const Icon(Icons.check, color: MediarrColors.accentPrimary)
-                        : null,
-                    onTap: () => onSelect(null),
+                    child: const Text('Replay',
+                        style: TextStyle(
+                            color: Colors.black, fontWeight: FontWeight.w700)),
                   ),
-                  for (var i = 0; i < tracks.length; i++)
-                    ListTile(
-                      title: Text(
-                        _trackLabel(tracks[i], i),
-                        style: const TextStyle(color: Colors.white),
+                ),
+                if (onNext != null) ...[
+                  const SizedBox(width: 12),
+                  FocusableAction(
+                    onSelect: onNext!,
+                    variant: FocusableActionVariant.button,
+                    borderRadius: 6,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.white24,
+                        borderRadius: BorderRadius.circular(6),
                       ),
-                      trailing: state.selectedSubtitleIndex == i
-                          ? const Icon(Icons.check, color: MediarrColors.accentPrimary)
-                          : null,
-                      onTap: () => onSelect(i),
+                      child: const Text('Next Episode',
+                          style: TextStyle(color: Colors.white)),
                     ),
+                  ),
                 ],
-              ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Close'),
+                const SizedBox(width: 12),
+                FocusableAction(
+                  onSelect: onBack,
+                  variant: FocusableActionVariant.button,
+                  borderRadius: 6,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 10),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.white),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Text('Back',
+                        style: TextStyle(color: Colors.white)),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
+}
+
+String _formatDuration(Duration d) {
+  final hours = d.inHours;
+  final minutes = d.inMinutes.remainder(60).toString().padLeft(2, '0');
+  final seconds = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+  if (hours > 0) return '$hours:$minutes:$seconds';
+  return '$minutes:$seconds';
 }

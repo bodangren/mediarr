@@ -6,7 +6,7 @@ import '../../core/widgets/netflix_scaffold.dart';
 import '../../shared/models/movie.dart';
 import '../../shared/services/api_client.dart';
 import '../../shared/widgets/poster_card.dart';
-import '../playback/playback_screen.dart';
+import '../playback/playback_navigation.dart';
 import 'continue_watching_section.dart';
 import 'movie_detail_screen.dart';
 
@@ -66,31 +66,30 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
                   ),
                   const Spacer(),
                   SizedBox(
-                    width: 280,
-                    child: Focus(
+                    width: 360,
+                    child: TextField(
+                      // The FocusNode must belong to the TextField itself. A
+                      // wrapper Focus keeps the input method from attaching,
+                      // so the field accepted no text (F5).
                       focusNode: _searchFocusNode,
-                      child: TextField(
-                        controller: _searchController,
-                        onChanged: (value) =>
-                            setState(() => _searchQuery = value),
-                        decoration: InputDecoration(
-                          hintText: 'Search...',
-                          prefixIcon: const Icon(Icons.search, size: 20),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          filled: true,
-                          fillColor: MediarrColors.surfaceCard,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
-                          ),
-                          isDense: true,
+                      controller: _searchController,
+                      onChanged: (value) => setState(() => _searchQuery = value),
+                      decoration: InputDecoration(
+                        hintText: 'Search...',
+                        prefixIcon: const Icon(Icons.search, size: 28),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                        style: const TextStyle(
-                          color: MediarrColors.textPrimary,
-                          fontSize: 14,
+                        filled: true,
+                        fillColor: MediarrColors.surfaceCard,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
                         ),
+                      ),
+                      style: const TextStyle(
+                        color: MediarrColors.textPrimary,
+                        fontSize: 20,
                       ),
                     ),
                   ),
@@ -133,10 +132,10 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 24),
                     gridDelegate:
                         const SliverGridDelegateWithMaxCrossAxisExtent(
-                      maxCrossAxisExtent: 180,
-                      childAspectRatio: 0.6,
-                      crossAxisSpacing: 16,
-                      mainAxisSpacing: 16,
+                      maxCrossAxisExtent: 280,
+                      childAspectRatio: 0.58,
+                      crossAxisSpacing: 24,
+                      mainAxisSpacing: 24,
                     ),
                     itemCount: filtered.length,
                     itemBuilder: (context, index) {
@@ -177,15 +176,12 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
         ? '${item.title} - ${item.episodeTitle}'
         : item.title;
 
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => PlaybackScreen(
-          streamUrl: streamUrl,
-          title: title,
-          mediaId: item.mediaId,
-          mediaType: type,
-        ),
-      ),
+    openFullscreenPlayback(
+      context,
+      streamUrl: streamUrl,
+      title: title,
+      mediaId: item.mediaId,
+      mediaType: type,
     );
   }
 }

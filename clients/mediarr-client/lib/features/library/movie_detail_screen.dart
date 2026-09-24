@@ -10,7 +10,7 @@ import '../../shared/widgets/media_detail/action_bar.dart';
 import '../../shared/widgets/media_detail/file_info_card.dart';
 import '../../shared/widgets/media_detail/media_hero.dart';
 import '../../shared/widgets/media_detail/metadata_section.dart';
-import '../playback/playback_screen.dart';
+import '../playback/playback_navigation.dart';
 import 'subtitle_search_sheet.dart';
 
 class MovieDetailScreen extends ConsumerStatefulWidget {
@@ -79,15 +79,12 @@ class _MovieDetailScreenState extends ConsumerState<MovieDetailScreen> {
     final movie = widget.movie;
     final apiClient = ref.read(apiClientProvider.notifier);
     final streamUrl = apiClient.getStreamUrl(movie.id, 'movie');
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => PlaybackScreen(
-          streamUrl: streamUrl,
-          title: movie.title,
-          mediaId: movie.id,
-          mediaType: 'movie',
-        ),
-      ),
+    openFullscreenPlayback(
+      context,
+      streamUrl: streamUrl,
+      title: movie.title,
+      mediaId: movie.id,
+      mediaType: 'movie',
     );
   }
 
@@ -149,21 +146,43 @@ class _MovieDetailScreenState extends ConsumerState<MovieDetailScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(8, 8, 0, 0),
-                child: IconButton(
-                  icon: const Icon(Icons.arrow_back),
-                  onPressed: () => Navigator.of(context).pop(),
+                padding: const EdgeInsets.fromLTRB(16, 16, 0, 0),
+                child: FocusableAction(
                   autofocus: true,
+                  variant: FocusableActionVariant.button,
+                  onSelect: () => Navigator.of(context).pop(),
+                  borderRadius: 8,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 12),
+                    color: MediarrColors.surfaceCard,
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.arrow_back,
+                            size: 28, color: MediarrColors.textPrimary),
+                        SizedBox(width: 8),
+                        Text(
+                          'Back',
+                          style: TextStyle(
+                            color: MediarrColors.textPrimary,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
               MediaHero(
+                backdropUrl: movie.fanartUrl,
                 posterUrl: movie.posterUrl,
                 title: movie.title,
                 subtitle: movie.year?.toString(),
               ),
               MetadataSection(
                 synopsis: movie.overview,
-                year: movie.year,
                 runtime: movie.runtime,
               ),
               if (movie.effectiveHasFile)
@@ -187,10 +206,30 @@ class _MovieDetailScreenState extends ConsumerState<MovieDetailScreen> {
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                       const Spacer(),
-                      TextButton.icon(
-                        onPressed: _showSubtitleSearch,
-                        icon: const Icon(Icons.search, size: 18),
-                        label: const Text('Search'),
+                      FocusableAction(
+                        variant: FocusableActionVariant.button,
+                        onSelect: _showSubtitleSearch,
+                        borderRadius: 8,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 10),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.search,
+                                  size: 24, color: MediarrColors.textPrimary),
+                              SizedBox(width: 8),
+                              Text(
+                                'Search',
+                                style: TextStyle(
+                                  color: MediarrColors.textPrimary,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     ],
                   ),

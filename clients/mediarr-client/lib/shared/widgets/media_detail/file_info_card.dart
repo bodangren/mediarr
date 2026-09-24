@@ -20,29 +20,15 @@ class FileInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hasSize = sizeBytes != null && sizeBytes! > 0;
     final hasAny = quality != null ||
         path != null ||
-        sizeBytes != null ||
+        hasSize ||
         audioTrackCount != null ||
         subtitleTrackCount != null;
 
     if (!hasAny) {
-      return Card(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              const Icon(Icons.insert_drive_file_outlined,
-                  color: MediarrColors.textMuted),
-              const SizedBox(width: 8),
-              Text(
-                'No file information available',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-            ],
-          ),
-        ),
-      );
+      return const SizedBox.shrink();
     }
 
     return Card(

@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mediarr_client/core/router/app_router.dart';
 import 'package:mediarr_client/features/discovery/discovery_service.dart';
-import 'package:mediarr_client/features/calendar/calendar_screen.dart';
 import 'package:mediarr_client/features/home/home_screen.dart';
 import 'package:mediarr_client/features/library/continue_watching_section.dart';
 import 'package:mediarr_client/features/library/movies_screen.dart';
@@ -79,7 +78,6 @@ void main() {
             (ref) => _RouterTestDiscoveryService(),
           ),
           continueWatchingProvider.overrideWith((ref) async => const []),
-          calendarProvider.overrideWith((ref, params) async => {}),
           upcomingProvider.overrideWith((ref) async => const []),
           recentlyAddedProvider.overrideWith((ref) async => const []),
           homeMoviesProvider.overrideWith((ref) async => const <Movie>[]),

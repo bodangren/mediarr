@@ -225,16 +225,38 @@ class PlaybackService extends StateNotifier<PlaybackState> {
   }
 
   /// Stop playback and report final position.
+  ///
+  /// Phase 4b+ follow-up: stop() must NOT close the underlying media_kit
+  /// stream surface so a subsequent [play] reopens cleanly without the
+  /// "playback breaks after one exit" regression. We report progress, hide
+  /// the overlay, and reset the state machine so a second play() starts
+  /// from a clean slate.
   Future<void> stop() async {
     _progressReportTimer?.cancel();
     _overlayHideTimer?.cancel();
     _subtitleToastTimer?.cancel();
 
     // Report final position
-    await _reportProgress();
+    try {
+      await _reportProgress();
+    } catch (_) {}
 
-    await _player.stop();
-    state = const PlaybackState();
+    try {
+      await _player.stop();
+    } catch (_) {}
+
+    state = const PlaybackState(overlayVisible: false);
+  }
+
+  /// Reset transient playback state to a clean slate before opening a new
+  /// stream. Used by [PlaybackScreen] before each `play()` call so a
+  /// play → exit → play sequence starts from a known-good state (status
+  /// loading, no stale tracks, overlay hidden, subtitle reset to 0).
+  void resetForNewPlayback() {
+    _progressReportTimer?.cancel();
+    _overlayHideTimer?.cancel();
+    _subtitleToastTimer?.cancel();
+    state = const PlaybackState(overlayVisible: false);
   }
 
   /// Show the overlay and restart the auto-hide timer.
@@ -243,11 +265,18 @@ class PlaybackService extends StateNotifier<PlaybackState> {
     _startOverlayTimer();
   }
 
+  /// Hide the overlay without affecting playback.
+  void hideOverlay() {
+    _overlayHideTimer?.cancel();
+    if (state.overlayVisible) {
+      state = state.copyWith(overlayVisible: false);
+    }
+  }
+
   /// Toggle overlay visibility.
   void toggleOverlay() {
     if (state.overlayVisible) {
-      _overlayHideTimer?.cancel();
-      state = state.copyWith(overlayVisible: false);
+      hideOverlay();
     } else {
       showOverlay();
     }
@@ -406,7 +435,7 @@ class PlaybackService extends StateNotifier<PlaybackState> {
 
   void _startOverlayTimer() {
     _overlayHideTimer?.cancel();
-    _overlayHideTimer = Timer(const Duration(seconds: 5), () {
+    _overlayHideTimer = Timer(const Duration(seconds: 4), () {
       if (state.status == PlaybackStatus.playing) {
         state = state.copyWith(overlayVisible: false);
       }

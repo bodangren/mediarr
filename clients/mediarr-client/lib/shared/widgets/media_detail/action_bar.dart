@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/mediarr_theme.dart';
+import '../../../core/widgets/netflix_scaffold.dart';
+
 class ActionBarAction {
   const ActionBarAction({
     required this.label,
@@ -27,32 +30,59 @@ class ActionBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Wrap(
-        spacing: 8,
+        spacing: 12,
         children: [
           for (final action in actions)
-            if (action.isDestructive)
-              TextButton.icon(
-                onPressed: () => _confirmDestructive(context, action),
-                icon: action.icon != null ? Icon(action.icon) : const SizedBox.shrink(),
-                label: Text(action.label),
-                style: TextButton.styleFrom(
-                  foregroundColor: Theme.of(context).colorScheme.error,
+            // One focus cue on every TV control (Phase 4c step 7).
+            FocusableAction(
+              variant: FocusableActionVariant.button,
+              onSelect: action.isDestructive
+                  ? () => _confirmDestructive(context, action)
+                  : action.onPressed,
+              borderRadius: 8,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 20, vertical: 12),
+                decoration: BoxDecoration(
+                  color: action.isPrimary
+                      ? MediarrColors.accentPrimary
+                      : MediarrColors.surfaceCard,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: MediarrColors.borderSubtle),
                 ),
-              )
-            else if (action.isPrimary)
-              ElevatedButton.icon(
-                onPressed: action.onPressed,
-                icon: action.icon != null ? Icon(action.icon) : const SizedBox.shrink(),
-                label: Text(action.label),
-              )
-            else
-              TextButton.icon(
-                onPressed: action.onPressed,
-                icon: action.icon != null ? Icon(action.icon) : const SizedBox.shrink(),
-                label: Text(action.label),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (action.icon != null) ...[
+                      Icon(
+                        action.icon,
+                        size: 28,
+                        color: action.isDestructive
+                            ? MediarrColors.statusError
+                            : action.isPrimary
+                                ? Colors.white
+                                : MediarrColors.textPrimary,
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                    Text(
+                      action.label,
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                        color: action.isDestructive
+                            ? MediarrColors.statusError
+                            : action.isPrimary
+                                ? Colors.white
+                                : MediarrColors.textPrimary,
+                      ),
+                    ),
+                  ],
+                ),
               ),
+            ),
         ],
       ),
     );

@@ -1,4 +1,4 @@
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -7,6 +7,7 @@ import '../../features/discovery/discovery_screen.dart';
 import '../../features/home/home_screen.dart';
 import '../../features/library/movies_screen.dart';
 import '../../features/library/series_screen.dart';
+import '../../features/playback/playback_screen.dart';
 import '../../shared/providers/connection_provider.dart';
 import '../../shared/services/api_client.dart';
 
@@ -18,19 +19,30 @@ class AppRoutes {
   static const String home = '/home';
   static const String movies = '/movies';
   static const String series = '/series';
+  static const String playback = '/playback';
 }
 
-/// Shell route key for the leanback scaffold.
+/// Navigator key for the leanback scaffold (Home/Movies/Series stack).
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
+
+/// Top-level Navigator for the fullscreen playback route. Kept separate so
+/// playback can be pushed without involving the leanback shell (which has
+/// the sidebar). Without this, the sidebar renders behind the video and the
+/// playback screen never gets the fullscreen surface the user expects.
+final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
 /// The app-wide router configuration.
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
+    navigatorKey: _rootNavigatorKey,
     initialLocation: AppRoutes.discovery,
     redirect: (context, state) {
       // Phase 4b: redirect to home if the API client is already connected
       // (e.g. autoconnect on cold boot succeeded before this redirect runs).
-      if (state.matchedLocation == AppRoutes.discovery) {
+      // `?switch=1` is the explicit "change server" request from the rail, and
+      // must stay on Discovery even while connected.
+      if (state.matchedLocation == AppRoutes.discovery &&
+          state.uri.queryParameters['switch'] != '1') {
         final manager = ref.read(connectionManagerProvider);
         final clientState = manager.clientState;
         if (clientState.baseUrl != null &&
@@ -70,6 +82,25 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const SeriesScreen(),
           ),
         ],
+      ),
+      // Fullscreen playback — parentNavigatorKey ensures this route lives
+      // OUTSIDE the ShellRoute's scaffold, so the sidebar never renders
+      // behind the video and the video gets the full screen.
+      GoRoute(
+        path: AppRoutes.playback,
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>?;
+          if (extra == null) {
+            return const Scaffold(body: SizedBox.shrink());
+          }
+          return PlaybackScreen(
+            streamUrl: extra['streamUrl'] as String,
+            title: extra['title'] as String,
+            mediaId: extra['mediaId'] as int,
+            mediaType: extra['mediaType'] as String,
+          );
+        },
       ),
     ],
   );

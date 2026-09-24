@@ -106,7 +106,34 @@
 
 ## Phase 3: Device check
 
-- [ ] Remote-only run on `192.168.10.60:5555`. One frame per step with MD5 in this plan (F10).
+- [x] Build and install the fat APK on `192.168.10.60:5555`. Build:
+      `JAVA_HOME=/home/daniel-bo/.local/jdk17 flutter build apk --release
+      --android-skip-build-dependency-validation` — 97.8 MB; install succeeded.
+- [x] Verify external Chinese subtitle rendering. The owner saw the subtitles on the TV and reported
+      that the text is too small. Frame `device-20260925/step-29-playback-5s.png`, MD5
+      `25a38bb3d02ee84f425d71ce6b67802f`, shows Chinese and English text during playback.
+- [~] Finish the remote-only check on `192.168.10.60:5555`. The 2026-09-25 run found small
+      transport controls and a home layout that does not match the revised mockup. It also found
+      that Back returns to Home without a confirmed stop. Do not mark the run complete until the
+      Phase 4 fixes pass on the TV.
+- [ ] Perceptual remote-only sign-off. Human-gated. The owner holds this judgement.
+
+## Phase 4: TV usability follow-up (FR-10 to FR-14)
+
+> Added 2026-09-25 after the owner reviewed the Phase 3 TV run. The owner's revised home image is
+> the visual authority. The owner chose stop-on-exit behavior.
+
+- [~] Red: tests for subtitle size, transport control size, route-exit stop, remote media keys, and
+      home layout at 1920×1080. Add the cases to the existing playback and home widget test files.
+- [ ] Green: increase the subtitle font size for external and embedded tracks. Verify it on the TV.
+- [ ] Green: enlarge the bottom transport buttons, their focus targets, and subtitle-nudge controls.
+- [ ] Green: stop the player when the playback route exits. Keep Stop, Back, and route disposal safe.
+- [ ] Green: map Play, Pause, and Play/Pause remote media keys to the active player. Ignore them
+      after the route exits.
+- [ ] Green: match the revised home image. Fit four Continue Watching cards across the TV view and
+      show the start of Recently Added at 1920×1080. Use landscape artwork for the full-width hero.
+- [ ] Gate: `flutter analyze` clean; `flutter test` green.
+- [ ] Build and install the fat APK. Repeat the TV check with one frame and MD5 per step (F10).
 - [ ] Perceptual remote-only sign-off. Human-gated. The owner holds this judgement.
 
 ## Risk register

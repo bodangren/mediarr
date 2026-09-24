@@ -4,11 +4,14 @@ Track: `feature_tv_home_redesign_20260924`
 Date: 2026-09-24
 Owner decision: build the mockup home screen first; repair the player next; both in this track.
 Owner decision: scope is the home screen only. Movies, Series, and detail screens keep their current design.
+Owner decision on 2026-09-25: stop playback when the user leaves the playback screen.
 
 ## Source of truth
 
-The owner supplied an "Improved UI mockup" on 2026-09-24. The mockup is the design authority for
-the home screen. Where the mockup and `DESIGN.md` ("Near-Zero") disagree, the mockup wins here.
+The owner supplied an "Improved UI mockup" on 2026-09-24 and a revised image on 2026-09-25.
+The 2026-09-25 image is the current home-screen design authority. The image on 2026-09-24 remains
+the source for the functional requirements. Where either mockup and `DESIGN.md` ("Near-Zero")
+disagree, the mockup wins here.
 
 ## Problem
 
@@ -48,6 +51,18 @@ one text line. Rows have no "See All" action. The rail does not carry Search or 
 - FR-9 **Chinese subtitles display.** External subtitle tracks reach the player. The FR-6 default
   selection (English audio, Chinese Simplified subtitles) applies to them. The subtitle picker lists
   them. The nudge (FR-7 of Phase 4) applies to them.
+- FR-10 **Subtitle size.** Render subtitle text at a size that the owner can read from the TV
+  viewing position. Apply the size to external and embedded tracks.
+- FR-11 **Playback control size.** Increase the bottom-row transport and subtitle-nudge controls for
+  TV use. Keep the focus cue visible on every control.
+- FR-12 **Stop playback on exit.** Stop playback when the user leaves the playback route. Do not
+  continue audio or video in the background.
+- FR-13 **Remote media keys.** While `PlaybackScreen` is active, Play, Pause, and Play/Pause keys
+  must control playback with the overlay visible or hidden. After route exit, no media session may
+  continue playback.
+- FR-14 **Home mockup fidelity.** At 1920×1080, show the full-width hero, four Continue Watching
+  cards, and the start of Recently Added. Use landscape art as a hero backdrop. Keep the rail and
+  existing D-pad path.
 
 ## Evidence rule (F10)
 
@@ -63,8 +78,13 @@ state change.
 2. Controls unreachable: `playback_screen.dart:132` maps every key to seek, wake, or toggle. The
    screen has no `FocusTraversalGroup`, so `FocusableAction` buttons hold no D-pad path.
 3. Subtitles absent: `media_player.dart:154` opens `Media(streamUrl)` only. `PlaybackManifest`
-   (`api_client.dart:100`) carries no subtitle list, so `/api/playback/subtitles/:trackId`
-   (`playbackRoutes.ts:187`) tracks never reach the player.
+    (`api_client.dart:100`) carries no subtitle list, so `/api/playback/subtitles/:trackId`
+    (`playbackRoutes.ts:187`) tracks never reach the player.
+4. Subtitle text and the bottom transport row are too small for the owner to read on the TV.
+5. The player route does not reliably stop playback when the user backs out. The owner selected
+   stop-on-exit behavior. Remote media keys also need a foreground playback path.
+6. The home layout uses cards that are too wide for four cards and places Recently Added below the
+   first 1080p view. The revised mockup shows four Continue Watching cards and Recently Added.
 
 ## Assumptions
 
@@ -74,6 +94,7 @@ state change.
 
 ## Non-goals
 
-- No restyle of Movies, Series, detail, or playback screens beyond FR-7 to FR-9.
+- No restyle of Movies, Series, or detail screens.
+- Playback restyle is limited to FR-10 and FR-11.
 - No new server endpoints. The client consumes what the server exposes today.
 - No transcoding, subtitle fetching, or subtitle conversion work.

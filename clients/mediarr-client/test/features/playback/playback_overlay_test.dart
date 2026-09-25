@@ -168,5 +168,18 @@ void main() {
           reason: 'FR-8: arrows seek on the video-surface path (+10 s)');
       expect(find.text('00:10'), findsOneWidget);
     });
+
+    testWidgets('remote Play, Pause, and Play/Pause keys control playback',
+        (tester) async {
+      await pumpScreen(tester);
+
+      await press(tester, LogicalKeyboardKey.mediaPlay);
+      await press(tester, LogicalKeyboardKey.mediaPause);
+      await press(tester, LogicalKeyboardKey.mediaPlayPause);
+
+      expect(player.playCalls, hasLength(1));
+      expect(player.pauseCalls, hasLength(1));
+      expect(player.playOrPauseCalls, hasLength(1));
+    });
   });
 }

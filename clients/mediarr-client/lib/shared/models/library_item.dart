@@ -6,6 +6,7 @@ class LibraryItem {
     required this.type,
     this.year,
     this.posterUrl,
+    this.backdropUrl,
     this.status,
     this.monitored = false,
     this.added,
@@ -17,6 +18,9 @@ class LibraryItem {
   final String type;
   final int? year;
   final String? posterUrl;
+
+  /// Landscape art (`backdropUrl` on the media-library response).
+  final String? backdropUrl;
   final String? status;
   final bool monitored;
   final DateTime? added;
@@ -29,6 +33,7 @@ class LibraryItem {
       type: json['type'] as String,
       year: json['year'] as int?,
       posterUrl: json['posterUrl'] as String?,
+      backdropUrl: json['backdropUrl'] as String?,
       status: json['status'] as String?,
       monitored: json['monitored'] as bool? ?? false,
       added: DateTime.tryParse(json['added'] as String? ?? ''),
@@ -43,6 +48,7 @@ class LibraryItem {
       'type': type,
       'year': year,
       'posterUrl': posterUrl,
+      'backdropUrl': backdropUrl,
       'status': status,
       'monitored': monitored,
       'added': added?.toIso8601String(),

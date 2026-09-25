@@ -176,7 +176,7 @@ class _MovieDetailScreenState extends ConsumerState<MovieDetailScreen> {
                 ),
               ),
               MediaHero(
-                backdropUrl: movie.fanartUrl,
+                backdropUrl: movie.backdropUrl,
                 posterUrl: movie.posterUrl,
                 title: movie.title,
                 subtitle: movie.year?.toString(),

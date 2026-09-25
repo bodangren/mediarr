@@ -196,6 +196,7 @@ class PlaybackService extends StateNotifier<PlaybackState> {
 
     try {
       await _player.open(streamUrl);
+      await _subtitleRenderer.setFontSize(defaultSubtitleFontSize);
       await _player.attachExternalSubtitles(externalSubtitles);
       if (startPosition > Duration.zero) {
         await _player.seek(startPosition);
@@ -214,6 +215,18 @@ class PlaybackService extends StateNotifier<PlaybackState> {
   Future<void> togglePlayPause() async {
     _touchOverlay();
     await _player.playOrPause();
+  }
+
+  /// Start playback from a dedicated remote media Play key.
+  Future<void> playMedia() async {
+    _touchOverlay();
+    await _player.play();
+  }
+
+  /// Pause playback from a dedicated remote media Pause key.
+  Future<void> pauseMedia() async {
+    _touchOverlay();
+    await _player.pause();
   }
 
   /// Seek to a specific position.

@@ -8,6 +8,8 @@ class Series {
     this.year,
     this.overview,
     this.posterUrl,
+    this.backdropUrl,
+    this.quality,
     this.network,
     this.status,
     this.monitored = false,
@@ -25,6 +27,13 @@ class Series {
   final int? year;
   final String? overview;
   final String? posterUrl;
+
+  /// Landscape art (server field `backdropUrl`). The hero banner uses this
+  /// as its full-bleed backdrop (FR-14).
+  final String? backdropUrl;
+
+  /// Quality label from the API (`quality` or the `qualityProfile` name).
+  final String? quality;
   final String? network;
   final String? status;
   final bool monitored;
@@ -49,6 +58,11 @@ class Series {
       year: json['year'] as int?,
       overview: json['overview'] as String?,
       posterUrl: json['posterUrl'] as String?,
+      backdropUrl: json['backdropUrl'] as String?,
+      quality: json['quality'] as String? ??
+          ((json['qualityProfile'] is Map)
+              ? (json['qualityProfile'] as Map)['name'] as String?
+              : null),
       network: json['network'] as String?,
       status: json['status'] as String?,
       monitored: json['monitored'] as bool? ?? false,

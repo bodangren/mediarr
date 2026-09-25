@@ -8,7 +8,7 @@ class Movie {
     this.year,
     this.overview,
     this.posterUrl,
-    this.fanartUrl,
+    this.backdropUrl,
     this.monitored = false,
     this.hasFile = false,
     this.quality,
@@ -23,7 +23,10 @@ class Movie {
   final int? year;
   final String? overview;
   final String? posterUrl;
-  final String? fanartUrl;
+
+  /// Landscape art (server field `backdropUrl`). The hero banner uses this
+  /// as its full-bleed backdrop (FR-14).
+  final String? backdropUrl;
   final bool monitored;
   final bool hasFile;
   final String? quality;
@@ -50,10 +53,10 @@ class Movie {
       year: json['year'] as int?,
       overview: json['overview'] as String?,
       posterUrl: json['posterUrl'] as String?,
-      fanartUrl: json['fanartUrl'] as String?,
+      backdropUrl: json['backdropUrl'] as String? ?? json['fanartUrl'] as String?,
       monitored: json['monitored'] as bool? ?? false,
       hasFile: json['hasFile'] as bool? ?? false,
-      quality: json['quality'] as String?,
+      quality: json['quality'] as String? ?? _qualityProfileName(json),
       sizeOnDisk: json['sizeOnDisk'] as int?,
       runtime: json['runtime'] as int?,
       path: json['path'] as String?,
@@ -62,4 +65,13 @@ class Movie {
           .toList(),
     );
   }
+}
+
+/// Quality label from the embedded `qualityProfile` relation (for example
+/// `HD-1080p`). The movie DTO omits file variants, so the profile name is
+/// the only quality signal on the detail response.
+String? _qualityProfileName(Map<String, dynamic> json) {
+  final profile = json['qualityProfile'];
+  if (profile is Map) return profile['name'] as String?;
+  return null;
 }

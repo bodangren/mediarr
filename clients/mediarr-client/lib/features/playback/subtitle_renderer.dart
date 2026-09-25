@@ -1,6 +1,28 @@
 import 'dart:async';
 
+import 'package:flutter/painting.dart';
 import 'package:media_kit/media_kit.dart';
+
+/// TV subtitle font size applied to libmpv's `sub-font-size` property.
+const double defaultSubtitleFontSize = 112;
+
+/// Subtitle text drawn by `media_kit_video`'s Flutter `SubtitleView`. This is
+/// the subtitles the owner sees on the TV; libmpv's `sub-font-size` does not
+/// reach it (FR-10). A fixed logical size keeps the rendered size identical
+/// on every panel: at the TV's device pixel ratio (1.5) this is 66 physical
+/// pixels.
+const double tvSubtitleFontSize = 44;
+
+/// Style for [tvSubtitleFontSize]: white on a translucent black box.
+const TextStyle tvSubtitleTextStyle = TextStyle(
+  height: 1.35,
+  fontSize: tvSubtitleFontSize,
+  letterSpacing: 0.0,
+  wordSpacing: 0.0,
+  color: Color(0xffffffff),
+  fontWeight: FontWeight.w500,
+  backgroundColor: Color(0xaa000000),
+);
 
 /// Side-effect-free renderer interface for the subtitle timing nudge (FR-7).
 ///
@@ -17,6 +39,7 @@ import 'package:media_kit/media_kit.dart';
 abstract class SubtitleRenderer {
   Future<void> setDelay(Duration delay);
   Future<Duration> getDelay();
+  Future<void> setFontSize(double fontSize);
 }
 
 /// No-op renderer used when the playback service is constructed without a
@@ -33,11 +56,15 @@ class NoOpSubtitleRenderer implements SubtitleRenderer {
 
   @override
   Future<Duration> getDelay() async => _delay;
+
+  @override
+  Future<void> setFontSize(double fontSize) async {}
 }
 
 /// Renderer used by tests to verify the offset passed to the renderer.
 class FakeSubtitleRenderer implements SubtitleRenderer {
   final List<Duration> setDelays = [];
+  final List<double> appliedFontSizes = [];
   Duration _current = Duration.zero;
 
   @override
@@ -48,6 +75,11 @@ class FakeSubtitleRenderer implements SubtitleRenderer {
 
   @override
   Future<Duration> getDelay() async => _current;
+
+  @override
+  Future<void> setFontSize(double fontSize) async {
+    appliedFontSizes.add(fontSize);
+  }
 }
 
 /// Default production renderer that drives `media_kit`'s `sub-delay` libmpv
@@ -78,6 +110,21 @@ class MediaKitSubtitleRenderer implements SubtitleRenderer {
       );
     } catch (_) {
       // sub-delay is not supported on every backend; ignore.
+    }
+  }
+
+  @override
+  Future<void> setFontSize(double fontSize) async {
+    final platform = _player.platform;
+    if (platform == null) return;
+    try {
+      // ignore: avoid_dynamic_calls
+      await (platform as dynamic).setProperty(
+        'sub-font-size',
+        fontSize.toString(),
+      );
+    } catch (_) {
+      // The default remains in effect if a backend rejects this property.
     }
   }
 

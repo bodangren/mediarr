@@ -138,7 +138,8 @@ void main() {
 
       await pressDpad(tester, LogicalKeyboardKey.arrowUp);
       expectVisibleFocus('up 1');
-      expect(focusedText(), contains('Salute Your Morts'));
+      expect(focusedText(), contains('Rick and Morty'));
+      expect(focusedText(), contains('Resume at'));
 
       await pressDpad(tester, LogicalKeyboardKey.arrowUp);
       expectSearchOwnsFocus(tester);

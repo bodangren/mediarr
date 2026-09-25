@@ -92,6 +92,12 @@ abstract class MediaPlayer {
   /// Toggle play / pause.
   Future<void> playOrPause();
 
+  /// Start playback without toggling its current state.
+  Future<void> play();
+
+  /// Pause playback without toggling its current state.
+  Future<void> pause();
+
   /// Stop playback.
   Future<void> stop();
 
@@ -231,6 +237,16 @@ class MediaKitMediaPlayer implements MediaPlayer {
   @override
   Future<void> playOrPause() async {
     await _player.playOrPause();
+  }
+
+  @override
+  Future<void> play() async {
+    await _player.play();
+  }
+
+  @override
+  Future<void> pause() async {
+    await _player.pause();
   }
 
   @override

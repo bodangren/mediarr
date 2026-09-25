@@ -23,7 +23,7 @@ void main() {
       expect(movie.year, isNull);
       expect(movie.overview, isNull);
       expect(movie.posterUrl, isNull);
-      expect(movie.fanartUrl, isNull);
+      expect(movie.backdropUrl, isNull);
       expect(movie.monitored, false);
       expect(movie.hasFile, false);
       expect(movie.quality, isNull);
@@ -49,9 +49,11 @@ void main() {
         'path': '/media/movies/Inception (2010)/Inception.mkv',
         'year': 2010,
         'posterUrl': 'https://image.tmdb.org/t/p/w500/poster.jpg',
+        'backdropUrl': 'https://image.tmdb.org/t/p/w1280/backdrop.jpg',
         'runtime': 148,
         'added': '2026-01-01T00:00:00Z',
         'minimumAvailability': 'released',
+        'qualityProfile': {'id': 1, 'name': 'HD-1080p'},
         'fileVariants': [
           {
             'id': 1,
@@ -88,6 +90,8 @@ void main() {
       expect(movie.year, 2010);
       expect(movie.overview, startsWith('A thief'));
       expect(movie.posterUrl, 'https://image.tmdb.org/t/p/w500/poster.jpg');
+      expect(movie.backdropUrl, 'https://image.tmdb.org/t/p/w1280/backdrop.jpg',
+          reason: 'FR-14: the hero banner reads the row field `backdropUrl`.');
       expect(movie.monitored, true);
       expect(movie.path, '/media/movies/Inception (2010)/Inception.mkv');
       expect(movie.runtime, 148);
@@ -96,7 +100,9 @@ void main() {
       // The Movie model now also derives effectiveHasFile from hasFile, path,
       // or fileVariants so the detail screen can still show Play.
       expect(movie.sizeOnDisk, 15000000000);
-      expect(movie.quality, isNull);
+      expect(movie.quality, 'HD-1080p',
+          reason: 'FR-2 chips fall back to the qualityProfile name when the '
+              'DTO carries no flat quality field.');
       expect(movie.hasFile, isFalse);
       expect(movie.fileVariants, hasLength(1));
       expect(
@@ -125,6 +131,7 @@ void main() {
       expect(movie.title, 'Tenet');
       expect(movie.year, isNull);
       expect(movie.monitored, false);
+      expect(movie.backdropUrl, 'https://image.tmdb.org/t/p/original/x.jpg');
     });
   });
 }

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,7 +10,18 @@ import '../../core/widgets/netflix_scaffold.dart';
 import '../../shared/services/api_client.dart';
 import 'media_player.dart';
 import 'playback_service.dart';
+import 'subtitle_renderer.dart';
 import 'track_selection.dart';
+
+/// Subtitle rendering for the video surface (FR-10). `media_kit_video` draws
+/// the cue text in Flutter, so the readable size lives here — the fixed
+/// [TextScaler] also disables the widget's area heuristic, which halved the
+/// text on the TV's 1280x720 logical viewport.
+const SubtitleViewConfiguration kPlaybackSubtitleViewConfiguration =
+    SubtitleViewConfiguration(
+  style: tvSubtitleTextStyle,
+  textScaler: TextScaler.noScaling,
+);
 
 /// Fullscreen playback surface. Phase 4b+ follow-up:
 ///   * No sidebar; rendered as a top-level /playback route outside the rail.
@@ -47,6 +60,7 @@ class PlaybackScreen extends ConsumerStatefulWidget {
 }
 
 class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
+  late final PlaybackService _playbackService;
   VideoController? _videoController;
   final FocusNode _rootFocusNode = FocusNode(debugLabel: 'PlaybackScreen.root');
   late String _resolvedStreamUrl;
@@ -55,13 +69,15 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
   /// Suppresses Back-driven overlay toggles for one frame after a
   /// deliberate Stop so a Navigator.pop doesn't double-fire.
   bool _exitInProgress = false;
+  bool _stopRequested = false;
 
   @override
   void initState() {
     super.initState();
     _resolvedStreamUrl = widget.streamUrl;
     _resolvedTitle = widget.title;
-    final service = ref.read(playbackServiceProvider.notifier);
+    _playbackService = ref.read(playbackServiceProvider.notifier);
+    final service = _playbackService;
     _videoController = widget.videoController;
     if (_videoController == null) {
       try {
@@ -75,8 +91,20 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
 
   @override
   void dispose() {
+    if (!_stopRequested) {
+      _stopRequested = true;
+      unawaited(_stopPlaybackOnDispose());
+    }
     _rootFocusNode.dispose();
     super.dispose();
+  }
+
+  Future<void> _stopPlaybackOnDispose() async {
+    try {
+      await _playbackService.stop();
+    } catch (_) {
+      // Route disposal must not report an unhandled playback error.
+    }
   }
 
   Future<void> _startPlayback() async {
@@ -140,6 +168,7 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
   void _exitPlayback() async {
     if (_exitInProgress) return;
     _exitInProgress = true;
+    _stopRequested = true;
     final navigator = Navigator.of(context);
     final service = ref.read(playbackServiceProvider.notifier);
     await service.stop();
@@ -148,12 +177,31 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
     }
   }
 
-  void _handleKeyEvent(KeyEvent event, PlaybackService service,
+  bool _handleKeyEvent(KeyEvent event, PlaybackService service,
       PlaybackState playbackState) {
-    if (event is! KeyDownEvent) return;
+    if (event is! KeyDownEvent) return false;
     final key = event.logicalKey;
+    if (key == LogicalKeyboardKey.mediaPlayPause) {
+      service.showOverlay();
+      service.togglePlayPause();
+      return true;
+    }
+    if (key == LogicalKeyboardKey.mediaPlay) {
+      service.showOverlay();
+      service.playMedia();
+      return true;
+    }
+    if (key == LogicalKeyboardKey.mediaPause) {
+      service.showOverlay();
+      service.pauseMedia();
+      return true;
+    }
+    if (key == LogicalKeyboardKey.mediaStop) {
+      _exitPlayback();
+      return true;
+    }
     if (key == LogicalKeyboardKey.goBack || key == LogicalKeyboardKey.escape) {
-      if (_exitInProgress) return;
+      if (_exitInProgress) return false;
       // Kodi style: Back toggles overlay. Back with overlay hidden shows
       // overlay (does NOT exit). A separate Stop affordance exits.
       if (playbackState.overlayVisible) {
@@ -161,7 +209,7 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
       } else {
         service.showOverlay();
       }
-      return;
+      return false;
     }
     // FR-7: any other key wakes the overlay and restarts the 4 s hide
     // window, whatever the play state.
@@ -174,7 +222,7 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
       } else if (key == LogicalKeyboardKey.arrowRight) {
         service.seekRelative(const Duration(seconds: 10));
       }
-      return;
+      return false;
     }
     // Visible overlay (FR-8): the arrows walk its controls and Select
     // activates the focused control (`FocusableAction` claims Select before
@@ -191,6 +239,7 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
         service.togglePlayPause();
       }
     }
+    return false;
   }
 
   @override
@@ -217,8 +266,9 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
         // returns here when the overlay hides (see ref.listen below).
         skipTraversal: true,
         onKeyEvent: (node, event) {
-          _handleKeyEvent(event, service, playbackState);
-          return KeyEventResult.ignored;
+          return _handleKeyEvent(event, service, playbackState)
+              ? KeyEventResult.handled
+              : KeyEventResult.ignored;
         },
         child: Stack(
           children: [
@@ -228,6 +278,8 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
                   ? Video(
                       controller: _videoController!,
                       controls: NoVideoControls,
+                      subtitleViewConfiguration:
+                          kPlaybackSubtitleViewConfiguration,
                     )
                   : const ColoredBox(color: Colors.black),
             ),
@@ -420,11 +472,11 @@ class _TransportOverlay extends StatelessWidget {
                     children: [
                       Text(
                         _formatDuration(state.position),
-                        style: const TextStyle(color: Colors.white70, fontSize: 13),
+                        style: const TextStyle(color: Colors.white70, fontSize: 18),
                       ),
                       Text(
                         _formatDuration(state.duration),
-                        style: const TextStyle(color: Colors.white70, fontSize: 13),
+                        style: const TextStyle(color: Colors.white70, fontSize: 18),
                       ),
                     ],
                   ),
@@ -437,16 +489,16 @@ class _TransportOverlay extends StatelessWidget {
                         onPressed: () => service.seekRelative(
                             const Duration(seconds: -10)),
                       ),
-                      const SizedBox(width: 24),
+                      const SizedBox(width: 32),
                       _IconActionButton(
                         icon: state.status == PlaybackStatus.playing
                             ? Icons.pause_circle_filled
                             : Icons.play_circle_filled,
-                        size: 72,
+                        size: 96,
                         color: MediarrColors.accentPrimary,
                         onPressed: service.togglePlayPause,
                       ),
-                      const SizedBox(width: 24),
+                      const SizedBox(width: 32),
                       _IconActionButton(
                         icon: Icons.forward_10,
                         onPressed: () => service.seekRelative(
@@ -459,7 +511,7 @@ class _TransportOverlay extends StatelessWidget {
                           onPressed: nextEpisode!,
                         ),
                       ],
-                      const SizedBox(width: 24),
+                      const SizedBox(width: 32),
                       _IconActionButton(
                         icon: Icons.closed_caption,
                         onPressed: () =>
@@ -553,7 +605,7 @@ class _IconActionButton extends StatelessWidget {
     required this.icon,
     required this.onPressed,
     this.tooltip,
-    this.size = 36,
+    this.size = 56,
     this.color = Colors.white,
     this.autofocus = false,
   });
@@ -599,8 +651,8 @@ class _SeekBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return SliderTheme(
       data: SliderTheme.of(context).copyWith(
-        trackHeight: 4,
-        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+        trackHeight: 6,
+        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10),
         activeTrackColor: MediarrColors.accentPrimary,
         inactiveTrackColor: Colors.white24,
         thumbColor: MediarrColors.accentPrimary,
@@ -640,43 +692,47 @@ class _SubtitleNudgeBar extends StatelessWidget {
     ];
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
+      child: Wrap(
+        alignment: WrapAlignment.center,
+        spacing: 8,
+        runSpacing: 6,
         children: [
-          for (final (label, step) in labels) ...[
+          for (final (label, step) in labels)
             FocusableAction(
               onSelect: () => service.nudgeSubtitleDelay(step),
               variant: FocusableActionVariant.button,
               borderRadius: 6,
               child: Container(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 10, vertical: 6),
+                  horizontal: 14,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.black.withValues(alpha: 0.6),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
                   label,
-                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                  style: const TextStyle(color: Colors.white, fontSize: 20),
                 ),
               ),
             ),
-            const SizedBox(width: 6),
-          ],
           FocusableAction(
             onSelect: () => service.resetSubtitleDelay(),
             variant: FocusableActionVariant.button,
             borderRadius: 6,
             child: Container(
               padding: const EdgeInsets.symmetric(
-                  horizontal: 10, vertical: 6),
+                horizontal: 14,
+                vertical: 10,
+              ),
               decoration: BoxDecoration(
                 color: Colors.black.withValues(alpha: 0.6),
                 borderRadius: BorderRadius.circular(6),
               ),
               child: const Text(
                 'Reset',
-                style: TextStyle(color: Colors.white, fontSize: 13),
+                style: TextStyle(color: Colors.white, fontSize: 20),
               ),
             ),
           ),

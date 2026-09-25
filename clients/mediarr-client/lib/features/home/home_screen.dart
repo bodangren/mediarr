@@ -54,11 +54,20 @@ final homeSeriesProvider = FutureProvider<List<Series>>((ref) async {
 
 /// Provider for the featured movie behind the hero (FR-2).
 ///
-/// Supplies year, runtime, and quality for the meta line and the quality
-/// chips. Returns null for series and episode heroes.
+/// Supplies year, runtime, quality, and landscape art for the meta line,
+/// chips, synopsis, and backdrop. Returns null for series and episode heroes.
 final heroMovieProvider = FutureProvider.family<Movie?, int>((ref, mediaId) async {
   final client = ref.read(apiClientProvider.notifier);
   return client.getMovie(mediaId);
+});
+
+/// Provider for the featured series behind the hero (FR-2, FR-14).
+///
+/// Episode heroes resolve their series for year, overview, quality, and
+/// landscape art. Returns null for movie heroes.
+final heroSeriesProvider = FutureProvider.family<Series?, int>((ref, seriesId) async {
+  final client = ref.read(apiClientProvider.notifier);
+  return client.getSeriesById(seriesId);
 });
 
 /// Netflix-style home screen.
@@ -120,9 +129,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       _HeroFromLibrary(:final item) => item.type == 'movie' ? item.id : null,
       null => null,
     };
+    final heroSeriesId = switch (recentItem) {
+      _HeroFromContinueWatching(:final item) =>
+        item.mediaTypeQueryValue == 'episode' ? item.seriesId : null,
+      _HeroFromLibrary(:final item) => item.type == 'series' ? item.id : null,
+      null => null,
+    };
     final heroMovie = heroMovieId == null
         ? null
         : ref.watch(heroMovieProvider(heroMovieId)).dataOrNull;
+    final heroSeries = heroSeriesId == null
+        ? null
+        : ref.watch(heroSeriesProvider(heroSeriesId)).dataOrNull;
 
     return NetflixScaffold(
       child: Container(
@@ -133,6 +151,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             _HeroBanner(
               item: recentItem,
               movie: heroMovie,
+              series: heroSeries,
               playFocusNode: _heroPlayFocusNode,
               infoFocusNode: _heroInfoFocusNode,
               onPlay: () => _playHero(recentItem),
@@ -308,7 +327,7 @@ class _RowSection extends StatelessWidget {
                 title,
                 style: const TextStyle(
                   color: MediarrColors.textPrimary,
-                  fontSize: 28,
+                  fontSize: 20,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -370,6 +389,7 @@ class _HeroBanner extends StatelessWidget {
   const _HeroBanner({
     required this.item,
     required this.movie,
+    required this.series,
     required this.playFocusNode,
     required this.infoFocusNode,
     required this.onPlay,
@@ -378,6 +398,7 @@ class _HeroBanner extends StatelessWidget {
 
   final _HeroItem? item;
   final Movie? movie;
+  final Series? series;
   final FocusNode playFocusNode;
   final FocusNode infoFocusNode;
   final VoidCallback onPlay;
@@ -391,12 +412,16 @@ class _HeroBanner extends StatelessWidget {
   }
 
   /// Only a real landscape backdrop. A portrait poster must never be cropped
-  /// into the banner (F11): it is shown as a poster tile instead.
+  /// into the banner (F11): it is shown as a poster tile instead. Landscape
+  /// art comes from the movie/series detail response (`backdropUrl`) or from
+  /// the continue-watching entry (FR-14).
   String? get _backdropUrl {
     final i = item;
     if (i == null) return null;
-    if (i is _HeroFromContinueWatching) return i.item.backdropUrl;
-    return movie?.fanartUrl;
+    if (i is _HeroFromContinueWatching) {
+      return i.item.backdropUrl ?? movie?.backdropUrl ?? series?.backdropUrl;
+    }
+    return movie?.backdropUrl ?? series?.backdropUrl;
   }
 
   String? get _posterUrl {
@@ -408,38 +433,59 @@ class _HeroBanner extends StatelessWidget {
 
   String? get _overview {
     final i = item;
-    if (i is _HeroFromLibrary) return (i).item.overview ?? movie?.overview;
-    return movie?.overview;
+    if (i is _HeroFromLibrary) {
+      return (i).item.overview ?? movie?.overview ?? series?.overview;
+    }
+    return movie?.overview ?? series?.overview;
+  }
+
+  /// Runtime in minutes: the metadata field when the API provides one,
+  /// otherwise the played duration of a continue-watching entry.
+  int? get _runtimeMinutes {
+    final runtime = movie?.runtime;
+    if (runtime != null && runtime > 0) return runtime;
+    final i = item;
+    if (i is _HeroFromContinueWatching) {
+      final minutes = i.item.duration ~/ 60;
+      if (minutes > 0) return minutes;
+    }
+    return null;
   }
 
   /// Metadata line (FR-2): `2024 | Sci-Fi | 2h 4m`, built only from fields
-  /// the API provides.
+  /// the API provides. Episode entries lead with `S09E09`; the runtime falls
+  /// back to the played duration when no runtime field exists.
   String? get _metaLine {
     final parts = <String>[];
     final i = item;
-    if (i is _HeroFromLibrary) {
+    if (i is _HeroFromContinueWatching) {
+      final w = i.item;
+      final isEpisode = w.mediaTypeQueryValue == 'episode';
+      if (isEpisode && w.seasonNumber != null && w.episodeNumber != null) {
+        parts.add('S${w.seasonNumber.toString().padLeft(2, '0')}'
+            'E${w.episodeNumber.toString().padLeft(2, '0')}');
+      }
+      final year = movie?.year ?? series?.year;
+      if (year != null) parts.add(year.toString());
+      if (!isEpisode) parts.add(_typeLabel(w.mediaType));
+      final runtime = _runtimeMinutes;
+      if (runtime != null) parts.add(_runtimeLabel(runtime));
+    } else if (i is _HeroFromLibrary) {
       final lib = i.item;
       if (lib.year != null) parts.add(lib.year.toString());
       parts.add(_typeLabel(lib.type));
-    } else if (i is _HeroFromContinueWatching) {
-      final w = i.item;
-      final season = w.seasonNumber;
-      final episode = w.episodeNumber;
-      if (season != null && episode != null) {
-        parts.add('S${season.toString().padLeft(2, '0')}'
-            'E${episode.toString().padLeft(2, '0')}');
-      }
+      final runtime = _runtimeMinutes;
+      if (runtime != null) parts.add(_runtimeLabel(runtime));
     }
-    final runtime = movie?.runtime;
-    if (runtime != null && runtime > 0) parts.add(_runtimeLabel(runtime));
     return parts.isEmpty ? null : parts.join(' | ');
   }
 
   /// Quality chips (FR-2). The API exposes no rating field today, so the
-  /// `PG-13` chip stays hidden until one exists.
+  /// `PG-13` chip stays hidden until one exists. An `Any` quality profile is
+  /// no quality signal, so it hides the chips instead of claiming `SD`.
   List<String> get _chips {
-    final quality = movie?.quality?.toLowerCase();
-    if (quality == null || quality.isEmpty) return const [];
+    final quality = (movie?.quality ?? series?.quality)?.toLowerCase();
+    if (quality == null || quality.isEmpty || quality == 'any') return const [];
     final chips = <String>[];
     if (quality.contains('2160') || quality.contains('4k')) {
       chips.add('4K');
@@ -471,8 +517,16 @@ class _HeroBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final backdrop = _backdropUrl;
     final poster = _posterUrl;
+    final hasOverview = _overview?.isNotEmpty ?? false;
+    // FR-14: the hero fills the mockup's top band (about 48 % of the view)
+    // and always keeps room for the two-line title, the meta line, the
+    // three-line synopsis, and the action row.
+    final viewportHeight = MediaQuery.sizeOf(context).height;
+    final band = hasOverview ? 0.48 : 0.42;
+    final contentMin = hasOverview ? 348.0 : 280.0;
+    final height = (viewportHeight * band).clamp(contentMin, 520.0);
     return SizedBox(
-      height: 460,
+      height: height,
       width: double.infinity,
       child: Stack(
         fit: StackFit.expand,
@@ -495,12 +549,26 @@ class _HeroBanner extends StatelessWidget {
                 ),
               ),
             ),
+          const DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+                colors: [
+                  Color(0xCC000000),
+                  Color(0x55000000),
+                  Color(0x00000000),
+                ],
+                stops: [0.0, 0.58, 1.0],
+              ),
+            ),
+          ),
           // Portrait posters render as a tile, never cropped into the banner.
           if (backdrop == null && poster != null)
             Positioned(
-              right: 64,
-              top: 40,
-              bottom: 120,
+              right: 48,
+              top: 24,
+              bottom: 24,
               child: AspectRatio(
                 aspectRatio: 2 / 3,
                 child: ClipRRect(
@@ -533,7 +601,7 @@ class _HeroBanner extends StatelessWidget {
           Positioned(
             left: 48,
             right: 48,
-            bottom: 36,
+            top: 32,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
@@ -563,7 +631,7 @@ class _HeroBanner extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 if (_metaLine != null || _chips.isNotEmpty) ...[
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 10),
                   Row(
                     children: [
                       if (_metaLine != null)
@@ -603,85 +671,40 @@ class _HeroBanner extends StatelessWidget {
                   ),
                 ],
                 if (_overview != null && _overview!.isNotEmpty) ...[
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
                   Text(
                     _overview!,
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       color: Colors.white70,
-                      fontSize: 20,
-                      height: 1.35,
+                      fontSize: 18,
+                      height: 1.3,
                     ),
                   ),
                 ],
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
                 Row(
                   children: [
-                    FocusableAction(
+                    _HeroActionPill(
                       focusNode: playFocusNode,
                       autofocus: true,
                       onSelect: onPlay,
-                      borderRadius: 8,
-                      scale: 1.04,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 28, vertical: 16),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF7FB2FF), Color(0xFF4E8DF5)],
-                          ),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.play_arrow,
-                                color: Color(0xFF0A1424), size: 28),
-                            const SizedBox(width: 8),
-                            Text(
-                              _primaryLabel,
-                              style: const TextStyle(
-                                color: Color(0xFF0A1424),
-                                fontSize: 18,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ],
-                        ),
+                      icon: Icons.play_arrow,
+                      label: _primaryLabel,
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF7FB2FF), Color(0xFF4E8DF5)],
                       ),
+                      foreground: const Color(0xFF0A1424),
                     ),
                     const SizedBox(width: 16),
-                    FocusableAction(
+                    _HeroActionPill(
                       focusNode: infoFocusNode,
                       onSelect: onMoreInfo,
-                      borderRadius: 8,
-                      scale: 1.04,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 24, vertical: 16),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF1B2430),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.white24),
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.info_outline,
-                                color: Colors.white, size: 24),
-                            SizedBox(width: 8),
-                            Text(
-                              'Details',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                      icon: Icons.info_outline,
+                      label: 'Details',
+                      foreground: Colors.white,
+                      border: Border.all(color: Colors.white24),
                     ),
                   ],
                 ),
@@ -689,6 +712,67 @@ class _HeroBanner extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// One hero action pill (FR-2). Both actions share the geometry, so the
+/// mockup's equal pill sizes hold whatever the text metrics are.
+class _HeroActionPill extends StatelessWidget {
+  const _HeroActionPill({
+    required this.focusNode,
+    required this.onSelect,
+    required this.icon,
+    required this.label,
+    required this.foreground,
+    this.autofocus = false,
+    this.gradient,
+    this.border,
+  });
+
+  final FocusNode focusNode;
+  final VoidCallback onSelect;
+  final IconData icon;
+  final String label;
+  final Color foreground;
+  final bool autofocus;
+  final Gradient? gradient;
+  final Border? border;
+
+  @override
+  Widget build(BuildContext context) {
+    return FocusableAction(
+      focusNode: focusNode,
+      autofocus: autofocus,
+      onSelect: onSelect,
+      borderRadius: 12,
+      scale: 1.04,
+      child: Container(
+        height: 52,
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        decoration: BoxDecoration(
+          gradient: gradient,
+          color: gradient == null ? const Color(0xFF1B2430) : null,
+          borderRadius: BorderRadius.circular(12),
+          border: border,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: foreground, size: 28),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(
+                color: foreground,
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -713,7 +797,7 @@ class _RecentlyAddedRow extends StatelessWidget {
     }
     // FR-4: landscape cards with a bottom title bar (the mockup's row).
     return SizedBox(
-      height: 240,
+      height: 140,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: items.length,
@@ -721,7 +805,7 @@ class _RecentlyAddedRow extends StatelessWidget {
         itemBuilder: (context, index) {
           final item = items[index];
           return SizedBox(
-            width: 380,
+            width: 240,
             child: _LibraryPosterCard(
               item: item,
               onSelect: () => onOpen(item),

@@ -26,10 +26,7 @@ import 'package:mediarr_client/shared/services/api_client.dart';
 import '../../support/fakes/fake_api_client.dart';
 import '../../support/focus_probe.dart';
 
-const _continueWatching = [
-  'Rick and Morty',
-  'Salute Your Morts',
-];
+const _continueWatching = 'Rick and Morty';
 const _recentFirst = 'The Matrix';
 const _moviesFirst = 'Inception';
 const _seriesFirst = 'Severance';
@@ -131,8 +128,7 @@ void main() {
 
     await pressDpad(tester, LogicalKeyboardKey.arrowDown);
     expectVisibleFocus('down 1');
-    expect(focusedText(), contains(_continueWatching[0]));
-    expect(focusedText(), contains(_continueWatching[1]));
+    expect(focusedText(), contains(_continueWatching));
 
     await pressDpad(tester, LogicalKeyboardKey.arrowDown);
     expectVisibleFocus('down 2');

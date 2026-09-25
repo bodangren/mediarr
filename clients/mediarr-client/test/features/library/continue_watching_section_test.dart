@@ -47,13 +47,57 @@ void main() {
       expect(find.text('Continue Watching'), findsOneWidget);
       expect(find.text('Movie One'), findsOneWidget);
       expect(find.text('Series One'), findsOneWidget);
-      expect(find.textContaining('S01E01'), findsOneWidget);
+      expect(find.text('Pilot'), findsNothing,
+          reason: 'The compact mockup card shows the series title and resume time.');
 
       final progressBars =
           tester.widgetList<LinearProgressIndicator>(find.byType(LinearProgressIndicator)).toList();
       expect(progressBars, hasLength(2));
       expect(progressBars[0].value, 0.5);
       expect(progressBars[1].value, 0.1);
+    });
+
+    testWidgets('four cards exactly fill a wide TV row (FR-14)', (tester) async {
+      tester.view.physicalSize = const Size(2000, 1200);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final items = List.generate(
+        4,
+        (index) => ContinueWatchingItem(
+          mediaType: 'MOVIE',
+          mediaId: index + 1,
+          title: 'Continue ${index + 1}',
+          position: 300,
+          duration: 1200,
+          progress: 0.25,
+          lastWatched: DateTime(2026, 9, 25),
+        ),
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: mediarrDarkTheme,
+          home: Scaffold(
+            body: ContinueWatchingSection(
+              items: items,
+              isLoading: false,
+              onResume: (_) {},
+            ),
+          ),
+        ),
+      );
+
+      final cards = tester
+          .widgetList<SizedBox>(find.byType(SizedBox))
+          .where((w) => w.width != null && w.width! > 100)
+          .toList();
+      expect(cards, hasLength(4));
+      expect(cards.first.width, (2000 - 48 - 36) / 4,
+          reason: 'FR-14: four cards span the row width exactly; the old '
+              '320 px cap left a wide gap and pushed the fourth card under '
+              'the fold.');
     });
 
     testWidgets('hides section when items are empty', (tester) async {

@@ -34,7 +34,7 @@ class ContinueWatchingSection extends StatelessWidget {
               'Continue Watching',
               style: TextStyle(
                 color: MediarrColors.textPrimary,
-                fontSize: 28,
+                fontSize: 20,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -65,28 +65,40 @@ class ContinueWatchingSection extends StatelessWidget {
             'Continue Watching',
             style: TextStyle(
               color: MediarrColors.textPrimary,
-              fontSize: 28,
+              fontSize: 20,
               fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(height: 12),
-          SizedBox(
-            height: 400,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: items.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 16),
-              itemBuilder: (context, index) {
-                final item = items[index];
-                return SizedBox(
-                  width: 420,
-                  child: _ContinueWatchingCard(
-                    item: item,
-                    onSelect: () => onResume(item),
-                  ),
-                );
-              },
-            ),
+          const SizedBox(height: 8),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              const gap = 12.0;
+              // FR-14: four cards exactly fill the row (the mockup). The
+              // floor only protects degenerate test widths.
+              final cardWidth =
+                  ((constraints.maxWidth - gap * 3) / 4).clamp(120.0, 640.0);
+              // Art is about 16:7 (the mockup); the text block below it is
+              // fixed, so the art absorbs the remainder via Expanded.
+              final cardHeight = cardWidth / 2.2 + 68;
+              return SizedBox(
+                height: cardHeight,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: items.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: gap),
+                  itemBuilder: (context, index) {
+                    final item = items[index];
+                    return SizedBox(
+                      width: cardWidth,
+                      child: _ContinueWatchingCard(
+                        item: item,
+                        onSelect: () => onResume(item),
+                      ),
+                    );
+                  },
+                ),
+              );
+            },
           ),
         ],
       ),
@@ -110,6 +122,7 @@ class _ContinueWatchingCard extends StatelessWidget {
     return FocusableAction(
       onSelect: onSelect,
       borderRadius: 12,
+      focusPadding: 4,
       child: Container(
         decoration: BoxDecoration(
           color: MediarrColors.surfaceCard,
@@ -119,14 +132,16 @@ class _ContinueWatchingCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            AspectRatio(
-              aspectRatio: 16 / 9,
+            Expanded(
               child: ClipRRect(
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(12),
                 ),
-                child: image != null
-                    ? CachedNetworkImage(
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    if (image != null)
+                      CachedNetworkImage(
                         imageUrl: image,
                         fit: BoxFit.cover,
                         placeholder: (_, __) =>
@@ -134,70 +149,76 @@ class _ContinueWatchingCard extends StatelessWidget {
                         errorWidget: (_, __, ___) =>
                             Container(color: MediarrColors.surfaceElevated),
                       )
-                    : Container(color: MediarrColors.surfaceElevated),
+                    else
+                      Container(color: MediarrColors.surfaceElevated),
+                    const DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [Colors.transparent, Color(0xCC000000)],
+                          stops: [0.35, 1.0],
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      left: 10,
+                      right: 10,
+                      bottom: 8,
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(3),
+                              child: LinearProgressIndicator(
+                                value: progress,
+                                minHeight: 5,
+                                backgroundColor:
+                                    Colors.white.withValues(alpha: 0.24),
+                                valueColor: const AlwaysStoppedAnimation(
+                                  MediarrColors.accentPrimary,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            '${(progress * 100).round()}%',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              shadows: [Shadow(blurRadius: 4, color: Colors.black)],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+              padding: const EdgeInsets.fromLTRB(12, 6, 12, 8),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(3),
-                          child: LinearProgressIndicator(
-                            value: progress,
-                            minHeight: 6,
-                            backgroundColor:
-                                Colors.white.withValues(alpha: 0.14),
-                            valueColor: const AlwaysStoppedAnimation(
-                              MediarrColors.accentPrimary,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Text(
-                        '${(progress * 100).round()}%',
-                        style: const TextStyle(
-                          color: MediarrColors.textSecondary,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
                   Text(
                     item.title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       color: MediarrColors.textPrimary,
-                      fontSize: 22,
+                      fontSize: 16,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  if (item.episodeTitle != null) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      _episodeLabel(item),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: MediarrColors.textSecondary,
-                        fontSize: 18,
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 1),
                   Text(
                     'Resume at ${_formatDuration(Duration(seconds: item.position))}',
                     style: const TextStyle(
                       color: MediarrColors.textMuted,
-                      fontSize: 16,
+                      fontSize: 13,
                     ),
                   ),
                 ],
@@ -208,22 +229,6 @@ class _ContinueWatchingCard extends StatelessWidget {
       ),
     );
   }
-}
-
-String _episodeLabel(ContinueWatchingItem item) {
-  if (item.episodeTitle == null) {
-    return '';
-  }
-
-  final season = item.seasonNumber;
-  final episode = item.episodeNumber;
-  if (season != null && episode != null) {
-    final seasonText = season.toString().padLeft(2, '0');
-    final episodeText = episode.toString().padLeft(2, '0');
-    return 'S${seasonText}E$episodeText · ${item.episodeTitle}';
-  }
-
-  return item.episodeTitle!;
 }
 
 String _formatDuration(Duration d) {

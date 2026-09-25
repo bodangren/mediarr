@@ -255,6 +255,22 @@ void main() {
         expect(find.text('English · eng'), findsOneWidget);
       },
     );
+
+    testWidgets('transport and nudge controls use TV-readable sizes',
+        (tester) async {
+      await pumpScreen(tester);
+
+      final rewind = tester.widget<Icon>(find.byIcon(Icons.replay_10));
+      final captions = tester.widget<Icon>(find.byIcon(Icons.closed_caption));
+      final playPause =
+          tester.widget<Icon>(find.byIcon(Icons.play_circle_filled));
+      final nudge = tester.widget<Text>(find.text('-5s'));
+
+      expect(rewind.size, 56);
+      expect(captions.size, 56);
+      expect(playPause.size, 96);
+      expect(nudge.style?.fontSize, 20);
+    });
   });
 
   group('PlaybackScreen — FR-7 subtitle timing nudge', () {
@@ -411,5 +427,25 @@ void main() {
         expect(find.text('Reset'), findsOneWidget);
       },
     );
+  });
+
+  group('PlaybackScreen — FR-10 subtitle size', () {
+    test('subtitle text renders at the TV size without area scaling', () {
+      expect(tvSubtitleFontSize, greaterThanOrEqualTo(44),
+          reason: 'The owner measured the cue text at about half the size it '
+              'needs to be on the TV; 44 logical px doubles it at the TV\'s '
+              'device pixel ratio of 1.5.');
+      expect(
+        kPlaybackSubtitleViewConfiguration.style.fontSize,
+        tvSubtitleFontSize,
+      );
+      expect(
+        kPlaybackSubtitleViewConfiguration.textScaler,
+        TextScaler.noScaling,
+        reason: 'media_kit_video scales its default style by the surface '
+            'area, which halved the text at 1280x720 logical. The fixed '
+            'scaler keeps the size identical on every panel.',
+      );
+    });
   });
 }

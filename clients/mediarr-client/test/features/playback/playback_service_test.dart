@@ -366,6 +366,19 @@ void main() {
       expect(service.state.selectedSubtitleIndex, isNull);
       expect(player.setSubtitleTrackCalls.last, isNull);
     });
+
+    test('applies the readable subtitle font size when playback starts',
+        () async {
+      await service.play(
+        streamUrl: 'http://example.com/movie.mp4',
+        title: 'Test Movie',
+        mediaId: 42,
+        mediaType: 'movie',
+      );
+
+      expect(defaultSubtitleFontSize, greaterThanOrEqualTo(100));
+      expect(renderer.appliedFontSizes, contains(defaultSubtitleFontSize));
+    });
   });
 
   group('PlaybackService — subtitle timing nudge (FR-7)', () {

@@ -121,19 +121,77 @@
 ## Phase 4: TV usability follow-up (FR-10 to FR-14)
 
 > Added 2026-09-25 after the owner reviewed the Phase 3 TV run. The owner's revised home image is
-> the visual authority. The owner chose stop-on-exit behavior.
+> the visual authority. The owner chose stop-on-exit behavior. FR-11, FR-12, and FR-13 were
+> implemented 2026-09-25 (uncommitted until this checkpoint). FR-10 and FR-14 were reopened the
+> same day after the owner measured the subtitle text at "half the size it needs to be" and found
+> the hero unlike the mockup; both had wrong-knob root causes, now fixed.
 
-- [~] Red: tests for subtitle size, transport control size, route-exit stop, remote media keys, and
-      home layout at 1920×1080. Add the cases to the existing playback and home widget test files.
-- [ ] Green: increase the subtitle font size for external and embedded tracks. Verify it on the TV.
-- [ ] Green: enlarge the bottom transport buttons, their focus targets, and subtitle-nudge controls.
-- [ ] Green: stop the player when the playback route exits. Keep Stop, Back, and route disposal safe.
-- [ ] Green: map Play, Pause, and Play/Pause remote media keys to the active player. Ignore them
-      after the route exits.
-- [ ] Green: match the revised home image. Fit four Continue Watching cards across the TV view and
+- [x] Red: tests for subtitle size, transport control size, route-exit stop, remote media keys, and
+      home layout at 1920×1080. _Done: `playback_screen_fr_widgets_test.dart` pins the TV
+      transport sizes (rewind/captions 56, play/pause 96, nudge text 20) and the FR-10 subtitle
+      configuration; `playback_overlay_test.dart` pins the remote media keys; the new
+      `playback_lifecycle_test.dart` pins stop-on-exit; `home_screen_mockup_test.dart` pins the
+      four-card + Recently Added budget at 1920×1080, the hero backdrop contract, the episode-hero
+      meta line, and equal hero pills; `continue_watching_section_test.dart` pins the four-card
+      row fill._
+- [x] Green: increase the subtitle font size for external and embedded tracks. _Root cause (found
+      2026-09-25): the first attempt set libmpv `sub-font-size` (112), but `media_kit_video` draws
+      the cue text in Flutter through its `SubtitleView` (`subtitle_view.dart`), so the property
+      never reached the visible text. Worse, `SubtitleView` scales its 32 px default style by
+      `sqrt(surfaceArea / 1920x1080)` computed in LOGICAL pixels: on the TV (1920x1080 at density
+      240 = 1280x720 logical) that factor is exactly 2/3, so the cue rendered at 32 physical px.
+      Fixed: `playback_screen.dart` passes `kPlaybackSubtitleViewConfiguration`
+      (`tvSubtitleTextStyle`, 44 logical px = 66 physical px at the TV's 1.5 ratio — double the
+      measured size — with `TextScaler.noScaling` so no panel size can halve it again). The libmpv
+      `sub-font-size` plumbing stays for native render paths; the device frame is the proof._
+- [x] Green: enlarge the bottom transport buttons, their focus targets, and subtitle-nudge
+      controls. _Done earlier in this phase: icons 56/96, nudge text 20, pinned by
+      `playback_screen_fr_widgets_test.dart`._
+- [x] Green: stop the player when the playback route exits. Keep Stop, Back, and route disposal
+      safe. _Done: `PlaybackScreen.dispose` requests a stop when no explicit Stop ran first;
+      `_exitPlayback` stops, reports progress, then pops. Pinned by `playback_lifecycle_test.dart`._
+- [x] Green: map Play, Pause, and Play/Pause remote media keys to the active player. Ignore them
+      after the route exits. _Done: `mediaPlay`/`mediaPause`/`mediaPlayPause`/`mediaStop` map to
+      `playMedia`/`pauseMedia`/`togglePlayPause`/`_exitPlayback` with the overlay woken; the route
+      is the only listener, so nothing survives exit._
+- [x] Green: match the revised home image. Fit four Continue Watching cards across the TV view and
       show the start of Recently Added at 1920×1080. Use landscape artwork for the full-width hero.
-- [ ] Gate: `flutter analyze` clean; `flutter test` green.
-- [ ] Build and install the fat APK. Repeat the TV check with one frame and MD5 per step (F10).
+      _Root cause of the hero mismatch (found 2026-09-25): three contract-drift layers kept every
+      landscape URL from reaching the banner — `Movie.fromJson` read `fanartUrl`, a field the
+      server never sends (the row field is `backdropUrl`); `LibraryItem.fromJson` dropped
+      `backdropUrl` although `mediaRoutes.ts:100` returns it; and episode heroes fetched nothing,
+      because `heroMovieProvider` only resolves movies. The banner therefore fell back to a
+      portrait poster tile on black, showed `S09E09` as its only metadata, and had no synopsis.
+      Fixed: `Movie.backdropUrl`, `Series.backdropUrl`/`quality`, `LibraryItem.backdropUrl` now
+      parse the real DTO fields; `heroSeriesProvider` resolves the series behind an episode hero;
+      the meta line is `S09E09 | 2013 | 43m` (episode label, year, runtime from the played
+      duration when no runtime field exists); the synopsis falls back movie -> series overview;
+      the chips read the `qualityProfile` name; both actions are the shared `_HeroActionPill`
+      (52 px, equal by construction); the title/meta/synopsis are 48/18/18 px; the hero band is
+      48 % of the view (the mockup proportion). Four cards now exactly fill the row (the 320 px
+      cap is gone) and the card art flexes over the text block, so no card can overflow._
+- [x] Gate: `flutter analyze` clean; `flutter test` green — 345 passed (baseline 339).
+- [x] Build and install the fat APK. Repeat the TV check with one frame and MD5 per step (F10).
+      _Done: `JAVA_HOME=/home/daniel-bo/.local/jdk17 flutter build apk --release
+      --android-skip-build-dependency-validation` (97.8 MB), installed on `192.168.10.60:5555`.
+      One refinement on the way: an `Any` quality profile no longer renders a false `SD` chip
+      (the API profile name is a constraint, not a quality). Evidence frames in
+      `device-20260925/`:
+      `p4-01-home-hero.png` MD5 `c872db1122768a42df1a081fdf7e20ad` — the home hero at
+      1920x1080 shows `FEATURED`, the 48 px title, the meta line `S09E09 | 2025 | 22m`
+      (episode label, series year, runtime from the played duration), the series synopsis,
+      no false chip, and equal `Resume`/`Details` pills (measured 76/78 px tall);
+      `p4-01-home-hero-crop.png` MD5 `4052c6c6d4c6680a0b4a136601200537` (hero crop of the
+      same frame);
+      `p4-02-subtitle-cue.png` MD5 `d5731da57d4c359b29c980fdab5b3e5c` — a bilingual cue
+      during playback; `p4-02-cue-compare.png` MD5 `f34e3e8f4c200cf3ff2b9063a9a712ea` —
+      old vs new cue at identical scale (old em ~31-32 physical px, new em ~66 px = the
+      designed 2x). The hero falls back to the poster tile because this library has no
+      landscape art in the database: `POST /api/metadata/refresh` fails with TMDB
+      `401 Invalid API key`, so `backdropUrl` never populates. The landscape-art path is
+      implemented and pinned by tests; it lights up when the rows carry art (operator action
+      recorded in `tech-debt.md`). Only the cited frames are kept in the repository; the full
+      89-frame burst of the run stays on the workstation._
 - [ ] Perceptual remote-only sign-off. Human-gated. The owner holds this judgement.
 
 ## Risk register

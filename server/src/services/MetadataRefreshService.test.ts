@@ -49,10 +49,11 @@ function skyhookSeriesPayload() {
     tvdbId: 275274,
     title: 'Rick and Morty',
     overview: 'An alcoholic scientist and his grandson travel across dimensions.',
+    // Cover types exactly as the live SkyHook API returns them: title case.
     images: [
-      { coverType: 'poster', url: SKYHOOK_POSTER_URL },
-      { coverType: 'fanart', url: SKYHOOK_FANART_URL },
-      { coverType: 'banner', url: 'https://artworks.thetvdb.com/banners/graphical/275274-g.jpg' },
+      { coverType: 'Poster', url: SKYHOOK_POSTER_URL },
+      { coverType: 'Fanart', url: SKYHOOK_FANART_URL },
+      { coverType: 'Banner', url: 'https://artworks.thetvdb.com/banners/graphical/275274-g.jpg' },
     ],
     episodes: [],
   };

@@ -60,7 +60,7 @@ export class ExistingLibraryScanner {
 
     const allFolders = await Promise.all([...folderPaths].map((p) => this.processFolder(p)));
     const nonEmpty = allFolders.filter((f) => f.files.length > 0);
-    const folders = await this.consolidateSeasonFolders(nonEmpty);
+    const folders = await this.consolidateSeasonFolders(nonEmpty, allFolders);
     const totalFiles = folders.reduce((sum, f) => sum + f.files.length, 0);
 
     return {
@@ -79,8 +79,14 @@ export class ExistingLibraryScanner {
    * case), a synthetic show folder is created from the parent directory name.
    * If the parent already has direct files the season files are appended.
    */
-  private async consolidateSeasonFolders(folders: ScannedFolder[]): Promise<ScannedFolder[]> {
+  private async consolidateSeasonFolders(
+    folders: ScannedFolder[],
+    allScanned: ScannedFolder[] = [],
+  ): Promise<ScannedFolder[]> {
     const byPath = new Map<string, ScannedFolder>(folders.map((f) => [f.path, f]));
+    // Show folders that hold no direct video file are filtered out before
+    // consolidation, so keep their scan result to recover the show NFO.
+    const scannedByPath = new Map<string, ScannedFolder>(allScanned.map((f) => [f.path, f]));
     const seasonPaths = new Set<string>();
 
     for (const folder of folders) {
@@ -92,13 +98,17 @@ export class ExistingLibraryScanner {
       if (!byPath.has(showPath)) {
         const showName = path.basename(showPath);
         const parsed = await releaseParser.parse(showName);
+        // The parent was scanned even when it holds no direct video file, so
+        // its own tvshow.nfo is available. Only fall back to the season NFO
+        // when the show folder was never scanned at all.
+        const parent = scannedByPath.get(showPath);
         byPath.set(showPath, {
           path: showPath,
           type: 'series',
           files: [],
-          nfoData: folder.nfoData,
-          parsedTitle: parsed?.title ?? folder.nfoData?.title,
-          parsedYear: parsed?.year ?? folder.nfoData?.year,
+          nfoData: parent?.nfoData ?? folder.nfoData,
+          parsedTitle: parent?.parsedTitle ?? parsed?.title ?? folder.nfoData?.title,
+          parsedYear: parent?.parsedYear ?? parsed?.year ?? folder.nfoData?.year,
         });
       }
 
@@ -118,8 +128,15 @@ export class ExistingLibraryScanner {
     const { files, nfoFiles } = await this.getVideoFiles(folderPath);
 
     let nfoData: NfoData | undefined;
-    if (nfoFiles.length > 0 && nfoFiles[0]) {
-      nfoData = await this.parseNfoFile(nfoFiles[0]);
+    // Show-level metadata wins over episode metadata. A flat show folder
+    // lists both, and an episode NFO carries the episode title and its own
+    // id, which would override the series title and series id.
+    const preferredNfo =
+      nfoFiles.find((f) => path.basename(f).toLowerCase() === 'tvshow.nfo') ??
+      nfoFiles.find((f) => path.basename(f).toLowerCase() === 'movie.nfo') ??
+      nfoFiles[0];
+    if (preferredNfo) {
+      nfoData = await this.parseNfoFile(preferredNfo);
     }
 
     const folderName = path.basename(folderPath);
@@ -331,6 +348,7 @@ export class ExistingLibraryScanner {
 
     const dirs: string[] = [];
     const localVideos: string[] = [];
+    let hasShowNfo = false;
 
     for (const entry of entries) {
       const fullPath = path.join(dirPath, entry.name);
@@ -340,6 +358,11 @@ export class ExistingLibraryScanner {
         const ext = path.extname(entry.name).toLowerCase();
         if (VIDEO_EXTENSIONS.has(ext)) {
           localVideos.push(fullPath);
+        } else if (entry.name.toLowerCase() === 'tvshow.nfo' || entry.name.toLowerCase() === 'movie.nfo') {
+          // A show folder usually holds no video of its own: the episodes sit
+          // in season subfolders. Its own NFO is the only series metadata, so
+          // the folder must still be scanned.
+          hasShowNfo = true;
         }
       }
     }
@@ -357,8 +380,9 @@ export class ExistingLibraryScanner {
       results.push(...subResults);
     }
 
-    // Emit this directory as a folder entry if it directly contains videos
-    if (localVideos.length > 0) {
+    // Emit this directory as a folder entry if it directly contains videos or
+    // its own show-level NFO
+    if (localVideos.length > 0 || hasShowNfo) {
       results.push({ path: dirPath, type: 'folder' });
     }
 

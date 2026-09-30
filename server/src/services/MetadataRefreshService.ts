@@ -162,10 +162,13 @@ export class MetadataRefreshService {
 
     const { series: details } = await this.metadataProvider.getSeriesDetails(row.tvdbId, fetchFn);
     const images = Array.isArray(details.images) ? details.images : [];
-    const poster = images.find(image => image.coverType === 'poster');
-    const backdrop =
-      images.find(image => image.coverType === 'fanart') ??
-      images.find(image => image.coverType === 'background');
+    // SkyHook reports TVDB cover types in title case ("Poster", "Fanart"),
+    // so match case-insensitively. A case-sensitive lookup silently found
+    // nothing and every series kept a null backdropUrl.
+    const byCoverType = (wanted: string) =>
+      images.find(image => image.coverType?.toLowerCase() === wanted);
+    const poster = byCoverType('poster');
+    const backdrop = byCoverType('fanart') ?? byCoverType('background');
 
     const patch = this.buildPatch(row, {
       posterUrl: poster?.url,

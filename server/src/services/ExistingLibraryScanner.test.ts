@@ -122,6 +122,53 @@ describe('ExistingLibraryScanner', () => {
       expect(result.folders[0]?.nfoData?.tvdbId).toBe(81189);
     });
 
+    it('uses the show tvshow.nfo when episodes live in season subfolders', async () => {
+      // The show folder holds no video file of its own, so it is dropped
+      // before season consolidation. The synthetic show folder must then
+      // carry the show-level NFO, never the season's episode NFO.
+      const showDir = path.join(tempDir, 'Firefly');
+      const seasonDir = path.join(showDir, 'Season 1');
+      await fs.mkdir(seasonDir, { recursive: true });
+      await fs.writeFile(
+        path.join(showDir, 'tvshow.nfo'),
+        '<tvshow><title>Firefly</title><tvdbid>78874</tvdbid>' +
+          '<tmdbid>1437</tmdbid><year>2002</year></tvshow>',
+      );
+      await fs.writeFile(
+        path.join(seasonDir, 'Firefly.S01E01.nfo'),
+        '<episodedetails><title>The Train Job</title><tvdbid>297989</tvdbid></episodedetails>',
+      );
+      await fs.writeFile(path.join(seasonDir, 'Firefly.S01E01.mkv'), '');
+
+      const result = await scanner.scan(tempDir);
+      const show = result.folders.find((f) => f.path === showDir);
+
+      expect(show?.nfoData?.title).toBe('Firefly');
+      expect(show?.nfoData?.tvdbId).toBe(78874);
+      expect(show?.nfoData?.tmdbId).toBe(1437);
+      expect(show?.files).toHaveLength(1);
+    });
+
+    it('prefers tvshow.nfo over an episode NFO in a flat show folder', async () => {
+      const showDir = path.join(tempDir, 'Gravity Falls');
+      await fs.mkdir(showDir, { recursive: true });
+      await fs.writeFile(
+        path.join(showDir, 'tvshow.nfo'),
+        '<tvshow><title>Gravity Falls</title><tvdbid>4344073</tvdbid></tvshow>',
+      );
+      await fs.writeFile(
+        path.join(showDir, 'Gravity.Falls.S01E01.nfo'),
+        '<episodedetails><title>Tourist Trapped</title><tvdbid>999999</tvdbid></episodedetails>',
+      );
+      await fs.writeFile(path.join(showDir, 'Gravity.Falls.S01E01.mkv'), '');
+
+      const result = await scanner.scan(tempDir);
+      const show = result.folders.find((f) => f.path === showDir);
+
+      expect(show?.nfoData?.title).toBe('Gravity Falls');
+      expect(show?.nfoData?.tvdbId).toBe(4344073);
+    });
+
     it('calculates total files count', async () => {
       await fs.writeFile(path.join(tempDir, 'movie1.mkv'), '');
       await fs.writeFile(path.join(tempDir, 'movie2.mkv'), '');

@@ -1,0 +1,48 @@
+Phase 1 verification report (FR-1 browse grid density)
+
+Commands and outcomes:
+- flutter analyze -> No issues found! (ran in 4.1s)
+- CI=true flutter test -> 349 passed, 0 failed (baseline 345, +4 new)
+
+Measured at the device viewport (adb: 1920x1080, density 240, dpr 1.5 ->
+1280x720 logical; rail 160), on the real screens inside the real
+LeanbackScaffold:
+
+  property                        before        after
+  grid cross-axis extent          1071          1071
+  columns                         4             6
+  tile size (logical)             250 x 431     165 x 285
+  tile size (physical)            375 x 646     248 x 427
+  grid viewport height            407.4         648
+  complete rows visible           1 (clipped)   2
+  posters per glance              4             12
+
+Files changed:
+- lib/features/library/poster_grid.dart (new): shared density contract
+  (kTvPosterColumns=6, kTvPosterTileWidth=165, kTvPosterTileHeight=285,
+  kTvPosterVisibleRows=2), posterColumnCountFor, posterGridDelegateFor.
+- lib/features/library/movies_screen.dart: shared delegate via LayoutBuilder,
+  ContinueWatchingSection removed, compact 72 px header.
+- lib/features/library/series_screen.dart: same.
+- lib/features/library/see_all_screen.dart: shared delegate (was
+  maxCrossAxisExtent 220 / aspect 0.62).
+- lib/features/search/search_screen.dart: shared delegate (same drift).
+- lib/shared/widgets/poster_card.dart: overflow fix and type scale.
+- test/features/library/poster_grid_density_test.dart (new): 4 tests.
+
+Two corrections found on the way, both recorded in plan.md:
+1. The first tile-width constant (173) was derived from the 1119 px content
+   width instead of the 1071 px grid extent, so the grid produced 5 columns and
+   the test caught it. Constant and comment now carry the real derivation.
+2. The narrower tile exposed a genuine 22 px RenderFlex overflow in the
+   PosterCard metadata row, caught by movies_screen_test.dart. The year now
+   absorbs slack via Expanded and the quality badge is capped at 72 px.
+
+Why: the owner reported that roughly three large posters fit in one row and
+that browsing movies was very hard. Two full rows cannot fit in the old 407 px
+grid viewport at any comfortable poster size, so the vertical space had to come
+from Continue Watching (213 of 720 logical px), which the owner accepted moving
+to Home only.
+
+Owner decisions on 2026-10-03: drop Continue Watching from Movies/Series; keep
+the rail at five destinations.

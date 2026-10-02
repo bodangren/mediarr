@@ -24,7 +24,7 @@
       the Movies screen.
 - [x] Write `spec.md`.
 
-## Phase 1: Browse grid density (FR-1) [checkpoint: pending]
+## Phase 1: Browse grid density (FR-1) [checkpoint: c232098]
 
 - [x] Red: grid density contract on the real screens. New
       `test/features/library/poster_grid_density_test.dart` measures

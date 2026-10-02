@@ -59,7 +59,7 @@ class PosterCard extends StatelessWidget {
                   title,
                   style: const TextStyle(
                     color: MediarrColors.textPrimary,
-                    fontSize: 22,
+                    fontSize: 20,
                     fontWeight: FontWeight.w600,
                   ),
                   maxLines: 1,
@@ -68,16 +68,31 @@ class PosterCard extends StatelessWidget {
                 const SizedBox(height: 2),
                 Row(
                   children: [
+                    // FR-1: the tile is 165 logical px wide at the TV viewport.
+                    // The year absorbs the slack through Expanded and the
+                    // badge is capped, so a long quality profile name can
+                    // never overflow the card.
                     if (year != null)
-                      Text(
-                        '$year',
-                        style: const TextStyle(
-                          color: MediarrColors.textMuted,
-                          fontSize: 18,
+                      Expanded(
+                        child: Text(
+                          '$year',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: MediarrColors.textMuted,
+                            fontSize: 15,
+                          ),
                         ),
+                      )
+                    else
+                      const Spacer(),
+                    if (quality != null) ...[
+                      const SizedBox(width: 4),
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 72),
+                        child: _QualityBadge(quality: quality!),
                       ),
-                    const Spacer(),
-                    if (quality != null) _QualityBadge(quality: quality!),
+                    ],
                     const SizedBox(width: 4),
                     _StatusDot(
                       hasFile: hasFile,
@@ -145,9 +160,11 @@ class _QualityBadge extends StatelessWidget {
       ),
       child: Text(
         quality,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
         style: const TextStyle(
           color: MediarrColors.accentPrimary,
-          fontSize: 14,
+          fontSize: 12,
           fontWeight: FontWeight.bold,
         ),
       ),

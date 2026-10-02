@@ -132,16 +132,15 @@ void main() {
       expect(focusedText(), contains(_movies[0]));
     });
 
-    testWidgets('Up walks grid -> Continue Watching -> search field, and the '
-        'search field owns focus', (tester) async {
+    testWidgets('Up walks grid -> search field, and the search field owns '
+        'focus', (tester) async {
+      // FR-1 removed Continue Watching from Movies (it measured 213 of the 720
+      // logical px of TV height, and two poster rows cannot fit without it).
+      // The row still exists on Home; this asserts the walk that remains.
       await _pumpShell(tester, '/movies');
 
       await pressDpad(tester, LogicalKeyboardKey.arrowUp);
       expectVisibleFocus('up 1');
-      expect(focusedText(), contains('Rick and Morty'));
-      expect(focusedText(), contains('Resume at'));
-
-      await pressDpad(tester, LogicalKeyboardKey.arrowUp);
       expectSearchOwnsFocus(tester);
     });
 

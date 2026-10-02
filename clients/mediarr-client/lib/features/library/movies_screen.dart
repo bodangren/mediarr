@@ -6,9 +6,8 @@ import '../../core/widgets/netflix_scaffold.dart';
 import '../../shared/models/movie.dart';
 import '../../shared/services/api_client.dart';
 import '../../shared/widgets/poster_card.dart';
-import '../playback/playback_navigation.dart';
-import 'continue_watching_section.dart';
 import 'movie_detail_screen.dart';
+import 'poster_grid.dart';
 
 /// Provider that fetches the movie list from the API.
 final moviesProvider = FutureProvider<List<Movie>>((ref) async {
@@ -48,7 +47,6 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
   @override
   Widget build(BuildContext context) {
     final moviesAsync = ref.watch(moviesProvider);
-    final continueWatchingAsync = ref.watch(continueWatchingProvider);
 
     return NetflixScaffold(
       child: Scaffold(
@@ -56,17 +54,24 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
         body: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // FR-1: the header is compact (72 px, was 100) so the grid keeps
+            // the vertical room that two complete poster rows need.
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
               child: Row(
                 children: [
                   Text(
                     'Movies',
-                    style: Theme.of(context).textTheme.headlineMedium,
+                    style: const TextStyle(
+                      color: MediarrColors.textPrimary,
+                      fontSize: 28,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                   const Spacer(),
                   SizedBox(
-                    width: 360,
+                    width: 320,
+                    height: 48,
                     child: TextField(
                       // The FocusNode must belong to the TextField itself. A
                       // wrapper Focus keeps the input method from attaching,
@@ -76,31 +81,27 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
                       onChanged: (value) => setState(() => _searchQuery = value),
                       decoration: InputDecoration(
                         hintText: 'Search...',
-                        prefixIcon: const Icon(Icons.search, size: 28),
+                        prefixIcon: const Icon(Icons.search, size: 22),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
                         filled: true,
                         fillColor: MediarrColors.surfaceCard,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
+                        contentPadding: EdgeInsets.zero,
                       ),
                       style: const TextStyle(
                         color: MediarrColors.textPrimary,
-                        fontSize: 20,
+                        fontSize: 18,
                       ),
                     ),
                   ),
                 ],
               ),
             ),
-            ContinueWatchingSection(
-              items: continueWatchingAsync.value ?? const [],
-              isLoading: continueWatchingAsync.isLoading,
-              onResume: (item) => _resumeContinueWatching(context, item),
-            ),
+            // FR-1: Continue Watching was removed here. It measured 213 of the
+            // 720 logical px of TV height, and two poster rows cannot fit in
+            // the 407 px that remained. It stays on Home, where the owner
+            // approved it. Pinned by poster_grid_density_test.dart.
             Expanded(
               child: moviesAsync.when(
                 loading: () => const Center(
@@ -128,27 +129,31 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
                       ),
                     );
                   }
-                  return GridView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    gridDelegate:
-                        const SliverGridDelegateWithMaxCrossAxisExtent(
-                      maxCrossAxisExtent: 280,
-                      childAspectRatio: 0.58,
-                      crossAxisSpacing: 24,
-                      mainAxisSpacing: 24,
-                    ),
-                    itemCount: filtered.length,
-                    itemBuilder: (context, index) {
-                      final movie = filtered[index];
-                      return PosterCard(
-                        title: movie.title,
-                        posterUrl: movie.posterUrl,
-                        year: movie.year,
-                        quality: movie.quality,
-                        monitored: movie.monitored,
-                        hasFile: movie.hasFile,
-                        autofocus: index == 0,
-                        onPressed: () => _openMovieDetail(context, movie),
+                  // FR-1: the shared density contract resolves to 6 columns
+                  // and 2 complete rows at the TV viewport.
+                  return LayoutBuilder(
+                    builder: (context, constraints) {
+                      final horizontalPadding =
+                          constraints.maxWidth > 900 ? 24.0 : 16.0;
+                      return GridView.builder(
+                        padding: EdgeInsets.fromLTRB(
+                            horizontalPadding, 0, horizontalPadding, 8),
+                        gridDelegate: posterGridDelegateFor(
+                            constraints.maxWidth - horizontalPadding * 2),
+                        itemCount: filtered.length,
+                        itemBuilder: (context, index) {
+                          final movie = filtered[index];
+                          return PosterCard(
+                            title: movie.title,
+                            posterUrl: movie.posterUrl,
+                            year: movie.year,
+                            quality: movie.quality,
+                            monitored: movie.monitored,
+                            hasFile: movie.hasFile,
+                            autofocus: index == 0,
+                            onPressed: () => _openMovieDetail(context, movie),
+                          );
+                        },
                       );
                     },
                   );
@@ -164,24 +169,6 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
   void _openMovieDetail(BuildContext context, Movie movie) {
     Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => MovieDetailScreen(movie: movie)),
-    );
-  }
-
-  void _resumeContinueWatching(
-      BuildContext context, ContinueWatchingItem item) {
-    final apiClient = ref.read(apiClientProvider.notifier);
-    final type = item.mediaTypeQueryValue;
-    final streamUrl = apiClient.getStreamUrl(item.mediaId, type);
-    final title = item.episodeTitle != null
-        ? '${item.title} - ${item.episodeTitle}'
-        : item.title;
-
-    openFullscreenPlayback(
-      context,
-      streamUrl: streamUrl,
-      title: title,
-      mediaId: item.mediaId,
-      mediaType: type,
     );
   }
 }

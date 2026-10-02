@@ -6,8 +6,7 @@ import '../../core/widgets/netflix_scaffold.dart';
 import '../../shared/models/series.dart';
 import '../../shared/services/api_client.dart';
 import '../../shared/widgets/poster_card.dart';
-import '../playback/playback_navigation.dart';
-import 'continue_watching_section.dart';
+import 'poster_grid.dart';
 import 'series_detail_screen.dart';
 
 /// Provider that fetches the series list from the API.
@@ -48,7 +47,6 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
   @override
   Widget build(BuildContext context) {
     final seriesAsync = ref.watch(seriesListProvider);
-    final continueWatchingAsync = ref.watch(continueWatchingProvider);
 
     return NetflixScaffold(
       child: Scaffold(
@@ -56,17 +54,24 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
         body: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // FR-1: compact header, matching MoviesScreen, so the grid keeps
+            // the height that two complete poster rows need.
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
               child: Row(
                 children: [
                   Text(
                     'Series',
-                    style: Theme.of(context).textTheme.headlineMedium,
+                    style: const TextStyle(
+                      color: MediarrColors.textPrimary,
+                      fontSize: 28,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                   const Spacer(),
                   SizedBox(
-                    width: 360,
+                    width: 320,
+                    height: 48,
                     child: TextField(
                       // The FocusNode must belong to the TextField itself. A
                       // wrapper Focus keeps the input method from attaching,
@@ -76,31 +81,25 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
                       onChanged: (value) => setState(() => _searchQuery = value),
                       decoration: InputDecoration(
                         hintText: 'Search...',
-                        prefixIcon: const Icon(Icons.search, size: 28),
+                        prefixIcon: const Icon(Icons.search, size: 22),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
                         filled: true,
                         fillColor: MediarrColors.surfaceCard,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
+                        contentPadding: EdgeInsets.zero,
                       ),
                       style: const TextStyle(
                         color: MediarrColors.textPrimary,
-                        fontSize: 20,
+                        fontSize: 18,
                       ),
                     ),
                   ),
                 ],
               ),
             ),
-            ContinueWatchingSection(
-              items: continueWatchingAsync.value ?? const [],
-              isLoading: continueWatchingAsync.isLoading,
-              onResume: (item) => _resumeContinueWatching(context, item),
-            ),
+            // FR-1: Continue Watching removed here for the same reason as on
+            // MoviesScreen. It stays on Home.
             Expanded(
               child: seriesAsync.when(
                 loading: () => const Center(
@@ -128,26 +127,30 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
                       ),
                     );
                   }
-                  return GridView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    gridDelegate:
-                        const SliverGridDelegateWithMaxCrossAxisExtent(
-                      maxCrossAxisExtent: 280,
-                      childAspectRatio: 0.58,
-                      crossAxisSpacing: 24,
-                      mainAxisSpacing: 24,
-                    ),
-                    itemCount: filtered.length,
-                    itemBuilder: (context, index) {
-                      final s = filtered[index];
-                      return PosterCard(
-                        title: s.title,
-                        posterUrl: s.posterUrl,
-                        year: s.year,
-                        monitored: s.monitored,
-                        hasFile: (s.episodeFileCount ?? 0) > 0,
-                        autofocus: index == 0,
-                        onPressed: () => _openSeriesDetail(context, s),
+                  // FR-1: the shared density contract, 6 columns and 2
+                  // complete rows at the TV viewport.
+                  return LayoutBuilder(
+                    builder: (context, constraints) {
+                      final horizontalPadding =
+                          constraints.maxWidth > 900 ? 24.0 : 16.0;
+                      return GridView.builder(
+                        padding: EdgeInsets.fromLTRB(
+                            horizontalPadding, 0, horizontalPadding, 8),
+                        gridDelegate: posterGridDelegateFor(
+                            constraints.maxWidth - horizontalPadding * 2),
+                        itemCount: filtered.length,
+                        itemBuilder: (context, index) {
+                          final s = filtered[index];
+                          return PosterCard(
+                            title: s.title,
+                            posterUrl: s.posterUrl,
+                            year: s.year,
+                            monitored: s.monitored,
+                            hasFile: (s.episodeFileCount ?? 0) > 0,
+                            autofocus: index == 0,
+                            onPressed: () => _openSeriesDetail(context, s),
+                          );
+                        },
                       );
                     },
                   );
@@ -163,24 +166,6 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
   void _openSeriesDetail(BuildContext context, Series series) {
     Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => SeriesDetailScreen(series: series)),
-    );
-  }
-
-  void _resumeContinueWatching(
-      BuildContext context, ContinueWatchingItem item) {
-    final apiClient = ref.read(apiClientProvider.notifier);
-    final type = item.mediaTypeQueryValue;
-    final streamUrl = apiClient.getStreamUrl(item.mediaId, type);
-    final title = item.episodeTitle != null
-        ? '${item.title} - ${item.episodeTitle}'
-        : item.title;
-
-    openFullscreenPlayback(
-      context,
-      streamUrl: streamUrl,
-      title: title,
-      mediaId: item.mediaId,
-      mediaType: type,
     );
   }
 }

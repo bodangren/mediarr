@@ -24,29 +24,64 @@
       the Movies screen.
 - [x] Write `spec.md`.
 
-## Phase 1: Browse grid density (FR-1)
+## Phase 1: Browse grid density (FR-1) [checkpoint: pending]
 
-- [ ] Red: grid density contract on the real screens. New
+- [x] Red: grid density contract on the real screens. New
       `test/features/library/poster_grid_density_test.dart` measures
       `MoviesScreen` and `SeriesScreen` in the device viewport and asserts 6
-      columns, tile size within 5 % of 173x298 logical, and at least 2 rows
-      completely inside the grid viewport. Fails today at 4 columns / 1 row.
-- [ ] Red: Continue Watching is not on the browse screens, and still is on
+      columns, tile size within 5 % of the contract, and at least 2 rows
+      completely inside the grid viewport. **Red confirmed as real assertion
+      failures, not a compile error:** `MoviesScreen shows 4 posters in the
+      first row; the contract is 6`, same for Series, plus
+      `ContinueWatchingSection` still found on Movies.
+- [x] Red: Continue Watching is not on the browse screens, and still is on
       Home. Assert the section is absent on Movies and Series and present on
       Home, so the removal cannot silently take the feature away everywhere.
-- [ ] Green: one shared grid definition. New
+- [x] Green: one shared grid definition. New
       `lib/features/library/poster_grid.dart` exports the spacing, the aspect
-      ratio, and `posterColumnCountFor(crossAxisExtent)`, which yields 6 at
-      1119 and scales on desktop windows.
-- [ ] Green: apply the shared delegate to `MoviesScreen` and `SeriesScreen`
+      ratio, `posterColumnCountFor(crossAxisExtent)`, and
+      `posterGridDelegateFor(crossAxisExtent)`.
+- [x] Green: apply the shared delegate to `MoviesScreen` and `SeriesScreen`
       and remove `ContinueWatchingSection` from both. Compact the search header
-      so two rows keep vertical headroom.
-- [ ] Green: reuse the same delegate in `SeeAllScreen` and `SearchScreen` so
-      browse density cannot drift. Update any suite that pinned the old
-      `maxCrossAxisExtent`, keeping its reachability assertions.
-- [ ] Gate: `flutter analyze` clean; `flutter test` green; record the measured
-      tile size and row count in this plan.
-- [ ] Checkpoint commit.
+      from 100 to 72 px so two rows keep vertical headroom.
+- [x] Green: reuse the same delegate in `SeeAllScreen` and `SearchScreen` so
+      browse density cannot drift.
+- [x] Gate: `flutter analyze` clean; `flutter test` green — **349 passed**
+      (baseline 345, +4 new).
+
+### Phase 1 measured result (device viewport, not estimated)
+
+| Property | Before | After |
+|---|---|---|
+| Grid cross-axis extent | 1071 logical | 1071 logical |
+| Columns | 4 | **6** |
+| Tile size | 250 x 431 logical (375 x 646 physical) | **165 x 285 logical (248 x 427 physical)** |
+| Grid viewport height | 407.4 logical | **648 logical** |
+| Complete rows visible | 1, and clipped | **2** |
+| Posters per glance | 4 | **12** |
+
+- [x] **Corrected measurement, recorded because the first constant was wrong.**
+      The first Green attempt set the tile width to 173 and the test still
+      failed at 5 columns. The constant had been derived from the 1119 px
+      *content* width, but the delegate receives the *grid extent*, which
+      excludes the grid's own 24 px padding on each side: 1280 - 160 rail
+      - 1 divider - 48 padding = **1071**. Six tiles of 165 plus five 16 px
+      gaps fill 1070 of it exactly. The constant and the comment now carry the
+      real derivation, and the unit test asserts the count at 1071.
+- [x] **Second defect found and fixed on the way.** The narrower tile exposed
+      a real overflow in `PosterCard`: the metadata row (year + quality badge +
+      status dot) overflowed by **22 px** at a 174 px tile, which
+      `movies_screen_test.dart` caught as a `RenderFlex overflowed` assertion.
+      The year now takes the slack through `Expanded` with ellipsis and the
+      badge is capped at 72 px, so a long quality profile name cannot overflow.
+      Card type scaled to the denser tile (title 22 to 20, year 18 to 15,
+      badge 14 to 12).
+- [x] One D-pad suite needed updating because the path it walked is gone:
+      `library_dpad_test.dart` asserted `grid -> Continue Watching -> search
+      field`. It now asserts `grid -> search field`, keeping the reachability
+      assertions intact (`expectSearchOwnsFocus` still checks the field owns
+      its node and shows a cue). The Home D-pad suites, which do walk
+      Continue Watching, are unchanged and green.
 
 ## Phase 2: Episode focus (FR-2)
 

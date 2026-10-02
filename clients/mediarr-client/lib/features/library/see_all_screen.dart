@@ -8,6 +8,7 @@ import '../../shared/models/library_item.dart';
 import '../../shared/services/api_client.dart';
 import '../../shared/utils/async_value_ext.dart';
 import 'movie_detail_screen.dart';
+import 'poster_grid.dart';
 import 'series_detail_screen.dart';
 
 /// Provider for the full "Recently Added" list behind `See All >` (FR-4).
@@ -79,22 +80,26 @@ class SeeAllScreen extends ConsumerWidget {
                         color: MediarrColors.accentPrimary,
                       ),
                     )
-                  : GridView.builder(
-                      padding: const EdgeInsets.all(24),
-                      gridDelegate:
-                          const SliverGridDelegateWithMaxCrossAxisExtent(
-                        maxCrossAxisExtent: 220,
-                        childAspectRatio: 0.62,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
-                      ),
-                      itemCount: items.length,
-                      itemBuilder: (context, index) {
-                        final item = items[index];
-                        return FocusableAction(
-                          onSelect: () => _open(context, ref, item),
-                          borderRadius: 8,
-                          child: _SeeAllCard(item: item),
+                  : LayoutBuilder(
+                      builder: (context, constraints) {
+                        final horizontalPadding =
+                            constraints.maxWidth > 900 ? 24.0 : 16.0;
+                        return GridView.builder(
+                          padding: EdgeInsets.fromLTRB(
+                              horizontalPadding, 0, horizontalPadding, 8),
+                          // FR-1: the shared density contract, so this grid
+                          // matches Movies and Series.
+                          gridDelegate: posterGridDelegateFor(
+                              constraints.maxWidth - horizontalPadding * 2),
+                          itemCount: items.length,
+                          itemBuilder: (context, index) {
+                            final item = items[index];
+                            return FocusableAction(
+                              onSelect: () => _open(context, ref, item),
+                              borderRadius: 8,
+                              child: _SeeAllCard(item: item),
+                            );
+                          },
                         );
                       },
                     ),

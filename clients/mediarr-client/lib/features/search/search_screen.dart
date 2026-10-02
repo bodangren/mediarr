@@ -9,6 +9,7 @@ import '../../shared/models/series.dart';
 import '../../shared/services/api_client.dart';
 import '../../shared/utils/async_value_ext.dart';
 import '../library/movie_detail_screen.dart';
+import '../library/poster_grid.dart';
 import '../library/series_detail_screen.dart';
 
 /// Combined movie + series search (owner mockup 2026-09-24, FR-5).
@@ -127,21 +128,26 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               ),
             ),
             Expanded(
-              child: GridView.builder(
-                padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
-                gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                  maxCrossAxisExtent: 220,
-                  childAspectRatio: 0.62,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                ),
-                itemCount: results.length,
-                itemBuilder: (context, index) {
-                  final result = results[index];
-                  return FocusableAction(
-                    onSelect: () => _open(result),
-                    borderRadius: 8,
-                    child: _ResultCard(result: result),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final horizontalPadding =
+                      constraints.maxWidth > 900 ? 24.0 : 16.0;
+                  return GridView.builder(
+                    padding: EdgeInsets.fromLTRB(
+                        horizontalPadding, 12, horizontalPadding, 24),
+                    // FR-1: the shared density contract, so search results
+                    // match the library grids.
+                    gridDelegate: posterGridDelegateFor(
+                        constraints.maxWidth - horizontalPadding * 2),
+                    itemCount: results.length,
+                    itemBuilder: (context, index) {
+                      final result = results[index];
+                      return FocusableAction(
+                        onSelect: () => _open(result),
+                        borderRadius: 8,
+                        child: _ResultCard(result: result),
+                      );
+                    },
                   );
                 },
               ),

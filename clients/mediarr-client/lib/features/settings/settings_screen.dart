@@ -5,7 +5,9 @@ import 'package:go_router/go_router.dart';
 import '../../core/router/app_router.dart';
 import '../../core/theme/mediarr_theme.dart';
 import '../../core/widgets/netflix_scaffold.dart';
+import '../../features/playback/playback_queue.dart';
 import '../../shared/services/api_client.dart';
+import '../../shared/utils/async_value_ext.dart';
 
 /// Build identifier shown on the Settings screen.
 const String kMediarrClientVersion =
@@ -23,6 +25,7 @@ class SettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final clientState = ref.watch(apiClientProvider);
     final server = clientState.baseUrl ?? 'Not connected';
+    final autoplay = ref.watch(autoplayNextEpisodeProvider).dataOrNull;
 
     return NetflixScaffold(
       child: Container(
@@ -47,6 +50,59 @@ class SettingsScreen extends ConsumerWidget {
             _SettingsRow(
               label: 'Client build',
               value: kMediarrClientVersion,
+            ),
+            const SizedBox(height: 24),
+            // FR-3: autoplay is on by default and persisted, so a viewer can
+            // turn it off and have that choice survive a restart.
+            FocusableAction(
+              autofocus: true,
+              variant: FocusableActionVariant.button,
+              borderRadius: 8,
+              onSelect: () async {
+                final next = !(autoplay ?? true);
+                await setAutoplayNextEpisode(next);
+                ref.invalidate(autoplayNextEpisodeProvider);
+              },
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                decoration: BoxDecoration(
+                  color: MediarrColors.surfaceCard,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: MediarrColors.borderSubtle),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.playlist_play,
+                        color: MediarrColors.textPrimary, size: 24),
+                    const SizedBox(width: 10),
+                    const Text(
+                      'Autoplay next episode',
+                      style: TextStyle(
+                        color: MediarrColors.textPrimary,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Text(
+                      // Fail closed while the preference is still loading, so
+                      // the row never claims "On" for an unknown value.
+                      switch (autoplay) {
+                        null => '...',
+                        true => 'On',
+                        false => 'Off',
+                      },
+                      style: const TextStyle(
+                        color: MediarrColors.accentPrimary,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
             const SizedBox(height: 24),
             Align(

@@ -7,6 +7,7 @@ import '../../features/discovery/discovery_screen.dart';
 import '../../features/home/home_screen.dart';
 import '../../features/library/movies_screen.dart';
 import '../../features/library/series_screen.dart';
+import '../../features/playback/playback_navigation.dart';
 import '../../features/playback/playback_screen.dart';
 import '../../features/search/search_screen.dart';
 import '../../features/settings/settings_screen.dart';
@@ -111,6 +112,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             title: extra['title'] as String,
             mediaId: extra['mediaId'] as int,
             mediaType: extra['mediaType'] as String,
+            // FR-3: the queue is untyped at the route boundary, so it is
+            // parsed defensively and anything malformed is dropped.
+            queue: readPlaybackQueueFromExtra(extra),
           );
         },
       ),

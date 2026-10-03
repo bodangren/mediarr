@@ -9,6 +9,7 @@ import '../../core/theme/mediarr_theme.dart';
 import '../../core/widgets/netflix_scaffold.dart';
 import '../../shared/services/api_client.dart';
 import 'media_player.dart';
+import 'playback_queue.dart';
 import 'playback_service.dart';
 import 'subtitle_renderer.dart';
 import 'track_selection.dart';
@@ -37,6 +38,7 @@ class PlaybackScreen extends ConsumerStatefulWidget {
     required this.mediaId,
     required this.mediaType,
     this.nextEpisode,
+    this.queue = const [],
     this.videoController,
   });
 
@@ -48,6 +50,12 @@ class PlaybackScreen extends ConsumerStatefulWidget {
   /// Callback to play next episode (null if not applicable or last episode).
   final VoidCallback? nextEpisode;
 
+  /// Episodes that follow the current one (FR-3).
+  ///
+  /// The Up Next countdown, the skip-next control, and the `Next Episode`
+  /// button all read this. An empty list disables autoplay entirely.
+  final List<PlaybackQueueItem> queue;
+
   /// Optional [VideoController]. Production callers pass `null` and the
   /// screen builds one from the playback service's underlying player.
   /// Tests inject a controller or `null` to skip `media_kit`'s native
@@ -58,6 +66,10 @@ class PlaybackScreen extends ConsumerStatefulWidget {
   @override
   ConsumerState<PlaybackScreen> createState() => _PlaybackScreenState();
 }
+
+/// Seconds the Up Next countdown waits before starting the next episode
+/// (FR-3, owner decision 2026-10-03).
+const int kUpNextCountdownSeconds = 15;
 
 class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
   late final PlaybackService _playbackService;
@@ -71,9 +83,36 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
   bool _exitInProgress = false;
   bool _stopRequested = false;
 
+  // --- FR-3 autoplay state ---
+
+  /// Episodes after the current one.
+  late final List<PlaybackQueueItem> _queue;
+
+  /// Index into [_queue] of the next episode to play, or null when the queue
+  /// is exhausted.
+  int? _nextIndex = 0;
+
+  /// The item currently playing, so the Up Next card can show it and the
+  /// completion handler can compare.
+  PlaybackQueueItem? _currentItem;
+
+  Timer? _upNextTimer;
+
+  /// Seconds left on the Up Next countdown, or null when the card is hidden.
+  int? _upNextSecondsLeft;
+
+  /// Set when the viewer pressed a key during the countdown. Autoplay must
+  /// never trap the viewer, so any input cancels it and leaves the card up.
+  bool _upNextCancelled = false;
+
+  /// The stored autoplay preference, or null while it is still unknown.
+  bool? _autoplayEnabled;
+
   @override
   void initState() {
     super.initState();
+    _queue = widget.queue;
+    _nextIndex = _queue.isEmpty ? null : 0;
     _resolvedStreamUrl = widget.streamUrl;
     _resolvedTitle = widget.title;
     _playbackService = ref.read(playbackServiceProvider.notifier);
@@ -87,16 +126,117 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
       }
     }
     Future.microtask(_startPlayback);
+    Future.microtask(_loadAutoplayPreference);
+  }
+
+  /// Reads the stored preference once, at start (FR-3).
+  ///
+  /// Read at start rather than at completion so the decision is never made on
+  /// a half-resolved provider.
+  Future<void> _loadAutoplayPreference() async {
+    try {
+      final enabled = await ref.read(autoplayNextEpisodeProvider.future);
+      if (mounted) setState(() => _autoplayEnabled = enabled);
+    } catch (_) {
+      // A missing preference store must not break playback.
+    }
+  }
+
+  @override
+  void didUpdateWidget(PlaybackScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.queue != widget.queue) {
+      _queue = widget.queue;
+      _nextIndex = _queue.isEmpty ? null : 0;
+    }
   }
 
   @override
   void dispose() {
+    _upNextTimer?.cancel();
     if (!_stopRequested) {
       _stopRequested = true;
       unawaited(_stopPlaybackOnDispose());
     }
     _rootFocusNode.dispose();
     super.dispose();
+  }
+
+  /// The next episode to play, or null when the queue is exhausted.
+  PlaybackQueueItem? get _nextItem {
+    final index = _nextIndex;
+    if (index == null || index < 0 || index >= _queue.length) return null;
+    return _queue[index];
+  }
+
+  /// FR-3: autoplay applies to episodes only, and only when the viewer left
+  /// the setting on.
+  ///
+  /// Fails **closed** while the preference is still unknown: an earlier version
+  /// read the provider as "on" before it resolved, so a viewer who had turned
+  /// autoplay off still got the next episode.
+  bool get _autoplayAllowed {
+    if (widget.mediaType != 'episode') return false;
+    if (_nextItem == null) return false;
+    if (widget.nextEpisode != null) return false;
+    return _autoplayEnabled == true;
+  }
+
+  /// Shows the Up Next card and starts its countdown.
+  void _startUpNext() {
+    if (_nextItem == null) return;
+    _upNextCancelled = false;
+    setState(() => _upNextSecondsLeft = kUpNextCountdownSeconds);
+    _upNextTimer?.cancel();
+    _upNextTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      final left = (_upNextSecondsLeft ?? 0) - 1;
+      if (left <= 0) {
+        timer.cancel();
+        _upNextTimer = null;
+        unawaited(_advanceToNext());
+        return;
+      }
+      if (mounted) setState(() => _upNextSecondsLeft = left);
+    });
+  }
+
+  /// FR-3: any key press cancels the countdown so nothing starts without a
+  /// fresh decision from the viewer.
+  void _cancelUpNextOnInput() {
+    if (_upNextSecondsLeft == null || _upNextCancelled) return;
+    _upNextTimer?.cancel();
+    _upNextTimer = null;
+    setState(() => _upNextCancelled = true);
+  }
+
+  void _dismissUpNext() {
+    _upNextTimer?.cancel();
+    _upNextTimer = null;
+    if (!mounted) return;
+    setState(() {
+      _upNextSecondsLeft = null;
+      _upNextCancelled = false;
+    });
+  }
+
+  /// Starts the next episode in the queue, in this route (FR-3).
+  Future<void> _advanceToNext() async {
+    final next = _nextItem;
+    if (next == null) {
+      _dismissUpNext();
+      return;
+    }
+    _upNextTimer?.cancel();
+    _upNextTimer = null;
+    _currentItem = next;
+    _nextIndex = _nextIndex! + 1;
+    if (_nextIndex! >= _queue.length) _nextIndex = null;
+    if (!mounted) return;
+    setState(() {
+      _upNextSecondsLeft = null;
+      _upNextCancelled = false;
+    });
+    await _playCurrentItem();
   }
 
   Future<void> _stopPlaybackOnDispose() async {
@@ -108,16 +248,30 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
   }
 
   Future<void> _startPlayback() async {
+    await _playCurrentItem();
+  }
+
+  /// Plays whatever is current: the route's media on entry, or the next queue
+  /// item after an autoplay advance (FR-3).
+  Future<void> _playCurrentItem() async {
     final service = ref.read(playbackServiceProvider.notifier);
     final apiClient = ref.read(apiClientProvider.notifier);
+
+    final item = _currentItem;
+    final mediaId = item?.mediaId ?? widget.mediaId;
+    final mediaType = widget.mediaType;
+    final fallbackUrl =
+        item == null ? widget.streamUrl : _apiStreamUrl(mediaId);
+    final fallbackTitle = item == null ? widget.title : item.label;
+
+    _resolvedStreamUrl = fallbackUrl;
+    _resolvedTitle = fallbackTitle;
 
     Duration resumeFrom = Duration.zero;
     var externalSubtitles = <ExternalSubtitleSource>[];
     try {
-      final manifest = await apiClient.getPlaybackManifest(
-        mediaId: widget.mediaId,
-        type: widget.mediaType,
-      );
+      final manifest =
+          await apiClient.getPlaybackManifest(mediaId: mediaId, type: mediaType);
       if (manifest != null) {
         final baseUrl = ref.read(apiClientProvider).baseUrl ?? '';
         _resolvedStreamUrl = manifest.streamUrl.startsWith('http')
@@ -148,8 +302,8 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
     await service.play(
       streamUrl: _resolvedStreamUrl,
       title: _resolvedTitle,
-      mediaId: widget.mediaId,
-      mediaType: widget.mediaType,
+      mediaId: mediaId,
+      mediaType: mediaType,
       resumeFrom: resumeFrom,
       externalSubtitles: externalSubtitles,
     );
@@ -157,6 +311,11 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
       // Show the overlay briefly at start so the user knows where Back lands.
       service.showOverlay();
     }
+  }
+
+  String _apiStreamUrl(int episodeId) {
+    final baseUrl = ref.read(apiClientProvider).baseUrl ?? '';
+    return '$baseUrl/api/stream/$episodeId?type=episode';
   }
 
   String _resolveManifestUrl(String url, String baseUrl) {
@@ -181,6 +340,12 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
       PlaybackState playbackState) {
     if (event is! KeyDownEvent) return false;
     final key = event.logicalKey;
+
+    // FR-3: any input during the Up Next countdown cancels it. The card stays
+    // on screen so the viewer can still choose Play now or Cancel.
+    if (_upNextSecondsLeft != null) {
+      _cancelUpNextOnInput();
+    }
     if (key == LogicalKeyboardKey.mediaPlayPause) {
       service.showOverlay();
       service.togglePlayPause();
@@ -253,6 +418,13 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
       if (previous?.overlayVisible == true && !next.overlayVisible) {
         _rootFocusNode.requestFocus();
       }
+      // FR-3: an episode that finishes offers the next one.
+      if (previous?.status != PlaybackStatus.completed &&
+          next.status == PlaybackStatus.completed) {
+        if (_autoplayAllowed) {
+          _startUpNext();
+        }
+      }
     });
 
     return Scaffold(
@@ -304,7 +476,9 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
                 title: playbackState.mediaTitle ?? _resolvedTitle,
                 onStop: _exitPlayback,
                 onBack: _exitPlayback,
-                nextEpisode: widget.nextEpisode,
+                // FR-3: a real skip-next when the queue has an item.
+                nextEpisode: widget.nextEpisode ??
+                    (_nextItem == null ? null : _advanceToNext),
               ),
 
             // Subtitle nudge toast.
@@ -319,8 +493,22 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
                 ),
               ),
 
+            // FR-3: Up Next card with its countdown.
+            if (_upNextSecondsLeft != null && _nextItem != null)
+              _UpNextCard(
+                item: _nextItem!,
+                secondsLeft: _upNextSecondsLeft!,
+                cancelled: _upNextCancelled,
+                onPlayNow: _advanceToNext,
+                onCancel: () {
+                  _dismissUpNext();
+                  service.showOverlay();
+                },
+              ),
+
             // Completed overlay.
-            if (playbackState.status == PlaybackStatus.completed)
+            if (playbackState.status == PlaybackStatus.completed &&
+                _upNextSecondsLeft == null)
               _CompletedOverlay(
                 onReplay: () => service.play(
                   streamUrl: _resolvedStreamUrl,
@@ -329,10 +517,124 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
                   mediaType: widget.mediaType,
                   resumeFrom: Duration.zero,
                 ),
-                onNext: widget.nextEpisode,
+                onNext: widget.nextEpisode ??
+                    (_nextItem == null ? null : _advanceToNext),
                 onBack: _exitPlayback,
               ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// FR-3: the Netflix-style Up Next card.
+///
+/// Shows the next episode, a countdown, `Play now`, and `Cancel`. Any key
+/// press cancels the countdown and leaves this card up, so autoplay never
+/// starts something the viewer did not choose.
+class _UpNextCard extends StatelessWidget {
+  const _UpNextCard({
+    required this.item,
+    required this.secondsLeft,
+    required this.cancelled,
+    required this.onPlayNow,
+    required this.onCancel,
+  });
+
+  final PlaybackQueueItem item;
+  final int secondsLeft;
+  final bool cancelled;
+  final VoidCallback onPlayNow;
+  final VoidCallback onCancel;
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned.fill(
+      child: ColoredBox(
+        color: const Color(0xF0000000),
+        child: Center(
+          child: FocusTraversalGroup(
+            policy: OrderedTraversalPolicy(),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Up Next',
+                  style: TextStyle(
+                    color: MediarrColors.accentPrimary,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  item.label,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 40,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  item.title,
+                  style: const TextStyle(color: Colors.white70, fontSize: 20),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  cancelled ? 'Autoplay cancelled' : 'Starting in $secondsLeft',
+                  style: const TextStyle(color: Colors.white70, fontSize: 18),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    FocusableAction(
+                      autofocus: true,
+                      variant: FocusableActionVariant.button,
+                      borderRadius: 8,
+                      onSelect: onPlayNow,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 28, vertical: 14),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Text(
+                          'Play now',
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    FocusableAction(
+                      variant: FocusableActionVariant.button,
+                      borderRadius: 8,
+                      onSelect: onCancel,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 28, vertical: 14),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.white),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Text(
+                          'Cancel',
+                          style: TextStyle(color: Colors.white, fontSize: 20),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

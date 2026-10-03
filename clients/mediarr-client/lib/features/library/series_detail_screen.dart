@@ -12,6 +12,7 @@ import '../../shared/widgets/media_detail/file_info_card.dart';
 import '../../shared/widgets/media_detail/media_hero.dart';
 import '../../shared/widgets/media_detail/metadata_section.dart';
 import '../playback/playback_navigation.dart';
+import '../playback/playback_queue.dart';
 
 class SeriesDetailScreen extends ConsumerStatefulWidget {
   const SeriesDetailScreen({super.key, required this.series});
@@ -103,12 +104,17 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
     final label = seasonNumber == null
         ? 'Episode ${episode.episodeNumber}'
         : 'S${_pad(seasonNumber)}E${_pad(episode.episodeNumber)}';
+    // FR-3: the queue continues through the season and into the next one, so
+    // an episode ending offers the next episode automatically.
+    final series = _detail ?? widget.series;
+    final queue = buildEpisodeQueue(series, episodeId: episode.id);
     openFullscreenPlayback(
       context,
       streamUrl: streamUrl,
       title: '${widget.series.title} — $label',
       mediaId: episode.id,
       mediaType: 'episode',
+      queue: queue,
     );
   }
 

@@ -154,29 +154,48 @@ every stop renders a visible focus cue (`focusIsInteractive()`).
       step. `playbackServiceProvider` is overridden with `FakeMediaPlayer` for
       the same reason `playback_overlay_test.dart` does it.
 
-## Phase 3: Next-episode autoplay (FR-3)
+## Phase 3: Next-episode autoplay (FR-3) [checkpoint: pending]
 
-- [ ] Red: queue construction test. Starting an episode in season 1 builds a
-      queue of the remaining season 1 episodes in order, then season 2, and the
-      last episode of the last season has an empty remainder.
-- [ ] Red: autoplay tests on the real `PlaybackScreen` with the existing
-      `FakeMediaPlayer`: on `completed` with a next item the Up Next card shows
-      a 15 s countdown; nothing starts before expiry; expiry starts the next
-      episode in the same route; a D-pad press during the countdown cancels
-      it; the toggle off never starts anything; a movie never starts anything.
-- [ ] Green: `PlaybackQueueItem` model and queue construction from the loaded
-      series detail.
-- [ ] Green: pass the queue through `openFullscreenPlayback` and the
-      `/playback` route extra; parse defensively and fall back to an empty
-      queue.
-- [ ] Green: Up Next card with countdown, `Play now`, and `Cancel`; advance
-      in-route without popping; report the finished episode's progress first.
-- [ ] Green: wire the existing skip-next transport button and the completed
-      overlay `Next Episode` button to the real next item.
-- [ ] Green: `Autoplay next episode` toggle on Settings, default on, persisted
-      with `shared_preferences`.
-- [ ] Gate: `flutter analyze` clean; `flutter test` green.
-- [ ] Checkpoint commit.
+- [x] Red: queue construction test plus autoplay tests on the real
+      `PlaybackScreen` with `FakeMediaPlayer`. **Red confirmed as a compile
+      failure on the missing capability**: `No named parameter with the name
+      'queue'`. Before this phase the `nextEpisode` callback, the
+      `Next Episode` button, and the skip-next transport button all existed and
+      no caller ever passed one, so nothing could advance.
+- [x] Red: queue construction (season order, empty remainder, unknown episode),
+      Up Next card with a 15 s countdown, no start before expiry, start on
+      expiry, a key press cancels, `Play now`, `Cancel` returns to the completed
+      overlay, the toggle off stops everything, a movie never advances, and
+      skip-next presence.
+- [x] Green: `PlaybackQueueItem`, `buildEpisodeQueue`, and the persisted
+      preference in the new `lib/features/playback/playback_queue.dart`.
+- [x] Green: the queue travels through `openFullscreenPlayback` and the
+      `/playback` route extra. `readPlaybackQueueFromExtra` parses defensively
+      and drops malformed entries, so a stale route disables autoplay instead
+      of crashing playback.
+- [x] Green: `_UpNextCard` with countdown, `Play now`, and `Cancel`; the advance
+      stays inside the route and re-fetches the manifest so subtitles and
+      resume resolve for the new episode.
+- [x] Green: the existing skip-next transport button and the completed overlay
+      `Next Episode` button now drive the real queue item.
+- [x] Green: `Autoplay next episode` on Settings, default on, persisted with
+      `shared_preferences`.
+- [x] Gate: `flutter analyze` clean; `flutter test` green — **374 passed**
+      (baseline 356, +18 new).
+
+### Phase 3 findings
+
+- [x] **A real fail-open bug, caught by the test for the toggle.** The screen
+      read the preference at completion time with
+      `ref.read(provider).dataOrNull ?? true`, so while the provider was still
+      loading it read as **enabled**. A viewer who had turned autoplay off would
+      still have been advanced. The preference is now read once at start and the
+      check fails **closed** while the value is unknown
+      (`_autoplayEnabled == true`).
+- [x] The countdown never traps the viewer: any key press cancels it and leaves
+      the card up with `Play now` and `Cancel`, which the tests pin.
+- [x] Movies are excluded from autoplay by an explicit `mediaType` check rather
+      than by convention.
 
 ## Phase 4: Collections browsing (FR-4)
 

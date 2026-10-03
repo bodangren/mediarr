@@ -1,0 +1,38 @@
+Phase 3 verification report (FR-3 next-episode autoplay)
+
+Commands and outcomes:
+- flutter analyze -> No issues found! (ran in 4.8s)
+- CI=true flutter test -> 374 passed, 0 failed (baseline 356, +18 new)
+
+What shipped:
+- lib/features/playback/playback_queue.dart (new): PlaybackQueueItem,
+  buildEpisodeQueue (season order then following seasons), and the persisted
+  autoplay preference backed by shared_preferences.
+- lib/features/playback/playback_screen.dart: 'queue' parameter, _UpNextCard
+  with a 15 s countdown plus Play now and Cancel, in-route advance that
+  re-fetches the manifest, and real wiring for the previously dead skip-next
+  and Next Episode controls.
+- lib/features/playback/playback_navigation.dart: queue plumbed through the
+  route extra plus readPlaybackQueueFromExtra, which drops malformed entries.
+- lib/core/router/app_router.dart: parses the queue at the untyped route edge.
+- lib/features/library/series_detail_screen.dart: builds the queue from the
+  already-loaded series detail, so no server work was needed.
+- lib/features/settings/settings_screen.dart: the Autoplay next episode toggle.
+- test/features/playback/autoplay_test.dart (new): 18 tests.
+
+Red state before the phase: 'No named parameter with the name queue'. The
+nextEpisode callback, the Next Episode button, and the skip-next transport
+button all existed and no caller ever passed one, so the capability was dead.
+
+One real defect found and fixed by the test for the toggle: the screen read the
+preference at completion time with 'dataOrNull ?? true', which reads as ENABLED
+while the provider is still loading. A viewer who had turned autoplay off would
+still have been advanced. The preference is now read once at start and the
+check fails closed while the value is unknown.
+
+Safety properties pinned by tests: nothing starts before the countdown expires;
+any key press cancels it and leaves the card up; Play now starts immediately;
+Cancel returns to the completed overlay; the toggle off starts nothing; movies
+never advance; the last episode offers no next control.
+
+Why: the owner asked for Netflix-style next autoplay.

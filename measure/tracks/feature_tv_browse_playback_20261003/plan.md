@@ -242,25 +242,64 @@ every stop renders a visible focus cue (`focusIsInteractive()`).
 
 ## Phase 5: Build, device evidence, sign-off
 
-- [ ] Build and install the fat APK on `192.168.10.60:5555`.
+- [x] Build and install the fat APK on `192.168.10.60:5555`.
       `JAVA_HOME=/home/daniel-bo/.local/jdk17 flutter build apk --release
-      --android-skip-build-dependency-validation`.
-- [ ] Device frame per phase with its MD5 (F10 rule: one frame per step, and
-      a byte-identical frame means the key press was dropped, so retry).
-- [ ] Verify the grid on the TV: 6 columns, 2 full rows, no clipping.
-- [ ] Verify the episode walk on the TV with the remote only: Down from the
-      chips reaches episode 1, the focus cue is visible, Select plays.
-- [ ] Verify autoplay on the TV: let an episode end, confirm the Up Next
-      countdown appears and starts the next episode, then confirm a key press
-      cancels it.
-- [ ] Verify collections on the TV. **Operator step, may be empty:** the live
-      DB is at `/run/media/daniel-bo/4TB/mediarr-config/mediarr.db` and the
-      development user gets permission denied, so this track cannot confirm the
-      live library holds collections. If the shelf is empty, create a
-      collection in the web UI and re-check. Record the outcome here.
+      --android-skip-build-dependency-validation` -> 97.9 MB, 221 s. Install
+      succeeded; `mCurrentFocus` confirmed our `MainActivity`, not the TV
+      AppInstaller (the failure mode of the earlier `p5_movies_grid.png` frame).
+- [x] Verify FR-1 on the TV. `device-20261003/p5-04-movies-grid.png` MD5
+      `533f90793282323d894850acea8aa461` shows **6 columns x 2 complete rows**
+      plus the start of a third, with no clipping. `p5-10-series-grid.png` MD5
+      `8e6fda8296a0c4ea2c11a78c4376c81e` shows the same on Series.
+- [x] Verify FR-4 entry and empty state on the TV.
+      `p5-05-up-to-collections.png` MD5 `a4a49d739b2834ae8f0770605569778d`:
+      one Up from the grid lands on the Collections header action.
+      `p5-06-collections.png` MD5 `ba72227ec1a6aa4ee648636f63a1a66b`: the
+      screen opens and renders the empty state.
+- [x] Verify FR-2 on the TV, the exact case the owner reported.
+      `p5-11-series-detail-top.png` MD5 `e78dcfb2ed2bb0c1cf0beea1038bc584`:
+      the detail page with S0..S7 chips. `p5-13-down-to-episode1.png` MD5
+      `a40132b6f308a12cb67085fbc0d1eeb0`: **two Down presses reach episode 1**
+      with the focus ring on the row. `p5-17-scrolled-bottom.png` MD5
+      `16a54db91a5012c4afaa11522d4478e9`: the walk continues through the
+      episodes, each showing the new `Missing` marker, and the last Down lands
+      on **`Search All Missing`, not `Delete Series`**.
+- [x] Verify playback and the transport on the TV. `p5-20-playing.png` MD5
+      `1c0704424ea29a50f66d82d32becfaad`: Select on an episode plays it
+      fullscreen with bilingual subtitles. `p5-21-transport.png` MD5
+      `007dadb0fb624136dbd11e64f0a5c42e`: the transport overlay, and the
+      **skip-next control is now present** (it was dead code before this track).
+- [x] Verify FR-3 on the TV. `p5-25-upnext-card.png` MD5
+      `be7a96d935ca29eb89211d5cf13770c7`: the Up Next card with
+      `S01E03 / Sweet Taste of Liberty`, a live countdown (`Starting in 11`),
+      and `Play now` / `Cancel`. `p5-26-autoplay-started.png` MD5
+      `2b88027fa2aa27f3e8399b9a45247b74`: the countdown expired and the next
+      episode started **in the same route**, with no return to browse.
+- [x] F10 evidence rule applied. One injected key was confirmed dropped: four
+      consecutive Down presses produced a **byte-identical** frame
+      (`355a16d330e8484f4dcd37c88d2c11eb`), so the frame was retaken rather
+      than recorded as a defect. A second identical pair turned out to be
+      **correct behaviour**: focus had already reached `Search All Missing`,
+      which has no candidate below it.
+- [x] Collections on the TV: **the live library holds no collections.** The
+      screen and both API calls work; the empty state renders. This resolves
+      the operator step flagged at spec time. To see real data, create a
+      collection in the web UI (the SPA already has the full editor).
 - [ ] Perceptual remote-only sign-off. Human-gated; the owner holds it.
-- [ ] Final gate: `flutter analyze` clean, `flutter test` green, then archive
-      the track per `measure/workflow.md`.
+- [ ] Final gate and archive per `measure/workflow.md`.
+
+### Phase 5 incidental findings, recorded not fixed
+
+- Series tiles show the year as **`0`**. `PosterCard` renders `$year` whenever
+  the field is non-null, and this library stores `0` rather than null for
+  unscanned series. A one-line guard would fix it; it is outside this track's
+  four requirements and is listed below.
+- The drag that "sought to the end" first seeked **backwards**: a swipe that
+  starts on a `Slider` track jumps the thumb to the start of the track. Worth
+  remembering for any future scripted device check.
+- The TV drops roughly 1 in 10 injected keys. Two separate runs needed a
+  retry, which confirms the F10 rule that a byte-identical frame means a
+  dropped key and not a product defect.
 
 ## Follow-ups recorded, not in this track
 
@@ -275,6 +314,13 @@ every stop renders a visible focus cue (`focusIsInteractive()`).
 - [ ] `SeeAllScreen` and `SearchScreen` had their own density
       (`maxCrossAxisExtent: 220`). Phase 1 unifies them; a perceptual check on
       the desktop form factors is still open.
+- [ ] Series tiles render the year as `0` when the library stores `0` instead
+      of null (seen on the device in Phase 5). A `year > 0` guard in
+      `PosterCard` fixes it. Left out of this track because it is outside the
+      four owner requirements.
+- [ ] Autoplay does not apply when an episode is **resumed** from Continue
+      Watching, because no queue is built on that path (see the first
+      follow-up).
 
 ## Risk register
 

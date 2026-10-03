@@ -285,8 +285,82 @@ every stop renders a visible focus cue (`focusIsInteractive()`).
       screen and both API calls work; the empty state renders. This resolves
       the operator step flagged at spec time. To see real data, create a
       collection in the web UI (the SPA already has the full editor).
-- [ ] Perceptual remote-only sign-off. Human-gated; the owner holds it.
-- [ ] Final gate and archive per `measure/workflow.md`.
+## Phase 5b: Perceptual sign-off defects (2026-10-03 evening) [checkpoint: pending]
+
+The owner's remote-only sign-off (Phase 5) found two defects that the Phase 5
+scripted checks had missed. Both are fixed, tested, and device-verified.
+
+### Defect A: the episode walk does not scroll the view with the selection
+
+- Owner report: "when pressing down to browse episodes in a TV series, the
+  view doesn't scroll together with the selection, so the selection is off the
+  screen and I can't see what I'm selecting."
+- Reproduced on the device: 7 consecutive Down presses from episode 1 produced
+  **byte-identical frames** — the selection moved below the fold while the
+  `SingleChildScrollView` stayed at offset 0. Earlier suites missed it because
+  `focusIsInteractive` checks that a cue exists, not that the focused row is
+  inside the scroll viewport.
+- Root cause, measured rather than guessed: `FocusableAction` already reveals
+  on focus change, but called `Scrollable.ensureVisible` with the fixed policy
+  `keepVisibleAtStart`. The SDK implements that policy as **scroll-up only**
+  (`if (target > pixels) target = pixels` in `ScrollPosition.ensureVisible`),
+  so a control crossing the **bottom** edge can never be revealed. Debug
+  probes showed the reveal firing, computing target 770 for the off-screen
+  row, and completing with the offset still 0.0.
+- Red: `test/features/library/episode_scroll_test.dart` walks 8 episodes at
+  the device viewport and asserts the focused row's global rect stays inside
+  the scroll viewport. Failed at episode 4 (row at y 774..850 vs viewport
+  0..720) before the fix.
+- Green: `_revealInScrollables` now measures both reveal offsets and picks the
+  policy per direction — `keepVisibleAtStart` when the control crossed the top
+  edge, `keepVisibleAtEnd` when it crossed the bottom edge, no-op when fully
+  visible. This fixes every scroll surface that uses the shared primitive, not
+  just the episode list.
+- Device-verified: `device-20261003/repro/v2-ep5.png` (MD5
+  `5366c9b32a4bf32478dfbb24882b164e`) shows episode 5 focused and visible after
+  scrolling; `v2-ep9.png` (MD5 `8c4d7e6521f121636962098b5e8690f5`) shows
+  episode 9 focused at the bottom edge with episodes 2-8 scrolled above. Every
+  frame in the walk is now distinct (no byte-identical pairs).
+
+### Defect B: a finished episode does not offer the next one
+
+- Owner report: "When an episode finishes, it doesn't offer to (and by default
+  choose to) automatically play the next episode."
+- The series-detail path was already verified in Phase 5 (`p5-25`, `p5-26`).
+  The failing path was the one the owner actually uses: **resuming an episode
+  from Continue Watching**, which pushed playback with an empty queue, so the
+  episode reached the completed overlay and stopped. This was the FR-3
+  follow-up "build a queue on the resume path", promoted to a defect by the
+  report.
+- Red: `test/features/home/resume_autoplay_test.dart` — resuming an episode
+  must call `getSeriesDetail(seriesId)` and pass the remaining episodes
+  (`[102, 103]` for a resume at S01E01) to `PlaybackScreen`. Failed with
+  `getSeriesDetailCalls: []` before the fix.
+- Green: `HomeScreen._resumeContinueWatching` is now async, fetches the series
+  detail for episode entries (`seriesId` is already on `ContinueWatchingItem`),
+  and builds the queue with the existing `buildEpisodeQueue`. The fetch is
+  best-effort: a failure still resumes playback, just without autoplay.
+- Device-verified on the resume path: `device-20261003/repro/v5-seeked.png`
+  (MD5 `4ee4717c629c`) shows the resumed S01E01 with the **skip-next control
+  present** — proof the queue arrived (the control is absent with an empty
+  queue). `v7-upnext.png` (MD5 `6843ea2f0267`) shows the Up Next card with the
+  countdown after the resumed episode finished, and `v8-autoplayed.png` (MD5
+  `4f95385604cc`) shows the next episode started in the same route.
+
+### Phase 5b gates
+
+- [x] `flutter analyze` clean; `flutter test` green — **386 passed**
+      (baseline 384, +2 new).
+- [x] Release APK rebuilt and installed on `192.168.10.60:5555`; both defects
+      re-verified with the new build.
+- [ ] Perceptual remote-only re-sign-off of the two fixes. Human-gated.
+
+### Phase 5 closing items
+
+- [x] Perceptual remote-only sign-off (first pass). Done by the owner and it
+      surfaced Defects A and B above — the scripted checks had missed both.
+- [ ] Final gate and archive per `measure/workflow.md`, after the 5b
+      re-sign-off.
 
 ### Phase 5 incidental findings, recorded not fixed
 
@@ -305,7 +379,9 @@ every stop renders a visible focus cue (`focusIsInteractive()`).
 
 - [ ] Build a play queue when an episode is resumed from `HomeScreen` Continue
       Watching or the Movies screen, so autoplay also works on the resume path.
-      Needs one extra `getSeriesDetail` call per resume.
+      Needs one extra `getSeriesDetail` call per resume. **Promoted to a defect
+      by the owner's 2026-10-03 report and fixed in Phase 5b (Defect B); this
+      entry stays open only until the archive.**
 - [ ] `MetadataProvider` computes `tmdbCollectionId` and then drops it
       (`measure/tech-debt.md`, 2026-07-28), so movie-to-collection membership
       never reaches a search-result consumer. Collections therefore exist only

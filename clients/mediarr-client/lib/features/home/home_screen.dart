@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/router/app_router.dart';
 import '../../core/theme/mediarr_theme.dart';
 import '../../core/widgets/netflix_scaffold.dart';
+import '../playback/playback_queue.dart';
 import '../../shared/models/library_item.dart';
 import '../../shared/models/movie.dart';
 import '../../shared/models/series.dart';
@@ -268,19 +269,42 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
   }
 
-  void _resumeContinueWatching(
+  /// Resumes a Continue Watching entry.
+  ///
+  /// FR-3b: when the entry is an episode, this also fetches the series detail
+  /// and builds the same queue the series detail screen builds. Before this,
+  /// the resume path pushed playback with an empty queue, so an episode
+  /// resumed from Home reached the completed overlay and stopped — the owner
+  /// reported exactly that on 2026-10-03.
+  Future<void> _resumeContinueWatching(
     BuildContext context,
     WidgetRef ref,
     ContinueWatchingItem item,
-  ) {
+  ) async {
     final client = ref.read(apiClientProvider.notifier);
     final streamUrl = client.getStreamUrl(item.mediaId, item.mediaTypeQueryValue);
+
+    var queue = const <PlaybackQueueItem>[];
+    if (item.mediaTypeQueryValue == 'episode' && item.seriesId != null) {
+      try {
+        final series = await client.getSeriesDetail(item.seriesId!);
+        if (series != null) {
+          queue = buildEpisodeQueue(series, episodeId: item.mediaId);
+        }
+      } catch (_) {
+        // Resume must still work when the detail fetch fails; it just loses
+        // autoplay for this playback.
+      }
+    }
+
+    if (!context.mounted) return;
     openFullscreenPlayback(
       context,
       streamUrl: streamUrl,
       title: item.title,
       mediaId: item.mediaId,
       mediaType: item.mediaTypeQueryValue,
+      queue: queue,
     );
   }
 

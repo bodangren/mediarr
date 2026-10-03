@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show RenderAbstractViewport;
 import 'package:flutter/services.dart';
 
 import '../theme/mediarr_theme.dart';
@@ -196,19 +199,47 @@ class _FocusableActionState extends State<FocusableAction> {
 
   /// Scrolls every enclosing scrollable just enough to show this widget.
   ///
-  /// [ScrollPositionAlignmentPolicy.keepVisibleAtStart] is a no-op when the
-  /// widget is already fully visible, so entry focus never causes a jump.
+  /// The policy is chosen per direction, and this is load-bearing:
+  /// `ScrollPosition.ensureVisible` implements `keepVisibleAtStart` as
+  /// "scroll up only" (`if (target > pixels) target = pixels`) and
+  /// `keepVisibleAtEnd` as "scroll down only". A single fixed policy can
+  /// therefore never reveal a control on the other side of the fold, which is
+  /// exactly the device-reported defect where pressing Down through a season's
+  /// episodes left the selection off the bottom of the screen while the
+  /// `SingleChildScrollView` stayed at offset 0. Measured 2026-10-03 on the
+  /// X96Max box and in `episode_scroll_test.dart`.
   void _revealInScrollables() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || !_isFocused) return;
       final target = context.findRenderObject();
       if (target is! RenderBox || !target.attached) return;
-      Scrollable.ensureVisible(
+      final viewport = RenderAbstractViewport.maybeOf(target);
+      if (viewport == null) return;
+      final scrollable = Scrollable.maybeOf(context);
+      final position = scrollable?.position;
+      if (position == null) return;
+
+      final double alignStart =
+          viewport.getOffsetToReveal(target, 0.0, axis: position.axis).offset;
+      final double alignEnd =
+          viewport.getOffsetToReveal(target, 1.0, axis: position.axis).offset;
+      final double pixels = position.pixels;
+
+      final ScrollPositionAlignmentPolicy policy;
+      if (alignStart < pixels) {
+        policy = ScrollPositionAlignmentPolicy.keepVisibleAtStart;
+      } else if (alignEnd > pixels) {
+        policy = ScrollPositionAlignmentPolicy.keepVisibleAtEnd;
+      } else {
+        return; // Fully visible; no scroll, so entry focus never causes a jump.
+      }
+
+      unawaited(Scrollable.ensureVisible(
         context,
-        alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtStart,
+        alignmentPolicy: policy,
         duration: const Duration(milliseconds: 180),
         curve: Curves.easeOut,
-      );
+      ));
     });
   }
 

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:mediarr_client/shared/models/collection.dart';
 import 'package:mediarr_client/shared/models/library_item.dart';
 import 'package:mediarr_client/shared/models/movie.dart';
 import 'package:mediarr_client/shared/models/search_result.dart';
@@ -45,6 +46,22 @@ class FakeMediarrApiClient extends MediarrApiClient {
 
   Movie? getMovieReturn;
   Object? getMovieError;
+
+  // --- Collections (FR-4) ---
+
+  List<MediaCollection> getCollectionsReturn = const [];
+  List<CollectionMovie> getCollectionMoviesReturn = const [];
+  final List<int> getCollectionMoviesCalls = [];
+
+  @override
+  Future<List<MediaCollection>> getCollections() async =>
+      getCollectionsReturn;
+
+  @override
+  Future<List<CollectionMovie>> getCollectionMovies(int collectionId) async {
+    getCollectionMoviesCalls.add(collectionId);
+    return getCollectionMoviesReturn;
+  }
 
   Series? getSeriesByIdReturn;
   Object? getSeriesByIdError;

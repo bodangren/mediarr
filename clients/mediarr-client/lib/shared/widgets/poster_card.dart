@@ -18,6 +18,7 @@ class PosterCard extends StatelessWidget {
     this.hasFile = false,
     this.onPressed,
     this.autofocus = false,
+    this.onFocusChange,
   });
 
   final String title;
@@ -29,10 +30,15 @@ class PosterCard extends StatelessWidget {
   final VoidCallback? onPressed;
   final bool autofocus;
 
+  /// Reports focus entering or leaving this tile, so the host can drive the
+  /// D-pad hop from the grid into the header (FR-4).
+  final ValueChanged<bool>? onFocusChange;
+
   @override
   Widget build(BuildContext context) {
     return FocusableAction(
       onSelect: onPressed,
+      onFocusChange: onFocusChange,
       autofocus: autofocus,
       borderRadius: 8,
       child: Column(

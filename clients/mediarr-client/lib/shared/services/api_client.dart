@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../models/collection.dart';
 import '../models/library_item.dart';
 import '../models/movie.dart';
 import '../models/search_result.dart';
@@ -635,6 +636,33 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
       return Series.fromJson(data as Map<String, dynamic>);
     }
     return null;
+  }
+
+  /// Fetch every movie collection (FR-4).
+  ///
+  /// The server returns a bare list, not the paginated envelope.
+  Future<List<MediaCollection>> getCollections() async {
+    final response = await _dio.get('/api/collections');
+    if (response.statusCode != 200 || response.data == null) return const [];
+    final data = _unwrap(response.data);
+    if (data is! List) return const [];
+    return data
+        .map((item) =>
+            MediaCollection.fromJson(item as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// Fetch the movies of one collection (FR-4).
+  Future<List<CollectionMovie>> getCollectionMovies(int collectionId) async {
+    final response = await _dio.get('/api/collections/$collectionId');
+    if (response.statusCode != 200 || response.data == null) return const [];
+    final data = _unwrap(response.data);
+    if (data is! Map) return const [];
+    final movies = data['movies'];
+    if (movies is! List) return const [];
+    return movies
+        .map((item) => CollectionMovie.fromJson(item as Map<String, dynamic>))
+        .toList();
   }
 
   /// Search for movies and series by query term.

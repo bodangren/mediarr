@@ -197,24 +197,48 @@ every stop renders a visible focus cue (`focusIsInteractive()`).
 - [x] Movies are excluded from autoplay by an explicit `mediaType` check rather
       than by convention.
 
-## Phase 4: Collections browsing (FR-4)
+## Phase 4: Collections browsing (FR-4) [checkpoint: pending]
 
-- [ ] Red: API tests for `getCollections` and `getCollectionMovies`, including
-      the envelope unwrap and an empty list.
-- [ ] Red: widget tests for `CollectionsScreen` and `CollectionDetailScreen`:
-      the collection grid renders name and `moviesInLibrary`; Select opens the
-      detail screen; the detail grid renders the collection's movies; Select
-      opens `MovieDetailScreen`; the empty state reads as a state, not an error.
-- [ ] Red: a collections action exists in the `MoviesScreen` header and reaches
-      the collections screen with the D-pad, with the rail unchanged at five
-      destinations.
-- [ ] Green: `MediaCollection` and `CollectionMovie` models.
-- [ ] Green: `getCollections` and `getCollectionMovies` on `MediarrApiClient`.
-- [ ] Green: `CollectionsScreen` and `CollectionDetailScreen` on the shared
-      grid delegate, with the empty state.
-- [ ] Green: `Collections` action in the Movies header plus the route.
-- [ ] Gate: `flutter analyze` clean; `flutter test` green.
-- [ ] Checkpoint commit.
+- [x] Red: models, screens, and entry point. New
+      `test/features/library/collections_screen_test.dart` (9 tests).
+- [x] Red: model parsing with a missing optional field.
+- [x] Red: the collection grid renders name and `moviesInLibrary`, uses the
+      shared density, and the empty library reads as a state.
+- [x] Red: the detail screen renders the collection's movies and marks one that
+      is not in the library.
+- [x] Red: the Movies screen offers a Collections action reachable on the D-pad,
+      and the rail still holds exactly five destinations.
+- [x] Green: `MediaCollection` and `CollectionMovie` models.
+- [x] Green: `getCollections` and `getCollectionMovies` on `MediarrApiClient`,
+      plus `FakeMediarrApiClient` overrides.
+- [x] Green: `CollectionsScreen` and `CollectionDetailScreen` on the shared grid
+      delegate, with entry focus on the first tile and an empty state.
+- [x] Green: `Collections` action in the Movies header. Select opens
+      `CollectionsScreen`; Select there opens the collection's movie grid.
+- [x] Gate: `flutter analyze` clean; `flutter test` green — **384 passed**
+      (baseline 374, +10 new).
+
+### Phase 4 findings
+
+- [x] **A real regression the new entry point caused, caught by the pre-existing
+      FR-1 D-pad suite.** Adding the Collections action made the header Row have
+      three children. Left to geometry, Up from a poster tile stopped resolving
+      to the header at all and landed on the rail, so the **search field became
+      unreachable** from the movies grid. The Up hop is now driven explicitly by
+      `MoviesScreen` (poster focus -> header first control), the same
+      deterministic pattern as Phase 2, and `library_dpad_test.dart` was
+      updated to `Up -> Collections -> Right -> search field` with its
+      `expectSearchOwnsFocus` reachability assertion intact.
+- [x] **A second overflow, caught by `movies_screen_test.dart`.** With three
+      fixed-width header children the header Row overflowed by 4.3 px at the
+      800 px default test width. The title is now `Flexible` with ellipsis and
+      the search field shrinks on narrow viewports.
+- [x] Two autofocus candidates on one screen (Back button and first tile) made
+      entry focus a race, so the Back buttons no longer autofocus and entry
+      focus belongs to the first tile, matching the library grids.
+- [x] Entry-focus ownership and the rail contract are pinned by tests, not left
+      to convention: the rail test asserts all five labels sit left of 160 px
+      and that `Collections` sits right of it (content area).
 
 ## Phase 5: Build, device evidence, sign-off
 

@@ -83,26 +83,76 @@
       its node and shows a cue). The Home D-pad suites, which do walk
       Continue Watching, are unchanged and green.
 
-## Phase 2: Episode focus (FR-2)
+## Phase 2: Episode focus (FR-2) [checkpoint: pending]
 
-- [ ] Red: D-pad episode walk on the real `SeriesDetailScreen`. Down from the
-      chip block reaches episode 1, walks episodes in order, reaches the
-      `ActionBar` after the last episode, and every stop is interactive. Fails
-      today: Down 2 already lands on `Search All Missing`.
-- [ ] Red: Select on an episode row plays it; Select on a row without a file
-      searches for it. The second assertion fails today because
-      `onPlayEpisode` silently does nothing when `hasFile` is false.
-- [ ] Green: make the whole episode row one focusable control with the shared
-      focus cue; keep the per-episode search as a secondary stop reached with
-      Right.
-- [ ] Green: explicit traversal order. Season chips and episode rows carry
-      numeric orders (chips first, rows after); `ActionBar` takes the order
-      after the last row. Order must not depend on geometry.
-- [ ] Green: wire Select to play-or-search in `SeriesDetailScreen`.
-- [ ] Gate: `flutter analyze` clean; `flutter test` green, including the
-      existing `library_dpad_test.dart` and `home_screen_dpad_test.dart`
-      reachability suites, which must stay green unchanged.
-- [ ] Checkpoint commit.
+- [x] Red: D-pad episode walk on the real `SeriesDetailScreen`. New
+      `test/features/library/episode_focus_test.dart` (7 tests) drives the real
+      screen at the device viewport. **Red confirmed with 6 failures**, e.g.
+      `Down from the season chips must reach episode 1; it landed on
+      "Search All Missing"`, `Select on an episode without a file must search
+      for it, not do nothing`.
+- [x] Red: Select on an episode row plays it; Select on a row without a file
+      searches for it.
+- [x] Green: the whole episode row is one focusable control with the shared
+      focus cue; the per-episode search stays reachable with Right; the play
+      glyph became an affordance only (`ExcludeFocus`), so one row is one stop.
+- [x] Green: the D-pad walk over the list is deterministic and owned by
+      `EpisodeList`: Down chips -> row 1 -> ... -> last row -> host exit; Up
+      mirrors it; Right walks the chips and then reaches a row's search control;
+      Left returns from the search control to its row. `Left` from the chip
+      block is deliberately left to the shell so the rail stays reachable.
+- [x] Green: `SeriesDetailScreen` owns the two remaining hops: Down from the
+      header enters the first chip, and Down past the last episode focuses the
+      **first** action-bar button.
+- [x] Green: Select plays when the file exists and searches when it does not.
+      The old code passed a play callback that silently did nothing for a
+      missing episode.
+- [x] Gate: `flutter analyze` clean; `flutter test` green — **356 passed**
+      (baseline 349, +7 new).
+
+### Phase 2 measured result (real `SeriesDetailScreen`, device viewport)
+
+```
+entry  -> node=FocusableAction                  cue=true  "Back"
+down 1 -> node=EpisodeList.chip                 cue=true  "S1 3/3"
+down 2 -> node=EpisodeList.row                  cue=true  "1 S1E1 Bluray-1080p"
+down 3 -> node=EpisodeList.row                  cue=true  "2 S1E2 Bluray-1080p"
+down 4 -> node=EpisodeList.row                  cue=true  "3 S1E3 Bluray-1080p"
+down 5 -> node=SeriesDetail.actionBar.first     cue=true  "Search All Missing"
+down 6 -> node=SeriesDetail.actionBar.first     cue=true  "Search All Missing"  (last stop)
+up 1   -> node=EpisodeList.row                  cue=true  "3 S1E3"
+up 2   -> node=EpisodeList.row                  cue=true  "2 S1E2"
+right  -> node=EpisodeList.rowSearch            cue=true
+left   -> node=EpisodeList.row                  cue=true  "2 S1E2"
+```
+
+`Delete Series` is never a stop in the walk, and `cue=true` on every stop means
+every stop renders a visible focus cue (`focusIsInteractive()`).
+
+- [x] **Three framework findings, each measured rather than assumed, all
+      recorded because each one silently broke the fix:**
+      1. **Numeric traversal orders were not enough.** A probe over every focus
+         node showed the orders were attached correctly (`Search All Missing`
+         100000, `Delete Series` 100001), yet Down still landed on Delete: the
+         episode rows span x 189..1252, and the button nearest a row's centre
+         is Delete. So the last hop is delegated to the host instead of left to
+         geometry. Removing the inner `FocusTraversalGroup` from `EpisodeList`
+         was also necessary, because an inner group scopes traversal to itself.
+      2. **`ChoiceChip` ignores `requestFocus()` on an external node.** Driving
+         the chip's own `focusNode` did nothing
+         (`requestFocus` returned, `hasPrimaryFocus=false`) and focus fell
+         through to the rail's `Home`. The chip is now the visual only, wrapped
+         in a `FocusableAction` that owns focus.
+      3. **`ExcludeFocus` cannot wrap the focusable.** It also sets
+         `descendantsAreFocusable: false`, which rejected the wrapper's own
+         focus request (`hasPrimaryFocus=false`). Only the chip itself is
+         excluded, so there is still one focus cue and not two.
+- [x] One test-harness trap worth recording: after Select routes to
+      `PlaybackScreen`, `pumpAndSettle` never returns, because the fake player
+      never reports `playing`, the status stays `loading`, and the buffering
+      spinner animates forever. The suite uses a bounded `pressOnce` for that
+      step. `playbackServiceProvider` is overridden with `FakeMediaPlayer` for
+      the same reason `playback_overlay_test.dart` does it.
 
 ## Phase 3: Next-episode autoplay (FR-3)
 

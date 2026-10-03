@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/mediarr_theme.dart';
@@ -18,8 +19,7 @@ class SeriesDetailScreen extends ConsumerStatefulWidget {
   final Series series;
 
   @override
-  ConsumerState<SeriesDetailScreen> createState() =>
-      _SeriesDetailScreenState();
+  ConsumerState<SeriesDetailScreen> createState() => _SeriesDetailScreenState();
 }
 
 class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
@@ -27,6 +27,44 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
   bool _loading = true;
   String? _error;
   final Map<int, int> _episodeSeasonMap = {};
+
+  /// FR-2: the first action-bar button. [EpisodeList] hands focus here when Down
+  /// leaves the last episode, so the walk never lands on `Delete Series`.
+  final FocusNode _firstActionFocusNode = FocusNode(
+    debugLabel: 'SeriesDetail.actionBar.first',
+  );
+
+  /// FR-2: handle on the episode list, so Down from the page header enters the
+  /// list instead of jumping to the rail.
+  final GlobalKey<EpisodeListState> _episodeListKey =
+      GlobalKey<EpisodeListState>();
+
+  /// Whether the Back control currently holds focus.
+  bool _backFocused = false;
+
+  @override
+  void dispose() {
+    _firstActionFocusNode.dispose();
+    super.dispose();
+  }
+
+  /// FR-2: Down from the header enters the episode list.
+  ///
+  /// Left to itself Flutter resolves that press geometrically and picks the
+  /// rail, because the rail sits nearer to the header button than the season
+  /// chips do. Measured: Down from `Back` landed on `Home` in the rail.
+  KeyEventResult _handleKey(FocusNode node, KeyEvent event) {
+    if (event is! KeyDownEvent) return KeyEventResult.ignored;
+    if (event.logicalKey != LogicalKeyboardKey.arrowDown) {
+      return KeyEventResult.ignored;
+    }
+    if (!_backFocused) return KeyEventResult.ignored;
+    final list = _episodeListKey.currentState;
+    if (list == null) return KeyEventResult.ignored;
+    return list.focusFirstChip()
+        ? KeyEventResult.handled
+        : KeyEventResult.ignored;
+  }
 
   @override
   void initState() {
@@ -100,32 +138,34 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
                 ),
               )
             : _error != null
-                ? Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.error,
-                            color: MediarrColors.statusError, size: 48),
-                        const SizedBox(height: 12),
-                        Text(
-                          'Error loading series detail',
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          _error!,
-                          style: const TextStyle(
-                              color: MediarrColors.textMuted),
-                        ),
-                        const SizedBox(height: 16),
-                        ElevatedButton(
-                          onPressed: _loadDetail,
-                          child: const Text('Retry'),
-                        ),
-                      ],
+            ? Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.error,
+                      color: MediarrColors.statusError,
+                      size: 48,
                     ),
-                  )
-                : _buildContent(context, series),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Error loading series detail',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      _error!,
+                      style: const TextStyle(color: MediarrColors.textMuted),
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: _loadDetail,
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              )
+            : _buildContent(context, series),
       ),
     );
   }
@@ -159,69 +199,89 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
     ];
 
     return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 0, 0),
-            child: FocusableAction(
-              autofocus: true,
-              variant: FocusableActionVariant.button,
-              onSelect: () => Navigator.of(context).pop(),
-              borderRadius: 8,
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                color: MediarrColors.surfaceCard,
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.arrow_back,
-                        size: 28, color: MediarrColors.textPrimary),
-                    SizedBox(width: 8),
-                    Text(
-                      'Back',
-                      style: TextStyle(
+      // FR-2: key anchor for the Down-from-header hop. `canRequestFocus` is
+      // false so it is never a traversal stop itself.
+      child: Focus(
+        canRequestFocus: false,
+        skipTraversal: true,
+        onKeyEvent: _handleKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 0, 0),
+              child: FocusableAction(
+                autofocus: true,
+                variant: FocusableActionVariant.button,
+                onFocusChange: (focused) => _backFocused = focused,
+                onSelect: () => Navigator.of(context).pop(),
+                borderRadius: 8,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
+                  color: MediarrColors.surfaceCard,
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.arrow_back,
+                        size: 28,
                         color: MediarrColors.textPrimary,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w600,
                       ),
-                    ),
-                  ],
+                      SizedBox(width: 8),
+                      Text(
+                        'Back',
+                        style: TextStyle(
+                          color: MediarrColors.textPrimary,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-          MediaHero(
-            posterUrl: series.posterUrl,
-            title: series.title,
-            subtitle: series.year?.toString(),
-          ),
-          MetadataSection(
-            synopsis: series.overview,
-            network: series.network,
-          ),
-          if (series.seasons.isNotEmpty)
+            MediaHero(
+              posterUrl: series.posterUrl,
+              title: series.title,
+              subtitle: series.year?.toString(),
+            ),
+            MetadataSection(synopsis: series.overview, network: series.network),
+            if (series.seasons.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                child: FileInfoCard(sizeBytes: series.sizeOnDisk),
+              ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: FileInfoCard(
-                sizeBytes: series.sizeOnDisk,
+              child: EpisodeList(
+                key: _episodeListKey,
+                data: _buildEpisodeData(series),
+                // FR-2: play is unconditional here. The list routes Select to
+                // search when the episode has no file, so a missing episode is
+                // no longer a silent no-op.
+                onPlayEpisode: _playEpisode,
+                onSearchEpisode: _searchEpisode,
+                onExitDown: () => _firstActionFocusNode.requestFocus(),
               ),
             ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: EpisodeList(
-              data: _buildEpisodeData(series),
-              onPlayEpisode: (episode) {
-                if (episode.hasFile) {
-                  _playEpisode(episode);
-                }
-              },
-              onSearchEpisode: _searchEpisode,
+            // FR-2: the series controls sort after the episode rows, so Down
+            // walks the episodes first and reaches these only at the end.
+            FocusTraversalOrder(
+              order: const NumericFocusOrder(kPostEpisodeOrderBase),
+              child: ActionBar(
+                actions: actions,
+                firstActionFocusNode: _firstActionFocusNode,
+              ),
             ),
-          ),
-          ActionBar(actions: actions),
-        ],
+          ],
+        ),
       ),
     );
   }

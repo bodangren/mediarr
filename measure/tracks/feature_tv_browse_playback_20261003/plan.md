@@ -83,7 +83,7 @@
       its node and shows a cue). The Home D-pad suites, which do walk
       Continue Watching, are unchanged and green.
 
-## Phase 2: Episode focus (FR-2) [checkpoint: pending]
+## Phase 2: Episode focus (FR-2) [checkpoint: 4b5c6ba]
 
 - [x] Red: D-pad episode walk on the real `SeriesDetailScreen`. New
       `test/features/library/episode_focus_test.dart` (7 tests) drives the real

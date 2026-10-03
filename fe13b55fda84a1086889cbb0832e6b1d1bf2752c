@@ -1,0 +1,40 @@
+Phase 4 verification report (FR-4 collections browsing)
+
+Commands and outcomes:
+- flutter analyze -> No issues found! (ran in 4.0s)
+- CI=true flutter test -> 384 passed, 0 failed (baseline 374, +10 new)
+
+What shipped:
+- lib/shared/models/collection.dart (new): MediaCollection, CollectionMovie.
+- lib/shared/services/api_client.dart: getCollections, getCollectionMovies.
+- lib/features/library/collections_screen.dart (new): CollectionsScreen,
+  CollectionCard, CollectionDetailScreen, both on the FR-1 shared grid
+  delegate, entry focus on the first tile, empty state.
+- lib/features/library/movies_screen.dart: Collections header action plus the
+  explicit Up-from-grid hop and a responsive header.
+- lib/shared/widgets/poster_card.dart: onFocusChange passthrough.
+- test/features/library/collections_screen_test.dart (new): 9 tests.
+
+Red state before the phase: the client had zero collection code, so the
+collections screen, the models, and the API methods did not exist and the test
+file failed to compile.
+
+Two defects found and fixed on the way, both caught by tests:
+1. Adding the Collections action gave the header three children. Left to
+   geometry, Up from a poster tile stopped resolving to the header and landed
+   on the rail, so the pre-existing FR-1 suite caught a real regression: the
+   search field had become unreachable from the movies grid. The hop is now
+   driven explicitly, and library_dpad_test.dart was updated to
+   'Up -> Collections -> Right -> search field' with its reachability
+   assertion intact.
+2. The three-child header Row overflowed by 4.3 px at the 800 px default test
+   width. The title is now Flexible with ellipsis and the field shrinks on
+   narrow viewports.
+
+Why: the owner asked for collections of movies to be browsable on the TV. The
+server and the web UI already manage collections, so no server change was
+needed.
+
+Note on device verification: the live library DB denies the development user
+and no server was reachable on the LAN during this track, so whether the live
+library actually contains collections is still an open operator step (Phase 5).

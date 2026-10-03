@@ -154,7 +154,7 @@ every stop renders a visible focus cue (`focusIsInteractive()`).
       step. `playbackServiceProvider` is overridden with `FakeMediaPlayer` for
       the same reason `playback_overlay_test.dart` does it.
 
-## Phase 3: Next-episode autoplay (FR-3) [checkpoint: pending]
+## Phase 3: Next-episode autoplay (FR-3) [checkpoint: c79d29b]
 
 - [x] Red: queue construction test plus autoplay tests on the real
       `PlaybackScreen` with `FakeMediaPlayer`. **Red confirmed as a compile

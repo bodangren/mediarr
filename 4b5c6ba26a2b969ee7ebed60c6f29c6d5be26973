@@ -1,0 +1,55 @@
+Phase 2 verification report (FR-2 episode focus)
+
+Commands and outcomes:
+- flutter analyze -> No issues found! (ran in 4.1s)
+- CI=true flutter test -> 356 passed, 0 failed (baseline 349, +7 new)
+
+Measured D-pad walk on the real SeriesDetailScreen at the device viewport
+(1920x1080, density 240, dpr 1.5 -> 1280x720 logical), 3-episode season 1
+plus a 2-episode season 2 with no files:
+
+  entry  -> node=FocusableAction              cue=true  "Back"
+  down 1 -> node=EpisodeList.chip             cue=true  "S1 3/3"
+  down 2 -> node=EpisodeList.row              cue=true  "1 S1E1"
+  down 3 -> node=EpisodeList.row              cue=true  "2 S1E2"
+  down 4 -> node=EpisodeList.row              cue=true  "3 S1E3"
+  down 5 -> node=SeriesDetail.actionBar.first cue=true  "Search All Missing"
+  down 6 -> node=SeriesDetail.actionBar.first cue=true  "Search All Missing"
+  up     -> walks back up the episodes
+  right  -> node=EpisodeList.rowSearch        cue=true
+  left   -> node=EpisodeList.row              cue=true  "2 S1E2"
+
+Before this phase the same walk was:
+  down 1 -> "S1 7/7"          (chip)
+  down 2 -> "Search All Missing"
+  down 3..8 -> stuck on "Search All Missing"
+so every episode was skipped and none could be selected.
+
+Files changed:
+- lib/shared/widgets/media_detail/episode_list.dart: episode rows became real
+  focus stops; deterministic D-pad walk owned by the widget; season chip focus
+  owned by a FocusableAction wrapper; public EpisodeListState with
+  focusFirstChip/focusFirstRow.
+- lib/shared/widgets/media_detail/action_bar.dart: firstActionFocusNode and
+  explicit left-to-right traversal order.
+- lib/features/library/series_detail_screen.dart: anchor that routes Down from
+  the header into the list; first-action focus node for the exit; Select now
+  plays or searches (no silent no-op for a missing episode).
+- test/features/library/episode_focus_test.dart (new): 7 tests.
+
+Three framework findings, each measured rather than assumed:
+1. Numeric traversal orders were attached correctly but did not win. Episode
+   rows span x 189..1252, so geometry picked the action-bar button nearest the
+   row centre, which was 'Delete Series'. The last hop is now delegated to the
+   host. An inner FocusTraversalGroup also had to be removed, because it scopes
+   traversal to itself.
+2. ChoiceChip ignores requestFocus() on an external node (hasPrimaryFocus
+   stayed false), so the chip is now the visual only and a FocusableAction owns
+   focus.
+3. ExcludeFocus sets descendantsAreFocusable: false, which also rejects the
+   wrapper's own focus request. Only the chip is excluded.
+
+Why: the owner reported that Down from the season chips skipped the episodes
+entirely and landed on the bottom buttons, leaving no episode selectable with
+the remote. Delete Series is now unreachable by Down, which removes a
+destructive action from a stray Select.

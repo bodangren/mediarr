@@ -20,9 +20,9 @@ import 'track_selection.dart';
 /// text on the TV's 1280x720 logical viewport.
 const SubtitleViewConfiguration kPlaybackSubtitleViewConfiguration =
     SubtitleViewConfiguration(
-  style: tvSubtitleTextStyle,
-  textScaler: TextScaler.noScaling,
-);
+      style: tvSubtitleTextStyle,
+      textScaler: TextScaler.noScaling,
+    );
 
 /// Fullscreen playback surface. Phase 4b+ follow-up:
 ///   * No sidebar; rendered as a top-level /playback route outside the rail.
@@ -260,8 +260,9 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
     final item = _currentItem;
     final mediaId = item?.mediaId ?? widget.mediaId;
     final mediaType = widget.mediaType;
-    final fallbackUrl =
-        item == null ? widget.streamUrl : _apiStreamUrl(mediaId);
+    final fallbackUrl = item == null
+        ? widget.streamUrl
+        : _apiStreamUrl(mediaId);
     final fallbackTitle = item == null ? widget.title : item.label;
 
     _resolvedStreamUrl = fallbackUrl;
@@ -270,8 +271,10 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
     Duration resumeFrom = Duration.zero;
     var externalSubtitles = <ExternalSubtitleSource>[];
     try {
-      final manifest =
-          await apiClient.getPlaybackManifest(mediaId: mediaId, type: mediaType);
+      final manifest = await apiClient.getPlaybackManifest(
+        mediaId: mediaId,
+        type: mediaType,
+      );
       if (manifest != null) {
         final baseUrl = ref.read(apiClientProvider).baseUrl ?? '';
         _resolvedStreamUrl = manifest.streamUrl.startsWith('http')
@@ -280,14 +283,16 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
         _resolvedTitle = manifest.metadata.title;
         resumeFrom = Duration(seconds: manifest.resume?.position ?? 0);
         externalSubtitles = manifest.subtitles
-            .map((track) => ExternalSubtitleSource(
-                  id: track.id,
-                  url: _resolveManifestUrl(track.url, baseUrl),
-                  languageCode: track.languageCode,
-                  isForced: track.isForced,
-                  isHi: track.isHi,
-                  format: track.format,
-                ))
+            .map(
+              (track) => ExternalSubtitleSource(
+                id: track.id,
+                url: _resolveManifestUrl(track.url, baseUrl),
+                languageCode: track.languageCode,
+                isForced: track.isForced,
+                isHi: track.isHi,
+                format: track.format,
+              ),
+            )
             .toList();
       }
     } catch (_) {
@@ -336,8 +341,11 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
     }
   }
 
-  bool _handleKeyEvent(KeyEvent event, PlaybackService service,
-      PlaybackState playbackState) {
+  bool _handleKeyEvent(
+    KeyEvent event,
+    PlaybackService service,
+    PlaybackState playbackState,
+  ) {
     if (event is! KeyDownEvent) return false;
     final key = event.logicalKey;
 
@@ -397,7 +405,8 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
         key == LogicalKeyboardKey.enter ||
         key == LogicalKeyboardKey.space) {
       final focus = FocusManager.instance.primaryFocus;
-      final controlHasFocus = focus != null &&
+      final controlHasFocus =
+          focus != null &&
           !identical(focus, _rootFocusNode) &&
           focus.context != null;
       if (!controlHasFocus) {
@@ -477,7 +486,8 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
                 onStop: _exitPlayback,
                 onBack: _exitPlayback,
                 // FR-3: a real skip-next when the queue has an item.
-                nextEpisode: widget.nextEpisode ??
+                nextEpisode:
+                    widget.nextEpisode ??
                     (_nextItem == null ? null : _advanceToNext),
               ),
 
@@ -488,8 +498,9 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
                 left: 0,
                 right: 0,
                 child: Center(
-                  child:
-                      _SubtitleDelayToast(label: playbackState.subtitleDelayToast!),
+                  child: _SubtitleDelayToast(
+                    label: playbackState.subtitleDelayToast!,
+                  ),
                 ),
               ),
 
@@ -517,7 +528,8 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
                   mediaType: widget.mediaType,
                   resumeFrom: Duration.zero,
                 ),
-                onNext: widget.nextEpisode ??
+                onNext:
+                    widget.nextEpisode ??
                     (_nextItem == null ? null : _advanceToNext),
                 onBack: _exitPlayback,
               ),
@@ -553,86 +565,97 @@ class _UpNextCard extends StatelessWidget {
     return Positioned.fill(
       child: ColoredBox(
         color: const Color(0xF0000000),
-        child: Center(
-          child: FocusTraversalGroup(
-            policy: OrderedTraversalPolicy(),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  'Up Next',
-                  style: TextStyle(
-                    color: MediarrColors.accentPrimary,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
+        // FR-8b: own scope so `Play now`'s autofocus fires when the card
+        // mounts over an already-focused playback screen (see
+        // _TransportOverlay for the full story).
+        child: FocusScope(
+          child: Center(
+            child: FocusTraversalGroup(
+              policy: OrderedTraversalPolicy(),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'Up Next',
+                    style: TextStyle(
+                      color: MediarrColors.accentPrimary,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  item.label,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 40,
-                    fontWeight: FontWeight.w700,
+                  const SizedBox(height: 16),
+                  Text(
+                    item.label,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 40,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  item.title,
-                  style: const TextStyle(color: Colors.white70, fontSize: 20),
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  cancelled ? 'Autoplay cancelled' : 'Starting in $secondsLeft',
-                  style: const TextStyle(color: Colors.white70, fontSize: 18),
-                ),
-                const SizedBox(height: 24),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    FocusableAction(
-                      autofocus: true,
-                      variant: FocusableActionVariant.button,
-                      borderRadius: 8,
-                      onSelect: onPlayNow,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 28, vertical: 14),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Text(
-                          'Play now',
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
+                  const SizedBox(height: 8),
+                  Text(
+                    item.title,
+                    style: const TextStyle(color: Colors.white70, fontSize: 20),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    cancelled
+                        ? 'Autoplay cancelled'
+                        : 'Starting in $secondsLeft',
+                    style: const TextStyle(color: Colors.white70, fontSize: 18),
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      FocusableAction(
+                        autofocus: true,
+                        variant: FocusableActionVariant.button,
+                        borderRadius: 8,
+                        onSelect: onPlayNow,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 28,
+                            vertical: 14,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Text(
+                            'Play now',
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontSize: 20,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 16),
-                    FocusableAction(
-                      variant: FocusableActionVariant.button,
-                      borderRadius: 8,
-                      onSelect: onCancel,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 28, vertical: 14),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.white),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Text(
-                          'Cancel',
-                          style: TextStyle(color: Colors.white, fontSize: 20),
+                      const SizedBox(width: 16),
+                      FocusableAction(
+                        variant: FocusableActionVariant.button,
+                        borderRadius: 8,
+                        onSelect: onCancel,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 28,
+                            vertical: 14,
+                          ),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.white),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Text(
+                            'Cancel',
+                            style: TextStyle(color: Colors.white, fontSize: 20),
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -700,140 +723,161 @@ class _TransportOverlay extends StatelessWidget {
     // them. Visibility itself is driven by `overlayVisible` in the parent.
     // OrderedTraversalPolicy matches NetflixScaffold, whose groups walk with
     // the D-pad on every browse screen.
-    return FocusTraversalGroup(
-      policy: OrderedTraversalPolicy(),
-      child: Stack(
-        children: [
-          const Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Color(0xE6000000),
-                    Color(0x00000000),
-                    Color(0x00000000),
-                    Color(0xE6000000),
-                  ],
-                  stops: [0.0, 0.18, 0.6, 1.0],
+    //
+    // FR-8b: the overlay gets its OWN FocusScope. It mounts and unmounts with
+    // visibility, and Flutter's `autofocus` only requests focus when the
+    // enclosing scope has no focused child. Sharing the playback root's
+    // scope meant the root node (which takes focus every time the overlay
+    // hides) suppressed the autofocus on remount — the overlay came up with
+    // no control focused, arrows did nothing, and Select fell through to a
+    // global play/pause fallback (owner report 2026-10-03). A fresh scope has
+    // no focused child, so Back's autofocus fires on every mount.
+    return FocusScope(
+      child: FocusTraversalGroup(
+        policy: OrderedTraversalPolicy(),
+        child: Stack(
+          children: [
+            const Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Color(0xE6000000),
+                      Color(0x00000000),
+                      Color(0x00000000),
+                      Color(0xE6000000),
+                    ],
+                    stops: [0.0, 0.18, 0.6, 1.0],
+                  ),
                 ),
               ),
             ),
-          ),
-          // Top bar.
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  _IconActionButton(
-                    icon: Icons.arrow_back,
-                    tooltip: 'Back',
-                    onPressed: onBack,
-                    autofocus: true,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                      ),
-                      overflow: TextOverflow.ellipsis,
+            // Top bar.
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    _IconActionButton(
+                      icon: Icons.arrow_back,
+                      tooltip: 'Back',
+                      onPressed: onBack,
+                      autofocus: true,
                     ),
-                  ),
-                  _IconActionButton(
-                    icon: Icons.stop_circle_outlined,
-                    tooltip: 'Stop playback',
-                    onPressed: onStop,
-                  ),
-                ],
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    _IconActionButton(
+                      icon: Icons.stop_circle_outlined,
+                      tooltip: 'Stop playback',
+                      onPressed: onStop,
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-          // Bottom: seek + transport + subtitle nudge.
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _SeekBar(state: state, service: service),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        _formatDuration(state.position),
-                        style: const TextStyle(color: Colors.white70, fontSize: 18),
-                      ),
-                      Text(
-                        _formatDuration(state.duration),
-                        style: const TextStyle(color: Colors.white70, fontSize: 18),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _IconActionButton(
-                        icon: Icons.replay_10,
-                        onPressed: () => service.seekRelative(
-                            const Duration(seconds: -10)),
-                      ),
-                      const SizedBox(width: 32),
-                      _IconActionButton(
-                        icon: state.status == PlaybackStatus.playing
-                            ? Icons.pause_circle_filled
-                            : Icons.play_circle_filled,
-                        size: 96,
-                        color: MediarrColors.accentPrimary,
-                        onPressed: service.togglePlayPause,
-                      ),
-                      const SizedBox(width: 32),
-                      _IconActionButton(
-                        icon: Icons.forward_10,
-                        onPressed: () => service.seekRelative(
-                            const Duration(seconds: 10)),
-                      ),
-                      if (nextEpisode != null) ...[
-                        const SizedBox(width: 24),
-                        _IconActionButton(
-                          icon: Icons.skip_next,
-                          onPressed: nextEpisode!,
+            // Bottom: seek + transport + subtitle nudge.
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _SeekBar(state: state, service: service),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          _formatDuration(state.position),
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 18,
+                          ),
+                        ),
+                        Text(
+                          _formatDuration(state.duration),
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 18,
+                          ),
                         ),
                       ],
-                      const SizedBox(width: 32),
-                      _IconActionButton(
-                        icon: Icons.closed_caption,
-                        onPressed: () =>
-                            _showSubtitlePicker(context, state, service),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  _SubtitleNudgeBar(service: service),
-                ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _IconActionButton(
+                          icon: Icons.replay_10,
+                          onPressed: () => service.seekRelative(
+                            const Duration(seconds: -10),
+                          ),
+                        ),
+                        const SizedBox(width: 32),
+                        _IconActionButton(
+                          icon: state.status == PlaybackStatus.playing
+                              ? Icons.pause_circle_filled
+                              : Icons.play_circle_filled,
+                          size: 96,
+                          color: MediarrColors.accentPrimary,
+                          onPressed: service.togglePlayPause,
+                        ),
+                        const SizedBox(width: 32),
+                        _IconActionButton(
+                          icon: Icons.forward_10,
+                          onPressed: () =>
+                              service.seekRelative(const Duration(seconds: 10)),
+                        ),
+                        if (nextEpisode != null) ...[
+                          const SizedBox(width: 24),
+                          _IconActionButton(
+                            icon: Icons.skip_next,
+                            onPressed: nextEpisode!,
+                          ),
+                        ],
+                        const SizedBox(width: 32),
+                        _IconActionButton(
+                          icon: Icons.closed_caption,
+                          onPressed: () =>
+                              _showSubtitlePicker(context, state, service),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    _SubtitleNudgeBar(service: service),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
   void _showSubtitlePicker(
-      BuildContext context, PlaybackState state, PlaybackService service) {
+    BuildContext context,
+    PlaybackState state,
+    PlaybackService service,
+  ) {
     final tracks = state.subtitleTracks;
     showDialog<void>(
       context: context,
@@ -852,11 +896,15 @@ class _TransportOverlay extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     ListTile(
-                      title: const Text('Off',
-                          style: TextStyle(color: Colors.white)),
+                      title: const Text(
+                        'Off',
+                        style: TextStyle(color: Colors.white),
+                      ),
                       trailing: state.selectedSubtitleIndex == null
-                          ? const Icon(Icons.check,
-                              color: MediarrColors.accentPrimary)
+                          ? const Icon(
+                              Icons.check,
+                              color: MediarrColors.accentPrimary,
+                            )
                           : null,
                       onTap: () {
                         service.selectSubtitle(null);
@@ -870,8 +918,10 @@ class _TransportOverlay extends StatelessWidget {
                           style: const TextStyle(color: Colors.white),
                         ),
                         trailing: state.selectedSubtitleIndex == i
-                            ? const Icon(Icons.check,
-                                color: MediarrColors.accentPrimary)
+                            ? const Icon(
+                                Icons.check,
+                                color: MediarrColors.accentPrimary,
+                              )
                             : null,
                         onTap: () {
                           service.selectSubtitle(i);
@@ -894,8 +944,7 @@ class _TransportOverlay extends StatelessWidget {
   String _trackLabel(SubtitleTrackInfo track, int index) {
     final parts = <String>[
       if (track.title != null && track.title!.isNotEmpty) track.title!,
-      if (track.language != null && track.language!.isNotEmpty)
-        track.language!,
+      if (track.language != null && track.language!.isNotEmpty) track.language!,
     ];
     final tag = parts.isEmpty ? 'Track ${index + 1}' : parts.join(' · ');
     return tag;
@@ -1024,10 +1073,7 @@ class _SubtitleNudgeBar extends StatelessWidget {
             variant: FocusableActionVariant.button,
             borderRadius: 6,
             child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 14,
-                vertical: 10,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
                 color: Colors.black.withValues(alpha: 0.6),
                 borderRadius: BorderRadius.circular(6),
@@ -1077,76 +1123,99 @@ class _CompletedOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ColoredBox(
-      color: const Color(0xE6000000),
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.check_circle,
-                color: MediarrColors.statusSuccess, size: 64),
-            const SizedBox(height: 16),
-            const Text(
-              'Playback Complete',
-              style: TextStyle(color: Colors.white, fontSize: 20),
-            ),
-            const SizedBox(height: 24),
-            Wrap(
-              spacing: 12,
-              children: [
-                FocusableAction(
-                  onSelect: onReplay,
-                  variant: FocusableActionVariant.button,
-                  borderRadius: 6,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 20, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: const Text('Replay',
-                        style: TextStyle(
-                            color: Colors.black, fontWeight: FontWeight.w700)),
-                  ),
-                ),
-                if (onNext != null) ...[
-                  const SizedBox(width: 12),
+    // FR-8b: own scope (see _TransportOverlay) AND an explicit autofocus on
+    // the first action — without one, no control owned focus on this overlay
+    // at all, leaving it as dead as the transport overlay was.
+    return FocusScope(
+      child: ColoredBox(
+        color: const Color(0xE6000000),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.check_circle,
+                color: MediarrColors.statusSuccess,
+                size: 64,
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Playback Complete',
+                style: TextStyle(color: Colors.white, fontSize: 20),
+              ),
+              const SizedBox(height: 24),
+              Wrap(
+                spacing: 12,
+                children: [
                   FocusableAction(
-                    onSelect: onNext!,
+                    autofocus: true,
+                    onSelect: onReplay,
                     variant: FocusableActionVariant.button,
                     borderRadius: 6,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 10),
+                        horizontal: 20,
+                        vertical: 10,
+                      ),
                       decoration: BoxDecoration(
-                        color: Colors.white24,
+                        color: Colors.white,
                         borderRadius: BorderRadius.circular(6),
                       ),
-                      child: const Text('Next Episode',
-                          style: TextStyle(color: Colors.white)),
+                      child: const Text(
+                        'Replay',
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                  if (onNext != null) ...[
+                    const SizedBox(width: 12),
+                    FocusableAction(
+                      onSelect: onNext!,
+                      variant: FocusableActionVariant.button,
+                      borderRadius: 6,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white24,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Text(
+                          'Next Episode',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(width: 12),
+                  FocusableAction(
+                    onSelect: onBack,
+                    variant: FocusableActionVariant.button,
+                    borderRadius: 6,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.white),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Text(
+                        'Back',
+                        style: TextStyle(color: Colors.white),
+                      ),
                     ),
                   ),
                 ],
-                const SizedBox(width: 12),
-                FocusableAction(
-                  onSelect: onBack,
-                  variant: FocusableActionVariant.button,
-                  borderRadius: 6,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 20, vertical: 10),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.white),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: const Text('Back',
-                        style: TextStyle(color: Colors.white)),
-                  ),
-                ),
-              ],
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
       ),
     );

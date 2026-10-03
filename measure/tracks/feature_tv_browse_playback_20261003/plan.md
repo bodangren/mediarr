@@ -355,6 +355,50 @@ scripted checks had missed. Both are fixed, tested, and device-verified.
       re-verified with the new build.
 - [ ] Perceptual remote-only re-sign-off of the two fixes. Human-gated.
 
+### Defect C: the player overlay is not D-pad navigable (2026-10-03, second pass)
+
+- Owner report: "The player overlay is not navigable. arrows don't do
+  anything. Only enter to start and stop works, and it brings up the overlay
+  controls."
+- Root cause, measured in `overlay_navigation_test.dart`: the transport
+  overlay, Up Next card, and completed overlay all live in the same focus
+  scope as the playback root key-handler Focus. Flutter's `autofocus` only
+  requests focus when the enclosing scope has no focused child; the root node
+  takes focus every time the overlay hides (FR-8), so on remount the overlay's
+  `autofocus` silently did nothing. Focus stayed on the root — a full-screen
+  rect with `skipTraversal`, which yields no directional candidates — so
+  arrows did nothing. Select fell through to the root fallback and toggled
+  play/pause, exactly as reported. The completed overlay had the same disease
+  plus no `autofocus` at all, so after an episode ended no control owned
+  focus anywhere.
+- Two test traps had to be disarmed on the way. `pumpAndSettle` never returns
+  on this screen (the fake player's buffering spinner animates forever), so
+  the tests use bounded pumps. And all overlay buttons created identically
+  labeled `FocusableAction` nodes, so the walk probe distinguishes stops by
+  node identity, not label — with labels alone, a moving walk looks stuck.
+- Green: each transient overlay now mounts inside its own `FocusScope`
+  (transport, Up Next, completed). A fresh scope has no focused child, so the
+  existing `autofocus` controls fire on every mount. The completed overlay
+  also gained `autofocus` on Replay. When a scope unmounts, the FR-8 listener
+  still returns focus to the root key handler.
+- Red: `test/features/playback/overlay_navigation_test.dart` (6 tests):
+  control owns focus on first appearance and on RE-appearance (the device
+  state), arrows visit at least 3 distinct stops, Select activates the
+  focused Back control (pops the route) instead of the global fallback, and
+  focus lands on the Up Next card's `Play now` and the completed overlay's
+  `Replay` when they appear.
+- Gate: `flutter analyze` clean; `flutter test` green — **392 passed**
+  (baseline 386, +6 new).
+- Device-verified on `192.168.10.60` with the release build:
+  `device-20261003/repro/o1-wake.png` (MD5 `90ad7f457790a9054bec0f7b01ffeed1`)
+  shows the overlay woken with the Back control focused; `o2-right.png`,
+  `o3-down.png`, `o4-left.png` (MD5s `484ee944…`, `f6d376c6…`, `ee76a786…`)
+  show the ring walking Stop → play/pause → rewind; `o5-endcard.png` (kept as
+  `v7-upnext.png`, MD5 `6843ea2f026701b3068328ea1d6bd419`) shows the Up Next
+  card with `Play now` focused. The completed-overlay focus is covered by the
+  widget test; a scripted device frame was not captured because adb latency
+  repeatedly raced the 15 s countdown (recorded, not claimed).
+
 ### Phase 5 closing items
 
 - [x] Perceptual remote-only sign-off (first pass). Done by the owner and it

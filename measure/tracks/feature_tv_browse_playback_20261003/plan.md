@@ -197,7 +197,7 @@ every stop renders a visible focus cue (`focusIsInteractive()`).
 - [x] Movies are excluded from autoplay by an explicit `mediaType` check rather
       than by convention.
 
-## Phase 4: Collections browsing (FR-4) [checkpoint: pending]
+## Phase 4: Collections browsing (FR-4) [checkpoint: fe13b55]
 
 - [x] Red: models, screens, and entry point. New
       `test/features/library/collections_screen_test.dart` (9 tests).

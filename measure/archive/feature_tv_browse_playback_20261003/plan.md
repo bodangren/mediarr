@@ -285,7 +285,7 @@ every stop renders a visible focus cue (`focusIsInteractive()`).
       screen and both API calls work; the empty state renders. This resolves
       the operator step flagged at spec time. To see real data, create a
       collection in the web UI (the SPA already has the full editor).
-## Phase 5b: Perceptual sign-off defects (2026-10-03 evening) [checkpoint: pending]
+## Phase 5b: Perceptual sign-off defects (2026-10-03 evening) [checkpoint: 82f6c7c]
 
 The owner's remote-only sign-off (Phase 5) found two defects that the Phase 5
 scripted checks had missed. Both are fixed, tested, and device-verified.
@@ -353,7 +353,14 @@ scripted checks had missed. Both are fixed, tested, and device-verified.
       (baseline 384, +2 new).
 - [x] Release APK rebuilt and installed on `192.168.10.60:5555`; both defects
       re-verified with the new build.
-- [ ] Perceptual remote-only re-sign-off of the two fixes. Human-gated.
+- [x] Perceptual remote-only re-sign-off of the fixes. Human-gated.
+      Owner confirmed on 2026-10-04 ("These work"); the re-sign-off covered
+      Defects A, B, and C, since C was fixed after the first sign-off pass.
+- [x] Final gate and archive per `measure/workflow.md`. Gates at archive:
+      `flutter analyze` clean; `flutter test` **392 passed**; root suite
+      `CI=true npx vitest run server/src tests` (Node 24) → **3121 passed,
+      0 failed**; `npm run build` (app) exit 0. Archive commit is the commit
+      that moves this folder to `measure/archive/`.
 
 ### Defect C: the player overlay is not D-pad navigable (2026-10-03, second pass)
 
@@ -403,8 +410,8 @@ scripted checks had missed. Both are fixed, tested, and device-verified.
 
 - [x] Perceptual remote-only sign-off (first pass). Done by the owner and it
       surfaced Defects A and B above — the scripted checks had missed both.
-- [ ] Final gate and archive per `measure/workflow.md`, after the 5b
-      re-sign-off.
+- [x] Final gate and archive per `measure/workflow.md`, after the 5b
+      re-sign-off. Done 2026-10-04 (see "Final gate and archive" above).
 
 ### Phase 5 incidental findings, recorded not fixed
 
@@ -421,11 +428,12 @@ scripted checks had missed. Both are fixed, tested, and device-verified.
 
 ## Follow-ups recorded, not in this track
 
-- [ ] Build a play queue when an episode is resumed from `HomeScreen` Continue
+- [x] Build a play queue when an episode is resumed from `HomeScreen` Continue
       Watching or the Movies screen, so autoplay also works on the resume path.
       Needs one extra `getSeriesDetail` call per resume. **Promoted to a defect
       by the owner's 2026-10-03 report and fixed in Phase 5b (Defect B); this
-      entry stays open only until the archive.**
+      entry stays open only until the archive.** Fixed and device-verified
+      2026-10-03; owner re-sign-off 2026-10-04.
 - [ ] `MetadataProvider` computes `tmdbCollectionId` and then drops it
       (`measure/tech-debt.md`, 2026-07-28), so movie-to-collection membership
       never reaches a search-result consumer. Collections therefore exist only
@@ -438,9 +446,9 @@ scripted checks had missed. Both are fixed, tested, and device-verified.
       of null (seen on the device in Phase 5). A `year > 0` guard in
       `PosterCard` fixes it. Left out of this track because it is outside the
       four owner requirements.
-- [ ] Autoplay does not apply when an episode is **resumed** from Continue
-      Watching, because no queue is built on that path (see the first
-      follow-up).
+- [x] Autoplay does not apply when an episode is **resumed** from Continue
+      Watching, because no queue is built on that path. **Fixed with Defect B
+      above (same root cause); re-sign-off 2026-10-04.**
 
 ## Risk register
 

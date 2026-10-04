@@ -1,0 +1,34 @@
+{
+  "id": "feature_tv_browse_playback_20261003",
+  "title": "TV Client Browse Density, Episode Focus, Autoplay, Collections",
+  "status": "done",
+  "created": "2026-10-03",
+  "completed": "2026-10-04",
+  "phases": 5,
+  "owner_scope": "Flutter TV client only (clients/mediarr-client). No server change required.",
+  "frs": ["FR-1", "FR-2", "FR-3", "FR-4"],
+  "source": "owner report 2026-10-03",
+  "phases_complete": [0, 1, 2, 3, 4, 5],
+  "checkpoints": {
+    "phase_1": "c232098",
+    "phase_2": "4b5c6ba",
+    "phase_3": "c79d29b",
+    "phase_4": "fe13b55",
+    "phase_5": "c775652",
+    "phase_5b": "82f6c7c"
+  },
+  "gates": {
+    "flutter_analyze": "no issues",
+    "flutter_test": "392 passed, 0 failed",
+    "root_suite": "3121 passed, 0 failed, 18 skipped (Node 24.18.0)",
+    "app_build": "exit 0"
+  },
+  "device_evidence": "device-20261003/",
+  "sign_off": "Owner perceptual re-sign-off 2026-10-04: Defects A, B, C confirmed fixed on device",
+  "open": [],
+  "follow_ups_moved_to_tech_debt": [
+    "Series tiles render year 0 (PosterCard year > 0 guard)",
+    "SeeAllScreen/SearchScreen desktop-form-factor density perceptual check",
+    "tmdbCollectionId already tracked in tech-debt.md (2026-07-28 row)"
+  ]
+}

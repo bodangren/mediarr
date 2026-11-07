@@ -130,6 +130,8 @@ class PlaybackService extends StateNotifier<PlaybackState> {
     this._apiClient, {
     MediaPlayer? player,
     SubtitleRenderer? subtitleRenderer,
+    this.retryDelay = const Duration(milliseconds: 1500),
+    this.maxOpenRetries = 2,
   }) : super(const PlaybackState()) {
     final defaultPlayer = player ?? MediaKitMediaPlayer();
     _player = defaultPlayer;
@@ -141,6 +143,24 @@ class PlaybackService extends StateNotifier<PlaybackState> {
   }
 
   final MediarrApiClient _apiClient;
+
+  /// Delay before automatically retrying a failed stream open.
+  final Duration retryDelay;
+
+  /// How many times a failed open is retried before the error is shown.
+  ///
+  /// Measured 2026-11-07: the server's event loop stalls (node-cron reported
+  /// missed executions at the same minute) and a sleeping 4 TB drive makes the
+  /// first byte take >3 s, so libmpv reported "Failed to open" for files that
+  /// serve HTTP 206 a second later. A silent retry turns that into a normal
+  /// start instead of an error the viewer has to dismiss.
+  final int maxOpenRetries;
+
+  /// The parameters of the in-flight play, kept so a failed open can retry.
+  Map<String, dynamic>? _lastPlayRequest;
+  int _openRetries = 0;
+  Timer? _openRetryTimer;
+
   late final MediaPlayer _player;
   late final SubtitleRenderer _subtitleRenderer;
   Timer? _progressReportTimer;
@@ -173,6 +193,18 @@ class PlaybackService extends StateNotifier<PlaybackState> {
     List<ExternalSubtitleSource> externalSubtitles = const [],
   }) async {
     final startPosition = normalizeResumeOffset(resumeFrom);
+    _openRetryTimer?.cancel();
+    // A fresh user-initiated play resets the retry budget; a retry of the same
+    // request re-enters play() with the budget intact.
+    if (!_isRetryingOpen) _openRetries = 0;
+    _lastPlayRequest = {
+      'streamUrl': streamUrl,
+      'title': title,
+      'mediaId': mediaId,
+      'mediaType': mediaType,
+      'resumeFrom': startPosition,
+      'externalSubtitles': externalSubtitles,
+    };
 
     // Per-media reset of subtitle timing nudge (FR-7).
     await _subtitleRenderer.setDelay(Duration.zero);
@@ -320,6 +352,8 @@ class PlaybackService extends StateNotifier<PlaybackState> {
     // A screen that is leaving may run its stop after the provider was
     // disposed (widget tests, hot restart). Never touch a dead notifier.
     if (!mounted) return;
+    _openRetryTimer?.cancel();
+    _openRetries = 0;
     _progressReportTimer?.cancel();
     _overlayHideTimer?.cancel();
     _subtitleToastTimer?.cancel();
@@ -339,6 +373,34 @@ class PlaybackService extends StateNotifier<PlaybackState> {
 
     if (!mounted) return;
     state = const PlaybackState(overlayVisible: false);
+  }
+
+  bool _isRetryingOpen = false;
+
+  /// Retries the current stream once or twice before surfacing the error.
+  void _scheduleOpenRetry() {
+    if (_openRetries >= maxOpenRetries) return;
+    final request = _lastPlayRequest;
+    if (request == null) return;
+    _openRetries += 1;
+    _openRetryTimer?.cancel();
+    _openRetryTimer = Timer(retryDelay, () async {
+      if (!mounted) return;
+      _isRetryingOpen = true;
+      try {
+        await play(
+          streamUrl: request['streamUrl'] as String,
+          title: request['title'] as String,
+          mediaId: request['mediaId'] as int,
+          mediaType: request['mediaType'] as String,
+          resumeFrom: request['resumeFrom'] as Duration,
+          externalSubtitles:
+              (request['externalSubtitles'] as List).cast<ExternalSubtitleSource>(),
+        );
+      } finally {
+        _isRetryingOpen = false;
+      }
+    });
   }
 
   /// Playback session ownership.
@@ -367,6 +429,8 @@ class PlaybackService extends StateNotifier<PlaybackState> {
   /// play → exit → play sequence starts from a known-good state (status
   /// loading, no stale tracks, overlay hidden, subtitle reset to 0).
   void resetForNewPlayback() {
+    _openRetryTimer?.cancel();
+    _openRetries = 0;
     _progressReportTimer?.cancel();
     _overlayHideTimer?.cancel();
     _subtitleToastTimer?.cancel();
@@ -499,7 +563,9 @@ class PlaybackService extends StateNotifier<PlaybackState> {
         'mediaType': state.mediaType,
         'position': state.position.inSeconds,
         'duration': state.duration.inSeconds,
+        'attempt': _openRetries,
       });
+      _scheduleOpenRetry();
     });
 
     _player.tracks.listen(_onTracks);

@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -105,6 +108,44 @@ class SettingsScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 24),
+            // Dedicated-box escape hatch: opens the Android Home-app picker so
+            // the TV can return to its stock launcher without ADB.
+            Align(
+              alignment: Alignment.centerLeft,
+              child: FocusableAction(
+                variant: FocusableActionVariant.button,
+                borderRadius: 8,
+                onSelect: () => _openSystemHomeSettings(context, ref),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 14,
+                  ),
+                  decoration: BoxDecoration(
+                    color: MediarrColors.surfaceCard,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: MediarrColors.borderSubtle),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.tv,
+                          color: MediarrColors.textSecondary, size: 24),
+                      SizedBox(width: 10),
+                      Text(
+                        'Android home app',
+                        style: TextStyle(
+                          color: MediarrColors.textPrimary,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
             Align(
               alignment: Alignment.centerLeft,
               child: FocusableAction(
@@ -177,6 +218,30 @@ class _SettingsRow extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Opens Android's "Home app" picker (dedicated-box escape hatch).
+///
+/// When Mediarr is the launcher a viewer can still return the box to its stock
+/// launcher without ADB. Failures are reported, never thrown.
+Future<void> _openSystemHomeSettings(
+  BuildContext context,
+  WidgetRef ref,
+) async {
+  const channel = MethodChannel('mediarr/system');
+  try {
+    await channel.invokeMethod<bool>('openHomeSettings');
+  } catch (error, stack) {
+    unawaited(ref.read(errorReporterProvider).report(
+          message: 'openHomeSettings failed: $error',
+          stack: stack.toString(),
+          severity: 'system',
+        ));
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Android settings are not available')),
     );
   }
 }

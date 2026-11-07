@@ -266,6 +266,76 @@ void main() {
     });
   });
 
+  group('PlaybackService — slow/failed open retry (2026-11-07)', () {
+    late FakeMediaPlayer player;
+    late FakeSubtitleRenderer renderer;
+    late PlaybackService service;
+
+    setUp(() {
+      player = FakeMediaPlayer();
+      renderer = FakeSubtitleRenderer();
+      service = PlaybackService(
+        MediarrApiClient(),
+        player: player,
+        subtitleRenderer: renderer,
+        retryDelay: const Duration(milliseconds: 20),
+        maxOpenRetries: 1,
+      );
+    });
+
+    tearDown(() async {
+      await service.stop();
+      await player.dispose();
+    });
+
+    testWidgets('a failed open is retried automatically instead of erroring', (
+      tester,
+    ) async {
+      await tester.runAsync(() async {
+        await service.play(
+          streamUrl: 'http://example.com/ep.mkv',
+          title: 'Episode',
+          mediaId: 1094,
+          mediaType: 'episode',
+        );
+        expect(player.openCalls, hasLength(1));
+
+        // libmpv reports this when the server is briefly too slow (event-loop
+        // stall / drive spin-up), even though the file serves 206 a moment
+        // later.
+        player.emitError(
+          'Failed to open http://example.com/ep.mkv.',
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 200));
+      });
+
+      expect(
+        player.openCalls.length,
+        greaterThanOrEqualTo(2),
+        reason: 'The service must retry a failed open before surfacing it as '
+            'a playback error.',
+      );
+    });
+
+    test('retry budget is bounded so a dead URL cannot loop forever', () async {
+      await service.play(
+        streamUrl: 'http://example.com/gone.mkv',
+        title: 'Episode',
+        mediaId: 5,
+        mediaType: 'episode',
+      );
+      player.emitError('Failed to open');
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      player.emitError('Failed to open');
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      player.emitError('Failed to open');
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+
+      // 1 initial open + at most maxOpenRetries retries.
+      expect(player.openCalls.length, lessThanOrEqualTo(2));
+    });
+  });
+
   group('PlaybackService — default track selection (FR-6)', () {
     late FakeMediaPlayer player;
     late FakeSubtitleRenderer renderer;

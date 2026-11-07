@@ -257,7 +257,13 @@ class _LeanbackScaffoldState extends State<LeanbackScaffold> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Focus(
+      // Dedicated-box mode: the shell route is the bottom of the stack, so a
+      // Back press here would quit the launcher and leave the TV on a blank
+      // screen. Detail and playback routes sit above this one and pop
+      // normally.
+      body: PopScope(
+        canPop: false,
+        child: Focus(
         onKeyEvent: _handleShellKey,
         child: FocusTraversalGroup(
           policy: OrderedTraversalPolicy(),
@@ -291,6 +297,7 @@ class _LeanbackScaffoldState extends State<LeanbackScaffold> {
               ),
             ],
           ),
+        ),
         ),
       ),
     );

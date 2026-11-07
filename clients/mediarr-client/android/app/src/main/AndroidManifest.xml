@@ -37,6 +37,17 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
                 <category android:name="android.intent.category.LEANBACK_LAUNCHER"/>
             </intent-filter>
+            <!--
+              Dedicated-box (kiosk) mode: opting in as a HOME app lets the
+              owner set Mediarr as the Android launcher, so the box boots
+              straight into the library. The stock launcher is never removed,
+              so recovery is always one `cmd package set-home-activity` away.
+            -->
+            <intent-filter android:priority="10">
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.HOME"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+            </intent-filter>
         </activity>
         <provider
             android:name="androidx.core.content.FileProvider"

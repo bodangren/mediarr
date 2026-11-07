@@ -1,9 +1,15 @@
-import type { ActivityItem } from '@/lib/api/activityApi';
+import type { RecentlyAddedItem } from '@/lib/api/dashboardApi';
 import { Link } from 'react-router-dom';
 
 interface RecentlyAddedWidgetProps {
-  items: ActivityItem[];
+  items: RecentlyAddedItem[];
   isLoading: boolean;
+}
+
+function detailPath(item: RecentlyAddedItem): string {
+  return item.type === 'series'
+    ? `/library/tv/${item.id}`
+    : `/library/movies/${item.id}`;
 }
 
 function formatRelativeTime(dateStr: string | undefined): string {
@@ -32,15 +38,7 @@ export function RecentlyAddedWidget({ items, isLoading }: RecentlyAddedWidgetPro
     );
   }
 
-  const recentItems = items
-    .filter(
-      (item) =>
-        item.eventType === 'IMPORT_COMPLETED' ||
-        item.eventType === 'MEDIA_ADDED' ||
-        item.eventType === 'MOVIE_IMPORTED' ||
-        item.eventType === 'SERIES_IMPORTED',
-    )
-    .slice(0, 8);
+  const recentItems = items.slice(0, 8);
 
   if (recentItems.length === 0) {
     return (
@@ -51,7 +49,9 @@ export function RecentlyAddedWidget({ items, isLoading }: RecentlyAddedWidgetPro
             View All
           </Link>
         </div>
-        <p className="text-xs text-text-secondary">No recent activity.</p>
+        <p className="text-xs text-text-secondary">
+          Nothing added yet. New movies and shows appear here after a scan or import.
+        </p>
       </div>
     );
   }
@@ -66,21 +66,22 @@ export function RecentlyAddedWidget({ items, isLoading }: RecentlyAddedWidgetPro
       </div>
       <div className="space-y-2">
         {recentItems.map((item) => (
-          <div key={item.id} className="flex items-start gap-2 py-1">
-            <span
-              className={`mt-0.5 h-2 w-2 rounded-full flex-shrink-0 ${
-                item.success === false ? 'bg-status-error' : 'bg-status-completed'
-              }`}
-            />
+          <Link
+            key={`${item.type}-${item.id}`}
+            to={detailPath(item)}
+            className="flex items-start gap-2 py-1 hover:bg-surface-2 rounded-sm px-1 -mx-1"
+          >
+            <span className="mt-0.5 h-2 w-2 rounded-full flex-shrink-0 bg-status-completed" />
             <div className="flex-1 min-w-0">
-              <p className="text-xs truncate" title={item.summary}>
-                {item.summary}
+              <p className="text-xs truncate" title={item.title}>
+                {item.title}
               </p>
               <p className="text-[10px] text-text-secondary">
-                {formatRelativeTime(item.occurredAt)}
+                {item.type === 'series' ? 'TV show' : 'Movie'} ·{' '}
+                {formatRelativeTime(item.added)}
               </p>
             </div>
-          </div>
+          </Link>
         ))}
       </div>
     </div>

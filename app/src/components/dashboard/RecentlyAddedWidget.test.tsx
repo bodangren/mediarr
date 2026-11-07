@@ -4,37 +4,51 @@ import { MemoryRouter } from 'react-router-dom';
 import { RecentlyAddedWidget } from './RecentlyAddedWidget';
 
 describe('RecentlyAddedWidget', () => {
-  it('includes MOVIE_IMPORTED and SERIES_IMPORTED entries', () => {
+  it('lists recently added media with its type and links to the detail page', () => {
     render(
       <MemoryRouter>
         <RecentlyAddedWidget
           isLoading={false}
           items={[
             {
-              id: 1,
-              eventType: 'MOVIE_IMPORTED',
-              summary: 'Movie import complete',
-              occurredAt: '2026-03-01T12:00:00.000Z',
+              id: 10,
+              title: 'The Walking Dead',
+              added: '2026-08-17T00:02:43.000Z',
+              type: 'series',
             },
             {
-              id: 2,
-              eventType: 'SERIES_IMPORTED',
-              summary: 'Episode import complete',
-              occurredAt: '2026-03-01T12:30:00.000Z',
-            },
-            {
-              id: 3,
-              eventType: 'RELEASE_GRABBED',
-              summary: 'Grabbed release',
-              occurredAt: '2026-03-01T13:00:00.000Z',
+              id: 20,
+              title: '1917',
+              added: '2026-08-15T12:53:51.000Z',
+              type: 'movie',
             },
           ]}
         />
       </MemoryRouter>,
     );
 
-    expect(screen.getByText('Movie import complete')).toBeInTheDocument();
-    expect(screen.getByText('Episode import complete')).toBeInTheDocument();
-    expect(screen.queryByText('Grabbed release')).not.toBeInTheDocument();
+    expect(screen.getByText('The Walking Dead')).toBeInTheDocument();
+    expect(screen.getByText('1917')).toBeInTheDocument();
+    expect(screen.getByText(/TV show/)).toBeInTheDocument();
+    expect(screen.getByText(/Movie/)).toBeInTheDocument();
+    expect(
+      screen.getByText('The Walking Dead').closest('a')?.getAttribute('href'),
+    ).toBe('/library/tv/10');
+    expect(screen.getByText('1917').closest('a')?.getAttribute('href')).toBe(
+      '/library/movies/20',
+    );
+  });
+
+  it('explains an empty library instead of claiming "no recent activity"', () => {
+    render(
+      <MemoryRouter>
+        <RecentlyAddedWidget isLoading={false} items={[]} />
+      </MemoryRouter>,
+    );
+
+    // The old copy came from filtering the activity feed and read as if the
+    // library were dead even when it was full of media.
+    expect(screen.queryByText('No recent activity.')).not.toBeInTheDocument();
+    expect(screen.getByText(/Nothing added yet/i)).toBeInTheDocument();
   });
 });

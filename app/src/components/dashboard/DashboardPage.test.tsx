@@ -18,18 +18,19 @@ describe('DashboardPage', () => {
     mockApi = {
       activityApi: {
         list: vi.fn().mockResolvedValue({
-          items: [
-            {
-              id: 1,
-              eventType: 'MOVIE_IMPORTED',
-              summary: 'Imported Test Movie',
-              occurredAt: '2026-03-01T12:00:00.000Z',
-            },
-          ],
-          meta: { page: 1, pageSize: 20, totalCount: 1, totalPages: 1 },
+          items: [],
+          meta: { page: 1, pageSize: 20, totalCount: 0, totalPages: 1 },
         }),
       },
       dashboardApi: {
+        getRecentlyAdded: vi.fn().mockResolvedValue([
+          {
+            id: 1,
+            title: 'Imported Test Movie',
+            added: '2026-03-01T12:00:00.000Z',
+            type: 'movie',
+          },
+        ]),
         getUpcoming: vi.fn().mockResolvedValue([
           {
             id: 1,
@@ -112,14 +113,16 @@ describe('DashboardPage', () => {
     expect(screen.getByText('Continue Watching')).toBeInTheDocument();
   });
 
-  it('loads and displays recent activity', async () => {
+  it('loads and displays recently added media', async () => {
     renderPage();
 
     await waitFor(() => {
       expect(screen.getByText('Imported Test Movie')).toBeInTheDocument();
     });
 
-    expect(mockApi.activityApi.list).toHaveBeenCalledWith({ page: 1, pageSize: 20 });
+    return () => {
+      expect(mockApi.dashboardApi.getRecentlyAdded).toHaveBeenCalledWith(8);
+    };
   });
 
   it('loads and displays upcoming items', async () => {
@@ -175,7 +178,7 @@ describe('DashboardPage', () => {
   });
 
   it('handles API errors gracefully', async () => {
-    mockApi.activityApi.list.mockRejectedValue(new Error('API Error'));
+    mockApi.dashboardApi.getRecentlyAdded.mockRejectedValue(new Error('API Error'));
     mockApi.dashboardApi.getUpcoming.mockRejectedValue(new Error('API Error'));
     mockApi.dashboardApi.getDiskSpace.mockRejectedValue(new Error('API Error'));
     mockApi.dashboardApi.getContinueWatching.mockRejectedValue(new Error('API Error'));

@@ -3,7 +3,7 @@ import { getApiClients } from '@/lib/api/client';
 import { RouteScaffold } from '@/components/primitives/RouteScaffold';
 import { useToast } from '@/components/providers/ToastProvider';
 import { Icon } from '@/components/primitives/Icon';
-import type { ActivityItem } from '@/lib/api/activityApi';
+import type { RecentlyAddedItem } from '@/lib/api/dashboardApi';
 import type { ContinueWatchingItem, DiskSpaceInfo, UpcomingItem } from '@/lib/api/dashboardApi';
 import type { TorrentItem } from '@/lib/api/torrentApi';
 import { DiskSpaceWidget } from './DiskSpaceWidget';
@@ -16,7 +16,7 @@ export function DashboardPage() {
   const api = useMemo(() => getApiClients(), []);
   const { pushToast } = useToast();
 
-  const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
+  const [recentlyAdded, setRecentlyAdded] = useState<RecentlyAddedItem[]>([]);
   const [upcoming, setUpcoming] = useState<UpcomingItem[]>([]);
   const [diskSpace, setDiskSpace] = useState<DiskSpaceInfo[]>([]);
   const [continueWatching, setContinueWatching] = useState<ContinueWatchingItem[]>([]);
@@ -42,19 +42,18 @@ export function DashboardPage() {
   };
 
   useEffect(() => {
-    const loadActivity = async () => {
+    const loadRecentlyAdded = async () => {
       setIsLoadingActivity(true);
       try {
-        const result = await api.activityApi.list({ page: 1, pageSize: 20 });
-        setRecentActivity(result.items);
+        setRecentlyAdded(await api.dashboardApi.getRecentlyAdded(8));
       } catch {
-        setRecentActivity([]);
+        setRecentlyAdded([]);
       } finally {
         setIsLoadingActivity(false);
       }
     };
 
-    void loadActivity();
+    void loadRecentlyAdded();
   }, [api]);
 
   useEffect(() => {
@@ -139,7 +138,7 @@ export function DashboardPage() {
     >
       <div className="grid gap-4 lg:grid-cols-2">
         <ContinueWatchingWidget items={continueWatching} isLoading={isLoadingContinueWatching} />
-        <RecentlyAddedWidget items={recentActivity} isLoading={isLoadingActivity} />
+        <RecentlyAddedWidget items={recentlyAdded} isLoading={isLoadingActivity} />
         <UpcomingWidget items={upcoming} isLoading={isLoadingUpcoming} />
         <ActiveDownloadsWidget torrents={torrents} isLoading={isLoadingTorrents} />
         <DiskSpaceWidget data={diskSpace} isLoading={isLoadingDiskSpace} />

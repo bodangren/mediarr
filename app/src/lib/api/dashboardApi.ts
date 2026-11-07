@@ -38,7 +38,20 @@ const continueWatchingItemSchema = z.object({
   lastWatched: z.string(),
 });
 
+const recentlyAddedLibraryItemSchema = z.object({
+  id: z.number(),
+  title: z.string(),
+  year: z.number().optional(),
+  posterUrl: z.string().nullable().optional(),
+  added: z.string(),
+});
+
+const recentlyAddedItemSchema = recentlyAddedLibraryItemSchema.extend({
+  type: z.enum(['movie', 'series']),
+});
+
 export type DiskSpaceInfo = z.infer<typeof diskSpaceInfoSchema>;
+export type RecentlyAddedItem = z.infer<typeof recentlyAddedItemSchema>;
 export type UpcomingItem = z.infer<typeof upcomingItemSchema>;
 export type ContinueWatchingItem = z.infer<typeof continueWatchingItemSchema>;
 
@@ -55,6 +68,34 @@ export function createDashboardApi(client: ApiHttpClient) {
         { path: '/api/dashboard/upcoming' },
         z.array(upcomingItemSchema),
       );
+    },
+    /**
+     * Recently added media.
+     *
+     * The dashboard used to filter the activity feed for import events, which
+     * showed "No recent activity" whenever recent events were subtitle/search
+     * failures — true on this server, whose library has plenty of media
+     * (verified 2026-11-08). This reads the library itself, like the TV home.
+     */
+    async getRecentlyAdded(limit = 8): Promise<RecentlyAddedItem[]> {
+      // The library payload has no `type` field, so it is added after parsing
+      // rather than required by the schema (which made every response fail the
+      // paginated contract).
+      const [moviePage, seriesPage] = await Promise.all([
+        client.requestPaginated(
+          { path: '/api/movies', query: { sortBy: 'added', sortDir: 'desc', pageSize: limit } },
+          recentlyAddedLibraryItemSchema,
+        ),
+        client.requestPaginated(
+          { path: '/api/series', query: { sortBy: 'added', sortDir: 'desc', pageSize: limit } },
+          recentlyAddedLibraryItemSchema,
+        ),
+      ]);
+      const movies: RecentlyAddedItem[] = moviePage.items.map(item => ({ ...item, type: 'movie' as const }));
+      const series: RecentlyAddedItem[] = seriesPage.items.map(item => ({ ...item, type: 'series' as const }));
+      return [...movies, ...series]
+        .sort((a, b) => Date.parse(b.added) - Date.parse(a.added))
+        .slice(0, limit);
     },
     getContinueWatching(limit = 20): Promise<ContinueWatchingItem[]> {
       return client.request(

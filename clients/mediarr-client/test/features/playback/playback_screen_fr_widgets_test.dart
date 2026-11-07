@@ -455,6 +455,23 @@ void main() {
     );
   });
 
+  group('PlaybackScreen — subtitle placement', () {
+    test('cues sit above the transport when the overlay is visible', () {
+      final hidden = playbackSubtitleViewConfiguration(overlayVisible: false);
+      final shown = playbackSubtitleViewConfiguration(overlayVisible: true);
+
+      expect(
+        shown.padding.bottom,
+        greaterThan(hidden.padding.bottom + 100),
+        reason: 'With the controls up the cue block must clear the transport '
+            'row; on the device the buttons drew over the subtitle text.',
+      );
+      // The readable style is shared with the always-on configuration.
+      expect(shown.style.fontSize, kPlaybackSubtitleViewConfiguration.style.fontSize);
+      expect(shown.textScaler, TextScaler.noScaling);
+    });
+  });
+
   group('PlaybackScreen — FR-10 subtitle size', () {
     test('subtitle text renders at the TV size without area scaling', () {
       expect(tvSubtitleFontSize, greaterThanOrEqualTo(44),

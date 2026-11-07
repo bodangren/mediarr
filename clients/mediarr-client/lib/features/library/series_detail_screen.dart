@@ -138,6 +138,8 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
       airDateUtc: episode.airDateUtc,
       hasFile: episode.effectiveHasFile,
       quality: episode.quality,
+      progress: episode.playbackState?.progress ?? 0,
+      isWatched: episode.playbackState?.isWatched ?? false,
     );
   }
 

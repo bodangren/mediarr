@@ -32,6 +32,8 @@ class EpisodeListItem {
     this.airDateUtc,
     this.hasFile = false,
     this.quality,
+    this.progress = 0,
+    this.isWatched = false,
   });
 
   final int id;
@@ -40,6 +42,13 @@ class EpisodeListItem {
   final String? airDateUtc;
   final bool hasFile;
   final String? quality;
+
+  /// 0..1 watched fraction of an in-progress episode (0 when unwatched or
+  /// finished). Surfaced as a progress bar under the row title.
+  final double progress;
+
+  /// True once the server has marked the episode watched.
+  final bool isWatched;
 }
 
 /// Season chips plus the episode list of the selected season (FR-2).
@@ -470,15 +479,49 @@ class _EpisodeRow extends StatelessWidget {
                   ),
                 ),
                 Expanded(
-                  child: Text(
-                    episode.title ?? 'Episode ${episode.episodeNumber}',
-                    style: const TextStyle(
-                      color: MediarrColors.textPrimary,
-                      fontSize: 22,
-                    ),
-                    overflow: TextOverflow.ellipsis,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        episode.title ?? 'Episode ${episode.episodeNumber}',
+                        style: TextStyle(
+                          // Watched episodes read as secondary so the eye
+                          // finds the next unwatched one (library tracking).
+                          color: episode.isWatched
+                              ? MediarrColors.textSecondary
+                              : MediarrColors.textPrimary,
+                          fontSize: 22,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (!episode.isWatched && episode.progress > 0.01) ...[
+                        const SizedBox(height: 6),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(2),
+                          child: LinearProgressIndicator(
+                            value: episode.progress.clamp(0.0, 1.0),
+                            minHeight: 4,
+                            backgroundColor:
+                                Colors.white.withValues(alpha: 0.16),
+                            valueColor: const AlwaysStoppedAnimation(
+                              MediarrColors.accentPrimary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
+                if (episode.isWatched)
+                  const Padding(
+                    padding: EdgeInsets.only(right: 10),
+                    child: Icon(
+                      Icons.check_circle,
+                      color: MediarrColors.accentPrimary,
+                      size: 26,
+                    ),
+                  ),
                 // Missing marker, so a row that will search says so.
                 if (!episode.hasFile)
                   const Padding(

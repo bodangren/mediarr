@@ -13,8 +13,24 @@ import '../../shared/services/api_client.dart';
 import '../../shared/utils/async_value_ext.dart';
 
 /// Build identifier shown on the Settings screen.
-const String kMediarrClientVersion =
-    String.fromEnvironment('MEDIARR_CLIENT_VERSION', defaultValue: 'dev');
+const String _kExplicitClientVersion =
+    String.fromEnvironment('MEDIARR_CLIENT_VERSION');
+
+/// Human-readable build identity for the settings screen.
+///
+/// This used to print "dev" on every release build because the dart-define it
+/// read is never passed. It now falls back to the build name/number the Flutter
+/// tool always provides, so support can ask "which build are you on?" and get a
+/// truthful answer (device capture 2026-11-08 showed "dev" on 1.2.9).
+String get kMediarrClientVersion {
+  if (_kExplicitClientVersion.isNotEmpty) return _kExplicitClientVersion;
+  const buildName = String.fromEnvironment('FLUTTER_BUILD_NAME');
+  const buildNumber = int.fromEnvironment('FLUTTER_BUILD_NUMBER', defaultValue: 0);
+  if (buildName.isNotEmpty && buildNumber > 0) return '$buildName ($buildNumber)';
+  if (buildName.isNotEmpty) return buildName;
+  if (buildNumber > 0) return 'build $buildNumber';
+  return 'dev';
+}
 
 /// Minimal settings surface (owner mockup 2026-09-24, FR-6).
 ///

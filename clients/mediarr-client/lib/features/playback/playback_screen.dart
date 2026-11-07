@@ -24,6 +24,23 @@ const SubtitleViewConfiguration kPlaybackSubtitleViewConfiguration =
       textScaler: TextScaler.noScaling,
     );
 
+/// Subtitle placement for the current overlay state.
+///
+/// With the transport up, cues sat directly under the rewind/play/forward row
+/// and the buttons drew over the text (device capture 2026-11-08). Lifting the
+/// cue block above the controls keeps both readable.
+SubtitleViewConfiguration playbackSubtitleViewConfiguration({
+  required bool overlayVisible,
+}) => SubtitleViewConfiguration(
+  style: tvSubtitleTextStyle,
+  textScaler: TextScaler.noScaling,
+  padding: EdgeInsets.only(
+    left: 48,
+    right: 48,
+    bottom: overlayVisible ? 220 : 36,
+  ),
+);
+
 /// Fullscreen playback surface. Phase 4b+ follow-up:
 ///   * No sidebar; rendered as a top-level /playback route outside the rail.
 ///   * Auto-hides the overlay after 4s of no input.
@@ -472,7 +489,9 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
                       controller: _videoController!,
                       controls: NoVideoControls,
                       subtitleViewConfiguration:
-                          kPlaybackSubtitleViewConfiguration,
+                          playbackSubtitleViewConfiguration(
+                        overlayVisible: playbackState.overlayVisible,
+                      ),
                     )
                   : const ColoredBox(color: Colors.black),
             ),

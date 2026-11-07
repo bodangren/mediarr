@@ -263,6 +263,57 @@ void main() {
       expect(searchTaps, isEmpty);
     });
 
+    testWidgets('marks watched episodes and shows in-progress progress bars', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildTestApp(
+          child: const EpisodeList(
+            data: EpisodeListSeason(
+              seasons: [
+                EpisodeListSeasonData(
+                  seasonNumber: 1,
+                  totalCount: 3,
+                  onDiskCount: 3,
+                  episodes: [
+                    EpisodeListItem(
+                      id: 301,
+                      episodeNumber: 1,
+                      title: 'Finished',
+                      hasFile: true,
+                      isWatched: true,
+                    ),
+                    EpisodeListItem(
+                      id: 302,
+                      episodeNumber: 2,
+                      title: 'Halfway',
+                      hasFile: true,
+                      progress: 0.5,
+                    ),
+                    EpisodeListItem(
+                      id: 303,
+                      episodeNumber: 3,
+                      title: 'Untouched',
+                      hasFile: true,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      // Watched rows carry the check and no progress bar.
+      expect(find.byIcon(Icons.check_circle), findsOneWidget);
+      // Only the in-progress row shows a bar.
+      expect(find.byType(LinearProgressIndicator), findsOneWidget);
+      final bar = tester.widget<LinearProgressIndicator>(
+        find.byType(LinearProgressIndicator),
+      );
+      expect(bar.value, closeTo(0.5, 0.001));
+    });
+
     testWidgets('shows an empty state when there are no seasons', (
       tester,
     ) async {

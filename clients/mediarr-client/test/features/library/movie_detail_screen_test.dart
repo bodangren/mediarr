@@ -418,7 +418,7 @@ void main() {
     );
 
   testWidgets(
-    'lists subtitle tracks once across duplicate file variants',
+    'collapses an identical track that both variants carry',
     (tester) async {
       // Two variants for the same movie used to print "No subtitle tracks"
       // twice; tracks from every variant must be listed exactly once each.
@@ -450,8 +450,38 @@ void main() {
 
       await pumpDetail(tester);
 
+      // Identical tracks across variants collapse to one entry each.
       expect(find.textContaining('No subtitle'), findsNothing);
       expect(find.byIcon(Icons.subtitles), findsNWidgets(2));
+    },
+  );
+
+  testWidgets(
+    'the same subtitle track on two variants is listed once',
+    (tester) async {
+      // Duplicate releases share the same embedded tracks; the detail screen
+      // must not list "English" twice.
+      VariantInventory variantWith(int id, List<SubtitleTrack> tracks) => VariantInventory(
+            variantId: id,
+            path: '/data/Movies/12 Angry Men (1957)/12 Angry Men (1957).mkv',
+            subtitleTracks: tracks,
+            missingSubtitles: const [],
+          );
+      const english = SubtitleTrack(
+        source: 'eng',
+        languageCode: 'eng',
+        isForced: false,
+        isHi: false,
+      );
+
+      fakeClient.getMovieSubtitlesReturn = [
+        variantWith(1, const [english]),
+        variantWith(2, const [english]),
+      ];
+
+      await pumpDetail(tester);
+
+      expect(find.byIcon(Icons.subtitles), findsOneWidget);
     },
   );
   });

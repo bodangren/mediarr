@@ -181,6 +181,11 @@ class _MovieDetailScreenState extends ConsumerState<MovieDetailScreen> {
                 title: movie.title,
                 subtitle: movie.year?.toString(),
               ),
+              // Play belongs on the first screen: the old layout put it below
+              // the synopsis, file card and subtitle list, so a viewer had to
+              // arrow past everything to start the film (device capture
+              // 2026-11-08 — same defect the series detail had).
+              ActionBar(actions: actions),
               MetadataSection(
                 synopsis: movie.overview,
                 runtime: movie.runtime,
@@ -239,7 +244,6 @@ class _MovieDetailScreenState extends ConsumerState<MovieDetailScreen> {
                   child: _buildSubtitleArea(),
                 ),
               ],
-              ActionBar(actions: actions),
             ],
           ),
         ),
@@ -268,8 +272,14 @@ class _MovieDetailScreenState extends ConsumerState<MovieDetailScreen> {
     // Flatten across variants: a movie with two file variants used to print
     // one "No subtitle tracks" line per variant (two identical lines on the
     // device, 2026-11-08).
+    final seen = <String>{};
     final tracks = _subtitles
         .expand((variant) => variant.subtitleTracks)
+        // The same physical track appears once per file variant (duplicate
+        // releases), so dedupe by what the viewer actually sees.
+        .where((track) => seen.add(
+              '${track.languageCode}|${track.isForced}|${track.isHi}',
+            ))
         .toList(growable: false);
     if (tracks.isEmpty) {
       return const Text(

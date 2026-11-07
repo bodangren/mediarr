@@ -84,8 +84,11 @@
       10–15 / wanted 60. **Code done:** map now points the real task id; 16/16 route tests; `tsc`
       clean. Remaining: `library-scan` has no interval key (reschedule persists nothing) — either
       add a setting or return 422; values apply with B1a.
-- [ ] **B2b** Fix the torrent speed-limit unit bug (`downloadClientRoutes.ts:121-125` passes Kbps
+- [x] **B2b** Fix the torrent speed-limit unit bug (`downloadClientRoutes.ts:121-125` passes Kbps
       into a bytes/sec setter, `TorrentManager.ts:547-554`/`:528-534`); test the conversion. (G7)
+      **Done 2026-11-07:** test updated to expect 500 Kbps → 512000 B/s (Red: got 500); route now
+      converts Kbps→bytes/sec and preserves the `-1` no-limit sentinel; 9/9 route tests green,
+      server `tsc` clean.
 - [ ] **B3** Install `dsh-host.service` as a systemd unit with `DSH_PERMISSION_MODE=danger-full-access`,
       the full PATH (nvm + venv + `~/.local/bin`), and a **hard ordering**: stop the terminal host,
       confirm `:10086` free, then start the unit. Prove reboot persistence. (G2/C-1)

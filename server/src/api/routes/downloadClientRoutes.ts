@@ -117,11 +117,17 @@ export function registerDownloadClientRoutes(
 
     const updated = await deps.settingsService.update({ torrentLimits });
 
-    // Apply speed limits to torrent manager if available
+    // Apply speed limits to torrent manager if available. Settings are Kbps;
+    // the torrent engine API is bytes/sec; -1 is the engine's "no limit" sentinel.
     if (deps.torrentManager?.setSpeedLimits) {
+      const toBytesPerSecond = (kbps: number | null | undefined): number | undefined => {
+        if (kbps === null || kbps === undefined) return undefined;
+        if (kbps < 0) return -1;
+        return kbps * 1024;
+      };
       await deps.torrentManager.setSpeedLimits({
-        download: torrentLimits.globalDownloadLimitKbps ?? undefined,
-        upload: torrentLimits.globalUploadLimitKbps ?? undefined,
+        download: toBytesPerSecond(torrentLimits.globalDownloadLimitKbps),
+        upload: toBytesPerSecond(torrentLimits.globalUploadLimitKbps),
       });
     }
     if (deps.torrentManager?.setDownloadPaths) {

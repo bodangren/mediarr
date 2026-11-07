@@ -170,8 +170,9 @@ describe('downloadClientRoutes — PUT /api/download-client', () => {
 
     expect(response.statusCode).toBe(200);
     expect(torrentManager.setSpeedLimits).toHaveBeenCalledWith({
-      download: 500,
-      upload: 100,
+      // Settings are Kbps; the engine API is bytes/sec.
+      download: 500 * 1024,
+      upload: 100 * 1024,
     });
     expect(torrentManager.setDownloadPaths).toHaveBeenCalledWith({
       incomplete: payload.incompleteDirectory,

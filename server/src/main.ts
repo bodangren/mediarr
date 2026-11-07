@@ -44,6 +44,14 @@ async function startApi(): Promise<void> {
   // in-flight request. Exposed through /api/health (2026-11-07).
   startEventLoopMonitor();
 
+  // Boot-phase timing. A cold USB drive plus per-row startup work made the API
+  // unresponsive for ~26 s after a restart (measured 2026-11-07); these lines
+  // make the next regression attributable instead of guessed at.
+  const bootStartedAt = Date.now();
+  const bootPhase = (label: string): void => {
+    console.log(`[boot] ${label}: ${Date.now() - bootStartedAt} ms`);
+  };
+
   assertValidEncryptionKey(process.env.ENCRYPTION_KEY);
   const databaseUrl = await resolveDatabaseUrl(process.env.DATABASE_URL);
 
@@ -95,13 +103,16 @@ async function startApi(): Promise<void> {
     }
   });
   await prisma.$connect();
+  bootPhase('database connected');
 
   await repairMalformedJsonColumns(prisma);
+  bootPhase('json columns repaired');
 
   // Quality/category seeds are -arr domain data; slim mode must not run them.
   if (!slimConfig.slim) {
     await seedBaselineData(prisma);
   }
+  bootPhase('baseline data seeded');
 
   const settings = await new SettingsService(new AppSettingsRepository(prisma)).get();
 
@@ -112,8 +123,10 @@ async function startApi(): Promise<void> {
     settings,
   });
   await container.initialize();
+  bootPhase('services initialized');
 
   const app = createApiServer(container.apiDependencies, { slimMode: container.slim });
+  bootPhase('api routes registered');
 
   const staticDir = process.env.STATIC_DIR ?? path.resolve(process.cwd(), 'app/dist');
   registerStaticServing(app, staticDir);

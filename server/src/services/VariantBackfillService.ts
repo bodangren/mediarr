@@ -43,6 +43,30 @@ export class VariantBackfillService {
     };
   }
 
+  /**
+   * Variant keys already present, as one query per media type.
+   *
+   * The previous implementation ran a `findFirst` per movie/episode — about
+   * 3,500 synchronous better-sqlite3 queries on startup, which took ~30 s on a
+   * cold USB drive and left the API unresponsive after every restart (measured
+   * 2026-11-07: `container.initialize()` = 30.9 s).
+   */
+  private async existingVariantKeys(
+    mediaType: 'MOVIE' | 'EPISODE',
+  ): Promise<Set<string>> {
+    const rows = await (this.prisma as any).mediaFileVariant.findMany({
+      where: { mediaType },
+      select: { movieId: true, episodeId: true, path: true },
+    });
+    const keys = new Set<string>();
+    for (const row of rows as Array<{ movieId?: number | null; episodeId?: number | null; path?: string | null }>) {
+      const ownerId = mediaType === 'MOVIE' ? row.movieId : row.episodeId;
+      if (ownerId === undefined || ownerId === null || !row.path) continue;
+      keys.add(`${ownerId}|${row.path}`);
+    }
+    return keys;
+  }
+
   private async backfillMovies(): Promise<number> {
     const movies = await this.prisma.movie.findMany({
       where: {
@@ -54,21 +78,14 @@ export class VariantBackfillService {
       },
     });
 
+    if (movies.length === 0) return 0;
+    const existing = await this.existingVariantKeys('MOVIE');
     let created = 0;
     for (const movie of movies) {
       if (!movie.path || !isVideoFilePath(movie.path)) {
         continue;
       }
-
-      const existing = await this.prisma.mediaFileVariant.findFirst({
-        where: {
-          mediaType: 'MOVIE',
-          movieId: movie.id,
-          path: movie.path,
-        },
-      });
-
-      if (existing) {
+      if (existing.has(`${movie.id}|${movie.path}`)) {
         continue;
       }
 
@@ -95,21 +112,14 @@ export class VariantBackfillService {
       },
     });
 
+    if (episodes.length === 0) return 0;
+    const existing = await this.existingVariantKeys('EPISODE');
     let created = 0;
     for (const episode of episodes) {
       if (!episode.path || !isVideoFilePath(episode.path)) {
         continue;
       }
-
-      const existing = await this.prisma.mediaFileVariant.findFirst({
-        where: {
-          mediaType: 'EPISODE',
-          episodeId: episode.id,
-          path: episode.path,
-        },
-      });
-
-      if (existing) {
+      if (existing.has(`${episode.id}|${episode.path}`)) {
         continue;
       }
 

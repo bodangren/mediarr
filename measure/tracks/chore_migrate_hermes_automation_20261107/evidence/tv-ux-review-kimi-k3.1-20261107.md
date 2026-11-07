@@ -105,3 +105,23 @@ that produced "player error: Failed to open .../stream/1094" at 21:00.
 
 Remaining: the ~26 s stall at process start (migrations + variant backfill on a
 cold USB drive) still blocks the first requests after a restart.
+
+## Boot stall fixed: 33.6 s → 1.5 s (2026-11-08)
+
+`/api/health` reported a 24.9 s event-loop stall at every restart. Boot-phase
+timing placed it inside `container.initialize()` (30.9 s), and the cause was
+`VariantBackfillService`: a `findFirst` per movie (550) and per episode (2971)
+— about 3,500 synchronous better-sqlite3 queries against a cold USB drive.
+
+Rewritten to one `findMany` per media type into an in-memory key set, with an
+early return when a type has no rows. Measured after:
+
+| Phase | Before | After |
+|---|---|---|
+| database connected | 200 ms | 52 ms |
+| json repair | 2,471 ms | 175 ms |
+| services initialized | **30,901 ms** | **1,513 ms** |
+| api listening | ~33.6 s | **1.7 s** |
+
+Event-loop `maxLagMs` at boot: 24,878 ms -> 953 ms; stalls 1/133 after.
+Tests: VariantBackfillService now asserts one query per media type.

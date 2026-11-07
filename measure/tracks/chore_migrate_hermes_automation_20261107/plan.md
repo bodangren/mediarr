@@ -93,6 +93,12 @@
       subtitle rendering verified on device. Old APK was from 2026-10-03 with a different
       signature, so it was backed up, uninstalled and replaced; server re-entered manually.
       Evidence: [`evidence/`](./evidence/).
+- [~] **B2f** Restore the **bilingual EN+ZH** subtitle invariant (FR-17, recovered 2026-11-07).
+      Old rule: bilingual packs only; Chinese-only/English-only rejected. Current audit: 868 bilingual,
+      54 Chinese-only, 35 English-only, 3 empty. Build: `BilingualSubtitleService` (classify, merge
+      EN+ZH by timing, atomic write + `.orig`, idempotent ledger) + `MiniMaxTranslator`
+      (MiniMax-M3.1-Flash, cheap, batch cues) for English-only items; scheduler task `bilingual-subs`.
+      Chinese-only with no English sibling is flagged, not guessed. TV proof required: two lines visible.
 - [x] **B2e** TV client update pipeline: server manifest + APK endpoint, `publish-client-update.sh`,
       in-app prompt (Update now / Wait 12 h / countdown → PackageInstaller), and a daily **silent
       ADB updater** (`tv-updater.sh`, sha256-verified). **Verified 2026-11-07:** silent v2→v4 in 33 s;
@@ -176,6 +182,27 @@
       wedge, webhook outage, delete-permission revoked mid-run — and retention/quarantine proven.
 - [ ] Test rollback once: re-enable `jobs.json` + gateway and confirm the old path still runs **and
       still finds the media** (file-layout diff, not just process start).
+
+## Phase 8: TV client delivery (live device, 2026-11-07/08)
+
+Closed against the 10-foot UI review (`evidence/tv-ux-review-kimi-k3.1-20261107.md`)
+and the owner bug report; every item is device-verified over network ADB.
+
+- [x] P0 Resume: seek after load via `Media(start:)` + `_enforceResume` (verified 10:00 / 22:45).
+- [x] P0 Episode flow: default season with a file, no per-row search stop, Select plays.
+- [x] P0 Detail two-pane: hero + CTA left, episodes right, Resume CTA autofocus.
+- [x] P0 Playback errors: retry chip + client-error telemetry to the server for triage.
+- [x] P0 Launcher/kiosk: Mediarr is the HOME app with an in-app rollback path.
+- [x] P0 Server event loop: activity poll saturated it (248k-row id fetch every 1 s); fixed,
+      86 % CPU -> 0.1 %, lag 400-1200 ms -> 0-1 ms, and `/api/health` now reports `eventLoop`.
+- [x] P1 Transport: Play/Pause entry focus, 64 px targets, 5 s hide only while playing,
+      labelled Sync panel moved out of the subtitle line.
+- [x] P1 Home budget: hero 36 %, Continue Watching with remaining time, next row on the fold.
+- [x] P1 Browse typography: real metadata only (no year 0 / "Any"), 18-20 px type.
+- [x] Boot stall: 33.6 s -> 1.7 s (variant backfill did ~3,500 startup queries; now one per type),
+      boot `maxLagMs` 24,878 -> 953 ms.
+- [ ] P2 artwork placeholder for tiles with no poster (flat grey today).
+- [ ] P2 episode thumbnails in the season list.
 
 ## Phase 7: Close
 

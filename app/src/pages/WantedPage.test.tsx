@@ -91,10 +91,7 @@ describe('WantedPage', () => {
         setEpisodeMonitored: vi.fn().mockResolvedValue({ id: 10, monitored: false }),
       },
       indexerApi: {
-        list: vi.fn().mockResolvedValue({
-          items: [{ id: 1 }],
-          meta: { page: 1, pageSize: 100, totalCount: 1, totalPages: 1 },
-        }),
+        list: vi.fn().mockResolvedValue([{ id: 1 }]),
       },
     };
     (getApiClients as any).mockReturnValue(mockApi);
@@ -357,10 +354,7 @@ describe('WantedPage', () => {
   it('warns that automatic searching is idle when no indexer exists', async () => {
     // The wanted-search cycle now skips every run with zero indexers; without
     // this banner the page would look like a silent failure (2026-11-08).
-    mockApi.indexerApi.list.mockResolvedValue({
-      items: [],
-      meta: { page: 1, pageSize: 100, totalCount: 0, totalPages: 0 },
-    });
+    mockApi.indexerApi.list.mockResolvedValue([]);
 
     renderPage();
 

@@ -27,8 +27,9 @@ export function WantedPage() {
     let cancelled = false;
     const loadIndexers = async () => {
       try {
-        const result = await api.indexerApi.list({ page: 1, pageSize: 100 });
-        if (!cancelled) setIndexerCount(result.items.length);
+        // `indexerApi.list()` returns the array directly (not paginated).
+        const result = await api.indexerApi.list();
+        if (!cancelled) setIndexerCount(result.length);
       } catch {
         if (!cancelled) setIndexerCount(null);
       }

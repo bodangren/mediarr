@@ -46,28 +46,34 @@ DSH substrate (schedules and any custom plugin); cut-over and decommissioning.
 **Out:** Hermes functionality outside the media path; jellyfin-go stability (owner-owned);
 rebuilding Mediarr's acquisition engine to mimic Pirate Bay browsing.
 
-## Target shape (to be ratified in Phase 3)
+## Target shape (RATIFIED 2026-11-07)
 
-Three execution classes, each with a different reliability story:
+Three execution classes, each with a different reliability story. Decisions were answered by the
+owner on 2026-11-07 and are recorded in §Decisions; the full rationale is in
+[`design/TARGET-ARCHITECTURE.md`](./design/TARGET-ARCHITECTURE.md).
 
 | Class | Examples | Owner | Why |
 |---|---|---|---|
-| Continuous / event-driven | ingest a completed download, pick up a new episode, refresh a changed item | Mediarr scheduler or filesystem/SSE event | must not wait for a model or a human |
-| Deterministic recurring | library scan, wanted search, subtitle wanted-search, RSS, prune candidates, reports | Mediarr scheduler (in-process) | no judgement; failure must be loud and local |
-| Judgement recurring | what to acquire next, which release, which subtitle pack, what to prune | DSH scheduled task (agent) | needs reasoning across sources |
+| Continuous / event-driven | ingest a completed download, pick up a new episode, refresh a changed item | Mediarr in-process (native) | must not wait for a model or a human |
+| Deterministic recurring | library scan, wanted search, subtitle wanted-search, RSS, tidy, receipts, quarantine | **Mediarr native tasks stay native; the household automation jobs run as DSH plugin timers** | owner chose more work in DSH; deterministic code needs no model, and native engine tasks are not duplicated |
+| Judgement recurring | what to acquire next, which subtitle pack, what to prune | DSH scheduled task (agent), weekly/monthly | needs reasoning across sources |
+| Meta / reliability | ledger, retry, alerts, heartbeat, dead-man | DSH plugin + systemd watchdog | must work when the model and the Host do not |
 
-A DSH **plugin** is the fallback wherever a scheduled prompt cannot deliver the reliability
-property: deterministic work, retries, dedupe, a run ledger, or an alert path that does not
-depend on the model being reachable.
+A DSH **plugin** is the owner of the automation layer wherever a scheduled prompt cannot deliver
+the reliability property (deterministic work, retries, dedupe, run ledger, quarantine, alerting
+without the model). Cron/scheduled prompts are used **only** for weekly/monthly judgement.
 
-## Decisions required
+## Decisions (resolved with the owner, 2026-11-07)
 
-| # | Decision | Options | Recommendation |
+| # | Decision | Answer | Rejected options and why |
 |---|---|---|---|
-| D1 | Runtime split | (a) everything as DSH scheduled prompts, (b) everything in Mediarr code, (c) hybrid by class | **(c)** per the table above |
-| D2 | Library scope | all four libraries, or Movies/TV only | all four; adult/music are small and already working |
-| D3 | Browser dependency | keep `kimi-webbridge` (Chrome + USA VPN) for TPB/YTS/EZTV/YouTube, or move acquisition onto Mediarr indexers | decide per source; Mediarr indexers for anything they can reach |
-| D4 | Reliability bar | what counts as "error-free" | every run writes a receipt; any missed or failed run raises an alert the owner sees; no silent skips |
+| D1 | Runtime split | **More work into DSH**: one plugin owns household automation (timers, ledger, quarantine, alerts); Mediarr keeps engine-coupled native tasks. Deterministic DSH work is plugin code, never model turns. | Mediarr-first split (more product code in this repo); everything as scheduled prompts (reintroduces the 42-failure mode — models in hourly/daily loops). |
+| D2 | Library scope | **Music scoped as a new track** (`feature_music_library_20261107`), automation paused meanwhile; **adult folded into the normal Movies pipeline**; Movies/TV automated as today. | Dropping music (owner wants it owned); keeping music-orchestrator (depends on Hermes + browser + jellyfin-go). |
+| D3 | Browser dependency | **Indexers only; drop browser browsing.** Discovery uses TMDB + indexers + library; no `kimi-webbridge`, Chrome or VPN in the runtime. | Keeping the browser bridge (Chrome + USA VPN on the acquisition critical path; unmonitorable by receipts). |
+| D4 | Reliability bar | **"Never silently wrong"**: every expected occurrence succeeded, was retried, or alerted. | "Always succeeds" (impossible with a provider that can be down); counting on a success status without an artifact (the 2026-11-06 case). |
+| Q5 | Prune deletion | **Quarantine-then-delete unattended**: weekly agent names candidates, plugin moves to `4TB/quarantine` at 04:45, 14-day retention, manifest + restore + caps, shadow week first. | Candidates-only (owner accepted the quarantine safety net); heuristic deletion (banned). |
+| Q6 | DSH host | **Systemd user unit with `DSH_PERMISSION_MODE=danger-full-access`**, one host on :3080. | Workspace-write host (scheduled turns cannot answer approvals; writes outside the repo fail closed). |
+| Q7 | Watch-next surface | **Report + `Watch Next` collection in Mediarr** (existing Collections API). | Report only; auto-add to wanted (an LLM adding acquisition work without review). |
 
 ## Requirements
 
@@ -86,6 +92,13 @@ depend on the model being reachable.
   from an archived `jobs.json` until one clean week has passed.
 - **FR-8 Versioned prompts:** the migrated prompts live in the repo (track docs or DSH skills),
   not only in a cron JSON blob.
+- **FR-9 No model in deterministic loops:** hourly/daily work implemented in DSH is plugin code;
+  scheduled model turns are reserved for weekly/monthly judgement.
+- **FR-10 Quarantine safety:** unattended pruning deletes nothing without a manifest; moves are
+  reversible for the retention window; safety rails (active torrents, last copy, continue-watching,
+  collections) and a per-week byte cap are enforced; the first week is dry-run.
+- **FR-11 No browser bridge:** the runtime does not depend on `kimi-webbridge`, Chrome, a VPN, or
+  jellyfin-go in any form; discovery uses indexers + TMDB + library.
 
 ## Acceptance criteria
 
@@ -96,3 +109,8 @@ depend on the model being reachable.
 4. `systemctl --user is-enabled fetch-monitor.timer` and the Hermes media jobs show the
    successor in place; rollback is documented and tested once.
 5. `measure/tracks.md` and `tech-debt.md` record what was dropped and why.
+6. Quarantine is proven safe: a moved item restores byte-identically, an expired item is deleted
+   only after retention and only with a manifest, and the safety rails reject an active torrent.
+7. No runtime component starts or calls `kimi-webbridge`, Chrome, a VPN, or jellyfin-go.
+8. The music module is registered as its own track with a spec and plan; music-orchestrator is
+   disabled (not deleted) until that track lands.

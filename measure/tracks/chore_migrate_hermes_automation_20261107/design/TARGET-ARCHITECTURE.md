@@ -1,222 +1,243 @@
-# Target architecture — media automation after Hermes
+# Target architecture v2 — media automation after Hermes (owner-ratified)
 
-**Status:** PROPOSED for owner ratification (Phase 3). Inputs: three independent designs
+**Status:** RATIFIED 2026-11-07 by owner answers to D1–D4 and four blast-radius questions.
+Supersedes v1. Inputs: three independent designs
 ([`intent-cadence.md`](./intent-cadence.md), [`dsh-substrate.md`](./dsh-substrate.md),
 [`mediarr-contract.md`](./mediarr-contract.md)), graded against source by the Lead.
 No production service, task, or profile was modified to produce this document.
 
 ## 0. One-page answer
 
-**What must happen hourly and daily needs no model at all.** The old system put an LLM agent
-turn inside every loop and paid a 25 % failure rate for it (167 runs, 42 failures, all provider
-outages, none noticed — `../inventory.md` §2). Re-derived from intent:
+**No model runs hourly or daily.** That was the old system's central mistake: an agent turn in
+every loop, 167 runs, 42 provider-outage failures, none noticed (`../inventory.md` §2). The
+owner's decision to *move more work into DSH* is honored as **DSH plugin timers running
+deterministic Node code**, not as hourly/daily model turns — a scheduled prompt would reintroduce
+the exact failure mode, so the plugin is the executor and the model is reserved for weekly
+judgement.
 
 | Class | When | Owner | Model? |
 |---|---|---|---|
-| Event-driven / continuous | on the event | **Mediarr in-process** (import on `torrent:completed`, subtitle attach, playback progress, seeding retire, indexer backoff) | never |
-| Hourly | every 10–60 min | **Mediarr scheduler** (`wanted-search` 60, `subtitle-wanted-search` 10–15, `rss-sync` 15–30) | never |
-| Daily | night | **Mediarr scheduler** (library scan 02:00, import lists, auto-update 04:00) + **pure-I/O systemd scripts** (downloads tidy 04:30, receipt 05:00) | never |
-| Weekly | Sunday | **DSH scheduled tasks** (watch-next, prune candidates) + monthly rule review | yes — the only model calls left |
-| Human | on demand | Mediarr UI/API (add+search, override, retry, delete) | optional |
+| Event-driven / continuous | on the event | **Mediarr in-process** (import, subtitles, playback, seeding, indexer backoff, auto-grab) | never |
+| Hourly / daily, deterministic | 10 min – daily | **DSH plugin `media-automation`** (timers) + **Mediarr's native engine tasks** it observes and verifies | never |
+| Weekly / monthly, judgement | Sunday / monthly | **DSH scheduled tasks** (watch-next, prune candidates, rule review) | yes — the only model calls |
+| Continuous, meta | 1–10 min | **DSH plugin** (ledger, retry, heartbeat) + **systemd watchdog** (host/plugin/Mediarr down) | never |
+| Human | on demand | Mediarr UI/API (add+search, override, restore from quarantine, delete) | optional |
 
-**The reliability property is not "the agent never fails"; it is "no failure is ever silent."**
-Three mechanisms deliver it, and each covers a failure the others cannot:
+**Reliability property: "never silently wrong"** — every expected occurrence either succeeded, was
+retried, or alerted. Mechanisms, each covering what the others cannot:
 
-1. **Receipts.** Every run leaves durable proof: Mediarr `TaskExecution` rows (native), a report
-   artifact, and a DSH run-ledger row.
-2. **A custom DSH plugin** (`media-automation`) that watches scheduled delivery and the consuming
-   `turn/end`, so a provider outage is recorded as a *failed occurrence* (DSH's receipt proves only
-   inbox delivery — `dsh-substrate.md` §1.3), then retries within a hard cap and alerts.
-3. **An external watchdog timer** that runs even when the DSH Host is down — the one failure the
-   plugin cannot see — and alerts on stale/missing receipts and unhealthy services.
+1. **Receipts everywhere** — Mediarr `TaskExecution` rows, plugin job-ledger rows, artifacts in
+   `~/media-reports/`, plugin heartbeat.
+2. **Plugin outcome attribution** — scheduled delivery only proves inbox delivery; the plugin reads
+   the consuming `turn/end`, so a provider outage is a recorded failure with retry and alert
+   (`dsh-substrate.md` §1.3, §3.5).
+3. **External watchdog** — a systemd timer that runs when the DSH Host or the plugin is down. It is
+   the only component that can notice its own dependency's absence.
 
-This is the combination the owner asked for: **DSH scheduled tasks for judgement, one custom DSH
-plugin for outcome attribution and retry, plus an OS-level dead-man for the host-down case.**
-Deterministic work stays in Mediarr, because a media server that is not running is broken anyway;
-putting it in an agent turn only adds a failure domain (substrate matrix, `dsh-substrate.md` §4).
+**What changed from v1 because of the owner:**
 
-## 1. Grading of the three designs
-
-All three are accepted. Their conflicts were resolved as follows.
-
-| Source | Accepted | Corrected / constrained |
+| Decision | v1 | Ratified v2 |
 |---|---|---|
-| cadence | intent-first rows, drop list, top-5, "no LLM in the hourly loop" | **Live cadences are 12/20/60 minutes, not defaults 15/30/60.** The live `AppSettings` row has `rssSyncMinutes:12, availabilityCheckMinutes:20, wantedSearchMinutes:60`; `inventory.md` read the live values. The doc's point stands: the *subtitle interval knob is broken* (`TASK_INTERVAL_KEY` maps `availability-check`, but the task id is `subtitle-wanted-search` — `schedulerRoutes.ts:38-42` vs `serviceContainer.ts:611-615`). |
-| contract | capability table, torrent-control correction, E1–E5, switch-off conditions | The brief's assumed gap "torrent queue control" was **wrong** — it exists (`torrentRoutes.ts:23-338`). Accepted as a correction. |
-| substrate | delivery≠execution, target semantics, plugin capability matrix, ledger design | **Two additions the substrate doc does not cover.** (a) Fresh sessions inherit `DSH_PERMISSION_MODE` from the Host process (`dsh --dump-config`: default `workspace-write`, approval `ask`), so a boot-persistent Host must set it deliberately or unattended writes outside the repo fail closed. (b) A plugin cannot alert while the Host is down; an **external watchdog** is required in addition to the plugin's dead-man. |
-| all | — | **Provider history, recorded honestly.** Moonshot (`moonshotai-cn`) was authorized but every request timed out on the first token, killing two planning attempts; the substrate brief was rerouted to DeepSeek, so three families did the work (MiniMax, Xiaomi, DeepSeek). The owner has since replaced that route with `kimi-coding` (profile default `kimi-for-coding`), but **this session's subagent allow-list was fixed at creation and predates the fix**, so Kimi could not review in this session; a new session can use it. |
+| D1 runtime split | Mediarr-first; systemd scripts | **More in DSH:** one plugin owns the household automation layer (timers, receipts, quarantine, alerts); Mediarr keeps only engine-coupled native tasks and gains almost no new code |
+| D2 library scope | Movies/TV; music dropped | **Music module scoped as a new track** (`feature_music_library_20261107`); music automation paused until it exists, beets manual meanwhile. Adult folds into the normal Movies pipeline |
+| D3 browser dependency | Browser allowed for weekly recommendations | **Indexers only; browser browsing dropped entirely** — no `kimi-webbridge`, Chrome or VPN in the runtime. Discovery uses TMDB + indexers + library |
+| D4 reliability bar | never silently wrong | unchanged |
+| Prune | name candidates only | **quarantine-then-delete unattended**, with retention, manifest, restore and caps |
+| DSH host | proposed | **systemd user unit, `DSH_PERMISSION_MODE=danger-full-access`** |
+| Watch-next | markdown report | report **plus a `Watch Next` collection in Mediarr** |
+
+> **Guardrail on "more work into DSH":** deterministic DSH work is plugin code only. If the intent
+> was hourly/daily *model* turns, that reverses the single largest reliability win and should be
+> re-decided explicitly.
+
+## 1. Owner decisions recorded (Phase 3)
+
+| # | Question | Answer | Consequence |
+|---|---|---|---|
+| D1 | Runtime split | **Move more work into DSH** | Plugin becomes the automation runtime; fewer Mediarr changes; DSH Host now on the critical path for household jobs (mitigated by systemd `Restart=always` + watchdog) |
+| D2 | Library scope | **Scope a music module; adult folds into Movies** | New track `feature_music_library_20261107` (scoped, not started); music-orchestrator disabled, beets manual meanwhile; no adult orchestrator |
+| D3 | Acquisition source | **Indexers only; drop browser browsing** | Removes Chrome/VPN runtime dependency; discovery limited to configured indexers + TMDB; TPB-only content becomes undiscoverable |
+| D4 | Reliability bar | **Never silently wrong** | Receipts + plugin ledger + external watchdog; measurable targets in §4.4 |
+| Q | Prune deletion | **Quarantine-then-delete unattended** | New plugin quarantine engine, 14-day retention, manifest, restore, caps, shadow week first |
+| Q | DSH host | **Systemd unit, full access** | §5.1 unit with `DSH_PERMISSION_MODE=danger-full-access`; one host on :3080 |
+| Q | Watch-next surface | **Report + Mediarr Collections** | Weekly task writes `recommendations-*` and syncs a `Watch Next` collection via the existing Collections API |
+
+Rejected options and why: Mediarr-first split (less DSH, more product code — not the owner's
+choice); keeping `kimi-webbridge` (a browser + VPN on the critical path for acquisition, and it
+cannot be monitored by receipts); dropping music (the owner wants it owned, not outsourced);
+candidates-only pruning (the owner accepted the quarantine safety net instead); workspace-write
+automation (scheduled turns cannot answer approval prompts, so writes fail closed).
 
 ## 2. What must happen, when, and who owns it
 
-R = receipt, A = alert if missed. "Build" = new work in this track.
+### 2.1 Continuous / event-driven (Mediarr native; no new scheduling)
 
-### 2.1 Continuous / event-driven (already native; no new scheduling)
+| Behaviour | Owner / evidence | Proof |
+|---|---|---|
+| Import a completed download | `ImportManager` on `torrent:completed` (`ImportManager.ts:55`) | `IMPORT` activity row + item row |
+| Attach subtitles on import | `SubtitleAutomationService.onMovie/EpisodeImported` (`:121,126`) | `WantedSubtitle` rows |
+| Remember playback position | `PlaybackRepository` upsert (`:94`) | `PlaybackProgress` row |
+| Retire finished torrents | `SeedingProtector` 60 s loop (`:23-25`) | torrent state |
+| Back off a failing indexer | `IndexerAutoDisable` | `IndexerHealth` row + SSE |
+| Auto-grab on new release | `RssMediaMonitor` on `release:stored` (`:8,17-19`) | `GRAB` activity row |
 
-| Behaviour | Intent | Owner / evidence | Proof | Build |
+This row set is the successor to `fetch-monitor.timer`; the 10-minute rescan is not recreated.
+
+### 2.2 Hourly / short-interval (Mediarr native; plugin observes and verifies)
+
+| Behaviour | Cadence | Owner | Proof | New work |
 |---|---|---|---|---|
-| Import a completed download | finished torrent becomes a library item, named and visible | Mediarr `ImportManager` on `torrent:completed` (`ImportManager.ts:55`) | `IMPORT` activity row + item row | none |
-| Attach subtitles on import | the thing about to be watched has subs, without a wait | `SubtitleAutomationService.onMovie/EpisodeImported` (`:121,126`) | `WantedSubtitle` rows | none |
-| Remember playback position | resume + continue-watching are correct | `PlaybackRepository` upsert (`:94`); Jellyfin surface (`createJellyfinServer.ts:234-299`) | `PlaybackProgress` row | none |
-| Retire finished torrents | client never becomes a second invisible library | `SeedingProtector` 60 s loop (`:23-25`) | torrent state | none |
-| Back off a failing indexer | one broken indexer cannot stall every search | `IndexerAutoDisable` | `IndexerHealth` row + SSE | none |
-| Auto-grab on a new release | a monitored item's release is grabbed when it appears | `RssMediaMonitor` on `release:stored` (`:8,17-19`) | `GRAB` activity row | none |
+| `wanted-search` | 60 min | Mediarr scheduler | `TaskExecution` | set 60; plugin polls history |
+| `subtitle-wanted-search` | 10–15 min | Mediarr scheduler | `TaskExecution` + counters | **fix interval persistence (only Mediarr code change)** |
+| `rss-sync` | 15–30 min | Mediarr scheduler | `TaskExecution` | set 30 |
+| task-health verification | 5 min | **plugin timer** | plugin `runs`/`alerts` | build |
 
-**Successor to `fetch-monitor.timer`:** this row set *is* the successor. The 10-minute full
-rescan existed because a shell script could not see a torrent finish; Mediarr can. No timer.
+### 2.3 Daily (deterministic; plugin timers)
 
-### 2.2 Hourly (Mediarr scheduler; no model in any loop)
-
-| Behaviour | Cadence | Intent | Proof | Build |
+| Behaviour | Time | Intent | Owner | Proof |
 |---|---|---|---|---|
-| `wanted-search` | 60 min (native) | every declared-wanted item is searched and the best release grabbed | `TaskExecution` SUCCESS/FAILED | set 60; make "searched, found nothing" visible (E3/alerting) |
-| `subtitle-wanted-search` | **10–15 min** (fix knob first) | subs land before playback, then backfill | `TaskExecution` + counters | **fix interval persistence** |
-| `rss-sync` | 15–30 min (native; live 12) | new releases are noticed within hours | `TaskExecution` | set 30 (intent says 15 is over-driven) |
-| transfer/queue health | continuous | transfers are healthy | torrent rows + SSE | none |
+| library scan + metadata backfill | 02:00 | DB matches disk; art repaired | Mediarr native | scan summary |
+| import-list sync | 6 h | curated lists feed wanted | Mediarr native | per-list counts |
+| auto-update check | 04:00 | updates found, not auto-applied | Mediarr native | task row |
+| **downloads tidy** | 04:30 | staging empty, only of library-proven items | **plugin timer** | `downloads-tidy-*.md` + counts |
+| **nightly receipt** | 05:00 | what ran, failed, changed | **plugin timer** | `YYYY-MM-DD.md`, `sub-priority-*.md`, `missing-subs-*.md` |
+| **quarantine sweep** | 04:45 | execute approved manifests; delete expired quarantine | **plugin timer** | manifest + `quarantine-*.md` |
+| plugin heartbeat | 1 min | prove the automation runtime is alive | **plugin timer** | heartbeat file |
 
-### 2.3 Daily (deterministic; no model)
+### 2.4 Weekly / monthly (DSH scheduled tasks; only model calls)
 
-| Behaviour | Cadence | Intent | Owner | Proof | Build |
-|---|---|---|---|---|---|
-| library scan + metadata backfill | 02:00 (native) | DB matches disk; missing art repaired | Mediarr (`serviceContainer.ts:619-631`) | scan summary | none |
-| import-list sync | 6 h (native; keep) | curated lists feed the wanted set | Mediarr (`:591`) | per-list counts | none (daily is not worth a code change) |
-| auto-update check | 04:00 (native) | updates found, never auto-applied silently | Mediarr (`:637`) | task row | none |
-| **downloads tidy** | 04:30 | staging empty, only of things proven in the library | **new pure-I/O script + timer** | `downloads-tidy-*.md` + counts | **build** |
-| **nightly receipt** | 05:00 | one artifact: what ran, what failed, what changed | **new renderer from `mediarr.db`** | `YYYY-MM-DD.md` + `sub-priority-*.md` | **build** |
-| backup | weekly (see 2.4) | recoverable DB | Mediarr `BackupService` exists, **unscheduled** | backup file | **build (schedule it)** |
+| Behaviour | Schedule | Output | Blast radius |
+|---|---|---|---|
+| **watch-next** | Sun 03:00 | `recommendations-*.md/.json` + `Watch Next` collection sync | low — advisory + collection membership |
+| **prune candidates** | Sun 03:30 | judgement manifest `prune-<date>.json` for the plugin | low — naming only; deletion is plugin-executed after quarantine |
+| **rule review** | monthly, Sun 04:00 | `rule-review-*.md` (proposals only) | low |
+| weekly backup trigger | Sun 02:00 | plugin timer calls Mediarr backup | low |
 
-### 2.4 Weekly (DSH scheduled tasks; the only model calls)
+**No daily LLM task.** The old daily `media-orchestrator` bundled deterministic loops (already
+native) with judgement (weekly, because taste is not daily-fresh). The provider may be down all
+week while every hourly/daily function keeps working.
 
-| Behaviour | Cadence | Intent | Blast radius | Proof | Build |
-|---|---|---|---|---|---|
-| **watch-next** | Sun 03:00 | what to watch next, suited to taste | low — advisory only | `recommendations-YYYY-MM-DD.{md,json}` | **build (DSH task + prompt)** |
-| **prune candidates** | Sun 03:30 | name what could be removed, before anything is removed | low if it only names; high if it deletes | `prune-candidates-*.txt` (shape preserved) | **build (DSH task + prompt)** |
-| **rule review** | monthly, Sun 04:00 | quality profile / custom formats still match taste; proposes diffs | medium if auto-applied — **propose only** | `rule-review-*.md` | **build (DSH task + prompt)** |
-| backup | Sun 02:00 | restorable DB | low | backup file + task row | **build (Mediarr task)** |
+### 2.5 Quarantine-then-delete (owner-authorized unattended pruning)
 
-**No daily LLM task exists.** The old daily `media-orchestrator` bundled deterministic loops
-(wanted, subs, refresh) with judgement (predict-next, prune); the loops are already native and the
-judgement is weekly because taste is not daily-fresh (`intent-cadence.md` §3.4). This is the
-largest reliability win and the largest simplification: **the provider can be down all week and
-every hourly/daily function keeps working.**
+1. Weekly judgement names candidates with rule + size + reason into
+   `~/media-automation/inbox/prune-<date>.json` — it never deletes, and never writes outside the
+   inbox.
+2. Daily quarantine sweep in the plugin: validates each candidate (inside a configured library
+   root, not the last copy, not an active/seeding torrent, not in continue-watching or a
+   collection), then atomically renames it to `4TB/quarantine/<YYYY-WW>/<relative-path>` and
+   records a manifest row (item, bytes, rule, movedAt, deleteAfter, restorePath).
+3. Retention: 14 days (config). Deletion requires the manifest, a re-check of the safety rails and
+   a per-week byte cap (default 50 GB). Every move and delete is notified.
+4. Restore: any owner action (playback, collection add, manual restore endpoint/CLI) cancels the
+   pending delete; the plugin exposes `automation/quarantine` state read-only in its CLI/log and
+   the manifest is the restore source.
+5. **Shadow week first:** quarantine engine runs in `dry-run` for the first week (manifest +
+   notification, no move), then is enabled.
 
-### 2.5 Human-initiated (no schedule)
+### 2.6 Human-initiated
 
-Add + search now (`POST /api/wanted` with `searchNow`), override a release/subtitle, retry an
-import, delete an item, ask "what happened". Deletion of library content stays here (see W1).
+Add + search now, override release/subtitle, retry import, restore from quarantine, delete,
+ask "what happened". Deletion remains available directly here too.
 
-### 2.6 Dropped, with reasons (`intent-cadence.md` §4)
+### 2.7 Dropped, with reasons
 
-music pipeline (no music domain in Mediarr — `MediaTypeEnum=["TV","MOVIE"]`, `schema.ts:15`; the
-engine was beets/MusicBrainz/YouTube), adult orchestrator (no adult concept; browsing habit, not
-an outcome; it auto-deleted by raw SQL), per-item jellyfin-go refresh + favourites publishing
-(target deprecated), `.nfo` writing (no consumer), separate poster job (subsumed by scan),
-recurring dedupe (one-time migration), the 10-minute rescan (event-driven now), LLM-authored
-per-job markdown reports (rendered from DB instead), and **an LLM in the hourly search loop** (the
-design decision that produced the 42 silent failures).
+Browser-based discovery (`kimi-webbridge`/TPB/YTS/EZTV/YouTube) — owner decision D3, removes
+Chrome + VPN from the runtime; music automation until the new track lands (beets manual meanwhile);
+adult orchestrator (folded into Movies); per-item jellyfin-go refresh and favourites publishing
+(target deprecated); `.nfo` writing (no consumer); separate poster job (subsumed by scan);
+recurring dedupe (one-time migration); the 10-minute rescan (event-driven now); LLM-authored
+per-job reports (rendered deterministically); **an LLM in any hourly/daily loop**.
 
-`recommendations-injected-*.md` is dropped with the jellyfin-go favourites target. `music-*.md`
-and `adult-*.md` are dropped with their jobs. `sub-priority-*.md` survives as a deterministic
-render from the subtitle wanted queue (no LLM), because it is an owner-facing priority view that
-still has a consumer.
-
-### 2.7 Report filename contract (spec acceptance criterion 3)
-
-`~/media-reports/` keeps these producer/name pairs; the watchdog treats a missing expected file as
-a failed run:
+### 2.8 Report filename contract (spec AC3)
 
 | File | Producer | Cadence |
 |---|---|---|
-| `YYYY-MM-DD.md` | nightly receipt renderer | daily |
-| `downloads-tidy-YYYY-MM-DD.md` | downloads-tidy script | daily |
-| `prune-candidates-YYYY-MM-DD.txt` | weekly prune-candidates task | weekly |
-| `recommendations-YYYY-MM-DD.md` / `.json` | weekly watch-next task | weekly |
-| `rule-review-YYYY-MM-DD.md` | monthly rule-review task | monthly |
-| `sub-priority-YYYY-MM-DD.md` | nightly receipt renderer | daily |
-| `missing-subs-YYYY-MM-DD.md` | nightly receipt renderer (already produced) | daily |
+| `YYYY-MM-DD.md` | nightly receipt (plugin) | daily |
+| `downloads-tidy-YYYY-MM-DD.md` | tidy (plugin) | daily |
+| `quarantine-YYYY-MM-DD.md` | quarantine sweep (plugin) | daily (when active) |
+| `prune-candidates-YYYY-MM-DD.txt` | weekly prune task (judgement table) | weekly |
+| `recommendations-YYYY-MM-DD.md` / `.json` | weekly watch-next | weekly |
+| `rule-review-YYYY-MM-DD.md` | monthly rule review | monthly |
+| `sub-priority-YYYY-MM-DD.md`, `missing-subs-YYYY-MM-DD.md` | nightly receipt | daily |
 
-## 3. Ownership rules (FR-1/FR-2)
+Missing expected file = failed run = watchdog alert.
 
-1. **One owner per behaviour.** Deterministic → Mediarr; judgement → DSH; never both. Running both
-   the old job and its successor is a double-grab bug, not redundancy (`mediarr-contract.md` §3).
-2. **No LLM where an acceptance check can be written** (`dsh-substrate.md` §5). Release ranking is
-   already deterministic: scored (`MediaSearchService.ts:434`), sorted (`:608`), deduped by info
-   hash (`:611`), grabbed (`:675`) with owner custom formats. Keep it that way; the LLM helps
-   *author* rules once (rule review), not pick every release.
-3. **No script decides; scripts move bytes or read data and fail loudly.** Downloads tidy is
-   deterministic *proof-based* deletion (library match), never heuristic.
-4. **No approval forms for routine work**; deletion of owned content and config changes are not
-   routine and stay human-initiated (W1 names candidates; X4 deletes).
+## 3. Ownership rules
+
+1. **One owner per behaviour.** Mediarr engine tasks stay Mediarr; household automation lives in the
+   plugin; judgement in scheduled tasks. The plugin never re-implements a native task — it triggers
+   or verifies it.
+2. **Deterministic DSH code, judgemental DSH prompts.** Plugin timers may run any pure code; only
+   scheduled tasks call the model. This is the guardrail that keeps "more in DSH" from restoring
+   the Hermes failure mode.
+3. **No script decides; scripts and plugin code move bytes or read data.** The only decision code
+   is the agent's weekly judgement and the owner's custom-format rules. Quarantine executes a
+   manifest; it does not choose.
+4. **Deletion is now authorized but reversible for 14 days.** It is not routine: rails, caps,
+   manifest, notifications, shadow week. Direct human deletion remains available.
 
 ## 4. Reliability design (D4)
 
-### 4.1 Receipts — three layers
+### 4.1 Receipts
 
-| Layer | Written by | Contents | Where |
-|---|---|---|---|
-| Mediarr `TaskExecution` | Scheduler (native) | task, RUNNING→SUCCESS/FAILED, duration, error | `mediarr.db`; `GET /api/tasks/history` |
-| DSH `runs` domain | **plugin** (authoritative outcome) | `taskId@occurrenceAt`, deliveredAt, messageId, sessionId, outcome, errorCode, attempts | DSH storage (plugin) |
-| Artifacts | tasks/scripts | the files in §2.7; watchdog state | filesystem |
-
-The plugin's ledger is the only place a *delivered-but-failed* turn is visible; the task record has
-no outcome field (`dsh-substrate.md` §2). Artifacts satisfy the owner's existing contract
-(`spec.md:95`).
+| Layer | Written by | Contents |
+|---|---|---|
+| Mediarr `TaskExecution` | Scheduler native | task, RUNNING→SUCCESS/FAILED, duration, error |
+| Plugin `jobs` domain | plugin timers | job, occurrence key, started/ended, outcome, bytes moved, error |
+| Plugin `runs` domain | scheduled-task observer | `taskId@occurrenceAt`, deliveredAt, messageId, sessionId, outcome, errorCode, attempts |
+| Artifacts + heartbeat | jobs/tasks/plugin | §2.8 files; heartbeat every minute |
 
 ### 4.2 Idempotency, overlap, retry
 
-- **Key:** `(task_id, occurrence_at)` — present in both the delivery framing and the receipt
-  (`dsh-substrate.md` §6.1). Every prompt starts by reading the ledger: if this occurrence is
-  already `ok`, stop. Delivery is at-least-once, so this is mandatory, not optional.
-- **Overlap:** Mediarr tasks have a native `running` guard; reuse one Session per DSH task
-  (`new_once`) or use `new` where stateless; media *writes* (tidy, prune, import) take one shared
-  library lock — cross-task locking is the plugin's job, DSH has none (`dsh-substrate.md` §1.4).
-- **Retry:** model-level retry already exists (`dsh-llm-retry`: 5 attempts, backoff; `always` for
-  weekly jobs so a wobble does not consume the week). Work-level: plugin retries only
-  `TIMEOUT|SERVER|TRANSPORT|RATE_LIMIT` at most twice (+5 min, +15 min), then alerts; auth/config
-  errors alert immediately and never retry. Hard cap three attempts.
+- **Key:** `(job_or_task, occurrence)` for plugin jobs and scheduled tasks. Delivery is
+  at-least-once (`dsh-substrate.md` §6.1), so every handler is a upsert keyed by it.
+- **Overlap:** one plugin job type at a time (`jobs` row with `running` + lease); media writes take
+  one shared library lock; quarantine and tidy never run concurrently.
+- **Retry:** plugin jobs retry transient failures twice with backoff, then alert; scheduled-task
+  failures are retried by the plugin via `ctx.schedule.run()` at most twice, only for
+  `TIMEOUT|SERVER|TRANSPORT|RATE_LIMIT`; auth/config errors alert immediately.
+- **Crash safety:** no in-memory state across operations; HMR may restart the plugin under a run
+  (`dsh-substrate.md` §3.3), so leases expire and are stolen with an alert.
 
-### 4.3 Dead-man and alerting — who catches what
+### 4.3 Who catches what
 
 | Failure | Caught by | Latency |
 |---|---|---|
-| provider unreachable during a scheduled turn | plugin (`turn/end` error) → ledger + alert (+ retry) | seconds |
-| scheduled turn ran but failed at the end | plugin outcome + artifact audit | seconds–minutes |
-| DSH Host not running / crashed / rebooted | **external watchdog** (`systemctl --user is-active`, stale ledger) | ≤ 10 min |
-| Mediarr server down | **external watchdog** (`/api/health`) | ≤ 10 min |
-| Mediarr deterministic task failed | watchdog polls `/api/tasks/history?status=failed` (or E3 notification) | ≤ 10 min |
-| host down over an occurrence (DSH collapses misses to one) | watchdog stale check + plugin `host-was-down` on next start | ≤ 10 min / next start |
-| "ran, found nothing" | watchdog compares wanted/missing counts + zero-result signal (owner question) | daily |
+| provider unreachable during weekly turn | plugin (`turn/end`) → ledger + retry + alert | seconds |
+| plugin job failed | plugin (`jobs` outcome) → retry + alert | seconds |
+| plugin crashed / disabled / HMR loop | **watchdog** (stale heartbeat) | ≤ 10 min |
+| DSH Host down | **watchdog** (`systemctl is-active`) | ≤ 10 min |
+| Mediarr down | **watchdog** (`/api/health`) + plugin failures | ≤ 10 min |
+| Mediarr task failed | plugin poll `/api/tasks/history?status=failed`; watchdog as backstop | ≤ 5–10 min |
+| quarantine manifest unsafe | plugin validation rejects + alerts | immediate |
+| watchdog itself dead | `systemd` timer failure is visible; add a daily "watchdog alive" heartbeat to the overnight receipt | ≤ 1 day |
 
-**Alert channel:** one outbound webhook/ntfy URL in `~/.config/mediarr-automation/alert.env`,
-posted by both the plugin and the watchdog with no model involvement. Local file + `systemd-cat` is
-the fallback if the network is also down.
+Alert channel: one outbound webhook in `~/.config/mediarr-automation/alert.env`; local file +
+`systemd-cat` fallback. No model on the alert path.
 
-### 4.4 Definition of "error-free" (replaces D4)
+### 4.4 Definition of "error-free"
 
-> **Never silently wrong.** Every expected occurrence either succeeded, was retried, or produced an
-> alert. "Always succeeded" is not achievable when a provider can be down; "never silent" is.
+> **Never silently wrong:** every expected occurrence succeeded, was retried, or alerted.
 
-Measurable: 100 % of occurrences have a terminal ledger outcome; 100 % of failures alerted < 3 min
-(plugin) / < 10 min (watchdog); 0 occurrences with neither ledger row nor alert; 0 duplicate side
-effects per idempotency key; one clean week with no silent miss.
+Targets: 100 % terminal outcomes; failures alerted < 3 min (plugin) / < 10 min (watchdog); 0
+occurrences with neither ledger row nor alert; 0 duplicate side effects per key; quarantine delete
+always manifest-backed; one clean week.
 
-## 5. DSH substrate — concrete design
+## 5. DSH substrate
 
-### 5.1 Host (prerequisite, P0)
-
-Run exactly one Host as a systemd **user** unit (linger already enabled on this machine —
-verified `Linger=yes`):
+### 5.1 Host (prerequisite P0) — approved
 
 ```ini
 # ~/.config/systemd/user/dsh-host.service
 [Unit]
-Description=DSH Host (web profile) - scheduler + agent runtime
+Description=DSH Host (web profile) - scheduler + automation runtime
 After=network-online.target
 Wants=network-online.target
 
 [Service]
 Type=simple
 WorkingDirectory=%h/Desktop/mediarr
-Environment=DSH_PERMISSION_MODE=danger-full-access   # unattended turns cannot answer approvals
+Environment=DSH_PERMISSION_MODE=danger-full-access
 ExecStart=%h/.local/bin/dsh web --no-open --port 3080
 Restart=always
 RestartSec=5
@@ -225,151 +246,122 @@ RestartSec=5
 WantedBy=default.target
 ```
 
-`DSH_PERMISSION_MODE` is the load-bearing line: the composed sandbox defaults to `workspace-write`
-+ approval `ask` (`dsh --profile web --dump-config`); a scheduled turn has no answerer, so writes
-outside the repo (e.g. `~/media-reports/`) would fail closed. The alternative — keep the default
-and keep every write inside the repo, publishing via the watchdog — is offered as a decision (Q5).
-Exactly one Host: the schedule store is Host-wide.
+`DSH_PERMISSION_MODE` is required: fresh sessions inherit it (`dsh --profile web --dump-config`:
+default `workspace-write` + approval `ask`), and a scheduled turn has no answerer. Linger is
+already enabled. Exactly one Host (the schedule store is Host-wide); the current terminal-launched
+Host is replaced by this unit.
 
-### 5.2 Scheduled tasks (weekly judgement)
+### 5.2 Custom plugin `media-automation` (the core of "more work in DSH")
 
-Create from a session whose cwd is this repo; target `new` (fresh context each run, state in
-files/DB — no transcript drift, no poisoned context), or `new_once` where narrative continuity
-earns its cost. RRULE example (Sunday 03:00 Asia/Shanghai):
+One in-process cordis plugin, versioned in this repo:
+
+```
+automation/
+  dsh-media-automation/        package.json + cordis.patch.yml + lib/*.js (or src/)
+  prompts/                     watch-next.md, prune-candidates.md, rule-review.md
+  scripts/                     none that duplicate plugin logic; CLI helpers only
+  systemd/                     dsh-host.service, automation-watchdog.{service,timer}
+  expectations.yaml            per-artifact max gaps for the watchdog
+```
+
+Responsibilities:
+
+| Area | Behaviour |
+|---|---|
+| Timers | tidy 04:30, quarantine 04:45, receipt 05:00, backup trigger Sun 02:00, reconcile every 1–5 min |
+| Mediarr client | triggers native tasks, polls `/api/tasks/history`, reads wanted/missing/torrents/playback, creates the `Watch Next` collection |
+| Ledger | durable `jobs`, `runs`, `locks`, `alerts`, `quarantine` tables; idempotent by occurrence key |
+| Outcome observer | scheduled-task `messageId` ↔ session `user/message.id` ↔ `turn/end`; retry + alert |
+| Quarantine engine | manifest validation, atomic move, retention, caps, restore, dry-run mode |
+| Files | receipts in `~/media-reports/`, heartbeat, inbox for judgement manifests |
+| Alerts | webhook + local fallback, throttled, incident ledger |
+
+Install: `dsh plugin --profile web add link:<repo>/automation/dsh-media-automation` (mechanism
+validated by reading; installation is a Phase 4 step). HMR may recompose it — state is durable, and
+the lease/alert path assumes it can be stopped mid-run.
+
+### 5.3 Scheduled tasks (weekly judgement)
+
+Target `new` (fresh context per run, state in files) unless continuity earns `new_once`. RRULE
+example (Sunday 03:00 Asia/Shanghai):
 
 ```
 DTSTART;TZID=Asia/Shanghai:20261108T030000
 RRULE:FREQ=WEEKLY;BYDAY=SU;BYHOUR=3;BYMINUTE=0
 ```
 
-| Task | Schedule | Prompt (versioned in repo) | Writes |
+| Task | Schedule | Prompt | Output |
 |---|---|---|---|
-| `media-watch-next` | Sun 03:00 | `automation/prompts/watch-next.md` | `recommendations-YYYY-MM-DD.{md,json}` + ledger |
-| `media-prune-candidates` | Sun 03:30 | `automation/prompts/prune-candidates.md` | `prune-candidates-YYYY-MM-DD.txt` |
-| `media-rule-review` | monthly, Sun 04:00 | `automation/prompts/rule-review.md` | `rule-review-YYYY-MM-DD.md` |
+| `media-watch-next` | Sun 03:00 | `automation/prompts/watch-next.md` | recommendations + collection sync |
+| `media-prune-candidates` | Sun 03:30 | `automation/prompts/prune-candidates.md` | manifest in inbox |
+| `media-rule-review` | monthly Sun 04:00 | `automation/prompts/rule-review.md` | proposals only |
 
-Thin task prompt: "You are the weekly media judgement run. Read
-`automation/prompts/watch-next.md` and execute it exactly. Idempotency key: the
-`schedule_id_json` occurrence in this message. On completion write the receipt; on failure exit
-loudly." This satisfies FR-8: the prompt lives in the repo, not only in DSH storage.
+Thin task prompt: read the repo prompt file, execute it, use the occurrence JSON as idempotency
+key, write the receipt, fail loudly. Prompts live in the repo (FR-8).
 
-### 5.3 Custom plugin `media-automation` (the "if necessary" — it is necessary)
+### 5.4 External watchdog (the only non-DSH deterministic piece)
 
-One small in-process cordis plugin (no LLM, own timers, durable storage) that:
+`automation-watchdog.timer` every 10 min, pure I/O: DSH host active, plugin heartbeat fresh,
+Mediarr `/api/health`, expected artifacts per `expectations.yaml`, failed Mediarr tasks since a
+watermark, alert webhook. This is the only component that notices the DSH Host or plugin being
+down; it is deliberately outside DSH.
 
-1. on scheduled delivery, correlates `messageId` (receipt) with the session's `user/message.id`;
-2. on `turn/end`, records the occurrence outcome (`ok`/`error`/`timeout`) in a `runs` domain —
-   turning "delivered" into "succeeded/failed";
-3. retries retryable failures via `ctx.schedule.run({id})` under a hard cap;
-4. reconciles every minute: missing terminal outcome or stale cadence → `stale`/`host-was-down`
-   alert; shared `locks` table serializes media writes across tasks;
-5. exposes the outcome to the external watchdog by writing a small state file (and appending to
-   `~/media-automation/runs.jsonl`), so the watchdog does not need to read DSH internals.
+## 6. Mediarr contract (deliberately minimal changes)
 
-Layout in this repo (versioned, installable by path):
+**Used as-is:** wanted/search/grab, torrent control (`torrentRoutes.ts:23-338`), subtitle
+search/upload, playback progress, import retry, `POST /api/tasks/scheduled/:taskId/run`,
+`GET /api/tasks/history`, `GET /api/health`, `GET /api/activity`, SSE, `Collections`
+(`collectionRoutes.ts:154`), backup service.
 
-```
-automation/
-  dsh-media-automation/   package.json + cordis.patch.yml + lib/index.js
-  prompts/                watch-next.md, prune-candidates.md, rule-review.md
-  scripts/                downloads-tidy.sh, nightly-receipt.ts, watchdog.sh
-  systemd/                dsh-host.service, automation-watchdog.{service,timer}
-```
+**Code changes required in this repo:**
+1. **Fix the subtitle interval knob** (only blocking Mediarr change): map `subtitle-wanted-search`
+   in `TASK_INTERVAL_KEY` (`schedulerRoutes.ts:38-42` vs `serviceContainer.ts:611-615`), plus test.
+2. Settings changes (no code): rss 30, availability 10–15, wanted 60.
+3. Optional, not required by the design: E1 execution ids, E2 per-item refresh route, E3 task-failure
+   notification, E4 async receipts, E5 real `/Library/Refresh`. The plugin polls history and alerts,
+   so the reliability bar does not depend on them. Keep them as future polish.
 
-Install: `dsh plugin --profile web add link:<repo>/automation/dsh-media-automation` (validated as a
-mechanism only — installation itself is a Phase 4 step; the substrate doc marks the skeleton
-`UNVALIDATED`, `dsh-substrate.md` §7).
+**Gaps this design absorbs rather than builds in Mediarr:** prune/quarantine (plugin), nightly
+receipt (plugin), recommendations surfacing (report + Collections), subtitle alignment (manual
+`subalign`, deferred), music domain (new track), downloads audit (plugin).
 
-### 5.4 External watchdog (the part no plugin can do)
+**Decommission list:** all jellyfin-go HTTP and direct SQL dependencies, `fetch-monitor.py` restart
+fallback, `media-daily` chain, `kimi-webbridge` usage (`mediarr-contract.md` §3–4).
 
-`automation-watchdog.timer`, every 10 min, pure I/O, independent of both Hosts:
-
-1. `systemctl --user is-active dsh-host.service` and Mediarr `GET /api/health`;
-2. per-task max-gap map from `automation/expectations.yaml` against `runs.jsonl`/receipts;
-3. `GET /api/tasks/history?status=failed` since a watermark;
-4. one webhook alert per incident, throttled hourly, plus a local incident ledger.
-
-This is the only mechanism that notices "the DSH Host is down" — the plugin cannot run to report
-its own host's absence.
-
-## 6. Mediarr contract and the small extensions it needs
-
-**Use as-is:** `POST /api/tasks/scheduled/:taskId/run` (awaits, 409 on overlap, 500 on failure),
-`GET /api/tasks/history`, `GET /api/scheduler/tasks`, `GET /api/health`, `GET /api/activity`,
-`GET /api/events/stream`, torrent control (`torrentRoutes.ts:23-338`), wanted/search/grab, subtitle
-search/upload, playback progress, import retry (`mediarr-contract.md` §2).
-
-**Extensions (small, each reuses existing code):**
-
-| # | Extension | Why | Prio |
-|---|---|---|---|
-| E1 | return the execution row id from both trigger endpoints (`executionId:-1` today) | the agent must verify its own run | P0 (D4) |
-| E2 | `POST /api/metadata/refresh/:type/:id` → existing `refreshMovie/refreshSeries` | per-item refresh successor; only bulk is exposed | P1 |
-| E3 | dispatch a notification on `TaskExecution.status=FAILED` (new `taskFailure` type/toggle) | closes the silent-failure hole without polling | P0 (D4) |
-| E4 | fire-and-forget routes return a run id, or become awaited | "search all"/series search leave no receipt | P1 |
-| E5 | `POST /Library/Refresh` does a real scan or returns 501 | today it is a no-op stub (`createJellyfinServer.ts:195`) | P1 |
-
-**Genuine gaps, not migrations:** prune/space management (W1 names candidates only — no delete
-code exists), recommendations surface (W2 is a report until a surface is chosen), subtitle
-timing/alignment (no align code; keep the manual `subalign` tool, defer), music domain (out of
-scope), downloads-staging audit (new script), browser-source discovery (D3). SubHD-specific
-subtitle handling is replaced by the Chinese-capable Assrt provider; a title that exists only on
-SubHD stays a manual download/upload via the existing subtitle upload route.
-
-## 7. Migration sequence (switch-off conditions)
+## 7. Migration sequence
 
 | Step | Work | Switch off when |
 |---|---|---|
-| P0 | deploy Mediarr always-on; DSH Host unit; alert webhook; watchdog skeleton | both services survive reboot; watchdog alerts a synthetic miss |
-| P1 | fix subtitle interval knob; set rss 30 / subs 10–15; E1+E3 | two days of SUCCESS rows for `wanted-search` + `rss-sync` + `subtitle-wanted-search`, no double grabs |
-| P2 | downloads-tidy + nightly receipt scripts; weekly backup task | one week of artifacts with zero orphaned staging folders |
-| P3 | install plugin; create three DSH tasks; run each manually once | each run leaves a ledger row + artifact; a forced provider failure alerts |
-| P4 | disable (never delete) `media-orchestrator`, `downloads-tidy`; disable `fetch-monitor.timer` | one real completed torrent imported with an `IMPORT` row and no manual move |
-| P5 | music/adult per owner decision; disable their jobs | decision recorded |
-| P6 | one clean week; rollback test (re-enable archived `jobs.json`) | zero silent misses; rollback proven |
-| P7 | archive track; update `tech-debt.md`/`lessons-learned.md` | — |
+| P0 | Deploy Mediarr 24/7; install DSH Host systemd unit; alert webhook | both survive reboot; watchdog alerts a synthetic miss |
+| P1 | Subtitle knob fix; settings; plugin skeleton (ledger/timers/heartbeat) | plugin heartbeat + a no-op timer visible for 24 h |
+| P2 | Tidy + receipt + backup jobs; **quarantine in dry-run** | one week of artifacts; shadow manifests reviewed with owner |
+| P3 | Quarantine enabled (14-day retention, caps); weekly scheduled tasks; collections sync | each task leaves receipt + ledger row; forced provider failure alerts |
+| P4 | Disable `media-orchestrator`, `downloads-tidy`, `fetch-monitor.timer`; music/adult per decisions | one real import with no manual move; no double grabs |
+| P5 | One clean week; rollback test (re-enable archived `jobs.json`); archive | zero silent misses; rollback proven |
 
-**Immediate, no successor needed:** every jellyfin-go HTTP call and every direct SQL against
-`jellyfin-go/data/jellyfin.db`, the restart fallback in `fetch-monitor.py`, and the dead
-`media-daily` chain (`mediarr-contract.md` §3). These can stop the moment the old jobs are edited,
-because their target is being removed.
+Immediate, no successor needed: jellyfin-go HTTP + SQLite calls, browser-bridge usage, dead
+`media-daily` chain.
 
-## 8. Ordered backlog (Phase 4–6), each with acceptance evidence
+## 8. Backlog (Phase 4–6)
 
 | # | Item | Acceptance evidence |
 |---|---|---|
-| B1 | Mediarr deployed 24/7 (container `restart: unless-stopped` or systemd) | reboot survives; `/api/health` green; scheduler nextRun present |
-| B2 | Fix subtitle interval persistence (+ test) | `PUT /api/scheduler/subtitle-wanted-search/interval` persists across restart |
-| B3 | E1 + E3 (execution id, task-failure notification) | trigger returns real id; forced task failure sends webhook |
-| B4 | DSH Host systemd unit + `DSH_PERMISSION_MODE` | reboot survives; a synthetic scheduled run writes outside the repo |
-| B5 | Plugin skeleton + install + `runs`/`alerts`/`locks` | occurrence with a forced provider error records `outcome:error` and alerts |
-| B6 | Watchdog timer + expectations map | host stopped → alert ≤ 10 min; host restarted → recovery note |
-| B7 | downloads-tidy script + receipt | dry-run=delete counts match; no folder deleted without library proof |
-| B8 | nightly receipt renderer | `YYYY-MM-DD.md` + `sub-priority-*.md` exist daily; missing file alerts |
-| B9 | weekly backup Mediarr task | backup file + task row each week |
-| B10 | three DSH tasks + prompts in repo | manual run of each: artifact + ledger row; prompt file is the authority |
-| B11 | cutover + one clean week + rollback test | zero silent misses; old path re-enabled once successfully |
-| B12 | docs: `tracks.md`, `tech-debt.md`, `lessons-learned.md` | recorded |
+| B1 | Mediarr deployed 24/7 | reboot survives; `/api/health` green; scheduler nextRun present |
+| B2 | Subtitle interval persistence fix + test | `PUT …/interval` persists across restart |
+| B3 | DSH Host systemd unit + `DSH_PERMISSION_MODE` | reboot survives; synthetic scheduled run writes outside repo |
+| B4 | Plugin skeleton: domains, heartbeat, alarms, install | installs via `link:`; survives HMR restart; heartbeat visible |
+| B5 | Plugin timers: tidy, receipt, backup trigger, reconcile | each writes artifact + `jobs` row; missed run alerts |
+| B6 | Quarantine engine (dry-run → enabled) | dry-run manifest matches review; enabled move/restore/delete rails tested; cap enforced |
+| B7 | Three scheduled tasks + repo prompts + Collections sync | manual run: artifact + ledger row + collection updated; forced failure alerts |
+| B8 | Watchdog + expectations map | host stopped, plugin disabled, Mediarr stopped each alert ≤ 10 min |
+| B9 | Cutover + one clean week + rollback | zero silent misses; old path re-enabled once |
+| B10 | Music track scoping handoff | `feature_music_library_20261107` registered with spec+plan |
+| B11 | Docs: tracks/tech-debt/lessons | recorded |
 
-## 9. Decisions requiring owner sign-off
+## 9. What would falsify this design
 
-| # | Decision | Recommendation |
-|---|---|---|
-| D1 | Runtime split | **hybrid by class** — Mediarr for deterministic, DSH tasks for weekly judgement, one plugin for ledger/retry, external watchdog for host-down (this document) |
-| D2 | Library scope | **Movies/TV only in this track.** Keep beets manual for music (no music domain); adult content, if wanted, enters the normal pipeline like any movie — no separate orchestrator |
-| D3 | Browser dependency | **Indexers own acquisition.** Browser-based browsing (TPB/YTS/EZTV) survives only inside the weekly judgement task, and only to *recommend*; grabbing uses Mediarr's torrent API. Migrate sources to indexers where possible |
-| D4 | Reliability bar | **"never silently wrong"** — every occurrence succeeded, retried, or alerted; receipts + plugin + watchdog; one clean week |
-
-Open questions carried to the owner: unattended deletion (W1 names-only vs quarantine-then-delete),
-DSH host full-access (Q5), watch-next surface, subtitle alignment, nightly receipt retention, and
-whether "searched, found nothing" should alert after N days.
-
-## 10. What would falsify this design
-
-- A provider outage during a scheduled weekly run that produces neither a ledger `error` nor a
-  watchdog alert within 10 minutes.
-- A library mutation (delete/move/import) that happens twice from one occurrence.
-- A daily/hourly behaviour that stops when the model provider is down — i.e. any surviving LLM call
-  in the deterministic path.
-- A receipt that says success while the artifact is absent or stale (the 2026-11-06 case: a
-  "completed" `media-orchestrator` run with no `2026-11-06.md`).
+- A scheduled weekly run that fails with neither ledger `error` nor watchdog alert in 10 minutes.
+- A quarantine move/delete not backed by a manifest, or a restore that loses data.
+- A daily/hourly behaviour that stops when the model provider is down.
+- A receipt claiming success while the artifact is absent (the 2026-11-06 case).
+- Two runs mutating media from one occurrence key.

@@ -40,33 +40,59 @@
 - [x] **contract** → `design/mediarr-contract.md`: capability table with file:line, automation-facing contract, sequencing. **Done** — corrected the brief (torrent queue control exists); E1–E5; switch-off conditions.
 - [x] Lead reads all three and grades them: every factual claim about DSH or Mediarr cited to source; no workflow transcription disguised as intent. **Done** — two substrate gaps found and corrected (unattended-session permission mode; host-down watchdog), live settings corrected to 12/20/60 min.
 
-## Phase 3: Ratify
+## Phase 3: Ratify ✅
 
-- [ ] Resolve D1–D4 in `spec.md` with the owner; record the rejected options and why.
-      **Recommendations ready** in [`design/TARGET-ARCHITECTURE.md`](./design/TARGET-ARCHITECTURE.md) §9.
-- [x] Merge the three designs into one target architecture (Lead) — [`design/TARGET-ARCHITECTURE.md`](./design/TARGET-ARCHITECTURE.md).
-- [x] Turn it into an ordered backlog with acceptance evidence per item — §8, B1–B12.
-- [ ] Amend this plan to match the ratified architecture.
+- [x] Resolve D1–D4 in `spec.md` with the owner; record the rejected options and why.
+      **Done 2026-11-07:** D1 more work in DSH (plugin code, never model turns in deterministic
+      loops); D2 music scoped as its own track, adult folded into Movies; D3 indexers only, no
+      browser bridge; D4 "never silently wrong". Four extra decisions resolved: quarantine-then-
+      delete (14-day retention), DSH host systemd unit with full access, watch-next report +
+      Collections, plugin ownership of the automation layer.
+- [x] Merge the three designs into one target architecture (Lead) —
+      [`design/TARGET-ARCHITECTURE.md`](./design/TARGET-ARCHITECTURE.md) v2 (owner-ratified).
+- [x] Turn it into an ordered backlog with acceptance evidence per item — §8, B1–B11.
+- [x] Amend this plan to match the ratified architecture.
 
-## Phase 4: Build the substrate
+## Phase 4: Build the substrate (DSH-first)
 
-- [ ] Decide per class: Mediarr scheduler task vs DSH scheduled task vs plugin.
-- [ ] Build the run-ledger + alerting mechanism first (it is what makes the rest verifiable).
-- [ ] If a plugin is required: scaffold, install into the profile, prove it survives a restart.
-- [ ] Test the substrate with a no-op task before any real job is migrated.
+- [ ] **B1** Deploy Mediarr 24/7 (container `restart: unless-stopped` or systemd); prove reboot.
+- [ ] **B2** Fix `subtitle-wanted-search` interval persistence (`TASK_INTERVAL_KEY`) + test; set
+      rss 30 / availability 10–15 / wanted 60 in settings.
+- [ ] **B3** Install `dsh-host.service` (systemd user, `DSH_PERMISSION_MODE=danger-full-access`,
+      port 3080); replace the terminal-launched Host; prove reboot persistence.
+- [ ] **B4** Scaffold `automation/dsh-media-automation/` (bundle + `jobs`/`runs`/`locks`/`alerts`/
+      `quarantine` domains, heartbeat, alert webhook); install via `link:`; prove HMR restarts.
+- [ ] **B5** Plugin timers: downloads tidy (04:30), nightly receipt (05:00), quarantine sweep
+      (04:45, **dry-run first**), weekly backup trigger, reconcile + Mediarr task-history polling.
+- [ ] **B6** Quarantine engine: manifest validation, safety rails (active torrent / last copy /
+      continue-watching / collection / cap), atomic move, restore, retention delete; shadow week
+      before enabling.
+- [ ] **B7** `automation/prompts/` + three DSH tasks (watch-next Sun 03:00, prune candidates
+      Sun 03:30, rule review monthly); watch-next syncs the `Watch Next` collection.
+- [ ] **B8** External watchdog timer + `automation/expectations.yaml`; prove host-down,
+      plugin-down and Mediarr-down each alert ≤ 10 min.
+- [ ] Test the substrate with a no-op occurrence before any old job is switched off.
 
 ## Phase 5: Migrate behaviours
 
-- [ ] Move deterministic behaviours into Mediarr's scheduler; delete the duplicated prompts.
-- [ ] Move judgement behaviours to DSH scheduled tasks; carry the intent, not the step list.
-- [ ] Retire `media-daily.py` and the deprecated `media-daily` skill (dead since 2026-08-30).
-- [ ] Re-point every remaining artifact path at Mediarr; jellyfin-go must not be referenced anywhere.
+- [ ] Keep native Mediarr tasks (scan, wanted, subtitles, RSS, import lists, auto-update); the
+      plugin verifies their receipts instead of re-implementing them.
+- [ ] Move the household jobs into plugin timers (tidy, receipt, quarantine, backup).
+- [ ] Move weekly judgement to the three DSH tasks; prompts live in `automation/prompts/`.
+- [ ] Retire `media-daily.py` and the deprecated `media-daily` skill; stop all `kimi-webbridge`,
+      Chrome/VPN, jellyfin-go HTTP and jellyfin-go SQLite usage.
+- [ ] Music: disable `music-orchestrator` (keep it, do not delete); hand automation to the new
+      `feature_music_library_20261107` track; beets stays manual meanwhile.
+- [ ] Adult: no separate orchestrator; content enters the normal Movies pipeline if wanted.
+- [ ] Re-point every remaining artifact path at Mediarr; `~/media-reports/` filename shapes kept.
 
 ## Phase 6: Cut over and verify
 
 - [ ] Create successors first, run them manually once, diff output against the Hermes artifact.
-- [ ] Disable (never delete) the four Hermes jobs and `fetch-monitor.timer`; archive `jobs.json` into this track.
-- [ ] One clean week: every run's receipt present, zero silent misses, provider outage produces an alert.
+- [ ] Disable (never delete) the four Hermes jobs and `fetch-monitor.timer`; archive `jobs.json`
+      into this track.
+- [ ] One clean week: every run's receipt present, zero silent misses, provider outage produces an
+      alert, quarantine manifest/restore proven.
 - [ ] Test rollback once: re-enable `jobs.json` + gateway and confirm the old path still runs.
 
 ## Phase 7: Close

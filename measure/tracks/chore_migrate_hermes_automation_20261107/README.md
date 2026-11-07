@@ -1,8 +1,11 @@
 # Hermes → Mediarr automation migration — start here
 
 **Track:** `chore_migrate_hermes_automation_20261107`
-**Opened:** 2026-11-07 · **Status:** Phase 1 (inventory) and Phase 2 (three-family design) complete.
-Phase 3 (owner ratification of D1–D4) is the only blocker before build.
+**Opened:** 2026-11-07 · **Status:** Phase 1 (inventory), Phase 2 (three-family design) and Phase 3
+(owner ratification) complete. **Phase 4 (build) is next.** Owner decisions: more work in DSH
+(plugin code, not model turns), indexers only (no browser bridge), music scoped as its own track,
+quarantine-then-delete pruning, DSH host as a systemd unit with full access, watch-next report +
+Collections.
 
 ## What this track is
 

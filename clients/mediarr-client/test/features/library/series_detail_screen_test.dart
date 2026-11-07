@@ -119,6 +119,53 @@ void main() {
       ],
     );
 
+    Series partlyWatchedSeries() => Series(
+      id: 2,
+      title: 'Partly Watched',
+      monitored: true,
+      seasons: [
+        Season(
+          id: 21,
+          seasonNumber: 1,
+          episodeCount: 3,
+          episodeFileCount: 3,
+          episodes: [
+            Episode(
+              id: 301,
+              seasonNumber: 1,
+              episodeNumber: 1,
+              title: 'One',
+              hasFile: true,
+              playbackState: const EpisodePlaybackState(
+                position: 1400,
+                duration: 1400,
+                isWatched: true,
+              ),
+            ),
+            Episode(
+              id: 302,
+              seasonNumber: 1,
+              episodeNumber: 2,
+              title: 'Two',
+              hasFile: true,
+              playbackState: const EpisodePlaybackState(
+                position: 1400,
+                duration: 1400,
+                isWatched: true,
+              ),
+            ),
+            const Episode(
+              id: 303,
+              seasonNumber: 1,
+              episodeNumber: 3,
+              title: 'Three',
+              hasFile: true,
+            ),
+          ],
+        ),
+      ],
+    );
+
     Series oneEpisodeSeries() => const Series(
       id: 5,
       title: 'Severance',
@@ -614,5 +661,19 @@ void main() {
         );
       },
     );
+  testWidgets('shows watched progress and per-season watched counts', (
+    tester,
+  ) async {
+    final series = partlyWatchedSeries();
+    fakeClient.getSeriesByIdReturn = series;
+    fakeClient.getSeriesDetailCompleter = Completer<Series>()..complete(series);
+
+    await pumpDetail(tester, series: series);
+
+    // Library tracking on the detail pane: 2 of 3 episodes finished.
+    expect(find.text('2 of 3 watched'), findsOneWidget);
+    // The season chip carries a compact watched tally with the on-disk count.
+    expect(find.textContaining('✓2'), findsWidgets);
+  });
   });
 }

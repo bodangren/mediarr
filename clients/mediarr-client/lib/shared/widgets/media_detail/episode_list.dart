@@ -331,6 +331,9 @@ class EpisodeListState extends State<EpisodeList> {
                           seasonNumber: widget.data.seasons[i].seasonNumber,
                           onDiskCount: widget.data.seasons[i].onDiskCount,
                           totalCount: widget.data.seasons[i].totalCount,
+                          watchedCount: widget.data.seasons[i].episodes
+                              .where((episode) => episode.isWatched)
+                              .length,
                           isSelected:
                               widget.data.seasons[i].seasonNumber ==
                               _selectedSeason,
@@ -371,6 +374,7 @@ class _SeasonChip extends StatelessWidget {
     required this.seasonNumber,
     this.onDiskCount,
     this.totalCount,
+    this.watchedCount = 0,
     required this.isSelected,
     required this.onTap,
   });
@@ -378,6 +382,10 @@ class _SeasonChip extends StatelessWidget {
   final int seasonNumber;
   final int? onDiskCount;
   final int? totalCount;
+
+  /// Episodes of this season the server has marked watched.
+  final int watchedCount;
+
   final bool isSelected;
   final VoidCallback onTap;
 
@@ -394,6 +402,12 @@ class _SeasonChip extends StatelessWidget {
             const SizedBox(width: 4),
             Text('$onDiskCount/$totalCount'),
           ],
+          // Library tracking at a glance: how much of this season is watched.
+          if (watchedCount > 0)
+            Text(
+              ' · ✓$watchedCount',
+              style: TextStyle(color: MediarrColors.statusSuccess),
+            ),
         ],
       ),
       selected: isSelected,
@@ -403,7 +417,7 @@ class _SeasonChip extends StatelessWidget {
         color: isSelected
             ? MediarrColors.textPrimary
             : MediarrColors.textSecondary,
-        fontSize: 12,
+        fontSize: 16,
       ),
       side: BorderSide(
         color: isSelected

@@ -330,6 +330,15 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
         ? null
         : _episodeSeasonMap[resumeTarget.id];
 
+    // Library tracking: how much of the show the viewer has finished. The
+    // server already sends per-episode playback state; this makes it visible
+    // without opening the season.
+    final allEpisodes = series.seasons
+        .expand((season) => season.episodes)
+        .toList(growable: false);
+    final watchedEpisodes =
+        allEpisodes.where((episode) => episode.playbackState?.isWatched == true).length;
+
     // Two-pane TV layout. The previous single scrolling column put a 340 px
     // banner, the synopsis, the file-info card and the season chips above the
     // episodes, so the first episode row began ~1000 px down a 720 px screen
@@ -418,12 +427,16 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
                               const Icon(Icons.play_arrow,
                                   size: 32, color: Colors.white),
                               const SizedBox(width: 10),
-                              Text(
-                                _resumeLabel(series, resumeTarget),
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w600,
+                              Flexible(
+                                child: Text(
+                                  _resumeLabel(series, resumeTarget),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ),
                             ],
@@ -435,6 +448,42 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
                     synopsis: series.overview,
                     network: series.network,
                   ),
+                  if (allEpisodes.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 4,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            watchedEpisodes == 0
+                                ? 'Not started'
+                                : '$watchedEpisodes of ${allEpisodes.length} watched',
+                            style: const TextStyle(
+                              color: MediarrColors.textSecondary,
+                              fontSize: 18,
+                            ),
+                          ),
+                          if (watchedEpisodes > 0) ...[
+                            const SizedBox(height: 6),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(3),
+                              child: LinearProgressIndicator(
+                                value: watchedEpisodes / allEpisodes.length,
+                                minHeight: 5,
+                                backgroundColor:
+                                    Colors.white.withValues(alpha: 0.16),
+                                valueColor: const AlwaysStoppedAnimation(
+                                  MediarrColors.accentPrimary,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
                   if (series.seasons.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.symmetric(
@@ -498,6 +547,11 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
               airDateUtc: ep.airDateUtc,
               hasFile: ep.effectiveHasFile,
               quality: ep.quality,
+              // Library tracking: the row needs the playback state the API
+              // already returns, or watched episodes look identical to new
+              // ones (the earlier wiring only covered the resume helper).
+              progress: ep.playbackState?.progress ?? 0,
+              isWatched: ep.playbackState?.isWatched ?? false,
             );
           }).toList(),
         );

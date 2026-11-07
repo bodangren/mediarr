@@ -70,6 +70,44 @@ describe('VariantBackfillService', () => {
     });
   });
 
+  it('does not backfill a folder path as a playable variant', async () => {
+    // Live-data defect 2026-11-07: Movie.path is the movie FOLDER
+    // (`/data/Movies/12 Angry Men (1957)`), not the video file. Backfilling it
+    // as a variant made every movie stream a directory and return 500.
+    const { service, prismaMock, repositoryMock } = buildService();
+
+    prismaMock.movie.findMany.mockResolvedValue([
+      { id: 1, path: '/data/Movies/12 Angry Men (1957)' },
+      { id: 2, path: '/data/Movies/1917 (2019)/1917 (2019).mkv' },
+    ]);
+    prismaMock.mediaFileVariant.findFirst.mockResolvedValue(null);
+
+    const result = await service.run();
+
+    expect(result.movieVariantsCreated).toBe(1);
+    expect(repositoryMock.upsertVariant).toHaveBeenCalledTimes(1);
+    expect(repositoryMock.upsertVariant).toHaveBeenCalledWith({
+      mediaType: 'MOVIE',
+      movieId: 2,
+      path: '/data/Movies/1917 (2019)/1917 (2019).mkv',
+      fileSize: 0,
+    });
+  });
+
+  it('does not backfill an episode path that is not a video file', async () => {
+    const { service, prismaMock, repositoryMock } = buildService();
+
+    prismaMock.episode.findMany.mockResolvedValue([
+      { id: 10, path: '/data/TV/Show/Season 1' },
+    ]);
+    prismaMock.mediaFileVariant.findFirst.mockResolvedValue(null);
+
+    const result = await service.run();
+
+    expect(result.episodeVariantsCreated).toBe(0);
+    expect(repositoryMock.upsertVariant).not.toHaveBeenCalled();
+  });
+
   it('skips movies that already have a variant row', async () => {
     const { service, prismaMock, repositoryMock } = buildService();
 

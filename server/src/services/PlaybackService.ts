@@ -12,6 +12,34 @@ const DEFAULT_WATCHED_THRESHOLD = 0.9;
 const DEFAULT_ALLOWED_ROOTS = ['/data/media'];
 const ALLOWED_SUBTITLE_EXTENSIONS = new Set(['.srt', '.vtt', '.ass']);
 
+/**
+ * Whether [candidate] is a regular file.
+ *
+ * Variant rows are trusted at read time, but the live database can carry a
+ * stale directory path (the 2026-11-07 backfill wrote `Movie.path`, the movie
+ * FOLDER, as a playable variant). Streaming such a row fails the request with
+ * a raw 500, so the resolver skips it and falls through to a real file.
+ */
+async function isRegularFile(candidate: string): Promise<boolean> {
+  try {
+    return (await fs.stat(candidate)).isFile();
+  } catch {
+    return false;
+  }
+}
+
+/** Returns the first variant path that points at an existing regular file. */
+async function pickPlayableVariantPath(
+  variants: Array<{ path?: string | null }>,
+): Promise<string | null> {
+  for (const variant of variants) {
+    const candidate = variant.path;
+    if (!candidate) continue;
+    if (await isRegularFile(candidate)) return candidate;
+  }
+  return null;
+}
+
 export interface PlaybackProgressInput extends PlaybackManifestRequest {
   position: number;
   duration: number;
@@ -417,8 +445,9 @@ export class PlaybackService {
       throw new NotFoundError(`Movie ${movieId} not found`);
     }
 
-    const variant = movie.fileVariants.find((item: { path?: string }) => Boolean(item.path));
-    if (!variant?.path) {
+    const variantPath = await pickPlayableVariantPath(movie.fileVariants);
+    const variant = movie.fileVariants.find((item: { path?: string }) => item.path === variantPath);
+    if (!variantPath || !variant) {
       throw new NotFoundError(`Movie ${movieId} has no playable file variants`);
     }
 
@@ -428,7 +457,7 @@ export class PlaybackService {
       overview: movie.overview ?? null,
       posterUrl: movie.posterUrl ?? null,
       backdropUrl: null,
-      variantPath: variant.path,
+      variantPath,
       subtitles: this.mapSubtitleSources(variant.subtitleTracks),
     };
   }
@@ -477,8 +506,9 @@ export class PlaybackService {
       throw new NotFoundError(`Episode ${episodeId} not found`);
     }
 
-    const variant = episode.fileVariants.find((item: { path?: string }) => Boolean(item.path));
-    if (!variant?.path) {
+    const variantPath = await pickPlayableVariantPath(episode.fileVariants);
+    const variant = episode.fileVariants.find((item: { path?: string }) => item.path === variantPath);
+    if (!variantPath || !variant) {
       throw new NotFoundError(`Episode ${episodeId} has no playable file variants`);
     }
 
@@ -492,7 +522,7 @@ export class PlaybackService {
       overview: episode.overview ?? episode.series?.overview ?? null,
       posterUrl: episode.series?.posterUrl ?? null,
       backdropUrl: null,
-      variantPath: variant.path,
+      variantPath,
       subtitles: this.mapSubtitleSources(variant.subtitleTracks),
     };
   }

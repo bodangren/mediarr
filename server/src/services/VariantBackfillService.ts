@@ -1,5 +1,23 @@
+import path from 'node:path';
 import type { DatabaseClient } from '../db/drizzleClient';
 import { SubtitleVariantRepository } from '../repositories/SubtitleVariantRepository';
+
+/**
+ * Extensions a `MediaFileVariant.path` may legitimately carry.
+ *
+ * `Movie.path` and `Episode.path` are not always a file: for a movie it is the
+ * movie FOLDER (`/data/Movies/12 Angry Men (1957)`). Backfilling such a path
+ * created a variant that playback resolved to a directory, so every movie
+ * stream failed with HTTP 500 (`FST_ERR_REP_INVALID_PAYLOAD_TYPE`) on
+ * 2026-11-07. Only real video files may become variants.
+ */
+const VIDEO_EXTENSIONS = new Set([
+  '.mkv', '.mp4', '.avi', '.m4v', '.mov', '.webm', '.ts', '.wmv', '.mpg', '.mpeg',
+]);
+
+function isVideoFilePath(filePath: string): boolean {
+  return VIDEO_EXTENSIONS.has(path.extname(filePath).toLowerCase());
+}
 
 export interface BackfillResult {
   movieVariantsCreated: number;
@@ -38,7 +56,7 @@ export class VariantBackfillService {
 
     let created = 0;
     for (const movie of movies) {
-      if (!movie.path) {
+      if (!movie.path || !isVideoFilePath(movie.path)) {
         continue;
       }
 
@@ -79,7 +97,7 @@ export class VariantBackfillService {
 
     let created = 0;
     for (const episode of episodes) {
-      if (!episode.path) {
+      if (!episode.path || !isVideoFilePath(episode.path)) {
         continue;
       }
 

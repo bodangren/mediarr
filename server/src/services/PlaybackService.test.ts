@@ -136,6 +136,59 @@ describe('PlaybackService', () => {
     });
   });
 
+  it('skips a directory variant and streams a real file (live defect 2026-11-07)', async () => {
+    // The variant backfill once wrote `Movie.path` — the movie FOLDER — as a
+    // playable variant. Ordering prefers the newest row, so playback resolved
+    // to a directory and every movie stream returned 500. The resolver must
+    // never select a non-file entry.
+    const folder = path.join(tempDir, '12 Angry Men (1957)');
+    await fs.mkdir(folder, { recursive: true });
+    const moviePath = path.join(folder, '12 Angry Men (1957).mkv');
+    await fs.writeFile(moviePath, 'movie-content');
+
+    prisma.movie.findUnique.mockResolvedValue({
+      id: 1,
+      title: '12 Angry Men',
+      overview: null,
+      posterUrl: null,
+      fileVariants: [
+        { path: folder, subtitleTracks: [] },
+        { path: moviePath, subtitleTracks: [] },
+      ],
+    });
+    playbackRepository.getProgress.mockResolvedValue(null);
+    playbackRepository.getLatestProgressForMedia.mockResolvedValue(null);
+
+    const service = createService();
+    const source = await service.resolveStreamSource({ mediaType: 'MOVIE', mediaId: 1 });
+
+    expect(source.filePath).toBe(moviePath);
+  });
+
+  it('falls through a variant whose file is missing on disk', async () => {
+    const missing = path.join(tempDir, 'gone.mp4');
+    const moviePath = path.join(tempDir, 'present.mp4');
+    await fs.writeFile(moviePath, 'movie-content');
+
+    prisma.movie.findUnique.mockResolvedValue({
+      id: 2,
+      title: 'Two Files',
+      overview: null,
+      posterUrl: null,
+      fileVariants: [
+        { path: missing, subtitleTracks: [] },
+        { path: moviePath, subtitleTracks: [] },
+      ],
+    });
+    playbackRepository.getProgress.mockResolvedValue(null);
+    playbackRepository.getLatestProgressForMedia.mockResolvedValue(null);
+
+    const service = createService();
+    const source = await service.resolveStreamSource({ mediaType: 'MOVIE', mediaId: 2 });
+
+    expect(source.filePath).toBe(moviePath);
+  });
+
   it('records progress with lan-default user when userId is not provided', async () => {
     playbackRepository.upsertProgress.mockResolvedValue({
       mediaType: 'EPISODE',

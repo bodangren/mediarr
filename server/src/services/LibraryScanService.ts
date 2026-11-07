@@ -176,6 +176,28 @@ export class LibraryScanService {
   }
 
   /**
+   * Resolves a path that may be a directory into a video file inside it.
+   *
+   * Movie rows store the movie folder, not the file. Returning the actual
+   * video keeps the variant inventory playable. Returns null when nothing
+   * playable is found.
+   */
+  private async resolveVideoFileIn(candidate: string): Promise<string | null> {
+    let entries: import('node:fs').Dirent[];
+    try {
+      entries = await fs.readdir(candidate, { withFileTypes: true });
+    } catch {
+      return null;
+    }
+    const videos = entries
+      .filter(entry => entry.isFile() && VIDEO_EXTENSIONS.has(path.extname(entry.name).toLowerCase()))
+      .map(entry => path.join(candidate, entry.name))
+      .sort();
+    if (videos.length === 0) return null;
+    return videos[0]!;
+  }
+
+  /**
    * Creates or repoints the MediaFileVariant row for a linked file. Playback
    * resolves stream sources through variant rows, not the Movie/Episode.path
    * column, so every scan link must have one. Keyed on (mediaType, path) like
@@ -183,6 +205,14 @@ export class LibraryScanService {
    * is a no-op.
    */
   private async ensureVariant(mediaType: 'MOVIE' | 'EPISODE', ownerId: number, filePath: string): Promise<void> {
+    // Only a real video file may become a playable variant. `Movie.path` is
+    // the movie FOLDER, and writing it here made every movie stream a
+    // directory (HTTP 500) on 2026-11-07.
+    if (!VIDEO_EXTENSIONS.has(path.extname(filePath).toLowerCase())) {
+      const resolved = await this.resolveVideoFileIn(filePath);
+      if (!resolved) return;
+      filePath = resolved;
+    }
     const ownerField = mediaType === 'MOVIE' ? 'movieId' : 'episodeId';
     const variant = await (this.prisma as any).mediaFileVariant.upsert({
       where: { mediaType_path: { mediaType, path: filePath } },

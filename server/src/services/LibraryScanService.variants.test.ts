@@ -162,6 +162,32 @@ describe('LibraryScanService creates playable MediaFileVariant rows', () => {
     expect(source.filePath).toBe(episodeFile);
   });
 
+  it('never stores a movie FOLDER as a playable variant', async () => {
+    // Live-data defect 2026-11-07: Movie.path is a folder
+    // (`/data/Movies/12 Angry Men (1957)`). Writing it as a variant made
+    // playback resolve a directory and every movie stream return HTTP 500.
+    const folderMovieId = 14;
+    const folder = path.join(movieRoot, 'Folder Movie (2021)');
+    fs.mkdirSync(folder, { recursive: true });
+    const innerFile = path.join(folder, 'Folder Movie (2021).mkv');
+    fs.writeFileSync(innerFile, 'folder-movie-bytes');
+
+    (client.sqlite.prepare(
+      'INSERT INTO "Movie" (id, tmdbId, title, cleanTitle, sortTitle, status, qualityProfileId, year, path)'
+      + ' VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    ) as any).run(folderMovieId, 9004, 'Folder Movie', 'foldermovie', 'Folder Movie', 'released', 1, 2021, folder);
+
+    await (scanService as any).scanMovies(movieRoot);
+
+    const variants = await (client as any).mediaFileVariant.findMany({
+      where: { mediaType: 'MOVIE', movieId: folderMovieId },
+    });
+    expect(variants.map((v: { path: string }) => v.path)).toEqual([innerFile]);
+
+    const source = await playbackService.resolveStreamSource({ mediaType: 'MOVIE', mediaId: folderMovieId });
+    expect(source.filePath).toBe(innerFile);
+  });
+
   it('does not create variant rows for files that are missing on disk', async () => {
     await scanService.scanAll({ movieRootFolder: movieRoot, tvRootFolder: tvRoot });
 

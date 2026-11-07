@@ -805,7 +805,7 @@ class _ErrorOverlay extends StatelessWidget {
 
 /// Transport overlay: title, seek bar, transport buttons, subtitle nudge,
 /// and Stop. Auto-hides 4s after the last input (handled by PlaybackService).
-class _TransportOverlay extends StatelessWidget {
+class _TransportOverlay extends StatefulWidget {
   const _TransportOverlay({
     required this.state,
     required this.service,
@@ -821,6 +821,20 @@ class _TransportOverlay extends StatelessWidget {
   final VoidCallback onStop;
   final VoidCallback onBack;
   final VoidCallback? nextEpisode;
+
+  @override
+  State<_TransportOverlay> createState() => _TransportOverlayState();
+}
+
+class _TransportOverlayState extends State<_TransportOverlay> {
+  bool _syncOpen = false;
+
+  PlaybackState get state => widget.state;
+  PlaybackService get service => widget.service;
+  String get title => widget.title;
+  VoidCallback get onStop => widget.onStop;
+  VoidCallback get onBack => widget.onBack;
+  VoidCallback? get nextEpisode => widget.nextEpisode;
 
   @override
   Widget build(BuildContext context) {
@@ -872,7 +886,6 @@ class _TransportOverlay extends StatelessWidget {
                       icon: Icons.arrow_back,
                       tooltip: 'Back',
                       onPressed: onBack,
-                      autofocus: true,
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -886,6 +899,12 @@ class _TransportOverlay extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
+                    _SyncToggle(
+                      open: _syncOpen,
+                      delay: state.subtitleDelay,
+                      onPressed: () => setState(() => _syncOpen = !_syncOpen),
+                    ),
+                    const SizedBox(width: 8),
                     _IconActionButton(
                       icon: Icons.stop_circle_outlined,
                       tooltip: 'Stop playback',
@@ -895,7 +914,39 @@ class _TransportOverlay extends StatelessWidget {
                 ),
               ),
             ),
-            // Bottom: seek + transport + subtitle nudge.
+            // Sync panel: under the top bar so it never covers subtitles.
+            if (_syncOpen)
+              Positioned(
+                top: 84,
+                right: 16,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xCC000000),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.white24),
+                      ),
+                      child: _SubtitleNudgeBar(service: widget.service),
+                    ),
+                    const SizedBox(height: 6),
+                    FocusableAction(
+                      variant: FocusableActionVariant.button,
+                      borderRadius: 8,
+                      onSelect: () => setState(() => _syncOpen = false),
+                      child: const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        child: Text('Hide sync',
+                            style: TextStyle(color: Colors.white54, fontSize: 16)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            // Bottom: seek + transport.
             Positioned(
               left: 0,
               right: 0,
@@ -913,15 +964,17 @@ class _TransportOverlay extends StatelessWidget {
                         Text(
                           _formatDuration(state.position),
                           style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 18,
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontFeatures: [FontFeature.tabularFigures()],
                           ),
                         ),
                         Text(
                           _formatDuration(state.duration),
                           style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 18,
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontFeatures: [FontFeature.tabularFigures()],
                           ),
                         ),
                       ],
@@ -941,8 +994,11 @@ class _TransportOverlay extends StatelessWidget {
                           icon: state.status == PlaybackStatus.playing
                               ? Icons.pause_circle_filled
                               : Icons.play_circle_filled,
-                          size: 96,
+                          size: 104,
                           color: MediarrColors.accentPrimary,
+                          // Entry focus belongs on the one control a viewer
+                          // uses most; Back used to hold it (UX review).
+                          autofocus: true,
                           onPressed: service.togglePlayPause,
                         ),
                         const SizedBox(width: 32),
@@ -966,8 +1022,7 @@ class _TransportOverlay extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
-                    _SubtitleNudgeBar(service: service),
+
                   ],
                 ),
               ),
@@ -1061,7 +1116,7 @@ class _IconActionButton extends StatelessWidget {
     required this.icon,
     required this.onPressed,
     this.tooltip,
-    this.size = 56,
+    this.size = 64,
     this.color = Colors.white,
     this.autofocus = false,
   });
@@ -1125,6 +1180,53 @@ class _SeekBar extends StatelessWidget {
             );
             service.seekTo(target);
           },
+        ),
+      ),
+    );
+  }
+}
+
+/// Compact labelled toggle for the subtitle sync panel.
+///
+/// The raw "-5s … Reset" row used to sit unexplained under the transport and
+/// collided with the subtitle line (owner: "what is that for?"). It is now a
+/// labelled **Sync** toggle whose panel opens under the top bar.
+class _SyncToggle extends StatelessWidget {
+  const _SyncToggle({
+    required this.open,
+    required this.delay,
+    required this.onPressed,
+  });
+
+  final bool open;
+  final Duration delay;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = delay == Duration.zero
+        ? 'Sync'
+        : 'Sync ${delay.inMilliseconds > 0 ? '+' : ''}'
+            '${(delay.inMilliseconds / 1000).toStringAsFixed(1)}s';
+    return FocusableAction(
+      variant: FocusableActionVariant.button,
+      borderRadius: 8,
+      onSelect: onPressed,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: open ? Colors.white24 : Colors.white12,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.white24),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.tune, size: 22, color: Colors.white70),
+            const SizedBox(width: 8),
+            Text(label,
+                style: const TextStyle(color: Colors.white70, fontSize: 18)),
+          ],
         ),
       ),
     );

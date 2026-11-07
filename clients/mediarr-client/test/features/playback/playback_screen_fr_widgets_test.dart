@@ -41,6 +41,18 @@ Future<void> pumpUntilSettled(WidgetTester tester) async {
   await tester.pump(const Duration(milliseconds: 400));
 }
 
+/// Opens the labelled Sync disclosure that now holds the subtitle nudge row.
+Future<void> openSyncControls(WidgetTester tester) async {
+  // Idempotent: the group's pumpScreen may already have opened the panel, and
+  // tapping the toggle again would close it.
+  if (find.text('-5s').evaluate().isNotEmpty) return;
+  final sync = find.text('Sync');
+  if (sync.evaluate().isNotEmpty) {
+    await tester.tap(sync.first);
+    await tester.pump();
+  }
+}
+
 void main() {
   group('PlaybackScreen — FR-6 silent default track selection', () {
     late FakeMediarrApiClient apiClient;
@@ -48,6 +60,10 @@ void main() {
     late FakeSubtitleRenderer renderer;
 
     Future<void> pumpScreen(WidgetTester tester) async {
+      tester.view.physicalSize = const Size(1280, 720);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -264,12 +280,9 @@ void main() {
       final captions = tester.widget<Icon>(find.byIcon(Icons.closed_caption));
       final playPause =
           tester.widget<Icon>(find.byIcon(Icons.play_circle_filled));
-      final nudge = tester.widget<Text>(find.text('-5s'));
-
-      expect(rewind.size, 56);
-      expect(captions.size, 56);
-      expect(playPause.size, 96);
-      expect(nudge.style?.fontSize, 20);
+      expect(rewind.size, 64);
+      expect(captions.size, 64);
+      expect(playPause.size, 104);
     });
   });
 
@@ -279,6 +292,10 @@ void main() {
     late FakeSubtitleRenderer renderer;
 
     Future<void> pumpScreen(WidgetTester tester) async {
+      tester.view.physicalSize = const Size(1280, 720);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -303,6 +320,14 @@ void main() {
       );
       await tester.pump();
       await tester.pump();
+      // The subtitle nudge row is now behind the labelled Sync disclosure
+      // (UX review 2026-11-07); open it so these FR-7 tests exercise the
+      // controls they assert on.
+      final sync = find.text('Sync');
+      if (sync.evaluate().isNotEmpty) {
+        await tester.tap(sync.first);
+        await tester.pump();
+      }
     }
 
     setUp(() {
@@ -416,6 +441,7 @@ void main() {
       '(-5s, -1s, -0.5s, +0.5s, +1s, +5s) plus Reset',
       (tester) async {
         await pumpScreen(tester);
+        await openSyncControls(tester);
 
         // All nudge buttons are visible at the same time.
         expect(find.text('-5s'), findsOneWidget);

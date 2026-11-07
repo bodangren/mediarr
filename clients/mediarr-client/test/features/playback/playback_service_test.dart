@@ -586,6 +586,68 @@ void main() {
     });
   });
 
+  group('PlaybackService — transport auto-hide (UX review 2026-11-07)', () {
+    late FakeMediaPlayer player;
+    late FakeSubtitleRenderer renderer;
+    late PlaybackService service;
+
+    setUp(() {
+      player = FakeMediaPlayer();
+      renderer = FakeSubtitleRenderer();
+      service = PlaybackService(
+        MediarrApiClient(),
+        player: player,
+        subtitleRenderer: renderer,
+      );
+    });
+
+    tearDown(() async {
+      await service.stop();
+      await player.dispose();
+    });
+
+    testWidgets('the overlay stays up while playback is paused', (tester) async {
+      await tester.runAsync(() async {
+        await service.play(
+          streamUrl: 'http://example.com/ep.mkv',
+          title: 'Episode',
+          mediaId: 1,
+          mediaType: 'episode',
+        );
+        player.emitStatus(MediaPlayerStatus.playing);
+        await Future<void>.delayed(Duration.zero);
+
+        service.showOverlay();
+        player.emitStatus(MediaPlayerStatus.paused);
+        await Future<void>.delayed(const Duration(seconds: 6));
+      });
+
+      expect(
+        service.state.overlayVisible,
+        isTrue,
+        reason: 'A paused screen with hidden controls looks frozen and gives '
+            'the viewer no obvious way to resume.',
+      );
+    });
+
+    testWidgets('the overlay hides 5 s after input while playing', (tester) async {
+      await tester.runAsync(() async {
+        await service.play(
+          streamUrl: 'http://example.com/ep.mkv',
+          title: 'Episode',
+          mediaId: 1,
+          mediaType: 'episode',
+        );
+        player.emitStatus(MediaPlayerStatus.playing);
+        await Future<void>.delayed(Duration.zero);
+        service.showOverlay();
+        await Future<void>.delayed(const Duration(seconds: 6));
+      });
+
+      expect(service.state.overlayVisible, isFalse);
+    });
+  });
+
   group('PlaybackService — subtitle timing nudge (FR-7)', () {
     late FakeMediaPlayer player;
     late FakeSubtitleRenderer renderer;

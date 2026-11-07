@@ -86,6 +86,9 @@ void main() {
     );
     await tester.pump();
     await tester.pump();
+    // The transport auto-hides only while the video is running.
+    player.emitStatus(MediaPlayerStatus.playing);
+    await tester.pump();
   }
 
   /// Sends one key and pumps a bounded number of frames.
@@ -117,7 +120,7 @@ void main() {
         (tester) async {
       await pumpScreen(tester);
 
-      // Let the 4 s hide window elapse: the overlay unmounts and focus
+      // Let the 5 s hide window elapse: the overlay unmounts and focus
       // returns to the root node (FR-8). This is the state the owner was in.
       await tester.pump(const Duration(seconds: 5));
       expect(find.text('How I Met Your Mother S01E01'), findsNothing,
@@ -174,19 +177,22 @@ void main() {
         (tester) async {
       await pumpScreen(tester);
 
-      // At first appearance focus is on the Back control (autofocus). Select
-      // must trigger THAT control — which pops the playback route — not fall
-      // through to the root fallback that toggles play/pause.
+      // Entry focus is the Play/Pause control (UX review 2026-11-07), so
+      // Select must drive THAT control — a real pause — not fall through to
+      // the root fallback.
       await pressOnce(tester, LogicalKeyboardKey.select);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(
+        player.playOrPauseCalls,
+        isNotEmpty,
+        reason: 'Select on the focused Play/Pause control must toggle playback.',
+      );
+      expect(
         find.byType(PlaybackScreen),
-        findsNothing,
-        reason: 'Select on the focused Back control must exit playback. '
-            'Before the fix no control held focus and Select toggled '
-            'play/pause instead (owner report 2026-10-03).',
+        findsOneWidget,
+        reason: 'Select on Play/Pause must not exit playback.',
       );
     });
   });

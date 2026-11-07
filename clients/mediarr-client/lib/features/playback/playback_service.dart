@@ -628,11 +628,15 @@ class PlaybackService extends StateNotifier<PlaybackState> {
 
   void _startOverlayTimer() {
     _overlayHideTimer?.cancel();
-    _overlayHideTimer = Timer(const Duration(seconds: 4), () {
-      // FR-7: hide 4 s after the last input whatever the play state. The old
-      // `status == playing` guard made this a one-shot that missed its window
-      // on any buffering blip and never re-armed, so the overlay stayed up.
-      if (state.overlayVisible) {
+    _overlayHideTimer = Timer(const Duration(seconds: 5), () {
+      if (!state.overlayVisible) return;
+      // Hide only while the video is actually running. A paused or buffering
+      // screen with no controls looks frozen and the viewer cannot resume
+      // without guessing (owner + 10-foot UX review 2026-11-07). The earlier
+      // one-shot `playing` guard was different: it never re-armed, so the
+      // overlay stayed up after a blip. This re-checks per tick and the next
+      // input re-arms the window.
+      if (state.status == PlaybackStatus.playing) {
         state = state.copyWith(overlayVisible: false);
       }
     });

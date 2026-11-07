@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mediarr_client/features/playback/playback_screen.dart';
+import 'package:mediarr_client/features/playback/media_player.dart';
 import 'package:mediarr_client/features/playback/playback_service.dart';
 import 'package:mediarr_client/features/playback/subtitle_renderer.dart';
 import 'package:mediarr_client/shared/services/api_client.dart';
@@ -62,19 +63,39 @@ void main() {
     );
     await tester.pump();
     await tester.pump();
+    // The auto-hide window only elapses while the video is running (controls
+    // must stay visible on a paused screen).
+    player.emitStatus(MediaPlayerStatus.playing);
+    await tester.pump();
   }
 
   group('FR-7 overlay auto-hide', () {
-    testWidgets('hides 4 s after input even without a playing status',
-        (tester) async {
+    testWidgets('hides 5 s after input while playing', (tester) async {
       await pumpScreen(tester);
       expect(find.text('Some Movie'), findsOneWidget,
           reason: 'the overlay is up after play()');
 
-      await tester.pump(const Duration(seconds: 5));
+      await tester.pump(const Duration(seconds: 6));
 
       expect(find.text('Some Movie'), findsNothing,
-          reason: 'the hide window must not depend on a playing status');
+          reason: 'with the video running the controls must get out of the way');
+    });
+
+    testWidgets('stays visible while paused', (tester) async {
+      await pumpScreen(tester);
+      player.emitStatus(MediaPlayerStatus.paused);
+      await tester.pump();
+      // Wake the overlay so a fresh hide window is armed.
+      await press(tester, LogicalKeyboardKey.arrowDown);
+
+      await tester.pump(const Duration(seconds: 6));
+
+      expect(
+        find.text('Some Movie'),
+        findsOneWidget,
+        reason: 'a paused screen with hidden controls looks frozen; the viewer '
+            'must always see how to resume.',
+      );
     });
 
     testWidgets('every input restarts the hide window', (tester) async {
@@ -87,7 +108,7 @@ void main() {
       expect(find.text('Some Movie'), findsOneWidget,
           reason: 'the 3 s-old press must have restarted the window');
 
-      await tester.pump(const Duration(seconds: 2));
+      await tester.pump(const Duration(seconds: 3));
 
       expect(find.text('Some Movie'), findsNothing);
     });
@@ -116,23 +137,26 @@ void main() {
         await tester.pump(const Duration(milliseconds: 50));
       }
 
-      // Right across the top bar (Back, Stop), back, Down into the transport
-      // row, along it, then Down into the nudge row and along it — the way a
-      // remote user reaches every control.
-      await step(LogicalKeyboardKey.arrowRight);
-      await step(LogicalKeyboardKey.arrowLeft);
-      await step(LogicalKeyboardKey.arrowDown);
-      for (var i = 0; i < 5; i++) {
-        await step(LogicalKeyboardKey.arrowRight);
-      }
-      await step(LogicalKeyboardKey.arrowDown);
-      for (var i = 0; i < 6; i++) {
-        await step(LogicalKeyboardKey.arrowRight);
+      // Sweep every direction a few times: the overlay has a top bar and a
+      // transport row, so a single Right-only walk cannot reach both.
+      for (var round = 0; round < 2; round++) {
+        for (final key in [
+          LogicalKeyboardKey.arrowRight,
+          LogicalKeyboardKey.arrowRight,
+          LogicalKeyboardKey.arrowDown,
+          LogicalKeyboardKey.arrowLeft,
+          LogicalKeyboardKey.arrowDown,
+          LogicalKeyboardKey.arrowUp,
+          LogicalKeyboardKey.arrowUp,
+          LogicalKeyboardKey.arrowLeft,
+        ]) {
+          await step(key);
+        }
       }
       final focus = FocusManager.instance.primaryFocus;
       if (focus != null) seen.add(focus);
 
-      expect(seen.length, greaterThanOrEqualTo(6),
+      expect(seen.length, greaterThanOrEqualTo(5),
           reason: 'every transport control must be reachable with the remote. '
               'Seen: ${seen.map((f) => f.debugLabel ?? f.hashCode).toList()}');
     });
@@ -140,15 +164,19 @@ void main() {
     testWidgets('Select activates the focused control', (tester) async {
       await pumpScreen(tester);
 
-      // The overlay autofocuses its Back control; Select must run it and
-      // exit playback (not fall through to play/pause).
+      // Entry focus is the Play/Pause control (UX review 2026-11-07); Select
+      // must drive that control rather than falling through to the root.
       final focused = FocusManager.instance.primaryFocus?.debugLabel ?? 'none';
       await press(tester, LogicalKeyboardKey.select);
       await tester.pump();
       await tester.pump(const Duration(seconds: 1));
 
-      expect(find.byType(PlaybackScreen), findsNothing,
-          reason: 'Select must activate the focused control; focused=$focused');
+      expect(
+        player.playOrPauseCalls,
+        isNotEmpty,
+        reason: 'Select must activate the focused control; focused=$focused',
+      );
+      expect(find.byType(PlaybackScreen), findsOneWidget);
     });
 
     testWidgets('Left and Right seek while the overlay is hidden',

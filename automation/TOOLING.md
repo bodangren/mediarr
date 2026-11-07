@@ -30,7 +30,7 @@ Evidence:
   (`server/src/services/MediaSearchService.ts:387`, `:794`), and the code says so outright —
   *"downloadClientId is accepted but currently not used since we use the internal torrent manager"*
   (`:902`).
-- The engine is WebTorrent **2.8.5** (`server/package.json`), initialized in
+- The engine is WebTorrent **2.8.5** (repo-root `package.json:57`), initialized in
   `server/src/services/TorrentManager.ts:117-133`, with completion → import, stats SSE, and
   `SeedingProtector` already wired.
 - `DownloadClientRepository` supports types `transmission | qbittorrent | deluge | rtorrent | …`
@@ -44,6 +44,10 @@ torrent MCP/plugin indirection.
 **Transmission today (2026-11-07):** `transmission-daemon.service` active, RPC on `:9091`, five
 torrents — four complete/idle, one active at **83.4%** (For All Mankind S03). `transmission-remote`
 remains the read-only way to inspect it.
+
+**Known unit bug (B2b):** the speed-limit setting is passed as Kbps into a bytes/sec setter
+(`downloadClientRoutes.ts:121-125` → `TorrentManager.ts:547-554`), so 1024 means ~8 kbps. Fix before
+the validation run.
 
 **Decommission condition (do not disable early):**
 1. the active torrent completes (or is deliberately re-added to Mediarr),
@@ -90,12 +94,26 @@ JSON-RPC stream on stdout is clean.
   a clear tool error. That must become an alert, not a hang (watchdog item B9).
 - The bridge is no longer a separate service: DSH spawns it from the MCP entry and supervises it via
   the host. On a host restart the bridge restarts with it; Chrome/extension reconnect.
+- **A failed bridge is not always an error:** after ~151 s of reconnect attempts the MCP client
+  unregisters the tools; a run then ends normally without them. Every run must assert the
+  `mcp__webbridge__*` tools exist and fail loudly otherwise. The bridge child does auto-respawn
+  (verified by killing it) but the extension must reconnect.
 - One managed-tab session per bridge process; `navigate ... newTab:true` is the non-disruptive way to
   open a page (do not navigate whatever tab the user has focused).
 - `list_tabs`/`close_tab` have returned empty-session quirks in testing; `navigate`+`evaluate` are the
   reliable primitives. Re-check before building UI flows on tab listing.
 
-## 4. PATH requirements for the systemd host unit (B3)
+## 4. System changes applied 2026-11-07
+
+- Passwordless sudo via `/etc/sudoers.d/010-mediarr-agent` (no password stored); validated with
+  `visudo -cf`.
+- `/data` → 4TB and `/config` → `4TB/mediarr-config` symlinks; config dir + staging + legacy
+  `4TB/media` chowned to uid 1000 (they were 100999). The real DB is `/config/mediarr.db`
+  (550 movies / 28 series; **0 indexers**, 0 notifications, auth disabled, roots `/data/Movies` +
+  `/data/TV`).
+- See [`PROVISIONING.md`](./PROVISIONING.md) for the recreate-from-scratch commands.
+
+## 5. PATH requirements for the systemd host unit (B3)
 
 The agent shell and the MCP child need:
 
@@ -110,7 +128,7 @@ The agent shell and the MCP child need:
 needed by some native modules); the venv bin supplies `beet`. The systemd unit should set
 `Environment=PATH=...` explicitly and use absolute paths for `ExecStart`.
 
-## 5. Deliberately not installed yet
+## 6. Deliberately not installed yet
 
 | Tool | Why not | Trigger to add |
 |---|---|---|
@@ -119,7 +137,7 @@ needed by some native modules); the venv bin supplies `beet`. The systemd unit s
 | Node 24 as default | root suite needs Node 24 for `better-sqlite3`; switching the default is invasive | running the Mediarr test suite / deploying |
 | Mediarr node deps | deployment (B1) is a service decision, not a tool install | B1 starts |
 
-## 6. Verification log
+## 7. Verification log
 
 ```sh
 $ ~/.local/bin/yt-dlp --version                 # 2026.10.26

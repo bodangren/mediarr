@@ -2,9 +2,11 @@
 
 **Track:** `chore_migrate_hermes_automation_20261107`
 **Opened:** 2026-11-07 · **Status:** Phases 1–3 complete (inventory, three-family design, owner
-ratification). **Phase 4 (build) in progress:** tooling installed and proven, browser MCP live,
-subtitle interval persistence fixed TDD, torrent engine decided (built-in WebTorrent); B1
-(Mediarr 24/7) and B3 (host → systemd) remain the open prerequisites. **v3 owner feedback (same
+ratification + triumvirate review). **Phase 4 (build) is gated:** tooling installed and proven,
+browser MCP live, subtitle interval persistence fixed TDD, torrent engine decided (built-in
+WebTorrent), the real Mediarr DB unblocked (550 movies / 28 series; `/data` + `/config` mapped), and
+the three-family review graded (`design/reviews/SYNTHESIS.md`, gates G1–G10). Next: B1a (start
+against the real DB), B2b (torrent unit bug), then B3/B4. **v3 owner feedback (same
 day):** agent-first web automation — browser-use via kimi-webbridge MCP instead of DOM/regex
 scripts; a *few* agent calls (daily 03:00 media orchestrator, weekly music, weekly adult, monthly
 rules) replace many scripts; deterministic code only for stable APIs and maintained tools
@@ -72,15 +74,24 @@ a session started before a provider change cannot use the new provider.
 - **The live DSH Host is a terminal-launched `node ~/.local/bin/dsh web` (no systemd unit);
   closing that terminal stops all scheduling.** Linger is enabled (`Linger=yes`), so a user unit
   will work. See `design/TARGET-ARCHITECTURE.md` §5.1.
-- The library tree `/run/media/daniel-bo/4TB/{downloads,media}` is owned by **uid 100999**,
-  not the login user. Anything that writes there (`fetch-monitor` moves, imports) fails with
-  `EACCES` until it is chowned, or until `MEDIA_DIR` is overridden to a writable path.
+- **Ownership corrected (2026-11-07):** the library roots (`Movies`, `TV`, `Porn`, `Music`, top
+  level) are uid **1000**; only the old container-era `4TB/downloads`, `4TB/media` and
+  `4TB/mediarr-config` were uid 100999. Config + staging + legacy media are now chowned to 1000, and
+  `/data`/`/config` symlinks make the DB's container paths resolve on the host. The real DB is
+  `/config/mediarr.db` (550 movies / 28 series; 0 indexers, 0 notification transports).
 - `mediarr.db` carries a repaired migration ledger: migration `0007` was recorded under a
   transposed timestamp and blocked every startup until it was fixed. A backup sits at
   `mediarr.db.bak-20261107` (repo root, untracked).
 - The TV box (`192.168.10.60`) runs an APK built before `82f6c7ce`; mDNS discovery does not
   work from it, manual entry does. That is a separate track, but it is why "the server is
   reachable" and "the client finds it" are different claims.
+- **Passwordless sudo is configured** (`/etc/sudoers.d/010-mediarr-agent`) on this dedicated
+  machine; no password is stored in the repo or in AGENTS.md. Recreate from
+  [`automation/PROVISIONING.md`](../../automation/PROVISIONING.md).
+- **Triumvirate review (2026-11-07):** three families reviewed v3 — architecture (MiniMax),
+  reliability/security (Xiaomi), delivery (DeepSeek). Verdicts: accept-with-fixes,
+  accept-with-fixes, not-yet-executable. Gates G1–G10 in
+  [`design/reviews/SYNTHESIS.md`](./design/reviews/SYNTHESIS.md).
 - **The silent miss is real and measurable:** `~/media-reports/YYYY-MM-DD.md` stops at
   `2026-10-20`, yet `media-orchestrator` logged completed runs on `2026-11-06`. Even a
   "completed" agent run did not produce its artifact — why the design requires receipts and an

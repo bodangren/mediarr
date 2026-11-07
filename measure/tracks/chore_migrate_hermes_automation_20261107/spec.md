@@ -76,6 +76,13 @@ maintained CLIs (`yt-dlp`, `beets`) plus a small bookkeeping layer.
 | D5 | Browser substrate | **kimi-webbridge mounted as an MCP server** (`@deepseek-ai/dsh-mcp-client`, stdio), tools named `mcp__webbridge__*`; Chrome + extension + existing VPN profile | Playwright-MCP only if the bridge proves unstable |
 | D6 | Agent cadence | **Daily 03:00 media orchestrator; weekly music (Sun 03:00); weekly adult (Sun 04:00); monthly rules review** | Hourly/daily model turns in API work (no benefit, adds provider risk) |
 | D7 | Torrent engine | **Mediarr's built-in WebTorrent 2.8.5 engine**; agent actuates via Mediarr's APIs. No external client, no rtorrent, no torrent MCP. Transmission is disabled once its active torrent finishes and one magnet is validated end-to-end through Mediarr | External `downloadClientId` is accepted but unused (`MediaSearchService.ts:902`); a Transmission adapter would duplicate state for no benefit |
+| D8 | Alert channel (review) | **Local-first**: desktop notification + `~/media-automation/alerts.jsonl` + journal, optional webhook; **system-level** watchdog; delivery status/retry + a periodic synthetic alert | Webhook-only (no delivery proof); user-level watchdog (dbus death kills host and watcher together) |
+| D9 | Destructive ops (review) | **Plugin-mediated only**, explicit delete intent, dry-run mandatory, delete never the default; patch Mediarr's `removeTorrent`/API defaults; reader→actuator split so injected pages cannot call deletes | Agent calling `DELETE /api/torrents/:hash` directly (`deleteData=true`, swallows rm failure) |
+| D10 | Schedule semantics (review) | `new` targets + plugin **locks** (incl. a `browser` lock); ledger keyed by `taskId+attempt` with `retryOf`; explicit `turn/end` mapping (only `completed` = ok); per-task catch-up policy; frozen ledger schema | `new_once` can wedge forever; `schedule.run()` mints a new occurrence; success on any non-error turn end |
+| D11 | Browser policy (review) | One browser runner, lock, **tool-registration assertion** at each occurrence, wedged-call timeout, extension-reconnect check; **music run moved off Sunday 03:00** | Port-liveness probe; assuming a dead bridge produces a tool error (tools disappear after ~151 s) |
+| D12 | Paths/ownership (review) | `/data` + `/config` mapped, config + staging uid 1000, DB backed up, `DATABASE_URL`/`MEDIA_DIR`/`ENCRYPTION_KEY` pinned, torrent staging paths set | `/data` absent + uid 100999 staging; dev encryption key regenerated |
+| D13 | Acquisition sources (review) | **0 indexers means browser-agent acquisition is the only live path**; indexers are optional future work | Assuming deterministic wanted-search/RSS currently has sources |
+| D14 | Domain sequencing (review) | Automation cuts over first; domains **YouTube → Adult → Music(domain) → Music(player)**; SPA-first where possible; Flutter focus fix + installed APK are prerequisites | Building three domain UIs on a known-broken TV client |
 | Q7 | Prune deletion | **Quarantine-then-delete unattended**: 14-day retention, manifest, restore, safety rails, cap, dry-run week | Heuristic deletion (banned); candidates-only (superseded by owner's safety-net choice) |
 | Q8 | Host | **Systemd user unit with `DSH_PERMISSION_MODE=danger-full-access`**, one host on :3080 | Workspace-write (scheduled turns cannot answer approvals) |
 | Q9 | Watch-next | **Report + `Watch Next` collection** in Mediarr (Collections API) | Report only; auto-add to wanted |
@@ -101,6 +108,14 @@ maintained CLIs (`yt-dlp`, `beets`) plus a small bookkeeping layer.
   and caps; dry-run first.
 - **FR-11 New domains:** Adult, YouTube and Music are separate tracks; this track's automation must
   skip absent domains gracefully and never depend on jellyfin-go.
+- **FR-12 Browser tools are asserted:** a run whose expected `mcp__webbridge__*` tools are absent must
+  fail loudly (receipt + alert), never end as a normal turn. A wedged tool call must time out.
+- **FR-13 Destructive actions are mediated:** an agent cannot delete data through a default-on API;
+  deletes require explicit intent, pass through the plugin, and have a dry-run.
+- **FR-14 Alerts are deliverable:** each alert records delivery status, retries within a bound, falls
+  back locally, and the chain has a periodic synthetic test.
+- **FR-15 Single browser:** browser-using runs are serialized; a second run waits or aborts with an
+  alert instead of interleaving on the one extension session.
 
 ## Acceptance criteria
 

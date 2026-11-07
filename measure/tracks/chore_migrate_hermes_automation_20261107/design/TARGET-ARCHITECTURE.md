@@ -72,9 +72,9 @@ plugin verifies Mediarr task receipts every 5 min. No model.
 | Time | Behaviour | Owner | Model? |
 |---|---|---|---|
 | Sun 02:00 | database backup trigger | plugin | never |
-| **Sun 03:00** | **music run** — discover/pick on YouTube, download audio via `yt-dlp`, tag via `beets`, report | **DSH agent + browser + CLIs** | yes (1 call) |
-| **Sun 04:00** | **adult run** — browse sources, queue 1–3, name prune candidates | **DSH agent + browser** | yes (1 call) |
-| monthly | rules review (quality profile / custom formats) — proposals only | DSH agent | yes (1 call) |
+| **Sun 01:00** | **music run** — discover/pick on YouTube, download audio via `yt-dlp`, tag via `beets`, report. (Moved off 03:00 by the review; the browser lock still serializes it with the daily run.) | **DSH agent + browser + CLIs** | yes (1 call) |
+| **Sun 04:00** | **adult run** — browse sources, queue 1–3, name prune candidates. (Daily run is at 03:00; the shared browser lock is the backstop.) | **DSH agent + browser** | yes (1 call) |
+| monthly Sun 05:00 | rules review (quality profile / custom formats) — proposals only | DSH agent | yes (1 call) |
 
 ### Human — on demand
 Add + search now, override, retry import, restore from quarantine, delete, ask what happened.
@@ -264,3 +264,50 @@ P0–P9 before they land (the daily agent simply skips domains that do not exist
 
 No new tooling was added for torrents: the engine, import path and seeding protector already exist
 in Mediarr, and an external client/adapter would create a second state owner.
+
+## 12. v3.1 — triumvirate review corrections (2026-11-07)
+
+Three independent reviews (MiniMax/architecture, Xiaomi/reliability, DeepSeek/delivery) graded v3 as
+buildable-but-gated; the graded synthesis, including the reviewer claims that were wrong, is
+[`reviews/SYNTHESIS.md`](./reviews/SYNTHESIS.md). Accepted deltas:
+
+1. **Real Mediarr state (G8).** The production DB is `/config/mediarr.db` (550 movies / 28 series,
+   real TMDB key, `authenticationRequired:false`, roots `/data/Movies` + `/data/TV`); the repo-root
+   DB is a test fixture. `/data` and `/config` are now symlinks and the config dir + staging are
+   uid 1000. **B1a** = back up, pin env, start against the real DB, verify counts/playback, then B1.
+2. **0 indexers (D13).** Acquisition is browser-agent-only until indexers exist; deterministic
+   wanted-search/RSS have no sources today. State this in every prompt; do not promise indexer
+   automation that is not configured.
+3. **Browser substrate (G2).** One bridge, one extension session, binds `*:10086`; a second instance
+   dies (EADDRINUSE, no error listener) and after ~151 s the MCP client unregisters the tools — the
+   run then ends *normally* (silent miss). Required: start ordering, `browser` lock, **tool-
+   registration assertion** at run start, per-call/run timeout, extension-reconnect probe, and the
+   music run moved to Sun 01:00 (schedule table updated above). A wedged call must be killed; the
+   alerting path must name "tools absent", not "browser error".
+4. **Destructive safety (D9/G3).** `removeTorrent(infoHash, deleteData=true)` deletes the payload and
+   the DB row even when the delete failed, and is reachable from `DELETE /api/torrents/:hash`. Agents
+   must not get delete-by-default; patch the default, require explicit intent, mediate destructive
+   actions through the plugin, dry-run first, and keep a reader→actuator boundary for prompt-injected
+   pages. Receipts carry no cookies/tokens.
+5. **Alert chain (D8/G4).** Local-first (desktop + `alerts.jsonl` + journal) with an optional webhook;
+   **system-level** watchdog, heartbeat, delivery status/retry, local fallback, synthetic alert.
+   Detection ≤10 min / delivery ≤15 min; `expectations.yaml` is the clean-week query.
+6. **Schedule semantics (D10/G5).** `new` targets (never `new_once` for the daily run — it can wedge
+   forever on a non-idle turn), plugin `locks` for FR-5, ledger keyed by `taskId+attempt` with
+   `retryOf` (`ctx.schedule.run()` mints a new occurrence), in-flight duplicates abort/wait, map every
+   `turn/end` kind (only `completed` is ok), per-task catch-up (daily next day; weekly one catch-up
+   `runNow`; monthly alert), freeze the ledger schema before first write.
+7. **Quarantine (G6).** Root on the 4TB filesystem (same device); per-file hash manifest; copy+verify
+   for EXDEV; restore proven byte-identical; cap/overflow behaviour stated; rails must not reuse
+   `isImportIncomplete`; explicit dry-run→live guard.
+8. **Torrents (G7).** Fix the Kbps→bytes/sec bug before B9b; set staging paths; let the 83.4 %
+   Transmission torrent finish and import once — do not re-add (different engine/dir = re-download);
+   state the ratio/seeding forfeit; keep `transmission-remote` read-only after disable.
+9. **Domains (D14/G9/G10).** Automation cuts over before domains; order YouTube → Adult → Music
+   (domain) → Music (player); YouTube retention only for subscription-managed items (never the 786
+   existing files), `isWatched && now−lastWatched>7d`, migration/keep-marking, per-poll cap,
+   deterministic `yt-dlp` poll; Music filing only for new imports + scanner accepts existing
+   layouts; Adult needs a filename grammar (hashes alone fail) and ships SPA-first; one shared
+   library-kind/roots/nav foundation and the Flutter focus fix are prerequisites.
+10. **Docs (G10).** §9 is the single canonical backlog (B1a, B2b added, B10–B12 are separate tracks);
+    B4–B9b are gated on G1–G3/G5/G6; `plan.md` references these IDs.

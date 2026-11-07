@@ -43,57 +43,75 @@
 - [x] **contract** → `design/mediarr-contract.md`: capability table with file:line, automation-facing contract, sequencing. **Done** — corrected the brief (torrent queue control exists); E1–E5; switch-off conditions.
 - [x] Lead reads all three and grades them: every factual claim about DSH or Mediarr cited to source; no workflow transcription disguised as intent. **Done** — two substrate gaps found and corrected (unattended-session permission mode; host-down watchdog), live settings corrected to 12/20/60 min.
 
-## Phase 3: Ratify ✅
+## Phase 3: Ratify ✅ (v3, revised after the triumvirate review)
 
 - [x] Resolve D1–D4 in `spec.md` with the owner; record the rejected options and why.
-      **Done 2026-11-07:** D1 more work in DSH (plugin code, never model turns in deterministic
-      loops); D2 music scoped as its own track, adult folded into Movies; D3 indexers only, no
-      browser bridge; D4 "never silently wrong". Four extra decisions resolved: quarantine-then-
-      delete (14-day retention), DSH host systemd unit with full access, watch-next report +
-      Collections, plugin ownership of the automation layer.
+      **Done 2026-11-07 (v3):** D1 more work in DSH (plugin code, never model turns in deterministic
+      loops); D2 **Adult is a separate library**, YouTube and Music are separate tracks; D3
+      **agent + browser-use (kimi-webbridge MCP)** for rendered web UIs — no DOM scrapers; D4
+      "never silently wrong". Extra decisions: quarantine-then-delete, DSH host systemd unit with
+      full access, watch-next report + Collections, plugin ownership of the automation layer.
 - [x] Merge the three designs into one target architecture (Lead) —
-      [`design/TARGET-ARCHITECTURE.md`](./design/TARGET-ARCHITECTURE.md) v2 (owner-ratified).
-- [x] Turn it into an ordered backlog with acceptance evidence per item — §8, B1–B11.
+      [`design/TARGET-ARCHITECTURE.md`](./design/TARGET-ARCHITECTURE.md) **v3 + §12 review
+      corrections**.
+- [x] Turn it into an ordered backlog with acceptance evidence per item — architecture §9 is the
+      **single canonical backlog**; this plan references its IDs.
 - [x] Amend this plan to match the ratified architecture.
+- [x] **Triumvirate review** (three families: MiniMax/architecture, Xiaomi/reliability,
+      DeepSeek/delivery) — [`design/reviews/SYNTHESIS.md`](./design/reviews/SYNTHESIS.md).
+      Verdicts: accept-with-fixes / accept-with-fixes / not-yet-executable; gates G1–G10 recorded.
 
-## Phase 4: Build the substrate (v3 — agent-first)
+## Phase 4: Build the substrate (v3.1 — gated)
 
 > **Tooling installed and proven 2026-11-07** under owner approval — `yt-dlp` 2026.10.26,
 > `beets` 2.14.1 (uv/Python 3.12 venv), `pnpm` 12.18.0, `uv` 0.13.7, ffmpeg 8.0.1; kimi-webbridge
 > mounted into the web profile as an MCP server, with live `mcp__webbridge__navigate/evaluate` calls
 > verified. Inventory and paths: [`automation/TOOLING.md`](../../../automation/TOOLING.md).
+>
+> **Gates from the review** ([`SYNTHESIS.md`](./design/reviews/SYNTHESIS.md) §3): G1 paths/ownership,
+> G2 browser single-instance/ordering/assertion, G3 destructive safety, G4 alert chain, G5
+> schedule/retry/ledger semantics, G6 quarantine spec, G7 torrent unit + cutover, G8 B1a real
+> deployment, G9 domain scope, G10 cross-track prerequisites. **P4/P5 do not start until G1–G3, G5,
+> G6 are closed with the forced-failure tests.**
 
-- [ ] **B1** Deploy Mediarr 24/7 (container `restart: unless-stopped` or systemd); prove reboot.
-- [~] **B2** Fix `subtitle-wanted-search` interval persistence (`TASK_INTERVAL_KEY`) + test; set
-      rss 30 / availability 10–15 / wanted 60 in settings. **Code done 2026-11-07:** the map now
-      points `subtitle-wanted-search` at `availabilityCheckMinutes` (the old `availability-check`
-      entry named a task that is never registered); new route test is green (16/16) and server
-      `tsc --noEmit` is clean. Runtime setting values apply with B1 when Mediarr runs.
-- [ ] **B3** Install `dsh-host.service` (systemd user, `DSH_PERMISSION_MODE=danger-full-access`,
-      port 3080); replace the terminal-launched Host; prove reboot persistence.
-- [ ] **B4** Scaffold `automation/dsh-media-automation/` (bundle + `jobs`/`runs`/`locks`/`alerts`/
-      `quarantine` domains, heartbeat, alert webhook); install via `link:`; prove HMR restarts.
-- [~] **B5** Mount **kimi-webbridge as an MCP server** (`@deepseek-ai/dsh-mcp-client`, stdio
-      `kimi-webbridge mcp`), supervise Chrome + bridge as a service, and probe the bridge before
-      agent runs; a dead bridge must alert, not hang. **Done 2026-11-07:** entry inserted in the
-      web profile; host spawned the bridge (ws :10086, extension v2.0.23); agent-side
-      `mcp__webbridge__navigate` + `evaluate` verified live. Remaining: bridge probe + dead-bridge
-      alert (lands with B9).
-- [ ] **B6** Write the **daily 03:00 media-orchestrator prompt** in `automation/prompts/` and run it
-      manually: watch-next, wanted + web fetch (TPB/YTS/EZTV) via browser tools, YouTube
-      subscription poll (if that domain exists), subtitle judgement, receipt with diagnosis.
-- [ ] **B7** Plugin timers: downloads tidy (04:30), nightly receipt (05:00), **retention sweep**
-      (04:45: YouTube watched+7d, quarantine expiry), weekly backup trigger, reconcile + Mediarr
-      task-history polling.
-- [ ] **B8** Quarantine engine: manifest validation, safety rails, atomic move, restore, retention
-      delete, cap; **dry-run first week**.
-- [ ] **B9** External watchdog timer + `automation/expectations.yaml`; prove host-down, bridge-down,
-      plugin-down and Mediarr-down each alert ≤ 10 min.
-- [ ] **B9b** Validate the built-in torrent engine: add one real magnet through Mediarr, watch
-      progress → complete → import, and record throughput/memory. WebTorrent 2.8.5 is already the
-      wired grab path (`MediaSearchService.ts:387,794`; `:902` says the external client id is unused);
-      no external client or rtorrent is added. Transmission stays active only until its remaining
-      active torrent finishes.
+- [ ] **B1a** Deploy against the **real** Mediarr DB (`CONFIG_DIR/mediarr.db`, 550 movies / 28
+      series; `/data` and `/config` now symlinked, config + staging chowned to uid 1000). Back up the
+      DB, pin `DATABASE_URL=file:/config/mediarr.db`, `MEDIA_DIR=/data`, `ENCRYPTION_KEY`, set
+      `torrentLimits` paths, start, and verify counts + playable SPA/TV. (G1/G8)
+- [ ] **B1** Prove 24/7 operation as a service (container `restart: unless-stopped` or systemd),
+      including reboot. (G8)
+- [~] **B2** Fix `subtitle-wanted-search` interval persistence + test; set rss 30 / availability
+      10–15 / wanted 60. **Code done:** map now points the real task id; 16/16 route tests; `tsc`
+      clean. Remaining: `library-scan` has no interval key (reschedule persists nothing) — either
+      add a setting or return 422; values apply with B1a.
+- [ ] **B2b** Fix the torrent speed-limit unit bug (`downloadClientRoutes.ts:121-125` passes Kbps
+      into a bytes/sec setter, `TorrentManager.ts:547-554`/`:528-534`); test the conversion. (G7)
+- [ ] **B3** Install `dsh-host.service` as a systemd unit with `DSH_PERMISSION_MODE=danger-full-access`,
+      the full PATH (nvm + venv + `~/.local/bin`), and a **hard ordering**: stop the terminal host,
+      confirm `:10086` free, then start the unit. Prove reboot persistence. (G2/C-1)
+- [ ] **B4** Scaffold `automation/dsh-media-automation/` with the **frozen** ledger schema
+      (`runs` keyed by `taskId+attempt` with `retryOf`, `jobs`, `locks` incl. a `browser` lock,
+      `alerts`, `quarantine`), heartbeat, local-first alert writer; install via `link:`; prove HMR.
+      (G4/G5)
+- [~] **B5** kimi-webbridge MCP is live (`mcp__webbridge__navigate/evaluate` verified). Remaining:
+      probe that asserts **tool registration + extension connected** (not port liveness), per-call/run
+      timeout for a wedged extension, extension-reconnect check after restart. (G2)
+- [ ] **B6** Daily 03:00 media-orchestrator prompt in `automation/prompts/`; it must hard-fail when
+      `mcp__webbridge__*` tools are absent, reconcile-before-act, and journal side effects
+      incrementally. Manual run first. (G2/G3/G5)
+- [ ] **B7** Plugin timers: tidy 04:30, nightly receipt 05:00, retention 04:45 (scoped per G9),
+      weekly backup, reconcile + Mediarr task-history polling (correlate by `taskName` + window;
+      `executionId:-1` stays until E1). (G6/G9)
+- [ ] **B8** Quarantine engine: root on the 4TB filesystem, per-file hash manifest, copy+verify for
+      cross-device, restore, retention delete, cap + overflow behaviour, rails that do not reuse
+      `isImportIncomplete`, explicit dry-run→live guard. (G6)
+- [ ] **B9** **System-level** watchdog + `automation/expectations.yaml`: host, plugin heartbeat,
+      bridge/tool registration, Mediarr health, task history, expected artifacts; alert delivery
+      status/retry + local fallback; synthetic end-to-end alert. Detection ≤10 min / delivery ≤15 min.
+      (G4)
+- [ ] **B9b** Validate the built-in torrent engine **after G7**: set staging paths, add one small real
+      magnet, watch progress → complete → import, record throughput/memory. Let the 83.4 % Transmission
+      torrent finish in place; do not re-add it (different engine/dir = full re-download). (G7)
 
 ## Phase 5: Migrate behaviours and wire the new domains
 
@@ -110,17 +128,25 @@
       revived — `media-daily.py` and the TPB/YTS/EZTV scrape wrappers stay dead.
 - [ ] Re-point every artifact path at Mediarr; `~/media-reports/` filename shapes kept.
 
-## Phase 6: Cut over and verify
+## Phase 6: Cut over and verify (order corrected by the review)
 
 - [ ] Create successors first, run each manually once, diff output against the Hermes artifact.
-- [ ] Disable (never delete) `media-orchestrator`, `downloads-tidy` and `fetch-monitor.timer`;
-      archive `jobs.json` into this track.
-- [ ] Disable (never delete) `transmission-daemon.service` once its active torrent has finished, the
-      old jobs are off, and B9b validated the built-in engine; `transmission-remote` remains the
-      read-only inspection path until then.
-- [ ] One clean week: every run's receipt present, zero silent misses, a forced provider outage and
-      a forced browser failure each produce an alert, retention/quarantine proven.
-- [ ] Test rollback once: re-enable `jobs.json` + gateway and confirm the old path still runs.
+- [ ] **Disable Hermes acquisition before the first unattended 03:00 run** (two live grabbers =
+      double grabs; there is no shared dedupe).
+- [ ] **Disable `adult-orchestrator` before enabling quarantine** (its raw-SQL prune can delete files
+      Mediarr just catalogued) and **`downloads-tidy` before the plugin's 04:30 tidy** (never let two
+      deleters share `~/Downloads`).
+- [ ] Disable (never delete) `media-orchestrator` and `fetch-monitor.timer`; archive `jobs.json`.
+- [ ] Let the 83.4 % Transmission torrent finish and import the finished file once; disable (never
+      delete) `transmission-daemon.service` after B9b validates the built-in engine;
+      `transmission-remote` remains the read-only inspection path.
+- [ ] Stop jellyfin-go last, after the Flutter client is confirmed playing from Mediarr; disable,
+      never delete.
+- [ ] One clean week, defined by `automation/expectations.yaml`: zero occurrences with neither
+      receipt nor alert, zero duplicate receipts, plus the forced tests — provider outage, browser
+      wedge, webhook outage, delete-permission revoked mid-run — and retention/quarantine proven.
+- [ ] Test rollback once: re-enable `jobs.json` + gateway and confirm the old path still runs **and
+      still finds the media** (file-layout diff, not just process start).
 
 ## Phase 7: Close
 

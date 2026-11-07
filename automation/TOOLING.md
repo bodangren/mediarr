@@ -20,7 +20,42 @@
 Also present: `python3.14` (system), Node `v26.7.0` (`~/.local/bin/node`), Node
 `v24.18.0` (`~/.nvm/...`), `curl`.
 
-## 2. DSH MCP mount (the browser-use substrate)
+## 2. Torrent engine — decided 2026-11-07
+
+**Use Mediarr's built-in WebTorrent engine; do not add an external client.**
+
+Evidence:
+
+- Grabs go through the internal manager: `MediaSearchService` calls `torrentManager.addTorrent`
+  (`server/src/services/MediaSearchService.ts:387`, `:794`), and the code says so outright —
+  *"downloadClientId is accepted but currently not used since we use the internal torrent manager"*
+  (`:902`).
+- The engine is WebTorrent **2.8.5** (`server/package.json`), initialized in
+  `server/src/services/TorrentManager.ts:117-133`, with completion → import, stats SSE, and
+  `SeedingProtector` already wired.
+- `DownloadClientRepository` supports types `transmission | qbittorrent | deluge | rtorrent | …`
+  (`server/src/repositories/DownloadClientRepository.ts:10-18`) but **no adapter adds torrents**; it
+  is a configuration/UI surface only.
+
+Why this is the right choice: one owner for torrent state, import, seeding and the agent-facing API;
+the agent drives `POST /api/releases/grab` / `/api/torrents/*`; no second daemon, no rtorrent, no
+torrent MCP/plugin indirection.
+
+**Transmission today (2026-11-07):** `transmission-daemon.service` active, RPC on `:9091`, five
+torrents — four complete/idle, one active at **83.4%** (For All Mankind S03). `transmission-remote`
+remains the read-only way to inspect it.
+
+**Decommission condition (do not disable early):**
+1. the active torrent completes (or is deliberately re-added to Mediarr),
+2. one real magnet is validated end-to-end through Mediarr (progress → complete → import),
+3. the old Hermes jobs are disabled.
+Then `systemctl --user disable --now transmission-daemon.service` — disabled, not deleted.
+
+**Risk to validate:** WebTorrent is pure JS; watch throughput, memory and tracker/DHT behaviour on
+the first real grab. If it proves unacceptable, the fallback is a Transmission adapter behind the
+same Mediarr API — not a different automation interface.
+
+## 3. DSH MCP mount (the browser-use substrate)
 
 `~/.dsh/profiles/web/cordis.patch.yml` now carries:
 
@@ -60,7 +95,7 @@ JSON-RPC stream on stdout is clean.
 - `list_tabs`/`close_tab` have returned empty-session quirks in testing; `navigate`+`evaluate` are the
   reliable primitives. Re-check before building UI flows on tab listing.
 
-## 3. PATH requirements for the systemd host unit (B3)
+## 4. PATH requirements for the systemd host unit (B3)
 
 The agent shell and the MCP child need:
 
@@ -75,7 +110,7 @@ The agent shell and the MCP child need:
 needed by some native modules); the venv bin supplies `beet`. The systemd unit should set
 `Environment=PATH=...` explicitly and use absolute paths for `ExecStart`.
 
-## 4. Deliberately not installed yet
+## 5. Deliberately not installed yet
 
 | Tool | Why not | Trigger to add |
 |---|---|---|
@@ -84,7 +119,7 @@ needed by some native modules); the venv bin supplies `beet`. The systemd unit s
 | Node 24 as default | root suite needs Node 24 for `better-sqlite3`; switching the default is invasive | running the Mediarr test suite / deploying |
 | Mediarr node deps | deployment (B1) is a service decision, not a tool install | B1 starts |
 
-## 5. Verification log
+## 6. Verification log
 
 ```sh
 $ ~/.local/bin/yt-dlp --version                 # 2026.10.26

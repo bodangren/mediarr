@@ -83,6 +83,11 @@
       delete, cap; **dry-run first week**.
 - [ ] **B9** External watchdog timer + `automation/expectations.yaml`; prove host-down, bridge-down,
       plugin-down and Mediarr-down each alert ≤ 10 min.
+- [ ] **B9b** Validate the built-in torrent engine: add one real magnet through Mediarr, watch
+      progress → complete → import, and record throughput/memory. WebTorrent 2.8.5 is already the
+      wired grab path (`MediaSearchService.ts:387,794`; `:902` says the external client id is unused);
+      no external client or rtorrent is added. Transmission stays active only until its remaining
+      active torrent finishes.
 
 ## Phase 5: Migrate behaviours and wire the new domains
 
@@ -104,6 +109,9 @@
 - [ ] Create successors first, run each manually once, diff output against the Hermes artifact.
 - [ ] Disable (never delete) `media-orchestrator`, `downloads-tidy` and `fetch-monitor.timer`;
       archive `jobs.json` into this track.
+- [ ] Disable (never delete) `transmission-daemon.service` once its active torrent has finished, the
+      old jobs are off, and B9b validated the built-in engine; `transmission-remote` remains the
+      read-only inspection path until then.
 - [ ] One clean week: every run's receipt present, zero silent misses, a forced provider outage and
       a forced browser failure each produce an alert, retention/quarantine proven.
 - [ ] Test rollback once: re-enable `jobs.json` + gateway and confirm the old path still runs.

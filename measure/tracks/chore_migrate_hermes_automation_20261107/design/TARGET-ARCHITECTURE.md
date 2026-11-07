@@ -172,6 +172,26 @@ website.
 `automation-watchdog.timer` every 10 min checks host, bridge, heartbeat, Mediarr health, expected
 artifacts and failed tasks; it is the only piece that survives both hosts being down.
 
+### 6.5 Torrent engine — Mediarr's built-in WebTorrent (decided 2026-11-07)
+
+Grabs already go through the internal manager: `MediaSearchService` calls
+`torrentManager.addTorrent` (`MediaSearchService.ts:387`, `:794`), and the code states the external
+`downloadClientId` is *"accepted but currently not used since we use the internal torrent manager"*
+(`:902`). The engine is WebTorrent 2.8.5 (`server/package.json`), initialized in
+`TorrentManager.ts:117-133`, with completion → import, stats SSE and `SeedingProtector` wired.
+`DownloadClientRepository` supports `transmission|qbittorrent|deluge|rtorrent|…`
+(`DownloadClientRepository.ts:10-18`) but no adapter adds torrents — it is configuration only.
+
+**Decision:** keep the built-in engine. No external client, no rtorrent, no torrent MCP/plugin; the
+agent drives `POST /api/releases/grab` and `/api/torrents/*`. One owner for torrent state, import,
+seeding and the agent-facing API; one fewer daemon.
+
+**Transmission decommission condition** (disabled, not deleted; currently active with four
+complete torrents and one at 83.4%): finish or re-add the active torrent, validate one real magnet
+end-to-end through Mediarr (progress → complete → import), and disable the old Hermes jobs. Risk to
+watch: WebTorrent is pure JS — validate throughput/memory on the first real grab; the fallback is a
+Transmission adapter behind the same Mediarr API, never a different automation interface.
+
 ## 7. Mediarr changes needed
 
 **Migration-track code changes:** fix the subtitle interval persistence (the only blocking one);

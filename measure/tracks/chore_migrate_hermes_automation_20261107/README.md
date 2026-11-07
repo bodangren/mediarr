@@ -88,6 +88,11 @@ a session started before a provider change cannot use the new provider.
   mounted into the web profile as an MCP server; agent-side `mcp__webbridge__navigate` and
   `evaluate` were verified live against Chrome (extension 2.0.23). Paths, update commands and the
   systemd PATH requirements are in [`automation/TOOLING.md`](../../automation/TOOLING.md).
+- **Torrent engine decided (2026-11-07):** use **Mediarr's built-in WebTorrent 2.8.5** — it is the
+  only wired grab path (`MediaSearchService.ts:387,794`; `:902` says the external client id is
+  accepted but unused). No rtorrent and no torrent MCP. Transmission is still active (four complete
+  torrents, one at **83.4%**); it is disabled — not deleted — only after that torrent finishes, one
+  magnet is validated end-to-end through Mediarr, and the old jobs are off.
 
 ## Definition of done for the whole track
 

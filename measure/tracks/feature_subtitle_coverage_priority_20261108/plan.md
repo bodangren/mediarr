@@ -19,7 +19,7 @@
       `{ itemId, kind, bucket, lastPlayedAt, added }` — **2026-11-08:** `classifyViewingPriority`,
       `rankByViewingPriority`, `compareViewingPriority`, `isHighPriority`; buckets
       continue-watching → recently-watched (14 d) → recently-added (30 d) → backfill.
-- [ ] Wire the SQL query (progress ⋈ movie/episode) that feeds it; Phase 2 consumes it.
+- [~] Wire the SQL query (progress ⋈ movie/episode) that feeds it; Phase 2 consumes it.
 - [x] Unit tests for finished vs in-progress, 14-day/30-day boundaries, and items with no playback.
 
 ## Phase 2: Coverage + ordered APIs

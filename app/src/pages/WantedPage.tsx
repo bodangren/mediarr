@@ -17,7 +17,25 @@ export function WantedPage() {
   const [searchFeedback, setSearchFeedback] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+  // Whether automatic searching can do anything at all. With no indexer the
+  // wanted-search cycle now idles (server-side guard, 2026-11-08); this banner
+  // is the surface that tells the owner why nothing gets grabbed.
+  const [indexerCount, setIndexerCount] = useState<number | null>(null);
   const pageSize = 25;
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadIndexers = async () => {
+      try {
+        const result = await api.indexerApi.list({ page: 1, pageSize: 100 });
+        if (!cancelled) setIndexerCount(result.items.length);
+      } catch {
+        if (!cancelled) setIndexerCount(null);
+      }
+    };
+    void loadIndexers();
+    return () => { cancelled = true; };
+  }, [api]);
 
   const loadMovies = async () => {
     setIsLoading(true);
@@ -87,6 +105,19 @@ export function WantedPage() {
   return (
     <RouteScaffold title="Wanted" description="Missing movies and episodes">
       <div className="space-y-4">
+        {indexerCount === 0 ? (
+          <section
+            role="alert"
+            className="rounded-md border border-accent-warning bg-surface-1 p-4 text-sm"
+          >
+            <h2 className="font-medium text-accent-warning">Automatic searching is idle</h2>
+            <p className="mt-1 text-text-secondary">
+              No indexers are configured, so the wanted-search cycle skips every run.
+              Add an indexer under Settings &rarr; Indexers and the cycle will start
+              looking for this list automatically.
+            </p>
+          </section>
+        ) : null}
         {/* Tabs */}
         <div className="flex gap-2 border-b border-border-subtle">
           <button

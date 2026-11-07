@@ -20,6 +20,14 @@ export class WantedSearchService {
     private readonly mediaSearchService: MediaSearchService,
     private readonly prisma: DatabaseClient,
     private readonly activityEventEmitter: ActivityEventEmitter,
+    /**
+     * Number of enabled indexers, or undefined when the host does not report it.
+     *
+     * With none configured the cycle cannot find anything: on 2026-11-08 it wrote
+     * 11,582 failed SEARCH_EXECUTED events in 24 h ("No releases found" per wanted
+     * item), flooding the activity feed and doing useless work.
+     */
+    private readonly enabledIndexerCount?: () => Promise<number>,
   ) {}
 
   /**
@@ -300,6 +308,16 @@ export class WantedSearchService {
   async autoSearchAll(): Promise<void> {
     if (this.isRunning) {
       return;
+    }
+
+    if (this.enabledIndexerCount) {
+      const indexers = await this.enabledIndexerCount();
+      if (indexers === 0) {
+        console.warn(
+          'Wanted search idle: no indexers are configured (Settings -> Indexers). Cycle skipped.',
+        );
+        return;
+      }
     }
 
     this.activityEventEmitter.emit({

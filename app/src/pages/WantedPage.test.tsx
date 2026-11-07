@@ -90,6 +90,12 @@ describe('WantedPage', () => {
         setMovieMonitored: vi.fn().mockResolvedValue({ id: 101, monitored: false }),
         setEpisodeMonitored: vi.fn().mockResolvedValue({ id: 10, monitored: false }),
       },
+      indexerApi: {
+        list: vi.fn().mockResolvedValue({
+          items: [{ id: 1 }],
+          meta: { page: 1, pageSize: 100, totalCount: 1, totalPages: 1 },
+        }),
+      },
     };
     (getApiClients as any).mockReturnValue(mockApi);
   });
@@ -346,5 +352,27 @@ describe('WantedPage', () => {
     await waitFor(() => {
       expect(mockApi.mediaApi.listMissingEpisodes).toHaveBeenLastCalledWith({ page: 1, pageSize: 25 });
     });
+  });
+
+  it('warns that automatic searching is idle when no indexer exists', async () => {
+    // The wanted-search cycle now skips every run with zero indexers; without
+    // this banner the page would look like a silent failure (2026-11-08).
+    mockApi.indexerApi.list.mockResolvedValue({
+      items: [],
+      meta: { page: 1, pageSize: 100, totalCount: 0, totalPages: 0 },
+    });
+
+    renderPage();
+
+    expect(await screen.findByText('Automatic searching is idle')).toBeInTheDocument();
+    expect(screen.getByText(/Settings .* Indexers/)).toBeInTheDocument();
+  });
+
+  it('hides the idle warning once an indexer exists', async () => {
+    renderPage();
+    await waitFor(() => {
+      expect(mockApi.indexerApi.list).toHaveBeenCalled();
+    });
+    expect(screen.queryByText('Automatic searching is idle')).not.toBeInTheDocument();
   });
 });

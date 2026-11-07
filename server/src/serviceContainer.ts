@@ -473,7 +473,12 @@ export async function createServiceContainer(
     importNotificationDispatch = notificationDispatchService;
 
     const wantedService = new WantedService(prisma);
-    const wantedSearchService = new WantedSearchService(mediaSearchService, prisma, activityEventEmitter);
+    const wantedSearchService = new WantedSearchService(
+      mediaSearchService,
+      prisma,
+      activityEventEmitter,
+      async () => (await indexerRepository.findAll()).filter((indexer: any) => indexer.enabled !== false).length,
+    );
 
     const indexerServiceDiscovery = browserAcceptanceAcquisitionFixture
       ? { detect: async () => [] }

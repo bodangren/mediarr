@@ -1,3 +1,4 @@
+import { buildTMDBRequest } from '../../utils/tmdbUtils';
 import type { HttpClient } from '../../indexers/HttpClient';
 
 export interface TMDBSeriesIdentifiers {
@@ -12,8 +13,8 @@ export async function resolveTMDBSeriesIdentifiers(
   apiKey: string,
   tmdbId: number,
 ): Promise<TMDBSeriesIdentifiers> {
-  const url = `${baseUrl}/tv/${tmdbId}/external_ids?api_key=${encodeURIComponent(apiKey)}`;
-  const response = await httpClient.get(url);
+  const request = buildTMDBRequest(baseUrl, `/tv/${tmdbId}/external_ids`, apiKey);
+  const response = await httpClient.get(request.url, { headers: request.headers });
 
   if (!response.ok) {
     throw new Error(

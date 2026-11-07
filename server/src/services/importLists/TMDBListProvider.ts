@@ -1,3 +1,4 @@
+import { buildTMDBRequest } from '../../utils/tmdbUtils';
 import type { HttpClient } from '../../indexers/HttpClient';
 import type { SettingsService } from '../SettingsService';
 import type { ImportListProvider, ImportListItem } from './ImportListProvider';
@@ -53,8 +54,8 @@ export class TMDBListProvider implements ImportListProvider {
     let hasMore = true;
 
     while (hasMore) {
-      const url = `${this.baseUrl}/list/${listId}?api_key=${encodeURIComponent(apiKey)}&page=${page}`;
-      const response = await this.httpClient.get(url);
+      const request = buildTMDBRequest(this.baseUrl, `/list/${listId}`, apiKey, [`page=${page}`]);
+      const response = await this.httpClient.get(request.url, { headers: request.headers });
 
       if (!response.ok) {
         if (response.status === 404) {

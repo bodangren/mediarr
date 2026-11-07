@@ -1,3 +1,4 @@
+import { buildTMDBRequest } from '../utils/tmdbUtils';
 import { HttpClient } from '../indexers/HttpClient';
 import { SettingsService } from './SettingsService';
 import type {
@@ -253,8 +254,13 @@ export class MetadataProvider {
     }
 
     const normalizedImdbId = imdbId.startsWith('tt') ? imdbId : `tt${imdbId}`;
-    const url = `${this.movieBaseUrl}/find/${encodeURIComponent(normalizedImdbId)}?api_key=${encodeURIComponent(apiKey)}&external_source=imdb_id`;
-    const response = await this.httpClient.get(url, {}, fetchFn);
+    const request = buildTMDBRequest(
+      this.movieBaseUrl,
+      `/find/${encodeURIComponent(normalizedImdbId)}`,
+      apiKey,
+      ['external_source=imdb_id'],
+    );
+    const response = await this.httpClient.get(request.url, { headers: request.headers }, fetchFn);
 
     if (!response.ok) {
       throw new Error(`Failed to find movie by IMDb ID: ${response.status} ${response.body}`);
@@ -292,8 +298,8 @@ export class MetadataProvider {
       throw new Error('TMDB API Key is missing. Please configure it in settings.');
     }
 
-    const url = `${this.movieBaseUrl}/movie/${tmdbId}?api_key=${encodeURIComponent(apiKey)}`;
-    const response = await this.httpClient.get(url, {}, fetchFn);
+    const request = buildTMDBRequest(this.movieBaseUrl, `/movie/${tmdbId}`, apiKey);
+    const response = await this.httpClient.get(request.url, { headers: request.headers }, fetchFn);
 
     if (!response.ok) {
       throw new Error(`Failed to get movie artwork: ${response.status} ${response.body}`);
@@ -323,9 +329,9 @@ export class MetadataProvider {
     }
     console.log('[DIAG:searchMovies] term=%j, apiKey present=%s', term, apiKey ? 'yes' : 'no');
     const encodedTerm = encodeURIComponent(term.toLowerCase().trim());
-    const url = `${this.movieBaseUrl}/search/movie?api_key=${encodeURIComponent(apiKey)}&query=${encodedTerm}`;
+    const request = buildTMDBRequest(this.movieBaseUrl, '/search/movie', apiKey, [`query=${encodedTerm}`]);
     console.log('[DIAG:searchMovies] requesting %s/search/movie?query=%s (key redacted)', this.movieBaseUrl, encodedTerm);
-    const response = await this.httpClient.get(url, {}, fetchFn);
+    const response = await this.httpClient.get(request.url, { headers: request.headers }, fetchFn);
 
     if (!response.ok) {
       console.error('[DIAG:searchMovies] TMDB responded with status=%d body=%s', response.status, response.body?.substring(0, 200));
@@ -354,8 +360,8 @@ export class MetadataProvider {
     if (!apiKey) {
       throw new Error('TMDB API Key is missing. Please configure it in settings.');
     }
-    const url = `${this.movieBaseUrl}/movie/${tmdbId}?api_key=${encodeURIComponent(apiKey)}`;
-    const response = await this.httpClient.get(url, {}, fetchFn);
+    const request = buildTMDBRequest(this.movieBaseUrl, `/movie/${tmdbId}`, apiKey);
+    const response = await this.httpClient.get(request.url, { headers: request.headers }, fetchFn);
 
     if (!response.ok) {
       throw new Error(`Failed to get movie details: ${response.status} ${response.body}`);

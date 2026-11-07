@@ -86,7 +86,7 @@ import { WantedSearchService } from './services/WantedSearchService';
 import { RssMediaMonitor } from './services/RssMediaMonitor';
 import { BackupService } from './services/BackupService';
 import { LibraryScanService } from './services/LibraryScanService';
-import { TvFolderImportService } from './services/TvFolderImportService';
+import { LibraryFolderImportService } from './services/LibraryFolderImportService';
 import { globalLogBuffer } from './services/LogReaderService';
 import { NotificationDispatchService } from './services/NotificationDispatchService';
 import { NotificationTransportRegistry } from './services/notifications/NotificationTransportRegistry';
@@ -768,17 +768,18 @@ export async function createServiceContainer(
       // Series folders on disk that the scan never registers are invisible
       // forever (scanEpisodes only validates known rows). This closes the loop
       // by importing them through the same pipeline as "Import Existing".
-      const tvFolderImportService = new TvFolderImportService(
+      const folderImportService = new LibraryFolderImportService(
         prisma,
         metadataProvider as any,
       );
-      scheduler.schedule('tv-folder-import', '40 2 * * *', async () => {
+      scheduler.schedule('folder-import', '40 2 * * *', async () => {
         const settings = await settingsService.get();
-        const result = await tvFolderImportService.run({
+        const result = await folderImportService.run({
+          movieRootFolder: settings.mediaManagement.movieRootFolder,
           tvRootFolder: settings.mediaManagement.tvRootFolder,
         });
         console.log(
-          `TV folder import: scanned ${result.foldersScanned}, skipped ${result.foldersSkipped}, `
+          `Folder import: scanned ${result.foldersScanned}, skipped ${result.foldersSkipped}, `
           + `imported ${result.imported}, failed ${result.failed}`
           + (result.unmatched.length > 0 ? `, unmatched ${result.unmatched.join(', ')}` : ''),
         );

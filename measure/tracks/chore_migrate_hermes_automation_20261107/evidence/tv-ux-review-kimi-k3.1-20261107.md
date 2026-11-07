@@ -171,3 +171,24 @@ and the service now searches by *folder name* and accepts a candidate only when
 the normalised titles agree (`isConfidentSeriesMatch`), so ambiguous folders are
 reported as `unmatched` instead of guessed. Re-run: 8 imported, 1 honest
 unmatched ("Special Ops: Lioness"), 0 wrong.
+
+## Movie metadata was dead: the TMDB key is a v4 token sent as `api_key` (2026-11-08)
+
+The folder importer reported 18 unregistered movie folders and every metadata
+match failed. Root cause was not the matcher: `MetadataProvider.searchMovies`
+built `…/search/movie?api_key=<key>` with **TMDB's v4 read access token** (a JWT),
+which TMDB only accepts as `Authorization: Bearer`. Every movie metadata call
+returned `401 Invalid API key` — verified with curl: `?api_key=` → 401,
+`Authorization: Bearer` → 200.
+
+A v4-aware helper (`server/src/utils/tmdbUtils.ts`, `buildTMDBRequest`) already
+existed but nothing used it. All ten TMDB call sites now go through it
+(MetadataProvider search/details/IMDB-find, CollectionService, and the three
+import-list providers), and the HTTP client receives `{ headers }` (its second
+argument is an options object, not a header map — the first attempt passed raw
+headers and silently kept 401-ing).
+
+**Result:** movie metadata search works again (Despicable Me → TMDB 20352), and
+the importer now adds the missing films: movies 550 → 567, 17 imported, 0 wrong,
+1 honest unmatched (Special Ops: Lioness, a TV folder). Imported movies carry
+TMDB posters and stream (206).

@@ -1,3 +1,4 @@
+import { buildTMDBRequest } from '../../utils/tmdbUtils';
 import type { HttpClient } from '../../indexers/HttpClient';
 import type { SettingsService } from '../SettingsService';
 import type { ImportListProvider, ImportListItem } from './ImportListProvider';
@@ -65,8 +66,8 @@ export class TMDBPopularProvider implements ImportListProvider {
     const totalPages = Math.ceil(limit / 20);
 
     while (items.length < limit && page <= totalPages) {
-      const url = `${this.baseUrl}/movie/popular?api_key=${encodeURIComponent(apiKey)}&page=${page}`;
-      const response = await this.httpClient.get(url);
+      const request = buildTMDBRequest(this.baseUrl, '/movie/popular', apiKey, [`page=${page}`]);
+      const response = await this.httpClient.get(request.url, { headers: request.headers });
 
       if (!response.ok) {
         throw new Error(`Failed to fetch popular movies: ${response.status} ${response.body}`);
@@ -97,8 +98,8 @@ export class TMDBPopularProvider implements ImportListProvider {
     const totalPages = Math.ceil(limit / 20);
 
     while (items.length < limit && page <= totalPages) {
-      const url = `${this.baseUrl}/tv/popular?api_key=${encodeURIComponent(apiKey)}&page=${page}`;
-      const response = await this.httpClient.get(url);
+      const request = buildTMDBRequest(this.baseUrl, '/tv/popular', apiKey, [`page=${page}`]);
+      const response = await this.httpClient.get(request.url, { headers: request.headers });
 
       if (!response.ok) {
         throw new Error(`Failed to fetch popular series: ${response.status} ${response.body}`);

@@ -1,3 +1,4 @@
+import { buildTMDBRequest } from '../utils/tmdbUtils';
 import type { DatabaseClient } from '../db/drizzleClient';
 import { HttpClient } from '../indexers/HttpClient';
 import { SettingsService } from './SettingsService';
@@ -75,8 +76,8 @@ export class CollectionService {
       throw new ValidationError('TMDB API Key is missing. Please configure it in settings.');
     }
 
-    const url = `${this.tmdbBaseUrl}/collection/${tmdbCollectionId}?api_key=${encodeURIComponent(apiKey)}`;
-    const response = await this.httpClient.get(url);
+    const request = buildTMDBRequest(this.tmdbBaseUrl, `/collection/${tmdbCollectionId}`, apiKey);
+    const response = await this.httpClient.get(request.url, { headers: request.headers });
 
     if (!response.ok) {
       if (response.status === 404) {
@@ -116,8 +117,8 @@ export class CollectionService {
       throw new ValidationError('TMDB API Key is missing. Please configure it in settings.');
     }
 
-    const url = `${this.tmdbBaseUrl}/movie/${tmdbMovieId}?api_key=${encodeURIComponent(apiKey)}`;
-    const response = await this.httpClient.get(url);
+    const request = buildTMDBRequest(this.tmdbBaseUrl, `/movie/${tmdbMovieId}`, apiKey);
+    const response = await this.httpClient.get(request.url, { headers: request.headers });
 
     if (!response.ok) {
       if (response.status === 404) {

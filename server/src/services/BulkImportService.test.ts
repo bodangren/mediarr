@@ -248,6 +248,43 @@ describe('BulkImportService', () => {
     expect(prisma.series.findUnique).not.toHaveBeenCalled();
   });
 
+  it('links episode files from their filenames when parsedInfo is absent', async () => {
+    // The scan response carries no parsedInfo, so a client-driven import sends
+    // bare paths. Without this fallback the series was created and every file
+    // silently went unlinked (found while importing a folder on 2026-11-08).
+    const prisma = makeSeriesPrisma(null);
+    const metadataProvider = {
+      getMediaDetails: vi.fn(),
+      getSeriesDetails: vi.fn().mockResolvedValue({
+        ...baseSeriesMeta,
+        episodes: [{ tvdbId: 9001, seasonNumber: 1, episodeNumber: 1, title: 'Pilot' }],
+      }),
+    } as any;
+
+    const service = new BulkImportService(prisma, metadataProvider);
+    await service.executeImport([{
+      folderPath: '/existing/tv/Breaking Bad',
+      mediaType: 'series',
+      matchId: 81189,
+      files: [{
+        path: '/existing/tv/Breaking Bad/Season 1/Breaking Bad - S01E01 - Pilot.mkv',
+        size: 1,
+        extension: '.mkv',
+      }],
+      renameFiles: false,
+      rootFolderPath: '/media/tv',
+      qualityProfileId: 2,
+    }]);
+
+    expect(prisma.episode.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          path: '/existing/tv/Breaking Bad/Season 1/Breaking Bad - S01E01 - Pilot.mkv',
+        }),
+      }),
+    );
+  });
+
   // ── Series: already exists ────────────────────────────────────────────────
 
   it('reuses existing series record without creating a duplicate', async () => {

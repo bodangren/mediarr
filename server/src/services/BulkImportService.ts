@@ -5,6 +5,7 @@ import { Organizer } from './Organizer';
 import { SubtitleVariantRepository, type UpsertVariantInput } from '../repositories/SubtitleVariantRepository';
 import type { ScannedFile } from './ExistingLibraryScanner';
 import { sanitizeTitle, toSortTitle } from '../utils/stringUtils';
+import { Parser } from '../utils/Parser';
 import type { VariantInventoryIndexer } from './VariantInventoryIndexer';
 
 function isInsideRoot(filePath: string, rootPath: string): boolean {
@@ -209,10 +210,13 @@ export class BulkImportService {
 
     const seasonMap = new Map<number, number>();
 
-    // Pre-index files by "seasonxepisode" for O(1) lookup during episode loop
+    // Pre-index files by "seasonxepisode" for O(1) lookup during episode loop.
+    // `parsedInfo` is not always supplied by callers (the scan response does not
+    // include it, so a client-driven import sends bare paths) — parse the
+    // filename here so the files are actually linked to their episodes.
     const filesByEpisode = new Map<string, ScannedFile>();
     for (const f of item.files) {
-      const parsed = f.parsedInfo;
+      const parsed = f.parsedInfo ?? (await Parser.parse(path.basename(f.path))) ?? undefined;
       if (parsed?.seasonNumber !== undefined) {
         for (const epNum of parsed.episodeNumbers ?? []) {
           filesByEpisode.set(`${parsed.seasonNumber}x${epNum}`, f);

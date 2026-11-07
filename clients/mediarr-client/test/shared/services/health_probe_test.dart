@@ -103,14 +103,18 @@ void main() {
         ),
       );
 
-      final up = await client.probeHealth(retrying: true);
+      var up = true;
+      for (var i = 0; i < MediarrApiClient.outageReportThreshold; i++) {
+        up = await client.probeHealth(retrying: true);
+      }
 
       expect(up, isFalse);
       expect(client.state.status, ConnectionStatus.error);
       expect(
         reportedPaths.where((p) => p.contains('/api/client-errors')).length,
         1,
-        reason: 'a genuine outage must reach triage, exactly once per probe',
+        reason: 'a genuine outage must reach triage once, after it has lasted '
+            'long enough to rule out a planned restart',
       );
     });
 
@@ -135,15 +139,46 @@ void main() {
         ),
       );
 
-      await client.probeHealth(retrying: true);
-      await client.probeHealth(retrying: true);
-      await client.probeHealth(retrying: true);
+      for (var i = 0; i < MediarrApiClient.outageReportThreshold + 3; i++) {
+        await client.probeHealth(retrying: true);
+      }
 
       expect(
         reportedPaths.where((p) => p.contains('/api/client-errors')).length,
         1,
         reason: 'A down server fails every 30 s probe; on 2026-11-08 that wrote '
             'one record per poll. Triage needs one record per outage.',
+      );
+    });
+
+    test('a short restart below the threshold is silent', () async {
+      dio.interceptors.insert(
+        0,
+        InterceptorsWrapper(
+          onRequest: (options, handler) {
+            if (!options.path.contains('/api/system/status')) {
+              return handler.resolve(Response(
+                requestOptions: options,
+                statusCode: 200,
+                data: {'ok': true},
+              ));
+            }
+            return handler.reject(DioException(
+              requestOptions: options,
+              type: DioExceptionType.connectionError,
+              message: 'Connection refused',
+            ));
+          },
+        ),
+      );
+
+      await client.probeHealth(retrying: true);
+
+      expect(
+        reportedPaths.where((p) => p.contains('/api/client-errors')),
+        isEmpty,
+        reason: 'a restart that recovers inside one poll window must not be '
+            'reported; these records were pure triage noise on 2026-11-08',
       );
     });
   });

@@ -572,6 +572,14 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
   /// 2026-11-08). One report per outage is what triage needs.
   bool _outageReported = false;
 
+  /// Consecutive failed probes. A planned restart takes a few seconds and
+  /// recovers; only a failure that survives ~90 s is a real outage worth a
+  /// triage record.
+  int _consecutiveFailures = 0;
+
+  @visibleForTesting
+  static const int outageReportThreshold = 3;
+
   @visibleForTesting
   Future<bool> probeHealth({required bool retrying}) async {
     try {
@@ -580,6 +588,7 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
         state = state.copyWith(status: ConnectionStatus.connected);
       }
       _outageReported = false;
+      _consecutiveFailures = 0;
       return true;
     } catch (error) {
       if (retrying) {
@@ -587,7 +596,11 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
         if (await probeHealth(retrying: false)) return true;
       }
       state = state.copyWith(status: ConnectionStatus.error);
+      _consecutiveFailures += 1;
       if (_outageReported) return false;
+      // One short retry absorbs sub-second restarts; three consecutive failed
+      // probes mean the server has been unreachable for ~90 s.
+      if (_consecutiveFailures < outageReportThreshold) return false;
       _outageReported = true;
       // Awaited: an outage report must land before the probe returns, so the
       // next tick cannot race a duplicate.

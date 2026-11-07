@@ -1,7 +1,7 @@
 # Spec — Music library for Mediarr
 
 **Track:** `feature_music_library_20261107`
-**Opened:** 2026-11-07 · **Status:** SCOPED ONLY — no work started. Raised by owner decision D2 in
+**Opened:** 2026-11-07 · **Status:** ACTIVE 2026-11-08 — M1–M6 ratified (see below). Raised by owner decision D2 in
 [`chore_migrate_hermes_automation_20261107`](../chore_migrate_hermes_automation_20261107/spec.md).
 Revised 2026-11-07 (v2): **YouTube is the source**, audio is downloaded as a normal track file and
 tagged, and the client gets an **iTunes-style, D-pad-navigable player**.
@@ -81,12 +81,12 @@ for the agent run; migration of `4TB/Music`; format conversion.
 
 | # | Decision | Options |
 |---|---|---|
-| M1 | Data model | Separate normalised artist/album/track tables (recommended) vs extending `Media` |
-| M2 | Source | YouTube via `yt-dlp` (recommended); add other sources later | 
-| M3 | Format | m4a/AAC 256k (recommended) vs mp3 320 vs opus |
-| M4 | Tagging | beets/MusicBrainz (recommended) vs native tag read-only with manual fix |
-| M5 | Player scope | TV-first Flutter (recommended), then desktop/mobile | 
-| M6 | Playlists | User playlists in v1 or v2 (recommended: simple queue in v1, playlists v2) |
+| M1 | Data model | Separate normalised artist/album/track tables (recommended) vs extending `Media` — **DECIDED: separate tables** |
+| M2 | Source | YouTube via `yt-dlp` (recommended); add other sources later — **DECIDED: YouTube via yt-dlp** | 
+| M3 | Format | m4a/AAC 256k (recommended) vs mp3 320 vs opus — **DECIDED: m4a/AAC 256k** |
+| M4 | Tagging | beets/MusicBrainz (recommended) vs native tag read-only with manual fix — **DECIDED: beets/MusicBrainz for new imports; existing files read-only** |
+| M5 | Player scope | TV-first Flutter (recommended), then desktop/mobile — **DECIDED: TV-first Flutter** | 
+| M6 | Playlists | User playlists in v1 or v2 (recommended: simple queue in v1, playlists v2) — **DECIDED: queue in v1, playlists v2** |
 
 ## Provenance
 

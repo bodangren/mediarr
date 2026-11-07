@@ -64,6 +64,7 @@ const samplePayload: AppSettingsPayload = {
   mediaManagement: {
     movieRootFolder: '/movies',
     tvRootFolder: '/tv',
+    adultRootFolder: '',
     movieNamingPattern: '{Movie Title} ({Release Year})',
     seriesNamingPattern: '{Series Title} - S{season:00}E{episode:00}',
   },

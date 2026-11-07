@@ -1,7 +1,9 @@
 # Plan — Music library for Mediarr
 
-> Contract-first + TDD per `measure/workflow.md`. **Scoped track: no task starts until M1–M6 are
-> decided and the track is promoted to active.**
+> Contract-first + TDD per `measure/workflow.md`. **ACTIVE since 2026-11-08** — M1–M6 are ratified
+> (spec §Open decisions), so Phase 0 may proceed. Live input: `/data/Music` holds 217 MP3 files
+> (2.4 GB, 17 artists) with 143 `.lrc` lyric sidecars; `beets` 2.14.1 is in the uv venv at
+> `~/.local/share/mediarr-automation/venv/bin/beet`.
 
 ## Phase 0: Ratify scope
 

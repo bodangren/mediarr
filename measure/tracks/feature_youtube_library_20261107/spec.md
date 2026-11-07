@@ -1,7 +1,7 @@
 # Spec — YouTube series library for Mediarr
 
 **Track:** `feature_youtube_library_20261107`
-**Opened:** 2026-11-07 · **Status:** SCOPED ONLY — no work started. Owner decision D2 in
+**Opened:** 2026-11-07 · **Status:** ACTIVE 2026-11-08 — Y1–Y5 ratified (see below). Owner decision D2 in
 [`chore_migrate_hermes_automation_20261107`](../chore_migrate_hermes_automation_20261107/spec.md):
 YouTube series live in the library and should update themselves: subscribe to a playlist, download
 new entries, delete watched ones after about a week.
@@ -66,11 +66,11 @@ transcripts, recommendations; live-stream recording (decide later).
 
 | # | Decision | Options |
 |---|---|---|
-| Y1 | Representation | Separate YouTube library type (recommended) vs map into TV series with a source tag |
-| Y2 | Retention | Quarantine then delete after watched+7d (recommended) vs hard delete at 7d |
-| Y3 | Quality | Best ≤1080p (recommended) vs source default vs capped size |
-| Y4 | Poll cadence | Daily with the media run (recommended) vs every 6 h |
-| Y5 | Shorts/live | Skip shorts (recommended); live: skip for v1 |
+| Y1 | Representation | Separate YouTube library type (recommended) vs map into TV series with a source tag — **DECIDED: separate library type** |
+| Y2 | Retention | Quarantine then delete after watched+7d (recommended) vs hard delete at 7d — **DECIDED: quarantine then delete, 7 days after watched** |
+| Y3 | Quality | Best ≤1080p (recommended) vs source default vs capped size — **DECIDED: best ≤1080p** |
+| Y4 | Poll cadence | Daily with the media run (recommended) vs every 6 h — **DECIDED: daily (03:00 media run)** |
+| Y5 | Shorts/live | Skip shorts (recommended); live: skip for v1 — **DECIDED: skip both** |
 
 ## Provenance
 

@@ -13,6 +13,15 @@ import { sql } from "drizzle-orm";
 // ─── Enums (text-backed) ────────────────────────────────────────────────────────
 
 export const MediaTypeEnum = ["TV", "MOVIE"] as const;
+/**
+ * Library kinds (track feature_adult_library_20261107, gate G10).
+ *
+ * A library is a *container* — kind + root + options — not a media type. Media rows keep the
+ * existing `MOVIE`/`TV` discriminator, so adding a kind here cannot change what the movie and
+ * series queries return.
+ */
+export const LibraryKindEnum = ["MOVIES", "TV", "ADULT", "YOUTUBE", "MUSIC"] as const;
+export type LibraryKind = typeof LibraryKindEnum[number];
 export const VariantMediaTypeEnum = ["EPISODE", "MOVIE"] as const;
 export const SubtitleTrackSourceEnum = ["EMBEDDED", "EXTERNAL"] as const;
 export const WantedSubtitleStateEnum = [
@@ -74,6 +83,23 @@ export const media = sqliteTable("Media", {
   uniqueIndex("Media_mediaType_tmdbId_key").on(table.mediaType, table.tmdbId),
   uniqueIndex("Media_mediaType_tvdbId_key").on(table.mediaType, table.tvdbId),
 ]);
+
+export const libraries = sqliteTable("Library", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  kind: text("kind", { enum: LibraryKindEnum }).notNull().unique(),
+  name: text("name").notNull(),
+  rootFolder: text("rootFolder").notNull().default(""),
+  enabled: integer("enabled", { mode: "boolean" }).notNull().default(true),
+  options: text("options", { mode: "json" })
+    .notNull()
+    .$defaultFn(() => ({})),
+  createdAt: integer("createdAt", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(strftime('%s','now'))`),
+  updatedAt: integer("updatedAt", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(strftime('%s','now'))`),
+});
 
 export const series = sqliteTable("Series", {
   id: integer("id").primaryKey({ autoIncrement: true }),

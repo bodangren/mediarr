@@ -23,6 +23,7 @@ function createApp(settingsService: ReturnType<typeof createSettingsServiceMock>
 const defaultMediaSettings: MediaManagementSettings = {
   movieRootFolder: '',
   tvRootFolder: '',
+  adultRootFolder: '',
   movieNamingPattern: '',
   seriesNamingPattern: '',
 };
@@ -103,6 +104,8 @@ describe('mediaSettingsRoutes — PUT /api/settings/media', () => {
 
   beforeEach(() => {
     settingsService = createSettingsServiceMock();
+    // The route merges onto the stored settings so a partial PUT cannot wipe unset fields.
+    settingsService.get.mockResolvedValue(defaultAppSettings);
     app = createApp(settingsService);
   });
 
@@ -110,6 +113,7 @@ describe('mediaSettingsRoutes — PUT /api/settings/media', () => {
     const payload: MediaManagementSettings = {
       movieRootFolder: '/media/movies',
       tvRootFolder: '/media/tv',
+      adultRootFolder: '/data/Porn',
       movieNamingPattern: '{Movie.Title}.{Release.Year}.{Quality.Full}.{MediaInfo.VideoCodec}',
       seriesNamingPattern: '{Series.Title}.S{season:00}E{episode:00}.{Episode.Title}.{Quality.Full}',
     };
@@ -129,6 +133,7 @@ describe('mediaSettingsRoutes — PUT /api/settings/media', () => {
     const payload: MediaManagementSettings = {
       movieRootFolder: '/movies',
       tvRootFolder: '/tv',
+      adultRootFolder: '',
       movieNamingPattern: '',
       seriesNamingPattern: '',
     };
@@ -144,6 +149,60 @@ describe('mediaSettingsRoutes — PUT /api/settings/media', () => {
     const body = JSON.parse(response.body) as { data: MediaManagementSettings };
     expect(body.data.movieRootFolder).toBe('/movies');
     expect(body.data.tvRootFolder).toBe('/tv');
+  });
+
+  it('saves and returns adultRootFolder', async () => {
+    const payload = {
+      movieRootFolder: '/movies',
+      tvRootFolder: '/tv',
+      adultRootFolder: '/data/Porn',
+      movieNamingPattern: '',
+      seriesNamingPattern: '',
+    };
+    settingsService.update.mockResolvedValue({ ...defaultAppSettings, mediaManagement: payload });
+
+    const response = await app.inject({ method: 'PUT', url: '/api/settings/media', payload });
+
+    expect(response.statusCode).toBe(200);
+    expect(settingsService.update).toHaveBeenCalledWith({ mediaManagement: payload });
+    const body = JSON.parse(response.body) as { data: MediaManagementSettings };
+    expect(body.data.adultRootFolder).toBe('/data/Porn');
+  });
+
+  it('keeps stored fields a partial update omits', async () => {
+    const stored: MediaManagementSettings = {
+      movieRootFolder: '/movies',
+      tvRootFolder: '/tv',
+      adultRootFolder: '/data/Porn',
+      movieNamingPattern: '{Movie.Title}',
+      seriesNamingPattern: '{Series.Title}',
+    };
+    settingsService.get.mockResolvedValue({ ...defaultAppSettings, mediaManagement: stored });
+    settingsService.update.mockImplementation(async (patch: { mediaManagement: MediaManagementSettings }) => ({
+      ...defaultAppSettings,
+      mediaManagement: patch.mediaManagement,
+    }));
+
+    const response = await app.inject({
+      method: 'PUT',
+      url: '/api/settings/media',
+      payload: { movieRootFolder: '/new-movies' },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(settingsService.update).toHaveBeenCalledWith({
+      mediaManagement: { ...stored, movieRootFolder: '/new-movies' },
+    });
+  });
+
+  it('returns 422 for non-string adultRootFolder', async () => {
+    const response = await app.inject({
+      method: 'PUT',
+      url: '/api/settings/media',
+      payload: { movieRootFolder: '/movies', tvRootFolder: '/tv', adultRootFolder: 42 },
+    });
+
+    expect(response.statusCode).toBe(422);
   });
 
   it('returns 422 for non-string movieRootFolder', async () => {

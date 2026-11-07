@@ -1,12 +1,26 @@
 # Plan — Adult library for Mediarr
 
-> Contract-first + TDD per `measure/workflow.md`. **Scoped track: no task starts until A1–A5 are
-> decided and the track is promoted to active.**
+> Contract-first + TDD per `measure/workflow.md`. **ACTIVE since 2026-11-08** — A1–A5 are ratified
+> (spec §Open decisions) and the Phase 0 inventory is committed, so Phase 1 may proceed.
 
-## Phase 0: Ratify scope
+## Phase 0.5: Shared foundation (gate G10)
 
-- [ ] Resolve A1 visibility, A2 root, A3 metadata, A4 cadence, A5 retention.
-- [ ] Confirm the existing `4TB/Porn` tree as migration input; record size/file count.
+> The triumvirate review requires "one shared *library kinds + arbitrary roots + generic nav*
+> foundation before Adult/YouTube/Music". Built once, here, rather than three times.
+
+- [ ] Contract tests for the library registry: kinds, roots, seeding from settings, isolation from
+      `TV|MOVIE` queries.
+- [ ] `Library` table + migration; seed `MOVIES`/`TV` from the existing settings, add `ADULT`.
+- [ ] `adultRootFolder` setting (default empty → library not scanned until configured).
+
+## Phase 0: Ratify scope ✅
+
+- [x] Resolve A1 visibility, A2 root, A3 metadata, A4 cadence, A5 retention — **2026-11-08:** visible
+      section, keep `4TB/Porn`, filename grammar matrix + review bucket (no provider), weekly
+      Sun 04:00, agent proposes / quarantine executes.
+- [x] Confirm the existing `4TB/Porn` tree as migration input; record size/file count — **2026-11-08:**
+      246 files, 196 videos (188 mp4 / 8 mkv), 49 jpg, 1 nfo, **298 GB**, flat root + 8 sub-dirs.
+      Evidence: [`evidence/phase0-inventory-20261108.md`](./evidence/phase0-inventory-20261108.md).
 
 ## Phase 1: Domain + scan
 

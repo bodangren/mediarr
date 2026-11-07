@@ -1,7 +1,9 @@
 # Plan — YouTube series library for Mediarr
 
-> Contract-first + TDD per `measure/workflow.md`. **Scoped track: no task starts until Y1–Y5 are
-> decided and the track is promoted to active.**
+> Contract-first + TDD per `measure/workflow.md`. **ACTIVE since 2026-11-08** — Y1–Y5 are ratified
+> (spec §Open decisions), so Phase 0 may proceed. Migration note: the 786 existing files under
+> `/data/Youtube` are 262 videos (133 webm + 129 mkv) with `.nfo` + thumbnail sidecars; they import as
+> an unmanaged archive and are never subject to the watched+7d retention rule (gate G9).
 
 ## Phase 0: Ratify scope
 

@@ -1,7 +1,8 @@
 # Spec — Adult library for Mediarr
 
 **Track:** `feature_adult_library_20261107`
-**Opened:** 2026-11-07 · **Status:** SCOPED ONLY — no work started. Owner decision D2 in
+**Opened:** 2026-11-07 · **Status:** ACTIVE 2026-11-08. Phase 0 ratified by the owner; A1–A5
+resolved (see below). Owner decision D2 in
 [`chore_migrate_hermes_automation_20261107`](../chore_migrate_hermes_automation_20261107/spec.md):
 the Adult library is separate and easily accessible, not folded into Movies.
 
@@ -60,13 +61,22 @@ multi-user or access control beyond the trusted-LAN scope.
 
 | # | Decision | Options |
 |---|---|---|
-| A1 | Visibility | Visible section (recommended) vs hidden behind a toggle/PIN |
-| A2 | Root | Keep `4TB/Porn` (recommended) vs move under `4TB/Adult` |
+| A1 | Visibility | Visible section (recommended) vs hidden behind a toggle/PIN — **DECIDED 2026-11-08: visible section**, owner-selected |
+| A2 | Root | Keep `4TB/Porn` (recommended) vs move under `4TB/Adult` — **DECIDED: keep**, root becomes configurable `adultRootFolder` |
 | A3 | Metadata | A **filename grammar matrix** (recommended) must be defined: the live tree mixes
   `pornplus.26.08.29.lulu.chu... [hash].mp4` and `001 [hash].mp4`. Hash-only names cannot satisfy
-  AC1 by parsing; they go to a review bucket. vs a metadata provider |
-| A4 | Discovery cadence | Weekly (recommended, matches the old job) vs daily |
-| A5 | Retention profile | Agent proposes, quarantine executes (recommended) vs hard cap by age/size only |
+  AC1 by parsing; they go to a review bucket. vs a metadata provider — **DECIDED: grammar matrix,
+  no provider.** Measured on 2026-11-08: 196 videos in 6 classes, 95.9 % yield at least a title;
+  8 hash-only files go to review. Matrix in
+  [`evidence/phase0-inventory-20261108.md`](./evidence/phase0-inventory-20261108.md) |
+| A4 | Discovery cadence | Weekly (recommended, matches the old job) vs daily — **DECIDED: weekly**, Sun 04:00 |
+| A5 | Retention profile | Agent proposes, quarantine executes (recommended) vs hard cap by age/size only — **DECIDED: agent proposes, quarantine executes.** No hard age/size cap |
+
+## Phase 0 record
+
+Ratified 2026-11-08. Live inventory: 246 files / **196 videos** / 298 GB, flat root plus 8
+sub-directories. Filename grammar matrix, isolation contract for `TV|MOVIE` and the Phase 1 design
+are recorded in [`evidence/phase0-inventory-20261108.md`](./evidence/phase0-inventory-20261108.md).
 
 ## Provenance
 

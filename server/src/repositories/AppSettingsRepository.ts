@@ -67,6 +67,8 @@ export interface UpdateSettings {
 export interface MediaManagementSettings {
   movieRootFolder: string;
   tvRootFolder: string;
+  /** Root of the separate Adult library (track feature_adult_library_20261107). Empty = not configured. */
+  adultRootFolder: string;
   movieNamingPattern: string;
   seriesNamingPattern: string;
 }
@@ -101,6 +103,7 @@ export type SchedulerEnabledMap = Record<string, boolean>;
 export const DEFAULT_MEDIA_MANAGEMENT_SETTINGS: MediaManagementSettings = {
   movieRootFolder: '',
   tvRootFolder: '',
+  adultRootFolder: '',
   movieNamingPattern: '{Movie.Title}.{Release.Year}.{Quality.Full}.{MediaInfo.VideoCodec}',
   seriesNamingPattern: '{Series.Title}.S{season:00}E{episode:00}.{Episode.Title}.{Quality.Full}',
 };
@@ -567,6 +570,7 @@ export class AppSettingsRepository {
       mediaManagement: {
         movieRootFolder: readString(mediaManagement.movieRootFolder, DEFAULT_MEDIA_MANAGEMENT_SETTINGS.movieRootFolder),
         tvRootFolder: readString(mediaManagement.tvRootFolder, DEFAULT_MEDIA_MANAGEMENT_SETTINGS.tvRootFolder),
+        adultRootFolder: readString(mediaManagement.adultRootFolder, DEFAULT_MEDIA_MANAGEMENT_SETTINGS.adultRootFolder),
         movieNamingPattern: readString(mediaManagement.movieNamingPattern, DEFAULT_MEDIA_MANAGEMENT_SETTINGS.movieNamingPattern),
         seriesNamingPattern: readString(mediaManagement.seriesNamingPattern, DEFAULT_MEDIA_MANAGEMENT_SETTINGS.seriesNamingPattern),
       },

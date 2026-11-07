@@ -66,7 +66,7 @@ class ContinueWatchingSection extends StatelessWidget {
             'Continue Watching',
             style: TextStyle(
               color: MediarrColors.textPrimary,
-              fontSize: 20,
+              fontSize: 24,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -80,7 +80,7 @@ class ContinueWatchingSection extends StatelessWidget {
                   ((constraints.maxWidth - gap * 3) / 4).clamp(120.0, 640.0);
               // Art is about 16:7 (the mockup); the text block below it is
               // fixed, so the art absorbs the remainder via Expanded.
-              final cardHeight = cardWidth / 2.2 + 68;
+              final cardHeight = cardWidth / 2.2 + 84;
               return SizedBox(
                 height: cardHeight,
                 child: ListView.separated(
@@ -187,7 +187,7 @@ class _ContinueWatchingCard extends StatelessWidget {
                             '${(progress * 100).round()}%',
                             style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 14,
+                              fontSize: 16,
                               fontWeight: FontWeight.w600,
                               shadows: [Shadow(blurRadius: 4, color: Colors.black)],
                             ),
@@ -210,16 +210,18 @@ class _ContinueWatchingCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       color: MediarrColors.textPrimary,
-                      fontSize: 16,
+                      fontSize: 20,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: 1),
                   Text(
-                    'Resume at ${_formatDuration(Duration(seconds: item.position))}',
+                    _subtitleLine(item),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       color: MediarrColors.textMuted,
-                      fontSize: 13,
+                      fontSize: 17,
                     ),
                   ),
                 ],
@@ -230,6 +232,20 @@ class _ContinueWatchingCard extends StatelessWidget {
       ),
     );
   }
+}
+
+/// "Resume at 12:34 · 32 min left" — the two facts a viewer needs to decide
+/// whether to resume now (UX review 2026-11-07).
+String _subtitleLine(ContinueWatchingItem item) {
+  final resume = _formatDuration(Duration(seconds: item.position));
+  if (item.duration <= 0) return 'Resume at $resume';
+  final remaining = item.duration - item.position;
+  if (remaining <= 0) return 'Resume at $resume';
+  final minutesLeft = (remaining / 60).ceil();
+  final left = minutesLeft >= 60
+      ? '${minutesLeft ~/ 60}h ${minutesLeft % 60}m left'
+      : '${minutesLeft}m left';
+  return 'Resume at $resume · $left';
 }
 
 String _formatDuration(Duration d) {

@@ -95,10 +95,11 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Test Movie'), findsWidgets);
-      // FR-3: the card shows the percent at the progress bar and the
-      // `Resume at mm:ss` line under the title.
+      // FR-3: the card shows the percent at the progress bar and, under the
+      // title, the resume stamp plus how much is left (UX review 2026-11-07).
       expect(find.text('50%'), findsOneWidget);
-      expect(find.text('Resume at 30:00'), findsOneWidget);
+      expect(find.textContaining('Resume at 30:00'), findsOneWidget);
+      expect(find.textContaining('m left'), findsOneWidget);
       expect(find.text('Continue Watching'), findsOneWidget);
     });
 

@@ -361,7 +361,7 @@ class _RowSection extends StatelessWidget {
                 title,
                 style: const TextStyle(
                   color: MediarrColors.textPrimary,
-                  fontSize: 20,
+                  fontSize: 24,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -555,10 +555,14 @@ class _HeroBanner extends StatelessWidget {
     // FR-14: the hero fills the mockup's top band (about 48 % of the view)
     // and always keeps room for the two-line title, the meta line, the
     // three-line synopsis, and the action row.
+    // 10-foot budget (UX review 2026-11-07): the banner is a header, not the
+    // page. At 0.48 x 720 = 348 px plus the Continue Watching row it pushed
+    // Recently Added off screen, so the first viewport looked static and the
+    // only way down was blind scrolling.
     final viewportHeight = MediaQuery.sizeOf(context).height;
-    final band = hasOverview ? 0.48 : 0.42;
-    final contentMin = hasOverview ? 348.0 : 280.0;
-    final height = (viewportHeight * band).clamp(contentMin, 520.0);
+    final band = hasOverview ? 0.36 : 0.32;
+    final contentMin = hasOverview ? 250.0 : 220.0;
+    final height = (viewportHeight * band).clamp(contentMin, 300.0);
     return SizedBox(
       height: height,
       width: double.infinity,
@@ -635,7 +639,7 @@ class _HeroBanner extends StatelessWidget {
           Positioned(
             left: 48,
             right: 48,
-            top: 32,
+            top: 20,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
@@ -649,12 +653,12 @@ class _HeroBanner extends StatelessWidget {
                     letterSpacing: 3,
                   ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 6),
                 Text(
                   _title,
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 48,
+                    fontSize: 40,
                     height: 1.05,
                     fontWeight: FontWeight.w800,
                     shadows: [
@@ -665,7 +669,7 @@ class _HeroBanner extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 if (_metaLine != null || _chips.isNotEmpty) ...[
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 6),
                   Row(
                     children: [
                       if (_metaLine != null)
@@ -705,10 +709,12 @@ class _HeroBanner extends StatelessWidget {
                   ),
                 ],
                 if (_overview != null && _overview!.isNotEmpty) ...[
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                   Text(
                     _overview!,
-                    maxLines: 3,
+                    // Two lines: at 260 px the third line pushed the action
+                    // row out of the band (verified on the TV 2026-11-07).
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       color: Colors.white70,
@@ -717,7 +723,7 @@ class _HeroBanner extends StatelessWidget {
                     ),
                   ),
                 ],
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
                 Row(
                   children: [
                     _HeroActionPill(

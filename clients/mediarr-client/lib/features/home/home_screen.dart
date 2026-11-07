@@ -237,13 +237,41 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
+  /// Opens the detail screen for the featured item.
+  ///
+  /// For a continue-watching entry this used to call `_resumeContinueWatching`,
+  /// so the hero's **Details** button started playback — with the ring visibly
+  /// on "Details" (device-captured 2026-11-08). Details now opens the series /
+  /// movie detail screen; Resume still resumes.
   void _openHeroDetail(BuildContext context, WidgetRef ref, _HeroItem item) {
     if (item is _HeroFromContinueWatching) {
-      _resumeContinueWatching(context, ref, item.item);
+      _openContinueWatchingDetail(context, ref, item.item);
       return;
     }
     final lib = (item as _HeroFromLibrary).item;
     _openLibraryItem(context, ref, lib);
+  }
+
+  Future<void> _openContinueWatchingDetail(
+    BuildContext context,
+    WidgetRef ref,
+    ContinueWatchingItem item,
+  ) async {
+    final client = ref.read(apiClientProvider.notifier);
+    final navigator = Navigator.of(context, rootNavigator: true);
+    if (item.mediaTypeQueryValue == 'movie') {
+      final movie = await client.getMovie(item.mediaId);
+      if (movie != null && mounted) {
+        navigator.push(MaterialPageRoute(builder: (_) => MovieDetailScreen(movie: movie)));
+      }
+      return;
+    }
+    if (item.seriesId != null) {
+      final series = await client.getSeriesById(item.seriesId!);
+      if (series != null && mounted) {
+        navigator.push(MaterialPageRoute(builder: (_) => SeriesDetailScreen(series: series)));
+      }
+    }
   }
 
   Future<void> _openLibraryItem(

@@ -37,8 +37,10 @@ class FileInfoCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Quality badge
-            if (quality != null)
+            // Quality badge. The API falls back to the quality-profile name,
+            // whose default is the meaningless "Any" — the same noise that was
+            // removed from poster tiles (device capture 2026-11-08).
+            if (_hasMeaningfulQuality)
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: _QualityBadge(quality: quality!),
@@ -95,6 +97,13 @@ class FileInfoCard extends StatelessWidget {
       parts.add('$subtitleTrackCount subtitle');
     }
     return parts.join(' \u00B7 ');
+  }
+
+  bool get _hasMeaningfulQuality {
+    final value = quality?.trim();
+    if (value == null || value.isEmpty) return false;
+    final lower = value.toLowerCase();
+    return lower != 'any' && lower != 'unknown';
   }
 }
 

@@ -106,4 +106,24 @@ void main() {
       expect(find.textContaining('GB'), findsOneWidget);
     });
   });
+
+  testWidgets('hides the meaningless "Any" quality badge', (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      theme: mediarrDarkTheme,
+      home: const Scaffold(
+        body: FileInfoCard(quality: 'Any', sizeBytes: 1024),
+      ),
+    ));
+    expect(find.text('Any'), findsNothing);
+  });
+
+  testWidgets('shows a real quality badge', (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      theme: mediarrDarkTheme,
+      home: const Scaffold(
+        body: FileInfoCard(quality: 'Bluray-1080p', sizeBytes: 1024),
+      ),
+    ));
+    expect(find.text('Bluray-1080p'), findsOneWidget);
+  });
 }

@@ -37,6 +37,7 @@ List<Override> _overrides(FakeMediarrApiClient api) => [
             ContinueWatchingItem(
               mediaType: 'episode',
               mediaId: 11,
+              seriesId: 41,
               title: 'Rick and Morty',
               position: 615,
               duration: 1320,
@@ -263,5 +264,25 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(SeriesDetailScreen), findsOneWidget);
+  });
+
+  testWidgets('Select on the hero Details pill opens the detail screen, not playback',
+      (tester) async {
+    // The hero's Details action called the resume path, so pressing Select with
+    // the ring visibly on "Details" started the video (device capture
+    // 2026-11-08). It must open the series detail instead.
+    final api = FakeMediarrApiClient();
+    api.getSeriesByIdReturn = const Series(id: 41, title: 'Rick and Morty', year: 2025);
+    final router = await _pumpShell(tester, api);
+
+    await pressDpad(tester, LogicalKeyboardKey.arrowRight);
+    expect(focusedText(), contains('Details'));
+
+    await pressDpad(tester, LogicalKeyboardKey.select);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(SeriesDetailScreen), findsOneWidget);
+    expect(api.getSeriesByIdCalls, contains(41));
+    expect(router.routerDelegate.currentConfiguration.uri.path, isNot('/playback'));
   });
 }

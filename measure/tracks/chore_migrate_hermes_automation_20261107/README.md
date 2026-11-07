@@ -83,6 +83,11 @@ a session started before a provider change cannot use the new provider.
   `2026-10-20`, yet `media-orchestrator` logged completed runs on `2026-11-06`. Even a
   "completed" agent run did not produce its artifact — why the design requires receipts and an
   independent watchdog rather than trusting a success status.
+- **Tooling installed 2026-11-07 (owner-approved):** standalone `yt-dlp` 2026.10.26, `beets`
+  2.14.1 in a uv/Python 3.12 venv, `pnpm` 12.18.0, `uv` 0.13.7, ffmpeg 8.0.1. kimi-webbridge is
+  mounted into the web profile as an MCP server; agent-side `mcp__webbridge__navigate` and
+  `evaluate` were verified live against Chrome (extension 2.0.23). Paths, update commands and the
+  systemd PATH requirements are in [`automation/TOOLING.md`](../../automation/TOOLING.md).
 
 ## Definition of done for the whole track
 

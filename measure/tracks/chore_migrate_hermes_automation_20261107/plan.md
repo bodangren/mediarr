@@ -55,6 +55,11 @@
 
 ## Phase 4: Build the substrate (v3 — agent-first)
 
+> **Tooling installed and proven 2026-11-07** under owner approval — `yt-dlp` 2026.10.26,
+> `beets` 2.14.1 (uv/Python 3.12 venv), `pnpm` 12.18.0, `uv` 0.13.7, ffmpeg 8.0.1; kimi-webbridge
+> mounted into the web profile as an MCP server, with live `mcp__webbridge__navigate/evaluate` calls
+> verified. Inventory and paths: [`automation/TOOLING.md`](../../../automation/TOOLING.md).
+
 - [ ] **B1** Deploy Mediarr 24/7 (container `restart: unless-stopped` or systemd); prove reboot.
 - [ ] **B2** Fix `subtitle-wanted-search` interval persistence (`TASK_INTERVAL_KEY`) + test; set
       rss 30 / availability 10–15 / wanted 60 in settings.
@@ -62,9 +67,12 @@
       port 3080); replace the terminal-launched Host; prove reboot persistence.
 - [ ] **B4** Scaffold `automation/dsh-media-automation/` (bundle + `jobs`/`runs`/`locks`/`alerts`/
       `quarantine` domains, heartbeat, alert webhook); install via `link:`; prove HMR restarts.
-- [ ] **B5** Mount **kimi-webbridge as an MCP server** (`@deepseek-ai/dsh-mcp-client`, stdio
+- [~] **B5** Mount **kimi-webbridge as an MCP server** (`@deepseek-ai/dsh-mcp-client`, stdio
       `kimi-webbridge mcp`), supervise Chrome + bridge as a service, and probe the bridge before
-      agent runs; a dead bridge must alert, not hang.
+      agent runs; a dead bridge must alert, not hang. **Done 2026-11-07:** entry inserted in the
+      web profile; host spawned the bridge (ws :10086, extension v2.0.23); agent-side
+      `mcp__webbridge__navigate` + `evaluate` verified live. Remaining: bridge probe + dead-bridge
+      alert (lands with B9).
 - [ ] **B6** Write the **daily 03:00 media-orchestrator prompt** in `automation/prompts/` and run it
       manually: watch-next, wanted + web fetch (TPB/YTS/EZTV) via browser tools, YouTube
       subscription poll (if that domain exists), subtitle judgement, receipt with diagnosis.

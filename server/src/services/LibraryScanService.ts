@@ -67,8 +67,31 @@ async function walkDir(dir: string): Promise<string[]> {
   return results;
 }
 
+/**
+ * Fraction of known paths that may disappear before the scan refuses to mark
+ * anything missing.
+ *
+ * The media lives on a USB drive that spins down, and `pathExists` failing for
+ * a sleeping or unmounted mount would otherwise null out every row in the
+ * library — a silent, catastrophic "hands-off" failure. Above this ratio the
+ * scan assumes the mount is at fault, changes nothing, and reports it.
+ */
+const MAX_MISSING_RATIO = 0.5;
+const MIN_ROWS_FOR_RATIO_GUARD = 10;
+
 export class LibraryScanService {
   constructor(private readonly prisma: DatabaseClient) {}
+
+  /**
+   * A root that yields no files at all is not scanned.
+   *
+   * An unreadable root (unmounted USB drive, permission error) and a genuinely
+   * empty root look identical to `walkDir`, and nulling thousands of rows
+   * because the drive spun down is a far worse failure than skipping one scan.
+   */
+  private static rootHasNoFiles(allFiles: string[]): boolean {
+    return allFiles.length === 0;
+  }
 
   async scanAll(settings: { movieRootFolder: string; tvRootFolder: string }): Promise<ScanSummary> {
     const start = Date.now();
@@ -116,14 +139,37 @@ export class LibraryScanService {
 
     // Build a set of paths on disk
     const allFiles = await walkDir(rootPath);
+    if (LibraryScanService.rootHasNoFiles(allFiles)) {
+      console.warn(
+        `Library scan skipped the movie root '${rootPath}': no files were readable `
+        + '(drive asleep or unmounted?). Nothing was marked missing.',
+      );
+      return { added, missing, subtitles };
+    }
     const videoFilesOnDisk = new Set(allFiles.filter(f => VIDEO_EXTENSIONS.has(path.extname(f).toLowerCase())));
     subtitles += allFiles.filter(f => SUBTITLE_EXTENSIONS.has(path.extname(f).toLowerCase())).length;
 
-    // Check DB records against disk
+    // Check DB records against disk, but never unlink a whole library because
+    // the mount went away.
+    const linkedMovies = movies.filter(movie => movie.path);
+    let missingProbe = 0;
+    for (const movie of linkedMovies) {
+      if (!await this.pathExists(movie.path!)) missingProbe += 1;
+    }
+    const guardTripped = linkedMovies.length >= MIN_ROWS_FOR_RATIO_GUARD
+      && missingProbe / linkedMovies.length > MAX_MISSING_RATIO;
+    if (guardTripped) {
+      console.warn(
+        `Library scan refused to mark ${missingProbe}/${linkedMovies.length} movies missing `
+        + `(over ${Math.round(MAX_MISSING_RATIO * 100)}%): the movie root looks unmounted.`,
+      );
+    }
+
     for (const movie of movies) {
       if (!movie.path) continue;
       const exists = await this.pathExists(movie.path);
       if (!exists) {
+        if (guardTripped) continue;
         // Mark movie path as null (missing) only if it was previously set
         await (this.prisma as any).movie.update({ where: { id: movie.id }, data: { path: null } });
         missing++;
@@ -163,6 +209,13 @@ export class LibraryScanService {
     let subtitles = 0;
 
     const allFiles = await walkDir(rootPath);
+    if (LibraryScanService.rootHasNoFiles(allFiles)) {
+      console.warn(
+        `Library scan skipped the TV root '${rootPath}': no files were readable `
+        + '(drive asleep or unmounted?). Nothing was marked missing.',
+      );
+      return { added, missing, subtitles, unregistered: 0 };
+    }
     const videoFilesOnDisk = new Set(allFiles.filter(f => VIDEO_EXTENSIONS.has(path.extname(f).toLowerCase())));
     subtitles += allFiles.filter(f => SUBTITLE_EXTENSIONS.has(path.extname(f).toLowerCase())).length;
 
@@ -170,10 +223,25 @@ export class LibraryScanService {
     const episodes: Array<{ id: number; path: string | null }> =
       await (this.prisma as any).episode.findMany({ select: { id: true, path: true } });
 
+    const linkedEpisodes = episodes.filter(ep => ep.path);
+    let missingEpisodeProbe = 0;
+    for (const ep of linkedEpisodes) {
+      if (!await this.pathExists(ep.path!)) missingEpisodeProbe += 1;
+    }
+    const episodeGuardTripped = linkedEpisodes.length >= MIN_ROWS_FOR_RATIO_GUARD
+      && missingEpisodeProbe / linkedEpisodes.length > MAX_MISSING_RATIO;
+    if (episodeGuardTripped) {
+      console.warn(
+        `Library scan refused to mark ${missingEpisodeProbe}/${linkedEpisodes.length} episodes missing `
+        + `(over ${Math.round(MAX_MISSING_RATIO * 100)}%): the TV root looks unmounted.`,
+      );
+    }
+
     for (const ep of episodes) {
       if (!ep.path) continue;
       const exists = await this.pathExists(ep.path);
       if (!exists) {
+        if (episodeGuardTripped) continue;
         await (this.prisma as any).episode.update({ where: { id: ep.id }, data: { path: null } });
         missing++;
       } else {

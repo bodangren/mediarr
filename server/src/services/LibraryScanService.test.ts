@@ -83,7 +83,9 @@ describe('LibraryScanService', () => {
     });
 
     it('scans both roots when both are set', async () => {
-      (vi.mocked(fs.default.readdir) as any).mockResolvedValue([]);
+      (vi.mocked(fs.default.readdir) as any).mockResolvedValue([
+        { name: 'episode.mkv', isDirectory: () => false, isFile: () => true },
+      ]);
       prisma.movie.findMany.mockResolvedValue([]);
       prisma.episode.findMany.mockResolvedValue([]);
 
@@ -112,7 +114,7 @@ describe('LibraryScanService', () => {
 
   describe('scanMovies() — DB-to-disk reconciliation', () => {
     it('marks movie as missing when file is deleted', async () => {
-      (vi.mocked(fs.default.readdir) as any).mockResolvedValue([]);
+      (vi.mocked(fs.default.readdir) as any).mockResolvedValue([({ name: 'notes.txt', isDirectory: () => false, isFile: () => true })]);
       vi.mocked(fs.default.access).mockRejectedValue(new Error('ENOENT'));
       prisma.movie.findMany.mockResolvedValue([
         { id: 1, path: '/movies/Existing Movie (2020).mkv', title: 'Existing Movie', year: 2020 },
@@ -161,7 +163,7 @@ describe('LibraryScanService', () => {
     });
 
     it('counts multiple missing movies correctly', async () => {
-      (vi.mocked(fs.default.readdir) as any).mockResolvedValue([]);
+      (vi.mocked(fs.default.readdir) as any).mockResolvedValue([({ name: 'notes.txt', isDirectory: () => false, isFile: () => true })]);
       vi.mocked(fs.default.access).mockRejectedValue(new Error('ENOENT'));
       prisma.movie.findMany.mockResolvedValue([
         { id: 1, path: '/movies/Movie A (2020).mkv', title: 'Movie A', year: 2020 },
@@ -176,7 +178,7 @@ describe('LibraryScanService', () => {
     });
 
     it('marks movie missing on any fs.access error including permission denied', async () => {
-      (vi.mocked(fs.default.readdir) as any).mockResolvedValue([]);
+      (vi.mocked(fs.default.readdir) as any).mockResolvedValue([({ name: 'notes.txt', isDirectory: () => false, isFile: () => true })]);
       vi.mocked(fs.default.access).mockRejectedValue(new Error('EACCES: permission denied'));
       prisma.movie.findMany.mockResolvedValue([
         { id: 1, path: '/movies/Secret Movie (2020).mkv', title: 'Secret Movie', year: 2020 },
@@ -352,7 +354,7 @@ describe('LibraryScanService', () => {
 
   describe('scanEpisodes() — DB-to-disk reconciliation', () => {
     it('marks episode as missing when file is deleted', async () => {
-      (vi.mocked(fs.default.readdir) as any).mockResolvedValue([]);
+      (vi.mocked(fs.default.readdir) as any).mockResolvedValue([({ name: 'notes.txt', isDirectory: () => false, isFile: () => true })]);
       vi.mocked(fs.default.access).mockRejectedValue(new Error('ENOENT'));
       prisma.episode.findMany.mockResolvedValue([
         { id: 1, path: '/tv/Show/S01/S01E01.mkv' },
@@ -402,7 +404,7 @@ describe('LibraryScanService', () => {
     });
 
     it('counts multiple missing episodes correctly', async () => {
-      (vi.mocked(fs.default.readdir) as any).mockResolvedValue([]);
+      (vi.mocked(fs.default.readdir) as any).mockResolvedValue([({ name: 'notes.txt', isDirectory: () => false, isFile: () => true })]);
       vi.mocked(fs.default.access).mockRejectedValue(new Error('ENOENT'));
       prisma.episode.findMany.mockResolvedValue([
         { id: 1, path: '/tv/Show/S01/S01E01.mkv' },

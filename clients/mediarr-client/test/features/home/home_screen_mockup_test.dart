@@ -339,4 +339,34 @@ void main() {
     expect(find.byType(SeeAllScreen), findsOneWidget);
     expect(find.text('Recently Added'), findsWidgets);
   });
+
+  testWidgets('Recently Added prefers landscape art over a portrait poster', (
+    tester,
+  ) async {
+    // A 2:3 poster cropped into a 16:9 card loses most of the artwork.
+    final container = createContainer(overrides: [
+      recentlyAddedProvider.overrideWith((ref) async => const [
+            LibraryItem(
+              id: 77,
+              title: 'Wide Art',
+              type: 'series',
+              year: 2026,
+              posterUrl: 'https://art.example/poster.jpg',
+              backdropUrl: 'https://art.example/backdrop.jpg',
+            ),
+          ]),
+    ]);
+    addTearDown(container.dispose);
+
+    await pumpHome(tester, container);
+
+    final urls = tester
+        .widgetList<CachedNetworkImage>(find.byType(CachedNetworkImage))
+        .map((image) => image.imageUrl)
+        .where((url) => url.contains('art.example'))
+        .toList();
+    // The row card now requests the landscape art (the portrait poster may
+    // still be used elsewhere, e.g. the hero's poster tile fallback).
+    expect(urls, contains(contains('backdrop.jpg')));
+  });
 }

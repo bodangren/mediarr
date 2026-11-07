@@ -917,8 +917,14 @@ class _LibraryPosterCard extends StatelessWidget {
   final LibraryItem item;
   final VoidCallback onSelect;
 
+  /// Landscape art first: this card is 16:9, and a 2:3 poster cropped into it
+  /// loses most of the artwork (10-foot review). Falls back to the poster when
+  /// the item has no backdrop.
+  String? get _artUrl => item.backdropUrl ?? item.posterUrl;
+
   @override
   Widget build(BuildContext context) {
+    final art = _artUrl;
     return FocusableAction(
       onSelect: onSelect,
       borderRadius: 12,
@@ -927,9 +933,9 @@ class _LibraryPosterCard extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            if (item.posterUrl != null)
+            if (art != null)
               CachedNetworkImage(
-                imageUrl: ApiConfig.image(item.posterUrl!),
+                imageUrl: ApiConfig.image(art),
                 fit: BoxFit.cover,
                 placeholder: (_, __) =>
                     Container(color: MediarrColors.surfaceCard),

@@ -113,5 +113,38 @@ void main() {
         reason: 'a genuine outage must reach triage, exactly once per probe',
       );
     });
+
+    test('reports an outage only once across repeated failed probes', () async {
+      dio.interceptors.insert(
+        0,
+        InterceptorsWrapper(
+          onRequest: (options, handler) {
+            if (!options.path.contains('/api/system/status')) {
+              return handler.resolve(Response(
+                requestOptions: options,
+                statusCode: 200,
+                data: {'ok': true},
+              ));
+            }
+            return handler.reject(DioException(
+              requestOptions: options,
+              type: DioExceptionType.connectionError,
+              message: 'Connection refused',
+            ));
+          },
+        ),
+      );
+
+      await client.probeHealth(retrying: true);
+      await client.probeHealth(retrying: true);
+      await client.probeHealth(retrying: true);
+
+      expect(
+        reportedPaths.where((p) => p.contains('/api/client-errors')).length,
+        1,
+        reason: 'A down server fails every 30 s probe; on 2026-11-08 that wrote '
+            'one record per poll. Triage needs one record per outage.',
+      );
+    });
   });
 }

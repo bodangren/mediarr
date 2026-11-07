@@ -565,6 +565,13 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
   /// A restart takes a second or two; reporting the first refused connection
   /// produced phantom "client errors" for planned maintenance. Only a failure
   /// that survives the retry is treated (and reported) as an outage.
+  /// Whether this client has already reported the current outage.
+  ///
+  /// A down server fails every 30 s probe; reporting each one wrote a record
+  /// per poll (8 identical records during the 02:50-03:00 deploys on
+  /// 2026-11-08). One report per outage is what triage needs.
+  bool _outageReported = false;
+
   @visibleForTesting
   Future<bool> probeHealth({required bool retrying}) async {
     try {
@@ -572,6 +579,7 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
       if (state.status != ConnectionStatus.connected) {
         state = state.copyWith(status: ConnectionStatus.connected);
       }
+      _outageReported = false;
       return true;
     } catch (error) {
       if (retrying) {
@@ -579,6 +587,8 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
         if (await probeHealth(retrying: false)) return true;
       }
       state = state.copyWith(status: ConnectionStatus.error);
+      if (_outageReported) return false;
+      _outageReported = true;
       // Awaited: an outage report must land before the probe returns, so the
       // next tick cannot race a duplicate.
       await _reporter?.report(

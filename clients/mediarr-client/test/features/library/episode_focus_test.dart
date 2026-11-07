@@ -264,10 +264,12 @@ void main() {
             'Selecting an episode without a file must search for it, not '
             'do nothing. Today onPlayEpisode is a silent no-op in that case.',
       );
-      expect(
-        fake.searchReleasesCalls.first.query,
-        contains('Breaking Bad S02E01'),
-      );
+      // The server contract takes the series title plus season/episode, not a
+      // pre-formatted "Title S02E01" query (that shape was a client-only idea).
+      expect(fake.searchReleasesCalls.first.query, contains('Breaking Bad'));
+      expect(fake.searchReleasesCalls.first.type, 'tvsearch');
+      expect(fake.searchReleasesCalls.first.season, 2);
+      expect(fake.searchReleasesCalls.first.episode, 1);
       expect(fake.getStreamUrlCalls, isEmpty);
     });
   });

@@ -472,11 +472,14 @@ void main() {
         );
         expect(
           fakeClient.searchReleasesCalls.first.type,
-          'episode',
+          'tvsearch',
           reason:
-              'Per-episode search must call searchReleases with type=episode '
-              'to distinguish it from the series-level Search All Missing.',
+              'The server only accepts generic|tvsearch|movie|music|book. '
+              'Sending type=episode was rejected with HTTP 422 on the TV '
+              '(measured 2026-11-07).',
         );
+        expect(fakeClient.searchReleasesCalls.first.season, 1);
+        expect(fakeClient.searchReleasesCalls.first.episode, 1);
       },
     );
 
@@ -515,7 +518,7 @@ void main() {
         );
         expect(
           fakeClient.searchReleasesCalls.last.type,
-          'series',
+          'tvsearch',
           reason:
               'Search All Missing must call searchReleases with '
               'type=series to distinguish it from per-episode search '

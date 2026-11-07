@@ -763,9 +763,21 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
   }
 
   /// Search for releases (torrents) matching a search result.
+  /// Valid `type` values accepted by `POST /api/releases/search`.
+  ///
+  /// The server enum is `generic | tvsearch | movie | music | book`. The client
+  /// used to send `episode` / `series`, which the server rejected with HTTP 422
+  /// (`body/type must be equal to one of the allowed values`) — measured on the
+  /// TV 2026-11-07 via the client error pipeline.
+  static const String searchTypeGeneric = 'generic';
+  static const String searchTypeTv = 'tvsearch';
+  static const String searchTypeMovie = 'movie';
+
   Future<List<Release>> searchReleases({
     String? query,
     String? type,
+    int? season,
+    int? episode,
     int? tmdbId,
     int? tvdbId,
     int? year,
@@ -774,6 +786,8 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
     final body = <String, dynamic>{};
     if (query != null) body['query'] = query;
     if (type != null) body['type'] = type;
+    if (season != null) body['season'] = season;
+    if (episode != null) body['episode'] = episode;
     if (tmdbId != null) body['tmdbId'] = tmdbId;
     if (tvdbId != null) body['tvdbId'] = tvdbId;
     if (year != null) body['year'] = year;

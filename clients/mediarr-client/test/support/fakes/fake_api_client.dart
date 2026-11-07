@@ -133,18 +133,22 @@ class FakeMediarrApiClient extends MediarrApiClient {
 
   List<Release> searchReleasesReturn = const [];
   Object? searchReleasesError;
-  final List<({String? query, String? type})> searchReleasesCalls = [];
+  final List<({String? query, String? type, int? season, int? episode})>
+      searchReleasesCalls = [];
 
   @override
   Future<List<Release>> searchReleases({
     String? query,
     String? type,
+    int? season,
+    int? episode,
     int? tmdbId,
     int? tvdbId,
     int? year,
     int? qualityProfileId,
   }) async {
-    searchReleasesCalls.add((query: query, type: type));
+    searchReleasesCalls
+        .add((query: query, type: type, season: season, episode: episode));
     if (searchReleasesError != null) throw searchReleasesError!;
     return searchReleasesReturn;
   }

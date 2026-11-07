@@ -93,7 +93,7 @@ class _MovieDetailScreenState extends ConsumerState<MovieDetailScreen> {
     final client = ref.read(apiClientProvider.notifier);
     client.searchReleases(
       query: movie.title,
-      type: 'movie',
+      type: MediarrApiClient.searchTypeMovie,
       year: movie.year,
     );
     ScaffoldMessenger.of(context).showSnackBar(

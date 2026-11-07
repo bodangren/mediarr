@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -184,14 +186,44 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
     );
   }
 
-  void _searchEpisode(EpisodeListItem episode) {
+  Future<void> _searchEpisode(EpisodeListItem episode) async {
     final seasonNumber = _episodeSeasonMap[episode.id] ?? 1;
     final client = ref.read(apiClientProvider.notifier);
-    client.searchReleases(
-      query:
-          '${widget.series.title} S${_pad(seasonNumber)}E${_pad(episode.episodeNumber)}',
-      type: 'episode',
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          'Searching for S${_pad(seasonNumber)}E${_pad(episode.episodeNumber)}…',
+        ),
+      ),
     );
+    try {
+      final releases = await client.searchReleases(
+        query: widget.series.title,
+        type: MediarrApiClient.searchTypeTv,
+        season: seasonNumber,
+        episode: episode.episodeNumber,
+      );
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            releases.isEmpty
+                ? 'No releases found for this episode'
+                : '${releases.length} release(s) found for this episode',
+          ),
+        ),
+      );
+    } catch (error, stack) {
+      unawaited(ref.read(errorReporterProvider).report(
+            message: 'episode release search failed: $error',
+            stack: stack.toString(),
+            route: '/series/${widget.series.id}',
+            context: {'episodeId': episode.id, 'season': seasonNumber},
+          ));
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Release search failed')),
+      );
+    }
   }
 
   String _pad(int n) => n.toString().padLeft(2, '0');
@@ -247,16 +279,37 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
       ActionBarAction(
         label: 'Search All Missing',
         icon: Icons.search,
-        onPressed: () {
+        onPressed: () async {
           final client = ref.read(apiClientProvider.notifier);
-          client.searchReleases(
-            query: series.title,
-            type: 'series',
-            year: series.year,
+          final messenger = ScaffoldMessenger.of(context);
+          messenger.showSnackBar(
+            const SnackBar(content: Text('Searching for missing episodes…')),
           );
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Searching for missing episodes...')),
-          );
+          try {
+            final releases = await client.searchReleases(
+              query: series.title,
+              type: MediarrApiClient.searchTypeTv,
+              year: series.year,
+            );
+            messenger.showSnackBar(
+              SnackBar(
+                content: Text(
+                  releases.isEmpty
+                      ? 'No releases found'
+                      : '${releases.length} release(s) found',
+                ),
+              ),
+            );
+          } catch (error, stack) {
+            unawaited(ref.read(errorReporterProvider).report(
+                  message: 'series release search failed: $error',
+                  stack: stack.toString(),
+                  route: '/series/${series.id}',
+                ));
+            messenger.showSnackBar(
+              const SnackBar(content: Text('Release search failed')),
+            );
+          }
         },
       ),
       ActionBarAction(

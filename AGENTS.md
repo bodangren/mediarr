@@ -1,5 +1,12 @@
 # Agent Instructions (AGENTS.md)
 
+## Start here: one system
+
+Read [`SYSTEM.md`](./SYSTEM.md) first. Mediarr is one system — the DeepSeek Harness (the brain:
+scheduled agent runs + Measure guard, running code from `automation/`), the server (the engine), and
+the SPA/TV client (the interfaces). They share one repository, one owner and one state model. Do not
+treat any layer as external or as somebody else's work, and never leave files untracked.
+
 ## Measure Workflow
 
 All development runs through the **Measure** spec-driven development framework exclusively. At the start of every session:

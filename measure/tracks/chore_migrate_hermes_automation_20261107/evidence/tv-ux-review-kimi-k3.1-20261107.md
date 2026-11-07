@@ -125,3 +125,20 @@ early return when a type has no rows. Measured after:
 
 Event-loop `maxLagMs` at boot: 24,878 ms -> 953 ms; stalls 1/133 after.
 Tests: VariantBackfillService now asserts one query per media type.
+
+## SPA audit after the setup-gating fix (2026-11-08)
+
+The web UI became reachable for the first time this session (it had been
+redirecting every route to /setup because zero indexers were configured). Tour:
+
+- **Fixed:** dashboard "Recently Added" filtered the last 20 activity events for
+  import types, so it read "No recent activity." on a 550-movie library. Now it
+  reads the library itself (movies + series by `added`), links each row to its
+  detail page, and explains the empty state.
+- **Fixed:** the Wanted row's Monitored toggle was `bg-accent-success
+  text-text-primary` — the monochrome theme's accent is white, so it rendered
+  as a blank white pill. Now `text-text-inverse`, with a regression test.
+- **Verified healthy:** Movies list (posters, subtitle badges, sizes), series
+  list, dashboard continue-watching (41% Reacher / 9% Sopranos), provider status.
+- Movies posters only looked blank in one capture because lazy loading had not
+  resolved; `document.images` confirmed 500x751 natural sizes.

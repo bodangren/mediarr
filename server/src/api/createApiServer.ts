@@ -10,6 +10,7 @@ import { registerCustomFormatRoutes } from './routes/customFormatRoutes';
 import { registerDownloadClientRoutes } from './routes/downloadClientRoutes';
 import { registerEventsRoutes } from './routes/eventsRoutes';
 import { registerTestRoutes } from './routes/testRoutes';
+import { registerClientErrorRoutes } from './routes/clientErrorRoutes';
 import { registerFilesystemRoutes } from './routes/filesystemRoutes';
 import { registerFilterRoutes } from './routes/filterRoutes';
 import { registerImportListRoutes } from './routes/importListRoutes';
@@ -227,6 +228,8 @@ export function createApiServer(
   registerImportRoutes(app, dependencies);
   registerLibraryRoutes(app, dependencies);
   registerTestRoutes(app, eventHub);
+  // TV client error ingestion: available in every mode, including slim.
+  registerClientErrorRoutes(app);
 
   const pollState: PollState = {};
   const intervals: NodeJS.Timeout[] = [];

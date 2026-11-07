@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Mediarr automation — what needs to be done</title>
+<title>Mediarr automation v3 — fewer scripts, better agents</title>
 <style>
   :root{
     --ink:#111827; --ink-2:#374151; --muted:#6b7280; --line:#e5e7eb;
@@ -21,7 +21,6 @@
   a{color:var(--accent);text-decoration:none}
   a:hover{text-decoration:underline}
   .wrap{max-width:1180px;margin:0 auto;padding:0 24px}
-  /* ---------- header ---------- */
   header{background:
       radial-gradient(1200px 400px at 85% -10%, rgba(99,102,241,.35), transparent 60%),
       radial-gradient(900px 380px at 8% 120%, rgba(13,148,136,.25), transparent 55%),
@@ -30,7 +29,7 @@
   .eyebrow{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:#a5b4fc;font-weight:700}
   h1{font-size:clamp(28px,3.4vw,44px);line-height:1.12;margin:10px 0 12px;letter-spacing:-.02em;font-weight:800}
   h1 .arrow{color:#818cf8}
-  .lede{max-width:820px;color:#c7d2fe;font-size:16.5px;margin:0 0 22px}
+  .lede{max-width:860px;color:#c7d2fe;font-size:16.5px;margin:0 0 22px}
   .badges{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px}
   .badge{display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border-radius:999px;
     font-size:12.5px;font-weight:650;border:1px solid rgba(255,255,255,.16);
@@ -40,41 +39,33 @@
   .dot{width:7px;height:7px;border-radius:50%;background:currentColor;display:inline-block}
   .meta{display:flex;flex-wrap:wrap;gap:18px;color:#94a3b8;font-size:12.5px}
   .meta b{color:#cbd5e1;font-weight:600}
-  /* ---------- nav ---------- */
   nav{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.9);backdrop-filter:blur(10px);
     border-bottom:1px solid var(--line)}
   nav .wrap{display:flex;gap:6px;overflow-x:auto;padding-top:10px;padding-bottom:10px}
   nav a{padding:7px 12px;border-radius:9px;font-size:13px;font-weight:600;color:var(--ink-2);white-space:nowrap}
   nav a:hover{background:var(--accent-soft);color:var(--accent);text-decoration:none}
-  /* ---------- layout ---------- */
   main{padding:36px 0 40px}
   section{padding:14px 0 34px;scroll-margin-top:70px}
   .section-h{display:flex;align-items:baseline;gap:12px;margin:0 0 6px}
   h2{font-size:23px;letter-spacing:-.01em;margin:0;font-weight:800}
   .section-kicker{color:var(--muted);font-size:13px;font-weight:600}
-  .section-sub{color:var(--muted);margin:0 0 18px;max-width:860px}
+  .section-sub{color:var(--muted);margin:0 0 18px;max-width:880px}
   .grid{display:grid;gap:14px}
   .g3{grid-template-columns:repeat(3,1fr)}
   .g2{grid-template-columns:repeat(2,1fr)}
-  .g4{grid-template-columns:repeat(4,1fr)}
-  @media (max-width:900px){.g3,.g2,.g4{grid-template-columns:1fr}}
+  @media (max-width:900px){.g3,.g2{grid-template-columns:1fr}}
   .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
     padding:20px;box-shadow:var(--shadow)}
   .card h3{margin:0 0 8px;font-size:15.5px;font-weight:750}
   .card p{margin:0;color:var(--ink-2);font-size:14px}
   .card .big{font-size:30px;font-weight:850;letter-spacing:-.02em;line-height:1.1}
   .card .cap{font-size:12px;color:var(--muted);font-weight:650;text-transform:uppercase;letter-spacing:.08em;margin-top:6px}
-  .tone-red{border-top:3px solid var(--red)} .tone-amber{border-top:3px solid var(--amber)}
-  .tone-teal{border-top:3px solid var(--teal)} .tone-violet{border-top:3px solid var(--violet)}
-  .tone-accent{border-top:3px solid var(--accent)}
-  /* ---------- callout ---------- */
   .callout{border-radius:14px;padding:16px 18px;border:1px solid;font-size:14px;margin:16px 0}
   .callout b{font-weight:750}
   .callout.warn{background:var(--amber-soft);border-color:#fde68a;color:#7c2d12}
   .callout.bad{background:var(--red-soft);border-color:#fecaca;color:#7f1d1d}
   .callout.info{background:var(--accent-soft);border-color:#c7d2fe;color:#312e81}
   .callout.ok{background:var(--teal-soft);border-color:#a7f3d0;color:#064e3b}
-  /* ---------- tables ---------- */
   .tablewrap{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
     overflow:hidden;box-shadow:var(--shadow)}
   table{width:100%;border-collapse:collapse;font-size:13.6px}
@@ -89,21 +80,19 @@
   .pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11.5px;font-weight:700;white-space:nowrap}
   .pill.mediarr{background:#e0f2fe;color:#075985}
   .pill.plugin{background:var(--violet-soft);color:#5b21b6}
-  .pill.task{background:var(--amber-soft);color:#92400e}
+  .pill.agent{background:var(--amber-soft);color:#92400e}
+  .pill.tool{background:var(--teal-soft);color:#065f46}
   .pill.human{background:#f3f4f6;color:#374151}
   .pill.none{background:var(--teal-soft);color:#065f46}
   .pill.yes{background:#fef3c7;color:#92400e}
   .pill.muted{background:#f3f4f6;color:#6b7280}
-  /* ---------- flow ---------- */
-  .flow{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;align-items:stretch}
+  .flow{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;align-items:stretch}
   @media (max-width:900px){.flow{grid-template-columns:1fr 1fr}}
-  .step{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;position:relative;box-shadow:var(--shadow)}
+  .step{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:var(--shadow)}
   .step .n{width:24px;height:24px;border-radius:7px;background:var(--accent-soft);color:var(--accent);
     display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;margin-bottom:8px}
   .step h4{margin:0 0 4px;font-size:13.5px;font-weight:750}
   .step p{margin:0;font-size:12.5px;color:var(--muted)}
-  .between{display:flex;align-items:center;justify-content:center;color:#c7d2fe;font-size:20px;font-weight:800}
-  /* ---------- backlog ---------- */
   .backlog{display:flex;flex-direction:column;gap:12px}
   .item{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);
     display:grid;grid-template-columns:44px 1fr auto;gap:14px;padding:16px 18px;align-items:start}
@@ -120,7 +109,6 @@
   .grp-h h3{margin:0;font-size:15px;font-weight:800}
   .grp-h .line{flex:1;height:1px;background:var(--line)}
   .grp-h .when{font-size:11.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-  /* ---------- timeline ---------- */
   .timeline{position:relative;margin:8px 0 0;padding-left:26px}
   .timeline:before{content:"";position:absolute;left:8px;top:6px;bottom:6px;width:2px;background:#e0e7ff}
   .tl{position:relative;padding:0 0 18px}
@@ -129,14 +117,12 @@
   .tl.done:before{background:var(--teal);border-color:var(--teal)}
   .tl h4{margin:0 0 3px;font-size:14px;font-weight:750}
   .tl p{margin:0;font-size:13px;color:var(--muted)}
-  /* ---------- decisions ---------- */
   .dec{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
   @media (max-width:900px){.dec{grid-template-columns:1fr}}
   .dec .card{padding:16px 18px}
   .dec .q{font-size:11.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--accent);margin-bottom:4px}
   .dec .a{font-weight:700;font-size:14.5px;margin-bottom:4px}
   .dec .r{font-size:12.6px;color:var(--muted)}
-  /* ---------- misc ---------- */
   .tag{display:inline-block;font-size:11px;font-weight:700;color:#4338ca;background:#eef2ff;
     border:1px solid #e0e7ff;padding:1px 7px;border-radius:6px;margin:2px 4px 2px 0}
   ul.clean{margin:8px 0 0;padding-left:18px;color:var(--ink-2);font-size:14px}
@@ -147,6 +133,8 @@
   .kpi{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;box-shadow:var(--shadow)}
   .kpi .v{font-size:24px;font-weight:850;letter-spacing:-.02em}
   .kpi .l{font-size:11.5px;color:var(--muted);font-weight:650;margin-top:2px}
+  .domain{border-top:4px solid var(--violet)}
+  .domain .track{font-size:11px;font-weight:800;color:var(--violet);letter-spacing:.04em}
   footer{border-top:1px solid var(--line);padding:26px 0 50px;color:var(--muted);font-size:12.6px}
   footer .wrap{display:flex;flex-wrap:wrap;gap:24px;justify-content:space-between}
   footer b{color:var(--ink-2)}
@@ -163,22 +151,23 @@
 
 <header>
   <div class="wrap">
-    <div class="eyebrow">Mediarr · Automation migration · Track chore_migrate_hermes_automation_20261107</div>
-    <h1>Hermes → Mediarr <span class="arrow">→</span> what needs to be done</h1>
-    <p class="lede">jellyfin-go is deprecated and Hermes is being retired. The old pipeline was four LLM cron jobs
-      and one systemd timer that failed silently. The replacement is re-derived from intent: <b>no model runs hourly or
-      daily</b>, deterministic work is DSH plugin code, and weekly judgement is the only place an LLM is used.</p>
+    <div class="eyebrow">Mediarr · Automation migration · v3 — agent-first · track chore_migrate_hermes_automation_20261107</div>
+    <h1>Fewer scripts. Better agents. <span class="arrow">→</span> what needs to be done</h1>
+    <p class="lede">The old pipeline failed silently because web work was wrapped in brittle DOM/regex scripts and model
+      failures were invisible. v3 keeps LLM judgement, drives the browser directly through the bridge, and gives every run
+      a receipt, a diagnosis, and an alert. One daily agent call and two weekly runs replace the pile of scrapers — while
+      the parts that were never fragile stay deterministic.</p>
     <div class="badges">
       <span class="badge green"><span class="dot"></span>Design + ratification complete</span>
       <span class="badge amber"><span class="dot"></span>Phase 4 build not started</span>
       <span class="badge">3 model families planned it</span>
-      <span class="badge">1 plugin + 3 DSH tasks + 1 watchdog</span>
+      <span class="badge">Browser-use via MCP · no DOM scrapers</span>
     </div>
     <div class="meta">
       <span>Date <b>2026-11-07</b></span>
-      <span>Commit <b>597064ae</b></span>
-      <span>Ratified by <b>owner</b></span>
-      <span>Sources <b>TARGET-ARCHITECTURE.md · spec.md · plan.md · inventory.md</b></span>
+      <span>Revision <b>v3 (owner feedback)</b></span>
+      <span>Domains <b>Adult · YouTube · Music</b></span>
+      <span>Sources <b>TARGET-ARCHITECTURE.md · spec.md · plan.md</b></span>
     </div>
   </div>
 </header>
@@ -186,316 +175,268 @@
 <nav>
   <div class="wrap">
     <a href="#why">Why</a>
+    <a href="#principle">The principle</a>
     <a href="#rhythm">The new rhythm</a>
-    <a href="#reliability">How failure becomes visible</a>
+    <a href="#domains">New media domains</a>
+    <a href="#reliability">No silent failures</a>
     <a href="#decisions">Decisions</a>
     <a href="#work">What needs doing</a>
     <a href="#cutover">Cut-over path</a>
     <a href="#guardrails">Guardrails</a>
-    <a href="#open">Open confirmations</a>
   </div>
 </nav>
 
 <main class="wrap">
 
-  <!-- ============ WHY ============ -->
+  <!-- WHY -->
   <section id="why">
-    <div class="section-h"><h2>Why this exists</h2><span class="section-kicker">measured, not assumed</span></div>
-    <p class="section-sub">Three facts from the live install changed the design. None of them came from documentation —
-      each was measured against the running system.</p>
+    <div class="section-h"><h2>Why this exists</h2><span class="section-kicker">measured on the live install</span></div>
+    <p class="section-sub">Three facts reset the design. None of them came from documentation.</p>
     <div class="grid g3">
-      <div class="card tone-red">
+      <div class="card" style="border-top:3px solid var(--red)">
         <div class="big" style="color:var(--red)">42 / 167</div>
         <div class="cap">Hermes runs failed silently</div>
-        <p style="margin-top:10px">Every failure was the same provider outage. Nothing noticed: no alert, no counter,
-          no dead-man switch. 25&nbsp;% of runs disappeared.</p>
+        <p style="margin-top:10px">Every failure was a provider outage. Nothing noticed — no alert, no counter, no dead-man
+          switch. 25&nbsp;% of runs disappeared, and the old scripts could not say why.</p>
       </div>
-      <div class="card tone-amber">
+      <div class="card" style="border-top:3px solid var(--amber)">
         <div class="big" style="color:var(--amber)">Oct 20</div>
         <div class="cap">Last daily report artifact</div>
-        <p style="margin-top:10px">The nightly <span class="srcline">YYYY-MM-DD.md</span> stops at 2026-10-20 — yet
-          <span class="srcline">media-orchestrator</span> logged “completed” runs on 2026-11-06. A success status is
-          not proof.</p>
+        <p style="margin-top:10px">The nightly report stops there, yet <span class="srcline">media-orchestrator</span>
+          logged “completed” runs on 2026-11-06. A success status is not proof of work.</p>
       </div>
-      <div class="card tone-violet">
+      <div class="card" style="border-top:3px solid var(--violet)">
         <div class="big" style="color:var(--violet)">TV + MOVIE</div>
-        <div class="cap">Mediarr media model</div>
-        <p style="margin-top:10px">Music and adult have no domain in Mediarr. The old jobs also reached into
-          jellyfin-go over HTTP <em>and its SQLite database</em> — both going away.</p>
+        <div class="cap">Mediarr's whole media model</div>
+        <p style="margin-top:10px">Adult, YouTube and Music have no domain. The old jobs also reached into jellyfin-go
+          over HTTP <em>and its SQLite database</em> — both going away.</p>
       </div>
     </div>
     <div class="callout bad">
-      <b>Also true right now:</b> the media server (Mediarr) is not installed as a service and is not running;
-      the DSH host is a terminal-launched process with no systemd unit; and the old jobs are still enabled.
-      Deployment, not scheduling, is the current weakest link.
+      <b>Also true right now:</b> Mediarr is not installed as a service and is not running; the DSH host is a
+      terminal-launched process with no systemd unit; and the old jobs are still enabled. Deployment is the current
+      weakest link, not scheduling.
     </div>
   </section>
 
-  <!-- ============ RHYTHM ============ -->
-  <section id="rhythm">
-    <div class="section-h"><h2>The new rhythm</h2><span class="section-kicker">what runs, when, and who owns it</span></div>
-    <p class="section-sub">Owner decision: move more work into DSH — but as <b>deterministic plugin code</b>, never as
-      hourly/daily model turns. Scheduled prompts are reserved for weekly/monthly judgement. That is the one guardrail
-      that keeps the Hermes failure mode from coming back.</p>
+  <!-- PRINCIPLE -->
+  <section id="principle">
+    <div class="section-h"><h2>The principle</h2><span class="section-kicker">interface stability decides the substrate</span></div>
+    <p class="section-sub">The fragile part was never “scripts” — it was <b>our own parsers of rendered web UIs</b>. An LLM
+      driving a real browser adapts to a changed page and can say what broke; a selector script cannot. But an API or a
+      maintained CLI never had that problem in the first place.</p>
     <div class="tablewrap">
       <table>
-        <thead>
-          <tr><th style="width:12%">Cadence</th><th style="width:34%">Behaviour</th><th style="width:18%">Owner</th><th style="width:10%">Model?</th><th>Proof it ran</th></tr>
-        </thead>
+        <thead><tr><th style="width:38%">Interface we must talk to</th><th style="width:24%">Substrate</th><th>Why</th></tr></thead>
         <tbody>
-          <tr class="rowgroup"><td colspan="5">Continuous / event-driven — must not wait for a timer or a model</td></tr>
-          <tr><td><strong>on event</strong></td><td>Import completed download into the library</td><td><span class="pill mediarr">Mediarr native</span></td><td><span class="pill none">never</span></td><td>IMPORT activity row + item row</td></tr>
+          <tr><td><strong>Stable API / local files / maintained CLI</strong><br><span class="srcline">Mediarr REST · transmission RPC · indexers · yt-dlp · beets · filesystem</span></td><td><span class="pill mediarr">Deterministic code</span></td><td>Never breaks when a website's DOM changes. No model, no provider risk.</td></tr>
+          <tr><td><strong>Rendered web UI we don't control</strong><br><span class="srcline">TPB · YTS · EZTV · YouTube · adult sources</span></td><td><span class="pill agent">Agent + browser</span></td><td>The agent adapts to layout/text changes and reports <em>why</em> something failed. We never write a DOM scraper.</td></tr>
+          <tr><td><strong>Judgement across sources</strong><br><span class="srcline">what to watch, which release, which sub, what to prune</span></td><td><span class="pill agent">Agent</span></td><td>No rule generalises. This is what the model is for.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout ok" style="margin-top:16px">
+      <b>What that buys:</b> one daily media orchestrator, one weekly music run, one weekly adult run, one monthly rules
+      review. The old 15 scripts / 4,966 LOC collapse to maintained tools (<span class="srcline">yt-dlp</span>,
+      <span class="srcline">beets</span>) plus a small bookkeeping plugin. “Massive numbers of scripts” becomes a handful
+      of deliberate agent calls.
+    </div>
+  </section>
+
+  <!-- RHYTHM -->
+  <section id="rhythm">
+    <div class="section-h"><h2>The new rhythm</h2><span class="section-kicker">what runs, when, and who owns it</span></div>
+    <p class="section-sub">API-shaped work stays deterministic and keeps running through a provider outage. Web-facing
+      work is an agent call with a receipt, a diagnosis and an alert — never a silent skip.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th style="width:11%">Cadence</th><th style="width:35%">Behaviour</th><th style="width:18%">Owner</th><th style="width:9%">Model?</th><th>Proof it ran</th></tr></thead>
+        <tbody>
+          <tr class="rowgroup"><td colspan="5">Continuous / event-driven — native, never waits for a timer or a model</td></tr>
+          <tr><td><strong>on event</strong></td><td>Import a completed download</td><td><span class="pill mediarr">Mediarr native</span></td><td><span class="pill none">never</span></td><td>IMPORT row + item</td></tr>
           <tr><td><strong>on import</strong></td><td>Attach subtitles to a new item</td><td><span class="pill mediarr">Mediarr native</span></td><td><span class="pill none">never</span></td><td>WantedSubtitle rows</td></tr>
-          <tr><td><strong>continuous</strong></td><td>Playback progress / resume</td><td><span class="pill mediarr">Mediarr native</span></td><td><span class="pill none">never</span></td><td>PlaybackProgress row</td></tr>
-          <tr><td><strong>continuous</strong></td><td>Torrent seeding retire, indexer backoff, auto-grab</td><td><span class="pill mediarr">Mediarr native</span></td><td><span class="pill none">never</span></td><td>torrent / health / GRAB rows</td></tr>
+          <tr><td><strong>continuous</strong></td><td>Playback progress, seeding retire, indexer backoff, auto-grab</td><td><span class="pill mediarr">Mediarr native</span></td><td><span class="pill none">never</span></td><td>progress / torrent / health / GRAB rows</td></tr>
 
-          <tr class="rowgroup"><td colspan="5">Hourly / short interval — deterministic, provider-outage proof</td></tr>
-          <tr><td><strong>60 min</strong></td><td>Wanted search + best-release grab</td><td><span class="pill mediarr">Mediarr native</span></td><td><span class="pill none">never</span></td><td>TaskExecution SUCCESS / FAILED</td></tr>
+          <tr class="rowgroup"><td colspan="5">Hourly / short interval — API-shaped, provider-outage proof</td></tr>
+          <tr><td><strong>60 min</strong></td><td>Wanted search + best-release grab (indexers)</td><td><span class="pill mediarr">Mediarr native</span></td><td><span class="pill none">never</span></td><td>TaskExecution</td></tr>
           <tr><td><strong>10–15 min</strong></td><td>Subtitle wanted sweep</td><td><span class="pill mediarr">Mediarr native</span></td><td><span class="pill none">never</span></td><td>TaskExecution + counters</td></tr>
-          <tr><td><strong>15–30 min</strong></td><td>RSS sync (new releases noticed)</td><td><span class="pill mediarr">Mediarr native</span></td><td><span class="pill none">never</span></td><td>TaskExecution</td></tr>
-          <tr><td><strong>5 min</strong></td><td>Verify Mediarr task receipts</td><td><span class="pill plugin">DSH plugin</span></td><td><span class="pill none">never</span></td><td>plugin runs/alerts tables</td></tr>
+          <tr><td><strong>15–30 min</strong></td><td>RSS sync</td><td><span class="pill mediarr">Mediarr native</span></td><td><span class="pill none">never</span></td><td>TaskExecution</td></tr>
+          <tr><td><strong>5 min</strong></td><td>Verify Mediarr task receipts</td><td><span class="pill plugin">DSH plugin</span></td><td><span class="pill none">never</span></td><td>plugin ledger</td></tr>
 
-          <tr class="rowgroup"><td colspan="5">Daily — deterministic; runs through a provider outage</td></tr>
+          <tr class="rowgroup"><td colspan="5">Daily</td></tr>
           <tr><td><strong>02:00</strong></td><td>Library scan + metadata / artwork backfill</td><td><span class="pill mediarr">Mediarr native</span></td><td><span class="pill none">never</span></td><td>scan summary</td></tr>
-          <tr><td><strong>04:00</strong></td><td>Auto-update check (never auto-applies)</td><td><span class="pill mediarr">Mediarr native</span></td><td><span class="pill none">never</span></td><td>task row</td></tr>
-          <tr><td><strong>04:30</strong></td><td>Downloads tidy — delete only library-proven items</td><td><span class="pill plugin">DSH plugin timer</span></td><td><span class="pill none">never</span></td><td>downloads-tidy-*.md + counts</td></tr>
-          <tr><td><strong>04:45</strong></td><td>Quarantine sweep (dry-run first week)</td><td><span class="pill plugin">DSH plugin timer</span></td><td><span class="pill none">never</span></td><td>manifest + quarantine-*.md</td></tr>
-          <tr><td><strong>05:00</strong></td><td>Nightly receipt (runs, failures, changes)</td><td><span class="pill plugin">DSH plugin timer</span></td><td><span class="pill none">never</span></td><td>YYYY-MM-DD.md, sub-priority, missing-subs</td></tr>
-          <tr><td><strong>every 1 min</strong></td><td>Plugin heartbeat</td><td><span class="pill plugin">DSH plugin</span></td><td><span class="pill none">never</span></td><td>heartbeat file</td></tr>
+          <tr><td><strong>03:00</strong></td><td><strong>Media orchestrator:</strong> watch-next, wanted + web fetch on TPB/YTS/EZTV, YouTube subscriptions, subtitle judgement, report</td><td><span class="pill agent">DSH agent + browser</span></td><td><span class="pill yes">yes — 1 call</span></td><td>report + agent ledger + browser diagnostics</td></tr>
+          <tr><td><strong>04:00</strong></td><td>Auto-update check</td><td><span class="pill mediarr">Mediarr native</span></td><td><span class="pill none">never</span></td><td>task row</td></tr>
+          <tr><td><strong>04:30</strong></td><td>Downloads tidy — delete only library-proven items</td><td><span class="pill plugin">DSH plugin</span></td><td><span class="pill none">never</span></td><td>downloads-tidy-*</td></tr>
+          <tr><td><strong>04:45</strong></td><td>Retention sweep — YouTube watched+7d, quarantine expiry</td><td><span class="pill plugin">DSH plugin</span></td><td><span class="pill none">never</span></td><td>retention manifest</td></tr>
+          <tr><td><strong>05:00</strong></td><td>Nightly receipt</td><td><span class="pill plugin">DSH plugin</span></td><td><span class="pill none">never</span></td><td>YYYY-MM-DD.md + sub reports</td></tr>
 
-          <tr class="rowgroup"><td colspan="5">Weekly / monthly — the only model calls left</td></tr>
-          <tr><td><strong>Sun 02:00</strong></td><td>Trigger Mediarr database backup</td><td><span class="pill plugin">DSH plugin timer</span></td><td><span class="pill none">never</span></td><td>backup file + task row</td></tr>
-          <tr><td><strong>Sun 03:00</strong></td><td>Watch-next: report + sync a <em>Watch Next</em> collection</td><td><span class="pill task">DSH scheduled task</span></td><td><span class="pill yes">yes</span></td><td>recommendations-*.md/.json + ledger</td></tr>
-          <tr><td><strong>Sun 03:30</strong></td><td>Prune candidates: judge and write a manifest</td><td><span class="pill task">DSH scheduled task</span></td><td><span class="pill yes">yes</span></td><td>prune-&lt;date&gt;.json + ledger</td></tr>
-          <tr><td><strong>monthly</strong></td><td>Review quality profile / custom formats (propose only)</td><td><span class="pill task">DSH scheduled task</span></td><td><span class="pill yes">yes</span></td><td>rule-review-*.md</td></tr>
+          <tr class="rowgroup"><td colspan="5">Weekly / monthly — the other agent calls</td></tr>
+          <tr><td><strong>Sun 02:00</strong></td><td>Database backup trigger</td><td><span class="pill plugin">DSH plugin</span></td><td><span class="pill none">never</span></td><td>backup file</td></tr>
+          <tr><td><strong>Sun 03:00</strong></td><td><strong>Music:</strong> YouTube discovery, download audio, tag, report</td><td><span class="pill agent">DSH agent + yt-dlp/beets</span></td><td><span class="pill yes">yes — 1 call</span></td><td>music-* report + ledger</td></tr>
+          <tr><td><strong>Sun 04:00</strong></td><td><strong>Adult:</strong> browse sources, queue 1–3, name prune candidates</td><td><span class="pill agent">DSH agent + browser</span></td><td><span class="pill yes">yes — 1 call</span></td><td>adult-* report + ledger</td></tr>
+          <tr><td><strong>monthly</strong></td><td>Rules review (quality profile / custom formats) — proposals only</td><td><span class="pill agent">DSH agent</span></td><td><span class="pill yes">yes — 1 call</span></td><td>rule-review-*</td></tr>
 
           <tr class="rowgroup"><td colspan="5">Human — on demand, never scheduled</td></tr>
-          <tr><td><strong>on demand</strong></td><td>Add + search now, override, retry import, restore from quarantine, delete</td><td><span class="pill human">Owner via Mediarr UI</span></td><td><span class="pill muted">optional</span></td><td>activity rows</td></tr>
+          <tr><td><strong>on demand</strong></td><td>Add + search now, override, restore from quarantine, delete, ask what happened</td><td><span class="pill human">Owner via Mediarr UI</span></td><td><span class="pill muted">optional</span></td><td>activity rows</td></tr>
         </tbody>
       </table>
     </div>
   </section>
 
-  <!-- ============ RELIABILITY ============ -->
+  <!-- DOMAINS -->
+  <section id="domains">
+    <div class="section-h"><h2>New media domains</h2><span class="section-kicker">three scoped tracks, one automation layer</span></div>
+    <p class="section-sub">Owner feedback turned these from “fold it in” into real product work. Each is its own track; the
+      daily/weekly agent runs drive them through the same receipt-and-ledger mechanism, and skip a domain cleanly until it
+      exists.</p>
+    <div class="grid g3">
+      <div class="card domain">
+        <div class="track">feature_adult_library_20261107</div>
+        <h3 style="margin-top:6px">Adult — a separate library</h3>
+        <p>Own root and a clearly reachable section (not mixed into Movies). The weekly agent browses sources; pruning goes
+          through the quarantine engine instead of raw SQL. Existing <span class="srcline">4TB/Porn</span> imports unchanged.</p>
+      </div>
+      <div class="card domain">
+        <div class="track">feature_youtube_library_20261107</div>
+        <h3 style="margin-top:6px">YouTube — subscribable series</h3>
+        <p>Subscribe to a channel/playlist; <span class="srcline">yt-dlp</span> pulls new entries, deduped by video id. A
+          watched episode is retired after ~7 days (quarantine → delete). Browsable as a series, D-pad navigable.</p>
+      </div>
+      <div class="card domain">
+        <div class="track">feature_music_library_20261107</div>
+        <h3 style="margin-top:6px">Music — iTunes-style, from YouTube</h3>
+        <p>Artist/album/track domain; agent picks YouTube tracks, <span class="srcline">yt-dlp</span> pulls audio
+          (m4a/AAC 256k, mp3 fallback), beets/MusicBrainz tags and files it, and the Flutter player gets a full
+          iTunes-style layout — sidebar, album grid, track list, now-playing bar — fully D-pad navigable.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- RELIABILITY -->
   <section id="reliability">
-    <div class="section-h"><h2>How failure becomes visible</h2><span class="section-kicker">“never silently wrong”</span></div>
-    <p class="section-sub">A scheduled task's delivery receipt proves only that a message reached an inbox — not that
-      the work succeeded. The plugin and an external watchdog close that gap from two directions.</p>
-
+    <div class="section-h"><h2>No silent failures</h2><span class="section-kicker">every agent run is observable</span></div>
+    <p class="section-sub">Hermes used the model and could not tell you when it failed. v3 uses the model and can tell you
+      exactly what broke, because the run itself is instrumented.</p>
     <div class="flow" style="margin-bottom:14px">
-      <div class="step"><div class="n">1</div><h4>DSH delivers</h4><p>Weekly task fires; inbox + receipt. Provider not involved yet.</p></div>
-      <div class="step"><div class="n">2</div><h4>Agent turn runs</h4><p>If the provider is down, the turn fails — durable <span class="srcline">turn/end</span> error.</p></div>
-      <div class="step"><div class="n">3</div><h4>Plugin observes</h4><p>Correlates the delivery message id with the turn outcome; writes the ledger.</p></div>
-      <div class="step"><div class="n">4</div><h4>Retry or alert</h4><p>Transient → up to 2 retries. Persistent → webhook alert. No model on this path.</p></div>
+      <div class="step"><div class="n">1</div><h4>Deliver</h4><p>Schedule fires; plugin records the occurrence key.</p></div>
+      <div class="step"><div class="n">2</div><h4>Work</h4><p>Browser tools on web surfaces, shell for maintained CLIs, Mediarr API to act.</p></div>
+      <div class="step"><div class="n">3</div><h4>Diagnose</h4><p>The agent reports the cause: DOM change, login, VPN, tool error.</p></div>
+      <div class="step"><div class="n">4</div><h4>Record</h4><p>Receipt + ledger row; plugin reads the turn outcome.</p></div>
+      <div class="step"><div class="n">5</div><h4>Retry / alert</h4><p>Transient → ≤2 retries. Persistent → webhook alert. No silence.</p></div>
     </div>
-
-    <div class="grid g2">
-      <div class="card tone-violet">
-        <h3>Plugin <span class="srcline" style="font-weight:400">media-automation</span></h3>
-        <ul class="clean">
-          <li>Owns deterministic timers, the run ledger, quarantine, receipts and alerts.</li>
-          <li>Durable state only — safe to hot-reload or crash mid-run.</li>
-          <li>Retries transient failures; escalates auth/config errors immediately.</li>
-          <li>Writes a heartbeat every minute.</li>
-        </ul>
-      </div>
-      <div class="card tone-teal">
-        <h3>External watchdog <span class="srcline" style="font-weight:400">systemd timer, 10 min</span></h3>
-        <ul class="clean">
-          <li>Runs even when the DSH host or the plugin is dead — the one failure a plugin cannot report.</li>
-          <li>Checks host active, heartbeat fresh, Mediarr health, expected artifacts, failed tasks.</li>
-          <li>One throttled webhook per incident; local fallback.</li>
-        </ul>
-      </div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th style="width:30%">Failure</th><th style="width:35%">Visible as</th><th>Recovery</th></tr></thead>
+        <tbody>
+          <tr><td>Model provider down</td><td><span class="srcline">turn/end</span> error in the plugin ledger</td><td>retry ≤2, alert, next occurrence catches up</td></tr>
+          <tr><td>Browser bridge down</td><td>MCP tool error; receipt names it</td><td>alert; bridge supervised as a service; no hang</td></tr>
+          <tr><td>Website changed / login / VPN</td><td>agent's diagnosis in receipt + alert</td><td>agent adapts next run — no selector script to repair</td></tr>
+          <tr><td><span class="srcline">yt-dlp</span> / beets breakage</td><td>tool error in receipt</td><td>agent retries / updates the tool; alert if unresolved</td></tr>
+          <tr><td>Run never happened (host down)</td><td>watchdog: missing receipt or heartbeat</td><td>alert ≤10 min; catch-up on next start</td></tr>
+          <tr><td>Bookkeeping job failed</td><td>plugin <span class="srcline">jobs</span> outcome</td><td>retry, then alert</td></tr>
+        </tbody>
+      </table>
     </div>
-
-    <div class="callout info" style="margin-top:14px">
-      <b>Definition of error-free:</b> every expected occurrence either <b>succeeded</b>, was <b>retried</b>, or
-      produced an <b>alert</b>. “Always succeeds” is impossible with a provider that can be down; “never silent” is
-      achievable and is the acceptance test for the one clean week.
+    <div class="callout info" style="margin-top:16px">
+      <b>“Auto-fix” policy:</b> browser work self-adapts; maintained tools are updated, not patched by us; there is no
+      graveyard of selectors to repair. <b>No silent failure</b> is the invariant — every expected run ends in a receipt,
+      a retry, or an alert.
     </div>
   </section>
 
-  <!-- ============ DECISIONS ============ -->
+  <!-- DECISIONS -->
   <section id="decisions">
-    <div class="section-h"><h2>Decisions ratified</h2><span class="section-kicker">owner, 2026-11-07</span></div>
-    <p class="section-sub">Recorded in <span class="srcline">spec.md</span> with the rejected options and why.</p>
+    <div class="section-h"><h2>Decisions ratified</h2><span class="section-kicker">owner, 2026-11-07 · v3 revision</span></div>
+    <p class="section-sub">Recorded in <span class="srcline">spec.md</span>, including the options that were rejected and why.</p>
     <div class="dec">
-      <div class="card tone-accent"><div class="q">D1 · runtime split</div><div class="a">More work into DSH</div><div class="r">Plugin owns household automation; deterministic DSH work is plugin code, never model turns. Mediarr keeps only engine-coupled native tasks.</div></div>
-      <div class="card tone-accent"><div class="q">D2 · library scope</div><div class="a">Music scoped; adult folds into Movies</div><div class="r">New track <span class="srcline">feature_music_library_20261107</span>. Music job disabled, beets manual meanwhile. No separate adult orchestrator.</div></div>
-      <div class="card tone-accent"><div class="q">D3 · acquisition</div><div class="a">Indexers only; browser dropped</div><div class="r">No kimi-webbridge, Chrome or VPN in the runtime. Discovery uses TMDB + indexers + library; TPB-only content becomes undiscoverable.</div></div>
-      <div class="card tone-accent"><div class="q">D4 · reliability bar</div><div class="a">“Never silently wrong”</div><div class="r">Receipts, plugin outcome attribution, external watchdog. One clean week is the proof.</div></div>
-      <div class="card tone-violet"><div class="q">Prune deletion</div><div class="a">Quarantine-then-delete, unattended</div><div class="r">14-day retention, manifest, safety rails, 50 GB/week cap, restore path; dry-run for the first week.</div></div>
-      <div class="card tone-violet"><div class="q">DSH host</div><div class="a">Systemd unit, full access</div><div class="r"><span class="srcline">DSH_PERMISSION_MODE=danger-full-access</span> on :3080 — scheduled turns cannot answer approval prompts.</div></div>
-      <div class="card tone-violet"><div class="q">Watch-next</div><div class="a">Report + Mediarr collection</div><div class="r">Weekly task writes recommendations and syncs a <em>Watch Next</em> collection via the existing Collections API.</div></div>
-      <div class="card tone-teal"><div class="q">Guardrail</div><div class="a">No model in deterministic loops</div><div class="r">If “more into DSH” was meant as hourly/daily model turns, that must be re-decided — it reverses the largest reliability win.</div></div>
+      <div class="card" style="border-top:3px solid var(--accent)"><div class="q">D1 · runtime split</div><div class="a">More work into DSH</div><div class="r">Plugin owns the automation layer; Mediarr keeps engine-coupled tasks; deterministic DSH work is plugin code.</div></div>
+      <div class="card" style="border-top:3px solid var(--accent)"><div class="q">D2 · library scope</div><div class="a">Adult · YouTube · Music, separate</div><div class="r">Each is its own scoped track. Adult is a separate library, not folded into Movies.</div></div>
+      <div class="card" style="border-top:3px solid var(--accent)"><div class="q">D3 · web dependency</div><div class="a">Agent + browser-use</div><div class="r">kimi-webbridge for rendered web UIs; maintained tools/APIs where they exist. No custom DOM scraper. (Reverses v2's browser removal.)</div></div>
+      <div class="card" style="border-top:3px solid var(--accent)"><div class="q">D4 · reliability bar</div><div class="a">Never silently wrong</div><div class="r">Every run succeeded, was retried, or alerted — with the agent's diagnosis. One clean week is the proof.</div></div>
+      <div class="card" style="border-top:3px solid var(--violet)"><div class="q">D5 · browser substrate</div><div class="a">kimi-webbridge over MCP</div><div class="r">Mounted via DSH's MCP client (<span class="srcline">mcp__webbridge__*</span>); Chrome + extension + existing VPN. Playwright-MCP is the fallback.</div></div>
+      <div class="card" style="border-top:3px solid var(--violet)"><div class="q">D6 · agent cadence</div><div class="a">1 daily + 2 weekly + 1 monthly</div><div class="r">Daily 03:00 media, Sun 03:00 music, Sun 04:00 adult, monthly rules. Few deliberate calls, not a script per step.</div></div>
+      <div class="card" style="border-top:3px solid var(--teal)"><div class="q">Prune deletion</div><div class="a">Quarantine-then-delete</div><div class="r">14-day retention, manifest, restore, safety rails, 50 GB/week cap; dry-run first.</div></div>
+      <div class="card" style="border-top:3px solid var(--teal)"><div class="q">Host</div><div class="a">Systemd unit, full access</div><div class="r"><span class="srcline">DSH_PERMISSION_MODE=danger-full-access</span> on :3080 — scheduled turns cannot answer approval prompts.</div></div>
     </div>
   </section>
 
-  <!-- ============ WORK ============ -->
+  <!-- WORK -->
   <section id="work">
     <div class="section-h"><h2>What needs to be done</h2><span class="section-kicker">Phase 4 → 6 · all unchecked</span></div>
     <p class="section-sub">Ordered so each item is verifiable before the next depends on it. Sizes are indicative:
-      S ≈ half a day, M ≈ 1–3 days, L ≈ a week. Nothing here starts until the owner confirms the open items below.</p>
+      S ≈ half a day, M ≈ 1–3 days, L ≈ a week. Domain tracks can land after the automation substrate.</p>
 
     <div class="grp-h"><h3>Now — substrate</h3><span class="line"></span><span class="when">blocks everything</span></div>
     <div class="backlog">
-      <div class="item">
-        <div class="box"></div>
-        <div>
-          <h4><span class="id">B1</span> Deploy Mediarr 24/7</h4>
-          <p>The media server is not installed as a service today. Container with <span class="srcline">restart: unless-stopped</span> or a systemd unit; same for the scheduler it hosts.</p>
-          <div class="acc"><b>Proof:</b> survives a reboot · <span class="srcline">/api/health</span> green · scheduler next-run present.</div>
-        </div>
-        <div class="side"><span class="size">M</span><span class="tag">P0</span></div>
-      </div>
-      <div class="item">
-        <div class="box"></div>
-        <div>
-          <h4><span class="id">B2</span> Fix the subtitle interval knob</h4>
-          <p>The only blocking Mediarr code change: <span class="srcline">TASK_INTERVAL_KEY</span> maps <span class="srcline">availability-check</span>, but the task is <span class="srcline">subtitle-wanted-search</span>, so interval edits do not persist. Then set RSS 30 / subtitles 10–15 / wanted 60.</p>
-          <div class="acc"><b>Proof:</b> interval survives a restart; test written first (TDD).</div>
-        </div>
-        <div class="side"><span class="size">S</span><span class="tag">P0</span></div>
-      </div>
-      <div class="item">
-        <div class="box"></div>
-        <div>
-          <h4><span class="id">B3</span> DSH host as a systemd unit</h4>
-          <p>Replace the terminal-launched host with <span class="srcline">dsh-host.service</span> (Restart=always, port 3080, <span class="srcline">DSH_PERMISSION_MODE=danger-full-access</span>). One host only — the schedule store is host-wide.</p>
-          <div class="acc"><b>Proof:</b> reboot survives · a scheduled run can write outside the repo.</div>
-        </div>
-        <div class="side"><span class="size">S</span><span class="tag">P0</span></div>
-      </div>
-      <div class="item">
-        <div class="box"></div>
-        <div>
-          <h4><span class="id">B4</span> Plugin skeleton</h4>
-          <p><span class="srcline">automation/dsh-media-automation/</span>: durable domains (<span class="srcline">jobs · runs · locks · alerts · quarantine</span>), heartbeat, alert webhook, <span class="srcline">link:</span> install.</p>
-          <div class="acc"><b>Proof:</b> installs by path · survives an HMR restart · heartbeat visible.</div>
-        </div>
-        <div class="side"><span class="size">M</span><span class="tag">P0</span></div>
-      </div>
+      <div class="item"><div class="box"></div><div><h4><span class="id">B1</span> Deploy Mediarr 24/7</h4><p>Container <span class="srcline">restart: unless-stopped</span> or a systemd unit; the media server must be up for the scheduler to exist.</p><div class="acc"><b>Proof:</b> survives reboot · health green · scheduler next-run present.</div></div><div class="side"><span class="size">M</span></div></div>
+      <div class="item"><div class="box"></div><div><h4><span class="id">B2</span> Fix the subtitle interval knob</h4><p>The only blocking Mediarr code change: interval edits for <span class="srcline">subtitle-wanted-search</span> do not persist. Then set RSS 30 / subtitles 10–15 / wanted 60.</p><div class="acc"><b>Proof:</b> interval survives restart; test written first.</div></div><div class="side"><span class="size">S</span></div></div>
+      <div class="item"><div class="box"></div><div><h4><span class="id">B3</span> DSH host as a systemd unit</h4><p><span class="srcline">Restart=always</span>, port 3080, <span class="srcline">DSH_PERMISSION_MODE=danger-full-access</span>. One host only.</p><div class="acc"><b>Proof:</b> reboot survives · scheduled run writes outside the repo.</div></div><div class="side"><span class="size">S</span></div></div>
+      <div class="item"><div class="box"></div><div><h4><span class="id">B4</span> Plugin skeleton</h4><p><span class="srcline">automation/dsh-media-automation/</span>: ledger, heartbeat, alerts, install via <span class="srcline">link:</span>.</p><div class="acc"><b>Proof:</b> survives HMR restart; heartbeat visible.</div></div><div class="side"><span class="size">M</span></div></div>
+      <div class="item"><div class="box"></div><div><h4><span class="id">B5</span> Mount kimi-webbridge as MCP</h4><p><span class="srcline">@deepseek-ai/dsh-mcp-client</span> stdio entry; supervise Chrome + bridge; probe before runs. A dead bridge alerts, never hangs.</p><div class="acc"><b>Proof:</b> agent calls a browser tool; bridge killed → alert within one run.</div></div><div class="side"><span class="size">M</span></div></div>
     </div>
 
-    <div class="grp-h"><h3>Next — the automation layer</h3><span class="line"></span><span class="when">after B1–B4</span></div>
+    <div class="grp-h"><h3>Next — automation layer</h3><span class="line"></span><span class="when">after B1–B5</span></div>
     <div class="backlog">
-      <div class="item">
-        <div class="box"></div>
-        <div>
-          <h4><span class="id">B5</span> Plugin timers: tidy, receipt, backup, reconcile</h4>
-          <p>Downloads tidy 04:30 (proof-based deletion only), nightly receipt 05:00, weekly backup trigger, Mediarr task-history polling. No model anywhere in these paths.</p>
-          <div class="acc"><b>Proof:</b> each run writes an artifact + <span class="srcline">jobs</span> row; a missed run alerts.</div>
-        </div>
-        <div class="side"><span class="size">M</span><span class="tag">P1</span></div>
-      </div>
-      <div class="item">
-        <div class="box"></div>
-        <div>
-          <h4><span class="id">B6</span> Quarantine engine, dry-run first</h4>
-          <p>Manifest validation; safety rails (active/seeding torrent, last copy, continue-watching, collection membership); atomic move to <span class="srcline">4TB/quarantine/&lt;week&gt;/</span>; restore; retention delete; 50 GB/week cap. Shadow week before enabling.</p>
-          <div class="acc"><b>Proof:</b> dry-run manifest reviewed · restore is byte-identical · rails reject an active torrent.</div>
-        </div>
-        <div class="side"><span class="size">L</span><span class="tag">P1</span></div>
-      </div>
-      <div class="item">
-        <div class="box"></div>
-        <div>
-          <h4><span class="id">B7</span> Three DSH tasks + prompts + collection sync</h4>
-          <p>Watch-next (Sun 03:00), prune candidates (Sun 03:30), rule review (monthly). Prompts live in <span class="srcline">automation/prompts/</span>; watch-next syncs the <em>Watch Next</em> collection.</p>
-          <div class="acc"><b>Proof:</b> manual run leaves artifact + ledger row + updated collection; a forced provider failure alerts.</div>
-        </div>
-        <div class="side"><span class="size">M</span><span class="tag">P1</span></div>
-      </div>
-      <div class="item">
-        <div class="box"></div>
-        <div>
-          <h4><span class="id">B8</span> Watchdog + expectations map</h4>
-          <p>Systemd timer every 10 min: host active, heartbeat fresh, Mediarr health, expected artifacts, failed tasks. <span class="srcline">automation/expectations.yaml</span> is the source of expected gaps.</p>
-          <div class="acc"><b>Proof:</b> host stopped, plugin disabled, Mediarr stopped — each alerts in ≤ 10 min.</div>
-        </div>
-        <div class="side"><span class="size">M</span><span class="tag">P1</span></div>
-      </div>
+      <div class="item"><div class="box"></div><div><h4><span class="id">B6</span> Daily orchestrator prompt + manual run</h4><p>Repo-versioned prompt: watch-next, wanted + web fetch, YouTube subscriptions, subtitle judgement, report. Run it once by hand before scheduling.</p><div class="acc"><b>Proof:</b> picks queued via browser; receipt names failures; ledger row.</div></div><div class="side"><span class="size">L</span></div></div>
+      <div class="item"><div class="box"></div><div><h4><span class="id">B7</span> Deterministic jobs</h4><p>Tidy 04:30, receipt 05:00, retention 04:45, backup trigger, reconcile. No model in any of them.</p><div class="acc"><b>Proof:</b> each writes an artifact + jobs row; a missed run alerts.</div></div><div class="side"><span class="size">M</span></div></div>
+      <div class="item"><div class="box"></div><div><h4><span class="id">B8</span> Quarantine + retention engine</h4><p>Manifest, safety rails, atomic move, restore, retention delete, byte cap; dry-run week first. Shared by YouTube and prune.</p><div class="acc"><b>Proof:</b> restore byte-identical; rails reject an active torrent.</div></div><div class="side"><span class="size">L</span></div></div>
+      <div class="item"><div class="box"></div><div><h4><span class="id">B9</span> Watchdog + expectations</h4><p>Systemd timer every 10 min: host, bridge, heartbeat, Mediarr health, expected artifacts, failed tasks.</p><div class="acc"><b>Proof:</b> host/bridge/plugin/Mediarr each down → alert ≤10 min.</div></div><div class="side"><span class="size">M</span></div></div>
+    </div>
+
+    <div class="grp-h"><h3>Domains — separate tracks</h3><span class="line"></span><span class="when">land in parallel</span></div>
+    <div class="backlog">
+      <div class="item"><div class="box"></div><div><h4><span class="id">B10</span> Adult library</h4><p>Own root + UI section; weekly agent discovery; quarantine prune. <span class="tag">feature_adult_library_20261107</span></p><div class="acc"><b>Proof:</b> visible section; 1–3 queued via browser; prune restorable.</div></div><div class="side"><span class="size">track</span></div></div>
+      <div class="item"><div class="box"></div><div><h4><span class="id">B11</span> YouTube library</h4><p>Subscriptions, <span class="srcline">yt-dlp</span> ingest, dedupe, watched+7d retention. <span class="tag">feature_youtube_library_20261107</span></p><div class="acc"><b>Proof:</b> new entry downloads; watched episode retires after 7 days.</div></div><div class="side"><span class="size">track</span></div></div>
+      <div class="item"><div class="box"></div><div><h4><span class="id">B12</span> Music library + player</h4><p>YouTube ingest, tagging, iTunes-style D-pad player on the TV. <span class="tag">feature_music_library_20261107</span></p><div class="acc"><b>Proof:</b> picked track plays; sidebar/grid/list/now-playing all reachable by remote.</div></div><div class="side"><span class="size">track</span></div></div>
     </div>
 
     <div class="grp-h"><h3>Then — cut over and prove it</h3><span class="line"></span><span class="when">one clean week</span></div>
     <div class="backlog">
-      <div class="item">
-        <div class="box"></div>
-        <div>
-          <h4><span class="id">B9</span> Disable the old path</h4>
-          <p>Disable (never delete) <span class="srcline">media-orchestrator</span>, <span class="srcline">downloads-tidy</span> and <span class="srcline">fetch-monitor.timer</span>; keep music/adult jobs disabled per decisions; archive <span class="srcline">jobs.json</span> into the track.</p>
-          <div class="acc"><b>Proof:</b> one real completed torrent imports with an IMPORT row and no manual move; no double grabs.</div>
-        </div>
-        <div class="side"><span class="size">S</span><span class="tag">P2</span></div>
-      </div>
-      <div class="item">
-        <div class="box"></div>
-        <div>
-          <h4><span class="id">B10</span> One clean week + rollback test</h4>
-          <p>Every expected artifact present; zero silent misses; provider outage produces an alert; quarantine move/restore/delete proven; then re-enable the archived old path once to prove rollback.</p>
-          <div class="acc"><b>Proof:</b> the week’s ledger has no unattributed occurrence; rollback works.</div>
-        </div>
-        <div class="side"><span class="size">week</span><span class="tag">P2</span></div>
-      </div>
-      <div class="item">
-        <div class="box"></div>
-        <div>
-          <h4><span class="id">B11</span> Close the track</h4>
-          <p>Update <span class="srcline">tracks.md</span>, <span class="srcline">tech-debt.md</span>, <span class="srcline">lessons-learned.md</span>; record drops; archive with the one-week evidence.</p>
-          <div class="acc"><b>Proof:</b> docs updated; track archived.</div>
-        </div>
-        <div class="side"><span class="size">S</span><span class="tag">P2</span></div>
-      </div>
-      <div class="item">
-        <div class="box"></div>
-        <div>
-          <h4><span class="id">M1</span> Music module — its own track</h4>
-          <p>Scoped, not started: <span class="srcline">feature_music_library_20261107</span>. Mediarr cannot represent music today; the old beets/YouTube pipeline is not portable. Beets stays manual until the domain exists.</p>
-          <div class="acc"><b>Proof (scoping):</b> spec + plan written; M1–M5 open decisions listed.</div>
-        </div>
-        <div class="side"><span class="size">track</span><span class="tag">separate</span></div>
-      </div>
+      <div class="item"><div class="box"></div><div><h4><span class="id">B13</span> Disable the old path</h4><p>Disable (never delete) <span class="srcline">media-orchestrator</span>, <span class="srcline">downloads-tidy</span>, <span class="srcline">fetch-monitor.timer</span>, music/adult jobs; archive <span class="srcline">jobs.json</span>.</p><div class="acc"><b>Proof:</b> one real import with no manual move; no double grabs.</div></div><div class="side"><span class="size">S</span></div></div>
+      <div class="item"><div class="box"></div><div><h4><span class="id">B14</span> Clean week + rollback</h4><p>Forced provider outage and forced browser failure both alert; retention/quarantine proven; rollback re-enables the archived path once.</p><div class="acc"><b>Proof:</b> zero unattributed occurrences; rollback works.</div></div><div class="side"><span class="size">week</span></div></div>
+      <div class="item"><div class="box"></div><div><h4><span class="id">B15</span> Close the track</h4><p>Update <span class="srcline">tracks.md</span>, <span class="srcline">tech-debt.md</span>, <span class="srcline">lessons-learned.md</span>; archive with evidence.</p><div class="acc"><b>Proof:</b> docs updated; track archived.</div></div><div class="side"><span class="size">S</span></div></div>
     </div>
   </section>
 
-  <!-- ============ CUTOVER ============ -->
+  <!-- CUTOVER -->
   <section id="cutover">
     <div class="section-h"><h2>Cut-over path</h2><span class="section-kicker">each step has a switch-off condition</span></div>
     <div class="timeline">
-      <div class="tl done"><h4>Phases 0–3 — inventory, three-family design, owner ratification</h4><p>Done 2026-11-07. Decisions recorded; architecture v2 ratified.</p></div>
+      <div class="tl done"><h4>Phases 0–3 — inventory, three-family design, owner ratification</h4><p>Done 2026-11-07. v3 incorporates the owner's agent-first correction.</p></div>
       <div class="tl"><h4>P0 — services + watchdog skeleton</h4><p>Mediarr 24/7, DSH host unit, webhook. Switch off nothing yet.</p></div>
-      <div class="tl"><h4>P1 — deterministic jobs</h4><p>Subtitle knob, settings, plugin timers, tidy/receipt/backup. Quarantine in dry-run.</p></div>
-      <div class="tl"><h4>P2 — weekly judgement + quarantine enabled</h4><p>Three DSH tasks, collection sync, quarantine enabled after the shadow week.</p></div>
-      <div class="tl"><h4>P3 — disable Hermes</h4><p>Four jobs and <span class="srcline">fetch-monitor.timer</span> disabled (not deleted); rollback archive kept.</p></div>
-      <div class="tl"><h4>P4 — one clean week + rollback test</h4><p>Zero silent misses; provider outage alerts; archive the track.</p></div>
+      <div class="tl"><h4>P1 — browser bridge + plugin</h4><p>kimi-webbridge MCP, plugin ledger/heartbeat, subtitle knob + settings.</p></div>
+      <div class="tl"><h4>P2 — daily orchestrator</h4><p>Run it manually, then schedule; receipts + diagnosis proven.</p></div>
+      <div class="tl"><h4>P3 — deterministic jobs + retention</h4><p>Tidy, receipt, retention, backup, quarantine dry-run.</p></div>
+      <div class="tl"><h4>P4 — domains</h4><p>Adult, YouTube, Music land as their tracks; agent runs pick them up.</p></div>
+      <div class="tl"><h4>P5 — disable Hermes; one clean week; rollback test</h4><p>Zero silent misses; archive the track.</p></div>
     </div>
   </section>
 
-  <!-- ============ GUARDRAILS ============ -->
+  <!-- GUARDRAILS -->
   <section id="guardrails">
     <div class="section-h"><h2>Guardrails &amp; risks</h2><span class="section-kicker">what could bite</span></div>
     <div class="grid g2">
-      <div class="callout warn"><b>“More work into DSH” has a hard limit.</b> Deterministic work must be plugin code. Hourly/daily model turns would restore the exact pattern that produced 42 silent failures — if that is what was meant, it must be re-decided explicitly.</div>
-      <div class="callout warn"><b>DSH host is now on the critical path.</b> All household automation depends on it. Mitigations: systemd <span class="srcline">Restart=always</span>, durable plugin state, independent watchdog. A host that is up but whose plugin is disabled is caught by the heartbeat check.</div>
-      <div class="callout bad"><b>Quarantine-then-delete is destructive.</b> 14-day retention, manifest, restore path, safety rails, byte cap, and a dry-run week are not optional. Any delete without a manifest is a bug.</div>
-      <div class="callout warn"><b>Dropping the browser removes discovery.</b> TPB/YTS/EZTV content that no configured indexer carries is no longer discoverable. This is the accepted cost of removing Chrome + VPN from the runtime.</div>
-      <div class="callout info"><b>Full-access host.</b> <span class="srcline">DSH_PERMISSION_MODE=danger-full-access</span> on a trusted single-user LAN; it is required because scheduled turns cannot answer approval prompts. Documented and reversible.</div>
-      <div class="callout info"><b>Music is not solved here.</b> Scope only. Until the new track lands, music is manual and the old job stays disabled — not deleted.</div>
+      <div class="callout warn"><b>Agent runs depend on the provider.</b> That is the accepted trade for adaptation: a provider outage delays the daily/weekly run and <em>alerts</em>; it never silently falls back to a scraper. API-shaped hourly/daily work keeps running regardless.</div>
+      <div class="callout warn"><b>The browser bridge is now a dependency.</b> Chrome + extension + the bridge's WebSocket + the VPN profile must be up. It is supervised, probed before runs, and a dead bridge is an alert — not a hang.</div>
+      <div class="callout bad"><b>Retention deletes media.</b> YouTube watched+7d and prune candidates go through quarantine: manifest, restore window, safety rails, byte cap, dry-run week. No manifest, no deletion.</div>
+      <div class="callout info"><b>Full-access host.</b> <span class="srcline">DSH_PERMISSION_MODE=danger-full-access</span> on a trusted single-user LAN; required because scheduled turns cannot answer approvals. Documented and reversible.</div>
+      <div class="callout info"><b>No DOM scrapers, by policy.</b> If a site breaks, the browser agent adapts; if a maintained CLI breaks, update it and alert. We do not maintain selector graveyards again.</div>
+      <div class="callout info"><b>Domains are product tracks.</b> This migration track builds the automation around them and can ship P0–P3 first; the agent skips absent domains and says so in the receipt.</div>
     </div>
   </section>
 
-  <!-- ============ OPEN ============ -->
-  <section id="open">
-    <div class="section-h"><h2>Open confirmations before build</h2><span class="section-kicker">small, but they change what gets built</span></div>
+  <!-- ASSUMPTIONS -->
+  <section id="assumptions">
+    <div class="section-h"><h2>Flagged assumptions</h2><span class="section-kicker">defaults chosen; say if any is wrong</span></div>
     <div class="card">
       <ul class="clean">
-        <li><b>Interpretation of D1:</b> confirm “more work into DSH” means deterministic plugin code (recommended), not hourly/daily model turns.</li>
-        <li><b>Quarantine policy:</b> 14-day retention and a 50 GB/week cap — adjust before the dry-run week if needed.</li>
-        <li><b>Collection name:</b> “Watch Next” — or reuse an existing list name?</li>
-        <li><b>Music track M1–M5:</b> data model (separate artist/album/track tables), tagging engine (native read vs beets import), acquisition source under D3, playlists, client scope.</li>
-        <li><b>Subtitle alignment:</b> keep the manual <span class="srcline">subalign</span> tool (recommended) or make alignment a build item?</li>
-        <li><b>“Searched, found nothing”:</b> after how many days should a wanted item raise an alert, rather than looking like a healthy idle hour?</li>
+        <li><b>Adult</b> is a separate library with its own root and a <em>visible</em> UI section (not behind a PIN).</li>
+        <li><b>YouTube retention</b> is quarantine-then-delete: watched + 7 days, configurable.</li>
+        <li><b>Music format</b> defaults to m4a/AAC 256k (mp3 320 fallback), tagged via beets/MusicBrainz; player ships TV-first.</li>
+        <li><b>Agent cadence</b>: daily 03:00 media, weekly music (Sun 03:00), weekly adult (Sun 04:00), monthly rules.</li>
+        <li><b>Browser</b>: kimi-webbridge MCP with the existing Chrome profile/VPN; Playwright-MCP if it proves unstable.</li>
+        <li><b>Subtitle alignment</b> stays manual (<span class="srcline">subalign</span>) until a later track.</li>
       </ul>
     </div>
   </section>
@@ -506,14 +447,15 @@
   <div class="wrap">
     <div>
       <b>Sources</b><br>
-      <a href="design/TARGET-ARCHITECTURE.md">design/TARGET-ARCHITECTURE.md</a> (v2, ratified) ·
+      <a href="design/TARGET-ARCHITECTURE.md">TARGET-ARCHITECTURE.md</a> (v3) ·
       <a href="spec.md">spec.md</a> ·
       <a href="plan.md">plan.md</a> ·
       <a href="inventory.md">inventory.md</a> ·
-      <a href="design/intent-cadence.md">intent-cadence.md</a> ·
       <a href="design/dsh-substrate.md">dsh-substrate.md</a> ·
-      <a href="design/mediarr-contract.md">mediarr-contract.md</a> ·
-      <a href="../feature_music_library_20261107/spec.md">music track</a>
+      <a href="design/mediarr-contract.md">mediarr-contract.md</a><br>
+      <a href="../feature_adult_library_20261107/spec.md">Adult track</a> ·
+      <a href="../feature_youtube_library_20261107/spec.md">YouTube track</a> ·
+      <a href="../feature_music_library_20261107/spec.md">Music track</a>
     </div>
     <div>
       <b>Generated</b> 2026-11-07 · <b>Track</b> chore_migrate_hermes_automation_20261107<br>

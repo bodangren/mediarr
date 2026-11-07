@@ -53,7 +53,7 @@
 - [x] Turn it into an ordered backlog with acceptance evidence per item — §8, B1–B11.
 - [x] Amend this plan to match the ratified architecture.
 
-## Phase 4: Build the substrate (DSH-first)
+## Phase 4: Build the substrate (v3 — agent-first)
 
 - [ ] **B1** Deploy Mediarr 24/7 (container `restart: unless-stopped` or systemd); prove reboot.
 - [ ] **B2** Fix `subtitle-wanted-search` interval persistence (`TASK_INTERVAL_KEY`) + test; set
@@ -62,37 +62,42 @@
       port 3080); replace the terminal-launched Host; prove reboot persistence.
 - [ ] **B4** Scaffold `automation/dsh-media-automation/` (bundle + `jobs`/`runs`/`locks`/`alerts`/
       `quarantine` domains, heartbeat, alert webhook); install via `link:`; prove HMR restarts.
-- [ ] **B5** Plugin timers: downloads tidy (04:30), nightly receipt (05:00), quarantine sweep
-      (04:45, **dry-run first**), weekly backup trigger, reconcile + Mediarr task-history polling.
-- [ ] **B6** Quarantine engine: manifest validation, safety rails (active torrent / last copy /
-      continue-watching / collection / cap), atomic move, restore, retention delete; shadow week
-      before enabling.
-- [ ] **B7** `automation/prompts/` + three DSH tasks (watch-next Sun 03:00, prune candidates
-      Sun 03:30, rule review monthly); watch-next syncs the `Watch Next` collection.
-- [ ] **B8** External watchdog timer + `automation/expectations.yaml`; prove host-down,
+- [ ] **B5** Mount **kimi-webbridge as an MCP server** (`@deepseek-ai/dsh-mcp-client`, stdio
+      `kimi-webbridge mcp`), supervise Chrome + bridge as a service, and probe the bridge before
+      agent runs; a dead bridge must alert, not hang.
+- [ ] **B6** Write the **daily 03:00 media-orchestrator prompt** in `automation/prompts/` and run it
+      manually: watch-next, wanted + web fetch (TPB/YTS/EZTV) via browser tools, YouTube
+      subscription poll (if that domain exists), subtitle judgement, receipt with diagnosis.
+- [ ] **B7** Plugin timers: downloads tidy (04:30), nightly receipt (05:00), **retention sweep**
+      (04:45: YouTube watched+7d, quarantine expiry), weekly backup trigger, reconcile + Mediarr
+      task-history polling.
+- [ ] **B8** Quarantine engine: manifest validation, safety rails, atomic move, restore, retention
+      delete, cap; **dry-run first week**.
+- [ ] **B9** External watchdog timer + `automation/expectations.yaml`; prove host-down, bridge-down,
       plugin-down and Mediarr-down each alert ≤ 10 min.
-- [ ] Test the substrate with a no-op occurrence before any old job is switched off.
 
-## Phase 5: Migrate behaviours
+## Phase 5: Migrate behaviours and wire the new domains
 
 - [ ] Keep native Mediarr tasks (scan, wanted, subtitles, RSS, import lists, auto-update); the
       plugin verifies their receipts instead of re-implementing them.
-- [ ] Move the household jobs into plugin timers (tidy, receipt, quarantine, backup).
-- [ ] Move weekly judgement to the three DSH tasks; prompts live in `automation/prompts/`.
-- [ ] Retire `media-daily.py` and the deprecated `media-daily` skill; stop all `kimi-webbridge`,
-      Chrome/VPN, jellyfin-go HTTP and jellyfin-go SQLite usage.
-- [ ] Music: disable `music-orchestrator` (keep it, do not delete); hand automation to the new
-      `feature_music_library_20261107` track; beets stays manual meanwhile.
-- [ ] Adult: no separate orchestrator; content enters the normal Movies pipeline if wanted.
-- [ ] Re-point every remaining artifact path at Mediarr; `~/media-reports/` filename shapes kept.
+- [ ] Move household jobs into the agent runs: daily media orchestrator, weekly music, weekly adult,
+      monthly rules review. Prompts live in `automation/prompts/` (FR-8).
+- [ ] Deterministic bookkeeping in the plugin; no custom DOM scrapers anywhere. Web surfaces are
+      browser-agent work; `yt-dlp`/`beets` are maintained tools invoked from the runs.
+- [ ] As each domain track lands (`feature_adult_library_20261107`, `feature_youtube_library_20261107`,
+      `feature_music_library_20261107`), wire its agent run and retention job; before it lands the
+      daily agent skips that domain and says so in the receipt.
+- [ ] Disable (never delete) `music-orchestrator` and `adult-orchestrator`; the old scripts are not
+      revived — `media-daily.py` and the TPB/YTS/EZTV scrape wrappers stay dead.
+- [ ] Re-point every artifact path at Mediarr; `~/media-reports/` filename shapes kept.
 
 ## Phase 6: Cut over and verify
 
-- [ ] Create successors first, run them manually once, diff output against the Hermes artifact.
-- [ ] Disable (never delete) the four Hermes jobs and `fetch-monitor.timer`; archive `jobs.json`
-      into this track.
-- [ ] One clean week: every run's receipt present, zero silent misses, provider outage produces an
-      alert, quarantine manifest/restore proven.
+- [ ] Create successors first, run each manually once, diff output against the Hermes artifact.
+- [ ] Disable (never delete) `media-orchestrator`, `downloads-tidy` and `fetch-monitor.timer`;
+      archive `jobs.json` into this track.
+- [ ] One clean week: every run's receipt present, zero silent misses, a forced provider outage and
+      a forced browser failure each produce an alert, retention/quarantine proven.
 - [ ] Test rollback once: re-enable `jobs.json` + gateway and confirm the old path still runs.
 
 ## Phase 7: Close

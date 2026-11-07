@@ -1,49 +1,52 @@
 # Plan — Music library for Mediarr
 
-> Contract-first + TDD per `measure/workflow.md`. This is a **scoped** track: no task is started
-> until M1–M5 are decided with the owner and the track is promoted to active.
+> Contract-first + TDD per `measure/workflow.md`. **Scoped track: no task starts until M1–M6 are
+> decided and the track is promoted to active.**
 
 ## Phase 0: Ratify scope
 
-- [ ] Resolve M1 data model (separate artist/album/track tables vs Media extension).
-- [ ] Resolve M2 tagging engine (native read vs beets import).
-- [ ] Resolve M3 acquisition source under D3 (indexers only; no browser bridge).
-- [ ] Resolve M4 playlists and M5 client scope.
-- [ ] Confirm the existing `4TB/Music` tree as the migration input and note its size.
+- [ ] Resolve M1 model, M2 source, M3 format, M4 tagging, M5 player scope, M6 playlists.
+- [ ] Confirm `4TB/Music` as the migration input; record size and a sample of tag quality.
+- [ ] Confirm `yt-dlp`/`beets`/`ffmpeg` install and update path.
 
-## Phase 1: Schema + scanner
+## Phase 1: Domain + scan
 
-- [ ] Contract test for the music domain (artist/album/track, scan summary) written first.
-- [ ] Migration + repository layer.
-- [ ] Scanner: walk root, read tags, upsert idempotently by path, report unreadable files.
-- [ ] Counts test against a seeded fixture tree.
+- [ ] Contract tests for artist/album/track and the scan summary, written first.
+- [ ] Schema/migration; isolated from `TV|MOVIE`.
+- [ ] Scanner: walk root, read tags/artwork, upsert by path, report unreadable files.
+- [ ] Seeded-tree counts test.
 
-## Phase 2: API + artwork
+## Phase 2: Ingest pipeline (deterministic)
 
-- [ ] Browse/search endpoints (artist, album, track).
-- [ ] Stream with range support, reusing the video stream handler contract.
-- [ ] Artwork extraction and serving.
-- [ ] Automation contract: wanted/acquire/status with receipt semantics.
+- [ ] `yt-dlp` audio download + thumbnail; `ffmpeg` convert to M3.
+- [ ] beets tag + file into `<Artist>/<Album>/<NN> - <Title>`; untaggable → review folder.
+- [ ] Idempotency by video id + audio hash; re-run does not duplicate.
+- [ ] Failure reporting per item with tool error; receipt.
 
-## Phase 3: Flutter client
+## Phase 3: API + artwork
 
-- [ ] Music tab / library screen with focus-safe TV navigation.
-- [ ] Album detail + track list; play, seek, resume.
-- [ ] Widget tests for the focus walk and playback handoff.
+- [ ] Artist/album/track browse + search endpoints.
+- [ ] Stream with range support (reuse video handler contract).
+- [ ] Artwork extraction/serving (embedded + folder image).
+- [ ] Automation contract: picks in, ingest status out.
 
-## Phase 4: Migration + tagging quality
+## Phase 4: Player (Flutter, TV-first)
 
-- [ ] Import `4TB/Music`; compare counts; quarantine malformed files to a report.
-- [ ] Native tag reading vs beets output diff on a sample; decide whether beets stays.
-- [ ] Dedupe policy for duplicate albums/tracks.
+- [ ] iTunes-style shell: persistent sidebar (Artists, Albums, Songs, Recently Added), album grid,
+  track list, now-playing bar, queue.
+- [ ] D-pad focus walk: sidebar ↔ grid ↔ list ↔ transport; visible focus; no traps; every control
+  reachable (the TV focus rules from prior tracks apply).
+- [ ] Play, seek, queue advance, resume, background audio behavior.
+- [ ] Widget tests for the focus walk and playback handoff; device check on the TV.
 
-## Phase 5: Automation
+## Phase 5: Automation + migration
 
-- [ ] DSH automation contract exercised end to end (wanted album → acquire → import → visible).
-- [ ] Music job in the automation layer; retire `music-orchestrator` (already disabled).
+- [ ] Weekly agent run: YouTube discovery via browser bridge → URLs → ingest → receipt + ledger.
+- [ ] Forced `yt-dlp` failure alerts; no silent skip.
+- [ ] Import `4TB/Music`; compare counts; report tag failures.
 - [ ] Nightly receipt includes music counts.
 
 ## Phase 6: Close
 
-- [ ] Acceptance criteria from `spec.md` verified on the TV box and in the SPA.
+- [ ] Acceptance criteria verified on the TV box and in the SPA.
 - [ ] Update `tracks.md`, `tech-debt.md`, `lessons-learned.md`; archive.

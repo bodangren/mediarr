@@ -1,11 +1,14 @@
 # Hermes → Mediarr automation migration — start here
 
 **Track:** `chore_migrate_hermes_automation_20261107`
-**Opened:** 2026-11-07 · **Status:** Phase 1 (inventory), Phase 2 (three-family design) and Phase 3
-(owner ratification) complete. **Phase 4 (build) is next.** Owner decisions: more work in DSH
-(plugin code, not model turns), indexers only (no browser bridge), music scoped as its own track,
-quarantine-then-delete pruning, DSH host as a systemd unit with full access, watch-next report +
-Collections.
+**Opened:** 2026-11-07 · **Status:** Phases 1–3 complete (inventory, three-family design, owner
+ratification). **Phase 4 (build) is next.** **v3 owner feedback (same day):** agent-first web
+automation — browser-use via kimi-webbridge MCP instead of DOM/regex scripts; a *few* agent calls
+(daily 03:00 media orchestrator, weekly music, weekly adult, monthly rules) replace many scripts;
+deterministic code only for stable APIs and maintained tools (`yt-dlp`, beets) plus bookkeeping.
+Three new media domains are scoped as separate tracks: **Adult library**, **YouTube subscriptions**
+(yt-dlp, watched+7d retention), **Music** (YouTube ingest → tagged files → iTunes-style D-pad
+player).
 
 ## What this track is
 

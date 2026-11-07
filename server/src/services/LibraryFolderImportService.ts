@@ -8,6 +8,31 @@ import { Parser } from '../utils/Parser';
 
 const VIDEO_EXTENSIONS_FOR_IMPORT = new Set(['.mkv', '.mp4', '.avi', '.ts', '.m4v']);
 
+/**
+ * Depth-first file walk.
+ *
+ * `fs.readdir({ recursive: true })` is pathologically slow on Node 24 for these
+ * trees: 95 s for /data/Movies where this takes 246 ms (measured 2026-11-08).
+ */
+async function listFilesDepthFirst(dir: string): Promise<string[]> {
+  const results: string[] = [];
+  let entries;
+  try {
+    entries = await fs.readdir(dir, { withFileTypes: true });
+  } catch {
+    return results;
+  }
+  for (const entry of entries) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      results.push(...await listFilesDepthFirst(full));
+    } else if (entry.isFile()) {
+      results.push(full);
+    }
+  }
+  return results;
+}
+
 export interface FolderImportStats {
   foldersScanned: number;
   foldersSkipped: number;
@@ -159,14 +184,7 @@ export class LibraryFolderImportService {
       if (!series.path.startsWith(tvRootFolder)) continue;
       if (scannedFolders.has(series.path)) continue;
 
-      let entries: string[] = [];
-      try {
-        entries = (await fs.readdir(series.path, { recursive: true, withFileTypes: true }))
-          .filter((entry: any) => entry.isFile() && !entry.isDirectory())
-          .map((entry: any) => path.join(entry.parentPath ?? entry.path ?? series.path!, entry.name));
-      } catch {
-        continue;
-      }
+      const entries = await listFilesDepthFirst(series.path);
 
       const missing = entries.filter(file =>
         VIDEO_EXTENSIONS_FOR_IMPORT.has(path.extname(file).toLowerCase()) && !knownPaths.has(file));

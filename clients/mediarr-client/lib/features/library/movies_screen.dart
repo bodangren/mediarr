@@ -211,7 +211,7 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
                               : 'No movies match "$_searchQuery"',
                           style: const TextStyle(
                             color: MediarrColors.textMuted,
-                            fontSize: 16,
+                            fontSize: 18,
                           ),
                         ),
                       );

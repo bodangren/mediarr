@@ -122,7 +122,7 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
                             : 'No series match "$_searchQuery"',
                         style: const TextStyle(
                           color: MediarrColors.textMuted,
-                          fontSize: 16,
+                          fontSize: 18,
                         ),
                       ),
                     );

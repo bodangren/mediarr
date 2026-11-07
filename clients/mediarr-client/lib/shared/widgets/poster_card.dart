@@ -26,6 +26,14 @@ class PosterCard extends StatelessWidget {
   final String? posterUrl;
   final int? year;
   final String? quality;
+
+  /// Whether the quality label says anything. The API falls back to the
+  /// quality profile name, whose default is the meaningless "Any".
+  bool get _hasMeaningfulQuality {
+    final value = quality?.trim();
+    if (value == null || value.isEmpty) return false;
+    return value.toLowerCase() != 'any' && value.toLowerCase() != 'unknown';
+  }
   final bool monitored;
   final bool hasFile;
   final VoidCallback? onPressed;
@@ -79,7 +87,11 @@ class PosterCard extends StatelessWidget {
                     // The year absorbs the slack through Expanded and the
                     // badge is capped, so a long quality profile name can
                     // never overflow the card.
-                    if (year != null)
+                    // A series row carries no year (the API returns 0), and a
+                    // movie's quality often falls back to the profile name
+                    // "Any". Rendering either is noise that made the tile look
+                    // broken (10-foot UX review 2026-11-07).
+                    if (year != null && year! > 0)
                       Expanded(
                         child: Text(
                           '$year',
@@ -87,19 +99,17 @@ class PosterCard extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             color: MediarrColors.textMuted,
-                            fontSize: 15,
+                            fontSize: 18,
                           ),
                         ),
                       )
                     else
                       const Spacer(),
-                    if (quality != null) ...[
-                      const SizedBox(width: 4),
+                    if (_hasMeaningfulQuality)
                       ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 72),
+                        constraints: const BoxConstraints(maxWidth: 64),
                         child: _QualityBadge(quality: quality!),
                       ),
-                    ],
                     const SizedBox(width: 4),
                     _StatusDot(
                       hasFile: hasFile,
@@ -136,7 +146,7 @@ class _PosterPlaceholder extends StatelessWidget {
                 title,
                 style: const TextStyle(
                   color: MediarrColors.textMuted,
-                  fontSize: 11,
+                  fontSize: 13,
                 ),
                 textAlign: TextAlign.center,
                 maxLines: 2,

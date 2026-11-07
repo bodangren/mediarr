@@ -59,7 +59,7 @@ describe('TMDBListProvider', () => {
 
     expect(get).toHaveBeenCalledWith(
       'https://api.themoviedb.org/3/list/9007199254740993?api_key=tmdb-key&page=1',
-      {},
+      { headers: {} },
     );
   });
 
@@ -74,7 +74,7 @@ describe('TMDBListProvider', () => {
 
     expect(get).toHaveBeenCalledWith(
       'https://api.themoviedb.org/3/list/7?api_key=tmdb-key&page=1',
-      {},
+      { headers: {} },
     );
   });
 
@@ -89,7 +89,7 @@ describe('TMDBListProvider', () => {
 
     expect(get).toHaveBeenCalledWith(
       'https://api.themoviedb.org/3/list/7?api_key=tmdb-key&page=1',
-      {},
+      { headers: {} },
     );
   });
 
@@ -153,7 +153,7 @@ describe('TMDBListProvider', () => {
     expect(get).toHaveBeenNthCalledWith(
       2,
       'https://api.themoviedb.org/3/tv/1396/external_ids?api_key=tmdb-key',
-      {},
+      { headers: {} },
     );
   });
 

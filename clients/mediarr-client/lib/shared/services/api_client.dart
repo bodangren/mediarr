@@ -553,6 +553,19 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
     state = const ApiClientState();
   }
 
+  /// Whether this client has already reported the current outage.
+  ///
+  /// A down server fails every 30 s probe; reporting each one wrote a record per
+  /// poll (8 identical records during the 02:50-03:00 deploys on 2026-11-08).
+  bool _outageReported = false;
+
+  /// Consecutive failed probes. A planned restart takes a few seconds and
+  /// recovers; only a failure that survives ~90 s is a real outage.
+  int _consecutiveFailures = 0;
+
+  @visibleForTesting
+  static const int outageReportThreshold = 3;
+
   void _startHealthCheck() {
     _healthTimer?.cancel();
     _healthTimer = Timer.periodic(const Duration(seconds: 30), (_) async {
@@ -560,55 +573,49 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
     });
   }
 
-  /// One health probe, with one short retry.
+  /// One health probe with one short retry.
   ///
-  /// A restart takes a second or two; reporting the first refused connection
-  /// produced phantom "client errors" for planned maintenance. Only a failure
-  /// that survives the retry is treated (and reported) as an outage.
-  /// Whether this client has already reported the current outage.
-  ///
-  /// A down server fails every 30 s probe; reporting each one wrote a record
-  /// per poll (8 identical records during the 02:50-03:00 deploys on
-  /// 2026-11-08). One report per outage is what triage needs.
-  bool _outageReported = false;
-
-  /// Consecutive failed probes. A planned restart takes a few seconds and
-  /// recovers; only a failure that survives ~90 s is a real outage worth a
-  /// triage record.
-  int _consecutiveFailures = 0;
-
-  @visibleForTesting
-  static const int outageReportThreshold = 3;
-
+  /// The probe is side-effect free (`_probeOnce`); the outage bookkeeping happens
+  /// exactly once per probe. The previous nesting counted the inner retry's
+  /// failure too, so two polls could reach the 3-failure threshold and report a
+  /// planned restart as an outage (observed 2026-11-08).
   @visibleForTesting
   Future<bool> probeHealth({required bool retrying}) async {
-    try {
-      await getSystemStatus();
+    var up = await _probeOnce();
+    if (!up && retrying) {
+      await Future<void>.delayed(const Duration(milliseconds: 800));
+      up = await _probeOnce();
+    }
+
+    if (up) {
       if (state.status != ConnectionStatus.connected) {
         state = state.copyWith(status: ConnectionStatus.connected);
       }
       _outageReported = false;
       _consecutiveFailures = 0;
       return true;
-    } catch (error) {
-      if (retrying) {
-        await Future<void>.delayed(const Duration(milliseconds: 800));
-        if (await probeHealth(retrying: false)) return true;
-      }
-      state = state.copyWith(status: ConnectionStatus.error);
-      _consecutiveFailures += 1;
-      if (_outageReported) return false;
-      // One short retry absorbs sub-second restarts; three consecutive failed
-      // probes mean the server has been unreachable for ~90 s.
-      if (_consecutiveFailures < outageReportThreshold) return false;
-      _outageReported = true;
-      // Awaited: an outage report must land before the probe returns, so the
-      // next tick cannot race a duplicate.
-      await _reporter?.report(
-        message: 'Health check failed: $error',
-        stack: null,
-        severity: 'network',
-      );
+    }
+
+    state = state.copyWith(status: ConnectionStatus.error);
+    _consecutiveFailures += 1;
+    if (_outageReported || _consecutiveFailures < outageReportThreshold) {
+      return false;
+    }
+    _outageReported = true;
+    // Awaited: the report must land before the next tick can race a duplicate.
+    await _reporter?.report(
+      message: 'Health check failed: server unreachable',
+      stack: null,
+      severity: 'network',
+    );
+    return false;
+  }
+
+  Future<bool> _probeOnce() async {
+    try {
+      await getSystemStatus();
+      return true;
+    } catch (_) {
       return false;
     }
   }

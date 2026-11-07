@@ -129,6 +129,17 @@ JSON-RPC stream on stdout is clean.
   `/data/TV`).
 - See [`PROVISIONING.md`](./PROVISIONING.md) for the recreate-from-scratch commands.
 
+## 4b. Flutter client builds (installed 2026-11-07)
+
+- `flutter` 3.47 (snap), Android SDK at `~/Android/Sdk`, **OpenJDK 17** (`/usr/lib/jvm/java-17-openjdk-amd64`).
+- Project wrapper is now **Gradle 8.14.3** (Flutter 3.47's minimum). The 8.14 download stalled on the
+  VPN during the first build; a local build succeeded with the cached 8.12 distribution plus
+  `--android-skip-build-dependency-validation`, then the wrapper was restored. Prefer letting the
+  8.14 wrapper complete on a healthy network.
+- TV target is **armeabi-v7a / Android 9**: `flutter build apk --release --target-platform android-arm`.
+- Install: `adb -s 192.168.10.60:5555 install -r <apk>`; the old APK predates this build and had a
+  different signature, so the first replacement required uninstall + manual server entry.
+
 ## 5. PATH requirements for the systemd host unit (B3)
 
 The agent shell and the MCP child need:
@@ -151,6 +162,7 @@ needed by some native modules); the venv bin supplies `beet`. The systemd unit s
 | Playwright-MCP | kimi-webbridge works and is the owner's preferred surface | bridge proves unstable across a week |
 | — | (subtitle alignment moved into scope; see §2b) | — |
 | Node 24 as default | root suite needs Node 24 for `better-sqlite3`; switching the default is invasive | running the Mediarr test suite / deploying |
+| OpenJDK 17 | installed 2026-11-07 for Flutter/Android builds | — (installed) |
 | Mediarr node deps | deployment (B1) is a service decision, not a tool install | B1 starts |
 
 ## 7. Verification log

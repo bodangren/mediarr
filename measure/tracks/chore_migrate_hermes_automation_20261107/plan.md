@@ -74,16 +74,25 @@
 > deployment, G9 domain scope, G10 cross-track prerequisites. **P4/P5 do not start until G1–G3, G5,
 > G6 are closed with the forced-failure tests.**
 
-- [ ] **B1a** Deploy against the **real** Mediarr DB (`CONFIG_DIR/mediarr.db`, 550 movies / 28
+- [x] **B1a** Deploy against the **real** Mediarr DB (`CONFIG_DIR/mediarr.db`, 550 movies / 28
       series; `/data` and `/config` now symlinked, config + staging chowned to uid 1000). Back up the
       DB, pin `DATABASE_URL=file:/config/mediarr.db`, `MEDIA_DIR=/data`, `ENCRYPTION_KEY`, set
       `torrentLimits` paths, start, and verify counts + playable SPA/TV. (G1/G8)
+      **Done 2026-11-07:** server runs on `:5174` against `/config/mediarr.db`; health
+      `{status:ok, scheduledTaskCount:6}`; API counts 550 movies / 28 series; live TV client
+      plays a streamed episode with a Chinese subtitle. Evidence:
+      [`evidence/`](./evidence/). B1 (service/reboot) remains open.
 - [ ] **B1** Prove 24/7 operation as a service (container `restart: unless-stopped` or systemd),
       including reboot. (G8)
 - [~] **B2** Fix `subtitle-wanted-search` interval persistence + test; set rss 30 / availability
       10–15 / wanted 60. **Code done:** map now points the real task id; 16/16 route tests; `tsc`
       clean. Remaining: `library-scan` has no interval key (reschedule persists nothing) — either
       add a setting or return 422; values apply with B1a.
+- [x] **B2d** Current client built and installed on the live TV over network ADB; artwork is
+      fetched through the server proxy (13 `CachedNetworkImage` call sites), playback and Chinese
+      subtitle rendering verified on device. Old APK was from 2026-10-03 with a different
+      signature, so it was backed up, uninstalled and replaced; server re-entered manually.
+      Evidence: [`evidence/`](./evidence/).
 - [~] **B2c** Chinese subtitle acquisition + synchronization. **Tool decision 2026-11-07 (advisor +
       measured): ffsubsync 0.5.1 primary** (audio-based; no same-language reference needed), alass
       2.0.0 optional when an English reference exists, existing ASR `subalign` as verifier/fallback.

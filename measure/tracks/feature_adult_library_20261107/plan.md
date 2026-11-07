@@ -15,7 +15,7 @@
 - [ ] Scanner with flat-layout preservation and a scan summary.
 - [ ] Seeded-tree counts test.
 
-## Phase 2: API + UI
+## Phase 2: API + UI (SPA first, TV after the focus fix)
 
 - [ ] Browse/search/list endpoints scoped to the adult library.
 - [ ] Playback (existing stream handler) + watched state integration.

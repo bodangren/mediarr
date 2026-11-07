@@ -27,6 +27,8 @@ iTunes-style client that is fully D-pad navigable on the TV.
 ## Scope
 
 **In:** music domain (artist/album/track); configurable music root; tag extraction and artwork;
+**domain/ingest ships separately from the player** (the domain can retire `music-orchestrator`
+before the TV player exists);
 YouTube ingest (`yt-dlp` audio + thumbnail/metadata) and tagging (`beets`/MusicBrainz, with a
 fallback path for untaggable tracks); browse/search/stream API; **iTunes-style player** (sidebar
 browse: Artists / Albums / Songs / Recently Added; album grid; track list; now-playing bar with
@@ -44,8 +46,10 @@ for the agent run; migration of `4TB/Music`; format conversion.
 - **FR-3 Ingest:** one deterministic pipeline — agent picks YouTube URLs, `yt-dlp` downloads audio
   + thumbnail, `ffmpeg` converts, `beets` tags and files under `<Artist>/<Album>/<NN> - <Title>` —
   idempotent by video id + audio hash. Format default m4a/AAC 256k; mp3 320 configurable.
-- **FR-4 Tagging:** beets/MusicBrainz enrichment; untaggable tracks land in a review folder and are
-  reported (never silently dropped or misfiled).
+  **Filing applies only to new agent imports**; the existing tree is never reorganised (FR-9 wins).
+- **FR-4 Tagging:** beets/MusicBrainz enrichment with a quality bar (≥80% auto-tagged on a seeded
+  sample); untaggable tracks land in a review folder and are reported (never silently dropped or
+  misfiled). Track the bar in the plan, not vibes.
 - **FR-5 Browse:** artist → album → track navigation matches the filesystem and DB.
 - **FR-6 Play/stream:** direct play with range support; gapless-enough queue behaviour.
 - **FR-7 Player (iTunes-style):** persistent left sidebar (Artists, Albums, Songs, Recently Added,
@@ -55,8 +59,9 @@ for the agent run; migration of `4TB/Music`; format conversion.
   tracks apply).
 - **FR-8 Automation:** YouTube discovery is an agent run (browser bridge); ingest is the
   deterministic pipeline; the run's receipt lists picks, downloads, tag failures and library counts.
-- **FR-9 Migration:** existing `4TB/Music` imports without destructive reorganisation; beets stays
-  available as the tagger.
+- **FR-9 Migration:** existing `4TB/Music` imports **without destructive reorganisation** and wins
+  over FR-3 for existing files; the scanner accepts both the existing layouts
+  (`Artist/Album/...` and top-level `VA - ...`/`Compilations/...`); beets stays available as the tagger.
 - **FR-10 Retries:** a failed `yt-dlp`/beets step is reported with the tool error and retried next
   run; never silently skipped.
 

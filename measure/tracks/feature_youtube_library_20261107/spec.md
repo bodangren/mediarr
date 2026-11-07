@@ -35,16 +35,23 @@ transcripts, recommendations; live-stream recording (decide later).
   unaffected.
 - **FR-2 Subscriptions:** add/remove a channel or playlist; enabled flag; per-subscription options
   (quality cap, retention days).
-- **FR-3 Poll + download:** periodic poll lists entries; new video ids are downloaded once
-  (idempotent by video id); failures reported per entry.
+- **FR-3 Poll + download:** a **deterministic** plugin/native task polls entries with
+  `yt-dlp --flat-playlist` (the agent handles only ambiguous or blocked cases); new video ids are
+  downloaded once (idempotent by video id); a per-poll item cap bounds a large channel; failures are
+  reported per entry.
 - **FR-4 Library shape:** channel/playlist → episode ordering; title, uploader, upload date,
   duration, thumbnail.
-- **FR-5 Retention:** an episode is eligible when watched and older than the retention window
-  (default 7 days); it moves to quarantine, then deletes after the quarantine window; restore works.
+- **FR-5 Retention (review-scoped):** only **subscription-managed** items are eligible — the item
+  must belong to a subscription row with `retentionDays > 0`. Eligibility is
+  `isWatched && now − lastWatched > retentionDays` (default 7), never "created 7 days ago".
+  Existing files are imported as *unmanaged/keep* and are never deleted. Ladder: watched + window →
+  quarantine; quarantine 14 days → delete; restore works at any point before deletion.
 - **FR-6 UI:** a YouTube section, D-pad navigable, in the Flutter client.
 - **FR-7 Automation:** the daily agent run polls subscriptions and decides; the deterministic
   retention job enforces deletion. No DOM code.
 - **FR-8 Maintained tool:** `yt-dlp` is updated, not patched; its errors surface in the run receipt.
+- **FR-9 Migration:** the existing `4TB/Youtube` tree (786 files) imports as *unmanaged/keep*; no
+  retention applies to it. Managed subscriptions start empty.
 
 ## Acceptance criteria
 

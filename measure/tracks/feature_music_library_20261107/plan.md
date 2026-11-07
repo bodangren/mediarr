@@ -6,6 +6,7 @@
 ## Phase 0: Ratify scope
 
 - [ ] Resolve M1 model, M2 source, M3 format, M4 tagging, M5 player scope, M6 playlists.
+- [ ] Confirm the split: domain/ingest (retires `music-orchestrator`) vs player (TV UI).
 - [ ] Confirm `4TB/Music` as the migration input; record size and a sample of tag quality.
 - [ ] Confirm `yt-dlp`/`beets`/`ffmpeg` install and update path.
 
@@ -30,7 +31,10 @@
 - [ ] Artwork extraction/serving (embedded + folder image).
 - [ ] Automation contract: picks in, ingest status out.
 
-## Phase 4: Player (Flutter, TV-first)
+## Phase 4: Player (Flutter, TV-first) — separate deliverable from the domain
+
+> The domain/ingest phases (1–3) are one shippable track; the player can follow independently.
+
 
 - [ ] iTunes-style shell: persistent sidebar (Artists, Albums, Songs, Recently Added), album grid,
   track list, now-playing bar, queue.

@@ -36,17 +36,20 @@ multi-user or access control beyond the trusted-LAN scope.
 - **FR-1 Type + root:** a dedicated adult library type and configurable root; existing movie/TV
   queries must not see it.
 - **FR-2 Scan/import:** reconcile filesystem ↔ DB; flat layout preserved; unreadable files reported.
-- **FR-3 UI:** a separate, clearly reachable section in the Flutter client and SPA; browse/play.
+- **FR-3 UI:** a separate, clearly reachable section in the **SPA first**, then the Flutter client
+  (the TV client's focus defects are a separate prerequisite); browse/play.
 - **FR-4 Automation contract:** list items, watched state, queue-ready metadata, and retention
   candidates exposed to the agent runs.
 - **FR-5 Discovery:** the agent browses sources with kimi-webbridge and queues picks; no DOM script.
+  Destructive actions go through the plugin's mediated delete path, never a default-on API.
 - **FR-6 Prune:** candidates named by the agent, moved/deleted by the quarantine engine; never raw
   SQL deletion.
 - **FR-7 Migration:** the existing `4TB/Porn` tree imports without reorganisation.
 
 ## Acceptance criteria
 
-1. The Adult section is visible and playable in the Flutter client, separate from Movies.
+1. The Adult section is visible and playable in the SPA, separate from Movies; the TV client follows
+   once its focus fix lands.
 2. A seeded tree scans with counts matching the filesystem.
 3. The weekly agent run queues 1–3 picks via the browser bridge and reports them.
 4. A prune candidate is quarantined, restorable, then deleted only after retention.
@@ -59,7 +62,9 @@ multi-user or access control beyond the trusted-LAN scope.
 |---|---|---|
 | A1 | Visibility | Visible section (recommended) vs hidden behind a toggle/PIN |
 | A2 | Root | Keep `4TB/Porn` (recommended) vs move under `4TB/Adult` |
-| A3 | Metadata | Filename parsing only (recommended; no TMDB) vs a metadata provider |
+| A3 | Metadata | A **filename grammar matrix** (recommended) must be defined: the live tree mixes
+  `pornplus.26.08.29.lulu.chu... [hash].mp4` and `001 [hash].mp4`. Hash-only names cannot satisfy
+  AC1 by parsing; they go to a review bucket. vs a metadata provider |
 | A4 | Discovery cadence | Weekly (recommended, matches the old job) vs daily |
 | A5 | Retention profile | Agent proposes, quarantine executes (recommended) vs hard cap by age/size only |
 

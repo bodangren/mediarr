@@ -7,6 +7,7 @@
 
 - [ ] Resolve Y1 representation, Y2 retention, Y3 quality, Y4 cadence, Y5 shorts/live.
 - [ ] Confirm `yt-dlp` install/update path and a test playlist.
+- [ ] Migration decision: existing 786 files import as unmanaged/keep; per-poll item cap value.
 
 ## Phase 1: Domain + subscriptions
 
@@ -31,7 +32,8 @@
 
 ## Phase 4: Automation + verification
 
-- [ ] Daily agent run polls subscriptions, reports new downloads and failures.
+- [ ] Deterministic subscription poll (plugin/native task) downloads new entries; the agent is used
+      only for ambiguity. Reports new downloads and failures; no silent skip.
 - [ ] Forced `yt-dlp` failure produces an alert with the tool error.
 - [ ] TV device check: subscribe → download → play → watch → retire.
 - [ ] Remove all jellyfin-go references.

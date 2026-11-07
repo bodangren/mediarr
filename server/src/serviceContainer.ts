@@ -662,7 +662,29 @@ export async function createServiceContainer(
       if (env.XIAOMI_API_KEY) translators.push(new XiaomiTranslator({ apiKey: env.XIAOMI_API_KEY }));
       const minimaxKey = env.MINIMAX_API_KEY ?? env.MINIMAX_CN_API_KEY;
       if (minimaxKey) translators.push(new MiniMaxTranslator({ apiKey: minimaxKey }));
-      const translator = translators.length > 0 ? new FallbackTranslator(translators) : null;
+      const rawTranslator = translators.length > 0 ? new FallbackTranslator(translators) : null;
+      // Hard deadline around the translator chain.
+      //
+      // The provider requests carry no timeout of their own, and a hung socket
+      // left `bilingual-subs` RUNNING for 17+ minutes (observed 2026-11-08,
+      // an ESTABLISHED connection to the provider with no progress), blocking
+      // that scheduled slot until the next restart. Failing the translation
+      // lets the cycle record the file and move on.
+      const TRANSLATE_TIMEOUT_MS = 120_000;
+      const translator = rawTranslator
+        ? {
+            translate: (cues: string[]) => Promise.race([
+              rawTranslator.translate(cues),
+              new Promise<never>((_resolve, reject) => {
+                const timer = setTimeout(
+                  () => reject(new Error(`translation timed out after ${TRANSLATE_TIMEOUT_MS} ms`)),
+                  TRANSLATE_TIMEOUT_MS,
+                );
+                timer.unref?.();
+              }),
+            ]),
+          }
+        : null;
       const bilingualService = new BilingualSubtitleService({
         statePath: path.join(env.CONFIG_DIR ?? path.dirname(options.databaseUrl.replace(/^file:/, '')), 'bilingual-state.json'),
         translator,

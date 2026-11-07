@@ -499,6 +499,15 @@ export class Scheduler {
     }
     job.running = true;
     const start = Date.now();
+    // Warn when a task runs far past its usual duration: a hung provider call
+    // held `bilingual-subs` RUNNING for 17+ minutes before anyone noticed
+    // (2026-11-08). Purely diagnostic — execution is unchanged.
+    const longRunTimer = setTimeout(() => {
+      console.warn(
+        `Scheduler job '${name}' has been running for ${Math.round((Date.now() - start) / 60000)} minutes`,
+      );
+    }, 10 * 60 * 1000);
+    longRunTimer.unref?.();
     let record: { id: number } | undefined;
     const phase = (label: string): void => {
       if (process.env.DEBUG_SCHED === '1') {
@@ -538,6 +547,7 @@ export class Scheduler {
         throw error;
       }
     } finally {
+      clearTimeout(longRunTimer);
       const job = this.jobs.get(name);
       if (job) {
         job.lastRunAt = new Date().toISOString();

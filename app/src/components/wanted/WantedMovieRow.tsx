@@ -107,7 +107,9 @@ export function WantedMovieRow({
           onClick={() => onToggleMonitored(movie.movieId, !movie.monitored)}
           className={`rounded-sm px-2 py-1 text-xs font-medium transition-colors ${
             movie.monitored
-              ? 'bg-accent-success text-text-primary'
+              // The theme's accents are white (monochrome OLED), so the label
+              // must be inverse; text-text-primary rendered white-on-white.
+              ? 'bg-accent-success text-text-inverse'
               : 'bg-surface-2 text-text-secondary'
           }`}
         >

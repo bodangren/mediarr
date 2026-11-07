@@ -222,6 +222,27 @@ describe('WantedMovieRow', () => {
     expect(checkbox).toBeChecked();
   });
 
+  it('keeps the Monitored label readable on the white accent', () => {
+    // The theme accents are white (monochrome OLED), so a solid accent
+    // background needs inverse text; text-text-primary rendered white-on-white
+    // and the control read as a blank white box (seen on the live server
+    // 2026-11-08).
+    render(
+      <WantedMovieRow
+        movie={mockMovie}
+        onSearch={mockOnSearch}
+        onEdit={mockOnEdit}
+        onDelete={mockOnDelete}
+        onToggleMonitored={mockOnToggleMonitored}
+        onSelect={mockOnSelect}
+      />,
+    );
+
+    const button = screen.getByRole('button', { name: 'Monitored' });
+    expect(button.className).toContain('text-text-inverse');
+    expect(button.className).not.toContain('text-text-primary');
+  });
+
   it('shows Unmonitored button for unmonitored movies', () => {
     const unmonitoredMovie = { ...mockMovie, monitored: false };
     render(

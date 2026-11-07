@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:mediarr_client/shared/services/api_config.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -557,7 +558,7 @@ class _HeroBanner extends StatelessWidget {
         children: [
           if (backdrop != null)
             CachedNetworkImage(
-              imageUrl: backdrop,
+              imageUrl: ApiConfig.image(backdrop),
               fit: BoxFit.cover,
               placeholder: (_, __) => Container(color: MediarrColors.surfaceCard),
               errorWidget: (_, __, ___) =>
@@ -598,7 +599,7 @@ class _HeroBanner extends StatelessWidget {
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(12),
                   child: CachedNetworkImage(
-                    imageUrl: poster,
+                    imageUrl: ApiConfig.image(poster),
                     fit: BoxFit.cover,
                     placeholder: (_, __) =>
                         Container(color: MediarrColors.surfaceCard),
@@ -861,7 +862,7 @@ class _LibraryPosterCard extends StatelessWidget {
           children: [
             if (item.posterUrl != null)
               CachedNetworkImage(
-                imageUrl: item.posterUrl!,
+                imageUrl: ApiConfig.image(item.posterUrl!),
                 fit: BoxFit.cover,
                 placeholder: (_, __) =>
                     Container(color: MediarrColors.surfaceCard),
@@ -977,7 +978,7 @@ class _MoviePosterCard extends StatelessWidget {
           Expanded(
             child: movie.posterUrl != null
                 ? CachedNetworkImage(
-                    imageUrl: movie.posterUrl!,
+                    imageUrl: ApiConfig.image(movie.posterUrl!),
                     fit: BoxFit.cover,
                     placeholder: (_, __) =>
                         Container(color: MediarrColors.surfaceCard),
@@ -1103,7 +1104,7 @@ class _SeriesPosterCard extends StatelessWidget {
           Expanded(
             child: series.posterUrl != null
                 ? CachedNetworkImage(
-                    imageUrl: series.posterUrl!,
+                    imageUrl: ApiConfig.image(series.posterUrl!),
                     fit: BoxFit.cover,
                     placeholder: (_, __) =>
                         Container(color: MediarrColors.surfaceCard),

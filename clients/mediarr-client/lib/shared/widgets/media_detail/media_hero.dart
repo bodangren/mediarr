@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:mediarr_client/shared/services/api_config.dart';
 
 import '../../../core/theme/mediarr_theme.dart';
 import '../../../core/widgets/netflix_scaffold.dart';
@@ -48,7 +49,7 @@ class MediaHero extends StatelessWidget {
         children: [
           if (backdrop != null)
             CachedNetworkImage(
-              imageUrl: backdrop,
+              imageUrl: ApiConfig.image(backdrop),
               fit: BoxFit.cover,
               placeholder: (_, __) =>
                   Container(color: MediarrColors.surfaceElevated),
@@ -94,7 +95,7 @@ class MediaHero extends StatelessWidget {
                         width: 150,
                         height: 225,
                         child: CachedNetworkImage(
-                          imageUrl: posterUrl!,
+                          imageUrl: ApiConfig.image(posterUrl!),
                           fit: BoxFit.cover,
                           placeholder: (_, __) => Container(
                               color: MediarrColors.surfaceElevated),

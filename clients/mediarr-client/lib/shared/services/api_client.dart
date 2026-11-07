@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/collection.dart';
@@ -10,6 +11,7 @@ import '../models/movie.dart';
 import '../models/search_result.dart';
 import '../models/series.dart';
 import '../models/subtitle_models.dart';
+import 'api_config.dart';
 
 class SseEvent {
   const SseEvent({required this.event, required this.data});
@@ -432,6 +434,7 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
       baseUrl: baseUrl,
     );
 
+    ApiConfig.baseUrl = baseUrl;
     _dio.options.baseUrl = baseUrl;
     _dio.options.connectTimeout = const Duration(seconds: 5);
     _dio.options.receiveTimeout = const Duration(seconds: 30);

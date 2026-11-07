@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:mediarr_client/shared/services/api_config.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/mediarr_theme.dart';
@@ -124,7 +125,7 @@ class _SeeAllCard extends StatelessWidget {
         Expanded(
           child: item.posterUrl != null
               ? CachedNetworkImage(
-                  imageUrl: item.posterUrl!,
+                  imageUrl: ApiConfig.image(item.posterUrl!),
                   fit: BoxFit.cover,
                   placeholder: (_, __) => Container(color: MediarrColors.surfaceCard),
                   errorWidget: (_, __, ___) =>

@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:mediarr_client/shared/services/api_config.dart';
 
 import '../../core/theme/mediarr_theme.dart';
 import '../../core/widgets/netflix_scaffold.dart';
@@ -47,7 +48,7 @@ class PosterCard extends StatelessWidget {
           Expanded(
             child: posterUrl != null
                 ? CachedNetworkImage(
-                    imageUrl: posterUrl!,
+                    imageUrl: ApiConfig.image(posterUrl!),
                     fit: BoxFit.cover,
                     placeholder: (_, __) => _PosterPlaceholder(title: title),
                     errorWidget: (_, __, ___) =>

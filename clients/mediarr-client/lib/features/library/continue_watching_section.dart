@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:mediarr_client/shared/services/api_config.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/mediarr_theme.dart';
@@ -142,7 +143,7 @@ class _ContinueWatchingCard extends StatelessWidget {
                   children: [
                     if (image != null)
                       CachedNetworkImage(
-                        imageUrl: image,
+                        imageUrl: ApiConfig.image(image),
                         fit: BoxFit.cover,
                         placeholder: (_, __) =>
                             Container(color: MediarrColors.surfaceElevated),

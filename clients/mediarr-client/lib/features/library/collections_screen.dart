@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:mediarr_client/shared/services/api_config.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/mediarr_theme.dart';
@@ -143,7 +144,7 @@ class CollectionCard extends StatelessWidget {
         Expanded(
           child: collection.posterUrl != null
               ? CachedNetworkImage(
-                  imageUrl: collection.posterUrl!,
+                  imageUrl: ApiConfig.image(collection.posterUrl!),
                   fit: BoxFit.cover,
                   placeholder: (_, __) =>
                       Container(color: MediarrColors.surfaceCard),
@@ -348,7 +349,7 @@ class _CollectionMovieCard extends StatelessWidget {
         Expanded(
           child: movie.posterUrl != null
               ? CachedNetworkImage(
-                  imageUrl: movie.posterUrl!,
+                  imageUrl: ApiConfig.image(movie.posterUrl!),
                   fit: BoxFit.cover,
                   placeholder: (_, __) =>
                       Container(color: MediarrColors.surfaceCard),

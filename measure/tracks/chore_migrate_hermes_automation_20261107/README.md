@@ -1,7 +1,8 @@
 # Hermes → Mediarr automation migration — start here
 
 **Track:** `chore_migrate_hermes_automation_20261107`
-**Opened:** 2026-11-07 · **Status:** Phase 1 complete (inventory measured); Phase 2 not started.
+**Opened:** 2026-11-07 · **Status:** Phase 1 (inventory) and Phase 2 (three-family design) complete.
+Phase 3 (owner ratification of D1–D4) is the only blocker before build.
 
 ## What this track is
 
@@ -20,26 +21,37 @@ plugins.
    install (jobs, schedules, failure rates, external surfaces, scripts, artifacts).
 2. [`spec.md`](./spec.md) — goal, principles, scope, open decisions, acceptance criteria.
 3. [`plan.md`](./plan.md) — the phased plan and what is genuinely done.
-4. [`design/BRIEFS.md`](./design/BRIEFS.md) — ready-to-paste briefs for the three planning
-   agents (cadence, DSH substrate, Mediarr contract).
+4. **The ratified proposal:** [`design/TARGET-ARCHITECTURE.md`](./design/TARGET-ARCHITECTURE.md) —
+   Lead synthesis; hourly/daily/weekly schedule, execution classes, DSH task + plugin +
+   watchdog design, migration sequence, ordered backlog, D1–D4 recommendations.
+5. The three independent designs it synthesises:
+   [`intent-cadence.md`](./design/intent-cadence.md) (MiniMax) ·
+   [`dsh-substrate.md`](./design/dsh-substrate.md) (DeepSeek) ·
+   [`mediarr-contract.md`](./design/mediarr-contract.md) (Xiaomi).
+6. [`design/BRIEFS.md`](./design/BRIEFS.md) — the ready-to-paste briefs used to spawn them.
 
 ## Where the last session stopped
 
-- ✅ Inventory measured and committed (`cfcae5f4`). Numbers are from
+- ✅ Phase 1 inventory measured and committed (`cfcae5f4`). Numbers are from
   `~/.hermes/cron/jobs.json` and `~/.hermes/cron/executions.db`, not from prose.
-- ❌ Phase 2 (decisions) was not reached. Three planning agents were spawned and then
-  stopped before writing anything — no design docs exist, nothing to recover.
-- ⚠️ Cross-family subagents were unavailable in that session: only
-  `deepseek-official/deepseek-flash` was authorized. DSH records the subagent model
-  allow-list **per session at creation**, so it must be enabled *before* the session that
-  needs it starts.
+- ✅ Phase 2 complete: three independent designs written and graded. Two substantive corrections
+  were made by the Lead in synthesis: (a) unattended scheduled sessions inherit
+  `DSH_PERMISSION_MODE` and would fail closed without deliberate configuration; (b) a custom
+  plugin cannot alert while the DSH Host is down, so an **external watchdog timer** is required
+  in addition to the plugin.
+- ✅ Synthesis written: `design/TARGET-ARCHITECTURE.md`.
+- ❌ Phase 3 not done: D1–D4 need owner sign-off; then Phases 4–7 (build/cut-over) can start.
+- ⚠️ Cross-family note: Moonshot (`moonshotai-cn`) was authorized but timed out on every request;
+  the owner has since replaced it with `kimi-coding` (profile default `kimi-for-coding`). The
+  allow-list is still fixed per session at creation, so this session could not use Kimi for a
+  review pass; a new session will.
 
 ## Before starting the new session
 
-DSH Settings → Subagents → enable **"Allow agents to choose models for Subagents"**, then
-authorize the routes you want (the profile already has credentials for `minimax-cn`,
-`moonshotai-cn`, `xiaomi`; `deepseek-official` is implicit). The setting applies only to
-sessions created afterwards.
+DSH Settings → Subagents → "Allow agents to choose models" is already enabled. The profile patch
+now lists `deepseek-official`, `minimax-cn`, `xiaomi`, and `kimi-coding` (default
+`kimi-for-coding`). The setting applies only to sessions created afterwards — that is exactly why
+a session started before a provider change cannot use the new provider.
 
 ## Environment facts the next session must not rediscover
 
@@ -49,6 +61,9 @@ sessions created afterwards.
   from the repo root on Node 24 (`~/.nvm/versions/node/v24.18.0`). Node 26 also loads
   `better-sqlite3` fine, so the runtime choice was caution, not a verified incompatibility —
   `tracks.md` carries an unverified claim to that effect.
+- **The live DSH Host is a terminal-launched `node ~/.local/bin/dsh web` (no systemd unit);
+  closing that terminal stops all scheduling.** Linger is enabled (`Linger=yes`), so a user unit
+  will work. See `design/TARGET-ARCHITECTURE.md` §5.1.
 - The library tree `/run/media/daniel-bo/4TB/{downloads,media}` is owned by **uid 100999**,
   not the login user. Anything that writes there (`fetch-monitor` moves, imports) fails with
   `EACCES` until it is chowned, or until `MEDIA_DIR` is overridden to a writable path.
@@ -58,6 +73,10 @@ sessions created afterwards.
 - The TV box (`192.168.10.60`) runs an APK built before `82f6c7ce`; mDNS discovery does not
   work from it, manual entry does. That is a separate track, but it is why "the server is
   reachable" and "the client finds it" are different claims.
+- **The silent miss is real and measurable:** `~/media-reports/YYYY-MM-DD.md` stops at
+  `2026-10-20`, yet `media-orchestrator` logged completed runs on `2026-11-06`. Even a
+  "completed" agent run did not produce its artifact — why the design requires receipts and an
+  independent watchdog rather than trusting a success status.
 
 ## Definition of done for the whole track
 

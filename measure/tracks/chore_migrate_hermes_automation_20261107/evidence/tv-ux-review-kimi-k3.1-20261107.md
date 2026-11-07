@@ -48,3 +48,32 @@ Owner requirement: log ALL failures, not just playback.
   every 2 min while the server is down.
 - Server: POST/GET /api/client-errors (JSONL, 5 MB rotate, torn-line tolerant).
 - Triage: DSH scheduled task every 30 min pulls new records into the session.
+
+## Dedicated-box (kiosk) mode — 2026-11-07
+
+The box now boots straight into Mediarr.
+- MainActivity declares `android.intent.category.HOME` (priority 10); the
+  stock launcher (`com.spocky.projengmenu`) is **not** removed or disabled.
+- Applied with `adb shell cmd package set-home-activity
+  com.mediarr.mediarr_client/.MainActivity` (returns Success).
+- Rollback (no ADB-free path needed either): Settings → "Android home app"
+  opens `android.settings.HOME_SETTINGS`; from a shell,
+  `cmd package set-home-activity com.spocky.projengmenu/.ui.home.MainActivity`.
+- `PopScope(canPop:false)` on the shell route so Back cannot quit the launcher.
+- **Verified by reboot**: after `adb reboot` the TV came up in
+  `com.mediarr.mediarr_client/.MainActivity` with no launcher step.
+
+## First telemetry catches — 2026-11-07 21:00-21:15
+
+Real failures captured without the owner reporting them:
+- `player error: Failed to open .../api/stream/1094?type=episode` (Reacher S02E01)
+- `player error: Failed to open .../api/stream/3?type=movie` (2001)
+- `HTTP network GET /api/system/status :: connection failed`
+
+Both stream URLs serve HTTP 206 from the host, so the client was not wrong:
+the server journal at those exact minutes shows
+`node-cron ... missed execution ... Possible blocking IO`, and
+`subtitle-sync` runs 332-681 s. **Root cause: long server-side task work stalls
+the event loop and starves HTTP responses.** Mitigation shipped: a failed open
+is retried twice, 1.5 s apart, before the error screen (v1.1.2).
+Remaining P0: move the multi-minute subtitle work off the request-critical path.

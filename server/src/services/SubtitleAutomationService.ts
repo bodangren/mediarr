@@ -111,6 +111,20 @@ export class SubtitleAutomationService {
   }
 
   async runTargetedAutomationCycle(options: { recentDays?: number; limit?: number } = {}): Promise<SubtitleAutomationStats> {
+    // The scheduled task enters here, not runAutomationCycle. With no usable
+    // provider this path still re-synced every recently-added variant (about
+    // 9.5 s of per-variant queries per run on this library) for nothing.
+    if (!await this.hasUsableProvider()) {
+      return {
+        variantsScanned: 0,
+        wantedQueued: 0,
+        downloaded: 0,
+        failed: 0,
+        variantsSkipped: 0,
+        skippedNoProvider: 1,
+      };
+    }
+
     const recentDays = options.recentDays ?? 7;
     const limit = options.limit ?? 100;
 
@@ -158,6 +172,20 @@ export class SubtitleAutomationService {
   }
 
   async runAutomationCycle(limit = 100): Promise<SubtitleAutomationStats> {
+    // With nothing configured the whole cycle (variant scan included) is pure
+    // waste: it took ~10 s per run on this library and could not download
+    // anything. Idle the cycle completely instead.
+    if (!await this.hasUsableProvider()) {
+      return {
+        variantsScanned: 0,
+        wantedQueued: 0,
+        downloaded: 0,
+        failed: 0,
+        variantsSkipped: 0,
+        skippedNoProvider: 1,
+      };
+    }
+
     const variantsScanned = await this.syncAllVariants();
     const queue = await this.processWantedQueue(limit);
 
@@ -182,6 +210,17 @@ export class SubtitleAutomationService {
   }
 
   private async runForVariants(variantIds: number[]): Promise<SubtitleAutomationStats> {
+    if (!await this.hasUsableProvider()) {
+      return {
+        variantsScanned: 0,
+        wantedQueued: 0,
+        downloaded: 0,
+        failed: 0,
+        variantsSkipped: 0,
+        skippedNoProvider: 1,
+      };
+    }
+
     const wantedLanguages = await this.resolveWantedLanguages();
 
     let downloaded = 0;

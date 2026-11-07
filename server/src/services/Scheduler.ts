@@ -500,6 +500,11 @@ export class Scheduler {
     job.running = true;
     const start = Date.now();
     let record: { id: number } | undefined;
+    const phase = (label: string): void => {
+      if (process.env.DEBUG_SCHED === '1') {
+        console.log(`[sched] ${name} ${label} +${Date.now() - start}ms`);
+      }
+    };
     try {
       if (this.taskExecutionsRepository) {
         record = await this.taskExecutionsRepository.create({
@@ -508,7 +513,9 @@ export class Scheduler {
           status: 'RUNNING',
         });
       }
+      phase('created');
       await callback();
+      phase('callback done');
       if (this.taskExecutionsRepository && record) {
         await this.taskExecutionsRepository.update(record.id, {
           status: 'SUCCESS',
@@ -543,9 +550,11 @@ export class Scheduler {
           await this.schedulerStateRepository.setTaskState(name, nextRun);
         }
       }
+      phase('updated');
       if (this.taskExecutionsRepository) {
         try {
           await this.pruneTaskExecutions(name, 100);
+          phase('pruned');
         } catch (pruneError) {
           console.error(`Scheduler failed to prune executions for '${name}':`, pruneError);
         }

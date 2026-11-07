@@ -149,6 +149,43 @@ describe('SubtitleAutomationService', () => {
     expect(stats.downloaded).toBe(1);
   });
 
+  it('idles the targeted cycle (the scheduled path) when no provider is configured', async () => {
+    const repository = {
+      listMonitoredVariants: vi.fn(),
+      listRecentlyAddedVariants: vi.fn().mockResolvedValue([{ id: 1 }, { id: 2 }]),
+      listVariantsWithFailedWanted: vi.fn().mockResolvedValue([{ id: 3 }]),
+      listWantedSubtitlesByStates: vi.fn(),
+      updateWantedSubtitleState: vi.fn(),
+      listMovieVariants: vi.fn(),
+      listEpisodeVariants: vi.fn(),
+      listWantedSubtitlesByVariant: vi.fn(),
+    };
+    const settingsService = { get: vi.fn().mockResolvedValue({ wantedLanguages: ['EN'] }) };
+    const missingService = { computeAndPersistForVariant: vi.fn() };
+    const wantedService = { syncWantedForVariant: vi.fn() };
+    const fetchService = { fetchWantedSubtitle: vi.fn() };
+    const fetchProvider = {
+      searchBestSubtitle: vi.fn(),
+      hasUsableProvider: vi.fn().mockResolvedValue(false),
+    };
+
+    const service = new SubtitleAutomationService(
+      repository as any,
+      settingsService as any,
+      missingService as any,
+      wantedService as any,
+      fetchService as any,
+      fetchProvider as any,
+    );
+
+    const stats = await service.runTargetedAutomationCycle({ recentDays: 7 });
+
+    expect(stats.skippedNoProvider).toBe(1);
+    expect(stats.variantsScanned).toBe(0);
+    expect(repository.listRecentlyAddedVariants).not.toHaveBeenCalled();
+    expect(missingService.computeAndPersistForVariant).not.toHaveBeenCalled();
+  });
+
   it('does not drain the wanted queue when no provider is configured', async () => {
     // On 2026-11-08 the production install had zero subtitle providers and the
     // queue failed every row on every run: 1,900 failed downloads and 9,069

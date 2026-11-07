@@ -4,7 +4,15 @@ import type { DatabaseClient } from '../db/drizzleClient';
 export interface ScanSummary {
   moviesAdded: number;
   moviesMissing: number;
+  /**
+   * Episode files on disk that no database row points at. The scanner cannot
+   * create them (it has no metadata provider), so this is a *discovery* count —
+   * `tv-folder-import` imports them. It used to be named `tvEpisodesAdded`,
+   * which claimed work the scan never did.
+   */
   tvEpisodesAdded: number;
+  /** Episode files on disk not registered to any episode row. */
+  tvEpisodesUnregistered?: number;
   tvEpisodesMissing: number;
   subtitleFilesDetected: number;
   durationMs: number;
@@ -77,14 +85,24 @@ export class LibraryScanService {
       subtitleFilesDetected += r.subtitles;
     }
 
+    let tvEpisodesUnregistered = 0;
     if (settings.tvRootFolder) {
       const r = await this.scanEpisodes(settings.tvRootFolder);
       tvEpisodesAdded += r.added;
       tvEpisodesMissing += r.missing;
       subtitleFilesDetected += r.subtitles;
+      tvEpisodesUnregistered = r.unregistered;
     }
 
-    return { moviesAdded, moviesMissing, tvEpisodesAdded, tvEpisodesMissing, subtitleFilesDetected, durationMs: Date.now() - start };
+    return {
+      moviesAdded,
+      moviesMissing,
+      tvEpisodesAdded,
+      tvEpisodesMissing,
+      subtitleFilesDetected,
+      durationMs: Date.now() - start,
+      tvEpisodesUnregistered,
+    };
   }
 
   private async scanMovies(rootPath: string): Promise<{ added: number; missing: number; subtitles: number }> {
@@ -139,7 +157,7 @@ export class LibraryScanService {
     return { added, missing, subtitles };
   }
 
-  private async scanEpisodes(rootPath: string): Promise<{ added: number; missing: number; subtitles: number }> {
+  private async scanEpisodes(rootPath: string): Promise<{ added: number; missing: number; subtitles: number; unregistered: number }> {
     let added = 0;
     let missing = 0;
     let subtitles = 0;
@@ -163,16 +181,21 @@ export class LibraryScanService {
       }
     }
 
-    // Find videos on disk with no matching DB path (new files)
+    // Find videos on disk with no matching DB path.
+    //
+    // This only *counts* them: matching a file to a series/season/episode needs
+    // metadata (TVDB ids), which this service does not have. The `tv-folder-import`
+    // task imports these folders through the metadata-backed import pipeline.
     const dbEpPaths = new Set(episodes.filter(e => e.path).map(e => e.path!));
+    let unregistered = 0;
     for (const videoFile of videoFilesOnDisk) {
       if (!dbEpPaths.has(videoFile)) {
-        // We can't auto-match episodes without metadata — just count new files for the summary
-        added++;
+        unregistered++;
       }
     }
+    added += unregistered;
 
-    return { added, missing, subtitles };
+    return { added, missing, subtitles, unregistered };
   }
 
   /**

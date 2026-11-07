@@ -142,3 +142,32 @@ redirecting every route to /setup because zero indexers were configured). Tour:
   list, dashboard continue-watching (41% Reacher / 9% Sopranos), provider status.
 - Movies posters only looked blank in one capture because lazy loading had not
   resolved; `document.images` confirmed 500x751 natural sizes.
+
+## The library was silently ignoring 26 of 54 TV folders (2026-11-08)
+
+`/data/TV` held 54 series folders; the database knew 28. The daily `library-scan`
+task ran at 02:00, reported SUCCESS after **14.7 minutes**, and changed nothing:
+`LibraryScanService.scanEpisodes` only validates paths of episodes that already
+exist, and counts unregistered files without creating rows ("we can't
+auto-match episodes without metadata"). Every TV folder added after the last
+manual import was invisible forever — movies and shows the owner had already
+downloaded (How I Met Your Mother S1-S9, For All Mankind S2-S3, Archer S4,
+Monarch, Weeds, …) simply never appeared in the client.
+
+Fix: new `TvFolderImportService` + scheduled task `tv-folder-import` (02:40
+daily). For each series folder with no database row it runs the same
+scanner → metadata match → bulk-import pipeline the web UI's "Import Existing"
+uses, with `renameFiles: false` (it links paths, never moves files).
+
+**Result on the live library:** series 28 → 42, episodes with files 2,028,
+`stream` returns 206 for an imported HIMYM episode.
+
+**A hard lesson, kept in the code:** the first run imported 18 folders and 8 of
+them were the *wrong show* — `MatchFolder` derives its search title from
+filenames, so "Mr. Robot" matched "PONY.MOV", "Weeds (2005)" matched
+"Kumamiko - Girl Meets Bear", "American Dad!" matched "The Pilot". The wrong
+imports were rolled back (backup `mediarr.db.bak-before-tvimport-rollback-20261108`)
+and the service now searches by *folder name* and accepts a candidate only when
+the normalised titles agree (`isConfidentSeriesMatch`), so ambiguous folders are
+reported as `unmatched` instead of guessed. Re-run: 8 imported, 1 honest
+unmatched ("Special Ops: Lioness"), 0 wrong.

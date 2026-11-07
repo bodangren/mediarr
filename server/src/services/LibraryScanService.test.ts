@@ -57,6 +57,7 @@ describe('LibraryScanService', () => {
         moviesAdded: 0,
         moviesMissing: 0,
         tvEpisodesAdded: 0,
+        tvEpisodesUnregistered: 0,
         tvEpisodesMissing: 0,
         subtitleFilesDetected: 0,
         durationMs: expect.any(Number),
@@ -397,7 +398,7 @@ describe('LibraryScanService', () => {
 
       const result = await (service as any).scanEpisodes('/tv');
 
-      expect(result).toEqual({ added: 0, missing: 0, subtitles: 0 });
+      expect(result).toEqual({ added: 0, missing: 0, subtitles: 0, unregistered: 0 });
     });
 
     it('counts multiple missing episodes correctly', async () => {

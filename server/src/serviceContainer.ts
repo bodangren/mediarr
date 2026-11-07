@@ -86,6 +86,7 @@ import { WantedSearchService } from './services/WantedSearchService';
 import { RssMediaMonitor } from './services/RssMediaMonitor';
 import { BackupService } from './services/BackupService';
 import { LibraryScanService } from './services/LibraryScanService';
+import { TvFolderImportService } from './services/TvFolderImportService';
 import { globalLogBuffer } from './services/LogReaderService';
 import { NotificationDispatchService } from './services/NotificationDispatchService';
 import { NotificationTransportRegistry } from './services/notifications/NotificationTransportRegistry';
@@ -763,6 +764,25 @@ export async function createServiceContainer(
         },
       );
       console.log('Library scan scheduled daily at 2 AM.');
+
+      // Series folders on disk that the scan never registers are invisible
+      // forever (scanEpisodes only validates known rows). This closes the loop
+      // by importing them through the same pipeline as "Import Existing".
+      const tvFolderImportService = new TvFolderImportService(
+        prisma,
+        metadataProvider as any,
+      );
+      scheduler.schedule('tv-folder-import', '40 2 * * *', async () => {
+        const settings = await settingsService.get();
+        const result = await tvFolderImportService.run({
+          tvRootFolder: settings.mediaManagement.tvRootFolder,
+        });
+        console.log(
+          `TV folder import: scanned ${result.foldersScanned}, skipped ${result.foldersSkipped}, `
+          + `imported ${result.imported}, failed ${result.failed}`
+          + (result.unmatched.length > 0 ? `, unmatched ${result.unmatched.join(', ')}` : ''),
+        );
+      });
     } catch (error) {
       console.error('Failed to schedule library scan:', error);
     }

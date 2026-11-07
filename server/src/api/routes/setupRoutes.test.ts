@@ -115,6 +115,70 @@ describe('setupRoutes', () => {
     });
   });
 
+  it('GET /api/setup/status treats a populated library as configured with no indexer', async () => {
+    // This was production on 2026-11-08: /data/Movies and /data/TV set, 550
+    // movies + 2,971 episodes catalogued, zero indexers — the whole SPA
+    // redirected to /setup, so the owner could not reach any settings page.
+    settingsState = createSettingsState({
+      mediaManagement: {
+        movieRootFolder: '/data/Movies',
+        tvRootFolder: '/data/TV',
+      },
+    });
+
+    const settingsService = {
+      get: vi.fn().mockImplementation(async () => settingsState),
+      update: vi.fn(),
+    };
+    const indexerRepository = {
+      findAll: vi.fn().mockResolvedValue([]),
+      findById: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+    };
+    const prisma = {
+      movie: { count: vi.fn().mockResolvedValue(550) },
+      series: { count: vi.fn().mockResolvedValue(120) },
+    };
+
+    const app = createApp({ settingsService, indexerRepository, prisma: prisma as any });
+    const response = await app.inject({ method: 'GET', url: '/api/setup/status' });
+    await app.close();
+
+    const payload = response.json();
+    expect(payload.data.isConfigured).toBe(true);
+    expect(payload.data.completedSteps).toContain('library');
+  });
+
+  it('GET /api/setup/status keeps a genuinely empty install unconfigured', async () => {
+    settingsState = createSettingsState({
+      mediaManagement: { movieRootFolder: '', tvRootFolder: '' },
+    });
+
+    const settingsService = {
+      get: vi.fn().mockImplementation(async () => settingsState),
+      update: vi.fn(),
+    };
+    const indexerRepository = {
+      findAll: vi.fn().mockResolvedValue([]),
+      findById: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+    };
+    const prisma = {
+      movie: { count: vi.fn().mockResolvedValue(0) },
+      series: { count: vi.fn().mockResolvedValue(0) },
+    };
+
+    const app = createApp({ settingsService, indexerRepository, prisma: prisma as any });
+    const response = await app.inject({ method: 'GET', url: '/api/setup/status' });
+    await app.close();
+
+    expect(response.json().data.isConfigured).toBe(false);
+  });
+
   it('GET /api/setup/status returns configured when root folders and indexer exist', async () => {
     settingsState = createSettingsState({
       mediaManagement: {

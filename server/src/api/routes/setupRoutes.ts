@@ -40,6 +40,35 @@ function isSetupMarkedComplete(settings: unknown): boolean {
   return (update as { setupCompleted?: unknown }).setupCompleted === true;
 }
 
+/**
+ * Whether the install has media in its library.
+ *
+ * The wizard exists so a brand-new install does not land on a blank app, but
+ * its rule ("root folders AND an indexer") gated the entire SPA on a server
+ * that had been in use for weeks with a 3,500-item library and no indexer
+ * configured — every route redirected to /setup (verified 2026-11-08). A
+ * populated library is the strongest possible signal that setup happened.
+ */
+async function resolveLibraryItemCount(deps: ApiDependencies): Promise<number> {
+  const prismaLike = deps.prisma as {
+    movie?: { count?: () => Promise<number> };
+    series?: { count?: () => Promise<number> };
+  };
+
+  let total = 0;
+  try {
+    if (typeof prismaLike?.movie?.count === 'function') {
+      total += Number(await prismaLike.movie.count());
+    }
+    if (typeof prismaLike?.series?.count === 'function') {
+      total += Number(await prismaLike.series.count());
+    }
+  } catch {
+    return 0;
+  }
+  return Number.isFinite(total) ? total : 0;
+}
+
 async function resolveIndexerCount(deps: ApiDependencies): Promise<number> {
   if (deps.indexerRepository?.findAll) {
     const all = await deps.indexerRepository.findAll();
@@ -71,8 +100,13 @@ export async function getSetupStatus(deps: ApiDependencies): Promise<SetupStatus
   const indexerCount = await resolveIndexerCount(deps);
   const indexersConfigured = indexerCount > 0;
   const setupCompleted = isSetupMarkedComplete(settings);
+  const libraryItemCount = await resolveLibraryItemCount(deps);
+  const hasLibrary = libraryItemCount > 0;
 
   const completedSteps: string[] = [];
+  if (hasLibrary) {
+    completedSteps.push('library');
+  }
   if (rootFoldersConfigured) {
     completedSteps.push('rootFolders');
   }
@@ -84,7 +118,9 @@ export async function getSetupStatus(deps: ApiDependencies): Promise<SetupStatus
   }
 
   return {
-    isConfigured: setupCompleted || (rootFoldersConfigured && indexersConfigured),
+    isConfigured: setupCompleted
+      || hasLibrary
+      || (rootFoldersConfigured && indexersConfigured),
     completedSteps,
   };
 }

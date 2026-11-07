@@ -1,0 +1,1 @@
+Live evidence 2026-11-07: before -> movie 1..5 all HTTP 500; after -> 206. DB backup /config/mediarr.db.bak-before-variant-cleanup-20261107.

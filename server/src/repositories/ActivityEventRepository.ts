@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, isNotNull, lt, lte, type SQL } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gte, isNotNull, lt, lte, type SQL } from 'drizzle-orm';
 import type { DatabaseClient } from '../db/drizzleClient';
 import * as schema from '../db/schema';
 import type { ActivityEvent } from '../types/modelTypes';
@@ -88,6 +88,11 @@ export class ActivityEventRepository {
     const pageSize = input.pageSize && input.pageSize > 0 ? input.pageSize : 25;
     const where = buildWhere(input);
 
+    // COUNT(*) instead of fetching every id. The previous implementation
+    // selected all 248k ids of a production ActivityEvent table to call
+    // `.length` — on a 1 s poll that pinned the event loop (synchronous
+    // better-sqlite3 + row mapping) and starved every other request. Measured
+    // 2026-11-07 with the event-loop monitor: 80 % CPU, 400–1200 ms lag.
     const [items, totalRows] = await Promise.all([
       this.prisma.drizzle
         .select()
@@ -97,14 +102,14 @@ export class ActivityEventRepository {
         .limit(pageSize)
         .offset((page - 1) * pageSize),
       this.prisma.drizzle
-        .select({ id: schema.activityEvents.id })
+        .select({ value: count() })
         .from(schema.activityEvents)
         .where(where),
     ]);
 
     return {
       items: items as unknown as ActivityEvent[],
-      total: totalRows.length,
+      total: Number(totalRows[0]?.value ?? 0),
       page,
       pageSize,
     };

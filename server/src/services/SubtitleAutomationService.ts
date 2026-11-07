@@ -15,6 +15,13 @@ export interface SubtitleAutomationStats {
   wantedQueued: number;
   downloaded: number;
   failed: number;
+  /**
+   * Variants that could not be processed because their inventory row is gone
+   * (deleted file, cleaned-up variant). One stale id must not abort the whole
+   * cycle: on 2026-11-07 a single orphaned variant failed the entire
+   * `subtitle-wanted-search` task with "Variant 5260 not found".
+   */
+  variantsSkipped: number;
 }
 
 /**
@@ -92,8 +99,19 @@ export class SubtitleAutomationService {
     ])];
 
     const wantedLanguages = await this.resolveWantedLanguages();
+    let variantsSkipped = 0;
     for (const variantId of variantIds) {
-      await this.syncVariantState(variantId, wantedLanguages);
+      try {
+        await this.syncVariantState(variantId, wantedLanguages);
+      } catch (error) {
+        // A stale variant id (its inventory row was removed) is not a reason to
+        // fail the scheduled task; count it and keep going.
+        variantsSkipped += 1;
+        console.warn(
+          `Subtitle automation skipped variant ${variantId}:`,
+          error instanceof Error ? error.message : error,
+        );
+      }
     }
 
     const queue = await this.processWantedQueue(limit);
@@ -103,6 +121,7 @@ export class SubtitleAutomationService {
       wantedQueued: queue.queued,
       downloaded: queue.downloaded,
       failed: queue.failed,
+      variantsSkipped,
     };
   }
 
@@ -115,6 +134,7 @@ export class SubtitleAutomationService {
       wantedQueued: queue.queued,
       downloaded: queue.downloaded,
       failed: queue.failed,
+      variantsSkipped: 0,
     };
   }
 
@@ -134,9 +154,19 @@ export class SubtitleAutomationService {
     let downloaded = 0;
     let failed = 0;
     let queued = 0;
+    let variantsSkipped = 0;
 
     for (const variantId of variantIds) {
-      await this.syncVariantState(variantId, wantedLanguages);
+      try {
+        await this.syncVariantState(variantId, wantedLanguages);
+      } catch (error) {
+        variantsSkipped += 1;
+        console.warn(
+          `Subtitle automation skipped variant ${variantId}:`,
+          error instanceof Error ? error.message : error,
+        );
+        continue;
+      }
       const wanted = await this.repository.listWantedSubtitlesByVariant(variantId);
       const fetchable = wanted.filter(item => FETCHABLE_STATES.includes(item.state));
       queued += fetchable.length;
@@ -161,6 +191,7 @@ export class SubtitleAutomationService {
       wantedQueued: queued,
       downloaded,
       failed,
+      variantsSkipped,
     };
   }
 

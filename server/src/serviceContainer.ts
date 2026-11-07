@@ -1,5 +1,6 @@
 import path from 'node:path';
 import { existsSync } from 'node:fs';
+import { readdir } from 'node:fs/promises';
 import type { DatabaseClient } from './db/drizzleClient';
 import type { ApiDependencies } from './api/types';
 import { ApiEventHub } from './api/eventHub';
@@ -60,6 +61,10 @@ import { RssSyncService } from './services/RssSyncService';
 import { type SchedulerStateRepository, Scheduler } from './services/Scheduler';
 import { SubtitleSyncService } from './services/SubtitleSyncService';
 import { FfsubsyncAligner } from './services/FfsubsyncAligner';
+import { BilingualSubtitleService } from './services/BilingualSubtitleService';
+import { MiniMaxTranslator } from './services/MiniMaxTranslator';
+import { XiaomiTranslator } from './services/XiaomiTranslator';
+import { FallbackTranslator } from './services/FallbackTranslator';
 import { SettingsService } from './services/SettingsService';
 import { SubtitleAutomationService } from './services/SubtitleAutomationService';
 import { SubtitleInventoryApiService } from './services/SubtitleInventoryApiService';
@@ -644,6 +649,97 @@ export async function createServiceContainer(
         },
         aligner: new FfsubsyncAligner(),
       });
+      // FR-17: every exposed Chinese sidecar must be bilingual EN+ZH.
+      const translators = [];
+      if (env.XIAOMI_API_KEY) translators.push(new XiaomiTranslator({ apiKey: env.XIAOMI_API_KEY }));
+      const minimaxKey = env.MINIMAX_API_KEY ?? env.MINIMAX_CN_API_KEY;
+      if (minimaxKey) translators.push(new MiniMaxTranslator({ apiKey: minimaxKey }));
+      const translator = translators.length > 0 ? new FallbackTranslator(translators) : null;
+      const bilingualService = new BilingualSubtitleService({
+        statePath: path.join(env.CONFIG_DIR ?? path.dirname(options.databaseUrl.replace(/^file:/, '')), 'bilingual-state.json'),
+        translator,
+        candidates: async () => {
+          // Scan only the configured media roots. Walking all of /data pinned
+          // the event loop for minutes on 2026-11-07: the tree there is ~17k
+          // directories / 90k files (Downloads, Backups, archive folders) and
+          // every request was starved while it ran.
+          const configured = [
+            settings.mediaManagement.movieRootFolder,
+            settings.mediaManagement.tvRootFolder,
+          ].filter((value): value is string => typeof value === 'string' && value.length > 0);
+          const roots = configured.length > 0
+            ? [...new Set(configured)]
+            : [env.MEDIA_DIR ?? '/data'];
+
+          const found: string[] = [];
+          const MAX_ENTRIES = 50_000;
+          const MAX_FILES = 4_000;
+          const SKIP_DIRECTORIES = new Set([
+            'downloads', 'backup', 'backups', '#recycle', '@eadir', '.git',
+            'node_modules', '.trash', '$recycle.bin', 'system volume information',
+          ]);
+          let scanned = 0;
+          let budgetHit = false;
+
+          const walk = async (dir: string): Promise<void> => {
+            if (budgetHit || found.length >= MAX_FILES) {
+              budgetHit = true;
+              return;
+            }
+            let entries;
+            try {
+              entries = await readdir(dir, { withFileTypes: true });
+            } catch {
+              return;
+            }
+            for (const entry of entries) {
+              if (found.length >= MAX_FILES) { budgetHit = true; return; }
+              scanned += 1;
+              if (scanned >= MAX_ENTRIES) { budgetHit = true; return; }
+              const full = path.join(dir, entry.name);
+              if (entry.isDirectory()) {
+                if (SKIP_DIRECTORIES.has(entry.name.toLowerCase())) continue;
+                await walk(full);
+              } else if (/\.(zho|zh)\.srt$/i.test(entry.name)
+                && !/\.(orig|bak|tmp|sync|verify)$/i.test(entry.name)
+                && !/\.(sync|verify|bilingual)\./i.test(entry.name)) {
+                found.push(full);
+              }
+            }
+          };
+          for (const root of roots) {
+            await walk(root);
+            if (budgetHit) break;
+          }
+          if (budgetHit) {
+            console.warn(
+              `Bilingual scan stopped at its budget (${scanned} entries, ${found.length} sidecars); `
+              + 'the remainder is picked up next cycle',
+            );
+          }
+          return found;
+        },
+      });
+      // Guard the cycle: two overlapping runs were observed on 2026-11-07 and
+      // each re-walked the library, doubling CPU and stalling requests.
+      let bilingualCycleRunning = false;
+      scheduler.schedule('bilingual-subs', '15 */2 * * *', async () => {
+        if (bilingualCycleRunning) {
+          console.warn('Bilingual cycle skipped: the previous cycle is still running');
+          return;
+        }
+        bilingualCycleRunning = true;
+        try {
+          const result = await bilingualService.runCycle({ limit: 3 });
+          console.log(
+            `Bilingual cycle: scanned ${result.scanned}, bilingual ${result.bilingual}, merged ${result.merged}, `
+            + `translated ${result.translated}, flagged ${result.flagged}, failed ${result.failed}`,
+          );
+        } finally {
+          bilingualCycleRunning = false;
+        }
+      });
+
       scheduler.schedule('subtitle-sync', '*/30 * * * *', async () => {
         const result = await subtitleSyncService.runCycle({ limit: 5 });
         console.log(

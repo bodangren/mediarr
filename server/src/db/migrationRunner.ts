@@ -292,6 +292,14 @@ export function runMigrations(
       }
     } finally {
       db.exec('PRAGMA foreign_keys = ON');
+      // Read-path index for the activity feed. Kept here as well as in the
+      // client so a brand-new database gets it immediately: without it SQLite
+      // sorts the entire ActivityEvent table on every page read (248k rows in
+      // production, polled every second on 2026-11-07).
+      db.exec(
+        'CREATE INDEX IF NOT EXISTS "ActivityEvent_occurredAt_idx" '
+        + 'ON "ActivityEvent" ("occurredAt")',
+      );
     }
 
     return { applied, alreadyApplied };

@@ -248,7 +248,9 @@ export function createApiServer(
         void pollActivity(dependencies, eventHub, pollState).catch(error => {
           console.error('Failed to poll activity:', error);
         });
-      }, options.activityPollIntervalMs ?? 1000),
+      // 1 s was aggressive: each poll is a query against a table that can hold
+      // hundreds of thousands of rows. 5 s still feels live over SSE.
+      }, options.activityPollIntervalMs ?? 5000),
     );
 
     intervals.push(

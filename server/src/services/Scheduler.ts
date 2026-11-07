@@ -47,6 +47,8 @@ export interface TaskExecutionsRepository {
     errorMessage: string | null;
   }) => Promise<void>;
   prune: (taskName: string, retainCount: number) => Promise<number>;
+  /** Closes executions left RUNNING by a previous process. */
+  failStaleRunning?: (reason: string) => Promise<number>;
 }
 
 export interface SchedulerStateRepository {
@@ -352,6 +354,20 @@ export class Scheduler {
         job.running = true;
         pendingRecovery.add(name);
       }
+    }
+
+    // Any RUNNING execution left behind by a previous process can never
+    // complete; close it so task history is truthful.
+    try {
+      const closeStale = this.taskExecutionsRepository?.failStaleRunning;
+      const repaired = closeStale
+        ? await closeStale.call(this.taskExecutionsRepository, 'Interrupted by a server restart')
+        : 0;
+      if (repaired) {
+        console.warn(`Scheduler closed ${repaired} interrupted task execution(s) from a previous run`);
+      }
+    } catch (error) {
+      console.warn('Scheduler could not close interrupted executions:', error);
     }
 
     // Reload persisted enable/disable flags before recovery so disabled tasks

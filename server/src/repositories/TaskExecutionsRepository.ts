@@ -97,6 +97,33 @@ export class TaskExecutionsRepository {
       .where(eq(schema.taskExecutions.id, id));
   }
 
+  /**
+   * Closes executions left `RUNNING` by a previous process.
+   *
+   * A restart during a long task leaves a phantom RUNNING row forever: the
+   * task history then claims work is in progress that no process owns (seen on
+   * 2026-11-07 with two overlapping `bilingual-subs` rows after a restart).
+   * Returns the number of rows repaired.
+   */
+  async failStaleRunning(reason: string): Promise<number> {
+    const rows = await this.prisma.drizzle
+      .select({ id: schema.taskExecutions.id })
+      .from(schema.taskExecutions)
+      .where(eq(schema.taskExecutions.status, 'RUNNING'));
+
+    for (const row of rows) {
+      await this.update(row.id, {
+        status: 'FAILED',
+        completedAt: new Date(),
+        // Duration is unknown for an interrupted run; 0 keeps the column valid
+        // while making it obvious the value is not a measurement.
+        durationMs: 0,
+        errorMessage: reason,
+      });
+    }
+    return rows.length;
+  }
+
   async query(input: QueryTaskExecutionsInput): Promise<QueryTaskExecutionsResult> {
     const page = Number.isInteger(input.page) && input.page > 0 ? input.page : 1;
     const pageSize = Number.isInteger(input.pageSize) && input.pageSize > 0 ? input.pageSize : 25;

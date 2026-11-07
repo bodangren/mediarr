@@ -3,6 +3,7 @@ import { ValidationError } from '../../errors/domainErrors';
 import { parsePaginationParams, sendPaginatedSuccess, sendSuccess } from '../contracts';
 import { parseBoolean, parseDate, parseIdParam } from '../routeUtils';
 import type { ApiDependencies } from '../types';
+import { getEventLoopHealth } from '../../utils/eventLoopMonitor';
 
 type Severity = 'critical' | 'warning' | 'ok';
 
@@ -283,13 +284,13 @@ export function registerOperationsRoutes(
 
     const overall = snapshots[0]?.severity ?? 'ok';
 
-    // Additive scheduler health — only included when the runtime wires a
-    // Scheduler instance into the API deps. Pre-existing health consumers
-    // that ignore this field keep working unchanged.
+    // Additive scheduler + event-loop health — only included when available.
+    // Pre-existing health consumers that ignore these fields keep working.
     const responseBody: {
       status: typeof overall;
       indexers: typeof snapshots;
       scheduler?: ReturnType<NonNullable<typeof deps.scheduler>['getHealth']>;
+      eventLoop?: ReturnType<typeof getEventLoopHealth>;
     } = {
       status: overall,
       indexers: snapshots,
@@ -297,6 +298,7 @@ export function registerOperationsRoutes(
     if (deps.scheduler) {
       responseBody.scheduler = deps.scheduler.getHealth();
     }
+    responseBody.eventLoop = getEventLoopHealth();
 
     return sendSuccess(reply, responseBody);
   });

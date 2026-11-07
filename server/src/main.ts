@@ -16,6 +16,7 @@ import { AppSettingsRepository } from './repositories/AppSettingsRepository';
 import { SettingsService } from './services/SettingsService';
 import { createServiceContainer, seedBaselineData } from './serviceContainer';
 import { globalLogBuffer } from './services/LogReaderService';
+import { startEventLoopMonitor } from './utils/eventLoopMonitor';
 
 function parsePort(rawPort: string | undefined, fallback: number): number {
   if (!rawPort) {
@@ -37,6 +38,11 @@ async function resolveDatabaseUrl(configuredUrl: string | undefined): Promise<st
 async function startApi(): Promise<void> {
   // Install global log buffer before any other output
   globalLogBuffer.install();
+
+  // Measure event-loop stalls: better-sqlite3 is synchronous and the database
+  // lives on a USB drive that spins down, so a cold query can freeze every
+  // in-flight request. Exposed through /api/health (2026-11-07).
+  startEventLoopMonitor();
 
   assertValidEncryptionKey(process.env.ENCRYPTION_KEY);
   const databaseUrl = await resolveDatabaseUrl(process.env.DATABASE_URL);

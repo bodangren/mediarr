@@ -45,6 +45,7 @@ function buildLifecycle() {
         wantedQueued: 0,
         downloaded: 0,
         failed: 0,
+        variantsSkipped: 0,
       };
     }),
     onEpisodeImported: vi.fn(async () => {
@@ -54,6 +55,7 @@ function buildLifecycle() {
         wantedQueued: 0,
         downloaded: 0,
         failed: 0,
+        variantsSkipped: 0,
       };
     }),
   };

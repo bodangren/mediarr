@@ -51,8 +51,54 @@ describe('SubtitleAutomationService', () => {
       wantedQueued: 2,
       downloaded: 1,
       failed: 1,
+      variantsSkipped: 0,
     });
     expect(missingService.computeAndPersistForVariant).toHaveBeenCalledTimes(2);
+    expect(wantedService.syncWantedForVariant).toHaveBeenCalledTimes(2);
+  });
+
+  it('skips a stale variant instead of failing the whole task', async () => {
+    // Live defect 2026-11-07: after a variant cleanup, the scheduled
+    // `subtitle-wanted-search` task failed every run with
+    // "Variant 5260 not found" because one orphaned id aborted the loop.
+    const repository = {
+      listMonitoredVariants: vi.fn(),
+      listRecentlyAddedVariants: vi.fn().mockResolvedValue([{ id: 1 }, { id: 5260 }, { id: 3 }]),
+      listVariantsWithFailedWanted: vi.fn().mockResolvedValue([]),
+      listWantedSubtitlesByStates: vi.fn().mockResolvedValue([]),
+      updateWantedSubtitleState: vi.fn(),
+      listMovieVariants: vi.fn(),
+      listEpisodeVariants: vi.fn(),
+      listWantedSubtitlesByVariant: vi.fn().mockResolvedValue([]),
+    };
+    const settingsService = {
+      get: vi.fn().mockResolvedValue({ wantedLanguages: ['en'] }),
+    };
+    const missingService = {
+      computeAndPersistForVariant: vi.fn()
+        .mockResolvedValueOnce(undefined)
+        .mockRejectedValueOnce(new Error('Variant 5260 not found'))
+        .mockResolvedValueOnce(undefined),
+    };
+    const wantedService = { syncWantedForVariant: vi.fn().mockResolvedValue(undefined) };
+    const fetchService = { fetchWantedSubtitle: vi.fn() };
+    const fetchProvider = { searchBestSubtitle: vi.fn() };
+
+    const service = new SubtitleAutomationService(
+      repository as any,
+      settingsService as any,
+      missingService as any,
+      wantedService as any,
+      fetchService as any,
+      fetchProvider as any,
+    );
+
+    const stats = await service.runTargetedAutomationCycle();
+
+    expect(stats.variantsScanned).toBe(3);
+    expect(stats.variantsSkipped).toBe(1);
+    // The healthy variants were still processed.
+    expect(missingService.computeAndPersistForVariant).toHaveBeenCalledTimes(3);
     expect(wantedService.syncWantedForVariant).toHaveBeenCalledTimes(2);
   });
 

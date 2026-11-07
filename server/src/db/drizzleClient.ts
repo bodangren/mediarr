@@ -503,7 +503,28 @@ export class DatabaseClient {
     this.sqlite = new BetterSqlite3(dbPath);
     this.sqlite.exec('PRAGMA journal_mode = WAL;');
     this.sqlite.exec('PRAGMA foreign_keys = ON;');
-    this.db = drizzle(this.sqlite, { schema });
+    // The activity feed orders by occurredAt; without this index SQLite sorts
+    // the whole table on every page read (248k rows in production on
+    // 2026-11-07). Idempotent so it is safe on an existing database.
+    try {
+      this.sqlite.exec(
+        'CREATE INDEX IF NOT EXISTS "ActivityEvent_occurredAt_idx" ON "ActivityEvent" ("occurredAt");',
+      );
+    } catch {
+      // Fresh/in-memory database before migrations: the migration runner adds
+      // the index once the table exists.
+    }
+    // Opt-in SQL tracing (`DEBUG_SQL=1`) for diagnosing event-loop stalls: a
+    // synchronous better-sqlite3 query blocks every request, so knowing which
+    // statement repeats is the difference between guessing and fixing.
+    this.db = process.env.DEBUG_SQL === '1'
+      ? drizzle(this.sqlite, {
+          schema,
+          logger: {
+            logQuery: (query: string) => console.log('[sql]', query.replace(/\s+/g, ' ').slice(0, 400)),
+          },
+        })
+      : drizzle(this.sqlite, { schema });
 
     this.media = this.createDelegate('media');
     this.series = this.createDelegate('series');

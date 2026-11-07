@@ -108,6 +108,10 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
   /// The stored autoplay preference, or null while it is still unknown.
   bool? _autoplayEnabled;
 
+  /// This screen's playback session ownership token. Only the owner may stop
+  /// the shared player when the screen is disposed.
+  late final int _playbackSessionId;
+
   @override
   void initState() {
     super.initState();
@@ -117,6 +121,7 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
     _resolvedTitle = widget.title;
     _playbackService = ref.read(playbackServiceProvider.notifier);
     final service = _playbackService;
+    _playbackSessionId = service.beginSession();
     _videoController = widget.videoController;
     if (_videoController == null) {
       try {
@@ -156,7 +161,11 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
     _upNextTimer?.cancel();
     if (!_stopRequested) {
       _stopRequested = true;
-      unawaited(_stopPlaybackOnDispose());
+      // Only the session that still owns playback may stop it; a newer
+      // screen's stream must survive this dispose (Kimi audit 2026-11-07).
+      // `ref` is invalid during dispose, so the service captured in
+      // initState is used instead.
+      unawaited(_playbackService.endSession(_playbackSessionId));
     }
     _rootFocusNode.dispose();
     super.dispose();
@@ -237,14 +246,6 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
       _upNextCancelled = false;
     });
     await _playCurrentItem();
-  }
-
-  Future<void> _stopPlaybackOnDispose() async {
-    try {
-      await _playbackService.stop();
-    } catch (_) {
-      // Route disposal must not report an unhandled playback error.
-    }
   }
 
   Future<void> _startPlayback() async {

@@ -317,20 +317,49 @@ class PlaybackService extends StateNotifier<PlaybackState> {
   /// the overlay, and reset the state machine so a second play() starts
   /// from a clean slate.
   Future<void> stop() async {
+    // A screen that is leaving may run its stop after the provider was
+    // disposed (widget tests, hot restart). Never touch a dead notifier.
+    if (!mounted) return;
     _progressReportTimer?.cancel();
     _overlayHideTimer?.cancel();
     _subtitleToastTimer?.cancel();
 
-    // Report final position
-    try {
-      await _reportProgress();
-    } catch (_) {}
-
+    // Stop the native player FIRST: a screen that is leaving must never keep a
+    // newly opened stream alive while it awaits a network write. On the
+    // Android box a fast "play A, back, play B" left B black because A's
+    // dispose ran `stop()` after B's `open()` (Kimi K3.1 audit 2026-11-07).
     try {
       await _player.stop();
     } catch (_) {}
 
+    // Report final position best-effort, after the player is quiet.
+    try {
+      await _reportProgress();
+    } catch (_) {}
+
+    if (!mounted) return;
     state = const PlaybackState(overlayVisible: false);
+  }
+
+  /// Playback session ownership.
+  ///
+  /// The service is app-wide, so a leaving screen must not tear down a stream
+  /// another screen has already started. Each [PlaybackScreen] owns one
+  /// session; only the owner may stop it.
+  int _nextSessionId = 0;
+  int? _activeSessionId;
+
+  int beginSession() {
+    _activeSessionId = ++_nextSessionId;
+    return _activeSessionId!;
+  }
+
+  /// Stops playback only when [sessionId] still owns it.
+  Future<void> endSession(int sessionId) async {
+    if (!mounted) return;
+    if (_activeSessionId != sessionId) return;
+    _activeSessionId = null;
+    await stop();
   }
 
   /// Reset transient playback state to a clean slate before opening a new

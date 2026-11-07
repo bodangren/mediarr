@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Mediarr is a trusted-LAN server reached over plain HTTP (e.g.
+  http://192.168.10.65:5174). targetSdk 36 blocks cleartext by default, which
+  would make native playback of an http:// stream fail while the rest of the
+  app still worked (Kimi K3.1 audit, 2026-11-07). Cleartext is permitted
+  because the deployment model is a private LAN; no public host is allowed
+  implicitly — TLS remains the default for every other destination.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

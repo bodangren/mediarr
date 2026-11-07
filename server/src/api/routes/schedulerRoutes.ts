@@ -37,7 +37,7 @@ interface SchedulerDeps {
 
 const TASK_INTERVAL_KEY: Record<string, keyof { rssSyncMinutes: number; availabilityCheckMinutes: number; torrentMonitoringSeconds: number; wantedSearchMinutes: number }> = {
   'rss-sync': 'rssSyncMinutes',
-  'availability-check': 'availabilityCheckMinutes',
+  'subtitle-wanted-search': 'availabilityCheckMinutes',
   'wanted-search': 'wantedSearchMinutes',
 };
 

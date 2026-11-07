@@ -61,8 +61,11 @@
 > verified. Inventory and paths: [`automation/TOOLING.md`](../../../automation/TOOLING.md).
 
 - [ ] **B1** Deploy Mediarr 24/7 (container `restart: unless-stopped` or systemd); prove reboot.
-- [ ] **B2** Fix `subtitle-wanted-search` interval persistence (`TASK_INTERVAL_KEY`) + test; set
-      rss 30 / availability 10–15 / wanted 60 in settings.
+- [~] **B2** Fix `subtitle-wanted-search` interval persistence (`TASK_INTERVAL_KEY`) + test; set
+      rss 30 / availability 10–15 / wanted 60 in settings. **Code done 2026-11-07:** the map now
+      points `subtitle-wanted-search` at `availabilityCheckMinutes` (the old `availability-check`
+      entry named a task that is never registered); new route test is green (16/16) and server
+      `tsc --noEmit` is clean. Runtime setting values apply with B1 when Mediarr runs.
 - [ ] **B3** Install `dsh-host.service` (systemd user, `DSH_PERMISSION_MODE=danger-full-access`,
       port 3080); replace the terminal-launched Host; prove reboot persistence.
 - [ ] **B4** Scaffold `automation/dsh-media-automation/` (bundle + `jobs`/`runs`/`locks`/`alerts`/

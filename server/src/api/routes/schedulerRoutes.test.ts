@@ -149,6 +149,31 @@ describe('PUT /api/scheduler/:taskId/interval', () => {
     expect(scheduler.isScheduled).toHaveBeenCalledWith('rss-sync');
   });
 
+  it('persists the subtitle sweep interval to availabilityCheckMinutes for the registered task id', async () => {
+    scheduler.isScheduled.mockReturnValue(true);
+    scheduler.reschedule.mockReturnValue(undefined);
+    settingsService.update.mockResolvedValue({
+      schedulerIntervals: {
+        rssSyncMinutes: 12,
+        availabilityCheckMinutes: 10,
+        torrentMonitoringSeconds: 10,
+        wantedSearchMinutes: 60,
+      },
+    });
+
+    const response = await app.inject({
+      method: 'PUT',
+      url: '/api/scheduler/subtitle-wanted-search/interval',
+      payload: { cronExpression: '*/10 * * * *' },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(scheduler.reschedule).toHaveBeenCalledWith('subtitle-wanted-search', '*/10 * * * *');
+    expect(settingsService.update).toHaveBeenCalledWith({
+      schedulerIntervals: { availabilityCheckMinutes: 10 },
+    });
+  });
+
   it('returns 422 for an invalid cron expression without mutating settings or rescheduling', async () => {
     const response = await app.inject({
       method: 'PUT',

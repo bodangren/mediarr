@@ -15,13 +15,18 @@ The plugin that enforces the Measure workflow inside DSH:
   (`measure/workflow.md` step 10), so every completed task is traceable to a commit;
 - exposes the `measure_status` tool.
 
-**Source of truth:** this directory. The running copy is installed in the DSH web profile at
-`~/.dsh/profiles/web/plugins/dsh-measure-guard`. Edit here, then sync:
+**Source of truth:** this directory. The DSH web profile does **not** hold a copy — it holds a
+symlink:
 
-```bash
-rsync -a --delete automation/dsh-plugins/dsh-measure-guard/ \
-  ~/.dsh/profiles/web/plugins/dsh-measure-guard/
-# then reload the plugin from DSH (Settings → Plugins) or restart the host
+```
+~/.dsh/profiles/web/plugins/dsh-measure-guard
+  -> /home/daniel-bo/Desktop/mediarr/automation/dsh-plugins/dsh-measure-guard
 ```
 
-`check-parity.sh` in the plugin compares the two copies and reports drift.
+The harness therefore loads the plugin straight from this repository: an edit here is the deployed
+change, and there is no copy to drift. Reload the plugin from DSH (Settings → Plugins) or restart the
+host to pick it up. Verified 2026-11-08: `node --input-type=module -e "await import(...)"` resolves
+`apply, digest, inject, name` from the repo path.
+
+Known gap: `scripts/check-parity.sh` compares `src/core/*` against `automation/mods/measure-guard`,
+which is not in this tree, so it cannot run. Treat these files as primary, not as copies.

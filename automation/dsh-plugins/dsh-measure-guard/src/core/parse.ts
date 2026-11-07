@@ -15,7 +15,9 @@ const MD_LINK = /\]\(([^)\s]+)\)/
 const PHASE = /^## Phase\b/
 const SECTION = /^#{1,2} /
 const TASK = /^- \[([ ~xb])\] (.*)$/
-const SHA = /(?:^|\s)`?([0-9a-f]{7})`?\s*$/
+// Accept the natural phrasings a plan line can end with: the bare SHA
+// (measure/workflow.md step 10), "commit <sha>", or a backticked SHA with trailing punctuation.
+const SHA = /(?:^|\s)`?(?:commit\s+`?)?([0-9a-f]{7,40})`?[.;,]?\s*$/
 const CHECKPOINT = /\s*\[checkpoint: ([0-9a-f]{7,40})\]/
 const DEFERRED = /\bdeferred:([^\s`]+)/
 

@@ -3,6 +3,7 @@ import 'package:path_provider/path_provider.dart';
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -444,7 +445,13 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
       onError: (error, handler) {
         final path = error.requestOptions.path;
         // Never report the telemetry endpoint itself: that would loop.
-        if (!path.contains('/api/client-errors')) {
+        //
+        // The health poll also stays out of the automatic path: it retries once
+        // before giving up, and reports explicitly. Without this, every server
+        // restart wrote a "connection refused" record that masqueraded as a
+        // client defect during triage (2026-11-08, twice).
+        final isHealthPoll = path.contains('/api/system/status');
+        if (!path.contains('/api/client-errors') && !isHealthPoll) {
           final status = error.response?.statusCode;
           final serverMessage = error.response?.data is Map
               ? (error.response!.data as Map)['error']
@@ -549,15 +556,38 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
   void _startHealthCheck() {
     _healthTimer?.cancel();
     _healthTimer = Timer.periodic(const Duration(seconds: 30), (_) async {
-      try {
-        await getSystemStatus();
-        if (state.status != ConnectionStatus.connected) {
-          state = state.copyWith(status: ConnectionStatus.connected);
-        }
-      } catch (_) {
-        state = state.copyWith(status: ConnectionStatus.error);
-      }
+      await probeHealth(retrying: true);
     });
+  }
+
+  /// One health probe, with one short retry.
+  ///
+  /// A restart takes a second or two; reporting the first refused connection
+  /// produced phantom "client errors" for planned maintenance. Only a failure
+  /// that survives the retry is treated (and reported) as an outage.
+  @visibleForTesting
+  Future<bool> probeHealth({required bool retrying}) async {
+    try {
+      await getSystemStatus();
+      if (state.status != ConnectionStatus.connected) {
+        state = state.copyWith(status: ConnectionStatus.connected);
+      }
+      return true;
+    } catch (error) {
+      if (retrying) {
+        await Future<void>.delayed(const Duration(milliseconds: 800));
+        if (await probeHealth(retrying: false)) return true;
+      }
+      state = state.copyWith(status: ConnectionStatus.error);
+      // Awaited: an outage report must land before the probe returns, so the
+      // next tick cannot race a duplicate.
+      await _reporter?.report(
+        message: 'Health check failed: $error',
+        stack: null,
+        severity: 'network',
+      );
+      return false;
+    }
   }
 
   // --- Helpers ---

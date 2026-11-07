@@ -113,12 +113,35 @@ export function SettingsSubtitlesPage() {
   };
 
   const wantedLanguages = form.watch('wantedLanguages');
+  const openSubtitlesKey = form.watch('openSubtitlesApiKey');
+  const assrtToken = form.watch('assrtApiToken');
+  const subdlKey = form.watch('subdlApiKey');
+  // Automatic fetching cannot do anything until one provider has credentials.
+  // On 2026-11-08 the queue held 1,740 wanted rows and every cycle failed them
+  // silently; this notice is the surface that tells the owner to add a key.
+  const hasAnyProviderCredential = Boolean(
+    openSubtitlesKey?.trim() || assrtToken?.trim() || subdlKey?.trim(),
+  );
 
   return (
     <RouteScaffold title="Subtitles" description="Unified subtitle providers and global behavior controls.">
       {error ? <p className="text-sm text-status-error">{error}</p> : null}
       {message ? <p className="text-sm text-text-secondary">{message}</p> : null}
       {isLoading ? <p className="text-sm text-text-secondary">Loading subtitle settings...</p> : null}
+      {!isLoading && !hasAnyProviderCredential ? (
+        <section
+          role="alert"
+          className="rounded-md border border-accent-warning bg-surface-1 p-4 text-sm"
+        >
+          <h2 className="font-medium text-accent-warning">Automatic subtitle fetching is idle</h2>
+          <p className="mt-1 text-text-secondary">
+            No provider credentials are configured, so Mediarr cannot fetch the subtitles
+            its automation has queued. Add an OpenSubtitles API key or a SubDL key below —
+            both offer free registrations — and the next cycle will start filling the queue
+            automatically.
+          </p>
+        </section>
+      ) : null}
       <section className="rounded-md border border-border-subtle bg-surface-1 p-4">
         <h2 className="font-medium">Provider Status</h2>
         {providerLoadError ? <p className="mt-2 text-xs text-status-error">{providerLoadError}</p> : null}

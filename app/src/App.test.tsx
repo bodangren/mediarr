@@ -316,6 +316,22 @@ describe('App route and settings parity', () => {
     expect(await screen.findByText('Subtitle settings saved.')).toBeInTheDocument();
   });
 
+  it('tells the owner when automatic subtitle fetching is idle', async () => {
+    // With no provider credentials the automation cannot fetch anything; on
+    // 2026-11-08 the queue held 1,740 wanted rows with no surface explaining
+    // why nothing happened.
+    renderApp('/settings/subtitles');
+
+    expect(await screen.findByText('Automatic subtitle fetching is idle')).toBeInTheDocument();
+    expect(screen.getByText(/free registrations/i)).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('OpenSubtitles API Key'), { target: { value: 'abc-key' } });
+
+    await waitFor(() => {
+      expect(screen.queryByText('Automatic subtitle fetching is idle')).not.toBeInTheDocument();
+    });
+  });
+
   it('searches for media and adds a result to wanted', async () => {
     mockApi.mediaApi.searchMetadata.mockResolvedValue([
       {

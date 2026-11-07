@@ -30,6 +30,7 @@ class MediaHero extends StatelessWidget {
     required this.title,
     this.subtitle,
     this.actions = const [],
+    this.height = 340,
   });
 
   final String? backdropUrl;
@@ -38,12 +39,17 @@ class MediaHero extends StatelessWidget {
   final String? subtitle;
   final List<MediaHeroAction> actions;
 
+  /// Banner height. The series-detail layout uses a compact banner so the
+  /// episode list is on screen without scrolling (owner report 2026-11-07:
+  /// "everything is too small and off screen until I arrow down to it").
+  final double height;
+
   @override
   Widget build(BuildContext context) {
     final backdrop = backdropUrl;
     return SizedBox(
       width: double.infinity,
-      height: 340,
+      height: height,
       child: Stack(
         fit: StackFit.expand,
         children: [

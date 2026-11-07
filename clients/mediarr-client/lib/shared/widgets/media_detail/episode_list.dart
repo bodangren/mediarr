@@ -120,11 +120,25 @@ class EpisodeListState extends State<EpisodeList> {
   @override
   void initState() {
     super.initState();
-    _selectedSeason =
-        widget.selectedSeasonNumber ??
-        (widget.data.seasons.isNotEmpty
-            ? widget.data.seasons.first.seasonNumber
-            : null);
+    _selectedSeason = widget.selectedSeasonNumber ?? _defaultSeasonNumber();
+  }
+
+  /// The season the list opens on.
+  ///
+  /// Owner-measured defect 2026-11-07: opening on the *first* season landed on
+  /// `S0` for Murderbot, whose single episode is a missing special, so Select
+  /// did nothing a viewer could see. The default is therefore the first season
+  /// that actually has an episode with a file, falling back to the first
+  /// season (and then to specials) when nothing has been downloaded yet.
+  int? _defaultSeasonNumber() {
+    final seasons = widget.data.seasons;
+    if (seasons.isEmpty) return null;
+    for (final season in seasons) {
+      if (season.episodes.any((episode) => episode.hasFile)) {
+        return season.seasonNumber;
+      }
+    }
+    return seasons.first.seasonNumber;
   }
 
   @override
@@ -217,31 +231,18 @@ class EpisodeListState extends State<EpisodeList> {
         return KeyEventResult.ignored;
 
       case LogicalKeyboardKey.arrowRight:
-        // Chip -> next chip, then row -> its own search control.
+        // Chips walk sideways. Episode rows own no right-hand control: the
+        // owner reported that Right moved to an unexplained magnifier and that
+        // Select on the row then appeared to do nothing (2026-11-07). Select
+        // is the only row action, so Right is left to the traversal group.
         final chip = _focusedChip;
-        if (chip != null) {
-          if (chip + 1 < _chipNodes.length) {
-            _chipNodes[chip + 1].requestFocus();
-            return KeyEventResult.handled;
-          }
-          return KeyEventResult.ignored;
-        }
-        final row = _focusedRow;
-        if (row != null && row < _searchNodes.length) {
-          _searchNodes[row].requestFocus();
+        if (chip != null && chip + 1 < _chipNodes.length) {
+          _chipNodes[chip + 1].requestFocus();
           return KeyEventResult.handled;
         }
         return KeyEventResult.ignored;
 
       case LogicalKeyboardKey.arrowLeft:
-        // Search control -> back to its row.
-        final row = _focusedRow;
-        if (row == null) return KeyEventResult.ignored;
-        final focusedSearch = _searchNodes.indexWhere((n) => n.hasPrimaryFocus);
-        if (focusedSearch >= 0 && focusedSearch < _rowNodes.length) {
-          _rowNodes[focusedSearch].requestFocus();
-          return KeyEventResult.handled;
-        }
         return KeyEventResult.ignored;
 
       default:
@@ -278,11 +279,9 @@ class EpisodeListState extends State<EpisodeList> {
       selectedData.episodes.length,
       'EpisodeList.row',
     );
-    final searches = _sync(
-      _searchNodes,
-      widget.onSearchEpisode == null ? 0 : selectedData.episodes.length,
-      'EpisodeList.rowSearch',
-    );
+    // Per-row search stops were removed 2026-11-07: they were the unexplained
+    // magnifier the owner hit by pressing Right on an episode.
+    _sync(_searchNodes, 0, 'EpisodeList.rowSearch');
 
     // Key anchor only. It must never be a traversal stop itself, or it would
     // swallow the arrows (the F3 class of defect in tv-ux-investigation).
@@ -342,7 +341,6 @@ class EpisodeListState extends State<EpisodeList> {
               child: _EpisodeRow(
                 episode: selectedData.episodes[i],
                 focusNode: rows[i],
-                searchFocusNode: searches.isEmpty ? null : searches[i],
                 rowOrder: kEpisodeRowOrderBase + i,
                 onFocused: (hasFocus) => _focusedRow = hasFocus ? i : null,
                 onPlay: widget.onPlayEpisode != null
@@ -418,7 +416,6 @@ class _EpisodeRow extends StatelessWidget {
     required this.episode,
     required this.rowOrder,
     this.focusNode,
-    this.searchFocusNode,
     this.onFocused,
     this.onPlay,
     this.onSearch,
@@ -427,9 +424,10 @@ class _EpisodeRow extends StatelessWidget {
   final EpisodeListItem episode;
   final double rowOrder;
   final FocusNode? focusNode;
-  final FocusNode? searchFocusNode;
   final ValueChanged<bool>? onFocused;
   final VoidCallback? onPlay;
+
+  /// Select fallback for an episode with no file on disk.
   final VoidCallback? onSearch;
 
   /// Select plays the episode when the file exists and searches for it when it
@@ -511,22 +509,17 @@ class _EpisodeRow extends StatelessWidget {
                       ),
                     ),
                   ),
-                // Secondary action, reached with Right from the row.
-                if (onSearch != null)
-                  FocusTraversalOrder(
-                    order: NumericFocusOrder(rowOrder + 0.5),
-                    child: FocusableAction(
-                      variant: FocusableActionVariant.button,
-                      onSelect: onSearch,
-                      focusNode: searchFocusNode,
-                      borderRadius: 8,
-                      child: const Padding(
-                        padding: EdgeInsets.all(8),
-                        child: Icon(
-                          Icons.search,
-                          size: 28,
-                          color: MediarrColors.textPrimary,
-                        ),
+                // Affordance only. Select on the row is the single action, so
+                // the glyph must not become a second traversal stop (owner
+                // report 2026-11-07: Right landed on an unexplained magnifier).
+                if (!episode.hasFile)
+                  const ExcludeFocus(
+                    child: Padding(
+                      padding: EdgeInsets.only(right: 4),
+                      child: Icon(
+                        Icons.search,
+                        size: 28,
+                        color: MediarrColors.textMuted,
                       ),
                     ),
                   ),

@@ -144,10 +144,15 @@ void main() {
     ) async {
       await _pumpSeries(tester, _series());
 
-      // Entry focus is the Back control.
-      expect(focusedText(), contains('Back'));
+      // Entry focus is the primary Resume/Play CTA (owner + UX review
+      // 2026-11-07): a viewer must be able to start watching immediately.
+      expect(
+        focusedText(),
+        anyOf(contains('Play'), contains('Resume')),
+        reason: 'entry focus was "${focusedText()}"',
+      );
 
-      // First Down lands on the season chip block, as it does today.
+      // First Down lands on the season chip block.
       await pressDpad(tester, LogicalKeyboardKey.arrowDown);
       expect(focusedText(), contains('S1'));
 
@@ -190,24 +195,24 @@ void main() {
       expect(find.byType(ActionBar), findsOneWidget);
     });
 
-    testWidgets('Right from an episode row reaches its search control', (
+    testWidgets('a playable episode row has no per-row search stop', (
       tester,
     ) async {
       await _pumpSeries(tester, _series(seasonOneEpisodes: 2));
 
-      // Chip, then episode 1.
+      // CTA, chip, then episode 1.
       await pressDpad(tester, LogicalKeyboardKey.arrowDown);
       await pressDpad(tester, LogicalKeyboardKey.arrowDown);
       expect(focusedText(), contains('S1E1'));
 
-      // Right reaches the per-episode search action inside the row.
-      await pressDpad(tester, LogicalKeyboardKey.arrowRight);
-      expectVisibleFocus('Right to the episode search control');
-      expect(
-        find.byIcon(Icons.search),
-        findsWidgets,
-        reason: 'The per-episode search control must stay reachable.',
+      // The unexplained per-row magnifier was removed 2026-11-07: the owner
+      // pressed Right on an episode and landed on it with no idea what it did.
+      final searchInRows = find.descendant(
+        of: find.byType(EpisodeList),
+        matching: find.byIcon(Icons.search),
       );
+      expect(searchInRows, findsNothing);
+      expectVisibleFocus('the episode row keeps its focus cue');
     });
   });
 
@@ -273,12 +278,10 @@ void main() {
     ) async {
       await _pumpSeries(tester, _series(seasonOneEpisodes: 4));
 
-      // Entry focus must be the Back control on the detail screen, not the
-      // rail: the rail is a sibling route shell, and the detail screen is
-      // pushed inside it.
+      // Entry focus is the Resume/Play CTA, not the rail and not Back.
       expect(
         focusedText(),
-        contains('Back'),
+        anyOf(contains('Play'), contains('Resume')),
         reason: 'entry focus was "${focusLabel()}" / "${focusedText()}"',
       );
 

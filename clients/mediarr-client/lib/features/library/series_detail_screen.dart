@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/mediarr_theme.dart';
 import '../../core/widgets/netflix_scaffold.dart';
+import '../../shared/models/episode.dart';
 import '../../shared/models/series.dart';
 import '../../shared/services/api_client.dart';
 import '../../shared/widgets/media_detail/action_bar.dart';
@@ -43,6 +44,9 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
   /// Whether the Back control currently holds focus.
   bool _backFocused = false;
 
+  /// Whether the primary Resume/Play CTA currently holds focus.
+  bool _ctaFocused = false;
+
   @override
   void dispose() {
     _firstActionFocusNode.dispose();
@@ -59,7 +63,7 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
     if (event.logicalKey != LogicalKeyboardKey.arrowDown) {
       return KeyEventResult.ignored;
     }
-    if (!_backFocused) return KeyEventResult.ignored;
+    if (!_backFocused && !_ctaFocused) return KeyEventResult.ignored;
     final list = _episodeListKey.currentState;
     if (list == null) return KeyEventResult.ignored;
     return list.focusFirstChip()
@@ -94,6 +98,68 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
         _loading = false;
       });
     }
+  }
+
+  /// The episode the primary action should play (Kimi UX review 2026-11-07:
+  /// a focused Resume/Play must be above the fold on entry).
+  ///
+  /// Preference order: an in-progress episode (position > 30 s, not watched),
+  /// then the first playable episode of the current season, then the first
+  /// playable episode anywhere. Null means nothing is downloaded.
+  EpisodeListItem? _resumeTarget(Series series) {
+    EpisodeListItem? firstPlayable;
+    EpisodeListItem? inProgress;
+    var bestPosition = 0;
+    for (final season in series.seasons) {
+      for (final episode in season.episodes) {
+        if (!episode.effectiveHasFile) continue;
+        firstPlayable ??= _toListItem(episode);
+        final state = episode.playbackState;
+        if (state != null && !state.isWatched && state.position > 30) {
+          if (state.position > bestPosition) {
+            bestPosition = state.position;
+            inProgress = _toListItem(episode);
+            _episodeSeasonMap[episode.id] = season.seasonNumber;
+          }
+        }
+      }
+    }
+    return inProgress ?? firstPlayable;
+  }
+
+  EpisodeListItem _toListItem(Episode episode) {
+    _episodeSeasonMap[episode.id] = episode.seasonNumber;
+    return EpisodeListItem(
+      id: episode.id,
+      episodeNumber: episode.episodeNumber,
+      title: episode.title,
+      airDateUtc: episode.airDateUtc,
+      hasFile: episode.effectiveHasFile,
+      quality: episode.quality,
+    );
+  }
+
+  String _resumeLabel(Series series, EpisodeListItem target) {
+    final season = _episodeSeasonMap[target.id];
+    final label = season == null
+        ? 'Episode ${target.episodeNumber}'
+        : 'S${_pad(season)}E${_pad(target.episodeNumber)}';
+    final progress = _progressFor(series, target.id);
+    if (progress != null && progress.position > 30) {
+      final mins = progress.position ~/ 60;
+      final secs = (progress.position % 60).toString().padLeft(2, '0');
+      return 'Resume $label · $mins:$secs';
+    }
+    return 'Play $label';
+  }
+
+  EpisodePlaybackState? _progressFor(Series series, int episodeId) {
+    for (final season in series.seasons) {
+      for (final episode in season.episodes) {
+        if (episode.id == episodeId) return episode.playbackState;
+      }
+    }
+    return null;
   }
 
   void _playEpisode(EpisodeListItem episode) {
@@ -204,91 +270,157 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
       ),
     ];
 
-    return SingleChildScrollView(
-      // FR-2: key anchor for the Down-from-header hop. `canRequestFocus` is
-      // false so it is never a traversal stop itself.
-      child: Focus(
-        canRequestFocus: false,
-        skipTraversal: true,
-        onKeyEvent: _handleKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 0, 0),
-              child: FocusableAction(
-                autofocus: true,
-                variant: FocusableActionVariant.button,
-                onFocusChange: (focused) => _backFocused = focused,
-                onSelect: () => Navigator.of(context).pop(),
-                borderRadius: 8,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 12,
-                  ),
-                  color: MediarrColors.surfaceCard,
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.arrow_back,
-                        size: 28,
-                        color: MediarrColors.textPrimary,
-                      ),
-                      SizedBox(width: 8),
-                      Text(
-                        'Back',
-                        style: TextStyle(
-                          color: MediarrColors.textPrimary,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w600,
+    final resumeTarget = _resumeTarget(series);
+    final resumeSeason = resumeTarget == null
+        ? null
+        : _episodeSeasonMap[resumeTarget.id];
+
+    // Two-pane TV layout. The previous single scrolling column put a 340 px
+    // banner, the synopsis, the file-info card and the season chips above the
+    // episodes, so the first episode row began ~1000 px down a 720 px screen
+    // and the owner had to arrow blindly to reach it (report 2026-11-07:
+    // "everything is too small and off screen until I arrow down to it").
+    // Splitting the page keeps the episode list — the thing a viewer came for
+    // — on screen from the first frame.
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // ---- Left: artwork, title, metadata, series-level actions ----
+        Expanded(
+          flex: 4,
+          child: SingleChildScrollView(
+            child: Focus(
+              // FR-2: key anchor for the Down-from-header hop. `canRequestFocus`
+              // is false so it is never a traversal stop itself.
+              canRequestFocus: false,
+              skipTraversal: true,
+              onKeyEvent: _handleKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 0, 0),
+                    child: FocusableAction(
+                      variant: FocusableActionVariant.button,
+                      onFocusChange: (focused) => _backFocused = focused,
+                      onSelect: () => Navigator.of(context).pop(),
+                      borderRadius: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 12,
+                        ),
+                        color: MediarrColors.surfaceCard,
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.arrow_back,
+                              size: 28,
+                              color: MediarrColors.textPrimary,
+                            ),
+                            SizedBox(width: 8),
+                            Text(
+                              'Back',
+                              style: TextStyle(
+                                color: MediarrColors.textPrimary,
+                                fontSize: 20,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
+                    ),
                   ),
-                ),
+                  MediaHero(
+                    posterUrl: series.posterUrl,
+                    title: series.title,
+                    subtitle: (series.year ?? 0) > 0 ? '$series.year' : null,
+                    height: 240,
+                  ),
+                  if (resumeTarget != null)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                      child: FocusableAction(
+                        autofocus: true,
+                        variant: FocusableActionVariant.button,
+                        onFocusChange: (focused) => _ctaFocused = focused,
+                        onSelect: () => _playEpisode(resumeTarget),
+                        borderRadius: 8,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 14,
+                          ),
+                          decoration: BoxDecoration(
+                            color: MediarrColors.accentPrimary,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.play_arrow,
+                                  size: 32, color: Colors.white),
+                              const SizedBox(width: 10),
+                              Text(
+                                _resumeLabel(series, resumeTarget),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  MetadataSection(
+                    synopsis: series.overview,
+                    network: series.network,
+                  ),
+                  if (series.seasons.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      child: FileInfoCard(sizeBytes: series.sizeOnDisk),
+                    ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    child: ActionBar(
+                      actions: actions,
+                      firstActionFocusNode: _firstActionFocusNode,
+                    ),
+                  ),
+                ],
               ),
             ),
-            MediaHero(
-              posterUrl: series.posterUrl,
-              title: series.title,
-              subtitle: series.year?.toString(),
-            ),
-            MetadataSection(synopsis: series.overview, network: series.network),
-            if (series.seasons.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                child: FileInfoCard(sizeBytes: series.sizeOnDisk),
-              ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          ),
+        ),
+        // ---- Right: seasons + episodes, visible immediately ----
+        Expanded(
+          flex: 6,
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(8, 16, 16, 16),
               child: EpisodeList(
                 key: _episodeListKey,
                 data: _buildEpisodeData(series),
-                // FR-2: play is unconditional here. The list routes Select to
-                // search when the episode has no file, so a missing episode is
-                // no longer a silent no-op.
+                selectedSeasonNumber: resumeSeason,
                 onPlayEpisode: _playEpisode,
                 onSearchEpisode: _searchEpisode,
                 onExitDown: () => _firstActionFocusNode.requestFocus(),
               ),
             ),
-            // FR-2: the series controls sort after the episode rows, so Down
-            // walks the episodes first and reaches these only at the end.
-            FocusTraversalOrder(
-              order: const NumericFocusOrder(kPostEpisodeOrderBase),
-              child: ActionBar(
-                actions: actions,
-                firstActionFocusNode: _firstActionFocusNode,
-              ),
-            ),
-          ],
+          ),
         ),
-      ),
+      ],
     );
   }
 

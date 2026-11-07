@@ -474,7 +474,11 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
               ),
 
             if (playbackState.status == PlaybackStatus.error)
-              _ErrorOverlay(error: playbackState.error ?? 'Playback error'),
+              _ErrorOverlay(
+                error: playbackState.error ?? 'Playback error',
+                onRetry: _playCurrentItem,
+                onBack: _exitPlayback,
+              ),
 
             // Transport overlay: hidden by default after 4s; Back/Select wake.
             if (playbackState.overlayVisible &&
@@ -665,30 +669,119 @@ class _UpNextCard extends StatelessWidget {
 }
 
 class _ErrorOverlay extends StatelessWidget {
-  const _ErrorOverlay({required this.error});
+  const _ErrorOverlay({required this.error, this.onRetry, this.onBack});
+
   final String error;
+  final VoidCallback? onRetry;
+  final VoidCallback? onBack;
 
   @override
   Widget build(BuildContext context) {
+    // Owner defect 2026-11-07: the error was a dead end — a raw URL in 13 px
+    // text and no action. A TV viewer must always be able to retry or go back
+    // without touching another device.
+    final technical = error;
     return ColoredBox(
       color: Colors.black,
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.error, color: MediarrColors.statusError, size: 48),
-            const SizedBox(height: 12),
-            Text(
-              'Playback error',
-              style: const TextStyle(color: Colors.white, fontSize: 18),
+            const Icon(Icons.error, color: MediarrColors.statusError, size: 64),
+            const SizedBox(height: 16),
+            const Text(
+              "Couldn't play this video",
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 28,
+                fontWeight: FontWeight.w600,
+              ),
             ),
-            const SizedBox(height: 8),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 48),
+            const SizedBox(height: 10),
+            const Text(
+              'The server or the file may be unavailable.',
+              style: TextStyle(color: Colors.white70, fontSize: 20),
+            ),
+            const SizedBox(height: 28),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (onRetry != null)
+                  FocusableAction(
+                    autofocus: true,
+                    variant: FocusableActionVariant.button,
+                    onSelect: onRetry,
+                    borderRadius: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 28,
+                        vertical: 14,
+                      ),
+                      decoration: BoxDecoration(
+                        color: MediarrColors.accentPrimary,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.refresh, size: 28, color: Colors.white),
+                          SizedBox(width: 10),
+                          Text(
+                            'Retry',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 22,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                if (onRetry != null && onBack != null) const SizedBox(width: 16),
+                if (onBack != null)
+                  FocusableAction(
+                    variant: FocusableActionVariant.button,
+                    onSelect: onBack,
+                    borderRadius: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 28,
+                        vertical: 14,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white12,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.white38),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.arrow_back, size: 28, color: Colors.white),
+                          SizedBox(width: 10),
+                          Text(
+                            'Back',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 22,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: 900,
               child: Text(
-                error,
+                technical,
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.white70, fontSize: 13),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: Colors.white38, fontSize: 14),
               ),
             ),
           ],

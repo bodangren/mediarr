@@ -195,12 +195,13 @@ class PlaybackService extends StateNotifier<PlaybackState> {
     );
 
     try {
-      await _player.open(streamUrl);
+      // FR-7: resume must be applied by the player's load path. Opening and
+      // then seeking loses the seek, because mpv resets the position when the
+      // file finishes loading (device-measured 2026-11-07: a 10:00 resume
+      // restarted from the 0:00 opening card).
+      await _player.open(streamUrl, startAt: startPosition);
       await _subtitleRenderer.setFontSize(defaultSubtitleFontSize);
       await _player.attachExternalSubtitles(externalSubtitles);
-      if (startPosition > Duration.zero) {
-        await _player.seek(startPosition);
-      }
       _startProgressReporting();
       _startOverlayTimer();
     } catch (e) {
@@ -440,6 +441,10 @@ class PlaybackService extends StateNotifier<PlaybackState> {
     final id = state.mediaId;
     final type = state.mediaType;
     if (id == null || type == null) return;
+    // Never write progress while the stream is still opening: the position is
+    // not real yet, and writing it would clobber the stored resume point (this
+    // is how a failed resume turned a 10:00 bookmark into 0:32 on 2026-11-07).
+    if (state.status == PlaybackStatus.loading) return;
     if (state.position == Duration.zero && state.duration == Duration.zero) {
       return;
     }

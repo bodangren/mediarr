@@ -131,6 +131,81 @@ void main() {
     });
   });
 
+  group('PlaybackService — resume (owner defect 2026-11-07)', () {
+    late FakeMediaPlayer player;
+    late FakeSubtitleRenderer renderer;
+    late PlaybackService service;
+
+    setUp(() {
+      player = FakeMediaPlayer();
+      renderer = FakeSubtitleRenderer();
+      service = PlaybackService(
+        MediarrApiClient(),
+        player: player,
+        subtitleRenderer: renderer,
+      );
+    });
+
+    tearDown(() async {
+      await service.stop();
+      await player.dispose();
+    });
+
+    test('resume position is applied through open(), not a post-open seek', () async {
+      await service.play(
+        streamUrl: 'http://example.com/ep.mkv',
+        title: 'Episode',
+        mediaId: 959,
+        mediaType: 'episode',
+        resumeFrom: const Duration(seconds: 600),
+      );
+
+      // The player load path owns the start position. A seek after open() is
+      // discarded by mpv when the file finishes loading, which restarted every
+      // resume at 0:00 on the TV (measured 2026-11-07).
+      expect(player.openStartCalls, [const Duration(seconds: 600)]);
+      expect(player.seekCalls, isEmpty,
+          reason: 'A post-open seek is the defect: it is reset to 0 when the '
+              'file loads.');
+    });
+
+    test('a zero resume plays from the start without a start offset', () async {
+      await service.play(
+        streamUrl: 'http://example.com/ep.mkv',
+        title: 'Episode',
+        mediaId: 959,
+        mediaType: 'episode',
+      );
+
+      expect(player.openStartCalls, [Duration.zero]);
+      expect(player.seekCalls, isEmpty);
+    });
+
+    test('no progress is reported while the stream is still opening', () async {
+      final reports = <int>[];
+      service = PlaybackService(
+        _RecordingApiClient(reports),
+        player: player,
+        subtitleRenderer: renderer,
+      );
+
+      await service.play(
+        streamUrl: 'http://example.com/ep.mkv',
+        title: 'Episode',
+        mediaId: 959,
+        mediaType: 'episode',
+        resumeFrom: const Duration(seconds: 600),
+      );
+
+      // status == loading; position is the optimistic resume value. Writing it
+      // would be harmless, but writing a *zero* position here is what corrupted
+      // the stored bookmark (846 s -> 32 s on the device).
+      await service.stop();
+      expect(reports, isEmpty,
+          reason: 'Progress must not be written from the loading state.');
+    });
+  });
+
   group('PlaybackService — default track selection (FR-6)', () {
     late FakeMediaPlayer player;
     late FakeSubtitleRenderer renderer;
@@ -504,4 +579,21 @@ void main() {
       expect(subtitleNudgeSteps, contains(const Duration(milliseconds: 5000)));
     });
   });
+}
+
+/// Captures `reportPlaybackProgress` position values for resume assertions.
+class _RecordingApiClient extends MediarrApiClient {
+  _RecordingApiClient(this.reports);
+
+  final List<int> reports;
+
+  @override
+  Future<void> reportPlaybackProgress({
+    required int mediaId,
+    required String type,
+    required int positionSeconds,
+    required int durationSeconds,
+  }) async {
+    reports.add(positionSeconds);
+  }
 }

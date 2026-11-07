@@ -416,51 +416,66 @@ void main() {
     );
 
     testWidgets(
-      'per-episode search action lives inside the shared EpisodeList and '
-      'triggers a searchReleases call for that episode',
+      'Select on an episode without a file searches for it (no per-row '
+      'magnifier)',
       (tester) async {
-        // Use the one-episode fixture so the search action is unambiguous.
-        fakeClient.getSeriesByIdReturn = oneEpisodeSeries();
-        fakeClient.getSeriesDetailReturn = oneEpisodeSeries();
-        await pumpDetail(tester, series: oneEpisodeSeries());
-
-        // The per-episode search affordance must live inside the shared
-        // EpisodeList widget (Phase 2 contract) and use Icons.search — NOT
-        // the current screen's Icons.subtitles (subtitle search) or
-        // Icons.upgrade (quality upgrade) modal-sheet pattern.
-        final searchIcon = find.descendant(
-          of: find.byType(EpisodeList),
-          matching: find.byIcon(Icons.search),
+        // Owner contract 2026-11-07: the row is the single action. A missing
+        // episode searches when selected; the unexplained per-row magnifier
+        // that Right used to reach was removed.
+        final noFileSeries = Series(
+          id: 77,
+          title: 'Missing Show',
+          seasons: [
+            Season(
+              id: 771,
+              seasonNumber: 1,
+              episodeCount: 1,
+              episodeFileCount: 0,
+              episodes: const [
+                Episode(
+                  id: 7701,
+                  seasonNumber: 1,
+                  episodeNumber: 1,
+                  title: 'Not Downloaded',
+                  hasFile: false,
+                  monitored: true,
+                ),
+              ],
+            ),
+          ],
         );
+        fakeClient.getSeriesByIdReturn = noFileSeries;
+        fakeClient.getSeriesDetailReturn = noFileSeries;
+        await pumpDetail(tester, series: noFileSeries);
+
+        // The missing row keeps a muted search affordance, but it is not a
+        // traversal stop.
         expect(
-          searchIcon,
+          find.descendant(
+            of: find.byType(EpisodeList),
+            matching: find.byIcon(Icons.search),
+          ),
           findsWidgets,
-          reason:
-              'Per-episode search action must live inside the shared '
-              'EpisodeList widget and use Icons.search (NOT the in-sheet '
-              'Icons.subtitles / Icons.upgrade modal pattern).',
+          reason: 'A missing row keeps a search affordance hint.',
         );
 
-        // Tap the per-episode search icon — searchReleases is called.
-        await tester.tap(searchIcon.first);
+        // Select on the missing row triggers the episode search.
+        await tester.tap(find.text('Not Downloaded'));
         await tester.pumpAndSettle();
 
         expect(
           fakeClient.searchReleasesCalls,
           isNotEmpty,
           reason:
-              'Tapping the per-episode search action must trigger a '
-              'searchReleases call on the API client.',
+              'Selecting an episode without a file must trigger a '
+              'searchReleases call.',
         );
-        // The first searchReleases call's type should be 'episode' (NOT
-        // 'series' — that is the series-level Search All Missing contract).
         expect(
           fakeClient.searchReleasesCalls.first.type,
           'episode',
           reason:
-              'Per-episode search must call searchReleases with '
-              'type=episode to distinguish it from the series-level '
-              'Search All Missing (type=series).',
+              'Per-episode search must call searchReleases with type=episode '
+              'to distinguish it from the series-level Search All Missing.',
         );
       },
     );

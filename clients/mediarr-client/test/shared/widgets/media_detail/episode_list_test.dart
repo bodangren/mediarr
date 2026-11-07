@@ -66,6 +66,87 @@ void main() {
   );
 
   group('EpisodeList', () {
+    testWidgets(
+        'opens on the first season that has a file, not an empty specials '
+        'season', (tester) async {
+      // Owner defect 2026-11-07: Murderbot's S0 has one missing special, and
+      // the list opened there, so Select did nothing visible. The default
+      // season is the first one a viewer can actually watch.
+      await tester.pumpWidget(
+        buildTestApp(
+          child: EpisodeList(
+            data: const EpisodeListSeason(
+              seasons: [
+                EpisodeListSeasonData(
+                  seasonNumber: 0,
+                  totalCount: 1,
+                  onDiskCount: 0,
+                  episodes: [
+                    EpisodeListItem(
+                      id: 900,
+                      episodeNumber: 1,
+                      title: 'Unmasked',
+                      hasFile: false,
+                    ),
+                  ],
+                ),
+                EpisodeListSeasonData(
+                  seasonNumber: 1,
+                  totalCount: 2,
+                  onDiskCount: 2,
+                  episodes: [
+                    EpisodeListItem(
+                      id: 901,
+                      episodeNumber: 1,
+                      title: 'FreeCommerce',
+                      hasFile: true,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            onPlayEpisode: (_) {},
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('FreeCommerce'), findsOneWidget,
+          reason: 'The season with the file must be the one shown first.');
+      expect(find.text('Unmasked'), findsNothing);
+    });
+
+    testWidgets('falls back to the first season when nothing has a file', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildTestApp(
+          child: const EpisodeList(
+            data: EpisodeListSeason(
+              seasons: [
+                EpisodeListSeasonData(
+                  seasonNumber: 1,
+                  totalCount: 1,
+                  onDiskCount: 0,
+                  episodes: [
+                    EpisodeListItem(
+                      id: 1,
+                      episodeNumber: 1,
+                      title: 'Only Episode',
+                      hasFile: false,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Only Episode'), findsOneWidget);
+    });
+
     testWidgets('renders a season chip per season', (tester) async {
       await tester.pumpWidget(
         buildTestApp(child: EpisodeList(data: twoSeasons())),
@@ -130,7 +211,7 @@ void main() {
       expect(find.text('Pilot'), findsNothing);
     });
 
-    testWidgets('renders per-episode action icons and fires callbacks on tap', (
+    testWidgets('rows play on tap and expose no per-row search stop', (
       tester,
     ) async {
       var playTaps = <int>[];
@@ -167,19 +248,19 @@ void main() {
       // Episode row is present.
       expect(find.text('Pilot'), findsOneWidget);
 
-      // Per-episode Play and Search icons are present.
+      // The row is a single focus stop with a play affordance. The per-row
+      // magnifier was removed on 2026-11-07: the owner reached it by pressing
+      // Right on an episode and had no idea what it did.
       expect(find.byIcon(Icons.play_arrow), findsWidgets);
-      expect(find.byIcon(Icons.search), findsWidgets);
+      expect(find.byIcon(Icons.search), findsNothing,
+          reason: 'A playable episode must not offer an unexplained per-row '
+              'search control.');
 
-      // Tap the first Play icon in the row.
-      await tester.tap(find.byIcon(Icons.play_arrow).first);
+      // Tapping the row is what plays the episode.
+      await tester.tap(find.text('Pilot'));
       await tester.pumpAndSettle();
       expect(playTaps, [101]);
-
-      // Tap the first Search icon in the row.
-      await tester.tap(find.byIcon(Icons.search).first);
-      await tester.pumpAndSettle();
-      expect(searchTaps, [101]);
+      expect(searchTaps, isEmpty);
     });
 
     testWidgets('shows an empty state when there are no seasons', (

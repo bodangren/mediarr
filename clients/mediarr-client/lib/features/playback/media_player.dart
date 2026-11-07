@@ -87,7 +87,12 @@ enum MediaPlayerStatus { idle, opening, buffering, playing, paused, completed }
 ///      rest is irrelevant to the playback flow.
 abstract class MediaPlayer {
   /// Open [streamUrl] and start loading the media.
-  Future<void> open(String streamUrl);
+  ///
+  /// [startAt] is the position playback must begin from (resume). It is
+  /// applied **by the player's load path**, not by a follow-up seek: mpv
+  /// discards a `seek` issued before the file finishes loading, which is
+  /// exactly the bug that made every resume restart at 0:00.
+  Future<void> open(String streamUrl, {Duration startAt = Duration.zero});
 
   /// Toggle play / pause.
   Future<void> playOrPause();
@@ -224,11 +229,20 @@ class MediaKitMediaPlayer implements MediaPlayer {
   }
 
   @override
-  Future<void> open(String streamUrl) async {
+  Future<void> open(String streamUrl, {Duration startAt = Duration.zero}) async {
     _externalSubtitles.clear();
     _nativeTracks = const MediaTrackLists();
     _selectedExternalTrackId = null;
-    await _player.open(Media(streamUrl));
+    // `Media.start` is applied by media_kit inside mpv's `on_load` hook, i.e.
+    // before the file starts playing. A `seek()` after `open()` returns is
+    // issued too early and is reset to 0 when loading completes (resume
+    // restart bug, 2026-11-07).
+    await _player.open(
+      Media(
+        streamUrl,
+        start: startAt > Duration.zero ? startAt : null,
+      ),
+    );
     if (!_statusController.isClosed) {
       _statusController.add(MediaPlayerStatus.opening);
     }

@@ -86,16 +86,23 @@ class ActionBar extends StatelessWidget {
                         ),
                         const SizedBox(width: 8),
                       ],
-                      Text(
-                        actions[i].label,
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w600,
-                          color: actions[i].isDestructive
-                              ? MediarrColors.statusError
-                              : actions[i].isPrimary
-                              ? Colors.white
-                              : MediarrColors.textPrimary,
+                      // Flexible + ellipsis: the series detail puts this bar
+                      // in a narrow left pane, and an unbounded Text overflowed
+                      // the button by a few pixels (Flutter test, 2026-11-07).
+                      Flexible(
+                        child: Text(
+                          actions[i].label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w600,
+                            color: actions[i].isDestructive
+                                ? MediarrColors.statusError
+                                : actions[i].isPrimary
+                                    ? Colors.white
+                                    : MediarrColors.textPrimary,
+                          ),
                         ),
                       ),
                     ],

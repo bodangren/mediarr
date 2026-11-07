@@ -18,6 +18,7 @@ import 'package:mediarr_client/shared/models/episode.dart';
 import 'package:mediarr_client/shared/models/season.dart';
 import 'package:mediarr_client/shared/models/series.dart';
 import 'package:mediarr_client/shared/services/api_client.dart';
+import 'package:mediarr_client/shared/widgets/media_detail/episode_list.dart';
 
 import '../../support/fakes/fake_api_client.dart';
 import '../../support/focus_probe.dart';
@@ -77,9 +78,18 @@ Future<void> _pump(WidgetTester tester, Series series) async {
   await tester.pumpAndSettle();
 }
 
-/// Global rect of the [SingleChildScrollView] viewport.
+/// Global rect of the scroll viewport that holds the episode list.
+///
+/// The detail screen is two-pane (2026-11-07), so there is more than one
+/// `SingleChildScrollView`; the episode walk belongs to the one enclosing the
+/// [EpisodeList].
 Rect _viewportRect(WidgetTester tester) {
-  final box = tester.renderObject<RenderBox>(find.byType(SingleChildScrollView));
+  final box = tester.renderObject<RenderBox>(
+    find.ancestor(
+      of: find.byType(EpisodeList),
+      matching: find.byType(SingleChildScrollView),
+    ),
+  );
   return box.localToGlobal(Offset.zero) & box.size;
 }
 

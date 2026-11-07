@@ -22,6 +22,9 @@ class FakeMediaPlayer implements MediaPlayer {
       StreamController<String>.broadcast();
 
   final List<String> openCalls = [];
+
+  /// The `startAt` passed with each [open] call (resume position).
+  final List<Duration> openStartCalls = [];
   final List<String> setAudioTrackCalls = [];
   final List<String?> setSubtitleTrackCalls = [];
   final List<List<ExternalSubtitleSource>> attachExternalSubtitlesCalls = [];
@@ -34,8 +37,9 @@ class FakeMediaPlayer implements MediaPlayer {
   bool throwOnOpen = false;
 
   @override
-  Future<void> open(String streamUrl) async {
+  Future<void> open(String streamUrl, {Duration startAt = Duration.zero}) async {
     openCalls.add(streamUrl);
+    openStartCalls.add(startAt);
     if (throwOnOpen) throw StateError('open failed');
   }
 

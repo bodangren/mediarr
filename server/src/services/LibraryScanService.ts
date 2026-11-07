@@ -79,6 +79,32 @@ async function walkDir(dir: string): Promise<string[]> {
 const MAX_MISSING_RATIO = 0.5;
 const MIN_ROWS_FOR_RATIO_GUARD = 10;
 
+/**
+ * Concurrency for filesystem existence probes.
+ *
+ * The probes run against a USB drive; serially they dominated the scan (883 s
+ * for ~3,000 paths on 2026-11-08). A small pool keeps the drive busy without
+ * queueing hundreds of outstanding ioctls.
+ */
+const PROBE_CONCURRENCY = 16;
+
+async function mapWithConcurrency<T, R>(
+  items: readonly T[],
+  concurrency: number,
+  fn: (item: T) => Promise<R>,
+): Promise<R[]> {
+  const results = new Array<R>(items.length);
+  let next = 0;
+  const workers = Array.from({ length: Math.min(concurrency, items.length) }, async () => {
+    while (next < items.length) {
+      const index = next++;
+      results[index] = await fn(items[index]!);
+    }
+  });
+  await Promise.all(workers);
+  return results;
+}
+
 export class LibraryScanService {
   constructor(private readonly prisma: DatabaseClient) {}
 
@@ -95,6 +121,7 @@ export class LibraryScanService {
 
   async scanAll(settings: { movieRootFolder: string; tvRootFolder: string }): Promise<ScanSummary> {
     const start = Date.now();
+    this.directoryCache = new Map();
     let moviesAdded = 0;
     let moviesMissing = 0;
     let tvEpisodesAdded = 0;
@@ -117,6 +144,12 @@ export class LibraryScanService {
       tvEpisodesUnregistered = r.unregistered;
     }
 
+    console.log(
+      `Library scan finished in ${Date.now() - start} ms: movies +${moviesAdded} -${moviesMissing}, `
+      + `episodes +${tvEpisodesAdded} -${tvEpisodesMissing}, unregistered files ${tvEpisodesUnregistered}, `
+      + `subtitles seen ${subtitleFilesDetected}.`,
+    );
+
     return {
       moviesAdded,
       moviesMissing,
@@ -126,6 +159,32 @@ export class LibraryScanService {
       durationMs: Date.now() - start,
       tvEpisodesUnregistered,
     };
+  }
+
+  /**
+   * Directory listing cache for one scan pass.
+   *
+   * `ensureSidecarSubtitleTracks` needs the directory of every episode, and a
+   * season folder holds ~24 episodes — without this cache the scan read the same
+   * directory ~24 times (thousands of readdirs on a USB drive, the bulk of the
+   * 883 s runtime measured on 2026-11-08).
+   */
+  private directoryCache = new Map<string, Promise<string[]>>();
+
+  private async readDirectoryCached(directory: string): Promise<string[]> {
+    const cached = this.directoryCache.get(directory);
+    if (cached) return cached;
+    const pending = (async () => {
+      try {
+        const rawEntries = await fs.readdir(directory);
+        return (rawEntries as Array<string | { name: string }>).map(entry =>
+          typeof entry === 'string' ? entry : entry.name);
+      } catch {
+        return [];
+      }
+    })();
+    this.directoryCache.set(directory, pending);
+    return pending;
   }
 
   private async scanMovies(rootPath: string): Promise<{ added: number; missing: number; subtitles: number }> {
@@ -152,10 +211,8 @@ export class LibraryScanService {
     // Check DB records against disk, but never unlink a whole library because
     // the mount went away.
     const linkedMovies = movies.filter(movie => movie.path);
-    let missingProbe = 0;
-    for (const movie of linkedMovies) {
-      if (!await this.pathExists(movie.path!)) missingProbe += 1;
-    }
+    const movieExists = await this.probePaths(linkedMovies.map(movie => movie.path!));
+    const missingProbe = movieExists.filter(exists => !exists).length;
     const guardTripped = linkedMovies.length >= MIN_ROWS_FOR_RATIO_GUARD
       && missingProbe / linkedMovies.length > MAX_MISSING_RATIO;
     if (guardTripped) {
@@ -165,9 +222,12 @@ export class LibraryScanService {
       );
     }
 
+    const movieExistsByPath = new Map<string, boolean>();
+    linkedMovies.forEach((movie, index) => { movieExistsByPath.set(movie.path!, movieExists[index]!); });
+
     for (const movie of movies) {
       if (!movie.path) continue;
-      const exists = await this.pathExists(movie.path);
+      const exists = movieExistsByPath.get(movie.path) ?? await this.pathExists(movie.path);
       if (!exists) {
         if (guardTripped) continue;
         // Mark movie path as null (missing) only if it was previously set
@@ -224,10 +284,8 @@ export class LibraryScanService {
       await (this.prisma as any).episode.findMany({ select: { id: true, path: true } });
 
     const linkedEpisodes = episodes.filter(ep => ep.path);
-    let missingEpisodeProbe = 0;
-    for (const ep of linkedEpisodes) {
-      if (!await this.pathExists(ep.path!)) missingEpisodeProbe += 1;
-    }
+    const episodeExists = await this.probePaths(linkedEpisodes.map(ep => ep.path!));
+    const missingEpisodeProbe = episodeExists.filter(exists => !exists).length;
     const episodeGuardTripped = linkedEpisodes.length >= MIN_ROWS_FOR_RATIO_GUARD
       && missingEpisodeProbe / linkedEpisodes.length > MAX_MISSING_RATIO;
     if (episodeGuardTripped) {
@@ -237,9 +295,12 @@ export class LibraryScanService {
       );
     }
 
+    const episodeExistsByPath = new Map<string, boolean>();
+    linkedEpisodes.forEach((ep, index) => { episodeExistsByPath.set(ep.path!, episodeExists[index]!); });
+
     for (const ep of episodes) {
       if (!ep.path) continue;
-      const exists = await this.pathExists(ep.path);
+      const exists = episodeExistsByPath.get(ep.path) ?? await this.pathExists(ep.path);
       if (!exists) {
         if (episodeGuardTripped) continue;
         await (this.prisma as any).episode.update({ where: { id: ep.id }, data: { path: null } });
@@ -324,15 +385,9 @@ export class LibraryScanService {
     const directory = path.dirname(videoPath);
     const videoBaseName = path.basename(videoPath, path.extname(videoPath));
 
-    let entries: string[];
-    try {
-      const rawEntries = await fs.readdir(directory);
-      // Tolerate Dirent-shaped entries (test mocks) as well as plain names.
-      entries = (rawEntries as Array<string | { name: string }>).map(entry =>
-        typeof entry === 'string' ? entry : entry.name);
-    } catch {
-      return;
-    }
+    // Tolerate Dirent-shaped entries (test mocks) as well as plain names.
+    const entries = await this.readDirectoryCached(directory);
+    if (entries.length === 0) return;
 
     const escapedBase = videoBaseName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const sidecarNamePattern = new RegExp(`^${escapedBase}(?:[._\\- ].+)?$`, 'i');
@@ -411,6 +466,11 @@ export class LibraryScanService {
     }
 
     return { languageCode, isForced, isHi };
+  }
+
+  /** Probes many paths with bounded concurrency. */
+  private async probePaths(paths: readonly string[]): Promise<boolean[]> {
+    return mapWithConcurrency(paths, PROBE_CONCURRENCY, candidate => this.pathExists(candidate));
   }
 
   private async pathExists(filePath: string): Promise<boolean> {

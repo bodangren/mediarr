@@ -31,6 +31,7 @@ describe('LibraryFolderImportService', () => {
     return {
       series: { findMany: vi.fn().mockResolvedValue(series) },
       movie: { findMany: vi.fn().mockResolvedValue(movies) },
+      episode: { findMany: vi.fn().mockResolvedValue([]) },
       qualityProfile: { findFirst: vi.fn().mockResolvedValue({ id: 3 }) },
     } as any;
   }
@@ -171,5 +172,45 @@ describe('LibraryFolderImportService', () => {
     expect(folderTitle('For All Mankind (2019)')).toBe('For All Mankind');
     expect(folderTitle('The Brothers Grimm (2005)')).toBe('The Brothers Grimm');
     expect(seriesKey('The.Walking.Dead')).toBe(seriesKey('The Walking Dead'));
+  });
+  it('imports episodes added to a series the database already knows', async () => {
+    // The folder importer skips registered series, so new episodes inside an
+    // existing show were never catalogued (279 files on 2026-11-08).
+    const seriesFolder = path.join(root, 'The Sopranos');
+    await fs.mkdir(path.join(seriesFolder, 'Season 1'), { recursive: true });
+    await fs.writeFile(path.join(seriesFolder, 'Season 1', 'The Sopranos - S01E01 - Pilot.mkv'), 'x');
+    await fs.writeFile(path.join(seriesFolder, 'Season 1', 'The Sopranos - S01E02 - 46 Long.mkv'), 'x');
+
+    const prisma = {
+      series: {
+        findMany: vi.fn().mockResolvedValue([
+          { id: 7, tvdbId: 73329, title: 'The Sopranos', path: seriesFolder },
+        ]),
+      },
+      movie: { findMany: vi.fn().mockResolvedValue([]) },
+      episode: {
+        findMany: vi.fn().mockResolvedValue([
+          { path: path.join(seriesFolder, 'Season 1', 'The Sopranos - S01E01 - Pilot.mkv') },
+        ]),
+      },
+      qualityProfile: { findFirst: vi.fn().mockResolvedValue({ id: 3 }) },
+    } as any;
+
+    const importService = {
+      executeImport: vi.fn().mockResolvedValue({ imported: 1, failed: 0, errors: [] }),
+    };
+    const service = new LibraryFolderImportService(prisma, {} as any, {
+      scanner: { scan: vi.fn() } as any,
+      matchService: { searchByTitle: vi.fn() } as any,
+      importService: importService as any,
+    });
+
+    const stats = await service.run({ tvRootFolder: root });
+    expect(stats.imported).toBe(1);
+    const items = importService.executeImport.mock.calls[0]![0];
+    expect(items[0].matchId).toBe(73329);
+    // Only the unregistered file is imported; the known one is not re-sent.
+    expect(items[0].files).toHaveLength(1);
+    expect(items[0].files[0].path).toContain('S01E02');
   });
 });

@@ -6,6 +6,8 @@ import { ImportMatchService } from './ImportMatchService';
 import { BulkImportService } from './BulkImportService';
 import { Parser } from '../utils/Parser';
 
+const VIDEO_EXTENSIONS_FOR_IMPORT = new Set(['.mkv', '.mp4', '.avi', '.ts', '.m4v']);
+
 export interface FolderImportStats {
   foldersScanned: number;
   foldersSkipped: number;
@@ -129,6 +131,77 @@ export class LibraryFolderImportService {
     return profile?.id ?? null;
   }
 
+  /**
+   * Imports episode files that sit inside series the database already knows.
+   *
+   * The folder importer skips registered series, so episodes added to an
+   * existing show were never catalogued: on 2026-11-08 the scan counted 279 such
+   * files (The Sopranos 60, Archer 55, The Big Bang Theory 53, …) that the
+   * client could not see.
+   */
+  private async importMissingEpisodes(
+    tvRootFolder: string,
+    qualityProfileId: number,
+    stats: FolderImportStats,
+    scannedFolders: Set<string>,
+  ): Promise<void> {
+    const seriesRows = await (this.prisma as any).series.findMany({
+      select: { id: true, tvdbId: true, title: true, path: true },
+    }) as Array<{ id: number; tvdbId: number; title: string; path: string | null }>;
+    const episodeRows = await (this.prisma as any).episode.findMany({
+      select: { path: true },
+    }) as Array<{ path: string | null }>;
+    const knownPaths = new Set(episodeRows.map(row => row.path).filter((value): value is string => Boolean(value)));
+
+    for (const series of seriesRows) {
+      if (!series.path) continue;
+      // Only inspect folders under the TV root this run owns.
+      if (!series.path.startsWith(tvRootFolder)) continue;
+      if (scannedFolders.has(series.path)) continue;
+
+      let entries: string[] = [];
+      try {
+        entries = (await fs.readdir(series.path, { recursive: true, withFileTypes: true }))
+          .filter((entry: any) => entry.isFile() && !entry.isDirectory())
+          .map((entry: any) => path.join(entry.parentPath ?? entry.path ?? series.path!, entry.name));
+      } catch {
+        continue;
+      }
+
+      const missing = entries.filter(file =>
+        VIDEO_EXTENSIONS_FOR_IMPORT.has(path.extname(file).toLowerCase()) && !knownPaths.has(file));
+      if (missing.length === 0) continue;
+
+      const files = await Promise.all(missing.map(async file => ({
+        path: file,
+        size: 0,
+        extension: path.extname(file),
+        parsedInfo: (await Parser.parse(path.basename(file))) ?? undefined,
+      })));
+
+      try {
+        const result = await this.importService.executeImport([{
+          folderPath: series.path,
+          mediaType: 'series',
+          matchId: series.tvdbId,
+          files,
+          renameFiles: false,
+          rootFolderPath: tvRootFolder,
+          qualityProfileId,
+        } as any]);
+        stats.imported += result.imported;
+        stats.failed += result.failed;
+        stats.errors.push(...result.errors);
+      } catch (error) {
+        stats.failed += 1;
+        stats.errors.push({
+          folderPath: series.path,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+  }
+
   async run(options: {
     movieRootFolder?: string;
     tvRootFolder?: string;
@@ -220,6 +293,11 @@ export class LibraryFolderImportService {
         stats.failed += result.failed;
         stats.errors.push(...result.errors);
       }
+    }
+
+    if (options.tvRootFolder && !options.dryRun) {
+      const knownFolders = new Set<string>();
+      await this.importMissingEpisodes(options.tvRootFolder, qualityProfileId, stats, knownFolders);
     }
 
     return stats;

@@ -215,3 +215,24 @@ committed wrapper stays 8.14.3.
 
 **Verified 2026-11-07:** silent v2→v4 in 33 s; in-app v4→v5 through the system installer ending at
 1.0.4/code 5; evidence in the track's `evidence/` folder.
+
+## 6. Harness components owned by this repository
+
+The DeepSeek Harness is **part of the system**, not an external helper: it runs the scheduled
+automation, the client-error triage loop, and the Measure guards. Two pieces are versioned here:
+
+| Component | Repo path | Runtime path | Notes |
+|---|---|---|---|
+| Measure guard plugin (`dsh-measure-guard`) | `automation/dsh-plugins/dsh-measure-guard/` | `~/.dsh/profiles/web/plugins/dsh-measure-guard` | Enforces plan state, edit/closeout/turn guards and the `measure_status` tool. Edit in the repo, then `rsync` to the profile and reload (see `automation/dsh-plugins/README.md`). |
+| Pi Measure harness (port experiment) | `automation/pi-measure-harness/` | — | Pi 0.80.6 port of the OpenCode orchestration setup (role snapshots, mutation policy, receipts). Retained as reference; **not** on the runtime path — DSH scheduled tasks and plugins are the live orchestration layer. |
+
+## 7. Script vs agent: where each belongs
+
+Owner correction, 2026-11-08: *"minimise scripts where LLMs can be more flexible."*
+
+- **Agent turns (DSH + tools/browser bridge):** anything requiring judgement — which release to
+  grab, whether a page changed, which subtitle is the right match, diagnosing a failed run.
+- **Deterministic code:** stable APIs, maintained CLIs (`yt-dlp`, `ffmpeg`, `beets`), and
+  bookkeeping (ledger, receipts, retention arithmetic, quarantine manifests).
+- A brittle script that scrapes a rendered UI is a defect, not an asset: replace it with an agent
+  run and delete the script. Keep scripts small, pure I/O, and loud on failure.

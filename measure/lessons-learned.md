@@ -51,3 +51,21 @@
 - (2026-07-03, chore_app_pre_existing_failures_20260630) **Umbrella cleanup tracks with >100 failures should be split after initial cataloging.** Fixing typecheck errors and the most obvious runtime guards first quickly narrows the failure surface; the remaining failures then cluster by root cause (modal wiring, API drift, validation UI, view props). Smaller tracks are easier to validate and less likely to time out during full-suite runs.
 - (2026-06-29, scheduler_persistence_missed_task_recovery) **Scheduler durability pattern:** keep Scheduler DB-agnostic with injected AppSettings-backed state; persist nextRun on schedule/reschedule/execute, clear on stop, and call `start()` after registration for one missed run per task. Health endpoints expose live state additively.
 - (2026-06-20, release_v1_cut_20260607) **Release-Cut Retrospective:** The open-ended testing tail cost ~2 weeks of continuous corner-case testing across 12+ subsystems; while the suite found 7 bugs, the diminishing-returns churn delayed the highest user-facing value tracks (Scheduler dashboard, Flutter media detail). The value-first reordering — cutting remaining untested services to post-v1.0 and shipping the scheduler + Flutter detail as v1.0 gate features — recovered delivery momentum. For future cuts: ship value over coverage, draw a hard line at the stated scope, and defer exhaustive testing to post-release.
+
+## 2026-11-08 — Few scripts, more judgement; the harness is part of the product
+
+The owner corrected two long-standing habits in one turn:
+
+1. **Scripts are a liability when the step needs judgement.** The inherited automation was a stack
+   of DOM scrapers and regex over rendered pages; they broke silently and needed constant repair.
+   Rule: if a step involves judgement (what to download, which subtitle matches, whether a page
+   changed, why a run failed) it belongs in an agent turn with tools. A script is justified only
+   for stable APIs, maintained CLIs (`yt-dlp`, `ffmpeg`, `beets`) and bookkeeping (ledger, receipts,
+   retention math, quarantine manifests). When an agent run replaces a script, delete the script.
+2. **The DSH harness is an integrated part of the system**, not an external tool: scheduled tasks,
+   the client-error triage loop and the Measure guard all run on it. Its plugin is therefore
+   versioned in this repository (`automation/dsh-plugins/dsh-measure-guard/`) with the profile copy
+   as a deployed instance. Same rule as the server and client: owned, versioned, evolved.
+
+Also recorded: untracked work is *not* someone else's — every file in the tree is owned here, so
+leave nothing untracked (commit it or delete it) and never assume another session will finish it.

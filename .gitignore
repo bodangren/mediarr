@@ -84,3 +84,11 @@ measure/runs
 
 *.db-shm
 *.db-wal
+
+# Mediarr runtime state and live data (never commit the DB or harness session state)
+mediarr.db
+mediarr.db-*
+*.db.bak-*
+.opencode/goals/state.json.lock
+.opencode/goals/state.json.sessions/
+.opencode/goals/*.migrated.*

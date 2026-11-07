@@ -1,5 +1,8 @@
 # Project Context
 
+> **System overview:** [`../SYSTEM.md`](../SYSTEM.md) — the harness, server and clients are one
+> system. Read it before planning work.
+
 ## Definition
 - [Product Definition](./product.md)
 - [Product Guidelines](./product-guidelines.md)

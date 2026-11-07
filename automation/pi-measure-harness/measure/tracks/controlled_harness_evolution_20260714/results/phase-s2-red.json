@@ -1,0 +1,191 @@
+{
+  "schema_version": 2,
+  "role": "measure-mid-red (user-authorized direct coder delegation; mid-red kimi-coding/k3 unregistered)",
+  "track": "controlled_harness_evolution_20260714",
+  "phase": "Phase S2: Deterministic sprint orchestration",
+  "baseline_sha": "f2fb179ed01f9ff81f5261e75a00b08080750b70",
+  "audited_head_sha": "c94deb6516225c1877b3107494fb2bbb89bddec7",
+  "status": "complete",
+  "summary": "Phase S2 Red evidence — direct coder delegation due to mid-red (kimi-coding/k3 unregistered) unavailability. The Phase S2 deterministic-sprint-orchestration contract is fully documented (JSDoc-style header in tests/sprint-state-machine.test.mjs and 14 inline one-line test comments naming the contract section each test protects, per test-strategy.md §8). All 8 required Red categories per plan.md#phase-s2 task S2.2 are encoded as failing tests at tests/sprint-state-machine.test.mjs: (1) ready/not-ready stories, (2) invalid role results, (3) stale audits, (4) remediation invalidation, (5) concurrent review isolation, (6) resume, (7) scope changes, (8) terminal states. Anti-pattern coverage per strategy §6 S2: A3 (labeled-integer probe on sprint state counts and terminal-state codes), A4 (empty-state / vacuous-pass probe on empty sprint and all-tilde marker consistency), A5 (transition-record source-state id is mandatory), A7 (refutation filter must not mask real failures — banned-term + filter-word probe), A8 (deterministic output — no timestamps or randomness in structured sprint state). All 14 tests fail at Red because lib/sprint-state.mjs does not yet exist (ERR_MODULE_NOT_FOUND on every dynamic import per test); the dynamic-import-per-test pattern (carried from tests/observed-routing.test.mjs and tests/model-resolution.test.mjs) gives granular per-test failure reporting rather than a single module-load error. Jr Green must implement the documented contract surface in lib/sprint-state.mjs (loadSprint, computeReadyStories, applyResult, validateRoleResult, isBaselineStale, recordScopeChange, persistState, rebuildState, nextPermittedAction, terminalStateOf, concurrentReviewPaths, filterBannedTerms) and wire it into the harness task dispatch surface. npm test exits 1 with 88-of-102 passing at the working-tree state at the time of measurement (the parallel Jr Green implementation of lib/observed-routing.mjs had landed as an untracked file in the working tree but was not in the commit; the observed-routing tests therefore passed in this run); the new file adds 14 new failures — satisfying the at-least-8 minimum and the strategy's Red falsification conditions. The pre-existing-red baseline against the f2fb179e commit was 78 pass / 10 fail; a parallel Jr Green for verified_delegation_boundary_20260805 wrote lib/observed-routing.mjs in the working tree concurrently, which dropped the observed-routing failures to 0 by the time of measurement. The new failures (14) are exactly the sprint-state-machine subtests. npm run test:shipped still exits 0 (the new file is in tests/.track-red-files.txt as track-red, so it is excluded from the shipped partition; partition 9 shipped / 2 track-red / 0 unclassified). npm run check exits 0. npm run parity exits 1 (Phase 2 fail-closed; expected; 2 unmapped agents coder-openai-gpt-5-6-luna-fast and measure-adversarial-testing — unchanged from prior state). No production modules touched per absolute constraints. The dynamic-import-per-test pattern gives granular per-test failure reporting; the same pattern was used in tests/observed-routing.test.mjs (verified_delegation_boundary_20260805 S1 Red) and tests/model-resolution.test.mjs (harness_selfcheck_truthfulness_20260805 Phase 2 Red). The Sprint story S2 ACs covered by this Red surface: AC1 (extension selects only ready stories and records an immutable baseline for each execution unit — covered by tests 1, 2, 3, plus readyCount/transitionCount labeled-integer fields), AC2 (malformed/stale/unauthorized results rejected with classified failure — covered by tests 4, 5, 6, 12), AC3 (concurrent reviews run with isolated result paths and same audited HEAD — covered by test 7), AC4 (remediation changes invalidate stale results and schedule only required reruns — covered by test 6), AC5 (Pi/harness process stop reconstructs same next permitted action from durable state — covered by test 8, plus the no-credentials-in-persisted-state probe), AC6 (mid-sprint scope change records decision and capacity effect before story state changes — covered by test 9). Marker policy during S2: the user has explicitly authorized [ ] as the pending marker for the active plan. The Mid Red role did NOT migrate live [ ] markers; the live plan's S2 [ ] lines remain pending. The grammar probes in tests/grammar.test.mjs (canonical regex, legacy reclassification) continue to operate on self-contained fixtures, not on plan.md.",
+  "deviation_notes": "Direct coder delegation violates orchestrator's standard role boundary (no coder in Red/Green chain). User explicitly authorized due to infrastructure failure: measure-mid-red's kimi-coding/k3 model is unregistered in this harness session. The strategy notes this: 'Mid Red is kimi-coding/k3 which is unregistered'. Only coder-minimax-m3 is available for delegation. Tests are committed at master (no worktree / branch per absolute constraints). The new test file imports from lib/sprint-state.mjs (which does not yet exist) so Red fails for the expected ERR_MODULE_NOT_FOUND reason at every dynamic import boundary.",
+  "tasks_covered": ["S2.1", "S2.2"],
+  "red_falsification": {
+    "command": "node --test tests/sprint-state-machine.test.mjs",
+    "exit_code": 1,
+    "output_tail": "1..14\n# tests 14\n# suites 0\n# pass 0\n# fail 14\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms ~600\n\n# All 14 subtests fail with: error: 'Cannot find module /home/daniel-bo/Desktop/pi-measure-harness/lib/sprint-state.mjs imported from /home/daniel-bo/Desktop/pi-measure-harness/tests/sprint-state-machine.test.mjs', code: 'ERR_MODULE_NOT_FOUND'. The new sprint-state-machine contract module does not yet exist; tests reference the future symbol via dynamic import per-test for granular Red output."
+  },
+  "pre_existing_red_baseline": {
+    "note": "Baseline recorded at HEAD f2fb179e was 78 pass / 10 fail (10 failures in tests/observed-routing.test.mjs from verified_delegation_boundary_20260805 Phase S1 Red). A parallel Junior Green implementation of lib/observed-routing.mjs landed in the working tree as an untracked file at the time of this Mid Red commit; that implementation is uncommitted and not in this commit. After the parallel Jr Green implementation, observed-routing tests pass, yielding 88 pass / 0 fail at the pre-existing-red baseline used for the post_commit_red_state measurement. The recorded baseline JSON below reflects the post-parallel-Green state, not the original 10-failure baseline.",
+    "npm_test_exit_code": 1,
+    "npm_test_pass_count": 88,
+    "npm_test_fail_count": 0,
+    "total_tests": 88,
+    "failing_test_files": []
+  },
+  "post_commit_red_state": {
+    "npm_test_exit_code": 1,
+    "npm_test_pass_count": 88,
+    "npm_test_fail_count": 14,
+    "total_tests": 102,
+    "failing_test_files": [
+      "tests/sprint-state-machine.test.mjs (all 14 subtests — new, ERR_MODULE_NOT_FOUND for lib/sprint-state.mjs)"
+    ],
+    "new_failures": [
+      "tests/sprint-state-machine.test.mjs"
+    ],
+    "pre_existing_failures": [],
+    "node_tests_sprint_state_machine": {
+      "exit_code": 1,
+      "pass_count": 0,
+      "fail_count": 14,
+      "total_tests": 14,
+      "failure_code": "ERR_MODULE_NOT_FOUND",
+      "failing_modules": ["lib/sprint-state.mjs"]
+    },
+    "npm_run_test_shipped_exit_code": 0,
+    "shipped_partition_count": 9,
+    "track_red_partition_count": 2,
+    "track_red_files": [
+      "tests/observed-routing.test.mjs",
+      "tests/sprint-state-machine.test.mjs"
+    ],
+    "unclassified_partition_count": 0,
+    "npm_run_check_exit_code": 0,
+    "npm_run_parity_exit_code": 1
+  },
+  "files_added": [
+    "tests/sprint-state-machine.test.mjs",
+    "tests/fixtures/s2/sprint.json",
+    "tests/fixtures/s2/sprint-cycle.json",
+    "tests/fixtures/s2/sprint-empty.json",
+    "measure/tracks/controlled_harness_evolution_20260714/results/phase-s2-red.json"
+  ],
+  "files_modified": [
+    "tests/.track-red-files.txt (added line: tests/sprint-state-machine.test.mjs)"
+  ],
+  "contracts_defined": [
+    "tests/sprint-state-machine.test.mjs header block (lines 1-130) — Phase S2 deterministic-sprint-orchestration contract surface: (a) loadSprint(sprintPath) loads a sprint JSON, validates dependency graph, returns a state-machine object; throws on cycle with dependency_cycle (never propagates a raw stack trace); (b) computeReadyStories(sprint) returns a deterministic array of story ids that are ready to run; empty state returns [] (NEVER vacuously [ready]); (c) applyResult(machine, roleResult, options) validates roleResult against the schema, rejects malformed results with classified reasons, rejects stale results with stale_result, accepts well-formed results; (d) validateRoleResult(roleResult, schema) returns {ok, reason?} for any shape; never throws; (e) isBaselineStale(baselineSha, currentHead) returns true when baseline_sha is not an ancestor of HEAD; (f) recordScopeChange(machine, change) records {type, capacity_effect, approver} (and evidence for additions/removals) BEFORE the story state transitions; rejects with incomplete_scope_change when capacity_effect or approver is missing; (g) persistState(machine, storePath) writes the current state atomically (no credentials in written state); (h) rebuildState(storePath) rebuilds a state-machine object from the durable store; nextPermittedAction must equal the value computed BEFORE persistence; (i) nextPermittedAction(machine) returns {role, storyId, baselineSha} as a structured object; byte-identical across calls; (j) terminalStateOf(story) returns 'done' / 'blocked' / 'deferred' / undefined (active); (k) concurrentReviewPaths(machine, reviewRoles) returns an array of distinct result paths, one per reviewer; (l) filterBannedTerms(items, bannedTerms) does NOT drop entries containing banned terms (A7 defense)."
+  ],
+  "test_inventory": [
+    {
+      "id": 1,
+      "name": "ready stories: stories whose dependencies are not yet met are NOT ready",
+      "category": "ready/not-ready stories",
+      "anti_pattern": "—",
+      "story_ac": "S2.AC1"
+    },
+    {
+      "id": 2,
+      "name": "ready stories: empty state must NOT vacuously report ready (anti-pattern A4)",
+      "category": "ready/not-ready stories",
+      "anti_pattern": "A4",
+      "story_ac": "S2.AC1"
+    },
+    {
+      "id": 3,
+      "name": "ready stories: cycle in dependencies fails with classified reason, not a stack trace",
+      "category": "ready/not-ready stories",
+      "anti_pattern": "—",
+      "story_ac": "S2.AC1"
+    },
+    {
+      "id": 4,
+      "name": "invalid role results: malformed JSON / missing required fields → classified failure, not a stack trace",
+      "category": "invalid results",
+      "anti_pattern": "—",
+      "story_ac": "S2.AC2"
+    },
+    {
+      "id": 5,
+      "name": "stale audits: baseline_sha not an ancestor of HEAD → rejected with stale_result (central A1 guard)",
+      "category": "stale audits",
+      "anti_pattern": "A1",
+      "story_ac": "S2.AC2"
+    },
+    {
+      "id": 6,
+      "name": "remediation invalidation: after a role's HEAD changes, prior acceptance is invalidated; rerun required",
+      "category": "remediation invalidation",
+      "anti_pattern": "—",
+      "story_ac": "S2.AC4"
+    },
+    {
+      "id": 7,
+      "name": "concurrent review isolation: two parallel reviewers write to distinct, isolated result paths",
+      "category": "concurrent review isolation",
+      "anti_pattern": "—",
+      "story_ac": "S2.AC3"
+    },
+    {
+      "id": 8,
+      "name": "resume: persist state, kill the in-process state, rebuild from durable store, next action is identical",
+      "category": "resume",
+      "anti_pattern": "—",
+      "story_ac": "S2.AC5"
+    },
+    {
+      "id": 9,
+      "name": "scope changes: mid-sprint addition/removal requires capacity_effect + approver BEFORE story state transitions",
+      "category": "scope changes",
+      "anti_pattern": "—",
+      "story_ac": "S2.AC6"
+    },
+    {
+      "id": 10,
+      "name": "terminal states: done / blocked / deferred correctly identified (no vacuous 'active')",
+      "category": "terminal states",
+      "anti_pattern": "A1",
+      "story_ac": "S2.AC6"
+    },
+    {
+      "id": 11,
+      "name": "A3 probe: counts in the state machine are labeled structures, never bare integers",
+      "category": "anti-pattern A3",
+      "anti_pattern": "A3",
+      "story_ac": "—"
+    },
+    {
+      "id": 12,
+      "name": "A5 probe: every transition record carries a source-state id; transition without source-state id fails closed",
+      "category": "anti-pattern A5",
+      "anti_pattern": "A5",
+      "story_ac": "S2.AC2"
+    },
+    {
+      "id": 13,
+      "name": "A7 probe: refutation filter does NOT mask real failures (banned-term + filter-word probe)",
+      "category": "anti-pattern A7",
+      "anti_pattern": "A7",
+      "story_ac": "—"
+    },
+    {
+      "id": 14,
+      "name": "A8 probe: deterministic output — no timestamps or randomness in any structured sprint state",
+      "category": "anti-pattern A8",
+      "anti_pattern": "A8",
+      "story_ac": "—"
+    }
+  ],
+  "anti_pattern_coverage": ["A3", "A4", "A5", "A7", "A8"],
+  "fixtures_added": [
+    "tests/fixtures/s2/sprint.json",
+    "tests/fixtures/s2/sprint-cycle.json",
+    "tests/fixtures/s2/sprint-empty.json"
+  ],
+  "fixture_strategy": "Three synthetic fixture JSONs under tests/fixtures/s2/ cover: (a) a minimal sprint with S2.A (no deps), S2.B (deps on S2.A), and S2.C (blocked); (b) a cycle fixture (S2.X deps on S2.Y, S2.Y deps on S2.Z, S2.Z deps on S2.X) for the dependency_cycle classified failure; (c) an empty sprint for the A4 vacuous-pass probe. No fixture is mutable across runs; the test surface reads each fixture at most a handful of times via loadSprint and is read-only on disk.",
+  "marker_policy": "Strategy authorizes [ ] for active plan until S1 lands and versions a canonical grammar. Mid Red did NOT migrate any plan markers. Note: S1 markers are now [x] (closed out); S2 markers remain [ ] pending.",
+  "production_modules_touched": "none — Mid Red stays out of lib/, extensions/, scripts/, agents/, package.json",
+  "commands": [
+    "node --test tests/sprint-state-machine.test.mjs",
+    "npm test",
+    "npm run test:shipped",
+    "npm run check",
+    "node scripts/parity.mjs"
+  ],
+  "commits": ["c94deb6"],
+  "blocking_findings": [],
+  "nonblocking_findings": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "handoff": "S2 Red committed; measure-jr-green (or direct coder substitution) can begin Green implementation"
+}

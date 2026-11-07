@@ -1,0 +1,45 @@
+{
+  "schema_version": 2,
+  "role": "jr-green remediation (user-authorized direct coder delegation)",
+  "track": "verified_delegation_boundary_20260805",
+  "phase": "Phase S1 Green remediation (F1: missing model frontmatter)",
+  "baseline_sha": "29c00f85d33ec2f11fad8b91314929eba1ba1a62",
+  "audited_head_sha": "69874ca",
+  "status": "complete",
+  "summary": "Added model: minimax-cn-coding-plan/MiniMax-M3 to agents/change-quality-reviewer.md to resolve VDB S1 Green review-c blocking finding F1 (undeclared_child_pin regression: agent was in lib/core.mjs#isTaskAllowed dispatch allowlist but lacked a model: frontmatter, so the strict runtime's runtimeModelStrict gate rejected every measure-orchestrator \u2192 change-quality-reviewer dispatch pre-spawn).",
+  "files_modified": ["agents/change-quality-reviewer.md"],
+  "files_added": [],
+  "gates": {
+    "observed-routing": {"exit_code": 0, "pass": 10, "fail": 0},
+    "manifest": {"exit_code": 0, "pass": 10, "fail": 0},
+    "grammar": {"exit_code": 0, "pass": 6, "fail": 0},
+    "preflight": {"exit_code": 0, "pass": 9, "fail": 0},
+    "agents-snapshot": {"exit_code": 0, "pass": 16, "fail": 0},
+    "parity": {"exit_code": 0, "pass": 11, "fail": 0},
+    "model-resolution": {"exit_code": 0, "pass": 9, "fail": 0},
+    "core": {"exit_code": 0, "pass": 5, "fail": 0, "agentCount": 29, "callableCount": 27},
+    "setup": {"exit_code": 0, "pass": 4, "fail": 0},
+    "green-gate": {"exit_code": 0, "pass": 8, "fail": 0},
+    "npm_run_test_shipped": {"exit_code": 0, "partition": "9/2/0"},
+    "npm_test": {"exit_code": 1, "failing": ["sprint-state-machine.test.mjs"], "failing_count": 14},
+    "npm_run_check": {"exit_code": 0},
+    "parity_script": {"exit_code": 1, "ok": false, "unmapped_count": 2, "model_map_matches": true, "unmapped_models": ["coder-openai-gpt-5-6-luna-fast", "measure-adversarial-testing"]}
+  },
+  "commits": ["69874ca"],
+  "blocking_findings": [],
+  "nonblocking_findings": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "handoff": "F1 resolved. change-quality-reviewer now declares model: minimax-cn-coding-plan/MiniMax-M3, which is in MODEL_MAP (modelMapMatches=true); it is no longer reachable by undeclared_child_pin at dispatch time and is not present in unmappedModels. Re-run review-c to verify, then phase-acceptance (final-acceptance substitute) can proceed.",
+  "evidence": {
+    "diff": "@@ -52,6 +52,7 @@ description: >-\n\n   </example>\n mode: all\n+model: minimax-cn-coding-plan/MiniMax-M3\n permission:\n   edit: deny",
+    "commit_message": "fix(agents): add model frontmatter to change-quality-reviewer (VDB S1 Green remediation F1)",
+    "files_modified_verified": ["agents/change-quality-reviewer.md (only +1 line)"],
+    "files_untouched_verified": ["agents/measure-final-acceptance.md", "agents/measure-review-c-ux-api.md", "agents/measure-orchestrator-audit.md", "lib/core.mjs", "lib/observed-routing.mjs", "scripts/parity.mjs", "tests/*.test.mjs", "package.json", "tsconfig.json"],
+    "git_status_after_commit": "clean (only measure/runs/ and the two prior phase-s1-review-c.* JSON artifacts are untracked, which are operator artifacts and not in the commit)"
+  },
+  "notes": [
+    "unmapped count remained 2 after this fix because change-quality-reviewer was never in unmappedModels (agentParity only filters agents with sourceModel && !agent.model). change-quality-reviewer has no sourceModel in MODEL_MAP, so unmappedModels did not list it before either; the regression was strictly at the strict-runtime pre-spawn gate (lib/observed-routing.mjs#runtimeModelStrict), not at the parity gate. With model: now declared and MODEL_MAP[minimax-cn-coding-plan/MiniMax-M3] resolving successfully, both gates pass.",
+    "npm test still fails with exit 1 and 14 sprint-state-machine failures \u2014 these are intentional-Red for controlled_harness_evolution_20260714 Phase S2 (test/1a3aa80) and are correctly partitioned into track-red by scripts/test-shipped.mjs. They do not affect VDB S1 acceptance."
+  ]
+}

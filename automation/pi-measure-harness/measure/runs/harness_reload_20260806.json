@@ -1,0 +1,147 @@
+{
+  "schema_version": 1,
+  "role": "operator-verification (one-off, user-authorized reload check)",
+  "track": "n/a",
+  "phase": "n/a",
+  "baseline_sha": "9ff6d21f31966f43eb34617d11c0f4db82a4dcaa",
+  "audited_head_sha": "a6c75f2d239321a27906331a3176b249ab948b14",
+  "verified_at": "2026-08-06T01:49:29Z",
+  "commits_in_batch": ["296cc2f", "5eaf85f", "07a1e50", "a6c75f2"],
+  "git_status_clean": true,
+  "gates": {
+    "green-gate": {"command": "node --test tests/green-gate.test.mjs", "exit_code": 0, "pass": 8, "fail": 0},
+    "parity-tests": {"command": "node --test tests/parity.test.mjs", "exit_code": 0, "pass": 11, "fail": 0},
+    "model-resolution-tests": {"command": "node --test tests/model-resolution.test.mjs", "exit_code": 1, "pass": 8, "fail": 1},
+    "core-tests": {"command": "node --test tests/core.test.mjs", "exit_code": 1, "pass": 4, "fail": 1},
+    "setup-tests": {"command": "node --test tests/setup.test.mjs", "exit_code": 0, "pass": 4, "fail": 0},
+    "npm_run_test_shipped": {"command": "npm run test:shipped", "exit_code": 1, "partition": "5/4/0", "pass": 35, "fail": 2},
+    "npm_test": {"command": "npm test", "exit_code": 1, "failing_files": ["agents-snapshot", "grammar", "manifest", "preflight", "core.test.mjs#agent-snapshot-has-expected-parity", "model-resolution.test.mjs#live-roster-reports->=3-unmapped-agents-with-the-expected-names"]},
+    "npm_run_check": {"command": "npm run check", "exit_code": 0},
+    "parity_script": {
+      "command": "node scripts/parity.mjs",
+      "exit_code": 1,
+      "ok": false,
+      "agent_count": 27,
+      "callable_count": 25,
+      "unmapped_count": 3,
+      "unmapped_models": ["coder-openai-gpt-5-6-luna-fast", "measure-adversarial-testing", "measure-ux-browser-review"],
+      "model_map_matches": true
+    }
+  },
+  "model_map_entries_count": 12,
+  "new_tracks_present": ["verified_delegation_boundary_20260805", "role_model_pool_20260805", "role_fitness_frontier_watch_20260805"],
+  "audit_role_hardening_verified": true,
+  "kimi_routes_registered": true,
+  "remaining_unmapped": ["coder-openai-gpt-5-6-luna-fast", "measure-adversarial-testing", "measure-ux-browser-review"],
+  "blocking_findings": [
+    "STALE-TEST-EXPECTATION (shipped regression): tests/core.test.mjs#agent-snapshot-has-expected-parity asserts unmappedModels.length === 7 (was 7 pre-kimi-route-registration); live state at a6c75f2 is 3. Caused by commit 5eaf85f registering kimi routes without updating the shipped test expectation.",
+    "STALE-TEST-EXPECTATION (shipped regression): tests/model-resolution.test.mjs#live-roster-reports->=3-unmapped-agents-with-the-expected-names asserts 7 specific names must appear in unmappedModels, including the 4 names that commit 5eaf85f just mapped (coder-kimi-for-coding-highspeed, coder-kimi-for-coding-k2p7, coder-orchestrator, measure-review-a-correctness). Live state has only the 3 remaining unmapped names.",
+    "RESULT: npm run test:shipped is RED (2/35+4 failing shipped tests); per test-strategy.md ship partition must be GREEN. Shipped gate cannot pass until both test assertions are updated to reflect the new live state (unmapped count 3, expected names: coder-openai-gpt-5-6-luna-fast, measure-adversarial-testing, measure-ux-browser-review).",
+    "RESULT: npm test fails with 6 failures (4 S1 intentional-Red + 2 stale shipped), not the expected 4."
+  ],
+  "nonblocking_findings": [
+    "3 agents remain unmapped (coder-openai-gpt-5-6-luna-fast, measure-adversarial-testing, measure-ux-browser-review) — pre-existing routing decision; all require user authorization to add MODEL_MAP entries.",
+    "node scripts/parity.mjs exit 1 (fail-closed by design; unmapped > 0). Expected behavior.",
+    "npm run check (tsc --noEmit) passes clean.",
+    "npm run test:shipped partition classifier correctly emits '5/4/0' (5 shipped run, 4 track-red excluded, 0 unclassified) — classifier behavior is correct; the failure is in the shipped tests themselves, not the classifier.",
+    "node scripts/parity.mjs reports modelMapMatches: true (the live MODEL_MAP matches the canonical spec)."
+  ],
+  "parity_script_full_output": {
+    "ok": false,
+    "parity": {
+      "ok": false,
+      "agentCount": 27,
+      "callableCount": 25,
+      "duplicates": [],
+      "missingDescriptions": [],
+      "unmappedModels": [
+        "coder-openai-gpt-5-6-luna-fast",
+        "measure-adversarial-testing",
+        "measure-ux-browser-review"
+      ],
+      "unmappedModelFindings": [
+        {
+          "class": "unmapped_model",
+          "name": "coder-openai-gpt-5-6-luna-fast",
+          "sourceModel": "openai/gpt-5.6-luna-fast",
+          "suggestion": "map_entry_needed"
+        },
+        {
+          "class": "unmapped_model",
+          "name": "measure-adversarial-testing",
+          "sourceModel": "deepseek/deepseek-v4-pro",
+          "suggestion": "map_entry_needed"
+        },
+        {
+          "class": "unmapped_model",
+          "name": "measure-ux-browser-review",
+          "sourceModel": "xiaomi/mimo-v2.5",
+          "suggestion": "map_entry_needed"
+        }
+      ]
+    },
+    "sourceDir": "/home/daniel-bo/.config/opencode/agent",
+    "missing": [
+      "coder-kimi-for-coding-k3.md",
+      "coder-xiaomi-mimo-v2-5.md"
+    ],
+    "extra": [],
+    "changed": [],
+    "modelMapMatches": true
+  },
+  "model_map_entries": [
+    "openai/gpt-5.6-sol",
+    "openai/gpt-5.6-terra",
+    "openai/gpt-5.6-luna",
+    "minimax-cn-coding-plan/MiniMax-M3",
+    "kimi-for-coding/k3",
+    "kimi-for-coding/kimi-for-coding",
+    "kimi-for-coding/kimi-for-coding-highspeed",
+    "deepseek/deepseek-v4-flash",
+    "xiaomi/mimo-v2.5-pro",
+    "vocengine-coding/glm-5.2",
+    "vocengine-coding/deepseek-v4-pro",
+    "vocengine-coding/ark-code-latest"
+  ],
+  "agent_model_field_verification": {
+    "agents/measure-review-a-correctness.md": "kimi-for-coding/kimi-for-coding",
+    "agents/coder-orchestrator.md": "kimi-for-coding/k3"
+  },
+  "audit_role_permission_blocks_verified": {
+    "agents/measure-final-acceptance.md": {
+      "edit": {
+        "*": "deny",
+        "measure/runs/**": "allow",
+        "**/measure/runs/**": "allow"
+      }
+    },
+    "agents/measure-review-a-correctness.md": {
+      "edit": {
+        "*": "deny",
+        "measure/runs/**": "allow",
+        "**/measure/runs/**": "allow"
+      }
+    }
+  },
+  "new_tracks_files_verified": {
+    "verified_delegation_boundary_20260805": ["spec.md", "plan.md", "metadata.json"],
+    "role_model_pool_20260805": ["spec.md", "plan.md", "metadata.json"],
+    "role_fitness_frontier_watch_20260805": ["spec.md", "plan.md", "metadata.json"]
+  },
+  "retry_recommendation": "blocked-on-test-update",
+  "confidence": "high",
+  "remediation_required": [
+    {
+      "file": "tests/core.test.mjs",
+      "test": "agent snapshot has expected parity",
+      "lines": "20-21",
+      "fix": "Update assert.equal(p.unmappedModels.length, 7) to assert.equal(p.unmappedModels.length, 3); update assert.equal(p.unmappedModelFindings.length, 7) to 3."
+    },
+    {
+      "file": "tests/model-resolution.test.mjs",
+      "test": "live-behavior: live roster reports >= 3 unmapped agents with the expected names",
+      "lines": "174-193",
+      "fix": "Reduce expectedNames to current live state: ['coder-openai-gpt-5-6-luna-fast', 'measure-adversarial-testing', 'measure-ux-browser-review']; update the strategy-text reference comment to reflect post-5eaf85f reality."
+    }
+  ]
+}

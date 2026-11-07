@@ -1,0 +1,22 @@
+{
+  "track_id": "role_model_pool_20260805",
+  "type": "chore",
+  "status": "new",
+  "created_at": "2026-08-05T00:00:00Z",
+  "updated_at": "2026-08-05T00:00:00Z",
+  "description": "Replace the single fixed model pin per role with a declared candidate pool, a cause-classified availability inventory, an entitlement-based cost model, and a phase-level assignment resolved at preflight so an unsatisfiable phase fails before the first role dispatches.",
+  "estimated_tasks": 29,
+  "actual_tasks": null,
+  "deviation_notes": null,
+  "sprint": {
+    "goal": "Make failover safe: candidates are declared in advance, the selection is recorded, constraints are checked against the model that ran, and a retired pin raises a configuration alarm instead of being quietly replaced.",
+    "stories": [
+      { "id": "S1", "title": "Capability and availability inventory", "size": "M", "priority": "Must", "status": "pending" },
+      { "id": "S2", "title": "Role requirements and ordered candidate pools", "size": "M", "priority": "Must", "status": "pending" },
+      { "id": "S3", "title": "Phase-level assignment at preflight", "size": "L", "priority": "Must", "status": "pending" },
+      { "id": "S4", "title": "Entitlement and cost model", "size": "M", "priority": "Should", "status": "pending" }
+    ],
+    "demo_notes": null,
+    "retro_ref": null
+  }
+}

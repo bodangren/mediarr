@@ -1,0 +1,14 @@
+{
+  "version": "0.2.0",
+  "extensionHash": "0000000000000000000000000000000000000000000000000000000000000000",
+  "agentHashes": {
+    "ghost-agent": "1111111111111111111111111111111111111111111111111111111111111111"
+  },
+  "skillHashes": {},
+  "contractHash": "0000000000000000000000000000000000000000000000000000000000000000",
+  "markerGrammarVersion": "1.0.0",
+  "compatibility": {
+    "legacyMarkerSupport": true
+  },
+  "agentCountLabel": "agent count: 1"
+}

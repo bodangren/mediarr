@@ -1,0 +1,36 @@
+{
+  "schema_version": 2,
+  "role": "measure-jr-green (direct coder-minimax-m3 delegation, user-authorized)",
+  "track": "harness_selfcheck_truthfulness_20260805",
+  "phase": "Phase 2: Unresolvable model references fail closed",
+  "baseline_sha": "c2ec3ea6bc128d2351d9f719d1f0f8bf177d8709",
+  "audited_head_sha": "c5afc9ee7394a1bb053d1a85c138a35b9fe320cc",
+  "status": "complete",
+  "summary": "Phase 2 Green evidence. Implemented fail-closed model resolution in lib/core.mjs: removed the silent `?? sourceModel` passthrough in parseAgentFile (line 48), so an absent MODEL_MAP entry now yields agent.model === undefined and the sourceModel is retained separately as agent.sourceModel (raw). Added classifyUnmappedSourceModel helper exporting the ^<provider>/<id>$ well-formed heuristic (map_entry_needed) vs malformed (reference_incorrect). Added unmappedModelFindings structured detail alongside the legacy unmappedModels string[] on both rosterParity and agentParity return shapes. JSDoc on parseAgentFile mirrors the contract surface from tests/model-resolution.test.mjs header. tests/core.test.mjs rewritten to assert the new contract (p.ok === false, p.unmappedModels.length === 7, p.unmappedModelFindings array present, first finding has class:'unmapped_model' and suggestion:'map_entry_needed'). scripts/parity.mjs and extensions/measure-harness/index.ts continue to work via the legacy parity.ok / parity.agentCount / parity.callableCount / unmappedModels / duplicates / missingDescriptions fields — no changes required. MODEL_MAP is unchanged (per spec Out-of-Scope: 'Changing which model any agent is routed to'). The 7 live unmapped agents (coder-kimi-for-coding-highspeed, coder-kimi-for-coding-k2p7, coder-openai-gpt-5-6-luna-fast, coder-orchestrator, measure-adversarial-testing, measure-review-a-correctness, measure-ux-browser-review) all classify as map_entry_needed (well-formed provider/id). Reconciliation report committed at measure/tracks/harness_selfcheck_truthfulness_20260805/reconciliation-models.md classifying each agent and recording the Decision-Required status of the routing change.",
+  "deviation_notes": "Direct coder delegation due to jr-green OAuth failure (openai-codex refresh token invalid) and mid-red unregistered (kimi-coding/k3 unavailable in this harness session). User explicitly authorized the delegation. All other openai-codex-based Measure subagents (review-a, review-b, phase-acceptance, orchestrator-audit, closeout) are similarly unavailable; only minimax-cn/MiniMax-M3-based agents work (measure-strategy, review-c, final-acceptance, coder-minimax-m3). MODEL_MAP routing changes explicitly NOT made per spec 'Out of Scope: Changing which model any agent is routed to. Correcting the roster's model references is a separate decision requiring the user's routing intent, not a defect fix.' The reconciliation-models.md report is a Decision-Required artifact, not a routing change. Live unmapped count is 7 (not 3 as the strategy text states) because the user made dirty agent edits between the strategy commit SHA 248d841 and the Phase 2 Red commit c2ec3ea that introduced four additional kimi-for-coding/* references — recorded in metadata.json#deviation_notes and the reconciliation report. The pre-existing dirty files (16 modified agent files, config/model-map.json, measure/tracks.md) were NOT included in the Green commit per the task's absolute constraint.",
+  "tasks_covered": ["2.3", "2.4", "2.5"],
+  "green_gate": {
+    "node_tests_model_resolution": {"command": "node --test tests/model-resolution.test.mjs", "exit_code": 0, "pass": 9, "fail": 0},
+    "node_tests_core":            {"command": "node --test tests/core.test.mjs", "exit_code": 0, "pass": 5, "fail": 0},
+    "node_tests_parity":          {"command": "node --test tests/parity.test.mjs", "exit_code": 0, "pass": 11, "fail": 0},
+    "npm_test":                   {"command": "npm test", "exit_code": 1, "pass": 29, "fail": 4, "failing": ["agents-snapshot", "grammar", "manifest", "preflight"]},
+    "npm_run_check":              {"command": "npm run check", "exit_code": 0},
+    "npm_run_parity":             {"command": "npm run parity", "exit_code": 1, "ok_field": false, "note": "expected 1 with ok:false — 7 unmapped, fail-closed behavior; Phase 3 work to make the green gate independent of this"}
+  },
+  "live_state_after_green": {
+    "unmapped_count": 7,
+    "unmapped_agents": ["coder-kimi-for-coding-highspeed", "coder-kimi-for-coding-k2p7", "coder-openai-gpt-5-6-luna-fast", "coder-orchestrator", "measure-adversarial-testing", "measure-review-a-correctness", "measure-ux-browser-review"],
+    "all_suggest_map_entry_needed": true,
+    "reconciliation_report_path": "measure/tracks/harness_selfcheck_truthfulness_20260805/reconciliation-models.md"
+  },
+  "files_modified": ["lib/core.mjs", "tests/core.test.mjs", "metadata.json"],
+  "files_added": ["measure/tracks/harness_selfcheck_truthfulness_20260805/reconciliation-models.md", "measure/tracks/harness_selfcheck_truthfulness_20260805/results/phase-2-green.json"],
+  "commands": ["node --test tests/model-resolution.test.mjs", "node --test tests/core.test.mjs", "node --test tests/parity.test.mjs", "npm test", "npm run check", "npm run parity"],
+  "commits": ["c5afc9ee7394a1bb053d1a85c138a35b9fe320cc"],
+  "anti_patterns_covered": ["A3", "A7"],
+  "blocking_findings": [],
+  "nonblocking_findings": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "handoff": "Phase 2 review-c should audit: (1) `?? sourceModel` is fully removed from parseAgentFile (line 48 reads `model: sourceModel ? MODEL_MAP[sourceModel] : undefined`); (2) unmappedModelFindings has class/name/sourceModel/suggestion on every entry, with suggestion classification computed by classifyUnmappedSourceModel helper; (3) suggestion heuristic correctly distinguishes well-formed (`^<provider>/<id>$` with exactly one `/` and both segments non-empty) from malformed (anything else, including empty sourceModel); (4) fail-closed behavior preserved when loadAgents encounters unmapped files (loadAgents with tests/fixtures/model-resolution/load-unmapped returns agent-load-unmapped with model === undefined); (5) live unmapped count is 7 (strategy said 3 at strategy commit SHA 248d841 — the drift is caused by dirty agent edits adding 4 kimi-using agents between the strategy commit and Phase 2 Red commit c2ec3ea); (6) reconciliation-models.md classifies each of the 7 agents as map_entry_needed and does NOT change MODEL_MAP unilaterally per spec Out-of-Scope; (7) tests/core.test.mjs rewrite asserts the new contract including the 7 unmapped agents and the structured findings shape; (8) npm test exit code reflects only the 4 S1 intentional-Red files (agents-snapshot, grammar, manifest, preflight); (9) scripts/parity.mjs / extensions/measure-harness/index.ts continue to work via the legacy agentParity return shape (ok/agentCount/callableCount/duplicates/missingDescriptions/unmappedModels all preserved); (10) Phase 3 green gate (npm run test:shipped) is independent of npm run parity — Phase 2's parity.ok === false is expected behavior until routing decisions land."
+}

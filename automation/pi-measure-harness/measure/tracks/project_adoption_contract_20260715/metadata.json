@@ -1,0 +1,21 @@
+{
+  "track_id": "project_adoption_contract_20260715",
+  "type": "feature",
+  "status": "new",
+  "created_at": "2026-07-15T00:00:00Z",
+  "updated_at": "2026-07-15T00:00:00Z",
+  "description": "Define the project-neutral contract by which arbitrary repositories adopt the harness: a run-configuration schema, trust-model resource loading, and a verified reference adoption.",
+  "estimated_tasks": 22,
+  "actual_tasks": null,
+  "deviation_notes": null,
+  "sprint": {
+    "goal": "Make harness adoption explicit, validated, and safe for any project repository without embedding project-specific policy in the framework.",
+    "stories": [
+      { "id": "S1", "title": "Run-configuration schema and validation", "size": "M", "priority": "Must", "status": "pending" },
+      { "id": "S2", "title": "Trust-boundary project resource loading", "size": "M", "priority": "Must", "status": "pending" },
+      { "id": "S3", "title": "Reference adoption and operator documentation", "size": "M", "priority": "Should", "status": "pending" }
+    ],
+    "demo_notes": null,
+    "retro_ref": null
+  }
+}

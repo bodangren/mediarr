@@ -1,0 +1,15 @@
+{
+  "openai/gpt-5.6-sol": "openai-codex/gpt-5.6-sol",
+  "openai/gpt-5.6-terra": "openai-codex/gpt-5.6-terra",
+  "openai/gpt-5.6-luna": "openai-codex/gpt-5.6-luna",
+  "minimax-cn-coding-plan/MiniMax-M3": "minimax-cn/MiniMax-M3",
+  "kimi-for-coding/k3": "kimi-coding/k3",
+  "kimi-for-coding/kimi-for-coding": "kimi-coding/kimi-for-coding",
+  "kimi-for-coding/kimi-for-coding-highspeed": "kimi-coding/kimi-for-coding-highspeed",
+  "deepseek/deepseek-v4-flash": "deepseek/deepseek-v4-flash",
+  "xiaomi/mimo-v2.5-pro": "xiaomi/mimo-v2.5-pro",
+  "xiaomi/mimo-v2.5": "xiaomi/mimo-v2.5",
+  "vocengine-coding/glm-5.2": "vocengine-coding/glm-5.2",
+  "vocengine-coding/deepseek-v4-pro": "vocengine-coding/deepseek-v4-pro",
+  "vocengine-coding/ark-code-latest": "vocengine-coding/ark-code-latest"
+}

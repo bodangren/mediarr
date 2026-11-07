@@ -1,0 +1,43 @@
+{
+  "schema_version": 2,
+  "role": "measure-mid-red (direct coder-minimax-m3 delegation, user-authorized)",
+  "track": "harness_selfcheck_truthfulness_20260805",
+  "phase": "Phase 3: A green gate independent of active-track Red",
+  "baseline_sha": "1a1ed2fc4eb0517017caae5d734f711cedf1546f",
+  "audited_head_sha": "1a1ed2fc4eb0517017caae5d734f711cedf1546f",
+  "status": "complete",
+  "summary": "Phase 3 Red evidence.",
+  "deviation_notes": "Direct coder delegation. The result artifact is committed atomically with the Red surface, so audited_head_sha records the Phase base inspected before the single required commit; the resulting commit is listed in commits after creation only in the handoff output because a commit cannot contain its own SHA.",
+  "tasks_covered": ["3.1", "3.2"],
+  "red_falsification": {
+    "command": "node --test tests/green-gate.test.mjs",
+    "exit_code": 1,
+    "output_tail": "The partition-listing assertion received empty stdout because scripts/test-shipped.mjs does not exist.\n1..8\n# tests 8\n# suites 0\n# pass 0\n# fail 8\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 1973.4417"
+  },
+  "pre_existing_red_baseline": {
+    "npm_test_exit_code": 1,
+    "npm_test_pass_count": 29,
+    "npm_test_fail_count": 4,
+    "failing_test_files": ["agents-snapshot", "grammar", "manifest", "preflight"]
+  },
+  "files_added": [
+    "tests/green-gate.test.mjs",
+    "tests/fixtures/green-gate/agents-snapshot.test.mjs",
+    "tests/fixtures/green-gate/grammar.test.mjs",
+    "tests/fixtures/green-gate/manifest.test.mjs",
+    "tests/fixtures/green-gate/preflight.test.mjs",
+    "tests/fixtures/green-gate/shipped-fixture.test.mjs",
+    "tests/fixtures/green-gate/not-actually-red-fixture.test.mjs",
+    "tests/fixtures/green-gate/seeded-regression.test.mjs"
+  ],
+  "files_modified": [],
+  "contracts_defined": ["Phase 3 green-gate contract: partition classifier reads tests/.track-red-files.txt, distinguishes shipped/trackRed/unclassified; npm run test:shipped runs shipped partition only with explicit listing"],
+  "anti_patterns_covered": ["A7"],
+  "blocking_findings": [],
+  "nonblocking_findings": ["The full npm test run reports 29 pass / 12 fail: the four pre-existing S1 intentional-Red failures plus all eight new Phase 3 Red contract tests. There are no new failures outside tests/green-gate.test.mjs."],
+  "commands": ["node --test tests/green-gate.test.mjs", "npm test", "npm run check", "npm run parity"],
+  "commits": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "handoff": "Phase 3 Green must: (1) implement scripts/test-shipped.mjs with the partition classifier and the node --test runner; (2) extract the partition classifier into lib/green-gate.mjs (or sibling) so tests/green-gate.test.mjs can import partitionTests directly; (3) wire `npm run test:shipped` in package.json (preserve `npm test` unchanged); (4) commit tests/.track-red-files.txt with the four S1 intentional-Red files; (5) verify node --test tests/green-gate.test.mjs exits 0 and npm run test:shipped exits 0 (independent of active-track Red)."
+}

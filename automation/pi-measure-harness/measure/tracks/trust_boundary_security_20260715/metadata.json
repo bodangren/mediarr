@@ -1,0 +1,21 @@
+{
+  "track_id": "trust_boundary_security_20260715",
+  "type": "chore",
+  "status": "new",
+  "created_at": "2026-07-15T00:00:00Z",
+  "updated_at": "2026-07-15T00:00:00Z",
+  "description": "Adversarial verification of the harness's fail-closed guarantees: a threat model, an adversarial fixture corpus, and a security test suite proving unauthorized, malformed, stale, and credential-bearing inputs can never advance a workflow.",
+  "estimated_tasks": 21,
+  "actual_tasks": null,
+  "deviation_notes": null,
+  "sprint": {
+    "goal": "Prove mechanically that the harness fails closed on every defined abuse case, and that receipts and telemetry can never leak credentials.",
+    "stories": [
+      { "id": "S1", "title": "Threat model and adversarial fixture corpus", "size": "M", "priority": "Must", "status": "pending" },
+      { "id": "S2", "title": "Fail-closed abuse-case verification", "size": "L", "priority": "Must", "status": "pending" },
+      { "id": "S3", "title": "Credential and payload leak guards", "size": "M", "priority": "Must", "status": "pending" }
+    ],
+    "demo_notes": null,
+    "retro_ref": null
+  }
+}

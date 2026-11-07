@@ -1,0 +1,8 @@
+node_modules/
+*.log
+.env
+auth.json
+sessions/
+tasks/
+coverage/
+dist/

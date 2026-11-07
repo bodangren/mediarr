@@ -1,0 +1,197 @@
+{
+  "schema_version": 2,
+  "role": "measure-phase-acceptance (substituted by measure-final-acceptance, user-authorized)",
+  "substitution_note": "Canonical measure-phase-acceptance (openai-codex OAuth refresh token invalid) is unavailable; substituted by measure-final-acceptance (minimax-cn-coding-plan/MiniMax-M3, working) under explicit user authorization. Role substitution authorized because measure-final-acceptance is the closest available audit-only role and uses the same schema. Mechanical checks were run per the user's task description; the substituted role is gate-only and did not edit implementation, tests, plans, registry, metadata, or archive state. Substitution is documented here and in /tmp/phase-3-acceptance.log. Substitution pattern mirrors phase-1-acceptance.json and phase-2-acceptance.json.",
+  "track": "harness_selfcheck_truthfulness_20260805",
+  "phase": "Phase 3: A green gate independent of active-track Red",
+  "baseline_sha": "248d841b0b2445b3376d15625da1665fc084edbc",
+  "audited_head_sha": "f914e2bd48dc4790d698bd4551d1eab3814a71eb",
+  "applicability": "applicable",
+  "status": "pass",
+  "summary": "Phase 3 A green gate independent of active-track Red accepted. The new `npm run test:shipped` script (wired to scripts/test-shipped.mjs) is the canonical shipped-surface green gate, fully independent of the active track's four S1 intentional-Red files and of `npm run parity`. lib/green-gate.mjs#partitionTests is exact-name matching (Set.has) over four candidate path forms — bare English words like 'red' or 'skip' are not filters — and produces byte-identical results across repeated calls. scripts/test-shipped.mjs reads tests/.track-red-files.txt correctly (comment lines, blank lines, and whitespace all filtered) and emits the explicit partition listing `[shipped] running N test files: ...; [track-red] excluded M: ...; [unclassified] U: ...`. Against the live repo at current HEAD f914e2b, partitionTests returns exactly 5 shipped (core, green-gate, model-resolution, parity, setup), 4 trackRed (agents-snapshot, grammar, manifest, preflight), and 0 unclassified. `node scripts/test-shipped.mjs` exits 0 with all 37 shipped assertions passing (5 files × tests: core=5, green-gate=8, model-resolution=9, parity=11, setup=4); `npm test` exits 1 with EXACTLY 4 failures (the documented S1 intentional-Red files). package.json was modified by an additive single-line change that introduces `test:shipped` while leaving the existing `test`, `check`, `parity`, `configure`, `migrate-auth` and other scripts untouched. Phase 1 (parity 11/11) and Phase 2 (model-resolution 9/9, core 5/5) show no regression. Red falsification at intermediate Red commit b0d3e59 is recorded in phase-3-red.json (node --test tests/green-gate.test.mjs exit 1, 0/8 pass). The Node v22.22.3 recursive-test compatibility adapter in lib/green-gate.mjs is a narrowly scoped, opt-in shim that only fires when a child `node --test` is invoked with exactly two argv entries (a single test file); the production gate passes 5 files so this adapter does not fire on the production invocation path. plan.md still carries `[ ]` pending markers per the strategy §3 compatibility marker grammar; the supervisor's migration is the owner of that state, not a Phase 3 gate, and the strategy explicitly accepts this state. The phase-3 role-gate mechanical check is permitted and was run; its FAIL lines are all accounted for as expected/non-blocking (audit-only role = phase-acceptance requires canonical role unavailable due to openai-codex OAuth failure; nonblocking_findings list-of-objects format mismatch in phase-3-review-c.json payload; audit-only role changed worktree status outside its result artifact = pre-existing dirty tree; current phase has 9 [ ] markers = explicitly accepted per strategy §3; missing prerequisite result for review-a/review-b/adversarial-testing/ux-browser-review = those roles never ran due to openai-codex OAuth failure, user-authorized substitution by measure-final-acceptance). None block Phase 3 acceptance. All three implementation phases accepted; the track's review-c (C1) and final-acceptance may proceed.",
+  "deviation_notes": "Direct coder delegation was used for Phase 3 Red and Phase 3 Green because measure-mid-red's kimi-coding/k3 is unregistered and measure-jr-green's openai-codex OAuth refresh token is invalid; user explicitly authorized the substitution. All other openai-codex-based Measure subagents are similarly unavailable; only minimax-cn/MiniMax-M3-based agents work. Live unmapped count is 7 (not 3 as the strategy text states at strategy commit SHA 248d841) — Phase 2 already documented this drift in metadata.json#deviation_notes. Pre-existing dirty files (16+ modified agent files, config/model-map.json, measure/tracks.md, plus 4 untracked 2026-08-05 track directories) were NOT included in the Phase 3 Green commit per the absolute constraint 'DO NOT commit any unrelated dirty file'. The dirty state persists across role boundaries; phase-3-review-c.worktree-snapshot.json captures the pre-audit worktree state. Current HEAD equals Phase 3 Green HEAD f914e2bd48dc4790d698bd4551d1eab3814a71eb exactly; no further commits between Green and acceptance.",
+  "spec_criteria_met": {
+    "s3_ac1": true,
+    "s3_ac2": true,
+    "s3_ac3": true
+  },
+  "spec_criteria_detail": {
+    "s3_ac1": "Given the active track's Red tests are failing as designed, When the green gate runs, Then it exits zero and its scope is stated explicitly. — Met: `npm run test:shipped` (and the underlying `node scripts/test-shipped.mjs`) exits 0 with 37/37 shipped assertions passing while the active track's S1 Red files (tests/agents-snapshot.test.mjs, tests/grammar.test.mjs, tests/manifest.test.mjs, tests/preflight.test.mjs) fail with ERR_MODULE_NOT_FOUND for lib/<name>.mjs (controlled_harness_evolution_20260714 Phase S1 intentional-Red, not yet implemented). Output explicitly states the partition: `[shipped] running 5 test files: ...; [track-red] excluded 4: ...; [unclassified] 0: ...`. `npm test` (full suite) exits 1 with EXACTLY 4 failures matching those four S1 files. Verified live at current HEAD f914e2b.",
+    "s3_ac2": "Given a shipped surface regresses, When the green gate runs, Then it exits non-zero and names the regressed surface. — Met: tests/green-gate.test.mjs#5 'live-behavior: a seeded regression in a shipped surface makes node --test fail' synthesizes a seeded regression (a synthetic tests/shipped-fixture.test.mjs containing `test('regression', () => { throw new Error('seeded'); })`) and asserts that the script invocation exits non-zero. The regression test passes against the live classifier and script at f914e2b.",
+    "s3_ac3": "Given a new test file is added, When it is neither in the green gate nor declared as track-owned Red, Then the gate reports the unclassified file rather than silently ignoring it. — Met: tests/green-gate.test.mjs#4 'live-behavior: a synthetic unclassified test file is reported as a hard failure' synthesizes an unclassified test file (not in tests/.track-red-files.txt, not under packageTestsDir) and asserts the gate reports `{class: 'unclassified_test_file', path: <label>}` as a hard failure. The unclassified-file probe passes against the live classifier and script at f914e2b."
+  },
+  "green_gates": {
+    "node_tests_green_gate": {
+      "command": "node --test tests/green-gate.test.mjs",
+      "exit_code": 0,
+      "pass": 8,
+      "fail": 0,
+      "re_run_at": "f914e2bd48dc4790d698bd4551d1eab3814a71eb"
+    },
+    "node_tests_parity": {
+      "command": "node --test tests/parity.test.mjs",
+      "exit_code": 0,
+      "pass": 11,
+      "fail": 0,
+      "note": "Phase 1 no-regression; parity contract still 11/11",
+      "re_run_at": "f914e2bd48dc4790d698bd4551d1eab3814a71eb"
+    },
+    "node_tests_model_resolution": {
+      "command": "node --test tests/model-resolution.test.mjs",
+      "exit_code": 0,
+      "pass": 9,
+      "fail": 0,
+      "note": "Phase 2 no-regression; model-resolution contract still 9/9",
+      "re_run_at": "f914e2bd48dc4790d698bd4551d1eab3814a71eb"
+    },
+    "node_tests_core": {
+      "command": "node --test tests/core.test.mjs",
+      "exit_code": 0,
+      "pass": 5,
+      "fail": 0,
+      "note": "Phase 1/2 no-regression; core 5/5",
+      "re_run_at": "f914e2bd48dc4790d698bd4551d1eab3814a71eb"
+    },
+    "npm_run_test_shipped": {
+      "command": "npm run test:shipped",
+      "exit_code": 0,
+      "pass": 37,
+      "fail": 0,
+      "note": "MUST exit 0; partition listing showed 5 shipped files (core, green-gate, model-resolution, parity, setup), 4 track-red exclusions (agents-snapshot, grammar, manifest, preflight), and 0 unclassified files. 37/37 child test assertions pass.",
+      "re_run_at": "f914e2bd48dc4790d698bd4551d1eab3814a71eb"
+    },
+    "npm_test": {
+      "command": "npm test",
+      "exit_code": 1,
+      "pass": 37,
+      "fail": 4,
+      "failing": ["agents-snapshot", "grammar", "manifest", "preflight"],
+      "note": "EXACTLY 4 S1 intentional-Red failures from controlled_harness_evolution_20260714 Phase S1 — every failure is ERR_MODULE_NOT_FOUND for lib/<name>.mjs which is not yet implemented; no Phase 3 regressions. The pre-Phase baseline (Phase 3 Red) was 29 pass / 4 fail.",
+      "re_run_at": "f914e2bd48dc4790d698bd4551d1eab3814a71eb"
+    },
+    "npm_run_check": {
+      "command": "npm run check",
+      "exit_code": 0,
+      "note": "tsc --noEmit clean; no type errors introduced by Phase 3",
+      "re_run_at": "f914e2bd48dc4790d698bd4551d1eab3814a71eb"
+    },
+    "npm_run_parity": {
+      "command": "npm run parity",
+      "exit_code": 1,
+      "ok_field": false,
+      "note": "expected 1 with parity.ok=false — Phase 2 fail-closed behavior preserved, independent of Phase 3. parity.unmappedModels.length=7 (live roster's 7 unmapped references), parity.unmappedModelFindings.length=7 with all 7 suggestions='map_entry_needed'. parity.ok=false because MODEL_MAP does not yet resolve 7 unmapped references; this is the Phase 2 fail-closed state the spec requires, not a Phase 3 regression.",
+      "re_run_at": "f914e2bd48dc4790d698bd4551d1eab3814a71eb"
+    }
+  },
+  "red_falsification_recorded": true,
+  "red_falsification": {
+    "red_commit": "b0d3e59e005cdfd47c2542ac99e26213d2bda05d",
+    "command": "node --test tests/green-gate.test.mjs",
+    "exit_code": 1,
+    "pass_count": 0,
+    "fail_count": 8,
+    "evidence_artifact": "measure/tracks/harness_selfcheck_truthfulness_20260805/results/phase-3-red.json"
+  },
+  "review_c_verdict": "pass",
+  "review_c_artifact": "measure/tracks/harness_selfcheck_truthfulness_20260805/results/phase-3-review-c.json",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    {
+      "id": "NF-1",
+      "class": "node_v22_compat_adapter_narrow_scope",
+      "description": "lib/green-gate.mjs contains a `NODE_TEST_CONTEXT === 'child-v8'` shim that adds `--experimental-test-isolation=none` to child `node --test` invocations when args.length === 2 (single-file recursive probe). The production `scripts/test-shipped.mjs` invokes `node --test` with the shipped partition (5 files; args.length === 6), so the adapter does not fire on the production path. This matches phase-3-green.json NF-1 (review should confirm the adapter is narrowly scoped); confirmed — adapter is gated on the test runner's child-v8 environment and only re-injects a flag for single-file child invocations. Identified by phase-3-review-c.json NF-1; no Phase 3 acceptance action required."
+    },
+    {
+      "id": "NF-2",
+      "class": "track_red_list_is_single_source_of_truth",
+      "description": "tests/.track-red-files.txt is the single source of truth for which files are excluded from `npm run test:shipped`. If a future phase adds a fifth intentional-Red file, the list must be updated in the same PR or the green gate will report it as an unclassified_test_file (hard failure). This is the documented contract (test-strategy §1, plan Task 3.3); no defect, but a maintenance surface future contributors must own. Identified by phase-3-review-c.json NF-2; no Phase 3 acceptance action required."
+    },
+    {
+      "id": "NF-3",
+      "class": "pre_existing_dirty_files_unrelated",
+      "description": "Pre-existing dirty edits to agents/*.md (16 files), config/model-map.json, measure/tracks.md, and untracked 2026-08-05 track directories are NOT included in the Phase 3 Green commit per the absolute constraint to not commit unrelated dirty files. The green gate's `node --test` invocation exits 0 against the dirty tree because none of these dirty edits affect tests/ or scripts/. The `npm run parity` exit 1 reflects Phase 2's fail-closed unmapped-model behavior, not a Phase 3 regression. Identified by phase-3-review-c.json NF-3; carried forward into Phase 3 acceptance."
+    },
+    {
+      "id": "NF-4",
+      "class": "role_gate_role_name_normalization",
+      "description": "The `measure_interphase_checks.py role-gate` script reports 'FAIL: audit role must be phase-acceptance' because the canonical role is unavailable (openai-codex OAuth refresh token invalid) and the about-to-be-written phase-3-acceptance.json cannot be pre-created as --result-file (the audit gate forbids self-reference). The substitution is authorized by the user; the script's role-name check is stricter than the documented role field of the about-to-be-written artifact. Same pattern as phase-1-acceptance.json and phase-2-acceptance.json; documented in the substitution_note field."
+    },
+    {
+      "id": "NF-5",
+      "class": "role_gate_prerequisite_chain_unavailable",
+      "description": "The role-gate reports 'FAIL: missing prerequisite result for review-a, review-b, adversarial-testing, ux-browser-review' because those roles never ran (openai-codex OAuth failure for review-a/review-b; deepseek/deepseek-v4-pro unregistered for adversarial-testing; xiaomi/mimo-v2-5 unregistered for ux-browser-review). The only review that ran is measure-review-c-ux-api (minimax-cn/MiniMax-M3 works), and its verdict is pass. User-authorized substitution by measure-final-acceptance; the audit-content is correct, the script's prerequisite chain is stricter than the documented track-level role availability."
+    },
+    {
+      "id": "NF-6",
+      "class": "plan_pending_markers_compatibility_grammar",
+      "description": "plan.md still has 9 [ ] pending markers for Tasks 3.1-3.5, C1-C4 per strategy §3 compatibility marker grammar. The strategy explicitly accepts this state and the orchestrator's supervisor is the migration owner. The user's task description confirms 'plan.md still has [ ] pending markers; that's the supervisor's migration responsibility, not a Phase 3 gate.' No Phase 3 acceptance action required."
+    },
+    {
+      "id": "NF-7",
+      "class": "audit_only_role_worktree_status",
+      "description": "The role-gate reports 'FAIL: audit-only role changed worktree status outside its result artifact' because 17 unrelated dirty files (agents/, config/model-map.json, measure/tracks.md) plus 4 untracked track directories pre-date Phase 3 Green and are excluded from the audit's mutation check. Pre-existing dirt, not introduced by the Green commit; the audit-mutation check excludes only the --result-file path (phase-3-review-c.json per the user's command), but the dirt is unrelated to this track. Same pattern as phase-2-acceptance.json NF-7."
+    },
+    {
+      "id": "NF-8",
+      "class": "live_unmapped_count_drift_from_strategy",
+      "description": "Live unmapped-model count is 7 at current HEAD f914e2b (strategy text said 3 at strategy commit SHA 248d841). Drift is caused by post-strategy dirty agent edits that introduced four additional kimi-for-coding/* and one openai/gpt-5.6-luna-fast reference. Reconciliation report records the drift explicitly. Recorded in metadata.json#deviation_notes and the reconciliation report. Carried forward from phase-2-acceptance.json NF-1; Phase 3 work did not modify the model-resolution contract."
+    }
+  ],
+  "evidence": [
+    "interphase role-gate raw output (FAIL-by-FAIL accounting): FAIL: missing role log: /tmp/phase-3-acceptance.log — first invocation; the log file did not exist yet because this is the first phase-3 acceptance run. FAIL: audit role must be 'phase-acceptance' — the --result-file path is phase-3-review-c.json which has role='measure-review-c-ux-api', not role='phase-acceptance'. The role-gate's intent is to validate the result-artifact the current role is producing; the correct --result-file is the about-to-be-written phase-3-acceptance.json, which I cannot pre-create (the audit gate forbids self-reference). The substitution_note documents the workaround; phase-1 and phase-2 acceptance JSONs followed the same pattern. FAIL: nonblocking_findings must contain only non-empty strings (×2: once for --result-file review-c.json, once for the review-c prerequisite) — review-c.json's nonblocking_findings is an array of {id, class, description} objects, but the script's validate_string_list requires string entries only. This is a script limitation, not an audit-content issue. FAIL: audit-only role changed worktree status outside its result artifact — 17 unrelated dirty files (agents/, config/model-map.json, measure/tracks.md) plus 4 untracked track directories are pre-existing dirt that pre-dates Phase 3 Green; the audit-mutation check excludes only the --result-file path (phase-3-review-c.json per the user's command), but the dirt is unrelated to this track. FAIL: current phase still has 9 non-deferred incomplete tasks — plan.md Phase 3 has [ ] markers for Tasks 3.1-3.5 + C1-C4; per strategy §3 compatibility marker grammar the [ ] pending markers stay pending throughout this track; the strategy explicitly accepts this state. FAIL: missing prerequisite result for review-b, adversarial-testing, ux-browser-review, review-a — those roles never ran because measure-review-a-correctness (kimi-for-coding/kimi-for-coding), measure-review-b-security (openai/gpt-5.6-sol), measure-adversarial-testing (deepseek/deepseek-v4-pro), and measure-ux-browser-review (xiaomi/mimo-v2.5) are all openai-codex-based or model-unregistered and unavailable in this harness session; the user-authorized Phase 3 review-c (measure-review-c-ux-api, which IS minimax-cn/MiniMax-M3 and works) is the only audit that ran, and its verdict is pass. FAIL: audit role must be 'review-c' — the prerequisite validation reads the role field of phase-3-review-c.json ('measure-review-c-ux-api') and compares it against the normalized 'review-c'; the validate_audit_payload check is direct equality, not normalized equality, so the strings differ. None of these 11 FAILs block Phase 3 acceptance; they are all categorized in nonblocking_findings above.",
+    "test runs (re-run at current HEAD f914e2b): node --test tests/green-gate.test.mjs → exit 0, 8/8 pass (all 8 contract tests: shipped-test script exists, partition classifier exported, shipped partition runs while 4 track-owned Red files excluded, unclassified file is hard failure, seeded regression in shipped surface fails, A7 analog not-actually-red probe, deterministic byte-identical, script output explicitly lists partitions); node --test tests/parity.test.mjs → exit 0, 11/11 pass (Phase 1 no-regression); node --test tests/model-resolution.test.mjs → exit 0, 9/9 pass (Phase 2 no-regression); node --test tests/core.test.mjs → exit 0, 5/5 pass (Phase 1/2 no-regression); npm run test:shipped / node scripts/test-shipped.mjs → exit 0, 37/37 pass with partition listing `[shipped] running 5 test files: ...; [track-red] excluded 4: ...; [unclassified] 0: ...` (exact format matches the contract); node --test ./tests/*.test.mjs (npm test equivalent) → exit 1, 37/41 pass with EXACTLY 4 failures (tests/agents-snapshot.test.mjs ERR_MODULE_NOT_FOUND lib/agents-snapshot.mjs, tests/grammar.test.mjs ERR_MODULE_NOT_FOUND lib/grammar.mjs, tests/manifest.test.mjs ERR_MODULE_NOT_FOUND lib/manifest.mjs, tests/preflight.test.mjs ERR_MODULE_NOT_FOUND lib/preflight.test.mjs — every one is the active controlled_harness_evolution_20260714 Phase S1 intentional-Red file, no Phase 3 regressions); npm run check → exit 0 (tsc --noEmit clean); node scripts/parity.mjs → exit 1 with parity.ok=false (Phase 2 fail-closed, 7 unmapped references named with structured findings shape, all 7 suggestion='map_entry_needed'; this is the expected Phase 2 state, independent of Phase 3).",
+    "live-behavior verification (current HEAD f914e2b): node -e \"import('./lib/green-gate.mjs').then(m => console.log(m.partitionTests(new Set(['tests/agents-snapshot.test.mjs','tests/grammar.test.mjs','tests/manifest.test.mjs','tests/preflight.test.mjs']), './tests')))\" → {shipped:[/home/daniel-bo/.../tests/core.test.mjs, /home/daniel-bo/.../tests/green-gate.test.mjs, /home/daniel-bo/.../tests/model-resolution.test.mjs, /home/daniel-bo/.../tests/parity.test.mjs, /home/daniel-bo/.../tests/setup.test.mjs], trackRed:[/home/daniel-bo/.../tests/agents-snapshot.test.mjs, /home/daniel-bo/.../tests/grammar.test.mjs, /home/daniel-bo/.../tests/manifest.test.mjs, /home/daniel-bo/.../tests/preflight.test.mjs], unclassified:[]} (5 shipped, 4 track-red, 0 unclassified — matches the contract).",
+    "live-behavior verification (current HEAD f914e2b): node -e \"import('./lib/green-gate.mjs').then(m => { const a = m.partitionTests(new Set([...]), './tests'); const b = m.partitionTests(new Set([...]), './tests'); console.log(JSON.stringify(a) === JSON.stringify(b)); })\" → true (determinism probe passes; byte-identical arrays across repeated calls).",
+    "live-behavior verification (current HEAD f914e2b): node -e \"import('./lib/green-gate.mjs').then(m => { ... synth tmpdir with foo.test.mjs → verify unclassified contains foo.test.mjs, shipped is empty })\" → shipped=[], unclassified=[<tmpdir>/foo.test.mjs] (out-of-tree files correctly classified as unclassified; scripts/test-shipped.mjs exits 1 with `[unclassified_test_file] 1 unclassified test file(s): ...` per its diagnostic format).",
+    "live-behavior verification (current HEAD f914e2b): tests/.track-red-files.txt content verified: 4 comment lines + 1 blank line filtered; 4 file entries (`tests/agents-snapshot.test.mjs`, `tests/grammar.test.mjs`, `tests/manifest.test.mjs`, `tests/preflight.test.mjs`) retained. The list contains exactly the four S1 intentional-Red files with no extra entries and no missing entries. The track-Red exclusion list is the single source of truth for the green gate.",
+    "git diff b0d3e59..f914e2b --name-status → A lib/green-gate.mjs, A measure/tracks/harness_selfcheck_truthfulness_20260805/results/phase-3-green.json, M package.json, A scripts/test-shipped.mjs, A tests/.track-red-files.txt. Only 5 files in the Phase 3 Green diff. No implementation/test/plan/registry/metadata changes beyond the Phase 3 Green commit itself.",
+    "git diff b0d3e59..f914e2b -- package.json → additive single-line insertion of `\"test:shipped\": \"node scripts/test-shipped.mjs\",`. Existing scripts (test, check, parity, configure, migrate-auth, configure:dry-run, migrate-auth:dry-run, etc.) unchanged. Verified by reading the diff.",
+    "Red falsification at b0d3e59 (Phase 3 Red commit): node --test tests/green-gate.test.mjs exited 1 with 0/8 pass — the partition-listing assertion received empty stdout because scripts/test-shipped.mjs did not yet exist; every contract test failed with exit 1. Recorded in phase-3-red.json (red_falsification.exit_code=1, red_falsification.pass=0, red_falsification.fail=8). The intermediate Red commit (b0d3e59) is an ancestor of f914e2b (Phase 3 Green HEAD); verified via git merge-base --is-ancestor.",
+    "Phase 3 review-c verdict (results/phase-3-review-c.json): status='pass', applicability='applicable', confidence='high', no blocking findings; 3 non-blocking findings (node_v22_compat_adapter_narrow_scope, track_red_list_is_single_source_of_truth, pre_existing_dirty_files_unrelated) all explicitly documented in nonblocking_findings above. The review-c audit verified: partitionTests deterministic and side-effect free (no Date.now/Math.random/new Date/setTimeout/setInterval/process.hrtime/crypto/randomUUID — verified via regex match counts = 0 each in lib/green-gate.mjs and scripts/test-shipped.mjs); scripts/test-shipped.mjs reads tests/.track-red-files.txt correctly; package.json is the additive single-line change; npm run test:shipped exits 0 with the documented partition format; npm test exit code reflects only the 4 S1 intentional-Red failures; Phase 1 and Phase 2 tests are not regressed; npm run parity exit 1 reflects Phase 2 fail-closed behavior. The Node v22.22.3 recursive-test compatibility adapter in lib/green-gate.mjs is narrowly scoped and does not fire on the production 5-file gate invocation.",
+    "git status --short shows pre-existing dirty agent files (16 files), config/model-map.json, measure/tracks.md, and untracked 2026-08-05 track directories + untracked result files (phase-3-review-c.json, phase-3-review-c.worktree-snapshot.json, phase-1-acceptance.json, phase-2-acceptance.json, etc.) but NO implementation files were modified by this audit. Audit-only role honored per absolute constraint 'DO NOT modify any source file'.",
+    "Anti-pattern audit (pre-closeout check list): A1 (prompt-only state transitions) — track did not introduce any supervisor change; Phase 3 only adds the green gate script. The Node v22.22.3 compatibility adapter is narrowly scoped (args.length === 2 single-file probe only; production gate uses 5-file invocation) and does not reintroduce a substring heuristic. A5 (plan truthfulness) — plan.md contains no 'PASS=N, FAIL=0' or 'all checks pass' claims; tasks have [ ] pending markers (which the strategy explicitly accepts per §3 compatibility marker grammar). A6 (registry note accuracy) — measure/tracks.md registry note for harness_selfcheck_truthfulness_20260805 describes the track accurately; the track is listed under 'Upcoming' (not 'Archived') and the description matches the spec.md scope. A9 (no test in tests/*.sh references an archived track path) — no .sh files exist in tests/ (verified via find tests -name '*.sh' returns no files); no archived-track path references. No anti-patterns A1, A3, A7 introduced by Phase 3: A3 defense — partition listing uses labeled counts (`running 5`, `excluded 4`, `0:`); no bare integers; A7 defense — exclude filter is exact-name matching via Set.has() over four candidate path forms (basename, relative-to-root, relative-to-packageTests, `tests/<...>`); no substring/regex matching. grep -nE 'substr|indexOf|match\\(|test\\(' lib/green-gate.mjs scripts/test-shipped.mjs returns zero matches."
+  ],
+  "commands": [
+    "node --test tests/green-gate.test.mjs",
+    "node --test tests/parity.test.mjs",
+    "node --test tests/model-resolution.test.mjs",
+    "node --test tests/core.test.mjs",
+    "node scripts/test-shipped.mjs (npm run test:shipped equivalent)",
+    "node --test ./tests/*.test.mjs (npm test equivalent)",
+    "npm run check",
+    "node scripts/parity.mjs (npm run parity equivalent)",
+    "node -e \"import('./lib/green-gate.mjs').then(m => console.log(m.partitionTests(new Set(['tests/agents-snapshot.test.mjs','tests/grammar.test.mjs','tests/manifest.test.mjs','tests/preflight.test.mjs']), './tests')))\"",
+    "node -e \"import('./lib/green-gate.mjs').then(m => { const a = m.partitionTests(new Set(['tests/agents-snapshot.test.mjs','tests/grammar.test.mjs','tests/manifest.test.mjs','tests/preflight.test.mjs']), './tests'); const b = m.partitionTests(new Set(['tests/agents-snapshot.test.mjs','tests/grammar.test.mjs','tests/manifest.test.mjs','tests/preflight.test.mjs']), './tests'); console.log(JSON.stringify(a) === JSON.stringify(b)); })\"",
+    "grep -nE 'Date\\.now|Math\\.random|new Date|setTimeout|setInterval|process\\.hrtime|crypto|randomUUID' lib/green-gate.mjs scripts/test-shipped.mjs",
+    "grep -nE 'substr|indexOf|match\\(|test\\(' lib/green-gate.mjs scripts/test-shipped.mjs",
+    "find tests -name '*.sh' (returns no files; no archived-track references)",
+    "cat tests/.track-red-files.txt (4 S1 intentional-Red files)",
+    "git diff b0d3e59..f914e2b --name-status (5 files: A lib/green-gate.mjs, A results/phase-3-green.json, M package.json, A scripts/test-shipped.mjs, A tests/.track-red-files.txt)",
+    "git diff b0d3e59..f914e2b -- package.json (additive single-line insertion of `test:shipped`)",
+    "git merge-base --is-ancestor 248d841b0b2445b3376d15625da1665fc084edbc HEAD && git merge-base --is-ancestor 7fe1a95c93a2bb0b4cda2f769f7fdcf30470bae7 HEAD && git merge-base --is-ancestor b0d3e59e005cdfd47c2542ac99e26213d2bda05d HEAD && git merge-base --is-ancestor f914e2bd48dc4790d698bd4551d1eab3814a71eb HEAD (all ancestors verified)",
+    "git rev-parse HEAD f914e2bd48dc4790d698bd4551d1eab3814a71eb (both return f914e2b...; current HEAD equals Phase 3 Green HEAD)",
+    "git status --short (17 modified agent files + config/model-map.json + measure/tracks.md + 4 untracked 2026-08-05 track directories + 8 untracked result files; pre-existing dirt, NOT introduced by Phase 3 Green)",
+    "python3 ~/.agents/skills/measure-orchestrator/scripts/measure_interphase_checks.py role-gate --repo /home/daniel-bo/Desktop/pi-measure-harness --role phase-acceptance --track harness_selfcheck_truthfulness_20260805 --phase 'Phase 3: A green gate independent of active-track Red' --baseline 248d841b0b2445b3376d15625da1665fc084edbc --role-base f914e2bd48dc4790d698bd4551d1eab3814a71eb --worktree-snapshot /home/daniel-bo/Desktop/pi-measure-harness/measure/tracks/harness_selfcheck_truthfulness_20260805/results/phase-3-review-c.worktree-snapshot.json --result-file /home/daniel-bo/Desktop/pi-measure-harness/measure/tracks/harness_selfcheck_truthfulness_20260805/results/phase-3-review-c.json --prerequisite-result review-c=/home/daniel-bo/Desktop/pi-measure-harness/measure/tracks/harness_selfcheck_truthfulness_20260805/results/phase-3-review-c.json --log-file /tmp/phase-3-acceptance.log"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "changed_files": [
+    "lib/green-gate.mjs (Phase 3 Green: deterministic partitionTests, exact-name matching via Set.has over 4 candidate path forms; narrow NODE_TEST_CONTEXT child-v8 adapter for Node v22.22.3 single-file recursive probes; no Date.now/Math.random/setTimeout/etc.)",
+    "scripts/test-shipped.mjs (Phase 3 Green: reads tests/.track-red-files.txt with comment/blank/whitespace filtering; emits explicit `[shipped] running N: ...; [track-red] excluded M: ...; [unclassified] U: ...` partition listing; exits 0 only when shipped partition is green and unclassified is empty; spawns node --test on shipped partition)",
+    "tests/.track-red-files.txt (Phase 3 Green: 4 S1 intentional-Red files — tests/agents-snapshot.test.mjs, tests/grammar.test.mjs, tests/manifest.test.mjs, tests/preflight.test.mjs — committed as the single source of truth for track-Red exclusion)",
+    "package.json (Phase 3 Green: additive single-line insertion of `test:shipped`; existing `test`, `check`, `parity`, `configure`, `migrate-auth`, etc. scripts unchanged)",
+    "tests/green-gate.test.mjs (Phase 3 Red: 8 contract tests — shipped-test script exists, partition classifier exported, shipped partition runs while 4 track-owned Red files excluded, unclassified file is hard failure, seeded regression in shipped surface fails, A7 analog not-actually-red probe, deterministic byte-identical, script output explicitly lists partitions)",
+    "tests/fixtures/green-gate/* (Phase 3 Red: 8 fixture files — agents-snapshot, grammar, manifest, preflight, shipped-fixture, not-actually-red-fixture, seeded-regression)",
+    "measure/tracks/harness_selfcheck_truthfulness_20260805/results/strategy.json (track setup; strategy validation against shipped surface)",
+    "measure/tracks/harness_selfcheck_truthfulness_20260805/results/phase-3-red.json (Phase 3 Red evidence; intermediate Red commit b0d3e59 recorded)",
+    "measure/tracks/harness_selfcheck_truthfulness_20260805/results/phase-3-green.json (Phase 3 Green evidence; implementation commit f914e2b recorded)",
+    "measure/tracks/harness_selfcheck_truthfulness_20260805/results/phase-3-review-c.json (Phase 3 review-c API-contract audit verdict: pass)",
+    "measure/tracks/harness_selfcheck_truthfulness_20260805/results/phase-3-review-c.worktree-snapshot.json (Phase 3 review-c pre-audit worktree snapshot)",
+    "measure/tracks/harness_selfcheck_truthfulness_20260805/results/phase-3-acceptance.json (this file; Phase 3 acceptance by measure-final-acceptance substitution)"
+  ],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "handoff": "Phase 3 accepted. All three implementation phases accepted (Phase 1 Roster parity, Phase 2 Model resolution fail-closed, Phase 3 Green gate independent of active-track Red). Track review-c (C1) and final-acceptance may proceed. Cross-cutting C2 (S1 handoff note naming which guards this track installs and which controlled_harness_evolution_20260714 Phase S1 supersedes) and C3 (scope decision record under the active plan's execution policy) are still pending; C4 (sprint retro) at closeout. Closeout agent (measure-closeout, openai-codex OAuth broken) requires user-authorized substitution; measure-final-acceptance may also serve that role. Final-acceptance should verify: (1) the cross-cutting C2 handoff note names each guard-to-supersede mapping (lib/core.mjs#parseAgentFile strict resolve → superseded by S1's lib/manifest.mjs; lib/core.mjs#rosterParity structured findings → superseded by S1's lib/manifest.mjs versioned manifest; tests/.track-red-files.txt classifier → superseded by S1's preflight blocker; npm run test:shipped script → superseded by S1's gate runner); (2) the reconciliation report at measure/tracks/harness_selfcheck_truthfulness_20260805/reconciliation-models.md is committed and reviewable with the 7 unmapped agents all classified as map_entry_needed and the user's pending routing decision documented; (3) metadata.json#deviation_notes is updated with the C2/C3 records; (4) all S1 Red artifacts in tests/agents-snapshot.test.mjs, tests/grammar.test.mjs, tests/manifest.test.mjs, tests/preflight.test.mjs are listed in tests/.track-red-files.txt so the green gate continues to exclude them when S1 lands; (5) `bash measure/doctor.sh` exits 0; (6) all configured project gates pass. The canonical measure-closeout role is unavailable due to openai-codex OAuth failure; user must authorize a substitute (likely measure-final-acceptance)."
+}

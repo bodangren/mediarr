@@ -1,0 +1,159 @@
+{
+  "schema_version": 2,
+  "role": "measure-mid-red (direct coder-minimax-m3 delegation, user-authorized)",
+  "track": "harness_selfcheck_truthfulness_20260805",
+  "phase": "Phase 1: Roster parity that cannot drift silently",
+  "baseline_sha": "ac61ec375d1e2ec76181317df0f20bd409549971",
+  "audited_head_sha": "64f5e994119f8a6a4cc888a17b47043bfa73ea80",
+  "status": "complete",
+  "summary": "Phase 1 Red evidence \u2014 direct coder delegation due to mid-red (model unregistered) and jr-green (OAuth expired) unavailability. The Phase 1 roster-parity contract is fully documented (JSDoc-style header in tests/parity.test.mjs and 11 inline one-line test comments naming the contract section each test protects, per test-strategy.md \u00a78). All 11 required Red conditions are encoded as failing tests at tests/parity.test.mjs; six static fixture rosters (baseline, missing-agent, extra-agent, mode-change, missing-description, malformed) under tests/fixtures/parity/ drive the named-finding probes; the live-roster probe (test #1) uses the actual 27-agent / 25-callable roster and falsifies the stale 24/22 hardcoded constant. node --test tests/parity.test.mjs exits non-zero with all 11 tests failing because `rosterParity` is not yet exported from lib/core.mjs. The existing tests/core.test.mjs 'agent snapshot has expected parity' test still fails on the live 27/25 vs stale 24/22 mismatch (observed only \u2014 NOT modified). npm run check exits 0 and npm run parity exits 1 (still red \u2014 Green work).",
+  "deviation_notes": "Direct coder delegation violates orchestrator's standard role boundary (no coder in Red/Green chain). User explicitly authorized due to infrastructure failures: measure-mid-red's kimi-coding/k3 is unregistered in this harness session; measure-jr-green's openai-codex OAuth refresh token is invalid (401 invalid_refresh_token). All openai-codex-based Measure subagents are similarly unavailable: measure-review-b-security, measure-phase-acceptance, measure-orchestrator-audit, measure-closeout. Only minimax-cn/MiniMax-M3-based agents work: measure-strategy, measure-review-c-ux-api, measure-final-acceptance, plus coder-minimax-m3 (and coder-vocengine-*). Fixtures are static committed files under tests/fixtures/parity/ (not os.tmpdir()-runtime-generated) \u2014 chosen for determinism per test-strategy.md \u00a74; documented here as required. The new parity function name chosen is `rosterParity` (added alongside `agentParity` in lib/core.mjs rather than replacing `agentParity`'s internals \u2014 keeps Green free to choose the rename at acceptance time). Dynamic import is used inside each test so every Red test reports its own contract-section comment in the failure output instead of the whole file failing at module-load time on a single missing export.",
+  "tasks_covered": [
+    "1.1",
+    "1.2"
+  ],
+  "red_falsification": {
+    "command": "node --test tests/parity.test.mjs",
+    "exit_code": 1,
+    "output_tail": "1..11\n# tests 11\n# suites 0\n# pass 0\n# fail 11\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 1201\n\n# All 11 subtests fail with: error: 'rosterParity is not a function', code: 'ERR_TEST_FAILURE', name: 'TypeError'. The new parity contract export does not yet exist in lib/core.mjs; tests reference the future symbol via dynamic import per-test for granular Red output."
+  },
+  "pre_existing_red_baseline": {
+    "npm_test_exit_code": 1,
+    "npm_test_pass_count": 8,
+    "npm_test_fail_count": 5,
+    "failing_test_files": [
+      "tests/agents-snapshot.test.mjs",
+      "tests/core.test.mjs (test: 'agent snapshot has expected parity' \u2014 frozen 24/22 vs live 27/25)",
+      "tests/grammar.test.mjs",
+      "tests/manifest.test.mjs",
+      "tests/preflight.test.mjs"
+    ]
+  },
+  "post_commit_red_state": {
+    "npm_test_exit_code": 1,
+    "npm_test_pass_count": 8,
+    "npm_test_fail_count": 16,
+    "npm_test_total": 24,
+    "failing_test_files": [
+      "tests/agents-snapshot.test.mjs",
+      "tests/core.test.mjs (test: 'agent snapshot has expected parity' \u2014 frozen 24/22 vs live 27/25)",
+      "tests/grammar.test.mjs",
+      "tests/manifest.test.mjs",
+      "tests/preflight.test.mjs",
+      "tests/parity.test.mjs (all 11 tests \u2014 `rosterParity is not a function`)"
+    ],
+    "npm_run_check_exit_code": 0,
+    "npm_run_parity_exit_code": 1
+  },
+  "files_added": [
+    "tests/parity.test.mjs",
+    "tests/fixtures/parity/baseline/agent-a.md",
+    "tests/fixtures/parity/baseline/agent-b.md",
+    "tests/fixtures/parity/missing-agent/agent-a.md",
+    "tests/fixtures/parity/extra-agent/agent-a.md",
+    "tests/fixtures/parity/extra-agent/agent-b.md",
+    "tests/fixtures/parity/extra-agent/agent-c.md",
+    "tests/fixtures/parity/mode-change/agent-a.md",
+    "tests/fixtures/parity/mode-change/agent-b.md",
+    "tests/fixtures/parity/missing-description/agent-a.md",
+    "tests/fixtures/parity/missing-description/agent-b.md",
+    "tests/fixtures/parity/malformed/agent-a.md",
+    "tests/fixtures/parity/malformed/agent-b.md",
+    "tests/fixtures/parity/malformed/agent-broken.md",
+    "measure/tracks/harness_selfcheck_truthfulness_20260805/results/phase-1-red.json"
+  ],
+  "files_modified": [],
+  "contracts_defined": [
+    "tests/parity.test.mjs header block (lines 1\u201342) \u2014 Phase 1 roster-parity contract surface: inputs (agents / rosterDir / expectedRoster), outputs (agentCount, callableCount, agentCountLabel 'agent count: <N>', callableCountLabel 'callable count: <N>', findings[{class,name?,expected?,actual?,path?,detail?}], ok = findings.length === 0); finding-class set: {missing_agent, extra_agent, mode_change, duplicate, missing_description, unreadable_source, malformed_agent_file}; public surface: new `rosterParity` exported from lib/core.mjs alongside `agentParity`; `EXPECTED_AGENT_COUNT` and `EXPECTED_CALLABLE_COUNT` are removed in Green (NOT here \u2014 that's Green work)."
+  ],
+  "test_inventory": [
+    {
+      "id": 1,
+      "name": "live-behavior: rosterParity derives agentCount and callableCount from agents (never hardcoded)",
+      "contract_section": "spec.md#story-s1 AC3 + test-strategy.md Phase 1 'live-behavior \u2014 derived counts'"
+    },
+    {
+      "id": 2,
+      "name": "live-behavior: rosterParity reports missing_agent by name (not bare integer count)",
+      "contract_section": "spec.md#story-s1 AC2 + test-strategy.md Phase 1 'live-behavior \u2014 missing agent by name'"
+    },
+    {
+      "id": 3,
+      "name": "live-behavior: rosterParity reports extra_agent by name (not bare integer count)",
+      "contract_section": "spec.md#story-s1 AC2 + test-strategy.md Phase 1 'live-behavior \u2014 extra agent by name'"
+    },
+    {
+      "id": 4,
+      "name": "live-behavior: rosterParity reports mode_change by name with expected/actual labels",
+      "contract_section": "spec.md#story-s1 AC2 + test-strategy.md Phase 1 'live-behavior \u2014 mode-change by name'"
+    },
+    {
+      "id": 5,
+      "name": "live-behavior: rosterParity reports duplicate by name",
+      "contract_section": "test-strategy.md Phase 1 'live-behavior \u2014 duplicate by name'"
+    },
+    {
+      "id": 6,
+      "name": "live-behavior: rosterParity reports missing_description by name",
+      "contract_section": "spec.md#story-s1 AC2 + test-strategy.md Phase 1 'live-behavior \u2014 missing description by name'"
+    },
+    {
+      "id": 7,
+      "name": "fail-closed: rosterParity reports unreadable_source with path label and ok=false",
+      "contract_section": "spec.md Non-Functional Requirements 'fails closed' + test-strategy.md Phase 1 'fail-closed \u2014 unreadable source'"
+    },
+    {
+      "id": 8,
+      "name": "fail-closed: rosterParity reports malformed_agent_file by name with path label",
+      "contract_section": "spec.md Non-Functional Requirements 'fails closed' + test-strategy.md Phase 1 'fail-closed \u2014 malformed frontmatter'"
+    },
+    {
+      "id": 9,
+      "name": "A3 probe: every rosterParity finding carries a labeled `class` (bare integers forbidden)",
+      "contract_section": "spec.md NF A3 + test-strategy.md Phase 1 'A3 probe \u2014 labeled integers only'"
+    },
+    {
+      "id": 10,
+      "name": "A3 probe: agentCountLabel is parseable as a labeled integer (analog to tests/manifest.test.mjs#agentCountLabel)",
+      "contract_section": "test-strategy.md Phase 1 'A3 probe \u2014 labeled-integer parse' (mirror of tests/manifest.test.mjs#agentCountLabel)"
+    },
+    {
+      "id": 11,
+      "name": "deterministic: rosterParity produces byte-identical findings across repeated calls",
+      "contract_section": "spec.md Non-Functional Requirements 'deterministic and side-effect free' + test-strategy.md Phase 1 'deterministic output'"
+    }
+  ],
+  "anti_patterns_covered": [
+    "A3"
+  ],
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    {
+      "id": "NF-1",
+      "class": "duplicate_fixture_shape_constraint",
+      "description": "POSIX filesystems forbid two filenames with the same basename in a single directory, so the 'duplicate by name' probe (test #5) cannot use a static fixture directory; it passes pre-loaded `agents` with two entries sharing the name `agent-a` via the `agents` option. The function contract MUST support this `agents`-as-override path (i.e., pre-loaded agents take precedence over `rosterDir`). If Jr Green chooses to load only from `rosterDir`, test #5 fails Green and the contract must be revised. This is documented in the test header."
+    },
+    {
+      "id": "NF-2",
+      "class": "expected_roster_source_pending_green",
+      "description": "The committed `expected-roster` source (e.g., config/expected-roster.json) per test-strategy.md Phase 1 'Architecture guardrails' is owned by Green; Red tests pass the expected roster inline (BASELINE_EXPECTED constant in tests/parity.test.mjs). Green may choose a different shape for the committed source, but the inline shape used here defines the minimum contract the function must accept."
+    },
+    {
+      "id": "NF-3",
+      "class": "live_behavior_test_count_observation",
+      "description": "npm test now reports 16-of-24 failing (vs the task description's 'at least 6-of-13'). The 13 \u2192 24 jump is because tests/parity.test.mjs exposes 11 individual subtests via dynamic import (per-test failure reporting), not because of test bloat. The focused Red command `node --test tests/parity.test.mjs` reports 0-of-11 passing. This is stricter than the task's minimum Red falsification and satisfies 'at least one additional failure'."
+    }
+  ],
+  "commands": [
+    "node --test tests/parity.test.mjs",
+    "npm test",
+    "npm run check",
+    "npm run parity"
+  ],
+  "commits": [
+    "64f5e99"
+  ],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "handoff": "Phase 1 Green must: (1) implement `rosterParity` in lib/core.mjs matching the JSDoc contract in tests/parity.test.mjs header (function accepts {agents?, rosterDir?, expectedRoster?} and returns {ok, agentCount, callableCount, agentCountLabel 'agent count: <N>', callableCountLabel 'callable count: <N>', findings[{class, name?, expected?, actual?, path?, detail?}]}); (2) make `agents` an override for `rosterDir` so test #5 (duplicate detection on pre-loaded agents) passes; (3) remove EXPECTED_AGENT_COUNT and EXPECTED_CALLABLE_COUNT from lib/core.mjs; (4) update tests/core.test.mjs to assert the derived contract not the frozen 24/22 snapshot; (5) verify node --test tests/parity.test.mjs exits 0 and npm test exit code reflects only the four S1 intentional-Red files (agents-snapshot, grammar, manifest, preflight). The committed expected-roster source (config/expected-roster.json or similar) is a Green decision \u2014 Red passes expectedRoster inline."
+}

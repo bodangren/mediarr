@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "role": "operator-fix (one-off, user-authorized)",
+  "track": "n/a",
+  "phase": "kimi-route regression fix",
+  "baseline_sha": "a6c75f2d239321a27906331a3176b249ab948b14",
+  "audited_head_sha": "2f23cef6d4d2ebc1bd4e506d62fe12886f4624c1",
+  "status": "complete",
+  "commits": ["2f23cef"],
+  "gates": {
+    "green-gate": { "exit_code": 0, "pass": 8, "fail": 0 },
+    "parity": { "exit_code": 0, "pass": 11, "fail": 0 },
+    "model-resolution": { "exit_code": 0, "pass": 9, "fail": 0 },
+    "core": { "exit_code": 0, "pass": 5, "fail": 0 },
+    "setup": { "exit_code": 0, "pass": 4, "fail": 0 },
+    "npm_run_test_shipped": { "exit_code": 0, "partition": "5/4/0", "pass": 37, "fail": 0 },
+    "npm_test": { "exit_code": 1, "failing": ["tests/agents-snapshot.test.mjs", "tests/grammar.test.mjs", "tests/manifest.test.mjs", "tests/preflight.test.mjs"] },
+    "npm_run_check": { "exit_code": 0 },
+    "parity_script": { "exit_code": 1, "ok": false, "unmapped_count": 3, "model_map_matches": true }
+  },
+  "files_changed": ["tests/core.test.mjs", "tests/model-resolution.test.mjs"],
+  "live_unmapped": ["coder-openai-gpt-5-6-luna-fast", "measure-adversarial-testing", "measure-ux-browser-review"],
+  "live_unmapped_count": 3,
+  "blocking_findings": [],
+  "nonblocking_findings": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "handoff": "Harness fully reloaded. All shipped gates green (npm run test:shipped exit 0, 37/37). Active track orchestration can resume."
+}

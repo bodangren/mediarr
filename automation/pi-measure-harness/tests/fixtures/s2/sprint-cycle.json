@@ -1,0 +1,10 @@
+{
+  "sprint_id": "s2-fixture-cycle",
+  "schema_version": 2,
+  "baselineSha": "ccc1111",
+  "stories": [
+    { "id": "S2.X", "deps": ["S2.Y"], "state": "pending" },
+    { "id": "S2.Y", "deps": ["S2.Z"], "state": "pending" },
+    { "id": "S2.Z", "deps": ["S2.X"], "state": "pending" }
+  ]
+}

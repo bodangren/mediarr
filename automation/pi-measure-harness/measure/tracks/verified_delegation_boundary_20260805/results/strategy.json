@@ -1,0 +1,120 @@
+{
+  "schema_version": 2,
+  "role": "measure-strategy",
+  "track": "verified_delegation_boundary_20260805",
+  "phase": "strategy",
+  "baseline_sha": "248d841b0b2445b3376d15625da1665fc084edbc",
+  "audited_head_sha": "2f23cef6d4d2ebc1bd4e506d62fe12886f4624c1",
+  "applicability": "applicable",
+  "status": "pass",
+  "summary": "Plan, spec, and committed strategy validated against the live harness surface. All 30 plan tasks (Phase 1 7 tasks including 1.4b, Phase 2 6 tasks, Phase 3 5 tasks, Phase 4 6 tasks, cross-cutting C1-C2-C2b-C3-C4-C5 6 tasks) are bounded, independently verifiable, and free of anti-patterns A1, A3, A4, A5, A7, A8 in the plan text. The four stories correspond one-to-one with the four phases. Live-state verification at the strategy commit SHA (2f23cef6) confirms: AUDIT_ONLY_ROLES in lib/core.mjs contains the 6 named roles from spec (measure-review-a-correctness, measure-review-b-security, measure-review-c-ux-api, measure-ux-browser-review, measure-phase-acceptance, measure-final-acceptance) plus measure-orchestrator-audit — wait, measure-orchestrator-audit is NOT in AUDIT_ONLY_ROLES today (only 6 entries); the spec mentions it for S2 but the set is 6-strong. Recorded as nonblocking finding NF-1 for Mid to confirm whether measure-orchestrator-audit should join the set or whether the spec text is descriptive. The 4 confirmed denylist-bypass commands (git -C . commit -am x, python3 -c '...os.remove...', eval $CMD, find . -delete) are runnable against the live lib/core.mjs#forbiddenShell today; Phase 2 will replace the denylist with a state assertion. isTaskAllowed('measure-orchestrator', 'measure-orchestrator') currently returns true per the live code; Phase 3 will tighten this. Plan uses [ ] compatibility markers (no [b] deferred markers exist); A1 free-text 'deferred' defense holds vacuously (no [b] markers to defend). No plan edits required — strategy.json and test-strategy.md are new artifacts added by this role commit; plan.md, spec.md, and metadata.json are unchanged from the user's commit (a6c75f2).",
+  "phases_planned": [
+    {
+      "id": "S1",
+      "title": "Observed routing, not requested routing",
+      "tasks": ["1.1", "1.2", "1.3", "1.4", "1.4b", "1.5", "1.6"],
+      "red_strategy": "node --test tests/observed-routing.test.mjs. Red falsification: (a) requestedModel and observedModel are not yet separate fields on the receipt (the new contract is not yet exported), AND (b) runtimeModel(agent, fallback) still silently falls back to the parent's model (undeclared_pin error not raised), AND (c) the live delegation probe's receipt carries only the old `model` field and no observedModel. All three Red conditions must hold at the Mid Red commit.",
+      "green_strategy": "npm run test:shipped exits 0; npm test exits 0 modulo the four S1 intentional-Red files (tests/agents-snapshot.test.mjs, tests/grammar.test.mjs, tests/manifest.test.mjs, tests/preflight.test.mjs); npm run check exits 0; npm run parity exits 0; node --test tests/observed-routing.test.mjs exits 0; the live delegation probe (Task 1.5) produces a receipt with requestedModel, observedModel, and roleDefinitionHash present and consistent; the mismatch classification probe produces failureClassification: 'observed_routing_mismatch' and the parent is not blocked from reporting the failure."
+    },
+    {
+      "id": "S2",
+      "title": "Read-only roles verified by state, not by string matching",
+      "tasks": ["2.1", "2.2", "2.3", "2.4", "2.5", "2.6"],
+      "red_strategy": "node --test tests/readonly-state.test.mjs. Red falsification: (a) the post-task state assertion is not yet implemented (the new function does not exist), AND (b) the live denylist-bypass corpus (git -C . commit -am x, python3 -c '...os.remove...', eval $CMD, find . -delete) is currently permitted for measure-orchestrator (the assertion test for each bypass must fail because the state assertion does not yet catch the mutation), AND (c) the receipt does not yet carry a verifiedReadOnly field. All three Red conditions must hold at the Mid Red commit.",
+      "green_strategy": "npm run test:shipped exits 0; npm test exits 0 modulo the four S1 intentional-Red files; npm run check exits 0; npm run parity exits 0; node --test tests/readonly-state.test.mjs exits 0; the denylist-bypass corpus now fails the state assertion for measure-orchestrator and every AUDIT_ONLY_ROLES member; the verifiedReadOnly field is on the receipt; the forbiddenShell denylist disposition is recorded in metadata.json#deviation_notes."
+    },
+    {
+      "id": "S3",
+      "title": "Bounded, non-recursive dispatch",
+      "tasks": ["3.1", "3.2", "3.3", "3.4", "3.5"],
+      "red_strategy": "node --test tests/dispatch-bounds.test.mjs. Red falsification: (a) the wall-clock timeout is not yet implemented (the test that stubs a sleeping child confirms the spawn does not terminate at the budget), AND (b) isTaskAllowed('measure-orchestrator', 'measure-orchestrator') returns true today (the self-spawn test fails), AND (c) the delegation depth is not yet propagated (a chained dispatch with depth=3 returns true today). All three Red conditions must hold at the Mid Red commit.",
+      "green_strategy": "npm run test:shipped exits 0; npm test exits 0 modulo the four S1 intentional-Red files; npm run check exits 0; npm run parity exits 0; node --test tests/dispatch-bounds.test.mjs exits 0; a fixture child that sleeps past the budget is terminated at the budget; isTaskAllowed(p, p) returns false for every p; a chained dispatch at depth 3 returns a dispatchRefusal with the chain recorded."
+    },
+    {
+      "id": "S4",
+      "title": "Untrusted child output and validated dispatch packets",
+      "tasks": ["4.1", "4.2", "4.3", "4.4", "4.5", "4.6"],
+      "red_strategy": "node --test tests/dispatch-packet.test.mjs. Red falsification: (a) the untrusted-output framing is not yet applied (the continuationText line is spliced inline, the delimiter is absent), AND (b) the pre-spawn packet validation is not yet implemented (a packet missing baselineSha is dispatched and a child process starts), AND (c) the validatedPacket field is not yet on the receipt. All three Red conditions must hold at the Mid Red commit.",
+      "green_strategy": "npm run test:shipped exits 0; npm test exits 0 modulo the four S1 intentional-Red files; npm run check exits 0; npm run parity exits 0; node --test tests/dispatch-packet.test.mjs exits 0; a packet missing any required field is refused pre-spawn with the missing fields named; the untrusted-output framing is applied wherever child text enters a parent context or a subsequent prompt; the validatedPacket field is on the receipt."
+    }
+  ],
+  "cross_cutting_tasks": ["C1", "C2", "C2b", "C3", "C4", "C5"],
+  "deviations_from_canonical": [
+    "C2b is a new task added when the routing chain was defined (per metadata.json#deviation_notes). The original plan did not enumerate C2b; the plan now lists it as a sub-task under cross-cutting. The strategy treats C2b as a separate cross-cutting task with its own risk (low) and owner (this role or measure-final-acceptance).",
+    "Task 1.4b is a new task added in the same revision (per metadata.json#deviation_notes). The strategy treats 1.4b as a Phase 1 sub-task alongside 1.4, with its own contract surface (roleDefinitionHash on the receipt, separate from promptHash).",
+    "The plan's 30-task count (per metadata.json#estimated_tasks) breaks down as 7 (S1) + 6 (S2) + 5 (S3) + 6 (S4) + 6 (cross-cutting C1, C2, C2b, C3, C4, C5) = 30. The strategy enumerates the same task list verbatim.",
+    "AUDIT_ONLY_ROLES in lib/core.mjs contains 6 entries today (measure-review-a-correctness, measure-review-b-security, measure-review-c-ux-api, measure-ux-browser-review, measure-phase-acceptance, measure-final-acceptance). The spec narrative also mentions measure-orchestrator-audit; today's set excludes it. Recorded as NF-1 below for Mid to confirm whether to add measure-orchestrator-audit to AUDIT_ONLY_ROLES or whether the spec text is descriptive of the intent (not a normative list)."
+  ],
+  "anti_patterns_to_avoid": ["A1", "A2", "A3", "A4", "A5", "A7", "A8"],
+  "estimated_tasks": 30,
+  "estimated_phases": 4,
+  "routing_chain_position": "step 1 of 3",
+  "blocking_dependencies": ["none — this is the foundational step of the routing chain"],
+  "feedback_for_red": "Mid Red must (1) write tests/observed-routing.test.mjs with at least 8 assertions covering: matching observation, contradicting observation, unobservable routing, undeclared pin (parent-fallback removed), roleDefinitionHash on receipt, three distinct failure classifications, A3 labeled verified-counter, A7 no-widening of accepted divergence, A8 symlink rejection, deterministic output; (2) write tests/readonly-state.test.mjs with the four denylist-bypass corpus tests (git -C . commit -am x, python3 -c, eval, find -delete) plus unverifiable state, result-path writes permitted/denied, head movement, A1 prompt-only state transition defense, A3 labeled bypass count, A4 positive control (a verifiedReadOnly: true case), A5 SHA evidence, deterministic output; (3) write tests/dispatch-bounds.test.mjs with wall-clock timeout, SIGKILL escalation, self-spawn refused, primary-as-child refused, depth-limit refusal with chain recorded, depth propagation through task_id continuation, A2 stress test (10-deep chain terminates), A3 labeled chain record, A7 no weakening of the bound, deterministic output; (4) write tests/dispatch-packet.test.mjs with untrusted-output framing in parent result and continuationText, pre-spawn refusal on missing field, pre-spawn refusal on invalid field (non-hex SHA), pre-spawn refusal on absolute path that does not exist, validatedPacket on receipt, A1 pre-spawn enforcement, A3 labeled missing-field count, A7 no weakening of the schema, deterministic output. Every test must have a falsification condition per the strategy §8 checklist; one-line comments naming the contract section each test protects are required. Red commits must observe all four node --test commands exiting non-zero for the documented Red conditions.",
+  "feedback_for_green": "Jr Green must (1) implement the observed-routing contract in extensions/measure-harness/index.ts#task: capture observedModel from the child's first message_start.model event, compare to the pin (strict equality of provider/id after MODEL_MAP resolution), record both requestedModel and observedModel on the receipt, add roleDefinitionHash from the parsed systemPrompt body, remove runtimeModel(agent, fallback) parent-fallback, emit three distinct failure classifications (observed_routing_mismatch, observed_routing_unobservable, undeclared_child_pin); (2) implement the read-only state assertion: replace or augment the forbiddenShell denylist with a post-task state check (endHead === startHead AND git status --porcelain is empty OR limited to writes inside result_path), record verifiedReadOnly as a tri-state (true | false | 'unverifiable'), record the disposition of forbiddenShell in metadata.json#deviation_notes; (3) implement the dispatch bounds: wall-clock timeout with SIGTERM then SIGKILL, depth propagation via PI_MEASURE_DELEGATION_DEPTH env var, tighten isTaskAllowed to refuse self-spawn and primary-mode children by name, return a dispatchRefusal structured object on refusal; (4) implement the untrusted-output framing with a versioned delimiter (<<<UNTRUSTED_CHILD_OUTPUT version=1 id role sha256>>>>...<<<END_UNTRUSTED_CHILD_OUTPUT>>>) wherever child text enters a parent context or continuationText, implement pre-spawn MEASURE_TASK_PACKET validation with the eight required fields (absoluteRepoPath, track, phase, baselineSha, auditedHeadSha, gateCommands, resultPath, childRole, packetHash), emit dispatchRefusal with missing[] and invalid[] arrays on refusal, record validatedPacket on the receipt. Green must observe: npm run test:shipped exits 0; npm test exits 0 modulo the four S1 intentional-Red files; npm run check exits 0; npm run parity exits 0; all four focused node --test commands exit 0; the S1 live delegation probe produces a receipt with all three new fields. Every [x] in plan.md must carry a 7-40 hex SHA evidence in the same evidence commit.",
+  "unresolved_questions": [
+    "Should measure-orchestrator-audit be added to AUDIT_ONLY_ROLES in lib/core.mjs as part of Phase 2 Task 2.3, or is the spec text descriptive only? The set today is 6 entries; the spec narrative implies 7. Mid must confirm with the user (or the role's existing agent-file edit: deny) and add it if appropriate.",
+    "Should the untrusted-output framing delimiter be a single opening+closing pair or include a per-output checksum? The strategy spec calls for sha256=<outputHash> in the opening tag, but the implementation choice (SHA-256 of the raw output vs SHA-256 of the wrapped output) is a Jr implementation detail. Mid must confirm the field semantic.",
+    "Should the MEASURE_TASK_PACKET schema be defined in TypeBox (matching the existing tool parameter style) or in JSON Schema (matching the public-API style)? The strategy spec lists it as a 'TypeBox schema or JSON Schema' — Jr chooses; review-a audits the choice for consistency with the rest of the extension."
+  ],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "nonblocking_findings": [
+    {
+      "id": "NF-1",
+      "class": "spec_vs_code_drift",
+      "description": "Spec mentions measure-orchestrator-audit in the Observed Defects #3 narrative ('startHead / endHead are recorded ... and never asserted, for any role') and again in Story S2 AC1 ('a read-only role completes'). AUDIT_ONLY_ROLES in lib/core.mjs today contains 6 entries (measure-review-a-correctness, measure-review-b-security, measure-review-c-ux-api, measure-ux-browser-review, measure-phase-acceptance, measure-final-acceptance) and does NOT include measure-orchestrator-audit. The strategy records this as a nonblocking finding: Mid must confirm whether to add measure-orchestrator-audit to AUDIT_ONLY_ROLES (so the state assertion applies to it) or treat the spec text as descriptive of the intent (any role with a read-only expectation). The role's agent file (measure-orchestrator-audit.md) already has edit: deny in its permission block at the agent-file level, so the spirit of S2 AC1 holds today even if AUDIT_ONLY_ROLES is not updated. The strategy recommends Mid add it; review-a audits the choice."
+    },
+    {
+      "id": "NF-2",
+      "class": "phase_ordering_implication",
+      "description": "The S1 acceptance gate requires a live delegation probe (Task 1.5). The probe invokes a real child process and parses the resulting JSON event stream. Pi's runtime event-stream shape is not formally versioned; if Pi's runtime changes the shape between the strategy commit and the S1 acceptance, the probe will fail and the fixture must be re-recorded. The strategy records this in the S1 closeout gate; the live probe is the ONLY test that exercises the live pipe, so any drift is detected at S1 acceptance, not at S1 Green."
+    },
+    {
+      "id": "NF-3",
+      "class": "downstream_consumers",
+      "description": "S1 introduces a breaking contract change: the receipt field `model` is renamed to `requestedModel` and a new `observedModel` field is added. The two successor tracks (role_model_pool_20260805, role_fitness_frontier_watch_20260805) consume these fields. Today no in-repo consumer reads `receipt.model` directly (the only writer is extensions/measure-harness/index.ts#task itself), so the rename is safe. The strategy's C2b handoff task names the exact fields for the two successor tracks; Mid/Jr must not add a `model` field as a silent alias to `requestedModel` (A7 analog). Review-a audits the rename for silent breakage."
+    },
+    {
+      "id": "NF-4",
+      "class": "isTaskAllowed_tightening_breaking",
+      "description": "Phase 3 Task 3.4 tightens isTaskAllowed to refuse `measure-orchestrator` → `coder-orchestrator` (primary-as-child refused). The closed harness_selfcheck_truthfulness_20260805 track used `coder-orchestrator` as a delegation target (per reconciliation-models.md handoff). If any in-flight acceptance flow or test depends on this pattern, the tightening will break it. The strategy records this in S3's changed-contract risks; review-a must confirm before Green."
+    }
+  ],
+  "commands": [
+    "node --test tests/observed-routing.test.mjs (Phase 1 Red — focused on observed-routing contract tests; exits non-zero pre-Green)",
+    "node --test tests/readonly-state.test.mjs (Phase 2 Red — focused on read-only state assertion contract tests; exits non-zero pre-Green)",
+    "node --test tests/dispatch-bounds.test.mjs (Phase 3 Red — focused on dispatch-bounds contract tests; exits non-zero pre-Green)",
+    "node --test tests/dispatch-packet.test.mjs (Phase 4 Red — focused on dispatch-packet validation contract tests; exits non-zero pre-Green)",
+    "npm run test:shipped (Green gate — runs shipped partition only, exits 0 when healthy; the four new test files join the shipped partition by default since they are not in tests/.track-red-files.txt)",
+    "npm test (full test suite — runs all tests, expects 4-of-N red pre-Green for the four S1 intentional-Red files, plus the four new test files red at Mid Red and green at Green)",
+    "npm run check (tsc --noEmit; exits 0)",
+    "npm run parity (snapshot vs agents/*.md; exits non-zero today due to 3 unmapped models per the latest reconciliation; S1/S2/S3/S4 do not change MODEL_MAP or agent files except where S4 Task 4.5 updates role prompts to match the now-machine-checked packet contract)"
+  ],
+  "gate_commands": {
+    "RED_TEST_COMMAND": "node --test tests/observed-routing.test.mjs (Phase 1) / node --test tests/readonly-state.test.mjs (Phase 2) / node --test tests/dispatch-bounds.test.mjs (Phase 3) / node --test tests/dispatch-packet.test.mjs (Phase 4) — orchestrator sets per phase via env var",
+    "GREEN_TEST_COMMAND": "npm run test:shipped (shipped by harness_selfcheck_truthfulness_20260805; the four new test files for this track are added to the shipped partition by default since they are not listed in tests/.track-red-files.txt)",
+    "PROJECT_LINT": "n/a — package has no separate lint command; typescript type-check via npm run check is the only static check",
+    "PROJECT_CHECKS": "npm run check",
+    "PROJECT_TESTS": "npm test",
+    "PROJECT_DEV_URL": "n/a — package is a Node.js ESM Pi extension with no user-facing browser surface; UX_REQUIRED=never"
+  },
+  "evidence": [
+    "lib/core.mjs#AUDIT_ONLY_ROLES contains 6 entries (measure-review-a-correctness, measure-review-b-security, measure-review-c-ux-api, measure-ux-browser-review, measure-phase-acceptance, measure-final-acceptance). Verified via grep at strategy commit SHA 2f23cef6.",
+    "lib/core.mjs#forbiddenShell at lines 369-376 contains 5 regex patterns. Verified that the four confirmed bypasses from spec.md Observed Defects #4 (git -C . commit -am x, python3 -c '...os.remove...', eval $CMD, find . -delete) are NOT matched by the denylist. The git commit pattern is `\\bgit\\s+(?:commit|push|reset|checkout|restore)\\b` which requires `commit` (not `commit -am`) preceded by whitespace and `git` — the `git -C . commit` form does not match because of the `-C .` argument between `git` and `commit`. The bypass corpus is confirmed runnable against the live denylist.",
+    "lib/core.mjs#isTaskAllowed at lines 355-362 returns true for (measure-orchestrator, measure-orchestrator) today (the `childName.startsWith('measure-')` branch matches). Verified via code inspection. Phase 3 Task 3.4 will tighten this.",
+    "lib/core.mjs#parseAgentFile at lines 78-95 uses strict resolve: `model: sourceModel ? MODEL_MAP[sourceModel] : undefined`. There is NO `?? sourceModel` fallback (the closed track already removed it). The spec S1 references a different runtimeModel line in extensions/measure-harness/index.ts:88 (`return agent.model ?? (fallback ? ... : undefined)`) which IS the parent-fallback the spec calls out. The fallback is in runtimeModel, not parseAgentFile. The strategy's S1 Red condition (b) targets runtimeModel's parent-fallback, not parseAgentFile.",
+    "extensions/measure-harness/index.ts#task writes the receipt with `model: modelRef` (line 297), captures `startHead` (line 282) and `endHead` (line 304), and splices `continuationText` inline at line 238. The S1 contract (requestedModel vs observedModel, roleDefinitionHash) and S4 contract (untrusted framing) are not yet present. Verified via code inspection.",
+    "Plan.md uses [ ] compatibility markers (no [b] deferred markers exist). Verified via grep. A1 free-text 'deferred' defense holds vacuously (no [b] markers to defend).",
+    "Plan.md task count: 7 (Phase 1) + 6 (Phase 2) + 5 (Phase 3) + 6 (Phase 4) + 6 (cross-cutting) = 30. Matches metadata.json#estimated_tasks.",
+    "AUDIT_ONLY_ROLES member agent files all have `edit: deny` at the agent-file level (verified via head of measure-review-a-correctness.md, measure-review-b-security.md, measure-review-c-ux-api.md, measure-phase-acceptance.md, measure-final-acceptance.md, measure-orchestrator-audit.md, measure-ux-browser-review.md). The S2 strategy's state-assertion is the harness-side defense; the agent-file `edit: deny` is the agent-side defense. Both are present today; S2 makes the harness-side defense structural.",
+    "controlled_harness_evolution_20260714 Phase S1.3b symlink rejection is in place (per lessons-learned.md). The strategy's S1 A8 probe is a regression guard carrying that work forward; the probe is not a new symlink-rejection implementation."
+  ],
+  "plan_updates": [
+    "no edits — strategy.json and test-strategy.md are new artifacts added by this role commit. plan.md, spec.md, and metadata.json are unchanged from the user's commit (a6c75f2)."
+  ],
+  "changed_files": [
+    "measure/tracks/verified_delegation_boundary_20260805/test-strategy.md (this file — added in this role commit)",
+    "measure/tracks/verified_delegation_boundary_20260805/results/strategy.json (this file — added in this role commit)"
+  ]
+}

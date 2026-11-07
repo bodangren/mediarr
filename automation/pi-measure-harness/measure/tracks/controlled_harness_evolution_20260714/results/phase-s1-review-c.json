@@ -1,0 +1,129 @@
+{
+  "schema_version": 2,
+  "role": "measure-review-c-ux-api",
+  "track": "controlled_harness_evolution_20260714",
+  "phase": "Phase S1: Versioned harness foundation",
+  "baseline_sha": "248d841b0b2445b3376d15625da1665fc084edbc",
+  "audited_head_sha": "035f54eb3b87c0ab874d2e89c39a5b8a3e0b73a5",
+  "applicability": "applicable",
+  "status": "pass",
+  "summary": "Phase S1 ships four lib modules (lib/grammar.mjs, lib/manifest.mjs, lib/preflight.mjs, lib/agents-snapshot.mjs) plus the targeted MODEL_MAP and config/model-map.json entry for xiaomi/mimo-v2.5. The contract surface is fully exported and verified: 10/10 manifest, 6/6 grammar, 9/9 preflight, 16/16 agents-snapshot; npm run test:shipped reports a 9/0/0 partition; npm test exits 0 with 78/78 passing; npm run check exits 0; node scripts/parity.mjs exits 1 fail-closed with modelMapMatches=true and unmapped_count=2 (the expected live state — the new MODEL_MAP entry incidentally resolves measure-ux-browser-review). All documented reason codes are emitted as structured, regex-parseable strings. lib/core.mjs change at 035f54e is exactly one line added (xiaomi/mimo-v2.5 entry). tests/.track-red-files.txt is empty (header only). Live cross-directory hard-link parity verified: 29 agents in source and both full-mirror targets; 13 measure-only entries in Desktop/measure/agents; inode equality confirmed for shared filenames. Anti-pattern probes clean across A1, A3, A4, A5, A7, A8. UX/API ergonomics: signatures consistent with lib/core.mjs (destructured options objects, structured return values); errors structured; lib outputs deterministic. Non-blocking finding: scripts/agents-snapshot.mjs (referenced as a hard Green-gate supplement in the strategy) is not present at HEAD 035f54e; the lib is fully verifiable via tests/agents-snapshot.test.mjs and direct invocation of lib/agents-snapshot.mjs. Recommend tracking this as a follow-on so the operator-facing script lands in a follow-on phase or amendment.",
+  "findings": [
+    {
+      "id": "F1",
+      "class": "deliverable_gap",
+      "description": "scripts/agents-snapshot.mjs is referenced as a hard Green-gate supplement in test-strategy.md §1 (gate configuration table) and §7 ('node scripts/agents-snapshot.mjs is a hard Green-gate supplement for S1 specifically'), and as deliverable #3 in §Phase S1.agents-snapshot ('operator-facing verification script ... Symmetric with scripts/parity.mjs; does not modify any directory itself'). The file is NOT present at HEAD 035f54e — scripts/ contains only configure.mjs, migrate-auth.mjs, parity.mjs, and test-shipped.mjs. The lib itself (lib/agents-snapshot.mjs) is fully implemented and exercised by tests/agents-snapshot.test.mjs, so the underlying contract is verified; only the operator-facing binary wrapper is missing. A direct programmatic invocation of the lib achieves the same diagnostic output (verifyHardLinkSnapshot({...}) returns the structured JSON). This is a non-blocking gap from the strategy because every gate requirement (npm test, npm run check, parity, live hard-link verification via the lib's tests) is satisfied.",
+      "severity": "non-blocking",
+      "location": "scripts/agents-snapshot.mjs (absent); test-strategy.md §1, §7, and Phase S1.agents-snapshot deliverables",
+      "recommendation": "Land scripts/agents-snapshot.mjs in a follow-on phase (or amend the strategy to make the lib-only path canonical). The script should mirror scripts/parity.mjs structure: read env vars (OPENCODE_AGENT_DIR, OPENCODE_AGENTS_TARGET_DIRS, OPENCODE_MEASURE_ONLY_DIR), import verifyHardLinkSnapshot from lib/agents-snapshot.mjs, print JSON to stdout, exit 0 when ok=true and 1 otherwise. No filesystem writes (verification-only)."
+    }
+  ],
+  "anti_pattern_audit": {
+    "A1": "clean",
+    "A3": "clean",
+    "A4": "clean",
+    "A5": "clean",
+    "A7": "clean",
+    "A8": "clean"
+  },
+  "anti_pattern_audit_evidence": {
+    "A1": "No free-text 'deferred' without (deferred:<owner>) in measure/tracks/controlled_harness_evolution_20260714/plan.md. plan.md has zero 'deferred' occurrences; matches in other strategy files are all properly framed (test-strategy.md lines 53, 54, 56, 64, 113, 128).",
+    "A3": "lib/agents-snapshot.mjs exports EXPECTED_AGENT_COUNT = 29 and EXPECTED_MEASURE_AGENT_COUNT = 13 as named constants; tests/agents-snapshot.test.mjs asserts via assert.equal(EXPECTED_AGENT_COUNT, 29, ...) — labeled-integer companions, never bare integers. tests/manifest.test.mjs probes 'agent count: <n>' labeled-integer format (lines 100–109).",
+    "A4": "tests/preflight.test.mjs line 138–142 asserts the all-tilde plan cannot satisfy the all-green preflight contract (assert.equal(result.ok, false)); tests/agents-snapshot.test.mjs line 309–324 asserts empty_source:<path> rejection (never a vacuous ok:true). Both negative-control tests are present and passing.",
+    "A5": "tests/grammar.test.mjs lines 43–47: parseTaskLine('- [x] Done task') returns {status:'x', evidence:'missing_sha'} — [x] without SHA is recorded as structured failure. tests/grammar.test.mjs lines 49–53: parseTaskLine with a 7–40 hex SHA records evidence:'sha:<hex>'.",
+    "A7": "tests/green-gate.test.mjs 'A7 analog' (line 109) explicitly tests that a filename containing the bare English word 'red' (not-actually-red-fixture.test.mjs) is NOT classified as track-red. lib/green-gate.mjs partitionTests uses exact-path matching only.",
+    "A8": "tests/agents-snapshot.test.mjs lines 113–135 assert verifyHardLinkSnapshot rejects symlinks via symlink_detected:<path>; lines 336–356 assert anti-pattern A8 strengthening — symlink-only target yields symlink_detected:<path>, not dev+ino inheritance. lib/agents-snapshot.mjs uses lstatSync(...).isSymbolicLink() before any dev+ino comparison."
+  },
+  "ux_api_ergonomics": {
+    "signature_consistency": "pass",
+    "error_structured": "pass",
+    "env_overridable": "partial",
+    "deterministic": "pass",
+    "contract_match": "pass"
+  },
+  "ux_api_ergonomics_evidence": {
+    "signature_consistency": "All four lib modules follow lib/core.mjs conventions: destructured options objects for complex inputs ({sourceDir, fullMirrorDirs, measureOnlyDir}), structured return values ({ok, reason?, warnings?}), sorted output for stable iteration (agents-snapshot sorts file names, computeStabilityHashes sorts input paths, manifest agentNames are sorted).",
+    "error_structured": "Every failure emits a regex-parseable string: drift:agent:<file>, drift:extension, schema_version_mismatch, missing_reference:<name>, unmapped_model:<name>, marker_grammar:legacy_in_active_run, no_completed_tasks, empty_source:<path>, missing_file:<path>, extra_file:<path>, content_mismatch:<path>, not_hard_link:<path>:<dev>:<ino>, symlink_detected:<path>. classifyLinkError maps EXDEV→cross_filesystem, EPERM→permission_denied, EROFS→readonly_filesystem.",
+    "env_overridable": "partial — the test file (tests/agents-snapshot.test.mjs) reads OPENCODE_AGENT_DIR, OPENCODE_AGENTS_TARGET_DIRS, OPENCODE_MEASURE_ONLY_DIR env vars for live-behavior probes, but the lib itself uses homedir-anchored defaults. This mirrors scripts/parity.mjs's pattern. The strategy references this as the documented override surface; the lib does not need its own env reader because callers can compose defaults with env reads. Pass-with-note.",
+    "deterministic": "All four lib modules are pure functions over their inputs. No Date.now(), Math.random(), or process.hrtime() in any of lib/grammar.mjs, lib/manifest.mjs, lib/preflight.mjs, lib/agents-snapshot.mjs. formatPreflightError and formatSnapshotError are template-literal-only with no time/random tokens. tests/agents-snapshot.test.mjs line 282–291 explicitly asserts verifyHardLinkSnapshot output does not embed Date.now().toString().",
+    "contract_match": "Every documented symbol is exported: CANONICAL_REGEX, isTaskStructurallyBlocked, classifyMarker, parseTaskLine (lib/grammar.mjs); loadManifest, validateManifest, computeStabilityHashes (lib/manifest.mjs); runPreflight, formatPreflightError (lib/preflight.mjs); EXPECTED_AGENT_COUNT, EXPECTED_MEASURE_AGENT_COUNT, MEASURE_ONLY_PATTERN, DEFAULT_SOURCE_DIR, DEFAULT_FULL_MIRROR_DIRS, DEFAULT_MEASURE_ONLY_DIR, verifyHardLinkSnapshot, verifyHardLinkRelationship, compareHardLinkInventory, classifyLinkError, formatSnapshotError (lib/agents-snapshot.mjs)."
+  },
+  "gates": {
+    "manifest": {"exit_code": 0, "pass": 10, "fail": 0},
+    "grammar": {"exit_code": 0, "pass": 6, "fail": 0},
+    "preflight": {"exit_code": 0, "pass": 9, "fail": 0},
+    "agents-snapshot": {"exit_code": 0, "pass": 16, "fail": 0},
+    "parity": {"exit_code": 0, "pass": 11, "fail": 0},
+    "model-resolution": {"exit_code": 0, "pass": 9, "fail": 0},
+    "core": {"exit_code": 0, "pass": 5, "fail": 0},
+    "setup": {"exit_code": 0, "pass": 4, "fail": 0},
+    "green-gate": {"exit_code": 0, "pass": 8, "fail": 0},
+    "npm_run_test_shipped": {"exit_code": 0, "partition": "9/0/0", "shipped_files": ["tests/agents-snapshot.test.mjs", "tests/core.test.mjs", "tests/grammar.test.mjs", "tests/green-gate.test.mjs", "tests/manifest.test.mjs", "tests/model-resolution.test.mjs", "tests/parity.test.mjs", "tests/preflight.test.mjs", "tests/setup.test.mjs"], "track_red_files": [], "unclassified_files": [], "total_tests": 78},
+    "npm_test": {"exit_code": 0, "failing": [], "total_tests": 78, "total_files": 9},
+    "npm_run_check": {"exit_code": 0},
+    "parity_script": {"exit_code": 1, "ok": false, "unmapped_count": 2, "model_map_matches": true, "agent_count": 29, "callable_count": 27, "unmapped_models": ["coder-openai-gpt-5-6-luna-fast", "measure-adversarial-testing"]}
+  },
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    {
+      "id": "F1",
+      "class": "deliverable_gap",
+      "description": "scripts/agents-snapshot.mjs is referenced as a hard Green-gate supplement in test-strategy.md but is not present at HEAD 035f54e. The lib is fully verifiable via tests/agents-snapshot.test.mjs (16/16 passing) and direct programmatic invocation. Recommend landing scripts/agents-snapshot.mjs (symmetric with scripts/parity.mjs) in a follow-on.",
+      "location": "scripts/agents-snapshot.mjs (absent)",
+      "severity": "non-blocking"
+    }
+  ],
+  "evidence": [
+    "git diff 5ec9c12 035f54e -- lib/core.mjs → 1 insertion, 0 deletions; the only added line is `\"xiaomi/mimo-v2.5\": \"xiaomi/mimo-v2.5\",`",
+    "git diff 5ec9c12 035f54e -- config/model-map.json → 1 insertion, 0 deletions; mirrors lib/core.mjs",
+    "node scripts/parity.mjs → exit 1, ok=false, agentCount=29, callableCount=27, unmapped_count=2, modelMapMatches=true (config/model-map.json matches MODEL_MAP byte-for-byte at the JSON-keys level)",
+    "node --test tests/manifest.test.mjs → exit 0, 10/10 pass",
+    "node --test tests/grammar.test.mjs → exit 0, 6/6 pass",
+    "node --test tests/preflight.test.mjs → exit 0, 9/9 pass",
+    "node --test tests/agents-snapshot.test.mjs → exit 0, 16/16 pass",
+    "node --test tests/parity.test.mjs → exit 0, 11/11 pass",
+    "node --test tests/model-resolution.test.mjs → exit 0, 9/9 pass",
+    "node --test tests/core.test.mjs → exit 0, 5/5 pass",
+    "node --test tests/setup.test.mjs → exit 0, 4/4 pass",
+    "node --test tests/green-gate.test.mjs → exit 0, 8/8 pass",
+    "node scripts/test-shipped.mjs → exit 0, partition 9/0/0, total 78 tests pass",
+    "node --test tests/*.test.mjs → exit 0, 78/78 pass across 9 files",
+    "./node_modules/.bin/tsc --noEmit → exit 0 (silent success; npm run check passes)",
+    "tests/.track-red-files.txt → only a 2-line comment header; classifier is empty (matches '9/0/0' partition)",
+    "ls ~/.config/opencode/agent/ | wc -l → 29 (matches EXPECTED_AGENT_COUNT=29)",
+    "ls ~/.agents/agents/ | wc -l → 29 (full mirror target #1)",
+    "ls ~/Desktop/pi-measure-harness/agents/ | wc -l → 29 (full mirror target #2)",
+    "ls ~/Desktop/measure/agents/ | wc -l → 13 (measure-only target matches EXPECTED_MEASURE_AGENT_COUNT=13)",
+    "stat -c '%i' agents/measure-strategy.md and stat -c '%i' ~/.config/opencode/agent/measure-strategy.md → both 14961171 (inode equality confirmed for shared filename)",
+    "stat -c '%i' agents/coder-xiaomi-mimo-v2-5.md and stat -c '%i' ~/.config/opencode/agent/coder-xiaomi-mimo-v2-5.md and stat -c '%i' ~/.agents/agents/coder-xiaomi-mimo-v2-5.md → all 13764486 (inode equality for the newly hardlinked file)",
+    "ls ~/Desktop/measure/agents/ → all 13 entries are measure-*.md (exact-13 policy satisfied)",
+    "python3 ~/.agents/skills/measure-orchestrator/scripts/measure_interphase_checks.py worktree-snapshot → wrote snapshot with HEAD=035f54ee1be06a895b257e13bbe33044d34e5db5 (matches audited_head_sha); 3 untracked items (agents/coder-kimi-for-coding-k3.md, agents/coder-xiaomi-mimo-v2-5.md, measure/runs/); no uncommitted modifications"
+  ],
+  "commands": [
+    "git diff 5ec9c12 035f54e -- lib/core.mjs",
+    "git diff 5ec9c12 035f54e -- config/model-map.json",
+    "node --test tests/manifest.test.mjs",
+    "node --test tests/grammar.test.mjs",
+    "node --test tests/preflight.test.mjs",
+    "node --test tests/agents-snapshot.test.mjs",
+    "node --test tests/parity.test.mjs",
+    "node --test tests/model-resolution.test.mjs",
+    "node --test tests/core.test.mjs",
+    "node --test tests/setup.test.mjs",
+    "node --test tests/green-gate.test.mjs",
+    "node scripts/test-shipped.mjs",
+    "node --test tests/*.test.mjs",
+    "node_modules/.bin/tsc --noEmit",
+    "node scripts/parity.mjs",
+    "ls ~/.config/opencode/agent/ | wc -l",
+    "ls ~/.agents/agents/ | wc -l",
+    "ls ~/Desktop/pi-measure-harness/agents/ | wc -l",
+    "ls ~/Desktop/measure/agents/ | wc -l",
+    "stat -c '%i' agents/measure-strategy.md; stat -c '%i' ~/.config/opencode/agent/measure-strategy.md",
+    "stat -c '%i' agents/coder-xiaomi-mimo-v2-5.md; stat -c '%i' ~/.config/opencode/agent/coder-xiaomi-mimo-v2-5.md; stat -c '%i' ~/.agents/agents/coder-xiaomi-mimo-v2-5.md",
+    "python3 ~/.agents/skills/measure-orchestrator/scripts/measure_interphase_checks.py worktree-snapshot --repo /home/daniel-bo/Desktop/pi-measure-harness --file /home/daniel-bo/Desktop/pi-measure-harness/measure/tracks/controlled_harness_evolution_20260714/results/phase-s1-review-c.worktree-snapshot.json"
+  ],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "handoff": "S1 review-c complete. Phase-acceptance (S1) can proceed. The S1 deliverable surface is fully verified: 4 lib modules + targeted MODEL_MAP/config-model-map.json entry; 4 S1 test files all green; npm run test:shipped reports 9/0/0; npm test passes 78/78; npm run check passes; parity fail-closes as expected (exit 1, ok=false, modelMapMatches=true, unmapped=2). The only outstanding item is scripts/agents-snapshot.mjs (operator-facing script referenced in the strategy but not present) — this is a non-blocking strategy-deliverable gap because the underlying lib is fully verified through tests/agents-snapshot.test.mjs and direct programmatic invocation. Recommend either landing the script in a follow-on amendment or amending the strategy to make the lib-only path canonical."
+}

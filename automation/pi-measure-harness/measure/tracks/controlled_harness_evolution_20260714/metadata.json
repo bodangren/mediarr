@@ -1,0 +1,23 @@
+{
+  "track_id": "controlled_harness_evolution_20260714",
+  "type": "feature",
+  "status": "new",
+  "created_at": "2026-07-14T00:00:00Z",
+  "updated_at": "2026-07-14T00:00:00Z",
+  "description": "Evolve the Pi Measure orchestration harness into a versioned, deterministic, sprint-driven, controlled self-improving system.",
+  "estimated_tasks": 47,
+  "actual_tasks": null,
+  "deviation_notes": "Track authoring began from an uninitialized Measure directory. Marker vocabulary remains in compatibility mode until Story S1 resolves and versions a canonical grammar.",
+  "sprint": {
+    "goal": "Make Pi Measure Harness a safe, evidence-driven control plane for general sprint development and controlled harness improvement.",
+    "stories": [
+      { "id": "S1", "title": "Versioned harness foundation", "size": "L", "priority": "Must", "status": "pending" },
+      { "id": "S2", "title": "Deterministic sprint orchestration", "size": "XL", "priority": "Must", "status": "pending" },
+      { "id": "S3", "title": "Evidence and evaluation telemetry", "size": "L", "priority": "Must", "status": "pending" },
+      { "id": "S4", "title": "Curated learning and safe revision", "size": "XL", "priority": "Must", "status": "pending" },
+      { "id": "S5", "title": "Canary promotion and rollback", "size": "L", "priority": "Should", "status": "pending" }
+    ],
+    "demo_notes": null,
+    "retro_ref": null
+  }
+}

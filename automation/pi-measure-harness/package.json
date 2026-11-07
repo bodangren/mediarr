@@ -1,0 +1,49 @@
+{
+  "name": "pi-measure-harness",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Pi extension package for the Measure multi-agent orchestration workflow",
+  "keywords": [
+    "pi-package",
+    "measure",
+    "orchestration"
+  ],
+  "pi": {
+    "extensions": [
+      "./extensions/measure-harness/index.ts"
+    ]
+  },
+  "scripts": {
+    "configure": "node scripts/configure.mjs",
+    "configure:dry-run": "node scripts/configure.mjs --dry-run",
+    "migrate-auth": "node scripts/migrate-auth.mjs",
+    "migrate-auth:dry-run": "node scripts/migrate-auth.mjs --dry-run",
+    "parity": "node scripts/parity.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "test:shipped": "node scripts/test-shipped.mjs",
+    "check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "yaml": "2.9.0"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-agent-core": "*",
+    "@earendil-works/pi-ai": "*",
+    "@earendil-works/pi-coding-agent": "*",
+    "@earendil-works/pi-tui": "*",
+    "typebox": "*"
+  },
+  "devDependencies": {
+    "@earendil-works/pi-agent-core": "0.80.6",
+    "@earendil-works/pi-ai": "0.80.6",
+    "@earendil-works/pi-coding-agent": "0.80.6",
+    "@earendil-works/pi-tui": "0.80.6",
+    "@types/node": "24.12.4",
+    "typebox": "1.1.38",
+    "typescript": "5.9.3"
+  },
+  "engines": {
+    "node": ">=22.19.0"
+  }
+}

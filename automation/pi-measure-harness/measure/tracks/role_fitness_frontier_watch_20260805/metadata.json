@@ -1,0 +1,22 @@
+{
+  "track_id": "role_fitness_frontier_watch_20260805",
+  "type": "feature",
+  "status": "new",
+  "created_at": "2026-08-05T00:00:00Z",
+  "updated_at": "2026-08-05T00:00:00Z",
+  "description": "Build the evidence layer for routing: a frozen role-fitness corpus judged by each role's own gate, evaluation across both model and role-prompt variant, a candidate intake with a scheduled frontier watch, and a periodic routing proposal that a human approves. No component may write to a role pool.",
+  "estimated_tasks": 31,
+  "actual_tasks": null,
+  "deviation_notes": null,
+  "sprint": {
+    "goal": "Stop tracking the global frontier and start measuring role fitness on a schedule, so a new model release becomes evidence rather than an interruption, and routing changes stay a human decision.",
+    "stories": [
+      { "id": "S1", "title": "Role-fitness corpus", "size": "L", "priority": "Must", "status": "pending" },
+      { "id": "S2", "title": "Two-variable evaluation (model and prompt)", "size": "M", "priority": "Must", "status": "pending" },
+      { "id": "S3", "title": "Candidate intake and scheduled frontier watch", "size": "M", "priority": "Must", "status": "pending" },
+      { "id": "S4", "title": "Routing proposal with human approval", "size": "M", "priority": "Must", "status": "pending" }
+    ],
+    "demo_notes": null,
+    "retro_ref": null
+  }
+}

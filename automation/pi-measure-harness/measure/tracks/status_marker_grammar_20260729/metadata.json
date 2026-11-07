@@ -1,0 +1,21 @@
+{
+  "track_id": "status_marker_grammar_20260729",
+  "type": "chore",
+  "status": "new",
+  "created_at": "2026-07-29T00:00:00Z",
+  "updated_at": "2026-07-29T00:00:00Z",
+  "description": "Define, version, and enforce the canonical status-marker grammar for plans and receipts, with a migration path for drifted materials, resolving the open high-severity tech-debt item.",
+  "estimated_tasks": 14,
+  "actual_tasks": null,
+  "deviation_notes": null,
+  "sprint": {
+    "goal": "Replace the informal compatibility marker grammar with a versioned, machine-checkable canonical grammar and a safe migration for existing drifted materials.",
+    "stories": [
+      { "id": "S1", "title": "Canonical grammar definition and versioning", "size": "M", "priority": "Must", "status": "pending" },
+      { "id": "S2", "title": "Grammar checker and drift detection", "size": "M", "priority": "Must", "status": "pending" },
+      { "id": "S3", "title": "Migration plan for drifted materials", "size": "S", "priority": "Should", "status": "pending" }
+    ],
+    "demo_notes": null,
+    "retro_ref": null
+  }
+}

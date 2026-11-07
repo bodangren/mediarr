@@ -1,0 +1,10 @@
+{
+  "sprint_id": "s2-fixture",
+  "schema_version": 2,
+  "baselineSha": "ccc1111",
+  "stories": [
+    { "id": "S2.A", "deps": [], "state": "pending" },
+    { "id": "S2.B", "deps": ["S2.A"], "state": "pending" },
+    { "id": "S2.C", "deps": ["S2.B"], "state": "blocked", "blocked_reason": "deferred:owner" }
+  ]
+}

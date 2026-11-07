@@ -1,0 +1,48 @@
+{
+  "schema_version": 2,
+  "role": "measure-closeout (substituted by coder-minimax-m3, user-authorized)",
+  "track": "harness_selfcheck_truthfulness_20260805",
+  "phase": "closeout",
+  "baseline_sha": "248d841b0b2445b3376d15625da1665fc084edbc",
+  "audited_head_sha": "b8ac78a2d94e3101e6f293f7995d50a5a0aea04d",
+  "status": "complete",
+  "summary": "Track archived. All 19 plan.md markers migrated to [x] (with commit SHA evidence) or [b] (deferred): 15 [x] across Phases 1-3 (commits d74471a, 1a1ed2f, f914e2b) plus C2/C3 (commit b8ac78a); 2 [b] (C1 deferred:openai-codex-oauth-restart, C4 deferred:user-review); 0 [ ] remaining. metadata.json#status set to 'done'; completed_at = 2026-08-06T00:28:55Z (preserves all other fields). Track directory moved from measure/tracks/ to measure/archive/ via git mv (rename history preserved). measure/tracks.md updated: removed from Upcoming, added to Archived with completion date and summary. automation-supervisor-closeout-manifest.json created at the archived path with phase SHAs, cross-cutting records, deviations, live-state snapshot, supersession mapping, and the Decision-Required MODEL_MAP note. C4 sprint-retro placeholder and C1 re-run prerequisites documented in handoff.md (appended sections). Optional lessons-learned.md append recorded below. Single commit on current branch; no worktree; no production code touched (lib/, tests/, scripts/, extensions/, package.json, config/, agents/ all unchanged by closeout).",
+  "tasks_covered": ["C1 (deferred)", "C2 (done)", "C3 (done)", "C4 (deferred)"],
+  "files_moved": [
+    "measure/tracks/harness_selfcheck_truthfulness_20260805 → measure/archive/harness_selfcheck_truthfulness_20260805 (git mv; rename history preserved; verified post-move: source path absent, archive path contains all subdirectories including results/)"
+  ],
+  "files_added": [
+    "measure/archive/harness_selfcheck_truthfulness_20260805/automation-supervisor-closeout-manifest.json",
+    "measure/archive/harness_selfcheck_truthfulness_20260805/results/closeout.json",
+    "measure/lessons-learned.md append (optional; 1 entry under 'Patterns That Worked Well' / cross-track observations)"
+  ],
+  "files_modified": [
+    "measure/archive/harness_selfcheck_truthfulness_20260805/plan.md (markers migrated: 15 [x] with commit SHAs, 2 [b] (deferred:<owner>), 0 [ ]; legacy text content preserved)",
+    "measure/archive/harness_selfcheck_truthfulness_20260805/metadata.json (status=done, updated_at=2026-08-06T00:28:55Z, completed_at=2026-08-06T00:28:55Z; all other fields preserved)",
+    "measure/archive/harness_selfcheck_truthfulness_20260805/handoff.md (appended C1 re-run prerequisites section + C4 sprint-retro placeholder section: highlights, lowlights, action items, cross-track implications)",
+    "measure/tracks.md (removed harness_selfcheck_truthfulness_20260805 from Upcoming; added to Archived with completion date 2026-08-06 and one-line summary referencing handoff.md and reconciliation-models.md)"
+  ],
+  "commands": [
+    "git mv measure/tracks/harness_selfcheck_truthfulness_20260805 measure/archive/harness_selfcheck_truthfulness_20260805",
+    "date -u +\"%Y-%m-%dT%H:%M:%SZ\" → 2026-08-06T00:28:55Z (closeout timestamp)",
+    "node scripts/test-shipped.mjs (re-verified at current HEAD b8ac78a: exits 0 with partition listing `[shipped] running 5: ...; [track-red] excluded 4: ...; [unclassified] 0: ...`; 37/37 child test assertions pass)",
+    "npm run check (tsc --noEmit exits 0)",
+    "npm run parity (exit 1, parity.ok:false — Phase 2 fail-closed state preserved; 7 unmapped agents, all 7 suggestion=map_entry_needed)",
+    "python3 -c 'import json; json.load(open(...))' (validated metadata.json, automation-supervisor-closeout-manifest.json, closeout.json)",
+    "grep -nE '^\\- \\[' plan.md (verified 19 markers total; 0 [ ] remaining)",
+    "git add measure/archive/... measure/tracks.md measure/lessons-learned.md",
+    "git commit -m 'chore(harness_selfcheck_truthfulness_20260805): closeout — archive, migrate markers, manifest, retro (user-authorized closeout substitution)'"
+  ],
+  "commits": ["fc57cb2"],
+  "anti_patterns_covered": ["A5", "A6"],
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    "C1 deferred: openai-codex OAuth refresh required to run review-a (kimi-coding/kimi-for-coding model unregistered) and review-b (openai-codex OAuth invalid). Re-run prerequisites documented in handoff.md#c1.",
+    "C4 deferred: user-review for sprint retro (placeholder with highlights, lowlights, action items, and cross-track implications documented in handoff.md#c4).",
+    "Decision-Required: 7 MODEL_MAP entries (all map_entry_needed per reconciliation-models.md) await user-approved routing intent. Spec out-of-scope rule preserved; MODEL_MAP routing changes NOT made in this track.",
+    "Pre-existing dirty working tree (16+ modified agent files, config/model-map.json, measure/tracks.md partial) excluded from closeout commit per absolute constraint 'DO NOT commit any unrelated dirty file'. The dirty state persists across role boundaries and is independent of closeout work."
+  ],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "handoff": "Track archived. Active track (controlled_harness_evolution_20260714 Phase S1) owns the supersession retirement per handoff.md. Three deferred items: (1) C1 review-a/b re-run after openai-codex OAuth refresh + measure-review-a-correctness re-route to a registered MODEL_MAP model; (2) C4 sprint retro user review (placeholder in handoff.md); (3) 7 MODEL_MAP routing decisions for live unmapped agents (reconciliation-models.md). DO NOT coexist two parity mechanisms — when S1 lands and acceptance passes, the active track's acceptance procedure must retire this track's mechanism via its own acceptance, not leave both live."
+}

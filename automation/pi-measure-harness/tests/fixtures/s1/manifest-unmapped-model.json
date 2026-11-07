@@ -1,0 +1,14 @@
+{
+  "version": "0.2.0",
+  "extensionHash": "0000000000000000000000000000000000000000000000000000000000000000",
+  "agentHashes": {
+    "unmapped-agent": "f896f6d9559fda3857261ebe51ee2a2b151fa91e6d2f2dfef213d6c31ad387e8"
+  },
+  "skillHashes": {},
+  "contractHash": "0000000000000000000000000000000000000000000000000000000000000000",
+  "markerGrammarVersion": "1.0.0",
+  "compatibility": {
+    "legacyMarkerSupport": true
+  },
+  "agentCountLabel": "agent count: 1"
+}

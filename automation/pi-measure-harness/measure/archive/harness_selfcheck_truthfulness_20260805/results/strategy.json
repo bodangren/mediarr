@@ -1,0 +1,62 @@
+{
+  "schema_version": 2,
+  "role": "measure-strategy",
+  "track": "harness_selfcheck_truthfulness_20260805",
+  "phase": "track setup",
+  "baseline_sha": "248d841b0b2445b3376d15625da1665fc084edbc",
+  "audited_head_sha": "7fe1a95c93a2bb0b4cda2f769f7fdcf30470bae7",
+  "status": "complete",
+  "summary": "Plan, spec, and committed strategy (7fe1a95) validated against the shipped surface. All 19 plan tasks are bounded, independently verifiable, scoped away from controlled_harness_evolution_20260714 Phase S1 (the versioned manifest, hash-drift detection, and preflight work are explicitly deferred), and free of anti-patterns A3 (bare integer findings) and A7 (relaxing assertions). Live-state reconciliation at the strategy commit SHA confirms: agent count is 27 (callable 25) — matches the strategy's reconciliation; unmapped models total 3 (measure-adversarial-testing → deepseek/deepseek-v4-pro, measure-ux-browser-review → xiaomi/mimo-v2.5, coder-openai-gpt-5-6-luna-fast → openai/gpt-5.6-luna-fast), not the 8 claimed by the original spec — recorded as deviation_notes in metadata.json. Contract test layout covers three new test files (tests/parity.test.mjs, tests/model-resolution.test.mjs, tests/green-gate.test.mjs), one rewrite of tests/core.test.mjs (remove frozen 24/22 snapshot, assert derived contract and reachable unmappedModels predicate), one new classifier file (tests/.track-red-files.txt), and one new package script (scripts/test-shipped.mjs wired as `npm run test:shipped`). Fixtures live under tests/fixtures/{parity,model-resolution,green-gate}/ as self-contained synthetic input, all A3 defenses probe labeled-integer parsing (analog to tests/manifest.test.mjs#agentCountLabel) and the A7 analog defends the green-gate's exclude filter via a not-actually-red.test.mjs probe. UX/browser review applicability: not_applicable across all three phases (no HTML/CSS/JSX/web surface in the package). No plan edits required — the strategy commit (7fe1a95) already records the spec-vs-live reconciliation and the corrected task count.",
+  "plan_updates": [
+    "no edits — committed strategy revision (7fe1a95) already records the spec-vs-live discrepancy in metadata.json#deviation_notes, rewrites Task 1.2 (A3 labeled-integer parse) and Task 2.4 (live unmapped-model count = 3, not 8), and names the contract test surface and green-gate architecture in the plan's Contract Test Layout section"
+  ],
+  "gate_commands": {
+    "RED_TEST_COMMAND": "node --test tests/parity.test.mjs (Phase 1) / node --test tests/model-resolution.test.mjs (Phase 2) / node --test tests/green-gate.test.mjs (Phase 3) — orchestrator sets per phase via env var",
+    "GREEN_TEST_COMMAND": "npm run test:shipped (introduced by Jr Green in Phase 3 Task 3.3 — exits 0 when shipped surface is healthy, even while the active track's Red tests are failing by design; for Phase 1 and Phase 2 Green gates before Phase 3 ships the script, use `npm test` exiting 0 modulo the four S1 intentional-Red files: tests/agents-snapshot.test.mjs, tests/grammar.test.mjs, tests/manifest.test.mjs, tests/preflight.test.mjs)",
+    "PROJECT_LINT": "n/a — package has no separate lint command; typescript type-check via `npm run check` is the only static check",
+    "PROJECT_CHECKS": "npm run check",
+    "PROJECT_TESTS": "npm test",
+    "PROJECT_DEV_URL": "n/a — package is a Node.js ESM Pi extension with no user-facing browser surface; UX_REQUIRED=never"
+  },
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    {
+      "id": "NF-1",
+      "class": "spec_vs_live_drift",
+      "description": "Spec section 'Observed Defects #2' claims 'Eight packaged agents currently reference models absent from MODEL_MAP' but live state at strategy commit SHA has only three unmapped references. Spec text describes an earlier state; strategy's metadata.json#deviation_notes and Task 2.4 reconcile against live behavior. Mid/Jr must reconcile against the live roster, not the spec's frozen count."
+    },
+    {
+      "id": "NF-2",
+      "class": "phase_ordering_implication",
+      "description": "Phase 1 and Phase 2 Green gates run before Phase 3 ships `npm run test:shipped`. Until Phase 3 Green lands, the canonical Green gate is `npm test` exiting 0 modulo the four S1 intentional-Red files. This is documented in strategy §1 (gate configuration) and the Phase 1/2 Green gate descriptions; not a defect, but a known ordering consequence Mid/Jr must internalize."
+    },
+    {
+      "id": "NF-3",
+      "class": "unmapped_routing_decision_pending",
+      "description": "Task 2.4 escalates the routing choice for three unmapped models to the user. Per spec 'Out of Scope: Changing which model any agent is routed to. Correcting the roster's model references is a separate decision requiring the user's routing intent.' Mid and Jr must not unilaterally decide routing; reconciliation report classifies each as map_entry_needed or reference_incorrect based on provider/id shape."
+    }
+  ],
+  "evidence": [
+    "lib/core.mjs#EXPECTED_AGENT_COUNT=24, EXPECTED_CALLABLE_COUNT=22 (hardcoded; live: 27/25) — verified via grep and agentParity() invocation; npm run parity reports ok:false with agentCount:27, callableCount:25.",
+    "lib/core.mjs#parseAgentFile uses `model: sourceModel ? MODEL_MAP[sourceModel] ?? sourceModel : undefined` — the `?? sourceModel` fallback makes the unmappedModels predicate `agents.filter((agent) => agent.sourceModel && !agent.model)` structurally unreachable (verified by reading the source line and observing `unmappedModels: []` even with three live unmapped agents).",
+    "npm test exit code 1 with 5-of-13 failing: tests/agents-snapshot.test.mjs (S1.3b Red), tests/grammar.test.mjs (S1.3 Red), tests/manifest.test.mjs (S1.3 Red), tests/preflight.test.mjs (S1.3 Red), and `agent snapshot has expected parity` in tests/core.test.mjs (this track's Red). Pre-existing green surface regressions: none.",
+    "npm run check exits 0 (tsc --noEmit clean). npm run parity exits 1 with parity.ok=false (stale 24/22 constants), missing: [coder-kimi-for-coding-k3.md, coder-xiaomi-mimo-v2-5.md] (operator-side drift, not this track's concern), modelMapMatches: true.",
+    "Live unmapped-models set at strategy commit SHA: {measure-adversarial-testing → deepseek/deepseek-v4-pro, measure-ux-browser-review → xiaomi/mimo-v2.5, coder-openai-gpt-5-6-luna-fast → openai/gpt-5.6-luna-fast}. Confirmed by grep '^model:' agents/*.md against MODEL_MAP keys. Plan Task 2.4 correctly lists these three; the five names from the original spec (measure-mid-red, measure-review-a-correctness, coder-orchestrator, coder-kimi-for-coding-highspeed, coder-kimi-for-coding-k2p7) are already mapped in MODEL_MAP and removed from the reconciliation list.",
+    "controlled_harness_evolution_20260714 Phase S1 currently stalled at Red (S1.3 [~], S1.3b [~]); S1.4 (manifest loading + preflight) is still pending. This track's mechanism is defect-repair on the shipped surface, taken under the active plan's execution policy, and supersedes nothing until S1 lands. Strategy §6 Phase 3 and cross-cutting C2 record the S1 handoff note requirement.",
+    "measure/anti-patterns.md currently contains only A1 (prompt-only state transitions). The track spec defines A3 (bare integer findings) and A7 (relaxing assertions) locally. Strategy covers both: A3 via labeled-integer parses and structured `class` fields in every phase; A7 via the Phase 3 not-actually-red.test.mjs probe defending the green-gate's exclude filter."
+  ],
+  "commands": [
+    "node --test tests/parity.test.mjs (Phase 1 Red — focused on parity contract tests; exits non-zero pre-Green)",
+    "node --test tests/model-resolution.test.mjs (Phase 2 Red — focused on model-resolution contract tests; exits non-zero pre-Green)",
+    "node --test tests/green-gate.test.mjs (Phase 3 Red — focused on green-gate contract tests; exits non-zero pre-Green)",
+    "npm run test:shipped (post-Phase-3 Green gate — runs shipped partition only, exits 0 when healthy)",
+    "npm test (full test suite — runs all 13 tests, expects 5-of-13 red pre-Phase-1-Green, 4-of-13 red post-Phase-1-Green-and-post-Phase-2-Green, 5-of-13 red mid-Phase-3-Red, 4-of-13 red post-Phase-3-Green)",
+    "npm run check (tsc --noEmit; exits 0)",
+    "npm run parity (snapshot vs agents/*.md; exits 1 pre-Phase-1-Green due to stale 24/22 constants; exits 0 post-Phase-1-Green once roster-derived parity matches live state)"
+  ],
+  "changed_files": [
+    "measure/tracks/harness_selfcheck_truthfulness_20260805/results/strategy.json (this file — added in this role commit)"
+  ],
+  "retry_recommendation": "none",
+  "confidence": "high"
+}

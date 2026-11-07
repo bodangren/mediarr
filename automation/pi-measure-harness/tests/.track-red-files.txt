@@ -1,0 +1,5 @@
+# Track-owned Red tests excluded from `npm run test:shipped`.
+# VDB S1 observed-routing test is now green (Phase S1 acceptance 20260805);
+# retired from the track-red partition at commit phase-s1-acceptance.
+# Only sprint-state-machine (controlled_harness_evolution_20260714 S2) remains track-red.
+tests/sprint-state-machine.test.mjs

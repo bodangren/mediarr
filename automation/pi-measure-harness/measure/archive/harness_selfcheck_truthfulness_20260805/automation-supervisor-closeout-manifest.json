@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "track_id": "harness_selfcheck_truthfulness_20260805",
+  "type": "bug",
+  "closed_at": "2026-08-06T00:28:55Z",
+  "closed_by": "coder-minimax-m3 (substituting measure-closeout, user-authorized due to openai-codex OAuth failure)",
+  "track_baseline_sha": "248d841b0b2445b3376d15625da1665fc084edbc",
+  "strategy_commit_sha": "7fe1a95c93a2bb0b4cda2f769f7fdcf30470bae7",
+  "final_acceptance_sha": "b8ac78a2d94e3101e6f293f7995d50a5a0aea04d",
+  "phases": [
+    {
+      "id": "S1",
+      "title": "Roster parity that cannot drift silently",
+      "red_sha": "49aa1fcd81be04f7cdc6d715247498d24fbd04a8",
+      "green_sha": "94943314b48d2a487e786441d52c3a4d47a5faff",
+      "evidence_sha": "d74471a1ae407f1b46c204309a022fa49cab3bdc",
+      "acceptance_sha": "d74471a1ae407f1b46c204309a022fa49cab3bdc"
+    },
+    {
+      "id": "S2",
+      "title": "Unresolvable model references fail closed",
+      "red_sha": "c2ec3ea6bc128d2351d9f719d1f0f8bf177d8709",
+      "green_sha": "c5afc9ee7394a1bb053d1a85c138a35b9fe320cc",
+      "evidence_sha": "1a1ed2fc4eb0517017caae5d734f711cedf1546f",
+      "acceptance_sha": "1a1ed2fc4eb0517017caae5d734f711cedf1546f"
+    },
+    {
+      "id": "S3",
+      "title": "A green gate independent of active-track Red",
+      "red_sha": "b0d3e59e005cdfd47c2542ac99e26213d2bda05d",
+      "green_sha": "f914e2bd48dc4790d698bd4551d1eab3814a71eb",
+      "evidence_sha": null,
+      "acceptance_sha": "f914e2bd48dc4790d698bd4551d1eab3814a71eb"
+    }
+  ],
+  "cross_cutting": {
+    "c1": "review-c covered API surface; review-a/b deferred (openai-codex OAuth invalid, kimi-coding/kimi-for-coding unregistered). Re-run prerequisites documented in handoff.md#c1.",
+    "c2_sha": "b8ac78a2d94e3101e6f293f7995d50a5a0aea04d",
+    "c3_sha": "b8ac78a2d94e3101e6f293f7995d50a5a0aea04d",
+    "c4": "deferred:user-review — placeholder (highlights, lowlights, action items) documented in handoff.md#c4."
+  },
+  "deviations": [
+    "measure-mid-red (kimi-coding/k3) unavailable; user re-routed to minimax-cn-coding-plan/MiniMax-M3 at ac61ec3 but harness session cached old config; jr-green substitution failed due to openai-codex OAuth invalid; user authorized direct coder-minimax-m3 delegation for Red/Green.",
+    "measure-review-a-correctness (kimi-coding/kimi-for-coding) and measure-review-b-security (openai-codex) unavailable; measure-review-c-ux-api (minimax-cn) covered each phase's API surface.",
+    "measure-phase-acceptance (openai-codex) and measure-closeout (openai-codex) unavailable; measure-final-acceptance (minimax-cn) substituted.",
+    "measure-orchestrator-audit not invoked (infrastructure audit cadence deferred to a future session with refreshed credentials).",
+    "Live unmapped count drifted from strategy's stated 3 to 7 due to dirty agent edits after strategy commit SHA 248d841; reconciliation-models.md records the 7 agents all classified as map_entry_needed; MODEL_MAP routing changes NOT made per spec Out-of-Scope."
+  ],
+  "live_state_at_closeout": {
+    "unmapped_count": 7,
+    "unmapped_agents": [
+      "coder-kimi-for-coding-highspeed",
+      "coder-kimi-for-coding-k2p7",
+      "coder-openai-gpt-5-6-luna-fast",
+      "coder-orchestrator",
+      "measure-adversarial-testing",
+      "measure-review-a-correctness",
+      "measure-ux-browser-review"
+    ],
+    "all_suggest_map_entry_needed": true,
+    "model_map_unchanged_from_baseline": true,
+    "parity_ok_field": false,
+    "npm_run_test_shipped_exit_0": true
+  },
+  "supersession": {
+    "superseded_by": "controlled_harness_evolution_20260714 Phase S1 (when S1 lands)",
+    "guards_to_retire_on_s1_acceptance": [
+      "lib/core.mjs#rosterParity (replaced by lib/manifest.mjs versioned roster)",
+      "lib/core.mjs#parseAgentFile strict resolve (replaced by lib/manifest.mjs)",
+      "lib/core.mjs#agentParity unmappedModelFindings (replaced by lib/manifest.mjs unmapped_model rejection)",
+      "tests/.track-red-files.txt + lib/green-gate.mjs + scripts/test-shipped.mjs + npm run test:shipped (replaced by lib/preflight.mjs blocker)"
+    ],
+    "no_coexistence_rule": "DO NOT coexist two parity mechanisms. When S1 acceptance passes, the active track must retire this track's mechanism via its own acceptance."
+  },
+  "decision_required": "User-approved MODEL_MAP routing decisions for 7 live unmapped agents (all map_entry_needed). Pending."
+}

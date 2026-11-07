@@ -1,0 +1,100 @@
+{
+  "schema_version": 2,
+  "role": "measure-jr-green (user-authorized direct coder delegation; jr-green OAuth broken)",
+  "track": "controlled_harness_evolution_20260714",
+  "phase": "Phase S1: Versioned harness foundation",
+  "baseline_sha": "2f23cef6d4d2ebc1bd4e506d62fe12886f4624c1",
+  "audited_head_sha": "2f23cef6d4d2ebc1bd4e506d62fe12886f4624c1",
+  "status": "blocked",
+  "tasks_covered": ["S1.4", "S1.5", "S1.6"],
+  "files_added": [
+    "lib/grammar.mjs",
+    "lib/manifest.mjs",
+    "lib/preflight.mjs",
+    "lib/agents-snapshot.mjs"
+  ],
+  "files_modified": [],
+  "gates": {
+    "manifest": {"exit_code": 0, "pass": 10, "fail": 0},
+    "grammar": {"exit_code": 0, "pass": 6, "fail": 0},
+    "preflight": {"exit_code": 0, "pass": 9, "fail": 0},
+    "agents-snapshot": {"exit_code": 1, "pass": 10, "fail": 6},
+    "parity": {"exit_code": 0, "pass": 11, "fail": 0},
+    "model-resolution": {"exit_code": 0, "pass": 9, "fail": 0},
+    "core": {"exit_code": 0, "pass": 5, "fail": 0},
+    "setup": {"exit_code": 0, "pass": 4, "fail": 0},
+    "green-gate": {"exit_code": 0, "pass": 8, "fail": 0},
+    "npm_run_test_shipped": {"exit_code": 0, "partition": "5 shipped / 4 track-red / 0 unclassified", "pass": 37, "fail": 0},
+    "npm_test": {"exit_code": 1, "failing": [
+      "tests/agents-snapshot.test.mjs#3 verifyHardLinkSnapshot reports full-mirror filename parity across every DEFAULT_FULL_MIRROR_DIRS target",
+      "tests/agents-snapshot.test.mjs#4 verifyHardLinkSnapshot reports exact-13 measure-only filename parity and rejects any non-measure .md residue",
+      "tests/agents-snapshot.test.mjs#5 verifyHardLinkRelationship returns sha256 + dev+ino parity for a fresh source/target hard link pair",
+      "tests/agents-snapshot.test.mjs#7 structured error — missing file: a target missing one expected .md yields missing_file:<path>",
+      "tests/agents-snapshot.test.mjs#8 structured error — extra file: an unexpected .md in a full-mirror target yields extra_file:<path>",
+      "tests/agents-snapshot.test.mjs#9 structured error — extra non-measure file in measure-only target yields extra_file:<path> (never tolerated warning)"
+    ]},
+    "npm_run_check": {"exit_code": 0},
+    "parity_script": {"exit_code": 1, "ok": false, "unmapped_count": 3, "model_map_matches": true}
+  },
+  "commands": [
+    "node --test tests/manifest.test.mjs",
+    "node --test tests/grammar.test.mjs",
+    "node --test tests/preflight.test.mjs",
+    "node --test tests/agents-snapshot.test.mjs",
+    "node --test tests/parity.test.mjs",
+    "node --test tests/model-resolution.test.mjs",
+    "node --test tests/core.test.mjs",
+    "node --test tests/setup.test.mjs",
+    "node --test tests/green-gate.test.mjs",
+    "npm run test:shipped",
+    "npm test",
+    "npm run check",
+    "npm run parity",
+    "ls ~/.config/opencode/agent/*.md | wc -l"
+  ],
+  "commits": [],
+  "blocking_findings": [
+    {
+      "id": "F1-live-state-divergence",
+      "class": "live_state_mismatch",
+      "severity": "high",
+      "description": "The live source directory ~/.config/opencode/agent/ contains 29 .md files (not the 27 expected by the user-approved strategy). The two extra files (coder-kimi-for-coding-k3.md, coder-xiaomi-mimo-v2-5.md) are NOT hardlinked to any of the three target directories (~/.agents/agents, ~/Desktop/pi-measure-harness/agents, ~/Desktop/measure/agents). The targets contain 27 files each (matching the strategy's expected 27-agent source set). This causes tests/agents-snapshot.test.mjs#3 and #4 to fail with 'live snapshot must pass: missing_file:coder-kimi-for-coding-k3.md'.",
+      "actual_count": 29,
+      "expected_count": 27,
+      "missing_in_targets": ["coder-kimi-for-coding-k3.md", "coder-xiaomi-mimo-v2-5.md"],
+      "unfixable_by_jr_green": "The agents-snapshot lib is verification-only per the task's absolute constraints. The live state cannot be modified by Jr Green. The strategy document (test-strategy.md#phase-s1.agents-snapshot) says source = 27, but actual = 29.",
+      "remediation": "Either (a) add hardlinks for the 2 extra source files to all three target directories, or (b) remove the 2 extra source files from ~/.config/opencode/agent/, or (c) update EXPECTED_AGENT_COUNT and the strategy document to reflect the actual 29-agent source set."
+    },
+    {
+      "id": "F2-require-in-esm-test",
+      "class": "test_design_bug",
+      "severity": "high",
+      "description": "tests/agents-snapshot.test.mjs uses bare `require(\"node:fs\").linkSync(...)` calls in 4 test bodies (lines 99, 153, 184, 216). In Node.js 22.22.3 ESM mode (the project's `type: \"module\"`), `require` is undefined, so each of these calls throws `ReferenceError: require is not defined` before the test body completes. This causes tests/agents-snapshot.test.mjs#5, #7, #8, #9 to fail with 'require is not defined' (not a lib defect).",
+      "affected_tests": [
+        "tests/agents-snapshot.test.mjs#5 verifyHardLinkRelationship returns sha256 + dev+ino parity for a fresh source/target hard link pair",
+        "tests/agents-snapshot.test.mjs#7 structured error — missing file: a target missing one expected .md yields missing_file:<path>",
+        "tests/agents-snapshot.test.mjs#8 structured error — extra file: an unexpected .md in a full-mirror target yields extra_file:<path>",
+        "tests/agents-snapshot.test.mjs#9 structured error — extra non-measure file in measure-only target yields extra_file:<path> (never tolerated warning)"
+      ],
+      "unfixable_by_jr_green": "The task's absolute constraints say 'Touch ONLY the files listed in Deliverables.' The test files are NOT in the deliverables. The test design bug (mixing ESM imports with bare `require` calls) is in the committed Mid Red test and requires a test-file edit to fix (e.g., change `require(\"node:fs\").linkSync(...)` to `import { linkSync } from \"node:fs\"` at the top of the file).",
+      "remediation": "Edit tests/agents-snapshot.test.mjs to import `linkSync` from \"node:fs\" alongside the existing imports, and replace each `require(\"node:fs\").linkSync(...)` call with `linkSync(...)`."
+    }
+  ],
+  "nonblocking_findings": [
+    {
+      "id": "NF1-track-red-list-not-emptied",
+      "class": "deliverable_divergence",
+      "severity": "low",
+      "description": "The task instructions said to empty tests/.track-red-files.txt (remove the 4 S1 lines) on the assumption that all 4 S1 test files would pass after Green. Because 6 agents-snapshot tests still fail (see F1 and F2), the 4 S1 test files are still partially-Red, and the track-red list correctly retains all 4 entries. The `npm run test:shipped` gate still exits 0 (5 shipped / 4 track-red / 0 unclassified, 37/37 pass). The green-gate test's hardcoded TRACK_RED_LIST (tests/green-gate.test.mjs) still matches the file content, so that test passes."
+    },
+    {
+      "id": "NF2-no-commit",
+      "class": "process_decision",
+      "severity": "low",
+      "description": "Per the task's hard rule 'If any test fails after implementation, do not commit. Diagnose and fix.' and because 6 tests still fail (due to F1 and F2, both unfixable by Jr Green), this result lands as `status: blocked` with an empty `commits` list. The audited_head_sha equals the baseline_sha. A follow-up remediation commit is needed once F1 and F2 are resolved."
+    }
+  ],
+  "retry_recommendation": "After (1) fixing tests/agents-snapshot.test.mjs to import `linkSync` from `node:fs` instead of using `require(\"node:fs\").linkSync(...)` in ESM context, and (2) resolving the live state divergence (either syncing the 2 extra source files into the targets, or removing them from the source, or updating EXPECTED_AGENT_COUNT to 29 and adjusting the strategy), re-run Jr Green for Phase S1. The four lib modules (lib/grammar.mjs, lib/manifest.mjs, lib/preflight.mjs, lib/agents-snapshot.mjs) are complete and correct; no changes to the lib surface are required.",
+  "confidence": "high",
+  "handoff": "S1 Green partial: 35/41 focused S1 tests pass (manifest 10/10, grammar 6/6, preflight 9/9, agents-snapshot 10/16). All 4 lib modules are implemented to contract and pass their deterministic-output and structured-error probes. Two blocking findings prevent the final commit: (1) live state divergence — actual source = 29 agents, strategy expects 27; (2) test design bug — tests/agents-snapshot.test.mjs uses bare `require()` in ESM which is undefined in Node 22.22.3. Neither is fixable by Jr Green per the absolute constraints. Review-c (S1) should verify (a) lib/grammar.mjs: CANONICAL_REGEX, isTaskStructurallyBlocked, classifyMarker, parseTaskLine deterministic; (b) lib/manifest.mjs: loadManifest, validateManifest, computeStabilityHashes deterministic and 5-throw contract; (c) lib/preflight.mjs: runPreflight, formatPreflightError deterministic, compatibility-mode warning contract; (d) lib/agents-snapshot.mjs: verification-only, no writes, all constants and pattern correct, classifyLinkError mapping, compareHardLinkInventory + formatSnapshotError deterministic. The task did not commit any code (commits: []) because 6 tests still fail. The implementation is in working tree but uncommitted; a follow-up remediation commit can land all 4 lib files once F1 and F2 are resolved by the appropriate owner."
+}

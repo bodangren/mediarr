@@ -1,0 +1,32 @@
+{
+  "schema_version": 2,
+  "role": "measure-jr-green (direct coder-minimax-m3 delegation, user-authorized)",
+  "track": "harness_selfcheck_truthfulness_20260805",
+  "phase": "Phase 3: A green gate independent of active-track Red",
+  "baseline_sha": "b0d3e59e005cdfd47c2542ac99e26213d2bda05d",
+  "audited_head_sha": "34231dd1915c4466d3390a679b7ca4bff482a1b0",
+  "status": "complete",
+  "summary": "Phase 3 Green evidence. Added the deterministic shipped-surface classifier, the npm run test:shipped runner, and the four-file track-Red declaration while preserving npm test unchanged.",
+  "deviation_notes": "Direct coder delegation. The shipped green gate is independent of `npm run parity` (Phase 2 fail-closed) and `npm test` (active-track Red). Node v22.22.3 skips recursive single-file `node --test` probes by default; lib/green-gate.mjs contains a narrowly scoped compatibility adapter for that test-runner behavior, while the production gate still invokes the required multi-file `node --test <shipped>` command. The result is recorded atomically with the implementation commit; audited_head_sha names the implementation head before the evidence-only amend.",
+  "tasks_covered": ["3.3", "3.4", "3.5"],
+  "green_gate": {
+    "node_tests_green_gate": {"command": "node --test tests/green-gate.test.mjs", "exit_code": 0, "pass": 8, "fail": 0},
+    "node_tests_parity":     {"command": "node --test tests/parity.test.mjs", "exit_code": 0, "pass": 11, "fail": 0, "note": "no Phase 1 regression"},
+    "node_tests_model_res":  {"command": "node --test tests/model-resolution.test.mjs", "exit_code": 0, "pass": 9, "fail": 0, "note": "no Phase 2 regression"},
+    "node_tests_core":       {"command": "node --test tests/core.test.mjs", "exit_code": 0, "pass": 5, "fail": 0, "note": "no Phase 1/2 regression"},
+    "npm_run_test_shipped":  {"command": "npm run test:shipped", "exit_code": 0, "note": "MUST exit 0; partition listing showed 5 shipped files, 4 track-red exclusions, and 0 unclassified files"},
+    "npm_test":              {"command": "npm test", "exit_code": 1, "pass": 37, "fail": 4, "failing": ["agents-snapshot", "grammar", "manifest", "preflight"], "note": "exactly the four S1 intentional-Red files; the pre-Phase baseline was 29 pass / 4 fail"},
+    "npm_run_check":         {"command": "npm run check", "exit_code": 0},
+    "npm_run_parity":        {"command": "npm run parity", "exit_code": 1, "note": "expected 1 — Phase 2 fail-closed, independent of Phase 3"}
+  },
+  "files_added": ["lib/green-gate.mjs", "scripts/test-shipped.mjs", "tests/.track-red-files.txt", "measure/tracks/harness_selfcheck_truthfulness_20260805/results/phase-3-green.json"],
+  "files_modified": ["package.json"],
+  "commands": ["node --test tests/green-gate.test.mjs", "node --test tests/parity.test.mjs", "node --test tests/model-resolution.test.mjs", "node --test tests/core.test.mjs", "npm run test:shipped", "npm test", "npm run check", "npm run parity"],
+  "commits": ["34231dd"],
+  "anti_patterns_covered": ["A7"],
+  "blocking_findings": [],
+  "nonblocking_findings": ["The Node v22.22.3 recursive-test compatibility adapter in lib/green-gate.mjs is a narrowly scoped test-runner workaround; Phase 3 review should confirm it does not alter the production partition or multi-file gate invocation."],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "handoff": "Phase 3 review-c should audit: (1) lib/green-gate.mjs#partitionTests is deterministic and side-effect free; (2) scripts/test-shipped.mjs reads tests/.track-red-files.txt correctly and emits the explicit partition listing; (3) tests/.track-red-files.txt lists exactly the four S1 intentional-Red files; (4) package.json has the new test:shipped script and the test script is unchanged; (5) npm run test:shipped exits 0 and shows the partition listing; (6) npm test exit code reflects only the 4 S1 intentional-Red failures; (7) Phase 1 and Phase 2 tests are not regressed; (8) npm run parity is still 1 (Phase 2 work, independent of Phase 3), including review of the Node test-runner compatibility adapter."
+}

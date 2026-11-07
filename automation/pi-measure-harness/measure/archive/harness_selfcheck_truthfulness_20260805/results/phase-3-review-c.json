@@ -1,0 +1,96 @@
+{
+  "schema_version": 2,
+  "role": "measure-review-c-ux-api",
+  "track": "harness_selfcheck_truthfulness_20260805",
+  "phase": "Phase 3: A green gate independent of active-track Red",
+  "baseline_sha": "f914e2bd48dc4790d698bd4551d1eab3814a71eb",
+  "audited_head_sha": "f914e2bd48dc4790d698bd4551d1eab3814a71eb",
+  "applicability": "applicable",
+  "status": "pass",
+  "summary": "Phase 3 Green passes the requested UX/API contract audit. The new `npm run test:shipped` script is the deterministic shipped-surface green gate, fully independent of the active track's four S1 intentional-Red files and of `npm run parity`. lib/green-gate.mjs#partitionTests is exact-name matching (Set.has) over four candidate path forms — bare English words like 'red' or 'skip' are not filters — and produces byte-identical results across repeated calls. scripts/test-shipped.mjs reads `tests/.track-red-files.txt` correctly (comment lines, blank lines, and whitespace all filtered) and emits the explicit partition listing `[shipped] running N: ...; [track-red] excluded M: ...; [unclassified] U: ...`. Against the live repo, partitionTests returns exactly 5 shipped (core, green-gate, model-resolution, parity, setup), 4 trackRed (agents-snapshot, grammar, manifest, preflight), and 0 unclassified. `node scripts/test-shipped.mjs` exits 0 with all 37 shipped assertions passing; `npm test` exits 1 with exactly 4 failures (the documented S1 intentional-Red files). package.json was modified by an additive single-line change that introduces `test:shipped` while leaving the existing `test`, `check`, `parity`, `configure`, and `migrate-auth` scripts untouched. Phase 1 (parity 11/11) and Phase 2 (model-resolution 9/9, core 5/5) show no regression. The Node v22.22.3 recursive-test compatibility adapter in lib/green-gate.mjs is a narrowly scoped, opt-in shim that only fires when a child `node --test` is invoked with exactly two argv entries (a single test file); the production gate passes 5 files so this adapter does not fire on the production invocation path.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    {
+      "id": "NF-1",
+      "class": "node_v22_compat_adapter_narrow_scope",
+      "description": "lib/green-gate.mjs contains a `NODE_TEST_CONTEXT === 'child-v8'` shim that adds `--experimental-test-isolation=none` to child `node --test` invocations when args.length === 2 (single-file recursive probe). The production `scripts/test-shipped.mjs` invokes `node --test` with the shipped partition (5 files; args.length === 6), so the adapter does not fire on the production path. This matches phase-3-green.json NF-1 (review should confirm the adapter is narrowly scoped); confirmed — adapter is gated on the test runner's child-v8 environment and only re-injects a flag for single-file child invocations."
+    },
+    {
+      "id": "NF-2",
+      "class": "track_red_list_is_single_source_of_truth",
+      "description": "tests/.track-red-files.txt is the single source of truth for which files are excluded from `npm run test:shipped`. If a future phase adds a fifth intentional-Red file, the list must be updated in the same PR or the green gate will report it as an unclassified_test_file (hard failure). This is the documented contract (test-strategy §1, plan Task 3.3); no defect, but a maintenance surface future contributors must own."
+    },
+    {
+      "id": "NF-3",
+      "class": "pre_existing_dirty_files_unrelated",
+      "description": "Pre-existing dirty edits to agents/*.md (16 files), config/model-map.json, and measure/tracks.md are NOT included in the Phase 3 Green commit per the task's absolute constraint to not commit unrelated dirty files. The green gate's `node --test` invocation exits 0 against the dirty tree because none of these dirty edits affect tests/ or scripts/. The `npm run parity` exit 1 reflects Phase 2's fail-closed unmapped-model behavior, not a Phase 3 regression."
+    }
+  ],
+  "evidence": [
+    "Provenance: phase_base_sha=f914e2bd48dc4790d698bd4551d1eab3814a71eb, audited_head_sha=f914e2bd48dc4790d698bd4551d1eab3814a71eb; HEAD matches phase_base_sha and current rev-parse output.",
+    "Worktree snapshot: `python3 ~/.agents/skills/measure-orchestrator/scripts/measure_interphase_checks.py worktree-snapshot ...` → PASS, wrote phase-3-review-c.worktree-snapshot.json.",
+    "git diff b0d3e59..f914e2b --name-status → A lib/green-gate.mjs, A measure/tracks/harness_selfcheck_truthfulness_20260805/results/phase-3-green.json, M package.json, A scripts/test-shipped.mjs, A tests/.track-red-files.txt. Only 5 files in the Phase 3 Green diff.",
+    "git diff b0d3e59..f914e2b -- package.json → additive single-line insertion of `test:shipped`. Existing scripts (test, check, parity, configure, migrate-auth, etc.) unchanged. Verified by reading the diff.",
+    "Direct partitionTests probe against ./tests with the canonical trackRedList: shipped=5 (core, green-gate, model-resolution, parity, setup), trackRed=4 (agents-snapshot, grammar, manifest, preflight), unclassified=0. Output arrays are deterministically sorted.",
+    "Determinism: two calls to partitionTests(TRACK_RED_LIST, './tests') produced JSON.stringify-identical objects. No Date.now, no Math.random, no new Date, no setTimeout, no setInterval, no process.hrtime, no crypto, no randomUUID in lib/green-gate.mjs or scripts/test-shipped.mjs (verified via regex match counts = 0 each).",
+    ".track-red-files.txt parsing: 4 comment lines and 1 blank line correctly filtered; 4 file entries (`tests/agents-snapshot.test.mjs`, `tests/grammar.test.mjs`, `tests/manifest.test.mjs`, `tests/preflight.test.mjs`) retained. Verified by simulating the script's split/trim/filter pipeline.",
+    "A7 analog: the classifier uses Set.has() over four candidate path forms (basename, relative-to-root, relative-to-packageTests, `tests/<...>`) — exact-name match only. No substring, no regex on the path. The not-actually-red-fixture.test.mjs in tests/fixtures/green-gate/ is correctly classified as shipped, not trackRed.",
+    "Unclassified-file diagnostic: when partitionTests is called against a directory outside packageTestsDir, the candidate files appear in `unclassified` (not silently promoted to shipped). Verified by synthetic probe: tmpdir + two files → shipped=[], unclassified=[foo.test.mjs]. scripts/test-shipped.mjs exits 1 with `[unclassified_test_file] N unclassified test file(s): ...` if unclassified.length > 0.",
+    "node scripts/test-shipped.mjs → exit 0; partition listing `[shipped] running 5 test files: ...; [track-red] excluded 4: ...; [unclassified] 0:` present and matches the expected format. 37/37 child test assertions pass (5 files × tests: core=5, green-gate=8, model-resolution=9, parity=11, setup=4).",
+    "npm test → exit 1; pass=37, fail=4. Failing tests: tests/agents-snapshot.test.mjs, tests/grammar.test.mjs, tests/manifest.test.mjs, tests/preflight.test.mjs. Exactly the four S1 intentional-Red files; no additional failures introduced.",
+    "node --test tests/parity.test.mjs → exit 0, 11/11 pass (Phase 1 no regression).",
+    "node --test tests/model-resolution.test.mjs → exit 0, 9/9 pass (Phase 2 no regression).",
+    "node --test tests/core.test.mjs → exit 0, 5/5 pass (Phase 1/2 no regression).",
+    "node --test tests/green-gate.test.mjs → exit 0, 8/8 pass (Phase 3 contract tests pass against shipped partition).",
+    "npm run parity → exit 1 with parity.ok=false, unmappedModels.length=7 (Phase 2 fail-closed behavior preserved, independent of Phase 3). All 7 unmapped references classify as suggestion=map_entry_needed.",
+    "npm run check → exit 0 (tsc --noEmit clean; no type errors introduced by Phase 3).",
+    "Anti-pattern audit: A1 (state transitions) — not applicable (no state machine in scope). A3 (bare integer findings) — partition listing uses labeled counts (`running 5`, `excluded 4`, `0:`); no bare integers. A7 (over-broad filter) — exact-name match only; verified by not-actually-red-fixture probe and Set.has semantics.",
+    "git status --short shows only pre-existing dirty agent files, config/model-map.json, measure/tracks.md, and untracked result files; no implementation files were modified by this audit. Audit-only role honored."
+  ],
+  "commands": [
+    "python3 ~/.agents/skills/measure-orchestrator/scripts/measure_interphase_checks.py worktree-snapshot --repo /home/daniel-bo/Desktop/pi-measure-harness --file /home/daniel-bo/Desktop/pi-measure-harness/measure/tracks/harness_selfcheck_truthfulness_20260805/results/phase-3-review-c.worktree-snapshot.json",
+    "git rev-parse HEAD; git status --short; git log -3 --oneline",
+    "git diff b0d3e59..f914e2b --name-status",
+    "git diff b0d3e59..f914e2b -- package.json",
+    "git diff b0d3e59..f914e2b -- lib/green-gate.mjs",
+    "git diff b0d3e59..f914e2b -- scripts/test-shipped.mjs",
+    "git diff b0d3e59..f914e2b -- tests/.track-red-files.txt",
+    "node -e \"import('./lib/green-gate.mjs').then(m => console.log(m.partitionTests(new Set(['tests/agents-snapshot.test.mjs','tests/grammar.test.mjs','tests/manifest.test.mjs','tests/preflight.test.mjs']), './tests')))\" — verify shipped=5, trackRed=4, unclassified=0",
+    "node -e \"import('./lib/green-gate.mjs').then(m => { const a = m.partitionTests(...); const b = m.partitionTests(...); console.log(JSON.stringify(a) === JSON.stringify(b)); })\" — determinism probe",
+    "node -e \"import('./lib/green-gate.mjs').then(m => { ... synth tmpdir with foo.test.mjs → verify unclassified contains foo.test.mjs, shipped is empty })\" — out-of-tree files correctly classified as unclassified",
+    "node -e \"import('./lib/green-gate.mjs').then(m => { ... fixture dir includes not-actually-red-fixture.test.mjs → verify it is in shipped, not in trackRed })\" — A7 analog probe",
+    "grep -nE 'Date\\.now|Math\\.random|new Date|setTimeout|setInterval|process\\.hrtime|crypto|randomUUID' lib/green-gate.mjs scripts/test-shipped.mjs — all zero",
+    "grep -nE 'substr|indexOf|match\\(|test\\(' lib/green-gate.mjs scripts/test-shipped.mjs — all zero (no substring/regex matching in classifier)",
+    "node scripts/test-shipped.mjs — partition listing + 37/37 child test assertions; exit 0",
+    "node --test tests/parity.test.mjs — 11/11 pass",
+    "node --test tests/model-resolution.test.mjs — 9/9 pass",
+    "node --test tests/core.test.mjs — 5/5 pass",
+    "node --test tests/green-gate.test.mjs — 8/8 pass",
+    "npm test — exit 1, fail=4 (agents-snapshot, grammar, manifest, preflight)",
+    "npm run parity — exit 1, ok=false, unmappedModels.length=7 (Phase 2 fail-closed)",
+    "npm run check — exit 0 (tsc --noEmit clean)"
+  ],
+  "changed_files": [
+    "lib/green-gate.mjs",
+    "scripts/test-shipped.mjs",
+    "tests/.track-red-files.txt",
+    "package.json",
+    "measure/tracks/harness_selfcheck_truthfulness_20260805/results/phase-3-green.json",
+    "measure/tracks/harness_selfcheck_truthfulness_20260805/results/phase-3-review-c.json (this audit)",
+    "measure/tracks/harness_selfcheck_truthfulness_20260805/results/phase-3-review-c.worktree-snapshot.json"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "ux_applicability": "applicable",
+  "webbridge_status": "not_run",
+  "webbridge_evidence": {
+    "screenshots": [],
+    "accessibility_snapshots": [],
+    "interactions": []
+  },
+  "handoff": "Phase 3 phase-acceptance should: (1) confirm HEAD equals f914e2bd48dc4790d698bd4551d1eab3814a71eb at acceptance start; (2) rerun `node scripts/test-shipped.mjs` (or `npm run test:shipped`) and verify exit 0 with partition listing showing 5/4/0; (3) rerun `npm test` and verify exit 1 with exactly 4 S1 intentional-Red failures (agents-snapshot, grammar, manifest, preflight); (4) rerun focused Phase 1 (parity 11/11), Phase 2 (model-resolution 9/9), and Phase 3 (green-gate 8/8) suites and verify all pass; (5) rerun `npm run parity` and verify exit 1 with ok=false (Phase 2 fail-closed behavior preserved); (6) rerun `npm run check` and verify exit 0; (7) audit the lib/green-gate.mjs NODE_TEST_CONTEXT adapter to confirm it only fires on single-file child invocations (args.length === 2) and does NOT fire on the production 5-file gate invocation; (8) audit tests/.track-red-files.txt to confirm it contains exactly the four S1 intentional-Red files with no extra entries and no missing entries. Note that pre-existing dirty agent files (16 files), config/model-map.json, and measure/tracks.md remain on the working tree but are NOT included in the Phase 3 Green commit per the absolute constraint — these do not affect the shipped-surface green gate. The Node v22.22.3 recursive-test compatibility adapter in lib/green-gate.mjs is narrowly scoped and does not affect the production gate; it is the same adapter called out in phase-3-green.json NF-1."
+}

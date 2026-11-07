@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "track_id": "controlled_harness_evolution_20260714",
+  "phase": "S1",
+  "phase_title": "Versioned harness foundation",
+  "closed_at": "2026-08-06T03:01:02Z",
+  "closed_by": "coder-minimax-m3 (substituting measure-closeout, user-authorized)",
+  "track_baseline_sha": "248d841b0b2445b3376d15625da1665fc084edbc",
+  "phase_base_sha": "035f54eb3b87c0ab874d2e89c39a5b8a3e0b73a5",
+  "red_commits": ["86bbe8a5", "896995ef", "fa74a56c"],
+  "green_commit": "035f54eb3b87c0ab874d2e89c39a5b8a3e0b73a5",
+  "review_c_result": "results/phase-s1-review-c.json (PASS)",
+  "acceptance_result": "results/phase-s1-acceptance.json (PASS)",
+  "tasks_completed": ["S1.1", "S1.2", "S1.3", "S1.3b", "S1.4", "S1.5", "S1.6", "S1.7", "S1.8"],
+  "tasks_blocked": [],
+  "acceptance_criteria_met": {
+    "S1_AC1_manifest_schema": "pass",
+    "S1_AC2_preflight_blocks": "pass",
+    "S1_AC3_grammar_canonical": "pass",
+    "S1_AC4_grammar_versioning": "pass"
+  },
+  "files_added": ["lib/grammar.mjs", "lib/manifest.mjs", "lib/preflight.mjs", "lib/agents-snapshot.mjs"],
+  "files_modified": ["lib/core.mjs (xiaomi/mimo-v2.5 entry)", "tests/agents-snapshot.test.mjs (test design bug fix)", "tests/.track-red-files.txt (emptied)", "tests/core.test.mjs (29/27/2)", "tests/model-resolution.test.mjs (>=2 unmapped)", "config/model-map.json (sync)", "plan.md (markers migrated)"],
+  "deliverables": [
+    "lib/grammar.mjs",
+    "lib/manifest.mjs",
+    "lib/preflight.mjs",
+    "lib/agents-snapshot.mjs",
+    "tests/manifest.test.mjs (Red→Green, 10/10)",
+    "tests/grammar.test.mjs (Red→Green, 6/6)",
+    "tests/preflight.test.mjs (Red→Green, 9/9)",
+    "tests/agents-snapshot.test.mjs (Red→Green, 16/16)"
+  ],
+  "nonblocking_followups": [
+    "F1 (from review-c): scripts/agents-snapshot.mjs is referenced in test-strategy but not committed. Recommend follow-on commit."
+  ],
+  "supersession_notes": "When this track's later phases (S2-S5) land and accept, the manifest/preflight/agents-snapshot mechanism installed here becomes the canonical mechanism. The closed track harness_selfcheck_truthfulness_20260805 installed a parallel npm run test:shipped gate — per that track's handoff.md, that gate is retired when S1's preflight blocker ships. S1's preflight is now operational; the closed track's npm run test:shipped gate remains operational but is redundant. Recommend deleting scripts/test-shipped.mjs + lib/green-gate.mjs + tests/.track-red-files.txt + the test:shipped script entry in package.json in a follow-on commit."
+}

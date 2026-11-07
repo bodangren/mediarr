@@ -1,0 +1,106 @@
+{
+  "schema_version": 2,
+  "role": "measure-jr-green remediation (user-authorized direct coder delegation)",
+  "track": "controlled_harness_evolution_20260714",
+  "phase": "Phase S1: Versioned harness foundation (remediation)",
+  "baseline_sha": "5ec9c127088a6133b6706fa2cd5d6c1a0b874eb8",
+  "audited_head_sha": "035f54eb3b87c0ab874d2e89c39a5b8a3e0b73a5",
+  "status": "complete",
+  "tasks_covered": ["S1.4", "S1.5", "S1.6"],
+  "files_added": [
+    "lib/grammar.mjs",
+    "lib/manifest.mjs",
+    "lib/preflight.mjs",
+    "lib/agents-snapshot.mjs"
+  ],
+  "files_modified": [
+    "tests/agents-snapshot.test.mjs",
+    "tests/.track-red-files.txt",
+    "lib/core.mjs",
+    "config/model-map.json",
+    "tests/core.test.mjs",
+    "tests/model-resolution.test.mjs"
+  ],
+  "live_state_investigation": {
+    "source_count": 29,
+    "target1_count": 29,
+    "target2_count": 29,
+    "measure_only_count": 13,
+    "missing_in_project": [
+      "coder-kimi-for-coding-k3.md",
+      "coder-xiaomi-mimo-v2-5.md"
+    ],
+    "missing_in_target1": [
+      "coder-kimi-for-coding-k3.md",
+      "coder-xiaomi-mimo-v2-5.md"
+    ],
+    "hardlinks_created": [
+      ["/home/daniel-bo/.config/opencode/agent/coder-kimi-for-coding-k3.md", "/home/daniel-bo/.agents/agents/coder-kimi-for-coding-k3.md"],
+      ["/home/daniel-bo/.config/opencode/agent/coder-xiaomi-mimo-v2-5.md", "/home/daniel-bo/.agents/agents/coder-xiaomi-mimo-v2-5.md"],
+      ["/home/daniel-bo/.config/opencode/agent/coder-kimi-for-coding-k3.md", "/home/daniel-bo/Desktop/pi-measure-harness/agents/coder-kimi-for-coding-k3.md"],
+      ["/home/daniel-bo/.config/opencode/agent/coder-xiaomi-mimo-v2-5.md", "/home/daniel-bo/Desktop/pi-measure-harness/agents/coder-xiaomi-mimo-v2-5.md"]
+    ],
+    "auxiliary_link_replacements": "16 pre-existing files in /home/daniel-bo/Desktop/pi-measure-harness/agents/ were independent copies (different inode, same content) before the sync; the strategy requires target files to share dev+ino with their source counterpart, so each copy was unlinked and replaced with a hardlink to the source. File content is unchanged, so git status remains clean for these 16 paths. The replaced files are: change-quality-reviewer.md, coder-kimi-for-coding-k2p7.md, coder-minimax-m3.md, coder-openai-gpt-5-6-luna.md, coder-openai-gpt-5-6-terra.md, coder-orchestrator.md, coder-vocengine-ark-code-latest.md, coder-vocengine-deepseek-v4-pro.md, coder-vocengine-glm-5-2.md, measure-final-acceptance.md, measure-orchestrator-audit.md, measure-phase-acceptance.md, measure-review-a-correctness.md, measure-review-b-security.md, measure-review-c-ux-api.md, measure-ux-browser-review.md."
+  },
+  "gates": {
+    "manifest": {"exit_code": 0, "pass": 10, "fail": 0},
+    "grammar": {"exit_code": 0, "pass": 6, "fail": 0},
+    "preflight": {"exit_code": 0, "pass": 9, "fail": 0},
+    "agents-snapshot": {"exit_code": 0, "pass": 16, "fail": 0},
+    "parity": {"exit_code": 0, "pass": 11, "fail": 0},
+    "model-resolution": {"exit_code": 0, "pass": 9, "fail": 0},
+    "core": {"exit_code": 0, "pass": 5, "fail": 0},
+    "setup": {"exit_code": 0, "pass": 4, "fail": 0},
+    "green-gate": {"exit_code": 0, "pass": 8, "fail": 0},
+    "npm_run_test_shipped": {"exit_code": 0, "partition": "9 shipped / 0 track-red / 0 unclassified", "pass": 78, "fail": 0},
+    "npm_test": {"exit_code": 0, "failing": []},
+    "npm_run_check": {"exit_code": 0},
+    "parity_script": {"exit_code": 1, "ok": false, "unmapped_count": 2, "model_map_matches": true}
+  },
+  "commands": [
+    "ls ~/.config/opencode/agent/*.md | wc -l",
+    "ls ~/.agents/agents/*.md | wc -l",
+    "ls ~/Desktop/pi-measure-harness/agents/*.md | wc -l",
+    "ls ~/Desktop/measure/agents/*.md | wc -l",
+    "comm -23 <(ls ~/.config/opencode/agent/*.md | xargs -n1 basename | sort) <(ls ~/Desktop/pi-measure-harness/agents/*.md | xargs -n1 basename | sort)",
+    "comm -23 <(ls ~/.config/opencode/agent/*.md | xargs -n1 basename | sort) <(ls ~/.agents/agents/*.md | xargs -n1 basename | sort)",
+    "node --test tests/manifest.test.mjs",
+    "node --test tests/grammar.test.mjs",
+    "node --test tests/preflight.test.mjs",
+    "node --test tests/agents-snapshot.test.mjs",
+    "node --test tests/parity.test.mjs",
+    "node --test tests/model-resolution.test.mjs",
+    "node --test tests/core.test.mjs",
+    "node --test tests/setup.test.mjs",
+    "node --test tests/green-gate.test.mjs",
+    "npm run test:shipped",
+    "npm test",
+    "npm run check",
+    "node scripts/parity.mjs"
+  ],
+  "commits": ["035f54eb3b87c0ab874d2e89c39a5b8a3e0b73a5"],
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    {
+      "id": "NF1-test-design-EEXIST",
+      "class": "test_design_followup",
+      "severity": "low",
+      "description": "After applying the require→linkSync fix, tests 7, 8, 9 in tests/agents-snapshot.test.mjs surfaced a second latent design bug: each test pre-created a target file with writeFileSync and then called linkSync onto the same path, throwing EEXIST. The three redundant writeFileSync(target) lines (one per test) were removed so linkSync could create the target as a hard link. The test intent (target file present, other expected file missing/extra) is preserved. This is a follow-up to the require fix; the test contract surface and assertions are unchanged."
+    },
+    {
+      "id": "NF2-parity-unmapped-divergence",
+      "class": "expected_output_drift",
+      "severity": "low",
+      "description": "The task description expected parity.mjs to report unmapped=3 after Green. After adding the xiaomi/mimo-v2.5 MODEL_MAP entry (required by the strategy for the new coder-xiaomi-mimo-v2-5 agent), measure-ux-browser-review was incidentally resolved because it shares the same model identifier. The live unmapped count is now 2 (coder-openai-gpt-5-6-luna-fast, measure-adversarial-testing) instead of 3. This is a beneficial side effect — one fewer unmapped reference — but it diverges from the task's pre-sync expected unmapped=3. modelMapMatches=true (MODEL_MAP and config/model-map.json stay byte-identical)."
+    },
+    {
+      "id": "NF3-auxiliary-file-changes",
+      "class": "deliverable_extension",
+      "severity": "low",
+      "description": "Beyond the listed deliverables, the commit also includes: (1) lib/core.mjs and config/model-map.json MODEL_MAP registration for xiaomi/mimo-v2.5 (the strategy §\"Changed-contract risks\" explicitly authorizes MODEL_MAP updates; parity.mjs requires MODEL_MAP and config/model-map.json to stay byte-identical); (2) tests/core.test.mjs editorial update of agentCount (27→29), callableCount (25→27), and the unmapped-models list (3→2) per the same strategy authorization; (3) tests/model-resolution.test.mjs update of the live-unmapped-count assertion (>=3, 3 names → >=2, 2 names) to reflect the new state. The 2 new agent files in agents/ remain untracked per the task's \"do not commit\" rule and the strategy's \"hardlink is outside the project\" guidance."
+    }
+  ],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "handoff": "S1 Green complete. Review-c (S1) and phase-acceptance (S1) can proceed. Review should verify: (a) lib/grammar.mjs: CANONICAL_REGEX, isTaskStructurallyBlocked, classifyMarker, parseTaskLine deterministic and the [ ] = pending compatibility preserved; (b) lib/manifest.mjs: loadManifest, validateManifest, computeStabilityHashes deterministic with the documented 5-throw contract (drift:agent, drift:extension, schema_version_mismatch, missing_reference, unmapped_model); (c) lib/preflight.mjs: runPreflight, formatPreflightError deterministic with compatibility-mode warning contract; (d) lib/agents-snapshot.mjs: verification-only, no writes to source/targets, EXPECTED_AGENT_COUNT=29, MEASURE_ONLY_PATTERN, DEFAULT_FULL_MIRROR_DIRS frozen, classifyLinkError mapping, compareHardLinkInventory + formatSnapshotError deterministic; (e) lib/core.mjs MODEL_MAP registration for xiaomi/mimo-v2.5 stays in sync with config/model-map.json; (f) tests/.track-red-files.txt is empty and lib/green-gate.mjs partitionTests correctly handles an empty classifier (verified: 9 shipped / 0 track-red / 0 unclassified); (g) the 2 hardlinks in agents/ and ~/.agents/agents/ remain untracked (filesystem-only sync, not committed); (h) the measure/runs/ directory is not committed."
+}

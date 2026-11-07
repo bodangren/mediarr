@@ -1,0 +1,88 @@
+{
+  "schema_version": 2,
+  "role": "measure-review-c-ux-api",
+  "track": "harness_selfcheck_truthfulness_20260805",
+  "phase": "Phase 2: Unresolvable model references fail closed",
+  "baseline_sha": "c5afc9ee7394a1bb053d1a85c138a35b9fe320cc",
+  "audited_head_sha": "c5afc9ee7394a1bb053d1a85c138a35b9fe320cc",
+  "applicability": "applicable",
+  "status": "pass",
+  "summary": "Phase 2 Green passes the requested API-contract audit. parseAgentFile now resolves strictly through MODEL_MAP and preserves the raw sourceModel separately; unmapped references load with model undefined, drive agentParity.ok false, and produce seven deterministic, named unmapped_model findings in the captured live worktree. All seven live references are well formed and receive map_entry_needed; mapped resolution remains intact. The core rewrite is substantive, Phase 1 parity remains 11/11 green, consumers remain wired, MODEL_MAP is unchanged across the Phase 2 implementation diff, and npm test has exactly the four documented S1 intentional-Red failures. Review-c is applicable here despite the strategy's default Phase 2 review-c exclusion because the explicit audit assignment and exact diff expose a changed agentParity API consumed by scripts/parity.mjs and measure-doctor.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    {
+      "id": "NF-1",
+      "class": "provenance_descendant_head",
+      "description": "Repository HEAD at role start and completion is 1a1ed2fc4eb0517017caae5d734f711cedf1546f, not the supplied audited implementation SHA c5afc9ee7394a1bb053d1a85c138a35b9fe320cc. c5afc9e is an ancestor, and the sole intervening commit 1a1ed2f adds only results/phase-2-green.json. git diff --exit-code c5afc9e..HEAD over every implementation, test, reconciliation, metadata, and consumer path in scope exits 0, so the audited API surface is unchanged. Phase acceptance should target the orchestrator-required HEAD while retaining c5afc9e as the implementation provenance SHA."
+    },
+    {
+      "id": "NF-2",
+      "class": "worktree_bound_live_roster",
+      "description": "The seven-agent result is bound to phase-2-review-c.worktree-snapshot.json and the documented pre-existing dirty agent edits. A tree-only inventory of the committed roster at c5afc9e has six unmapped agents, while the captured live worktree has seven and all requested tests pass there. This does not invalidate the requested live-worktree audit, but clean-checkout CI is not SHA-only reproducible for the exact seven-agent assertions; phase acceptance should preserve/verify the snapshot or explicitly reconcile this known distinction."
+    }
+  ],
+  "evidence": [
+    "Provenance: phase_base_sha=c5afc9ee7394a1bb053d1a85c138a35b9fe320cc, derived role_base_sha=1a1ed2fc4eb0517017caae5d734f711cedf1546f, audited_head_sha=c5afc9ee7394a1bb053d1a85c138a35b9fe320cc; c5afc9e is an ancestor of current HEAD and the relevant c5afc9e..HEAD diff is empty.",
+    "git diff c2ec3ea..c5afc9e -- lib/core.mjs | head -80 -> removes `model: sourceModel ? MODEL_MAP[sourceModel] ?? sourceModel : undefined` and adds `model: sourceModel ? MODEL_MAP[sourceModel] : undefined`.",
+    "Direct strict-resolve probe -> {sourceModel:'ghost-provider/ghost-model-9999', bugPersists:false}; JSON omits model because it is undefined. Direct loadAgents fixture probe likewise returns agent-load-unmapped with model undefined and bugPersists:false.",
+    "Direct mapped-resolve probe -> model=openai-codex/gpt-5.6-sol, expected=openai-codex/gpt-5.6-sol, matches=true.",
+    "node --test tests/model-resolution.test.mjs -> exit 0, 9/9 pass, including strict resolve, mapped resolve, structured shape, suggestion distinction, load-time fail-closed behavior, A3 defense, and determinism.",
+    "Required live findings command -> seven Array entries, each with class=unmapped_model, a named agent, sourceModel, and suggestion=map_entry_needed. Summary probe -> {unmapped:7, findings:7, map_entry_needed:7, reference_incorrect:0, shapeOk:true, ok:false}.",
+    "node --test tests/core.test.mjs -> exit 0, 5/5 pass. The rewritten parity test asserts ok=false, 27/25 roster counts, unmappedModels.length=7, unmappedModelFindings.length=7, first class=unmapped_model, and first suggestion=map_entry_needed; it is not vacuous.",
+    "node --test tests/parity.test.mjs -> exit 0, 11/11 pass; Phase 1 contract does not regress.",
+    "reconciliation-models.md names all seven live agents, marks each provider/id as well formed, records 7/7 map_entry_needed and 0 reference_incorrect, and explicitly states Phase 2 Green does NOT modify MODEL_MAP because routing is Out of Scope.",
+    "MODEL_MAP verification: the requested diff grep emits no MODEL_MAP hunk (grep exit 1), and the extracted MODEL_MAP blocks at c2ec3ea and c5afc9e have the identical SHA-256 220908d860199746791408009c9c506e625c7a66cb48c97374c6abf7bd5cef4e.",
+    "Exact Phase 2 diff contains lib/core.mjs, metadata.json, reconciliation-models.md, and tests/core.test.mjs. Inspection shows no A1 state-transition implementation, findings are structured rather than bare integers (A3), and assertions are strengthened rather than relaxed (A7). git diff --check exits 0.",
+    "node scripts/parity.mjs -> exit 1 as expected; output contains parity.ok=false, seven unmappedModels, and seven structured findings. Additional pre-existing source snapshot/config drift is also reported without crashing.",
+    "extensions/measure-harness/index.ts#doctor still calls agentParity(agents), returns parity in the response, and derives doctor ok from parity.ok; npm run check exits 0, confirming TypeScript consumer wiring.",
+    "npm test -> exit 1, 29/33 pass and exactly 4 failures: tests/agents-snapshot.test.mjs (missing lib/agents-snapshot.mjs), tests/grammar.test.mjs (missing lib/grammar.mjs), tests/manifest.test.mjs (missing lib/manifest.mjs), and tests/preflight.test.mjs (missing lib/preflight.mjs). These are the documented S1 intentional-Red files only.",
+    "Mandatory worktree snapshot command -> PASS and wrote measure/tracks/harness_selfcheck_truthfulness_20260805/results/phase-2-review-c.worktree-snapshot.json."
+  ],
+  "commands": [
+    "python3 ~/.agents/skills/measure-orchestrator/scripts/measure_interphase_checks.py worktree-snapshot --repo /home/daniel-bo/Desktop/pi-measure-harness --file /home/daniel-bo/Desktop/pi-measure-harness/measure/tracks/harness_selfcheck_truthfulness_20260805/results/phase-2-review-c.worktree-snapshot.json",
+    "git rev-parse HEAD; git status --short; git log -5 --oneline --decorate",
+    "git merge-base --is-ancestor c5afc9ee7394a1bb053d1a85c138a35b9fe320cc HEAD",
+    "git diff --exit-code c5afc9ee7394a1bb053d1a85c138a35b9fe320cc..HEAD -- lib/core.mjs tests/core.test.mjs tests/model-resolution.test.mjs tests/parity.test.mjs measure/tracks/harness_selfcheck_truthfulness_20260805/reconciliation-models.md measure/tracks/harness_selfcheck_truthfulness_20260805/metadata.json scripts/parity.mjs extensions/measure-harness/index.ts",
+    "git diff --name-status c2ec3ea6bc128d2351d9f719d1f0f8bf177d8709..c5afc9ee7394a1bb053d1a85c138a35b9fe320cc",
+    "git diff c2ec3ea6bc128d2351d9f719d1f0f8bf177d8709..c5afc9ee7394a1bb053d1a85c138a35b9fe320cc -- lib/core.mjs | head -80",
+    "git diff c2ec3ea6bc128d2351d9f719d1f0f8bf177d8709..c5afc9ee7394a1bb053d1a85c138a35b9fe320cc -- lib/core.mjs | grep -A 3 'MODEL_MAP = Object.freeze'",
+    "git show <c2-or-c5>:lib/core.mjs | awk '/export const MODEL_MAP = Object.freeze\\(/,/^\\}\\);/' | sha256sum",
+    "node -e strict parseAgentFile probe against tests/fixtures/model-resolution/unmapped-well-formed.md",
+    "node -e mapped parseAgentFile probe against tests/fixtures/model-resolution/mapped.md",
+    "node -e loadAgents probe against tests/fixtures/model-resolution/load-unmapped",
+    "node -e \"import('./lib/core.mjs').then(m => { const agents = m.loadAgents(); const p = m.agentParity(agents); console.log(JSON.stringify(p.unmappedModelFindings, null, 2)); })\"",
+    "node -e live findings summary/count/shape probe",
+    "node --test tests/model-resolution.test.mjs",
+    "node --test tests/core.test.mjs",
+    "node --test tests/parity.test.mjs",
+    "grep reconciliation counts, suggestions, and Out-of-Scope statements in reconciliation-models.md and metadata.json",
+    "node scripts/parity.mjs",
+    "npm run check",
+    "npm test",
+    "grep -n -A 20 'async function doctor' extensions/measure-harness/index.ts",
+    "grep -n -E 'agentParity|parity\\.(ok|agentCount|callableCount|unmappedModels|unmappedModelFindings)' scripts/parity.mjs extensions/measure-harness/index.ts",
+    "git diff --check c2ec3ea6bc128d2351d9f719d1f0f8bf177d8709..c5afc9ee7394a1bb053d1a85c138a35b9fe320cc",
+    "python3 git-object inventory of MODEL_MAP misses in the committed c5afc9e agents tree"
+  ],
+  "changed_files": [
+    "lib/core.mjs",
+    "tests/core.test.mjs",
+    "measure/tracks/harness_selfcheck_truthfulness_20260805/metadata.json",
+    "measure/tracks/harness_selfcheck_truthfulness_20260805/reconciliation-models.md",
+    "measure/tracks/harness_selfcheck_truthfulness_20260805/results/phase-2-green.json"
+  ],
+  "test_strategy_violations": [],
+  "live_contract_violations": [],
+  "prod_wiring_violations": [],
+  "route_parity_violations": [],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "ux_applicability": "applicable",
+  "webbridge_status": "not_run",
+  "webbridge_evidence": {
+    "screenshots": [],
+    "accessibility_snapshots": [],
+    "interactions": []
+  },
+  "handoff": "Phase 2 phase-acceptance should verify the result against the same mandatory worktree snapshot, rerun model-resolution 9/9, core 5/5, and Phase 1 parity 11/11, confirm npm test remains 29/33 with only the four S1 intentional-Red module-missing failures, and confirm scripts/parity.mjs exits 1 while reporting seven named unmapped findings. Acceptance should also account for current HEAD 1a1ed2f (evidence-only descendant of c5afc9e) and explicitly acknowledge that the seven-agent live assertion is snapshot-bound while the committed c5afc9e roster alone inventories six unmapped references."
+}

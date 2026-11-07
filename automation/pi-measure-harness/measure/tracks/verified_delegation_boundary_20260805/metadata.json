@@ -1,0 +1,22 @@
+{
+  "track_id": "verified_delegation_boundary_20260805",
+  "type": "chore",
+  "status": "new",
+  "created_at": "2026-08-05T00:00:00Z",
+  "updated_at": "2026-08-05T00:00:00Z",
+  "description": "Close the gap between evidence the task boundary records and invariants it asserts: verify observed routing against the role pin, verify read-only roles from repository state rather than a bypassable command denylist, bound dispatch in time and depth, and check the outbound packet with the rigor already applied to the inbound result block.",
+  "estimated_tasks": 30,
+  "actual_tasks": null,
+  "deviation_notes": "2026-08-05 revision: task count corrected from 27 to 30 to match the live plan. The original figure was already one low at track creation. Two tasks were added when the routing chain was defined: Task 1.4b records the role-definition hash on the receipt, and Task C2b writes the handoff note naming the receipt fields that role_model_pool_20260805 and role_fitness_frontier_watch_20260805 consume.",
+  "sprint": {
+    "goal": "The orchestrator may believe only what it has observed: a declared model, a requested sandbox, and a role prompt become inputs to be verified rather than facts to be reported.",
+    "stories": [
+      { "id": "S1", "title": "Observed routing, not requested routing", "size": "M", "priority": "Must", "status": "pending" },
+      { "id": "S2", "title": "Read-only roles verified by state, not by string matching", "size": "M", "priority": "Must", "status": "pending" },
+      { "id": "S3", "title": "Bounded, non-recursive dispatch", "size": "S", "priority": "Must", "status": "pending" },
+      { "id": "S4", "title": "Untrusted child output and validated dispatch packets", "size": "M", "priority": "Should", "status": "pending" }
+    ],
+    "demo_notes": null,
+    "retro_ref": null
+  }
+}

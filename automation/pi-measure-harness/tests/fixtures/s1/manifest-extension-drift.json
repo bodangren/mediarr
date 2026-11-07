@@ -1,0 +1,14 @@
+{
+  "version": "0.2.0",
+  "extensionHash": "deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
+  "agentHashes": {
+    "fixture-agent": "a4fec61a1c3e6104f2a3892371f817f2156e04208e028035c8325478c5627894"
+  },
+  "skillHashes": {},
+  "contractHash": "0000000000000000000000000000000000000000000000000000000000000000",
+  "markerGrammarVersion": "1.0.0",
+  "compatibility": {
+    "legacyMarkerSupport": true
+  },
+  "agentCountLabel": "agent count: 1"
+}

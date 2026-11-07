@@ -1,0 +1,203 @@
+{
+  "schema_version": 2,
+  "role": "measure-mid-red (direct coder-minimax-m3 delegation, user-authorized)",
+  "track": "harness_selfcheck_truthfulness_20260805",
+  "phase": "Phase 2: Unresolvable model references fail closed",
+  "baseline_sha": "d74471a1ae407f1b46c204309a022fa49cab3bdc",
+  "audited_head_sha": "d609a21201ede53f20ebfce9de050208304d572c",
+  "status": "complete",
+  "summary": "Phase 2 Red evidence — direct coder delegation due to mid-red (kimi-coding/k3 unregistered) and jr-green (openai-codex OAuth refresh token invalid) unavailability. The Phase 2 model-resolution contract is fully documented (JSDoc-style header in tests/model-resolution.test.mjs and 9 inline one-line test comments naming the contract section each test protects, per test-strategy.md §8). All 9 required Red conditions are encoded as tests at tests/model-resolution.test.mjs; 4 static fixture files under tests/fixtures/model-resolution/ drive the probe cases (mapped, unmapped-well-formed, unmapped-malformed, load-unmapped). 8 of 9 tests fail at Red because: (a) parseAgentFile still uses the silent `?? sourceModel` passthrough (test 1 fails — model === sourceModel, not undefined); (b) agentParity does not expose unmappedModelFindings (tests 4, 5, 8, 9 fail because the field is undefined); (c) unmappedModels is structurally unreachable against the live roster (tests 3, 7 fail because the passthrough masks all 7 unmapped agents and unmappedModels === []); (d) loadAgents silently coerces unmapped references into passthroughs (test 6 fails). Test 2 (successful resolve) passes at Red because the mapped-path resolution works correctly in the current code. npm test now exits 1 with 12-of-33 failures (was 4-of-24 at HEAD d74471a; the new file adds 8 new failures — satisfying the 'at least one additional failure' minimum). The 7 live unmapped agents at HEAD d74471a (per the discovery probe) are: coder-kimi-for-coding-highspeed → kimi-for-coding/kimi-for-coding-highspeed, coder-kimi-for-coding-k2p7 → kimi-for-coding/kimi-for-coding, coder-openai-gpt-5-6-luna-fast → openai/gpt-5.6-luna-fast, coder-orchestrator → kimi-for-coding/k3, measure-adversarial-testing → deepseek/deepseek-v4-pro, measure-review-a-correctness → kimi-for-coding/kimi-for-coding, measure-ux-browser-review → xiaomi/mimo-v2.5 — all well-formed provider/id shape, so all 7 classify as `map_entry_needed` (not `reference_incorrect`). Zero references are malformed. This is recorded here so Phase 2 Green can produce reconciliation-models.md (or extend metadata.json#deviation_notes) accordingly. The strategy text's stated '3 unmapped' reflects the strategy commit SHA 248d841 state; live state has drifted past the strategy commit due to dirty agent edits adding 4 kimi-using agents. The strategy's reconciliation list (measure-adversarial-testing, measure-ux-browser-review, coder-openai-gpt-5-6-luna-fast) is a strict subset of the live 7.",
+  "deviation_notes": "Direct coder delegation violates orchestrator's standard role boundary (no coder in Red/Green chain). User explicitly authorized due to infrastructure failures: measure-mid-red's kimi-coding/k3 is unregistered in this harness session; measure-jr-green's openai-codex OAuth refresh token is invalid (401 invalid_refresh_token). All openai-codex-based Measure subagents are similarly unavailable: measure-review-a-correctness, measure-review-b-security, measure-review-c-ux-api, measure-phase-acceptance, measure-orchestrator-audit, measure-closeout. Only minimax-cn/MiniMax-M3-based agents work: coder-minimax-m3 (and coder-vocengine-*). Fixtures are static committed files under tests/fixtures/model-resolution/ (not os.tmpdir()-runtime-generated) — chosen for determinism per test-strategy.md §4. Live unmapped count is 7 at HEAD d74471a (not 3 as the strategy text states — the strategy was written at commit SHA 248d841 when the live roster had 3 unmapped agents; the user has since made dirty edits to 4 kimi-using agent files that are present in the working tree but not committed). The test 7 probe asserts count >= 3 AND that each of the 7 expected names appears, so the test is robust to future additions and explicitly rejects the false-positive case where unmappedModels === []. The JSDoc-style contract surface is documented in the test file header (since lib/core.mjs is unchanged per absolute constraints). Test 5 uses raw parseAgentFile + forced model:undefined to test the suggestion heuristic independently of test 1's passthrough bug (the test would otherwise be coupled to the parseAgentFile fix being landed first).",
+  "tasks_covered": ["2.1", "2.2"],
+  "red_falsification": {
+    "command": "node --test tests/model-resolution.test.mjs",
+    "exit_code": 1,
+    "output_tail": "1..9\n# tests 9\n# suites 0\n# pass 1\n# fail 8\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 3681\n\n# Tests 1, 3, 4, 5, 6, 7, 8, 9 fail at Red:\n# Test 1: parseAgentFile returns model: 'ghost-provider/ghost-model-9999' (the bug — passthrough); expected undefined.\n# Test 3: agentParity(liveRoster).unmappedModels === [] (the bug — passthrough masks all 7 unmapped agents); expected length > 0.\n# Test 4: result.unmappedModelFindings is undefined (the field does not yet exist on agentParity's return shape); expected Array.\n# Test 5: result.unmappedModelFindings is undefined; expected structured array with suggestion field.\n# Test 6: loadAgents returns the unmapped agent with model === sourceModel (the bug — passthrough); expected model === undefined.\n# Test 7: live roster reports 0 unmapped agents (the bug — passthrough masks the 7); expected >= 3 AND the 7 named agents appear.\n# Test 8: result.unmappedModelFindings[0] throws because the field is undefined; expected a structured finding with class field.\n# Test 9: result.unmappedModelFindings is undefined (existence check); expected byte-identical array.\n# Test 2 passes by design: the mapped-path resolution works correctly in the current code (no `?? sourceModel` fallback needed when MODEL_MAP contains the entry).\n\n# The `?? sourceModel` passthrough in parseAgentFile (lib/core.mjs:48) is the central Red falsification — it makes the unmappedModels predicate structurally unreachable. Green removes this line.\n# The `unmappedModelFindings` field is not yet exported from agentParity (lib/core.mjs); Green adds it as Array<{class: 'unmapped_model', name, sourceModel, suggestion}>. The suggestion heuristic must classify `^<provider>/<id>$` as `map_entry_needed` and malformed strings as `reference_incorrect`."
+  },
+  "pre_existing_red_baseline": {
+    "npm_test_exit_code": 1,
+    "npm_test_pass_count": 20,
+    "npm_test_fail_count": 4,
+    "total_tests": 24,
+    "failing_test_files": [
+      "tests/agents-snapshot.test.mjs",
+      "tests/grammar.test.mjs",
+      "tests/manifest.test.mjs",
+      "tests/preflight.test.mjs"
+    ]
+  },
+  "post_commit_red_state": {
+    "npm_test_exit_code": 1,
+    "npm_test_pass_count": 21,
+    "npm_test_fail_count": 12,
+    "total_tests": 33,
+    "failing_test_files": [
+      "tests/agents-snapshot.test.mjs",
+      "tests/grammar.test.mjs",
+      "tests/manifest.test.mjs",
+      "tests/preflight.test.mjs",
+      "tests/model-resolution.test.mjs (8 of 9 subtests — test 2 passes by design)"
+    ],
+    "node_tests_model_resolution": {
+      "exit_code": 1,
+      "pass_count": 1,
+      "fail_count": 8,
+      "total_tests": 9
+    },
+    "npm_run_check_exit_code": 0,
+    "npm_run_parity_exit_code": 1
+  },
+  "live_unmapped_at_red_baseline": {
+    "count": 7,
+    "agents": [
+      "coder-kimi-for-coding-highspeed",
+      "coder-kimi-for-coding-k2p7",
+      "coder-openai-gpt-5-6-luna-fast",
+      "coder-orchestrator",
+      "measure-adversarial-testing",
+      "measure-review-a-correctness",
+      "measure-ux-browser-review"
+    ],
+    "source_models": [
+      "kimi-for-coding/kimi-for-coding-highspeed",
+      "kimi-for-coding/kimi-for-coding",
+      "openai/gpt-5.6-luna-fast",
+      "kimi-for-coding/k3",
+      "deepseek/deepseek-v4-pro",
+      "kimi-for-coding/kimi-for-coding",
+      "xiaomi/mimo-v2.5"
+    ],
+    "all_well_formed": true,
+    "all_suggest_map_entry_needed": true,
+    "suggestion_heuristic_summary": "All 7 well-formed provider/id (matches ^<provider>/<id>$); all classify as map_entry_needed. Zero references are malformed (zero classify as reference_incorrect). Note: dual listing of measure-review-a-correctness and coder-kimi-for-coding-k2p7 both sourceModel kimi-for-coding/kimi-for-coding — both need the same single MODEL_MAP entry."
+  },
+  "files_added": [
+    "tests/model-resolution.test.mjs",
+    "tests/fixtures/model-resolution/mapped.md",
+    "tests/fixtures/model-resolution/unmapped-well-formed.md",
+    "tests/fixtures/model-resolution/unmapped-malformed.md",
+    "tests/fixtures/model-resolution/load-unmapped/agent-load-unmapped.md",
+    "measure/tracks/harness_selfcheck_truthfulness_20260805/results/phase-2-red.json"
+  ],
+  "files_modified": [],
+  "contracts_defined": [
+    "tests/model-resolution.test.mjs header (lines 1-72) — Phase 2 model-resolution contract surface: (a) parseAgentFile strict resolve — agent.model is strictly MODEL_MAP[frontmatter.model] or undefined, NO `?? sourceModel` fallback; sourceModel remains as frontmatter.model (raw), separate from resolved model. (b) agentParity (and rosterParity) diagnostic shape — unmappedModels: string[] (consumer-friendly, unchanged) + unmappedModelFindings: Array<{class: 'unmapped_model', name: string, sourceModel: string, suggestion: 'map_entry_needed' | 'reference_incorrect'}> (structured detail). (c) suggestion heuristic — `^<provider>/<id>$` -> map_entry_needed, otherwise reference_incorrect. (d) fail-closed on load — loadAgents must NOT silently coerce unmapped references into passthroughs; surface findings with ok: false (no passthrough). (e) live unmapped set at HEAD d74471a is 7 agents (not 3 as strategy text states — strategy was written at commit SHA 248d841 when live roster had 3 unmapped agents; live state has drifted past the strategy commit due to dirty agent edits)."
+  ],
+  "test_inventory": [
+    {
+      "id": 1,
+      "name": "live-behavior: parseAgentFile returns model: undefined for unmapped sourceModel (no ?? sourceModel passthrough)",
+      "contract_section": "spec.md#story-s2 AC1 + test-strategy.md Phase 2 'live-behavior — strict resolve'",
+      "synthetic_fixture": "tests/fixtures/model-resolution/unmapped-well-formed.md",
+      "fails_at_red": true,
+      "failure_message": "unmapped model must yield model: undefined; got 'ghost-provider/ghost-model-9999' (the passthrough)",
+      "red_root_cause": "lib/core.mjs:48: `model: sourceModel ? MODEL_MAP[sourceModel] ?? sourceModel : undefined` returns the sourceModel when MODEL_MAP misses it"
+    },
+    {
+      "id": 2,
+      "name": "live-behavior: parseAgentFile returns model: MODEL_MAP[sourceModel] for mapped sourceModel",
+      "contract_section": "spec.md#story-s2 AC1 + test-strategy.md Phase 2 'live-behavior — successful resolve'",
+      "synthetic_fixture": "tests/fixtures/model-resolution/mapped.md",
+      "fails_at_red": false,
+      "pass_at_red": "the mapped-path resolution works correctly in the current code (no `?? sourceModel` fallback needed when MODEL_MAP contains the entry); falsification: model === sourceModel would fail"
+    },
+    {
+      "id": 3,
+      "name": "live-behavior: unmappedModels predicate is reachable against the live roster",
+      "contract_section": "spec.md#story-s2 AC1 + test-strategy.md Phase 2 'live-behavior — unmappedModels predicate is reachable'",
+      "synthetic_fixture": null,
+      "fails_at_red": true,
+      "failure_message": "live roster must surface at least one unmapped agent (predicate must be reachable); got 0 because the silent passthrough masks all 7",
+      "red_root_cause": "agentParity().unmappedModels = agents.filter(agent.sourceModel && !agent.model); since parseAgentFile returns model === sourceModel for unmapped, the predicate is unreachable"
+    },
+    {
+      "id": 4,
+      "name": "live-behavior: unmappedModelFindings is a structured array with class/name/sourceModel/suggestion",
+      "contract_section": "spec.md#story-s2 AC2 + test-strategy.md Phase 2 'live-behavior — named finding shape'",
+      "synthetic_fixture": null,
+      "fails_at_red": true,
+      "failure_message": "unmappedModelFindings must be an array; got undefined (the field does not yet exist on agentParity's return shape)",
+      "red_root_cause": "agentParity does not yet expose unmappedModelFindings; Green adds the structured findings array"
+    },
+    {
+      "id": 5,
+      "name": "live-behavior: suggestion classification distinguishes map_entry_needed from reference_incorrect",
+      "contract_section": "spec.md#story-s2 AC2 + test-strategy.md Phase 2 'live-behavior — distinction between map-entry-needed and reference-incorrect'",
+      "synthetic_fixture": "tests/fixtures/model-resolution/unmapped-well-formed.md and tests/fixtures/model-resolution/unmapped-malformed.md",
+      "fails_at_red": true,
+      "failure_message": "Cannot read properties of undefined (reading 'find') — result.unmappedModelFindings is undefined",
+      "red_root_cause": "agentParity does not yet expose unmappedModelFindings; the suggestion heuristic is not yet implemented"
+    },
+    {
+      "id": 6,
+      "name": "fail-closed: loadAgents does not silently coerce unmapped references into passthroughs",
+      "contract_section": "spec.md Non-Functional Requirements 'fails closed' + test-strategy.md Phase 2 'fail-closed — load-time rejection'",
+      "synthetic_fixture": "tests/fixtures/model-resolution/load-unmapped/agent-load-unmapped.md",
+      "fails_at_red": true,
+      "failure_message": "loadAgents must not silently coerce an unmapped reference into a passthrough; got 'ghost-provider/ghost-model-9999' (the passthrough)",
+      "red_root_cause": "parseAgentFile's `?? sourceModel` fallback returns the sourceModel when MODEL_MAP misses it, so loadAgents returns agents with model === sourceModel for unmapped references"
+    },
+    {
+      "id": 7,
+      "name": "live-behavior: live roster reports >= 3 unmapped agents with the expected names",
+      "contract_section": "spec.md#story-s2 AC2 + test-strategy.md Phase 2 'live-behavior — live unmapped set'",
+      "synthetic_fixture": null,
+      "fails_at_red": true,
+      "failure_message": "live roster must report >= 3 unmapped agents; got 0 due to the passthrough; strategy states 3 at commit SHA 248d841; live state at HEAD d74471a is 7",
+      "red_root_cause": "agentParity().unmappedModels === [] because the silent passthrough masks all 7 unmapped agents; structurally unreachable predicate"
+    },
+    {
+      "id": 8,
+      "name": "A3 probe: unmapped count is never a bare integer (must be labeled or structured)",
+      "contract_section": "measure/anti-patterns.md (A3) + test-strategy.md Phase 2 'A3 probe — no bare integer unmapped count'",
+      "synthetic_fixture": null,
+      "fails_at_red": true,
+      "failure_message": "Cannot read properties of undefined (reading '0') — result.unmappedModelFindings[0] throws because the field is undefined",
+      "red_root_cause": "agentParity does not yet expose unmappedModelFindings; defense: structured findings have a labeled class, never a bare integer count"
+    },
+    {
+      "id": 9,
+      "name": "deterministic: agentParity produces byte-identical unmappedModelFindings across repeated calls",
+      "contract_section": "spec.md Non-Functional Requirements 'deterministic and side-effect free' + test-strategy.md Phase 2 'deterministic output'",
+      "synthetic_fixture": null,
+      "fails_at_red": true,
+      "failure_message": "unmappedModelFindings must be an array (deterministic test guards the field's existence)",
+      "red_root_cause": "agentParity does not yet expose unmappedModelFindings; deterministic test guards the field's existence so a future contributor who fails to add the field at Green is caught"
+    }
+  ],
+  "anti_patterns_covered": ["A3"],
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    {
+      "id": "NF-1",
+      "class": "live_unmapped_count_drift_from_strategy",
+      "description": "Strategy text states 'Live count at the strategy commit SHA is 3' but live state at HEAD d74471a is 7. The discrepancy is caused by 4 dirty agent edits (coder-kimi-for-coding-highspeed, coder-kimi-for-coding-k2p7, coder-openai-gpt-5-6-luna-fast, coder-orchestrator) that were made after the strategy commit SHA 248d841. The strategy's reconciliation list (measure-adversarial-testing, measure-ux-browser-review, coder-openai-gpt-5-6-luna-fast) is a strict subset of the live 7; the strategy's full 8-name list (which includes the 5 already-mapped names) is reconciled in metadata.json#deviation_notes. Test 7 asserts count >= 3 AND the 7 specific names, so the test is robust to future agent additions and explicitly rejects the false-positive case where unmappedModels === []. Recorded here so Phase 2 Green produces the reconciliation report against live state, not the strategy's frozen list."
+    },
+    {
+      "id": "NF-2",
+      "class": "test_5_force_undefined_pattern",
+      "description": "Test 5 (suggestion classification) uses parseAgentFile + forced model:undefined to test the suggestion heuristic independently of test 1's passthrough bug. This is intentional because if test 5 relied solely on parseAgentFile's current behavior, it would never reach the suggestion-check assertion (since model === sourceModel for unmapped, the agents would not be classified as unmapped). The forced model:undefined pattern is documented in the test's inline comment. Green will remove the need for this when parseAgentFile returns model:undefined for unmapped (test 1's fix). If Jr Green disagrees with the pattern, they should rewrite test 5 to use the live-roster unmapped agents (which will all be well-formed provider/id after test 1's fix) and assert map_entry_needed for each — but the test would lose the reference_incorrect coverage unless a malformed fixture is added to the live roster itself."
+    },
+    {
+      "id": "NF-3",
+      "class": "test_9_existence_check",
+      "description": "Test 9 (deterministic) includes an existence check (assert.ok(Array.isArray(before.unmappedModelFindings))) before the byte-identical comparison. This is intentional because the field does not yet exist; without the existence check, the test would vacuously pass (both calls return undefined, undefined === undefined). The existence check ensures the test fails at Red with a clear message ('unmappedModelFindings must be an array') and continues to fail if Green lands without the field. This is documented in the test's inline comment."
+    },
+    {
+      "id": "NF-4",
+      "class": "jsdoc_documentation_lives_in_test_file",
+      "description": "The Phase 2 model-resolution contract is documented in the JSDoc-style header block of tests/model-resolution.test.mjs (lines 1-72) instead of in lib/core.mjs#parseAgentFile's JSDoc. This is because the absolute constraints prohibit modifying lib/core.mjs in Red. Green (or Phase 2 acceptance) may add the JSDoc to lib/core.mjs#parseAgentFile to mirror the test file's contract surface. The contract content is identical in both locations once Green lands."
+    }
+  ],
+  "commands": [
+    "node --test tests/model-resolution.test.mjs",
+    "npm test",
+    "npm run check",
+    "npm run parity",
+    "node -e \"import('./lib/core.mjs').then(m => { const agents = m.loadAgents(); agents.forEach(a => { if (a.sourceModel && (!m.MODEL_MAP[a.sourceModel])) console.log(a.name, '->', a.sourceModel); })\""
+  ],
+  "commits": ["d609a21201ede53f20ebfce9de050208304d572c"],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "handoff": "Phase 2 Green must: (1) remove `?? sourceModel` from parseAgentFile in lib/core.mjs (line 48) so an absent MODEL_MAP entry yields model: undefined; (2) ensure agentParity (and rosterParity) returns unmappedModels: string[] AND unmappedModelFindings: [{class:'unmapped_model',name,sourceModel,suggestion}]; (3) implement the suggestion heuristic (`^<provider>/<id>$` -> map_entry_needed, otherwise reference_incorrect); (4) update tests/core.test.mjs to reflect the new shape (its current assertion of unmappedModels:[] will fail post-Green until routing decisions are made — the recommended rewrite is to assert unmappedModels is a string[] AND unmappedModelFindings is a structured array, with the assertion that there are 7 unmapped agents against the live roster until Phase 2 acceptance is reached); (5) produce reconciliation-models.md (or extend metadata.json#deviation_notes) listing each of the 7 unmapped agents classified as map_entry_needed vs reference_incorrect — all 7 are well-formed provider/id so all classify as map_entry_needed; the reconciliation report does NOT change MODEL_MAP routing unilaterally per spec 'Out of Scope: Changing which model any agent is routed to'; (6) the live count assertion in test 7 (>= 3 AND the 7 names) is robust to future agent edits; the 7 names must all appear in unmappedModels for the test to pass; (7) the deterministic test 9 includes an existence check; the field must be a plain array (not a Map or other iterable) so JSON.stringify produces comparable output."
+}

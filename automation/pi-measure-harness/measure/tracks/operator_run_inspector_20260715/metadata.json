@@ -1,0 +1,21 @@
+{
+  "track_id": "operator_run_inspector_20260715",
+  "type": "feature",
+  "status": "new",
+  "created_at": "2026-07-15T00:00:00Z",
+  "updated_at": "2026-07-15T00:00:00Z",
+  "description": "A read-only operator surface over durable harness state: list runs, inspect story and gate state, browse receipts and failure classifications, and review promotion decisions.",
+  "estimated_tasks": 20,
+  "actual_tasks": null,
+  "deviation_notes": null,
+  "sprint": {
+    "goal": "Give operators a trustworthy, read-only view of orchestration state and evidence without parsing raw JSONL by hand.",
+    "stories": [
+      { "id": "S1", "title": "Run and story state inspection", "size": "M", "priority": "Must", "status": "pending" },
+      { "id": "S2", "title": "Receipt and failure-classification queries", "size": "M", "priority": "Must", "status": "pending" },
+      { "id": "S3", "title": "Operator documentation", "size": "S", "priority": "Should", "status": "pending" }
+    ],
+    "demo_notes": null,
+    "retro_ref": null
+  }
+}

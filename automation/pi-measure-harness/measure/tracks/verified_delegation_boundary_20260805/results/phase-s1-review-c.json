@@ -1,0 +1,309 @@
+{
+  "schema_version": 2,
+  "role": "measure-review-c-ux-api",
+  "track": "verified_delegation_boundary_20260805",
+  "phase": "Phase S1: Observed routing, not requested routing",
+  "baseline_sha": "248d841b0b2445b3376d15625da1665fc084edbc",
+  "phase_base_sha": "c224cc1a2890adc501d6148f5a4f1af9c226ef59",
+  "role_base_sha": "c224cc1a2890adc501d6148f5a4f1af9c226ef59",
+  "audited_head_sha": "c224cc1a2890adc501d6148f5a4f1af9c226ef59",
+  "current_head_sha_at_audit_time": "29c00f85d33ec2f11fad8b91314929eba1ba1a62",
+  "stale_audited_head": true,
+  "stale_audited_head_note": "audited_head_sha=c224cc1 was current HEAD at task-issue time but has since moved to 29c00f8 by commit 29c00f8 'chore: commit new agent files and S1 audit artifacts' (housekeeping only: adds 2 new agent files and prior-track audit artifacts; no VDB S1 surface change). VDB S1 Green work is unchanged at the new HEAD; provenance check fails but findings remain valid.",
+  "applicability": "applicable",
+  "status": "fail",
+  "summary": "VDB S1 Green implementation correctly implements the seven-function observed-routing contract surface per test-strategy.md#phase-1 and test-strategy.md architecture guardrails: extractObservedRouting / classifyObservedRouting / runtimeModelStrict / computeRoleDefinitionHash / resolveStrict / classifyAgentFile / buildReceipt. All 10 observed-routing tests pass (10/10) at audited HEAD c224cc1 and at the post-housekeeping HEAD 29c00f8. extensions/measure-harness/index.ts extends the TaskReceipt interface with the 5 new fields (requestedModel/observedModel/observedAt/roleDefinitionHash/routingClassification) and wires the helpers into the task handler; the parent-fallback in runtimeModel is removed (the prior signature runtimeModel(agent, fallback) is now runtimeModel(agent), a strict wrapper around runtimeModelStrict(agent).model); the three routing-failure classifications (observed_routing_mismatch / observed_routing_unobservable / undeclared_child_pin) correctly cause the task to fail. Test imports match lib exports; every test has a one-line comment naming the contract section it protects; A3 probe asserts labeled {class,reason} structure; A7 probe asserts strict equality (no widening); A8 probe asserts symlink rejection; determinism probe asserts byte-identical stable fields. Gates: node --test tests/observed-routing.test.mjs exits 0 (10/10); 8 other shipped test files all green (78/78 in test:shipped); npm run test:shipped exits 0 (partition 9/2/0, with observed-routing AND sprint-state-machine in track-red); npm test exits 1 (14 sprint-state-machine failures, intentional-Red for parallel track); npm run check exits 0; node scripts/parity.mjs exits 1 fail-closed with ok=false, unmapped=2 (coder-openai-gpt-5-6-luna-fast and measure-adversarial-testing), modelMapMatches=true. ONE BLOCKING FINDING (F1): agents/change-quality-reviewer.md has no 'model:' frontmatter (confirmed via grep -c '^model:' = 0 and runtimeModelStrict({name:'change-quality-reviewer',model:undefined}) returns undeclared_child_pin), but lib/core.mjs#isTaskAllowed explicitly permits measure-orchestrator to dispatch to it (return childName.startsWith('measure-') || childName.startsWith('coder-') || childName === 'change-quality-reviewer'). With the strict runtime, every measure-orchestrator \u2192 change-quality-reviewer dispatch will now fail pre-spawn with undeclared_child_pin. The VDB S1 Green evidence handoff explicitly required 'verify every agent in agents/*.md has a model: frontmatter before Green closes, since the fallback's removal makes this a hard requirement'; this pre-flight condition was NOT met, and the regression was not caught. The agent file change-quality-reviewer.md has existed since e7f4277 (initial commit) and was hardened in 296cc2f, but never received a model: frontmatter. S1 acceptance cannot proceed until either (a) a model: frontmatter is added to agents/change-quality-reviewer.md, or (b) change-quality-reviewer is removed from the allowed-dispatch list in lib/core.mjs#isTaskAllowed. NON-BLOCKING FINDINGS: F2 the receipt's old 'model' field is retained as a silent alias to requestedModel (the strategy explicitly forbids this: 'A model field left on the receipt as a silent alias to requestedModel is forbidden (A7 analog)'). F3 lib/observed-routing.mjs#buildReceipt does NOT include observedAt in its return shape, even though the audit prompt and the handler's TaskReceipt interface both expect it; the handler compensates by computing observedAt from event.timestamp manually, so the field reaches the receipt but buildReceipt is incomplete relative to its documented contract. F4 the handler in extensions/measure-harness/index.ts manually composes the receipt using individual helpers (extractObservedRouting + classifyObservedRouting + computeRoleDefinitionHash) rather than calling the canonical buildReceipt primitive; functionally equivalent (all 5 fields populated correctly) but the architecture guardrail suggests buildReceipt should be the single composition point. F5 partition template: tests/observed-routing.test.mjs remains in tests/.track-red-files.txt at Green time (partition 9 shipped / 2 track-red / 0 unclassified). The test-strategy.md \u00a7Phase 1 says the file should be in the shipped surface and retired from track-red at S1 acceptance, not at Green; this is a documented deferral to acceptance. UX/API ergonomics: signature_consistency=pass (matches lib/core.mjs conventions: structured return values, pure functions, destructured inputs); error_structured=pass (every error carries a labeled class: verified_routing | unverified_routing | symlinked_agent_file | undeclared_child_pin + reason string when applicable); env_overridable=pass (pure module, no env coupling needed); deterministic=pass (no Date.now() / Math.random() / process.hrtime() in lib/observed-routing.mjs; buildReceipt returns byte-identical output for identical inputs); contract_match=pass (every documented symbol is exported and matches the test-strategy.md contract surface and the test assertions; minor field-naming discrepancies with the audit prompt's signature descriptions are noted under F3/F4 but do not contradict the implementation-vs-test-strategy contract).",
+  "findings": [
+    {
+      "id": "F1",
+      "class": "pre_existing_undeclared_pin_uncovered_by_strict_runtime",
+      "description": "agents/change-quality-reviewer.md has no 'model:' frontmatter (zero matches for '^model:' in the file). parseAgentFile returns {name:'change-quality-reviewer', model:undefined, sourceModel:undefined}. With the VDB S1 Green runtimeModelStrict strict semantics, runtimeModelStrict({name:'change-quality-reviewer', model:undefined}) returns {error:{class:'undeclared_child_pin', role:'change-quality-reviewer'}}, and the task handler refuses dispatch pre-spawn with isError:true. However, lib/core.mjs#isTaskAllowed explicitly permits measure-orchestrator to dispatch to change-quality-reviewer: `return childName.startsWith('measure-') || childName.startsWith('coder-') || childName === 'change-quality-reviewer'`. The measure-orchestrator prompt (agents/measure-orchestrator.md line 115) instructs the orchestrator: 'Use change-quality-reviewer when an independent review adds value.' The permission table (line 47) explicitly allows delegation. The agent file change-quality-reviewer.md has existed since e7f4277 (initial commit) and was hardened in 296cc2f but never received a model: frontmatter. This regression was NOT pre-flighted by Jr Green: the green evidence handoff explicitly required 'verify every agent in agents/*.md has a model: frontmatter before Green closes, since the fallback's removal makes this a hard requirement'. Every other agent in agents/*.md (29 of 29) has a model: frontmatter \u2014 only change-quality-reviewer.md is missing. S1 acceptance cannot proceed until the regression is resolved.",
+      "severity": "blocking",
+      "location": "agents/change-quality-reviewer.md (line 1+ \u2014 frontmatter lacks 'model:' field); lib/core.mjs:357-359 (isTaskAllowed allows the dispatch); agents/measure-orchestrator.md:47,115 (orchestrator prompt relies on this dispatch)",
+      "recommendation": "Route to Green for fix before S1 acceptance: (option A) add a model: frontmatter to agents/change-quality-reviewer.md (the file is loaded by loadAgents, so adding e.g. model: openai/gpt-5.6-luna would make the role dispatchable; verify with `parseAgentFile('agents/change-quality-reviewer.md').model === MODEL_MAP[frontmatter.model]`); (option B) remove `|| childName === 'change-quality-reviewer'` from lib/core.mjs#isTaskAllowed and update agents/measure-orchestrator.md lines 47 and 115 to remove the change-quality-reviewer reference. Option A preserves existing orchestrator behavior with minimal blast radius."
+    },
+    {
+      "id": "F2",
+      "class": "silent_alias_field_retained",
+      "description": "extensions/measure-harness/index.ts:335-336 writes BOTH 'model: modelRef' AND 'requestedModel: modelRef' to the receipt. The strategy explicitly forbids this: 'A model field left on the receipt as a silent alias to requestedModel is forbidden (A7 analog: aliasing the new field to the old one would mask the contract change).' The receipt's old `model` field should have been renamed to `requestedModel` (a breaking contract change), not duplicated. The green evidence acknowledged this: 'existing model field is retained as a compatibility alias to requestedModel \u2014 review-a should audit this for silent breakage on any consumer that reads receipt.model'. Today the `model` field is the only field written to the receipt's details consumer side, but the new `requestedModel` field is the new authoritative name.",
+      "severity": "non-blocking",
+      "location": "extensions/measure-harness/index.ts:335-336",
+      "recommendation": "Remove `model: modelRef` from the receipt shape at the next refactor; rely solely on `requestedModel: modelRef` (per the strategy). If a downstream consumer needs the old field, leave a TODO marker with a removal date. Alternative: keep `model` as the canonical field and rename `requestedModel` to a new field \u2014 but the strategy already established `requestedModel` as the new name."
+    },
+    {
+      "id": "F3",
+      "class": "buildReceipt_missing_observedAt_field",
+      "description": "lib/observed-routing.mjs#buildReceipt returns {requestedModel, observedModel, roleDefinitionHash, promptHash, failureClassification, verifiedRouting} \u2014 6 fields, no observedAt. The audit prompt's task description says 'buildReceipt({...}) \u2014 returns TaskReceipt with new fields requestedModel, observedModel, observedAt, roleDefinitionHash, routingClassification'. The handler in extensions/measure-harness/index.ts adds observedAt separately from event.timestamp and writes it to the receipt. Functionally the field reaches the receipt, but buildReceipt is incomplete relative to the audit prompt's stated contract (and is never called by the handler \u2014 see F4). The test-strategy.md contract header block in tests/observed-routing.test.mjs (which is the authoritative contract) does NOT include observedAt in buildReceipt's shape; it is consistent with the implementation. The discrepancy is between the audit prompt and the implementation, not between the implementation and the test contract.",
+      "severity": "non-blocking",
+      "location": "lib/observed-routing.mjs:206-221 (buildReceipt return shape)",
+      "recommendation": "Option A: update the audit prompt's signature description to match the test-strategy contract (recommended \u2014 the implementation matches the strategy). Option B: extend buildReceipt to take an observedAt input and emit it in the receipt shape, and have the handler pass event.timestamp through. Option A is preferred because the test-strategy is authoritative and the implementation matches it."
+    },
+    {
+      "id": "F4",
+      "class": "handler_does_not_use_buildReceipt_primitive",
+      "description": "extensions/measure-harness/index.ts#task manually composes the receipt (extractObservedRouting \u2192 classifyObservedRouting \u2192 computeRoleDefinitionHash) instead of calling the documented buildReceipt primitive. The 5 new receipt fields are correct (all populated, all values match), but the architecture guardrail in the strategy says 'the named-classification shape is part of the exported contract surface. Consumers (role_model_pool_20260805 Task 2.1, role_fitness_frontier_watch_20260805 Task 4.1) import from the same module' \u2014 i.e. consumers should import buildReceipt directly, not duplicate its composition logic. Two composition paths (lib's buildReceipt and the handler's manual composition) creates drift risk: a future contract change to buildReceipt could leave the handler out of sync.",
+      "severity": "non-blocking",
+      "location": "extensions/measure-harness/index.ts:319-355 (manual receipt composition)",
+      "recommendation": "Refactor the handler to call buildReceipt({pin: modelRef, roleDefinition: child.systemPrompt, promptBody: fullPrompt, events}) and merge the returned shape into the receipt, plus handle the observedAt field from event.timestamp separately (since buildReceipt does not return it \u2014 see F3). This aligns the handler with the documented contract primitive and reduces drift risk for downstream consumers."
+    },
+    {
+      "id": "F5",
+      "class": "shipped_partition_contains_track_red_file",
+      "description": "tests/observed-routing.test.mjs remains in tests/.track-red-files.txt at Green time (partition 9 shipped / 2 track-red / 0 unclassified). The test-strategy.md \u00a7Phase 1 says the file should be in the shipped surface and NOT in track-red: 'the four new test files for this track (tests/observed-routing.test.mjs, ...) are NOT added to tests/.track-red-files.txt; they are part of the shipped surface and must pass before Green.' The green evidence interprets this as a deferral: 'The new observed-routing.test.mjs stays in track-red at this commit and is removed at S1 acceptance (Phase 1 closeout).' At S1 acceptance the file MUST be removed from tests/.track-red-files.txt so the partition becomes 10/1/0.",
+      "severity": "non-blocking",
+      "location": "tests/.track-red-files.txt:3 (tests/observed-routing.test.mjs listed); test-strategy.md \u00a7Phase 1 vs. phase-s1-green.json handoff",
+      "recommendation": "Phase-acceptance (final-acceptance substitute) MUST remove `tests/observed-routing.test.mjs` from tests/.track-red-files.txt as part of S1 closeout, before the partition is reported as 10 shipped / 1 track-red / 0 unclassified. Until that point, the partition is intentionally 9/2/0 per the green evidence's interpretation."
+    },
+    {
+      "id": "F6",
+      "class": "audit_prompt_signature_descriptions_diverge_from_implementation",
+      "description": "The audit prompt's task description diverges from the actual implementation in several places. (a) extractObservedRouting is described as returning `{observedModel, observedProvider, observedAt, source}` but actually returns `string | undefined` (the served model identifier). (b) runtimeModelStrict error is described as `{class: 'undeclared_child_pin', reason}` but actually returns `{class: 'undeclared_child_pin', role}`. (c) classifyRoutingFailure({requested, observed, runtime}) is described as a single helper but is NOT implemented \u2014 the equivalent behavior is achieved by compose of classifyObservedRouting + runtimeModelStrict. (d) resolveStrict(agentFilePath) is described but actually takes two strings `(requestedModel, observedModel)`. (e) computeRoleDefinitionHash(agent) is described but actually takes a systemPrompt string. (f) buildReceipt is described as returning `observedAt` but does not. The implementation matches the test-strategy.md contract header in tests/observed-routing.test.mjs and the test assertions. The discrepancies are in the audit prompt itself, not in the implementation. S1 Green evidence is internally consistent with the implementation; the audit prompt was likely written from a description of the contract that diverged from the final implementation.",
+      "severity": "non-blocking",
+      "location": "audit prompt task description (above); lib/observed-routing.mjs (implementation)",
+      "recommendation": "Update the audit prompt's signature descriptions to match the implementation (or note the discrepancies as documentation drift in the strategy's contract header). The implementation is correct per test-strategy.md and the test assertions."
+    }
+  ],
+  "anti_pattern_audit": {
+    "A1": "clean",
+    "A3": "clean",
+    "A4": "clean",
+    "A5": "clean",
+    "A7": "non-blocking finding F2 (silent alias on receipt's `model` field)",
+    "A8": "clean"
+  },
+  "anti_pattern_audit_evidence": {
+    "A1": "clean \u2014 no deferred-without-owner marker in plan.md; no prompt-only reassurance for routing enforcement (the routing assertion runs in the parent task handler, not in the child's prompt).",
+    "A3": "clean \u2014 buildReceipt returns a labeled structure {class: 'verified_routing' | 'unverified_routing', reason?}; A3 test asserts the absence of bare `verified`/`count`/`code` integer keys; classifyObservedRouting returns a labeled class string, not a bare integer code.",
+    "A4": "clean \u2014 no vacuous pass risk: the three routing failure classifications each produce structured findings, and verified_routing requires strict equality after MODEL_MAP resolution. The empty-state case in unobservable routing returns {class:'unverified_routing', reason:'observed_routing_unobservable'} rather than vacuously passing.",
+    "A5": "clean \u2014 every transition / classification carries a labeled class and a labeled reason; the routingFailure diagnostic includes requestedModel and observedModel (per index.ts:361).",
+    "A7": "non-blocking finding F2 \u2014 the receipt retains `model` as a silent alias to `requestedModel` (explicitly forbidden by the strategy). The comparison logic in resolveStrict uses strict equality after MODEL_MAP resolution (no alias widening); the A7 probe asserts 5 cases of non-matching.",
+    "A8": "clean \u2014 the deterministic output test asserts byte-identical stable fields across repeated calls; buildReceipt has no timestamp leakage (only stable fields); the strategy explicitly excludes startedAt/completedAt from the comparison. lib/observed-routing.mjs has no Date.now() / Math.random() / process.hrtime()."
+  },
+  "ux_api_ergonomics": {
+    "signature_consistency": "pass",
+    "error_structured": "pass",
+    "env_overridable": "pass",
+    "deterministic": "pass",
+    "contract_match": "pass"
+  },
+  "ux_api_ergonomics_evidence": {
+    "signature_consistency": "lib/observed-routing.mjs follows lib/core.mjs conventions: pure functions with destructured options objects (e.g. buildReceipt({pin, roleDefinition, promptBody, events})), structured return values ({requestedModel, observedModel, roleDefinitionHash, promptHash, failureClassification, verifiedRouting}), class+reason labeled structure on every output. All exported symbols (extractObservedRouting / classifyObservedRouting / runtimeModelStrict / computeRoleDefinitionHash / resolveStrict / classifyAgentFile / buildReceipt) match the test-strategy.md contract header.",
+    "error_structured": "Every error / failure carries a labeled class string and (when applicable) a labeled reason string. Failure classifications: 'verified_routing', 'unverified_routing' with reason 'observed_routing_mismatch' | 'observed_routing_unobservable', 'undeclared_child_pin', 'symlinked_agent_file'. Regex-parseable: /^unverified_routing$/, /^(observed_routing_mismatch|observed_routing_unobservable|undeclared_child_pin)$/, /^symlinked_agent_file$/.",
+    "env_overridable": "pass \u2014 lib/observed-routing.mjs is a pure module with no env coupling (correctly, since it is a data-processing surface). The handler in extensions/measure-harness/index.ts uses env vars only for orchestration (PI_MEASURE_AGENT, PI_MEASURE_TASK_ID, PI_MEASURE_PARENT_SESSION_ID, PI_MEASURE_RESULT_PATH), which were already present before S1. No new env vars needed for S1.",
+    "deterministic": "pass \u2014 no Date.now() / Math.random() / process.hrtime() in lib/observed-routing.mjs. buildReceipt returns byte-identical output for identical inputs (test 10 verifies). The handler's stable receipt fields (requestedModel/observedModel/roleDefinitionHash/routingClassification/promptHash) are deterministic across repeated calls. startedAt/completedAt are excluded from the determinism comparison (per the strategy).",
+    "contract_match": "pass \u2014 every symbol in the test-strategy.md contract header block (lines 14-50 of tests/observed-routing.test.mjs) is exported from lib/observed-routing.mjs and matches the test assertions. The 10 test cases in tests/observed-routing.test.mjs cover all 6 contract sections (matching, contradicting, unobservable, undeclared, roleDefinitionHash, three classifications, A3 labeled-counter, A7 strict equality, A8 symlink rejection, deterministic output)."
+  },
+  "gates": {
+    "observed-routing": {
+      "exit_code": 0,
+      "pass": 10,
+      "fail": 0,
+      "total_tests": 10
+    },
+    "manifest": {
+      "exit_code": 0,
+      "pass": 10,
+      "fail": 0,
+      "total_tests": 10
+    },
+    "grammar": {
+      "exit_code": 0,
+      "pass": 6,
+      "fail": 0,
+      "total_tests": 6
+    },
+    "preflight": {
+      "exit_code": 0,
+      "pass": 9,
+      "fail": 0,
+      "total_tests": 9
+    },
+    "agents-snapshot": {
+      "exit_code": 0,
+      "pass": 16,
+      "fail": 0,
+      "total_tests": 16
+    },
+    "parity": {
+      "exit_code": 0,
+      "pass": 11,
+      "fail": 0,
+      "total_tests": 11
+    },
+    "model-resolution": {
+      "exit_code": 0,
+      "pass": 9,
+      "fail": 0,
+      "total_tests": 9
+    },
+    "core": {
+      "exit_code": 0,
+      "pass": 5,
+      "fail": 0,
+      "total_tests": 5
+    },
+    "setup": {
+      "exit_code": 0,
+      "pass": 4,
+      "fail": 0,
+      "total_tests": 4
+    },
+    "green-gate": {
+      "exit_code": 0,
+      "pass": 8,
+      "fail": 0,
+      "total_tests": 8
+    },
+    "sprint-state-machine": {
+      "exit_code": 1,
+      "pass": 0,
+      "fail": 14,
+      "note": "track-red, intentional-Red for parallel controlled_harness_evolution_20260714 Phase S2; correctly excluded from shipped partition by tests/.track-red-files.txt; unrelated to VDB S1"
+    },
+    "npm_run_test_shipped": {
+      "exit_code": 0,
+      "partition": "9/2/0",
+      "shipped_files": [
+        "tests/agents-snapshot.test.mjs",
+        "tests/core.test.mjs",
+        "tests/grammar.test.mjs",
+        "tests/green-gate.test.mjs",
+        "tests/manifest.test.mjs",
+        "tests/model-resolution.test.mjs",
+        "tests/parity.test.mjs",
+        "tests/preflight.test.mjs",
+        "tests/setup.test.mjs"
+      ],
+      "track_red_files": [
+        "tests/observed-routing.test.mjs",
+        "tests/sprint-state-machine.test.mjs"
+      ],
+      "unclassified_files": [],
+      "shipped_total": 78,
+      "shipped_pass": 78,
+      "shipped_fail": 0
+    },
+    "npm_test": {
+      "exit_code": 1,
+      "failing_files": [
+        "tests/sprint-state-machine.test.mjs"
+      ],
+      "failing_count": 14,
+      "pass_count": 88,
+      "total_tests": 102,
+      "note": "14 sprint-state-machine failures are intentional-Red for parallel track, not VDB S1"
+    },
+    "npm_run_check": {
+      "exit_code": 0
+    },
+    "parity_script": {
+      "exit_code": 1,
+      "ok": false,
+      "unmapped_count": 2,
+      "model_map_matches": true,
+      "agent_count": 29,
+      "callable_count": 27,
+      "unmapped_models": [
+        "coder-openai-gpt-5-6-luna-fast",
+        "measure-adversarial-testing"
+      ]
+    }
+  },
+  "blocking_findings": [
+    {
+      "id": "F1",
+      "class": "pre_existing_undeclared_pin_uncovered_by_strict_runtime",
+      "summary": "agents/change-quality-reviewer.md has no 'model:' frontmatter (zero matches for '^model:'), but lib/core.mjs#isTaskAllowed explicitly permits measure-orchestrator to dispatch to it (and the orchestrator prompt instructs the orchestrator to use it for independent reviews). With the VDB S1 strict runtime, every measure-orchestrator \u2192 change-quality-reviewer dispatch now fails pre-spawn with undeclared_child_pin. This regression was not pre-flighted by Jr Green (the green evidence handoff explicitly required 'verify every agent in agents/*.md has a model: frontmatter before Green closes, since the fallback's removal makes this a hard requirement'). S1 acceptance cannot proceed until the regression is resolved."
+    }
+  ],
+  "nonblocking_findings": [
+    {
+      "id": "F2",
+      "class": "silent_alias_field_retained",
+      "summary": "extensions/measure-harness/index.ts writes BOTH 'model: modelRef' AND 'requestedModel: modelRef' to the receipt, retaining the old field as a silent alias. The strategy explicitly forbids this (A7 analog)."
+    },
+    {
+      "id": "F3",
+      "class": "buildReceipt_missing_observedAt_field",
+      "summary": "lib/observed-routing.mjs#buildReceipt does NOT include observedAt in its return shape, but the audit prompt's signature description (and the handler's TaskReceipt interface) expect it. The handler compensates by computing observedAt separately from event.timestamp; the field reaches the receipt but buildReceipt is incomplete relative to the audit prompt's stated contract."
+    },
+    {
+      "id": "F4",
+      "class": "handler_does_not_use_buildReceipt_primitive",
+      "summary": "The handler manually composes the receipt using individual helpers rather than calling the documented buildReceipt primitive. Two composition paths create drift risk for downstream consumers."
+    },
+    {
+      "id": "F5",
+      "class": "shipped_partition_contains_track_red_file",
+      "summary": "tests/observed-routing.test.mjs remains in tests/.track-red-files.txt at Green time (partition 9 shipped / 2 track-red / 0 unclassified). Phase-acceptance MUST remove the file from track-red at S1 closeout so the partition becomes 10/1/0."
+    },
+    {
+      "id": "F6",
+      "class": "audit_prompt_signature_descriptions_diverge_from_implementation",
+      "summary": "The audit prompt's task description diverges from the implementation in 6 places (extractObservedRouting return shape, runtimeModelStrict error field, classifyRoutingFailure function existence, resolveStrict signature, computeRoleDefinitionHash signature, buildReceipt fields). The implementation matches the test-strategy.md contract and the test assertions; the discrepancies are in the audit prompt itself."
+    }
+  ],
+  "evidence": [
+    "git rev-parse HEAD \u2192 29c00f85d33ec2f11fad8b91314929eba1ba1a62 (post-housekeeping move from task-supplied audited_head_sha=c224cc1)",
+    "git rev-parse 248d841b0b2445b3376d15625da1665fc084edbc \u2192 matches track baseline",
+    "git rev-parse c224cc1a2890adc501d6148f5a4f1af9c226ef59 \u2192 matches audited_head_sha (VDB S1 Green commit)",
+    "git log --oneline 248d841b..HEAD \u2192 22 commits (5 VDB track commits + 17 prior-track/housekeeping commits including the closed harness_selfcheck_truthfulness_20260805 archive, the controlled_harness_evolution_20260714 S1 commit, and the S2 sprint-state-machine Red file). The VDB S1 Green commit is c224cc1.",
+    "git show c224cc1 --stat \u2192 3 files changed, 462 insertions: extensions/measure-harness/index.ts (52 lines), lib/observed-routing.mjs (229 lines, new), measure/tracks/verified_delegation_boundary_20260805/results/phase-s1-green.json (186 lines). No other modules touched.",
+    "node --test tests/observed-routing.test.mjs \u2192 exit 0, 10/10 pass at both c224cc1 and 29c00f8",
+    "node --test tests/manifest.test.mjs \u2192 exit 0, 10/10 pass",
+    "node --test tests/grammar.test.mjs \u2192 exit 0, 6/6 pass",
+    "node --test tests/preflight.test.mjs \u2192 exit 0, 9/9 pass",
+    "node --test tests/agents-snapshot.test.mjs \u2192 exit 0, 16/16 pass",
+    "node --test tests/parity.test.mjs \u2192 exit 0, 11/11 pass",
+    "node --test tests/model-resolution.test.mjs \u2192 exit 0, 9/9 pass",
+    "node --test tests/core.test.mjs \u2192 exit 0, 5/5 pass",
+    "node --test tests/setup.test.mjs \u2192 exit 0, 4/4 pass",
+    "node --test tests/green-gate.test.mjs \u2192 exit 0, 8/8 pass",
+    "node scripts/test-shipped.mjs \u2192 exit 0, partition '9 shipped / 2 track-red / 0 unclassified', 78/78 shipped pass. track-red: tests/observed-routing.test.mjs, tests/sprint-state-machine.test.mjs",
+    "npm test \u2192 exit 1, 88 pass / 14 fail. Failing: tests/sprint-state-machine.test.mjs (14 subtests \u2014 ERR_MODULE_NOT_FOUND for lib/sprint-state.mjs; parallel-track Red for controlled_harness_evolution_20260714 Phase S2). VDB S1 surface: 10/10 observed-routing pass.",
+    "npm run check (tsc --noEmit) \u2192 exit 0 (TypeScript clean)",
+    "node scripts/parity.mjs \u2192 exit 1, ok=false, agentCount=29, callableCount=27, unmapped_count=2, modelMapMatches=true, unmapped_models=['coder-openai-gpt-5-6-luna-fast', 'measure-adversarial-testing']",
+    "tests/.track-red-files.txt \u2192 2 entries: tests/observed-routing.test.mjs (VDB S1), tests/sprint-state-machine.test.mjs (controlled_harness_evolution_20260714 S2)",
+    "grep -c '^model:' agents/change-quality-reviewer.md \u2192 0 (no model: frontmatter)",
+    "node runtimeModelStrict({name:'change-quality-reviewer', model:undefined}) \u2192 {error: {class: 'undeclared_child_pin', role: 'change-quality-reviewer'}} (BLOCKING F1)",
+    "grep '^model:' agents/*.md | wc -l \u2192 28 matches across 28 distinct agent files (29 total agents, minus change-quality-reviewer.md which has no model: frontmatter)",
+    "lib/core.mjs:357-359 isTaskAllowed \u2192 return childName.startsWith('measure-') || childName.startsWith('coder-') || childName === 'change-quality-reviewer' (allows the regression)",
+    "agents/measure-orchestrator.md:47 (permission: 'change-quality-reviewer': allow), agents/measure-orchestrator.md:115 (prompt: 'Use change-quality-reviewer when an independent review adds value.')",
+    "git log -- agents/change-quality-reviewer.md \u2192 2 commits: e7f4277 (initial) and 296cc2f (harden audit-only roles). Never received a model: frontmatter.",
+    "extensions/measure-harness/index.ts:335-336 \u2192 writes BOTH 'model: modelRef' AND 'requestedModel: modelRef' (F2 silent alias)",
+    "lib/observed-routing.mjs:206-221 buildReceipt \u2192 returns {requestedModel, observedModel, roleDefinitionHash, promptHash, failureClassification, verifiedRouting} \u2014 no observedAt (F3)",
+    "extensions/measure-harness/index.ts:319-355 manual receipt composition (F4)",
+    "git diff cc1eeca HEAD \u2192 VDB S1 Green commit only adds lib/observed-routing.mjs and the result JSON; the only change to extensions/measure-harness/index.ts is the 52-line integration",
+    "git status --short at audit time \u2192 '?? measure/runs/' (untracked; not committed)"
+  ],
+  "commands": [
+    "git rev-parse HEAD",
+    "git rev-parse 248d841b0b2445b3376d15625da1665fc084edbc",
+    "git rev-parse c224cc1a2890adc501d6148f5a4f1af9c226ef59",
+    "git log --oneline 248d841b..HEAD",
+    "git show c224cc1 --stat",
+    "git show c224cc1 -- extensions/measure-harness/index.ts",
+    "git diff cc1eeca HEAD",
+    "git status --short",
+    "node --test tests/observed-routing.test.mjs",
+    "node --test tests/manifest.test.mjs",
+    "node --test tests/grammar.test.mjs",
+    "node --test tests/preflight.test.mjs",
+    "node --test tests/agents-snapshot.test.mjs",
+    "node --test tests/parity.test.mjs",
+    "node --test tests/model-resolution.test.mjs",
+    "node --test tests/core.test.mjs",
+    "node --test tests/setup.test.mjs",
+    "node --test tests/green-gate.test.mjs",
+    "node scripts/test-shipped.mjs",
+    "npm test",
+    "npm run check",
+    "node scripts/parity.mjs",
+    "grep -c '^model:' agents/change-quality-reviewer.md",
+    "grep '^model:' agents/*.md",
+    "git log -- agents/change-quality-reviewer.md"
+  ],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "handoff": "VDB S1 review-c complete. BLOCKING FINDING (F1) requires fix before S1 acceptance: agents/change-quality-reviewer.md must either (a) receive a 'model:' frontmatter (preserves existing orchestrator behavior) or (b) be removed from lib/core.mjs#isTaskAllowed and the orchestrator prompt. Once F1 is resolved, Phase-acceptance (final-acceptance substitute) must also: (1) retire tests/observed-routing.test.mjs from tests/.track-red-files.txt so the partition becomes 10 shipped / 1 track-red / 0 unclassified (F5); (2) run the live delegation probe (plan Task 1.5) against a fixture subagent and confirm the receipt carries all three new fields (requestedModel/observedModel/roleDefinitionHash) plus a matching/contradicting/unobservable routingClassification; (3) record the live probe receipt as tests/fixtures/observed-routing/live-probe-<sha>.json; (4) address non-blocking findings F2 (silent model alias), F3 (buildReceipt missing observedAt), F4 (handler should call buildReceipt primitive) \u2014 these are non-blocking for S1 closeout but should be tracked in metadata.json#deviation_notes or follow-on amendments. The worktree-snapshot file has been written to measure/tracks/verified_delegation_boundary_20260805/results/phase-s1-review-c.worktree-snapshot.json per the audit prompt. NO source files were modified by this audit (audit-only role)."
+}

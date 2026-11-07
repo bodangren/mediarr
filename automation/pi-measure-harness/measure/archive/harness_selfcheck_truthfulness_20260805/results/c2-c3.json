@@ -1,0 +1,81 @@
+{
+  "schema_version": 2,
+  "role": "measure-strategy (C2/C3 documentation, user-authorized direct coder delegation)",
+  "track": "harness_selfcheck_truthfulness_20260805",
+  "phase": "Cross-Cutting C2 + C3",
+  "baseline_sha": "f914e2bd48dc4790d698bd4551d1eab3814a71eb",
+  "audited_head_sha": "f914e2bd48dc4790d698bd4551d1eab3814a71eb",
+  "status": "complete",
+  "summary": "C2 + C3 documentation artifacts complete. C2: handoff.md documents the guard-to-supersede mapping between this track's four installed guards (roster-derived parity in lib/core.mjs#rosterParity/agentParity; strict model resolution in lib/core.mjs#parseAgentFile; structured unmappedModelFindings with suggestion field; tests/.track-red-files.txt classifier; npm run test:shipped script + lib/green-gate.mjs) and controlled_harness_evolution_20260714 Phase S1's mechanism (lib/manifest.mjs versioned roster manifest; lib/preflight.mjs preflight blocking surface; hash-drift detection). The handoff note explicitly states the critical rule: DO NOT coexist two parity mechanisms; when S1 lands and acceptance passes, the active track's acceptance must retire this track's mechanism, not leave both live. Live-state drift at HEAD f914e2b (7 unmapped agents vs strategy's stated 3) and dirty MODEL_MAP state are recorded as operator-side concerns S1's manifest will resolve. C3: metadata.json#deviation_notes is appended (NOT replaced) with the scope-decision paragraph that authorized this follow-on under the active plan's execution policy, names the spec Out-of-Scope rule that bounded the scope, lists the four guards this track installed, references handoff.md for the supersession mapping, and re-states that MODEL_MAP routing changes for the 7 live unmapped agents are NOT made in this track (Decision-Required artifact at reconciliation-models.md). All other metadata.json fields (track_id, type, status, created_at, updated_at, description, estimated_tasks, actual_tasks, sprint) are preserved unchanged. No production code touched; no worktree created; no unrelated dirty files committed.",
+  "tasks_covered": ["C2", "C3"],
+  "files_added": [
+    "measure/tracks/harness_selfcheck_truthfulness_20260805/handoff.md",
+    "measure/tracks/harness_selfcheck_truthfulness_20260805/results/c2-c3.json"
+  ],
+  "files_modified": [
+    "measure/tracks/harness_selfcheck_truthfulness_20260805/metadata.json (deviation_notes appended only; all other fields preserved unchanged)"
+  ],
+  "commands": [
+    "git status --short (verify no unrelated dirty files in working tree beyond the 3 in-scope paths)",
+    "git rev-parse HEAD (current HEAD = f914e2bd48dc4790d698bd4551d1eab3814a71eb)",
+    "python3 -c \"import json; json.load(open('measure/tracks/harness_selfcheck_truthfulness_20260805/metadata.json'))\" (validate JSON)",
+    "python3 -c \"import json; json.load(open('measure/tracks/harness_selfcheck_truthfulness_20260805/results/c2-c3.json'))\" (validate result JSON)",
+    "git diff measure/tracks/harness_selfcheck_truthfulness_20260805/metadata.json (verify only deviation_notes changed)",
+    "git add measure/tracks/harness_selfcheck_truthfulness_20260805/handoff.md measure/tracks/harness_selfcheck_truthfulness_20260805/metadata.json measure/tracks/harness_selfcheck_truthfulness_20260805/results/c2-c3.json",
+    "git commit -m \"chore(harness_selfcheck_truthfulness_20260805): record S1 handoff note and scope-decision record (C2, C3)\""
+  ],
+  "commits": ["a07713b"],
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    {
+      "id": "NF-1",
+      "class": "live_unmapped_count_drift",
+      "description": "Live unmapped-model count is 7 at current HEAD f914e2b (strategy text stated 3 at strategy commit SHA 248d841). Drift caused by post-strategy dirty agent edits that introduced kimi-for-coding/* and openai/gpt-5.6-luna-fast references. Reconciliation report records this drift explicitly. Recorded in metadata.json#deviation_notes (existing paragraph from Phase 2 Green) and in handoff.md 'Live-State Drift at HEAD f914e2b' section. S1's manifest will declare the versioned roster; the 7 unmapped agents will need routing decisions before S1 acceptance can pass."
+    },
+    {
+      "id": "NF-2",
+      "class": "dirty_model_map_state",
+      "description": "config/model-map.json carries kimi-for-coding/* entries added in the user's working tree but reverted during Phase 1 Green per the absolute constraint to not commit unrelated dirty files. The committed lib/core.mjs#MODEL_MAP is Object.freeze-d (verified byte-identical between Phase 2 Green c5afc9e and current HEAD f914e2b). npm run parity reports modelMapMatches:false precisely because the dirty config/model-map.json differs from the in-memory MODEL_MAP. Recorded in handoff.md 'Dirty MODEL_MAP State (Operator-Side Drift)' section. S1's manifest will resolve this drift; the dirty state is unrelated user work."
+    },
+    {
+      "id": "NF-3",
+      "class": "unrelated_dirty_tree",
+      "description": "Pre-existing dirty working tree (16+ modified agent files, config/model-map.json, measure/tracks.md, plus 4 untracked 2026-08-05 track directories and 8 untracked result files) is unrelated to C2/C3 documentation work. C2/C3 touched only 3 files (handoff.md new, metadata.json deviation_notes appended, c2-c3.json new) per the absolute constraint. No unrelated dirty files committed."
+    }
+  ],
+  "handoff_md_content": {
+    "purpose": "Documents the guard-to-supersede mapping between this track's four installed guards and controlled_harness_evolution_20260714 Phase S1's mechanism. When S1 lands, the active track's acceptance must retire this track's mechanism; this artifact is the source of truth for what to retire.",
+    "supersession_mapping_table": [
+      {"this_track_guard": "Roster-derived parity (replaces hardcoded EXPECTED_AGENT_COUNT=24 / EXPECTED_CALLABLE_COUNT=22)", "location": "lib/core.mjs#rosterParity and agentParity (Phase 1 Green commit d74471a)", "s1_supersession": "lib/manifest.mjs versioned roster manifest (manifest check supersedes)"},
+      {"this_track_guard": "Strict model resolution (no ?? sourceModel passthrough)", "location": "lib/core.mjs#parseAgentFile (Phase 2 Green commit c5afc9e)", "s1_supersession": "lib/manifest.mjs declares model references (unmapped_model findings supersede)"},
+      {"this_track_guard": "unmappedModelFindings structured findings array with suggestion field", "location": "lib/core.mjs#agentParity / rosterParity (Phase 2 Green commit c5afc9e)", "s1_supersession": "S1 manifest unmapped_model:<name> rejection (per tests/fixtures/s1/manifest-unmapped-model.json)"},
+      {"this_track_guard": "tests/.track-red-files.txt classifier", "location": "tests/.track-red-files.txt (Phase 3 Green commit f914e2b)", "s1_supersession": "S1 preflight blocker (lib/preflight.mjs Task S1.4) — when S1 lands, the classifier is retired"},
+      {"this_track_guard": "npm run test:shipped script", "location": "scripts/test-shipped.mjs + package.json test:shipped + lib/green-gate.mjs (Phase 3 Green commit f914e2b)", "s1_supersession": "S1 preflight-driven gate — when S1 lands, this script can be removed if S1 provides equivalent coverage"}
+    ],
+    "critical_rule": "DO NOT coexist two parity mechanisms. When S1 lands and acceptance passes, the active track's acceptance must retire this track's mechanism, not leave both live.",
+    "retirement_plan": "Owned by S1's acceptance: (1) verify S1's manifest check rejects unmapped_model:<name> for all 7 live unmapped agents; (2) verify S1's preflight rejects track-Red test files not declared in the manifest; (3) verify S1's preflight-driven gate provides coverage equivalent to npm run test:shipped; (4) verify S1's manifest detects hash drift in place of this track's roster-derived parity; (5) update active controlled_harness_evolution_20260714 plan's acceptance evidence to record retirement of this track's guards and resolution of the 7 unmapped agents."
+  },
+  "deviation_notes_appended_paragraph_summary": {
+    "c3_authorization": "This track was authorized as a follow-on repair under the active controlled_harness_evolution_20260714 track's execution policy.",
+    "c3_scope_bounded": "Defect repair on the shipped self-check surface, NOT a duplicate of S1's mechanism (versioned manifest, hash-drift, preflight). Spec Out-of-Scope rule cited verbatim.",
+    "c3_guards_authorized": "Four guards listed: roster-derived parity (lib/core.mjs#rosterParity), strict model resolution (lib/core.mjs#parseAgentFile), structured unmappedModelFindings (lib/core.mjs#agentParity), green gate independent of active-track Red (npm run test:shipped + tests/.track-red-files.txt classifier).",
+    "c3_each_superseded_by_s1": "Reference to handoff.md for the explicit guard-to-supersede mapping.",
+    "c3_routing_not_in_scope": "MODEL_MAP routing changes for the 7 live unmapped agents are NOT made in this track; reconciliation-models.md is the Decision-Required artifact; user's routing intent is pending.",
+    "c3_critical_rule": "DO NOT coexist two parity mechanisms; when S1 lands and acceptance passes, the active track's acceptance must retire this track's mechanism, not leave both live."
+  },
+  "metadata_json_field_preservation_verified": {
+    "track_id_unchanged": true,
+    "type_unchanged": true,
+    "status_unchanged": true,
+    "created_at_unchanged": true,
+    "updated_at_unchanged": true,
+    "description_unchanged": true,
+    "estimated_tasks_unchanged": true,
+    "actual_tasks_unchanged": true,
+    "sprint_unchanged": true,
+    "deviation_notes_appended_only": true
+  },
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "handoff": "C2 + C3 complete. Final acceptance and closeout can proceed. C4 (sprint retro) is closeout work. The next reader of the active track's acceptance procedure should consult handoff.md before deciding what to retire; the retirement of this track's mechanism is owned by S1's acceptance, not by this track's closeout."
+}

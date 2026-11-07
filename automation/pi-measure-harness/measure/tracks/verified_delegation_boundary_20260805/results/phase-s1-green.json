@@ -1,0 +1,186 @@
+{
+  "schema_version": 2,
+  "role": "measure-jr-green (user-authorized direct coder delegation; jr-green OAuth-broken)",
+  "track": "verified_delegation_boundary_20260805",
+  "phase": "Phase S1: Observed routing, not requested routing",
+  "baseline_sha": "1a3aa8049efc98af105b33fe746907561e3c7d52",
+  "audited_head_sha": "9e1e952ce086f6ee52abbe1cc074f0c9b15ad510",
+  "status": "complete",
+  "summary": "Phase S1 Green evidence — direct coder delegation. lib/observed-routing.mjs implements the seven-function contract (extractObservedRouting, classifyObservedRouting, runtimeModelStrict, computeRoleDefinitionHash, resolveStrict, classifyAgentFile, buildReceipt) per the JSDoc-style header in tests/observed-routing.test.mjs; the parent-fallback path is removed from runtimeModel and an absent child pin is now a structured `undeclared_child_pin` error naming the role. extensions/measure-harness/index.ts extends the TaskReceipt interface with requestedModel/observedModel/observedAt/roleDefinitionHash/routingClassification, computes roleDefinitionHash from the parsed role body before spawn, observes the served model via extractObservedRouting on the captured JSON event stream, classifies via classifyObservedRouting, and writes all five new fields to the receipt. The failed-detection logic now also fails the task when routingClassification.class === 'unverified_routing'. All 10 observed-routing tests pass (was 0/10 in Red). The 9 other shipped test files continue to pass (78/78 in test:shipped). npm test exits 1 with 88 pass / 14 fail — the 14 failures are all from tests/sprint-state-machine.test.mjs (a parallel-track Red file committed to the repo HEAD during this session by a parallel agent on `controlled_harness_evolution_20260714` Phase S2; that file is correctly classified as track-red by tests/.track-red-files.txt and is therefore excluded from the shipped partition). npm run parity exits 1 with 2 unmapped agents (coder-openai-gpt-5-6-luna-fast and measure-adversarial-testing — unchanged from Red; recorded here as NF-1 for Phase 2 reconciliation). npm run check exits 0 (TypeScript clean). No production modules outside the contract surface were touched.",
+  "deviation_notes": "Single deviation: tests/sprint-state-machine.test.mjs (14 tests, ERR_MODULE_NOT_FOUND on lib/sprint-state.mjs) was added to tests/.track-red-files.txt by a parallel agent's commit cc1eeca on `controlled_harness_evolution_20260714` Phase S2 during this session. The commit moved HEAD from the immutable phase base 1a3aa80 to cc1eeca BEFORE Jr Green committed. The partition is therefore 9 shipped / 2 track-red / 0 unclassified (not 9 / 1 / 0 as the task template expected). The shipped gate still exits 0, and the 14 sprint-state-machine failures are correctly excluded from the shipped partition by the classifier — no action required for Phase S1. The new observed-routing.test.mjs stays in track-red at this commit and is removed at S1 acceptance (Phase 1 closeout), per the strategy §Phase 1 handoff.",
+  "tasks_covered": ["1.3", "1.4", "1.4b"],
+  "green_evidence": {
+    "command": "node --test tests/observed-routing.test.mjs",
+    "exit_code": 0,
+    "pass_count": 10,
+    "fail_count": 0,
+    "total_tests": 10,
+    "previously_failing_modules": ["lib/observed-routing.mjs"]
+  },
+  "pre_existing_green_baseline": {
+    "shipped_partition_test_count": 78,
+    "shipped_partition_pass_count": 78,
+    "shipped_partition_fail_count": 0,
+    "files_unaffected": [
+      "lib/core.mjs",
+      "lib/agents-snapshot.mjs",
+      "lib/grammar.mjs",
+      "lib/manifest.mjs",
+      "lib/preflight.mjs",
+      "lib/green-gate.mjs",
+      "lib/setup.mjs",
+      "scripts/parity.mjs",
+      "scripts/test-shipped.mjs",
+      "scripts/configure.mjs",
+      "scripts/migrate-auth.mjs",
+      "agents/*.md"
+    ]
+  },
+  "post_commit_green_state": {
+    "node_tests_observed_routing": {"exit_code": 0, "pass_count": 10, "fail_count": 0, "total_tests": 10},
+    "node_tests_manifest": {"exit_code": 0, "pass_count": 10, "fail_count": 0, "total_tests": 10},
+    "node_tests_grammar": {"exit_code": 0, "pass_count": 6, "fail_count": 0, "total_tests": 6},
+    "node_tests_preflight": {"exit_code": 0, "pass_count": 9, "fail_count": 0, "total_tests": 9},
+    "node_tests_agents_snapshot": {"exit_code": 0, "pass_count": 16, "fail_count": 0, "total_tests": 16},
+    "node_tests_parity": {"exit_code": 0, "pass_count": 11, "fail_count": 0, "total_tests": 11},
+    "node_tests_model_resolution": {"exit_code": 0, "pass_count": 9, "fail_count": 0, "total_tests": 9},
+    "node_tests_core": {"exit_code": 0, "pass_count": 5, "fail_count": 0, "total_tests": 5},
+    "node_tests_setup": {"exit_code": 0, "pass_count": 4, "fail_count": 0, "total_tests": 4},
+    "node_tests_green_gate": {"exit_code": 0, "pass_count": 8, "fail_count": 0, "total_tests": 8},
+    "npm_run_test_shipped_exit_code": 0,
+    "shipped_partition_count": 9,
+    "track_red_partition_count": 2,
+    "unclassified_partition_count": 0,
+    "shipped_partition_test_total": 78,
+    "shipped_partition_pass": 78,
+    "shipped_partition_fail": 0,
+    "npm_test_exit_code": 1,
+    "npm_test_pass_count": 88,
+    "npm_test_fail_count": 14,
+    "npm_test_total_tests": 102,
+    "npm_test_failing_test_files": [
+      "tests/sprint-state-machine.test.mjs (14 subtests — ERR_MODULE_NOT_FOUND for lib/sprint-state.mjs; parallel track-red, correctly excluded from shipped partition)"
+    ],
+    "npm_run_check_exit_code": 0,
+    "npm_run_parity_exit_code": 1
+  },
+  "files_added": [
+    "lib/observed-routing.mjs",
+    "measure/tracks/verified_delegation_boundary_20260805/results/phase-s1-green.json"
+  ],
+  "files_modified": [
+    "extensions/measure-harness/index.ts (extended TaskReceipt interface with requestedModel/observedModel/observedAt/roleDefinitionHash/routingClassification; wired observed-routing helpers into the task handler; removed parent-fallback from runtimeModel; added routingFailure to the failed-detection logic)"
+  ],
+  "contracts_implemented": [
+    "lib/observed-routing.mjs: extractObservedRouting(events) walks the JSON event stream and returns the first message_start.message.model, or undefined; classifyObservedRouting(pin, observedModel) returns {class: 'verified_routing'} | {class: 'unverified_routing', reason: 'observed_routing_mismatch', requestedModel, observedModel} | {class: 'unverified_routing', reason: 'observed_routing_unobservable'}; runtimeModelStrict(agent) returns {model} | {error: {class: 'undeclared_child_pin', role}} — NEVER falls back to a parent model; computeRoleDefinitionHash(systemPrompt) returns sha256(systemPrompt.trim()); resolveStrict(requestedModel, observedModel) returns strict equality after MODEL_MAP[requestedModel] resolution (no alias widening); classifyAgentFile(filePath, lstat) returns {class: 'symlinked_agent_file', path} on symlink, null otherwise; buildReceipt({pin, roleDefinition, promptBody, events}) composes the structured receipt with requestedModel/observedModel/roleDefinitionHash/promptHash/failureClassification/verifiedRouting — byte-identical across repeated calls.",
+    "extensions/measure-harness/index.ts: TaskReceipt interface extended with requestedModel?, observedModel?, observedAt?, roleDefinitionHash?, routingClassification?; runtimeModel(agent) is now a strict wrapper around runtimeModelStrict(agent).model — the prior parent-fallback is removed; the task handler computes roleDefinitionHash via computeRoleDefinitionHash(child.systemPrompt), observes the served model via extractObservedRouting(events), classifies via classifyObservedRouting(modelRef, observedModel), captures observedAt from the first message_start.message.timestamp, and writes all five new fields to the receipt; the failed-detection logic includes routingClassification.class === 'unverified_routing' so the task fails closed when observed routing contradicts the pin or is unobservable."
+  ],
+  "test_inventory": [
+    {
+      "id": 1,
+      "name": "live-behavior — matching observation: first message_start.model === pin → observedModel === pin, no failureClassification",
+      "status": "green",
+      "result": "pass"
+    },
+    {
+      "id": 2,
+      "name": "live-behavior — contradicting observation: observed ≠ pin → failureClassification === observed_routing_mismatch",
+      "status": "green",
+      "result": "pass"
+    },
+    {
+      "id": 3,
+      "name": "live-behavior — unobservable routing: no message_start.model → failureClassification === observed_routing_unobservable",
+      "status": "green",
+      "result": "pass"
+    },
+    {
+      "id": 4,
+      "name": "live-behavior — undeclared pin (parent-fallback removed): runtimeModelStrict returns undeclared_child_pin error",
+      "status": "green",
+      "result": "pass"
+    },
+    {
+      "id": 5,
+      "name": "live-behavior — roleDefinitionHash on receipt: SHA-256 of role body, distinct from promptHash when continuation present",
+      "status": "green",
+      "result": "pass"
+    },
+    {
+      "id": 6,
+      "name": "fail-closed — three distinct failure classifications: emitted as distinct {class, reason} findings (A7 defense)",
+      "status": "green",
+      "result": "pass"
+    },
+    {
+      "id": 7,
+      "name": "A3 probe — verified-counter: status is {class, reason}, never a bare integer",
+      "status": "green",
+      "result": "pass"
+    },
+    {
+      "id": 8,
+      "name": "A7 probe — no widening of accepted divergence: strict equality after MODEL_MAP resolution",
+      "status": "green",
+      "result": "pass"
+    },
+    {
+      "id": 9,
+      "name": "A8 probe — symlink rejection: agent file resolved through symlink → {class: 'symlinked_agent_file', path}",
+      "status": "green",
+      "result": "pass"
+    },
+    {
+      "id": 10,
+      "name": "deterministic output: two receipt writes for the same fixture invocation produce byte-identical stable fields",
+      "status": "green",
+      "result": "pass"
+    }
+  ],
+  "anti_patterns_covered": ["A3", "A7", "A8"],
+  "marker_policy": "Strategy authorizes [ ] for active plan until S1 lands and versions a canonical grammar. Jr Green did NOT migrate any plan markers (per absolute constraint: do not modify plan.md).",
+  "production_modules_touched": "lib/observed-routing.mjs (new), extensions/measure-harness/index.ts (extended interface + wiring). NO changes to agents/, config/, lib/core.mjs, lib/agents-snapshot.mjs, lib/grammar.mjs, lib/manifest.mjs, lib/preflight.mjs, lib/green-gate.mjs, lib/setup.mjs, tests/, scripts/, package.json, tsconfig.json.",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    {
+      "id": "NF-1",
+      "class": "parity_unmapped_count_drift",
+      "description": "npm run parity exits 1 (Phase 2 fail-closed; expected). Live unmapped count is 2: coder-openai-gpt-5-6-luna-fast → openai/gpt-5.6-luna-fast and measure-adversarial-testing → deepseek/deepseek-v4-pro. Both are well-formed provider/id (map_entry_needed). Recorded here so Phase 2 Green can reconcile. No action required for Phase S1."
+    },
+    {
+      "id": "NF-2",
+      "class": "parallel_track_head_movement",
+      "description": "A parallel agent on `controlled_harness_evolution_20260714` Phase S2 committed tests/sprint-state-machine.test.mjs and updated tests/.track-red-files.txt during this session (commit cc1eeca, AFTER the immutable phase base 1a3aa80). HEAD moved from 1a3aa80 to cc1eeca BEFORE Jr Green committed. The 14 sprint-state-machine tests are correctly excluded from the shipped partition by the classifier; the shipped gate still exits 0. The audit's audited_head_sha is the new commit SHA Jr Green produces, not cc1eeca. Recorded here so the next role gate is aware of the parallel-track HEAD movement."
+    },
+    {
+      "id": "NF-3",
+      "class": "shipped_partition_mismatch_template",
+      "description": "The task template expected a 9 shipped / 1 track-red / 0 unclassified partition. The actual partition is 9 shipped / 2 track-red / 0 unclassified (observed-routing AND sprint-state-machine are both in track-red at this commit). This is a benign deviation caused by the parallel-track commit described in NF-2; no action required."
+    },
+    {
+      "id": "NF-4",
+      "class": "live_delegation_probe_deferred_to_acceptance",
+      "description": "Plan Task 1.5 (live delegation probe) requires a real `task` tool invocation against a fixture subagent. This is Phase 1 acceptance work, not Jr Green work — the probe depends on the buildReceipt contract being implemented first (which it now is). The 10 Green tests use synthetic inline event fixtures per the strategy §Phase 1 guidance; Phase 1 acceptance replaces the inline fixtures with the live probe's recorded receipt at S1 closeout time."
+    }
+  ],
+  "commands": [
+    "node --test tests/observed-routing.test.mjs",
+    "node --test tests/manifest.test.mjs",
+    "node --test tests/grammar.test.mjs",
+    "node --test tests/preflight.test.mjs",
+    "node --test tests/agents-snapshot.test.mjs",
+    "node --test tests/parity.test.mjs",
+    "node --test tests/model-resolution.test.mjs",
+    "node --test tests/core.test.mjs",
+    "node --test tests/setup.test.mjs",
+    "node --test tests/green-gate.test.mjs",
+    "npm run test:shipped",
+    "npm test",
+    "npm run check",
+    "npm run parity"
+  ],
+  "commits": ["9e1e952"],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "handoff": "Phase S1 Green complete. measure-review-a-correctness (correctness audit), measure-review-b-security (security audit), measure-review-c-ux-api (API surface audit), and measure-phase-acceptance (Phase 1 final-acceptance substitute) can proceed. The TaskReceipt contract change is the only API surface alteration (added requestedModel/observedModel/observedAt/roleDefinitionHash/routingClassification fields; existing model field is retained as a compatibility alias to requestedModel — review-a should audit this for silent breakage on any consumer that reads receipt.model). tests/.track-red-files.txt retirement (removing tests/observed-routing.test.mjs from the classifier) happens at S1 acceptance, not at Green. The live delegation probe (plan Task 1.5) is acceptance work — Phase 1 acceptance must run one real `task` tool invocation against a fixture subagent and confirm the receipt carries all three new fields (requestedModel/observedModel/roleDefinitionHash) plus the matching/contradicting/unobservable routingClassification."
+}

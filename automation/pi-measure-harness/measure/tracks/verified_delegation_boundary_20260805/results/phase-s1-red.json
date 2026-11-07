@@ -1,0 +1,161 @@
+{
+  "schema_version": 2,
+  "role": "measure-mid-red (user-authorized direct coder delegation; mid-red kimi-coding/k3 unregistered)",
+  "track": "verified_delegation_boundary_20260805",
+  "phase": "Phase S1: Observed routing, not requested routing",
+  "baseline_sha": "035f54eb3b87c0ab874d2e89c39a5b8a3e0b73a5",
+  "audited_head_sha": "1096c6e2a59e3861cf55b11c85b6e9ae5aa7a8d6",
+  "status": "complete",
+  "summary": "Phase S1 Red evidence — direct coder delegation due to mid-red (kimi-coding/k3 unregistered) unavailability. The Phase S1 observed-routing contract is fully documented (JSDoc-style header in tests/observed-routing.test.mjs and 10 inline one-line test comments naming the contract section each test protects, per test-strategy.md §8). All 10 required Red conditions are encoded as failing tests at tests/observed-routing.test.mjs; 6 distinct contract sections are covered (matching observation, contradicting observation, unobservable routing, undeclared pin, roleDefinitionHash on receipt, three distinct classifications, A3 labeled verified-counter, A7 no-widening of accepted divergence, A8 symlink rejection, deterministic output). All 10 tests fail at Red because `lib/observed-routing.mjs` does not yet exist (ERR_MODULE_NOT_FOUND on every dynamic import); the dynamic-import-per-test pattern (carried from tests/model-resolution.test.mjs in the closed track) gives granular per-test failure reporting rather than a single module-load error. The tests assert the documented contract surface that Jr Green must implement: extractObservedRouting, classifyObservedRouting (returns {class, reason} with three distinct failure classifications), runtimeModelStrict (returns {model} or {error: {class: 'undeclared_child_pin', role}}), computeRoleDefinitionHash (SHA-256 of trimmed role body, distinct from promptHash when continuation present), resolveStrict (strict equality after MODEL_MAP resolution, no alias widening), classifyAgentFile ({class: 'symlinked_agent_file', path} on symlink), and buildReceipt (composes requestedModel/observedModel/roleDefinitionHash/promptHash/failureClassification/verifiedRouting). The A8 symlink-rejection probe is a regression guard carried from controlled_harness_evolution_20260714 S1.3b; the A3 verified-counter probe is the labeled-integer analog to tests/manifest.test.mjs#agentCountLabel. npm test now exits 1 with 78-of-88 passing (was 78-of-78 green at HEAD 035f54e); the new file adds 10 new failures — satisfying the 'at least one additional failure' minimum and the strategy's Red falsification (a) (b) (c) all three Red conditions. npm run test:shipped still exits 0 (the new file is in tests/.track-red-files.txt as track-red, so it is excluded from the shipped partition; partition 9 shipped / 1 track-red / 0 unclassified). npm run check exits 0. npm run parity exits 1 (Phase 2 fail-closed; expected; 2 unmapped agents coder-openai-gpt-5-6-luna-fast and measure-adversarial-testing — recorded here as NF-1). No production modules touched per absolute constraints.",
+  "deviation_notes": "Direct coder delegation violates orchestrator's standard role boundary (no coder in Red/Green chain). User explicitly authorized due to infrastructure failure: measure-mid-red's kimi-coding/k3 model is unregistered in this harness session. The strategy notes this: 'Mid Red is kimi-coding/k3 which is unregistered'. Only coder-minimax-m3 is available for delegation. Tests are committed at master (no worktree / branch per absolute constraints). The new test file imports from lib/observed-routing.mjs (which does not yet exist) rather than extensions/measure-harness/index.ts (which is TypeScript and would require tsc transpilation before node --test could load it) — this matches the strategy's 'or a sibling lib/observed-routing.mjs if Jr prefers separation' guidance and keeps the Red test surface in pure Node ESM. Event-stream fixtures are inlined in the test file (matchingEvents/contradictingEvents/unobservableEvents as object literals) rather than committed to tests/fixtures/observed-routing/, per the absolute-constraint allowed-files list (only tests/fixtures/dispatch-packet/ is permitted, and that is for Phase 4). The deterministic test compares stable fields (requestedModel/observedModel/roleDefinitionHash/promptHash/failureClassification/verifiedRouting) excluding any startedAt/completedAt runtime timestamps; the contract is that the routing/role-hash fields are byte-identical across repeated calls.",
+  "tasks_covered": ["1.2"],
+  "red_falsification": {
+    "command": "node --test tests/observed-routing.test.mjs",
+    "exit_code": 1,
+    "output_tail": "1..10\n# tests 10\n# suites 0\n# pass 0\n# fail 10\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 372\n\n# All 10 subtests fail with: error: \"Cannot find module '/home/daniel-bo/Desktop/pi-measure-harness/lib/observed-routing.mjs' imported from /home/daniel-bo/Desktop/pi-measure-harness/tests/observed-routing.test.mjs\", code: 'ERR_MODULE_NOT_FOUND'. The new observed-routing contract module does not yet exist; tests reference the future symbol via dynamic import per-test for granular Red output.\n\n# Strategy §Phase 1 Red falsification conditions:\n#   (a) requestedModel and observedModel are NOT yet separate fields on the receipt\n#       (the new contract is not yet exported) — tests 1, 2, 3, 5 falsify this\n#       (buildReceipt returns ERR_MODULE_NOT_FOUND because lib/observed-routing.mjs\n#       does not exist).\n#   (b) runtimeModel(agent, fallback) still silently falls back to the parent's model\n#       (no undeclared_child_pin error is raised) — test 4 falsifies this\n#       (runtimeModelStrict is not yet exported).\n#   (c) The live delegation probe's receipt carries only the old `model` field and\n#       no `observedModel` — captured by tests 1, 2, 3, 5 (buildReceipt is not yet\n#       exported). Test 1.5 (live delegation probe) is Green work, not Red.\n# All three Red conditions hold at the Mid Red commit."
+  },
+  "pre_existing_red_baseline": {
+    "npm_test_exit_code": 0,
+    "npm_test_pass_count": 78,
+    "npm_test_fail_count": 0,
+    "total_tests": 78,
+    "failing_test_files": []
+  },
+  "post_commit_red_state": {
+    "npm_test_exit_code": 1,
+    "npm_test_pass_count": 78,
+    "npm_test_fail_count": 10,
+    "total_tests": 88,
+    "failing_test_files": [
+      "tests/observed-routing.test.mjs (all 10 subtests — ERR_MODULE_NOT_FOUND for lib/observed-routing.mjs)"
+    ],
+    "node_tests_observed_routing": {
+      "exit_code": 1,
+      "pass_count": 0,
+      "fail_count": 10,
+      "total_tests": 10,
+      "failure_code": "ERR_MODULE_NOT_FOUND",
+      "failing_modules": ["lib/observed-routing.mjs"]
+    },
+    "npm_run_test_shipped_exit_code": 0,
+    "shipped_partition_count": 9,
+    "track_red_partition_count": 1,
+    "unclassified_partition_count": 0,
+    "npm_run_check_exit_code": 0,
+    "npm_run_parity_exit_code": 1
+  },
+  "files_added": [
+    "tests/observed-routing.test.mjs",
+    "measure/tracks/verified_delegation_boundary_20260805/results/phase-s1-red.json"
+  ],
+  "files_modified": [
+    "tests/.track-red-files.txt (added line: tests/observed-routing.test.mjs)"
+  ],
+  "contracts_defined": [
+    "tests/observed-routing.test.mjs header block (lines 1-94) — Phase S1 observed-routing contract surface: (a) extractObservedRouting(events) walks the child's JSON event stream and returns the served model from the first message_start whose message.model is populated, or undefined; (b) classifyObservedRouting(pin, observedModel) returns {class: 'verified_routing'} on match (after MODEL_MAP resolution), {class: 'unverified_routing', reason: 'observed_routing_mismatch', requestedModel, observedModel} on mismatch, {class: 'unverified_routing', reason: 'observed_routing_unobservable'} on undefined observed; (c) runtimeModelStrict(agent) returns {model} or {error: {class: 'undeclared_child_pin', role}}, NEVER falls back to a parent model; (d) computeRoleDefinitionHash(systemPrompt) returns sha256(systemPrompt.trim()) — separate from promptHash; (e) resolveStrict(requestedModel, observedModel) is strict equality after MODEL_MAP resolution — no alias widening; (f) classifyAgentFile(filePath, lstat) returns {class: 'symlinked_agent_file', path} when lstat indicates a symlink, null otherwise; (g) buildReceipt({pin, roleDefinition, promptBody, events}) composes a receipt with requestedModel, observedModel, roleDefinitionHash, promptHash, failureClassification (undefined on match), verifiedRouting ({class, reason?} structure)."
+  ],
+  "test_inventory": [
+    {
+      "id": 1,
+      "name": "live-behavior — matching observation: first message_start.model === pin → observedModel === pin, no failureClassification",
+      "contract_section": "spec.md#story-s1 AC1 + test-strategy.md Phase 1 'live-behavior — matching observation'",
+      "fails_at_red": true,
+      "failure_message": "Cannot find module '.../lib/observed-routing.mjs' — buildReceipt is not yet exported"
+    },
+    {
+      "id": 2,
+      "name": "live-behavior — contradicting observation: observed ≠ pin → failureClassification === observed_routing_mismatch",
+      "contract_section": "spec.md#story-s1 AC2 + test-strategy.md Phase 1 'live-behavior — contradicting observation'",
+      "fails_at_red": true,
+      "failure_message": "Cannot find module '.../lib/observed-routing.mjs' — buildReceipt is not yet exported"
+    },
+    {
+      "id": 3,
+      "name": "live-behavior — unobservable routing: no message_start.model → failureClassification === observed_routing_unobservable",
+      "contract_section": "spec.md#story-s1 AC3 + test-strategy.md Phase 1 'live-behavior — unobservable routing'",
+      "fails_at_red": true,
+      "failure_message": "Cannot find module '.../lib/observed-routing.mjs' — buildReceipt is not yet exported"
+    },
+    {
+      "id": 4,
+      "name": "live-behavior — undeclared pin (parent-fallback removed): runtimeModelStrict returns undeclared_child_pin error",
+      "contract_section": "spec.md#story-s1 AC4 + test-strategy.md Phase 1 'live-behavior — undeclared pin (parent-fallback removed)'",
+      "fails_at_red": true,
+      "failure_message": "Cannot find module '.../lib/observed-routing.mjs' — runtimeModelStrict is not yet exported; current runtimeModel(agent, fallback) in extensions/measure-harness/index.ts:64 still silently falls back to the parent's model"
+    },
+    {
+      "id": 5,
+      "name": "live-behavior — roleDefinitionHash on receipt: SHA-256 of role body, distinct from promptHash when continuation present",
+      "contract_section": "spec.md#story-s1 AC5 + test-strategy.md Phase 1 'live-behavior — roleDefinitionHash on receipt'",
+      "fails_at_red": true,
+      "failure_message": "Cannot find module '.../lib/observed-routing.mjs' — buildReceipt and computeRoleDefinitionHash are not yet exported"
+    },
+    {
+      "id": 6,
+      "name": "fail-closed — three distinct failure classifications: emitted as distinct {class, reason} findings (A7 defense)",
+      "contract_section": "spec.md Non-Functional Requirements A7 + test-strategy.md Phase 1 'fail-closed — three distinct classifications'",
+      "fails_at_red": true,
+      "failure_message": "Cannot find module '.../lib/observed-routing.mjs' — classifyObservedRouting and runtimeModelStrict are not yet exported; the three distinct strings ('observed_routing_mismatch', 'observed_routing_unobservable', 'undeclared_child_pin') are not yet implemented as a contract"
+    },
+    {
+      "id": 7,
+      "name": "A3 probe — verified-counter: status is {class, reason}, never a bare integer",
+      "contract_section": "measure/anti-patterns.md#A3 + test-strategy.md Phase 1 'A3 probe — labeled verified-counter' (analog to tests/manifest.test.mjs#agentCountLabel)",
+      "fails_at_red": true,
+      "failure_message": "Cannot find module '.../lib/observed-routing.mjs' — classifyObservedRouting is not yet exported"
+    },
+    {
+      "id": 8,
+      "name": "A7 probe — no widening of accepted divergence: strict equality after MODEL_MAP resolution",
+      "contract_section": "measure/anti-patterns.md#A7 + test-strategy.md Phase 1 'A7 probe — no widening of accepted divergence'",
+      "fails_at_red": true,
+      "failure_message": "Cannot find module '.../lib/observed-routing.mjs' — resolveStrict is not yet exported"
+    },
+    {
+      "id": 9,
+      "name": "A8 probe — symlink rejection: agent file resolved through symlink → {class: 'symlinked_agent_file', path}",
+      "contract_section": "measure/anti-patterns.md#A8 + test-strategy.md Phase 1 'A8 probe — symlink rejection (defense carried from controlled_harness_evolution_20260714 S1.3b)'",
+      "fails_at_red": true,
+      "failure_message": "Cannot find module '.../lib/observed-routing.mjs' — classifyAgentFile is not yet exported"
+    },
+    {
+      "id": 10,
+      "name": "deterministic output: two receipt writes for the same fixture invocation produce byte-identical stable fields",
+      "contract_section": "spec.md Non-Functional Requirements 'deterministic and side-effect free' + test-strategy.md Phase 1 'deterministic output'",
+      "fails_at_red": true,
+      "failure_message": "Cannot find module '.../lib/observed-routing.mjs' — buildReceipt is not yet exported"
+    }
+  ],
+  "anti_patterns_covered": ["A1 (mirror)", "A3", "A7", "A8"],
+  "marker_policy": "Strategy authorizes [ ] for active plan until S1 lands and versions a canonical grammar. Mid Red did NOT migrate any plan markers.",
+  "production_modules_touched": "none — Mid Red stays out of lib/, extensions/, scripts/, agents/, package.json",
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    {
+      "id": "NF-1",
+      "class": "parity_unmapped_count_drift",
+      "description": "npm run parity exits 1 (Phase 2 fail-closed; expected). Live unmapped count is 2: coder-openai-gpt-5-6-luna-fast → openai/gpt-5.6-luna-fast and measure-adversarial-testing → deepseek/deepseek-v4-pro. Both are well-formed provider/id (map_entry_needed). Recorded here so Phase 2 Green can reconcile. No action required for Phase S1."
+    },
+    {
+      "id": "NF-2",
+      "class": "untracked_files_outside_scope",
+      "description": "git status --short shows 6 untracked files outside the Mid Red scope: agents/coder-kimi-for-coding-k3.md, agents/coder-xiaomi-mimo-v2-5.md, measure/runs/, and measure/tracks/controlled_harness_evolution_20260714/results/phase-s1-{acceptance,review-c,review-c.worktree-snapshot}.json. Per absolute constraints, Mid Red did not stage or commit any of these — they remain untracked at the audit boundary. Recorded here so the next role gate is aware they exist."
+    },
+    {
+      "id": "NF-3",
+      "class": "live_delegation_probe_deferred",
+      "description": "Plan Task 1.5 (live delegation probe) requires a real task invocation against a fixture subagent. This is Green work, not Red — the probe depends on the buildReceipt contract being implemented first. The 10 Red tests use synthetic inline event fixtures (matchingEvents/contradictingEvents/unobservableEvents as object literals) per the strategy §Phase 1 'synthetic event-stream JSONL files' guidance, with the understanding that Green replaces the inline fixtures with the live probe's recorded receipt at S1 acceptance time."
+    }
+  ],
+  "commands": [
+    "node --test tests/observed-routing.test.mjs",
+    "npm test",
+    "npm run test:shipped",
+    "npm run check",
+    "npm run parity"
+  ],
+  "commits": ["1096c6e"],
+  "retry_recommendation": "none",
+  "confidence": "high",
+  "handoff": "Phase S1 Green must: (1) implement lib/observed-routing.mjs with the documented contract surface — extractObservedRouting / classifyObservedRouting / runtimeModelStrict / computeRoleDefinitionHash / resolveStrict / classifyAgentFile / buildReceipt per the JSDoc contract in tests/observed-routing.test.mjs header; (2) wire them into extensions/measure-harness/index.ts#task so the receipt carries requestedModel, observedModel, and roleDefinitionHash as separate fields, renaming the existing `model` field to `requestedModel` (leaving `model` as a silent alias to `requestedModel` is forbidden, A7 analog); (3) remove the parent-fallback from runtimeModel(agent, fallback) so an absent child pin is a dispatch error naming the role — verify every agent in agents/*.md has a model: frontmatter before Green closes, since the fallback's removal makes this a hard requirement; (4) ensure the three failure classifications (observed_routing_mismatch, observed_routing_unobservable, undeclared_child_pin) are emitted as distinct {class, reason} structured findings — never collapsed into a single routing_failure (A7 defense); (5) commit the live delegation probe (Task 1.5) as tests/fixtures/observed-routing/live-probe-<sha>.json once one real task invocation produces a receipt with all three new fields (requestedModel, observedModel, roleDefinitionHash); (6) verify node --test tests/observed-routing.test.mjs exits 0, npm test exits 0 with 88-of-88 passing, npm run test:shipped exits 0 (the new file remains in tests/.track-red-files.txt until Phase S1 acceptance retires it), npm run check exits 0, npm run parity exits 0. Every [x] in plan.md must carry a 7-40 hex SHA evidence in the same evidence commit. Note: tests/.track-red-files.txt retirement happens at S1 acceptance (Phase 1 closeout), not at Green — until then the new file stays in the track-red partition to keep the shipped gate green."
+}

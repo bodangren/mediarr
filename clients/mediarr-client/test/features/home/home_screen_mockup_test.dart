@@ -98,7 +98,7 @@ void main() {
               progress: 0.5,
               position: 1800,
               duration: 3600,
-              lastWatched: DateTime(2026, 9, 24),
+              lastWatched: DateTime.now().subtract(const Duration(hours: 3)),
             ),
           ]),
       heroMovieProvider.overrideWith((ref, id) async => const Movie(
@@ -202,7 +202,7 @@ void main() {
               position: 8,
               duration: 2580,
               progress: 0.01,
-              lastWatched: DateTime(2026, 9, 25),
+              lastWatched: DateTime.now().subtract(const Duration(hours: 4)),
             ),
           ]),
       heroSeriesProvider.overrideWith((ref, id) async => Series.fromJson({
@@ -246,7 +246,7 @@ void main() {
               progress: 0.5,
               position: 1800,
               duration: 3600,
-              lastWatched: DateTime(2026, 9, 25),
+              lastWatched: DateTime.now().subtract(const Duration(hours: 4)),
             ),
           ]),
     ]);
@@ -281,7 +281,7 @@ void main() {
         position: 300,
         duration: 1200,
         progress: 0.25,
-        lastWatched: DateTime(2026, 9, 24),
+        lastWatched: DateTime.now().subtract(const Duration(hours: 3)),
         backdropUrl: 'https://example.com/backdrop-${index + 1}.jpg',
       ),
     );

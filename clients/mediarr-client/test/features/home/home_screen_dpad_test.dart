@@ -42,7 +42,7 @@ List<Override> _overrides(FakeMediarrApiClient api) => [
               position: 615,
               duration: 1320,
               progress: 0.47,
-              lastWatched: DateTime(2026, 9, 24),
+              lastWatched: DateTime.now().subtract(const Duration(hours: 2)),
               episodeTitle: 'Salute Your Morts',
               seasonNumber: 9,
               episodeNumber: 9,
@@ -284,5 +284,49 @@ void main() {
     expect(find.byType(SeriesDetailScreen), findsOneWidget);
     expect(api.getSeriesByIdCalls, contains(41));
     expect(router.routerDelegate.currentConfiguration.uri.path, isNot('/playback'));
+  });
+
+  testWidgets('the hero rotates to the newest item when the resume is stale',
+      (tester) async {
+    // A continue-watching entry older than the window must not own the hero
+    // forever: the first screen should show something new.
+    final api = FakeMediarrApiClient();
+    final container = ProviderContainer(overrides: [
+      apiClientProvider.overrideWith((ref) => api),
+      continueWatchingProvider.overrideWith((ref) async => [
+            ContinueWatchingItem(
+              mediaType: 'episode',
+              mediaId: 11,
+              seriesId: 41,
+              title: 'Old Resume',
+              position: 600,
+              duration: 1200,
+              progress: 0.5,
+              lastWatched: DateTime.now().subtract(const Duration(days: 30)),
+            ),
+          ]),
+      upcomingProvider.overrideWith((ref) async => const []),
+      recentlyAddedProvider.overrideWith((ref) async => const [
+            LibraryItem(id: 99, title: 'Brand New Show', type: 'series', year: 2026),
+          ]),
+      homeMoviesProvider.overrideWith((ref) async => const []),
+      homeSeriesProvider.overrideWith((ref) async => const []),
+    ]);
+    addTearDown(container.dispose);
+
+    await tester.pumpWidget(UncontrolledProviderScope(
+      container: container,
+      child: MaterialApp(
+        theme: mediarrDarkTheme,
+        home: const Scaffold(body: HomeScreen()),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    // The hero features the new item; the stale resume is still listed in
+    // Continue Watching (so the viewer can pick it up deliberately).
+    expect(find.text('FEATURED'), findsOneWidget);
+    expect(find.text('Brand New Show'), findsWidgets);
+    expect(find.text('Old Resume'), findsOneWidget);
   });
 }

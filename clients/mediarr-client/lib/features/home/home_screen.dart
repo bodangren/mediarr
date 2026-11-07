@@ -129,9 +129,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         continueWatchingAsync.dataOrNull ?? const <ContinueWatchingItem>[];
     final recentlyAdded =
         recentlyAddedAsync.dataOrNull ?? const <LibraryItem>[];
-    final _HeroItem? recentItem = continueWatching.isNotEmpty
-        ? _HeroFromContinueWatching(continueWatching.first)
-        : (recentlyAdded.isNotEmpty ? _HeroFromLibrary(recentlyAdded.first) : null);
+    final _HeroItem? recentItem = _selectHeroItem(continueWatching, recentlyAdded);
 
     // Hero metadata (FR-2): the featured movie supplies year, runtime, and
     // quality. Fields the API does not provide stay hidden.
@@ -215,6 +213,31 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
       ),
     );
+  }
+
+  /// How long a continue-watching entry may lead the hero.
+  ///
+  /// The hero used to be `continueWatching.first` forever, so one in-progress
+  /// show (Reacher for days on this library) owned the first screen while newly
+  /// added content stayed below it. After this window the hero rotates to the
+  /// newest library item until the viewer returns to the in-progress show.
+  static const Duration _heroContinueWatchingWindow = Duration(days: 7);
+
+  _HeroItem? _selectHeroItem(
+    List<ContinueWatchingItem> continueWatching,
+    List<LibraryItem> recentlyAdded,
+  ) {
+    if (continueWatching.isNotEmpty) {
+      final candidate = continueWatching.first;
+      final isFresh = DateTime.now().difference(candidate.lastWatched) <=
+          _heroContinueWatchingWindow;
+      if (isFresh || recentlyAdded.isEmpty) {
+        return _HeroFromContinueWatching(candidate);
+      }
+      // The in-progress show is stale: feature the newest addition instead.
+      return _HeroFromLibrary(recentlyAdded.first);
+    }
+    return recentlyAdded.isNotEmpty ? _HeroFromLibrary(recentlyAdded.first) : null;
   }
 
   void _playHero(_HeroItem? item) {

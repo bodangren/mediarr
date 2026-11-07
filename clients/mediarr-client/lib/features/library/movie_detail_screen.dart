@@ -265,7 +265,13 @@ class _MovieDetailScreenState extends ConsumerState<MovieDetailScreen> {
         style: TextStyle(color: MediarrColors.statusError),
       );
     }
-    if (_subtitles.isEmpty) {
+    // Flatten across variants: a movie with two file variants used to print
+    // one "No subtitle tracks" line per variant (two identical lines on the
+    // device, 2026-11-08).
+    final tracks = _subtitles
+        .expand((variant) => variant.subtitleTracks)
+        .toList(growable: false);
+    if (tracks.isEmpty) {
       return const Text(
         'No subtitle data available',
         style: TextStyle(color: MediarrColors.textMuted),
@@ -274,36 +280,29 @@ class _MovieDetailScreenState extends ConsumerState<MovieDetailScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        for (final variant in _subtitles)
-          if (variant.subtitleTracks.isNotEmpty)
-            for (final track in variant.subtitleTracks)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.subtitles,
-                      size: 16,
-                      color: MediarrColors.textSecondary,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        track.displayLabel,
-                        style: const TextStyle(
-                          color: MediarrColors.textPrimary,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ),
-                  ],
+        for (final track in tracks)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.subtitles,
+                  size: 16,
+                  color: MediarrColors.textSecondary,
                 ),
-              )
-          else
-            const Text(
-              'No subtitle tracks',
-              style: TextStyle(color: MediarrColors.textMuted),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    track.displayLabel,
+                    style: const TextStyle(
+                      color: MediarrColors.textPrimary,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ],
             ),
+          ),
       ],
     );
   }

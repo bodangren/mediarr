@@ -416,5 +416,43 @@ void main() {
                 'without a file).');
       },
     );
+
+  testWidgets(
+    'lists subtitle tracks once across duplicate file variants',
+    (tester) async {
+      // Two variants for the same movie used to print "No subtitle tracks"
+      // twice; tracks from every variant must be listed exactly once each.
+      VariantInventory variant(int id, List<SubtitleTrack> tracks) => VariantInventory(
+            variantId: id,
+            path: '/data/Movies/Inception (2010)/Inception (2010).mkv',
+            subtitleTracks: tracks,
+            missingSubtitles: const [],
+          );
+
+      fakeClient.getMovieSubtitlesReturn = [
+        variant(1, const [
+          SubtitleTrack(
+            source: 'eng',
+            languageCode: 'eng',
+            isForced: false,
+            isHi: false,
+          ),
+        ]),
+        variant(2, const [
+          SubtitleTrack(
+            source: 'zho',
+            languageCode: 'zho',
+            isForced: false,
+            isHi: false,
+          ),
+        ]),
+      ];
+
+      await pumpDetail(tester);
+
+      expect(find.textContaining('No subtitle'), findsNothing);
+      expect(find.byIcon(Icons.subtitles), findsNWidgets(2));
+    },
+  );
   });
 }

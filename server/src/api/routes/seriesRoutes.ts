@@ -5,6 +5,7 @@ import { ValidationError } from '../../errors/domainErrors';
 import type { ApiDependencies } from '../types';
 import type { DatabaseClient } from '../../db/drizzleClient';
 import { MediaRepository, type BulkSeriesChanges } from '../../repositories/MediaRepository';
+import { EpisodeThumbnailService } from '../../services/EpisodeThumbnailService';
 import { SeriesMonitoringService, type MonitoringType } from '../../services/SeriesMonitoringService';
 import { SeriesOrganizeService, DEFAULT_SERIES_MANAGEMENT_SETTINGS } from '../../services/SeriesOrganizeService';
 import { FilenameParsingService } from '../../services/FilenameParsingService';
@@ -440,6 +441,13 @@ export function registerSeriesRoutes(
       );
     }));
 
+    const thumbnailService = deps.episodeThumbnailService ?? new EpisodeThumbnailService(deps.prisma as any);
+    const episodesWithThumbs = new Set<number>();
+    await Promise.all(allEpisodes.map(async (episode: any) => {
+      if (!hasFileByEpisodeId.get(episode.id)) return;
+      if (await thumbnailService.hasThumbnail(episode.id)) episodesWithThumbs.add(episode.id);
+    }));
+
     const augmentedSeasons = (record.seasons || []).map((season: any) => {
       let seasonTotal = 0;
       let seasonOnDisk = 0;
@@ -479,6 +487,14 @@ export function registerSeriesRoutes(
           hasFile,
           isDownloading,
           playbackState: serializePlaybackState(playback),
+          // Locally generated still (EpisodeThumbnailService). The client
+          // requests it lazily and keeps its placeholder on 404, so this is
+          // safe to expose before the cache is warm.
+          // Only advertise a still that exists: the client then renders no empty
+          // box while the cache is still warming.
+          thumbUrl: episodesWithThumbs.has(episode.id)
+            ? `/api/episodes/${episode.id}/thumbnail`
+            : null,
         };
       });
 

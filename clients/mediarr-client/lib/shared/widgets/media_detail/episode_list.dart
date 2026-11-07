@@ -1,7 +1,9 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../core/theme/mediarr_theme.dart';
+import '../../services/api_config.dart';
 import '../../../core/widgets/netflix_scaffold.dart';
 
 class EpisodeListSeason {
@@ -34,6 +36,7 @@ class EpisodeListItem {
     this.quality,
     this.progress = 0,
     this.isWatched = false,
+    this.thumbUrl,
   });
 
   final int id;
@@ -49,6 +52,10 @@ class EpisodeListItem {
 
   /// True once the server has marked the episode watched.
   final bool isWatched;
+
+  /// Server-side still for this episode; absent until the thumbnail cache is
+  /// warm, in which case the row keeps its text-only layout.
+  final String? thumbUrl;
 }
 
 /// Season chips plus the episode list of the selected season (FR-2).
@@ -482,6 +489,22 @@ class _EpisodeRow extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             child: Row(
               children: [
+                if (episode.thumbUrl != null) ...[
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(6),
+                    child: CachedNetworkImage(
+                      imageUrl: ApiConfig.image(episode.thumbUrl!),
+                      width: 112,
+                      height: 63,
+                      fit: BoxFit.cover,
+                      placeholder: (_, __) =>
+                          Container(width: 112, height: 63, color: MediarrColors.surfaceElevated),
+                      errorWidget: (_, __, ___) =>
+                          Container(width: 112, height: 63, color: MediarrColors.surfaceElevated),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                ],
                 SizedBox(
                   width: 48,
                   child: Text(

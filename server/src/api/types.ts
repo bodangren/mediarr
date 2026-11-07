@@ -102,6 +102,10 @@ export interface ApiDependencies {
     VariantInventoryIndexer,
     'indexMovieVariant' | 'indexEpisodeVariant'
   > | undefined;
+  episodeThumbnailService?: {
+    thumbnailPath: (episodeId: number) => string;
+    hasThumbnail: (episodeId: number) => Promise<boolean>;
+  };
   playbackService?: Pick<
     PlaybackService,
     'resolveStreamSource' | 'buildManifest' | 'getProgress' | 'recordHeartbeat' | 'markWatched' | 'markUnwatched' | 'resolveSubtitleTrack' | 'getContinueWatching'

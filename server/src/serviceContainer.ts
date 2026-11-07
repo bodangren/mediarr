@@ -86,6 +86,7 @@ import { WantedSearchService } from './services/WantedSearchService';
 import { RssMediaMonitor } from './services/RssMediaMonitor';
 import { BackupService } from './services/BackupService';
 import { LibraryScanService } from './services/LibraryScanService';
+import { EpisodeThumbnailService } from './services/EpisodeThumbnailService';
 import { LibraryFolderImportService } from './services/LibraryFolderImportService';
 import { globalLogBuffer } from './services/LogReaderService';
 import { NotificationDispatchService } from './services/NotificationDispatchService';
@@ -772,6 +773,16 @@ export async function createServiceContainer(
         prisma,
         metadataProvider as any,
       );
+      const episodeThumbnailService = new EpisodeThumbnailService(prisma);
+      scheduler.schedule('episode-thumbnails', '*/10 * * * *', async () => {
+        const result = await episodeThumbnailService.generateMissing(40);
+        if (result.generated > 0 || result.failed > 0) {
+          console.log(
+            `Episode thumbnails: generated ${result.generated}, skipped ${result.skipped}, failed ${result.failed}`,
+          );
+        }
+      });
+
       scheduler.schedule('folder-import', '40 2 * * *', async () => {
         const settings = await settingsService.get();
         const result = await folderImportService.run({

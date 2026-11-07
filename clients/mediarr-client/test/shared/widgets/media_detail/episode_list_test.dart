@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mediarr_client/core/theme/mediarr_theme.dart';
@@ -330,5 +331,49 @@ void main() {
       expect(find.textContaining('No'), findsWidgets);
       expect(tester.takeException(), isNull);
     });
+    testWidgets('shows an episode still when the server provides one', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildTestApp(
+          child: const EpisodeList(
+            data: EpisodeListSeason(
+              seasons: [
+                EpisodeListSeasonData(
+                  seasonNumber: 1,
+                  totalCount: 2,
+                  onDiskCount: 2,
+                  episodes: [
+                    EpisodeListItem(
+                      id: 401,
+                      episodeNumber: 1,
+                      title: 'With still',
+                      hasFile: true,
+                      thumbUrl: '/api/episodes/401/thumbnail',
+                    ),
+                    EpisodeListItem(
+                      id: 402,
+                      episodeNumber: 2,
+                      title: 'No still',
+                      hasFile: true,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      // The server-generated still is requested for the row that has one; the
+      // text-only row keeps its previous layout.
+      final images = find.byType(CachedNetworkImage);
+      expect(images, findsOneWidget);
+      expect(
+        tester.widget<CachedNetworkImage>(images).imageUrl,
+        contains('/api/episodes/401/thumbnail'),
+      );
+    });
+
   });
 }

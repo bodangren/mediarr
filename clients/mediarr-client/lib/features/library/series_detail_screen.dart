@@ -552,6 +552,7 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
               // ones (the earlier wiring only covered the resume helper).
               progress: ep.playbackState?.progress ?? 0,
               isWatched: ep.playbackState?.isWatched ?? false,
+              thumbUrl: ep.thumbUrl,
             );
           }).toList(),
         );

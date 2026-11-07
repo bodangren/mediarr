@@ -16,6 +16,7 @@ class Episode {
     this.path,
     this.fileVariants,
     this.playbackState,
+    this.thumbUrl,
   });
 
   final int id;
@@ -31,6 +32,10 @@ class Episode {
   final String? path;
   final List<MediaFileVariant>? fileVariants;
   final EpisodePlaybackState? playbackState;
+
+  /// Server-generated still for the episode row (`/api/episodes/:id/thumbnail`).
+  /// Absent until the thumbnail cache has been warmed for that episode.
+  final String? thumbUrl;
 
   /// Effective playability flag.
   ///
@@ -59,6 +64,7 @@ class Episode {
       fileVariants: rawVariants
           ?.map((v) => MediaFileVariant.fromJson(v as Map<String, dynamic>))
           .toList(),
+      thumbUrl: json['thumbUrl'] as String?,
       playbackState: json['playbackState'] != null
           ? EpisodePlaybackState.fromJson(
               json['playbackState'] as Map<String, dynamic>)

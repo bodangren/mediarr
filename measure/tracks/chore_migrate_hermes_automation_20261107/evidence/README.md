@@ -13,3 +13,15 @@ Measured on the live install:
 - Artwork: TV loads the server proxy; posters/backdrops render.
 - Playback: `GET /api/stream/:id` serves the mkv to the client; subtitle sidecar served via `/api/playback/subtitles/:trackId`.
 - Aligner: a +10 s shifted `.zho.srt` was corrected in 11 s by ffsubsync; a second verification pass reported offset 0.000 s and scale 1.000 (the source was 0.83 s early).
+
+## Round 2 (2026-11-07, later)
+
+| Evidence | What it proves |
+|---|---|
+| `tv-continue-watching-20261107.png` | Live TV home shows the featured **Resume 00:32** hero and a **Continue Watching** row (Murderbot S01E02, 2%) populated from real playback progress |
+
+Also verified live:
+
+- Mediarr now runs as an **enabled systemd user service** (`mediarr.service`, Restart=always); restart recovered the API in ~64 s.
+- **Chinese subtitle sync is live**: `subtitle-sync` scheduler task (30 min, limit 5) aligned 5/5 The Last of Us sidecars, second-pass residual 0.000 s, `.orig` backups written, no temp leftovers; task history shows success at ~106 s.
+- `/api/playback/continue-watching` returns Murderbot E02 at 32 s with `isWatched:false` — the tracking chain server → client is real.

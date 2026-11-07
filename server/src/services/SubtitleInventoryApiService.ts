@@ -46,6 +46,16 @@ export interface ManualSubtitleProvider {
   }): Promise<ManualSearchCandidate[]>;
 
   download?(candidate: ManualSearchCandidate): Promise<ManualSearchCandidate>;
+
+  /**
+   * Whether this provider has the credentials it needs.
+   *
+   * Unconfigured providers throw "API Key is missing" on every search; the
+   * automation then marks every wanted row FAILED. Reporting configuration up
+   * front lets the wanted queue idle instead of churning (2026-11-08: 1,900
+   * failed downloads and 9,069 failed searches in 24 h with no key set).
+   */
+  isConfigured?(): Promise<boolean>;
 }
 
 export interface VariantInventoryView {

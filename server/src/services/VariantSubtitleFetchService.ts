@@ -35,6 +35,9 @@ export interface SubtitleFetchCandidate {
 
 export interface SubtitleFetchProvider {
   searchBestSubtitle(context: FetchProviderContext): Promise<SubtitleFetchCandidate | null>;
+
+  /** Whether any registered provider has credentials. Absent means unknown. */
+  hasUsableProvider?(): Promise<boolean>;
 }
 
 export interface FetchWantedResult {

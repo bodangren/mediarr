@@ -52,6 +52,7 @@ describe('SubtitleAutomationService', () => {
       downloaded: 1,
       failed: 1,
       variantsSkipped: 0,
+      skippedNoProvider: 0,
     });
     expect(missingService.computeAndPersistForVariant).toHaveBeenCalledTimes(2);
     expect(wantedService.syncWantedForVariant).toHaveBeenCalledTimes(2);
@@ -146,5 +147,83 @@ describe('SubtitleAutomationService', () => {
     expect(repository.listMovieVariants).toHaveBeenCalledWith(7);
     expect(stats.variantsScanned).toBe(1);
     expect(stats.downloaded).toBe(1);
+  });
+
+  it('does not drain the wanted queue when no provider is configured', async () => {
+    // On 2026-11-08 the production install had zero subtitle providers and the
+    // queue failed every row on every run: 1,900 failed downloads and 9,069
+    // failed searches in 24 h, all "No subtitle found".
+    const repository = {
+      listMonitoredVariants: vi.fn().mockResolvedValue([]),
+      listWantedSubtitlesByStates: vi.fn().mockResolvedValue([{ id: 11 }]),
+      updateWantedSubtitleState: vi.fn(),
+      listMovieVariants: vi.fn(),
+      listEpisodeVariants: vi.fn(),
+      listWantedSubtitlesByVariant: vi.fn(),
+    };
+    const settingsService = { get: vi.fn().mockResolvedValue({ wantedLanguages: ['EN'] }) };
+    const missingService = { computeAndPersistForVariant: vi.fn() };
+    const wantedService = { syncWantedForVariant: vi.fn() };
+    const fetchService = { fetchWantedSubtitle: vi.fn() };
+    const fetchProvider = {
+      searchBestSubtitle: vi.fn(),
+      // Every registered provider reports "no credentials", which is the
+      // production state on 2026-11-08 (no OpenSubtitles/ASSRT/SubDL keys).
+      hasUsableProvider: vi.fn().mockResolvedValue(false),
+    };
+
+    const service = new SubtitleAutomationService(
+      repository as any,
+      settingsService as any,
+      missingService as any,
+      wantedService as any,
+      fetchService as any,
+      fetchProvider as any,
+    );
+
+    const stats = await service.runAutomationCycle();
+
+    expect(stats.skippedNoProvider).toBe(1);
+    expect(stats.downloaded).toBe(0);
+    expect(stats.failed).toBe(0);
+    expect(repository.listWantedSubtitlesByStates).not.toHaveBeenCalled();
+    expect(fetchService.fetchWantedSubtitle).not.toHaveBeenCalled();
+    expect(repository.updateWantedSubtitleState).not.toHaveBeenCalled();
+  });
+
+  it('processes the queue normally once a provider exists', async () => {
+    const repository = {
+      listMonitoredVariants: vi.fn().mockResolvedValue([]),
+      listWantedSubtitlesByStates: vi.fn().mockResolvedValue([{ id: 11 }]),
+      updateWantedSubtitleState: vi.fn(),
+      listMovieVariants: vi.fn(),
+      listEpisodeVariants: vi.fn(),
+      listWantedSubtitlesByVariant: vi.fn(),
+    };
+    const settingsService = { get: vi.fn().mockResolvedValue({ wantedLanguages: ['EN'] }) };
+    const missingService = { computeAndPersistForVariant: vi.fn() };
+    const wantedService = { syncWantedForVariant: vi.fn() };
+    const fetchService = {
+      fetchWantedSubtitle: vi.fn().mockResolvedValue({ storedPath: '/tmp/a.srt', provider: 'p', score: 1 }),
+    };
+    const fetchProvider = {
+      searchBestSubtitle: vi.fn(),
+      hasUsableProvider: vi.fn().mockResolvedValue(true),
+    };
+
+    const service = new SubtitleAutomationService(
+      repository as any,
+      settingsService as any,
+      missingService as any,
+      wantedService as any,
+      fetchService as any,
+      fetchProvider as any,
+    );
+
+    const stats = await service.runAutomationCycle();
+
+    expect(stats.skippedNoProvider).toBe(0);
+    expect(stats.downloaded).toBe(1);
+    expect(repository.listWantedSubtitlesByStates).toHaveBeenCalled();
   });
 });

@@ -32,6 +32,14 @@ export class SubdlProvider implements ManualSubtitleProvider {
     private readonly settingsService: SettingsService,
   ) {}
 
+  async isConfigured(): Promise<boolean> {
+    const settings = await this.settingsService.get();
+    const apiKeys = settings.apiKeys as unknown as Record<string, unknown>;
+    const fromSettings = typeof apiKeys.subdlApiKey === 'string' ? apiKeys.subdlApiKey : null;
+    const key = fromSettings ?? process.env.SUBDL_API_KEY ?? null;
+    return Boolean(key);
+  }
+
   async search(context: {
     variant: {
       id: number;

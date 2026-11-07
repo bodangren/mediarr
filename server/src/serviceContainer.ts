@@ -457,6 +457,7 @@ export async function createServiceContainer(
       subtitleWantedService,
       subtitleFetchService,
       subtitleFetchProvider,
+      () => subtitleProviderFactory.resolveAllManualProviders().length,
     );
     const variantLifecycle = createVariantLifecycle(
       variantBackfillService,

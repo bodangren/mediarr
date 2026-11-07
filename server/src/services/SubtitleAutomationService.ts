@@ -16,6 +16,13 @@ export interface SubtitleAutomationStats {
   downloaded: number;
   failed: number;
   /**
+   * Wanted rows deliberately not attempted this cycle. With no subtitle
+   * provider configured the queue used to fail every row on every run: 1,900
+   * failed downloads and 9,069 failed searches in 24 h on 2026-11-08, all of
+   * which were "No subtitle found" against zero providers.
+   */
+  skippedNoProvider: number;
+  /**
    * Variants that could not be processed because their inventory row is gone
    * (deleted file, cleaned-up variant). One stale id must not abort the whole
    * cycle: on 2026-11-07 a single orphaned variant failed the entire
@@ -35,6 +42,8 @@ export class SubtitleAutomationService {
     private readonly wantedService: VariantWantedService,
     private readonly fetchService: VariantSubtitleFetchService,
     private readonly fetchProvider: SubtitleFetchProvider,
+    /** Number of configured subtitle search providers; omit when unknown. */
+    private readonly providersAvailable?: () => number,
   ) {}
 
   async syncAllVariants(): Promise<number> {
@@ -48,7 +57,28 @@ export class SubtitleAutomationService {
     return variants.length;
   }
 
-  async processWantedQueue(limit = 100): Promise<{ downloaded: number; failed: number; queued: number }> {
+  /**
+   * Whether at least one subtitle search provider is registered.
+   *
+   * The provider factory resolves nothing until a provider is configured, so
+   * an unconfigured install cannot ever satisfy a wanted row. Detecting that
+   * up front keeps the automation from burning the queue (and the indexers)
+   * every cycle.
+   */
+  private async hasUsableProvider(): Promise<boolean> {
+    if (typeof this.fetchProvider.hasUsableProvider === 'function') {
+      return this.fetchProvider.hasUsableProvider();
+    }
+    // Hosts that inject a custom provider do not report configuration; assume
+    // it works and keep the normal path.
+    return this.providersAvailable ? this.providersAvailable() > 0 : true;
+  }
+
+  async processWantedQueue(limit = 100): Promise<{ downloaded: number; failed: number; queued: number; skippedNoProvider: number }> {
+    if (!await this.hasUsableProvider()) {
+      return { downloaded: 0, failed: 0, queued: 0, skippedNoProvider: 1 };
+    }
+
     const wanted = await this.repository.listWantedSubtitlesByStates(FETCHABLE_STATES, limit);
 
     let downloaded = 0;
@@ -76,6 +106,7 @@ export class SubtitleAutomationService {
       downloaded,
       failed,
       queued: wanted.length,
+      skippedNoProvider: 0,
     };
   }
 
@@ -122,6 +153,7 @@ export class SubtitleAutomationService {
       downloaded: queue.downloaded,
       failed: queue.failed,
       variantsSkipped,
+      skippedNoProvider: queue.skippedNoProvider,
     };
   }
 
@@ -135,6 +167,7 @@ export class SubtitleAutomationService {
       downloaded: queue.downloaded,
       failed: queue.failed,
       variantsSkipped: 0,
+      skippedNoProvider: queue.skippedNoProvider,
     };
   }
 
@@ -192,6 +225,7 @@ export class SubtitleAutomationService {
       downloaded,
       failed,
       variantsSkipped,
+      skippedNoProvider: 0,
     };
   }
 

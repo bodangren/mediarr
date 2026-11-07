@@ -590,7 +590,26 @@ export class Scheduler {
     cronExpression = '0 */6 * * *',
   ): void {
     this.schedule(name, cronExpression, async () => {
-      await subtitleAutomationService.runAutomationCycle();
+      const result = await subtitleAutomationService.runAutomationCycle() as {
+        skippedNoProvider?: number;
+        wantedQueued?: number;
+        downloaded?: number;
+        failed?: number;
+      } | undefined;
+      if (result?.skippedNoProvider) {
+        // Say it once per cycle instead of failing 1,740 rows silently.
+        console.warn(
+          'Subtitle automation idle: no subtitle search provider is configured '
+          + '(Settings -> Subtitles -> Provider). Wanted queue untouched this cycle.',
+        );
+        return;
+      }
+      if (result) {
+        console.log(
+          `Subtitle automation: queued ${result.wantedQueued ?? 0}, `
+          + `downloaded ${result.downloaded ?? 0}, failed ${result.failed ?? 0}`,
+        );
+      }
     });
   }
 

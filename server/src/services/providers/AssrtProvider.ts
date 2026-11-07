@@ -140,6 +140,15 @@ export class AssrtProvider implements ManualSubtitleProvider {
     };
   }
 
+  async isConfigured(): Promise<boolean> {
+    try {
+      await this.resolveToken();
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   private async resolveToken(): Promise<string> {
     const settings = await this.settingsService.get();
     const apiKeys = settings.apiKeys as unknown as Record<string, unknown>;

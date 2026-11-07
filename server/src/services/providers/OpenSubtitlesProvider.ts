@@ -31,6 +31,11 @@ export class OpenSubtitlesProvider implements ManualSubtitleProvider {
     private readonly settingsService: SettingsService
   ) {}
 
+  async isConfigured(): Promise<boolean> {
+    const settings = await this.settingsService.get();
+    return Boolean(settings.apiKeys.openSubtitlesApiKey);
+  }
+
   async search(context: {
     variant: {
       id: number;

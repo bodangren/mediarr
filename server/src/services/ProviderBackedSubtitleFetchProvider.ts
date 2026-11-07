@@ -12,6 +12,16 @@ export class ProviderBackedSubtitleFetchProvider implements SubtitleFetchProvide
     private readonly scoringService: SubtitleScoringService = new SubtitleScoringService(),
   ) {}
 
+  async hasUsableProvider(): Promise<boolean> {
+    for (const entry of this.providerFactory.resolveAllManualProviders()) {
+      const configured = entry.provider.isConfigured
+        ? await entry.provider.isConfigured()
+        : true;
+      if (configured) return true;
+    }
+    return false;
+  }
+
   async searchBestSubtitle(context: FetchProviderContext): Promise<SubtitleFetchCandidate | null> {
     const providerEntries = this.providerFactory.resolveAllManualProviders();
     const collected: ManualSearchCandidate[] = [];

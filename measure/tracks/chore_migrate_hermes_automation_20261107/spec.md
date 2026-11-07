@@ -1,73 +1,98 @@
-# Spec — Migrate Hermes media automation to DSH + Mediarr
+# Spec — Re-derive media automation from first principles
 
 **Track:** `chore_migrate_hermes_automation_20261107`
-**Opened:** 2026-11-07
-**Source of facts:** [`inventory.md`](./inventory.md) (verified against the live install)
+**Opened:** 2026-11-07 · **Revised:** 2026-11-07 (jellyfin-go declared deprecated; workflow
+port replaced by intent-first redesign)
 
 ## Context
 
-Four hermes cron jobs and one systemd timer currently run the household media pipeline:
-a daily 03:00 orchestrator, a 03:30 downloads audit, a weekly music job, a weekly adult job,
-and `fetch-monitor` every 10 minutes. They depend on a hermes gateway process, a MiniMax
-provider route that fails 25% of the time, jellyfin-go's REST API and SQLite database, and
-`kimi-webbridge` (Chrome + USA VPN) for TPB/YTS/EZTV/YouTube.
+The household media pipeline runs on Hermes. Four LLM cron jobs and one systemd timer keep
+the library fed, subtitled, refreshed and pruned. Measured reality (`inventory.md`): 167
+executions, 42 failures — every failure a model-provider outage, none of them noticed by the
+system itself.
 
-Mediarr is replacing jellyfin-go and already implements six native scheduler tasks that
-overlap the mechanical half of that pipeline.
+Those jobs were built against **jellyfin-go**, which is now deprecated. They reach into
+jellyfin-go over HTTP `:8097` and read its SQLite database directly; that entire dependency
+surface is going away. Mediarr — the server in this repo — is the media server going forward.
+
+So the old workflow cannot simply be ported: half of it points at a service that is being
+removed, and the other half encodes habits rather than requirements.
+
+## Principle
+
+**Re-derive the schedule from intent, not from the old scripts.** For each behaviour ask:
+what outcome does the owner need, how quickly must it be true, what happens if nothing runs
+for a day, and is a language model actually required — or is this deterministic work that a
+script should own and report loudly?
+
+The old system's own doctrine survives this test and constrains the answer:
+`media-pipeline-invariants` — judgement stays with the agent, scripts do pure I/O and fail
+loudly, no `&&` chains standing in for reasoning, and no `clarify` forms.
 
 ## Goal
 
-Retire hermes from the media path without losing capability: every scheduled behaviour that
-exists today either (a) becomes a Mediarr scheduler task, (b) becomes a DSH scheduled task
-where genuine LLM judgement is required, or (c) is explicitly dropped with a recorded reason.
+A media automation layer where every recurring behaviour has a justified cadence, a named
+owner (Mediarr scheduler task, DSH scheduled task, or a DSH plugin), an idempotency key, a
+proof-of-run artifact, and a failure signal the owner sees without having to notice a missing
+report.
 
 ## Scope
 
-**In scope**
+**In:** the four Hermes cron jobs and their skill payloads; `fetch-monitor.timer`; the media
+skills under `~/.hermes/skills/media`; the 15 scripts in `~/tools/jellyfin-tools/`; the
+artifact contracts in `~/media-reports/` and `~/.local/share/media-recommendations/`; the
+DSH substrate (schedules and any custom plugin); cut-over and decommissioning.
 
-- The four cron jobs and their prompt/skill payloads.
-- `fetch-monitor.timer` / `fetch-monitor.service`.
-- The 32 media skills + `media-pipeline-invariants` + `torrent-acquisition-llm-direct`.
-- The 15 scripts in `~/tools/jellyfin-tools/` — ported, retargeted, or retired.
-- Artifact contracts: `~/media-reports/*`, `wanted.jsonl`, `prune-candidates-*.txt`.
-- Cut-over and decommissioning of the hermes units.
+**Out:** Hermes functionality outside the media path; jellyfin-go stability (owner-owned);
+rebuilding Mediarr's acquisition engine to mimic Pirate Bay browsing.
 
-**Out of scope**
+## Target shape (to be ratified in Phase 3)
 
-- The general hermes install outside the media path (messaging, other skills).
-- jellyfin-go stability work (user-owned by standing rule).
-- Rewriting Mediarr's acquisition engine to match TPB browsing semantics.
+Three execution classes, each with a different reliability story:
 
-## Open decisions (block Phase 2)
+| Class | Examples | Owner | Why |
+|---|---|---|---|
+| Continuous / event-driven | ingest a completed download, pick up a new episode, refresh a changed item | Mediarr scheduler or filesystem/SSE event | must not wait for a model or a human |
+| Deterministic recurring | library scan, wanted search, subtitle wanted-search, RSS, prune candidates, reports | Mediarr scheduler (in-process) | no judgement; failure must be loud and local |
+| Judgement recurring | what to acquire next, which release, which subtitle pack, what to prune | DSH scheduled task (agent) | needs reasoning across sources |
+
+A DSH **plugin** is the fallback wherever a scheduled prompt cannot deliver the reliability
+property: deterministic work, retries, dedupe, a run ledger, or an alert path that does not
+depend on the model being reachable.
+
+## Decisions required
 
 | # | Decision | Options | Recommendation |
 |---|---|---|---|
-| D1 | Where migrated jobs run | (a) DSH scheduled tasks, (b) Mediarr scheduler tasks in code, (c) hybrid | **(c)** — Mediarr owns deterministic cadence (scan, subs wanted, RSS); DSH owns the 2–4 daily judgement runs |
-| D2 | Library scope | all four (Movies/TV/Music/Adult) vs Movies/TV only | all four; adult/music are small and already working |
-| D3 | `kimi-webbridge` dependency | keep browser automation vs replace with Mediarr indexers / YTS direct | keep for TPB/YTS; replace YouTube with a yt-dlp path if Mediarr grows one |
-| D4 | jellyfin-go API dependency | leave until Mediarr parity, or block migration | hard dependency: the port cannot finish before Mediarr exposes library/user_data/refresh |
+| D1 | Runtime split | (a) everything as DSH scheduled prompts, (b) everything in Mediarr code, (c) hybrid by class | **(c)** per the table above |
+| D2 | Library scope | all four libraries, or Movies/TV only | all four; adult/music are small and already working |
+| D3 | Browser dependency | keep `kimi-webbridge` (Chrome + USA VPN) for TPB/YTS/EZTV/YouTube, or move acquisition onto Mediarr indexers | decide per source; Mediarr indexers for anything they can reach |
+| D4 | Reliability bar | what counts as "error-free" | every run writes a receipt; any missed or failed run raises an alert the owner sees; no silent skips |
 
 ## Requirements
 
-- **FR-1 (parity):** every job in `inventory.md` §2–3 has a named successor or a recorded
-  drop decision, with its schedule preserved.
-- **FR-2 (no new decision scripts):** the `media-pipeline-invariants` doctrine survives the
-  port — judgement stays in the agent, scripts stay pure I/O.
-- **FR-3 (artifacts):** the report and wanted-queue contracts keep their paths and shapes so
-  the operator's habits and any downstream reader keep working.
-- **FR-4 (failure visibility):** a failed run must be visible without the user noticing a
-  missing report — the hermes failure mode was 25% silent-ish failures.
-- **FR-5 (reversibility):** hermes jobs are disabled, not deleted, until one full cycle of
-  the successor has produced equivalent output; the old `jobs.json` is archived.
-- **FR-6 (single source):** the migrated prompts live in the repo (or in DSH skills under
-  version control), not in a cron JSON blob only.
+- **FR-1 Intent-first:** every scheduled behaviour traces to a stated intent, freshness
+  tolerance and failure signal — not to "the old job did this".
+- **FR-2 Single owner:** no behaviour is implemented twice (Mediarr task *and* DSH prompt).
+- **FR-3 No decision scripts:** judgement stays in an agent; scripts are pure I/O and exit
+  non-zero on failure.
+- **FR-4 Observable runs:** each run leaves a durable receipt (artifact, DB row, or event)
+  and a failure that is visible without reading logs.
+- **FR-5 Idempotent + non-overlapping:** re-running a task must not duplicate work; two runs
+  must not overlap.
+- **FR-6 Survives a dead model:** the parts that matter for library correctness keep working
+  when the model provider is unreachable.
+- **FR-7 Reversible:** the Hermes media path is disabled, not deleted, and can be restored
+  from an archived `jobs.json` until one clean week has passed.
+- **FR-8 Versioned prompts:** the migrated prompts live in the repo (track docs or DSH skills),
+  not only in a cron JSON blob.
 
 ## Acceptance criteria
 
-1. `systemctl --user is-enabled fetch-monitor.timer hermes-gateway.service` shows the hermes
-   media path disabled and the successor active.
-2. One full week where every scheduled run produced its artifact, with zero provider-outage
-   failures for the jobs that remain LLM-driven.
-3. `~/media-reports/` continues to receive one report per run with the same filenames.
-4. `measure/tracks.md` and `tech-debt.md` record what was dropped and why.
-5. Rollback documented: re-enable `jobs.json` + `hermes-gateway` restores the old behaviour.
+1. Every inventory row has a successor or a recorded drop decision with a reason.
+2. One full week: every scheduled run produced its artifact; zero silent misses; provider
+   outages produce an alert, not a missing report.
+3. `~/media-reports/` keeps its filenames and shapes.
+4. `systemctl --user is-enabled fetch-monitor.timer` and the Hermes media jobs show the
+   successor in place; rollback is documented and tested once.
+5. `measure/tracks.md` and `tech-debt.md` record what was dropped and why.

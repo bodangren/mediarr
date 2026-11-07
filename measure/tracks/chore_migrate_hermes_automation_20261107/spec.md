@@ -116,6 +116,11 @@ maintained CLIs (`yt-dlp`, `beets`) plus a small bookkeeping layer.
   back locally, and the chain has a periodic synthetic test.
 - **FR-15 Single browser:** browser-using runs are serialized; a second run waits or aborts with an
   alert instead of interleaving on the one extension session.
+- **FR-16 Synced Chinese subtitles are core:** for every item without usable Chinese subtitles,
+  acquire from a Chinese-capable provider (Assrt/SubHD-class), **align the timing** against the
+  release, verify residual offset/drift, store the sidecar under the established Chinese naming
+  convention, and make it available to the player. Deterministic and idempotent; acquired subs that
+  cannot be aligned are reported, never silently kept out of sync.
 
 ## Acceptance criteria
 
@@ -130,3 +135,5 @@ maintained CLIs (`yt-dlp`, `beets`) plus a small bookkeeping layer.
 7. No runtime component calls jellyfin-go; no custom DOM scraper exists in the tree.
 8. Adult, YouTube and Music tracks are registered with specs and plans; their automation is wired
    through the same agent-run/ledger mechanism.
+9. A seeded item with a deliberately out-of-sync Chinese subtitle is aligned, verified within a
+   stated offset/drift threshold, and plays in the TV client; an unalignable item is reported.

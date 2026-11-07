@@ -84,6 +84,13 @@
       10–15 / wanted 60. **Code done:** map now points the real task id; 16/16 route tests; `tsc`
       clean. Remaining: `library-scan` has no interval key (reschedule persists nothing) — either
       add a setting or return 422; values apply with B1a.
+- [~] **B2c** Chinese subtitle acquisition + synchronization. **Tool decision 2026-11-07 (advisor +
+      measured): ffsubsync 0.5.1 primary** (audio-based; no same-language reference needed), alass
+      2.0.0 optional when an English reference exists, existing ASR `subalign` as verifier/fallback.
+      **Proof:** on a real episode, a +10 s shifted .zho.srt was realigned in 11 s; a second pass
+      reported offset 0.000 s / scale 1.000 (the source itself was 0.83 s early). Remaining:
+      Mediarr `SubtitleSyncService` + scheduler hook (native, per advisor), sync-state table,
+      naming/atomic write, failure reporting, and the TV playback proof. (FR-16)
 - [x] **B2b** Fix the torrent speed-limit unit bug (`downloadClientRoutes.ts:121-125` passes Kbps
       into a bytes/sec setter, `TorrentManager.ts:547-554`/`:528-534`); test the conversion. (G7)
       **Done 2026-11-07:** test updated to expect 500 Kbps → 512000 B/s (Red: got 500); route now

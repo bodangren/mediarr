@@ -46,6 +46,16 @@ const DISABLED_CRON_JOBS = ['rss-sync', 'import-list-sync', 'wanted-search', 'su
 const KEPT_CRON_JOBS = ['library-scan', 'auto-update-check'];
 
 describe('createServiceContainer in slim mode', () => {
+  it('defers missed-run recovery until startSchedulerRecovery()', async () => {
+    const container = await createSlimContainer();
+
+    await container.initialize();
+    expect(container.scheduler.getHealth().lastRecoveryAt).toBeUndefined();
+
+    await container.startSchedulerRecovery();
+    expect(container.scheduler.getHealth().lastRecoveryAt).toBeDefined();
+  });
+
   it('keeps the playback and library-management services running', async () => {
     const container = await createSlimContainer();
 

@@ -168,6 +168,8 @@ export interface ServiceContainer {
   readonly arr: ArrServices | null;
   registerScheduledJobs(): void;
   initialize(): Promise<void>;
+  /** Start missed-run recovery; call after the HTTP listener is up. */
+  startSchedulerRecovery(): Promise<void>;
   stopBackgroundServices(): Promise<void>;
   close(): Promise<void>;
 }
@@ -759,7 +761,15 @@ export async function createServiceContainer(
       }
 
       registerScheduledJobs();
-      await scheduler.start();
+      // Recovery of missed runs is deliberately deferred until after app.listen():
+      // a missed library scan must not delay the HTTP listener (2026-11-07).
+    },
+    startSchedulerRecovery: async (): Promise<void> => {
+      try {
+        await scheduler.start();
+      } catch (error) {
+        console.error('Scheduler recovery failed:', error);
+      }
     },
     stopBackgroundServices,
     close: async (): Promise<void> => {

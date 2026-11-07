@@ -146,6 +146,9 @@ async function startApi(): Promise<void> {
   });
 
   await app.listen({ host, port });
+  // The listener is up; recover missed runs in the background so a long scan
+  // cannot delay API availability. Errors are logged by the container.
+  void container.startSchedulerRecovery();
   if (settings.streaming.discoveryEnabled) {
     try {
       const configuredServiceName = settings.streaming.discoveryServiceName.trim();

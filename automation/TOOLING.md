@@ -59,6 +59,22 @@ Then `systemctl --user disable --now transmission-daemon.service` — disabled, 
 the first real grab. If it proves unacceptable, the fallback is a Transmission adapter behind the
 same Mediarr API — not a different automation interface.
 
+## 2b. Subtitle alignment (2026-11-07)
+
+Chinese subtitles are part of the operation, so alignment tooling is installed:
+
+| Tool | Version | Path | Role |
+|---|---|---|---|
+| ffsubsync | **0.5.1** | `~/.local/share/mediarr-automation/venv/bin/ffsubsync` | **primary** — audio-based alignment, no reference subtitle needed |
+| alass | **2.0.0** | `~/.local/bin/alass` | optional — reference-subtitle alignment when an English `.srt` exists |
+| subalign (ASR) | existing | `~/.local/bin/subalign` → `~/tools/subalign/.venv` | verifier / fallback for items ffsubsync cannot lock |
+
+Measured on a real episode (Rick and Morty S09E03, 22 min): a `.zho.srt` shifted +10 s was realigned
+in **11 s**; a second pass reported **offset 0.000 s, framerate scale 1.000** (the original sidecar was
+0.83 s early, so ffsubsync aligned to the audio). Verification rule: second pass `|offset| ≤ 0.3 s`
+and `|scale − 1| ≤ 0.02`. ffsubsync installed cleanly under the Python 3.12 venv despite the advisor's
+3.11 warning; keep 3.11 as fallback only if a future dependency break appears.
+
 ## 3. DSH MCP mount (the browser-use substrate)
 
 `~/.dsh/profiles/web/cordis.patch.yml` now carries:
@@ -133,7 +149,7 @@ needed by some native modules); the venv bin supplies `beet`. The systemd unit s
 | Tool | Why not | Trigger to add |
 |---|---|---|
 | Playwright-MCP | kimi-webbridge works and is the owner's preferred surface | bridge proves unstable across a week |
-| faster-whisper / subalign | subtitle alignment is deferred to a later item | alignment becomes in-scope |
+| — | (subtitle alignment moved into scope; see §2b) | — |
 | Node 24 as default | root suite needs Node 24 for `better-sqlite3`; switching the default is invasive | running the Mediarr test suite / deploying |
 | Mediarr node deps | deployment (B1) is a service decision, not a tool install | B1 starts |
 

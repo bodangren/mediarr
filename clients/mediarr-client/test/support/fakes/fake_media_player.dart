@@ -36,10 +36,18 @@ class FakeMediaPlayer implements MediaPlayer {
   bool disposed = false;
   bool throwOnOpen = false;
 
+  /// When set, `open()` emits this duration on the duration stream, mimicking
+  /// a media that finishes loading while the player is still opening.
+  Duration? emitDurationOnOpen;
+
   @override
   Future<void> open(String streamUrl, {Duration startAt = Duration.zero}) async {
     openCalls.add(streamUrl);
     openStartCalls.add(startAt);
+    final duration = emitDurationOnOpen;
+    if (duration != null) {
+      _durationController.add(duration);
+    }
     if (throwOnOpen) throw StateError('open failed');
   }
 

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_kit/media_kit.dart';
@@ -7,12 +9,13 @@ import 'core/theme/mediarr_theme.dart';
 import 'features/discovery/bonsoir_adapter.dart';
 import 'features/discovery/discovery_service.dart';
 import 'shared/providers/connection_provider.dart';
+import 'shared/services/api_client.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   MediaKit.ensureInitialized();
 
-  runApp(ProviderScope(
+  final container = ProviderContainer(
     overrides: [
       discoveryServiceProvider.overrideWith((ref) {
         return DiscoveryService(
@@ -21,8 +24,34 @@ void main() {
         );
       }),
     ],
-    child: MediarrApp(),
-  ));
+  );
+
+  // Every uncaught failure is shipped to the server for triage. The owner
+  // required this on 2026-11-07 instead of reporting bugs screen by screen.
+  final reporter = container.read(errorReporterProvider);
+  reporter.install();
+  // Errors raised while the server was unreachable are spooled to disk.
+  // Retry them as soon as a connection exists, and periodically thereafter.
+  Timer.periodic(const Duration(minutes: 2), (_) {
+    unawaited(reporter.flushSpool());
+  });
+  unawaited(reporter.flushSpool());
+
+  runZonedGuarded(
+    () => runApp(
+      UncontrolledProviderScope(
+        container: container,
+        child: MediarrApp(),
+      ),
+    ),
+    (error, stack) {
+      unawaited(reporter.report(
+        message: error.toString(),
+        stack: stack.toString(),
+        severity: 'zone',
+      ));
+    },
+  );
 }
 
 class MediarrApp extends ConsumerStatefulWidget {

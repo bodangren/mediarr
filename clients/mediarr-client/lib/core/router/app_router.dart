@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/widgets/leanback_scaffold.dart';
+import '../../core/widgets/netflix_scaffold.dart';
+import '../theme/mediarr_theme.dart';
 import '../../features/discovery/discovery_screen.dart';
 import '../../features/home/home_screen.dart';
 import '../../features/library/movies_screen.dart';
@@ -11,8 +13,9 @@ import '../../features/playback/playback_navigation.dart';
 import '../../features/playback/playback_screen.dart';
 import '../../features/search/search_screen.dart';
 import '../../features/settings/settings_screen.dart';
-import '../../shared/providers/connection_provider.dart';
 import '../../shared/services/api_client.dart';
+import '../../shared/services/error_reporter.dart';
+import '../../shared/providers/connection_provider.dart';
 
 /// Route paths used throughout the app.
 class AppRoutes {
@@ -38,9 +41,65 @@ final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
 /// The app-wide router configuration.
 final appRouterProvider = Provider<GoRouter>((ref) {
+  final reporter = ref.read(errorReporterProvider);
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
     initialLocation: AppRoutes.discovery,
+    // Navigation failures are user-visible dead ends, so they are shipped to
+    // the server like any other failure (owner requirement 2026-11-07).
+    errorBuilder: (context, state) {
+      reporter.report(
+        message: 'navigation error: ${state.error ?? state.uri}',
+        stack: state.error?.toString(),
+        severity: 'navigation',
+        route: state.uri.path,
+        context: {'location': state.uri.toString()},
+      );
+      return Scaffold(
+        backgroundColor: MediarrColors.surfaceBase,
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.error_outline,
+                  color: MediarrColors.statusError,
+                  size: 56,
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'That screen could not be opened',
+                  style: TextStyle(color: Colors.white, fontSize: 26),
+                ),
+                const SizedBox(height: 20),
+                FocusableAction(
+                  autofocus: true,
+                  variant: FocusableActionVariant.button,
+                  onSelect: () => context.go(AppRoutes.home),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 28,
+                      vertical: 14,
+                    ),
+                    color: MediarrColors.accentPrimary,
+                    child: const Text(
+                      'Back to Home',
+                      style: TextStyle(color: Colors.white, fontSize: 22),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    },
+    observers: [
+      // Track the current route so error reports carry the screen context.
+      _RouteObserver(reporter),
+    ],
     redirect: (context, state) {
       // Phase 4b: redirect to home if the API client is already connected
       // (e.g. autoconnect on cold boot succeeded before this redirect runs).
@@ -121,6 +180,35 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     ],
   );
 });
+
+/// Records the current route on the error reporter.
+class _RouteObserver extends NavigatorObserver {
+  _RouteObserver(this._reporter);
+
+  final ErrorReporter _reporter;
+
+  void _record(Route<dynamic>? route) {
+    final name = route?.settings.name;
+    if (name != null && name.isNotEmpty) {
+      _reporter.currentRoute = name;
+    }
+  }
+
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    _record(route);
+  }
+
+  @override
+  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    _record(previousRoute);
+  }
+
+  @override
+  void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) {
+    _record(newRoute);
+  }
+}
 
 /// Bridges Riverpod's connection state to GoRouter's refreshListenable so the
 /// router redirects when the connection is established mid-session.

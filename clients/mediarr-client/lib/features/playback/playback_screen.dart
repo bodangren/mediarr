@@ -295,8 +295,19 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
             )
             .toList();
       }
-    } catch (_) {
-      // Best-effort; fallback to route-provided stream URL.
+    } catch (error, stack) {
+      // Best-effort fallback, but the failure is exactly what makes a viewer
+      // see "nothing happens", so it is shipped to the server for triage.
+      unawaited(ref.read(errorReporterProvider).report(
+            message: 'playback manifest failed: $error',
+            stack: stack.toString(),
+            route: '/playback',
+            context: {
+              'mediaId': mediaId,
+              'mediaType': mediaType,
+              'fallbackUrl': fallbackUrl,
+            },
+          ));
     }
 
     if (!mounted || _exitInProgress) return;

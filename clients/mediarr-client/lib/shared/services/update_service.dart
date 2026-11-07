@@ -2,8 +2,27 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'api_client.dart';
 
-/// Build-time client identity (dart-define), used to compare against the server manifest.
-const int kClientVersionCode = int.fromEnvironment('CLIENT_VERSION_CODE', defaultValue: 1);
+/// Build-time client identity, used to compare against the server manifest.
+///
+/// The Flutter tool always provides `FLUTTER_BUILD_NUMBER`, so a build without
+/// an explicit `CLIENT_VERSION_CODE` still knows its own versionCode. The old
+/// default of 1 made *every* manifest look newer, so the TV offered — and
+/// auto-installed after 30 s — a "1.0.6 available" prompt while already
+/// running 1.0.6 (device-measured 2026-11-07). A mis-published manifest could
+/// therefore downgrade the live client.
+int clientVersionCode() {
+  const explicit = int.fromEnvironment('CLIENT_VERSION_CODE', defaultValue: 0);
+  if (explicit > 0) return explicit;
+  const buildNumber = int.fromEnvironment('FLUTTER_BUILD_NUMBER', defaultValue: 0);
+  return buildNumber > 0 ? buildNumber : 1;
+}
+
+/// Whether [remoteCode] should be offered as an update over [localCode].
+///
+/// Strictly newer only: equal or older manifests are never offered, so the
+/// updater can never downgrade the installed client.
+bool shouldOfferUpdate(int remoteCode, int localCode) => remoteCode > localCode;
+
 const String kClientVersionName =
     String.fromEnvironment('MEDIARR_CLIENT_VERSION', defaultValue: 'dev');
 
@@ -54,7 +73,9 @@ class UpdateService {
     final raw = await _client.fetchClientUpdate();
     if (raw == null) return null;
     final info = ClientUpdateInfo.fromJson(raw);
-    if (info == null || info.versionCode <= kClientVersionCode) return null;
+    if (info == null || !shouldOfferUpdate(info.versionCode, clientVersionCode())) {
+      return null;
+    }
     return info;
   }
 

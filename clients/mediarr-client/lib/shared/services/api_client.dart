@@ -13,6 +13,8 @@ import '../models/search_result.dart';
 import '../models/series.dart';
 import '../models/subtitle_models.dart';
 import 'api_config.dart';
+import 'error_reporter.dart';
+import 'update_service.dart';
 
 class SseEvent {
   const SseEvent({required this.event, required this.data});
@@ -423,10 +425,56 @@ class ApiClientState {
 class MediarrApiClient extends StateNotifier<ApiClientState> {
   MediarrApiClient({Dio? dio})
       : _dio = dio ?? Dio(),
-        super(const ApiClientState());
+        super(const ApiClientState()) {
+    _installErrorReporting();
+  }
 
   final Dio _dio;
   Timer? _healthTimer;
+
+  /// A reporter bound to this client, used by the global handlers.
+  ErrorReporter? _reporter;
+
+  /// Reports every failed HTTP call (network error or >= 400) with its method,
+  /// path and server message. This is the broadest failure net the client has:
+  /// any screen's data load that fails shows up here (owner requirement
+  /// 2026-11-07: log all kinds of failures, not just playback).
+  void _installErrorReporting() {
+    _dio.interceptors.add(InterceptorsWrapper(
+      onError: (error, handler) {
+        final path = error.requestOptions.path;
+        // Never report the telemetry endpoint itself: that would loop.
+        if (!path.contains('/api/client-errors')) {
+          final status = error.response?.statusCode;
+          final serverMessage = error.response?.data is Map
+              ? (error.response!.data as Map)['error']
+              : null;
+          final reporter = _reporter;
+          if (reporter != null) {
+            unawaited(reporter.report(
+              message: 'HTTP ${status ?? 'network'} ${error.requestOptions.method} $path'
+                  '${serverMessage == null ? '' : ' :: $serverMessage'}'
+                  '${error.message == null ? '' : ' :: ${error.message}'}',
+              stack: error.stackTrace.toString(),
+              severity: 'http',
+              context: {
+                'status': status,
+                'method': error.requestOptions.method,
+                'path': path,
+                'type': error.type.name,
+              },
+            ));
+          }
+        }
+        handler.next(error);
+      },
+    ));
+  }
+
+  /// Binds the global reporter to this client (set once from `main`).
+  set errorReporter(ErrorReporter reporter) {
+    _reporter = reporter;
+  }
 
   /// Latest Android client build published by the server, if any.
   Future<Map<String, dynamic>?> fetchClientUpdate() async {
@@ -828,6 +876,34 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
     });
   }
 
+  /// Ship a client failure to the server for triage.
+  ///
+  /// Best-effort and short-timeout: telemetry must never delay or break the
+  /// flow that hit the error.
+  Future<void> reportClientError({
+    required String message,
+    String? stack,
+    String severity = 'error',
+    String? route,
+    Map<String, dynamic>? context,
+  }) async {
+    await _dio.post(
+      '/api/client-errors',
+      data: {
+        'message': message,
+        'severity': severity,
+        if (stack != null) 'stack': stack,
+        if (route != null) 'route': route,
+        if (context != null) 'context': context,
+        'appVersion': kClientVersionName,
+        'versionCode': clientVersionCode(),
+        'platform': 'android',
+        'clientTs': DateTime.now().toUtc().toIso8601String(),
+      },
+      options: Options(receiveTimeout: const Duration(seconds: 4)),
+    );
+  }
+
   /// Report playback position to the server.
   /// Server expects: {type, mediaId, position (seconds), duration (seconds)}
   Future<void> reportPlaybackProgress({
@@ -1195,4 +1271,15 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
 final apiClientProvider =
     StateNotifierProvider<MediarrApiClient, ApiClientState>((ref) {
   return MediarrApiClient();
+});
+
+/// Ships client failures to the server for triage (owner requirement
+/// 2026-11-07). Depends on the live client so the report goes to the server the
+/// TV is actually connected to.
+final errorReporterProvider = Provider<ErrorReporter>((ref) {
+  final client = ref.read(apiClientProvider.notifier);
+  final reporter = ErrorReporter(client);
+  // The HTTP interceptor reports through this binding.
+  client.errorReporter = reporter;
+  return reporter;
 });

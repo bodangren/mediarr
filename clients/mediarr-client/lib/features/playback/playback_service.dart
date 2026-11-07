@@ -202,13 +202,76 @@ class PlaybackService extends StateNotifier<PlaybackState> {
       await _player.open(streamUrl, startAt: startPosition);
       await _subtitleRenderer.setFontSize(defaultSubtitleFontSize);
       await _player.attachExternalSubtitles(externalSubtitles);
+      if (startPosition > Duration.zero) {
+        unawaited(_enforceResume(startPosition));
+      }
       _startProgressReporting();
       _startOverlayTimer();
-    } catch (e) {
+    } catch (e, stack) {
       state = state.copyWith(
         status: PlaybackStatus.error,
         error: e.toString(),
       );
+      _reportFailure('playback open failed: $e', stack, {
+        'stage': 'open',
+        'streamUrl': streamUrl,
+        'mediaId': mediaId,
+        'mediaType': mediaType,
+        'resumeFrom': startPosition.inSeconds,
+      });
+    }
+  }
+
+  /// Ship a playback failure to the server (owner requirement 2026-11-07).
+  void _reportFailure(
+    String message,
+    StackTrace stack,
+    Map<String, dynamic> context,
+  ) {
+    unawaited(_apiClient.reportClientError(
+      message: message,
+      stack: stack.toString(),
+      severity: 'playback',
+      route: '/playback',
+      context: context,
+    ).catchError((_) {}));
+  }
+
+  /// Applies the resume position once the media has actually loaded.
+  ///
+  /// `Media.start` is set by media_kit in mpv's `on_load` hook, but on the
+  /// Android box it did not move playback (measured 2026-11-07: a 10:00 resume
+  /// still began at 0:00). This waits for the first real duration report — the
+  /// load signal — then seeks and re-checks, so a dropped seek cannot silently
+  /// restart the episode.
+  Future<void> _enforceResume(Duration target) async {
+    const timeout = Duration(seconds: 20);
+    const tolerance = Duration(seconds: 8);
+
+    // The duration stream is a broadcast that emits once. By the time `open()`
+    // returns the load signal may already have passed, so read the current
+    // state first and only wait when it is still unknown.
+    var loaded = state.duration;
+    if (loaded == Duration.zero) {
+      try {
+        loaded = await _player.duration
+            .firstWhere(
+              (value) => value > Duration.zero,
+              orElse: () => Duration.zero,
+            )
+            .timeout(timeout, onTimeout: () => Duration.zero);
+      } catch (_) {
+        return; // The player was stopped/disposed before it ever loaded.
+      }
+    }
+    if (loaded == Duration.zero) return;
+
+    for (var attempt = 0; attempt < 3; attempt++) {
+      await _player.seek(target);
+      // Give mpv a moment to land, then verify the position actually moved.
+      await Future<void>.delayed(const Duration(milliseconds: 900));
+      final current = state.position;
+      if (current + tolerance >= target) return;
     }
   }
 
@@ -401,6 +464,13 @@ class PlaybackService extends StateNotifier<PlaybackState> {
         status: PlaybackStatus.error,
         error: error,
       );
+      _reportFailure('player error: $error', StackTrace.current, {
+        'stage': 'player',
+        'mediaId': state.mediaId,
+        'mediaType': state.mediaType,
+        'position': state.position.inSeconds,
+        'duration': state.duration.inSeconds,
+      });
     });
 
     _player.tracks.listen(_onTracks);

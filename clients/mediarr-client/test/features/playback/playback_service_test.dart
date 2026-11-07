@@ -164,9 +164,67 @@ void main() {
       // discarded by mpv when the file finishes loading, which restarted every
       // resume at 0:00 on the TV (measured 2026-11-07).
       expect(player.openStartCalls, [const Duration(seconds: 600)]);
-      expect(player.seekCalls, isEmpty,
-          reason: 'A post-open seek is the defect: it is reset to 0 when the '
-              'file loads.');
+      // No seek is issued *before* the media loads; the enforced seek happens
+      // only after the first duration report (see the dedicated test).
+      expect(player.seekCalls, isEmpty);
+    });
+
+    testWidgets(
+        'seeks to the resume point once the media reports a duration', (
+      tester,
+    ) async {
+      await tester.runAsync(() async {
+        await service.play(
+          streamUrl: 'http://example.com/ep.mkv',
+          title: 'Episode',
+          mediaId: 959,
+          mediaType: 'episode',
+          resumeFrom: const Duration(seconds: 600),
+        );
+        // The load signal: the player only knows a duration once the file is
+        // open. `Media.start` alone did not move playback on the Android box,
+        // so the service must seek after this point.
+        player.emitDuration(const Duration(seconds: 1365));
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        player.emitPosition(const Duration(seconds: 600));
+        await Future<void>.delayed(const Duration(milliseconds: 1200));
+      });
+
+      expect(
+        player.seekCalls,
+        isNotEmpty,
+        reason: 'A resume must be enforced after the media loads.',
+      );
+      expect(
+        player.seekCalls.every((call) => call == const Duration(seconds: 600)),
+        isTrue,
+      );
+    });
+
+    testWidgets('seeks immediately when the duration is already known', (
+      tester,
+    ) async {
+      await tester.runAsync(() async {
+        // Simulate the load completing before play() returns: the broadcast
+        // duration stream has already emitted, so the service must use the
+        // current state instead of waiting for a second event.
+        player.emitDurationOnOpen = const Duration(seconds: 1365);
+        await service.play(
+          streamUrl: 'http://example.com/ep.mkv',
+          title: 'Episode',
+          mediaId: 959,
+          mediaType: 'episode',
+          resumeFrom: const Duration(seconds: 600),
+        );
+        player.emitPosition(const Duration(seconds: 600));
+        await Future<void>.delayed(const Duration(milliseconds: 1200));
+      });
+
+      expect(
+        player.seekCalls,
+        contains(const Duration(seconds: 600)),
+        reason: 'An already-loaded media must still be resumed.',
+      );
     });
 
     test('a zero resume plays from the start without a start offset', () async {
@@ -203,6 +261,8 @@ void main() {
       await service.stop();
       expect(reports, isEmpty,
           reason: 'Progress must not be written from the loading state.');
+      // The pending resume enforcement must not throw after stop().
+      await Future<void>.delayed(const Duration(milliseconds: 50));
     });
   });
 

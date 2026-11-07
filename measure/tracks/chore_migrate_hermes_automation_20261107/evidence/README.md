@@ -25,3 +25,17 @@ Also verified live:
 - Mediarr now runs as an **enabled systemd user service** (`mediarr.service`, Restart=always); restart recovered the API in ~64 s.
 - **Chinese subtitle sync is live**: `subtitle-sync` scheduler task (30 min, limit 5) aligned 5/5 The Last of Us sidecars, second-pass residual 0.000 s, `.orig` backups written, no temp leftovers; task history shows success at ~106 s.
 - `/api/playback/continue-watching` returns Murderbot E02 at 32 s with `isWatched:false` — the tracking chain server → client is real.
+
+## Round 2b — client self-update (2026-11-07)
+
+| Evidence | What it proves |
+|---|---|
+| `tv-update-dialog-20261107.png` | In-app prompt: version + notes, **Update now** / **Wait 12 hours**, live countdown ("Updating automatically in 26 s") |
+| `tv-update-installer-20261107.png` | After auto-download, Android's installer confirms: "Do you want to install an update to this existing application?" |
+| `tv-client-version-20261107.txt` | Installed client after the update: **versionName 1.0.4, versionCode 5** |
+
+Verified live:
+- **Server**: `GET /api/client/update` (manifest) + `GET /api/client/download` (APK), published by `automation/scripts/publish-client-update.sh` into `CONFIG_DIR/client-updates/`.
+- **In-app path**: v4 (1.0.3) → prompt → countdown → download (59 MB over TV Wi-Fi, ~90 s) → system installer → INSTALL → v5 (1.0.4) running. One remote press is required by Android; the TV is not rooted/device-owner.
+- **Silent path**: `automation/scripts/tv-updater.sh` installed v2→v4 over network ADB in **33 s** with sha256 verification and relaunch; daily systemd timer at 04:00. Requires no TV interaction.
+- Android 9 gate: the installer needs "Install unknown apps" for the app; granted once via `adb shell appops set com.mediarr.mediarr_client REQUEST_INSTALL_PACKAGES allow` (documented in PROVISIONING/tooling).

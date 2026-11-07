@@ -93,6 +93,12 @@
       subtitle rendering verified on device. Old APK was from 2026-10-03 with a different
       signature, so it was backed up, uninstalled and replaced; server re-entered manually.
       Evidence: [`evidence/`](./evidence/).
+- [x] **B2e** TV client update pipeline: server manifest + APK endpoint, `publish-client-update.sh`,
+      in-app prompt (Update now / Wait 12 h / countdown → PackageInstaller), and a daily **silent
+      ADB updater** (`tv-updater.sh`, sha256-verified). **Verified 2026-11-07:** silent v2→v4 in 33 s;
+      in-app v4→v5 through the Android installer; installed 1.0.4 / code 5. Android 9 needs the
+      "Install unknown apps" app-op for the in-app path; no silent in-app install without root/device-owner.
+      Evidence: [`evidence/`](./evidence/).
 - [~] **B2c** Chinese subtitle acquisition + synchronization. **Tool decision 2026-11-07 (advisor +
       measured): ffsubsync 0.5.1 primary** (audio-based; no same-language reference needed), alass
       2.0.0 optional when an English reference exists, existing ASR `subalign` as verifier/fallback.

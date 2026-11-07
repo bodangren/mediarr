@@ -12,6 +12,7 @@ import '../../shared/models/library_item.dart';
 import '../../shared/models/movie.dart';
 import '../../shared/models/series.dart';
 import '../../shared/services/api_client.dart';
+import '../../shared/widgets/update_prompt.dart';
 import '../../shared/utils/async_value_ext.dart';
 import '../library/continue_watching_section.dart';
 import '../library/movie_detail_screen.dart';
@@ -96,6 +97,14 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   final _heroPlayFocusNode = FocusNode(debugLabel: 'HomeScreen.hero.play');
   final _heroInfoFocusNode = FocusNode(debugLabel: 'HomeScreen.hero.info');
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) checkForClientUpdate(context, ref);
+    });
+  }
 
   @override
   void dispose() {

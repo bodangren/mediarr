@@ -107,3 +107,29 @@ writing); back it up before any migration.
 - Chrome autostart (+ VPN health probe).
 - Transmission disable **after** its active torrent finishes (see `TOOLING.md` §2).
 - Hermes jobs and `fetch-monitor.timer` disabled (archived `jobs.json` in the track).
+
+## 8. TV client update path (verified 2026-11-07)
+
+Units (copies in `automation/systemd/`):
+
+```sh
+systemctl --user enable --now mediarr.service            # API + scheduler, Restart=always
+systemctl --user enable --now mediarr-tv-updater.timer   # daily 04:00 silent TV update check
+```
+
+One-time TV grant for the in-app installer (Android 9):
+
+```sh
+adb shell appops set com.mediarr.mediarr_client REQUEST_INSTALL_PACKAGES allow
+```
+
+Publish an APK and let the timer install it:
+
+```sh
+automation/scripts/publish-client-update.sh <apk> <versionCode> <versionName> "<notes>"
+# or force now:
+automation/scripts/tv-updater.sh
+```
+
+The TV is not rooted and cannot be device-owner without removing accounts, so the in-app path always
+ends at Android's Install confirmation; the ADB updater is the silent path.

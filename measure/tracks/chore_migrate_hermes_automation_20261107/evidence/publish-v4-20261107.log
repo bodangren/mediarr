@@ -1,0 +1,7 @@
+published 1.0.3 code 4 sha 63a042f95012 size 59247717
+total 115736
+drwxrwxr-x 2 daniel-bo daniel-bo     4096 Nov  7 14:24 .
+drwx------ 4 daniel-bo daniel-bo     4096 Nov  7 14:17 ..
+-rw-rw-r-- 1 daniel-bo daniel-bo      301 Nov  7 14:24 manifest.json
+-rw-rw-r-- 1 daniel-bo daniel-bo 59247717 Nov  7 14:17 mediarr-client-3.apk
+-rw-rw-r-- 1 daniel-bo daniel-bo 59247717 Nov  7 14:24 mediarr-client-4.apk

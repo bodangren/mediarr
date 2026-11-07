@@ -1,0 +1,7 @@
+[Unit]
+Description=Mediarr TV client silent updater (network ADB)
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/daniel-bo/Desktop/mediarr
+ExecStart=/home/daniel-bo/Desktop/mediarr/automation/scripts/tv-updater.sh

@@ -1,0 +1,17 @@
+[Unit]
+Description=Mediarr media server (API + scheduler)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/daniel-bo/Desktop/mediarr
+EnvironmentFile=/home/daniel-bo/Desktop/mediarr/.env
+Environment=PATH=/home/daniel-bo/.nvm/versions/node/v24.18.0/bin:/home/daniel-bo/.local/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=/home/daniel-bo/.nvm/versions/node/v24.18.0/bin/node /home/daniel-bo/Desktop/mediarr/node_modules/tsx/dist/cli.mjs server/src/main.ts
+Restart=always
+RestartSec=5
+TimeoutStopSec=30
+
+[Install]
+WantedBy=default.target

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:path_provider/path_provider.dart';
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
@@ -426,6 +427,33 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
 
   final Dio _dio;
   Timer? _healthTimer;
+
+  /// Latest Android client build published by the server, if any.
+  Future<Map<String, dynamic>?> fetchClientUpdate() async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>('/api/client/update');
+      final data = response.data?['data'];
+      return data is Map<String, dynamic> ? data : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Downloads a published APK to the app cache and returns its path.
+  Future<String> downloadClientUpdate(
+    String file, {
+    void Function(int received, int total)? onProgress,
+  }) async {
+    final dir = await getTemporaryDirectory();
+    final target = '${dir.path}/$file';
+    await _dio.download(
+      '/api/client/download',
+      target,
+      queryParameters: {'file': file},
+      onReceiveProgress: onProgress,
+    );
+    return target;
+  }
 
   /// Connect to a server at the given base URL.
   Future<bool> connect(String baseUrl) async {

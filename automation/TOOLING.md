@@ -179,3 +179,39 @@ $ .../mediarr-automation/venv/bin/beet version # beets 2.14.1 / Python 3.12.14
 $ /usr/bin/ffmpeg -version | head -1           # ffmpeg 8.0.1
 $ ss -tlnp | grep 10086                        # bridge listening
 ```
+
+## 8. TV client updates (self-update)
+
+Two independent paths exist; both use the same server-published artifact:
+
+1. **In-app prompt (Android decides the install).**
+   - Client checks `GET /api/client/update` on Home, compares `versionCode` against its build define
+     (`CLIENT_VERSION_CODE`). If newer it shows: version/notes, **Update now**, **Wait 12 hours**, and a
+     countdown (`UPDATE_COUNTDOWN_SECONDS`, default 30) that auto-starts the update.
+   - Downloads `GET /api/client/download?file=...` via `path_provider` temporary dir, then hands the
+     APK to Android's PackageInstaller through a `MethodChannel` + `FileProvider` — the user presses
+     **Install** (this TV is not rooted/device-owner, so silent in-app install is impossible).
+   - Android 9 gate: grant the source app "Install unknown apps" once:
+     `adb shell appops set com.mediarr.mediarr_client REQUEST_INSTALL_PACKAGES allow`.
+2. **Silent host updater (no TV interaction).**
+   - `automation/scripts/tv-updater.sh` compares the installed `versionCode` with the server manifest,
+     downloads, verifies sha256, runs `adb install -r`, and relaunches. Timer:
+     `mediarr-tv-updater.timer` daily 04:00 (`automation/systemd/`).
+   - This is the hands-off path; keep ADB reachable (`adb connect 192.168.10.60:5555`).
+
+**Publishing** a build:
+
+```sh
+flutter build apk --release --target-platform android-arm \
+  --build-number 4 --build-name 1.0.3 \
+  --dart-define=CLIENT_VERSION_CODE=4 --dart-define=MEDIARR_CLIENT_VERSION=1.0.3
+CONFIG_DIR=/run/media/daniel-bo/4TB/mediarr-config \
+  automation/scripts/publish-client-update.sh build/app/outputs/flutter-apk/app-release.apk 4 1.0.3 "notes"
+```
+
+Manifest + APK live in `CONFIG_DIR/client-updates/` (not in git). `flutter build` locally uses the
+cached Gradle 8.12 + `--android-skip-build-dependency-validation` when the 8.14 download stalls; the
+committed wrapper stays 8.14.3.
+
+**Verified 2026-11-07:** silent v2→v4 in 33 s; in-app v4→v5 through the system installer ending at
+1.0.4/code 5; evidence in the track's `evidence/` folder.

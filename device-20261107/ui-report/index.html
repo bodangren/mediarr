@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Mediarr TV — UI change report</title>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --panel: #12121a;
+    --panel-2: #171722;
+    --line: #262635;
+    --text: #ececf5;
+    --muted: #9fa0b5;
+    --dim: #6f7088;
+    --accent: #6366f1;
+    --accent-2: #8b5cf6;
+    --ok: #34d399;
+    --warn: #fbbf24;
+    --bad: #f87171;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 0 0 72px;
+    background: var(--bg); color: var(--text);
+    font: 16px/1.55 -apple-system, "Segoe UI", Roboto, Inter, sans-serif;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 0 28px; }
+  header {
+    background: radial-gradient(1200px 420px at 20% -20%, #24244a 0%, transparent 60%), var(--panel);
+    border-bottom: 1px solid var(--line);
+    padding: 52px 0 36px; margin-bottom: 40px;
+  }
+  h1 { font-size: 40px; line-height: 1.1; margin: 0 0 10px; letter-spacing: -0.5px; }
+  .sub { color: var(--muted); font-size: 17px; max-width: 820px; margin: 0; }
+  .meta { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 20px; }
+  .pill {
+    font-size: 12.5px; letter-spacing: .02em; padding: 6px 12px; border-radius: 999px;
+    border: 1px solid var(--line); background: #0f0f16; color: var(--muted);
+  }
+  .pill.ok { color: var(--ok); border-color: #1d4d3b; background: #0d1f19; }
+  .pill.warn { color: var(--warn); border-color: #4d3d13; background: #1f1a0c; }
+  h2 { font-size: 25px; margin: 48px 0 8px; letter-spacing: -0.2px; }
+  h2 .n {
+    display: inline-block; min-width: 30px; height: 30px; line-height: 30px; text-align: center;
+    font-size: 14px; border-radius: 8px; background: var(--accent); color: #fff;
+    margin-right: 12px; vertical-align: 2px; font-weight: 700;
+  }
+  h3 { font-size: 18px; margin: 28px 0 10px; }
+  p { color: #cfd0e0; }
+  .lede { color: var(--muted); margin: 0 0 18px; }
+  .grid { display: grid; gap: 18px; }
+  .g2 { grid-template-columns: 1fr 1fr; }
+  @media (max-width: 900px) { .g2 { grid-template-columns: 1fr; } }
+  .card {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 14px; padding: 18px; overflow: hidden;
+  }
+  .card h4 { margin: 0 0 6px; font-size: 15px; letter-spacing: .02em; }
+  .card .tag { font-size: 11.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+  .tag.today { color: var(--muted); }
+  .tag.planned { color: var(--accent-2); }
+  figure { margin: 0; }
+  figure img {
+    width: 100%; aspect-ratio: 16/9; object-fit: cover;
+    border-radius: 10px; border: 1px solid var(--line); background: #05050a; display: block;
+  }
+  figcaption { color: var(--dim); font-size: 13.5px; margin-top: 10px; }
+  table { width: 100%; border-collapse: collapse; margin: 14px 0 6px; font-size: 14.5px; }
+  th, td { text-align: left; padding: 11px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--dim); font-weight: 600; font-size: 12px; letter-spacing: .09em; text-transform: uppercase; }
+  td code, p code, li code {
+    background: #0e0e16; border: 1px solid var(--line); border-radius: 5px;
+    padding: 1px 6px; font-size: 13px; color: #c9c9ff;
+  }
+  .status { font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
+  .s-done { color: #06251a; background: var(--ok); }
+  .s-next { color: #1b1402; background: var(--warn); }
+  .s-later { color: var(--muted); background: #1d1d29; border: 1px solid var(--line); }
+  ul { padding-left: 20px; }
+  li { margin: 7px 0; color: #cfd0e0; }
+  .callout {
+    border-left: 3px solid var(--accent); background: #101022;
+    padding: 14px 18px; border-radius: 0 10px 10px 0; margin: 18px 0; color: #cfd0e0;
+  }
+  .callout.warn { border-left-color: var(--warn); background: #1b1708; }
+  .swatches { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+  .sw { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+  .sw i { width: 22px; height: 22px; border-radius: 6px; border: 1px solid var(--line); display: inline-block; }
+  footer { color: var(--dim); font-size: 13px; border-top: 1px solid var(--line); margin-top: 56px; padding-top: 20px; }
+  .kbd { font-size: 12px; color: var(--dim); }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>Mediarr TV — UI change report</h1>
+    <p class="sub">
+      What changed in the living-room client, what is planned next, and generative mockups of the
+      target screens. Every claim below is tied to a device measurement, a test, or a file in the repo.
+    </p>
+    <div class="meta">
+      <span class="pill ok">client v1.2.0 · code 14</span>
+      <span class="pill ok">installed on X96Max · 192.168.10.60</span>
+      <span class="pill ok">kiosk launcher mode</span>
+      <span class="pill">415 Flutter tests · analyze clean</span>
+      <span class="pill warn">server event-loop stall · open</span>
+      <span class="pill">2026-11-07</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <h2><span class="n">1</span>Why this report exists</h2>
+  <p class="lede">
+    The owner reported three things that made the client unusable: resume did not resume, episodes
+    could not be started from the season list, and the detail screen hid the episode list below a
+    full screen of decoration. All three were reproduced over network ADB before any code changed,
+    then fixed and re-measured on the device.
+  </p>
+  <div class="callout">
+    <strong>Method.</strong> Defects were reproduced by driving the real D-pad (no assumptions from
+    code reading), fixed test-first where practical, and re-verified on the TV. Failure telemetry
+    now ships every client error to the server so the next defect does not need to be reported by hand.
+  </div>
+
+  <h2><span class="n">2</span>Shipped this session</h2>
+  <table>
+    <thead>
+      <tr><th style="width:30%">Change</th><th style="width:34%">Before</th><th style="width:26%">After</th><th style="width:10%">Status</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Resume actually resumes</strong></td>
+        <td>Seek issued before the file loaded, so playback restarted at 0:00 — and the bookmark was overwritten (10:00 → 0:32).</td>
+        <td>Start position travels through the player's load path, plus an enforced seek after the first duration report. Verified: overlay shows <code>10:00 / 22:45</code>.</td>
+        <td><span class="status s-done">DONE</span></td>
+      </tr>
+      <tr>
+        <td><strong>Movies were all unwatchable</strong></td>
+        <td>Every movie stream returned HTTP 500: the variant backfill wrote the movie <em>folder</em> as a playable file, and playback resolved a directory.</td>
+        <td>Backfill, daily scan and resolver all reject non-file paths. 120/120 sampled movies return 206.</td>
+        <td><span class="status s-done">DONE</span></td>
+      </tr>
+      <tr>
+        <td><strong>Episode list is usable</strong></td>
+        <td>Opened on <code>S0</code> (specials) whose only entry is missing, so Select fired a silent search; Right jumped to an unexplained magnifier.</td>
+        <td>Defaults to the first season with a file; per-row magnifier removed; Select on a missing row searches and says so.</td>
+        <td><span class="status s-done">DONE</span></td>
+      </tr>
+      <tr>
+        <td><strong>Two-pane detail</strong></td>
+        <td>One tall column: 340 px banner + synopsis + file card pushed the episodes ~1000 px down a 720 px screen.</td>
+        <td>Left pane = art, metadata, actions; right pane = pinned season chips + episode list, visible on entry with a focused <strong>Resume/Play</strong> CTA.</td>
+        <td><span class="status s-done">DONE</span></td>
+      </tr>
+      <tr>
+        <td><strong>Playback errors are recoverable</strong></td>
+        <td>Dead end: a raw URL in 13 px text, no action.</td>
+        <td>“Couldn't play this video” + focused <strong>Retry</strong> + <strong>Back</strong>, plus two automatic open retries before the error ever shows.</td>
+        <td><span class="status s-done">DONE</span></td>
+      </tr>
+      <tr>
+        <td><strong>Kiosk mode</strong></td>
+        <td>Box booted into a stock launcher.</td>
+        <td>Mediarr declares <code>HOME</code>; verified by reboot. Stock launcher kept for rollback; Settings → “Android home app” escape hatch.</td>
+        <td><span class="status s-done">DONE</span></td>
+      </tr>
+      <tr>
+        <td><strong>Brand</strong></td>
+        <td>Default Flutter icon, square icon used as the TV banner.</td>
+        <td>Indigo “M” mark: 5 launcher densities, adaptive icon, 320×180 TV banner, web favicons + PWA manifest.</td>
+        <td><span class="status s-done">DONE</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Today, on the device</h3>
+  <div class="grid g2">
+    <figure class="card">
+      <span class="tag today">Today · series detail</span>
+      <h4>Two panes, episodes on screen</h4>
+      <img src="today-detail.png" alt="Current series detail screen on the TV" />
+      <figcaption>Real TV frame: focused <em>Play S01E01</em> on the left, season chips pinned and 10+ episode rows visible on the right — no blind scrolling.</figcaption>
+    </figure>
+    <figure class="card">
+      <span class="tag today">Today · player</span>
+      <h4>Transport over a playing episode</h4>
+      <img src="today-player.png" alt="Current player overlay on the TV" />
+      <figcaption>Real TV frame: title, seek bar, elapsed/total, 10 s skips, next episode, subtitles. Controls are still small for a 10-foot screen — that is section 4.</figcaption>
+    </figure>
+  </div>
+
+  <h2><span class="n">3</span>Planned UI — generative mockups</h2>
+  <p class="lede">
+    The direction below comes from an independent 10-foot-UI review (Kimi K3.1 Pro) of real client
+    screenshots against Netflix, Roku, Peacock, Hulu, Prime and HBO Max. These are
+    <strong>generative concept renderings</strong>, not screenshots: they encode layout, hierarchy and
+    focus treatment, not pixel-exact copy. Prompts are in the appendix.
+  </p>
+
+  <div class="grid g2">
+    <figure class="card">
+      <span class="tag planned">Planned · home</span>
+      <h4>Budget the fold for watching</h4>
+      <img src="home-mockup.png" alt="Planned home screen mockup" />
+      <figcaption>
+        Full-bleed cinematic backdrop, 2–3 line synopsis over a left scrim, one dominant
+        <strong>Resume</strong> CTA. The entire Continue Watching row fits (16:9 art + title +
+        progress + “Resume at …”), with the next row peeking so the screen is obviously scrollable.
+      </figcaption>
+    </figure>
+    <figure class="card">
+      <span class="tag planned">Planned · series detail</span>
+      <h4>One action per episode row</h4>
+      <img src="detail-mockup.png" alt="Planned series detail mockup" />
+      <figcaption>
+        Left pane ≈ 40 %: poster, title, focused <strong>Resume S01 E03 · 12:34</strong>, quieter
+        <strong>Start over</strong>, short synopsis. Right pane ≈ 60 %: pinned season chips above six
+        rows of 96 px, each with thumbnail, title, duration, watched progress and a single focus stop.
+      </figcaption>
+    </figure>
+  </div>
+
+  <figure class="card" style="margin-top:18px">
+    <span class="tag planned">Planned · player transport</span>
+    <h4>Big targets, focus on Play/Pause, 5 s auto-hide only while playing</h4>
+    <img src="player-mockup.png" alt="Planned player transport mockup" />
+    <figcaption>
+      Bottom gradient, 64 px round controls, 20 px time labels, 6 px seek track (12 px when focused).
+      Entry focus lands on Play/Pause, not Back. Back hides a visible overlay and only exits when it
+      is already hidden. The unexplained Stop button and the naked “−5 s … Reset” row move into a
+      labelled <em>Audio &amp; subtitles → Sync</em> panel.
+    </figcaption>
+  </figure>
+
+  <h2><span class="n">4</span>Prioritised backlog</h2>
+  <table>
+    <thead><tr><th style="width:8%">Prio</th><th style="width:42%">Item</th><th style="width:42%">Why / measurable target</th><th style="width:8%">Status</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>P0</strong></td>
+        <td>Move the multi-minute subtitle work off the request-critical path</td>
+        <td><code>subtitle-sync</code> runs 332–681 s in the API process; node-cron logs missed executions at the same minutes the TV reported <em>Failed to open</em>. Target: no request blocked &gt; 2 s.</td>
+        <td><span class="status s-next">NEXT</span></td>
+      </tr>
+      <tr>
+        <td><strong>P1</strong></td>
+        <td>Home budget: full Continue row + next-row peek, 260–280 px hero</td>
+        <td>Current card is tall enough that Recently Added is clipped; measure “row fully visible at 720 logical”.</td>
+        <td><span class="status s-next">NEXT</span></td>
+      </tr>
+      <tr>
+        <td><strong>P1</strong></td>
+        <td>Transport: focus Play/Pause, 64 px targets, 5 s auto-hide while playing only</td>
+        <td>Today the overlay hides on a timer even when paused and initially focuses Back.</td>
+        <td><span class="status s-next">NEXT</span></td>
+      </tr>
+      <tr>
+        <td><strong>P1</strong></td>
+        <td>Typography floor: ≥20 px body, ≥18 px metadata, ≥56 px targets</td>
+        <td>Several labels render at 14–16 px on a 1280×720 logical surface.</td>
+        <td><span class="status s-later">LATER</span></td>
+      </tr>
+      <tr>
+        <td><strong>P1</strong></td>
+        <td>Episode thumbnails, remaining-time labels, Next Episode affordance</td>
+        <td>Mockup (right), and “32 min left” on Continue cards.</td>
+        <td><span class="status s-later">LATER</span></td>
+      </tr>
+      <tr>
+        <td><strong>P2</strong></td>
+        <td>Demote library management under a <em>Manage</em> disclosure</td>
+        <td>Search All Missing / Delete Series currently sit in the playback path.</td>
+        <td><span class="status s-later">LATER</span></td>
+      </tr>
+      <tr>
+        <td><strong>P2</strong></td>
+        <td>True 2:3 posters and 16:9 backdrops with focal-aware cropping</td>
+        <td>Landscape art is currently cropped into portrait tiles.</td>
+        <td><span class="status s-later">LATER</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2><span class="n">5</span>Reliability: failures now arrive on their own</h2>
+  <p class="lede">
+    The owner should not have to QA screen by screen. The client now reports every failure, and a
+    scheduled triage pass picks them up every 30 minutes.
+  </p>
+  <div class="grid g2">
+    <div class="card">
+      <h4>What is captured</h4>
+      <ul>
+        <li>uncaught Flutter errors, platform errors and zone errors</li>
+        <li><strong>every failed HTTP call</strong> (status ≥ 400 or network) with method, path, status</li>
+        <li>navigation failures, with a recoverable “Back to Home” screen</li>
+        <li>playback open / manifest / player errors with media id, URL and stage</li>
+        <li>route, app version, stack; deduped and capped at 60 per session</li>
+        <li><strong>offline spool</strong>: retried on start and every 2 min, so an error during an outage is not lost</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>Where it goes</h4>
+      <ul>
+        <li><code>POST /api/client-errors</code> → append-only JSONL, 5 MB rotation</li>
+        <li><code>GET /api/client-errors?since=…</code> for triage</li>
+        <li>a DSH scheduled task every 30 min groups new failures, fixes P0/P1, rebuilds, publishes and installs the APK</li>
+        <li>first catches: two <em>Failed to open</em> playback errors and one health-check connection failure — all traced to the server stall in P0</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2><span class="n">6</span>Design system anchors</h2>
+  <div class="card">
+    <p style="margin:0 0 4px;color:var(--muted)">Colours are already the app's own; the plan is to use them more consistently for focus and state.</p>
+    <div class="swatches">
+      <span class="sw"><i style="background:#0a0a0f"></i>surface base #0A0A0F</span>
+      <span class="sw"><i style="background:#12121a"></i>surface card #12121A</span>
+      <span class="sw"><i style="background:#6366f1"></i>accent #6366F1</span>
+      <span class="sw"><i style="background:#8b5cf6"></i>accent 2 #8B5CF6</span>
+      <span class="sw"><i style="background:#ffffff"></i>focus ring (3 px) + glow</span>
+    </div>
+    <p style="margin:14px 0 0" class="kbd">
+      Focus rule for every control: 3 px white outline, soft accent glow, child grows into reserved
+      padding so neighbours never shift. Minimum target 56×56 logical px.
+    </p>
+  </div>
+
+  <h2><span class="n">7</span>Open questions for the owner</h2>
+  <ul>
+    <li>Should Back at the launcher root do nothing (current) or offer an explicit “Leave Mediarr” confirm?</li>
+    <li>Do you want the stock launcher hidden entirely (<code>pm disable-user</code>) for true lockdown, or kept as a safety net?</li>
+    <li>For the home hero: auto-rotate featured titles, or keep a single stable pick?</li>
+    <li>Episode rows: thumbnails only where artwork exists, or a generated gradient placeholder otherwise?</li>
+  </ul>
+
+  <footer>
+    <p>
+      <strong>Provenance.</strong> Mockups generated 2026-11-07 with
+      <code>google/gemini-2.5-flash-image</code> via OpenRouter. Note: OpenRouter has no image-output
+      “muse” model — the Meta Muse family there (<code>muse-spark</code>, <code>muse-wonder</code>,
+      <code>muse-glimmer</code>) is text-only. <code>gemini-3-pro-image</code> was tried first but the
+      response was cut off mid-stream twice. Off-device screenshots are real frames captured over
+      network ADB from the installed release build.
+    </p>
+    <p class="kbd">Report generated by the Mediarr agent · source of truth: measure/tracks/chore_migrate_hermes_automation_20261107/</p>
+  </footer>
+</div>
+</body>
+</html>

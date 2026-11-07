@@ -14,7 +14,7 @@
 
 ## Phase 1: Priority model (server)
 
-- [ ] Contract tests for the classifier: bucket precedence, recency tie-break, stability.
+- [~] Contract tests for the classifier: bucket precedence, recency tie-break, stability.
 - [ ] `ViewingPriorityService` (pure function over progress rows) + SQL shape that returns
       `{ itemId, kind, bucket, lastPlayedAt, added }`.
 - [ ] Unit tests for finished vs in-progress, 14-day/30-day boundaries, and items with no playback.

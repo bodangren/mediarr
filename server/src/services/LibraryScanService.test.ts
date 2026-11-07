@@ -23,6 +23,7 @@ function createMockDb() {
     },
     mediaFileVariant: {
       upsert: vi.fn().mockResolvedValue({ id: 1 }),
+      findMany: vi.fn().mockResolvedValue([]),
     },
     variantSubtitleTrack: {
       findMany: vi.fn().mockResolvedValue([]),

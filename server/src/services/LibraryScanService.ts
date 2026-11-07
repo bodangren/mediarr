@@ -208,6 +208,8 @@ export class LibraryScanService {
     const videoFilesOnDisk = new Set(allFiles.filter(f => VIDEO_EXTENSIONS.has(path.extname(f).toLowerCase())));
     subtitles += allFiles.filter(f => SUBTITLE_EXTENSIONS.has(path.extname(f).toLowerCase())).length;
 
+    const existingVariantPaths = await this.existingVariantPaths('MOVIE');
+
     // Check DB records against disk, but never unlink a whole library because
     // the mount went away.
     const linkedMovies = movies.filter(movie => movie.path);
@@ -233,10 +235,11 @@ export class LibraryScanService {
         // Mark movie path as null (missing) only if it was previously set
         await (this.prisma as any).movie.update({ where: { id: movie.id }, data: { path: null } });
         missing++;
-      } else {
-        // The file is linked but may lack a MediaFileVariant row (scan or
-        // manual import linked the path without one); playback resolves
-        // through variants, so heal the row here.
+      } else if (!existingVariantPaths.has(movie.path)) {
+        // The file is linked but has no MediaFileVariant row (scan or manual
+        // import linked the path without one); playback resolves through
+        // variants, so heal it. Rows that already have one are skipped: each
+        // upsert costs ~115 ms on this USB-backed database.
         await this.ensureVariant('MOVIE', movie.id, movie.path);
       }
     }
@@ -283,6 +286,7 @@ export class LibraryScanService {
     const episodes: Array<{ id: number; path: string | null }> =
       await (this.prisma as any).episode.findMany({ select: { id: true, path: true } });
 
+    const episodeVariantPaths = await this.existingVariantPaths('EPISODE');
     const linkedEpisodes = episodes.filter(ep => ep.path);
     const episodeExists = await this.probePaths(linkedEpisodes.map(ep => ep.path!));
     const missingEpisodeProbe = episodeExists.filter(exists => !exists).length;
@@ -305,7 +309,7 @@ export class LibraryScanService {
         if (episodeGuardTripped) continue;
         await (this.prisma as any).episode.update({ where: { id: ep.id }, data: { path: null } });
         missing++;
-      } else {
+      } else if (!episodeVariantPaths.has(ep.path)) {
         await this.ensureVariant('EPISODE', ep.id, ep.path);
       }
     }
@@ -356,6 +360,19 @@ export class LibraryScanService {
    * ImportManager's import-time upsert; re-running against a healthy library
    * is a no-op.
    */
+  /** Variant paths that already exist, one query per media type. */
+  private async existingVariantPaths(mediaType: 'MOVIE' | 'EPISODE'): Promise<Set<string>> {
+    const rows = await (this.prisma as any).mediaFileVariant.findMany({
+      where: { mediaType },
+      select: { path: true },
+    });
+    return new Set(
+      (rows as Array<{ path?: string | null }>)
+        .map(row => row.path)
+        .filter((value): value is string => Boolean(value)),
+    );
+  }
+
   private async ensureVariant(mediaType: 'MOVIE' | 'EPISODE', ownerId: number, filePath: string): Promise<void> {
     // Only a real video file may become a playable variant. `Movie.path` is
     // the movie FOLDER, and writing it here made every movie stream a

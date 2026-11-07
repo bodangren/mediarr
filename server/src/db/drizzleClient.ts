@@ -502,6 +502,12 @@ export class DatabaseClient {
     const dbPath = normalizeDatabasePath(options?.datasources?.db?.url ?? process.env.DATABASE_URL);
     this.sqlite = new BetterSqlite3(dbPath);
     this.sqlite.exec('PRAGMA journal_mode = WAL;');
+    // WAL + FULL fsyncs on every commit, and this database lives on a USB drive:
+    // a single variant upsert measured 115 ms, making the library scan spend
+    // ~6 minutes healing rows that were already correct (2026-11-08). NORMAL is
+    // the standard WAL setting — committed transactions survive process crashes,
+    // only an OS/power failure can roll back the last few.
+    this.sqlite.exec('PRAGMA synchronous = NORMAL;');
     this.sqlite.exec('PRAGMA foreign_keys = ON;');
     // The activity feed orders by occurredAt; without this index SQLite sorts
     // the whole table on every page read (248k rows in production on

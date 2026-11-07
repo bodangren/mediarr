@@ -58,11 +58,11 @@ class PosterCard extends StatelessWidget {
                 ? CachedNetworkImage(
                     imageUrl: ApiConfig.image(posterUrl!),
                     fit: BoxFit.cover,
-                    placeholder: (_, __) => _PosterPlaceholder(title: title),
+                    placeholder: (_, __) => PosterPlaceholder(title: title),
                     errorWidget: (_, __, ___) =>
-                        _PosterPlaceholder(title: title),
+                        PosterPlaceholder(title: title),
                   )
-                : _PosterPlaceholder(title: title),
+                : PosterPlaceholder(title: title),
           ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
@@ -126,34 +126,64 @@ class PosterCard extends StatelessWidget {
   }
 }
 
-class _PosterPlaceholder extends StatelessWidget {
-  const _PosterPlaceholder({required this.title});
+/// Tile artwork for a title with no poster.
+///
+/// A flat grey rectangle with a film icon made missing artwork look like a
+/// loading failure (several tiles in the owner's library have no poster). The
+/// placeholder now derives a stable dark gradient from the title and shows its
+/// initial, so a posterless library still reads as a designed grid
+/// (10-foot UX review 2026-11-07).
+class PosterPlaceholder extends StatelessWidget {
+  const PosterPlaceholder({super.key, required this.title});
   final String title;
+
+  static const _palette = <(Color, Color)>[
+    (Color(0xFF2A3A55), Color(0xFF141A24)),
+    (Color(0xFF3A2A45), Color(0xFF1A141F)),
+    (Color(0xFF243A38), Color(0xFF121D1C)),
+    (Color(0xFF3E3324), Color(0xFF1E1912)),
+    (Color(0xFF2C2F45), Color(0xFF15161F)),
+  ];
+
+  String get _initial {
+    final trimmed = title.trim();
+    if (trimmed.isEmpty) return '?';
+    // Skip a leading article so "The Boys" reads as B, not T.
+    final withoutArticle = trimmed.replaceFirst(
+      RegExp(r'^(the|a|an)\s+', caseSensitive: false),
+      '',
+    );
+    final source = withoutArticle.isEmpty ? trimmed : withoutArticle;
+    return source.characters.first.toUpperCase();
+  }
+
+  int get _paletteIndex {
+    var hash = 0;
+    for (final unit in title.codeUnits) {
+      hash = (hash * 31 + unit) & 0x7fffffff;
+    }
+    return hash % _palette.length;
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: MediarrColors.surfaceHover,
+    final colours = _palette[_paletteIndex];
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [colours.$1, colours.$2],
+        ),
+      ),
       child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.movie, color: MediarrColors.textMuted, size: 40),
-            const SizedBox(height: 8),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Text(
-                title,
-                style: const TextStyle(
-                  color: MediarrColors.textMuted,
-                  fontSize: 13,
-                ),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
+        child: Text(
+          _initial,
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.30),
+            fontSize: 56,
+            fontWeight: FontWeight.w800,
+          ),
         ),
       ),
     );

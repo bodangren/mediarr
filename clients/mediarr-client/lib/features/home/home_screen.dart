@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/router/app_router.dart';
 import '../../core/theme/mediarr_theme.dart';
+import '../../shared/widgets/poster_card.dart';
 import '../../core/widgets/netflix_scaffold.dart';
 import '../playback/playback_queue.dart';
 import '../../shared/models/library_item.dart';
@@ -885,7 +886,7 @@ class _LibraryPosterCard extends StatelessWidget {
                     Container(color: MediarrColors.surfaceCard),
               )
             else
-              Container(color: MediarrColors.surfaceCard),
+              PosterPlaceholder(title: item.title),
             const DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(

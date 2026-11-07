@@ -38,7 +38,41 @@ void main() {
         child: const PosterCard(title: 'No Poster Movie'),
       ));
 
-      expect(find.byIcon(Icons.movie), findsOneWidget);
+      // The placeholder now shows a monogram instead of a film icon, so a
+      // posterless grid reads as designed rather than as failed loads.
+      expect(find.text('N'), findsOneWidget);
+      expect(find.byIcon(Icons.movie), findsNothing);
+    });
+
+    testWidgets('placeholder monogram skips a leading article', (tester) async {
+      await tester.pumpWidget(buildTestApp(
+        child: const PosterCard(title: 'The Boys'),
+      ));
+
+      expect(find.text('B'), findsOneWidget);
+      expect(find.text('T'), findsNothing);
+    });
+
+    testWidgets('placeholder monogram is deterministic for a title',
+        (tester) async {
+      await tester.pumpWidget(buildTestApp(
+        child: const Row(
+          children: [
+            SizedBox(
+              width: 160,
+              height: 240,
+              child: PosterCard(title: 'Alien'),
+            ),
+            SizedBox(
+              width: 160,
+              height: 240,
+              child: PosterCard(title: 'Alien'),
+            ),
+          ],
+        ),
+      ));
+
+      expect(find.text('A'), findsNWidgets(2));
     });
 
     testWidgets('triggers onPressed', (tester) async {

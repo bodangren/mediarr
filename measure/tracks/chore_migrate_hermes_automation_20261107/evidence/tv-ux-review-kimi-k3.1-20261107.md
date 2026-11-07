@@ -77,3 +77,31 @@ the server journal at those exact minutes shows
 the event loop and starves HTTP responses.** Mitigation shipped: a failed open
 is retried twice, 1.5 s apart, before the error screen (v1.1.2).
 Remaining P0: move the multi-minute subtitle work off the request-critical path.
+
+## P0 root cause found: the activity poll was saturating the server (2026-11-07 22:15-22:50)
+
+The "Failed to open" playback errors and node-cron "missed execution" warnings
+were not the media drive or libmpv. Measured with a new event-loop monitor plus
+a Node CPU profile attached through the inspector:
+
+- `ActivityEventRepository.query()` selected **every id** of the production
+  `ActivityEvent` table (248,160 rows) just to call `.length`.
+- `/api/activity` was polled **once per second**, and `ActivityEvent` had no
+  index on `occurredAt`, so each poll also sorted the whole table.
+- better-sqlite3 is synchronous, so this ran on the main thread: **86 % CPU,
+  400-1200 ms lag on nearly every 500 ms sample, a 24 s boot stall**, 27
+  queries/s. Every HTTP request (including `/api/stream`), node-cron timer and
+  playback open was starved.
+
+Fixes: `COUNT(*)` instead of materialising ids; `ActivityEvent_occurredAt_idx`
+(client + migration runner); activity poll 1 s -> 5 s. Plus stall telemetry in
+`/api/health` (`eventLoop`), opt-in `DEBUG_SQL=1` query logging, stale-RUNNING
+recovery in the Scheduler, `variantsSkipped` resilience in subtitle automation,
+and a scoped/budgeted bilingual scan with an in-flight guard.
+
+**After:** CPU 0.1-10 %, lag 0-1 ms, 1 stall (boot) in 708 samples.
+Device proof: Reacher S02E01 - ATM now plays (00:06 / 55:41) — the exact stream
+that produced "player error: Failed to open .../stream/1094" at 21:00.
+
+Remaining: the ~26 s stall at process start (migrations + variant backfill on a
+cold USB drive) still blocks the first requests after a restart.

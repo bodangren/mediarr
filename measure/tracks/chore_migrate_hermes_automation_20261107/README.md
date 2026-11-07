@@ -2,13 +2,15 @@
 
 **Track:** `chore_migrate_hermes_automation_20261107`
 **Opened:** 2026-11-07 · **Status:** Phases 1–3 complete (inventory, three-family design, owner
-ratification). **Phase 4 (build) is next.** **v3 owner feedback (same day):** agent-first web
-automation — browser-use via kimi-webbridge MCP instead of DOM/regex scripts; a *few* agent calls
-(daily 03:00 media orchestrator, weekly music, weekly adult, monthly rules) replace many scripts;
-deterministic code only for stable APIs and maintained tools (`yt-dlp`, beets) plus bookkeeping.
-Three new media domains are scoped as separate tracks: **Adult library**, **YouTube subscriptions**
-(yt-dlp, watched+7d retention), **Music** (YouTube ingest → tagged files → iTunes-style D-pad
-player).
+ratification). **Phase 4 (build) in progress:** tooling installed and proven, browser MCP live,
+subtitle interval persistence fixed TDD, torrent engine decided (built-in WebTorrent); B1
+(Mediarr 24/7) and B3 (host → systemd) remain the open prerequisites. **v3 owner feedback (same
+day):** agent-first web automation — browser-use via kimi-webbridge MCP instead of DOM/regex
+scripts; a *few* agent calls (daily 03:00 media orchestrator, weekly music, weekly adult, monthly
+rules) replace many scripts; deterministic code only for stable APIs and maintained tools
+(`yt-dlp`, beets) plus bookkeeping. Three new media domains are scoped as separate tracks:
+**Adult library**, **YouTube subscriptions** (yt-dlp, watched+7d retention), **Music** (YouTube
+ingest → tagged files → iTunes-style D-pad player).
 
 ## What this track is
 

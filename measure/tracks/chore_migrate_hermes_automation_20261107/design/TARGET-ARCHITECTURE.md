@@ -249,3 +249,18 @@ P0–P9 before they land (the daily agent simply skips domains that do not exist
    outage delays these runs and alerts; it never falls back to a scraper.
 5. **Browser:** kimi-webbridge MCP, with the Chrome profile's existing VPN. Playwright-MCP is the
    fallback if the bridge proves unstable.
+
+## 11. Build progress (2026-11-07)
+
+| Item | State | Evidence |
+|---|---|---|
+| Tooling | **done** | yt-dlp 2026.10.26, beets 2.14.1 (uv/Python 3.12), pnpm 12.18.0, uv 0.13.7, ffmpeg 8.0.1 — [`automation/TOOLING.md`](../../../automation/TOOLING.md) |
+| Browser-use substrate (B5) | **partial** | `mcp-webbridge` inserted into the web profile; host spawned the bridge (ws :10086, extension 2.0.23); agent-side `mcp__webbridge__navigate` + `evaluate` verified. Probe + dead-bridge alert pending B9 |
+| Subtitle interval persistence (B2) | **done (code)** | TDD route test (Red: persisted `{}`; Green: 16/16), server `tsc --noEmit` exit 0. Runtime values apply with B1 |
+| Torrent engine | **decided** | Mediarr's built-in WebTorrent 2.8.5 is the only wired grab path (`MediaSearchService.ts:387,794`; external id unused `:902`). Transmission stays until its 83.4% torrent finishes + one magnet validated + old jobs off |
+| Mediarr 24/7 (B1) | **open** | server not running; deployment is the prerequisite for settings and the real-magnet validation |
+| DSH host unit (B3) | **open** | requires a quiet handoff: this session lives inside the current terminal-launched host |
+| Plugin, jobs, quarantine, watchdog (B4/B7/B8/B9) | **open** | next build chunk |
+
+No new tooling was added for torrents: the engine, import path and seeding protector already exist
+in Mediarr, and an external client/adapter would create a second state owner.

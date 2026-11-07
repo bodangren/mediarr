@@ -1,7 +1,10 @@
 # Plan — Re-derive and migrate the media automation
 
 > Contract-first + TDD per `measure/workflow.md`.
-> Phase 1 is complete with evidence. Phases 2–3 are the planning team's work; 4–7 are build.
+> **Status 2026-11-07:** Phases 0–3 complete. **Phase 4 (build) in progress:** tooling installed and
+> proven, the browser MCP is live, subtitle interval persistence is fixed TDD, and the torrent
+> engine is decided (built-in WebTorrent; Transmission decommission condition recorded). B1 (Mediarr
+> 24/7) and B3 (host → systemd) are the open prerequisites; B4/B7/B8/B9 are next.
 
 ## Phase 0: Session prerequisites ✅ / ⚠️
 

@@ -14,10 +14,13 @@
 
 ## Phase 1: Priority model (server)
 
-- [~] Contract tests for the classifier: bucket precedence, recency tie-break, stability.
-- [ ] `ViewingPriorityService` (pure function over progress rows) + SQL shape that returns
-      `{ itemId, kind, bucket, lastPlayedAt, added }`.
-- [ ] Unit tests for finished vs in-progress, 14-day/30-day boundaries, and items with no playback.
+- [x] Contract tests for the classifier: bucket precedence, recency tie-break, stability — **2026-11-08:** 13 tests (`server/src/services/ViewingPriorityService.test.ts`). 8 cases pin bucket precedence and the 14/30-day window boundaries, 1 pins `isHighPriority`, 3 pin sort order + stability, 1 pins the comparator.
+- [x] `ViewingPriorityService` (pure function over progress rows) + the SQL shape that will return
+      `{ itemId, kind, bucket, lastPlayedAt, added }` — **2026-11-08:** `classifyViewingPriority`,
+      `rankByViewingPriority`, `compareViewingPriority`, `isHighPriority`; buckets
+      continue-watching → recently-watched (14 d) → recently-added (30 d) → backfill.
+- [ ] Wire the SQL query (progress ⋈ movie/episode) that feeds it; Phase 2 consumes it.
+- [x] Unit tests for finished vs in-progress, 14-day/30-day boundaries, and items with no playback.
 
 ## Phase 2: Coverage + ordered APIs
 

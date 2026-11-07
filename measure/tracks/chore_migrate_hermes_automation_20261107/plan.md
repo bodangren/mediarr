@@ -97,9 +97,13 @@
       measured): ffsubsync 0.5.1 primary** (audio-based; no same-language reference needed), alass
       2.0.0 optional when an English reference exists, existing ASR `subalign` as verifier/fallback.
       **Proof:** on a real episode, a +10 s shifted .zho.srt was realigned in 11 s; a second pass
-      reported offset 0.000 s / scale 1.000 (the source itself was 0.83 s early). Remaining:
-      Mediarr `SubtitleSyncService` + scheduler hook (native, per advisor), sync-state table,
-      naming/atomic write, failure reporting, and the TV playback proof. (FR-16)
+      reported offset 0.000 s / scale 1.000 (the source itself was 0.83 s early).
+      **Implemented 2026-11-07:** `SubtitleSyncService` (JSON-state, idempotent by sidecar hash +
+      video size, atomic replace, `.orig` backup, verification bounds |offset|≤0.3 s and
+      |scale−1|≤0.02, attempt cap) + `FfsubsyncAligner`, wired as the `subtitle-sync` scheduler task
+      every 30 min (limit 5). Tests 6/6; first two live cycles: 5/5 aligned, residual 0, backups
+      written, no temp leftovers, task history success. First full-library pass runs in the
+      background; a DB-backed sync table is a follow-up (JSON state for now). (FR-16)
 - [x] **B2b** Fix the torrent speed-limit unit bug (`downloadClientRoutes.ts:121-125` passes Kbps
       into a bytes/sec setter, `TorrentManager.ts:547-554`/`:528-534`); test the conversion. (G7)
       **Done 2026-11-07:** test updated to expect 500 Kbps → 512000 B/s (Red: got 500); route now

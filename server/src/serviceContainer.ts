@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { existsSync } from 'node:fs';
 import type { DatabaseClient } from './db/drizzleClient';
 import type { ApiDependencies } from './api/types';
 import { ApiEventHub } from './api/eventHub';
@@ -57,6 +58,8 @@ import { AssrtProvider } from './services/providers/AssrtProvider';
 import { SubdlProvider } from './services/providers/SubdlProvider';
 import { RssSyncService } from './services/RssSyncService';
 import { type SchedulerStateRepository, Scheduler } from './services/Scheduler';
+import { SubtitleSyncService } from './services/SubtitleSyncService';
+import { FfsubsyncAligner } from './services/FfsubsyncAligner';
 import { SettingsService } from './services/SettingsService';
 import { SubtitleAutomationService } from './services/SubtitleAutomationService';
 import { SubtitleInventoryApiService } from './services/SubtitleInventoryApiService';
@@ -615,6 +618,38 @@ export async function createServiceContainer(
         'subtitle-wanted-search',
         subtitleScanCron,
       );
+
+      // Alignment is deterministic and idempotent; bounded per 30-minute cycle.
+      const subtitleSyncService = new SubtitleSyncService({
+        statePath: path.join(env.CONFIG_DIR ?? path.dirname(options.databaseUrl.replace(/^file:/, '')), 'subtitle-sync-state.json'),
+        candidates: async () => {
+          const [movies, episodes] = await Promise.all([
+            prisma.movie.findMany({ where: { path: { not: null } }, select: { path: true } }),
+            prisma.episode.findMany({ where: { path: { not: null } }, select: { path: true } }),
+          ]);
+          const found: Array<{ videoPath: string; srtPath: string }> = [];
+          for (const row of [...movies, ...episodes]) {
+            const videoPath = row.path;
+            if (!videoPath) continue;
+            const base = videoPath.replace(/\.[^.\\/]+$/, '');
+            for (const ext of ['.zho.srt', '.zh.srt']) {
+              const srtPath = base + ext;
+              if (existsSync(srtPath)) {
+                found.push({ videoPath, srtPath });
+                break;
+              }
+            }
+          }
+          return found;
+        },
+        aligner: new FfsubsyncAligner(),
+      });
+      scheduler.schedule('subtitle-sync', '*/30 * * * *', async () => {
+        const result = await subtitleSyncService.runCycle({ limit: 5 });
+        console.log(
+          `Subtitle sync cycle: scanned ${result.scanned}, aligned ${result.aligned}, skipped ${result.skipped}, failed ${result.failed}`,
+        );
+      });
     }
 
     try {

@@ -137,3 +137,6 @@ maintained CLIs (`yt-dlp`, `beets`) plus a small bookkeeping layer.
    through the same agent-run/ledger mechanism.
 9. A seeded item with a deliberately out-of-sync Chinese subtitle is aligned, verified within a
    stated offset/drift threshold, and plays in the TV client; an unalignable item is reported.
+10. A seeded English-only sidecar is translated by the cheap model into a bilingual EN+ZH sidecar and
+    plays on the TV with both languages visible; a Chinese-only sidecar with no English sibling is
+    reported as a defect rather than silently accepted.

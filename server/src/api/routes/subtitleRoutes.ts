@@ -113,6 +113,18 @@ function isFetchableState(state: unknown): state is 'PENDING' | 'FAILED' {
   return state === 'PENDING' || state === 'FAILED';
 }
 
+function toPriorityBucketFilter(query: Record<string, unknown>): string | null {
+  const raw = query.bucket;
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  if (value === undefined || value === null || value === '') return null;
+  const bucket = String(value);
+  const allowed = ['continue-watching', 'recently-watched', 'recently-added', 'backfill'];
+  if (!allowed.includes(bucket)) {
+    throw new ValidationError(`bucket must be one of ${allowed.join(', ')}`);
+  }
+  return bucket;
+}
+
 /**
  * Order wanted entries by the shared viewing-priority model (track
  * feature_subtitle_coverage_priority_20261108). Falls back to added-date ordering when a unit-test
@@ -637,7 +649,9 @@ export function registerSubtitleRoutes(
       addedAt: entry.addedAt,
     }));
 
-    const orderedSeriesEntries = await orderByViewingPriority(prisma, 'episode', entries, entry => entry.episodeId);
+    const bucketFilter = toPriorityBucketFilter(query);
+    const orderedSeriesEntries = (await orderByViewingPriority(prisma, 'episode', entries, entry => entry.episodeId))
+      .filter(entry => bucketFilter === null || entry.priority.bucket === bucketFilter);
     const paged = paginateArray(orderedSeriesEntries, pagination.page, pagination.pageSize);
     return sendPaginatedSuccess(reply, paged.items, {
       page: pagination.page,
@@ -702,7 +716,9 @@ export function registerSubtitleRoutes(
       addedAt: entry.addedAt,
     }));
 
-    const orderedMovieEntries = await orderByViewingPriority(prisma, 'movie', entries, entry => entry.movieId);
+    const bucketFilter = toPriorityBucketFilter(query);
+    const orderedMovieEntries = (await orderByViewingPriority(prisma, 'movie', entries, entry => entry.movieId))
+      .filter(entry => bucketFilter === null || entry.priority.bucket === bucketFilter);
     const paged = paginateArray(orderedMovieEntries, pagination.page, pagination.pageSize);
     return sendPaginatedSuccess(reply, paged.items, {
       page: pagination.page,

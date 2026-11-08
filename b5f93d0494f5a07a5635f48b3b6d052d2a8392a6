@@ -1,0 +1,3 @@
+Focusable AdultItemCard (feature_adult_library_20261107, Phase 2 client).
+
+Single Focus stop per card, visible focus ring, title/filename fallback, review badge. 3 widget tests incl. select-key activation.

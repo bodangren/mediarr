@@ -71,3 +71,10 @@ isolation. Verified:
 - full Flutter suite **463 tests green** (layout/back/home D-pad suites included);
 - device 1.3.50 (code 74): one press on Continue Watching resumed Entourage at **606 s** (stored 600),
   no second screen, no timer/double-push diagnostics.
+
+## Regression checks after the single-select fix (2026-11-09 06:1x)
+- **MENU key on the Movies grid still opens the context menu** (Open details / Mark watched /
+  Mark unwatched) — capture `movie-context-menu-after-select-fix-20261109.png`.
+- New widget tests pin the corrected focus contract in `test/core/focusable_action_select_test.dart`:
+  a short press selects **exactly once**; a held press opens the context menu and does **not** also
+  select. (adb cannot emulate a 700 ms hold reliably, hence the widget-level pin.)

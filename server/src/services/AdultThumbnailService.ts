@@ -81,3 +81,33 @@ export class AdultThumbnailService {
     return target;
   }
 }
+
+/**
+ * Bounded missing-thumbnail pass shared by the API route and the scheduler (tech-debt entry
+ * 2026-11-08): covers stills that appeared after the first backfill without ever blocking a list
+ * request, and yields between ffmpeg runs so the TV never sees an event-loop stall.
+ */
+export async function generateMissingAdultThumbnails(options: {
+  rows: Array<{ id: number; path: string }>;
+  thumbnails: Pick<AdultThumbnailService, 'hasThumbnail' | 'generate'>;
+  limit?: number;
+  now?: () => number;
+  sleep?: (ms: number) => Promise<void>;
+}): Promise<{ generated: number; failures: Array<{ id: number; error: string }>; scanned: number }> {
+  const limit = options.limit ?? 8;
+  const sleep = options.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
+  let generated = 0;
+  const failures: Array<{ id: number; error: string }> = [];
+  for (const row of options.rows) {
+    if (generated >= limit) break;
+    if (await options.thumbnails.hasThumbnail(row.id)) continue;
+    try {
+      await options.thumbnails.generate(row.id, row.path);
+      generated += 1;
+      await sleep(200);
+    } catch (error) {
+      failures.push({ id: row.id, error: error instanceof Error ? error.message : String(error) });
+    }
+  }
+  return { generated, failures, scanned: options.rows.length };
+}

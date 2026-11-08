@@ -63,7 +63,7 @@ import { SubtitleSyncService } from './services/SubtitleSyncService';
 import { FfsubsyncAligner } from './services/FfsubsyncAligner';
 import { BilingualSubtitleService } from './services/BilingualSubtitleService';
 import { ensureLibraryRegistry } from './services/LibraryRegistry';
-import { eq, sql } from 'drizzle-orm';
+import { asc, eq, sql } from 'drizzle-orm';
 import * as dbSchema from './db/schema';
 import { orderSubtitlePathsByPriority } from './services/SubtitlePathPriority';
 import { MiniMaxTranslator } from './services/MiniMaxTranslator';
@@ -95,6 +95,7 @@ import { LibraryFolderImportService } from './services/LibraryFolderImportServic
 import { downloadPending, pollAllSubscriptions, runRetention } from './services/YoutubeAutomation';
 import { appendNightlyReceipt, buildNightlyReceipt, readIngestReceipts } from './services/MusicAutomation';
 import { applyTidy, planTidy } from './services/StagingTidyService';
+import { AdultThumbnailService, generateMissingAdultThumbnails } from './services/AdultThumbnailService';
 import { snapshotCoverage } from './services/SubtitleCoverageAutomation';
 import { queuePriorityWanted } from './services/SubtitleCoverageWanted';
 import { globalLogBuffer } from './services/LogReaderService';
@@ -911,6 +912,24 @@ export async function createServiceContainer(
           + `dual ${snapshot.counts.dual}, zho-only ${snapshot.counts['zho-only']}, `
           + `en-only ${snapshot.counts['en-only']}, none ${snapshot.counts.none}`,
         );
+      });
+
+      scheduler.schedule('adult-thumbnails', '*/10 * * * *', async () => {
+        const rows = await prisma.drizzle
+          .select({ id: dbSchema.adultItems.id, path: dbSchema.adultItems.path })
+          .from(dbSchema.adultItems)
+          .orderBy(asc(dbSchema.adultItems.id));
+        const result = await generateMissingAdultThumbnails({
+          rows,
+          thumbnails: new AdultThumbnailService(),
+          limit: 8,
+        });
+        if (result.generated > 0 || result.failures.length > 0) {
+          console.log(
+            `Adult thumbnails: generated ${result.generated}, `
+            + `failed ${result.failures.length}, scanned ${result.scanned}`,
+          );
+        }
       });
 
       scheduler.schedule('staging-tidy', '30 4 * * *', async () => {

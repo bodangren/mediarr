@@ -1,0 +1,5 @@
+Wanted-subtitle fetch cycle now uses viewing priority (feature_subtitle_coverage_priority_20261108, Phase 3).
+
+Repository: listWantedSubtitlesByPriority loads a limit x5 pool, resolves variant -> movie/episode (through episode/season/series), batches progress per media type, aggregates sibling episodes into series activity, orders with orderWantedCandidates, slices to the cap. Service calls it with a fallback for plain listings.
+
+Tests: 2 simulated-provider tests (order preserved, cap respected, fallback works) + 15 existing green; tsc clean. Live ordering waits on a subtitle provider credential; queue remains idle with evidence.

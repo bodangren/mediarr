@@ -317,6 +317,20 @@ export function registerMusicRoutes(app: FastifyInstance, deps: ApiDependencies)
       path: tag?.finalPath ?? result.audioPath ?? null,
     });
 
+    // A failed ingest must never be silent: log the exact tool error and publish it on the event hub
+    // (the receipt alone is only discovered by someone who goes looking).
+    if (!result.ok) {
+      const message = result.error ?? 'ingest failed';
+      console.error(`[Music] Ingest failed for ${videoId}: ${message}`);
+      try {
+        deps.eventHub?.publish('notification:music-ingest-failure', { videoId, error: message });
+      } catch {
+        // The journal line above is the fallback when no subscriber is attached.
+      }
+    } else if (tag?.filed !== true) {
+      console.warn(`[Music] Ingest filed to review for ${videoId}: ${tag?.reason ?? 'needs review'}`);
+    }
+
     return sendSuccess(reply, { videoId, ...result, tag, audioHash, receipt });
   });
 

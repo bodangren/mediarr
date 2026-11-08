@@ -32,7 +32,7 @@
 
 ## Phase 4: SPA + client surface
 
-- [~] Wanted page: grouped sections with counts, coverage card, reason badges; component tests.
+- [~] Wanted page: coverage card shipped and browser-verified — live `/wanted` shows "9 high-priority · 7 covered · 2 missing" with the four buckets (6/3/17/3136) — 9811f7c; 4 card tests. Remaining: group the wanted rows by bucket with counts and reason badges.
 - [ ] TV client: pass through `priority`/`bucket` for the wanted/watched surfaces (read-only).
 - [ ] Browser check against the live server with the real library.
 

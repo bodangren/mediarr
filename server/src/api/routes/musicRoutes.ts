@@ -1,4 +1,5 @@
 import fsp from 'node:fs/promises';
+import { sendByteRangeStream } from '../utils/byteRangeStreaming';
 import pathPosix from 'node:path/posix';
 import type { FastifyInstance } from 'fastify';
 import { and, asc, desc, eq, like, or, sql } from 'drizzle-orm';
@@ -15,6 +16,28 @@ import type { ApiDependencies } from '../types';
 /** Music library endpoints (track feature_music_library_20261107). Own domain under /api/music/*. */
 export function registerMusicRoutes(app: FastifyInstance, deps: ApiDependencies): void {
   const drizzle = (deps.prisma as unknown as { drizzle: any }).drizzle;
+
+  /** Audio streaming with Range support, reusing the video handler's contract (206 + Content-Range). */
+  app.get('/api/music/tracks/:id/stream', async (request, reply) => {
+    const id = Number.parseInt(String((request.params as { id?: string }).id ?? ''), 10);
+    if (!Number.isInteger(id) || id <= 0) {
+      return reply.code(422).send({ ok: false, error: { code: 'INVALID_ID', message: 'id must be a positive integer' } });
+    }
+    const row = (await drizzle
+      .select({ path: schema.musicTracks.path })
+      .from(schema.musicTracks)
+      .where(eq(schema.musicTracks.id, id))
+      .limit(1))[0];
+    if (!row?.path) {
+      return reply.code(404).send({ ok: false, error: { code: 'NOT_FOUND', message: 'Track not found' } });
+    }
+    try {
+      await fsp.access(row.path);
+    } catch {
+      return reply.code(404).send({ ok: false, error: { code: 'FILE_MISSING', message: 'Audio file is missing on disk' } });
+    }
+    return sendByteRangeStream(reply, row.path, request.headers.range);
+  });
 
   /** Artists with album and track counts. */
   app.get('/api/music/artists', async (_request, reply) => {

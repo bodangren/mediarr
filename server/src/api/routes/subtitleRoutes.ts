@@ -1,3 +1,5 @@
+import fsp from 'node:fs/promises';
+import path from 'node:path';
 import type { FastifyInstance } from 'fastify';
 import { inArray } from 'drizzle-orm';
 import { ValidationError } from '../../errors/domainErrors';
@@ -13,6 +15,7 @@ import { parseIdParam } from '../routeUtils';
 import type { ApiDependencies } from '../types';
 import { ALLOWED_SUBTITLE_EXTENSIONS } from '../../services/providers/providerUtils';
 import { subtitleUploadInputSchema } from '../../contracts/subtitle';
+import { summarizeSyncState } from '../../services/SubtitleSyncService';
 import {
   isChineseLanguage,
   isEnglishLanguage,
@@ -724,6 +727,32 @@ export function registerSubtitleRoutes(
       page: pagination.page,
       pageSize: pagination.pageSize,
       totalCount: paged.totalCount,
+    });
+  });
+
+  /** How far the background Chinese-subtitle timing pass has got (B2c). */
+  app.get('/api/subtitles/sync/status', async (_request, reply) => {
+    const prisma = deps.prisma as any;
+    const configDir = process.env.CONFIG_DIR ?? '/config';
+    let raw: unknown = null;
+    try {
+      raw = JSON.parse(await fsp.readFile(path.join(configDir, 'subtitle-sync-state.json'), 'utf-8'));
+    } catch {
+      raw = null;
+    }
+    const summary = summarizeSyncState(raw);
+    // Only Chinese subtitle sidecars are sync candidates, not every media file.
+    const candidates = await prisma.variantSubtitleTrack.count({
+      where: {
+        languageCode: { in: ['zho', 'chi', 'zh', 'cmn'] },
+        filePath: { not: null },
+        NOT: { filePath: '' },
+      },
+    });
+    return sendSuccess(reply, {
+      ...summary,
+      candidates,
+      remaining: Math.max(0, candidates - summary.attempted),
     });
   });
 

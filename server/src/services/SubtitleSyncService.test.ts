@@ -7,6 +7,7 @@ import {
   type Aligner,
   type AlignResult,
   type Candidate,
+  summarizeSyncState,
 } from './SubtitleSyncService';
 
 const SRT = '1\n00:00:01,000 --> 00:00:02,000\n你好\n';
@@ -139,5 +140,18 @@ describe('SubtitleSyncService', () => {
 
     expect(result.aligned).toBe(1);
     expect(aligner.calls).toBe(2);
+  });
+});
+
+describe('summarizeSyncState', () => {
+  it('counts ok/gave_up/failed entries in the ledger', () => {
+    expect(summarizeSyncState({ entries: {
+      a: { status: 'ok' }, b: { status: 'ok' }, c: { status: 'gave_up' }, d: { status: 'failed' }, e: {},
+    } })).toEqual({ attempted: 5, ok: 2, gaveUp: 1, failed: 1, other: 1 });
+  });
+
+  it('tolerates a missing or corrupt ledger', () => {
+    expect(summarizeSyncState(null)).toEqual({ attempted: 0, ok: 0, gaveUp: 0, failed: 0, other: 0 });
+    expect(summarizeSyncState({})).toEqual({ attempted: 0, ok: 0, gaveUp: 0, failed: 0, other: 0 });
   });
 });

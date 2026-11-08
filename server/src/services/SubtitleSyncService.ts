@@ -229,3 +229,30 @@ export class SubtitleSyncService {
     await fs.rename(tmp, this.statePath);
   }
 }
+
+export interface SyncStateSummary {
+  attempted: number;
+  ok: number;
+  gaveUp: number;
+  failed: number;
+  other: number;
+}
+
+/** Counts the JSON sync ledger so the owner can see how far the background pass has got. */
+export function summarizeSyncState(raw: unknown): SyncStateSummary {
+  const entries = raw && typeof raw === 'object' && 'entries' in raw
+    ? (raw as { entries?: unknown }).entries
+    : raw;
+  const summary: SyncStateSummary = { attempted: 0, ok: 0, gaveUp: 0, failed: 0, other: 0 };
+  if (!entries || typeof entries !== 'object') return summary;
+  for (const entry of Object.values(entries as Record<string, unknown>)) {
+    if (!entry || typeof entry !== 'object') continue;
+    summary.attempted += 1;
+    const status = (entry as { status?: unknown }).status;
+    if (status === 'ok') summary.ok += 1;
+    else if (status === 'gave_up') summary.gaveUp += 1;
+    else if (status === 'failed') summary.failed += 1;
+    else summary.other += 1;
+  }
+  return summary;
+}

@@ -32,7 +32,7 @@
 
 ## Phase 4: SPA + client surface
 
-- [ ] Wanted page: grouped sections with counts, coverage card, reason badges; component tests.
+- [~] Wanted page: grouped sections with counts, coverage card, reason badges; component tests.
 - [ ] TV client: pass through `priority`/`bucket` for the wanted/watched surfaces (read-only).
 - [ ] Browser check against the live server with the real library.
 

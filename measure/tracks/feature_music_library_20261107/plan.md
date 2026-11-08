@@ -15,8 +15,8 @@
 ## Phase 1: Domain + scan
 
 - [x] Contract tests for artist/album/track and the scan summary, written first — `MusicLibrary` with 6 tests: casefolded artist/album identity, Unknown buckets, filename title fallback, disc/track ordering, scan summary with unreadable reporting — 78c125fc
-- [~] Schema/migration; isolated from `TV|MOVIE`.
-- [ ] Scanner: walk root, read tags/artwork, upsert by path, report unreadable files.
+- [x] Schema/migration; isolated from `TV|MOVIE` — migration 0014 MusicArtist/MusicAlbum/MusicTrack (casefolded unique artist key, album unique per artist, `path` unique for idempotent scans, own playback state, source LOCAL|YOUTUBE); applied on the live DB — 78c125fc
+- [~] Scanner: walk root, read tags/artwork, upsert by path, report unreadable files.
 - [ ] Seeded-tree counts test.
 
 ## Phase 2: Ingest pipeline (deterministic)

@@ -1,0 +1,7 @@
+Series-level priority inheritance for wanted episodes (feature_subtitle_coverage_priority_20261108).
+
+Missing episodes have no progress; the route now loads siblings per wanted series, aggregates series activity (unfinished sibling first, then most recent lastWatched), and uses it as the episode's snapshot before ranking.
+
+Live evidence: /api/media/wanted page 1 = Archer missing episodes; SQL confirms Archer has the newest episode progress (2026-11-07 23:57) vs Reacher 21:50, The 100 21:16, The Sopranos 13:33.
+
+3 tests, 11 wanted-route tests green, tsc clean.

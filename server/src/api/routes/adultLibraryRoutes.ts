@@ -186,6 +186,42 @@ export function registerAdultLibraryRoutes(app: FastifyInstance, deps: ApiDepend
    * system, and it checks the existing Torrent table first so a repeated pick (or a careless retry)
    * cannot queue twice. `dryRun` defaults to true: a run must opt in explicitly to actually download.
    */
+  /**
+   * Discovery receipts (Phase 3). A run must leave a receipt even when it picked nothing - decision D4
+   * is "never silently wrong", and an unrecorded weekly run is indistinguishable from a dead one.
+   */
+  app.post('/api/adult/automation/receipt', async (request, reply) => {
+    const body = (request.body ?? {}) as {
+      sources?: unknown;
+      picks?: unknown;
+      duplicates?: unknown;
+      failures?: unknown;
+      note?: string;
+    };
+    const row = (await drizzle
+      .insert(schema.adultDiscoveryReceipts)
+      .values({
+        sources: Array.isArray(body.sources) ? body.sources : [],
+        picks: Array.isArray(body.picks) ? body.picks : [],
+        duplicates: Array.isArray(body.duplicates) ? body.duplicates : [],
+        failures: Array.isArray(body.failures) ? body.failures : [],
+        note: typeof body.note === 'string' ? body.note : null,
+      })
+      .returning())[0];
+    return sendSuccess(reply, row);
+  });
+
+  app.get('/api/adult/automation/receipts', async (request, reply) => {
+    const query = request.query as Record<string, unknown>;
+    const limit = Math.min(50, Math.max(1, Number.parseInt(String(query.limit ?? '10'), 10) || 10));
+    const rows = await drizzle
+      .select()
+      .from(schema.adultDiscoveryReceipts)
+      .orderBy(asc(schema.adultDiscoveryReceipts.runAt))
+      .limit(limit);
+    return sendSuccess(reply, rows);
+  });
+
   app.post('/api/adult/automation/queue', async (request, reply) => {
     const body = (request.body ?? {}) as {
       title?: string;

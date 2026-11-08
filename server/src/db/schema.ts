@@ -130,6 +130,21 @@ export const adultItems = sqliteTable("AdultItem", {
   index("AdultItem_needsReview_idx").on(table.needsReview),
 ]);
 
+export const adultDiscoveryReceipts = sqliteTable("AdultDiscoveryReceipt", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  runAt: integer("runAt", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(strftime('%s','now'))`),
+  /** Where the agent browsed (free text list). */
+  sources: text("sources", { mode: "json" }).notNull().$defaultFn(() => []),
+  /** Picks with their queue result, as proposed by the agent. */
+  picks: text("picks", { mode: "json" }).notNull().$defaultFn(() => []),
+  duplicates: text("duplicates", { mode: "json" }).notNull().$defaultFn(() => []),
+  /** Non-empty when the run failed or was deliberately empty (D4: never silently wrong). */
+  failures: text("failures", { mode: "json" }).notNull().$defaultFn(() => []),
+  note: text("note"),
+}, (table) => [index("AdultDiscoveryReceipt_runAt_idx").on(table.runAt)]);
+
 export const series = sqliteTable("Series", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   mediaId: integer("mediaId").unique().references(() => media.id, {

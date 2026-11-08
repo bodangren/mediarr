@@ -138,6 +138,30 @@ export function applyYoutubeProgress(
   return { position, isWatched: current.isWatched || reachedEnd };
 }
 
+export interface RetentionCandidate {
+  isWatched: boolean;
+  watchedAt: Date | null;
+  source: 'SUBSCRIPTION' | 'IMPORT' | string;
+}
+
+/**
+ * Retention eligibility for YouTube (track feature_youtube_library_20261107, Phase 3).
+ *
+ * Retire only a watched subscription video whose watchedAt is older than the retention window
+ * (default 7 days, decision Y2). Imported archive files are never eligible (gate G9): they are
+ * unmanaged history, not downloaded episodes.
+ */
+export function retentionEligible(
+  video: RetentionCandidate,
+  now: Date,
+  retentionDays = 7,
+): boolean {
+  if (video.source !== 'SUBSCRIPTION') return false;
+  if (!video.isWatched || video.watchedAt === null) return false;
+  const cutoff = new Date(now.getTime() - retentionDays * 24 * 60 * 60 * 1000);
+  return video.watchedAt.getTime() <= cutoff.getTime();
+}
+
 export interface VideoPersistence {
   findByVideoId(videoId: string): Promise<{ id: number } | null>;
   insert(entry: FeedEntry & { subscriptionId: number }): Promise<{ id: number }>;

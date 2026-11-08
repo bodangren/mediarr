@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   applyYoutubeProgress,
+  retentionEligible,
   normalizeYoutubeVideoId,
   parseSubscriptionUrl,
   queueNewVideos,
@@ -107,6 +108,32 @@ describe('applyYoutubeProgress', () => {
   it('does not mark watched when duration is unknown', () => {
     const update = applyYoutubeProgress({ position: 0, isWatched: false }, { positionSeconds: 5000 });
     expect(update.isWatched).toBe(false);
+  });
+});
+
+describe('retentionEligible', () => {
+  const now = new Date('2026-11-08T12:00:00Z');
+  const watched = (daysAgo: number) => ({
+    isWatched: true,
+    watchedAt: new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000),
+    source: 'SUBSCRIPTION' as const,
+  });
+
+  it('retires a watched subscription video after the window', () => {
+    expect(retentionEligible(watched(8), now)).toBe(true);
+    expect(retentionEligible(watched(7), now)).toBe(true);
+    expect(retentionEligible(watched(6), now)).toBe(false);
+  });
+
+  it('never retires unwatched or imported archive items', () => {
+    expect(retentionEligible({ isWatched: false, watchedAt: null, source: 'SUBSCRIPTION' }, now)).toBe(false);
+    expect(retentionEligible({ ...watched(30), source: 'IMPORT' }, now)).toBe(false);
+    expect(retentionEligible({ isWatched: true, watchedAt: null, source: 'SUBSCRIPTION' }, now)).toBe(false);
+  });
+
+  it('honours a custom retention window', () => {
+    expect(retentionEligible(watched(3), now, 1)).toBe(true);
+    expect(retentionEligible(watched(3), now, 30)).toBe(false);
   });
 });
 

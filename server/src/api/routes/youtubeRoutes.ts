@@ -3,7 +3,7 @@ import fsp from 'node:fs/promises';
 import type { FastifyInstance } from 'fastify';
 import { and, asc, desc, eq } from 'drizzle-orm';
 import * as schema from '../../db/schema';
-import { applyYoutubeProgress, parseSubscriptionUrl } from '../../services/YoutubeLibrary';
+import { applyYoutubeProgress, parseSubscriptionUrl, retentionEligible } from '../../services/YoutubeLibrary';
 import { YoutubeFeedPoller } from '../../services/YoutubeFeedPoller';
 import { YoutubeDownloadService } from '../../services/YoutubeDownloadService';
 import { sendSuccess } from '../contracts';
@@ -152,6 +152,37 @@ export function registerYoutubeRoutes(app: FastifyInstance, deps: ApiDependencie
     }
     await drizzle.update(schema.youtubeVideos).set(patch).where(eq(schema.youtubeVideos.id, id));
     return sendSuccess(reply, { id, ...update });
+  });
+
+  /** Dry-run retention list: watched subscription videos older than 7 days. Read-only. */
+  app.get('/api/youtube/retention/candidates', async (request, reply) => {
+    const query = request.query as Record<string, unknown>;
+    const days = Math.max(1, Math.min(365, Number.parseInt(String(query.days ?? '7'), 10) || 7));
+    const rows = await drizzle
+      .select({
+        id: schema.youtubeVideos.id,
+        videoId: schema.youtubeVideos.videoId,
+        title: schema.youtubeVideos.title,
+        source: schema.youtubeVideos.source,
+        isWatched: schema.youtubeVideos.isWatched,
+        watchedAt: schema.youtubeVideos.watchedAt,
+        path: schema.youtubeVideos.path,
+      })
+      .from(schema.youtubeVideos)
+      .where(eq(schema.youtubeVideos.status, 'AVAILABLE'));
+    const now = new Date();
+    const candidates = rows.filter((row: Record<string, unknown>) =>
+      retentionEligible(
+        {
+          isWatched: Boolean(row.isWatched),
+          watchedAt: row.watchedAt instanceof Date ? row.watchedAt : null,
+          source: String(row.source),
+        },
+        now,
+        days,
+      ),
+    );
+    return sendSuccess(reply, { retentionDays: days, candidates, count: candidates.length });
   });
 
   /** Download queued videos now; the scheduled task will call the same service. */

@@ -80,22 +80,7 @@ export class LibraryScanner {
   }
 
   private async getAllFiles(dir: string): Promise<string[]> {
-    const results: string[] = [];
-    const list = await fs.readdir(dir);
-
-    for (const file of list) {
-      const filePath = path.join(dir, file);
-      const stat = await fs.stat(filePath);
-
-      if (stat.isDirectory()) {
-        const subFiles = await this.getAllFiles(filePath);
-        results.push(...subFiles);
-      } else {
-        results.push(filePath);
-      }
-    }
-
-    return results;
+    return collectFiles(dir);
   }
 
   private matchesMovieFile(movie: { title: string; year: number }, filePath: string): boolean {
@@ -106,4 +91,46 @@ export class LibraryScanner {
     const hasYear = cleanFilename.includes(String(movie.year));
     return hasTitle && hasYear;
   }
+}
+
+
+export interface ScanIo {
+  readdir(dir: string): Promise<string[]>;
+  stat(file: string): Promise<{ isDirectory(): boolean }>;
+}
+
+/**
+ * Recursively lists files, skipping unreadable directories/entries with a warning instead of aborting
+ * the whole scan (tech-debt 2026-07-28: one unreadable subdirectory failed an entire library scan).
+ */
+export async function collectFiles(
+  dir: string,
+  io: ScanIo = fs,
+  warn: (message: string) => void = (message) => console.warn(message),
+): Promise<string[]> {
+  let names: string[];
+  try {
+    names = await io.readdir(dir);
+  } catch (error) {
+    warn(`Skipping unreadable directory ${dir}: ${error instanceof Error ? error.message : String(error)}`);
+    return [];
+  }
+
+  const results: string[] = [];
+  for (const name of names) {
+    const filePath = path.join(dir, name);
+    let stat: { isDirectory(): boolean };
+    try {
+      stat = await io.stat(filePath);
+    } catch (error) {
+      warn(`Skipping unreadable entry ${filePath}: ${error instanceof Error ? error.message : String(error)}`);
+      continue;
+    }
+    if (stat.isDirectory()) {
+      results.push(...await collectFiles(filePath, io, warn));
+    } else {
+      results.push(filePath);
+    }
+  }
+  return results;
 }

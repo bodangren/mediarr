@@ -14,7 +14,7 @@ import { sql } from "drizzle-orm";
 
 export const MediaTypeEnum = ["TV", "MOVIE"] as const;
 export const YoutubeSubscriptionKindEnum = ["CHANNEL", "PLAYLIST"] as const;
-export const YoutubeVideoStatusEnum = ["PENDING", "DOWNLOADING", "AVAILABLE", "FAILED"] as const;
+export const YoutubeVideoStatusEnum = ["PENDING", "DOWNLOADING", "AVAILABLE", "FAILED", "QUARANTINED", "DELETED"] as const;
 export const YoutubeVideoSourceEnum = ["SUBSCRIPTION", "IMPORT"] as const;
 /**
  * Library kinds (track feature_adult_library_20261107, gate G10).

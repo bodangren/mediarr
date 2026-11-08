@@ -32,7 +32,7 @@
 
 ## Phase 4: SPA + client surface
 
-- [x] Wanted page: coverage card + grouped list, browser-verified — live `/wanted` shows "9 high-priority · 7 covered · 2 missing" and per-bucket sections with counts (BACKFILL · 25 visible in `device-20261107/wanted-grouped.jpg`) — 9811f7c, 6189a9a, 8d6f4c2-style grouping commit; 4 card + 17 page tests. Reason badges deferred to the TV client task.
+- [x] Wanted page: coverage card + grouped list, browser-verified — live `/wanted` shows "9 high-priority · 7 covered · 2 missing" and per-bucket sections with counts (BACKFILL · 25 in `device-20261107/wanted-grouped.jpg`); commits 9811f7c, 6189a9a, 9d568f1; 4 card + 17 page tests; reason badges deferred to the TV client — 97fda37
 - [~] TV client: pass through `priority`/`bucket` for the wanted/watched surfaces (read-only).
 - [ ] Browser check against the live server with the real library.
 

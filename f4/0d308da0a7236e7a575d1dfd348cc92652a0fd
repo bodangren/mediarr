@@ -1,0 +1,1 @@
+YouTube playback profile fix: transcode to H.264 High@4.0 1080p30 AAC faststart to match movies that play on the TV; temp+rename; failure marks FAILED; both live rows re-transcoded and verified by ffprobe.

@@ -17,7 +17,7 @@
 - [x] Wire the SQL query (progress ⋈ movie/episode) that feeds it — `ViewingPriorityQuery` batches one query per media type and feeds the classifier — 67c3193
 - [x] Unit tests for finished vs in-progress, 14-day/30-day boundaries, and items with no playback — 098f153
 
-## Phase 2: Coverage + ordered APIs
+## Phase 2: Coverage + ordered APIs [checkpoint: 9d910b2c]
 
 - [x] `GET /api/subtitles/coverage` with per-bucket counts and EN/ZH/bilingual/none tallies + route tests — live: 3,162 items, high priority 9 (7 covered, 2 missing); 3 route tests in `subtitleRoutes.coverage.test.ts` — b9c3aaa
 - [x] Order `GET /api/subtitles/wanted/series|movies` by bucket then recency; `priority` field and `bucket` filter with 3 route tests — live: in-progress ranks first, backfill filter returns 1,202 — c822cc7

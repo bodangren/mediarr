@@ -26,7 +26,7 @@
 
 ## Phase 3: Automation consumes the order
 
-- [ ] Subtitle fetch cycle pulls candidates through the priority query (highest bucket first) with
+- [~] Subtitle fetch cycle pulls candidates through the priority query (highest bucket first) with
       the existing provider guard and per-run cap intact; test with a simulated provider.
 - [ ] Bilingual cycle same ordering; test with a simulated translator.
 - [ ] Receipt log line records the bucket of each processed item.

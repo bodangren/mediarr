@@ -1,0 +1,1 @@
+Music ingest failures now logged + SSE event (forced alert, no silent skip); live-verified with a bogus id, test row/receipt cleaned.

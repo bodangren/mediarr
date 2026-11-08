@@ -1,0 +1,1 @@
+Subtitle t2s normaliser: OpenCC via automation venv, dry-run default, dated backup + atomic write; dry-run 1512 scanned -> 169 would convert; live gated on owner decision.

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../shared/models/adult_item.dart';
 
@@ -23,6 +24,18 @@ class AdultItemCard extends StatelessWidget {
     final subtitle = item.subtitleLine;
     return Focus(
       autofocus: autofocus,
+      // The remote's centre button arrives as select/enter, not as a Material ActivateIntent on
+      // every device: handle both so one press always opens the item.
+      onKeyEvent: (node, event) {
+        if (event is KeyDownEvent &&
+            (event.logicalKey == LogicalKeyboardKey.select ||
+                event.logicalKey == LogicalKeyboardKey.enter ||
+                event.logicalKey == LogicalKeyboardKey.gameButtonA)) {
+          onSelect?.call();
+          return KeyEventResult.handled;
+        }
+        return KeyEventResult.ignored;
+      },
       child: Builder(
         builder: (focusContext) {
           final focused = Focus.of(focusContext).hasFocus;

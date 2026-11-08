@@ -22,40 +22,42 @@ const _reviewItem = AdultItem(
   needsReview: true,
 );
 
-Widget _wrap(Widget child, {required void Function() onKey}) => MaterialApp(
-      home: Shortcuts(
-        shortcuts: const <ShortcutActivator, Intent>{
-          SingleActivator(LogicalKeyboardKey.select): ActivateIntent(),
-        },
-        child: Actions(
-          actions: <Type, Action<Intent>>{
-            ActivateIntent: CallbackAction<ActivateIntent>(
-              onInvoke: (_) { onKey(); return null; },
-            ),
-          },
-          child: Scaffold(body: Center(child: child)),
-        ),
-      ),
-    );
+Widget _wrap(Widget child) => MaterialApp(home: Scaffold(body: Center(child: child)));
 
 void main() {
   testWidgets('shows the parsed title and metadata line', (tester) async {
-    await tester.pumpWidget(_wrap(AdultItemCard(item: _item), onKey: () {}));
+    await tester.pumpWidget(_wrap(AdultItemCard(item: _item)));
     expect(find.text('Best Asian Babes Blowjobs Compilation'), findsOneWidget);
     expect(find.text('1000Facials · 1080p'), findsOneWidget);
     expect(find.text('NEEDS REVIEW'), findsNothing);
   });
 
   testWidgets('falls back to the filename and badges a review-bucket item', (tester) async {
-    await tester.pumpWidget(_wrap(AdultItemCard(item: _reviewItem), onKey: () {}));
+    await tester.pumpWidget(_wrap(AdultItemCard(item: _reviewItem)));
     expect(find.text('004 [1c6d5a2b].mp4'), findsOneWidget);
     expect(find.text('NEEDS REVIEW'), findsOneWidget);
   });
 
-  testWidgets('activates on select, so the TV remote can open it', (tester) async {
+  testWidgets('activates on the remote centre button', (tester) async {
     var activations = 0;
-    await tester.pumpWidget(_wrap(AdultItemCard(item: _item, autofocus: true), onKey: () => activations++));
+    await tester.pumpWidget(_wrap(AdultItemCard(
+      item: _item,
+      autofocus: true,
+      onSelect: () => activations++,
+    )));
     await tester.sendKeyEvent(LogicalKeyboardKey.select);
+    await tester.pump();
+    expect(activations, 1);
+  });
+
+  testWidgets('activates on Enter as well', (tester) async {
+    var activations = 0;
+    await tester.pumpWidget(_wrap(AdultItemCard(
+      item: _item,
+      autofocus: true,
+      onSelect: () => activations++,
+    )));
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
     await tester.pump();
     expect(activations, 1);
   });

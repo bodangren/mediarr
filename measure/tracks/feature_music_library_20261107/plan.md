@@ -38,10 +38,9 @@
 > The domain/ingest phases (1–3) are one shippable track; the player can follow independently.
 
 
-- [~] iTunes-style shell: persistent sidebar (Artists, Albums, Songs, Recently Added), album grid, track list, now-playing bar, queue.
-- [ ] D-pad focus walk: sidebar ↔ grid ↔ list ↔ transport; visible focus; no traps; every control
-  reachable (the TV focus rules from prior tracks apply).
-- [ ] Play, seek, queue advance, resume, background audio behavior.
+- [x] iTunes-style shell: persistent sidebar (Artists, Albums, Songs, Recently Added), album grid, track list, now-playing bar, queue — implemented and device-verified (artists grid, album grid with artwork, album view with Play all, now-playing bar; 1.3.30) — 16a634d9
+- [x] D-pad focus walk: sidebar ↔ grid ↔ list ↔ transport; visible focus; no traps; every control reachable — explicit content-focus handoff + widget test walking artist grid → sidebar → Albums → album → track list → Play album → now-playing bar; 156 tests; device Albums section focused correctly — 16a634d9
+- [~] Play, seek, queue advance, resume, background audio behavior.
 - [ ] Widget tests for the focus walk and playback handoff; device check on the TV.
 
 ## Phase 5: Automation + migration

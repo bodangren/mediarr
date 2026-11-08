@@ -258,7 +258,9 @@ export function registerMediaRoutes(
       const byKey = new Map(filtered.map(item => [`${item.type}:${item.id}`, item]));
       ordered = ranked.flatMap(entry => {
         const original = byKey.get(`${entry.kind}:${entry.id}`);
-        return original ? [original] : [];
+        return original
+          ? [{ ...original, priority: { bucket: entry.priority.bucket, rank: entry.priority.rank } }]
+          : [];
       });
     }
 

@@ -63,10 +63,12 @@ describe('GET /api/media/wanted — viewing priority', () => {
 
     const response = await app.inject({ method: 'GET', url: '/api/media/wanted?pageSize=10' });
     expect(response.statusCode).toBe(200);
-    const body = JSON.parse(response.body) as { data: Array<{ type: string; id: number; title: string }> };
+    const body = JSON.parse(response.body) as { data: Array<{ type: string; id: number; title: string; priority?: { bucket: string } }> };
 
     // 502 is in progress; the rest tie on backfill, where the model breaks ties movie-before-episode.
     expect(body.data.map((item) => item.id)).toEqual([502, 77, 501]);
+    // The bucket travels with the item so the SPA can group the list (feature_subtitle_coverage_priority).
+    expect((body.data[0] as { priority?: { bucket: string } }).priority?.bucket).toBe('continue-watching');
     expect(body.data[0]?.title).toBe('In-progress episode');
   });
 

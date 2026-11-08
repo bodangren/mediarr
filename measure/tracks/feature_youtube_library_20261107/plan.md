@@ -25,12 +25,12 @@
 - [x] Dedupe by video id; partial-download cleanup — `videoId` UNIQUE in the DB plus `queueNewVideos` insert-only-unknown guarantee; `.part`/`.temp` files removed when a download fails, and a "success without a file" is treated as a failure — d8241c1, 1d52d8c
 - [x] UI section: playlist → episodes, D-pad navigable — **SPA done**: `/youtube` route + nav group, videos grouped by channel with thumbnail/duration/watched marker and inline playback; live endpoints verified (listing, 206 `0-1023/35160714`, thumbnail 200) and browser-verified in `device-20261107/youtube-spa.jpg` — 05ba691. TV section also done: own model/screen, channel groups, D-pad cards, shared player over the Range stream with manifest skipped; device 1.3.20 (code 44) verified grid + playback, with a clipped-title row-height bug found and fixed on device (`youtube-tv-section.png`, `youtube-tv-playback.png`) — d58c9b4
 
-## Phase 3: Retention
+## Phase 3: Retention [checkpoint: db7fdbf4]
 
 - [x] Watched-state integration — `applyYoutubeProgress` (clamp to duration, watched at 95%, monotonic, `watchedAt` once) with 14 domain tests, `POST /api/youtube/videos/:id/progress`, and the TV reporter wired for `mediaType youtube`; live: curl 100→not watched, 430/441→watched, device playback updated position/lastPlayedAt — b9bf18e
 - [x] Eligibility rule: watched + retention days (default 7) — `retentionEligible` (subscriptions only, archive excluded per G9, custom window) with tests; `GET /api/youtube/retention/candidates` dry-run list; live: back-dated watched row appeared, restored row disappeared — 5f4f8858
-- [~] Quarantine move/restore/delete with manifest; dry-run first.
-- [ ] Nightly retention job + receipt.
+- [x] Quarantine move/restore/delete with manifest; dry-run first — reuses `planQuarantine`/`executeQuarantine`; `planYoutubeRetention` + `runYoutubeRetention` (dry-run default, EXDEV copy+verify, JSONL manifest), `POST /retention/run|restore|purge` (restore/purge guarded to the quarantine root); 6 tests; **live round-trip** on a throwaway file: dry run untouched → moved+QUARANTINED+manifest → restored byte-identical → re-run+purge deleted+DELETED — db7fdbf4
+- [~] Nightly retention job + receipt.
 
 ## Phase 4: Automation + verification
 

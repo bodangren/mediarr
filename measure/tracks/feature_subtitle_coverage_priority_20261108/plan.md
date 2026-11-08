@@ -24,7 +24,7 @@
 - [x] Sort `GET /api/media/wanted` with the same model (no shape change) — live: 1,736 items in priority order; explicit `sortBy` still honoured, 2 tests — ba465aa
 - [x] Episodes inherit **series-level** viewing priority in the acquisition list — siblings aggregated per wanted series; live page 1 = Archer, which holds the newest episode progress (23:57 vs Reacher 21:50) — 912cd6e
 
-## Phase 3: Automation consumes the order
+## Phase 3: Automation consumes the order [checkpoint: 052b4af1]
 
 - [x] Subtitle fetch cycle pulls candidates through the priority query (highest bucket first) with the existing provider guard and per-run cap intact; test with a simulated provider — `listWantedSubtitlesByPriority` (pool ×5, variant→media, batched progress, sibling-series activity) wired into `processWantedQueue`; 2 simulated-provider tests; live ordering waits on a provider credential — 1687509
 - [x] Bilingual cycle same ordering — candidate provider maps sidecar paths through `VariantSubtitleTrack.filePath` → variant → movie/episode, orders with `orderSubtitlePathsByPriority` (3 tests), logs the ordered count, degrades on failure; cycle consumes the order as given with a simulated-translator test — 09448275

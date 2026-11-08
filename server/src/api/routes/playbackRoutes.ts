@@ -208,6 +208,40 @@ export function registerPlaybackRoutes(
     return sendSuccess(reply, { days, items, counts, total: items.length });
   });
 
+  /**
+   * Honest status of subtitle fetching: queue state, how many failures carry a real error, how many
+   * are stale rows from before error capture, and the latest watched-coverage counts.
+   */
+  app.get('/api/subtitles/wanted/status', async (_request, reply) => {
+    const drizzle = (deps.prisma as unknown as { drizzle: any }).drizzle;
+    const schema = await import('../../db/schema');
+    const rows = await drizzle
+      .select({ state: schema.wantedSubtitles.state, attempts: schema.wantedSubtitles.attempts, lastError: schema.wantedSubtitles.lastError })
+      .from(schema.wantedSubtitles);
+    const counts: Record<string, number> = {};
+    let staleFailures = 0;
+    const errors: Record<string, number> = {};
+    for (const row of rows as Array<{ state: string; attempts: number; lastError: string | null }>) {
+      counts[row.state] = (counts[row.state] ?? 0) + 1;
+      if (row.state === 'FAILED' && row.attempts === 0) staleFailures += 1;
+      if (row.state === 'FAILED' && row.lastError) {
+        errors[row.lastError] = (errors[row.lastError] ?? 0) + 1;
+      }
+    }
+    const receipts = await readCoverageReceipts(process.env.CONFIG_DIR ?? '/config', 1);
+    const latest = receipts.length > 0 ? receipts[receipts.length - 1]!.counts : null;
+
+    return sendSuccess(reply, {
+      counts,
+      staleFailures,
+      errors,
+      latestCoverage: latest,
+      retryBlockedReason: staleFailures > 0
+        ? `${staleFailures} FAILED wanted rows predate error capture; retrying them requires an enabled subtitle provider`
+        : null,
+    });
+  });
+
   /** Queue the missing languages for watched variants into WantedSubtitle. */
   app.post('/api/subtitles/priority-wanted', async (request, reply) => {
     const body = (request.body ?? {}) as { days?: number; limit?: number };

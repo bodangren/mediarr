@@ -234,10 +234,17 @@ export class SubtitleVariantRepository {
   async updateWantedSubtitleState(
     id: number,
     state: WantedSubtitleState,
+    error?: string | null,
   ): Promise<WantedSubtitle> {
     const rows = await this.prisma.drizzle
       .update(schema.wantedSubtitles)
-      .set({ state })
+      .set({
+        state,
+        lastAttemptAt: new Date(),
+        attempts: sql`${schema.wantedSubtitles.attempts} + 1`,
+        ...(error === undefined ? {} : { lastError: error }),
+        ...(state === 'DOWNLOADED' ? { lastError: null } : {}),
+      })
       .where(eq(schema.wantedSubtitles.id, id))
       .returning();
     const updated = rows[0];

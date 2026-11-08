@@ -1,0 +1,1 @@
+{"ok":true,"data":{"counts":{"FAILED":1740,"PENDING":79},"staleFailures":1740,"errors":{},"latestCoverage":{"dual":9,"zho-only":10,"en-only":18,"none":13},"retryBlockedReason":"1740 FAILED wanted rows predate error capture; retrying them requires an enabled subtitle provider"}}

@@ -520,6 +520,11 @@ export const wantedSubtitles = sqliteTable("WantedSubtitle", {
   state: text("state", { enum: WantedSubtitleStateEnum })
     .notNull()
     .default("PENDING"),
+  /** Why the last fetch failed, and how many attempts were made: an honest reason is part of the
+   * coverage requirement, not a log line nobody reads. */
+  lastError: text("lastError"),
+  attempts: integer("attempts").notNull().default(0),
+  lastAttemptAt: integer("lastAttemptAt", { mode: "timestamp" }),
   createdAt: integer("createdAt", { mode: "timestamp" })
     .notNull()
     .default(sql`(strftime('%s','now'))`),

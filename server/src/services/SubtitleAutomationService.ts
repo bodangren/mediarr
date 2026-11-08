@@ -107,10 +107,15 @@ export class SubtitleAutomationService {
           downloaded += 1;
         } else {
           failed += 1;
+          await this.repository.updateWantedSubtitleState(item.id, 'FAILED', 'provider returned no matching subtitle');
         }
       } catch (error) {
         failed += 1;
-        await this.repository.updateWantedSubtitleState(item.id, 'FAILED');
+        await this.repository.updateWantedSubtitleState(
+          item.id,
+          'FAILED',
+          error instanceof Error ? error.message : String(error),
+        );
         console.warn(
           `[SubtitleAutomationService] Failed to fetch wanted subtitle ${item.id}:`,
           error,

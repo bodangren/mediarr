@@ -7,6 +7,7 @@ import { scanMusicLibrary } from '../../services/MusicScanner';
 import { MusicIngestService } from '../../services/MusicIngestService';
 import { MusicTaggerService } from '../../services/MusicTaggerService';
 import { audioHashOf, decideIngest } from '../../services/MusicIngestLedger';
+import { appendIngestReceipt, readIngestReceipts, summarizeReceipts } from '../../services/MusicAutomation';
 import { normalizeYoutubeVideoId } from '../../services/YoutubeLibrary';
 import { sendSuccess } from '../contracts';
 import type { ApiDependencies } from '../types';
@@ -14,6 +15,14 @@ import type { ApiDependencies } from '../types';
 /** Music library endpoints (track feature_music_library_20261107). Own domain under /api/music/*. */
 export function registerMusicRoutes(app: FastifyInstance, deps: ApiDependencies): void {
   const drizzle = (deps.prisma as unknown as { drizzle: any }).drizzle;
+
+  /** Recent ingest receipts plus a summary: answers 'why did this song not appear?'. */
+  app.get('/api/music/receipts', async (request, reply) => {
+    const query = request.query as Record<string, unknown>;
+    const limit = Math.max(1, Math.min(200, Number.parseInt(String(query.limit ?? '50'), 10) || 50));
+    const receipts = await readIngestReceipts(process.env.CONFIG_DIR ?? '/config', limit);
+    return sendSuccess(reply, { receipts, summary: summarizeReceipts(receipts), count: receipts.length });
+  });
 
   /** Tag one staged file with beets and file it into the library tree / review folder. */
   app.post('/api/music/tag', async (request, reply) => {
@@ -51,6 +60,9 @@ export function registerMusicRoutes(app: FastifyInstance, deps: ApiDependencies)
       .from(schema.musicIngestLog);
     const videoDecision = decideIngest(videoId, null, existing);
     if (videoDecision.duplicate) {
+      await appendIngestReceipt(process.env.CONFIG_DIR ?? '/config', {
+        videoId, status: 'SKIPPED', reason: 'duplicate-video', path: null,
+      });
       return sendSuccess(reply, { videoId, ok: true, skipped: 'duplicate-video', existingVideoId: videoDecision.existingVideoId });
     }
 
@@ -69,6 +81,9 @@ export function registerMusicRoutes(app: FastifyInstance, deps: ApiDependencies)
       const audioDecision = decideIngest(videoId, audioHash, existing);
       if (audioDecision.duplicate) {
         await fsp.unlink(result.audioPath).catch(() => undefined);
+        await appendIngestReceipt(process.env.CONFIG_DIR ?? '/config', {
+          videoId, status: 'SKIPPED', reason: 'duplicate-audio', path: null,
+        });
         return sendSuccess(reply, { videoId, ok: true, skipped: 'duplicate-audio', existingVideoId: audioDecision.existingVideoId });
       }
     }
@@ -90,7 +105,14 @@ export function registerMusicRoutes(app: FastifyInstance, deps: ApiDependencies)
       error: result.ok ? (tag?.reason ?? null) : (result.error ?? 'ingest failed'),
     }).onConflictDoNothing();
 
-    return sendSuccess(reply, { videoId, ...result, tag, audioHash });
+    const receipt = await appendIngestReceipt(process.env.CONFIG_DIR ?? '/config', {
+      videoId,
+      status: result.ok ? (tag?.filed === true ? 'FILED' : 'REVIEW') : 'FAILED',
+      reason: result.ok ? (tag?.reason ?? null) : (result.error ?? 'ingest failed'),
+      path: tag?.finalPath ?? result.audioPath ?? null,
+    });
+
+    return sendSuccess(reply, { videoId, ...result, tag, audioHash, receipt });
   });
 
   /** Scan /data/Music (or MUSIC_DIR): dry-run by default, idempotent by file path. */

@@ -36,7 +36,7 @@
 - [x] Flutter client section (TV-safe focus walk); SPA section — SPA done (`c7aeb11`). TV shipped: model/API/card/screen/rail/player handoff, remote-centre fix, **device acceptance on the X96Max**: 1.3.13 (code 37) shows the rail entry with `196 items · 8 need review` and `Page 1 of 9`; 1.3.14 (code 38) opens playback and writes adult progress (AdultItem id 1, 7/1669 s, 02:05:20) without touching movie/episode progress; 441 Flutter tests + 4 card tests green — c202f801
 - [x] Automation contract: list, watched, retention candidates — `GET /api/adult/automation/list`, `POST /api/adult/automation/watched/:id`, `GET /api/adult/automation/retention-candidates?days=N` (proposal only, `destructive:false`); live verified: marking item 1 watched then `days=0` returns exactly that candidate, `days=30` none — c9d5a06
 
-## Phase 3: Agent discovery
+## Phase 3: Agent discovery [checkpoint: 17ff468e]
 
 - [x] Browser-bridge prompt for discovery (score profile: Asian dominant, scene-style; avoid list) — `automation/prompts/adult-discovery-weekly.md`: inputs from the automation contract + `/api/torrents` hashes, selection profile, 1–3 picks (zero valid), queue via `/api/releases/grab-candidate`, mandatory receipt, hard rules (no DB/file writes, no silent success, no unapproved fallback) — 1c25115
 - [x] Queue via Mediarr torrent API; dedupe by info hash — `POST /api/adult/automation/queue`: validates title/40-hex hash/magnet, refuses hashes already in `Torrent`, and only calls `grabRelease` when the caller passes `dryRun:false`. Live: dry-run returns `reason:'dry-run'`, bad hash returns 422. The duplicate branch runs on every call but a true duplicate is only observable once the first real pick exists — 7933835

@@ -135,9 +135,15 @@
       **Done 2026-11-07:** test updated to expect 500 Kbps → 512000 B/s (Red: got 500); route now
       converts Kbps→bytes/sec and preserves the `-1` no-limit sentinel; 9/9 route tests green,
       server `tsc` clean.
-- [ ] **B3** Install `dsh-host.service` as a systemd unit with `DSH_PERMISSION_MODE=danger-full-access`,
+- [~] **B3** Install `dsh-host.service` as a systemd unit with `DSH_PERMISSION_MODE=danger-full-access`,
       the full PATH (nvm + venv + `~/.local/bin`), and a **hard ordering**: stop the terminal host,
-      confirm `:10086` free, then start the unit. Prove reboot persistence. (G2/C-1)
+      confirm `:10086` free, then start the unit. Prove reboot persistence. (G2/C-1) **Prepared
+      2026-11-09:** unit at `automation/systemd/dsh-host.service` (danger-full-access, full PATH,
+      Restart=always, TimeoutStopSec=30, accepted by `systemd-analyze --user verify`) and
+      `automation/scripts/install-dsh-host.sh`, which enforces the :10086 free check and refuses to
+      cut over without `DSH_HOST_CUTOVER=1` — stopping the terminal host also ends the agent turn
+      running it, so the actual cutover is owner-gated. Evidence
+      `device-20261107/service-supervision-20261109.md` — 8c23f906
 - [ ] **B4** Scaffold `automation/dsh-media-automation/` with the **frozen** ledger schema
       (`runs` keyed by `taskId+attempt` with `retryOf`, `jobs`, `locks` incl. a `browser` lock,
       `alerts`, `quarantine`), heartbeat, local-first alert writer; install via `link:`; prove HMR.

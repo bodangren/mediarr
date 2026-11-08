@@ -1,0 +1,6 @@
+Phase 1 of feature_subtitle_coverage_priority_20261108: ViewingPriorityService with the shared viewing-priority model.
+
+- classifyViewingPriority: continue-watching -> recently-watched (14 d) -> recently-added (30 d) -> backfill.
+- rankByViewingPriority / compareViewingPriority: bucket, then newest activity, then stable identity tie-break.
+- isHighPriority marks the coverage denominator (first two buckets).
+- 13 tests in ViewingPriorityService.test.ts pin bucket precedence, both window boundaries, sort order and stability.

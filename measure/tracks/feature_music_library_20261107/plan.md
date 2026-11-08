@@ -40,7 +40,7 @@
 
 - [x] iTunes-style shell: persistent sidebar (Artists, Albums, Songs, Recently Added), album grid, track list, now-playing bar, queue — implemented and device-verified (artists grid, album grid with artwork, album view with Play all, now-playing bar; 1.3.30) — 16a634d9
 - [x] D-pad focus walk: sidebar ↔ grid ↔ list ↔ transport; visible focus; no traps; every control reachable — explicit content-focus handoff + widget test walking artist grid → sidebar → Albums → album → track list → Play album → now-playing bar; 156 tests; device Albums section focused correctly — 16a634d9
-- [~] Play, seek, queue advance, resume, background audio behavior — play/seek/queue advance + media keys verified on device earlier; **background audio measured 2026-11-08: position advanced 0:08 -> 0:42 while the app was backgrounded** (`device-20261107/music-bg-t1.png`, `music-bg-t2.png`); resume across app restart still open.
+- [x] Play, seek, queue advance, resume, background audio behavior — play/seek/queue advance + media keys verified on device; **background audio measured 2026-11-08: position advanced 0:08 -> 0:42 while the app was backgrounded**; **resume across app restart implemented and device-verified: force-stop -> "Continue listening · Sweet Child O' Mine — at 0:14" banner -> playback resumes at 0:19** (`device-20261107/music-bg-t1.png`, `music-bg-t2.png`, `music-resume-banner.png`, `music-resume-playing.png`) — 58ce19ad
 - [ ] Widget tests for the focus walk and playback handoff; device check on the TV.
 
 ## Phase 5: Automation + migration

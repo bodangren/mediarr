@@ -21,7 +21,7 @@ void main() {
       expect(item.needsReview, isFalse);
     });
 
-    test('falls back to the filename for a review-bucket item', () {
+    test('cleans the filename for a review-bucket item', () {
       final item = AdultItem.fromJson({
         'id': 1,
         'fileName': '004 [1c6d5a2b].mp4',
@@ -31,7 +31,8 @@ void main() {
         'needsReview': true,
       });
 
-      expect(item.displayTitle, '004 [1c6d5a2b].mp4');
+      // Hash bracket and extension are ingest artefacts, not a title (three-model review, 2026-11-08).
+      expect(item.displayTitle, '004');
       expect(item.subtitleLine, '');
       expect(item.needsReview, isTrue);
     });

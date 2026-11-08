@@ -3,7 +3,7 @@ import fsp from 'node:fs/promises';
 import type { FastifyInstance } from 'fastify';
 import { and, asc, desc, eq } from 'drizzle-orm';
 import * as schema from '../../db/schema';
-import { parseSubscriptionUrl } from '../../services/YoutubeLibrary';
+import { applyYoutubeProgress, parseSubscriptionUrl } from '../../services/YoutubeLibrary';
 import { YoutubeFeedPoller } from '../../services/YoutubeFeedPoller';
 import { YoutubeDownloadService } from '../../services/YoutubeDownloadService';
 import { sendSuccess } from '../contracts';
@@ -121,6 +121,37 @@ export function registerYoutubeRoutes(app: FastifyInstance, deps: ApiDependencie
     );
 
     return sendSuccess(reply, result);
+  });
+
+  /** Playback progress; watched is monotonic and drives Phase 3 retention. */
+  app.post('/api/youtube/videos/:id/progress', async (request, reply) => {
+    const id = Number.parseInt(String((request.params as { id?: string }).id ?? ''), 10);
+    if (!Number.isInteger(id) || id <= 0) {
+      return reply.code(422).send({ ok: false, error: { code: 'INVALID_ID', message: 'id must be a positive integer' } });
+    }
+    const body = (request.body ?? {}) as { position?: number; duration?: number };
+    const current = (await drizzle
+      .select({ position: schema.youtubeVideos.position, isWatched: schema.youtubeVideos.isWatched })
+      .from(schema.youtubeVideos)
+      .where(eq(schema.youtubeVideos.id, id))
+      .limit(1))[0];
+    if (!current) {
+      return reply.code(404).send({ ok: false, error: { code: 'NOT_FOUND', message: 'Video not found' } });
+    }
+    const update = applyYoutubeProgress(current, {
+      positionSeconds: Number(body.position ?? 0),
+      durationSeconds: typeof body.duration === 'number' ? body.duration : null,
+    });
+    const patch: Record<string, unknown> = {
+      position: update.position,
+      lastPlayedAt: new Date(),
+    };
+    if (update.isWatched && !current.isWatched) {
+      patch.isWatched = true;
+      patch.watchedAt = new Date();
+    }
+    await drizzle.update(schema.youtubeVideos).set(patch).where(eq(schema.youtubeVideos.id, id));
+    return sendSuccess(reply, { id, ...update });
   });
 
   /** Download queued videos now; the scheduled task will call the same service. */

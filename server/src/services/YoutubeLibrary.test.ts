@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
+  applyYoutubeProgress,
   normalizeYoutubeVideoId,
   parseSubscriptionUrl,
   queueNewVideos,
@@ -82,6 +83,30 @@ describe('selectNewEntries', () => {
     const decision = selectNewEntries([entry({ videoId: 'nope' })], new Set());
     expect(decision.accepted).toHaveLength(0);
     expect(decision.skipped).toEqual([{ videoId: 'nope', reason: 'invalid-id' }]);
+  });
+});
+
+describe('applyYoutubeProgress', () => {
+  it('tracks position without marking watched early', () => {
+    const update = applyYoutubeProgress({ position: 0, isWatched: false }, { positionSeconds: 120, durationSeconds: 600 });
+    expect(update).toEqual({ position: 120, isWatched: false });
+  });
+
+  it('marks watched at 95% and never un-watches on replay', () => {
+    const done = applyYoutubeProgress({ position: 0, isWatched: false }, { positionSeconds: 580, durationSeconds: 600 });
+    expect(done.isWatched).toBe(true);
+    const replay = applyYoutubeProgress({ position: 580, isWatched: true }, { positionSeconds: 5, durationSeconds: 600 });
+    expect(replay).toEqual({ position: 5, isWatched: true });
+  });
+
+  it('clamps garbage positions to the known duration', () => {
+    const update = applyYoutubeProgress({ position: 0, isWatched: false }, { positionSeconds: 99999, durationSeconds: 600 });
+    expect(update.position).toBe(600);
+  });
+
+  it('does not mark watched when duration is unknown', () => {
+    const update = applyYoutubeProgress({ position: 0, isWatched: false }, { positionSeconds: 5000 });
+    expect(update.isWatched).toBe(false);
   });
 });
 

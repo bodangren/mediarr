@@ -107,6 +107,37 @@ export function selectNewEntries(
   return { accepted, skipped };
 }
 
+export interface YoutubeProgressInput {
+  positionSeconds: number;
+  durationSeconds?: number | null;
+  /** Fraction of the video that counts as watched; 0.95 because credits are never played. */
+  watchedThreshold?: number;
+}
+
+export interface YoutubeProgressUpdate {
+  position: number;
+  isWatched: boolean;
+}
+
+/**
+ * Watched-state rule for YouTube (track feature_youtube_library_20261107, Phase 3).
+ *
+ * Watched is monotonic: replaying from the start never un-watches a video. Position is clamped to a
+ * sensible range so a bad client report cannot store garbage that breaks retention later.
+ */
+export function applyYoutubeProgress(
+  current: { position: number; isWatched: boolean },
+  input: YoutubeProgressInput,
+): YoutubeProgressUpdate {
+  const threshold = input.watchedThreshold ?? 0.95;
+  const duration = typeof input.durationSeconds === 'number' && input.durationSeconds > 0
+    ? input.durationSeconds
+    : null;
+  const position = Math.max(0, Math.min(Math.trunc(input.positionSeconds), duration ?? Number.MAX_SAFE_INTEGER));
+  const reachedEnd = duration !== null && position >= Math.floor(duration * threshold);
+  return { position, isWatched: current.isWatched || reachedEnd };
+}
+
 export interface VideoPersistence {
   findByVideoId(videoId: string): Promise<{ id: number } | null>;
   insert(entry: FeedEntry & { subscriptionId: number }): Promise<{ id: number }>;

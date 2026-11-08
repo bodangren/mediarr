@@ -91,7 +91,11 @@ void _openYoutubeVideo(Ref ref, BuildContext context, YoutubeVideo video) {
           required String type,
           required int positionSeconds,
           required int durationSeconds,
-        }) async {},
+        }) => client.reportYoutubeProgress(
+          videoId: mediaId,
+          positionSeconds: positionSeconds,
+          durationSeconds: durationSeconds,
+        ),
       ),
     ),
   );

@@ -684,6 +684,18 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
         .toList();
   }
 
+  /// Reports YouTube playback progress; the server marks watched at 95% and keeps it monotonic.
+  Future<void> reportYoutubeProgress({
+    required int videoId,
+    required int positionSeconds,
+    required int durationSeconds,
+  }) async {
+    await _dio.post<Map<String, dynamic>>(
+      '/api/youtube/videos/$videoId/progress',
+      data: {'position': positionSeconds, 'duration': durationSeconds},
+    );
+  }
+
   /// Range-capable stream URL for one YouTube video.
   String youtubeStreamUrl(int id) => '${_dio.options.baseUrl}/api/youtube/videos/$id/stream';
 

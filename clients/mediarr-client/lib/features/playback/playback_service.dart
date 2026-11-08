@@ -751,6 +751,12 @@ class PlaybackService extends StateNotifier<PlaybackState> {
   Future<void> _maybeRetryResume(Duration position) async {
     final target = _pendingResumeTarget;
     if (target == null) return;
+    // mpv/media_kit silently drop seeks issued while the stream is still loading; the device defect
+    // (episodes starting at 0:00 despite startAt) matches a budget spent on a buffering player. Only
+    // spend attempts once playback is actually running and the duration is known.
+    if (state.status != PlaybackStatus.playing || state.duration <= const Duration(seconds: 30)) {
+      return;
+    }
     if (position + const Duration(seconds: 15) >= target) {
       // The seek (or the player's own start offset) landed.
       _pendingResumeTarget = null;

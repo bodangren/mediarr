@@ -42,3 +42,19 @@ reported once the budget was spent. Fixed:
 Device run with 1.3.48 (code 72) resumed at **10:46** (position 646 after 46 s) and wrote the bookmark
 forward, so resume **can** still succeed; the failure is intermittent. The new `seekError` field will
 tell us whether failed episodes throw on seek or simply keep reporting 0.
+
+## RESOLVED 2026-11-09 (1.3.49 / code 73)
+The retry budget was being spent while the stream was still loading — mpv/media_kit silently drop
+seeks issued during load, so the attempts were exhausted before playback was seekable and the file
+then played from 0. The budget is now only spent when `status == playing` **and** a duration > 30 s is
+known. (While writing this, the first gate version compared `PlaybackStatus` to `MediaPlayerStatus`,
+which is always true — the new buffering-gate test caught it immediately.)
+
+Verification, two consecutive cold launches (force-stop, Home → Continue Watching):
+- run 1: bookmark **600 → 604** after the first progress report;
+- run 2: **600 → 604**, then 634 while playing; HUD shows **10:35** for a stored 10:00 position
+  (`episode-resume-fixed-20261109.png`).
+Position now starts at the bookmark instead of 0:00, and continues from there.
+
+Tests: 167 playback tests green; new pins for the buffering gate, the re-seek behaviour, and the
+one-shot exhaustion report (with `seekError`).

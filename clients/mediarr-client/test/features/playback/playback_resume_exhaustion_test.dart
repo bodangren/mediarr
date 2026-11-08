@@ -47,12 +47,14 @@ void main() {
     player.emitDuration(const Duration(seconds: 1300));
     player.emitStatus(MediaPlayerStatus.playing);
     // The player keeps reporting the start of the file despite seek() succeeding.
-    for (var second = 0; second < 6; second++) {
-      player.emitPosition(Duration(seconds: second));
+    for (var second = 0; second < 25; second++) {
+      player.emitPosition(Duration(seconds: second % 5));
       await Future<void>.delayed(const Duration(milliseconds: 20));
     }
+    await Future<void>.delayed(const Duration(milliseconds: 200));
 
-    expect(player.seekCalls.where((call) => call == const Duration(seconds: 600)), isNotEmpty);
+    expect(player.seekCalls.where((call) => call == const Duration(seconds: 600)), isNotEmpty,
+        reason: 'status=${service.state.status} duration=${service.state.duration}');
     expect(api.messages.where((message) => message.contains('resume seek did not take effect')), isNotEmpty);
     // Only one record per play, not one per tick.
     expect(api.messages.where((message) => message.contains('resume seek did not take effect')).length, 1);

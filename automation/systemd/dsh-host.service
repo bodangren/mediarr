@@ -1,0 +1,25 @@
+[Unit]
+Description=DeepSeek Harness host (Mediarr automation brain)
+# The harness is the brain of the product (SYSTEM.md); it must come up with the machine, not with a
+# terminal window (B3). Stopping the terminal-launched host first is mandatory: the webbridge MCP
+# binds *:10086 and a second instance dies on bind.
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/daniel-bo/Desktop/mediarr
+# The harness runs the owner's scheduled media automation; it needs the full tool battery.
+Environment=DSH_PERMISSION_MODE=danger-full-access
+Environment=PATH=/home/daniel-bo/.local/bin:/home/daniel-bo/.nvm/versions/node/v24.18.0/bin:/home/daniel-bo/.local/share/mediarr-automation/venv/bin:/usr/local/bin:/usr/bin:/bin
+Environment=DSH_HOME=%h/.dsh
+# The web host loads the linked profile (automation/dsh-plugins) and serves the GUI.
+ExecStart=/home/daniel-bo/.local/bin/dsh web
+Restart=always
+RestartSec=5
+# A hung turn must never leave the unit "active" with a dead host (2026-11-09 incident).
+TimeoutStopSec=30
+KillMode=mixed
+
+[Install]
+WantedBy=default.target

@@ -146,6 +146,7 @@ async function startApi(): Promise<void> {
     console.log(`Jellyfin compatibility surface listening on http://${host}:${jellyfinConfig.port}`);
   }
 
+  const shutdownTimeoutMs = Number.parseInt(process.env.SHUTDOWN_TIMEOUT_MS ?? '15000', 10);
   const close = async (): Promise<void> => {
     await container.stopBackgroundServices();
     await jellyfinDiscoveryService.stop().catch(error => console.warn('Failed to stop Jellyfin discovery cleanly:', error));
@@ -157,12 +158,30 @@ async function startApi(): Promise<void> {
     await container.close();
   };
 
-  process.on('SIGINT', () => {
-    void close().finally(() => process.exit(0));
-  });
-  process.on('SIGTERM', () => {
-    void close().finally(() => process.exit(0));
-  });
+  // A stop signal must always end the process: systemd's Restart=always only fires after exit, and a
+  // hung `close()` (scheduler child, yt-dlp, mDNS) left the service "active" with a dead API for
+  // minutes on 2026-11-09. Force the exit if graceful shutdown exceeds the budget.
+  let shuttingDown = false;
+  const shutdown = (signal: string): void => {
+    if (shuttingDown) {
+      console.warn(`[shutdown] ${signal} received again while shutting down; forcing exit`);
+      process.exit(1);
+    }
+    shuttingDown = true;
+    const force = setTimeout(() => {
+      console.error(`[shutdown] graceful shutdown timed out after ${shutdownTimeoutMs} ms; forcing exit`);
+      process.exit(1);
+    }, shutdownTimeoutMs);
+    force.unref();
+    void close()
+      .catch(error => console.error('[shutdown] close failed:', error))
+      .finally(() => {
+        clearTimeout(force);
+        process.exit(0);
+      });
+  };
+  process.on('SIGINT', () => shutdown('SIGINT'));
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
 
   await app.listen({ host, port });
   // The listener is up; recover missed runs in the background so a long scan

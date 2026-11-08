@@ -140,6 +140,13 @@ function regexFallback(title: string): ParsedRelease | null {
     };
   }
 
+  // A season *range* (S01-S09 / S01-09) is a multi-season pack, not season 1: refusing to parse it
+  // here is honest, because mislabelling it as a single-season pack makes the grab pick the wrong
+  // release (tech-debt 2026-07-28).
+  if (/\bS\d{1,2}\s*[-–]\s*S?\d{1,2}\b/i.test(title) && !/S\d{1,2}E\d/i.test(title)) {
+    return null;
+  }
+
   // Lone season marker (S01 without episode) — season pack
   if (/\bS\d{1,2}\b/i.test(title) && !/S\d{1,2}E\d/i.test(title)) {
     const seasonMatch = title.match(/\bS(\d{1,2})\b/i);

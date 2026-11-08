@@ -157,6 +157,16 @@ describe('ReleaseParser — parse()', () => {
     expect(result?.episodeNumbers).toEqual([]);
   });
 
+  it('regex fallback refuses a season range instead of calling it a season 1 pack', async () => {
+    vi.unstubAllEnvs();
+    vi.stubEnv('OPENROUTER_API_KEY', '');
+
+    const range = await releaseParser.parse('Some.Show.S01-S09.Complete.1080p.BluRay');
+    expect(range).toBeNull();
+    const shortRange = await releaseParser.parse('Some.Show.S01-09.1080p.WEB-DL');
+    expect(shortRange).toBeNull();
+  });
+
   it('regex fallback returns null when no pattern matches', async () => {
     vi.unstubAllEnvs();
     vi.stubEnv('OPENROUTER_API_KEY', '');

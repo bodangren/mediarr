@@ -8,6 +8,7 @@
   "exports": {
     ".": "./index.js",
     "./ledger": "./src/ledger.js",
+    "./quarantine": "./src/quarantine.js",
     "./cordis.patch.yml": "./cordis.patch.yml",
     "./package.json": "./package.json"
   },

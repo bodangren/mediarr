@@ -1,0 +1,7 @@
+Batch viewing-priority query for the wanted/subtitle queues (feature_subtitle_coverage_priority_20261108, Phase 1 remainder).
+
+- ViewingPriorityQuery.loadProgress: one query per media type for all requested ids, normalising sqlite isWatched (0/1) and lastWatched (seconds or Date).
+- latestProgressByMediaId: the table can hold multiple rows per media id; keeps the most recent.
+- rank(): joins progress to PrioritySubject added dates and delegates to the pure classifier, returning bucket-sorted subjects.
+
+6 tests: no query on empty input, value normalisation, cross-kind ranking, subjects without progress rows, and query count per media type rather than per item.

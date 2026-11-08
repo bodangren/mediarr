@@ -13,6 +13,13 @@ import { parseIdParam } from '../routeUtils';
 import type { ApiDependencies } from '../types';
 import { ALLOWED_SUBTITLE_EXTENSIONS } from '../../services/providers/providerUtils';
 import { subtitleUploadInputSchema } from '../../contracts/subtitle';
+import {
+  isChineseLanguage,
+  isEnglishLanguage,
+  summarizeCoverage,
+  type CoverageInput,
+} from '../../services/SubtitleCoverageService';
+import { ViewingPriorityQuery, type PrioritySubject } from '../../services/ViewingPriorityQuery';
 
 interface SubtitleBlacklistEntry {
   id: number;
@@ -666,6 +673,72 @@ export function registerSubtitleRoutes(
       pageSize: pagination.pageSize,
       totalCount: paged.totalCount,
     });
+  });
+
+  app.get('/api/subtitles/coverage', async (_request, reply) => {
+    const prisma = deps.prisma as any;
+    const [movies, episodes, variants, tracks] = await Promise.all([
+      prisma.movie.findMany({ select: { id: true, added: true, path: true } }),
+      prisma.episode.findMany({ select: { id: true, added: true, path: true } }),
+      prisma.mediaFileVariant.findMany({ select: { id: true, movieId: true, episodeId: true } }),
+      prisma.variantSubtitleTrack.findMany({ select: { variantId: true, languageCode: true } }),
+    ]);
+
+    const languagesByVariant = new Map<number, { chinese: boolean; english: boolean }>();
+    for (const track of tracks as Array<{ variantId: number; languageCode: string | null }>) {
+      const entry = languagesByVariant.get(track.variantId) ?? { chinese: false, english: false };
+      if (isChineseLanguage(track.languageCode)) entry.chinese = true;
+      if (isEnglishLanguage(track.languageCode)) entry.english = true;
+      languagesByVariant.set(track.variantId, entry);
+    }
+
+    const coverageByItem = new Map<string, { chinese: boolean; english: boolean }>();
+    for (const variant of variants as Array<{ id: number; movieId: number | null; episodeId: number | null }>) {
+      const languages = languagesByVariant.get(variant.id);
+      if (!languages) continue;
+      const key = variant.movieId != null
+        ? `movie:${variant.movieId}`
+        : variant.episodeId != null
+          ? `episode:${variant.episodeId}`
+          : null;
+      if (key === null) continue;
+      const entry = coverageByItem.get(key) ?? { chinese: false, english: false };
+      entry.chinese = entry.chinese || languages.chinese;
+      entry.english = entry.english || languages.english;
+      coverageByItem.set(key, entry);
+    }
+
+    const toDate = (value: unknown): Date | null => {
+      if (value == null) return null;
+      if (value instanceof Date) return value;
+      const numeric = Number(value);
+      if (!Number.isFinite(numeric)) return null;
+      // Timestamps may arrive in seconds (sqlite) or milliseconds (drizzle mode: timestamp).
+      return new Date(numeric > 1e12 ? numeric : numeric * 1000);
+    };
+
+    const subjects: PrioritySubject[] = [
+      ...(movies as Array<{ id: number; added: unknown; path: string | null }>)
+        .filter((movie) => movie.path != null)
+        .map((movie) => ({ kind: 'movie' as const, id: movie.id, addedAt: toDate(movie.added) })),
+      ...(episodes as Array<{ id: number; added: unknown; path: string | null }>)
+        .filter((episode) => episode.path != null)
+        .map((episode) => ({ kind: 'episode' as const, id: episode.id, addedAt: toDate(episode.added) })),
+    ];
+
+    const ranked = await new ViewingPriorityQuery(prisma.drizzle).rank(subjects);
+    const items: CoverageInput[] = ranked.map((entry) => {
+      const coverage = coverageByItem.get(`${entry.kind}:${entry.id}`) ?? { chinese: false, english: false };
+      return {
+        kind: entry.kind,
+        id: entry.id,
+        bucket: entry.priority.bucket,
+        hasChinese: coverage.chinese,
+        hasEnglish: coverage.english,
+      };
+    });
+
+    return sendSuccess(reply, summarizeCoverage(items));
   });
 
   app.get('/api/subtitles/wanted/count', async (_request, reply) => {

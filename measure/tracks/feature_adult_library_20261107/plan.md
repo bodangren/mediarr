@@ -29,7 +29,7 @@
 - [x] Scanner with flat-layout preservation and a scan summary — `AdultLibraryScanner` (six-class grammar + review bucket, depth-first walk) and `AdultLibraryService.importAdultLibrary` (upsert by path, reports notSeen without deleting); **live import of `/data/Porn`: scanned 196, created 196, needsReview 8, unreadable 0, notSeen 0** — 9720fff
 - [x] Seeded-tree counts test — live seeded tree: **196 items / 8 needsReview / 297 GB** in `AdultItem`, matching the Phase 0 inventory exactly; API returns 196 rows — 9720fff
 
-## Phase 2: API + UI (SPA first, TV after the focus fix)
+## Phase 2: API + UI (SPA first, TV after the focus fix) [checkpoint: ebcdb58b]
 
 - [x] Browse/search/list endpoints scoped to the adult library — `GET /api/libraries`, `GET /api/adult/items` with `q`/`page`/`pageSize` (title, filename, studio) returning `items/page/pageSize/totalCount/needsReview`; live verified against the 196-item tree — 9720fff, 3d229b6
 - [x] Playback (existing stream handler) + watched state integration — `GET /api/adult/items/:id/stream` serves Range/206 (live: 1024/264237135 bytes, partial content); progress stored on `AdultItem` (migration 0010) so it cannot enter movie/episode Continue Watching — PlaybackProgress count stayed 9 after posting progress on the live DB — ac93e8f

@@ -249,6 +249,7 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
                                   _gridFocused = focused,
                               onPressed: () => _openMovieDetail(context, movie),
                               onContextMenu: () => _openMovieMenu(movie),
+                              watched: movie.isWatched,
                             );
                           },
                         );

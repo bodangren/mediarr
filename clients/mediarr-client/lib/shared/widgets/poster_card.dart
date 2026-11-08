@@ -21,6 +21,7 @@ class PosterCard extends StatelessWidget {
     this.autofocus = false,
     this.onFocusChange,
     this.onContextMenu,
+    this.watched = false,
   });
 
   final String title;
@@ -46,6 +47,9 @@ class PosterCard extends StatelessWidget {
   /// Remote Menu-key action for this poster (context menu).
   final VoidCallback? onContextMenu;
 
+  /// Renders a watched check badge over the poster (library tracking).
+  final bool watched;
+
   @override
   Widget build(BuildContext context) {
     return FocusableAction(
@@ -58,15 +62,33 @@ class PosterCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Expanded(
-            child: posterUrl != null
-                ? CachedNetworkImage(
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                if (posterUrl != null)
+                CachedNetworkImage(
                     imageUrl: ApiConfig.image(posterUrl!),
                     fit: BoxFit.cover,
                     placeholder: (_, __) => PosterPlaceholder(title: title),
                     errorWidget: (_, __, ___) =>
                         PosterPlaceholder(title: title),
                   )
-                : PosterPlaceholder(title: title),
+                else
+                PosterPlaceholder(title: title),
+                if (watched)
+                  const Positioned(
+                    top: 8,
+                    right: 8,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(color: Color(0xCC000000), shape: BoxShape.circle),
+                      child: Padding(
+                        padding: EdgeInsets.all(3),
+                        child: Icon(Icons.check, color: Color(0xFF22C55E), size: 22),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),

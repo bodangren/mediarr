@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/mediarr_theme.dart';
 import '../../core/widgets/netflix_scaffold.dart';
+import '../../core/widgets/tv_context_menu.dart';
 import '../../shared/models/episode.dart';
 import '../../shared/models/series.dart';
 import '../../shared/services/api_client.dart';
@@ -164,6 +165,27 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
       }
     }
     return null;
+  }
+
+  Future<void> _setEpisodeWatched(EpisodeListItem episode, bool watched) async {
+    try {
+      await ref.read(apiClientProvider.notifier).setWatched(
+            mediaType: 'episode',
+            mediaId: episode.id,
+            watched: watched,
+          );
+      await _loadDetail();
+    } catch (_) {
+      // A failed toggle leaves the previous state; the row simply keeps its marker.
+    }
+  }
+
+  void _openEpisodeMenu(EpisodeListItem episode) {
+    showTvContextMenu(context, title: episode.title ?? 'Episode ${episode.episodeNumber}', actions: [
+      TvContextAction(label: 'Play', onSelected: () => _playEpisode(episode)),
+      TvContextAction(label: 'Mark watched', onSelected: () => _setEpisodeWatched(episode, true)),
+      TvContextAction(label: 'Mark unwatched', onSelected: () => _setEpisodeWatched(episode, false)),
+    ]);
   }
 
   void _playEpisode(EpisodeListItem episode) {
@@ -519,6 +541,7 @@ class _SeriesDetailScreenState extends ConsumerState<SeriesDetailScreen> {
                 selectedSeasonNumber: resumeSeason,
                 onPlayEpisode: _playEpisode,
                 onSearchEpisode: _searchEpisode,
+                onContextMenu: _openEpisodeMenu,
                 onExitDown: () => _firstActionFocusNode.requestFocus(),
               ),
             ),

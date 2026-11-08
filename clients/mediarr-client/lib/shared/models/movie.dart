@@ -16,6 +16,8 @@ class Movie {
     this.runtime,
     this.path,
     this.fileVariants,
+    this.isWatched = false,
+    this.progress = 0,
   });
 
   final int id;
@@ -34,6 +36,10 @@ class Movie {
   final int? runtime;
   final String? path;
   final List<MediaFileVariant>? fileVariants;
+
+  /// Server playback state: drives the watched badge on the poster.
+  final bool isWatched;
+  final double progress;
 
   /// Effective playability flag.
   ///
@@ -63,6 +69,8 @@ class Movie {
       fileVariants: rawVariants
           ?.map((v) => MediaFileVariant.fromJson(v as Map<String, dynamic>))
           .toList(),
+      isWatched: (json['playbackState'] as Map<String, dynamic>?)?['isWatched'] as bool? ?? false,
+      progress: ((json['playbackState'] as Map<String, dynamic>?)?['progress'] as num?)?.toDouble() ?? 0,
     );
   }
 }

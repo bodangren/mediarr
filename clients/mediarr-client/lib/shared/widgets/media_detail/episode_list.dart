@@ -76,6 +76,7 @@ class EpisodeList extends StatefulWidget {
     this.onPlayEpisode,
     this.onSearchEpisode,
     this.onToggleMonitored,
+    this.onContextMenu,
     this.onExitDown,
     this.onExitUp,
   });
@@ -85,6 +86,9 @@ class EpisodeList extends StatefulWidget {
   final void Function(EpisodeListItem)? onPlayEpisode;
   final void Function(EpisodeListItem)? onSearchEpisode;
   final void Function(EpisodeListItem)? onToggleMonitored;
+
+  /// Remote Menu key / long-press on a row: open the episode context menu.
+  final void Function(EpisodeListItem)? onContextMenu;
 
   /// Moves focus to the first control **below** the episode list. Wired by
   /// `SeriesDetailScreen` to the first action-bar button (FR-2).
@@ -368,6 +372,9 @@ class EpisodeListState extends State<EpisodeList> {
                 onSearch: widget.onSearchEpisode != null
                     ? () => widget.onSearchEpisode!(selectedData.episodes[i])
                     : null,
+                onContextMenu: widget.onContextMenu == null
+                    ? null
+                    : () => widget.onContextMenu!(selectedData.episodes[i]),
               ),
             ),
         ],
@@ -449,6 +456,7 @@ class _EpisodeRow extends StatelessWidget {
     this.onFocused,
     this.onPlay,
     this.onSearch,
+    this.onContextMenu,
   });
 
   final EpisodeListItem episode;
@@ -459,6 +467,9 @@ class _EpisodeRow extends StatelessWidget {
 
   /// Select fallback for an episode with no file on disk.
   final VoidCallback? onSearch;
+
+  /// Menu-key / long-press action for this row.
+  final VoidCallback? onContextMenu;
 
   /// Select plays the episode when the file exists and searches for it when it
   /// does not. The old wiring passed a play callback that did nothing for a
@@ -480,6 +491,7 @@ class _EpisodeRow extends StatelessWidget {
         child: FocusableAction(
           variant: FocusableActionVariant.button,
           onSelect: _onSelect,
+          onContextMenu: onContextMenu,
           onFocusChange: onFocused,
           focusNode: focusNode,
           borderRadius: 8,

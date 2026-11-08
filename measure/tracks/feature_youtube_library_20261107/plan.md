@@ -28,8 +28,8 @@
 ## Phase 3: Retention
 
 - [x] Watched-state integration — `applyYoutubeProgress` (clamp to duration, watched at 95%, monotonic, `watchedAt` once) with 14 domain tests, `POST /api/youtube/videos/:id/progress`, and the TV reporter wired for `mediaType youtube`; live: curl 100→not watched, 430/441→watched, device playback updated position/lastPlayedAt — b9bf18e
-- [~] Eligibility rule: watched + retention days (default 7).
-- [ ] Quarantine move/restore/delete with manifest; dry-run first.
+- [x] Eligibility rule: watched + retention days (default 7) — `retentionEligible` (subscriptions only, archive excluded per G9, custom window) with tests; `GET /api/youtube/retention/candidates` dry-run list; live: back-dated watched row appeared, restored row disappeared — 5f4f8858
+- [~] Quarantine move/restore/delete with manifest; dry-run first.
 - [ ] Nightly retention job + receipt.
 
 ## Phase 4: Automation + verification

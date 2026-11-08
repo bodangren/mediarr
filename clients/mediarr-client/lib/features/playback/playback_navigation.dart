@@ -5,6 +5,32 @@ import '../../core/router/app_router.dart';
 import 'playback_queue.dart';
 import 'playback_screen.dart' as ps;
 
+
+/// Double-select protection: the TV remote (and the hero Resume CTA) can deliver two selects for one
+/// interaction, which used to push two PlaybackScreens; the second open reset the player and dropped
+/// the resume offset, so an episode started at 0 even though the caller asked for 21:40.
+DateTime? _lastOpenAt;
+int? _lastOpenMediaId;
+
+/// Test-only reset so debounce state cannot leak between cases.
+void resetPlaybackOpenDebounce() {
+  _lastOpenAt = null;
+  _lastOpenMediaId = null;
+}
+
+bool shouldIgnoreDuplicateOpen({
+  required int mediaId,
+  required DateTime now,
+  Duration window = const Duration(milliseconds: 800),
+}) {
+  final lastAt = _lastOpenAt;
+  final lastId = _lastOpenMediaId;
+  if (lastAt != null && lastId == mediaId && now.difference(lastAt) < window) return true;
+  _lastOpenAt = now;
+  _lastOpenMediaId = mediaId;
+  return false;
+}
+
 /// Pushes [PlaybackScreen] as a fullscreen route outside the leanback
 /// scaffold.
 ///
@@ -22,6 +48,7 @@ void openFullscreenPlayback(
   List<PlaybackQueueItem> queue = const [],
   Duration resumeFrom = Duration.zero,
 }) {
+  if (shouldIgnoreDuplicateOpen(mediaId: mediaId, now: DateTime.now())) return;
   // Production: go_router is in scope (mounted by main.dart). Push the
   // top-level /playback route, which is registered with parentNavigatorKey
   // = rootNavigatorKey so it lives outside the ShellRoute scaffold.

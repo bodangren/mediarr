@@ -31,7 +31,7 @@ void main() {
         shouldSkipProgressReport(
           position: const Duration(seconds: 5),
           resumeTarget: const Duration(seconds: 2315),
-          sincePlayStart: const Duration(seconds: 45),
+          sincePlayStart: const Duration(seconds: 130),
         ),
         isFalse,
       );

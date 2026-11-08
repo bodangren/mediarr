@@ -11,7 +11,7 @@ void main() {
 
     test('throttles and caps retries', () {
       expect(shouldRetryResumeSeek(position: const Duration(seconds: 3), resumeTarget: target, sinceLastAttempt: const Duration(milliseconds: 200), attempts: 0), isFalse);
-      expect(shouldRetryResumeSeek(position: const Duration(seconds: 3), resumeTarget: target, sinceLastAttempt: const Duration(seconds: 2), attempts: 6), isFalse);
+      expect(shouldRetryResumeSeek(position: const Duration(seconds: 3), resumeTarget: target, sinceLastAttempt: const Duration(seconds: 3), attempts: 20), isFalse);
     });
 
     test('stops once the seek landed', () {

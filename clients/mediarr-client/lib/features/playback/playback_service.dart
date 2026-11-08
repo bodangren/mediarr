@@ -150,7 +150,7 @@ bool shouldSkipProgressReport({
 }) {
   final target = resumeTarget;
   if (target == null || target <= const Duration(seconds: 30)) return false;
-  if (sincePlayStart >= const Duration(seconds: 30)) return false;
+  if (sincePlayStart >= const Duration(seconds: 120)) return false;
   return position + const Duration(seconds: 15) < target;
 }
 
@@ -166,9 +166,9 @@ bool shouldRetryResumeSeek({
   required int attempts,
 }) {
   if (resumeTarget == null) return false;
-  if (attempts >= 6) return false;
+  if (attempts >= 20) return false;
   if (position + const Duration(seconds: 15) >= resumeTarget) return false;
-  return sinceLastAttempt >= const Duration(milliseconds: 1500);
+  return sinceLastAttempt >= const Duration(seconds: 2);
 }
 
 class PlaybackService extends StateNotifier<PlaybackState> {
@@ -244,8 +244,42 @@ class PlaybackService extends StateNotifier<PlaybackState> {
     );
   }
 
+  Future<void>? _pendingPlay;
+  String? _pendingPlayKey;
+
   /// Start playing a media item.
+  ///
+  /// Duplicate starts for the same item (the TV can deliver two selects, and a rebuild can mount the
+  /// screen twice) are collapsed into the in-flight call. Two overlapping `open(start:)` calls made
+  /// mpv drop the resume offset and start at 0 (device, 2026-11-09).
   Future<void> play({
+    required String streamUrl,
+    required String title,
+    required int mediaId,
+    required String mediaType,
+    Duration resumeFrom = Duration.zero,
+    List<ExternalSubtitleSource> externalSubtitles = const [],
+  }) {
+    final key = '$mediaId|$mediaType|$streamUrl|${resumeFrom.inSeconds}';
+    final pending = _pendingPlay;
+    if (pending != null && _pendingPlayKey == key) return pending;
+    _pendingPlayKey = key;
+    final run = _performPlay(
+      streamUrl: streamUrl,
+      title: title,
+      mediaId: mediaId,
+      mediaType: mediaType,
+      resumeFrom: resumeFrom,
+      externalSubtitles: externalSubtitles,
+    ).whenComplete(() {
+      _pendingPlay = null;
+      _pendingPlayKey = null;
+    });
+    _pendingPlay = run;
+    return run;
+  }
+
+  Future<void> _performPlay({
     required String streamUrl,
     required String title,
     required int mediaId,
@@ -717,7 +751,7 @@ class PlaybackService extends StateNotifier<PlaybackState> {
       }
       return;
     }
-    if (_resumeAttempts >= 6) {
+    if (_resumeAttempts >= 20) {
       if (_pendingResumeTarget != null) {
         _pendingResumeTarget = null;
         _reportResumeFailure(target!, position, 'retryExhausted');

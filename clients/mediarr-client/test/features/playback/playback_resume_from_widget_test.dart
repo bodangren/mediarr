@@ -43,5 +43,7 @@ void main() {
     await tester.pump();
 
     expect(player.openStartCalls, [const Duration(seconds: 2315)]);
+    // Let the overlay auto-hide timer fire so the widget test can dispose without a pending timer.
+    await tester.pump(const Duration(seconds: 6));
   });
 }

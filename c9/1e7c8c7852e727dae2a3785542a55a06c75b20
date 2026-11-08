@@ -1,0 +1,1 @@
+YouTube subscription CRUD (feature_youtube_library_20261107, Phase 1): create with URL validation/dedupe, list, patch enabled/title, delete; live verified incl. video-URL rejection and enable toggle.

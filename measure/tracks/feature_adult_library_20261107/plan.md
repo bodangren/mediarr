@@ -38,8 +38,8 @@
 
 ## Phase 3: Agent discovery
 
-- [~] Browser-bridge prompt for discovery (score profile: Asian dominant, scene-style; avoid list).
-- [ ] Queue via Mediarr torrent API; dedupe by info hash.
+- [x] Browser-bridge prompt for discovery (score profile: Asian dominant, scene-style; avoid list) — `automation/prompts/adult-discovery-weekly.md`: inputs from the automation contract + `/api/torrents` hashes, selection profile, 1–3 picks (zero valid), queue via `/api/releases/grab-candidate`, mandatory receipt, hard rules (no DB/file writes, no silent success, no unapproved fallback) — 1c25115
+- [~] Queue via Mediarr torrent API; dedupe by info hash.
 - [ ] Receipt + ledger row; forced browser failure alerts.
 
 ## Phase 4: Prune + migration

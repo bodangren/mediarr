@@ -1,0 +1,3 @@
+Per-item bucket in the fetch receipt (feature_subtitle_coverage_priority_20261108, Phase 3).
+
+Repository attaches priorityBucket per wanted row (classifyViewingPriority with own or series-inherited activity); the cycle logs 'wanted <id> bucket=<bucket>'. 15 tests green, tsc clean.

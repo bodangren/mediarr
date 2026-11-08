@@ -38,6 +38,6 @@
 
 ## Phase 5: Acceptance + close
 
-- [ ] Live high-priority coverage reported; every missing item explainable.
+- [~] Live high-priority coverage reported; every missing item explainable.
 - [ ] Server suite, SPA tests, `flutter analyze`/tests green; screenshots recorded.
 - [ ] Update `tracks.md`, `tech-debt.md`, `lessons-learned.md`.

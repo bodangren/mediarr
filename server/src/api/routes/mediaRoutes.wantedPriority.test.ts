@@ -7,14 +7,18 @@ import { registerMediaRoutes } from './mediaRoutes';
 const NOW = new Date();
 const daysAgo = (days: number) => new Date(NOW.getTime() - days * 24 * 60 * 60 * 1000);
 
-function buildApp(progress: Array<Record<string, unknown>>): FastifyInstance {
+function buildApp(progress: Array<Record<string, unknown>>, siblings: Record<number, number[]> = {}): FastifyInstance {
   const drizzle = {
     select: vi.fn(() => ({
       from: vi.fn(() => ({ where: vi.fn(() => Promise.resolve(progress)) })),
     })),
   };
+  const episodeFindMany = vi.fn(async (args: { where?: { seriesId?: number } }) => {
+    const seriesId = args?.where?.seriesId;
+    return (seriesId !== undefined ? siblings[seriesId] ?? [] : []).map((id) => ({ id }));
+  });
   const deps = {
-    prisma: { drizzle },
+    prisma: { drizzle, episode: { findMany: episodeFindMany } },
     wantedService: {
       getMissingEpisodes: vi.fn().mockResolvedValue([
         {
@@ -64,6 +68,19 @@ describe('GET /api/media/wanted — viewing priority', () => {
     // 502 is in progress; the rest tie on backfill, where the model breaks ties movie-before-episode.
     expect(body.data.map((item) => item.id)).toEqual([502, 77, 501]);
     expect(body.data[0]?.title).toBe('In-progress episode');
+  });
+
+  it('inherits series-level activity for a missing episode', async () => {
+    // Episode 501 belongs to series 25, whose sibling episode 900 is being watched right now.
+    // Episode 502 is from an untouched series. 501 must rank first even though it has no progress.
+    const app = buildApp(
+      [{ mediaId: 900, progress: 0.45, isWatched: 0, lastWatched: daysAgo(1) }],
+      { 25: [900], 29: [901] },
+    );
+
+    const response = await app.inject({ method: 'GET', url: '/api/media/wanted?pageSize=10' });
+    const body = JSON.parse(response.body) as { data: Array<{ id: number }> };
+    expect(body.data[0]?.id).toBe(501);
   });
 
   it('honours an explicit sortBy instead of the priority order', async () => {

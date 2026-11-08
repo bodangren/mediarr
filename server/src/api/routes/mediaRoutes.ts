@@ -204,17 +204,70 @@ export function registerMediaRoutes(
     const explicitSort = typeof query.sortBy === 'string' && query.sortBy.trim().length > 0;
     let ordered = filtered;
     if (!explicitSort) {
-      const subjects = filtered.map(item => ({
-        kind: item.type === 'movie' ? ('movie' as const) : ('episode' as const),
-        id: item.id as number,
-        addedAt: (item as { addedAt?: Date | null }).addedAt ?? null,
-      }));
-      const prisma = deps.prisma as { drizzle?: unknown } | undefined;
-      const ranked = prisma?.drizzle
-        ? await new ViewingPriorityQuery(prisma.drizzle as never).rank(subjects)
-        : rankByViewingPriority(
-            subjects.map(subject => ({ ...subject, lastWatchedAt: null, isWatched: false, progress: null })),
-          );
+      const prisma = deps.prisma as any;
+      const episodeItems = filtered.filter(item => item.type === 'episode');
+      const movieItems = filtered.filter(item => item.type === 'movie');
+      const priorityQuery = prisma?.drizzle ? new ViewingPriorityQuery(prisma.drizzle) : null;
+
+      const [movieProgress, episodeProgress] = priorityQuery
+        ? await Promise.all([
+            priorityQuery.loadProgress('movie', movieItems.map(item => item.id as number)),
+            priorityQuery.loadProgress('episode', episodeItems.map(item => item.id as number)),
+          ])
+        : [new Map(), new Map()];
+
+      // A missing episode has no progress of its own: inherit the series-level activity so the
+      // acquisition list still reflects "the shows we actually watch".
+      const seriesIds = [...new Set(
+        episodeItems
+          .map(item => item.seriesId as number | null | undefined)
+          .filter((id): id is number => typeof id === 'number'),
+      )];
+      const seriesProgress = new Map<number, { progress: number; isWatched: boolean; lastWatched: Date | null }>();
+      if (priorityQuery && seriesIds.length > 0 && typeof prisma.episode?.findMany === 'function') {
+        const siblingIdToSeries = new Map<number, number>();
+        await Promise.all(seriesIds.map(async seriesId => {
+          const rows = await prisma.episode.findMany({ where: { seriesId }, select: { id: true } });
+          for (const row of rows as Array<{ id: number }>) siblingIdToSeries.set(row.id, seriesId);
+        }));
+        const siblingProgress = await priorityQuery.loadProgress('episode', [...siblingIdToSeries.keys()]);
+        for (const [episodeId, snapshot] of siblingProgress) {
+          const seriesId = siblingIdToSeries.get(episodeId);
+          if (seriesId === undefined) continue;
+          const current = seriesProgress.get(seriesId);
+          const candidate = { ...snapshot };
+          if (current === undefined) {
+            seriesProgress.set(seriesId, candidate);
+            continue;
+          }
+          // Prefer an unfinished sibling (the show is being watched), then the most recent one.
+          const currentActive = !current.isWatched;
+          const candidateActive = !candidate.isWatched;
+          if (candidateActive && !currentActive) seriesProgress.set(seriesId, candidate);
+          else if (currentActive === candidateActive
+            && (candidate.lastWatched?.getTime() ?? 0) > (current.lastWatched?.getTime() ?? 0)) {
+            seriesProgress.set(seriesId, candidate);
+          }
+        }
+      }
+
+      const inputs = filtered.map(item => {
+        const own = item.type === 'movie'
+          ? movieProgress.get(item.id as number)
+          : episodeProgress.get(item.id as number);
+        const inherited = item.type === 'episode'
+          ? seriesProgress.get(item.seriesId as number)
+          : undefined;
+        return {
+          kind: item.type === 'movie' ? ('movie' as const) : ('episode' as const),
+          id: item.id as number,
+          addedAt: (item as { addedAt?: Date | null }).addedAt ?? null,
+          lastWatchedAt: own?.lastWatched ?? inherited?.lastWatched ?? null,
+          isWatched: own?.isWatched ?? inherited?.isWatched ?? false,
+          progress: own?.progress ?? inherited?.progress ?? null,
+        };
+      });
+      const ranked = rankByViewingPriority(inputs);
       const byKey = new Map(filtered.map(item => [`${item.type}:${item.id}`, item]));
       ordered = ranked.flatMap(entry => {
         const original = byKey.get(`${entry.kind}:${entry.id}`);

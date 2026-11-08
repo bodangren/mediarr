@@ -27,7 +27,14 @@
 ## Phase 3: Automation consumes the order
 
 - [~] Subtitle fetch cycle pulls candidates through the priority query (highest bucket first) with
-      the existing provider guard and per-run cap intact; test with a simulated provider — ordering
+      **Wiring design (recorded 2026-11-08):** `processWantedQueue` fetches a pool of
+      `limit × 5` rows, resolves `variantId → {kind, id}` (one `mediaFileVariant` query), loads movie
+      and episode progress in one batch each, derives series activity with `aggregateSeriesProgress`,
+      orders with `orderWantedCandidates`, then slices to `limit`. The provider guard, per-run cap and
+      the `skippedNoProvider` path stay untouched. Requires two small `SubtitleVariantRepository`
+      methods (variant→media refs, batch progress) so the service never touches prisma directly.
+
+      The existing provider guard, per-run cap intact; test with a simulated provider — ordering
       step shipped: `orderWantedCandidates` with 4 tests (b0f175b), wiring into
       `processWantedQueue` next.
 

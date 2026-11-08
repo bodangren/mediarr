@@ -1,0 +1,1 @@
+SPA zero-year rendering fixed with (year??0)>0 across 4 views; unit test + browser verification; tech-debt resolved.

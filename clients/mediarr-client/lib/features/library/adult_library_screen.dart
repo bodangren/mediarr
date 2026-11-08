@@ -65,15 +65,28 @@ class _AdultLibraryScreenState extends State<AdultLibraryScreen> {
       );
       if (!mounted) return;
       setState(() {
+        // Titled items first, review bucket after: eight raw filenames at the top blocked discovery
+        // (review finding). Order inside each group stays the server's.
+        final sorted = [...page.items]..sort((a, b) {
+            if (a.needsReview != b.needsReview) return a.needsReview ? 1 : -1;
+            return 0;
+          });
+        final orderedPage = AdultItemsPage(
+          items: sorted,
+          page: page.page,
+          pageSize: page.pageSize,
+          totalCount: page.totalCount,
+          needsReview: page.needsReview,
+        );
         _page = append && _page != null
             ? AdultItemsPage(
-                items: [..._page!.items, ...page.items],
+                items: [..._page!.items, ...orderedPage.items],
                 page: page.page,
                 pageSize: page.pageSize,
                 totalCount: page.totalCount,
                 needsReview: page.needsReview,
               )
-            : page;
+            : orderedPage;
       });
     } catch (error) {
       if (!mounted) return;
@@ -165,7 +178,7 @@ class _AdultLibraryScreenState extends State<AdultLibraryScreen> {
                           maxCrossAxisExtent: 320,
                           mainAxisSpacing: 16,
                           crossAxisSpacing: 16,
-                          mainAxisExtent: 190,
+                          mainAxisExtent: 250,
                         ),
                         itemCount: items.length,
                         itemBuilder: (context, index) => AdultItemCard(

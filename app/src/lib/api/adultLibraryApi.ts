@@ -17,6 +17,7 @@ const itemSchema = z.object({
   needsReview: z.boolean(),
   path: z.string(),
   sizeBytes: z.number(),
+  thumbUrl: z.string().nullable().optional(),
 });
 
 const listSchema = z.object({

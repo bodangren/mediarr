@@ -18,7 +18,7 @@ describe('SubtitleCoverageCard', () => {
   it('summarises the high-priority denominator', () => {
     render(<SubtitleCoverageCard report={report} />);
     expect(screen.getByText('Subtitle coverage')).toBeInTheDocument();
-    expect(screen.getByText('9 high-priority · 7 covered · 2 missing')).toBeInTheDocument();
+    expect(screen.getByText('9 high-priority · 6 EN+ZH · 1 Chinese only · 2 without Chinese')).toBeInTheDocument();
     expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '78');
   });
 

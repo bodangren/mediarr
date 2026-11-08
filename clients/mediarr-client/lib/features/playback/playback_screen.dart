@@ -512,8 +512,23 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
             if (playbackState.status == PlaybackStatus.loading ||
                 playbackState.status == PlaybackStatus.buffering)
               const Center(
-                child: CircularProgressIndicator(
-                  color: MediarrColors.accentPrimary,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(
+                      width: 40,
+                      height: 40,
+                      child: CircularProgressIndicator(
+                        color: MediarrColors.accentPrimary,
+                        strokeWidth: 4,
+                      ),
+                    ),
+                    SizedBox(height: 12),
+                    Text(
+                      'Buffering…',
+                      style: TextStyle(color: Colors.white, fontSize: 20),
+                    ),
+                  ],
                 ),
               ),
 

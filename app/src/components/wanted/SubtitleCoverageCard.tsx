@@ -28,6 +28,13 @@ export function SubtitleCoverageCard({ report, isLoading = false }: SubtitleCove
   }
 
   const { highPriority: high } = report;
+  // "Covered" used to mean "has Chinese", which contradicted the table's "Both languages" column:
+  // 9 high-priority / 7 covered / 2 missing read as if 7 were bilingual when only 6 were (review
+  // finding, 2026-11-08). Spell the three states out instead.
+  const both = report.buckets
+    .filter((bucket) => bucket.bucket === 'continue-watching' || bucket.bucket === 'recently-watched')
+    .reduce((sum, bucket) => sum + bucket.withBoth, 0);
+  const chineseOnly = high.covered - both;
   const covered = high.total - high.missing;
   const coveragePercent = high.total === 0 ? 100 : Math.round((covered / high.total) * 100);
 
@@ -36,7 +43,7 @@ export function SubtitleCoverageCard({ report, isLoading = false }: SubtitleCove
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="text-lg font-semibold text-text-primary">Subtitle coverage</h2>
         <p className="text-sm text-text-muted">
-          {high.total} high-priority · {covered} covered · {high.missing} missing
+          {high.total} high-priority · {both} EN+ZH · {chineseOnly} Chinese only · {high.missing} without Chinese
         </p>
       </div>
 

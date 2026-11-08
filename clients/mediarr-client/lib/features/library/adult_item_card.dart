@@ -7,6 +7,22 @@ import '../../shared/models/adult_item.dart';
 ///
 /// Focusable as a single stop so the TV D-pad treats it as one control, and it always shows
 /// something identifiable: the parsed title, or the filename for the review bucket.
+class _NoPreview extends StatelessWidget {
+  const _NoPreview();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: const Color(0xFF0B1220),
+      alignment: Alignment.center,
+      child: const Text(
+        'No preview',
+        style: TextStyle(color: Color(0xFF6B7280), fontSize: 12),
+      ),
+    );
+  }
+}
+
 class AdultItemCard extends StatelessWidget {
   const AdultItemCard({
     super.key,
@@ -74,19 +90,22 @@ class AdultItemCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (imageUrl != null) ...[
-                      ClipRRect(
+                    // 16:9 like the source frames; a fixed 96px height cropped them to ~3.3:1 and cut
+                    // subjects out (review finding from all three models, 2026-11-08).
+                    AspectRatio(
+                      aspectRatio: 16 / 9,
+                      child: ClipRRect(
                         borderRadius: BorderRadius.circular(6),
-                        child: Image.network(
-                          imageUrl!,
-                          height: 96,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => const SizedBox(height: 96),
-                        ),
+                        child: imageUrl != null
+                            ? Image.network(
+                                imageUrl!,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => const _NoPreview(),
+                              )
+                            : const _NoPreview(),
                       ),
-                      const SizedBox(height: 8),
-                    ],
+                    ),
+                    const SizedBox(height: 8),
                     Text(
                       item.displayTitle,
                       maxLines: 2,

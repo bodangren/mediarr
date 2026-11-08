@@ -33,8 +33,8 @@
 
 - [x] Browse/search/list endpoints scoped to the adult library — `GET /api/libraries`, `GET /api/adult/items` with `q`/`page`/`pageSize` (title, filename, studio) returning `items/page/pageSize/totalCount/needsReview`; live verified against the 196-item tree — 9720fff, 3d229b6
 - [x] Playback (existing stream handler) + watched state integration — `GET /api/adult/items/:id/stream` serves Range/206 (live: 1024/264237135 bytes, partial content); progress stored on `AdultItem` (migration 0010) so it cannot enter movie/episode Continue Watching — PlaybackProgress count stayed 9 after posting progress on the live DB — ac93e8f
-- [~] Flutter client section (TV-safe focus walk); SPA section — SPA done (`c7aeb11`). TV code path complete: AdultItem model (`02837899`), API methods + `reportAdultProgress` (`469ee301`), focusable card with select-key test (`b5f93d04`), screen (`64d9b1f1`), route + rail (`95f269a8`), player handoff with library-owned progress (`54bb8c57`). **Full Flutter suite: 441 tests pass**, `flutter analyze lib` clean. Remaining: the device pass (widget test for the handoff, `--target-platform android-arm` build 37, publish, `adb install`, X96Max verification).
-- [ ] Automation contract: list, watched, retention candidates.
+- [x] Flutter client section (TV-safe focus walk); SPA section — SPA done (`c7aeb11`). TV shipped: model/API/card/screen/rail/player handoff, remote-centre fix, **device acceptance on the X96Max**: 1.3.13 (code 37) shows the rail entry with `196 items · 8 need review` and `Page 1 of 9`; 1.3.14 (code 38) opens playback and writes adult progress (AdultItem id 1, 7/1669 s, 02:05:20) without touching movie/episode progress; 441 Flutter tests + 4 card tests green — c202f801
+- [~] Automation contract: list, watched, retention candidates.
 
 ## Phase 3: Agent discovery
 

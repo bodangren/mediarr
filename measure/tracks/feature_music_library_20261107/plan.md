@@ -22,8 +22,8 @@
 ## Phase 2: Ingest pipeline (deterministic)
 
 - [x] `yt-dlp` audio download + thumbnail; `ffmpeg` convert to M3 — `MusicIngestService` (bestaudio + jpg, ffmpeg AAC 256k m4a into staging, partial cleanup, exact tool errors, `POST /api/music/ingest` with validation); 4 tests; live 19 s video -> 577,744-byte m4a + 23,683-byte jpg, ffprobe aac 241 kbps — c13af5a
-- [~] beets tag + file into `<Artist>/<Album>/<NN> - <Title>`; untaggable → review folder.
-- [ ] Idempotency by video id + audio hash; re-run does not duplicate.
+- [x] beets tag + file into `<Artist>/<Album>/<NN> - <Title>`; untaggable → review folder — `MusicTaggerService` runs beets tag-only (-q -M -C -w) and owns placement: complete tags → `<Artist>/<Album>/<NN> - <Title>`, incomplete → `_review` with an explicit reason. Ingest writes yt-dlp artist/title/album/year hints into the file first (no fpcalc here) and chains tagging by default. 5 tests; live proof of both paths (filed: Rick Astley/Whenever You Need Somebody/01 - Never Gonna Give You Up.m4a; review: 'untaggable: missing album after beets') — bb3f355c
+- [~] Idempotency by video id + audio hash; re-run does not duplicate.
 - [ ] Failure reporting per item with tool error; receipt.
 
 ## Phase 3: API + artwork

@@ -1,0 +1,1 @@
+Season range no longer misparsed as season-1 pack (returns null); live RANGE=null vs PLAIN=S02; 50 tests; tech-debt resolved.

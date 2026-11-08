@@ -693,6 +693,11 @@ class PlaybackService extends StateNotifier<PlaybackState> {
       // input re-arms the window.
       if (state.status == PlaybackStatus.playing) {
         state = state.copyWith(overlayVisible: false);
+      } else {
+        // One-shot timers made the HUD stick forever when the 5 s mark fell during the startup
+        // resume/buffer (owner report 2026-11-08: "the HUD never disappears on its own"). Re-arm so
+        // it hides as soon as playback is actually running.
+        _startOverlayTimer();
       }
     });
   }

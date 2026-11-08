@@ -106,6 +106,9 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
   /// Suppresses Back-driven overlay toggles for one frame after a
   /// deliberate Stop so a Navigator.pop doesn't double-fire.
   bool _exitInProgress = false;
+  /// Set only by _exitPlayback: PopScope blocks system Back so it can toggle the HUD instead of
+  /// ending playback (owner report 2026-11-08).
+  bool _allowPop = false;
   // Remote seeking acceleration: repeated Left/Right presses within 1.5 s grow the jump
   // (10 s -> 30 s -> 60 s -> 5 min). Owners asked for a way to seek far without the HUD.
   DateTime _lastSeekAt = DateTime.fromMillisecondsSinceEpoch(0);
@@ -392,6 +395,7 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
     final service = ref.read(playbackServiceProvider.notifier);
     await service.stop();
     if (mounted) {
+      setState(() => _allowPop = true);
       navigator.pop();
     }
   }
@@ -448,14 +452,15 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
     }
     if (key == LogicalKeyboardKey.goBack || key == LogicalKeyboardKey.escape) {
       if (_exitInProgress) return false;
-      // Kodi style: Back toggles overlay. Back with overlay hidden shows
-      // overlay (does NOT exit). A separate Stop affordance exits.
+      // Kodi style: Back toggles the overlay and is always consumed, so it can never pop the route.
+      // Owner report 2026-11-08: Back ended the video instead of closing the HUD; the Stop button is
+      // the deliberate exit affordance.
       if (playbackState.overlayVisible) {
         service.hideOverlay();
       } else {
         service.showOverlay();
       }
-      return false;
+      return true;
     }
     // FR-7: any other key wakes the overlay and restarts the 4 s hide
     // window, whatever the play state.
@@ -503,7 +508,22 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
       }
     });
 
-    return Scaffold(
+    return PopScope(
+      // Android delivers Back as a route pop, so a Focus handler never sees it; intercept here.
+      canPop: _allowPop,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        // Read live state: the closure's captured `playbackState` can be one frame stale after the
+        // first Back showed the overlay, so a second Back appeared to do nothing.
+        final live = ref.read(playbackServiceProvider.notifier);
+        final visible = ref.read(playbackServiceProvider).overlayVisible;
+        if (visible) {
+          live.hideOverlay();
+        } else {
+          live.showOverlay();
+        }
+      },
+      child: Scaffold(
       backgroundColor: Colors.black,
       body: Focus(
         focusNode: _rootFocusNode,
@@ -643,6 +663,7 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
               ),
           ],
         ),
+      ),
       ),
     );
   }

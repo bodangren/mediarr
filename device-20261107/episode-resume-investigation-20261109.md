@@ -29,3 +29,16 @@ stored position (movie resume works; fixed earlier with 1.3.39 and device-verifi
   on a later launch: there is still a second path that opens playback with an offset that lands as 0.
 - Next step: log which two call sites start playback (stack + screen identity) and serialise at the
   service boundary instead of relying on key equality; then re-run the two-launch device check.
+
+## Update — telemetry-corrected (2026-11-09 04:5x)
+A latent bug in the retry logic explained the missing diagnostics: `_maybeRetryResume` returned from the
+throttle branch *before* the exhaustion branch, so "resume seek did not take effect" could never be
+reported once the budget was spent. Fixed:
+- exhaustion is checked first and reports once with `target/actual/attempts/seekError`;
+- the first thrown seek error is captured (`seekError`) so future reports say *why* seeking failed;
+- retry interval/attempt cap are constructor-injectable, and a behaviour test pins "re-seeks when the
+  player ignores startAt" plus "reports exactly once on exhaustion" (166 playback tests).
+
+Device run with 1.3.48 (code 72) resumed at **10:46** (position 646 after 46 s) and wrote the bookmark
+forward, so resume **can** still succeed; the failure is intermittent. The new `seekError` field will
+tell us whether failed episodes throw on seek or simply keep reporting 0.

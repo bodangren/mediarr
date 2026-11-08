@@ -164,11 +164,12 @@ bool shouldRetryResumeSeek({
   required Duration? resumeTarget,
   required Duration sinceLastAttempt,
   required int attempts,
+  Duration interval = const Duration(seconds: 2),
 }) {
   if (resumeTarget == null) return false;
   if (attempts >= 20) return false;
   if (position + const Duration(seconds: 15) >= resumeTarget) return false;
-  return sinceLastAttempt >= const Duration(seconds: 2);
+  return sinceLastAttempt >= interval;
 }
 
 class PlaybackService extends StateNotifier<PlaybackState> {
@@ -176,6 +177,8 @@ class PlaybackService extends StateNotifier<PlaybackState> {
     this._apiClient, {
     MediaPlayer? player,
     SubtitleRenderer? subtitleRenderer,
+    this.resumeRetryInterval = const Duration(seconds: 2),
+    this.maxResumeAttempts = 20,
     this.retryDelay = const Duration(milliseconds: 1500),
     this.maxOpenRetries = 2,
     PlaybackProgressReporter? progressReporter,
@@ -222,8 +225,11 @@ class PlaybackService extends StateNotifier<PlaybackState> {
   Duration? _resumeTarget;
   DateTime? _playStartedAt;
   Duration? _pendingResumeTarget;
+  final Duration resumeRetryInterval;
+  final int maxResumeAttempts;
   DateTime? _lastResumeAttemptAt;
   int _resumeAttempts = 0;
+  String? _lastResumeSeekError;
   Timer? _overlayHideTimer;
   Timer? _subtitleToastTimer;
   Timer? _seekToastTimer;
@@ -423,6 +429,7 @@ class PlaybackService extends StateNotifier<PlaybackState> {
         'mediaId': state.mediaId,
         'mediaType': state.mediaType,
         'attempts': _resumeAttempts,
+        'seekError': _lastResumeSeekError,
       },
     );
   }
@@ -743,27 +750,31 @@ class PlaybackService extends StateNotifier<PlaybackState> {
 
   Future<void> _maybeRetryResume(Duration position) async {
     final target = _pendingResumeTarget;
-    final last = _lastResumeAttemptAt;
-    final sinceLast = last == null ? const Duration(days: 1) : DateTime.now().difference(last);
-    if (!shouldRetryResumeSeek(position: position, resumeTarget: target, sinceLastAttempt: sinceLast, attempts: _resumeAttempts)) {
-      if (target != null && position + const Duration(seconds: 15) >= target) {
-        _pendingResumeTarget = null;
-      }
+    if (target == null) return;
+    if (position + const Duration(seconds: 15) >= target) {
+      // The seek (or the player's own start offset) landed.
+      _pendingResumeTarget = null;
+      _resumeTarget = null;
       return;
     }
-    if (_resumeAttempts >= 20) {
-      if (_pendingResumeTarget != null) {
-        _pendingResumeTarget = null;
-        _reportResumeFailure(target!, position, 'retryExhausted');
-      }
+    if (_resumeAttempts >= maxResumeAttempts) {
+      _pendingResumeTarget = null;
+      _reportResumeFailure(target, position, 'retryExhausted');
+      return;
+    }
+    final last = _lastResumeAttemptAt;
+    final sinceLast = last == null ? const Duration(days: 1) : DateTime.now().difference(last);
+    if (!shouldRetryResumeSeek(position: position, resumeTarget: target, sinceLastAttempt: sinceLast, attempts: _resumeAttempts, interval: resumeRetryInterval)) {
       return;
     }
     _resumeAttempts += 1;
     _lastResumeAttemptAt = DateTime.now();
     try {
-      await _player.seek(target!);
-    } catch (_) {
-      // Keep the pending target; the next tick retries within the attempt budget.
+      await _player.seek(target);
+    } catch (error) {
+      // Keep the pending target; the next tick retries. Remember the first error so the exhaustion
+      // record explains the real cause instead of only the position mismatch.
+      _lastResumeSeekError ??= error.toString();
     }
   }
 

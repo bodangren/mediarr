@@ -24,6 +24,10 @@ const movieItemSchema = z.object({
   status: z.string().nullish(),
   monitored: z.boolean().nullish(),
   sizeOnDisk: z.number().nullish(),
+  playbackState: z.object({
+    isWatched: z.boolean(),
+    progress: z.number(),
+  }).nullish(),
 }).passthrough();
 
 const wantedItemSchema = z.object({

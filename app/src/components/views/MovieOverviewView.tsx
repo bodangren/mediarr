@@ -91,6 +91,15 @@ function MovieOverviewCard({ item, onToggleMonitored, onDelete, onSearch }: Movi
               {item.runtime && <span>•</span>}
               {item.runtime && <span>{getRuntimeDisplay(item.runtime)}</span>}
               <StatusBadge status={fileStatus} />
+              {item.playbackState?.isWatched ? (
+                <span className="inline-flex items-center gap-1 rounded bg-status-completed/15 px-1.5 py-0.5 text-[11px] font-semibold text-status-completed">
+                  ✓ Watched
+                </span>
+              ) : item.playbackState && item.playbackState.progress > 0.02 ? (
+                <span className="inline-flex items-center gap-1 rounded bg-accent-primary/15 px-1.5 py-0.5 text-[11px] font-semibold text-accent-primary">
+                  {Math.round(item.playbackState.progress * 100)}%
+                </span>
+              ) : null}
               {item.sizeOnDisk != null && item.sizeOnDisk > 0 && (
                 <span className="text-text-muted">• {formatBytes(item.sizeOnDisk)}</span>
               )}

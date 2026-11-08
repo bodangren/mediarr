@@ -1,0 +1,1 @@
+Fixed legacy migration fixture for 0016 ALTER; migrationCompatibility 7/7. Full-suite run also documented the node-ABI trap (v24 vs v26) and the intentionally-red harness fixture.

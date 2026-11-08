@@ -1,1 +1,3 @@
 B9 alert delivery: retry + webhook transport + no-transport fallback, 4 tests; full server suite green 291/2795; timer gated.
+
+B9 delivery retry recorded in plan; timer owner-gated.

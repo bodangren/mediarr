@@ -36,7 +36,7 @@
 - [x] TV client: **nothing to pass through** — measured 2026-11-08: the Flutter client has no wanted surface (`grep -rn wanted lib test` = 0 hits; feature dirs are activity/calendar/discovery/home/library/playback/search/settings) and no `priority` usage (`grep -rn priority lib` = 0). A TV wanted screen would be its own track, not a pass-through — 97fda37
 - [x] Browser check against the live server with the real library — `/wanted` renders the coverage card (9 high-priority · 7 covered · 2 missing) and bucket sections (BACKFILL · 25); evidence `device-20261107/wanted-coverage.jpg` + `wanted-grouped.jpg` — 97fda37
 
-## Phase 5: Acceptance + close
+## Phase 5: Acceptance + close [checkpoint: da7e3bd4]
 
 - [x] Live high-priority coverage reported; every missing item explainable — measured 2026-11-08: high priority `{total: 9, covered: 7, missing: 2}` and subtitle search providers configured: **none** (`apiKeys` has no opensubtitles/subdl/assrt value), so both missing items are explained by `no-provider` and the automation idles with a visible notice rather than silently failing — 570d808
 - [x] Server suite, SPA tests, `flutter analyze`/tests green; screenshots recorded — 2026-11-08: **62 server tests** across the 11 priority/coverage/wanted/bilingual files, **34 SPA tests** (`WantedPage`, `SubtitleCoverageCard`, `subtitleWantedApi`), server + app `tsc` clean, SPA rebuilt and browser-checked; screenshots `device-20261107/wanted-coverage.jpg`, `wanted-grouped.jpg`. Flutter client was not modified by this track (grep-only evidence) — 8f63fa6

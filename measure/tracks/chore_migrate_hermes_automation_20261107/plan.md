@@ -94,12 +94,15 @@
       subtitle rendering verified on device. Old APK was from 2026-10-03 with a different
       signature, so it was backed up, uninstalled and replaced; server re-entered manually.
       Evidence: [`evidence/`](./evidence/).
-- [~] **B2f** Restore the **bilingual EN+ZH** subtitle invariant (FR-17, recovered 2026-11-07).
-      Old rule: bilingual packs only; Chinese-only/English-only rejected. Current audit: 868 bilingual,
-      54 Chinese-only, 35 English-only, 3 empty. Build: `BilingualSubtitleService` (classify, merge
-      EN+ZH by timing, atomic write + `.orig`, idempotent ledger) + `MiniMaxTranslator`
+- [x] **B2f** Restore the **bilingual EN+ZH** subtitle invariant (FR-17, recovered 2026-11-07).
+      Old rule: bilingual packs only; Chinese-only/English-only rejected. Build: `BilingualSubtitleService`
+      (classify, merge EN+ZH by timing, atomic write + `.orig`, idempotent ledger) + `MiniMaxTranslator`
       (MiniMax-M3.1-Flash, cheap, batch cues) for English-only items; scheduler task `bilingual-subs`.
-      Chinese-only with no English sibling is flagged, not guessed. TV proof required: two lines visible.
+      Chinese-only with no English sibling is flagged (`needs_english`), never guessed. **Done 2026-11-08:**
+      `/config/bilingual-state.json` has 753 entries = 637 ok + 24 merged + 4 translated (665 bilingual),
+      79 needs_english flagged, 6 gave_up, 3 failed; **TV proof: merged bilingual episode renders the
+      Chinese line with the English line directly under it** (`device-20261107/bilingual-tv-proof.png`,
+      `bilingual-tv-proof-20261108.md`); test playback row removed — 0c51321f
 - [x] **B2e** TV client update pipeline: server manifest + APK endpoint, `publish-client-update.sh`, — d5f3674
       in-app prompt (Update now / Wait 12 h / countdown → PackageInstaller), and a daily **silent
       ADB updater** (`tv-updater.sh`, sha256-verified). **Verified 2026-11-07:** silent v2→v4 in 33 s;

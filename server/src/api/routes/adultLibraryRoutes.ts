@@ -123,6 +123,74 @@ export function registerAdultLibraryRoutes(app: FastifyInstance, deps: ApiDepend
     return sendSuccess(reply, { id, position, duration, isWatched });
   });
 
+  /**
+   * Automation contract (track feature_adult_library_20261107, Phase 2 last item).
+   *
+   * The weekly agent run reads this contract instead of scraping or touching the database: what is
+   * in the library, what has been watched, and which watched items are old enough to prune. Pruning
+   * itself belongs to the quarantine engine (Phase 4); these endpoints only propose.
+   */
+  app.get('/api/adult/automation/list', async (request, reply) => {
+    const query = request.query as Record<string, unknown>;
+    const limit = Math.min(500, Math.max(1, Number.parseInt(String(query.limit ?? '200'), 10) || 200));
+    const rows = await drizzle
+      .select({
+        id: schema.adultItems.id,
+        title: schema.adultItems.title,
+        fileName: schema.adultItems.fileName,
+        studio: schema.adultItems.studio,
+        needsReview: schema.adultItems.needsReview,
+        isWatched: schema.adultItems.isWatched,
+        position: schema.adultItems.position,
+        duration: schema.adultItems.duration,
+        lastPlayedAt: schema.adultItems.lastPlayedAt,
+        sizeBytes: schema.adultItems.sizeBytes,
+      })
+      .from(schema.adultItems)
+      .orderBy(asc(schema.adultItems.id))
+      .limit(limit);
+    return sendSuccess(reply, { items: rows, count: rows.length });
+  });
+
+  app.get('/api/adult/automation/retention-candidates', async (request, reply) => {
+    const query = request.query as Record<string, unknown>;
+    const parsedDays = Number.parseInt(String(query.days ?? '30'), 10);
+    const days = Number.isFinite(parsedDays) && parsedDays >= 0 ? parsedDays : 30;
+    const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+    const rows = await drizzle
+      .select()
+      .from(schema.adultItems)
+      .where(eq(schema.adultItems.isWatched, true));
+    const candidates = rows
+      .filter((row: { lastPlayedAt: Date | null }) => row.lastPlayedAt == null || row.lastPlayedAt < cutoff)
+      .map((row: { id: number; title: string | null; fileName: string; sizeBytes: number; lastPlayedAt: Date | null }) => ({
+        id: row.id,
+        title: row.title ?? row.fileName,
+        sizeBytes: row.sizeBytes,
+        lastPlayedAt: row.lastPlayedAt,
+      }));
+    return sendSuccess(reply, {
+      days,
+      cutoff: cutoff.toISOString(),
+      candidates,
+      count: candidates.length,
+      // Explicitly a proposal: the quarantine engine performs moves/deletes.
+      destructive: false,
+    });
+  });
+
+  app.post('/api/adult/automation/watched/:id', async (request, reply) => {
+    const id = Number.parseInt(String((request.params as { id?: string }).id ?? ''), 10);
+    if (!Number.isInteger(id) || id <= 0) {
+      return reply.code(422).send({ ok: false, error: { code: 'INVALID_ID', message: 'id must be a positive integer' } });
+    }
+    await drizzle
+      .update(schema.adultItems)
+      .set({ isWatched: true, lastPlayedAt: new Date() })
+      .where(eq(schema.adultItems.id, id));
+    return sendSuccess(reply, { id, isWatched: true });
+  });
+
   app.post('/api/libraries/adult/import', async (_request, reply) => {
     const library = await drizzle
       .select()

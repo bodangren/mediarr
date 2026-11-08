@@ -1,0 +1,1 @@
+Plugin install proven in isolated profile: dsh.bundle declared, layer composes with ledger/expectations config; load/reload test 19 green; live reload owner-gated.

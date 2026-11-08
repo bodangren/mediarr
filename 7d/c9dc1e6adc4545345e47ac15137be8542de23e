@@ -1,0 +1,1 @@
+Episode resume investigation: telemetry proves double open with offset; in-flight dedupe fixed it once (10:10) but not deterministically; guard prevents bookmark loss; next: serialise at service boundary/log call sites.

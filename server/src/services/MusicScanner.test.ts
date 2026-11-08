@@ -140,6 +140,33 @@ describe('scanMusicLibrary', () => {
     expect(summary.unreadable[0]?.path).toContain('broken.mp3');
   });
 
+  it('seeded tree yields exact artist/album/track counts', async () => {
+    // Deterministic tree: 3 artists, 4 albums (one artist has two), 7 tracks incl. a disc-2 set.
+    const root = await makeTree([
+      'Alpha/First/01 - a.mp3', 'Alpha/First/02 - b.mp3', 'Alpha/First/03 - c.mp3',
+      'Alpha/Second/01 - d.mp3',
+      'Beta/Only/01 - e.flac', 'Beta/Only/02 - f.flac',
+      'Gamma/Set/02-02 - g.m4a',
+    ]);
+    const fake = store();
+    const probes = probe({
+      '01 - a.mp3': { artist: 'Alpha', album: 'First', trackNumber: 1 },
+      '02 - b.mp3': { artist: 'Alpha', album: 'First', trackNumber: 2 },
+      '03 - c.mp3': { artist: 'Alpha', album: 'First', trackNumber: 3 },
+      '01 - d.mp3': { artist: 'Alpha', album: 'Second', trackNumber: 1 },
+      '01 - e.flac': { artist: 'Beta', album: 'Only', trackNumber: 1 },
+      '02 - f.flac': { artist: 'Beta', album: 'Only', trackNumber: 2 },
+      '02-02 - g.m4a': { artist: 'Gamma', album: 'Set', trackNumber: 2, discNumber: 2 },
+    });
+
+    const summary = await scanMusicLibrary({ root, store: fake.store, probe: probes });
+
+    expect(summary).toEqual({ scanned: 7, artists: 3, albums: 4, tracks: 7, unreadable: [] });
+    expect(fake.calls.filter((call) => call.startsWith('artist:'))).toHaveLength(3);
+    expect(fake.calls.filter((call) => call.startsWith('album:'))).toHaveLength(4);
+    expect(fake.tracks).toHaveLength(7);
+  });
+
   it('dry run reports the summary without writing rows', async () => {
     const root = await makeTree(['A/Album/01.mp3']);
     const fake = store();

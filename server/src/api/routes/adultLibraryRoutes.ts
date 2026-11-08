@@ -65,7 +65,8 @@ export function registerAdultLibraryRoutes(app: FastifyInstance, deps: ApiDepend
       page,
       pageSize,
       totalCount: filtered.length,
-      needsReview: withThumbs.filter((row: { needsReview: boolean }) => row.needsReview).length,
+      // Count within the current search filter: a global count read as "N need review" would lie when q is set.
+      needsReview: filtered.filter((row: { needsReview: boolean }) => row.needsReview).length,
     });
   });
 

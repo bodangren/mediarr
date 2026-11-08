@@ -1,3 +1,4 @@
+import { adultSectionTotals } from '@/lib/adultSections';
 import { useEffect, useMemo, useState } from 'react';
 import { RouteScaffold } from '@/components/primitives/RouteScaffold';
 import { getApiClients } from '@/lib/api/client';
@@ -58,6 +59,7 @@ export function AdultLibraryPage() {
   });
   const reviewItems = ordered.filter((item) => item.needsReview);
   const libraryItems = ordered.filter((item) => !item.needsReview);
+  const sectionTotals = adultSectionTotals({ totalCount, needsReview, pageSize });
 
   const renderCard = (item: AdultItem) => (
   <button
@@ -139,7 +141,8 @@ export function AdultLibraryPage() {
         {reviewItems.length > 0 ? (
           <section aria-label="Needs review" className="space-y-2">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-accent-warning">
-              Needs review ({reviewItems.length})
+              Needs review ({sectionTotals.review})
+              {sectionTotals.paginated ? <span className="ml-1 font-normal normal-case text-text-muted">· showing this page</span> : null}
             </h2>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
               {reviewItems.map((item) => renderCard(item))}
@@ -150,7 +153,8 @@ export function AdultLibraryPage() {
         {libraryItems.length > 0 ? (
           <section aria-label="Library" className="space-y-2">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-text-muted">
-              Library ({libraryItems.length} on this page)
+              Library ({sectionTotals.library})
+              {sectionTotals.paginated ? <span className="ml-1 font-normal text-text-muted">· showing this page</span> : null}
             </h2>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
               {libraryItems.map((item) => renderCard(item))}

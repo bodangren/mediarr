@@ -1,1 +1,3 @@
 Music ingest failures now logged + SSE event (forced alert, no silent skip); live-verified with a bogus id, test row/receipt cleaned.
+
+Music forced failure alerts closed (journal + SSE event); weekly agent run remains blocked on the harness link and a curated list.

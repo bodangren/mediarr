@@ -76,9 +76,7 @@ describe('auditSubtitles', () => {
     );
 
     expect(summary).toMatchObject({ variants: 2, dual: 1, zhoOnly: 1, enOnly: 0, traditional: 1 });
-    expect(summary.issues).toContainEqual({
-      filePath: 'variant:2', languageCode: 'zho', problem: 'missing-english',
-    });
+    expect(summary.zhoOnlyVariants).toEqual([2]);
   });
 });
 

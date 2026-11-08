@@ -66,7 +66,7 @@ export interface SubtitleRow {
 export interface SubtitleIssue {
   filePath: string;
   languageCode: string | null;
-  problem: 'non-utf8' | 'traditional-chinese' | 'mixed-chinese' | 'missing-file' | 'missing-english';
+  problem: 'non-utf8' | 'traditional-chinese' | 'mixed-chinese' | 'missing-file';
 }
 
 export interface VariantLanguageCoverage {
@@ -89,6 +89,9 @@ export interface SubtitleAuditSummary {
   mixed: number;
   missingFiles: number;
   chineseFiles: number;
+  /** Variants that have Chinese but no English subtitle: the bilingual gaps, id-only to keep the
+   * per-file issue list actionable. */
+  zhoOnlyVariants: number[];
   issues: SubtitleIssue[];
 }
 
@@ -104,7 +107,8 @@ export async function auditSubtitles(
   const readFile = options.readFile ?? ((file: string) => fsp.readFile(file));
   const summary: SubtitleAuditSummary = {
     variants: 0, zhoOnly: 0, enOnly: 0, dual: 0,
-    scanned: 0, emptyPath: 0, nonUtf8: 0, traditional: 0, mixed: 0, missingFiles: 0, chineseFiles: 0, issues: [],
+    scanned: 0, emptyPath: 0, nonUtf8: 0, traditional: 0, mixed: 0, missingFiles: 0, chineseFiles: 0,
+    zhoOnlyVariants: [], issues: [],
   };
   const coverage = new Map<number, VariantLanguageCoverage>();
 
@@ -161,11 +165,7 @@ export async function auditSubtitles(
     else if (entry.hasChinese) summary.zhoOnly += 1;
     else if (entry.hasEnglish) summary.enOnly += 1;
     if (entry.hasChinese && !entry.hasEnglish) {
-      summary.issues.push({
-        filePath: `variant:${entry.variantId}`,
-        languageCode: 'zho',
-        problem: 'missing-english',
-      });
+      summary.zhoOnlyVariants.push(entry.variantId);
     }
   }
 

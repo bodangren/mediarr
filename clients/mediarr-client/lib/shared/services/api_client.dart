@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/collection.dart';
 import '../models/adult_item.dart';
+import '../models/music.dart';
 import '../models/youtube_video.dart';
 import '../models/library_item.dart';
 import '../models/movie.dart';
@@ -670,6 +671,44 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
       (json) => Movie.fromJson(json as Map<String, dynamic>),
     );
   }
+
+  /// Music browse/search (track feature_music_library_20261107). Own domain under /api/music/*.
+  Future<List<MusicArtist>> getMusicArtists() async {
+    final response = await _dio.get<Map<String, dynamic>>('/api/music/artists');
+    final data = _unwrap(response.data) as List<dynamic>;
+    return data.map((json) => MusicArtist.fromJson(json as Map<String, dynamic>)).toList();
+  }
+
+  Future<List<MusicAlbum>> getMusicAlbums({int? artistId, bool recent = false}) async {
+    final query = <String, dynamic>{};
+    if (artistId != null) query['artistId'] = artistId;
+    if (recent) query['recent'] = 1;
+    final response = await _dio.get<Map<String, dynamic>>(
+      '/api/music/albums',
+      queryParameters: query.isEmpty ? null : query,
+    );
+    final data = _unwrap(response.data) as List<dynamic>;
+    return data.map((json) => MusicAlbum.fromJson(json as Map<String, dynamic>)).toList();
+  }
+
+  Future<List<MusicTrack>> getMusicTracks({String query = '', int limit = 100}) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      '/api/music/tracks',
+      queryParameters: {'q': query, 'limit': limit},
+    );
+    final data = _unwrap(response.data) as Map<String, dynamic>;
+    final items = data['items'] as List<dynamic>? ?? const [];
+    return items.map((json) => MusicTrack.fromJson(json as Map<String, dynamic>)).toList();
+  }
+
+  Future<MusicAlbumDetail> getMusicAlbum(int albumId) async {
+    final response = await _dio.get<Map<String, dynamic>>('/api/music/albums/$albumId');
+    return MusicAlbumDetail.fromJson(_unwrap(response.data) as Map<String, dynamic>);
+  }
+
+  String musicStreamUrl(int trackId) => '${_dio.options.baseUrl}/api/music/tracks/$trackId/stream';
+
+  String musicArtworkUrl(int albumId) => '${_dio.options.baseUrl}/api/music/albums/$albumId/artwork';
 
   /// YouTube library listing (track feature_youtube_library_20261107). Its own domain: `/api/youtube/*`.
   Future<List<YoutubeVideo>> getYoutubeVideos({int limit = 200}) async {

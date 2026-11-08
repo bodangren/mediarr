@@ -131,6 +131,7 @@ export function registerMusicRoutes(app: FastifyInstance, deps: ApiDependencies)
   app.get('/api/music/albums', async (request, reply) => {
     const query = request.query as Record<string, unknown>;
     const artistId = Number.parseInt(String(query.artistId ?? ''), 10);
+    const recent = String(query.recent ?? '') === '1';
     const conditions = Number.isInteger(artistId) && artistId > 0
       ? eq(schema.musicAlbums.artistId, artistId)
       : undefined;
@@ -141,10 +142,12 @@ export function registerMusicRoutes(app: FastifyInstance, deps: ApiDependencies)
         title: schema.musicAlbums.title,
         year: schema.musicAlbums.year,
         artworkPath: schema.musicAlbums.artworkPath,
+        added: schema.musicAlbums.added,
       })
       .from(schema.musicAlbums)
       .where(conditions)
-      .orderBy(asc(schema.musicAlbums.title));
+      .orderBy(recent ? desc(schema.musicAlbums.added) : asc(schema.musicAlbums.title))
+      .limit(recent ? 50 : 500);
     const tracks = await drizzle
       .select({ albumId: schema.musicTracks.albumId })
       .from(schema.musicTracks);

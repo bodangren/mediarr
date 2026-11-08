@@ -11,6 +11,7 @@ import '../../features/library/movies_screen.dart';
 import '../../features/library/series_screen.dart';
 import '../../features/library/adult_library_screen.dart';
 import '../../features/library/youtube_library_screen.dart';
+import '../../features/music/music_library_screen.dart';
 import '../../shared/models/adult_item.dart';
 import '../../shared/models/youtube_video.dart';
 import '../../features/playback/playback_screen.dart';
@@ -31,6 +32,7 @@ class AppRoutes {
   static const String series = '/series';
   static const String adult = '/adult';
   static const String youtube = '/youtube';
+  static const String music = '/music';
   static const String search = '/search';
   static const String settings = '/settings';
   static const String playback = '/playback';
@@ -214,6 +216,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               baseUrl: ref.read(apiClientProvider).baseUrl,
               onSelect: (item) => _openAdultItem(ref, context, item),
             ),
+          ),
+          GoRoute(
+            path: AppRoutes.music,
+            builder: (context, state) => const MusicLibraryScreen(),
           ),
           GoRoute(
             path: AppRoutes.youtube,

@@ -64,6 +64,12 @@ const _destinations = [
     label: 'Series',
   ),
   _NavDestination(
+    path: AppRoutes.music,
+    icon: Icons.library_music_outlined,
+    selectedIcon: Icons.library_music,
+    label: 'Music',
+  ),
+  _NavDestination(
     path: AppRoutes.youtube,
     icon: Icons.video_library_outlined,
     selectedIcon: Icons.video_library,

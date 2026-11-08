@@ -79,15 +79,13 @@ describe('ReleaseParser — known regex-fallback defects', () => {
     vi.unstubAllEnvs();
   });
 
-  it('misclassifies a season range as a season pack for the first season', async () => {
-    // `\bS\d{1,2}\b` matches the leading S01 of "S01-S09", so a complete-series
-    // release is reported as season 1. WantedSearchService skips season_pack when
-    // hunting complete series (WantedSearchService.ts:408), so this defect can hide a
-    // legitimate complete-series release from an automatic grab.
+  it('refuses a season range instead of calling it a season 1 pack (fixed 2026-11-09)', async () => {
+    // `\bS\d{1,2}\b` used to match the leading S01 of "S01-S09", reporting a complete-series
+    // release as season 1; WantedSearchService skips season_pack when hunting complete series, so
+    // that could hide a legitimate release. The fallback now returns null for ranges.
     const result = await releaseParser.parse('Seinfeld.S01-S09.Complete.1080p.BluRay-GRP');
 
-    expect(result?.matchType).toBe('season_pack');
-    expect(result?.seasonNumber).toBe(1);
+    expect(result).toBeNull();
   });
 
   it('destroys internal punctuation when normalising separators', async () => {

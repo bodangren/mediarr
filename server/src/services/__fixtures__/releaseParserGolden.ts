@@ -8,9 +8,9 @@
 // entirely for movies, NNxNN titles, and anime absolute-numbering titles.
 //
 // Do not "fix" `regexFallbackExpected` values to look more correct — they must describe
-// what the current implementation actually does, including its known bugs (e.g. a season
-// range like "S01-S09" makes the lone-season branch misfire and return a season_pack for
-// season 1 instead of null).
+// what the current implementation actually does. A season range like "S01-S09" used to make the
+// lone-season branch misfire and return season 1; the fallback now returns null for ranges
+// (fixed 2026-11-09), and the golden data describes that behaviour.
 
 import type { ParsedRelease } from '../ReleaseParser';
 import { ParsedReleaseSchema } from '../ReleaseParser';
@@ -86,8 +86,8 @@ export const RELEASE_PARSER_GOLDEN: readonly GoldenEntry[] = [
   {
     title: 'Seinfeld.S01-S09.Complete.480p.DVDRip.XviD-GROUP',
     expected: { title: 'Seinfeld', type: 'series', matchType: 'complete_series', seasonNumber: null, episodeNumbers: [], year: null, quality: { resolution: '480p', source: 'DVDRip', codec: 'XviD' } },
-    regexFallbackExpected: { title: 'Seinfeld', type: 'series', matchType: 'season_pack', seasonNumber: 1, episodeNumbers: [], year: null, quality: null },
-    notes: 'complete series via season range; regex fallback misfires on the lone S01',
+    regexFallbackExpected: null,
+    notes: 'complete series via season range; the fallback now refuses ranges instead of calling them season 1',
   },
   {
     title: 'Oppenheimer.2023.2160p.UHD.BluRay.x265-TERMiNAL',
@@ -206,8 +206,8 @@ export const RELEASE_PARSER_GOLDEN: readonly GoldenEntry[] = [
   {
     title: 'Avatar.The.Last.Airbender.S01-S03.Complete.720p.BluRay.x264-GROUP',
     expected: { title: 'Avatar The Last Airbender', type: 'series', matchType: 'complete_series', seasonNumber: null, episodeNumbers: [], year: null, quality: { resolution: '720p', source: 'BluRay', codec: 'x264' } },
-    regexFallbackExpected: { title: 'Avatar The Last Airbender', type: 'series', matchType: 'season_pack', seasonNumber: 1, episodeNumbers: [], year: null, quality: null },
-    notes: 'complete series via season range; regex fallback misfires on the lone S01',
+    regexFallbackExpected: null,
+    notes: 'complete series via season range; the fallback now refuses ranges instead of calling them season 1',
   },
   {
     title: 'Top.Gun.Maverick.2022.1080p.BluRay.x264-GROUP',

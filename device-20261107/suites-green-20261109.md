@@ -1,0 +1,24 @@
+# Test suites after the 2026-11-09 quality fixes
+
+## Full server suite
+```
+Test Files  294 passed (294)
+Tests  2804 passed | 11 skipped (2815)
+```
+The two former red spots were **characterisation tests that pinned the old defects**, updated to the
+fixed behaviour:
+
+- `ReleaseParser.golden.test.ts` + `__fixtures__/releaseParserGolden.ts`: season ranges
+  (`Seinfeld.S01-S09…`, `Avatar…S01-S03…`) now expect `null` — the fallback refuses a range instead of
+  reporting a season-1 pack (fixed in 72daa246). Fixture header text updated so nobody "restores" the
+  bug for consistency.
+- `LibraryScanner.test.ts`: the "known defect: unreadable subdirectory aborts the scan" block became
+  "unreadable subdirectories are skipped, not fatal" — asserts a warning and that readable files are
+  still linked (fixed in 8996e99b).
+
+## SPA suite
+`npx vitest run` in `app/` exited 0 (dot reporter, ~26 min wall time on this laptop) after the
+zero-year fix (e5e22414) and its new test.
+
+## Flutter client
+463 tests green after the select-once fix (a8d04d21) — recorded earlier.

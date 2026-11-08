@@ -246,51 +246,55 @@ describe('LibraryScanner', () => {
   // Pinned rather than fixed: the fix is a production change and this track is
   // scoped to tests unless a defect is found. It IS a defect, and it is live
   // (LibraryScanner is wired), so it is recorded in tech-debt.md for routing.
-  describe('known defect: an unreadable subdirectory aborts the whole scan', () => {
+  describe('unreadable subdirectories are skipped, not fatal (fixed 2026-11-09)', () => {
     const canTestPermissions = process.getuid ? process.getuid() !== 0 : false;
 
     it.runIf(canTestPermissions)(
-      'throws instead of skipping the unreadable directory',
+      'warns and continues instead of throwing',
       async () => {
         await touch('good/Show.S01E01.mkv');
         const locked = path.join(tempRoot, 'locked');
         await fs.mkdir(locked, { recursive: true });
         await fs.chmod(locked, 0o000);
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
 
         const { db } = makeDb();
 
         try {
           await expect(
             new LibraryScanner(db).scanSeries({ id: 7, path: tempRoot, title: 'Show' }),
-          ).rejects.toThrow(/EACCES|EPERM/);
+          ).resolves.toBeUndefined();
+          expect(warn.mock.calls.some((args) => String(args[0]).includes('Skipping unreadable directory'))).toBe(true);
         } finally {
+          warn.mockRestore();
           await fs.chmod(locked, 0o755);
         }
       },
     );
 
     it.runIf(canTestPermissions)(
-      'loses files it had not yet reached when the error is thrown',
+      'still links the readable files around the unreadable directory',
       async () => {
-        // 'a-good' sorts before 'b-locked'; readdir order decides how much work
-        // is lost, which is exactly why aborting instead of skipping is wrong.
+        // 'a-good' sorts before 'b-locked'; readdir order used to decide how much work was lost.
         await touch('a-good/Show.S01E01.mkv');
         const locked = path.join(tempRoot, 'b-locked');
         await fs.mkdir(locked, { recursive: true });
         await fs.chmod(locked, 0o000);
         await touch('c-good/Show.S01E02.mkv');
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
 
-        const { db, episodeUpdate } = makeDb();
+        const { db, episodeUpdate, episodeFindFirst } = makeDb();
+        episodeFindFirst.mockResolvedValue({ id: 42 });
 
         try {
           await new LibraryScanner(db)
             .scanSeries({ id: 7, path: tempRoot, title: 'Show' })
             .catch(() => undefined);
 
-          // The walk collects every path before parsing any of them, so an
-          // abort mid-walk means NOTHING is linked, not even the readable files.
-          expect(episodeUpdate).not.toHaveBeenCalled();
+          // The readable files are still linked even though one directory could not be read.
+          expect(episodeUpdate).toHaveBeenCalled();
         } finally {
+          warn.mockRestore();
           await fs.chmod(locked, 0o755);
         }
       },

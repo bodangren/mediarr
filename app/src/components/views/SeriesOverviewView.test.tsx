@@ -151,4 +151,15 @@ describe('SeriesOverviewView', () => {
     const firstPosterLink = posterLinks.find(link => link.querySelector('img'));
     expect(firstPosterLink).toHaveAttribute('href', '/library/tv/1');
   });
+
+  it('shows watched and in-progress episode counts from library statistics', () => {
+    const watchedSeries = {
+      ...mockSeries[0],
+      statistics: { totalEpisodes: 4, watchedEpisodes: 7, inProgressEpisodes: 2 },
+    } as SeriesListItem;
+    render(<SeriesOverviewView items={[watchedSeries]} onToggleMonitored={vi.fn()} />);
+
+    expect(screen.getByText('✓ 7 watched')).toBeTruthy();
+    expect(screen.getByText('▶ 2 in progress')).toBeTruthy();
+  });
 });

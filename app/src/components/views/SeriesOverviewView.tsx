@@ -66,6 +66,16 @@ function SeriesOverviewCard({ item, onToggleMonitored, onDelete, onRefresh }: Se
               {item.year && item.network && <span>•</span>}
               {item.network && <span>{item.network}</span>}
               {item.status && <StatusBadge status={item.status} />}
+              {(item.statistics?.watchedEpisodes ?? 0) > 0 && (
+                <span className="inline-flex items-center gap-1 rounded bg-status-completed/15 px-1.5 py-0.5 text-[11px] font-semibold text-status-completed">
+                  ✓ {item.statistics!.watchedEpisodes} watched
+                </span>
+              )}
+              {(item.statistics?.inProgressEpisodes ?? 0) > 0 && (
+                <span className="inline-flex items-center gap-1 rounded bg-accent-primary/15 px-1.5 py-0.5 text-[11px] font-semibold text-accent-primary">
+                  ▶ {item.statistics!.inProgressEpisodes} in progress
+                </span>
+              )}
             </div>
           </div>
 

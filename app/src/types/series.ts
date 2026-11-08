@@ -21,9 +21,12 @@ export interface SeriesListItem extends ApiSeriesListItem {
   sizeOnDisk?: number;
   statistics?: {
     totalEpisodes: number;
-    episodesOnDisk: number;
-    episodesMissing: number;
-    episodesDownloading: number;
+    episodesOnDisk?: number;
+    episodesMissing?: number;
+    episodesDownloading?: number;
+    /** From the library API: how many episodes the household has already watched. */
+    watchedEpisodes?: number;
+    inProgressEpisodes?: number;
   };
   seasons?: Array<{
     statistics?: {

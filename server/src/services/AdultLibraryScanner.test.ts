@@ -23,11 +23,30 @@ describe('classifyAdultFilename — the six measured classes', () => {
     expect(info.title).toContain('Asians Love Anal Compilation');
   });
 
+  it('does not repeat quality or container tokens inside the title', () => {
+    const info = classifyAdultFilename('Mina Tran Analed Asian XXX 1080p MP4 WRB.mp4');
+    expect(info.title).toBe('Mina Tran Analed Asian XXX');
+    expect(info.quality).toBe('1080p');
+  });
+
+  it('keeps a trailing number that is part of the title', () => {
+    expect(classifyAdultFilename('Little Chicks With Tiny Tits 17 1080p.mp4').title)
+      .toBe('Little Chicks With Tiny Tits 17');
+  });
+
   it('parses underscore titles and keeps the quality', () => {
     const info = classifyAdultFilename('Cheerleaders_In_Heat_Vol_6_4K [b66c8473].mp4');
     expect(info.className).toBe('underscore-title');
-    expect(info.title).toBe('Cheerleaders In Heat Vol 6 4K');
+    // Quality is extracted into its own field and no longer repeated in the title.
+    expect(info.title).toBe('Cheerleaders In Heat Vol 6');
     expect(info.quality).toBe('4k');
+  });
+
+  it('cleans a date-stamped scene title of quality/rip tokens', () => {
+    const info = classifyAdultFilename('Holed.24.03.08.Mina.Tran.Analed.Asian.XXX.1080p.MP4-WRB[XvX].mp4');
+    expect(info.className).toBe('date-prefixed');
+    expect(info.title).toBe('Mina Tran Analed Asian XXX');
+    expect(info.quality).toBe('1080p');
   });
 
   it('parses date-prefixed studio names', () => {

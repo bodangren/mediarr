@@ -33,6 +33,23 @@ export interface AdultFilenameInfo {
 export const ADULT_VIDEO_EXTENSIONS = new Set(['.mp4', '.mkv', '.avi', '.wmv', '.m4v', '.mov']);
 
 const QUALITY = /(2160p|4k|1080p|720p|480p|x265|x264|hevc)/i;
+// Tokens that are container/rip noise rather than part of a title. Reviews flagged titles that
+// repeated their quality ("Mina Tran Analed Asian XXX 1080p MP4 WRB") and hash-like artefacts.
+const TITLE_NOISE = /^(?:2160p|1080p|720p|480p|4k|x264|x265|hevc|h264|mp4|mkv|avi|wmv|web-?dl|webrip|bluray|wrb)$/i;
+
+/** Trim trailing quality/container tokens while keeping any real words. */
+function cleanTitle(raw: string): string {
+  const tokens = raw.split(/\s+/).filter((token) => token.length > 0);
+  while (tokens.length > 0) {
+    const last = tokens[tokens.length - 1]!.replace(/[._-]+$/, '');
+    if (TITLE_NOISE.test(last)) {
+      tokens.pop();
+      continue;
+    }
+    break;
+  }
+  return tokens.join(' ').trim();
+}
 
 export function classifyAdultFilename(fileName: string): AdultFilenameInfo {
   const base = path.basename(fileName);
@@ -57,7 +74,7 @@ export function classifyAdultFilename(fileName: string): AdultFilenameInfo {
     const after = stem.slice(dateIndex + full.length).replace(/^[.\-_]+/, '').replace(/[.\-_]+/g, ' ').trim();
     return {
       className: 'date-prefixed',
-      title: after.length > 0 ? after : null,
+      title: after.length > 0 ? cleanTitle(after) || null : null,
       studio,
       quality,
       releaseDate: `${y}-${m}-${d}`,
@@ -66,7 +83,7 @@ export function classifyAdultFilename(fileName: string): AdultFilenameInfo {
   }
 
   if (/_/.test(stem) && !/\s/.test(stem)) {
-    const title = stem.replace(/_/g, ' ').replace(/\s+/g, ' ').trim();
+    const title = cleanTitle(stem.replace(/_/g, ' ').replace(/\s+/g, ' ').trim());
     return { className: 'underscore-title', title, studio: null, quality, releaseDate: null, needsReview: false };
   }
 
@@ -76,7 +93,7 @@ export function classifyAdultFilename(fileName: string): AdultFilenameInfo {
     // `<studio> - <title>` when the left side is short and title-cased like a studio name.
     const looksStudio = left.length <= 24 && /^[A-Za-z0-9&'. ]+$/.test(left) && !QUALITY.test(left);
     const rawTitle = (looksStudio ? right : `${left} - ${right}`).replace(/\s+/g, ' ').trim();
-    const title = rawTitle.replace(new RegExp(`\\s*${QUALITY.source}\\s*$`, 'i'), '').trim();
+    const title = cleanTitle(rawTitle.replace(new RegExp(`\\s*${QUALITY.source}\\s*$`, 'i'), '').trim());
     return {
       className: looksStudio ? 'quality-tagged' : 'studio-dash-title',
       title,
@@ -87,7 +104,8 @@ export function classifyAdultFilename(fileName: string): AdultFilenameInfo {
     };
   }
 
-  const title = stem.replace(/\s+/g, ' ').trim();
+  const spaced = /\s/.test(stem) ? stem : stem.replace(/[._]+/g, ' ');
+  const title = cleanTitle(spaced.replace(/\s+/g, ' ').trim());
   return {
     className: quality ? 'quality-tagged' : 'plain-title',
     title: title.length > 0 ? title : null,

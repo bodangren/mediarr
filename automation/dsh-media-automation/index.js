@@ -11,6 +11,7 @@ import {
   recordHeartbeat,
 } from './src/ledger.js';
 import { pruneQuarantine, quarantineFile } from './src/quarantine.js';
+import { loadExpectations, runWatchdog } from './src/watchdog.js';
 
 export const name = 'media-automation';
 
@@ -20,6 +21,7 @@ const STATUS_TOOL = 'media_automation_status';
 const HEARTBEAT_TOOL = 'media_automation_heartbeat';
 const ALERT_TOOL = 'media_automation_alert';
 const QUARANTINE_TOOL = 'media_automation_quarantine';
+const WATCHDOG_TOOL = 'media_automation_watchdog';
 
 export function apply(ctx, config) {
   const ledgerPath = config?.ledgerPath
@@ -108,4 +110,44 @@ export function apply(ctx, config) {
       }));
     },
   }), 'media-automation:quarantine');
+
+  const expectationsPath = config?.expectationsPath
+    ?? process.env.MEDIA_AUTOMATION_EXPECTATIONS
+    ?? path.join(homedir(), 'Desktop', 'mediarr', 'automation', 'expectations.yaml');
+
+  ctx.effect(() => ctx.tools.register({
+    name: WATCHDOG_TOOL,
+    description: 'Run the substrate watchdog against automation/expectations.yaml (host health, heartbeat, bridge tool registration, scheduler freshness, artifacts) and raise local-first alerts.',
+    parameters: {
+      type: 'object',
+      properties: {
+        availableTools: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Tool names registered in this turn, used for the bridge check.',
+        },
+      },
+    },
+    output: { schema: { type: 'string' }, render: (_args, value) => [{ type: 'text', text: value }] },
+    async execute(args) {
+      let tasks = [];
+      try {
+        const health = loadExpectations(expectationsPath).host?.mediarrHealth?.url;
+        if (health) {
+          const base = health.replace(/\/api\/health$/, '');
+          const response = await fetch(`${base}/api/scheduler/tasks`);
+          if (response.ok) tasks = (await response.json())?.data ?? [];
+        }
+      } catch {
+        tasks = []; // The host check reports the unreachable server; tasks stay unknown.
+      }
+      return JSON.stringify(await runWatchdog({
+        expectations: loadExpectations(expectationsPath),
+        db,
+        registeredTools: Array.isArray(args?.availableTools) ? args.availableTools : [],
+        tasks,
+        alertsJsonl,
+      }));
+    },
+  }), 'media-automation:watchdog');
 }

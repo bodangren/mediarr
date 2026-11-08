@@ -1,0 +1,42 @@
+# Expected state of the automation substrate (track chore_migrate_hermes_automation_20261107, B9).
+# The watchdog checks these values; failures become ledger alerts (local JSONL first).
+version: 1
+
+host:
+  # Mediarr API must answer; the TV shows a dead server as "Connection refused".
+  mediarrHealth:
+    url: http://127.0.0.1:5174/api/health
+    timeoutMs: 5000
+
+  # The automation brain must have written a heartbeat recently.
+  maxHeartbeatAgeMinutes: 90
+
+bridge:
+  # Agent turns that judge rendered web UIs need these registered tools, not just a listening port.
+  requiredTools:
+    - mcp__webbridge__navigate
+    - mcp__webbridge__evaluate
+  # A wedged extension must not hold a run forever.
+  callTimeoutMinutes: 5
+
+scheduler:
+  # Native Mediarr tasks that must keep producing history.
+  expectedTasks:
+    - subtitle-sync
+    - youtube-download
+    - bilingual-subs
+    - subtitle-wanted-priority
+  maxTaskStalenessMinutes: 180
+
+artifacts:
+  - path: /config/music-nightly-receipts.jsonl
+    maxAgeHours: 36
+  - path: /config/subtitle-coverage-receipts.jsonl
+    maxAgeHours: 36
+  - path: /config/subtitle-sync-state.json
+    maxAgeHours: 72
+
+alerts:
+  # Local-first fallback: even if delivery is broken the alert exists on disk.
+  localJsonl: /config/media-automation-alerts.jsonl
+  maxDeliveryMinutes: 15

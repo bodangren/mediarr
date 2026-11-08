@@ -3,3 +3,4 @@
       name: dsh-media-automation
       config:
         ledgerPath: /config/media-automation-ledger.db
+        expectationsPath: /home/daniel-bo/Desktop/mediarr/automation/expectations.yaml

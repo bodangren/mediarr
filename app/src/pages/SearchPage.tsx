@@ -1,3 +1,4 @@
+import { metadataToAddMediaInput } from '@/lib/api/mediaApi';
 import { useMemo, useState, type FormEvent } from 'react';
 import { RouteScaffold } from '@/components/primitives/RouteScaffold';
 import { useToast } from '@/components/providers/ToastProvider';
@@ -42,17 +43,7 @@ export function SearchPage() {
 
   const onAdd = async (item: MetadataSearchResult) => {
     try {
-      await api.mediaApi.addToWanted({
-        mediaType: item.mediaType,
-        tmdbId: item.tmdbId,
-        tvdbId: item.tvdbId,
-        title: item.title,
-        year: item.year,
-        status: item.status,
-        overview: item.overview,
-        network: item.network,
-        posterUrl: getPosterUrl(item.images),
-      });
+      await api.mediaApi.addToWanted(metadataToAddMediaInput(item));
       pushToast({
         title: 'Added to Wanted',
         message: `"${item.title}" has been added to your collection.`,

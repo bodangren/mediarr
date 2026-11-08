@@ -6,7 +6,7 @@ import { ImportWizard } from '@/components/import/ImportWizard';
 import { MovieOverviewView } from '@/components/views';
 import { getApiClients } from '@/lib/api/client';
 import type { MovieListItem as MovieViewItem } from '@/types/movie';
-import type { MetadataSearchResult } from '@/lib/api/mediaApi';
+import { metadataToAddMediaInput, type MetadataSearchResult } from '@/lib/api/mediaApi';
 
 interface UnknownMovieGroup {
   title: string;
@@ -88,15 +88,7 @@ export function MoviesLibraryPage() {
     const key = `${item.tmdbId}-${item.tvdbId}`;
     setAddingId(key);
     try {
-      const created = await api.mediaApi.addToWanted({
-        mediaType: 'MOVIE',
-        tmdbId: item.tmdbId,
-        title: item.title,
-        year: item.year,
-        status: item.status,
-        overview: item.overview,
-        posterUrl: item.images?.find(i => i.coverType === 'poster')?.url,
-      });
+      const created = await api.mediaApi.addToWanted(metadataToAddMediaInput(item));
 
       // Link the first file to the newly-added movie
       if (group.files[0]) {

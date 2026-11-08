@@ -135,6 +135,25 @@ export interface AddMediaInput {
   tmdbCollectionId?: number;
 }
 
+/**
+ * Builds the add-to-wanted body from a metadata search result. Included here so the collection id the
+ * provider already returned is not silently dropped when the owner adds a movie (tech-debt 2026-07-28).
+ */
+export function metadataToAddMediaInput(item: MetadataSearchResult): AddMediaInput {
+  return {
+    mediaType: item.mediaType,
+    tmdbId: item.tmdbId,
+    tvdbId: item.tvdbId,
+    title: item.title,
+    year: item.year,
+    status: item.status,
+    overview: item.overview,
+    network: item.network,
+    posterUrl: item.images?.find(image => image.coverType === 'poster')?.url,
+    tmdbCollectionId: item.tmdbCollectionId,
+  };
+}
+
 export type MonitoringType =
   | 'all'
   | 'none'

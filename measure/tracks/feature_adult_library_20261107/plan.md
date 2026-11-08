@@ -33,7 +33,7 @@
 
 - [x] Browse/search/list endpoints scoped to the adult library — `GET /api/libraries`, `GET /api/adult/items` with `q`/`page`/`pageSize` (title, filename, studio) returning `items/page/pageSize/totalCount/needsReview`; live verified against the 196-item tree — 9720fff, 3d229b6
 - [x] Playback (existing stream handler) + watched state integration — `GET /api/adult/items/:id/stream` serves Range/206 (live: 1024/264237135 bytes, partial content); progress stored on `AdultItem` (migration 0010) so it cannot enter movie/episode Continue Watching — PlaybackProgress count stayed 9 after posting progress on the live DB — ac93e8f
-- [~] Flutter client section (TV-safe focus walk); SPA section — SPA done (`c7aeb11`). TV **browse path done**: AdultItem model (`02837899`), API methods (`469ee301`), focusable card with select-key test (`b5f93d04`), screen (`64d9b1f1`), route + rail entry (`95f269a8`); `flutter analyze lib` clean. Remaining: player handoff through `adultStreamUrl` + progress POST, then `--target-platform android-arm` build, publish, install and device verification.
+- [~] Flutter client section (TV-safe focus walk); SPA section — SPA done (`c7aeb11`). TV code path complete: AdultItem model (`02837899`), API methods + `reportAdultProgress` (`469ee301`), focusable card with select-key test (`b5f93d04`), screen (`64d9b1f1`), route + rail (`95f269a8`), player handoff with library-owned progress (`54bb8c57`). **Full Flutter suite: 441 tests pass**, `flutter analyze lib` clean. Remaining: the device pass (widget test for the handoff, `--target-platform android-arm` build 37, publish, `adb install`, X96Max verification).
 - [ ] Automation contract: list, watched, retention candidates.
 
 ## Phase 3: Agent discovery

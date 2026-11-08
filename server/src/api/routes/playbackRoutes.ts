@@ -146,6 +146,37 @@ export function registerPlaybackRoutes(
     return sendSuccess(reply, items);
   });
 
+  app.post('/api/playback/:id/watched', {
+    schema: {
+      params: { type: 'object', required: ['id'], properties: { id: { type: 'string' } } },
+      querystring: {
+        type: 'object',
+        required: ['type'],
+        properties: {
+          type: { type: 'string', enum: ['movie', 'episode'] },
+          userId: { type: 'string' },
+        },
+      },
+      body: {
+        type: 'object',
+        properties: { watched: { type: 'boolean' } },
+      },
+    },
+  }, async (request, reply) => {
+    if (!deps.playbackService?.markWatched || !deps.playbackService.markUnwatched) {
+      throw new ValidationError('Playback service is not configured');
+    }
+    const mediaId = parseIdParam((request.params as { id: string }).id, 'playback media');
+    const query = request.query as { type: string; userId?: string };
+    const body = (request.body ?? {}) as { watched?: boolean };
+    const mediaType = parsePlaybackType(query.type);
+    const input = { mediaType, mediaId, ...(query.userId === undefined ? {} : { userId: query.userId }) };
+    const state = body.watched === false
+      ? await deps.playbackService.markUnwatched(input)
+      : await deps.playbackService.markWatched(input);
+    return sendSuccess(reply, state);
+  });
+
   app.post('/api/playback/progress', {
     schema: {
       body: {

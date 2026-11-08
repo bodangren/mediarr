@@ -168,6 +168,9 @@ class FocusableAction extends StatefulWidget {
 class _FocusableActionState extends State<FocusableAction> {
   late final FocusNode _focusNode;
   bool _isFocused = false;
+  Timer? _longPressTimer;
+  bool _selectDown = false;
+  bool _longPressFired = false;
 
   double get _focusPadding =>
       widget.focusPadding ??
@@ -184,6 +187,7 @@ class _FocusableActionState extends State<FocusableAction> {
   @override
   void dispose() {
     _focusNode.removeListener(_onFocusChange);
+    _longPressTimer?.cancel();
     if (widget.focusNode == null) {
       _focusNode.dispose();
     }
@@ -248,12 +252,36 @@ class _FocusableActionState extends State<FocusableAction> {
   }
 
   KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
-    if (event is! KeyDownEvent) return KeyEventResult.ignored;
     final direction = mapLogicalKeyToDpad(event.logicalKey);
     if (direction == DpadDirection.select) {
-      widget.onSelect?.call();
-      return KeyEventResult.handled;
+      if (event is KeyUpEvent) {
+        final wasDown = _selectDown;
+        _selectDown = false;
+        _longPressTimer?.cancel();
+        if (wasDown && !_longPressFired) widget.onSelect?.call();
+        return KeyEventResult.handled;
+      }
+      if (event is KeyDownEvent) {
+        if (_selectDown) return KeyEventResult.handled; // key repeat while held
+        _selectDown = true;
+        _longPressFired = false;
+        if (widget.onContextMenu != null) {
+          // Long-press on OK is the second context-menu trigger, for remotes whose Menu key is not
+          // mapped to a logical key (the X96 remote's Menu key is not). A short press still selects.
+          _longPressTimer?.cancel();
+          _longPressTimer = Timer(const Duration(milliseconds: 700), () {
+            if (!_selectDown || !mounted) return;
+            _longPressFired = true;
+            widget.onContextMenu!();
+          });
+          return KeyEventResult.handled;
+        }
+        widget.onSelect?.call();
+        return KeyEventResult.handled;
+      }
+      return KeyEventResult.ignored;
     }
+    if (event is! KeyDownEvent) return KeyEventResult.ignored;
     if (event.logicalKey == LogicalKeyboardKey.contextMenu) {
       if (widget.onContextMenu != null) {
         widget.onContextMenu!.call();

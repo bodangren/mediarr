@@ -710,6 +710,19 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
 
   String musicArtworkUrl(int albumId) => '${_dio.options.baseUrl}/api/music/albums/$albumId/artwork';
 
+  /// Marks a movie/episode watched or unwatched (TV context-menu actions).
+  Future<void> setWatched({
+    required String mediaType,
+    required int mediaId,
+    required bool watched,
+  }) async {
+    await _dio.post<Map<String, dynamic>>(
+      '/api/playback/$mediaId/watched',
+      queryParameters: {'type': mediaType},
+      data: {'watched': watched},
+    );
+  }
+
   /// YouTube library listing (track feature_youtube_library_20261107). Its own domain: `/api/youtube/*`.
   Future<List<YoutubeVideo>> getYoutubeVideos({int limit = 200}) async {
     final response = await _dio.get<Map<String, dynamic>>(

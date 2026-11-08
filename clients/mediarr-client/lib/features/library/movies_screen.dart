@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/mediarr_theme.dart';
 import '../../core/widgets/netflix_scaffold.dart';
+import '../../core/widgets/tv_context_menu.dart';
 import '../../shared/models/movie.dart';
 import '../../shared/services/api_client.dart';
 import '../../shared/widgets/poster_card.dart';
@@ -247,6 +248,7 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
                               onFocusChange: (focused) =>
                                   _gridFocused = focused,
                               onPressed: () => _openMovieDetail(context, movie),
+                              onContextMenu: () => _openMovieMenu(movie),
                             );
                           },
                         );
@@ -260,6 +262,28 @@ class _MoviesScreenState extends ConsumerState<MoviesScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _setWatched(Movie movie, bool watched) async {
+    try {
+      await ref.read(apiClientProvider.notifier).setWatched(
+            mediaType: 'movie',
+            mediaId: movie.id,
+            watched: watched,
+          );
+      ref.invalidate(moviesProvider);
+    } catch (_) {
+      // The context-menu action failing must not take the library down; the list simply keeps its
+      // previous state.
+    }
+  }
+
+  void _openMovieMenu(Movie movie) {
+    showTvContextMenu(context, title: movie.title, actions: [
+      TvContextAction(label: 'Open details', onSelected: () => _openMovieDetail(context, movie)),
+      TvContextAction(label: 'Mark watched', onSelected: () => _setWatched(movie, true)),
+      TvContextAction(label: 'Mark unwatched', onSelected: () => _setWatched(movie, false)),
+    ]);
   }
 
   void _openMovieDetail(BuildContext context, Movie movie) {

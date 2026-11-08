@@ -277,6 +277,44 @@ describe('playbackRoutes', () => {
     await app.close();
   });
 
+  it('marks a movie watched and unwatched through one route', async () => {
+    const { app, deps } = createApp({
+      playbackService: {
+        markWatched: vi.fn(async (input: Record<string, unknown>) => ({
+          mediaType: 'MOVIE', mediaId: input.mediaId, userId: 'lan-default',
+          position: 5400, duration: 5400, progress: 1, isWatched: true,
+          lastWatched: '2026-11-08T12:00:00.000Z',
+        })),
+        markUnwatched: vi.fn(async (input: Record<string, unknown>) => ({
+          mediaType: 'MOVIE', mediaId: input.mediaId, userId: 'lan-default',
+          position: 0, duration: 5400, progress: 0, isWatched: false,
+          lastWatched: '2026-11-08T12:00:00.000Z',
+        })),
+      },
+    });
+
+    const watched = await app.inject({
+      method: 'POST',
+      url: '/api/playback/382/watched?type=movie',
+      payload: { watched: true },
+    });
+    expect(watched.statusCode).toBe(200);
+    expect(watched.json().data.isWatched).toBe(true);
+    expect(deps.playbackService.markWatched).toHaveBeenCalledWith(
+      expect.objectContaining({ mediaType: 'MOVIE', mediaId: 382 }),
+    );
+
+    const unwatched = await app.inject({
+      method: 'POST',
+      url: '/api/playback/382/watched?type=movie',
+      payload: { watched: false },
+    });
+    expect(unwatched.json().data.isWatched).toBe(false);
+    expect(deps.playbackService.markUnwatched).toHaveBeenCalled();
+
+    await app.close();
+  });
+
   it('returns validation error when playback service is missing', async () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const app = Fastify();

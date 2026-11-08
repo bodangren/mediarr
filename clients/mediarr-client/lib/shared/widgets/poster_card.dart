@@ -20,6 +20,7 @@ class PosterCard extends StatelessWidget {
     this.onPressed,
     this.autofocus = false,
     this.onFocusChange,
+    this.onContextMenu,
   });
 
   final String title;
@@ -42,12 +43,15 @@ class PosterCard extends StatelessWidget {
   /// Reports focus entering or leaving this tile, so the host can drive the
   /// D-pad hop from the grid into the header (FR-4).
   final ValueChanged<bool>? onFocusChange;
+  /// Remote Menu-key action for this poster (context menu).
+  final VoidCallback? onContextMenu;
 
   @override
   Widget build(BuildContext context) {
     return FocusableAction(
       onSelect: onPressed,
       onFocusChange: onFocusChange,
+      onContextMenu: onContextMenu,
       autofocus: autofocus,
       borderRadius: 8,
       child: Column(

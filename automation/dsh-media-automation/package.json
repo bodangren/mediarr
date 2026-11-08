@@ -1,0 +1,17 @@
+{
+  "name": "dsh-media-automation",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Mediarr media-automation ledger for the DeepSeek Harness: frozen run/job/lock/alert/quarantine schema, heartbeat, local-first alerts",
+  "type": "module",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js",
+    "./ledger": "./src/ledger.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "files": ["index.js", "src", "cordis.patch.yml", "README.md"],
+  "engines": { "node": ">=24.9.0" },
+  "scripts": { "test": "vitest run" }
+}

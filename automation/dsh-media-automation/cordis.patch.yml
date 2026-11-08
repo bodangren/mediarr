@@ -1,0 +1,5 @@
+- insert:
+    - id: media-automation
+      name: dsh-media-automation
+      config:
+        ledgerPath: /config/media-automation-ledger.db

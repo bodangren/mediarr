@@ -23,7 +23,7 @@
 - [x] Download job (video + metadata + thumbnail) into the YouTube root — `YoutubeDownloadService` (yt-dlp, ≤1080p per Y3, `Title [videoId]` naming, `PENDING→DOWNLOADING→AVAILABLE|FAILED`, exact tool error stored, `.part` cleanup) + `POST /api/youtube/download` bounded batch; 5 tests; **first live download succeeded** (`{attempted:1, downloaded:1, failed:[]}`) — d8241c1
 - [x] Scanner/metadata mapping: channel/playlist → episode, title/date/duration/thumbnail — duration and channel are read from the yt-dlp `.info.json` sidecar (flat-playlist figures are often missing) and stored with path/thumb; a corrupt sidecar never fails the download; 6 tests; **live: row 2 stored duration 267 s and channel `Dave Gray`** — 1d52d8c
 - [x] Dedupe by video id; partial-download cleanup — `videoId` UNIQUE in the DB plus `queueNewVideos` insert-only-unknown guarantee; `.part`/`.temp` files removed when a download fails, and a "success without a file" is treated as a failure — d8241c1, 1d52d8c
-- [~] UI section: playlist → episodes, D-pad navigable.
+- [~] UI section: playlist → episodes, D-pad navigable — **SPA done**: `/youtube` route + nav group, videos grouped by channel with thumbnail/duration/watched marker and inline playback; live endpoints verified (listing, 206 `0-1023/35160714`, thumbnail 200) and browser-verified in `device-20261107/youtube-spa.jpg` — 05ba691. TV section still to build.
 
 ## Phase 3: Retention
 

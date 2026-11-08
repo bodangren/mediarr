@@ -83,7 +83,12 @@ export class YoutubeDownloadService {
       await this.runTool([
         '--no-playlist',
         '--no-warnings',
-        '-f', `bv*[height<=${this.options.maxHeight ?? 1080}]+ba/b[height<=${this.options.maxHeight ?? 1080}]/b`,
+        // The TV is a 32-bit Amlogic box: AV1 video and Opus audio in an mp4 are not decodable there
+        // ("Could not open codec" at playback, 2026-11-08). Require H.264 + AAC and fall back to
+        // best H.264, never to "whatever is best" that the device cannot play.
+        '-f', `bv*[height<=${this.options.maxHeight ?? 1080}][vcodec^=avc1]+ba[acodec^=mp4a]`
+          + `/b[height<=${this.options.maxHeight ?? 1080}][vcodec^=avc1]`
+          + `/b[height<=${this.options.maxHeight ?? 1080}]`,
         '--merge-output-format', 'mp4',
         '--write-info-json',
         '--write-thumbnail',

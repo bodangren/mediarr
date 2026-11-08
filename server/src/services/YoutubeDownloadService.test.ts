@@ -45,7 +45,8 @@ describe('YoutubeDownloadService', () => {
     const { io } = fakeIo(['A B unsafe title [aaaaaaaaaaa].mp4', 'A B unsafe title [aaaaaaaaaaa].jpg']);
     const run = vi.fn(async (args: string[]) => {
       expect(args).toContain('--no-playlist');
-      expect(args.join(' ')).toContain('height<=1080');
+      expect(args.join(' ')).toContain('vcodec^=avc1');
+      expect(args.join(' ')).toContain('acodec^=mp4a');
     });
     const service = new YoutubeDownloadService({ root: '/data/Youtube', run, fsOps: io });
 

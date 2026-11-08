@@ -125,6 +125,15 @@ class PlaybackState {
 /// FR-7: subtitle timing nudge is exposed via `nudgeSubtitleDelay` /
 /// `resetSubtitleDelay`. Offset is per-session (per `play()` call) and is
 /// cleared whenever a different media item starts.
+/// Replacement for the default `/api/playback/progress` write. Used by the Adult library, whose
+/// progress lives on its own endpoint and must never enter movie/episode Continue Watching.
+typedef PlaybackProgressReporter = Future<void> Function({
+  required int mediaId,
+  required String type,
+  required int positionSeconds,
+  required int durationSeconds,
+});
+
 class PlaybackService extends StateNotifier<PlaybackState> {
   PlaybackService(
     this._apiClient, {
@@ -132,7 +141,9 @@ class PlaybackService extends StateNotifier<PlaybackState> {
     SubtitleRenderer? subtitleRenderer,
     this.retryDelay = const Duration(milliseconds: 1500),
     this.maxOpenRetries = 2,
-  }) : super(const PlaybackState()) {
+    PlaybackProgressReporter? progressReporter,
+  })  : _progressReporter = progressReporter,
+        super(const PlaybackState()) {
     final defaultPlayer = player ?? MediaKitMediaPlayer();
     _player = defaultPlayer;
     _subtitleRenderer = subtitleRenderer ??
@@ -143,6 +154,13 @@ class PlaybackService extends StateNotifier<PlaybackState> {
   }
 
   final MediarrApiClient _apiClient;
+
+  /// Overrides where progress is written. Null keeps the standard movie/episode endpoint.
+  PlaybackProgressReporter? _progressReporter;
+
+  set progressReporter(PlaybackProgressReporter? reporter) {
+    _progressReporter = reporter;
+  }
 
   /// Delay before automatically retrying a failed stream open.
   final Duration retryDelay;
@@ -611,6 +629,21 @@ class PlaybackService extends StateNotifier<PlaybackState> {
     // is how a failed resume turned a 10:00 bookmark into 0:32 on 2026-11-07).
     if (state.status == PlaybackStatus.loading) return;
     if (state.position == Duration.zero && state.duration == Duration.zero) {
+      return;
+    }
+
+    final override = _progressReporter;
+    if (override != null) {
+      try {
+        await override(
+          mediaId: id,
+          type: type,
+          positionSeconds: state.position.inSeconds,
+          durationSeconds: state.duration.inSeconds,
+        );
+      } catch (_) {
+        // Best-effort, same contract as the default path.
+      }
       return;
     }
 

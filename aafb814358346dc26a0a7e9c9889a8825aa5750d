@@ -1,0 +1,3 @@
+Adult library scanner + grammar classifier (feature_adult_library_20261107, Phase 1 first step).
+
+classifyAdultFilename: six measured classes, review bucket for hash-only names. scanAdultLibrary: depth-first walk, layout preserved, unreadable dirs reported, video-only. 9 tests, tsc clean.

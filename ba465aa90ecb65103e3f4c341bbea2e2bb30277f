@@ -1,0 +1,7 @@
+Acquisition wanted list ordered by viewing priority (feature_subtitle_coverage_priority_20261108, Phase 2).
+
+GET /api/media/wanted defaults to the shared viewing-priority order for both missing episodes and wanted movies; explicit ?sortBy still applies the previous field sort. Response shape unchanged.
+
+2 route tests (default priority order; explicit sortBy honoured). Live: totalCount 1,736 served in priority order.
+
+Refinement found and recorded: missing episodes have no progress rows of their own, so they inherit only their series' added date; series-level viewing activity aggregation is the next task so the acquisition list reflects the shows being watched.

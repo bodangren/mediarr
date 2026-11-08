@@ -9,6 +9,7 @@ import { parseIdParam } from '../routeUtils';
 import { sendByteRangeStream } from '../utils/byteRangeStreaming';
 import type { ApiDependencies } from '../types';
 import { auditSubtitles, coverageStatus } from '../../services/SubtitleAuditService';
+import { readCoverageReceipts, snapshotCoverage } from '../../services/SubtitleCoverageAutomation';
 
 function parsePlaybackType(rawType: unknown): PlaybackMediaType {
   if (typeof rawType !== 'string') {
@@ -204,6 +205,26 @@ export function registerPlaybackRoutes(
     }
 
     return sendSuccess(reply, { days, items, counts, total: items.length });
+  });
+
+  /** Manual trigger for the daily priority-coverage snapshot (same function the scheduler calls). */
+  app.post('/api/subtitles/coverage-snapshot', async (request, reply) => {
+    const body = (request.body ?? {}) as { days?: number; limit?: number };
+    const drizzle = (deps.prisma as unknown as { drizzle: any }).drizzle;
+    const snapshot = await snapshotCoverage(drizzle, {
+      configDir: process.env.CONFIG_DIR ?? '/config',
+      days: typeof body.days === 'number' ? body.days : 14,
+      limit: typeof body.limit === 'number' ? body.limit : 100,
+    });
+    return sendSuccess(reply, snapshot);
+  });
+
+  /** Recent coverage snapshots: proves the scheduled audit fired and how the gap changed. */
+  app.get('/api/subtitles/coverage-receipts', async (request, reply) => {
+    const query = request.query as { limit?: string | number };
+    const limit = Math.max(1, Math.min(100, Number.parseInt(String(query.limit ?? '20'), 10) || 20));
+    const receipts = await readCoverageReceipts(process.env.CONFIG_DIR ?? '/config', limit);
+    return sendSuccess(reply, { receipts, count: receipts.length });
   });
 
   /** Subtitle health audit: encoding and script problems, one actionable record per file. */

@@ -93,6 +93,7 @@ import { LibraryScanService } from './services/LibraryScanService';
 import { EpisodeThumbnailService } from './services/EpisodeThumbnailService';
 import { LibraryFolderImportService } from './services/LibraryFolderImportService';
 import { downloadPending, pollAllSubscriptions, runRetention } from './services/YoutubeAutomation';
+import { snapshotCoverage } from './services/SubtitleCoverageAutomation';
 import { globalLogBuffer } from './services/LogReaderService';
 import { NotificationDispatchService } from './services/NotificationDispatchService';
 import { NotificationTransportRegistry } from './services/notifications/NotificationTransportRegistry';
@@ -868,6 +869,19 @@ export async function createServiceContainer(
 
       const youtubeRoot = process.env.YOUTUBE_DIR ?? '/data/Youtube';
       const configDir = process.env.CONFIG_DIR ?? '/config';
+
+      scheduler.schedule('subtitle-coverage', '15 6 * * *', async () => {
+        const snapshot = await snapshotCoverage(prisma.drizzle, {
+          configDir: process.env.CONFIG_DIR ?? '/config',
+          days: 14,
+          limit: 100,
+        });
+        console.log(
+          `Subtitle coverage: ${snapshot.items.length} priority items, `
+          + `dual ${snapshot.counts.dual}, zho-only ${snapshot.counts['zho-only']}, `
+          + `en-only ${snapshot.counts['en-only']}, none ${snapshot.counts.none}`,
+        );
+      });
 
       scheduler.schedule('youtube-poll', '20 * * * *', async () => {
         const receipt = await pollAllSubscriptions(prisma.drizzle, { configDir });

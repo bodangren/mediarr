@@ -1,0 +1,3 @@
+Phase 5 acceptance measurement (feature_subtitle_coverage_priority_20261108).
+
+High priority 9 / 7 covered / 2 missing; zero subtitle providers configured -> both gaps explained as no-provider; UI notice + idle skip are the honest behaviour. Next: full validation runs + docs/close.

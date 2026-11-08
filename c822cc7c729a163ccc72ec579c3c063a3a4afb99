@@ -1,0 +1,7 @@
+Bucket filter + ordering route tests for the wanted lists (feature_subtitle_coverage_priority_20261108, Phase 2).
+
+- ?bucket=continue-watching|recently-watched|recently-added|backfill filters the ranked entries; an unknown value is a 422.
+- Three route tests: in-progress episode ranks before backfill and carries priority {bucket, rank}; bucket filter narrows to the continue-watching item with meta.totalCount 1; unknown bucket rejected.
+- 16 sibling subtitle route tests still pass; tsc clean.
+
+Live after deploy: GET /api/subtitles/wanted/series?bucket=backfill => totalCount 1,202, every item priority.bucket=backfill (episodes 2614, 2618 on page 1).

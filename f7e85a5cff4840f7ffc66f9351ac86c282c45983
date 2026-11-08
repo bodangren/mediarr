@@ -1,0 +1,3 @@
+Bilingual candidate provider ordered by viewing priority (feature_subtitle_coverage_priority_20261108, Phase 3).
+
+candidates() maps scanned sidecars via VariantSubtitleTrack.filePath -> variant -> movie/episode, loads playback progress once, calls orderSubtitlePathsByPriority; any failure falls back to filesystem order with a warning. tsc clean, server healthy after restart. Remaining for the task: simulated-translator cycle test asserting the processing order.

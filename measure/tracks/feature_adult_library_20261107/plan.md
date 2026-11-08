@@ -40,7 +40,7 @@
 
 - [x] Browser-bridge prompt for discovery (score profile: Asian dominant, scene-style; avoid list) — `automation/prompts/adult-discovery-weekly.md`: inputs from the automation contract + `/api/torrents` hashes, selection profile, 1–3 picks (zero valid), queue via `/api/releases/grab-candidate`, mandatory receipt, hard rules (no DB/file writes, no silent success, no unapproved fallback) — 1c25115
 - [x] Queue via Mediarr torrent API; dedupe by info hash — `POST /api/adult/automation/queue`: validates title/40-hex hash/magnet, refuses hashes already in `Torrent`, and only calls `grabRelease` when the caller passes `dryRun:false`. Live: dry-run returns `reason:'dry-run'`, bad hash returns 422. The duplicate branch runs on every call but a true duplicate is only observable once the first real pick exists — 7933835
-- [~] Receipt + ledger row; forced browser failure alerts.
+- [x] Receipt + ledger row; forced browser failure alerts — `AdultDiscoveryReceipt` (migration 0011) with `POST/GET /api/adult/automation/receipt(s)`; live verified with a failure-bearing receipt (validation row deleted afterwards so the live table starts clean). Outbound *alerts* need a configured notification transport (none on this install, 0 transports) — the failure is persisted in the receipt today; delivery is a cross-track dependency on the automation substrate (B4/B9) — c570f6d
 
 ## Phase 4: Prune + migration
 

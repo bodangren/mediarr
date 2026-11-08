@@ -31,7 +31,7 @@
 
 ## Phase 2: API + UI (SPA first, TV after the focus fix)
 
-- [x] Browse/search/list endpoints scoped to the adult library — `GET /api/libraries`, `GET /api/adult/items` with `q`/`page`/`pageSize` (title, filename, studio) returning `items/page/pageSize/totalCount/needsReview`; live verified against the 196-item tree (9720fff, 3d229b6). Playback + watched state are the next task.
+- [x] Browse/search/list endpoints scoped to the adult library — `GET /api/libraries`, `GET /api/adult/items` with `q`/`page`/`pageSize` (title, filename, studio) returning `items/page/pageSize/totalCount/needsReview`; live verified against the 196-item tree — 9720fff, 3d229b6
 - [~] Playback (existing stream handler) + watched state integration.
 - [ ] Flutter client section (TV-safe focus walk); SPA section.
 - [ ] Automation contract: list, watched, retention candidates.

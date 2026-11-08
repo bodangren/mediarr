@@ -177,7 +177,8 @@
       `schedule-81975ac5-340e-478f-8ef6-f8ad7e0ab335` ("Mediarr daily media orchestrator",
       Asia/Shanghai 03:00 daily, new session per delivery, receipt to
       `/config/orchestrator-receipts.jsonl`, no destructive actions without owner approval); next
-      delivery 2026-11-10T03:00+08:00 (`device-20261107/orchestrator-schedule-20261109.md`) — ebc88c96, d5a0c60a
+      delivery 2026-11-10T03:00+08:00 (`device-20261107/orchestrator-schedule-20261109.md`); prompt and
+      manual-run commit was ebc88c96 — d5a0c60a
 - [ ] **B7** Plugin timers: tidy 04:30, nightly receipt 05:00, retention 04:45 (scoped per G9),
       weekly backup, reconcile + Mediarr task-history polling (correlate by `taskName` + window;
       `executionId:-1` stays until E1). (G6/G9)

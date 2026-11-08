@@ -1,0 +1,1 @@
+Resume hardening: progress-regression guard, throttled resume re-seek, one-shot resume-failure telemetry; 161 tests. Device still reproduced 0-start with no target inside the service - launch path resume plumbing is the next suspect.

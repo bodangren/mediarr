@@ -8,15 +8,15 @@
 
 ## Phase 0: Session prerequisites ✅ / ⚠️
 
-- [x] Confirm what DSH authorizes for subagents in a session — recorded: the allow-list is
+- [x] Confirm what DSH authorizes for subagents in a session — recorded: the allow-list is — 2770901c
       written **once, at session creation**, and the previous session had only
       `deepseek-official/deepseek-flash`.
-- [x] In the new session: Settings → Subagents → enable "Allow agents to choose models" and
+- [x] In the new session: Settings → Subagents → enable "Allow agents to choose models" and — 2770901c
       authorize at least two other families (`minimax-cn`, `moonshotai-cn`, `xiaomi`).
       **Verified 2026-11-07:** `~/.dsh/profiles/web/cordis.patch.yml` already carries
       `subagent-model-selection-settings.enabled: true` with six allowed models across
       `deepseek-official`, `minimax-cn`, `moonshotai-cn`, `xiaomi`.
-- [x] Verify with `list_subagent_models`: three distinct providers must be listed before the
+- [x] Verify with `list_subagent_models`: three distinct providers must be listed before the — 2770901c
       team is spawned. **Verified:** four providers returned. Moonshot was authorized but
       every request **timed out on the first token** (two planners lost); the substrate brief
       was rerouted to `deepseek-official/deepseek-flash` so the three planning agents still
@@ -24,40 +24,40 @@
 
 ## Phase 1: Inventory the old automation ✅
 
-- [x] Read live definitions (`~/.hermes/cron/jobs.json`): 4 jobs, schedules, prompts, skills.
-- [x] Read the non-Hermes piece: `fetch-monitor.timer` → `fetch-monitor.py --cleanup --no-rescan`, every 10 min.
-- [x] Quantify reliability from `~/.hermes/cron/executions.db`: 167 runs, 42 failures, all provider-connectivity.
-- [x] Map external surfaces (transmission :9091, jellyfin-go :8097 + SQLite, TPB/YTS/EZTV via kimi-webbridge, TMDB, SubHD, beets, subalign).
-- [x] Map artifacts and filesystem contracts; classify the 15 scripts; record the doctrine.
-- [x] Record what Mediarr's scheduler already covers (6 tasks in `serviceContainer.ts`).
-- [x] Write [`inventory.md`](./inventory.md) and commit (`cfcae5f4`).
+- [x] Read live definitions (`~/.hermes/cron/jobs.json`): 4 jobs, schedules, prompts, skills. — 2770901c
+- [x] Read the non-Hermes piece: `fetch-monitor.timer` → `fetch-monitor.py --cleanup --no-rescan`, every 10 min. — 2770901c
+- [x] Quantify reliability from `~/.hermes/cron/executions.db`: 167 runs, 42 failures, all provider-connectivity. — 2770901c
+- [x] Map external surfaces (transmission :9091, jellyfin-go :8097 + SQLite, TPB/YTS/EZTV via kimi-webbridge, TMDB, SubHD, beets, subalign). — 2770901c
+- [x] Map artifacts and filesystem contracts; classify the 15 scripts; record the doctrine. — 2770901c
+- [x] Record what Mediarr's scheduler already covers (6 tasks in `serviceContainer.ts`). — 2770901c
+- [x] Write [`inventory.md`](./inventory.md) and commit (`cfcae5f4`). — cfcae5f4
 
 ## Phase 2: Three-agent first-principles design ✅
 
-- [x] Spawn three planners from three different model families; briefs in [`design/BRIEFS.md`](./design/BRIEFS.md).
+- [x] Spawn three planners from three different model families; briefs in [`design/BRIEFS.md`](./design/BRIEFS.md). — 14c687e7
       **Done 2026-11-07:** MiniMax (`cadence-designer`), Xiaomi (`mediarr-contract`), DeepSeek
       (`dsh-architect`). Moonshot was authorized but every request timed out on first token; the
       substrate brief was rerouted to DeepSeek so three distinct families did the work.
-- [x] **cadence** → `design/intent-cadence.md`: behaviours, trigger classes, freshness, idempotency keys, failure signals, "do not schedule" list. **Done** — 7-field rows, five ranked behaviours, explicit drop list (music, adult, nfo, dedupe, LLM-in-hourly-loop).
-- [x] **substrate** → `design/dsh-substrate.md`: schedule semantics vs plugin capability, reliability design, installable skeleton. **Done** — delivery≠execution proven from source; plugin outcome-attribution chain verified; skeleton marked UNVALIDATED.
-- [x] **contract** → `design/mediarr-contract.md`: capability table with file:line, automation-facing contract, sequencing. **Done** — corrected the brief (torrent queue control exists); E1–E5; switch-off conditions.
-- [x] Lead reads all three and grades them: every factual claim about DSH or Mediarr cited to source; no workflow transcription disguised as intent. **Done** — two substrate gaps found and corrected (unattended-session permission mode; host-down watchdog), live settings corrected to 12/20/60 min.
+- [x] **cadence** → `design/intent-cadence.md`: behaviours, trigger classes, freshness, idempotency keys, failure signals, "do not schedule" list. **Done** — 7-field rows, five ranked behaviours, explicit drop list (music, adult, nfo, dedupe, LLM-in-hourly-loop). — 75a0c38e
+- [x] **substrate** → `design/dsh-substrate.md`: schedule semantics vs plugin capability, reliability design, installable skeleton. **Done** — delivery≠execution proven from source; plugin outcome-attribution chain verified; skeleton marked UNVALIDATED. — 75a0c38e
+- [x] **contract** → `design/mediarr-contract.md`: capability table with file:line, automation-facing contract, sequencing. **Done** — corrected the brief (torrent queue control exists); E1–E5; switch-off conditions. — 75a0c38e
+- [x] Lead reads all three and grades them: every factual claim about DSH or Mediarr cited to source; no workflow transcription disguised as intent. **Done** — two substrate gaps found and corrected (unattended-session permission mode; host-down watchdog), live settings corrected to 12/20/60 min. — 2770901c
 
 ## Phase 3: Ratify ✅ (v3, revised after the triumvirate review)
 
-- [x] Resolve D1–D4 in `spec.md` with the owner; record the rejected options and why.
+- [x] Resolve D1–D4 in `spec.md` with the owner; record the rejected options and why. — 2770901c
       **Done 2026-11-07 (v3):** D1 more work in DSH (plugin code, never model turns in deterministic
       loops); D2 **Adult is a separate library**, YouTube and Music are separate tracks; D3
       **agent + browser-use (kimi-webbridge MCP)** for rendered web UIs — no DOM scrapers; D4
       "never silently wrong". Extra decisions: quarantine-then-delete, DSH host systemd unit with
       full access, watch-next report + Collections, plugin ownership of the automation layer.
-- [x] Merge the three designs into one target architecture (Lead) —
+- [x] Merge the three designs into one target architecture (Lead) — — 2770901c
       [`design/TARGET-ARCHITECTURE.md`](./design/TARGET-ARCHITECTURE.md) **v3 + §12 review
       corrections**.
-- [x] Turn it into an ordered backlog with acceptance evidence per item — architecture §9 is the
+- [x] Turn it into an ordered backlog with acceptance evidence per item — architecture §9 is the — 2770901c
       **single canonical backlog**; this plan references its IDs.
-- [x] Amend this plan to match the ratified architecture.
-- [x] **Triumvirate review** (three families: MiniMax/architecture, Xiaomi/reliability,
+- [x] Amend this plan to match the ratified architecture. — 2770901c
+- [x] **Triumvirate review** (three families: MiniMax/architecture, Xiaomi/reliability, — 2770901c
       DeepSeek/delivery) — [`design/reviews/SYNTHESIS.md`](./design/reviews/SYNTHESIS.md).
       Verdicts: accept-with-fixes / accept-with-fixes / not-yet-executable; gates G1–G10 recorded.
 
@@ -74,7 +74,7 @@
 > deployment, G9 domain scope, G10 cross-track prerequisites. **P4/P5 do not start until G1–G3, G5,
 > G6 are closed with the forced-failure tests.**
 
-- [x] **B1a** Deploy against the **real** Mediarr DB (`CONFIG_DIR/mediarr.db`, 550 movies / 28
+- [x] **B1a** Deploy against the **real** Mediarr DB (`CONFIG_DIR/mediarr.db`, 550 movies / 28 — ae5b835a
       series; `/data` and `/config` now symlinked, config + staging chowned to uid 1000). Back up the
       DB, pin `DATABASE_URL=file:/config/mediarr.db`, `MEDIA_DIR=/data`, `ENCRYPTION_KEY`, set
       `torrentLimits` paths, start, and verify counts + playable SPA/TV. (G1/G8)
@@ -88,7 +88,7 @@
       10–15 / wanted 60. **Code done:** map now points the real task id; 16/16 route tests; `tsc`
       clean. Remaining: `library-scan` has no interval key (reschedule persists nothing) — either
       add a setting or return 422; values apply with B1a.
-- [x] **B2d** Current client built and installed on the live TV over network ADB; artwork is
+- [x] **B2d** Current client built and installed on the live TV over network ADB; artwork is — 8015f816
       fetched through the server proxy (13 `CachedNetworkImage` call sites), playback and Chinese
       subtitle rendering verified on device. Old APK was from 2026-10-03 with a different
       signature, so it was backed up, uninstalled and replaced; server re-entered manually.
@@ -99,7 +99,7 @@
       EN+ZH by timing, atomic write + `.orig`, idempotent ledger) + `MiniMaxTranslator`
       (MiniMax-M3.1-Flash, cheap, batch cues) for English-only items; scheduler task `bilingual-subs`.
       Chinese-only with no English sibling is flagged, not guessed. TV proof required: two lines visible.
-- [x] **B2e** TV client update pipeline: server manifest + APK endpoint, `publish-client-update.sh`,
+- [x] **B2e** TV client update pipeline: server manifest + APK endpoint, `publish-client-update.sh`, — 2770901c
       in-app prompt (Update now / Wait 12 h / countdown → PackageInstaller), and a daily **silent
       ADB updater** (`tv-updater.sh`, sha256-verified). **Verified 2026-11-07:** silent v2→v4 in 33 s;
       in-app v4→v5 through the Android installer; installed 1.0.4 / code 5. Android 9 needs the
@@ -116,7 +116,7 @@
       every 30 min (limit 5). Tests 6/6; first two live cycles: 5/5 aligned, residual 0, backups
       written, no temp leftovers, task history success. First full-library pass runs in the
       background; a DB-backed sync table is a follow-up (JSON state for now). (FR-16)
-- [x] **B2b** Fix the torrent speed-limit unit bug (`downloadClientRoutes.ts:121-125` passes Kbps
+- [x] **B2b** Fix the torrent speed-limit unit bug (`downloadClientRoutes.ts:121-125` passes Kbps — 227eba22
       into a bytes/sec setter, `TorrentManager.ts:547-554`/`:528-534`); test the conversion. (G7)
       **Done 2026-11-07:** test updated to expect 500 Kbps → 512000 B/s (Red: got 500); route now
       converts Kbps→bytes/sec and preserves the `-1` no-limit sentinel; 9/9 route tests green,
@@ -188,18 +188,18 @@
 Closed against the 10-foot UI review (`evidence/tv-ux-review-kimi-k3.1-20261107.md`)
 and the owner bug report; every item is device-verified over network ADB.
 
-- [x] P0 Resume: seek after load via `Media(start:)` + `_enforceResume` (verified 10:00 / 22:45).
-- [x] P0 Episode flow: default season with a file, no per-row search stop, Select plays.
-- [x] P0 Detail two-pane: hero + CTA left, episodes right, Resume CTA autofocus.
-- [x] P0 Playback errors: retry chip + client-error telemetry to the server for triage.
-- [x] P0 Launcher/kiosk: Mediarr is the HOME app with an in-app rollback path.
-- [x] P0 Server event loop: activity poll saturated it (248k-row id fetch every 1 s); fixed,
+- [x] P0 Resume: seek after load via `Media(start:)` + `_enforceResume` (verified 10:00 / 22:45). — adf016af
+- [x] P0 Episode flow: default season with a file, no per-row search stop, Select plays. — 7e651d70
+- [x] P0 Detail two-pane: hero + CTA left, episodes right, Resume CTA autofocus. — adf016af
+- [x] P0 Playback errors: retry chip + client-error telemetry to the server for triage. — 2770901c
+- [x] P0 Launcher/kiosk: Mediarr is the HOME app with an in-app rollback path. — 46c91c33
+- [x] P0 Server event loop: activity poll saturated it (248k-row id fetch every 1 s); fixed, — afdf8ad0
       86 % CPU -> 0.1 %, lag 400-1200 ms -> 0-1 ms, and `/api/health` now reports `eventLoop`.
-- [x] P1 Transport: Play/Pause entry focus, 64 px targets, 5 s hide only while playing,
+- [x] P1 Transport: Play/Pause entry focus, 64 px targets, 5 s hide only while playing, — a04ff8ff
       labelled Sync panel moved out of the subtitle line.
-- [x] P1 Home budget: hero 36 %, Continue Watching with remaining time, next row on the fold.
-- [x] P1 Browse typography: real metadata only (no year 0 / "Any"), 18-20 px type.
-- [x] Boot stall: 33.6 s -> 1.7 s (variant backfill did ~3,500 startup queries; now one per type),
+- [x] P1 Home budget: hero 36 %, Continue Watching with remaining time, next row on the fold. — 0b44e828
+- [x] P1 Browse typography: real metadata only (no year 0 / "Any"), 18-20 px type. — 0ea5ed63
+- [x] Boot stall: 33.6 s -> 1.7 s (variant backfill did ~3,500 startup queries; now one per type), — e7073af6
       boot `maxLagMs` 24,878 -> 953 ms.
 - [ ] P2 artwork placeholder for tiles with no poster (flat grey today).
 - [ ] P2 episode thumbnails in the season list.

@@ -48,6 +48,8 @@ type ModelName =
   | 'movie'
   | 'library'
   | 'adultItem'
+  | 'youtubeSubscription'
+  | 'youtubeVideo'
   | 'mediaFileVariant'
   | 'variantMissingSubtitle'
   | 'variantAudioTrack'
@@ -131,6 +133,16 @@ const MODEL_CONFIG: Record<ModelName, ModelConfig> = {
   },
   adultItem: {
     table: schema.adultItems,
+    primaryKey: 'id',
+    relations: {},
+  },
+  youtubeSubscription: {
+    table: schema.youtubeSubscriptions,
+    primaryKey: 'id',
+    relations: {},
+  },
+  youtubeVideo: {
+    table: schema.youtubeVideos,
     primaryKey: 'id',
     relations: {},
   },

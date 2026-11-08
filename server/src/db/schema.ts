@@ -13,6 +13,9 @@ import { sql } from "drizzle-orm";
 // ─── Enums (text-backed) ────────────────────────────────────────────────────────
 
 export const MediaTypeEnum = ["TV", "MOVIE"] as const;
+export const YoutubeSubscriptionKindEnum = ["CHANNEL", "PLAYLIST"] as const;
+export const YoutubeVideoStatusEnum = ["PENDING", "DOWNLOADING", "AVAILABLE", "FAILED"] as const;
+export const YoutubeVideoSourceEnum = ["SUBSCRIPTION", "IMPORT"] as const;
 /**
  * Library kinds (track feature_adult_library_20261107, gate G10).
  *
@@ -161,6 +164,53 @@ export const quarantineEntries = sqliteTable("QuarantineEntry", {
 }, (table) => [
   index("QuarantineEntry_status_idx").on(table.status),
   index("QuarantineEntry_originalPath_idx").on(table.originalPath),
+]);
+
+export const youtubeSubscriptions = sqliteTable("YoutubeSubscription", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  kind: text("kind", { enum: YoutubeSubscriptionKindEnum }).notNull(),
+  url: text("url").notNull().unique(),
+  externalId: text("externalId").notNull(),
+  title: text("title"),
+  enabled: integer("enabled", { mode: "boolean" }).notNull().default(true),
+  options: text("options", { mode: "json" }).notNull().$defaultFn(() => ({})),
+  lastPolledAt: integer("lastPolledAt", { mode: "timestamp" }),
+  lastError: text("lastError"),
+  added: integer("added", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(strftime('%s','now'))`),
+}, (table) => [index("YoutubeSubscription_enabled_idx").on(table.enabled)]);
+
+export const youtubeVideos = sqliteTable("YoutubeVideo", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  /** Nullable: the 786 pre-existing files import as an unmanaged archive (gate G9). */
+  subscriptionId: integer("subscriptionId").references(() => youtubeSubscriptions.id, { onDelete: "set null" }),
+  /** YouTube's 11-character video id; unique so a video can never be downloaded twice. */
+  videoId: text("videoId").notNull().unique(),
+  source: text("source", { enum: YoutubeVideoSourceEnum }).notNull().default("SUBSCRIPTION"),
+  title: text("title").notNull(),
+  channel: text("channel"),
+  durationSeconds: integer("durationSeconds"),
+  publishedAt: integer("publishedAt", { mode: "timestamp" }),
+  status: text("status", { enum: YoutubeVideoStatusEnum }).notNull().default("PENDING"),
+  error: text("error"),
+  path: text("path"),
+  thumbPath: text("thumbPath"),
+  /** Playback state kept inside this domain so it never enters movie/TV Continue Watching. */
+  position: integer("position").notNull().default(0),
+  isWatched: integer("isWatched", { mode: "boolean" }).notNull().default(false),
+  lastPlayedAt: integer("lastPlayedAt", { mode: "timestamp" }),
+  watchedAt: integer("watchedAt", { mode: "timestamp" }),
+  added: integer("added", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(strftime('%s','now'))`),
+  lastSeenAt: integer("lastSeenAt", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(strftime('%s','now'))`),
+}, (table) => [
+  index("YoutubeVideo_subscriptionId_idx").on(table.subscriptionId),
+  index("YoutubeVideo_status_idx").on(table.status),
+  index("YoutubeVideo_isWatched_idx").on(table.isWatched),
 ]);
 
 export const series = sqliteTable("Series", {

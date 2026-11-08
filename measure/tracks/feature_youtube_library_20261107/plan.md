@@ -15,8 +15,8 @@
 
 - [x] Contract tests for library type, subscription table, and idempotent download by video id — `YoutubeLibrary` with 10 tests: video-id normalisation, subscription URL parsing, feed selection (duplicates, shorts/live per Y5, per-poll cap, invalid ids) and `queueNewVideos` single-download + per-entry failure reporting — adece9a
 - [x] Schema/type change isolated from `TV|MOVIE` — migration 0013 `YoutubeSubscription` + `YoutubeVideo` (videoId unique, nullable subscription for archive imports, own playback state), client models registered, live tables verified on the running server — 36fd397
-- [~] Subscription CRUD API with enabled/options.
-- [ ] `yt-dlp --flat-playlist` poller returning new entries; per-entry failure reporting.
+- [x] Subscription CRUD API with enabled/options — `GET/POST/PATCH/DELETE /api/youtube/subscriptions`; POST validates with the tested URL parser (video URLs rejected 422, kind mismatch rejected, duplicate URL returns the existing row), PATCH toggles enabled/title; live verified by adding @DaveGrayTeachesCode, rejecting a youtu.be video URL and toggling enabled — c91e7c8
+- [~] `yt-dlp --flat-playlist` poller returning new entries; per-entry failure reporting.
 
 ## Phase 2: Download + library
 

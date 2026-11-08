@@ -190,6 +190,23 @@ export const musicAlbums = sqliteTable("MusicAlbum", {
     .default(sql`(strftime('%s','now'))`),
 }, (table) => [uniqueIndex("MusicAlbum_artist_title_idx").on(table.artistId, table.titleKey)]);
 
+/**
+ * Ingest ledger (feature_music_library_20261107, Phase 2): the same YouTube video must never be
+ * downloaded twice, and the same audio (different video/title) must never be filed twice.
+ */
+export const musicIngestLog = sqliteTable("MusicIngestLog", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  videoId: text("videoId").notNull().unique(),
+  /** SHA-256 of the converted audio, filled once conversion succeeds. */
+  audioHash: text("audioHash"),
+  status: text("status").notNull(),
+  trackPath: text("trackPath"),
+  error: text("error"),
+  createdAt: integer("createdAt", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(strftime('%s','now'))`),
+}, (table_) => [index("MusicIngestLog_audioHash_idx").on(table_.audioHash)]);
+
 export const musicTracks = sqliteTable("MusicTrack", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   albumId: integer("albumId").notNull().references(() => musicAlbums.id, { onDelete: "cascade" }),

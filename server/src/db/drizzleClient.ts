@@ -53,6 +53,7 @@ type ModelName =
   | 'musicArtist'
   | 'musicAlbum'
   | 'musicTrack'
+  | 'musicIngestLog'
   | 'mediaFileVariant'
   | 'variantMissingSubtitle'
   | 'variantAudioTrack'
@@ -161,6 +162,11 @@ const MODEL_CONFIG: Record<ModelName, ModelConfig> = {
   },
   musicTrack: {
     table: schema.musicTracks,
+    primaryKey: 'id',
+    relations: {},
+  },
+  musicIngestLog: {
+    table: schema.musicIngestLog,
     primaryKey: 'id',
     relations: {},
   },

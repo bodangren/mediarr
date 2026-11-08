@@ -1,3 +1,4 @@
+import fsp from 'node:fs/promises';
 import pathPosix from 'node:path/posix';
 import type { FastifyInstance } from 'fastify';
 import { and, eq } from 'drizzle-orm';
@@ -5,6 +6,7 @@ import * as schema from '../../db/schema';
 import { scanMusicLibrary } from '../../services/MusicScanner';
 import { MusicIngestService } from '../../services/MusicIngestService';
 import { MusicTaggerService } from '../../services/MusicTaggerService';
+import { audioHashOf, decideIngest } from '../../services/MusicIngestLedger';
 import { normalizeYoutubeVideoId } from '../../services/YoutubeLibrary';
 import { sendSuccess } from '../contracts';
 import type { ApiDependencies } from '../types';
@@ -44,10 +46,32 @@ export function registerMusicRoutes(app: FastifyInstance, deps: ApiDependencies)
         error: { code: 'INVALID_URL', message: 'url/videoId must identify a YouTube video' },
       });
     }
+    const existing = await drizzle
+      .select({ videoId: schema.musicIngestLog.videoId, audioHash: schema.musicIngestLog.audioHash, status: schema.musicIngestLog.status })
+      .from(schema.musicIngestLog);
+    const videoDecision = decideIngest(videoId, null, existing);
+    if (videoDecision.duplicate) {
+      return sendSuccess(reply, { videoId, ok: true, skipped: 'duplicate-video', existingVideoId: videoDecision.existingVideoId });
+    }
+
     const service = new MusicIngestService({
       stagingDir: process.env.MUSIC_STAGING_DIR ?? '/data/Music/_incoming',
     });
     const result = await service.ingest(videoId);
+
+    let audioHash: string | null = null;
+    if (result.ok && result.audioPath !== undefined) {
+      try {
+        audioHash = await audioHashOf(result.audioPath);
+      } catch {
+        audioHash = null;
+      }
+      const audioDecision = decideIngest(videoId, audioHash, existing);
+      if (audioDecision.duplicate) {
+        await fsp.unlink(result.audioPath).catch(() => undefined);
+        return sendSuccess(reply, { videoId, ok: true, skipped: 'duplicate-audio', existingVideoId: audioDecision.existingVideoId });
+      }
+    }
     // Hands-off default: tag and file immediately after a successful ingest, so an owner doesn't have
     // to make two calls; the /tag endpoint remains for retries and review items.
     let tag = null;
@@ -58,7 +82,15 @@ export function registerMusicRoutes(app: FastifyInstance, deps: ApiDependencies)
         reviewDir: pathPosix.join(musicRoot, '_review'),
       }).tagAndFile(result.audioPath);
     }
-    return sendSuccess(reply, { videoId, ...result, tag });
+    await drizzle.insert(schema.musicIngestLog).values({
+      videoId,
+      audioHash,
+      status: result.ok ? (tag?.filed === true ? 'FILED' : 'REVIEW') : 'FAILED',
+      trackPath: tag?.finalPath ?? result.audioPath ?? null,
+      error: result.ok ? (tag?.reason ?? null) : (result.error ?? 'ingest failed'),
+    }).onConflictDoNothing();
+
+    return sendSuccess(reply, { videoId, ...result, tag, audioHash });
   });
 
   /** Scan /data/Music (or MUSIC_DIR): dry-run by default, idempotent by file path. */

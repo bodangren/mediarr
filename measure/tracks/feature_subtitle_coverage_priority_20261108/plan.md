@@ -19,7 +19,7 @@
 
 ## Phase 2: Coverage + ordered APIs
 
-- [ ] `GET /api/subtitles/coverage` with per-bucket counts and EN/ZH/bilingual/none tallies + route
+- [~] `GET /api/subtitles/coverage` with per-bucket counts and EN/ZH/bilingual/none tallies + route
       tests.
 - [ ] Order `GET /api/subtitles/wanted/series|movies` by bucket then recency; add `priority` and
       `bucket` filter; route tests for ordering and filtering.

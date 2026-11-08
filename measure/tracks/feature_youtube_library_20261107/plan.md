@@ -37,7 +37,8 @@
 - [x] Deterministic subscription poll (plugin/native task) downloads new entries; the agent is used only for ambiguity. Reports new downloads and failures; no silent skip — `youtube-poll` hourly (`:20`) + `youtube-download` every 20 min (bounded batch of 2), each writing a JSONL receipt; live poll: 463 seen, 25 queued PENDING, receipt written — 0eec7ed
 - [x] Forced `yt-dlp` failure produces an alert with the tool error — a real bot-check failure marked the row FAILED with yt-dlp's message and the receipt recorded it; `downloadPending` now routes failures to `NotificationDispatchService.notifyYoutubeFailure` (SSE `notification:youtube-failure` + journal alert channel while no transport is configured); the fix itself (browser cookies via env) was verified against the same video — 09a1ea3
 - [x] TV device check: subscribe → download → play → watch → retire — subscribe (Dave Gray, live poll), download (real yt-dlp+transcode, 57 MB), play on the box (`device-20261107/youtube-tv-e2e-play.png`), watch (device reporter stored position 28 + lastPlayedAt), retire (watchedAt back-dated as test setup: dry run listed the file, real run moved it to quarantine + QUARANTINED, restore returned it byte-identical); stale DOWNLOADING claims now recover to PENDING after 30 min — 7ebeae6e
-- [~] Remove all jellyfin-go references.
+- [x] Remove all jellyfin-go references — no code, dependency or unit references remain: grep over `server/src`, `app/src`, `clients/mediarr-client/lib` and `package.json` is clean; the only mentions are historical prose in `automation/PROVISIONING.md` and measure docs naming the retired service — 8e12b86
+- [~] Import the 262 existing `/data/Youtube` files as unmanaged archive — `/data/Youtube` holds 265 video files (262 archive with `.nfo` + thumbnails, 3 downloaded); they must import with `source: IMPORT`, `status: AVAILABLE`, and stay retention-ineligible (gate G9)
 
 ## Phase 5: Close
 

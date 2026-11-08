@@ -13,8 +13,8 @@
 
 ## Phase 1: Domain + subscriptions
 
-- [~] Contract tests for library type, subscription table, and idempotent download by video id.
-- [ ] Schema/type change isolated from `TV|MOVIE`.
+- [x] Contract tests for library type, subscription table, and idempotent download by video id — `YoutubeLibrary` with 10 tests: video-id normalisation, subscription URL parsing, feed selection (duplicates, shorts/live per Y5, per-poll cap, invalid ids) and `queueNewVideos` single-download + per-entry failure reporting — adece9a
+- [~] Schema/type change isolated from `TV|MOVIE`.
 - [ ] Subscription CRUD API with enabled/options.
 - [ ] `yt-dlp --flat-playlist` poller returning new entries; per-entry failure reporting.
 

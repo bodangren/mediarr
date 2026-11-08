@@ -5,15 +5,15 @@
 > `/data/Youtube` are 262 videos (133 webm + 129 mkv) with `.nfo` + thumbnail sidecars; they import as
 > an unmanaged archive and are never subject to the watched+7d retention rule (gate G9).
 
-## Phase 0: Ratify scope
+## Phase 0: Ratify scope [checkpoint: 9b7c9e6a]
 
-- [ ] Resolve Y1 representation, Y2 retention, Y3 quality, Y4 cadence, Y5 shorts/live.
-- [ ] Confirm `yt-dlp` install/update path and a test playlist.
-- [ ] Migration decision: existing 786 files import as unmanaged/keep; per-poll item cap value.
+- [x] Resolve Y1 representation, Y2 retention, Y3 quality, Y4 cadence, Y5 shorts/live — ratified 2026-11-08 (separate library type, quarantine then delete at watched+7d, best ≤1080p, daily poll, shorts skipped / live skipped for v1) — 0723765
+- [x] Confirm `yt-dlp` install/update path — installed 2026.10.26 at `~/.local/bin/yt-dlp`, self-updating (`yt-dlp -U`), verified against a live YouTube metadata fetch; `/data/Youtube` holds 262 videos across 3 channels as the import test set  — 9b7c9e6a
+- [x] Migration decision: the 786 existing files (262 videos with .nfo + thumbnails) import as **unmanaged archive** and are never subject to watched+7d retention (gate G9); per-poll cap 25 entries to bound a run — 9b7c9e6a
 
 ## Phase 1: Domain + subscriptions
 
-- [ ] Contract tests for library type, subscription table, and idempotent download by video id.
+- [~] Contract tests for library type, subscription table, and idempotent download by video id.
 - [ ] Schema/type change isolated from `TV|MOVIE`.
 - [ ] Subscription CRUD API with enabled/options.
 - [ ] `yt-dlp --flat-playlist` poller returning new entries; per-entry failure reporting.

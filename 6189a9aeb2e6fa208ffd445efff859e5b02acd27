@@ -1,0 +1,3 @@
+Priority bucket on /api/media/wanted items (feature_subtitle_coverage_priority_20261108, Phase 4 data for grouping).
+
+Default-order items carry priority {bucket, rank}; test asserts it. 3 tests green, tsc clean.

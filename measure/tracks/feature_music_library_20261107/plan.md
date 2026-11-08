@@ -21,7 +21,7 @@
 
 ## Phase 2: Ingest pipeline (deterministic)
 
-- [ ] `yt-dlp` audio download + thumbnail; `ffmpeg` convert to M3.
+- [~] `yt-dlp` audio download + thumbnail; `ffmpeg` convert to M3.
 - [ ] beets tag + file into `<Artist>/<Album>/<NN> - <Title>`; untaggable → review folder.
 - [ ] Idempotency by video id + audio hash; re-run does not duplicate.
 - [ ] Failure reporting per item with tool error; receipt.

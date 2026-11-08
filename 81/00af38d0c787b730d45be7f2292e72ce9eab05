@@ -1,0 +1,1 @@
+HUD regression fixes: re-arming auto-hide (buffering-start skip) and PopScope Back toggle (system back was popping route). 155 playback tests; 1.3.27/51 device-verified with HUD shown/hidden captures.

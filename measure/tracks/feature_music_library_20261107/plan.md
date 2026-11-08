@@ -19,16 +19,16 @@
 - [x] Scanner: walk root, read tags/artwork, upsert by path, report unreadable files — `MusicScanner` with injectable ffprobe runner, case-insensitive tags (Vorbis uppercase, '3/12'), duration/bitrate/size, folder artwork, idempotent path upsert, unreadable reporting; `POST /api/music/scan` (dry-run default); **live `/data/Music`: dry 30.6 s then real 25.8 s → scanned 217, artists 86, albums 91, tracks 217, 0 unreadable**, DB rows match; 6 tests — e7e541c
 - [x] Seeded-tree counts test — deterministic 3-artist/4-album/7-track tree (including a disc-2 file) asserts the exact scan summary and the artist/album create calls; 7 scanner tests green — f7bb59e3
 
-## Phase 2: Ingest pipeline (deterministic)
+## Phase 2: Ingest pipeline (deterministic) [checkpoint: 6bd99939]
 
 - [x] `yt-dlp` audio download + thumbnail; `ffmpeg` convert to M3 — `MusicIngestService` (bestaudio + jpg, ffmpeg AAC 256k m4a into staging, partial cleanup, exact tool errors, `POST /api/music/ingest` with validation); 4 tests; live 19 s video -> 577,744-byte m4a + 23,683-byte jpg, ffprobe aac 241 kbps — c13af5a
 - [x] beets tag + file into `<Artist>/<Album>/<NN> - <Title>`; untaggable → review folder — `MusicTaggerService` runs beets tag-only (-q -M -C -w) and owns placement: complete tags → `<Artist>/<Album>/<NN> - <Title>`, incomplete → `_review` with an explicit reason. Ingest writes yt-dlp artist/title/album/year hints into the file first (no fpcalc here) and chains tagging by default. 5 tests; live proof of both paths (filed: Rick Astley/Whenever You Need Somebody/01 - Never Gonna Give You Up.m4a; review: 'untaggable: missing album after beets') — bb3f355c
 - [x] Idempotency by video id + audio hash; re-run does not duplicate — `MusicIngestLog` (migration 0015: videoId unique, sha256 audioHash, status, path, reason), pure `decideIngest` + streaming `audioHashOf`, checked before download and again after conversion (duplicate staging file deleted); 5 tests; **live: first ingest 64.8 s → hash caae5e35... REVIEW row; second call `{skipped: duplicate-video}` in 0.021 s with no download** — e970bf6c
-- [~] Failure reporting per item with tool error; receipt.
+- [x] Failure reporting per item with tool error; receipt — every attempt appends a JSONL receipt (FILED|REVIEW|FAILED|SKIPPED, reason, path) incl. duplicates; `GET /api/music/receipts` returns receipts + summary; 3 tests; live FAILED receipt carried yt-dlp's exact error and summary {attempted:1, failed:1} — 6bd99939
 
 ## Phase 3: API + artwork
 
-- [ ] Artist/album/track browse + search endpoints.
+- [~] Artist/album/track browse + search endpoints.
 - [ ] Stream with range support (reuse video handler contract).
 - [ ] Artwork extraction/serving (embedded + folder image).
 - [ ] Automation contract: picks in, ingest status out.

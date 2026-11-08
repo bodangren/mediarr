@@ -19,7 +19,11 @@ export function registerAdultLibraryRoutes(app: FastifyInstance, deps: ApiDepend
     return sendSuccess(reply, rows);
   });
 
-  app.get('/api/adult/items', async (_request, reply) => {
+  app.get('/api/adult/items', async (request, reply) => {
+    const query = request.query as Record<string, unknown>;
+    const q = typeof query.q === 'string' ? query.q.trim().toLowerCase() : '';
+    const page = Math.max(1, Number.parseInt(String(query.page ?? '1'), 10) || 1);
+    const pageSize = Math.min(200, Math.max(1, Number.parseInt(String(query.pageSize ?? '50'), 10) || 50));
     const rows = await drizzle
       .select({
         id: schema.adultItems.id,
@@ -34,7 +38,21 @@ export function registerAdultLibraryRoutes(app: FastifyInstance, deps: ApiDepend
       })
       .from(schema.adultItems)
       .orderBy(asc(schema.adultItems.id));
-    return sendSuccess(reply, rows);
+
+    const filtered = q.length === 0
+      ? rows
+      : rows.filter((row: { title: string | null; fileName: string; studio: string | null }) =>
+          [row.title, row.fileName, row.studio]
+            .filter((value): value is string => typeof value === 'string')
+            .some((value) => value.toLowerCase().includes(q)));
+    const start = (page - 1) * pageSize;
+    return sendSuccess(reply, {
+      items: filtered.slice(start, start + pageSize),
+      page,
+      pageSize,
+      totalCount: filtered.length,
+      needsReview: rows.filter((row: { needsReview: boolean }) => row.needsReview).length,
+    });
   });
 
   app.post('/api/libraries/adult/import', async (_request, reply) => {

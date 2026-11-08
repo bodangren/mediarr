@@ -450,6 +450,14 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
       _exitPlayback();
       return true;
     }
+    if (key == LogicalKeyboardKey.mediaFastForward) {
+      service.seekRelative(const Duration(seconds: 30));
+      return true;
+    }
+    if (key == LogicalKeyboardKey.mediaRewind) {
+      service.seekRelative(const Duration(seconds: -30));
+      return true;
+    }
     if (key == LogicalKeyboardKey.goBack || key == LogicalKeyboardKey.escape) {
       if (_exitInProgress) return false;
       // Kodi style: Back toggles the overlay and is always consumed, so it can never pop the route.

@@ -131,6 +131,7 @@ class FocusableAction extends StatefulWidget {
     this.focusNode,
     this.onSelect,
     this.onFocusChange,
+    this.onContextMenu,
     this.scale = 1.0,
     this.borderRadius = 8,
     this.variant = FocusableActionVariant.poster,
@@ -143,6 +144,9 @@ class FocusableAction extends StatefulWidget {
   final FocusNode? focusNode;
   final VoidCallback? onSelect;
   final ValueChanged<bool>? onFocusChange;
+
+  /// Invoked when the remote's Menu key is pressed on this item (long-lived TV menu shortcut).
+  final VoidCallback? onContextMenu;
 
   /// Kept for call-site compatibility. The focus "pop" now comes from the
   /// child growing into [focusPadding], not from a transform.
@@ -249,6 +253,12 @@ class _FocusableActionState extends State<FocusableAction> {
     if (direction == DpadDirection.select) {
       widget.onSelect?.call();
       return KeyEventResult.handled;
+    }
+    if (event.logicalKey == LogicalKeyboardKey.contextMenu) {
+      if (widget.onContextMenu != null) {
+        widget.onContextMenu!.call();
+        return KeyEventResult.handled;
+      }
     }
     return KeyEventResult.ignored;
   }

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/widgets/netflix_scaffold.dart';
+import '../../core/widgets/tv_context_menu.dart';
 import '../../shared/models/music.dart';
 import '../../shared/services/api_client.dart';
 import 'music_player_service.dart';
@@ -184,6 +185,42 @@ class _MusicLibraryScreenState extends ConsumerState<MusicLibraryScreen> {
         );
   }
 
+  void _openAlbumMenu(MusicAlbum album) {
+    showTvContextMenu(context, title: album.title, actions: [
+      TvContextAction(
+        label: 'Play album',
+        onSelected: () async {
+          final detail = await ref.read(apiClientProvider.notifier).getMusicAlbum(album.id);
+          if (detail.tracks.isNotEmpty) {
+            await _play(detail.tracks, 0);
+          }
+        },
+      ),
+      TvContextAction(label: 'Open album', onSelected: () => _openAlbum(album)),
+    ]);
+  }
+
+  void _openTrackMenu(MusicTrack track, List<MusicTrack> queue, int index) {
+    final api = ref.read(apiClientProvider.notifier);
+    showTvContextMenu(context, title: track.title, actions: [
+      TvContextAction(label: 'Play now', onSelected: () => _play(queue, index)),
+      TvContextAction(
+        label: 'Play next',
+        onSelected: () => ref.read(musicPlayerProvider.notifier).insertNext(
+              track: track,
+              urlFor: api.musicStreamUrl,
+            ),
+      ),
+      TvContextAction(label: 'Go to album', onSelected: () => _openAlbum(
+            MusicAlbum(
+              id: track.albumId,
+              artistId: track.artistId,
+              title: 'Album',
+            ),
+          )),
+    ]);
+  }
+
   @override
   Widget build(BuildContext context) {
     final playback = ref.watch(musicPlayerProvider);
@@ -307,6 +344,7 @@ class _MusicLibraryScreenState extends ConsumerState<MusicLibraryScreen> {
           autofocus: index == 0,
           focusNode: index == 0 ? _contentFirstNode : null,
           onSelect: () => _openAlbum(album),
+          onContextMenu: () => _openAlbumMenu(album),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -379,6 +417,7 @@ class _MusicLibraryScreenState extends ConsumerState<MusicLibraryScreen> {
             itemBuilder: (context, index) => _TrackRow(
               track: tracks[index],
               onSelect: () => _play(tracks, index),
+              onContextMenu: () => _openTrackMenu(tracks[index], tracks, index),
             ),
           ),
         ),
@@ -396,6 +435,7 @@ class _MusicLibraryScreenState extends ConsumerState<MusicLibraryScreen> {
       itemBuilder: (context, index) => _TrackRow(
         track: _songs[index],
         onSelect: () => _play(_songs, index),
+        onContextMenu: () => _openTrackMenu(_songs[index], _songs, index),
       ),
     );
   }
@@ -453,10 +493,11 @@ class _Sidebar extends StatelessWidget {
 }
 
 class _TrackRow extends StatelessWidget {
-  const _TrackRow({required this.track, required this.onSelect});
+  const _TrackRow({required this.track, required this.onSelect, this.onContextMenu});
 
   final MusicTrack track;
   final VoidCallback onSelect;
+  final VoidCallback? onContextMenu;
 
   @override
   Widget build(BuildContext context) {
@@ -466,6 +507,7 @@ class _TrackRow extends StatelessWidget {
       child: FocusableAction(
         variant: FocusableActionVariant.button,
         onSelect: onSelect,
+        onContextMenu: onContextMenu,
         child: _Card(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           child: Row(

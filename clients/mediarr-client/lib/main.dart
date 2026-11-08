@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_kit/media_kit.dart';
 
 import 'core/router/app_router.dart';
+import 'core/widgets/tv_media_keys.dart';
 import 'core/theme/mediarr_theme.dart';
 import 'features/discovery/bonsoir_adapter.dart';
 import 'features/discovery/discovery_service.dart';
@@ -87,6 +88,7 @@ class _MediarrAppState extends ConsumerState<MediarrApp> {
       debugShowCheckedModeBanner: false,
       theme: mediarrDarkTheme,
       routerConfig: router,
+      builder: (context, child) => TvMediaKeyScope(child: child ?? const SizedBox.shrink()),
     );
   }
 }

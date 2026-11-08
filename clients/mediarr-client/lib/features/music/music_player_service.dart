@@ -107,6 +107,37 @@ class MusicPlayerService extends Notifier<MusicPlaybackState> {
     }
   }
 
+  /// Pauses without clearing the queue (media Stop key and menu actions).
+  Future<void> pause() async {
+    try {
+      await _player?.pause();
+    } catch (_) {
+      // Ignore a dead audio output.
+    }
+  }
+
+  /// Plays one track immediately, replacing the queue.
+  Future<void> playNow({required MusicTrack track, required String Function(int trackId) urlFor}) async {
+    await playQueue(tracks: [track], index: 0, urlFor: urlFor);
+  }
+
+  /// Queues a track right after the current one; with nothing playing it starts a new queue.
+  Future<void> insertNext({
+    required MusicTrack track,
+    required String Function(int trackId) urlFor,
+  }) async {
+    final current = state.current;
+    if (current == null) {
+      await playQueue(tracks: [track], index: 0, urlFor: urlFor);
+      return;
+    }
+    final queue = [...state.queue];
+    final index = state.index ?? 0;
+    queue.insert(index + 1, track);
+    _urlFor = urlFor;
+    state = state.copyWith(queue: queue);
+  }
+
   Future<void> next() async {
     final index = state.index;
     final urlFor = _urlFor;

@@ -3,6 +3,7 @@ import { and, asc, eq, gte, inArray, not, or, sql } from 'drizzle-orm';
 import type { DatabaseClient } from '../db/drizzleClient';
 import * as schema from '../db/schema';
 import { aggregateSeriesProgress, orderWantedCandidates } from '../services/WantedSubtitlePriority';
+import { classifyViewingPriority } from '../services/ViewingPriorityService';
 import type { ProgressSnapshot } from '../services/ViewingPriorityQuery';
 import type {
   MediaFileVariant,
@@ -575,6 +576,26 @@ export class SubtitleVariantRepository {
       }
     }
 
+    const bucketsByWantedId = new Map<number, string>();
+    for (const candidate of pool) {
+      const media = mediaByVariant.get(candidate.variantId);
+      if (!media) continue;
+      const own = media.kind === 'movie'
+        ? latest(movieProgressRows).get(media.id)
+        : allEpisodeProgress.get(media.id);
+      const inherited = media.kind === 'episode' && media.seriesId != null
+        ? seriesProgress.get(media.seriesId)
+        : undefined;
+      bucketsByWantedId.set(candidate.id, classifyViewingPriority({
+        kind: media.kind,
+        id: media.id,
+        addedAt: null,
+        lastWatchedAt: own?.lastWatched ?? inherited?.lastWatched ?? null,
+        isWatched: own?.isWatched ?? inherited?.isWatched ?? false,
+        progress: own?.progress ?? inherited?.progress ?? null,
+      }).bucket);
+    }
+
     const ordered = orderWantedCandidates(
       pool.map((row) => ({ id: row.id, variantId: row.variantId })),
       (candidate) => mediaByVariant.get(candidate.variantId) ?? null,
@@ -584,7 +605,8 @@ export class SubtitleVariantRepository {
     return ordered
       .flatMap((candidate) => {
         const row = byId.get(candidate.id);
-        return row ? [row] : [];
+        if (!row) return [];
+        return [{ ...row, priorityBucket: bucketsByWantedId.get(row.id) ?? 'backfill' } as WantedSubtitle];
       })
       .slice(0, limit);
   }

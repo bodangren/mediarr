@@ -97,6 +97,10 @@ export class SubtitleAutomationService {
     );
 
     for (const item of wanted) {
+      const bucket = (item as { priorityBucket?: string }).priorityBucket;
+      if (bucket) {
+        console.info(`[subtitle-wanted-search] wanted ${item.id} bucket=${bucket}`);
+      }
       try {
         const result = await this.fetchService.fetchWantedSubtitle(item.id, this.fetchProvider);
         if (result) {

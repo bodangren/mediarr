@@ -94,6 +94,7 @@ import { EpisodeThumbnailService } from './services/EpisodeThumbnailService';
 import { LibraryFolderImportService } from './services/LibraryFolderImportService';
 import { downloadPending, pollAllSubscriptions, runRetention } from './services/YoutubeAutomation';
 import { appendNightlyReceipt, buildNightlyReceipt, readIngestReceipts } from './services/MusicAutomation';
+import { applyTidy, planTidy } from './services/StagingTidyService';
 import { snapshotCoverage } from './services/SubtitleCoverageAutomation';
 import { queuePriorityWanted } from './services/SubtitleCoverageWanted';
 import { globalLogBuffer } from './services/LogReaderService';
@@ -909,6 +910,16 @@ export async function createServiceContainer(
           `Subtitle coverage: ${snapshot.items.length} priority items, `
           + `dual ${snapshot.counts.dual}, zho-only ${snapshot.counts['zho-only']}, `
           + `en-only ${snapshot.counts['en-only']}, none ${snapshot.counts.none}`,
+        );
+      });
+
+      scheduler.schedule('staging-tidy', '30 4 * * *', async () => {
+        const candidates = await planTidy();
+        if (candidates.length === 0) return;
+        const result = await applyTidy(candidates);
+        console.log(
+          `Staging tidy: deleted ${result.deleted} abandoned file(s), ${result.bytes} bytes`
+          + (result.failed.length > 0 ? `, failed ${result.failed.length}` : ''),
         );
       });
 

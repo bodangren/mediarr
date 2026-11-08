@@ -5,6 +5,6 @@
   "created": "2026-11-07",
   "completed": "2026-11-08",
   "priority": "high",
-  "actual_tasks": 24,
+  "actual_tasks": 20,
   "evidence": "196 measured -> 197 imported items / 8 review / 297 GB; SPA + TV sections device-verified; quarantine round-trip proven; three-model UI review implemented"
 }

@@ -199,8 +199,12 @@
       registration**, scheduler freshness, artifact freshness; failures raise critical alerts with the
       JSONL fallback written first. Live run: health ok, 4 tasks fresh, 3 artifacts fresh, heartbeat +
       bridge correctly failed (plugin not linked) and wrote 2 local alerts
-      (`device-20261107/watchdog-live-20261109.md`). Remaining: alert delivery retry over an external
-      transport and a ≤10 min system timer — both wait on the owner-gated harness link (B3/B4) — de05fa00
+      (`device-20261107/watchdog-live-20261109.md`). **Delivery done 2026-11-09:**
+      `deliverPendingAlerts` retries PENDING alerts through a webhook transport
+      (`MEDIA_AUTOMATION_ALERT_WEBHOOK`), stamps DELIVERED/attempts, marks FAILED after 3 attempts, and
+      leaves alerts PENDING when no transport exists (JSONL fallback); exposed as
+      `media_automation_deliver_alerts` (4 tests, 23 plugin total; `device-20261107/alert-delivery-retry-20261109.md`).
+      Remaining: the ≤10 min system timer, which waits on the owner-gated harness link (B3/B4) — de05fa00, 2cfbd15e
 - [ ] **B9b** Validate the built-in torrent engine **after G7**: set staging paths, add one small real
       magnet, watch progress → complete → import, record throughput/memory. Let the 83.4 % Transmission
       torrent finish in place; do not re-add it (different engine/dir = full re-download). (G7)

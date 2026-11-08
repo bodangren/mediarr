@@ -11,16 +11,16 @@
 - [x] Confirm `yt-dlp` install/update path — installed 2026.10.26 at `~/.local/bin/yt-dlp`, self-updating (`yt-dlp -U`), verified against a live YouTube metadata fetch; `/data/Youtube` holds 262 videos across 3 channels as the import test set  — 9b7c9e6a
 - [x] Migration decision: the 786 existing files (262 videos with .nfo + thumbnails) import as **unmanaged archive** and are never subject to watched+7d retention (gate G9); per-poll cap 25 entries to bound a run — 9b7c9e6a
 
-## Phase 1: Domain + subscriptions
+## Phase 1: Domain + subscriptions [checkpoint: a969335]
 
 - [x] Contract tests for library type, subscription table, and idempotent download by video id — `YoutubeLibrary` with 10 tests: video-id normalisation, subscription URL parsing, feed selection (duplicates, shorts/live per Y5, per-poll cap, invalid ids) and `queueNewVideos` single-download + per-entry failure reporting — adece9a
 - [x] Schema/type change isolated from `TV|MOVIE` — migration 0013 `YoutubeSubscription` + `YoutubeVideo` (videoId unique, nullable subscription for archive imports, own playback state), client models registered, live tables verified on the running server — 36fd397
 - [x] Subscription CRUD API with enabled/options — `GET/POST/PATCH/DELETE /api/youtube/subscriptions`; POST validates with the tested URL parser (video URLs rejected 422, kind mismatch rejected, duplicate URL returns the existing row), PATCH toggles enabled/title; live verified by adding @DaveGrayTeachesCode, rejecting a youtu.be video URL and toggling enabled — c91e7c8
-- [~] `yt-dlp --flat-playlist` poller returning new entries; per-entry failure reporting.
+- [x] `yt-dlp --flat-playlist` poller returning new entries; per-entry failure reporting — `YoutubeFeedPoller` (nested channel tabs flattened, dedupe/shorts/cap, per-entry failures, poll error recorded) with POST `/api/youtube/subscriptions/:id/poll`; 6 tests; **live poll of the real Dave Gray channel: seen 463, queued 25 PENDING (cap), skipped 438, no failures** — a969335
 
 ## Phase 2: Download + library
 
-- [ ] Download job (video + metadata + thumbnail) into the YouTube root.
+- [~] Download job (video + metadata + thumbnail) into the YouTube root.
 - [ ] Scanner/metadata mapping: channel/playlist → episode, title/date/duration/thumbnail.
 - [ ] Dedupe by video id; partial-download cleanup.
 - [ ] UI section: playlist → episodes, D-pad navigable.

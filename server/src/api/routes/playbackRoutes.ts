@@ -10,6 +10,7 @@ import { sendByteRangeStream } from '../utils/byteRangeStreaming';
 import type { ApiDependencies } from '../types';
 import { auditSubtitles, coverageStatus } from '../../services/SubtitleAuditService';
 import { readCoverageReceipts, snapshotCoverage } from '../../services/SubtitleCoverageAutomation';
+import { queuePriorityWanted } from '../../services/SubtitleCoverageWanted';
 
 function parsePlaybackType(rawType: unknown): PlaybackMediaType {
   if (typeof rawType !== 'string') {
@@ -205,6 +206,18 @@ export function registerPlaybackRoutes(
     }
 
     return sendSuccess(reply, { days, items, counts, total: items.length });
+  });
+
+  /** Queue the missing languages for watched variants into WantedSubtitle. */
+  app.post('/api/subtitles/priority-wanted', async (request, reply) => {
+    const body = (request.body ?? {}) as { days?: number; limit?: number };
+    const drizzle = (deps.prisma as unknown as { drizzle: any }).drizzle;
+    const result = await queuePriorityWanted(drizzle, {
+      configDir: process.env.CONFIG_DIR ?? '/config',
+      days: typeof body.days === 'number' ? body.days : 14,
+      limit: typeof body.limit === 'number' ? body.limit : 200,
+    });
+    return sendSuccess(reply, result);
   });
 
   /** Manual trigger for the daily priority-coverage snapshot (same function the scheduler calls). */

@@ -94,6 +94,7 @@ import { EpisodeThumbnailService } from './services/EpisodeThumbnailService';
 import { LibraryFolderImportService } from './services/LibraryFolderImportService';
 import { downloadPending, pollAllSubscriptions, runRetention } from './services/YoutubeAutomation';
 import { snapshotCoverage } from './services/SubtitleCoverageAutomation';
+import { queuePriorityWanted } from './services/SubtitleCoverageWanted';
 import { globalLogBuffer } from './services/LogReaderService';
 import { NotificationDispatchService } from './services/NotificationDispatchService';
 import { NotificationTransportRegistry } from './services/notifications/NotificationTransportRegistry';
@@ -869,6 +870,17 @@ export async function createServiceContainer(
 
       const youtubeRoot = process.env.YOUTUBE_DIR ?? '/data/Youtube';
       const configDir = process.env.CONFIG_DIR ?? '/config';
+
+      scheduler.schedule('subtitle-wanted-priority', '30 6 * * *', async () => {
+        const result = await queuePriorityWanted(prisma.drizzle, {
+          configDir: process.env.CONFIG_DIR ?? '/config',
+          days: 14,
+          limit: 200,
+        });
+        console.log(
+          `Priority subtitle wanted: ${result.variants} variants, queued en ${result.queuedEn}, zho ${result.queuedZho}`,
+        );
+      });
 
       scheduler.schedule('subtitle-coverage', '15 6 * * *', async () => {
         const snapshot = await snapshotCoverage(prisma.drizzle, {

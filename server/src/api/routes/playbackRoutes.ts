@@ -7,6 +7,7 @@ import { sendSuccess } from '../contracts';
 import { parseIdParam } from '../routeUtils';
 import { sendByteRangeStream } from '../utils/byteRangeStreaming';
 import type { ApiDependencies } from '../types';
+import { auditSubtitles } from '../../services/SubtitleAuditService';
 
 function parsePlaybackType(rawType: unknown): PlaybackMediaType {
   if (typeof rawType !== 'string') {
@@ -144,6 +145,28 @@ export function registerPlaybackRoutes(
     const limit = parseContinueWatchingLimit(query.limit);
     const items = await deps.playbackService.getContinueWatching(limit);
     return sendSuccess(reply, items);
+  });
+
+  /** Subtitle health audit: encoding and script problems, one actionable record per file. */
+  app.get('/api/subtitles/audit', async (request, reply) => {
+    const query = request.query as { limit?: string | number };
+    const limit = Math.max(1, Math.min(5000, Number.parseInt(String(query.limit ?? '500'), 10) || 500));
+    const prisma = deps.prisma as unknown as {
+      variantSubtitleTrack?: {
+        findMany(args: { select: Record<string, boolean>; take: number; where: unknown }): Promise<Array<{ filePath: string | null; languageCode: string | null }>>;
+      };
+    };
+    if (!prisma.variantSubtitleTrack) {
+      throw new ValidationError('Subtitle table is not available');
+    }
+    // Most rows are DB records without a downloaded file; the audit is about files on disk.
+    const rows = await prisma.variantSubtitleTrack.findMany({
+      select: { filePath: true, languageCode: true },
+      take: limit,
+      where: { AND: [{ filePath: { not: null } }, { filePath: { not: '' } }] },
+    });
+    const summary = await auditSubtitles(rows, { limit });
+    return sendSuccess(reply, summary);
   });
 
   app.post('/api/playback/:id/watched', {

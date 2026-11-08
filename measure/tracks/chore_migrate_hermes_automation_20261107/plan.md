@@ -178,10 +178,16 @@
       Root `/run/media/daniel-bo/4TB/MediarrQuarantine` created, dry-run exercised against it
       (`device-20261107/quarantine-engine-20261109.md`). Remaining: live retention policy per domain
       (window + restore surface) — an owner decision, not a code gap — a699ae93
-- [ ] **B9** **System-level** watchdog + `automation/expectations.yaml`: host, plugin heartbeat,
+- [~] **B9** **System-level** watchdog + `automation/expectations.yaml`: host, plugin heartbeat,
       bridge/tool registration, Mediarr health, task history, expected artifacts; alert delivery
       status/retry + local fallback; synthetic end-to-end alert. Detection ≤10 min / delivery ≤15 min.
-      (G4)
+      (G4) **Checks done 2026-11-09:** `automation/expectations.yaml` + tested watchdog
+      (`media_automation_watchdog` tool, 5 tests): host health, heartbeat age, bridge **tool
+      registration**, scheduler freshness, artifact freshness; failures raise critical alerts with the
+      JSONL fallback written first. Live run: health ok, 4 tasks fresh, 3 artifacts fresh, heartbeat +
+      bridge correctly failed (plugin not linked) and wrote 2 local alerts
+      (`device-20261107/watchdog-live-20261109.md`). Remaining: alert delivery retry over an external
+      transport and a ≤10 min system timer — both wait on the owner-gated harness link (B3/B4) — de05fa00
 - [ ] **B9b** Validate the built-in torrent engine **after G7**: set staging paths, add one small real
       magnet, watch progress → complete → import, record throughput/memory. Let the 83.4 % Transmission
       torrent finish in place; do not re-add it (different engine/dir = full re-download). (G7)

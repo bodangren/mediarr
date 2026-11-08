@@ -21,6 +21,21 @@ function createTemporaryDatabase(): { db: SqliteDatabase; databasePath: string }
 }
 
 function createLegacyAppSettings(db: SqliteDatabase, schedulerColumns: 'none' | 'both'): void {
+  // Later tracked migrations ALTER tables that a real legacy database already has; the fixture records
+  // 0000-0002 as applied, so the tables those migrations would have created must exist here too or the
+  // first pure-ALTER migration (0016 WantedSubtitle) fails with 'no such table'.
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS "WantedSubtitle" (
+      "id" integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+      "variantId" integer NOT NULL,
+      "languageCode" text NOT NULL,
+      "isForced" integer DEFAULT false NOT NULL,
+      "isHi" integer DEFAULT false NOT NULL,
+      "state" text DEFAULT 'PENDING' NOT NULL,
+      "createdAt" integer DEFAULT (strftime('%s','now')) NOT NULL,
+      "updatedAt" integer NOT NULL
+    );
+  `);
   db.exec(`
     CREATE TABLE "AppSettings" (
       "id" integer PRIMARY KEY DEFAULT 1 NOT NULL,

@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { RouteScaffold } from '@/components/primitives/RouteScaffold';
 import { WantedMovieRow } from '@/components/wanted/WantedMovieRow';
+import { SubtitleCoverageCard } from '@/components/wanted/SubtitleCoverageCard';
+import type { SubtitleCoverageReport } from '@/lib/api/subtitleWantedApi';
 import { getApiClients } from '@/lib/api/client';
 import type { MissingMovie } from '@/types/wanted';
 import type { MissingEpisodeItem } from '@/lib/api/mediaApi';
@@ -21,6 +23,10 @@ export function WantedPage() {
   // wanted-search cycle now idles (server-side guard, 2026-11-08); this banner
   // is the surface that tells the owner why nothing gets grabbed.
   const [indexerCount, setIndexerCount] = useState<number | null>(null);
+  // Coverage of the titles the household actually watches — the answer to "are the subtitles
+  // there for what we watch?" (track feature_subtitle_coverage_priority_20261108).
+  const [subtitleCoverage, setSubtitleCoverage] = useState<SubtitleCoverageReport | null>(null);
+  const [isCoverageLoading, setIsCoverageLoading] = useState(false);
   const pageSize = 25;
 
   useEffect(() => {
@@ -35,6 +41,23 @@ export function WantedPage() {
       }
     };
     void loadIndexers();
+    return () => { cancelled = true; };
+  }, [api]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadCoverage = async () => {
+      setIsCoverageLoading(true);
+      try {
+        const report = await api.subtitleWantedApi.getCoverage();
+        if (!cancelled) setSubtitleCoverage(report);
+      } catch {
+        if (!cancelled) setSubtitleCoverage(null);
+      } finally {
+        if (!cancelled) setIsCoverageLoading(false);
+      }
+    };
+    void loadCoverage();
     return () => { cancelled = true; };
   }, [api]);
 
@@ -119,6 +142,7 @@ export function WantedPage() {
             </p>
           </section>
         ) : null}
+        <SubtitleCoverageCard report={subtitleCoverage} isLoading={isCoverageLoading} />
         {/* Tabs */}
         <div className="flex gap-2 border-b border-border-subtle">
           <button

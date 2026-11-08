@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="refresh" content="300">
+<title>Mediarr — System Feature Report</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 32px 40px 80px; background: #0a0a0f; color: #e5e7eb;
+         font: 15px/1.55 -apple-system, "Segoe UI", Roboto, Ubuntu, sans-serif; }
+  h1 { font-size: 30px; margin: 0 0 4px; letter-spacing: .2px; }
+  h2 { font-size: 20px; margin: 36px 0 10px; color: #f9fafb; border-bottom: 1px solid #262633; padding-bottom: 6px; }
+  h3 { font-size: 15px; margin: 18px 0 6px; color: #d1d5db; text-transform: uppercase; letter-spacing: .6px; }
+  .sub { color: #9ca3af; margin: 0 0 18px; }
+  .pill { display: inline-block; padding: 2px 9px; border-radius: 999px; background: #172554; color: #93c5fd;
+          font-size: 12px; margin-left: 6px; vertical-align: middle; }
+  .pill.green { background: #052e16; color: #86efac; }
+  .pill.amber { background: #3f2d05; color: #fcd34d; }
+  table { width: 100%; border-collapse: collapse; margin: 10px 0 6px; font-size: 14px; }
+  th { text-align: left; color: #9ca3af; font-weight: 600; padding: 8px 10px; border-bottom: 1px solid #2a2a38; }
+  td { padding: 8px 10px; border-bottom: 1px solid #1b1b26; vertical-align: top; }
+  tr:hover td { background: #101019; }
+  code { background: #12121c; border: 1px solid #262633; border-radius: 5px; padding: 1px 5px; font-size: 12.5px; }
+  a { color: #93c5fd; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  ul { margin: 6px 0 6px 20px; padding: 0; }
+  li { margin: 3px 0; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+  .card { background: #101019; border: 1px solid #23232f; border-radius: 10px; padding: 14px 16px; }
+  .muted { color: #9ca3af; }
+  .footer { margin-top: 46px; color: #6b7280; font-size: 13px; }
+</style>
+</head>
+<body>
+<h1>Mediarr — one system, living-room first</h1>
+<p class="sub">
+  DeepSeek Harness (brain) · server (engine) · SPA + Flutter TV client (interfaces) — one repository,
+  one owner, one state model. <span class="pill green">auto-refresh 5 min</span>
+  <span class="pill">last updated 2026-11-09</span>
+</p>
+
+<h2>Recent improvements <span class="muted" style="font-size:14px;font-weight:400">— newest first</span></h2>
+<table>
+  <tr><th style="width:92px">Date</th><th style="width:130px">Area</th><th>What changed</th><th style="width:210px">Evidence</th></tr>
+  <tr><td>2026-11-09</td><td>TV playback</td>
+      <td><b>Episode resume solved.</b> Every OK press fired selection twice (key-down + key-up), pushing two
+      playback screens; second open dropped the resume offset. Selection now fires once, and resume retries
+      only spend their budget once the player is actually playing. Device: stored 10:00 → resumed 10:35.</td>
+      <td><code>a8d04d21</code>, <code>86637989</code><br><a href="file:///home/daniel-bo/Desktop/mediarr/device-20261107/episode-resume-investigation-20261109.md">investigation</a></td></tr>
+  <tr><td>2026-11-09</td><td>TV playback</td>
+      <td>Up-next countdown and season autoplay device-verified (S02E01 → S02E02 → E05) with bilingual
+      subtitles active; bookmark-regression guard still protects progress during seeks.</td>
+      <td><code>890cd825</code><br><a href="file:///home/daniel-bo/Desktop/mediarr/device-20261107/upnext-autoplay-20261109.md">evidence</a></td></tr>
+  <tr><td>2026-11-09</td><td>Library</td>
+      <td>Watched state everywhere: movie posters, series posters (✓ n), episode rows, season chips,
+      SPA movie list and SPA series rows (✓ watched / ▶ in progress); bulk mark-watched at episode and
+      series level from the TV context menu.</td>
+      <td><code>51e5f096</code>, <code>33beb995</code>, <code>b052497d</code>, <code>48d47c2f</code></td></tr>
+  <tr><td>2026-11-09</td><td>TV client</td>
+      <td>Context menus (MENU key or long-press OK) on movies, episodes, music albums/tracks and series;
+      media keys (play/pause/next/previous/FF/REW) work across screens; seeking accelerated 10→300 s.</td>
+      <td><code>1.3.50</code> / code 74<br><a href="file:///home/daniel-bo/Desktop/mediarr/device-20261107/movie-context-menu-after-select-fix-20261109.png">screenshot</a></td></tr>
+  <tr><td>2026-11-09</td><td>Music</td>
+      <td>iTunes-style TV player: artists/albums/songs sidebar, album grid, track list, now-playing bar,
+      queue advance, resume across app restarts ("Continue listening"), background audio measured
+      (0:08 → 0:42 while backgrounded), nightly receipt with track/artist/album counts.</td>
+      <td><code>58ce19ad</code>, <code>78c64089</code><br><a href="file:///home/daniel-bo/Desktop/mediarr/device-20261107/music-resume-banner.png">resume banner</a></td></tr>
+  <tr><td>2026-11-09</td><td>Subtitles</td>
+      <td>Full-library audit (2,878 files: 0 non-UTF-8, 0 missing, 169 traditional, 762 Chinese-only),
+      priority coverage for what you actually watch with daily receipts, priority wanted queue feeding the
+      fetch/bilingual cycles, OpenCC traditional→simplified tool with dry-run default and dated backups,
+      and a background timing-alignment pass (80/82 aligned).</td>
+      <td><code>2d9f5aea</code>, <code>89d97552</code>, <code>91e0be83</code>, <code>37c1e6f6</code><br><a href="file:///home/daniel-bo/Desktop/mediarr/device-20261107/subtitle-audit-20261108.json">audit</a></td></tr>
+  <tr><td>2026-11-09</td><td>YouTube</td>
+      <td>Import 263 pre-existing items, hourly subscription polling, download worker with per-video
+      H.264/30 fps normalisation, remux fast path, duration-aware transcode tiers, retry-with-backoff
+      (30 m / 6 h / 24 h), watched+7 d retention to quarantine, staging tidy.</td>
+      <td><code>1ac51311</code>, <code>0d09b183</code>, <code>8b1bb27e</code><br><a href="file:///home/daniel-bo/Desktop/mediarr/device-20261107/youtube-retry-policy-20261109.md">retry</a></td></tr>
+  <tr><td>2026-11-09</td><td>Server</td>
+      <td>Bounded graceful shutdown (Fastify keep-alive/SSE connections force-closed; restart in 10–25 s),
+      boot reset of stale download claims, resilient library scans (unreadable dirs skipped), scheduled
+      adult thumbnails, real Continue Watching backdrops.</td>
+      <td><code>d23db57f</code>, <code>3c19e5a8</code>, <code>8996e99b</code>, <code>9919683d</code>, <code>fd574241</code></td></tr>
+  <tr><td>2026-11-09</td><td>Automation</td>
+      <td>Harness substrate built: frozen ledger (runs/jobs/locks/alerts/quarantine), watchdog against
+      expectations.yaml, local-first alert delivery with retry, quarantine engine with verified
+      copy/restore/prune, daily orchestrator scheduled at 03:00, weekly database backup scheduled,
+      bridge probe (tool registration + real extension connectivity).</td>
+      <td><code>75ce6f57</code>, <code>de05fa00</code>, <code>2cfbd15e</code>, <code>d5a0c60a</code>, <code>588d54a1</code></td></tr>
+  <tr><td>2026-11-09</td><td>Quality</td>
+      <td>Suites green and kept honest: server <b>294 files / 2,804 tests</b>, SPA suite exit 0,
+      Flutter <b>463 tests</b>; characterisation tests for the fixed parser/scanner defects updated so the
+      suite describes the cure, not the bug.</td>
+      <td><code>9d55de21</code><br><a href="file:///home/daniel-bo/Desktop/mediarr/device-20261107/suites-green-20261109.md">suites</a></td></tr>
+</table>
+
+<h2>What the system does</h2>
+<div class="two">
+  <div class="card">
+    <h3>Living-room TV client (Flutter, 32-bit ARM)</h3>
+    <ul>
+      <li><b>Home:</b> featured hero with Resume/Details, Continue Watching (poster, progress, backdrop),
+          Recently Added, Upcoming; D-pad driven with visible focus.</li>
+      <li><b>Movies / Series:</b> poster grids, details, season/episode lists, watched badges,
+          context menus (open, mark watched/unwatched), series-level bulk actions.</li>
+      <li><b>Playback:</b> resume (movie + episode), HUD auto-hide, Back toggles HUD (not exit),
+          accelerated seeking, FF/REW media keys, bilingual subtitles, up-next countdown and autoplay,
+          audio/subtitle pickers, subtitle timing nudge.</li>
+      <li><b>Music:</b> artists/albums/songs/recently-added, album view with Play all, queue,
+          now-playing bar, resume across restarts, background audio, media keys.</li>
+      <li><b>YouTube:</b> subscription videos browsable and playable; <b>Adult:</b> separate visible
+          section with PIN-gated entry; <b>Search</b>, <b>Settings</b>, client-error telemetry.</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Web SPA</h3>
+    <ul>
+      <li>Dashboard (continue watching, recently added, task/system status), Movies, TV Shows,
+          Collections, Calendar, Search, Settings, Events, Backup, Statistics.</li>
+      <li>Wanted list <b>grouped by viewing priority</b> with a subtitle-coverage summary
+          (e.g. “34 high-priority · 9 EN+ZH · 21 Chinese only · 4 without Chinese”).</li>
+      <li>Watched chips on movie and series rows; imports/import wizard, interactive search,
+          quality profiles, indexers, download client settings.</li>
+      <li>YouTube and Adult sections; client error triage surfaced from the TV.</li>
+    </ul>
+  </div>
+</div>
+
+<h3>Server engine (single Bun/Node daemon + SQLite)</h3>
+<ul>
+  <li><b>Libraries:</b> Movies, Series/Episodes, Adult (197 items), YouTube (290+ available), Music
+      (217 tracks / 12 artists / 16 albums) — one database, one state model.</li>
+  <li><b>Scheduler:</b> RSS sync, import lists, wanted search, subtitle wanted (priority-ordered),
+      bilingual EN+ZH cycle, subtitle timing sync, library scan, episode thumbnails, adult thumbnails,
+      YouTube poll/download/retention, folder import, auto-update, music nightly receipt, staging tidy,
+      subtitle coverage snapshot + priority wanted queue.</li>
+  <li><b>Playback API:</b> manifests with resume/stream/subtitles, progress upserts with
+      watched-state and regression guard, watched marking for movie/episode/series, up-next queue.</li>
+  <li><b>Subtitles:</b> health audit, EN+ZH coverage for recent/in-progress items, viewing-priority
+      classifier, OpenCC normaliser (dry-run by default, dated backups), ffsubsync alignment,
+      bilingual merge/translation with per-item receipts.</li>
+  <li><b>Automation &amp; operations:</b> watchdog + expectations, local-first alerts with retry,
+      quarantine engine with hash verification, weekly backups, graceful shutdown, stale-claim recovery,
+      client error intake, task history.</li>
+</ul>
+
+<h3>DeepSeek Harness (the brain)</h3>
+<ul>
+  <li>Scheduled agent runs: daily media orchestrator 03:00, weekly database backup (Sundays 04:30),
+      TV-client error triage every 30 minutes.</li>
+  <li><code>dsh-media-automation</code> plugin: frozen ledger schema, heartbeat, alerts, quarantine and
+      watchdog tools, alert delivery with webhook transport; installed via a repo symlink, never a copy.</li>
+  <li>Measure guard: plan/task discipline enforced, every task traceable to a commit SHA with a git note.</li>
+</ul>
+
+<h2>Known open items <span class="pill amber">owner-gated or measured ceiling</span></h2>
+<ul>
+  <li><b>Subtitle acquisition:</b> all subtitle providers are disabled (no API key) — fetching new Chinese
+      subtitles is owner-gated; 169 traditional files and 762 Chinese-only variants are listed and queued.</li>
+  <li><b>Traditional → simplified conversion:</b> tool ready (dry-run over the library, 169 files
+      identified); needs the owner’s convert-with-backup vs re-download decision.</li>
+  <li><b>Harness cutover:</b> linking the automation plugin into the live profile and the reboot proof
+      restart this agent session, so both wait for an owner-approved window.</li>
+  <li><b>Weekly music ingest:</b> pipeline + receipts exist; needs a curated source list from the owner.</li>
+  <li><b>YouTube backlog:</b> ~5 videos/hour ceiling because this laptop has no working hardware encoder
+      (VAAPI/QSV fail); 1080p60 sources need a real encode. Remux path is used when possible.</li>
+  <li><b>TMDB API key:</b> invalid, so artwork backfill cannot run (operator action).</li>
+</ul>
+
+<p class="footer">
+  Source of truth: this repository. This single report is updated at the end of every Measure track
+  (see <code>measure/workflow.md → Track Completion &amp; Archiving</code>) and reloads itself every
+  5 minutes. Evidence files live under <code>device-20261107/</code>; commits are linked by short SHA.
+</p>
+</body>
+</html>

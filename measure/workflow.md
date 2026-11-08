@@ -280,6 +280,13 @@ act of every track, performed immediately after all tasks are `[x]` and all test
    - Remove the `[~] In Progress` entry for `<track_id>`.
    - If the file has an archive/completed section, add the entry there. Otherwise, delete the line entirely.
 
+4b. **Update the single feature report**
+   - File: `automation/reports/mediarr-features.html` (served live at `/reports/features.html`).
+   - Add this track's user-visible changes under **Recent improvements** (newest first) with the
+     short commit SHA and evidence link; refresh the feature bullets and the open-items list; update
+     the `last updated` pill. The page refreshes itself every five minutes, so this is the one place
+     the owner reads what the system can do.
+
 5. **Commit the Archive Action**
    Stage and commit all archiving changes in a single dedicated commit:
    ```bash

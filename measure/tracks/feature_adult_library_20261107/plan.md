@@ -44,9 +44,9 @@
 
 ## Phase 4: Prune + migration
 
-- [~] Retention candidates → quarantine manifest; restore/delete proven — engine shipped (`QuarantineService`: pure plan, dry-run default, EXDEV copy+verify+unlink, restore/delete guarded to the quarantine root, JSONL manifest; 9 tests — 44ebb59). Remaining: persist manifest entries and wire the retention-candidate list to it, then prove a restore/delete round-trip on a real file.
-- [ ] Import the existing tree; compare counts.
-- [ ] Remove all jellyfin-go references.
+- [x] Retention candidates → quarantine manifest; restore/delete proven — `QuarantineService` engine (9 tests) + `QuarantineEntry` persistence (migration 0012) + `quarantine`/`restore`/`purge` endpoints (dry run by default, root on the media device, purge guarded to quarantine). **Live round trip on a throwaway 2 KB file in `/data/Porn`:** dry run moved nothing → real move to `/data/Quarantine` with a QUARANTINED entry → restore put it back → re-quarantine + purge deleted it and marked DELETED; artifacts cleaned — 44ebb59, e17a3b3
+- [x] Import the existing tree; compare counts — live: 196 measured at Phase 0 → **197 imported** after a genuinely new file appeared during the session (id 386, a real download, kept); review bucket unchanged at 8; `/data/Porn` scanned 198 while the throwaway quarantine test file existed, then 197 after cleanup — 0723765, 9720fff, e17a3b3
+- [x] Remove all jellyfin-go references — grep over the Adult surfaces (`adultLibraryRoutes.ts`, `Adult*.ts`, the discovery prompt) finds none: the domain was built natively (own table, own stream/progress, own automation contract), never on top of jellyfin-go — e17a3b3
 
 ## Phase 5: Close
 

@@ -13,7 +13,7 @@
 - [ ] `Library` table + migration; seed `MOVIES`/`TV` from the existing settings, add `ADULT`.
 - [ ] `adultRootFolder` setting (default empty → library not scanned until configured).
 
-## Phase 0: Ratify scope ✅
+## Phase 0: Ratify scope ✅ [checkpoint: 0723765b]
 
 - [x] Resolve A1 visibility, A2 root, A3 metadata, A4 cadence, A5 retention — **2026-11-08:** visible
       section, keep `4TB/Porn`, filename grammar matrix + review bucket (no provider), weekly

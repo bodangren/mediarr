@@ -24,10 +24,10 @@
 
 ## Phase 1: Domain + scan
 
-- [ ] Contract test for the adult library type/root written first.
-- [ ] Schema/type change isolated so `TV|MOVIE` queries cannot see the new library.
-- [~] Scanner with flat-layout preservation and a scan summary — `AdultLibraryScanner` shipped: six-class filename grammar with review bucket, depth-first walk, layout preserved, unreadable directories reported; 9 tests — aafb814
-- [ ] Seeded-tree counts test.
+- [x] Contract test for the adult library type/root written first — registry test pins `ADULT` kind + root/disabled semantics — c87e372
+- [x] Schema/type change isolated so `TV|MOVIE` queries cannot see the new library — `Library` (migration 0008) + `AdultItem` (migration 0009) are separate tables; registry/import tests prove isolation — 9ed0044
+- [x] Scanner with flat-layout preservation and a scan summary — `AdultLibraryScanner` (six-class grammar + review bucket, depth-first walk) and `AdultLibraryService.importAdultLibrary` (upsert by path, reports notSeen without deleting); **live import of `/data/Porn`: scanned 196, created 196, needsReview 8, unreadable 0, notSeen 0** — 9720fff
+- [x] Seeded-tree counts test — live seeded tree: **196 items / 8 needsReview / 297 GB** in `AdultItem`, matching the Phase 0 inventory exactly; API returns 196 rows — 9720fff
 
 ## Phase 2: API + UI (SPA first, TV after the focus fix)
 

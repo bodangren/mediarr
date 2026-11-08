@@ -378,4 +378,35 @@ describe('PlaybackRepository.findContinueWatching', () => {
     const result = await repo.findContinueWatching();
     expect(result).toEqual([]);
   });
+
+  it('carries movie and series backdrops into continue-watching items', async () => {
+    const lastWatched = new Date('2026-04-09T00:00:00.000Z');
+    const playbackRows = [
+      { mediaType: 'MOVIE', mediaId: 10, position: 10, duration: 100, progress: 0.1, isWatched: false, lastWatched },
+      { mediaType: 'EPISODE', mediaId: 20, position: 10, duration: 100, progress: 0.1, isWatched: false, lastWatched },
+    ];
+    const movieRows = [
+      { id: 10, title: 'Movie A', posterUrl: null, backdropUrl: 'https://example.com/movie-backdrop.jpg' },
+    ];
+    const episodeRows = [
+      {
+        id: 20, seriesId: 5, title: 'Ep', seasonNumber: 1, episodeNumber: 2,
+        seriesTitle: 'Series A', seriesPosterUrl: null, seriesBackdropUrl: 'https://example.com/series-backdrop.jpg',
+      },
+    ];
+    const db = {
+      drizzle: {
+        select: vi.fn()
+          .mockImplementationOnce(() => makeSelectBuilder(playbackRows))
+          .mockImplementationOnce(() => makeSelectBuilder(movieRows))
+          .mockImplementationOnce(() => makeSelectBuilder(episodeRows)),
+      },
+    };
+    const repo = new PlaybackRepository(db as any);
+    const result = await repo.findContinueWatching(20);
+    expect(result.map((item) => item.backdropUrl)).toEqual([
+      'https://example.com/movie-backdrop.jpg',
+      'https://example.com/series-backdrop.jpg',
+    ]);
+  });
 });

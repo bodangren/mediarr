@@ -263,6 +263,7 @@ export class PlaybackRepository {
               id: schema.movies.id,
               title: schema.movies.title,
               posterUrl: schema.movies.posterUrl,
+              backdropUrl: schema.movies.backdropUrl,
             })
             .from(schema.movies)
             .where(inArray(schema.movies.id, movieIds))
@@ -277,6 +278,7 @@ export class PlaybackRepository {
               episodeNumber: schema.episodes.episodeNumber,
               seriesTitle: schema.series.title,
               seriesPosterUrl: schema.series.posterUrl,
+              seriesBackdropUrl: schema.series.backdropUrl,
             })
             .from(schema.episodes)
             .leftJoin(schema.series, eq(schema.episodes.seriesId, schema.series.id))
@@ -284,7 +286,7 @@ export class PlaybackRepository {
         : Promise.resolve([]),
     ]);
 
-    type MovieRow = { id: number; title: string; posterUrl: string | null };
+    type MovieRow = { id: number; title: string; posterUrl: string | null; backdropUrl?: string | null };
     type EpisodeRow = {
       id: number;
       seriesId: number | null;
@@ -293,6 +295,7 @@ export class PlaybackRepository {
       episodeNumber: number | null;
       seriesTitle: string | null;
       seriesPosterUrl: string | null;
+      seriesBackdropUrl?: string | null;
     };
 
     const movieById = new Map<number, MovieRow>(
@@ -316,7 +319,7 @@ export class PlaybackRepository {
           seasonNumber: null,
           episodeNumber: null,
           posterUrl: movie.posterUrl ?? null,
-          backdropUrl: null,
+          backdropUrl: movie.backdropUrl ?? null,
           position: row.position,
           duration: row.duration,
           progress: row.progress,
@@ -335,7 +338,7 @@ export class PlaybackRepository {
           seasonNumber: episode.seasonNumber ?? null,
           episodeNumber: episode.episodeNumber ?? null,
           posterUrl: episode.seriesPosterUrl ?? null,
-          backdropUrl: null,
+          backdropUrl: episode.seriesBackdropUrl ?? null,
           position: row.position,
           duration: row.duration,
           progress: row.progress,

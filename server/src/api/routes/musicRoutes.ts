@@ -1,5 +1,10 @@
+import { execFile } from 'node:child_process';
 import fsp from 'node:fs/promises';
+import path from 'node:path';
+import { promisify } from 'node:util';
 import { sendByteRangeStream } from '../utils/byteRangeStreaming';
+
+const execFileAsync = promisify(execFile);
 import pathPosix from 'node:path/posix';
 import type { FastifyInstance } from 'fastify';
 import { and, asc, desc, eq, like, or, sql } from 'drizzle-orm';
@@ -37,6 +42,66 @@ export function registerMusicRoutes(app: FastifyInstance, deps: ApiDependencies)
       return reply.code(404).send({ ok: false, error: { code: 'FILE_MISSING', message: 'Audio file is missing on disk' } });
     }
     return sendByteRangeStream(reply, row.path, request.headers.range);
+  });
+
+  /**
+   * Album artwork: folder image if the scan found one, else embedded art extracted once into a cache
+   * file (ffmpeg), else 404 so clients can render their own placeholder.
+   */
+  app.get('/api/music/albums/:id/artwork', async (request, reply) => {
+    const id = Number.parseInt(String((request.params as { id?: string })?.id ?? ''), 10);
+    if (!Number.isInteger(id) || id <= 0) {
+      return reply.code(422).send({ ok: false, error: { code: 'INVALID_ID', message: 'id must be a positive integer' } });
+    }
+    const album = (await drizzle
+      .select({ artworkPath: schema.musicAlbums.artworkPath })
+      .from(schema.musicAlbums)
+      .where(eq(schema.musicAlbums.id, id))
+      .limit(1))[0];
+    if (!album) {
+      return reply.code(404).send({ ok: false, error: { code: 'NOT_FOUND', message: 'Album not found' } });
+    }
+
+    const cached = path.join(process.env.CONFIG_DIR ?? '/config', 'cache', 'music-artwork', `album-${id}.jpg`);
+    const serve = async (file: string) => {
+      const data = await fsp.readFile(file);
+      reply.header('Content-Type', 'image/jpeg');
+      reply.header('Cache-Control', 'public, max-age=86400, immutable');
+      return reply.send(data);
+    };
+
+    if (typeof album.artworkPath === 'string' && album.artworkPath.length > 0) {
+      try {
+        return await serve(album.artworkPath);
+      } catch {
+        // Fall through to embedded artwork / cache.
+      }
+    }
+    try {
+      return await serve(cached);
+    } catch {
+      // Not cached yet.
+    }
+
+    const track = (await drizzle
+      .select({ path: schema.musicTracks.path })
+      .from(schema.musicTracks)
+      .where(eq(schema.musicTracks.albumId, id))
+      .limit(1))[0];
+    if (!track?.path) {
+      return reply.code(404).send({ ok: false, error: { code: 'NO_ARTWORK', message: 'No artwork for this album' } });
+    }
+    try {
+      await fsp.mkdir(path.dirname(cached), { recursive: true });
+      await execFileAsync(
+        process.env.FFMPEG_PATH ?? 'ffmpeg',
+        ['-y', '-i', track.path, '-map', '0:v:0', '-frames:v', '1', '-f', 'image2', cached],
+        { timeout: 20_000 },
+      );
+      return await serve(cached);
+    } catch {
+      return reply.code(404).send({ ok: false, error: { code: 'NO_ARTWORK', message: 'No embedded artwork for this album' } });
+    }
   });
 
   /** Artists with album and track counts. */
@@ -88,6 +153,7 @@ export function registerMusicRoutes(app: FastifyInstance, deps: ApiDependencies)
     return sendSuccess(reply, rows.map((album: { id: number }) => ({
       ...album,
       trackCount: counts.get(album.id) ?? 0,
+      artworkUrl: `/api/music/albums/${album.id}/artwork`,
     })));
   });
 

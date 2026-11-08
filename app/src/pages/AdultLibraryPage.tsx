@@ -50,6 +50,49 @@ export function AdultLibraryPage() {
   }, [api, query, page]);
 
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  // Two labelled sections: review bucket and titled library. Reviews flagged the two being flattened
+  // into one grid, which hid the point of having a review bucket.
+  const ordered = [...items].sort((a, b) => {
+    if (a.needsReview !== b.needsReview) return a.needsReview ? 1 : -1;
+    return 0;
+  });
+  const reviewItems = ordered.filter((item) => item.needsReview);
+  const libraryItems = ordered.filter((item) => !item.needsReview);
+
+  const renderCard = (item: AdultItem) => (
+  <button
+                key={item.id}
+                type="button"
+                onClick={() => setPlaying(item)}
+                className="flex flex-col items-start gap-1 overflow-hidden rounded-lg border border-border bg-surface-1 text-left hover:border-accent-primary"
+              >
+                <span className="block aspect-video w-full overflow-hidden bg-black">
+                  {item.thumbUrl ? (
+                    <img
+                      src={item.thumbUrl}
+                      alt=""
+                      loading="lazy"
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <span className="flex h-full w-full items-center justify-center text-xs text-text-muted">
+                      No preview
+                    </span>
+                  )}
+                </span>
+                <span className="line-clamp-2 w-full px-3 pt-2 text-sm font-medium text-text-primary">
+                  {displayTitle(item)}
+                </span>
+                <span className="w-full px-3 text-xs text-text-muted">
+                  {[item.studio, item.quality, item.releaseDate].filter(Boolean).join(' · ') || 'No metadata'}
+                </span>
+                {item.needsReview ? (
+                  <span className="mx-3 mb-3 rounded bg-accent-warning/15 px-1.5 py-0.5 text-[11px] text-accent-warning">Needs review</span>
+                ) : (
+                  <span className="mb-3" />
+                )}
+              </button>
+  );
 
   return (
     <RouteScaffold title="Adult" description="A separate library with its own root and review bucket">
@@ -93,42 +136,28 @@ export function AdultLibraryPage() {
           </section>
         ) : null}
 
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          {items.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => setPlaying(item)}
-              className="flex flex-col items-start gap-1 overflow-hidden rounded-lg border border-border bg-surface-1 text-left hover:border-accent-primary"
-            >
-              <span className="block aspect-video w-full overflow-hidden bg-black">
-                {item.thumbUrl ? (
-                  <img
-                    src={item.thumbUrl}
-                    alt=""
-                    loading="lazy"
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <span className="flex h-full w-full items-center justify-center text-xs text-text-muted">
-                    No preview
-                  </span>
-                )}
-              </span>
-              <span className="line-clamp-2 w-full px-3 pt-2 text-sm font-medium text-text-primary">
-                {displayTitle(item)}
-              </span>
-              <span className="w-full px-3 text-xs text-text-muted">
-                {[item.studio, item.quality, item.releaseDate].filter(Boolean).join(' · ') || 'No metadata'}
-              </span>
-              {item.needsReview ? (
-                <span className="mx-3 mb-3 rounded bg-accent-warning/15 px-1.5 py-0.5 text-[11px] text-accent-warning">Needs review</span>
-              ) : (
-                <span className="mb-3" />
-              )}
-            </button>
-          ))}
-        </div>
+        {reviewItems.length > 0 ? (
+          <section aria-label="Needs review" className="space-y-2">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-accent-warning">
+              Needs review ({reviewItems.length})
+            </h2>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+              {reviewItems.map((item) => renderCard(item))}
+            </div>
+          </section>
+        ) : null}
+
+        {libraryItems.length > 0 ? (
+          <section aria-label="Library" className="space-y-2">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-text-muted">
+              Library ({libraryItems.length} on this page)
+            </h2>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+              {libraryItems.map((item) => renderCard(item))}
+            </div>
+          </section>
+        ) : null}
+
 
         {isLoading ? <p className="text-sm text-text-muted">Loading…</p> : null}
         {!isLoading && items.length === 0 ? <p className="text-sm text-text-muted">No items match.</p> : null}

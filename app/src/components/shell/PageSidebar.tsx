@@ -144,7 +144,11 @@ export function PageSidebar({
                             {!collapsed && (
                               <>
                                 <span>{item.label}</span>
-                                {item.showBadge && <WantedCountBadge className="ml-auto bg-white text-black rounded-full" />}
+                                {item.showBadge && (
+                              <span className="ml-auto" aria-label="Missing subtitles">
+                                <WantedCountBadge />
+                              </span>
+                            )}
                               </>
                             )}
                           </Link>
@@ -219,7 +223,11 @@ export function PageSidebar({
                               >
                                 <LucideIcon name={item.icon} />
                                 <span>{item.label}</span>
-                                {item.showBadge && <WantedCountBadge className="ml-auto bg-white text-black rounded-full" />}
+                                {item.showBadge && (
+                              <span className="ml-auto" aria-label="Missing subtitles">
+                                <WantedCountBadge />
+                              </span>
+                            )}
                               </Link>
                             </li>
                           );

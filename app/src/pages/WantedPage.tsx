@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { RouteScaffold } from '@/components/primitives/RouteScaffold';
 import { WantedMovieRow } from '@/components/wanted/WantedMovieRow';
 import { SubtitleCoverageCard } from '@/components/wanted/SubtitleCoverageCard';
@@ -124,6 +124,29 @@ export function WantedPage() {
     }
   };
 
+  // The server returns items already in viewing-priority order with their bucket; group them so the
+  // household's shows are visibly a section, not an implicit ordering (feature_subtitle_coverage_priority).
+  const PRIORITY_ORDER = ['continue-watching', 'recently-watched', 'recently-added', 'backfill'] as const;
+  const PRIORITY_LABELS: Record<string, string> = {
+    'continue-watching': 'Continue watching',
+    'recently-watched': 'Watched recently',
+    'recently-added': 'New',
+    backfill: 'Backfill',
+  };
+  const bucketOf = (item: unknown): string =>
+    (item as { priority?: { bucket?: string } }).priority?.bucket ?? 'backfill';
+  const groupedMovies = useMemo(() => {
+    const groups = new Map<string, MissingMovie[]>();
+    for (const movie of movies) {
+      const bucket = bucketOf(movie);
+      const current = groups.get(bucket) ?? [];
+      current.push(movie);
+      groups.set(bucket, current);
+    }
+    return PRIORITY_ORDER.filter((bucket) => groups.has(bucket))
+      .map((bucket) => ({ bucket, items: groups.get(bucket) as MissingMovie[] }));
+  }, [movies]);
+
   const totalPages = Math.ceil(totalCount / pageSize);
 
   return (
@@ -208,16 +231,25 @@ export function WantedPage() {
                     </td>
                   </tr>
                 ) : (
-                  movies.map(movie => (
-                    <WantedMovieRow
-                      key={movie.id}
-                      movie={movie}
-                      onSearch={movie => { void handleSearch(movie); }}
-                      onEdit={() => {}}
-                      onDelete={() => {}}
-                      onToggleMonitored={handleToggleMonitored}
-                      onSelect={() => {}}
-                    />
+                  groupedMovies.map(group => (
+                    <Fragment key={group.bucket}>
+                      <tr className="bg-surface-1">
+                        <td colSpan={8} className="px-3 py-2 text-xs uppercase tracking-wide text-text-muted">
+                          {PRIORITY_LABELS[group.bucket] ?? group.bucket} · {group.items.length}
+                        </td>
+                      </tr>
+                      {group.items.map(movie => (
+                        <WantedMovieRow
+                          key={movie.id}
+                          movie={movie}
+                          onSearch={movie => { void handleSearch(movie); }}
+                          onEdit={() => {}}
+                          onDelete={() => {}}
+                          onToggleMonitored={handleToggleMonitored}
+                          onSelect={() => {}}
+                        />
+                      ))}
+                    </Fragment>
                   ))
                 )}
               </tbody>

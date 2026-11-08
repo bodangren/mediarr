@@ -14,7 +14,7 @@
 
 - [x] Contract tests for the classifier: bucket precedence, recency tie-break, stability — 13 tests in `server/src/services/ViewingPriorityService.test.ts` covering bucket precedence, both window boundaries, sort order and stability — 098f153
 - [x] `ViewingPriorityService` — pure functions `classifyViewingPriority`, `rankByViewingPriority`, `compareViewingPriority`, `isHighPriority`; buckets continue-watching → recently-watched (14 d) → recently-added (30 d) → backfill — 098f153
-- [~] Wire the SQL query (progress ⋈ movie/episode) that feeds it; Phase 2 consumes it.
+- [x] Wire the SQL query (progress ⋈ movie/episode) that feeds it — `ViewingPriorityQuery` batches one query per media type and feeds the classifier — 67c3193
 - [x] Unit tests for finished vs in-progress, 14-day/30-day boundaries, and items with no playback — 098f153
 
 ## Phase 2: Coverage + ordered APIs

@@ -32,8 +32,8 @@
 ## Phase 2: API + UI (SPA first, TV after the focus fix)
 
 - [x] Browse/search/list endpoints scoped to the adult library — `GET /api/libraries`, `GET /api/adult/items` with `q`/`page`/`pageSize` (title, filename, studio) returning `items/page/pageSize/totalCount/needsReview`; live verified against the 196-item tree — 9720fff, 3d229b6
-- [~] Playback (existing stream handler) + watched state integration.
-- [ ] Flutter client section (TV-safe focus walk); SPA section.
+- [x] Playback (existing stream handler) + watched state integration — `GET /api/adult/items/:id/stream` serves Range/206 (live: 1024/264237135 bytes, partial content); progress stored on `AdultItem` (migration 0010) so it cannot enter movie/episode Continue Watching — PlaybackProgress count stayed 9 after posting progress on the live DB — ac93e8f
+- [~] Flutter client section (TV-safe focus walk); SPA section.
 - [ ] Automation contract: list, watched, retention candidates.
 
 ## Phase 3: Agent discovery

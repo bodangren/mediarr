@@ -1,0 +1,1 @@
+Music ingest idempotency (Phase 2): MusicIngestLog ledger + pure decideIngest + streaming sha256; video checked before download, audio duplicate rejected; 5 tests; live 64.8s first vs 0.021s duplicate with no download.

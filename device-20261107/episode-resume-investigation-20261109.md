@@ -58,3 +58,16 @@ Position now starts at the bookmark instead of 0:00, and continues from there.
 
 Tests: 167 playback tests green; new pins for the buffering gate, the re-seek behaviour, and the
 one-shot exhaustion report (with `seekError`).
+
+## Final root cause: every OK press fired twice (2026-11-09 05:5x)
+The duplicate `_PlaybackScreen` instances were real and explainable: `FocusableAction` called
+`onSelect` on **both key-down and key-up** for a short lock-press (added with the long-press context
+menu change). One remote press therefore pushed two playback routes (and two detail screens), which is
+what defeated the resume offset and made the earlier "duplicate start" theory look intermittent.
+
+Fix: selection now fires **once, on key-up** (key-down only tracks the long-press window). The
+openFullscreenPlayback debounce was removed again because it only masked this and polluted test
+isolation. Verified:
+- full Flutter suite **463 tests green** (layout/back/home D-pad suites included);
+- device 1.3.50 (code 74): one press on Continue Watching resumed Entourage at **606 s** (stored 600),
+  no second screen, no timer/double-push diagnostics.

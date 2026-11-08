@@ -274,9 +274,9 @@ class _FocusableActionState extends State<FocusableAction> {
             _longPressFired = true;
             widget.onContextMenu!();
           });
-          return KeyEventResult.handled;
         }
-        widget.onSelect?.call();
+        // Selection always fires once, on key-up: firing on key-down as well double-triggered every
+        // press (two playback routes / two detail pushes; device + widget-test evidence 2026-11-09).
         return KeyEventResult.handled;
       }
       return KeyEventResult.ignored;

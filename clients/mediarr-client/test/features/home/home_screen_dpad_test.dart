@@ -239,9 +239,10 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(MovieDetailScreen), findsOneWidget);
 
-    // The Back control is a large, focused control (Phase 4c step 12).
+    // The Back control is a large, focused control (Phase 4c step 12). The remote path is a
+    // D-pad select on the autofocused control, which is also what the TV sends.
     expect(find.text('Back'), findsOneWidget);
-    await tester.tap(find.text('Back'));
+    await pressDpad(tester, LogicalKeyboardKey.select);
     await tester.pumpAndSettle();
 
     expect(find.byType(MovieDetailScreen), findsNothing);

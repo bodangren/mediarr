@@ -100,7 +100,6 @@ void main() {
             )),
       ],
     );
-    addTearDown(container.dispose);
 
     await tester.pumpWidget(
       UncontrolledProviderScope(
@@ -135,5 +134,12 @@ void main() {
       reason: 'The resumed episode is S01E01; the queue must hold S01E02 and '
           'S01E03 so autoplay continues after it.',
     );
+
+    // Dispose the container in-body: the overlay auto-hide timer deliberately re-arms while the
+    // service is alive, so only provider disposal cancels it before the test-tree invariant check.
+    await container.read(playbackServiceProvider.notifier).stop();
+    container.dispose();
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(seconds: 6));
   });
 }

@@ -261,6 +261,10 @@ export const youtubeVideos = sqliteTable("YoutubeVideo", {
   publishedAt: integer("publishedAt", { mode: "timestamp" }),
   status: text("status", { enum: YoutubeVideoStatusEnum }).notNull().default("PENDING"),
   error: text("error"),
+  /** Download attempts and the next retry time: transient yt-dlp failures (bot-check, network) are
+   * retried with backoff instead of staying FAILED forever. */
+  attempts: integer("attempts").notNull().default(0),
+  retryAt: integer("retryAt", { mode: "timestamp" }),
   path: text("path"),
   thumbPath: text("thumbPath"),
   /** Playback state kept inside this domain so it never enters movie/TV Continue Watching. */

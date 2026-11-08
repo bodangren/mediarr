@@ -1,6 +1,6 @@
 import fsp from 'node:fs/promises';
 import pathPosix from 'node:path/posix';
-import { and, eq, sql } from 'drizzle-orm';
+import { and, eq, isNull, lt, lte, or, sql } from 'drizzle-orm';
 import * as schema from '../db/schema';
 import { planYoutubeRetention, runYoutubeRetention } from './YoutubeRetentionService';
 import { YoutubeFeedPoller, type PollResult } from './YoutubeFeedPoller';
@@ -191,6 +191,17 @@ export function shouldRequeueLegacyBotFailure(error: string | null): boolean {
   return !error.includes('--cookies-from-browser');
 }
 
+/**
+ * Backoff for a retried download: a bot-check or network failure is usually transient (the same
+ * video often succeeds later), so retry after 30 min, then 6 h, then 24 h; after three attempts it
+ * stays FAILED with its error for the owner to see.
+ */
+export function retryDelayMs(attempts: number): number {
+  const steps = [30 * 60 * 1000, 6 * 60 * 60 * 1000, 24 * 60 * 60 * 1000];
+  const index = Math.max(0, Math.min(steps.length - 1, attempts - 1));
+  return steps[index]!;
+}
+
 export async function downloadPending(
   drizzle: Drizzle,
   options: {
@@ -238,7 +249,14 @@ export async function downloadPending(
       channel: schema.youtubeVideos.channel,
     })
     .from(schema.youtubeVideos)
-    .where(eq(schema.youtubeVideos.status, 'PENDING'))
+    .where(or(
+      eq(schema.youtubeVideos.status, 'PENDING'),
+      and(
+        eq(schema.youtubeVideos.status, 'FAILED'),
+        lt(schema.youtubeVideos.attempts, 3),
+        or(isNull(schema.youtubeVideos.retryAt), lte(schema.youtubeVideos.retryAt, new Date())),
+      ),
+    ))
     .orderBy(schema.youtubeVideos.added)
     .limit(Math.max(1, options.limit));
 
@@ -262,7 +280,16 @@ export async function downloadPending(
         }).where(eq(schema.youtubeVideos.id, id));
       },
       markFailed: async (id, error) => {
-        await drizzle.update(schema.youtubeVideos).set({ status: 'FAILED', error }).where(eq(schema.youtubeVideos.id, id));
+        const current = (await drizzle
+          .select({ attempts: schema.youtubeVideos.attempts })
+          .from(schema.youtubeVideos)
+          .where(eq(schema.youtubeVideos.id, id))
+          .limit(1))[0] as { attempts?: number } | undefined;
+        const attempts = (current?.attempts ?? 0) + 1;
+        const retryAt = new Date(Date.now() + retryDelayMs(attempts));
+        await drizzle.update(schema.youtubeVideos)
+          .set({ status: 'FAILED', error, attempts, retryAt })
+          .where(eq(schema.youtubeVideos.id, id));
       },
     });
   }

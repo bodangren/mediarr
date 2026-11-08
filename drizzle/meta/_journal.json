@@ -120,6 +120,13 @@
       "when": 1794149579648,
       "tag": "0016_subtitle_wanted_errors",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "6",
+      "when": 1794172862495,
+      "tag": "0017_youtube_download_retry",
+      "breakpoints": true
     }
   ]
 }

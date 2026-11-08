@@ -1,0 +1,3 @@
+Adult import service + AdultItem migration (feature_adult_library_20261107, Phase 1).
+
+Migration 0009 AdultItem; importAdultLibrary upserts by path, reports review cases and notSeen without deleting; is isolated from movies/TV tables by construction. 12 tests, tsc clean.

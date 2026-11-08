@@ -29,8 +29,8 @@
 ## Phase 3: API + artwork
 
 - [x] Artist/album/track browse + search endpoints — `/api/music/artists` (+album/track counts), `/api/music/albums?artistId` (+counts), `/api/music/albums/:id` (tracks in disc/track order, isPlayed/playCount), `/api/music/tracks?q=` (title/artist/album search, wildcards stripped); live verified: 86 artists, AC/DC albums, ordered album tracks, metallica search incl. played flag — e56293df
-- [~] Stream with range support (reuse video handler contract).
-- [ ] Artwork extraction/serving (embedded + folder image).
+- [x] Stream with range support (reuse video handler contract) — `GET /api/music/tracks/:id/stream` via `sendByteRangeStream`; live: 206 `bytes 0-1023/4157320` for a 1 KB range and 200 full read (4,157,320 bytes) — 42cbcfab
+- [~] Artwork extraction/serving (embedded + folder image).
 - [ ] Automation contract: picks in, ingest status out.
 
 ## Phase 4: Player (Flutter, TV-first) — separate deliverable from the domain

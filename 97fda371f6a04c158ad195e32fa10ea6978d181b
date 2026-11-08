@@ -1,0 +1,3 @@
+Browser evidence for the grouped wanted list and coverage card (feature_subtitle_coverage_priority_20261108, Phase 4).
+
+Live /wanted scrolled: BACKFILL - 25 section header above rows proves bucket grouping renders from server priority; coverage card reads 9 high-priority / 7 covered / 2 missing. Screenshot device-20261107/wanted-grouped.jpg. Commits: 9811f7c (card mount), 6189a9a (priority field), 9d568f1 (grouping).

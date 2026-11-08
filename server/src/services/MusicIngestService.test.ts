@@ -66,6 +66,33 @@ describe('MusicIngestService', () => {
     expect(result.error).toContain('ffmpeg convert failed');
   });
 
+  it('writes yt-dlp metadata hints into the file for beets', async () => {
+    const { io: fake } = io(
+      ['music-eeeeeeeeeee.webm', 'music-eeeeeeeeeee.jpg', 'music-eeeeeeeeeee.info.json'],
+      {
+        readFile: async () => JSON.stringify({
+          artist: 'Rick Astley', track: 'Never Gonna Give You Up', album: 'Whenever You Need Somebody', release_year: 1987,
+        }),
+      },
+    );
+    const ffmpeg = vi.fn(async (_args: string[]) => undefined);
+    const service = new MusicIngestService({
+      stagingDir: '/tmp/music',
+      runYtDlp: async () => undefined,
+      runFfmpeg: ffmpeg,
+      fsOps: fake,
+    });
+
+    const result = await service.ingest('eeeeeeeeeee');
+
+    expect(result.hints).toEqual({
+      artist: 'Rick Astley', album: 'Whenever You Need Somebody', title: 'Never Gonna Give You Up', year: 1987,
+    });
+    const metadataCall = ffmpeg.mock.calls.at(-1)?.[0]?.join(' ');
+    expect(metadataCall).toContain('artist=Rick Astley');
+    expect(metadataCall).toContain('-c copy');
+  });
+
   it('fails honestly when yt-dlp writes no audio', async () => {
     const { io: fake } = io([]);
     const service = new MusicIngestService({

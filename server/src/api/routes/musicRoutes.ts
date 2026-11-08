@@ -1,8 +1,10 @@
+import pathPosix from 'node:path/posix';
 import type { FastifyInstance } from 'fastify';
 import { and, eq } from 'drizzle-orm';
 import * as schema from '../../db/schema';
 import { scanMusicLibrary } from '../../services/MusicScanner';
 import { MusicIngestService } from '../../services/MusicIngestService';
+import { MusicTaggerService } from '../../services/MusicTaggerService';
 import { normalizeYoutubeVideoId } from '../../services/YoutubeLibrary';
 import { sendSuccess } from '../contracts';
 import type { ApiDependencies } from '../types';
@@ -11,9 +13,30 @@ import type { ApiDependencies } from '../types';
 export function registerMusicRoutes(app: FastifyInstance, deps: ApiDependencies): void {
   const drizzle = (deps.prisma as unknown as { drizzle: any }).drizzle;
 
+  /** Tag one staged file with beets and file it into the library tree / review folder. */
+  app.post('/api/music/tag', async (request, reply) => {
+    const body = (request.body ?? {}) as { path?: string };
+    const musicRoot = process.env.MUSIC_DIR ?? '/data/Music';
+    const stagingDir = process.env.MUSIC_STAGING_DIR ?? '/data/Music/_incoming';
+    const stagedPath = typeof body.path === 'string' ? body.path : '';
+    // Guard: only files inside the staging folder may be moved by this endpoint.
+    if (!pathPosix.normalize(stagedPath).startsWith(`${pathPosix.normalize(stagingDir)}/`)) {
+      return reply.code(422).send({
+        ok: false,
+        error: { code: 'OUTSIDE_STAGING', message: 'path must be inside the music staging folder' },
+      });
+    }
+    const service = new MusicTaggerService({
+      musicRoot,
+      reviewDir: pathPosix.join(musicRoot, '_review'),
+    });
+    const result = await service.tagAndFile(stagedPath);
+    return sendSuccess(reply, result);
+  });
+
   /** Ingest one YouTube video as m4a 256k into the staging folder (beets tagging follows). */
   app.post('/api/music/ingest', async (request, reply) => {
-    const body = (request.body ?? {}) as { url?: string; videoId?: string };
+    const body = (request.body ?? {}) as { url?: string; videoId?: string; tag?: boolean };
     const videoId = normalizeYoutubeVideoId(body.videoId ?? body.url ?? null);
     if (videoId === null) {
       return reply.code(422).send({
@@ -25,7 +48,17 @@ export function registerMusicRoutes(app: FastifyInstance, deps: ApiDependencies)
       stagingDir: process.env.MUSIC_STAGING_DIR ?? '/data/Music/_incoming',
     });
     const result = await service.ingest(videoId);
-    return sendSuccess(reply, { videoId, ...result });
+    // Hands-off default: tag and file immediately after a successful ingest, so an owner doesn't have
+    // to make two calls; the /tag endpoint remains for retries and review items.
+    let tag = null;
+    if (result.ok && result.audioPath !== undefined && body.tag !== false) {
+      const musicRoot = process.env.MUSIC_DIR ?? '/data/Music';
+      tag = await new MusicTaggerService({
+        musicRoot,
+        reviewDir: pathPosix.join(musicRoot, '_review'),
+      }).tagAndFile(result.audioPath);
+    }
+    return sendSuccess(reply, { videoId, ...result, tag });
   });
 
   /** Scan /data/Music (or MUSIC_DIR): dry-run by default, idempotent by file path. */

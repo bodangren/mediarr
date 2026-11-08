@@ -1,5 +1,7 @@
+import { createReadStream } from 'node:fs';
+import fsp from 'node:fs/promises';
 import type { FastifyInstance } from 'fastify';
-import { asc, eq } from 'drizzle-orm';
+import { and, asc, desc, eq } from 'drizzle-orm';
 import * as schema from '../../db/schema';
 import { parseSubscriptionUrl } from '../../services/YoutubeLibrary';
 import { YoutubeFeedPoller } from '../../services/YoutubeFeedPoller';
@@ -122,6 +124,98 @@ export function registerYoutubeRoutes(app: FastifyInstance, deps: ApiDependencie
   });
 
   /** Download queued videos now; the scheduled task will call the same service. */
+  /** Library listing: playable videos with their channel; the SPA/TV render from this. */
+  app.get('/api/youtube/videos', async (request, reply) => {
+    const query = request.query as Record<string, unknown>;
+    const limit = Math.min(500, Math.max(1, Number.parseInt(String(query.limit ?? '200'), 10) || 200));
+    const rows = await drizzle
+      .select({
+        id: schema.youtubeVideos.id,
+        videoId: schema.youtubeVideos.videoId,
+        title: schema.youtubeVideos.title,
+        channel: schema.youtubeVideos.channel,
+        durationSeconds: schema.youtubeVideos.durationSeconds,
+        publishedAt: schema.youtubeVideos.publishedAt,
+        isWatched: schema.youtubeVideos.isWatched,
+        position: schema.youtubeVideos.position,
+        added: schema.youtubeVideos.added,
+      })
+      .from(schema.youtubeVideos)
+      .where(and(eq(schema.youtubeVideos.status, 'AVAILABLE'), eq(schema.youtubeVideos.source, 'SUBSCRIPTION')))
+      .orderBy(desc(schema.youtubeVideos.added))
+      .limit(limit);
+    return sendSuccess(reply, {
+      items: rows.map((row: Record<string, unknown>) => ({
+        ...row,
+        streamUrl: `/api/youtube/videos/${row.id}/stream`,
+        thumbUrl: `/api/youtube/videos/${row.id}/thumbnail`,
+      })),
+      count: rows.length,
+    });
+  });
+
+  app.get('/api/youtube/videos/:id/stream', async (request, reply) => {
+    const id = Number.parseInt(String((request.params as { id?: string }).id ?? ''), 10);
+    if (!Number.isInteger(id) || id <= 0) {
+      return reply.code(422).send({ ok: false, error: { code: 'INVALID_ID', message: 'id must be a positive integer' } });
+    }
+    const row = (await drizzle
+      .select({ path: schema.youtubeVideos.path })
+      .from(schema.youtubeVideos)
+      .where(eq(schema.youtubeVideos.id, id))
+      .limit(1))[0];
+    if (!row?.path) {
+      return reply.code(404).send({ ok: false, error: { code: 'NOT_FOUND', message: 'No downloaded file for this video' } });
+    }
+    let size: number;
+    try {
+      size = (await fsp.stat(row.path)).size;
+    } catch {
+      return reply.code(404).send({ ok: false, error: { code: 'FILE_MISSING', message: 'File is missing on disk' } });
+    }
+    const range = request.headers.range;
+    if (typeof range === 'string') {
+      const match = /^bytes=(\d*)-(\d*)$/.exec(range.trim());
+      if (match) {
+        const start = match[1] === '' ? Math.max(0, size - Number(match[2])) : Number(match[1]);
+        const end = match[2] === '' || match[1] === '' ? size - 1 : Math.min(Number(match[2]), size - 1);
+        if (start >= size || start > end) {
+          return reply.code(416).header('Content-Range', `bytes */${size}`).send();
+        }
+        reply.code(206);
+        reply.header('Content-Type', 'video/mp4');
+        reply.header('Accept-Ranges', 'bytes');
+        reply.header('Content-Range', `bytes ${start}-${end}/${size}`);
+        reply.header('Content-Length', String(end - start + 1));
+        return reply.send(createReadStream(row.path, { start, end }));
+      }
+    }
+    reply.header('Content-Type', 'video/mp4');
+    reply.header('Accept-Ranges', 'bytes');
+    reply.header('Content-Length', String(size));
+    return reply.send(createReadStream(row.path));
+  });
+
+  app.get('/api/youtube/videos/:id/thumbnail', async (request, reply) => {
+    const id = Number.parseInt(String((request.params as { id?: string }).id ?? ''), 10);
+    const row = (await drizzle
+      .select({ thumbPath: schema.youtubeVideos.thumbPath })
+      .from(schema.youtubeVideos)
+      .where(eq(schema.youtubeVideos.id, id))
+      .limit(1))[0];
+    if (!row?.thumbPath) {
+      return reply.code(404).send({ ok: false, error: { code: 'NOT_FOUND', message: 'No thumbnail for this video' } });
+    }
+    try {
+      const file = await fsp.readFile(row.thumbPath);
+      reply.header('Content-Type', 'image/jpeg');
+      reply.header('Cache-Control', 'public, max-age=86400, immutable');
+      return reply.send(file);
+    } catch {
+      return reply.code(404).send({ ok: false, error: { code: 'NOT_FOUND', message: 'Thumbnail file is missing' } });
+    }
+  });
+
   app.post('/api/youtube/download', async (request, reply) => {
     const body = (request.body ?? {}) as { limit?: number };
     const limit = Math.min(5, Math.max(1, Number.parseInt(String(body.limit ?? 1), 10) || 1));

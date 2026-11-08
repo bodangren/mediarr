@@ -42,6 +42,7 @@ import { createStatsApi } from './statsApi';
 import { createUpdatesApi } from './updatesApi';
 import { createWantedApi } from './wantedApi';
 import { createAdultLibraryApi } from './adultLibraryApi';
+import { createYoutubeApi } from './youtubeApi';
 
 export function createApiClients(config: ApiHttpClientConfig = {}) {
   const httpClient = new ApiHttpClient(config);
@@ -88,6 +89,7 @@ export function createApiClients(config: ApiHttpClientConfig = {}) {
     languageProfilesApi: createLanguageProfilesApi(httpClient),
     wantedApi: createWantedApi(httpClient),
     adultLibraryApi: createAdultLibraryApi(httpClient),
+    youtubeApi: createYoutubeApi(httpClient),
     movieApi: createMovieApi(httpClient),
     seriesApi: createSeriesApi(httpClient),
     filesystemApi: createFilesystemApi(httpClient),

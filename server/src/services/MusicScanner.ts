@@ -30,6 +30,8 @@ export function isAudioFile(name: string): boolean {
 
 export interface ProbedTrack {
   artist: string | null;
+  /** Album artist: for compilations this is "Various Artists" while `artist` varies per track. */
+  albumArtist?: string | null;
   album: string | null;
   title: string | null;
   trackNumber: number | null;
@@ -72,7 +74,8 @@ export function parseProbeOutput(payload: unknown): ProbedTrack {
   const size = Number(format['size']);
 
   return {
-    artist: tagValue(tags, 'artist', 'album_artist', 'albumartist'),
+    artist: tagValue(tags, 'artist'),
+    albumArtist: tagValue(tags, 'album_artist', 'albumartist'),
     album: tagValue(tags, 'album'),
     title: tagValue(tags, 'title'),
     trackNumber: positiveInt(tagValue(tags, 'track', 'tracknumber') ?? format['track']),
@@ -164,7 +167,10 @@ export async function scanMusicLibrary(options: MusicScannerOptions): Promise<Sc
 
   for (const { file, probed } of collected) {
     if (dryRun) continue;
-    const artistName = resolveArtist(probed.artist);
+    // Album identity uses the album artist when present, so a compilation is one album under
+    // "Various Artists" instead of one album per track artist (found live: 50 duplicated
+    // "100 Greatest Heavy Metal Songs" albums after the first scan).
+    const artistName = resolveArtist(probed.albumArtist ?? probed.artist);
     const artistKey = nameKey(artistName);
     const artistId = (await options.store.findArtistId(artistKey))
       ?? (await options.store.createArtist(artistName, artistKey));
@@ -196,7 +202,7 @@ export async function scanMusicLibrary(options: MusicScannerOptions): Promise<Sc
   return summarizeScan(
     collected.map(({ probed }) => ({
       path: '',
-      artist: probed.artist,
+      artist: probed.albumArtist ?? probed.artist,
       album: probed.album,
       title: probed.title,
       trackNumber: probed.trackNumber,

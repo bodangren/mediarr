@@ -52,6 +52,7 @@ describe('parseProbeOutput', () => {
     });
     expect(probed).toEqual({
       artist: 'AC/DC',
+      albumArtist: null,
       album: 'Back In Black',
       title: 'Hells Bells',
       trackNumber: 1,
@@ -63,12 +64,14 @@ describe('parseProbeOutput', () => {
     });
   });
 
-  it('prefers album_artist when present and tolerates missing fields', () => {
+  it('keeps album_artist separate from the track artist', () => {
     const probed = parseProbeOutput({
-      format: { tags: { album_artist: 'Various Artists', title: 'Track' } },
+      format: { tags: { artist: 'Guest Singer', album_artist: 'Various Artists', title: 'Track' } },
       streams: [{ codec_type: 'video' }],
     });
-    expect(probed).toMatchObject({ artist: 'Various Artists', album: null, trackNumber: null, durationSeconds: null });
+    expect(probed).toMatchObject({
+      artist: 'Guest Singer', albumArtist: 'Various Artists', album: null, trackNumber: null, durationSeconds: null,
+    });
   });
 });
 
@@ -138,6 +141,23 @@ describe('scanMusicLibrary', () => {
     expect(summary.scanned).toBe(2);
     expect(summary.unreadable).toHaveLength(1);
     expect(summary.unreadable[0]?.path).toContain('broken.mp3');
+  });
+
+  it('files a compilation as one album under the album artist', async () => {
+    const root = await makeTree(['VA/Comp/01 - a.mp3', 'VA/Comp/02 - b.mp3']);
+    const fake = store();
+    const compilation = async (file: string): Promise<ProbedTrack> => ({
+      artist: path.basename(file).startsWith('01') ? 'Alice' : 'Bob',
+      albumArtist: 'Various Artists',
+      album: 'Comp',
+      title: path.basename(file),
+      trackNumber: null, discNumber: null, durationSeconds: 100, format: 'mp3', bitrate: 320, sizeBytes: 100,
+    });
+
+    const summary = await scanMusicLibrary({ root, store: fake.store, probe: compilation });
+
+    expect(summary).toMatchObject({ artists: 1, albums: 1, tracks: 2 });
+    expect(fake.calls.filter((call) => call.startsWith('artist:'))).toEqual(['artist:Various Artists']);
   });
 
   it('seeded tree yields exact artist/album/track counts', async () => {

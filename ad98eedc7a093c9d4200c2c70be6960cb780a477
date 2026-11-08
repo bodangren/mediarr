@@ -1,0 +1,7 @@
+Subtitle coverage endpoint (feature_subtitle_coverage_priority_20261108, Phase 2).
+
+GET /api/subtitles/coverage: classifies every movie/episode with a file into the viewing-priority buckets and counts Chinese / English / both / neither per bucket, in totals, and for the high-priority denominator (continue-watching + recently-watched). Pure summarizeCoverage plus language-code recognition for zho/chi/zh/chs/cht/cmn/yue and en/eng.
+
+Route batches 4 queries (movies, episodes, variants, tracks) + one progress query per media type. It does not claim 'bilingual': both-languages-present is the precondition; BilingualSubtitleService remains the authority for merged sidecars.
+
+Live verification after deploy: 3,162 items; continue-watching 6 (4 with Chinese, 2 missing), recently-watched 3 (all covered), recently-added 17 (13 missing), backfill 3,136; totals 1,511 with Chinese / 1,878 with English / 1,017 both; high priority 9 items, 7 covered, 2 missing. Route-level test still to add.

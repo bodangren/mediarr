@@ -49,7 +49,7 @@ export function YoutubeLibraryPage() {
   }, [videos]);
 
   return (
-    <RouteScaffold title="YouTube" description="Subscribed channels, downloaded automatically">
+    <RouteScaffold title="YouTube" description="Downloaded channels and videos">
       <div className="space-y-6">
         {error ? (
           <p role="alert" className="rounded-md border border-accent-warning bg-surface-1 p-3 text-sm text-accent-warning">{error}</p>
@@ -80,14 +80,22 @@ export function YoutubeLibraryPage() {
                   onClick={() => setPlaying(video)}
                   className="flex gap-3 overflow-hidden rounded-lg border border-border bg-surface-1 p-2 text-left hover:border-accent-primary"
                 >
-                  <span className="block aspect-video w-40 shrink-0 overflow-hidden rounded bg-black">
+                  <span className="relative block aspect-video w-40 shrink-0 overflow-hidden rounded bg-black">
                     <img src={video.thumbUrl} alt="" loading="lazy" className="h-full w-full object-cover" />
+                    {duration(video.durationSeconds) ? (
+                      <span className="absolute bottom-1 right-1 rounded bg-black/75 px-1.5 py-0.5 text-xs font-semibold text-white">
+                        {duration(video.durationSeconds)}
+                      </span>
+                    ) : null}
                   </span>
                   <span className="flex min-w-0 flex-col gap-1">
-                    <span className="line-clamp-2 text-sm font-medium text-text-primary">{video.title}</span>
+                    <span className="line-clamp-2 text-sm font-medium text-text-primary" title={video.title}>
+                      {video.title}
+                    </span>
                     <span className="text-xs text-text-muted">
-                      {duration(video.durationSeconds)}
-                      {video.isWatched ? ' · watched' : ''}
+                      {[video.channel ?? 'Archive', video.isWatched ? 'watched' : null]
+                          .filter((value): value is string => value !== null)
+                          .join(' · ')}
                     </span>
                   </span>
                 </button>

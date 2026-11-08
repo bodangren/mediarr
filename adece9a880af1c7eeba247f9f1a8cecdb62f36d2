@@ -1,0 +1,1 @@
+YouTube domain contract (feature_youtube_library_20261107, Phase 1): video-id normalisation, subscription URL parsing, idempotent feed selection with shorts/live skip and per-poll cap, queueNewVideos single-download guarantee with per-entry failure reporting. 10 tests.

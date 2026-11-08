@@ -42,6 +42,7 @@ describe('dsh-media-automation plugin', () => {
       'media_automation_alert',
       'media_automation_quarantine',
       'media_automation_watchdog',
+      'media_automation_deliver_alerts',
     ]));
     disposeAll();
   });

@@ -37,3 +37,11 @@ The repo's unit suite is `vitest run server/src` — `vitest run` at the root al
 Test Files  290 passed (290)
 Tests  2793 passed | 11 skipped (2804)
 ```
+
+## Re-run after the later server changes (2026-11-09 ~05:2x)
+```
+Test Files  291 passed (291)
+Tests  2795 passed | 11 skipped (2806)
+```
+This includes the YouTube retry migration test, subtitle script normaliser, music failure alerts and
+the download-claim changes.

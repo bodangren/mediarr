@@ -12,6 +12,7 @@ import {
 } from './src/ledger.js';
 import { pruneQuarantine, quarantineFile } from './src/quarantine.js';
 import { loadExpectations, runWatchdog } from './src/watchdog.js';
+import { deliverPendingAlerts, webhookTransport } from './src/alerts.js';
 
 export const name = 'media-automation';
 
@@ -22,6 +23,7 @@ const HEARTBEAT_TOOL = 'media_automation_heartbeat';
 const ALERT_TOOL = 'media_automation_alert';
 const QUARANTINE_TOOL = 'media_automation_quarantine';
 const WATCHDOG_TOOL = 'media_automation_watchdog';
+const DELIVER_ALERTS_TOOL = 'media_automation_deliver_alerts';
 
 export function apply(ctx, config) {
   const ledgerPath = config?.ledgerPath
@@ -150,4 +152,14 @@ export function apply(ctx, config) {
       }));
     },
   }), 'media-automation:watchdog');
+
+  ctx.effect(() => ctx.tools.register({
+    name: DELIVER_ALERTS_TOOL,
+    description: 'Deliver pending ledger alerts through the configured webhook (MEDIA_AUTOMATION_ALERT_WEBHOOK), retrying and marking failures after 3 attempts. Local JSONL remains the fallback.',
+    parameters: { type: 'object', properties: {} },
+    output: { schema: { type: 'string' }, render: (_args, value) => [{ type: 'text', text: value }] },
+    async execute() {
+      return JSON.stringify(await deliverPendingAlerts(db, { transport: webhookTransport() }));
+    },
+  }), 'media-automation:deliver-alerts');
 }

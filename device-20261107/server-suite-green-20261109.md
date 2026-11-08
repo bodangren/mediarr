@@ -31,3 +31,9 @@ have), so later ALTER migrations apply as they do in production. `migrationCompa
 The repo's unit suite is `vitest run server/src` — `vitest run` at the root also picks up
 `automation/pi-measure-harness/tests/fixtures/green-gate/seeded-regression.test.mjs`, which is a
 **deliberately red fixture** for the measure harness gate, not a product test.
+
+## Final full-suite result (after the fixture fix)
+```
+Test Files  290 passed (290)
+Tests  2793 passed | 11 skipped (2804)
+```

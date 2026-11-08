@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/mediarr_theme.dart';
 import '../../core/widgets/netflix_scaffold.dart';
+import '../../core/widgets/tv_context_menu.dart';
 import '../../shared/models/series.dart';
 import '../../shared/services/api_client.dart';
 import '../../shared/widgets/poster_card.dart';
@@ -149,6 +150,7 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
                             hasFile: (s.episodeFileCount ?? 0) > 0,
                             autofocus: index == 0,
                             onPressed: () => _openSeriesDetail(context, s),
+                            onContextMenu: () => _openSeriesMenu(s),
                           );
                         },
                       );
@@ -161,6 +163,23 @@ class _SeriesScreenState extends ConsumerState<SeriesScreen> {
         ),
       ),
     );
+  }
+
+  void _openSeriesMenu(Series series) {
+    showTvContextMenu(context, title: series.title, actions: [
+      TvContextAction(label: 'Open series', onSelected: () => _openSeriesDetail(context, series)),
+      TvContextAction(label: 'Mark watched', onSelected: () => _setSeriesWatched(series, true)),
+      TvContextAction(label: 'Mark unwatched', onSelected: () => _setSeriesWatched(series, false)),
+    ]);
+  }
+
+  Future<void> _setSeriesWatched(Series series, bool watched) async {
+    try {
+      await ref.read(apiClientProvider.notifier).setSeriesWatched(seriesId: series.id, watched: watched);
+      ref.invalidate(seriesListProvider);
+    } catch (_) {
+      // A failed bulk update keeps the previous list state rather than taking the screen down.
+    }
   }
 
   void _openSeriesDetail(BuildContext context, Series series) {

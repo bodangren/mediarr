@@ -710,6 +710,16 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
 
   String musicArtworkUrl(int albumId) => '${_dio.options.baseUrl}/api/music/albums/$albumId/artwork';
 
+  /// Marks every downloaded episode of a series watched/unwatched (TV series context menu).
+  Future<int> setSeriesWatched({required int seriesId, required bool watched}) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/api/playback/series/$seriesId/watched',
+      data: {'watched': watched},
+    );
+    final data = _unwrap(response.data) as Map<String, dynamic>;
+    return (data['episodes'] as num?)?.toInt() ?? 0;
+  }
+
   /// Marks a movie/episode watched or unwatched (TV context-menu actions).
   Future<void> setWatched({
     required String mediaType,

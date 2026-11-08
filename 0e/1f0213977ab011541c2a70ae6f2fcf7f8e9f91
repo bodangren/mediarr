@@ -1,0 +1,1 @@
+TV seeking: arrows seek directly with 10/30/60/120/300s acceleration and toast, no HUD wake; seekRelative clamp bug fixed; tests updated + 150 green; 1.3.25/49 installed. Resume verified on device at 38:35.

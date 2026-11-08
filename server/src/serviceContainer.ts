@@ -62,6 +62,7 @@ import { type SchedulerStateRepository, Scheduler } from './services/Scheduler';
 import { SubtitleSyncService } from './services/SubtitleSyncService';
 import { FfsubsyncAligner } from './services/FfsubsyncAligner';
 import { BilingualSubtitleService } from './services/BilingualSubtitleService';
+import { orderSubtitlePathsByPriority } from './services/SubtitlePathPriority';
 import { MiniMaxTranslator } from './services/MiniMaxTranslator';
 import { XiaomiTranslator } from './services/XiaomiTranslator';
 import { FallbackTranslator } from './services/FallbackTranslator';
@@ -747,7 +748,53 @@ export async function createServiceContainer(
               + 'the remainder is picked up next cycle',
             );
           }
-          return found;
+          // Highest viewing priority first, not filesystem order (track
+          // feature_subtitle_coverage_priority_20261108). Any failure here degrades to the unordered
+          // list — the cycle must never stop because the ordering query failed.
+          try {
+            const [tracks, variants, progressRows] = await Promise.all([
+              prisma.variantSubtitleTrack.findMany(),
+              prisma.mediaFileVariant.findMany(),
+              prisma.playbackProgress.findMany(),
+            ]);
+            const mediaByPath = new Map<string, { kind: 'movie' | 'episode'; id: number; addedAt: Date | null }>();
+            const mediaByVariant = new Map<number, { kind: 'movie' | 'episode'; id: number }>();
+            for (const variant of variants as Array<{ id: number; movieId: number | null; episodeId: number | null }>) {
+              if (variant.movieId != null) mediaByVariant.set(variant.id, { kind: 'movie', id: variant.movieId });
+              else if (variant.episodeId != null) mediaByVariant.set(variant.id, { kind: 'episode', id: variant.episodeId });
+            }
+            for (const track of tracks as Array<{ variantId: number; filePath: string | null }>) {
+              if (!track.filePath) continue;
+              const media = mediaByVariant.get(track.variantId);
+              if (media) mediaByPath.set(track.filePath, { ...media, addedAt: null });
+            }
+            const movies = new Map<number, { mediaId: number; progress: number; isWatched: boolean; lastWatched: Date | null }>();
+            const episodes = new Map<number, { mediaId: number; progress: number; isWatched: boolean; lastWatched: Date | null }>();
+            for (const row of progressRows as Array<{ mediaType: string; mediaId: number; progress: number; isWatched: unknown; lastWatched: unknown }>) {
+              const snapshot = {
+                mediaId: row.mediaId,
+                progress: Number(row.progress ?? 0),
+                isWatched: row.isWatched === true || row.isWatched === 1,
+                lastWatched: row.lastWatched == null
+                  ? null
+                  : row.lastWatched instanceof Date
+                    ? row.lastWatched
+                    : new Date(Number(row.lastWatched) * 1000),
+              };
+              const target = row.mediaType === 'MOVIE' ? movies : episodes;
+              const current = target.get(row.mediaId);
+              if (!current || (snapshot.lastWatched?.getTime() ?? 0) > (current.lastWatched?.getTime() ?? 0)) {
+                target.set(row.mediaId, snapshot);
+              }
+            }
+            return orderSubtitlePathsByPriority(found, (candidate) => mediaByPath.get(candidate) ?? null, {
+              movies,
+              episodes,
+            });
+          } catch (error) {
+            console.warn('[bilingual-subs] priority ordering unavailable, using scan order:', error);
+            return found;
+          }
         },
       });
       // Guard the cycle: two overlapping runs were observed on 2026-11-07 and

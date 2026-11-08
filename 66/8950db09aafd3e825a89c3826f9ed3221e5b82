@@ -1,0 +1,1 @@
+TV media keys + context menus: global TvMediaKeyScope (music keys when no video session, video FF/REW in player), reusable context menu with Menu-key hook on FocusableAction, Music actions (play album/open, play now/play next/go to album); device verified MENU dialog, play/pause, next, FF.

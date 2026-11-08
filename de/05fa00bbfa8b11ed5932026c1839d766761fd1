@@ -1,0 +1,1 @@
+B9 watchdog: expectations.yaml + 5 tested checks; live run health/scheduler/artifacts ok, heartbeat+bridge fail honestly (plugin unlinked), 2 local alerts written; delivery/timer gated.

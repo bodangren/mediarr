@@ -33,7 +33,7 @@
 - [x] Artwork extraction/serving (embedded + folder image) — `/api/music/albums/:id/artwork`: folder image first, else embedded art extracted once with ffmpeg into a CONFIG_DIR cache, immutable headers, 404 NO_ARTWORK contract; album listing carries artworkUrl; live: album 1 → 200 image/jpeg 89,158 bytes (1280x720) — 682b8363
 - [ ] Automation contract: picks in, ingest status out.
 
-## Phase 4: Player (Flutter, TV-first) — separate deliverable from the domain
+## Phase 4: Player (Flutter, TV-first) — separate deliverable from the domain [checkpoint: 58ce19ad]
 
 > The domain/ingest phases (1–3) are one shippable track; the player can follow independently.
 
@@ -41,7 +41,7 @@
 - [x] iTunes-style shell: persistent sidebar (Artists, Albums, Songs, Recently Added), album grid, track list, now-playing bar, queue — implemented and device-verified (artists grid, album grid with artwork, album view with Play all, now-playing bar; 1.3.30) — 16a634d9
 - [x] D-pad focus walk: sidebar ↔ grid ↔ list ↔ transport; visible focus; no traps; every control reachable — explicit content-focus handoff + widget test walking artist grid → sidebar → Albums → album → track list → Play album → now-playing bar; 156 tests; device Albums section focused correctly — 16a634d9
 - [x] Play, seek, queue advance, resume, background audio behavior — play/seek/queue advance + media keys verified on device; **background audio measured 2026-11-08: position advanced 0:08 -> 0:42 while the app was backgrounded**; **resume across app restart implemented and device-verified: force-stop -> "Continue listening · Sweet Child O' Mine — at 0:14" banner -> playback resumes at 0:19** (`device-20261107/music-bg-t1.png`, `music-bg-t2.png`, `music-resume-banner.png`, `music-resume-playing.png`) — 58ce19ad
-- [ ] Widget tests for the focus walk and playback handoff; device check on the TV.
+- [x] Widget tests for the focus walk and playback handoff; device check on the TV. — **Done 2026-11-09:** `test/features/music/music_focus_walk_test.dart` walks artist grid → sidebar → Albums → album → track list and the now-playing handoff (1 widget test, suite green: 4 music tests); the device check was the 1.3.30/1.3.42 music sessions (artists/albums/album view/now-playing bar, focus handoff verified on TV). — 16a634d9
 
 ## Phase 5: Automation + migration
 

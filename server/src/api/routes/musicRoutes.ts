@@ -2,12 +2,31 @@ import type { FastifyInstance } from 'fastify';
 import { and, eq } from 'drizzle-orm';
 import * as schema from '../../db/schema';
 import { scanMusicLibrary } from '../../services/MusicScanner';
+import { MusicIngestService } from '../../services/MusicIngestService';
+import { normalizeYoutubeVideoId } from '../../services/YoutubeLibrary';
 import { sendSuccess } from '../contracts';
 import type { ApiDependencies } from '../types';
 
 /** Music library endpoints (track feature_music_library_20261107). Own domain under /api/music/*. */
 export function registerMusicRoutes(app: FastifyInstance, deps: ApiDependencies): void {
   const drizzle = (deps.prisma as unknown as { drizzle: any }).drizzle;
+
+  /** Ingest one YouTube video as m4a 256k into the staging folder (beets tagging follows). */
+  app.post('/api/music/ingest', async (request, reply) => {
+    const body = (request.body ?? {}) as { url?: string; videoId?: string };
+    const videoId = normalizeYoutubeVideoId(body.videoId ?? body.url ?? null);
+    if (videoId === null) {
+      return reply.code(422).send({
+        ok: false,
+        error: { code: 'INVALID_URL', message: 'url/videoId must identify a YouTube video' },
+      });
+    }
+    const service = new MusicIngestService({
+      stagingDir: process.env.MUSIC_STAGING_DIR ?? '/data/Music/_incoming',
+    });
+    const result = await service.ingest(videoId);
+    return sendSuccess(reply, { videoId, ...result });
+  });
 
   /** Scan /data/Music (or MUSIC_DIR): dry-run by default, idempotent by file path. */
   app.post('/api/music/scan', async (request, reply) => {

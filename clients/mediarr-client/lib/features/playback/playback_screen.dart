@@ -296,6 +296,10 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
 
     Duration resumeFrom = Duration.zero;
     var externalSubtitles = <ExternalSubtitleSource>[];
+    // The Adult library has no playback manifest: it has its own stream endpoint and progress store.
+    // Asking for one produced a 422 and a noisy 'manifest failed' record on every play (device,
+    // 2026-11-08 02:05), so the stream URL passed in is used as-is.
+    if (mediaType != 'adult') {
     try {
       final manifest = await apiClient.getPlaybackManifest(
         mediaId: mediaId,
@@ -334,6 +338,7 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
               'fallbackUrl': fallbackUrl,
             },
           ));
+    }
     }
 
     if (!mounted || _exitInProgress) return;

@@ -62,8 +62,8 @@ function SeriesOverviewCard({ item, onToggleMonitored, onDelete, onRefresh }: Se
               {item.title}
             </Link>
             <div className="flex flex-wrap items-center gap-2 text-xs text-text-secondary">
-              {item.year && <span>{item.year}</span>}
-              {item.year && item.network && <span>•</span>}
+              {(item.year ?? 0) > 0 && <span>{item.year}</span>}
+              {(item.year ?? 0) > 0 && item.network && <span>•</span>}
               {item.network && <span>{item.network}</span>}
               {item.status && <StatusBadge status={item.status} />}
               {(item.statistics?.watchedEpisodes ?? 0) > 0 && (

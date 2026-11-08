@@ -162,4 +162,10 @@ describe('SeriesOverviewView', () => {
     expect(screen.getByText('✓ 7 watched')).toBeTruthy();
     expect(screen.getByText('▶ 2 in progress')).toBeTruthy();
   });
+
+  it('does not render a zero year for series with no year', () => {
+    const noYear = { ...mockSeries[1], year: 0 } as SeriesListItem;
+    render(<SeriesOverviewView items={[noYear]} onToggleMonitored={vi.fn()} />);
+    expect(screen.queryByText('0')).toBeNull();
+  });
 });

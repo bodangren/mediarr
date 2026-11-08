@@ -124,7 +124,7 @@ function SeriesPosterCard({ item, onToggleMonitored, onDelete, onRefresh }: Seri
           {item.title}
         </h3>
         <div className="flex items-center gap-2 text-xs text-text-secondary">
-          {item.year && <span>{item.year}</span>}
+          {(item.year ?? 0) > 0 && <span>{item.year}</span>}
           {item.status && <StatusBadge status={item.status} />}
         </div>
       </div>

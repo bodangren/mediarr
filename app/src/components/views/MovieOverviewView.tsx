@@ -85,7 +85,7 @@ function MovieOverviewCard({ item, onToggleMonitored, onDelete, onSearch }: Movi
               {item.title}
             </Link>
             <div className="flex flex-wrap items-center gap-2 text-xs text-text-secondary">
-              {item.year && <span>{item.year}</span>}
+              {(item.year ?? 0) > 0 && <span>{item.year}</span>}
               {item.certification && <span>•</span>}
               {item.certification && <span>{item.certification}</span>}
               {item.runtime && <span>•</span>}

@@ -1,0 +1,3 @@
+Phase 5 validation evidence (feature_subtitle_coverage_priority_20261108).
+
+62 server tests across 11 files; 34 SPA tests across 3 files; tsc clean (server+app); SPA built and browser-verified; screenshots wanted-coverage.jpg + wanted-grouped.jpg. Flutter untouched.

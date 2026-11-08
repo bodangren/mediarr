@@ -179,6 +179,66 @@ export function registerAdultLibraryRoutes(app: FastifyInstance, deps: ApiDepend
     });
   });
 
+  /**
+   * Queue one discovery pick, refusing duplicates server-side.
+   *
+   * The agent proposes a magnet + info hash; the server is the only place a torrent can enter the
+   * system, and it checks the existing Torrent table first so a repeated pick (or a careless retry)
+   * cannot queue twice. `dryRun` defaults to true: a run must opt in explicitly to actually download.
+   */
+  app.post('/api/adult/automation/queue', async (request, reply) => {
+    const body = (request.body ?? {}) as {
+      title?: string;
+      magnetUrl?: string;
+      infoHash?: string;
+      size?: number;
+      quality?: string;
+      dryRun?: boolean;
+    };
+    const title = typeof body.title === 'string' ? body.title.trim() : '';
+    const infoHash = typeof body.infoHash === 'string' ? body.infoHash.trim().toLowerCase() : '';
+    if (title.length === 0) {
+      return reply.code(422).send({ ok: false, error: { code: 'INVALID_TITLE', message: 'title is required' } });
+    }
+    if (!/^[0-9a-f]{40}$/.test(infoHash)) {
+      return reply.code(422).send({ ok: false, error: { code: 'INVALID_INFOHASH', message: 'infoHash must be 40 hex characters' } });
+    }
+    if (typeof body.magnetUrl !== 'string' || !body.magnetUrl.startsWith('magnet:')) {
+      return reply.code(422).send({ ok: false, error: { code: 'INVALID_MAGNET', message: 'magnetUrl must be a magnet link' } });
+    }
+
+    const existing = await drizzle
+      .select({ id: schema.torrents.id })
+      .from(schema.torrents)
+      .where(eq(schema.torrents.infoHash, infoHash))
+      .limit(1);
+    if (existing.length > 0) {
+      return sendSuccess(reply, { queued: false, reason: 'duplicate', infoHash, dryRun: body.dryRun !== false });
+    }
+
+    if (body.dryRun !== false) {
+      return sendSuccess(reply, { queued: false, reason: 'dry-run', infoHash, dryRun: true });
+    }
+
+    if (!deps.mediaSearchService?.grabRelease) {
+      return reply.code(422).send({ ok: false, error: { code: 'NOT_CONFIGURED', message: 'Media search service is not configured' } });
+    }
+
+    const grabbed = await deps.mediaSearchService.grabRelease({
+      indexer: 'browser-agent',
+      indexerId: 0,
+      title,
+      guid: infoHash,
+      size: Math.max(0, Math.trunc(Number(body.size ?? 0))),
+      seeders: 0,
+      magnetUrl: body.magnetUrl,
+      infoHash,
+      quality: typeof body.quality === 'string' ? body.quality : undefined,
+    } as never);
+
+    return sendSuccess(reply, { queued: true, infoHash: grabbed.infoHash, name: grabbed.name, dryRun: false });
+  });
+
   app.post('/api/adult/automation/watched/:id', async (request, reply) => {
     const id = Number.parseInt(String((request.params as { id?: string }).id ?? ''), 10);
     if (!Number.isInteger(id) || id <= 0) {

@@ -3,6 +3,30 @@ import { ApiHttpClient, type PaginatedResult } from './httpClient';
 import { routeMap } from './routeMap';
 
 // Schema definitions
+const viewingPrioritySchema = z.object({
+  bucket: z.enum(['continue-watching', 'recently-watched', 'recently-added', 'backfill']),
+  rank: z.number(),
+});
+
+const coverageBucketSchema = z.object({
+  bucket: z.enum(['continue-watching', 'recently-watched', 'recently-added', 'backfill']),
+  total: z.number(),
+  withChinese: z.number(),
+  withEnglish: z.number(),
+  withBoth: z.number(),
+  missingChinese: z.number(),
+  missingBoth: z.number(),
+});
+
+const coverageReportSchema = z.object({
+  buckets: z.array(coverageBucketSchema),
+  totals: coverageBucketSchema.omit({ bucket: true }),
+  highPriority: z.object({ total: z.number(), covered: z.number(), missing: z.number() }),
+});
+
+export type SubtitleViewingPriority = z.infer<typeof viewingPrioritySchema>;
+export type SubtitleCoverageReport = z.infer<typeof coverageReportSchema>;
+
 const wantedSeriesEntrySchema = z.object({
   seriesId: z.number(),
   seriesTitle: z.string(),
@@ -12,6 +36,8 @@ const wantedSeriesEntrySchema = z.object({
   episodeTitle: z.string(),
   missingLanguages: z.array(z.string()),
   lastSearch: z.string().optional(),
+  addedAt: z.string().optional(),
+  priority: viewingPrioritySchema.optional(),
 });
 
 const wantedMovieEntrySchema = z.object({
@@ -20,6 +46,8 @@ const wantedMovieEntrySchema = z.object({
   year: z.number().optional(),
   missingLanguages: z.array(z.string()),
   lastSearch: z.string().optional(),
+  addedAt: z.string().optional(),
+  priority: viewingPrioritySchema.optional(),
 });
 
 const wantedCountSchema = z.object({
@@ -57,6 +85,7 @@ export interface WantedQueryParams {
   page?: number;
   pageSize?: number;
   languageCode?: string;
+  bucket?: SubtitleViewingPriority['bucket'];
 }
 
 export function createSubtitleWantedApi(client: ApiHttpClient) {
@@ -68,6 +97,7 @@ export function createSubtitleWantedApi(client: ApiHttpClient) {
       if (page !== undefined) query.page = page;
       if (pageSize !== undefined) query.pageSize = pageSize;
       if (languageCode !== undefined) query.languageCode = languageCode;
+      if (params.bucket !== undefined) query.bucket = params.bucket;
 
       return client.requestPaginated(
         {
@@ -85,6 +115,7 @@ export function createSubtitleWantedApi(client: ApiHttpClient) {
       if (page !== undefined) query.page = page;
       if (pageSize !== undefined) query.pageSize = pageSize;
       if (languageCode !== undefined) query.languageCode = languageCode;
+      if (params.bucket !== undefined) query.bucket = params.bucket;
 
       return client.requestPaginated(
         {
@@ -143,6 +174,16 @@ export function createSubtitleWantedApi(client: ApiHttpClient) {
           path: routeMap.subtitleWantedCount,
         },
         wantedCountSchema,
+      );
+    },
+
+    /** Per-bucket subtitle coverage + the high-priority denominator (track feature_subtitle_coverage_priority_20261108). */
+    getCoverage(): Promise<SubtitleCoverageReport> {
+      return client.request(
+        {
+          path: routeMap.subtitleCoverage,
+        },
+        coverageReportSchema,
       );
     },
   };

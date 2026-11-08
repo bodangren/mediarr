@@ -97,6 +97,7 @@ export const routeMap = {
   subtitleBlacklistMoviesClear: '/api/subtitles/blacklist/movies',
 
   subtitleWantedSeries: '/api/subtitles/wanted/series',
+  subtitleCoverage: '/api/subtitles/coverage',
   subtitleWantedMovies: '/api/subtitles/wanted/movies',
   subtitleWantedSeriesSearch: '/api/subtitles/wanted/series/search',
   subtitleWantedMoviesSearch: '/api/subtitles/wanted/movies/search',

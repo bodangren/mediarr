@@ -30,12 +30,11 @@
 - [x] Watched-state integration — `applyYoutubeProgress` (clamp to duration, watched at 95%, monotonic, `watchedAt` once) with 14 domain tests, `POST /api/youtube/videos/:id/progress`, and the TV reporter wired for `mediaType youtube`; live: curl 100→not watched, 430/441→watched, device playback updated position/lastPlayedAt — b9bf18e
 - [x] Eligibility rule: watched + retention days (default 7) — `retentionEligible` (subscriptions only, archive excluded per G9, custom window) with tests; `GET /api/youtube/retention/candidates` dry-run list; live: back-dated watched row appeared, restored row disappeared — 5f4f8858
 - [x] Quarantine move/restore/delete with manifest; dry-run first — reuses `planQuarantine`/`executeQuarantine`; `planYoutubeRetention` + `runYoutubeRetention` (dry-run default, EXDEV copy+verify, JSONL manifest), `POST /retention/run|restore|purge` (restore/purge guarded to the quarantine root); 6 tests; **live round-trip** on a throwaway file: dry run untouched → moved+QUARANTINED+manifest → restored byte-identical → re-run+purge deleted+DELETED — db7fdbf4
-- [~] Nightly retention job + receipt.
+- [x] Nightly retention job + receipt — `youtube-retention` cron `45 5 * * *` in the existing Scheduler, sharing `runRetention` with the manual endpoint; every run appends a JSONL receipt (counts + moved/failed ids) under CONFIG_DIR; `GET /api/youtube/retention/receipts`; live receipt verified — cf31c883
 
 ## Phase 4: Automation + verification
 
-- [ ] Deterministic subscription poll (plugin/native task) downloads new entries; the agent is used
-      only for ambiguity. Reports new downloads and failures; no silent skip.
+- [~] Deterministic subscription poll (plugin/native task) downloads new entries; the agent is used only for ambiguity. Reports new downloads and failures; no silent skip.
 - [ ] Forced `yt-dlp` failure produces an alert with the tool error.
 - [ ] TV device check: subscribe → download → play → watch → retire.
 - [ ] Remove all jellyfin-go references.

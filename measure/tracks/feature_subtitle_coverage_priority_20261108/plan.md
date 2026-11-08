@@ -26,26 +26,7 @@
 
 ## Phase 3: Automation consumes the order
 
-- [~] Subtitle fetch cycle pulls candidates through the priority query (highest bucket first) with
-      **Wiring design (recorded 2026-11-08):** `processWantedQueue` fetches a pool of
-      `limit × 5` rows, resolves `variantId → {kind, id}` (one `mediaFileVariant` query), loads movie
-      and episode progress in one batch each, derives series activity with `aggregateSeriesProgress`,
-      orders with `orderWantedCandidates`, then slices to `limit`. The provider guard, per-run cap and
-      the `skippedNoProvider` path stay untouched. Requires two small `SubtitleVariantRepository`
-      methods (variant→media refs, batch progress) so the service never touches prisma directly.
-
-      The existing provider guard, per-run cap intact; test with a simulated provider — ordering
-      step shipped: `orderWantedCandidates` with 4 tests (b0f175b), wiring into
-      `processWantedQueue` next.
-
-      **Impact measured 2026-11-08 (before wiring):** the queue holds 1,740 wanted rows —
-      1,204 on episode variants, 536 on movie variants. **160 episode rows belong to a series watched
-      in the last 14 days**; 0 movie rows belong to a movie watched in 14 days. So priority ordering
-      moves ~9.2 % of the queue to the front — real, but the queue itself cannot drain while
-      **0 subtitle search providers are configured** (owner-gated credential; Settings → Subtitles
-      shows the idle notice and the automation skips the cycle). Ordering matters the moment a
-      provider exists; coverage cannot rise before it.
-- [ ] Bilingual cycle same ordering; test with a simulated translator.
+- [x] Subtitle fetch cycle pulls candidates through the priority query (highest bucket first) with the existing provider guard and per-run cap intact; test with a simulated provider — `listWantedSubtitlesByPriority` (pool x5, variant→media, batched progress, sibling-series activity) wired into `processWantedQueue`; 2 simulated-provider tests; live ordering waits on a provider credential — - [ ] Bilingual cycle same ordering; test with a simulated translator.
 - [ ] Receipt log line records the bucket of each processed item.
 
 ## Phase 4: SPA + client surface

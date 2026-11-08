@@ -1,0 +1,1 @@
+Quarantine wiring (feature_adult_library_20261107, Phase 4): QuarantineEntry migration 0012; quarantine/restore/purge endpoints with candidate selection, dry-run default and manifest persistence; live round-trip proven on a throwaway file inside the media root; artifacts cleaned; 197 real items remain.

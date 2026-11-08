@@ -39,5 +39,5 @@
 ## Phase 5: Acceptance + close
 
 - [x] Live high-priority coverage reported; every missing item explainable — measured 2026-11-08: high priority `{total: 9, covered: 7, missing: 2}` and subtitle search providers configured: **none** (`apiKeys` has no opensubtitles/subdl/assrt value), so both missing items are explained by `no-provider` and the automation idles with a visible notice rather than silently failing — 570d808
-- [~] Server suite, SPA tests, `flutter analyze`/tests green; screenshots recorded.
-- [ ] Update `tracks.md`, `tech-debt.md`, `lessons-learned.md`.
+- [x] Server suite, SPA tests, `flutter analyze`/tests green; screenshots recorded — 2026-11-08: **62 server tests** across the 11 priority/coverage/wanted/bilingual files, **34 SPA tests** (`WantedPage`, `SubtitleCoverageCard`, `subtitleWantedApi`), server + app `tsc` clean, SPA rebuilt and browser-checked; screenshots `device-20261107/wanted-coverage.jpg`, `wanted-grouped.jpg`. Flutter client was not modified by this track (grep-only evidence) — 8f63fa6
+- [~] Update `tracks.md`, `tech-debt.md`, `lessons-learned.md`.

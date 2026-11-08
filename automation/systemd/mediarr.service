@@ -7,6 +7,8 @@ Wants=network-online.target
 # YouTube answers with 'Sign in to confirm you are not a bot' for some videos; yt-dlp needs
 # cookies from a signed-in browser. Read from the owner's own Chrome profile, never exported.
 Environment=YTDLP_COOKIES_FROM_BROWSER=chrome
+# beets lives in the automation venv (decision M4); not on the service PATH.
+Environment=BEET_PATH=%h/.local/share/mediarr-automation/venv/bin/beet
 Type=simple
 WorkingDirectory=/home/daniel-bo/Desktop/mediarr
 EnvironmentFile=/home/daniel-bo/Desktop/mediarr/.env

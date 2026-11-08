@@ -169,9 +169,15 @@
 - [ ] **B7** Plugin timers: tidy 04:30, nightly receipt 05:00, retention 04:45 (scoped per G9),
       weekly backup, reconcile + Mediarr task-history polling (correlate by `taskName` + window;
       `executionId:-1` stays until E1). (G6/G9)
-- [ ] **B8** Quarantine engine: root on the 4TB filesystem, per-file hash manifest, copy+verify for
+- [~] **B8** Quarantine engine: root on the 4TB filesystem, per-file hash manifest, copy+verify for
       cross-device, restore, retention delete, cap + overflow behaviour, rails that do not reuse
-      `isImportIncomplete`, explicit dry-run→live guard. (G6)
+      `isImportIncomplete`, explicit dry-run→live guard. (G6) **Engine done 2026-11-09:**
+      `automation/dsh-media-automation/src/quarantine.js` + `media_automation_quarantine` tool:
+      dry-run default, live copy+sha256/bytes verify before unlink, hash-checked restore, cap/age prune
+      only inside the root, refuses missing root / file already quarantined; 5 tests (12 plugin total).
+      Root `/run/media/daniel-bo/4TB/MediarrQuarantine` created, dry-run exercised against it
+      (`device-20261107/quarantine-engine-20261109.md`). Remaining: live retention policy per domain
+      (window + restore surface) — an owner decision, not a code gap — a699ae93
 - [ ] **B9** **System-level** watchdog + `automation/expectations.yaml`: host, plugin heartbeat,
       bridge/tool registration, Mediarr health, task history, expected artifacts; alert delivery
       status/retry + local fallback; synthetic end-to-end alert. Detection ≤10 min / delivery ≤15 min.

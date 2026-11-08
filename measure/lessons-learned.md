@@ -69,3 +69,20 @@ The owner corrected two long-standing habits in one turn:
 
 Also recorded: untracked work is *not* someone else's — every file in the tree is owned here, so
 leave nothing untracked (commit it or delete it) and never assume another session will finish it.
+
+## 2026-11-08 — Priority only matters if the queue can drain; measure the blocker before the feature
+
+Building the viewing-priority system end to end produced three lessons:
+
+1. **Ordering beats insertion order only when work can actually happen.** The wanted queues held
+   1,740 rows and zero configured subtitle providers, so the ordering moved ~9 % of the queue to the
+   front of a queue that idles by design. Measure the *blocker* (no credential, no indexer) before
+   optimising the order; then say so in the UI instead of letting the list imply progress.
+2. **A missing item is a modelling problem, not a display problem.** A missing episode has no
+   playback progress of its own, so "rank by what we watch" silently degraded to "rank by added
+   date". The fix was to inherit series-level activity from sibling episodes — the same aggregation
+   now shared by the acquisition list and the subtitle queues (`aggregateSeriesProgress`).
+3. **"Nothing to pass through" is a valid, valuable measurement.** The TV-client task assumed a
+   wanted surface existed; `grep` proved zero references and zero priority usage. Closing the task
+   with that evidence is progress — inventing a screen to satisfy a task would have been the defect.
+

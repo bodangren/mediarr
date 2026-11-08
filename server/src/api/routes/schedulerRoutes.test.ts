@@ -149,6 +149,21 @@ describe('PUT /api/scheduler/:taskId/interval', () => {
     expect(scheduler.isScheduled).toHaveBeenCalledWith('rss-sync');
   });
 
+  it('rejects an interval for a task with no persisted interval setting (B2)', async () => {
+    scheduler.isScheduled.mockReturnValue(true);
+
+    const response = await app.inject({
+      method: 'PUT',
+      url: '/api/scheduler/library-scan/interval',
+      payload: { cronExpression: '*/30 * * * *' },
+    });
+
+    expect(response.statusCode).toBe(422);
+    expect(response.json().error.message).toContain('no persisted interval setting');
+    expect(scheduler.reschedule).not.toHaveBeenCalled();
+    expect(settingsService.update).not.toHaveBeenCalled();
+  });
+
   it('persists the subtitle sweep interval to availabilityCheckMinutes for the registered task id', async () => {
     scheduler.isScheduled.mockReturnValue(true);
     scheduler.reschedule.mockReturnValue(undefined);

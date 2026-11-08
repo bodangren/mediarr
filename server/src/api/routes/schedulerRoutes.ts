@@ -113,20 +113,38 @@ export function registerSchedulerRoutes(app: FastifyInstance, deps: SchedulerDep
       return reply.status(404).send({ ok: false, error: { code: 'NOT_FOUND', message: `Unknown task: ${taskId}`, retryable: false } });
     }
 
-    deps.scheduler.reschedule(taskId, cronExpression);
-
     const intervalKey = TASK_INTERVAL_KEY[taskId];
-    const minutes = extractMinutes(cronExpression);
-
-    if (intervalKey && minutes !== null) {
-      await deps.settingsService.update({
-        schedulerIntervals: { [intervalKey]: minutes },
-      } as Record<string, unknown> as Parameters<typeof deps.settingsService.update>[0]);
-    } else {
-      await deps.settingsService.update({} as Parameters<typeof deps.settingsService.update>[0]);
+    if (!intervalKey) {
+      // Rescheduling a task with no persisted interval setting would look successful but silently
+      // revert on the next server start (B2). Reject instead of pretending it was saved.
+      return reply.status(422).send({
+        ok: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: `Task ${taskId} has no persisted interval setting`,
+          retryable: false,
+        },
+      });
     }
 
-    return sendSuccess(reply, { taskId, cronExpression });
+    const minutes = extractMinutes(cronExpression);
+    if (minutes === null) {
+      return reply.status(422).send({
+        ok: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: `cronExpression ${cronExpression} has no fixed interval to persist`,
+          retryable: false,
+        },
+      });
+    }
+
+    deps.scheduler.reschedule(taskId, cronExpression);
+    await deps.settingsService.update({
+      schedulerIntervals: { [intervalKey]: minutes },
+    } as Record<string, unknown> as Parameters<typeof deps.settingsService.update>[0]);
+
+    return sendSuccess(reply, { taskId, cronExpression, intervalMinutes: minutes });
   });
 
   app.post('/api/scheduler/:taskId/trigger', async (request, reply) => {

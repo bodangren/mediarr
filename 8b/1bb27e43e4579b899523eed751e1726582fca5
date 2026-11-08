@@ -1,0 +1,1 @@
+B7 staging tidy: daily 04:30 removes abandoned .part/.ytdl/.tmp and old empty files only; live verified deleted 1 synthetic partial; 2 tests.

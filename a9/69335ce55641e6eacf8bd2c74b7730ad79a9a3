@@ -1,0 +1,1 @@
+YouTube poller (feature_youtube_library_20261107, Phase 1): yt-dlp flat listing, nested channel tabs flattened, dedupe/shorts/cap via selectNewEntries, per-entry failures, poll error recorded. Live poll of the real channel: seen 463, queued 25 PENDING, no failures.

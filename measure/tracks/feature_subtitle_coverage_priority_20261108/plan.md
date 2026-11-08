@@ -38,6 +38,6 @@
 
 ## Phase 5: Acceptance + close
 
-- [~] Live high-priority coverage reported; every missing item explainable.
-- [ ] Server suite, SPA tests, `flutter analyze`/tests green; screenshots recorded.
+- [x] Live high-priority coverage reported; every missing item explainable — measured 2026-11-08: high priority `{total: 9, covered: 7, missing: 2}` and subtitle search providers configured: **none** (`apiKeys` has no opensubtitles/subdl/assrt value), so both missing items are explained by `no-provider` and the automation idles with a visible notice rather than silently failing — 570d808
+- [~] Server suite, SPA tests, `flutter analyze`/tests green; screenshots recorded.
 - [ ] Update `tracks.md`, `tech-debt.md`, `lessons-learned.md`.

@@ -186,8 +186,11 @@
       (`.part`/`.ytdl`/`.tmp`/`.temp`, old empty files) in the music/YouTube staging areas; live
       trigger deleted a synthetic back-dated partial and logged it
       (`device-20261107/staging-tidy-20261109.md`). Retention (05:45) and music receipt (05:10) already
-      exist; nightly aggregate receipt + weekly backup stay open because `BackupService.getSchedule()`
-      is honestly `supported:false` until the host cutover — 8b1bb27e
+      exist; **weekly backup done 2026-11-09:** harness task `schedule-582bb043-2214-4b44-8edb-dbe41e0d2c69`
+      ("Mediarr weekly database backup", Sundays 04:30 Asia/Shanghai, new session, deterministic POST
+      `/api/backups` + receipt, never prunes); manual proof created an 87 MB backup listed by
+      `GET /api/backups` (`device-20261107/weekly-backup-timer-20261109.md`). Nightly aggregate receipt
+      05:00 stays open (orchestrator 03:00 + music receipt 05:10 already cover most of it) — 8b1bb27e, 588d54a1
 - [~] **B8** Quarantine engine: root on the 4TB filesystem, per-file hash manifest, copy+verify for
       cross-device, restore, retention delete, cap + overflow behaviour, rails that do not reuse
       `isImportIncomplete`, explicit dry-run→live guard. (G6) **Engine done 2026-11-09:**

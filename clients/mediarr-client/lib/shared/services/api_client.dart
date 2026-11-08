@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/collection.dart';
+import '../models/adult_item.dart';
 import '../models/library_item.dart';
 import '../models/movie.dart';
 import '../models/search_result.dart';
@@ -656,6 +657,25 @@ class MediarrApiClient extends StateNotifier<ApiClientState> {
       (json) => Movie.fromJson(json as Map<String, dynamic>),
     );
   }
+
+  /// Adult library listing (track feature_adult_library_20261107).
+  ///
+  /// A separate domain: `/api/adult/*` only, so these items never mix with movies or episodes.
+  Future<AdultItemsPage> getAdultItems({String? query, int page = 1, int pageSize = 24}) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      '/api/adult/items',
+      queryParameters: {
+        if (query != null && query.trim().isNotEmpty) 'q': query.trim(),
+        'page': page,
+        'pageSize': pageSize,
+      },
+    );
+    final data = _unwrap(response.data) as Map<String, dynamic>;
+    return AdultItemsPage.fromJson(data);
+  }
+
+  /// Range-capable stream URL for one adult item.
+  String adultStreamUrl(int id) => '${_dio.options.baseUrl}/api/adult/items/$id/stream';
 
   Future<Movie?> getMovie(int id) async {
     final response = await _dio.get('/api/movies/$id');

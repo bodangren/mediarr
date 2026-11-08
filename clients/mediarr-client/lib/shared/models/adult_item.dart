@@ -59,3 +59,37 @@ class AdultItem {
     );
   }
 }
+
+/// One page of the Adult library listing (`GET /api/adult/items`).
+class AdultItemsPage {
+  const AdultItemsPage({
+    required this.items,
+    required this.page,
+    required this.pageSize,
+    required this.totalCount,
+    required this.needsReview,
+  });
+
+  final List<AdultItem> items;
+  final int page;
+  final int pageSize;
+  final int totalCount;
+
+  /// Items whose filename carried no title and need a human/agent decision.
+  final int needsReview;
+
+  int get totalPages => totalCount == 0 ? 1 : ((totalCount + pageSize - 1) ~/ pageSize);
+
+  factory AdultItemsPage.fromJson(Map<String, dynamic> json) {
+    final rawItems = json['items'] as List<dynamic>? ?? const [];
+    return AdultItemsPage(
+      items: rawItems
+          .map((item) => AdultItem.fromJson(item as Map<String, dynamic>))
+          .toList(),
+      page: (json['page'] as num?)?.toInt() ?? 1,
+      pageSize: (json['pageSize'] as num?)?.toInt() ?? 24,
+      totalCount: (json['totalCount'] as num?)?.toInt() ?? rawItems.length,
+      needsReview: (json['needsReview'] as num?)?.toInt() ?? 0,
+    );
+  }
+}

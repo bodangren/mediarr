@@ -138,6 +138,39 @@ typedef PlaybackProgressReporter = Future<void> Function({
   required int durationSeconds,
 });
 
+/// True when a progress write must be skipped because a resume seek has not landed yet.
+///
+/// Device defect 2026-11-08: resuming The Avengers at 27% reported position 6 s before the seek
+/// completed, overwriting the stored 38:35 bookmark. A report is suppressed while it is far behind
+/// the resume target and the player has only just opened.
+bool shouldSkipProgressReport({
+  required Duration position,
+  required Duration? resumeTarget,
+  required Duration sincePlayStart,
+}) {
+  final target = resumeTarget;
+  if (target == null || target <= const Duration(seconds: 30)) return false;
+  if (sincePlayStart >= const Duration(seconds: 30)) return false;
+  return position + const Duration(seconds: 15) < target;
+}
+
+/// Retry rule for a resume seek that lost the race with stream loading.
+///
+/// Owner defect 2026-11-08: resume sometimes started at 0:00 and then overwrote the bookmark. The
+/// position listener re-seeks while playback is far behind the target, throttled so a buffering stall
+/// cannot thrash the player.
+bool shouldRetryResumeSeek({
+  required Duration position,
+  required Duration? resumeTarget,
+  required Duration sinceLastAttempt,
+  required int attempts,
+}) {
+  if (resumeTarget == null) return false;
+  if (attempts >= 6) return false;
+  if (position + const Duration(seconds: 15) >= resumeTarget) return false;
+  return sinceLastAttempt >= const Duration(milliseconds: 1500);
+}
+
 class PlaybackService extends StateNotifier<PlaybackState> {
   PlaybackService(
     this._apiClient, {
@@ -186,6 +219,11 @@ class PlaybackService extends StateNotifier<PlaybackState> {
   late final MediaPlayer _player;
   late final SubtitleRenderer _subtitleRenderer;
   Timer? _progressReportTimer;
+  Duration? _resumeTarget;
+  DateTime? _playStartedAt;
+  Duration? _pendingResumeTarget;
+  DateTime? _lastResumeAttemptAt;
+  int _resumeAttempts = 0;
   Timer? _overlayHideTimer;
   Timer? _subtitleToastTimer;
   Timer? _seekToastTimer;
@@ -228,6 +266,12 @@ class PlaybackService extends StateNotifier<PlaybackState> {
       'resumeFrom': startPosition,
       'externalSubtitles': externalSubtitles,
     };
+
+    _resumeTarget = startPosition > const Duration(seconds: 30) ? startPosition : null;
+    _pendingResumeTarget = startPosition > const Duration(seconds: 30) ? startPosition : null;
+    _resumeAttempts = 0;
+    _lastResumeAttemptAt = null;
+    _playStartedAt = DateTime.now();
 
     // Per-media reset of subtitle timing nudge (FR-7).
     await _subtitleRenderer.setDelay(Duration.zero);
@@ -329,6 +373,24 @@ class PlaybackService extends StateNotifier<PlaybackState> {
       final current = state.position;
       if (current + tolerance >= target) return;
     }
+    _reportResumeFailure(target, state.position, 'enforceResume');
+  }
+
+  /// One diagnostic record per play when the player refuses to move to the stored resume point.
+  /// Without it a failed resume only shows up as the viewer starting from the beginning.
+  void _reportResumeFailure(Duration target, Duration actual, String stage) {
+    _reportFailure(
+      'resume seek did not take effect ($stage)',
+      StackTrace.current,
+      {
+        'targetSeconds': target.inSeconds,
+        'actualSeconds': actual.inSeconds,
+        'durationSeconds': state.duration.inSeconds,
+        'mediaId': state.mediaId,
+        'mediaType': state.mediaType,
+        'attempts': _resumeAttempts,
+      },
+    );
   }
 
   /// Toggle play/pause.
@@ -385,6 +447,8 @@ class PlaybackService extends StateNotifier<PlaybackState> {
     _overlayHideTimer?.cancel();
     _subtitleToastTimer?.cancel();
     _seekToastTimer?.cancel();
+    _pendingResumeTarget = null;
+    _resumeTarget = null;
 
     // Stop the native player FIRST: a screen that is leaving must never keep a
     // newly opened stream alive while it awaits a network write. On the
@@ -586,6 +650,7 @@ class PlaybackService extends StateNotifier<PlaybackState> {
 
     _player.position.listen((position) {
       state = state.copyWith(position: position);
+      unawaited(_maybeRetryResume(position));
     });
 
     _player.duration.listen((duration) {
@@ -642,6 +707,32 @@ class PlaybackService extends StateNotifier<PlaybackState> {
     );
   }
 
+  Future<void> _maybeRetryResume(Duration position) async {
+    final target = _pendingResumeTarget;
+    final last = _lastResumeAttemptAt;
+    final sinceLast = last == null ? const Duration(days: 1) : DateTime.now().difference(last);
+    if (!shouldRetryResumeSeek(position: position, resumeTarget: target, sinceLastAttempt: sinceLast, attempts: _resumeAttempts)) {
+      if (target != null && position + const Duration(seconds: 15) >= target) {
+        _pendingResumeTarget = null;
+      }
+      return;
+    }
+    if (_resumeAttempts >= 6) {
+      if (_pendingResumeTarget != null) {
+        _pendingResumeTarget = null;
+        _reportResumeFailure(target!, position, 'retryExhausted');
+      }
+      return;
+    }
+    _resumeAttempts += 1;
+    _lastResumeAttemptAt = DateTime.now();
+    try {
+      await _player.seek(target!);
+    } catch (_) {
+      // Keep the pending target; the next tick retries within the attempt budget.
+    }
+  }
+
   Future<void> _reportProgress() async {
     final id = state.mediaId;
     final type = state.mediaType;
@@ -653,6 +744,15 @@ class PlaybackService extends StateNotifier<PlaybackState> {
     if (state.position == Duration.zero && state.duration == Duration.zero) {
       return;
     }
+    if (shouldSkipProgressReport(
+      position: state.position,
+      resumeTarget: _resumeTarget,
+      sincePlayStart: DateTime.now().difference(_playStartedAt ?? DateTime.now()),
+    )) {
+      return;
+    }
+    // The resume seek has landed (or the grace window passed); stop guarding.
+    _resumeTarget = null;
 
     final override = _progressReporter;
     if (override != null) {

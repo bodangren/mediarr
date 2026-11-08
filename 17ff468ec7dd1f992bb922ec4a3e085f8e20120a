@@ -1,0 +1,1 @@
+Adult Phase 3 closeout: discovery prompt, queue+dedupe with dry-run default, receipts table+endpoints; outbound alert delivery is a substrate dependency (no notification transport configured).

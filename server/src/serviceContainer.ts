@@ -63,7 +63,7 @@ import { SubtitleSyncService } from './services/SubtitleSyncService';
 import { FfsubsyncAligner } from './services/FfsubsyncAligner';
 import { BilingualSubtitleService } from './services/BilingualSubtitleService';
 import { ensureLibraryRegistry } from './services/LibraryRegistry';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import * as dbSchema from './db/schema';
 import { orderSubtitlePathsByPriority } from './services/SubtitlePathPriority';
 import { MiniMaxTranslator } from './services/MiniMaxTranslator';
@@ -93,6 +93,7 @@ import { LibraryScanService } from './services/LibraryScanService';
 import { EpisodeThumbnailService } from './services/EpisodeThumbnailService';
 import { LibraryFolderImportService } from './services/LibraryFolderImportService';
 import { downloadPending, pollAllSubscriptions, runRetention } from './services/YoutubeAutomation';
+import { appendNightlyReceipt, buildNightlyReceipt, readIngestReceipts } from './services/MusicAutomation';
 import { snapshotCoverage } from './services/SubtitleCoverageAutomation';
 import { queuePriorityWanted } from './services/SubtitleCoverageWanted';
 import { globalLogBuffer } from './services/LogReaderService';
@@ -908,6 +909,29 @@ export async function createServiceContainer(
           `Subtitle coverage: ${snapshot.items.length} priority items, `
           + `dual ${snapshot.counts.dual}, zho-only ${snapshot.counts['zho-only']}, `
           + `en-only ${snapshot.counts['en-only']}, none ${snapshot.counts.none}`,
+        );
+      });
+
+      scheduler.schedule('music-nightly-receipt', '10 5 * * *', async () => {
+        const drizzle = prisma.drizzle;
+        // Every music table is a plain SQLite table; one count helper avoids three typed variants.
+        const countRows = async (table: any): Promise<number> => {
+          const rows = await drizzle.select({ n: sql<number>`count(*)` }).from(table);
+          return Number(rows[0]?.n ?? 0);
+        };
+        const [tracks, artists, albums] = await Promise.all([
+          countRows(dbSchema.musicTracks),
+          countRows(dbSchema.musicArtists),
+          countRows(dbSchema.musicAlbums),
+        ]);
+        const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+        const ingests = (await readIngestReceipts(configDir, 500))
+          .filter((receipt) => Date.parse(receipt.at) >= weekAgo);
+        const receipt = buildNightlyReceipt({ tracks, artists, albums, ingests });
+        await appendNightlyReceipt(configDir, receipt);
+        console.log(
+          `Music nightly receipt: tracks ${tracks}, artists ${artists}, albums ${albums}, `
+          + `ingests ${receipt.ingests.attempted} (failed ${receipt.ingests.failed})`,
         );
       });
 

@@ -61,3 +61,40 @@ export function summarizeReceipts(receipts: readonly IngestReceipt[]): IngestSum
     skipped: receipts.filter((receipt) => receipt.status === 'SKIPPED').length,
   };
 }
+
+export interface MusicNightlyReceipt {
+  at: string;
+  tracks: number;
+  artists: number;
+  albums: number;
+  /** Ingest receipts inside the lookback window, aggregated. */
+  ingests: IngestSummary;
+  /** True when the library grew since the previous receipt (the receipt is the growth record). */
+  libraryComplete: boolean;
+}
+
+/** One honest nightly line: library size + what ingest did recently. Pure so it is testable. */
+export function buildNightlyReceipt(input: {
+  tracks: number;
+  artists: number;
+  albums: number;
+  ingests: readonly IngestReceipt[];
+  now?: Date;
+}): MusicNightlyReceipt {
+  return {
+    at: (input.now ?? new Date()).toISOString(),
+    tracks: input.tracks,
+    artists: input.artists,
+    albums: input.albums,
+    ingests: summarizeReceipts(input.ingests),
+    libraryComplete: input.tracks > 0 && input.albums > 0,
+  };
+}
+
+export function nightlyReceiptPath(configDir: string): string {
+  return path.join(configDir, 'music-nightly-receipts.jsonl');
+}
+
+export async function appendNightlyReceipt(configDir: string, receipt: MusicNightlyReceipt): Promise<void> {
+  await fsp.appendFile(nightlyReceiptPath(configDir), `${JSON.stringify(receipt)}\n`);
+}

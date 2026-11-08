@@ -144,10 +144,16 @@
       cut over without `DSH_HOST_CUTOVER=1` — stopping the terminal host also ends the agent turn
       running it, so the actual cutover is owner-gated. Evidence
       `device-20261107/service-supervision-20261109.md` — 8c23f906
-- [ ] **B4** Scaffold `automation/dsh-media-automation/` with the **frozen** ledger schema
+- [~] **B4** Scaffold `automation/dsh-media-automation/` with the **frozen** ledger schema
       (`runs` keyed by `taskId+attempt` with `retryOf`, `jobs`, `locks` incl. a `browser` lock,
       `alerts`, `quarantine`), heartbeat, local-first alert writer; install via `link:`; prove HMR.
-      (G4/G5)
+      (G4/G5) **Scaffolded 2026-11-09:** package + frozen versioned schema (node:sqlite, no native
+      build), tools `media_automation_status` / `_heartbeat` / `_alert`, local-first alert JSONL,
+      7 tests (migration, attempt/retry, heartbeat, alert ordering, lock expiry, quarantine, reload
+      safety); `automation/scripts/install-media-automation.sh` links the profile with
+      `dsh plugin add link:` but is **gated** behind `MEDIA_AUTOMATION_CUTOVER=1` because loading a
+      host plugin reloads the harness running this turn (same gate as B3) — live link+HMR proof is
+      owner-gated — 75ce6f57
 - [~] **B5** kimi-webbridge MCP is live (`mcp__webbridge__navigate/evaluate` verified). Remaining:
       probe that asserts **tool registration + extension connected** (not port liveness), per-call/run
       timeout for a wedged extension, extension-reconnect check after restart. (G2)

@@ -1,0 +1,6 @@
+Phase 3 checkpoint — automation consumes the viewing-priority order.
+
+- Fetch cycle: listWantedSubtitlesByPriority (pool x5, variant->media, batched progress, sibling-series activity) -> orderWantedCandidates -> cap; per-item bucket logged.
+- Bilingual cycle: candidate provider maps sidecar paths via VariantSubtitleTrack.filePath -> variant -> media, orders with orderSubtitlePathsByPriority, degrades to filesystem order on failure; simulated-translator test locks the order contract.
+- Receipts: count/order/cap lines plus per-item bucket; bilingual ordered/mapped counts.
+- Tests: 15 automation/priority + 13 bilingual/path green; tsc clean; server healthy.

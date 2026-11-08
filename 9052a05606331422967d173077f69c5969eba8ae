@@ -1,0 +1,1 @@
+Thumbnail generation bounded (event-loop safety): single in-flight batch, single-threaded ffmpeg, 200ms yield per item. Verified lag 1ms after a 40-item batch; 196/196 stills cached. Watermark advanced past the two triaged records.

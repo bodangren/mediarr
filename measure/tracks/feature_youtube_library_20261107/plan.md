@@ -20,8 +20,8 @@
 
 ## Phase 2: Download + library
 
-- [~] Download job (video + metadata + thumbnail) into the YouTube root.
-- [ ] Scanner/metadata mapping: channel/playlist → episode, title/date/duration/thumbnail.
+- [x] Download job (video + metadata + thumbnail) into the YouTube root — `YoutubeDownloadService` (yt-dlp, ≤1080p per Y3, `Title [videoId]` naming, `PENDING→DOWNLOADING→AVAILABLE|FAILED`, exact tool error stored, `.part` cleanup) + `POST /api/youtube/download` bounded batch; 5 tests; **first live download succeeded** (`{attempted:1, downloaded:1, failed:[]}`) — d8241c1
+- [~] Scanner/metadata mapping: channel/playlist → episode, title/date/duration/thumbnail.
 - [ ] Dedupe by video id; partial-download cleanup.
 - [ ] UI section: playlist → episodes, D-pad navigable.
 

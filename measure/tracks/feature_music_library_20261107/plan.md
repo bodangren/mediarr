@@ -14,8 +14,8 @@
 
 ## Phase 1: Domain + scan
 
-- [~] Contract tests for artist/album/track and the scan summary, written first.
-- [ ] Schema/migration; isolated from `TV|MOVIE`.
+- [x] Contract tests for artist/album/track and the scan summary, written first — `MusicLibrary` with 6 tests: casefolded artist/album identity, Unknown buckets, filename title fallback, disc/track ordering, scan summary with unreadable reporting — 78c125fc
+- [~] Schema/migration; isolated from `TV|MOVIE`.
 - [ ] Scanner: walk root, read tags/artwork, upsert by path, report unreadable files.
 - [ ] Seeded-tree counts test.
 

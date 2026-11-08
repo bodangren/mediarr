@@ -1016,13 +1016,28 @@ class _TransportOverlayState extends State<_TransportOverlay> {
                             fontFeatures: [FontFeature.tabularFigures()],
                           ),
                         ),
-                        Text(
-                          _formatDuration(state.duration),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 20,
-                            fontFeatures: [FontFeature.tabularFigures()],
-                          ),
+                        Row(
+                          children: [
+                            Text(
+                              _formatDuration(state.duration),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 20,
+                                fontFeatures: [FontFeature.tabularFigures()],
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            // Remaining time: reviewers said 00:10 / 27:49 alone makes the viewer do
+                            // the subtraction at 10 feet.
+                            Text(
+                              '-${_formatDuration(state.duration - state.position)}',
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 18,
+                                fontFeatures: [FontFeature.tabularFigures()],
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -1209,8 +1224,8 @@ class _SeekBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return SliderTheme(
       data: SliderTheme.of(context).copyWith(
-        trackHeight: 6,
-        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10),
+        trackHeight: 8,
+        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 16),
         activeTrackColor: MediarrColors.accentPrimary,
         inactiveTrackColor: Colors.white24,
         thumbColor: MediarrColors.accentPrimary,

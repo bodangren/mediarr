@@ -41,3 +41,14 @@ run are reliable. That is a harness/provider limitation, not a screen defect.
 - Noise: MiMo read the two hash-different files as "duplicates" (they are distinct files with the same
   sequence number); MiniMax reported the SPA capture as 1280×668 (correct — it is a browser viewport,
   not a 1366 design width); "missing artwork" on the SPA capture was genuine and is now fixed.
+
+## Follow-up (round 83) — one review finding was a misread, two were real
+
+- **The white right-side panel (bell, vertical slider, music note, gear) is NOT Mediarr UI.** Grep
+  across `clients/mediarr-client/lib` finds no such widget in the playback screen; it is the Android
+  TV box's own system overlay. Kimi, MiMo and MiniMax all attributed it to the app, and every
+  "panel covers the seek bar / bell is not mute" suggestion is therefore dropped — implementing it
+  would have "fixed" a launcher panel we do not own.
+- **Seek target was genuinely small**: track raised 6→8 px, thumb radius 10→16 px.
+- **Time readout lacked remaining time**: now shows `00:10  27:49  -27:39` (elapsed, duration,
+  remaining), 148 playback tests green.

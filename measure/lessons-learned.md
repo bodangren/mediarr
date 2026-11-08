@@ -86,3 +86,23 @@ Building the viewing-priority system end to end produced three lessons:
    wanted surface existed; `grep` proved zero references and zero priority usage. Closing the task
    with that evidence is progress — inventing a screen to satisfy a task would have been the defect.
 
+
+## 2026-11-08 — Ships in the order the review says, and never fix a panel you do not own
+
+The Adult library went from schema to a device-verified section in one stretch. What kept it honest:
+
+1. **Every surface was verified where it runs.** SPA in Chrome, TV over ADB, quarantine on the real
+   filesystem with a throwaway file — not "tests pass, therefore it works". The TV exposed a real
+   defect the widget tests missed (the remote centre button did nothing because the card only handled
+   tap and the test had used a `Shortcuts` wrapper the app does not have).
+2. **Three different model families reviewed the same screenshots and disagreed productively.**
+   Kimi caught the cropped stills and the silent paging, MiMo caught the clipped review badge and the
+   white-on-white Wanted pill, MiniMax caught the seek-target size and the flattened review bucket.
+   But all three attributed the TV box's own system overlay to the app; grep proved it was not ours.
+   **Never implement a fix for UI you cannot find in your codebase.**
+3. **Batch work that spawns processes must yield.** Five concurrent ffmpeg thumbnail batches stalled
+   the event loop to 16.9 s and the TV reported "server unreachable". The fix was not "do less", it was
+   single-flight + `-threads 1` + a 200 ms yield per item — the backfill then finished with 1 ms lag.
+4. **Deletion is a two-step move, never a delete.** The quarantine engine plans purely, defaults to
+   dry-run, copies+verifies across devices, and its delete function refuses any path outside the
+   quarantine root. A destructive API that cannot be pointed at the library is worth the extra code.

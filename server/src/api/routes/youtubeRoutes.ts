@@ -3,6 +3,7 @@ import { asc, eq } from 'drizzle-orm';
 import * as schema from '../../db/schema';
 import { parseSubscriptionUrl } from '../../services/YoutubeLibrary';
 import { YoutubeFeedPoller } from '../../services/YoutubeFeedPoller';
+import { YoutubeDownloadService } from '../../services/YoutubeDownloadService';
 import { sendSuccess } from '../contracts';
 import type { ApiDependencies } from '../types';
 
@@ -117,6 +118,46 @@ export function registerYoutubeRoutes(app: FastifyInstance, deps: ApiDependencie
       },
     );
 
+    return sendSuccess(reply, result);
+  });
+
+  /** Download queued videos now; the scheduled task will call the same service. */
+  app.post('/api/youtube/download', async (request, reply) => {
+    const body = (request.body ?? {}) as { limit?: number };
+    const limit = Math.min(5, Math.max(1, Number.parseInt(String(body.limit ?? 1), 10) || 1));
+    const pending = await drizzle
+      .select({
+        id: schema.youtubeVideos.id,
+        videoId: schema.youtubeVideos.videoId,
+        title: schema.youtubeVideos.title,
+        channel: schema.youtubeVideos.channel,
+      })
+      .from(schema.youtubeVideos)
+      .where(eq(schema.youtubeVideos.status, 'PENDING'))
+      .orderBy(asc(schema.youtubeVideos.added))
+      .limit(limit);
+    if (pending.length === 0) {
+      return sendSuccess(reply, { attempted: 0, downloaded: 0, failed: [] });
+    }
+
+    const service = new YoutubeDownloadService({ root: process.env.YOUTUBE_DIR ?? '/data/Youtube' });
+    const result = await service.run(limit, pending, {
+      claim: async (id) => {
+        await drizzle.update(schema.youtubeVideos).set({ status: 'DOWNLOADING' }).where(eq(schema.youtubeVideos.id, id));
+      },
+      markAvailable: async (id, outcome) => {
+        await drizzle.update(schema.youtubeVideos).set({
+          status: 'AVAILABLE',
+          path: outcome.path,
+          thumbPath: outcome.thumbPath,
+          error: null,
+          lastSeenAt: new Date(),
+        }).where(eq(schema.youtubeVideos.id, id));
+      },
+      markFailed: async (id, error) => {
+        await drizzle.update(schema.youtubeVideos).set({ status: 'FAILED', error }).where(eq(schema.youtubeVideos.id, id));
+      },
+    });
     return sendSuccess(reply, result);
   });
 

@@ -22,7 +22,7 @@
       246 files, 196 videos (188 mp4 / 8 mkv), 49 jpg, 1 nfo, **298 GB**, flat root + 8 sub-dirs.
       Evidence: [`evidence/phase0-inventory-20261108.md`](./evidence/phase0-inventory-20261108.md) — 0723765
 
-## Phase 1: Domain + scan
+## Phase 1: Domain + scan [checkpoint: b49d424b]
 
 - [x] Contract test for the adult library type/root written first — registry test pins `ADULT` kind + root/disabled semantics — c87e372
 - [x] Schema/type change isolated so `TV|MOVIE` queries cannot see the new library — `Library` (migration 0008) + `AdultItem` (migration 0009) are separate tables; registry/import tests prove isolation — 9ed0044
@@ -31,7 +31,7 @@
 
 ## Phase 2: API + UI (SPA first, TV after the focus fix)
 
-- [ ] Browse/search/list endpoints scoped to the adult library.
+- [~] Browse/search/list endpoints scoped to the adult library — `GET /api/adult/items` + `GET /api/libraries` shipped (9720fff); search/paging next.
 - [ ] Playback (existing stream handler) + watched state integration.
 - [ ] Flutter client section (TV-safe focus walk); SPA section.
 - [ ] Automation contract: list, watched, retention candidates.

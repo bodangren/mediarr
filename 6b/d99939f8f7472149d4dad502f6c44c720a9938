@@ -1,0 +1,1 @@
+Music ingest receipts (Phase 2): JSONL per-attempt receipts incl. duplicates and exact tool errors, /api/music/receipts summary; 3 tests; live failure receipt proven.

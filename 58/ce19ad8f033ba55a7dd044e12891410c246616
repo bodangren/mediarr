@@ -1,0 +1,1 @@
+Music resume across restarts: SharedPreferences snapshot (codec tested), periodic/pause/dispose persistence, Continue listening banner restores queue and seeks; device verified force-stop -> banner 0:14 -> playing 0:19.

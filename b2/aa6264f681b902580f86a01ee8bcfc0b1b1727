@@ -1,0 +1,1 @@
+Resume: fixed unreachable exhaustion telemetry (checked after throttle), added seekError capture + injectable retry tunables, behaviour tests; device run 1.3.48 resumed 10:46; intermittent failure remains under watch.

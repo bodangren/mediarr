@@ -2,6 +2,8 @@ import fs from 'node:fs/promises';
 import { and, asc, eq, gte, inArray, not, or, sql } from 'drizzle-orm';
 import type { DatabaseClient } from '../db/drizzleClient';
 import * as schema from '../db/schema';
+import { aggregateSeriesProgress, orderWantedCandidates } from '../services/WantedSubtitlePriority';
+import type { ProgressSnapshot } from '../services/ViewingPriorityQuery';
 import type {
   MediaFileVariant,
   VariantAudioTrack,
@@ -440,6 +442,151 @@ export class SubtitleVariantRepository {
       .where(inArray(schema.wantedSubtitles.state, states))
       .orderBy(asc(schema.wantedSubtitles.updatedAt), asc(schema.wantedSubtitles.id))
       .limit(limit) as unknown as Promise<WantedSubtitle[]>;
+  }
+
+  /**
+   * Fetchable wanted rows in viewing-priority order (track
+   * feature_subtitle_coverage_priority_20261108, Phase 3).
+   *
+   * The plain query returns `updatedAt`/`id` order, so a show being watched competes with ~1,700 rows
+   * nobody played. This loads a larger pool, resolves each row's movie/episode, attaches own or
+   * series-inherited activity, and returns the highest-priority `limit` rows. Six small queries, run
+   * once per cycle — not per row.
+   */
+  async listWantedSubtitlesByPriority(
+    states: WantedSubtitleState[],
+    limit = 200,
+  ): Promise<WantedSubtitle[]> {
+    if (states.length === 0) return [];
+    const pool = await this.listWantedSubtitlesByStates(states, Math.max(limit * 5, limit));
+    if (pool.length === 0) return [];
+
+    const variantIds = [...new Set(pool.map((row) => row.variantId))];
+    const variants = await this.prisma.drizzle
+      .select({
+        id: schema.mediaFileVariants.id,
+        movieId: schema.mediaFileVariants.movieId,
+        episodeId: schema.mediaFileVariants.episodeId,
+      })
+      .from(schema.mediaFileVariants)
+      .where(inArray(schema.mediaFileVariants.id, variantIds)) as Array<{
+        id: number;
+        movieId: number | null;
+        episodeId: number | null;
+      }>;
+
+    const episodeIds = [...new Set(variants.map((v) => v.episodeId).filter((id): id is number => id != null))];
+    const movieIds = [...new Set(variants.map((v) => v.movieId).filter((id): id is number => id != null))];
+
+    const episodeSeries = new Map<number, number | null>();
+    const seriesIds = new Set<number>();
+    if (episodeIds.length > 0) {
+      const episodes = await this.prisma.drizzle
+        .select({ id: schema.episodes.id, seasonId: schema.episodes.seasonId })
+        .from(schema.episodes)
+        .where(inArray(schema.episodes.id, episodeIds)) as Array<{ id: number; seasonId: number | null }>;
+      const seasonIds = [...new Set(episodes.map((episode) => episode.seasonId).filter((id): id is number => id != null))];
+      const seasonSeries = new Map<number, number>();
+      if (seasonIds.length > 0) {
+        const seasons = await this.prisma.drizzle
+          .select({ id: schema.seasons.id, seriesId: schema.seasons.seriesId })
+          .from(schema.seasons)
+          .where(inArray(schema.seasons.id, seasonIds)) as Array<{ id: number; seriesId: number }>;
+        for (const season of seasons) seasonSeries.set(season.id, season.seriesId);
+      }
+      for (const episode of episodes) {
+        const seriesId = episode.seasonId != null ? seasonSeries.get(episode.seasonId) ?? null : null;
+        episodeSeries.set(episode.id, seriesId);
+        if (seriesId != null) seriesIds.add(seriesId);
+      }
+    }
+
+    const latest = (rows: Array<{ mediaId: number; progress: number; isWatched: unknown; lastWatched: unknown }>): Map<number, ProgressSnapshot> => {
+      const result = new Map<number, ProgressSnapshot>();
+      for (const row of rows) {
+        const snapshot: ProgressSnapshot = {
+          mediaId: row.mediaId,
+          progress: Number(row.progress ?? 0),
+          isWatched: row.isWatched === true || row.isWatched === 1,
+          lastWatched: row.lastWatched == null
+            ? null
+            : row.lastWatched instanceof Date
+              ? row.lastWatched
+              : new Date(Number(row.lastWatched) * 1000),
+        };
+        const current = result.get(row.mediaId);
+        if (!current || (snapshot.lastWatched?.getTime() ?? 0) > (current.lastWatched?.getTime() ?? 0)) {
+          result.set(row.mediaId, snapshot);
+        }
+      }
+      return result;
+    };
+
+    const progressRows = async (mediaType: 'MOVIE' | 'EPISODE', ids: number[]) => {
+      if (ids.length === 0) return [] as Array<{ mediaId: number; progress: number; isWatched: unknown; lastWatched: unknown }>;
+      return this.prisma.drizzle
+        .select({
+          mediaId: schema.playbackProgress.mediaId,
+          progress: schema.playbackProgress.progress,
+          isWatched: schema.playbackProgress.isWatched,
+          lastWatched: schema.playbackProgress.lastWatched,
+        })
+        .from(schema.playbackProgress)
+        .where(and(
+          eq(schema.playbackProgress.mediaType, mediaType),
+          inArray(schema.playbackProgress.mediaId, ids),
+        )) as unknown as Array<{ mediaId: number; progress: number; isWatched: unknown; lastWatched: unknown }>;
+    };
+
+    const [movieProgressRows, ownEpisodeProgressRows] = await Promise.all([
+      progressRows('MOVIE', movieIds),
+      progressRows('EPISODE', episodeIds),
+    ]);
+
+    // Series activity = sibling-episode progress, not just the wanted episode's own row.
+    let siblingEpisodeIds: number[] = [];
+    if (seriesIds.size > 0) {
+      const siblings = await this.prisma.drizzle
+        .select({ id: schema.episodes.id })
+        .from(schema.episodes)
+        .where(inArray(schema.episodes.seriesId, [...seriesIds])) as Array<{ id: number }>;
+      siblingEpisodeIds = siblings.map((row) => row.id).filter((id) => !episodeSeries.has(id));
+    }
+    const siblingProgressRows = await progressRows('EPISODE', siblingEpisodeIds);
+
+    const episodeToSeries = new Map<number, number>();
+    for (const [episodeId, seriesId] of episodeSeries) {
+      if (seriesId != null) episodeToSeries.set(episodeId, seriesId);
+    }
+    const allEpisodeProgress = latest([...ownEpisodeProgressRows, ...siblingProgressRows]);
+    const seriesProgress = aggregateSeriesProgress(allEpisodeProgress, episodeToSeries);
+
+    const mediaByVariant = new Map<number, { kind: 'movie' | 'episode'; id: number; addedAt: Date | null; seriesId: number | null }>();
+    for (const variant of variants) {
+      if (variant.movieId != null) {
+        mediaByVariant.set(variant.id, { kind: 'movie', id: variant.movieId, addedAt: null, seriesId: null });
+      } else if (variant.episodeId != null) {
+        mediaByVariant.set(variant.id, {
+          kind: 'episode',
+          id: variant.episodeId,
+          addedAt: null,
+          seriesId: episodeSeries.get(variant.episodeId) ?? null,
+        });
+      }
+    }
+
+    const ordered = orderWantedCandidates(
+      pool.map((row) => ({ id: row.id, variantId: row.variantId })),
+      (candidate) => mediaByVariant.get(candidate.variantId) ?? null,
+      { movies: latest(movieProgressRows), episodes: allEpisodeProgress, series: seriesProgress },
+    );
+    const byId = new Map(pool.map((row) => [row.id, row]));
+    return ordered
+      .flatMap((candidate) => {
+        const row = byId.get(candidate.id);
+        return row ? [row] : [];
+      })
+      .slice(0, limit);
   }
 
   async deleteMovieVariantsNotInPaths(

@@ -79,7 +79,11 @@ export class SubtitleAutomationService {
       return { downloaded: 0, failed: 0, queued: 0, skippedNoProvider: 1 };
     }
 
-    const wanted = await this.repository.listWantedSubtitlesByStates(FETCHABLE_STATES, limit);
+    // Highest viewing priority first, not `updatedAt` order. Older repository doubles (tests) may not
+    // implement the priority query yet, so fall back to the plain listing.
+    const wanted = typeof this.repository.listWantedSubtitlesByPriority === 'function'
+      ? await this.repository.listWantedSubtitlesByPriority(FETCHABLE_STATES, limit)
+      : await this.repository.listWantedSubtitlesByStates(FETCHABLE_STATES, limit);
 
     let downloaded = 0;
     let failed = 0;

@@ -1,0 +1,3 @@
+Adult library routes + first live import (feature_adult_library_20261107, Phase 1).
+
+POST /api/libraries/adult/import on the real tree: scanned 196 / created 196 / needsReview 8 / unreadable 0 / notSeen 0. GET /api/libraries and /api/adult/items serve the rows.

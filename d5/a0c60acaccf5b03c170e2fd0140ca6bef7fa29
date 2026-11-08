@@ -1,1 +1,3 @@
 B6 scheduled: daily 03:00 orchestrator via harness schedule-81975ac5..., new session per delivery, receipt to /config/orchestrator-receipts.jsonl.
+
+B6 closed: daily orchestrator scheduled (new session 03:00, receipt file, no destructive actions).

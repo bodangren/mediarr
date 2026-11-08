@@ -190,11 +190,12 @@ void main() {
       await press(tester, LogicalKeyboardKey.arrowRight);
       await tester.pump();
 
-      expect(find.text('Some Movie'), findsOneWidget,
-          reason: 'the press also wakes the overlay');
+      // Owner report 2026-11-08: waking the HUD on a seek made every following press move focus
+      // instead of seeking. Arrows now seek directly and leave the overlay hidden.
+      expect(find.text('Some Movie'), findsNothing,
+          reason: 'seeking must not open the transport overlay');
       expect(player.seekCalls, contains(const Duration(seconds: 10)),
           reason: 'FR-8: arrows seek on the video-surface path (+10 s)');
-      expect(find.text('00:10'), findsOneWidget);
     });
 
     testWidgets('remote Play, Pause, and Play/Pause keys control playback',

@@ -43,6 +43,7 @@ class PlaybackState {
     this.selectedSubtitleIndex,
     this.subtitleDelay = Duration.zero,
     this.subtitleDelayToast,
+    this.seekToast,
     // Hidden by default: the transport overlay appears via `showOverlay()`
     // (startup and every input) and hides on its 4 s window (FR-7). A `true`
     // default created a spurious hide transition during playback start, which
@@ -64,6 +65,8 @@ class PlaybackState {
   final int? selectedSubtitleIndex;
   final Duration subtitleDelay;
   final String? subtitleDelayToast;
+  /// Transient label for a seek performed while the overlay is hidden, e.g. "+30s".
+  final String? seekToast;
   final bool overlayVisible;
 
   double get progress =>
@@ -88,6 +91,7 @@ class PlaybackState {
     bool clearSelectedSubtitleIndex = false,
     Duration? subtitleDelay,
     String? subtitleDelayToast,
+    String? seekToast,
     bool clearSubtitleDelayToast = false,
     bool? overlayVisible,
   }) {
@@ -184,6 +188,7 @@ class PlaybackService extends StateNotifier<PlaybackState> {
   Timer? _progressReportTimer;
   Timer? _overlayHideTimer;
   Timer? _subtitleToastTimer;
+  Timer? _seekToastTimer;
 
   /// Returns the underlying `media_kit` `Player` if this service was
   /// constructed with a `MediaKitMediaPlayer`. The playback screen uses
@@ -227,6 +232,7 @@ class PlaybackService extends StateNotifier<PlaybackState> {
     // Per-media reset of subtitle timing nudge (FR-7).
     await _subtitleRenderer.setDelay(Duration.zero);
     _subtitleToastTimer?.cancel();
+    _seekToastTimer?.cancel();
 
     state = state.copyWith(
       status: PlaybackStatus.loading,
@@ -353,9 +359,12 @@ class PlaybackService extends StateNotifier<PlaybackState> {
   /// Seek relative to current position.
   Future<void> seekRelative(Duration offset) async {
     final target = state.position + offset;
+    // Duration is unknown (zero) until the stream loads; clamping to it would swallow a seek
+    // entirely, which is what made remote seeks move 0 seconds in the first tests.
+    final upper = state.duration > Duration.zero ? state.duration : null;
     final clamped = target < Duration.zero
         ? Duration.zero
-        : (target > state.duration ? state.duration : target);
+        : (upper != null && target > upper ? upper : target);
     await seekTo(clamped);
   }
 
@@ -375,6 +384,7 @@ class PlaybackService extends StateNotifier<PlaybackState> {
     _progressReportTimer?.cancel();
     _overlayHideTimer?.cancel();
     _subtitleToastTimer?.cancel();
+    _seekToastTimer?.cancel();
 
     // Stop the native player FIRST: a screen that is leaving must never keep a
     // newly opened stream alive while it awaits a network write. On the
@@ -456,6 +466,18 @@ class PlaybackService extends StateNotifier<PlaybackState> {
   }
 
   /// Show the overlay and restart the auto-hide timer.
+  /// Seeks without opening the overlay, and shows a transient label so the viewer can see how far
+  /// the press moved. Repeated presses are accelerated by the caller (see PlaybackScreen).
+  Future<void> seekWithFeedback(Duration offset) async {
+    await seekRelative(offset);
+    final label = offset.inSeconds >= 0 ? '+${offset.inSeconds}s' : '${offset.inSeconds}s';
+    state = state.copyWith(seekToast: label);
+    _seekToastTimer?.cancel();
+    _seekToastTimer = Timer(const Duration(milliseconds: 1200), () {
+      if (mounted) state = state.copyWith(seekToast: null);
+    });
+  }
+
   void showOverlay() {
     state = state.copyWith(overlayVisible: true);
     _startOverlayTimer();

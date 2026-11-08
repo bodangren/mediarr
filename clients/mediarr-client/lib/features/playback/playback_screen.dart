@@ -47,6 +47,9 @@ SubtitleViewConfiguration playbackSubtitleViewConfiguration({
 ///   * Back while overlay visible: hides overlay (does NOT exit).
 ///   * Back while overlay hidden: shows overlay.
 ///   * "Stop" affordance on the overlay exits playback deliberately.
+/// Seek jumps in seconds; index grows with repeated presses (acceleration).
+const List<int> _seekSteps = [10, 30, 60, 120, 300];
+
 class PlaybackScreen extends ConsumerStatefulWidget {
   const PlaybackScreen({
     super.key,
@@ -103,6 +106,11 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
   /// Suppresses Back-driven overlay toggles for one frame after a
   /// deliberate Stop so a Navigator.pop doesn't double-fire.
   bool _exitInProgress = false;
+  // Remote seeking acceleration: repeated Left/Right presses within 1.5 s grow the jump
+  // (10 s -> 30 s -> 60 s -> 5 min). Owners asked for a way to seek far without the HUD.
+  DateTime _lastSeekAt = DateTime.fromMillisecondsSinceEpoch(0);
+  int _seekStepIndex = 0;
+  int _seekDirection = 0;
   bool _stopRequested = false;
 
   // --- FR-3 autoplay state ---
@@ -401,6 +409,24 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
     if (_upNextSecondsLeft != null) {
       _cancelUpNextOnInput();
     }
+    // Overlay hidden: Left/Right seek directly and never open the HUD (the old behaviour woke the
+    // overlay first, so the next press walked HUD controls instead of seeking).
+    final isLeft = key == LogicalKeyboardKey.arrowLeft;
+    final isRight = key == LogicalKeyboardKey.arrowRight;
+    if ((isLeft || isRight) && !playbackState.overlayVisible) {
+      final direction = isLeft ? -1 : 1;
+      final now = DateTime.now();
+      if (direction == _seekDirection && now.difference(_lastSeekAt) < const Duration(milliseconds: 1500)) {
+        _seekStepIndex = (_seekStepIndex + 1).clamp(0, _seekSteps.length - 1);
+      } else {
+        _seekStepIndex = 0;
+      }
+      _lastSeekAt = now;
+      _seekDirection = direction;
+      final seconds = _seekSteps[_seekStepIndex] * direction;
+      service.seekWithFeedback(Duration(seconds: seconds));
+      return true;
+    }
     if (key == LogicalKeyboardKey.mediaPlayPause) {
       service.showOverlay();
       service.togglePlayPause();
@@ -435,13 +461,7 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
     // window, whatever the play state.
     service.showOverlay();
     if (!playbackState.overlayVisible) {
-      // Hidden overlay: the video surface owns the arrows (FR-8), so Left
-      // and Right seek. The other keys only wake the overlay.
-      if (key == LogicalKeyboardKey.arrowLeft) {
-        service.seekRelative(const Duration(seconds: -10));
-      } else if (key == LogicalKeyboardKey.arrowRight) {
-        service.seekRelative(const Duration(seconds: 10));
-      }
+      // Arrows were handled above; other keys only wake the overlay.
       return false;
     }
     // Visible overlay (FR-8): the arrows walk its controls and Select
@@ -557,6 +577,26 @@ class _PlaybackScreenState extends ConsumerState<PlaybackScreen> {
                 nextEpisode:
                     widget.nextEpisode ??
                     (_nextItem == null ? null : _advanceToNext),
+              ),
+
+            // Seek feedback while the overlay stays hidden.
+            if ((ref.watch(playbackServiceProvider).seekToast) case final String label)
+              Positioned(
+                bottom: 160,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: const Color(0xCC000000),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                      child: Text(label, style: const TextStyle(color: Colors.white, fontSize: 24)),
+                    ),
+                  ),
+                ),
               ),
 
             // Subtitle nudge toast.

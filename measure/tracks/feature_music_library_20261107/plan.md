@@ -21,8 +21,8 @@
 
 ## Phase 2: Ingest pipeline (deterministic)
 
-- [~] `yt-dlp` audio download + thumbnail; `ffmpeg` convert to M3.
-- [ ] beets tag + file into `<Artist>/<Album>/<NN> - <Title>`; untaggable → review folder.
+- [x] `yt-dlp` audio download + thumbnail; `ffmpeg` convert to M3 — `MusicIngestService` (bestaudio + jpg, ffmpeg AAC 256k m4a into staging, partial cleanup, exact tool errors, `POST /api/music/ingest` with validation); 4 tests; live 19 s video -> 577,744-byte m4a + 23,683-byte jpg, ffprobe aac 241 kbps — c13af5a
+- [~] beets tag + file into `<Artist>/<Album>/<NN> - <Title>`; untaggable → review folder.
 - [ ] Idempotency by video id + audio hash; re-run does not duplicate.
 - [ ] Failure reporting per item with tool error; receipt.
 

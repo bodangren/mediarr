@@ -43,7 +43,7 @@
 - [x] **contract** → `design/mediarr-contract.md`: capability table with file:line, automation-facing contract, sequencing. **Done** — corrected the brief (torrent queue control exists); E1–E5; switch-off conditions. — 75a0c38
 - [x] Lead reads all three and grades them: every factual claim about DSH or Mediarr cited to source; no workflow transcription disguised as intent. **Done** — two substrate gaps found and corrected (unattended-session permission mode; host-down watchdog), live settings corrected to 12/20/60 min. — d5f3674
 
-## Phase 3: Ratify ✅ (v3, revised after the triumvirate review)
+## Phase 3: Ratify ✅ (v3, revised after the triumvirate review) [checkpoint: d5f3674]
 
 - [x] Resolve D1–D4 in `spec.md` with the owner; record the rejected options and why. — 2770901
       **Done 2026-11-07 (v3):** D1 more work in DSH (plugin code, never model turns in deterministic
@@ -83,7 +83,12 @@
       plays a streamed episode with a Chinese subtitle. Evidence:
       [`evidence/`](./evidence/). B1 (service/reboot) remains open.
 - [ ] **B1** Prove 24/7 operation as a service (container `restart: unless-stopped` or systemd),
-      including reboot. (G8)
+      including reboot. (G8) **Progress 2026-11-09:** found and fixed a real split-brain — SIGTERM
+      closed Fastify but the process never exited, so the unit stayed `active` with a dead API and
+      `Restart=always` never fired; shutdown is now bounded (15 s forced exit) and a kill test shows
+      systemd restarting in **25 s** (`NRestarts=1`, health 200). Unit is `enabled`, `WantedBy=default.target`,
+      user `Linger=yes`. **Reboot proof remains owner-gated** (rebooting ends this harness session and
+      the TV); evidence `device-20261107/service-supervision-20261109.md` — 8c23f906
 - [x] **B2** Fix `subtitle-wanted-search` interval persistence + test; set rss 30 / availability
       10–15 / wanted 60. **Done:** interval updates for tasks without an AppSettings key now return
       422 before rescheduling (no more silent revert); persisted values verified across a full server

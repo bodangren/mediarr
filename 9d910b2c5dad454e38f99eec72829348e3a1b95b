@@ -1,0 +1,7 @@
+Phase 2 checkpoint — coverage + ordered APIs (feature_subtitle_coverage_priority_20261108).
+
+Delivered and verified:
+- GET /api/subtitles/coverage: per-bucket EN/ZH/both/neither counts, high-priority denominator; live 3,162 items, high priority 9 (7 covered, 2 missing Chinese).
+- Wanted subtitle lists ordered by viewing priority with priority field and bucket filter; live /wanted/series?bucket=backfill => 1,202 entries.
+- Acquisition wanted list ordered by the same model; series-level inheritance for missing episodes (live page 1 = Archer, newest episode progress in the DB).
+- 3 + 3 + 3 route/priority tests plus 25 service tests; tsc clean.

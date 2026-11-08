@@ -101,6 +101,30 @@ export const libraries = sqliteTable("Library", {
     .default(sql`(strftime('%s','now'))`),
 });
 
+export const adultItems = sqliteTable("AdultItem", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  libraryId: integer("libraryId").notNull().references(() => libraries.id, { onDelete: "cascade" }),
+  /** Absolute path; the file is never renamed or moved by the scanner. */
+  path: text("path").notNull().unique(),
+  fileName: text("fileName").notNull(),
+  title: text("title"),
+  studio: text("studio"),
+  quality: text("quality"),
+  releaseDate: text("releaseDate"),
+  /** Filename carries no title: needs a human/agent decision. */
+  needsReview: integer("needsReview", { mode: "boolean" }).notNull().default(false),
+  sizeBytes: integer("sizeBytes").notNull().default(0),
+  added: integer("added", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(strftime('%s','now'))`),
+  lastSeenAt: integer("lastSeenAt", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(strftime('%s','now'))`),
+}, (table) => [
+  index("AdultItem_libraryId_idx").on(table.libraryId),
+  index("AdultItem_needsReview_idx").on(table.needsReview),
+]);
+
 export const series = sqliteTable("Series", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   mediaId: integer("mediaId").unique().references(() => media.id, {

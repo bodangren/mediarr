@@ -19,12 +19,10 @@
 
 ## Phase 2: Coverage + ordered APIs
 
-- [~] `GET /api/subtitles/coverage` with per-bucket counts and EN/ZH/bilingual/none tallies + route
-      tests — **live 2026-11-08:** 3,162 items; high priority 9 (7 covered, 2 missing Chinese),
-      continue-watching 6, recently-watched 3, recently-added 17, backfill 3,136; totals 1,511
-      Chinese / 1,878 English / 1,017 both — ad98eed. Route-level test still to add.
-- [ ] Order `GET /api/subtitles/wanted/series|movies` by bucket then recency; add `priority` and
-      `bucket` filter; route tests for ordering and filtering.
+- [x] `GET /api/subtitles/coverage` with per-bucket counts and EN/ZH/bilingual/none tallies + route tests — live: 3,162 items, high priority 9 (7 covered, 2 missing); 3 route tests in `subtitleRoutes.coverage.test.ts` — b9c3aaa
+- [~] Order `GET /api/subtitles/wanted/series|movies` by bucket then recency; add `priority` field —
+      live: in-progress The 100 / The Sopranos rank first — b9c3aaa. Remaining: `bucket` filter and a
+      route test that asserts the order.
 - [ ] Sort `GET /api/media/wanted` with the same model (no shape change).
 
 ## Phase 3: Automation consumes the order

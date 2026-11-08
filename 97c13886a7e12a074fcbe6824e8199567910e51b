@@ -1,0 +1,3 @@
+SubtitleCoverageCard component (feature_subtitle_coverage_priority_20261108, Phase 4).
+
+Props: report | null, isLoading. High-priority summary, progressbar, per-bucket table (items/Chinese/both/missing). 4 tests, app tsc clean. Mounting on WantedPage next.

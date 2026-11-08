@@ -44,7 +44,7 @@
 
 ## Phase 4: Prune + migration
 
-- [~] Retention candidates → quarantine manifest; restore/delete proven.
+- [~] Retention candidates → quarantine manifest; restore/delete proven — engine shipped (`QuarantineService`: pure plan, dry-run default, EXDEV copy+verify+unlink, restore/delete guarded to the quarantine root, JSONL manifest; 9 tests — 44ebb59). Remaining: persist manifest entries and wire the retention-candidate list to it, then prove a restore/delete round-trip on a real file.
 - [ ] Import the existing tree; compare counts.
 - [ ] Remove all jellyfin-go references.
 

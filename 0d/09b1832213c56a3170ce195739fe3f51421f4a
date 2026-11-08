@@ -1,0 +1,1 @@
+YouTube retry policy: attempts+retryAt migration 0017, 30m/6h/24h backoff, selectable FAILED rows; live attempts=1/retryAt observed.

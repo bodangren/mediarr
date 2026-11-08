@@ -147,15 +147,39 @@ async function startApi(): Promise<void> {
   }
 
   const shutdownTimeoutMs = Number.parseInt(process.env.SHUTDOWN_TIMEOUT_MS ?? '15000', 10);
+  // Each stop step gets its own budget and log line. On 2026-11-09 close() hung with no clue which
+  // step blocked; a per-step timeout keeps shutdown bounded and the log names the culprit.
+  const stepTimeoutMs = Number.parseInt(process.env.SHUTDOWN_STEP_TIMEOUT_MS ?? '5000', 10);
+  const closeStep = async (name: string, task: () => Promise<void>): Promise<void> => {
+    const startedAt = Date.now();
+    let timer: NodeJS.Timeout | undefined;
+    try {
+      await Promise.race([
+        task(),
+        new Promise<void>((resolve) => {
+          timer = setTimeout(() => {
+            console.warn(`[shutdown] step '${name}' exceeded ${stepTimeoutMs} ms; continuing`);
+            resolve();
+          }, stepTimeoutMs);
+          timer.unref?.();
+        }),
+      ]);
+      console.log(`[shutdown] step '${name}' done in ${Date.now() - startedAt} ms`);
+    } catch (error) {
+      console.warn(`[shutdown] step '${name}' failed:`, error);
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+  };
   const close = async (): Promise<void> => {
-    await container.stopBackgroundServices();
-    await jellyfinDiscoveryService.stop().catch(error => console.warn('Failed to stop Jellyfin discovery cleanly:', error));
-    await jellyfinApp?.close();
-    await container.discoveryService.stop().catch(error => {
-      console.warn('Failed to stop discovery service cleanly:', error);
+    await closeStep('background-services', () => container.stopBackgroundServices());
+    await closeStep('jellyfin-discovery', () => jellyfinDiscoveryService.stop());
+    await closeStep('jellyfin-app', async () => {
+      await jellyfinApp?.close();
     });
-    await app.close();
-    await container.close();
+    await closeStep('mdns-discovery', () => container.discoveryService.stop());
+    await closeStep('api', () => app.close());
+    await closeStep('container', () => container.close());
   };
 
   // A stop signal must always end the process: systemd's Restart=always only fires after exit, and a

@@ -145,6 +145,9 @@ export function createApiServer(
 ): FastifyInstance {
   const app = Fastify({
     logger: options.logger ?? false,
+    // SPA/TV clients keep SSE and keep-alive connections open; without this Fastify's close() waits
+    // for them indefinitely and blocks systemd restarts (measured 2026-11-09: app.close() hung >5 s).
+    forceCloseConnections: true,
     ajv: {
       customOptions: {
         allowUnionTypes: true,

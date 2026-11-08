@@ -30,3 +30,19 @@ Restart=always, TimeoutStopSec=30) and `automation/scripts/install-dsh-host.sh`,
 run unless `DSH_HOST_CUTOVER=1` because stopping the terminal host also ends the agent turn running
 it. `systemd-analyze --user verify` accepts the unit. Cutover needs a separate terminal or explicit
 owner approval.
+
+## Root cause found (same round, 2026-11-09 00:59)
+Per-step logging identified the hung step: **`app.close()` never returned** — Fastify waits for open
+keep-alive/SSE connections from the SPA and TV. Measured: `step 'api' exceeded 5000 ms; continuing`
+then the forced 15 s exit.
+
+Fix: Fastify is constructed with **`forceCloseConnections: true`**, and each shutdown step now has a
+5 s budget with a log line (`SHUTDOWN_STEP_TIMEOUT_MS`).
+
+After the fix the same kill test shows:
+```
+[shutdown] step 'background-services' done in 4 ms
+[shutdown] step 'api' done in 2 ms
+[shutdown] step 'container' done in 164 ms
+```
+No forced exit, and `/api/health` was back **10 s** after the signal (5 s RestartSec + boot).

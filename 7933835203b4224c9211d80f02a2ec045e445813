@@ -1,0 +1,1 @@
+Adult queue + dedupe endpoint (feature_adult_library_20261107, Phase 3): validation, Torrent infoHash check, dryRun default true, grabRelease only on opt-in. Live dry-run + validation verified; duplicate branch awaits first real torrent.

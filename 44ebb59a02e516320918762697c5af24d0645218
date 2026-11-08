@@ -1,0 +1,1 @@
+Quarantine engine (feature_adult_library_20261107, Phase 4 / G6): pure plan, dry-run default, EXDEV copy+verify+unlink, restore and delete guarded to the quarantine root, JSONL manifest lines. 9 tests, tsc clean.

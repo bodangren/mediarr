@@ -1,0 +1,1 @@
+Root cause of duplicate screens: select fired on key-down AND key-up. Fixed to key-up only; debounce removed; 463 Flutter tests green; device resume 600->606 with one press.

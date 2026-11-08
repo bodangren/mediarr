@@ -1,0 +1,3 @@
+Library registry seeding + live enablement (feature_adult_library_20261107, Phase 1).
+
+ensureLibraryRegistry idempotent seeding of MOVIES/TV/ADULT from settings; boot wiring via drizzle adapter; adultRootFolder set through the settings PUT and merged correctly; live Library rows verified all enabled. 3 tests, tsc clean.

@@ -84,10 +84,11 @@
       [`evidence/`](./evidence/). B1 (service/reboot) remains open.
 - [ ] **B1** Prove 24/7 operation as a service (container `restart: unless-stopped` or systemd),
       including reboot. (G8)
-- [~] **B2** Fix `subtitle-wanted-search` interval persistence + test; set rss 30 / availability
-      10–15 / wanted 60. **Code done:** map now points the real task id; 16/16 route tests; `tsc`
-      clean. Remaining: `library-scan` has no interval key (reschedule persists nothing) — either
-      add a setting or return 422; values apply with B1a.
+- [x] **B2** Fix `subtitle-wanted-search` interval persistence + test; set rss 30 / availability
+      10–15 / wanted 60. **Done:** interval updates for tasks without an AppSettings key now return
+      422 before rescheduling (no more silent revert); persisted values verified across a full server
+      restart: rss 30 / wanted 60 / subtitle-wanted-search 12 (within 10–15); live library-scan call
+      returns 422 'no persisted interval setting'; 24 scheduler route tests green, tsc clean — 8a18bcb0
 - [x] **B2d** Current client built and installed on the live TV over network ADB; artwork is — 8015f81
       fetched through the server proxy (13 `CachedNetworkImage` call sites), playback and Chinese
       subtitle rendering verified on device. Old APK was from 2026-10-03 with a different

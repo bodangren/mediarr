@@ -1,0 +1,1 @@
+SPA review fixes: Adult page split into Needs review / Library sections with titled-first order; sidebar wanted badge no longer white-on-white and carries an aria-label. app tsc + build clean.

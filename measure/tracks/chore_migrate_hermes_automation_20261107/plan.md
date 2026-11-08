@@ -179,9 +179,15 @@
       `/config/orchestrator-receipts.jsonl`, no destructive actions without owner approval); next
       delivery 2026-11-10T03:00+08:00 (`device-20261107/orchestrator-schedule-20261109.md`); prompt and
       manual-run commit was ebc88c96 — d5a0c60a
-- [ ] **B7** Plugin timers: tidy 04:30, nightly receipt 05:00, retention 04:45 (scoped per G9),
+- [~] **B7** Plugin timers: tidy 04:30, nightly receipt 05:00, retention 04:45 (scoped per G9),
       weekly backup, reconcile + Mediarr task-history polling (correlate by `taskName` + window;
-      `executionId:-1` stays until E1). (G6/G9)
+      `executionId:-1` stays until E1). (G6/G9) **Tidy done 2026-11-09:**
+      `staging-tidy` scheduler task 04:30 removes only abandoned tool artefacts older than 6 h
+      (`.part`/`.ytdl`/`.tmp`/`.temp`, old empty files) in the music/YouTube staging areas; live
+      trigger deleted a synthetic back-dated partial and logged it
+      (`device-20261107/staging-tidy-20261109.md`). Retention (05:45) and music receipt (05:10) already
+      exist; nightly aggregate receipt + weekly backup stay open because `BackupService.getSchedule()`
+      is honestly `supported:false` until the host cutover — 8b1bb27e
 - [~] **B8** Quarantine engine: root on the 4TB filesystem, per-file hash manifest, copy+verify for
       cross-device, restore, retention delete, cap + overflow behaviour, rails that do not reuse
       `isImportIncomplete`, explicit dry-run→live guard. (G6) **Engine done 2026-11-09:**

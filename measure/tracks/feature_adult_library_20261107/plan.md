@@ -50,5 +50,5 @@
 
 ## Phase 5: Close
 
-- [ ] Acceptance criteria verified on the TV box.
+- [~] Acceptance criteria verified on the TV box.
 - [ ] Update `tracks.md`, `tech-debt.md`, `lessons-learned.md`; archive.

@@ -27,8 +27,8 @@
 ## Phase 3: Automation consumes the order
 
 - [x] Subtitle fetch cycle pulls candidates through the priority query (highest bucket first) with the existing provider guard and per-run cap intact; test with a simulated provider — `listWantedSubtitlesByPriority` (pool ×5, variant→media, batched progress, sibling-series activity) wired into `processWantedQueue`; 2 simulated-provider tests; live ordering waits on a provider credential — 1687509
-- [~] Bilingual cycle same ordering; test with a simulated translator.
-- [ ] Receipt log line records the bucket of each processed item.
+- [x] Bilingual cycle same ordering — candidate provider resolves sidecar paths through `VariantSubtitleTrack.filePath` → variant → movie/episode, orders them with `orderSubtitlePathsByPriority`, degrades to filesystem order on failure, and logs the ordered count — f7e85a
+- [~] Receipt states the ordered workload: count + order + cap for the fetch cycle, ordered/mapped counts for the bilingual provider — 5b0d78d. Per-item bucket still missing.
 
 ## Phase 4: SPA + client surface
 

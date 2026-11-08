@@ -36,7 +36,14 @@ class AdultItem {
   String get displayTitle {
     final candidate = title?.trim();
     if (candidate != null && candidate.isNotEmpty) return candidate;
-    return fileName;
+    // Review-bucket files fall back to a cleaned filename, never an ingest artefact like
+    // "001 [1c6d5a2b].mp4" (review finding: filenames read as implementation detail).
+    final cleaned = fileName
+        .replaceAll(RegExp(r'\s*\[[^\]]+\]\s*'), ' ')
+        .replaceAll(RegExp(r'\.[a-z0-9]+$', caseSensitive: false), '')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+    return cleaned.isEmpty ? fileName : cleaned;
   }
 
   /// Secondary line: studio / quality / release date, whichever are present.

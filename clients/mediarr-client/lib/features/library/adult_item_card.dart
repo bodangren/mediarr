@@ -50,7 +50,10 @@ class AdultItemCard extends StatelessWidget {
       child: Builder(
         builder: (focusContext) {
           final focused = Focus.of(focusContext).hasFocus;
-          return Material(
+          return AnimatedScale(
+            scale: focused ? 1.02 : 1.0,
+            duration: const Duration(milliseconds: 120),
+            child: Material(
             color: focused ? const Color(0xFF1F2937) : const Color(0xFF111827),
             borderRadius: BorderRadius.circular(10),
             child: InkWell(
@@ -62,8 +65,9 @@ class AdultItemCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                    color: focused ? const Color(0xFF8B5CF6) : const Color(0xFF262635),
-                    width: focused ? 2 : 1,
+                    color: focused ? const Color(0xFFA78BFA) : const Color(0xFF262635),
+                    // 4 logical px ring + slight scale: a 1-2px outline was too subtle at 10 feet.
+                    width: focused ? 4 : 1,
                   ),
                 ),
                 child: Column(
@@ -93,15 +97,16 @@ class AdultItemCard extends StatelessWidget {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    if (subtitle.isNotEmpty) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        subtitle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 13),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle.isEmpty ? 'No metadata' : subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: subtitle.isEmpty ? const Color(0xFF6B7280) : const Color(0xFF9CA3AF),
+                        fontSize: 13,
                       ),
-                    ],
+                    ),
                     if (item.needsReview) ...[
                       const SizedBox(height: 6),
                       Text(
@@ -117,6 +122,7 @@ class AdultItemCard extends StatelessWidget {
                   ],
                 ),
               ),
+            ),
             ),
           );
         },

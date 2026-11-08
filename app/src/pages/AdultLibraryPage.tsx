@@ -3,6 +3,13 @@ import { RouteScaffold } from '@/components/primitives/RouteScaffold';
 import { getApiClients } from '@/lib/api/client';
 import type { AdultItem } from '@/lib/api/adultLibraryApi';
 
+/** Cards always show something identifiable: parsed title, else the filename without extension/hash. */
+function displayTitle(item: AdultItem): string {
+  const title = item.title?.trim();
+  if (title) return title;
+  return item.fileName.replace(/\s*\[[^\]]+\]\s*/g, ' ').replace(/\.[a-z0-9]+$/i, '').trim() || item.fileName;
+}
+
 /**
  * Adult library section (track feature_adult_library_20261107).
  *
@@ -92,17 +99,33 @@ export function AdultLibraryPage() {
               key={item.id}
               type="button"
               onClick={() => setPlaying(item)}
-              className="flex flex-col items-start gap-1 rounded-lg border border-border bg-surface-1 p-3 text-left hover:border-accent-primary"
+              className="flex flex-col items-start gap-1 overflow-hidden rounded-lg border border-border bg-surface-1 text-left hover:border-accent-primary"
             >
-              <span className="line-clamp-2 text-sm font-medium text-text-primary">
-                {item.title ?? item.fileName}
+              <span className="block aspect-video w-full overflow-hidden bg-black">
+                {item.thumbUrl ? (
+                  <img
+                    src={item.thumbUrl}
+                    alt=""
+                    loading="lazy"
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <span className="flex h-full w-full items-center justify-center text-xs text-text-muted">
+                    No preview
+                  </span>
+                )}
               </span>
-              <span className="text-xs text-text-muted">
-                {[item.studio, item.quality, item.releaseDate].filter(Boolean).join(' · ') || '—'}
+              <span className="line-clamp-2 w-full px-3 pt-2 text-sm font-medium text-text-primary">
+                {displayTitle(item)}
+              </span>
+              <span className="w-full px-3 text-xs text-text-muted">
+                {[item.studio, item.quality, item.releaseDate].filter(Boolean).join(' · ') || 'No metadata'}
               </span>
               {item.needsReview ? (
-                <span className="rounded bg-accent-warning/15 px-1.5 py-0.5 text-[11px] text-accent-warning">Needs review</span>
-              ) : null}
+                <span className="mx-3 mb-3 rounded bg-accent-warning/15 px-1.5 py-0.5 text-[11px] text-accent-warning">Needs review</span>
+              ) : (
+                <span className="mb-3" />
+              )}
             </button>
           ))}
         </div>

@@ -94,7 +94,8 @@ class _AdultLibraryScreenState extends State<AdultLibraryScreen> {
     final page = _page;
     if (page == null || _loading) return;
     if (_pageNumber >= page.totalPages) return;
-    if (index < page.items.length - 4) return;
+    // Prefetch two rows early so a fast Down press never outruns the network (review finding).
+    if (index < page.items.length - 8) return;
     _pageNumber += 1;
     unawaited(_load(append: true));
   }
@@ -154,12 +155,17 @@ class _AdultLibraryScreenState extends State<AdultLibraryScreen> {
               Expanded(
                 child: _loading && items.isEmpty
                     ? const Center(child: CircularProgressIndicator())
-                    : GridView.builder(
+                    : Stack(children: [
+                      GridView.builder(
+                        // Card height fits a 96px still + title + metadata + the review badge. At 120 it
+                        // clipped the badge, so the header claimed "8 need review" while no visible card
+                        // showed one (review finding, 2026-11-08).
+                        padding: const EdgeInsets.only(bottom: 48),
                         gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                          maxCrossAxisExtent: 300,
-                          mainAxisSpacing: 14,
-                          crossAxisSpacing: 14,
-                          mainAxisExtent: 120,
+                          maxCrossAxisExtent: 320,
+                          mainAxisSpacing: 16,
+                          crossAxisSpacing: 16,
+                          mainAxisExtent: 190,
                         ),
                         itemCount: items.length,
                         itemBuilder: (context, index) => AdultItemCard(
@@ -170,6 +176,30 @@ class _AdultLibraryScreenState extends State<AdultLibraryScreen> {
                           onSelect: () => widget.onSelect?.call(items[index]),
                         ),
                       ),
+                      // Auto-paging is silent otherwise: nothing tells the viewer more is coming or
+                      // that they reached the end (review finding, 2026-11-08).
+                      if (_loading)
+                        const Positioned(
+                          left: 0,
+                          right: 0,
+                          bottom: 8,
+                          child: Center(
+                            child: Text('Loading more…', style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 14)),
+                          ),
+                        )
+                      else if (page != null && _pageNumber >= page.totalPages)
+                        Positioned(
+                          left: 0,
+                          right: 0,
+                          bottom: 8,
+                          child: Center(
+                            child: Text(
+                              '${page.items.length} of ${page.totalCount} · end of list',
+                              style: const TextStyle(color: Color(0xFF6B7280), fontSize: 13),
+                            ),
+                          ),
+                        ),
+                    ]),
               ),
             ],
           ),

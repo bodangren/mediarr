@@ -158,7 +158,15 @@
       B3) — 75ce6f57, a958c7d2
 - [~] **B5** kimi-webbridge MCP is live (`mcp__webbridge__navigate/evaluate` verified). Remaining:
       probe that asserts **tool registration + extension connected** (not port liveness), per-call/run
-      timeout for a wedged extension, extension-reconnect check after restart. (G2)
+      timeout for a wedged extension, extension-reconnect check after restart. (G2) **Probe done
+      2026-11-09:** port 10086 returns `426 Upgrade Required` on every path, so liveness was
+      disproven as evidence; the probe contract is declared in `automation/expectations.yaml`
+      (`bridge.probe`: expression, expected value, 15 s timeout) and step 0b of the orchestrator
+      prompt (registration check → one evaluate probe → `BRIDGE_TOOLS_ABSENT`/`BRIDGE_WEDGED` alerts →
+      re-probe after any host restart, no scraping fallback). Live: evaluate returned
+      `{probe:'bridge-alive', two:2, url:SPA}` from a real extension
+      (`device-20261107/bridge-probe-20261109.md`). Remaining: the 5-minute per-call/run budget is
+      enforced by the gated run timer, and the live reconnect check needs a host restart (B3 cutover) — 92a9ef3d
 - [~] **B6** Daily 03:00 media-orchestrator prompt in `automation/prompts/`; it must hard-fail when
       `mcp__webbridge__*` tools are absent, reconcile-before-act, and journal side effects
       incrementally. Manual run first. (G2/G3/G5) **Prompt + manual run done 2026-11-09:**

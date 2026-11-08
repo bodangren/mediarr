@@ -16,6 +16,7 @@ import { registerFilterRoutes } from './routes/filterRoutes';
 import { registerImportListRoutes } from './routes/importListRoutes';
 import { registerImportRoutes } from './routes/importRoutes';
 import { registerLibraryRoutes } from './routes/libraryRoutes';
+import { registerAdultLibraryRoutes } from './routes/adultLibraryRoutes';
 import { registerIndexerRoutes } from './routes/indexerRoutes';
 
 import { registerLogsRoutes } from './routes/logsRoutes';
@@ -229,6 +230,7 @@ export function createApiServer(
   registerFilesystemRoutes(app, dependencies);
   registerImportRoutes(app, dependencies);
   registerLibraryRoutes(app, dependencies);
+  registerAdultLibraryRoutes(app, dependencies);
   registerTestRoutes(app, eventHub);
   // TV client error ingestion: available in every mode, including slim.
   registerClientErrorRoutes(app);

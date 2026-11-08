@@ -7,6 +7,7 @@ import * as schema from '../../db/schema';
 import { applyYoutubeProgress, parseSubscriptionUrl, retentionEligible } from '../../services/YoutubeLibrary';
 import { restoreYoutubeRetention } from '../../services/YoutubeRetentionService';
 import { downloadPending, pollAllSubscriptions, readRetentionReceipts, runRetention } from '../../services/YoutubeAutomation';
+import { importYoutubeArchive } from '../../services/YoutubeArchiveImporter';
 import { YoutubeFeedPoller } from '../../services/YoutubeFeedPoller';
 import { YoutubeDownloadService } from '../../services/YoutubeDownloadService';
 import { sendSuccess } from '../contracts';
@@ -190,6 +191,16 @@ export function registerYoutubeRoutes(app: FastifyInstance, deps: ApiDependencie
     return sendSuccess(reply, receipt);
   });
 
+  /** Import the pre-existing /data/Youtube archive as unmanaged history (never retention-eligible). */
+  app.post('/api/libraries/youtube/import', async (request, reply) => {
+    const body = (request.body ?? {}) as { dryRun?: boolean };
+    const result = await importYoutubeArchive(drizzle, {
+      root: process.env.YOUTUBE_DIR ?? '/data/Youtube',
+      dryRun: body.dryRun === true,
+    });
+    return sendSuccess(reply, result);
+  });
+
   /** Recent retention receipts, newest last: proof the nightly job fired and what it did. */
   app.get('/api/youtube/retention/receipts', async (request, reply) => {
     const query = request.query as Record<string, unknown>;
@@ -323,7 +334,7 @@ export function registerYoutubeRoutes(app: FastifyInstance, deps: ApiDependencie
         added: schema.youtubeVideos.added,
       })
       .from(schema.youtubeVideos)
-      .where(and(eq(schema.youtubeVideos.status, 'AVAILABLE'), eq(schema.youtubeVideos.source, 'SUBSCRIPTION')))
+      .where(eq(schema.youtubeVideos.status, 'AVAILABLE'))
       .orderBy(desc(schema.youtubeVideos.added))
       .limit(limit);
     return sendSuccess(reply, {

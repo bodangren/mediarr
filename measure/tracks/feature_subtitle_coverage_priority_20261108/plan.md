@@ -30,7 +30,7 @@
 - [x] Bilingual cycle same ordering — candidate provider maps sidecar paths through `VariantSubtitleTrack.filePath` → variant → movie/episode, orders with `orderSubtitlePathsByPriority` (3 tests), logs the ordered count, degrades on failure; cycle consumes the order as given with a simulated-translator test — 09448275
 - [x] Receipt names the order and each item's bucket — fetch cycle logs count/order/cap and `wanted <id> bucket=<bucket>`; bilingual provider logs ordered/mapped counts — 2ac3780
 
-## Phase 4: SPA + client surface
+## Phase 4: SPA + client surface [checkpoint: 570d8082]
 
 - [x] Wanted page: coverage card + grouped list, browser-verified — live `/wanted` shows "9 high-priority · 7 covered · 2 missing" and per-bucket sections with counts (BACKFILL · 25 in `device-20261107/wanted-grouped.jpg`); commits 9811f7c, 6189a9a, 9d568f1; 4 card + 17 page tests; reason badges deferred to the TV client — 97fda37
 - [x] TV client: **nothing to pass through** — measured 2026-11-08: the Flutter client has no wanted surface (`grep -rn wanted lib test` = 0 hits; feature dirs are activity/calendar/discovery/home/library/playback/search/settings) and no `priority` usage (`grep -rn priority lib` = 0). A TV wanted screen would be its own track, not a pass-through — 97fda37

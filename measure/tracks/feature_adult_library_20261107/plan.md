@@ -26,7 +26,7 @@
 
 - [ ] Contract test for the adult library type/root written first.
 - [ ] Schema/type change isolated so `TV|MOVIE` queries cannot see the new library.
-- [ ] Scanner with flat-layout preservation and a scan summary.
+- [~] Scanner with flat-layout preservation and a scan summary — `AdultLibraryScanner` shipped: six-class filename grammar with review bucket, depth-first walk, layout preserved, unreadable directories reported; 9 tests — aafb814
 - [ ] Seeded-tree counts test.
 
 ## Phase 2: API + UI (SPA first, TV after the focus fix)

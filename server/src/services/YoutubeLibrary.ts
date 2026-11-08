@@ -63,7 +63,7 @@ export interface FeedEntry {
 
 export interface FeedDecision {
   accepted: FeedEntry[];
-  skipped: Array<{ videoId: string; reason: 'duplicate' | 'short' | 'live' | 'invalid-id' }>;
+  skipped: Array<{ videoId: string; reason: 'duplicate' | 'short' | 'live' | 'invalid-id' | 'cap' }>;
 }
 
 /** Decide which feed entries warrant a download. Idempotent by video id; shorts/live skipped (Y5). */
@@ -96,8 +96,8 @@ export function selectNewEntries(
       continue;
     }
     if (accepted.length >= cap) {
-      // Not an error: the remainder is picked up on the next poll.
-      skipped.push({ videoId, reason: 'duplicate' });
+      // Not an error and not a duplicate: the remainder is picked up on the next poll.
+      skipped.push({ videoId, reason: 'cap' });
       continue;
     }
     seen.add(videoId);

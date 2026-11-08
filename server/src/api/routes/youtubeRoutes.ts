@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { asc, eq } from 'drizzle-orm';
 import * as schema from '../../db/schema';
 import { parseSubscriptionUrl } from '../../services/YoutubeLibrary';
+import { YoutubeFeedPoller } from '../../services/YoutubeFeedPoller';
 import { sendSuccess } from '../contracts';
 import type { ApiDependencies } from '../types';
 
@@ -13,6 +14,7 @@ import type { ApiDependencies } from '../types';
  */
 export function registerYoutubeRoutes(app: FastifyInstance, deps: ApiDependencies): void {
   const drizzle = (deps.prisma as unknown as { drizzle: any }).drizzle;
+  const poller = new YoutubeFeedPoller();
 
   app.get('/api/youtube/subscriptions', async (_request, reply) => {
     const rows = await drizzle
@@ -63,6 +65,59 @@ export function registerYoutubeRoutes(app: FastifyInstance, deps: ApiDependencie
       })
       .returning())[0];
     return reply.code(201).send({ ok: true, data: row });
+  });
+
+  /** Poll one subscription now; the scheduled task will call the same service. */
+  app.post('/api/youtube/subscriptions/:id/poll', async (request, reply) => {
+    const id = Number.parseInt(String((request.params as { id?: string }).id ?? ''), 10);
+    if (!Number.isInteger(id) || id <= 0) {
+      return reply.code(422).send({ ok: false, error: { code: 'INVALID_ID', message: 'id must be a positive integer' } });
+    }
+    const row = (await drizzle
+      .select()
+      .from(schema.youtubeSubscriptions)
+      .where(eq(schema.youtubeSubscriptions.id, id))
+      .limit(1))[0];
+    if (!row) {
+      return reply.code(404).send({ ok: false, error: { code: 'NOT_FOUND', message: 'Subscription not found' } });
+    }
+
+    const result = await poller.poll(
+      { id: row.id, url: row.url, title: row.title },
+      {
+        videos: {
+          existingVideoIds: async () => new Set(
+            (await drizzle.select({ videoId: schema.youtubeVideos.videoId }).from(schema.youtubeVideos))
+              .map((video: { videoId: string }) => video.videoId),
+          ),
+          findByVideoId: async (videoId: string) => (await drizzle
+            .select({ id: schema.youtubeVideos.id })
+            .from(schema.youtubeVideos)
+            .where(eq(schema.youtubeVideos.videoId, videoId))
+            .limit(1))[0] ?? null,
+          insert: async (entry) => (await drizzle
+            .insert(schema.youtubeVideos)
+            .values({
+              subscriptionId: entry.subscriptionId,
+              videoId: entry.videoId,
+              source: 'SUBSCRIPTION',
+              title: entry.title,
+              channel: entry.channel ?? null,
+              durationSeconds: entry.durationSeconds ?? null,
+              publishedAt: entry.publishedAt ?? null,
+              status: 'PENDING',
+            })
+            .returning({ id: schema.youtubeVideos.id }))[0],
+        },
+        recordPoll: async (subscriptionId, outcome) => {
+          await drizzle.update(schema.youtubeSubscriptions)
+            .set({ lastPolledAt: outcome.at, lastError: outcome.error ?? null })
+            .where(eq(schema.youtubeSubscriptions.id, subscriptionId));
+        },
+      },
+    );
+
+    return sendSuccess(reply, result);
   });
 
   app.patch('/api/youtube/subscriptions/:id', async (request, reply) => {

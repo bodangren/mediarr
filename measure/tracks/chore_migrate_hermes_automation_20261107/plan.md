@@ -157,9 +157,15 @@
 - [~] **B5** kimi-webbridge MCP is live (`mcp__webbridge__navigate/evaluate` verified). Remaining:
       probe that asserts **tool registration + extension connected** (not port liveness), per-call/run
       timeout for a wedged extension, extension-reconnect check after restart. (G2)
-- [ ] **B6** Daily 03:00 media-orchestrator prompt in `automation/prompts/`; it must hard-fail when
+- [~] **B6** Daily 03:00 media-orchestrator prompt in `automation/prompts/`; it must hard-fail when
       `mcp__webbridge__*` tools are absent, reconcile-before-act, and journal side effects
-      incrementally. Manual run first. (G2/G3/G5)
+      incrementally. Manual run first. (G2/G3/G5) **Prompt + manual run done 2026-11-09:**
+      `automation/prompts/media-orchestrator-daily.md` hard-fails with a
+      `BRIDGE_TOOLS_ABSENT` critical alert when the bridge tools are missing, reconciles scheduler/
+      subtitle/music/YouTube/adult truth before acting, and journals one run per domain as it goes;
+      the manual first run is recorded in
+      `device-20261107/orchestrator-manual-run-20261109.md` (no destructive action taken). Remaining:
+      wire it to the 03:00 plugin timer, which depends on the gated B4 profile link — ebc88c96
 - [ ] **B7** Plugin timers: tidy 04:30, nightly receipt 05:00, retention 04:45 (scoped per G9),
       weekly backup, reconcile + Mediarr task-history polling (correlate by `taskName` + window;
       `executionId:-1` stays until E1). (G6/G9)

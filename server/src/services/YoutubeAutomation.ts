@@ -1,6 +1,6 @@
 import fsp from 'node:fs/promises';
 import pathPosix from 'node:path/posix';
-import { eq } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import * as schema from '../db/schema';
 import { planYoutubeRetention, runYoutubeRetention } from './YoutubeRetentionService';
 import { YoutubeFeedPoller, type PollResult } from './YoutubeFeedPoller';
@@ -192,6 +192,16 @@ export async function downloadPending(
   },
 ): Promise<DownloadReceipt> {
   const service = options.service ?? new YoutubeDownloadService({ root: options.mediaRoot });
+  // Crash recovery: a download claimed by a process that died leaves the row DOWNLOADING forever,
+  // and nothing retries it. Anything claimed longer than 30 minutes ago goes back to PENDING; the
+  // scheduler runs every 20 minutes so a live job never loses its own claim.
+  await drizzle.update(schema.youtubeVideos)
+    .set({ status: 'PENDING' })
+    .where(and(
+      eq(schema.youtubeVideos.status, 'DOWNLOADING'),
+      sql`${schema.youtubeVideos.lastSeenAt} < strftime('%s','now','-30 minutes')`,
+    ));
+
   const pending = await drizzle
     .select({
       id: schema.youtubeVideos.id,
@@ -208,7 +218,9 @@ export async function downloadPending(
   if (pending.length > 0) {
     outcome = await service.run(options.limit, pending, {
       claim: async (id) => {
-        await drizzle.update(schema.youtubeVideos).set({ status: 'DOWNLOADING' }).where(eq(schema.youtubeVideos.id, id));
+        await drizzle.update(schema.youtubeVideos)
+          .set({ status: 'DOWNLOADING', lastSeenAt: new Date() })
+          .where(eq(schema.youtubeVideos.id, id));
       },
       markAvailable: async (id, result) => {
         await drizzle.update(schema.youtubeVideos).set({

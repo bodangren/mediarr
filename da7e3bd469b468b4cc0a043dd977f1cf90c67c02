@@ -1,0 +1,3 @@
+Phase 5 checkpoint — acceptance and closeout for feature_subtitle_coverage_priority_20261108.
+
+Live high priority 9 / 7 covered / 2 missing (both no-provider); 62 server + 34 SPA tests; tsc clean; SPA browser-verified with screenshots; lessons + tech-debt recorded. Track implementation complete; archive next.

@@ -1,0 +1,1 @@
+Music ingest (Phase 2): yt-dlp bestaudio -> ffmpeg AAC 256k m4a + thumbnail into staging, failure cleanup and exact errors; 4 tests; live 19s video ingested and probed aac 241kbps.

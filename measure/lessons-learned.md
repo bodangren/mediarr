@@ -106,3 +106,24 @@ The Adult library went from schema to a device-verified section in one stretch. 
 4. **Deletion is a two-step move, never a delete.** The quarantine engine plans purely, defaults to
    dry-run, copies+verifies across devices, and its delete function refuses any path outside the
    quarantine root. A destructive API that cannot be pointed at the library is worth the extra code.
+
+## 2026-11-08 — Live schedules find what unit tests cannot
+
+The YouTube track's biggest defects were invisible until the poller and downloader ran on a schedule:
+
+1. **A channel URL returns tabs, not videos.** `--dump-single-json` gave `seen: 0` because entries were
+   nested under Videos/Shorts/Live tabs. A silent zero is indistinguishable from "nothing new", so the
+   flattening is now tested — and the live poll (463 entries) is the check that matters.
+2. **Codec choice is a device contract, not a preference.** "Best quality" downloaded AV1+Opus, which
+   this 32-bit TV cannot decode at all; after that, 1080p60 High@4.2 played at ~2 fps while 1080p24
+   High@4.1 movies play smoothly. Downloads now transcode to the profile the box is proven to handle
+   (H.264 High@4.0, 1080p30, AAC, faststart) — measured with ffprobe and confirmed on the device.
+3. **An open format selector can fail on real videos.** Requiring mp4a audio failed whole videos because
+   YouTube served only opus; require only what the device actually needs (H.264 video) and let ffmpeg
+   normalise audio.
+4. **A claimed download must be recoverable.** A process that dies leaves rows DOWNLOADING forever;
+   stale claims (>30 min) return to PENDING at job start. This was found by running two overlapping
+   jobs, i.e. by operating the thing rather than reasoning about it.
+5. **Quarantine reuse beat a second delete path.** Retention uses the Adult quarantine engine (pure plan,
+   dry-run default, manifest, guarded restore/purge), proven by moving a real 57 MB video and restoring
+   it byte-identically.

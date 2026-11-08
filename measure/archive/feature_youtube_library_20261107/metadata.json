@@ -1,0 +1,10 @@
+{
+  "id": "feature_youtube_library_20261107",
+  "title": "YouTube Series Library for Mediarr",
+  "status": "completed",
+  "created": "2026-11-07",
+  "completed": "2026-11-08",
+  "priority": "high",
+  "actual_tasks": 23,
+  "evidence": "poll 463 seen/25 queued; 2 real downloads H.264+AAC 1080p30 with metadata; SPA + TV sections device-verified 1.3.22/46; watched rule + 7d retention quarantine round-trip on a 57MB file; nightly job + JSONL receipts; archive import 263 of 265 files; three-model review implemented"
+}

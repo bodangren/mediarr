@@ -1,0 +1,1 @@
+YouTube device-compat fix from triage: AV1+Opus downloads replaced with avc1+mp4a; 2 files re-downloaded and re-probed h264/aac; TV playback clean. Watermark advanced past all 4 triaged records.

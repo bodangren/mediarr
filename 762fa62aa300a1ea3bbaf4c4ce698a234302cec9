@@ -1,0 +1,1 @@
+PlaybackService progress-reporter seam (feature_adult_library_20261107, player handoff prep): optional reporter overrides the movie/episode progress endpoint; null keeps existing behaviour. analyze clean, 38 tests.
